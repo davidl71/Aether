@@ -1,0 +1,167 @@
+// tws_client.h - TWS API Client wrapper for IBKR Box Spread Generator
+#pragma once
+
+#include "types.h"
+#include "config_manager.h"
+#include <memory>
+#include <functional>
+#include <map>
+#include <vector>
+
+namespace tws {
+
+// ============================================================================
+// TWS Client Callbacks
+// ============================================================================
+
+using MarketDataCallback = std::function<void(const types::MarketData&)>;
+using OrderStatusCallback = std::function<void(const types::Order&)>;
+using PositionCallback = std::function<void(const types::Position&)>;
+using AccountCallback = std::function<void(const types::AccountInfo&)>;
+using ErrorCallback = std::function<void(int code, const std::string& msg)>;
+
+// ============================================================================
+// Connection State
+// ============================================================================
+
+enum class ConnectionState {
+    Disconnected,
+    Connecting,
+    Connected,
+    Error
+};
+
+// ============================================================================
+// TWS Client Class
+// ============================================================================
+
+class TWSClient {
+public:
+    // Constructor
+    explicit TWSClient(const config::TWSConfig& config);
+
+    // Destructor
+    ~TWSClient();
+
+    // Disable copy (manage connection state)
+    TWSClient(const TWSClient&) = delete;
+    TWSClient& operator=(const TWSClient&) = delete;
+
+    // Connection management
+    bool connect();
+    void disconnect();
+    bool is_connected() const;
+    ConnectionState get_connection_state() const;
+
+    // Process incoming messages (call in main loop)
+    void process_messages(int timeout_ms = 100);
+
+    // ========================================================================
+    // Market Data Operations
+    // ========================================================================
+
+    // Request market data for an option contract
+    int request_market_data(const types::OptionContract& contract,
+                           MarketDataCallback callback);
+
+    // Cancel market data subscription
+    void cancel_market_data(int request_id);
+
+    // Request option chain for underlying symbol
+    std::vector<types::OptionContract> request_option_chain(
+        const std::string& symbol,
+        const std::string& expiry = ""  // Empty for all expiries
+    );
+
+    // ========================================================================
+    // Order Operations
+    // ========================================================================
+
+    // Place a new order
+    int place_order(const types::OptionContract& contract,
+                    types::OrderAction action,
+                    int quantity,
+                    double limit_price = 0.0,  // 0 for market order
+                    types::TimeInForce tif = types::TimeInForce::Day);
+
+    // Cancel an order
+    void cancel_order(int order_id);
+
+    // Cancel all orders
+    void cancel_all_orders();
+
+    // Get order status
+    std::optional<types::Order> get_order(int order_id) const;
+
+    // Get all active orders
+    std::vector<types::Order> get_active_orders() const;
+
+    // ========================================================================
+    // Position Operations
+    // ========================================================================
+
+    // Request current positions
+    void request_positions(PositionCallback callback);
+
+    // Get all positions
+    std::vector<types::Position> get_positions() const;
+
+    // Get position for specific contract
+    std::optional<types::Position> get_position(
+        const types::OptionContract& contract
+    ) const;
+
+    // ========================================================================
+    // Account Operations
+    // ========================================================================
+
+    // Request account updates
+    void request_account_updates(AccountCallback callback);
+
+    // Get current account information
+    std::optional<types::AccountInfo> get_account_info() const;
+
+    // ========================================================================
+    // Callbacks
+    // ========================================================================
+
+    void set_order_status_callback(OrderStatusCallback callback);
+    void set_error_callback(ErrorCallback callback);
+
+    // ========================================================================
+    // Helper Methods
+    // ========================================================================
+
+    // Get next valid order ID
+    int get_next_order_id() const;
+
+    // Check if market is open
+    bool is_market_open() const;
+
+    // Get server time
+    std::chrono::system_clock::time_point get_server_time() const;
+
+private:
+    class Impl;
+    std::unique_ptr<Impl> pimpl_;
+};
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+// Validate symbol format
+bool is_valid_symbol(const std::string& symbol);
+
+// Parse option symbol (e.g., "SPY250620C00500000" -> components)
+std::optional<types::OptionContract> parse_option_symbol(
+    const std::string& option_symbol
+);
+
+// Format option symbol from components
+std::string format_option_symbol(const types::OptionContract& contract);
+
+// Calculate DTE (days to expiry)
+int calculate_dte(const std::string& expiry);
+
+} // namespace tws

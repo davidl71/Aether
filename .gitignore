@@ -1,0 +1,97 @@
+# Build directories
+build/
+build-*/
+cmake-build-*/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+compile_commands.json
+
+# Compiled binaries
+bin/
+*.o
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+ib_box_spread
+
+# Configuration files (keep examples only)
+config/config.json
+config/*.local.json
+*.env
+.env*
+
+# Logs
+logs/
+*.log
+
+# Credentials and secrets
+credentials/
+*.key
+*.pem
+*.p12
+api_keys.txt
+secrets.txt
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python virtual environments (if any)
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Dependency directories
+vendor/tws-api/
+_deps/
+
+# Test results
+Testing/
+*.gcda
+*.gcno
+*.gcov
+
+# Package managers
+.conan/
+vcpkg/
+
+# Backup files
+*.bak
+*.backup
+*.tmp
+
+# Documentation build
+docs/_build/
+docs/html/
+docs/latex/
+
+# Core dumps
+core
+core.*
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux specific
+.directory
+
+# Windows specific
+Thumbs.db
+Desktop.ini
