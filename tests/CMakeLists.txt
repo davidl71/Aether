@@ -19,9 +19,16 @@ add_executable(box_spread_tests ${TEST_SOURCES})
 # Include Directories
 # ============================================================================
 
+# TWS API configuration (needed for tws_client.cpp)
+set(TWS_API_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/vendor/tws-api/IBJts/source/cppclient/client")
+set(TWS_API_LIB "${CMAKE_SOURCE_DIR}/vendor/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib")
+set(INTEL_DECIMAL_LIB "${CMAKE_SOURCE_DIR}/vendor/IntelRDFPMathLib20U2/LIBRARY/libbid.a")
+file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.dylib")
+
 target_include_directories(box_spread_tests
     PRIVATE
         ${CMAKE_SOURCE_DIR}/include
+        ${TWS_API_INCLUDE_DIR}
 )
 
 # ============================================================================
@@ -34,7 +41,22 @@ target_link_libraries(box_spread_tests
         nlohmann_json::nlohmann_json
         spdlog::spdlog
         CLI11::CLI11
+        ${TWS_API_LIB}
+        ${INTEL_DECIMAL_LIB}
+        /usr/local/lib/libprotobuf.dylib
+        ${ABSEIL_LIBS}
 )
+
+# Platform-specific libraries (needed for TWS API)
+if(APPLE)
+    target_link_libraries(box_spread_tests PRIVATE "-framework CoreFoundation")
+    find_library(PTHREAD_LIBRARY pthread)
+    if(PTHREAD_LIBRARY)
+        target_link_libraries(box_spread_tests PRIVATE ${PTHREAD_LIBRARY})
+    endif()
+elseif(UNIX)
+    target_link_libraries(box_spread_tests PRIVATE pthread)
+endif()
 
 # Link with the same object files as the main executable
 # (This avoids code duplication)

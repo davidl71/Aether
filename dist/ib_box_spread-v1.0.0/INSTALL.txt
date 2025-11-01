@@ -1,0 +1,80 @@
+IBKR Box Spread Generator v1.0.0
+Installation Instructions
+
+======================
+SYSTEM REQUIREMENTS
+======================
+- macOS 10.15 or later
+- Intel (x86_64) or Apple Silicon (arm64)
+- Protocol Buffers 6.33.0+
+- Abseil libraries (installed via Homebrew)
+
+======================
+QUICK START
+======================
+
+1. Install dependencies:
+   brew install protobuf abseil
+
+2. Configure the application:
+   cp config/config.example.json config/config.json
+   # Edit config/config.json with your settings
+
+3. Run in dry-run mode (safe, no real trades):
+   ./run.sh --dry-run
+
+4. Run with TWS connection (requires TWS/Gateway):
+   ./run.sh
+
+======================
+DIRECTORY STRUCTURE
+======================
+bin/              - Application binary and libraries
+config/           - Configuration files
+docs/             - Documentation
+logs/             - Log files (created automatically)
+README.md         - Project overview
+INSTALL.txt       - This file
+run.sh            - Launch script
+
+======================
+CONFIGURATION
+======================
+Edit config/config.json to set:
+- TWS connection (host, port, client_id)
+- Trading symbols (SPY, QQQ, IWM, etc.)
+- Risk parameters (min_profit, min_roi)
+- Position limits (max_position, max_exposure)
+
+See docs/QUICK_START.md for detailed configuration guide.
+
+======================
+LOGGING
+======================
+Logs are written to logs/ib_box_spread.log
+Log level can be configured in config.json
+
+======================
+CURRENT STATUS
+======================
+This release (v1.0.0) includes:
+✅ Complete trading framework
+✅ Box spread detection and validation
+✅ Risk management system
+✅ Order management
+✅ Comprehensive logging
+✅ Dry-run simulation mode
+✅ Full test coverage (29/29 tests passing)
+
+⚠️  TWS Connection: Currently using stub implementation
+To enable real TWS connectivity, implement EWrapper callbacks
+See docs/TWS_INTEGRATION_TEMPLATE.cpp for implementation guide
+
+======================
+SUPPORT
+======================
+Documentation: See docs/ directory
+GitHub: https://github.com/davidl71/ib_box_spread_full_universal
+
+For questions or issues, please refer to the documentation
+or create an issue on GitHub.

@@ -93,7 +93,7 @@ configure_cmake() {
           -B "${BUILD_DIR}" \
           -G "${CMAKE_GENERATOR}" \
           -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-          -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
+          -DCMAKE_OSX_ARCHITECTURES="x86_64" \
           -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0" \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
           -DCMAKE_COLOR_DIAGNOSTICS=ON

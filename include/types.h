@@ -173,6 +173,12 @@ struct MarketData {
     int last_size;
     double volume;
 
+    // OHLC data
+    double high;
+    double low;
+    double close;
+    double open;
+
     // Option-specific data
     std::optional<double> implied_volatility;
     std::optional<double> delta;
@@ -204,8 +210,10 @@ struct AccountInfo {
     double unrealized_pnl;        // Total unrealized P&L
     double realized_pnl;          // Total realized P&L
     double day_trades_remaining;  // PDT - day trades remaining
+    double gross_position_value;  // Total gross position value
 
     std::chrono::system_clock::time_point last_update;
+    std::chrono::system_clock::time_point timestamp;  // Alias for last_update
 };
 
 // ============================================================================

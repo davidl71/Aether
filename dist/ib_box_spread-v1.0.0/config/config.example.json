@@ -1,0 +1,40 @@
+{
+  "tws": {
+    "host": "127.0.0.1",
+    "port": 7497,
+    "client_id": 1,
+    "connection_timeout_ms": 5000,
+    "auto_reconnect": true,
+    "reconnect_delay_ms": 3000
+  },
+  "strategy": {
+    "symbols": ["SPY", "QQQ", "IWM"],
+    "min_arbitrage_profit": 0.10,
+    "min_roi_percent": 0.5,
+    "max_position_size": 10000.0,
+    "min_days_to_expiry": 30,
+    "max_days_to_expiry": 90,
+    "max_bid_ask_spread": 0.10,
+    "min_volume": 100,
+    "min_open_interest": 500
+  },
+  "risk": {
+    "max_total_exposure": 50000.0,
+    "max_positions": 10,
+    "max_loss_per_position": 1000.0,
+    "max_daily_loss": 2000.0,
+    "position_size_percent": 0.1,
+    "enable_stop_loss": true,
+    "stop_loss_percent": 0.2
+  },
+  "logging": {
+    "log_file": "logs/ib_box_spread.log",
+    "log_level": "info",
+    "max_file_size_mb": 10,
+    "max_files": 5,
+    "log_to_console": true
+  },
+  "dry_run": true,
+  "loop_delay_ms": 1000,
+  "continue_on_error": false
+}
