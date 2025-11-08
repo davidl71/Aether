@@ -1,0 +1,78 @@
+- name: Ensure required packages on Debian/Ubuntu
+  become: true
+  apt:
+    name:
+      - python3
+      - python3-pip
+      - python3-venv
+      - jq
+      - build-essential
+    state: present
+    update_cache: true
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Ensure Homebrew packages on macOS
+  become: false
+  community.general.homebrew:
+    name:
+      - node
+      - jq
+      - go
+      - python
+      - poetry
+    state: present
+  when: ansible_facts['os_family'] == 'Darwin'
+
+- name: Install Poetry via pip
+  become: false
+  ansible.builtin.command: >-
+    python3 -m pip install --user --upgrade poetry
+  register: poetry_install
+  changed_when: "'Requirement already satisfied' not in poetry_install.stdout"
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Ensure nvm is installed (optional)
+  shell: |
+    export PROFILE="$HOME/.bashrc"
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+  args:
+    creates: "$HOME/.nvm/nvm.sh"
+  when: ansible_facts['os_family'] in ['Debian', 'Darwin']
+
+- name: Install Node.js 20 via nvm when available
+  shell: |
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+    nvm install 20
+  args:
+    creates: "$HOME/.nvm/versions/node"
+  when: ansible_facts['os_family'] in ['Debian', 'Darwin']
+
+- name: Install Go 1.21 via tarball on Debian/Ubuntu
+  become: true
+  get_url:
+    url: https://go.dev/dl/go1.21.6.linux-amd64.tar.gz
+    dest: /tmp/go.tar.gz
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+    - ansible_architecture == 'x86_64'
+
+- name: Extract Go tarball
+  become: true
+  unarchive:
+    src: /tmp/go.tar.gz
+    dest: /usr/local
+    remote_src: true
+    creates: /usr/local/go/bin/go
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+    - ansible_architecture == 'x86_64'
+
+- name: Clean Go tarball
+  file:
+    path: /tmp/go.tar.gz
+    state: absent
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+    - ansible_architecture == 'x86_64'
+
