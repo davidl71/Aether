@@ -11,6 +11,7 @@ PROTOBUF_URL_DEFAULT="https://github.com/protocolbuffers/protobuf/archive/refs/t
 
 INTEL_DIR="${REPO_ROOT}/third_party/IntelRDFPMathLib20U2"
 IB_STUB_DIR="${REPO_ROOT}/third_party/tws-api"
+NAUTILUS_DIR="${REPO_ROOT}/third_party/nautilus"
 
 mkdir -p "${CACHE_DIR}"
 
@@ -123,8 +124,63 @@ setup_ib_api_stub()
   unzip -o "$ib_cache" -d "$IB_STUB_DIR"
 }
 
+setup_nautilus_trader()
+{
+  mkdir -p "$NAUTILUS_DIR"
+
+  local wheel_url="${NAUTILUS_TRADER_WHEEL_URL:-}"
+  local release_tag="${NAUTILUS_TRADER_RELEASE:-stable}"
+
+  if [ -z "$wheel_url" ]; then
+    if ! command -v curl >/dev/null 2>&1; then
+      warn "curl is required to discover Nautilus Trader releases; skipping wheel fetch."
+      return 0
+    fi
+    if ! command -v python3 >/dev/null 2>&1; then
+      warn "python3 not available; cannot parse GitHub release JSON. Set NAUTILUS_TRADER_WHEEL_URL manually."
+      return 0
+    fi
+
+    local api_url="${NAUTILUS_TRADER_RELEASE_API:-https://api.github.com/repos/nautechsystems/nautilus_trader/releases/tags/${release_tag}}"
+    log "Querying Nautilus Trader release '${release_tag}'"
+    local release_json
+    if ! release_json="$(curl -sfL "$api_url")"; then
+      warn "Unable to fetch Nautilus Trader release metadata from ${api_url}"
+      return 0
+    fi
+
+    wheel_url="$(printf '%s' "$release_json" | python3 - <<'PY'
+import json
+import sys
+
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+
+for asset in data.get("assets", []):
+    name = asset.get("name", "")
+    if name.endswith(".whl") and "py3" in name:
+        url = asset.get("browser_download_url")
+        if url:
+            print(url)
+        break
+PY
+)"
+    if [ -z "$wheel_url" ]; then
+      warn "No wheel asset found in Nautilus Trader release '${release_tag}'. Set NAUTILUS_TRADER_WHEEL_URL to override."
+      return 0
+    fi
+  fi
+
+  local wheel_dest="${NAUTILUS_DIR}/$(basename "$wheel_url")"
+  fetch_archive "$wheel_url" "$wheel_dest"
+  log "Nautilus Trader wheel ready at ${wheel_dest}"
+}
+
 setup_protobuf
 setup_intel_decimal
 setup_ib_api_stub
+setup_nautilus_trader
 
 log "Third-party fetch complete."

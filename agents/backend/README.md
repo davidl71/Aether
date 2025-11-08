@@ -22,7 +22,7 @@
 5. Execute checks via `bash agents/backend/scripts/run-tests.sh`.
 
 ### Nautilus Trader Wheel
-The setup script looks for a prebuilt Nautilus Trader wheel before building sources. Set `NAUTILUS_TRADER_WHEEL=/abs/path/to/nautilus_trader-<version>-py3-none-any.whl` or drop the wheel into `third_party/` and rerun the setup so the virtualenv installs it instead of compiling from source.
+The setup script looks for a prebuilt Nautilus Trader wheel before building sources. Run `./scripts/fetch_third_party.sh` (or set `NAUTILUS_TRADER_RELEASE=<tag>`) to download the latest stable wheel into `third_party/nautilus/`, or set `NAUTILUS_TRADER_WHEEL=/abs/path/to/nautilus_trader-<version>-py3-none-any.whl` manually before rerunning the setup.
 
 ## Current Behaviour
 - Periodic mock market data updates drive the shared snapshot returned to TUI/mobile/web clients.
