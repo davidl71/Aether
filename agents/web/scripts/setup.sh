@@ -6,6 +6,11 @@ ROOT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 WEB_DIR="$ROOT_DIR/web"
 
 if [ -d "$WEB_DIR" ]; then
+  if [ -s "$HOME/.nvm/nvm.sh" ]; then
+    # shellcheck disable=SC1090
+    . "$HOME/.nvm/nvm.sh"
+    nvm use --lts >/dev/null 2>&1 || nvm install --lts
+  fi
   cd "$WEB_DIR"
   if command -v npm >/dev/null 2>&1; then
     npm install

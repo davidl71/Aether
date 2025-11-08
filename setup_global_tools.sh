@@ -33,3 +33,14 @@ else
 fi
 echo "[ok] Global toolchain configured via Ansible."
 
+if [ -s "$HOME/.nvm/nvm.sh" ]; then
+  # shellcheck disable=SC1090
+  . "$HOME/.nvm/nvm.sh"
+  echo "[info] Ensuring Node.js LTS via nvm..."
+  nvm install --lts >/dev/null
+  nvm use --lts >/dev/null
+  echo "[ok] nvm environment ready (Node $(nvm current))."
+else
+  echo "[warn] nvm not detected; skip Node.js LTS bootstrap." >&2
+fi
+

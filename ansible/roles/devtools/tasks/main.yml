@@ -7,6 +7,7 @@
       - python3-venv
       - jq
       - build-essential
+      - curl
     state: present
     update_cache: true
   when: ansible_facts['os_family'] == 'Debian'
@@ -15,11 +16,11 @@
   become: false
   community.general.homebrew:
     name:
-      - node
       - jq
       - go
       - python
       - poetry
+      - curl
     state: present
   when: ansible_facts['os_family'] == 'Darwin'
 
@@ -31,19 +32,35 @@
   changed_when: "'Requirement already satisfied' not in poetry_install.stdout"
   when: ansible_facts['os_family'] == 'Debian'
 
-- name: Ensure nvm is installed (optional)
+- name: Determine nvm profile path
+  set_fact:
+    nvm_profile: "{{ ansible_env.HOME }}/.zshrc"
+  when: ansible_facts['os_family'] == 'Darwin'
+
+- name: Fallback nvm profile path
+  set_fact:
+    nvm_profile: "{{ ansible_env.HOME }}/.bashrc"
+  when: nvm_profile is not defined
+
+- name: Ensure nvm directory exists
+  file:
+    path: "{{ ansible_env.HOME }}/.nvm"
+    state: directory
+    mode: "0755"
+
+- name: Ensure nvm is installed
   shell: |
-    export PROFILE="$HOME/.bashrc"
+    export PROFILE="{{ nvm_profile }}"
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
   args:
-    creates: "$HOME/.nvm/nvm.sh"
+    creates: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
   when: ansible_facts['os_family'] in ['Debian', 'Darwin']
 
 - name: Install Node.js 20 via nvm when available
   shell: |
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-    nvm install 20
+    nvm install --lts
   args:
     creates: "$HOME/.nvm/versions/node"
   when: ansible_facts['os_family'] in ['Debian', 'Darwin']
