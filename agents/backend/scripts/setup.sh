@@ -2,6 +2,7 @@
 set -euo pipefail
 
 BACKEND_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+REPO_ROOT="$(cd "$BACKEND_DIR/.." && pwd)"
 
 if ! command -v cargo >/dev/null 2>&1; then
   echo "[error] Rust toolchain missing. Install Rust via https://rustup.rs." >&2
@@ -22,6 +23,24 @@ if [ -n "$PYTHON_BIN" ]; then
   # shellcheck disable=SC1091
   source "$BACKEND_DIR/.venv/bin/activate"
   pip install --upgrade pip
+
+  wheel_path=""
+  if [ -n "${NAUTILUS_TRADER_WHEEL:-}" ] && [ -f "$NAUTILUS_TRADER_WHEEL" ]; then
+    wheel_path="$NAUTILUS_TRADER_WHEEL"
+  else
+    candidate="$(find "$REPO_ROOT" -maxdepth 3 -type f -name 'nautilus_trader-*.whl' -print -quit 2>/dev/null || true)"
+    if [ -n "$candidate" ]; then
+      wheel_path="$candidate"
+    fi
+  fi
+
+  if [ -n "$wheel_path" ]; then
+    echo "[info] Installing Nautilus Trader wheel: $wheel_path"
+    pip install "$wheel_path"
+  else
+    echo "[warn] Nautilus Trader wheel not found; skipping prebuilt install. Set NAUTILUS_TRADER_WHEEL to a local wheel path." >&2
+  fi
+
   pip install -e "$BACKEND_DIR/python"
 else
   echo "[warn] python interpreter not found; skipping Python setup" >&2

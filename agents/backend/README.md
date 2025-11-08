@@ -21,6 +21,9 @@
 4. Stream strategy decisions with a gRPC client against `ib.backend.v1.StrategyService/StreamDecisions` on port `50051`.
 5. Execute checks via `bash agents/backend/scripts/run-tests.sh`.
 
+### Nautilus Trader Wheel
+The setup script looks for a prebuilt Nautilus Trader wheel before building sources. Set `NAUTILUS_TRADER_WHEEL=/abs/path/to/nautilus_trader-<version>-py3-none-any.whl` or drop the wheel into `third_party/` and rerun the setup so the virtualenv installs it instead of compiling from source.
+
 ## Current Behaviour
 - Periodic mock market data updates drive the shared snapshot returned to TUI/mobile/web clients.
 - Strategy signals flow through a mock Nautilus loop, risk checks vet each decision, and both REST/gRPC surfaces stream the approved trades plus risk status.
