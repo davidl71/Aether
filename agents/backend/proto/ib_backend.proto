@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package ib.backend.v1;
+
+option go_package = "github.com/example/ib/backend/v1";
+
+service StrategyService {
+  rpc StreamDecisions (StrategyRequest) returns (stream StrategyDecision);
+}
+
+message StrategyRequest {
+  string strategy = 1;
+}
+
+message StrategyDecision {
+  string symbol = 1;
+  int32 quantity = 2;
+  string side = 3;
+}

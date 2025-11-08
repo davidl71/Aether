@@ -1,0 +1,11 @@
+{
+  "name": "web-agent",
+  "workingDirectory": "./agents/web",
+  "startupCommands": [
+    "bash scripts/setup.sh"
+  ],
+  "runtimeCommands": [
+    "bash scripts/run-tests.sh"
+  ]
+}
+

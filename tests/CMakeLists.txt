@@ -20,9 +20,9 @@ add_executable(box_spread_tests ${TEST_SOURCES})
 # ============================================================================
 
 # TWS API configuration (needed for tws_client.cpp)
-set(TWS_API_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/vendor/tws-api/IBJts/source/cppclient/client")
-set(TWS_API_LIB "${CMAKE_SOURCE_DIR}/vendor/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib")
-set(INTEL_DECIMAL_LIB "${CMAKE_SOURCE_DIR}/vendor/IntelRDFPMathLib20U2/LIBRARY/libbid.a")
+set(TWS_API_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/third_party/tws-api/IBJts/source/cppclient/client")
+set(TWS_API_LIB "${CMAKE_SOURCE_DIR}/third_party/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib")
+set(INTEL_DECIMAL_LIB "${CMAKE_SOURCE_DIR}/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a")
 file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.dylib")
 
 target_include_directories(box_spread_tests

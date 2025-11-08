@@ -1,0 +1,126 @@
+# Python Bindings and NautilusTrader Installation Guide
+
+## Prerequisites
+
+1. **Python 3.11 or higher** (required by nautilus_trader)
+2. **Cython 3.0+**
+3. **CMake** (for building C++ dependencies)
+4. **C++ Compiler** (Clang/GCC with C++20 support)
+
+## Installation Steps
+
+### 1. Install Python Dependencies
+
+```bash
+# From project root
+pip install -r requirements.txt
+```
+
+This installs:
+- `nautilus_trader>=2.0.0`
+- `cython>=3.0.0`
+- `numpy>=1.24.0`
+- `pytest>=7.4.0`
+
+### 2. Build Cython Bindings
+
+#### Option A: Using setuptools (Recommended)
+
+```bash
+cd python/bindings
+pip install -e .
+```
+
+This will:
+- Compile the `.pyx` file to C++
+- Link with C++ source files
+- Install the `box_spread_bindings` module
+
+#### Option B: Using CMake
+
+```bash
+# From project root
+cmake -B build -DENABLE_PYTHON_BINDINGS=ON
+cmake --build build --target python_bindings
+```
+
+### 3. Verify Installation
+
+```bash
+# Test Python imports
+python -c "from python.bindings.box_spread_bindings import PyOptionContract; print('Bindings OK')"
+
+# Run Python tests
+pytest tests/python/
+```
+
+### 4. Run with NautilusTrader
+
+```bash
+# Make sure TWS/IB Gateway is running in paper trading mode (port 7497)
+python python/nautilus_strategy.py --config config/config.json --dry-run
+```
+
+## Troubleshooting
+
+### Cython Not Found
+
+```bash
+pip install --upgrade cython
+```
+
+### Compilation Errors
+
+1. Check that C++ headers are in `include/` directory
+2. Verify C++ source files are in `src/` directory
+3. Ensure C++ compiler supports C++20
+
+### Import Errors
+
+```bash
+# Make sure you're in the project root or have PYTHONPATH set
+export PYTHONPATH="${PYTHONPATH}:$(pwd)/python"
+```
+
+### NautilusTrader Installation Issues
+
+NautilusTrader requires Python 3.11+. If you have multiple Python versions:
+
+```bash
+# Use specific Python version
+python3.11 -m pip install -r requirements.txt
+python3.11 python/nautilus_strategy.py --config config/config.json
+```
+
+## Development
+
+For development with automatic recompilation:
+
+```bash
+cd python/bindings
+pip install -e . --no-build-isolation
+```
+
+Then edit `.pyx` files and restart Python to see changes.
+
+## Project Structure
+
+```
+python/
+├── bindings/           # Cython bindings
+│   ├── box_spread_bindings.pxd  # Cython declarations
+│   ├── box_spread_bindings.pyx  # Cython implementation
+│   └── setup.py        # Build configuration
+├── integration/        # NautilusTrader integration
+│   ├── nautilus_client.py
+│   ├── market_data_handler.py
+│   ├── execution_handler.py
+│   └── strategy_runner.py
+├── wrapper/            # Bridge between Python and C++
+│   └── nautilus_bridge.py
+├── config_adapter.py   # Config conversion
+└── nautilus_strategy.py # Main entry point
+```
+
+
+

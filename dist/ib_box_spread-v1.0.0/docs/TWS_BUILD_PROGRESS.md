@@ -12,20 +12,20 @@
 - ✅ Downloaded Intel Decimal Floating-Point Math Library (5.7MB)
 - ✅ Fixed compilation issues (missing stdlib.h, signal.h includes)
 - ✅ Successfully built `libbid.a` (5.1MB static library)
-- 📍 Location: `vendor/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
+- 📍 Location: `third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
 
 ### 2. Protocol Buffers Configured
 - ✅ Installed protobuf compiler (version 6.33.0)
 - ✅ Generated all 190 Protocol Buffer files (.pb.h, .pb.cc)
 - ✅ Updated TWS API CMakeLists.txt to include .pb.cc files
-- 📍 Location: `vendor/tws-api/IBJts/source/cppclient/client/*.pb.{h,cc}`
+- 📍 Location: `third_party/tws-api/IBJts/source/cppclient/client/*.pb.{h,cc}`
 
 ### 3. TWS API Build Configuration
 - ✅ Fixed CMakeLists.txt (added cmake_minimum_required, project)
 - ✅ Set C++17 standard (required for modern protobuf)
 - ✅ Added Intel Decimal library linking
 - ✅ Added Protocol Buffer sources to build
-- 📍 Location: `vendor/tws-api/IBJts/source/cppclient/client/CMakeLists.txt:1`
+- 📍 Location: `third_party/tws-api/IBJts/source/cppclient/client/CMakeLists.txt:1`
 
 ---
 
@@ -128,7 +128,7 @@ Your Application
 **Implementation**:
 ```cmake
 # In your main CMakeLists.txt
-set(TWS_CLIENT_DIR "${CMAKE_SOURCE_DIR}/vendor/tws-api/IBJts/source/cppclient/client")
+set(TWS_CLIENT_DIR "${CMAKE_SOURCE_DIR}/third_party/tws-api/IBJts/source/cppclient/client")
 
 # Essential TWS sources (without protobuf)
 set(TWS_ESSENTIAL_SOURCES
@@ -242,9 +242,9 @@ This will:
 
 ## Files Created/Modified
 
-- ✅ `vendor/IntelRDFPMathLib20U2/LIBRARY/libbid.a` - Intel Decimal library
-- ✅ `vendor/tws-api/IBJts/source/cppclient/client/*.pb.{h,cc}` - Protobuf files
-- ✅ `vendor/tws-api/IBJts/source/cppclient/client/CMakeLists.txt` - Updated build config
+- ✅ `third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a` - Intel Decimal library
+- ✅ `third_party/tws-api/IBJts/source/cppclient/client/*.pb.{h,cc}` - Protobuf files
+- ✅ `third_party/tws-api/IBJts/source/cppclient/client/CMakeLists.txt` - Updated build config
 - ✅ `docs/TWS_INTEGRATION_STATUS.md` - Integration status document
 - ✅ `docs/TWS_BUILD_PROGRESS.md` - This document
 

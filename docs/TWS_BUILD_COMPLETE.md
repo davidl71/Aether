@@ -13,16 +13,16 @@
 **Built Components**:
 1. ✅ **Intel Decimal Library** (5.1MB)
    - Built from source with fixes for modern compilers
-   - Location: `vendor/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
+   - Location: `third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
 
 2. ✅ **Protocol Buffer Files** (190 files)
    - Generated .pb.h and .pb.cc files for all TWS messages
-   - Location: `vendor/tws-api/IBJts/source/cppclient/client/*.pb.*`
+   - Location: `third_party/tws-api/IBJts/source/cppclient/client/*.pb.*`
 
 3. ✅ **TWS API Shared Library** (4.3MB)
    - Compiled with all dependencies
    - Includes: EClient, EWrapper, Protocol Buffers, Intel Decimal
-   - Location: `vendor/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib`
+   - Location: `third_party/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib`
 
 4. ✅ **Main Application**
    - Links TWS API library
@@ -57,15 +57,15 @@
 
 3. **Intel Decimal Library**: v20U2
    - Custom built from source
-   - `vendor/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
+   - `third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
 
 4. **TWS API**: v10.40.01
    - Full library with all message types
-   - `vendor/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib`
+   - `third_party/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib`
 
 ### Build Files Modified
 
-1. **TWS API CMakeLists.txt** (`vendor/tws-api/IBJts/source/cppclient/client/CMakeLists.txt:1`)
+1. **TWS API CMakeLists.txt** (`third_party/tws-api/IBJts/source/cppclient/client/CMakeLists.txt:1`)
    - Added cmake_minimum_required and project
    - Set C++17 standard
    - Added Protocol Buffer sources
@@ -124,13 +124,13 @@ ctest --output-on-failure
 ## 📁 Important File Locations
 
 ### Libraries
-- **TWS API**: `vendor/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib`
-- **Intel Decimal**: `vendor/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
+- **TWS API**: `third_party/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib`
+- **Intel Decimal**: `third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
 - **Protobuf**: `/usr/local/lib/libprotobuf.dylib`
 - **Abseil**: `/usr/local/lib/libabsl_*.dylib` (184 files)
 
 ### Headers
-- **TWS API**: `vendor/tws-api/IBJts/source/cppclient/client/*.h`
+- **TWS API**: `third_party/tws-api/IBJts/source/cppclient/client/*.h`
 - **Application**: `include/*.h`
 
 ### Configuration
@@ -201,10 +201,10 @@ If you need to rebuild from scratch:
 ```bash
 # Clean everything
 rm -rf build
-rm -rf vendor/tws-api/IBJts/source/cppclient/client/build
+rm -rf third_party/tws-api/IBJts/source/cppclient/client/build
 
 # Rebuild TWS API library
-cd vendor/tws-api/IBJts/source/cppclient/client
+cd third_party/tws-api/IBJts/source/cppclient/client
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j4
@@ -222,7 +222,7 @@ If Protobuf or Abseil are updated:
 brew upgrade protobuf abseil
 
 # Regenerate Protocol Buffer files
-cd vendor/tws-api/IBJts/source
+cd third_party/tws-api/IBJts/source
 protoc --proto_path=./proto --cpp_out=./cppclient/client proto/*.proto
 
 # Rebuild TWS API and main project
@@ -267,12 +267,12 @@ The TWS API library is not in your runtime path. Either:
 
 **Option A**: Copy library to system location
 ```bash
-sudo cp vendor/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib /usr/local/lib/
+sudo cp third_party/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib /usr/local/lib/
 ```
 
 **Option B**: Set runtime path
 ```bash
-export DYLD_LIBRARY_PATH="$PWD/vendor/tws-api/IBJts/source/cppclient/client/build/lib:$DYLD_LIBRARY_PATH"
+export DYLD_LIBRARY_PATH="$PWD/third_party/tws-api/IBJts/source/cppclient/client/build/lib:$DYLD_LIBRARY_PATH"
 ./build/bin/ib_box_spread
 ```
 
@@ -292,7 +292,7 @@ If tests fail after making changes:
 
 3. **Verify TWS library**:
    ```bash
-   ls -lh vendor/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib
+   ls -lh third_party/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib
    ```
 
 ### "Build Takes Too Long"

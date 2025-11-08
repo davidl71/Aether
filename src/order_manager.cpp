@@ -1,6 +1,7 @@
 // order_manager.cpp - Order management implementation (stub)
 #include "order_manager.h"
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/bundled/core.h>
 #include <algorithm>
 
 namespace order {
@@ -145,8 +146,9 @@ ExecutionResult OrderManager::place_box_spread(
         return result;
     }
 
-    // Place all 4 legs
+    // Place all 4 legs rapidly
     std::vector<int> order_ids;
+    std::vector<int> successful_order_ids;
 
     // Leg 1: Long call
     int id1 = pimpl_->client_->place_order(
@@ -156,6 +158,7 @@ ExecutionResult OrderManager::place_box_spread(
         spread.long_call_price
     );
     order_ids.push_back(id1);
+    successful_order_ids.push_back(id1);
 
     // Leg 2: Short call
     int id2 = pimpl_->client_->place_order(
@@ -165,6 +168,7 @@ ExecutionResult OrderManager::place_box_spread(
         spread.short_call_price
     );
     order_ids.push_back(id2);
+    successful_order_ids.push_back(id2);
 
     // Leg 3: Long put
     int id3 = pimpl_->client_->place_order(
@@ -174,6 +178,7 @@ ExecutionResult OrderManager::place_box_spread(
         spread.long_put_price
     );
     order_ids.push_back(id3);
+    successful_order_ids.push_back(id3);
 
     // Leg 4: Short put
     int id4 = pimpl_->client_->place_order(
@@ -183,13 +188,73 @@ ExecutionResult OrderManager::place_box_spread(
         spread.short_put_price
     );
     order_ids.push_back(id4);
+    successful_order_ids.push_back(id4);
 
+    // Monitor order statuses for a short period to detect immediate rejections
+    // In a real implementation, this would use callbacks or polling
+    // For now, we'll check immediately and implement rollback if any fail
+
+    // Check if any orders were immediately rejected
+    bool has_failures = false;
+    for (int order_id : order_ids) {
+        auto order_status = pimpl_->client_->get_order(order_id);
+        if (order_status.has_value()) {
+            if (order_status->status == types::OrderStatus::Rejected ||
+                order_status->status == types::OrderStatus::Error) {
+                spdlog::warn("Order #{} was rejected: {}", order_id, order_status->status_message);
+                has_failures = true;
+                // Remove from successful list
+                successful_order_ids.erase(
+                    std::remove(successful_order_ids.begin(), successful_order_ids.end(), order_id),
+                    successful_order_ids.end()
+                );
+            }
+        }
+    }
+
+    // If any order failed, cancel all remaining orders (rollback)
+    if (has_failures) {
+        spdlog::warn("Box spread execution failed - rolling back remaining orders");
+        for (int order_id : successful_order_ids) {
+            spdlog::info("Cancelling order #{} due to rollback", order_id);
+            pimpl_->client_->cancel_order(order_id);
+        }
+
+        result.success = false;
+        result.error_message = "One or more legs failed - all orders cancelled";
+        result.order_ids = order_ids;  // Include all IDs for tracking
+        pimpl_->stats_.total_orders_cancelled += static_cast<int>(successful_order_ids.size());
+        return result;
+    }
+
+    // All orders placed successfully
     result.success = true;
     result.order_ids = order_ids;
     result.total_cost = spread.net_debit * 100.0;
 
     pimpl_->stats_.total_orders_placed += 4;
 
+    // Store multi-leg order for tracking
+    if (!strategy_id.empty()) {
+        MultiLegOrder multi_leg;
+        multi_leg.strategy_id = strategy_id;
+        multi_leg.status = types::OrderStatus::Submitted;
+        multi_leg.created_time = std::chrono::system_clock::now();
+        multi_leg.legs_filled = 0;
+        multi_leg.total_cost = result.total_cost;
+
+        // Get order objects for tracking
+        for (int order_id : order_ids) {
+            auto order_opt = pimpl_->client_->get_order(order_id);
+            if (order_opt.has_value()) {
+                multi_leg.legs.push_back(order_opt.value());
+            }
+        }
+
+        pimpl_->multi_leg_orders_[strategy_id] = multi_leg;
+    }
+
+    spdlog::info("✓ Box spread orders placed: {}", fmt::join(order_ids, ", "));
     return result;
 }
 

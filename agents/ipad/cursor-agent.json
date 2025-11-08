@@ -1,0 +1,11 @@
+{
+  "name": "ipad-agent",
+  "workingDirectory": "./agents/ipad",
+  "startupCommands": [
+    "bash scripts/setup.sh"
+  ],
+  "runtimeCommands": [
+    "bash scripts/run-tests.sh"
+  ]
+}
+

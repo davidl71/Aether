@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=65.0.0", "wheel", "cython>=3.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ib-box-spread-generator"
+version = "1.0.0"
+description = "IB Box Spread Generator - Python integration with NautilusTrader"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "IB Box Spread Generator Team"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: C++",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+
+dependencies = [
+    "nautilus_trader>=2.0.0",
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "cython>=3.0.0",
+]
+
+[project.scripts]
+ib-box-spread-nautilus = "python.nautilus_strategy:main"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests*", "build*", "*.egg-info*"]
+
+

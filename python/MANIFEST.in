@@ -1,0 +1,8 @@
+# Include Cython source files
+include bindings/*.pxd
+include bindings/*.pyx
+
+# Include documentation
+include INSTALL.md
+
+

@@ -102,6 +102,7 @@ int main(int argc, char** argv) {
     std::string config_file = "config/config.json";
     bool dry_run = false;
     bool validate_only = false;
+    bool use_nautilus = false;
     std::string log_level_override;
 
     app.add_option("-c,--config", config_file, "Configuration file path")
@@ -110,6 +111,9 @@ int main(int argc, char** argv) {
     app.add_flag("--dry-run", dry_run, "Simulate trading without executing orders");
 
     app.add_flag("--validate", validate_only, "Validate configuration and exit");
+
+    app.add_flag("--use-nautilus", use_nautilus, 
+                 "Use nautilus_trader for market data and execution (requires Python)");
 
     app.add_option("--log-level", log_level_override,
                   "Override log level (trace|debug|info|warn|error)")
@@ -136,6 +140,13 @@ int main(int argc, char** argv) {
         }
         if (!log_level_override.empty()) {
             config.logging.log_level = log_level_override;
+        }
+        
+        // Check for nautilus_trader usage
+        if (use_nautilus) {
+            spdlog::info("NautilusTrader mode requested via --use-nautilus flag");
+            spdlog::info("Note: Use python/nautilus_strategy.py for full nautilus_trader integration");
+            spdlog::info("C++ application will continue with TWS client");
         }
 
         // Validate configuration

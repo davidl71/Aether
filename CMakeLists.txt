@@ -17,6 +17,11 @@ option(BUILD_DOCS "Build documentation" OFF)
 option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
 option(ENABLE_TSAN "Enable ThreadSanitizer" OFF)
 option(ENABLE_LTO "Enable Link-Time Optimization" ON)
+option(ENABLE_PYTHON_BINDINGS "Enable Python bindings (Cython)" ON)
+option(ENABLE_NAUTILUS_TRADER "Enable nautilus_trader integration" ON)
+option(ENABLE_DISTCC "Enable distcc distributed compilation" OFF)
+option(ENABLE_CCACHE "Enable ccache compilation caching" OFF)
+option(ENABLE_SCCACHE "Enable sccache compilation caching" OFF)
 
 # ============================================================================
 # C++ Standard and Compiler Requirements
@@ -27,6 +32,55 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Export compile commands for IDE support
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# ============================================================================
+# Distributed Compilation and Caching
+# ============================================================================
+
+# Prioritize: sccache > ccache > distcc
+if(ENABLE_SCCACHE)
+    find_program(SCCACHE_EXECUTABLE sccache)
+    if(SCCACHE_EXECUTABLE)
+        message(STATUS "Using sccache: ${SCCACHE_EXECUTABLE}")
+        set(CMAKE_CXX_COMPILER_LAUNCHER ${SCCACHE_EXECUTABLE})
+        set(CMAKE_C_COMPILER_LAUNCHER ${SCCACHE_EXECUTABLE})
+    else()
+        message(WARNING "sccache not found, falling back to ccache/distcc")
+        set(ENABLE_SCCACHE OFF)
+    endif()
+endif()
+
+if(ENABLE_CCACHE AND NOT ENABLE_SCCACHE)
+    find_program(CCACHE_EXECUTABLE ccache)
+    if(CCACHE_EXECUTABLE)
+        message(STATUS "Using ccache: ${CCACHE_EXECUTABLE}")
+        set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_EXECUTABLE})
+        set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_EXECUTABLE})
+        
+        # Use distcc via ccache if both enabled
+        if(ENABLE_DISTCC)
+            find_program(DISTCC_EXECUTABLE distcc)
+            if(DISTCC_EXECUTABLE)
+                message(STATUS "Using ccache with distcc backend")
+                set(ENV{CCACHE_PREFIX} "distcc")
+            endif()
+        endif()
+    else()
+        message(WARNING "ccache not found, trying distcc only")
+        set(ENABLE_CCACHE OFF)
+    endif()
+endif()
+
+if(ENABLE_DISTCC AND NOT ENABLE_CCACHE AND NOT ENABLE_SCCACHE)
+    find_program(DISTCC_EXECUTABLE distcc)
+    if(DISTCC_EXECUTABLE)
+        message(STATUS "Using distcc: ${DISTCC_EXECUTABLE}")
+        set(CMAKE_CXX_COMPILER_LAUNCHER ${DISTCC_EXECUTABLE})
+        set(CMAKE_C_COMPILER_LAUNCHER ${DISTCC_EXECUTABLE})
+    else()
+        message(WARNING "distcc not found, distributed compilation disabled")
+    endif()
+endif()
 
 # ============================================================================
 # Output Directories
@@ -120,7 +174,7 @@ endif()
 
 # TWS API (IBKR C++ API) - Must be manually downloaded
 # Download from: https://interactivebrokers.github.io/
-set(TWS_API_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/vendor/tws-api/IBJts/source/cppclient/client"
+set(TWS_API_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/third_party/tws-api/IBJts/source/cppclient/client"
     CACHE PATH "Path to TWS API include directory")
 
 if(EXISTS "${TWS_API_INCLUDE_DIR}")
@@ -128,7 +182,7 @@ if(EXISTS "${TWS_API_INCLUDE_DIR}")
 else()
     message(WARNING "TWS API not found at ${TWS_API_INCLUDE_DIR}")
     message(WARNING "Download from: https://interactivebrokers.github.io/")
-    message(WARNING "Extract to: ${CMAKE_SOURCE_DIR}/vendor/tws-api/")
+    message(WARNING "Extract to: ${CMAKE_SOURCE_DIR}/third_party/tws-api/")
 endif()
 
 # ============================================================================
@@ -155,8 +209,8 @@ set(HEADERS
 )
 
 # TWS API Library (pre-built with all dependencies)
-set(TWS_API_LIB "${CMAKE_SOURCE_DIR}/vendor/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib")
-set(INTEL_DECIMAL_LIB "${CMAKE_SOURCE_DIR}/vendor/IntelRDFPMathLib20U2/LIBRARY/libbid.a")
+set(TWS_API_LIB "${CMAKE_SOURCE_DIR}/third_party/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib")
+set(INTEL_DECIMAL_LIB "${CMAKE_SOURCE_DIR}/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a")
 file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.dylib")
 
 # ============================================================================
@@ -209,6 +263,40 @@ install(DIRECTORY config/
 )
 
 # ============================================================================
+# Python Bindings (Cython)
+# ============================================================================
+if(ENABLE_PYTHON_BINDINGS)
+    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+    
+    # Check for Cython
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c "import Cython; print(Cython.__version__)"
+        OUTPUT_VARIABLE CYTHON_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    
+    if(CYTHON_VERSION)
+        message(STATUS "Found Cython: ${CYTHON_VERSION}")
+        
+        # Add custom target to build Python bindings
+        add_custom_target(
+            python_bindings
+            COMMAND ${Python3_EXECUTABLE} setup.py build_ext --inplace
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python/bindings
+            COMMENT "Building Python bindings with Cython"
+        )
+        
+        message(STATUS "Python bindings target: python_bindings")
+        message(STATUS "  Build with: cmake --build . --target python_bindings")
+        message(STATUS "  Or install with: cd python/bindings && pip install -e .")
+    else()
+        message(WARNING "Cython not found. Install with: pip install cython")
+        message(WARNING "Python bindings will not be built.")
+    endif()
+endif()
+
+# ============================================================================
 # Testing
 # ============================================================================
 if(BUILD_TESTING)
@@ -241,5 +329,7 @@ message(STATUS "C++ Standard:  ${CMAKE_CXX_STANDARD}")
 message(STATUS "Compiler:      ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "Build testing: ${BUILD_TESTING}")
 message(STATUS "Enable LTO:    ${ENABLE_LTO}")
+message(STATUS "Python bindings: ${ENABLE_PYTHON_BINDINGS}")
+message(STATUS "NautilusTrader: ${ENABLE_NAUTILUS_TRADER}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "============================================")

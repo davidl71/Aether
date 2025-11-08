@@ -102,13 +102,75 @@ std::vector<BoxSpreadOpportunity> BoxSpreadStrategy::find_box_spreads_in_chain(
 
     std::vector<BoxSpreadOpportunity> opportunities;
 
-    // NOTE: Full implementation would:
-    // 1. Get all expiries in the DTE range
-    // 2. For each expiry, find all strike combinations
-    // 3. Evaluate each combination for arbitrage
-    // 4. Calculate confidence scores
-    // 5. Sort by profitability
+    // Get all expiries in the DTE range
+    int min_dte = pimpl_->params_.min_days_to_expiry;
+    int max_dte = pimpl_->params_.max_days_to_expiry;
+    auto expiries = chain.get_expiries_in_dte_range(min_dte, max_dte);
 
+    spdlog::trace("Scanning {} expiries for box spreads", expiries.size());
+
+    // For each expiry, find all strike combinations
+    for (const auto& expiry : expiries) {
+        auto expiry_chain_opt = chain.get_expiry_chain(expiry);
+        if (!expiry_chain_opt.has_value()) {
+            continue;
+        }
+
+        const auto& expiry_chain = expiry_chain_opt.value();
+        auto strikes = expiry_chain.get_strikes();
+
+        // Generate all strike pairs (K1, K2) where K1 < K2
+        for (size_t i = 0; i < strikes.size(); ++i) {
+            double strike_low = strikes[i];
+
+            for (size_t j = i + 1; j < strikes.size(); ++j) {
+                double strike_high = strikes[j];
+
+                // Get all 4 legs for this strike pair
+                auto long_call_opt = expiry_chain.get_option(strike_low, types::OptionType::Call);
+                auto short_call_opt = expiry_chain.get_option(strike_high, types::OptionType::Call);
+                auto long_put_opt = expiry_chain.get_option(strike_high, types::OptionType::Put);
+                auto short_put_opt = expiry_chain.get_option(strike_low, types::OptionType::Put);
+
+                // All 4 legs must exist
+                if (!long_call_opt.has_value() || !short_call_opt.has_value() ||
+                    !long_put_opt.has_value() || !short_put_opt.has_value()) {
+                    continue;
+                }
+
+                // Check liquidity requirements
+                int min_volume = pimpl_->params_.min_volume;
+                int min_oi = pimpl_->params_.min_open_interest;
+                if (!long_call_opt->meets_liquidity_requirements(min_volume, min_oi) ||
+                    !short_call_opt->meets_liquidity_requirements(min_volume, min_oi) ||
+                    !long_put_opt->meets_liquidity_requirements(min_volume, min_oi) ||
+                    !short_put_opt->meets_liquidity_requirements(min_volume, min_oi)) {
+                    continue;
+                }
+
+                // Evaluate this box spread combination
+                auto opportunity_opt = evaluate_box_spread(
+                    long_call_opt->contract,
+                    short_call_opt->contract,
+                    long_put_opt->contract,
+                    short_put_opt->contract,
+                    chain
+                );
+
+                if (opportunity_opt.has_value()) {
+                    opportunities.push_back(opportunity_opt.value());
+                }
+            }
+        }
+    }
+
+    // Sort by profitability (highest first)
+    std::sort(opportunities.begin(), opportunities.end(),
+        [](const BoxSpreadOpportunity& a, const BoxSpreadOpportunity& b) {
+            return a.expected_profit > b.expected_profit;
+        });
+
+    spdlog::trace("Found {} box spread opportunities", opportunities.size());
     return opportunities;
 }
 
@@ -119,8 +181,106 @@ std::optional<BoxSpreadOpportunity> BoxSpreadStrategy::evaluate_box_spread(
     const types::OptionContract& short_put,
     const option_chain::OptionChain& chain) {
 
-    // NOTE: Full validation and calculation would go here
-    return std::nullopt;
+    // Get market data for all 4 legs
+    auto expiry_chain_opt = chain.get_expiry_chain(long_call.expiry);
+    if (!expiry_chain_opt.has_value()) {
+        return std::nullopt;
+    }
+
+    const auto& expiry_chain = expiry_chain_opt.value();
+
+    auto long_call_entry = expiry_chain.get_option(long_call.strike, types::OptionType::Call);
+    auto short_call_entry = expiry_chain.get_option(short_call.strike, types::OptionType::Call);
+    auto long_put_entry = expiry_chain.get_option(long_put.strike, types::OptionType::Put);
+    auto short_put_entry = expiry_chain.get_option(short_put.strike, types::OptionType::Put);
+
+    if (!long_call_entry.has_value() || !short_call_entry.has_value() ||
+        !long_put_entry.has_value() || !short_put_entry.has_value()) {
+        return std::nullopt;
+    }
+
+    // Check market data quality - all must have valid bid/ask
+    if (!long_call_entry->is_valid() || !short_call_entry->is_valid() ||
+        !long_put_entry->is_valid() || !short_put_entry->is_valid()) {
+        return std::nullopt;
+    }
+
+    // Check bid/ask spread thresholds
+    double max_spread = pimpl_->params_.max_bid_ask_spread;
+    if (long_call_entry->market_data.get_spread() > max_spread ||
+        short_call_entry->market_data.get_spread() > max_spread ||
+        long_put_entry->market_data.get_spread() > max_spread ||
+        short_put_entry->market_data.get_spread() > max_spread) {
+        return std::nullopt;
+    }
+
+    // Build box spread leg
+    types::BoxSpreadLeg spread;
+    spread.long_call = long_call;
+    spread.short_call = short_call;
+    spread.long_put = long_put;
+    spread.short_put = short_put;
+
+    // Use mid prices for calculations
+    spread.long_call_price = long_call_entry->market_data.get_mid_price();
+    spread.short_call_price = short_call_entry->market_data.get_mid_price();
+    spread.long_put_price = long_put_entry->market_data.get_mid_price();
+    spread.short_put_price = short_put_entry->market_data.get_mid_price();
+
+    // Calculate bid/ask spreads
+    spread.long_call_bid_ask_spread = long_call_entry->market_data.get_spread();
+    spread.short_call_bid_ask_spread = short_call_entry->market_data.get_spread();
+    spread.long_put_bid_ask_spread = long_put_entry->market_data.get_spread();
+    spread.short_put_bid_ask_spread = short_put_entry->market_data.get_spread();
+
+    // Calculate net debit and theoretical value
+    spread.net_debit = BoxSpreadCalculator::calculate_net_debit(spread);
+    spread.theoretical_value = BoxSpreadCalculator::calculate_theoretical_value(spread);
+    spread.arbitrage_profit = BoxSpreadCalculator::calculate_max_profit(spread);
+    spread.roi_percent = BoxSpreadCalculator::calculate_roi(spread);
+
+    // Validate the spread
+    std::vector<std::string> validation_errors;
+    if (!BoxSpreadValidator::validate(spread, validation_errors)) {
+        spdlog::trace("Box spread validation failed: {}", validation_errors[0]);
+        return std::nullopt;
+    }
+
+    // Check profitability
+    if (!is_profitable(spread)) {
+        return std::nullopt;
+    }
+
+    // Build opportunity
+    BoxSpreadOpportunity opportunity;
+    opportunity.spread = spread;
+    opportunity.expected_profit = spread.arbitrage_profit;
+    opportunity.confidence_score = calculate_confidence_score(spread, chain);
+    opportunity.risk_adjusted_return = spread.roi_percent;
+    opportunity.discovered_time = std::chrono::system_clock::now();
+
+    // Calculate liquidity score (average of all legs)
+    opportunity.liquidity_score = (
+        long_call_entry->liquidity_score +
+        short_call_entry->liquidity_score +
+        long_put_entry->liquidity_score +
+        short_put_entry->liquidity_score
+    ) / 4.0;
+
+    // Estimate execution probability based on liquidity and spreads
+    double avg_spread_pct = (
+        long_call_entry->market_data.get_spread_percent() +
+        short_call_entry->market_data.get_spread_percent() +
+        long_put_entry->market_data.get_spread_percent() +
+        short_put_entry->market_data.get_spread_percent()
+    ) / 4.0;
+
+    // Higher liquidity and lower spreads = higher execution probability
+    opportunity.execution_probability = std::min(1.0,
+        (opportunity.liquidity_score / 100.0) * (1.0 - std::min(avg_spread_pct / 10.0, 1.0))
+    );
+
+    return opportunity;
 }
 
 bool BoxSpreadStrategy::is_profitable(const types::BoxSpreadLeg& spread) const {
@@ -309,6 +469,46 @@ bool BoxSpreadValidator::validate(
 
     if (!validate_pricing(spread)) {
         errors.push_back("Invalid pricing");
+        valid = false;
+    }
+
+    // Additional validation: Strike width must equal theoretical value
+    double strike_width = spread.get_strike_width();
+    const double tolerance = 0.01;  // Allow small floating point differences
+    if (std::abs(spread.theoretical_value - strike_width) > tolerance) {
+        errors.push_back("Theoretical value must equal strike width (theoretical=" +
+                        std::to_string(spread.theoretical_value) +
+                        ", strike_width=" + std::to_string(strike_width) + ")");
+        valid = false;
+    }
+
+    // Validate bid/ask spreads are reasonable
+    const double max_spread_threshold = 0.50;  // $0.50 max spread per leg
+    if (spread.long_call_bid_ask_spread > max_spread_threshold) {
+        errors.push_back("Long call bid/ask spread too wide: " +
+                        std::to_string(spread.long_call_bid_ask_spread));
+        valid = false;
+    }
+    if (spread.short_call_bid_ask_spread > max_spread_threshold) {
+        errors.push_back("Short call bid/ask spread too wide: " +
+                        std::to_string(spread.short_call_bid_ask_spread));
+        valid = false;
+    }
+    if (spread.long_put_bid_ask_spread > max_spread_threshold) {
+        errors.push_back("Long put bid/ask spread too wide: " +
+                        std::to_string(spread.long_put_bid_ask_spread));
+        valid = false;
+    }
+    if (spread.short_put_bid_ask_spread > max_spread_threshold) {
+        errors.push_back("Short put bid/ask spread too wide: " +
+                        std::to_string(spread.short_put_bid_ask_spread));
+        valid = false;
+    }
+
+    // Validate prices are positive
+    if (spread.long_call_price <= 0 || spread.short_call_price <= 0 ||
+        spread.long_put_price <= 0 || spread.short_put_price <= 0) {
+        errors.push_back("All option prices must be positive");
         valid = false;
     }
 

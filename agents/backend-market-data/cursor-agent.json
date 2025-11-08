@@ -1,0 +1,10 @@
+{
+  "name": "backend-market-data-agent",
+  "workingDirectory": "./agents/backend-market-data",
+  "startupCommands": [
+    "bash scripts/setup.sh"
+  ],
+  "runtimeCommands": [
+    "bash scripts/run-tests.sh"
+  ]
+}

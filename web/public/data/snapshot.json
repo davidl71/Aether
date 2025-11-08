@@ -1,0 +1,175 @@
+{
+  "generated_at": "2025-11-07T16:25:00Z",
+  "mode": "DRY-RUN",
+  "strategy": "RUNNING",
+  "account_id": "DU123456",
+  "metrics": {
+    "net_liq": 100523.12,
+    "buying_power": 80412.44,
+    "excess_liquidity": 25500.22,
+    "margin_requirement": 15234.56,
+    "commissions": 127.89,
+    "portal_ok": true,
+    "tws_ok": true,
+    "orats_ok": true,
+    "questdb_ok": true
+  },
+  "symbols": [
+    {
+      "symbol": "SPY",
+      "last": 509.26,
+      "bid": 509.12,
+      "ask": 509.34,
+      "spread": 0.22,
+      "roi": 11.45,
+      "maker_count": 12,
+      "taker_count": 4,
+      "volume": 132,
+      "candle": {
+        "open": 508.60,
+        "high": 510.12,
+        "low": 507.90,
+        "close": 509.26,
+        "volume": 112.5,
+        "entry": 508.10,
+        "updated": "2025-11-07T16:24:45Z"
+      },
+      "option_chains": []
+    },
+    {
+      "symbol": "QQQ",
+      "last": 389.42,
+      "bid": 389.22,
+      "ask": 389.56,
+      "spread": 0.34,
+      "roi": 9.38,
+      "maker_count": 8,
+      "taker_count": 3,
+      "volume": 101,
+      "candle": {
+        "open": 388.74,
+        "high": 390.30,
+        "low": 388.22,
+        "close": 389.42,
+        "volume": 98.2,
+        "entry": 388.36,
+        "updated": "2025-11-07T16:24:30Z"
+      },
+      "option_chains": []
+    },
+    {
+      "symbol": "IWM",
+      "last": 201.08,
+      "bid": 200.92,
+      "ask": 201.18,
+      "spread": 0.26,
+      "roi": 7.92,
+      "maker_count": 6,
+      "taker_count": 2,
+      "volume": 95,
+      "candle": {
+        "open": 200.48,
+        "high": 201.64,
+        "low": 200.10,
+        "close": 201.08,
+        "volume": 86.4,
+        "entry": 200.52,
+        "updated": "2025-11-07T16:24:15Z"
+      },
+      "option_chains": []
+    }
+  ],
+  "positions": [
+    {
+      "name": "SPY BOX 675/670",
+      "quantity": 2,
+      "roi": 13.5,
+      "maker_count": 5,
+      "taker_count": 2,
+      "rebate_estimate": 2.54,
+      "vega": 0.42,
+      "theta": -0.06,
+      "fair_diff": 0.18,
+      "candle": {
+        "open": 160.2,
+        "high": 161.6,
+        "low": 159.8,
+        "close": 160.9,
+        "volume": 68.0,
+        "entry": 160.0,
+        "updated": "2025-11-07T16:24:20Z"
+      }
+    },
+    {
+      "name": "QQQ BOX 390/385",
+      "quantity": 3,
+      "roi": 10.8,
+      "maker_count": 4,
+      "taker_count": 1,
+      "rebate_estimate": 3.12,
+      "vega": 0.38,
+      "theta": -0.04,
+      "fair_diff": -0.12,
+      "candle": {
+        "open": 152.6,
+        "high": 153.4,
+        "low": 151.9,
+        "close": 152.9,
+        "volume": 59.6,
+        "entry": 152.0,
+        "updated": "2025-11-07T16:24:10Z"
+      }
+    }
+  ],
+  "historic": [
+    {
+      "name": "SPY BOX 670/665",
+      "quantity": 0,
+      "roi": 14.2,
+      "maker_count": 7,
+      "taker_count": 2,
+      "rebate_estimate": 1.98,
+      "vega": 0.31,
+      "theta": -0.03,
+      "fair_diff": 0.09,
+      "candle": {
+        "open": 158.1,
+        "high": 159.4,
+        "low": 157.6,
+        "close": 158.7,
+        "volume": 44.1,
+        "entry": 158.0,
+        "updated": "2025-11-07T14:15:00Z"
+      }
+    }
+  ],
+  "orders": [
+    {
+      "timestamp": "2025-11-07T16:24:20Z",
+      "text": "SPY BOX 675/670 submitted @ 160.90",
+      "severity": "info"
+    },
+    {
+      "timestamp": "2025-11-07T16:24:05Z",
+      "text": "QQQ BOX 390/385 fill 1/3 added liquidity",
+      "severity": "success"
+    },
+    {
+      "timestamp": "2025-11-07T16:23:50Z",
+      "text": "IWM BOX 205/200 partial fill removed liquidity",
+      "severity": "warn"
+    }
+  ],
+  "alerts": [
+    {
+      "timestamp": "2025-11-07T16:24:25Z",
+      "text": "Combo quote missing for SPY – falling back to ORATS synthetic",
+      "severity": "warn"
+    },
+    {
+      "timestamp": "2025-11-07T16:24:00Z",
+      "text": "Portal summary net_liq=100,523 buying_power=80,412",
+      "severity": "info"
+    }
+  ]
+}

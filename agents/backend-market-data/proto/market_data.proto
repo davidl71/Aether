@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package ib.market_data.v1;
+
+option go_package = "github.com/example/ib/market_data/v1";
+
+service MarketDataService {
+  rpc StreamEvents (MarketDataRequest) returns (stream MarketDataEvent);
+}
+
+message MarketDataRequest {
+  repeated string symbols = 1;
+}
+
+message MarketDataEvent {
+  string symbol = 1;
+  double bid = 2;
+  double ask = 3;
+  string timestamp = 4;
+}

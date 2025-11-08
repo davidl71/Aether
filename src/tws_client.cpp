@@ -21,8 +21,49 @@
 #include <chrono>
 #include <cfloat>
 #include <ctime>
+#include <unordered_map>
+#include <vector>
 
 namespace tws {
+
+namespace {
+
+const std::unordered_map<int, std::string> kIbErrorGuidance = {
+    {1100, "IB lost connectivity. Check TWS/IB Gateway and internet; re-authenticate if prompted."},
+    {1101, "Market data connection restored. Confirm subscriptions are active."},
+    {1102, "Order routing connection restored."},
+    {200, "Invalid contract definition. Verify symbol, expiry, right, strike, and exchange values."},
+    {201, "Order rejected due to contract error. Confirm contract fields before resubmitting."},
+    {202, "Order rejected by IB. Check order parameters, size limits, and account permissions."},
+    {321, "Server validation failed. Review price increments, exchange routing, and TIF."},
+    {354, "No market data permissions. Ensure your IB account has the required data subscriptions."},
+    {2104, "Market data farm connection restored."},
+    {2106, "Market data farm is connecting. Expect delayed quotes until established."},
+    {2107, "Market data farm connection failed. Check IB network status dashboard."},
+    {2108, "Market data farm disconnected. Quotes will pause until reconnection."},
+    {2109, "Order routing to IB server is OK."},
+};
+
+const std::pair<const char*, const char*> kErrorPhraseGuidance[] = {
+    {
+        "code card authentication",
+        "IB triggered code card authentication. Approve the 2FA challenge in IBKR Mobile or disable code card auth.",
+    },
+    {
+        "two factor authentication request timed out",
+        "Two-factor approval timed out. Re-initiate login and approve promptly on your IBKR Mobile device.",
+    },
+    {
+        "No market data permissions",
+        "IB refused market data. Purchase/enable required market data subscriptions or switch data provider.",
+    },
+    {
+        "No security definition has been found",
+        "Contract not recognized. Double-check ticker, expiration, strike, right, and exchange.",
+    },
+};
+
+}  // namespace
 
 // ============================================================================
 // TWSClient::Impl - Full TWS API Implementation with DefaultEWrapper
@@ -430,6 +471,8 @@ public:
 
     void error(int id, time_t errorTime, int errorCode, const std::string& errorString,
               const std::string& advancedOrderRejectJson) override {
+        std::vector<std::string> guidance_notes;
+
         if (errorCode >= 2100 && errorCode < 3000) {
             // Informational messages
             spdlog::info("TWS message {} (id={}): {}", errorCode, id, errorString);
@@ -452,8 +495,31 @@ public:
             spdlog::error("TWS error {} (id={}): {}", errorCode, id, errorString);
         }
 
+        if (auto it = kIbErrorGuidance.find(errorCode); it != kIbErrorGuidance.end()) {
+            spdlog::warn("Guidance: {}", it->second);
+            guidance_notes.emplace_back(it->second);
+        }
+
+        for (const auto& phrase : kErrorPhraseGuidance) {
+            if (errorString.find(phrase.first) != std::string::npos) {
+                spdlog::warn("Guidance: {}", phrase.second);
+                guidance_notes.emplace_back(phrase.second);
+            }
+        }
+
         if (error_callback_) {
-            error_callback_(errorCode, errorString);
+            if (guidance_notes.empty()) {
+                error_callback_(errorCode, errorString);
+            } else {
+                std::string enriched_message = errorString + " | Guidance: ";
+                for (size_t i = 0; i < guidance_notes.size(); ++i) {
+                    if (i > 0) {
+                        enriched_message += " | ";
+                    }
+                    enriched_message += guidance_notes[i];
+                }
+                error_callback_(errorCode, enriched_message);
+            }
         }
     }
 

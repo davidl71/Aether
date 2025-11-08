@@ -1,0 +1,15 @@
+{
+  "name": "backend-data-agent",
+  "workingDirectory": "./agents/backend",
+  "env": {
+    "PYTHONPATH": "../../python",
+    "TWS_MOCK": "true",
+    "BACKEND_AGENT_SCOPE": "combo_and_liquidity"
+  },
+  "startupCommands": [
+    "bash ../backend-data/scripts/setup.sh"
+  ],
+  "runtimeCommands": [
+    "bash ../backend-data/scripts/run-tests.sh"
+  ]
+}

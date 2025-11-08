@@ -1,0 +1,11 @@
+{
+  "name": "tui-agent",
+  "workingDirectory": "./agents/tui",
+  "startupCommands": [
+    "bash scripts/setup.sh"
+  ],
+  "runtimeCommands": [
+    "bash scripts/run-tests.sh"
+  ]
+}
+

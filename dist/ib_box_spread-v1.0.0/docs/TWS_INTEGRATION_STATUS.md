@@ -70,7 +70,7 @@ Linking TWS API library failed with:
 
 **Steps**:
 1. Download Intel Decimal library
-2. Build libbid.a following instructions in `vendor/tws-api/IBJts/source/cppclient/Intel_lib_build.txt`
+2. Build libbid.a following instructions in `third_party/tws-api/IBJts/source/cppclient/Intel_lib_build.txt`
 3. Update TWS API CMakeLists.txt to link against libbid
 4. Complete TWS API library build
 5. Implement actual EWrapper callbacks in `src/tws_client.cpp`
@@ -195,9 +195,9 @@ Given that your **framework is 100% complete and tested**, I recommend:
 - **Current Implementation**: `src/tws_client.cpp` (stub)
 - **Integration Template**: `docs/TWS_INTEGRATION_TEMPLATE.cpp` (full EWrapper example)
 - **Implementation Guide**: `docs/IMPLEMENTATION_GUIDE.md` (step-by-step)
-- **TWS API Path**: `vendor/tws-api/IBJts/source/cppclient/client/`
-- **Intel Decimal Instructions**: `vendor/tws-api/IBJts/source/cppclient/Intel_lib_build.txt`
-- **Protocol Buffer Files**: Already generated in `vendor/tws-api/IBJts/source/cppclient/client/*.pb.{h,cc}`
+- **TWS API Path**: `third_party/tws-api/IBJts/source/cppclient/client/`
+- **Intel Decimal Instructions**: `third_party/tws-api/IBJts/source/cppclient/Intel_lib_build.txt`
+- **Protocol Buffer Files**: Already generated in `third_party/tws-api/IBJts/source/cppclient/client/*.pb.{h,cc}`
 
 ---
 

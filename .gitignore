@@ -48,6 +48,11 @@ secrets.txt
 *.swo
 *~
 .DS_Store
+.cursor/
+.bewaker/
+.bewaker-audit.jsonl
+.mcpower/
+.agentic-tools-mcp/
 
 # Python virtual environments (if any)
 venv/
@@ -56,8 +61,19 @@ __pycache__/
 *.pyc
 
 # Dependency directories
-vendor/tws-api/
+third_party/tws-api/
 _deps/
+protobuf-3.20.3/
+protobuf-build/
+third_party/cache/
+third_party/IntelRDFPMathLib20U2/
+third_party/ib/
+ibapi_build/
+/agents/backend/target/
+/agents/backend-mock/target/
+/agents/backend-data/target/
+/web/node_modules/
+worktrees/
 
 # Test results
 Testing/
@@ -95,3 +111,15 @@ core.*
 # Windows specific
 Thumbs.db
 Desktop.ini
+
+# Trunk CLI cache (retain configs)
+.trunk/*
+!.trunk/trunk.yaml
+!.trunk/configs/
+.trunk/configs/*
+!.trunk/configs/ruff.toml
+
+# Release archives
+ib_box_spread-*.tar.gz
+dist/ib_box_spread-*.tar.gz
+dist/ib_box_spread-*.sha256

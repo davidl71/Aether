@@ -28,6 +28,13 @@ Automated options arbitrage trading system for Interactive Brokers using box spr
 - ✅ Modern C++20 codebase with extensive error handling
 - ✅ JSON-based configuration
 - ✅ Comprehensive test suite with Catch2
+- ✅ NautilusTrader integration (Python) for advanced market data and execution
+- ✅ QuantConnect-inspired deployment guard rails (pre-flight checklist, weekly re-auth, rich error catalog)
+- ✅ Event notifications via email/webhook/SMS/Telegram
+- ✅ Market data provider failover with ORATS fallback support
+- ✅ QuestDB time-series archiving for quotes and trades
+- ✅ IBKR Client Portal API integration for account and portfolio snapshots
+- ✅ Cython bindings exposing C++ calculations to Python
 
 ## What is a Box Spread?
 
@@ -70,15 +77,62 @@ The following dependencies are automatically fetched by CMake:
 - [CLI11](https://github.com/CLIUtils/CLI11) - Command-line parsing
 - [Catch2](https://github.com/catchorg/Catch2) - Testing framework
 
+### Third-Party Bundles (Cached at Build Time)
+
+Heavy vendor assets now live outside the repository and are hydrated locally:
+
+```bash
+./scripts/fetch_third_party.sh
+```
+
+This script downloads/extracts:
+
+- **Protobuf v3.20.3** (override with `PROTOBUF_URL` if you mirror releases)
+- **Intel decimal math library** (provide `INTEL_DECIMAL_URL` or drop the tarball into `third_party/cache/`)
+- **IBKR TWS API** (set `IB_API_ARCHIVE` to a local/remote zip or manually unpack to `third_party/tws-api/`)
+
+All artifacts land in `third_party/cache/` and remain untracked.
+
 ### TWS API (Manual Installation Required)
 
 The Interactive Brokers TWS C++ API must be downloaded manually:
 
 1. Visit https://interactivebrokers.github.io/
 2. Download the TWS API for your platform
-3. Extract to `vendor/tws-api/`
+3. Extract to `third_party/tws-api/`
 
 **Note**: The current implementation uses stub functions. Full TWS API integration requires implementing the actual IBKR client callbacks.
+
+### NautilusTrader Integration (Optional)
+
+For advanced trading capabilities, the project supports integration with [NautilusTrader](https://github.com/nautechsystems/nautilus_trader), a high-performance Python trading framework.
+
+**Requirements:**
+- Python 3.11 or higher
+- Cython 3.0+
+- NautilusTrader 2.0+
+
+**Installation:**
+```bash
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Build Cython bindings
+cd python/bindings
+pip install -e .
+
+# Or use CMake
+cmake --build build --target python_bindings
+```
+
+**Usage:**
+```bash
+# Run with nautilus_trader
+python python/nautilus_strategy.py --config config/config.json --dry-run
+
+# Or use C++ binary with --use-nautilus flag (for compatibility check)
+./build/bin/ib_box_spread --use-nautilus --config config/config.json
+```
 
 ## Installation
 
@@ -102,28 +156,36 @@ cd ib-box-spread-generator
 ### 3. Download TWS API (Optional but Recommended)
 
 ```bash
-# Create vendor directory
-mkdir -p vendor/tws-api
+# Create third-party directory
+mkdir -p third_party/tws-api
 
-# Download TWS API from IBKR and extract to vendor/tws-api/
+# Download TWS API from IBKR and extract to third_party/tws-api/
 # Directory structure should be:
-# vendor/tws-api/source/cppclient/client/*.h
+# third_party/tws-api/source/cppclient/client/*.h
 ```
 
 ### 4. Build the Project
 
 ```bash
-# Make build script executable
+# Standard build
 chmod +x scripts/build_universal.sh
-
-# Build (Release mode)
 ./scripts/build_universal.sh
 
-# Or build in Debug mode
-BUILD_TYPE=Debug ./scripts/build_universal.sh
+# Or use fast build with ccache (10-100x faster rebuilds)
+brew install ccache  # Install ccache first
+./build_fast.sh
+
+# Or distributed build (2-10x faster clean builds)
+export DISTCC_HOSTS="localhost/4 remote-ip/8"
+./build_distributed.sh
 ```
 
 The binary will be created at: `build/bin/ib_box_spread`
+
+**Build Optimization** (see `docs/DISTRIBUTED_COMPILATION.md` for details):
+- 🚀 **ccache**: Cache compilation results (10-100x speedup on rebuilds)
+- 🌐 **distcc**: Distribute compilation across network (2-10x speedup)
+- ⚡ **Both**: Use together for maximum performance
 
 ### 5. Configure
 
@@ -143,25 +205,101 @@ Edit `config/config.json`:
 {
   "tws": {
     "host": "127.0.0.1",
-    "port": 7497,              // 7497 = Paper, 7496 = Live
+    "port": 7497,
     "client_id": 1
   },
   "strategy": {
     "symbols": ["SPY", "QQQ", "IWM"],
-    "min_arbitrage_profit": 0.10,    // Min $0.10 profit
-    "min_roi_percent": 0.5,          // Min 0.5% ROI
-    "max_position_size": 10000.0,    // Max $10k per position
-    "min_days_to_expiry": 30,
-    "max_days_to_expiry": 90
+    "min_arbitrage_profit": 0.10,
+    "min_roi_percent": 0.5
   },
   "risk": {
-    "max_total_exposure": 50000.0,   // Max $50k total
+    "max_total_exposure": 50000.0,
     "max_positions": 10,
     "max_daily_loss": 2000.0
   },
-  "dry_run": true                    // ALWAYS start with true!
+  "dry_run": true,
+  "logging": {
+    "log_file": "logs/ib_box_spread.log",
+    "log_level": "info",
+    "log_to_console": true,
+    "use_colors": true
+  },
+  "connection_management": {
+    "weekly_reauth": {
+      "enabled": false,
+      "day_of_week": "sunday",
+      "time_utc": "21:00",
+      "auto_reconnect": true
+    }
+  },
+  "notifications": {
+    "enabled": false,
+    "channels": [
+      {
+        "type": "email",
+        "smtp_host": "smtp.example.com",
+        "from": "alerts@example.com",
+        "to": ["ops@example.com"],
+        "events": ["reauth_failure", "order_rejected"]
+      }
+    ]
+  },
+  "data_providers": {
+    "primary": "ib",
+    "fallbacks": ["orats"]
+  },
+  "orats": {
+    "enabled": false,
+    "api_token": ""
+  },
+  "nautilus_trader": {
+    "enabled": true
+  },
+  "ibkr_portal": {
+    "enabled": false,
+    "base_url": "https://localhost:5000/v1/portal",
+    "verify_ssl": false,
+    "preferred_accounts": []
+  }
 }
 ```
+
+### Connection Management
+
+- `weekly_reauth.enabled`: Enable the weekly IB Key re-auth workflow.
+- `weekly_reauth.time_utc`: UTC time to start the re-authentication window.
+- `weekly_reauth.auto_reconnect`: Automatically reconnect after 2FA succeeds (otherwise waits for manual reconnect).
+
+When enabled, the runtime pauses the strategy, disconnects IB, prompts for re-auth, and resumes once the session is refreshed.
+
+### Notifications
+
+Channels subscribe to specific events (e.g., `reauth_failure`, `order_rejected`, `strategy_paused`). Supported types:
+
+- **email** (SMTP credentials + recipients)
+- **webhook** (generic HTTPS POST)
+- **sms** (Twilio account credentials)
+- **telegram** (bot token + chat id)
+
+### Market Data Providers
+
+Configure a primary provider and optional fallbacks. The router will attempt each provider in sequence until a fresh quote is available. Setting `fallbacks` to `orats` enables ORATS core data as a backup when IB quotes are stale or unavailable.
+
+### QuestDB Archiving
+
+- `questdb.enabled`: Persist validated quotes and trades to QuestDB via the ILP wire protocol.
+- `questdb.quote_table` / `questdb.trade_table`: Destination table names.
+- Ensure QuestDB is running with ILP enabled (default port `9009`). The runtime retries transient failures and logs deliverability issues.
+
+### IBKR Client Portal API
+
+- `ibkr_portal.enabled`: Toggle the REST integration (requires the Client Portal Gateway running locally).
+- `ibkr_portal.base_url`: Base URL to the Gateway (defaults to `https://localhost:5000/v1/portal`).
+- `ibkr_portal.verify_ssl`: Set to `false` when using the self-signed certificate shipped with the Gateway.
+- `ibkr_portal.preferred_accounts`: Optional list of account IDs to prioritise when multiple accounts are returned.
+
+When enabled, the strategy validates the session during startup and logs account net liquidation/buying power via the Client Portal summary endpoint. Start IBKR’s Client Portal Gateway (for example, by running `bin/run.sh` from the Gateway package) before launching the strategy.
 
 ### Configuration Parameters
 
@@ -426,7 +564,7 @@ brew install llvm  # or gcc
 
 **Problem**: TWS API not found
 ```bash
-# Solution: Download TWS API and place in vendor/tws-api/
+# Solution: Download TWS API and place in third_party/tws-api/
 # Or disable TWS API in CMakeLists.txt for testing
 ```
 
@@ -499,6 +637,14 @@ Solutions:
 - [ ] Multi-strategy support
 - [ ] Alert/notification system
 - [ ] Machine learning for opportunity scoring
+
+### NautilusTrader Integration ✅
+- [x] Cython bindings for C++ calculations
+- [x] NautilusTrader client wrapper
+- [x] Market data handler
+- [x] Execution handler
+- [x] Strategy runner integration
+- [x] Configuration adapter
 
 ## Contributing
 

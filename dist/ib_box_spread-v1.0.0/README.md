@@ -76,7 +76,7 @@ The Interactive Brokers TWS C++ API must be downloaded manually:
 
 1. Visit https://interactivebrokers.github.io/
 2. Download the TWS API for your platform
-3. Extract to `vendor/tws-api/`
+3. Extract to `third_party/tws-api/`
 
 **Note**: The current implementation uses stub functions. Full TWS API integration requires implementing the actual IBKR client callbacks.
 
@@ -103,11 +103,11 @@ cd ib-box-spread-generator
 
 ```bash
 # Create vendor directory
-mkdir -p vendor/tws-api
+mkdir -p third_party/tws-api
 
-# Download TWS API from IBKR and extract to vendor/tws-api/
+# Download TWS API from IBKR and extract to third_party/tws-api/
 # Directory structure should be:
-# vendor/tws-api/source/cppclient/client/*.h
+# third_party/tws-api/source/cppclient/client/*.h
 ```
 
 ### 4. Build the Project
@@ -426,7 +426,7 @@ brew install llvm  # or gcc
 
 **Problem**: TWS API not found
 ```bash
-# Solution: Download TWS API and place in vendor/tws-api/
+# Solution: Download TWS API and place in third_party/tws-api/
 # Or disable TWS API in CMakeLists.txt for testing
 ```
 

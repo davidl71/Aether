@@ -61,6 +61,7 @@ struct LogConfig {
     int max_file_size_mb = 10;
     int max_files = 5;
     bool log_to_console = true;
+    bool use_colors = true;
 };
 
 // ============================================================================
@@ -210,7 +211,8 @@ inline void to_json(nlohmann::json& j, const LogConfig& config) {
         {"log_level", config.log_level},
         {"max_file_size_mb", config.max_file_size_mb},
         {"max_files", config.max_files},
-        {"log_to_console", config.log_to_console}
+        {"log_to_console", config.log_to_console},
+        {"use_colors", config.use_colors}
     };
 }
 
@@ -225,6 +227,8 @@ inline void from_json(const nlohmann::json& j, LogConfig& config) {
         j.at("max_files").get_to(config.max_files);
     if (j.contains("log_to_console"))
         j.at("log_to_console").get_to(config.log_to_console);
+    if (j.contains("use_colors"))
+        j.at("use_colors").get_to(config.use_colors);
 }
 
 // Main Config
