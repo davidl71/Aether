@@ -1,11 +1,14 @@
 #!/bin/bash
-# extract_tws.sh - Extract TWS API to vendor directory
+# extract_tws.sh - Extract TWS API to third_party directory
 
 set -euo pipefail
 
-readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-readonly VENDOR_DIR="${PROJECT_ROOT}/vendor/tws-api"
-readonly DOWNLOADS="${HOME}/Downloads"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly PROJECT_ROOT
+TWS_DIR="${PROJECT_ROOT}/third_party/tws-api"
+readonly TWS_DIR
+DOWNLOADS="${HOME}/Downloads"
+readonly DOWNLOADS
 
 echo "════════════════════════════════════════════════════════════"
 echo "  TWS API Extraction"
@@ -13,26 +16,38 @@ echo "════════════════════════�
 echo ""
 
 # Find TWS API zip file
-FILES=$(find "${DOWNLOADS}" -maxdepth 1 -name "twsapi*.zip" 2>/dev/null || true)
+files=()
+while IFS= read -r -d '' file; do
+    files+=("${file}")
+done < <(find "${DOWNLOADS}" -maxdepth 1 -name "twsapi*.zip" -print0 2>/dev/null)
 
-if [ -z "${FILES}" ]; then
+if [ ${#files[@]} -eq 0 ]; then
     echo "❌ No TWS API zip files found"
     echo "Please run: ./scripts/check_tws_download.sh"
     exit 1
 fi
 
-# Get most recent file
-LATEST=$(ls -t ${FILES} | head -1)
+# Get most recent file by modification time
+LATEST=""
+LATEST_MTIME=0
+for candidate in "${files[@]}"; do
+    mtime=$(stat -f %m "${candidate}" 2>/dev/null || stat -c %Y "${candidate}")
+    if [ "${mtime}" -gt "${LATEST_MTIME}" ]; then
+        LATEST_MTIME="${mtime}"
+        LATEST="${candidate}"
+    fi
+done
+
 echo "Found: ${LATEST}"
 echo ""
 
-# Create vendor directory
-echo "Creating vendor directory..."
-mkdir -p "${VENDOR_DIR}"
+# Create third-party directory
+echo "Creating third_party directory..."
+mkdir -p "${TWS_DIR}"
 
 # Check if already extracted
-if [ -d "${VENDOR_DIR}/IBJts" ]; then
-    echo "⚠️  Warning: TWS API already exists in vendor/"
+if [ -d "${TWS_DIR}/IBJts" ]; then
+    echo "⚠️  Warning: TWS API already exists in third_party/"
     read -p "Overwrite? (y/N) " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -40,22 +55,22 @@ if [ -d "${VENDOR_DIR}/IBJts" ]; then
         exit 0
     fi
     echo "Removing old installation..."
-    rm -rf "${VENDOR_DIR:?}"/*
+    rm -rf "${TWS_DIR:?}"/*
 fi
 
 # Extract
 echo "Extracting TWS API..."
-unzip -q "${LATEST}" -d "${VENDOR_DIR}"
+unzip -q "${LATEST}" -d "${TWS_DIR}"
 
 # Verify extraction
-EXPECTED_PATH="${VENDOR_DIR}/IBJts/source/cppclient/client"
+EXPECTED_PATH="${TWS_DIR}/IBJts/source/cppclient/client"
 
 if [ ! -d "${EXPECTED_PATH}" ]; then
     echo "❌ Extraction failed: Expected directory not found"
     echo "Expected: ${EXPECTED_PATH}"
     echo ""
     echo "Directory structure:"
-    find "${VENDOR_DIR}" -type d -maxdepth 3
+    find "${TWS_DIR}" -type d -maxdepth 3
     exit 1
 fi
 
@@ -64,7 +79,7 @@ echo ""
 
 # Show what was extracted
 echo "Extracted contents:"
-ls -la "${VENDOR_DIR}"
+ls -la "${TWS_DIR}"
 echo ""
 
 # Verify critical files exist
@@ -79,9 +94,9 @@ REQUIRED_FILES=(
 ALL_FOUND=true
 for file in "${REQUIRED_FILES[@]}"; do
     if [ -f "${file}" ]; then
-        echo "  ✅ $(basename ${file})"
+        echo "  ✅ $(basename "${file}")"
     else
-        echo "  ❌ $(basename ${file}) - NOT FOUND"
+        echo "  ❌ $(basename "${file}") - NOT FOUND"
         ALL_FOUND=false
     fi
 done
@@ -98,7 +113,7 @@ echo "════════════════════════�
 echo "  ✅ TWS API Installed Successfully!"
 echo "════════════════════════════════════════════════════════════"
 echo ""
-echo "Location: ${VENDOR_DIR}"
+echo "Location: ${TWS_DIR}"
 echo ""
 echo "Next steps:"
 echo "  1. Rebuild project: ./scripts/build_universal.sh"
@@ -108,5 +123,5 @@ echo ""
 echo "Documentation:"
 echo "  - Implementation guide: docs/IMPLEMENTATION_GUIDE.md"
 echo "  - Integration template: docs/TWS_INTEGRATION_TEMPLATE.cpp"
-echo "  - TWS API docs: ${VENDOR_DIR}/IBJts/Guides/"
+echo "  - TWS API docs: ${TWS_DIR}/IBJts/Guides/"
 echo ""

@@ -14,9 +14,12 @@ echo "Checking ${DOWNLOADS} for TWS API..."
 echo ""
 
 # Find TWS API zip files
-FILES=$(find "${DOWNLOADS}" -maxdepth 1 -name "twsapi*.zip" 2>/dev/null || true)
+files=()
+while IFS= read -r -d '' file; do
+    files+=("$file")
+done < <(find "${DOWNLOADS}" -maxdepth 1 -name "twsapi*.zip" -print0 2>/dev/null)
 
-if [ -z "${FILES}" ]; then
+if [ ${#files[@]} -eq 0 ]; then
     echo "❌ No TWS API zip files found in Downloads folder"
     echo ""
     echo "Please download TWS API from:"
@@ -32,11 +35,20 @@ echo "✅ Found TWS API file(s):"
 echo ""
 
 # List found files with details
-ls -lh ${FILES}
+ls -lh "${files[@]}"
 echo ""
 
-# Get the most recent file
-LATEST=$(ls -t ${FILES} | head -1)
+# Get the most recent file by modification time
+LATEST=""
+LATEST_MTIME=0
+for candidate in "${files[@]}"; do
+    mtime=$(stat -f %m "${candidate}" 2>/dev/null || stat -c %Y "${candidate}")
+    if [ "${mtime}" -gt "${LATEST_MTIME}" ]; then
+        LATEST_MTIME="${mtime}"
+        LATEST="${candidate}"
+    fi
+done
+
 echo "Most recent: ${LATEST}"
 echo ""
 

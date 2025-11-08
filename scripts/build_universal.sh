@@ -8,8 +8,10 @@ IFS=$'\n\t'
 # ============================================================================
 # Configuration
 # ============================================================================
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+readonly PROJECT_ROOT
 
 BUILD_DIR="${BUILD_DIR:-${PROJECT_ROOT}/build}"
 BUILD_TYPE="${BUILD_TYPE:-Release}"
@@ -48,11 +50,9 @@ cleanup() {
 check_dependencies() {
     local missing_deps=()
 
-    for cmd in cmake; do
-        if ! command -v "${cmd}" &> /dev/null; then
-            missing_deps+=("${cmd}")
-        fi
-    done
+    if ! command -v cmake >/dev/null 2>&1; then
+        missing_deps+=("cmake")
+    fi
 
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
         log_error "Missing dependencies: ${missing_deps[*]}"
