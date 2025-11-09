@@ -5,7 +5,7 @@
 /*
 PREREQUISITES:
 1. Download TWS API from https://interactivebrokers.github.io/
-2. Extract to third_party/tws-api/
+2. Extract to native/third_party/tws-api/
 3. Include these headers:
 */
 

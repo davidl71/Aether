@@ -44,6 +44,7 @@ BUILD_DIR="build-distributed"
 # IBAPI paths (customize if needed)
 IBAPI_INCLUDE_DIR="${IBAPI_INCLUDE_DIR:-$HOME/IBJts/source/cppclient}"
 IBAPI_LIB="${IBAPI_LIB:-$HOME/IBJts/source/cppclient/libTwsApiCpp.dylib}"
+TWS_API_BUILD_VENDOR="${TWS_API_BUILD_VENDOR:-OFF}"
 
 echo "Configuring with ccache + distcc..."
 cmake -S . -B "$BUILD_DIR" \
@@ -52,7 +53,8 @@ cmake -S . -B "$BUILD_DIR" \
   -DENABLE_DISTCC=ON \
   -DENABLE_LTO=ON \
   -DIBAPI_INCLUDE_DIR="$IBAPI_INCLUDE_DIR" \
-  -DIBAPI_LIB="$IBAPI_LIB"
+  -DIBAPI_LIB="$IBAPI_LIB" \
+  -DTWS_API_BUILD_VENDOR="$TWS_API_BUILD_VENDOR"
 
 # Calculate optimal parallelism
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -81,5 +83,10 @@ if command -v distcc &> /dev/null; then
 fi
 
 echo ""
-echo "✓ Build complete: $BUILD_DIR/bin/ib_box_spread"
+bin_path="$BUILD_DIR/bin/ib_box_spread"
+if [ -f "$bin_path" ]; then
+  echo "✓ Build complete: $bin_path"
+else
+  echo "ℹ️  Build finished. Native CLI target was skipped (see CMake output for details)."
+fi
 

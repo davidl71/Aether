@@ -88,10 +88,10 @@ Heavy vendor assets now live outside the repository and are hydrated locally:
 This script downloads/extracts:
 
 - **Protobuf v3.20.3** (override with `PROTOBUF_URL` if you mirror releases)
-- **Intel decimal math library** (provide `INTEL_DECIMAL_URL` or drop the tarball into `third_party/cache/`)
-- **IBKR TWS API** (set `IB_API_ARCHIVE` to a local/remote zip or manually unpack to `third_party/tws-api/`)
+- **Intel decimal math library** (provide `INTEL_DECIMAL_URL` or drop the tarball into `native/third_party/cache/`)
+- **IBKR TWS API** (set `IB_API_ARCHIVE` to a local/remote zip or manually unpack to `native/third_party/tws-api/`)
 
-All artifacts land in `third_party/cache/` and remain untracked.
+All artifacts land in `native/third_party/cache/` and remain untracked.
 
 ### TWS API (Manual Installation Required)
 
@@ -99,7 +99,7 @@ The Interactive Brokers TWS C++ API must be downloaded manually:
 
 1. Visit https://interactivebrokers.github.io/
 2. Download the TWS API for your platform
-3. Extract to `third_party/tws-api/`
+3. Extract to `native/third_party/tws-api/`
 
 **Note**: The current implementation uses stub functions. Full TWS API integration requires implementing the actual IBKR client callbacks.
 
@@ -128,6 +128,7 @@ cmake --build build --target python_bindings
 **Usage:**
 ```bash
 # Run with nautilus_trader
+# (Requires a separate Nautilus Trader installation; not bundled with this repo.)
 python python/nautilus_strategy.py --config config/config.json --dry-run
 
 # Or use C++ binary with --use-nautilus flag (for compatibility check)
@@ -157,11 +158,11 @@ cd ib-box-spread-generator
 
 ```bash
 # Create third-party directory
-mkdir -p third_party/tws-api
+mkdir -p native/third_party/tws-api
 
-# Download TWS API from IBKR and extract to third_party/tws-api/
+# Download TWS API from IBKR and extract to native/third_party/tws-api/
 # Directory structure should be:
-# third_party/tws-api/source/cppclient/client/*.h
+# native/third_party/tws-api/source/cppclient/client/*.h
 ```
 
 ### 4. Build the Project
@@ -564,7 +565,7 @@ brew install llvm  # or gcc
 
 **Problem**: TWS API not found
 ```bash
-# Solution: Download TWS API and place in third_party/tws-api/
+# Solution: Download TWS API and place in native/third_party/tws-api/
 # Or disable TWS API in CMakeLists.txt for testing
 ```
 

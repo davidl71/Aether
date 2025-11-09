@@ -41,30 +41,30 @@ unzip -t ~/Downloads/twsapi_macunix*.zip
 
 ---
 
-## Step 2: Extract TWS API to third_party/tws-api/
+## Step 2: Extract TWS API to native/third_party/tws-api/
 
 ### 2.1 Create Target Directory
 
 ```bash
 cd /Users/davidlowes/.claude-squad/worktrees/claude_1873e0c42c155fb0
-mkdir -p third_party/tws-api
+mkdir -p native/third_party/tws-api
 ```
 
 ### 2.2 Extract Archive
 
 ```bash
 # Extract to vendor directory
-unzip ~/Downloads/twsapi_macunix*.zip -d third_party/tws-api/
+unzip ~/Downloads/twsapi_macunix*.zip -d native/third_party/tws-api/
 
 # Verify extraction
-ls -la third_party/tws-api/
+ls -la native/third_party/tws-api/
 ```
 
 ### 2.3 Verify Directory Structure
 
 Expected structure:
 ```
-third_party/tws-api/
+native/third_party/tws-api/
 ├── IBJts/
 │   ├── source/
 │   │   ├── cppclient/
@@ -92,7 +92,7 @@ rm -rf build
 
 **Expected output**:
 ```
-CMake Status: TWS API found: /path/to/third_party/tws-api/source/cppclient/client
+CMake Status: TWS API found: /path/to/native/third_party/tws-api/source/cppclient/client
 ```
 
 ---
@@ -184,14 +184,14 @@ private:
 
 See the TWS API samples:
 ```bash
-cd third_party/tws-api/samples/Cpp/TestCppClient/
+cd native/third_party/tws-api/samples/Cpp/TestCppClient/
 # Study the example implementation
 ```
 
 ### 3.7 Recommended Resources
 
-- **Official API Guide**: third_party/tws-api/IBJts/Guides/
-- **Sample Code**: third_party/tws-api/samples/Cpp/
+- **Official API Guide**: native/third_party/tws-api/IBJts/Guides/
+- **Sample Code**: native/third_party/tws-api/samples/Cpp/
 - **API Reference**: https://interactivebrokers.github.io/tws-api/
 
 ---

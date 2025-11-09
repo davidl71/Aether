@@ -5,7 +5,6 @@ description = "Strategy scaffolding for the IB backend"
 authors = [{ name = "IB Box Spread Team" }]
 requires-python = ">=3.10"
 dependencies = [
-  "nautilus-trader>=1.180.0",
   "pydantic>=2.4",
   "pytest",
 ]

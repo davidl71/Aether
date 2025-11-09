@@ -1,10 +1,12 @@
-# Python dependencies for nautilus_trader integration
-nautilus_trader>=2.0.0
+# Core Python dependencies (Nautilus Trader wheel should be installed separately)
 cython>=3.0.0
 setuptools>=65.0.0
 numpy>=1.24.0
 pytest>=7.4.0
 pytest-cov>=4.1.0
+
+# Optional Nautilus Trader integration
+# Install the wheel separately when enabling integration (see README).
 
 # ORATS API integration
 requests>=2.31.0

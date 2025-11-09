@@ -96,8 +96,8 @@ except ImportError:
 
 ### Runtime Dependencies
 
-- `nautilus_trader>=2.0.0`
 - `numpy>=1.24.0`
+- `nautilus_trader` (optional; install manually when enabling integration)
 
 ### Build Dependencies (for bindings)
 

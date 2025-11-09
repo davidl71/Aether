@@ -14,3 +14,9 @@ chrono = { workspace = true }
 rand = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
+reqwest = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros"] }
+wiremock = "0.5"
+serde_json = { workspace = true }

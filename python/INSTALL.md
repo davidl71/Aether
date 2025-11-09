@@ -2,14 +2,14 @@
 
 ## Prerequisites
 
-1. **Python 3.11 or higher** (required by nautilus_trader)
+1. **Python 3.11 or higher** (required if you plan to use Nautilus Trader)
 2. **Cython 3.0+**
 3. **CMake** (for building C++ dependencies)
 4. **C++ Compiler** (Clang/GCC with C++20 support)
 
 ## Installation Steps
 
-### 1. Install Python Dependencies
+### 1. Install Python Dependencies (Core)
 
 ```bash
 # From project root
@@ -17,12 +17,20 @@ pip install -r requirements.txt
 ```
 
 This installs:
-- `nautilus_trader>=2.0.0`
 - `cython>=3.0.0`
 - `numpy>=1.24.0`
 - `pytest>=7.4.0`
 
-### 2. Build Cython Bindings
+### 2. Install Nautilus Trader (Optional)
+
+If you require Nautilus Trader integration, install a prebuilt wheel manually (building from source can take ~30 minutes and requires Rust toolchains).
+
+```bash
+# Download a prebuilt wheel (see scripts/fetch_third_party.sh) and install it
+pip install /abs/path/to/nautilus_trader-<version>-py3-none-any.whl
+```
+
+### 3. Build Cython Bindings
 
 #### Option A: Using setuptools (Recommended)
 
@@ -44,7 +52,7 @@ cmake -B build -DENABLE_PYTHON_BINDINGS=ON
 cmake --build build --target python_bindings
 ```
 
-### 3. Verify Installation
+### 4. Verify Installation
 
 ```bash
 # Test Python imports
@@ -54,7 +62,7 @@ python -c "from python.bindings.box_spread_bindings import PyOptionContract; pri
 pytest tests/python/
 ```
 
-### 4. Run with NautilusTrader
+### 5. Run with NautilusTrader
 
 ```bash
 # Make sure TWS/IB Gateway is running in paper trading mode (port 7497)
@@ -84,11 +92,11 @@ export PYTHONPATH="${PYTHONPATH}:$(pwd)/python"
 
 ### NautilusTrader Installation Issues
 
-NautilusTrader requires Python 3.11+. If you have multiple Python versions:
+NautilusTrader requires Python 3.11+. If you maintain multiple Python versions:
 
 ```bash
-# Use specific Python version
-python3.11 -m pip install -r requirements.txt
+# Use specific Python version for the optional Nautilus install
+python3.11 -m pip install /abs/path/to/nautilus_trader-<version>-py3-none-any.whl
 python3.11 python/nautilus_strategy.py --config config/config.json
 ```
 

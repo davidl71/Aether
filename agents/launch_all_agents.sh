@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Launches per-agent setup scripts in parallel; helpful for fresh dev machines.
+# Requires: poetry (backend), go, npm, xcodebuild depending on targets.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"

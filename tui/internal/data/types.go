@@ -40,6 +40,7 @@ type SymbolSnapshot struct {
 	TakerCount   int            `json:"taker_count"`
 	Volume       int            `json:"volume"`
 	Candle       Candle         `json:"candle"`
+	Multiplier   float64        `json:"multiplier"`
 	OptionChains []OptionSeries `json:"option_chains"`
 }
 
@@ -84,18 +85,52 @@ type AccountMetrics struct {
 	QuestDBOK         bool    `json:"questdb_ok"`
 }
 
+// HistoryEntry captures historical box spread observations.
+type HistoryEntry struct {
+	Date          time.Time `json:"date"`
+	Symbol        string    `json:"symbol"`
+	Expiration    string    `json:"expiration"`
+	Width         float64   `json:"width"`
+	NetDebit      float64   `json:"net_debit"`
+	APR           float64   `json:"apr"`
+	Benchmark     string    `json:"benchmark"`
+	BenchmarkRate float64   `json:"benchmark_rate"`
+	Notes         string    `json:"notes"`
+	DaysToExpiry  float64   `json:"days_to_expiry"`
+}
+
+// YieldCurvePoint summarises current synthetic funding along the term structure.
+type YieldCurvePoint struct {
+	Label      string  `json:"label"`
+	Expiration string  `json:"expiration"`
+	DTE        float64 `json:"dte"`
+	NetDebit   float64 `json:"net_debit"`
+	APR        float64 `json:"apr"`
+	Benchmark  float64 `json:"benchmark"`
+	APRSpread  float64 `json:"apr_spread"`
+}
+
+// FAQEntry contains frequently asked questions content for offline reference.
+type FAQEntry struct {
+	Question string `json:"question"`
+	Answer   string `json:"answer"`
+}
+
 // Snapshot is the aggregate data served to the TUI.
 type Snapshot struct {
-	GeneratedAt time.Time        `json:"generated_at"`
-	Mode        string           `json:"mode"`
-	Strategy    string           `json:"strategy"`
-	AccountID   string           `json:"account_id"`
-	Metrics     AccountMetrics   `json:"metrics"`
-	Symbols     []SymbolSnapshot `json:"symbols"`
-	Positions   []Position       `json:"positions"`
-	Historic    []Position       `json:"historic"`
-	Orders      []Order          `json:"orders"`
-	Alerts      []Alert          `json:"alerts"`
+	GeneratedAt time.Time         `json:"generated_at"`
+	Mode        string            `json:"mode"`
+	Strategy    string            `json:"strategy"`
+	AccountID   string            `json:"account_id"`
+	Metrics     AccountMetrics    `json:"metrics"`
+	Symbols     []SymbolSnapshot  `json:"symbols"`
+	Positions   []Position        `json:"positions"`
+	Historic    []Position        `json:"historic"`
+	Orders      []Order           `json:"orders"`
+	Alerts      []Alert           `json:"alerts"`
+	History     []HistoryEntry    `json:"history"`
+	YieldCurve  []YieldCurvePoint `json:"yield_curve"`
+	FAQs        []FAQEntry        `json:"faqs"`
 }
 
 // Provider produces snapshots for the TUI.

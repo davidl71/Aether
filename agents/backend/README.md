@@ -22,15 +22,38 @@
 5. Execute checks via `bash agents/backend/scripts/run-tests.sh`.
 
 ### Nautilus Trader Wheel
-The setup script looks for a prebuilt Nautilus Trader wheel before building sources. Run `./scripts/fetch_third_party.sh` (or set `NAUTILUS_TRADER_RELEASE=<tag>`) to download the latest stable wheel into `third_party/nautilus/`, or set `NAUTILUS_TRADER_WHEEL=/abs/path/to/nautilus_trader-<version>-py3-none-any.whl` manually before rerunning the setup.
+The backend setup no longer installs the Nautilus Trader wheel automatically. Download a prebuilt wheel via `./scripts/fetch_third_party.sh` (or set `NAUTILUS_TRADER_RELEASE=<tag>`) to place it under `native/third_party/nautilus/`, then install it manually (for example, `pip install <path-to-wheel>`) before enabling Nautilus integration. The backend Python package does not declare Nautilus Trader as a dependency; install it separately when you are ready to wire in the integration.
 
 ## Current Behaviour
 - Periodic mock market data updates drive the shared snapshot returned to TUI/mobile/web clients.
 - Strategy signals flow through a mock Nautilus loop, risk checks vet each decision, and both REST/gRPC surfaces stream the approved trades plus risk status.
 - REST now exposes `POST /api/v1/strategy/{start,stop}` to toggle the mock engine, updating risk status and alert stream in lockstep.
 - Alerts, positions, historic fills, and orders are seeded with example data for UI prototyping.
+- Polygon.io integration is available via the market data configuration; set `market_data.provider = "polygon"` and provide an API key (see below).
 
 ## Next Steps
 - Swap mock data with the real ingestion pipeline and Nautilus-driven strategy execution.
 - Flesh out POST command endpoints (`/strategy/start`, `/combos/*`) to match `agents/shared/API_CONTRACT.md`.
 - Expand risk checks beyond scaffolding and persist state to QuestDB/ Livevol feeds.
+
+## Configuring Polygon.io Market Data
+Update `agents/backend/config/default.toml` (or the file pointed to by `BACKEND_CONFIG`) to enable Polygon:
+
+```toml
+[market_data]
+provider = "polygon"
+symbols = ["SPY", "QQQ"]
+poll_interval_ms = 500
+
+[market_data.polygon]
+api_key_env = "POLYGON_API_KEY"
+# Alternatively:
+# api_key = "your-api-key"
+```
+
+Make sure the referenced environment variable is exported before running the backend:
+
+```sh
+export POLYGON_API_KEY="pk_your_polygon_token"
+cargo run -p backend_service
+```

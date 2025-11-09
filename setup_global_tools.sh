@@ -34,12 +34,16 @@ fi
 echo "[ok] Global toolchain configured via Ansible."
 
 if [ -s "$HOME/.nvm/nvm.sh" ]; then
+  # Temporarily relax nounset because the nvm scripts reference unset vars internally.
+  set +u
   # shellcheck disable=SC1090
   . "$HOME/.nvm/nvm.sh"
   echo "[info] Ensuring Node.js LTS via nvm..."
   nvm install --lts >/dev/null
   nvm use --lts >/dev/null
-  echo "[ok] nvm environment ready (Node $(nvm current))."
+  current_node="$(nvm current)"
+  set -u
+  echo "[ok] nvm environment ready (Node ${current_node})."
 else
   echo "[warn] nvm not detected; skip Node.js LTS bootstrap." >&2
 fi

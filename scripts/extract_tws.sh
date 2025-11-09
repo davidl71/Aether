@@ -1,11 +1,11 @@
 #!/bin/bash
-# extract_tws.sh - Extract TWS API to third_party directory
+# extract_tws.sh - Extract TWS API to native/third_party directory
 
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly PROJECT_ROOT
-TWS_DIR="${PROJECT_ROOT}/third_party/tws-api"
+TWS_DIR="${PROJECT_ROOT}/native/third_party/tws-api"
 readonly TWS_DIR
 DOWNLOADS="${HOME}/Downloads"
 readonly DOWNLOADS
@@ -42,12 +42,12 @@ echo "Found: ${LATEST}"
 echo ""
 
 # Create third-party directory
-echo "Creating third_party directory..."
+echo "Creating native third_party directory..."
 mkdir -p "${TWS_DIR}"
 
 # Check if already extracted
 if [ -d "${TWS_DIR}/IBJts" ]; then
-    echo "⚠️  Warning: TWS API already exists in third_party/"
+    echo "⚠️  Warning: TWS API already exists in native/third_party/"
     read -p "Overwrite? (y/N) " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then

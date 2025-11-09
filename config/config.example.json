@@ -32,69 +32,11 @@
     "log_level": "info",
     "max_file_size_mb": 10,
     "max_files": 5,
-    "log_to_console": true,
-    "use_colors": true
+    "log_to_console": true
   },
   "dry_run": true,
   "loop_delay_ms": 1000,
   "continue_on_error": false,
-  "connection_management": {
-    "weekly_reauth": {
-      "enabled": false,
-      "day_of_week": "sunday",
-      "time_utc": "21:00",
-      "reminder_minutes_before": 15,
-      "reauth_window_minutes": 10,
-      "auto_reconnect": true
-    }
-  },
-  "notifications": {
-    "enabled": false,
-    "default_severity": "info",
-    "channels": [
-      {
-        "type": "email",
-        "smtp_host": "smtp.example.com",
-        "smtp_port": 587,
-        "use_tls": true,
-        "username": "",
-        "password": "",
-        "from": "alerts@example.com",
-        "to": ["ops@example.com"],
-        "events": ["reauth_failure", "order_rejected", "connection_failure"]
-      },
-      {
-        "type": "webhook",
-        "url": "https://hooks.example.com/ib-alerts",
-        "events": ["reauth_start", "reauth_success", "strategy_start"]
-      },
-      {
-        "type": "telegram",
-        "bot_token": "",
-        "chat_id": "",
-        "events": ["reauth_failure", "strategy_paused"]
-      }
-    ]
-  },
-  "data_providers": {
-    "primary": "ib",
-    "fallbacks": ["orats"]
-  },
-  "questdb": {
-    "enabled": false,
-    "ilp_host": "127.0.0.1",
-    "ilp_port": 9009,
-    "quote_table": "ib_quotes",
-    "trade_table": "ib_trades",
-    "max_retries": 3
-  },
-  "ibkr_portal": {
-    "enabled": false,
-    "base_url": "https://localhost:5000/v1/portal",
-    "verify_ssl": false,
-    "timeout_seconds": 5,
-    "preferred_accounts": []
-  },
   "nautilus_trader": {
     "enabled": true,
     "use_nautilus_for_market_data": true,
@@ -109,19 +51,5 @@
       "port": 7497,
       "client_id": 1
     }
-  },
-  "orats": {
-    "enabled": false,
-    "api_token": "",
-    "base_url": "https://api.orats.io",
-    "use_for_liquidity_scoring": true,
-    "use_for_iv_data": true,
-    "use_for_risk_events": true,
-    "min_liquidity_score": 70.0,
-    "max_iv_percentile": 80.0,
-    "earnings_blackout_days": 7,
-    "dividend_blackout_days": 2,
-    "cache_duration_seconds": 300,
-    "rate_limit_per_second": 10
   }
 }

@@ -1,0 +1,5 @@
+---
+repo_root: "{{ ansible_env.PWD }}"
+python_bin: "python3"
+nautilus_trader_wheel: ""
+

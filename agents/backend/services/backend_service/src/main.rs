@@ -21,7 +21,9 @@ use api::{
 use anyhow::Context;
 use async_trait::async_trait;
 use chrono::{Duration as ChronoDuration, Utc};
-use market_data::{MockMarketDataSource, MarketDataEvent, MarketDataIngestor, MarketDataSource};
+use market_data::{
+  MarketDataEvent, MarketDataIngestor, MarketDataSource, MockMarketDataSource, PolygonMarketDataSource,
+};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use risk::{RiskCheck, RiskDecision, RiskEngine, RiskLimit, RiskViolation};
 use serde::Deserialize;
@@ -37,19 +39,74 @@ use tokio::{
 };
 use tracing::{info, warn};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct BackendConfig {
-  rest_addr: Option<SocketAddr>,
-  grpc_addr: Option<SocketAddr>,
+  #[serde(default = "default_rest_addr")]
+  rest_addr: SocketAddr,
+  #[serde(default = "default_grpc_addr")]
+  grpc_addr: SocketAddr,
+  #[serde(default)]
+  market_data: MarketDataSettings,
 }
 
 impl Default for BackendConfig {
   fn default() -> Self {
     Self {
-      rest_addr: Some(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8080)),
-      grpc_addr: Some(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 50051)),
+      rest_addr: default_rest_addr(),
+      grpc_addr: default_grpc_addr(),
+      market_data: MarketDataSettings::default(),
     }
   }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+struct MarketDataSettings {
+  #[serde(default = "default_market_provider")]
+  provider: String,
+  #[serde(default = "default_market_symbols")]
+  symbols: Vec<String>,
+  #[serde(default = "default_poll_interval_ms")]
+  poll_interval_ms: u64,
+  #[serde(default)]
+  polygon: Option<PolygonSettings>,
+}
+
+impl Default for MarketDataSettings {
+  fn default() -> Self {
+    Self {
+      provider: default_market_provider(),
+      symbols: default_market_symbols(),
+      poll_interval_ms: default_poll_interval_ms(),
+      polygon: None,
+    }
+  }
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+struct PolygonSettings {
+  api_key: Option<String>,
+  api_key_env: Option<String>,
+  base_url: Option<String>,
+}
+
+fn default_rest_addr() -> SocketAddr {
+  SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8080)
+}
+
+fn default_grpc_addr() -> SocketAddr {
+  SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 50051)
+}
+
+fn default_market_provider() -> String {
+  "mock".into()
+}
+
+fn default_market_symbols() -> Vec<String> {
+  vec!["XSP".into(), "SPY".into(), "QQQ".into(), "IWM".into()]
+}
+
+fn default_poll_interval_ms() -> u64 {
+  800
 }
 
 #[tokio::main]
@@ -57,8 +114,8 @@ async fn main() -> anyhow::Result<()> {
   init_tracing();
   let config = load_config().context("failed to load backend config")?;
 
-  let rest_addr = config.rest_addr.unwrap_or_else(|| SocketAddr::from(([127, 0, 0, 1], 8080)));
-  let grpc_addr = config.grpc_addr.unwrap_or_else(|| SocketAddr::from(([127, 0, 0, 1], 50051)));
+  let rest_addr = config.rest_addr;
+  let grpc_addr = config.grpc_addr;
 
   let state: SharedSnapshot = Arc::new(RwLock::new(SystemSnapshot::default()));
   let (strategy_ctrl_tx, strategy_ctrl_rx) = watch::channel(false);
@@ -92,8 +149,12 @@ async fn main() -> anyhow::Result<()> {
   );
 
   let market_ctrl_rx = strategy_ctrl_rx;
-  let mock_source = MockMarketDataSource::new(["XSP", "SPY", "QQQ", "IWM"], Duration::from_millis(800));
-  spawn_market_data_loop(mock_source, state.clone(), strategy_signal_tx, market_ctrl_rx);
+  spawn_market_data_provider(
+    &config.market_data,
+    state.clone(),
+    strategy_signal_tx,
+    market_ctrl_rx,
+  )?;
 
   info!(%rest_addr, %grpc_addr, "backend service online");
 
@@ -118,7 +179,6 @@ fn init_tracing() {
 }
 
 fn load_config() -> anyhow::Result<BackendConfig> {
-  let default_cfg = BackendConfig::default();
   let path = std::env::var("BACKEND_CONFIG").unwrap_or_else(|_| "config/default.toml".into());
 
   if std::path::Path::new(&path).exists() {
@@ -126,13 +186,66 @@ fn load_config() -> anyhow::Result<BackendConfig> {
       .with_context(|| format!("unable to read config file {path}"))?;
     let cfg: BackendConfig = toml::from_str(&data)
       .with_context(|| format!("invalid config file {path}"))?;
-    Ok(BackendConfig {
-      rest_addr: cfg.rest_addr.or(default_cfg.rest_addr),
-      grpc_addr: cfg.grpc_addr.or(default_cfg.grpc_addr),
-    })
+    Ok(cfg)
   } else {
-    Ok(default_cfg)
+    Ok(BackendConfig::default())
   }
+}
+
+fn spawn_market_data_provider(
+  settings: &MarketDataSettings,
+  state: SharedSnapshot,
+  strategy_signal: UnboundedSender<StrategySignal>,
+  strategy_toggle: watch::Receiver<bool>,
+) -> anyhow::Result<()> {
+  let symbols = if settings.symbols.is_empty() {
+    default_market_symbols()
+  } else {
+    settings.symbols.clone()
+  };
+  let interval = Duration::from_millis(settings.poll_interval_ms.max(10));
+
+  match settings.provider.as_str() {
+    "polygon" => {
+      let polygon_cfg = settings
+        .polygon
+        .as_ref()
+        .context("polygon provider selected but polygon settings missing")?;
+      let api_key = resolve_polygon_api_key(polygon_cfg)?;
+      let base_url = polygon_cfg.base_url.as_deref();
+      let source = PolygonMarketDataSource::new(symbols, interval, api_key, base_url)
+        .context("failed to create polygon market data source")?;
+      spawn_market_data_loop(source, state, strategy_signal, strategy_toggle);
+    }
+    provider => {
+      if provider != "mock" {
+        warn!(%provider, "unknown market data provider requested, falling back to mock");
+      }
+      let source = MockMarketDataSource::new(symbols, interval);
+      spawn_market_data_loop(source, state, strategy_signal, strategy_toggle);
+    }
+  }
+
+  Ok(())
+}
+
+fn resolve_polygon_api_key(settings: &PolygonSettings) -> anyhow::Result<String> {
+  if let Some(key) = settings.api_key.clone() {
+    return Ok(key);
+  }
+
+  if let Some(env) = &settings.api_key_env {
+    if let Ok(val) = std::env::var(env) {
+      anyhow::ensure!(
+        !val.trim().is_empty(),
+        "environment variable {env} is set but empty"
+      );
+      return Ok(val);
+    }
+    anyhow::bail!("environment variable {env} not found for polygon API key");
+  }
+
+  anyhow::bail!("polygon API key not configured (set market_data.polygon.api_key or api_key_env)");
 }
 
 fn spawn_market_data_loop<S>(

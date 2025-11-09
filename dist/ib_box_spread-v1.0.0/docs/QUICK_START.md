@@ -31,8 +31,8 @@ open https://interactivebrokers.github.io/
 
 ### Step 2: Extract API ⏳
 ```bash
-mkdir -p third_party/tws-api
-unzip ~/Downloads/twsapi_macunix*.zip -d third_party/tws-api/
+mkdir -p vendor/tws-api
+unzip ~/Downloads/twsapi_macunix*.zip -d vendor/tws-api/
 ```
 
 ### Step 3: Implement Client ⏳

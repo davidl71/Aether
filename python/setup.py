@@ -27,7 +27,6 @@ setup(
     py_modules=["nautilus_strategy", "config_adapter"],
     python_requires=">=3.11",
     install_requires=[
-        "nautilus_trader>=2.0.0",
         "numpy>=1.24.0",
     ],
     extras_require={
@@ -35,11 +34,6 @@ setup(
             "pytest>=7.4.0",
             "pytest-cov>=4.1.0",
             "cython>=3.0.0",
-        ],
-        "all": [
-            "cython>=3.0.0",
-            "pytest>=7.4.0",
-            "pytest-cov>=4.1.0",
         ],
     },
     entry_points={

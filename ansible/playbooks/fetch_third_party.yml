@@ -1,0 +1,8 @@
+---
+- name: Fetch third-party dependencies
+  hosts: localhost
+  become: false
+  gather_facts: true
+  roles:
+    - third_party
+

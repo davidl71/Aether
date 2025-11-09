@@ -1,0 +1,218 @@
+---
+- name: Ensure cache directory exists
+  ansible.builtin.file:
+    path: "{{ third_party_cache }}"
+    state: directory
+    mode: "0755"
+
+- name: Ensure third_party root exists
+  ansible.builtin.file:
+    path: "{{ third_party_root }}"
+    state: directory
+    mode: "0755"
+
+- name: Normalize fetch components list when provided as string
+  ansible.builtin.set_fact:
+    fetch_components_list: >-
+      {{
+        (
+          fetch_components
+          | default('')
+          | replace('[', '')
+          | replace(']', '')
+          | replace('\"', '')
+          | replace(\"'\", '')
+          | replace(' ', '')
+          | split(',')
+        )
+        | reject('equalto', '')
+        | list
+      }}
+  when: fetch_components is string
+
+- name: Normalize fetch components list when provided as list
+  ansible.builtin.set_fact:
+    fetch_components_list: "{{ fetch_components }}"
+  when: fetch_components is not string
+
+- name: Trim fetch components list
+  ansible.builtin.set_fact:
+    fetch_components_normalized: "{{ fetch_components_list | map('trim') | list }}"
+
+- name: Fetch and extract protobuf
+  when: "'protobuf' in fetch_components_normalized"
+  block:
+    - name: Resolve protobuf URL
+      ansible.builtin.set_fact:
+        protobuf_url_resolved: "{{ protobuf_url if protobuf_url | length > 0 else protobuf_url_default }}"
+
+    - name: Download protobuf archive
+      ansible.builtin.get_url:
+        url: "{{ protobuf_url_resolved }}"
+        dest: "{{ third_party_cache }}/protobuf-{{ protobuf_version }}.tar.gz"
+        mode: "0644"
+
+    - name: Ensure protobuf destination exists
+      ansible.builtin.file:
+        path: "{{ third_party_root }}/protobuf-{{ protobuf_version }}"
+        state: directory
+        mode: "0755"
+
+    - name: Extract protobuf archive
+      ansible.builtin.command:
+        cmd: >-
+          tar -xzf {{ third_party_cache }}/protobuf-{{ protobuf_version }}.tar.gz
+          -C {{ third_party_root }}/protobuf-{{ protobuf_version }}
+          --strip-components=1
+        creates: "{{ third_party_root }}/protobuf-{{ protobuf_version }}/README.md"
+
+- name: Handle Intel decimal math library
+  when: "'intel' in fetch_components_normalized"
+  block:
+    - name: Warn when Intel decimal URL not provided
+      ansible.builtin.debug:
+        msg: >
+          INTEL_DECIMAL_URL not set; skipping Intel decimal math download. Place the archive manually at
+          {{ third_party_cache }}/IntelRDFPMathLib20U2.tar.gz or provide an URL via INTEL_DECIMAL_URL.
+      when: intel_decimal_url | length == 0
+
+    - name: Download Intel decimal archive
+      ansible.builtin.get_url:
+        url: "{{ intel_decimal_url }}"
+        dest: "{{ third_party_cache }}/IntelRDFPMathLib20U2.tar.gz"
+        mode: "0644"
+      when: intel_decimal_url | length > 0
+
+    - name: Stat Intel decimal archive
+      ansible.builtin.stat:
+        path: "{{ third_party_cache }}/IntelRDFPMathLib20U2.tar.gz"
+      register: intel_decimal_archive
+
+    - name: Ensure Intel decimal destination exists
+      ansible.builtin.file:
+        path: "{{ third_party_root }}/IntelRDFPMathLib20U2"
+        state: directory
+        mode: "0755"
+      when: intel_decimal_archive.stat.exists
+
+    - name: Extract Intel decimal archive when available
+      ansible.builtin.command:
+        cmd: >-
+          tar -xzf {{ third_party_cache }}/IntelRDFPMathLib20U2.tar.gz
+          -C {{ third_party_root }}/IntelRDFPMathLib20U2 --strip-components=1
+        creates: "{{ third_party_root }}/IntelRDFPMathLib20U2/README"
+      when: intel_decimal_archive.stat.exists
+
+- name: Handle IB API archive
+  when: "'ibapi' in fetch_components_normalized"
+  block:
+    - name: Determine IB API source
+      ansible.builtin.set_fact:
+        ib_api_source: "{{ ib_api_archive if ib_api_archive | length > 0 else ib_api_url_default }}"
+        ib_api_using_default: "{{ ib_api_archive | length == 0 }}"
+
+    - name: Announce IB API default download
+      ansible.builtin.debug:
+        msg: "IB_API_ARCHIVE not provided. Falling back to default SDK URL: {{ ib_api_source }}"
+      when: ib_api_using_default
+
+    - name: Determine if IB API source appears to be a URL
+      ansible.builtin.set_fact:
+        ib_api_source_is_url: "{{ (ib_api_source | lower | regex_search('^[a-z]+://')) is not none }}"
+
+    - name: Stat IB API source when local path
+      ansible.builtin.stat:
+        path: "{{ ib_api_source }}"
+      register: ib_api_local
+      when: not ib_api_source_is_url
+
+    - name: Fail when IB API archive path does not exist
+      ansible.builtin.fail:
+        msg: "IB API archive path not found: {{ ib_api_source }}"
+      when:
+        - not ib_api_source_is_url
+        - not ib_api_local.stat.exists
+
+    - name: Compute IB API archive filename
+      ansible.builtin.set_fact:
+        ib_api_archive_filename: "{{ ib_api_source | basename }}"
+
+    - name: Ensure TWS API directory exists
+      ansible.builtin.file:
+        path: "{{ third_party_root }}/tws-api"
+        state: directory
+        mode: "0755"
+
+    - name: Copy IB API archive to cache
+      ansible.builtin.copy:
+        src: "{{ ib_api_source }}"
+        dest: "{{ third_party_cache }}/{{ ib_api_archive_filename }}"
+        mode: "0644"
+      when:
+        - not ib_api_source_is_url
+
+    - name: Download IB API archive
+      ansible.builtin.get_url:
+        url: "{{ ib_api_source }}"
+        dest: "{{ third_party_cache }}/{{ ib_api_archive_filename }}"
+        mode: "0644"
+      when: ib_api_source_is_url
+
+    - name: Extract IB API archive
+      ansible.builtin.unarchive:
+        src: "{{ third_party_cache }}/{{ ib_api_archive_filename }}"
+        dest: "{{ third_party_root }}/tws-api"
+        remote_src: true
+        creates: "{{ third_party_root }}/tws-api/IBJts"
+
+- name: Handle Nautilus Trader wheel
+  when: "'nautilus' in fetch_components_normalized"
+  block:
+    - name: Ensure Nautilus directory exists
+      ansible.builtin.file:
+        path: "{{ third_party_root }}/nautilus"
+        state: directory
+        mode: "0755"
+
+    - name: Build Nautilus release metadata URL
+      ansible.builtin.set_fact:
+        nautilus_trader_release_api_resolved: >-
+          {{
+            nautilus_trader_release_api if nautilus_trader_release_api | length > 0 else
+            (
+              "https://api.github.com/repos/nautechsystems/nautilus_trader/releases/latest"
+              if nautilus_trader_release | lower == 'latest'
+              else "https://api.github.com/repos/nautechsystems/nautilus_trader/releases/tags/" ~ nautilus_trader_release
+            )
+          }}
+      when: nautilus_trader_wheel_url | length == 0
+
+    - name: Resolve Nautilus Trader wheel URL from release metadata
+      ansible.builtin.uri:
+        url: "{{ nautilus_trader_release_api_resolved }}"
+        return_content: true
+      register: nautilus_release
+      when: nautilus_trader_wheel_url | length == 0
+
+    - name: Collect Nautilus wheel URLs
+      ansible.builtin.set_fact:
+        nautilus_trader_wheel_urls: "{{ nautilus_release.json.assets | default([]) | selectattr('name', 'search', '\\.whl$') | map(attribute='browser_download_url') | list }}"
+      when: nautilus_trader_wheel_url | length == 0
+
+    - name: Set Nautilus Trader wheel URL fact
+      ansible.builtin.set_fact:
+        nautilus_trader_wheel_url_resolved: "{{ nautilus_trader_wheel_urls[0] | default('') }}"
+      when: nautilus_trader_wheel_url | length == 0
+
+    - name: Validate Nautilus Trader wheel URL availability
+      ansible.builtin.fail:
+        msg: "Unable to locate Nautilus Trader wheel URL from release metadata."
+      when:
+        - nautilus_trader_wheel_url | length == 0
+        - nautilus_trader_wheel_url_resolved | default('') | length == 0
+
+    - name: Download Nautilus Trader wheel
+      ansible.builtin.get_url:
+        url: "{{ nautilus_trader_wheel_url if nautilus_trader_wheel_url | length > 0 else nautilus_trader_wheel_url_resolved }}"
+        dest: "{{ third_party_root }}/nautilus/{{ (nautilus_trader_wheel_url if nautilus_trader_wheel_url | length > 0 else nautilus_trader_wheel_url_resolved) | basename }}"
+        mode: "0644"

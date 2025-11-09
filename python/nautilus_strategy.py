@@ -7,6 +7,13 @@ import logging
 import sys
 from pathlib import Path
 
+try:
+    import nautilus_trader  # noqa: F401  # pylint: disable=unused-import
+except ModuleNotFoundError as exc:  # pragma: no cover - defensive guard
+    raise SystemExit(
+        "Nautilus Trader is not installed. Install a wheel manually to use the Nautilus integration."
+    ) from exc
+
 # Try to import as package first, fallback to path manipulation
 try:
     from python.integration.nautilus_client import NautilusClient

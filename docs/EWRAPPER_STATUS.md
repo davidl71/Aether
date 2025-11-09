@@ -62,7 +62,7 @@ Add stub implementations for all 93+ methods. This is the **only way** to make t
 ### Option B: Use DefaultEWrapper (If Available)
 Some TWS API versions include `DefaultEWrapper` with default implementations.
 
-**Check**: Does third_party/tws-api include `DefaultEWrapper.h`?
+**Check**: Does native/third_party/tws-api include `DefaultEWrapper.h`?
 
 ### Option C: Simplified Stub Client (Current Approach)
 Keep the stub implementation that was working before. It compiles and runs but doesn't connect to real TWS.

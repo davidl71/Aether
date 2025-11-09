@@ -1,2 +1,13 @@
 rest_addr = "127.0.0.1:8080"
 grpc_addr = "127.0.0.1:50051"
+
+[market_data]
+provider = "mock"
+symbols = ["XSP", "SPY", "QQQ", "IWM"]
+poll_interval_ms = 800
+
+[market_data.polygon]
+# Uncomment and set either api_key or api_key_env when using Polygon.io
+# api_key = "your-api-key"
+api_key_env = "POLYGON_API_KEY"
+base_url = "https://api.polygon.io"
