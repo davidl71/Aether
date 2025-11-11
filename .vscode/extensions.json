@@ -1,0 +1,52 @@
+{
+  "recommendations": [
+    // C++ Development
+    "ms-vscode.cpptools",
+    "ms-vscode.cmake-tools",
+
+    // Python Development
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.black-formatter",
+
+    // Rust Development (for agents/backend)
+    "rust-lang.rust-analyzer",
+
+    // Go Development (for tui/)
+    "golang.go",
+
+    // TypeScript/JavaScript (for web/)
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+
+    // General Development
+    "editorconfig.editorconfig",
+    "redhat.vscode-yaml",
+
+    // Git
+    "eamodio.gitlens",
+
+    // Markdown
+    "yzhang.markdown-all-in-one",
+    "davidanson.vscode-markdownlint",
+
+    // Shell Scripts
+    "timonwong.shellcheck",
+
+    // Code Quality & Security
+    "streetsidesoftware.code-spell-checker",
+    "usernamehw.errorlens",
+
+    // Swift (for ios/ and desktop/)
+    "sswg.swift-lang"
+  ],
+  "unwantedRecommendations": [
+    // Redundant - cpptools-extension-pack includes cpptools which is already recommended
+    "ms-vscode.cpptools-extension-pack",
+
+    // Not needed - no Docker/Kubernetes configuration in this project
+    "ms-azuretools.vscode-containers",
+    "ms-kubernetes-tools.vscode-kubernetes-tools",
+    "ms-vscode-remote.remote-containers"
+  ]
+}

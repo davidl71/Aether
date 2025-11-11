@@ -1,0 +1,176 @@
+{
+  // C++ Settings
+  "C_Cpp.default.cppStandard": "c++20",
+  "C_Cpp.default.intelliSenseMode": "macos-clang-arm64",
+  "C_Cpp.default.compilerPath": "/usr/bin/clang++",
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/native/include",
+    "${workspaceFolder}/native/third_party/tws-api/IBJts/source/cppclient/client",
+    "/usr/local/include",
+    "/opt/homebrew/include"
+  ],
+  "C_Cpp.default.defines": [
+    "_DEBUG",
+    "DEBUG"
+  ],
+  "C_Cpp.default.browse": {
+    "path": [
+      "${workspaceFolder}/native/include",
+      "${workspaceFolder}/native/src",
+      "${workspaceFolder}/native/third_party/tws-api/IBJts/source/cppclient/client",
+      "/usr/local/include"
+    ],
+    "limitSymbolsToIncludedHeaders": false
+  },
+  "C_Cpp.errorSquiggles": "enabled",
+  "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+  "C_Cpp.codeAnalysis.clangTidy.checks.enabled": [
+    "clang-analyzer-*",
+    "readability-*",
+    "performance-*",
+    "modernize-*"
+  ],
+  "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
+    "readability-magic-numbers",
+    "modernize-use-trailing-return-type"
+  ],
+
+  // File Associations
+  "files.associations": {
+    "*.h": "cpp",
+    "*.hpp": "cpp",
+    "*.cpp": "cpp",
+    "*.cc": "cpp",
+    "CMakeLists.txt": "cmake",
+    "*.cmake": "cmake"
+  },
+
+  // Editor Settings
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "editor.rulers": [100],
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+
+  // File Exclusions (from file explorer and AI analysis)
+  "files.exclude": {
+    "**/build": true,
+    "**/build-*": true,
+    "**/cmake-build-*": true,
+    "**/CMakeFiles": true,
+    "**/.cmake": true,
+    "**/*.o": true,
+    "**/*.so": true,
+    "**/*.dylib": true,
+    "**/compile_commands.json": false,
+    // Third-party vendor code (large, shouldn't be analyzed)
+    "native/third_party/tws-api/IBJts/samples": true,
+    "native/third_party/tws-api/IBJts/source/pythonclient": true,
+    "native/third_party/tws-api/IBJts/source/java": true,
+    "native/third_party/IntelRDFPMathLib20U2/EXAMPLES": true,
+    "native/third_party/IntelRDFPMathLib20U2/TESTS": true,
+    "native/third_party/IntelRDFPMathLib20U2/LIBRARY/src": true,
+    "native/third_party/IntelRDFPMathLib20U2/LIBRARY/float128": true,
+    "native/third_party/nautilus": true,
+    "native/third_party/cache": true,
+    // Generated protobuf files
+    "**/*.pb.cc": true,
+    "**/*.pb.h": true,
+    "**/*.pb.go": true,
+    // Distribution files
+    "dist": true,
+    "**/*.tar.gz": true,
+    "**/*.sha256": true
+  },
+  "search.exclude": {
+    "**/build": true,
+    "**/node_modules": true,
+    "**/target": true,
+    "**/__pycache__": true,
+    "**/.git": true,
+    // Third-party vendor code
+    "native/third_party/tws-api/IBJts/samples": true,
+    "native/third_party/tws-api/IBJts/source/pythonclient": true,
+    "native/third_party/tws-api/IBJts/source/java": true,
+    "native/third_party/IntelRDFPMathLib20U2/EXAMPLES": true,
+    "native/third_party/IntelRDFPMathLib20U2/TESTS": true,
+    "native/third_party/IntelRDFPMathLib20U2/LIBRARY/src": true,
+    "native/third_party/IntelRDFPMathLib20U2/LIBRARY/float128": true,
+    "native/third_party/nautilus": true,
+    "native/third_party/cache": true,
+    // Generated protobuf files
+    "**/*.pb.cc": true,
+    "**/*.pb.h": true,
+    "**/*.pb.go": true,
+    // Distribution files
+    "dist": true
+  },
+  "files.watcherExclude": {
+    "**/build/**": true,
+    "**/node_modules/**": true,
+    "**/target/**": true,
+    "**/.git/**": true,
+    // Third-party vendor code (reduce file watching overhead)
+    "native/third_party/tws-api/**": true,
+    "native/third_party/IntelRDFPMathLib20U2/**": true,
+    "native/third_party/nautilus/**": true,
+    "native/third_party/cache/**": true,
+    // Generated files
+    "**/*.pb.cc": true,
+    "**/*.pb.h": true,
+    "**/*.pb.go": true
+  },
+
+  // CMake Settings
+  "cmake.configureOnOpen": false,
+  "cmake.buildDirectory": "${workspaceFolder}/build",
+  "cmake.generator": "Ninja",
+  "cmake.configureSettings": {
+    "CMAKE_BUILD_TYPE": "Debug",
+    "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+  },
+  "cmake.sourceDirectory": "${workspaceFolder}/native",
+
+  // Python Settings
+  "python.defaultInterpreterPath": "/usr/local/bin/python3",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "python.formatting.provider": "black",
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": false,
+  "python.linting.flake8Enabled": true,
+
+  // Rust Settings (for agents/backend)
+  "rust-analyzer.checkOnSave.command": "clippy",
+  "rust-analyzer.cargo.buildScripts.enable": true,
+
+  // TypeScript/JavaScript Settings (for web/)
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "javascript.preferences.importModuleSpecifier": "relative",
+
+  // Terminal Settings
+  "terminal.integrated.cwd": "${workspaceFolder}",
+  "terminal.integrated.env.osx": {
+    "PYTHONPATH": "${workspaceFolder}/python"
+  },
+
+  // Git Settings
+  "git.ignoreLimitWarning": true,
+  "git.autofetch": true,
+
+  // Other Settings
+  "files.encoding": "utf8",
+  "files.eol": "\n",
+  "workbench.colorCustomizations": {
+    "[Default Dark+]": {
+      "editorRuler.foreground": "#444444"
+    }
+  }
+}

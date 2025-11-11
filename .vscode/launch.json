@@ -1,0 +1,88 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug ib_box_spread",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/ib_box_spread",
+      "args": [
+        "--config",
+        "${workspaceFolder}/config/config.json",
+        "--dry-run"
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [
+        {
+          "name": "PYTHONPATH",
+          "value": "${workspaceFolder}/python"
+        }
+      ],
+      "externalConsole": false,
+      "MIMode": "lldb",
+      "preLaunchTask": "CMake: Build",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for lldb",
+          "text": "settings set target.python-api-path ${workspaceFolder}/.vscode/lldb-python",
+          "ignoreFailures": true
+        }
+      ]
+    },
+    {
+      "name": "Debug ib_box_spread (with config)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/ib_box_spread",
+      "args": [
+        "--config",
+        "${workspaceFolder}/config/config.json"
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [
+        {
+          "name": "PYTHONPATH",
+          "value": "${workspaceFolder}/python"
+        },
+        {
+          "name": "TWS_MOCK",
+          "value": "true"
+        }
+      ],
+      "externalConsole": false,
+      "MIMode": "lldb",
+      "preLaunchTask": "CMake: Build"
+    },
+    {
+      "name": "Run Tests",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/box_spread_tests",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/build",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "lldb",
+      "preLaunchTask": "CMake: Build"
+    },
+    {
+      "name": "Attach to Process",
+      "type": "cppdbg",
+      "request": "attach",
+      "program": "${workspaceFolder}/build/bin/ib_box_spread",
+      "processId": "${command:pickProcess}",
+      "MIMode": "lldb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for lldb",
+          "text": "settings set target.python-api-path ${workspaceFolder}/.vscode/lldb-python",
+          "ignoreFailures": true
+        }
+      ]
+    }
+  ]
+}
+
