@@ -9,45 +9,27 @@
 class IbBoxSpread < Formula
   desc "Automated options arbitrage trading system for Interactive Brokers using box spread strategies"
   homepage "https://github.com/davidl71/ib_box_spread_full_universal"
-  # For private repositories, use GitDownloadStrategy with SSH URL
-  # This allows Homebrew to clone the repo and checkout the tag
-  url "git@github.com:davidl71/ib_box_spread_full_universal.git", tag: "v1.0.0", using: :git
+  version "1.3.2"
+  url "https://github.com/davidl71/ib_box_spread_full_universal/releases/download/v1.3.2/ib_box_spread-v1.3.2-macos-x86_64.tar.gz"
+  sha256 "a7fcb8a50b1e80e7160dfc50cb7308b151150d71eaa1899280009277cd1278af"
   license "MIT"
-  head "git@github.com:davidl71/ib_box_spread_full_universal.git", branch: "main", using: :git
 
-  depends_on "cmake" => :build
-  depends_on "ninja" => :build
-  depends_on "pkg-config" => :build
-  depends_on "protobuf" => :build
-  depends_on "abseil" => :build
-
-  # Optional dependencies for full functionality
-  depends_on "go" => :optional
-  depends_on "python@3.11" => :optional
+  bottle do
+    root_url "https://github.com/davidl71/ib_box_spread_full_universal/releases/download/v1.3.2"
+    sha256 cellar: :any, sequoia: "6d751def669a85293e34fdfec1b488ba013305aa57b83588fb9f8f965a276f94"
+  end
 
   def install
-    # Build main C++ binary
-    system "cmake", "-S", "native", "-B", "build",
-           "-DCMAKE_BUILD_TYPE=Release",
-           "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-           *std_cmake_args
-    system "cmake", "--build", "build", "--config", "Release"
+    binary_path = Dir["**/ib_box_spread"].first
+    config_path = Dir["**/config.example.json"].first
 
-    # Install main binary
-    bin.install "build/bin/ib_box_spread"
-
-    # Install man page if it exists
-    man1.install "docs/man/ib_box_spread.1" if File.exist?("docs/man/ib_box_spread.1")
-
-    # Install configuration example
-    pkgshare.install "config/config.example.json"
+    odie "ib_box_spread binary not found in archive" unless binary_path
+    bin.install binary_path
+    pkgshare.install config_path if config_path
   end
 
   test do
-    # Test that binary exists
     assert_predicate bin/"ib_box_spread", :exist?
-
-    # Test that binary runs (may fail without config, but should not crash)
-    system bin/"ib_box_spread", "--help", :status => false
+    system bin/"ib_box_spread", "--help"
   end
 end
