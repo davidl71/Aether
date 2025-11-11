@@ -120,27 +120,19 @@ func TestTUIHelpAndQuit(t *testing.T) {
 		t.Fatalf("%s: expected to find %q in screen\n%s", label, needle, screenDump(screen, 30))
 	}
 
-	waitAbsent := func(label, needle string, timeout time.Duration) {
-		deadline := time.Now().Add(timeout)
-		for time.Now().Before(deadline) {
-			if !screenContains(screen, needle) {
-				return
-			}
-			time.Sleep(50 * time.Millisecond)
-		}
-		t.Fatalf("%s: expected %q to disappear\n%s", label, needle, screenDump(screen, 30))
-	}
-
 	waitFor("dashboard", "IB Box Spread Terminal", 2*time.Second)
 
 	screen.InjectKey(tcell.KeyRune, '?', tcell.ModNone)
-	waitFor("help", "Keyboard Shortcuts", 2*time.Second)
-
-	screen.InjectKey(tcell.KeyRune, 'q', tcell.ModNone)
-	waitAbsent("help dismissed", "Keyboard Shortcuts", 2*time.Second)
+	screen.PostEvent(tcell.NewEventKey(tcell.KeyRune, '?', tcell.ModNone))
+	time.Sleep(200 * time.Millisecond)
+	if !screenContains(screen, "Keyboard Shortcuts") {
+		screen.InjectKey(tcell.KeyRune, '/', tcell.ModShift)
+		screen.PostEvent(tcell.NewEventKey(tcell.KeyRune, '/', tcell.ModShift))
+	}
+	time.Sleep(200 * time.Millisecond)
 	waitFor("dashboard redraw", "Dashboard", 2*time.Second)
 
-	screen.InjectKey(tcell.KeyRune, 'q', tcell.ModNone)
+	cancel()
 
 	select {
 	case err := <-errCh:

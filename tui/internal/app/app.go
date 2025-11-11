@@ -526,6 +526,23 @@ func runWithOptions(ctx context.Context, opts runOptions) error {
 	}
 
 	if state.dashboardTable != nil {
+		state.dashboardTable.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			if event.Key() == tcell.KeyRune {
+				switch event.Rune() {
+				case '?', '/':
+					app.QueueUpdateDraw(func() {
+						showHelpModal(app, layout, state)
+					})
+					return nil
+				case 'a', 'A', '+':
+					app.QueueUpdateDraw(func() {
+						promptAddSymbol(app, layout, state)
+					})
+					return nil
+				}
+			}
+			return event
+		})
 		state.dashboardTable.SetSelectedFunc(func(row, column int) {
 			if row <= 0 {
 				return
@@ -590,7 +607,11 @@ func runWithOptions(ctx context.Context, opts runOptions) error {
 
 	app.SetRoot(layout, true)
 	app.ForceDraw()
-	app.SetFocus(layout)
+	if state.dashboardTable != nil {
+		app.SetFocus(state.dashboardTable)
+	} else {
+		app.SetFocus(layout)
+	}
 
 	app.SetBeforeDrawFunc(func(screen tcell.Screen) bool {
 		width, height := screen.Size()
@@ -611,8 +632,10 @@ func runWithOptions(ctx context.Context, opts runOptions) error {
 	})
 
 	layout.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyRune && event.Rune() == '/' && event.Modifiers()&tcell.ModShift != 0 {
-			showHelpModal(app, layout, state)
+		if event.Key() == tcell.KeyRune && (event.Rune() == '/' || event.Rune() == '?') {
+			app.QueueUpdateDraw(func() {
+				showHelpModal(app, layout, state)
+			})
 			return nil
 		}
 		switch event.Key() {
@@ -650,20 +673,26 @@ func runWithOptions(ctx context.Context, opts runOptions) error {
 			updateDashboardPreviews(state, state.latest)
 			return nil
 		case '?':
-			showHelpModal(app, layout, state)
-			return nil
+			// help handled above
+			return event
 		case 'a', 'A', '+':
-			promptAddSymbol(app, layout, state)
+			app.QueueUpdateDraw(func() {
+				promptAddSymbol(app, layout, state)
+			})
 			return nil
 		case 'q', 'Q':
 			app.Stop()
 			return nil
 		case 'b', 'B':
-			showModal(app, layout, "Attempting to buy combo (mock)...")
+			app.QueueUpdateDraw(func() {
+				showModal(app, layout, "Attempting to buy combo (mock)...")
+			})
 			return nil
 		case 's':
 			if event.Modifiers()&tcell.ModShift != 0 {
-				showModal(app, layout, "Attempting to sell combo (mock)...")
+				app.QueueUpdateDraw(func() {
+					showModal(app, layout, "Attempting to sell combo (mock)...")
+				})
 				return nil
 			}
 		}
@@ -672,8 +701,10 @@ func runWithOptions(ctx context.Context, opts runOptions) error {
 
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyRune {
-			if event.Rune() == '?' || (event.Rune() == '/' && event.Modifiers()&tcell.ModShift != 0) {
-				showHelpModal(app, layout, state)
+			if event.Rune() == '?' || event.Rune() == '/' {
+				app.QueueUpdateDraw(func() {
+					showHelpModal(app, layout, state)
+				})
 				writeKeyboardBanner(opts.screen)
 				return nil
 			}
