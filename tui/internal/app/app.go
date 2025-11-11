@@ -1674,7 +1674,7 @@ func showOptionChain(app *tview.Application, root tview.Primitive, state *uiStat
 	table := tview.NewTable().SetBorders(false)
 	footer := tview.NewTextView().
 		SetDynamicColors(true).
-		SetText("[gray]←/→ change expiry  •  E enter expiry/DTE  •  B box detail  •  Esc or Q return[-]").
+		SetText("[gray]←/→ change expiry  •  E enter expiry/DTE  •  B box detail  •  W box span  •  Esc or Q return[-]").
 		SetTextAlign(tview.AlignCenter)
 
 	container := tview.NewFlex().SetDirection(tview.FlexRow).
@@ -1811,7 +1811,8 @@ func showOptionChain(app *tview.Application, root tview.Primitive, state *uiStat
 				metrics.aprVsBenchmark,
 			)
 		}
-		summaryText += "\n[gray]Use ←/→ keys, B to open box spread, or 'E' to jump to a specific expiry."
+		summaryText += fmt.Sprintf("\nBox span setting: %.1f strikes", state.boxWidth)
+		summaryText += "\n[gray]Use ←/→ keys, B to open box spread, W to change span, or 'E' to jump to a specific expiry."
 		summary.SetText(summaryText)
 	}
 
@@ -1866,13 +1867,19 @@ func showOptionChain(app *tview.Application, root tview.Primitive, state *uiStat
 		app.SetFocus(table)
 	}
 
-	showBoxDetail := func(idx int) {
+	var showBoxDetail func(idx int)
+	var promptBoxWidth func(idx int)
+
+	showBoxDetail = func(idx int) {
 		if currentStrikes == nil || idx < 0 || idx >= len(currentStrikes) {
 			return
 		}
 		targetIdx := idx
 
-		span := int(math.Max(1, math.Round(4.0)))
+		span := int(math.Max(1, math.Round(state.boxWidth)))
+		if span > len(currentStrikes) {
+			span = len(currentStrikes)
+		}
 		lowerIdx := targetIdx - span/2
 		upperIdx := targetIdx + span/2
 		if lowerIdx < 0 {
@@ -1927,30 +1934,82 @@ func showOptionChain(app *tview.Application, root tview.Primitive, state *uiStat
 		benchmark := selectBenchmark(dte)
 		diffAPR := apr - benchmark.ratePct
 
-		detail := tview.NewTextView().
-			SetDynamicColors(true).
-			SetText(fmt.Sprintf("[yellow]%s Box Spread[-]\n\nLower Strike: %.2f\nUpper Strike: %.2f\nWidth: %.2f\nDebit: $%.2f\nMax Payoff: $%.2f\nProfit: $%.2f (%.2f%%)\nAPR: %.2f%%\nBenchmark: %s %.2f%%\nAPR vs Benchmark: %.2f%%",
-				sym.Symbol,
-				lower.Strike,
-				upper.Strike,
-				upper.Strike-lower.Strike,
-				cash,
-				payoff,
-				profit,
-				profitPct,
-				apr,
-				benchmark.symbol,
-				benchmark.ratePct,
-				diffAPR,
-			))
+		spannedStrikes := upperIdx - lowerIdx + 1
+		detailText := fmt.Sprintf(
+			"[yellow]%s Box Spread[-]\n\nSelected Strike: %.2f  (span setting: %.1f strikes; covering %d legs)\nLower Strike: %.2f\nUpper Strike: %.2f\nWidth: %.2f\nDebit: $%.2f\nMax Payoff: $%.2f\nProfit: $%.2f (%.2f%%)\nAPR: %.2f%%\nBenchmark: %s %.2f%%\nAPR vs Benchmark: %.2f%%\n\n[gray]Use Width… to change the span, Close to return.[-]",
+			sym.Symbol,
+			currentStrikes[targetIdx].Strike,
+			state.boxWidth,
+			spannedStrikes,
+			lower.Strike,
+			upper.Strike,
+			upper.Strike-lower.Strike,
+			cash,
+			payoff,
+			profit,
+			profitPct,
+			apr,
+			benchmark.symbol,
+			benchmark.ratePct,
+			diffAPR,
+		)
 
 		modal := tview.NewModal().
-			SetText(detail.GetText(true)).
-			AddButtons([]string{"Close"})
+			SetText(detailText).
+			AddButtons([]string{"Close", "Width..."})
 		modal.SetDoneFunc(func(i int, l string) {
-			restore()
+			switch l {
+			case "Width...":
+				promptBoxWidth(targetIdx)
+			default:
+				restore()
+			}
 		})
 		app.SetRoot(modal, true)
+	}
+
+	promptBoxWidth = func(idx int) {
+		input := tview.NewInputField().
+			SetLabel("Box span (# strikes): ").
+			SetFieldWidth(10).
+			SetText(fmt.Sprintf("%.1f", state.boxWidth))
+		status := tview.NewTextView().
+			SetDynamicColors(true).
+			SetText("[gray]Enter a value ≥ 1. Decimals will be rounded to the nearest strike count.[-]")
+
+		form := tview.NewForm().
+			AddFormItem(input).
+			AddButton("Apply", func() {
+				valText := strings.TrimSpace(input.GetText())
+				widthVal, err := strconv.ParseFloat(valText, 64)
+				if err != nil || widthVal < 1 {
+					status.SetText("[red]Enter a numeric span of at least 1.[-]")
+					return
+				}
+				maxWidth := float64(len(currentStrikes))
+				if maxWidth < 1 {
+					maxWidth = 1
+				}
+				if widthVal > maxWidth {
+					widthVal = maxWidth
+				}
+				state.boxWidth = widthVal
+				restore()
+				showBoxDetail(idx)
+			}).
+			AddButton("Cancel", func() {
+				restore()
+			})
+		form.SetCancelFunc(func() {
+			restore()
+		})
+
+		dialog := tview.NewFlex().SetDirection(tview.FlexRow).
+			AddItem(form, 0, 1, true).
+			AddItem(status, 1, 0, false)
+
+		app.SetRoot(dialog, true)
+		app.SetFocus(form)
 	}
 
 	promptExpiryInput := func() {
@@ -2027,6 +2086,20 @@ func showOptionChain(app *tview.Application, root tview.Primitive, state *uiStat
 			return nil
 		case 'e', 'E':
 			promptExpiryInput()
+			return nil
+		case 'w', 'W':
+			if currentStrikes == nil {
+				return nil
+			}
+			row, _ := table.GetSelection()
+			if row <= 0 {
+				row = 1
+			}
+			idx := currentStart + (row - 1)
+			if idx < 0 || idx >= len(currentStrikes) {
+				return nil
+			}
+			promptBoxWidth(idx)
 			return nil
 		case 'b', 'B':
 			if currentStrikes == nil {
