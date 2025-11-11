@@ -1,48 +1,70 @@
 cmake_minimum_required(VERSION 3.15)
 project(twsapi_builder LANGUAGES C CXX)
 
-set(IBAPI_CLIENT_DIR "/Users/davidlowes/IBJts/source/cppclient")
-cmake_path(APPEND IBAPI_CLIENT_DIR "client")
+# Use relative paths from the project root
+get_filename_component(PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 
-set(IB_DOWNLOADS_DIR "/Users/davidlowes/Downloads")
-set(IB_BOX_SPREAD_ROOT "${IB_DOWNLOADS_DIR}")
-cmake_path(APPEND IB_BOX_SPREAD_ROOT "ib_box_spread_full_universal")
+set(IBAPI_CLIENT_DIR "${PROJECT_ROOT}")
+cmake_path(APPEND IBAPI_CLIENT_DIR "native" "third_party" "tws-api" "IBJts" "source" "cppclient" "client")
 
-set(IBAPI_PROTO_DIR "${IB_BOX_SPREAD_ROOT}")
-cmake_path(APPEND IBAPI_PROTO_DIR "third_party" "ib" "protobuf")
+set(IBAPI_PROTO_DIR "${PROJECT_ROOT}")
+cmake_path(APPEND IBAPI_PROTO_DIR "native" "third_party" "tws-api" "IBJts" "source" "cppclient" "client")
 
-set(PROTOBUF_SRC_DIR "${IB_BOX_SPREAD_ROOT}")
-cmake_path(APPEND PROTOBUF_SRC_DIR "protobuf-3.20.3" "src")
+set(INTEL_BID_LIB "${PROJECT_ROOT}")
+cmake_path(APPEND INTEL_BID_LIB "native" "third_party" "IntelRDFPMathLib20U2" "LIBRARY" "libbid.a")
 
-set(PROTOBUF_BUILD_DIR "${IB_BOX_SPREAD_ROOT}")
-cmake_path(APPEND PROTOBUF_BUILD_DIR "protobuf-build")
+# ------------------------------------------------------------------------------
+# Dependency discovery
+# ------------------------------------------------------------------------------
+set(DEFAULT_PACKAGE_PREFIX "/usr/local")
+if(APPLE AND EXISTS "/opt/homebrew")
+  set(DEFAULT_PACKAGE_PREFIX "/opt/homebrew")
+endif()
 
-set(INTEL_BID_SRC_DIR "${IB_BOX_SPREAD_ROOT}")
-cmake_path(APPEND INTEL_BID_SRC_DIR "third_party" "IntelRDFPMathLib20U2")
-cmake_path(APPEND INTEL_BID_SRC_DIR "LIBRARY" "src")
+set(PACKAGE_PREFIX "${DEFAULT_PACKAGE_PREFIX}" CACHE PATH "Prefix where protobuf/abseil are installed")
 
+find_path(PROTOBUF_INCLUDE_DIR
+  NAMES google/protobuf/message_lite.h
+  HINTS
+    "${PACKAGE_PREFIX}/include"
+    "/usr/local/include"
+    "/opt/homebrew/include"
+    "/usr/include"
+)
+
+find_library(PROTOBUF_LIBRARY
+  NAMES protobuf libprotobuf
+  HINTS
+    "${PACKAGE_PREFIX}/lib"
+    "/usr/local/lib"
+    "/opt/homebrew/lib"
+    "/usr/lib"
+)
+
+if(NOT PROTOBUF_INCLUDE_DIR OR NOT PROTOBUF_LIBRARY)
+  message(FATAL_ERROR "Unable to locate protobuf headers or library. Set PROTOBUF_INCLUDE_DIR/PROTOBUF_LIBRARY.")
+endif()
+
+get_filename_component(PROTOBUF_LIB_DIR "${PROTOBUF_LIBRARY}" DIRECTORY)
+
+find_library(PROTOBUF_LITE_LIBRARY
+  NAMES protobuf-lite libprotobuf-lite
+  HINTS
+    "${PROTOBUF_LIB_DIR}"
+    "${PACKAGE_PREFIX}/lib"
+    "/usr/local/lib"
+    "/opt/homebrew/lib"
+    "/usr/lib"
+)
+
+# ------------------------------------------------------------------------------
+# Source collection and targets
+# ------------------------------------------------------------------------------
 file(GLOB IBAPI_CORE_SOURCES "${IBAPI_CLIENT_DIR}/*.cpp")
-file(GLOB IBAPI_PROTO_SOURCES "${IBAPI_PROTO_DIR}/*.cc")
-file(GLOB INTEL_BID_SOURCES "${INTEL_BID_SRC_DIR}/*.c")
+file(GLOB IBAPI_PROTO_SOURCES "${IBAPI_PROTO_DIR}/*.pb.cc")
 
 set(IBAPI_STDAFX "${IBAPI_CLIENT_DIR}/StdAfx.cpp")
 list(REMOVE_ITEM IBAPI_CORE_SOURCES "${IBAPI_STDAFX}")
-
-add_library(bid_decimal STATIC ${INTEL_BID_SOURCES})
-target_include_directories(bid_decimal PUBLIC "${INTEL_BID_SRC_DIR}")
-target_compile_features(bid_decimal PUBLIC c_std_99)
-target_compile_options(bid_decimal PRIVATE
-    -std=gnu99
-    -Wno-implicit-function-declaration
-    -Wno-dangling-else
-)
-target_compile_definitions(bid_decimal PUBLIC
-  DECIMAL_CALL_BY_REFERENCE=0
-  DECIMAL_GLOBAL_ROUNDING=0
-  DECIMAL_GLOBAL_EXCEPTION_FLAGS=0
-  DECIMAL_GLOBAL_ROUNDING_FLAGS=0
-  DECIMAL_GLOBAL_ROUNDING_EMULATION=0
-)
 
 add_library(twsapi SHARED ${IBAPI_CORE_SOURCES} ${IBAPI_PROTO_SOURCES})
 
@@ -50,7 +72,7 @@ target_include_directories(twsapi
   PUBLIC
     "${IBAPI_CLIENT_DIR}"
     "${IBAPI_PROTO_DIR}"
-    "${PROTOBUF_SRC_DIR}"
+    "${PROTOBUF_INCLUDE_DIR}"
 )
 
 target_compile_features(twsapi PUBLIC cxx_std_17)
@@ -61,12 +83,25 @@ target_compile_options(twsapi PRIVATE
 
 target_link_libraries(twsapi
   PUBLIC
-    "${PROTOBUF_BUILD_DIR}/libprotobuf.a"
-    "${PROTOBUF_BUILD_DIR}/libprotobuf-lite.a"
-    bid_decimal
+    "${PROTOBUF_LIBRARY}"
+    "${INTEL_BID_LIB}"
     "-lz"
     "-lpthread"
 )
+
+if(PROTOBUF_LITE_LIBRARY)
+  target_link_libraries(twsapi PUBLIC "${PROTOBUF_LITE_LIBRARY}")
+endif()
+
+# Link Abseil libraries if available (required by modern protobuf)
+file(GLOB ABSEIL_LIBS
+  "${PROTOBUF_LIB_DIR}/libabsl*.dylib"
+  "${PROTOBUF_LIB_DIR}/libabsl*.a"
+)
+if(ABSEIL_LIBS)
+  list(REMOVE_DUPLICATES ABSEIL_LIBS)
+  target_link_libraries(twsapi PUBLIC ${ABSEIL_LIBS})
+endif()
 
 set_target_properties(twsapi PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"

@@ -42,13 +42,19 @@ api_keys.txt
 secrets.txt
 
 # IDE and editor files
-.vscode/
+# Note: .vscode/ workspace settings are committed for team consistency
+# Only user-specific VS Code settings are ignored
+.vscode/settings.json.user
+.vscode/launch.json.user
 .idea/
 *.swp
 *.swo
 *~
 .DS_Store
-.cursor/
+# Note: .cursor/mcp.json is committed for team consistency
+# Only user-specific Cursor settings are ignored
+.cursor/settings.json
+.cursor/cache/
 .bewaker/
 .bewaker-audit.jsonl
 .mcpower/
@@ -69,6 +75,13 @@ third_party/cache/
 third_party/IntelRDFPMathLib20U2/
 third_party/ib/
 ibapi_build/
+native/third_party/tws-api/IBJts/source/cppclient/client/build/
+native/third_party/tws-api/IBJts/source/cppclient/client/lib/
+native/third_party/IntelRDFPMathLib20U2/**
+!native/third_party/IntelRDFPMathLib20U2/
+!native/third_party/IntelRDFPMathLib20U2/**/
+!native/third_party/IntelRDFPMathLib20U2/**/CMakeLists.txt
+native/third_party/IntelRDFPMathLib20U2/**/*.a
 /agents/backend/target/
 /agents/backend-mock/target/
 /agents/backend-data/target/

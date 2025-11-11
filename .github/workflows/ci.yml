@@ -36,3 +36,50 @@ jobs:
         run: |
           cd agents/tui
           bash scripts/run-tests.sh
+
+  homebrew-bottles:
+    runs-on: macos-14
+    if: startsWith(github.ref, 'refs/tags/')
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+      HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure git for Homebrew
+        run: |
+          git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+      - name: Update Homebrew
+        run: brew update
+
+      - name: Set up local tap
+        run: |
+          brew tap --force-local local/ib-box-spread "$(pwd)/homebrew-tap"
+
+      - name: Build ib-box-spread bottle
+        run: |
+          FORMULA=ib-box-spread
+          brew install --build-bottle local/ib-box-spread/$FORMULA
+          brew bottle --json local/ib-box-spread/$FORMULA
+          mkdir -p bottles
+          mv ${FORMULA}--*.tar.gz bottles/
+          mv ${FORMULA}--*.json bottles/
+          brew uninstall --force local/ib-box-spread/$FORMULA
+
+      - name: Build ib-box-spread-tui bottle
+        run: |
+          FORMULA=ib-box-spread-tui
+          brew install --build-bottle local/ib-box-spread/$FORMULA
+          brew bottle --json local/ib-box-spread/$FORMULA
+          mv ${FORMULA}--*.tar.gz bottles/
+          mv ${FORMULA}--*.json bottles/
+          brew uninstall --force local/ib-box-spread/$FORMULA
+
+      - name: Upload bottles
+        uses: actions/upload-artifact@v4
+        with:
+          name: homebrew-bottles-${{ github.ref_name }}
+          path: bottles/

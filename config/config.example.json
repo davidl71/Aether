@@ -1,55 +1,100 @@
 {
+  // ============================================================================
+  // TWS Connection Configuration
+  // ============================================================================
   "tws": {
-    "host": "127.0.0.1",
-    "port": 7497,
-    "client_id": 1,
-    "connection_timeout_ms": 5000,
-    "auto_reconnect": true,
-    "reconnect_delay_ms": 3000
+    "host": "127.0.0.1",              // TWS/Gateway hostname (localhost)
+    "port": 7497,                      // Port: 7497 = Paper Trading (safe), 7496 = Live Trading (real money!)
+    "client_id": 1,                    // Unique client ID (1-32), must be unique per connection
+    "connection_timeout_ms": 5000,     // Connection timeout in milliseconds
+    "auto_reconnect": true,             // Automatically reconnect on disconnection
+    "reconnect_delay_ms": 3000          // Delay before reconnection attempt (milliseconds)
   },
+
+  // ============================================================================
+  // Strategy Configuration
+  // ============================================================================
   "strategy": {
+    // Symbols to monitor for box spread opportunities
     "symbols": ["SPY", "QQQ", "IWM"],
-    "min_arbitrage_profit": 0.10,
-    "min_roi_percent": 0.5,
-    "max_position_size": 10000.0,
-    "min_days_to_expiry": 30,
-    "max_days_to_expiry": 90,
-    "max_bid_ask_spread": 0.10,
-    "min_volume": 100,
-    "min_open_interest": 500
+
+    // Profit thresholds (minimum requirements to execute a trade)
+    "min_arbitrage_profit": 0.10,      // Minimum profit in dollars (e.g., $0.10)
+    "min_roi_percent": 0.5,            // Minimum ROI percentage (0.5 = 0.5%)
+
+    // Position sizing
+    "max_position_size": 10000.0,      // Maximum capital per trade in dollars
+
+    // Expiration filters
+    "min_days_to_expiry": 30,          // Minimum days until expiration
+    "max_days_to_expiry": 90,          // Maximum days until expiration
+
+    // Liquidity filters (ensure options are tradeable)
+    "max_bid_ask_spread": 0.10,         // Maximum bid/ask spread in dollars
+    "min_volume": 100,                  // Minimum daily volume
+    "min_open_interest": 500           // Minimum open interest
   },
+
+  // ============================================================================
+  // Risk Management Configuration
+  // ============================================================================
   "risk": {
-    "max_total_exposure": 50000.0,
-    "max_positions": 10,
-    "max_loss_per_position": 1000.0,
-    "max_daily_loss": 2000.0,
-    "position_size_percent": 0.1,
-    "enable_stop_loss": true,
-    "stop_loss_percent": 0.2
+    // Portfolio-level limits
+    "max_total_exposure": 50000.0,     // Maximum total capital deployed across all positions
+    "max_positions": 10,                // Maximum number of concurrent positions
+
+    // Position-level limits
+    "max_loss_per_position": 1000.0,   // Maximum loss per position before stop-loss
+
+    // Daily limits
+    "max_daily_loss": 2000.0,           // Stop trading if daily loss exceeds this amount
+
+    // Position sizing
+    "position_size_percent": 0.1,       // Position size as percentage of account (0.1 = 10%)
+
+    // Stop-loss configuration
+    "enable_stop_loss": true,           // Enable automatic stop-loss
+    "stop_loss_percent": 0.2            // Stop-loss threshold (0.2 = 20% loss)
   },
+
+  // ============================================================================
+  // Logging Configuration
+  // ============================================================================
   "logging": {
-    "log_file": "logs/ib_box_spread.log",
-    "log_level": "info",
-    "max_file_size_mb": 10,
-    "max_files": 5,
-    "log_to_console": true
+    "log_file": "logs/ib_box_spread.log",  // Log file path
+    "log_level": "info",                    // Log level: trace, debug, info, warn, error, critical
+    "max_file_size_mb": 10,                 // Maximum log file size before rotation
+    "max_files": 5,                         // Number of rotated log files to keep
+    "log_to_console": true                  // Also log to console (stdout)
   },
-  "dry_run": true,
-  "loop_delay_ms": 1000,
-  "continue_on_error": false,
+
+  // ============================================================================
+  // Application Settings
+  // ============================================================================
+  "dry_run": true,                      // Dry-run mode: simulate trades without executing (SAFE)
+  "loop_delay_ms": 1000,                // Delay between strategy evaluation loops (milliseconds)
+  "continue_on_error": false,           // Continue running after errors (false = exit on error)
+
+  // ============================================================================
+  // Nautilus Trader Integration (Optional)
+  // ============================================================================
   "nautilus_trader": {
-    "enabled": true,
-    "use_nautilus_for_market_data": true,
-    "use_nautilus_for_execution": true,
+    "enabled": true,                    // Enable Nautilus Trader integration
+    "use_nautilus_for_market_data": true,   // Use Nautilus for market data
+    "use_nautilus_for_execution": true,     // Use Nautilus for order execution
+
+    // Data client configuration
     "data_client_config": {
       "host": "127.0.0.1",
       "port": 7497,
       "client_id": 1
     },
+
+    // Execution client configuration
     "exec_client_config": {
       "host": "127.0.0.1",
       "port": 7497,
-      "client_id": 1
+      "client_id": 2                     // Different client_id for execution
     }
   }
 }
