@@ -16,10 +16,15 @@
 pip install -r requirements.txt
 ```
 
-This installs:
-- `cython>=3.0.0`
-- `numpy>=1.24.0`
-- `pytest>=7.4.0`
+This installs the pinned dependencies captured in `requirements.txt`, which is generated from `requirements.in` via `pip-compile`. Core packages include NumPy, Cython, pytest/pytest-cov, requests, and urllib3; consult the lockfile for exact versions.
+
+To refresh the lockfile after updating direct dependencies, run:
+
+```bash
+pip-compile requirements.in --allow-unsafe --output-file=requirements.txt
+```
+
+Ensure `pip-tools` is available in your environment (for example, `python3 -m pip install --user pip-tools` or activate a virtualenv before running the command).
 
 ### 2. Install Nautilus Trader (Optional)
 

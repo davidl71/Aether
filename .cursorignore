@@ -19,6 +19,13 @@ native/third_party/IntelRDFPMathLib20U2/TESTS/
 native/third_party/IntelRDFPMathLib20U2/LIBRARY/build/
 native/third_party/IntelRDFPMathLib20U2/LIBRARY/float128/
 native/third_party/IntelRDFPMathLib20U2/LIBRARY/src/
+native/third_party/IntelRDFPMathLib20U2/LIBRARY/float128/
+!native/third_party/IntelRDFPMathLib20U2/LIBRARY/src/
+!native/third_party/IntelRDFPMathLib20U2/LIBRARY/float128/
+!native/third_party/IntelRDFPMathLib20U2/LIBRARY/src/bid32_pow.c
+!native/third_party/IntelRDFPMathLib20U2/LIBRARY/src/bid64_pow.c
+!native/third_party/IntelRDFPMathLib20U2/LIBRARY/src/bid128_pow.c
+!native/third_party/IntelRDFPMathLib20U2/LIBRARY/float128/dpml_exception.c
 native/third_party/IntelRDFPMathLib20U2/LIBRARY/*.bat
 native/third_party/IntelRDFPMathLib20U2/LIBRARY/*build*
 native/third_party/IntelRDFPMathLib20U2/LIBRARY/RUN*

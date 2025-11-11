@@ -19,16 +19,34 @@ add_executable(box_spread_tests ${TEST_SOURCES})
 # Include Directories
 # ============================================================================
 
-# TWS API configuration (needed for tws_client.cpp)
-set(TWS_API_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/vendor/tws-api/IBJts/source/cppclient/client")
-set(TWS_API_LIB "${CMAKE_SOURCE_DIR}/vendor/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib")
-set(INTEL_DECIMAL_LIB "${CMAKE_SOURCE_DIR}/vendor/IntelRDFPMathLib20U2/LIBRARY/libbid.a")
-file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.dylib")
+# TWS API configuration (needed for tws_client.cpp). These variables are also
+# defined in the parent build; fall back to the vendored paths if they were not
+# provided via cache entries.
+if(NOT TWS_API_INCLUDE_DIR)
+    set(TWS_API_INCLUDE_DIR
+        "${CMAKE_SOURCE_DIR}/native/third_party/tws-api/IBJts/source/cppclient/client"
+    )
+endif()
 
-target_include_directories(box_spread_tests
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/include
-        ${TWS_API_INCLUDE_DIR}
+if(NOT TWS_API_LIB)
+    set(TWS_API_LIB
+        "${TWS_API_INCLUDE_DIR}/build/lib/libtwsapi.dylib"
+    )
+endif()
+
+if(NOT INTEL_DECIMAL_LIB)
+    set(INTEL_DECIMAL_LIB
+        "${CMAKE_SOURCE_DIR}/native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a"
+    )
+endif()
+
+if(NOT ABSEIL_LIBS)
+    file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.dylib")
+endif()
+
+target_include_directories(box_spread_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/native/include
+    ${TWS_API_INCLUDE_DIR}
 )
 
 # ============================================================================
@@ -61,12 +79,12 @@ endif()
 # Link with the same object files as the main executable
 # (This avoids code duplication)
 target_sources(box_spread_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/config_manager.cpp
-    ${CMAKE_SOURCE_DIR}/src/tws_client.cpp
-    ${CMAKE_SOURCE_DIR}/src/option_chain.cpp
-    ${CMAKE_SOURCE_DIR}/src/box_spread_strategy.cpp
-    ${CMAKE_SOURCE_DIR}/src/order_manager.cpp
-    ${CMAKE_SOURCE_DIR}/src/risk_calculator.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/config_manager.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/tws_client.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/option_chain.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/box_spread_strategy.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/order_manager.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/risk_calculator.cpp
 )
 
 # ============================================================================

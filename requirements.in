@@ -1,0 +1,8 @@
+# Direct Python dependencies for IB Box Spread Generator
+cython>=3.0.0
+setuptools>=65.0.0
+numpy>=1.24.0
+pytest>=7.4.0
+pytest-cov>=4.1.0
+requests>=2.31.0
+urllib3>=2.0.0

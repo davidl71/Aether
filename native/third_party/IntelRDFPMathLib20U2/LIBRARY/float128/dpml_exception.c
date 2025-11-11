@@ -41,6 +41,7 @@
 
 #define GLOBAL_TABLE_VALUES
 #include "dpml_private.h"
+#include <signal.h>
 #include "dpml_error_codes.h"
 
 /*

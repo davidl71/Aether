@@ -9,10 +9,7 @@
     "/usr/local/include",
     "/opt/homebrew/include"
   ],
-  "C_Cpp.default.defines": [
-    "_DEBUG",
-    "DEBUG"
-  ],
+  "C_Cpp.default.defines": ["_DEBUG", "DEBUG"],
   "C_Cpp.default.browse": {
     "path": [
       "${workspaceFolder}/native/include",
@@ -172,5 +169,6 @@
     "[Default Dark+]": {
       "editorRuler.foreground": "#444444"
     }
-  }
+  },
+  "github.gitProtocol": "ssh"
 }
