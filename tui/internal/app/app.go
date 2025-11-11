@@ -38,6 +38,7 @@ type uiState struct {
 	backendLabel       string
 	helpShown          bool
 	helpBannerExpiry   time.Time
+	boxWidth           float64
 }
 
 type symbolAdder interface {
@@ -196,6 +197,7 @@ func newUIState() *uiState {
 		symbolCache:  make(map[string]data.SymbolSnapshot),
 		windowWidth:  120,
 		windowHeight: 32,
+		boxWidth:     4.0,
 	}
 }
 

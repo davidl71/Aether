@@ -21,8 +21,36 @@
       - python
       - poetry
       - curl
+      - act
     state: present
   when: ansible_facts['os_family'] == 'Darwin'
+
+- name: Install act on Debian/Ubuntu
+  become: true
+  block:
+    - name: Download act binary
+      get_url:
+        url: https://github.com/nektos/act/releases/download/v0.2.82/act_Linux_x86_64.tar.gz
+        dest: /tmp/act.tar.gz
+        mode: "0644"
+    - name: Extract act binary
+      unarchive:
+        src: /tmp/act.tar.gz
+        dest: /usr/local/bin
+        remote_src: true
+        creates: /usr/local/bin/act
+    - name: Ensure act binary permissions
+      file:
+        path: /usr/local/bin/act
+        mode: "0755"
+    - name: Clean act archive
+      file:
+        path: /tmp/act.tar.gz
+        state: absent
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+    - ansible_architecture == 'x86_64'
+    - ansible_env.SUDO_USER is defined
 
 - name: Install Poetry via pip
   become: false
@@ -92,4 +120,3 @@
   when:
     - ansible_facts['os_family'] == 'Debian'
     - ansible_architecture == 'x86_64'
-

@@ -1,0 +1,235 @@
+---
+- hosts: distcc_macos_workers
+  become: true
+  vars:
+    homebrew_prefix: "/opt/homebrew"
+    allowed_subnet: "192.168.192.0/24"
+    distcc_jobs: 12
+    ai_brew_packages:
+      - python@3.11
+      - node
+      - deno
+      - git
+      - tmux
+    ai_brew_casks:
+      - cursor
+    ai_workspace_dir: "{{ ansible_env.HOME }}/ai-workspace"
+
+  pre_tasks:
+    - name: Ensure Homebrew exists (install if missing)
+      raw: |
+        if ! command -v brew >/dev/null 2>&1; then
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        fi
+      args:
+        warn: false
+
+    - name: Ensure Homebrew prefix is in PATH for this session
+      shell: echo "{{ homebrew_prefix }}/bin" >> /etc/paths.d/homebrew
+      args:
+        creates: "/etc/paths.d/homebrew"
+
+  tasks:
+    - name: Install distcc prerequisite packages
+      shell: "{{ homebrew_prefix }}/bin/brew list {{ item }} >/dev/null 2>&1 || {{ homebrew_prefix }}/bin/brew install {{ item }}"
+      loop:
+        - llvm
+        - distcc
+        - ccache
+        - cmake
+        - ninja
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Install AI tooling packages
+      shell: "{{ homebrew_prefix }}/bin/brew list {{ item }} >/dev/null 2>&1 || {{ homebrew_prefix }}/bin/brew install {{ item }}"
+      loop: "{{ ai_brew_packages }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Install AI tooling casks
+      shell: "{{ homebrew_prefix }}/bin/brew list --cask {{ item }} >/dev/null 2>&1 || {{ homebrew_prefix }}/bin/brew install --cask {{ item }}"
+      loop: "{{ ai_brew_casks }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Ensure AI workspace directory exists
+      file:
+        path: "{{ ai_workspace_dir }}"
+        state: directory
+        mode: "0755"
+        owner: "{{ ansible_user | default(ansible_env.USER) }}"
+        group: staff
+
+    - name: Ensure Cursor configuration directory exists
+      file:
+        path: "{{ ansible_env.HOME }}/.cursor"
+        state: directory
+        mode: "0755"
+
+    - name: Check for repository MCP configuration
+      stat:
+        path: "{{ playbook_dir }}/../../.cursor/mcp.json"
+      register: repo_mcp_config
+
+    - name: Install MCP configuration on worker
+      copy:
+        src: "{{ playbook_dir }}/../../.cursor/mcp.json"
+        dest: "{{ ansible_env.HOME }}/.cursor/mcp.json"
+        mode: "0644"
+      when: repo_mcp_config.stat.exists
+
+    - name: Create AI helper script
+      copy:
+        dest: "{{ ai_workspace_dir }}/start-ai-services.sh"
+        mode: "0755"
+        content: |
+          #!/bin/zsh
+          set -euo pipefail
+          export PATH="{{ homebrew_prefix }}/bin:$PATH"
+          export DISTCC_HOSTS="${DISTCC_HOSTS:-localhost/4 {{ ansible_host }}/{{ distcc_jobs }},lzo}"
+          LOG_DIR="{{ ai_workspace_dir }}/logs"
+          mkdir -p "${LOG_DIR}"
+          if ! tmux ls | grep -q '^ai-services'; then
+            tmux new-session -d -s ai-services -n cursor "cursor --headless >> ${LOG_DIR}/cursor.log 2>&1"
+          fi
+          echo "[ai] tmux session 'ai-services' running. Attach with: tmux attach -t ai-services"
+
+    - name: Ensure log directory exists
+      file:
+        path: "{{ homebrew_prefix }}/var/log"
+        state: directory
+        mode: "0755"
+        owner: root
+        group: wheel
+
+    - name: Create distccd launchd plist
+      copy:
+        dest: /Library/LaunchDaemons/org.distcc.daemon.plist
+        owner: root
+        group: wheel
+        mode: "0644"
+        content: |
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+            <dict>
+              <key>Label</key>
+              <string>org.distcc.daemon</string>
+              <key>ProgramArguments</key>
+              <array>
+                <string>{{ homebrew_prefix }}/bin/distccd</string>
+                <string>--daemon</string>
+                <string>--allow</string>
+                <string>{{ allowed_subnet }}</string>
+                <string>--jobs</string>
+                <string>{{ distcc_jobs }}</string>
+                <string>--log-level</string>
+                <string>warning</string>
+                <string>--log-file</string>
+                <string>{{ homebrew_prefix }}/var/log/distccd.log</string>
+                <string>--no-detach</string>
+              </array>
+              <key>RunAtLoad</key>
+              <true/>
+              <key>KeepAlive</key>
+              <true/>
+              <key>StandardOutPath</key>
+              <string>{{ homebrew_prefix }}/var/log/distccd.stdout.log</string>
+              <key>StandardErrorPath</key>
+              <string>{{ homebrew_prefix }}/var/log/distccd.stderr.log</string>
+            </dict>
+          </plist>
+
+    - name: Load distccd launch daemon
+      command: launchctl load /Library/LaunchDaemons/org.distcc.daemon.plist
+      register: load_result
+      failed_when: false
+
+    - name: Start distccd
+      command: launchctl start org.distcc.daemon
+      register: start_result
+      failed_when: false
+
+    - name: Verify distccd is running
+      command: pgrep -f "{{ homebrew_prefix }}/bin/distccd"
+      register: distccd_running
+      changed_when: false
+
+    - name: Share distcc metadata with controller
+      set_fact:
+        distcc_remote_host: "{{ ansible_host }}"
+        distcc_remote_alias: "{{ inventory_hostname }}"
+        distcc_remote_cores: "{{ distcc_jobs }}"
+
+    - name: Create symlinks for clang and clang++
+      file:
+        src: "{{ homebrew_prefix }}/opt/llvm/bin/{{ item.src }}"
+        dest: "/usr/local/bin/{{ item.dest }}"
+        state: link
+        force: yes
+      loop:
+        - { src: "clang", dest: "clang" }
+        - { src: "clang++", dest: "clang++" }
+      notify: restart distccd
+
+  handlers:
+    - name: restart distccd
+      command: launchctl kickstart -k system/org.distcc.daemon
+
+- hosts: localhost
+  connection: local
+  vars:
+    remote_alias: "{{ groups['distcc_macos_workers'][0] }}"
+    remote_host: "{{ hostvars[remote_alias].distcc_remote_host | default(hostvars[remote_alias].ansible_host) }}"
+    remote_cores: "{{ hostvars[remote_alias].distcc_remote_cores | default(hostvars[remote_alias].distcc_jobs | default(12)) }}"
+    remote_host_entry: "{{ remote_host }}/{{ remote_cores }},lzo"
+    remote_key_path: "{{ lookup('env','DISTCC_SSH_KEY_PATH') | default(ansible_env.HOME + '/.ssh/' + remote_alias + '_id_ed25519', true) }}"
+    local_distcc_hosts_file: "{{ lookup('env','HOME') }}/.distcc/hosts"
+  tasks:
+    - name: Ensure ~/.distcc directory exists
+      file:
+        path: "{{ local_distcc_hosts_file | dirname }}"
+        state: directory
+        mode: "0755"
+
+    - name: Ensure distcc hosts file includes localhost
+      lineinfile:
+        path: "{{ local_distcc_hosts_file }}"
+        line: "localhost/4"
+        create: yes
+        mode: "0644"
+        insertafter: BOF
+
+    - name: Ensure distcc host entry for remote worker
+      lineinfile:
+        path: "{{ local_distcc_hosts_file }}"
+        line: "{{ remote_host_entry }}"
+        insertafter: EOF
+
+    - name: Export DISTCC_HOSTS in shell profile (zsh)
+      lineinfile:
+        path: "{{ lookup('env','HOME') }}/.zshrc"
+        line: 'export DISTCC_HOSTS="localhost/4 {{ remote_host_entry }}"'
+        insertafter: EOF
+      when: ansible_env.SHELL is search("zsh")
+
+    - name: Ensure ~/.ssh directory exists
+      file:
+        path: "{{ lookup('env','HOME') }}/.ssh"
+        state: directory
+        mode: "0700"
+
+    - name: Ensure SSH config contains distcc host entry
+      blockinfile:
+        path: "{{ lookup('env','HOME') }}/.ssh/config"
+        create: yes
+        mode: "0600"
+        block: |
+          Host {{ remote_alias }}
+            HostName {{ remote_host }}
+            Port {{ hostvars[remote_alias].ansible_port | default(22) }}
+            User {{ hostvars[remote_alias].ansible_user | default(ansible_env.USER) }}
+            IdentityFile {{ remote_key_path }}
+            StrictHostKeyChecking accept-new
+            IdentitiesOnly yes
