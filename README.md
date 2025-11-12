@@ -193,10 +193,28 @@ The binary will be created at: `build/bin/ib_box_spread`
 ```bash
 # Copy example configuration
 cp config/config.example.json config/config.json
-
 # Edit with your settings
 nano config/config.json  # or vim, code, etc.
 ```
+
+When installed via Homebrew, the CLI searches for a user copy of `config.json` in the following
+locations (in priority order) before falling back to the `--config` flag:
+
+- `$HOME/.config/ib_box_spread/config.json`
+- `$HOME/Library/Application Support/ib_box_spread/config.json` (macOS)
+- `/usr/local/etc/ib_box_spread/config.json`
+- `/etc/ib_box_spread/config.json`
+
+Copy the packaged example into one of those directories to get started:
+
+```bash
+mkdir -p "${HOME}/.config/ib_box_spread"
+cp "$(brew --prefix)/share/ib-box-spread/config.example.json" \
+   "${HOME}/.config/ib_box_spread/config.json"
+```
+
+You can also set `IB_BOX_SPREAD_CONFIG=/path/to/config.json` to point both the C++ CLI and Python
+orchestration script at an alternate location.
 
 ## Configuration
 

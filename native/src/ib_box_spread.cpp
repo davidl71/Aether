@@ -9,6 +9,10 @@
 #include <atomic>
 #include <thread>
 #include <chrono>
+#include <filesystem>
+#include <cstdlib>
+#include <sstream>
+#include <algorithm>
 
 #include "config_manager.h"
 #include "tws_client.h"
@@ -78,6 +82,76 @@ namespace {
         }
     }
 
+    namespace fs = std::filesystem;
+
+    void add_candidate(std::vector<fs::path>& candidates, const fs::path& path) {
+        if (path.empty()) {
+            return;
+        }
+        fs::path normalized = path.lexically_normal();
+        if (std::find(candidates.begin(), candidates.end(), normalized) == candidates.end()) {
+            candidates.push_back(normalized);
+        }
+    }
+
+    fs::path make_absolute(const fs::path& path) {
+        if (path.is_absolute()) {
+            return path.lexically_normal();
+        }
+        return (fs::current_path() / path).lexically_normal();
+    }
+
+    fs::path resolve_config_path(const std::string& requested_path, bool user_override) {
+        std::vector<fs::path> candidates;
+
+        if (!requested_path.empty()) {
+            fs::path requested(requested_path);
+            add_candidate(candidates, make_absolute(requested));
+            if (requested.is_relative()) {
+                add_candidate(candidates, requested);
+            }
+        }
+
+        if (const char* env_override = std::getenv("IB_BOX_SPREAD_CONFIG")) {
+            fs::path env_path(env_override);
+            add_candidate(candidates, make_absolute(env_path));
+            if (env_path.is_relative()) {
+                add_candidate(candidates, env_path);
+            }
+        }
+
+        if (!user_override) {
+            if (const char* home_env = std::getenv("HOME")) {
+                fs::path home(home_env);
+                add_candidate(candidates, home / ".config" / "ib_box_spread" / "config.json");
+#ifdef __APPLE__
+                add_candidate(candidates,
+                              home / "Library" / "Application Support" / "ib_box_spread"
+                                   / "config.json");
+#endif
+            }
+
+            add_candidate(candidates, fs::path("/usr/local/etc/ib_box_spread/config.json"));
+            add_candidate(candidates, fs::path("/etc/ib_box_spread/config.json"));
+        }
+
+        std::error_code ec;
+        for (const auto& candidate : candidates) {
+            if (fs::exists(candidate, ec) && fs::is_regular_file(candidate, ec)) {
+                spdlog::debug("Resolved configuration candidate: {}", candidate.string());
+                return candidate;
+            }
+            ec.clear();
+        }
+
+        std::ostringstream oss;
+        oss << "Configuration file not found. Searched:";
+        for (const auto& candidate : candidates) {
+            oss << "\n  - " << candidate.string();
+        }
+        throw std::runtime_error(oss.str());
+    }
+
     void print_banner() {
         spdlog::info("╔════════════════════════════════════════════════════════════╗");
         spdlog::info("║    IBKR Box Spread Generator v1.0.0                       ║");
@@ -112,14 +186,17 @@ int main(int argc, char** argv) {
     bool use_nautilus = false;
     std::string log_level_override;
 
-    app.add_option("-c,--config", config_file, "Configuration file path")
-        ->check(CLI::ExistingFile);
+    auto* config_option = app.add_option(
+        "-c,--config",
+        config_file,
+        "Configuration file path (defaults to ~/.config/ib_box_spread/config.json if present)"
+    );
 
     app.add_flag("--dry-run", dry_run, "Simulate trading without executing orders");
 
     app.add_flag("--validate", validate_only, "Validate configuration and exit");
 
-    app.add_flag("--use-nautilus", use_nautilus, 
+    app.add_flag("--use-nautilus", use_nautilus,
                  "Use nautilus_trader for market data and execution (requires Python)");
 
     app.add_option("--log-level", log_level_override,
@@ -130,6 +207,14 @@ int main(int argc, char** argv) {
         app.parse(argc, argv);
     } catch (const CLI::ParseError& e) {
         return app.exit(e);
+    }
+
+    const bool user_provided_config = config_option->count() > 0;
+    try {
+        config_file = resolve_config_path(config_file, user_provided_config).string();
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return EXIT_FAILURE;
     }
 
     // ========================================================================
@@ -148,7 +233,7 @@ int main(int argc, char** argv) {
         if (!log_level_override.empty()) {
             config.logging.log_level = log_level_override;
         }
-        
+
         // Check for nautilus_trader usage
         if (use_nautilus) {
             spdlog::info("NautilusTrader mode requested via --use-nautilus flag");

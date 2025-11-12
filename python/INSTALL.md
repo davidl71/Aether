@@ -26,6 +26,11 @@ pip-compile requirements.in --allow-unsafe --output-file=requirements.txt
 
 Ensure `pip-tools` is available in your environment (for example, `python3 -m pip install --user pip-tools` or activate a virtualenv before running the command).
 
+For Homebrew installations, the native CLI and Python entrypoints also look for user configuration
+at `$HOME/.config/ib_box_spread/config.json` (or `~/Library/Application Support/ib_box_spread/config.json`
+on macOS). Copy the packaged example to that directory or pass an explicit `--config /path/to/config.json`
+when launching the tooling.
+
 ### 2. Install Nautilus Trader (Optional)
 
 If you require Nautilus Trader integration, install a prebuilt wheel manually (building from source can take ~30 minutes and requires Rust toolchains).
@@ -134,6 +139,3 @@ python/
 ├── config_adapter.py   # Config conversion
 └── nautilus_strategy.py # Main entry point
 ```
-
-
-
