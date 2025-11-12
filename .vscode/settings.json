@@ -170,5 +170,8 @@
       "editorRuler.foreground": "#444444"
     }
   },
-  "github.gitProtocol": "ssh"
+  "github.gitProtocol": "ssh",
+  "python.testing.pytestArgs": ["python"],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true
 }
