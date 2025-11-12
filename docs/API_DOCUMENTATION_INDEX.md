@@ -113,6 +113,44 @@ This file serves as a reference for all external APIs and libraries used in this
 - **Location**: `native/third_party/nautilus/`
 - **Note**: Optional integration, Python wheel file
 
+## Market Structure & Efficiency References
+
+### CME Group – Capital Efficiencies and AIR TRFs
+- **Whitepaper**: https://www.cmegroup.com/articles/whitepapers/capital-efficiencies-and-air-trfs.html
+- **Focus**: Explains capital efficiency benefits of Alternative Index Replication (AIR) Total Return Futures.
+- **Relevance**: Useful for comparing margin treatment and financing costs when evaluating box-spread arbitrage versus futures-based replication strategies.
+- **Key Takeaways**:
+  - AIR TRFs deliver equity index exposure with optimized capital usage.
+  - Highlights clearing efficiencies and reduced balance-sheet impact relative to swaps.
+  - Provides framework for assessing total-cost-of-carry trade structures.
+
+### Cboe – Box Spreads as Alternative Borrowing & Lending
+- **Article**: https://www.cboe.com/insights/posts/why-consider-box-spreads-as-an-alternative-borrowing-lending-strategy/
+- **Author**: Dr. Wesley R. Gray (Alpha Architect), October 16, 2024.
+- **Focus**: Demonstrates how four-leg box spreads replicate risk-free borrowing/lending via put-call parity.
+- **Relevance**: Aligns with our CLI’s intent to capture financing edges by comparing box spread yields to Treasury bills.
+- **Key Takeaways**:
+  - Box spreads provide funding rates competitive with T-bills.
+  - OCC clearing significantly mitigates counterparty risk.
+  - Highlights practical use cases for retail and institutional investors seeking efficient cash management.
+
+### CME Group – Quantifying and Hedging Equity Financing Risk
+- **Article**: https://www.cmegroup.com/articles/2025/quantifying-and-hedging-equity-financing-risk.html
+- **Focus**: Examines equity financing costs, basis dynamics, and hedging techniques using listed derivatives.
+- **Relevance**: Complements box-spread financing analysis by framing how equity financing risk and basis can be hedged or benchmarked against futures.
+- **Key Takeaways**:
+  - Provides methodologies to measure financing spreads between cash equities and futures.
+  - Discusses hedging tools to manage equity repo and funding exposures.
+  - Informs scenario analysis for arbitrage strategies sensitive to financing shifts.
+
+### CME Group Client Systems Wiki (EPIC Sandbox)
+- **Portal**: https://cmegroupclientsite.atlassian.net/wiki/spaces/EPICSANDBOX/overview?homepageId=457314687
+- **Scope**: Documentation for CME client systems sandbox, including reference data, clearing, Globex connectivity, and post-trade services.
+- **Access Notes**:
+  - Some content requires authenticated CME client credentials; anonymous users may see restricted sections.
+  - Useful for integration teams coordinating CME connectivity, testing flows, or referencing settlement schedules and API specs.
+- **Relevance**: Helps align our automation with CME interface changes (e.g., market data, clearing, settlement timings) when evaluating financing trades that interact with futures infrastructure.
+
 ## Rust (Agents)
 
 ### Rust Standard Library
