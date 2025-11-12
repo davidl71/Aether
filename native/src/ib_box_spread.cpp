@@ -101,6 +101,18 @@ namespace {
         return (fs::current_path() / path).lexically_normal();
     }
 
+    fs::path default_user_config_path() {
+        if (const char* home_env = std::getenv("HOME")) {
+            fs::path home(home_env);
+#ifdef __APPLE__
+            return (home / ".config" / "ib_box_spread" / "config.json").lexically_normal();
+#else
+            return (home / ".config" / "ib_box_spread" / "config.json").lexically_normal();
+#endif
+        }
+        return (fs::current_path() / "config" / "config.json").lexically_normal();
+    }
+
     fs::path resolve_config_path(const std::string& requested_path, bool user_override) {
         std::vector<fs::path> candidates;
 
@@ -185,13 +197,18 @@ int main(int argc, char** argv) {
     bool validate_only = false;
     bool use_nautilus = false;
     std::string log_level_override;
+    std::string init_config_override;
 
     auto* config_option = app.add_option(
         "-c,--config",
         config_file,
         "Configuration file path (defaults to ~/.config/ib_box_spread/config.json if present)"
     );
-
+    auto* init_option = app.add_option(
+        "--init-config",
+        init_config_override,
+        "Write a sample configuration to the provided path (default: ~/.config/ib_box_spread/config.json) and exit"
+    )->expected(0, 1);
     app.add_flag("--dry-run", dry_run, "Simulate trading without executing orders");
 
     app.add_flag("--validate", validate_only, "Validate configuration and exit");
@@ -207,6 +224,42 @@ int main(int argc, char** argv) {
         app.parse(argc, argv);
     } catch (const CLI::ParseError& e) {
         return app.exit(e);
+    }
+
+    if (init_option->count() > 0) {
+        fs::path target = init_config_override.empty()
+                              ? default_user_config_path()
+                              : fs::path(init_config_override);
+        if (!target.is_absolute()) {
+            target = make_absolute(target);
+        }
+
+        const fs::path parent = target.parent_path();
+        std::error_code ec;
+        if (!parent.empty()) {
+            fs::create_directories(parent, ec);
+            if (ec) {
+                std::cerr << "Failed to create directory " << parent << ": " << ec.message()
+                          << std::endl;
+                return EXIT_FAILURE;
+            }
+        }
+
+        try {
+            config::Config sample = config::ConfigManager::get_default();
+            if (sample.strategy.symbols.empty()) {
+                sample.strategy.symbols.push_back("SPY");
+            }
+            sample.dry_run = true;
+            config::ConfigManager::save(sample, target.string());
+        } catch (const std::exception& e) {
+            std::cerr << "Failed to write sample configuration: " << e.what() << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        std::cout << "Sample configuration written to: " << target.string() << std::endl;
+        std::cout << "Update the values before running live." << std::endl;
+        return EXIT_SUCCESS;
     }
 
     const bool user_provided_config = config_option->count() > 0;

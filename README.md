@@ -211,6 +211,11 @@ Copy the packaged example into one of those directories to get started:
 mkdir -p "${HOME}/.config/ib_box_spread"
 cp "$(brew --prefix)/share/ib-box-spread/config.example.json" \
    "${HOME}/.config/ib_box_spread/config.json"
+
+# Or have the CLI generate a starter config for you
+ib_box_spread --init-config
+# Optional: specify a path explicitly
+ib_box_spread --init-config /tmp/my_ib_box_spread.json
 ```
 
 You can also set `IB_BOX_SPREAD_CONFIG=/path/to/config.json` to point both the C++ CLI and Python

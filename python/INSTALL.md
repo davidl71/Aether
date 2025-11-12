@@ -29,7 +29,12 @@ Ensure `pip-tools` is available in your environment (for example, `python3 -m pi
 For Homebrew installations, the native CLI and Python entrypoints also look for user configuration
 at `$HOME/.config/ib_box_spread/config.json` (or `~/Library/Application Support/ib_box_spread/config.json`
 on macOS). Copy the packaged example to that directory or pass an explicit `--config /path/to/config.json`
-when launching the tooling.
+when launching the tooling. The native binary can scaffold a starter file as well:
+
+```bash
+ib_box_spread --init-config                # writes ~/.config/ib_box_spread/config.json
+ib_box_spread --init-config ./custom.json  # writes to a custom path
+```
 
 ### 2. Install Nautilus Trader (Optional)
 
