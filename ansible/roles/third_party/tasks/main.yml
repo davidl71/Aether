@@ -69,11 +69,51 @@
 - name: Handle Intel decimal math library
   when: "'intel' in fetch_components_normalized"
   block:
-    - name: Warn when Intel decimal URL not provided
+    - name: Search Downloads folder recursively for Intel decimal archive
+      ansible.builtin.find:
+        paths: "{{ ansible_env.HOME }}/Downloads"
+        patterns:
+          - "IntelRDFPMathLib*.tar.gz"
+          - "intel*decimal*.tar.gz"
+          - "*Intel*Decimal*.tar.gz"
+          - "*Intel*RDFP*.tar.gz"
+        recurse: true
+        file_type: file
+      register: intel_downloads_search
+      when: intel_decimal_url | length == 0
+
+    - name: Debug Intel decimal search results
+      ansible.builtin.debug:
+        msg: "Found {{ intel_downloads_search.files | length }} Intel decimal archive(s) in Downloads: {{ intel_downloads_search.files | map(attribute='path') | list }}"
+      when:
+        - intel_decimal_url | length == 0
+        - intel_downloads_search.files | length > 0
+
+    - name: Set Intel decimal URL from Downloads if found (most recent)
+      ansible.builtin.set_fact:
+        intel_decimal_url: "{{ intel_downloads_search.files | sort(attribute='mtime', reverse=true) | map(attribute='path') | list | first }}"
+      when:
+        - intel_decimal_url | length == 0
+        - intel_downloads_search.files | length > 0
+
+    - name: Warn when Intel decimal URL not provided (before Netlib fallback)
       ansible.builtin.debug:
         msg: >
-          INTEL_DECIMAL_URL not set; skipping Intel decimal math download. Place the archive manually at
-          {{ third_party_cache }}/IntelRDFPMathLib20U2.tar.gz or provide an URL via INTEL_DECIMAL_URL.
+          INTEL_DECIMAL_URL not set and no archive found in Downloads (searched recursively for:
+          IntelRDFPMathLib*.tar.gz, intel*decimal*.tar.gz, *Intel*Decimal*.tar.gz, *Intel*RDFP*.tar.gz).
+
+          Options:
+          1. Place the archive in Downloads folder (any subdirectory) - will be auto-detected
+          2. Place manually at {{ third_party_cache }}/IntelRDFPMathLib20U2.tar.gz
+          3. Provide URL via INTEL_DECIMAL_URL environment variable
+          4. Download from Netlib: {{ intel_decimal_url_default }}
+
+          Falling back to Netlib download...
+      when: intel_decimal_url | length == 0
+
+    - name: Set Intel decimal URL to Netlib default if not found
+      ansible.builtin.set_fact:
+        intel_decimal_url: "{{ intel_decimal_url_default }}"
       when: intel_decimal_url | length == 0
 
     - name: Download Intel decimal archive
@@ -81,7 +121,18 @@
         url: "{{ intel_decimal_url }}"
         dest: "{{ third_party_cache }}/IntelRDFPMathLib20U2.tar.gz"
         mode: "0644"
-      when: intel_decimal_url | length > 0
+      when:
+        - intel_decimal_url | length > 0
+        - (intel_decimal_url | lower | regex_search('^[a-z]+://')) is not none
+
+    - name: Copy Intel decimal archive from local path
+      ansible.builtin.copy:
+        src: "{{ intel_decimal_url }}"
+        dest: "{{ third_party_cache }}/IntelRDFPMathLib20U2.tar.gz"
+        mode: "0644"
+      when:
+        - intel_decimal_url | length > 0
+        - (intel_decimal_url | lower | regex_search('^[a-z]+://')) is none
 
     - name: Stat Intel decimal archive
       ansible.builtin.stat:
@@ -106,6 +157,23 @@
 - name: Handle IB API archive
   when: "'ibapi' in fetch_components_normalized"
   block:
+    - name: Search Downloads folder recursively for TWS API archive
+      ansible.builtin.find:
+        paths: "{{ ansible_env.HOME }}/Downloads"
+        patterns:
+          - "twsapi*.zip"
+        recurse: true
+        file_type: file
+      register: ibapi_downloads_search
+      when: ib_api_archive | length == 0
+
+    - name: Set IB API archive from Downloads if found (most recent)
+      ansible.builtin.set_fact:
+        ib_api_archive: "{{ ibapi_downloads_search.files | sort(attribute='mtime', reverse=true) | map(attribute='path') | list | first }}"
+      when:
+        - ib_api_archive | length == 0
+        - ibapi_downloads_search.files | length > 0
+
     - name: Determine IB API source
       ansible.builtin.set_fact:
         ib_api_source: "{{ ib_api_archive if ib_api_archive | length > 0 else ib_api_url_default }}"
@@ -113,7 +181,7 @@
 
     - name: Announce IB API default download
       ansible.builtin.debug:
-        msg: "IB_API_ARCHIVE not provided. Falling back to default SDK URL: {{ ib_api_source }}"
+        msg: "IB_API_ARCHIVE not provided and not found in Downloads. Falling back to default SDK URL: {{ ib_api_source }}"
       when: ib_api_using_default
 
     - name: Determine if IB API source appears to be a URL

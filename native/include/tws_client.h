@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "config_manager.h"
+#include "rate_limiter.h"
 #include <memory>
 #include <functional>
 #include <map>
@@ -93,6 +94,18 @@ public:
                     double limit_price = 0.0,  // 0 for market order
                     types::TimeInForce tif = types::TimeInForce::Day);
 
+    // Place a combo order (BAG secType) for atomic multi-leg execution
+    // Returns order ID, or -1 if failed
+    // Note: Requires contract IDs (conId) for each leg - use reqContractDetails first if needed
+    int place_combo_order(
+        const std::vector<types::OptionContract>& contracts,
+        const std::vector<types::OrderAction>& actions,
+        const std::vector<int>& quantities,
+        const std::vector<long>& contract_ids,  // TWS contract IDs (conId) for each leg
+        const std::vector<double>& limit_prices,  // Limit price for each leg (0 for market)
+        types::TimeInForce tif = types::TimeInForce::Day
+    );
+
     // Cancel an order
     void cancel_order(int order_id);
 
@@ -155,6 +168,22 @@ public:
 
     // Get server time
     std::chrono::system_clock::time_point get_server_time() const;
+
+    // ========================================================================
+    // Rate Limiting (IBKR Compliance)
+    // ========================================================================
+
+    // Enable rate limiting with default settings
+    void enable_rate_limiting();
+
+    // Configure rate limiter
+    void configure_rate_limiter(const RateLimiterConfig& config);
+
+    // Get rate limiter status
+    std::optional<RateLimiterStatus> get_rate_limiter_status() const;
+
+    // Cleanup stale requests (for long-running applications)
+    void cleanup_stale_rate_limiter_requests(std::chrono::seconds max_age);
 
 private:
     class Impl;

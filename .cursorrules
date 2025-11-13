@@ -176,6 +176,7 @@ When helping with this codebase:
 6. Consider multi-language aspects (C++, Python, Rust, Go, TypeScript)
 7. Reference API documentation using `@docs` - see `docs/API_DOCUMENTATION_INDEX.md` for all external APIs
 8. When users ask about APIs, reference `docs/API_DOCUMENTATION_INDEX.md` for context
+9. Use NotebookLM MCP server to research topics, summarize YouTube videos, and create documentation from links - see `docs/NOTEBOOKLM_USAGE.md` for detailed instructions
 
 ## Documentation References
 
@@ -197,6 +198,7 @@ When helping with this codebase:
 - **Code Patterns**: Use `@docs COMMON_PATTERNS.md` when suggesting code to ensure consistency
 - **Code Quality**: Use `@docs AI_FRIENDLY_CODE.md` when writing new code to ensure AI-friendly patterns
 - **TWS Integration**: Use `@docs TWS_INTEGRATION_STATUS.md` for TWS-specific questions
+- **NotebookLM Usage**: Use `@docs NOTEBOOKLM_USAGE.md` when researching topics, summarizing videos, or creating documentation from links
 
 ### Writing AI-Friendly Code
 When writing or suggesting code:

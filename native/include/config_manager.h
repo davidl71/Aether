@@ -16,9 +16,10 @@ struct TWSConfig {
     std::string host = "127.0.0.1";
     int port = 7497;              // 7497 for paper, 7496 for live
     int client_id = 1;
-    int connection_timeout_ms = 5000;
+    int connection_timeout_ms = 60000;  // 60 seconds - timeout for waiting for nextValidId after socket connection
     bool auto_reconnect = true;
-    int reconnect_delay_ms = 3000;
+    int reconnect_delay_ms = 3000;  // Deprecated: use exponential backoff instead
+    int max_reconnect_attempts = 10; // Maximum reconnection attempts (0 = unlimited)
 };
 
 // ============================================================================
@@ -123,7 +124,8 @@ inline void to_json(nlohmann::json& j, const TWSConfig& config) {
         {"client_id", config.client_id},
         {"connection_timeout_ms", config.connection_timeout_ms},
         {"auto_reconnect", config.auto_reconnect},
-        {"reconnect_delay_ms", config.reconnect_delay_ms}
+        {"reconnect_delay_ms", config.reconnect_delay_ms},
+        {"max_reconnect_attempts", config.max_reconnect_attempts}
     };
 }
 
@@ -137,6 +139,8 @@ inline void from_json(const nlohmann::json& j, TWSConfig& config) {
         j.at("auto_reconnect").get_to(config.auto_reconnect);
     if (j.contains("reconnect_delay_ms"))
         j.at("reconnect_delay_ms").get_to(config.reconnect_delay_ms);
+    if (j.contains("max_reconnect_attempts"))
+        j.at("max_reconnect_attempts").get_to(config.max_reconnect_attempts);
 }
 
 // Strategy Params

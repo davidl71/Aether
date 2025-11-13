@@ -4,6 +4,7 @@
 #include <spdlog/fmt/bundled/core.h>
 #include <algorithm>
 #include <map>
+#include <set>
 
 // NOTE FOR AUTOMATION AGENTS:
 // The order manager coordinates interaction with IB's TWS API. It validates
@@ -33,6 +34,17 @@ class OrderManager::Impl {
 public:
     Impl(tws::TWSClient* client, bool dry_run)
         : client_(client), dry_run_(dry_run), max_order_size_(100) {
+        // Initialize stats
+        stats_ = OrderStats{};
+        stats_.total_orders_placed = 0;
+        stats_.total_orders_filled = 0;
+        stats_.total_orders_cancelled = 0;
+        stats_.total_orders_rejected = 0;
+        stats_.executed_trades = 0;
+        stats_.total_volume_traded = 0.0;
+        stats_.average_fill_time_ms = 0.0;
+        stats_.fill_rate = 0.0;
+        stats_.efficiency_ratio = 0.0;
     }
 
     // Raw pointer references to avoid ownership cycles; lifetime managed by caller
@@ -41,6 +53,26 @@ public:
     int max_order_size_;
     OrderStats stats_;
     std::map<std::string, MultiLegOrder> multi_leg_orders_;
+
+    // Helper to update efficiency ratio and check for warnings
+    void update_efficiency_ratio() {
+        if (stats_.total_orders_placed > 0) {
+            stats_.efficiency_ratio = static_cast<double>(stats_.executed_trades) /
+                                      static_cast<double>(stats_.total_orders_placed);
+        } else {
+            stats_.efficiency_ratio = 0.0;
+        }
+
+        // Warn if efficiency ratio is low and we have enough orders
+        if (stats_.total_orders_placed > 20 && stats_.efficiency_ratio < 0.05) {
+            double efficiency_percent = stats_.efficiency_ratio * 100.0;
+            spdlog::warn("⚠️  Low order efficiency ratio: {:.2f}% ({} executed / {} placed)",
+                        efficiency_percent,
+                        stats_.executed_trades,
+                        stats_.total_orders_placed);
+            spdlog::warn("   Consider reviewing order parameters, prices, or market conditions");
+        }
+    }
 
     // Optional callbacks invoked by the full implementation when fills/status change
     OrderUpdateCallback order_update_callback_;
@@ -150,10 +182,59 @@ ExecutionResult OrderManager::place_box_spread(
         spdlog::info("[DRY RUN] Would place box spread (4 legs)");
         result.success = true;
         result.order_ids = {1001, 1002, 1003, 1004};
+        pimpl_->stats_.total_orders_placed += 4;
         return result;
     }
 
-    // Place all 4 legs rapidly
+    // Try combo order first (atomic execution) if contract IDs are available
+    // For now, we'll use individual orders as fallback since contract IDs require reqContractDetails
+    // TODO: Add contract details lookup to get conIds for combo orders
+    bool use_combo_order = false;  // Set to true when contract IDs are available
+
+    if (use_combo_order) {
+        // Prepare combo order data
+        std::vector<types::OptionContract> contracts = {
+            spread.long_call,
+            spread.short_call,
+            spread.long_put,
+            spread.short_put
+        };
+        std::vector<types::OrderAction> actions = {
+            types::OrderAction::Buy,
+            types::OrderAction::Sell,
+            types::OrderAction::Buy,
+            types::OrderAction::Sell
+        };
+        std::vector<int> quantities = {1, 1, 1, 1};
+        std::vector<double> limit_prices = {
+            spread.long_call_price,
+            spread.short_call_price,
+            spread.long_put_price,
+            spread.short_put_price
+        };
+
+        // TODO: Get contract IDs (conId) from reqContractDetails
+        // For now, use placeholder - combo order will fail without real IDs
+        std::vector<long> contract_ids = {0, 0, 0, 0};  // Placeholder
+
+        int combo_order_id = pimpl_->client_->place_combo_order(
+            contracts, actions, quantities, contract_ids, limit_prices
+        );
+
+        if (combo_order_id > 0) {
+            spdlog::info("✓ Box spread placed as combo order #{} (atomic execution)", combo_order_id);
+            result.success = true;
+            result.order_ids = {combo_order_id};
+            result.total_cost = spread.net_debit * 100.0;
+            pimpl_->stats_.total_orders_placed += 1;  // Single combo order counts as 1
+            pimpl_->update_efficiency_ratio();
+            return result;
+        } else {
+            spdlog::warn("Combo order failed, falling back to individual orders");
+        }
+    }
+
+    // Fallback: Place all 4 legs as individual orders (with rollback on failure)
     std::vector<int> order_ids;
     std::vector<int> successful_order_ids;
 
@@ -240,6 +321,7 @@ ExecutionResult OrderManager::place_box_spread(
     result.total_cost = spread.net_debit * 100.0;
 
     pimpl_->stats_.total_orders_placed += 4;
+    pimpl_->update_efficiency_ratio();
 
     // Store multi-leg order for tracking
     if (!strategy_id.empty()) {
@@ -295,11 +377,37 @@ std::optional<MultiLegOrder> OrderManager::get_multi_leg_order(
 }
 
 void OrderManager::update() {
-    // NOTE: Full implementation would:
-    // 1. Poll order statuses from TWS
-    // 2. Update internal order tracking
-    // 3. Trigger callbacks on status changes
-    // 4. Update statistics
+    // Check all active orders for status changes
+    auto active_orders = get_active_orders();
+    for (const auto& order : active_orders) {
+        // Track fills
+        if (order.status == types::OrderStatus::Filled) {
+            track_order_fill(order.order_id);
+        }
+    }
+}
+
+void OrderManager::track_order_fill(int order_id) {
+    // Check if we've already tracked this fill
+    static std::set<int> tracked_fills;
+
+    if (tracked_fills.count(order_id) > 0) {
+        return;  // Already tracked
+    }
+
+    auto order_opt = pimpl_->client_->get_order(order_id);
+    if (order_opt.has_value() && order_opt->status == types::OrderStatus::Filled) {
+        pimpl_->stats_.total_orders_filled++;
+        pimpl_->stats_.executed_trades++;
+        tracked_fills.insert(order_id);
+        pimpl_->update_efficiency_ratio();
+
+        double efficiency_percent = pimpl_->stats_.efficiency_ratio * 100.0;
+        spdlog::debug("Tracked order fill: #{} (executed_trades: {}, efficiency: {:.2f}%)",
+                     order_id,
+                     pimpl_->stats_.executed_trades,
+                     efficiency_percent);
+    }
 }
 
 std::vector<types::Order> OrderManager::get_active_orders() const {
@@ -431,6 +539,8 @@ bool OrderManager::exceeds_limits(int quantity) const {
 }
 
 OrderManager::OrderStats OrderManager::get_statistics() const {
+    // Update efficiency ratio before returning
+    pimpl_->update_efficiency_ratio();
     return pimpl_->stats_;
 }
 

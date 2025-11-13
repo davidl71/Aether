@@ -15,11 +15,11 @@ echo "  TWS API Extraction"
 echo "════════════════════════════════════════════════════════════"
 echo ""
 
-# Find TWS API zip file
+# Find TWS API zip file (recursively)
 files=()
 while IFS= read -r -d '' file; do
     files+=("${file}")
-done < <(find "${DOWNLOADS}" -maxdepth 1 -name "twsapi*.zip" -print0 2>/dev/null)
+done < <(find "${DOWNLOADS}" -name "twsapi*.zip" -print0 2>/dev/null)
 
 if [ ${#files[@]} -eq 0 ]; then
     echo "❌ No TWS API zip files found"

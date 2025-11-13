@@ -8,16 +8,16 @@ echo "  TWS API Download Checker"
 echo "════════════════════════════════════════════════════════════"
 echo ""
 
-# Check Downloads folder for TWS API
+# Check Downloads folder for TWS API (recursively)
 DOWNLOADS="${HOME}/Downloads"
-echo "Checking ${DOWNLOADS} for TWS API..."
+echo "Checking ${DOWNLOADS} (recursively) for TWS API..."
 echo ""
 
-# Find TWS API zip files
+# Find TWS API zip files recursively
 files=()
 while IFS= read -r -d '' file; do
     files+=("$file")
-done < <(find "${DOWNLOADS}" -maxdepth 1 -name "twsapi*.zip" -print0 2>/dev/null)
+done < <(find "${DOWNLOADS}" -name "twsapi*.zip" -print0 2>/dev/null)
 
 if [ ${#files[@]} -eq 0 ]; then
     echo "❌ No TWS API zip files found in Downloads folder"

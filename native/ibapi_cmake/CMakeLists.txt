@@ -10,8 +10,16 @@ cmake_path(APPEND IBAPI_CLIENT_DIR "native" "third_party" "tws-api" "IBJts" "sou
 set(IBAPI_PROTO_DIR "${PROJECT_ROOT}")
 cmake_path(APPEND IBAPI_PROTO_DIR "native" "third_party" "tws-api" "IBJts" "source" "cppclient" "client")
 
-set(PROTOBUF_SRC_DIR "/usr/local/include")
-set(PROTOBUF_BUILD_DIR "/usr/local/lib")
+# Platform-specific Protocol Buffers paths
+if(WIN32)
+    # Windows: typically installed via vcpkg or custom path
+    set(PROTOBUF_SRC_DIR "${Protobuf_ROOT}/include" CACHE PATH "Protocol Buffers include directory")
+    set(PROTOBUF_BUILD_DIR "${Protobuf_ROOT}/lib" CACHE PATH "Protocol Buffers library directory")
+else()
+    # macOS/Linux: typically in /usr/local
+    set(PROTOBUF_SRC_DIR "/usr/local/include")
+    set(PROTOBUF_BUILD_DIR "/usr/local/lib")
+endif()
 
 set(INTEL_BID_LIB "${PROJECT_ROOT}")
 cmake_path(APPEND INTEL_BID_LIB "native" "third_party" "IntelRDFPMathLib20U2" "LIBRARY" "libbid.a")
@@ -36,18 +44,53 @@ target_compile_options(twsapi PRIVATE
     -Wno-deprecated-declarations
 )
 
-target_link_libraries(twsapi
-  PUBLIC
-    "${PROTOBUF_BUILD_DIR}/libprotobuf.dylib"
-    "${INTEL_BID_LIB}"
-    "-lz"
-    "-lpthread"
-)
+# Platform-specific linking
+if(WIN32)
+    # Windows: link against Winsock 2 and use .lib/.dll
+    target_link_libraries(twsapi
+      PUBLIC
+        "${PROTOBUF_BUILD_DIR}/libprotobuf.lib"
+        "${INTEL_BID_LIB}"
+        "ws2_32"
+    )
+elseif(APPLE)
+    # macOS: use .dylib and pthread
+    target_link_libraries(twsapi
+      PUBLIC
+        "${PROTOBUF_BUILD_DIR}/libprotobuf.dylib"
+        "${INTEL_BID_LIB}"
+        "-lz"
+        "-lpthread"
+    )
+else()
+    # Linux: use .so and pthread
+    target_link_libraries(twsapi
+      PUBLIC
+        "${PROTOBUF_BUILD_DIR}/libprotobuf.so"
+        "${INTEL_BID_LIB}"
+        "-lz"
+        "-lpthread"
+    )
+endif()
 
 # Link Abseil libraries if available (required by modern protobuf)
-file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.dylib")
+if(WIN32)
+    # Windows: Abseil typically in vcpkg or custom path
+    if(Protobuf_ROOT)
+        file(GLOB ABSEIL_LIBS "${Protobuf_ROOT}/lib/absl*.lib")
+    else()
+        file(GLOB ABSEIL_LIBS "C:/vcpkg/installed/x64-windows/lib/absl*.lib")
+    endif()
+else()
+    # macOS/Linux: typically in /usr/local/lib
+    if(APPLE)
+        file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.dylib")
+    else()
+        file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.so")
+    endif()
+endif()
 if(ABSEIL_LIBS)
-  target_link_libraries(twsapi PUBLIC ${ABSEIL_LIBS})
+    target_link_libraries(twsapi PUBLIC ${ABSEIL_LIBS})
 endif()
 
 set_target_properties(twsapi PROPERTIES

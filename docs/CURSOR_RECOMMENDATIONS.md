@@ -107,7 +107,7 @@ Key settings in `.vscode/settings.json`:
 ## Performance Tips
 
 1. **Use CMake presets**: Faster configuration
-2. **Enable ccache**: 10-100x faster rebuilds (see `build_fast.sh`)
+2. **Enable ccache**: 10-100x faster rebuilds (see `scripts/build_fast.sh`)
 3. **Exclude build directories**: Reduces file indexing overhead
 4. **Use Ninja generator**: Faster than Make
 
@@ -130,6 +130,8 @@ Key settings in `.vscode/settings.json`:
 
 ## See Also
 
+- [CURSOR_AI_TUTORIAL.md](CURSOR_AI_TUTORIAL.md) - Cursor AI tutorial and best practices
 - [CURSOR_SETUP.md](CURSOR_SETUP.md) - Complete Cursor setup guide
+- [CURSOR_DOCS_USAGE.md](CURSOR_DOCS_USAGE.md) - Using @docs in Cursor
 - [MCP_SERVERS.md](MCP_SERVERS.md) - MCP server configuration details
 - [.cursorrules](../.cursorrules) - AI assistant guidelines

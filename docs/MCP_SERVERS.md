@@ -61,6 +61,36 @@ This document describes the Model Context Protocol (MCP) servers configured for 
 - Can help with commit messages
 - Understands branch structure and diffs
 
+### 4. NotebookLM Server
+**Purpose**: Zero-hallucination knowledge base for summarizing YouTube videos, documentation, and links
+
+**Configuration**: `.cursor/mcp.json`
+```json
+{
+  "notebooklm": {
+    "command": "npx",
+    "args": ["-y", "notebooklm-mcp@latest"]
+  }
+}
+```
+
+**Benefits**:
+- Summarize YouTube videos and convert them to markdown documentation
+- Process documentation links and extract key information
+- Zero-hallucination answers based on your uploaded sources
+- Pre-processed by Gemini 2.5 for intelligent synthesis
+- Citation-backed answers with source references
+- Natural language Q&A that understands context across multiple documents
+
+**Usage**: The AI assistant can use NotebookLM to research topics, summarize videos, and create documentation. See [NotebookLM Usage Guide](NOTEBOOKLM_USAGE.md) for detailed instructions.
+
+**Key Features**:
+- Upload PDFs, Google Docs, markdown files, websites, GitHub repos, and YouTube videos
+- Ask questions and get synthesized answers from your sources
+- Save notebooks in a library with tags for easy retrieval
+- Autonomous research with follow-up questions
+- Browser automation for seamless integration
+
 ## Setup Instructions
 
 ### Prerequisites
@@ -157,10 +187,13 @@ If you add database support:
 - **Semgrep**: Scans code but doesn't send data externally (runs locally)
 - **Filesystem**: Only has access to `${workspaceFolder}` directory
 - **Git**: Only has access to the configured repository
+- **NotebookLM**: Uses browser automation with local Chrome profile. Credentials never leave your machine. Consider using a dedicated Google account for automation.
 - **Never commit**: API keys, tokens, or credentials in MCP configuration
 
 ## See Also
 
 - [Cursor Setup Guide](CURSOR_SETUP.md) - General Cursor IDE configuration
+- [NotebookLM Usage Guide](NOTEBOOKLM_USAGE.md) - How to use NotebookLM for summarizing videos and documentation
 - [.cursorrules](../.cursorrules) - AI assistant guidelines mentioning Semgrep
 - [MCP Documentation](https://modelcontextprotocol.io/) - Official MCP documentation
+- [NotebookLM MCP Repository](https://github.com/PleasePrompto/notebooklm-mcp) - Source code and detailed documentation

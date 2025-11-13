@@ -185,7 +185,9 @@ Add debug configurations to `.vscode/launch.json`:
 
 ## See Also
 
+- [CURSOR_AI_TUTORIAL.md](CURSOR_AI_TUTORIAL.md) - Cursor AI tutorial and best practices
+- [CURSOR_RECOMMENDATIONS.md](CURSOR_RECOMMENDATIONS.md) - Cursor optimization recommendations
+- [CURSOR_DOCS_USAGE.md](CURSOR_DOCS_USAGE.md) - Using @docs in Cursor
 - [README.md](../README.md) - Main project documentation
 - [WORKTREE_SETUP.md](WORKTREE_SETUP.md) - Worktree setup guide
 - [QUICK_START.md](QUICK_START.md) - Quick start guide
-

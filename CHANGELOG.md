@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed - TWS API Version Update
+- Updated TWS API from version 10.33.01 to 10.40.01
+- **Key improvements in 10.40.01** (from [release notes](https://ibkrguides.com/releasenotes/prod-2025.htm)):
+  - ✅ **Full Protocol Buffers Support**: All requests/responses now support protocol buffers (previously only specific endpoints)
+  - ✅ **Order Recovery**: New setting "Maintain and resubmit orders when connection is restored" - automatically maintains/resubmits orders after network disconnect
+  - ✅ **Enhanced Error Handling**: Better errors and exceptions handling (10.38+)
+- **Incremental Protocol Buffers Support** (10.37-10.39):
+  - Historical data, account data, positions (10.39)
+  - Completed orders, contract data, market data, market depth (10.38)
+  - placeOrder/cancelOrder/reqGlobalCancel, error/openOrder/openOrdersEnd/orderStatus (10.37)
+- Default download URL updated to: `https://interactivebrokers.github.io/downloads/twsapi_macunix.1040.01.zip`
+
 ## [1.0.1] - 2025-01-27
 
 ### Added - Box Spread Core Improvements

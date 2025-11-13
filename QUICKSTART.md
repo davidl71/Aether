@@ -42,7 +42,7 @@ cd ib_box_spread_full_universal
 ./scripts/build_universal.sh
 
 # Or use fast build with ccache
-./build_fast.sh
+./scripts/build_fast.sh
 
 # Binary will be at: build/bin/ib_box_spread
 ```

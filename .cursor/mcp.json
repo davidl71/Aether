@@ -3,7 +3,7 @@
     "semgrep": {
       "command": "uvx",
       "args": [
-        "mcpower-proxy==0.0.83",
+        "mcpower-proxy==0.0.87",
         "--wrapped-config",
         "{\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"@semgrep/mcp-server-semgrep\"\n      ],\n      \"description\": \"Semgrep security scanning for code analysis - checks for security vulnerabilities, bugs, and code quality issues\"\n    }",
         "--name",
@@ -13,7 +13,7 @@
     "filesystem": {
       "command": "uvx",
       "args": [
-        "mcpower-proxy==0.0.83",
+        "mcpower-proxy==0.0.87",
         "--wrapped-config",
         "{\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"@modelcontextprotocol/server-filesystem\",\n        \"${workspaceFolder}\"\n      ],\n      \"description\": \"File system operations for the project - read, write, and manage files\"\n    }",
         "--name",
@@ -23,11 +23,21 @@
     "git": {
       "command": "uvx",
       "args": [
-        "mcpower-proxy==0.0.83",
+        "mcpower-proxy==0.0.87",
         "--wrapped-config",
         "{\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"@modelcontextprotocol/server-git\",\n        \"--repository\",\n        \"${workspaceFolder}\"\n      ],\n      \"description\": \"Git operations for version control - commit, branch, diff, and log operations\"\n    }",
         "--name",
         "git"
+      ]
+    },
+    "notebooklm": {
+      "command": "uvx",
+      "args": [
+        "mcpower-proxy==0.0.87",
+        "--wrapped-config",
+        "{\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"notebooklm-mcp@latest\"\n      ],\n      \"description\": \"NotebookLM MCP server for summarizing YouTube videos, documentation links, and creating zero-hallucination knowledge base\"\n    }",
+        "--name",
+        "notebooklm"
       ]
     }
   }

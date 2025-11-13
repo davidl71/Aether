@@ -1,5 +1,6 @@
 // tws_client.cpp - TWS API Client implementation with full EWrapper integration
 #include "tws_client.h"
+#include "rate_limiter.h"
 #include <spdlog/spdlog.h>
 
 // TWS API headers
@@ -139,19 +140,44 @@ std::vector<int> get_port_candidates(int configured_port) {
 }
 
 const std::unordered_map<int, std::string> kIbErrorGuidance = {
-    {1100, "IB lost connectivity. Check TWS/IB Gateway and internet; re-authenticate if prompted."},
+    // Connection errors (500-599)
+    {502, "Connection rejected. Enable 'ActiveX and Socket Clients' in TWS Settings > API > Settings. Verify IP is trusted (127.0.0.1) and port is correct."},
+
+    // System messages (1100-1999)
+    {1100, "Connection lost. Check TWS/IB Gateway and internet connection. Auto-reconnect will be attempted if enabled."},
     {1101, "Market data connection restored. Confirm subscriptions are active."},
     {1102, "Order routing connection restored."},
+
+    // Contract/Order errors (100-299)
+    {162, "Order rejected - Invalid order ticket. Check order parameters, contract ID, and trading permissions."},
     {200, "Invalid contract definition. Verify symbol, expiry, right, strike, and exchange values."},
     {201, "Order rejected due to contract error. Confirm contract fields before resubmitting."},
     {202, "Order rejected by IB. Check order parameters, size limits, and account permissions."},
+    {203, "Order rejected - Order cannot be executed. Check market hours, order type, and account permissions."},
+    {204, "Order rejected - Order size exceeds position limit. Reduce order size or check account limits."},
+    {205, "Order rejected - Order price is outside acceptable range. Adjust limit price."},
+
+    // Validation errors (300-399)
     {321, "Server validation failed. Review price increments, exchange routing, and TIF."},
+    {322, "Order rejected - Duplicate order ID. Use unique order IDs for each order."},
+    {323, "Order rejected - Order cannot be cancelled. Order may already be filled or cancelled."},
+
+    // Market data errors (350-399)
     {354, "No market data permissions. Ensure your IB account has the required data subscriptions."},
+    {355, "Market data request failed. Check contract details and market data subscriptions."},
+
+    // Market data farm messages (2100-2199)
     {2104, "Market data farm connection restored."},
     {2106, "Market data farm is connecting. Expect delayed quotes until established."},
     {2107, "Market data farm connection failed. Check IB network status dashboard."},
     {2108, "Market data farm disconnected. Quotes will pause until reconnection."},
     {2109, "Order routing to IB server is OK."},
+
+    // Additional common errors
+    {399, "Order rejected - Order would exceed maximum position size. Check account limits."},
+    {400, "Order rejected - Order would create a position that violates account restrictions."},
+    {401, "Order rejected - Order type not allowed for this contract. Check order type compatibility."},
+    {402, "Order rejected - Order would exceed maximum order value. Reduce order size or price."},
 };
 
 const std::pair<const char*, const char*> kErrorPhraseGuidance[] = {
@@ -190,9 +216,14 @@ public:
         , next_request_id_(1000)
         , state_(ConnectionState::Disconnected)
         , reconnect_attempts_(0)
-        , last_heartbeat_(std::chrono::steady_clock::now()) {
+        , last_heartbeat_(std::chrono::steady_clock::now())
+        , rate_limiter_(RateLimiterConfig{}) {
         // Enable async connection mode for non-blocking connections
         client_.asyncEConnect(true);
+
+        // Initialize callback tracking
+        connection_callbacks_received_.connectAck = false;
+        connection_callbacks_received_.managedAccounts = false;
     }
 
     ~Impl() {
@@ -382,6 +413,10 @@ public:
             last_error_code_ = 0;
             last_error_message_.clear();
 
+            // Reset callback tracking for this connection attempt
+            connection_callbacks_received_.connectAck = false;
+            connection_callbacks_received_.managedAccounts = false;
+
         bool success = client_.eConnect(
             config_.host.c_str(),
                 port,
@@ -534,39 +569,53 @@ public:
     // ========================================================================
 
     void connectAck() override {
-        spdlog::info("Connection acknowledged by TWS (connectAck callback received)");
-        spdlog::info("According to IB API Quick Reference, this means:");
-        spdlog::info("  - Socket connection established");
-        spdlog::info("  - Server version received");
-        spdlog::info("  - Waiting for managedAccounts and nextValidId...");
+        try {
+            spdlog::info("✓ connectAck received - Socket connection established, server version received");
+            spdlog::info("Connection sequence: connectAck → managedAccounts → nextValidId");
+            spdlog::info("Status: Waiting for managedAccounts and nextValidId...");
 
-        // In async mode, connectAck is called immediately after socket connection
-        // We still need to wait for nextValidId to confirm full connection
+            // Track that we received connectAck (for diagnostics)
+            connection_callbacks_received_.connectAck = true;
+            connection_callbacks_received_.connectAck_time = std::chrono::steady_clock::now();
 
-        // Reset reconnection attempts on successful connection
-        reconnect_attempts_ = 0;
-        last_message_time_ = std::chrono::steady_clock::now();
+            // In async mode, connectAck is called immediately after socket connection
+            // We still need to wait for nextValidId to confirm full connection
 
-        // Note: Don't start health monitoring yet - wait for nextValidId
-        // Request next valid order ID (this will trigger nextValidId callback)
-        // According to IB API Quick Reference, reqIds(-1) requests the next valid order ID
-        client_.reqIds(-1);
-        spdlog::debug("Requested next valid order ID, waiting for nextValidId callback...");
+            // Reset reconnection attempts on successful connection
+            reconnect_attempts_ = 0;
+            last_message_time_ = std::chrono::steady_clock::now();
+
+            // Note: Don't start health monitoring yet - wait for nextValidId
+            // Request next valid order ID (this will trigger nextValidId callback)
+            // According to IB API Quick Reference, reqIds(-1) requests the next valid order ID
+            client_.reqIds(-1);
+            spdlog::debug("Requested next valid order ID via reqIds(-1), waiting for nextValidId callback...");
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in connectAck: {}", e.what());
+        } catch (...) {
+            spdlog::error("Unknown exception in connectAck");
+        }
     }
 
     void connectionClosed() override {
-        spdlog::warn("Connection closed by TWS");
-        connected_ = false;
-        state_ = ConnectionState::Disconnected;
+        try {
+            spdlog::warn("Connection closed by TWS");
+            connected_ = false;
+            state_ = ConnectionState::Disconnected;
 
-        // Call error callback
-        if (error_callback_) {
-            error_callback_(1100, "Connection closed by TWS");
-        }
+            // Call error callback
+            if (error_callback_) {
+                error_callback_(1100, "Connection closed by TWS");
+            }
 
-        // Auto-reconnect if enabled with exponential backoff
-        if (config_.auto_reconnect) {
-            attempt_reconnect_with_backoff();
+            // Auto-reconnect if enabled with exponential backoff
+            if (config_.auto_reconnect) {
+                attempt_reconnect_with_backoff();
+            }
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in connectionClosed: {}", e.what());
+        } catch (...) {
+            spdlog::error("Unknown exception in connectionClosed");
         }
     }
 
@@ -574,34 +623,92 @@ public:
     // This is an early indicator of successful connection (happens before nextValidId)
     // According to IB API Quick Reference, this is called after connectAck
     void managedAccounts(const std::string& accountsList) override {
-        spdlog::info("Managed accounts received: {}", accountsList);
-        spdlog::info("This indicates connection is progressing (received after connectAck)");
-        // Parse account list if needed
-        if (!accountsList.empty()) {
-            spdlog::debug("Account list: {}", accountsList);
-            // Store account info for later use
-            // Note: This happens before nextValidId, so connection is progressing
+        try {
+            spdlog::info("✓ managedAccounts received: {} - Connection progressing", accountsList);
+
+            // Track that we received managedAccounts (for diagnostics)
+            connection_callbacks_received_.managedAccounts = true;
+            connection_callbacks_received_.managedAccounts_time = std::chrono::steady_clock::now();
+
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                connection_callbacks_received_.managedAccounts_time -
+                connection_callbacks_received_.connectAck_time).count();
+
+            // Show progress indicator
+            spdlog::info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            spdlog::info("Connection Progress: [████████░░░░░░░░░░] 50%");
+            spdlog::info("  ✓ Step 1/3: connectAck received (socket connected)");
+            spdlog::info("  ✓ Step 2/3: managedAccounts received ({}ms after connectAck)", elapsed);
+            spdlog::info("  ⏳ Step 3/3: Waiting for nextValidId... (this may take a few seconds)");
+            spdlog::info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+            // Parse account list if needed
+            if (!accountsList.empty()) {
+                spdlog::info("Account(s) available: {}", accountsList);
+                // Store account info for later use
+                // Note: This happens before nextValidId, so connection is progressing
+            } else {
+                spdlog::warn("⚠️  managedAccounts received but account list is empty");
+            }
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in managedAccounts: {} (accountsList: {})", e.what(), accountsList);
+        } catch (...) {
+            spdlog::error("Unknown exception in managedAccounts");
         }
     }
 
     void nextValidId(OrderId orderId) override {
-        spdlog::info("Received nextValidId: {} - Connection fully established", orderId);
-        next_order_id_ = orderId;
+        try {
+            // Calculate total connection time
+            auto total_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - connection_callbacks_received_.connectAck_time).count();
 
-        std::lock_guard<std::mutex> lock(connection_mutex_);
-        connected_ = true;
+            spdlog::info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            spdlog::info("Connection Progress: [████████████████████████████████████████████████] 100%");
+            spdlog::info("  ✓ Step 1/3: connectAck received");
+            spdlog::info("  ✓ Step 2/3: managedAccounts received");
+            spdlog::info("  ✓ Step 3/3: nextValidId received: {} (connection complete!)", orderId);
+            spdlog::info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            spdlog::info("✓ Connection fully established in {}ms", total_elapsed);
 
-        // Start health monitoring now that we're fully connected
-        start_health_monitoring();
+            next_order_id_ = orderId;
 
-        // According to EWrapper best practices, request open orders to sync state
-        // This is important for order recovery after reconnection
-        // TWS will call openOrder() for each open order, then openOrderEnd()
-        spdlog::debug("Requesting open orders to sync state...");
-        client_.reqAllOpenOrders();
+            std::lock_guard<std::mutex> lock(connection_mutex_);
+            connected_ = true;
 
-        connection_cv_.notify_all();
-        spdlog::info("✓ Connection fully established and ready");
+            // Check if this is a reconnection
+            bool is_reconnection = (reconnect_attempts_.load() > 0);
+
+            if (is_reconnection) {
+                spdlog::info("Reconnection detected ({} attempts). Synchronizing state with TWS...",
+                           reconnect_attempts_.load());
+            }
+
+            // Start health monitoring now that we're fully connected
+            start_health_monitoring();
+
+            // According to EWrapper best practices, request open orders to sync state
+            // This is important for order recovery after reconnection
+            // TWS will call openOrder() for each open order, then openOrderEnd()
+            spdlog::debug("Requesting open orders to sync state...");
+            client_.reqAllOpenOrders();
+
+            // Sync positions and account after reconnection
+            if (is_reconnection) {
+                spdlog::debug("Synchronizing positions and account data after reconnection...");
+                client_.reqPositions();
+                client_.reqAccountUpdates(true, "");
+                reconnect_attempts_ = 0; // Reset after successful sync
+                spdlog::info("State synchronization complete after reconnection");
+            }
+
+            connection_cv_.notify_all();
+            spdlog::info("✓ Connection fully established and ready");
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in nextValidId: {} (orderId: {})", e.what(), orderId);
+        } catch (...) {
+            spdlog::error("Unknown exception in nextValidId (orderId: {})", orderId);
+        }
     }
 
     // ========================================================================
@@ -809,28 +916,48 @@ public:
     }
 
     void openOrderEnd() override {
-        spdlog::debug("Open orders sync complete");
-        // All open orders have been sent via openOrder() callbacks
-        // This is useful for order recovery after reconnection
+        try {
+            spdlog::debug("Open orders sync complete");
+            // All open orders have been sent via openOrder() callbacks
+            // This is useful for order recovery after reconnection
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in openOrderEnd: {}", e.what());
+        } catch (...) {
+            spdlog::error("Unknown exception in openOrderEnd");
+        }
     }
 
     void execDetails(int reqId, const Contract& contract,
                     const Execution& execution) override {
-        spdlog::info("Execution: order={}, shares={}, price={}, time={}",
-                    execution.orderId, execution.shares, execution.price, execution.time);
+        try {
+            spdlog::info("Execution: order={}, shares={}, price={}, time={}",
+                        execution.orderId, execution.shares, execution.price, execution.time);
 
-        std::lock_guard<std::mutex> lock(order_mutex_);
+            std::lock_guard<std::mutex> lock(order_mutex_);
 
-        if (orders_.count(execution.orderId)) {
-            auto& order = orders_[execution.orderId];
-            order.filled_quantity += static_cast<int>(execution.shares);
-            order.avg_fill_price = execution.price;
-            order.last_update = std::chrono::system_clock::now();
+            if (orders_.count(execution.orderId)) {
+                auto& order = orders_[execution.orderId];
+                order.filled_quantity += static_cast<int>(execution.shares);
+                order.avg_fill_price = execution.price;
+                order.last_update = std::chrono::system_clock::now();
+            }
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in execDetails: {} (reqId: {}, orderId: {})",
+                         e.what(), reqId, execution.orderId);
+        } catch (...) {
+            spdlog::error("Unknown exception in execDetails (reqId: {}, orderId: {})",
+                         reqId, execution.orderId);
         }
     }
 
     void execDetailsEnd(int reqId) override {
-        spdlog::debug("Execution details end for reqId={}", reqId);
+        try {
+            spdlog::debug("Execution details end for reqId={}", reqId);
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in execDetailsEnd: {} (reqId: {})", e.what(), reqId);
+        } catch (...) {
+            spdlog::error("Unknown exception in execDetailsEnd (reqId: {})", reqId);
+        }
     }
 
     // ========================================================================
@@ -839,77 +966,99 @@ public:
 
     void position(const std::string& account, const Contract& contract,
                  Decimal position, double avgCost) override {
-        spdlog::debug("Position: {} {} @ {} (account={})",
-                     position, contract.symbol, avgCost, account);
+        try {
+            spdlog::debug("Position: {} {} @ {} (account={})",
+                         position, contract.symbol, avgCost, account);
 
-        std::lock_guard<std::mutex> lock(position_mutex_);
+            std::lock_guard<std::mutex> lock(position_mutex_);
 
-        types::Position pos;
-        pos.contract = convert_from_tws_contract(contract);
-        pos.quantity = static_cast<int>(position);
-        pos.avg_price = avgCost;
-        pos.current_price = avgCost;  // Will be updated by market data
+            types::Position pos;
+            pos.contract = convert_from_tws_contract(contract);
+            pos.quantity = static_cast<int>(position);
+            pos.avg_price = avgCost;
+            pos.current_price = avgCost;  // Will be updated by market data
 
-        // Update or add position
-        auto existing = std::find_if(
-            positions_.begin(),
-            positions_.end(),
-            [&pos](const types::Position& candidate) {
-                return candidate.contract.symbol == pos.contract.symbol &&
-                       candidate.contract.expiry == pos.contract.expiry &&
-                       candidate.contract.strike == pos.contract.strike &&
-                       candidate.contract.type == pos.contract.type;
+            // Update or add position
+            auto existing = std::find_if(
+                positions_.begin(),
+                positions_.end(),
+                [&pos](const types::Position& candidate) {
+                    return candidate.contract.symbol == pos.contract.symbol &&
+                           candidate.contract.expiry == pos.contract.expiry &&
+                           candidate.contract.strike == pos.contract.strike &&
+                           candidate.contract.type == pos.contract.type;
+                }
+            );
+
+            if (existing != positions_.end()) {
+                *existing = pos;
+            } else if (position != 0) {
+                positions_.push_back(pos);
             }
-        );
-
-        if (existing != positions_.end()) {
-            *existing = pos;
-        } else if (position != 0) {
-            positions_.push_back(pos);
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in position: {} (account: {}, symbol: {})",
+                         e.what(), account, contract.symbol);
+        } catch (...) {
+            spdlog::error("Unknown exception in position (account: {}, symbol: {})",
+                         account, contract.symbol);
         }
     }
 
     void positionEnd() override {
-        spdlog::debug("Position updates complete");
+        try {
+            spdlog::debug("Position updates complete");
 
-        // Fulfill promise if waiting for synchronous request
-        if (positions_request_pending_.load()) {
-            std::lock_guard<std::mutex> lock(position_mutex_);
-            if (positions_promise_) {
-                positions_promise_->set_value(positions_);
-                positions_promise_.reset();
-                positions_request_pending_ = false;
+            // Fulfill promise if waiting for synchronous request
+            if (positions_request_pending_.load()) {
+                std::lock_guard<std::mutex> lock(position_mutex_);
+                if (positions_promise_) {
+                    positions_promise_->set_value(positions_);
+                    positions_promise_.reset();
+                    positions_request_pending_ = false;
+                }
             }
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in positionEnd: {}", e.what());
+        } catch (...) {
+            spdlog::error("Unknown exception in positionEnd");
         }
     }
 
     void updateAccountValue(const std::string& key, const std::string& val,
                            const std::string& currency,
                            const std::string& accountName) override {
-        spdlog::trace("Account update: {}={} ({}, {})", key, val, currency, accountName);
-
-        std::lock_guard<std::mutex> lock(account_mutex_);
-
         try {
-            if (key == "NetLiquidation" && currency == "USD") {
-                account_info_.net_liquidation = std::stod(val);
-            } else if (key == "TotalCashBalance" && currency == "USD") {
-                account_info_.cash_balance = std::stod(val);
-            } else if (key == "BuyingPower") {
-                account_info_.buying_power = std::stod(val);
-            } else if (key == "GrossPositionValue" && currency == "USD") {
-                account_info_.gross_position_value = std::stod(val);
-            } else if (key == "UnrealizedPnL" && currency == "USD") {
-                account_info_.unrealized_pnl = std::stod(val);
-            } else if (key == "RealizedPnL" && currency == "USD") {
-                account_info_.realized_pnl = std::stod(val);
-            }
-        } catch (const std::exception& e) {
-            spdlog::warn("Failed to parse account value: {}={} ({})", key, val, e.what());
-        }
+            spdlog::trace("Account update: {}={} ({}, {})", key, val, currency, accountName);
 
-        account_info_.account_id = accountName;
-        account_info_.timestamp = std::chrono::system_clock::now();
+            std::lock_guard<std::mutex> lock(account_mutex_);
+
+            try {
+                if (key == "NetLiquidation" && currency == "USD") {
+                    account_info_.net_liquidation = std::stod(val);
+                } else if (key == "TotalCashBalance" && currency == "USD") {
+                    account_info_.cash_balance = std::stod(val);
+                } else if (key == "BuyingPower") {
+                    account_info_.buying_power = std::stod(val);
+                } else if (key == "GrossPositionValue" && currency == "USD") {
+                    account_info_.gross_position_value = std::stod(val);
+                } else if (key == "UnrealizedPnL" && currency == "USD") {
+                    account_info_.unrealized_pnl = std::stod(val);
+                } else if (key == "RealizedPnL" && currency == "USD") {
+                    account_info_.realized_pnl = std::stod(val);
+                }
+            } catch (const std::exception& e) {
+                spdlog::warn("Failed to parse account value: {}={} ({})", key, val, e.what());
+            }
+
+            account_info_.account_id = accountName;
+            account_info_.timestamp = std::chrono::system_clock::now();
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in updateAccountValue: {} (key: {}, account: {})",
+                         e.what(), key, accountName);
+        } catch (...) {
+            spdlog::error("Unknown exception in updateAccountValue (key: {}, account: {})",
+                         key, accountName);
+        }
     }
 
     void updateAccountTime(const std::string& timeStamp) override {
@@ -934,14 +1083,15 @@ public:
                         double marketPrice, double marketValue,
                         double averageCost, double unrealizedPNL,
                         double realizedPNL, const std::string& accountName) override {
-        spdlog::debug("Portfolio update: {} position={}, value={}, PnL={}, avgCost={}",
-                     contract.symbol, position, marketValue, unrealizedPNL, averageCost);
+        try {
+            spdlog::debug("Portfolio update: {} position={}, value={}, PnL={}, avgCost={}",
+                         contract.symbol, position, marketValue, unrealizedPNL, averageCost);
 
-        // updatePortfolio is called for each position in the portfolio
-        // This is important for tracking current positions and P&L
-        // Per EWrapper best practices, this provides real-time position updates
+            // updatePortfolio is called for each position in the portfolio
+            // This is important for tracking current positions and P&L
+            // Per EWrapper best practices, this provides real-time position updates
 
-        std::lock_guard<std::mutex> lock(position_mutex_);
+            std::lock_guard<std::mutex> lock(position_mutex_);
 
         auto it = std::find_if(
             positions_.begin(),
@@ -954,21 +1104,28 @@ public:
             }
         );
 
-        if (it != positions_.end()) {
-            // Update existing position with latest data
-            it->current_price = marketPrice;
-            it->quantity = static_cast<int>(position);
-            it->avg_price = averageCost;
-            // Note: unrealizedPNL and realizedPNL could be stored if needed
-        } else if (position != 0) {
-            // New position - add it (might be from previous session)
-            types::Position pos;
-            pos.contract = convert_from_tws_contract(contract);
-            pos.quantity = static_cast<int>(position);
-            pos.avg_price = averageCost;
-            pos.current_price = marketPrice;
-            positions_.push_back(pos);
-            spdlog::debug("Added new position from updatePortfolio: {}", contract.symbol);
+            if (it != positions_.end()) {
+                // Update existing position with latest data
+                it->current_price = marketPrice;
+                it->quantity = static_cast<int>(position);
+                it->avg_price = averageCost;
+                // Note: unrealizedPNL and realizedPNL could be stored if needed
+            } else if (position != 0) {
+                // New position - add it (might be from previous session)
+                types::Position pos;
+                pos.contract = convert_from_tws_contract(contract);
+                pos.quantity = static_cast<int>(position);
+                pos.avg_price = averageCost;
+                pos.current_price = marketPrice;
+                positions_.push_back(pos);
+                spdlog::debug("Added new position from updatePortfolio: {}", contract.symbol);
+            }
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in updatePortfolio: {} (symbol: {}, account: {})",
+                         e.what(), contract.symbol, accountName);
+        } catch (...) {
+            spdlog::error("Unknown exception in updatePortfolio (symbol: {}, account: {})",
+                         contract.symbol, accountName);
         }
     }
 
@@ -978,82 +1135,155 @@ public:
 
     void error(int id, time_t errorTime, int errorCode, const std::string& errorString,
               const std::string& advancedOrderRejectJson) override {
-        // Store error for connection attempt checking
-        {
-            std::lock_guard<std::mutex> lock(error_mutex_);
-            last_error_code_ = errorCode;
-            last_error_message_ = errorString;
-        }
+        try {
+            // Store error for connection attempt checking
+            {
+                std::lock_guard<std::mutex> lock(error_mutex_);
+                last_error_code_ = errorCode;
+                last_error_message_ = errorString;
+            }
 
-        std::vector<std::string> guidance_notes;
+            std::vector<std::string> guidance_notes;
 
-        // Check for connection failure errors (502 and other connection errors)
-        if (errorCode == 502 || (errorCode >= 500 && errorCode < 600)) {
-            spdlog::error("TWS connection error {}: {}", errorCode, errorString);
-            connected_ = false;
-            state_ = ConnectionState::Error;
-            connection_cv_.notify_all(); // Wake up waiting connection attempt
-        }
-
-        // Check for authentication/authorization errors
-        if (errorCode == 162 || errorCode == 200) {
-            spdlog::error("TWS authentication/authorization error {}: {}", errorCode, errorString);
-            spdlog::error("This usually means:");
-            spdlog::error("  - TWS/Gateway is waiting for you to accept the connection");
-            spdlog::error("  - Check TWS/Gateway window for a connection prompt");
-            spdlog::error("  - Ensure 'Enable ActiveX and Socket Clients' is enabled in API settings");
-            connected_ = false;
-            state_ = ConnectionState::Error;
-            connection_cv_.notify_all();
-        }
-
-        if (errorCode >= 2100 && errorCode < 3000) {
-            // Informational messages
-            spdlog::info("TWS message {} (id={}): {}", errorCode, id, errorString);
-        } else if (errorCode >= 1100 && errorCode < 2000) {
-            // System messages
-            spdlog::warn("TWS system {} (id={}): {}", errorCode, id, errorString);
-
-            // Connection lost
-            if (errorCode == 1100) {
+            // Check for connection failure errors (502 and other connection errors)
+            if (errorCode == 502 || (errorCode >= 500 && errorCode < 600)) {
+                spdlog::error("TWS connection error {}: {}", errorCode, errorString);
                 connected_ = false;
                 state_ = ConnectionState::Error;
+                connection_cv_.notify_all(); // Wake up waiting connection attempt
             }
-            // Connection restored
-            else if (errorCode == 1101 || errorCode == 1102) {
-                connected_ = true;
-                state_ = ConnectionState::Connected;
+
+            // Check for authentication/authorization errors
+            if (errorCode == 162 || errorCode == 200) {
+                spdlog::error("TWS authentication/authorization error {}: {}", errorCode, errorString);
+                spdlog::error("This usually means:");
+                spdlog::error("  - TWS/Gateway is waiting for you to accept the connection");
+                spdlog::error("  - Check TWS/Gateway window for a connection prompt");
+                spdlog::error("  - Ensure 'Enable ActiveX and Socket Clients' is enabled in API settings");
+                connected_ = false;
+                state_ = ConnectionState::Error;
+                connection_cv_.notify_all();
             }
-        } else {
-            // Errors
-            spdlog::error("TWS error {} (id={}): {}", errorCode, id, errorString);
-        }
 
-        if (auto it = kIbErrorGuidance.find(errorCode); it != kIbErrorGuidance.end()) {
-            spdlog::warn("Guidance: {}", it->second);
-            guidance_notes.emplace_back(it->second);
-        }
-
-        for (const auto& phrase : kErrorPhraseGuidance) {
-            if (errorString.find(phrase.first) != std::string::npos) {
-                spdlog::warn("Guidance: {}", phrase.second);
-                guidance_notes.emplace_back(phrase.second);
+            // Enhanced logging with context and guidance
+            std::string guidance = "";
+            if (auto it = kIbErrorGuidance.find(errorCode); it != kIbErrorGuidance.end()) {
+                guidance = it->second;
             }
-        }
 
-        if (error_callback_) {
-            if (guidance_notes.empty()) {
-                error_callback_(errorCode, errorString);
-            } else {
-                std::string enriched_message = errorString + " | Guidance: ";
-                for (size_t i = 0; i < guidance_notes.size(); ++i) {
-                    if (i > 0) {
-                        enriched_message += " | ";
-                    }
-                    enriched_message += guidance_notes[i];
+            // Build context string with order/request details if available
+            std::string context = "";
+            {
+                // Check if ID matches an order ID
+                std::lock_guard<std::mutex> lock(order_mutex_);
+                if (orders_.count(id) > 0) {
+                    const auto& order = orders_[id];
+                    context = "Order #" + std::to_string(id) + ": " +
+                             types::order_action_to_string(order.action) + " " +
+                             std::to_string(order.quantity) + " " +
+                             order.contract.to_string() + " @ " +
+                             (order.limit_price > 0 ? std::to_string(order.limit_price) : "MKT");
                 }
-                error_callback_(errorCode, enriched_message);
             }
+
+            // Check if ID matches a market data request ID
+            if (context.empty()) {
+                std::lock_guard<std::mutex> lock(data_mutex_);
+                if (market_data_.count(id) > 0 || market_data_callbacks_.count(id) > 0) {
+                    context = "Market data request #" + std::to_string(id);
+                }
+            }
+
+            // Add advanced order reject JSON context if available
+            if (!advancedOrderRejectJson.empty() && advancedOrderRejectJson != "{}") {
+                if (!context.empty()) {
+                    context += " | ";
+                }
+                context += "Reject JSON: " + advancedOrderRejectJson;
+            }
+
+            // Log with appropriate level and context
+            if (errorCode >= 2100 && errorCode < 3000) {
+                // Informational messages
+                if (!context.empty()) {
+                    spdlog::info("[IB Info {}] ID: {} | {} | Context: {}", errorCode, id, errorString, context);
+                } else {
+                    spdlog::info("[IB Info {}] ID: {} | {}", errorCode, id, errorString);
+                }
+                if (!guidance.empty()) {
+                    spdlog::info("  → {}", guidance);
+                }
+            } else if (errorCode >= 1100 && errorCode < 2000) {
+                // System messages
+                if (!context.empty()) {
+                    spdlog::warn("[IB System {}] ID: {} | {} | Context: {}", errorCode, id, errorString, context);
+                } else {
+                    spdlog::warn("[IB System {}] ID: {} | {}", errorCode, id, errorString);
+                }
+                if (!guidance.empty()) {
+                    spdlog::warn("  → {}", guidance);
+                }
+
+                // Connection lost - trigger reconnection if enabled
+                if (errorCode == 1100) {
+                    connected_ = false;
+                    state_ = ConnectionState::Error;
+                    spdlog::warn("Connection lost (error 1100). Auto-reconnect: {}",
+                                config_.auto_reconnect ? "enabled" : "disabled");
+                    if (config_.auto_reconnect) {
+                        attempt_reconnect_with_backoff();
+                    }
+                }
+                // Connection restored
+                else if (errorCode == 1101 || errorCode == 1102) {
+                    connected_ = true;
+                    state_ = ConnectionState::Connected;
+                    spdlog::info("Connection restored (error {}). Resuming operations.", errorCode);
+                }
+            } else {
+                // Errors (< 1100)
+                if (!context.empty()) {
+                    spdlog::error("[IB Error {}] ID: {} | {} | Context: {}", errorCode, id, errorString, context);
+                } else {
+                    spdlog::error("[IB Error {}] ID: {} | {}", errorCode, id, errorString);
+                }
+                if (!guidance.empty()) {
+                    spdlog::error("  → {}", guidance);
+                }
+            }
+
+            // Add guidance to notes (already logged above, but keep for callback)
+            if (!guidance.empty()) {
+                guidance_notes.emplace_back(guidance);
+            }
+
+            for (const auto& phrase : kErrorPhraseGuidance) {
+                if (errorString.find(phrase.first) != std::string::npos) {
+                    spdlog::warn("Guidance: {}", phrase.second);
+                    guidance_notes.emplace_back(phrase.second);
+                }
+            }
+
+            if (error_callback_) {
+                if (guidance_notes.empty()) {
+                    error_callback_(errorCode, errorString);
+                } else {
+                    std::string enriched_message = errorString + " | Guidance: ";
+                    for (size_t i = 0; i < guidance_notes.size(); ++i) {
+                        if (i > 0) {
+                            enriched_message += " | ";
+                        }
+                        enriched_message += guidance_notes[i];
+                    }
+                    error_callback_(errorCode, enriched_message);
+                }
+            }
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in error callback: {} (errorCode: {}, id: {})",
+                         e.what(), errorCode, id);
+        } catch (...) {
+            spdlog::error("Unknown exception in error callback (errorCode: {}, id: {})",
+                         errorCode, id);
         }
     }
 
@@ -1063,7 +1293,21 @@ public:
 
     int request_market_data(const types::OptionContract& contract,
                            MarketDataCallback callback) {
+        // Check rate limits
+        if (!rate_limiter_.check_message_rate()) {
+            spdlog::error("Rate limit exceeded: Cannot request market data for {}",
+                         contract.to_string());
+            return -1;  // Invalid request ID
+        }
+
         int request_id = next_request_id_++;
+
+        // Check market data line limit
+        if (!rate_limiter_.can_start_market_data(request_id)) {
+            spdlog::error("Market data line limit exceeded: Cannot subscribe to {}",
+                         contract.to_string());
+            return -1;  // Invalid request ID
+        }
 
         // Convert to TWS Contract
         Contract tws_contract = convert_to_tws_contract(contract);
@@ -1073,6 +1317,10 @@ public:
             std::lock_guard<std::mutex> lock(data_mutex_);
             market_data_callbacks_[request_id] = callback;
         }
+
+        // Record message and start tracking
+        rate_limiter_.record_message();
+        rate_limiter_.start_market_data(request_id);
 
         // Request market data
         client_.reqMktData(
@@ -1091,7 +1339,19 @@ public:
     }
 
     void cancel_market_data(int request_id) {
+        // Check rate limits for cancel message
+        if (rate_limiter_.is_enabled() && !rate_limiter_.check_message_rate()) {
+            spdlog::warn("Rate limit exceeded: Delaying cancel_market_data for request {}", request_id);
+            // Still proceed with cancel, but log the rate limit issue
+        }
+
         client_.cancelMktData(request_id);
+
+        // End market data tracking
+        rate_limiter_.end_market_data(request_id);
+        if (rate_limiter_.is_enabled()) {
+            rate_limiter_.record_message();
+        }
 
         std::lock_guard<std::mutex> lock(data_mutex_);
         market_data_callbacks_.erase(request_id);
@@ -1125,6 +1385,24 @@ public:
 
         // Convert to TWS Contract
         Contract tws_contract = convert_to_tws_contract(contract);
+
+        // Check rate limits
+        if (!rate_limiter_.check_message_rate()) {
+            spdlog::error("Rate limit exceeded: Cannot request market data synchronously for {}",
+                         contract.to_string());
+            return std::nullopt;
+        }
+
+        // Check market data line limit
+        if (!rate_limiter_.can_start_market_data(request_id)) {
+            spdlog::error("Market data line limit exceeded: Cannot subscribe to {}",
+                         contract.to_string());
+            return std::nullopt;
+        }
+
+        // Record message and start tracking
+        rate_limiter_.record_message();
+        rate_limiter_.start_market_data(request_id);
 
         // Request market data directly (don't use request_market_data to avoid double request_id)
         client_.reqMktData(
@@ -1182,11 +1460,21 @@ public:
                    int quantity,
                    double limit_price,
                    types::TimeInForce tif) {
+        // Check rate limits
+        if (!rate_limiter_.check_message_rate()) {
+            spdlog::error("Rate limit exceeded: Cannot place order for {}",
+                         contract.to_string());
+            return -1;  // Invalid order ID
+        }
+
         int order_id = next_order_id_++;
 
         // Convert to TWS types
         Contract tws_contract = convert_to_tws_contract(contract);
         Order tws_order = create_tws_order(action, quantity, limit_price, tif);
+
+        // Record message before placing order
+        rate_limiter_.record_message();
 
         // Place order
         client_.placeOrder(order_id, tws_contract, tws_order);
@@ -1216,9 +1504,122 @@ public:
         return order_id;
     }
 
+    int place_combo_order(
+        const std::vector<types::OptionContract>& contracts,
+        const std::vector<types::OrderAction>& actions,
+        const std::vector<int>& quantities,
+        const std::vector<long>& contract_ids,
+        const std::vector<double>& limit_prices,
+        types::TimeInForce tif) {
+
+        // Validate inputs
+        if (contracts.size() != actions.size() || contracts.size() != quantities.size() ||
+            contracts.size() != contract_ids.size() || contracts.size() != limit_prices.size()) {
+            spdlog::error("Combo order: Mismatched vector sizes (contracts: {}, actions: {}, quantities: {}, contract_ids: {}, prices: {})",
+                         contracts.size(), actions.size(), quantities.size(), contract_ids.size(), limit_prices.size());
+            return -1;
+        }
+
+        if (contracts.empty()) {
+            spdlog::error("Combo order: Cannot place empty combo");
+            return -1;
+        }
+
+        // Check rate limits
+        if (!rate_limiter_.check_message_rate()) {
+            spdlog::error("Rate limit exceeded: Cannot place combo order");
+            return -1;
+        }
+
+        int order_id = next_order_id_++;
+
+        // Create BAG (combo) contract
+        Contract combo_contract;
+        combo_contract.secType = "BAG";
+        combo_contract.symbol = contracts[0].symbol;  // Use underlying symbol
+        combo_contract.currency = "USD";
+        combo_contract.exchange = "SMART";
+
+        // Create combo legs
+        combo_contract.comboLegs = std::make_shared<Contract::ComboLegList>();
+        for (size_t i = 0; i < contracts.size(); ++i) {
+            auto leg = std::make_shared<ComboLeg>();
+            leg->conId = contract_ids[i];
+            leg->ratio = quantities[i];
+            leg->action = (actions[i] == types::OrderAction::Buy) ? "BUY" : "SELL";
+            leg->exchange = contracts[i].exchange.empty() ? "SMART" : contracts[i].exchange;
+            leg->openClose = 0;  // SAME_POS - same as combo
+            leg->shortSaleSlot = 0;
+            leg->exemptCode = -1;
+
+            combo_contract.comboLegs->push_back(leg);
+        }
+
+        // Create order with combo leg prices
+        Order combo_order = create_tws_order(actions[0], 1, 0.0, tif);  // Base order
+        combo_order.orderType = "LMT";  // Limit order for combo
+        combo_order.allOrNone = true;   // All-or-nothing execution
+
+        // Set order combo legs with prices
+        combo_order.orderComboLegs = std::make_shared<Order::OrderComboLegList>();
+        for (size_t i = 0; i < limit_prices.size(); ++i) {
+            auto order_leg = std::make_shared<OrderComboLeg>();
+            order_leg->price = limit_prices[i];
+            combo_order.orderComboLegs->push_back(order_leg);
+        }
+
+        // Calculate total limit price (sum of all legs)
+        double total_limit = 0.0;
+        for (size_t i = 0; i < limit_prices.size(); ++i) {
+            if (actions[i] == types::OrderAction::Buy) {
+                total_limit += limit_prices[i] * quantities[i];
+            } else {
+                total_limit -= limit_prices[i] * quantities[i];
+            }
+        }
+        combo_order.lmtPrice = total_limit;
+
+        // Record message before placing order
+        rate_limiter_.record_message();
+
+        // Place combo order
+        client_.placeOrder(order_id, combo_contract, combo_order);
+
+        spdlog::info("Placed combo order #{}: {} legs, total limit price: {:.2f}",
+                    order_id, contracts.size(), total_limit);
+
+        // Store order (mark as combo)
+        {
+            std::lock_guard<std::mutex> lock(order_mutex_);
+            types::Order our_order;
+            our_order.order_id = order_id;
+            our_order.contract = contracts[0];  // Store first contract as representative
+            our_order.action = actions[0];
+            our_order.quantity = 1;  // Combo order quantity is 1 (legs have individual quantities)
+            our_order.limit_price = total_limit;
+            our_order.tif = tif;
+            our_order.status = types::OrderStatus::Submitted;
+            our_order.submitted_time = std::chrono::system_clock::now();
+            orders_[order_id] = our_order;
+        }
+
+        return order_id;
+    }
+
     void cancel_order(int order_id) {
+        // Check rate limits
+        if (rate_limiter_.is_enabled() && !rate_limiter_.check_message_rate()) {
+            spdlog::warn("Rate limit exceeded: Delaying cancel_order for order #{}", order_id);
+            // Still proceed with cancel, but log the rate limit issue
+        }
+
         OrderCancel orderCancel;
         client_.cancelOrder(order_id, orderCancel);
+
+        if (rate_limiter_.is_enabled()) {
+            rate_limiter_.record_message();
+        }
+
         spdlog::info("Cancelling order #{}", order_id);
 
         std::lock_guard<std::mutex> lock(order_mutex_);
@@ -1267,8 +1668,16 @@ public:
     // ========================================================================
 
     void request_positions(PositionCallback callback) {
+        // Check rate limits
+        if (!rate_limiter_.check_message_rate()) {
+            spdlog::error("Rate limit exceeded: Cannot request positions");
+            return;
+        }
+
         spdlog::debug("Requesting positions");
         position_callback_ = callback;
+
+        rate_limiter_.record_message();
         client_.reqPositions();
     }
 
@@ -1284,6 +1693,14 @@ public:
             positions_promise_ = promise;
             positions_request_pending_ = true;
         }
+
+        // Check rate limits
+        if (!rate_limiter_.check_message_rate()) {
+            spdlog::error("Rate limit exceeded: Cannot request positions synchronously");
+            return {};
+        }
+
+        rate_limiter_.record_message();
 
         // Request positions (async)
         client_.reqPositions();
@@ -1334,8 +1751,16 @@ public:
     // ========================================================================
 
     void request_account_updates(AccountCallback callback) {
+        // Check rate limits
+        if (!rate_limiter_.check_message_rate()) {
+            spdlog::error("Rate limit exceeded: Cannot request account updates");
+            return;
+        }
+
         spdlog::debug("Requesting account updates");
         account_callback_ = callback;
+
+        rate_limiter_.record_message();
         client_.reqAccountUpdates(true, "");
     }
 
@@ -1351,6 +1776,14 @@ public:
             account_promise_ = promise;
             account_request_pending_ = true;
         }
+
+        // Check rate limits
+        if (!rate_limiter_.check_message_rate()) {
+            spdlog::error("Rate limit exceeded: Cannot request account info synchronously");
+            return std::nullopt;
+        }
+
+        rate_limiter_.record_message();
 
         // Request account updates (async)
         client_.reqAccountUpdates(true, "");
@@ -1420,6 +1853,31 @@ public:
     std::chrono::system_clock::time_point get_server_time() const {
         // TODO: Request and return actual TWS server time
         return std::chrono::system_clock::now();
+    }
+
+    // ========================================================================
+    // Rate Limiting (Public Interface)
+    // ========================================================================
+
+    void enable_rate_limiting() {
+        RateLimiterConfig config;
+        config.enabled = true;
+        rate_limiter_.configure(config);
+    }
+
+    void configure_rate_limiter(const RateLimiterConfig& config) {
+        rate_limiter_.configure(config);
+    }
+
+    std::optional<RateLimiterStatus> get_rate_limiter_status() const {
+        if (!rate_limiter_.is_enabled()) {
+            return std::nullopt;
+        }
+        return rate_limiter_.get_status();
+    }
+
+    void cleanup_stale_rate_limiter_requests(std::chrono::seconds max_age) {
+        rate_limiter_.cleanup_stale_requests(max_age);
     }
 
 private:
@@ -1592,7 +2050,7 @@ private:
 
             // Check for connection errors during wait
             {
-                std::lock_guard<std::mutex> lock(error_mutex_);
+                std::lock_guard<std::mutex> error_lock(error_mutex_);
                 if (last_error_code_ == 502) {
                     spdlog::warn("Connection error 502 detected during wait: {}", last_error_message_);
                     return false;
@@ -1617,10 +2075,74 @@ private:
                 return true;
             }
 
-            // Log progress every 2 seconds
+            // Log progress every 2 seconds with diagnostic info
             if (time_since_last_log >= log_interval) {
                 auto remaining = timeout_ms - elapsed;
-                spdlog::info("Still waiting for TWS acknowledgment... ({}ms remaining, waiting for nextValidId)", remaining);
+
+                // Calculate progress percentage based on callbacks received
+                int progress_percent = 0;
+                std::string progress_bar = "";
+                if (connection_callbacks_received_.connectAck) {
+                    progress_percent += 33;
+                }
+                if (connection_callbacks_received_.managedAccounts) {
+                    progress_percent += 33;
+                }
+                // nextValidId would add the final 34%, but we're still waiting
+
+                // Create visual progress bar (50 characters wide)
+                // Use string literals for Unicode box-drawing characters (multi-byte UTF-8)
+                int filled = (progress_percent * 50) / 100;
+                std::string filled_str = std::string(filled, '#');
+                std::string empty_str = std::string(50 - filled, '-');
+                progress_bar = filled_str + empty_str;
+
+                // Include diagnostic info about which callbacks were received
+                std::string callback_status = "Callbacks received: ";
+                if (connection_callbacks_received_.connectAck) {
+                    callback_status += "connectAck ✓";
+                } else {
+                    callback_status += "connectAck ✗";
+                }
+                if (connection_callbacks_received_.managedAccounts) {
+                    callback_status += ", managedAccounts ✓";
+                } else {
+                    callback_status += ", managedAccounts ✗";
+                }
+                callback_status += ", nextValidId ✗ (waiting)";
+
+                spdlog::info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                spdlog::info("Connection Progress: [{}] {}% ({}ms remaining)", progress_bar, progress_percent, remaining);
+                spdlog::info("  {}", callback_status);
+
+                // Show step-by-step progress
+                if (connection_callbacks_received_.connectAck) {
+                    spdlog::info("  ✓ Step 1/3: connectAck received");
+                } else {
+                    spdlog::warn("  ✗ Step 1/3: connectAck not received");
+                }
+                if (connection_callbacks_received_.managedAccounts) {
+                    auto managed_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        now - connection_callbacks_received_.managedAccounts_time).count();
+                    spdlog::info("  ✓ Step 2/3: managedAccounts received ({}ms ago)", managed_elapsed);
+                } else {
+                    spdlog::warn("  ✗ Step 2/3: managedAccounts not received");
+                }
+                spdlog::info("  ⏳ Step 3/3: Waiting for nextValidId...");
+                spdlog::info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+                // If we received connectAck but not managedAccounts, provide specific guidance
+                if (connection_callbacks_received_.connectAck && !connection_callbacks_received_.managedAccounts) {
+                    spdlog::warn("  ⚠️  Received connectAck but not managedAccounts - TWS may be waiting for connection approval");
+                    spdlog::warn("  → Check TWS/Gateway window for a connection prompt and click 'Accept' or 'OK'");
+                }
+                // If we received both but not nextValidId, provide different guidance
+                else if (connection_callbacks_received_.connectAck && connection_callbacks_received_.managedAccounts) {
+                    spdlog::warn("  ⚠️  Received connectAck and managedAccounts but not nextValidId");
+                    spdlog::warn("  → This may indicate TWS is processing the connection or there's a delay");
+                    spdlog::warn("  → Check TWS/Gateway for any error messages or warnings");
+                }
+
                 last_log = now;
             }
 
@@ -1818,6 +2340,14 @@ private:
     std::atomic<bool> health_check_enabled_{false};
     std::unique_ptr<std::thread> health_check_thread_;
 
+    // Connection callback tracking (for diagnostics)
+    struct ConnectionCallbacks {
+        bool connectAck = false;
+        bool managedAccounts = false;
+        std::chrono::steady_clock::time_point connectAck_time;
+        std::chrono::steady_clock::time_point managedAccounts_time;
+    } connection_callbacks_received_;
+
     std::unique_ptr<std::thread> reader_thread_;
 
     // Connection synchronization
@@ -1852,6 +2382,9 @@ private:
 
     // Callbacks
     ErrorCallback error_callback_;
+
+    // Rate limiting
+    RateLimiter rate_limiter_;
 };
 
 // ============================================================================
@@ -1925,6 +2458,16 @@ int TWSClient::place_order(const types::OptionContract& contract,
                           double limit_price,
                           types::TimeInForce tif) {
     return pimpl_->place_order(contract, action, quantity, limit_price, tif);
+}
+
+int TWSClient::place_combo_order(
+        const std::vector<types::OptionContract>& contracts,
+        const std::vector<types::OrderAction>& actions,
+        const std::vector<int>& quantities,
+        const std::vector<long>& contract_ids,
+        const std::vector<double>& limit_prices,
+        types::TimeInForce tif) {
+    return pimpl_->place_combo_order(contracts, actions, quantities, contract_ids, limit_prices, tif);
 }
 
 void TWSClient::cancel_order(int order_id) {
@@ -2006,6 +2549,26 @@ bool TWSClient::is_market_open() const {
 
 std::chrono::system_clock::time_point TWSClient::get_server_time() const {
     return pimpl_->get_server_time();
+}
+
+// ============================================================================
+// Rate Limiting (IBKR Compliance)
+// ============================================================================
+
+void TWSClient::enable_rate_limiting() {
+    pimpl_->enable_rate_limiting();
+}
+
+void TWSClient::configure_rate_limiter(const RateLimiterConfig& config) {
+    pimpl_->configure_rate_limiter(config);
+}
+
+std::optional<RateLimiterStatus> TWSClient::get_rate_limiter_status() const {
+    return pimpl_->get_rate_limiter_status();
+}
+
+void TWSClient::cleanup_stale_rate_limiter_requests(std::chrono::seconds max_age) {
+    pimpl_->cleanup_stale_rate_limiter_requests(max_age);
 }
 
 } // namespace tws

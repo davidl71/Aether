@@ -102,6 +102,9 @@ public:
     // Update all order statuses
     void update();
 
+    // Track order fill (call when order status changes to Filled)
+    void track_order_fill(int order_id);
+
     // Get all active orders
     std::vector<types::Order> get_active_orders() const;
 
@@ -197,9 +200,11 @@ public:
         int total_orders_filled;
         int total_orders_cancelled;
         int total_orders_rejected;
+        int executed_trades;  // Number of successfully executed trades (filled orders)
         double total_volume_traded;
         double average_fill_time_ms;
         double fill_rate;  // Percentage of orders filled
+        double efficiency_ratio;  // executed_trades / total_orders_placed (0.0 to 1.0)
     };
 
     OrderStats get_statistics() const;

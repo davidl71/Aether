@@ -19,6 +19,7 @@
 #include "box_spread_strategy.h"
 #include "order_manager.h"
 #include "risk_calculator.h"
+#include "version.h"
 
 // NOTE FOR AUTOMATION AGENTS:
 // This translation unit glues together the CLI/TUI runtime. It wires configuration,
@@ -190,7 +191,7 @@ int main(int argc, char** argv) {
     // Command-line Parsing
     // ========================================================================
     CLI::App app{"IBKR Box Spread Generator - Automated options arbitrage"};
-    app.set_version_flag("-v,--version", "1.0.0");
+    app.set_version_flag("-v,--version", VERSION_STRING);
 
     std::string config_file = "config/config.json";
     bool dry_run = false;

@@ -2,9 +2,44 @@
 
 ## Current Status: ✅ Framework Complete, ⏳ TWS API Complex
 
+### TWS API Version: 10.40.01
+
+**New Features in 10.40.01**:
+
+- ✅ **Order Recovery**: Automatic order resubmission on connection restore (configure in TWS/Gateway)
+- ✅ **Full Protocol Buffers Support**: All requests/responses support protobuf (optional migration - see `docs/PROTOBUF_MIGRATION_PLAN.md`)
+- ✅ **Enhanced Error Handling**: Better errors and exceptions
+
+**Order Recovery Setup**:
+
+1. Open TWS or IB Gateway
+2. Go to: Global Configuration → API → Settings
+3. Enable: "Maintain and resubmit orders when connection is restored"
+4. This automatically maintains/resubmits orders after network disconnect
+
+**Additional TWS API Features**:
+
+- **Fixed Income Orders (Bonds/Bills)**:
+  - Quantity can be specified in units of $1k
+  - A confirmation message is displayed for bond orders transmitted through the API
+  - To skip this message: Go to Global Configuration → API → API Precautions → Select "Bypass bond disclaimer for API orders"
+
+- **Realtime News via Generic Ticks**:
+  - Generic tick 292 provides realtime news
+  - Topic news is available by providing the news source as the exchange parameter
+  - To see all available topics for a source: Enter "\*" for the symbol
+  - Check subscriptions: Global Configuration → Pre-Configured API News Providers
+
+- **Simultaneous Account Access**:
+  - TWS uses different ports for production and simulated trading accounts
+  - This allows simultaneous access to both account types
+  - Production: Port 7496 (TWS) or 4001 (IB Gateway)
+  - Simulated/Paper: Port 7497 (TWS) or 4002 (IB Gateway)
+
 ### What's Working (100%)
 
 ✅ **Complete Trading Framework**
+
 - Build system (Universal binary for Intel + Apple Silicon)
 - Configuration management with JSON validation
 - Box spread strategy detection and validation
@@ -15,12 +50,14 @@
 - Dry-run mode for safe testing
 
 ✅ **TWS API Preparation**
+
 - TWS API downloaded and extracted
 - CMake detects TWS headers
 - Protocol Buffer files generated
 - Build infrastructure ready
 
 ⚠️ **Current Limitation: Stub TWS Client**
+
 - The application currently uses a **stub implementation** of the TWS client
 - It simulates connections but doesn't actually communicate with Interactive Brokers
 - This is intentional for framework development and testing
@@ -69,6 +106,7 @@ Linking TWS API library failed with:
 **When**: When you're ready for live trading with real money
 
 **Steps**:
+
 1. Download Intel Decimal library
 2. Build libbid.a following instructions in `native/third_party/tws-api/IBJts/source/cppclient/Intel_lib_build.txt`
 3. Update TWS API CMakeLists.txt to link against libbid
@@ -79,11 +117,13 @@ Linking TWS API library failed with:
 8. Consider live trading
 
 **Pros**:
+
 - Full TWS API functionality
 - Production-ready for real trading
 - All features available (market data, orders, Greeks, etc.)
 
 **Cons**:
+
 - Complex setup with multiple dependencies
 - Time investment in building dependencies
 
@@ -96,6 +136,7 @@ Linking TWS API library failed with:
 **Current Status**: **THIS IS WHERE YOU ARE NOW**
 
 **What Works**:
+
 - All framework code compiles and runs
 - All 29 tests pass
 - Configuration, risk management, order validation all work
@@ -103,18 +144,21 @@ Linking TWS API library failed with:
 - Can run in dry-run mode safely
 
 **What Doesn't Work**:
+
 - No actual connection to Interactive Brokers
 - No real market data
 - No actual order execution
 - Cannot paper trade or live trade
 
 **Pros**:
+
 - Zero additional setup needed
 - Safe for development and testing
 - Fast iteration on strategy logic
 - All framework features work
 
 **Cons**:
+
 - Cannot connect to real broker
 - Cannot test with live market data
 - Cannot execute actual trades (even paper trades)
@@ -128,6 +172,7 @@ Linking TWS API library failed with:
 **Approach**: Compile only essential TWS source files directly into your application
 
 **Steps**:
+
 1. Identify minimal TWS source files needed (EClient, EWrapper, basic networking)
 2. Exclude files that require Intel Decimal library
 3. Compile these files directly with your application
@@ -135,11 +180,13 @@ Linking TWS API library failed with:
 5. Test with paper trading
 
 **Pros**:
+
 - Faster to set up than full build
 - Can test with paper trading sooner
 - Fewer dependencies
 
 **Cons**:
+
 - Limited TWS API functionality
 - May not support all features (Greeks, precision decimals)
 - Still requires some TWS API integration work
@@ -152,6 +199,7 @@ Linking TWS API library failed with:
 
 **If your goal is to test the strategy framework:**
 → Use Option 2 (Stub) - you're already there!
+
 - Continue developing your box spread strategy logic
 - Test with simulated data
 - Refine risk parameters
@@ -160,6 +208,7 @@ Linking TWS API library failed with:
 
 **If your goal is to test with real market data:**
 → Proceed with Option 1 (Full Build) or Option 3 (Simplified)
+
 - Download and build Intel Decimal library
 - Complete TWS API library build
 - Implement EWrapper callbacks
@@ -201,7 +250,7 @@ Given that your **framework is 100% complete and tested**, I recommend:
 
 ---
 
-##  Current Build Status
+## Current Build Status
 
 ```bash
 # Your application builds successfully
@@ -243,6 +292,13 @@ A: Complete Option 1 (full TWS API build with all dependencies). It's the most s
 - **IBKR Support**: 1-877-442-2757
 - **API Forums**: https://groups.io/g/twsapi
 - **Intel Decimal Library**: https://www.intel.com/content/www/us/en/developer/articles/tool/intel-decimal-floating-point-math-library.html
+
+## Related Resources
+
+- [IBC Learnings](IBC_LEARNINGS.md) - IBC (Interactive Brokers Controller) automation tool for TWS/Gateway management
+- [API Documentation Index](API_DOCUMENTATION_INDEX.md) - Complete index of all external APIs
+- [TWS API Best Practices](TWS_API_BEST_PRACTICES.md) - Best practices for TWS API integration
+- [EWrapper Status](EWRAPPER_STATUS.md) - EWrapper implementation status
 
 ---
 

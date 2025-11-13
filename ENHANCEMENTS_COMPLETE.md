@@ -1,7 +1,7 @@
 # 🎉 All Enhancements Complete!
 
-**Date**: 2025-01-27  
-**Version**: 1.0.1  
+**Date**: 2025-01-27
+**Version**: 1.0.1
 **Status**: ✅ READY FOR TESTING
 
 ---
@@ -91,7 +91,7 @@ Successfully implemented all improvements from icli, ibkrbox, and NautilusTrader
 brew install ccache
 
 # Use fast build script
-./build_fast.sh
+./scripts/build_fast.sh
 
 # Results:
 # First build: ~60-90s
@@ -107,7 +107,7 @@ brew install ccache
 export DISTCC_HOSTS="localhost/4 192.168.1.100/8"
 
 # Use distributed build script
-./build_distributed.sh
+./scripts/build_distributed.sh
 
 # Results:
 # Clean builds: ~15-20s (3-4x faster)
@@ -172,11 +172,11 @@ python python/nautilus_strategy.py --config config/config.json --dry-run
 
 ```bash
 # Test ccache
-./build_fast.sh
+./scripts/build_fast.sh
 # Change a file
 touch src/box_spread_strategy.cpp
 # Rebuild (should be very fast)
-./build_fast.sh
+./scripts/build_fast.sh
 
 # View ccache stats
 ccache --show-stats
@@ -218,7 +218,7 @@ ccache --show-stats
 
 2. **Test fast builds** (5 minutes)
    ```bash
-   ./build_fast.sh
+   ./scripts/build_fast.sh
    ```
 
 3. **Review changes** (30 minutes)
@@ -347,13 +347,12 @@ MIT License - See LICENSE file for details.
 
 ## Final Notes
 
-🎯 **Ready for paper trading and validation**  
-📚 **Comprehensive documentation provided**  
-⚡ **Optimized for performance**  
-🛡️ **Risk management built-in**  
+🎯 **Ready for paper trading and validation**
+📚 **Comprehensive documentation provided**
+⚡ **Optimized for performance**
+🛡️ **Risk management built-in**
 🚀 **Modern architecture following best practices**
 
 **Next milestone**: Test with TWS paper trading, collect real-world data, optimize based on results.
 
 Good luck with your trading! 📈
-

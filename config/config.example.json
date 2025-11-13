@@ -6,7 +6,7 @@
     "host": "127.0.0.1",              // TWS/Gateway hostname (localhost)
     "port": 7497,                      // Port: 7497 = Paper Trading (safe), 7496 = Live Trading (real money!)
     "client_id": 1,                    // Unique client ID (1-32), must be unique per connection
-    "connection_timeout_ms": 5000,     // Connection timeout in milliseconds
+    "connection_timeout_ms": 60000,    // Connection timeout in milliseconds (60 seconds - timeout for waiting for nextValidId after socket connection)
     "auto_reconnect": true,             // Automatically reconnect on disconnection
     "reconnect_delay_ms": 3000          // Delay before reconnection attempt (milliseconds)
   },

@@ -11,6 +11,7 @@ set(TEST_SOURCES
     test_box_spread_strategy.cpp
     test_risk_calculator.cpp
     test_order_manager.cpp
+    test_tws_client.cpp
 )
 
 add_executable(box_spread_tests ${TEST_SOURCES})

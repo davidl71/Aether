@@ -31,6 +31,19 @@
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "CMAKE_COLOR_DIAGNOSTICS": "ON"
       }
+    },
+    {
+      "name": "macos-x86_64-debug",
+      "displayName": "macOS x86_64 Debug",
+      "generator": "Ninja",
+      "binaryDir": "build/macos-x86_64-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_OSX_ARCHITECTURES": "x86_64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "11.0",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_COLOR_DIAGNOSTICS": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -41,6 +54,10 @@
     {
       "name": "macos-universal-release",
       "configurePreset": "macos-universal-release"
+    },
+    {
+      "name": "macos-x86_64-debug",
+      "configurePreset": "macos-x86_64-debug"
     }
   ],
   "testPresets": [
@@ -60,4 +77,3 @@
     }
   ]
 }
-

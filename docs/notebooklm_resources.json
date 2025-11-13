@@ -1,0 +1,141 @@
+{
+  "_comment": "Single source of truth: NOTEBOOKLM_RESOURCES_OPTIMIZED.md - This JSON is maintained for programmatic access",
+  "_last_updated": "2025-11-13",
+  "notebook_id": "tws-automated-trading-complete",
+  "notebook_url": "https://notebooklm.google.com/notebook/d08f66c4-e5db-480a-bdc4-50682adc045e",
+  "notebook_name": "TWS Automated Trading - Complete Resources",
+  "description": "Complete knowledge base for TWS Automated Trading project including GitHub repository documentation, TWS API implementation videos, trading tutorials, and implementation articles.",
+  "topics": [
+    "TWS API",
+    "Interactive Brokers",
+    "Options Trading",
+    "Box Spreads",
+    "C++ Implementation",
+    "Socket Programming",
+    "Trading Strategies",
+    "API Integration"
+  ],
+  "tags": [
+    "tws-api",
+    "trading",
+    "options",
+    "documentation",
+    "youtube",
+    "tutorial",
+    "ib-api",
+    "c++",
+    "socket-implementation",
+    "boost-asio"
+  ],
+  "use_cases": [
+    "Research TWS API implementation",
+    "Summarize YouTube tutorials",
+    "Create documentation from videos",
+    "Research trading strategies",
+    "Get code examples for TWS API"
+  ],
+  "content_types": [
+    "documentation",
+    "tutorial",
+    "video",
+    "article",
+    "code examples",
+    "implementation guide"
+  ],
+  "resources": [
+    {
+      "id": 1,
+      "type": "github",
+      "url": "https://github.com/davidl71/ib_box_spread_full_universal",
+      "description": "GitHub repository with 47+ documentation files",
+      "status": "active"
+    },
+    {
+      "id": 2,
+      "type": "youtube",
+      "url": "https://www.youtube.com/watch?v=n-9bdREECTQ",
+      "description": "Essential Components of TWS API Programs",
+      "category": "TWS API",
+      "status": "active"
+    },
+    {
+      "id": 3,
+      "type": "youtube",
+      "url": "https://www.youtube.com/watch?v=5moyX0qwkCA",
+      "description": "Trading & Options Tutorial",
+      "category": "Trading",
+      "status": "active"
+    },
+    {
+      "id": 4,
+      "type": "youtube",
+      "url": "https://www.youtube.com/watch?v=hJ7ewxQVhJw",
+      "description": "Trading & Options Tutorial",
+      "category": "Trading",
+      "status": "active"
+    },
+    {
+      "id": 5,
+      "type": "youtube",
+      "url": "https://www.youtube.com/watch?v=4zpYhHn5p90",
+      "description": "Trading & Options Tutorial",
+      "category": "Trading",
+      "status": "active"
+    },
+    {
+      "id": 6,
+      "type": "youtube",
+      "url": "https://www.youtube.com/watch?v=rC02897uiuc",
+      "description": "Trading & Options Tutorial",
+      "category": "Trading",
+      "status": "active"
+    },
+    {
+      "id": 7,
+      "type": "youtube",
+      "url": "https://www.youtube.com/watch?v=ZxwdTgMY44g",
+      "description": "Trading & Options Tutorial",
+      "category": "Trading",
+      "status": "active"
+    },
+    {
+      "id": 8,
+      "type": "youtube",
+      "url": "https://www.youtube.com/watch?v=ICZH89GdUGQ",
+      "description": "Trading & Options Tutorial",
+      "category": "Trading",
+      "status": "active"
+    },
+    {
+      "id": 9,
+      "type": "youtube",
+      "url": "https://www.youtube.com/watch?v=W6OJy32sE_g",
+      "description": "Trading & Options Tutorial",
+      "category": "Trading",
+      "status": "active"
+    },
+    {
+      "id": 10,
+      "type": "article",
+      "url": "https://www.vitaltrades.com/2024/02/02/making-a-c-interactive-brokers-tws-client-with-a-custom-socket-implementation/",
+      "description": "Making a C++ Interactive Brokers TWS Client with a Custom Socket Implementation",
+      "author": "AndrewAMD (VitalTrades LLC)",
+      "date": "2024-02-02",
+      "category": "TWS API Implementation",
+      "status": "active"
+    }
+  ],
+  "resource_summary": {
+    "total": 10,
+    "by_type": {
+      "github": 1,
+      "youtube": 8,
+      "article": 1
+    },
+    "by_category": {
+      "TWS API": 2,
+      "Trading": 7,
+      "TWS API Implementation": 1
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # Distributed Compilation Setup
 
-**Date**: 2025-01-27  
+**Date**: 2025-01-27
 **Purpose**: Enable fast distributed compilation with distcc and ccache
 
 ---
@@ -10,6 +10,7 @@
 This project supports distributed compilation using **distcc** and **ccache** to dramatically reduce build times. Your system already has distcc installed, and we can leverage it for faster development iterations.
 
 **Tools Available**:
+
 - ✅ `distcc` - Distributed C/C++ compilation across network
 - ❌ `ccache` - Not installed (optional, but highly recommended)
 - ❌ `sccache` - Not installed (Rust-based alternative to ccache)
@@ -18,12 +19,12 @@ This project supports distributed compilation using **distcc** and **ccache** to
 
 ## Compilation Speed Tools Comparison
 
-| Tool | Purpose | Speed Improvement | Use Case |
-|------|---------|------------------|----------|
-| **distcc** | Distribute compilation across network | 2-10x | Multiple machines available |
-| **ccache** | Cache compilation results locally | 10-100x | Repeated builds |
-| **sccache** | Cache + distributed (Rust-based) | 10-100x | Modern alternative to ccache |
-| **icecream** | Distributed with smart scheduling | 2-10x | Alternative to distcc |
+| Tool         | Purpose                               | Speed Improvement | Use Case                     |
+| ------------ | ------------------------------------- | ----------------- | ---------------------------- |
+| **distcc**   | Distribute compilation across network | 2-10x             | Multiple machines available  |
+| **ccache**   | Cache compilation results locally     | 10-100x           | Repeated builds              |
+| **sccache**  | Cache + distributed (Rust-based)      | 10-100x           | Modern alternative to ccache |
+| **icecream** | Distributed with smart scheduling     | 2-10x             | Alternative to distcc        |
 
 **Best Combination**: `ccache` + `distcc` (cache first, distribute misses)
 
@@ -149,7 +150,7 @@ if(ENABLE_CCACHE)
         message(STATUS "Found ccache: ${CCACHE_EXECUTABLE}")
         set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_EXECUTABLE})
         set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_EXECUTABLE})
-        
+
         # Use distcc via ccache if both enabled
         if(ENABLE_DISTCC AND DISTCC_EXECUTABLE)
             message(STATUS "Using ccache with distcc backend")
@@ -240,6 +241,7 @@ sccache --show-stats
 ### This Project (Estimated)
 
 Current build structure:
+
 - ~20 C++ source files
 - TWS API library (pre-built)
 - Tests
@@ -252,18 +254,19 @@ Current build structure:
 
 ### Benchmark Expectations
 
-| Build Type | No Cache | With ccache | With distcc | With Both |
-|------------|----------|-------------|-------------|-----------|
-| Clean build | 60-90s | 60-90s | 15-20s | 15-20s |
-| Incremental (1 file changed) | 5-10s | 2-3s | 3-5s | 2-3s |
-| Incremental (header changed) | 30-40s | 3-5s | 10-15s | 3-5s |
-| Rebuild (no changes) | 60-90s | 1-2s | 15-20s | 1-2s |
+| Build Type                   | No Cache | With ccache | With distcc | With Both |
+| ---------------------------- | -------- | ----------- | ----------- | --------- |
+| Clean build                  | 60-90s   | 60-90s      | 15-20s      | 15-20s    |
+| Incremental (1 file changed) | 5-10s    | 2-3s        | 3-5s        | 2-3s      |
+| Incremental (header changed) | 30-40s   | 3-5s        | 10-15s      | 3-5s      |
+| Rebuild (no changes)         | 60-90s   | 1-2s        | 15-20s      | 1-2s      |
 
 ---
 
 ## Recommended Configuration for This Project
 
 ### For Solo Development
+
 ```bash
 # Use ccache only (most benefit for solo dev)
 brew install ccache
@@ -271,6 +274,7 @@ cmake -S . -B build -DENABLE_CCACHE=ON ...
 ```
 
 ### For Team Development
+
 ```bash
 # Use ccache + distcc
 brew install ccache distcc
@@ -284,6 +288,7 @@ cmake -S . -B build -DENABLE_CCACHE=ON -DENABLE_DISTCC=ON ...
 ```
 
 ### For CI/CD
+
 ```bash
 # Use sccache with cloud storage backend
 # Supports S3, Redis, GCS for shared cache
@@ -331,7 +336,7 @@ if(ENABLE_CCACHE AND NOT ENABLE_SCCACHE)
         message(STATUS "Using ccache: ${CCACHE_EXECUTABLE}")
         set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_EXECUTABLE})
         set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_EXECUTABLE})
-        
+
         # Use distcc via ccache if both enabled
         if(ENABLE_DISTCC)
             find_program(DISTCC_EXECUTABLE distcc)
@@ -391,7 +396,7 @@ make -j$(sysctl -n hw.ncpu) -C build-fast
 
 ## Build Scripts
 
-### build_fast.sh (with ccache)
+### scripts/build_fast.sh (with ccache)
 
 ```bash
 #!/bin/bash
@@ -429,7 +434,7 @@ echo "=== ccache Statistics ==="
 ccache --show-stats
 ```
 
-### build_distributed.sh (with distcc + ccache)
+### scripts/build_distributed.sh (with distcc + ccache)
 
 ```bash
 #!/bin/bash
@@ -648,7 +653,7 @@ Update `build_universal.sh` to support distributed compilation:
 if command -v ccache &> /dev/null; then
     export CMAKE_CXX_COMPILER_LAUNCHER=ccache
     echo "Using ccache for faster builds"
-    
+
     # Use distcc via ccache if available
     if command -v distcc &> /dev/null && [ -n "$DISTCC_HOSTS" ]; then
         export CCACHE_PREFIX=distcc
@@ -673,19 +678,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1
         with:
           key: ${{ runner.os }}-build
           max-size: 1G
-      
+
       - name: Configure
         run: |
           cmake -S . -B build \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_BUILD_TYPE=Release
-      
+
       - name: Build
         run: make -j$(nproc) -C build
 ```
@@ -697,6 +702,7 @@ jobs:
 ### For This Project
 
 1. **Immediate**: Install ccache
+
    ```bash
    brew install ccache
    ```
@@ -738,6 +744,7 @@ make -j16 -C build  # In main terminal
 ### distcc Issues
 
 **Problem**: "Connection refused"
+
 ```bash
 # Check distccd is running on server
 ssh server "ps aux | grep distccd"
@@ -747,6 +754,7 @@ telnet server-ip 3632  # distcc default port
 ```
 
 **Problem**: "Access denied"
+
 ```bash
 # Check allowed networks on server
 # Edit /etc/default/distcc (Linux) or restart with --allow
@@ -756,6 +764,7 @@ distccd --daemon --allow 192.168.1.0/24
 ### ccache Issues
 
 **Problem**: "Cache hit rate low"
+
 ```bash
 # Check ccache configuration
 ccache --show-config
@@ -773,13 +782,14 @@ ccache --show-stats
 
 ## Summary
 
-✅ **distcc is already installed** on your system  
-📦 **Install ccache** for maximum benefit (10-100x speedup on rebuilds)  
-🚀 **Use both together** for best results  
-⚙️ **Update CMakeLists.txt** to support compilation options  
-📝 **Document in README** for team members  
+✅ **distcc is already installed** on your system
+📦 **Install ccache** for maximum benefit (10-100x speedup on rebuilds)
+🚀 **Use both together** for best results
+⚙️ **Update CMakeLists.txt** to support compilation options
+📝 **Document in README** for team members
 
 **Expected Impact**:
+
 - Clean builds: 60s → 15-20s with distcc
 - Rebuilds: 60s → 1-2s with ccache
 - Incremental: 5-10s → 2-3s with ccache
@@ -788,8 +798,7 @@ ccache --show-stats
 
 ## References
 
-- distcc: https://distcc.org/
-- ccache: https://ccache.dev/
-- sccache: https://github.com/mozilla/sccache
-- CMake Compiler Launchers: https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER_LAUNCHER.html
-
+- distcc: <https://distcc.org/>
+- ccache: <https://ccache.dev/>
+- sccache: <https://github.com/mozilla/sccache>
+- CMake Compiler Launchers: <https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER_LAUNCHER.html>

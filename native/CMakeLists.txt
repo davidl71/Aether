@@ -35,7 +35,7 @@ cmake_minimum_required(VERSION 3.21)
 # Project Configuration
 # ============================================================================
 project(IBKRBoxSpreadGenerator
-    VERSION 1.0.0
+    VERSION 1.3.3
     DESCRIPTION "Interactive Brokers Box Spread Trading Application"
     LANGUAGES CXX
 )
@@ -376,6 +376,7 @@ if(_build_native_cli)
     set(SOURCES
         src/ib_box_spread.cpp
         src/tws_client.cpp
+        src/rate_limiter.cpp
         src/option_chain.cpp
         src/box_spread_strategy.cpp
         src/order_manager.cpp
@@ -385,6 +386,7 @@ if(_build_native_cli)
 
     set(HEADERS
         include/tws_client.h
+        include/rate_limiter.h
         include/option_chain.h
         include/box_spread_strategy.h
         include/order_manager.h
@@ -393,11 +395,26 @@ if(_build_native_cli)
         include/types.h
     )
 
+    # Version suffix (empty for release, "-prerelease" for development)
+    # Set via: cmake -DVERSION_SUFFIX="" for release, or omit for prerelease
+    if(NOT DEFINED VERSION_SUFFIX)
+        set(VERSION_SUFFIX "-prerelease")
+    endif()
+
+    # Generate version.h from CMake PROJECT_VERSION
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/version.h.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/include/version.h"
+        @ONLY
+    )
+
     add_executable(ib_box_spread ${SOURCES} ${HEADERS})
 
+    # Include the generated version header in the build
     target_include_directories(ib_box_spread
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${CMAKE_CURRENT_BINARY_DIR}/include  # For generated version.h
             ${TWS_API_INCLUDE_DIR}
     )
 

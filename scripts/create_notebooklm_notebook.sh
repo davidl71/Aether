@@ -1,0 +1,77 @@
+#!/bin/bash
+# Script to create a NotebookLM notebook with all resources
+# This script opens NotebookLM and provides instructions for adding resources
+
+set -e
+
+echo "=========================================="
+echo "NotebookLM Notebook Creation Script"
+echo "=========================================="
+echo ""
+echo "This script will help you create a NotebookLM notebook with all resources."
+echo ""
+echo "Resources to add:"
+echo "  1. GitHub Repository: https://github.com/davidl71/ib_box_spread_full_universal"
+echo "  2. YouTube Videos: 8 videos"
+echo "  3. External Articles: 1 article"
+echo ""
+echo "Total: 10 resources"
+echo ""
+echo "=========================================="
+echo ""
+
+# Check if running on macOS
+if [[ "$OSTYPE" != "darwin"* ]]; then
+    echo "Error: This script is designed for macOS"
+    exit 1
+fi
+
+# Open NotebookLM in browser
+echo "Opening NotebookLM in browser..."
+open "https://notebooklm.google.com"
+
+echo ""
+echo "=========================================="
+echo "Next Steps:"
+echo "=========================================="
+echo ""
+echo "1. Wait for NotebookLM to load in your browser"
+echo "2. Click '+ New' to create a new notebook"
+echo "3. Name it: 'TWS Automated Trading - Complete Resources'"
+echo "4. Add sources one by one using the URLs below:"
+echo ""
+echo "=========================================="
+echo "Resources to Add:"
+echo "=========================================="
+echo ""
+echo "1. GitHub Repository:"
+echo "   https://github.com/davidl71/ib_box_spread_full_universal"
+echo ""
+echo "2. YouTube Videos:"
+echo "   https://www.youtube.com/watch?v=n-9bdREECTQ"
+echo "   https://www.youtube.com/watch?v=5moyX0qwkCA"
+echo "   https://www.youtube.com/watch?v=hJ7ewxQVhJw&list=PLePBf4ZtCKhpovbIfv85Ks3-rvyNtAwsg&index=2"
+echo "   https://www.youtube.com/watch?v=4zpYhHn5p90&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2"
+echo "   https://www.youtube.com/watch?v=rC02897uiuc&list=PLePBf4ZtCKhpovbIfv85Ks3-rvyNtAwsg&index=2"
+echo "   https://www.youtube.com/watch?v=ZxwdTgMY44g&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2"
+echo "   https://www.youtube.com/watch?v=ICZH89GdUGQ&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2"
+echo "   https://www.youtube.com/watch?v=W6OJy32sE_g&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2"
+echo ""
+echo "3. External Articles:"
+echo "   https://www.vitaltrades.com/2024/02/02/making-a-c-interactive-brokers-tws-client-with-a-custom-socket-implementation/"
+echo ""
+echo "=========================================="
+echo "After Adding Resources:"
+echo "=========================================="
+echo ""
+echo "1. Wait for all resources to process (may take 10-20 minutes)"
+echo "2. Click '⚙️ Share' (top right)"
+echo "3. Select 'Anyone with link'"
+echo "4. Click 'Copy link'"
+echo "5. Save the link"
+echo "6. Return to Cursor and say:"
+echo "   'Add [paste-the-link-here] to library tagged tws-api, trading, options, documentation, youtube, tutorial, ib-api, c++, socket-implementation, boost-asio'"
+echo ""
+echo "=========================================="
+echo "Script complete!"
+echo "=========================================="

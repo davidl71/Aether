@@ -48,6 +48,7 @@ A box spread is a complex options strategy that combines four positions:
 **Arbitrage Opportunity**: When the net debit paid is less than the strike width (K2 - K1), there's a guaranteed profit at expiration.
 
 **Example**:
+
 - Buy SPY 500 Call @ $2.50
 - Sell SPY 510 Call @ $1.00
 - Buy SPY 510 Put @ $2.00
@@ -60,13 +61,16 @@ A box spread is a complex options strategy that combines four positions:
 
 ### System Requirements
 
-- **macOS** 11.0 or later (for universal binary support)
+- **macOS** 11.0+ / **Linux** / **Windows 10/11** (64-bit)
 - **CMake** 3.21 or higher
 - **C++ Compiler** with C++20 support:
-  - Clang 13+ (recommended for macOS)
-  - GCC 11+
+  - **macOS**: Clang 13+ (recommended)
+  - **Linux**: GCC 11+ or Clang 13+
+  - **Windows**: Visual Studio 2019+ or MinGW-w64
 - **Interactive Brokers** TWS or IB Gateway
 - **Active IBKR account** with options trading enabled
+
+**Note:** See [Windows Setup Guide](docs/WINDOWS_SETUP_GUIDE.md) for Windows-specific instructions.
 
 ### Dependencies (Automatically Downloaded)
 
@@ -108,11 +112,13 @@ The Interactive Brokers TWS C++ API must be downloaded manually:
 For advanced trading capabilities, the project supports integration with [NautilusTrader](https://github.com/nautechsystems/nautilus_trader), a high-performance Python trading framework.
 
 **Requirements:**
+
 - Python 3.11 or higher
 - Cython 3.0+
 - NautilusTrader 2.0+
 
 **Installation:**
+
 ```bash
 # Install Python dependencies
 pip install -r requirements.txt
@@ -126,6 +132,7 @@ cmake --build build --target python_bindings
 ```
 
 **Usage:**
+
 ```bash
 # Run with nautilus_trader
 # (Requires a separate Nautilus Trader installation; not bundled with this repo.)
@@ -174,16 +181,17 @@ chmod +x scripts/build_universal.sh
 
 # Or use fast build with ccache (10-100x faster rebuilds)
 brew install ccache  # Install ccache first
-./build_fast.sh
+./scripts/build_fast.sh
 
 # Or distributed build (2-10x faster clean builds)
 export DISTCC_HOSTS="localhost/4 remote-ip/8"
-./build_distributed.sh
+./scripts/build_distributed.sh
 ```
 
 The binary will be created at: `build/bin/ib_box_spread`
 
 **Build Optimization** (see `docs/DISTRIBUTED_COMPILATION.md` for details):
+
 - 🚀 **ccache**: Cache compilation results (10-100x speedup on rebuilds)
 - 🌐 **distcc**: Distribute compilation across network (2-10x speedup)
 - ⚡ **Both**: Use together for maximum performance
@@ -234,7 +242,7 @@ Edit `config/config.json`:
   },
   "strategy": {
     "symbols": ["SPY", "QQQ", "IWM"],
-    "min_arbitrage_profit": 0.10,
+    "min_arbitrage_profit": 0.1,
     "min_roi_percent": 0.5
   },
   "risk": {
@@ -328,6 +336,7 @@ When enabled, the strategy validates the session during startup and logs account
 ### Configuration Parameters
 
 #### TWS Connection
+
 - `host`: TWS/Gateway hostname (usually "127.0.0.1")
 - `port`:
   - **7497** = Paper Trading (Safe for testing)
@@ -335,6 +344,7 @@ When enabled, the strategy validates the session during startup and logs account
 - `client_id`: Unique client identifier (1-32)
 
 #### Strategy
+
 - `symbols`: List of underlying symbols to monitor
 - `min_arbitrage_profit`: Minimum profit in dollars
 - `min_roi_percent`: Minimum return on investment (%)
@@ -343,6 +353,7 @@ When enabled, the strategy validates the session during startup and logs account
 - `max_days_to_expiry`: Maximum days to expiration
 
 #### Risk Management
+
 - `max_total_exposure`: Maximum total capital deployed
 - `max_positions`: Maximum number of open positions
 - `max_daily_loss`: Stop trading if daily loss exceeds this
@@ -419,6 +430,7 @@ cd build/bin
 ### Test Coverage
 
 The test suite includes:
+
 - Configuration validation tests
 - Box spread strategy tests
 - Risk calculator tests
@@ -530,6 +542,7 @@ cmake --build build
 ### Code Style
 
 This project follows:
+
 - Modern C++20 standards
 - RAII resource management
 - Error handling via exceptions
@@ -549,12 +562,14 @@ This project follows:
 ### Important Security Practices
 
 1. **Never commit credentials**:
+
    ```bash
    # config.json is in .gitignore
    # Never use `git add -f` on it!
    ```
 
 2. **Use environment variables for sensitive data** (if needed):
+
    ```bash
    export IBKR_USERNAME="your_username"
    export IBKR_PASSWORD="your_password"
@@ -562,7 +577,7 @@ This project follows:
 
 3. **Review .gitignore**:
    - config/config.json ✓
-   - *.env ✓
+   - \*.env ✓
    - logs/ ✓
    - credentials/ ✓
 
@@ -575,18 +590,21 @@ This project follows:
 ### Build Issues
 
 **Problem**: CMake version too old
+
 ```bash
 # Solution: Update CMake
 brew upgrade cmake
 ```
 
 **Problem**: Compiler doesn't support C++20
+
 ```bash
 # Solution: Update compiler
 brew install llvm  # or gcc
 ```
 
 **Problem**: TWS API not found
+
 ```bash
 # Solution: Download TWS API and place in native/third_party/tws-api/
 # Or disable TWS API in CMakeLists.txt for testing
@@ -595,6 +613,7 @@ brew install llvm  # or gcc
 ### Runtime Issues
 
 **Problem**: "Failed to connect to TWS"
+
 ```
 Solutions:
 1. Ensure TWS or IB Gateway is running
@@ -606,6 +625,7 @@ Solutions:
 ```
 
 **Problem**: "Configuration validation failed"
+
 ```
 Solution: Check config.json for:
 - Valid JSON syntax
@@ -614,6 +634,7 @@ Solution: Check config.json for:
 ```
 
 **Problem**: No opportunities found
+
 ```
 Solutions:
 1. Lower min_arbitrage_profit threshold
@@ -641,6 +662,7 @@ Solutions:
 ## Roadmap
 
 ### Completed ✓
+
 - [x] Project structure and build system
 - [x] Configuration management
 - [x] Core strategy framework
@@ -650,11 +672,13 @@ Solutions:
 - [x] Documentation
 
 ### In Progress 🚧
+
 - [ ] Full TWS API integration
 - [ ] Black-Scholes Greeks calculation
 - [ ] Historical data analysis
 
 ### Planned 📋
+
 - [ ] Web dashboard for monitoring
 - [ ] Database for trade history
 - [ ] Performance analytics
@@ -663,6 +687,7 @@ Solutions:
 - [ ] Machine learning for opportunity scoring
 
 ### NautilusTrader Integration ✅
+
 - [x] Cython bindings for C++ calculations
 - [x] NautilusTrader client wrapper
 - [x] Market data handler
@@ -717,11 +742,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ## Resources
 
 ### Options Trading
+
 - [IBKR Options Trading](https://www.interactivebrokers.com/en/trading/options.php)
 - [Box Spread Strategy](https://www.investopedia.com/terms/b/boxspread.asp)
 - [Options Greeks](https://www.investopedia.com/trading/getting-to-know-the-greeks/)
 
 ### Technical Documentation
+
 - [CMake Documentation](https://cmake.org/documentation/)
 - [C++20 Features](https://en.cppreference.com/w/cpp/20)
 - [Catch2 Tutorial](https://github.com/catchorg/Catch2/blob/devel/docs/tutorial.md)

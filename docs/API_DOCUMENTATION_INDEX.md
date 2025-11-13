@@ -5,9 +5,16 @@ This file serves as a reference for all external APIs and libraries used in this
 ## Core Trading APIs
 
 ### Interactive Brokers TWS API
+
 - **Official Docs**: https://interactivebrokers.github.io/tws-api/
 - **GitHub**: https://github.com/InteractiveBrokers/tws-api
-- **Version**: 10.40.01+
+- **Version**: 10.40.01 (updated from 10.33.01)
+- **Release Notes**: https://ibkrguides.com/releasenotes/prod-2025.htm
+- **Key Features (10.40)**:
+  - ✅ Full Protocol Buffers support (all requests/responses)
+  - ✅ Order Recovery: Automatic order resubmission on connection restore
+  - ✅ Enhanced error handling
+- **Protocol Buffers Migration**: See `docs/PROTOBUF_MIGRATION_PLAN.md` for future migration plan
 - **Key Classes**:
   - `EClient` / `EClientSocket`: Client connection to TWS/Gateway
   - `EWrapper`: Callback interface (93+ methods)
@@ -16,12 +23,23 @@ This file serves as a reference for all external APIs and libraries used in this
   - `Order`: Order details (price, quantity, type)
   - `OrderState`: Order status and fills
 - **Ports**:
-  - `7497`: Paper Trading (safe for testing)
-  - `7496`: Live Trading (real money!)
+  - `7497`: Paper Trading (TWS) - safe for testing
+  - `7496`: Live Trading (TWS) - real money!
+  - `4002`: Paper Trading (IB Gateway)
+  - `4001`: Live Trading (IB Gateway)
+  - **Note**: Different ports allow simultaneous access to both production and simulated accounts
 - **Location**: `native/third_party/tws-api/IBJts/source/cppclient/client/`
 - **Headers**: `native/include/ib_box_spread/tws_client.h`
+- **Additional Features**:
+  - **Fixed Income Orders**: Quantity in $1k units; bypass confirmation via API Precautions settings
+  - **Realtime News**: Generic tick 292 for news; topic news via exchange parameter (use "\*" for symbol to list topics)
+  - **News Providers**: Configure in Global Configuration → Pre-Configured API News Providers
+- **IBKR Campus Resources**:
+  - **EClient and EWrapper Architecture**: https://www.interactivebrokers.com/campus/ibkr-quant-news/the-eclient-and-ewrapper-api-classes/ - Official explanation of EClient/EWrapper pattern
+  - See also: `docs/ECLIENT_EWRAPPER_ARCHITECTURE.md` - Detailed architecture documentation based on IBKR Campus
 
 ### Intel Decimal Floating-Point Math Library
+
 - **Official Docs**: https://www.intel.com/content/www/us/en/developer/articles/tool/intel-decimal-floating-point-math-library.html
 - **Version**: 20U2
 - **Purpose**: Precision decimal arithmetic for financial calculations
@@ -30,6 +48,7 @@ This file serves as a reference for all external APIs and libraries used in this
 - **Note**: Required by TWS API for decimal price handling
 
 ### Protocol Buffers
+
 - **Official Docs**: https://protobuf.dev/
 - **C++ API**: https://protobuf.dev/cpp/
 - **Version**: 6.33.0+
@@ -40,6 +59,7 @@ This file serves as a reference for all external APIs and libraries used in this
 ## Logging & Utilities
 
 ### spdlog
+
 - **Official Docs**: https://github.com/gabime/spdlog
 - **API Reference**: https://spdlog.docsforge.com/
 - **Version**: Latest (via CMake FetchContent)
@@ -53,6 +73,7 @@ This file serves as a reference for all external APIs and libraries used in this
   ```
 
 ### CLI11
+
 - **Official Docs**: https://cliutils.github.io/CLI11/book/
 - **GitHub**: https://github.com/CLIUtils/CLI11
 - **Version**: Latest (via CMake FetchContent)
@@ -60,6 +81,7 @@ This file serves as a reference for all external APIs and libraries used in this
 - **Usage**: See `native/src/ib_box_spread.cpp` for examples
 
 ### nlohmann/json
+
 - **Official Docs**: https://json.nlohmann.me/
 - **GitHub**: https://github.com/nlohmann/json
 - **Version**: Latest (via CMake FetchContent)
@@ -69,6 +91,7 @@ This file serves as a reference for all external APIs and libraries used in this
 ## Testing
 
 ### Catch2
+
 - **Official Docs**: https://github.com/catchorg/Catch2
 - **Documentation**: https://github.com/catchorg/Catch2/blob/devel/docs/Readme.md
 - **Version**: Latest (via CMake FetchContent)
@@ -78,6 +101,7 @@ This file serves as a reference for all external APIs and libraries used in this
 ## Build System
 
 ### CMake
+
 - **Official Docs**: https://cmake.org/documentation/
 - **CMake Tutorial**: https://cmake.org/cmake/help/latest/guide/tutorial/index.html
 - **Version**: 3.21+
@@ -90,6 +114,7 @@ This file serves as a reference for all external APIs and libraries used in this
   - `macos-universal-release`: Production build
 
 ### Abseil (Google C++ Libraries)
+
 - **Official Docs**: https://abseil.io/docs/cpp/
 - **GitHub**: https://github.com/abseil/abseil-cpp
 - **Version**: 20250814+
@@ -100,12 +125,14 @@ This file serves as a reference for all external APIs and libraries used in this
 ## Python Integration
 
 ### Cython
+
 - **Official Docs**: https://cython.readthedocs.io/
 - **Purpose**: Python bindings for C++ code
 - **Location**: `python/bindings/`
 - **Build**: `cmake --build build --target python_bindings`
 
 ### Nautilus Trader
+
 - **Official Docs**: https://docs.nautilustrader.io/
 - **GitHub**: https://github.com/nautechsystems/nautilus_trader
 - **Version**: 1.221.0+
@@ -116,6 +143,7 @@ This file serves as a reference for all external APIs and libraries used in this
 ## Market Structure & Efficiency References
 
 ### CME Group – Capital Efficiencies and AIR TRFs
+
 - **Whitepaper**: https://www.cmegroup.com/articles/whitepapers/capital-efficiencies-and-air-trfs.html
 - **Focus**: Explains capital efficiency benefits of Alternative Index Replication (AIR) Total Return Futures.
 - **Relevance**: Useful for comparing margin treatment and financing costs when evaluating box-spread arbitrage versus futures-based replication strategies.
@@ -125,6 +153,7 @@ This file serves as a reference for all external APIs and libraries used in this
   - Provides framework for assessing total-cost-of-carry trade structures.
 
 ### Cboe – Box Spreads as Alternative Borrowing & Lending
+
 - **Article**: https://www.cboe.com/insights/posts/why-consider-box-spreads-as-an-alternative-borrowing-lending-strategy/
 - **Author**: Dr. Wesley R. Gray (Alpha Architect), October 16, 2024.
 - **Focus**: Demonstrates how four-leg box spreads replicate risk-free borrowing/lending via put-call parity.
@@ -135,6 +164,7 @@ This file serves as a reference for all external APIs and libraries used in this
   - Highlights practical use cases for retail and institutional investors seeking efficient cash management.
 
 ### CME Group – Quantifying and Hedging Equity Financing Risk
+
 - **Article**: https://www.cmegroup.com/articles/2025/quantifying-and-hedging-equity-financing-risk.html
 - **Focus**: Examines equity financing costs, basis dynamics, and hedging techniques using listed derivatives.
 - **Relevance**: Complements box-spread financing analysis by framing how equity financing risk and basis can be hedged or benchmarked against futures.
@@ -144,6 +174,7 @@ This file serves as a reference for all external APIs and libraries used in this
   - Informs scenario analysis for arbitrage strategies sensitive to financing shifts.
 
 ### CME Group Client Systems Wiki (EPIC Sandbox)
+
 - **Portal**: https://cmegroupclientsite.atlassian.net/wiki/spaces/EPICSANDBOX/overview?homepageId=457314687
 - **Scope**: Documentation for CME client systems sandbox, including reference data, clearing, Globex connectivity, and post-trade services.
 - **Access Notes**:
@@ -154,6 +185,7 @@ This file serves as a reference for all external APIs and libraries used in this
 ## Rust (Agents)
 
 ### Rust Standard Library
+
 - **Official Docs**: https://doc.rust-lang.org/std/
 - **Location**: `agents/backend/`, `agents/backend-mock/`, etc.
 - **Cargo**: `Cargo.toml` files in agent directories
@@ -161,6 +193,7 @@ This file serves as a reference for all external APIs and libraries used in this
 ## Go (TUI)
 
 ### Go Standard Library
+
 - **Official Docs**: https://pkg.go.dev/std
 - **Location**: `tui/`
 - **Modules**: `go.mod`, `go.sum`
@@ -168,17 +201,20 @@ This file serves as a reference for all external APIs and libraries used in this
 ## TypeScript/JavaScript (Web)
 
 ### TypeScript
+
 - **Official Docs**: https://www.typescriptlang.org/docs/
 - **Location**: `web/`
 - **Config**: `tsconfig.json`
 
 ### Vite
+
 - **Official Docs**: https://vitejs.dev/
 - **Config**: `vite.config.ts`
 
 ## Swift (Desktop/iOS)
 
 ### Swift Package Manager
+
 - **Official Docs**: https://www.swift.org/package-manager/
 - **Location**: `desktop/`, `ios/`
 - **Config**: `Package.swift`
@@ -186,13 +222,17 @@ This file serves as a reference for all external APIs and libraries used in this
 ## How to Use This Index in Cursor
 
 ### Method 1: Reference in Prompts
+
 When asking Cursor about API usage, reference this file:
+
 ```
 @docs API_DOCUMENTATION_INDEX.md How do I use spdlog for error logging?
 ```
 
 ### Method 2: Add to Code Comments
+
 Add references in your code:
+
 ```cpp
 // @docs API_DOCUMENTATION_INDEX.md - TWS API EWrapper implementation
 class MyTWSClient : public EWrapper {
@@ -201,11 +241,13 @@ class MyTWSClient : public EWrapper {
 ```
 
 ### Method 3: Update .cursorrules
+
 The `.cursorrules` file already references this documentation structure.
 
 ## Keeping This Index Updated
 
 When adding new dependencies:
+
 1. Add entry to this file with:
    - Official documentation URL
    - Version used
@@ -217,6 +259,7 @@ When adding new dependencies:
 ## Quick Reference Links
 
 - **TWS API**: https://interactivebrokers.github.io/tws-api/
+- **IBKR Campus - EClient/EWrapper**: https://www.interactivebrokers.com/campus/ibkr-quant-news/the-eclient-and-ewrapper-api-classes/
 - **spdlog**: https://github.com/gabime/spdlog
 - **CMake**: https://cmake.org/documentation/
 - **Protocol Buffers**: https://protobuf.dev/

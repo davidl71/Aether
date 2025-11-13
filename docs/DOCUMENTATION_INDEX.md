@@ -1,0 +1,271 @@
+# TWS Automated Trading - Complete Documentation Index
+
+This document serves as a comprehensive index of all documentation in the IBKR Box Spread Generator project for NotebookLM integration.
+
+## Repository Information
+
+- **Repository**: `ib_box_spread_full_universal`
+- **GitHub**: `https://github.com/davidl71/ib_box_spread_full_universal`
+- **Purpose**: Automated options arbitrage trading system for Interactive Brokers using box spread strategies
+
+## Core Documentation
+
+### Getting Started
+
+- `README.md` - Main project documentation and overview
+- `QUICKSTART.md` - Quick start guide
+- `docs/QUICK_START.md` - Detailed quick start guide
+- `CHANGELOG.md` - Version history and changes
+
+### Architecture & Design
+
+- `docs/CODEBASE_ARCHITECTURE.md` - System design and component interactions
+- `docs/ECLIENT_EWRAPPER_ARCHITECTURE.md` - TWS API client architecture
+- `docs/TUI_DESIGN.md` - Terminal UI design
+- `docs/IPAD_APP_DESIGN.md` - iPad app design
+- `docs/AI_FRIENDLY_CODE.md` - Best practices for AI-friendly code
+
+### Implementation Guides
+
+- `docs/IMPLEMENTATION_GUIDE.md` - Step-by-step implementation guide
+- `docs/IMPLEMENTATION_COMPLETE_SUMMARY.md` - Implementation overview
+- `docs/EW RAPPER_IMPLEMENTATION.md` - EWrapper implementation details
+- `docs/TWS_INTEGRATION_TEMPLATE.cpp` - TWS integration template
+
+### Integration Status
+
+- `docs/TWS_INTEGRATION_STATUS.md` - TWS API integration details
+- `docs/EWRAPPER_STATUS.md` - EWrapper implementation status
+- `docs/INTEGRATION_STATUS.md` - General integration status
+- `docs/INTEGRATION_TESTING.md` - Integration testing guide
+
+## API Documentation
+
+### API References
+
+- `docs/API_DOCUMENTATION_INDEX.md` - Complete index of all external APIs
+- `docs/TWS_API_BEST_PRACTICES.md` - TWS API best practices
+- `docs/TWS_API_CODE_EXAMPLES_LEARNINGS.md` - TWS API code examples
+- `docs/EWRAPPER_BEST_PRACTICES.md` - EWrapper best practices
+
+### Learning Resources
+
+- `docs/IB_API_QUICK_REFERENCE_LEARNINGS.md` - IB API quick reference
+- `docs/IB_ASYNC_LEARNINGS.md` - Asynchronous IB API patterns
+- `docs/IBKRBOX_LEARNINGS.md` - IBKRBox patterns and learnings
+- `docs/IBC_LEARNINGS.md` - IBC (Interactive Brokers Controller) automation tool
+- `docs/ICLI_LEARNINGS.md` - ICLI patterns and learnings
+- `docs/LEAN_LEARNINGS.md` - Lean patterns and learnings
+- `docs/NAUTILUS_LEARNINGS.md` - NautilusTrader patterns
+- `docs/NAUTILUS_IMPLEMENTATION_SUMMARY.md` - NautilusTrader implementation
+- `docs/TRADE_FRAME_LEARNINGS.md` - Trade-frame repository patterns and learnings
+
+## Build & Development
+
+### Build System
+
+- `docs/DISTRIBUTED_COMPILATION.md` - Distributed compilation guide
+- `docs/TWS_BUILD_PROGRESS.md` - TWS build progress
+- `docs/TWS_BUILD_COMPLETE.md` - TWS build completion
+- `docs/WORKTREE_SETUP.md` - Development worktree setup
+- `docs/HOMEBREW_TAP.md` - Homebrew tap documentation
+
+### Development Environment
+
+- `docs/CURSOR_SETUP.md` - Cursor IDE setup
+- `docs/CURSOR_AI_TUTORIAL.md` - Cursor AI tutorial and best practices
+- `docs/CURSOR_DOCS_USAGE.md` - Using @docs in Cursor
+- `docs/CURSOR_IGNORE_SETUP.md` - Cursor ignore configuration
+- `docs/CURSOR_RECOMMENDATIONS.md` - Cursor recommendations
+- `docs/SHELL_COMPLETION.md` - Shell completion setup
+- `docs/WINDOWS_SETUP_GUIDE.md` - Windows setup guide
+
+## Configuration & Deployment
+
+### Configuration
+
+- `config/config.example.json` - Example configuration file
+- `docs/ONEPASSWORD_INTEGRATION.md` - 1Password integration
+- `docs/ORATS_INTEGRATION.md` - ORATS integration guide
+
+### Testing
+
+- `docs/TUI_TESTING.md` - Terminal UI testing
+- `docs/INTEGRATION_TESTING.md` - Integration testing
+
+## Code Patterns & Practices
+
+### Patterns
+
+- `docs/COMMON_PATTERNS.md` - Common coding patterns and idioms
+- `docs/AI_FRIENDLY_CODE.md` - AI-friendly code practices
+
+### Migration & Planning
+
+- `docs/PROTOBUF_MIGRATION_PLAN.md` - Protocol Buffers migration plan
+- `docs/decimal_migration_planning.md` - Decimal migration planning
+- `docs/CME_RESEARCH.md` - CME research documentation
+
+## External Integrations
+
+### Data Providers
+
+- `docs/ORATS_INTEGRATION.md` - ORATS API integration
+- `python/ORATS_USAGE.md` - ORATS usage guide
+
+### Services
+
+- `docs/ONEPASSWORD_INTEGRATION.md` - 1Password integration
+- `docs/ios_certificate_pinning.md` - iOS certificate pinning
+
+## Project Management
+
+### Planning & Status
+
+- `docs/ACTION_PLAN.md` - Priority roadmap and action plan
+- `docs/WISHLIST.md` - Feature wishlist
+- `FINAL_SUMMARY.md` - Final project summary
+- `ENHANCEMENTS_COMPLETE.md` - Enhancements summary
+
+## Agent Services
+
+### Agent Documentation
+
+- `AGENTS.md` - Agent services overview
+- `agents/backend/README.md` - Backend agent
+- `agents/backend-market-data/README.md` - Market data agent
+- `agents/backend-data/README.md` - Data agent
+- `agents/web/README.md` - Web agent
+- `agents/tui/README.md` - TUI agent
+- `agents/ipad/README.md` - iPad agent
+- `agents/desktop/README.md` - Desktop agent
+- `agents/shared/API_CONTRACT.md` - API contract
+- `agents/shared/COORDINATION.md` - Agent coordination
+- `agents/shared/CI.md` - Continuous integration
+- `agents/shared/KnownIssues.md` - Known issues
+- `agents/shared/TODO_OVERVIEW.md` - TODO overview
+
+## Python Integration
+
+### Python Documentation
+
+- `python/README.md` - Python integration overview
+- `python/INSTALL.md` - Python installation
+- `python/PACKAGE.md` - Python package documentation
+- `python/ORATS_USAGE.md` - ORATS usage guide
+
+## Web & UI
+
+### Web Interface
+
+- `web/README.md` - Web interface documentation
+
+### Terminal UI
+
+- `tui/README.md` - Terminal UI overview
+- `tui/INSTALL.md` - Terminal UI installation
+- `tui/docs/USAGE_GUIDE.md` - Terminal UI usage guide
+- `tui/docs/KEYBOARD_SHORTCUTS.md` - Keyboard shortcuts
+
+### Desktop
+
+- `desktop/README.md` - Desktop application documentation
+
+## YouTube Videos & External Resources
+
+### YouTube Videos
+
+- **Essential Components of TWS API Programs**: <https://www.youtube.com/watch?v=n-9bdREECTQ>
+  - Referenced in: `docs/ECLIENT_EWRAPPER_ARCHITECTURE.md`
+  - Topic: TWS API architecture and implementation
+
+### External Links & Resources
+
+- **IBKR Campus**: EClient and EWrapper documentation
+- **TWS API Quick Reference**: PDF documentation
+- **TWS API Documentation**: Interactive Brokers API docs
+- **CME Group**: Capital efficiencies and financing references
+- **Cboe**: Box spreads as alternative borrowing & lending
+
+### External Resources Documentation
+
+- `docs/EXTERNAL_RESOURCES.md` - External resources tracking and summarization guide
+- `docs/resource-summaries/` - Directory for resource summaries
+
+#### Current Resources
+
+- **Making a C++ Interactive Brokers TWS Client with a Custom Socket Implementation**: <https://www.vitaltrades.com/2024/02/02/making-a-c-interactive-brokers-tws-client-with-a-custom-socket-implementation/>
+  - Author: AndrewAMD (VitalTrades LLC)
+  - Date: February 2, 2024
+  - Topic: Custom socket implementation for TWS API
+  - Status: ✅ Added to NotebookLM notebook "TWS Automated Trading - Complete Resources"
+  - Relevance: Highly relevant to TWS API integration
+
+## YouTube Videos & Tutorials
+
+### Video Documentation
+
+- `docs/YOUTUBE_VIDEOS.md` - YouTube videos tracking and summarization guide
+- `docs/YOUTUBE_VIDEOS_SETUP.md` - Step-by-step setup guide for adding videos to NotebookLM
+- `docs/video-summaries/` - Directory for video summaries
+
+### Current Videos
+
+#### TWS API Videos
+
+- **Essential Components of TWS API Programs**: <https://www.youtube.com/watch?v=n-9bdREECTQ>
+  - Referenced in: `docs/ECLIENT_EWRAPPER_ARCHITECTURE.md`
+  - Status: ✅ Added to NotebookLM notebook
+
+#### Trading & Options Videos (7 videos)
+
+1. <https://www.youtube.com/watch?v=5moyX0qwkCA>
+2. <https://www.youtube.com/watch?v=hJ7ewxQVhJw> (Playlist 1, Index 2)
+3. <https://www.youtube.com/watch?v=4zpYhHn5p90> (Playlist 2, Index 2)
+4. <https://www.youtube.com/watch?v=rC02897uiuc> (Playlist 1, Index 2)
+5. <https://www.youtube.com/watch?v=ZxwdTgMY44g> (Playlist 2, Index 2)
+6. <https://www.youtube.com/watch?v=ICZH89GdUGQ> (Playlist 2, Index 2)
+7. <https://www.youtube.com/watch?v=W6OJy32sE_g> (Playlist 2, Index 2)
+
+**Status**: ✅ All videos added to NotebookLM notebook "TWS Automated Trading - Complete Resources"
+
+**Note**: See `docs/YOUTUBE_VIDEOS.md` for complete list and status. All videos are ready for summarization.
+
+## MCP & Tools
+
+### MCP Servers
+
+- `docs/MCP_SERVERS.md` - MCP servers configuration
+- `docs/NOTEBOOKLM_USAGE.md` - NotebookLM usage guide
+- `docs/NOTEBOOKLM_SETUP_GUIDE.md` - NotebookLM setup guide
+- `docs/NOTEBOOKLM_BEGINNER_TIPS.md` - NotebookLM expert tips and best practices
+- `docs/NOTEBOOKLM_RESOURCES_OPTIMIZED.md` - ⭐ Single source of truth for all NotebookLM resources
+
+## Third Party
+
+### Third Party Libraries
+
+- `native/third_party/README.md` - Third party libraries documentation
+
+## Homebrew
+
+### Homebrew Tap
+
+- `homebrew-tap/README.md` - Homebrew tap documentation
+- `docs/HOMEBREW_TAP.md` - Homebrew tap setup
+
+## Summary
+
+This repository contains **47+ documentation files** covering:
+
+- Architecture and design patterns
+- TWS API integration and best practices
+- Build system and development environment
+- Testing and deployment
+- External integrations (ORATS, 1Password, etc.)
+- Agent services and coordination
+- Python bindings and integration
+- Web, TUI, and desktop interfaces
+- Project management and planning
+
+All documentation is maintained in Markdown format and organized in the `docs/` directory and various subdirectories throughout the project.
