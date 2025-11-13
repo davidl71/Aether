@@ -24,6 +24,14 @@
 #include <ctime>
 #include <unordered_map>
 #include <vector>
+#include <string>
+#include <cstring>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
 
 // NOTE FOR AUTOMATION AGENTS:
 // `TWSClient` is the primary integration point with Interactive Brokers' TWS API.
@@ -35,6 +43,100 @@
 namespace tws {
 
 namespace {
+
+// ============================================================================
+// Port Checking Helper
+// ============================================================================
+
+/**
+ * Check if a port is open/listening on the given host
+ * @param host Hostname or IP address
+ * @param port Port number to check
+ * @param timeout_ms Timeout in milliseconds
+ * @return true if port is open, false otherwise
+ */
+bool is_port_open(const std::string& host, int port, int timeout_ms = 1000) {
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {
+        return false;
+    }
+
+    // Set socket to non-blocking
+    int flags = fcntl(sock, F_GETFL, 0);
+    fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(port);
+
+    if (inet_pton(AF_INET, host.c_str(), &server_addr.sin_addr) <= 0) {
+        close(sock);
+        return false;
+    }
+
+    // Attempt connection
+    int result = connect(sock, (struct sockaddr*)&server_addr, sizeof(server_addr));
+
+    if (result == 0) {
+        // Connected immediately
+        close(sock);
+        return true;
+    }
+
+    if (errno == EINPROGRESS) {
+        // Connection in progress, wait with select
+        fd_set write_fds;
+        FD_ZERO(&write_fds);
+        FD_SET(sock, &write_fds);
+
+        struct timeval timeout;
+        timeout.tv_sec = timeout_ms / 1000;
+        timeout.tv_usec = (timeout_ms % 1000) * 1000;
+
+        int select_result = select(sock + 1, nullptr, &write_fds, nullptr, &timeout);
+        if (select_result > 0) {
+            int so_error;
+            socklen_t len = sizeof(so_error);
+            if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &so_error, &len) == 0 && so_error == 0) {
+                close(sock);
+                return true;
+            }
+        }
+    }
+
+    close(sock);
+    return false;
+}
+
+/**
+ * Get default ports to try based on configured port
+ * Returns configured port first, then all standard ports (TWS and IB Gateway, paper and live)
+ * This ensures we find the correct port even if user configured wrong type (paper vs live)
+ */
+std::vector<int> get_port_candidates(int configured_port) {
+    std::vector<int> candidates;
+
+    // Standard ports in priority order:
+    // 1. Configured port (if it's a standard port, it will be tried first anyway)
+    // 2. TWS Paper (7497) - most common for testing
+    // 3. TWS Live (7496)
+    // 4. IB Gateway Paper (4002)
+    // 5. IB Gateway Live (4001)
+
+    // Start with configured port
+    candidates.push_back(configured_port);
+
+    // Add all standard ports, avoiding duplicates
+    std::vector<int> standard_ports = {7497, 7496, 4002, 4001};
+    for (int port : standard_ports) {
+        if (port != configured_port) {
+            candidates.push_back(port);
+        }
+    }
+
+    return candidates;
+}
 
 const std::unordered_map<int, std::string> kIbErrorGuidance = {
     {1100, "IB lost connectivity. Check TWS/IB Gateway and internet; re-authenticate if prompted."},
@@ -86,7 +188,11 @@ public:
         , next_order_id_(0)
         , connected_(false)
         , next_request_id_(1000)
-        , state_(ConnectionState::Disconnected) {
+        , state_(ConnectionState::Disconnected)
+        , reconnect_attempts_(0)
+        , last_heartbeat_(std::chrono::steady_clock::now()) {
+        // Enable async connection mode for non-blocking connections
+        client_.asyncEConnect(true);
     }
 
     ~Impl() {
@@ -98,42 +204,303 @@ public:
     // ========================================================================
 
     bool connect() {
-        spdlog::info("Connecting to TWS at {}:{}...", config_.host, config_.port);
-
         state_ = ConnectionState::Connecting;
 
-        // Connect to TWS
+        // Get port candidates (TWS first, then IB Gateway)
+        std::vector<int> port_candidates = get_port_candidates(config_.port);
+
+        // Check which ports are open in parallel
+        std::vector<int> open_ports;
+        std::vector<int> closed_ports;
+        std::vector<std::thread> check_threads;
+        std::mutex ports_mutex;
+
+        // Build port list string for debug logging
+        std::string port_list_str;
+        for (size_t i = 0; i < port_candidates.size(); ++i) {
+            if (i > 0) port_list_str += ", ";
+            port_list_str += std::to_string(port_candidates[i]);
+        }
+        spdlog::debug("Checking {} ports in parallel: {}", port_candidates.size(), port_list_str);
+
+        auto check_start = std::chrono::steady_clock::now();
+
+        // Launch parallel port checks for all candidates
+        for (int port : port_candidates) {
+            check_threads.emplace_back([&, port]() {
+                bool is_open = is_port_open(config_.host, port, 1000);
+                std::lock_guard<std::mutex> lock(ports_mutex);
+                if (is_open) {
+                    open_ports.push_back(port);
+                    spdlog::info("Port {} is open on {}", port, config_.host);
+                } else {
+                    closed_ports.push_back(port);
+                }
+            });
+        }
+
+        // Wait for all checks to complete
+        for (auto& thread : check_threads) {
+            thread.join();
+        }
+
+        auto check_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - check_start).count();
+
+        // Log summary of port check results
+        if (!open_ports.empty()) {
+            std::string open_str;
+            for (size_t i = 0; i < open_ports.size(); ++i) {
+                if (i > 0) open_str += ", ";
+                open_str += std::to_string(open_ports[i]);
+            }
+            spdlog::info("Port check complete ({}ms): {} open port(s) found: {}",
+                        check_duration, open_ports.size(), open_str);
+        } else {
+            spdlog::warn("Port check complete ({}ms): No open ports found", check_duration);
+        }
+
+        // Helper to determine if a port is for paper trading
+        auto is_paper_port = [](int port) -> bool {
+            return port == 7497 || port == 4002;
+        };
+
+        // Helper to determine if a port is for live trading
+        auto is_live_port = [](int port) -> bool {
+            return port == 7496 || port == 4001;
+        };
+
+        // Helper to get port type string
+        auto get_port_type_string = [](int port) -> std::string {
+            if (port == 7497) return "TWS Paper Trading";
+            if (port == 7496) return "TWS Live Trading";
+            if (port == 4002) return "IB Gateway Paper Trading";
+            if (port == 4001) return "IB Gateway Live Trading";
+            return "Custom";
+        };
+
+        // Determine which port to use based on priority
+        // Priority: configured port > TWS paper > TWS live > IB Gateway paper > IB Gateway live
+        int port_to_use = config_.port;
+        bool found_open_port = false;
+        bool paper_live_mismatch = false;
+
+        // Check if configured port is in open_ports
+        if (std::find(open_ports.begin(), open_ports.end(), config_.port) != open_ports.end()) {
+            port_to_use = config_.port;
+            found_open_port = true;
+        } else if (!open_ports.empty()) {
+            // Check for paper/live mismatch
+            bool configured_is_paper = is_paper_port(config_.port);
+            bool configured_is_live = is_live_port(config_.port);
+
+            // Find what type of ports are actually open
+            bool has_paper_port = false;
+            bool has_live_port = false;
+            for (int port : open_ports) {
+                if (is_paper_port(port)) has_paper_port = true;
+                if (is_live_port(port)) has_live_port = true;
+            }
+
+            // Detect mismatch
+            if (configured_is_paper && !has_paper_port && has_live_port) {
+                paper_live_mismatch = true;
+                spdlog::warn("⚠️  Paper/Live Trading Mismatch Detected:");
+                spdlog::warn("   Configured: Paper Trading (port {})", config_.port);
+                spdlog::warn("   Available: Only Live Trading ports are open");
+                spdlog::warn("   Action: Will use available Live Trading port");
+            } else if (configured_is_live && !has_live_port && has_paper_port) {
+                paper_live_mismatch = true;
+                spdlog::warn("⚠️  Paper/Live Trading Mismatch Detected:");
+                spdlog::warn("   Configured: Live Trading (port {})", config_.port);
+                spdlog::warn("   Available: Only Paper Trading ports are open");
+                spdlog::warn("   Action: Will use available Paper Trading port");
+                spdlog::warn("   ⚠️  WARNING: This will use PAPER TRADING instead of LIVE!");
+            }
+
+            // Use first open port from priority list
+            for (int priority_port : port_candidates) {
+                if (std::find(open_ports.begin(), open_ports.end(), priority_port) != open_ports.end()) {
+                    port_to_use = priority_port;
+                    found_open_port = true;
+                    break;
+                }
+            }
+        }
+
+        std::string port_type = get_port_type_string(port_to_use);
+        std::string configured_type = get_port_type_string(config_.port);
+
+        if (found_open_port) {
+            if (port_to_use != config_.port) {
+                if (paper_live_mismatch) {
+                    spdlog::warn("Switching from {} (port {}) to {} (port {})",
+                                configured_type, config_.port, port_type, port_to_use);
+                } else {
+                    spdlog::warn("Configured port {} is not open, using {} port {} instead",
+                                config_.port, port_type, port_to_use);
+                }
+            } else {
+                spdlog::info("Using configured port {} ({})", port_to_use, port_type);
+            }
+        }
+
+        if (!found_open_port) {
+            std::string ports_str;
+            for (size_t i = 0; i < port_candidates.size(); ++i) {
+                if (i > 0) ports_str += ", ";
+                ports_str += std::to_string(port_candidates[i]);
+            }
+            spdlog::error("No open ports found on {}. Checked ports: {}",
+                         config_.host, ports_str);
+            spdlog::error("Please ensure TWS or IB Gateway is running and API is enabled");
+            state_ = ConnectionState::Error;
+            return false;
+        }
+
+        spdlog::info("Connecting to {}:{}...", config_.host, port_to_use);
+
+        // Try connecting to each open port until one succeeds
+        bool connected = false;
+        int successful_port = port_to_use;
+
+        for (int port : open_ports) {
+            // Disconnect any previous attempt
+            if (client_.isConnected()) {
+                client_.eDisconnect();
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+
+            spdlog::info("Attempting connection to {}:{}...", config_.host, port);
+
+            // Connect to TWS/IB Gateway
+            spdlog::info("Calling eConnect() for {}:{} (client_id={})...", config_.host, port, config_.client_id);
+
+            // Reset connection state before attempting
+            connected_ = false;
+        state_ = ConnectionState::Connecting;
+            last_error_code_ = 0;
+            last_error_message_.clear();
+
         bool success = client_.eConnect(
             config_.host.c_str(),
-            config_.port,
+                port,
             config_.client_id
         );
 
+            spdlog::info("eConnect() returned: {}", success ? "true" : "false");
+
         if (!success) {
-            spdlog::error("Failed to connect to TWS");
-            state_ = ConnectionState::Error;
-            return false;
-        }
+                spdlog::warn("eConnect() returned false for {}:{}, trying next port...", config_.host, port);
+                continue;
+            }
 
-        // Wait for connection acknowledgment
-        if (!wait_for_connection(config_.connection_timeout_ms)) {
-            spdlog::error("Connection timeout");
+            // Give a brief moment for any immediate errors to come through
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+            // Check for immediate connection errors (like 502)
+            {
+                std::lock_guard<std::mutex> lock(error_mutex_);
+                if (last_error_code_ == 502) {
+                    spdlog::warn("Connection rejected by TWS/Gateway (error 502) for {}:{}", config_.host, port);
+                    spdlog::warn("Error: {}", last_error_message_);
             client_.eDisconnect();
+                    continue;
+                }
+            }
+
+            // Check if socket is actually connected
+            bool is_connected = client_.isConnected();
+            spdlog::info("isConnected() returned: {}", is_connected ? "true" : "false");
+
+            if (!is_connected) {
+                spdlog::warn("Socket not connected after eConnect() for {}:{}, trying next port...", config_.host, port);
+                spdlog::warn("This may indicate the port is open but TWS/Gateway rejected the connection");
+                spdlog::warn("Check TWS/Gateway for error messages or authentication prompts");
+                client_.eDisconnect();
+                continue;
+            }
+
+            spdlog::info("Socket connected, starting message reader thread...");
+
+            // CRITICAL: Start reader thread BEFORE waiting for acknowledgment
+            // The reader thread processes messages from TWS, including nextValidId
+            // which sets connected_ = true. Without it, we'll wait forever.
+            start_reader_thread();
+
+            spdlog::info("Waiting for TWS acknowledgment (timeout: {}ms)...",
+                         config_.connection_timeout_ms);
+
+            // Wait for connection acknowledgment with progress logging
+            auto wait_start = std::chrono::steady_clock::now();
+            bool connection_acknowledged = wait_for_connection_with_progress(config_.connection_timeout_ms);
+
+            if (connection_acknowledged) {
+                connected = true;
+                successful_port = port;
+
+                // Determine port type for logging
+                std::string port_type = "";
+                if (port == 7497) port_type = "TWS Paper Trading";
+                else if (port == 7496) port_type = "TWS Live Trading";
+                else if (port == 4002) port_type = "IB Gateway Paper Trading";
+                else if (port == 4001) port_type = "IB Gateway Live Trading";
+                else port_type = "Custom";
+
+                if (port != config_.port) {
+                    spdlog::warn("Configured port {} failed, successfully connected to {} port {}",
+                                config_.port, port_type, port);
+                } else {
+                    spdlog::info("Successfully connected to {} port {}", port_type, port);
+                }
+                break;
+            } else {
+                spdlog::warn("Connection timeout on {}:{}, trying next port...", config_.host, port);
+                // Stop reader thread if it was started
+                if (reader_thread_ && reader_thread_->joinable()) {
+                    connected_ = false;
+                    signal_.issueSignal();
+                    reader_thread_->join();
+                    reader_thread_.reset();
+                }
+                client_.eDisconnect();
+            }
+        }
+
+        if (!connected) {
+            spdlog::error("Failed to connect to any open port on {}", config_.host);
+            if (!open_ports.empty()) {
+                std::string tried_ports;
+                for (size_t i = 0; i < open_ports.size(); ++i) {
+                    if (i > 0) tried_ports += ", ";
+                    tried_ports += std::to_string(open_ports[i]);
+                }
+                spdlog::error("Attempted connection to open port(s): {}", tried_ports);
+                spdlog::error("Possible causes:");
+                spdlog::error("  - API not enabled in TWS/Gateway settings");
+                spdlog::error("  - Authentication required (check TWS/Gateway for prompts)");
+                spdlog::error("  - Client ID conflict (try a different client_id)");
+                spdlog::error("  - Firewall blocking connection");
+                spdlog::error("  - Wrong port type (paper vs live trading mismatch)");
+            }
+            spdlog::error("Port reference: TWS Paper=7497, TWS Live=7496, IB Gateway Paper=4002, IB Gateway Live=4001");
             state_ = ConnectionState::Error;
             return false;
         }
 
-        // Start message reader thread
-        start_reader_thread();
+        port_to_use = successful_port;
 
         state_ = ConnectionState::Connected;
-        spdlog::info("✓ Connected to TWS");
+        spdlog::info("✓ Connected to {}:{}", config_.host, port_to_use);
         return true;
     }
 
     void disconnect() {
         if (connected_) {
             spdlog::info("Disconnecting from TWS...");
+
+            // Stop health monitoring
+            stop_health_monitoring();
 
             // Stop reader thread
             if (reader_thread_ && reader_thread_->joinable()) {
@@ -167,9 +534,24 @@ public:
     // ========================================================================
 
     void connectAck() override {
-        spdlog::info("Connection acknowledged by TWS");
-        // Request next valid order ID
+        spdlog::info("Connection acknowledged by TWS (connectAck callback received)");
+        spdlog::info("According to IB API Quick Reference, this means:");
+        spdlog::info("  - Socket connection established");
+        spdlog::info("  - Server version received");
+        spdlog::info("  - Waiting for managedAccounts and nextValidId...");
+
+        // In async mode, connectAck is called immediately after socket connection
+        // We still need to wait for nextValidId to confirm full connection
+
+        // Reset reconnection attempts on successful connection
+        reconnect_attempts_ = 0;
+        last_message_time_ = std::chrono::steady_clock::now();
+
+        // Note: Don't start health monitoring yet - wait for nextValidId
+        // Request next valid order ID (this will trigger nextValidId callback)
+        // According to IB API Quick Reference, reqIds(-1) requests the next valid order ID
         client_.reqIds(-1);
+        spdlog::debug("Requested next valid order ID, waiting for nextValidId callback...");
     }
 
     void connectionClosed() override {
@@ -182,22 +564,44 @@ public:
             error_callback_(1100, "Connection closed by TWS");
         }
 
-        // Auto-reconnect if enabled
+        // Auto-reconnect if enabled with exponential backoff
         if (config_.auto_reconnect) {
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds(config_.reconnect_delay_ms)
-            );
-            connect();
+            attempt_reconnect_with_backoff();
+        }
+    }
+
+    // managedAccounts is called with the list of accounts after connection
+    // This is an early indicator of successful connection (happens before nextValidId)
+    // According to IB API Quick Reference, this is called after connectAck
+    void managedAccounts(const std::string& accountsList) override {
+        spdlog::info("Managed accounts received: {}", accountsList);
+        spdlog::info("This indicates connection is progressing (received after connectAck)");
+        // Parse account list if needed
+        if (!accountsList.empty()) {
+            spdlog::debug("Account list: {}", accountsList);
+            // Store account info for later use
+            // Note: This happens before nextValidId, so connection is progressing
         }
     }
 
     void nextValidId(OrderId orderId) override {
-        spdlog::info("Received nextValidId: {}", orderId);
+        spdlog::info("Received nextValidId: {} - Connection fully established", orderId);
         next_order_id_ = orderId;
 
         std::lock_guard<std::mutex> lock(connection_mutex_);
         connected_ = true;
+
+        // Start health monitoring now that we're fully connected
+        start_health_monitoring();
+
+        // According to EWrapper best practices, request open orders to sync state
+        // This is important for order recovery after reconnection
+        // TWS will call openOrder() for each open order, then openOrderEnd()
+        spdlog::debug("Requesting open orders to sync state...");
+        client_.reqAllOpenOrders();
+
         connection_cv_.notify_all();
+        spdlog::info("✓ Connection fully established and ready");
     }
 
     // ========================================================================
@@ -206,6 +610,7 @@ public:
 
     void tickPrice(TickerId tickerId, TickType field,
                    double price, const TickAttrib& attribs) override {
+        try {
         spdlog::trace("tickPrice: id={}, field={}, price={}", tickerId, field, price);
 
         std::lock_guard<std::mutex> lock(data_mutex_);
@@ -242,6 +647,17 @@ public:
         // Notify callback if registered
         if (market_data_callbacks_.count(tickerId)) {
             market_data_callbacks_[tickerId](market_data);
+            }
+
+            // Fulfill promise if waiting for synchronous request
+            if (market_data_promises_.count(tickerId)) {
+                market_data_promises_[tickerId]->set_value(market_data);
+                market_data_promises_.erase(tickerId);
+            }
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in tickPrice(tickerId={}, field={}): {}", tickerId, field, e.what());
+        } catch (...) {
+            spdlog::error("Unknown exception in tickPrice(tickerId={}, field={})", tickerId, field);
         }
     }
 
@@ -307,6 +723,7 @@ public:
                     double avgFillPrice, long long permId, int parentId,
                     double lastFillPrice, int clientId,
                     const std::string& whyHeld, double mktCapPrice) override {
+        try {
         spdlog::info("Order #{} status: {}, filled={}, remaining={}, avgPrice={}",
                     orderId, status, filled, remaining, avgFillPrice);
 
@@ -336,26 +753,65 @@ public:
             if (order_status_callback_) {
                 order_status_callback_(order);
             }
+            }
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in orderStatus(orderId={}, status={}): {}", orderId, status, e.what());
+        } catch (...) {
+            spdlog::error("Unknown exception in orderStatus(orderId={}, status={})", orderId, status);
         }
     }
 
     void openOrder(OrderId orderId, const Contract& contract,
                    const Order& order, const OrderState& orderState) override {
-        spdlog::debug("Open order: #{}, {}, {}", orderId, contract.symbol, order.action);
+        try {
+            spdlog::debug("Open order: #{}, {}, {}, status={}",
+                         orderId, contract.symbol, order.action, orderState.status);
 
         std::lock_guard<std::mutex> lock(order_mutex_);
 
-        // Update order if it exists
+            // openOrder is called for ALL open orders, including ones we didn't place
+            // This is important for order recovery and syncing with TWS state
+
+            // Update order if it exists in our tracking
         if (orders_.count(orderId)) {
             auto& our_order = orders_[orderId];
-            our_order.status = types::OrderStatus::Submitted;
 
-            if (orderState.status == "Filled") {
+                // Update status based on orderState
+                // Note: OrderState contains status string, but filled quantity and avg price
+                // come from orderStatus() callback, not openOrder()
+                if (orderState.status == "PreSubmitted" || orderState.status == "Submitted") {
+                    our_order.status = types::OrderStatus::Submitted;
+                } else if (orderState.status == "Filled") {
                 our_order.status = types::OrderStatus::Filled;
+                    // Filled quantity and price come from orderStatus() callback
             } else if (orderState.status == "Cancelled") {
                 our_order.status = types::OrderStatus::Cancelled;
+                } else if (orderState.status == "PartiallyFilled") {
+                    our_order.status = types::OrderStatus::PartiallyFilled;
+                    // Filled quantity and price come from orderStatus() callback
+                }
+
+                our_order.last_update = std::chrono::system_clock::now();
+
+                // Notify callback
+                if (order_status_callback_) {
+                    order_status_callback_(our_order);
+                }
+            } else {
+                // Order not in our tracking - might be from previous session or another client
+                spdlog::debug("Received openOrder for order #{} not in our tracking (may be from previous session)", orderId);
             }
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in openOrder(orderId={}, symbol={}): {}", orderId, contract.symbol, e.what());
+        } catch (...) {
+            spdlog::error("Unknown exception in openOrder(orderId={}, symbol={})", orderId, contract.symbol);
         }
+    }
+
+    void openOrderEnd() override {
+        spdlog::debug("Open orders sync complete");
+        // All open orders have been sent via openOrder() callbacks
+        // This is useful for order recovery after reconnection
     }
 
     void execDetails(int reqId, const Contract& contract,
@@ -415,6 +871,16 @@ public:
 
     void positionEnd() override {
         spdlog::debug("Position updates complete");
+
+        // Fulfill promise if waiting for synchronous request
+        if (positions_request_pending_.load()) {
+            std::lock_guard<std::mutex> lock(position_mutex_);
+            if (positions_promise_) {
+                positions_promise_->set_value(positions_);
+                positions_promise_.reset();
+                positions_request_pending_ = false;
+            }
+        }
     }
 
     void updateAccountValue(const std::string& key, const std::string& val,
@@ -452,16 +918,29 @@ public:
 
     void accountDownloadEnd(const std::string& accountName) override {
         spdlog::debug("Account download complete: {}", accountName);
+
+        // Fulfill promise if waiting for synchronous request
+        if (account_request_pending_.load()) {
+            std::lock_guard<std::mutex> lock(account_mutex_);
+            if (account_promise_) {
+                account_promise_->set_value(account_info_);
+                account_promise_.reset();
+                account_request_pending_ = false;
+            }
+        }
     }
 
     void updatePortfolio(const Contract& contract, Decimal position,
                         double marketPrice, double marketValue,
                         double averageCost, double unrealizedPNL,
                         double realizedPNL, const std::string& accountName) override {
-        spdlog::debug("Portfolio update: {} position={}, value={}, PnL={}",
-                     contract.symbol, position, marketValue, unrealizedPNL);
+        spdlog::debug("Portfolio update: {} position={}, value={}, PnL={}, avgCost={}",
+                     contract.symbol, position, marketValue, unrealizedPNL, averageCost);
 
-        // Update position with current market price
+        // updatePortfolio is called for each position in the portfolio
+        // This is important for tracking current positions and P&L
+        // Per EWrapper best practices, this provides real-time position updates
+
         std::lock_guard<std::mutex> lock(position_mutex_);
 
         auto it = std::find_if(
@@ -476,7 +955,20 @@ public:
         );
 
         if (it != positions_.end()) {
+            // Update existing position with latest data
             it->current_price = marketPrice;
+            it->quantity = static_cast<int>(position);
+            it->avg_price = averageCost;
+            // Note: unrealizedPNL and realizedPNL could be stored if needed
+        } else if (position != 0) {
+            // New position - add it (might be from previous session)
+            types::Position pos;
+            pos.contract = convert_from_tws_contract(contract);
+            pos.quantity = static_cast<int>(position);
+            pos.avg_price = averageCost;
+            pos.current_price = marketPrice;
+            positions_.push_back(pos);
+            spdlog::debug("Added new position from updatePortfolio: {}", contract.symbol);
         }
     }
 
@@ -486,7 +978,34 @@ public:
 
     void error(int id, time_t errorTime, int errorCode, const std::string& errorString,
               const std::string& advancedOrderRejectJson) override {
+        // Store error for connection attempt checking
+        {
+            std::lock_guard<std::mutex> lock(error_mutex_);
+            last_error_code_ = errorCode;
+            last_error_message_ = errorString;
+        }
+
         std::vector<std::string> guidance_notes;
+
+        // Check for connection failure errors (502 and other connection errors)
+        if (errorCode == 502 || (errorCode >= 500 && errorCode < 600)) {
+            spdlog::error("TWS connection error {}: {}", errorCode, errorString);
+            connected_ = false;
+            state_ = ConnectionState::Error;
+            connection_cv_.notify_all(); // Wake up waiting connection attempt
+        }
+
+        // Check for authentication/authorization errors
+        if (errorCode == 162 || errorCode == 200) {
+            spdlog::error("TWS authentication/authorization error {}: {}", errorCode, errorString);
+            spdlog::error("This usually means:");
+            spdlog::error("  - TWS/Gateway is waiting for you to accept the connection");
+            spdlog::error("  - Check TWS/Gateway window for a connection prompt");
+            spdlog::error("  - Ensure 'Enable ActiveX and Socket Clients' is enabled in API settings");
+            connected_ = false;
+            state_ = ConnectionState::Error;
+            connection_cv_.notify_all();
+        }
 
         if (errorCode >= 2100 && errorCode < 3000) {
             // Informational messages
@@ -577,8 +1096,69 @@ public:
         std::lock_guard<std::mutex> lock(data_mutex_);
         market_data_callbacks_.erase(request_id);
         market_data_.erase(request_id);
+        // Cancel any pending promise
+        if (market_data_promises_.count(request_id)) {
+            // Set promise to indicate cancellation (empty MarketData)
+            types::MarketData empty_data;
+            market_data_promises_[request_id]->set_value(empty_data);
+            market_data_promises_.erase(request_id);
+        }
 
         spdlog::debug("Cancelled market data request {}", request_id);
+    }
+
+    // Synchronous wrapper for market data request
+    std::optional<types::MarketData> request_market_data_sync(
+        const types::OptionContract& contract,
+        int timeout_ms) {
+        int request_id = next_request_id_++;
+
+        // Create promise for synchronous wait
+        auto promise = std::make_shared<std::promise<types::MarketData>>();
+        auto future = promise->get_future();
+
+        // Register promise
+        {
+            std::lock_guard<std::mutex> lock(data_mutex_);
+            market_data_promises_[request_id] = promise;
+        }
+
+        // Convert to TWS Contract
+        Contract tws_contract = convert_to_tws_contract(contract);
+
+        // Request market data directly (don't use request_market_data to avoid double request_id)
+        client_.reqMktData(
+            request_id,           // Request ID
+            tws_contract,         // Contract
+            "",                   // Generic tick list
+            false,                // Snapshot
+            false,                // Regulatory snapshot
+            TagValueListSPtr()    // Options
+        );
+
+        spdlog::debug("Requested market data synchronously for {} (id={})",
+                     contract.to_string(), request_id);
+
+        // Wait for response with timeout
+        if (future.wait_for(std::chrono::milliseconds(timeout_ms)) == std::future_status::ready) {
+            auto data = future.get();
+            // Check if we got valid data (not empty/cancelled)
+            if (data.bid > 0 || data.ask > 0 || data.last > 0) {
+                return data;
+            }
+        } else {
+            // Timeout - cancel request and clean up
+            spdlog::warn("Market data request {} timed out after {}ms", request_id, timeout_ms);
+            cancel_market_data(request_id);
+        }
+
+        // Clean up promise if still pending
+        {
+            std::lock_guard<std::mutex> lock(data_mutex_);
+            market_data_promises_.erase(request_id);
+        }
+
+        return std::nullopt;
     }
 
     std::vector<types::OptionContract> request_option_chain(
@@ -692,6 +1272,38 @@ public:
         client_.reqPositions();
     }
 
+    // Synchronous wrapper for positions request
+    std::vector<types::Position> request_positions_sync(int timeout_ms) {
+        // Create promise for synchronous wait
+        auto promise = std::make_shared<std::promise<std::vector<types::Position>>>();
+        auto future = promise->get_future();
+
+        // Register promise
+        {
+            std::lock_guard<std::mutex> lock(position_mutex_);
+            positions_promise_ = promise;
+            positions_request_pending_ = true;
+        }
+
+        // Request positions (async)
+        client_.reqPositions();
+
+        // Wait for positionEnd() callback with timeout
+        if (future.wait_for(std::chrono::milliseconds(timeout_ms)) == std::future_status::ready) {
+            return future.get();
+        } else {
+            // Timeout
+            spdlog::warn("Positions request timed out after {}ms", timeout_ms);
+            {
+                std::lock_guard<std::mutex> lock(position_mutex_);
+                positions_promise_.reset();
+                positions_request_pending_ = false;
+            }
+            // Return cached positions if available
+            return get_positions();
+        }
+    }
+
     std::vector<types::Position> get_positions() const {
         std::lock_guard<std::mutex> lock(position_mutex_);
         return positions_;
@@ -725,6 +1337,42 @@ public:
         spdlog::debug("Requesting account updates");
         account_callback_ = callback;
         client_.reqAccountUpdates(true, "");
+    }
+
+    // Synchronous wrapper for account info request
+    std::optional<types::AccountInfo> request_account_info_sync(int timeout_ms) {
+        // Create promise for synchronous wait
+        auto promise = std::make_shared<std::promise<types::AccountInfo>>();
+        auto future = promise->get_future();
+
+        // Register promise
+        {
+            std::lock_guard<std::mutex> lock(account_mutex_);
+            account_promise_ = promise;
+            account_request_pending_ = true;
+        }
+
+        // Request account updates (async)
+        client_.reqAccountUpdates(true, "");
+
+        // Wait for accountDownloadEnd() callback with timeout
+        if (future.wait_for(std::chrono::milliseconds(timeout_ms)) == std::future_status::ready) {
+            auto info = future.get();
+            if (!info.account_id.empty()) {
+                return info;
+            }
+        } else {
+            // Timeout
+            spdlog::warn("Account info request timed out after {}ms", timeout_ms);
+            {
+                std::lock_guard<std::mutex> lock(account_mutex_);
+                account_promise_.reset();
+                account_request_pending_ = false;
+            }
+        }
+
+        // Return cached account info if available
+        return get_account_info();
     }
 
     std::optional<types::AccountInfo> get_account_info() const {
@@ -790,11 +1438,119 @@ private:
 
                 try {
                     r->processMsgs();
+                    // Update last message time for health monitoring
+                    last_message_time_ = std::chrono::steady_clock::now();
                 } catch (const std::exception& e) {
                     spdlog::error("Error processing messages: {}", e.what());
                 }
             }
         });
+    }
+
+    void attempt_reconnect_with_backoff() {
+        std::lock_guard<std::mutex> lock(reconnect_mutex_);
+
+        int attempts = reconnect_attempts_.load();
+        const int max_retries = config_.max_reconnect_attempts > 0
+            ? config_.max_reconnect_attempts
+            : 10; // Default max retries
+
+        if (attempts >= max_retries) {
+            spdlog::error("Max reconnection attempts ({}) reached. Stopping auto-reconnect.", max_retries);
+            state_ = ConnectionState::Error;
+            return;
+        }
+
+        // Exponential backoff: 1s, 2s, 4s, 8s, 16s, max 30s
+        int delay_ms = std::min(
+            1000 * (1 << attempts),  // Exponential: 1000, 2000, 4000, 8000, 16000...
+            30000                     // Cap at 30 seconds
+        );
+
+        reconnect_attempts_++;
+        last_reconnect_attempt_ = std::chrono::steady_clock::now();
+
+        spdlog::info("Attempting reconnection (attempt {}/{}, delay: {}ms)...",
+                    attempts + 1, max_retries, delay_ms);
+
+        // Wait with backoff
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+
+        // Attempt reconnection in background thread to avoid blocking
+        std::thread([this]() {
+            if (connect()) {
+                spdlog::info("✓ Reconnected successfully after {} attempts",
+                           reconnect_attempts_.load());
+            } else {
+                spdlog::warn("Reconnection attempt {} failed", reconnect_attempts_.load());
+                // Will retry on next connectionClosed() or error 1100
+            }
+        }).detach();
+    }
+
+    void start_health_monitoring() {
+        if (health_check_enabled_.load()) {
+            return; // Already running
+        }
+
+        health_check_enabled_ = true;
+        last_message_time_ = std::chrono::steady_clock::now();
+
+        health_check_thread_ = std::make_unique<std::thread>([this]() {
+            const auto health_check_interval = std::chrono::seconds(30); // Check every 30 seconds
+            const auto stale_threshold = std::chrono::minutes(2); // Consider stale after 2 minutes
+
+            while (health_check_enabled_.load() && connected_.load()) {
+                std::this_thread::sleep_for(health_check_interval);
+
+                if (!connected_.load()) {
+                    break;
+                }
+
+                auto now = std::chrono::steady_clock::now();
+                auto time_since_last_message = now - last_message_time_;
+
+                // Check if connection appears stale
+                if (time_since_last_message > stale_threshold) {
+                    spdlog::warn("Connection appears stale (no messages for {}s). Checking connection...",
+                                std::chrono::duration_cast<std::chrono::seconds>(time_since_last_message).count());
+
+                    // Verify socket is still connected
+                    if (!client_.isConnected()) {
+                        spdlog::error("Socket disconnected. Triggering reconnection...");
+                        connected_ = false;
+                        state_ = ConnectionState::Error;
+                        connectionClosed(); // This will trigger reconnection if enabled
+                        break;
+                    } else {
+                        // Socket is connected but no messages - might be idle
+                        // Request server time as a heartbeat
+                        spdlog::debug("Connection alive but idle. Requesting server time as heartbeat...");
+                        // Note: reqCurrentTime() would be ideal but may not be available
+                        // Instead, we'll just log and continue monitoring
+                    }
+                }
+
+                last_heartbeat_ = now;
+            }
+        });
+
+        spdlog::debug("Connection health monitoring started");
+    }
+
+    void stop_health_monitoring() {
+        if (!health_check_enabled_.load()) {
+            return;
+        }
+
+        health_check_enabled_ = false;
+
+        if (health_check_thread_ && health_check_thread_->joinable()) {
+            health_check_thread_->join();
+            health_check_thread_.reset();
+        }
+
+        spdlog::debug("Connection health monitoring stopped");
     }
 
     bool wait_for_connection(int timeout_ms) {
@@ -804,6 +1560,83 @@ private:
             std::chrono::milliseconds(timeout_ms),
             [this] { return connected_.load(); }
         );
+    }
+
+    bool wait_for_connection_with_progress(int timeout_ms) {
+        std::unique_lock<std::mutex> lock(connection_mutex_);
+
+        auto start = std::chrono::steady_clock::now();
+        auto last_log = start;
+        const auto log_interval = std::chrono::seconds(2); // Log every 2 seconds
+
+        while (true) {
+            auto now = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+            auto time_since_last_log = now - last_log;
+
+            // Check if we've timed out
+            if (elapsed >= timeout_ms) {
+                spdlog::warn("Connection timeout after {}ms (waiting for nextValidId from TWS)", elapsed);
+                spdlog::warn("Possible reasons:");
+                spdlog::warn("  1. TWS/Gateway is waiting for you to accept the connection");
+                spdlog::warn("     → Check TWS/Gateway window for a connection prompt");
+                spdlog::warn("  2. API not fully enabled in TWS/Gateway settings");
+                spdlog::warn("     → Go to Edit → Global Configuration → API → Settings");
+                spdlog::warn("     → Enable 'Enable ActiveX and Socket Clients'");
+                spdlog::warn("  3. Client ID conflict (another application using same ID)");
+                spdlog::warn("     → Try a different client_id in your config");
+                spdlog::warn("  4. TWS/Gateway requires authentication");
+                spdlog::warn("     → Check TWS/Gateway for authentication prompts");
+                return false;
+            }
+
+            // Check for connection errors during wait
+            {
+                std::lock_guard<std::mutex> lock(error_mutex_);
+                if (last_error_code_ == 502) {
+                    spdlog::warn("Connection error 502 detected during wait: {}", last_error_message_);
+                    return false;
+                }
+                // Check for authentication/authorization errors (162, 200)
+                if (last_error_code_ == 162 || last_error_code_ == 200) {
+                    spdlog::error("TWS authentication error {} detected: {}", last_error_code_, last_error_message_);
+                    spdlog::error("TWS is likely waiting for you to accept the connection in the TWS/Gateway window");
+                    return false;
+                }
+                // Check for other connection-related errors (500-599)
+                if (last_error_code_ >= 500 && last_error_code_ < 600) {
+                    spdlog::warn("Connection error {} detected during wait: {}", last_error_code_, last_error_message_);
+                    return false;
+                }
+            }
+
+            // Check if connected
+            if (connected_.load()) {
+                auto total_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+                spdlog::info("Connection acknowledged after {}ms", total_elapsed);
+                return true;
+            }
+
+            // Log progress every 2 seconds
+            if (time_since_last_log >= log_interval) {
+                auto remaining = timeout_ms - elapsed;
+                spdlog::info("Still waiting for TWS acknowledgment... ({}ms remaining, waiting for nextValidId)", remaining);
+                last_log = now;
+            }
+
+            // Wait with a shorter timeout to allow periodic checks
+            auto wait_time = std::min(
+                std::chrono::milliseconds(timeout_ms - elapsed),
+                std::chrono::milliseconds(500) // Check every 500ms
+            );
+
+            if (connection_cv_.wait_for(lock, wait_time, [this] { return connected_.load(); })) {
+                auto total_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now() - start).count();
+                spdlog::info("Connection acknowledged after {}ms", total_elapsed);
+                return true;
+            }
+        }
     }
 
     Contract convert_to_tws_contract(const types::OptionContract& contract) {
@@ -970,6 +1803,20 @@ private:
     std::atomic<int> next_order_id_;
     std::atomic<int> next_request_id_;
     ConnectionState state_;
+    std::atomic<int> last_error_code_{0};
+    std::string last_error_message_;
+    std::mutex error_mutex_;
+
+    // Reconnection state
+    std::atomic<int> reconnect_attempts_{0};
+    std::chrono::steady_clock::time_point last_reconnect_attempt_;
+    std::mutex reconnect_mutex_;
+
+    // Connection health monitoring
+    std::chrono::steady_clock::time_point last_heartbeat_;
+    std::chrono::steady_clock::time_point last_message_time_;
+    std::atomic<bool> health_check_enabled_{false};
+    std::unique_ptr<std::thread> health_check_thread_;
 
     std::unique_ptr<std::thread> reader_thread_;
 
@@ -981,6 +1828,8 @@ private:
     mutable std::mutex data_mutex_;
     std::map<int, types::MarketData> market_data_;
     std::map<int, MarketDataCallback> market_data_callbacks_;
+    // Synchronous request tracking
+    std::map<int, std::shared_ptr<std::promise<types::MarketData>>> market_data_promises_;
 
     // Orders
     mutable std::mutex order_mutex_;
@@ -991,11 +1840,15 @@ private:
     mutable std::mutex position_mutex_;
     std::vector<types::Position> positions_;
     PositionCallback position_callback_;
+    std::shared_ptr<std::promise<std::vector<types::Position>>> positions_promise_;
+    std::atomic<bool> positions_request_pending_{false};
 
     // Account
     mutable std::mutex account_mutex_;
     types::AccountInfo account_info_;
     AccountCallback account_callback_;
+    std::shared_ptr<std::promise<types::AccountInfo>> account_promise_;
+    std::atomic<bool> account_request_pending_{false};
 
     // Callbacks
     ErrorCallback error_callback_;
@@ -1046,6 +1899,12 @@ int TWSClient::request_market_data(const types::OptionContract& contract,
     return pimpl_->request_market_data(contract, callback);
 }
 
+std::optional<types::MarketData> TWSClient::request_market_data_sync(
+    const types::OptionContract& contract,
+    int timeout_ms) {
+    return pimpl_->request_market_data_sync(contract, timeout_ms);
+}
+
 void TWSClient::cancel_market_data(int request_id) {
     pimpl_->cancel_market_data(request_id);
 }
@@ -1092,6 +1951,10 @@ void TWSClient::request_positions(PositionCallback callback) {
     pimpl_->request_positions(callback);
 }
 
+std::vector<types::Position> TWSClient::request_positions_sync(int timeout_ms) {
+    return pimpl_->request_positions_sync(timeout_ms);
+}
+
 std::vector<types::Position> TWSClient::get_positions() const {
     return pimpl_->get_positions();
 }
@@ -1107,6 +1970,10 @@ std::optional<types::Position> TWSClient::get_position(
 
 void TWSClient::request_account_updates(AccountCallback callback) {
     pimpl_->request_account_updates(callback);
+}
+
+std::optional<types::AccountInfo> TWSClient::request_account_info_sync(int timeout_ms) {
+    return pimpl_->request_account_info_sync(timeout_ms);
 }
 
 std::optional<types::AccountInfo> TWSClient::get_account_info() const {

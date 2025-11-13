@@ -7,6 +7,9 @@
 #include <functional>
 #include <map>
 #include <vector>
+#include <future>
+#include <chrono>
+#include <optional>
 
 namespace tws {
 
@@ -60,9 +63,15 @@ public:
     // Market Data Operations
     // ========================================================================
 
-    // Request market data for an option contract
+    // Request market data for an option contract (async - callback-based)
     int request_market_data(const types::OptionContract& contract,
                            MarketDataCallback callback);
+
+    // Request market data synchronously (blocks until data received or timeout)
+    std::optional<types::MarketData> request_market_data_sync(
+        const types::OptionContract& contract,
+        int timeout_ms = 5000
+    );
 
     // Cancel market data subscription
     void cancel_market_data(int request_id);
@@ -100,10 +109,13 @@ public:
     // Position Operations
     // ========================================================================
 
-    // Request current positions
+    // Request current positions (async - callback-based)
     void request_positions(PositionCallback callback);
 
-    // Get all positions
+    // Request positions synchronously (blocks until positions received or timeout)
+    std::vector<types::Position> request_positions_sync(int timeout_ms = 5000);
+
+    // Get all positions (from cache - may be stale)
     std::vector<types::Position> get_positions() const;
 
     // Get position for specific contract
@@ -115,10 +127,13 @@ public:
     // Account Operations
     // ========================================================================
 
-    // Request account updates
+    // Request account updates (async - callback-based)
     void request_account_updates(AccountCallback callback);
 
-    // Get current account information
+    // Request account updates synchronously (blocks until account info received or timeout)
+    std::optional<types::AccountInfo> request_account_info_sync(int timeout_ms = 5000);
+
+    // Get current account information (from cache - may be stale)
     std::optional<types::AccountInfo> get_account_info() const;
 
     // ========================================================================
