@@ -405,7 +405,10 @@ public:
             spdlog::info("Attempting connection to {}:{}...", config_.host, port);
 
             // Connect to TWS/IB Gateway
+            spdlog::info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             spdlog::info("Calling eConnect() for {}:{} (client_id={})...", config_.host, port, config_.client_id);
+            spdlog::debug("  → Socket state before eConnect: {}", client_.isConnected() ? "connected" : "disconnected");
+            spdlog::debug("  → Async mode enabled: true");
 
             // Reset connection state before attempting
             connected_ = false;
@@ -417,13 +420,21 @@ public:
             connection_callbacks_received_.connectAck = false;
             connection_callbacks_received_.managedAccounts = false;
 
+        auto connect_start = std::chrono::steady_clock::now();
+        if (config_.log_raw_messages) {
+            spdlog::trace("[RAW API] → eConnect(host=\"{}\", port={}, clientId={})",
+                        config_.host, port, config_.client_id);
+        }
         bool success = client_.eConnect(
             config_.host.c_str(),
                 port,
             config_.client_id
         );
+        auto connect_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - connect_start).count();
 
-            spdlog::info("eConnect() returned: {}", success ? "true" : "false");
+            spdlog::info("eConnect() returned: {} (took {}ms)", success ? "true" : "false", connect_duration);
+            spdlog::debug("  → Socket state after eConnect: {}", client_.isConnected() ? "connected" : "disconnected");
 
         if (!success) {
                 spdlog::warn("eConnect() returned false for {}:{}, trying next port...", config_.host, port);
@@ -431,16 +442,46 @@ public:
             }
 
             // Give a brief moment for any immediate errors to come through
+            spdlog::debug("Waiting 200ms for immediate errors...");
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
             // Check for immediate connection errors (like 502)
             {
                 std::lock_guard<std::mutex> lock(error_mutex_);
-                if (last_error_code_ == 502) {
-                    spdlog::warn("Connection rejected by TWS/Gateway (error 502) for {}:{}", config_.host, port);
-                    spdlog::warn("Error: {}", last_error_message_);
-            client_.eDisconnect();
-                    continue;
+                if (last_error_code_ != 0) {
+                    spdlog::warn("Error detected immediately after eConnect() (error {}): {}",
+                               last_error_code_, last_error_message_);
+
+                    if (last_error_code_ == 502) {
+                        spdlog::error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                        spdlog::error("Connection rejected by TWS/Gateway (error 502) for {}:{}", config_.host, port);
+                        spdlog::error("Error message: {}", last_error_message_);
+                        spdlog::error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                        spdlog::error("Possible causes:");
+                        spdlog::error("  1. API not enabled in TWS/Gateway");
+                        spdlog::error("     → Go to: File → Global Configuration → API → Settings");
+                        spdlog::error("     → Enable: 'Enable ActiveX and Socket Clients'");
+                        spdlog::error("  2. IP address not trusted (127.0.0.1 should be trusted by default)");
+                        spdlog::error("     → Check 'Trusted IPs' in API settings");
+                        spdlog::error("  3. TWS/Gateway not fully started");
+                        spdlog::error("     → Wait for TWS/Gateway to fully load before connecting");
+                        spdlog::error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                        client_.eDisconnect();
+                        continue;
+                    } else if (last_error_code_ == 162 || last_error_code_ == 200) {
+                        spdlog::error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                        spdlog::error("Authentication required (error {})", last_error_code_);
+                        spdlog::error("Error message: {}", last_error_message_);
+                        spdlog::error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                        spdlog::error("TWS/Gateway is waiting for you to accept the connection:");
+                        spdlog::error("  → Check TWS/Gateway window for a connection prompt");
+                        spdlog::error("  → Click 'Accept' or 'OK' to allow the connection");
+                        spdlog::error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                        client_.eDisconnect();
+                        continue;
+                    }
+                } else {
+                    spdlog::debug("No immediate errors detected - connection proceeding");
                 }
             }
 
@@ -457,6 +498,11 @@ public:
             }
 
             spdlog::info("Socket connected, starting message reader thread...");
+            spdlog::debug("  → Reader thread will process TWS messages including:");
+            spdlog::debug("     - connectAck() callback");
+            spdlog::debug("     - managedAccounts() callback");
+            spdlog::debug("     - nextValidId() callback");
+            spdlog::debug("  → Without the reader thread, callbacks won't be processed!");
 
             // CRITICAL: Start reader thread BEFORE waiting for acknowledgment
             // The reader thread processes messages from TWS, including nextValidId
@@ -465,6 +511,10 @@ public:
 
             spdlog::info("Waiting for TWS acknowledgment (timeout: {}ms)...",
                          config_.connection_timeout_ms);
+            spdlog::debug("  → Waiting for connection sequence:");
+            spdlog::debug("     1. connectAck() - Socket connection acknowledged");
+            spdlog::debug("     2. managedAccounts() - Account list received");
+            spdlog::debug("     3. nextValidId() - Ready for trading operations");
 
             // Wait for connection acknowledgment with progress logging
             auto wait_start = std::chrono::steady_clock::now();
@@ -570,6 +620,9 @@ public:
 
     void connectAck() override {
         try {
+            if (config_.log_raw_messages) {
+                spdlog::trace("[RAW API] ← connectAck() callback received");
+            }
             spdlog::info("✓ connectAck received - Socket connection established, server version received");
             spdlog::info("Connection sequence: connectAck → managedAccounts → nextValidId");
             spdlog::info("Status: Waiting for managedAccounts and nextValidId...");
@@ -588,6 +641,9 @@ public:
             // Note: Don't start health monitoring yet - wait for nextValidId
             // Request next valid order ID (this will trigger nextValidId callback)
             // According to IB API Quick Reference, reqIds(-1) requests the next valid order ID
+            if (config_.log_raw_messages) {
+                spdlog::trace("[RAW API] → reqIds(-1) - Requesting next valid order ID");
+            }
             client_.reqIds(-1);
             spdlog::debug("Requested next valid order ID via reqIds(-1), waiting for nextValidId callback...");
         } catch (const std::exception& e) {
@@ -624,6 +680,9 @@ public:
     // According to IB API Quick Reference, this is called after connectAck
     void managedAccounts(const std::string& accountsList) override {
         try {
+            if (config_.log_raw_messages) {
+                spdlog::trace("[RAW API] ← managedAccounts(accountsList=\"{}\") callback received", accountsList);
+            }
             spdlog::info("✓ managedAccounts received: {} - Connection progressing", accountsList);
 
             // Track that we received managedAccounts (for diagnostics)
@@ -659,6 +718,9 @@ public:
 
     void nextValidId(OrderId orderId) override {
         try {
+            if (config_.log_raw_messages) {
+                spdlog::trace("[RAW API] ← nextValidId(orderId={}) callback received", orderId);
+            }
             // Calculate total connection time
             auto total_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::steady_clock::now() - connection_callbacks_received_.connectAck_time).count();
@@ -718,7 +780,13 @@ public:
     void tickPrice(TickerId tickerId, TickType field,
                    double price, const TickAttrib& attribs) override {
         try {
-        spdlog::trace("tickPrice: id={}, field={}, price={}", tickerId, field, price);
+            if (config_.log_raw_messages) {
+                spdlog::trace("[RAW API] ← tickPrice(tickerId={}, field={}, price={}, attribs.canAutoExecute={}, "
+                            "attribs.pastLimit={}, attribs.preOpen={})",
+                            tickerId, static_cast<int>(field), price, attribs.canAutoExecute,
+                            attribs.pastLimit, attribs.preOpen);
+            }
+        spdlog::trace("tickPrice: id={}, field={}, price={}", tickerId, static_cast<int>(field), price);
 
         std::lock_guard<std::mutex> lock(data_mutex_);
         auto& market_data = market_data_[tickerId];
@@ -762,14 +830,18 @@ public:
                 market_data_promises_.erase(tickerId);
             }
         } catch (const std::exception& e) {
-            spdlog::error("Exception in tickPrice(tickerId={}, field={}): {}", tickerId, field, e.what());
+            spdlog::error("Exception in tickPrice(tickerId={}, field={}): {}", tickerId, static_cast<int>(field), e.what());
         } catch (...) {
-            spdlog::error("Unknown exception in tickPrice(tickerId={}, field={})", tickerId, field);
+            spdlog::error("Unknown exception in tickPrice(tickerId={}, field={})", tickerId, static_cast<int>(field));
         }
     }
 
     void tickSize(TickerId tickerId, TickType field, Decimal size) override {
-        spdlog::trace("tickSize: id={}, field={}, size={}", tickerId, field, size);
+        if (config_.log_raw_messages) {
+            spdlog::trace("[RAW API] ← tickSize(tickerId={}, field={}, size={})",
+                        tickerId, static_cast<int>(field), size);
+        }
+        spdlog::trace("tickSize: id={}, field={}, size={}", tickerId, static_cast<int>(field), size);
 
         std::lock_guard<std::mutex> lock(data_mutex_);
         auto& market_data = market_data_[tickerId];
@@ -1136,6 +1208,11 @@ public:
     void error(int id, time_t errorTime, int errorCode, const std::string& errorString,
               const std::string& advancedOrderRejectJson) override {
         try {
+            if (config_.log_raw_messages) {
+                spdlog::trace("[RAW API] ← error(id={}, errorTime={}, errorCode={}, errorString=\"{}\", "
+                            "advancedOrderRejectJson=\"{}\")",
+                            id, errorTime, errorCode, errorString, advancedOrderRejectJson);
+            }
             // Store error for connection attempt checking
             {
                 std::lock_guard<std::mutex> lock(error_mutex_);
@@ -1323,6 +1400,11 @@ public:
         rate_limiter_.start_market_data(request_id);
 
         // Request market data
+        if (config_.log_raw_messages) {
+            spdlog::trace("[RAW API] → reqMktData(requestId={}, contract={}, genericTickList=\"\", "
+                        "snapshot=false, regulatorySnapshot=false, options=TagValueListSPtr())",
+                        request_id, contract.to_string());
+        }
         client_.reqMktData(
             request_id,           // Request ID
             tws_contract,         // Contract
@@ -1345,6 +1427,9 @@ public:
             // Still proceed with cancel, but log the rate limit issue
         }
 
+        if (config_.log_raw_messages) {
+            spdlog::trace("[RAW API] → cancelMktData(requestId={})", request_id);
+        }
         client_.cancelMktData(request_id);
 
         // End market data tracking
@@ -1477,6 +1562,12 @@ public:
         rate_limiter_.record_message();
 
         // Place order
+        if (config_.log_raw_messages) {
+            spdlog::trace("[RAW API] → placeOrder(orderId={}, contract={}, action={}, totalQuantity={}, "
+                        "orderType={}, lmtPrice={}, auxPrice={}, tif={})",
+                        order_id, contract.to_string(), types::order_action_to_string(action),
+                        quantity, "LMT", limit_price, 0.0, types::time_in_force_to_string(tif));
+        }
         client_.placeOrder(order_id, tws_contract, tws_order);
 
         spdlog::info("Placed order #{}: {} {} {} @ {}",
@@ -1583,6 +1674,11 @@ public:
         rate_limiter_.record_message();
 
         // Place combo order
+        if (config_.log_raw_messages) {
+            spdlog::trace("[RAW API] → placeOrder(orderId={}, contract=COMBO_BAG, totalLimitPrice={:.2f}, "
+                        "legs={}, tif={})",
+                        order_id, total_limit, contracts.size(), types::time_in_force_to_string(tif));
+        }
         client_.placeOrder(order_id, combo_contract, combo_order);
 
         spdlog::info("Placed combo order #{}: {} legs, total limit price: {:.2f}",
@@ -1614,6 +1710,10 @@ public:
         }
 
         OrderCancel orderCancel;
+        if (config_.log_raw_messages) {
+            spdlog::trace("[RAW API] → cancelOrder(orderId={}, manualOrderCancelTime=\"{}\")",
+                        order_id, "");
+        }
         client_.cancelOrder(order_id, orderCancel);
 
         if (rate_limiter_.is_enabled()) {
@@ -1788,20 +1888,23 @@ public:
         // Request account updates (async)
         client_.reqAccountUpdates(true, "");
 
+        auto cleanup_request_state = [this]() {
+            std::lock_guard<std::mutex> lock(account_mutex_);
+            account_promise_.reset();
+            account_request_pending_ = false;
+        };
+
         // Wait for accountDownloadEnd() callback with timeout
         if (future.wait_for(std::chrono::milliseconds(timeout_ms)) == std::future_status::ready) {
             auto info = future.get();
+            cleanup_request_state();
             if (!info.account_id.empty()) {
                 return info;
             }
         } else {
             // Timeout
             spdlog::warn("Account info request timed out after {}ms", timeout_ms);
-            {
-                std::lock_guard<std::mutex> lock(account_mutex_);
-                account_promise_.reset();
-                account_request_pending_ = false;
-            }
+            cleanup_request_state();
         }
 
         // Return cached account info if available
@@ -1886,23 +1989,90 @@ private:
     // ========================================================================
 
     void start_reader_thread() {
+        spdlog::debug("Starting EReader thread...");
         auto reader = std::make_unique<EReader>(&client_, &signal_);
+
+        auto reader_start_time = std::chrono::steady_clock::now();
         reader->start();
+        auto reader_start_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - reader_start_time).count();
+        spdlog::debug("EReader::start() completed in {}ms", reader_start_duration);
 
         reader_thread_ = std::make_unique<std::thread>([this, r = std::move(reader)]() mutable {
-            while (connected_) {
+            spdlog::debug("EReader thread started (thread_id: {})",
+                         std::hash<std::thread::id>{}(std::this_thread::get_id()));
+            int message_count = 0;
+            int error_count = 0;
+            auto thread_start = std::chrono::steady_clock::now();
+
+            // Use client_.isConnected() instead of connected_ flag because:
+            // - connected_ is only set to true after nextValidId() callback is received
+            // - But we need the thread to run to process messages and receive callbacks
+            // - client_.isConnected() reflects the actual socket state
+            while (client_.isConnected() || connected_.load()) {
                 signal_.waitForSignal();
-                if (!connected_) break;
+
+                // Check both conditions - socket state and flag
+                if (!client_.isConnected() && !connected_.load()) {
+                    spdlog::debug("EReader thread exiting (socket disconnected and connected_ = false)");
+                    break;
+                }
 
                 try {
+                    auto process_start = std::chrono::steady_clock::now();
+
+                    // Log raw message processing if enabled (trace level)
+                    if (config_.log_raw_messages) {
+                        spdlog::trace("[RAW API] EReader::processMsgs() - Processing messages from TWS...");
+                    }
+
                     r->processMsgs();
+                    auto process_duration = std::chrono::duration_cast<std::chrono::microseconds>(
+                        std::chrono::steady_clock::now() - process_start).count();
+                    message_count++;
+
                     // Update last message time for health monitoring
                     last_message_time_ = std::chrono::steady_clock::now();
+
+                    // Log raw message processing stats if enabled
+                    if (config_.log_raw_messages && message_count > 0) {
+                        spdlog::trace("[RAW API] processMsgs() completed: {}μs, total messages: {}",
+                                    process_duration, message_count);
+                    }
+
+                    // Log message processing stats every 100 messages (at trace level)
+                    if (message_count % 100 == 0) {
+                        auto thread_uptime = std::chrono::duration_cast<std::chrono::seconds>(
+                            std::chrono::steady_clock::now() - thread_start).count();
+                        spdlog::trace("EReader thread: processed {} messages in {}s (avg: {}μs/msg, errors: {})",
+                                    message_count, thread_uptime,
+                                    process_duration > 0 ? process_duration : 0, error_count);
+                    }
                 } catch (const std::exception& e) {
-                    spdlog::error("Error processing messages: {}", e.what());
+                    error_count++;
+                    spdlog::error("Error processing messages in EReader thread: {}", e.what());
+                    spdlog::error("  → Message count: {}, Error count: {}", message_count, error_count);
+                    spdlog::error("  → Socket connected: {}", client_.isConnected() ? "yes" : "no");
+
+                    // If socket disconnects due to error, exit thread
+                    if (!client_.isConnected()) {
+                        spdlog::debug("EReader thread exiting due to socket disconnection");
+                        break;
+                    }
+                } catch (...) {
+                    error_count++;
+                    spdlog::error("Unknown exception in EReader thread (message count: {}, error count: {})",
+                                message_count, error_count);
                 }
             }
+
+            auto thread_uptime = std::chrono::duration_cast<std::chrono::seconds>(
+                std::chrono::steady_clock::now() - thread_start).count();
+            spdlog::debug("EReader thread stopped after {}s (processed {} messages, {} errors)",
+                         thread_uptime, message_count, error_count);
         });
+
+        spdlog::debug("EReader thread created (waiting for signals from TWS...)");
     }
 
     void attempt_reconnect_with_backoff() {

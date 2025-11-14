@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# build_universal.sh - Universal binary builder for IBKR Box Spread Generator
+# build_universal.sh - x86_64 binary builder for IBKR Box Spread Generator
 # Usage: ./build_universal.sh [build|clean|test|install]
-# See README “Build” section for prerequisites; script assumes macOS with cmake + Xcode tools.
+# See README "Build" section for prerequisites; script assumes macOS with cmake + Xcode tools.
+# Note: Currently builds x86_64 only. Universal binary support is in the wishlist (docs/WISHLIST.md).
 
 set -euo pipefail
 
@@ -9,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./include/logging.sh
 . "${SCRIPT_DIR}/include/logging.sh"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-DEFAULT_PRESET="macos-universal-release"
+DEFAULT_PRESET="macos-x86_64-release"
 PRESET="${CMAKE_PRESET:-${DEFAULT_PRESET}}"
 
 if ! command -v cmake >/dev/null 2>&1; then

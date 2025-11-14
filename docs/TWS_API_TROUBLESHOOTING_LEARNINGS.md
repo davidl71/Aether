@@ -351,6 +351,10 @@ Based on common troubleshooting needs, here are diagnostic tools we could implem
 
 ## Recommendations
 
+### Stage 0: Validate Environment with Official Samples
+
+Before digging into our code, run the official IB sample client (or `scmhub/ibapi` Go sample) against the same TWS/Gateway instance. If the sample also fails to reach `nextValidId`, the issue is with the environment (API settings, trusted IPs, stale sessions, etc.). If the sample succeeds but our client does not, focus on our initialization flow.
+
 ### High Priority
 
 1. **Add Diagnostic Commands**

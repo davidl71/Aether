@@ -459,6 +459,49 @@ else()
     message(STATUS "ib_box_spread native CLI target disabled.")
 endif()
 
+# ============================================================================
+# TWS Connection Test Program
+# ============================================================================
+if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/test_tws_connection.cpp")
+    add_executable(test_tws_connection ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/test_tws_connection.cpp)
+
+    target_include_directories(test_tws_connection
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${TWS_API_INCLUDE_DIR}
+    )
+
+    target_link_libraries(test_tws_connection
+        PRIVATE
+            nlohmann_json::nlohmann_json
+            spdlog::spdlog
+            ${TWS_API_LIB}
+            ${INTEL_DECIMAL_LIB}
+            /usr/local/lib/libprotobuf.dylib
+            ${ABSEIL_LIBS}
+    )
+
+    # Link with TWS client source files
+    target_sources(test_tws_connection PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/config_manager.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/rate_limiter.cpp
+    )
+
+    if(APPLE)
+        target_link_libraries(test_tws_connection PRIVATE "-framework CoreFoundation")
+        find_library(PTHREAD_LIBRARY pthread)
+        if(PTHREAD_LIBRARY)
+            target_link_libraries(test_tws_connection PRIVATE ${PTHREAD_LIBRARY})
+        endif()
+    elseif(UNIX)
+        target_link_libraries(test_tws_connection PRIVATE pthread)
+    endif()
+
+    message(STATUS "TWS connection test program: test_tws_connection")
+endif()
+
 # ====================================================================================
 # Python Bindings (Cython)
 # ============================================================================

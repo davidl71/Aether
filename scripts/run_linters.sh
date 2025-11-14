@@ -58,11 +58,10 @@ run_clang_analyze() {
     dir=$(printf '%s' "${entry}" | jq -r '.directory')
 
     case "${file}" in
-      "${ROOT_DIR}/src/"*| "${ROOT_DIR}/tests/"*| "${ROOT_DIR}/include/"*)
-        ;;
-      *)
-        continue
-        ;;
+    "${ROOT_DIR}/src/"* | "${ROOT_DIR}/tests/"* | "${ROOT_DIR}/include/"*) ;;
+    *)
+      continue
+      ;;
     esac
 
     if [ ! -f "${file}" ]; then
@@ -78,13 +77,14 @@ run_clang_analyze() {
         status=1
         continue
       fi
-      mapfile -t args < <(CLANG_ANALYZE_CMD="${cmd}" python3 - <<'PY'
+      mapfile -t args < <(
+        CLANG_ANALYZE_CMD="${cmd}" python3 - <<'PY'
 import os, shlex
 cmd = os.environ.get("CLANG_ANALYZE_CMD", "")
 for token in shlex.split(cmd):
     print(token)
 PY
-)
+      )
     fi
 
     if [ "${#args[@]}" -eq 0 ]; then
@@ -93,7 +93,7 @@ PY
 
     local compiler="${args[0]}"
     local analyzer="clang"
-    if [[ "${compiler}" == *++* ]]; then
+    if [[ ${compiler} == *++* ]]; then
       analyzer="clang++"
     fi
     if ! command -v "${analyzer}" >/dev/null 2>&1; then
@@ -102,19 +102,19 @@ PY
 
     local filtered=()
     local skip_next=0
-    for ((i=1; i<${#args[@]}; i++)); do
+    for ((i = 1; i < ${#args[@]}; i++)); do
       if [ "${skip_next}" -eq 1 ]; then
         skip_next=0
         continue
       fi
       case "${args[i]}" in
-        -o|-MF|-MT|-MQ)
-          skip_next=1
-          continue
-          ;;
-        -MD|-MMD)
-          continue
-          ;;
+      -o | -MF | -MT | -MQ)
+        skip_next=1
+        continue
+        ;;
+      -MD | -MMD)
+        continue
+        ;;
       esac
       filtered+=("${args[i]}")
     done
@@ -165,9 +165,72 @@ run_bandit() {
   "${bandit_cmd[@]}" -r "${ROOT_DIR}/python" "${ROOT_DIR}/agents/backend/python"
 }
 
+run_infer() {
+  if ! command -v infer >/dev/null 2>&1; then
+    warn "Skipping Infer (executable not found)"
+    warn "Install Infer: brew install infer or see https://fbinfer.com/docs/getting-started"
+    return 0
+  fi
+
+  info "Running Infer (C++ static analysis)"
+
+  # Search for compile_commands.json in common build directories
+  local compile_db=""
+  local build_dir=""
+
+  # Check common build directory locations
+  for possible_dir in \
+    "${ROOT_DIR}/build/macos-x86_64-debug" \
+    "${ROOT_DIR}/build/macos-x86_64-release" \
+    "${ROOT_DIR}/build/macos-universal-debug" \
+    "${ROOT_DIR}/build/macos-universal-release" \
+    "${ROOT_DIR}/build"; do
+    if [ -f "${possible_dir}/compile_commands.json" ]; then
+      compile_db="${possible_dir}/compile_commands.json"
+      build_dir="${possible_dir}"
+      break
+    fi
+  done
+
+  if [ -z "${compile_db}" ] || [ ! -f "${compile_db}" ]; then
+    err "compile_commands.json not found in any build directory."
+    err "Configure the project with CMake: cmake --preset macos-x86_64-debug"
+    return 1
+  fi
+
+  local infer_out_dir="${build_dir}/infer-out"
+
+  # Clean previous Infer results
+  if [ -d "${infer_out_dir}" ]; then
+    rm -rf "${infer_out_dir}"
+  fi
+
+  # Infer needs to run from the build directory with compile_commands.json
+  # Use infer run with --compilation-database to analyze all files
+  # RacerD is enabled by default for C++ code (thread safety analysis)
+  (
+    cd "${build_dir}" || exit 1
+    infer run \
+      --compilation-database compile_commands.json \
+      --compilation-database-escaped \
+      --racerd \
+      --no-progress-bar \
+      --quiet
+  ) || {
+    warn "Infer found issues. Check ${infer_out_dir}/report.json for details."
+    warn "View report: infer-explore --html ${infer_out_dir}"
+    warn "For thread safety issues, see: https://fbinfer.com/docs/checker-racerd"
+    return 1
+  }
+
+  info "Infer analysis completed. Results in ${infer_out_dir}/"
+  info "RacerD (thread safety) analysis included. For details: https://fbinfer.com/docs/checker-racerd"
+}
+
 main() {
   run_cppcheck
   run_clang_analyze
+  run_infer
   run_swiftlint
   run_golangci_lint
   run_bandit
@@ -176,4 +239,3 @@ main() {
 }
 
 main "$@"
-

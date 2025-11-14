@@ -82,6 +82,7 @@ endif()
 target_sources(box_spread_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/native/src/config_manager.cpp
     ${CMAKE_SOURCE_DIR}/native/src/tws_client.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/rate_limiter.cpp
     ${CMAKE_SOURCE_DIR}/native/src/option_chain.cpp
     ${CMAKE_SOURCE_DIR}/native/src/box_spread_strategy.cpp
     ${CMAKE_SOURCE_DIR}/native/src/order_manager.cpp

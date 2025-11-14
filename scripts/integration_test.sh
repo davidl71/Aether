@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "${SCRIPT_DIR}/include/logging.sh"
 
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-DEFAULT_PRESET="macos-universal-release"
+DEFAULT_PRESET="macos-x86_64-release"
 PRESET="${CMAKE_PRESET:-${DEFAULT_PRESET}}"
 
 if ! command -v ctest >/dev/null 2>&1; then

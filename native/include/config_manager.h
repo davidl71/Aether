@@ -20,6 +20,7 @@ struct TWSConfig {
     bool auto_reconnect = true;
     int reconnect_delay_ms = 3000;  // Deprecated: use exponential backoff instead
     int max_reconnect_attempts = 10; // Maximum reconnection attempts (0 = unlimited)
+    bool log_raw_messages = false;   // Log raw API messages/data for debugging (verbose, use with trace log_level)
 };
 
 // ============================================================================
@@ -125,7 +126,8 @@ inline void to_json(nlohmann::json& j, const TWSConfig& config) {
         {"connection_timeout_ms", config.connection_timeout_ms},
         {"auto_reconnect", config.auto_reconnect},
         {"reconnect_delay_ms", config.reconnect_delay_ms},
-        {"max_reconnect_attempts", config.max_reconnect_attempts}
+        {"max_reconnect_attempts", config.max_reconnect_attempts},
+        {"log_raw_messages", config.log_raw_messages}
     };
 }
 
@@ -141,6 +143,8 @@ inline void from_json(const nlohmann::json& j, TWSConfig& config) {
         j.at("reconnect_delay_ms").get_to(config.reconnect_delay_ms);
     if (j.contains("max_reconnect_attempts"))
         j.at("max_reconnect_attempts").get_to(config.max_reconnect_attempts);
+    if (j.contains("log_raw_messages"))
+        j.at("log_raw_messages").get_to(config.log_raw_messages);
 }
 
 // Strategy Params

@@ -244,6 +244,16 @@ inline std::string order_status_to_string(OrderStatus status) {
     }
 }
 
+inline std::string time_in_force_to_string(TimeInForce tif) {
+    switch (tif) {
+        case TimeInForce::Day: return "DAY";
+        case TimeInForce::GTC: return "GTC";
+        case TimeInForce::IOC: return "IOC";
+        case TimeInForce::FOK: return "FOK";
+        default: return "DAY";
+    }
+}
+
 // Parse string to OptionType
 inline std::optional<OptionType> string_to_option_type(const std::string& str) {
     if (str == "CALL" || str == "C") return OptionType::Call;
