@@ -12,12 +12,8 @@
     // Rust Development (for agents/backend)
     "rust-lang.rust-analyzer",
 
-    // Go Development (for tui/)
-    "golang.go",
-
     // TypeScript/JavaScript (for web/)
     "dbaeumer.vscode-eslint",
-    "esbenp.prettier-vscode",
 
     // General Development
     "editorconfig.editorconfig",
@@ -37,8 +33,14 @@
     "streetsidesoftware.code-spell-checker",
     "usernamehw.errorlens",
 
+    // AI & Prompt Enhancement
+    "prompttower.prompttower",
+
     // Swift (for ios/ and desktop/)
-    "sswg.swift-lang"
+    "sswg.swift-lang",
+
+    // MCP Integration
+    "yutengjing.vscode-mcp"
   ],
   "unwantedRecommendations": [
     // Redundant - cpptools-extension-pack includes cpptools which is already recommended
@@ -47,6 +49,17 @@
     // Not needed - no Docker/Kubernetes configuration in this project
     "ms-azuretools.vscode-containers",
     "ms-kubernetes-tools.vscode-kubernetes-tools",
-    "ms-vscode-remote.remote-containers"
+    "ms-vscode-remote.remote-containers",
+
+    // Not used - no Go code in this project
+    "golang.go",
+
+    // Optional - Prettier may conflict with ESLint formatting rules configured in web/eslint.config.js
+    // Keep if you prefer Prettier's formatting style, otherwise ESLint handles formatting
+    "esbenp.prettier-vscode",
+
+    // Trunk CLI is used via scripts/run_linters.sh, not as VS Code formatter extension
+    // Explicit formatters are configured in settings.json to prevent auto-detection
+    "trunk.io"
   ]
 }

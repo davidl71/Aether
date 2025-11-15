@@ -4,6 +4,8 @@ This document describes the Model Context Protocol (MCP) servers configured for 
 
 ## Configured MCP Servers
 
+### ✅ Currently Active
+
 ### 1. Semgrep Security Scanner
 **Purpose**: Automated security vulnerability scanning and code quality analysis
 
@@ -63,6 +65,143 @@ This document describes the Model Context Protocol (MCP) servers configured for 
 
 ### 4. NotebookLM Server
 **Purpose**: Zero-hallucination knowledge base for summarizing YouTube videos, documentation, and links
+
+**Status**: ✅ Configured
+
+### 5. Filesystem Server
+**Purpose**: Enhanced file system operations for better context understanding
+
+**Status**: ✅ Configured (recently added)
+
+**Configuration**: `.cursor/mcp.json`
+```json
+{
+  "filesystem": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-filesystem", "${workspaceFolder}"]
+  }
+}
+```
+
+**Benefits**:
+- Better context understanding of project structure
+- Intelligent file operations
+- Enhanced AI suggestions based on file structure
+
+### 6. Git Server
+**Purpose**: Enhanced Git version control operations
+
+**Status**: ✅ Configured (recently added)
+
+**Configuration**: `.cursor/mcp.json`
+```json
+{
+  "git": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-git", "--repository", "${workspaceFolder}"]
+  }
+}
+```
+
+**Benefits**:
+- AI understands git history and changes
+- Better commit message assistance
+- Understands branch structure and diffs
+- Can help with merge conflicts
+
+### 7. Browser Automation Server
+**Purpose**: Test and interact with React web UI, verify PWA functionality
+
+**Status**: ✅ Configured
+
+**Configuration**: `.cursor/mcp.json`
+```json
+{
+  "browser": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-browser"]
+  }
+}
+```
+
+**Benefits**:
+- Test web UI after changes
+- Verify PWA installation and offline mode
+- Screenshot dashboard states
+- Test box spread scenario explorer
+- Validate responsive design
+
+**Use Cases**:
+- Navigate to local dev server (`http://localhost:5173`)
+- Take screenshots of dashboard states
+- Test box spread scenario explorer
+- Verify PWA offline functionality
+- Test responsive design on different viewport sizes
+
+### 8. Terminal/Shell Server
+**Purpose**: Safely execute build commands, tests, and trading scripts
+
+**Status**: ✅ Configured
+
+**Configuration**: `.cursor/mcp.json`
+```json
+{
+  "terminal": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-terminal"]
+  }
+}
+```
+
+**Benefits**:
+- Run CMake builds, tests, linters
+- Execute integration tests safely
+- Run trading scripts in dry-run mode
+- Execute multi-language build commands (C++, Python, Rust, TypeScript)
+
+**Use Cases**:
+- Run `./scripts/build_universal.sh`
+- Execute `ctest --output-on-failure`
+- Run `./scripts/run_linters.sh`
+- Test integration scripts safely
+- Execute Python strategy runner in dry-run mode
+
+**⚠️ Safety Note**: For trading software, always use `--dry-run` flag when testing via terminal MCP. Never execute live trading commands.
+
+---
+
+## Additional Interactive MCP Tools (Optional)
+
+For more interactive tools like GitHub integration and database queries, see [MCP_INTERACTIVE_TOOLS.md](MCP_INTERACTIVE_TOOLS.md).
+
+---
+
+## VSCode LSP MCP Extension
+
+**Extension**: `yutengjing.vscode-mcp` (recommended in `.vscode/extensions.json`)
+
+**Purpose**: Bridges VS Code/Cursor's Language Server Protocol (LSP) with MCP, exposing LSP diagnostics, type information, and code navigation to AI assistants.
+
+**Benefits**:
+- AI can access real-time diagnostics from all your LSPs (C++, Python, Rust, TypeScript, Swift)
+- Type information available to AI for better code suggestions
+- Code navigation features accessible to AI assistants
+- Better context understanding for multi-language projects
+
+**Configuration**:
+- Install the extension: `yutengjing.vscode-mcp`
+- Extension automatically creates MCP server
+- Socket file location: `/Users/davidlowes/Library/Application Support/YuTengjing.vscode-mcp/vscode-mcp-*.sock`
+- Cursor's MCP bridge connects automatically
+
+**Troubleshooting**:
+- If you see permission errors, see [MCP_TROUBLESHOOTING.md](MCP_TROUBLESHOOTING.md) for permission fixes
+- Extension must be installed and enabled
+- Restart Cursor after installation
+
+---
+
+## Additional MCP Servers (Optional)
 
 **Configuration**: `.cursor/mcp.json`
 ```json

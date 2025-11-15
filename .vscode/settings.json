@@ -20,17 +20,18 @@
     "limitSymbolsToIncludedHeaders": false
   },
   "C_Cpp.errorSquiggles": "enabled",
-  "C_Cpp.codeAnalysis.clangTidy.enabled": true,
-  "C_Cpp.codeAnalysis.clangTidy.checks.enabled": [
-    "clang-analyzer-*",
-    "readability-*",
-    "performance-*",
-    "modernize-*"
-  ],
-  "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
-    "readability-magic-numbers",
-    "modernize-use-trailing-return-type"
-  ],
+  // Disable clang-tidy on save for performance - use scripts/run_linters.sh instead
+  "C_Cpp.codeAnalysis.clangTidy.enabled": false,
+  // "C_Cpp.codeAnalysis.clangTidy.checks.enabled": [
+  //   "clang-analyzer-*",
+  //   "readability-*",
+  //   "performance-*",
+  //   "modernize-*"
+  // ],
+  // "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
+  //   "readability-magic-numbers",
+  //   "modernize-use-trailing-return-type"
+  // ],
 
   // File Associations
   "files.associations": {
@@ -49,9 +50,11 @@
   "editor.rulers": [100],
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit",
-    "source.organizeImports": "explicit"
+    "source.fixAll": "explicit"
+    // Removed "source.organizeImports" - not well-supported for C++ and can slow saves
+    // Use manual import organization or clang-format instead
   },
+  "editor.accessibilitySupport": "off",
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
@@ -140,9 +143,11 @@
   "python.analysis.typeCheckingMode": "basic",
   "python.analysis.autoImportCompletions": true,
   "python.formatting.provider": "black",
-  "python.linting.enabled": true,
-  "python.linting.pylintEnabled": false,
-  "python.linting.flake8Enabled": true,
+  // Disable flake8 - use trunk's ruff instead (faster, more modern)
+  // Use scripts/run_linters.sh for bandit security scanning
+  "python.linting.enabled": false,
+  // "python.linting.pylintEnabled": false,
+  // "python.linting.flake8Enabled": true,
 
   // Rust Settings (for agents/backend)
   "rust-analyzer.checkOnSave.command": "clippy",
@@ -151,6 +156,45 @@
   // TypeScript/JavaScript Settings (for web/)
   "typescript.preferences.importModuleSpecifier": "relative",
   "javascript.preferences.importModuleSpecifier": "relative",
+
+  // Explicit formatter settings to prevent Trunk auto-detection
+  // Trunk CLI is used via scripts/run_linters.sh, not as VS Code formatter
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "[cpp]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools"
+  },
+  "[c]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools"
+  },
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer"
+  },
+  "[swift]": {
+    "editor.defaultFormatter": "sswg.swift-lang"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "yzhang.markdown-all-in-one"
+  },
+  "[shellscript]": {
+    "editor.defaultFormatter": null
+  },
 
   // Terminal Settings
   "terminal.integrated.cwd": "${workspaceFolder}",
@@ -165,6 +209,8 @@
   // Other Settings
   "files.encoding": "utf8",
   "files.eol": "\n",
+  "audioCues.enabled": "off",
+  "workbench.settings.enableNaturalLanguageSearch": false,
   "workbench.colorCustomizations": {
     "[Default Dark+]": {
       "editorRuler.foreground": "#444444"
@@ -173,5 +219,12 @@
   "github.gitProtocol": "ssh",
   "python.testing.pytestArgs": ["python"],
   "python.testing.unittestEnabled": false,
-  "python.testing.pytestEnabled": true
+  "python.testing.pytestEnabled": true,
+  "accessibility.signals.terminalBell": {
+    "sound": "off"
+  },
+  "terminal.integrated.enableVisualBell": false,
+  // Disable cursorpyright - redundant with Pylance (python.analysis.typeCheckingMode above)
+  // "cursorpyright.analysis.autoImportCompletions": true,
+  // "cursorpyright.analysis.typeCheckingMode": "basic"
 }

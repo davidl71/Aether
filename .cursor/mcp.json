@@ -10,26 +10,6 @@
         "semgrep"
       ]
     },
-    "filesystem": {
-      "command": "uvx",
-      "args": [
-        "mcpower-proxy==0.0.87",
-        "--wrapped-config",
-        "{\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"@modelcontextprotocol/server-filesystem\",\n        \"${workspaceFolder}\"\n      ],\n      \"description\": \"File system operations for the project - read, write, and manage files\"\n    }",
-        "--name",
-        "filesystem"
-      ]
-    },
-    "git": {
-      "command": "uvx",
-      "args": [
-        "mcpower-proxy==0.0.87",
-        "--wrapped-config",
-        "{\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"@modelcontextprotocol/server-git\",\n        \"--repository\",\n        \"${workspaceFolder}\"\n      ],\n      \"description\": \"Git operations for version control - commit, branch, diff, and log operations\"\n    }",
-        "--name",
-        "git"
-      ]
-    },
     "notebooklm": {
       "command": "uvx",
       "args": [
@@ -39,6 +19,43 @@
         "--name",
         "notebooklm"
       ]
-    }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${workspaceFolder}"
+      ],
+      "description": "File system operations for reading, writing, and managing project files"
+    },
+    "git": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-git",
+        "--repository",
+        "${workspaceFolder}"
+      ],
+      "description": "Git version control operations - understand history, help with commits, branch management"
+    },
+    // Temporarily disabled - can cause socket server issues
+    // Re-enable after resolving MCP bridge socket server error
+    // "browser": {
+    //   "command": "npx",
+    //   "args": [
+    //     "-y",
+    //     "@modelcontextprotocol/server-browser"
+    //   ],
+    //   "description": "Browser automation for testing web UI, verifying PWA functionality, and taking screenshots"
+    // },
+    // "terminal": {
+    //   "command": "npx",
+    //   "args": [
+    //     "-y",
+    //     "@modelcontextprotocol/server-terminal"
+    //   ],
+    //   "description": "Terminal/shell execution for safely running build commands, tests, and trading scripts (always use --dry-run for trading)"
+    // }
   }
 }
