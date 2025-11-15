@@ -1,0 +1,26 @@
+{
+  // Workspace-specific user settings (copy to .vscode/settings.json.user)
+  // This file is gitignored - customize as needed
+
+  // Auto-run RAM disk startup task (requires "Task Runner" extension or manual setup)
+  // Option 1: Use Terminal: Run Active Task command on startup
+  // Option 2: Add to shell profile (recommended)
+  "task.autoDetect": "on",
+
+  // Keyboard shortcuts (add to keybindings.json):
+  // {
+  //   "key": "cmd+shift+r",
+  //   "command": "workbench.action.tasks.runTask",
+  //   "args": "RAM Disk: Save & Shutdown"
+  // },
+  // {
+  //   "key": "cmd+shift+s",
+  //   "command": "workbench.action.tasks.runTask",
+  //   "args": "RAM Disk: Save Now"
+  // },
+  // {
+  //   "key": "cmd+shift+t",
+  //   "command": "workbench.action.tasks.runTask",
+  //   "args": "RAM Disk: Status"
+  // }
+}

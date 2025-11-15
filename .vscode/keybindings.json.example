@@ -1,0 +1,20 @@
+[
+  {
+    "key": "cmd+shift+r",
+    "command": "workbench.action.tasks.runTask",
+    "args": "RAM Disk: Save & Shutdown",
+    "when": "!inDebugMode"
+  },
+  {
+    "key": "cmd+shift+s",
+    "command": "workbench.action.tasks.runTask",
+    "args": "RAM Disk: Save Now",
+    "when": "!inDebugMode"
+  },
+  {
+    "key": "cmd+shift+t",
+    "command": "workbench.action.tasks.runTask",
+    "args": "RAM Disk: Status",
+    "when": "!inDebugMode"
+  }
+]
