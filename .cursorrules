@@ -1,7 +1,7 @@
 # Cursor Rules for IBKR Box Spread Generator
 
 ## Project Overview
-This is a C++20 trading application for Interactive Brokers that implements box spread arbitrage strategies. The project uses CMake for building, includes Python bindings via Cython, and has multiple agent services (Rust backend, Go TUI, TypeScript web).
+C++20 trading application for Interactive Brokers implementing box spread arbitrage. Uses CMake, Python bindings (Cython), and multi-language agents (Rust, Go, TypeScript).
 
 ## Code Style & Conventions
 
@@ -13,198 +13,83 @@ This is a C++20 trading application for Interactive Brokers that implements box 
 - **Naming**:
   - Types: `PascalCase` (e.g., `Scenario`, `OrderManager`)
   - Functions: `snake_case` (e.g., `make_scenario`, `calculate_profit`)
-  - Variables: `snake_case` (e.g., `min_profit`, `max_position_size`)
-  - Constants: `k` prefix (e.g., `kMaxPositions`, `kDefaultPort`)
-- **Comments**: Add `//` comments only where trading math is non-obvious (e.g., APR scaling by contract multiplier)
+  - Variables: `snake_case`
+  - Constants: `k` prefix (e.g., `kMaxPositions`)
+- **Comments**: Add `//` comments only where trading math is non-obvious
 
 ### File Organization
-- Core pricing logic: `native/src/` with headers in `native/include/`
-- Reusable calculations: `native/src/box_spread_calc.cpp`
-- Main CLI entry: `native/src/ib_box_spread.cpp`
+- Core logic: `native/src/` with headers in `native/include/`
 - Tests: `native/tests/` mirroring source file names
-- Helper scripts: Top-level `scripts/` directory
-- Generated output: Disposable directories (`build/`, `protobuf-build/`)
+- Helper scripts: Top-level `scripts/`
+- Generated output: `build/`, `protobuf-build/` (disposable)
 
 ## Build System
 
-### CMake Configuration
-- Use CMake presets from `CMakePresets.json`:
-  - `macos-universal-debug` for development
-  - `macos-universal-release` for production
-- Build directory: `build/` (or `build/macos-universal-debug` for presets)
-- Compile commands: Always export `compile_commands.json` for IDE support
-
-### Build Commands
+### Commands
 ```bash
-# Configure with preset
 cmake --preset macos-universal-debug
-
-# Build
 cmake --build --preset macos-universal-debug
-
-# Or use scripts
 ./scripts/build_universal.sh
-./build_fast.sh  # With ccache
-./build_distributed.sh  # With distcc
+./scripts/run_linters.sh
+ctest --output-on-failure
 ```
 
 ### Dependencies
-- **TWS API**: Located at `native/third_party/tws-api/IBJts/source/cppclient/client/`
-- **Intel Decimal Library**: `native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
+- **TWS API**: `native/third_party/tws-api/IBJts/source/cppclient/client/`
+- **Intel Decimal**: `native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
 - **Protocol Buffers**: System-installed (`/usr/local/lib/libprotobuf.dylib`)
 - **Abseil**: System-installed (`/usr/local/lib/libabsl*.dylib`)
 
-## Testing
+## Security & Best Practices
 
-### Running Tests
-```bash
-# From build directory
-ctest --output-on-failure
-
-# Or use preset
-ctest --preset macos-universal-debug
-```
-
-### Test Organization
-- Tests mirror source file names: `test_box_spread_strategy.cpp` for `box_spread_strategy.cpp`
-- Use Catch2 framework
-- All tests should pass before committing
-
-## Git Workflow
-
-### Worktrees
-- Use `scripts/setup_worktree.sh` to create new worktrees with dependencies pre-built
-- Worktrees are created at `../worktree-name` relative to main repo
-- Never commit build artifacts, logs, or credentials
-
-### Commit Messages
-- Imperative mood, 72-character subject lines
-- Example: "Add TSV formatter for CLI"
-- Body should summarize changes and list commands run
-
-## TWS API Integration
-
-### Important Notes
-- TWS API headers: `native/third_party/tws-api/IBJts/source/cppclient/client/*.h`
-- TWS API library: Built at `native/third_party/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib`
-- Intel Decimal library must be built before TWS API
-- Protocol Buffers and Abseil are required dependencies
-- Never commit IB credentials, logs, or vendor artifacts
-
-### Building TWS API Dependencies
-The `setup_worktree.sh` script automates:
-1. Building Intel Decimal library (`libbid.a`)
-2. Building TWS API library (`libtwsapi.dylib`)
-3. Configuring main project
-
-## Python Integration
-
-### Python Code Style
-- Follow PEP 8
-- Type hints recommended
-- Python 3.11+ required
-
-### Cython Bindings
-- Located in `python/bindings/`
-- Build with: `cmake --build build --target python_bindings`
-- Or: `cd python/bindings && pip install -e .`
-
-## Configuration
-
-### Config Files
-- Example config: `config/config.example.json`
-- User config: `config/config.json` (gitignored)
-- Always validate JSON before using
-
-### Environment Variables
-- `TWS_MOCK`: Set to "true" for mock TWS client
-- `PYTHONPATH`: Include `python/` directory
-- `CMAKE_PRESET`: Override CMake preset
-- `CMAKE_LOG_LEVEL`: Control CMake verbosity
-
-## Error Handling
-
-### Best Practices
-- Use spdlog for logging (already included)
-- Validate all user inputs
-- Handle TWS API errors gracefully
-- Never expose credentials in logs
-- Use dry-run mode for testing
-
-## Security
-
-### Critical Rules
 - Never commit credentials, API keys, or secrets
 - Never log sensitive information
 - Always use paper trading port (7497) for testing
 - Gate live trading behind explicit configuration flags
 - Validate all configuration before use
+- Use spdlog for logging (already included)
+- Run linters before committing: `./scripts/run_linters.sh`
 
-## Documentation
+## Testing
 
-### Writing Documentation
-- Markdown files in `docs/`
-- Code comments for complex trading logic
-- README.md for major features
-- Keep documentation up-to-date with code changes
+- Tests mirror source file names (use Catch2 framework)
+- Run: `ctest --output-on-failure`
+- All tests must pass before committing
 
-## When Writing Code
+## Git Workflow
 
-### Before Committing
-1. Run linters: `./scripts/run_linters.sh`
-2. Run tests: `ctest --output-on-failure`
-3. Verify build: `cmake --build build`
-4. Check for credentials or secrets
-5. Update documentation if needed
-
-### Code Review Checklist
-- [ ] Code follows style guidelines
-- [ ] Tests pass
-- [ ] No credentials or secrets
-- [ ] Documentation updated
-- [ ] Build succeeds
-- [ ] No compiler warnings (unless intentional)
+- Use `scripts/setup_worktree.sh` for new worktrees
+- Commit messages: Imperative mood, 72-character subject lines
+- Never commit build artifacts, logs, or credentials
 
 ## AI Assistant Guidelines
 
 When helping with this codebase:
-1. Always check existing patterns before suggesting new approaches
-2. Respect the existing code style (2-space indentation, Allman braces)
+1. Check existing patterns before suggesting new approaches
+2. Respect code style (2-space indentation, Allman braces)
 3. Suggest using existing scripts (`setup_worktree.sh`, `build_universal.sh`)
 4. Remember this is trading software - emphasize safety and validation
 5. Point to relevant documentation in `docs/` when available
 6. Consider multi-language aspects (C++, Python, Rust, Go, TypeScript)
-7. Reference API documentation using `@docs` - see `docs/API_DOCUMENTATION_INDEX.md` for all external APIs
-8. When users ask about APIs, reference `docs/API_DOCUMENTATION_INDEX.md` for context
-9. Use NotebookLM MCP server to research topics, summarize YouTube videos, and create documentation from links - see `docs/NOTEBOOKLM_USAGE.md` for detailed instructions
+7. For API questions, reference `@docs API_DOCUMENTATION_INDEX.md`
+8. Use NotebookLM MCP server for research (see `docs/NOTEBOOKLM_USAGE.md`)
 
-## Documentation References
+## Static Analysis
 
-### API Documentation
-- **Complete API Index**: `docs/API_DOCUMENTATION_INDEX.md` - All external APIs and libraries
-- **TWS API**: `docs/TWS_INTEGRATION_STATUS.md` - TWS API integration details
-- **EWrapper**: `docs/EWRAPPER_STATUS.md` - EWrapper implementation status
-- **Usage Guide**: `docs/CURSOR_DOCS_USAGE.md` - How to use @docs in Cursor
+- Use `./scripts/run_linters.sh` for linting
+- Tools: cppcheck, Clang Static Analyzer, Infer, clang-tidy
+- Add annotations for critical functions: `[[nodiscard]]`, `__attribute__((nonnull))`
+- See `docs/STATIC_ANALYSIS_ANNOTATIONS.md` for details
 
-### Architecture & Patterns
-- **Architecture**: `docs/CODEBASE_ARCHITECTURE.md` - System design and component interactions
-- **Common Patterns**: `docs/COMMON_PATTERNS.md` - Coding patterns, conventions, and idioms
-- **AI-Friendly Code**: `docs/AI_FRIENDLY_CODE.md` - Best practices for writing AI-friendly code
-- **Implementation Guide**: `docs/IMPLEMENTATION_GUIDE.md` - Step-by-step implementation guide
+## Before Committing
 
-### When to Reference Documentation
-- **API Usage**: Use `@docs API_DOCUMENTATION_INDEX.md` when suggesting code using external APIs
-- **Architecture Questions**: Use `@docs CODEBASE_ARCHITECTURE.md` when discussing system design
-- **Code Patterns**: Use `@docs COMMON_PATTERNS.md` when suggesting code to ensure consistency
-- **Code Quality**: Use `@docs AI_FRIENDLY_CODE.md` when writing new code to ensure AI-friendly patterns
-- **TWS Integration**: Use `@docs TWS_INTEGRATION_STATUS.md` for TWS-specific questions
-- **NotebookLM Usage**: Use `@docs NOTEBOOKLM_USAGE.md` when researching topics, summarizing videos, or creating documentation from links
+1. Run linters: `./scripts/run_linters.sh`
+2. Run tests: `ctest --output-on-failure`
+3. Verify build: `cmake --build build`
+4. Check for credentials/secrets
+5. Update documentation if needed
+6. Add static analysis annotations where appropriate
 
-### Writing AI-Friendly Code
-When writing or suggesting code:
-1. Use explicit, descriptive names (see `docs/AI_FRIENDLY_CODE.md`)
-2. Add documentation comments explaining *why*, not *what*
-3. Include usage examples for complex functions
-4. Make error messages actionable with context
-5. Use type aliases for clarity
-6. Follow established patterns from `docs/COMMON_PATTERNS.md`
+---
+
+**For detailed documentation references and API usage, see `.cursor/rules/documentation.mdc`**

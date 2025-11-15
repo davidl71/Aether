@@ -77,6 +77,7 @@ This document serves as a comprehensive index of all documentation in the IBKR B
 - `docs/CURSOR_DOCS_USAGE.md` - Using @docs in Cursor
 - `docs/CURSOR_IGNORE_SETUP.md` - Cursor ignore configuration
 - `docs/CURSOR_RECOMMENDATIONS.md` - Cursor recommendations
+- `docs/PROMPT_TOWER_USAGE.md` - Prompt Tower extension usage guide
 - `docs/SHELL_COMPLETION.md` - Shell completion setup
 - `docs/WINDOWS_SETUP_GUIDE.md` - Windows setup guide
 
@@ -117,6 +118,12 @@ This document serves as a comprehensive index of all documentation in the IBKR B
 
 - `docs/ONEPASSWORD_INTEGRATION.md` - 1Password integration
 - `docs/ios_certificate_pinning.md` - iOS certificate pinning
+
+### Trading Infrastructure
+
+- `docs/FPGA_HFT_FRAMEWORKS.md` - FPGA frameworks and high-frequency trading resources
+- `docs/T_BILLS_AND_FUTURES_GUIDE.md` - Treasury bills and futures guide for box spread trading
+- `docs/LEGACY_FINANCIAL_SYSTEMS.md` - Legacy financial systems (COBOL/RPG) reference guide
 
 ## Project Management
 
@@ -256,7 +263,7 @@ This document serves as a comprehensive index of all documentation in the IBKR B
 
 ## Summary
 
-This repository contains **47+ documentation files** covering:
+This repository contains **48+ documentation files** covering:
 
 - Architecture and design patterns
 - TWS API integration and best practices

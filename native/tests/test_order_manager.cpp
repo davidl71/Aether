@@ -7,7 +7,8 @@
 
 using namespace order;
 
-TEST_CASE("OrderValidator validates contracts", "[order]") {
+TEST_CASE("OrderValidator validates contracts", "[order][validation]") {
+    // Given: A valid option contract
     types::OptionContract contract;
     contract.symbol = "SPY";
     contract.strike = 500.0;
@@ -18,43 +19,96 @@ TEST_CASE("OrderValidator validates contracts", "[order]") {
     std::string error;
 
     SECTION("Valid contract passes validation") {
-        REQUIRE(OrderValidator::validate_contract(contract, error));
+        // When: We validate a contract with all required fields
+        bool is_valid = OrderValidator::validate_contract(contract, error);
+
+        // Then: Validation should pass
+        REQUIRE(is_valid);
+        // And: Error message should be empty
+        REQUIRE(error.empty());
     }
 
     SECTION("Empty symbol fails validation") {
+        // Given: Contract with empty symbol
         contract.symbol = "";
-        REQUIRE_FALSE(OrderValidator::validate_contract(contract, error));
+
+        // When: We validate the contract
+        bool is_valid = OrderValidator::validate_contract(contract, error);
+
+        // Then: Validation should fail
+        REQUIRE_FALSE(is_valid);
+        // And: Error message should contain details
         REQUIRE_FALSE(error.empty());
     }
 
     SECTION("Zero strike fails validation") {
+        // Given: Contract with zero strike
         contract.strike = 0.0;
-        REQUIRE_FALSE(OrderValidator::validate_contract(contract, error));
+
+        // When: We validate the contract
+        bool is_valid = OrderValidator::validate_contract(contract, error);
+
+        // Then: Validation should fail (strike must be positive)
+        REQUIRE_FALSE(is_valid);
     }
 
     SECTION("Empty expiry fails validation") {
+        // Given: Contract with empty expiry
         contract.expiry = "";
-        REQUIRE_FALSE(OrderValidator::validate_contract(contract, error));
+
+        // When: We validate the contract
+        bool is_valid = OrderValidator::validate_contract(contract, error);
+
+        // Then: Validation should fail (expiry is required)
+        REQUIRE_FALSE(is_valid);
     }
 }
 
-TEST_CASE("OrderValidator validates quantity", "[order]") {
+TEST_CASE("OrderValidator validates quantity", "[order][validation]") {
     std::string error;
 
     SECTION("Positive quantity is valid") {
-        REQUIRE(OrderValidator::validate_quantity(10, error));
+        // Given: A positive quantity
+        int quantity = 10;
+
+        // When: We validate the quantity
+        bool is_valid = OrderValidator::validate_quantity(quantity, error);
+
+        // Then: Validation should pass
+        REQUIRE(is_valid);
     }
 
     SECTION("Zero quantity fails validation") {
-        REQUIRE_FALSE(OrderValidator::validate_quantity(0, error));
+        // Given: Zero quantity
+        int quantity = 0;
+
+        // When: We validate the quantity
+        bool is_valid = OrderValidator::validate_quantity(quantity, error);
+
+        // Then: Validation should fail (quantity must be positive)
+        REQUIRE_FALSE(is_valid);
     }
 
     SECTION("Negative quantity fails validation") {
-        REQUIRE_FALSE(OrderValidator::validate_quantity(-5, error));
+        // Given: Negative quantity
+        int quantity = -5;
+
+        // When: We validate the quantity
+        bool is_valid = OrderValidator::validate_quantity(quantity, error);
+
+        // Then: Validation should fail (quantity cannot be negative)
+        REQUIRE_FALSE(is_valid);
     }
 
     SECTION("Excessive quantity fails validation") {
-        REQUIRE_FALSE(OrderValidator::validate_quantity(10000, error));
+        // Given: Quantity that exceeds maximum limit
+        int quantity = 10000;
+
+        // When: We validate the quantity
+        bool is_valid = OrderValidator::validate_quantity(quantity, error);
+
+        // Then: Validation should fail (exceeds maximum position size)
+        REQUIRE_FALSE(is_valid);
     }
 }
 

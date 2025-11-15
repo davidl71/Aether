@@ -2,6 +2,8 @@
 
 This guide describes best practices for writing code that AI assistants (like Cursor) can understand and work with effectively.
 
+**Note**: Cursor uses [codebase indexing](https://cursor.com/docs/context/codebase-indexing) to enable semantic search across your codebase. The practices in this guide help improve indexing quality, making AI suggestions more accurate and relevant.
+
 ## Principles
 
 ### 1. **Explicit Over Implicit**
@@ -365,6 +367,8 @@ When writing code, ask yourself:
 
 ## Related Documentation
 
+- **Algorithms and Behavior**: `docs/ALGORITHMS_AND_BEHAVIOR.md` - Comprehensive algorithm documentation, mathematical formulas, and expected behavior patterns
 - **Common Patterns**: `docs/COMMON_PATTERNS.md`
 - **Architecture**: `docs/CODEBASE_ARCHITECTURE.md`
 - **API Reference**: `docs/API_DOCUMENTATION_INDEX.md`
+- **Static Analysis Annotations**: `docs/STATIC_ANALYSIS_ANNOTATIONS.md` - Annotations to help static analyzers and Cursor AI

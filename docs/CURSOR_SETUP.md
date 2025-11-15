@@ -10,7 +10,10 @@ Main AI assistant rules file that guides Cursor's AI when helping with this code
 - Build system conventions
 - Testing practices
 - Security guidelines
+- Static analysis tools and annotations
 - Project structure information
+
+**Note**: For examples of `.cursorrules` files from other projects, see [awesome-cursorrules](https://github.com/PatrickJS/awesome-cursorrules) - a curated collection of Cursor rules for various technologies and frameworks.
 
 ### `.vscode/settings.json`
 Workspace settings for Cursor/VS Code:
@@ -42,12 +45,17 @@ Debug configurations:
 
 ### `.vscode/extensions.json`
 Recommended extensions:
-- **C++**: C/C++ extension pack, CMake Tools
+- **C++**: C/C++ extension, CMake Tools
 - **Python**: Python, Pylance, Black formatter
 - **Rust**: rust-analyzer (for agents/backend)
-- **Go**: Go extension (for tui/)
-- **TypeScript**: ESLint, Prettier (for web/)
-- **General**: EditorConfig, GitLens, Markdown tools
+- **TypeScript**: ESLint (for web/)
+- **Swift**: Swift language support (for ios/ and desktop/)
+- **General**: EditorConfig, GitLens, Markdown tools, ShellCheck
+
+Unwanted extensions (will be blocked):
+- Go extension (not used in this project)
+- Prettier (optional - ESLint handles formatting)
+- Docker/Kubernetes extensions (not used)
 
 ### `.editorconfig`
 Editor-agnostic configuration for consistent formatting across editors.
@@ -183,11 +191,115 @@ Add debug configurations to `.vscode/launch.json`:
 4. Use multi-cursor editing (`Cmd+Option+Up/Down`) for bulk edits
 5. Use breadcrumbs (`View` → `Show Breadcrumbs`) for navigation
 
+## Codebase Indexing
+
+Cursor automatically indexes your codebase to enable semantic search and improve AI suggestions. Understanding how indexing works can help you optimize your code for better AI assistance.
+
+### How It Works
+
+Cursor uses a 7-step process to index your codebase:
+
+1. **File Sync**: Workspace files are securely synchronized with Cursor's servers
+2. **Chunking**: Files are broken into meaningful chunks (functions, classes, logical blocks)
+3. **Embeddings**: Each chunk is converted to vector representations using AI models
+4. **Storage**: Embeddings stored in a vector database optimized for similarity search
+5. **Query Processing**: Your search queries are converted to vectors using the same models
+6. **Similarity Search**: System finds most similar code chunks by comparing vectors
+7. **Results**: Relevant code snippets returned ranked by semantic similarity
+
+### Benefits
+
+- **Semantic Search**: Find code by meaning, not just exact string matches
+- **Faster Agent Searches**: Pre-computed embeddings make searches faster
+- **Better Accuracy**: Custom-trained models retrieve more relevant results
+- **Conceptual Matching**: Find code by what it does, not just what it's named
+
+### Privacy & Security
+
+- File paths are encrypted before being sent to servers
+- Code content is never stored in plaintext
+- Code is only held in memory during indexing, then discarded
+- No permanent storage of source code
+
+### Configuration
+
+Cursor indexes all files except those in ignore files (`.gitignore`, `.cursorignore`).
+
+**To configure indexing:**
+1. Click `Show Settings` in Cursor
+2. Enable automatic indexing for new repositories
+3. Configure which files to ignore
+
+**To view indexed files:**
+- `Cursor Settings` > `Indexing & Docs` > `View included files`
+
+**Tip**: Ignoring large content files (see [CURSOR_IGNORE_SETUP.md](CURSOR_IGNORE_SETUP.md)) improves answer accuracy and indexing performance.
+
+### Optimizing for Indexing
+
+To get the best results from codebase indexing:
+
+1. **Use Descriptive Names**: Function and class names that clearly describe purpose help semantic search
+2. **Add Documentation Comments**: Comments explaining *why* (not just *what*) improve semantic understanding
+3. **Structure Code Logically**: Well-organized code with clear boundaries (functions, classes) chunks better
+4. **Use Static Analysis Annotations**: Attributes like `[[nodiscard]]` and `__attribute__((nonnull))` provide semantic hints (see [STATIC_ANALYSIS_ANNOTATIONS.md](STATIC_ANALYSIS_ANNOTATIONS.md))
+5. **Follow Naming Conventions**: Consistent naming patterns help the AI understand code relationships
+
+### Automatic Updates
+
+- Indexing begins automatically when you open a workspace
+- Semantic search becomes available at 80% completion
+- Index syncs automatically every 5 minutes
+- Only changed files are updated (old embeddings removed, new ones created)
+- Files processed in batches for optimal performance
+
+### Multi-Root Workspaces
+
+Cursor supports multi-root workspaces:
+- All codebases get indexed automatically
+- Each codebase's context is available to AI
+- `.cursor/rules` work in all folders
+- Some features (like worktrees) are disabled for multi-root workspaces
+
+**Note**: Cursor Cloud Agents do not support multi-root workspaces.
+
+For more details, see [Cursor's Codebase Indexing Documentation](https://cursor.com/docs/context/codebase-indexing).
+
+## Community Resources & Best Practices
+
+### Learning Resources
+
+- **[Write C++ and Python Code Faster And Better With Cursor](https://supercomputingblog.com/coding-with-ai/write-c-and-python-code-faster-and-better-with-cursor/)** - Practical guide for C++ developers using Cursor, including examples with Z3 solver and build system integration
+- **[Why I'm Back Using Cursor (And Why Their CLI Changes Everything)](https://www.ksred.com/why-im-back-using-cursor-and-why-their-cli-changes-everything/)** - Comparison of Cursor CLI vs Claude Code, performance considerations, and workflow optimization
+- **[Cursor Community Forum](https://forum.cursor.com/)** - Community discussions, tips, and best practices from Cursor users
+
+### Alternative AI Coding Tools
+
+While this project is configured for Cursor, other AI coding assistants are available:
+
+- **Claude Code** - Anthropic's terminal-based AI coding assistant (see [Builder.io's guide](https://www.builder.io/blog/claude-code))
+- **Windsurf** - AI-powered editor with Cascade agent (see [windsurf.com](https://windsurf.com/))
+- **GitHub Copilot** - Microsoft's AI pair programmer
+
+**Note**: The static analysis annotations and code quality practices documented in this project work with any AI coding assistant that understands code semantics.
+
+### Tips from the Community
+
+Based on community feedback and best practices:
+
+1. **Use Git Frequently**: Commit working code often when using AI assistants - it's easier to revert if AI suggestions go wrong
+2. **Add Context in Comments**: Use "Rules for AI" or file-level comments to provide context about features, constraints, and considerations
+3. **Review AI Suggestions**: Don't blindly accept all suggestions - review and understand what the AI is doing
+4. **Clear Chat History**: Use `/clear` or start fresh conversations when switching tasks to avoid token waste
+5. **Combine Tools**: Use Cursor for quick completions and tab completions, but consider other tools for complex architectural decisions
+
 ## See Also
 
 - [CURSOR_AI_TUTORIAL.md](CURSOR_AI_TUTORIAL.md) - Cursor AI tutorial and best practices
 - [CURSOR_RECOMMENDATIONS.md](CURSOR_RECOMMENDATIONS.md) - Cursor optimization recommendations
 - [CURSOR_DOCS_USAGE.md](CURSOR_DOCS_USAGE.md) - Using @docs in Cursor
+- [CURSOR_IGNORE_SETUP.md](CURSOR_IGNORE_SETUP.md) - File exclusion configuration
+- [STATIC_ANALYSIS_ANNOTATIONS.md](STATIC_ANALYSIS_ANNOTATIONS.md) - Static analysis annotations that help indexing
 - [README.md](../README.md) - Main project documentation
 - [WORKTREE_SETUP.md](WORKTREE_SETUP.md) - Worktree setup guide
 - [QUICK_START.md](QUICK_START.md) - Quick start guide

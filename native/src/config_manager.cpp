@@ -55,6 +55,7 @@ void ConfigManager::validate(const Config& config) {
     validate_strategy_params(config.strategy);
     validate_risk_config(config.risk);
     validate_log_config(config.logging);
+    validate_massive_config(config.massive);
 }
 
 Config ConfigManager::from_json(const nlohmann::json& j) {
@@ -183,6 +184,36 @@ void ConfigManager::validate_log_config(const LogConfig& logging) {
 
     if (logging.max_files <= 0) {
         throw std::invalid_argument("Maximum files must be positive");
+    }
+}
+
+void ConfigManager::validate_massive_config(const MassiveConfig& massive) {
+    if (massive.enabled && massive.api_key.empty()) {
+        throw std::invalid_argument("Massive.com API key is required when enabled");
+    }
+
+    if (massive.base_url.empty()) {
+        throw std::invalid_argument("Massive.com base URL cannot be empty");
+    }
+
+    if (massive.min_market_cap < 0) {
+        throw std::invalid_argument("Minimum market cap must be non-negative");
+    }
+
+    if (massive.max_pe_ratio < 0) {
+        throw std::invalid_argument("Maximum P/E ratio must be non-negative");
+    }
+
+    if (massive.dividend_blackout_days < 0) {
+        throw std::invalid_argument("Dividend blackout days must be non-negative");
+    }
+
+    if (massive.cache_duration_seconds <= 0) {
+        throw std::invalid_argument("Cache duration must be positive");
+    }
+
+    if (massive.rate_limit_per_second <= 0) {
+        throw std::invalid_argument("Rate limit must be positive");
     }
 }
 

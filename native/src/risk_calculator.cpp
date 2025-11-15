@@ -239,6 +239,31 @@ int RiskCalculator::calculate_optimal_position_size(
     return std::max(1, max_contracts);
 }
 
+/// Calculate optimal position size using Kelly Criterion.
+///
+/// Algorithm: The Kelly Criterion determines the optimal fraction of capital
+/// to risk on a bet to maximize long-term growth.
+///
+/// Formula: f = (bp - q) / b
+///   where:
+///     f = fraction of capital to bet
+///     b = win/loss ratio (win_amount / loss_amount)
+///     p = win probability
+///     q = loss probability (1 - p)
+///
+/// Expected behavior:
+/// - Returns 0 if loss_amount == 0 (division by zero protection)
+/// - Uses fractional Kelly (50% of full Kelly) for risk management
+/// - Clamps result to maximum 25% of account value
+/// - Converts to number of contracts (assuming $100 per contract)
+///
+/// @param win_probability Probability of winning (0.0 to 1.0)
+/// @param win_amount Amount won if successful
+/// @param loss_amount Amount lost if unsuccessful
+/// @param account_value Total account value
+/// @return Optimal number of contracts to trade
+///
+/// @see ALGORITHMS_AND_BEHAVIOR.md for detailed algorithm documentation
 int RiskCalculator::calculate_kelly_position_size(
     double win_probability,
     double win_amount,
@@ -282,6 +307,27 @@ int RiskCalculator::calculate_fixed_fractional_size(
 // VaR Calculations
 // ============================================================================
 
+/// Calculate Value at Risk (VaR) using historical simulation method.
+///
+/// Algorithm: Historical simulation uses past returns to estimate future risk.
+/// The method sorts historical returns and selects the percentile corresponding
+/// to the confidence level.
+///
+/// Formula: VaR = -sorted_returns[percentile_index]
+///   where percentile_index = (1 - confidence_level) * returns.size()
+///
+/// Expected behavior:
+/// - Returns 0.0 if returns vector is empty
+/// - Sorts returns in ascending order
+/// - Selects the return at the (1 - confidence_level) percentile
+/// - Returns negative of selected return (VaR is typically positive)
+/// - For 95% confidence, selects 5th percentile (worst 5% of returns)
+///
+/// @param returns Vector of historical returns
+/// @param confidence_level Confidence level (e.g., 0.95 for 95%)
+/// @return VaR value (positive number representing potential loss)
+///
+/// @see ALGORITHMS_AND_BEHAVIOR.md for detailed algorithm documentation
 double RiskCalculator::calculate_var_historical(
     const std::vector<double>& returns,
     double confidence_level) const {
@@ -297,6 +343,31 @@ double RiskCalculator::calculate_var_historical(
     return -sorted_returns[index];
 }
 
+/// Calculate Value at Risk (VaR) using parametric (variance-covariance) method.
+///
+/// Algorithm: Parametric VaR assumes returns follow a normal distribution.
+/// Uses the mean, standard deviation, and z-score to estimate potential loss.
+///
+/// Formula: VaR = position_value * z_score * volatility * sqrt(time_horizon / 252)
+///
+/// Z-scores:
+/// - 95% confidence: z = 1.645
+/// - 99% confidence: z = 2.326
+///
+/// Expected behavior:
+/// - Scales volatility by square root of time (square root of time rule)
+/// - Assumes 252 trading days per year
+/// - Returns positive value representing potential loss
+/// - Higher confidence level = higher VaR (more conservative)
+///
+/// @param expected_return Expected return (mean)
+/// @param volatility Standard deviation of returns
+/// @param position_value Current value of position
+/// @param confidence_level Confidence level (0.95 or 0.99)
+/// @param time_horizon_days Time horizon in days (default: 1)
+/// @return VaR value (positive number representing potential loss)
+///
+/// @see ALGORITHMS_AND_BEHAVIOR.md for detailed algorithm documentation
 double RiskCalculator::calculate_var_parametric(
     double expected_return,
     double volatility,
@@ -418,6 +489,30 @@ types::RiskMetrics RiskCalculator::calculate_box_spread_greeks(
 // Risk-Adjusted Returns
 // ============================================================================
 
+/// Calculate Sharpe ratio (risk-adjusted return measure).
+///
+/// Algorithm: Sharpe ratio measures excess return per unit of risk (volatility).
+/// Higher Sharpe ratio indicates better risk-adjusted performance.
+///
+/// Formula: Sharpe = (mean_return - risk_free_rate) / standard_deviation
+///
+/// Expected behavior:
+/// - Returns 0.0 if returns vector is empty
+/// - Returns 0.0 if standard deviation is zero (division by zero protection)
+/// - Positive value: Returns exceed risk-free rate
+/// - Negative value: Returns below risk-free rate
+/// - Higher value: Better risk-adjusted performance
+///
+/// Interpretation:
+/// - Sharpe > 1: Good
+/// - Sharpe > 2: Very good
+/// - Sharpe > 3: Excellent
+///
+/// @param returns Vector of historical returns
+/// @param risk_free_rate Risk-free rate (e.g., T-bill rate)
+/// @return Sharpe ratio
+///
+/// @see ALGORITHMS_AND_BEHAVIOR.md for detailed algorithm documentation
 double RiskCalculator::calculate_sharpe_ratio(
     const std::vector<double>& returns,
     double risk_free_rate) const {
@@ -432,6 +527,30 @@ double RiskCalculator::calculate_sharpe_ratio(
     return (mean_return - risk_free_rate) / std_dev;
 }
 
+/// Calculate Sortino ratio (downside risk-adjusted return measure).
+///
+/// Algorithm: Sortino ratio is similar to Sharpe ratio but only considers
+/// downside volatility (negative returns). This makes it more appropriate
+/// for strategies where upside volatility is desirable.
+///
+/// Formula: Sortino = (mean_return - risk_free_rate) / downside_deviation
+///   where downside_deviation = std_dev of negative returns only
+///
+/// Expected behavior:
+/// - Returns 0.0 if returns vector is empty
+/// - Returns infinity if no negative returns (perfect downside protection)
+/// - Returns 0.0 if downside deviation is zero
+/// - Higher value: Better downside risk-adjusted performance
+///
+/// Interpretation:
+/// - Sortino > Sharpe: Strategy has favorable upside volatility
+/// - Sortino < Sharpe: Strategy has unfavorable upside volatility
+///
+/// @param returns Vector of historical returns
+/// @param risk_free_rate Risk-free rate (e.g., T-bill rate)
+/// @return Sortino ratio (or infinity if no downside risk)
+///
+/// @see ALGORITHMS_AND_BEHAVIOR.md for detailed algorithm documentation
 double RiskCalculator::calculate_sortino_ratio(
     const std::vector<double>& returns,
     double risk_free_rate) const {

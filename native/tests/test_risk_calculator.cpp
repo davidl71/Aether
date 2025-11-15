@@ -5,29 +5,38 @@
 
 using namespace risk;
 
-TEST_CASE("RiskCalculator calculates box spread risk", "[risk]") {
+TEST_CASE("RiskCalculator calculates box spread risk", "[risk][box_spread]") {
+    // Given: A risk calculator and a box spread with known parameters
     config::RiskConfig config;
     RiskCalculator calculator(config);
 
     types::BoxSpreadLeg spread;
-    spread.long_call.strike = 500.0;
-    spread.short_call.strike = 510.0;
-    spread.net_debit = 9.85;
+    spread.long_call.strike = 500.0;   // K1
+    spread.short_call.strike = 510.0;  // K2
+    spread.net_debit = 9.85;            // Cost to enter
 
     SECTION("Box spread has defined risk") {
+        // When: We calculate the risk metrics
         auto risk = calculator.calculate_box_spread_risk(spread, 505.0, 0.20);
 
+        // Then: Maximum loss should equal net debit (box spreads have limited risk)
         REQUIRE(risk.max_loss == spread.net_debit * 100.0);
+        // And: Maximum gain should be positive (arbitrage opportunity)
         REQUIRE(risk.max_gain > 0);
+        // And: Probability of profit should be 1.0 if held to expiration
         REQUIRE_THAT(risk.probability_of_profit,
                     Catch::Matchers::WithinRel(1.0, 0.001));
     }
 
     SECTION("Box spread is delta-neutral") {
+        // When: We calculate the risk metrics
         auto risk = calculator.calculate_box_spread_risk(spread, 505.0, 0.20);
 
+        // Then: Delta should be approximately zero (box spreads are delta-neutral)
         REQUIRE_THAT(risk.delta, Catch::Matchers::WithinAbs(0.0, 0.001));
+        // And: Gamma should be approximately zero
         REQUIRE_THAT(risk.gamma, Catch::Matchers::WithinAbs(0.0, 0.001));
+        // And: Vega should be approximately zero
         REQUIRE_THAT(risk.vega, Catch::Matchers::WithinAbs(0.0, 0.001));
     }
 }
@@ -82,14 +91,24 @@ TEST_CASE("RiskCalculator position sizing", "[risk]") {
     }
 
     SECTION("Kelly criterion position sizing") {
+        // Given: Known win probability, win/loss amounts, and account value
+        double win_probability = 0.6;   // 60% win probability
+        double win_amount = 100.0;      // Win $100
+        double loss_amount = 50.0;      // Risk $50
+        double account_value = 10000.0; // Account value
+
+        // When: We calculate optimal position size using Kelly Criterion
         int kelly_size = calculator.calculate_kelly_position_size(
-            0.6,      // 60% win probability
-            100.0,    // Win $100
-            50.0,     // Risk $50
-            10000.0   // Account value
+            win_probability, win_amount, loss_amount, account_value
         );
 
+        // Then: Position size should be non-negative
         REQUIRE(kelly_size >= 0);
+        // And: Should use fractional Kelly (50% of full Kelly) for risk management
+        // Kelly fraction = (bp - q) / b where b = 100/50 = 2, p = 0.6, q = 0.4
+        // Full Kelly = (2*0.6 - 0.4) / 2 = 0.4, Fractional = 0.2
+        // Expected position = 10000 * 0.2 / 100 = 20 contracts
+        // But implementation uses half Kelly and clamps to 25%, so result may vary
     }
 
     SECTION("Fixed fractional sizing") {

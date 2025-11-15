@@ -48,6 +48,18 @@ This script will:
 - ✓ Test dry-run mode
 - ✓ Test TWS connection (if available)
 
+### 1b. Mock TWS Dry Run
+
+The integration wrapper now runs the CLI with `--mock-tws` after validation. This spins up the in-process mock TWS client, exercises the main trading loop for a few seconds (using `timeout`, default 8s), and writes the transcript to `build/integration_logs/mock_run_<timestamp>.log`. Use it to sanity-check orchestration without a live IB Gateway:
+
+```bash
+./build/macos-x86_64-release/bin/ib_box_spread \
+  --config config/config.json \
+  --dry-run \
+  --mock-tws \
+  --log-level debug
+```
+
 ### 2. Start TWS Paper Trading
 
 #### Download TWS
@@ -99,7 +111,8 @@ tail -f logs/ib_box_spread.log
     "client_id": 1,
     "connection_timeout_ms": 5000,
     "auto_reconnect": true,
-    "reconnect_delay_ms": 3000
+    "reconnect_delay_ms": 3000,
+    "use_mock": false
   }
 }
 ```

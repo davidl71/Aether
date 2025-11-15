@@ -12,6 +12,10 @@ set(TEST_SOURCES
     test_risk_calculator.cpp
     test_order_manager.cpp
     test_tws_client.cpp
+    test_option_chain.cpp
+    test_rate_limiter.cpp
+    test_hedge_manager.cpp
+    test_box_spread_bag.cpp
 )
 
 add_executable(box_spread_tests ${TEST_SOURCES})
@@ -87,6 +91,8 @@ target_sources(box_spread_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/native/src/box_spread_strategy.cpp
     ${CMAKE_SOURCE_DIR}/native/src/order_manager.cpp
     ${CMAKE_SOURCE_DIR}/native/src/risk_calculator.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/hedge_manager.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/box_spread_bag.cpp
 )
 
 # ============================================================================

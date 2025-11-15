@@ -102,7 +102,9 @@ fn default_market_provider() -> String {
 }
 
 fn default_market_symbols() -> Vec<String> {
-  vec!["XSP".into(), "SPY".into(), "QQQ".into(), "IWM".into()]
+  // Default to European-style symbols: SPX, XSP, NDX (European exercise style)
+  // American-style symbols (SPY, QQQ, IWM) are hidden by default
+  vec!["SPX".into(), "XSP".into(), "NDX".into()]
 }
 
 fn default_poll_interval_ms() -> u64 {

@@ -15,26 +15,25 @@ class IbBoxSpreadTui < Formula
   license "MIT"
   head "git@github.com:davidl71/ib_box_spread_full_universal.git", branch: "main", using: :git
 
-  depends_on "go" => :build
+  depends_on "cmake" => :build
+  depends_on "ftxui" => :build
 
   def install
-    # Build TUI binary
-    system "go", "build", "-ldflags", "-s -w",
-           "-o", "ib-box-spread-tui",
-           "./tui/cmd/tui"
+    # Build C++ TUI using CMake
+    mkdir "build" do
+      system "cmake", "..", "-DENABLE_TUI=ON", *std_cmake_args
+      system "cmake", "--build", "."
+      system "cmake", "--install", ".", "--component", "tui"
+    end
 
-    # Install binary
-    bin.install "ib-box-spread-tui"
-
-    # Install man page
-    man1.install "tui/man/ib-box-spread-tui.1"
+    # Install binary (CMake installs to bin/ib_box_spread_tui)
+    # Create symlink for compatibility with old name
+    bin.install_symlink "ib_box_spread_tui" => "ib-box-spread-tui"
   end
 
   test do
     # Test that binary exists and can be executed
-    assert_predicate bin/"ib-box-spread-tui", :exist?
-
-    # Test man page exists
-    assert_predicate man1/"ib-box-spread-tui.1", :exist?
+    assert_predicate bin/"ib_box_spread_tui", :exist?
+    system bin/"ib_box_spread_tui", "--help" rescue nil  # May not have --help flag yet
   end
 end

@@ -69,133 +69,156 @@ public:
     // ========================================================================
 
     // Calculate risk for box spread
+    // Pure calculation function - no side effects
     PositionRisk calculate_box_spread_risk(
         const types::BoxSpreadLeg& spread,
         double underlying_price,
         double implied_volatility
-    ) const;
+    ) const __attribute__((pure));
 
     // Calculate risk for single position
+    // Pure calculation function - no side effects
     PositionRisk calculate_position_risk(
         const types::Position& position,
         double underlying_price,
         double implied_volatility
-    ) const;
+    ) const __attribute__((pure));
 
     // Calculate maximum loss for position
-    double calculate_max_loss(const types::Position& position) const;
+    // Pure calculation function - no side effects
+    double calculate_max_loss(const types::Position& position) const __attribute__((pure));
 
     // Calculate maximum gain for position
-    double calculate_max_gain(const types::Position& position) const;
+    // Pure calculation function - no side effects
+    double calculate_max_gain(const types::Position& position) const __attribute__((pure));
 
     // ========================================================================
     // Portfolio Risk Analysis
     // ========================================================================
 
     // Calculate portfolio-level risk
+    // Pure calculation function - no side effects
+    // Note: positions vector cannot be null (passed by reference)
     PortfolioRisk calculate_portfolio_risk(
         const std::vector<types::Position>& positions,
         const types::AccountInfo& account
-    ) const;
+    ) const __attribute__((pure));
 
     // Calculate aggregate Greeks
+    // Pure calculation function - no side effects
+    // Note: positions vector cannot be null (passed by reference)
     types::RiskMetrics calculate_aggregate_greeks(
         const std::vector<types::Position>& positions
-    ) const;
+    ) const __attribute__((pure));
 
     // Calculate correlation risk
+    // Pure calculation function - no side effects
+    // Note: positions vector cannot be null (passed by reference)
     double calculate_correlation_risk(
         const std::vector<types::Position>& positions
-    ) const;
+    ) const __attribute__((pure));
 
     // ========================================================================
     // Risk Limits and Validation
     // ========================================================================
 
     // Check if position is within limits
+    // Pure calculation function - no side effects
     bool is_within_limits(
         const types::Position& position,
         const std::vector<types::Position>& existing_positions
-    ) const;
+    ) const __attribute__((pure));
 
     // Check if box spread is within limits
+    // Pure calculation function - no side effects
     bool is_box_spread_within_limits(
         const types::BoxSpreadLeg& spread,
         const std::vector<types::Position>& existing_positions
-    ) const;
+    ) const __attribute__((pure));
 
     // Calculate remaining capacity
+    // Pure calculation function - no side effects
     double calculate_remaining_capacity(
         const std::vector<types::Position>& positions,
         double account_value
-    ) const;
+    ) const __attribute__((pure));
 
     // Check if adding position exceeds limits
+    // Pure calculation function - no side effects
     bool would_exceed_limits(
         const types::Position& new_position,
         const std::vector<types::Position>& existing_positions,
         double account_value
-    ) const;
+    ) const __attribute__((pure));
 
     // ========================================================================
     // Position Sizing
     // ========================================================================
 
     // Calculate optimal position size
+    // Pure calculation function - no side effects
     int calculate_optimal_position_size(
         const types::BoxSpreadLeg& spread,
         double account_value,
         double risk_tolerance
-    ) const;
+    ) const __attribute__((pure));
 
     // Calculate position size using Kelly Criterion
+    // Pure calculation function - no side effects
     int calculate_kelly_position_size(
         double win_probability,
         double win_amount,
         double loss_amount,
         double account_value
-    ) const;
+    ) const __attribute__((pure));
 
     // Calculate fixed-fractional position size
+    // Pure calculation function - no side effects
     int calculate_fixed_fractional_size(
         double position_cost,
         double account_value,
         double risk_percent
-    ) const;
+    ) const __attribute__((pure));
 
     // ========================================================================
     // Value at Risk (VaR) Calculations
     // ========================================================================
 
     // Calculate VaR using historical simulation
+    // Pure calculation function - no side effects
+    // Note: returns vector cannot be null (passed by reference)
     double calculate_var_historical(
         const std::vector<double>& returns,
         double confidence_level
-    ) const;
+    ) const __attribute__((pure));
 
     // Calculate VaR using parametric method
+    // Pure calculation function - no side effects
     double calculate_var_parametric(
         double expected_return,
         double volatility,
         double position_value,
         double confidence_level,
         int time_horizon_days = 1
-    ) const;
+    ) const __attribute__((pure));
 
     // Calculate VaR using Monte Carlo simulation
+    // Pure calculation function - no side effects (deterministic with fixed seed)
     double calculate_var_monte_carlo(
         const types::Position& position,
         double underlying_price,
         double volatility,
         int simulations,
         double confidence_level
-    ) const;
+    ) const __attribute__((pure));
 
     // Calculate Expected Shortfall (CVaR)
+    // Pure calculation function - no side effects
+    // Note: returns vector cannot be null (passed by reference)
     double calculate_expected_shortfall(
         const std::vector<double>& returns,
         double confidence_level
-    ) const;
+    ) const __attribute__((pure));
 
     // ========================================================================
     // Scenario Analysis
@@ -226,63 +249,78 @@ public:
     // ========================================================================
 
     // Calculate delta for box spread
+    // Pure calculation function - no side effects
     double calculate_box_spread_delta(
         const types::BoxSpreadLeg& spread
-    ) const;
+    ) const __attribute__((pure));
 
     // Calculate all Greeks for box spread
+    // Pure calculation function - no side effects
     types::RiskMetrics calculate_box_spread_greeks(
         const types::BoxSpreadLeg& spread,
         double underlying_price,
         double volatility
-    ) const;
+    ) const __attribute__((pure));
 
     // ========================================================================
     // Risk-Adjusted Returns
     // ========================================================================
 
     // Calculate Sharpe ratio
+    // Pure calculation function - no side effects
+    // Note: returns vector cannot be null (passed by reference)
     double calculate_sharpe_ratio(
         const std::vector<double>& returns,
         double risk_free_rate
-    ) const;
+    ) const __attribute__((pure));
 
     // Calculate Sortino ratio
+    // Pure calculation function - no side effects
+    // Note: returns vector cannot be null (passed by reference)
     double calculate_sortino_ratio(
         const std::vector<double>& returns,
         double risk_free_rate
-    ) const;
+    ) const __attribute__((pure));
 
     // Calculate Calmar ratio
+    // Pure calculation function - no side effects
     double calculate_calmar_ratio(
         double annualized_return,
         double max_drawdown
-    ) const;
+    ) const __attribute__((pure));
 
     // Calculate information ratio
+    // Pure calculation function - no side effects
+    // Note: returns and benchmark_returns vectors cannot be null (passed by reference)
     double calculate_information_ratio(
         const std::vector<double>& returns,
         const std::vector<double>& benchmark_returns
-    ) const;
+    ) const __attribute__((pure));
 
     // ========================================================================
     // Drawdown Analysis
     // ========================================================================
 
     // Calculate maximum drawdown
+    // Pure calculation function - no side effects
+    // Note: equity_curve vector cannot be null (passed by reference)
     double calculate_max_drawdown(
         const std::vector<double>& equity_curve
-    ) const;
+    ) const __attribute__((pure));
 
     // Calculate current drawdown
+    // Pure calculation function - no side effects
+    // Note: equity_curve vector cannot be null (passed by reference)
     double calculate_current_drawdown(
         const std::vector<double>& equity_curve
-    ) const;
+    ) const __attribute__((pure));
 
     // Calculate drawdown duration
+    // Pure calculation function - no side effects
+    // Note: equity_curve vector cannot be null (passed by reference)
     int calculate_drawdown_duration(
         const std::vector<double>& equity_curve
-    ) const;
+    ) const __attribute__((pure));
 
     // ========================================================================
     // Configuration
@@ -292,7 +330,8 @@ public:
     void update_config(const config::RiskConfig& config);
 
     // Get current configuration
-    config::RiskConfig get_config() const;
+    // Pure query function - no side effects
+    config::RiskConfig get_config() const __attribute__((pure));
 
 private:
     class Impl;
@@ -346,28 +385,38 @@ private:
 // ============================================================================
 
 // Calculate standard deviation
-double calculate_standard_deviation(const std::vector<double>& values);
+// Pure calculation function - no side effects
+// Note: values vector cannot be null (passed by reference)
+double calculate_standard_deviation(const std::vector<double>& values) __attribute__((pure));
 
 // Calculate mean
-double calculate_mean(const std::vector<double>& values);
+// Pure calculation function - no side effects
+// Note: values vector cannot be null (passed by reference)
+double calculate_mean(const std::vector<double>& values) __attribute__((pure));
 
 // Calculate percentile
+// Pure calculation function - no side effects
+// Note: values vector cannot be null (passed by reference)
 double calculate_percentile(
     const std::vector<double>& values,
     double percentile
-);
+) __attribute__((pure));
 
 // Calculate correlation coefficient
+// Pure calculation function - no side effects
+// Note: x and y vectors cannot be null (passed by reference)
 double calculate_correlation(
     const std::vector<double>& x,
     const std::vector<double>& y
-);
+) __attribute__((pure));
 
 // Calculate beta
+// Pure calculation function - no side effects
+// Note: asset_returns and market_returns vectors cannot be null (passed by reference)
 double calculate_beta(
     const std::vector<double>& asset_returns,
     const std::vector<double>& market_returns
-);
+) __attribute__((pure));
 
 // Annualize return
 double annualize_return(double period_return, int periods_per_year);

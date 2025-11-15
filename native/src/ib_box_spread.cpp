@@ -197,6 +197,7 @@ int main(int argc, char** argv) {
     bool dry_run = false;
     bool validate_only = false;
     bool use_nautilus = false;
+    bool mock_tws = false;
     std::string log_level_override;
     std::string init_config_override;
 
@@ -216,6 +217,9 @@ int main(int argc, char** argv) {
 
     app.add_flag("--use-nautilus", use_nautilus,
                  "Use nautilus_trader for market data and execution (requires Python)");
+
+    app.add_flag("--mock-tws", mock_tws,
+                 "Use the in-process mock TWS client (no live IB connection required)");
 
     app.add_option("--log-level", log_level_override,
                   "Override log level (trace|debug|info|warn|error)")
@@ -249,7 +253,8 @@ int main(int argc, char** argv) {
         try {
             config::Config sample = config::ConfigManager::get_default();
             if (sample.strategy.symbols.empty()) {
-                sample.strategy.symbols.push_back("SPY");
+                // Default to European-style symbols
+                sample.strategy.symbols.push_back("SPX");
             }
             sample.dry_run = true;
             config::ConfigManager::save(sample, target.string());
@@ -280,12 +285,28 @@ int main(int argc, char** argv) {
         spdlog::info("Loading configuration from: {}", config_file);
         config = config::ConfigManager::load(config_file);
 
-        // Override settings from command line
+        // Override settings from command line / environment
         if (dry_run) {
             config.dry_run = true;
         }
         if (!log_level_override.empty()) {
             config.logging.log_level = log_level_override;
+        }
+        auto env_truthy = [](const char* value) {
+            if (value == nullptr) {
+                return false;
+            }
+            std::string str(value);
+            std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {
+                return static_cast<char>(std::tolower(c));
+            });
+            return str == "1" || str == "true" || str == "yes" || str == "on";
+        };
+        if (mock_tws) {
+            config.tws.use_mock = true;
+        }
+        if (env_truthy(std::getenv("TWS_MOCK"))) {
+            config.tws.use_mock = true;
         }
 
         // Check for nautilus_trader usage
@@ -293,6 +314,10 @@ int main(int argc, char** argv) {
             spdlog::info("NautilusTrader mode requested via --use-nautilus flag");
             spdlog::info("Note: Use python/nautilus_strategy.py for full nautilus_trader integration");
             spdlog::info("C++ application will continue with TWS client");
+        }
+
+        if (config.tws.use_mock) {
+            spdlog::warn("Mock TWS client enabled. No live IBKR connection will be attempted.");
         }
 
         // Validate configuration

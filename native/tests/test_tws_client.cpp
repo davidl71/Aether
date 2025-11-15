@@ -84,20 +84,20 @@ bool is_port_listening(const std::string& host, int port, int timeout_ms = 500) 
 // ============================================================================
 
 TEST_CASE("TWS Client - Port candidate generation", "[tws][connectivity]") {
-    // Test that port candidates include all standard ports
-    // Note: This tests the logic, not actual connectivity
-
+    // Given: A TWS client configuration with paper trading port
     config::TWSConfig config;
     config.host = "127.0.0.1";
     config.port = 7497; // Paper trading
 
+    // When: We create a TWS client
     TWSClient client(config);
 
-    // The client should be constructible
+    // Then: The client should be constructible without throwing
     REQUIRE_NOTHROW(client.get_connection_state());
 
-    // Should start disconnected
+    // And: Should start in disconnected state
     REQUIRE(client.get_connection_state() == ConnectionState::Disconnected);
+    // And: is_connected() should return false
     REQUIRE_FALSE(client.is_connected());
 }
 
@@ -105,11 +105,15 @@ TEST_CASE("TWS Client - Configuration validation", "[tws][config]") {
     config::TWSConfig config;
 
     SECTION("Valid paper trading config") {
+        // Given: Valid paper trading configuration
         config.host = "127.0.0.1";
         config.port = 7497;
         config.client_id = 1;
 
+        // When: We create a TWS client
         TWSClient client(config);
+
+        // Then: Client should be in disconnected state (not yet connected)
         REQUIRE(client.get_connection_state() == ConnectionState::Disconnected);
     }
 

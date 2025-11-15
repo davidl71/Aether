@@ -1,6 +1,7 @@
 // tws_client.cpp - TWS API Client implementation with full EWrapper integration
 #include "tws_client.h"
 #include "rate_limiter.h"
+#include "pcap_capture.h"
 #include <spdlog/spdlog.h>
 
 // TWS API headers
@@ -27,6 +28,7 @@
 #include <vector>
 #include <string>
 #include <cstring>
+#include <cstdlib>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -139,6 +141,67 @@ std::vector<int> get_port_candidates(int configured_port) {
     return candidates;
 }
 
+bool env_flag_enabled(const char* name) {
+    const char* value = std::getenv(name);
+    if (!value) {
+        return false;
+    }
+    std::string flag(value);
+    std::transform(flag.begin(), flag.end(), flag.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
+    return flag == "1" || flag == "true" || flag == "yes" || flag == "on";
+}
+
+bool should_use_mock_client(const config::TWSConfig& config) {
+    return config.use_mock || env_flag_enabled("TWS_MOCK");
+}
+
+types::OptionContract make_mock_contract(const std::string& symbol,
+                                         const std::string& expiry,
+                                         double strike,
+                                         types::OptionType type) {
+    types::OptionContract contract;
+    contract.symbol = symbol.empty() ? "SPY" : symbol;
+    contract.expiry = expiry.empty() ? "20251219" : expiry;
+    contract.strike = strike;
+    contract.type = type;
+    contract.exchange = "SMART";
+    contract.local_symbol = contract.symbol + contract.expiry +
+                            (type == types::OptionType::Call ? "C" : "P") +
+                            std::to_string(static_cast<int>(strike * 1000));
+    return contract;
+}
+
+types::MarketData generate_mock_market_data(const types::OptionContract& contract) {
+    types::MarketData data;
+    data.symbol = contract.symbol.empty() ? "SPY" : contract.symbol;
+    data.timestamp = std::chrono::system_clock::now();
+
+    double base_price = contract.strike > 0 ? contract.strike / 10.0 : 100.0;
+    if (!contract.symbol.empty()) {
+        base_price += static_cast<double>((contract.symbol[0] % 10));
+    }
+
+    data.bid = std::max(0.1, base_price - 0.1);
+    data.ask = data.bid + 0.2;
+    data.last = (data.bid + data.ask) / 2.0;
+    data.bid_size = 10;
+    data.ask_size = 10;
+    data.last_size = 1;
+    data.volume = 5000;
+    data.high = data.last + 0.5;
+    data.low = data.last - 0.5;
+    data.open = data.last - 0.2;
+    data.close = data.last - 0.1;
+    data.implied_volatility = 0.25;
+    data.delta = contract.type == types::OptionType::Call ? 0.4 : -0.4;
+    data.gamma = 0.02;
+    data.theta = -0.01;
+    data.vega = 0.15;
+    return data;
+}
+
 const std::unordered_map<int, std::string> kIbErrorGuidance = {
     // Connection errors (500-599)
     {502, "Connection rejected. Enable 'ActiveX and Socket Clients' in TWS Settings > API > Settings. Verify IP is trusted (127.0.0.1) and port is correct."},
@@ -217,13 +280,46 @@ public:
         , state_(ConnectionState::Disconnected)
         , reconnect_attempts_(0)
         , last_heartbeat_(std::chrono::steady_clock::now())
-        , rate_limiter_(RateLimiterConfig{}) {
+        , rate_limiter_(RateLimiterConfig{})
+        , mock_mode_(should_use_mock_client(config)) {
         // Enable async connection mode for non-blocking connections
         client_.asyncEConnect(true);
 
         // Initialize callback tracking
         connection_callbacks_received_.connectAck = false;
         connection_callbacks_received_.managedAccounts = false;
+
+        // Initialize PCAP capture if enabled
+        if (config_.enable_pcap_capture && !mock_mode_) {
+            std::string pcap_file = config_.pcap_output_file;
+            if (pcap_file.empty()) {
+                pcap_file = pcap::generate_pcap_filename("tws_capture");
+            }
+            pcap_capture_ = std::make_unique<pcap::PcapCapture>(
+                pcap_file,
+                config_.pcap_nanosecond_precision
+            );
+            if (pcap_capture_->open()) {
+                spdlog::info("PCAP capture enabled: {}", pcap_file);
+                // Cache IP addresses for pcap
+                local_ip_ = pcap::ip_to_uint32("127.0.0.1");
+                remote_ip_ = pcap::ip_to_uint32(config_.host);
+                remote_port_ = htons(static_cast<uint16_t>(config_.port));
+                local_port_ = 0;  // Will be set when connection is established
+            } else {
+                spdlog::warn("Failed to open PCAP capture file: {}", pcap_file);
+                pcap_capture_.reset();
+            }
+        } else {
+            local_ip_ = 0;
+            remote_ip_ = 0;
+            local_port_ = 0;
+            remote_port_ = 0;
+        }
+
+        if (mock_mode_) {
+            spdlog::info("TWSClient starting in mock mode (live IBKR connections disabled).");
+        }
     }
 
     ~Impl() {
@@ -235,6 +331,19 @@ public:
     // ========================================================================
 
     bool connect() {
+        if (mock_mode_) {
+            state_ = ConnectionState::Connected;
+            connected_.store(true);
+            next_order_id_ = 1000;
+            connection_callbacks_received_.connectAck = true;
+            connection_callbacks_received_.managedAccounts = true;
+            connection_callbacks_received_.connectAck_time = std::chrono::steady_clock::now();
+            connection_callbacks_received_.managedAccounts_time = connection_callbacks_received_.connectAck_time;
+            seed_mock_state();
+            connection_cv_.notify_all();
+            spdlog::info("Mock TWS client connected instantly.");
+            return true;
+        }
         state_ = ConnectionState::Connecting;
 
         // Get port candidates (TWS first, then IB Gateway)
@@ -425,6 +534,15 @@ public:
             spdlog::trace("[RAW API] → eConnect(host=\"{}\", port={}, clientId={})",
                         config_.host, port, config_.client_id);
         }
+        // Capture connection attempt in PCAP
+        if (pcap_capture_ && pcap_capture_->is_open()) {
+            std::string connect_msg = "CONNECT_ATTEMPT:host=" + config_.host +
+                                     ",port=" + std::to_string(port) +
+                                     ",client_id=" + std::to_string(config_.client_id);
+            std::vector<uint8_t> data(connect_msg.begin(), connect_msg.end());
+            pcap_capture_->capture_raw(data, true, 0, htons(static_cast<uint16_t>(port)));
+        }
+
         bool success = client_.eConnect(
             config_.host.c_str(),
                 port,
@@ -435,6 +553,13 @@ public:
 
             spdlog::info("eConnect() returned: {} (took {}ms)", success ? "true" : "false", connect_duration);
             spdlog::debug("  → Socket state after eConnect: {}", client_.isConnected() ? "connected" : "disconnected");
+
+            // Capture connection result in PCAP
+            if (pcap_capture_ && pcap_capture_->is_open()) {
+                std::string result_msg = success ? "CONNECT_SUCCESS" : "CONNECT_FAILED";
+                std::vector<uint8_t> data(result_msg.begin(), result_msg.end());
+                pcap_capture_->capture_raw(data, true, 0, htons(static_cast<uint16_t>(port)));
+            }
 
         if (!success) {
                 spdlog::warn("eConnect() returned false for {}:{}, trying next port...", config_.host, port);
@@ -581,6 +706,12 @@ public:
     }
 
     void disconnect() {
+        if (mock_mode_) {
+            connected_ = false;
+            state_ = ConnectionState::Disconnected;
+            spdlog::info("Mock TWS client disconnected.");
+            return;
+        }
         if (connected_) {
             spdlog::info("Disconnecting from TWS...");
 
@@ -601,6 +732,9 @@ public:
     }
 
     bool is_connected() const {
+        if (mock_mode_) {
+            return connected_.load();
+        }
         return connected_ && client_.isConnected();
     }
 
@@ -609,8 +743,11 @@ public:
     }
 
     void process_messages(int timeout_ms) {
-        // Messages are processed by the reader thread
-        // This method can be used for additional processing if needed
+        if (mock_mode_) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(timeout_ms));
+            last_heartbeat_ = std::chrono::steady_clock::now();
+            return;
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(timeout_ms));
     }
 
@@ -630,6 +767,13 @@ public:
             // Track that we received connectAck (for diagnostics)
             connection_callbacks_received_.connectAck = true;
             connection_callbacks_received_.connectAck_time = std::chrono::steady_clock::now();
+
+            // Capture connection event in PCAP
+            if (pcap_capture_ && pcap_capture_->is_open()) {
+                std::string event_data = "CONNECTION_ACK";
+                std::vector<uint8_t> data(event_data.begin(), event_data.end());
+                pcap_capture_->capture_raw(data, false, local_port_, remote_port_);
+            }
 
             // In async mode, connectAck is called immediately after socket connection
             // We still need to wait for nextValidId to confirm full connection
@@ -658,6 +802,14 @@ public:
             spdlog::warn("Connection closed by TWS");
             connected_ = false;
             state_ = ConnectionState::Disconnected;
+
+            // Capture disconnection event in PCAP
+            if (pcap_capture_ && pcap_capture_->is_open()) {
+                std::string event_data = "CONNECTION_CLOSED";
+                std::vector<uint8_t> data(event_data.begin(), event_data.end());
+                pcap_capture_->capture_raw(data, false, local_port_, remote_port_);
+                pcap_capture_->flush();
+            }
 
             // Call error callback
             if (error_callback_) {
@@ -734,6 +886,13 @@ public:
             spdlog::info("✓ Connection fully established in {}ms", total_elapsed);
 
             next_order_id_ = orderId;
+
+            // Capture connection completion event in PCAP
+            if (pcap_capture_ && pcap_capture_->is_open()) {
+                std::string event_data = "CONNECTION_COMPLETE:nextValidId=" + std::to_string(orderId);
+                std::vector<uint8_t> data(event_data.begin(), event_data.end());
+                pcap_capture_->capture_raw(data, false, local_port_, remote_port_);
+            }
 
             std::lock_guard<std::mutex> lock(connection_mutex_);
             connected_ = true;
@@ -1370,6 +1529,33 @@ public:
 
     int request_market_data(const types::OptionContract& contract,
                            MarketDataCallback callback) {
+        if (mock_mode_) {
+            int request_id = next_request_id_++;
+            auto data = generate_mock_market_data(contract);
+            {
+                std::lock_guard<std::mutex> lock(data_mutex_);
+                market_data_[request_id] = data;
+                market_data_callbacks_[request_id] = callback;
+            }
+            std::thread([this, request_id]() {
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                MarketDataCallback cb;
+                types::MarketData md;
+                {
+                    std::lock_guard<std::mutex> lock(data_mutex_);
+                    auto it = market_data_callbacks_.find(request_id);
+                    if (it == market_data_callbacks_.end()) {
+                        return;
+                    }
+                    cb = it->second;
+                    md = market_data_[request_id];
+                }
+                if (cb) {
+                    cb(md);
+                }
+            }).detach();
+            return request_id;
+        }
         // Check rate limits
         if (!rate_limiter_.check_message_rate()) {
             spdlog::error("Rate limit exceeded: Cannot request market data for {}",
@@ -1421,6 +1607,13 @@ public:
     }
 
     void cancel_market_data(int request_id) {
+        if (mock_mode_) {
+            std::lock_guard<std::mutex> lock(data_mutex_);
+            market_data_callbacks_.erase(request_id);
+            market_data_.erase(request_id);
+            market_data_promises_.erase(request_id);
+            return;
+        }
         // Check rate limits for cancel message
         if (rate_limiter_.is_enabled() && !rate_limiter_.check_message_rate()) {
             spdlog::warn("Rate limit exceeded: Delaying cancel_market_data for request {}", request_id);
@@ -1531,6 +1724,22 @@ public:
         spdlog::debug("Requesting option chain for {} (expiry={})",
                      symbol, expiry.empty() ? "all" : expiry);
 
+        if (mock_mode_) {
+            std::vector<types::OptionContract> contracts;
+            std::vector<std::string> expiries = {
+                expiry.empty() ? "20251219" : expiry,
+                "20260116"
+            };
+            std::vector<double> strikes = {100.0, 105.0, 110.0};
+            for (const auto& exp : expiries) {
+                for (double strike : strikes) {
+                    contracts.push_back(make_mock_contract(symbol, exp, strike, types::OptionType::Call));
+                    contracts.push_back(make_mock_contract(symbol, exp, strike, types::OptionType::Put));
+                }
+            }
+            return contracts;
+        }
+
         // TODO: Implement option chain request using reqSecDefOptParams
         // This is complex and requires handling multiple callbacks
         return {};
@@ -1545,6 +1754,35 @@ public:
                    int quantity,
                    double limit_price,
                    types::TimeInForce tif) {
+        if (mock_mode_) {
+            int order_id = next_order_id_++;
+            types::Order mock_order;
+            mock_order.order_id = order_id;
+            mock_order.contract = contract;
+            mock_order.action = action;
+            mock_order.quantity = quantity;
+            mock_order.limit_price = limit_price;
+            mock_order.tif = tif;
+            mock_order.status = types::OrderStatus::Filled;
+            mock_order.submitted_time = std::chrono::system_clock::now();
+            mock_order.last_update = mock_order.submitted_time;
+            mock_order.filled_quantity = quantity;
+            mock_order.avg_fill_price = limit_price > 0 ? limit_price : generate_mock_market_data(contract).get_mid_price();
+            mock_order.status_message = "Filled via mock TWS client";
+
+            {
+                std::lock_guard<std::mutex> lock(order_mutex_);
+                orders_[order_id] = mock_order;
+            }
+
+            update_mock_positions(contract, action, quantity, mock_order.avg_fill_price);
+
+            if (order_status_callback_) {
+                order_status_callback_(mock_order);
+            }
+
+            return order_id;
+        }
         // Check rate limits
         if (!rate_limiter_.check_message_rate()) {
             spdlog::error("Rate limit exceeded: Cannot place order for {}",
@@ -1602,6 +1840,47 @@ public:
         const std::vector<long>& contract_ids,
         const std::vector<double>& limit_prices,
         types::TimeInForce tif) {
+
+        if (mock_mode_) {
+            if (contracts.empty()) {
+                spdlog::error("Combo order: Cannot place empty combo");
+                return -1;
+            }
+            int order_id = next_order_id_++;
+            types::Order mock_order;
+            mock_order.order_id = order_id;
+            mock_order.contract = contracts.front();
+            mock_order.action = actions.empty() ? types::OrderAction::Buy : actions.front();
+            mock_order.quantity = 1;
+            mock_order.limit_price = limit_prices.empty() ? 0.0 : limit_prices.front();
+            mock_order.tif = tif;
+            mock_order.status = types::OrderStatus::Filled;
+            mock_order.submitted_time = std::chrono::system_clock::now();
+            mock_order.last_update = mock_order.submitted_time;
+            mock_order.filled_quantity = 1;
+            mock_order.avg_fill_price = mock_order.limit_price;
+            mock_order.status_message = "Mock combo order filled";
+
+            {
+                std::lock_guard<std::mutex> lock(order_mutex_);
+                orders_[order_id] = mock_order;
+            }
+
+            for (size_t i = 0; i < contracts.size(); ++i) {
+                auto action = i < actions.size() ? actions[i] : types::OrderAction::Buy;
+                int qty = i < quantities.size() ? quantities[i] : 1;
+                double price = i < limit_prices.size()
+                                   ? limit_prices[i]
+                                   : generate_mock_market_data(contracts[i]).get_mid_price();
+                update_mock_positions(contracts[i], action, qty, price);
+            }
+
+            if (order_status_callback_) {
+                order_status_callback_(mock_order);
+            }
+
+            return order_id;
+        }
 
         // Validate inputs
         if (contracts.size() != actions.size() || contracts.size() != quantities.size() ||
@@ -1703,6 +1982,16 @@ public:
     }
 
     void cancel_order(int order_id) {
+        if (mock_mode_) {
+            std::lock_guard<std::mutex> lock(order_mutex_);
+            auto it = orders_.find(order_id);
+            if (it != orders_.end()) {
+                it->second.status = types::OrderStatus::Cancelled;
+                it->second.last_update = std::chrono::system_clock::now();
+                it->second.status_message = "Cancelled via mock TWS client";
+            }
+            return;
+        }
         // Check rate limits
         if (rate_limiter_.is_enabled() && !rate_limiter_.check_message_rate()) {
             spdlog::warn("Rate limit exceeded: Delaying cancel_order for order #{}", order_id);
@@ -1730,6 +2019,15 @@ public:
     }
 
     void cancel_all_orders() {
+        if (mock_mode_) {
+            std::lock_guard<std::mutex> lock(order_mutex_);
+            for (auto& [id, order] : orders_) {
+                order.status = types::OrderStatus::Cancelled;
+                order.last_update = std::chrono::system_clock::now();
+                order.status_message = "Cancelled via mock TWS client";
+            }
+            return;
+        }
         spdlog::info("Cancelling all orders");
         OrderCancel orderCancel;
         client_.reqGlobalCancel(orderCancel);
@@ -1744,6 +2042,14 @@ public:
     }
 
     std::optional<types::Order> get_order(int order_id) const {
+        if (mock_mode_) {
+            std::lock_guard<std::mutex> lock(order_mutex_);
+            auto it = orders_.find(order_id);
+            if (it != orders_.end()) {
+                return it->second;
+            }
+            return std::nullopt;
+        }
         std::lock_guard<std::mutex> lock(order_mutex_);
         auto it = orders_.find(order_id);
         if (it != orders_.end()) {
@@ -1753,6 +2059,16 @@ public:
     }
 
     std::vector<types::Order> get_active_orders() const {
+        if (mock_mode_) {
+            std::vector<types::Order> result;
+            std::lock_guard<std::mutex> lock(order_mutex_);
+            for (const auto& [id, order] : orders_) {
+                if (order.is_active()) {
+                    result.push_back(order);
+                }
+            }
+            return result;
+        }
         std::lock_guard<std::mutex> lock(order_mutex_);
         std::vector<types::Order> active_orders;
         for (const auto& [id, order] : orders_) {
@@ -1768,6 +2084,15 @@ public:
     // ========================================================================
 
     void request_positions(PositionCallback callback) {
+        if (mock_mode_) {
+            std::lock_guard<std::mutex> lock(position_mutex_);
+            if (callback) {
+                for (const auto& pos : positions_) {
+                    callback(pos);
+                }
+            }
+            return;
+        }
         // Check rate limits
         if (!rate_limiter_.check_message_rate()) {
             spdlog::error("Rate limit exceeded: Cannot request positions");
@@ -1783,6 +2108,10 @@ public:
 
     // Synchronous wrapper for positions request
     std::vector<types::Position> request_positions_sync(int timeout_ms) {
+        if (mock_mode_) {
+            std::lock_guard<std::mutex> lock(position_mutex_);
+            return positions_;
+        }
         // Create promise for synchronous wait
         auto promise = std::make_shared<std::promise<std::vector<types::Position>>>();
         auto future = promise->get_future();
@@ -1822,12 +2151,34 @@ public:
     }
 
     std::vector<types::Position> get_positions() const {
+        if (mock_mode_) {
+            std::lock_guard<std::mutex> lock(position_mutex_);
+            return positions_;
+        }
         std::lock_guard<std::mutex> lock(position_mutex_);
         return positions_;
     }
 
     std::optional<types::Position> get_position(
         const types::OptionContract& contract) const {
+
+        if (mock_mode_) {
+            std::lock_guard<std::mutex> lock(position_mutex_);
+            auto it = std::find_if(
+                positions_.begin(),
+                positions_.end(),
+                [&contract](const types::Position& pos) {
+                    return pos.contract.symbol == contract.symbol &&
+                           pos.contract.expiry == contract.expiry &&
+                           std::abs(pos.contract.strike - contract.strike) < 0.01 &&
+                           pos.contract.type == contract.type;
+                }
+            );
+            if (it != positions_.end()) {
+                return *it;
+            }
+            return std::nullopt;
+        }
 
         std::lock_guard<std::mutex> lock(position_mutex_);
         auto it = std::find_if(
@@ -1851,6 +2202,14 @@ public:
     // ========================================================================
 
     void request_account_updates(AccountCallback callback) {
+        if (mock_mode_) {
+            std::lock_guard<std::mutex> lock(account_mutex_);
+            account_callback_ = callback;
+            if (account_callback_) {
+                account_callback_(account_info_);
+            }
+            return;
+        }
         // Check rate limits
         if (!rate_limiter_.check_message_rate()) {
             spdlog::error("Rate limit exceeded: Cannot request account updates");
@@ -1866,6 +2225,10 @@ public:
 
     // Synchronous wrapper for account info request
     std::optional<types::AccountInfo> request_account_info_sync(int timeout_ms) {
+        if (mock_mode_) {
+            std::lock_guard<std::mutex> lock(account_mutex_);
+            return account_info_;
+        }
         // Create promise for synchronous wait
         auto promise = std::make_shared<std::promise<types::AccountInfo>>();
         auto future = promise->get_future();
@@ -1912,6 +2275,10 @@ public:
     }
 
     std::optional<types::AccountInfo> get_account_info() const {
+        if (mock_mode_) {
+            std::lock_guard<std::mutex> lock(account_mutex_);
+            return account_info_;
+        }
         std::lock_guard<std::mutex> lock(account_mutex_);
         if (account_info_.account_id.empty()) {
             return std::nullopt;
@@ -1988,7 +2355,97 @@ private:
     // Helper Methods - Private
     // ========================================================================
 
+    void seed_mock_state() {
+        {
+            std::lock_guard<std::mutex> lock(account_mutex_);
+            account_info_.account_id = "DU123456";
+            account_info_.net_liquidation = 100000.0;
+            account_info_.cash_balance = 50000.0;
+            account_info_.buying_power = 200000.0;
+            account_info_.maintenance_margin = 25000.0;
+            account_info_.initial_margin = 30000.0;
+            account_info_.unrealized_pnl = 0.0;
+            account_info_.realized_pnl = 0.0;
+            account_info_.day_trades_remaining = 3;
+            account_info_.gross_position_value = 50000.0;
+            account_info_.last_update = std::chrono::system_clock::now();
+            account_info_.timestamp = account_info_.last_update;
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(position_mutex_);
+            positions_.clear();
+            types::Position pos;
+            pos.contract = make_mock_contract("SPY", "20251219", 500.0, types::OptionType::Call);
+            pos.quantity = 1;
+            pos.avg_price = 2.50;
+            pos.current_price = 2.60;
+            pos.unrealized_pnl = 10.0;
+            pos.entry_time = std::chrono::system_clock::now() - std::chrono::hours(24);
+            pos.last_update = std::chrono::system_clock::now();
+            positions_.push_back(pos);
+        }
+    }
+
+    void update_mock_positions(const types::OptionContract& contract,
+                               types::OrderAction action,
+                               int quantity,
+                               double fill_price) {
+        auto now = std::chrono::system_clock::now();
+        int signed_qty = action == types::OrderAction::Buy ? quantity : -quantity;
+
+        {
+            std::lock_guard<std::mutex> lock(position_mutex_);
+            auto it = std::find_if(
+                positions_.begin(),
+                positions_.end(),
+                [&contract](const types::Position& pos) {
+                    return pos.contract.symbol == contract.symbol &&
+                           pos.contract.expiry == contract.expiry &&
+                           pos.contract.strike == contract.strike &&
+                           pos.contract.type == contract.type;
+                });
+
+            if (it == positions_.end()) {
+                types::Position pos;
+                pos.contract = contract;
+                pos.quantity = signed_qty;
+                pos.avg_price = fill_price;
+                pos.current_price = fill_price;
+                pos.unrealized_pnl = 0.0;
+                pos.entry_time = now;
+                pos.last_update = now;
+                positions_.push_back(pos);
+            } else {
+                it->quantity += signed_qty;
+                if (it->quantity == 0) {
+                    positions_.erase(it);
+                } else {
+                    it->avg_price = fill_price;
+                    it->current_price = fill_price;
+                    it->last_update = now;
+                }
+            }
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(account_mutex_);
+            double trade_value = fill_price * quantity;
+            if (action == types::OrderAction::Buy) {
+                account_info_.cash_balance -= trade_value;
+            } else {
+                account_info_.cash_balance += trade_value;
+            }
+            account_info_.last_update = now;
+            account_info_.timestamp = now;
+        }
+    }
+
     void start_reader_thread() {
+        if (mock_mode_) {
+            spdlog::debug("Mock mode enabled - reader thread not required.");
+            return;
+        }
         spdlog::debug("Starting EReader thread...");
         auto reader = std::make_unique<EReader>(&client_, &signal_);
 
@@ -2063,6 +2520,12 @@ private:
                     error_count++;
                     spdlog::error("Unknown exception in EReader thread (message count: {}, error count: {})",
                                 message_count, error_count);
+                    spdlog::error("  → Socket connected: {}", client_.isConnected() ? "yes" : "no");
+
+                    if (!client_.isConnected()) {
+                        spdlog::debug("EReader thread exiting due to socket disconnection after unknown exception");
+                        break;
+                    }
                 }
             }
 
@@ -2191,6 +2654,9 @@ private:
     }
 
     bool wait_for_connection_with_progress(int timeout_ms) {
+        if (mock_mode_) {
+            return connected_.load();
+        }
         std::unique_lock<std::mutex> lock(connection_mutex_);
 
         auto start = std::chrono::steady_clock::now();
@@ -2520,6 +2986,13 @@ private:
 
     std::unique_ptr<std::thread> reader_thread_;
 
+    // PCAP capture for debugging
+    std::unique_ptr<pcap::PcapCapture> pcap_capture_;
+    uint32_t local_ip_;  // Cached local IP for pcap
+    uint32_t remote_ip_; // Cached remote IP for pcap
+    uint16_t local_port_; // Cached local port for pcap
+    uint16_t remote_port_; // Cached remote port (TWS port) for pcap
+
     // Connection synchronization
     mutable std::mutex connection_mutex_;
     std::condition_variable connection_cv_;
@@ -2555,6 +3028,7 @@ private:
 
     // Rate limiting
     RateLimiter rate_limiter_;
+    bool mock_mode_ = false;
 };
 
 // ============================================================================

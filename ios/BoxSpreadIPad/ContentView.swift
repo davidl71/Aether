@@ -44,10 +44,11 @@ final class DashboardViewModel: ObservableObject {
   }()
 
   private static let sampleSpreads: [SpreadRow] = [
+    // Default to European-style symbols: SPX, XSP, NDX (European exercise style)
     SpreadRow(symbol: "SPX", days: 30, credit: 1_250.0, apr: 18.3),
-    SpreadRow(symbol: "RUT", days: 21, credit: 980.0, apr: 16.1),
+    SpreadRow(symbol: "XSP", days: 21, credit: 980.0, apr: 16.1),
     SpreadRow(symbol: "NDX", days: 14, credit: 750.5, apr: 12.4),
-    SpreadRow(symbol: "SPXW", days: 7, credit: 420.0, apr: 9.9)
+    SpreadRow(symbol: "SPX", days: 7, credit: 420.0, apr: 9.9)
   ]
 }
 

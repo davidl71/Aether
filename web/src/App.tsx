@@ -87,20 +87,27 @@ function App() {
       return null;
     }
 
+    // Filter to European-style scenarios only for summary (default behavior)
+    const europeanScenarios = scenarioData.scenarios.filter(
+      (scenario) => scenario.option_style === 'European'
+    );
+
+    const scenariosToUse = europeanScenarios.length > 0 ? europeanScenarios : scenarioData.scenarios;
+
     const avgApr =
-      scenarioData.scenarios.reduce((acc, scenario) => acc + scenario.annualized_return, 0) /
-      scenarioData.scenarios.length;
+      scenariosToUse.reduce((acc, scenario) => acc + scenario.annualized_return, 0) /
+      scenariosToUse.length;
 
     return {
-      totalScenarios: scenarioData.scenarios.length,
+      totalScenarios: scenariosToUse.length,
       avgApr,
-      probableCount: scenarioData.scenarios.filter((scenario) => scenario.fill_probability > 0).length,
-      maxAprScenario: scenarioData.scenarios.reduce((best, scenario) => {
+      probableCount: scenariosToUse.filter((scenario) => scenario.fill_probability > 0).length,
+      maxAprScenario: scenariosToUse.reduce((best, scenario) => {
         if (!best || scenario.annualized_return > best.annualized_return) {
           return scenario;
         }
         return best;
-      }, scenarioData.scenarios[0])
+      }, scenariosToUse[0])
     };
   }, [scenarioData]);
 

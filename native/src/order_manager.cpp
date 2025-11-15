@@ -389,6 +389,8 @@ void OrderManager::update() {
 
 void OrderManager::track_order_fill(int order_id) {
     // Check if we've already tracked this fill
+    // Static variable intentionally persists across calls to track fills
+    // cppcheck-suppress[staticVariable]
     static std::set<int> tracked_fills;
 
     if (tracked_fills.count(order_id) > 0) {

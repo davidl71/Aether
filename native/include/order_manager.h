@@ -60,7 +60,8 @@ public:
     // ========================================================================
 
     // Place a single order
-    ExecutionResult place_order(
+    // Return value should always be checked to verify order was placed successfully
+    [[nodiscard]] ExecutionResult place_order(
         const types::OptionContract& contract,
         types::OrderAction action,
         int quantity,
@@ -69,26 +70,31 @@ public:
     );
 
     // Cancel an order
-    bool cancel_order(int order_id);
+    // Return value indicates success/failure - should be checked
+    [[nodiscard]] bool cancel_order(int order_id);
 
     // Cancel all orders
     void cancel_all_orders();
 
     // Get order status
-    std::optional<types::Order> get_order_status(int order_id) const;
+    // Pure query function - no side effects
+    std::optional<types::Order> get_order_status(int order_id) const
+        __attribute__((pure));
 
     // ========================================================================
     // Multi-Leg Order Operations (Box Spreads)
     // ========================================================================
 
     // Place a box spread (4-leg order)
-    ExecutionResult place_box_spread(
+    // Return value should always be checked to verify spread was placed successfully
+    [[nodiscard]] ExecutionResult place_box_spread(
         const types::BoxSpreadLeg& spread,
         const std::string& strategy_id = ""
     );
 
     // Close a box spread position
-    ExecutionResult close_box_spread(const std::string& strategy_id);
+    // Return value should always be checked to verify spread was closed successfully
+    [[nodiscard]] ExecutionResult close_box_spread(const std::string& strategy_id);
 
     // Get multi-leg order status
     std::optional<MultiLegOrder> get_multi_leg_order(
@@ -121,7 +127,8 @@ public:
     // ========================================================================
 
     // Execute with immediate-or-cancel
-    ExecutionResult execute_ioc(
+    // Return value should always be checked to verify execution result
+    [[nodiscard]] ExecutionResult execute_ioc(
         const types::OptionContract& contract,
         types::OrderAction action,
         int quantity,
@@ -180,6 +187,7 @@ public:
     // ========================================================================
 
     // Validate order before submission
+    // Note: error_message is a reference (cannot be null), so no nonnull attribute needed
     bool validate_order(
         const types::OptionContract& contract,
         types::OrderAction action,

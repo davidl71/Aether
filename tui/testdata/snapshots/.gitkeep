@@ -1,2 +1,0 @@
-# Snapshot test files will be stored here
-# Run: go test -update-snapshots -run TestTUISnapshot

@@ -3,7 +3,9 @@ grpc_addr = "127.0.0.1:50051"
 
 [market_data]
 provider = "mock"
-symbols = ["XSP", "SPY", "QQQ", "IWM"]
+# Default to European-style symbols: SPX, XSP, NDX (European exercise style)
+# American-style symbols (SPY, QQQ, IWM) are hidden by default
+symbols = ["SPX", "XSP", "NDX"]
 poll_interval_ms = 800
 
 [market_data.polygon]

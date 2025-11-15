@@ -166,7 +166,58 @@
       },
       "dependsOn": "Build Intel Decimal Library",
       "problemMatcher": []
+    },
+    {
+      "label": "RAM Disk: Startup (Auto)",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/workspace_ram_disk_manager.sh",
+      "args": ["startup"],
+      "group": "none",
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared",
+        "showReuseMessage": false
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "RAM Disk: Save & Shutdown",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/workspace_ram_disk_manager.sh",
+      "args": ["shutdown"],
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "RAM Disk: Save Now",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/workspace_ram_disk_manager.sh",
+      "args": ["save"],
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "RAM Disk: Status",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/workspace_ram_disk_manager.sh",
+      "args": ["status"],
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
     }
   ]
 }
-

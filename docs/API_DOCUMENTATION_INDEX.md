@@ -1,8 +1,64 @@
 # API Documentation Index
 
+<!--
+@index: api-documentation
+@category: reference
+@tags: api, trading, options, market-data, fix-protocol, quantitative-finance
+@last-updated: 2025-01-27
+-->
+
 This file serves as a reference for all external APIs and libraries used in this project. Use `@docs API_DOCUMENTATION_INDEX.md` in Cursor to give the AI context about these APIs.
 
+## Project Documentation
+
+### Box Spread Trading Guide
+
+- **Comprehensive Box Spread Guide**: `docs/BOX_SPREAD_COMPREHENSIVE_GUIDE.md`
+  - Complete reference for box spread mechanics, risks, and implementation
+  - Covers long/short box spreads, assignment risk, tax implications
+  - Includes practical examples and implementation recommendations
+  - Synthesizes information from multiple educational resources
+
+### Device Task Delegation & Apple Intelligence
+
+- **Device Task Delegation Guide**: `docs/DEVICE_TASK_DELEGATION.md`
+  - Optimize workflow across multiple Apple devices (iPads, Macs)
+  - Apple Intelligence integration for development and monitoring
+  - Distributed compilation setup across all machines
+  - Task delegation strategy for each device type
+  - Practical workflows for development, monitoring, and testing
+
+- **T-Bills and T-Bill Futures Guide**: `docs/T_BILLS_AND_FUTURES_GUIDE.md`
+  - Comprehensive guide to Treasury Bills and T-bill futures
+  - Risk-free rate calculations for option pricing
+  - Box spread vs. T-bill arbitrage opportunities
+  - Integration considerations for IB box spread application
+  - Based on CME Group, Interactive Brokers, and Investopedia resources
+
+- **Trading Infrastructure Guide**: `docs/TRADING_INFRASTRUCTURE.md`
+  - VPS provider comparison (QuantVPS, TradingVPS, Ninja Mobile Trader)
+  - Server operating system options (FreeBSD, Linux)
+  - Latency optimization strategies
+  - Deployment architecture recommendations
+  - Cost analysis and ROI considerations
+  - Based on Elite Trader resources and infrastructure best practices
+
+- **Feature Tracking**: `docs/FEATURE_TRACKING.md`
+  - Comprehensive feature parity tracking between TUI and Web App
+  - Feature status (implemented, partial, missing)
+  - Implementation locations and notes
+  - Feature gaps and priorities
+  - Data schema alignment verification
+  - Testing checklist for feature consistency
+
 ## Core Trading APIs
+
+<!--
+@index: api-documentation
+@category: trading-apis
+@tags: trading, broker-api, tws-api, alpaca, options
+@last-updated: 2025-01-27
+-->
 
 ### Interactive Brokers TWS API
 
@@ -309,7 +365,126 @@ This file serves as a reference for all external APIs and libraries used in this
 - **Location**: `native/third_party/nautilus/`
 - **Note**: Optional integration, Python wheel file
 
-## Market Data APIs
+## Market Data Providers
+
+<!--
+@index: api-documentation
+@category: market-data
+@tags: market-data, options, analytics, c++, fix-api, rest-api
+@last-updated: 2025-01-27
+-->
+
+This section covers market data providers for real-time and historical financial data, options analytics, and market information.
+
+**Quick Comparison**:
+
+| Provider          | Focus          | API Types                    | Options Analytics | C++ Support   | Best For                         |
+| ----------------- | -------------- | ---------------------------- | ----------------- | ------------- | -------------------------------- |
+| **dxFeed**        | Multi-asset    | FIX, C++, Java, Python, REST | ✅ Greeks, IV     | ✅ Native C++ | C++ integration, FIX protocol    |
+| **ORATS**         | Options        | REST API                     | ✅ Extensive      | ❌            | Options-specific analytics       |
+| **Massive.com**   | Historical     | REST, WebSocket              | ⚠️ Limited        | ❌            | Historical data, backtesting     |
+| **Alpha Vantage** | Multi-asset    | REST, MCP                    | ⚠️ Basic          | ❌            | Free tier, technical indicators  |
+| **Finnhub**       | Multi-asset    | REST, WebSocket              | ⚠️ Basic          | ❌            | Generous free tier, fundamentals |
+| **OpenBB**        | Financial Data | API                          | ⚠️ Unknown        | ❌            | Financial analytics platform     |
+
+### dxFeed - Market Data Provider with FIX API and C/C++ APIs
+
+- **Website**: <https://dxfeed.com/>
+- **FIX API**: <https://dxfeed.com/api/fix-api/>
+- **C/C++ and .NET APIs**: <https://dxfeed.com/api/c-and-net-apis/>
+- **Provider**: dxFeed Solutions IE Limited (Devexperts)
+- **Description**: Market data provider delivering financial market data and services to buy- and sell-side institutions in the global financial industry. Provides multiple API access methods including FIX API, C/C++ APIs, Java API, JavaScript/REST APIs, and Python API.
+- **Key Features**:
+  - **FIX API**: Electronic messaging protocol based on FIX protocol v4.4, widely adopted by financial institutions
+  - **C/C++ and .NET APIs**: Graal C/C++ and .NET APIs for native integration
+  - **Java API**: Java-based market data API
+  - **JavaScript and REST APIs**: Web-based API access
+  - **Python API**: Python integration for market data
+- **Market Data Coverage**:
+  - **Equities & ETFs**: Stock and ETF market data
+  - **Futures**: Futures market data
+  - **Options**: Options market data with analytics
+  - **Indices**: Index data
+  - **Fixed Income**: Fixed income instruments
+  - **Forex**: Foreign exchange data
+  - **Cryptocurrencies**: Cryptocurrency market data
+  - **Spot**: Spot market data
+- **Data Analytics**:
+  - **Options Analytics**: Options-specific analytics and calculations
+  - **Greeks and Implied Volatility**: Greeks (delta, gamma, theta, vega) and implied volatility data
+  - **Market Indicators**: Market indicators and metrics
+- **Reference Data**:
+  - **Global Fundamentals**: Fundamental data for global markets
+  - **Corporate Actions**: Corporate action data
+  - **Trading Schedules**: Trading schedule information
+- **Data Services**:
+  - **Real-time and Delayed Data Service**: Real-time and delayed market data feeds
+  - **Historical Data Services**: Historical market data access
+    - **Order Historical Market Data**: <https://dxfeed.com/order-historical-market-data/>
+    - **Sample Data**: Try out data presets and explore dxFeed market data samples
+    - **Data Formats**: CSV format available for download
+    - **Coverage**: Equities & ETFs, Equity Options, Futures and Futures Options, Indices, Fixed Income
+    - **Data Types**: Bid/Ask, Last Sale, TnS (Trades and Quotes), Price Level Book, Full Order Depth, Minute bars
+  - **Market Replay**: Market replay functionality for backtesting
+  - **Aggregated Data Services**: Aggregated data services
+  - **ORCS (Multidimensional Aggregation Service)**: Advanced aggregation service
+  - **News Data Feed**: News data integration
+- **Platform Integrations**:
+  - **dxFeed ATAS**: Integration with ATAS (Advanced Trading Analysis Software) platform
+    - **Order Page**: <https://get.dxfeed.com/orders/new/atas>
+    - **Features**: dxFeed market data integration for ATAS trading platform
+    - **Configuration**: Connect dxFeed data feed to ATAS for advanced trading analysis
+    - **Use Case**: Use ATAS platform with dxFeed data for options trading analysis
+  - **Option Traders Assistant**: dxFeed integration for options trading assistance
+    - **Order Page**: <https://get.dxfeed.com/orders/new/optiontradersassistant>
+    - **Purpose**: Specialized product for options traders using dxFeed market data
+    - **Use Case**: Options trading assistance and analysis with dxFeed data
+  - **Other Platforms**: dxFeed integrates with multiple trading platforms including Bookmap, NinjaTrader, TradingView, cTrader, and more
+- **Geographic Coverage**:
+  - **United States**: US market data
+  - **European Union**: EU market data
+  - **Turkey**: Turkish market data
+  - **APAC**: Asia-Pacific market data
+  - **Brazil**: Brazilian market data
+  - **Australia**: Australian market data
+  - **Global**: Global market coverage
+- **Relevance to Box Spread Trading**:
+  - **Options Market Data**: Comprehensive options data for box spread analysis
+  - **Options Analytics**: Greeks and implied volatility for strategy validation
+  - **FIX API**: Industry-standard FIX protocol for institutional integration
+  - **C/C++ APIs**: Native C++ integration matches project technology stack
+  - **Real-Time Data**: Real-time options data for live trading
+  - **Historical Data**: Historical data for backtesting box spread strategies
+  - **Multi-Asset Support**: Access to equities, options, futures, and forex for comprehensive market analysis
+- **Integration Considerations**:
+  - **C/C++ APIs**: Native C++ integration available (matches project stack)
+  - **FIX API**: FIX 4.4 protocol for institutional-grade integration
+  - **Multiple API Options**: Choose between FIX, C/C++, Java, Python, or REST based on needs
+  - **Options Analytics**: Pre-calculated Greeks and IV can complement internal calculations
+  - **Data Subscription**: Market data subscription required (contact for pricing)
+  - **Institutional Focus**: Designed for buy- and sell-side institutions
+- **Comparison with Current Solutions**:
+  - **vs. TWS API**: dxFeed provides market data only (no trading), TWS provides both data and execution
+  - **vs. ORATS**: Both provide options analytics; dxFeed offers FIX API and C++ APIs, ORATS focuses on REST API
+  - **vs. Internal Calculations**: dxFeed provides pre-calculated Greeks/IV, can validate against internal calculations
+- **Use Cases**:
+  - Real-time options market data for box spread detection
+  - Options analytics (Greeks, IV) for strategy validation
+  - Historical data for backtesting box spread strategies
+  - Multi-asset market data for comprehensive market analysis
+  - FIX API integration for institutional-grade data feeds
+  - C++ native integration for high-performance data processing
+  - Platform integration via ATAS or Option Traders Assistant for visual analysis
+- **Platform Integration Options**:
+  - **ATAS Integration**: Use ATAS trading platform with dxFeed data for advanced options analysis
+  - **Option Traders Assistant**: Specialized options trading tool with dxFeed data integration
+  - **Direct API Integration**: Integrate dxFeed APIs (FIX, C/C++, Java, Python, REST) directly into custom trading systems
+- **Contact**: Contact dxFeed sales for market data subscriptions and API access
+- **Order Pages**:
+  - **Historical Market Data**: <https://dxfeed.com/order-historical-market-data/>
+  - **ATAS Integration**: <https://get.dxfeed.com/orders/new/atas>
+  - **Option Traders Assistant**: <https://get.dxfeed.com/orders/new/optiontradersassistant>
+- **Note**: dxFeed is a comprehensive market data provider with multiple API access methods including FIX API and native C/C++ APIs. Particularly relevant for options trading with pre-calculated Greeks and implied volatility. The C/C++ APIs provide native integration that matches the project's technology stack. dxFeed complements TWS API by providing additional market data sources and analytics, but does not provide trading execution capabilities. Evaluate as alternative/complement to ORATS for options market data and analytics.
 
 ### Massive.com REST API
 
@@ -326,6 +501,1110 @@ This file serves as a reference for all external APIs and libraries used in this
 - **Data Coverage**: Major U.S. exchanges
 - **Integration Opportunities**: See `docs/MASSIVE_INTEGRATION.md` for detailed integration analysis
 - **Note**: Alternative/complement to ORATS for historical data and real-time quotes
+
+### Alpha Vantage
+
+- **URL**: <https://www.alphavantage.co/>
+- **Official API Docs**: <https://www.alphavantage.co/documentation/>
+- **MCP Server**: <https://www.alphavantage.co/> (MCP + AI Agents support)
+- **Description**: Enterprise-grade stock market data API provider, backed by Y Combinator and officially licensed by NASDAQ
+- **Key Features**:
+  - Real-time and historical stock market data
+  - Options, forex, cryptocurrency data
+  - 60+ technical indicators
+  - Economic indicators
+  - Market news API with sentiment analysis
+  - MCP (Model Context Protocol) server support for AI agents
+  - Spreadsheet integration
+- **Data Coverage**:
+  - Traditional asset classes (stocks, ETFs, mutual funds)
+  - Foreign exchange rates
+  - Commodities
+  - Fundamental data
+  - Technical indicators
+  - Global market data
+- **Auth**: apiKey required (free tier available)
+- **HTTPS**: Yes
+- **API Limits**:
+  - Free tier: 5 API calls per minute, 500 calls per day
+  - Paid plans: Starting at $49.99/month with higher limits
+- **Integration**:
+  - REST API for direct integration
+  - MCP server for AI agent integration
+  - Spreadsheet add-ons
+  - Python, JavaScript, and other language support
+- **Relevance**:
+  - Complements TWS API with additional market data sources
+  - Useful for technical analysis with 60+ indicators
+  - News sentiment analysis for market research
+  - Cross-validation of TWS data
+  - MCP support enables AI agent integration
+- **Pricing**:
+  - Free tier: Limited to 5 calls/minute, 500 calls/day
+  - Premium: Subscription-based with higher limits
+  - Enterprise: Custom pricing for high-volume usage
+- **Partnerships**: Officially licensed by NASDAQ as a US market data provider
+
+### Finnhub
+
+- **URL**: <https://finnhub.io/>
+- **Official API Docs**: <https://finnhub.io/docs/api>
+- **Description**: Comprehensive financial data API with real-time stock prices, fundamental data, news sentiment, and alternative data
+- **Key Features**:
+  - Real-time stock prices and quotes
+  - Historical market data
+  - Financial statements (income, balance sheet, cash flow)
+  - Company fundamentals and profiles
+  - News sentiment analysis (AI-powered)
+  - Forex and cryptocurrency data
+  - Alternative data sources
+  - WebSocket support for real-time data
+- **Data Coverage**:
+  - Global stock markets
+  - Options data
+  - Forex pairs
+  - Cryptocurrency markets
+  - Economic indicators
+  - Company fundamentals
+  - News and sentiment
+- **Auth**: apiKey required (free tier available)
+- **HTTPS**: Yes
+- **API Limits**:
+  - Free tier: 60 API calls per minute (generous free tier)
+  - Paid plans: Higher rate limits and advanced features
+- **Integration**:
+  - REST API
+  - WebSocket API for real-time data
+  - SDKs available for multiple languages (Python, JavaScript, Go, etc.)
+  - Comprehensive documentation
+- **Relevance**:
+  - More generous free tier than Alpha Vantage (60 calls/min vs 5 calls/min)
+  - Strong fundamental data for research
+  - AI-powered sentiment analysis
+  - WebSocket support for real-time updates
+  - Options data available
+- **Pricing**:
+  - Free tier: 60 calls/minute (generous for free tier)
+  - Paid plans: Higher limits and premium features
+  - Enterprise: Custom pricing
+
+### OpenBB - Financial Data Platform
+
+- **Website**: <https://openbb.co/>
+- **Description**: Financial data platform providing access to market data, financial information, and analytics
+- **Key Features**:
+  - **Market Data**: Access to financial market data
+  - **Analytics**: Financial analytics and insights
+  - **Data Integration**: Integration with multiple data sources
+  - **API Access**: API for programmatic access to financial data
+- **Relevance to Box Spread Trading**:
+  - **Market Data**: Access to market data for box spread analysis
+  - **Financial Analytics**: Analytics tools for strategy development
+  - **Data Integration**: Multiple data sources for comprehensive analysis
+- **Note**: OpenBB provides financial data and analytics platform. Evaluate for market data access and analytics capabilities relevant to box spread trading strategies.
+
+### Bank of Israel (BOI) - Economic Data API
+
+- **Official Website**: <https://www.boi.org.il/en/>
+- **New Website**: <https://www.boi.org.il/en/the-bank-of-israel-s-new-website/>
+- **Series Database**: <https://edge.boi.gov.il>
+- **Contact**: <https://boi.org.il/en/contact-us/>
+- **Description**: Central bank of Israel providing economic data APIs including interest rates, exchange rates, and financial indicators. APIs are updated multiple times daily and provide real-time access to Israeli economic data.
+- **Key Features**:
+  - **Exchange Rates API**: Up-to-date exchange rate data (updated multiple times daily)
+  - **Economic Data API**: Interest rates, financial indicators, and economic statistics
+  - **Series Database**: External database at `edge.boi.gov.il` for querying data series
+  - **Live Data Export**: Export information live through the API
+  - **Metadata Access**: View metadata for data series
+  - **Graphs and Charts**: Generate visualizations from data
+- **Data Coverage**:
+  - **Interest Rates**: Bank of Israel interest rates (SHIR - Shekel Interest Rate)
+  - **Exchange Rates**: Currency exchange rates
+  - **Economic Indicators**: Various economic statistics
+  - **Monetary Policy Data**: FOMC-equivalent data (Monetary Committee decisions)
+  - **Financial Market Data**: Market-related statistics
+- **Update Frequency**: Multiple times daily
+- **API Access**:
+  - APIs available through BOI's official website
+  - External series database at `edge.boi.gov.il` for programmatic access
+  - Dashboard technology for querying and downloading data files
+  - Statistics section provides data access
+- **Open Banking**: BOI promotes open banking practices, encouraging banks to provide secure API connections
+- **Use Cases**:
+  - Access Israeli interest rates for risk-free rate calculations
+  - Monitor exchange rates (USD/ILS, EUR/ILS, etc.)
+  - Economic data for trading strategies involving Israeli markets
+  - Integration with trading systems requiring Israeli economic indicators
+  - Research and analysis of Israeli financial markets
+- **Relevance to This Project**:
+  - **Risk-Free Rate**: Israeli interest rates could be used as risk-free rate benchmark for options pricing
+  - **Currency Hedging**: Exchange rate data for USD/ILS hedging strategies
+  - **Market Analysis**: Economic indicators for understanding Israeli market conditions
+  - **Multi-Currency Trading**: Support for traders operating in Israeli markets
+- **Documentation**: Available on BOI website; detailed API documentation and guidelines provided
+- **Note**: BOI has been actively developing APIs to enhance transparency and facilitate access to financial data. The new website includes improved API services and data accessibility.
+
+### Bank of Israel - Digital Shekel (CBDC) APIs
+
+- **Official Website**: <https://www.boi.org.il/en/>
+- **Digital Shekel Challenge**: <https://www.boi.org.il/en/NewsAndPublications/PressReleases/Pages/24-10-24-Digital-Shekel-Challenge.aspx>
+- **API Documentation**: <https://www.boi.org.il/media/mi1llyjv/%D7%95%D7%AA%D7%A8%D7%97%D7%99%D7%A9%D7%99-%D7%A9%D7%99%D7%9E%D7%95%D7%A9-%D7%9E%D7%A8-%D7%90%D7%9E%D7%99%D7%A8-%D7%9E%D7%A9%D7%94-apis.pdf>
+- **Description**: Central Bank Digital Currency (CBDC) APIs for the Digital Shekel (שקל דיגיטלי) payment system. Part of BOI's Digital Shekel Challenge initiative to develop innovative use cases and payment solutions.
+- **Architecture**: Two-tier model (Two-Tier Model)
+  - **Bank of Israel**: Exclusive authority for issuance/burning of Digital Shekel, system management
+  - **Payment Service Providers (DS-PSP)**: Provide technological access for end users, KYC processes, wallet services, customer support
+  - **Funding Institutions (FI)**: Financial institutions supporting conversion between cash, digital money, and Digital Shekel
+  - **Additional Service Providers (ASP)**: Optional advanced services (budget management, conditional payments, etc.)
+- **Key API Categories**:
+  - **Basic Functionality APIs**: Support for end-user journey
+    - Wallet operations (Open Wallet, Connect FI, Connect ASP)
+    - Payment operations
+    - Account management
+    - Transaction history
+    - Balance inquiries
+  - **Advanced Platform APIs**: Innovation support platform
+    - Sub-wallet management
+    - Alias services (phone number-based wallet lookup)
+    - Conditional payments
+    - Programmable money features
+    - Delivery vs. Payment (DvP) functionality
+- **API Features**:
+  - **Open Wallet**: Create and manage Digital Shekel wallets
+  - **Connect FI**: Connect to Funding Institutions for conversion
+  - **Connect ASP**: Connect to Additional Service Providers
+  - **Payment Operations**: Send and receive Digital Shekel payments
+  - **Alias Management**: Create, delete, and lookup wallet aliases (phone number-based)
+  - **Sub-Wallet Management**: Create and manage linked sub-wallets
+  - **Transaction History**: Query transaction history and balances
+- **Innovative Use Cases**:
+  - **Delivery vs. Payment (DvP)**: Atomic settlement of assets and payments
+  - **Linked Sub-Wallets**: Hierarchical wallet structures for budgeting or organizational purposes
+  - **Split Payments**: Advanced payment splitting functionality
+  - **Conditional Payments**: Programmable money with conditions
+  - **Programmable Finance**: Smart contract-like functionality for financial services
+- **Challenge Context**:
+  - Part of BOI's Digital Shekel Challenge competition
+  - Participants can simulate multiple participant types (DS-PSP, ASP, FI)
+  - Default challenge setup includes 2 DS-PSPs, 1 ASP, and 1 FI per participant
+  - BOI simulates 3 FI institutions in the challenge
+- **Use Cases**:
+  - CBDC payment system integration
+  - Digital wallet development
+  - Payment service provider integration
+  - Financial innovation and DeFi applications
+  - Programmable money and smart contract functionality
+  - Atomic settlement and DvP operations
+- **Relevance to This Project**:
+  - **Payment Integration**: Potential for integrating Digital Shekel payments into trading systems
+  - **Settlement**: DvP functionality for atomic asset settlement
+  - **Multi-Currency**: Support for Digital Shekel as additional currency option
+  - **Innovation Platform**: APIs for developing financial innovation solutions
+- **Documentation**: PDF documentation available from BOI website with API specifications and use case examples
+- **Status**: Challenge/development phase - APIs available for Digital Shekel Challenge participants
+- **Note**: This is separate from the Economic Data APIs. The Digital Shekel APIs are for CBDC payment system integration, while Economic Data APIs are for accessing economic statistics and market data.
+
+### Discount Bank (Israel) - Open Banking API
+
+- **Developer Portal**: <https://developer.discountbank.co.il/openapi/>
+- **Official Website**: <https://www.discountbank.co.il/>
+- **Contact**: abuse@dbank.co.il (for cyber security incidents)
+- **Description**: Discount Bank's Open Banking API portal providing access to banking services and financial data through REST APIs. Part of Israel's open banking initiative, allowing third-party providers to access banking services with customer consent.
+- **Key Features**:
+  - **Open Banking APIs**: RESTful APIs for banking services
+  - **Sandbox Environment**: Sandbox configuration for testing
+  - **Implementer Options**: Multiple implementation options available
+  - **Corporate Services**: Business banking APIs (עסקים פלוס - Businesses Plus)
+  - **Authorization Management**: Corporate authorization and signature management
+- **API Access**:
+  - Developer portal registration required
+  - Sandbox environment for testing
+  - Production access requires corporate authorization
+  - Corporate authorization requires authorized signatories approval
+- **Corporate Authorization**:
+  - Requires authorization of signatories for open banking operations
+  - Multiple signatories require all to approve consent
+  - Authorization form available through "עסקים פלוס" (Businesses Plus) service
+  - Separate form required for each corporation
+- **Use Cases**:
+  - Account information access
+  - Payment initiation services
+  - Transaction history retrieval
+  - Balance inquiries
+  - Corporate banking automation
+  - Financial data aggregation
+- **Relevance to This Project**:
+  - **Multi-Currency Trading**: Access to ILS account information for Israeli traders
+  - **Settlement**: Potential integration for ILS-denominated settlement
+  - **Account Management**: Automated account monitoring and management
+  - **Israeli Market Integration**: Support for traders operating in Israeli markets
+- **Security**:
+  - Cyber security incident reporting: abuse@dbank.co.il
+  - Contact requests through portal for security incidents
+  - Corporate authorization required for production access
+- **Maintenance**: Scheduled maintenance windows announced (e.g., November 22nd, 23:00-02:00)
+- **Documentation**: Available through developer portal; sandbox configuration and implementer options provided
+- **Note**: Part of Israel's open banking ecosystem, allowing third-party financial service providers to access banking data and services with proper authorization and customer consent. Useful for Israeli traders requiring automated account access and ILS-denominated operations.
+
+### First International Bank of Israel (FIBI) - Open Banking API
+
+- **Developer Portal (Sandbox)**: <https://devapi.test.fibi.co.il/fibi/sb/api>
+- **Official Website**: <https://www.fibi.co.il/>
+- **Description**: First International Bank of Israel's Open Banking API portal providing NextGenPSD2-compliant APIs for account information, payments, and securities accounts. Part of Israel's open banking initiative following European PSD2 standards.
+- **API Framework**: NextGenPSD2 XS2A Framework
+  - Modern, open, harmonized, and interoperable set of APIs
+  - Reduces XS2A (Access to Account) complexity and costs
+  - Addresses multiple competing standards in Europe
+  - Aligned with Euro Retail Payments Board goals
+  - Enables "Banking as a Service" through secure TPP (Third Party Provider) access
+- **Available APIs**:
+  - **NextGenPSD2 XS2A Framework**: Core account access and payment services
+    - Refresh Token API (v1.0.0, v1.0.1)
+    - Account Information Services (AIS)
+    - Payment Initiation Services (PIS)
+  - **Card Information**: Card account access and information
+    - Single Cards API (v1.7.0, v1.8.0)
+    - Card-specific consent management
+    - Access to both cards and card accounts
+  - **Savings and Loans**: Savings and loan account access
+    - Savings Accounts API (v1.4.0, v1.5.0)
+    - Loan Accounts API
+    - IBAN-based account identification
+    - Cash account type specification (SVGS/LOAN)
+  - **Securities Accounts**: Securities account information
+    - Securities Accounts API (v1.0.0, v1.1.0)
+    - Extension of NextGenPSD2 XS2A specification
+    - Securities account information services
+  - **Sandbox Bypass**: Testing and development utilities (v1.8.0)
+- **API Categories**:
+  - **Account Information**: Account balances, transactions, account details
+  - **Identity and Security**: Authentication and authorization
+  - **Payments**: Payment initiation and processing
+  - **Public Information**: Publicly available banking information
+- **Consent Management**:
+  - Bank-offered consent (simplified)
+  - Detailed consent (granular access control)
+  - Card-specific consent for card accounts
+  - Savings/loan-specific consent with cashAccountType specification
+  - Consent-based access control for all services
+- **Use Cases**:
+  - Account information aggregation
+  - Payment initiation services
+  - Card transaction monitoring
+  - Savings and loan account management
+  - Securities account information
+  - Financial data aggregation for trading systems
+- **Relevance to This Project**:
+  - **Account Monitoring**: Automated monitoring of ILS-denominated accounts
+  - **Settlement**: Payment initiation for ILS-denominated settlement
+  - **Securities Integration**: Access to securities account information for trading
+  - **Multi-Bank Aggregation**: Combine data from multiple Israeli banks
+  - **Israeli Market Integration**: Support for traders operating in Israeli markets
+- **Environment**: Sandbox environment available for testing
+- **Standards Compliance**: NextGenPSD2 framework (European PSD2 adapted for Israel)
+- **Documentation**: Available through developer portal with API specifications and examples
+- **Note**: FIBI provides comprehensive open banking APIs following NextGenPSD2 standards, including specialized APIs for cards, savings, loans, and securities accounts. Useful for Israeli traders requiring integrated banking services and securities account access alongside trading operations.
+
+### Finanda Smart Aggregation - Open Banking API Aggregator
+
+- **Official Website**: <https://www.finanda.com/open-banking/>
+- **Description**: Finanda Smart Aggregation is Israel's veteran and experienced open banking aggregator, the first to provide Open Banking API services to information consumers in the banking system. Licensed by the Israel Securities Authority to provide financial information services.
+- **Key Features**:
+  - **Multi-Bank Aggregation**: Integrates with all major Israeli banks
+    - Bank Hapoalim (בנק הפועלים)
+    - Mizrahi Tefahot (מזרחי טפחות)
+    - Otsar HaHayal (אוצר החייל)
+    - Bank Leumi (בנק לאומי)
+    - FIBI (First International Bank of Israel)
+    - Discount Bank
+  - **PSD2 Compliance**: Adapted to Open Banking regulation (PSD2)
+  - **Smart Data Processing**: Processes and categorizes data from tens of thousands of accounts and millions of transactions
+  - **Financial Data Quality**: High-quality financial data aggregation
+  - **Over 10 Years Experience**: Proven technology in use by banking system information consumers
+- **Authorization Server Endpoints**:
+  - **FIBI**: `https://api.test.fibi.co.il/fibi/`
+  - **Discount Bank**: `https://mtls-api-nonprod.discountbank.co.il/devapi/`
+  - **Bank Hapoalim**: `https://openbankingsb.poalim-api.co.il/xs2a/`
+  - **Mizrahi Tefahot**: `https://sboapi.mizrahi-tefahot.co.il/accesscodeoauthprovider/`
+- **Consent Management**:
+  - Consent status tracking (received, rejected, valid, expired, etc.)
+  - Partially authorized consent support
+  - Revocation by PSU (Payment Service User)
+  - Termination by TPP (Third Party Provider)
+  - Suspension/blocking by ASPSP (Account Servicing Payment Service Provider)
+- **Data Buckets**:
+  - **Accounts**: Account information
+  - **Balances**: Account balances
+  - **Transactions**: Transaction history
+- **Use Cases**:
+  - Financial data for decision making
+  - Credit assessment assistance
+  - Product comparison and cheaper offers for customers
+  - Fraud detection and risk reduction
+  - Smart investment knowledge base
+  - Advanced smart categorizations
+  - Financial improvement control systems
+  - Economic empowerment leverage
+  - Smart financial management for businesses
+  - Income and expense information
+  - Smart product matching according to financial needs
+  - Transition from form-based to technology-based processes
+- **Security & Compliance**:
+  - **Licensed**: Licensed by Israel Securities Authority for financial information services
+  - **Banking Standards**: Secure, backed-up systems meeting banking standards
+  - **Regulatory Compliance**: Compliance with regulatory requirements
+  - **24/7 Monitoring**: Continuous system monitoring and activity tracking
+  - **Management Portal**: Dedicated management portal for control and oversight
+- **Deployment Options**:
+  - **Cloud Deployment**: Cloud deployment options
+  - **Private Cloud**: Private cloud deployment in your organization
+  - **Finanda Cloud**: Deployment via Finanda's cloud using Amazon Web Services
+- **Integration**:
+  - Fast implementation based on proven system
+  - Used by information consumers in the banking system
+  - Quick integration with all data sources according to regulation
+- **Relevance to This Project**:
+  - **Multi-Bank Aggregation**: Single API access to multiple Israeli banks
+  - **Account Monitoring**: Automated monitoring across multiple bank accounts
+  - **Transaction Analysis**: Comprehensive transaction history from all banks
+  - **Financial Data**: High-quality financial data for trading decisions
+  - **ILS Operations**: Support for ILS-denominated operations across banks
+  - **Risk Management**: Fraud detection and risk reduction capabilities
+- **Documentation**: Available through Finanda website; API documentation and integration guides provided
+- **Note**: Finanda provides a unified API layer over multiple Israeli banks, simplifying integration for developers who need access to multiple banking institutions. Particularly useful for Israeli traders requiring comprehensive financial data aggregation and multi-bank account management.
+
+### Yael Group - Open Banking Solutions & Consulting
+
+- **Official Website**: <https://yaelgroup.com/solution_category/open-banking-solutions/>
+- **Description**: Yael Group provides open banking solutions and consulting services for implementing open banking in Israel. They specialize in helping financial institutions comply with Israeli open banking regulations and implement the Berlin Standard (תקן ברלין) published by the Bank of Israel.
+- **Key Services**:
+  - **Open Banking Implementation**: Implementation of open banking solutions
+  - **Regulatory Compliance**: Assistance with compliance to Israeli Financial Information Services Law (חוק שירות מידע פיננסי, November 2021)
+  - **Berlin Standard Implementation**: Expertise in the Berlin Standard published by Bank of Israel
+  - **API Management**: API management solutions for open banking
+  - **Banking Mobility**: Mobile banking solutions
+  - **Credit Reporting**: Credit reporting integration
+  - **Integration Services**: Integration and API management services
+- **Regulatory Context**:
+  - **Financial Information Services Law**: Israeli law (November 2021) enabling open banking
+  - **Berlin Standard**: Standard published by Bank of Israel for open banking implementation
+  - **Capital Market, Insurance and Savings Authority**: Regulatory body for open banking in Israel
+  - **Guidelines**: Guidelines published in March 2023 for institutional financial information sources
+- **Regulated Entities**:
+  - Banks
+  - Credit card companies
+  - Non-bank credit providers
+  - Insurance companies
+  - Pension fund management companies
+- **Standards & Compliance**:
+  - **Berlin Standard**: Bank of Israel standard for open banking
+  - **Unified Standard**: Maintains uniform standard across financial information market
+  - **Innovative Technology Environment**: Fast and easy access to accurate and up-to-date information
+  - **Regulatory Requirements**: Compliance with Capital Market, Insurance and Savings Authority requirements
+- **Use Cases**:
+  - Open banking implementation for financial institutions
+  - Regulatory compliance consulting
+  - API management and integration
+  - Banking mobility solutions
+  - Credit reporting integration
+  - Open finance solutions
+- **Relevance to This Project**:
+  - **Implementation Support**: Consulting for implementing open banking integrations
+  - **Regulatory Understanding**: Understanding Israeli open banking regulations
+  - **Standards Compliance**: Implementation of Berlin Standard for open banking
+  - **Integration Services**: API management and integration support
+  - **Multi-Bank Integration**: Support for integrating with multiple Israeli banks
+- **Documentation**: Available through Yael Group website; information about open banking solutions and regulatory compliance
+- **Note**: Yael Group is a consulting and implementation company, not an API provider. They help organizations implement open banking solutions and comply with Israeli regulations. Useful for understanding the Israeli open banking regulatory landscape and finding implementation support for open banking integrations.
+
+### Meitav Dash - OpenHub Open Banking API
+
+- **Developer Portal (Sandbox)**: <https://portal.openhub-sbx.meitav.co.il/instructions>
+- **Official Website**: <https://www.meitav.co.il/>
+- **Description**: Meitav Dash (מאית דש) is an Israeli investment management company providing OpenHub developer portal for open banking API integration. The sandbox environment provides instructions and resources for integrating with Meitav's open banking APIs.
+- **Key Features**:
+  - **Open Banking APIs**: Open banking API access through OpenHub portal
+  - **Sandbox Environment**: Sandbox portal for testing and development
+  - **Developer Resources**: Instructions and documentation for API integration
+  - **Investment Management**: Integration with investment management services
+- **API Access**:
+  - Sandbox portal available at `portal.openhub-sbx.meitav.co.il`
+  - Instructions and documentation through developer portal
+  - JavaScript required for portal access
+- **Use Cases**:
+  - Investment account information access
+  - Portfolio data integration
+  - Investment management services integration
+  - Financial data aggregation for investment accounts
+- **Relevance to This Project**:
+  - **Investment Accounts**: Access to investment account information
+  - **Portfolio Integration**: Integration with investment portfolios
+  - **Multi-Provider**: Additional Israeli financial services provider
+  - **Trading Integration**: Potential integration with investment management services
+- **Documentation**: Available through OpenHub sandbox portal; instructions and API documentation provided
+- **Note**: Meitav Dash is an investment management company providing open banking APIs through their OpenHub portal. Part of the Israeli open banking ecosystem, providing access to investment account information and portfolio data. Useful for Israeli traders requiring integration with investment management services alongside trading operations.
+
+### StoreNext Meteor - Financial Data Import & Open Banking Platform
+
+- **Official Website**: <https://www.storenext.co.il/en/e-commerce/meteor/>
+- **Description**: StoreNext Meteor is an automated financial data import platform that aggregates data from all of an organization's financial databases in Israel and around the world. The platform processes and streams financial data in a uniform structure through a single central path to enterprise information systems, fully integrated with ERP systems or treasury management.
+- **Key Features**:
+  - **Bank Account Aggregation**: Complete overview of balances and transactions from all bank accounts and subsidiaries
+  - **Open Banking**: Open banking integration for financial data access
+  - **Cash Positioning**: Cash management and positioning services
+  - **Foreign Exchange Rates Import**: Import foreign exchange rates from worldwide sources
+  - **BANKonnect**: Multibank payment system for secure payment instructions
+  - **Cash Management**: Cash flow forecasting and analysis
+- **BANKonnect - Multibank Payments**:
+  - Internet-cloud system for secure payment instructions
+  - Payment instructions from Israeli banks transmitted abroad
+  - Internal approval process management
+  - Advanced fraud prevention controls
+  - Digital certificate workflow management
+  - Security controls and beneficiary management
+  - Withholding tax processes and VAT reporting
+  - Secure private cloud with peripheral security
+  - ERP2Bank and WEB2Bank interfaces
+- **Bank Account Aggregation**:
+  - Complete overview of all organization bank accounts (Israel and abroad)
+  - Access to data based on client-defined permissions
+  - Broad financial picture of all company accounts at all banks
+  - Transaction history and balance information
+- **Cash Management**:
+  - Cash flow forecasting including retrospective analysis
+  - Cumulative information generation
+  - Analysis of material performance trends
+  - Ongoing control of gap between forecast and actual execution
+- **Foreign Exchange Rates Import**:
+  - Import foreign exchange rates from worldwide sources
+  - Access to central bank databases in different countries
+  - Information from commercial banks
+  - Exchange rate databases including cross-rates
+  - Various indices (metal prices, stock exchanges)
+  - Direct integration with corporate ERP systems
+- **Data Processing**:
+  - Automated data import from financial databases
+  - Data processing and streaming in uniform structure
+  - Single central path to enterprise information systems
+  - Full integration with ERP systems or treasury
+- **Use Cases**:
+  - Daily connection with financial institutions (banks, credit cards, investment companies)
+  - Accurate and relevant financial status picture
+  - Ongoing and continuous flow of data from multiple financial sources
+  - Digital-financial transformation
+  - Multibank payment management
+  - Cash flow management and forecasting
+  - Foreign exchange rate monitoring
+- **Relevance to This Project**:
+  - **Multi-Bank Aggregation**: Single platform for multiple bank accounts
+  - **Cash Management**: Cash positioning and flow forecasting for trading operations
+  - **FX Rates**: Foreign exchange rate data for multi-currency trading
+  - **Payment Processing**: Multibank payment capabilities for settlement
+  - **ERP Integration**: Integration with enterprise systems
+  - **Financial Data**: Comprehensive financial data aggregation for trading decisions
+- **Industries Served**:
+  - Construction
+  - Retail FMCG
+  - Pharmaceuticals
+  - Automotive
+  - Catering
+  - Recycling
+  - Hi-Tech & Electronics
+- **Documentation**: Available through StoreNext website; information about Meteor platform and integration options
+- **Note**: StoreNext Meteor provides a comprehensive financial data aggregation and open banking platform, particularly useful for organizations requiring integration with multiple financial institutions and ERP systems. Useful for Israeli traders and businesses requiring automated financial data import, cash management, and multibank payment processing.
+
+### Tel Aviv Stock Exchange (TASE) - Market Data Vendors
+
+- **Official Website**: <https://www.tase.co.il/en>
+- **Data Vendors Page**: <https://www.tase.co.il/en/content/about/data_vendors>
+- **Description**: The Tel Aviv Stock Exchange (TASE) is Israel's primary stock exchange, providing market data through authorized data vendors. TASE offers real-time and historical market data for Israeli equities, ETFs, bonds, and other securities.
+- **Market Data Access**:
+  - **Authorized Data Vendors**: TASE provides market data through various authorized data vendors
+  - **Real-Time Data**: Real-time market data feeds
+  - **Historical Data**: Historical market data access
+  - **Global Distribution**: Market data available globally through vendor networks
+- **Notable Data Vendors**:
+  - **Transaction Network Services (TNS)**:
+    - Established connectivity with TASE (December 2022)
+    - Delivers TASE market data globally via high-availability backbone
+    - Minimal network latency
+    - Low-latency network for TASE alongside European, US, and Asia Pacific exchanges
+    - Market data for TASE equities
+    - Enhanced number of market data feeds available to clients
+- **Market Coverage**:
+  - **Equities**: Israeli stocks listed on TASE
+  - **ETFs**: Over 1,000 stocks and ETFs listed on TASE
+  - **Bonds**: Government and corporate bonds
+  - **Other Securities**: Various financial instruments traded on TASE
+- **Data Services**:
+  - Real-time quotes and trades
+  - Historical price data
+  - Market depth and order book data
+  - Corporate actions and dividend information
+  - Performance reporting
+  - Tax reporting support
+- **Use Cases**:
+  - Real-time market data for Israeli securities
+  - Historical data analysis and backtesting
+  - Portfolio tracking and performance reporting
+  - Dividend tracking
+  - Tax reporting for Israeli securities
+  - Multi-exchange market data (TASE alongside other global exchanges)
+- **Relevance to This Project**:
+  - **Israeli Market Data**: Access to real-time and historical data for Israeli securities
+  - **Options Trading**: Market data for underlying Israeli stocks for options trading
+  - **Multi-Currency**: ILS-denominated securities data
+  - **Portfolio Management**: Tracking and analysis of Israeli securities positions
+  - **Risk Management**: Market data for risk assessment of Israeli market exposure
+  - **Arbitrage Opportunities**: Cross-market arbitrage between TASE and other exchanges
+- **Integration**:
+  - Access through authorized data vendors
+  - Low-latency network connectivity
+  - Integration with global market data platforms
+  - Support for multiple exchange connectivity
+- **Documentation**: Available through TASE website; comprehensive list of authorized data vendors and integration information
+- **Note**: TASE is Israel's primary stock exchange. Market data is available through authorized data vendors rather than direct API access. TNS is a notable vendor providing low-latency global distribution of TASE market data. Useful for Israeli traders requiring real-time and historical market data for Israeli securities, options trading on Israeli underlyings, and portfolio management of ILS-denominated positions.
+
+### Options-IT - Trading Infrastructure & Connectivity
+
+- **Official Website**: <https://www.options-it.com/>
+- **Description**: Options Technology provides managed trading infrastructure and connectivity services for financial institutions. They offer solutions that support trading operations, including low-latency connectivity, cloud services, and managed hosting.
+- **Key Products**:
+  - **Atlas**: Trading infrastructure platform
+  - **AtlasWorkplace**: Workplace solutions for trading operations
+  - **AtlasApps**: Application services
+  - **PrivateMind**: Private cloud solutions
+  - **Managed Security**: Security services for trading infrastructure
+- **Key Features**:
+  - **Low-Latency Connectivity**: High-speed connectivity for trading operations
+  - **Cloud Services**: Cloud-based trading infrastructure
+  - **Managed Hosting**: Managed hosting services for trading systems
+  - **Infrastructure Management**: Complete trading infrastructure management
+- **Target Clients**:
+  - Asset managers
+  - Hedge funds
+  - Sell-side firms
+  - Software providers
+  - Private equity firms
+- **Use Cases**:
+  - Trading infrastructure setup and management
+  - Low-latency connectivity for algorithmic trading
+  - Cloud-based trading system deployment
+  - Managed hosting for trading applications
+  - Security services for trading operations
+- **Relevance to This Project**:
+  - **Infrastructure**: Trading infrastructure and connectivity services
+  - **Low-Latency**: High-speed connectivity for box spread execution
+  - **Managed Services**: Managed hosting and infrastructure for trading systems
+  - **Cloud Deployment**: Cloud-based deployment options
+- **Documentation**: Available through Options-IT website
+- **Note**: Options-IT provides infrastructure and connectivity services rather than market data APIs. Useful for setting up and managing trading infrastructure, low-latency connectivity, and cloud-based trading systems.
+
+### Bloomberg - Financial Data & Analytics Platform
+
+- **Official Website**: <https://www.bloomberg.com/>
+- **Middle East Portal**: <https://www.bloomberg.com/middleeast>
+- **Description**: Bloomberg is a global financial data and analytics platform providing real-time market data, news, and analytical tools. Bloomberg Terminal and B-PIPE provide comprehensive market data coverage including Middle Eastern markets.
+- **Key Features**:
+  - **B-PIPE**: Real-time market data feed delivering standardized, up-to-the-minute data
+  - **Bloomberg Terminal**: Comprehensive trading and analytics platform
+  - **Real-Time Data**: Instant market insights and data delivery
+  - **Customizable Tools**: Customizable visual tools and reporting options
+  - **Global Coverage**: Coverage of global markets including Middle East
+- **Market Data Services**:
+  - Real-time quotes and trades
+  - Historical data
+  - News and analytics
+  - Portfolio management tools
+  - Risk management analytics
+- **Use Cases**:
+  - Real-time market data for trading decisions
+  - Portfolio management and analysis
+  - Risk management and compliance
+  - News and market analysis
+  - Best execution compliance
+- **Relevance to This Project**:
+  - **Market Data**: Real-time and historical market data for box spread analysis
+  - **Options Data**: Options market data and analytics
+  - **Middle East Coverage**: Coverage of Israeli and Middle Eastern markets
+  - **Analytics**: Advanced analytics for trading strategies
+- **Documentation**: Available through Bloomberg Professional Services
+- **Note**: Bloomberg provides comprehensive financial data and analytics through Bloomberg Terminal and B-PIPE. Premium service with extensive market coverage including Middle Eastern markets. Useful for institutional traders requiring comprehensive market data and analytics.
+
+### BMLL Technologies - Historical Order Book Data & Analytics
+
+- **Official Website**: <https://www.bmlltech.com/>
+- **Description**: BMLL Technologies is an independent provider of harmonized, historical Level 3, 2, and 1 data and analytics across global equity, ETFs, and futures markets. They offer clients access to deep data to derive predictive insights, enabling researchers and quants to understand market behaviors comprehensively.
+- **Key Features**:
+  - **Historical Order Book Data**: Level 3, 2, and 1 historical data
+  - **Harmonized Data**: Harmonized data across multiple markets
+  - **Global Coverage**: Equity, ETFs, and futures markets
+  - **Options Data**: Six years of nanosecond unconflated OPRA options data
+  - **Analytics**: Advanced analytics and insights
+- **Data Coverage**:
+  - **Equity Markets**: Global equity markets
+  - **ETFs**: Exchange-traded funds
+  - **Futures**: Futures markets
+  - **Options**: OPRA options data (6 years of nanosecond unconflated data)
+- **Partnerships**:
+  - **FactSet Integration**: Cloud-based granular historical tick data and analytics through FactSet platform
+  - **INQDATA Partnership**: Access to BMLL data within kdb+ environment
+- **Use Cases**:
+  - Quantitative research and backtesting
+  - Market impact analysis
+  - Pre- and post-trade analytics
+  - Order book simulation
+  - Compliance and surveillance
+  - Risk management
+  - Transaction cost analysis
+  - Best execution analysis
+- **Relevance to This Project**:
+  - **Historical Data**: Extensive historical order book data for backtesting
+  - **Options Data**: Historical options data for box spread analysis
+  - **Analytics**: Advanced analytics for strategy development
+  - **Order Book Analysis**: Deep order book analysis for execution optimization
+  - **Research**: Quantitative research capabilities
+- **Documentation**: Available through BMLL Technologies website
+- **Note**: BMLL Technologies specializes in historical order book data and analytics. Particularly useful for quantitative research, backtesting, and understanding market microstructure. The partnership with FactSet provides cloud-based access to granular historical data.
+
+### FactSet - Financial Data & Analytics Platform
+
+- **Official Website**: <https://www.factset.com/>
+- **Description**: FactSet is a global provider of integrated financial information, analytical applications, and industry-leading services. They deliver financial data, analytics, and open technology in a digital platform to help users gain comprehensive insights.
+- **Key Features**:
+  - **Integrated Financial Information**: Comprehensive financial data platform
+  - **Analytical Applications**: Advanced analytics and applications
+  - **Open Technology**: Open technology platform
+  - **Digital Platform**: Cloud-based digital platform
+  - **Global Coverage**: Approximately 180,000 users worldwide
+- **Services**:
+  - Financial data and content
+  - Flexible workflow solutions
+  - Innovative technologies
+  - Investment decision support
+- **Partnerships**:
+  - **BMLL Technologies**: Collaboration to provide cloud-based granular historical tick data and analytics
+  - Enhanced access to Level 3 order book data through FactSet platform
+- **Use Cases**:
+  - Investment research and analysis
+  - Portfolio management
+  - Risk management
+  - Compliance and surveillance
+  - Quantitative research
+  - Backtesting
+  - Transaction cost analysis
+- **Relevance to This Project**:
+  - **Financial Data**: Comprehensive financial data for trading decisions
+  - **Analytics**: Advanced analytics for strategy development
+  - **Historical Data**: Access to historical data through BMLL partnership
+  - **Research Tools**: Research and analysis tools for box spread strategies
+  - **Portfolio Management**: Portfolio management and analysis
+- **Documentation**: Available through FactSet website
+- **Note**: FactSet provides comprehensive financial data and analytics platform. The collaboration with BMLL Technologies enhances access to granular historical order book data. Useful for institutional traders requiring comprehensive financial data, analytics, and research tools.
+
+### Intercontinental Exchange (ICE) - Fixed Income Data Services
+
+- **Developer Portal**: <https://developer.ice.com/fixed-income-data-services/catalog>
+- **Official Website**: <https://www.ice.com/>
+- **Description**: Intercontinental Exchange (ICE) provides comprehensive fixed income and data services designed to enhance market transparency and support informed decision-making. ICE offers continuous evaluated pricing, end-of-day evaluations, and fair value information services for fixed income instruments.
+- **Key Services**:
+  - **Continuous Evaluated Pricing (CEP)**: High-quality, continuous evaluated pricing for approximately 2.5 million fixed income instruments globally
+  - **End-of-Day Evaluations**: End-of-day evaluation services
+  - **Fair Value Information**: Fair value information services
+  - **Price Transparency**: Enhanced price transparency for fixed income markets
+  - **Performance Analysis**: Performance analysis tools
+- **Data Delivery Mechanisms**:
+  - **ICE Connect**: Connectivity platform
+  - **ICE Consolidated Feed**: Consolidated data feed
+  - **ICE Data API**: API access to data services
+- **Fixed Income Solutions**:
+  - **Price Transparency**: Enhanced price transparency
+  - **Efficient Execution**: Execution services
+  - **Performance Analysis**: Performance analysis tools
+  - **Risk Management**: Real-time risk monitoring
+  - **Price Discovery**: Price discovery services
+- **Recent Innovations**:
+  - **Price Improvement Volume Clearing (PIVC)**: Enhancement to Risk Matching Auction protocol
+  - Deepens liquidity and improves pricing outcomes
+- **Market Coverage**:
+  - Approximately 2.5 million fixed income instruments globally
+  - Multiple asset classes
+  - Global market coverage
+- **Use Cases**:
+  - Fixed income price discovery
+  - Real-time risk monitoring
+  - Portfolio valuation
+  - Risk management
+  - Investment decisions
+  - Compliance and reporting
+- **Relevance to This Project**:
+  - **Fixed Income Data**: Access to fixed income pricing data for hedging
+  - **T-Bill Data**: Fixed income data including T-bills and government securities
+  - **Risk Management**: Real-time risk monitoring for fixed income positions
+  - **Valuation**: Portfolio valuation services
+  - **Price Discovery**: Price discovery for fixed income instruments
+- **Documentation**: Available through ICE Developer portal; catalog of fixed income data services
+- **Note**: ICE provides comprehensive fixed income data services including continuous evaluated pricing for millions of fixed income instruments. Particularly useful for traders requiring fixed income pricing data, T-bill valuations, and fixed income risk management.
+
+### ION Group - Trading Technology & Workflow Automation
+
+- **Official Website**: <https://iongroup.com/>
+- **Markets Portal**: <https://iongroup.com/markets/>
+- **Fixed Income Solutions**: <https://iongroup.com/solutions/markets/fixed-income/>
+- **Description**: ION Group specializes in workflow automation across the complete trade lifecycle, unifying operations from front to back and simplifying processes across asset classes. Their solutions automate the trade lifecycle, reduce operational risk, and deliver actionable insights in real-time.
+- **Key Solutions**:
+  - **Fixed Income Solutions**: Connectivity to multiple markets, client inquiry management, trading workflow automation
+  - **Equities Trading**: Fidessa platform for equities trading
+  - **Workflow Automation**: Complete trade lifecycle automation
+  - **Risk Management**: Operational risk reduction
+  - **Real-Time Insights**: Actionable insights in real-time
+- **Key Features**:
+  - **Front-to-Back Integration**: Unifies operations from front to back
+  - **Multi-Asset Class**: Solutions across multiple asset classes
+  - **Automation**: Trade lifecycle automation
+  - **Risk Reduction**: Operational risk reduction
+  - **Real-Time Analytics**: Real-time actionable insights
+  - **Customer Understanding**: Better customer understanding
+  - **Proactive Risk Management**: Proactive risk management capabilities
+- **Fixed Income Capabilities**:
+  - Connectivity to multiple fixed income markets
+  - Client inquiry management
+  - Trading workflow automation
+  - Competitive edge in complex markets
+- **Use Cases**:
+  - Trade lifecycle automation
+  - Multi-asset class trading
+  - Fixed income trading
+  - Risk management
+  - Operational efficiency
+  - Real-time analytics
+- **Relevance to This Project**:
+  - **Trading Workflows**: Workflow automation for box spread trading
+  - **Fixed Income**: Fixed income trading solutions
+  - **Risk Management**: Operational risk reduction
+  - **Integration**: Front-to-back integration capabilities
+  - **Automation**: Trade lifecycle automation
+- **Documentation**: Available through ION Group website; information about trading solutions and workflow automation
+- **Note**: ION Group provides trading technology and workflow automation solutions rather than direct market data APIs. Useful for automating trading workflows, managing fixed income operations, and reducing operational risk in trading systems.
+
+### Pico Quantitative Trading - Market Data & Infrastructure Services
+
+- **Official Website**: <https://www.pico.net/>
+- **Description**: Pico is a leading global provider of technology services connecting the world's most liquid markets. They offer access to over 900 exchange and venue products to power high-performance trading with real-time network monitoring and performance analytics.
+- **Key Services**:
+  - **Analytics**: Corvil Analytics for real-time trading and network operations analytics
+  - **Trading Applications**: InRush Ticker Plant, RedlineFeed, Order Execution Gateway, Pre-Trade Risk, Historical Market Data
+  - **Market Data**: Raw, normalized, and historical market data, market data analytics
+  - **Connectivity**: Network connectivity, venue access, network analytics, network services
+  - **Infrastructure**: Colocation hosting, cloud services (public, private, hybrid), device management
+  - **Expert Services**: Technology procurement, delivery management, service operations, security
+- **Corvil Analytics**:
+  - Real-time trading and network operations analytics
+  - Machine learning and AI capabilities (Corvil Analytics 10.0)
+  - Corvil Appliances, Decoders, Certification
+  - 200Gbps continuous network capture and analytics
+  - AI-ready network observability pipelines
+- **Trading Applications**:
+  - **InRush Ticker Plant**: Market data ticker plant
+  - **RedlineFeed**: Ultra-low latency market data feed
+  - **Order Execution Gateway**: Order execution services
+  - **Pre-Trade Risk**: Pre-trade risk management
+  - **Historical Market Data**: Historical data services
+  - **Managed Service**: Managed trading services
+- **Market Data Services**:
+  - Raw market data
+  - Normalized market data
+  - Historical market data
+  - Market data analytics
+- **Connectivity**:
+  - Network connectivity to global markets
+  - Venue access to exchanges
+  - Network analytics
+  - Network services
+  - IntelliVUE network monitoring
+- **Infrastructure**:
+  - **Colocation Hosting**: Data center colocation
+  - **Cloud Services**: Public, private, and hybrid cloud
+  - **Device Management**: Infrastructure device management
+  - **Intellihands Services**: Remote hands services
+  - **Infrastructure Analytics**: Infrastructure monitoring
+- **Scale**:
+  - 24/7 technical support
+  - 55+ data centers globally
+  - 900+ exchange and venue products
+- **Target Industries**:
+  - Global Banks
+  - Regional Banks
+  - Quantitative Hedge Funds
+  - Exchanges
+  - Fintech Service Providers
+  - Electronic Market Makers
+  - Macro Hedge Funds
+  - Retail Brokers
+  - Crypto
+- **Use Cases**:
+  - High-performance trading infrastructure
+  - Ultra-low latency market data
+  - Network monitoring and analytics
+  - Order execution services
+  - Pre-trade risk management
+  - Historical data for backtesting
+  - Colocation and cloud services
+- **Relevance to This Project**:
+  - **Market Data**: Ultra-low latency market data feeds
+  - **Infrastructure**: Colocation and cloud infrastructure for trading
+  - **Analytics**: Real-time trading and network analytics
+  - **Execution**: Order execution gateway services
+  - **Risk Management**: Pre-trade risk management
+  - **Historical Data**: Historical market data for backtesting
+  - **Connectivity**: Global connectivity to exchanges
+- **Documentation**: Available through Pico website; comprehensive information about services and solutions
+- **Note**: Pico provides comprehensive technology services for financial markets including market data, connectivity, infrastructure, and analytics. Particularly useful for high-performance trading systems requiring ultra-low latency market data, colocation services, and comprehensive market connectivity.
+
+### QuantHouse - Systematic Trading Solutions
+
+- **Official Website**: <https://www.quanthouse.com/>
+- **Description**: QuantHouse is a provider of end-to-end systematic trading solutions, offering services such as market data, algorithmic trading development frameworks, and infrastructure solutions. Their offerings are designed to support trading firms in developing, testing, and deploying quantitative trading strategies efficiently.
+- **Key Services**:
+  - **Market Data**: Market data services for trading
+  - **Algo Trading Development**: Algorithmic trading development frameworks
+  - **Infrastructure Solutions**: Trading infrastructure solutions
+  - **Systematic Trading**: End-to-end systematic trading solutions
+- **Key Features**:
+  - **Development Frameworks**: Frameworks for algo trading development
+  - **Testing Capabilities**: Testing tools for trading strategies
+  - **Deployment Solutions**: Deployment solutions for quantitative strategies
+  - **Efficiency**: Efficient development and deployment of trading strategies
+- **Use Cases**:
+  - Quantitative trading strategy development
+  - Algorithmic trading system development
+  - Market data integration
+  - Trading infrastructure setup
+  - Strategy testing and deployment
+- **Relevance to This Project**:
+  - **Trading Infrastructure**: Infrastructure solutions for box spread trading
+  - **Market Data**: Market data services for options and underlying securities
+  - **Development Frameworks**: Frameworks for developing automated trading strategies
+  - **Systematic Trading**: Support for systematic/quantitative trading approaches
+- **Documentation**: Available through QuantHouse website
+- **Note**: QuantHouse provides end-to-end systematic trading solutions including market data, development frameworks, and infrastructure. Useful for quantitative trading firms developing and deploying algorithmic trading strategies including box spread automation.
+
+### London Stock Exchange Group (LSEG) - Data & Analytics
+
+- **Official Website**: <https://www.lseg.com/en/data-analytics>
+- **Description**: LSEG Data & Analytics is one of the world's largest providers of financial markets data and infrastructure. With over 40,000 customers and 400,000 end users across approximately 190 markets, LSEG is an essential partner to the global financial community.
+- **Key Services**:
+  - **Data & Feeds**: Best-in-class global market data and feeds
+  - **Analytics**: AI-powered analytics platform
+  - **Workflows**: Interoperable and collaborative workflows through LSEG Workspace
+  - **Reuters News**: Exclusive provider of Reuters news to global financial marketplace
+- **Key Features**:
+  - **Global Coverage**: Approximately 190 markets worldwide
+  - **AI-Powered Analytics**: Next-generation AI-driven products using Large Language Models
+  - **Cloud-Collaborative**: Open, cloud-collaborative data distribution
+  - **Market-Leading Technology**: Market-leading distribution and management technology
+  - **Microsoft Partnership**: Strategic partnership with Microsoft for AI-ready data and cloud infrastructure
+- **Data & Feeds Services**:
+  - Global market data and feeds
+  - Open, cloud-collaborative distribution
+  - Market-leading distribution and management technology
+  - Comprehensive data coverage
+- **Analytics Solutions**:
+  - AI-powered analytics platform
+  - Rapid transformation of data into actionable insights
+  - Custom analytics development
+  - Large Language Model orchestration
+  - Live financial data transformation
+- **Workflow Solutions**:
+  - **LSEG Workspace**: Open ecosystem for workflows
+  - Interoperable and collaborative workflows
+  - Integration of insights, news, and analytics
+  - Customizable workflow solutions
+- **Historical Analytics**:
+  - **Historical Analytics via Snowflake**: Launched December 2024
+  - Over 20 years of pricing data
+  - More than 2.9 million bonds
+  - Integration of LSEG Pricing Services with Yield Book Analytics
+  - Use cases: Regulatory reporting, risk management, portfolio analysis
+- **Fixed Income Solutions**:
+  - **Yield Book Analytics**: Fixed income analytics tools
+  - Bond pricing and analytics
+  - Fixed income risk management
+  - Portfolio analysis
+- **News Services**:
+  - **Reuters News**: Exclusive provider of Reuters news
+  - 170-year history and reputation
+  - Market-moving headlines
+  - Insight and commentary
+  - Coverage of all major market sectors
+- **Customer Consulting**:
+  - Global in-house team of consultants
+  - Solution architects and project managers
+  - Technical expertise delivery
+  - Custom solution implementation
+- **Recent Developments**:
+  - **Q1 2025**: 8.7% year-on-year increase in total income
+  - **Data & Analytics Growth**: 5.1% growth driven by Analytics and Data & Feeds units
+  - **Cloud Solutions**: New cloud-based solutions developed with Microsoft partnership
+  - **Historical Analytics**: Historical Analytics solution via Snowflake platform
+- **Use Cases**:
+  - Investment research and analysis
+  - Risk management
+  - Portfolio management
+  - Regulatory reporting
+  - Market data access
+  - News and market analysis
+  - Fixed income analytics
+- **Relevance to This Project**:
+  - **Market Data**: Comprehensive global market data for box spread analysis
+  - **Fixed Income Data**: Yield Book Analytics for fixed income and T-bill data
+  - **Historical Data**: Historical analytics for backtesting
+  - **Analytics**: AI-powered analytics for strategy development
+  - **News**: Reuters news for market-moving events
+  - **Workflows**: Workflow solutions for trading operations
+- **Documentation**: Available through LSEG website; comprehensive product documentation and support
+- **Note**: LSEG Data & Analytics is one of the world's largest financial data providers with extensive global coverage. The strategic partnership with Microsoft and AI-powered analytics capabilities make it particularly valuable for institutional traders requiring comprehensive market data, fixed income analytics, and advanced analytics tools.
+
+### SIX Group - Swiss Financial Infrastructure & Market Data
+
+- **Official Website**: <https://www.six-group.com/en/home.html>
+- **Developer Portal**: <https://www.six-group.com/en/specialized-offerings/six-developer-portal.html>
+- **Description**: SIX Group operates the infrastructure for the Swiss and Spanish financial centers, providing services in securities, financial information, and payments. SIX operates the Swiss Stock Exchange and provides comprehensive market data, indices, and financial services.
+- **Key Services**:
+  - **SIX Swiss Exchange**: Swiss stock exchange operations
+  - **BME Exchange**: Spanish stock exchanges (acquired 2020)
+  - **Aquis Exchange**: Pan-European stock exchange (acquired July 2025)
+  - **Securities Services**: Clearing, settlement, custody, securities finance
+  - **Data Products**: Market data, indices, reference data, regulatory services
+  - **Banking Services**: Billing, payments, open banking, interbank clearing
+- **Market Data Services**:
+  - **Real-Time Data**: Real-time market data feeds
+  - **Historical Data**: Historical prices and market data
+  - **Indices**: Swiss indices (SMI, SPI), Spanish indices, Nordic indices, crypto indices
+  - **Reference Data**: Market and reference data services
+  - **Regulatory Services**: Regulatory data and services
+  - **ESG Data**: ESG data and services
+- **SARON (Swiss Average Rate Overnight)**:
+  - **SARON Calculator**: Available through SIX market data services
+  - **Risk-Free Rate**: Swiss equivalent of risk-free rate for CHF-denominated options
+  - **Overnight Rate**: Swiss overnight interest rate benchmark
+- **Indices**:
+  - **Swiss Indices**: SMI (Swiss Market Index), SPI (Swiss Performance Index)
+  - **Spanish Indices**: BME exchange indices
+  - **Nordic Indices**: Nordic market indices
+  - **Crypto Indices**: Cryptocurrency indices
+  - **Global Indices**: Global index coverage
+  - **Customized Indices**: Custom index creation
+- **Data Products**:
+  - **Indices Data Center**: Index data and analytics
+  - **Market & Reference Data**: Comprehensive market data
+  - **Regulatory Services**: Regulatory reporting and data
+  - **ESG Data & Services**: Environmental, social, and governance data
+  - **Delivery Methods**: Multiple data delivery methods
+- **Securities Services**:
+  - **Clearing Services**: Trade clearing
+  - **Settlement and Custody**: Securities settlement and custody
+  - **Securities Finance**: Securities lending and financing
+  - **Tax Services**: Tax-related services
+  - **Trade Repository**: Trade reporting repository
+- **Banking Services**:
+  - **Open Banking**: Open banking services
+  - **Interbank Clearing**: Interbank clearing services
+  - **Payment Services**: Billing and payment services
+  - **Data Analytics & AI**: Banking data analytics
+- **Developer Portal**:
+  - **SIX Developer Portal**: Developer resources and APIs
+  - **API Access**: Programmatic access to SIX services
+  - **Documentation**: Technical documentation and integration guides
+- **Recent Acquisitions**:
+  - **BME (2020)**: Acquisition of Spanish stock exchanges
+  - **Aquis (July 2025)**: Acquisition of pan-European stock exchange
+- **Use Cases**:
+  - Swiss and Spanish market data access
+  - Index data and analytics
+  - Securities trading and settlement
+  - Risk-free rate data (SARON) for CHF options
+  - Regulatory reporting
+  - ESG data and analysis
+- **Relevance to This Project**:
+  - **Swiss Market Data**: Access to Swiss stock exchange data
+  - **SARON Data**: Swiss risk-free rate for CHF-denominated options pricing
+  - **Index Data**: Swiss and European index data
+  - **Multi-Exchange**: Access to Swiss, Spanish, and pan-European exchanges
+  - **Regulatory Data**: Regulatory reporting and compliance data
+  - **Developer APIs**: Developer portal for programmatic access
+- **Documentation**: Available through SIX website and Developer Portal
+- **Note**: SIX Group operates the infrastructure for Swiss and Spanish financial centers. Provides comprehensive market data, indices, and financial services. SARON (Swiss Average Rate Overnight) is the Swiss risk-free rate equivalent, available through SIX market data services. Useful for traders requiring Swiss market data, SARON for CHF options pricing, and access to Swiss and Spanish exchanges.
+
+### Allocator - Alternative Investment Data Management Platform
+
+- **Official Website**: <https://www.allocator.com/>
+- **Description**: AI-driven data management platform for Limited Partners (LPs) to manage alternative investment data from hedge funds and private capital funds. Provides portfolio analytics, risk monitoring, performance attribution, and comprehensive fund data aggregation.
+- **Key Services**:
+  - **Data Aggregation**: Automated collection and organization of fund reports from GPs and hedge funds
+  - **Risk Analytics**: Portfolio risk exposure analysis, VaR, CVaR, MVaR, sensitivity analysis
+  - **Performance Analytics**: Returns analysis, performance attribution, benchmarking
+  - **Portfolio Analytics**: Diversification analysis, correlation tracking, overlap detection
+  - **API Access**: Programmatic access to aggregated fund data
+  - **Data Harvesting**: Automated extraction of data from financial statements, quarterly reports, questionnaires, factsheets, risk reports
+- **Coverage**:
+  - **Hedge Funds**: Thousands of hedge funds regularly uploading data
+  - **Private Capital Funds**: Private equity, venture capital, and other private capital funds
+  - **Long-Only Funds**: Traditional long-only investment funds
+  - **Fund Types**: Fund of Funds, Secondary Funds, Fund of Hedge Funds
+- **Client Types**:
+  - Private Capital Fund of Funds
+  - Secondary Funds
+  - Fund of Hedge Funds
+  - Endowments
+  - Foundations
+  - Sovereign Wealth Funds
+  - Insurance Companies
+  - Pension Funds
+  - Investment Consultants
+  - Private Banks
+  - Family Offices
+- **Analytics Capabilities**:
+  - **Performance Analysis**: Returns over different time periods, benchmarking against indices
+  - **Risk Monitoring**: Exposure tracking by asset class, sector, strategy, currency, geography
+  - **Sensitivity Analysis**: Price sensitivities (long, short, net, gross exposures), interest rate sensitivities (duration, DV01), credit spread sensitivities (CS01), volatility sensitivities (vega)
+  - **Tail Risk**: VaR, CVaR, MVaR calculations
+  - **Diversification**: Portfolio overlap and correlation analysis
+  - **Value Creation**: Revenue, EBITDA, and KPI tracking at portfolio company level
+  - **Alpha/Beta Decomposition**: Return decomposition for active managers
+- **Data Sources**:
+  - Financial statements
+  - Quarterly reports
+  - Questionnaires
+  - Factsheets
+  - Risk reports
+  - Open Protocol templates
+  - ILPA templates
+- **API Features**:
+  - **Data Warehouse Integration**: Direct feed to CRM, portfolio monitoring systems, dashboards
+  - **Real-Time Updates**: Up-to-date, accurate, and comprehensive data
+  - **Custom Scorecards**: Create custom investment criteria filters
+  - **Peer Groups**: Benchmark funds and maintain peer groups
+- **Geographic Presence**:
+  - **United Kingdom**: London office
+  - **Switzerland**: Zürich office
+  - **South Africa**: Somerset West office
+- **Use Cases**:
+  - Portfolio risk monitoring and analysis
+  - Performance attribution and benchmarking
+  - Fund due diligence and selection
+  - Diversification analysis
+  - Risk exposure tracking
+  - Value creation analysis
+  - Peer group benchmarking
+- **Relevance to This Project**:
+  - **Portfolio-Level Analytics**: If expanding to portfolio management features, Allocator could provide hedge fund strategy data and benchmarking
+  - **Risk Analytics**: Advanced risk metrics (VaR, CVaR, sensitivity analysis) could be useful for multi-strategy portfolios
+  - **Hedge Fund Data**: Access to hedge fund strategies that may use box spreads or similar arbitrage strategies
+  - **Performance Benchmarking**: Benchmark box spread strategy performance against hedge fund peers
+  - **Multi-Asset Portfolio**: If expanding beyond box spreads to multi-asset portfolios
+  - **Note**: Less directly relevant to core box spread trading functionality, but potentially useful for portfolio-level analysis and benchmarking
+- **Documentation**: Available through Allocator website; API documentation available to clients
+- **Note**: Allocator is primarily designed for Limited Partners managing alternative investment portfolios. While not directly relevant to individual box spread trading, it could be useful for portfolio-level analytics, benchmarking against hedge fund strategies, or if the project expands to include multi-strategy portfolio management features.
 
 ### CppTrader - High-Performance Trading Components
 
@@ -547,6 +1826,13 @@ This file serves as a reference for all external APIs and libraries used in this
 
 ## Open Data APIs & Resources
 
+<!--
+@index: api-documentation
+@category: open-data
+@tags: open-data, public-apis, government-data, free
+@last-updated: 2025-01-27
+-->
+
 ### Public APIs Repository (Curated List)
 
 - **GitHub**: <https://github.com/public-apis/public-apis>
@@ -609,7 +1895,64 @@ This file serves as a reference for all external APIs and libraries used in this
   - Commercial use may require licensing agreements
 - **Note**: The original `quandl-python` library has been archived. Use `nasdaq-data-link` package for current integration.
 
-#### Alpha Vantage
+### Unmeshed - API Orchestration Platform
+
+- **Website**: <https://unmeshed.io/>
+- **Blog Post**: <https://unmeshed.io/blog/api-orchestration-efficently-aggregate-api-data-using-orchestration>
+- **Provider**: Unmeshed, Inc.
+- **Description**: Developer-centric API orchestration platform that enables visual workflow building for aggregating data from multiple APIs, executing API calls in parallel, and managing complex API workflows without writing glue code
+- **Key Features**:
+  - **Visual Workflow Builder**: Drag-and-drop interface for building API orchestration workflows
+  - **Parallel Execution**: Execute multiple API calls in parallel and use the first response received
+  - **Sequential to Parallel Optimization**: Easily switch from sequential to parallel execution without code changes
+  - **JavaScript Tasks**: Built-in JavaScript task support for shaping response JSON and data transformation
+  - **Secret Management**: Built-in secrets management without hardcoding API keys
+  - **Visual Timeline**: Visual timeline for debugging and tracing performance
+  - **No Glue Code**: Eliminates need for repetitive glue code, retries, and edge case handling
+  - **No Redeploys**: Modify workflows without redeploying code
+  - **SDKs**: SDKs for integrating services instantly
+- **Use Cases**:
+  - **API Data Aggregation**: Aggregate data from multiple market data providers (e.g., TWS API, ORATS, dxFeed)
+  - **Parallel API Calls**: Execute multiple API calls in parallel for faster data retrieval
+  - **First Response Wins**: Use first available response when speed is critical
+  - **Multi-Source Market Data**: Combine data from TWS API, ORATS, dxFeed, and other sources
+  - **Workflow Orchestration**: Orchestrate complex workflows involving multiple API calls
+  - **Data Transformation**: Transform and merge responses from multiple APIs into unified format
+- **Relevance to Box Spread Trading**:
+  - **Multi-Source Market Data**: Aggregate options data from TWS API, ORATS, dxFeed, and other sources
+  - **Parallel Data Fetching**: Fetch market data from multiple sources in parallel for faster box spread detection
+  - **Data Validation**: Compare data from multiple sources to validate pricing and identify arbitrage opportunities
+  - **Workflow Automation**: Orchestrate complex workflows for box spread scanning, validation, and execution
+  - **Performance Optimization**: Reduce latency by executing API calls in parallel instead of sequentially
+  - **Data Aggregation**: Combine options chain data, Greeks, IV, and market data from multiple providers
+- **Integration Considerations**:
+  - **Visual Workflow Builder**: No code required for basic workflows (drag-and-drop interface)
+  - **JavaScript Tasks**: Use JavaScript for custom data transformation and merging
+  - **Secret Management**: Secure API key management without hardcoding
+  - **Parallel Execution**: Optimize workflows by running API calls in parallel
+  - **SDK Integration**: Integrate Unmeshed workflows into existing applications via SDKs
+  - **Azure Marketplace**: Available in Microsoft Azure Marketplace
+  - **No Backend Code Changes**: Modify workflows without changing backend code
+- **Example Use Case for Box Spread Trading**:
+  - **Parallel Market Data Fetching**: Fetch options chain data from TWS API, Greeks from ORATS, and IV from dxFeed in parallel
+  - **Data Aggregation**: Merge responses into unified format for box spread analysis
+  - **First Response Strategy**: Use first available data source when speed is critical for arbitrage detection
+  - **Multi-Source Validation**: Compare pricing from multiple sources to identify mispricing opportunities
+- **Comparison with Current Solutions**:
+  - **vs. Custom Glue Code**: Unmeshed eliminates need for custom API aggregation code
+  - **vs. Sequential API Calls**: Parallel execution reduces total latency
+  - **vs. Manual Integration**: Visual builder simplifies workflow creation and modification
+- **Benefits**:
+  - **Faster Development**: Build API aggregation workflows faster without writing glue code
+  - **Better Performance**: Parallel execution reduces total latency
+  - **Easier Maintenance**: Visual workflows easier to understand and modify
+  - **No Redeploys**: Modify workflows without redeploying code
+  - **Built-in Secrets**: Secure API key management
+  - **Visual Debugging**: Visual timeline for debugging and performance analysis
+- **Contact**: Sign up at <https://unmeshed.io/> or find in Microsoft Azure Marketplace
+- **Note**: Unmeshed is an API orchestration platform that simplifies aggregating data from multiple APIs. Particularly useful for box spread trading when combining data from multiple market data providers (TWS API, ORATS, dxFeed) in parallel for faster data retrieval and validation. The visual workflow builder eliminates need for custom glue code, and parallel execution can significantly reduce latency when fetching data from multiple sources. Evaluate as tool for orchestrating multi-source market data aggregation workflows.
+
+#### Alpha Vantage (Market Data)
 
 - **URL**: <https://www.alphavantage.co/>
 - **Official API Docs**: <https://www.alphavantage.co/documentation/>
@@ -652,7 +1995,7 @@ This file serves as a reference for all external APIs and libraries used in this
   - Enterprise: Custom pricing for high-volume usage
 - **Partnerships**: Officially licensed by NASDAQ as a US market data provider
 
-#### Finnhub
+#### Finnhub (Market Data)
 
 - **URL**: <https://finnhub.io/>
 - **Official API Docs**: <https://finnhub.io/docs/api>
@@ -710,6 +2053,13 @@ This file serves as a reference for all external APIs and libraries used in this
 - Terms of service compliance for trading applications
 
 ## Trading Frameworks & Infrastructure
+
+<!--
+@index: api-documentation
+@category: trading-frameworks
+@tags: trading-framework, c++, low-latency, infrastructure
+@last-updated: 2025-01-27
+-->
 
 ### FLOX (Modular Trading Framework)
 
@@ -808,6 +2158,13 @@ This file serves as a reference for all external APIs and libraries used in this
 
 ### FIX Protocol & FIX Trading Community
 
+<!--
+@index: api-documentation
+@category: fix-protocol
+@tags: fix-protocol, fix-api, trading-protocol, standards
+@last-updated: 2025-01-27
+-->
+
 - **Official Website**: <https://www.fixtrading.org/>
 - **FIXimate (Interactive FIX Reference)**: <https://fiximate.fixtrading.org/>
 - **GitHub Organization**: <https://github.com/FIXTradingCommunity>
@@ -857,6 +2214,7 @@ This file serves as a reference for all external APIs and libraries used in this
   - **FIXimate Release Notes**: <https://fiximate.fixtrading.org/releasenotes.html>
   - **FIX Orchestra Specification**: <https://github.com/FIXTradingCommunity/fix-orchestra-spec>
   - **FIX Trading Community GitHub**: <https://github.com/FIXTradingCommunity>
+  - **FIX Online Specification**: <https://www.fixtrading.org/online-specification/introduction/> - Official FIX protocol specification and documentation
 - **Potential Integration Opportunities**:
   - Direct CME Globex connectivity for futures trading
   - Direct Cboe connectivity for options trading (SPX, SPXW)
@@ -866,7 +2224,517 @@ This file serves as a reference for all external APIs and libraries used in this
 - **Example Use Case**: Direct CME/Cboe FIX connectivity could enable faster execution for box spread strategies by bypassing IBKR's TWS API, potentially reducing latency and improving fill rates.
 - **Note**: FIX protocol is the industry standard for institutional trading. While more complex than REST APIs, it offers lower latency, better control, and direct exchange access. FIXimate provides an excellent reference for understanding FIX message structures and field definitions.
 
-### Tools for Brokers (TFB) FIX API Platform
+### FIX Protocol Development Tools & Libraries
+
+#### QuickFIX Engine
+
+- **Website**: <https://quickfixengine.org/>
+- **Description**: Open-source FIX protocol engine implementation supporting multiple programming languages
+- **Key Features**:
+  - **Multi-Language Support**: C++, Java, Python, Ruby, .NET implementations
+  - **FIX Protocol Versions**: Supports FIX 4.0 through FIX 5.0 SP2
+  - **Session Management**: Automatic session management, message sequencing, and recovery
+  - **Message Validation**: Built-in message validation and field validation
+  - **Logging**: Comprehensive logging for debugging and compliance
+  - **File-Based Storage**: File-based message store for persistence
+  - **Database Storage**: Optional database storage for message persistence
+- **Language Implementations**:
+  - **QuickFIX/J**: Java implementation
+  - **QuickFIX/n**: .NET implementation
+  - **QuickFIX/py**: Python implementation
+  - **QuickFIX++**: C++ implementation
+- **Relevance to Box Spread Trading**:
+  - **FIX Protocol Implementation**: Use QuickFIX to implement FIX API connectivity for direct exchange access
+  - **C++ Support**: QuickFIX++ provides C++ implementation matching project technology stack
+  - **Direct CBOE/CME Access**: Implement FIX connectivity to exchanges for box spread execution
+- **Use Cases**:
+  - Implementing FIX API client for broker/exchange connectivity
+  - Building FIX protocol infrastructure for trading systems
+  - Testing FIX message handling and session management
+  - Direct exchange connectivity for options trading
+- **Note**: QuickFIX is one of the most widely used open-source FIX protocol engines. QuickFIX++ (C++) is particularly relevant for this project's technology stack.
+
+#### fix8.org - FIX Protocol Library
+
+- **Website**: <https://fix8.org/>
+- **Description**: FIX protocol library and development tools
+- **Key Features**:
+  - **FIX Protocol Library**: FIX protocol implementation library
+  - **Development Tools**: Tools for FIX protocol development
+  - **Documentation**: FIX protocol documentation and resources
+- **Relevance to Box Spread Trading**:
+  - **FIX Protocol Implementation**: Library for implementing FIX API connectivity
+  - **Development Resources**: Tools and documentation for FIX development
+- **Note**: Additional FIX protocol library option for implementing FIX connectivity.
+
+#### FIX Simulator Tools
+
+##### FIXSim.com - FIX Simulator
+
+- **Website**: <https://www.fixsim.com/>
+- **FIX Simulator**: <https://www.fixsim.com/fix-simulator>
+- **Description**: FIX protocol simulator for testing and development
+- **Key Features**:
+  - **FIX Protocol Simulation**: Simulate FIX protocol exchanges for testing
+  - **Message Testing**: Test FIX message handling and responses
+  - **Session Management**: Test FIX session management and recovery
+  - **Development Tool**: Useful for developing and testing FIX implementations
+- **Relevance to Box Spread Trading**:
+  - **Testing FIX Implementation**: Test FIX API connectivity before connecting to real exchanges
+  - **Development**: Develop and validate FIX message handling
+  - **Integration Testing**: Test FIX integration without live exchange connectivity
+- **Use Cases**:
+  - Testing FIX client implementations
+  - Validating FIX message formats
+  - Simulating exchange responses
+  - Development and debugging of FIX connectivity
+
+##### Esprow FIX Exchange Simulator
+
+- **Website**: <https://www.esprow.com/index.php>
+- **FIX Exchange Simulator**: <https://www.esprow.com/products/fix-testing/fix-exchange-simulator.php>
+- **Provider**: Esprow - Financial technology solutions
+- **Description**: Professional FIX exchange simulator for testing and development
+- **Key Features**:
+  - **FIX Exchange Simulation**: Simulate exchange behavior for FIX protocol testing
+  - **Message Handling**: Test FIX message handling and responses
+  - **Session Management**: Test FIX session management and recovery
+  - **Professional Tool**: Enterprise-grade FIX testing tool
+- **Relevance to Box Spread Trading**:
+  - **Testing FIX Implementation**: Test FIX API connectivity before connecting to real exchanges
+  - **Development**: Develop and validate FIX message handling for direct exchange access
+  - **Integration Testing**: Test FIX integration without live exchange connectivity
+- **Use Cases**:
+  - Testing FIX client implementations
+  - Validating FIX message formats
+  - Simulating exchange responses
+  - Professional FIX development and testing
+
+##### B2Bits FIX Client Simulator
+
+- **Website**: <https://www.b2bits.com/trading_solutions/fix-tools/fix-client-simulator>
+- **Provider**: B2Bits - Financial technology solutions
+- **Description**: FIX client simulator for testing FIX server implementations
+- **Key Features**:
+  - **FIX Client Simulation**: Simulate FIX client behavior for testing FIX servers
+  - **Message Generation**: Generate FIX messages for testing
+  - **Session Management**: Test FIX session management from client perspective
+  - **Testing Tool**: Tool for testing FIX server implementations
+- **Relevance to Box Spread Trading**:
+  - **Testing FIX Servers**: Test FIX server implementations (if building FIX server)
+  - **Development**: Develop and validate FIX server message handling
+  - **Integration Testing**: Test FIX server integration
+- **Use Cases**:
+  - Testing FIX server implementations
+  - Validating FIX server message handling
+  - Simulating client behavior
+  - FIX server development and testing
+
+##### FIX Trading Simulator (Open Source)
+
+- **GitHub**: <https://github.com/felipewind/fix-trading-simulator>
+- **License**: MIT License
+- **Description**: Open-source trading simulator between a Broker and a Stock Exchange using FIX Protocol
+- **Technology Stack**:
+  - **QuickFIX/J**: Java FIX protocol engine
+  - **Quarkus**: Java framework for back-end
+  - **Angular**: Front-end framework
+  - **Docker & Docker Compose**: Containerization
+  - **PostgreSQL**: Database
+- **Key Features**:
+  - **Broker-Exchange Simulation**: Complete trading simulator with broker and exchange components
+  - **FIX Protocol Communication**: Broker and exchange communicate via QuickFIX/J
+  - **Order Management**: Submit, negotiate, cancel, and list orders
+  - **Session Management**: FIX session logon/logout and status monitoring
+  - **Real-Time Updates**: WebSocket-based real-time updates to front-end
+  - **Message Logging**: FIX message logging and event tracking
+  - **Docker Support**: Easy deployment with Docker Compose
+- **System Architecture**:
+  - **Broker Back-End**: Quarkus-based broker system
+  - **Broker Front-End**: Angular-based broker interface
+  - **Exchange Back-End**: Quarkus-based exchange system
+  - **Exchange Front-End**: Angular-based exchange interface
+  - **PostgreSQL**: Database for both broker and exchange
+- **Relevance to Box Spread Trading**:
+  - **FIX Protocol Learning**: Study FIX protocol implementation in a complete trading system
+  - **Testing FIX Connectivity**: Test FIX client implementations against simulated exchange
+  - **Development Reference**: Reference implementation for FIX protocol integration
+  - **Box Spread Testing**: Test box spread order execution via FIX protocol
+- **Use Cases**:
+  - Learning FIX protocol implementation
+  - Testing FIX client connectivity
+  - Developing FIX protocol integration
+  - Testing trading strategies via FIX protocol
+  - Reference implementation for FIX-based trading systems
+- **Running the Project**:
+  - **Docker Compose**: Easy setup with `docker-compose up`
+  - **Access Points**:
+    - Broker Front-End: <http://localhost/>
+    - Broker Back-End Swagger: <http://localhost:8080/q/swagger-ui/>
+    - Exchange Front-End: <http://localhost:90/>
+    - Exchange Back-End Swagger: <http://localhost:8090/q/swagger-ui/>
+- **Note**: This is an excellent open-source reference implementation for FIX protocol trading systems. Particularly useful for learning FIX protocol implementation and testing FIX connectivity before connecting to real exchanges. The complete broker-exchange simulation provides a realistic testing environment.
+
+##### FIXPusher
+
+- **Website**: <https://fixpusher.sourceforge.net/>
+- **SourceForge**: Open-source project hosting
+- **Description**: FIX protocol message pusher tool
+- **Key Features**:
+  - **FIX Message Pushing**: Tool for pushing FIX messages
+  - **Testing Tool**: Useful for testing FIX message handling
+  - **Open Source**: Open-source FIX protocol tool
+- **Relevance to Box Spread Trading**:
+  - **FIX Message Testing**: Test FIX message handling and responses
+  - **Development Tool**: Tool for FIX protocol development and testing
+- **Use Cases**:
+  - Testing FIX message handling
+  - Pushing FIX messages for testing
+  - FIX protocol development and debugging
+- **Note**: Open-source FIX protocol tool for message pushing and testing.
+
+### Trading Simulators & Testing Tools
+
+<!--
+@index: api-documentation
+@category: trading-simulators
+@tags: simulator, backtesting, testing, strategy-validation
+@last-updated: 2025-01-27
+-->
+
+#### QuantReplay - Open-Source Multi-Asset Trading Simulator
+
+- **Website**: <https://www.quodfinancial.com/quantreplay-open-source-trading-simulator/>
+- **GitHub**: <https://github.com/quodfinancial/quantreplay>
+- **Provider**: Quod Financial
+- **License**: Open-source
+- **Description**: Open-source, multi-asset trading simulator designed for testing and validating trading strategies in realistic market environments. Originally developed for Quod Financial's internal use, now freely available to the global trading community.
+- **Key Features**:
+  - **Multi-Asset Support**: Equities, FX, futures, and digital assets
+  - **Historical Data Playback**: Reconstruct real market scenarios for backtesting
+  - **Synthetic Order Flow Modeling**: Simulate unpredictable market behavior
+  - **Stochastic Order Generation**: Simulate edge cases and stress conditions
+  - **Real-Time Simulation Engine**: Model auction periods, continuous trading, and other market phases
+  - **Order Book-Driven Environment**: High-fidelity simulation with realistic order book dynamics
+  - **Fully-Featured Matching Engine**: Complete matching engine for realistic execution simulation
+  - **Market Data Generation**: Customizable market data generation
+  - **Self-Hosted**: Deploy and run on your own infrastructure
+- **Relevance to Box Spread Trading**:
+  - **Strategy Testing**: Test box spread strategies in realistic market environments
+  - **Multi-Asset Backtesting**: Backtest multi-asset strategies with precision
+  - **Order Book Simulation**: Test box spread execution with realistic order book dynamics
+  - **Stress Testing**: Test strategies under varied liquidity and volatility conditions
+  - **Execution Validation**: Validate execution algorithms before live trading
+- **Use Cases**:
+  - Backtesting box spread strategies with historical data
+  - Testing execution algorithms in realistic market conditions
+  - Validating multi-leg options strategies
+  - Stress testing under various market conditions
+  - Developing and fine-tuning trading algorithms
+- **Integration Considerations**:
+  - **Self-Hosted Deployment**: Deploy on your own infrastructure
+  - **GitHub Repository**: Open-source, contributions welcome
+  - **Institutional-Grade**: Originally developed for Quod Financial's internal use
+  - **Extensible Platform**: Extensible and customizable for specific needs
+- **Comparison with Other Simulators**:
+  - **vs. Paper Trading**: More realistic than simple paper trading (order book simulation)
+  - **vs. Basic Backtesting**: Includes order book dynamics and synthetic order flow
+  - **vs. FIX Trading Simulator**: Focuses on strategy testing rather than FIX protocol
+- **Contact**: Visit <https://quantreplay.com> or contact <info@quodfinancial.com>
+- **Note**: QuantReplay is an institutional-grade trading simulator now available as open-source. Particularly valuable for testing box spread strategies in realistic market environments with order book dynamics. The multi-asset support and historical data playback make it ideal for comprehensive strategy validation before live trading.
+
+#### Stotra - Multiplayer Stock Trading Simulator
+
+- **GitHub**: <https://github.com/spikecodes/stotra>
+- **Live Demo**: <https://stotra.spike.codes>
+- **License**: MIT License
+- **Description**: Multiplayer stock trading simulator allowing real-time virtual trading of stocks, currencies, and cryptocurrencies. Built with React (MERN stack) and deployed on AWS.
+- **Technology Stack**:
+  - **Frontend**: React, TypeScript, Chakra UI, Axios, Highcharts
+  - **Backend**: Node.js, Express, MongoDB, Mongoose, JWT
+  - **Deployment**: AWS Amplify (frontend), AWS EC2 (backend), MongoDB Atlas
+  - **Authentication**: JWT-based authentication with Cloudflare Turnstile
+- **Key Features**:
+  - **Real-Time Virtual Trading**: Trade stocks, currencies, and cryptocurrencies without real money
+  - **Multiplayer Leaderboard**: Competitive trading with friends
+  - **Interactive Charts**: Highcharts-based visualizations for decision-making
+  - **Financial News**: Access to financial news for informed trading
+  - **Dark Mode**: Beautiful design with dark mode and customizable accent colors
+  - **Responsive Design**: Trading on-the-go with mobile support
+- **Relevance to Box Spread Trading**:
+  - **Learning Tool**: Practice trading concepts before implementing automated strategies
+  - **UI/UX Reference**: Reference for building trading interfaces
+  - **MERN Stack Reference**: Reference implementation for full-stack trading applications
+  - **Real-Time Updates**: WebSocket-based real-time updates (reference for real-time trading UIs)
+- **Use Cases**:
+  - Learning trading concepts and market dynamics
+  - UI/UX reference for trading applications
+  - Full-stack trading application reference
+  - Testing trading ideas in a virtual environment
+- **Integration Considerations**:
+  - **Open Source**: MIT licensed, can be used as reference or modified
+  - **MERN Stack**: Modern full-stack architecture reference
+  - **AWS Deployment**: Reference for cloud deployment patterns
+  - **Real-Time Features**: WebSocket implementation reference
+- **Limitations**:
+  - Focuses on stocks/currencies/crypto, not options
+  - Virtual trading simulator, not for live trading
+  - No API for automated trading
+- **Note**: Stotra is a well-designed virtual trading simulator useful as a reference for building trading UIs and full-stack trading applications. While it doesn't support options trading, it provides excellent examples of real-time trading interfaces, authentication, and full-stack architecture patterns.
+
+#### PyMarketSim / TradingAgents - Financial Market Simulation for Deep Reinforcement Learning
+
+- **GitHub**: <https://github.com/TauricResearch/TradingAgents>
+- **Paper**: <https://openreview.net/forum?id=EXFIW61dG8>
+- **License**: Open-source (check repository for license)
+- **Description**: Financial market simulation environment designed for training and evaluating trading agents using deep reinforcement learning (dRL). Agent-based environment with private valuations, asymmetric information, and flexible limit order book mechanism.
+- **Key Features**:
+  - **Deep Reinforcement Learning**: Designed for training and evaluating trading agents using dRL
+  - **Agent-Based Environment**: Incorporates private valuations and asymmetric information
+  - **Limit Order Book**: Flexible limit order book mechanism
+  - **Single-Agent & Multi-Agent**: Supports both single-agent and multi-agent dRL settings
+  - **TRON Agents**: Trained response order networks (TRON agents) implemented as recurrent neural networks
+  - **Empirical Game Theory**: Multi-agent equilibrium identification using empirical game-theoretic techniques
+  - **Market Dynamics**: Study complex market dynamics and emergent behaviors
+- **Relevance to Box Spread Trading**:
+  - **Strategy Development**: Develop and test box spread strategies using reinforcement learning
+  - **Market Dynamics**: Study market dynamics and order book behavior
+  - **Agent Training**: Train trading agents for automated box spread execution
+  - **Multi-Agent Simulation**: Test strategies in multi-agent environments
+- **Use Cases**:
+  - Training trading agents using deep reinforcement learning
+  - Studying market dynamics and emergent behaviors
+  - Developing advanced trading algorithms
+  - Testing strategies in agent-based environments
+  - Research on financial market simulation
+- **Integration Considerations**:
+  - **Open Source**: Available on GitHub for research and development
+  - **Python-Based**: Python implementation for dRL
+  - **Research Tool**: Primarily designed for research and algorithm development
+  - **Reinforcement Learning**: Requires understanding of dRL concepts
+- **Note**: PyMarketSim/TradingAgents is a research-oriented tool for training trading agents using deep reinforcement learning. Particularly useful for developing and testing automated trading strategies, including box spread strategies, in simulated market environments with realistic order book dynamics.
+
+#### MarS (Market Simulation) - Financial Market Simulation Engine
+
+- **Website**: <https://mars-lmm.github.io/>
+- **GitHub**: <https://github.com/mars-lmm> (check for repository)
+- **Provider**: Microsoft Research Asia
+- **Description**: Financial market simulation engine powered by Large Market Model (LMM), an order-level generative foundation model for financial market simulation. Addresses domain-specific needs for realistic, interactive, and controllable order generation.
+- **Key Features**:
+  - **Large Market Model (LMM)**: Order-level generative foundation model trained on historical financial market data
+  - **Realistic Simulations**: Generates realistic market simulations with order-level granularity
+  - **Interactive Order Generation**: Dynamically generates order series in response to user-injected interactive orders
+  - **Controllable Generation**: Supports vague target scenario descriptions and market impact analysis
+  - **Real-Time Simulation**: Real-time order matching in simulated clearing house
+  - **Fine-Grained Trajectories**: Produces fine-grained simulated market trajectories
+  - **Scalability**: Strong scalability across data size and model complexity
+- **Applications**:
+  - **Forecast**: Market trend prediction and forecasting
+  - **Detection**: Anomaly detection and market abuse regulation
+  - **"What IF" Analysis**: Market impact analysis and trading strategy evaluation
+  - **Reinforcement Learning Environment**: Training environment for RL trading agents
+- **Market Impact Analysis**:
+  - **Square-Root-Law**: Confirms market impact follows Square-Root-Law model
+  - **New Factors**: Identifies factors beyond Square-Root-Law (resiliency, LOB pressure, LOB depth)
+  - **Long-Term Impact**: Models dynamics of long-term market impact using ODE
+- **Relevance to Box Spread Trading**:
+  - **Strategy Testing**: Test box spread strategies in realistic market simulations
+  - **Market Impact Analysis**: Analyze market impact of box spread execution
+  - **Forecasting**: Forecast market trends for box spread opportunities
+  - **Anomaly Detection**: Detect market anomalies that could affect box spread execution
+  - **RL Agent Training**: Train RL agents for automated box spread trading
+- **Use Cases**:
+  - Testing trading strategies in realistic market environments
+  - Analyzing market impact of large trades
+  - Forecasting market trends
+  - Training reinforcement learning agents
+  - Market anomaly detection
+  - "What IF" analysis for trading strategies
+- **Integration Considerations**:
+  - **Foundation Model**: Powered by Large Market Model (LMM)
+  - **Order-Level Granularity**: Fine-grained order-level simulation
+  - **Research Tool**: Developed by Microsoft Research Asia
+  - **Scalability**: Strong scalability with larger datasets and models
+- **Note**: MarS is a cutting-edge financial market simulation engine powered by generative foundation models. Particularly valuable for testing box spread strategies with realistic market dynamics, analyzing market impact, and training RL agents for automated trading. The order-level granularity and realistic simulations make it ideal for comprehensive strategy validation.
+
+### Quantitative Finance Libraries
+
+<!--
+@index: api-documentation
+@category: quantitative-finance
+@tags: quantitative-finance, options-pricing, greeks, risk-management
+@last-updated: 2025-01-27
+-->
+
+#### QuantLib - Free/Open-Source Library for Quantitative Finance
+
+- **Website**: <https://www.quantlib.org/>
+- **GitHub**: <https://github.com/lballabio/quantlib>
+- **License**: Modified BSD License (suitable for both free software and proprietary applications)
+- **Description**: Comprehensive software framework for quantitative finance. Free/open-source library for modeling, trading, and risk management in real-life financial applications. Used by banks, software companies, regulatory institutions, researchers, and students worldwide.
+- **Documentation**: Available in several formats from multiple sources (see website)
+- **Support**: Mailing list for questions and community support
+- **Contributions**: Open to contributions via GitHub pull requests
+- **Key Features**:
+  - **C++ Core**: Written in C++ with clean object model
+  - **Multi-Language Bindings**: Exported to C#, Java, Python, and R
+  - **Excel Add-in**: QuantLibXL for Excel integration
+  - **LibreOffice**: QuantLibAddin for LibreOffice Calc
+  - **Comprehensive Tools**: Tools for practical implementation and advanced modeling
+  - **Options Pricing**: Extensive options pricing models
+  - **Risk Management**: Risk management tools and calculations
+  - **Yield Curves**: Yield curve construction and analysis
+  - **Monte Carlo**: Monte Carlo simulation capabilities
+- **Language Support**:
+  - **C++**: Core implementation with clean object model
+  - **Python**: Python bindings (QuantLib-Python)
+  - **Java**: Java bindings
+  - **C#**: .NET bindings
+  - **R**: R bindings
+- **Extensions**:
+  - **QuantLibXL**: Excel add-in for QuantLib
+  - **QuantLibAddin**: Add-ins for LibreOffice Calc and other platforms
+  - **AAD-Enabled Versions**: Automatic Differentiation (AAD) enabled versions available
+- **Relevance to Box Spread Trading**:
+  - **Options Pricing**: Comprehensive options pricing models for box spread valuation
+  - **Greeks Calculation**: Calculate Greeks (delta, gamma, theta, vega) for options
+  - **Yield Curve**: Yield curve construction for risk-free rate estimation
+  - **Risk Management**: Risk management tools for position sizing and VaR
+  - **C++ Integration**: Native C++ library matches project technology stack
+  - **Theoretical Pricing**: Validate theoretical box spread prices
+- **Use Cases**:
+  - Options pricing and valuation
+  - Greeks calculation for risk management
+  - Yield curve construction
+  - Monte Carlo simulation
+  - Risk management calculations
+  - Financial instrument modeling
+- **Integration Considerations**:
+  - **C++ Core**: Native C++ implementation (matches project stack)
+  - **Python Bindings**: Can be used from Python if needed
+  - **Well-Established**: Industry-standard library used by academics and practitioners
+  - **Comprehensive**: Extensive feature set for quantitative finance
+- **Note**: QuantLib is the industry-standard open-source library for quantitative finance. Particularly valuable for options pricing, Greeks calculation, and risk management in box spread trading. The C++ core provides native integration that matches the project's technology stack, while Python bindings offer flexibility for analysis and prototyping.
+
+### Financial Infrastructure & Ledger Systems
+
+<!--
+@index: api-documentation
+@category: financial-infrastructure
+@tags: ledger, banking, double-entry, reconciliation
+@last-updated: 2025-01-27
+-->
+
+#### Blnk - Open-Source Financial Ledger
+
+- **GitHub**: <https://github.com/blnkfinance/blnk>
+- **Documentation**: <https://docs.blnkfinance.com>
+- **License**: Apache-2.0 License
+- **Description**: Open-source ledger and financial core for shipping fintech products fast. Developer-first toolkit designed for developers who want to ship fintech products without compromising compliance and correctness.
+- **Key Components**:
+  - **Ledger**: Open-source double-entry ledger for managing balances and recording transaction workflows
+  - **Reconciliation**: Automatically match external records (bank statements) to internal ledger with custom matching rules
+  - **Identity Management**: Create and manage identities with PII tokenization and link to balances/transactions
+- **Ledger Features**:
+  - **Balance Monitoring**: Real-time balance monitoring and tracking
+  - **Balance Snapshots**: Historical balance snapshots
+  - **Historical Balances**: Track balance history over time
+  - **Inflight Transactions**: Hold transactions and commit/void as needed
+  - **Scheduling and Overdrafts**: Schedule transactions and handle overdrafts
+  - **Bulk Transactions**: Process multiple transactions at once
+  - **Backdated Transactions**: Record transactions with past dates
+- **Technology Stack**:
+  - **Language**: Go (95.4% of codebase)
+  - **Database**: PostgreSQL
+  - **Cache**: Redis
+  - **Search**: Typesense
+  - **Deployment**: Docker Compose, Kubernetes support
+- **Use Cases**:
+  - Wallet Management
+  - Deposits & Withdrawals
+  - Order Exchange
+  - Lending
+  - Loyalty Points System
+  - Savings Application
+  - Escrow Application
+- **Relevance to Box Spread Trading**:
+  - **Transaction Tracking**: Track box spread transactions and P&L
+  - **Balance Management**: Manage trading account balances and positions
+  - **Reconciliation**: Reconcile broker statements with internal records
+  - **Financial Core**: Financial infrastructure for trading system
+  - **Compliance**: Double-entry ledger ensures accounting compliance
+- **Integration Considerations**:
+  - **Go Implementation**: Go-based system (different from C++ project stack)
+  - **REST API**: RESTful API for integration
+  - **Docker Deployment**: Easy deployment with Docker Compose
+  - **Self-Hosted**: Open-source, self-hosted solution
+  - **Financial Compliance**: Double-entry accounting ensures compliance
+- **Quick Start**:
+  - **Installation**: Docker Compose setup
+  - **Configuration**: JSON configuration file
+  - **API**: REST API for all operations
+- **Use Cases for Box Spread Trading**:
+  - Track box spread transaction history
+  - Manage trading account balances
+  - Reconcile broker statements
+  - Financial reporting and compliance
+  - P&L tracking and accounting
+- **Note**: Blnk is an open-source financial ledger system useful for building financial infrastructure in trading systems. While the Go implementation differs from the C++ project stack, the REST API allows integration for transaction tracking, balance management, and reconciliation. Particularly valuable for maintaining accurate financial records and compliance in box spread trading operations.
+
+#### Apache Fineract - Core Banking System
+
+- **Website**: <https://fineract.apache.org/>
+- **License**: Apache License 2.0
+- **Description**: Open-source software for financial services, designed to create a cloud-ready core banking system that enables digital financial services. Sophisticated core banking system with comprehensive financial technology solutions.
+- **Key Features**:
+  - **Client Data Management**: Comprehensive client data management system
+  - **Loan and Savings Portfolio Management**: Complete loan and investment tracking
+  - **Integrated Real-Time Accounting**: Real-time accounting integration
+  - **Extensive Reporting**: Comprehensive reporting capabilities
+  - **Flexible Product Configuration**: Customize financial products
+  - **KYC Documentation Support**: Flexible customer system of record
+  - **Business Rule Sets**: Four eyes principles and configurable workflows
+  - **Payment Recognitions**: System of record for repayments
+- **Deployment Options**:
+  - **Cloud Deployment**: Scalable cloud-based solutions
+  - **On-Premise**: Traditional deployment options
+  - **Mobile Access**: Headless design allows third-party mobile solutions
+  - **Open API**: Comprehensive API support since 2011
+  - **Extensible Architecture**: Support for any organizational type or delivery channel
+- **Relevance to Box Spread Trading**:
+  - **Financial Infrastructure**: Core banking infrastructure for financial operations
+  - **Transaction Management**: Transaction tracking and management
+  - **Reporting**: Financial reporting capabilities
+  - **Compliance**: Banking-grade compliance and security
+  - **⚠️ Limited Direct Relevance**: Primarily designed for banking/financial services, not trading-specific
+- **Integration Considerations**:
+  - **Banking Focus**: Designed for banking/financial services, not trading
+  - **Open API**: Comprehensive API for integration
+  - **Cloud-Ready**: Cloud-native architecture
+  - **Enterprise-Grade**: Proven in high-transaction environments
+- **Use Cases**:
+  - Building banking/financial services infrastructure
+  - Core banking system implementation
+  - Financial services platform development
+  - Digital banking solutions
+- **Note**: Apache Fineract is a comprehensive core banking system designed for financial services and banking operations. While it provides robust financial infrastructure, it is primarily designed for banking/financial services rather than trading-specific use cases. For box spread trading, it may be over-engineered unless building a broader financial services platform that includes trading capabilities. Consider for comprehensive financial infrastructure needs beyond just trading.
+
+### FIX API Providers
+
+This section covers FIX protocol API providers for direct exchange access and institutional trading. For FIX protocol development tools and libraries, see the "FIX Protocol Development Tools & Libraries" section above.
+
+**Quick Comparison**:
+
+| Provider                    | Focus              | Latency         | Options Support | Best For                 | Contact         |
+| --------------------------- | ------------------ | --------------- | --------------- | ------------------------ | --------------- |
+| **Tools for Brokers (TFB)** | Platform           | Ultra-low       | ✅ Verify       | Direct CBOE, multi-venue | <sales@t4b.com> |
+| **4T**                      | Institutional      | Ultra-low (LD4) | ✅ Verify       | LD4 proximity, PrimeXM   | Contact 4T      |
+| **B2PRIME**                 | Prime of Prime     | Low             | ⚠️ FOREX/CFD    | FOREX/CFD strategies     | Contact B2PRIME |
+| **ATFX**                    | Broker             | Low             | ⚠️ Verify       | Custom integration       | Contact ATFX    |
+| **Kraken**                  | Crypto Derivatives | Ultra-low       | ⚠️ Crypto only  | Crypto derivatives       | Contact Kraken  |
+| **OnixS directConnect**     | SDK                | Ultra-low       | ✅ Full         | Direct exchange SDK      | Contact OnixS   |
+
+#### Tools for Brokers (TFB) FIX API Platform
 
 - **Website**: <https://t4b.com/fix-api/>
 - **Provider**: Tools for Brokers (TFB) - Technology provider for retail brokers
@@ -910,6 +2778,259 @@ This file serves as a reference for all external APIs and libraries used in this
 - **Contact**: <sales@t4b.com> (sales), <marketing@t4b.com> (general inquiries)
 - **Documentation**: See `docs/TOOLS_FOR_BROKERS_FIX_API.md` for comprehensive platform details, integration considerations, and use cases
 - **Note**: TFB FIX API platform could complement or replace broker APIs for direct exchange access. Contact TFB for pricing and capabilities. Evaluate as alternative execution venue for box spread trading, particularly for direct CBOE access and multi-venue arbitrage strategies.
+
+#### 4T FIX API - Institutional Trading Solutions
+
+- **Website**: <https://4t.com/en/institutional-trading-solutions/fix-api>
+- **Provider**: 4T - Financial brokerage firm specializing in institutional trading
+- **Description**: FIX API trading solution with PrimeXM XCore integration, providing ultra-low latency FIX API trading with cross-connected liquidity providers based in LD4 (London data center)
+- **Key Features**:
+  - **FIX Protocol**: Industry-standard Financial Information eXchange (FIX) protocol for electronic trading
+  - **PrimeXM XCore Integration**: Partnership with PrimeXM's XCore trading and aggregation engine
+  - **Ultra-Low Latency**: LD4 data center location for fast, low-latency execution
+  - **Cross-Connected Liquidity**: Network of 250+ liquidity partners via PrimeXM XCore
+  - **Multiple Asset Classes**: Supports stocks, bonds, options, and other financial instruments
+  - **Security**: Advanced encryption techniques for secure data transmission
+- **PrimeXM XCore Technology**:
+  - **Trading Engine**: Top-rated trading and aggregation engine
+  - **Order Management**: Ultra-low latency order management
+  - **Risk Management**: Built-in risk management capabilities
+  - **Reporting**: Comprehensive reporting and monitoring
+  - **Liquidity Network**: 250+ partners for efficient liquidity exchange
+  - **Multi-Asset Support**: Supports multiple asset classes
+- **LD4 Data Center**:
+  - **Location**: LD4 (London) - one of the world's most important data centers for financial trading
+  - **Benefits**: Fast, low-latency, reliable access to global financial markets
+  - **Infrastructure**: Cross-connected liquidity providers for optimal execution
+- **FIX Protocol Advantages**:
+  - **Flexibility**: Transmit data between any financial institutions regardless of size or location
+  - **Industry Standard**: Constantly updated to reflect changes in financial industry
+  - **Security**: Advanced encryption for protection from tampering or interception
+  - **Speed**: Simple, fast protocol designed for electronic exchange
+  - **Comprehensive**: Supports trade confirmations, market data, order status updates
+- **Relevance to Box Spread Trading**:
+  - **FIX Protocol**: Direct FIX API access for algorithmic trading
+  - **Low Latency**: LD4 data center location critical for arbitrage strategies
+  - **Options Support**: FIX protocol supports options trading (verify specific capabilities)
+  - **Multi-Venue**: Access to 250+ liquidity partners via PrimeXM XCore
+  - **Institutional Focus**: Designed for institutional clients and sophisticated traders
+- **Integration Considerations**:
+  - **FIX Protocol Implementation**: Requires FIX message handling, session management
+  - **PrimeXM XCore**: Integration with PrimeXM's aggregation engine
+  - **LD4 Connectivity**: May require co-location or proximity hosting for optimal latency
+  - **Institutional Requirements**: Contact 4T for pricing, minimums, and capabilities
+- **Comparison with Current Solutions**:
+  - **vs. TWS API**: FIX protocol vs. socket-based, multi-venue vs. single venue, LD4 latency vs. standard
+  - **vs. Alpaca REST API**: FIX protocol vs. REST, institutional vs. retail-focused, LD4 vs. cloud
+- **Use Cases**:
+  - Institutional box spread execution via FIX API
+  - Multi-venue arbitrage with access to 250+ liquidity partners
+  - High-frequency trading with LD4 data center proximity
+  - Direct market access for options and equities
+- **Contact**: Contact 4T directly for institutional FIX API access, pricing, and capabilities
+- **Note**: 4T FIX API with PrimeXM XCore integration offers institutional-grade FIX protocol access with ultra-low latency via LD4 data center. Particularly relevant for institutional traders requiring direct FIX connectivity and multi-venue liquidity access. Verify options trading capabilities and minimum requirements before integration. Evaluate as alternative to TWS API for institutional FIX-based trading.
+
+### B2PRIME - Prime of Prime Liquidity Provider with FIX API
+
+- **Website**: <https://b2prime.com/>
+- **RAW Account Types**: <https://b2prime.com/account-types/raw>
+- **Provider**: B2PRIME - Global group of regulated prime of prime liquidity providers
+- **Description**: Prime of prime liquidity provider offering FIX API connectivity, RAW account types with ultra-low raw spreads and fixed commissions, and multiple connectivity options for institutional and professional traders
+- **Regulated Entities**:
+  - **B2B Prime Services EU Limited**: Cyprus (CySEC license 370/18)
+  - **B2B Prime Services**: Mauritius (FSC license C117017139)
+  - **B2B Prime Services SC Ltd**: Seychelles (FSA license SD 192)
+  - **B2B Prime Services Africa (Pty) Ltd**: South Africa (FSCA license 54191)
+  - **B2B Prime Services Mena Limited**: Dubai (DFSA license F009446)
+- **Key Features**:
+  - **FIX API**: Low-latency trading protocol enabling direct market access for high-speed execution
+  - **RAW Account Types**: Ultra-low raw spreads with fixed commissions (ideal for high-volume trading)
+  - **Standard Account Types**: Most popular choice, ideal for all types of traders
+  - **Multiple Connectivity Options**: FIX API, PrimeXM XCORE, oneZero hub, Bridge for MT4/MT5, Centroid, FXCubic, B2CONNECT
+  - **Trading Platforms**: cTrader, B2TRADER, TradingView integration
+  - **Multi-Asset Support**: FOREX, Cryptocurrencies, Metals, NDFs, Indices, Commodities, Energies
+- **Account Types**:
+  - **Standard**: Most popular choice, ideal for all types of traders
+  - **RAW**: Ultra-low raw spreads and fixed commissions (optimal for algorithmic and high-volume trading)
+- **Connectivity Options**:
+  - **FIX API**: Low-latency trading protocol for direct market access
+  - **PrimeXM XCORE**: High-performance liquidity aggregation and connectivity solution
+  - **oneZero**: Smart bridge and liquidity hub for fast, reliable trade routing and risk management
+  - **Bridge for MT4/MT5**: Connects MetaTrader platforms to liquidity providers
+  - **B2CONNECT**: B2PRIME's proprietary connectivity solution
+  - **Centroid**: Additional connectivity option
+  - **FXCubic**: Additional connectivity option
+- **Trading Platforms**:
+  - **B2TRADER**: High-performance trading platform with advanced features for fast execution, deep liquidity
+  - **cTrader**: Leading trading platform with modern UI and advanced trade management features
+  - **TradingView**: Advanced charting capabilities integrated with B2PRIME
+- **Asset Classes**:
+  - **FOREX**: Major and exotic currency pairs
+  - **Cryptocurrencies**: Crypto trading support
+  - **Metals**: Precious metals trading
+  - **NDFs**: Non-deliverable forwards
+  - **Indices**: Index CFDs
+  - **Commodities**: Commodity trading
+  - **Energies**: Energy products
+- **Relevance to Box Spread Trading**:
+  - **FIX API Access**: Direct FIX protocol connectivity for algorithmic trading
+  - **RAW Account**: Ultra-low spreads and fixed commissions ideal for high-frequency strategies
+  - **Multi-Connectivity**: Multiple connectivity options (FIX, PrimeXM, oneZero) for flexibility
+  - **Institutional Focus**: Prime of prime model suitable for sophisticated traders
+  - **Low Latency**: FIX API designed for high-speed execution
+  - **⚠️ Asset Limitations**: Primarily FOREX, CFDs, and derivatives - verify options trading capabilities
+- **Integration Considerations**:
+  - **FIX Protocol**: Requires FIX message handling and session management
+  - **Account Type**: RAW account recommended for algorithmic trading (ultra-low spreads, fixed commissions)
+  - **Connectivity Choice**: FIX API for direct integration, or PrimeXM/oneZero for platform integration
+  - **Regulatory Entity**: Account opened through appropriate regulated entity based on jurisdiction
+  - **Options Trading**: Verify if B2PRIME supports options trading (may be primarily FOREX/CFD focused)
+  - **Minimum Requirements**: Contact B2PRIME for institutional account minimums and requirements
+- **Comparison with Current Solutions**:
+  - **vs. TWS API**: FIX protocol vs. socket-based, prime of prime vs. direct broker, multi-connectivity vs. single API
+  - **vs. Alpaca REST API**: FIX protocol vs. REST, FOREX/CFD focus vs. equities/options, prime of prime vs. direct broker
+- **Use Cases**:
+  - High-frequency FOREX trading with RAW account (ultra-low spreads)
+  - Multi-venue arbitrage via FIX API and PrimeXM XCORE
+  - Algorithmic trading with direct FIX API connectivity
+  - Professional trading with institutional-grade infrastructure
+- **Contact**: Contact B2PRIME sales for account opening, FIX API access, and pricing
+- **Note**: B2PRIME is a prime of prime liquidity provider offering FIX API access with RAW account types featuring ultra-low spreads and fixed commissions. Particularly relevant for high-frequency and algorithmic trading strategies. However, B2PRIME appears primarily focused on FOREX, CFDs, and derivatives - verify options trading capabilities before integration. The multiple connectivity options (FIX API, PrimeXM XCORE, oneZero) provide flexibility for different integration approaches. Evaluate as alternative execution venue for FOREX-based strategies, but may not support options box spread trading.
+
+### ATFX FIX API
+
+- **Website**: <https://www.atfx.com/en/atfx-fix-api>
+- **Provider**: ATFX - Global online trading broker
+- **Description**: FIX API solution allowing advanced traders to connect their own trading systems directly to ATFX's infrastructure, minimizing latency and providing real-time data access for efficient and scalable trading
+- **Key Features**:
+  - **FIX Protocol**: Industry-standard FIX protocol for electronic trading
+  - **Direct System Integration**: Connect custom trading systems directly to ATFX infrastructure
+  - **Low Latency**: Minimized latency for high-speed execution
+  - **Real-Time Data**: Real-time market data access
+  - **Scalable Trading**: Support for efficient and scalable trading across various custom strategies
+  - **Custom Strategies**: Enable algorithmic and automated trading strategies
+- **Relevance to Box Spread Trading**:
+  - **FIX API Access**: Direct FIX protocol connectivity for algorithmic trading
+  - **Low Latency**: Critical for time-sensitive arbitrage strategies
+  - **Custom Integration**: Connect existing C++ box spread trading system
+  - **Real-Time Data**: Access to real-time market data for strategy execution
+  - **⚠️ Asset Limitations**: Verify if ATFX supports options trading (may be primarily FOREX/CFD focused)
+- **Integration Considerations**:
+  - **FIX Protocol Implementation**: Requires FIX message handling and session management
+  - **Custom Trading Systems**: Designed for traders with existing trading infrastructure
+  - **Direct Integration**: Connect directly to ATFX infrastructure without broker middleware
+  - **Options Trading**: Verify if ATFX supports options trading capabilities
+  - **Minimum Requirements**: Contact ATFX for institutional account requirements and FIX API access
+- **Comparison with Current Solutions**:
+  - **vs. TWS API**: FIX protocol vs. socket-based, direct integration vs. via broker middleware
+  - **vs. Alpaca REST API**: FIX protocol vs. REST, institutional vs. retail-focused
+- **Use Cases**:
+  - Algorithmic trading with direct FIX API connectivity
+  - High-frequency trading strategies with low latency
+  - Custom trading system integration
+  - Multi-strategy trading platform
+- **Contact**: Contact ATFX for FIX API access, account requirements, and integration support
+- **Note**: ATFX FIX API provides direct system integration for advanced traders with custom trading infrastructure. Particularly relevant for algorithmic and high-frequency trading strategies requiring low latency and real-time data access. Verify options trading capabilities before integration, as ATFX may be primarily focused on FOREX and CFDs.
+
+### Kraken Derivatives FIX API
+
+- **Website**: <https://blog.kraken.com/product/kraken-derivatives/fix-api>
+- **Provider**: Kraken - Cryptocurrency exchange and derivatives platform
+- **Description**: FIX API for derivatives trading built on industry-standard FIX 4.4 protocol, designed specifically for professional and institutional clients trading cryptocurrency derivatives (futures and options)
+- **Key Features**:
+  - **FIX 4.4 Protocol**: Industry-standard FIX protocol implementation
+  - **Derivatives Trading**: Support for cryptocurrency futures and options trading
+  - **High Performance**: Native FIX API built for demanding derivatives trading (microseconds matter)
+  - **Level 3 (L3) Market Data**: Full order book access with visibility of individual orders and microsecond-precision sequencing
+  - **Comprehensive Functionality**: All order types and instructions available through REST, with additional controls
+  - **Cancel-on-Disconnect**: Session-based risk management tool
+  - **UAT Environment**: User Acceptance Testing environment providing complete mirror of production systems
+- **Performance Characteristics**:
+  - **Ultra-Low Latency**: Built for microseconds-critical derivatives trading
+  - **Basis Opportunities**: Capture basis opportunities in leveraged positions
+  - **Funding Rate Changes**: Respond quickly to funding rate changes
+  - **Multi-Leg Strategies**: Execute complex multi-leg strategies efficiently
+- **Market Data**:
+  - **Level 3 (L3) Order Book**: Full order book visibility (vs. L1 top of book or L2 price aggregated)
+  - **Individual Orders**: Visibility of individual orders in the book
+  - **Microsecond Precision**: Microsecond-precision sequencing for market data
+  - **Deeper Market Insight**: More granular market dynamics compared to traditional feeds
+- **Integration Benefits**:
+  - **Unified API**: Consistent design with existing Kraken FIX API for spot trading
+  - **Seamless Adoption**: If already using Kraken FIX API for spot, derivatives API feels seamless
+  - **Robust Documentation**: Clear message protocols and dedicated technical support
+  - **Vendor Compatibility**: Works with any vendors compliant with FIX standard
+- **Relevance to Box Spread Trading**:
+  - **⚠️ Cryptocurrency Focus**: Kraken Derivatives FIX API is for cryptocurrency derivatives (futures/options), not traditional equity options
+  - **Multi-Leg Strategies**: Supports complex multi-leg strategies (relevant for box spread concept)
+  - **High Performance**: Ultra-low latency critical for arbitrage strategies
+  - **L3 Market Data**: Deep order book visibility for better execution
+  - **Risk Management**: Cancel-on-Disconnect for session-based risk controls
+  - **⚠️ Not Traditional Options**: This is for crypto derivatives, not SPX/SPXW box spreads
+- **Integration Considerations**:
+  - **Cryptocurrency Derivatives Only**: This API is for crypto futures/options, not traditional equity options
+  - **FIX 4.4 Protocol**: Standard FIX protocol implementation
+  - **UAT Environment**: Test thoroughly in UAT before production
+  - **Account Manager**: Contact Account Manager for UAT access
+  - **Developer Portal**: Visit developer portal for detailed documentation
+- **Comparison with Current Solutions**:
+  - **vs. TWS API**: Crypto derivatives vs. traditional options, FIX protocol vs. socket-based
+  - **vs. Traditional Options**: Crypto derivatives vs. equity options (SPX/SPXW)
+- **Use Cases**:
+  - Cryptocurrency derivatives trading (futures and options)
+  - Multi-leg crypto derivative strategies
+  - High-frequency crypto derivatives trading
+  - Basis trading and funding rate arbitrage
+  - **⚠️ Not for Traditional Box Spreads**: This is crypto-focused, not for traditional equity options box spreads
+- **Contact**: Contact Kraken API support team or Account Manager for FIX API access and UAT environment
+- **Note**: Kraken Derivatives FIX API is a high-performance FIX 4.4 implementation for cryptocurrency derivatives trading (futures and options). While it supports multi-leg strategies and ultra-low latency execution similar to box spread trading, it is **not applicable for traditional equity options box spreads** (SPX/SPXW). This API is relevant only for cryptocurrency derivatives trading strategies. The L3 market data and microsecond-precision sequencing make it suitable for sophisticated crypto derivatives trading, but traditional options traders should use TWS API or other equity-focused FIX APIs.
+
+### FIXAPI.cc - FIX API Consulting & Resource Platform
+
+- **Website**: <https://www.fixapi.cc/>
+- **Provider**: FIXAPI.cc - FIX API Trading Platform & Liquidity Provider Influencer
+- **Description**: Consulting and resource platform that introduces FIX API trading platforms and liquidity providers to Forex, cryptocurrency, and stock traders. Provides FIX API programming services, sample source codes, and recommendations for financial institutions and traders.
+- **Key Services**:
+  - **FIX API Programming**: Assign developers to work on FIX API programming tasks
+  - **Sample Source Codes**: Large codebase of FIX API sample source codes (some free, some paid)
+  - **Free Source Codes (FOSS)**: Free and open-source FIX API code samples for subscribers
+  - **Liquidity Provider Recommendations**: Recommendations for best FIX API trading platforms and liquidity providers
+  - **Consulting Services**: Consultants for financial institutions and traders
+  - **Newsletter**: Free newsletter with notifications about new resources and code samples
+- **Free Resources**:
+  - **FIX API Excel VBA**: Free FIX API Excel VBA for live and demo trading (Forex, stocks, cryptocurrency)
+  - **Free Source Codes**: Some FOSS code samples available to subscribers
+  - **Newsletter**: Free subscription for updates
+- **Paid Services**:
+  - **FIX API Development**: Custom FIX API algorithm trading system development
+  - **App Development**: APP and DAPP development for financial institutions
+  - **Branding Services**: Logo design, brand identity, broker branding
+  - **Startup Services**: Help startups build Forex or cryptocurrency brokerage
+- **Recommended Platforms** (from FIXAPI.cc):
+  - **Advanced Markets**: Algorithmic and high-frequency trading with RFQ and ECN platforms in one DMA trading venue
+  - **EXANTE**: Trading platform with access to 300,000+ assets from single multi-currency account
+  - **FXCM FIX API**: FIX Protocol 4.4 with up to 200 price updates per second (fastest solution), full range of trading order types
+    - **⚠️ Note**: FXCM does not allow residents of Israel (not available for Israeli traders)
+- **Relevance to Box Spread Trading**:
+  - **FIX API Resources**: Sample source codes and programming assistance for FIX API integration
+  - **Liquidity Provider Recommendations**: Guidance on selecting appropriate FIX API platforms
+  - **Development Support**: FIX API programming services for custom trading systems
+  - **Code Samples**: Reference implementations for FIX protocol integration
+  - **Educational Resource**: Learning resource for FIX API development
+- **Integration Considerations**:
+  - **Consulting Service**: Use for FIX API development guidance and programming tasks
+  - **Code Samples**: Reference their codebase for FIX API implementation patterns
+  - **Free Resources**: Start with free Excel VBA and FOSS code samples
+  - **Newsletter**: Subscribe for updates on new resources and code samples
+  - **Platform Recommendations**: Use their recommendations as starting point for evaluating FIX API platforms
+- **Use Cases**:
+  - Learning FIX API development with sample source codes
+  - Getting FIX API programming assistance for custom trading systems
+  - Finding recommended FIX API trading platforms and liquidity providers
+  - Accessing free FIX API tools (Excel VBA, code samples)
+  - Consulting services for FIX API integration projects
+- **Contact**: Contact FIXAPI.cc through their website for consulting services, code samples, and platform recommendations
+- **Note**: FIXAPI.cc is a consulting and resource platform for FIX API development, not a trading platform itself. It provides valuable resources including sample source codes, programming services, and recommendations for FIX API trading platforms and liquidity providers. Useful for developers learning FIX API or needing assistance with FIX API integration projects. The free Excel VBA and FOSS code samples can be helpful starting points for FIX API development.
 
 ### OnixS directConnect - Ultra Low Latency DMA SDKs
 
@@ -1078,6 +3199,13 @@ This file serves as a reference for all external APIs and libraries used in this
 
 ## Brokerage API Resources
 
+<!--
+@index: api-documentation
+@category: brokerage-resources
+@tags: brokerage, broker-api, trading-platforms
+@last-updated: 2025-01-27
+-->
+
 ### QuantPedia Brokerage APIs List
 
 - **Website**: <https://quantpedia.com/links-tools/?category=brokerage-api>
@@ -1216,6 +3344,13 @@ This file serves as a reference for all external APIs and libraries used in this
 - **Note**: eToro is a social trading platform for retail investors to copy trades. It does not offer options trading, algorithmic trading APIs, or capabilities required for box spread trading. For box spread strategies, use IBKR, Alpaca, or other options-capable brokers with API access.
 
 ## Market Structure & Efficiency References
+
+<!--
+@index: api-documentation
+@category: market-structure
+@tags: market-structure, box-spread, cboe, cme, research
+@last-updated: 2025-01-27
+-->
 
 ### CME Group – Capital Efficiencies and AIR TRFs
 
@@ -1461,6 +3596,13 @@ This file serves as a reference for all external APIs and libraries used in this
 
 ## Risk Management & Hedging
 
+<!--
+@index: api-documentation
+@category: risk-management
+@tags: risk-management, hedging, currency-exchange
+@last-updated: 2025-01-27
+-->
+
 ### Currency Exchange Risk in Box Spread Trading
 
 - **Documentation**: `docs/CURRENCY_EXCHANGE_RISK.md`
@@ -1487,7 +3629,8 @@ This file serves as a reference for all external APIs and libraries used in this
 - **Real-Time Integration**:
   - **TWS API**: Request currency market data via `reqMktData()` with `secType="CASH"`
   - **Available Pairs**: USD/ILS, USD/EUR, USD/GBP, USD/JPY, and many more
-  - **Alternative Sources**: OANDA API, FXCM API, Alpha Vantage, Finnhub
+  - **Alternative Sources**: OANDA API, Alpha Vantage, Finnhub
+  - **⚠️ FXCM Restriction**: FXCM does not allow residents of Israel (not available for Israeli traders)
 - **Risk Management**:
   - **Currency Risk Limits**: Maximum exposure per position, total exposure, per currency pair
   - **Currency Risk Monitoring**: Real-time metrics (exposure, delta, VaR, P&L)
@@ -1610,7 +3753,7 @@ This file serves as a reference for all external APIs and libraries used in this
 - **Location**: `agents/backend/`, `agents/backend-mock/`, etc.
 - **Cargo**: `Cargo.toml` files in agent directories
 
-## Go (TUI)
+## C++ TUI (FTXUI)
 
 ### Go Standard Library
 
@@ -1676,6 +3819,140 @@ When adding new dependencies:
 2. Update version numbers when upgrading
 3. Add usage examples for complex APIs
 
+## Data Science & Modeling Tools
+
+### Modeling Tools Overview
+
+- **Source**: [Domino Data Lab Blog](https://domino.ai/blog/8-modeling-tools-to-build-complex-algorithms)
+- **Documentation**: See `docs/MODELING_TOOLS_OVERVIEW.md` for comprehensive overview
+- **Purpose**: Reference guide for machine learning and deep learning tools that could be used for strategy development, backtesting, and predictive modeling
+- **Key Tools Covered**:
+  - **Deep Learning**: PyTorch, TensorFlow, Keras, Ray, Horovod
+  - **Machine Learning**: Scikit-Learn, XGBoost, Apache Spark
+- **Use Cases**:
+  - Strategy optimization and backtesting
+  - Predictive modeling for market conditions
+  - Pattern recognition in options data
+  - Risk management models
+- **Note**: While not currently integrated, these tools could be valuable for future ML-enhanced box spread detection, volatility forecasting, or execution optimization. Consider resource requirements (especially GPU for deep learning) and production stability when evaluating tools for trading applications.
+
+### XGBoost (eXtreme Gradient Boosting)
+
+- **Official Docs**: <https://xgboost.readthedocs.io/>
+- **GitHub**: <https://github.com/dmlc/xgboost>
+- **Website**: <https://xgboost.ai/>
+- **License**: Apache-2.0
+- **Version**: Latest (actively maintained, 27.6k+ stars)
+- **Language**: Primarily C++ (43.5%), with Python (20.9%), CUDA (17.9%), R, Java, Scala support
+- **Deep Research**: See `docs/XGBOOST_DEEP_RESEARCH.md` for comprehensive guide
+- **Key Features**:
+  - **High Performance**: One of the fastest gradient boosting implementations
+  - **C++ Native**: Direct integration with C++ trading systems (no Python overhead)
+  - **Regularization**: Built-in L1/L2 regularization to prevent overfitting
+  - **Missing Values**: Automatic handling of missing data
+  - **Feature Importance**: Built-in feature importance metrics
+  - **SHAP Integration**: Model interpretability for regulatory compliance
+  - **Distributed Training**: Support for Spark, Dask, Kubernetes
+  - **Low Latency**: Sub-millisecond inference suitable for real-time trading
+- **Trading Use Cases**:
+  - **Opportunity Detection**: Predict profitable box spread opportunities
+  - **Risk Assessment**: Predict execution risk or early assignment probability
+  - **Execution Timing**: Determine optimal timing for order execution
+  - **Position Sizing**: Adaptive position sizing based on market conditions
+  - **Market Regime Detection**: Identify favorable market conditions
+- **C++ Integration**:
+  - **CMake Support**: Native CMake integration via FetchContent
+  - **API**: C API (`xgboost/c_api.h`) for direct C++ usage
+  - **Performance**: Direct C++ usage avoids Python overhead for production inference
+  - **Model Loading**: Save models from Python, load in C++ for deployment
+- **Recommended Approach**:
+  1. **Phase 1**: Prototype in Python for rapid development
+  2. **Phase 2**: Export trained models and integrate into C++ codebase
+  3. **Phase 3**: Continuous learning with periodic retraining
+- **Key Parameters**:
+  - `max_depth`: Tree depth (3-10 typical)
+  - `learning_rate` (eta): Step size (0.01-0.3)
+  - `n_estimators`: Number of trees (100-1000+)
+  - `subsample`: Row sampling (0.6-1.0)
+  - `colsample_bytree`: Column sampling (0.6-1.0)
+  - `lambda` (L2): L2 regularization
+  - `alpha` (L1): L1 regularization
+- **Hyperparameter Tuning**: Integration with Optuna, Hyperopt, Ray Tune
+- **Production Considerations**:
+  - Model versioning and A/B testing
+  - Regular retraining to adapt to market changes
+  - Monitoring model performance in production
+  - SHAP values for regulatory compliance
+- **Installation**:
+  - **Python**: `pip install xgboost`
+  - **C++**: Build from source or use CMake FetchContent
+- **Note**: XGBoost is widely used in financial services for credit scoring, fraud detection, and risk assessment. Its C++ implementation makes it ideal for low-latency trading applications. The recommended workflow is to train models in Python for rapid iteration, then deploy trained models in C++ for production inference.
+
+### Ollama (Local LLM Platform)
+
+- **Official Website**: <https://ollama.ai/>
+- **GitHub**: <https://github.com/ollama/ollama>
+- **License**: MIT
+- **Version**: Latest (actively maintained, 100k+ stars)
+- **Description**: Open-source platform for running large language models (LLMs) locally on your machine. Provides both CLI and GUI interfaces for interacting with local AI models.
+- **Key Features**:
+  - **Local Execution**: Run LLMs entirely on your machine (no API calls, no data sent to cloud)
+  - **Privacy**: All data stays local, important for proprietary trading strategies
+  - **Cost-Effective**: No per-token API costs after initial setup
+  - **Multiple Models**: Support for various models including:
+    - OpenAI GPT series (via compatible models)
+    - DeepSeek-R1
+    - Gemma 3
+    - Llama, Mistral, CodeLlama, and many others
+  - **Cross-Platform**: macOS, Windows, and Linux support
+  - **GUI Application**: Windows 11 GUI app available (no terminal required)
+  - **REST API**: HTTP API for programmatic access
+  - **Model Management**: Easy model pulling, removal, and customization
+- **Trading Use Cases**:
+  - **Code Analysis**: Analyze trading code for bugs, security issues, or optimization opportunities
+  - **Documentation Generation**: Generate documentation from code comments and structure
+  - **Strategy Research**: Research trading strategies and market analysis (with local data)
+  - **Code Review**: Automated code review for trading logic
+  - **Error Analysis**: Understand and debug complex trading system errors
+  - **Learning Tool**: Learn about options trading, box spreads, and market mechanics
+- **Integration Options**:
+  - **CLI**: Command-line interface for direct interaction
+  - **REST API**: HTTP API for programmatic integration
+  - **Python**: Python bindings available
+  - **MCP Server**: Potential MCP server integration for Cursor IDE
+- **Installation**:
+  - **macOS**: `brew install ollama` or download from website
+  - **Linux**: `curl -fsSL https://ollama.ai/install.sh | sh`
+  - **Windows**: Download installer from website or use Windows 11 GUI app
+- **Usage Example**:
+
+  ```bash
+  # Pull a model
+  ollama pull llama3
+
+  # Run a model
+  ollama run llama3 "Explain box spread arbitrage"
+
+  # Use REST API
+  curl http://localhost:11434/api/generate -d '{
+    "model": "llama3",
+    "prompt": "What are the risks of box spread trading?"
+  }'
+  ```
+
+- **Relevance to Box Spread Trading**:
+  - **Privacy**: Keep proprietary trading strategies and code analysis private
+  - **Cost Savings**: No API costs for frequent code analysis or documentation tasks
+  - **Offline Capability**: Work with AI assistance even without internet
+  - **Custom Models**: Fine-tune models on trading-specific data if needed
+  - **Code Quality**: Use for automated code review and documentation
+- **Considerations**:
+  - **Hardware Requirements**: Requires sufficient RAM and potentially GPU for larger models
+  - **Model Size**: Larger models provide better results but require more resources
+  - **Performance**: Local inference may be slower than cloud APIs depending on hardware
+  - **Model Selection**: Choose models appropriate for code analysis vs. general chat
+- **Note**: Ollama is particularly valuable for trading software development where code privacy and cost control are important. It can serve as a local alternative to cloud-based AI services for code analysis, documentation, and learning. Consider using it alongside cloud services (like Cursor's AI) for a hybrid approach: Ollama for sensitive/proprietary analysis, cloud services for general assistance.
+
 ## Quick Reference Links
 
 - **TWS API**: <https://interactivebrokers.github.io/tws-api/>
@@ -1707,3 +3984,5 @@ When adding new dependencies:
 - **Market Gear Options Platform**: <https://www.marketgear.com/options/> (Web-based options trading platform with strategy templates and backtesting)
 - **SpeedBot Enterprise**: <https://speedbot.tech/speedbot-enterprise-for-brokers> (B2B white-label algo trading platform with API access for brokers)
 - **ECN Execution**: <https://ecnexecution.com/algorithmic-trading/> (Educational resource about algorithmic trading, ECN brokers, and trading platforms)
+- **Ollama**: <https://ollama.ai/> (Local LLM platform for running AI models on your machine)
+- **Ollama GitHub**: <https://github.com/ollama/ollama> (Open-source local LLM platform)

@@ -138,15 +138,16 @@ run_swiftlint() {
   (cd "${ROOT_DIR}/desktop" && swiftlint)
 }
 
-run_golangci_lint() {
-  if ! command -v golangci-lint >/dev/null 2>&1; then
-    warn "Skipping golangci-lint (executable not found)"
-    return 0
-  fi
-
-  info "Running golangci-lint (TUI)"
-  (cd "${ROOT_DIR}/tui" && golangci-lint run)
-}
+# Go TUI removed - using C++ TUI instead
+# run_golangci_lint() {
+#   if ! command -v golangci-lint >/dev/null 2>&1; then
+#     warn "Skipping golangci-lint (executable not found)"
+#     return 0
+#   fi
+#
+#   info "Running golangci-lint (TUI)"
+#   (cd "${ROOT_DIR}/tui" && golangci-lint run)
+# }
 
 run_bandit() {
   info "Running bandit (Python)"
@@ -232,7 +233,7 @@ main() {
   run_clang_analyze
   run_infer
   run_swiftlint
-  run_golangci_lint
+  # run_golangci_lint  # Go TUI removed - using C++ TUI instead
   run_bandit
 
   info "Lint checks completed"

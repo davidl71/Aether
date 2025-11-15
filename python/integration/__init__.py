@@ -27,3 +27,11 @@ try:
     __all__.extend(["ORATSClient", "ORATSEnricher"])
 except ImportError:
     pass
+
+try:
+    from .massive_client import MassiveClient
+    from .massive_websocket import MassiveWebSocketClient, QuoteCrossValidator
+
+    __all__.extend(["MassiveClient", "MassiveWebSocketClient", "QuoteCrossValidator"])
+except ImportError:
+    pass

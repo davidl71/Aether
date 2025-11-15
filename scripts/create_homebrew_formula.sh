@@ -110,9 +110,8 @@ class ${CLASS_NAME} < Formula
     system "cmake", "--build", "build"
     bin.install "build/ib_box_spread"
 
-    cd "tui" do
-      system "go", "build", "-o", bin/"ib-box-tui", "./cmd/tui"
-    end
+    # C++ TUI is built as part of main CMake build
+    # No separate build step needed - ib_box_spread_tui is built with ENABLE_TUI=ON
   end
 
   test do
@@ -142,4 +141,3 @@ cat <<EOF
 - brew install --build-from-source ${TAP}/${FORMULA_NAME}
 - brew audit --new --formula ${TAP}/${FORMULA_NAME}
 EOF
-

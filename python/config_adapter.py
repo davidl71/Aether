@@ -155,6 +155,38 @@ class ConfigAdapter:
         return config.get("risk", {})
 
     @staticmethod
+    def get_massive_config(config: Dict) -> Optional[Dict]:
+        """
+        Extract Massive.com configuration.
+
+        Args:
+            config: Full configuration dict
+
+        Returns:
+            Massive.com config dict or None if not configured
+        """
+        massive_config = config.get("massive", {})
+        if not massive_config.get("enabled", False):
+            return None
+
+        return {
+            "api_key": massive_config.get("api_key", ""),
+            "base_url": massive_config.get("base_url", "https://api.massive.com"),
+            "use_for_historical_data": massive_config.get("use_for_historical_data", True),
+            "use_for_realtime_quotes": massive_config.get("use_for_realtime_quotes", True),
+            "use_for_dividend_data": massive_config.get("use_for_dividend_data", True),
+            "use_for_fundamental_data": massive_config.get("use_for_fundamental_data", True),
+            "websocket_enabled": massive_config.get("websocket_enabled", False),
+            "websocket_url": massive_config.get("websocket_url", "wss://api.massive.com/ws"),
+            "min_market_cap": massive_config.get("min_market_cap", 1e9),
+            "max_pe_ratio": massive_config.get("max_pe_ratio", 50.0),
+            "avoid_penny_stocks": massive_config.get("avoid_penny_stocks", True),
+            "dividend_blackout_days": massive_config.get("dividend_blackout_days", 2),
+            "cache_duration_seconds": massive_config.get("cache_duration_seconds", 300),
+            "rate_limit_per_second": massive_config.get("rate_limit_per_second", 10),
+        }
+
+    @staticmethod
     def get_orats_config(config: Dict) -> Optional[Dict]:
         """
         Extract ORATS configuration.

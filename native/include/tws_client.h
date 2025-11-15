@@ -52,10 +52,13 @@ public:
     TWSClient& operator=(const TWSClient&) = delete;
 
     // Connection management
-    bool connect();
+    // Return value should be checked to verify connection succeeded
+    [[nodiscard]] bool connect();
     void disconnect();
-    bool is_connected() const;
-    ConnectionState get_connection_state() const;
+    // Pure query function - no side effects
+    bool is_connected() const __attribute__((pure));
+    // Pure query function - no side effects
+    ConnectionState get_connection_state() const __attribute__((pure));
 
     // Process incoming messages (call in main loop)
     void process_messages(int timeout_ms = 100);
@@ -113,10 +116,12 @@ public:
     void cancel_all_orders();
 
     // Get order status
-    std::optional<types::Order> get_order(int order_id) const;
+    // Pure query function - no side effects
+    std::optional<types::Order> get_order(int order_id) const __attribute__((pure));
 
     // Get all active orders
-    std::vector<types::Order> get_active_orders() const;
+    // Pure query function - no side effects
+    std::vector<types::Order> get_active_orders() const __attribute__((pure));
 
     // ========================================================================
     // Position Operations
@@ -129,12 +134,14 @@ public:
     std::vector<types::Position> request_positions_sync(int timeout_ms = 5000);
 
     // Get all positions (from cache - may be stale)
-    std::vector<types::Position> get_positions() const;
+    // Pure query function - no side effects
+    std::vector<types::Position> get_positions() const __attribute__((pure));
 
     // Get position for specific contract
+    // Pure query function - no side effects
     std::optional<types::Position> get_position(
         const types::OptionContract& contract
-    ) const;
+    ) const __attribute__((pure));
 
     // ========================================================================
     // Account Operations
@@ -147,7 +154,8 @@ public:
     std::optional<types::AccountInfo> request_account_info_sync(int timeout_ms = 5000);
 
     // Get current account information (from cache - may be stale)
-    std::optional<types::AccountInfo> get_account_info() const;
+    // Pure query function - no side effects
+    std::optional<types::AccountInfo> get_account_info() const __attribute__((pure));
 
     // ========================================================================
     // Callbacks
@@ -161,13 +169,16 @@ public:
     // ========================================================================
 
     // Get next valid order ID
-    int get_next_order_id() const;
+    // Pure query function - no side effects
+    int get_next_order_id() const __attribute__((pure));
 
     // Check if market is open
-    bool is_market_open() const;
+    // Pure query function - no side effects
+    bool is_market_open() const __attribute__((pure));
 
     // Get server time
-    std::chrono::system_clock::time_point get_server_time() const;
+    // Pure query function - no side effects
+    std::chrono::system_clock::time_point get_server_time() const __attribute__((pure));
 
     // ========================================================================
     // Rate Limiting (IBKR Compliance)
@@ -180,7 +191,8 @@ public:
     void configure_rate_limiter(const RateLimiterConfig& config);
 
     // Get rate limiter status
-    std::optional<RateLimiterStatus> get_rate_limiter_status() const;
+    // Pure query function - no side effects
+    std::optional<RateLimiterStatus> get_rate_limiter_status() const __attribute__((pure));
 
     // Cleanup stale requests (for long-running applications)
     void cleanup_stale_rate_limiter_requests(std::chrono::seconds max_age);

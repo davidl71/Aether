@@ -2,7 +2,9 @@
 
 ## Overview
 
-This document explains the `.cursorignore` file and VS Code settings that exclude files from Cursor's AI analysis to streamline development and reduce unnecessary prompts.
+This document explains the `.cursorignore` file and VS Code settings that exclude files from Cursor's AI analysis and [codebase indexing](https://cursor.com/docs/context/codebase-indexing) to streamline development and reduce unnecessary prompts.
+
+**Important**: Files in `.cursorignore` (and `.gitignore`) are excluded from Cursor's codebase indexing, which means they won't appear in semantic search results. This improves indexing performance and answer accuracy.
 
 ## What's Excluded
 

@@ -106,39 +106,153 @@ public:
     // ========================================================================
 
     // Execute a box spread trade
-    bool execute_box_spread(const BoxSpreadOpportunity& opportunity);
+    // Return value should be checked to verify execution succeeded
+    [[nodiscard]] bool execute_box_spread(const BoxSpreadOpportunity& opportunity);
 
     // Close an existing box spread position
-    bool close_box_spread(const std::string& position_id);
+    // Return value should be checked to verify close succeeded
+    [[nodiscard]] bool close_box_spread(const std::string& position_id);
 
     // ========================================================================
     // Risk Management
     // ========================================================================
 
     // Check if spread is within risk limits
-    bool within_risk_limits(const types::BoxSpreadLeg& spread) const;
+    // Pure calculation function - no side effects
+    bool within_risk_limits(const types::BoxSpreadLeg& spread) const __attribute__((pure));
 
     // Check if we can take a new position
-    bool can_take_new_position() const;
+    // Pure query function - no side effects
+    bool can_take_new_position() const __attribute__((pure));
 
     // Get current exposure
-    double get_current_exposure() const;
+    // Pure query function - no side effects
+    double get_current_exposure() const __attribute__((pure));
 
     // Get maximum allowable exposure
-    double get_max_exposure() const;
+    // Pure query function - no side effects
+    double get_max_exposure() const __attribute__((pure));
 
     // ========================================================================
     // Position Management
     // ========================================================================
 
     // Get all active box spread positions
-    std::vector<types::Position> get_active_positions() const;
+    // Pure query function - no side effects
+    std::vector<types::Position> get_active_positions() const __attribute__((pure));
 
     // Monitor existing positions
     void monitor_positions();
 
     // Get position count
-    int get_position_count() const;
+    // Pure query function - no side effects
+    int get_position_count() const __attribute__((pure));
+
+    // ========================================================================
+    // Lending/Borrowing Opportunities
+    // ========================================================================
+
+    // Find box spread opportunities for lending/borrowing (rate-based)
+    std::vector<BoxSpreadOpportunity> find_lending_opportunities(
+        const std::string& symbol,
+        double benchmark_rate_percent,
+        double min_spread_bps = 50.0  // Minimum spread over benchmark in basis points
+    );
+
+    // Evaluate if box spread beats benchmark rate
+    // Pure calculation function - no side effects
+    bool beats_benchmark(
+        const types::BoxSpreadLeg& spread,
+        double benchmark_rate_percent,
+        double min_spread_bps = 50.0
+    ) const __attribute__((pure));
+
+    // ========================================================================
+    // Intraday Position Improvement
+    // ========================================================================
+
+    // Position improvement evaluation result
+    struct PositionImprovement {
+        std::string position_id;
+        double current_implied_rate;
+        double entry_implied_rate;
+        double improvement_bps;  // Rate improvement in basis points
+        bool has_improvement_opportunity;
+        std::string improvement_action;  // "roll", "close_early", "partial_adjust"
+
+        // Rolling opportunity details
+        std::optional<BoxSpreadOpportunity> roll_opportunity;
+        double roll_benefit_bps;  // Net benefit after transaction costs
+
+        // Early close opportunity details
+        double early_close_value;
+        double hold_to_expiry_value;
+        bool early_close_beneficial;
+    };
+
+    // Evaluate position for improvement opportunities
+    std::optional<PositionImprovement> evaluate_position_improvement(
+        const std::string& position_id
+    );
+
+    // Roll position to new expiration with better rate
+    // Return value should be checked to verify roll succeeded
+    [[nodiscard]] bool roll_box_spread(
+        const std::string& position_id,
+        const BoxSpreadOpportunity& new_opportunity
+    );
+
+    // Calculate value of early close vs holding to expiry
+    double calculate_early_close_value(
+        const types::BoxSpreadLeg& spread
+    ) const;
+
+    // Enhanced position monitoring with improvement detection
+    void monitor_positions_with_improvements(
+        double improvement_threshold_bps = 25.0  // Minimum improvement to trigger action
+    );
+
+    // ========================================================================
+    // Yield Curve Analysis
+    // ========================================================================
+
+    // Build yield curve for a symbol with specified strike width
+    // Scans all available expirations and calculates implied rates
+    types::YieldCurve build_yield_curve(
+        const std::string& symbol,
+        double strike_width,
+        double benchmark_rate_percent = 5.0,
+        int min_dte = 7,    // Minimum days to expiry
+        int max_dte = 180   // Maximum days to expiry
+    );
+
+    // Build yield curve for multiple symbols with same strike width
+    // Allows comparison across ES, XSP, SPX, nanos, etc.
+    std::vector<types::YieldCurve> build_yield_curves_multi_symbol(
+        const std::vector<std::string>& symbols,
+        double strike_width,
+        double benchmark_rate_percent = 5.0,
+        int min_dte = 7,
+        int max_dte = 180
+    );
+
+    // Compare yield curves across symbols
+    // Returns comparison data showing relative rates at each expiration
+    struct YieldCurveComparison {
+        double strike_width;
+        std::vector<std::string> symbols;
+        std::vector<int> common_dte_points;  // Days to expiry where all symbols have data
+        std::map<std::string, std::vector<double>> rates_by_symbol;  // rates by symbol at each DTE
+        std::map<std::string, std::vector<double>> spreads_by_symbol;  // spreads by symbol at each DTE
+        std::chrono::system_clock::time_point generated_time;
+
+        // Helper methods
+        bool is_valid() const;
+    };
+
+    YieldCurveComparison compare_yield_curves(
+        const std::vector<types::YieldCurve>& curves
+    );
 
     // ========================================================================
     // Configuration
@@ -235,9 +349,88 @@ public:
         double per_contract_fee = 0.65
     );
 
+    // Buy vs Sell calculations (using bid/ask prices instead of mid)
+    // These reveal intraday disparities due to bid-ask spreads, put-call parity violations, etc.
+
+    // Calculate net debit for BUYING box spread (using ASK for long legs, BID for short legs)
+    static double calculate_buy_net_debit(
+        const types::BoxSpreadLeg& spread,
+        double long_call_ask,
+        double short_call_bid,
+        double long_put_ask,
+        double short_put_bid
+    );
+
+    // Calculate net credit for SELLING box spread (using BID for long legs, ASK for short legs)
+    static double calculate_sell_net_credit(
+        const types::BoxSpreadLeg& spread,
+        double long_call_bid,
+        double short_call_ask,
+        double long_put_bid,
+        double short_put_ask
+    );
+
+    // Calculate buy vs sell disparity (difference in profitability)
+    static double calculate_buy_sell_disparity(
+        double buy_profit,
+        double sell_profit
+    );
+
+    // Calculate put-call parity violation (bps)
+    // Compares implied rates from call side vs put side to detect violations
+    static double calculate_put_call_parity_violation(
+        const types::BoxSpreadLeg& spread,
+        double call_implied_rate,
+        double put_implied_rate
+    );
+
+    // Calculate commission using IBKR Pro config (with volume tiers)
+    static double calculate_commission_ibkr_pro(
+        const types::BoxSpreadLeg& spread,
+        const config::CommissionConfig& commission_config
+    );
+
     // Calculate total cost including commission
     static double calculate_total_cost(
         const types::BoxSpreadLeg& spread,
+        double per_contract_fee = 0.65
+    );
+
+    // Calculate total cost including IBKR Pro commission
+    static double calculate_total_cost_ibkr_pro(
+        const types::BoxSpreadLeg& spread,
+        const config::CommissionConfig& commission_config
+    );
+
+    // ========================================================================
+    // Lending/Borrowing Rate Calculations
+    // ========================================================================
+
+    // Calculate implied annual interest rate (for lending/borrowing)
+    // Returns annualized percentage rate
+    // For lending (net credit > 0): rate = ((strike_width - net_credit) / net_credit) * (365 / dte) * 100
+    // For borrowing (net debit > 0): rate = ((net_debit - strike_width) / strike_width) * (365 / dte) * 100
+    static double calculate_implied_interest_rate(
+        const types::BoxSpreadLeg& spread
+    );
+
+    // Calculate effective rate after transaction costs
+    static double calculate_effective_interest_rate(
+        const types::BoxSpreadLeg& spread,
+        double per_contract_fee = 0.65
+    );
+
+    // Calculate effective rate using IBKR Pro commission config
+    static double calculate_effective_interest_rate(
+        const types::BoxSpreadLeg& spread,
+        const config::CommissionConfig& commission_config
+    );
+
+    // Compare implied rate to benchmark rate
+    // Returns spread in basis points (positive = box spread beats benchmark)
+    static double compare_to_benchmark(
+        const types::BoxSpreadLeg& spread,
+        double benchmark_rate_percent,
         double per_contract_fee = 0.65
     );
 };

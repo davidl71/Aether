@@ -199,7 +199,15 @@ fetchcontent_declare(
     GIT_SHALLOW TRUE
 )
 
-fetchcontent_makeavailable(nlohmann_json spdlog CLI11)
+set(FTXUI_REPOSITORY "https://github.com/ArthurSonzogni/FTXUI.git")
+fetchcontent_declare(
+    ftxui
+    GIT_REPOSITORY ${FTXUI_REPOSITORY}
+    GIT_TAG v5.0.0
+    GIT_SHALLOW TRUE
+)
+
+fetchcontent_makeavailable(nlohmann_json spdlog CLI11 ftxui)
 
 if(BUILD_TESTING)
     set(CATCH2_REPOSITORY "https://github.com/catchorg/Catch2.git")
@@ -382,6 +390,7 @@ if(_build_native_cli)
         src/order_manager.cpp
         src/risk_calculator.cpp
         src/config_manager.cpp
+        src/pcap_capture.cpp
     )
 
     set(HEADERS
@@ -392,6 +401,7 @@ if(_build_native_cli)
         include/order_manager.h
         include/risk_calculator.h
         include/config_manager.h
+        include/pcap_capture.h
         include/types.h
     )
 
@@ -457,6 +467,120 @@ if(_build_native_cli)
     )
 else()
     message(STATUS "ib_box_spread native CLI target disabled.")
+endif()
+
+# ====================================================================================
+# TUI Executable (C++)
+# ============================================================================
+option(ENABLE_TUI "Build the C++ TUI application" ON)
+option(ENABLE_TA_LIB "Enable TA-Lib technical analysis library integration" OFF)
+
+if(ENABLE_TUI)
+    set(TUI_SOURCES
+        src/tui_app.cpp
+        src/tui_provider.cpp
+        src/tui_breadcrumb.cpp
+        src/tui_converter.cpp
+        src/tui_config.cpp
+    )
+
+    set(TUI_HEADERS
+        include/tui_data.h
+        include/tui_provider.h
+        include/tui_converter.h
+        include/tui_config.h
+        include/tui_breadcrumb.h
+    )
+
+    add_executable(ib_box_spread_tui ${TUI_SOURCES} ${TUI_HEADERS})
+
+    target_include_directories(ib_box_spread_tui
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${CMAKE_CURRENT_BINARY_DIR}/include
+    )
+
+    # FTXUI is header-only, but we need to link against its dependencies
+    target_link_libraries(ib_box_spread_tui
+        PRIVATE
+            nlohmann_json::nlohmann_json
+            spdlog::spdlog
+    )
+
+    # FTXUI uses FetchContent, link to its interface target if available
+    # FTXUI v5.0.0 uses component targets that need to be linked
+    if(TARGET ftxui::ftxui)
+        target_link_libraries(ib_box_spread_tui PRIVATE ftxui::ftxui)
+    elseif(TARGET ftxui::component)
+        # Link component library if available
+        target_link_libraries(ib_box_spread_tui PRIVATE ftxui::component)
+    else()
+        # Fallback: add include directory manually and link any built libraries
+        get_filename_component(FTXUI_INCLUDE_DIR "${CMAKE_BINARY_DIR}/_deps/ftxui-src/include" ABSOLUTE)
+        if(EXISTS "${FTXUI_INCLUDE_DIR}")
+            target_include_directories(ib_box_spread_tui PRIVATE "${FTXUI_INCLUDE_DIR}")
+        endif()
+        # Try to find and link FTXUI component library
+        find_library(FTXUI_COMPONENT_LIB
+            NAMES ftxui-component
+            PATHS "${CMAKE_BINARY_DIR}/_deps/ftxui-build"
+            NO_DEFAULT_PATH
+        )
+        if(FTXUI_COMPONENT_LIB)
+            target_link_libraries(ib_box_spread_tui PRIVATE ${FTXUI_COMPONENT_LIB})
+        endif()
+    endif()
+
+    if(APPLE)
+        target_link_libraries(ib_box_spread_tui PRIVATE "-framework CoreFoundation")
+        find_library(PTHREAD_LIBRARY pthread)
+        if(PTHREAD_LIBRARY)
+            target_link_libraries(ib_box_spread_tui PRIVATE ${PTHREAD_LIBRARY})
+        endif()
+    elseif(UNIX)
+        target_link_libraries(ib_box_spread_tui PRIVATE pthread)
+    endif()
+
+    install(TARGETS ib_box_spread_tui
+        RUNTIME DESTINATION bin
+    )
+
+    message(STATUS "TUI executable: ib_box_spread_tui")
+
+    # TA-Lib integration (optional)
+    # TA-Lib is a C/C++ library for technical analysis indicators
+    # See: https://ta-lib.org/
+    # Installation:
+    #   macOS: brew install ta-lib
+    #   Linux: Download from https://sourceforge.net/projects/ta-lib/
+    #   Windows: Download pre-built binaries
+    if(ENABLE_TA_LIB)
+        find_library(TA_LIB_LIBRARY
+            NAMES ta_lib ta_libc
+            PATHS
+                /usr/local/lib
+                /opt/homebrew/lib
+                /usr/lib
+        )
+        find_path(TA_LIB_INCLUDE_DIR
+            NAMES ta_libc.h
+            PATHS
+                /usr/local/include
+                /opt/homebrew/include
+                /usr/include
+        )
+
+        if(TA_LIB_LIBRARY AND TA_LIB_INCLUDE_DIR)
+            target_include_directories(ib_box_spread_tui PRIVATE ${TA_LIB_INCLUDE_DIR})
+            target_link_libraries(ib_box_spread_tui PRIVATE ${TA_LIB_LIBRARY})
+            target_compile_definitions(ib_box_spread_tui PRIVATE ENABLE_TA_LIB)
+            message(STATUS "TA-Lib found: ${TA_LIB_LIBRARY}")
+            message(STATUS "TA-Lib include: ${TA_LIB_INCLUDE_DIR}")
+        else()
+            message(WARNING "TA-Lib not found. Install with: brew install ta-lib (macOS) or download from https://ta-lib.org/")
+            message(WARNING "Continuing without TA-Lib support")
+        endif()
+    endif()
 endif()
 
 # ============================================================================

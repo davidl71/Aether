@@ -145,43 +145,46 @@ EOF
   echo -e "${GREEN}✓ Fish completion generated: $COMPLETIONS_DIR/ib_box_spread.fish${NC}"
 }
 
-# Function to generate TUI completion (environment variable based)
+# Function to generate TUI completion (C++ TUI uses config files, not CLI args)
 generate_tui_completions() {
   echo -e "${GREEN}Generating TUI completions...${NC}"
 
+  # Note: C++ TUI (ib_box_spread_tui) uses config files and environment variables
+  # instead of command-line flags. These completions are minimal.
+
   # Bash completion for TUI
-  cat > "$COMPLETIONS_DIR/ib-box-spread-tui.bash" << 'EOF'
-# Bash completion for ib-box-spread-tui
+  cat > "$COMPLETIONS_DIR/ib_box_spread_tui.bash" << 'EOF'
+# Bash completion for ib_box_spread_tui (C++ TUI)
+# Note: TUI uses config files (~/.config/ib_box_spread/tui_config.json)
+# and environment variables (TUI_BACKEND, TUI_API_URL) instead of CLI flags
 _ib_box_spread_tui() {
   local cur prev words cword
   _init_completion || return
 
-  case "$prev" in
-    --endpoint)
-      COMPREPLY=($(compgen -W "http://localhost:8080/api/snapshot" -- "$cur"))
-      return
-      ;;
-  esac
-
+  # C++ TUI doesn't have CLI flags yet, but we can add basic completion
   if [[ "$cur" == -* ]]; then
-    COMPREPLY=($(compgen -W "--mock --endpoint -h --help" -- "$cur"))
+    COMPREPLY=($(compgen -W "-h --help" -- "$cur"))
   fi
 }
 
+complete -F _ib_box_spread_tui ib_box_spread_tui
+# Also complete the symlink name for compatibility
 complete -F _ib_box_spread_tui ib-box-spread-tui
 EOF
 
   # Zsh completion for TUI
-  cat > "$COMPLETIONS_DIR/_ib-box-spread-tui" << 'EOF'
-#compdef ib-box-spread-tui
+  cat > "$COMPLETIONS_DIR/_ib_box_spread_tui" << 'EOF'
+#compdef ib_box_spread_tui ib-box-spread-tui
+
+# C++ TUI uses config files, not CLI flags
+# Config: ~/.config/ib_box_spread/tui_config.json
+# Env vars: TUI_BACKEND, TUI_API_URL
 
 _ib_box_spread_tui() {
   local context state line
   local -a options
 
   options=(
-    '(--mock)'--mock'[Use mock data provider]'
-    '(--endpoint)'--endpoint'[API endpoint URL]:endpoint:'
     '(-h --help)'{-h,--help}'[Show help message]'
   )
 
@@ -192,15 +195,16 @@ _ib_box_spread_tui "$@"
 EOF
 
   # Fish completion for TUI
-  cat > "$COMPLETIONS_DIR/ib-box-spread-tui.fish" << 'EOF'
-# Fish completion for ib-box-spread-tui
+  cat > "$COMPLETIONS_DIR/ib_box_spread_tui.fish" << 'EOF'
+# Fish completion for ib_box_spread_tui (C++ TUI)
+# Note: TUI uses config files (~/.config/ib_box_spread/tui_config.json)
+# and environment variables (TUI_BACKEND, TUI_API_URL) instead of CLI flags
 
-complete -c ib-box-spread-tui -l mock -d "Use mock data provider"
-complete -c ib-box-spread-tui -l endpoint -r -d "API endpoint URL"
+complete -c ib_box_spread_tui -s h -l help -d "Show help message"
 complete -c ib-box-spread-tui -s h -l help -d "Show help message"
 EOF
 
-  chmod +x "$COMPLETIONS_DIR"/*tui*
+  chmod +x "$COMPLETIONS_DIR"/*tui* 2>/dev/null || true
   echo -e "${GREEN}✓ TUI completions generated${NC}"
 }
 

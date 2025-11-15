@@ -94,13 +94,14 @@ TEST_CASE("BoxSpreadValidator detects invalid configurations", "[strategy]") {
     }
 }
 
-TEST_CASE("BoxSpreadCalculator calculations", "[strategy]") {
+TEST_CASE("BoxSpreadCalculator calculations", "[strategy][calculator]") {
+    // Given: A box spread with strike width $10 (K1=500, K2=510) and known option prices
     BoxSpreadLeg spread;
 
-    spread.long_call.strike = 500.0;
-    spread.short_call.strike = 510.0;
-    spread.long_put.strike = 510.0;
-    spread.short_put.strike = 500.0;
+    spread.long_call.strike = 500.0;   // K1
+    spread.short_call.strike = 510.0;  // K2
+    spread.long_put.strike = 510.0;    // K2
+    spread.short_put.strike = 500.0;   // K1
 
     spread.long_call_price = 2.50;
     spread.short_call_price = 1.00;
@@ -108,38 +109,56 @@ TEST_CASE("BoxSpreadCalculator calculations", "[strategy]") {
     spread.short_put_price = 0.75;
 
     SECTION("Calculate theoretical value") {
+        // When: We calculate the theoretical value
         double theoretical_value = BoxSpreadCalculator::calculate_theoretical_value(spread);
+
+        // Then: Should equal strike width (K2 - K1 = 510 - 500 = 10.0)
+        // This is a fundamental property of box spreads - they always equal strike width at expiration
         REQUIRE_THAT(theoretical_value, Catch::Matchers::WithinRel(10.0, 0.001));
     }
 
     SECTION("Calculate net debit") {
+        // When: We calculate the net debit
         double net_debit = BoxSpreadCalculator::calculate_net_debit(spread);
-        // (2.50 - 1.00) + (2.00 - 0.75) = 2.75
+
+        // Then: Should equal sum of long positions minus sum of short positions
+        // Formula: (2.50 - 1.00) + (2.00 - 0.75) = 1.50 + 1.25 = 2.75
         REQUIRE_THAT(net_debit, Catch::Matchers::WithinRel(2.75, 0.001));
     }
 
     SECTION("Calculate max profit") {
+        // Given: Net debit and theoretical value are known
         spread.net_debit = 2.75;
         spread.theoretical_value = 10.0;
 
+        // When: We calculate the maximum profit
         double max_profit = BoxSpreadCalculator::calculate_max_profit(spread);
-        // 10.0 - 2.75 = 7.25
+
+        // Then: Should equal theoretical_value - net_debit = 10.0 - 2.75 = 7.25
+        // This represents the arbitrage profit if held to expiration
         REQUIRE_THAT(max_profit, Catch::Matchers::WithinRel(7.25, 0.001));
     }
 
     SECTION("Calculate ROI") {
+        // Given: Net debit and theoretical value are known
         spread.net_debit = 2.75;
         spread.theoretical_value = 10.0;
 
+        // When: We calculate the ROI percentage
         double roi = BoxSpreadCalculator::calculate_roi(spread);
-        // (7.25 / 2.75) * 100 = 263.6%
+
+        // Then: Should equal (profit / net_debit) * 100 = (7.25 / 2.75) * 100 ≈ 263.6%
+        // This measures return relative to capital deployed
         REQUIRE(roi > 260.0);
         REQUIRE(roi < 265.0);
     }
 
     SECTION("Calculate commission") {
+        // When: We calculate commission with $0.65 per contract fee
         double commission = BoxSpreadCalculator::calculate_commission(spread, 0.65);
-        // 4 legs * $0.65 = $2.60
+
+        // Then: Should equal 4 legs * $0.65 = $2.60
+        // Box spreads have 4 legs, so commission is 4x the per-contract fee
         REQUIRE_THAT(commission, Catch::Matchers::WithinRel(2.60, 0.001));
     }
 }

@@ -252,11 +252,57 @@ std::optional<BoxSpreadOpportunity> BoxSpreadStrategy::evaluate_box_spread(
     spread.long_put_bid_ask_spread = long_put_entry->market_data.get_spread();
     spread.short_put_bid_ask_spread = short_put_entry->market_data.get_spread();
 
-    // Calculate net debit and theoretical value
+    // Calculate net debit and theoretical value (using mid prices)
     spread.net_debit = BoxSpreadCalculator::calculate_net_debit(spread);
     spread.theoretical_value = BoxSpreadCalculator::calculate_theoretical_value(spread);
     spread.arbitrage_profit = BoxSpreadCalculator::calculate_max_profit(spread);
     spread.roi_percent = BoxSpreadCalculator::calculate_roi(spread);
+
+    // Calculate BUY vs SELL disparity (using bid/ask prices)
+    // This reveals intraday differences due to bid-ask spreads, put-call parity violations, etc.
+    // BUY: Long legs use ASK, short legs use BID
+    spread.buy_net_debit = BoxSpreadCalculator::calculate_buy_net_debit(
+        spread,
+        long_call_entry->market_data.ask,    // Long call: ASK
+        short_call_entry->market_data.bid,   // Short call: BID
+        long_put_entry->market_data.ask,     // Long put: ASK
+        short_put_entry->market_data.bid     // Short put: BID
+    );
+    spread.buy_profit = spread.theoretical_value - spread.buy_net_debit;
+    // Calculate implied rate for buying (using buy_net_debit as net cost)
+    int days_to_expiry = spread.get_days_to_expiry();
+    double strike_width = spread.get_strike_width();
+    if (days_to_expiry > 0 && spread.buy_net_debit > 0) {
+        // Implied rate when buying (borrowing scenario: pay now, receive at expiry)
+        spread.buy_implied_rate = ((spread.buy_net_debit - strike_width) / strike_width) * (365.0 / days_to_expiry) * 100.0;
+    } else {
+        spread.buy_implied_rate = 0.0;
+    }
+
+    // SELL: Long legs use BID, short legs use ASK
+    spread.sell_net_credit = BoxSpreadCalculator::calculate_sell_net_credit(
+        spread,
+        long_call_entry->market_data.bid,    // Long call: BID
+        short_call_entry->market_data.ask,   // Short call: ASK
+        long_put_entry->market_data.bid,     // Long put: BID
+        short_put_entry->market_data.ask     // Short put: ASK
+    );
+    spread.sell_profit = spread.sell_net_credit - spread.theoretical_value;
+    // Calculate implied rate for selling (using sell_net_credit as net received)
+    if (days_to_expiry > 0 && spread.sell_net_credit > 0) {
+        // Implied rate when selling (lending scenario: receive now, pay at expiry)
+        spread.sell_implied_rate = ((strike_width - spread.sell_net_credit) / spread.sell_net_credit) * (365.0 / days_to_expiry) * 100.0;
+    } else {
+        spread.sell_implied_rate = 0.0;
+    }
+
+    // Calculate disparity and put-call parity violation
+    spread.buy_sell_disparity = BoxSpreadCalculator::calculate_buy_sell_disparity(
+        spread.buy_profit, spread.sell_profit
+    );
+    spread.put_call_parity_violation = BoxSpreadCalculator::calculate_put_call_parity_violation(
+        spread, spread.buy_implied_rate, spread.sell_implied_rate
+    );
 
     // Validate the spread
     std::vector<std::string> validation_errors;
@@ -302,6 +348,21 @@ std::optional<BoxSpreadOpportunity> BoxSpreadStrategy::evaluate_box_spread(
     return opportunity;
 }
 
+/// Check if a box spread meets profitability criteria.
+///
+/// Algorithm: A box spread is considered profitable if it meets both:
+///   1. Minimum arbitrage profit threshold (absolute dollar amount)
+///   2. Minimum ROI threshold (percentage return)
+///
+/// Expected behavior:
+/// - Returns true if both thresholds are met
+/// - Returns false if either threshold is not met
+/// - Thresholds are configurable via StrategyParams
+///
+/// @param spread The box spread leg structure to evaluate
+/// @return true if profitable, false otherwise
+///
+/// @see ALGORITHMS_AND_BEHAVIOR.md for detailed algorithm documentation
 bool BoxSpreadStrategy::is_profitable(const types::BoxSpreadLeg& spread) const {
     double profit = calculate_arbitrage_profit(spread);
     double roi = calculate_roi(spread);
@@ -310,6 +371,18 @@ bool BoxSpreadStrategy::is_profitable(const types::BoxSpreadLeg& spread) const {
            roi >= pimpl_->params_.min_roi_percent;
 }
 
+/// Calculate arbitrage profit for a box spread.
+///
+/// Algorithm: Profit is the difference between theoretical value and net debit.
+/// This is a wrapper around BoxSpreadCalculator::calculate_max_profit().
+///
+/// Formula: arbitrage_profit = theoretical_value - net_debit
+///
+/// @param spread The box spread leg structure
+/// @return Arbitrage profit (theoretical_value - net_debit)
+///
+/// @see BoxSpreadCalculator::calculate_max_profit() for implementation details
+/// @see ALGORITHMS_AND_BEHAVIOR.md for detailed algorithm documentation
 double BoxSpreadStrategy::calculate_arbitrage_profit(
     const types::BoxSpreadLeg& spread) const {
 
@@ -416,7 +489,7 @@ int BoxSpreadStrategy::get_position_count() const {
 // Lending/Borrowing Opportunities
 // ============================================================================
 
-std::vector<BoxSpreadStrategy::BoxSpreadOpportunity> BoxSpreadStrategy::find_lending_opportunities(
+std::vector<BoxSpreadOpportunity> BoxSpreadStrategy::find_lending_opportunities(
     const std::string& symbol,
     double benchmark_rate_percent,
     double min_spread_bps) {
@@ -909,12 +982,48 @@ bool BoxSpreadValidator::validate(
 // BoxSpreadCalculator Implementation
 // ============================================================================
 
+/// Calculate theoretical value of a box spread.
+///
+/// Algorithm: The theoretical value of a box spread at expiration is always
+/// equal to the strike width (K2 - K1), regardless of the underlying price.
+///
+/// Mathematical proof:
+/// - If S > K2: Long call = (S - K1), Short call = -(S - K2), Long put = 0, Short put = 0
+///   Net: (S - K1) - (S - K2) = K2 - K1
+/// - If K1 < S <= K2: Long call = (S - K1), Short call = 0, Long put = (K2 - S), Short put = 0
+///   Net: (S - K1) + (K2 - S) = K2 - K1
+/// - If S <= K1: Long call = 0, Short call = 0, Long put = (K2 - S), Short put = -(K1 - S)
+///   Net: (K2 - S) - (K1 - S) = K2 - K1
+///
+/// @param spread The box spread leg structure
+/// @return Theoretical value (always equals strike width)
+///
+/// @see ALGORITHMS_AND_BEHAVIOR.md for detailed algorithm documentation
 double BoxSpreadCalculator::calculate_theoretical_value(
     const types::BoxSpreadLeg& spread) {
 
     return spread.get_strike_width();
 }
 
+/// Calculate net debit (cost to enter) a box spread.
+///
+/// Algorithm: Net debit is the total cost to enter the spread, calculated as:
+///   net_debit = long_call_price - short_call_price + long_put_price - short_put_price
+///
+/// Explanation:
+/// - Long positions (long_call, long_put) cost money (positive contribution)
+/// - Short positions (short_call, short_put) generate income (negative contribution)
+/// - Net debit is the sum of all costs minus all income
+///
+/// Expected behavior:
+/// - Positive value: We pay to enter (net debit)
+/// - Negative value: We receive to enter (net credit)
+/// - Zero: Costless entry (rare, but possible)
+///
+/// @param spread The box spread leg structure with prices for each leg
+/// @return Net debit (positive = we pay, negative = we receive)
+///
+/// @see ALGORITHMS_AND_BEHAVIOR.md for detailed algorithm documentation
 double BoxSpreadCalculator::calculate_net_debit(
     const types::BoxSpreadLeg& spread) {
 
@@ -922,6 +1031,25 @@ double BoxSpreadCalculator::calculate_net_debit(
            spread.long_put_price - spread.short_put_price;
 }
 
+/// Calculate maximum arbitrage profit from a box spread.
+///
+/// Algorithm: Arbitrage profit is the difference between what we receive at
+/// expiration (theoretical value) and what we pay to enter (net debit).
+///
+/// Formula: arbitrage_profit = theoretical_value - net_debit
+///
+/// Expected behavior:
+/// - Positive profit: Arbitrage opportunity exists
+/// - Zero profit: Break-even (no arbitrage)
+/// - Negative profit: Loss (not an arbitrage opportunity)
+///
+/// Note: This is the maximum profit because box spreads always reach their
+/// theoretical value at expiration, regardless of underlying price movement.
+///
+/// @param spread The box spread leg structure
+/// @return Arbitrage profit (theoretical_value - net_debit)
+///
+/// @see ALGORITHMS_AND_BEHAVIOR.md for detailed algorithm documentation
 double BoxSpreadCalculator::calculate_max_profit(
     const types::BoxSpreadLeg& spread) {
 
@@ -935,6 +1063,22 @@ double BoxSpreadCalculator::calculate_max_loss(
     return spread.net_debit < 0 ? -spread.net_debit : 0;
 }
 
+/// Calculate return on investment (ROI) percentage for a box spread.
+///
+/// Algorithm: ROI measures profitability relative to capital deployed.
+///
+/// Formula: roi_percent = (arbitrage_profit / net_debit) * 100.0
+///
+/// Expected behavior:
+/// - Positive ROI: Profitable opportunity (arbitrage_profit > 0)
+/// - Zero ROI: Break-even (arbitrage_profit = 0)
+/// - Negative ROI: Loss (arbitrage_profit < 0)
+/// - Returns 0.0 if net_debit <= 0 (division by zero protection)
+///
+/// @param spread The box spread leg structure
+/// @return ROI as a percentage (0.0 if net_debit <= 0)
+///
+/// @see ALGORITHMS_AND_BEHAVIOR.md for detailed algorithm documentation
 double BoxSpreadCalculator::calculate_roi(const types::BoxSpreadLeg& spread) {
     if (spread.net_debit > 0) {
         return (calculate_max_profit(spread) / spread.net_debit) * 100.0;
@@ -994,6 +1138,31 @@ double BoxSpreadCalculator::calculate_total_cost_ibkr_pro(
 // Lending/Borrowing Rate Calculations
 // ============================================================================
 
+/// Calculate implied annual interest rate from a box spread.
+///
+/// Algorithm: Box spreads can be used as synthetic lending/borrowing instruments.
+/// The implied rate represents the annualized interest rate embedded in the spread.
+///
+/// For Borrowing (net_debit > 0):
+///   - We pay net_debit upfront
+///   - We receive strike_width at expiration
+///   - Formula: rate = ((net_debit - strike_width) / strike_width) * (365 / days_to_expiry) * 100
+///
+/// For Lending (net_debit < 0, i.e., net_credit > 0):
+///   - We receive net_credit upfront
+///   - We pay strike_width at expiration
+///   - Formula: rate = ((strike_width - net_credit) / net_credit) * (365 / days_to_expiry) * 100
+///
+/// Expected behavior:
+/// - Positive rate: Lending opportunity (we receive upfront, pay at expiry)
+/// - Negative rate: Borrowing opportunity (we pay upfront, receive at expiry)
+/// - Returns 0.0 if days_to_expiry <= 0 (division by zero protection)
+/// - Returns 0.0 if net_debit == 0 (no rate embedded)
+///
+/// @param spread The box spread leg structure
+/// @return Implied annual interest rate as a percentage (0.0 if invalid)
+///
+/// @see ALGORITHMS_AND_BEHAVIOR.md for detailed algorithm documentation
 double BoxSpreadCalculator::calculate_implied_interest_rate(
     const types::BoxSpreadLeg& spread) {
 
@@ -1103,6 +1272,71 @@ double BoxSpreadCalculator::compare_to_benchmark(
         // Lending: positive spread means better (higher rate)
         return spread_bps;
     }
+}
+
+// ============================================================================
+// Buy vs Sell Calculations (Bid-Ask Disparity Analysis)
+// ============================================================================
+
+/// Calculate net debit for BUYING a box spread.
+/// Uses ASK prices for long legs (what we pay) and BID prices for short legs (what we receive).
+/// This represents the actual cost to buy the box spread at market prices.
+double BoxSpreadCalculator::calculate_buy_net_debit(
+    const types::BoxSpreadLeg& spread,
+    double long_call_ask,
+    double short_call_bid,
+    double long_put_ask,
+    double short_put_bid) {
+
+    // BUY: Pay ASK for long positions, receive BID for short positions
+    return long_call_ask - short_call_bid + long_put_ask - short_put_bid;
+}
+
+/// Calculate net credit for SELLING a box spread.
+/// Uses BID prices for long legs (what we receive) and ASK prices for short legs (what we pay).
+/// This represents the actual credit received from selling the box spread at market prices.
+double BoxSpreadCalculator::calculate_sell_net_credit(
+    const types::BoxSpreadLeg& spread,
+    double long_call_bid,
+    double short_call_ask,
+    double long_put_bid,
+    double short_put_ask) {
+
+    // SELL: Receive BID for long positions, pay ASK for short positions
+    return long_call_bid - short_call_ask + long_put_bid - short_put_ask;
+}
+
+/// Calculate the disparity between buying and selling profitability.
+/// This reveals intraday differences due to:
+/// - Bid-ask spread widths
+/// - Put-call parity violations
+/// - Liquidity imbalances
+/// - Market maker inventory effects
+/// - Order flow imbalances
+double BoxSpreadCalculator::calculate_buy_sell_disparity(
+    double buy_profit,
+    double sell_profit) {
+
+    // Disparity is the difference in profitability between buying and selling
+    // Positive = buying is more profitable, Negative = selling is more profitable
+    return buy_profit - sell_profit;
+}
+
+/// Calculate put-call parity violation.
+/// Compares implied interest rates from call side vs put side.
+/// Violations can occur due to:
+/// - Dividend expectations
+/// - Early exercise risk (American options)
+/// - Interest rate changes
+/// - Market microstructure effects
+double BoxSpreadCalculator::calculate_put_call_parity_violation(
+    const types::BoxSpreadLeg& spread,
+    double call_implied_rate,
+    double put_implied_rate) {
+
+    // Put-call parity violation in basis points
+    // Positive = call side implies higher rate, Negative = put side implies higher rate
+    return (call_implied_rate - put_implied_rate) * 100.0;  // Convert % to bps
 }
 
 // ============================================================================

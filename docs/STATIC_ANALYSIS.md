@@ -12,6 +12,11 @@ This project uses multiple static analysis tools to ensure code quality and catc
 - **Checks**: Warnings, performance, style, portability
 - **Usage**: `scripts/run_linters.sh` (runs automatically)
 - **Installation**: `brew install cppcheck`
+- **Key Features**:
+  - Focus on low false-positive rate by default
+  - Can analyze C++ code (despite the name)
+  - Supports parallel analysis with `-j` flag
+  - Portability checks that other tools often miss
 
 #### 2. **Clang Static Analyzer**
 
@@ -19,6 +24,14 @@ This project uses multiple static analysis tools to ensure code quality and catc
 - **Checks**: Memory safety, null pointer dereferences, use-after-free
 - **Usage**: `scripts/run_linters.sh` (runs automatically)
 - **Installation**: Comes with Xcode/Clang
+
+#### 2b. **clang-tidy**
+
+- **Purpose**: Additional linting and static analysis checks
+- **Checks**: Performance, bug-prone patterns, readability, security
+- **Usage**: Can be integrated into build system or run manually
+- **Installation**: Comes with Clang/LLVM
+- **Note**: Requires configuration to disable noisy checks (see [Best Practices](#best-practices))
 
 #### 3. **Infer** (Facebook)
 
@@ -40,7 +53,7 @@ This project uses multiple static analysis tools to ensure code quality and catc
 ### Other Languages
 
 - **Swift**: `swiftlint` (for macOS app)
-- **Go**: `golangci-lint` (for TUI)
+- **C++ TUI**: Uses same C++ static analysis tools (cppcheck, clang-analyzer, infer)
 
 ## Running Static Analysis
 
@@ -248,6 +261,38 @@ Create `.inferconfig` in project root:
 
 Configure via CMake flags or `.clang-tidy` file.
 
+## Handling Legacy Code
+
+When introducing static analysis to an existing codebase, you may face thousands of warnings from legacy code. Rather than fixing everything at once (which is impractical), you can use a **mass suppression** strategy:
+
+### Strategy: Suppress Legacy, Focus on New Code
+
+1. **Initial Suppression**: Suppress all existing warnings in legacy code
+2. **Track New Issues**: Only show warnings from new or modified code
+3. **Gradual Cleanup**: Fix suppressed warnings over time as you touch those files
+
+This approach allows you to:
+- Start benefiting from static analysis immediately
+- Avoid overwhelming developers with thousands of legacy warnings
+- Focus on preventing new bugs
+- Gradually improve code quality over time
+
+### Implementation
+
+Different tools support this in different ways:
+
+- **cppcheck**: Use `--suppressions-list=suppressions.txt` to suppress specific warnings
+- **Clang Static Analyzer**: Use `// NOLINT` comments or suppression files
+- **Infer**: Supports suppression files and can filter by file modification time
+- **PVS-Studio**: Has built-in mass suppression mechanism (see [reference article](https://pvs-studio.com/en/blog/posts/0527/))
+
+### Best Practices for Suppression
+
+1. **Document Suppressions**: Always document why a warning is suppressed
+2. **Review Periodically**: Periodically review suppressed warnings to see if they can be fixed
+3. **Don't Suppress New Code**: Never suppress warnings in new code - fix them instead
+4. **Use Tool-Specific Mechanisms**: Prefer tool-specific suppression mechanisms over broad suppressions
+
 ## Best Practices
 
 1. **Run before commits**: Use `scripts/run_linters.sh` before committing
@@ -255,6 +300,7 @@ Configure via CMake flags or `.clang-tidy` file.
 3. **Review false positives**: Some tools may report false positives; suppress them appropriately
 4. **Keep tools updated**: Update static analysis tools regularly for better detection
 5. **Use in CI**: Integrate static analysis into your CI/CD pipeline
+6. **Handle legacy code strategically**: Use mass suppression for legacy code, focus on new code
 
 ## Troubleshooting
 
@@ -280,7 +326,22 @@ cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 - Review and refine suppressions regularly
 - Consider tool configuration files (`.cppcheckrc`, `.inferconfig`)
 
+## Static Analysis Annotations
+
+To help static analysis tools understand your code better and reduce false positives, see:
+
+- **[STATIC_ANALYSIS_ANNOTATIONS.md](STATIC_ANALYSIS_ANNOTATIONS.md)** - Comprehensive guide on using function attributes, comments, and pragmas to leave "breadcrumbs" for static analyzers
+
+This guide covers:
+- Standardized comments for warning suppression
+- Function attributes (`__attribute__((nonnull))`, `__attribute__((warn_unused_result))`, etc.)
+- Pragmas for tool-specific instructions
+- Custom macros for domain-specific annotations
+- Codebase-specific examples
+
 ## References
+
+### Tool Documentation
 
 - **[Infer Getting Started](https://fbinfer.com/docs/getting-started)** - Official installation and quick start guide
 - [Infer Documentation](https://fbinfer.com/docs) - Complete Infer documentation
@@ -288,3 +349,8 @@ cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 - [cppcheck Manual](http://cppcheck.sourceforge.net/manual.pdf)
 - [Clang Static Analyzer](https://clang-analyzer.llvm.org/)
 - [Bandit Documentation](https://bandit.readthedocs.io/)
+
+### Best Practices & Guides
+
+- **[A gentle introduction to static analyzers for C](https://nrk.neocities.org/articles/c-static-analyzers)** - Practical guide covering compiler warnings, cppcheck, GCC's fanalyzer, and clang-tidy with emphasis on low false-positive tools
+- **[How to Step Over Legacy and Start Using Static Code Analysis](https://pvs-studio.com/en/blog/posts/0527/)** - PVS-Studio's guide on handling legacy code with mass suppression strategies (concepts apply to other tools)

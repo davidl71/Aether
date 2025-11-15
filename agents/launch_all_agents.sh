@@ -15,11 +15,8 @@ else
   echo "[warn] Poetry missing; backend agents skipped." >&2
 fi
 
-if command -v go >/dev/null 2>&1; then
-  (cd "$ROOT_DIR" && bash agents/tui/scripts/setup.sh) &
-else
-  echo "[warn] Go missing; TUI setup skipped." >&2
-fi
+# C++ TUI is built as part of main CMake build - no separate setup needed
+(cd "$ROOT_DIR" && bash agents/tui/scripts/setup.sh) &
 
 if command -v npm >/dev/null 2>&1; then
   (cd "$ROOT_DIR" && bash agents/web/scripts/setup.sh) &
@@ -36,4 +33,3 @@ fi
 
 wait || true
 echo "[info] Agent setup scripts completed."
-

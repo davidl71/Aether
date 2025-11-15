@@ -5,6 +5,7 @@
 #include <chrono>
 #include <optional>
 #include <vector>
+#include <map>
 
 namespace types {
 
@@ -39,6 +40,11 @@ enum class TimeInForce {
     FOK         // Fill or kill
 };
 
+enum class OptionStyle {
+    European,   // Can only be exercised at expiration
+    American    // Can be exercised at any time before expiration
+};
+
 // ============================================================================
 // Option Contract Structure
 // ============================================================================
@@ -48,6 +54,7 @@ struct OptionContract {
     std::string expiry;          // Expiration date in YYYYMMDD format
     double strike;               // Strike price
     OptionType type;             // Call or Put
+    OptionStyle style;           // European or American exercise style
     std::string exchange;        // Exchange (e.g., "SMART", "CBOE")
     std::string local_symbol;    // Exchange-specific symbol
 
@@ -66,16 +73,30 @@ struct BoxSpreadLeg {
     OptionContract long_put;      // Long put at higher strike
     OptionContract short_put;     // Short put at lower strike
 
-    double net_debit;             // Total cost of the spread
+    double net_debit;             // Total cost of the spread (using mid prices)
     double theoretical_value;     // Should equal strike difference
     double arbitrage_profit;      // theoretical_value - net_debit
     double roi_percent;           // (profit / net_debit) * 100
 
-    // Pricing details for each leg
+    // Pricing details for each leg (mid prices)
     double long_call_price;
     double short_call_price;
     double long_put_price;
     double short_put_price;
+
+    // Buy vs Sell disparity (intraday changes due to bid-ask spreads, put-call parity violations, etc.)
+    // BUY: Long legs use ASK, short legs use BID (cost to buy the box)
+    double buy_net_debit;         // Cost to buy box spread (ASK for long, BID for short)
+    double buy_profit;            // Profit from buying box spread
+    double buy_implied_rate;      // Implied rate when buying
+
+    // SELL: Long legs use BID, short legs use ASK (credit received from selling box)
+    double sell_net_credit;       // Credit received from selling box spread (BID for long, ASK for short)
+    double sell_profit;           // Profit from selling box spread
+    double sell_implied_rate;     // Implied rate when selling
+
+    double buy_sell_disparity;    // Difference between buy and sell profitability
+    double put_call_parity_violation;  // Put-call parity violation amount (bps)
 
     // Liquidity metrics
     double long_call_bid_ask_spread;
@@ -87,6 +108,46 @@ struct BoxSpreadLeg {
     bool is_valid() const;
     double get_strike_width() const;
     int get_days_to_expiry() const;
+};
+
+// ============================================================================
+// Yield Curve Data Point
+// ============================================================================
+
+struct YieldCurvePoint {
+    std::string symbol;              // Underlying symbol (e.g., "SPX", "ES", "XSP")
+    int days_to_expiry;              // Days to expiration
+    std::string expiry_date;         // Expiration date (YYYYMMDD)
+    double strike_width;             // Strike width (K2 - K1)
+    double implied_rate;             // Implied annual interest rate (%)
+    double effective_rate;           // Effective rate after transaction costs (%)
+    double net_debit;                // Net debit/credit
+    double spread_bps;               // Spread vs benchmark (basis points)
+    double liquidity_score;          // Average liquidity score across legs
+    BoxSpreadLeg spread;             // Full box spread leg data
+
+    // Timestamp
+    std::chrono::system_clock::time_point timestamp;
+
+    // Helper methods
+    bool is_valid() const;
+};
+
+// ============================================================================
+// Yield Curve
+// ============================================================================
+
+struct YieldCurve {
+    std::string symbol;              // Underlying symbol
+    double strike_width;             // Strike width for all points
+    std::vector<YieldCurvePoint> points;  // Data points sorted by days_to_expiry
+    double benchmark_rate;           // Benchmark rate for comparison (%)
+    std::chrono::system_clock::time_point generated_time;
+
+    // Helper methods
+    bool is_valid() const;
+    size_t size() const { return points.size(); }
+    void sort_by_dte();  // Sort points by days to expiry
 };
 
 // ============================================================================
@@ -258,6 +319,18 @@ inline std::string time_in_force_to_string(TimeInForce tif) {
 inline std::optional<OptionType> string_to_option_type(const std::string& str) {
     if (str == "CALL" || str == "C") return OptionType::Call;
     if (str == "PUT" || str == "P") return OptionType::Put;
+    return std::nullopt;
+}
+
+// Convert OptionStyle to string
+inline std::string option_style_to_string(OptionStyle style) {
+    return style == OptionStyle::European ? "European" : "American";
+}
+
+// Parse string to OptionStyle
+inline std::optional<OptionStyle> string_to_option_style(const std::string& str) {
+    if (str == "European" || str == "EU" || str == "E") return OptionStyle::European;
+    if (str == "American" || str == "US" || str == "A") return OptionStyle::American;
     return std::nullopt;
 }
 

@@ -10,8 +10,9 @@
    - `poetry run pytest`
    - Optional: run mock TWS integration tests and schema validation.
 
-2. **Go TUI**
-   - `go test ./tui/...`
+2. **C++ TUI**
+   - Build: `cmake --build build --target ib_box_spread_tui`
+   - Tests: C++ TUI tests run as part of main C++ test suite
 
 3. **Web SPA**
    - `npm install`
@@ -52,11 +53,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
-      - name: TUI tests
-        run: bash agents/tui/scripts/run-tests.sh
+      - uses: actions/setup-cmake@v3
+      - name: Build C++ TUI
+        run: cmake --build build --target ib_box_spread_tui
+      - name: TUI tests (part of C++ test suite)
+        run: ctest --test-dir build --output-on-failure
 
   web:
     runs-on: ubuntu-latest
@@ -90,4 +91,3 @@ jobs:
 - Each agent should update `TODO_OVERVIEW.md` as tasks complete.
 - Backend publishes schema updates in `API_CONTRACT.md`; frontends sync before merging.
 - Tag releases (e.g., `git tag v1.2.0`) after CI passes on main.
-

@@ -21,6 +21,39 @@ struct TWSConfig {
     int reconnect_delay_ms = 3000;  // Deprecated: use exponential backoff instead
     int max_reconnect_attempts = 10; // Maximum reconnection attempts (0 = unlimited)
     bool log_raw_messages = false;   // Log raw API messages/data for debugging (verbose, use with trace log_level)
+    bool use_mock = false;           // Use in-process mock TWS client (no network connection)
+
+    // PCAP Capture Configuration
+    bool enable_pcap_capture = false;  // Enable PCAP packet capture for TWS API traffic
+    std::string pcap_output_file = ""; // Output file path (empty = auto-generate with timestamp)
+    bool pcap_nanosecond_precision = false;  // Use nanosecond precision timestamps (default: microsecond)
+};
+
+// ============================================================================
+// Commission Configuration (IBKR Pro)
+// ============================================================================
+
+enum class CommissionTier {
+    Standard,        // 0-10,000 contracts/month: $0.65/contract
+    Tier1,           // 10,001-50,000: $0.60/contract
+    Tier2,           // 50,001-100,000: $0.55/contract
+    Tier3            // 100,001+: $0.50/contract
+};
+
+struct CommissionConfig {
+    bool use_ibkr_pro_rates = true;    // Use IBKR Pro published rates
+    double per_contract_fee = 0.65;    // Default per contract fee (IBKR Pro standard)
+    double minimum_order_fee = 1.00;   // Minimum per order (waived if monthly > $30)
+    double maximum_order_fee_pct = 1.0; // Maximum 1% of trade value (for orders < $1/share)
+
+    // Volume-based tiers (monthly contract volume)
+    int monthly_contract_volume = 0;   // Track monthly volume for tier calculation
+    CommissionTier current_tier = CommissionTier::Standard;
+
+    // Tier thresholds and rates
+    static double get_tier_rate(CommissionTier tier);
+    static CommissionTier get_tier_from_volume(int monthly_volume);
+    double get_effective_rate() const;  // Get current effective rate based on tier
 };
 
 // ============================================================================
@@ -37,6 +70,7 @@ struct StrategyParams {
     double max_bid_ask_spread = 0.10;   // Maximum acceptable bid-ask spread
     int min_volume = 100;               // Minimum daily volume
     int min_open_interest = 500;        // Minimum open interest
+    CommissionConfig commissions;       // Commission configuration
 };
 
 // ============================================================================
@@ -67,6 +101,33 @@ struct LogConfig {
 };
 
 // ============================================================================
+// Massive.com Configuration
+// ============================================================================
+
+struct MassiveConfig {
+    bool enabled = false;
+    std::string api_key;
+    std::string base_url = "https://api.massive.com";
+
+    bool use_for_historical_data = true;
+    bool use_for_realtime_quotes = true;
+    bool use_for_dividend_data = true;
+    bool use_for_fundamental_data = true;
+
+    bool websocket_enabled = false;
+    std::string websocket_url = "wss://api.massive.com/ws";
+
+    double min_market_cap = 1e9;  // $1B minimum
+    double max_pe_ratio = 50.0;
+    bool avoid_penny_stocks = true;
+
+    int dividend_blackout_days = 2;
+
+    int cache_duration_seconds = 300;
+    int rate_limit_per_second = 10;
+};
+
+// ============================================================================
 // Main Configuration Structure
 // ============================================================================
 
@@ -75,12 +136,41 @@ struct Config {
     StrategyParams strategy;
     RiskConfig risk;
     LogConfig logging;
+    MassiveConfig massive;
 
     // Runtime options
     bool dry_run = false;                       // Simulate without real trades
     int loop_delay_ms = 1000;                   // Main loop delay
     bool continue_on_error = false;             // Continue trading on errors
 };
+
+// ============================================================================
+// Commission Config Helper Methods
+// ============================================================================
+
+inline double CommissionConfig::get_tier_rate(CommissionTier tier) {
+    switch (tier) {
+        case CommissionTier::Standard: return 0.65;
+        case CommissionTier::Tier1: return 0.60;
+        case CommissionTier::Tier2: return 0.55;
+        case CommissionTier::Tier3: return 0.50;
+        default: return 0.65;
+    }
+}
+
+inline CommissionTier CommissionConfig::get_tier_from_volume(int monthly_volume) {
+    if (monthly_volume <= 10000) return CommissionTier::Standard;
+    if (monthly_volume <= 50000) return CommissionTier::Tier1;
+    if (monthly_volume <= 100000) return CommissionTier::Tier2;
+    return CommissionTier::Tier3;
+}
+
+inline double CommissionConfig::get_effective_rate() const {
+    if (use_ibkr_pro_rates) {
+        return get_tier_rate(current_tier);
+    }
+    return per_contract_fee;
+}
 
 // ============================================================================
 // Configuration Manager Class
@@ -111,6 +201,7 @@ public:
     static void validate_strategy_params(const StrategyParams& strategy);
     static void validate_risk_config(const RiskConfig& risk);
     static void validate_log_config(const LogConfig& logging);
+    static void validate_massive_config(const MassiveConfig& massive);
 };
 
 // ============================================================================
@@ -127,7 +218,11 @@ inline void to_json(nlohmann::json& j, const TWSConfig& config) {
         {"auto_reconnect", config.auto_reconnect},
         {"reconnect_delay_ms", config.reconnect_delay_ms},
         {"max_reconnect_attempts", config.max_reconnect_attempts},
-        {"log_raw_messages", config.log_raw_messages}
+        {"log_raw_messages", config.log_raw_messages},
+        {"use_mock", config.use_mock},
+        {"enable_pcap_capture", config.enable_pcap_capture},
+        {"pcap_output_file", config.pcap_output_file},
+        {"pcap_nanosecond_precision", config.pcap_nanosecond_precision}
     };
 }
 
@@ -145,6 +240,14 @@ inline void from_json(const nlohmann::json& j, TWSConfig& config) {
         j.at("max_reconnect_attempts").get_to(config.max_reconnect_attempts);
     if (j.contains("log_raw_messages"))
         j.at("log_raw_messages").get_to(config.log_raw_messages);
+    if (j.contains("use_mock"))
+        j.at("use_mock").get_to(config.use_mock);
+    if (j.contains("enable_pcap_capture"))
+        j.at("enable_pcap_capture").get_to(config.enable_pcap_capture);
+    if (j.contains("pcap_output_file"))
+        j.at("pcap_output_file").get_to(config.pcap_output_file);
+    if (j.contains("pcap_nanosecond_precision"))
+        j.at("pcap_nanosecond_precision").get_to(config.pcap_nanosecond_precision);
 }
 
 // Strategy Params
@@ -239,6 +342,60 @@ inline void from_json(const nlohmann::json& j, LogConfig& config) {
         j.at("use_colors").get_to(config.use_colors);
 }
 
+// Massive Config
+inline void to_json(nlohmann::json& j, const MassiveConfig& config) {
+    j = nlohmann::json{
+        {"enabled", config.enabled},
+        {"api_key", config.api_key},
+        {"base_url", config.base_url},
+        {"use_for_historical_data", config.use_for_historical_data},
+        {"use_for_realtime_quotes", config.use_for_realtime_quotes},
+        {"use_for_dividend_data", config.use_for_dividend_data},
+        {"use_for_fundamental_data", config.use_for_fundamental_data},
+        {"websocket_enabled", config.websocket_enabled},
+        {"websocket_url", config.websocket_url},
+        {"min_market_cap", config.min_market_cap},
+        {"max_pe_ratio", config.max_pe_ratio},
+        {"avoid_penny_stocks", config.avoid_penny_stocks},
+        {"dividend_blackout_days", config.dividend_blackout_days},
+        {"cache_duration_seconds", config.cache_duration_seconds},
+        {"rate_limit_per_second", config.rate_limit_per_second}
+    };
+}
+
+inline void from_json(const nlohmann::json& j, MassiveConfig& config) {
+    if (j.contains("enabled"))
+        j.at("enabled").get_to(config.enabled);
+    if (j.contains("api_key"))
+        j.at("api_key").get_to(config.api_key);
+    if (j.contains("base_url"))
+        j.at("base_url").get_to(config.base_url);
+    if (j.contains("use_for_historical_data"))
+        j.at("use_for_historical_data").get_to(config.use_for_historical_data);
+    if (j.contains("use_for_realtime_quotes"))
+        j.at("use_for_realtime_quotes").get_to(config.use_for_realtime_quotes);
+    if (j.contains("use_for_dividend_data"))
+        j.at("use_for_dividend_data").get_to(config.use_for_dividend_data);
+    if (j.contains("use_for_fundamental_data"))
+        j.at("use_for_fundamental_data").get_to(config.use_for_fundamental_data);
+    if (j.contains("websocket_enabled"))
+        j.at("websocket_enabled").get_to(config.websocket_enabled);
+    if (j.contains("websocket_url"))
+        j.at("websocket_url").get_to(config.websocket_url);
+    if (j.contains("min_market_cap"))
+        j.at("min_market_cap").get_to(config.min_market_cap);
+    if (j.contains("max_pe_ratio"))
+        j.at("max_pe_ratio").get_to(config.max_pe_ratio);
+    if (j.contains("avoid_penny_stocks"))
+        j.at("avoid_penny_stocks").get_to(config.avoid_penny_stocks);
+    if (j.contains("dividend_blackout_days"))
+        j.at("dividend_blackout_days").get_to(config.dividend_blackout_days);
+    if (j.contains("cache_duration_seconds"))
+        j.at("cache_duration_seconds").get_to(config.cache_duration_seconds);
+    if (j.contains("rate_limit_per_second"))
+        j.at("rate_limit_per_second").get_to(config.rate_limit_per_second);
+}
+
 // Main Config
 inline void to_json(nlohmann::json& j, const Config& config) {
     j = nlohmann::json{
@@ -246,6 +403,7 @@ inline void to_json(nlohmann::json& j, const Config& config) {
         {"strategy", config.strategy},
         {"risk", config.risk},
         {"logging", config.logging},
+        {"massive", config.massive},
         {"dry_run", config.dry_run},
         {"loop_delay_ms", config.loop_delay_ms},
         {"continue_on_error", config.continue_on_error}
@@ -259,6 +417,8 @@ inline void from_json(const nlohmann::json& j, Config& config) {
         j.at("risk").get_to(config.risk);
     if (j.contains("logging"))
         j.at("logging").get_to(config.logging);
+    if (j.contains("massive"))
+        j.at("massive").get_to(config.massive);
     if (j.contains("dry_run"))
         j.at("dry_run").get_to(config.dry_run);
     if (j.contains("loop_delay_ms"))

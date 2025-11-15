@@ -35,6 +35,7 @@ Automated options arbitrage trading system for Interactive Brokers using box spr
 - ✅ QuestDB time-series archiving for quotes and trades
 - ✅ IBKR Client Portal API integration for account and portfolio snapshots
 - ✅ Cython bindings exposing C++ calculations to Python
+- ✅ WebAssembly (WASM) module for code reuse between backend, TUI, and web app
 
 ## What is a Box Spread?
 
