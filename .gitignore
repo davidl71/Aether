@@ -142,3 +142,9 @@ dist/ib_box_spread-*.sha256
 .cursor/rules/todo2.mdc
 .cursor/mcp.json
 .todo2/
+# Build artifacts
+web/dist/
+web/dev-dist/
+.cache/
+emsdk/
+typescript/node_modules/
