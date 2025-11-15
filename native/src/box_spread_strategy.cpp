@@ -1,8 +1,10 @@
 // box_spread_strategy.cpp - Box spread strategy implementation (stub)
 #include "box_spread_strategy.h"
+#include "config_manager.h"
 #include <spdlog/spdlog.h>
 #include <algorithm>
 #include <numeric>
+#include <cmath>
 
 // NOTE FOR AUTOMATION AGENTS:
 // This module encapsulates the decision logic around identifying, validating, and
@@ -410,9 +412,377 @@ int BoxSpreadStrategy::get_position_count() const {
     return static_cast<int>(pimpl_->positions_.size());
 }
 
+// ============================================================================
+// Lending/Borrowing Opportunities
+// ============================================================================
+
+std::vector<BoxSpreadStrategy::BoxSpreadOpportunity> BoxSpreadStrategy::find_lending_opportunities(
+    const std::string& symbol,
+    double benchmark_rate_percent,
+    double min_spread_bps) {
+
+    spdlog::info("Scanning for lending opportunities for {} vs benchmark rate {:.2f}% (min spread: {:.1f} bps)",
+                 symbol, benchmark_rate_percent, min_spread_bps);
+
+    // Find all box spreads for the symbol
+    std::vector<BoxSpreadOpportunity> all_opportunities = find_box_spreads(symbol);
+
+    // Filter and rank by rate competitiveness
+    std::vector<BoxSpreadOpportunity> lending_opportunities;
+    for (const auto& opp : all_opportunities) {
+        if (beats_benchmark(opp.spread, benchmark_rate_percent, min_spread_bps)) {
+            lending_opportunities.push_back(opp);
+        }
+    }
+
+    // Sort by rate competitiveness (better rates first)
+    std::sort(lending_opportunities.begin(), lending_opportunities.end(),
+        [this, benchmark_rate_percent](const BoxSpreadOpportunity& a, const BoxSpreadOpportunity& b) {
+            double spread_a = BoxSpreadCalculator::compare_to_benchmark(a.spread, benchmark_rate_percent);
+            double spread_b = BoxSpreadCalculator::compare_to_benchmark(b.spread, benchmark_rate_percent);
+            return spread_a > spread_b;  // Higher spread = better
+        });
+
+    spdlog::info("Found {} lending opportunities beating benchmark", lending_opportunities.size());
+    return lending_opportunities;
+}
+
+bool BoxSpreadStrategy::beats_benchmark(
+    const types::BoxSpreadLeg& spread,
+    double benchmark_rate_percent,
+    double min_spread_bps) const {
+
+    double spread_bps = BoxSpreadCalculator::compare_to_benchmark(spread, benchmark_rate_percent);
+    return spread_bps >= min_spread_bps;
+}
+
+// ============================================================================
+// Intraday Position Improvement
+// ============================================================================
+
+std::optional<BoxSpreadStrategy::PositionImprovement> BoxSpreadStrategy::evaluate_position_improvement(
+    const std::string& position_id) {
+
+    // Find position
+    auto pos_it = std::find_if(pimpl_->positions_.begin(), pimpl_->positions_.end(),
+        [&position_id](const types::Position& pos) {
+            // NOTE: Position ID matching would need to be implemented
+            // For now, using symbol matching as placeholder
+            return position_id == pos.contract.symbol;
+        });
+
+    if (pos_it == pimpl_->positions_.end()) {
+        spdlog::warn("Position {} not found for improvement evaluation", position_id);
+        return std::nullopt;
+    }
+
+    // NOTE: This is a stub implementation
+    // Full implementation would:
+    // 1. Get current market data for the position
+    // 2. Calculate current implied rate
+    // 3. Compare to entry implied rate
+    // 4. Scan for better opportunities on different expirations
+    // 5. Evaluate early close value vs holding to expiry
+
+    PositionImprovement improvement;
+    improvement.position_id = position_id;
+    improvement.current_implied_rate = 0.0;  // Would calculate from current market data
+    improvement.entry_implied_rate = 0.0;     // Would retrieve from position history
+    improvement.improvement_bps = 0.0;
+    improvement.has_improvement_opportunity = false;
+    improvement.improvement_action = "none";
+    improvement.early_close_beneficial = false;
+
+    // TODO: Implement full evaluation logic
+    spdlog::debug("Evaluating position improvement for {}", position_id);
+
+    return improvement;
+}
+
+bool BoxSpreadStrategy::roll_box_spread(
+    const std::string& position_id,
+    const BoxSpreadOpportunity& new_opportunity) {
+
+    spdlog::info("Rolling box spread position {} to new opportunity", position_id);
+
+    // Close existing position
+    if (!close_box_spread(position_id)) {
+        spdlog::error("Failed to close existing position {} for roll", position_id);
+        return false;
+    }
+
+    // Open new position
+    if (!execute_box_spread(new_opportunity)) {
+        spdlog::error("Failed to open new position for roll");
+        return false;
+    }
+
+    spdlog::info("Successfully rolled position {} to new expiration", position_id);
+    return true;
+}
+
+double BoxSpreadStrategy::calculate_early_close_value(
+    const types::BoxSpreadLeg& spread) const {
+
+    // Calculate current mark-to-market value
+    // For early close, we would reverse the box spread (sell what we bought, buy what we sold)
+    // Early close value = -current_net_debit (opposite of entry cost)
+
+    // NOTE: This requires current market data for all legs
+    // Stub implementation returns theoretical early close value
+
+    double current_market_value = spread.theoretical_value;  // Would use current market prices
+    double early_close_value = current_market_value - spread.net_debit;
+
+    return early_close_value;
+}
+
+void BoxSpreadStrategy::monitor_positions_with_improvements(
+    double improvement_threshold_bps) {
+
+    spdlog::debug("Monitoring positions for improvement opportunities (threshold: {:.1f} bps)",
+                  improvement_threshold_bps);
+
+    for (const auto& position : pimpl_->positions_) {
+        // NOTE: Position ID would be stored in Position structure
+        std::string position_id = position.contract.symbol;  // Placeholder
+
+        auto improvement_opt = evaluate_position_improvement(position_id);
+        if (!improvement_opt.has_value()) {
+            continue;
+        }
+
+        PositionImprovement improvement = improvement_opt.value();
+
+        if (!improvement.has_improvement_opportunity) {
+            continue;
+        }
+
+        if (improvement.improvement_bps < improvement_threshold_bps) {
+            spdlog::trace("Position {} has improvement opportunity ({:.1f} bps) but below threshold",
+                         position_id, improvement.improvement_bps);
+            continue;
+        }
+
+        // Log improvement opportunity
+        spdlog::info("Position {} improvement opportunity: {} (improvement: {:.1f} bps)",
+                    position_id, improvement.improvement_action, improvement.improvement_bps);
+
+        // Execute improvement action
+        if (improvement.improvement_action == "roll" && improvement.roll_opportunity.has_value()) {
+            if (improvement.roll_benefit_bps > improvement_threshold_bps) {
+                spdlog::info("Executing roll for position {} (benefit: {:.1f} bps)",
+                            position_id, improvement.roll_benefit_bps);
+                roll_box_spread(position_id, improvement.roll_opportunity.value());
+            }
+        } else if (improvement.improvement_action == "close_early" && improvement.early_close_beneficial) {
+            spdlog::info("Executing early close for position {} (value: ${:.2f} vs hold: ${:.2f})",
+                        position_id, improvement.early_close_value, improvement.hold_to_expiry_value);
+            close_box_spread(position_id);
+        }
+    }
+}
+
 void BoxSpreadStrategy::update_parameters(const config::StrategyParams& params) {
     pimpl_->params_ = params;
     spdlog::info("Strategy parameters updated");
+}
+
+// ============================================================================
+// Yield Curve Analysis Implementation
+// ============================================================================
+
+types::YieldCurve BoxSpreadStrategy::build_yield_curve(
+    const std::string& symbol,
+    double strike_width,
+    double benchmark_rate_percent,
+    int min_dte,
+    int max_dte) {
+
+    spdlog::info("Building yield curve for {} with strike width {:.2f} (DTE: {}-{})",
+                 symbol, strike_width, min_dte, max_dte);
+
+    types::YieldCurve curve;
+    curve.symbol = symbol;
+    curve.strike_width = strike_width;
+    curve.benchmark_rate = benchmark_rate_percent;
+    curve.generated_time = std::chrono::system_clock::now();
+
+    // Find all box spreads for the symbol
+    std::vector<BoxSpreadOpportunity> all_opportunities = find_box_spreads(symbol);
+
+    // Filter by strike width and DTE range
+    for (const auto& opp : all_opportunities) {
+        double opp_strike_width = opp.spread.get_strike_width();
+        int dte = opp.spread.get_days_to_expiry();
+
+        // Check if strike width matches (within tolerance) and DTE is in range
+        const double strike_tolerance = 0.01;  // $0.01 tolerance
+        if (std::abs(opp_strike_width - strike_width) <= strike_tolerance &&
+            dte >= min_dte && dte <= max_dte) {
+
+            // Calculate implied rate
+            double implied_rate = BoxSpreadCalculator::calculate_implied_interest_rate(opp.spread);
+            double effective_rate = BoxSpreadCalculator::calculate_effective_interest_rate(opp.spread);
+            double spread_bps = BoxSpreadCalculator::compare_to_benchmark(opp.spread, benchmark_rate_percent);
+
+            // Create yield curve point
+            types::YieldCurvePoint point;
+            point.symbol = symbol;
+            point.days_to_expiry = dte;
+            point.expiry_date = opp.spread.long_call.expiry;  // All legs have same expiry
+            point.strike_width = opp_strike_width;
+            point.implied_rate = implied_rate;
+            point.effective_rate = effective_rate;
+            point.net_debit = opp.spread.net_debit;
+            point.spread_bps = spread_bps;
+            point.liquidity_score = opp.liquidity_score;
+            point.spread = opp.spread;
+            point.timestamp = std::chrono::system_clock::now();
+
+            curve.points.push_back(point);
+        }
+    }
+
+    // Sort by days to expiry
+    curve.sort_by_dte();
+
+    spdlog::info("Built yield curve with {} data points", curve.points.size());
+    return curve;
+}
+
+std::vector<types::YieldCurve> BoxSpreadStrategy::build_yield_curves_multi_symbol(
+    const std::vector<std::string>& symbols,
+    double strike_width,
+    double benchmark_rate_percent,
+    int min_dte,
+    int max_dte) {
+
+    spdlog::info("Building yield curves for {} symbols with strike width {:.2f}",
+                 symbols.size(), strike_width);
+
+    std::vector<types::YieldCurve> curves;
+    curves.reserve(symbols.size());
+
+    for (const auto& symbol : symbols) {
+        types::YieldCurve curve = build_yield_curve(
+            symbol, strike_width, benchmark_rate_percent, min_dte, max_dte);
+        curves.push_back(curve);
+    }
+
+    spdlog::info("Built {} yield curves", curves.size());
+    return curves;
+}
+
+BoxSpreadStrategy::YieldCurveComparison BoxSpreadStrategy::compare_yield_curves(
+    const std::vector<types::YieldCurve>& curves) {
+
+    YieldCurveComparison comparison;
+    comparison.generated_time = std::chrono::system_clock::now();
+
+    if (curves.empty()) {
+        return comparison;
+    }
+
+    // Get strike width from first curve (all should be same)
+    comparison.strike_width = curves[0].strike_width;
+
+    // Collect all symbols
+    for (const auto& curve : curves) {
+        comparison.symbols.push_back(curve.symbol);
+        comparison.rates_by_symbol[curve.symbol] = {};
+        comparison.spreads_by_symbol[curve.symbol] = {};
+    }
+
+    // Find common DTE points across all curves
+    if (curves.empty()) {
+        return comparison;
+    }
+
+    // Start with DTE points from first curve
+    std::vector<int> candidate_dte_points;
+    for (const auto& point : curves[0].points) {
+        candidate_dte_points.push_back(point.days_to_expiry);
+    }
+
+    // Filter to only DTE points that exist in all curves
+    for (int dte : candidate_dte_points) {
+        bool all_have_dte = true;
+        for (const auto& curve : curves) {
+            bool has_dte = false;
+            for (const auto& point : curve.points) {
+                if (point.days_to_expiry == dte) {
+                    has_dte = true;
+                    break;
+                }
+            }
+            if (!has_dte) {
+                all_have_dte = false;
+                break;
+            }
+        }
+
+        if (all_have_dte) {
+            comparison.common_dte_points.push_back(dte);
+        }
+    }
+
+    // Populate rates and spreads for each symbol at each common DTE
+    for (const auto& curve : curves) {
+        for (int dte : comparison.common_dte_points) {
+            // Find point with matching DTE
+            for (const auto& point : curve.points) {
+                if (point.days_to_expiry == dte) {
+                    comparison.rates_by_symbol[curve.symbol].push_back(point.implied_rate);
+                    comparison.spreads_by_symbol[curve.symbol].push_back(point.spread_bps);
+                    break;
+                }
+            }
+        }
+    }
+
+    spdlog::info("Comparison created with {} common DTE points across {} symbols",
+                 comparison.common_dte_points.size(), comparison.symbols.size());
+
+    return comparison;
+}
+
+// ============================================================================
+// Yield Curve Helper Methods
+// ============================================================================
+
+} // namespace strategy
+
+namespace types {
+
+bool YieldCurvePoint::is_valid() const {
+    return !symbol.empty() &&
+           days_to_expiry > 0 &&
+           strike_width > 0 &&
+           !expiry_date.empty();
+}
+
+bool YieldCurve::is_valid() const {
+    return !symbol.empty() &&
+           strike_width > 0 &&
+           !points.empty();
+}
+
+void YieldCurve::sort_by_dte() {
+    std::sort(points.begin(), points.end(),
+        [](const YieldCurvePoint& a, const YieldCurvePoint& b) {
+            return a.days_to_expiry < b.days_to_expiry;
+        });
+}
+
+} // namespace types
+
+namespace strategy {
+
+bool BoxSpreadStrategy::YieldCurveComparison::is_valid() const {
+    return strike_width > 0 &&
+           !symbols.empty() &&
+           !common_dte_points.empty();
 }
 
 config::StrategyParams BoxSpreadStrategy::get_parameters() const {
@@ -586,11 +956,153 @@ double BoxSpreadCalculator::calculate_commission(
     return 4.0 * per_contract_fee;  // 4 legs
 }
 
+double BoxSpreadCalculator::calculate_commission_ibkr_pro(
+    const types::BoxSpreadLeg& spread,
+    const config::CommissionConfig& commission_config) {
+
+    // Get effective rate based on tier
+    double per_contract_rate = commission_config.get_effective_rate();
+
+    // Calculate base commission (4 legs)
+    double base_commission = 4.0 * per_contract_rate;
+
+    // Apply minimum order fee if applicable
+    // Note: Minimum fee is waived if monthly commissions > $30
+    // For now, we'll assume minimum applies unless told otherwise
+    if (base_commission < commission_config.minimum_order_fee) {
+        base_commission = commission_config.minimum_order_fee;
+    }
+
+    return base_commission;
+}
+
 double BoxSpreadCalculator::calculate_total_cost(
     const types::BoxSpreadLeg& spread,
     double per_contract_fee) {
 
     return spread.net_debit + calculate_commission(spread, per_contract_fee);
+}
+
+double BoxSpreadCalculator::calculate_total_cost_ibkr_pro(
+    const types::BoxSpreadLeg& spread,
+    const config::CommissionConfig& commission_config) {
+
+    return spread.net_debit + calculate_commission_ibkr_pro(spread, commission_config);
+}
+
+// ============================================================================
+// Lending/Borrowing Rate Calculations
+// ============================================================================
+
+double BoxSpreadCalculator::calculate_implied_interest_rate(
+    const types::BoxSpreadLeg& spread) {
+
+    double strike_width = spread.get_strike_width();
+    int days_to_expiry = spread.get_days_to_expiry();
+
+    if (days_to_expiry <= 0) {
+        return 0.0;
+    }
+
+    double net_cost = spread.net_debit;
+    double implied_rate = 0.0;
+
+    if (net_cost > 0) {
+        // Net debit (borrowing scenario): paying upfront, receiving strike width at expiry
+        // Rate = ((net_debit - strike_width) / strike_width) * (365 / days_to_expiry) * 100
+        implied_rate = ((net_cost - strike_width) / strike_width) * (365.0 / days_to_expiry) * 100.0;
+    } else if (net_cost < 0) {
+        // Net credit (lending scenario): receiving upfront, paying strike width at expiry
+        // Rate = ((strike_width - net_credit) / net_credit) * (365 / days_to_expiry) * 100
+        double net_credit = -net_cost;
+        implied_rate = ((strike_width - net_credit) / net_credit) * (365.0 / days_to_expiry) * 100.0;
+    }
+    // If net_cost == 0, implied_rate remains 0.0
+
+    return implied_rate;
+}
+
+double BoxSpreadCalculator::calculate_effective_interest_rate(
+    const types::BoxSpreadLeg& spread,
+    double per_contract_fee) {
+
+    double strike_width = spread.get_strike_width();
+    int days_to_expiry = spread.get_days_to_expiry();
+
+    if (days_to_expiry <= 0) {
+        return 0.0;
+    }
+
+    // Include transaction costs in rate calculation
+    double commission = calculate_commission(spread, per_contract_fee);
+    double total_cost = spread.net_debit + commission;
+    double effective_rate = 0.0;
+
+    if (total_cost > 0) {
+        // Net debit after costs (borrowing)
+        effective_rate = ((total_cost - strike_width) / strike_width) * (365.0 / days_to_expiry) * 100.0;
+    } else if (total_cost < 0) {
+        // Net credit after costs (lending)
+        double net_credit_after_costs = -total_cost;
+        effective_rate = ((strike_width - net_credit_after_costs) / net_credit_after_costs) * (365.0 / days_to_expiry) * 100.0;
+    }
+
+    return effective_rate;
+}
+
+// Overload using IBKR Pro commission config
+double BoxSpreadCalculator::calculate_effective_interest_rate(
+    const types::BoxSpreadLeg& spread,
+    const config::CommissionConfig& commission_config) {
+
+    double strike_width = spread.get_strike_width();
+    int days_to_expiry = spread.get_days_to_expiry();
+
+    if (days_to_expiry <= 0) {
+        return 0.0;
+    }
+
+    // Include IBKR Pro transaction costs in rate calculation
+    double commission = calculate_commission_ibkr_pro(spread, commission_config);
+    double total_cost = spread.net_debit + commission;
+    double effective_rate = 0.0;
+
+    if (total_cost > 0) {
+        // Net debit after costs (borrowing)
+        effective_rate = ((total_cost - strike_width) / strike_width) * (365.0 / days_to_expiry) * 100.0;
+    } else if (total_cost < 0) {
+        // Net credit after costs (lending)
+        double net_credit_after_costs = -total_cost;
+        effective_rate = ((strike_width - net_credit_after_costs) / net_credit_after_costs) * (365.0 / days_to_expiry) * 100.0;
+    }
+
+    return effective_rate;
+}
+
+double BoxSpreadCalculator::compare_to_benchmark(
+    const types::BoxSpreadLeg& spread,
+    double benchmark_rate_percent,
+    double per_contract_fee) {
+
+    double effective_rate = calculate_effective_interest_rate(spread, per_contract_fee);
+
+    // Return spread in basis points (1 basis point = 0.01%)
+    // Positive = box spread beats benchmark (lower rate for borrowing, higher rate for lending)
+    // Negative = benchmark beats box spread
+
+    double spread_bps = (effective_rate - benchmark_rate_percent) * 100.0;
+
+    // For borrowing: negative spread_bps is good (we're paying less)
+    // For lending: positive spread_bps is good (we're earning more)
+    // This calculation gives positive when box spread is better
+
+    if (spread.net_debit > 0) {
+        // Borrowing: invert so negative spread means better (lower rate)
+        return -spread_bps;
+    } else {
+        // Lending: positive spread means better (higher rate)
+        return spread_bps;
+    }
 }
 
 // ============================================================================
