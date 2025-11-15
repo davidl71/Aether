@@ -1,0 +1,24 @@
+# Cursor Global Docs - Relative Paths
+# Generated: 2025-11-15T22:19:41.259570
+
+--- High-Priority Files ---
+docs/API_DOCUMENTATION_INDEX.md
+docs/CODEBASE_ARCHITECTURE.md
+docs/COMMON_PATTERNS.md
+docs/AI_FRIENDLY_CODE.md
+docs/TWS_INTEGRATION_STATUS.md
+docs/BOX_SPREAD_COMPREHENSIVE_GUIDE.md
+docs/STATIC_ANALYSIS_ANNOTATIONS.md
+docs/IMPLEMENTATION_GUIDE.md
+
+--- External Documentation ---
+docs/external/TWS_API_QUICK_REFERENCE.md
+docs/external/ECLIENT_EWRAPPER_PATTERNS.md
+docs/external/CMake_PRESETS_GUIDE.md
+docs/external/CPP20_FEATURES.md
+
+--- Secondary Documentation ---
+docs/EWRAPPER_STATUS.md
+docs/QUICK_START.md
+docs/DISTRIBUTED_COMPILATION.md
+docs/CURSOR_SETUP.md

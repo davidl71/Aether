@@ -1,0 +1,78 @@
+---
+alwaysApply: false
+---
+
+# Documentation References
+
+This file contains documentation reference guidelines. Use `@docs` to reference specific documentation files in Cursor.
+
+## Global Documentation Strategy
+
+See `docs/CURSOR_GLOBAL_DOCS.md` for complete guide on setting up global Docs in Cursor.
+
+### High-Priority Global Docs (Must-Have)
+- ✅ `docs/API_DOCUMENTATION_INDEX.md` - Complete index of all external APIs and libraries
+- ✅ `docs/CODEBASE_ARCHITECTURE.md` - System design and component interactions
+- ✅ `docs/COMMON_PATTERNS.md` - Coding patterns, conventions, and idioms
+- ✅ `docs/AI_FRIENDLY_CODE.md` - Best practices for writing AI-friendly code
+- ✅ `docs/TWS_INTEGRATION_STATUS.md` - TWS API integration details
+- ✅ `docs/BOX_SPREAD_COMPREHENSIVE_GUIDE.md` - Box spread mechanics and implementation
+- ✅ `docs/STATIC_ANALYSIS_ANNOTATIONS.md` - Static analysis annotations guide
+- ✅ `docs/IMPLEMENTATION_GUIDE.md` - Step-by-step implementation guide
+
+### External Documentation (Downloaded)
+- ✅ `docs/external/TWS_API_QUICK_REFERENCE.md` - TWS API quick reference
+- ✅ `docs/external/ECLIENT_EWRAPPER_PATTERNS.md` - EClient/EWrapper patterns
+- ✅ `docs/external/CMake_PRESETS_GUIDE.md` - CMake presets guide
+- ✅ `docs/external/CPP20_FEATURES.md` - C++20 features reference
+
+## When to Reference Documentation
+
+### API Usage
+- Use `@docs API_DOCUMENTATION_INDEX.md` when suggesting code using external APIs
+- **TWS API**: Use `@docs external/TWS_API_QUICK_REFERENCE.md` or `@docs TWS_INTEGRATION_STATUS.md`
+- **EWrapper**: Use `@docs EWRAPPER_STATUS.md`
+
+### Architecture & Patterns
+- **Architecture Questions**: Use `@docs CODEBASE_ARCHITECTURE.md` when discussing system design
+- **Code Patterns**: Use `@docs COMMON_PATTERNS.md` when suggesting code to ensure consistency
+- **AI-Friendly Code**: Use `@docs AI_FRIENDLY_CODE.md` when writing new code
+
+### Code Quality & Analysis
+- **Static Analysis**: Use `@docs STATIC_ANALYSIS_ANNOTATIONS.md` when adding function attributes or annotations
+- **Static Analysis Tools**: Use `@docs STATIC_ANALYSIS.md` for tool configuration
+
+### Build System & Language
+- **CMake Questions**: Use `@docs external/CMake_PRESETS_GUIDE.md` for build system questions
+- **C++20 Features**: Use `@docs external/CPP20_FEATURES.md` for C++20 language questions
+
+### Research & Documentation
+- **NotebookLM Usage**: Use `@docs NOTEBOOKLM_USAGE.md` when researching topics, summarizing videos, or creating documentation from links
+
+## Writing AI-Friendly Code
+
+When writing or suggesting code:
+1. Use explicit, descriptive names (see `docs/AI_FRIENDLY_CODE.md`)
+2. Add documentation comments explaining *why*, not *what*
+3. Include usage examples for complex functions
+4. Make error messages actionable with context
+5. Use type aliases for clarity
+6. Follow established patterns from `docs/COMMON_PATTERNS.md`
+7. Add static analysis annotations for critical functions (see `docs/STATIC_ANALYSIS_ANNOTATIONS.md`):
+   - Use `[[nodiscard]]` for functions whose return values must be checked
+   - Use `__attribute__((nonnull))` for pointer parameters that cannot be null
+   - Use `__attribute__((warn_unused_result))` for functions where ignoring the return value is dangerous
+   - Add suppression comments (`// cppcheck-suppress`, `// NOLINT`) only when necessary and document why
+
+## Additional Documentation Files
+
+### API Documentation
+- **Complete API Index**: `docs/API_DOCUMENTATION_INDEX.md` - All external APIs and libraries
+- **TWS API**: `docs/TWS_INTEGRATION_STATUS.md` - TWS API integration details
+- **EWrapper**: `docs/EWRAPPER_STATUS.md` - EWrapper implementation status
+- **Usage Guide**: `docs/CURSOR_DOCS_USAGE.md` - How to use @docs in Cursor
+- **Global Docs Guide**: `docs/CURSOR_GLOBAL_DOCS.md` - Complete guide on global Docs setup
+
+### Implementation Guides
+- **Implementation Guide**: `docs/IMPLEMENTATION_GUIDE.md` - Step-by-step implementation guide
+- **Box Spread Guide**: `docs/BOX_SPREAD_COMPREHENSIVE_GUIDE.md` - Box spread mechanics and implementation

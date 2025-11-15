@@ -1,0 +1,46 @@
+name: Documentation Validation
+
+on:
+  pull_request:
+    paths:
+      - 'docs/API_DOCUMENTATION_INDEX.md'
+      - 'docs/**/*.md'
+      - 'scripts/validate_docs_*.sh'
+      - 'scripts/validate_docs_*.py'
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/API_DOCUMENTATION_INDEX.md'
+      - 'docs/**/*.md'
+
+jobs:
+  validate-format:
+    name: Validate Documentation Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Validate Format
+        run: |
+          chmod +x scripts/validate_docs_format.py
+          ./scripts/validate_docs_format.py
+
+  validate-links:
+    name: Validate Documentation Links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate Links
+        run: |
+          chmod +x scripts/validate_docs_links.sh
+          ./scripts/validate_docs_links.sh
+        continue-on-error: true  # Non-blocking, but will show warnings

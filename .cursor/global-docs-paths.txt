@@ -1,0 +1,25 @@
+# Cursor Global Docs - File Paths
+# Generated: 2025-11-15T22:19:41.259016
+# Use these paths in Cursor Settings → Features → Docs
+
+--- High-Priority Files (Must-Have) ---
+/Users/davidlowes/ib_box_spread_full_universal/docs/API_DOCUMENTATION_INDEX.md
+/Users/davidlowes/ib_box_spread_full_universal/docs/CODEBASE_ARCHITECTURE.md
+/Users/davidlowes/ib_box_spread_full_universal/docs/COMMON_PATTERNS.md
+/Users/davidlowes/ib_box_spread_full_universal/docs/AI_FRIENDLY_CODE.md
+/Users/davidlowes/ib_box_spread_full_universal/docs/TWS_INTEGRATION_STATUS.md
+/Users/davidlowes/ib_box_spread_full_universal/docs/BOX_SPREAD_COMPREHENSIVE_GUIDE.md
+/Users/davidlowes/ib_box_spread_full_universal/docs/STATIC_ANALYSIS_ANNOTATIONS.md
+/Users/davidlowes/ib_box_spread_full_universal/docs/IMPLEMENTATION_GUIDE.md
+
+--- External Documentation (Optional) ---
+/Users/davidlowes/ib_box_spread_full_universal/docs/external/TWS_API_QUICK_REFERENCE.md
+/Users/davidlowes/ib_box_spread_full_universal/docs/external/ECLIENT_EWRAPPER_PATTERNS.md
+/Users/davidlowes/ib_box_spread_full_universal/docs/external/CMake_PRESETS_GUIDE.md
+/Users/davidlowes/ib_box_spread_full_universal/docs/external/CPP20_FEATURES.md
+
+--- Secondary Documentation (Optional) ---
+/Users/davidlowes/ib_box_spread_full_universal/docs/EWRAPPER_STATUS.md
+/Users/davidlowes/ib_box_spread_full_universal/docs/QUICK_START.md
+/Users/davidlowes/ib_box_spread_full_universal/docs/DISTRIBUTED_COMPILATION.md
+/Users/davidlowes/ib_box_spread_full_universal/docs/CURSOR_SETUP.md

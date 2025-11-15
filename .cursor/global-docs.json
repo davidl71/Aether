@@ -1,0 +1,91 @@
+{
+  "version": "1.0.0",
+  "description": "Global documentation files for Cursor IDE",
+  "lastUpdated": "2025-01-27",
+  "highPriority": [
+    {
+      "path": "docs/API_DOCUMENTATION_INDEX.md",
+      "description": "Complete index of all external APIs and libraries",
+      "category": "api-reference"
+    },
+    {
+      "path": "docs/CODEBASE_ARCHITECTURE.md",
+      "description": "System design and component interactions",
+      "category": "architecture"
+    },
+    {
+      "path": "docs/COMMON_PATTERNS.md",
+      "description": "Coding patterns, conventions, and idioms",
+      "category": "patterns"
+    },
+    {
+      "path": "docs/AI_FRIENDLY_CODE.md",
+      "description": "Best practices for writing AI-friendly code",
+      "category": "best-practices"
+    },
+    {
+      "path": "docs/TWS_INTEGRATION_STATUS.md",
+      "description": "TWS API integration details",
+      "category": "api-reference"
+    },
+    {
+      "path": "docs/BOX_SPREAD_COMPREHENSIVE_GUIDE.md",
+      "description": "Box spread mechanics and implementation",
+      "category": "trading"
+    },
+    {
+      "path": "docs/STATIC_ANALYSIS_ANNOTATIONS.md",
+      "description": "Static analysis annotations guide",
+      "category": "code-quality"
+    },
+    {
+      "path": "docs/IMPLEMENTATION_GUIDE.md",
+      "description": "Step-by-step implementation guide",
+      "category": "implementation"
+    }
+  ],
+  "external": [
+    {
+      "path": "docs/external/TWS_API_QUICK_REFERENCE.md",
+      "description": "TWS API quick reference",
+      "category": "api-reference"
+    },
+    {
+      "path": "docs/external/ECLIENT_EWRAPPER_PATTERNS.md",
+      "description": "EClient/EWrapper patterns",
+      "category": "api-reference"
+    },
+    {
+      "path": "docs/external/CMake_PRESETS_GUIDE.md",
+      "description": "CMake presets guide",
+      "category": "build-system"
+    },
+    {
+      "path": "docs/external/CPP20_FEATURES.md",
+      "description": "C++20 features reference",
+      "category": "language-reference"
+    }
+  ],
+  "secondary": [
+    {
+      "path": "docs/EWRAPPER_STATUS.md",
+      "description": "EWrapper implementation status",
+      "category": "api-reference"
+    },
+    {
+      "path": "docs/QUICK_START.md",
+      "description": "Quick start guide",
+      "category": "getting-started"
+    },
+    {
+      "path": "docs/DISTRIBUTED_COMPILATION.md",
+      "description": "Build optimization guide",
+      "category": "build-system"
+    },
+    {
+      "path": "docs/CURSOR_SETUP.md",
+      "description": "Cursor IDE setup",
+      "category": "development"
+    }
+  ]
+}
