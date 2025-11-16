@@ -85,7 +85,7 @@ bash agents/web/scripts/run-tests.sh
 npm run dev
 ```
 
-Set `VITE_API_URL=https://host/api/snapshot` to hit a live backend. The default static JSON under `public/data/` keeps the SPA functional offline, and the service worker caches it for offline access.
+Set `VITE_API_URL=http://127.0.0.1:8000/api/snapshot` (or your backend URL) to hit the live Alpaca-backed service. The default static JSON under `public/data/` keeps the SPA functional offline, and the service worker caches it for offline access.
 
 ## Feature Parity with TUI
 
