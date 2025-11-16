@@ -99,14 +99,20 @@ class ConfigAdapter:
         Returns:
             Data client config dict
         """
-        nautilus_config = config.get("nautilus_trader", {})
-        data_config = nautilus_config.get("data_client_config", {})
-
-        return {
-            "host": data_config.get("host", "127.0.0.1"),
-            "port": data_config.get("port", 7497),
-            "client_id": data_config.get("client_id", 1),
-        }
+        broker = config.get("broker", {})
+        primary = str(broker.get("primary", "ALPACA")).upper()
+        if primary == "ALPACA":
+            alpaca_cfg = config.get("alpaca", {})
+            # Return verbatim; NautilusTrader Alpaca configs accept api keys and urls
+            return alpaca_cfg.get("data_client_config", {})
+        else:
+            nautilus_config = config.get("nautilus_trader", {})
+            data_config = nautilus_config.get("data_client_config", {})
+            return {
+                "host": data_config.get("host", "127.0.0.1"),
+                "port": data_config.get("port", 7497),
+                "client_id": data_config.get("client_id", 1),
+            }
 
     @staticmethod
     def get_nautilus_exec_config(config: Dict) -> Dict:
@@ -119,14 +125,19 @@ class ConfigAdapter:
         Returns:
             Execution client config dict
         """
-        nautilus_config = config.get("nautilus_trader", {})
-        exec_config = nautilus_config.get("exec_client_config", {})
-
-        return {
-            "host": exec_config.get("host", "127.0.0.1"),
-            "port": exec_config.get("port", 7497),
-            "client_id": exec_config.get("client_id", 1),
-        }
+        broker = config.get("broker", {})
+        primary = str(broker.get("primary", "ALPACA")).upper()
+        if primary == "ALPACA":
+            alpaca_cfg = config.get("alpaca", {})
+            return alpaca_cfg.get("exec_client_config", {})
+        else:
+            nautilus_config = config.get("nautilus_trader", {})
+            exec_config = nautilus_config.get("exec_client_config", {})
+            return {
+                "host": exec_config.get("host", "127.0.0.1"),
+                "port": exec_config.get("port", 7497),
+                "client_id": exec_config.get("client_id", 1),
+            }
 
     @staticmethod
     def get_strategy_config(config: Dict) -> Dict:

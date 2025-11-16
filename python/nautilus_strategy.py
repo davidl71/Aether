@@ -75,17 +75,17 @@ def main():
         choices=["debug", "info", "warning", "error"],
         help="Logging level"
     )
-    
+
     args = parser.parse_args()
-    
+
     # Set log level
     log_level = getattr(logging, args.log_level.upper())
     logging.getLogger().setLevel(log_level)
-    
+
     logger.info("=" * 60)
-    logger.info("IB Box Spread Strategy - NautilusTrader Integration")
+    logger.info("Box Spread Strategy - NautilusTrader Integration")
     logger.info("=" * 60)
-    
+
     # Load configuration
     try:
         config = ConfigAdapter.load_config(args.config)
@@ -93,18 +93,18 @@ def main():
     except Exception as e:
         logger.error(f"Failed to load configuration: {e}")
         return 1
-    
+
     # Override dry_run if specified
     if args.dry_run:
         config["dry_run"] = True
         logger.info("Running in DRY-RUN mode")
-    
+
     # Check if nautilus_trader is enabled
     nautilus_config = config.get("nautilus_trader", {})
     if not nautilus_config.get("enabled", True):
         logger.error("NautilusTrader integration is disabled in config")
         return 1
-    
+
     # Initialize NautilusTrader client
     try:
         connection_config = ConfigAdapter.get_connection_management_config(config)
@@ -115,10 +115,13 @@ def main():
 
         data_config = ConfigAdapter.get_nautilus_data_config(config)
         exec_config = ConfigAdapter.get_nautilus_exec_config(config)
+        # Determine primary venue/broker
+        broker_cfg = config.get("broker", {})
+        venue = str(broker_cfg.get("primary", "ALPACA")).upper()
         data_provider_config = ConfigAdapter.get_data_provider_config(config)
         questdb_config = ConfigAdapter.get_questdb_config(config)
         ibkr_portal_config = ConfigAdapter.get_ibkr_portal_config(config)
-        
+
         preflight = PreflightChecklist(
             config=config,
             nautilus_data_config=data_config,
@@ -155,47 +158,47 @@ def main():
         client = NautilusClient(
             data_config=data_config,
             exec_config=exec_config,
-            venue="IB",
+            venue=venue,
             notification_center=notifier,
         )
-        
+
         # Create data and exec clients
         client.create_data_client()
         client.create_exec_client()
-        
+
         logger.info("NautilusTrader client initialized")
     except Exception as e:
         logger.error(f"Failed to initialize NautilusTrader client: {e}")
         return 1
-    
+
     # Prepare connection supervisor
     reauth_scheduler = ReauthScheduler(ReauthScheduler.parse_config(reauth_config))
     connection_supervisor = ConnectionSupervisor(reauth_scheduler, notifier)
     if not reauth_scheduler.config.enabled:
-        logger.info("Weekly IB re-authentication workflow disabled")
+        logger.info("Weekly re-authentication workflow disabled")
 
-    # Connect to IB
+    # Connect to selected venue
     try:
         if not client.connect():
-            logger.error("Failed to connect to Interactive Brokers")
+            logger.error("Failed to connect to broker venue")
             return 1
-        logger.info("Connected to Interactive Brokers")
+        logger.info("Connected to venue")
     except Exception as e:
         logger.error(f"Connection error: {e}")
         return 1
-    
+
     # Initialize strategy runner
     try:
         strategy_config = ConfigAdapter.get_strategy_config(config)
         risk_config = ConfigAdapter.get_risk_config(config)
         orats_config = ConfigAdapter.get_orats_config(config)
-        
+
         # Log ORATS status
         if orats_config:
             logger.info("ORATS integration enabled")
         else:
             logger.info("ORATS integration disabled")
-        
+
         runner = StrategyRunner(
             nautilus_client=client,
             strategy_config=strategy_config,
@@ -206,18 +209,18 @@ def main():
             questdb_config=questdb_config,
             portal_client=portal_client,
         )
-        
+
         logger.info("Strategy runner initialized")
     except Exception as e:
         logger.error(f"Failed to initialize strategy runner: {e}")
         client.disconnect()
         return 1
-    
+
     # Start strategy
     try:
         runner.start()
         logger.info("Strategy started - monitoring for opportunities")
-        
+
         # Keep running until interrupted
         import signal
         import time
@@ -231,10 +234,10 @@ def main():
             runner.stop()
             client.disconnect()
             sys.exit(0)
-        
+
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
-        
+
         # Main loop
         while True:
             connection_supervisor.run_housekeeping(client, runner)
@@ -243,7 +246,7 @@ def main():
             if not runner.is_running and not runner.is_paused:
                 break
             time.sleep(1)
-        
+
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
     except Exception as e:
@@ -252,12 +255,9 @@ def main():
         runner.stop()
         client.disconnect()
         logger.info("Shutdown complete")
-    
+
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
-
-
-
