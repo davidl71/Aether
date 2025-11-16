@@ -148,3 +148,4 @@ web/dev-dist/
 .cache/
 emsdk/
 typescript/node_modules/
+typescript
