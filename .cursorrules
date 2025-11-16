@@ -74,6 +74,12 @@ When helping with this codebase:
 7. For API questions, reference `@docs API_DOCUMENTATION_INDEX.md`
 8. Use NotebookLM MCP server for research (see `docs/NOTEBOOKLM_USAGE.md`)
 
+### Deep Code Review Hint
+- For in-depth, model-driven code review on C++/CMake, prefer the local MLX command:
+  - Run: `cursor run ai:review-with-mlx --arg "<file list>"`
+  - Set `MLX_MODEL` (default suggested: `DiffuCode-7B-cpGRPO`) before running.
+  - Use for focused reviews on `native/src/*.cpp`, `CMakePresets.json`, and related files.
+
 ## Static Analysis
 
 - Use `./scripts/run_linters.sh` for linting

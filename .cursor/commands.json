@@ -3,6 +3,54 @@
   "description": "Project-specific commands for IB Box Spread trading application",
   "commands": [
     {
+      "name": "shortcuts:build",
+      "description": "Run build via Shortcut-friendly script (logs to logs/build_latest.log)",
+      "command": "./scripts/shortcuts/run_build.sh build",
+      "category": "build"
+    },
+    {
+      "name": "shortcuts:test",
+      "description": "Run tests via Shortcut-friendly script (logs to logs/tests_latest.log)",
+      "command": "./scripts/shortcuts/run_tests.sh",
+      "category": "test"
+    },
+    {
+      "name": "summarize:build-log",
+      "description": "Summarize latest build log on-device (MLX if available)",
+      "command": "python3 python/tools/summarize_log_mlx.py --path logs/build_latest.log",
+      "category": "docs"
+    },
+    {
+      "name": "summarize:test-log",
+      "description": "Summarize latest test log on-device (MLX if available)",
+      "command": "python3 python/tools/summarize_log_mlx.py --path logs/tests_latest.log",
+      "category": "docs"
+    },
+    {
+      "name": "env:install-mlx",
+      "description": "Install MLX and MLX-LM (Apple Silicon macOS only; safe no-op elsewhere)",
+      "command": "./scripts/install_mlx.sh",
+      "category": "setup"
+    },
+    {
+      "name": "shortcuts:summarize-file-to-notes",
+      "description": "Summarize a file and create a macOS Note (provide absolute path as ARG)",
+      "command": "./scripts/shortcuts/summarize_file_to_notes.sh \"$ARG\"",
+      "category": "docs"
+    },
+    {
+      "name": "shortcuts:plan-from-clipboard",
+      "description": "Draft an engineering plan from clipboard to macOS Notes",
+      "command": "./scripts/shortcuts/draft_plan_from_clipboard.sh",
+      "category": "docs"
+    },
+    {
+      "name": "ai:review-with-mlx",
+      "description": "Run MLX model code review (set MLX_MODEL, edit ARG to file list)",
+      "command": "python3 python/tools/diffucode_review.py --files $ARG",
+      "category": "quality"
+    },
+    {
       "name": "setup:platform",
       "description": "Auto-detect and configure platform-specific settings",
       "command": "./scripts/setup_platform_settings.sh",

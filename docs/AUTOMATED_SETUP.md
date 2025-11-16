@@ -94,6 +94,23 @@ Creates `.vscode/settings.json.user` with:
 
 ### 6. CMake Configuration (Optional)
 
+## MLX Installation (Apple Silicon)
+
+Install via command or Cursor command:
+
+```bash
+# Bash script (safe no-op on unsupported platforms)
+./scripts/install_mlx.sh
+```
+
+Or run the Cursor command:
+- `env:install-mlx`
+
+Verification:
+```bash
+python3 -c "import mlx, mlx_lm; print('OK')"
+```
+
 If `--cmake-configure` is used:
 - Configures appropriate CMake preset
 - Generates `compile_commands.json`

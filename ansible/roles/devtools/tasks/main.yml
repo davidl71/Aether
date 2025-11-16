@@ -93,6 +93,49 @@
     - ansible_facts['os_family'] in ['Debian', 'Darwin']
     - uvx_version.rc == 0
 
+# ---------------------------------------------------------------------------
+# MLX / MLX-LM (Apple Silicon only)
+# ---------------------------------------------------------------------------
+- name: Install MLX and MLX-LM (Apple Silicon/macOS) via pip
+  become: false
+  ansible.builtin.command: >-
+    python3 -m pip install --user --upgrade mlx mlx-lm
+  register: mlx_install_result
+  changed_when: "'Successfully installed' in mlx_install_result.stdout or 'Installing collected packages' in mlx_install_result.stdout or 'Requirement already satisfied' not in mlx_install_result.stdout"
+  when:
+    - ansible_facts['os_family'] == 'Darwin'
+    - ansible_facts['architecture'] is defined
+    - ansible_facts['architecture'] in ['arm64', 'aarch64']
+
+- name: Verify MLX install (Apple Silicon/macOS)
+  become: false
+  ansible.builtin.command: >-
+    python3 - << 'PY'
+    import sys
+    try:
+        import mlx  # noqa: F401
+        import mlx_lm  # noqa: F401
+        print('OK')
+    except Exception as e:
+        print(f'ERR: {e}', file=sys.stderr)
+        sys.exit(1)
+    PY
+  register: mlx_verify
+  changed_when: false
+  failed_when: mlx_verify.rc != 0
+  when:
+    - ansible_facts['os_family'] == 'Darwin'
+    - ansible_facts['architecture'] is defined
+    - ansible_facts['architecture'] in ['arm64', 'aarch64']
+
+- name: Display MLX verification result
+  ansible.builtin.debug:
+    msg: "MLX verification: {{ mlx_verify.stdout | default('skipped') }}"
+  when:
+    - ansible_facts['os_family'] == 'Darwin'
+    - ansible_facts['architecture'] is defined
+    - ansible_facts['architecture'] in ['arm64', 'aarch64']
+
 - name: Determine nvm profile path
   set_fact:
     nvm_profile: "{{ ansible_env.HOME }}/.zshrc"
