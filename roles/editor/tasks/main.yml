@@ -1,0 +1,41 @@
+---
+- name: Install Cursor or VS Code (optional via Homebrew cask)
+  community.general.homebrew_cask:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - cursor
+    - visual-studio-code
+  ignore_errors: yes
+  tags: ["global", "editor"]
+
+- name: Install Global Kit into home (symlink mode)
+  command: >
+    {{ playbook_dir }}/../scripts/install_global_kit.sh --mode link
+  args:
+    chdir: "{{ playbook_dir }}/.."
+  changed_when: false
+  tags: ["global", "editor"]
+
+- name: Configure global git ignores
+  command: git config --global core.excludesfile "{{ lookup('env','HOME') }}/.gitignore_global"
+  changed_when: false
+  tags: ["global", "editor"]
+
+- name: Install safe global extensions (if Cursor CLI exists)
+  shell: |
+    if command -v cursor >/dev/null 2>&1; then
+      cursor --install-extension editorconfig.editorconfig || true
+      cursor --install-extension yzhang.markdown-all-in-one || true
+      cursor --install-extension davidsanson.vscode-markdownlint || true
+      cursor --install-extension streetsidesoftware.code-spell-checker || true
+      cursor --install-extension redhat.vscode-yaml || true
+    elif command -v code >/dev/null 2>&1; then
+      code --install-extension editorconfig.editorconfig || true
+      code --install-extension yzhang.markdown-all-in-one || true
+      code --install-extension davidanson.vscode-markdownlint || true
+      code --install-extension streetsidesoftware.code-spell-checker || true
+      code --install-extension redhat.vscode-yaml || true
+    fi
+  changed_when: false
+  tags: ["global", "editor"]

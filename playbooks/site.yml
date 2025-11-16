@@ -1,0 +1,4 @@
+---
+# Runs both global and project-specific setup
+- import_playbook: global.yml
+- import_playbook: project.yml

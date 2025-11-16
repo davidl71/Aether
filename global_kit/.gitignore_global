@@ -1,0 +1,41 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+build/
+dist/
+out/
+target/
+protobuf-build/
+ibapi_build/
+.cache/
+.gradle/
+.pytest_cache/
+.venv/
+node_modules/
+
+# Logs
+*.log
+logs/
+
+# Python
+__pycache__/
+*.pyc
+.mypy_cache/
+.ruff_cache/
+
+# C/C++
+*.o
+*.obj
+*.so
+*.dylib
+*.a
+CMakeFiles/
+CMakeCache.txt
+cmake-build*/
+
+# Coverage
+coverage/
+*.lcov
+.nyc_output/

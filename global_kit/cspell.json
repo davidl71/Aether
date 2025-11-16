@@ -1,0 +1,26 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "caseSensitive": false,
+  "ignorePaths": [
+    "build",
+    "dist",
+    "node_modules",
+    "target",
+    "protobuf-build",
+    "ibapi_build"
+  ],
+  "words": [
+    "IBKR",
+    "IBJts",
+    "BoxSpread",
+    "CMake",
+    "Cppcheck",
+    "clangd",
+    "clangformat",
+    "clangtidy",
+    "protobuf",
+    "precommit",
+    "TwsApi"
+  ]
+}

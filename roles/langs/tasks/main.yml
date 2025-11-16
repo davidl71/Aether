@@ -1,0 +1,20 @@
+---
+- name: Ensure base language toolchains (macOS via Homebrew)
+  community.general.homebrew:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - python
+    - node
+    - rustup-init
+  tags: ["global", "langs"]
+
+- name: Initialize Rust toolchain (idempotent)
+  shell: |
+    if ! command -v rustup >/dev/null 2>&1; then
+      /opt/homebrew/bin/rustup-init -y
+    fi
+  args:
+    executable: /bin/zsh
+  changed_when: false
+  tags: ["global", "langs"]

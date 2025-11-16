@@ -1,0 +1,35 @@
+---
+- name: Ensure running on macOS
+  assert:
+    that: ansible_facts['os_family'] == 'Darwin'
+    fail_msg: "This playbook currently targets macOS (Darwin) only."
+    success_msg: "macOS detected."
+  tags: ["global", "common"]
+
+- name: Ensure Homebrew is installed
+  stat:
+    path: /opt/homebrew/bin/brew
+  register: brew_stat
+  tags: ["global", "common"]
+
+- name: Install Homebrew (manual step)
+  debug:
+    msg: "Homebrew not found. Install from https://brew.sh then re-run."
+  when: not brew_stat.stat.exists
+  tags: ["global", "common"]
+
+- name: Install brew packages
+  community.general.homebrew:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ brew_packages | default([]) }}"
+  when: brew_stat.stat.exists
+  tags: ["global", "common"]
+
+- name: Install brew casks
+  community.general.homebrew_cask:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ brew_casks | default([]) }}"
+  when: brew_stat.stat.exists
+  tags: ["global", "common"]

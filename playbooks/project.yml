@@ -1,0 +1,12 @@
+---
+- name: Project-specific setup (ib_box_spread on macOS)
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+  vars:
+    ibjts_dir: "{{ lookup('env','IBJTS_DIR') | default('', true) }}"
+    protobuf_lib: "/usr/local/lib/libprotobuf.dylib"
+    abseil_lib_dir: "/usr/local/lib"
+  roles:
+    - role: ib_box_spread
+      tags: ["project", "ib", "cmake"]

@@ -1,0 +1,24 @@
+---
+- name: Global developer environment setup (macOS)
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+  vars:
+    brew_packages:
+      - cmake
+      - ninja
+      - git
+      - jq
+      - python
+      - shellcheck
+      - shfmt
+      - clang-format
+    brew_casks:
+      - iterm2
+  roles:
+    - role: common
+      tags: ["global", "common"]
+    - role: editor
+      tags: ["global", "editor"]
+    - role: langs
+      tags: ["global", "langs"]
