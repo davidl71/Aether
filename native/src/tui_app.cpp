@@ -1024,6 +1024,13 @@ int main(int argc, char* argv[]) {
     // TODO: Implement Nautilus provider
     spdlog::warn("Nautilus provider not yet implemented, falling back to mock");
     provider = std::make_unique<MockProvider>();
+  } else if (backend == "file") {
+    std::string file_path = std::getenv("TUI_SNAPSHOT_FILE")
+      ? std::getenv("TUI_SNAPSHOT_FILE")
+      : std::string("web/public/data/snapshot.json");
+    auto interval = config.update_interval.count() > 0 ? config.update_interval : std::chrono::milliseconds(1000);
+    provider = std::make_unique<FileProvider>(file_path, interval);
+    spdlog::info("Using File provider: {} (interval: {}ms)", file_path, interval.count());
   } else {
     spdlog::warn("Unknown backend: {}, falling back to mock", backend);
     provider = std::make_unique<MockProvider>();

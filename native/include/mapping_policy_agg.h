@@ -28,5 +28,3 @@ public:
 };
 
 }  // namespace ib_box_spread
-
-

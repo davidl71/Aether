@@ -162,4 +162,28 @@ private:
   std::chrono::system_clock::time_point token_expiry_;
 };
 
+// FileProvider polls a JSON file on disk for snapshots (broker-agnostic).
+class FileProvider : public Provider {
+public:
+  FileProvider(const std::string& file_path, std::chrono::milliseconds interval);
+  ~FileProvider() override;
+
+  void Start() override;
+  void Stop() override;
+  Snapshot GetSnapshot() override;
+  bool IsRunning() const override;
+
+private:
+  void PollLoop();
+  Snapshot LoadFromFile();
+
+  std::string file_path_;
+  std::chrono::milliseconds interval_;
+  std::atomic<bool> running_{false};
+  std::thread worker_;
+  std::mutex mutex_;
+  Snapshot latest_snapshot_;
+  std::time_t last_mtime_{0};
+};
+
 } // namespace tui

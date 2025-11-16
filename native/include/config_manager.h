@@ -30,6 +30,15 @@ struct TWSConfig {
 };
 
 // ============================================================================
+// Broker Selection
+// ============================================================================
+struct BrokerConfig {
+    // Priority-ordered list of brokers to attempt.
+    // Recognized values (case-insensitive): "mock", "alpaca", "ib", "fibi", "meitav", "ibi", "discount"
+    std::vector<std::string> priorities;
+};
+
+// ============================================================================
 // Commission Configuration (IBKR Pro)
 // ============================================================================
 
@@ -133,6 +142,7 @@ struct MassiveConfig {
 
 struct Config {
     TWSConfig tws;
+    BrokerConfig broker;
     StrategyParams strategy;
     RiskConfig risk;
     LogConfig logging;
@@ -224,6 +234,18 @@ inline void to_json(nlohmann::json& j, const TWSConfig& config) {
         {"pcap_output_file", config.pcap_output_file},
         {"pcap_nanosecond_precision", config.pcap_nanosecond_precision}
     };
+}
+
+// Broker Config
+inline void to_json(nlohmann::json& j, const BrokerConfig& broker) {
+    j = nlohmann::json{
+        {"priorities", broker.priorities}
+    };
+}
+
+inline void from_json(const nlohmann::json& j, BrokerConfig& broker) {
+    if (j.contains("priorities"))
+        j.at("priorities").get_to(broker.priorities);
 }
 
 inline void from_json(const nlohmann::json& j, TWSConfig& config) {
@@ -400,6 +422,7 @@ inline void from_json(const nlohmann::json& j, MassiveConfig& config) {
 inline void to_json(nlohmann::json& j, const Config& config) {
     j = nlohmann::json{
         {"tws", config.tws},
+        {"broker", config.broker},
         {"strategy", config.strategy},
         {"risk", config.risk},
         {"logging", config.logging},
@@ -412,6 +435,8 @@ inline void to_json(nlohmann::json& j, const Config& config) {
 
 inline void from_json(const nlohmann::json& j, Config& config) {
     j.at("tws").get_to(config.tws);
+    if (j.contains("broker"))
+        j.at("broker").get_to(config.broker);
     j.at("strategy").get_to(config.strategy);
     if (j.contains("risk"))
         j.at("risk").get_to(config.risk);

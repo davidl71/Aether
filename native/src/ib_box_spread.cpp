@@ -368,21 +368,84 @@ int main(int argc, char** argv) {
         // ====================================================================
         spdlog::info("Initializing components...");
 
-        // TWS Client
-        spdlog::info("Connecting to TWS on {}:{}",
-                     config.tws.host, config.tws.port);
-
-        auto tws_client = std::make_unique<tws::TWSClient>(config.tws);
-
-        if (!tws_client->connect()) {
-            spdlog::critical("Failed to connect to TWS");
-            spdlog::error("Make sure TWS or IB Gateway is running");
-            spdlog::error("Check that the port {} is correct", config.tws.port);
-            spdlog::error("Port 7497 = Paper Trading, Port 7496 = Live Trading");
-            return EXIT_FAILURE;
+        // Broker selection (non-blocking): try in priority order, fall back to mock
+        std::vector<std::string> priorities;
+        if (!config.broker.priorities.empty()) {
+            priorities = config.broker.priorities;
+        } else {
+            priorities = {"mock", "alpaca", "ib", "fibi", "meitav", "ibi", "discount"};
+        }
+        // Normalize to lowercase
+        for (auto& p : priorities) {
+            std::transform(p.begin(), p.end(), p.begin(),
+                           [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
         }
 
-        spdlog::info("✓ Connected to TWS");
+        std::unique_ptr<tws::TWSClient> tws_client;
+        bool connected = false;
+
+        for (const auto& broker : priorities) {
+            if (broker == "mock") {
+                spdlog::info("Selecting broker: MOCK (in-process)");
+                config.tws.use_mock = true;
+                tws_client = std::make_unique<tws::TWSClient>(config.tws);
+                connected = tws_client->connect();
+                if (connected) {
+                    spdlog::info("✓ Using mock TWS client");
+                    break;
+                }
+                spdlog::warn("Mock TWS client failed to initialize, trying next broker");
+            } else if (broker == "alpaca") {
+                spdlog::warn("Alpaca broker selected, but C++ adapter is not implemented. "
+                             "Continuing in analysis/dry-run mode using mock client.");
+                config.tws.use_mock = true;
+                tws_client = std::make_unique<tws::TWSClient>(config.tws);
+                connected = tws_client->connect();
+                if (connected) {
+                    break;
+                }
+            } else if (broker == "ib") {
+                spdlog::info("Selecting broker: Interactive Brokers (TWS/Gateway)");
+                config.tws.use_mock = false;
+                spdlog::info("Connecting to TWS on {}:{}", config.tws.host, config.tws.port);
+                tws_client = std::make_unique<tws::TWSClient>(config.tws);
+                connected = tws_client->connect();
+                if (connected) {
+                    spdlog::info("✓ Connected to TWS");
+                    break;
+                }
+                spdlog::error("Failed to connect to TWS on {}:{}", config.tws.host, config.tws.port);
+                spdlog::error("Check TWS/Gateway is running and ports are correct (7497 paper / 7496 live)");
+                // Do not exit; move to next broker
+            } else if (broker == "fibi" || broker == "meitav" || broker == "ibi" || broker == "discount") {
+                spdlog::warn("{} broker selected, but C++ adapter is not implemented. "
+                             "Continuing with mock client.", broker);
+                config.tws.use_mock = true;
+                tws_client = std::make_unique<tws::TWSClient>(config.tws);
+                connected = tws_client->connect();
+                if (connected) {
+                    break;
+                }
+            } else {
+                spdlog::warn("Unknown broker identifier '{}', skipping", broker);
+            }
+        }
+
+        if (!tws_client) {
+            spdlog::warn("No broker connection established. Falling back to mock client.");
+            config.tws.use_mock = true;
+            tws_client = std::make_unique<tws::TWSClient>(config.tws);
+            connected = tws_client->connect();
+        }
+
+        if (!connected) {
+            spdlog::critical("Unable to initialize any broker client (including mock).");
+            if (config.continue_on_error || config.dry_run) {
+                spdlog::warn("Proceeding without a live connection. Strategy will operate in analysis mode.");
+            } else {
+                return EXIT_FAILURE;
+            }
+        }
 
         // Order Manager
         auto order_manager = std::make_unique<order::OrderManager>(

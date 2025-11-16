@@ -70,5 +70,3 @@ struct ErrorEnvelope
 };
 
 }  // namespace ib_box_spread
-
-

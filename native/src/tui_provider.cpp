@@ -3,11 +3,13 @@
 #include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 #include <sstream>
+#include <fstream>
 #include <random>
 #include <cmath>
 #include <algorithm>
 #include <iomanip>
 #include <ctime>
+#include <sys/stat.h>
 
 namespace tui {
 
@@ -722,6 +724,97 @@ std::string LiveVolProvider::GetAccessToken() {
   }
 
   return "";  // Stub
+}
+
+} // namespace tui
+
+// ============================================================================
+// FileProvider Implementation
+// ============================================================================
+namespace tui {
+
+FileProvider::FileProvider(const std::string& file_path, std::chrono::milliseconds interval)
+  : file_path_(file_path), interval_(interval) {
+}
+
+FileProvider::~FileProvider() {
+  Stop();
+}
+
+void FileProvider::Start() {
+  if (running_.exchange(true)) {
+    return;
+  }
+  worker_ = std::thread(&FileProvider::PollLoop, this);
+  spdlog::info("FileProvider started with path: {}", file_path_);
+}
+
+void FileProvider::Stop() {
+  if (!running_.exchange(false)) {
+    return;
+  }
+  if (worker_.joinable()) {
+    worker_.join();
+  }
+  spdlog::info("FileProvider stopped");
+}
+
+Snapshot FileProvider::GetSnapshot() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return latest_snapshot_;
+}
+
+bool FileProvider::IsRunning() const {
+  return running_.load();
+}
+
+void FileProvider::PollLoop() {
+  while (running_.load()) {
+    try {
+      auto snap = LoadFromFile();
+      if (snap.generated_at.time_since_epoch().count() > 0) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        latest_snapshot_ = snap;
+      }
+    } catch (const std::exception& e) {
+      spdlog::error("FileProvider read error: {}", e.what());
+    }
+    std::this_thread::sleep_for(interval_);
+  }
+}
+
+Snapshot FileProvider::LoadFromFile() {
+  using namespace std;
+  using json = nlohmann::json;
+
+  // Check mtime to avoid unnecessary reads
+  struct stat st {};
+  if (stat(file_path_.c_str(), &st) != 0) {
+    // File may not exist yet
+    return Snapshot{};
+  }
+  if (st.st_mtime == last_mtime_) {
+    // No change; return existing
+    std::lock_guard<std::mutex> lock(mutex_);
+    return latest_snapshot_;
+  }
+
+  // Read and parse
+  std::ifstream f(file_path_);
+  if (!f.good()) {
+    return Snapshot{};
+  }
+  json j;
+  f >> j;
+  Snapshot s{};
+  try {
+    from_json(j, s);
+    last_mtime_ = st.st_mtime;
+  } catch (const std::exception& e) {
+    spdlog::error("Failed to parse snapshot JSON: {}", e.what());
+    return Snapshot{};
+  }
+  return s;
 }
 
 } // namespace tui
