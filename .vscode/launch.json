@@ -6,26 +6,17 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/build/bin/ib_box_spread",
-      "args": [
-        "--config",
-        "${workspaceFolder}/config/config.json",
-        "--dry-run"
-      ],
+      "args": ["--dry-run"],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
-      "environment": [
-        {
-          "name": "PYTHONPATH",
-          "value": "${workspaceFolder}/python"
-        }
-      ],
+      "environment": [],
       "externalConsole": false,
       "MIMode": "lldb",
       "preLaunchTask": "CMake: Build",
       "setupCommands": [
         {
-          "description": "Enable pretty-printing for lldb",
-          "text": "settings set target.python-api-path ${workspaceFolder}/.vscode/lldb-python",
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
           "ignoreFailures": true
         }
       ]
@@ -37,36 +28,42 @@
       "program": "${workspaceFolder}/build/bin/ib_box_spread",
       "args": [
         "--config",
-        "${workspaceFolder}/config/config.json"
+        "${workspaceFolder}/config/config.json",
+        "--dry-run"
       ],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
-      "environment": [
-        {
-          "name": "PYTHONPATH",
-          "value": "${workspaceFolder}/python"
-        },
-        {
-          "name": "TWS_MOCK",
-          "value": "true"
-        }
-      ],
+      "environment": [],
       "externalConsole": false,
       "MIMode": "lldb",
-      "preLaunchTask": "CMake: Build"
+      "preLaunchTask": "CMake: Build",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
     },
     {
       "name": "Run Tests",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/bin/box_spread_tests",
+      "program": "${workspaceFolder}/build/bin/test_runner",
       "args": [],
       "stopAtEntry": false,
-      "cwd": "${workspaceFolder}/build",
+      "cwd": "${workspaceFolder}",
       "environment": [],
       "externalConsole": false,
       "MIMode": "lldb",
-      "preLaunchTask": "CMake: Build"
+      "preLaunchTask": "CMake: Build",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
     },
     {
       "name": "Attach to Process",
@@ -77,12 +74,11 @@
       "MIMode": "lldb",
       "setupCommands": [
         {
-          "description": "Enable pretty-printing for lldb",
-          "text": "settings set target.python-api-path ${workspaceFolder}/.vscode/lldb-python",
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
           "ignoreFailures": true
         }
       ]
     }
   ]
 }
-

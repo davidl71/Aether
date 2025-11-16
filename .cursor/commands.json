@@ -1,0 +1,180 @@
+{
+  "version": "1.0.0",
+  "description": "Project-specific commands for IB Box Spread trading application",
+  "commands": [
+    {
+      "name": "setup:platform",
+      "description": "Auto-detect and configure platform-specific settings",
+      "command": "./scripts/setup_platform_settings.sh",
+      "category": "setup"
+    },
+    {
+      "name": "setup:platform-full",
+      "description": "Setup platform settings and configure CMake",
+      "command": "./scripts/setup_platform_settings.sh --cmake-configure",
+      "category": "setup"
+    },
+    {
+      "name": "build:debug",
+      "description": "Build project in debug mode (ARM64)",
+      "command": "cmake --build --preset macos-arm64-debug",
+      "category": "build"
+    },
+    {
+      "name": "build:release",
+      "description": "Build project in release mode (ARM64)",
+      "command": "cmake --build --preset macos-arm64-release",
+      "category": "build"
+    },
+    {
+      "name": "build:configure",
+      "description": "Configure CMake for debug build",
+      "command": "cmake --preset macos-arm64-debug",
+      "category": "build"
+    },
+    {
+      "name": "build:clean",
+      "description": "Clean build artifacts",
+      "command": "cmake --build --preset macos-arm64-debug --target clean",
+      "category": "build"
+    },
+    {
+      "name": "build:universal",
+      "description": "Build universal binary (auto-detects architecture)",
+      "command": "./scripts/build_universal.sh",
+      "category": "build"
+    },
+    {
+      "name": "test:run",
+      "description": "Run all tests with output on failure",
+      "command": "ctest --preset macos-arm64-debug --output-on-failure",
+      "category": "test"
+    },
+    {
+      "name": "test:run-release",
+      "description": "Run tests in release mode",
+      "command": "ctest --preset macos-arm64-release --output-on-failure",
+      "category": "test"
+    },
+    {
+      "name": "lint:run",
+      "description": "Run all linters (cppcheck, clang-tidy, etc.)",
+      "command": "./scripts/run_linters.sh",
+      "category": "quality"
+    },
+    {
+      "name": "run:tui",
+      "description": "Run TUI application (dry-run mode)",
+      "command": "./build/macos-arm64-debug/bin/ib_box_spread_tui --dry-run",
+      "category": "run"
+    },
+    {
+      "name": "run:cli",
+      "description": "Run CLI application (dry-run mode)",
+      "command": "./build/macos-arm64-debug/bin/ib_box_spread --dry-run",
+      "category": "run"
+    },
+    {
+      "name": "run:cli-with-config",
+      "description": "Run CLI with config file (dry-run)",
+      "command": "./build/macos-arm64-debug/bin/ib_box_spread --config config/config.json --dry-run",
+      "category": "run"
+    },
+    {
+      "name": "setup:worktree",
+      "description": "Setup new git worktree with build",
+      "command": "./scripts/setup_worktree.sh",
+      "category": "setup"
+    },
+    {
+      "name": "setup:ramdisk",
+      "description": "Setup RAM disk for faster builds",
+      "command": "./scripts/workspace_ram_disk_manager.sh startup",
+      "category": "setup"
+    },
+    {
+      "name": "ramdisk:status",
+      "description": "Check RAM disk status",
+      "command": "./scripts/workspace_ram_disk_manager.sh status",
+      "category": "setup"
+    },
+    {
+      "name": "ramdisk:save",
+      "description": "Save RAM disk contents to disk",
+      "command": "./scripts/workspace_ram_disk_manager.sh save",
+      "category": "setup"
+    },
+    {
+      "name": "ramdisk:shutdown",
+      "description": "Save and shutdown RAM disk",
+      "command": "./scripts/workspace_ram_disk_manager.sh shutdown",
+      "category": "setup"
+    },
+    {
+      "name": "docs:list",
+      "description": "List all global docs paths for Cursor setup",
+      "command": "./scripts/list_global_docs.sh",
+      "category": "docs"
+    },
+    {
+      "name": "docs:sync",
+      "description": "Sync global docs configuration",
+      "command": "python3 scripts/sync_global_docs.py --generate-paths",
+      "category": "docs"
+    },
+    {
+      "name": "check:tws",
+      "description": "Check TWS API download and setup",
+      "command": "./scripts/check_tws_download.sh",
+      "category": "check"
+    },
+    {
+      "name": "check:feature-parity",
+      "description": "Check feature parity across implementations",
+      "command": "./scripts/check_feature_parity.sh",
+      "category": "check"
+    },
+    {
+      "name": "validate:config",
+      "description": "Validate configuration file",
+      "command": "./build/macos-arm64-debug/bin/ib_box_spread --config config/config.json --validate",
+      "category": "validate"
+    },
+    {
+      "name": "build:dependencies",
+      "description": "Build Intel Decimal and TWS API dependencies",
+      "command": "cmake --build native/third_party/IntelRDFPMathLib20U2/LIBRARY/build --target all && cmake --build native/third_party/tws-api/IBJts/source/cppclient/client/build --target all",
+      "category": "build"
+    },
+    {
+      "name": "test:tws-connection",
+      "description": "Test TWS connection (requires TWS/Gateway running)",
+      "command": "./scripts/test_tws_connection.sh",
+      "category": "test"
+    },
+    {
+      "name": "format:code",
+      "description": "Format code using clang-format",
+      "command": "find native/src native/include -name '*.cpp' -o -name '*.h' | xargs clang-format -i",
+      "category": "format"
+    },
+    {
+      "name": "check:build-status",
+      "description": "Check current build status and binary locations",
+      "command": "find build -name '*ib_box_spread*' -type f 2>/dev/null | grep -v '.o$' | head -10",
+      "category": "check"
+    },
+    {
+      "name": "clean:all",
+      "description": "Clean all build artifacts and generated files",
+      "command": "rm -rf build/* cmake-build-* && find . -name 'CMakeCache.txt' -delete && find . -name 'CMakeFiles' -type d -exec rm -rf {} + 2>/dev/null || true",
+      "category": "clean"
+    },
+    {
+      "name": "info:project",
+      "description": "Show project information and status",
+      "command": "echo 'Project: IB Box Spread Universal' && echo 'Architecture: $(uname -m)' && echo 'Build Presets:' && cmake --list-presets 2>/dev/null | grep -E 'macos-(arm64|x86_64)|windows|linux' || echo 'Run: cmake --list-presets'",
+      "category": "info"
+    }
+  ]
+}

@@ -4,8 +4,7 @@
   become: false
   gather_facts: true
   vars:
-    ansible_python_interpreter: /usr/local/bin/python3.11
+    ansible_python_interpreter: auto
 
   roles:
     - devtools
-

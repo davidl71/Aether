@@ -1,26 +1,104 @@
 {
-  // Workspace-specific user settings (copy to .vscode/settings.json.user)
-  // This file is gitignored - customize as needed
+  // ==========================================
+  // Platform-Specific User Settings Template
+  // ==========================================
+  // Copy this file to .vscode/settings.json.user (gitignored)
+  // Uncomment and customize settings for your platform
+  // ==========================================
 
-  // Auto-run RAM disk startup task (requires "Task Runner" extension or manual setup)
-  // Option 1: Use Terminal: Run Active Task command on startup
-  // Option 2: Add to shell profile (recommended)
-  "task.autoDetect": "on",
+  // ==========================================
+  // macOS ARM64 (Apple Silicon) Settings
+  // ==========================================
+  // Uncomment for macOS ARM64:
+  /*
+  "C_Cpp.default.intelliSenseMode": "macos-clang-arm64",
+  "C_Cpp.default.compilerPath": "/usr/bin/clang++",
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/native/include",
+    "${workspaceFolder}/native/third_party/tws-api/IBJts/source/cppclient/client",
+    "/opt/homebrew/include",
+    "/usr/local/include"
+  ],
+  "python.defaultInterpreterPath": "/opt/homebrew/bin/python3"
+  */
 
-  // Keyboard shortcuts (add to keybindings.json):
-  // {
-  //   "key": "cmd+shift+r",
-  //   "command": "workbench.action.tasks.runTask",
-  //   "args": "RAM Disk: Save & Shutdown"
-  // },
-  // {
-  //   "key": "cmd+shift+s",
-  //   "command": "workbench.action.tasks.runTask",
-  //   "args": "RAM Disk: Save Now"
-  // },
-  // {
-  //   "key": "cmd+shift+t",
-  //   "command": "workbench.action.tasks.runTask",
-  //   "args": "RAM Disk: Status"
-  // }
+  // ==========================================
+  // macOS x86_64 (Intel) Settings
+  // ==========================================
+  // Uncomment for macOS Intel:
+  /*
+  "C_Cpp.default.intelliSenseMode": "macos-clang-x64",
+  "C_Cpp.default.compilerPath": "/usr/bin/clang++",
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/native/include",
+    "${workspaceFolder}/native/third_party/tws-api/IBJts/source/cppclient/client",
+    "/usr/local/include"
+  ],
+  "python.defaultInterpreterPath": "/usr/local/bin/python3"
+  */
+
+  // ==========================================
+  // Windows Settings
+  // ==========================================
+  // Uncomment for Windows:
+  /*
+  "C_Cpp.default.intelliSenseMode": "windows-msvc-x64",
+  "C_Cpp.default.compilerPath": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.xx.xxxxx/bin/Hostx64/x64/cl.exe",
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/native/include",
+    "${workspaceFolder}/native/third_party/tws-api/IBJts/source/cppclient/client",
+    "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.xx.xxxxx/include"
+  ],
+  "python.defaultInterpreterPath": "C:/Python3xx/python.exe"
+  */
+
+  // ==========================================
+  // Linux (Ubuntu) Settings
+  // ==========================================
+  // Uncomment for Linux:
+  /*
+  "C_Cpp.default.intelliSenseMode": "linux-gcc-x64",
+  "C_Cpp.default.compilerPath": "/usr/bin/g++",
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/native/include",
+    "${workspaceFolder}/native/third_party/tws-api/IBJts/source/cppclient/client",
+    "/usr/include",
+    "/usr/local/include"
+  ],
+  "python.defaultInterpreterPath": "/usr/bin/python3"
+  */
+
+  // ==========================================
+  // Personal Preferences (All Platforms)
+  // ==========================================
+  "editor.fontSize": 14,
+  "editor.fontFamily": "Fira Code, 'Courier New', monospace",
+  "editor.fontLigatures": true,
+  "editor.lineHeight": 1.5,
+
+  "workbench.colorTheme": "Default Dark+",
+  "workbench.iconTheme": "vs-seti",
+
+  "editor.accessibilitySupport": "off",
+  "audioCues.enabled": "off",
+  "accessibility.signals.terminalBell": {
+    "sound": "off"
+  },
+  "terminal.integrated.enableVisualBell": false,
+
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "terminal.integrated.defaultProfile.linux": "bash",
+
+  "editor.minimap.enabled": true,
+  "editor.smoothScrolling": true,
+  "editor.cursorBlinking": "smooth",
+
+  "git.ignoreLimitWarning": true,
+  "git.autofetch": true,
+
+  "workbench.settings.enableNaturalLanguageSearch": false,
+
+  "files.encoding": "utf8",
+  "files.eol": "\n"
 }

@@ -1,7 +1,7 @@
 // tui_breadcrumb.cpp - Breadcrumb logging implementation
 #include "tui_breadcrumb.h"
 #include <spdlog/sinks/rotating_file_sink.h>
-#include <spdlog/sinks/stdout_color_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include <algorithm>
 #include <fstream>
 #include <nlohmann/json.hpp>

@@ -22,6 +22,7 @@
       - poetry
       - curl
       - act
+      - uv
     state: present
   when: ansible_facts['os_family'] == 'Darwin'
 
@@ -59,6 +60,38 @@
   register: poetry_install
   changed_when: "'Requirement already satisfied' not in poetry_install.stdout"
   when: ansible_facts['os_family'] == 'Debian'
+
+- name: Install uvx via pip (macOS)
+  become: false
+  ansible.builtin.command: >-
+    python3 -m pip install --user --upgrade uvx
+  register: uvx_install_macos
+  changed_when: "'Requirement already satisfied' not in uvx_install_macos.stdout"
+  when: ansible_facts['os_family'] == 'Darwin'
+
+- name: Install uvx via pip (Debian/Ubuntu)
+  become: false
+  ansible.builtin.command: >-
+    python3 -m pip install --user --upgrade uvx
+  register: uvx_install_debian
+  changed_when: "'Requirement already satisfied' not in uvx_install_debian.stdout"
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Verify uvx installation
+  become: false
+  ansible.builtin.command: >-
+    uvx --version
+  register: uvx_version
+  changed_when: false
+  failed_when: false
+  when: ansible_facts['os_family'] in ['Debian', 'Darwin']
+
+- name: Display uvx version
+  ansible.builtin.debug:
+    msg: "uvx version: {{ uvx_version.stdout }}"
+  when:
+    - ansible_facts['os_family'] in ['Debian', 'Darwin']
+    - uvx_version.rc == 0
 
 - name: Determine nvm profile path
   set_fact:

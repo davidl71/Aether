@@ -75,7 +75,7 @@ public:
     std::chrono::milliseconds flush_interval{1000};  // Flush interval
   };
 
-  BreadcrumbLogger(const Config& config = Config{});
+  BreadcrumbLogger(const Config& config = Config{.enabled = true, .max_entries = 1000, .log_to_console = false, .log_to_file = true, .capture_state_dumps = true, .capture_screen_dumps = false, .flush_interval = std::chrono::milliseconds{1000}});
   ~BreadcrumbLogger();
 
   // Logging methods

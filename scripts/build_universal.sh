@@ -10,7 +10,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./include/logging.sh
 . "${SCRIPT_DIR}/include/logging.sh"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-DEFAULT_PRESET="macos-x86_64-release"
+# Auto-detect architecture
+ARCH=$(uname -m)
+if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
+  DEFAULT_PRESET="macos-arm64-release"
+else
+  DEFAULT_PRESET="macos-x86_64-release"
+fi
 PRESET="${CMAKE_PRESET:-${DEFAULT_PRESET}}"
 
 if ! command -v cmake >/dev/null 2>&1; then
