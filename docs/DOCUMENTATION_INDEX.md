@@ -194,6 +194,10 @@ This document serves as a comprehensive index of all documentation in the IBKR B
 - **CME Group**: Capital efficiencies and financing references
 - **Cboe**: Box spreads as alternative borrowing & lending
 
+### Brokerage Aggregation & Embedded Investing
+
+- `docs/UNIVERSAL_BROKERAGE_AGGREGATION.md` - Universal brokerage APIs (SnapTrade, Plaid, Sophtron) vs. embedded investing (Finax); capabilities, tradeoffs, and recommended patterns for this repo.
+
 ### External Resources Documentation
 
 - `docs/EXTERNAL_RESOURCES.md` - External resources tracking and summarization guide
