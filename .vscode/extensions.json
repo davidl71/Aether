@@ -1,46 +1,59 @@
 {
   "recommendations": [
-    // C++ Development
+    // ============================================
+    // WORKSPACE-ONLY EXTENSIONS (Recommended)
+    // ============================================
+    // These should be DISABLED globally and enabled only in this workspace
+    // to prevent conflicts with other projects. See docs/EXTENSION_MANAGEMENT.md
+
+    // C++ Development (WORKSPACE-ONLY)
     "ms-vscode.cpptools",
     "ms-vscode.cmake-tools",
 
-    // Python Development
+    // Python Development (WORKSPACE-ONLY)
     "ms-python.python",
     "ms-python.vscode-pylance",
     "ms-python.black-formatter",
 
-    // Rust Development (for agents/backend)
+    // Rust Development (WORKSPACE-ONLY - for agents/backend)
     "rust-lang.rust-analyzer",
 
-    // TypeScript/JavaScript (for web/)
+    // TypeScript/JavaScript (WORKSPACE-ONLY - for web/)
     "dbaeumer.vscode-eslint",
 
-    // General Development
+    // Shell Scripts (WORKSPACE-ONLY)
+    "timonwong.shellcheck",
+
+    // Swift (WORKSPACE-ONLY - for ios/ and desktop/)
+    "sswg.swift-lang",
+
+    // MCP Integration (WORKSPACE-ONLY)
+    "yutengjing.vscode-mcp",
+
+    // AI & Prompt Enhancement (WORKSPACE-ONLY)
+    "prompttower.prompttower",
+    // Note: GitHub Copilot and AWS CodeWhisperer can be global
+    // but may benefit from workspace-specific configurations
+
+    // ============================================
+    // GLOBAL EXTENSIONS (Safe to Enable Globally)
+    // ============================================
+    // These can be safely enabled globally as they don't conflict across projects
+
+    // General Development (GLOBAL)
     "editorconfig.editorconfig",
     "redhat.vscode-yaml",
 
-    // Git
+    // Git (GLOBAL)
     "eamodio.gitlens",
 
-    // Markdown
+    // Markdown (GLOBAL)
     "yzhang.markdown-all-in-one",
     "davidanson.vscode-markdownlint",
 
-    // Shell Scripts
-    "timonwong.shellcheck",
-
-    // Code Quality & Security
+    // Code Quality & Security (GLOBAL)
     "streetsidesoftware.code-spell-checker",
-    "usernamehw.errorlens",
-
-    // AI & Prompt Enhancement
-    "prompttower.prompttower",
-
-    // Swift (for ios/ and desktop/)
-    "sswg.swift-lang",
-
-    // MCP Integration
-    "yutengjing.vscode-mcp"
+    "usernamehw.errorlens"
   ],
   "unwantedRecommendations": [
     // Redundant - cpptools-extension-pack includes cpptools which is already recommended
@@ -60,6 +73,123 @@
 
     // Trunk CLI is used via scripts/run_linters.sh, not as VS Code formatter extension
     // Explicit formatters are configured in settings.json to prevent auto-detection
-    "trunk.io"
+    "trunk.io",
+
+    // Unused languages - disable to reduce extension clutter and improve performance
+    // Java (only vendor code in third_party, not actively developed)
+    "vscjava.vscode-java-pack",
+    "vscjava.vscode-java-debug",
+    "vscjava.vscode-java-test",
+    "vscjava.vscode-maven",
+    "vscjava.vscode-gradle",
+    "redhat.java",
+    // Kotlin
+    "fwcd.kotlin",
+    "mathiasfrohlich.kotlin",
+    // Dart/Flutter
+    "dart-code.dart",
+    "dart-code.flutter",
+    // C# / .NET
+    "ms-dotnettools.csharp",
+    "ms-dotnettools.csdevkit",
+    "ms-dotnettools.vscode-dotnet-runtime",
+    // PHP
+    "bmewburn.vscode-intelephense-client",
+    "xdebug.php-debug",
+    "felixfbecker.php-debug",
+    "felixfbecker.php-intellisense",
+    // Ruby (minimal use - only Homebrew formulas)
+    "shopify.ruby-lsp",
+    "rebornix.ruby",
+    "wingrunr21.vscode-ruby",
+    // Scala
+    "scala-lang.scala",
+    "scalameta.metals",
+    // Clojure
+    "betterthantomorrow.calva",
+    // Elixir
+    "elixir-lsp.elixir-ls",
+    // Erlang
+    "pgourlain.erlang",
+    // Haskell
+    "haskell.haskell",
+    // OCaml
+    "ocamllabs.ocaml-platform",
+    // F#
+    "ionide.ionide-fsharp",
+    // R
+    "ikuyadeu.r",
+    "rdebugger.r-debugger",
+    // MATLAB
+    "mathworks.matlab",
+    // Lua
+    "sumneko.lua",
+    // Perl
+    "kraih.perl",
+    // VB.NET
+    "ms-dotnettools.vscode-dotnet-pack",
+    // Objective-C (we use Swift, not Obj-C)
+    "ms-vscode.cpptools-objc",
+    // Terraform
+    "hashicorp.terraform",
+    // Ansible (we have playbooks but don't need full extension)
+    "redhat.ansible",
+    // PowerShell
+    "ms-vscode.powershell",
+
+    // Enterprise/Mainframe - not used in this trading application
+    // IBM i / AS/400
+    "halcyontechltd.code-for-ibmi",
+    "codefori.vscode-ibmi",
+    "halcyontechltd.vscode-ibmi-languages",
+    "barrettotte.ibmi-languages",
+    "halcyontechltd.vscode-ibmi-walkthroughs",
+    "halcyontechltd.vscode-displayfile",
+    "ibm.vscode-ibmi-projectexplorer",
+    // IBM Z / Mainframe
+    "ibm.zopeneditor",
+    "ibm.zopendebug",
+    "broadcomMFD.code4z",
+    "broadcomMFD.explorer-for-endevor",
+    "broadcomMFD.cobol-language-support",
+    "broadcommfd.cobol-language-support",
+    "broadcommfd.ccf",
+    "broadcomMFD.jcl-lang-support",
+    "broadcomMFD.hlasm-language-support",
+    // COBOL
+    "bitlang.cobol",
+    "eclipse-foundation.cobol-language-support",
+    "eclipse-foundation.cobol-language-support-pro",
+    // Micro Focus / Rocket Software
+    "MicroFocus.cobol",
+    "MicroFocus.pli",
+    "MicroFocus.jcl",
+    "rocketsoftware.rocket-enterprise-extension",
+    // Other mainframe languages
+    "broadcomMFD.rexx-language-support",
+    "broadcomMFD.pli-language-support",
+    "broadcomMFD.assembler-language-support",
+    // RPG (IBM i)
+    "halcyontechltd.rpgle",
+    "halcyontechltd.vscode-rpgle",
+    // Zowe (mainframe tooling)
+    "zowe.vscode-extension-for-zowe",
+    "zowe.zowe-explorer-ftp-extension",
+    // Docker/Containers (not used in this project)
+    "ms-azuretools.vscode-containers",
+    "ms-azuretools.vscode-docker",
+    "anysphere.remote-containers",
+    // Go tools (not used - no Go code)
+    "golang.go",
+    "neonxp.gotools",
+    "shivamkumar.go-extras",
+    // Java (only vendor code, not actively developed)
+    "redhat.java",
+    // Ruby (minimal use - only Homebrew formulas)
+    "shopify.ruby-lsp",
+    // Ansible (we have playbooks but don't need full extension suite)
+    "redhat.ansible",
+    "mattiasbaake.vscode-snippets-for-ansible",
+    "jborean.ansibug"
   ]
 }

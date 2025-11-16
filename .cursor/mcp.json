@@ -39,23 +39,13 @@
       ],
       "description": "Git version control operations - understand history, help with commits, branch management"
     },
-    // Temporarily disabled - can cause socket server issues
-    // Re-enable after resolving MCP bridge socket server error
-    // "browser": {
-    //   "command": "npx",
-    //   "args": [
-    //     "-y",
-    //     "@modelcontextprotocol/server-browser"
-    //   ],
-    //   "description": "Browser automation for testing web UI, verifying PWA functionality, and taking screenshots"
-    // },
-    // "terminal": {
-    //   "command": "npx",
-    //   "args": [
-    //     "-y",
-    //     "@modelcontextprotocol/server-terminal"
-    //   ],
-    //   "description": "Terminal/shell execution for safely running build commands, tests, and trading scripts (always use --dry-run for trading)"
-    // }
+    "agentic-tools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@pimzino/agentic-tools-mcp"
+      ],
+      "description": "Advanced task management and agent memories with project-specific storage - unlimited task hierarchy, persistent agent context, git-trackable data"
+    }
   }
 }

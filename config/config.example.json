@@ -80,6 +80,34 @@
   "continue_on_error": false, // Continue running after errors (false = exit on error)
 
   // ============================================================================
+  // Broker Selection (Primary integration defaults to Alpaca)
+  // ============================================================================
+  "broker": {
+    "primary": "ALPACA", // Options: "ALPACA", "IB"
+    "priorities": ["mock", "alpaca", "ib", "fibi", "meitav", "ibi", "discount"]
+  },
+
+  // ============================================================================
+  // Alpaca Integration (Primary)
+  // ============================================================================
+  "alpaca": {
+    // See https://docs.alpaca.markets/
+    "data_client_config": {
+      "api_key_id": "${ALPACA_API_KEY_ID}",
+      "api_secret_key": "${ALPACA_API_SECRET_KEY}",
+      "base_url": "https://paper-api.alpaca.markets", // Switch to https://api.alpaca.markets for live
+      "data_base_url": "https://data.alpaca.markets", // Optional: market data endpoint
+      "paper": true
+    },
+    "exec_client_config": {
+      "api_key_id": "${ALPACA_API_KEY_ID}",
+      "api_secret_key": "${ALPACA_API_SECRET_KEY}",
+      "base_url": "https://paper-api.alpaca.markets",
+      "paper": true
+    }
+  },
+
+  // ============================================================================
   // Massive.com Integration (Optional)
   // ============================================================================
   "massive": {

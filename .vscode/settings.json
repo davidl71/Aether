@@ -52,13 +52,62 @@
   // ],
 
   // File Associations
+  // Disable language features for unused languages by associating them with plaintext
   "files.associations": {
+    // C++ files (actively used)
     "*.h": "cpp",
     "*.hpp": "cpp",
     "*.cpp": "cpp",
     "*.cc": "cpp",
+    // CMake files (actively used)
     "CMakeLists.txt": "cmake",
-    "*.cmake": "cmake"
+    "*.cmake": "cmake",
+    // Java files (only vendor code in third_party, not actively developed)
+    "**/third_party/**/*.java": "plaintext",
+    // Unused languages - associate with plaintext to disable language features
+    "*.go": "plaintext",
+    "*.kt": "plaintext",
+    "*.kts": "plaintext",
+    "*.dart": "plaintext",
+    "*.cs": "plaintext",
+    "*.php": "plaintext",
+    "*.rb": "plaintext",
+    "*.scala": "plaintext",
+    "*.clj": "plaintext",
+    "*.cljs": "plaintext",
+    "*.ex": "plaintext",
+    "*.exs": "plaintext",
+    "*.erl": "plaintext",
+    "*.hrl": "plaintext",
+    "*.hs": "plaintext",
+    "*.ml": "plaintext",
+    "*.mli": "plaintext",
+    "*.fs": "plaintext",
+    "*.fsi": "plaintext",
+    "*.fsx": "plaintext",
+    "*.R": "plaintext",
+    "*.r": "plaintext",
+    "*.m": "plaintext",
+    "*.lua": "plaintext",
+    "*.pl": "plaintext",
+    "*.pm": "plaintext",
+    "*.vb": "plaintext",
+    "*.ps1": "plaintext",
+    "*.tf": "plaintext",
+    "*.tfvars": "plaintext",
+    // Enterprise/Mainframe file types (not used)
+    "*.cbl": "plaintext",
+    "*.cob": "plaintext",
+    "*.cobol": "plaintext",
+    "*.rpgle": "plaintext",
+    "*.rpg": "plaintext",
+    "*.clle": "plaintext",
+    "*.jcl": "plaintext",
+    "*.pli": "plaintext",
+    "*.asm": "plaintext",
+    "*.hlasm": "plaintext",
+    "*.rexx": "plaintext",
+    "*.rex": "plaintext"
   },
 
   // Editor Settings
@@ -219,6 +268,36 @@
   "[shellscript]": {
     "editor.defaultFormatter": null
   },
+
+  // Extension Management
+  // Ensure workspace extensions take precedence over global extensions
+  "extensions.ignoreRecommendations": false,
+  "extensions.showRecommendationsOnlyOnDemand": false,
+  // Auto-install workspace recommendations when opening workspace
+  "extensions.autoCheckUpdates": true,
+
+  // Disable language-specific features for unused languages
+  // This prevents VS Code from loading language servers and extensions for these languages
+  "java.configuration.updateBuildConfiguration": "disabled",
+  "java.import.gradle.enabled": false,
+  "java.import.maven.enabled": false,
+  "kotlin.languageServer.enabled": false,
+  "dart.enableSdkFormatter": false,
+  "dart.enableSnippets": false,
+  "php.validate.enable": false,
+  "ruby.useLanguageServer": false,
+  "scala.server.enabled": false,
+  "clojure.enabled": false,
+  "elixir.enabled": false,
+  "erlang.enabled": false,
+  "haskell.enabled": false,
+  "ocaml.enabled": false,
+  "fsharp.enabled": false,
+  "r.enabled": false,
+  "matlab.enabled": false,
+  "lua.enabled": false,
+  "perl.enabled": false,
+  "powershell.enable": false,
 
   // Terminal Settings
   "terminal.integrated.cwd": "${workspaceFolder}",
