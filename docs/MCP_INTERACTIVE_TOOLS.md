@@ -201,6 +201,10 @@
 1. **GitHub Integration** - Useful for PR/issue management
 2. **QuestDB MCP** - Useful when debugging data ingestion
 
+### ✅ Recently Added
+
+3. **Agentic Tools MCP** - ✅ **DONE** - Advanced task management and agent memories
+
 ## Security Considerations
 
 ### Trading Software Safety
