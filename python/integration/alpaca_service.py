@@ -14,12 +14,20 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime, timezone
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from .alpaca_client import AlpacaClient
+
+
+class ModeRequest(BaseModel):
+    mode: str
+
+class AccountRequest(BaseModel):
+    account_id: Optional[str] = None
 
 
 def _now_iso() -> str:
@@ -31,7 +39,7 @@ def _symbols_from_env() -> List[str]:
     return [s.strip().upper() for s in raw.split(",") if s.strip()]
 
 
-def build_snapshot_payload(symbols: List[str], client: AlpacaClient) -> Dict[str, Any]:
+def build_snapshot_payload(symbols: List[str], client: AlpacaClient, mode: str = "PAPER", account_id: Optional[str] = None) -> Dict[str, Any]:
     # Map to the web/src/types/snapshot.ts SnapshotPayload shape
     symbol_snapshots: List[Dict[str, Any]] = []
     for sym in symbols:
@@ -60,22 +68,60 @@ def build_snapshot_payload(symbols: List[str], client: AlpacaClient) -> Dict[str
             }
         )
 
+    # Normalize mode
+    if mode.upper() in ("LIVE", "LIVE_TRADING", "PRODUCTION"):
+        mode_display = "LIVE"
+    else:
+        mode_display = "PAPER"
+
+    # Get account info if account_id is specified
+    account_info = None
+    display_account_id = "ALPACA"
+    if account_id:
+        # Try to get the specific account by matching account_number
+        accounts = client.get_accounts()
+        for acc in accounts:
+            account_number = acc.get("account_number") or acc.get("id")
+            if account_number == account_id:
+                account_info = acc
+                display_account_id = account_number
+                break
+        # If not found in list, try direct lookup
+        if not account_info:
+            account_info = client.get_account(account_id)
+            if account_info:
+                display_account_id = account_info.get("account_number") or account_info.get("id") or account_id
+    else:
+        # Get default account (first account from list or direct call)
+        accounts = client.get_accounts()
+        if accounts:
+            account_info = accounts[0]
+            display_account_id = account_info.get("account_number") or account_info.get("id") or "ALPACA"
+        else:
+            # Fallback to direct account call
+            account_info = client.get_account()
+            if account_info:
+                display_account_id = account_info.get("account_number") or account_info.get("id") or "ALPACA"
+
+    # Extract account metrics if available
+    metrics = {
+        "net_liq": float(account_info.get("portfolio_value", 0.0)) if account_info else 0.0,
+        "buying_power": float(account_info.get("buying_power", 0.0)) if account_info else 0.0,
+        "excess_liquidity": float(account_info.get("excess_liquidity", 0.0)) if account_info else 0.0,
+        "margin_requirement": float(account_info.get("day_trading_buying_power", 0.0)) if account_info else 0.0,
+        "commissions": 0.0,  # Alpaca doesn't provide commission history in account endpoint
+        "portal_ok": True,
+        "tws_ok": False,
+        "orats_ok": False,
+        "questdb_ok": False,
+    }
+
     payload: Dict[str, Any] = {
         "generated_at": _now_iso(),
-        "mode": "PAPER",
+        "mode": mode_display,
         "strategy": "box_spread",
-        "account_id": "ALPACA",
-        "metrics": {
-            "net_liq": 0.0,
-            "buying_power": 0.0,
-            "excess_liquidity": 0.0,
-            "margin_requirement": 0.0,
-            "commissions": 0.0,
-            "portal_ok": True,
-            "tws_ok": False,
-            "orats_ok": False,
-            "questdb_ok": False,
-        },
+        "account_id": display_account_id,
+        "metrics": metrics,
         "symbols": symbol_snapshots,
         "positions": [],
         "historic": [],
@@ -96,15 +142,21 @@ def create_app() -> FastAPI:
     )
 
     client = AlpacaClient()
+    # Store current mode and account in memory (in production, use Redis or database)
+    current_mode: str = os.getenv("ALPACA_PAPER", "1").lower() in {"1", "true", "yes", "on"} and "PAPER" or "LIVE"
+    current_account_id: Optional[str] = None
 
     @app.get("/api/health")
     def health() -> Dict[str, str]:
         return {"status": "ok", "ts": _now_iso()}
 
     @app.get("/api/snapshot")
-    def snapshot() -> Dict[str, Any]:
+    def snapshot(mode: Optional[str] = None, account_id: Optional[str] = None) -> Dict[str, Any]:
+        # Use query parameter if provided, otherwise use stored mode/account
+        effective_mode = mode.upper() if mode else current_mode
+        effective_account_id = account_id if account_id else current_account_id
         symbols = _symbols_from_env()
-        payload = build_snapshot_payload(symbols, client)
+        payload = build_snapshot_payload(symbols, client, effective_mode, effective_account_id)
         # Optional file write for TUI file-based polling
         path = os.getenv("SNAPSHOT_FILE_PATH", "").strip()
         if path:
@@ -116,6 +168,102 @@ def create_app() -> FastAPI:
                 # Non-fatal
                 pass
         return payload
+
+    @app.post("/api/mode")
+    def set_mode(request: ModeRequest) -> Dict[str, str]:
+        """Set trading mode (PAPER or LIVE)"""
+        nonlocal current_mode
+        new_mode = request.mode.upper()
+        if new_mode in ("PAPER", "LIVE", "LIVE_TRADING"):
+            current_mode = "LIVE" if new_mode in ("LIVE", "LIVE_TRADING") else "PAPER"
+            return {"status": "ok", "mode": current_mode, "ts": _now_iso()}
+        return {"status": "error", "message": "Invalid mode. Use 'PAPER' or 'LIVE'", "ts": _now_iso()}
+
+    @app.get("/api/mode")
+    def get_mode() -> Dict[str, str]:
+        """Get current trading mode"""
+        return {"mode": current_mode, "ts": _now_iso()}
+
+    @app.get("/api/accounts")
+    def list_accounts() -> Dict[str, Any]:
+        """List all available Alpaca accounts"""
+        try:
+            accounts = client.get_accounts()
+            # Format accounts for frontend
+            formatted_accounts = []
+            for acc in accounts:
+                # Alpaca Trading API returns account_number as the main identifier
+                # Paper accounts start with "PA", live accounts are UUIDs or other formats
+                account_number = acc.get("account_number") or acc.get("id")
+                account_id = acc.get("id") or acc.get("account_number")
+
+                formatted_accounts.append({
+                    "id": account_id,
+                    "account_number": account_number,
+                    "status": acc.get("status", "unknown"),
+                    "currency": acc.get("currency", "USD"),
+                    "buying_power": float(acc.get("buying_power", 0.0)),
+                    "cash": float(acc.get("cash", 0.0)),
+                    "portfolio_value": float(acc.get("portfolio_value", 0.0)),
+                    "pattern_day_trader": acc.get("pattern_day_trader", False),
+                    "trading_blocked": acc.get("trading_blocked", False),
+                })
+            return {"accounts": formatted_accounts, "ts": _now_iso()}
+        except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            return {"accounts": [], "error": str(e), "traceback": error_details, "ts": _now_iso()}
+
+    @app.post("/api/account")
+    def set_account(request: AccountRequest) -> Dict[str, Any]:
+        """Set active account ID"""
+        nonlocal current_account_id
+        new_account_id = request.account_id
+
+        if new_account_id:
+            # For Trading API, we typically only have one account, so we can match by account_number
+            # First, get all accounts to find a match
+            accounts = client.get_accounts()
+            matched_account = None
+            for acc in accounts:
+                account_number = acc.get("account_number") or acc.get("id")
+                account_id = acc.get("id") or acc.get("account_number")
+                # Match by account_number (e.g., PA3RWI1D1527) or id
+                if account_number == new_account_id or account_id == new_account_id:
+                    matched_account = acc
+                    break
+
+            if matched_account:
+                # Store the account_number as the identifier
+                account_number = matched_account.get("account_number") or matched_account.get("id")
+                current_account_id = account_number
+                return {"status": "ok", "account_id": account_number, "ts": _now_iso()}
+            return {"status": "error", "message": f"Account {new_account_id} not found", "ts": _now_iso()}
+        else:
+            # Clear account (use default)
+            current_account_id = None
+            return {"status": "ok", "account_id": None, "ts": _now_iso()}
+
+    @app.get("/api/account")
+    def get_account() -> Dict[str, Any]:
+        """Get current active account"""
+        account_info = None
+        if current_account_id:
+            account_info = client.get_account(current_account_id)
+        else:
+            account_info = client.get_account()
+
+        if account_info:
+            return {
+                "account_id": account_info.get("account_number") or account_info.get("id"),
+                "status": account_info.get("status"),
+                "currency": account_info.get("currency", "USD"),
+                "buying_power": float(account_info.get("buying_power", 0.0)),
+                "cash": float(account_info.get("cash", 0.0)),
+                "portfolio_value": float(account_info.get("portfolio_value", 0.0)),
+                "ts": _now_iso()
+            }
+        return {"account_id": None, "ts": _now_iso()}
 
     return app
 

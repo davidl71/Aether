@@ -70,6 +70,27 @@ Icons will be generated in `public/icons/` with all required sizes (72x72 throug
 
 ## Scripts
 
+### Quick Start
+
+**Start the web service (recommended):**
+```bash
+./web/scripts/run-web-service.sh
+```
+
+This script will:
+- Check for Node.js/npm
+- Install dependencies if needed
+- Auto-detect and connect to Alpaca service if running
+- Configure `VITE_API_URL` automatically
+- Start the Vite dev server
+
+**Start the Alpaca backend service:**
+```bash
+./web/scripts/run-alpaca-service.sh
+```
+
+### Manual Commands
+
 - `npm run dev` – start Vite dev server (PWA enabled in dev mode).
 - `npm run build` – produce optimized bundle in `dist/` with service worker.
 - `npm run preview` – preview the build locally.
@@ -86,6 +107,8 @@ npm run dev
 ```
 
 Set `VITE_API_URL=http://127.0.0.1:8000/api/snapshot` (or your backend URL) to hit the live Alpaca-backed service. The default static JSON under `public/data/` keeps the SPA functional offline, and the service worker caches it for offline access.
+
+**See [ALPACA_INTEGRATION.md](./ALPACA_INTEGRATION.md) for detailed setup instructions.**
 
 ## Feature Parity with TUI
 

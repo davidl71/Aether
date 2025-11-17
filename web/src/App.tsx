@@ -158,9 +158,69 @@ function App() {
     };
   }, [handleBuyCombo, handleSellCombo]);
 
+  const handleModeChange = useCallback(async (mode: 'PAPER' | 'LIVE') => {
+    try {
+      // Get API URL from environment or use default
+      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
+      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
+
+      // Send mode change request to backend
+      const response = await fetch(`${baseUrl}/api/mode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Mode changed to:', data.mode);
+        // The snapshot will update on next poll with the new mode
+      } else {
+        console.error('Failed to change mode:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error changing mode:', error);
+      // If API call fails, still allow UI change (for development/offline)
+    }
+  }, []);
+
+  const handleAccountChange = useCallback(async (accountId: string | null) => {
+    try {
+      // Get API URL from environment or use default
+      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
+      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
+
+      // Send account change request to backend
+      const response = await fetch(`${baseUrl}/api/account`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account_id: accountId })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Account changed to:', data.account_id);
+        // The snapshot will update on next poll with the new account
+      } else {
+        console.error('Failed to change account:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error changing account:', error);
+    }
+  }, []);
+
+  // Get API base URL for account selector
+  const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
+  const apiBaseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
+
   return (
-    <div className="app-shell">
-      <HeaderStatus snapshot={snapshot} />
+    <div className={`app-shell ${snapshot?.mode === 'LIVE' || snapshot?.mode === 'LIVE_TRADING' ? 'app-shell--live' : ''}`}>
+      <HeaderStatus
+        snapshot={snapshot}
+        onModeChange={handleModeChange}
+        onAccountChange={handleAccountChange}
+        apiBaseUrl={apiBaseUrl}
+      />
 
       <div className="scenario-section">
         {scenarioLoading && <div className="app-status">Loading box spread scenarios…</div>}
