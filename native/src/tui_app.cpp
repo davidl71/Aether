@@ -1692,6 +1692,17 @@ int main(int argc, char* argv[]) {
     auto interval = config.update_interval.count() > 0 ? config.update_interval : std::chrono::milliseconds(1000);
     provider = std::make_unique<FileProvider>(file_path, interval);
     spdlog::info("Using File provider: {} (interval: {}ms)", file_path, interval.count());
+  } else if (backend == "websocket") {
+    std::string ws_url = std::getenv("TUI_WS_URL")
+      ? std::getenv("TUI_WS_URL")
+      : std::string("ws://localhost:8000/ws");
+    std::string fallback_file = std::getenv("TUI_SNAPSHOT_FILE")
+      ? std::getenv("TUI_SNAPSHOT_FILE")
+      : std::string("web/public/data/snapshot.json");
+    auto reconnect_interval = config.update_interval.count() > 0 ? config.update_interval : std::chrono::milliseconds(3000);
+    provider = std::make_unique<WebSocketProvider>(ws_url, fallback_file, reconnect_interval);
+    spdlog::info("Using WebSocket provider: {} (fallback: {})", ws_url, fallback_file);
+    spdlog::info("Note: WebSocket connection not yet implemented, will use file polling fallback");
   } else {
     spdlog::warn("Unknown backend: {}, falling back to mock", backend);
     provider = std::make_unique<MockProvider>();

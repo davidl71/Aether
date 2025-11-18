@@ -1,5 +1,6 @@
 // tui_provider.cpp - Data provider implementations
 #include "tui_provider.h"
+#include "tui_data.h"
 #include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 #include <sstream>
@@ -10,6 +11,10 @@
 #include <iomanip>
 #include <ctime>
 #include <sys/stat.h>
+#include <curl/curl.h>
+#include <memory>
+#include <cstring>
+#include <mutex>
 
 namespace tui {
 
@@ -32,6 +37,13 @@ MockProvider::~MockProvider() {
 void MockProvider::Start() {
   if (running_.exchange(true)) {
     return;  // Already running
+  }
+
+  // Generate initial snapshot immediately for instant UI display
+  {
+    auto snapshot = GenerateSnapshot();
+    std::lock_guard<std::mutex> lock(mutex_);
+    latest_snapshot_ = snapshot;
   }
 
   worker_ = std::thread(&MockProvider::GenerateLoop, this);
@@ -395,6 +407,11 @@ std::vector<FAQEntry> MockProvider::MockFAQs() {
 
 RestProvider::RestProvider(const std::string& endpoint, std::chrono::milliseconds interval)
   : endpoint_(endpoint), interval_(interval) {
+  // Initialize curl globally (thread-safe, can be called multiple times)
+  static std::once_flag curl_init_flag;
+  std::call_once(curl_init_flag, []() {
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+  });
 }
 
 RestProvider::~RestProvider() {
@@ -404,6 +421,18 @@ RestProvider::~RestProvider() {
 void RestProvider::Start() {
   if (running_.exchange(true)) {
     return;
+  }
+
+  // Try to fetch initial snapshot immediately for instant UI display
+  // If it fails, we'll have an empty snapshot that will be updated by the background thread
+  try {
+    auto snap = Fetch();
+    if (snap.generated_at.time_since_epoch().count() > 0) {
+      std::lock_guard<std::mutex> lock(mutex_);
+      latest_snapshot_ = snap;
+    }
+  } catch (...) {
+    spdlog::debug("Initial REST fetch failed, will retry in background");
   }
 
   worker_ = std::thread(&RestProvider::PollLoop, this);
@@ -457,11 +486,74 @@ void RestProvider::PollLoop() {
   }
 }
 
+// Helper struct for curl write callback
+struct CurlWriteData {
+  std::string data;
+};
+
+static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
+  size_t realsize = size * nmemb;
+  CurlWriteData* mem = static_cast<CurlWriteData*>(userp);
+  mem->data.append(static_cast<char*>(contents), realsize);
+  return realsize;
+}
+
 Snapshot RestProvider::Fetch() {
-  // TODO: Implement HTTP client using curl or similar
-  // For now, return empty snapshot
-  spdlog::warn("REST provider not fully implemented yet");
-  return Snapshot{};
+  using json = nlohmann::json;
+
+  CURL* curl = curl_easy_init();
+  if (!curl) {
+    spdlog::error("Failed to initialize curl");
+    return Snapshot{};
+  }
+
+  // RAII wrapper for curl cleanup
+  struct CurlGuard {
+    CURL* handle;
+    ~CurlGuard() { if (handle) curl_easy_cleanup(handle); }
+  } guard{curl};
+
+  CurlWriteData write_data;
+  CURLcode res;
+
+  // Set up curl options
+  curl_easy_setopt(curl, CURLOPT_URL, endpoint_.c_str());
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &write_data);
+  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+  curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);  // 10 second timeout
+  curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);  // 5 second connect timeout
+  curl_easy_setopt(curl, CURLOPT_USERAGENT, "IBBoxSpread/1.0");
+
+  // Perform the request
+  res = curl_easy_perform(curl);
+
+  if (res != CURLE_OK) {
+    spdlog::error("curl_easy_perform() failed: {}", curl_easy_strerror(res));
+    return Snapshot{};
+  }
+
+  // Check HTTP response code
+  long response_code;
+  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+  if (response_code != 200) {
+    spdlog::error("HTTP request failed with status code: {}", response_code);
+    return Snapshot{};
+  }
+
+  // Parse JSON response
+  try {
+    json j = json::parse(write_data.data);
+    Snapshot snapshot;
+    from_json(j, snapshot);
+    return snapshot;
+  } catch (const json::parse_error& e) {
+    spdlog::error("Failed to parse JSON response: {}", e.what());
+    return Snapshot{};
+  } catch (const std::exception& e) {
+    spdlog::error("Failed to deserialize snapshot: {}", e.what());
+    return Snapshot{};
+  }
 }
 
 // ============================================================================
@@ -489,6 +581,18 @@ IBKRRestProvider::~IBKRRestProvider() {
 void IBKRRestProvider::Start() {
   if (running_.exchange(true)) {
     return;  // Already running
+  }
+
+  // Try to fetch initial snapshot immediately for instant UI display
+  // If it fails, we'll have an empty snapshot that will be updated by the background thread
+  try {
+    auto snap = FetchFromIBKR();
+    if (snap.generated_at.time_since_epoch().count() > 0) {
+      std::lock_guard<std::mutex> lock(mutex_);
+      latest_snapshot_ = snap;
+    }
+  } catch (...) {
+    spdlog::debug("Initial IBKR fetch failed, will retry in background");
   }
 
   worker_ = std::thread(&IBKRRestProvider::PollLoop, this);
@@ -745,6 +849,19 @@ void FileProvider::Start() {
   if (running_.exchange(true)) {
     return;
   }
+
+  // Try to load initial snapshot immediately for instant UI display
+  // If file doesn't exist yet, we'll have an empty snapshot that will be updated by the background thread
+  try {
+    auto snap = LoadFromFile();
+    if (snap.generated_at.time_since_epoch().count() > 0) {
+      std::lock_guard<std::mutex> lock(mutex_);
+      latest_snapshot_ = snap;
+    }
+  } catch (const std::exception& e) {
+    spdlog::debug("Initial file load failed: {}, will retry in background", e.what());
+  }
+
   worker_ = std::thread(&FileProvider::PollLoop, this);
   spdlog::info("FileProvider started with path: {}", file_path_);
 }
@@ -810,6 +927,129 @@ Snapshot FileProvider::LoadFromFile() {
   try {
     from_json(j, s);
     last_mtime_ = st.st_mtime;
+  } catch (const std::exception& e) {
+    spdlog::error("Failed to parse snapshot JSON: {}", e.what());
+    return Snapshot{};
+  }
+  return s;
+}
+
+// ============================================================================
+// WebSocketProvider Implementation
+// ============================================================================
+
+WebSocketProvider::WebSocketProvider(const std::string& ws_url,
+                                     const std::string& fallback_file_path,
+                                     std::chrono::milliseconds reconnect_interval)
+  : ws_url_(ws_url)
+  , fallback_file_path_(fallback_file_path)
+  , reconnect_interval_(reconnect_interval) {
+  // Remove trailing slash from ws_url
+  if (!ws_url_.empty() && ws_url_.back() == '/') {
+    ws_url_.pop_back();
+  }
+}
+
+WebSocketProvider::~WebSocketProvider() {
+  Stop();
+}
+
+void WebSocketProvider::Start() {
+  if (running_.exchange(true)) {
+    return;  // Already running
+  }
+
+  // Try to connect to WebSocket, fallback to file if unavailable
+  worker_ = std::thread(&WebSocketProvider::ConnectLoop, this);
+  spdlog::info("WebSocketProvider started (ws_url: {}, fallback: {})", ws_url_, fallback_file_path_);
+}
+
+void WebSocketProvider::Stop() {
+  if (!running_.exchange(false)) {
+    return;  // Already stopped
+  }
+
+  if (worker_.joinable()) {
+    worker_.join();
+  }
+  spdlog::info("WebSocketProvider stopped");
+}
+
+Snapshot WebSocketProvider::GetSnapshot() {
+  // Non-blocking: just return latest snapshot atomically
+  std::lock_guard<std::mutex> lock(mutex_);
+  return latest_snapshot_;
+}
+
+bool WebSocketProvider::IsRunning() const {
+  return running_.load();
+}
+
+void WebSocketProvider::ConnectLoop() {
+  // Try to connect to WebSocket
+  // TODO: Implement actual WebSocket connection using websocketpp or similar
+  // For now, fallback to file polling immediately
+  spdlog::info("WebSocket connection not yet implemented, falling back to file polling");
+  FallbackToFile();
+}
+
+void WebSocketProvider::Reconnect() {
+  if (reconnect_attempts_ >= MAX_RECONNECT_ATTEMPTS) {
+    spdlog::warn("WebSocket reconnection limit reached, falling back to file polling");
+    FallbackToFile();
+    return;
+  }
+
+  reconnect_attempts_++;
+  spdlog::info("Attempting WebSocket reconnection ({}/{})", reconnect_attempts_, MAX_RECONNECT_ATTEMPTS);
+
+  // Wait before reconnecting
+  std::this_thread::sleep_for(reconnect_interval_);
+
+  // TODO: Attempt WebSocket reconnection
+  // For now, fallback to file
+  FallbackToFile();
+}
+
+void WebSocketProvider::FallbackToFile() {
+  websocket_connected_.store(false);
+  reconnect_attempts_ = 0;
+
+  if (fallback_file_path_.empty()) {
+    spdlog::error("WebSocket unavailable and no fallback file path provided");
+    return;
+  }
+
+  spdlog::info("Using file polling fallback: {}", fallback_file_path_);
+
+  // Poll file similar to FileProvider
+  while (running_.load()) {
+    try {
+      auto snap = LoadFromFile();
+      if (snap.generated_at.time_since_epoch().count() > 0) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        latest_snapshot_ = snap;
+      }
+    } catch (const std::exception& e) {
+      spdlog::error("WebSocketProvider file read error: {}", e.what());
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));  // Poll every 2 seconds
+  }
+}
+
+Snapshot WebSocketProvider::LoadFromFile() {
+  using namespace std;
+  using json = nlohmann::json;
+
+  std::ifstream f(fallback_file_path_);
+  if (!f.good()) {
+    return Snapshot{};
+  }
+  json j;
+  f >> j;
+  Snapshot s{};
+  try {
+    from_json(j, s);
   } catch (const std::exception& e) {
     spdlog::error("Failed to parse snapshot JSON: {}", e.what());
     return Snapshot{};

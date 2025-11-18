@@ -186,4 +186,37 @@ private:
   std::time_t last_mtime_{0};
 };
 
+// WebSocketProvider connects to a WebSocket endpoint for real-time snapshots.
+// Falls back to file polling if WebSocket is unavailable.
+// TODO: Implement actual WebSocket connection using websocketpp or similar library.
+class WebSocketProvider : public Provider {
+public:
+  WebSocketProvider(const std::string& ws_url,
+                    const std::string& fallback_file_path,
+                    std::chrono::milliseconds reconnect_interval);
+  ~WebSocketProvider() override;
+
+  void Start() override;
+  void Stop() override;
+  Snapshot GetSnapshot() override;
+  bool IsRunning() const override;
+
+private:
+  void ConnectLoop();
+  void Reconnect();
+  void FallbackToFile();
+  Snapshot LoadFromFile();
+
+  std::string ws_url_;
+  std::string fallback_file_path_;
+  std::chrono::milliseconds reconnect_interval_;
+  std::atomic<bool> running_{false};
+  std::atomic<bool> websocket_connected_{false};
+  std::thread worker_;
+  std::mutex mutex_;
+  Snapshot latest_snapshot_;
+  int reconnect_attempts_{0};
+  static constexpr int MAX_RECONNECT_ATTEMPTS = 10;
+};
+
 } // namespace tui
