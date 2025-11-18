@@ -155,6 +155,39 @@ struct FAQEntry {
   std::string answer;
 };
 
+// BoxSpreadScenario represents a single box spread opportunity.
+struct BoxSpreadScenario {
+  double width = 0.0;                    // Strike width in points
+  double put_bid = 0.0;                  // Put bid price
+  double call_ask = 0.0;                 // Call ask price
+  double synthetic_bid = 0.0;            // Synthetic bid price
+  double synthetic_ask = 0.0;           // Synthetic ask price
+  double mid_price = 0.0;                // Mid price
+  double annualized_return = 0.0;        // Annualized return (APR) as percentage
+  double fill_probability = 0.0;         // Fill probability (0-100)
+  std::string option_style;               // "European" or "American"
+
+  // Buy vs Sell disparity (intraday differences)
+  double buy_profit = 0.0;               // Profit from buying box spread
+  double sell_profit = 0.0;              // Profit from selling box spread
+  double buy_implied_rate = 0.0;         // Implied rate when buying
+  double sell_implied_rate = 0.0;        // Implied rate when selling
+  double buy_sell_disparity = 0.0;       // Difference between buy and sell profitability
+  double put_call_parity_violation = 0.0; // Put-call parity violation (bps)
+
+  // Expiration data for yield curve
+  std::string expiration_date;            // Expiration date in YYYYMMDD or ISO format
+  double days_to_expiry = 0.0;           // Days until expiration
+};
+
+// BoxSpreadSummary contains aggregated statistics about scenarios.
+struct BoxSpreadSummary {
+  int total_scenarios = 0;
+  double avg_apr = 0.0;
+  int probable_count = 0;  // Scenarios with fill_probability > 0
+  BoxSpreadScenario max_apr_scenario;  // Scenario with highest APR
+};
+
 // Snapshot is the aggregate data served to the TUI.
 struct Snapshot {
   std::chrono::system_clock::time_point generated_at;
@@ -170,6 +203,12 @@ struct Snapshot {
   std::vector<HistoryEntry> history;
   std::vector<YieldCurvePoint> yield_curve;
   std::vector<FAQEntry> faqs;
+
+  // Box spread scenario data
+  std::vector<BoxSpreadScenario> scenarios;
+  BoxSpreadSummary scenario_summary;
+  std::string scenario_underlying;  // Underlying symbol for scenarios
+  std::chrono::system_clock::time_point scenario_as_of;  // Timestamp for scenario data
 };
 
 // JSON serialization helpers
@@ -205,6 +244,12 @@ void from_json(const nlohmann::json& j, YieldCurvePoint& p);
 
 void to_json(nlohmann::json& j, const FAQEntry& f);
 void from_json(const nlohmann::json& j, FAQEntry& f);
+
+void to_json(nlohmann::json& j, const BoxSpreadScenario& s);
+void from_json(const nlohmann::json& j, BoxSpreadScenario& s);
+
+void to_json(nlohmann::json& j, const BoxSpreadSummary& s);
+void from_json(const nlohmann::json& j, BoxSpreadSummary& s);
 
 void to_json(nlohmann::json& j, const Snapshot& s);
 void from_json(const nlohmann::json& j, Snapshot& s);
