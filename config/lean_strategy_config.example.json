@@ -1,0 +1,23 @@
+{
+  "strategy": {
+    "symbols": ["SPY", "SPX", "XSP"],
+    "min_roi_percent": 0.5,
+    "max_position_size": 5,
+    "max_risk": 0.1,
+    "min_days_to_expiry": 7,
+    "max_days_to_expiry": 60,
+    "max_bid_ask_spread": 0.5,
+    "min_volume": 10,
+    "min_open_interest": 100
+  },
+  "notes": {
+    "min_roi_percent": "Minimum ROI percentage (e.g., 0.5 for 0.5%)",
+    "max_position_size": "Maximum number of concurrent box spread positions",
+    "max_risk": "Maximum risk score (0.0-1.0)",
+    "min_days_to_expiry": "Minimum days until expiration",
+    "max_days_to_expiry": "Maximum days until expiration",
+    "max_bid_ask_spread": "Maximum bid-ask spread in dollars",
+    "min_volume": "Minimum daily volume requirement",
+    "min_open_interest": "Minimum open interest requirement"
+  }
+}

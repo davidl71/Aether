@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSnapshot } from './hooks/useSnapshot';
 import { useBoxSpreadData } from './hooks/useBoxSpreadData';
+import { useSymbolWatchlist } from './hooks/useSymbolWatchlist';
 import { HeaderStatus } from './components/HeaderStatus';
 import { TabNavigation } from './components/TabNavigation';
 import { DashboardTab } from './components/DashboardTab';
@@ -11,6 +12,9 @@ import { ActionBar } from './components/ActionBar';
 import { DetailModal } from './components/DetailModal';
 import ScenarioSummary from './components/ScenarioSummary';
 import BoxSpreadTable from './components/BoxSpreadTable';
+import { YieldCurveTable } from './components/YieldCurveTable';
+import { OptionsChainTable } from './components/OptionsChainTable';
+import { BoxSpreadCombinations } from './components/BoxSpreadCombinations';
 import type { SnapshotPayload, SymbolSnapshot, PositionSnapshot } from './types/snapshot';
 import type { BoxSpreadSummary } from './types';
 
@@ -34,17 +38,35 @@ function renderTabContent(
   tab: TabId,
   snapshot: SnapshotPayload | null,
   onSelectSymbol: (symbol: SymbolSnapshot) => void,
-  onSelectPosition: (position: PositionSnapshot) => void
+  onSelectPosition: (position: PositionSnapshot) => void,
+  watchlist: string[],
+  onAddSymbol: (symbol: string) => { success: boolean; error?: string },
+  onRemoveSymbol: (symbol: string) => void,
+  isDefaultSymbol: (symbol: string) => boolean,
+  onCancelOrder: (orderId: string) => Promise<void>,
+  apiBaseUrl: string
 ) {
   if (!snapshot) {
     return <div className="panel panel--fill">Awaiting live data…</div>;
   }
 
+  // Filter symbols to only show those in watchlist
+  const filteredSymbols = snapshot.symbols.filter((symbol) =>
+    watchlist.includes(symbol.symbol.toUpperCase())
+  );
+
   switch (tab) {
     case 'dashboard':
       return (
         <>
-          <DashboardTab symbols={snapshot.symbols} onSelectSymbol={onSelectSymbol} />
+          <DashboardTab
+            symbols={filteredSymbols}
+            onSelectSymbol={onSelectSymbol}
+            watchlist={watchlist}
+            onAddSymbol={onAddSymbol}
+            onRemoveSymbol={onRemoveSymbol}
+            isDefaultSymbol={isDefaultSymbol}
+          />
         </>
       );
     case 'current':
@@ -63,8 +85,8 @@ function renderTabContent(
           onSelectPosition={onSelectPosition}
         />
       );
-    case 'orders':
-      return <OrdersPanel orders={snapshot.orders} />;
+      case 'orders':
+        return <OrdersPanel orders={snapshot.orders} onCancelOrder={onCancelOrder} apiBaseUrl={apiBaseUrl} />;
     case 'alerts':
       return <AlertsPanel alerts={snapshot.alerts} />;
     default:
@@ -75,12 +97,15 @@ function renderTabContent(
 function App() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const [modal, setModal] = useState<ModalState>(null);
+  const [selectedStrike, setSelectedStrike] = useState<number | null>(null);
+  const [selectedExpiration, setSelectedExpiration] = useState<string | null>(null);
   const {
     snapshot,
     isLoading: snapshotLoading,
     error: snapshotError
   } = useSnapshot();
   const { data: scenarioData, isLoading: scenarioLoading, error: scenarioError } = useBoxSpreadData();
+  const { watchlist, addSymbol, removeSymbol, isDefault } = useSymbolWatchlist();
 
   const scenarioSummary = useMemo<BoxSpreadSummary | null>(() => {
     if (!scenarioData || scenarioData.scenarios.length === 0) {
@@ -112,7 +137,40 @@ function App() {
   }, [scenarioData]);
 
   const handleSelectSymbol = (symbol: SymbolSnapshot) => {
+    console.log('Symbol selected:', symbol.symbol);
     setModal({ type: 'symbol', payload: symbol });
+    // Reset strike selection when opening new symbol
+    setSelectedStrike(null);
+    setSelectedExpiration(null);
+  };
+
+  const handleStrikeSelect = (strike: number, expiration: string) => {
+    setSelectedStrike(strike);
+    setSelectedExpiration(expiration);
+  };
+
+  // Calculate days to expiry from expiration date string
+  const calculateDaysToExpiry = (expiration: string): number => {
+    try {
+      // Try parsing YYYYMMDD format
+      if (/^\d{8}$/.test(expiration)) {
+        const year = parseInt(expiration.substring(0, 4));
+        const month = parseInt(expiration.substring(4, 6)) - 1;
+        const day = parseInt(expiration.substring(6, 8));
+        const expiryDate = new Date(year, month, day);
+        const today = new Date();
+        return Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      }
+      // Try parsing ISO format
+      const expiryDate = new Date(expiration);
+      if (!isNaN(expiryDate.getTime())) {
+        const today = new Date();
+        return Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      }
+    } catch {
+      // Fallback
+    }
+    return 30; // Default to 30 days if parsing fails
   };
 
   const handleSelectPosition = (position: PositionSnapshot) => {
@@ -209,6 +267,100 @@ function App() {
     }
   }, []);
 
+  const handleStrategyStart = useCallback(async () => {
+    try {
+      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
+      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
+
+      const response = await fetch(`${baseUrl}/api/v1/strategy/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (response.ok) {
+        console.log('Strategy started');
+        // Snapshot will update on next poll
+      } else {
+        console.error('Failed to start strategy:', response.statusText);
+        alert(`Failed to start strategy: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error starting strategy:', error);
+      alert(`Error starting strategy: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, []);
+
+  const handleStrategyStop = useCallback(async () => {
+    try {
+      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
+      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
+
+      const response = await fetch(`${baseUrl}/api/v1/strategy/stop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (response.ok) {
+        console.log('Strategy stopped');
+        // Snapshot will update on next poll
+      } else {
+        console.error('Failed to stop strategy:', response.statusText);
+        alert(`Failed to stop strategy: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error stopping strategy:', error);
+      alert(`Error stopping strategy: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, []);
+
+  const handleDryRunToggle = useCallback(async (enabled: boolean) => {
+    try {
+      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
+      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
+
+      const response = await fetch(`${baseUrl}/api/mode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: enabled ? 'DRY-RUN' : 'LIVE' })
+      });
+
+      if (response.ok) {
+        console.log('Dry-run mode:', enabled ? 'enabled' : 'disabled');
+        // Snapshot will update on next poll
+      } else {
+        console.error('Failed to toggle dry-run:', response.statusText);
+        alert(`Failed to toggle dry-run: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error toggling dry-run:', error);
+      alert(`Error toggling dry-run: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, []);
+
+  const handleCancelOrder = useCallback(async (orderId: string) => {
+    try {
+      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
+      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
+
+      const response = await fetch(`${baseUrl}/api/v1/orders/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId })
+      });
+
+      if (response.ok) {
+        console.log(`Order ${orderId} cancelled`);
+        // Snapshot will update on next poll
+      } else {
+        console.error('Failed to cancel order:', response.statusText);
+        throw new Error(response.statusText);
+      }
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      throw error;
+    }
+  }, []);
+
   // Get API base URL for account selector
   const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
   const apiBaseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
@@ -219,6 +371,9 @@ function App() {
         snapshot={snapshot}
         onModeChange={handleModeChange}
         onAccountChange={handleAccountChange}
+        onStrategyStart={handleStrategyStart}
+        onStrategyStop={handleStrategyStop}
+        onDryRunToggle={handleDryRunToggle}
         apiBaseUrl={apiBaseUrl}
       />
 
@@ -245,7 +400,18 @@ function App() {
           <div className="panel panel--fill app-status app-status--error">{snapshotError}</div>
         )}
         {!snapshotLoading && !snapshotError &&
-          renderTabContent(activeTab, snapshot, handleSelectSymbol, handleSelectPosition)}
+          renderTabContent(
+            activeTab,
+            snapshot,
+            handleSelectSymbol,
+            handleSelectPosition,
+            watchlist,
+            addSymbol,
+            removeSymbol,
+            isDefault,
+            handleCancelOrder,
+            apiBaseUrl
+          )}
       </main>
 
       <ActionBar onBuyCombo={handleBuyCombo} onSellCombo={handleSellCombo} />
@@ -262,27 +428,68 @@ function App() {
           onClose={() => setModal(null)}
         >
           {modal.type === 'symbol' && (
-            <ul className="modal-list">
-              <li>
-                Last: <strong>{modal.payload.last.toFixed(2)}</strong>
-              </li>
-              <li>
-                Bid/Ask: <strong>{modal.payload.bid.toFixed(2)}</strong> /
-                <strong> {modal.payload.ask.toFixed(2)}</strong>
-              </li>
-              <li>
-                Spread: <strong>{modal.payload.spread.toFixed(2)}</strong>
-              </li>
-              <li>
-                ROI: <strong>{modal.payload.roi.toFixed(2)}%</strong>
-              </li>
-              <li>
-                Maker/Taker: <strong>{modal.payload.maker_count}</strong>/<strong>{modal.payload.taker_count}</strong>
-              </li>
-              <li>
-                Volume: <strong>{modal.payload.volume.toLocaleString()}</strong>
-              </li>
-            </ul>
+            <>
+              <div style={{ marginBottom: '16px', padding: '12px', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '8px' }}>
+                <ul className="modal-list" style={{ margin: 0 }}>
+                  <li>
+                    Last: <strong>{modal.payload.last.toFixed(2)}</strong>
+                  </li>
+                  <li>
+                    Bid/Ask: <strong>{modal.payload.bid.toFixed(2)}</strong> /
+                    <strong> {modal.payload.ask.toFixed(2)}</strong>
+                  </li>
+                  <li>
+                    Spread: <strong>{modal.payload.spread.toFixed(2)}</strong>
+                  </li>
+                  <li>
+                    ROI: <strong>{modal.payload.roi.toFixed(2)}%</strong>
+                  </li>
+                  <li>
+                    Maker/Taker: <strong>{modal.payload.maker_count}</strong>/<strong>{modal.payload.taker_count}</strong>
+                  </li>
+                  <li>
+                    Volume: <strong>{modal.payload.volume.toLocaleString()}</strong>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Options Chain Table */}
+              {modal.payload.option_chains && modal.payload.option_chains.length > 0 ? (
+                <>
+                  <OptionsChainTable
+                    optionChains={modal.payload.option_chains}
+                    underlyingPrice={modal.payload.last}
+                    onStrikeSelect={handleStrikeSelect}
+                    selectedStrike={selectedStrike}
+                    selectedExpiration={selectedExpiration}
+                  />
+
+                  {/* Box Spread Combinations when strike is selected */}
+                  {selectedStrike && selectedExpiration && scenarioData && scenarioData.underlying === modal.payload.symbol && (
+                    <div style={{ marginTop: '24px' }}>
+                      <BoxSpreadCombinations
+                        scenarios={scenarioData.scenarios}
+                        selectedStrike={selectedStrike}
+                        selectedExpiration={selectedExpiration}
+                        underlyingPrice={modal.payload.last}
+                        daysToExpiry={calculateDaysToExpiry(selectedExpiration)}
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                  <p>No options chain data available for {modal.payload.symbol}</p>
+                </div>
+              )}
+
+              {/* Yield Curve Table (always show if data available) */}
+              {scenarioData && scenarioData.underlying === modal.payload.symbol && (
+                <div style={{ marginTop: '24px' }}>
+                  <YieldCurveTable scenarios={scenarioData.scenarios} symbol={modal.payload.symbol} />
+                </div>
+              )}
+            </>
           )}
           {modal.type === 'position' && (
             <ul className="modal-list">

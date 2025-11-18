@@ -7,6 +7,9 @@ interface HeaderStatusProps {
   snapshot: SnapshotPayload | null;
   onModeChange?: (mode: TradingMode) => void;
   onAccountChange?: (accountId: string | null) => void;
+  onStrategyStart?: () => void;
+  onStrategyStop?: () => void;
+  onDryRunToggle?: (enabled: boolean) => void;
   apiBaseUrl?: string;
 }
 
@@ -18,9 +21,18 @@ function statusBadge(ok: boolean, label: string) {
   );
 }
 
-export function HeaderStatus({ snapshot, onModeChange, onAccountChange, apiBaseUrl }: HeaderStatusProps) {
+export function HeaderStatus({
+  snapshot,
+  onModeChange,
+  onAccountChange,
+  onStrategyStart,
+  onStrategyStop,
+  onDryRunToggle,
+  apiBaseUrl
+}: HeaderStatusProps) {
   const isLive = snapshot?.mode === 'LIVE' || snapshot?.mode === 'LIVE_TRADING';
   const modeClass = isLive ? 'mode-indicator--live' : 'mode-indicator--paper';
+  const isStrategyRunning = snapshot?.strategy === 'RUNNING';
 
   if (!snapshot) {
     return (
@@ -39,6 +51,30 @@ export function HeaderStatus({ snapshot, onModeChange, onAccountChange, apiBaseU
     } else {
       // Fallback: just log (for now, until backend integration)
       console.log('Mode change requested:', mode);
+    }
+  };
+
+  const handleStrategyStart = () => {
+    if (onStrategyStart) {
+      onStrategyStart();
+    } else {
+      console.log('Strategy start requested');
+    }
+  };
+
+  const handleStrategyStop = () => {
+    if (onStrategyStop) {
+      onStrategyStop();
+    } else {
+      console.log('Strategy stop requested');
+    }
+  };
+
+  const handleDryRunToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (onDryRunToggle) {
+      onDryRunToggle(event.target.checked);
+    } else {
+      console.log('Dry-run toggle:', event.target.checked);
     }
   };
 
@@ -65,6 +101,40 @@ export function HeaderStatus({ snapshot, onModeChange, onAccountChange, apiBaseU
       </div>
       <div className="header__meta">
         <span>Strategy: <strong>{snapshot.strategy}</strong></span>
+        {(onStrategyStart || onStrategyStop) && (
+          <div className="header__strategy-controls" style={{ display: 'inline-flex', gap: '8px', marginLeft: '16px' }}>
+            {!isStrategyRunning ? (
+              <button
+                type="button"
+                className="btn btn--primary btn--small"
+                onClick={handleStrategyStart}
+                title="Start strategy"
+              >
+                ▶ Start
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn btn--secondary btn--small"
+                onClick={handleStrategyStop}
+                title="Stop strategy"
+              >
+                ⏹ Stop
+              </button>
+            )}
+          </div>
+        )}
+        {onDryRunToggle && (
+          <label className="header__dry-run-toggle" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginLeft: '16px' }}>
+            <input
+              type="checkbox"
+              checked={snapshot.mode === 'DRY-RUN' || snapshot.mode === 'PAPER'}
+              onChange={handleDryRunToggle}
+              title="Toggle dry-run mode"
+            />
+            <span>Dry-Run</span>
+          </label>
+        )}
         {onAccountChange ? (
           <AccountSelector
             currentAccountId={snapshot.account_id}

@@ -784,6 +784,38 @@ body {
   transform: translateY(-2px);
 }
 
+.btn--small {
+  padding: 4px 12px;
+  font-size: 0.85rem;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.header__strategy-controls {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: 16px;
+}
+
+.header__dry-run-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.header__dry-run-toggle input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+
 .app-status {
   padding: 12px 16px;
   border-radius: 12px;
@@ -816,7 +848,10 @@ body {
   background: rgba(15, 23, 42, 0.95);
   border-radius: 16px;
   padding: 24px;
-  width: min(480px, 90vw);
+  width: min(1200px, 95vw);
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 24px 48px rgba(2, 6, 23, 0.65);
   display: grid;
   gap: 16px;
@@ -839,6 +874,8 @@ body {
 
 .modal__body {
   color: #cbd5f5;
+  overflow-y: auto;
+  max-height: calc(90vh - 200px);
 }
 
 .modal-list {
