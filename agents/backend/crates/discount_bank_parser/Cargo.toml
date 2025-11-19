@@ -1,0 +1,27 @@
+[package]
+name = "discount_bank_parser"
+edition = "2021"
+version = "0.1.0"
+
+[dependencies]
+anyhow = { workspace = true }
+chrono = { workspace = true }
+encoding_rs = "0.8"
+ledger = { path = "../ledger" }
+rust_decimal = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tokio = { version = "1", features = ["fs"] }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["fs", "rt", "macros"] }
+
+[[example]]
+name = "test_parser"
+path = "examples/test_parser.rs"
+
+[[example]]
+name = "show_balances"
+path = "examples/show_balances.rs"

@@ -23,6 +23,7 @@ using OrderStatusCallback = std::function<void(const types::Order&)>;
 using PositionCallback = std::function<void(const types::Position&)>;
 using AccountCallback = std::function<void(const types::AccountInfo&)>;
 using ErrorCallback = std::function<void(int code, const std::string& msg)>;
+using ContractDetailsCallback = std::function<void(long conId)>;
 
 // ============================================================================
 // Connection State
@@ -84,6 +85,21 @@ public:
     std::vector<types::OptionContract> request_option_chain(
         const std::string& symbol,
         const std::string& expiry = ""  // Empty for all expiries
+    );
+
+    // Request contract details for an option contract (async - callback-based)
+    // Returns request ID, or -1 if failed
+    // Callback receives the contract ID (conId) when details are available
+    int request_contract_details(
+        const types::OptionContract& contract,
+        ContractDetailsCallback callback
+    );
+
+    // Request contract details synchronously (blocks until details received or timeout)
+    // Returns contract ID (conId), or -1 if failed/timeout
+    long request_contract_details_sync(
+        const types::OptionContract& contract,
+        int timeout_ms = 5000
     );
 
     // ========================================================================
@@ -156,6 +172,29 @@ public:
     // Get current account information (from cache - may be stale)
     // Pure query function - no side effects
     std::optional<types::AccountInfo> get_account_info() const __attribute__((pure));
+
+    // ========================================================================
+    // Margin Operations
+    // ========================================================================
+
+    // Query margin requirements for a box spread
+    // Uses account margin data and margin calculator to estimate requirements
+    // Returns margin result with initial/maintenance/portfolio margin
+    std::optional<types::BoxSpreadLeg> query_box_spread_margin(
+        types::BoxSpreadLeg spread,
+        double underlying_price,
+        double implied_volatility = 0.20
+    );
+
+    // Get account margin utilization
+    // Returns margin used / available margin as percentage
+    double get_margin_utilization() const;
+
+    // Check if account is at risk of margin call
+    bool is_margin_call_risk(double buffer_percent = 10.0) const;
+
+    // Get remaining margin capacity
+    double get_remaining_margin_capacity() const;
 
     // ========================================================================
     // Callbacks

@@ -207,7 +207,37 @@ fetchcontent_declare(
     GIT_SHALLOW TRUE
 )
 
-fetchcontent_makeavailable(nlohmann_json spdlog CLI11 ftxui)
+set(EIGEN3_REPOSITORY "https://gitlab.com/libeigen/eigen.git")
+fetchcontent_declare(
+    Eigen3
+    GIT_REPOSITORY ${EIGEN3_REPOSITORY}
+    GIT_TAG 3.4.0
+    GIT_SHALLOW TRUE
+)
+
+# Find Boost (required for QuantLib)
+find_package(Boost REQUIRED COMPONENTS date_time filesystem system)
+
+# QuantLib via FetchContent
+set(QUANTLIB_REPOSITORY "https://github.com/lballabio/quantlib.git")
+fetchcontent_declare(
+    QuantLib
+    GIT_REPOSITORY ${QUANTLIB_REPOSITORY}
+    GIT_TAG QuantLib-v1.32
+    GIT_SHALLOW TRUE
+)
+
+# NLopt via FetchContent
+set(NLOPT_REPOSITORY "https://github.com/stevengj/nlopt.git")
+fetchcontent_declare(
+    NLopt
+    GIT_REPOSITORY ${NLOPT_REPOSITORY}
+    GIT_TAG v2.7.1
+    GIT_SHALLOW TRUE
+)
+set(NLOPT_LICENSE_MIT ON CACHE BOOL "Use MIT license instead of LGPL")
+
+fetchcontent_makeavailable(nlohmann_json spdlog CLI11 ftxui Eigen3 QuantLib NLopt)
 
 if(BUILD_TESTING)
     set(CATCH2_REPOSITORY "https://github.com/catchorg/Catch2.git")
@@ -391,6 +421,7 @@ if(_build_native_cli)
         src/risk_calculator.cpp
         src/config_manager.cpp
         src/pcap_capture.cpp
+        src/convexity_calculator.cpp
     )
 
     set(HEADERS
@@ -402,6 +433,7 @@ if(_build_native_cli)
         include/risk_calculator.h
         include/config_manager.h
         include/pcap_capture.h
+        include/convexity_calculator.h
         include/types.h
     )
 
@@ -432,11 +464,21 @@ if(_build_native_cli)
         add_dependencies(ib_box_spread twsapi_external)
     endif()
 
+    # Find libcurl for HTTP client support
+    find_package(CURL REQUIRED)
+
     target_link_libraries(ib_box_spread
         PRIVATE
             nlohmann_json::nlohmann_json
             spdlog::spdlog
             CLI11::CLI11
+            Eigen3::Eigen
+            QuantLib::QuantLib
+            Boost::date_time
+            Boost::filesystem
+            Boost::system
+            NLopt::nlopt
+            CURL::libcurl
             ${TWS_API_LIB}
             ${INTEL_DECIMAL_LIB}
             /usr/local/lib/libprotobuf.dylib
@@ -482,6 +524,8 @@ if(ENABLE_TUI)
         src/tui_breadcrumb.cpp
         src/tui_converter.cpp
         src/tui_config.cpp
+        src/tui_data.cpp
+        src/types_utils.cpp
     )
 
     set(TUI_HEADERS
@@ -501,10 +545,14 @@ if(ENABLE_TUI)
     )
 
     # FTXUI is header-only, but we need to link against its dependencies
+    # Find libcurl for HTTP client support in TUI
+    find_package(CURL REQUIRED)
+
     target_link_libraries(ib_box_spread_tui
         PRIVATE
             nlohmann_json::nlohmann_json
             spdlog::spdlog
+            CURL::libcurl
     )
 
     # FTXUI uses FetchContent, link to its interface target if available

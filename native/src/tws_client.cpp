@@ -2,6 +2,7 @@
 #include "tws_client.h"
 #include "rate_limiter.h"
 #include "pcap_capture.h"
+#include "margin_calculator.h"
 #include <spdlog/spdlog.h>
 
 // TWS API headers
@@ -205,17 +206,19 @@ types::MarketData generate_mock_market_data(const types::OptionContract& contrac
 const std::unordered_map<int, std::string> kIbErrorGuidance = {
     // Connection errors (500-599)
     {502, "Connection rejected. Enable 'ActiveX and Socket Clients' in TWS Settings > API > Settings. Verify IP is trusted (127.0.0.1) and port is correct."},
+    {504, "Not connected. Check TWS connection. Ensure TWS/Gateway is running and API is enabled."},
 
     // System messages (1100-1999)
     {1100, "Connection lost. Check TWS/IB Gateway and internet connection. Auto-reconnect will be attempted if enabled."},
-    {1101, "Market data connection restored. Confirm subscriptions are active."},
-    {1102, "Order routing connection restored."},
+    {1101, "Connectivity restored - data maintained. Market data connection restored. Confirm subscriptions are active."},
+    {1102, "Connectivity restored - data lost. Re-requesting market data subscriptions."},
+    {2110, "Connectivity between TWS and server broken. Data may be delayed. Check IB network status."},
 
     // Contract/Order errors (100-299)
-    {162, "Order rejected - Invalid order ticket. Check order parameters, contract ID, and trading permissions."},
-    {200, "Invalid contract definition. Verify symbol, expiry, right, strike, and exchange values."},
-    {201, "Order rejected due to contract error. Confirm contract fields before resubmitting."},
-    {202, "Order rejected by IB. Check order parameters, size limits, and account permissions."},
+    {162, "Historical data request pacing violation. Rate limiter should prevent this. Reduce request frequency."},
+    {200, "No security definition found for request. Invalid contract definition. Verify symbol, expiry, right, strike, and exchange values."},
+    {201, "Order rejected - invalid contract. Order rejected due to contract error. Confirm contract fields before resubmitting."},
+    {202, "Order cancelled. Order rejected by IB. Check order parameters, size limits, and account permissions."},
     {203, "Order rejected - Order cannot be executed. Check market hours, order type, and account permissions."},
     {204, "Order rejected - Order size exceeds position limit. Reduce order size or check account limits."},
     {205, "Order rejected - Order price is outside acceptable range. Adjust limit price."},
@@ -224,23 +227,25 @@ const std::unordered_map<int, std::string> kIbErrorGuidance = {
     {321, "Server validation failed. Review price increments, exchange routing, and TIF."},
     {322, "Order rejected - Duplicate order ID. Use unique order IDs for each order."},
     {323, "Order rejected - Order cannot be cancelled. Order may already be filled or cancelled."},
-
-    // Market data errors (350-399)
-    {354, "No market data permissions. Ensure your IB account has the required data subscriptions."},
-    {355, "Market data request failed. Check contract details and market data subscriptions."},
-
-    // Market data farm messages (2100-2199)
-    {2104, "Market data farm connection restored."},
-    {2106, "Market data farm is connecting. Expect delayed quotes until established."},
-    {2107, "Market data farm connection failed. Check IB network status dashboard."},
-    {2108, "Market data farm disconnected. Quotes will pause until reconnection."},
-    {2109, "Order routing to IB server is OK."},
-
-    // Additional common errors
     {399, "Order rejected - Order would exceed maximum position size. Check account limits."},
     {400, "Order rejected - Order would create a position that violates account restrictions."},
     {401, "Order rejected - Order type not allowed for this contract. Check order type compatibility."},
     {402, "Order rejected - Order would exceed maximum order value. Reduce order size or price."},
+
+    // Market data errors (350-399, 10000+)
+    {354, "Subscription cancelled. Check market data permissions. Requested market data is not subscribed."},
+    {355, "Market data request failed. Check contract details and market data subscriptions."},
+    {10167, "Requested market data is not subscribed. Check data permissions. Ensure your IB account has the required data subscriptions."},
+
+    // Order errors (10000+)
+    {10148, "Order size exceeds account limits. Reduce order size or check account limits."},
+
+    // Market data farm messages (2100-2199)
+    {2104, "Market data farm connection restored. Quotes should resume normally."},
+    {2106, "Market data farm is connecting. Expect delayed quotes until established."},
+    {2107, "Market data farm connection failed. Check IB network status dashboard."},
+    {2108, "Market data farm disconnected. Quotes will pause until reconnection."},
+    {2109, "Order routing to IB server is OK."},
 };
 
 const std::pair<const char*, const char*> kErrorPhraseGuidance[] = {
@@ -996,30 +1001,36 @@ public:
     }
 
     void tickSize(TickerId tickerId, TickType field, Decimal size) override {
-        if (config_.log_raw_messages) {
-            spdlog::trace("[RAW API] ← tickSize(tickerId={}, field={}, size={})",
-                        tickerId, static_cast<int>(field), size);
-        }
-        spdlog::trace("tickSize: id={}, field={}, size={}", tickerId, static_cast<int>(field), size);
+        try {
+            if (config_.log_raw_messages) {
+                spdlog::trace("[RAW API] ← tickSize(tickerId={}, field={}, size={})",
+                            tickerId, static_cast<int>(field), size);
+            }
+            spdlog::trace("tickSize: id={}, field={}, size={}", tickerId, static_cast<int>(field), size);
 
-        std::lock_guard<std::mutex> lock(data_mutex_);
-        auto& market_data = market_data_[tickerId];
+            std::lock_guard<std::mutex> lock(data_mutex_);
+            auto& market_data = market_data_[tickerId];
 
-        switch (field) {
-            case BID_SIZE:
-                market_data.bid_size = static_cast<int>(size);
-                break;
-            case ASK_SIZE:
-                market_data.ask_size = static_cast<int>(size);
-                break;
-            case LAST_SIZE:
-                market_data.last_size = static_cast<int>(size);
-                break;
-            case VOLUME:
-                market_data.volume = static_cast<double>(size);
-                break;
-            default:
-                break;
+            switch (field) {
+                case BID_SIZE:
+                    market_data.bid_size = static_cast<int>(size);
+                    break;
+                case ASK_SIZE:
+                    market_data.ask_size = static_cast<int>(size);
+                    break;
+                case LAST_SIZE:
+                    market_data.last_size = static_cast<int>(size);
+                    break;
+                case VOLUME:
+                    market_data.volume = static_cast<double>(size);
+                    break;
+                default:
+                    break;
+            }
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in tickSize(tickerId={}, field={}): {}", tickerId, static_cast<int>(field), e.what());
+        } catch (...) {
+            spdlog::error("Unknown exception in tickSize(tickerId={}, field={})", tickerId, static_cast<int>(field));
         }
     }
 
@@ -1029,26 +1040,32 @@ public:
                                double pvDividend, double gamma,
                                double vega, double theta,
                                double undPrice) override {
-        spdlog::trace("tickOptionComputation: id={}, IV={}, delta={}",
-                     tickerId, impliedVol, delta);
+        try {
+            spdlog::trace("tickOptionComputation: id={}, IV={}, delta={}",
+                         tickerId, impliedVol, delta);
 
-        std::lock_guard<std::mutex> lock(data_mutex_);
-        auto& market_data = market_data_[tickerId];
+            std::lock_guard<std::mutex> lock(data_mutex_);
+            auto& market_data = market_data_[tickerId];
 
-        if (impliedVol >= 0 && impliedVol != DBL_MAX) {
-            market_data.implied_volatility = impliedVol;
-        }
-        if (delta != DBL_MAX) {
-            market_data.delta = delta;
-        }
-        if (gamma != DBL_MAX) {
-            market_data.gamma = gamma;
-        }
-        if (vega != DBL_MAX) {
-            market_data.vega = vega;
-        }
-        if (theta != DBL_MAX) {
-            market_data.theta = theta;
+            if (impliedVol >= 0 && impliedVol != DBL_MAX) {
+                market_data.implied_volatility = impliedVol;
+            }
+            if (delta != DBL_MAX) {
+                market_data.delta = delta;
+            }
+            if (gamma != DBL_MAX) {
+                market_data.gamma = gamma;
+            }
+            if (vega != DBL_MAX) {
+                market_data.vega = vega;
+            }
+            if (theta != DBL_MAX) {
+                market_data.theta = theta;
+            }
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in tickOptionComputation(tickerId={}, type={}): {}", tickerId, static_cast<int>(tickType), e.what());
+        } catch (...) {
+            spdlog::error("Unknown exception in tickOptionComputation(tickerId={}, type={})", tickerId, static_cast<int>(tickType));
         }
     }
 
@@ -1746,6 +1763,148 @@ public:
     }
 
     // ========================================================================
+    // Contract Details Operations
+    // ========================================================================
+
+    int request_contract_details(const types::OptionContract& contract,
+                                ContractDetailsCallback callback) {
+        if (mock_mode_) {
+            int request_id = next_request_id_++;
+            long mock_conId = 1000000 + request_id;  // Generate mock contract ID
+            {
+                std::lock_guard<std::mutex> lock(contract_details_mutex_);
+                contract_details_callbacks_[request_id] = callback;
+                contract_details_results_[request_id] = mock_conId;
+            }
+            std::thread([this, request_id, callback]() {
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                ContractDetailsCallback cb;
+                long conId = -1;
+                {
+                    std::lock_guard<std::mutex> lock(contract_details_mutex_);
+                    auto it = contract_details_callbacks_.find(request_id);
+                    if (it == contract_details_callbacks_.end()) {
+                        return;
+                    }
+                    cb = it->second;
+                    conId = contract_details_results_[request_id];
+                    contract_details_callbacks_.erase(request_id);
+                    contract_details_results_.erase(request_id);
+                }
+                if (cb) {
+                    cb(conId);
+                }
+            }).detach();
+            return request_id;
+        }
+
+        if (!is_connected()) {
+            spdlog::error("Cannot request contract details: Not connected to TWS");
+            return -1;
+        }
+
+        // Check rate limits
+        if (!rate_limiter_.check_message_rate()) {
+            spdlog::error("Rate limit exceeded: Cannot request contract details for {}",
+                         contract.to_string());
+            return -1;
+        }
+
+        int request_id = next_request_id_++;
+
+        // Convert to TWS Contract
+        Contract tws_contract = convert_to_tws_contract(contract);
+
+        // Register callback
+        {
+            std::lock_guard<std::mutex> lock(contract_details_mutex_);
+            contract_details_callbacks_[request_id] = callback;
+        }
+
+        // Record message
+        rate_limiter_.record_message();
+
+        // Request contract details
+        if (config_.log_raw_messages) {
+            spdlog::trace("[RAW API] → reqContractDetails(requestId={}, contract={})",
+                        request_id, contract.to_string());
+        }
+        client_.reqContractDetails(request_id, tws_contract);
+
+        spdlog::debug("Requested contract details for {} (id={})",
+                     contract.to_string(), request_id);
+
+        return request_id;
+    }
+
+    long request_contract_details_sync(const types::OptionContract& contract,
+                                      int timeout_ms) {
+        if (mock_mode_) {
+            int request_id = next_request_id_++;
+            long mock_conId = 1000000 + request_id;
+            return mock_conId;
+        }
+
+        if (!is_connected()) {
+            spdlog::error("Cannot request contract details: Not connected to TWS");
+            return -1;
+        }
+
+        // Check rate limits
+        if (!rate_limiter_.check_message_rate()) {
+            spdlog::error("Rate limit exceeded: Cannot request contract details synchronously for {}",
+                         contract.to_string());
+            return -1;
+        }
+
+        int request_id = next_request_id_++;
+
+        // Create promise for synchronous request
+        auto promise = std::make_shared<std::promise<long>>();
+        auto future = promise->get_future();
+
+        // Register promise
+        {
+            std::lock_guard<std::mutex> lock(contract_details_mutex_);
+            contract_details_promises_[request_id] = promise;
+        }
+
+        // Convert to TWS Contract
+        Contract tws_contract = convert_to_tws_contract(contract);
+
+        // Record message
+        rate_limiter_.record_message();
+
+        // Request contract details
+        if (config_.log_raw_messages) {
+            spdlog::trace("[RAW API] → reqContractDetails(requestId={}, contract={}) [SYNC]",
+                        request_id, contract.to_string());
+        }
+        client_.reqContractDetails(request_id, tws_contract);
+
+        // Wait for response with timeout
+        auto status = future.wait_for(std::chrono::milliseconds(timeout_ms));
+        if (status == std::future_status::timeout) {
+            spdlog::warn("Contract details request timeout for {} (id={}, timeout={}ms)",
+                        contract.to_string(), request_id, timeout_ms);
+            {
+                std::lock_guard<std::mutex> lock(contract_details_mutex_);
+                contract_details_promises_.erase(request_id);
+            }
+            return -1;
+        }
+
+        // Get result
+        long conId = future.get();
+        {
+            std::lock_guard<std::mutex> lock(contract_details_mutex_);
+            contract_details_promises_.erase(request_id);
+        }
+
+        return conId;
+    }
+
+    // ========================================================================
     // Order Operations (Public Interface)
     // ========================================================================
 
@@ -2284,6 +2443,91 @@ public:
             return std::nullopt;
         }
         return account_info_;
+    }
+
+    // ========================================================================
+    // Margin Operations
+    // ========================================================================
+
+    std::optional<types::BoxSpreadLeg> query_box_spread_margin(
+        types::BoxSpreadLeg spread,
+        double underlying_price,
+        double implied_volatility) {
+
+        // Use margin calculator to estimate margin requirements
+        static margin::MarginCalculator margin_calc;
+
+        // Check if account info is available
+        auto account_info = get_account_info();
+        if (!account_info) {
+            spdlog::warn("Account info not available for margin calculation");
+            // Still calculate margin, but without account context
+        }
+
+        // Calculate margin using margin calculator
+        margin::MarginResult margin_result = margin_calc.calculate_margin(
+            spread, underlying_price, implied_volatility, true  // Prefer portfolio margin
+        );
+
+        // Update spread with margin data
+        spread.initial_margin = margin_result.initial_margin;
+        spread.maintenance_margin = margin_result.maintenance_margin;
+        spread.portfolio_margin_benefit = margin_result.portfolio_margin_benefit;
+        spread.reg_t_margin = margin_result.reg_t_margin;
+        spread.span_margin = margin_result.span_margin;
+        spread.uses_portfolio_margin = margin_result.uses_portfolio_margin;
+        spread.margin_timestamp = margin_result.calculated_at;
+
+        spdlog::debug("Box spread margin calculated: initial=${:.2f}, maintenance=${:.2f}, "
+                     "portfolio_benefit=${:.2f}",
+                     spread.initial_margin, spread.maintenance_margin,
+                     spread.portfolio_margin_benefit);
+
+        return spread;
+    }
+
+    double get_margin_utilization() const {
+        auto account_info = get_account_info();
+        if (!account_info) {
+            return 0.0;
+        }
+
+        if (account_info->initial_margin <= 0.0) {
+            return 0.0;
+        }
+
+        double total_margin = account_info->net_liquidation;
+        if (total_margin <= 0.0) {
+            return 100.0;  // Fully utilized if no net liquidation
+        }
+
+        return (account_info->initial_margin / total_margin) * 100.0;
+    }
+
+    bool is_margin_call_risk(double buffer_percent) const {
+        auto account_info = get_account_info();
+        if (!account_info) {
+            return false;
+        }
+
+        if (account_info->maintenance_margin <= 0.0) {
+            return false;
+        }
+
+        double margin_used = account_info->initial_margin;
+        double available_margin = account_info->net_liquidation - margin_used;
+        double maintenance_threshold = account_info->maintenance_margin * (1.0 + buffer_percent / 100.0);
+
+        return margin_used >= maintenance_threshold || available_margin < account_info->maintenance_margin;
+    }
+
+    double get_remaining_margin_capacity() const {
+        auto account_info = get_account_info();
+        if (!account_info) {
+            return 0.0;
+        }
+
+        return std::max(0.0, account_info->net_liquidation - account_info->maintenance_margin);
     }
 
     // ========================================================================
@@ -2877,8 +3121,80 @@ private:
     void scannerDataEnd(int reqId) override {}
     void receiveFA(faDataType pFaDataType, const std::string& cxml) override {}
     void bondContractDetails(int reqId, const ContractDetails& contractDetails) override {}
-    void contractDetails(int reqId, const ContractDetails& contractDetails) override {}
-    void contractDetailsEnd(int reqId) override {}
+
+    void contractDetails(int reqId, const ContractDetails& contractDetails) override {
+        try {
+            long conId = contractDetails.contract.conId;
+            spdlog::debug("Contract details received: reqId={}, conId={}, symbol={}",
+                         reqId, conId, contractDetails.contract.symbol);
+
+            ContractDetailsCallback callback;
+            std::shared_ptr<std::promise<long>> promise;
+
+            {
+                std::lock_guard<std::mutex> lock(contract_details_mutex_);
+
+                // Store result
+                contract_details_results_[reqId] = conId;
+
+                // Get callback if registered
+                if (contract_details_callbacks_.count(reqId)) {
+                    callback = contract_details_callbacks_[reqId];
+                    contract_details_callbacks_.erase(reqId);
+                }
+
+                // Get promise if waiting for synchronous request
+                if (contract_details_promises_.count(reqId)) {
+                    promise = contract_details_promises_[reqId];
+                    contract_details_promises_.erase(reqId);
+                }
+            }
+
+            // Invoke callback outside lock to avoid deadlock
+            if (callback) {
+                callback(conId);
+            }
+
+            // Fulfill promise outside lock
+            if (promise) {
+                promise->set_value(conId);
+            }
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in contractDetails(reqId={}): {}", reqId, e.what());
+        } catch (...) {
+            spdlog::error("Unknown exception in contractDetails(reqId={})", reqId);
+        }
+    }
+
+    void contractDetailsEnd(int reqId) override {
+        try {
+            spdlog::debug("Contract details end for reqId={}", reqId);
+
+            std::lock_guard<std::mutex> lock(contract_details_mutex_);
+
+            // If no result was received, fulfill promise with -1 (failure)
+            if (contract_details_promises_.count(reqId)) {
+                if (!contract_details_results_.count(reqId)) {
+                    spdlog::warn("Contract details end without result for reqId={}", reqId);
+                    contract_details_promises_[reqId]->set_value(-1);
+                }
+                contract_details_promises_.erase(reqId);
+            }
+
+            // Clean up callback if still registered (no results received)
+            if (contract_details_callbacks_.count(reqId)) {
+                spdlog::warn("Contract details end without result for async callback reqId={}", reqId);
+                contract_details_callbacks_.erase(reqId);
+            }
+
+            // Clean up result
+            contract_details_results_.erase(reqId);
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in contractDetailsEnd(reqId={}): {}", reqId, e.what());
+        } catch (...) {
+            spdlog::error("Unknown exception in contractDetailsEnd(reqId={})", reqId);
+        }
+    }
     void accountSummary(int reqId, const std::string& account, const std::string& tag,
                        const std::string& value, const std::string& currency) override {}
     void accountSummaryEnd(int reqId) override {}
@@ -3004,6 +3320,12 @@ private:
     // Synchronous request tracking
     std::map<int, std::shared_ptr<std::promise<types::MarketData>>> market_data_promises_;
 
+    // Contract details
+    mutable std::mutex contract_details_mutex_;
+    std::map<int, ContractDetailsCallback> contract_details_callbacks_;
+    std::map<int, long> contract_details_results_;  // Store conId by request ID
+    std::map<int, std::shared_ptr<std::promise<long>>> contract_details_promises_;
+
     // Orders
     mutable std::mutex order_mutex_;
     std::map<int, types::Order> orders_;
@@ -3090,6 +3412,18 @@ std::vector<types::OptionContract> TWSClient::request_option_chain(
     const std::string& symbol,
     const std::string& expiry) {
     return pimpl_->request_option_chain(symbol, expiry);
+}
+
+int TWSClient::request_contract_details(
+    const types::OptionContract& contract,
+    ContractDetailsCallback callback) {
+    return pimpl_->request_contract_details(contract, callback);
+}
+
+long TWSClient::request_contract_details_sync(
+    const types::OptionContract& contract,
+    int timeout_ms) {
+    return pimpl_->request_contract_details_sync(contract, timeout_ms);
 }
 
 // ============================================================================
@@ -3250,6 +3584,18 @@ double BoxSpreadLeg::get_strike_width() const {
 int BoxSpreadLeg::get_days_to_expiry() const {
     // TODO: Implement proper DTE calculation
     return 30;  // Stub
+}
+
+double BoxSpreadLeg::get_effective_margin() const {
+    // Return portfolio margin if available and enabled, otherwise initial margin
+    if (uses_portfolio_margin && span_margin > 0.0) {
+        return span_margin;
+    }
+    if (initial_margin > 0.0) {
+        return initial_margin;
+    }
+    // Fallback to net_debit if margin not calculated yet
+    return net_debit * 100.0;
 }
 
 double Position::get_market_value() const {

@@ -103,6 +103,10 @@ def build_snapshot_payload(symbols: List[str], client: AlpacaClient, mode: str =
             if account_info:
                 display_account_id = account_info.get("account_number") or account_info.get("id") or "ALPACA"
 
+    # Fetch positions and orders
+    positions = client.get_positions()
+    orders = client.get_orders(status="open", limit=20)
+
     # Extract account metrics if available
     metrics = {
         "net_liq": float(account_info.get("portfolio_value", 0.0)) if account_info else 0.0,
@@ -123,9 +127,32 @@ def build_snapshot_payload(symbols: List[str], client: AlpacaClient, mode: str =
         "account_id": display_account_id,
         "metrics": metrics,
         "symbols": symbol_snapshots,
-        "positions": [],
+        "positions": [
+            {
+                "symbol": pos.get("symbol", ""),
+                "quantity": int(float(pos.get("qty", 0))),
+                "avg_price": float(pos.get("avg_entry_price", 0.0)),
+                "current_price": float(pos.get("current_price", 0.0)),
+                "market_value": float(pos.get("market_value", 0.0)),
+                "unrealized_pl": float(pos.get("unrealized_pl", 0.0)),
+            }
+            for pos in positions
+        ],
         "historic": [],
-        "orders": [],
+        "orders": [
+            {
+                "id": order.get("id", ""),
+                "symbol": order.get("symbol", ""),
+                "side": order.get("side", ""),
+                "quantity": int(float(order.get("qty", 0))),
+                "filled_quantity": int(float(order.get("filled_qty", 0))),
+                "order_type": order.get("order_type", ""),
+                "status": order.get("status", ""),
+                "limit_price": float(order.get("limit_price", 0.0)) if order.get("limit_price") else None,
+                "stop_price": float(order.get("stop_price", 0.0)) if order.get("stop_price") else None,
+            }
+            for order in orders
+        ],
         "alerts": [],
     }
     return payload
@@ -147,27 +174,72 @@ def create_app() -> FastAPI:
     current_account_id: Optional[str] = None
 
     @app.get("/api/health")
-    def health() -> Dict[str, str]:
-        return {"status": "ok", "ts": _now_iso()}
+    def health() -> Dict[str, Any]:
+        """Health check endpoint."""
+        try:
+            # Try to get account to verify credentials
+            account = client.get_account()
+            return {
+                "status": "ok",
+                "ts": _now_iso(),
+                "alpaca_connected": account is not None,
+                "account_id": account.get("account_number") if account else None,
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "ts": _now_iso(),
+                "alpaca_connected": False,
+                "error": str(e),
+            }
 
     @app.get("/api/snapshot")
     def snapshot(mode: Optional[str] = None, account_id: Optional[str] = None) -> Dict[str, Any]:
-        # Use query parameter if provided, otherwise use stored mode/account
-        effective_mode = mode.upper() if mode else current_mode
-        effective_account_id = account_id if account_id else current_account_id
-        symbols = _symbols_from_env()
-        payload = build_snapshot_payload(symbols, client, effective_mode, effective_account_id)
-        # Optional file write for TUI file-based polling
-        path = os.getenv("SNAPSHOT_FILE_PATH", "").strip()
-        if path:
-            try:
-                os.makedirs(os.path.dirname(path), exist_ok=True)
-                with open(path, "w", encoding="utf-8") as f:
-                    json.dump(payload, f, indent=2)
-            except Exception:
-                # Non-fatal
-                pass
-        return payload
+        """Get complete snapshot with market data, positions, and orders."""
+        try:
+            # Use query parameter if provided, otherwise use stored mode/account
+            effective_mode = mode.upper() if mode else current_mode
+            effective_account_id = account_id if account_id else current_account_id
+            symbols = _symbols_from_env()
+            payload = build_snapshot_payload(symbols, client, effective_mode, effective_account_id)
+            # Optional file write for TUI file-based polling
+            path = os.getenv("SNAPSHOT_FILE_PATH", "").strip()
+            if path:
+                try:
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    with open(path, "w", encoding="utf-8") as f:
+                        json.dump(payload, f, indent=2)
+                except Exception as e:
+                    # Non-fatal, but log it
+                    import logging
+                    logging.warning(f"Failed to write snapshot file: {e}")
+            return payload
+        except Exception as e:
+            import logging
+            logging.error(f"Error building snapshot: {e}")
+            return {
+                "error": str(e),
+                "generated_at": _now_iso(),
+                "symbols": [],
+                "positions": [],
+                "orders": [],
+            }
+
+    @app.get("/api/positions")
+    def get_positions() -> List[Dict[str, Any]]:
+        """Get all open positions."""
+        try:
+            return client.get_positions()
+        except Exception as e:
+            return [{"error": str(e)}]
+
+    @app.get("/api/orders")
+    def get_orders(status: str = "all", limit: int = 50) -> List[Dict[str, Any]]:
+        """Get orders (default: all, can filter by status: open, closed, all)."""
+        try:
+            return client.get_orders(status=status, limit=limit)
+        except Exception as e:
+            return [{"error": str(e)}]
 
     @app.post("/api/mode")
     def set_mode(request: ModeRequest) -> Dict[str, str]:

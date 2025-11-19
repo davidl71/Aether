@@ -38,6 +38,85 @@ namespace {
         }
     }
 
+    // ========================================================================
+    // System Health Check
+    // ========================================================================
+
+    struct SystemHealth {
+        bool tws_connected;
+        int active_positions;
+        int pending_orders;
+        double efficiency_ratio;
+        int rate_limiter_messages_per_sec;
+        int rate_limiter_active_market_data;
+        int rate_limiter_active_historical;
+        std::string last_error;
+        int error_count_last_hour;
+        std::chrono::system_clock::time_point timestamp;
+    };
+
+    SystemHealth get_system_health(
+        tws::TWSClient* tws_client,
+        order::OrderManager* order_manager,
+        strategy::BoxSpreadStrategy* strategy
+    ) {
+        SystemHealth health{};
+        health.timestamp = std::chrono::system_clock::now();
+
+        // TWS connection status
+        if (tws_client) {
+            health.tws_connected = tws_client->is_connected();
+        } else {
+            health.tws_connected = false;
+        }
+
+        // Active positions
+        if (strategy) {
+            auto positions = strategy->get_active_positions();
+            health.active_positions = static_cast<int>(positions.size());
+        } else {
+            health.active_positions = 0;
+        }
+
+        // Pending orders (from order manager stats)
+        if (order_manager) {
+            auto order_stats = order_manager->get_statistics();
+            // Estimate pending orders (placed but not filled)
+            health.pending_orders = order_stats.total_orders_placed - order_stats.total_orders_filled;
+            health.efficiency_ratio = order_stats.efficiency_ratio;
+        } else {
+            health.pending_orders = 0;
+            health.efficiency_ratio = 0.0;
+        }
+
+        // Rate limiter metrics (placeholder - would need to expose from TWSClient)
+        health.rate_limiter_messages_per_sec = 0;  // TODO: Expose from TWSClient
+        health.rate_limiter_active_market_data = 0;  // TODO: Expose from TWSClient
+        health.rate_limiter_active_historical = 0;  // TODO: Expose from TWSClient
+
+        // Error tracking (placeholder - would need error tracking system)
+        health.last_error = "";  // TODO: Track last error
+        health.error_count_last_hour = 0;  // TODO: Track error count
+
+        return health;
+    }
+
+    void log_system_health(const SystemHealth& health) {
+        spdlog::info("═══════════════════════════════════════");
+        spdlog::info("System Health Check:");
+        spdlog::info("  TWS Connected: {}", health.tws_connected ? "✓" : "✗");
+        spdlog::info("  Active Positions: {}", health.active_positions);
+        spdlog::info("  Pending Orders: {}", health.pending_orders);
+        spdlog::info("  Efficiency Ratio: {:.2f}%", health.efficiency_ratio * 100.0);
+        if (!health.last_error.empty()) {
+            spdlog::info("  Last Error: {}", health.last_error);
+        }
+        if (health.error_count_last_hour > 0) {
+            spdlog::warn("  Errors (last hour): {}", health.error_count_last_hour);
+        }
+        spdlog::info("═══════════════════════════════════════");
+    }
+
     void setup_logging(const config::LogConfig& log_config) {
         try {
             std::vector<spdlog::sink_ptr> sinks;
@@ -526,6 +605,14 @@ int main(int argc, char** argv) {
 
                     auto positions = strategy->get_active_positions();
                     spdlog::info("Active positions: {}", positions.size());
+
+                    // Log system health check
+                    auto health = get_system_health(
+                        tws_client.get(),
+                        order_manager.get(),
+                        strategy.get()
+                    );
+                    log_system_health(health);
                 }
 
                 // Sleep to maintain loop timing

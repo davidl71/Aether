@@ -1,10 +1,10 @@
 # Cross-Agent TODO Overview
 
+**Last Updated**: 2025-11-18
+**Note**: Go-related tasks (1, 2, 3) removed - backend is implemented in Rust (`agents/backend/`). Market data ingestion and QuestDB integration are handled by the Rust backend service.
+
 | TODO ID | Description | Owner Agent | Status |
 |---------|-------------|-------------|--------|
-| 1 | Design Go-based market data ingestion gateway | backend | pending |
-| 2 | Prototype Go QuestDB ingestion microservice | backend | pending |
-| 3 | Design Go build-coordinator daemon concept | backend | pending |
 | 4 | Add ANSI colorized output to C++ CLI | backend | pending |
 | 5 | Integrate IBKR Client Portal Web API | backend | completed |
 | 6 | Design iPad frontend architecture | ipad | in_progress |
@@ -38,4 +38,3 @@
 | 34 | Ensure Apple clients remain compatible with AnyLanguageModel; document low-priority integration hooks | ipad/desktop | pending |
 
 Update this table as tasks progress to keep all agents aligned.
-

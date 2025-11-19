@@ -2,6 +2,7 @@
 
 The project can pull credentials directly from 1Password so secrets never land in source control. This includes:
 - Distcc host credentials
+- Cursor remote development credentials
 - Alpaca API credentials
 - Other service credentials
 
@@ -56,6 +57,44 @@ op://Engineering/Distcc M4/private key
 - `OP_DISTCC_*` variables accept any 1Password item paths.
 - The script rewrites `ansible/hosts` for the `distcc_macos_workers` group each run.
 - Update `DISTCC_REMOTE_ALIAS` or `DISTCC_REMOTE_CORES` to match new hosts.
+
+### Sync Cursor remote development from 1Password
+
+Use `scripts/op_sync_cursor_remote.sh` to populate SSH config for Cursor remote development:
+
+- `~/.ssh/<alias>_id_ed25519` and SSH config
+- Cursor-optimized SSH settings (compression, keep-alive, connection multiplexing)
+
+```bash
+export OP_CURSOR_REMOTE_HOST_SECRET="op://Engineering/Cursor Remote M4/host"
+export OP_CURSOR_REMOTE_USER_SECRET="op://Engineering/Cursor Remote M4/username"
+export OP_CURSOR_REMOTE_KEY_SECRET="op://Engineering/Cursor Remote M4/private key"
+# optional
+export OP_CURSOR_REMOTE_PORT_SECRET="op://Engineering/Cursor Remote M4/port"
+export CURSOR_REMOTE_ALIAS="cursor-m4-mac"
+
+./scripts/op_sync_cursor_remote.sh
+```
+
+After running the script:
+
+1. Install Remote-SSH extension in Cursor (`anysphere.remote-ssh`) if not already installed
+2. In Cursor, open Command Palette (`⌘+Shift+P`) and select "Remote-SSH: Connect to Host"
+3. Choose your configured alias (e.g., `cursor-m4-mac`) from the list
+4. Wait for VS Code Server to install on remote Mac (first connection only)
+
+**SSH Settings Included:**
+- Compression enabled for better performance over slow networks
+- Keep-alive settings to prevent connection timeouts
+- Connection multiplexing for faster subsequent connections
+- Strict host key checking with auto-accept for first connection
+
+See [Remote Development Workflow](./REMOTE_DEVELOPMENT_WORKFLOW.md) for complete setup instructions.
+
+### Notes
+- `OP_CURSOR_REMOTE_*` variables accept any 1Password item paths.
+- The script updates `~/.ssh/config` with Cursor-optimized settings.
+- Update `CURSOR_REMOTE_ALIAS` to match your preferred SSH host alias.
 
 ## Alpaca API Credentials
 

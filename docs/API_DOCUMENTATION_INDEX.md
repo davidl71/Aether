@@ -51,6 +51,55 @@ This file serves as a reference for all external APIs and libraries used in this
   - Data schema alignment verification
   - Testing checklist for feature consistency
 
+- **StockSharp Platform Analysis**: `docs/STOCKSHARP_ANALYSIS.md`
+  - Comprehensive analysis of StockSharp C# trading platform
+  - Architecture comparison with current project
+  - Connector pattern insights and recommendations
+  - Multi-broker integration strategies
+  - Based on StockSharp GitHub repository and documentation
+
+- **Ticker TUI Analysis**: `docs/TICKER_TUI_ANALYSIS.md`
+  - Comprehensive analysis of ticker Go-based terminal UI
+  - Comparison with current C++ FTXUI implementation
+  - UI pattern insights and recommendations
+  - Configuration and refresh strategy comparisons
+  - Based on ticker GitHub repository
+
+- **Open Trading Platform Analysis**: `docs/OPEN_TRADING_PLATFORM_ANALYSIS.md`
+  - Comprehensive analysis of OTP microservices trading platform
+  - Comparison with current multi-agent architecture
+  - Kafka order management and service patterns
+  - Market data distribution and aggregation insights
+  - Based on OTP GitHub repository
+
+- **FOSSology License Compliance Analysis**: `docs/FOSSOLOGY_ANALYSIS.md`
+  - Comprehensive analysis of FOSSology license compliance tool
+  - Comparison with existing scancode-toolkit setup
+  - License scanning and copyright detection capabilities
+  - SPDX generation and compliance workflow insights
+  - Based on FOSSology official documentation
+
+- **tasks.md Task Manager Analysis**: `docs/TASKS_MD_ANALYSIS.md`
+  - Comprehensive analysis of tasks.md markdown task manager
+  - Comparison with Todo2 MCP system and shared TODO table
+  - Privacy-focused task management features
+  - Markdown format and storage options
+  - Based on tasks.md official website
+
+- **Cline AI Coding Agent Analysis**: `docs/CLINE_ANALYSIS.md`
+  - Comprehensive analysis of Cline open-source AI coding agent
+  - Comparison with current Cursor AI assistant setup
+  - Open-source transparency and model flexibility features
+  - Client-side execution and privacy considerations
+  - Based on Cline official documentation
+
+- **FinceptTerminal Financial Platform Analysis**: `docs/FINCEPT_TERMINAL_ANALYSIS.md`
+  - Comprehensive analysis of FinceptTerminal open-source financial platform
+  - Comparison with current IBKR box spread project capabilities
+  - CFA-level analytics, AI agents, and data connector features
+  - Cross-domain intelligence and workflow builder capabilities
+  - Based on FinceptTerminal GitHub repository
+
 ## Core Trading APIs
 
 <!--
@@ -2563,8 +2612,51 @@ This section covers market data providers for real-time and historical financial
 @index: api-documentation
 @category: quantitative-finance
 @tags: quantitative-finance, options-pricing, greeks, risk-management
-@last-updated: 2025-01-27
+@last-updated: 2025-11-18
 -->
+
+#### C++ Financial Libraries Research
+
+- **Research Document**: `docs/RESEARCH_CPP_FINANCIAL_LIBRARIES.md`
+  - Comprehensive analysis of 10 C++ financial software resources
+  - Integration priority matrix and recommendations
+  - CMake integration examples for QuantLib, Eigen, NLopt
+  - License compatibility analysis
+  - Risk assessment and mitigation strategies
+  - **Key Recommendations**: QuantLib (high priority), Eigen (high priority), NLopt (medium priority)
+  - **Resources Analyzed**: QuantLib, Option Pricer (GitHub), Eigen, NLopt, OnixS FIX Engine, StockChartX, UnoAPI/SYCL, C++ for Quants, Medium articles
+  - Created: 2025-11-18
+
+#### Eigen - Linear Algebra Library
+
+- **Status**: ✅ **Integrated** (2025-11-18)
+- **Integration Guide**: `docs/EIGEN_INTEGRATION.md`
+- **Version**: Eigen 3.4.0
+- **License**: MPL2 (Mozilla Public License 2.0)
+- **Use Cases**: Portfolio optimization, convexity calculations, matrix operations
+- **CMake Integration**: Via FetchContent (GitLab repository)
+- **Testing**: Integration tests in `native/tests/eigen_integration_test.cpp`
+- **Documentation**: Comprehensive usage examples and performance considerations
+
+#### QuantLib - Quantitative Finance Library
+
+- **Status**: 📋 **Documentation Prepared** (2025-11-18)
+- **Integration Guide**: `docs/QUANTLIB_INTEGRATION_GUIDE.md`
+- **License**: BSD 3-Clause
+- **Use Cases**: Option pricing, Greeks calculations, volatility modeling, yield curves
+- **Prerequisites**: Boost libraries (date_time, filesystem, system)
+- **CMake Integration**: Via FetchContent or find_package
+- **Documentation**: Complete integration guide with usage examples
+
+#### NLopt - Nonlinear Optimization Library
+
+- **Status**: 📋 **Documentation Prepared** (2025-11-18)
+- **Integration Guide**: `docs/NLOPT_INTEGRATION_GUIDE.md`
+- **License**: LGPL or MIT (MIT recommended)
+- **Use Cases**: Convexity optimization, portfolio rebalancing, spare cash allocation
+- **Prerequisites**: None (self-contained)
+- **CMake Integration**: Via FetchContent or find_package
+- **Documentation**: Complete integration guide with algorithm selection guide
 
 #### QuantLib - Free/Open-Source Library for Quantitative Finance
 
@@ -3953,6 +4045,62 @@ When adding new dependencies:
   - **Model Selection**: Choose models appropriate for code analysis vs. general chat
 - **Note**: Ollama is particularly valuable for trading software development where code privacy and cost control are important. It can serve as a local alternative to cloud-based AI services for code analysis, documentation, and learning. Consider using it alongside cloud services (like Cursor's AI) for a hybrid approach: Ollama for sensitive/proprietary analysis, cloud services for general assistance.
 
+## Project Management & Issue Tracking
+
+### Linear.app (Issue Tracking & Project Management)
+
+- **Official Website**: <https://linear.app/>
+- **API Documentation**: <https://developers.linear.app/docs/graphql/working-with-the-graphql-api>
+- **GraphQL API**: <https://api.linear.app/graphql>
+- **License**: Proprietary (SaaS)
+- **Integration Guide**: See `docs/LINEAR_INTEGRATION.md` for comprehensive setup and usage
+- **Location**: `python/integration/linear_client.py`
+- **Key Features**:
+  - **GraphQL API**: Full GraphQL API for all operations
+  - **Issue Tracking**: Create, update, and query issues
+  - **Team Management**: Multi-team workspace support
+  - **Workflow States**: Customizable workflow states (Backlog, In Progress, Done, etc.)
+  - **Comments**: Add comments to issues
+  - **Labels**: Organize issues with labels
+  - **Priority Levels**: 0-4 priority system (0 = urgent)
+- **Authentication**:
+  - Personal Access Token from Linear Settings → API
+  - Set `LINEAR_API_KEY` environment variable
+- **Python Client**:
+  - `LinearClient` class in `python/integration/linear_client.py`
+  - Follows same pattern as `AlpacaClient` for consistency
+  - Methods: `get_teams()`, `get_issues()`, `create_issue()`, `update_issue()`, `add_comment()`, `get_states()`
+- **MCP Integration**:
+  - Available through GitKraken MCP server (configured in `.cursor/mcp.json`)
+  - Issue tracking through Cursor's AI assistant
+  - Link commits to Linear issues
+  - Create issues from code changes
+- **Trading System Integration**:
+  - Log trading errors to Linear for tracking
+  - Track feature development and bug fixes
+  - Link trading events to Linear issues
+  - Monitor system health through Linear dashboards
+- **Use Cases**:
+  - Track TWS API integration progress
+  - Log trading system errors and incidents
+  - Manage feature development roadmap
+  - Link code changes to issues
+  - Coordinate multi-agent development (see `agents/shared/COORDINATION.md`)
+- **Example Usage**:
+  ```python
+  from python.integration.linear_client import LinearClient
+
+  client = LinearClient()
+  teams = client.get_teams()
+  issue = client.create_issue(
+    team_id=teams[0]["id"],
+    title="Fix box spread calculation",
+    description="APR calculation incorrect for wide spreads",
+    priority=1
+  )
+  ```
+- **Note**: Linear provides both MCP integration (via GitKraken) for Cursor IDE and direct API access for programmatic issue tracking. The Python client enables automated issue creation from trading system events, error logging, and feature tracking. Particularly useful for coordinating multi-agent development workflows and tracking trading system incidents.
+
 ## Quick Reference Links
 
 - **TWS API**: <https://interactivebrokers.github.io/tws-api/>
@@ -3986,3 +4134,5 @@ When adding new dependencies:
 - **ECN Execution**: <https://ecnexecution.com/algorithmic-trading/> (Educational resource about algorithmic trading, ECN brokers, and trading platforms)
 - **Ollama**: <https://ollama.ai/> (Local LLM platform for running AI models on your machine)
 - **Ollama GitHub**: <https://github.com/ollama/ollama> (Open-source local LLM platform)
+- **Linear.app**: <https://linear.app/> (Issue tracking and project management)
+- **Linear API Docs**: <https://developers.linear.app/docs/graphql/working-with-the-graphql-api> (GraphQL API documentation)

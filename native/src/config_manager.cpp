@@ -56,6 +56,12 @@ void ConfigManager::validate(const Config& config) {
     validate_risk_config(config.risk);
     validate_log_config(config.logging);
     validate_massive_config(config.massive);
+
+    // Validate Config-level parameters
+    if (config.loop_delay_ms <= 0) {
+        throw std::invalid_argument("Loop delay must be positive (got: " +
+                                   std::to_string(config.loop_delay_ms) + " ms)");
+    }
 }
 
 Config ConfigManager::from_json(const nlohmann::json& j) {
@@ -105,24 +111,35 @@ void ConfigManager::validate_strategy_params(const StrategyParams& strategy) {
         }
     }
 
-    if (strategy.min_arbitrage_profit < 0) {
-        throw std::invalid_argument("Minimum arbitrage profit must be non-negative");
+    if (strategy.min_arbitrage_profit <= 0) {
+        throw std::invalid_argument("Invalid min_arbitrage_profit: " +
+                                   std::to_string(strategy.min_arbitrage_profit) +
+                                   ". Must be > 0.");
     }
 
-    if (strategy.min_roi_percent < 0 || strategy.min_roi_percent > 100) {
-        throw std::invalid_argument("ROI percent must be between 0 and 100");
+    if (strategy.min_roi_percent <= 0 || strategy.min_roi_percent > 100) {
+        throw std::invalid_argument("Invalid min_roi_percent: " +
+                                   std::to_string(strategy.min_roi_percent) +
+                                   ". Must be > 0 and <= 100.");
     }
 
     if (strategy.max_position_size <= 0) {
-        throw std::invalid_argument("Maximum position size must be positive");
+        throw std::invalid_argument("Invalid max_position_size: " +
+                                   std::to_string(strategy.max_position_size) +
+                                   ". Must be > 0.");
     }
 
     if (strategy.min_days_to_expiry < 0) {
-        throw std::invalid_argument("Minimum days to expiry must be non-negative");
+        throw std::invalid_argument("Invalid min_days_to_expiry: " +
+                                   std::to_string(strategy.min_days_to_expiry) +
+                                   ". Must be >= 0.");
     }
 
     if (strategy.max_days_to_expiry < strategy.min_days_to_expiry) {
-        throw std::invalid_argument("Maximum DTE must be >= minimum DTE");
+        throw std::invalid_argument("Invalid DTE range: min=" +
+                                   std::to_string(strategy.min_days_to_expiry) +
+                                   ", max=" + std::to_string(strategy.max_days_to_expiry) +
+                                   ". Min must be < max.");
     }
 
     if (strategy.max_bid_ask_spread < 0) {

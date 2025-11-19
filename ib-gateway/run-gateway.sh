@@ -42,16 +42,7 @@ if [ ! -f "${CONFIG_FILE}" ]; then
   CONFIG_FILE="${SCRIPT_DIR}/root/conf.tws.yaml"
 fi
 
-# Normalize config file path to absolute path (fixes ..// issues)
-if [ -f "${CONFIG_FILE}" ]; then
-  # Use realpath if available, otherwise use cd/pwd
-  if command -v realpath >/dev/null 2>&1; then
-    CONFIG_FILE="$(realpath "${CONFIG_FILE}")"
-  else
-    CONFIG_FILE="$(cd "$(dirname "${CONFIG_FILE}")" && pwd)/$(basename "${CONFIG_FILE}")"
-  fi
-fi
-
+# Verify config file exists
 if [ ! -f "${CONFIG_FILE}" ]; then
   echo "[ERROR] IB Gateway configuration file not found" >&2
   echo "[PATH] Searched locations:" >&2
@@ -63,8 +54,12 @@ if [ ! -f "${CONFIG_FILE}" ]; then
   exit 1
 fi
 
-# Run gateway with config file and handle failures gracefully
-if ! ./bin/run.sh "${CONFIG_FILE}" "$@"; then
+# Get relative path from SCRIPT_DIR (Java expects relative path)
+# Since we're already in SCRIPT_DIR, just use the relative path
+CONFIG_RELATIVE="root/$(basename "${CONFIG_FILE}")"
+
+# Run gateway with relative config file path (Java expects relative path from working directory)
+if ! ./bin/run.sh "${CONFIG_RELATIVE}" "$@"; then
   EXIT_CODE=$?
   echo "" >&2
   echo "[ERROR] IB Gateway exited with error code ${EXIT_CODE}" >&2

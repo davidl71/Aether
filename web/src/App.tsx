@@ -5,6 +5,7 @@ import { useSymbolWatchlist } from './hooks/useSymbolWatchlist';
 import { HeaderStatus } from './components/HeaderStatus';
 import { TabNavigation } from './components/TabNavigation';
 import { DashboardTab } from './components/DashboardTab';
+import { BankAccountsPanel } from './components/BankAccountsPanel';
 import { PositionsTable } from './components/PositionsTable';
 import { OrdersPanel } from './components/OrdersPanel';
 import { AlertsPanel } from './components/AlertsPanel';
@@ -67,6 +68,7 @@ function renderTabContent(
             onRemoveSymbol={onRemoveSymbol}
             isDefaultSymbol={isDefaultSymbol}
           />
+          <BankAccountsPanel serviceUrl="http://localhost:8003" />
         </>
       );
     case 'current':

@@ -104,6 +104,7 @@ class ${CLASS_NAME} < Formula
   depends_on "go" => :build
   depends_on "rust" => :build
   depends_on "python@3.11" => :build
+  depends_on "fswatch"
 
   def install
     system "cmake", "-S", "native", "-B", "build", *std_cmake_args

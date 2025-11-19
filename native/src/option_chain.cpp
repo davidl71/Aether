@@ -1,10 +1,19 @@
-// option_chain.cpp - Option chain implementation (stub)
+// option_chain.cpp - Option chain implementation
 #include "option_chain.h"
 #include <spdlog/spdlog.h>
+#include <ql/quantlib.hpp>
+#include <ql/instruments/vanillaoption.hpp>
+#include <ql/pricingengines/vanilla/analyticeuropeanengine.hpp>
+#include <ql/processes/blackscholesmertonprocess.hpp>
+#include <ql/termstructures/volatility/equityfx/blackconstantvol.hpp>
+#include <ql/termstructures/yield/flatforward.hpp>
+#include <ql/volatility/blackformula.hpp>
 #include <cmath>
 #include <algorithm>
 #include <iterator>
 #include <numeric>
+
+using namespace QuantLib;
 
 // NOTE FOR AUTOMATION AGENTS:
 // Option chain utilities live here. They transform raw market data into structures
@@ -330,8 +339,41 @@ std::optional<double> OptionChainBuilder::calculate_implied_volatility(
     double risk_free_rate,
     types::OptionType option_type) {
 
-    // NOTE: Newton-Raphson IV calculation would go here
-    return std::nullopt;  // Stub
+    if (time_to_expiry <= 0.0 || option_price <= 0.0 || underlying_price <= 0.0 || strike <= 0.0) {
+        return std::nullopt;
+    }
+
+    try {
+        // Convert time_to_expiry (years) to QuantLib time
+        Time maturity = time_to_expiry;
+
+        // Calculate implied volatility using QuantLib's black formula
+        Option::Type ql_type = (option_type == types::OptionType::Call) ? Option::Call : Option::Put;
+
+        // Use blackFormulaImpliedStdDev for implied volatility
+        // This calculates the implied standard deviation (volatility * sqrt(time))
+        double implied_std_dev = blackFormulaImpliedStdDev(
+            ql_type,
+            strike,
+            underlying_price,
+            option_price,
+            risk_free_rate,
+            maturity
+        );
+
+        // Convert to annualized volatility
+        double implied_vol = implied_std_dev / std::sqrt(maturity);
+
+        // Validate result
+        if (implied_vol > 0.0 && implied_vol < 10.0) {  // Reasonable bounds (0-1000%)
+            return implied_vol;
+        }
+
+        return std::nullopt;
+    } catch (const std::exception& e) {
+        spdlog::warn("QuantLib implied volatility calculation failed: {}", e.what());
+        return std::nullopt;
+    }
 }
 
 double OptionChainBuilder::calculate_theoretical_price(
@@ -342,8 +384,66 @@ double OptionChainBuilder::calculate_theoretical_price(
     double risk_free_rate,
     types::OptionType option_type) {
 
-    // NOTE: Black-Scholes formula would go here
-    return 0.0;  // Stub
+    if (time_to_expiry <= 0.0 || underlying_price <= 0.0 || strike <= 0.0 || volatility < 0.0) {
+        return 0.0;
+    }
+
+    try {
+        // Set up QuantLib date and calendar
+        Date today = Date::todaysDate();
+        Calendar calendar = TARGET();
+        DayCounter dayCounter = Actual365Fixed();
+
+        // Calculate expiration date from time_to_expiry (years)
+        int days_to_expiry = static_cast<int>(time_to_expiry * 365.0);
+        Date expiration = today + days_to_expiry;
+
+        // Create option type
+        Option::Type ql_type = (option_type == types::OptionType::Call) ? Option::Call : Option::Put;
+
+        // Create handles for spot, rate, and volatility
+        Handle<Quote> spotHandle(ext::shared_ptr<Quote>(new SimpleQuote(underlying_price)));
+        Handle<YieldTermStructure> rateHandle(
+            ext::shared_ptr<YieldTermStructure>(
+                new FlatForward(today, risk_free_rate, dayCounter)
+            )
+        );
+        Handle<BlackVolTermStructure> volHandle(
+            ext::shared_ptr<BlackVolTermStructure>(
+                new BlackConstantVol(today, calendar, volatility, dayCounter)
+            )
+        );
+
+        // Create Black-Scholes-Merton process
+        ext::shared_ptr<BlackScholesMertonProcess> process(
+            new BlackScholesMertonProcess(spotHandle, rateHandle, volHandle)
+        );
+
+        // Create pricing engine
+        ext::shared_ptr<PricingEngine> engine(
+            new AnalyticEuropeanEngine(process)
+        );
+
+        // Create payoff and exercise
+        ext::shared_ptr<StrikedTypePayoff> payoff(
+            new PlainVanillaPayoff(ql_type, strike)
+        );
+        ext::shared_ptr<Exercise> exercise(
+            new EuropeanExercise(expiration)
+        );
+
+        // Create option and set pricing engine
+        VanillaOption option(payoff, exercise);
+        option.setPricingEngine(engine);
+
+        // Calculate theoretical price
+        double theoretical_price = option.NPV();
+
+        return theoretical_price;
+    } catch (const std::exception& e) {
+        spdlog::warn("QuantLib theoretical price calculation failed: {}", e.what());
+        return 0.0;
+    }
 }
 
 double OptionChainBuilder::calculate_delta(
@@ -354,8 +454,60 @@ double OptionChainBuilder::calculate_delta(
     double risk_free_rate,
     types::OptionType option_type) {
 
-    // NOTE: Delta calculation would go here
-    return 0.0;  // Stub
+    if (time_to_expiry <= 0.0 || underlying_price <= 0.0 || strike <= 0.0 || volatility < 0.0) {
+        return 0.0;
+    }
+
+    try {
+        // Set up QuantLib date and calendar
+        Date today = Date::todaysDate();
+        Calendar calendar = TARGET();
+        DayCounter dayCounter = Actual365Fixed();
+
+        // Calculate expiration date
+        int days_to_expiry = static_cast<int>(time_to_expiry * 365.0);
+        Date expiration = today + days_to_expiry;
+
+        // Create option type
+        Option::Type ql_type = (option_type == types::OptionType::Call) ? Option::Call : Option::Put;
+
+        // Create handles
+        Handle<Quote> spotHandle(ext::shared_ptr<Quote>(new SimpleQuote(underlying_price)));
+        Handle<YieldTermStructure> rateHandle(
+            ext::shared_ptr<YieldTermStructure>(
+                new FlatForward(today, risk_free_rate, dayCounter)
+            )
+        );
+        Handle<BlackVolTermStructure> volHandle(
+            ext::shared_ptr<BlackVolTermStructure>(
+                new BlackConstantVol(today, calendar, volatility, dayCounter)
+            )
+        );
+
+        // Create process and engine
+        ext::shared_ptr<BlackScholesMertonProcess> process(
+            new BlackScholesMertonProcess(spotHandle, rateHandle, volHandle)
+        );
+        ext::shared_ptr<PricingEngine> engine(
+            new AnalyticEuropeanEngine(process)
+        );
+
+        // Create option
+        ext::shared_ptr<StrikedTypePayoff> payoff(
+            new PlainVanillaPayoff(ql_type, strike)
+        );
+        ext::shared_ptr<Exercise> exercise(
+            new EuropeanExercise(expiration)
+        );
+        VanillaOption option(payoff, exercise);
+        option.setPricingEngine(engine);
+
+        // Calculate delta
+        return option.delta();
+    } catch (const std::exception& e) {
+        spdlog::warn("QuantLib delta calculation failed: {}", e.what());
+        return 0.0;
+    }
 }
 
 double OptionChainBuilder::calculate_gamma(
@@ -365,8 +517,56 @@ double OptionChainBuilder::calculate_gamma(
     double volatility,
     double risk_free_rate) {
 
-    // NOTE: Gamma calculation would go here
-    return 0.0;  // Stub
+    if (time_to_expiry <= 0.0 || underlying_price <= 0.0 || strike <= 0.0 || volatility < 0.0) {
+        return 0.0;
+    }
+
+    try {
+        // Set up QuantLib (gamma is same for calls and puts)
+        Date today = Date::todaysDate();
+        Calendar calendar = TARGET();
+        DayCounter dayCounter = Actual365Fixed();
+
+        int days_to_expiry = static_cast<int>(time_to_expiry * 365.0);
+        Date expiration = today + days_to_expiry;
+
+        // Create handles
+        Handle<Quote> spotHandle(ext::shared_ptr<Quote>(new SimpleQuote(underlying_price)));
+        Handle<YieldTermStructure> rateHandle(
+            ext::shared_ptr<YieldTermStructure>(
+                new FlatForward(today, risk_free_rate, dayCounter)
+            )
+        );
+        Handle<BlackVolTermStructure> volHandle(
+            ext::shared_ptr<BlackVolTermStructure>(
+                new BlackConstantVol(today, calendar, volatility, dayCounter)
+            )
+        );
+
+        // Create process and engine
+        ext::shared_ptr<BlackScholesMertonProcess> process(
+            new BlackScholesMertonProcess(spotHandle, rateHandle, volHandle)
+        );
+        ext::shared_ptr<PricingEngine> engine(
+            new AnalyticEuropeanEngine(process)
+        );
+
+        // Create option (use Call for gamma - same for both)
+        ext::shared_ptr<StrikedTypePayoff> payoff(
+            new PlainVanillaPayoff(Option::Call, strike)
+        );
+        ext::shared_ptr<Exercise> exercise(
+            new EuropeanExercise(expiration)
+        );
+        VanillaOption option(payoff, exercise);
+        option.setPricingEngine(engine);
+
+        // Calculate gamma
+        return option.gamma();
+    } catch (const std::exception& e) {
+        spdlog::warn("QuantLib gamma calculation failed: {}", e.what());
+        return 0.0;
+    }
 }
 
 double OptionChainBuilder::calculate_theta(
@@ -377,8 +577,58 @@ double OptionChainBuilder::calculate_theta(
     double risk_free_rate,
     types::OptionType option_type) {
 
-    // NOTE: Theta calculation would go here
-    return 0.0;  // Stub
+    if (time_to_expiry <= 0.0 || underlying_price <= 0.0 || strike <= 0.0 || volatility < 0.0) {
+        return 0.0;
+    }
+
+    try {
+        // Set up QuantLib
+        Date today = Date::todaysDate();
+        Calendar calendar = TARGET();
+        DayCounter dayCounter = Actual365Fixed();
+
+        int days_to_expiry = static_cast<int>(time_to_expiry * 365.0);
+        Date expiration = today + days_to_expiry;
+
+        Option::Type ql_type = (option_type == types::OptionType::Call) ? Option::Call : Option::Put;
+
+        // Create handles
+        Handle<Quote> spotHandle(ext::shared_ptr<Quote>(new SimpleQuote(underlying_price)));
+        Handle<YieldTermStructure> rateHandle(
+            ext::shared_ptr<YieldTermStructure>(
+                new FlatForward(today, risk_free_rate, dayCounter)
+            )
+        );
+        Handle<BlackVolTermStructure> volHandle(
+            ext::shared_ptr<BlackVolTermStructure>(
+                new BlackConstantVol(today, calendar, volatility, dayCounter)
+            )
+        );
+
+        // Create process and engine
+        ext::shared_ptr<BlackScholesMertonProcess> process(
+            new BlackScholesMertonProcess(spotHandle, rateHandle, volHandle)
+        );
+        ext::shared_ptr<PricingEngine> engine(
+            new AnalyticEuropeanEngine(process)
+        );
+
+        // Create option
+        ext::shared_ptr<StrikedTypePayoff> payoff(
+            new PlainVanillaPayoff(ql_type, strike)
+        );
+        ext::shared_ptr<Exercise> exercise(
+            new EuropeanExercise(expiration)
+        );
+        VanillaOption option(payoff, exercise);
+        option.setPricingEngine(engine);
+
+        // Calculate theta (per day)
+        return option.thetaPerDay();
+    } catch (const std::exception& e) {
+        spdlog::warn("QuantLib theta calculation failed: {}", e.what());
+        return 0.0;
+    }
 }
 
 double OptionChainBuilder::calculate_vega(
@@ -388,8 +638,56 @@ double OptionChainBuilder::calculate_vega(
     double volatility,
     double risk_free_rate) {
 
-    // NOTE: Vega calculation would go here
-    return 0.0;  // Stub
+    if (time_to_expiry <= 0.0 || underlying_price <= 0.0 || strike <= 0.0 || volatility < 0.0) {
+        return 0.0;
+    }
+
+    try {
+        // Set up QuantLib (vega is same for calls and puts)
+        Date today = Date::todaysDate();
+        Calendar calendar = TARGET();
+        DayCounter dayCounter = Actual365Fixed();
+
+        int days_to_expiry = static_cast<int>(time_to_expiry * 365.0);
+        Date expiration = today + days_to_expiry;
+
+        // Create handles
+        Handle<Quote> spotHandle(ext::shared_ptr<Quote>(new SimpleQuote(underlying_price)));
+        Handle<YieldTermStructure> rateHandle(
+            ext::shared_ptr<YieldTermStructure>(
+                new FlatForward(today, risk_free_rate, dayCounter)
+            )
+        );
+        Handle<BlackVolTermStructure> volHandle(
+            ext::shared_ptr<BlackVolTermStructure>(
+                new BlackConstantVol(today, calendar, volatility, dayCounter)
+            )
+        );
+
+        // Create process and engine
+        ext::shared_ptr<BlackScholesMertonProcess> process(
+            new BlackScholesMertonProcess(spotHandle, rateHandle, volHandle)
+        );
+        ext::shared_ptr<PricingEngine> engine(
+            new AnalyticEuropeanEngine(process)
+        );
+
+        // Create option (use Call for vega - same for both)
+        ext::shared_ptr<StrikedTypePayoff> payoff(
+            new PlainVanillaPayoff(Option::Call, strike)
+        );
+        ext::shared_ptr<Exercise> exercise(
+            new EuropeanExercise(expiration)
+        );
+        VanillaOption option(payoff, exercise);
+        option.setPricingEngine(engine);
+
+        // Calculate vega
+        return option.vega();
+    } catch (const std::exception& e) {
+        spdlog::warn("QuantLib vega calculation failed: {}", e.what());
+        return 0.0;
+    }
 }
 
 double OptionChainBuilder::standard_normal_cdf(double x) {

@@ -93,7 +93,7 @@ echo "🍺 Updating Homebrew formulas..."
 TAP_DIR="${ROOT_DIR}/../homebrew-ib-box-spread"
 if [ -d "${TAP_DIR}" ]; then
   echo "Found tap directory: ${TAP_DIR}"
-  
+
   # Update main formula
   if [ -f "${TAP_DIR}/Formula/ib-box-spread.rb" ]; then
     "${ROOT_DIR}/scripts/update_homebrew_formula.sh" \
@@ -101,7 +101,7 @@ if [ -d "${TAP_DIR}" ]; then
       --formula ib-box-spread \
       --tap-dir "${TAP_DIR}"
   fi
-  
+
   # Update TUI formula if it exists
   if [ -f "${TAP_DIR}/Formula/ib-box-spread-tui.rb" ]; then
     "${ROOT_DIR}/scripts/update_homebrew_formula.sh" \
@@ -109,7 +109,7 @@ if [ -d "${TAP_DIR}" ]; then
       --formula ib-box-spread-tui \
       --tap-dir "${TAP_DIR}"
   fi
-  
+
   echo ""
   echo "✅ Homebrew formulas updated"
   echo ""
@@ -148,4 +148,3 @@ echo "  See: scripts/release_x86.sh (macOS x86_64)"
 echo "  See: scripts/release_arm64.sh (macOS arm64 - if exists)"
 echo "  See: .github/workflows/ci.yml (GitHub Actions for Ubuntu)"
 echo ""
-

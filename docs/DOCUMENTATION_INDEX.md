@@ -129,8 +129,17 @@ This document serves as a comprehensive index of all documentation in the IBKR B
 
 ### Planning & Status
 
-- `docs/ACTION_PLAN.md` - Priority roadmap and action plan
-- `docs/WISHLIST.md` - Feature wishlist
+- `docs/MERGED_ACTION_PLAN.md` - **ACTIVE** Priority roadmap and action plan (replaces ACTION_PLAN.md)
+- `docs/ACTION_PLAN.md` - 🔴 **DEPRECATED** - Replaced by MERGED_ACTION_PLAN.md
+- `docs/CODE_IMPROVEMENTS_ACTION_PLAN.md` - 🔴 **DEPRECATED** - Replaced by MERGED_ACTION_PLAN.md
+- `docs/WISHLIST.md` - Feature wishlist and deferred decisions
+- `docs/NEXT_STEPS.md` - Immediate next steps for buy/sell disparity feature
+- `docs/FEATURE_TRACKING.md` - TUI/Web app feature parity tracking
+- `docs/DOCUMENTATION_STATUS_REPORT.md` - Comprehensive documentation status and gaps
+- `docs/DOCUMENTATION_INDEX_UPDATED.md` - **NEW** Updated comprehensive index with status indicators
+- `docs/ALPACA_API_INTEGRATION_DESIGN.md` - **NEW** Alpaca API integration architecture design
+- `docs/IB_CLIENT_PORTAL_API_INTEGRATION_DESIGN.md` - **NEW** IB Client Portal API integration architecture design
+- `docs/PLAN_IMPLEMENTATION_SUMMARY.md` - **NEW** Plan implementation summary
 - `FINAL_SUMMARY.md` - Final project summary
 - `ENHANCEMENTS_COMPLETE.md` - Enhancements summary
 
@@ -265,9 +274,19 @@ This document serves as a comprehensive index of all documentation in the IBKR B
 - `homebrew-tap/README.md` - Homebrew tap documentation
 - `docs/HOMEBREW_TAP.md` - Homebrew tap setup
 
+## Documentation Status
+
+See `docs/DOCUMENTATION_STATUS_REPORT.md` for comprehensive status of all documentation files, including:
+- Complete documentation (✅)
+- Partial documentation (🟡)
+- Outdated documentation (🔴)
+- Missing documentation gaps
+
+**Updated Index**: See `docs/DOCUMENTATION_INDEX_UPDATED.md` for the most recent comprehensive index with status indicators.
+
 ## Summary
 
-This repository contains **48+ documentation files** covering:
+This repository contains **213+ documentation files** covering:
 
 - Architecture and design patterns
 - TWS API integration and best practices

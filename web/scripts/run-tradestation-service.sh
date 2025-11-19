@@ -5,29 +5,31 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 PYTHON_DIR="$ROOT_DIR/python"
+SCRIPTS_DIR="${ROOT_DIR}/scripts"
 
-# Function to read from 1Password or environment variable
-read_credential() {
-  local op_secret="${1:-}"
-  local env_var="${2:-}"
-  local description="${3:-credential}"
+# Load shared utility functions
+# shellcheck source=../../scripts/include/config.sh
+if [ -f "${SCRIPTS_DIR}/include/config.sh" ]; then
+  source "${SCRIPTS_DIR}/include/config.sh"
+fi
 
-  # Try 1Password first if secret path is provided
-  if [ -n "${op_secret:-}" ] && command -v op >/dev/null 2>&1; then
-    if op read "${op_secret}" 2>/dev/null | grep -q .; then
-      op read "${op_secret}" 2>/dev/null | tr -d '[:space:]'
-      return 0
-    fi
-  fi
+# shellcheck source=../../scripts/include/python_utils.sh
+if [ -f "${SCRIPTS_DIR}/include/python_utils.sh" ]; then
+  source "${SCRIPTS_DIR}/include/python_utils.sh"
+else
+  echo "Error: python_utils.sh not found" >&2
+  exit 1
+fi
 
-  # Fall back to environment variable
-  if [ -n "${env_var:-}" ]; then
-    echo -n "${env_var}"
-    return 0
-  fi
+# shellcheck source=../../scripts/include/service_utils.sh
+if [ -f "${SCRIPTS_DIR}/include/service_utils.sh" ]; then
+  source "${SCRIPTS_DIR}/include/service_utils.sh"
+fi
 
-  return 1
-}
+# shellcheck source=../../scripts/include/onepassword.sh
+if [ -f "${SCRIPTS_DIR}/include/onepassword.sh" ]; then
+  source "${SCRIPTS_DIR}/include/onepassword.sh"
+fi
 
 # Read credentials from 1Password or environment variables
 OP_CLIENT_ID_SECRET="${OP_TRADESTATION_CLIENT_ID_SECRET:-}"
@@ -61,21 +63,35 @@ export TRADESTATION_CLIENT_SECRET
 
 cd "$PYTHON_DIR"
 
-# Check if uvicorn is installed
-if ! python -c "import uvicorn" 2>/dev/null; then
-  echo "Installing uvicorn..." >&2
-  pip install uvicorn fastapi >&2
-fi
+# Find Python command
+find_python || exit 1
+
+# Set up virtual environment
+setup_venv "${PYTHON_DIR}" || exit 1
+
+# Install required packages
+install_python_packages "${VENV_PYTHON}" "uvicorn[standard]" "fastapi" || exit 1
+
+# Use venv Python for all subsequent operations
+PYTHON_CMD="${VENV_PYTHON}"
 
 # Check if integration module is available
-if ! python -c "from integration.tradestation_service import app" 2>/dev/null; then
+if ! test_python_import "${PYTHON_CMD}" "integration.tradestation_service" "app"; then
   echo "Error: Cannot import tradestation_service. Make sure you're in the python directory." >&2
   exit 1
 fi
 
-echo "Starting TradeStation service on http://127.0.0.1:8001" >&2
-echo "Set VITE_API_URL=http://127.0.0.1:8001/api/snapshot in your web app" >&2
+# Get TradeStation service port from config (default: 8001)
+TRADESTATION_PORT=$(config_get_port "tradestation" 8001)
+
+# Check if port is available and verify service identity
+if ! check_port_with_service "${PYTHON_CMD}" "127.0.0.1" "${TRADESTATION_PORT}" "TRADESTATION_SERVICE" "TradeStation"; then
+  exit 1
+fi
+
+echo "Starting TradeStation service on http://127.0.0.1:${TRADESTATION_PORT}" >&2
+echo "Set VITE_API_URL=http://127.0.0.1:${TRADESTATION_PORT}/api/snapshot in your web app" >&2
 echo "" >&2
 
-# Run the service (using port 8001 to avoid conflict with Alpaca on 8000)
-python -m uvicorn integration.tradestation_service:app --host 127.0.0.1 --port 8001 --reload
+# Run the service
+"${PYTHON_CMD}" -m uvicorn integration.tradestation_service:app --host 127.0.0.1 --port "${TRADESTATION_PORT}" --reload

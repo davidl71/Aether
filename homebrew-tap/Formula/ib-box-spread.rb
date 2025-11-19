@@ -14,6 +14,8 @@ class IbBoxSpread < Formula
   sha256 "a7fcb8a50b1e80e7160dfc50cb7308b151150d71eaa1899280009277cd1278af"
   license "MIT"
 
+  depends_on "fswatch"
+
   bottle do
     root_url "https://github.com/davidl71/ib_box_spread_full_universal/releases/download/v1.3.2"
     sha256 cellar: :any, sequoia: "6d751def669a85293e34fdfec1b488ba013305aa57b83588fb9f8f965a276f94"

@@ -1,6 +1,8 @@
-// risk_calculator.cpp - Risk management implementation (stub)
+// risk_calculator.cpp - Risk management implementation
 #include "risk_calculator.h"
+#include "option_chain.h"
 #include <spdlog/spdlog.h>
+#include <Eigen/Dense>
 #include <cmath>
 #include <algorithm>
 #include <iterator>
@@ -83,6 +85,13 @@ PositionRisk RiskCalculator::calculate_box_spread_risk(
         risk.risk_reward_ratio = risk.max_gain / risk.max_loss;
     }
 
+    // Initialize margin fields (will be calculated by margin calculator)
+    risk.initial_margin = 0.0;
+    risk.maintenance_margin = 0.0;
+    risk.margin_utilization = 0.0;
+    risk.margin_call_risk = false;
+    risk.margin_timestamp = std::chrono::system_clock::now();
+
     spdlog::debug("Box spread risk: max_loss=${:.2f}, max_gain=${:.2f}",
                   risk.max_loss, risk.max_gain);
 
@@ -159,14 +168,51 @@ types::RiskMetrics RiskCalculator::calculate_aggregate_greeks(
 
     types::RiskMetrics metrics{};
 
-    for (const auto& pos : positions) {
-        // NOTE: Would sum up Greeks from all positions
-        // This is a stub - actual implementation would calculate properly
-        metrics.delta += 0.0;
-        metrics.gamma += 0.0;
-        metrics.theta += 0.0;
-        metrics.vega += 0.0;
+    if (positions.empty()) {
+        return metrics;
     }
+
+    // Use Eigen VectorXd for Greeks aggregation
+    // Greeks vector: [delta, gamma, theta, vega, rho]
+    Eigen::VectorXd aggregate_greeks = Eigen::VectorXd::Zero(5);
+
+    for (const auto& pos : positions) {
+        // TODO: Get Greeks from position
+        // For now, we'll need to calculate Greeks using OptionChainBuilder
+        // Once QuantLib is integrated, this will be populated from QuantLib calculations
+        // For box spreads, Greeks would be calculated from the four legs
+
+        // Placeholder: In real implementation, get Greeks from:
+        // 1. OptionChainBuilder::calculate_delta/gamma/theta/vega() (after QuantLib integration)
+        // 2. Or from MarketData if Greeks are pre-calculated
+        // 3. Or from position's risk metrics if stored
+
+        // For now, create a vector for this position's Greeks
+        // This will be populated once QuantLib integration is complete
+        Eigen::VectorXd position_greeks(5);
+        position_greeks << 0.0,  // delta (placeholder)
+                           0.0,  // gamma (placeholder)
+                           0.0,  // theta (placeholder)
+                           0.0,  // vega (placeholder)
+                           0.0;  // rho (placeholder)
+
+        // Scale by position quantity (long = positive, short = negative)
+        double position_multiplier = static_cast<double>(pos.quantity);
+        position_greeks *= position_multiplier;
+
+        // Aggregate: sum all position Greeks
+        aggregate_greeks += position_greeks;
+    }
+
+    // Extract aggregated Greeks
+    metrics.delta = aggregate_greeks(0);
+    metrics.gamma = aggregate_greeks(1);
+    metrics.theta = aggregate_greeks(2);
+    metrics.vega = aggregate_greeks(3);
+    metrics.rho = aggregate_greeks(4);
+
+    spdlog::debug("Aggregate Greeks: delta={:.4f}, gamma={:.4f}, theta={:.4f}, vega={:.4f}, rho={:.4f}",
+                  metrics.delta, metrics.gamma, metrics.theta, metrics.vega, metrics.rho);
 
     return metrics;
 }
@@ -174,8 +220,74 @@ types::RiskMetrics RiskCalculator::calculate_aggregate_greeks(
 double RiskCalculator::calculate_correlation_risk(
     const std::vector<types::Position>& positions) const {
 
-    // NOTE: Would calculate correlation between positions
-    return 0.0;  // Stub
+    if (positions.size() < 2) {
+        return 0.0;  // Need at least 2 positions for correlation
+    }
+
+    // Use Eigen MatrixXd for correlation matrix
+    // For now, we'll use a simplified approach based on underlying symbols
+    // In a full implementation, we'd use historical returns to calculate correlation
+
+    size_t n = positions.size();
+    Eigen::MatrixXd correlation_matrix = Eigen::MatrixXd::Identity(n, n);
+
+    // TODO: Calculate actual correlation from:
+    // 1. Historical returns of underlying assets
+    // 2. Or use pre-calculated correlation matrix from market data
+    // 3. Or use asset class correlations (equity, fixed income, etc.)
+
+    // For now, use simplified correlation based on underlying symbols
+    // Positions with same underlying have correlation = 1.0
+    // Different underlyings have correlation = 0.5 (placeholder)
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = i + 1; j < n; ++j) {
+            const auto& pos1 = positions[i];
+            const auto& pos2 = positions[j];
+
+            // Check if same underlying
+            if (pos1.contract.symbol == pos2.contract.symbol) {
+                correlation_matrix(i, j) = 1.0;
+                correlation_matrix(j, i) = 1.0;
+            } else {
+                // Different underlyings - use placeholder correlation
+                // In real implementation, calculate from historical data
+                correlation_matrix(i, j) = 0.5;
+                correlation_matrix(j, i) = 0.5;
+            }
+        }
+    }
+
+    // Calculate portfolio variance using Eigen: w^T * C * w
+    // where w = position weights, C = correlation matrix
+    Eigen::VectorXd weights(n);
+    double total_value = 0.0;
+
+    // Calculate total portfolio value
+    for (size_t i = 0; i < n; ++i) {
+        total_value += std::abs(positions[i].get_market_value());
+    }
+
+    if (total_value == 0.0) {
+        return 0.0;
+    }
+
+    // Calculate normalized weights
+    for (size_t i = 0; i < n; ++i) {
+        weights(i) = std::abs(positions[i].get_market_value()) / total_value;
+    }
+
+    // Portfolio variance = w^T * C * w
+    Eigen::VectorXd temp = correlation_matrix * weights;
+    double portfolio_variance = weights.transpose() * temp;
+
+    // Correlation risk metric: normalized portfolio variance
+    // Higher variance = higher correlation risk
+    double correlation_risk = std::sqrt(portfolio_variance);
+
+    spdlog::debug("Correlation risk: portfolio_variance={:.6f}, correlation_risk={:.6f}",
+                  portfolio_variance, correlation_risk);
+
+    return correlation_risk;
 }
 
 bool RiskCalculator::is_within_limits(

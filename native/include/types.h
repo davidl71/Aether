@@ -104,10 +104,20 @@ struct BoxSpreadLeg {
     double long_put_bid_ask_spread;
     double short_put_bid_ask_spread;
 
+    // Margin requirements
+    double initial_margin;              // Initial margin required (Reg-T or portfolio)
+    double maintenance_margin;         // Maintenance margin required
+    double portfolio_margin_benefit;    // Margin reduction from portfolio margining
+    double reg_t_margin;                // Reg-T margin if applicable
+    double span_margin;                 // SPAN margin if applicable
+    bool uses_portfolio_margin;         // Whether portfolio margin is used
+    std::chrono::system_clock::time_point margin_timestamp;  // When margin was calculated
+
     // Helper methods
     bool is_valid() const;
     double get_strike_width() const;
     int get_days_to_expiry() const;
+    double get_effective_margin() const;  // Returns initial_margin or portfolio_margin if available
 };
 
 // ============================================================================

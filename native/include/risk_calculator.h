@@ -53,6 +53,13 @@ struct PositionRisk {
     double leverage;                // Leverage ratio
     double risk_reward_ratio;       // Risk/reward ratio
     double kelly_criterion;         // Optimal position size
+
+    // Margin requirements
+    double initial_margin;          // Initial margin required
+    double maintenance_margin;        // Maintenance margin required
+    double margin_utilization;      // Margin used / available margin
+    bool margin_call_risk;          // Whether position is at risk of margin call
+    std::chrono::system_clock::time_point margin_timestamp;  // When margin was calculated
 };
 
 // ============================================================================

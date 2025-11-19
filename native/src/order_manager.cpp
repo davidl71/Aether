@@ -187,18 +187,33 @@ ExecutionResult OrderManager::place_box_spread(
     }
 
     // Try combo order first (atomic execution) if contract IDs are available
-    // For now, we'll use individual orders as fallback since contract IDs require reqContractDetails
-    // TODO: Add contract details lookup to get conIds for combo orders
-    bool use_combo_order = false;  // Set to true when contract IDs are available
+    // Request contract details for all 4 legs to get conIds
+    std::vector<types::OptionContract> contracts = {
+        spread.long_call,
+        spread.short_call,
+        spread.long_put,
+        spread.short_put
+    };
+    std::vector<long> contract_ids;
+    bool all_conIds_available = true;
+
+    spdlog::debug("Requesting contract details for box spread legs...");
+    for (const auto& contract : contracts) {
+        long conId = pimpl_->client_->request_contract_details_sync(contract, 5000);  // 5 second timeout
+        if (conId > 0) {
+            contract_ids.push_back(conId);
+            spdlog::debug("Got conId={} for contract {}", conId, contract.to_string());
+        } else {
+            spdlog::warn("Failed to get contract ID for {} (timeout or error)", contract.to_string());
+            all_conIds_available = false;
+            break;
+        }
+    }
+
+    bool use_combo_order = all_conIds_available && contract_ids.size() == 4;
 
     if (use_combo_order) {
         // Prepare combo order data
-        std::vector<types::OptionContract> contracts = {
-            spread.long_call,
-            spread.short_call,
-            spread.long_put,
-            spread.short_put
-        };
         std::vector<types::OrderAction> actions = {
             types::OrderAction::Buy,
             types::OrderAction::Sell,
@@ -212,10 +227,6 @@ ExecutionResult OrderManager::place_box_spread(
             spread.long_put_price,
             spread.short_put_price
         };
-
-        // TODO: Get contract IDs (conId) from reqContractDetails
-        // For now, use placeholder - combo order will fail without real IDs
-        std::vector<long> contract_ids = {0, 0, 0, 0};  // Placeholder
 
         int combo_order_id = pimpl_->client_->place_combo_order(
             contracts, actions, quantities, contract_ids, limit_prices

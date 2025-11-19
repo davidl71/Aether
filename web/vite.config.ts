@@ -131,6 +131,7 @@ export default defineConfig({
   ],
   server: {
     port: 5173,
+    strictPort: true, // Fail if port is already in use (don't auto-increment)
     open: true
   },
   preview: {

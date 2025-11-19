@@ -8,6 +8,7 @@ Reads API credentials from environment variables:
 - ALPACA_DATA_BASE_URL (optional, defaults to https://data.alpaca.markets)
 - ALPACA_PAPER (optional, "1"/"true" uses paper endpoints)
 """
+
 from __future__ import annotations
 
 import os
@@ -39,10 +40,16 @@ class AlpacaClient:
         self.api_key_id = api_key_id or os.getenv("ALPACA_API_KEY_ID", "")
         self.api_secret_key = api_secret_key or os.getenv("ALPACA_API_SECRET_KEY", "")
         if not self.api_key_id or not self.api_secret_key:
-            raise RuntimeError("Missing Alpaca credentials (ALPACA_API_KEY_ID/ALPACA_API_SECRET_KEY)")
+            raise RuntimeError(
+                "Missing Alpaca credentials (ALPACA_API_KEY_ID/ALPACA_API_SECRET_KEY)"
+            )
 
         paper = os.getenv("ALPACA_PAPER", "1").lower() in {"1", "true", "yes", "on"}
-        default_trading_base = "https://paper-api.alpaca.markets" if paper else "https://api.alpaca.markets"
+        default_trading_base = (
+            "https://paper-api.alpaca.markets"
+            if paper
+            else "https://api.alpaca.markets"
+        )
         default_data_base = "https://data.alpaca.markets"
 
         self.base_url = base_url or os.getenv("ALPACA_BASE_URL", default_trading_base)
@@ -174,7 +181,11 @@ class AlpacaClient:
         trade = self.get_latest_trade(symbol) or {}
         bid = float(quote.get("bid_price") or 0.0)
         ask = float(quote.get("ask_price") or 0.0)
-        last = float(trade.get("price") or 0.0) or (bid + ask) / 2.0 if (bid and ask) else (bid or ask)
+        last = (
+            float(trade.get("price") or 0.0) or (bid + ask) / 2.0
+            if (bid and ask)
+            else (bid or ask)
+        )
         spread = (ask - bid) if (ask and bid) else 0.0
         return {
             "symbol": symbol,
@@ -280,3 +291,29 @@ class AlpacaClient:
             return self._get(url)
         except requests.HTTPError:
             return None
+
+    def get_positions(self) -> List[Dict]:
+        """
+        Get all open positions from Alpaca.
+        Returns list of position dicts.
+        """
+        url = f"{self.base_url}/v2/positions"
+        try:
+            return self._get(url) or []
+        except requests.HTTPError:
+            return []
+
+    def get_orders(self, status: str = "all", limit: int = 50) -> List[Dict]:
+        """
+        Get orders from Alpaca.
+        Args:
+            status: Order status filter (all, open, closed)
+            limit: Maximum number of orders to return
+        Returns list of order dicts.
+        """
+        url = f"{self.base_url}/v2/orders"
+        params = {"status": status, "limit": limit}
+        try:
+            return self._get(url, params=params) or []
+        except requests.HTTPError:
+            return []

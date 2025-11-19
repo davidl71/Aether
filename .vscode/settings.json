@@ -196,6 +196,7 @@
   },
 
   // CMake Settings
+  // Enhanced CMake Tools extension configuration
   "cmake.configureOnOpen": false,
   "cmake.buildDirectory": "${workspaceFolder}/build",
   "cmake.generator": "Ninja",
@@ -204,6 +205,69 @@
     "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
   },
   "cmake.sourceDirectory": "${workspaceFolder}/native",
+
+  // CMake Presets support (CMake 3.19+)
+  "cmake.useCMakePresets": "always",
+  "cmake.presets.default": "macos-x86_64-debug",
+
+  // CMake Tools advanced features
+  "cmake.showOptionsMovedNotification": false,
+  "cmake.parallelJobs": 0, // 0 = use all available cores
+  "cmake.debugConfig": {
+    "name": "Debug",
+    "type": "cppdbg",
+    "request": "launch",
+    "program": "${command:cmake.launchTargetPath}",
+    "args": [],
+    "stopAtEntry": false,
+    "cwd": "${workspaceFolder}",
+    "environment": [],
+    "externalConsole": false,
+    "MIMode": "lldb",
+    "setupCommands": [
+      {
+        "description": "Enable pretty-printing for gdb",
+        "text": "-enable-pretty-printing",
+        "ignoreFailures": true
+      }
+    ]
+  },
+
+  // CMake Tools UI enhancements
+  "cmake.statusbar.advanced": {
+    "debug": {
+      "visibility": "default"
+    },
+    "launch": {
+      "visibility": "default"
+    },
+    "build": {
+      "visibility": "default"
+    },
+    "configure": {
+      "visibility": "default"
+    }
+  },
+
+  // CMake Tools logging (useful for debugging CMake issues)
+  "cmake.loggingLevel": "info", // "trace", "debug", "info", "warning", "error"
+
+  // CMake Tools build target selection
+  "cmake.defaultVariants": {
+    "buildType": {
+      "default": "debug",
+      "description": "The build type to use"
+    }
+  },
+
+  // CMake Tools kit selection (auto-detect)
+  "cmake.autoSelectActiveFolder": true,
+
+  // CMake Tools problem matcher for better error parsing
+  "cmake.buildToolArgs": [],
+
+  // CMake Tools test integration
+  "cmake.testExplorerIntegrationEnabled": true,
 
   // Python Settings
   // Python interpreter path is platform-specific
@@ -268,6 +332,36 @@
   "[shellscript]": {
     "editor.defaultFormatter": null
   },
+  "[cmake]": {
+    "editor.defaultFormatter": "twxs.cmake",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+
+  // Tabnine Settings (AI Code Completion)
+  // Privacy: Enable on-device inference for trading algorithms (if available)
+  "tabnine.enableAutoImport": true,
+  "tabnine.enableDeepCompletions": true,
+  "tabnine.enableInlinePredictions": true,
+  // Enable for all project languages
+  "tabnine.enableForLanguages": [
+    "cpp",
+    "c",
+    "python",
+    "typescript",
+    "typescriptreact",
+    "javascript",
+    "javascriptreact",
+    "rust",
+    "go"
+  ],
+  // Privacy settings - keep code local (important for proprietary trading algorithms)
+  "tabnine.cloudModelEnabled": false, // Disable cloud model, prefer local if available
+  "tabnine.codePrivacyEnabled": true, // Enable code privacy
+  // Performance settings
+  "tabnine.maxNumResults": 5, // Limit suggestions to reduce resource usage
+  "tabnine.debounceMs": 200, // Debounce delay for completions
 
   // Extension Management
   // Ensure workspace extensions take precedence over global extensions

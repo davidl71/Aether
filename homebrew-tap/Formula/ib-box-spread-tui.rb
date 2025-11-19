@@ -17,6 +17,7 @@ class IbBoxSpreadTui < Formula
 
   depends_on "cmake" => :build
   depends_on "ftxui" => :build
+  depends_on "fswatch"
 
   def install
     # Build C++ TUI using CMake

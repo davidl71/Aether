@@ -20,6 +20,7 @@ tracing = { workspace = true }
 market_data = { path = "../market_data" }
 risk = { path = "../risk" }
 strategy = { path = "../strategy" }
+ledger = { path = "../ledger" }
 
 [build-dependencies]
 tonic-build = "0.11"

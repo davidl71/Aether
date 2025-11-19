@@ -78,11 +78,62 @@ This document describes the Model Context Protocol (MCP) servers configured for 
 
 **Status**: ✅ Configured
 
-### 5. Filesystem Server
+**Configuration**: `.cursor/mcp.json`
+
+```json
+{
+  "notebooklm": {
+    "command": "uvx",
+    "args": [
+      "mcpower-proxy==0.0.87",
+      "--wrapped-config",
+      "{\"command\": \"npx\", \"args\": [\"-y\", \"notebooklm-mcp@latest\"]}"
+    ]
+  }
+}
+```
+
+**Benefits**:
+
+- Summarize YouTube videos and documentation
+- Create zero-hallucination knowledge bases
+- Extract key information from links
+
+### 5. Context7 Server
+
+**Purpose**: Up-to-date, version-specific documentation and code examples
+
+**Status**: ✅ Configured
+
+**Configuration**: `.cursor/mcp.json`
+
+```json
+{
+  "context7": {
+    "command": "npx",
+    "args": ["-y", "@upstash/context7-mcp"]
+  }
+}
+```
+
+**Benefits**:
+
+- Access current, version-specific documentation
+- Get accurate code examples for latest API versions
+- Ensure code generation uses up-to-date references
+- No need to leave coding environment for docs
+
+**Usage**: Append `use context7` to your prompts to access current documentation. For example:
+
+- "How do I use FastAPI async endpoints? use context7"
+- "Show me React hooks examples use context7"
+- "CMake best practices 2025 use context7"
+
+### 6. Filesystem Server
 
 **Purpose**: Enhanced file system operations for better context understanding
 
-**Status**: ✅ Configured (recently added)
+**Status**: ✅ Configured
 
 **Configuration**: `.cursor/mcp.json`
 
@@ -101,11 +152,11 @@ This document describes the Model Context Protocol (MCP) servers configured for 
 - Intelligent file operations
 - Enhanced AI suggestions based on file structure
 
-### 6. Git Server
+### 7. Git Server
 
 **Purpose**: Enhanced Git version control operations
 
-**Status**: ✅ Configured (recently added)
+**Status**: ✅ Configured
 
 **Configuration**: `.cursor/mcp.json`
 
@@ -125,7 +176,7 @@ This document describes the Model Context Protocol (MCP) servers configured for 
 - Understands branch structure and diffs
 - Can help with merge conflicts
 
-### 7. Browser Automation Server
+### 8. Browser Automation Server
 
 **Purpose**: Test and interact with React web UI, verify PWA functionality
 
@@ -158,7 +209,7 @@ This document describes the Model Context Protocol (MCP) servers configured for 
 - Verify PWA offline functionality
 - Test responsive design on different viewport sizes
 
-### 8. Terminal/Shell Server
+### 9. Terminal/Shell Server
 
 **Purpose**: Safely execute build commands, tests, and trading scripts
 
@@ -274,6 +325,67 @@ For more interactive tools like GitHub integration and database queries, see [MC
 - Status workflow: pending → in-progress → blocked → done
 - Tag-based organization and filtering
 - Time tracking (estimated and actual hours)
+
+### 10. iTerm2 MCP Server
+
+**Purpose**: Provide terminal context to Cursor agents by integrating with iTerm2
+
+**Status**: ✅ Configured
+
+**Configuration**: `.cursor/mcp.json`
+
+```json
+{
+  "iterm2": {
+    "command": "npx",
+    "args": ["-y", "@rishabkoul/iterm-mcp-server"],
+    "description": "iTerm2 MCP server - provides terminal context to Cursor agents"
+  }
+}
+```
+
+**Benefits**:
+
+- **Terminal Context**: AI can see your active iTerm2 sessions, current directories, and command history
+- **Service Status**: AI understands which services are running in your tmux sessions
+- **Command Execution**: AI can execute commands in iTerm2 terminals (with your permission)
+- **Output Reading**: AI can read terminal output to understand errors, logs, and service status
+- **Session Management**: AI can create new terminal sessions or interact with existing ones
+- **Real-time Awareness**: AI knows what's happening in your terminal environment
+
+**Use Cases for Your Project**:
+
+- **Service Monitoring**: AI can check if PWA services are running, see port status, view logs
+- **Debugging**: AI can read error messages from terminal output and suggest fixes
+- **Build Verification**: AI can execute build commands and see results
+- **Integration Testing**: AI can run tests and understand test output
+- **Context Sharing**: When you ask about services, AI can see actual terminal state
+
+**How It Works**:
+
+1. **Terminal State**: AI can see current directory, shell, recent commands, exit status
+2. **Command History**: AI can view command history for context
+3. **Active Sessions**: AI can list and interact with active iTerm2/tmux sessions
+4. **Output Capture**: AI can read terminal output to understand what's happening
+5. **Command Execution**: With permissions, AI can run commands to diagnose issues
+
+**Integration with Launch Script**:
+
+The launch script now includes `[AI:ANALYZE]` markers that make it easy for AI to understand:
+- Which services are running
+- Port assignments
+- Service dependencies
+- Gateway status
+
+**Permissions** (configured in iTerm2):
+
+When using iTerm2's AI Chat feature, you can grant permissions for:
+- **Check Terminal State**: See directory, shell, commands, exit status
+- **Run Commands**: Execute diagnostic commands
+- **View History**: Access command history
+- **View Manpages**: Reference documentation
+
+**⚠️ Security Note**: The MCP server respects iTerm2's permission system. You control what AI can access.
 
 ---
 

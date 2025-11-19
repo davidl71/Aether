@@ -91,6 +91,44 @@ except:
   check_port "${port}"
 }
 
+# Function to open URL in browser (cross-platform)
+open_browser() {
+  local url="${1:-}"
+  if [ -z "${url}" ]; then
+    return 1
+  fi
+
+  # Only open if running in interactive terminal
+  if [ ! -t 1 ]; then
+    return 0
+  fi
+
+  # macOS
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    open "${url}" 2>/dev/null || true
+    return 0
+  fi
+
+  # Linux
+  if command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "${url}" 2>/dev/null || true
+    return 0
+  fi
+
+  # Fallback: try common browsers
+  if command -v firefox >/dev/null 2>&1; then
+    firefox "${url}" 2>/dev/null || true
+    return 0
+  fi
+
+  if command -v google-chrome >/dev/null 2>&1; then
+    google-chrome "${url}" 2>/dev/null || true
+    return 0
+  fi
+
+  return 1
+}
+
 # Function to get service port from config or default
 get_service_port() {
   local service_name="${1:-}"
@@ -328,7 +366,7 @@ if [ "$TMUX_AVAILABLE" = true ] && [ ${#SERVICES_TO_START[@]} -eq 0 ]; then
   if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
     echo "${GREEN}✓ All services are running and tmux session exists${NC}"
     echo "${BLUE}Attaching to existing tmux session...${NC}"
-    echo ""
+  echo ""
     if [ -n "${ITERM_PROFILE:-}" ] || [ -n "${ITERM_SESSION_ID:-}" ] || echo "${TERM_PROGRAM:-}" | grep -qi "iterm"; then
       exec tmux -CC attach -t "$SESSION_NAME"
     else
@@ -337,7 +375,7 @@ if [ "$TMUX_AVAILABLE" = true ] && [ ${#SERVICES_TO_START[@]} -eq 0 ]; then
   else
     echo "${YELLOW}⚠ All services are running but no tmux session found${NC}"
     echo "${BLUE}Creating tmux session to manage services...${NC}"
-    echo ""
+  echo ""
     # Continue to create tmux session below
   fi
 elif [ ${#SERVICES_TO_START[@]} -eq 0 ]; then
@@ -381,16 +419,16 @@ if [ "$TMUX_AVAILABLE" = true ]; then
     # If no services need starting, create empty session
     if [ -z "${FIRST_SERVICE}" ]; then
       FIRST_SERVICE="web"
-    fi
+  fi
 
     # Create session with appropriate first window
     case "${FIRST_SERVICE}" in
       web)
-        if ! tmux new-session -d -s "$SESSION_NAME" -n "web" -c "$WEB_DIR" \
-          "bash ${SCRIPTS_DIR}/run-web-service.sh" 2>/dev/null; then
-          echo "${RED}Error: Failed to create tmux session${NC}" >&2
-          exit 1
-        fi
+  if ! tmux new-session -d -s "$SESSION_NAME" -n "web" -c "$WEB_DIR" \
+    "bash ${SCRIPTS_DIR}/run-web-service.sh" 2>/dev/null; then
+    echo "${RED}Error: Failed to create tmux session${NC}" >&2
+    exit 1
+  fi
         ;;
       *)
         # Create empty session, we'll add windows below
@@ -437,7 +475,7 @@ if [ "$TMUX_AVAILABLE" = true ]; then
 
   # Check if gateway is already running
   if [ "${SERVICE_STATUS[gateway]}" = "running" ]; then
-    GATEWAY_RUNNING=true
+      GATEWAY_RUNNING=true
     echo "${GREEN}✓ IB Gateway already running${NC}"
   fi
 
@@ -445,9 +483,15 @@ if [ "$TMUX_AVAILABLE" = true ]; then
   if [[ " ${SERVICES_TO_START[*]} " =~ " web " ]]; then
     # Check if web window already exists
     if ! tmux list-windows -t "$SESSION_NAME" -F "#{window_name}" 2>/dev/null | grep -q "^web$"; then
-      echo "${BLUE}  Starting web service...${NC}"
-      tmux new-window -t "$SESSION_NAME" -n "web" -c "$WEB_DIR" \
-        "bash ${SCRIPTS_DIR}/run-web-service.sh" 2>/dev/null || true
+      # Check if port is already in use (prevent duplicate starts)
+      if check_port "${WEB_PORT}"; then
+        echo "${YELLOW}  Web service port ${WEB_PORT} is already in use. Skipping start.${NC}"
+        echo "${YELLOW}  If you want to restart, stop the existing service first.${NC}"
+      else
+        echo "${BLUE}  Starting web service...${NC}"
+        tmux new-window -t "$SESSION_NAME" -n "web" -c "$WEB_DIR" \
+          "bash ${SCRIPTS_DIR}/run-web-service.sh" 2>/dev/null || true
+      fi
     fi
   fi
 
@@ -503,9 +547,39 @@ if [ "$TMUX_AVAILABLE" = true ]; then
             echo "${YELLOW}  [PATH] Searched: ${GATEWAY_DIR}/root/conf.tws.yaml${NC}"
           fi
         fi
+      else
+        echo "${YELLOW}  Gateway not installed (IB service will wait)${NC}"
       fi
-    else
-      echo "${YELLOW}  Gateway not installed (IB service will wait)${NC}"
+    fi
+
+    # Verify gateway is listening on configured port after starting
+    if [[ " ${SERVICES_TO_START[*]} " =~ " gateway " ]]; then
+      echo "${BLUE}  Verifying Gateway is listening on port ${GATEWAY_PORT}...${NC}"
+      GATEWAY_VERIFIED=false
+      for i in {1..30}; do
+        sleep 1
+        if check_port "${GATEWAY_PORT}"; then
+          # Port is listening, verify it's actually the gateway
+          if check_service_health "${GATEWAY_PORT}" "/sso/validate" "https"; then
+            echo "${GREEN}  ✓ Gateway verified and listening on port ${GATEWAY_PORT}${NC}"
+            GATEWAY_VERIFIED=true
+            GATEWAY_RUNNING=true
+            # Open gateway URL in browser
+            echo "${BLUE}  Opening gateway in browser...${NC}"
+            open_browser "https://localhost:${GATEWAY_PORT}"
+            break
+          fi
+        fi
+        # Show progress every 5 seconds
+        if [ $((i % 5)) -eq 0 ]; then
+          echo "${BLUE}  Still waiting for gateway to start... (${i}/30 seconds)${NC}"
+        fi
+      done
+
+      if [ "$GATEWAY_VERIFIED" = false ]; then
+        echo "${YELLOW}  ⚠ Gateway may not be fully ready on port ${GATEWAY_PORT}${NC}"
+        echo "${YELLOW}  Check the 'ib-gateway' tmux window for status.${NC}"
+      fi
     fi
   fi
 
@@ -549,38 +623,44 @@ if [ "$TMUX_AVAILABLE" = true ]; then
   if [[ " ${SERVICES_TO_START[*]} " =~ " jupyterlab " ]]; then
     if ! tmux list-windows -t "$SESSION_NAME" -F "#{window_name}" 2>/dev/null | grep -q "^jupyterlab$"; then
       echo "${BLUE}  Starting JupyterLab service...${NC}"
-      tmux new-window -t "$SESSION_NAME" -n "jupyterlab" -c "$ROOT_DIR" \
-        "bash ${SCRIPTS_DIR}/run-jupyterlab-service.sh" 2>/dev/null || true
+      # JupyterLab script is in scripts/ not web/scripts/
+      JUPYTERLAB_SCRIPT="${ROOT_DIR}/scripts/run-jupyterlab-service.sh"
+      if [ -f "${JUPYTERLAB_SCRIPT}" ]; then
+        tmux new-window -t "$SESSION_NAME" -n "jupyterlab" -c "$ROOT_DIR" \
+          "bash ${JUPYTERLAB_SCRIPT}" 2>/dev/null || true
+      else
+        echo "${YELLOW}  JupyterLab script not found at ${JUPYTERLAB_SCRIPT}${NC}"
+      fi
     fi
   fi
 
   # Wait for Gateway if IB service needs starting
   if [[ " ${SERVICES_TO_START[*]} " =~ " ib " ]]; then
     if [ "$GATEWAY_RUNNING" = false ]; then
-      echo "${BLUE}Waiting for Gateway to be ready before starting IB service...${NC}"
-      for i in {1..20}; do
-        sleep 1
+  echo "${BLUE}Waiting for Gateway to be ready before starting IB service...${NC}"
+    for i in {1..20}; do
+      sleep 1
         if check_service_health "${GATEWAY_PORT}"; then
-          echo "${GREEN}✓ Gateway is now running and ready${NC}"
-          GATEWAY_RUNNING=true
-          break
-        fi
-        # Show progress every 3 seconds
-        if [ $((i % 3)) -eq 0 ]; then
-          echo "${BLUE}  Still waiting for gateway... (${i}/20 seconds)${NC}"
-        fi
-      done
-
-      if [ "$GATEWAY_RUNNING" = false ]; then
-        echo "${YELLOW}  Gateway may still be starting. IB service will start but API calls may fail.${NC}"
-        echo "${YELLOW}  Check the 'ib-gateway' tmux window for status.${NC}"
+        echo "${GREEN}✓ Gateway is now running and ready${NC}"
+        GATEWAY_RUNNING=true
+        break
       fi
+      # Show progress every 3 seconds
+      if [ $((i % 3)) -eq 0 ]; then
+        echo "${BLUE}  Still waiting for gateway... (${i}/20 seconds)${NC}"
+      fi
+    done
+
+    if [ "$GATEWAY_RUNNING" = false ]; then
+      echo "${YELLOW}  Gateway may still be starting. IB service will start but API calls may fail.${NC}"
+      echo "${YELLOW}  Check the 'ib-gateway' tmux window for status.${NC}"
     fi
+  fi
 
     # Start IB service if needed
     if ! tmux list-windows -t "$SESSION_NAME" -F "#{window_name}" 2>/dev/null | grep -q "^ib$"; then
       echo "${BLUE}  Starting IB service...${NC}"
-      tmux new-window -t "$SESSION_NAME" -n "ib" -c "$ROOT_DIR" \
+  tmux new-window -t "$SESSION_NAME" -n "ib" -c "$ROOT_DIR" \
         "bash ${SCRIPTS_DIR}/run-ib-service.sh || (echo ''; echo 'IB service failed - check logs above'; echo 'Press any key to continue...'; read -n 1 -s || true; exit 1)" 2>/dev/null || true
     fi
   fi
@@ -649,6 +729,13 @@ if [ "$TMUX_AVAILABLE" = true ]; then
     echo "  ${YELLOW}⚠${NC} Risk-Free Rate service (port ${RISK_FREE_RATE_PORT}) - Window: risk-free-rate [starting]"
   fi
   echo "    ${BLUE}URL: http://127.0.0.1:${RISK_FREE_RATE_PORT}${NC}"
+
+  if [ "${SERVICE_STATUS[jupyterlab]}" = "running" ]; then
+    echo "  ${GREEN}✓${NC} JupyterLab service (port ${JUPYTERLAB_PORT}) - Window: jupyterlab [running]"
+  else
+    echo "  ${YELLOW}⚠${NC} JupyterLab service (port ${JUPYTERLAB_PORT}) - Window: jupyterlab [starting]"
+  fi
+  echo "    ${BLUE}URL: http://127.0.0.1:${JUPYTERLAB_PORT}${NC}"
   echo ""
   echo "Commands:"
   if [ -n "${ITERM_PROFILE:-}" ] || [ -n "${ITERM_SESSION_ID:-}" ]; then
@@ -680,16 +767,17 @@ if [ "$TMUX_AVAILABLE" = true ]; then
   echo "  http://127.0.0.1:${IB_PORT}  # IB API"
   echo "  http://127.0.0.1:${DISCOUNT_BANK_PORT}  # Discount Bank API"
   echo "  http://127.0.0.1:${RISK_FREE_RATE_PORT}  # Risk-Free Rate API"
+  echo "  http://127.0.0.1:${JUPYTERLAB_PORT}  # JupyterLab"
   echo ""
-  echo "[CAPTURE:PORT] Service ports: ${WEB_PORT}, ${GATEWAY_PORT}, ${ALPACA_PORT}, ${TRADESTATION_PORT}, ${IB_PORT}, ${DISCOUNT_BANK_PORT}, ${RISK_FREE_RATE_PORT}"
+  echo "[CAPTURE:PORT] Service ports: ${WEB_PORT}, ${GATEWAY_PORT}, ${ALPACA_PORT}, ${TRADESTATION_PORT}, ${IB_PORT}, ${DISCOUNT_BANK_PORT}, ${RISK_FREE_RATE_PORT}, ${JUPYTERLAB_PORT}"
   echo "[CAPTURE:PATH] Config file: ${ROOT_DIR}/config/config.json"
   echo "[CAPTURE:PATH] Scripts: ${SCRIPTS_DIR}"
   echo ""
   echo "[AI:ANALYZE] Service Status Summary (for iTerm2 AI Chat):"
-  echo "  Services: Web(${WEB_PORT}), Gateway(${GATEWAY_PORT}), Alpaca(${ALPACA_PORT}), IB(${IB_PORT}), TradeStation(${TRADESTATION_PORT}), DiscountBank(${DISCOUNT_BANK_PORT}), RiskFreeRate(${RISK_FREE_RATE_PORT})"
+  echo "  Services: Web(${WEB_PORT}), Gateway(${GATEWAY_PORT}), Alpaca(${ALPACA_PORT}), IB(${IB_PORT}), TradeStation(${TRADESTATION_PORT}), DiscountBank(${DISCOUNT_BANK_PORT}), RiskFreeRate(${RISK_FREE_RATE_PORT}), JupyterLab(${JUPYTERLAB_PORT})"
   echo "  Session: ${SESSION_NAME}"
   echo "  Status: Services managed in tmux"
-  echo "  Running: $([ ${#SERVICES_TO_START[@]} -eq 0 ] && echo "All" || echo "$((7 - ${#SERVICES_TO_START[@]})) of 7")"
+  echo "  Running: $([ ${#SERVICES_TO_START[@]} -eq 0 ] && echo "All" || echo "$((8 - ${#SERVICES_TO_START[@]})) of 8")"
   echo ""
   echo "iTerm2 AI Chat Integration:"
   echo "  • Use 'Edit > Explain Output with AI' to analyze this output"
@@ -727,16 +815,23 @@ else
   echo "${BLUE}Starting independent services in parallel...${NC}"
 
   # Group 1: Start all independent services simultaneously
-  # Web service
-  (
-    cd "$WEB_DIR"
-    bash "${SCRIPTS_DIR}/run-web-service.sh" > /tmp/pwa-web.log 2>&1 &
-    echo $! > /tmp/pwa-web.pid
-  ) &
+  # Web service (check if port is already in use to prevent duplicates)
+  if check_port "${WEB_PORT}"; then
+    echo "${YELLOW}  Web service port ${WEB_PORT} is already in use. Skipping start.${NC}"
+    echo "${YELLOW}  If you want to restart, stop the existing service first.${NC}"
+  else
+    (
+      cd "$WEB_DIR"
+      bash "${SCRIPTS_DIR}/run-web-service.sh" > /tmp/pwa-web.log 2>&1 &
+      echo $! > /tmp/pwa-web.pid
+    ) &
+  fi
 
   # IB Gateway (IB service will wait for it)
   GATEWAY_DIR="${ROOT_DIR}/ib-gateway"
   GATEWAY_RUNNING=false
+  GATEWAY_STARTED=false
+
   if [ "${USE_BREW_SERVICES:-false}" = true ]; then
     PLIST_NAME="com.davidl71.ib-gateway"
     if ! brew services list 2>/dev/null | grep -q "${PLIST_NAME}.*started"; then
@@ -785,10 +880,44 @@ else
           fi
         fi
         echo $! > /tmp/pwa-ib-gateway.pid
+        GATEWAY_STARTED=true
       ) &
     else
       echo "${GREEN}✓ IB Gateway already running${NC}"
       GATEWAY_RUNNING=true
+    fi
+  fi
+
+  # Verify gateway is listening on configured port after starting (background mode)
+  # Only verify if we actually started the gateway in this run
+  if [ "${GATEWAY_STARTED:-false}" = true ]; then
+    if [ -f "${GATEWAY_DIR}/run-gateway-with-reload.sh" ] || [ -f "${GATEWAY_DIR}/run-gateway.sh" ] || [ -f "${GATEWAY_DIR}/bin/run.sh" ]; then
+      echo "${BLUE}Verifying Gateway is listening on port ${GATEWAY_PORT}...${NC}"
+      GATEWAY_VERIFIED=false
+      for i in {1..30}; do
+        sleep 1
+        if check_port "${GATEWAY_PORT}"; then
+          # Port is listening, verify it's actually the gateway
+          if check_service_health "${GATEWAY_PORT}" "/sso/validate" "https"; then
+            echo "${GREEN}✓ Gateway verified and listening on port ${GATEWAY_PORT}${NC}"
+            GATEWAY_VERIFIED=true
+            GATEWAY_RUNNING=true
+            # Open gateway URL in browser
+            echo "${BLUE}Opening gateway in browser...${NC}"
+            open_browser "https://localhost:${GATEWAY_PORT}"
+            break
+          fi
+        fi
+        # Show progress every 5 seconds
+        if [ $((i % 5)) -eq 0 ]; then
+          echo "${BLUE}  Still waiting for gateway to start... (${i}/30 seconds)${NC}"
+        fi
+      done
+
+      if [ "$GATEWAY_VERIFIED" = false ]; then
+        echo "${YELLOW}  ⚠ Gateway may not be fully ready on port ${GATEWAY_PORT}${NC}"
+        echo "${YELLOW}  Check log: /tmp/pwa-ib-gateway.log${NC}"
+      fi
     fi
   fi
 
@@ -821,11 +950,14 @@ else
   ) &
 
   # JupyterLab service (port 8888)
-  (
-    cd "$ROOT_DIR"
-    bash "${SCRIPTS_DIR}/run-jupyterlab-service.sh" > /tmp/pwa-jupyterlab.log 2>&1 &
-    echo $! > /tmp/pwa-jupyterlab.pid
-  ) &
+  JUPYTERLAB_SCRIPT="${ROOT_DIR}/scripts/run-jupyterlab-service.sh"
+  if [ -f "${JUPYTERLAB_SCRIPT}" ]; then
+    (
+      cd "$ROOT_DIR"
+      bash "${JUPYTERLAB_SCRIPT}" > /tmp/pwa-jupyterlab.log 2>&1 &
+      echo $! > /tmp/pwa-jupyterlab.pid
+    ) &
+  fi
 
   # Group 2: Wait for Gateway, then start IB service
   if [ "$GATEWAY_RUNNING" = false ]; then
@@ -853,14 +985,25 @@ else
   echo ""
   echo "Services:"
   echo "  ${GREEN}✓${NC} Web service (Vite) - Log: /tmp/pwa-web.log"
+  echo "    ${BLUE}URL: http://127.0.0.1:${WEB_PORT}${NC}"
   if [ -f "${GATEWAY_DIR}/run-gateway-with-reload.sh" ] || [ -f "${GATEWAY_DIR}/run-gateway.sh" ] || [ -f "${GATEWAY_DIR}/bin/run.sh" ]; then
-    echo "  ${GREEN}✓${NC} IB Gateway (port 5000) - Log: /tmp/pwa-ib-gateway.log"
+    echo "  ${GREEN}✓${NC} IB Gateway (port ${GATEWAY_PORT}) - Log: /tmp/pwa-ib-gateway.log"
+    echo "    ${BLUE}URL: https://localhost:${GATEWAY_PORT}${NC}"
   fi
-  echo "  ${GREEN}✓${NC} Alpaca service (port 8000) - Log: /tmp/pwa-alpaca.log"
-  echo "  ${GREEN}✓${NC} IB service (port 8002) - Log: /tmp/pwa-ib.log"
-  echo "  ${GREEN}✓${NC} TradeStation service (port 8001) - Log: /tmp/pwa-tradestation.log"
-  echo "  ${GREEN}✓${NC} Discount Bank service (port 8003) - Log: /tmp/pwa-discount-bank.log"
-  echo "  ${GREEN}✓${NC} Risk-Free Rate service (port 8004) - Log: /tmp/pwa-risk-free-rate.log"
+  echo "  ${GREEN}✓${NC} Alpaca service (port ${ALPACA_PORT}) - Log: /tmp/pwa-alpaca.log"
+  echo "    ${BLUE}URL: http://127.0.0.1:${ALPACA_PORT}${NC}"
+  echo "  ${GREEN}✓${NC} IB service (port ${IB_PORT}) - Log: /tmp/pwa-ib.log"
+  echo "    ${BLUE}URL: http://127.0.0.1:${IB_PORT}${NC}"
+  echo "  ${GREEN}✓${NC} TradeStation service (port ${TRADESTATION_PORT}) - Log: /tmp/pwa-tradestation.log"
+  echo "    ${BLUE}URL: http://127.0.0.1:${TRADESTATION_PORT}${NC}"
+  echo "  ${GREEN}✓${NC} Discount Bank service (port ${DISCOUNT_BANK_PORT}) - Log: /tmp/pwa-discount-bank.log"
+  echo "    ${BLUE}URL: http://127.0.0.1:${DISCOUNT_BANK_PORT}${NC}"
+  echo "  ${GREEN}✓${NC} Risk-Free Rate service (port ${RISK_FREE_RATE_PORT}) - Log: /tmp/pwa-risk-free-rate.log"
+  echo "    ${BLUE}URL: http://127.0.0.1:${RISK_FREE_RATE_PORT}${NC}"
+  if [ -f "${ROOT_DIR}/scripts/run-jupyterlab-service.sh" ]; then
+    echo "  ${GREEN}✓${NC} JupyterLab service (port ${JUPYTERLAB_PORT}) - Log: /tmp/pwa-jupyterlab.log"
+    echo "    ${BLUE}URL: http://127.0.0.1:${JUPYTERLAB_PORT}${NC}"
+  fi
   echo ""
   echo "Commands:"
   echo "  ${BLUE}tail -f /tmp/pwa-*.log${NC}  # View all logs"

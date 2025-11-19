@@ -72,7 +72,40 @@ Icons will be generated in `public/icons/` with all required sizes (72x72 throug
 
 ### Quick Start
 
-**Start the web service (recommended):**
+**Launch all PWA services (recommended):**
+```bash
+./web/scripts/launch-all-pwa-services.sh
+```
+
+This script will:
+- Launch web service (Vite dev server) on port 5173
+- Launch Alpaca backend service on port 8000
+- Launch IB backend service on port 8000
+- Launch TradeStation backend service on port 8001
+- Use tmux for session management (if available)
+- Fall back to background processes if tmux is not installed
+
+**Script commands:**
+```bash
+./web/scripts/launch-all-pwa-services.sh start    # Start all services (default)
+./web/scripts/launch-all-pwa-services.sh stop      # Stop all services
+./web/scripts/launch-all-pwa-services.sh restart # Restart all services
+./web/scripts/launch-all-pwa-services.sh status   # Check service status
+./web/scripts/launch-all-pwa-services.sh attach   # Attach to tmux session
+```
+
+**Services launched:**
+- Web service (Vite) - Port 5173
+- IB Gateway - Port 5000 (requires Java)
+- Alpaca service - Port 8000
+- IB service - Port 8002
+- TradeStation service - Port 8001
+- Discount Bank service - Port 8003
+- Risk-Free Rate service - Port 8004 (new)
+
+**Individual service scripts:**
+
+**Start the web service:**
 ```bash
 ./web/scripts/run-web-service.sh
 ```
@@ -87,6 +120,16 @@ This script will:
 **Start the Alpaca backend service:**
 ```bash
 ./web/scripts/run-alpaca-service.sh
+```
+
+**Start the IB backend service:**
+```bash
+./web/scripts/run-ib-service.sh
+```
+
+**Start the TradeStation backend service:**
+```bash
+./web/scripts/run-tradestation-service.sh
 ```
 
 ### Manual Commands
@@ -106,9 +149,10 @@ bash agents/web/scripts/run-tests.sh
 npm run dev
 ```
 
-Set `VITE_API_URL=http://127.0.0.1:8000/api/snapshot` (or your backend URL) to hit the live Alpaca-backed service. The default static JSON under `public/data/` keeps the SPA functional offline, and the service worker caches it for offline access.
+Set `VITE_API_URL=http://127.0.0.1:8000/api/snapshot` (or your backend URL) to hit the live backend service (Alpaca or IB). The default static JSON under `public/data/` keeps the SPA functional offline, and the service worker caches it for offline access.
 
-**See [ALPACA_INTEGRATION.md](./ALPACA_INTEGRATION.md) for detailed setup instructions.**
+**See [ALPACA_INTEGRATION.md](./ALPACA_INTEGRATION.md) for Alpaca setup instructions.**
+**See [IB_INTEGRATION.md](./IB_INTEGRATION.md) for Interactive Brokers setup instructions.**
 
 ## Feature Parity with TUI
 

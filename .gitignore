@@ -149,3 +149,11 @@ web/dev-dist/
 emsdk/
 typescript/node_modules/
 typescript
+
+# OpenMemory - IDE/Assistant specific rules
+.cursor/rules/openmemory.mdc
+AGENTS.md
+
+
+#Ignore cursor AI rules
+.cursor/rules/codacy.mdc

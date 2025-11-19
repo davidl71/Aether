@@ -40,6 +40,7 @@ class IBKRPortalClient:
         self.session.headers.update({"Content-Type": "application/json"})
 
         self._cached_accounts: List[str] = []
+        self._conid_cache: Dict[str, int] = {}  # symbol -> conid cache
 
     # ------------------------------------------------------------------
     # Session Helpers
@@ -105,6 +106,176 @@ class IBKRPortalClient:
             return positions
         return []
 
+    def search_contracts(
+        self, symbol: str, sec_type: str = "STK", exchange: str = "SMART", currency: str = "USD"
+    ) -> List[Dict]:
+        """
+        Search for contracts by symbol to get conid (contract ID).
+
+        Args:
+            symbol: Stock symbol (e.g., "SPY")
+            sec_type: Security type (STK, OPT, FUT, etc.) - default: "STK"
+            exchange: Exchange (SMART, NASDAQ, NYSE, etc.) - default: "SMART"
+            currency: Currency - default: "USD"
+
+        Returns:
+            List of contract dictionaries with conid, symbol, etc.
+        """
+        self.ensure_session()
+        # IB Client Portal contract search endpoint
+        endpoint = "/iserver/secdef/search"
+        payload = {
+            "symbol": symbol,
+            "name": symbol,
+            "secType": sec_type,
+        }
+
+        try:
+            # POST with JSON body
+            url = f"{self.base_url}{endpoint}"
+            response = self.session.post(url, json=payload, timeout=self.timeout)
+            if not response.ok:
+                raise IBKRPortalError(
+                    f"Client Portal responded with status {response.status_code}: {response.text[:200]}"
+                )
+            data = response.json()
+
+            # IB returns a list of matches
+            if isinstance(data, list):
+                # Filter by exchange/currency if specified
+                matches = []
+                for contract in data:
+                    # Prefer SMART or exact exchange match
+                    contract_exch = contract.get("exchange", "")
+                    contract_curr = contract.get("currency", "")
+                    if exchange == "SMART" or contract_exch == exchange:
+                        if currency == contract_curr or not currency:
+                            matches.append(contract)
+
+                # If no filtered matches, return first result
+                if matches:
+                    return matches
+                elif data:
+                    return [data[0]]
+
+            return []
+        except IBKRPortalError:
+            logger.warning(f"Contract search failed for {symbol}")
+            return []
+
+    def get_conid(self, symbol: str, sec_type: str = "STK", exchange: str = "SMART", currency: str = "USD") -> Optional[int]:
+        """
+        Get conid (contract ID) for a symbol, using cache when available.
+
+        Returns:
+            Conid as integer, or None if not found
+        """
+        cache_key = f"{symbol}:{sec_type}:{exchange}:{currency}"
+        if cache_key in self._conid_cache:
+            return self._conid_cache[cache_key]
+
+        contracts = self.search_contracts(symbol, sec_type, exchange, currency)
+        if contracts:
+            conid = contracts[0].get("conid")
+            if conid:
+                self._conid_cache[cache_key] = int(conid)
+                return int(conid)
+
+        return None
+
+    def get_market_data_snapshot(self, conid: int, fields: Optional[List[int]] = None) -> Dict:
+        """
+        Get market data snapshot for a contract ID (conid).
+
+        Args:
+            conid: Contract ID from search_contracts()
+            fields: List of field IDs to request (default: bid, ask, last, close, volume)
+                   Common fields: 31=bid, 55=ask, 84=last, 86=close, 7309=volume
+
+        Returns:
+            Dictionary with field values keyed by field ID
+        """
+        if fields is None:
+            # Default fields: bid (31), ask (55), last (84), close (86), volume (7309)
+            fields = [31, 55, 84, 86, 7309]
+
+        self.ensure_session()
+        # Convert conid to string and fields to comma-separated string
+        fields_str = ",".join(str(f) for f in fields)
+        endpoint = f"/iserver/marketdata/snapshot"
+        params = {
+            "conids": str(conid),
+            "fields": fields_str,
+        }
+
+        try:
+            # GET with query params
+            url = f"{self.base_url}{endpoint}"
+            response = self.session.get(url, params=params, timeout=self.timeout)
+            if not response.ok:
+                raise IBKRPortalError(
+                    f"Client Portal responded with status {response.status_code}: {response.text[:200]}"
+                )
+            data = response.json()
+
+            # IB returns a list, take first result
+            if isinstance(data, list) and len(data) > 0:
+                return data[0]
+
+            return {}
+        except IBKRPortalError:
+            logger.warning(f"Market data snapshot failed for conid {conid}")
+            return {}
+
+    def get_snapshot(self, symbol: str) -> Dict[str, float]:
+        """
+        Get market data snapshot for a symbol (convenience method).
+        Returns dict with bid, ask, last, close, volume.
+
+        Returns:
+            Dictionary with keys: bid, ask, last, close, volume
+        """
+        conid = self.get_conid(symbol)
+        if not conid:
+            return {
+                "bid": 0.0,
+                "ask": 0.0,
+                "last": 0.0,
+                "close": 0.0,
+                "volume": 0.0,
+            }
+
+        # Field IDs: 31=bid, 55=ask, 84=last, 86=close, 7309=volume
+        snapshot = self.get_market_data_snapshot(conid, fields=[31, 55, 84, 86, 7309])
+
+        # Extract field values (IB returns fields as dictionary with numeric keys as strings)
+        result = {
+            "bid": 0.0,
+            "ask": 0.0,
+            "last": 0.0,
+            "close": 0.0,
+            "volume": 0.0,
+        }
+
+        # IB snapshot format: {"31": "509.15", "55": "509.18", ...}
+        if isinstance(snapshot, dict):
+            fields_map = snapshot.get("31", {})  # Sometimes nested
+            if isinstance(fields_map, dict):
+                result["bid"] = float(fields_map.get("31", 0) or 0)
+                result["ask"] = float(fields_map.get("55", 0) or 0)
+                result["last"] = float(fields_map.get("84", 0) or 0)
+                result["close"] = float(fields_map.get("86", 0) or 0)
+                result["volume"] = float(fields_map.get("7309", 0) or 0)
+            else:
+                # Flat format: {"31": "509.15", "55": "509.18", ...}
+                result["bid"] = float(snapshot.get("31", 0) or 0)
+                result["ask"] = float(snapshot.get("55", 0) or 0)
+                result["last"] = float(snapshot.get("84", 0) or 0)
+                result["close"] = float(snapshot.get("86", 0) or 0)
+                result["volume"] = float(snapshot.get("7309", 0) or 0)
+
+        return result
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
@@ -130,4 +301,3 @@ class IBKRPortalClient:
                 f"Client Portal responded with status {response.status_code}: {response.text[:200]}"
             )
         return response
-

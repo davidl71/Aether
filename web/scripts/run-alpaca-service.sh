@@ -5,32 +5,31 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 PYTHON_DIR="$ROOT_DIR/python"
+SCRIPTS_DIR="${ROOT_DIR}/scripts"
 
-# Function to read from 1Password or environment variable
-# Supports both personal accounts (op signin) and service accounts (OP_SERVICE_ACCOUNT_TOKEN)
-read_credential() {
-  local op_secret="${1:-}"
-  local env_var="${2:-}"
-  local result=""
+# Load shared utility functions
+# shellcheck source=../../scripts/include/config.sh
+if [ -f "${SCRIPTS_DIR}/include/config.sh" ]; then
+  source "${SCRIPTS_DIR}/include/config.sh"
+fi
 
-  # Try 1Password first if secret path is provided
-  # The CLI automatically uses OP_SERVICE_ACCOUNT_TOKEN if set, otherwise uses signed-in session
-  if [ -n "${op_secret:-}" ] && command -v op >/dev/null 2>&1; then
-    result=$(op read "${op_secret}" 2>/dev/null | tr -d '[:space:]' || echo "")
-    if [ -n "${result}" ]; then
-      echo -n "${result}"
-      return 0
-    fi
-  fi
+# shellcheck source=../../scripts/include/python_utils.sh
+if [ -f "${SCRIPTS_DIR}/include/python_utils.sh" ]; then
+  source "${SCRIPTS_DIR}/include/python_utils.sh"
+else
+  echo "Error: python_utils.sh not found" >&2
+  exit 1
+fi
 
-  # Fall back to environment variable
-  if [ -n "${env_var:-}" ]; then
-    echo -n "${env_var}"
-    return 0
-  fi
+# shellcheck source=../../scripts/include/service_utils.sh
+if [ -f "${SCRIPTS_DIR}/include/service_utils.sh" ]; then
+  source "${SCRIPTS_DIR}/include/service_utils.sh"
+fi
 
-  return 1
-}
+# shellcheck source=../../scripts/include/onepassword.sh
+if [ -f "${SCRIPTS_DIR}/include/onepassword.sh" ]; then
+  source "${SCRIPTS_DIR}/include/onepassword.sh"
+fi
 
 # Read credentials from 1Password or environment variables
 # Supports both path format (op://Vault/Item/field) and UUID format
@@ -38,55 +37,17 @@ OP_API_KEY_SECRET="${OP_ALPACA_API_KEY_ID_SECRET:-}"
 OP_API_SECRET_SECRET="${OP_ALPACA_API_SECRET_KEY_SECRET:-}"
 
 # If OP_ALPACA_ITEM_UUID is set, use it to construct field references
-# Format: op://<vault>/<uuid>/<field> or just <uuid> with field labels
 if [ -n "${OP_ALPACA_ITEM_UUID:-}" ]; then
-  # Try to auto-detect vault and field names
-  if command -v op >/dev/null 2>&1; then
-    ITEM_JSON=$(op item get "${OP_ALPACA_ITEM_UUID}" --format json 2>/dev/null || echo "")
-    if [ -n "${ITEM_JSON}" ]; then
-      VAULT_ID=$(echo "${ITEM_JSON}" | python3 -c "import sys, json; print(json.load(sys.stdin).get('vault', {}).get('id', ''))" 2>/dev/null || echo "")
-      VAULT_NAME=$(echo "${ITEM_JSON}" | python3 -c "import sys, json; print(json.load(sys.stdin).get('vault', {}).get('name', ''))" 2>/dev/null || echo "")
+  # Auto-detect fields from UUID
+  KEY_FIELD=""
+  SECRET_FIELD=""
+  if op_detect_fields "${OP_ALPACA_ITEM_UUID}" "KEY_FIELD" "SECRET_FIELD"; then
+    KEY_FIELD_NAME="${OP_ALPACA_KEY_FIELD_NAME:-${KEY_FIELD:-API Key ID}}"
+    SECRET_FIELD_NAME="${OP_ALPACA_SECRET_FIELD_NAME:-${SECRET_FIELD:-API Secret Key}}"
 
-      # Try to find the API key and secret fields by common names
-      # Check for: API Key ID, username, api_key, key_id, etc.
-      KEY_FIELD=$(echo "${ITEM_JSON}" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-fields = data.get('fields', [])
-# Try common field names for API key
-for name in ['API Key ID', 'api_key_id', 'API Key', 'api_key', 'username', 'key_id', 'Key ID']:
-    for field in fields:
-        if field.get('label', '').lower() == name.lower():
-            print(name)
-            sys.exit(0)
-" 2>/dev/null || echo "")
-
-      SECRET_FIELD=$(echo "${ITEM_JSON}" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-fields = data.get('fields', [])
-# Try common field names for API secret
-for name in ['API Secret Key', 'api_secret_key', 'API Secret', 'api_secret', 'credential', 'secret_key', 'Secret Key', 'password']:
-    for field in fields:
-        if field.get('label', '').lower() == name.lower() and field.get('type') == 'CONCEALED':
-            print(name)
-            sys.exit(0)
-" 2>/dev/null || echo "")
-
-      # Use custom field names if provided, otherwise use detected or defaults
-      KEY_FIELD_NAME="${OP_ALPACA_KEY_FIELD_NAME:-${KEY_FIELD:-API Key ID}}"
-      SECRET_FIELD_NAME="${OP_ALPACA_SECRET_FIELD_NAME:-${SECRET_FIELD:-API Secret Key}}"
-
-      if [ -n "${VAULT_ID}" ]; then
-        OP_API_KEY_SECRET="${OP_API_KEY_SECRET:-op://${VAULT_ID}/${OP_ALPACA_ITEM_UUID}/${KEY_FIELD_NAME}}"
-        OP_API_SECRET_SECRET="${OP_API_SECRET_SECRET:-op://${VAULT_ID}/${OP_ALPACA_ITEM_UUID}/${SECRET_FIELD_NAME}}"
-      elif [ -n "${VAULT_NAME}" ]; then
-        OP_API_KEY_SECRET="${OP_API_KEY_SECRET:-op://${VAULT_NAME}/${OP_ALPACA_ITEM_UUID}/${KEY_FIELD_NAME}}"
-        OP_API_SECRET_SECRET="${OP_API_SECRET_SECRET:-op://${VAULT_NAME}/${OP_ALPACA_ITEM_UUID}/${SECRET_FIELD_NAME}}"
-      else
-        OP_API_KEY_SECRET="${OP_API_KEY_SECRET:-op://Private/${OP_ALPACA_ITEM_UUID}/${KEY_FIELD_NAME}}"
-        OP_API_SECRET_SECRET="${OP_API_SECRET_SECRET:-op://Private/${OP_ALPACA_ITEM_UUID}/${SECRET_FIELD_NAME}}"
-      fi
+    # Build secret paths (only if not already set)
+    if [ -z "${OP_API_KEY_SECRET}" ] || [ -z "${OP_API_SECRET_SECRET}" ]; then
+      op_build_secret_paths "${OP_ALPACA_ITEM_UUID}" "${KEY_FIELD_NAME}" "${SECRET_FIELD_NAME}" "OP_API_KEY_SECRET" "OP_API_SECRET_SECRET"
     fi
   fi
 fi
@@ -136,53 +97,17 @@ export ALPACA_API_SECRET_KEY
 
 cd "$PYTHON_DIR"
 
-# Find Python and pip commands
-PYTHON_CMD=""
-PIP_CMD=""
+# Find Python command
+find_python || exit 1
 
-# Try python3 first (most common on macOS/Linux)
-if command -v python3 >/dev/null 2>&1; then
-  PYTHON_CMD="python3"
-  if command -v pip3 >/dev/null 2>&1; then
-    PIP_CMD="pip3"
-  fi
-# Fall back to python
-elif command -v python >/dev/null 2>&1; then
-  PYTHON_CMD="python"
-  if command -v pip >/dev/null 2>&1; then
-    PIP_CMD="pip"
-  fi
-fi
+# Set up virtual environment
+setup_venv "${PYTHON_DIR}" || exit 1
 
-if [ -z "${PYTHON_CMD}" ]; then
-  echo "Error: Python not found. Please install Python 3." >&2
-  exit 1
-fi
+# Install required packages
+install_python_packages "${VENV_PYTHON}" "uvicorn[standard]" "fastapi" "alpaca-py" || exit 1
 
-# Check if required packages are installed
-MISSING_PACKAGES=()
-
-if ! "${PYTHON_CMD}" -c "import uvicorn" 2>/dev/null; then
-  MISSING_PACKAGES+=("uvicorn" "fastapi")
-fi
-
-if ! "${PYTHON_CMD}" -c "from alpaca.trading.client import TradingClient" 2>/dev/null; then
-  MISSING_PACKAGES+=("alpaca-py")
-fi
-
-if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
-  echo "Installing missing packages: ${MISSING_PACKAGES[*]}..." >&2
-  if [ -z "${PIP_CMD}" ]; then
-    # Try python -m pip as fallback
-    if "${PYTHON_CMD}" -m pip --version >/dev/null 2>&1; then
-      PIP_CMD="${PYTHON_CMD} -m pip"
-    else
-      echo "Error: pip not found. Please install pip or use: ${PYTHON_CMD} -m ensurepip" >&2
-      exit 1
-    fi
-  fi
-  ${PIP_CMD} install "${MISSING_PACKAGES[@]}" >&2
-fi
+# Use venv Python for all subsequent operations
+PYTHON_CMD="${VENV_PYTHON}"
 
 # Check if integration module file exists
 if [ ! -f "integration/alpaca_service.py" ]; then
@@ -190,93 +115,27 @@ if [ ! -f "integration/alpaca_service.py" ]; then
   exit 1
 fi
 
-# Check if port 8000 is already in use
-check_port() {
-  local port="${1:-8000}"
-  if command -v lsof >/dev/null 2>&1; then
-    lsof -ti ":${port}" >/dev/null 2>&1
-  elif command -v netstat >/dev/null 2>&1; then
-    netstat -an 2>/dev/null | grep -q ":${port}.*LISTEN"
-  else
-    # Fallback: try to connect
-    "${PYTHON_CMD}" -c "import socket; s = socket.socket(); s.settimeout(0.1); result = s.connect_ex(('127.0.0.1', ${port})); s.close(); exit(0 if result == 0 else 1)" 2>/dev/null
-  fi
-}
+# Get Alpaca service port from config (default: 8000)
+ALPACA_PORT=$(config_get_port "alpaca" 8000)
 
-# Check if Alpaca service is already running
-if check_port 8000; then
-  echo "Port 8000 is already in use. Checking if it's the Alpaca service..." >&2
-
-  # Try to verify it's the Alpaca service by checking the health endpoint
-  HEALTH_CHECK=$("${PYTHON_CMD}" -c "
-import urllib.request
-import json
-import sys
-try:
-    with urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2) as response:
-        data = json.loads(response.read().decode())
-        if data.get('status') == 'ok':
-            print('ALPACA_SERVICE')
-        else:
-            print('OTHER_SERVICE')
-except Exception:
-    print('OTHER_SERVICE')
-" 2>/dev/null || echo "OTHER_SERVICE")
-
-  if [ "${HEALTH_CHECK}" = "ALPACA_SERVICE" ]; then
-    echo "✓ Alpaca service is already running on http://127.0.0.1:8000" >&2
-    echo "  Using existing service. No need to start a new one." >&2
-    echo "  Set VITE_API_URL=http://127.0.0.1:8000/api/snapshot in your web app" >&2
-    echo "" >&2
-    exit 0
-  else
-    echo "Error: Port 8000 is in use by another service (not Alpaca service)" >&2
-    echo "  Please stop the service on port 8000 or use a different port:" >&2
-    echo "  export ALPACA_SERVICE_PORT=8001" >&2
-    echo "  (Note: Port configuration not yet implemented in this script)" >&2
-    exit 1
-  fi
-fi
-
-# Check if we can import (this will fail if dependencies are missing, but that's OK)
-# We'll handle the import error gracefully
-IMPORT_TEST=$("${PYTHON_CMD}" -c "
-import sys
-import os
-# Temporarily disable __init__.py by renaming it
-init_py = 'integration/__init__.py'
-backup_py = 'integration/__init__.py.bak'
-if os.path.exists(init_py):
-    os.rename(init_py, backup_py)
-try:
-    sys.path.insert(0, '.')
-    from integration.alpaca_service import app
-    print('OK')
-except Exception as e:
-    print(f'ERROR: {e}')
-finally:
-    if os.path.exists(backup_py):
-        os.rename(backup_py, init_py)
-" 2>&1)
-
-if echo "${IMPORT_TEST}" | grep -q "OK"; then
-  echo "Starting Alpaca service on http://127.0.0.1:8000" >&2
-  echo "Set VITE_API_URL=http://127.0.0.1:8000/api/snapshot in your web app" >&2
-  echo "" >&2
-
-  # Temporarily disable __init__.py to avoid dependency issues
-  INIT_PY="integration/__init__.py"
-  INIT_PY_BAK="integration/__init__.py.bak"
-  if [ -f "${INIT_PY}" ]; then
-    mv "${INIT_PY}" "${INIT_PY_BAK}"
-    trap "mv '${INIT_PY_BAK}' '${INIT_PY}' 2>/dev/null || true" EXIT
-  fi
-
-  # Run the service with PYTHONPATH set
-  export PYTHONPATH="${PYTHON_DIR}:${PYTHONPATH:-}"
-  "${PYTHON_CMD}" -m uvicorn integration.alpaca_service:app --host 127.0.0.1 --port 8000 --reload
-else
-  echo "Error: Cannot import alpaca_service" >&2
-  echo "${IMPORT_TEST}" >&2
+# Check if port is available and verify service identity
+if ! check_port_with_service "${PYTHON_CMD}" "127.0.0.1" "${ALPACA_PORT}" "ALPACA_SERVICE" "Alpaca"; then
   exit 1
 fi
+
+# Test import before starting service
+if ! test_python_import "${PYTHON_CMD}" "integration.alpaca_service" "app"; then
+  echo "Error: Cannot import alpaca_service" >&2
+  exit 1
+fi
+
+echo "Starting Alpaca service on http://127.0.0.1:${ALPACA_PORT}" >&2
+echo "Set VITE_API_URL=http://127.0.0.1:${ALPACA_PORT}/api/snapshot in your web app" >&2
+echo "" >&2
+
+# Temporarily disable __init__.py to avoid dependency issues
+disable_init_py "${PYTHON_DIR}" || exit 1
+
+# Run the service with PYTHONPATH set
+export PYTHONPATH="${PYTHON_DIR}:${PYTHONPATH:-}"
+"${PYTHON_CMD}" -m uvicorn integration.alpaca_service:app --host 127.0.0.1 --port "${ALPACA_PORT}" --reload

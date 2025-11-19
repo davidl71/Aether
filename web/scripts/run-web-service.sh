@@ -27,8 +27,8 @@ if [ ! -d "node_modules" ]; then
   npm install
 fi
 
-# Check if Alpaca service is running and configure VITE_API_URL
-check_alpaca_service() {
+# Check if backend service is running (Alpaca or IB)
+check_backend_service() {
   local port="${1:-8000}"
   if command -v python3 >/dev/null 2>&1; then
     python3 -c "
@@ -39,7 +39,13 @@ try:
     with urllib.request.urlopen('http://127.0.0.1:${port}/api/health', timeout=1) as response:
         data = json.loads(response.read().decode())
         if data.get('status') == 'ok':
-            sys.exit(0)
+            # Check if it's Alpaca or IB service
+            if 'alpaca_connected' in data:
+                sys.exit(1)  # Alpaca service
+            elif 'ib_connected' in data:
+                sys.exit(2)  # IB service
+            else:
+                sys.exit(0)  # Unknown but OK
         else:
             sys.exit(1)
 except Exception:
@@ -63,18 +69,38 @@ check_port() {
   fi
 }
 
-# Check if Alpaca service is running
-ALPACA_SERVICE_RUNNING=false
-if check_alpaca_service 8000; then
-  ALPACA_SERVICE_RUNNING=true
-  echo "✓ Alpaca service detected on http://127.0.0.1:8000" >&2
-fi
+# Check if backend service is running
+BACKEND_SERVICE_TYPE="none"
+SERVICE_CHECK_RESULT=$(check_backend_service 8000 || echo $?)
+case "${SERVICE_CHECK_RESULT}" in
+  1)
+    BACKEND_SERVICE_TYPE="alpaca"
+    echo "✓ Alpaca service detected on http://127.0.0.1:8000" >&2
+    ;;
+  2)
+    BACKEND_SERVICE_TYPE="ib"
+    echo "✓ IB service detected on http://127.0.0.1:8000" >&2
+    ;;
+  0)
+    BACKEND_SERVICE_TYPE="unknown"
+    echo "✓ Backend service detected on http://127.0.0.1:8000" >&2
+    ;;
+  *)
+    BACKEND_SERVICE_TYPE="none"
+    ;;
+esac
 
 # Set up environment file
 ENV_FILE=".env"
 if [ ! -f "${ENV_FILE}" ] || ! grep -q "VITE_API_URL" "${ENV_FILE}" 2>/dev/null; then
-  if [ "${ALPACA_SERVICE_RUNNING}" = true ]; then
-    echo "Configuring VITE_API_URL to connect to Alpaca service..." >&2
+  if [ "${BACKEND_SERVICE_TYPE}" != "none" ]; then
+    if [ "${BACKEND_SERVICE_TYPE}" = "alpaca" ]; then
+      echo "Configuring VITE_API_URL to connect to Alpaca service..." >&2
+    elif [ "${BACKEND_SERVICE_TYPE}" = "ib" ]; then
+      echo "Configuring VITE_API_URL to connect to IB service..." >&2
+    else
+      echo "Configuring VITE_API_URL to connect to backend service..." >&2
+    fi
     if [ -f "${ENV_FILE}" ]; then
       # Append to existing .env
       echo "" >> "${ENV_FILE}"
@@ -84,9 +110,10 @@ if [ ! -f "${ENV_FILE}" ] || ! grep -q "VITE_API_URL" "${ENV_FILE}" 2>/dev/null;
       echo "VITE_API_URL=http://127.0.0.1:8000/api/snapshot" > "${ENV_FILE}"
     fi
   else
-    echo "⚠ Alpaca service not detected. Using static JSON data." >&2
-    echo "  To use live data, start the Alpaca service first:" >&2
-    echo "  ./web/scripts/run-alpaca-service.sh" >&2
+    echo "⚠ Backend service not detected. Using static JSON data." >&2
+    echo "  To use live data, start a backend service:" >&2
+    echo "  ./web/scripts/run-alpaca-service.sh  # For Alpaca" >&2
+    echo "  ./web/scripts/run-ib-service.sh      # For Interactive Brokers" >&2
   fi
 else
   # .env exists and has VITE_API_URL
@@ -97,18 +124,27 @@ else
 fi
 
 # Check if Vite port is already in use
+# If port is in use, exit - the launch script should handle port conflicts
 VITE_PORT=5173
 if check_port "${VITE_PORT}"; then
-  echo "Port ${VITE_PORT} is already in use." >&2
-  echo "Vite will automatically try the next available port." >&2
-  echo "" >&2
+  echo "Error: Port ${VITE_PORT} is already in use." >&2
+  echo "Another web service instance may be running." >&2
+  echo "To stop it, run: ./web/scripts/launch-all-pwa-services.sh stop" >&2
+  echo "Or manually: lsof -ti :${VITE_PORT} | xargs kill -9" >&2
+  exit 1
 fi
 
 echo "Starting web service (PWA)..." >&2
-if [ "${ALPACA_SERVICE_RUNNING}" = true ]; then
-  echo "  Connected to Alpaca service: http://127.0.0.1:8000" >&2
+if [ "${BACKEND_SERVICE_TYPE}" != "none" ]; then
+  if [ "${BACKEND_SERVICE_TYPE}" = "alpaca" ]; then
+    echo "  Connected to Alpaca service: http://127.0.0.1:8000" >&2
+  elif [ "${BACKEND_SERVICE_TYPE}" = "ib" ]; then
+    echo "  Connected to IB service: http://127.0.0.1:8000" >&2
+  else
+    echo "  Connected to backend service: http://127.0.0.1:8000" >&2
+  fi
 else
-  echo "  Using static data (Alpaca service not running)" >&2
+  echo "  Using static data (backend service not running)" >&2
 fi
 echo "" >&2
 

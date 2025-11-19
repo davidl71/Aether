@@ -5,6 +5,7 @@ use market_data::MarketDataEvent;
 use risk::RiskDecision;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
+use tracing::{debug, warn};
 
 pub type SharedSnapshot = Arc<RwLock<SystemSnapshot>>;
 
@@ -22,6 +23,9 @@ pub struct SystemSnapshot {
   pub decisions: Vec<StrategyDecisionSnapshot>,
   pub alerts: Vec<Alert>,
   pub risk: RiskStatus,
+  /// Optional ledger engine for transaction recording
+  #[serde(skip)]
+  pub ledger: Option<Arc<ledger::LedgerEngine>>,
 }
 
 impl Default for SystemSnapshot {
@@ -39,6 +43,7 @@ impl Default for SystemSnapshot {
       decisions: Vec::new(),
       alerts: vec![Alert::info("Backend initialising")],
       risk: RiskStatus::default(),
+      ledger: None,
     }
   }
 }
@@ -84,7 +89,7 @@ impl SystemSnapshot {
 
     let order_id = format!("ORD-{}", Utc::now().timestamp_millis());
     self.orders.push(OrderSnapshot {
-      id: order_id,
+      id: order_id.clone(),
       symbol: decision.symbol.clone(),
       side: decision.side.clone(),
       quantity: decision.quantity,
@@ -95,28 +100,77 @@ impl SystemSnapshot {
       self.orders.remove(0);
     }
 
+    // Track previous position state for ledger recording
+    let prev_position = self
+      .positions
+      .iter()
+      .find(|p| p.symbol == decision.symbol)
+      .map(|p| (p.quantity, p.cost_basis));
+
     if let Some(idx) = self.positions.iter().position(|p| p.symbol == decision.symbol) {
       let prev_qty = self.positions[idx].quantity;
       let cost_basis = self.positions[idx].cost_basis;
       let new_qty = prev_qty + decision.quantity;
 
       if new_qty == 0 {
+        // Position closed - record realized PnL
         let position = self.positions.remove(idx);
         let realized = (decision.mark - cost_basis) * prev_qty as f64;
         self.historic.push(HistoricPosition {
           id: format!("HIST-{}", self.historic.len() + 1),
-          symbol: position.symbol,
+          symbol: position.symbol.clone(),
           quantity: prev_qty,
           realized_pnl: realized,
           closed_at: decision.created_at,
         });
+
+        // Record position close in ledger (non-blocking)
+        if let Some(ref ledger) = self.ledger {
+          let ledger_clone = ledger.clone();
+          let symbol = position.symbol.clone();
+          tokio::spawn(async move {
+            if let Err(err) = ledger::record_position_close(
+              ledger_clone,
+              &symbol,
+              prev_qty,
+              cost_basis,
+              decision.mark,
+              ledger::Currency::USD,
+              Some(&order_id),
+            )
+            .await
+            {
+              warn!(error = %err, symbol = %symbol, "Failed to record position close in ledger (non-blocking)");
+            }
+          });
+        }
       } else {
         let position = &mut self.positions[idx];
         position.quantity = new_qty;
         position.mark = decision.mark;
         position.unrealized_pnl = (position.mark - position.cost_basis) * position.quantity as f64;
+
+        // Record position change in ledger (non-blocking)
+        if let Some(ref ledger) = self.ledger {
+          let ledger_clone = ledger.clone();
+          let symbol = decision.symbol.clone();
+          let quantity = decision.quantity;
+          let price = decision.mark;
+          tokio::spawn(async move {
+            ledger::record_position_change_safe(
+              ledger_clone,
+              &symbol,
+              quantity,
+              price,
+              ledger::Currency::USD,
+              Some(&order_id),
+            )
+            .await;
+          });
+        }
       }
     } else {
+      // New position
       self.positions.push(PositionSnapshot {
         id: format!("POS-{}", self.positions.len() + self.historic.len() + 1),
         symbol: decision.symbol.clone(),
@@ -125,6 +179,108 @@ impl SystemSnapshot {
         mark: decision.mark,
         unrealized_pnl: 0.0,
       });
+
+      // Record position change in ledger (non-blocking)
+      if let Some(ref ledger) = self.ledger {
+        let ledger_clone = ledger.clone();
+        let symbol = decision.symbol.clone();
+        let quantity = decision.quantity;
+        let price = decision.mark;
+        tokio::spawn(async move {
+          ledger::record_position_change_safe(
+            ledger_clone,
+            &symbol,
+            quantity,
+            price,
+            ledger::Currency::USD,
+            Some(&order_id),
+          )
+          .await;
+        });
+      }
+    }
+  }
+
+  /// Set ledger engine for transaction recording
+  pub fn set_ledger(&mut self, ledger: Arc<ledger::LedgerEngine>) {
+    self.ledger = Some(ledger);
+    debug!("Ledger engine attached to SystemSnapshot");
+  }
+
+  /// Record box spread transaction (async, non-blocking)
+  pub fn record_box_spread_async(
+    &self,
+    symbol: &str,
+    strike1: i32,
+    strike2: i32,
+    expiry: &str,
+    net_debit: f64,
+    trade_id: Option<&str>,
+  ) {
+    if let Some(ref ledger) = self.ledger {
+      let ledger_clone = ledger.clone();
+      let symbol = symbol.to_string();
+      let expiry = expiry.to_string();
+      let trade_id = trade_id.map(|s| s.to_string());
+      tokio::spawn(async move {
+        ledger::record_box_spread_safe(
+          ledger_clone,
+          &symbol,
+          strike1,
+          strike2,
+          &expiry,
+          net_debit,
+          trade_id.as_deref(),
+          ledger::Currency::USD,
+        )
+        .await;
+      });
+      debug!(
+        symbol = %symbol,
+        strike1,
+        strike2,
+        expiry = %expiry,
+        net_debit,
+        "Box spread transaction queued for ledger recording"
+      );
+    } else {
+      debug!("Ledger not configured, skipping box spread transaction recording");
+    }
+  }
+
+  /// Record cash flow transaction (async, non-blocking)
+  pub fn record_cash_flow_async(
+    &self,
+    amount: f64,
+    currency: ledger::Currency,
+    description: &str,
+    is_deposit: bool,
+  ) {
+    if let Some(ref ledger) = self.ledger {
+      let ledger_clone = ledger.clone();
+      let description = description.to_string();
+      tokio::spawn(async move {
+        if let Err(err) = ledger::record_cash_flow(
+          ledger_clone,
+          amount,
+          currency,
+          &description,
+          is_deposit,
+        )
+        .await
+        {
+          warn!(error = %err, description = %description, "Failed to record cash flow in ledger (non-blocking)");
+        }
+      });
+      debug!(
+        amount,
+        currency = ?currency,
+        description = %description,
+        is_deposit,
+        "Cash flow transaction queued for ledger recording"
+      );
+    } else {
+      debug!("Ledger not configured, skipping cash flow transaction recording");
     }
   }
 

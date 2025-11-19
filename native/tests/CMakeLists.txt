@@ -12,10 +12,15 @@ set(TEST_SOURCES
     test_risk_calculator.cpp
     test_order_manager.cpp
     test_tws_client.cpp
+    test_tws_integration.cpp
+    test_market_data_integration.cpp
+    test_box_spread_e2e.cpp
     test_option_chain.cpp
     test_rate_limiter.cpp
     test_hedge_manager.cpp
     test_box_spread_bag.cpp
+    eigen_integration_test.cpp
+    test_convexity_calculator.cpp
 )
 
 add_executable(box_spread_tests ${TEST_SOURCES})
@@ -64,6 +69,12 @@ target_link_libraries(box_spread_tests
         nlohmann_json::nlohmann_json
         spdlog::spdlog
         CLI11::CLI11
+        Eigen3::Eigen
+        QuantLib::QuantLib
+        Boost::date_time
+        Boost::filesystem
+        Boost::system
+        NLopt::nlopt
         ${TWS_API_LIB}
         ${INTEL_DECIMAL_LIB}
         /usr/local/lib/libprotobuf.dylib
@@ -93,6 +104,7 @@ target_sources(box_spread_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/native/src/risk_calculator.cpp
     ${CMAKE_SOURCE_DIR}/native/src/hedge_manager.cpp
     ${CMAKE_SOURCE_DIR}/native/src/box_spread_bag.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/convexity_calculator.cpp
 )
 
 # ============================================================================
