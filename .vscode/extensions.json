@@ -9,6 +9,7 @@
     // C++ Development (WORKSPACE-ONLY)
     "ms-vscode.cpptools",
     "ms-vscode.cmake-tools",
+    "twxs.cmake", // Enhanced CMake language support with IntelliSense
 
     // Python Development (WORKSPACE-ONLY)
     "ms-python.python",
@@ -32,6 +33,7 @@
 
     // AI & Prompt Enhancement (WORKSPACE-ONLY)
     "prompttower.prompttower",
+    "TabNine.tabnine-vscode", // AI code completion for C++, Python, TypeScript, Rust, Go
     // Note: GitHub Copilot and AWS CodeWhisperer can be global
     // but may benefit from workspace-specific configurations
 
@@ -43,6 +45,10 @@
     // General Development (GLOBAL)
     "editorconfig.editorconfig",
     "redhat.vscode-yaml",
+
+    // Terminal Integration (GLOBAL - macOS only)
+    "tyriar.vscode-shell-launcher", // Better shell selection
+    "tlehman.execute-in-iterm2", // Execute tasks in iTerm2 (macOS only)
 
     // Git (GLOBAL)
     "eamodio.gitlens",

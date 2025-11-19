@@ -43,6 +43,40 @@
       ]
     },
     {
+      "label": "CMake: Build (iTerm2)",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "--preset",
+        "macos-universal-debug"
+      ],
+      "group": "build",
+      "dependsOn": "CMake: Configure (Debug)",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "echo": true,
+        "focus": false,
+        "revealProblems": "onProblem"
+      },
+      "options": {
+        "shell": {
+          "executable": "/usr/bin/osascript",
+          "args": [
+            "-e",
+            "tell application \"iTerm2\"\n  tell current window\n    create tab with default profile\n    tell current session of current tab\n      write text \"cd '${workspaceFolder}' && cmake --build --preset macos-universal-debug\"\n    end tell\n  end tell\nend tell"
+          ]
+        }
+      },
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    },
+    {
       "label": "CMake: Build (Release)",
       "type": "shell",
       "command": "cmake",
@@ -95,6 +129,32 @@
       "problemMatcher": []
     },
     {
+      "label": "Run Tests (iTerm2)",
+      "type": "shell",
+      "command": "ctest",
+      "args": [
+        "--preset",
+        "macos-universal-debug",
+        "--output-on-failure"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "dependsOn": "CMake: Build",
+      "options": {
+        "shell": {
+          "executable": "/usr/bin/osascript",
+          "args": [
+            "-e",
+            "tell application \"iTerm2\"\n  tell current window\n    create tab with default profile\n    tell current session of current tab\n      write text \"cd '${workspaceFolder}' && ctest --preset macos-universal-debug --output-on-failure\"\n    end tell\n  end tell\nend tell"
+          ]
+        }
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Setup Worktree",
       "type": "shell",
       "command": "${workspaceFolder}/scripts/setup_worktree.sh",
@@ -119,6 +179,27 @@
       "problemMatcher": []
     },
     {
+      "label": "Build Universal (iTerm2)",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/build_universal.sh",
+      "args": [],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "options": {
+        "shell": {
+          "executable": "/usr/bin/osascript",
+          "args": [
+            "-e",
+            "tell application \"iTerm2\"\n  tell current window\n    create tab with default profile\n    tell current session of current tab\n      write text \"cd '${workspaceFolder}' && ./scripts/build_universal.sh\"\n    end tell\n  end tell\nend tell"
+          ]
+        }
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Run Linters",
       "type": "shell",
       "command": "${workspaceFolder}/scripts/run_linters.sh",
@@ -127,6 +208,69 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Linters (iTerm2)",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/run_linters.sh",
+      "args": [],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "options": {
+        "shell": {
+          "executable": "/usr/bin/osascript",
+          "args": [
+            "-e",
+            "tell application \"iTerm2\"\n  tell current window\n    create tab with default profile\n    tell current session of current tab\n      write text \"cd '${workspaceFolder}' && ./scripts/run_linters.sh\"\n    end tell\n  end tell\nend tell"
+          ]
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run ShellSpec Tests (iTerm2)",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/run_tests.sh",
+      "args": ["--format", "documentation"],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "options": {
+        "shell": {
+          "executable": "/usr/bin/osascript",
+          "args": [
+            "-e",
+            "tell application \"iTerm2\"\n  tell current window\n    create tab with default profile\n    tell current session of current tab\n      write text \"cd '${workspaceFolder}' && ./scripts/run_tests.sh --format documentation\"\n    end tell\n  end tell\nend tell"
+          ]
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Launch PWA Services (iTerm2)",
+      "type": "shell",
+      "command": "${workspaceFolder}/web/scripts/launch-all-pwa-services.sh",
+      "args": [],
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "options": {
+        "shell": {
+          "executable": "/usr/bin/osascript",
+          "args": [
+            "-e",
+            "tell application \"iTerm2\"\n  tell current window\n    create tab with default profile\n    tell current session of current tab\n      write text \"cd '${workspaceFolder}' && ./web/scripts/launch-all-pwa-services.sh\"\n    end tell\n  end tell\nend tell"
+          ]
+        }
       },
       "problemMatcher": []
     },
