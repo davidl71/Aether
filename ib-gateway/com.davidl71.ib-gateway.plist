@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.davidl71.ib-gateway</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>GATEWAY_DIR/run-gateway.sh</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>GATEWAY_DIR</string>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>GATEWAY_DIR/gateway.log</string>
+  <key>StandardErrorPath</key>
+  <string>GATEWAY_DIR/gateway.error.log</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/opt/homebrew/opt/openjdk@17/bin</string>
+    <key>JAVA_HOME</key>
+    <string>JAVA_HOME_PLACEHOLDER</string>
+  </dict>
+</dict>
+</plist>
