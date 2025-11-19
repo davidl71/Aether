@@ -159,5 +159,55 @@
       "port": 7497,
       "client_id": 2 // Different client_id for execution
     }
+  },
+
+  // ============================================================================
+  // Service Port Configuration
+  // ============================================================================
+  // Port assignments for PWA services to prevent conflicts
+  // Environment variables can override: WEB_PORT, ALPACA_PORT, IB_PORT, etc.
+  "services": {
+    "web": {
+      "port": 5173 // Vite dev server (frontend)
+    },
+    "alpaca": {
+      "port": 8000 // Alpaca service (primary backend)
+    },
+    "ib": {
+      "port": 8002 // IB service (separate from Alpaca to avoid conflicts)
+    },
+    "tradestation": {
+      "port": 8001 // TradeStation service
+    },
+    "discount_bank": {
+      "port": 8003 // Discount Bank service
+    },
+    "tastytrade": {
+      "port": 8004 // Tastytrade service
+    },
+    "jupyterlab": {
+      "port": 8888 // JupyterLab service (interactive analysis and backtesting)
+    }
+  },
+
+  // ============================================================================
+  // Tastytrade Integration
+  // ============================================================================
+  "tastytrade": {
+    // See https://tastytrade.com/api/
+    // OAuth authentication (preferred - more secure)
+    "oauth": {
+      "client_secret": "${TASTYTRADE_CLIENT_SECRET}",
+      "refresh_token": "${TASTYTRADE_REFRESH_TOKEN}"
+    },
+    // Session-based authentication (fallback if OAuth not configured)
+    "username": "${TASTYTRADE_USERNAME}",
+    "password": "${TASTYTRADE_PASSWORD}",
+    // API Base URLs
+    "base_url": "https://api.tastytrade.com", // Production API URL
+    "sandbox_base_url": "https://api.cert.tastyworks.com", // Sandbox API URL
+    "sandbox_websocket_url": "wss://streamer.cert.tastyworks.com", // Sandbox WebSocket URL (for future use)
+    // Environment mode
+    "sandbox": false // Enable sandbox mode (uses sandbox_base_url, resets every 24 hours, 15-min delayed quotes)
   }
 }

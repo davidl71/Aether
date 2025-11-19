@@ -228,6 +228,7 @@ TRADESTATION_PORT=$(get_service_port "tradestation" 8001)
 IB_PORT=$(get_service_port "ib" 8002)
 DISCOUNT_BANK_PORT=$(get_service_port "discount_bank" 8003)
 RISK_FREE_RATE_PORT=$(get_service_port "risk_free_rate" 8004)
+JUPYTERLAB_PORT=$(get_service_port "jupyterlab" 8888)
 
 # Check service health and track which are running
 declare -A SERVICE_STATUS
@@ -300,6 +301,15 @@ else
   SERVICE_STATUS["discount_bank"]="stopped"
   SERVICES_TO_START+=("discount_bank")
   echo "${YELLOW}⚠ Discount Bank service (port ${DISCOUNT_BANK_PORT}) is not running${NC}"
+fi
+
+if check_service_health "${JUPYTERLAB_PORT}"; then
+  SERVICE_STATUS["jupyterlab"]="running"
+  echo "${GREEN}✓ JupyterLab service (port ${JUPYTERLAB_PORT}) is running${NC}"
+else
+  SERVICE_STATUS["jupyterlab"]="stopped"
+  SERVICES_TO_START+=("jupyterlab")
+  echo "${YELLOW}⚠ JupyterLab service (port ${JUPYTERLAB_PORT}) is not running${NC}"
 fi
 
 if check_service_health "${RISK_FREE_RATE_PORT}"; then
@@ -532,6 +542,15 @@ if [ "$TMUX_AVAILABLE" = true ]; then
       echo "${BLUE}  Starting Risk-Free Rate service...${NC}"
       tmux new-window -t "$SESSION_NAME" -n "risk-free-rate" -c "$ROOT_DIR" \
         "bash ${SCRIPTS_DIR}/run-risk-free-rate-service.sh" 2>/dev/null || true
+    fi
+  fi
+
+  # Start JupyterLab service if needed
+  if [[ " ${SERVICES_TO_START[*]} " =~ " jupyterlab " ]]; then
+    if ! tmux list-windows -t "$SESSION_NAME" -F "#{window_name}" 2>/dev/null | grep -q "^jupyterlab$"; then
+      echo "${BLUE}  Starting JupyterLab service...${NC}"
+      tmux new-window -t "$SESSION_NAME" -n "jupyterlab" -c "$ROOT_DIR" \
+        "bash ${SCRIPTS_DIR}/run-jupyterlab-service.sh" 2>/dev/null || true
     fi
   fi
 
@@ -799,6 +818,13 @@ else
     cd "$ROOT_DIR"
     bash "${SCRIPTS_DIR}/run-risk-free-rate-service.sh" > /tmp/pwa-risk-free-rate.log 2>&1 &
     echo $! > /tmp/pwa-risk-free-rate.pid
+  ) &
+
+  # JupyterLab service (port 8888)
+  (
+    cd "$ROOT_DIR"
+    bash "${SCRIPTS_DIR}/run-jupyterlab-service.sh" > /tmp/pwa-jupyterlab.log 2>&1 &
+    echo $! > /tmp/pwa-jupyterlab.pid
   ) &
 
   # Group 2: Wait for Gateway, then start IB service
