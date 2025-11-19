@@ -6,16 +6,19 @@
 ## Current State
 
 ### Existing Todos (Well-Structured)
+
 - **T-1, T-2, T-3**: Have detailed long descriptions, tags, priorities, research comments
 - **Structure**: Objective, Acceptance Criteria, Scope Boundaries, Technical Requirements, Files/Components, Testing Requirements, Edge Cases, Dependencies
 
 ### New Todos (Basic)
+
 - **T-4 through T-25**: Only have basic content strings
 - **Missing**: Detailed descriptions, tags, priorities, dependencies
 
 ## Todo2 Features Available
 
 ### 1. Rich Todo Structure
+
 - **Long descriptions**: Detailed objectives, acceptance criteria, scope boundaries
 - **Tags**: For filtering and organization (e.g., `critical-fix`, `testing`, `feature-parity`)
 - **Priorities**: `high`, `medium`, `low`
@@ -23,12 +26,14 @@
 - **Status tracking**: `Todo`, `In Progress`, `Review`, `Done`
 
 ### 2. Comments System
+
 - **research_with_links**: Mandatory research with local codebase + internet research
 - **note**: Track decisions, blockers, human feedback
 - **result**: Document completion outcomes
 - **manualsetup**: Tasks humans must perform
 
 ### 3. Activity Tracking
+
 - Automatic tracking of status changes
 - Comment additions
 - Description updates
@@ -70,16 +75,19 @@
 ## Benefits of Enhanced Todos
 
 ### Better Organization
+
 - Filter by tags to see all critical fixes or testing tasks
 - Sort by priority to focus on high-priority work
 - View dependencies to understand task order
 
 ### Better Tracking
+
 - Detailed acceptance criteria make completion clear
 - Research comments provide context for decisions
 - Activity tracking shows progress over time
 
 ### Better Collaboration
+
 - Clear scope boundaries prevent scope creep
 - Dependencies show what blocks what
 - Comments capture decisions and rationale
@@ -87,12 +95,14 @@
 ## Implementation Plan
 
 ### Phase 1: Critical Fixes (T-4, T-5)
+
 - Add detailed descriptions with file locations
 - Add `critical-fix` tag
 - Set `high` priority
 - Add research comments with codebase analysis
 
 ### Phase 2: Testing & Validation (T-6, T-7, T-8, T-9)
+
 - Add detailed descriptions with test scenarios
 - Add `testing` tag
 - Set `high` priority
@@ -100,24 +110,28 @@
 - Add research comments with testing strategy references
 
 ### Phase 3: Production Readiness (T-10, T-11, T-12)
+
 - Add detailed descriptions with implementation details
 - Add `production-readiness` tag
 - Set `high` priority
 - Add dependencies where appropriate
 
 ### Phase 4: Feature Parity (T-13, T-14, T-15)
+
 - Add detailed descriptions with feature tracking references
 - Add `feature-parity` tag
 - Set `medium` priority
 - Reference FEATURE_TRACKING.md
 
 ### Phase 5: Agent Coordination (T-16 through T-22)
+
 - Add detailed descriptions with agent TODO references
 - Add `agent-coordination` tag
 - Set `medium` priority
 - Reference agents/shared/TODO_OVERVIEW.md
 
 ### Phase 6: Documentation (T-23, T-24, T-25)
+
 - Add detailed descriptions with documentation gaps
 - Add `documentation` tag
 - Set `low` priority
@@ -143,6 +157,7 @@
 ## Todo2 Best Practices
 
 ### Description Structure
+
 ```markdown
 🎯 **Objective:** [Clear goal]
 
@@ -171,16 +186,19 @@
 ```
 
 ### Tag Conventions
+
 - Use kebab-case: `critical-fix`, `feature-parity`
 - Be specific: `testing-integration` vs `testing-unit`
 - Group related: All agent todos use `agent-coordination`
 
 ### Priority Guidelines
+
 - **high**: Blocks production, security issues, critical bugs
 - **medium**: Important features, improvements
 - **low**: Nice-to-have, documentation, cleanup
 
 ### Dependency Rules
+
 - Only add dependencies when truly required
 - Don't create circular dependencies
 - Use dependencies to show logical order, not just sequence
