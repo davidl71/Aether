@@ -36,5 +36,17 @@
 | 32 | Adopt Poetry for Python dependency management | backend | pending |
 | 33 | Detect and integrate Livevol data when credentials available | backend | pending |
 | 34 | Ensure Apple clients remain compatible with AnyLanguageModel; document low-priority integration hooks | ipad/desktop | pending |
+| 35 | Fix day count convention in implied rate calculation (ACT/365, ACT/360, continuous compounding) | backend | pending |
+| 36 | Add annualized ROI calculation to BoxSpreadCalculator | backend | pending |
+| 37 | Implement portfolio VaR calculation for multiple box spread positions | backend | pending |
+| 38 | Implement correlation analysis and covariance matrix calculation | backend | pending |
+| 39 | Design and implement mean-variance portfolio optimization framework | backend | pending |
+| 40 | Extend Kelly Criterion to multi-asset portfolio optimization | backend | pending |
+| 41 | Add dividend-adjusted put-call parity violation calculation | backend | pending |
+| 42 | Implement Conditional Value at Risk (CVaR) calculation | backend | pending |
+| 43 | Implement Hierarchical Risk Parity (HRP) portfolio optimization | backend | pending |
+| 44 | Add individual leg Greeks monitoring for box spreads | backend | pending |
+
+**Mathematical Finance Improvements (T-201 to T-210):** Tasks 35-44 are part of the mathematical finance code improvements initiative. See `docs/analysis/code-improvements-mathematical-finance.md` and `docs/design/portfolio-optimization-framework.md` for detailed specifications.
 
 Update this table as tasks progress to keep all agents aligned.
