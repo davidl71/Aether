@@ -234,3 +234,4 @@ These schemas can be used to generate:
 - [NATS Topics Registry](../NATS_TOPICS_REGISTRY.md)
 - [NATS Integration Architecture](../research/architecture/MESSAGE_QUEUE_ARCHITECTURE.md)
 - [JSON Schema Specification](https://json-schema.org/specification.html)
+
