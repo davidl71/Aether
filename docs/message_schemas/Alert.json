@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Alert",
+  "description": "Alert notifications",
+  "type": "object",
+  "required": ["id", "timestamp", "source", "type", "payload"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique message identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+    "source": {
+      "type": "string",
+      "enum": ["backend", "risk-engine", "strategy", "system"],
+      "description": "Source of alert"
+    },
+    "type": {
+      "type": "string",
+      "const": "Alert",
+      "description": "Message type identifier"
+    },
+    "payload": {
+      "type": "object",
+      "required": ["level", "message"],
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["INFO", "WARNING", "ERROR"],
+          "description": "Alert level"
+        },
+        "message": {
+          "type": "string",
+          "description": "Alert message"
+        },
+        "component": {
+          "type": "string",
+          "description": "Component that generated the alert"
+        }
+      }
+    }
+  },
+  "example": {
+    "id": "550e8400-e29b-41d4-a716-446655440013",
+    "timestamp": "2025-11-20T10:00:00Z",
+    "source": "backend",
+    "type": "Alert",
+    "payload": {
+      "level": "INFO",
+      "message": "Backend initialising",
+      "component": "backend-service"
+    }
+  }
+}

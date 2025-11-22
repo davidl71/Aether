@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use nats_adapter::{ChannelBridge, NatsClient, Publisher, topics};
+use nats_adapter::{ChannelBridge, DlqService, NatsClient, Publisher, topics};
 use strategy::{Decision as StrategyDecisionModel, StrategySignal};
 use tokio::sync::RwLock;
 use tracing::{error, info, warn};
@@ -50,20 +50,25 @@ impl NatsIntegration {
     let client = Arc::new(client);
     let client_clone = client.as_ref().clone();
 
+    // Create DLQ service for failed messages
+    let dlq_service = DlqService::new(client_clone.clone(), "backend");
+
     // Create publishers for strategy signals and decisions
     // We need separate bridges because ChannelBridge is generic over the message type
     let signal_bridge: ChannelBridge<StrategySignal> = ChannelBridge::new(client_clone.clone());
-    let decision_bridge: ChannelBridge<StrategyDecisionModel> = ChannelBridge::new(client_clone);
+    let decision_bridge: ChannelBridge<StrategyDecisionModel> = ChannelBridge::new(client_clone.clone());
 
-    let strategy_signal_pub = signal_bridge.create_publisher(
+    let strategy_signal_pub = signal_bridge.create_publisher_with_dlq(
       topics::strategy::all_signals(),
       "backend",
       "StrategySignal",
+      dlq_service.clone(),
     );
-    let strategy_decision_pub = decision_bridge.create_publisher(
+    let strategy_decision_pub = decision_bridge.create_publisher_with_dlq(
       topics::strategy::all_decisions(),
       "backend",
       "StrategyDecision",
+      dlq_service.clone(),
     );
 
     Some(Self {
@@ -84,10 +89,12 @@ impl NatsIntegration {
           .entry(symbol.to_string())
           .or_insert_with(|| {
             let bridge = ChannelBridge::new(client.as_ref().clone());
-            Arc::new(bridge.create_publisher(
+            let dlq = DlqService::new(client.as_ref().clone(), "backend");
+            Arc::new(bridge.create_publisher_with_dlq(
               topics::market_data::tick(symbol),
               "backend",
               "MarketDataTick",
+              dlq,
             ))
           })
           .clone()

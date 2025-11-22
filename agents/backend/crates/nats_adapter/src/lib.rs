@@ -5,12 +5,14 @@
 
 pub mod bridge;
 pub mod client;
+pub mod dlq;
 pub mod error;
 pub mod serde;
 pub mod topics;
 
 pub use bridge::{ChannelBridge, Publisher, Subscriber};
 pub use client::NatsClient;
+pub use dlq::{DlqConfig, DlqService, DeadLetterMessage, error_type_from_error};
 pub use error::{NatsAdapterError, Result};
 pub use topics::{validate_topic, topic_matches};
 

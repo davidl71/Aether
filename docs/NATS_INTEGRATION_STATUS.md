@@ -16,6 +16,7 @@
 | T-194 | Topic Registry | ✅ Complete | Centralized topics, validation |
 | T-175 | Backend Integration | ✅ Complete | Integration module, parallel publishing |
 | T-176 | Testing Infrastructure | ✅ Complete | Test scripts, integration tests, guide |
+| T-195 | Dead Letter Queue | ✅ Complete | DLQ service, retry logic, DLQ topics |
 
 ### 🔧 Compilation Status
 
@@ -85,13 +86,13 @@
 - Error scenario testing
 - Documentation updates
 
-### Phase 2 (Future)
-- C++ TWS client integration
-- Python strategy runner integration
-- TypeScript frontend integration
-- Swift iPad app integration
-- Dead letter queue (T-195)
-- Circuit breakers
+### Phase 2 (In Progress)
+- ✅ **Dead letter queue (T-195)** - Complete with retry logic and DLQ topics
+- ⏳ C++ TWS client integration
+- ⏳ Python strategy runner integration
+- ⏳ TypeScript frontend integration
+- ⏳ Swift iPad app integration
+- ⏳ Circuit breakers
 
 ## Files Summary
 

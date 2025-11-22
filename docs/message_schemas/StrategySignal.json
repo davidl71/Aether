@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StrategySignal",
+  "description": "Market signal for strategy evaluation",
+  "type": "object",
+  "required": ["id", "timestamp", "source", "type", "payload"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique message identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+    "source": {
+      "type": "string",
+      "enum": ["market-data", "backend", "mock"],
+      "description": "Source of the signal"
+    },
+    "type": {
+      "type": "string",
+      "const": "StrategySignal",
+      "description": "Message type identifier"
+    },
+    "payload": {
+      "type": "object",
+      "required": ["symbol", "price", "timestamp"],
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "description": "Trading symbol (e.g., SPY, SPX)"
+        },
+        "price": {
+          "type": "number",
+          "description": "Current market price"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when signal was generated"
+        }
+      }
+    }
+  },
+  "example": {
+    "id": "550e8400-e29b-41d4-a716-446655440002",
+    "timestamp": "2025-11-20T10:00:03Z",
+    "source": "market-data",
+    "type": "StrategySignal",
+    "payload": {
+      "symbol": "SPY",
+      "price": 509.18,
+      "timestamp": "2025-11-20T10:00:03Z"
+    }
+  }
+}

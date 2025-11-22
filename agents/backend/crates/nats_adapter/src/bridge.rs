@@ -5,6 +5,7 @@ use tokio::sync::mpsc;
 use tracing::{error, info, warn};
 
 use crate::client::NatsClient;
+use crate::dlq::{DlqService, error_type_from_error};
 use crate::error::{NatsAdapterError, Result};
 use crate::serde::{deserialize_message, serialize_message};
 
@@ -44,6 +45,26 @@ where
     )
   }
 
+  /// Create a publisher with DLQ support
+  pub fn create_publisher_with_dlq(
+    &self,
+    subject: impl Into<String>,
+    source: impl Into<String>,
+    message_type: impl Into<String>,
+    dlq_service: DlqService,
+  ) -> Publisher<T>
+  where
+    T: serde::Serialize,
+  {
+    Publisher::with_dlq(
+      self.client.clone(),
+      subject.into(),
+      source.into(),
+      message_type.into(),
+      dlq_service,
+    )
+  }
+
   /// Create a subscriber that receives messages from NATS and sends to a Tokio channel
   pub fn create_subscriber(
     &self,
@@ -62,6 +83,7 @@ pub struct Publisher<T> {
   subject: String,
   source: String,
   message_type: String,
+  dlq_service: Option<DlqService>,
   _phantom: PhantomData<T>,
 }
 
@@ -75,29 +97,136 @@ where
       subject,
       source,
       message_type,
+      dlq_service: None,
       _phantom: PhantomData,
     }
   }
 
-  /// Publish a message to NATS
-  pub async fn publish(&self, payload: T) -> Result<()> {
-    let bytes = serialize_message(&self.source, &self.message_type, payload)?;
+  /// Create a publisher with DLQ support
+  pub fn with_dlq(
+    client: NatsClient,
+    subject: String,
+    source: String,
+    message_type: String,
+    dlq_service: DlqService,
+  ) -> Self {
+    Self {
+      client,
+      subject,
+      source,
+      message_type,
+      dlq_service: Some(dlq_service),
+      _phantom: PhantomData,
+    }
+  }
 
-    self
-      .client
-      .client()
-      .publish(self.subject.clone(), bytes)
-      .await
+  /// Publish a message to NATS with retry logic and DLQ support
+  pub async fn publish(&self, payload: T) -> Result<()> {
+    // Serialize payload first (before retries)
+    let original_payload = serde_json::to_value(&payload)
       .map_err(|e| {
         error!(
           subject = %self.subject,
           error = %e,
-          "Failed to publish message to NATS"
+          "Failed to serialize message payload"
         );
-        NatsAdapterError::from(e)
+        NatsAdapterError::Serialization(e)
       })?;
 
-    Ok(())
+    let bytes = serialize_message(&self.source, &self.message_type, payload)?;
+
+    // If DLQ is enabled, use retry logic
+    if let Some(ref dlq_service) = self.dlq_service {
+      let config = dlq_service.config();
+      let mut last_error = None;
+
+      // Retry loop
+      for attempt in 0..=config.max_retries {
+        match self
+          .client
+          .client()
+          .publish(self.subject.clone(), bytes.clone())
+          .await
+        {
+          Ok(_) => {
+            if attempt > 0 {
+              info!(
+                subject = %self.subject,
+                attempt = attempt,
+                "Message published successfully after {} retries",
+                attempt
+              );
+            }
+            return Ok(());
+          }
+          Err(e) => {
+            last_error = Some(NatsAdapterError::from(e));
+
+            // If this was the last attempt, send to DLQ
+            if attempt >= config.max_retries {
+              let error = last_error.unwrap();
+              let error_type = error_type_from_error(&error);
+              let error_message = format!("{}", error);
+
+              // Send to DLQ (non-blocking, log errors but don't fail)
+              if let Err(dlq_err) = dlq_service
+                .publish_failed_message(
+                  &self.subject,
+                  error_type,
+                  &error_message,
+                  attempt,
+                  original_payload.clone(),
+                  None,
+                )
+                .await
+              {
+                error!(
+                  dlq_error = %dlq_err,
+                  "Failed to send message to DLQ after publish failure"
+                );
+              }
+
+              return Err(error);
+            }
+
+            // Calculate delay and wait before retry
+            let delay = dlq_service.calculate_retry_delay(attempt);
+            warn!(
+              subject = %self.subject,
+              attempt = attempt + 1,
+              max_retries = config.max_retries,
+              delay_ms = delay.as_millis(),
+              error = %last_error.as_ref().unwrap(),
+              "Publish failed, retrying in {:?}",
+              delay
+            );
+            tokio::time::sleep(delay).await;
+          }
+        }
+      }
+
+      // Should never reach here, but handle it just in case
+      Err(last_error.unwrap_or_else(|| {
+        NatsAdapterError::Publish("Unknown error during retry loop".to_string())
+      }))
+    } else {
+      // No DLQ, just try once
+      self
+        .client
+        .client()
+        .publish(self.subject.clone(), bytes)
+        .await
+        .map_err(|e| {
+          error!(
+            subject = %self.subject,
+            error = %e,
+            "Failed to publish message to NATS"
+          );
+          NatsAdapterError::from(e)
+        })?;
+
+      Ok(())
+    }
   }
 
   /// Spawn a task that reads from a Tokio channel and publishes to NATS
@@ -125,6 +254,7 @@ impl<T> Clone for Publisher<T> {
       subject: self.subject.clone(),
       source: self.source.clone(),
       message_type: self.message_type.clone(),
+      dlq_service: self.dlq_service.clone(),
       _phantom: PhantomData,
     }
   }

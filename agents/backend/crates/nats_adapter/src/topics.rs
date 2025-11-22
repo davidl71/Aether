@@ -163,7 +163,6 @@ pub mod risk {
 
 /// System topics
 pub mod system {
-  use super::domain;
 
   /// System health status: `system.health`
   pub fn health() -> &'static str {
@@ -186,9 +185,39 @@ pub mod system {
   }
 }
 
+/// Dead Letter Queue (DLQ) topics
+pub mod dlq {
+  use super::domain;
+
+  /// Dead letter queue topic: `system.dlq.{component}.{error_type}`
+  ///
+  /// # Arguments
+  /// * `component` - Component that failed (e.g., "backend", "strategy", "market-data")
+  /// * `error_type` - Type of error (e.g., "publish_error", "deserialization_error", "timeout")
+  ///
+  /// # Example
+  /// ```
+  /// use nats_adapter::topics;
+  /// let dlq_topic = topics::dlq::dead_letter("backend", "publish_error");
+  /// // Returns: "system.dlq.backend.publish_error"
+  /// ```
+  pub fn dead_letter(component: &str, error_type: &str) -> String {
+    format!("{}.dlq.{}.{}", domain::SYSTEM, component, error_type)
+  }
+
+  /// Subscribe to all DLQ messages for a component: `system.dlq.{component}.>`
+  pub fn component_dlq(component: &str) -> String {
+    format!("{}.dlq.{}.>", domain::SYSTEM, component)
+  }
+
+  /// Subscribe to all DLQ messages: `system.dlq.>`
+  pub fn all() -> &'static str {
+    "system.dlq.>"
+  }
+}
+
 /// RPC (Request/Reply) topics
 pub mod rpc {
-  use super::domain;
 
   /// Request strategy status: `rpc.strategy.status`
   pub fn strategy_status() -> &'static str {
