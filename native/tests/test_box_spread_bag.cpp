@@ -1,9 +1,9 @@
 // test_box_spread_bag.cpp - Box spread bag tests
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
-#include "box_spread_bag.h"
+#include "strategies/box_spread/box_spread_bag.h"
 #include "types.h"
-#include "box_spread_strategy.h"
+#include "strategies/box_spread/box_spread_strategy.h"
 
 using namespace types;
 using namespace strategy;

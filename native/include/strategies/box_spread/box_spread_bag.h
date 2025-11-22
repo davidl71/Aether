@@ -2,7 +2,7 @@
 #pragma once
 
 #include "types.h"
-#include "box_spread_strategy.h"
+#include "strategies/box_spread/box_spread_strategy.h"
 #include <string>
 #include <vector>
 #include <chrono>

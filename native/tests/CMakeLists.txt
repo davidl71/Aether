@@ -99,7 +99,7 @@ target_sources(box_spread_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/native/src/tws_client.cpp
     ${CMAKE_SOURCE_DIR}/native/src/rate_limiter.cpp
     ${CMAKE_SOURCE_DIR}/native/src/hedge_manager.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/box_spread_bag.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/strategies/box_spread/box_spread_bag.cpp
     ${CMAKE_SOURCE_DIR}/native/src/convexity_calculator.cpp
 )
 
@@ -107,7 +107,7 @@ target_sources(box_spread_tests PRIVATE
 if(NOT USE_BOX_SPREAD_CPP_LIB)
     target_sources(box_spread_tests PRIVATE
         ${CMAKE_SOURCE_DIR}/native/src/option_chain.cpp
-        ${CMAKE_SOURCE_DIR}/native/src/box_spread_strategy.cpp
+        ${CMAKE_SOURCE_DIR}/native/src/strategies/box_spread/box_spread_strategy.cpp
         ${CMAKE_SOURCE_DIR}/native/src/order_manager.cpp
         ${CMAKE_SOURCE_DIR}/native/src/risk_calculator.cpp
     )

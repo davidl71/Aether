@@ -28,7 +28,7 @@
   #include <box_spread/config.h>
 #else
   // Using local implementation
-  #include "box_spread_strategy.h"
+  #include "strategies/box_spread/box_spread_strategy.h"
   #include "order_manager.h"
   #include "risk_calculator.h"
 #endif

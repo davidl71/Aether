@@ -1,6 +1,6 @@
 // hedge_manager.cpp - Hedging management implementation
 #include "hedge_manager.h"
-#include "box_spread_strategy.h"
+#include "strategies/box_spread/box_spread_strategy.h"
 #include <spdlog/spdlog.h>
 #include <algorithm>
 #include <cmath>

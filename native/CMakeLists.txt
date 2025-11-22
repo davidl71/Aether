@@ -34,9 +34,9 @@ cmake_minimum_required(VERSION 3.21)
 # ============================================================================
 # Project Configuration
 # ============================================================================
-project(IBKRBoxSpreadGenerator
+project(SyntheticFinancingPlatform
     VERSION 1.3.3
-    DESCRIPTION "Interactive Brokers Box Spread Trading Application"
+    DESCRIPTION "Comprehensive multi-asset financing optimization system. Box spreads are one strategy component of this platform."
     LANGUAGES CXX
 )
 
@@ -245,7 +245,78 @@ fetchcontent_declare(
 )
 
 # Find Boost (required for QuantLib)
-find_package(Boost REQUIRED COMPONENTS date_time filesystem system)
+# Set Boost root if installed via Homebrew
+set(BOOST_FOUND_DIRECTLY FALSE)
+if(APPLE AND EXISTS "/usr/local/Cellar/boost")
+    # Find the actual Boost version directory
+    file(GLOB BOOST_CELLAR_DIRS "/usr/local/Cellar/boost/*")
+    if(BOOST_CELLAR_DIRS)
+        list(GET BOOST_CELLAR_DIRS 0 BOOST_CELLAR_DIR)
+        set(Boost_ROOT "${BOOST_CELLAR_DIR}")
+        set(BOOST_LIB_DIR "${BOOST_CELLAR_DIR}/lib")
+        set(BOOST_INCLUDE_DIR "${BOOST_CELLAR_DIR}/include")
+        message(STATUS "Found Boost in Homebrew Cellar: ${BOOST_CELLAR_DIR}")
+
+        # Try to find libraries directly (check both .dylib and .a)
+        find_library(BOOST_DATE_TIME_LIB
+            NAMES boost_date_time libboost_date_time
+            PATHS ${BOOST_LIB_DIR} /usr/local/lib
+            NO_DEFAULT_PATH
+        )
+        find_library(BOOST_FILESYSTEM_LIB
+            NAMES boost_filesystem libboost_filesystem
+            PATHS ${BOOST_LIB_DIR} /usr/local/lib
+            NO_DEFAULT_PATH
+        )
+        find_library(BOOST_SYSTEM_LIB
+            NAMES boost_system libboost_system
+            PATHS ${BOOST_LIB_DIR} /usr/local/lib
+            NO_DEFAULT_PATH
+        )
+
+        # Debug output
+        if(BOOST_DATE_TIME_LIB)
+            message(STATUS "Found boost_date_time: ${BOOST_DATE_TIME_LIB}")
+        endif()
+        if(BOOST_FILESYSTEM_LIB)
+            message(STATUS "Found boost_filesystem: ${BOOST_FILESYSTEM_LIB}")
+        endif()
+        if(BOOST_SYSTEM_LIB)
+            message(STATUS "Found boost_system: ${BOOST_SYSTEM_LIB}")
+        endif()
+
+        # boost_system might be in /usr/local/lib (symlink) or header-only
+        if(NOT BOOST_SYSTEM_LIB)
+            find_library(BOOST_SYSTEM_LIB
+                NAMES boost_system libboost_system
+                PATHS /usr/local/lib ${BOOST_LIB_DIR}
+                NO_DEFAULT_PATH
+            )
+        endif()
+
+        # Proceed if we have at least date_time and filesystem
+        # boost_system might be header-only in newer Boost versions
+        if(BOOST_DATE_TIME_LIB AND BOOST_FILESYSTEM_LIB)
+            set(BOOST_FOUND_DIRECTLY TRUE)
+            set(Boost_LIBRARIES "${BOOST_DATE_TIME_LIB}" "${BOOST_FILESYSTEM_LIB}")
+            if(BOOST_SYSTEM_LIB)
+                set(Boost_LIBRARIES "${BOOST_DATE_TIME_LIB}" "${BOOST_FILESYSTEM_LIB}" "${BOOST_SYSTEM_LIB}")
+            endif()
+            set(Boost_INCLUDE_DIRS "${BOOST_INCLUDE_DIR}")
+            set(Boost_FOUND TRUE)
+            message(STATUS "Found Boost libraries directly")
+        endif()
+    endif()
+endif()
+
+# Try find_package if direct finding didn't work
+if(NOT BOOST_FOUND_DIRECTLY)
+    set(Boost_NO_BOOST_CMAKE ON)
+    find_package(Boost QUIET COMPONENTS date_time filesystem system)
+    if(NOT Boost_FOUND)
+        message(FATAL_ERROR "Could not find Boost. Please install via: brew install boost")
+    endif()
+endif()
 
 # QuantLib via FetchContent
 set(QUANTLIB_REPOSITORY "https://github.com/lballabio/quantlib.git")
@@ -265,6 +336,19 @@ fetchcontent_declare(
     GIT_SHALLOW TRUE
 )
 set(NLOPT_LICENSE_MIT ON CACHE BOOL "Use MIT license instead of LGPL")
+
+# NATS C client library (optional, for message queue integration)
+option(ENABLE_NATS "Enable NATS message queue integration" OFF)
+if(ENABLE_NATS)
+    set(NATS_C_REPOSITORY "https://github.com/nats-io/nats.c.git")
+    fetchcontent_declare(
+        nats_c
+        GIT_REPOSITORY ${NATS_C_REPOSITORY}
+        GIT_TAG v3.8.0
+        GIT_SHALLOW TRUE
+    )
+    message(STATUS "NATS integration enabled - will fetch nats.c library")
+endif()
 
 fetchcontent_makeavailable(nlohmann_json spdlog CLI11 ftxui Eigen3 QuantLib NLopt)
 
@@ -445,6 +529,7 @@ if(_build_native_cli)
         src/tws_client.cpp
         src/rate_limiter.cpp
         src/config_manager.cpp
+        src/nats_client.cpp
         src/pcap_capture.cpp
         src/convexity_calculator.cpp
     )
@@ -462,13 +547,15 @@ if(_build_native_cli)
     if(NOT USE_BOX_SPREAD_CPP_LIB)
         list(APPEND SOURCES
             src/option_chain.cpp
-            src/box_spread_strategy.cpp
+            src/strategies/box_spread/box_spread_strategy.cpp
+            src/strategies/box_spread/box_spread_bag.cpp
             src/order_manager.cpp
             src/risk_calculator.cpp
         )
         list(APPEND HEADERS
             include/option_chain.h
-            include/box_spread_strategy.h
+            include/strategies/box_spread/box_spread_strategy.h
+            include/strategies/box_spread/box_spread_bag.h
             include/order_manager.h
             include/risk_calculator.h
         )
@@ -525,6 +612,19 @@ if(_build_native_cli)
     # Find libcurl for HTTP client support
     find_package(CURL REQUIRED)
 
+    # Link NATS library if enabled
+    if(ENABLE_NATS)
+        fetchcontent_makeavailable(nats_c)
+        if(TARGET nats)
+            target_link_libraries(ib_box_spread PRIVATE nats)
+            target_include_directories(ib_box_spread PRIVATE "${CMAKE_BINARY_DIR}/_deps/nats_c-src/src")
+            target_compile_definitions(ib_box_spread PRIVATE ENABLE_NATS)
+            message(STATUS "Linked NATS library to ib_box_spread")
+        else()
+            message(WARNING "NATS enabled but nats target not found")
+        endif()
+    endif()
+
     target_link_libraries(ib_box_spread
         PRIVATE
             nlohmann_json::nlohmann_json
@@ -532,9 +632,7 @@ if(_build_native_cli)
             CLI11::CLI11
             Eigen3::Eigen
             QuantLib::QuantLib
-            Boost::date_time
-            Boost::filesystem
-            Boost::system
+            ${Boost_LIBRARIES}
             NLopt::nlopt
             CURL::libcurl
             ${TWS_API_LIB}

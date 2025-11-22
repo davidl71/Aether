@@ -3,7 +3,7 @@
 
 #include <emscripten/bind.h>
 #include "wasm_types.h"
-#include "../include/box_spread_strategy.h"
+#include "../include/strategies/box_spread/box_spread_strategy.h"
 #include "../include/risk_calculator.h"
 #include "../include/types.h"
 #include <memory>

@@ -3,7 +3,7 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include "hedge_manager.h"
 #include "types.h"
-#include "box_spread_strategy.h"
+#include "strategies/box_spread/box_spread_strategy.h"
 
 using namespace hedge;
 using namespace types;

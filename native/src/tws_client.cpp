@@ -3,6 +3,7 @@
 #include "rate_limiter.h"
 #include "pcap_capture.h"
 #include "margin_calculator.h"
+#include "nats_client.h"
 #include <spdlog/spdlog.h>
 
 // TWS API headers
@@ -325,6 +326,16 @@ public:
         if (mock_mode_) {
             spdlog::info("TWSClient starting in mock mode (live IBKR connections disabled).");
         }
+
+        // Initialize NATS client if enabled
+#ifdef ENABLE_NATS
+        nats_client_ = std::make_unique<nats::NatsClient>("nats://localhost:4222");
+        if (nats_client_->connect()) {
+            spdlog::info("NATS client connected for market data publishing");
+        } else {
+            spdlog::warn("NATS client connection failed - market data publishing disabled");
+        }
+#endif
     }
 
     ~Impl() {
@@ -983,6 +994,28 @@ public:
 
         market_data.timestamp = std::chrono::system_clock::now();
 
+        // Publish to NATS if both bid and ask are available
+#ifdef ENABLE_NATS
+        if (nats_client_ && nats_client_->is_connected() &&
+            field == ASK && market_data.bid > 0.0 && market_data.ask > 0.0) {
+            // Get symbol from ticker mapping
+            std::string symbol = "UNKNOWN";
+            {
+                std::lock_guard<std::mutex> lock(data_mutex_);
+                if (ticker_to_symbol_.count(tickerId)) {
+                    symbol = ticker_to_symbol_[tickerId];
+                }
+            }
+            // Format timestamp as ISO 8601
+            auto time_t = std::chrono::system_clock::to_time_t(market_data.timestamp);
+            std::tm tm_buf;
+            gmtime_r(&time_t, &tm_buf);
+            char timestamp_str[32];
+            std::strftime(timestamp_str, sizeof(timestamp_str), "%Y-%m-%dT%H:%M:%SZ", &tm_buf);
+            nats_client_->publish_market_data(symbol, market_data.bid, market_data.ask, timestamp_str);
+        }
+#endif
+
         // Notify callback if registered
         if (market_data_callbacks_.count(tickerId)) {
             market_data_callbacks_[tickerId](market_data);
@@ -1592,10 +1625,11 @@ public:
         // Convert to TWS Contract
         Contract tws_contract = convert_to_tws_contract(contract);
 
-        // Register callback
+        // Register callback and store symbol mapping
         {
             std::lock_guard<std::mutex> lock(data_mutex_);
             market_data_callbacks_[request_id] = callback;
+            ticker_to_symbol_[request_id] = contract.symbol;
         }
 
         // Record message and start tracking
@@ -1651,6 +1685,7 @@ public:
         std::lock_guard<std::mutex> lock(data_mutex_);
         market_data_callbacks_.erase(request_id);
         market_data_.erase(request_id);
+        ticker_to_symbol_.erase(request_id);
         // Cancel any pending promise
         if (market_data_promises_.count(request_id)) {
             // Set promise to indicate cancellation (empty MarketData)
@@ -3319,6 +3354,8 @@ private:
     std::map<int, MarketDataCallback> market_data_callbacks_;
     // Synchronous request tracking
     std::map<int, std::shared_ptr<std::promise<types::MarketData>>> market_data_promises_;
+    // Map request_id (tickerId) to contract symbol for NATS publishing
+    std::map<int, std::string> ticker_to_symbol_;
 
     // Contract details
     mutable std::mutex contract_details_mutex_;
@@ -3351,6 +3388,11 @@ private:
     // Rate limiting
     RateLimiter rate_limiter_;
     bool mock_mode_ = false;
+
+    // NATS client (optional, for message queue integration)
+#ifdef ENABLE_NATS
+    std::unique_ptr<nats::NatsClient> nats_client_;
+#endif
 };
 
 // ============================================================================

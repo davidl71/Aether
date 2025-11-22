@@ -1,6 +1,6 @@
 // mock_data_generator.cpp - Mock data generator implementation
 #include "mock_data_generator.h"
-#include "box_spread_bag.h"
+#include "strategies/box_spread/box_spread_bag.h"
 #include <spdlog/spdlog.h>
 #include <algorithm>
 #include <cmath>

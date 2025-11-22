@@ -73,7 +73,7 @@ set(WASM_SOURCES
 
 # Headers
 set(WASM_HEADERS
-  ${CMAKE_CURRENT_SOURCE_DIR}/../include/box_spread_strategy.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/../include/strategies/box_spread/box_spread_strategy.h
   ${CMAKE_CURRENT_SOURCE_DIR}/../include/risk_calculator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/../include/option_chain.h
   ${CMAKE_CURRENT_SOURCE_DIR}/../include/tui_converter.h

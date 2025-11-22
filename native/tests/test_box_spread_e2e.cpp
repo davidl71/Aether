@@ -2,7 +2,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include "tws_client.h"
-#include "box_spread_strategy.h"
+#include "strategies/box_spread/box_spread_strategy.h"
 #include "order_manager.h"
 #include "config_manager.h"
 #include "types.h"

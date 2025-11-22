@@ -1,7 +1,7 @@
 // mock_data_generator.h - Mock data generator for box spread bags
 #pragma once
 
-#include "box_spread_bag.h"
+#include "strategies/box_spread/box_spread_bag.h"
 #include "types.h"
 #include <vector>
 #include <random>

@@ -1,7 +1,7 @@
 // test_box_spread_strategy.cpp - Box spread strategy tests
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
-#include "box_spread_strategy.h"
+#include "strategies/box_spread/box_spread_strategy.h"
 #include "types.h"
 
 using namespace strategy;

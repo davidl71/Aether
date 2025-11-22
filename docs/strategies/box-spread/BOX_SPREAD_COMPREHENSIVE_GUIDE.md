@@ -547,7 +547,7 @@ Box spreads are sophisticated options strategies that:
 - High-quality market data
 - Careful opportunity selection
 
-This guide should serve as a comprehensive reference for understanding and implementing box spread strategies in the IB Box Spread Generator project.
+This guide should serve as a comprehensive reference for understanding and implementing box spread strategies in the Synthetic Financing Platform project. Box spreads are one strategy component of the platform, used for spare cash allocation (7-10% of portfolio) to achieve T-bill-equivalent yields.
 
 ---
 
