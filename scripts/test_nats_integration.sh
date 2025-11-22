@@ -63,7 +63,7 @@ test_basic() {
   sleep 1
 
   # Publish message
-  echo "${test_message}" | nats pub "${test_subject}" --stdin
+  echo "${test_message}" | nats pub "${test_subject}" --force-stdin
 
   # Wait for message
   sleep 1
@@ -107,7 +107,7 @@ test_market_data() {
     sleep 0.5
 
     # Publish
-    echo "${test_message}" | nats pub "${test_subject}" --stdin
+    echo "${test_message}" | nats pub "${test_subject}" --force-stdin
     sleep 0.5
 
     # Check
@@ -149,7 +149,7 @@ test_strategy_topics() {
   local sub_pid=$!
   sleep 0.5
 
-  echo "${signal_message}" | nats pub "${signal_subject}" --stdin
+  echo "${signal_message}" | nats pub "${signal_subject}" --force-stdin
   sleep 0.5
 
   local signal_ok=false
@@ -173,7 +173,7 @@ test_strategy_topics() {
   sub_pid=$!
   sleep 0.5
 
-  echo "${decision_message}" | nats pub "${decision_subject}" --stdin
+  echo "${decision_message}" | nats pub "${decision_subject}" --force-stdin
   sleep 0.5
 
   local decision_ok=false
@@ -219,7 +219,7 @@ test_performance() {
     sleep 0.01
 
     # Publish
-    echo "{\"test\":${i}}" | nats pub "${test_subject}" --stdin > /dev/null 2>&1
+    echo "{\"test\":${i}}" | nats pub "${test_subject}" --force-stdin > /dev/null 2>&1
 
     # Wait for message
     sleep 0.01

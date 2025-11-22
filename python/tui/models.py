@@ -287,3 +287,113 @@ class SnapshotPayload:
     def from_json(cls, json_str: str) -> SnapshotPayload:
         """Create from JSON string (shared format with PWA)"""
         return cls.from_dict(json.loads(json_str))
+
+
+@dataclass
+class BoxSpreadScenario:
+    """Box spread scenario matching web/src/types.ts BoxSpreadScenario interface"""
+    width: float = 0.0
+    put_bid: float = 0.0
+    call_ask: float = 0.0
+    synthetic_bid: float = 0.0
+    synthetic_ask: float = 0.0
+    mid_price: float = 0.0
+    annualized_return: float = 0.0
+    fill_probability: float = 0.0
+    option_style: str = "European"  # "European" or "American"
+
+    # Optional fields
+    buy_profit: Optional[float] = None
+    buy_implied_rate: Optional[float] = None
+    sell_profit: Optional[float] = None
+    sell_implied_rate: Optional[float] = None
+    buy_sell_disparity: Optional[float] = None
+    put_call_parity_violation: Optional[float] = None
+    expiration_date: Optional[str] = None
+    days_to_expiry: Optional[int] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> BoxSpreadScenario:
+        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+
+
+@dataclass
+class BoxSpreadPayload:
+    """Box spread payload matching web/src/types.ts BoxSpreadPayload interface"""
+    as_of: str = ""  # ISO 8601 timestamp string
+    underlying: str = ""
+    scenarios: List[BoxSpreadScenario] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "as_of": self.as_of,
+            "underlying": self.underlying,
+            "scenarios": [s.to_dict() for s in self.scenarios]
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> BoxSpreadPayload:
+        return cls(
+            as_of=data.get("as_of", ""),
+            underlying=data.get("underlying", ""),
+            scenarios=[BoxSpreadScenario.from_dict(s) for s in data.get("scenarios", [])]
+        )
+
+    @classmethod
+    def from_json(cls, json_str: str) -> BoxSpreadPayload:
+        """Create from JSON string"""
+        return cls.from_dict(json.loads(json_str))
+
+
+@dataclass
+class BoxSpreadSummary:
+    """Box spread summary statistics matching web/src/types.ts BoxSpreadSummary interface"""
+    total_scenarios: int = 0
+    avg_apr: float = 0.0
+    probable_count: int = 0
+    max_apr_scenario: Optional[BoxSpreadScenario] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "total_scenarios": self.total_scenarios,
+            "avg_apr": self.avg_apr,
+            "probable_count": self.probable_count,
+            "max_apr_scenario": self.max_apr_scenario.to_dict() if self.max_apr_scenario else None
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> BoxSpreadSummary:
+        max_scenario = None
+        if data.get("max_apr_scenario"):
+            max_scenario = BoxSpreadScenario.from_dict(data["max_apr_scenario"])
+        return cls(
+            total_scenarios=data.get("total_scenarios", 0),
+            avg_apr=data.get("avg_apr", 0.0),
+            probable_count=data.get("probable_count", 0),
+            max_apr_scenario=max_scenario
+        )
+
+    @classmethod
+    def calculate(cls, payload: BoxSpreadPayload) -> BoxSpreadSummary:
+        """Calculate summary statistics from payload"""
+        if not payload.scenarios:
+            return cls()
+
+        # Filter to European-style scenarios only for summary (default behavior)
+        european_scenarios = [s for s in payload.scenarios if s.option_style == "European"]
+        scenarios_to_use = european_scenarios if european_scenarios else payload.scenarios
+
+        total = len(scenarios_to_use)
+        avg_apr = sum(s.annualized_return for s in scenarios_to_use) / total if total > 0 else 0.0
+        probable_count = sum(1 for s in scenarios_to_use if s.fill_probability > 0)
+        max_apr_scenario = max(scenarios_to_use, key=lambda s: s.annualized_return) if scenarios_to_use else None
+
+        return cls(
+            total_scenarios=total,
+            avg_apr=avg_apr,
+            probable_count=probable_count,
+            max_apr_scenario=max_apr_scenario
+        )

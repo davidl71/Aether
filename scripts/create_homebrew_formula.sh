@@ -101,6 +101,7 @@ class ${CLASS_NAME} < Formula
   depends_on "cmake" => :build
   depends_on "ninja" => :build
   depends_on "pkg-config" => :build
+  depends_on "boost"
   depends_on "go" => :build
   depends_on "rust" => :build
   depends_on "python@3.11" => :build

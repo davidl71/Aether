@@ -207,20 +207,129 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() === 'b') {
+      // Ignore if typing in input/textarea
+      if (
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement ||
+        (event.target instanceof HTMLElement && event.target.isContentEditable)
+      ) {
+        return;
+      }
+
+      // Strategy control shortcuts
+      if (event.key.toLowerCase() === 's' && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        if (snapshot?.strategy !== 'RUNNING') {
+          handleStrategyStart();
+        }
+      }
+      if (event.key.toLowerCase() === 't' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        if (snapshot?.strategy === 'RUNNING') {
+          handleStrategyStop();
+        }
+      }
+
+      // Toggle dry-run mode
+      if (event.key.toLowerCase() === 'd' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        const isDryRun = snapshot?.mode === 'DRY-RUN' || snapshot?.mode === 'PAPER';
+        handleDryRunToggle(!isDryRun);
+      }
+
+      // Combo actions
+      if (event.key.toLowerCase() === 'b' && !event.ctrlKey && !event.metaKey && !event.altKey) {
         event.preventDefault();
         handleBuyCombo();
       }
-      if (event.key.toLowerCase() === 's' && event.shiftKey) {
+      if (event.key.toLowerCase() === 's' && event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
         event.preventDefault();
         handleSellCombo();
+      }
+
+      // Tab navigation shortcuts (1-5)
+      const numKey = parseInt(event.key, 10);
+      if (numKey >= 1 && numKey <= TABS.length && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        const targetTab = TABS[numKey - 1];
+        if (targetTab) {
+          setActiveTab(targetTab.id);
+        }
+      }
+
+      // Tab/Shift+Tab for cycling through tabs
+      if (event.key === 'Tab' && !event.ctrlKey && !event.metaKey) {
+        // Only prevent default if we're not in a form element (already handled above)
+        if (!event.shiftKey) {
+          // Tab: move to next tab
+          event.preventDefault();
+          const currentIndex = TABS.findIndex(tab => tab.id === activeTab);
+          const nextIndex = (currentIndex + 1) % TABS.length;
+          setActiveTab(TABS[nextIndex].id);
+        } else {
+          // Shift+Tab: move to previous tab
+          event.preventDefault();
+          const currentIndex = TABS.findIndex(tab => tab.id === activeTab);
+          const prevIndex = (currentIndex - 1 + TABS.length) % TABS.length;
+          setActiveTab(TABS[prevIndex].id);
+        }
+      }
+
+      // Cancel orders (Ctrl+K to avoid conflict with help shortcut)
+      if (event.key.toLowerCase() === 'k' && event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        // Cancel the most recent active order if available
+        if (snapshot?.orders && snapshot.orders.length > 0) {
+          const activeOrders = snapshot.orders.filter(order =>
+            order.status === 'SUBMITTED' || order.status === 'PENDING'
+          );
+          if (activeOrders.length > 0) {
+            const mostRecentOrder = activeOrders[activeOrders.length - 1];
+            // Extract order ID from order text (heuristic)
+            const orderIdMatch = mostRecentOrder.text.match(/order[_\s]*#?(\d+)/i) ||
+                                 mostRecentOrder.text.match(/id[:\s]+(\d+)/i);
+            if (orderIdMatch) {
+              handleCancelOrder(orderIdMatch[1]).catch(err => {
+                console.error('Failed to cancel order:', err);
+              });
+            }
+          }
+        }
+      }
+
+      // Escape to close modal
+      if (event.key === 'Escape' && modal) {
+        event.preventDefault();
+        setModal(null);
+      }
+
+      // Keyboard shortcuts help (K or ?)
+      if ((event.key.toLowerCase() === 'k' || event.key === '?') && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        setModal({
+          type: 'action',
+          payload: {
+            title: 'Keyboard Shortcuts',
+            message: `Keyboard Shortcuts:
+• S - Start strategy (when stopped)
+• T - Stop strategy (when running)
+• D - Toggle dry-run mode
+• B - Buy combo
+• Shift+S - Sell combo
+• 1-5 - Switch tabs (Dashboard, Positions, Historic, Orders, Alerts)
+• Tab/Shift+Tab - Cycle through tabs
+• Ctrl+K - Cancel most recent active order
+• Escape - Close modal
+• K or ? - Show this help`
+          }
+        });
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handleBuyCombo, handleSellCombo]);
+  }, [handleBuyCombo, handleSellCombo, handleStrategyStart, handleStrategyStop, handleDryRunToggle, handleCancelOrder, modal, snapshot, activeTab]);
 
   const handleModeChange = useCallback(async (mode: 'PAPER' | 'LIVE') => {
     try {
@@ -385,10 +494,12 @@ function App() {
         snapshot={snapshot}
         onModeChange={handleModeChange}
         onAccountChange={handleAccountChange}
+        onBrokerChange={setCurrentBroker}
         onStrategyStart={handleStrategyStart}
         onStrategyStop={handleStrategyStop}
         onDryRunToggle={handleDryRunToggle}
         apiBaseUrl={apiBaseUrl}
+        currentBroker={currentBroker}
       />
 
       <div className="scenario-section">

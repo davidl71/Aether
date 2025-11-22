@@ -65,6 +65,7 @@ Main C++ trading binary with full box spread strategy implementation.
 **Dependencies**:
 - CMake
 - Ninja
+- Boost
 - Protocol Buffers
 - Abseil
 

@@ -145,6 +145,7 @@ class IbBoxSpread < Formula
 
   depends_on "cmake" => :build
   depends_on "ninja" => :build
+  depends_on "boost"
   # ... other dependencies
 
   def install

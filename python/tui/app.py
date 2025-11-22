@@ -36,7 +36,7 @@ from textual.widgets import (
 from textual.binding import Binding
 from textual.reactive import reactive
 
-from .models import SnapshotPayload, Severity
+from .models import SnapshotPayload, Severity, BoxSpreadPayload, BoxSpreadSummary
 from .providers import Provider, MockProvider, RestProvider, FileProvider
 from .config import TUIConfig, load_config
 
@@ -253,6 +253,91 @@ class AlertsTab(Container):
         return styles.get(severity, "white")
 
 
+class ScenariosTab(Container):
+    """Scenarios tab showing box spread scenarios"""
+
+    def __init__(self, box_spread_data: Optional[BoxSpreadPayload] = None):
+        super().__init__()
+        self.box_spread_data = box_spread_data
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label("Box Spread Scenarios", classes="tab-title")
+            yield Static(id="scenario-summary")
+            yield DataTable(id="scenarios-table")
+
+    def on_mount(self) -> None:
+        """Called when tab is mounted"""
+        table = self.query_one("#scenarios-table", DataTable)
+        table.add_columns(
+            "Width", "Style", "Buy Profit", "Sell Profit", "APR %", "Fill Prob"
+        )
+        self._update_data()
+
+    def update_data(self, box_spread_data: BoxSpreadPayload) -> None:
+        """Update with new box spread data"""
+        self.box_spread_data = box_spread_data
+        self._update_data()
+
+    def _update_data(self) -> None:
+        if not self.box_spread_data:
+            try:
+                summary = self.query_one("#scenario-summary", Static)
+                summary.update("Loading scenarios...")
+            except Exception:
+                pass
+            return
+
+        try:
+            # Calculate summary
+            summary_stats = BoxSpreadSummary.calculate(self.box_spread_data)
+
+            # Update summary
+            summary = self.query_one("#scenario-summary", Static)
+            summary_text = (
+                f"Total Scenarios: {summary_stats.total_scenarios} | "
+                f"Average APR: {summary_stats.avg_apr:.2f}% | "
+                f"Probable (fill_prob > 0): {summary_stats.probable_count}"
+            )
+            if summary_stats.max_apr_scenario:
+                summary_text += (
+                    f" | Max APR: {summary_stats.max_apr_scenario.annualized_return:.2f}% "
+                    f"({summary_stats.max_apr_scenario.width:.2f} pts)"
+                )
+            summary.update(summary_text)
+
+            # Update table
+            table = self.query_one("#scenarios-table", DataTable)
+            table.clear()
+
+            # Filter to European-style scenarios (default behavior, matching web app)
+            european_scenarios = [
+                s for s in self.box_spread_data.scenarios
+                if s.option_style == "European"
+            ]
+            scenarios_to_show = european_scenarios if european_scenarios else self.box_spread_data.scenarios
+
+            for scenario in scenarios_to_show:
+                buy_profit = scenario.buy_profit if scenario.buy_profit is not None else 0.0
+                sell_profit = scenario.sell_profit if scenario.sell_profit is not None else 0.0
+
+                table.add_row(
+                    f"{scenario.width:.2f}",
+                    scenario.option_style,
+                    f"${buy_profit:.2f}" if buy_profit != 0.0 else "—",
+                    f"${sell_profit:.2f}" if sell_profit != 0.0 else "—",
+                    f"{scenario.annualized_return:.2f}%",
+                    f"{scenario.fill_probability:.0f}%"
+                )
+        except Exception as e:
+            logger.error(f"Error updating scenarios: {e}")
+            try:
+                summary = self.query_one("#scenario-summary", Static)
+                summary.update(f"Error loading scenarios: {e}")
+            except Exception:
+                pass
+
+
 class TUIApp(App):
     """
     Main TUI application
@@ -301,10 +386,13 @@ class TUIApp(App):
         self.provider = provider
         self.config = config or TUIConfig()
         self.snapshot: Optional[SnapshotPayload] = None
+        self.box_spread_data: Optional[BoxSpreadPayload] = None
         self._dashboard_tab: Optional[DashboardTab] = None
         self._positions_tab: Optional[PositionsTab] = None
         self._orders_tab: Optional[OrdersTab] = None
         self._alerts_tab: Optional[AlertsTab] = None
+        self._scenarios_tab: Optional[ScenariosTab] = None
+        self._box_spread_file_path = Path("web/public/data/box_spread_sample.json")
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the app"""
@@ -333,12 +421,17 @@ class TUIApp(App):
                     self._alerts_tab = AlertsTab()
                     yield self._alerts_tab
 
+                with TabPane("Scenarios", id="scenarios-tab"):
+                    self._scenarios_tab = ScenariosTab()
+                    yield self._scenarios_tab
+
         yield Footer()
 
     def on_mount(self) -> None:
         """Called when app starts"""
         self.provider.start()
         self.set_interval(0.5, self._update_snapshot)  # Update every 500ms
+        self.set_interval(2.0, self._update_box_spread_data)  # Update every 2 seconds
         logger.info("TUI application mounted")
 
     def on_unmount(self) -> None:
@@ -365,6 +458,34 @@ class TUIApp(App):
                 self._orders_tab.update_snapshot(new_snapshot)
             if self._alerts_tab:
                 self._alerts_tab.update_snapshot(new_snapshot)
+
+    def _update_box_spread_data(self) -> None:
+        """Update box spread data from file"""
+        try:
+            if not self._box_spread_file_path.exists():
+                logger.debug(f"Box spread data file not found: {self._box_spread_file_path}")
+                return
+
+            # Check if file was modified
+            current_mtime = self._box_spread_file_path.stat().st_mtime
+            if hasattr(self, '_last_box_spread_mtime'):
+                if current_mtime <= self._last_box_spread_mtime:
+                    return  # No changes
+            self._last_box_spread_mtime = current_mtime
+
+            # Load data from file
+            with open(self._box_spread_file_path, 'r') as f:
+                data = json.load(f)
+
+            new_data = BoxSpreadPayload.from_dict(data)
+            if new_data != self.box_spread_data:
+                self.box_spread_data = new_data
+
+                # Update scenarios tab
+                if self._scenarios_tab:
+                    self._scenarios_tab.update_data(new_data)
+        except Exception as e:
+            logger.error(f"Error updating box spread data: {e}")
 
     def action_quit(self) -> None:
         """Quit the application"""

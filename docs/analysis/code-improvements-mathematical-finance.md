@@ -1,7 +1,7 @@
 # Code Improvements Based on Mathematical Finance Principles
 
 **Generated:** 2025-11-20
-**Reference:** [Mathematical Finance Tools Documentation](../research/mathematical-finance-tools.md)
+**Reference:** [Mathematical Finance Tools Documentation](../research/analysis/mathematical-finance-tools.md)
 
 ## Executive Summary
 
@@ -625,7 +625,7 @@ target_link_libraries(box_spread_strategy
 
 ## 7. References
 
-- [Mathematical Finance Tools](../research/mathematical-finance-tools.md)
+- [Mathematical Finance Tools](../research/analysis/mathematical-finance-tools.md)
 - Markowitz, H. (1952). "Portfolio Selection". Journal of Finance.
 - Kelly, J. L. (1956). "A New Interpretation of Information Rate". Bell System Technical Journal.
 - Black, F., & Scholes, M. (1973). "The Pricing of Options and Corporate Liabilities". Journal of Political Economy.

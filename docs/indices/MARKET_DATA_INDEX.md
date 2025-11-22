@@ -22,6 +22,7 @@
 | **Massive.com** | Historical | REST, WebSocket | ⚠️ Limited | ❌ | Historical data, backtesting |
 | **Alpha Vantage** | Multi-asset | REST, MCP | ⚠️ Basic | ❌ | Free tier, technical indicators |
 | **Finnhub** | Multi-asset | REST, WebSocket | ⚠️ Basic | ❌ | Generous free tier, fundamentals |
+| **Financial Modeling Prep (FMP)** | Multi-asset | REST API | ⚠️ Basic | ❌ | Financial statements, bulk APIs, research |
 | **OpenBB** | Financial Data | API | ⚠️ Unknown | ❌ | Financial analytics platform |
 
 ---
@@ -46,6 +47,14 @@ Need FIX protocol?
 Need free tier?
   → Yes → Alpha Vantage (5 calls/min) or Finnhub (60 calls/min)
   → No → dxFeed or ORATS (paid)
+
+Need financial statements?
+  → Yes → Financial Modeling Prep (FMP) or Finnhub
+  → No → Continue...
+
+Need bulk data APIs?
+  → Yes → Financial Modeling Prep (FMP) or dxFeed
+  → No → REST APIs (ORATS, Alpha Vantage, Finnhub)
 
 Need historical data?
   → Yes → Massive.com or dxFeed
@@ -85,6 +94,13 @@ Need historical data?
 - **Best For**: Generous free tier, fundamentals
 - **Key Features**: 60 calls/min free tier, AI-powered sentiment analysis
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#finnhub`
+
+### Financial Modeling Prep (FMP)
+
+- **Best For**: Financial statements, fundamental analysis, bulk data retrieval
+- **Key Features**: Comprehensive financial statements (income, balance sheet, cash flow), bulk APIs, DCF valuations, 100+ endpoints
+- **Documentation**: `../research/external/FINANCIAL_DATA_SOURCES_RESEARCH.md#fmp`
+- **Relevance**: Tier 2 data source for research, cross-validation, fundamental analysis
 
 ### OpenBB
 
@@ -132,6 +148,7 @@ Need historical data?
 
 - **Historical Data**: Massive.com or dxFeed
 - **Options Data**: ORATS or dxFeed
+- **Financial Statements**: Financial Modeling Prep (FMP) for fundamental analysis
 
 ### Real-Time Trading
 

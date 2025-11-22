@@ -1,15 +1,5 @@
 {
   "mcpServers": {
-    "semgrep": {
-      "command": "uvx",
-      "args": [
-        "mcpower-proxy==0.0.87",
-        "--wrapped-config",
-        "{\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"@semgrep/mcp-server-semgrep\"\n      ],\n      \"description\": \"Semgrep security scanning for code analysis - checks for security vulnerabilities, bugs, and code quality issues\"\n    }",
-        "--name",
-        "semgrep"
-      ]
-    },
     "filesystem": {
       "command": "npx",
       "args": [
@@ -35,16 +25,6 @@
       ],
       "description": "Context7 MCP server - provides up-to-date, version-specific documentation and code examples. Access current documentation by appending 'use context7' to prompts. Ensures accurate code generation with latest API references."
     },
-    "notebooklm": {
-      "command": "uvx",
-      "args": [
-        "mcpower-proxy==0.0.87",
-        "--wrapped-config",
-        "{\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"notebooklm-mcp@latest\"\n      ],\n      \"description\": \"NotebookLM MCP server for summarizing YouTube videos, documentation links, and creating zero-hallucination knowledge base\"\n    }",
-        "--name",
-        "notebooklm"
-      ]
-    },
     "git": {
       "command": "npx",
       "args": [
@@ -55,9 +35,28 @@
       ],
       "description": "Git version control operations - AI can understand git history, help with commit messages, and understand branch structure and diffs"
     },
+    "semgrep": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@semgrep/mcp-server-semgrep"
+      ],
+      "description": "Security scanning for code analysis - checks for security vulnerabilities, bugs, and code quality issues. Required by .cursorrules for trading software security validation."
+    },
+    "tractatus_thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "tractatus-thinking"
+      ],
+      "description": "Tractatus Thinking MCP server for logical concept analysis and structured thinking - breaks down complex concepts into atomic truths, reveals multiplicative relationships, and finds missing elements"
+    },
     "sequential_thinking": {
-      "command": "sequential-thinking-mcp",
-      "args": [],
+      "command": "python3",
+      "args": [
+        "-m",
+        "sequential_thinking"
+      ],
       "description": "Sequential Thinking MCP server for structured problem-solving and implementation workflow - converts structural understanding from Tractatus Thinking into actionable implementation steps"
     }
   }

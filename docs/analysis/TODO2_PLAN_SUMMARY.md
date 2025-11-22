@@ -57,7 +57,7 @@ T-203 (Portfolio VaR) ──> T-208 (CVaR)
 ### ✅ Documentation
 - Analysis document: `docs/analysis/code-improvements-mathematical-finance.md`
 - Design document: `docs/design/portfolio-optimization-framework.md`
-- Research document: `docs/research/mathematical-finance-tools.md`
+- Research document: `docs/research/analysis/mathematical-finance-tools.md`
 - This summary: `docs/analysis/TODO2_PLAN_SUMMARY.md`
 
 ## Expected Impact
@@ -104,5 +104,5 @@ The tasks have been organized for optimal execution:
 
 - [Code Improvements Analysis](../analysis/code-improvements-mathematical-finance.md)
 - [Portfolio Optimization Framework](../../docs/design/portfolio-optimization-framework.md)
-- [Mathematical Finance Tools](../../docs/research/mathematical-finance-tools.md)
+- [Mathematical Finance Tools](../../docs/research/analysis/mathematical-finance-tools.md)
 - [Agent Coordination](../../agents/shared/MATHEMATICAL_FINANCE_TASKS.md)

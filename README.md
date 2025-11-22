@@ -1,10 +1,12 @@
-# IBKR Box Spread Generator
+# Synthetic Financing Platform
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)]()
 
-Comprehensive synthetic financing platform utilizing options, futures, bonds, bank loans, and pension funds across multiple currencies and brokers. Box spreads are one component of a larger multi-asset financing optimization system.
+Comprehensive multi-asset financing optimization system for managing synthetic financing across options, futures, bonds, bank loans, and pension funds. Provides unified portfolio management, cash flow modeling, opportunity simulation, and multi-instrument relationship optimization across 21+ accounts and multiple brokers.
+
+**Note**: Box spreads are one strategy component of this platform, used for spare cash allocation (7-10% of portfolio) to achieve T-bill-equivalent yields.
 
 ## ⚠️ Important Disclaimers
 
@@ -17,8 +19,18 @@ Comprehensive synthetic financing platform utilizing options, futures, bonds, ba
 - **No warranties**: THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 - **Stub implementation**: The current TWS API client is a stub. You must integrate the actual IBKR TWS API.
 
-## Features
+## Platform Capabilities
 
+### Core Platform Features
+- ✅ Multi-account aggregation (21+ accounts across multiple brokers)
+- ✅ Cash flow modeling and forecasting
+- ✅ Opportunity simulation (what-if analysis)
+- ✅ Multi-instrument relationship optimization
+- ✅ Investment strategy framework (portfolio allocation, convexity, volatility skew)
+- ✅ Unified position view across all asset types
+- ✅ Multi-broker architecture (IBKR, Alpaca, Tradier, Tastytrade, Israeli brokers)
+
+### Box Spread Strategy (One Component)
 - ✅ Automated box spread identification and analysis
 - ✅ Real-time options chain monitoring
 - ✅ Risk-based position sizing and management
@@ -439,6 +451,26 @@ The test suite includes:
 - Order manager tests
 - Input validation tests
 - Edge case handling
+
+## Extracted Components
+
+This project has been split into multiple focused repositories for better organization and reuse:
+
+### 🔧 Reusable Tools & Libraries
+
+- **[box-spread-cpp](https://github.com/davidl71/box-spread-cpp)** - Broker-agnostic C++ library for box spread arbitrage calculations and risk management
+- **[box-spread-python](https://github.com/davidl71/box-spread-python)** - Broker-agnostic Python utilities for box spread strategies (DSL, tools, TUI, ML)
+- **[trading-api-docs](https://github.com/davidl71/trading-api-docs)** - Trading API documentation and integration guides
+- **[trading-architecture-docs](https://github.com/davidl71/trading-architecture-docs)** - Trading system architecture and design documentation
+- **[trading-setup-docs](https://github.com/davidl71/trading-setup-docs)** - Trading system setup, configuration, and deployment documentation
+- **[trading-automation-docs](https://github.com/davidl71/trading-automation-docs)** - Trading project automation and maintenance documentation
+- **[trading-tools-docs](https://github.com/davidl71/trading-tools-docs)** - Trading tools, frameworks, and best practices documentation
+- **[trading-mcp-servers](https://github.com/davidl71/trading-mcp-servers)** - MCP servers for trading operations (broker-agnostic)
+- **[trading-build-tools](https://github.com/davidl71/trading-build-tools)** - Reusable CMake build scripts and presets for C++ trading projects
+- **[trading-automation-tools](https://github.com/davidl71/trading-automation-tools)** - Project housekeeping and analysis automation tools
+- **[box-spread-notebooks](https://github.com/davidl71/box-spread-notebooks)** - Educational Jupyter notebooks for box spread trading strategies
+
+**Note**: These repositories are currently private. See [Project Split Strategy](docs/PROJECT_SPLIT_STRATEGY.md) for details on the modularization approach.
 
 ## Project Structure
 

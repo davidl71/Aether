@@ -16,10 +16,22 @@
 
 #include "config_manager.h"
 #include "tws_client.h"
-#include "box_spread_strategy.h"
-#include "order_manager.h"
-#include "risk_calculator.h"
 #include "version.h"
+
+// Conditionally include local or extracted library components
+#ifdef USE_BOX_SPREAD_CPP_LIB
+  // Using extracted library - include adapter and library headers
+  #include "brokers/tws_adapter.h"
+  #include <box_spread/order_manager.h>
+  #include <box_spread/risk_calculator.h>
+  #include <box_spread/box_spread_strategy.h>
+  #include <box_spread/config.h>
+#else
+  // Using local implementation
+  #include "box_spread_strategy.h"
+  #include "order_manager.h"
+  #include "risk_calculator.h"
+#endif
 
 // NOTE FOR AUTOMATION AGENTS:
 // This translation unit glues together the CLI/TUI runtime. It wires configuration,
@@ -460,6 +472,126 @@ int main(int argc, char** argv) {
                            [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
         }
 
+#ifdef USE_BOX_SPREAD_CPP_LIB
+        // Using extracted library - create TWS adapter
+        std::unique_ptr<brokers::TWSAdapter> broker_adapter;
+        bool connected = false;
+
+        for (const auto& broker : priorities) {
+            if (broker == "mock") {
+                spdlog::info("Selecting broker: MOCK (in-process)");
+                config.tws.use_mock = true;
+                broker_adapter = std::make_unique<brokers::TWSAdapter>(config.tws);
+                connected = broker_adapter->connect();
+                if (connected) {
+                    spdlog::info("✓ Using mock TWS client via adapter");
+                    break;
+                }
+                spdlog::warn("Mock TWS client failed to initialize, trying next broker");
+            } else if (broker == "alpaca") {
+                spdlog::warn("Alpaca broker selected, but C++ adapter is not implemented. "
+                             "Continuing in analysis/dry-run mode using mock client.");
+                config.tws.use_mock = true;
+                broker_adapter = std::make_unique<brokers::TWSAdapter>(config.tws);
+                connected = broker_adapter->connect();
+                if (connected) {
+                    break;
+                }
+            } else if (broker == "ib") {
+                spdlog::info("Selecting broker: Interactive Brokers (TWS/Gateway)");
+                config.tws.use_mock = false;
+                spdlog::info("Connecting to TWS on {}:{}", config.tws.host, config.tws.port);
+                broker_adapter = std::make_unique<brokers::TWSAdapter>(config.tws);
+                connected = broker_adapter->connect();
+                if (connected) {
+                    spdlog::info("✓ Connected to TWS via adapter");
+                    break;
+                }
+                spdlog::error("Failed to connect to TWS on {}:{}", config.tws.host, config.tws.port);
+                spdlog::error("Check TWS/Gateway is running and ports are correct (7497 paper / 7496 live)");
+                // Do not exit; move to next broker
+            } else if (broker == "fibi" || broker == "meitav" || broker == "ibi" || broker == "discount") {
+                spdlog::warn("{} broker selected, but C++ adapter is not implemented. "
+                             "Continuing with mock client.", broker);
+                config.tws.use_mock = true;
+                broker_adapter = std::make_unique<brokers::TWSAdapter>(config.tws);
+                connected = broker_adapter->connect();
+                if (connected) {
+                    break;
+                }
+            } else {
+                spdlog::warn("Unknown broker identifier '{}', skipping", broker);
+            }
+        }
+
+        if (!broker_adapter) {
+            spdlog::warn("No broker connection established. Falling back to mock client.");
+            config.tws.use_mock = true;
+            broker_adapter = std::make_unique<brokers::TWSAdapter>(config.tws);
+            connected = broker_adapter->connect();
+        }
+
+        if (!connected) {
+            spdlog::critical("Unable to initialize any broker client (including mock).");
+            if (config.continue_on_error || config.dry_run) {
+                spdlog::warn("Proceeding without a live connection. Strategy will operate in analysis mode.");
+            } else {
+                return EXIT_FAILURE;
+            }
+        }
+
+        // Convert config to library format
+        box_spread::config::StrategyParams strategy_params;
+        strategy_params.symbols = config.strategy.symbols;
+        strategy_params.min_arbitrage_profit = config.strategy.min_arbitrage_profit;
+        strategy_params.min_roi_percent = config.strategy.min_roi_percent;
+        strategy_params.max_position_size = config.strategy.max_position_size;
+        strategy_params.min_days_to_expiry = config.strategy.min_days_to_expiry;
+        strategy_params.max_days_to_expiry = config.strategy.max_days_to_expiry;
+        strategy_params.max_bid_ask_spread = config.strategy.max_bid_ask_spread;
+        strategy_params.min_volume = config.strategy.min_volume;
+        strategy_params.min_open_interest = config.strategy.min_open_interest;
+        // Commission config: library uses generic CommissionConfig, local uses IBKR-specific
+        // Copy basic fields - full conversion would require mapping IBKR tiers to generic tiers
+        strategy_params.commissions.per_contract_fee = config.strategy.commissions.per_contract_fee;
+        strategy_params.commissions.minimum_order_fee = config.strategy.commissions.minimum_order_fee;
+        strategy_params.commissions.maximum_order_fee_pct = config.strategy.commissions.maximum_order_fee_pct;
+        strategy_params.commissions.monthly_contract_volume = config.strategy.commissions.monthly_contract_volume;
+
+        box_spread::config::RiskConfig risk_config;
+        risk_config.max_total_exposure = config.risk.max_total_exposure;
+        risk_config.max_positions = config.risk.max_positions;
+        risk_config.max_loss_per_position = config.risk.max_loss_per_position;
+        risk_config.max_daily_loss = config.risk.max_daily_loss;
+        risk_config.position_size_percent = config.risk.position_size_percent;
+        risk_config.enable_stop_loss = config.risk.enable_stop_loss;
+        risk_config.stop_loss_percent = config.risk.stop_loss_percent;
+
+        // Order Manager (extracted library)
+        auto order_manager = std::make_unique<box_spread::order::OrderManager>(
+            broker_adapter.get(),
+            config.dry_run
+        );
+
+        spdlog::info("✓ Order manager initialized (extracted library)");
+
+        // Risk Calculator (extracted library) - constructor may differ, check header
+        auto risk_calculator = std::make_unique<box_spread::risk::RiskCalculator>(
+            risk_config
+        );
+
+        spdlog::info("✓ Risk calculator initialized (extracted library)");
+
+        // Box Spread Strategy (extracted library)
+        auto strategy = std::make_unique<box_spread::strategy::BoxSpreadStrategy>(
+            broker_adapter.get(),
+            order_manager.get(),
+            strategy_params
+        );
+
+        spdlog::info("✓ Strategy initialized (extracted library)");
+#else
+        // Using local implementation - create TWSClient directly
         std::unique_ptr<tws::TWSClient> tws_client;
         bool connected = false;
 
@@ -526,7 +658,7 @@ int main(int argc, char** argv) {
             }
         }
 
-        // Order Manager
+        // Order Manager (local implementation)
         auto order_manager = std::make_unique<order::OrderManager>(
             tws_client.get(),
             config.dry_run
@@ -534,14 +666,14 @@ int main(int argc, char** argv) {
 
         spdlog::info("✓ Order manager initialized");
 
-        // Risk Calculator
+        // Risk Calculator (local implementation)
         auto risk_calculator = std::make_unique<risk::RiskCalculator>(
             config.risk
         );
 
         spdlog::info("✓ Risk calculator initialized");
 
-        // Box Spread Strategy
+        // Box Spread Strategy (local implementation)
         auto strategy = std::make_unique<strategy::BoxSpreadStrategy>(
             tws_client.get(),
             order_manager.get(),
@@ -549,6 +681,8 @@ int main(int argc, char** argv) {
         );
 
         spdlog::info("✓ Strategy initialized");
+#endif
+
         spdlog::info("All components initialized successfully");
 
         // ====================================================================
@@ -563,6 +697,29 @@ int main(int argc, char** argv) {
             try {
                 auto iteration_start = std::chrono::steady_clock::now();
 
+#ifdef USE_BOX_SPREAD_CPP_LIB
+                // Process TWS messages via adapter
+                if (broker_adapter) {
+                    broker_adapter->process_messages();
+                }
+
+                // Check if connected
+                if (!broker_adapter || !broker_adapter->is_connected()) {
+                    // Let the outer loop decide whether to reconnect or shut down based on config
+                    spdlog::error("Lost connection to TWS");
+                    if (config.tws.auto_reconnect && broker_adapter) {
+                        spdlog::info("Attempting to reconnect...");
+                        if (broker_adapter->connect()) {
+                            spdlog::info("Reconnected successfully");
+                        } else {
+                            spdlog::error("Reconnection failed");
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+#else
                 // Process TWS messages
                 tws_client->process_messages();
 
@@ -582,6 +739,7 @@ int main(int argc, char** argv) {
                         break;
                     }
                 }
+#endif
 
                 // Update order statuses
                 // Keeps local state in sync with TWS fills/acks without issuing new orders
@@ -607,11 +765,20 @@ int main(int argc, char** argv) {
                     spdlog::info("Active positions: {}", positions.size());
 
                     // Log system health check
+#ifdef USE_BOX_SPREAD_CPP_LIB
+                    // Use adapter's TWSClient for health check
+                    auto health = get_system_health(
+                        broker_adapter ? broker_adapter->get_tws_client() : nullptr,
+                        order_manager.get(),
+                        strategy.get()
+                    );
+#else
                     auto health = get_system_health(
                         tws_client.get(),
                         order_manager.get(),
                         strategy.get()
                     );
+#endif
                     log_system_health(health);
                 }
 
@@ -668,7 +835,13 @@ int main(int argc, char** argv) {
 
         // Disconnect from TWS
         spdlog::info("Disconnecting from TWS...");
+#ifdef USE_BOX_SPREAD_CPP_LIB
+        if (broker_adapter) {
+            broker_adapter->disconnect();
+        }
+#else
         tws_client->disconnect();
+#endif
 
         spdlog::info("Shutdown complete");
         return EXIT_SUCCESS;

@@ -98,14 +98,26 @@ target_sources(box_spread_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/native/src/config_manager.cpp
     ${CMAKE_SOURCE_DIR}/native/src/tws_client.cpp
     ${CMAKE_SOURCE_DIR}/native/src/rate_limiter.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/option_chain.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/box_spread_strategy.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/order_manager.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/risk_calculator.cpp
     ${CMAKE_SOURCE_DIR}/native/src/hedge_manager.cpp
     ${CMAKE_SOURCE_DIR}/native/src/box_spread_bag.cpp
     ${CMAKE_SOURCE_DIR}/native/src/convexity_calculator.cpp
 )
+
+# Conditionally include local source files only if NOT using extracted library
+if(NOT USE_BOX_SPREAD_CPP_LIB)
+    target_sources(box_spread_tests PRIVATE
+        ${CMAKE_SOURCE_DIR}/native/src/option_chain.cpp
+        ${CMAKE_SOURCE_DIR}/native/src/box_spread_strategy.cpp
+        ${CMAKE_SOURCE_DIR}/native/src/order_manager.cpp
+        ${CMAKE_SOURCE_DIR}/native/src/risk_calculator.cpp
+    )
+endif()
+
+# Link to extracted box-spread-cpp library if enabled
+if(USE_BOX_SPREAD_CPP_LIB AND TARGET box_spread_cpp)
+    target_link_libraries(box_spread_tests PRIVATE box_spread_cpp)
+    message(STATUS "Linked box_spread_tests to box_spread_cpp library")
+endif()
 
 # ============================================================================
 # Test Discovery

@@ -2,16 +2,19 @@ import type { SnapshotPayload } from '../types/snapshot';
 import { formatCurrency } from '../utils/formatters';
 import { ModeSwitcher, type TradingMode } from './ModeSwitcher';
 import { AccountSelector } from './AccountSelector';
+import { BrokerSelector, type BrokerType } from './BrokerSelector';
 import { useWebSocketStatus } from '../hooks/useWebSocket';
 
 interface HeaderStatusProps {
   snapshot: SnapshotPayload | null;
   onModeChange?: (mode: TradingMode) => void;
   onAccountChange?: (accountId: string | null) => void;
+  onBrokerChange?: (broker: BrokerType) => void;
   onStrategyStart?: () => void;
   onStrategyStop?: () => void;
   onDryRunToggle?: (enabled: boolean) => void;
   apiBaseUrl?: string;
+  currentBroker?: BrokerType;
 }
 
 function statusBadge(ok: boolean, label: string) {
@@ -26,10 +29,12 @@ export function HeaderStatus({
   snapshot,
   onModeChange,
   onAccountChange,
+  onBrokerChange,
   onStrategyStart,
   onStrategyStop,
   onDryRunToggle,
-  apiBaseUrl
+  apiBaseUrl,
+  currentBroker = 'AUTO'
 }: HeaderStatusProps) {
   const isLive = snapshot?.mode === 'LIVE' || snapshot?.mode === 'LIVE_TRADING';
   const modeClass = isLive ? 'mode-indicator--live' : 'mode-indicator--paper';
@@ -145,6 +150,13 @@ export function HeaderStatus({
           />
         ) : (
           <span>Account: <strong>{snapshot.account_id}</strong></span>
+        )}
+        {onBrokerChange && (
+          <BrokerSelector
+            currentBroker={currentBroker}
+            onBrokerChange={onBrokerChange}
+            apiBaseUrl={apiBaseUrl}
+          />
         )}
         {(snapshot.account_id?.startsWith('ALPACA') || snapshot.account_id === 'ALPACA' ||
           (snapshot.account_id && snapshot.account_id !== 'DU123456' && snapshot.account_id !== 'TRADESTATION')) ? (

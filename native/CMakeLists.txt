@@ -160,6 +160,35 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 
 # ============================================================================
+# Extracted Libraries
+# ============================================================================
+# Box Spread C++ Engine (broker-agnostic library)
+# Default to OFF for now - requires TWS adapter implementation (see MONOREPO_REORGANIZATION_PLAN.md)
+option(USE_BOX_SPREAD_CPP_LIB "Use extracted box-spread-cpp library" OFF)
+if(USE_BOX_SPREAD_CPP_LIB)
+    set(BOX_SPREAD_CPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../libs/box-spread-cpp")
+    if(EXISTS "${BOX_SPREAD_CPP_DIR}/CMakeLists.txt")
+        add_subdirectory(${BOX_SPREAD_CPP_DIR} box_spread_cpp)
+        message(STATUS "Using extracted box-spread-cpp library from: ${BOX_SPREAD_CPP_DIR}")
+        # Add library include directory
+        if(TARGET box_spread_cpp)
+            get_target_property(BOX_SPREAD_CPP_INCLUDE_DIR box_spread_cpp INTERFACE_INCLUDE_DIRECTORIES)
+            if(NOT BOX_SPREAD_CPP_INCLUDE_DIR)
+                # Fallback: use the library's include directory
+                set(BOX_SPREAD_CPP_INCLUDE_DIR "${BOX_SPREAD_CPP_DIR}/include")
+            endif()
+            message(STATUS "Box Spread C++ library include directory: ${BOX_SPREAD_CPP_INCLUDE_DIR}")
+        endif()
+    else()
+        message(WARNING "box-spread-cpp library not found at ${BOX_SPREAD_CPP_DIR}")
+        message(WARNING "Initialize submodule with: git submodule update --init --recursive")
+        set(USE_BOX_SPREAD_CPP_LIB OFF)
+    endif()
+else()
+    message(STATUS "Using local box spread implementation (not extracted library)")
+endif()
+
+# ============================================================================
 # Dependencies
 # ============================================================================
 include(FetchContent)
@@ -415,10 +444,6 @@ if(_build_native_cli)
         src/ib_box_spread.cpp
         src/tws_client.cpp
         src/rate_limiter.cpp
-        src/option_chain.cpp
-        src/box_spread_strategy.cpp
-        src/order_manager.cpp
-        src/risk_calculator.cpp
         src/config_manager.cpp
         src/pcap_capture.cpp
         src/convexity_calculator.cpp
@@ -427,15 +452,37 @@ if(_build_native_cli)
     set(HEADERS
         include/tws_client.h
         include/rate_limiter.h
-        include/option_chain.h
-        include/box_spread_strategy.h
-        include/order_manager.h
-        include/risk_calculator.h
         include/config_manager.h
         include/pcap_capture.h
         include/convexity_calculator.h
         include/types.h
     )
+
+    # Conditionally include local source files only if NOT using extracted library
+    if(NOT USE_BOX_SPREAD_CPP_LIB)
+        list(APPEND SOURCES
+            src/option_chain.cpp
+            src/box_spread_strategy.cpp
+            src/order_manager.cpp
+            src/risk_calculator.cpp
+        )
+        list(APPEND HEADERS
+            include/option_chain.h
+            include/box_spread_strategy.h
+            include/order_manager.h
+            include/risk_calculator.h
+        )
+        message(STATUS "Including local box spread implementation files")
+    else()
+        # When using extracted library, include TWS adapter
+        list(APPEND SOURCES
+            src/brokers/tws_adapter.cpp
+        )
+        list(APPEND HEADERS
+            include/brokers/tws_adapter.h
+        )
+        message(STATUS "Excluding local box spread files (using extracted library with TWS adapter)")
+    endif()
 
     # Version suffix (empty for release, "-prerelease" for development)
     # Set via: cmake -DVERSION_SUFFIX="" for release, or omit for prerelease
@@ -459,6 +506,17 @@ if(_build_native_cli)
             ${CMAKE_CURRENT_BINARY_DIR}/include  # For generated version.h
             ${TWS_API_INCLUDE_DIR}
     )
+
+    # Add box-spread-cpp library include directory if using extracted library
+    if(USE_BOX_SPREAD_CPP_LIB AND DEFINED BOX_SPREAD_CPP_INCLUDE_DIR)
+        target_include_directories(ib_box_spread
+            PRIVATE
+                ${BOX_SPREAD_CPP_INCLUDE_DIR}
+        )
+        target_compile_definitions(ib_box_spread PRIVATE USE_BOX_SPREAD_CPP_LIB)
+        message(STATUS "Added box-spread-cpp include directory to ib_box_spread target")
+        message(STATUS "Defined USE_BOX_SPREAD_CPP_LIB preprocessor macro")
+    endif()
 
     if(TWS_API_BUILD_VENDOR)
         add_dependencies(ib_box_spread twsapi_external)
@@ -484,6 +542,12 @@ if(_build_native_cli)
             /usr/local/lib/libprotobuf.dylib
             ${ABSEIL_LIBS}
     )
+
+    # Link to extracted box-spread-cpp library if enabled
+    if(USE_BOX_SPREAD_CPP_LIB AND TARGET box_spread_cpp)
+        target_link_libraries(ib_box_spread PRIVATE box_spread_cpp)
+        message(STATUS "Linked ib_box_spread to box_spread_cpp library")
+    endif()
 
     if(APPLE)
         target_link_libraries(ib_box_spread PRIVATE "-framework CoreFoundation")

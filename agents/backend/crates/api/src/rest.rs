@@ -6,6 +6,7 @@ use axum::{
   routing::{get, post, put},
   Json, Router,
 };
+use crate::websocket;
 use tower::make::Shared;
 use chrono::Utc;
 use reqwest::Client;
@@ -76,6 +77,7 @@ impl RestServer {
       .route("/api/v1/swiftness/validate", get(swiftness_validate))
       .route("/api/v1/swiftness/exchange-rate", get(swiftness_exchange_rate))
       .route("/api/v1/swiftness/exchange-rate", put(swiftness_update_exchange_rate))
+      .merge(websocket::WebSocketServer::route(state.clone()))
       .layer(axum::Extension(state))
   }
 
