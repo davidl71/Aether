@@ -11,12 +11,14 @@ This document summarizes research on Interactive Brokers Python live trading res
 ## Current Implementation
 
 ### Architecture
+
 - **Primary API:** TWS C++ API (`native/src/tws_client.cpp`)
 - **Pattern:** EWrapper/EClientSocket with asynchronous callbacks
 - **Python Integration:** LEAN integration exists (`python/lean_integration/`) but no direct IB Python API wrapper
 - **State:** Production-ready C++ implementation with Python bindings via Cython
 
 ### Key Integration Points
+
 - Investment Strategy Framework requires live trading capabilities
 - Current C++ implementation uses TWS API directly
 - Python integration exists for LEAN but not for direct IB trading
@@ -28,18 +30,21 @@ This document summarizes research on Interactive Brokers Python live trading res
 **Source:** [Interactive Brokers Python Live Trading Guide](https://www.interactivebrokers.com/campus/ibkr-quant-news/unleashing-the-power-of-python-live-trading-a-comprehensive-guide/)
 
 **Key Features:**
+
 - Native Python API package (`ibapi`)
 - Requires TWS API version 9.73 or higher
 - Installation: `python3 setup.py install` from `/TWS API/source/pythonclient`
 - Supports automation, real-time data, and order execution
 
 **Advantages:**
+
 - Official IBKR support
 - Latest features and updates
 - Direct API access
 - Comprehensive documentation
 
 **Disadvantages:**
+
 - Lower-level interface (more boilerplate code)
 - Requires understanding of TWS API architecture
 - Less Pythonic than third-party wrappers
@@ -49,6 +54,7 @@ This document summarizes research on Interactive Brokers Python live trading res
 **Source:** [IBridgePy Platform](https://ibridgepy.com/)
 
 **Key Features:**
+
 - Simplified Python interface for IB API
 - Unified backtesting and live trading (no code changes)
 - Multi-account management
@@ -56,12 +62,14 @@ This document summarizes research on Interactive Brokers Python live trading res
 - Supports multiple brokers (IBKR, TD Ameritrade, Robinhood)
 
 **Advantages:**
+
 - User-friendly, Pythonic interface
 - Seamless backtesting/live trading transition
 - Active community and documentation
 - Simplified account management
 
 **Disadvantages:**
+
 - Third-party dependency (not official IBKR)
 - May lag behind official API updates
 - Additional abstraction layer
@@ -70,6 +78,7 @@ This document summarizes research on Interactive Brokers Python live trading res
 ### 3. Comparison with Current C++ Implementation
 
 **Current C++ TWS API:**
+
 - ✅ High performance
 - ✅ Direct API access
 - ✅ Production-ready, already integrated
@@ -78,6 +87,7 @@ This document summarizes research on Interactive Brokers Python live trading res
 - ❌ Less Python-friendly for strategy framework
 
 **Python API Options:**
+
 - ✅ Python-native, easier strategy development
 - ✅ Better integration with data science tools
 - ✅ More accessible for strategy framework
@@ -91,12 +101,14 @@ This document summarizes research on Interactive Brokers Python live trading res
 **Approach:** Add Python wrapper layer on top of existing C++ TWS client
 
 **Benefits:**
+
 - Maintains existing C++ performance
 - Adds Python flexibility for strategy framework
 - Minimal disruption to current architecture
 - Leverages existing, tested C++ implementation
 
 **Implementation:**
+
 - Create Python bindings for C++ TWS client
 - Expose strategy framework interface in Python
 - Maintain C++ core for performance-critical operations
@@ -106,11 +118,13 @@ This document summarizes research on Interactive Brokers Python live trading res
 **Approach:** Implement parallel Python API integration using ibapi or IBridgePy
 
 **Benefits:**
+
 - More flexible for strategy-specific needs
 - Can run alongside C++ for different use cases
 - Full Python ecosystem access
 
 **Drawbacks:**
+
 - Adds complexity (two API connections)
 - Potential synchronization issues
 - More maintenance overhead
@@ -120,6 +134,7 @@ This document summarizes research on Interactive Brokers Python live trading res
 **Approach:** Complete migration from C++ to Python
 
 **Drawbacks:**
+
 - Loses performance benefits of C++
 - Requires complete rewrite
 - Not aligned with current architecture

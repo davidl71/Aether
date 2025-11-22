@@ -7,12 +7,14 @@ This document explains the factors that cause disparities between buying and sel
 ## Key Factors Causing Buy/Sell Disparity
 
 ### 1. **Bid-Ask Spread Width**
+
 - **Impact**: Primary driver of buy/sell differences
 - **Mechanism**: Different spreads on each leg create a gap between buying (ASK) and selling (BID)
 - **Intraday Changes**: Spreads widen during low liquidity (pre-market, after-hours, lunch)
 - **Visualization**: Track average bid-ask spread across all legs
 
 ### 2. **Put-Call Parity Violations**
+
 - **Impact**: Different implied rates on call side vs put side
 - **Causes**:
   - Dividend expectations (affects synthetic forward price)
@@ -21,6 +23,7 @@ This document explains the factors that cause disparities between buying and sel
 - **Visualization**: Show put-call parity violation in basis points
 
 ### 3. **Liquidity Imbalance**
+
 - **Impact**: More buyers vs sellers at different times
 - **Times**:
   - Market open: High liquidity, narrow disparity
@@ -29,36 +32,43 @@ This document explains the factors that cause disparities between buying and sel
 - **Visualization**: Track liquidity score over time
 
 ### 4. **Market Maker Inventory**
+
 - **Impact**: Market makers adjust prices based on their inventory
 - **Mechanism**: If they're long, they may offer better BID (buy from them)
 - **Visualization**: Track when one side (buy vs sell) becomes more favorable
 
 ### 5. **Early Exercise Risk (American Options)**
+
 - **Impact**: Creates premium that differs for long vs short
 - **Mechanism**: American options can be exercised early, affecting pricing
 - **Visualization**: Show early exercise risk premium
 
 ### 6. **Dividend Expectations**
+
 - **Impact**: Expected dividends affect synthetic forward price
 - **Mechanism**: Dividends reduce call prices, increase put prices (put-call parity)
 - **Visualization**: Show dividend-adjusted rates
 
 ### 7. **Interest Rate Changes (Intraday)**
+
 - **Impact**: Changes in SOFR/T-bill rates during the day
 - **Mechanism**: Box spreads are interest rate instruments
 - **Visualization**: Compare box spread rates to benchmark over time
 
 ### 8. **Volatility Skew**
+
 - **Impact**: Different implied volatility at different strikes
 - **Mechanism**: Skew affects call vs put pricing differently
 - **Visualization**: Show IV skew impact
 
 ### 9. **Order Flow Imbalance**
+
 - **Impact**: Large institutional orders create temporary imbalances
 - **Mechanism**: More buying pressure → ASK prices rise
 - **Visualization**: Track order flow indicators
 
 ### 10. **Time Decay Asymmetry**
+
 - **Impact**: Theta differs slightly between long and short positions
 - **Mechanism**: Time decay affects buy vs sell profitability
 - **Visualization**: Show theta impact
@@ -90,6 +100,7 @@ struct BoxSpreadLeg {
 ### Calculations
 
 **Buying Box Spread:**
+
 - Long call: Use ASK (what we pay)
 - Short call: Use BID (what we receive)
 - Long put: Use ASK (what we pay)
@@ -97,6 +108,7 @@ struct BoxSpreadLeg {
 - Net Debit = (Long Call ASK + Long Put ASK) - (Short Call BID + Short Put BID)
 
 **Selling Box Spread:**
+
 - Long call: Use BID (what we receive)
 - Short call: Use ASK (what we pay)
 - Long put: Use BID (what we receive)
@@ -104,6 +116,7 @@ struct BoxSpreadLeg {
 - Net Credit = (Long Call BID + Long Put BID) - (Short Call ASK + Short Put ASK)
 
 **Disparity:**
+
 - Buy-Sell Disparity = Buy Profit - Sell Profit
 - Positive = Buying more profitable
 - Negative = Selling more profitable

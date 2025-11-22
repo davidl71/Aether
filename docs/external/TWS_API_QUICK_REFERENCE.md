@@ -5,6 +5,7 @@
 **Last Updated**: 2025-01-27
 
 This is a quick reference guide for the most commonly used TWS API methods. For detailed documentation, see:
+
 - [TWS API Documentation](https://interactivebrokers.github.io/tws-api/)
 - [EClient and EWrapper Architecture](../ECLIENT_EWRAPPER_ARCHITECTURE.md)
 - [TWS Integration Status](../TWS_INTEGRATION_STATUS.md)
@@ -27,6 +28,7 @@ bool isConnected();
 ```
 
 **Ports**:
+
 - **TWS Production**: 7496
 - **TWS Paper Trading**: 7497
 - **IB Gateway Production**: 4001
@@ -45,6 +47,7 @@ void reqMktData(TickerId tickerId, const Contract& contract,
 ```
 
 **Example**:
+
 ```cpp
 Contract contract;
 contract.symbol = "SPX";
@@ -71,12 +74,14 @@ void reqHistoricalData(TickerId reqId, const Contract& contract,
 ```
 
 **Bar Size Options**:
+
 - `"1 sec"`, `"5 secs"`, `"10 secs"`, `"15 secs"`, `"30 secs"`
 - `"1 min"`, `"2 mins"`, `"3 mins"`, `"5 mins"`, `"10 mins"`, `"15 mins"`, `"20 mins"`, `"30 mins"`
 - `"1 hour"`, `"2 hours"`, `"3 hours"`, `"4 hours"`, `"8 hours"`
 - `"1 day"`, `"1 week"`, `"1 month"`
 
 **What to Show**:
+
 - `"TRADES"`, `"MIDPOINT"`, `"BID"`, `"ASK"`, `"BID_ASK"`
 - `"HISTORICAL_VOLATILITY"`, `"OPTION_IMPLIED_VOLATILITY"`
 - `"YIELD_BID"`, `"YIELD_ASK"`, `"YIELD_BID_ASK"`, `"YIELD_LAST"`
@@ -92,6 +97,7 @@ void placeOrder(OrderId id, const Contract& contract, const Order& order);
 ```
 
 **Order Types**:
+
 - `"MKT"` - Market order
 - `"LMT"` - Limit order
 - `"STP"` - Stop order
@@ -100,6 +106,7 @@ void placeOrder(OrderId id, const Contract& contract, const Order& order);
 - `"TRAIL LIMIT"` - Trailing stop limit
 
 **Time in Force**:
+
 - `"DAY"` - Day order
 - `"GTC"` - Good till cancelled
 - `"IOC"` - Immediate or cancel
@@ -107,6 +114,7 @@ void placeOrder(OrderId id, const Contract& contract, const Order& order);
 - `"GTD"` - Good till date (requires `goodTillDate`)
 
 **Example**:
+
 ```cpp
 Order order;
 order.action = "BUY";
@@ -147,6 +155,7 @@ void reqContractDetails(int reqId, const Contract& contract);
 ```
 
 **EWrapper Callback**:
+
 ```cpp
 void contractDetails(int reqId, const ContractDetails& contractDetails) override;
 void contractDetailsEnd(int reqId) override;
@@ -160,6 +169,7 @@ void reqMktDepth(TickerId tickerId, const Contract& contract, int numRows,
 ```
 
 **EWrapper Callbacks**:
+
 ```cpp
 void updateMktDepth(TickerId tickerId, int position, int operation, int side,
                     double price, int size) override;
@@ -178,6 +188,7 @@ void reqAccountUpdates(bool subscribe, const std::string& acctCode);
 ```
 
 **EWrapper Callbacks**:
+
 ```cpp
 void updateAccountValue(const std::string& key, const std::string& val,
                        const std::string& currency, const std::string& accountName) override;
@@ -186,6 +197,7 @@ void accountDownloadEnd(const std::string& accountName) override;
 ```
 
 **Common Account Values**:
+
 - `"NetLiquidation"` - Total account value
 - `"BuyingPower"` - Buying power
 - `"CashBalance"` - Cash balance
@@ -201,6 +213,7 @@ void reqPositions();
 ```
 
 **EWrapper Callbacks**:
+
 ```cpp
 void position(const std::string& account, const Contract& contract,
               Decimal position, double avgCost) override;
@@ -227,6 +240,7 @@ void reqSecDefOptParams(int reqId, const std::string& underlyingSymbol,
 ```
 
 **EWrapper Callback**:
+
 ```cpp
 void securityDefinitionOptionalParameter(int reqId, const std::string& exchange,
                                          int underlyingConId, const std::string& tradingClass,
@@ -262,6 +276,7 @@ void tickOptionComputation(TickerId tickerId, TickType tickType,
 ```
 
 **TickType Values**:
+
 - `BID` (1), `ASK` (2), `LAST` (4)
 - `HIGH` (6), `LOW` (7), `CLOSE` (9)
 - `VOLUME` (5), `BID_SIZE` (0), `ASK_SIZE` (3)
@@ -284,6 +299,7 @@ void execDetails(int reqId, const Contract& contract,
 ```
 
 **Order Status Values**:
+
 - `"ApiPending"` - Order submitted but not yet acknowledged
 - `"PendingSubmit"` - Order submitted to broker
 - `"PreSubmitted"` - Order validated but not yet submitted
@@ -300,6 +316,7 @@ void error(int id, int errorCode, const std::string& errorString,
 ```
 
 **Error Code Ranges**:
+
 - **< 1100**: Error messages (connection issues, invalid requests)
 - **1100-1999**: System messages (warnings, info)
 - **2000-2999**: Informational messages (market data subscriptions, etc.)

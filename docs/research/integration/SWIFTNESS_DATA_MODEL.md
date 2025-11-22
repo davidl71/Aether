@@ -170,15 +170,18 @@ class ProductDetails:
 ## Validity Date Summary
 
 ### Sheet 1: Insurance Coverage
+
 - **No validity date column**
 - Use file modification date or cross-reference with Sheet 3
 
 ### Sheet 2: Deposit Tracking
+
 - **Column 4: "תאריך ערך" (Value Date)**
 - Each deposit record has its own validity date
 - Format: M/D/YYYY (text)
 
 ### Sheet 3: Product Details
+
 - **Column 30: "תאריך נכונות נתונים" (Data Accuracy Date)**
 - One validity date per product (applies to all product data)
 - Format: M/D/YYYY (text)
@@ -187,12 +190,14 @@ class ProductDetails:
 ## Data Relationships
 
 ### Unique Identifiers
+
 - **Policy Number (מספר פוליסה)**: Used across all sheets to link related records
 - Sheet 1: Column 7
 - Sheet 2: Column 3
 - Sheet 3: Column 3
 
 ### Cross-Reference Strategy
+
 1. Use policy number to link records across sheets
 2. Sheet 3's validity date (Column 30) applies to product-level data
 3. Sheet 2's validity dates (Column 4) apply to individual deposit records
@@ -201,12 +206,14 @@ class ProductDetails:
 ## Date Format Handling
 
 ### Date Parsing
+
 - All dates are stored as **text** in M/D/YYYY format
 - Examples: "7/11/2024", "9/30/2025", "12/26/2022"
 - **Important:** Month comes first (US format), not day-first (Israeli format)
 - Parse using: `datetime.strptime(date_str, "%m/%d/%Y")`
 
 ### Date Validation
+
 - Check if validity date is in the future (data is still valid)
 - Check if validity date has passed (data may be stale)
 - Compare validity dates when updating existing records
@@ -214,12 +221,14 @@ class ProductDetails:
 ## Update Logic
 
 ### When to Update
+
 1. **New file imported:** Compare validity dates with existing data
 2. **Validity date check:** If new data has later validity date, update
 3. **Policy matching:** Match by policy number across sheets
 4. **Conflict resolution:** Always prefer data with later validity date
 
 ### Update Rules
+
 - **Sheet 2 (Deposits):** Each row is a separate transaction - add new rows, don't overwrite
 - **Sheet 3 (Products):** Update entire product record if validity date is newer
 - **Sheet 1 (Coverage):** Update if policy number matches and file is newer

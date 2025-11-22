@@ -31,6 +31,9 @@
     // MCP Integration (WORKSPACE-ONLY)
     "yutengjing.vscode-mcp",
 
+    // Ona/Gitpod Integration (WORKSPACE-ONLY)
+    "gitpod.gitpod-flex",
+
     // AI & Prompt Enhancement (WORKSPACE-ONLY)
     "prompttower.prompttower",
     "TabNine.tabnine-vscode", // AI code completion for C++, Python, TypeScript, Rust, Go

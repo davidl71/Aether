@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StrategyDecision",
+  "description": "Trading decision from strategy engine",
+  "type": "object",
+  "required": ["id", "timestamp", "source", "type", "payload"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique message identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+    "source": {
+      "type": "string",
+      "enum": ["python-strategy", "rust-strategy", "mock"],
+      "description": "Source strategy engine"
+    },
+    "type": {
+      "type": "string",
+      "const": "StrategyDecision",
+      "description": "Message type identifier"
+    },
+    "payload": {
+      "type": "object",
+      "required": ["symbol", "quantity", "side", "mark"],
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "description": "Trading symbol"
+        },
+        "quantity": {
+          "type": "integer",
+          "description": "Number of contracts/shares"
+        },
+        "side": {
+          "type": "string",
+          "enum": ["BUY", "SELL"],
+          "description": "Trade side"
+        },
+        "mark": {
+          "type": "number",
+          "description": "Mark price at decision time"
+        },
+        "strategy_name": {
+          "type": "string",
+          "description": "Name of strategy generating decision"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Decision confidence score (optional)"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Additional strategy-specific metadata"
+        }
+      }
+    }
+  },
+  "example": {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "timestamp": "2025-11-20T10:00:05Z",
+    "source": "python-strategy",
+    "type": "StrategyDecision",
+    "payload": {
+      "symbol": "SPY",
+      "quantity": 1,
+      "side": "BUY",
+      "mark": 509.18,
+      "strategy_name": "box_spread_arbitrage",
+      "confidence": 0.85
+    }
+  }
+}

@@ -84,11 +84,13 @@ Need FIX API provider?
 ## Key Resources
 
 ### Documentation
+
 - **Full Index**: `../API_DOCUMENTATION_INDEX.md#fix-protocol`
 - **FIX Protocol Development Tools**: `../API_DOCUMENTATION_INDEX.md#fix-protocol-development-tools`
 - **FIX API Providers**: `../API_DOCUMENTATION_INDEX.md#fix-api-providers`
 
 ### External Links
+
 - **FIX Trading Community**: <https://www.fixtrading.org/>
 - **FIX Online Specification**: <https://www.fixtrading.org/online-specification/introduction/>
 - **FIXimate**: <https://fiximate.fixtrading.org/>

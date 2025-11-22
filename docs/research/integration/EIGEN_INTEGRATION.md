@@ -151,6 +151,7 @@ Integration tests are located in `native/tests/eigen_integration_test.cpp`:
 - C++20 compatibility verification
 
 Run tests with:
+
 ```bash
 ctest --test-dir build --output-on-failure
 ```
@@ -187,6 +188,7 @@ std::vector<Eigen::VectorXd, Eigen::aligned_allocator<Eigen::VectorXd>> vectors;
 ## C++20 Compatibility
 
 Eigen 3.4.0 is fully compatible with C++20. The integration test verifies:
+
 - Lambda functions with Eigen types
 - `auto` type deduction
 - Modern C++ features
@@ -221,10 +223,10 @@ Eigen is licensed under MPL2 (Mozilla Public License 2.0), which is permissive a
 
 ## References
 
-- **Eigen Website:** https://eigen.tuxfamily.org/
-- **Eigen Documentation:** https://eigen.tuxfamily.org/dox/
-- **Getting Started:** https://eigen.tuxfamily.org/dox/GettingStarted.html
-- **GitLab Repository:** https://gitlab.com/libeigen/eigen
+- **Eigen Website:** <https://eigen.tuxfamily.org/>
+- **Eigen Documentation:** <https://eigen.tuxfamily.org/dox/>
+- **Getting Started:** <https://eigen.tuxfamily.org/dox/GettingStarted.html>
+- **GitLab Repository:** <https://gitlab.com/libeigen/eigen>
 
 ## Next Steps
 

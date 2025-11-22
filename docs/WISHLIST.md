@@ -1,6 +1,7 @@
 # Wishlist / Deferred Decisions
 
 ## IDE Extensions – C++ Language Server Choice
+
 - Decision: Choose one C/C++ extension to standardize on (Microsoft “C/C++” vs Anysphere “C/C++”).
 - Rationale: Running both causes duplicate diagnostics and slower IntelliSense. Microsoft’s cpptools integrates tightly with CMake Tools; Anysphere may be sufficient for some workflows.
 - Status: Deferred
@@ -11,6 +12,7 @@
 - Temporary guidance: Do not enable both simultaneously in the same workspace.
 
 ## Debugger Choice on Windows
+
 - Decision: Standardize on MSVC debugger (Visual Studio/VSCode) vs LLDB/CodeLLDB for MinGW/Clang.
 - Status: Deferred
 - Trigger to decide: After first successful end‑to‑end debug session on Windows with the chosen toolchain.
@@ -21,7 +23,7 @@
 
 - [ ] Evaluate Lean CLI integration for optional QuantConnect/LEAN workflows
   - Track lessons learned in `docs/LEAN_LEARNINGS.md`
-  - Reference Lean CLI documentation: https://www.lean.io/docs/v2/lean-cli
+  - Reference Lean CLI documentation: <https://www.lean.io/docs/v2/lean-cli>
   - Gate any implementation on clear benefit for our IBKR box-spread flow
 
 ## Low Priority

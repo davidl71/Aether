@@ -7,11 +7,13 @@ Based on recent security incidents, here are the priority extensions to review:
 ### 🔴 High Priority - Review Immediately
 
 **1. Amazon Extensions (After July 2025 Breach)**
+
 - `amazonwebservices.codewhisperer-for-command-line-companion`
 - **Action**: Verify latest version, check for security updates
 - **Risk**: Known security incident in July 2025
 
 **2. Unknown Publishers with Low Visibility**
+
 - `backnotprop.prompt-tower` - Unknown publisher
 - `pascalx.sketchprompt` - Unknown publisher
 - `fridaplatform.fridagpt` - Unknown publisher
@@ -19,6 +21,7 @@ Based on recent security incidents, here are the priority extensions to review:
 - **Action**: Research publisher, check download counts, reviews
 
 **3. MCP Extensions (Multiple Unknown Publishers)**
+
 - `yutengjing.vscode-mcp-bridge` - MCP bridge (verify source)
 - `cjl.lsp-mcp` - Unknown publisher
 - `daninemonic.mcp4humans` - Unknown publisher
@@ -31,6 +34,7 @@ Based on recent security incidents, here are the priority extensions to review:
 ### 🟡 Medium Priority - Review Soon
 
 **4. Popular but Verify**
+
 - `donjayamanne.githistory` - Popular, but verify publisher
 - `vadimcn.vscode-lldb` - Popular debugger, verify
 - `vscodevim.vim` - Popular Vim extension, verify
@@ -39,6 +43,7 @@ Based on recent security incidents, here are the priority extensions to review:
 - **Action**: Check marketplace reviews, verify publisher identity
 
 **5. Specialized/Enterprise Tools**
+
 - `halcyontechltd.*` - IBM i tools (if you use IBM i, verify)
 - `barrettotte.ibmi-languages` - IBM i (if needed, verify)
 - `broadcommfd.cobol-language-support` - COBOL (if needed, verify)
@@ -47,6 +52,7 @@ Based on recent security incidents, here are the priority extensions to review:
 - **Action**: Only keep if you actually use these technologies
 
 **6. C++ Development Helpers**
+
 - `franneck94.*` - C++ helpers (verify if needed)
 - `jbenden.*` - C++ linter (verify if needed)
 - `jeff-hykin.better-cpp-syntax` - Syntax helper (verify)
@@ -57,6 +63,7 @@ Based on recent security incidents, here are the priority extensions to review:
 ### 🟢 Low Priority - Likely Safe
 
 **7. Well-Known but Not in Trusted List**
+
 - `1password.op-vscode` - 1Password official (likely safe)
 - `firefox-devtools.vscode-firefox-debug` - Mozilla official (likely safe)
 - `vercel.turbo-vsc` - Vercel official (likely safe)
@@ -110,20 +117,20 @@ cursor --list-extensions --show-versions > extensions_list.txt
 
 ### Short Term (This Month)
 
-4. **Review Popular Extensions**
+1. **Review Popular Extensions**
    - Verify `donjayamanne.githistory`
    - Verify `vadimcn.vscode-lldb`
    - Verify `vscodevim.vim`
    - Verify `continue.continue`
 
-5. **Remove Unused Enterprise Tools**
+2. **Remove Unused Enterprise Tools**
    - If you don't use IBM i: Remove `halcyontechltd.*`, `barrettotte.*`
    - If you don't use COBOL: Remove `broadcommfd.*`
    - If you don't use mainframe: Remove `zowe.*`
 
 ### Ongoing
 
-6. **Regular Security Audits**
+1. **Regular Security Audits**
    - Run `./scripts/check_extension_security.sh` monthly
    - Keep extensions updated
    - Review extension changelogs
@@ -131,10 +138,10 @@ cursor --list-extensions --show-versions > extensions_list.txt
 
 ## Resources
 
-- **VS Code Marketplace**: https://marketplace.visualstudio.com/vscode
+- **VS Code Marketplace**: <https://marketplace.visualstudio.com/vscode>
 - **Extension Security Scanner**: `./scripts/check_extension_security.sh`
-- **GitHub Security Advisories**: https://github.com/advisories
-- **VS Code Security**: https://code.visualstudio.com/docs/supporting/security
+- **GitHub Security Advisories**: <https://github.com/advisories>
+- **VS Code Security**: <https://code.visualstudio.com/docs/supporting/security>
 
 ## Summary
 

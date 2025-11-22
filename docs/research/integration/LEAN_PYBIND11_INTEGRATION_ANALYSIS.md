@@ -61,12 +61,14 @@ This document analyzes the feasibility of using **LEAN (QuantConnect LEAN)** wit
 ### ✅ **Feasible: Yes**
 
 **Why it works:**
+
 - ✅ LEAN has Python bindings (Python.NET or similar)
 - ✅ pybind11 creates Python modules from C++
 - ✅ Python can call both pybind11 modules and LEAN
 - ✅ Data can flow: C++ ↔ Python ↔ LEAN
 
 **Architecture:**
+
 ```
 C++ (pybind11) ←→ Python ←→ LEAN (Python bindings)
 ```
@@ -105,6 +107,7 @@ PYBIND11_MODULE(box_spread_cpp, m) {
 ```
 
 **Build with pybind11:**
+
 ```cmake
 find_package(pybind11 REQUIRED)
 pybind11_add_module(box_spread_cpp src/pybind11_bindings.cpp)
@@ -187,12 +190,14 @@ def _convert_to_cpp_format(self, lean_chain):
 ### Current Approach: Cython
 
 **Pros:**
+
 - ✅ Already implemented
 - ✅ Good performance
 - ✅ Works with existing code
 - ✅ Mature and stable
 
 **Cons:**
+
 - ⚠️ Requires .pyx files (separate syntax)
 - ⚠️ Compilation can be complex
 - ⚠️ Less Pythonic API
@@ -200,6 +205,7 @@ def _convert_to_cpp_format(self, lean_chain):
 ### Proposed Approach: pybind11
 
 **Pros:**
+
 - ✅ Pure C++ (no .pyx files)
 - ✅ More Pythonic API
 - ✅ Better error messages
@@ -208,6 +214,7 @@ def _convert_to_cpp_format(self, lean_chain):
 - ✅ Better type conversion
 
 **Cons:**
+
 - ⚠️ Migration effort (rewrite bindings)
 - ⚠️ Different build system
 - ⚠️ New dependency
@@ -228,16 +235,19 @@ def _convert_to_cpp_format(self, lean_chain):
 ### Integration Points
 
 **1. Market Data Flow:**
+
 ```
 LEAN → Python → pybind11 → C++ (calculations)
 ```
 
 **2. Order Execution Flow:**
+
 ```
 C++ (opportunity) → Python → LEAN → Broker
 ```
 
 **3. Risk Management:**
+
 ```
 C++ (risk calc) → Python → LEAN (position limits)
 ```
@@ -303,12 +313,14 @@ C++ (risk calc) → Python → LEAN (position limits)
 ### Latency Analysis
 
 **Current (NautilusTrader + Cython):**
+
 - C++ calculation: < 1ms
 - Cython call overhead: ~0.1ms
 - Python → NautilusTrader: ~0.5ms
 - **Total**: ~1.6ms
 
 **Proposed (LEAN + pybind11):**
+
 - C++ calculation: < 1ms
 - pybind11 call overhead: ~0.1ms (similar to Cython)
 - Python → LEAN: ~1-2ms (C# interop)
@@ -331,11 +343,13 @@ C++ (risk calc) → Python → LEAN (position limits)
 ### Option A: Enhance NautilusTrader (Current Recommendation)
 
 **Effort**: 2-4 weeks
+
 - Add broker adapters
 - Integrate with unified interface
 - Test and validate
 
 **Pros:**
+
 - ✅ Already integrated
 - ✅ Best performance
 - ✅ Lowest effort
@@ -343,17 +357,20 @@ C++ (risk calc) → Python → LEAN (position limits)
 ### Option B: Migrate to LEAN + pybind11
 
 **Effort**: 7-10 weeks
+
 - Migrate Cython → pybind11 (optional, 2-3 weeks)
 - Integrate LEAN (5-7 weeks)
 - Test and validate
 
 **Pros:**
+
 - ✅ Excellent multi-broker support
 - ✅ Large community
 - ✅ Keep C++ code
 - ✅ Better documentation
 
 **Cons:**
+
 - ❌ Higher migration effort
 - ❌ C# runtime dependency
 - ❌ More latency (C# interop)
@@ -362,16 +379,19 @@ C++ (risk calc) → Python → LEAN (position limits)
 ### Option C: LEAN + Keep Cython
 
 **Effort**: 5-7 weeks
+
 - Keep existing Cython bindings
 - Integrate LEAN
 - Bridge Cython → LEAN
 
 **Pros:**
+
 - ✅ No pybind11 migration needed
 - ✅ Keep existing bindings
 - ✅ Faster integration
 
 **Cons:**
+
 - ⚠️ Still need LEAN integration
 - ⚠️ C# runtime dependency
 
@@ -382,6 +402,7 @@ C++ (risk calc) → Python → LEAN (position limits)
 ### Primary: Enhance NautilusTrader (Keep Current Approach)
 
 **Rationale:**
+
 - Already integrated and working
 - Best performance (Rust core)
 - Lowest migration effort (2-4 weeks)
@@ -407,11 +428,13 @@ C++ (risk calc) → Python → LEAN (position limits)
    - You prefer header-only libraries
 
 **Architecture:**
+
 ```
 C++ (Cython) → Python → LEAN (Python bindings)
 ```
 
 **Not:**
+
 ```
 C++ (pybind11) → Python → LEAN (Python bindings)
 ```
@@ -425,12 +448,14 @@ C++ (pybind11) → Python → LEAN (Python bindings)
 ### Both Work Equally Well
 
 **Cython (Current):**
+
 - ✅ Already implemented
 - ✅ Works with LEAN
 - ✅ Good performance
 - ✅ No migration needed
 
 **pybind11 (Alternative):**
+
 - ✅ More Pythonic
 - ✅ Pure C++ (no .pyx)
 - ✅ Better error messages
@@ -442,24 +467,27 @@ C++ (pybind11) → Python → LEAN (Python bindings)
 
 ## Final Recommendation
 
-### For LEAN Integration:
+### For LEAN Integration
 
 **Use: Cython + LEAN** (not pybind11 + LEAN)
 
 **Why:**
+
 1. Cython already works
 2. No migration needed
 3. Same performance
 4. Faster integration
 
 **Architecture:**
+
 ```
 C++ Core → Cython → Python → LEAN → Brokers
 ```
 
-### For pybind11 Migration:
+### For pybind11 Migration
 
 **Only migrate if:**
+
 - You want more Pythonic API
 - You're refactoring bindings anyway
 - You prefer header-only libraries
@@ -478,12 +506,14 @@ C++ Core → Cython → Python → LEAN → Brokers
 3. **NautilusTrader is still better** - Already integrated, better performance
 
 **If choosing LEAN:**
+
 - Use **Cython + LEAN** (not pybind11 + LEAN)
 - Architecture: `C++ (Cython) → Python → LEAN`
 - Effort: 5-7 weeks
 - Benefit: Excellent multi-broker support
 
 **If staying with NautilusTrader:**
+
 - Keep **Cython** (no need for pybind11)
 - Architecture: `C++ (Cython) → Python → NautilusTrader`
 - Effort: 2-4 weeks (add adapters)

@@ -1,0 +1,7 @@
+{
+  "project_root": ".",
+  "todo_file": ".todo2/state.todo2.json",
+  "dry_run": false,
+  "output_file": "docs/TODO_SYNC_REPORT.md",
+  "sync_frequency": "hourly"
+}

@@ -2,6 +2,7 @@
 
 **Date**: 2025-01-27
 **References**:
+
 - [New York Fed: Options for Calculating Risk-Free Rates](https://libertystreeteconomics.newyorkfed.org/2023/10/options-for-calculating-risk-free-rates/)
 - [CME Group: Pricing and Hedging USD SOFR Interest Swaps with SOFR Futures](https://www.cmegroup.com/articles/2025/price-and-hedging-usd-sofr-interest-swaps-with-sofr-futures.html)
 
@@ -16,6 +17,7 @@ This document describes how box spreads are used to calculate risk-free rates, b
 ### What is a Box Spread?
 
 A box spread is a four-legged options strategy that creates a synthetic forward contract:
+
 - **Long Call** at lower strike (K1)
 - **Short Call** at higher strike (K2)
 - **Long Put** at higher strike (K2)
@@ -33,22 +35,27 @@ The payoff at expiration is **always** equal to the strike width (K2 - K1), rega
 ### Implied Rate Calculation
 
 For a box spread with:
+
 - Strike width: `W = K2 - K1`
 - Net debit (cost to buy): `D`
 - Days to expiry: `T`
 
 **Buying (Borrowing Scenario)**:
+
 ```
 Implied Rate = ((D - W) / W) × (365 / T) × 100%
 ```
 
 **Selling (Lending Scenario)**:
+
 ```
 Implied Rate = ((W - C) / C) × (365 / T) × 100%
 ```
+
 where `C` is the net credit received.
 
 **Mid Rate**:
+
 ```
 Mid Rate = (Buy Rate + Sell Rate) / 2
 ```
@@ -116,6 +123,7 @@ spread_bps = RateComparison.calculate_spread(box_rate=5.20, benchmark_rate=5.00)
 ## API Endpoints
 
 ### Extract Rate from Box Spread
+
 ```bash
 POST /api/extract-rate
 Content-Type: application/json
@@ -134,6 +142,7 @@ Content-Type: application/json
 ```
 
 ### Build Yield Curve
+
 ```bash
 POST /api/build-curve
 Content-Type: application/json
@@ -145,6 +154,7 @@ Content-Type: application/json
 ```
 
 ### Compare with Benchmarks
+
 ```bash
 POST /api/compare
 Content-Type: application/json
@@ -174,12 +184,14 @@ Content-Type: application/json
 ### Box Spread Rates vs. Benchmarks
 
 **Advantages of Box Spread Rates**:
+
 - Market-based (reflects actual trading)
 - Real-time (updates with market data)
 - No counterparty risk (exchange-cleared)
 - Can be constructed for any expiration
 
 **Considerations**:
+
 - Requires liquid options market
 - Bid-ask spreads affect accuracy
 - May include some liquidity premium
@@ -192,16 +204,19 @@ Content-Type: application/json
 When multiple box spreads exist at the same expiration:
 
 1. **Weighted Average** (default): Weight by liquidity score
+
    ```
    Rate = Σ(Rate_i × Liquidity_i) / Σ(Liquidity_i)
    ```
 
 2. **Best Liquidity**: Use the spread with highest liquidity
+
    ```
    Rate = Rate_max(liquidity)
    ```
 
 3. **Simple Average**: Average all rates
+
    ```
    Rate = Σ(Rate_i) / N
    ```
@@ -209,6 +224,7 @@ When multiple box spreads exist at the same expiration:
 ### Term Structure Points
 
 A complete yield curve includes:
+
 - **Overnight**: 1 day
 - **Short-term**: 7, 14, 30 days
 - **Medium-term**: 60, 90, 180 days
@@ -219,11 +235,13 @@ A complete yield curve includes:
 ### 1. Arbitrage Detection
 
 Compare box spread rates with SOFR/Treasury to identify:
+
 - **Positive Spread**: Box spread rate > benchmark → potential arbitrage opportunity
 - **Negative Spread**: Box spread rate < benchmark → market inefficiency or execution costs
 - **Spread Analysis**: Track spreads over time to identify patterns
 
 **Example:**
+
 ```python
 comparison = RateComparison.compare_curves(box_curve, benchmarks)
 for dte, comp in comparison.items():
@@ -234,12 +252,14 @@ for dte, comp in comparison.items():
 ### 2. Funding Cost Analysis
 
 Use box spread rates to:
+
 - **Estimate funding costs** for different maturities
 - **Compare borrowing vs. lending rates** (buy vs. sell implied rates)
 - **Analyze term structure** of funding costs
 - **Optimize capital allocation** across maturities
 
 **Example:**
+
 ```python
 # Get funding cost for 30-day period
 rate_30d = curve.get_rate_at_dte(30)
@@ -251,12 +271,14 @@ if rate_30d:
 ### 3. Risk-Free Rate Proxy
 
 When SOFR/Treasury data is unavailable or delayed:
+
 - **Real-time proxy**: Use box spread rates as immediate risk-free rate
 - **Custom term structure**: Build curves for specific expirations
 - **Option pricing**: Calculate discount factors for Black-Scholes
 - **Yield curve modeling**: Input for term structure models
 
 **Example:**
+
 ```python
 # Use box spread rate for option pricing
 risk_free_rate = curve.get_rate_at_dte(option_dte) / 100.0
@@ -266,12 +288,14 @@ discount_factor = math.exp(-risk_free_rate * (option_dte / 365.0))
 ### 4. Market Efficiency Analysis
 
 Compare box spread rates across:
+
 - **Different underlyings**: SPX vs. XSP vs. ES
 - **Different strike widths**: 25 vs. 50 vs. 100
 - **Different expirations**: Short-term vs. long-term
 - **Time periods**: Intraday vs. daily vs. weekly
 
 This helps identify:
+
 - Market inefficiencies
 - Liquidity differences
 - Execution cost variations
@@ -314,16 +338,19 @@ This helps identify:
 The SOFR/Treasury client supports FRED API for real-time benchmark rates:
 
 **Setup:**
-1. Get free API key: https://fred.stlouisfed.org/docs/api/api_key.html
+
+1. Get free API key: <https://fred.stlouisfed.org/docs/api/api_key.html>
 2. Set environment variable: `export FRED_API_KEY=your_key_here`
 3. Or pass to client: `SOFRTreasuryClient(fred_api_key="your_key")`
 
 **Available Series:**
+
 - **SOFR**: `SOFR` - Secured Overnight Financing Rate
 - **SOFR Term**: `SOFR30DAYAVG`, `SOFR90DAYAVG`, `SOFR180DAYAVG`
 - **Treasury**: `DGS1MO`, `DGS3MO`, `DGS6MO`, `DGS1`, `DGS2`, `DGS5`, `DGS10`, `DGS30`
 
 **Example:**
+
 ```python
 from integration.sofr_treasury_client import SOFRTreasuryClient
 
@@ -335,6 +362,7 @@ treasury_rates = client.get_treasury_rates()
 ### New York Fed API
 
 Alternative source for SOFR data (structure may vary):
+
 - Base URL: `https://markets.newyorkfed.org/api`
 - Endpoint: `/rates/all` or `/rates/sofr`
 

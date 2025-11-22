@@ -17,10 +17,12 @@ This document summarizes the implementation of LEAN integration for the box spre
 ### ✅ T-42: Data Conversion Layer
 
 **Files Created:**
+
 - `python/lean_integration/data_converter.py`
 - `python/lean_integration/type_mappings.py`
 
 **Features:**
+
 - LEAN → C++ conversion (OptionChain, OptionContract, MarketData)
 - C++ → LEAN conversion (Symbols for order execution)
 - Date formatting utilities (YYYYMMDD)
@@ -30,11 +32,13 @@ This document summarizes the implementation of LEAN integration for the box spre
 ### ✅ T-43: LEAN Box Spread Strategy
 
 **Files Created:**
+
 - `python/lean_integration/box_spread_algorithm.py`
 - `python/lean_integration/strategy_config.py`
 - `config/lean_strategy_config.example.json`
 
 **Features:**
+
 - LEAN Algorithm class (inherits from QCAlgorithm)
 - C++ integration via Cython bindings
 - Opportunity detection and evaluation
@@ -45,9 +49,11 @@ This document summarizes the implementation of LEAN integration for the box spre
 ### ✅ T-44: IBKR Broker Integration
 
 **Files Created:**
+
 - `docs/LEAN_IBKR_SETUP.md`
 
 **Features:**
+
 - TWS/IB Gateway configuration guide
 - LEAN configuration examples
 - Connection testing procedures
@@ -57,9 +63,11 @@ This document summarizes the implementation of LEAN integration for the box spre
 ### ✅ T-45: Alpaca Broker Integration
 
 **Files Created:**
+
 - `docs/LEAN_ALPACA_SETUP.md`
 
 **Features:**
+
 - Alpaca account setup guide
 - API key configuration
 - LEAN configuration examples
@@ -69,10 +77,12 @@ This document summarizes the implementation of LEAN integration for the box spre
 ### ✅ T-46: Configuration System Migration
 
 **Files Created:**
+
 - `python/lean_integration/config_adapter.py`
 - `config/lean_config.example.json`
 
 **Features:**
+
 - Native → LEAN configuration conversion
 - Broker configuration adapter (IBKR, Alpaca)
 - Strategy configuration adapter
@@ -198,11 +208,13 @@ lean --version
 ### 2. Configure Broker
 
 **For IBKR:**
+
 - Follow `docs/LEAN_IBKR_SETUP.md`
 - Configure TWS/IB Gateway
 - Update `config/lean_config.example.json`
 
 **For Alpaca:**
+
 - Follow `docs/LEAN_ALPACA_SETUP.md`
 - Generate API keys
 - Update `config/lean_config.example.json`

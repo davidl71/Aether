@@ -34,10 +34,12 @@ Greeks are calculated by aggregating from individual option legs:
 - **Rho**: Rate sensitivity (some exposure due to financing)
 
 **Key Files**:
+
 - `native/include/box_spread_bag.h` - Bag structure and manager interface
 - `native/src/box_spread_bag.cpp` - Bag implementation and Greeks calculation
 
 **Implementation**:
+
 ```cpp
 // Calculate Greeks for box spread bag
 auto greeks = BoxSpreadBagManager::calculate_bag_greeks(
@@ -64,6 +66,7 @@ Each bag tracks OHLC candle data:
 - **Period Management**: Reset candles for new periods (e.g., hourly, daily)
 
 **Usage**:
+
 ```cpp
 // Update candle with new price
 bag.update_candle(mid_price, volume);
@@ -88,10 +91,12 @@ Comprehensive mock data generator for testing and TUI development:
 - **Yield Curve Bags**: Generate bags across different expirations
 
 **Key Files**:
+
 - `native/include/mock_data_generator.h` - Mock generator interface
 - `native/src/mock_data_generator.cpp` - Mock generator implementation
 
 **Usage Example**:
+
 ```cpp
 MockBoxSpreadBagGenerator generator;
 
@@ -176,6 +181,7 @@ struct BoxSpreadBag {
 The box spread bags can be integrated with the existing TUI data structures:
 
 **TUI Data Format** (`tui/internal/data/types.go`):
+
 ```go
 type Position struct {
     Name           string
@@ -188,6 +194,7 @@ type Position struct {
 ```
 
 **Conversion**:
+
 - Bag → TUI Position: Convert bag position data to TUI format
 - Bag Greeks → TUI Greeks: Map bag.greeks to TUI vega/theta
 - Bag Candle → TUI Candle: Convert bag.candle to TUI Candle structure

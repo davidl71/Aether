@@ -11,21 +11,25 @@ NLopt is a library for nonlinear optimization, providing a unified interface for
 ## Use Cases in Project
 
 ### 1. Convexity Optimization (Barbell Strategy)
+
 - Optimize bond allocation between short-term and long-term maturities
 - Maximize portfolio convexity while maintaining duration targets
 - Constrained optimization for portfolio allocation
 
 ### 2. Portfolio Rebalancing
+
 - Optimize allocation changes to minimize transaction costs
 - Rebalance portfolio to target allocations
 - Constrained optimization with risk limits
 
 ### 3. Spare Cash Allocation
+
 - Optimize allocation between box spreads, T-bills, and bonds
 - Maximize yield while maintaining liquidity constraints
 - Multi-objective optimization for cash allocation
 
 ### 4. Risk-Constrained Optimization
+
 - Optimize portfolio allocation subject to risk limits
 - Maximize return while maintaining risk constraints
 - Portfolio optimization with Greeks constraints
@@ -381,16 +385,19 @@ void optimize_cash_allocation()
 ## Algorithm Selection Guide
 
 ### For Convexity Optimization
+
 - **LD_LBFGS** (Recommended): Limited-memory BFGS, good for smooth objectives
 - **LD_SLSQP**: Sequential quadratic programming, good for constraints
 - **LN_COBYLA**: Derivative-free, good if gradients unavailable
 
 ### For Portfolio Rebalancing
+
 - **LD_SLSQP** (Recommended): Good for equality constraints
 - **LD_MMA**: Method of moving asymptotes, good for inequality constraints
 - **GN_ISRES**: Global optimization, if local optima are a concern
 
 ### For Cash Allocation
+
 - **LD_MMA** (Recommended): Good for inequality constraints (liquidity limits)
 - **LD_SLSQP**: Good for mixed equality/inequality constraints
 - **LN_BOBYQA**: Derivative-free, if yield functions are noisy
@@ -398,23 +405,27 @@ void optimize_cash_allocation()
 ## Integration Checklist
 
 ### Pre-Integration
+
 - [ ] Verify CMake version (3.15+)
 - [ ] Verify C++ compiler (C++11+)
 - [ ] Decide on license (MIT recommended)
 
 ### CMake Integration
+
 - [ ] Add NLopt FetchContent declaration
 - [ ] Set NLOPT_LICENSE_MIT=ON (if using MIT license)
 - [ ] Add NLopt to fetchcontent_makeavailable
 - [ ] Add NLopt to target_link_libraries
 
 ### Testing
+
 - [ ] Create convexity optimization test
 - [ ] Test portfolio rebalancing optimization
 - [ ] Verify build succeeds
 - [ ] Run integration tests
 
 ### Documentation
+
 - [ ] Update API_DOCUMENTATION_INDEX.md
 - [ ] Document algorithm selection
 - [ ] Add usage examples
@@ -422,11 +433,13 @@ void optimize_cash_allocation()
 ## Performance Considerations
 
 ### Algorithm Performance
+
 - Gradient-based algorithms (LD_*) are faster but require gradients
 - Derivative-free algorithms (LN_*) are slower but more robust
 - Global algorithms (GN_*) are slowest but find global optima
 
 ### Optimization Tips
+
 - Provide good initial guesses
 - Set appropriate tolerances (xtol_rel, ftol_rel)
 - Use gradient-based algorithms when possible
@@ -454,10 +467,10 @@ void optimize_cash_allocation()
 
 ## References
 
-- **NLopt Website:** https://nlopt.readthedocs.io/
-- **NLopt GitHub:** https://github.com/stevengj/nlopt
-- **NLopt C++ Reference:** https://nlopt.readthedocs.io/en/stable/NLopt_C-plus-plus_Reference/
-- **Algorithm Guide:** https://nlopt.readthedocs.io/en/stable/NLopt_Algorithms/
+- **NLopt Website:** <https://nlopt.readthedocs.io/>
+- **NLopt GitHub:** <https://github.com/stevengj/nlopt>
+- **NLopt C++ Reference:** <https://nlopt.readthedocs.io/en/stable/NLopt_C-plus-plus_Reference/>
+- **Algorithm Guide:** <https://nlopt.readthedocs.io/en/stable/NLopt_Algorithms/>
 - **Project Research:** `docs/RESEARCH_CPP_FINANCIAL_LIBRARIES.md`
 
 ## Next Steps

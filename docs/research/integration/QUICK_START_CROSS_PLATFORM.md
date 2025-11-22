@@ -20,6 +20,7 @@
 ```
 
 **That's it!** The script will:
+
 1. ✅ Detect your platform and architecture
 2. ✅ Find your C++ compiler
 3. ✅ Detect include paths
@@ -47,6 +48,7 @@
 ### Platform Detection
 
 The script automatically detects:
+
 - **macOS ARM64**: Apple Silicon Macs
 - **macOS x86_64**: Intel Macs
 - **Windows x64**: Windows 10/11
@@ -66,6 +68,7 @@ The script automatically detects:
    - Check that errors are highlighted
 
 3. **Build the project**:
+
    ```bash
    cmake --build --preset <your-platform-preset>
    ```
@@ -77,24 +80,28 @@ The script automatically detects:
 After running the script, use these presets:
 
 ### macOS ARM64
+
 ```bash
 cmake --preset macos-arm64-debug
 cmake --build --preset macos-arm64-debug
 ```
 
 ### macOS x86_64
+
 ```bash
 cmake --preset macos-x86_64-debug
 cmake --build --preset macos-x86_64-debug
 ```
 
 ### Windows
+
 ```bash
 cmake --preset windows-x64-debug
 cmake --build --preset windows-x64-debug
 ```
 
 ### Linux
+
 ```bash
 cmake --preset linux-x64-debug
 cmake --build --preset linux-x64-debug
@@ -107,16 +114,19 @@ cmake --build --preset linux-x64-debug
 ### Script Fails to Detect Compiler
 
 **macOS**:
+
 ```bash
 xcode-select --install
 ```
 
 **Linux**:
+
 ```bash
 sudo apt-get install build-essential
 ```
 
 **Windows**:
+
 - Install Visual Studio 2022 (free Community edition)
 - Or install MinGW-w64
 
@@ -129,6 +139,7 @@ sudo apt-get install build-essential
 ### CMake Configuration Fails
 
 1. **Install CMake**:
+
    ```bash
    # macOS
    brew install cmake ninja
@@ -141,6 +152,7 @@ sudo apt-get install build-essential
    ```
 
 2. **Check dependencies**:
+
    ```bash
    ./scripts/check_tws_download.sh
    ```

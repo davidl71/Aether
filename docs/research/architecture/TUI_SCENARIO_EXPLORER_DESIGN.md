@@ -15,11 +15,13 @@ Add box spread scenario explorer with summary statistics and scenario table to t
 ## Current State
 
 **Web App Has:**
+
 - `ScenarioSummary.tsx` - Summary component showing total scenarios, average APR, probable count, max APR
 - `BoxSpreadTable.tsx` - Full table of all scenarios with sortable columns
 - Data from `useBoxSpreadData` hook
 
 **TUI Missing:**
+
 - Scenario explorer view
 - Summary statistics display
 - Scenario table
@@ -33,6 +35,7 @@ Add box spread scenario explorer with summary statistics and scenario table to t
 **Location**: Add to Dashboard tab or create new "Scenarios" tab
 
 **Display:**
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │ Box Spread Scenarios                                    │
@@ -45,6 +48,7 @@ Add box spread scenario explorer with summary statistics and scenario table to t
 ```
 
 **Implementation:**
+
 - Use FTXUI `text()` and `hbox()` for layout
 - Fetch scenario data from same source as web app
 - Calculate statistics in C++ or receive from backend
@@ -56,6 +60,7 @@ Add box spread scenario explorer with summary statistics and scenario table to t
 **Location**: Below summary or in separate tab
 
 **Columns:**
+
 - Symbol (e.g., "SPX")
 - Expiration (e.g., "2025-12-19")
 - Strike Width (e.g., "100")
@@ -66,6 +71,7 @@ Add box spread scenario explorer with summary statistics and scenario table to t
 - Fill Probability (e.g., "0.85")
 
 **Display:**
+
 ```
 ┌──────┬────────────┬──────────────┬───────────┬────────┬───────┬───────┬──────────────┐
 │Symbol│Expiration  │Strike Width  │Net Debit  │Profit  │ROI %  │APR %  │Fill Prob    │
@@ -77,6 +83,7 @@ Add box spread scenario explorer with summary statistics and scenario table to t
 ```
 
 **Implementation:**
+
 - Use FTXUI `Table` component or custom table rendering
 - Sortable columns (click header to sort)
 - Scrollable list
@@ -87,16 +94,19 @@ Add box spread scenario explorer with summary statistics and scenario table to t
 ## Data Source
 
 **Option 1: Fetch from Backend API**
+
 - Call `/api/v1/scenarios` or similar endpoint
 - Parse JSON response
 - Cache and refresh periodically
 
 **Option 2: Read from File**
+
 - Backend writes scenario data to JSON file
 - TUI reads file (similar to snapshot)
 - Poll for updates
 
 **Option 3: Calculate in TUI**
+
 - Use box spread strategy to calculate scenarios
 - Display results directly
 - Real-time calculation
@@ -108,11 +118,13 @@ Add box spread scenario explorer with summary statistics and scenario table to t
 ## Integration Points
 
 **Files to Modify:**
+
 - `native/src/tui_app.cpp` - Add scenario explorer rendering
 - `native/src/tui_data.h` - Add scenario data structures
 - `native/src/tui_provider.cpp` - Add scenario data fetching
 
 **New Functions:**
+
 - `RenderScenarioExplorer()` - Main rendering function
 - `RenderScenarioSummary()` - Summary statistics
 - `RenderScenarioTable()` - Scenario table
@@ -122,12 +134,14 @@ Add box spread scenario explorer with summary statistics and scenario table to t
 ## User Interaction
 
 **Keyboard Navigation:**
+
 - Arrow keys: Navigate table rows
 - Enter: View scenario details
 - Tab: Switch between summary and table
 - Sort: Click column header (if supported)
 
 **Display Options:**
+
 - Filter by symbol
 - Filter by expiration
 - Sort by APR (descending)

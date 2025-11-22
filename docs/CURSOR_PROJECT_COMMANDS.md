@@ -4,6 +4,7 @@
 **Location**: `.cursor/commands.json`
 
 This document describes the project-specific commands available in Cursor IDE. These commands can be executed from:
+
 - **Command Palette**: `Cmd+Shift+P` → Type command name
 - **AI Chat**: Ask AI to run a command (e.g., "run the build command")
 - **Terminal**: Commands are also available as shell scripts
@@ -13,6 +14,7 @@ This document describes the project-specific commands available in Cursor IDE. T
 ## Build Commands
 
 ### `build:debug`
+
 Build project in debug mode (ARM64).
 
 **Command**: `cmake --build --preset macos-arm64-debug`
@@ -22,6 +24,7 @@ Build project in debug mode (ARM64).
 ---
 
 ### `build:release`
+
 Build project in release mode (ARM64).
 
 **Command**: `cmake --build --preset macos-arm64-release`
@@ -31,6 +34,7 @@ Build project in release mode (ARM64).
 ---
 
 ### `build:configure`
+
 Configure CMake for debug build.
 
 **Command**: `cmake --preset macos-arm64-debug`
@@ -40,6 +44,7 @@ Configure CMake for debug build.
 ---
 
 ### `build:clean`
+
 Clean build artifacts.
 
 **Command**: `cmake --build --preset macos-arm64-debug --target clean`
@@ -49,6 +54,7 @@ Clean build artifacts.
 ---
 
 ### `build:universal`
+
 Build universal binary (auto-detects architecture).
 
 **Command**: `./scripts/build_universal.sh`
@@ -58,6 +64,7 @@ Build universal binary (auto-detects architecture).
 ---
 
 ### `build:dependencies`
+
 Build Intel Decimal and TWS API dependencies.
 
 **Command**: Builds both dependency libraries
@@ -69,6 +76,7 @@ Build Intel Decimal and TWS API dependencies.
 ## Test Commands
 
 ### `test:run`
+
 Run all tests with output on failure.
 
 **Command**: `ctest --preset macos-arm64-debug --output-on-failure`
@@ -78,6 +86,7 @@ Run all tests with output on failure.
 ---
 
 ### `test:run-release`
+
 Run tests in release mode.
 
 **Command**: `ctest --preset macos-arm64-release --output-on-failure`
@@ -87,6 +96,7 @@ Run tests in release mode.
 ---
 
 ### `test:tws-connection`
+
 Test TWS connection (requires TWS/Gateway running).
 
 **Command**: `./scripts/test_tws_connection.sh`
@@ -98,6 +108,7 @@ Test TWS connection (requires TWS/Gateway running).
 ## Quality Commands
 
 ### `lint:run`
+
 Run all linters (cppcheck, clang-tidy, etc.).
 
 **Command**: `./scripts/run_linters.sh`
@@ -107,6 +118,7 @@ Run all linters (cppcheck, clang-tidy, etc.).
 ---
 
 ### `format:code`
+
 Format code using clang-format.
 
 **Command**: Formats all C++ source files
@@ -118,6 +130,7 @@ Format code using clang-format.
 ## Run Commands
 
 ### `run:tui`
+
 Run TUI application (dry-run mode).
 
 **Command**: `./build/macos-arm64-debug/bin/ib_box_spread_tui --dry-run`
@@ -127,6 +140,7 @@ Run TUI application (dry-run mode).
 ---
 
 ### `run:cli`
+
 Run CLI application (dry-run mode).
 
 **Command**: `./build/macos-arm64-debug/bin/ib_box_spread --dry-run`
@@ -136,6 +150,7 @@ Run CLI application (dry-run mode).
 ---
 
 ### `run:cli-with-config`
+
 Run CLI with config file (dry-run).
 
 **Command**: `./build/macos-arm64-debug/bin/ib_box_spread --config config/config.json --dry-run`
@@ -147,6 +162,7 @@ Run CLI with config file (dry-run).
 ## Setup Commands
 
 ### `setup:worktree`
+
 Setup new git worktree with build.
 
 **Command**: `./scripts/setup_worktree.sh`
@@ -156,6 +172,7 @@ Setup new git worktree with build.
 ---
 
 ### `setup:ramdisk`
+
 Setup RAM disk for faster builds.
 
 **Command**: `./scripts/workspace_ram_disk_manager.sh startup`
@@ -165,6 +182,7 @@ Setup RAM disk for faster builds.
 ---
 
 ### `ramdisk:status`
+
 Check RAM disk status.
 
 **Command**: `./scripts/workspace_ram_disk_manager.sh status`
@@ -174,6 +192,7 @@ Check RAM disk status.
 ---
 
 ### `ramdisk:save`
+
 Save RAM disk contents to disk.
 
 **Command**: `./scripts/workspace_ram_disk_manager.sh save`
@@ -183,6 +202,7 @@ Save RAM disk contents to disk.
 ---
 
 ### `ramdisk:shutdown`
+
 Save and shutdown RAM disk.
 
 **Command**: `./scripts/workspace_ram_disk_manager.sh shutdown`
@@ -194,6 +214,7 @@ Save and shutdown RAM disk.
 ## Documentation Commands
 
 ### `docs:list`
+
 List all global docs paths for Cursor setup.
 
 **Command**: `./scripts/list_global_docs.sh`
@@ -203,6 +224,7 @@ List all global docs paths for Cursor setup.
 ---
 
 ### `docs:sync`
+
 Sync global docs configuration.
 
 **Command**: `python3 scripts/sync_global_docs.py --generate-paths`
@@ -214,6 +236,7 @@ Sync global docs configuration.
 ## Validation Commands
 
 ### `validate:config`
+
 Validate configuration file.
 
 **Command**: `./build/macos-arm64-debug/bin/ib_box_spread --config config/config.json --validate`
@@ -223,6 +246,7 @@ Validate configuration file.
 ---
 
 ### `check:tws`
+
 Check TWS API download and setup.
 
 **Command**: `./scripts/check_tws_download.sh`
@@ -232,6 +256,7 @@ Check TWS API download and setup.
 ---
 
 ### `check:feature-parity`
+
 Check feature parity across implementations.
 
 **Command**: `./scripts/check_feature_parity.sh`
@@ -241,6 +266,7 @@ Check feature parity across implementations.
 ---
 
 ### `check:build-status`
+
 Check current build status and binary locations.
 
 **Command**: Lists built binaries
@@ -252,6 +278,7 @@ Check current build status and binary locations.
 ## Clean Commands
 
 ### `clean:all`
+
 Clean all build artifacts and generated files.
 
 **Command**: Removes all build directories and CMake cache
@@ -263,6 +290,7 @@ Clean all build artifacts and generated files.
 ## Info Commands
 
 ### `info:project`
+
 Show project information and status.
 
 **Command**: Displays project name, architecture, and available presets
@@ -323,6 +351,7 @@ To add new commands, edit `.cursor/commands.json`:
 ```
 
 **Categories**:
+
 - `build` - Build-related commands
 - `test` - Testing commands
 - `quality` - Linting, formatting, code quality

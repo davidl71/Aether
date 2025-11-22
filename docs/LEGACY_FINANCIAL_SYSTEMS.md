@@ -45,6 +45,7 @@ This guide provides information about legacy business-oriented programming langu
 **Philosophy**: Portable, English-like language for cross-platform compatibility
 
 **Key Characteristics**:
+
 - Verbose, self-documenting syntax
 - Designed for business applications
 - Cross-platform portability (IBM Z mainframes, Windows, Linux, cloud)
@@ -53,12 +54,14 @@ This guide provides information about legacy business-oriented programming langu
 ### Platform and Ecosystem
 
 **Platform Flexibility**:
+
 - IBM Z mainframes
 - Windows and Linux
 - Containerized cloud environments
 - Multiple vendor tooling options
 
 **Market Dominance**:
+
 - Banking and insurance sectors
 - Government systems
 - Credit card processing
@@ -67,6 +70,7 @@ This guide provides information about legacy business-oriented programming langu
 ### Security Considerations
 
 **Attack Surface**: COBOL itself exposes few attack avenues compared to modern web languages:
+
 - Limited I/O statements (ACCEPT, DISPLAY)
 - Database access (EXEC SQL)
 - Data file operations (typically trusted sources)
@@ -78,6 +82,7 @@ This guide provides information about legacy business-oriented programming langu
    - Static SQL with host variables is safe (parameterized statements)
    - Dynamic SQL (PREPARE, EXECUTE IMMEDIATE) is vulnerable if user input is not validated
    - Example vulnerability:
+
    ```cobol
    STRING "INSERT INTO TBL (a,b,c) VALUES (" X "," Y "," Z ")"
           INTO MY-SQL.
@@ -104,6 +109,7 @@ This guide provides information about legacy business-oriented programming langu
    - Memory leaks from improper FREEMAIN/GETMAIN usage
 
 **Security Resources**:
+
 - Limited information on "COBOL secure coding" available online
 - Less security awareness compared to modern languages
 - Static analysis tools like Kiuwan Code Security can help identify vulnerabilities
@@ -119,6 +125,7 @@ This guide provides information about legacy business-oriented programming langu
 **Philosophy**: Fixed-format specifications optimized for business calculations and reports
 
 **Key Characteristics**:
+
 - Originally fixed-format columns (modern RPG IV is free-format)
 - Cycle-based processing heritage
 - Tightly coupled to IBM i (formerly AS/400)
@@ -127,12 +134,14 @@ This guide provides information about legacy business-oriented programming langu
 ### Platform and Ecosystem
 
 **Platform**:
+
 - IBM i (formerly AS/400, System/3)
 - Seamless integration with DB2/400
 - Native file systems
 - Rock-solid stability
 
 **Market Presence**:
+
 - Manufacturing and distribution
 - ERP systems (JD Edwards, Infor)
 - Custom IBM i solutions
@@ -146,6 +155,7 @@ This guide provides information about legacy business-oriented programming langu
 1. **SQL Injection**:
    - Dynamic SQL is vulnerable if user input is not properly validated
    - Example vulnerability:
+
    ```rpg
    Stmt = 'UPDATE EmplTable SET Sal = Sal + (Sal * '
         + %Char(RaisePct) + ') WHERE ' + WhereClause;
@@ -169,7 +179,7 @@ This guide provides information about legacy business-oriented programming langu
 
 ## COBOL vs RPG: Decision Framework
 
-### Choose COBOL If:
+### Choose COBOL If
 
 - **Cross-platform portability** is required
 - **Hardware migrations** are anticipated
@@ -177,7 +187,7 @@ This guide provides information about legacy business-oriented programming langu
 - **Highly regulated industries** (banking, government) where COBOL is standard
 - **High-volume batch transactions** where COBOL's proven performance on z/OS is critical
 
-### Choose RPG If:
+### Choose RPG If
 
 - **Committed to IBM i platform** and value integrated ecosystem
 - **Tight database integration** benefits business processes
@@ -191,12 +201,14 @@ This guide provides information about legacy business-oriented programming langu
 ### Open Source Tools and Modernization
 
 **Open Mainframe Project**:
+
 - Hosted by Linux Foundation
 - Focal point for Linux and Open Source in mainframe computing
 - Projects include Zowe, COBOL Check, Galasa, and more
 - Website: [Open Mainframe Project](https://openmainframeproject.org/)
 
 **Zowe**:
+
 - Open source project offering modern interfaces to interact with z/OS
 - Zowe CLI allows command-line access to mainframe through APIs
 - Enables modern development tools (VS Code, Git, DevOps)
@@ -204,6 +216,7 @@ This guide provides information about legacy business-oriented programming langu
 - Website: [Zowe.org](https://www.zowe.org/)
 
 **Modern Development Workflow**:
+
 - Use VS Code with Zowe Explorer extensions
 - Git for version control (similar to CA Endevor or IBM SCLM)
 - NPM scripts for automation
@@ -215,11 +228,13 @@ This guide provides information about legacy business-oriented programming langu
 ### Modernization Strategies
 
 **Traditional Approach**:
+
 - "Maintain or rewrite" dilemma
 - High-risk "big bang" migrations
 - Expensive and time-consuming
 
 **Modern Approach**:
+
 - **AI-powered tools** reduce discovery time by 80%
 - **Incremental transformation** preserving business logic
 - **Renovate rather than replace** - transform green-screen to cloud-ready
@@ -227,6 +242,7 @@ This guide provides information about legacy business-oriented programming langu
 - Modernization market expected to reach $36.86 billion by 2027
 
 **Tools**:
+
 - CM evolveIT (AI-powered analysis)
 - Micro Focus modernization tools
 - OpenLegacy platform
@@ -235,11 +251,13 @@ This guide provides information about legacy business-oriented programming langu
 ### AI and Large Language Models for Mainframe
 
 **The Challenge**:
+
 - LLMs perform poorly on mainframe code because there's very little training data
 - AI coding assistants are less useful for mainframe developers
 - LLMs are considerably worse at mainframe programming tasks than modern languages
 
 **Zorse Project**:
+
 - **Purpose**: Train and evaluate large language models for mainframe programming languages (COBOL, RPG, etc.)
 - **Approach**: Collect large dataset of permissively licensed mainframe source code
 - **Dataset**: Source code from decommissioned mainframe systems
@@ -247,11 +265,13 @@ This guide provides information about legacy business-oriented programming langu
 - **Goal**: Build AI coding tools to boost productivity of mainframe software engineers
 
 **Integration with Other Projects**:
+
 - Works with **COBOL Programming Course** for educational materials
 - Integrates with **COBOL Check** for practical testing
 - Combines education and testing for modernizing legacy systems
 
 **Benefits**:
+
 - Improved AI coding assistants for mainframe developers
 - Better code understanding and generation for legacy systems
 - Enhanced productivity for maintaining and modernizing COBOL/RPG systems
@@ -266,6 +286,7 @@ This guide provides information about legacy business-oriented programming langu
 **GitHub Repository**: [loveOSS/awesome-cobol](https://github.com/loveOSS/awesome-cobol)
 
 Curated list of COBOL resources including:
+
 - Learning materials
 - Compilers and tools
 - Frameworks and libraries
@@ -275,6 +296,7 @@ Curated list of COBOL resources including:
 ### Data Conversion Tools
 
 **COBOL2J (Cobol and RPG Data Reader and Converter)**:
+
 - **Purpose**: Read/write COBOL or RPG data files from mainframes, AS/400, or Baby/36 environments
 - **Features**:
   - COBOL file layout parsing
@@ -293,6 +315,7 @@ Curated list of COBOL resources including:
 - **Reference**: [SourceForge: COBOL2J](https://sourceforge.net/projects/cobol2j/)
 
 **Related Tools**:
+
 - **CB2XML**: COBOL CopyBook to XML converter
 - **CobolToJson**: Converts COBOL data files to JSON using CopyBook
 - **RecordEditor**: Data file editor for flat files (supports legacy formats)
@@ -300,6 +323,7 @@ Curated list of COBOL resources including:
 ### Open Mainframe Project Resources
 
 **Projects**:
+
 - **Zowe**: Modern interfaces for z/OS
 - **COBOL Check**: Testing framework for COBOL
 - **COBOL Programming Course**: Educational materials
@@ -308,12 +332,14 @@ Curated list of COBOL resources including:
 - **Zorse**: AI dataset tool for training LLMs on mainframe languages
 
 **Education**:
+
 - COBOL Programming Course
 - Mainframe Open Education
 - Mentorship Program
 - Career opportunities
 
 **Community**:
+
 - Slack channels
 - Mailing lists
 - Community meetings
@@ -326,6 +352,7 @@ Curated list of COBOL resources including:
 ### Integration Scenarios
 
 **Potential Integration Points**:
+
 1. **Backend Systems**: Legacy systems may handle account management, settlement, or reporting
 2. **Data Feeds**: Historical data or reference data from legacy systems
 3. **Regulatory Reporting**: Compliance systems may run on legacy platforms
@@ -334,6 +361,7 @@ Curated list of COBOL resources including:
 ### Security Considerations
 
 **When Interfacing with Legacy Systems**:
+
 - Validate all data from legacy systems
 - Implement proper authentication and authorization
 - Monitor for information leakage
@@ -341,6 +369,7 @@ Curated list of COBOL resources including:
 - Audit data flows between modern and legacy systems
 
 **Shared Security Concerns**:
+
 - SQL injection prevention
 - Command injection prevention
 - Information flow vulnerabilities
@@ -349,17 +378,20 @@ Curated list of COBOL resources including:
 ### This Project's Approach
 
 **Current Stack**:
+
 - C++20 for core calculations
 - Python for bindings and strategy development
 - Rust for performance-critical components (future consideration)
 - TWS API for Interactive Brokers integration
 
 **No Direct Legacy Integration**:
+
 - This project does not directly interface with COBOL or RPG systems
 - Modern architecture avoids legacy dependencies
 - Focus on modern APIs and protocols
 
 **Why This Reference Exists**:
+
 - Understanding the broader financial technology ecosystem
 - Awareness of security considerations in financial systems
 - Context for potential future integration scenarios
@@ -434,6 +466,7 @@ COBOL and RPG remain critical infrastructure in the financial industry, powering
 - **Industry Knowledge**: Awareness of the technology stack used by major financial institutions
 
 For modern trading systems like this project:
+
 - **No direct legacy integration** is required
 - **Modern APIs and protocols** are preferred
 - **Security best practices** apply regardless of underlying systems

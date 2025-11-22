@@ -1,14 +1,16 @@
 # NotebookLM Cleanup Steps - Action Checklist
 
-**Notebook URL**: https://notebooklm.google.com/notebook/d08f66c4-e5db-480a-bdc4-50682adc045e
+**Notebook URL**: <https://notebooklm.google.com/notebook/d08f66c4-e5db-480a-bdc4-50682adc045e>
 
 ## Pre-Cleanup: Identify Sources to Keep
 
 ### ✅ Keep These Sources (Already in Notebook)
+
 - **8 YouTube Videos** - Keep all of them
 - **1 Article** - VitalTrades socket implementation article
 
 ### ❌ Remove This Source
+
 - **GitHub Repository** - Remove the entire repository source
 
 ### ➕ Add These Individual Documentation Files (After cleanup)
@@ -18,6 +20,7 @@
 ### Step 1: Remove GitHub Repository Source
 
 1. **Open notebook in browser**:
+
    ```
    https://notebooklm.google.com/notebook/d08f66c4-e5db-480a-bdc4-50682adc045e
    ```
@@ -101,6 +104,7 @@ https://raw.githubusercontent.com/davidl71/ib_box_spread_full_universal/main/con
 After cleanup, you should have approximately **19-20 sources**:
 
 **Videos**: 8 sources
+
 - ✅ Essential Components of TWS API Programs
 - ✅ Trading & Options Tutorial 1
 - ✅ Trading & Options Tutorial 2
@@ -111,9 +115,11 @@ After cleanup, you should have approximately **19-20 sources**:
 - ✅ Trading & Options Tutorial 7
 
 **Articles**: 1 source
+
 - ✅ VitalTrades C++ Socket Implementation article
 
 **Documentation Files**: ~10-11 sources
+
 - ✅ README.md
 - ✅ ECLIENT_EWRAPPER_ARCHITECTURE.md
 - ✅ TWS_INTEGRATION_STATUS.md
@@ -173,16 +179,19 @@ Once you've completed the cleanup:
 ## Troubleshooting
 
 **If a URL doesn't work**:
+
 - Make sure you're using the `raw.githubusercontent.com` URL (not regular github.com)
 - Check that the file path is correct
 - Try copying the URL directly from the browser when viewing the raw file on GitHub
 
 **If files aren't processing**:
+
 - Check that the files exist on GitHub
 - Wait a few minutes - processing can take time
 - Try refreshing the page
 
 **If sources aren't showing up**:
+
 - Check the Sources panel - they should appear even while processing
 - Look for processing indicators (spinning icons)
 - Check for any error messages

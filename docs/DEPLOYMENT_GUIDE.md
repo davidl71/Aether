@@ -87,6 +87,7 @@ This guide provides step-by-step procedures for deploying the box spread trading
 ### 1.1 System Requirements
 
 **Minimum Requirements**:
+
 - **OS**: Linux (Ubuntu 22.04+ recommended) or macOS 11.0+
 - **CPU**: 4+ cores
 - **RAM**: 8GB+ (16GB recommended)
@@ -94,6 +95,7 @@ This guide provides step-by-step procedures for deploying the box spread trading
 - **Network**: Stable internet connection, low latency to IB servers
 
 **Recommended**:
+
 - Dedicated server (not shared)
 - Redundant network connections
 - UPS backup power
@@ -102,6 +104,7 @@ This guide provides step-by-step procedures for deploying the box spread trading
 ### 1.2 Operating System Setup
 
 **Linux (Ubuntu/Debian)**:
+
 ```bash
 # Update system
 sudo apt update && sudo apt upgrade -y
@@ -127,6 +130,7 @@ sudo apt install -y \
 ```
 
 **macOS**:
+
 ```bash
 # Install Homebrew (if not installed)
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -255,6 +259,7 @@ sudo -u ib_trading nano ~/.config/ib_box_spread/config.json
 ### 3.3 Security Configuration
 
 **File Permissions**:
+
 ```bash
 # Secure configuration file
 chmod 600 ~/.config/ib_box_spread/config.json
@@ -267,6 +272,7 @@ chmod 750 /var/log/ib_box_spread
 ```
 
 **Environment Variables** (if needed):
+
 ```bash
 # Add to ~/.bashrc or systemd service file
 export IB_BOX_SPREAD_CONFIG=/home/ib_trading/.config/ib_box_spread/config.json
@@ -297,12 +303,14 @@ export TWS_MOCK=false
 ### 4.2 Gateway Configuration (Headless)
 
 **IB Gateway Setup**:
+
 - Download IB Gateway from IB website
 - Install on server
 - Configure API settings (same as TWS)
 - Set to auto-start on boot
 
 **Systemd Service** (if needed):
+
 ```ini
 [Unit]
 Description=Interactive Brokers Gateway
@@ -360,6 +368,7 @@ WantedBy=multi-user.target
 ```
 
 **Enable and Start**:
+
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable ib-box-spread
@@ -397,6 +406,7 @@ sudo systemctl status ib-box-spread
 ```
 
 **Load Service**:
+
 ```bash
 launchctl load ~/Library/LaunchAgents/com.ib_box_spread.plist
 launchctl start com.ib_box_spread
@@ -409,6 +419,7 @@ launchctl start com.ib_box_spread
 ### 6.1 Log Configuration
 
 **Log Rotation** (logrotate):
+
 ```bash
 # Create logrotate config: /etc/logrotate.d/ib-box-spread
 /var/log/ib_box_spread/*.log {
@@ -429,6 +440,7 @@ launchctl start com.ib_box_spread
 ### 6.2 Monitoring Setup
 
 **Health Check Script**:
+
 ```bash
 #!/bin/bash
 # /opt/ib_box_spread/scripts/health_check.sh
@@ -452,6 +464,7 @@ exit 0
 ```
 
 **Cron Job** (every 5 minutes):
+
 ```bash
 # Add to crontab: crontab -e
 */5 * * * * /opt/ib_box_spread/scripts/health_check.sh
@@ -460,6 +473,7 @@ exit 0
 ### 6.3 Alerting
 
 **Email Alerts** (configure in config.json):
+
 ```json
 {
   "notifications": {
@@ -490,6 +504,7 @@ exit 0
 ### 7.1 Network Security
 
 **Firewall Rules**:
+
 ```bash
 # Allow only localhost connections to TWS
 sudo ufw allow from 127.0.0.1 to any port 7496
@@ -519,11 +534,13 @@ chmod 640 /var/log/ib_box_spread/*.log
 ### 7.3 Credential Management
 
 **Never commit credentials**:
+
 - Use environment variables for sensitive data
 - Store API keys in secure vault (HashiCorp Vault, AWS Secrets Manager)
 - Rotate credentials regularly
 
 **Example**:
+
 ```bash
 # Use environment variables
 export IB_API_KEY=$(vault kv get -field=api_key secret/ib_box_spread)
@@ -537,6 +554,7 @@ export IB_API_SECRET=$(vault kv get -field=api_secret secret/ib_box_spread)
 ### 8.1 Backup Strategy
 
 **Configuration Backup**:
+
 ```bash
 # Daily backup script
 #!/bin/bash
@@ -552,6 +570,7 @@ find "$BACKUP_DIR" -type d -mtime +30 -exec rm -rf {} +
 ```
 
 **Database Backup** (if using QuestDB):
+
 ```bash
 # Backup QuestDB data
 questdb backup /backup/ib_box_spread/questdb_$(date +%Y%m%d).tar.gz
@@ -560,6 +579,7 @@ questdb backup /backup/ib_box_spread/questdb_$(date +%Y%m%d).tar.gz
 ### 8.2 Recovery Procedures
 
 **Service Recovery**:
+
 ```bash
 # Restart service
 sudo systemctl restart ib-box-spread
@@ -572,6 +592,7 @@ sudo journalctl -u ib-box-spread -f
 ```
 
 **Configuration Recovery**:
+
 ```bash
 # Restore from backup
 cp /backup/ib_box_spread/YYYYMMDD/config.json ~/.config/ib_box_spread/
@@ -585,6 +606,7 @@ sudo systemctl restart ib-box-spread
 ### 9.1 System Tuning
 
 **Linux**:
+
 ```bash
 # Increase file descriptor limits
 echo "* soft nofile 65536" | sudo tee -a /etc/security/limits.conf
@@ -596,6 +618,7 @@ sudo sysctl -w net.ipv4.tcp_max_syn_backlog=4096
 ```
 
 **macOS**:
+
 ```bash
 # Increase file descriptor limits
 sudo launchctl limit maxfiles 65536 200000
@@ -604,6 +627,7 @@ sudo launchctl limit maxfiles 65536 200000
 ### 9.2 Application Tuning
 
 **Configuration Optimizations**:
+
 ```json
 {
   "loop_delay_ms": 500,  // Reduce for faster scanning
@@ -662,6 +686,7 @@ tail -f /var/log/ib_box_spread/ib_box_spread.log
 ### Daily Operations
 
 **Morning Checklist**:
+
 1. Check service status: `sudo systemctl status ib-box-spread`
 2. Review overnight logs: `tail -n 100 /var/log/ib_box_spread/ib_box_spread.log`
 3. Verify TWS connection active
@@ -669,6 +694,7 @@ tail -f /var/log/ib_box_spread/ib_box_spread.log
 5. Review positions and orders
 
 **Monitoring**:
+
 - Service uptime
 - TWS connection status
 - Order execution rate
@@ -699,6 +725,7 @@ tail -f /var/log/ib_box_spread/ib_box_spread.log
 ### Common Issues
 
 **Service Won't Start**:
+
 ```bash
 # Check logs
 sudo journalctl -u ib-box-spread -n 50
@@ -712,6 +739,7 @@ ls -la ~/.config/ib_box_spread/config.json
 ```
 
 **TWS Connection Failures**:
+
 ```bash
 # Verify TWS is running
 netstat -an | grep 7496
@@ -724,6 +752,7 @@ telnet 127.0.0.1 7496
 ```
 
 **High Error Rates**:
+
 ```bash
 # Check error logs
 grep ERROR /var/log/ib_box_spread/ib_box_spread.log | tail -20

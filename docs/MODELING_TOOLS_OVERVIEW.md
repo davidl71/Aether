@@ -127,13 +127,15 @@ Modeling tools are essential for data science teams to develop, test, and deploy
 
 ## Decision Framework
 
-### Choose Machine Learning When:
+### Choose Machine Learning When
+
 - Working with structured data
 - Need traditional statistical methods
 - Want faster training times
 - Have limited computational resources
 
-### Choose Deep Learning When:
+### Choose Deep Learning When
+
 - Working with unstructured data (images, videos, text)
 - Need to identify complex patterns
 - Have access to GPU resources

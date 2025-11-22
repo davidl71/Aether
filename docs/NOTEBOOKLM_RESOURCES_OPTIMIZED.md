@@ -5,7 +5,7 @@
 **Last Updated**: 2025-11-13
 **Notebook**: TWS Automated Trading - Complete Resources
 **Notebook ID**: `tws-automated-trading-complete`
-**Notebook URL**: https://notebooklm.google.com/notebook/d08f66c4-e5db-480a-bdc4-50682adc045e
+**Notebook URL**: <https://notebooklm.google.com/notebook/d08f66c4-e5db-480a-bdc4-50682adc045e>
 
 ## Quick Summary
 
@@ -17,12 +17,15 @@
 ## Notebook Metadata
 
 ### Name
+
 TWS Automated Trading - Complete Resources
 
 ### Description
+
 Complete knowledge base for TWS Automated Trading project including GitHub repository documentation, TWS API implementation videos, trading tutorials, and implementation articles.
 
 ### Topics
+
 - TWS API
 - Interactive Brokers
 - Options Trading
@@ -33,9 +36,11 @@ Complete knowledge base for TWS Automated Trading project including GitHub repos
 - API Integration
 
 ### Tags
+
 `tws-api`, `trading`, `options`, `documentation`, `youtube`, `tutorial`, `ib-api`, `c++`, `socket-implementation`, `boost-asio`
 
 ### Use Cases
+
 - Research TWS API implementation
 - Summarize YouTube tutorials
 - Create documentation from videos

@@ -94,11 +94,13 @@ The script will generate:
 ### What to Look For
 
 ✅ **Success Indicators**:
+
 - Authentication successful
 - Endpoints discovered (especially `/strategy/*`, `/complex/*`, `/qsb/*`)
 - Quoted spread tests return data
 
 ❌ **Failure Indicators**:
+
 - Authentication fails (check credentials)
 - All endpoints return 404 (may need different base URL)
 - No quoted spread endpoints found
@@ -135,6 +137,7 @@ curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
 **Symptoms**: `401 Unauthorized` or `403 Forbidden`
 
 **Solutions**:
+
 - ✅ Verify client ID and secret are correct
 - ✅ Check if credentials are for API (not just web login)
 - ✅ Verify OAuth endpoint URL
@@ -145,6 +148,7 @@ curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
 **Symptoms**: All endpoints return `404 Not Found`
 
 **Solutions**:
+
 - ✅ Check base URL (may be different)
 - ✅ Review API documentation for correct endpoints
 - ✅ Verify API access is enabled in your trial
@@ -154,6 +158,7 @@ curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
 **Symptoms**: `429 Too Many Requests`
 
 **Solutions**:
+
 - ✅ Add delays between requests
 - ✅ Check rate limits in API docs
 - ✅ Use caching for repeated requests

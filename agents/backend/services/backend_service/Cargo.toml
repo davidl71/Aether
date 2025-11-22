@@ -10,11 +10,21 @@ market_data = { path = "../../crates/market_data" }
 strategy = { path = "../../crates/strategy" }
 risk = { path = "../../crates/risk" }
 api = { path = "../../crates/api" }
+nats_adapter = { path = "../../crates/nats_adapter" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }
 async-trait = { workspace = true }
-tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 rand = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "sync", "time", "signal"] }
+toml = { workspace = true }
+futures = "0.3"
+
+[dev-dependencies]
+nats_adapter = { path = "../../crates/nats_adapter" }
+strategy = { path = "../../crates/strategy" }
+serde_json = { workspace = true }
+chrono = { workspace = true }

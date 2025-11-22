@@ -756,7 +756,7 @@ This section covers market data providers for real-time and historical financial
 
 - **Developer Portal**: <https://developer.discountbank.co.il/openapi/>
 - **Official Website**: <https://www.discountbank.co.il/>
-- **Contact**: abuse@dbank.co.il (for cyber security incidents)
+- **Contact**: <abuse@dbank.co.il> (for cyber security incidents)
 - **Description**: Discount Bank's Open Banking API portal providing access to banking services and financial data through REST APIs. Part of Israel's open banking initiative, allowing third-party providers to access banking services with customer consent.
 - **Key Features**:
   - **Open Banking APIs**: RESTful APIs for banking services
@@ -787,7 +787,7 @@ This section covers market data providers for real-time and historical financial
   - **Account Management**: Automated account monitoring and management
   - **Israeli Market Integration**: Support for traders operating in Israeli markets
 - **Security**:
-  - Cyber security incident reporting: abuse@dbank.co.il
+  - Cyber security incident reporting: <abuse@dbank.co.il>
   - Contact requests through portal for security incidents
   - Corporate authorization required for production access
 - **Maintenance**: Scheduled maintenance windows announced (e.g., November 22nd, 23:00-02:00)
@@ -4087,6 +4087,7 @@ When adding new dependencies:
   - Link code changes to issues
   - Coordinate multi-agent development (see `agents/shared/COORDINATION.md`)
 - **Example Usage**:
+
   ```python
   from python.integration.linear_client import LinearClient
 
@@ -4099,6 +4100,7 @@ When adding new dependencies:
     priority=1
   )
   ```
+
 - **Note**: Linear provides both MCP integration (via GitKraken) for Cursor IDE and direct API access for programmatic issue tracking. The Python client enables automated issue creation from trading system events, error logging, and feature tracking. Particularly useful for coordinating multi-agent development workflows and tracking trading system incidents.
 
 ## Quick Reference Links

@@ -19,6 +19,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 **Status**: ✅ Already Documented
 
 **Key Features**:
+
 - API-first commission-free stock broker
 - Free paper trading and real-time market data
 - Strong backtesting integrations (QuantRocket, Blueshift, Backtrader)
@@ -27,6 +28,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 - **Elite Smart Router**: DMA Gateway, VWAP/TWAP orders (user has account)
 
 **Pricing**:
+
 - Stock & ETFs: Free
 - Account fee: No
 - Margin rate: 3.75%
@@ -43,6 +45,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 **Status**: ✅ Already Documented (Primary Broker)
 
 **Key Features**:
+
 - One of the largest online brokerage firms
 - TWS API supports multiple asset classes
 - Coverage of 135 markets, 33 countries, 23 currencies
@@ -50,6 +53,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 - Backtesting and paper trading available
 
 **Pricing**:
+
 - Stock & ETFs: $1.0 for US stocks
 - Account fee: No
 - Inactivity fee: Yes
@@ -67,6 +71,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 **Status**: ⚠️ Limited Relevance
 
 **Key Features**:
+
 - Large online brokerage (acquired by Charles Schwab)
 - API built for service integration
 - US-focused, Nasdaq Level 1/2, Real-time OPRA/AMEX/NYSE quotes
@@ -74,6 +79,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 - No paper trading
 
 **Pricing**:
+
 - Stock & ETFs: Free US stocks
 - Account fee: No
 - Market data: Free for non-professional, $24-$110/month for professional
@@ -89,6 +95,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 **Status**: ❌ Not Relevant
 
 **Key Features**:
+
 - API-driven brokerage for enterprise clients
 - Cloud-based brokerage infrastructure
 - Fractional investing of US stocks
@@ -103,6 +110,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 **Status**: ⚠️ Market Data Only
 
 **Key Features**:
+
 - Cloud-native market data solutions
 - Forex API (170+ currencies, 29,000+ currency pairs)
 - ETFs, mutual funds, hedge fund data APIs
@@ -119,6 +127,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 **Status**: ❌ Not Relevant
 
 **Key Features**:
+
 - Spread betting and CFD provider
 - Access to 17,000+ global markets
 - UK-focused (FCA regulated)
@@ -133,6 +142,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 **Status**: ✅ Potentially Relevant
 
 **Key Features**:
+
 - **C++ API**: Libraries for C++ programmers (matches project language!)
 - **DLL Integration**: Create dynamic link libraries (DLLs)
 - **List Order Entry**: Basket trading functionality
@@ -144,6 +154,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 - **No Additional Fees**: No additional market data subscription fees for API use
 
 **Pricing**:
+
 - Stock & ETFs: Yes
 - Minimum monthly commission: $25 for accounts under $15,000
 - Margin rate: $0.01/share or $1.00/contract with $50 per position minimum
@@ -161,11 +172,13 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 **Status**: ⚠️ Limited Relevance
 
 **Key Features**:
+
 - Online trading for retail investors
 - Stocks, Options, Futures, ETFs, Mutual Funds, Bonds, CDs
 - Multiple account types available
 
 **Pricing**:
+
 - Account fee: No
 - Margin rate: Between 5.45% and 8.95%
 
@@ -178,6 +191,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 **Status**: ❌ Not Relevant
 
 **Key Features**:
+
 - Self-directed trading platform
 - Commission-free ETFs
 - No account minimum
@@ -191,6 +205,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 **Status**: ✅ Potentially Relevant
 
 **Key Features**:
+
 - **Interface Options**: APIs, FIX, or trading applications
 - **Market Access**: All U.S. Equity and Options markets
 - **Trading Management**: Advanced strategies, risk monitoring
@@ -211,6 +226,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 **Status**: ⚠️ Market Data Only
 
 **Key Features**:
+
 - **Excel Integration**: Live streaming market data into Excel
 - **Desktop APIs**: R and Python APIs
 - **Market Data**: Streaming data from Infront terminal
@@ -286,6 +302,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 ### Primary Broker: Interactive Brokers (IBKR)
 
 **Rationale**:
+
 - ✅ Already integrated in project
 - ✅ Comprehensive options support (SPX/SPXW)
 - ✅ Global market access
@@ -294,6 +311,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 ### Secondary Broker: Alpaca Markets
 
 **Rationale**:
+
 - ✅ Already documented
 - ✅ Commission-free options (API)
 - ✅ Modern REST API
@@ -302,6 +320,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 ### Alternative Options (Not Yet Integrated)
 
 **Lightspeed Trader API**:
+
 - ✅ C++ API matches project technology stack
 - ✅ High performance (1,500 orders/sec)
 - ✅ Low latency with co-location options
@@ -309,6 +328,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 - ⚠️ Requires evaluation and integration
 
 **Lime Brokerage**:
+
 - ✅ FIX/API access to US Options markets
 - ✅ Performance-focused
 - ✅ Direct market access
@@ -321,6 +341,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 ### Lightspeed Trader API
 
 **Advantages**:
+
 - **C++ Native**: Matches project technology stack perfectly
 - **High Performance**: 1,500 orders/second per ID
 - **Low Latency**: Optimized for performance, co-location available
@@ -328,6 +349,7 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 - **DLL Integration**: Can integrate as dynamic library
 
 **Considerations**:
+
 - Requires Lightspeed Trader platform
 - Minimum monthly commission ($25 for accounts under $15,000)
 - Need to evaluate options trading capabilities
@@ -338,12 +360,14 @@ QuantPedia maintains a comprehensive list of brokerage APIs and tools for quanti
 ### Lime Brokerage
 
 **Advantages**:
+
 - **FIX/API Access**: Industry-standard protocols
 - **US Options Markets**: Direct access
 - **Performance-Focused**: Optimized for automated trading
 - **Comprehensive Market Data**: Real-time data for executions
 
 **Considerations**:
+
 - Requires evaluation of pricing and capabilities
 - Need to verify options trading support
 - Integration effort required

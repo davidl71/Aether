@@ -1,0 +1,5 @@
+{
+  "stale_threshold_days": 90,
+  "output_path": "docs/DOCUMENTATION_HEALTH_REPORT.md",
+  "comment": "Configuration for automated documentation health monitoring script"
+}

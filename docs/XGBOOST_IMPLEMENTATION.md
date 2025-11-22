@@ -96,6 +96,7 @@ python -m python.ml.evaluate_models \
 ### Next Steps for Full Integration
 
 1. Add XGBoost to CMakeLists.txt:
+
    ```cmake
    find_package(xgboost QUIET)
    if(NOT xgboost_FOUND)
@@ -110,16 +111,19 @@ python -m python.ml.evaluate_models \
    ```
 
 2. Link XGBoost to target:
+
    ```cmake
    target_link_libraries(your_target PRIVATE xgboost::xgboost)
    ```
 
 3. Enable XGBoost in code:
+
    ```cpp
    #define ENABLE_XGBOOST
    ```
 
 4. Integrate with `BoxSpreadStrategy`:
+
    ```cpp
    ml::MLPredictor predictor;
    predictor.load_models("python/ml/models/models");
@@ -174,6 +178,7 @@ python -m python.ml.continuous_learning \
 ### Data Collection
 
 The system collects:
+
 - Trading opportunities (before execution)
 - Predictions made by models
 - Actual outcomes (after execution)
@@ -311,6 +316,7 @@ The continuous learning pipeline tracks:
 ## Model Versioning
 
 Models are versioned with:
+
 - Version ID (timestamp-based)
 - Creation date
 - Training metrics

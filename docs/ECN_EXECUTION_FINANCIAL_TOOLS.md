@@ -17,11 +17,13 @@ ECN Execution provides a comprehensive collection of free financial calculators 
 ### Options Trading Tools
 
 #### Options Profit Calculator For Pro Traders
+
 - **Purpose**: Advanced options profit/loss calculation for professional traders
 - **Use Case**: Calculate potential profits and losses for complex options strategies
 - **Relevance**: Essential for box spread profit analysis and risk assessment
 
 #### Options Profit Calculator
+
 - **Purpose**: Standard options profit/loss calculator
 - **Use Case**: Quick calculation of options strategy profitability
 - **Relevance**: Useful for initial box spread opportunity screening
@@ -29,6 +31,7 @@ ECN Execution provides a comprehensive collection of free financial calculators 
 ### Futures Trading Tools
 
 #### Futures Contract Calculator for Profit/Loss on Futures Trades
+
 - **Purpose**: Calculate profit/loss for futures contracts
 - **Use Case**: Analyze futures trading profitability
 - **Relevance**: Useful for hedging box spreads with interest rate futures (SOFR, Eurodollar)
@@ -36,11 +39,13 @@ ECN Execution provides a comprehensive collection of free financial calculators 
 ### Position Sizing Tools
 
 #### Position Size Calculator
+
 - **Purpose**: Calculate optimal position size based on risk parameters
 - **Use Case**: Determine position size for box spread trades
 - **Relevance**: Critical for risk management in box spread strategies
 
 #### Lot Size Calculator
+
 - **Purpose**: Calculate lot sizes for forex and CFD trading
 - **Use Case**: Position sizing for currency hedging
 - **Relevance**: Useful when hedging box spread currency exposure
@@ -48,6 +53,7 @@ ECN Execution provides a comprehensive collection of free financial calculators 
 ### Stock Trading Tools
 
 #### Stocks Dividend Calculator
+
 - **Purpose**: Calculate dividend payments and yields
 - **Use Case**: Analyze dividend impact on stock positions
 - **Relevance**: Less directly relevant to box spreads (options-based), but useful for underlying analysis
@@ -55,16 +61,19 @@ ECN Execution provides a comprehensive collection of free financial calculators 
 ### Cryptocurrency Tools
 
 #### Crypto Multiple Calculator
+
 - **Purpose**: Calculate cryptocurrency position multiples
 - **Use Case**: Analyze crypto trading returns
 - **Relevance**: Not directly relevant to box spread trading
 
 #### Crypto X Calculator
+
 - **Purpose**: Cryptocurrency calculation tool
 - **Use Case**: Crypto trading analysis
 - **Relevance**: Not directly relevant to box spread trading
 
 #### Crypto Profit Calculator
+
 - **Purpose**: Calculate cryptocurrency trading profits
 - **Use Case**: Analyze crypto trading profitability
 - **Relevance**: Not directly relevant to box spread trading
@@ -72,11 +81,13 @@ ECN Execution provides a comprehensive collection of free financial calculators 
 ### Risk Management Tools
 
 #### Win Rate & Breakeven Calculator
+
 - **Purpose**: Calculate win rate and breakeven points
 - **Use Case**: Analyze trading strategy performance
 - **Relevance**: Useful for evaluating box spread strategy effectiveness
 
 #### Comprehensive Profit Margins Calculator
+
 - **Purpose**: Calculate profit margins across different scenarios
 - **Use Case**: Multi-scenario profitability analysis
 - **Relevance**: Useful for box spread profitability analysis under different market conditions
@@ -84,6 +95,7 @@ ECN Execution provides a comprehensive collection of free financial calculators 
 ### Currency & Swap Tools
 
 #### Swap Rate Calculator
+
 - **Purpose**: Calculate swap rates for forex positions
 - **Use Case**: Analyze overnight financing costs
 - **Relevance**: Useful for understanding currency hedging costs when hedging box spread currency exposure
@@ -136,12 +148,14 @@ ECN Execution provides a comprehensive collection of free financial calculators 
 ### Web-Based Tools
 
 **Advantages**:
+
 - No installation required
 - Accessible from any device
 - Regular updates and improvements
 - Free to use
 
 **Limitations**:
+
 - Requires internet connection
 - May not integrate directly with trading systems
 - Manual data entry required
@@ -150,24 +164,28 @@ ECN Execution provides a comprehensive collection of free financial calculators 
 ### Comparison with Built-In Tools
 
 **ECN Execution Tools**:
+
 - Web-based, accessible
 - User-friendly interface
 - Free to use
 - No integration with trading systems
 
 **Built-In Project Tools**:
+
 - Integrated with trading system
 - Automated calculations
 - Real-time data integration
 - Customizable for specific needs
 
 **Recommendation**: Use ECN Execution tools for:
+
 - Quick calculations and validation
 - Educational purposes
 - Cross-checking built-in calculations
 - Initial opportunity screening
 
 Use built-in project tools for:
+
 - Automated trading decisions
 - Real-time position monitoring
 - Integration with execution system
@@ -182,6 +200,7 @@ Use built-in project tools for:
 **Scenario**: Evaluating a SPX box spread opportunity
 
 **Steps**:
+
 1. Use **Options Profit Calculator (Pro)** to calculate:
    - Maximum profit (strike width - net debit)
    - Maximum loss (net debit)
@@ -203,6 +222,7 @@ Use built-in project tools for:
 **Scenario**: Hedging box spread with interest rate futures
 
 **Steps**:
+
 1. Use **Futures Contract Calculator** to calculate:
    - Futures hedge profit/loss
    - Basis risk
@@ -217,6 +237,7 @@ Use built-in project tools for:
 **Scenario**: Analyzing box spread under different market conditions
 
 **Steps**:
+
 1. Use **Comprehensive Profit Margins Calculator** to evaluate:
    - Profitability under different scenarios
    - Risk-adjusted returns
@@ -236,6 +257,7 @@ Use built-in project tools for:
 ### Broker Reviews
 
 ECN Execution also provides reviews of:
+
 - ECN Forex Brokers (FP Markets, IC Markets, Fusion Markets, etc.)
 - Crypto Exchanges
 - Prop Trading Firms

@@ -352,6 +352,7 @@ struct Snapshot {
 ### Platform-Specific Features
 
 Some features are inherently platform-specific:
+
 - **TUI**: Keyboard-only navigation, terminal-specific shortcuts
 - **Web**: Mouse/touch interaction, responsive design, PWA features
 

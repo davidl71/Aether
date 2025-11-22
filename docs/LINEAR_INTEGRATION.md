@@ -38,11 +38,13 @@ No additional configuration needed - GitKraken MCP handles Linear authentication
    - Copy the token
 
 2. **Set Environment Variable**:
+
    ```bash
    export LINEAR_API_KEY="your_personal_access_token_here"
    ```
 
    Or add to your `.env` file:
+
    ```
    LINEAR_API_KEY=your_personal_access_token_here
    ```
@@ -89,9 +91,11 @@ client.add_comment(
 ### API Methods
 
 #### Teams
+
 - `get_teams()` - List all teams in workspace
 
 #### Issues
+
 - `get_issues(team_id, assignee_id, state, limit)` - Query issues with filters
 - `get_issue(issue_id)` - Get specific issue by ID or identifier (e.g., "ENG-123")
 - `create_issue(...)` - Create new issue
@@ -99,6 +103,7 @@ client.add_comment(
 - `add_comment(issue_id, body)` - Add comment to issue
 
 #### Workflow States
+
 - `get_states(team_id)` - Get workflow states (Backlog, In Progress, Done, etc.)
 
 ### Integration with Trading System
@@ -176,15 +181,18 @@ See [Linear's GraphQL API Documentation](https://developers.linear.app/docs/grap
 ## Troubleshooting
 
 ### "Missing Linear API key" error
+
 - Ensure `LINEAR_API_KEY` environment variable is set
 - Verify the token is valid in Linear Settings → API
 
 ### "Linear API errors" exception
+
 - Check the error message for specific GraphQL errors
 - Verify team IDs, state IDs, and other references are correct
 - Check Linear's status page for API outages
 
 ### Authentication failures
+
 - Regenerate your personal access token
 - Ensure token has necessary permissions (read/write issues)
 

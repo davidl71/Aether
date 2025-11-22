@@ -14,8 +14,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add project root to path for imports
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 
 from python.integration.swiftness_parser import SwiftnessParser
 from python.integration.swiftness_storage import SwiftnessStorage

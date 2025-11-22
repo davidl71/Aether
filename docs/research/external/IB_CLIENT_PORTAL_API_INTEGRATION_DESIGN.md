@@ -17,6 +17,7 @@ This document designs the IB Client Portal API integration architecture followin
 ### IB Client Portal API Capabilities
 
 **REST API:**
+
 - Trading operations (orders, positions, account)
 - Market data (quotes, trades, bars)
 - Options trading support
@@ -24,15 +25,18 @@ This document designs the IB Client Portal API integration architecture followin
 - No TWS/Gateway required
 
 **Authentication:**
+
 - OAuth 2.0 flow (redirect → callback → tokens)
 - Session-based authentication (login → session token)
 - Alternative: Username/password (less secure)
 
 **Base URL:**
+
 - `https://localhost:5000/v1/api` (local Client Portal)
 - Or cloud-hosted Client Portal instance
 
 **Key Differences from TWS API:**
+
 - REST-based (request/response) vs Socket-based (callbacks)
 - No TWS/Gateway needed
 - Session tokens vs persistent connection
@@ -78,6 +82,7 @@ public:
 ### 1. Authentication
 
 **OAuth 2.0 Flow:**
+
 ```cpp
 class IBClientPortalAuth {
 public:
@@ -102,6 +107,7 @@ public:
 ```
 
 **Session-Based Authentication (Alternative):**
+
 ```cpp
 bool IBClientPortalAdapter::connect() {
     // POST /iserver/auth/status
@@ -112,6 +118,7 @@ bool IBClientPortalAdapter::connect() {
 ```
 
 **Configuration:**
+
 ```cpp
 struct IBClientPortalConfig {
     std::string base_url;  // https://localhost:5000/v1/api
@@ -126,15 +133,18 @@ struct IBClientPortalConfig {
 ### 2. Market Data
 
 **REST API Endpoints:**
+
 - `GET /iserver/marketdata/snapshot?conids={conid}&fields={fields}` - Snapshot data
 - `GET /iserver/marketdata/history?conid={conid}&period={period}` - Historical data
 - `POST /iserver/marketdata/unsubscribeall` - Unsubscribe all
 
 **Options Chain:**
+
 - `GET /iserver/secdef/search?symbol={symbol}&sectype=OPT` - Search options
 - `GET /iserver/secdef/info?conid={conid}` - Contract details
 
 **Implementation:**
+
 ```cpp
 int IBClientPortalAdapter::subscribe_market_data(const types::OptionContract& contract) {
     // Step 1: Get contract ID (conid)
@@ -156,6 +166,7 @@ int IBClientPortalAdapter::subscribe_market_data(const types::OptionContract& co
 ```
 
 **Polling Strategy:**
+
 ```cpp
 void IBClientPortalAdapter::poll_market_data() {
     // Poll every 1-2 seconds for subscribed contracts
@@ -178,6 +189,7 @@ void IBClientPortalAdapter::poll_market_data() {
 ### 3. Order Placement
 
 **Single Order:**
+
 ```cpp
 int IBClientPortalAdapter::place_order(const types::Order& order) {
     // Convert to IB Client Portal order format
@@ -202,6 +214,7 @@ int IBClientPortalAdapter::place_order(const types::Order& order) {
 ```
 
 **Multi-Leg Order (Combo):**
+
 ```cpp
 int IBClientPortalAdapter::place_combo_order(const std::vector<types::Order>& legs) {
     // IB Client Portal supports combo orders via "legs" array
@@ -236,6 +249,7 @@ int IBClientPortalAdapter::place_combo_order(const std::vector<types::Order>& le
 ### 4. Contract ID Lookup
 
 **Search for Contract:**
+
 ```cpp
 long IBClientPortalAdapter::get_contract_id(const types::OptionContract& contract) {
     // Search for contract
@@ -259,6 +273,7 @@ long IBClientPortalAdapter::get_contract_id(const types::OptionContract& contrac
 ```
 
 **Cache Contract IDs:**
+
 ```cpp
 class ContractCache {
     std::unordered_map<std::string, long> cache_;  // contract_key -> conid
@@ -285,6 +300,7 @@ public:
 ### 5. Session Management
 
 **Session Token Management:**
+
 ```cpp
 class SessionManager {
     std::string session_token_;

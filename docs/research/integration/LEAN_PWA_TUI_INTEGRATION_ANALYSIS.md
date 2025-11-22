@@ -11,6 +11,7 @@
 **Key Finding**: LEAN is a **headless execution engine** - it does NOT provide a web UI or TUI. However, LEAN can handle backend execution, and you may be duplicating some functionality that LEAN already provides internally.
 
 **Recommendation**: Use LEAN for execution, but you still need to build:
+
 1. REST API wrapper around LEAN to expose data to UIs
 2. PWA/TUI frontends (these are still needed)
 3. Real-time data bridge from LEAN to UIs
@@ -146,6 +147,7 @@ From `agents/shared/API_CONTRACT.md`:
 ### Key Difference
 
 **With LEAN**: You need to build a **REST API wrapper** that:
+
 1. Runs LEAN algorithm
 2. Exposes LEAN's internal state (positions, orders, portfolio) via REST
 3. Provides strategy control endpoints (start/stop)
@@ -186,6 +188,7 @@ From `agents/shared/API_CONTRACT.md`:
 **Purpose**: Expose LEAN's internal state to PWA/TUI
 
 **What it needs to do**:
+
 - Query LEAN's portfolio/positions
 - Query LEAN's order history
 - Provide strategy control (start/stop LEAN algorithm)
@@ -194,6 +197,7 @@ From `agents/shared/API_CONTRACT.md`:
 **Implementation Options**:
 
 **Option A: Python Wrapper**
+
 ```python
 # python/lean_integration/api_wrapper.py
 from fastapi import FastAPI
@@ -222,6 +226,7 @@ async def start_strategy():
 ```
 
 **Option B: Rust Wrapper (Call Python)**
+
 ```rust
 // agents/backend/crates/lean_api/src/lib.rs
 // Call Python LEAN wrapper via PyO3
@@ -232,11 +237,13 @@ async def start_strategy():
 **Purpose**: Push LEAN events to PWA/TUI via WebSocket
 
 **What it needs to do**:
+
 - Subscribe to LEAN order events
 - Subscribe to LEAN position updates
 - Push updates to connected clients
 
 **Implementation**:
+
 ```python
 # python/lean_integration/websocket_bridge.py
 from fastapi import WebSocket
@@ -256,6 +263,7 @@ async def bridge_lean_events(websocket: WebSocket):
 **Purpose**: User interface for viewing and controlling strategy
 
 **What they provide**:
+
 - Dashboard visualization
 - Charts and analytics
 - Strategy controls (start/stop)
@@ -271,6 +279,7 @@ async def bridge_lean_events(websocket: WebSocket):
 ### Current Approach (Rust Backend)
 
 **Pros**:
+
 - ✅ Full control over implementation
 - ✅ Direct REST API (no wrapper needed)
 - ✅ Best performance (Rust)
@@ -278,6 +287,7 @@ async def bridge_lean_events(websocket: WebSocket):
 - ✅ No C# dependency
 
 **Cons**:
+
 - ❌ Need to build multi-broker adapters (T-35, T-36, T-37)
 - ❌ Need to implement order/position tracking
 - ❌ Need to implement backtesting (if desired)
@@ -286,6 +296,7 @@ async def bridge_lean_events(websocket: WebSocket):
 ### LEAN Approach
 
 **Pros**:
+
 - ✅ Multi-broker support built-in
 - ✅ Order/position tracking built-in
 - ✅ Backtesting built-in
@@ -293,6 +304,7 @@ async def bridge_lean_events(websocket: WebSocket):
 - ✅ Battle-tested execution engine
 
 **Cons**:
+
 - ❌ Need to build REST API wrapper
 - ❌ Need to bridge LEAN events to WebSocket
 - ❌ C# runtime dependency
@@ -307,6 +319,7 @@ async def bridge_lean_events(websocket: WebSocket):
 ### Option 1: Continue Current Approach (Recommended)
 
 **Rationale**:
+
 - Already partially implemented
 - Best performance (Rust)
 - Full control
@@ -314,6 +327,7 @@ async def bridge_lean_events(websocket: WebSocket):
 - Lower latency
 
 **What to do**:
+
 - Complete multi-broker adapters (T-35, T-36, T-37)
 - Keep existing REST API
 - Keep PWA/TUI as-is
@@ -322,11 +336,13 @@ async def bridge_lean_events(websocket: WebSocket):
 ### Option 2: Migrate to LEAN (If Multi-Broker is Priority)
 
 **Rationale**:
+
 - Excellent multi-broker support
 - Built-in backtesting
 - Less code to maintain (for execution)
 
 **What to do**:
+
 - Build REST API wrapper around LEAN
 - Build WebSocket bridge for real-time updates
 - Keep PWA/TUI (they're still needed)
@@ -334,6 +350,7 @@ async def bridge_lean_events(websocket: WebSocket):
 - Keep C++ calculations (via Cython)
 
 **Architecture**:
+
 ```
 PWA/TUI → REST API Wrapper → LEAN → Brokers
               ↑
@@ -375,6 +392,7 @@ PWA/TUI → REST API Wrapper → LEAN → Brokers
 **Short answer**: LEAN can handle **execution**, but PWA/TUI are still needed for **user interface**.
 
 **Long answer**:
+
 - ✅ LEAN can replace backend execution logic
 - ❌ LEAN cannot replace PWA/TUI (it has no UI)
 - ⚠️ You still need to build REST API wrapper to expose LEAN data
@@ -383,11 +401,13 @@ PWA/TUI → REST API Wrapper → LEAN → Brokers
 ### Are you duplicating functionality?
 
 **Yes, partially**:
+
 - Order/position tracking (LEAN does this internally, but you're also tracking)
 - Multi-broker adapters (LEAN has these, you're building your own)
 - Market data subscription (LEAN handles this, you're also handling it)
 
 **But**:
+
 - PWA/TUI are NOT duplicates - LEAN has no UI
 - REST API is NOT a duplicate - LEAN has no REST API
 - Dashboard/visualization are NOT duplicates - LEAN has no visualization
@@ -397,6 +417,7 @@ PWA/TUI → REST API Wrapper → LEAN → Brokers
 **For PWA/TUI**: Keep building them - they're still needed regardless of execution engine.
 
 **For Backend**:
+
 - **Option A (Recommended)**: Continue with Rust backend, complete multi-broker adapters
 - **Option B**: Migrate to LEAN if multi-broker support is critical and you're willing to build REST wrapper
 

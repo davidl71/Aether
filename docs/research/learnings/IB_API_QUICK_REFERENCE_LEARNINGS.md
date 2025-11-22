@@ -1,6 +1,7 @@
 # Learnings from IB API Quick Reference
 
 ## Reference
+
 [Interactive Brokers C++ API Quick Reference](https://www.interactivebrokers.com/download/C++APIQuickReference.pdf)
 
 ## Key Connection Flow (Per Quick Reference)
@@ -17,18 +18,21 @@ According to the IB API Quick Reference, the connection flow is:
 ### Connection Callbacks
 
 **connectAck()** - Called when:
+
 - Socket connection is established
 - Server version is received
 - TWS has accepted the connection at the socket level
 - **Note:** This does NOT mean the connection is fully ready - you still need `nextValidId`
 
 **managedAccounts()** - Called when:
+
 - TWS sends the list of managed accounts
 - This happens after `connectAck` but before `nextValidId`
 - **Useful:** This is an early indicator that connection is progressing
 - If you receive this, it means TWS has accepted the connection and is sending account info
 
 **nextValidId()** - Called when:
+
 - TWS sends the next valid order ID
 - **This is the final confirmation** that connection is fully established
 - Only after receiving this should you consider the connection "ready"
@@ -36,6 +40,7 @@ According to the IB API Quick Reference, the connection flow is:
 ### TWS Configuration (Per Quick Reference)
 
 The Quick Reference emphasizes:
+
 1. **Enable API in TWS:**
    - Edit → Global Configuration → API → Settings
    - Enable "Enable ActiveX and Socket Clients"

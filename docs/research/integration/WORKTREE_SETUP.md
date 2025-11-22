@@ -73,6 +73,7 @@ cd /path/to/ib_box_spread_full_universal
 ### Step 1: Prerequisites Check
 
 The script verifies that all required tools are installed:
+
 - Git
 - CMake
 - Make or Ninja
@@ -105,6 +106,7 @@ Creates a new git worktree at `../${WORKTREE_NAME}` from the specified branch.
 ## Output
 
 The script provides colored output showing:
+
 - ✅ Success messages for completed steps
 - ⚠️ Warnings for non-critical issues
 - ❌ Errors for failures (script exits on errors)
@@ -156,22 +158,26 @@ ls -la native/third_party/IntelRDFPMathLib20U2/LIBRARY/src/
 Once the script completes, you can:
 
 1. **Navigate to the worktree:**
+
    ```bash
    cd ../worktree-name
    ```
 
 2. **Run the application:**
+
    ```bash
    ./build/bin/ib_box_spread --help
    ```
 
 3. **Configure the application:**
+
    ```bash
    cp config/config.example.json config/config.json
    # Edit config/config.json with your settings
    ```
 
 4. **Run tests:**
+
    ```bash
    cd build
    ctest --output-on-failure
@@ -223,4 +229,3 @@ git worktree remove ../ci-build
 - [README.md](../README.md) - Main project documentation
 - [QUICK_START.md](QUICK_START.md) - Quick start guide
 - [TWS_BUILD_COMPLETE.md](TWS_BUILD_COMPLETE.md) - TWS API build documentation
-

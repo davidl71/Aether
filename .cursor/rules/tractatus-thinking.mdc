@@ -1,0 +1,130 @@
+---
+alwaysApply: true
+---
+# Tractatus Thinking MCP Server Usage
+
+## When to Use Tractatus Thinking
+
+**ALWAYS use Tractatus Thinking for:**
+- Breaking down complex concepts into atomic truths
+- Understanding problems where bundled ideas hide the real issue
+- Concepts where the logical structure isn't clear initially
+- Problems requiring multiplicative understanding (A × B × C must ALL be true)
+- Tasks that need to separate essential from accidental
+- Situations where fuzzy definitions cause confusion
+- Understanding WHY things work, not just HOW
+
+**Usage Pattern:**
+Use Tractatus Thinking when you need to:
+- Analyze the logical structure of a concept or problem
+- Reveal multiplicative failures (why ALL factors must align for success)
+- Create precise definitions that eliminate confusion
+- Find the ONE missing element preventing success
+- Understand logical necessity vs mere correlation
+- Decompose fuzzy concepts into measurable components
+
+## Strategic Sequencing
+
+**START HERE FIRST** to understand WHAT you're dealing with, then:
+1. Use Tractatus Thinking to reveal structure and logical dependencies
+2. Switch to sequential/process thinking for HOW to proceed
+3. Return to Tractatus Thinking to formalize and verify solution structure
+
+**Complementary to Sequential Thinking:**
+- Tractatus Thinking analyzes WHAT (structure/logic)
+- Sequential thinking handles HOW (process/steps)
+- Together they form complete thinking: structure → process → verification
+
+## Examples
+
+✅ **Good:**
+- "What is the structure of authentication in our system?"
+- "Analyze why all deployment attempts fail - what must ALL be true?"
+- "Break down the box spread arbitrage concept into atomic components"
+- "What are the multiplicative dependencies for a successful trade?"
+- "Why does this feature require ALL of: API access + config + validation?"
+
+❌ **Avoid:**
+- Simple, well-defined problems with clear solutions
+- Questions already answered by documentation
+- Implementation steps (use sequential thinking instead)
+- Questions requiring just facts or data lookup
+
+## Key Operations
+
+**Start Analysis:**
+```
+operation: "start"
+concept: "What is X?" or "Analyze Y problem"
+```
+
+**Add Propositions:**
+```
+operation: "add"
+content: "Proposition content"
+parent_number: "1" (or null for root level)
+decomposition_type: "clarification" | "analysis" | "cases" | "implication" | "negation"
+```
+
+**Navigate Structure:**
+```
+operation: "navigate"
+target: "proposition number" | "parent" | "child" | "sibling" | "root"
+```
+
+**Export Results:**
+```
+operation: "export"
+format: "markdown" | "json" | "graphviz"
+```
+
+**Revise Understanding:**
+```
+operation: "revise"
+proposition_number: "1"
+new_content: "Updated proposition"
+```
+
+## Benefits
+
+- **Reveals Multiplicative Relationships**: Shows why ALL factors must align
+- **Eliminates Confusion**: Creates precise definitions and separates bundled concepts
+- **Finds Missing Elements**: Identifies the ONE critical missing piece
+- **Shows Logical Necessity**: Distinguishes what MUST be true from what happens to be true
+- **Decomposes Complexity**: Breaks fuzzy concepts into measurable components
+- **Explains WHY**: Provides structural understanding beyond surface-level HOW
+
+## Integration with Other Tools
+
+- **Before Implementation**: Use Tractatus Thinking to understand structure, then implement
+- **With Codebase Search**: Tractatus for logical analysis, codebase search for existing patterns
+- **With Research**: Tractatus reveals what to research, research provides facts
+- **With OpenMemory**: Store structural insights as project info or implementation patterns
+
+## Common Patterns
+
+**Multiplicative Failures:**
+```
+Problem: "Why do deployments always fail?"
+Tractatus reveals: A × B × C × D must ALL be true
+Missing element: D is always false
+Solution: Fix D, now all factors align
+```
+
+**Fuzzy Definitions:**
+```
+Problem: "What is 'authentication' in this system?"
+Tractatus decomposes: Auth = User Identity × Credentials × Session × Permissions
+Clarifies: Each component is atomic and measurable
+```
+
+**Essential vs Accidental:**
+```
+Problem: "What makes this component work?"
+Tractatus separates: Essential (must have) vs Accidental (nice to have)
+Focus: Only implement essential components first
+```
+
+---
+
+**Reference:** See `docs/MCP_SERVERS.md` for detailed Tractatus Thinking configuration and usage.

@@ -15,6 +15,20 @@
 - `scripts/`: setup and CI entrypoints.
 
 ## Getting Started
+
+### Python Environment (Required for PyO3)
+
+The backend uses PyO3 0.21 which requires Python 3.12 or earlier. Activate the Python 3.12 environment:
+
+```bash
+cd agents/backend
+source scripts/activate_python_env.sh
+```
+
+This creates a virtual environment and configures PyO3 to use Python 3.12. See [Python Environment Setup](../docs/PYTHON_ENVIRONMENT_SETUP.md) for details.
+
+### Backend Setup
+
 1. Run `bash agents/backend/scripts/setup.sh` to create the virtualenv, install Python deps, and fetch Rust crates.
 2. Start the live service with `cargo run -p backend_service` from `agents/backend`.
 3. Hit the REST surface via `curl http://127.0.0.1:8080/api/v1/snapshot`.

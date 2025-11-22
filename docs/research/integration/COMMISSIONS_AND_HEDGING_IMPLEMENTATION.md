@@ -8,6 +8,7 @@
 ## Overview
 
 This document summarizes the implementation of:
+
 1. **IBKR Pro Commission System** - Accurate commission calculation using IBKR Pro published rates
 2. **Interest Rate Futures Hedging** - Hedge box spread positions using SOFR, Eurodollar, and other interest rate futures
 3. **Currency Hedging** - Hedge currency exposure (e.g., USD to ILS) for box spread positions
@@ -19,11 +20,13 @@ This document summarizes the implementation of:
 ### Commission Configuration
 
 **Files Modified**:
+
 - `native/include/config_manager.h` - Added `CommissionConfig` structure
 - `native/include/box_spread_strategy.h` - Added IBKR Pro commission methods
 - `native/src/box_spread_strategy.cpp` - Added IBKR Pro commission calculations
 
 **New Structures**:
+
 ```cpp
 enum class CommissionTier {
     Standard,    // 0-10,000 contracts/month: $0.65/contract
@@ -43,12 +46,14 @@ struct CommissionConfig {
 ```
 
 **Features**:
+
 - ✅ Volume-based tiered pricing (0-10K, 10K-50K, 50K-100K, 100K+ contracts/month)
 - ✅ Automatic tier calculation based on monthly volume
 - ✅ Minimum order fee handling ($1.00, waived if monthly commissions > $30)
 - ✅ Maximum order fee cap (1% of trade value for orders < $1/share)
 
 **New Methods**:
+
 ```cpp
 // Calculate commission using IBKR Pro rates
 static double calculate_commission_ibkr_pro(
@@ -70,6 +75,7 @@ static double calculate_effective_interest_rate(
 ```
 
 **Usage Example**:
+
 ```cpp
 // Setup commission config
 config::CommissionConfig commission_config;
@@ -92,11 +98,13 @@ double effective_rate = BoxSpreadCalculator::calculate_effective_interest_rate(s
 | 100,001+ | $0.50 |
 
 **Box Spread Commission** (4 legs):
+
 - Entry: 4 contracts × tier rate
 - Exit: 4 contracts × tier rate
 - Total round trip: 8 contracts × tier rate
 
 **Example**:
+
 - Standard tier: 8 × $0.65 = $5.20 per box spread round trip
 - Tier 3 (high volume): 8 × $0.50 = $4.00 per box spread round trip
 
@@ -109,12 +117,14 @@ double effective_rate = BoxSpreadCalculator::calculate_effective_interest_rate(s
 **New File**: `native/include/hedge_manager.h` and `native/src/hedge_manager.cpp`
 
 **Supported Futures**:
+
 - **SOFR 3M (SR3)**: $1M contract, 0.25 bp tick, $6.25 per tick
 - **SOFR 1M (SR1)**: $1M contract, 0.25 bp tick, ~$2.08 per tick
 - **Eurodollar (ED)**: $1M contract, 0.25 bp tick, $6.25 per tick
 - **Fed Funds (ZQ)**: $5M contract, 0.25 bp tick, $31.25 per tick
 
 **Key Structures**:
+
 ```cpp
 struct InterestRateFuture {
     InterestRateFutureType type;
@@ -147,6 +157,7 @@ struct RateHedgeCalculation {
 ```
 
 **Features**:
+
 - ✅ Find suitable futures contract matching box spread DTE
 - ✅ Calculate hedge ratio and number of contracts needed
 - ✅ Calculate basis risk (rate difference between box spread and futures)
@@ -154,6 +165,7 @@ struct RateHedgeCalculation {
 - ✅ Validate hedge viability (basis risk < 50 bps, cost < 0.1% of notional)
 
 **Usage Example**:
+
 ```cpp
 HedgeManager hedge_mgr;
 
@@ -186,6 +198,7 @@ if (future_opt.has_value()) {
 ### Currency Hedge Manager
 
 **Key Structures**:
+
 ```cpp
 struct CurrencyHedge {
     std::string base_currency;      // Base currency (e.g., "USD")
@@ -213,12 +226,14 @@ struct CompleteHedge {
 ```
 
 **Features**:
+
 - ✅ Calculate currency hedge for box spread positions
 - ✅ Support for USD to ILS and other currency pairs
 - ✅ Calculate hedge amount and cost
 - ✅ Combined hedging (interest rate + currency)
 
 **Usage Example**:
+
 ```cpp
 HedgeManager hedge_mgr;
 
@@ -296,11 +311,13 @@ for (const auto& point : curve.points) {
 ### Code References
 
 **Commission Configuration**:
+
 - `native/include/config_manager.h` - `CommissionConfig` structure
 - `native/include/box_spread_strategy.h` - Commission calculation methods
 - `native/src/box_spread_strategy.cpp` - Commission calculation implementations
 
 **Hedging**:
+
 - `native/include/hedge_manager.h` - Hedge manager interface
 - `native/src/hedge_manager.cpp` - Hedge manager implementation
 

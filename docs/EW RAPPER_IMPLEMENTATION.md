@@ -9,9 +9,11 @@
 ## ✅ What Was Implemented
 
 ### Full EWrapper Integration
+
 Replaced the stub TWS client with a complete TWS API implementation:
 
 **Core Components**:
+
 1. ✅ `TWSClient::Impl` inherits from `EWrapper`
 2. ✅ `EClientSocket` for TWS communication
 3. ✅ `EReader` and `EReaderOSSignal` for message processing
@@ -19,6 +21,7 @@ Replaced the stub TWS client with a complete TWS API implementation:
 5. ✅ Thread-safe operations with mutexes for all data structures
 
 ### Connection Management
+
 - Connection/disconnection with TWS/Gateway
 - Connection acknowledgment handling
 - Automatic reconnection support
@@ -26,17 +29,20 @@ Replaced the stub TWS client with a complete TWS API implementation:
 - Thread-safe connection synchronization
 
 ### Market Data Callbacks
+
 - `tickPrice` - Bid, ask, last, high, low, close, open prices
 - `tickSize` - Bid size, ask size, last size, volume
 - `tickOptionComputation` - IV, delta, gamma, vega, theta
 
 ### Order Management Callbacks
+
 - `orderStatus` - Order status updates (submitted, filled, cancelled, etc.)
 - `openOrder` - Open order details
 - `execDetails` - Execution details with fills
 - Order tracking with thread-safe storage
 
 ### Position & Account Callbacks
+
 - `position` - Position updates from TWS
 - `positionEnd` - Position download complete
 - `updateAccountValue` - Account value updates (cash, buying power, P&L, etc.)
@@ -44,6 +50,7 @@ Replaced the stub TWS client with a complete TWS API implementation:
 - `accountDownloadEnd` - Account download complete
 
 ### Error Handling
+
 - Comprehensive error callback with proper severity levels
 - Informational messages (2100-2999)
 - System messages (1100-1999)
@@ -51,6 +58,7 @@ Replaced the stub TWS client with a complete TWS API implementation:
 - Connection state tracking on errors
 
 ### Helper Methods
+
 - Contract conversion (our types ↔ TWS Contract)
 - Order creation with proper TWS Order format
 - Reader thread management
@@ -61,6 +69,7 @@ Replaced the stub TWS client with a complete TWS API implementation:
 ## 📝 Implementation Details
 
 ### Architecture
+
 ```
 TWSClient (public interface)
 └── TWSClient::Impl : public EWrapper
@@ -82,7 +91,9 @@ TWSClient (public interface)
 ```
 
 ### Thread Safety
+
 All operations are thread-safe:
+
 - Market data updates use `data_mutex_`
 - Order updates use `order_mutex_`
 - Position updates use `position_mutex_`
@@ -90,6 +101,7 @@ All operations are thread-safe:
 - Connection state uses `connection_mutex_` and condition variable
 
 ### Message Processing
+
 - EReader runs in dedicated thread
 - Waits for messages using EReaderOSSignal
 - Processes messages asynchronously
@@ -102,7 +114,9 @@ All operations are thread-safe:
 The implementation has some API signature mismatches that need to be fixed:
 
 ### 1. Order Status Signature
+
 **Issue**: `permId` parameter type mismatch
+
 ```cpp
 // Current (WRONG):
 void orderStatus(OrderId orderId, const std::string& status, Decimal filled,
@@ -114,7 +128,9 @@ void orderStatus(OrderId orderId, const std::string& status, Decimal filled,
 ```
 
 ### 2. Error Callback Signature
+
 **Issue**: Missing `time_t errorTime` parameter
+
 ```cpp
 // Current (WRONG):
 void error(int id, int errorCode, const std::string& errorString,
@@ -127,7 +143,9 @@ void error(int id, time_t errorTime, int errorCode,
 ```
 
 ### 3. Cancel Order
+
 **Issue**: `cancelOrder` expects `OrderCancel` struct, not string
+
 ```cpp
 // Current (WRONG):
 client_.cancelOrder(order_id, "");
@@ -138,7 +156,9 @@ client_.cancelOrder(order_id, cancelOrder);
 ```
 
 ### 4. Missing Headers
+
 Need to include:
+
 ```cpp
 #include "OrderState.h"   // For OrderState access
 #include "Execution.h"    // For Execution access
@@ -146,19 +166,22 @@ Need to include:
 ```
 
 Or use Protocol Buffer versions:
+
 ```cpp
 #include "OrderState.pb.h"
 #include "Execution.pb.h"
 ```
 
 ### 5. Types Updated
+
 Added missing fields:
+
 - `MarketData`: `high`, `low`, `close`, `open`
 - `AccountInfo`: `gross_position_value`, `timestamp`
 
 ---
 
-##  Next Steps
+## Next Steps
 
 To complete the implementation:
 
@@ -213,9 +236,10 @@ To complete the implementation:
 
 ---
 
-##  Implementation Highlights
+## Implementation Highlights
 
 **Best Practices**:
+
 - ✅ PIMPL idiom for clean interface
 - ✅ Thread-safe with proper mutexes
 - ✅ Exception handling in message processing
@@ -225,6 +249,7 @@ To complete the implementation:
 - ✅ Type-safe contract conversions
 
 **Production Ready**:
+
 - Auto-reconnection support
 - Connection timeout handling
 - Proper error categorization
@@ -233,6 +258,7 @@ To complete the implementation:
 - Account value tracking
 
 **Scalability**:
+
 - Async message processing
 - Non-blocking operations
 - Efficient data structures (std::map for lookups)
@@ -243,6 +269,7 @@ To complete the implementation:
 ## 🚀 When Fixed and Tested
 
 This implementation provides:
+
 1. **Real TWS Connectivity** - Connect to IB TWS/Gateway
 2. **Live Market Data** - Streaming bid/ask/last/greeks
 3. **Order Execution** - Place, modify, cancel orders

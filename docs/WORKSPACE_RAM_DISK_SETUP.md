@@ -7,6 +7,7 @@ This guide explains how to configure your workspace to automatically start and p
 ## Overview
 
 The workspace includes:
+
 - ✅ **Auto-startup script**: Creates and pre-warms RAM disks on workspace open
 - ✅ **Auto-save script**: Saves important build artifacts before closing
 - ✅ **Tasks**: Available in Command Palette for manual use
@@ -42,6 +43,7 @@ cd /path/to/ib_box_spread_full_universal
 ### Step 2: Enable Auto-Save on Close
 
 **Option A: Manual (Before Closing)**
+
 - Press `Cmd+Shift+R` to run "RAM Disk: Save & Shutdown"
 - Or run: `./scripts/workspace_ram_disk_manager.sh shutdown`
 
@@ -74,21 +76,25 @@ fi
 ## Tasks Available
 
 ### RAM Disk: Startup (Auto)
+
 - **Purpose**: Creates and pre-warms RAM disks
 - **Runs**: Automatically on workspace open (if configured)
 - **Manual**: `Cmd+Shift+P` → "Tasks: Run Task" → "RAM Disk: Startup (Auto)"
 
 ### RAM Disk: Save & Shutdown
+
 - **Purpose**: Saves build artifacts and cache stats before closing
 - **Usage**: Run before closing workspace
 - **Shortcut**: `Cmd+Shift+R` (after setup)
 
 ### RAM Disk: Save Now
+
 - **Purpose**: Save current build artifacts without shutdown
 - **Usage**: Periodic saves during development
 - **Shortcut**: `Cmd+Shift+S` (after setup)
 
 ### RAM Disk: Status
+
 - **Purpose**: Show RAM disk status and usage
 - **Usage**: Check current state
 - **Shortcut**: `Cmd+Shift+T` (after setup)
@@ -227,17 +233,20 @@ Build artifacts are saved to `.saved-builds/` directory:
 ### RAM Disk Not Auto-Starting
 
 **Check 1**: Verify task exists
+
 ```bash
 # In Cursor: Cmd+Shift+P → "Tasks: Run Task" → "RAM Disk: Startup (Auto)"
 ```
 
 **Check 2**: Check shell profile
+
 ```bash
 # Verify startup command in ~/.zshrc or ~/.bashrc
 grep "workspace_ram_disk_manager" ~/.zshrc ~/.bashrc
 ```
 
 **Check 3**: Run manually
+
 ```bash
 ./scripts/workspace_ram_disk_manager.sh startup
 ```
@@ -245,16 +254,19 @@ grep "workspace_ram_disk_manager" ~/.zshrc ~/.bashrc
 ### Save Not Working
 
 **Check 1**: Verify RAM disk exists
+
 ```bash
 ./scripts/workspace_ram_disk_manager.sh status
 ```
 
 **Check 2**: Check disk space
+
 ```bash
 df -h /Volumes/IBBoxSpreadBuild
 ```
 
 **Check 3**: Manual save
+
 ```bash
 ./scripts/workspace_ram_disk_manager.sh save
 ```
@@ -262,11 +274,13 @@ df -h /Volumes/IBBoxSpreadBuild
 ### Saved Build Not Restoring
 
 **Check saved builds**:
+
 ```bash
 ls -lt .saved-builds/
 ```
 
 **Manual restore**:
+
 ```bash
 # Copy from latest save
 cp -r .saved-builds/$(ls -t .saved-builds/ | head -1)/* build-ramdisk/
@@ -354,6 +368,7 @@ fi
 ✅ **Saved builds**: Automatic restore on next startup
 
 **Next steps**:
+
 1. Add startup command to shell profile
 2. Copy keyboard shortcuts to keybindings.json
 3. Test with: `./scripts/workspace_ram_disk_manager.sh startup`

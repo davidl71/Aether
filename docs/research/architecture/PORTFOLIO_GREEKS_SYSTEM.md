@@ -34,46 +34,56 @@ While Greeks are traditionally associated with options, the concepts can be adap
 ### Stocks and ETFs
 
 **Delta:**
+
 - **Definition:** For stocks, Delta = 1.0 (stock price moves 1:1 with itself)
 - **Portfolio Delta:** Sum of all shares held (total equity exposure)
 - **Formula:** `Delta_stock = 1.0 × quantity`
 
 **Gamma:**
+
 - **Definition:** Gamma = 0 (linear relationship, no curvature)
 - **Rationale:** Stock price changes are linear; no acceleration of price movements
 
 **Vega:**
+
 - **Definition:** Vega = 0 (stocks don't have implied volatility pricing)
 - **Note:** However, stocks are exposed to realized volatility; may want to track volatility exposure separately
 
 **Theta:**
+
 - **Definition:** Theta = 0 (no time decay for stocks)
 - **Rationale:** Stocks don't expire; their value doesn't erode with time passage
 
 **Rho:**
+
 - **Definition:** Rho ≈ 0 for stocks (minimal direct interest rate sensitivity)
 - **Rationale:** Interest rates affect stocks indirectly (via discount rates, earnings, etc.), but not directly priced in like bonds
 
 ### Bonds and Bond ETFs
 
 **Delta:**
+
 - **Definition:** Delta ≈ 0 (bonds don't move 1:1 with a stock index)
 - **Alternative:** Can use **Duration** as Delta-equivalent for price sensitivity
 - **Formula:** `Delta_bond = -Duration × Price × Δyield` (modified duration)
 
 **Gamma:**
+
 - **Definition:** Gamma = Convexity (second-order price sensitivity)
 - **Formula:** `Gamma_bond = Convexity × Price × (Δyield)²`
 
 **Vega:**
+
 - **Definition:** Vega = 0 (bonds don't have implied volatility)
 - **Note:** However, credit spreads and liquidity can be volatile
 
 **Theta:**
+
 - **Definition:** Theta ≈ 0 for bonds (time decay minimal unless approaching maturity)
 - **Alternative:** Track time to maturity as separate metric
 
 **Rho:**
+
 - **Definition:** Rho is significant for bonds (interest rate sensitivity)
 - **Formula:** `Rho_bond = -Duration × Price` (dollar duration)
 - **Calculation:** Based on modified duration and bond price
@@ -89,6 +99,7 @@ While Greeks are traditionally associated with options, the concepts can be adap
 ### Foreign Currency Positions (ILS, EUR, etc.)
 
 **Delta (Currency Exposure):**
+
 - **Definition:** Sensitivity to exchange rate changes
 - **Formula:** `Delta_currency = Position_Value_ILS × ΔFX_Rate_ILS_USD`
 - **Example:** 100,000 ILS position has Delta of 100,000 × (1/ILS_USD_rate)
@@ -100,32 +111,38 @@ While Greeks are traditionally associated with options, the concepts can be adap
 ### Aggregation Formula
 
 **Portfolio Delta:**
+
 ```cpp
 PortfolioDelta = Σ(Delta_i × Quantity_i × Multiplier_i × FX_Rate_i)
 ```
 
 Where:
+
 - `Delta_i`: Delta for position i
 - `Quantity_i`: Number of shares/contracts
 - `Multiplier_i`: Contract multiplier (100 for options, 1 for stocks)
 - `FX_Rate_i`: FX rate to convert to base currency (USD)
 
 **Portfolio Gamma:**
+
 ```cpp
 PortfolioGamma = Σ(Gamma_i × Quantity_i × Multiplier_i × FX_Rate_i)
 ```
 
 **Portfolio Vega:**
+
 ```cpp
 PortfolioVega = Σ(Vega_i × Quantity_i × Multiplier_i × FX_Rate_i)
 ```
 
 **Portfolio Theta:**
+
 ```cpp
 PortfolioTheta = Σ(Theta_i × Quantity_i × Multiplier_i × FX_Rate_i)
 ```
 
 **Portfolio Rho:**
+
 ```cpp
 PortfolioRho = Σ(Rho_i × Quantity_i × Multiplier_i × FX_Rate_i)
 ```
@@ -139,6 +156,7 @@ Greeks_USD = Greeks_Local × Position_Value_USD / Position_Value_Local
 ```
 
 **Example:**
+
 - ILS position with Delta = 1.0 (local)
 - Position value: 100,000 ILS = $25,000 USD (at 0.25 ILS/USD)
 - Delta_USD = 1.0 × $25,000 / 100,000 ILS = 0.25
@@ -390,17 +408,20 @@ double RiskCalculator::calculate_bond_convexity(
 ### Portfolio Delta Risk
 
 **Delta-Neutral Portfolio:**
+
 - **Target:** Portfolio Delta ≈ 0
 - **Benefit:** Hedged against small price movements
 - **Calculation:** `|PortfolioDelta| < threshold` (e.g., < 5% of portfolio value)
 
 **Delta Exposure Limits:**
+
 - **Maximum Delta:** Limit total delta exposure (e.g., ±50% of portfolio value)
 - **Delta per Position:** Limit individual position delta (e.g., ±20% of portfolio)
 
 ### Portfolio Gamma Risk
 
 **Gamma Exposure:**
+
 - **High Positive Gamma:** Portfolio benefits from large price movements (favorable)
 - **High Negative Gamma:** Portfolio suffers from large price movements (unfavorable)
 - **Gamma Limits:** `|PortfolioGamma| < threshold`
@@ -408,11 +429,13 @@ double RiskCalculator::calculate_bond_convexity(
 ### Portfolio Vega Risk
 
 **Vega Exposure:**
+
 - **Positive Vega:** Portfolio benefits from volatility increases
 - **Negative Vega:** Portfolio suffers from volatility increases
 - **Vega Limits:** `|PortfolioVega| < threshold` (e.g., < $10,000 per 1% vol change)
 
 **Volatility Risk Management:**
+
 - Monitor portfolio vega for options-heavy portfolios
 - Hedge vega exposure if exceeds limits
 - Consider volatility regime when setting vega targets
@@ -420,11 +443,13 @@ double RiskCalculator::calculate_bond_convexity(
 ### Portfolio Theta Risk
 
 **Theta Exposure:**
+
 - **Negative Theta:** Portfolio loses value over time (time decay)
 - **Positive Theta:** Portfolio gains value over time (rare)
 - **Theta Management:** Monitor daily theta cost (dollars per day)
 
 **Time Decay Management:**
+
 - For option-heavy portfolios, monitor daily theta cost
 - Consider closing positions with high theta before expiry
 - Balance theta cost against expected returns
@@ -432,11 +457,13 @@ double RiskCalculator::calculate_bond_convexity(
 ### Portfolio Rho Risk
 
 **Rho Exposure:**
+
 - **Positive Rho:** Portfolio benefits from interest rate increases
 - **Negative Rho:** Portfolio suffers from interest rate increases
 - **Rho Calculation:** Aggregate across bonds, options, and rate-sensitive positions
 
 **Interest Rate Risk Management:**
+
 - Monitor portfolio rho for bond-heavy portfolios
 - Consider correlation with SHIR-based loans (variable rate loans)
 - Hedge rho exposure if exceeds limits
@@ -502,6 +529,7 @@ class PortfolioAllocationManager {
 ### Greeks-Based Rebalancing Triggers
 
 Add to rebalancing triggers:
+
 - Portfolio Delta exceeds ±50% of portfolio value
 - Portfolio Vega exceeds $10,000 per 1% volatility change
 - Portfolio Theta exceeds -$500 per day (time decay cost)
@@ -536,26 +564,31 @@ Add to rebalancing triggers:
 ### Portfolio-Level Greeks Limits
 
 **Delta:**
+
 - Maximum exposure: ±50% of portfolio value
 - Target delta-neutral for hedged strategies
 - Monitor correlation with loan payments (SHIR rate changes)
 
 **Gamma:**
+
 - Monitor for large positive/negative gamma
 - High gamma = high sensitivity to large price movements
 - Limit extreme gamma exposure
 
 **Vega:**
+
 - Maximum exposure: $10,000 per 1% volatility change
 - Monitor in high-volatility environments
 - Consider vega hedging for option-heavy portfolios
 
 **Theta:**
+
 - Maximum time decay cost: -$500 per day
 - Monitor for option-heavy portfolios
 - Balance theta cost against expected returns
 
 **Rho:**
+
 - Maximum exposure: ±$50,000 per 1% interest rate change
 - Monitor correlation with variable loans (SHIR-based)
 - Consider rho hedging for bond-heavy portfolios
@@ -571,11 +604,13 @@ Add to rebalancing triggers:
 ### Example 1: Mixed Portfolio (Stocks + Bonds + Options)
 
 **Positions:**
+
 - 100 shares SPY @ $500 = $50,000 (Delta = 100)
 - 50 shares TLT @ $100 = $5,000 (Delta = -9.25, Rho = -$462.50)
 - 10 SPY call options @ $5 (Delta = 0.5 each, Vega = $200 each, Theta = -$10/day each)
 
 **Portfolio Greeks:**
+
 - Delta = 100 (SPY) - 9.25 (TLT) + 500 (options) = 590.75
 - Gamma = 0 (SPY) + 0 (TLT) + 50 (options) = 50
 - Vega = 0 + 0 + 2,000 = $2,000 per 1% vol change
@@ -585,10 +620,12 @@ Add to rebalancing triggers:
 ### Example 2: Israeli Broker Positions (ILS)
 
 **Positions:**
+
 - 10,000 ILS in Israeli stocks @ 100 ILS/share = 1,000,000 ILS
 - FX Rate: 0.25 ILS/USD → $250,000 USD equivalent
 
 **Greeks (USD):**
+
 - Delta = 10,000 shares × 1.0 × 0.25 = 2,500 (USD equivalent)
 - Gamma = 0
 - Vega = 0
@@ -598,12 +635,14 @@ Add to rebalancing triggers:
 ## Implementation Roadmap
 
 ### Phase 1: Greeks Calculation for Options (Week 1)
+
 - [ ] Implement Black-Scholes Greeks formulas
 - [ ] Add Greeks calculation to RiskCalculator
 - [ ] Test with option positions
 - [ ] Validate against known option pricing models
 
 ### Phase 2: Greeks Calculation for Non-Options (Week 2)
+
 - [ ] Implement stock/ETF Greeks (Delta = 1.0)
 - [ ] Implement bond Greeks (Duration-based Rho, Convexity-based Gamma)
 - [ ] Add bond duration/convexity lookup (ETF data)
@@ -611,6 +650,7 @@ Add to rebalancing triggers:
 - [ ] Test with various non-option products
 
 ### Phase 3: Portfolio Aggregation (Week 3)
+
 - [ ] Implement portfolio-level Greeks aggregation
 - [ ] Add currency conversion for foreign positions
 - [ ] Integrate with PortfolioAllocationManager
@@ -618,6 +658,7 @@ Add to rebalancing triggers:
 - [ ] Test with mixed portfolios (IBKR + Israeli brokers)
 
 ### Phase 4: Risk Management Integration (Week 4)
+
 - [ ] Add Greeks-based rebalancing triggers
 - [ ] Implement Greeks limits and alerts
 - [ ] Add Greeks reporting and monitoring
@@ -651,6 +692,7 @@ Add to rebalancing triggers:
 ---
 
 **Next Steps:**
+
 1. Review and approve design
 2. Begin Phase 1 implementation (option Greeks)
 3. Then Phase 2 (non-option Greeks)

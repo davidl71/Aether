@@ -9,6 +9,7 @@
 Discount Bank provides a bank reconciliation service (התאמות בנקים עו"ש - Osh Matching) that allows businesses to download transaction reports in multiple formats for account reconciliation.
 
 **Service Details:**
+
 - **Report Range:** Up to 1 year back
 - **Single Report Range:** Maximum 31 calendar days
 - **File Size Limit:** 3.5MB (larger reports require reduced date range)
@@ -56,6 +57,7 @@ All records end with CR + LF (2 characters: `\r\n`)
 | Filler | 55-56 | 2 | Spaces | Padding |
 
 **Example:**
+
 ```
 0001234567890123456789012345678901234567890123456789012345
 ```
@@ -81,6 +83,7 @@ All records end with CR + LF (2 characters: `\r\n`)
 | Filler | 29-47 | 19 | Spaces | Padding |
 
 **Example:**
+
 ```
 01250118123456789012 1234567
 ```
@@ -102,6 +105,7 @@ All records end with CR + LF (2 characters: `\r\n`)
 | Filler | 32-107 | 76 | Spaces | Padding |
 
 **Example:**
+
 ```
 04112345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567
 ```
@@ -126,6 +130,7 @@ All records end with CR + LF (2 characters: `\r\n`)
 ### Currency Codes
 
 Common currency codes (may vary):
+
 - `01` = ILS (Israeli Shekel)
 - `02` = USD (US Dollar)
 - `03` = EUR (Euro)
@@ -166,11 +171,13 @@ Common currency codes (may vary):
 ### Integration Points
 
 **Related Systems:**
+
 - **Ledger Core Library:** `agents/backend/crates/ledger/` - Transaction and Posting models
 - **Investment Strategy Framework:** `docs/INVESTMENT_STRATEGY_FRAMEWORK.md` - Cash management and loan tracking
 - **Israeli Broker Import:** `docs/ISRAELI_BROKER_POSITION_IMPORT.md` - Similar import patterns
 
 **Data Flow:**
+
 ```
 Discount Bank File → Parser → Transaction Objects → Ledger Postings → Cash Flow Calculator
 ```
@@ -188,6 +195,7 @@ Discount Bank File → Parser → Transaction Objects → Ledger Postings → Ca
 Automated web scraping library for Israeli banks that can fetch transaction data programmatically without manual file downloads.
 
 **Supported Banks:**
+
 - Discount Bank
 - Bank Hapoalim
 - Bank Leumi
@@ -201,6 +209,7 @@ Automated web scraping library for Israeli banks that can fetch transaction data
 ### Discount Bank Scraper
 
 **Credentials Required:**
+
 ```javascript
 {
   id: <user identification number>,
@@ -210,6 +219,7 @@ Automated web scraping library for Israeli banks that can fetch transaction data
 ```
 
 **Usage Example:**
+
 ```javascript
 import { CompanyTypes, createScraper } from 'israeli-bank-scrapers';
 
@@ -253,18 +263,21 @@ if (result.success) {
 ### Recommendation
 
 **Use Osh Matching Files When:**
+
 - Manual reconciliation is acceptable
 - Stable, documented format is preferred
 - No automation infrastructure available
 - Compliance requires file-based audit trail
 
 **Use Scrapers Library When:**
+
 - Full automation is required
 - Real-time transaction fetching needed
 - Integration with Node.js/TypeScript stack
 - Willing to maintain scraper updates
 
 **Hybrid Approach:**
+
 - Use scrapers for automated daily imports
 - Use file format for manual reconciliation and audit
 - Both feed into same ledger system

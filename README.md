@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)]()
 
-Automated options arbitrage trading system for Interactive Brokers using box spread strategies.
+Comprehensive synthetic financing platform utilizing options, futures, bonds, bank loans, and pension funds across multiple currencies and brokers. Box spreads are one component of a larger multi-asset financing optimization system.
 
 ## ⚠️ Important Disclaimers
 
@@ -46,17 +46,18 @@ A box spread is a complex options strategy that combines four positions:
 3. **Long put** at strike K2 (higher strike)
 4. **Short put** at strike K1 (lower strike)
 
-**Arbitrage Opportunity**: When the net debit paid is less than the strike width (K2 - K1), there's a guaranteed profit at expiration.
+**Synthetic Financing**: Box spreads create synthetic lending/borrowing positions. The implied interest rate is calculated from the difference between strike width and net debit/credit, providing a risk-free financing rate comparable to T-bills or SOFR.
 
-**Example**:
+**Example** (Borrowing Scenario):
 
-- Buy SPY 500 Call @ $2.50
-- Sell SPY 510 Call @ $1.00
-- Buy SPY 510 Put @ $2.00
-- Sell SPY 500 Put @ $0.75
-- **Net Debit**: $2.75
-- **Strike Width**: $10.00
-- **Arbitrage Profit**: $7.25 (263% ROI)
+- Buy SPX 5000 Call @ $250
+- Sell SPX 5050 Call @ $100
+- Buy SPX 5050 Put @ $200
+- Sell SPX 5000 Put @ $75
+- **Net Debit**: $275 (cost to establish position)
+- **Strike Width**: $50.00
+- **Implied Interest Rate**: ((275 - 50) / 50) × (365 / 30) × 100% = 5.48% APR
+- **Use Case**: Synthetic borrowing at 5.48% APR, competitive with T-bills or margin loans
 
 ## Prerequisites
 

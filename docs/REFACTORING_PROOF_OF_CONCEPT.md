@@ -12,6 +12,7 @@ Successfully refactored `web/scripts/run-discount-bank-service.sh` to use shared
 ## 📊 Before vs After Comparison
 
 ### Before: 80 lines
+
 ```bash
 #!/usr/bin/env bash
 # Run Discount Bank service for PWA integration
@@ -95,6 +96,7 @@ exec "${PYTHON_CMD}" -m uvicorn integration.discount_bank_service:app \
 ```
 
 ### After: 70 lines (but much cleaner!)
+
 ```bash
 #!/usr/bin/env bash
 # Run Discount Bank service for PWA integration
@@ -172,17 +174,20 @@ exec "${PYTHON_CMD}" -m uvicorn integration.discount_bank_service:app \
 ## 📈 Improvements
 
 ### Code Reduction
+
 - **Before**: 80 lines (with ~50 lines of boilerplate)
 - **After**: 70 lines (with ~10 lines of includes + function calls)
 - **Effective reduction**: ~50 lines of boilerplate → ~10 lines = **80% reduction in boilerplate**
 
 ### Functionality Improvements
+
 1. ✅ **Config-based port** - Now reads from `config.json` instead of hardcoded
 2. ✅ **Consistent error handling** - Uses shared error handling patterns
 3. ✅ **Better port checking** - Uses `config_check_port_available()` instead of `lsof`
 4. ✅ **Maintainability** - Python/venv logic centralized
 
 ### Code Quality
+
 - **Readability**: Script focuses on service-specific logic
 - **Maintainability**: Common patterns in shared files
 - **Consistency**: Same patterns as other refactored scripts

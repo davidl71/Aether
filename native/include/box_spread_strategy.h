@@ -1,4 +1,4 @@
-// box_spread_strategy.h - Box spread arbitrage strategy
+// box_spread_strategy.h - Box spread synthetic financing strategy
 #pragma once
 
 #include "types.h"
@@ -89,7 +89,8 @@ public:
     // Check if box spread meets profit criteria
     bool is_profitable(const types::BoxSpreadLeg& spread) const;
 
-    // Calculate arbitrage profit
+    // Calculate arbitrage profit (legacy name - actually calculates implied interest rate basis)
+    // TODO: Refactor to calculate_implied_interest_rate() for synthetic financing focus
     double calculate_arbitrage_profit(const types::BoxSpreadLeg& spread) const;
 
     // Calculate ROI

@@ -18,6 +18,7 @@ All improvements from NautilusTrader learnings have been successfully implemente
 **File**: `python/integration/market_data_handler.py`
 
 **Changes**:
+
 - Added comprehensive data quality validation
 - Implemented proper timestamp extraction from ticks
 - Added stale data detection (configurable max age)
@@ -26,6 +27,7 @@ All improvements from NautilusTrader learnings have been successfully implemente
 - Improved error handling in callbacks
 
 **Key Features**:
+
 - Validates bid/ask prices are positive and bid < ask
 - Checks spread thresholds (min/max)
 - Validates data freshness (default 5 seconds)
@@ -37,6 +39,7 @@ All improvements from NautilusTrader learnings have been successfully implemente
 **File**: `python/integration/strategy_runner.py`
 
 **Changes**:
+
 - Refactored to `BoxSpreadStrategyRunner` class
 - Implemented `on_start()`, `on_stop()`, `on_reset()` lifecycle methods
 - Added event handlers: `on_quote_tick()`, `on_trade_tick()`, `on_order_filled()`, `on_order_rejected()`
@@ -46,6 +49,7 @@ All improvements from NautilusTrader learnings have been successfully implemente
 - Added multi-leg order tracking with rollback support
 
 **Key Features**:
+
 - Lifecycle methods follow NautilusTrader pattern
 - Event-driven opportunity evaluation (immediate on quote ticks)
 - Automatic rollback on order rejection
@@ -57,6 +61,7 @@ All improvements from NautilusTrader learnings have been successfully implemente
 **File**: `python/integration/order_factory.py` (NEW)
 
 **Changes**:
+
 - Created new `OrderFactory` class
 - Implements factory pattern for order creation
 - Methods: `limit()`, `market()`, `create_box_spread_orders()`
@@ -64,6 +69,7 @@ All improvements from NautilusTrader learnings have been successfully implemente
 - Proper order construction using NautilusTrader types
 
 **Key Features**:
+
 - Centralized order creation logic
 - Consistent order ID generation
 - Box spread order creation (all 4 legs)
@@ -75,12 +81,14 @@ All improvements from NautilusTrader learnings have been successfully implemente
 **File**: `python/integration/strategy_runner.py`
 
 **Changes**:
+
 - Uses proper `InstrumentId` format (e.g., "SPY.US")
 - Handles both string and InstrumentId types
 - Proper subscription/unsubscription management
 - Tracks subscribed instruments
 
 **Key Features**:
+
 - Standardized instrument ID format
 - Automatic ".US" suffix for US instruments
 - Proper error handling for invalid instruments
@@ -90,6 +98,7 @@ All improvements from NautilusTrader learnings have been successfully implemente
 **File**: `python/integration/market_data_handler.py`
 
 **Changes**:
+
 - Comprehensive validation in `_convert_quote_tick()` and `_convert_trade_tick()`
 - Timestamp validation and stale data detection
 - Spread validation (min/max thresholds)
@@ -97,6 +106,7 @@ All improvements from NautilusTrader learnings have been successfully implemente
 - Data quality statistics tracking
 
 **Key Features**:
+
 - Configurable max data age (default 5 seconds)
 - Spread percentage calculation
 - Statistics per instrument
@@ -107,6 +117,7 @@ All improvements from NautilusTrader learnings have been successfully implemente
 **File**: `python/integration/option_chain_manager.py` (NEW)
 
 **Changes**:
+
 - Created new `OptionChainManager` class
 - Efficient chain storage: symbol → expiry → strike → option_data
 - Real-time updates via `update_option()`
@@ -115,6 +126,7 @@ All improvements from NautilusTrader learnings have been successfully implemente
 - Chain statistics
 
 **Key Features**:
+
 - Efficient nested dictionary structure
 - Automatic chain updates on market data
 - Fast lookup for box spread legs
@@ -126,12 +138,14 @@ All improvements from NautilusTrader learnings have been successfully implemente
 **File**: `python/integration/execution_handler.py`
 
 **Changes**:
+
 - Integrated `OrderFactory` for order creation
 - Added `submit_box_spread_orders()` method
 - Automatic rollback on partial failure
 - Proper error handling
 
 **Key Features**:
+
 - Uses order factory instead of manual construction
 - Atomic box spread submission (with rollback)
 - Tracks all 4 orders together
@@ -280,4 +294,3 @@ stats = market_data_handler.get_data_quality_stats("SPY.US")
 - Error handling added throughout
 - Logging improved for debugging
 - Type hints added for better IDE support
-

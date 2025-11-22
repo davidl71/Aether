@@ -87,6 +87,7 @@ FinceptTerminal is an open-source financial intelligence platform offering CFA-l
 **Focus**: Automated box spread arbitrage trading for Interactive Brokers
 
 **Current Features**:
+
 - Box spread identification and analysis
 - Real-time options chain monitoring
 - Risk-based position sizing
@@ -102,6 +103,7 @@ FinceptTerminal is an open-source financial intelligence platform offering CFA-l
 - iPad app (SwiftUI) - planned
 
 **Current Analytics**:
+
 - Box spread profit/loss calculations
 - Risk metrics (VaR mentioned in docs, not fully implemented)
 - Position sizing based on risk
@@ -109,6 +111,7 @@ FinceptTerminal is an open-source financial intelligence platform offering CFA-l
 - Greeks calculation (planned)
 
 **Current Data Sources**:
+
 - Interactive Brokers TWS API
 - IBKR Client Portal Web API
 - ORATS (integration planned)
@@ -116,6 +119,7 @@ FinceptTerminal is an open-source financial intelligence platform offering CFA-l
 - Market data provider failover
 
 **Tech Stack**:
+
 - **Core**: C++20 (native calculations)
 - **Backend**: Python (NautilusTrader integration)
 - **Agents**: Rust, Go, TypeScript
@@ -209,17 +213,20 @@ FinceptTerminal is an open-source financial intelligence platform offering CFA-l
 **Action**: Integrate specific FinceptTerminal analytics modules into current project.
 
 **Potential Integrations**:
+
 1. **Portfolio Optimization**: Use FinceptTerminal's max Sharpe ratio optimization
 2. **Risk Metrics**: Integrate VaR, Sharpe ratio, max drawdown calculations
 3. **DCF Models**: Add equity valuation capabilities (if expanding beyond options)
 4. **Data Connectors**: Use FinceptTerminal's API mapper for additional data sources
 
 **Benefits**:
+
 - Add professional analytics without building from scratch
 - Leverage Python modules (compatible with current Python integration)
 - Enhance risk management capabilities
 
 **Drawbacks**:
+
 - Different codebase (would need to extract modules)
 - May have dependencies not needed for box spreads
 - Integration complexity
@@ -231,6 +238,7 @@ FinceptTerminal is an open-source financial intelligence platform offering CFA-l
 **Action**: Study FinceptTerminal's implementation patterns and apply to current project.
 
 **Learning Opportunities**:
+
 1. **Portfolio Optimization**: Study max Sharpe implementation
 2. **Risk Metrics**: Study VaR, Sharpe, max drawdown calculations
 3. **Data Connector Pattern**: Study API mapper approach
@@ -238,11 +246,13 @@ FinceptTerminal is an open-source financial intelligence platform offering CFA-l
 5. **AI Agent Pattern**: Study investor persona implementation (for future AI features)
 
 **Benefits**:
+
 - Learn best practices without integration complexity
 - Apply patterns to current tech stack
 - Maintain project focus
 
 **Drawbacks**:
+
 - Requires implementation work
 - No direct code reuse
 
@@ -253,17 +263,20 @@ FinceptTerminal is an open-source financial intelligence platform offering CFA-l
 **Action**: Use FinceptTerminal as a reference for features to add to current project.
 
 **Reference Features**:
+
 1. **Analytics Dashboard**: Reference for web SPA dashboard design
 2. **Risk Metrics**: Reference for implementing VaR, Sharpe, max drawdown
 3. **Data Visualization**: Reference for charts and graphs
 4. **Workflow Builder**: Reference for future automation features
 
 **Benefits**:
+
 - Inspiration for UI/UX design
 - Feature roadmap ideas
 - Best practices reference
 
 **Drawbacks**:
+
 - No direct integration
 - Requires custom implementation
 
@@ -274,11 +287,13 @@ FinceptTerminal is an open-source financial intelligence platform offering CFA-l
 **Action**: Migrate current project to FinceptTerminal platform.
 
 **Benefits**:
+
 - Access to all FinceptTerminal features
 - Broader analytics capabilities
 - Extensive data connectors
 
 **Drawbacks**:
+
 - Lose C++ performance (core calculations)
 - Different tech stack (Tauri vs current stack)
 - Lose project focus (box spread specialization)

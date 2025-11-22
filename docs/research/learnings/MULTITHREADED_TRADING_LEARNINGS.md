@@ -17,24 +17,29 @@ This article provides a comprehensive guide to building a multi-threaded stock t
 ### 1. OrderBook Class
 
 **Article Approach:**
+
 - Central component managing stocks, traders, and orders
 - Uses `std::unordered_map` for fast access and retrieval
 - Constant-time lookup (O(1)) for order operations
 - Customized key-value pairs for efficient data organization
 
 **Key Features:**
+
 - Fast order insertion and retrieval
 - Efficient trader and stock information management
 - Thread-safe operations for concurrent access
 
 **Current State:**
+
 - This project uses `OrderManager` class (`native/src/order_manager.cpp`)
 - Tracks multi-leg orders and execution statistics
 - Uses standard containers but could benefit from optimized data structures
 - Thread safety handled via mutexes in TWS client
 
 **Recommendation:**
+
 - **Consider implementing an OrderBook-style structure:**
+
   ```cpp
   class OrderBook {
   private:
@@ -47,6 +52,7 @@ This article provides a comprehensive guide to building a multi-threaded stock t
       std::vector<Order> get_orders_for_symbol(const std::string& symbol);
   };
   ```
+
 - **Benefits:**
   - Faster order lookups by ID (O(1) vs O(n))
   - Efficient symbol-based order queries
@@ -56,23 +62,28 @@ This article provides a comprehensive guide to building a multi-threaded stock t
 ### 2. Trader Class
 
 **Article Approach:**
+
 - Manages information about stocks and orders
 - Uses `std::vector` for dynamic flexibility
 - Constant-time random access for order management
 - Tracks trader-specific state and positions
 
 **Key Features:**
+
 - Dynamic order list management
 - Position tracking per trader
 - Efficient iteration over orders
 
 **Current State:**
+
 - This project doesn't have a dedicated Trader class
 - Order tracking is handled in `OrderManager`
 - Position tracking exists in backend Rust service (`agents/backend/crates/api/src/state.rs`)
 
 **Recommendation:**
+
 - **Consider adding a Trader/Account abstraction:**
+
   ```cpp
   class Trader {
   private:
@@ -86,6 +97,7 @@ This article provides a comprehensive guide to building a multi-threaded stock t
       double get_unrealized_pnl() const;
   };
   ```
+
 - **Benefits:**
   - Better separation of concerns
   - Easier to implement multi-account support
@@ -95,18 +107,21 @@ This article provides a comprehensive guide to building a multi-threaded stock t
 ### 3. Multithreading Architecture
 
 **Article Approach:**
+
 - Multiple threads for concurrent trading activities
 - Thread-safe data structures for shared state
 - Efficient processing of multiple orders and updates in real-time
 - Synchronization primitives for coordination
 
 **Key Features:**
+
 - Concurrent order processing
 - Real-time market data updates
 - Parallel order matching
 - Thread-safe order book operations
 
 **Current State:**
+
 - This project uses:
   - **Main Thread**: Application logic, strategy execution
   - **TWS Callback Thread**: EWrapper callbacks (from TWS API)
@@ -116,7 +131,9 @@ This article provides a comprehensive guide to building a multi-threaded stock t
 - Rust backend uses Tokio async runtime for concurrent operations
 
 **Recommendation:**
+
 - **Enhance C++ threading model:**
+
   ```cpp
   class ThreadedOrderProcessor {
   private:
@@ -135,6 +152,7 @@ This article provides a comprehensive guide to building a multi-threaded stock t
       void match_orders();
   };
   ```
+
 - **Benefits:**
   - Dedicated threads for different responsibilities
   - Better CPU utilization
@@ -148,23 +166,28 @@ This article provides a comprehensive guide to building a multi-threaded stock t
 ### 4. Factory Method Pattern for Orders
 
 **Article Approach:**
+
 - Factory pattern to create different order types (Market Order, Limit Order)
 - Flexible and extensible order creation
 - Abstracts order creation process
 - Easy to add new order types
 
 **Key Features:**
+
 - Type-safe order creation
 - Centralized order validation
 - Extensible design for new order types
 
 **Current State:**
+
 - This project creates orders directly in `OrderManager::place_box_spread()`
 - Uses `Order` struct with type field
 - No factory pattern currently
 
 **Recommendation:**
+
 - **Implement OrderFactory:**
+
   ```cpp
   class OrderFactory {
   public:
@@ -186,6 +209,7 @@ This article provides a comprehensive guide to building a multi-threaded stock t
           double stop_price);
   };
   ```
+
 - **Benefits:**
   - Centralized order creation logic
   - Easier to add new order types (e.g., stop-loss for box spreads)
@@ -195,23 +219,28 @@ This article provides a comprehensive guide to building a multi-threaded stock t
 ### 5. Strategy Pattern for Order Generation
 
 **Article Approach:**
+
 - Strategy pattern for different order generation algorithms
 - Flexible software system with simple interface
 - Each order type has its own generation strategy
 - Easy to swap strategies at runtime
 
 **Key Features:**
+
 - Pluggable order generation algorithms
 - Strategy interface for extensibility
 - Runtime strategy selection
 
 **Current State:**
+
 - This project has `BoxSpreadStrategy` class
 - Strategy is fixed (box spread arbitrage)
 - Could benefit from strategy pattern for different arbitrage types
 
 **Recommendation:**
+
 - **Consider strategy pattern for different arbitrage types:**
+
   ```cpp
   class ArbitrageStrategy {
   public:
@@ -233,6 +262,7 @@ This article provides a comprehensive guide to building a multi-threaded stock t
       // Future implementation
   };
   ```
+
 - **Benefits:**
   - Easy to add new arbitrage strategies
   - Runtime strategy selection
@@ -262,11 +292,13 @@ This article provides a comprehensive guide to building a multi-threaded stock t
 ## STL Data Structure Recommendations
 
 ### Current Usage
+
 - `std::vector` for option chains and opportunities
 - `std::unordered_map` for some lookups
 - `std::mutex` for thread synchronization
 
 ### Article Recommendations
+
 - **`std::unordered_map`** for O(1) lookups (OrderBook)
 - **`std::vector`** for dynamic lists (Trader orders)
 - **`std::queue`** for order processing queues
@@ -275,6 +307,7 @@ This article provides a comprehensive guide to building a multi-threaded stock t
 ### Enhancements for This Project
 
 1. **Order Lookup Optimization:**
+
    ```cpp
    // Instead of linear search
    std::unordered_map<int, Order*> orders_by_id_;
@@ -282,12 +315,14 @@ This article provides a comprehensive guide to building a multi-threaded stock t
    ```
 
 2. **Priority Queue for Opportunities:**
+
    ```cpp
    // Sort opportunities by profit
    std::priority_queue<BoxSpreadOpportunity> opportunities_;
    ```
 
 3. **Queue for Async Order Processing:**
+
    ```cpp
    // Thread-safe order queue
    std::queue<Order> pending_orders_;
@@ -299,12 +334,14 @@ This article provides a comprehensive guide to building a multi-threaded stock t
 ## Threading Model Comparison
 
 ### Article's Threading Model
+
 - Multiple worker threads for order processing
 - Dedicated thread for market data
 - Thread pool for concurrent operations
 - Lock-free data structures where possible
 
 ### Current Project's Threading Model
+
 - Main thread: Strategy execution
 - TWS callback thread: API callbacks
 - Thread-safe updates via mutexes
@@ -313,6 +350,7 @@ This article provides a comprehensive guide to building a multi-threaded stock t
 ### Recommendations
 
 1. **Consider Thread Pool for Order Processing:**
+
    ```cpp
    class OrderThreadPool {
    private:
@@ -409,15 +447,15 @@ This article provides a comprehensive guide to building a multi-threaded stock t
 
 ### Medium Priority (Performance Gains)
 
-4. **Thread Pool for Order Processing** - Better concurrency
-5. **Lock-Free Structures** - Reduced contention
-6. **Trader/Account Abstraction** - Better position tracking
+1. **Thread Pool for Order Processing** - Better concurrency
+2. **Lock-Free Structures** - Reduced contention
+3. **Trader/Account Abstraction** - Better position tracking
 
 ### Low Priority (Future Enhancements)
 
-7. **Strategy Pattern for Arbitrage Types** - Extensibility
-8. **Custom Allocators** - Memory optimization
-9. **C++20 Coroutines** - Async improvements
+1. **Strategy Pattern for Arbitrage Types** - Extensibility
+2. **Custom Allocators** - Memory optimization
+3. **C++20 Coroutines** - Async improvements
 
 ---
 
@@ -503,6 +541,7 @@ The article provides valuable insights into building a high-performance, multi-t
 4. **STL is Powerful**: Leverage STL containers and algorithms
 
 For this project, the most impactful improvements would be:
+
 - Implementing an OrderBook-style structure for faster order lookups
 - Adding a Factory pattern for order creation
 - Considering a thread pool for concurrent opportunity scanning

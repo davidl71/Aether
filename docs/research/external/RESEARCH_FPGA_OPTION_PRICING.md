@@ -10,6 +10,7 @@
 This document analyzes the MDPI Electronics article "The Role of FPGAs in Modern Option Pricing Techniques: A Survey" and assesses its relevance to the IBKR box spread trading application. The analysis focuses on understanding FPGA-based acceleration techniques for option pricing and evaluating their applicability to the current software-based C++20 architecture.
 
 **Key Findings:**
+
 - **High Theoretical Relevance:** Article directly addresses option pricing, core to box spread strategies
 - **Low Immediate Practical Relevance:** Project is software-based C++20, not FPGA hardware
 - **Future Consideration:** FPGA acceleration could be valuable if performance profiling reveals bottlenecks
@@ -26,7 +27,7 @@ This document analyzes the MDPI Electronics article "The Role of FPGAs in Modern
 
 **Volume/Issue:** Volume 13, Issue 16, Article 3186
 
-**URL:** https://www.mdpi.com/2079-9292/13/16/3186
+**URL:** <https://www.mdpi.com/2079-9292/13/16/3186>
 
 **Type:** Survey/Review Article
 
@@ -61,17 +62,20 @@ The article provides a comprehensive survey of how Field-Programmable Gate Array
 ### Key Technical Concepts
 
 **FPGA Architecture:**
+
 - Field-Programmable Gate Arrays are hardware devices that can be programmed to perform specific computations
 - Enable parallel execution of multiple calculations simultaneously
 - Reconfigurable logic allows optimization for specific algorithms
 
 **Option Pricing Acceleration:**
+
 - Parallel computation of multiple option prices simultaneously
 - Suitable for Monte Carlo simulations requiring thousands of iterations
 - Real-time pricing for high-frequency trading applications
 - Greeks calculations can be accelerated through parallel processing
 
 **Performance Characteristics:**
+
 - 10-100x speedup over traditional software approaches (depending on implementation)
 - Energy efficiency advantages for continuous computation
 - Low latency for real-time trading applications
@@ -83,6 +87,7 @@ The article provides a comprehensive survey of how Field-Programmable Gate Array
 ### Current Project Status
 
 **Option Pricing Implementation:**
+
 - Option pricing calculations are currently **stubbed** in the codebase
 - Location: `native/src/option_chain.cpp`
 - Functions requiring implementation:
@@ -91,6 +96,7 @@ The article provides a comprehensive survey of how Field-Programmable Gate Array
   - Greeks calculations (delta, gamma, theta, vega) - all stubbed (lines 349-384)
 
 **Architecture:**
+
 - **Language:** C++20
 - **Build System:** CMake
 - **Platform:** Software-based (no hardware acceleration currently)
@@ -164,6 +170,7 @@ The article provides a comprehensive survey of how Field-Programmable Gate Array
 ### Current Implementation Gaps
 
 **Software-Based Option Pricing (Priority 1):**
+
 ```cpp
 // Current stub in native/src/option_chain.cpp
 double OptionChainBuilder::calculate_theoretical_price(
@@ -179,6 +186,7 @@ double OptionChainBuilder::calculate_theoretical_price(
 ```
 
 **Required Implementation:**
+
 - Black-Scholes analytical pricing
 - Implied volatility calculation (Newton-Raphson)
 - Greeks calculations (delta, gamma, theta, vega, rho)
@@ -267,12 +275,14 @@ double OptionChainBuilder::calculate_theoretical_price(
 The MDPI article on FPGA-based option pricing provides valuable insights into advanced acceleration techniques for financial computing. While highly relevant theoretically to option pricing and box spread strategies, it is not immediately actionable for the current software-based C++20 project.
 
 **Key Takeaways:**
+
 1. **Focus on Software Implementation First:** Complete the stubbed option pricing functions in C++
 2. **Performance Profiling Required:** Identify actual bottlenecks before considering hardware acceleration
 3. **Future Optimization Path:** FPGA acceleration remains a viable option if performance becomes critical
 4. **Educational Resource:** Article serves as comprehensive reference for understanding pricing model complexity
 
 **Next Steps:**
+
 - Implement software-based option pricing models
 - Profile performance of box spread calculations
 - Document performance metrics for future decision-making

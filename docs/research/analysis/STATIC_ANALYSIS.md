@@ -39,7 +39,7 @@ This project uses multiple static analysis tools to ensure code quality and catc
 - **Checks**: Null pointer dereferences, resource leaks, race conditions
 - **Usage**: `scripts/run_linters.sh` (runs automatically)
 - **Installation**: `brew install infer` or see [Installation Guide](#infer-installation)
-- **Website**: https://fbinfer.com/
+- **Website**: <https://fbinfer.com/>
 
 ### Python Security
 
@@ -272,6 +272,7 @@ When introducing static analysis to an existing codebase, you may face thousands
 3. **Gradual Cleanup**: Fix suppressed warnings over time as you touch those files
 
 This approach allows you to:
+
 - Start benefiting from static analysis immediately
 - Avoid overwhelming developers with thousands of legacy warnings
 - Focus on preventing new bugs
@@ -333,6 +334,7 @@ To help static analysis tools understand your code better and reduce false posit
 - **[STATIC_ANALYSIS_ANNOTATIONS.md](STATIC_ANALYSIS_ANNOTATIONS.md)** - Comprehensive guide on using function attributes, comments, and pragmas to leave "breadcrumbs" for static analyzers
 
 This guide covers:
+
 - Standardized comments for warning suppression
 - Function attributes (`__attribute__((nonnull))`, `__attribute__((warn_unused_result))`, etc.)
 - Pragmas for tool-specific instructions

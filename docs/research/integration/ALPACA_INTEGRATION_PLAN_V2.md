@@ -6,7 +6,7 @@
 
 ---
 
-## ✅ CRITICAL UPDATE: Alpaca Supports Options!
+## ✅ CRITICAL UPDATE: Alpaca Supports Options
 
 **I was wrong in my initial assessment.** Alpaca launched **Level 3 Options Trading** and **multi-leg support** (announced Feb 2025).
 
@@ -15,6 +15,7 @@
 ✅ **Options Trading**: Yes, with levels 1-3
 ✅ **Multi-leg Orders**: Up to 4 legs per order
 ✅ **Supported Strategies**:
+
 - Call spreads
 - Put spreads
 - Iron condors
@@ -27,12 +28,14 @@
 **Critical Question**: Are box spreads supported?
 
 **What we know**:
+
 - Box spreads = 4-leg strategy ✅ (Alpaca allows up to 4 legs)
 - Alpaca requires: "All legs must be covered within the same MLeg order"
 - Box spreads are theoretically covered (risk-free arbitrage)
 - **BUT**: Box spreads are NOT explicitly mentioned in documentation
 
 **Box Spread Composition**:
+
 ```
 Long call @ K1   (covered by short put @ K1)
 Short call @ K2  (covered by long put @ K2)
@@ -41,7 +44,8 @@ Short put @ K1   (covers long call @ K1)
 ```
 
 **Recommendation**: Contact Alpaca support to verify:
-- Email: support@alpaca.markets
+
+- Email: <support@alpaca.markets>
 - Ask: "Does Level 3 support box spread arbitrage strategies?"
 
 ---
@@ -74,12 +78,14 @@ Short put @ K1   (covers long call @ K1)
 ### Option 1: Replace IBKR with Alpaca (Simplest)
 
 **Pros**:
+
 - Simpler API (REST vs Socket)
 - No TWS/Gateway setup
 - Lower commissions
 - Free market data
 
 **Cons**:
+
 - Box spreads may not be supported (need verification)
 - Less mature options platform
 - Fewer advanced features
@@ -91,11 +97,13 @@ Short put @ K1   (covers long call @ K1)
 ### Option 2: Broker Abstraction (Both IBKR + Alpaca)
 
 **Pros**:
+
 - Use best of both platforms
 - Fallback if one broker has issues
 - Diversified execution
 
 **Cons**:
+
 - More complexity
 - Maintain two integrations
 
@@ -110,7 +118,7 @@ Short put @ K1   (covers long call @ K1)
 **Before writing code, verify box spreads work:**
 
 1. **Create Paper Trading Account**:
-   - Sign up: https://alpaca.markets/
+   - Sign up: <https://alpaca.markets/>
    - Enable paper trading
    - Request Level 3 options approval
 
@@ -120,6 +128,7 @@ Short put @ K1   (covers long call @ K1)
    - Document if it's accepted
 
 3. **Test via API**:
+
    ```bash
    curl -X POST https://paper-api.alpaca.markets/v2/orders \
      -H "APCA-API-KEY-ID: YOUR_KEY" \
@@ -239,6 +248,7 @@ private:
 ### Phase 3: Implement Alpaca REST Client (Days 3-4)
 
 **Dependencies** (add to `CMakeLists.txt`):
+
 ```cmake
 find_package(CURL REQUIRED)
 find_package(nlohmann_json 3.11.2 REQUIRED)
@@ -512,6 +522,7 @@ int AlpacaAdapter::place_box_spread(const types::BoxSpreadLeg& spread) {
 ```
 
 **Environment Variables**:
+
 ```bash
 export ALPACA_API_KEY="PK..."
 export ALPACA_SECRET_KEY="..."
@@ -565,6 +576,7 @@ BoxSpreadStrategy strategy(broker.get(), &order_mgr, params);
 ## Testing Plan
 
 ### Week 1: Verification & Setup
+
 - [ ] Create Alpaca paper trading account
 - [ ] Get Level 3 options approval
 - [ ] Test box spread via dashboard (manual)
@@ -572,6 +584,7 @@ BoxSpreadStrategy strategy(broker.get(), &order_mgr, params);
 - [ ] Document results
 
 ### Week 2: Integration
+
 - [ ] Implement AlpacaAdapter
 - [ ] Write unit tests
 - [ ] Test option chain fetching
@@ -579,6 +592,7 @@ BoxSpreadStrategy strategy(broker.get(), &order_mgr, params);
 - [ ] Test multi-leg orders
 
 ### Week 3: Box Spread Testing
+
 - [ ] Place test box spread (paper)
 - [ ] Monitor execution
 - [ ] Verify atomic fill
@@ -589,20 +603,23 @@ BoxSpreadStrategy strategy(broker.get(), &order_mgr, params);
 
 ## Decision Matrix
 
-### Choose Alpaca if:
+### Choose Alpaca if
+
 ✅ You want simpler API (REST)
 ✅ You're frustrated with TWS setup
 ✅ Lower commissions matter
 ✅ Free market data is important
 ✅ Box spreads are verified to work
 
-### Choose IBKR if:
+### Choose IBKR if
+
 ✅ Box spread support is 100% confirmed
 ✅ You need advanced features
 ✅ More mature options platform preferred
 ✅ You can handle TWS complexity
 
-### Do Both (Hybrid) if:
+### Do Both (Hybrid) if
+
 ✅ You want redundancy
 ✅ Broker diversification is important
 ✅ You have time for dual integration
@@ -630,11 +647,11 @@ BoxSpreadStrategy strategy(broker.get(), &order_mgr, params);
 
 ## Resources
 
-- **Alpaca Docs**: https://docs.alpaca.markets/docs/options-trading
-- **Level 3 Options**: https://docs.alpaca.markets/docs/options-level-3-trading
-- **Support**: support@alpaca.markets
-- **Discord**: https://alpaca.markets/community
-- **API Reference**: https://docs.alpaca.markets/reference
+- **Alpaca Docs**: <https://docs.alpaca.markets/docs/options-trading>
+- **Level 3 Options**: <https://docs.alpaca.markets/docs/options-level-3-trading>
+- **Support**: <support@alpaca.markets>
+- **Discord**: <https://alpaca.markets/community>
+- **API Reference**: <https://docs.alpaca.markets/reference>
 
 ---
 
@@ -645,6 +662,7 @@ BoxSpreadStrategy strategy(broker.get(), &order_mgr, params);
 **Total**: 2-3 weeks to production
 
 **Savings vs TWS**:
+
 - Setup time: -4 hours (no TWS/Gateway)
 - Maintenance: Easier (REST vs Socket)
 - Commissions: $0.15/contract savings
@@ -659,6 +677,7 @@ BoxSpreadStrategy strategy(broker.get(), &order_mgr, params);
 3. **If not**: Fix TWS connection (30 min) or use Tradier
 
 **My gut feeling**: Box spreads SHOULD work since:
+
 - They're fully covered (no naked positions)
 - 4 legs fit Alpaca's limit
 - All legs offset each other

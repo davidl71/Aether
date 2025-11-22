@@ -16,6 +16,8 @@ export interface SnapshotClientOptions {
 export type SnapshotListener = (payload: SnapshotPayload) => void;
 export type SnapshotErrorListener = (error: Error) => void;
 
+export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error' | 'polling';
+
 export class SnapshotClient {
   private readonly endpoint: string;
   private readonly pollInterval: number;
@@ -30,6 +32,8 @@ export class SnapshotClient {
     new Map<SnapshotListener, SnapshotErrorListener | undefined>();
   private isPolling = false;
   private isWebSocketConnected = false;
+  private connectionStatus: ConnectionStatus = 'disconnected';
+  private statusListeners: Set<(status: ConnectionStatus) => void> = new Set();
 
   constructor(options: SnapshotClientOptions = {}) {
     const env = (import.meta as unknown as { env?: Record<string, unknown> }).env;
@@ -90,6 +94,38 @@ export class SnapshotClient {
     }
   }
 
+  /**
+   * Get current connection status
+   */
+  getConnectionStatus(): ConnectionStatus {
+    return this.connectionStatus;
+  }
+
+  /**
+   * Subscribe to connection status changes
+   */
+  onStatusChange(listener: (status: ConnectionStatus) => void): () => void {
+    this.statusListeners.add(listener);
+    // Immediately notify of current status
+    listener(this.connectionStatus);
+    return () => {
+      this.statusListeners.delete(listener);
+    };
+  }
+
+  private setConnectionStatus(status: ConnectionStatus) {
+    if (this.connectionStatus !== status) {
+      this.connectionStatus = status;
+      this.statusListeners.forEach((listener) => {
+        try {
+          listener(status);
+        } catch (error) {
+          console.error('Error in status listener:', error);
+        }
+      });
+    }
+  }
+
   private connectWebSocket() {
     if (!this.wsUrl || this.ws) {
       // Already connected or no WebSocket URL
@@ -98,11 +134,13 @@ export class SnapshotClient {
     }
 
     try {
+      this.setConnectionStatus('connecting');
       this.ws = new WebSocket(this.wsUrl);
 
       this.ws.onopen = () => {
         this.isWebSocketConnected = true;
         this.reconnectAttempts = 0;
+        this.setConnectionStatus('connected');
         this.stopPolling(); // Stop polling when WebSocket is connected
         // Fetch initial snapshot via REST
         void this.fetchOnce();
@@ -131,11 +169,13 @@ export class SnapshotClient {
       };
 
       this.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        // Don't log as error - WebSocket may not be available, polling is a valid fallback
+        console.debug('WebSocket not available, using polling instead');
         this.isWebSocketConnected = false;
-        // Fallback to polling
+        this.setConnectionStatus('polling');
+        // Fallback to polling (this is expected if WebSocket server isn't running)
         this.startPolling();
-        this.notifyError(new Error('WebSocket connection error. Falling back to polling.'));
+        // Don't notify as error - polling is a valid fallback
       };
 
       this.ws.onclose = () => {
@@ -145,20 +185,25 @@ export class SnapshotClient {
         // Attempt reconnection if we have listeners
         if (this.listeners.size > 0 && this.reconnectAttempts < DEFAULT_MAX_RECONNECT_ATTEMPTS) {
           this.reconnectAttempts++;
+          this.setConnectionStatus('connecting');
           this.reconnectTimeout = window.setTimeout(() => {
             this.connectWebSocket();
           }, DEFAULT_WS_RECONNECT_INTERVAL);
         } else if (this.reconnectAttempts >= DEFAULT_MAX_RECONNECT_ATTEMPTS) {
           // Max reconnection attempts reached, fallback to polling
-          console.warn('WebSocket reconnection limit reached. Falling back to polling.');
+          console.debug('WebSocket reconnection limit reached. Using polling instead.');
+          this.setConnectionStatus('polling');
           this.startPolling();
         } else {
           // No listeners, just fallback to polling
+          this.setConnectionStatus('polling');
           this.startPolling();
         }
       };
     } catch (error) {
-      console.error('Failed to create WebSocket:', error);
+      // WebSocket creation failed - fallback to polling (expected if server doesn't support WebSocket)
+      console.debug('WebSocket not available, using polling instead');
+      this.setConnectionStatus('polling');
       this.startPolling();
     }
   }
@@ -168,6 +213,7 @@ export class SnapshotClient {
       return; // Already polling
     }
     this.isPolling = true;
+    this.setConnectionStatus('polling');
     this.stopWebSocket(); // Stop WebSocket when polling
     this.stopPolling(); // Clear any existing polling
     this.timer = window.setInterval(() => {
@@ -234,14 +280,32 @@ export class SnapshotClient {
         headers: { 'cache-control': 'no-cache' }
       });
       if (!response.ok) {
-        throw new Error(`Snapshot request failed with status ${response.status}`);
+        const errorMessage = response.status === 404
+          ? `Snapshot endpoint not found: ${this.endpoint}. Make sure the backend service is running.`
+          : response.status === 0
+            ? `Network error: Unable to connect to ${this.endpoint}. Check if the service is running and CORS is configured.`
+            : `Snapshot request failed with status ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
       }
       const payload = (await response.json()) as SnapshotPayload;
       this.listeners.forEach((onError, listener) => {
         listener(payload);
       });
     } catch (error) {
-      const err = error instanceof Error ? error : new Error('Unknown snapshot error');
+      let err: Error;
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        // Network error - provide helpful message
+        err = new Error(
+          `Cannot connect to ${this.endpoint}. ` +
+          `Please ensure the backend service is running. ` +
+          `If using a backend API, check that it's accessible at this URL.`
+        );
+      } else if (error instanceof Error) {
+        err = error;
+      } else {
+        err = new Error('Unknown snapshot error');
+      }
+
       this.listeners.forEach((onError) => {
         if (onError) {
           onError(err);

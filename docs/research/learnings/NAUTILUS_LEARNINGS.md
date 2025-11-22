@@ -17,17 +17,20 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
 ### 1. Rust for Core Components
 
 **NautilusTrader Approach:**
+
 - Core components (`nautilus_core`) implemented in Rust
 - Type-safe and memory-safe by construction
 - High performance for latency-critical operations
 - Python bindings via Cython (static linking) and PyO3
 
 **Current State:**
+
 - This project uses C++ for core calculations
 - Python bindings via Cython
 - Good performance, but Rust could offer better safety guarantees
 
 **Recommendation:**
+
 - **Consider Rust for performance-critical components:**
   - Option chain scanning algorithms
   - Real-time market data processing
@@ -44,24 +47,29 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
 ### 2. Event-Driven Architecture
 
 **NautilusTrader Approach:**
+
 - Event-driven design with message passing
 - Components communicate via events (market data, order updates, etc.)
 - Asynchronous processing for low latency
 - Clear separation between data, execution, and strategy layers
 
 **Current State:**
+
 - This project uses callbacks and polling
 - Synchronous order placement
 - Strategy loop with periodic evaluation
 
 **Recommendation:**
+
 - **Implement event-driven market data handling:**
+
   ```python
   # Instead of polling, use event callbacks
   def on_quote_tick(self, tick: QuoteTick):
       # Immediately process new quote
       self._evaluate_opportunities(tick.instrument_id)
   ```
+
 - **Use async/await for non-blocking operations:**
   - Market data subscriptions
   - Order status monitoring
@@ -74,18 +82,22 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
 ### 3. Strategy Class Pattern
 
 **NautilusTrader Approach:**
+
 - Strategies inherit from base `Strategy` class
 - Lifecycle methods: `on_start()`, `on_stop()`, `on_reset()`
 - Event handlers: `on_quote_tick()`, `on_trade_tick()`, `on_order_filled()`
 - State management within strategy instance
 
 **Current State:**
+
 - `StrategyRunner` class exists but doesn't follow NautilusTrader pattern
 - Missing lifecycle management
 - Event handlers are basic
 
 **Recommendation:**
+
 - **Refactor to proper Strategy class:**
+
   ```python
   class BoxSpreadStrategy(Strategy):
       def on_start(self):
@@ -106,18 +118,22 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
 ### 4. Instrument Management
 
 **NautilusTrader Approach:**
+
 - `InstrumentId` for all instruments (standardized format)
 - Instrument definitions include contract specifications
 - Proper instrument resolution from symbols
 - Support for options chains via instrument queries
 
 **Current State:**
+
 - Uses string symbols directly
 - Manual instrument ID construction
 - No standardized instrument format
 
 **Recommendation:**
+
 - **Use NautilusTrader's InstrumentId:**
+
   ```python
   # Instead of: symbol = "SPY"
   instrument_id = InstrumentId.from_str("SPY.US")
@@ -125,6 +141,7 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
   # For options:
   option_id = InstrumentId.from_str("SPY240412C00500000.US")
   ```
+
 - **Leverage instrument definitions:**
   - Store contract specifications in instrument
   - Use instrument queries for option chains
@@ -133,18 +150,22 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
 ### 5. Order Management Best Practices
 
 **NautilusTrader Approach:**
+
 - Order factory pattern for creating orders
 - Order state machine (INITIALIZED → SUBMITTED → ACCEPTED → FILLED)
 - Order event callbacks for status updates
 - Position tracking via order fills
 
 **Current State:**
+
 - Basic order placement
 - Manual order status checking
 - No proper order factory
 
 **Recommendation:**
+
 - **Implement order factory:**
+
   ```python
   def create_box_spread_order(self, spread: BoxSpreadLeg) -> List[Order]:
       orders = []
@@ -160,6 +181,7 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
           orders.append(order)
       return orders
   ```
+
 - **Use order events for tracking:**
   - Subscribe to order status events
   - Update multi-leg order state automatically
@@ -168,18 +190,22 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
 ### 6. Market Data Handling
 
 **NautilusTrader Approach:**
+
 - Separate `QuoteTick` and `TradeTick` types
 - Real-time streaming with minimal latency
 - Data aggregation (bars, order book) handled by framework
 - Efficient data structures (Rust-based)
 
 **Current State:**
+
 - Basic market data conversion
 - Missing proper tick handling
 - No data aggregation
 
 **Recommendation:**
+
 - **Improve market data conversion:**
+
   ```python
   def _convert_quote_tick(self, tick: QuoteTick) -> Dict:
       return {
@@ -191,6 +217,7 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
           "timestamp": tick.ts_event,  # Use actual timestamp
       }
   ```
+
 - **Handle both quote and trade ticks:**
   - Quote ticks for bid/ask updates
   - Trade ticks for execution price validation
@@ -201,17 +228,20 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
 ### 7. Performance Optimization
 
 **NautilusTrader Approach:**
+
 - Rust core for maximum performance
 - Cython for performance-critical Python code
 - Zero-copy data structures where possible
 - Efficient memory management
 
 **Current State:**
+
 - C++ for calculations (good performance)
 - Python for integration (acceptable)
 - Some data copying in conversions
 
 **Recommendation:**
+
 - **Use Cython for hot paths:**
   - Option chain scanning (already using Cython bindings)
   - Profitability calculations
@@ -252,6 +282,7 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
 ### What to Implement in Rust (for this project)
 
 **High Priority:**
+
 1. **Option Chain Scanner**
    - Fast scanning of large option chains
    - Strike pair generation
@@ -272,25 +303,28 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
 
 **Medium Priority:**
 4. **Order Matching Logic**
-   - Multi-leg order coordination
-   - Fill matching
-   - Rollback logic
-   - State machine implementation
 
-5. **Performance Metrics**
+- Multi-leg order coordination
+- Fill matching
+- Rollback logic
+- State machine implementation
+
+1. **Performance Metrics**
    - Latency measurements
    - Throughput tracking
    - Statistical calculations
 
 **Low Priority (Future):**
 6. **Backtesting Engine**
-   - Historical data processing
-   - Strategy simulation
-   - Performance analysis
+
+- Historical data processing
+- Strategy simulation
+- Performance analysis
 
 ### Rust Integration Strategy
 
 **Option 1: Rust FFI from C++**
+
 ```rust
 // Rust library
 #[no_mangle]
@@ -303,6 +337,7 @@ pub extern "C" fn scan_option_chain(
 ```
 
 **Option 2: Rust via Python (PyO3)**
+
 ```rust
 use pyo3::prelude::*;
 
@@ -314,6 +349,7 @@ fn scan_option_chain_py(chain: PyObject) -> PyResult<Vec<BoxSpreadOpportunity>> 
 ```
 
 **Option 3: Standalone Rust Service**
+
 - Separate Rust service for calculations
 - Communicate via message queue or gRPC
 - Maximum isolation and performance
@@ -327,11 +363,13 @@ fn scan_option_chain_py(chain: PyObject) -> PyResult<Vec<BoxSpreadOpportunity>> 
 ### 1. StrategyRunner Improvements
 
 **Current Issues:**
+
 - Missing proper lifecycle management
 - No event-driven architecture
 - Basic market data handling
 
 **Improvements:**
+
 ```python
 class BoxSpreadStrategyRunner:
     def __init__(self, ...):
@@ -362,11 +400,13 @@ class BoxSpreadStrategyRunner:
 ### 2. Market Data Handler Improvements
 
 **Current Issues:**
+
 - Missing timestamp from actual tick
 - No data quality checks
 - Basic conversion
 
 **Improvements:**
+
 ```python
 def _convert_quote_tick(self, tick: QuoteTick) -> Dict:
     # Use actual timestamp from tick
@@ -397,11 +437,13 @@ def _convert_quote_tick(self, tick: QuoteTick) -> Dict:
 ### 3. Execution Handler Improvements
 
 **Current Issues:**
+
 - Order factory not implemented
 - Missing proper order construction
 - No combo order support
 
 **Improvements:**
+
 ```python
 def create_box_spread_orders(self, spread: BoxSpreadLeg) -> List[Order]:
     """Create all 4 legs as combo order if supported."""
@@ -428,11 +470,13 @@ def create_box_spread_orders(self, spread: BoxSpreadLeg) -> List[Order]:
 ### 4. Option Chain Management
 
 **Current Issues:**
+
 - No caching of option chains
 - Manual chain construction
 - No efficient lookup
 
 **Improvements:**
+
 ```python
 class OptionChainManager:
     def __init__(self):
@@ -474,6 +518,7 @@ class OptionChainManager:
 ### Current Project Targets
 
 Based on NautilusTrader benchmarks, aim for:
+
 - **Option Chain Scan:** < 10ms for 1000 options
 - **Box Spread Evaluation:** < 1ms per combination
 - **Order Placement:** < 50ms for 4-leg order
@@ -484,24 +529,28 @@ Based on NautilusTrader benchmarks, aim for:
 ## Migration Path
 
 ### Phase 1: Improve Python Integration (Immediate)
+
 1. Implement proper Strategy class pattern
 2. Add event-driven market data handling
 3. Improve order factory and management
 4. Add proper lifecycle management
 
 ### Phase 2: Optimize Critical Paths (Short-term)
+
 1. Profile current implementation
 2. Identify bottlenecks
 3. Optimize with Cython where needed
 4. Add caching and memoization
 
 ### Phase 3: Rust Integration (Medium-term)
+
 1. Implement option chain scanner in Rust
 2. Create PyO3 bindings
 3. Integrate with existing Python code
 4. Benchmark and compare performance
 
 ### Phase 4: Full Rust Core (Long-term)
+
 1. Migrate more components to Rust
 2. Create comprehensive Rust library
 3. Maintain Python API for strategies
@@ -524,11 +573,11 @@ Based on NautilusTrader benchmarks, aim for:
 
 ## References
 
-- NautilusTrader Documentation: https://nautilustrader.io/docs/nightly/
-- Architecture Guide: https://docs.nautilustrader.io/concepts/architecture
-- Tutorials: https://nautilustrader.io/docs/nightly/tutorials
-- GitHub Repository: https://github.com/nautechsystems/nautilus_trader
-- Rust Integration: https://docs.nautilustrader.io/advanced/rust
+- NautilusTrader Documentation: <https://nautilustrader.io/docs/nightly/>
+- Architecture Guide: <https://docs.nautilustrader.io/concepts/architecture>
+- Tutorials: <https://nautilustrader.io/docs/nightly/tutorials>
+- GitHub Repository: <https://github.com/nautechsystems/nautilus_trader>
+- Rust Integration: <https://docs.nautilustrader.io/advanced/rust>
 
 ---
 
@@ -539,4 +588,3 @@ Based on NautilusTrader benchmarks, aim for:
 - Event-driven architecture reduces latency significantly
 - Proper instrument and order management is critical for reliability
 - Performance optimization should be data-driven (profile first)
-

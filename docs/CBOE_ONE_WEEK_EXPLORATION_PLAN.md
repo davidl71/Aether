@@ -82,6 +82,7 @@
 **Goal**: Understand what's available for free
 
 **Tasks**:
+
 1. ✅ Access CBOE Options Reference Data webpage
    - Find JSON/HTML format
    - Download QSB instrument list
@@ -101,6 +102,7 @@
    - **Output**: `docs/cboe_api_endpoints.md`
 
 **Deliverables**:
+
 - Reference data structure documentation
 - QSB specifications summary
 - API endpoint inventory
@@ -112,6 +114,7 @@
 **Goal**: Explore options analytics and box spread capabilities
 
 **Tasks**:
+
 1. ✅ Sign up for LiveVol Pro 15-day trial
    - URL: <https://datashop.cboe.com/livevol-pro>
    - Document registration process
@@ -142,6 +145,7 @@
    - **Output**: `docs/livevol_qsb_access.md`
 
 **Deliverables**:
+
 - LiveVol Pro feature documentation
 - Box spread capabilities assessment
 - Data export/API evaluation
@@ -153,6 +157,7 @@
 **Goal**: Evaluate alert and monitoring capabilities
 
 **Tasks**:
+
 1. ✅ Sign up for Trade Alert 30-day trial
    - URL: <https://go.cboe.com/option-alert-trial>
    - Document registration process
@@ -170,6 +175,7 @@
    - **Output**: `docs/trade_alert_flow_data.md`
 
 **Deliverables**:
+
 - Trade Alert feature documentation
 - Alert capabilities assessment
 
@@ -180,6 +186,7 @@
 **Goal**: Explore research and analytics tools
 
 **Tasks**:
+
 1. ✅ Sign up for FT Options trial
    - URL: <https://go.cboe.com/ftoptions-free-trial>
    - Document registration process
@@ -191,6 +198,7 @@
    - **Output**: `docs/ft_options_research_tools.md`
 
 **Deliverables**:
+
 - FT Options feature documentation
 
 ---
@@ -200,6 +208,7 @@
 **Goal**: Identify integration opportunities
 
 **Tasks**:
+
 1. ✅ Document All Available APIs
    - REST APIs
    - WebSocket APIs
@@ -220,6 +229,7 @@
    - **Output**: `docs/cboe_integration_complexity.md`
 
 **Deliverables**:
+
 - Complete API inventory
 - Integration assessment
 
@@ -230,6 +240,7 @@
 **Goal**: Consolidate findings and make recommendations
 
 **Tasks**:
+
 1. ✅ Create Comparison Matrix
    - Free vs. subscription features
    - Cost-benefit analysis
@@ -249,6 +260,7 @@
    - **Output**: `docs/cboe_integration_roadmap.md`
 
 **Deliverables**:
+
 - Complete comparison matrix
 - Recommendations document
 - Integration roadmap
@@ -258,6 +270,7 @@
 ## Key Questions to Answer
 
 ### Reference Data
+
 - [ ] What format is the reference data (JSON, HTML, CSV)?
 - [ ] How often is it updated?
 - [ ] Can it be accessed programmatically?
@@ -265,6 +278,7 @@
 - [ ] What QSB instruments are listed?
 
 ### LiveVol Pro
+
 - [ ] Can you scan for box spreads?
 - [ ] What data fields are available?
 - [ ] Can you export data via API?
@@ -272,18 +286,21 @@
 - [ ] Can you see QSB instruments?
 
 ### Trade Alert
+
 - [ ] Can you set alerts for box spreads?
 - [ ] What alert criteria are available?
 - [ ] Is flow data available?
 - [ ] Can you export alert data?
 
 ### FT Options
+
 - [ ] What research tools are available?
 - [ ] Can you analyze box spreads?
 - [ ] Is there an API?
 - [ ] What data can be exported?
 
 ### APIs & Integration
+
 - [ ] What REST APIs are available?
 - [ ] What WebSocket APIs are available?
 - [ ] What authentication methods are used?
@@ -291,6 +308,7 @@
 - [ ] What are the rate limits?
 
 ### Costs
+
 - [ ] What's free forever?
 - [ ] What's free during trial only?
 - [ ] What are the subscription costs?
@@ -308,6 +326,7 @@
 **Purpose**: Parse CBOE reference data (JSON/HTML) to extract QSB instruments
 
 **Features**:
+
 - Download reference data
 - Parse QSB instrument definitions
 - Extract box spread instruments
@@ -320,6 +339,7 @@
 **Purpose**: Export data from LiveVol Pro (if API available)
 
 **Features**:
+
 - Connect to LiveVol API (if available)
 - Export box spread data
 - Save to local database/files
@@ -331,6 +351,7 @@
 **Purpose**: Explore and document CBOE APIs
 
 **Features**:
+
 - Test API endpoints
 - Document authentication
 - Record rate limits
@@ -402,19 +423,19 @@ By end of week, you should have:
 
 ### 🟡 MEDIUM PRIORITY
 
-4. **Trade Alert Trial**
+1. **Trade Alert Trial**
    - Useful for monitoring
    - May have flow data
    - Less critical for integration
 
-5. **FT Options Trial**
+2. **FT Options Trial**
    - Research-focused
    - May have analytics tools
    - Less critical for automation
 
 ### 🟢 LOW PRIORITY
 
-6. **Subscription Tools**
+1. **Subscription Tools**
    - Document costs
    - Evaluate if needed
    - Don't focus on implementation

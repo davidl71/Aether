@@ -19,6 +19,7 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 **Regulator**: Israel Securities Authority (ISA) - <https://www.isa.gov.il/>
 
 **Key Requirements**:
+
 - Brokers must comply with ISA regulations
 - Verify broker registration and licensing
 - Ensure investor protection measures
@@ -33,6 +34,7 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 ### 1. API Requirements
 
 **Critical Features**:
+
 - **Multi-leg Options Support**: Ability to execute 4-leg box spread orders atomically
 - **Real-time Market Data**: Options chain data, quotes, Greeks
 - **Order Management**: Advanced order types, partial fill handling
@@ -40,6 +42,7 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 - **Reliability**: Stable API with minimal downtime
 
 **Current Project Requirements**:
+
 - TWS API (Interactive Brokers) - socket-based protocol
 - REST API alternatives (Alpaca) - HTTP-based protocol
 - FIX Protocol support (institutional brokers)
@@ -47,6 +50,7 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 ### 2. Options Trading Capabilities
 
 **Essential Features**:
+
 - **SPX/SPXW Options**: Access to CBOE-listed index options
 - **Multi-leg Orders**: Support for complex option strategies
 - **Portfolio Margining**: Capital efficiency for box spreads
@@ -56,6 +60,7 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 ### 3. Trading Costs
 
 **Fee Structure**:
+
 - **Commission per Contract**: Critical for high-volume box spread trading
 - **Exchange Fees**: CBOE transaction fees
 - **Market Data Costs**: Options data (OPRA) fees
@@ -63,6 +68,7 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 - **Rebate Programs**: CBOE Frequent Trader Program (FTID) support
 
 **Cost Optimization**:
+
 - Compare commission structures across brokers
 - Factor in exchange fees and rebates
 - Consider market data package costs
@@ -71,12 +77,14 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 ### 4. Platform Compatibility
 
 **Supported Platforms**:
+
 - **MetaTrader 4/5 (MT4/MT5)**: Popular algorithmic trading platforms
 - **cTrader**: Advanced algorithmic trading platform
 - **TradingView**: Charting and analysis platform
 - **Custom APIs**: Direct API integration (preferred for this project)
 
 **Current Project**:
+
 - Uses TWS API directly (no platform dependency)
 - Can integrate with multiple brokers via APIs
 - Platform-agnostic architecture
@@ -84,6 +92,7 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 ### 5. Currency Support
 
 **USD/ILS Considerations**:
+
 - **Account Currency**: ILS-denominated accounts
 - **Trading Currency**: USD-denominated options (SPX/SPXW)
 - **Currency Conversion**: Automatic or manual conversion
@@ -99,6 +108,7 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 **Status**: ✅ Currently Integrated
 
 **Key Features**:
+
 - **Comprehensive API**: TWS API with full options support
 - **Global Access**: Access to US options markets (CBOE)
 - **Multi-leg Options**: Native support for complex option strategies
@@ -107,6 +117,7 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 - **Regulatory**: Regulated globally, ISA compliance
 
 **Advantages**:
+
 - ✅ Already integrated in project
 - ✅ Robust API for algorithmic trading
 - ✅ Excellent options market access
@@ -114,6 +125,7 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 - ✅ Currency hedging support
 
 **Considerations**:
+
 - Socket-based API (more complex than REST)
 - Learning curve for TWS API
 - Market data costs (OPRA feed)
@@ -125,6 +137,7 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 **Status**: ✅ Documented, Account Available
 
 **Key Features**:
+
 - **Developer-Friendly API**: REST API (easier than TWS sockets)
 - **Commission-Free Options**: No commissions for US-listed options via API
 - **Multi-leg Options**: Direct support for box spread strategies
@@ -133,12 +146,14 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 - **Currency Support**: Local currency API, funding wallets
 
 **Advantages**:
+
 - ✅ Modern REST API (easier integration)
 - ✅ Commission-free options trading
 - ✅ Elite features available (DMA, advanced orders)
 - ✅ Good for US-focused algorithmic trading
 
 **Considerations**:
+
 - US-focused (less global than IBKR)
 - Smaller broker vs. IBKR
 - Market data costs may apply
@@ -148,17 +163,20 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 ### 3. OANDA
 
 **Key Features**:
+
 - **Forex Focus**: Primarily forex trading
 - **Reliable API**: REST API for algorithmic trading
 - **Competitive Spreads**: Good for currency trading
 - **Currency Support**: Multi-currency accounts
 
 **Relevance**:
+
 - **Currency Hedging**: Useful for hedging USD/ILS exposure
 - **Forex Trading**: Not suitable for options trading
 - **Complementary**: Could be used alongside IBKR for currency hedging
 
 **Considerations**:
+
 - Limited to forex (no options trading)
 - Not suitable for box spread strategies
 - Better as complementary service for currency hedging
@@ -166,17 +184,20 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 ### 4. TradeStation Global
 
 **Key Features**:
+
 - **Powerful API**: Comprehensive trading API
 - **Trading Tools**: Wide array of trading tools
 - **Platform Support**: TradeStation platform
 - **Options Trading**: Support for options strategies
 
 **Relevance**:
+
 - Good API support for algorithmic trading
 - Options trading capabilities
 - Suitable for both novice and experienced traders
 
 **Considerations**:
+
 - Platform-dependent (TradeStation platform)
 - May have higher costs than IBKR
 - Less flexible than direct API integration
@@ -184,17 +205,20 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 ### 5. MEXEM
 
 **Key Features**:
+
 - **Global Markets**: Access to global markets
 - **Competitive Fees**: Low trading fees
 - **API Infrastructure**: Solid API for algorithmic trading
 - **Options Support**: Options trading available
 
 **Relevance**:
+
 - Good API infrastructure
 - Competitive fees
 - Global market access
 
 **Considerations**:
+
 - Less established than IBKR
 - Verify ISA compliance
 - May have limited options market access
@@ -237,6 +261,7 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 ### Primary Broker: Interactive Brokers (IBKR)
 
 **Rationale**:
+
 - ✅ Already integrated in project
 - ✅ Comprehensive options market access
 - ✅ Robust API for algorithmic trading
@@ -245,6 +270,7 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 - ✅ Portfolio margining
 
 **Use For**:
+
 - Primary box spread execution
 - Options market access
 - Currency hedging (USD/ILS)
@@ -253,12 +279,14 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 ### Secondary Broker: Alpaca Markets
 
 **Rationale**:
+
 - ✅ Commission-free options (API)
 - ✅ Modern REST API (easier than TWS)
 - ✅ Elite features (DMA, VWAP/TWAP)
 - ✅ Good for US-focused strategies
 
 **Use For**:
+
 - Alternative execution venue
 - Cost comparison
 - Multi-venue arbitrage
@@ -267,6 +295,7 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 ### Complementary Services
 
 **OANDA** (if needed):
+
 - Currency hedging
 - Forex trading
 - Currency conversion
@@ -278,11 +307,13 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 ### Multi-Broker Architecture
 
 **Current Project**:
+
 - Primary: IBKR (TWS API)
 - Secondary: Alpaca (REST API) - documented, account available
 - Future: Additional brokers via FIX Protocol
 
 **Benefits**:
+
 - **Redundancy**: Backup execution venue
 - **Cost Optimization**: Compare rates across brokers
 - **Arbitrage**: Multi-venue opportunities
@@ -291,18 +322,21 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 ### API Integration Patterns
 
 **IBKR (TWS API)**:
+
 - Socket-based protocol
 - Real-time callbacks
 - Complex but powerful
 - See `docs/API_DOCUMENTATION_INDEX.md`
 
 **Alpaca (REST API)**:
+
 - HTTP RESTful interface
 - WebSocket for real-time data
 - Simpler than TWS API
 - See `docs/API_DOCUMENTATION_INDEX.md`
 
 **FIX Protocol**:
+
 - Industry standard
 - Direct exchange connectivity
 - Lower latency
@@ -317,6 +351,7 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 **Challenge**: Trading USD-denominated options (SPX/SPXW) with ILS account
 
 **Solutions**:
+
 1. **Currency Hedging**: Use currency futures/forwards
 2. **Multi-Currency Account**: Maintain USD balance
 3. **Automatic Conversion**: Let broker handle conversion
@@ -327,12 +362,14 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 ### Broker Currency Support
 
 **IBKR**:
+
 - ✅ Multi-currency accounts
 - ✅ Currency conversion
 - ✅ Currency hedging (futures, forwards)
 - ✅ Real-time exchange rates
 
 **Alpaca**:
+
 - ✅ Local currency API
 - ✅ Funding wallets (local currencies)
 - ⚠️ Verify USD/ILS support

@@ -1,0 +1,141 @@
+---
+alwaysApply: true
+---
+# Sequential Thinking MCP Server Usage
+
+## When to Use Sequential Thinking
+
+**ALWAYS use Sequential Thinking for:**
+- Converting structural understanding into actionable implementation steps
+- Creating step-by-step workflows for complex features
+- Breaking down implementation tasks into sequential, manageable components
+- Reflective problem-solving that iteratively refines approaches
+- Process-oriented thinking when you know WHAT but need HOW
+- Implementation planning after structural analysis
+
+**Usage Pattern:**
+Use Sequential Thinking when you need to:
+- Convert Tractatus Thinking structural analysis into concrete steps
+- Create implementation workflows for complex problems
+- Break down "what needs to be done" into "how to do it"
+- Plan sequential execution of multi-step processes
+- Refine implementation approaches based on feedback
+- Document step-by-step processes and workflows
+
+## Strategic Sequencing
+
+**USE AFTER Tractatus Thinking** to convert structural understanding into implementation:
+1. **First**: Use Tractatus Thinking to understand WHAT (structure/logic) - breaks down concepts
+2. **Then**: Use Sequential Thinking for HOW (process/steps) - creates implementation workflow
+3. **Finally**: Return to Tractatus Thinking to verify all components are addressed
+
+**Complementary to Tractatus Thinking:**
+- Tractatus Thinking analyzes WHAT (structure/logic) - reveals dependencies and components
+- Sequential Thinking handles HOW (process/steps) - creates actionable implementation plan
+- Together they form complete thinking: structure → process → verification
+
+## Examples
+
+✅ **Good:**
+- "How do we implement the box spread arbitrage system after Tractatus analysis?"
+- "Create a step-by-step workflow for integrating TWS API"
+- "Break down the deployment process into sequential steps"
+- "Plan the implementation of the risk management module"
+- "Convert the structural analysis into concrete implementation tasks"
+
+❌ **Avoid:**
+- Structural analysis questions (use Tractatus Thinking instead)
+- Simple, single-step implementations
+- Questions about what components exist (use codebase search)
+- Questions requiring just facts or data lookup
+
+## Key Operations
+
+**Start Sequential Analysis:**
+```
+operation: "start"
+problem: "How do we implement X?" or "Create workflow for Y"
+```
+
+**Add Steps:**
+```
+operation: "add_step"
+step: "Step description"
+previous_step: "step_id" (or null for first step)
+```
+
+**Refine Steps:**
+```
+operation: "refine"
+step_id: "step_id"
+updated_content: "Refined step description"
+```
+
+**Navigate Workflow:**
+```
+operation: "navigate"
+target: "step_id" | "next" | "previous" | "start"
+```
+
+**Export Workflow:**
+```
+operation: "export"
+format: "markdown" | "json" | "graphviz"
+```
+
+## Benefits
+
+- **Structured Problem-Solving**: Dynamic and reflective problem-solving through structured thought sequences
+- **Implementation Workflow**: Converts structural understanding into actionable steps
+- **Step-by-Step Reasoning**: Breaks down complex problems into sequential, manageable components
+- **Reflective Analysis**: Enables dynamic reflection and refinement of approaches
+- **Process Documentation**: Creates reusable workflows for future implementations
+
+## Integration with Other Tools
+
+- **After Tractatus Thinking**: Convert structural analysis into implementation steps
+- **With Codebase Search**: Use existing patterns to inform sequential steps
+- **With Research**: Incorporate research findings into implementation workflow
+- **With OpenMemory**: Store implementation workflows for future reference
+- **With Todo2**: Convert sequential steps into actionable tasks
+
+## Common Patterns
+
+**Implementation Workflow:**
+```
+Step 1 (Tractatus): "What is the structure of box spread arbitrage?"
+→ Reveals: Success = Valid Market Data × Correct Strikes × Proper Pricing × API Connection
+
+Step 2 (Sequential): "How do we implement box spread arbitrage?"
+→ Creates:
+  1. Connect to TWS API
+  2. Fetch market data for strikes
+  3. Calculate pricing for all legs
+  4. Validate arbitrage opportunity
+  5. Execute trade if valid
+
+Step 3 (Tractatus): "Verify implementation structure"
+→ Confirms: All multiplicative dependencies are addressed
+```
+
+**Reflective Refinement:**
+```
+Problem: "How do we deploy the backend service?"
+Sequential creates initial workflow
+→ Test workflow reveals issues
+→ Refine steps based on feedback
+→ Final workflow addresses all edge cases
+```
+
+**Process Documentation:**
+```
+Problem: "How do we integrate NATS messaging?"
+Sequential creates step-by-step workflow
+→ Document workflow in OpenMemory
+→ Reuse workflow for future integrations
+→ Refine workflow as patterns emerge
+```
+
+---
+
+**Reference:** See `docs/research/integration/MCP_SERVERS.md` for detailed Sequential Thinking configuration and usage.

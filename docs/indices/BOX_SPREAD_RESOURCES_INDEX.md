@@ -63,6 +63,7 @@ Need CME-specific information?
 ### Educational Resources
 
 #### Cboe – Box Spreads as Alternative Borrowing & Lending
+
 - **URL**: <https://www.cboe.com/insights/posts/why-consider-box-spreads-as-an-alternative-borrowing-lending-strategy/>
 - **Author**: Dr. Wesley R. Gray (Alpha Architect)
 - **Key Points**:
@@ -72,6 +73,7 @@ Need CME-specific information?
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#cboe-box-spreads`
 
 #### OCC Options Education – Box Spread Strategies
+
 - **PDF**: <https://www.optionseducation.org/getmedia/2ae6c8bd-9a8e-4d2f-8168-19b6ff9e3589/listed-options-box-spread-strategies-for-borrowing-or-lending-cash.pdf>
 - **Key Topics**:
   - Box spread construction (bull call + bear put)
@@ -83,6 +85,7 @@ Need CME-specific information?
 ### Implementation Examples
 
 #### SyntheticFi
+
 - **Website**: <https://www.syntheticfi.com/>
 - **YC Profile**: <https://www.ycombinator.com/companies/syntheticfi>
 - **Description**: YC-backed fintech using box spreads for securities-backed lending
@@ -95,6 +98,7 @@ Need CME-specific information?
 ### Market Structure
 
 #### Cboe Quoted Spread Book (QSB)
+
 - **Document**: <https://cdn.cboe.com/resources/membership/Quoted_Spread_Book_FAQ.pdf>
 - **Focus**: Box spread quoting on CBOE Complex Order Books
 - **Key Features**:
@@ -104,6 +108,7 @@ Need CME-specific information?
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#cboe-qsb`
 
 #### Cboe Frequent Trader Program (FTID)
+
 - **Document**: <https://cdn.cboe.com/resources/membership/us-options-frequent-trader-program.pdf>
 - **Focus**: Fee rebate program for high-volume options trading
 - **Benefits**: Reduced fees for qualifying traders
@@ -114,21 +119,25 @@ Need CME-specific information?
 ## Use Cases
 
 ### Learning Box Spread Mechanics
+
 - **Start**: OCC Options Education PDF
 - **Deep Dive**: Cboe article by Dr. Wesley R. Gray
 - **Implementation**: SyntheticFi example
 
 ### Comparing Strategies
+
 - **Box Spreads vs T-bills**: Cboe article
 - **Box Spreads vs Futures**: CME Group whitepapers
 - **Capital Efficiency**: CME Group AIR TRFs whitepaper
 
 ### CBOE Integration
+
 - **Quoting**: Cboe QSB FAQ
 - **Fee Optimization**: Cboe FTID program
 - **Fee Structure**: Cboe EDGX fee schedule
 
 ### CME Integration
+
 - **Financing Comparison**: CME Group whitepapers
 - **Fee Structure**: CME Group fee schedules
 - **Integration**: CME Client Systems Wiki

@@ -15,12 +15,14 @@ The TWS API requires implementing ALL pure virtual methods from EWrapper. The cu
 ## Issue
 
 Modern TWS API (v10.19+) added Protocol Buffers support, requiring protobuf versions of EVERY callback method. This means:
+
 - Every method has both a classic version AND a protobuf version
 - Both must be implemented for EWrapper to be concrete
 
 ## Missing Methods
 
 ### Core Methods (11)
+
 1. `openOrderEnd`
 2. `winError`
 3. `updateMktDepth`
@@ -34,7 +36,9 @@ Modern TWS API (v10.19+) added Protocol Buffers support, requiring protobuf vers
 11. `currentTimeInMillis`
 
 ### ProtoBuf Methods (82+)
+
 All protobuf versions of callbacks, including:
+
 - `errorProtoBuf` ✅ ADDED
 - `orderStatusProtoBuf`
 - `openOrderProtoBuf`
@@ -46,25 +50,30 @@ All protobuf versions of callbacks, including:
 ## Solution Options
 
 ### Option A: Add All Stubs (Recommended for Completion)
+
 Add stub implementations for all 93+ methods. This is the **only way** to make the class concrete.
 
 **Time estimate**: 2-3 hours to add all stubs properly
 
 **Pros**:
+
 - Complete, compilable implementation
 - Can be enhanced incrementally
 - Follows TWS API requirements
 
 **Cons**:
+
 - Tedious to add all methods
 - Large code file
 
 ### Option B: Use DefaultEWrapper (If Available)
+
 Some TWS API versions include `DefaultEWrapper` with default implementations.
 
 **Check**: Does native/third_party/tws-api include `DefaultEWrapper.h`?
 
 ### Option C: Simplified Stub Client (Current Approach)
+
 Keep the stub implementation that was working before. It compiles and runs but doesn't connect to real TWS.
 
 **Status**: Stub version is still available in git history

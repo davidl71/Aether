@@ -1,5 +1,7 @@
 # IB Box Spread Desktop (SwiftUI)
 
+> **Note:** Desktop app development has been deferred in favor of focusing on PWA (first priority) and TUI (second priority). This documentation and code are preserved for future implementation reference.
+
 This directory packages the macOS SwiftUI shell that will visualize box spread analytics.
 
 ## Getting Started

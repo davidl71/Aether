@@ -1,0 +1,48 @@
+---
+alwaysApply: true
+---
+# Context7 MCP Server Usage
+
+## When to Use Context7
+
+**ALWAYS use Context7 for:**
+- Documentation queries about libraries, frameworks, or APIs
+- Getting up-to-date code examples (2025)
+- Version-specific API references
+- Best practices for current library versions
+
+**Usage Pattern:**
+Append `use context7` to your prompts when asking about:
+- FastAPI, React, Rust, Python, TypeScript, or other frameworks
+- Library-specific patterns and examples
+- API documentation and usage
+- Current best practices (2025)
+
+## Examples
+
+✅ **Good:**
+- "How do I use FastAPI CORS middleware? use context7"
+- "Show me Rust Axum REST API patterns use context7"
+- "FTXUI Input component C++ examples use context7"
+
+❌ **Avoid:**
+- General programming questions (use regular search)
+- Project-specific questions (use codebase search)
+- Questions that don't need current documentation
+
+## Benefits
+
+- **Up-to-date**: Always gets latest documentation (2025)
+- **Version-specific**: Accurate for current library versions
+- **Code examples**: Real, working code patterns
+- **No hallucinations**: Based on actual documentation
+
+## Integration with Other Tools
+
+- **Before web search**: Try Context7 first for documentation
+- **With NotebookLM**: Use Context7 for docs, NotebookLM for research
+- **With Semgrep**: Use Context7 to find secure patterns
+
+---
+
+**Reference:** See `docs/MCP_SERVERS.md` for detailed Context7 configuration and usage.

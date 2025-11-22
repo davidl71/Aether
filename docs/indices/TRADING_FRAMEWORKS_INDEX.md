@@ -93,16 +93,19 @@ Need modular/extensible?
 ## Use Cases
 
 ### Building Modular Trading System
+
 - **Framework**: FLOX
 - **Benefits**: Modular architecture, extensible components
 - **Best For**: Systems requiring flexibility and modularity
 
 ### Ultra-Low Latency Trading
+
 - **Framework**: SmartQuant C++
 - **Benefits**: Maximum performance, institutional-grade
 - **Best For**: HFT systems, institutional trading
 
 ### Python-Based Strategies
+
 - **Framework**: Nautilus Trader
 - **Benefits**: Event-driven, comprehensive backtesting
 - **Best For**: Python strategies, backtesting, rapid prototyping
@@ -112,16 +115,19 @@ Need modular/extensible?
 ## Integration Considerations
 
 ### FLOX
+
 - **Integration**: Modular components can be integrated incrementally
 - **Effort**: Medium (modular design allows gradual integration)
 - **Best For**: New systems or major refactoring
 
 ### SmartQuant C++
+
 - **Integration**: Significant refactoring required
 - **Effort**: High (institutional framework, commercial license)
 - **Best For**: New institutional systems from scratch
 
 ### Nautilus Trader
+
 - **Integration**: Python bindings, event-driven architecture
 - **Effort**: Low-Medium (Python integration, event-driven patterns)
 - **Best For**: Python-based strategies, backtesting

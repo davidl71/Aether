@@ -13,8 +13,8 @@ Quick reference for using MCP servers in your Cursor prompts.
 
 ### 🔍 Available but Not Configured
 
-5. **GitKraken** - Enhanced Git workflow, PRs, issues
-6. **Cursor IDE Browser** - Browser automation
+1. **GitKraken** - Enhanced Git workflow, PRs, issues
+2. **Cursor IDE Browser** - Browser automation
 
 ## Quick Prompt Examples
 
@@ -80,12 +80,14 @@ Create a new file at docs/NEW_FEATURE.md with this content: [content]
 ## When to Use Each MCP
 
 ### Semgrep
+
 - ✅ Before committing security-sensitive code
 - ✅ When writing trading logic
 - ✅ When handling credentials or API keys
 - ✅ As part of code review process
 
 ### GitKraken
+
 - ✅ Creating pull requests
 - ✅ Managing branches and worktrees
 - ✅ Tracking issues related to features
@@ -93,6 +95,7 @@ Create a new file at docs/NEW_FEATURE.md with this content: [content]
 - ✅ Adding comments to PRs/issues
 
 ### NotebookLM
+
 - ✅ Researching TWS API topics
 - ✅ Summarizing YouTube tutorials
 - ✅ Creating documentation from links
@@ -100,6 +103,7 @@ Create a new file at docs/NEW_FEATURE.md with this content: [content]
 - ⚠️ Always ask permission first if task isn't explicitly about these topics
 
 ### Filesystem
+
 - ✅ Reading project files
 - ✅ Creating new files
 - ✅ Modifying existing files
@@ -107,6 +111,7 @@ Create a new file at docs/NEW_FEATURE.md with this content: [content]
 - ℹ️ Automatically used by AI - no explicit prompt needed
 
 ### Browser
+
 - ✅ Testing WASM builds
 - ✅ Verifying React components
 - ✅ Testing web UI functionality
@@ -116,6 +121,7 @@ Create a new file at docs/NEW_FEATURE.md with this content: [content]
 ## Integration with .cursorrules
 
 The AI assistant will automatically:
+
 - Use Semgrep when you mention security scanning
 - Use Filesystem for file operations
 - Use Git/GitKraken for version control tasks
@@ -132,12 +138,14 @@ The AI assistant will automatically:
 ## Troubleshooting
 
 ### MCP Not Responding
+
 - Restart Cursor
 - Check `.cursor/mcp.json` syntax
 - Verify Node.js/npm/uvx is installed
 - Check Cursor Developer Tools → Console for errors
 
 ### MCP Not Available
+
 - Ensure MCP server is configured in `.cursor/mcp.json`
 - Check that the command/args are correct
 - Verify the MCP server package is available via npx/uvx

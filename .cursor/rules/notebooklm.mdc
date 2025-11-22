@@ -1,0 +1,56 @@
+---
+alwaysApply: true
+---
+# NotebookLM MCP Server Usage
+
+## When to Use NotebookLM
+
+**ALWAYS use NotebookLM for:**
+- Summarizing YouTube videos (tutorials, documentation, talks)
+- Processing documentation links and extracting key information
+- Creating zero-hallucination knowledge bases from sources
+- Research tasks that require synthesizing multiple documents
+
+**Usage Pattern:**
+Use NotebookLM when:
+- User provides YouTube video links for research
+- Documentation links need to be processed and summarized
+- Creating knowledge bases from multiple sources
+- Research tasks (T-142 through T-160) that benefit from source synthesis
+
+## Examples
+
+✅ **Good:**
+- "Summarize this TWS API tutorial: [YouTube link]"
+- "Create a knowledge base from these documentation links: [links]"
+- "Extract key information from this research paper: [PDF link]"
+- "Process this API documentation and summarize patterns: [link]"
+
+❌ **Avoid:**
+- Simple code questions (use Context7 or codebase search)
+- Quick lookups (use web search)
+- Questions that don't need source synthesis
+
+## Benefits
+
+- **Zero-hallucination**: Answers based on your actual sources
+- **Citation-backed**: References specific sources
+- **Synthesis**: Combines information from multiple documents
+- **Natural language**: Understands context across documents
+
+## Integration with Other Tools
+
+- **Before web search**: Use NotebookLM for source-based research
+- **With Context7**: NotebookLM for research, Context7 for API docs
+- **With research tasks**: Use NotebookLM to process research materials
+
+## Workflow for Research Tasks
+
+1. **Identify sources**: YouTube videos, documentation links, PDFs
+2. **Use NotebookLM**: Process and summarize sources
+3. **Extract patterns**: Identify key insights and patterns
+4. **Document findings**: Add to research_with_links comments
+
+---
+
+**Reference:** See `docs/NOTEBOOKLM_USAGE.md` for detailed NotebookLM usage guide.

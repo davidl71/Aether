@@ -17,9 +17,11 @@ NotebookLM can import multiple types of sources. You have several options:
 1. In the notebook, click **"+ Add source"**
 2. Select **"Website"** or **"GitHub"** (if available)
 3. Paste the repository URL:
+
    ```
    https://github.com/davidl71/ib_box_spread_full_universal
    ```
+
 4. Click **"Add"** and wait for NotebookLM to process the repository
 
 ### Option B: Add YouTube Videos
@@ -62,6 +64,7 @@ If the GitHub repo import doesn't work, you can add files individually:
 ## Step 3: Wait for Processing
 
 NotebookLM will process the repository/documentation files. This may take a few minutes depending on:
+
 - Repository size
 - Number of files
 - Complexity of documentation
@@ -133,6 +136,7 @@ If you prefer to upload specific documentation files:
 ### GitHub Repo Not Processing
 
 If NotebookLM can't process the GitHub repo:
+
 1. Try adding the repository URL as a "Website" source
 2. Or manually upload individual markdown files
 3. Or create a consolidated document with all documentation
@@ -140,6 +144,7 @@ If NotebookLM can't process the GitHub repo:
 ### Large Repository
 
 If the repository is too large:
+
 1. Focus on `docs/` directory files
 2. Skip binary files and code files
 3. Upload documentation files individually
@@ -173,6 +178,7 @@ If you have external articles or blog posts to include:
 5. **Share**: Share the notebook and add to library
 
 **Current External Resources**:
+
 - See `docs/EXTERNAL_RESOURCES.md` for complete list
 - TWS API custom socket implementation article (highly relevant)
 

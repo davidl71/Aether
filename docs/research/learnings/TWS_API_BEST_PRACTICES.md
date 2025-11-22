@@ -1,6 +1,7 @@
 # TWS API Best Practices & Learnings
 
 ## Overview
+
 This document captures best practices and patterns learned from analyzing TWS API implementations, including references to `JanBoonen/TwsApiCpp` and other C++ wrappers.
 
 ## Key Learnings
@@ -12,11 +13,13 @@ This document captures best practices and patterns learned from analyzing TWS AP
 **Learning:** The TWS API supports async connection mode via `client_.asyncEConnect(true)`.
 
 **Benefits:**
+
 - Prevents blocking during connection handshake
 - More responsive to errors
 - Better for UI applications
 
 **Implementation:**
+
 ```cpp
 // In constructor or before eConnect()
 client_.asyncEConnect(true);
@@ -31,12 +34,14 @@ client_.asyncEConnect(true);
 **Learning:** The EReader thread MUST be started before waiting for `nextValidId`, otherwise the connection will hang indefinitely.
 
 **Best Practice:**
+
 1. Call `eConnect()`
 2. **Immediately start EReader thread** (if not in async mode, or after async connect)
 3. Wait for `nextValidId` callback
 4. Process messages via EReader thread
 
 **Our Implementation:**
+
 ```cpp
 // ✅ CORRECT - Start reader thread before waiting
 start_reader_thread();
@@ -50,11 +55,13 @@ bool connection_acknowledged = wait_for_connection_with_progress(timeout);
 **Learning:** Connection errors can arrive asynchronously via the `error()` callback, even after `eConnect()` returns true.
 
 **Best Practice:**
+
 - Check for errors immediately after `eConnect()`
 - Monitor error callback during connection wait
 - Handle specific error codes (502 = connection rejected, 1100 = connection lost)
 
 **Our Implementation:**
+
 ```cpp
 // Check for immediate errors
 if (last_error_code_ == 502) {
@@ -74,12 +81,14 @@ if (last_error_code_ == 502) {
 **Learning:** TWS and IB Gateway use different ports for paper/live trading. Automatic detection improves user experience.
 
 **Best Practice:**
+
 - Check all standard ports in parallel
 - Prioritize configured port, then TWS, then IB Gateway
 - Detect paper/live mismatches and warn user
 - Provide clear error messages
 
 **Our Implementation:**
+
 - ✅ Parallel port checking
 - ✅ Priority-based selection
 - ✅ Paper/live mismatch detection
@@ -90,11 +99,13 @@ if (last_error_code_ == 502) {
 **Current State:** ✅ **GOOD** - We track connection state with atomic variables.
 
 **Learning:** Connection state should be:
+
 - Thread-safe (use atomics or mutexes)
 - Observable (for UI/status reporting)
 - Recoverable (auto-reconnect support)
 
 **Best Practice:**
+
 ```cpp
 enum class ConnectionState {
     Disconnected,
@@ -112,17 +123,20 @@ std::atomic<bool> connected_;
 **Current State:** ✅ **GOOD** - We use EReader thread for message processing.
 
 **Learning:** The standard pattern is:
+
 1. EReader thread reads from socket
 2. EReader calls `processMsgs()` which decodes messages
 3. Decoded messages trigger EWrapper callbacks
 4. Callbacks update application state
 
 **Best Practice:**
+
 - Keep EReader thread alive while connected
 - Handle exceptions in message processing
 - Use condition variables for signaling
 
 **Our Implementation:**
+
 ```cpp
 reader_thread_ = std::make_unique<std::thread>([this, r = std::move(reader)]() mutable {
     while (connected_) {
@@ -142,12 +156,14 @@ reader_thread_ = std::make_unique<std::thread>([this, r = std::move(reader)]() m
 **Current State:** ✅ **PARTIAL** - We have auto-reconnect support but could improve.
 
 **Learning:** Robust applications should:
+
 - Detect connection loss (error 1100)
 - Implement exponential backoff for reconnection
 - Preserve pending orders/requests during reconnection
 - Handle reconnection race conditions
 
 **Potential Improvement:**
+
 ```cpp
 void handle_reconnection() {
     if (!config_.auto_reconnect) return;
@@ -187,6 +203,7 @@ void handle_reconnection() {
 ## Recommendations
 
 ### Immediate Improvements (Already Done)
+
 - ✅ Start EReader thread before waiting for connection
 - ✅ Parallel port checking
 - ✅ Error detection during connection
@@ -222,6 +239,7 @@ void handle_reconnection() {
 ## Conclusion
 
 Our current implementation follows all best practices:
+
 - ✅ Proper EReader thread management
 - ✅ Parallel port detection
 - ✅ Error handling and recovery
@@ -233,17 +251,20 @@ Our current implementation follows all best practices:
 ### Implementation Status (Updated)
 
 **✅ Async Connection Mode:**
+
 - Enabled `client_.asyncEConnect(true)` in constructor
 - Non-blocking connection handshake
 - Better responsiveness to errors
 
 **✅ Exponential Backoff Reconnection:**
+
 - Delays: 1s, 2s, 4s, 8s, 16s, max 30s
 - Configurable max attempts (default: 10)
 - Background reconnection to avoid blocking
 - Automatic reset on successful connection
 
 **✅ Connection Health Monitoring:**
+
 - Checks connection every 30 seconds
 - Detects stale connections (no messages for 2+ minutes)
 - Verifies socket connectivity

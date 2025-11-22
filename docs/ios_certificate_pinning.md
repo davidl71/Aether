@@ -30,4 +30,3 @@ The iPad companion app now enforces App Transport Security (ATS) pinning through
    If you also perform manual pin checks in Swift, add the DER file to the app bundle’s resources to keep the certificate hash aligned with the ATS configuration.
 
 After updating the plist and bundling any needed assets, rebuild the app to ensure connectivity succeeds. When rotating certificates, remember to update the hash before the old certificate expires so users don’t experience downtime.
-

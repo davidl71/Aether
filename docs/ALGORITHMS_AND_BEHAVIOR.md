@@ -59,16 +59,19 @@ A box spread is a four-leg options strategy that creates a risk-free arbitrage o
 #### 1. Net Debit Calculation
 
 **Formula:**
+
 ```
 net_debit = long_call_price - short_call_price + long_put_price - short_put_price
 ```
 
 **Explanation:**
+
 - We pay for long positions (long_call, long_put)
 - We receive for short positions (short_call, short_put)
 - Net debit is the total cost to enter the spread
 
 **Expected Behavior:**
+
 - Positive value: We pay to enter (net debit)
 - Negative value: We receive to enter (net credit)
 - Zero: Costless entry (rare)
@@ -76,11 +79,13 @@ net_debit = long_call_price - short_call_price + long_put_price - short_put_pric
 #### 2. Theoretical Value
 
 **Formula:**
+
 ```
 theoretical_value = strike_width = K2 - K1
 ```
 
 **Explanation:**
+
 - At expiration, regardless of underlying price, the box spread is worth exactly the strike width
 - This is because:
   - If S > K2: Long call worth (S - K1), short call worth -(S - K2), long put worth 0, short put worth 0
@@ -88,6 +93,7 @@ theoretical_value = strike_width = K2 - K1
   - Similar logic applies for other price ranges
 
 **Expected Behavior:**
+
 - Always equals strike width
 - Independent of underlying price at expiration
 - Used as the benchmark for arbitrage detection
@@ -95,15 +101,18 @@ theoretical_value = strike_width = K2 - K1
 #### 3. Arbitrage Profit
 
 **Formula:**
+
 ```
 arbitrage_profit = theoretical_value - net_debit
 ```
 
 **Explanation:**
+
 - Profit is the difference between what we receive at expiration (theoretical value) and what we pay to enter (net debit)
 - Positive profit indicates an arbitrage opportunity
 
 **Expected Behavior:**
+
 - Must be positive for arbitrage opportunity
 - Should exceed minimum profit threshold (configurable)
 - Should account for transaction costs (commissions)
@@ -111,15 +120,18 @@ arbitrage_profit = theoretical_value - net_debit
 #### 4. ROI Calculation
 
 **Formula:**
+
 ```
 roi_percent = (arbitrage_profit / net_debit) * 100.0
 ```
 
 **Explanation:**
+
 - Return on investment as a percentage
 - Measures profitability relative to capital deployed
 
 **Expected Behavior:**
+
 - Positive when arbitrage_profit > 0
 - Should exceed minimum ROI threshold (configurable)
 - Higher ROI indicates better opportunity
@@ -127,22 +139,26 @@ roi_percent = (arbitrage_profit / net_debit) * 100.0
 #### 5. Implied Interest Rate (Lending/Borrowing)
 
 **Formula for Lending (net credit > 0):**
+
 ```
 implied_rate = ((strike_width - net_credit) / net_credit) * (365 / days_to_expiry) * 100
 ```
 
 **Formula for Borrowing (net debit > 0):**
+
 ```
 implied_rate = ((net_debit - strike_width) / strike_width) * (365 / days_to_expiry) * 100
 ```
 
 **Explanation:**
+
 - Box spreads can be used as synthetic lending/borrowing instruments
 - The implied rate represents the annualized interest rate
 - For lending: We receive net credit, and at expiration we pay strike_width
 - For borrowing: We pay net debit, and at expiration we receive strike_width
 
 **Expected Behavior:**
+
 - Positive rate for lending opportunities
 - Negative rate for borrowing opportunities
 - Annualized to 365 days
@@ -151,16 +167,19 @@ implied_rate = ((net_debit - strike_width) / strike_width) * (365 / days_to_expi
 #### 6. Effective Interest Rate (After Transaction Costs)
 
 **Formula:**
+
 ```
 effective_rate = implied_rate - (total_commission / net_debit) * (365 / days_to_expiry) * 100
 ```
 
 **Explanation:**
+
 - Accounts for transaction costs (commissions)
 - More accurate representation of actual return
 - Should be used for comparison with benchmark rates
 
 **Expected Behavior:**
+
 - Lower than implied rate (due to costs)
 - Should still exceed benchmark rate for actionable opportunity
 - Minimum spread over benchmark should be configurable (e.g., 50 bps)
@@ -174,6 +193,7 @@ effective_rate = implied_rate - (total_commission / net_debit) * (365 / days_to_
 **Input:** Option chain data, configuration parameters
 
 **Expected Behavior:**
+
 - Scans all expirations within DTE range (min_dte to max_dte)
 - Generates all valid strike pairs
 - Filters by liquidity requirements:
@@ -185,6 +205,7 @@ effective_rate = implied_rate - (total_commission / net_debit) * (365 / days_to_
 - Returns sorted list of opportunities
 
 **Edge Cases:**
+
 - Missing legs: Skip strike pair
 - Stale market data: Use last known prices with warning
 - Zero volume: Skip if liquidity required
@@ -195,6 +216,7 @@ effective_rate = implied_rate - (total_commission / net_debit) * (365 / days_to_
 **Input:** Box spread opportunity, order manager
 
 **Expected Behavior:**
+
 - Validates opportunity is still valid (prices haven't changed)
 - Checks risk limits (position size, exposure)
 - Places all 4 orders atomically (or as close as possible)
@@ -204,6 +226,7 @@ effective_rate = implied_rate - (total_commission / net_debit) * (365 / days_to_
 - Returns execution result with order IDs
 
 **Edge Cases:**
+
 - Partial fill: Monitor and potentially cancel remaining
 - Order rejection: Rollback all orders, return error
 - Price movement: Re-validate opportunity before execution
@@ -214,6 +237,7 @@ effective_rate = implied_rate - (total_commission / net_debit) * (365 / days_to_
 **Input:** Active positions, current market data
 
 **Expected Behavior:**
+
 - Track P&L for each position
 - Monitor time decay (theta)
 - Check for early assignment risk
@@ -225,6 +249,7 @@ effective_rate = implied_rate - (total_commission / net_debit) * (365 / days_to_
 - Close positions if stop-loss triggered
 
 **Edge Cases:**
+
 - Missing market data: Use last known prices
 - Early assignment: Handle assignment and close remaining legs
 - Expiration approaching: Close position to avoid assignment risk
@@ -235,6 +260,7 @@ effective_rate = implied_rate - (total_commission / net_debit) * (365 / days_to_
 **Input:** Position, existing positions, account info
 
 **Expected Behavior:**
+
 - Check position size against limits
 - Check total exposure against limits
 - Validate Greeks (delta, gamma, theta, vega)
@@ -243,6 +269,7 @@ effective_rate = implied_rate - (total_commission / net_debit) * (365 / days_to_
 - Return validation result with error messages
 
 **Edge Cases:**
+
 - Zero account value: Reject all positions
 - Negative account value: Reject all positions
 - Exceeds limits: Return detailed error message
@@ -257,6 +284,7 @@ effective_rate = implied_rate - (total_commission / net_debit) * (365 / days_to_
 **Location:** `native/src/box_spread_strategy.cpp::find_box_spreads_in_chain()`
 
 **Algorithm:**
+
 ```cpp
 // Pseudo-code
 for each expiry in option_chain:
@@ -277,6 +305,7 @@ return opportunities
 ```
 
 **Key Functions:**
+
 - `get_option()`: Retrieves option contract from chain
 - `all_legs_exist()`: Verifies all 4 legs are available
 - `liquidity_check_passes()`: Validates volume, open interest, spreads
@@ -288,6 +317,7 @@ return opportunities
 **Location:** `native/src/box_spread_strategy.cpp::is_profitable()`
 
 **Algorithm:**
+
 ```cpp
 // Pseudo-code
 profit = calculate_arbitrage_profit(spread)
@@ -297,6 +327,7 @@ return profit >= min_arbitrage_profit AND roi >= min_roi_percent
 ```
 
 **Key Functions:**
+
 - `calculate_arbitrage_profit()`: theoretical_value - net_debit
 - `calculate_roi()`: (profit / net_debit) * 100.0
 
@@ -305,6 +336,7 @@ return profit >= min_arbitrage_profit AND roi >= min_roi_percent
 **Location:** `native/src/box_spread_strategy.cpp::calculate_implied_interest_rate()`
 
 **Algorithm:**
+
 ```cpp
 // Pseudo-code
 strike_width = K2 - K1
@@ -324,6 +356,7 @@ return implied_rate
 ```
 
 **Key Functions:**
+
 - `calculate_dte()`: Days to expiry from current date
 - `get_strike_width()`: K2 - K1
 
@@ -334,6 +367,7 @@ return implied_rate
 ### 1. Given-When-Then Pattern
 
 **Structure:**
+
 ```cpp
 TEST_CASE("Description", "[category]") {
   // Given: Set up test data and initial state
@@ -349,6 +383,7 @@ TEST_CASE("Description", "[category]") {
 ```
 
 **Example:**
+
 ```cpp
 TEST_CASE("Box spread profit calculation with valid inputs", "[strategy][profit]") {
   // Given: A box spread with strike width $10 and net debit $9.50
@@ -372,6 +407,7 @@ TEST_CASE("Box spread profit calculation with valid inputs", "[strategy][profit]
 ### 2. Boundary Value Testing
 
 **Test edge cases:**
+
 - Zero net debit
 - Zero profit
 - Maximum strike width
@@ -380,6 +416,7 @@ TEST_CASE("Box spread profit calculation with valid inputs", "[strategy][profit]
 - Negative net debit (net credit)
 
 **Example:**
+
 ```cpp
 TEST_CASE("Box spread with zero profit", "[strategy][boundary]") {
   // Given: Net debit equals theoretical value
@@ -398,12 +435,14 @@ TEST_CASE("Box spread with zero profit", "[strategy][boundary]") {
 ### 3. Error Condition Testing
 
 **Test invalid inputs:**
+
 - Missing legs
 - Invalid strikes
 - Mismatched expiries
 - Zero or negative days to expiry
 
 **Example:**
+
 ```cpp
 TEST_CASE("Implied rate calculation with zero DTE", "[strategy][error]") {
   // Given: Box spread expiring today (0 DTE)
@@ -422,11 +461,13 @@ TEST_CASE("Implied rate calculation with zero DTE", "[strategy][error]") {
 ### 4. Algorithm Correctness Testing
 
 **Test mathematical correctness:**
+
 - Formula verification
 - Rounding behavior
 - Precision handling
 
 **Example:**
+
 ```cpp
 TEST_CASE("Net debit calculation formula", "[strategy][formula]") {
   // Given: Known option prices
@@ -448,11 +489,13 @@ TEST_CASE("Net debit calculation formula", "[strategy][formula]") {
 ### 5. Integration Testing
 
 **Test component interactions:**
+
 - Strategy → Order Manager
 - Order Manager → TWS Client
 - Risk Calculator → Strategy
 
 **Example:**
+
 ```cpp
 TEST_CASE("End-to-end box spread execution", "[integration]") {
   // Given: Valid opportunity and configured components
@@ -491,6 +534,7 @@ When working with algorithms in Cursor, reference this document:
 ```
 
 This helps Cursor understand:
+
 - Expected algorithm behavior
 - Mathematical formulas and their implementations
 - Edge cases and error conditions

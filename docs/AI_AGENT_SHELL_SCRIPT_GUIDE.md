@@ -129,11 +129,13 @@ Functions set these global variables:
 ## Error Handling
 
 All functions:
+
 - Return `0` on success, `1` on failure
 - Write error messages to `stderr`
 - Service scripts should check return codes and exit on failure
 
 Example:
+
 ```bash
 find_python || exit 1
 setup_venv "${PYTHON_DIR}" || exit 1
@@ -149,30 +151,33 @@ Tests are in `spec/scripts/include/`:
 - `onepassword_spec.sh` - Tests for 1Password functions
 
 Run tests:
+
 ```bash
 ./scripts/run_tests.sh
 ```
 
 ## When Modifying Shared Functions
 
-1. **Update Comments**: Add/update AI context comments at function level
-2. **Update Tests**: Add tests for new functionality
-3. **Check Dependencies**: Verify all service scripts still work
-4. **Run Tests**: `./scripts/run_tests.sh`
-5. **Test Manually**: Test with at least one service script
+1. __Update Comments__: Add/update AI context comments at function level
+2. __Update Tests__: Add tests for new functionality
+3. __Check Dependencies__: Verify all service scripts still work
+4. __Run Tests__: `./scripts/run_tests.sh`
+5. __Test Manually__: Test with at least one service script
 
 ## Common Issues
 
 ### Issue: Function not found
 
-**Solution**: Ensure script sources the include file:
+__Solution__: Ensure script sources the include file:
+
 ```bash
 source "${SCRIPTS_DIR}/include/python_utils.sh"
 ```
 
 ### Issue: PYTHON_CMD not set
 
-**Solution**: Call `find_python` before using `PYTHON_CMD`:
+__Solution__: Call `find_python` before using `PYTHON_CMD`:
+
 ```bash
 find_python || exit 1
 # Now PYTHON_CMD is set
@@ -180,7 +185,8 @@ find_python || exit 1
 
 ### Issue: VENV_PYTHON not set
 
-**Solution**: Call `setup_venv` before using `VENV_PYTHON`:
+__Solution__: Call `setup_venv` before using `VENV_PYTHON`:
+
 ```bash
 setup_venv "${PYTHON_DIR}" || exit 1
 # Now VENV_PYTHON is set
@@ -188,7 +194,8 @@ setup_venv "${PYTHON_DIR}" || exit 1
 
 ### Issue: Port conflict
 
-**Solution**: Use `check_port_with_service` to verify service identity:
+__Solution__: Use `check_port_with_service` to verify service identity:
+
 ```bash
 if ! check_port_with_service "${PYTHON_CMD}" "127.0.0.1" "${PORT}" "SERVICE_NAME" "Display Name"; then
   exit 1
@@ -197,12 +204,12 @@ fi
 
 ## Best Practices for AI Agents
 
-1. **Read Function Comments**: All functions have detailed AI context comments
-2. **Follow Patterns**: Use existing service scripts as examples
-3. **Check Return Codes**: Always check function return codes
-4. **Use Shared Functions**: Don't duplicate code - use shared functions
-5. **Test Changes**: Run tests after modifying shared functions
-6. **Update Documentation**: Update this guide when adding new patterns
+1. __Read Function Comments__: All functions have detailed AI context comments
+2. __Follow Patterns__: Use existing service scripts as examples
+3. __Check Return Codes__: Always check function return codes
+4. __Use Shared Functions__: Don't duplicate code - use shared functions
+5. __Test Changes__: Run tests after modifying shared functions
+6. __Update Documentation__: Update this guide when adding new patterns
 
 ## Related Documentation
 

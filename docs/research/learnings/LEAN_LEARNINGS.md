@@ -28,6 +28,4 @@ Source: QuantConnect Lean CLI – Interactive Brokers documentation[^1]
 | Error catalog | `tws_client.cpp` guidance map | Logs include remediation hints for common IB API failures |
 | Data feed choice | `DataProviderRouter` | IB first, ORATS as fallback when primary quotes fail |
 
-[^1]: QuantConnect LEAN CLI – Interactive Brokers Brokerage Integration, https://www.quantconnect.com/docs/v2/lean-cli/live-trading/brokerages/interactive-brokers
-
-
+[^1]: QuantConnect LEAN CLI – Interactive Brokers Brokerage Integration, <https://www.quantconnect.com/docs/v2/lean-cli/live-trading/brokerages/interactive-brokers>

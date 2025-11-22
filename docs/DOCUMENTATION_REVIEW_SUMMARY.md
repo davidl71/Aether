@@ -119,13 +119,13 @@ Created comprehensive status report: `docs/DOCUMENTATION_STATUS_REPORT.md`
 
 ### Short-Term Actions (Week 2-3)
 
-3. **Paper Trading Validation** (T-9)
+1. **Paper Trading Validation** (T-9)
    - 5-day comprehensive test plan
    - Validate all edge cases
    - **Effort**: 5 days
    - **Critical**: Must complete before production
 
-4. **Production Readiness** (T-10, T-11, T-12)
+2. **Production Readiness** (T-10, T-11, T-12)
    - Enhanced error handling
    - Monitoring infrastructure
    - Configuration validation
@@ -134,14 +134,14 @@ Created comprehensive status report: `docs/DOCUMENTATION_STATUS_REPORT.md`
 
 ### Medium-Term Actions (Month 1-2)
 
-5. **Feature Parity** (T-13, T-14, T-15)
+1. **Feature Parity** (T-13, T-14, T-15)
    - Complete Web app features
    - Complete TUI features
    - Add WebSocket support
    - **Effort**: 2-3 weeks
    - **Benefit**: Consistent user experience
 
-6. **Agent Coordination** (T-16 through T-22)
+2. **Agent Coordination** (T-16 through T-22)
    - Backend infrastructure
    - Frontend implementations
    - **Effort**: 4-6 weeks
@@ -149,7 +149,7 @@ Created comprehensive status report: `docs/DOCUMENTATION_STATUS_REPORT.md`
 
 ### Long-Term Actions (Ongoing)
 
-7. **Documentation** (T-23, T-24, T-25)
+1. **Documentation** (T-23, T-24, T-25)
    - Create missing guides
    - Archive deprecated files
    - **Effort**: Ongoing

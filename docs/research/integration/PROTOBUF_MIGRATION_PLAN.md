@@ -9,6 +9,7 @@
 TWS API 10.40.01 provides full Protocol Buffers support for all requests/responses. This document outlines a migration plan from classic callbacks to protobuf callbacks for improved performance.
 
 **Important**: This migration is **optional**. The classic API continues to work perfectly. Only migrate if you need:
+
 - Better performance (faster serialization/deserialization)
 - More efficient network usage
 - Future-proofing for new TWS API features
@@ -18,6 +19,7 @@ TWS API 10.40.01 provides full Protocol Buffers support for all requests/respons
 ## Current Implementation
 
 ### Classic API (Current)
+
 ```cpp
 class TWSClient::Impl : public DefaultEWrapper {
     void tickPrice(TickerId tickerId, TickType field,
@@ -34,6 +36,7 @@ class TWSClient::Impl : public DefaultEWrapper {
 ```
 
 ### Protocol Buffers API (Future)
+
 ```cpp
 class TWSClient::Impl : public DefaultEWrapper {
     void tickPriceProtoBuf(TickerId tickerId, const TickPriceProto& tickPrice) override {
@@ -93,6 +96,7 @@ private:
 ```
 
 **Benefits**:
+
 - No breaking changes
 - Can test protobuf callbacks in parallel
 - Easy rollback if issues arise
@@ -144,20 +148,20 @@ These are called most often and benefit most from protobuf:
 
 ### Priority 2: Medium-Frequency Callbacks
 
-4. **Positions & Account**
+1. **Positions & Account**
    - `positionProtoBuf` → `position`
    - `updateAccountValueProtoBuf` → `updateAccountValue`
    - `updatePortfolioProtoBuf` → `updatePortfolio`
 
-5. **Contract Data**
+2. **Contract Data**
    - `contractDetailsProtoBuf` → `contractDetails`
 
 ### Priority 3: Low-Frequency Callbacks
 
-6. **Historical Data**
+1. **Historical Data**
    - `historicalDataProtoBuf` → `historicalData`
 
-7. **Other Callbacks**
+2. **Other Callbacks**
    - Migrate as needed based on usage
 
 ---
@@ -235,9 +239,11 @@ void handle_tick_price(TickerId tickerId, TickType field,
 ### Common Protobuf Types
 
 Based on TWS API 10.40.01, protobuf messages are defined in:
+
 - `native/third_party/tws-api/IBJts/source/cppclient/client/*.pb.h`
 
 Key message types:
+
 - `TickPriceProto` - Market data price updates
 - `TickSizeProto` - Market data size updates
 - `OrderStatusProto` - Order status updates
@@ -306,12 +312,14 @@ If issues arise:
 ### When to Migrate
 
 Migrate if you experience:
+
 - High message volume (1000+ messages/second)
 - Network bandwidth constraints
 - Latency-sensitive trading strategies
 - Need for future TWS API features
 
 **Don't migrate if**:
+
 - Current performance is acceptable
 - Classic API meets all needs
 - Migration effort outweighs benefits
@@ -321,24 +329,28 @@ Migrate if you experience:
 ## Migration Checklist
 
 ### Preparation
+
 - [ ] Review protobuf message definitions
 - [ ] Create conversion utility functions
 - [ ] Set up performance baseline measurements
 - [ ] Plan testing strategy
 
 ### Implementation
+
 - [ ] Implement protobuf callbacks for Priority 1 methods
 - [ ] Add dual-mode support (classic + protobuf)
 - [ ] Create shared processing logic
 - [ ] Add comprehensive logging
 
 ### Testing
+
 - [ ] Unit tests for protobuf conversions
 - [ ] Integration tests with real TWS
 - [ ] Performance benchmarks
 - [ ] Stress testing with high message volume
 
 ### Deployment
+
 - [ ] Feature flag for protobuf enable/disable
 - [ ] Monitor for issues
 - [ ] Gradual rollout (if needed)
@@ -371,9 +383,9 @@ native/third_party/tws-api/IBJts/source/cppclient/client/*.pb.h
 
 ## Resources
 
-- **TWS API Documentation**: https://interactivebrokers.github.io/tws-api/
-- **Protocol Buffers C++ Guide**: https://protobuf.dev/cpp/
-- **TWS API Release Notes**: https://ibkrguides.com/releasenotes/prod-2025.htm
+- **TWS API Documentation**: <https://interactivebrokers.github.io/tws-api/>
+- **Protocol Buffers C++ Guide**: <https://protobuf.dev/cpp/>
+- **TWS API Release Notes**: <https://ibkrguides.com/releasenotes/prod-2025.htm>
 - **Current Implementation**: `native/src/tws_client.cpp`
 
 ---
@@ -415,4 +427,3 @@ native/third_party/tws-api/IBJts/source/cppclient/client/*.pb.h
 
 **Last Updated**: 2025-01-27  
 **Status**: Planning Document - Not Yet Implemented
-

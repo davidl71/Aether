@@ -4,8 +4,7 @@ use std::pin::Pin;
 use futures::Stream;
 use tokio::sync::broadcast;
 use tokio::task::JoinHandle;
-use tokio_stream::wrappers::BroadcastStream;
-use tokio_stream::StreamExt;
+use tokio_stream::{wrappers::BroadcastStream, wrappers::errors::BroadcastStreamRecvError, StreamExt};
 use tonic::{transport::Server, Request, Response, Status};
 use tonic_health::server::health_reporter;
 use tracing::info;
@@ -23,10 +22,7 @@ impl GrpcServer {
     decisions: broadcast::Sender<StrategyDecision>,
   ) -> anyhow::Result<JoinHandle<()>> {
     info!(%addr, "starting gRPC server");
-    let (mut reporter, health_service) = health_reporter();
-    if let Err(err) = reporter.set_serving("nautilus").await {
-      tracing::warn!(%err, "failed to set initial health status");
-    }
+    let (_reporter, health_service) = health_reporter();
 
     let service = StrategyStreamService { state, decisions };
 
@@ -58,11 +54,12 @@ impl StrategyService for StrategyStreamService {
     _request: Request<StrategyRequest>,
   ) -> Result<Response<Self::StreamDecisionsStream>, Status> {
     let rx = self.decisions.subscribe();
-    let stream = BroadcastStream::new(rx).filter_map(|result| async move {
-      match result {
-        Ok(decision) => Some(Ok(decision)),
-        Err(broadcast::error::RecvError::Lagged(_)) => None,
-        Err(broadcast::error::RecvError::Closed) => Some(Err(Status::cancelled("decision feed closed"))),
+    let stream = BroadcastStream::new(rx).then(move |item| {
+      async move {
+        match item {
+          Ok(decision) => Ok(decision),
+          Err(BroadcastStreamRecvError::Lagged(_)) => Err(Status::cancelled("decision feed lagged")),
+        }
       }
     });
 

@@ -62,11 +62,13 @@
 ## Required Fields
 
 ### Minimum Required
+
 - **Website**: Official website URL
 - **Description**: What this provides
 - **Relevance to Box Spread Trading**: Why it's relevant
 
 ### Recommended Fields
+
 - **Key Features**: List of main features
 - **API Types**: Types of APIs available
 - **Integration Considerations**: Technical requirements
@@ -74,6 +76,7 @@
 - **Note**: Additional context
 
 ### Optional Fields
+
 - **GitHub**: If open-source
 - **Provider**: Company name
 - **Auth**: Authentication details
@@ -86,20 +89,24 @@
 ## Formatting Guidelines
 
 ### URLs
+
 - Always use angle brackets: `<https://example.com>`
 - Include protocol: `https://` not just `example.com`
 
 ### Lists
+
 - Use bullet points (`-`) for unordered lists
 - Use numbered lists for ordered sequences
 - Use bold for field names: `- **Field Name**: Value`
 
 ### Sections
+
 - Use `###` for provider/service entries
 - Use `####` for subsections within providers
 - Use `#####` for sub-subsections
 
 ### Emphasis
+
 - Use `✅` for supported features
 - Use `⚠️` for warnings or limitations
 - Use `❌` for not supported

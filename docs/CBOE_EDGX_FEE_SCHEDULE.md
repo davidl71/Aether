@@ -30,7 +30,7 @@ CBOE's consolidated market data feed providing equity and options data.
 | **Cboe One Summary** | $5,000/month¹,⁷ | $10/month | $0.25/month | $50,000/month | $15,000/month |
 | **Cboe One Premium** | $12,500/month¹,⁷ | $15/month | $0.50/month | $100,000/month | $25,000/month |
 
-#### Notes:
+#### Notes
 
 1. **New External Distributor Credit**:
    - Cboe One Summary: No External Distributor Fee for first 1 month
@@ -101,7 +101,7 @@ End-of-day report providing short volume and trade data for US equities.
 | Monthly Fee per External Distributor | $1,250 |
 | Fee per Month of Historical Data²,³ | $500 |
 
-### Notes:
+### Notes
 
 1. **Subscription Options**: Monthly or annual basis
    - Monthly: Access from subscription date, end-of-month report on last business day
@@ -192,6 +192,7 @@ Market data connectivity service providing access to various exchange data feeds
 
 **Price**: $5,910/month
 **Includes**:
+
 - UQDF/UTDF/OMDF
 - CQS/CTS
 - Nasdaq TotalView
@@ -208,6 +209,7 @@ Market data connectivity service providing access to various exchange data feeds
 
 **Price**: $6,390/month
 **Includes**:
+
 - OPRA
 - UQDF/UTDF/OMDF
 - CQS/CTS
@@ -257,18 +259,21 @@ Dedicated bandwidth for order entry connectivity.
 ### Typical Setup Costs
 
 #### Minimal Setup (Retail/Individual)
+
 - **Market Data**: Cboe One Summary (Non-Professional): $0.25/month/user
 - **Connectivity**: Free BZX/BYX/EDGX/EDGA feeds
 - **Order Entry**: Free for CBOE exchanges
 - **Total**: ~$0.25/month (plus broker fees)
 
 #### Professional Setup
+
 - **Market Data**: Cboe One Premium (Internal): $15,000/month
 - **Options Data**: OPRA + SIP Bundle: $6,390/month
 - **Order Entry**: 10Mb Unicast: $1,250/month
 - **Total**: ~$22,640/month (plus exchange transaction fees)
 
 #### Enterprise Setup
+
 - **Market Data**: Enterprise license: $50,000-$100,000/month
 - **Full Data Suite**: $20,000-$30,000/month
 - **High-Speed Connectivity**: 100Mb: $3,500/month
@@ -285,12 +290,14 @@ Dedicated bandwidth for order entry connectivity.
 ### Transaction Cost Impact
 
 For box spread strategies:
+
 - **Market Data**: Fixed monthly cost (amortized per trade)
 - **Exchange Fees**: Per-contract fees (reduced by FTID rebates)
 - **Connectivity**: Fixed monthly cost
 - **Total Cost**: Market data + connectivity + (exchange fees - rebates)
 
 **Example**:
+
 - 10,000 SPX contracts/month
 - SPX transaction fee: $0.45/contract = $4,500
 - FTID Tier 1 rebate (3%): $135 rebate

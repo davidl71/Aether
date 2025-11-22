@@ -12,10 +12,12 @@
 **Method**: `find_box_spreads_in_chain()`
 
 ### Current State
+
 - Method exists but is stubbed (returns empty vector)
 - Option chain structure exists but not fully utilized
 
 ### Implementation Required
+
 1. Group options by expiry date
 2. For each expiry, identify all strike pairs (K1, K2) where K1 < K2
 3. For each strike pair, verify all 4 legs exist:
@@ -27,6 +29,7 @@
 5. Sort by profit/ROI and return top opportunities
 
 ### Code Location
+
 ```cpp
 // src/box_spread_strategy.cpp:99-113
 std::vector<BoxSpreadOpportunity> BoxSpreadStrategy::find_box_spreads_in_chain(
@@ -37,6 +40,7 @@ std::vector<BoxSpreadOpportunity> BoxSpreadStrategy::find_box_spreads_in_chain(
 ```
 
 ### Dependencies
+
 - `OptionChain` class must be populated with market data
 - Market data subscriptions for all options in chain
 - Strike pair generation algorithm
@@ -50,11 +54,13 @@ std::vector<BoxSpreadOpportunity> BoxSpreadStrategy::find_box_spreads_in_chain(
 **Method**: `place_box_spread()`
 
 ### Current State
+
 - Places 4 separate orders sequentially
 - No guarantee of atomic execution
 - Risk of partial fills breaking box spread structure
 
 ### Implementation Required
+
 1. **Option A (Preferred)**: Use IBKR combo orders
    - Create `ComboLeg` structures for all 4 legs
    - Place as single combo order
@@ -67,6 +73,7 @@ std::vector<BoxSpreadOpportunity> BoxSpreadStrategy::find_box_spreads_in_chain(
    - Track order IDs for rollback
 
 ### Code Location
+
 ```cpp
 // src/order_manager.cpp:128-194
 ExecutionResult OrderManager::place_box_spread(
@@ -78,6 +85,7 @@ ExecutionResult OrderManager::place_box_spread(
 ```
 
 ### Risk Mitigation
+
 - Partial fills expose position to market risk
 - Early assignment risk if not all legs filled
 - Need rapid cancellation capability
@@ -91,11 +99,14 @@ ExecutionResult OrderManager::place_box_spread(
 **Class**: `BoxSpreadValidator`
 
 ### Current State
+
 - Basic validation exists (strikes, expiries, symbols, pricing)
 - Missing some critical validations
 
 ### Additional Validations Needed
+
 1. **Strike Width Validation**
+
    ```cpp
    // Verify: theoretical_value == (strike_high - strike_low)
    double strike_width = spread.short_call.strike - spread.long_call.strike;
@@ -120,6 +131,7 @@ ExecutionResult OrderManager::place_box_spread(
    - ROI meets minimum requirements
 
 ### Code Location
+
 ```cpp
 // src/box_spread_strategy.cpp:284-316
 bool BoxSpreadValidator::validate(
@@ -138,12 +150,15 @@ bool BoxSpreadValidator::validate(
 **Method**: `evaluate_box_spread()`
 
 ### Current State
+
 - Market data can be requested but quality not validated
 - No checks for stale data or missing prices
 - No liquidity assessment before execution
 
 ### Implementation Required
+
 1. **Data Freshness Validation**
+
    ```cpp
    // Check market data timestamp
    auto data_age = std::chrono::system_clock::now() - market_data.timestamp;
@@ -169,6 +184,7 @@ bool BoxSpreadValidator::validate(
    - Minimum open interest threshold
 
 ### Code Location
+
 ```cpp
 // src/box_spread_strategy.cpp:115-124
 std::optional<BoxSpreadOpportunity> BoxSpreadStrategy::evaluate_box_spread(
@@ -182,6 +198,7 @@ std::optional<BoxSpreadOpportunity> BoxSpreadStrategy::evaluate_box_spread(
 ```
 
 ### Integration Points
+
 - `TWSClient::request_market_data()` - ensure data is fresh
 - `types::MarketData` - add timestamp field if missing
 - `BoxSpreadOpportunity` - add liquidity_score field
@@ -191,36 +208,42 @@ std::optional<BoxSpreadOpportunity> BoxSpreadStrategy::evaluate_box_spread(
 ## Implementation Order
 
 ### Phase 1: Foundation (Week 1)
+
 1. ✅ Priority 3: Add validation rules (foundation for everything)
 2. ✅ Priority 4: Market data quality checks (required before execution)
 
 ### Phase 2: Core Functionality (Week 2)
-3. ✅ Priority 1: Option chain scanning (enables opportunity detection)
-4. ✅ Priority 2: Atomic execution (enables safe execution)
+
+1. ✅ Priority 1: Option chain scanning (enables opportunity detection)
+2. ✅ Priority 2: Atomic execution (enables safe execution)
 
 ---
 
 ## Success Criteria
 
-### Priority 1 Complete When:
+### Priority 1 Complete When
+
 - [ ] `find_box_spreads_in_chain()` returns valid opportunities
 - [ ] All strike pairs are evaluated
 - [ ] Opportunities are sorted by profitability
 - [ ] Unit tests pass for chain scanning
 
-### Priority 2 Complete When:
+### Priority 2 Complete When
+
 - [ ] Box spreads execute atomically (all-or-nothing)
 - [ ] Rollback logic works if any leg fails
 - [ ] No partial fills break box spread structure
 - [ ] Integration tests pass with paper trading
 
-### Priority 3 Complete When:
+### Priority 3 Complete When
+
 - [ ] All validation rules implemented
 - [ ] Validation catches invalid box spreads
 - [ ] Clear error messages for each validation failure
 - [ ] Unit tests cover all validation scenarios
 
-### Priority 4 Complete When:
+### Priority 4 Complete When
+
 - [ ] Market data freshness is validated
 - [ ] Low-liquidity opportunities are filtered out
 - [ ] Execution probability is calculated
@@ -231,17 +254,20 @@ std::optional<BoxSpreadOpportunity> BoxSpreadStrategy::evaluate_box_spread(
 ## Related Files to Modify
 
 ### Core Implementation
+
 - `src/box_spread_strategy.cpp` - Main strategy logic
 - `src/order_manager.cpp` - Order execution
 - `include/box_spread_strategy.h` - Strategy interface
 - `include/order_manager.h` - Order management interface
 
 ### Supporting Files
+
 - `include/types.h` - Data structures (may need additions)
 - `include/option_chain.h` - Option chain structure
 - `src/tws_client.cpp` - TWS API integration (for combo orders)
 
 ### Tests
+
 - `tests/test_box_spread_strategy.cpp` - Strategy tests
 - `tests/test_order_manager.cpp` - Order execution tests
 
@@ -261,5 +287,4 @@ std::optional<BoxSpreadOpportunity> BoxSpreadStrategy::evaluate_box_spread(
 
 - See `docs/IBKRBOX_LEARNINGS.md` for detailed patterns
 - See `docs/ICLI_LEARNINGS.md` for API usage patterns
-- IBKR Combo Orders: https://interactivebrokers.github.io/tws-api/combo_orders.html
-
+- IBKR Combo Orders: <https://interactivebrokers.github.io/tws-api/combo_orders.html>

@@ -51,21 +51,25 @@ Need market impact analysis?
 ## Simulator Details
 
 ### QuantReplay
+
 - **Best For**: Strategy testing, order book simulation
 - **Key Features**: Historical data playback, order book modeling, multi-asset
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#quantreplay`
 
 ### Stotra
+
 - **Best For**: UI/UX reference, multiplayer trading
 - **Key Features**: React + MERN stack, multiplayer, stocks/crypto
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#stotra`
 
 ### PyMarketSim / TradingAgents
+
 - **Best For**: RL agent development, limit order book simulation
 - **Key Features**: Limit order book, agent training, deep RL
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#pymarketsim`
 
 ### MarS (Market Simulation)
+
 - **Best For**: Market impact analysis, RL training, realistic simulation
 - **Key Features**: Large Market Model (LMM), order-level granularity, realistic dynamics
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#mars`
@@ -75,14 +79,17 @@ Need market impact analysis?
 ## Use Cases
 
 ### Box Spread Strategy Testing
+
 - **QuantReplay**: Test box spread strategies with realistic order book
 - **MarS**: Analyze market impact of box spread execution
 
 ### RL Agent Development
+
 - **PyMarketSim**: Train RL agents for box spread trading
 - **MarS**: Advanced RL training with realistic market dynamics
 
 ### Backtesting
+
 - **QuantReplay**: Historical data playback for backtesting
 - **MarS**: Realistic market simulation for strategy validation
 

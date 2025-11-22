@@ -17,12 +17,14 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### 1. Ultra-Low Latency DMA Solutions
 
 **Performance Focus**:
+
 - Designed for lowest latency, highest performance APIs
 - Supports both FIX-based and native binary protocols
 - Optimized for automated trading strategies
 - Calibrated and pre-certified for exchange connectivity
 
 **Protocol Support**:
+
 - **FIX-Based**: Implemented using OnixS ultra-low latency FIX Engine
 - **Native Binary**: Alternative APIs for low latency, high throughput
 - **Venue-Specific**: Custom implementations for each exchange's protocol
@@ -30,6 +32,7 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### 2. Multi-Platform Support
 
 **Platforms**:
+
 - C++ FIX Engine
 - .NET Core/.NET FIX Engine
 - .NET Framework / C# FIX Engine
@@ -43,11 +46,13 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 #### CBOE (Chicago Board Options Exchange)
 
 **Cboe CFE (Cboe Futures Exchange)**:
+
 - **CFE Binary Order Entry (BOE)**: Binary protocol for order entry
 - **CFE FIX Order Entry & FIX Drop**: FIX-based order routing
 - **CFE Multicast PITCH**: Market data feed handler
 
 **Cboe Europe**:
+
 - Cboe EU BIDS
 - Cboe EU BXE, CXE, TRF and SI
 
@@ -56,6 +61,7 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 #### CME Group
 
 **CME Globex**:
+
 - CME iLink 3 Binary Order Entry
 - CME MDP Conflated TCP feed Handler SDK
 - CME MDP Conflated UDP feed Handler SDK
@@ -81,12 +87,14 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### 4. Service Level Guarantee
 
 **Maintenance Commitment**:
+
 - SDKs kept up-to-date with venue API updates
 - Service level guarantee for protocol conformance
 - Calibrated and tested for each venue
 - Support for venue-specific protocol changes
 
 **Benefits**:
+
 - Focus on trading logic, not connectivity maintenance
 - Automatic updates for venue API changes
 - Pre-certified connectivity
@@ -95,6 +103,7 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### 5. Development Tools
 
 **Included Features**:
+
 - **Source Code Reference**: Fast-start sample implementations
 - **Market Data Logging**: Log and replay for backtesting strategies
 - **Complete Data Model**: Full access to venue's data model
@@ -108,18 +117,21 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### CBOE CFE SDKs
 
 **CFE Binary Order Entry (BOE)**:
+
 - **Protocol**: Binary (ultra-low latency)
 - **Purpose**: Order entry for CBOE futures and options
 - **Performance**: Optimized for high-frequency trading
 - **Use Case**: Execute SPX/SPXW box spread orders directly on CBOE
 
 **CFE FIX Order Entry & FIX Drop**:
+
 - **Protocol**: FIX-based
 - **Purpose**: Order routing and trade capture
 - **Compatibility**: Standard FIX protocol
 - **Use Case**: Alternative to BOE for FIX-based systems
 
 **CFE Multicast PITCH**:
+
 - **Protocol**: Multicast market data
 - **Purpose**: Real-time market data feed
 - **Performance**: High-throughput market data
@@ -128,18 +140,21 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### Integration Benefits
 
 **Direct CBOE Access**:
+
 - Bypass broker middleware
 - Lower latency execution
 - Better fill rates
 - Direct exchange connectivity
 
 **Market Data**:
+
 - Real-time options chain data
 - Multicast PITCH feed for low latency
 - Complete market depth
 - Trade and quote data
 
 **Order Execution**:
+
 - Binary Order Entry for fastest execution
 - FIX Order Entry for standard protocol
 - Multi-leg order support
@@ -152,18 +167,21 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### SDK Components
 
 **1. Market Data Handler**:
+
 - Real-time market data processing
 - Multicast feed handling
 - Order book reconstruction
 - Quote and trade processing
 
 **2. Order Routing**:
+
 - Order entry and management
 - Order status tracking
 - Fill reporting
 - Risk management integration
 
 **3. DropCopy/Trade Capture**:
+
 - Post-trade processing
 - Trade reconciliation
 - Audit trail generation
@@ -172,12 +190,14 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### Protocol Implementation
 
 **FIX-Based Venues**:
+
 - OnixS ultra-low latency FIX Engine
 - Optimized FIX message processing
 - Session management
 - Heartbeat and recovery
 
 **Binary Protocol Venues**:
+
 - Native binary protocol implementations
 - Custom message encoding/decoding
 - High-performance data structures
@@ -190,12 +210,14 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### 1. Direct CBOE Access
 
 **Benefits**:
+
 - Execute SPX/SPXW box spreads directly on CBOE
 - Lower latency than broker APIs
 - Better fill rates for arbitrage opportunities
 - Direct control over execution
 
 **Implementation**:
+
 - Use CFE Binary Order Entry (BOE) for fastest execution
 - Integrate CFE Multicast PITCH for real-time market data
 - Route multi-leg box spread orders atomically
@@ -203,12 +225,14 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### 2. Ultra-Low Latency Execution
 
 **Critical for Arbitrage**:
+
 - Box spread opportunities are time-sensitive
 - Fast execution before opportunity disappears
 - Minimize slippage on multi-leg orders
 - Real-time opportunity detection and execution
 
 **Performance**:
+
 - Binary protocols for minimal latency
 - Optimized for high-frequency trading
 - Calibrated and pre-certified for CBOE
@@ -216,6 +240,7 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### 3. Market Data Integration
 
 **Real-Time Options Chain**:
+
 - Multicast PITCH feed for SPX/SPXW options
 - Real-time quotes for all strikes
 - Market depth for liquidity assessment
@@ -226,6 +251,7 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### 4. Multi-Leg Order Support
 
 **Box Spread Execution**:
+
 - Execute 4-leg box spread orders atomically
 - Order routing for complex strategies
 - Fill reporting for each leg
@@ -234,6 +260,7 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### 5. Interest Rate Futures Hedging
 
 **CME Integration**:
+
 - CME iLink 3 for SOFR/Eurodollar futures
 - Hedge box spread interest rate risk
 - Real-time futures market data
@@ -277,11 +304,13 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### Current Project Architecture
 
 **Primary Broker**: Interactive Brokers (TWS API)
+
 - Socket-based protocol
 - Comprehensive options support
 - Already integrated
 
 **Potential Addition**: OnixS directConnect
+
 - Direct CBOE access via CFE BOE
 - Ultra-low latency execution
 - Real-time market data via Multicast PITCH
@@ -289,16 +318,19 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### Integration Pattern
 
 **Option 1: Complementary Market Data**
+
 - Use OnixS for CBOE market data (Multicast PITCH)
 - Use TWS API for order execution
 - Best of both: fast data + broker execution
 
 **Option 2: Direct CBOE Execution**
+
 - Use OnixS for both market data and execution
 - Bypass broker for CBOE orders
 - Lower latency, better control
 
 **Option 3: Multi-Venue Strategy**
+
 - Use OnixS for CBOE (options)
 - Use OnixS for CME (futures hedging)
 - Use TWS API for other venues
@@ -307,12 +339,14 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### Technical Requirements
 
 **SDK Integration**:
+
 - C++ SDK available (matches project language)
 - Source code reference implementations
 - Market data logging for backtesting
 - Complete data model access
 
 **Development**:
+
 - Free 30-day evaluation
 - Source code samples included
 - Technical support available
@@ -321,12 +355,14 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### Cost Considerations
 
 **Licensing Model**:
+
 - SDK license (contact OnixS for pricing)
 - Service level support
 - Maintenance and updates included
 - Source code escrow available
 
 **Cost-Benefit Analysis**:
+
 - Lower latency → better fills → higher profits
 - Direct exchange access → potentially lower fees
 - Real-time market data → better opportunity detection
@@ -341,12 +377,14 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 **Scenario**: Execute SPX/SPXW box spreads directly on CBOE
 
 **Implementation**:
+
 - Use CFE Binary Order Entry (BOE) for order execution
 - Use CFE Multicast PITCH for real-time market data
 - Execute 4-leg box spread orders atomically
 - Monitor execution quality in real-time
 
 **Benefits**:
+
 - Lower latency than broker APIs
 - Better fill rates
 - Direct control over execution
@@ -357,12 +395,14 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 **Scenario**: Rapidly scan and execute box spread opportunities
 
 **Implementation**:
+
 - Integrate CFE Multicast PITCH for real-time quotes
 - Scan for opportunities using OnixS market data
 - Execute immediately via CFE BOE when opportunity found
 - Log market data for backtesting
 
 **Benefits**:
+
 - Ultra-low latency market data
 - Fast opportunity detection
 - Quick execution before opportunity disappears
@@ -373,12 +413,14 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 **Scenario**: Execute box spread legs across different venues
 
 **Implementation**:
+
 - Use OnixS for CBOE (options)
 - Use OnixS for CME (futures hedging)
 - Compare prices across venues
 - Route to best venue for each leg
 
 **Benefits**:
+
 - Access to multiple venues
 - Best execution prices
 - Cross-venue arbitrage opportunities
@@ -389,12 +431,14 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 **Scenario**: Hedge box spread interest rate risk with CME futures
 
 **Implementation**:
+
 - Use CME iLink 3 for SOFR/Eurodollar futures
 - Real-time futures market data
 - Execute hedge orders via CME
 - Monitor basis risk
 
 **Benefits**:
+
 - Direct CME access
 - Low-latency futures execution
 - Real-time hedge monitoring
@@ -455,24 +499,28 @@ OnixS directConnect provides ultra-low latency Direct Market Access (DMA) SDKs f
 ### Integration Strategy
 
 **Phase 1: Evaluation**
+
 - Request 30-day free evaluation
 - Test CFE Multicast PITCH for market data
 - Evaluate CFE BOE for order execution
 - Compare latency with TWS API
 
 **Phase 2: Market Data Integration**
+
 - Integrate CFE Multicast PITCH for real-time quotes
 - Use for box spread opportunity scanning
 - Compare with TWS API market data quality
 - Log market data for backtesting
 
 **Phase 3: Order Execution**
+
 - Integrate CFE BOE for direct CBOE execution
 - Test multi-leg box spread orders
 - Compare execution quality with TWS API
 - Monitor latency improvements
 
 **Phase 4: Production**
+
 - Deploy as complementary execution venue
 - Use for high-frequency opportunities
 - Monitor execution quality

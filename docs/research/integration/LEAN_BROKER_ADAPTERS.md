@@ -53,6 +53,7 @@ LEAN's Interactive Brokers adapter uses the **TWS API** (same as our current imp
 ### Capabilities
 
 ✅ **Supported Asset Classes:**
+
 - Equities
 - Equity Options
 - Futures
@@ -61,6 +62,7 @@ LEAN's Interactive Brokers adapter uses the **TWS API** (same as our current imp
 - CFDs
 
 ✅ **Order Types:**
+
 - Market Orders
 - Limit Orders
 - Stop Orders
@@ -68,6 +70,7 @@ LEAN's Interactive Brokers adapter uses the **TWS API** (same as our current imp
 - **Combo Orders** (multi-leg orders including box spreads)
 
 ✅ **Features:**
+
 - Real-time market data
 - Historical data
 - Paper trading support
@@ -113,6 +116,7 @@ LEAN's Interactive Brokers adapter uses the **TWS API** (same as our current imp
 | `trading-mode` | `paper` or `live` | `paper` | Yes |
 
 **Standard Ports:**
+
 - **TWS Paper Trading**: `7497`
 - **TWS Live Trading**: `7496`
 - **IB Gateway Paper Trading**: `4002`
@@ -139,18 +143,21 @@ LEAN's Interactive Brokers adapter uses the **TWS API** (same as our current imp
 ### Integration with Current Codebase
 
 **Current Implementation:**
+
 - `native/src/tws_client.cpp`: Direct TWS API client (C++)
 - Uses same TWS API as LEAN adapter
 - Port configuration: `7497` (paper), `7496` (live)
 - Connection management with auto-reconnect
 
 **LEAN Integration:**
+
 - LEAN adapter uses TWS API (C# implementation)
 - Same connection parameters (host, port, account)
 - Can reuse existing TWS/IB Gateway setup
 - No changes needed to TWS configuration
 
 **Migration Path:**
+
 1. Keep existing TWS client for C++ calculations
 2. Use LEAN adapter for order execution and market data
 3. Bridge between C++ and LEAN via Python
@@ -158,6 +165,7 @@ LEAN's Interactive Brokers adapter uses the **TWS API** (same as our current imp
 ### Limitations
 
 ⚠️ **IB Client Portal API:**
+
 - LEAN does **not** natively support IB Client Portal API
 - Only TWS API is supported
 - For Client Portal integration, would need:
@@ -165,6 +173,7 @@ LEAN's Interactive Brokers adapter uses the **TWS API** (same as our current imp
   - Or use TWS adapter (recommended)
 
 ⚠️ **Options Trading:**
+
 - Requires appropriate account permissions
 - Market data subscriptions required
 - Some options may not be available for all symbols
@@ -182,11 +191,13 @@ LEAN's Alpaca adapter uses the **REST API** to connect to Alpaca's trading platf
 ### Capabilities
 
 ✅ **Supported Asset Classes:**
+
 - US Equities
 - **Equity Options** (if available on Alpaca)
 - Cryptocurrencies (via Alpaca Crypto)
 
 ✅ **Order Types:**
+
 - Market Orders
 - Limit Orders
 - Stop Orders
@@ -195,6 +206,7 @@ LEAN's Alpaca adapter uses the **REST API** to connect to Alpaca's trading platf
 - OCO (One-Cancels-Other) Orders
 
 ✅ **Features:**
+
 - Real-time market data (via Alpaca WebSocket)
 - Historical data
 - Paper trading support
@@ -236,6 +248,7 @@ LEAN's Alpaca adapter uses the **REST API** to connect to Alpaca's trading platf
 | `trading-mode` | `paper` or `live` | `paper` | Yes |
 
 **API Endpoints:**
+
 - **Paper Trading**: `https://paper-api.alpaca.markets`
 - **Live Trading**: `https://api.alpaca.markets`
 
@@ -259,18 +272,21 @@ LEAN's Alpaca adapter uses the **REST API** to connect to Alpaca's trading platf
 ### Integration with Current Codebase
 
 **Current Implementation:**
+
 - `python/integration/alpaca_client.py`: Alpaca REST API client (Python)
 - `python/integration/alpaca_service.py`: Alpaca service wrapper
 - Uses same REST API as LEAN adapter
 - API key authentication
 
 **LEAN Integration:**
+
 - LEAN adapter uses Alpaca REST API (C# implementation)
 - Same authentication (API key + secret)
 - Can reuse existing API keys
 - No changes needed to Alpaca account
 
 **Migration Path:**
+
 1. Keep existing Alpaca client for reference
 2. Use LEAN adapter for order execution and market data
 3. Bridge between C++ and LEAN via Python
@@ -278,16 +294,19 @@ LEAN's Alpaca adapter uses the **REST API** to connect to Alpaca's trading platf
 ### Limitations
 
 ⚠️ **Options Trading:**
+
 - Alpaca options trading availability may be limited
 - Verify options support for your region
 - Some options features may not be available
 
 ⚠️ **Rate Limiting:**
+
 - Alpaca has rate limits on API calls
 - LEAN adapter handles rate limiting automatically
 - Monitor for rate limit errors
 
 ⚠️ **Market Data:**
+
 - Real-time data requires appropriate subscriptions
 - Historical data may have limitations
 - Options data availability varies
@@ -303,18 +322,21 @@ LEAN's Alpaca adapter uses the **REST API** to connect to Alpaca's trading platf
 ### Options
 
 **Option 1: Use TWS Adapter (Recommended)**
+
 - Use LEAN's existing IBKR TWS adapter
 - TWS API provides same functionality
 - No custom development needed
 - ✅ **Recommended approach**
 
 **Option 2: Custom Adapter Development**
+
 - Create custom LEAN brokerage adapter
 - Implement all 9 brokerage components
 - Significant development effort (weeks)
 - ⚠️ **Complex, not recommended unless necessary**
 
 **Option 3: Hybrid Approach**
+
 - Use TWS adapter for LEAN
 - Keep existing Client Portal client for specific features
 - Bridge between systems
@@ -323,6 +345,7 @@ LEAN's Alpaca adapter uses the **REST API** to connect to Alpaca's trading platf
 ### Recommendation
 
 **Use TWS Adapter** for IBKR integration:
+
 - Same functionality as Client Portal
 - Already supported by LEAN
 - No custom development needed

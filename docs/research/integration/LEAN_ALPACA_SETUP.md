@@ -38,6 +38,7 @@ This guide covers the configuration and testing of Alpaca integration with LEAN 
 5. **Save keys securely** (they won't be shown again)
 
 **Key Format:**
+
 - Paper trading keys start with `PK...`
 - Live trading keys start with `AK...`
 
@@ -177,6 +178,7 @@ class TestAlpacaOrders(QCAlgorithm):
 ### Verification
 
 Check Alpaca documentation and account dashboard for:
+
 - Options trading permissions
 - Available option symbols
 - Data feed requirements
@@ -188,12 +190,14 @@ Check Alpaca documentation and account dashboard for:
 ### Authentication Errors
 
 **Error: "Invalid API key"**
+
 - Verify API key is correct
 - Check key format (PK... for paper, AK... for live)
 - Ensure secret key matches API key
 - Regenerate keys if needed
 
 **Error: "Unauthorized"**
+
 - Check API keys are active
 - Verify account status
 - Check rate limits
@@ -201,11 +205,13 @@ Check Alpaca documentation and account dashboard for:
 ### Connection Errors
 
 **Error: "Connection timeout"**
+
 - Check internet connection
 - Verify API endpoint URL is correct
 - Check firewall settings
 
 **Error: "Rate limit exceeded"**
+
 - Alpaca has rate limits on API calls
 - LEAN adapter handles rate limiting automatically
 - Reduce request frequency if needed
@@ -213,11 +219,13 @@ Check Alpaca documentation and account dashboard for:
 ### Market Data Errors
 
 **Error: "Symbol not found"**
+
 - Verify symbol is correct
 - Check symbol is available on Alpaca
 - Some symbols may not be available for options
 
 **Error: "Options data not available"**
+
 - Check account has options trading enabled
 - Verify options data subscriptions
 - Some options may require additional permissions
@@ -225,11 +233,13 @@ Check Alpaca documentation and account dashboard for:
 ### Order Errors
 
 **Error: "Insufficient buying power"**
+
 - Check account cash balance
 - Verify buying power
 - Reduce order size
 
 **Error: "Order rejected"**
+
 - Check order parameters
 - Verify market is open
 - Check account permissions

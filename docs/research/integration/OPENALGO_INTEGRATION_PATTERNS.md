@@ -19,6 +19,7 @@ OpenAlgo is a Python Flask-based open-source algo trading platform with comprehe
 OpenAlgo includes native MCP server capabilities, enabling AI assistants to execute trades and manage portfolios directly through natural language commands.
 
 **Key Features**:
+
 - Full trading capabilities (place, modify, cancel orders)
 - Smart orders (automatic position sizing, basket orders)
 - Position management (close positions, track P&L)
@@ -26,6 +27,7 @@ OpenAlgo includes native MCP server capabilities, enabling AI assistants to exec
 - Account information (funds, holdings, order book)
 
 **Available MCP Tools**:
+
 - `place_order`, `place_smart_order`, `place_basket_order`
 - `modify_order`, `cancel_order`
 - `get_open_position`, `get_position_book`, `close_all_positions`
@@ -38,6 +40,7 @@ OpenAlgo includes native MCP server capabilities, enabling AI assistants to exec
 **Location**: `mcp/trading_server/server.py`
 
 **Features Implemented**:
+
 - ✅ Order placement (`place_order`, `place_box_spread`)
 - ✅ Order cancellation (`cancel_order`)
 - ✅ Position tracking (`get_open_positions`)
@@ -48,12 +51,14 @@ OpenAlgo includes native MCP server capabilities, enabling AI assistants to exec
 - ✅ Dry-run mode support
 
 **Integration Points**:
+
 - Native C++ `OrderManager` for order execution
 - TWS API for market data and account info
 - Backend REST API for position tracking
 
 **Configuration**:
 Add to `.cursor/mcp.json`:
+
 ```json
 {
   "mcpServers": {
@@ -78,6 +83,7 @@ Add to `.cursor/mcp.json`:
 ### OpenAlgo Approach
 
 OpenAlgo implements comprehensive rate limiting with:
+
 - **Configurable Rate Limits**: Environment variable controlled
 - **Moving Window Strategy**: Flask-Limiter with moving-window for accurate limiting
 - **IP-based Limiting**: Rate limits applied per IP address
@@ -85,6 +91,7 @@ OpenAlgo implements comprehensive rate limiting with:
 - **Graceful Handling**: Clear error messages when limits exceeded
 
 **Rate Limit Categories**:
+
 - `LOGIN_RATE_LIMIT_MIN`: Login attempts per minute (default: 5)
 - `LOGIN_RATE_LIMIT_HOUR`: Login attempts per hour (default: 25)
 - `API_RATE_LIMIT`: General API endpoints (default: 10 per second)
@@ -98,6 +105,7 @@ OpenAlgo implements comprehensive rate limiting with:
 **Location**: `native/src/rate_limiter.cpp`, `native/include/rate_limiter.h`
 
 **Current Features**:
+
 - ✅ Message rate limiting (messages per second)
 - ✅ Historical request limiting (concurrent requests)
 - ✅ Market data line limiting (concurrent subscriptions)
@@ -107,6 +115,7 @@ OpenAlgo implements comprehensive rate limiting with:
 **Enhancements Needed** (inspired by OpenAlgo):
 
 1. **IP-based Rate Limiting**:
+
    ```cpp
    class IPRateLimiter {
      std::unordered_map<std::string, RateLimiter> per_ip_limiters_;
@@ -115,6 +124,7 @@ OpenAlgo implements comprehensive rate limiting with:
    ```
 
 2. **Per-Endpoint Rate Limits**:
+
    ```cpp
    struct EndpointRateLimit {
      std::string endpoint;
@@ -181,6 +191,7 @@ OpenAlgo implements comprehensive security at multiple levels:
 ### Current Implementation
 
 **Current Security**:
+
 - ✅ Credentials not committed to git (`.gitignore`, `.cursorignore`)
 - ✅ Environment variable configuration
 - ✅ Dry-run mode for testing
@@ -191,6 +202,7 @@ OpenAlgo implements comprehensive security at multiple levels:
 **Recommended Enhancements**:
 
 1. **Credential Encryption**:
+
    ```cpp
    class CredentialManager {
      std::string encrypt_token(const std::string& token);
@@ -200,6 +212,7 @@ OpenAlgo implements comprehensive security at multiple levels:
    ```
 
 2. **API Key Management**:
+
    ```cpp
    class APIKeyManager {
      bool validate_api_key(const std::string& key);
@@ -218,6 +231,7 @@ OpenAlgo implements comprehensive security at multiple levels:
    - Store encryption keys in secure keychain (macOS Keychain, Linux keyring)
 
 **Implementation Priority**:
+
 1. **High**: API key management for MCP server
 2. **Medium**: Credential encryption for stored tokens
 3. **Low**: Full password hashing system (if user auth added)
@@ -231,6 +245,7 @@ OpenAlgo implements comprehensive security at multiple levels:
 OpenAlgo includes a comprehensive API Analyzer tool that provides:
 
 **For Traders**:
+
 - Risk-free testing of all trading operations
 - Real-time validation of order parameters
 - Strategy monitoring
@@ -238,6 +253,7 @@ OpenAlgo includes a comprehensive API Analyzer tool that provides:
 - Cost savings by avoiding trading errors
 
 **For Developers**:
+
 - Complete API testing with detailed request/response analysis
 - Automatic parameter validation
 - WebSocket monitoring
@@ -296,6 +312,7 @@ void OrderManager::place_order(...) {
 ```
 
 **Benefits**:
+
 - Complete audit trail of all trading operations
 - Easy reproduction of issues
 - Performance analysis (timing between operations)

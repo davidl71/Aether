@@ -80,7 +80,7 @@ During TWS API library compilation, we discovered it has **complex dependencies*
    - Required for precision decimal arithmetic in trading
    - Must be downloaded separately from Intel
    - Must be compiled as `libbid.a` or `libbid.so`
-   - Download: https://www.intel.com/content/www/us/en/developer/articles/tool/intel-decimal-floating-point-math-library.html
+   - Download: <https://www.intel.com/content/www/us/en/developer/articles/tool/intel-decimal-floating-point-math-library.html>
 
 3. **C++17 Standard** - CONFIGURED
    - Required by modern Protocol Buffers
@@ -195,7 +195,7 @@ Linking TWS API library failed with:
 
 ## Recommendations
 
-### For Immediate Next Steps:
+### For Immediate Next Steps
 
 **If your goal is to test the strategy framework:**
 → Use Option 2 (Stub) - you're already there!
@@ -215,7 +215,7 @@ Linking TWS API library failed with:
 - Test with paper trading (port 7497)
 - **Time to production**: 4-8 hours for dependencies + implementation
 
-### My Recommendation:
+### My Recommendation
 
 Given that your **framework is 100% complete and tested**, I recommend:
 
@@ -288,10 +288,10 @@ A: Complete Option 1 (full TWS API build with all dependencies). It's the most s
 
 ## Support
 
-- **TWS API Docs**: https://interactivebrokers.github.io/tws-api/
+- **TWS API Docs**: <https://interactivebrokers.github.io/tws-api/>
 - **IBKR Support**: 1-877-442-2757
-- **API Forums**: https://groups.io/g/twsapi
-- **Intel Decimal Library**: https://www.intel.com/content/www/us/en/developer/articles/tool/intel-decimal-floating-point-math-library.html
+- **API Forums**: <https://groups.io/g/twsapi>
+- **Intel Decimal Library**: <https://www.intel.com/content/www/us/en/developer/articles/tool/intel-decimal-floating-point-math-library.html>
 
 ## Related Resources
 

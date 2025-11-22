@@ -1,6 +1,6 @@
 # IBKR Pro Commission Rates Reference
 
-**Source**: https://www.interactivebrokers.com/en/pricing/commissions-home.php
+**Source**: <https://www.interactivebrokers.com/en/pricing/commissions-home.php>
 **Account Type**: IBKR Pro
 **Last Updated**: 2025-01-27
 
@@ -38,16 +38,19 @@ For accounts with high monthly volume, IBKR offers tiered pricing:
 For a box spread (4 legs):
 
 **Basic Calculation**:
+
 - Entry: 4 contracts × $0.65 = $2.60
 - Exit: 4 contracts × $0.65 = $2.60
 - **Total**: $5.20 per box spread round trip
 
 **With Volume Discount** (50,000+ contracts/month):
+
 - Entry: 4 contracts × $0.55 = $2.20
 - Exit: 4 contracts × $0.55 = $2.20
 - **Total**: $4.40 per box spread round trip
 
 **Per Contract** (for rate calculations):
+
 - Basic: $0.65 per contract
 - Tiered (high volume): $0.50-$0.60 per contract
 
@@ -65,6 +68,7 @@ For a box spread (4 legs):
 ## Implementation Recommendation
 
 For box spread calculations:
+
 - Use **$0.65 per contract** as default (conservative estimate)
 - Allow configuration for volume-based tiers
 - Account for round-trip costs (entry + exit)

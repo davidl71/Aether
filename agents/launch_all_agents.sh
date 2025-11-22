@@ -7,6 +7,12 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "[info] Launching agent setup scripts in parallel..."
 
+# Start NATS server if not running
+if ! pgrep -f "nats-server" >/dev/null; then
+  echo "[info] Starting NATS server..."
+  (cd "$ROOT_DIR" && bash scripts/start_nats.sh) || echo "[warn] NATS server startup failed" >&2
+fi
+
 if command -v poetry >/dev/null 2>&1; then
   (cd "$ROOT_DIR" && bash agents/backend/scripts/setup.sh) &
   (cd "$ROOT_DIR" && bash agents/backend-mock/scripts/setup.sh) &

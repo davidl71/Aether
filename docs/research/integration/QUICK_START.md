@@ -24,34 +24,40 @@ Your IBKR Box Spread Generator is **built and tested** but needs TWS API integra
 ## Next Steps Summary
 
 ### Step 1: Download TWS API ⏳
+
 ```bash
 # Visit and download
 open https://interactivebrokers.github.io/
 ```
 
 ### Step 2: Extract API ⏳
+
 ```bash
 mkdir -p native/third_party/tws-api
 unzip ~/Downloads/twsapi_macunix*.zip -d native/third_party/tws-api/
 ```
 
 ### Step 3: Implement Client ⏳
+
 - Modify `src/tws_client.cpp`
 - Implement EWrapper callbacks
 - See: `docs/IMPLEMENTATION_GUIDE.md`
 
 ### Step 4: Test Paper Trading ⏳
+
 ```bash
 # Port 7497 = Paper Trading
 ./build/bin/ib_box_spread --config config/config.json
 ```
 
 ### Step 5: Validate Data ⏳
+
 - Run for 30+ days
 - Verify all metrics
 - Check performance
 
 ### Step 6: Live Trading (EXTREME CAUTION) ⏳
+
 - Only after 30+ days of successful paper trading
 - Start with $500 max position
 - Monitor continuously
@@ -61,26 +67,31 @@ unzip ~/Downloads/twsapi_macunix*.zip -d native/third_party/tws-api/
 ## Quick Commands
 
 ### Build
+
 ```bash
 ./scripts/build_universal.sh
 ```
 
 ### Test
+
 ```bash
 cd build && ctest --output-on-failure
 ```
 
 ### Run (Dry-Run)
+
 ```bash
 ./build/bin/ib_box_spread --config config/config.json --dry-run
 ```
 
 ### Validate Config
+
 ```bash
 ./build/bin/ib_box_spread --config config/config.json --validate
 ```
 
 ### View Logs
+
 ```bash
 tail -f logs/ib_box_spread.log
 ```
@@ -112,7 +123,7 @@ tail -f logs/ib_box_spread.log
 
 - **Full Guide**: `docs/IMPLEMENTATION_GUIDE.md`
 - **README**: `README.md`
-- **IBKR API Docs**: https://interactivebrokers.github.io/tws-api/
+- **IBKR API Docs**: <https://interactivebrokers.github.io/tws-api/>
 - **IBKR Support**: 1-877-442-2757
 
 ---

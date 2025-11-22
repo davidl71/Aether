@@ -1,4 +1,5 @@
 # Comprehensive Testing Strategy
+
 **Date**: 2025-01-16
 **Version**: 1.0
 **Status**: Active
@@ -23,6 +24,7 @@
 ## Overview
 
 ### Current State
+
 - **Unit Tests**: ✅ 3,123 lines across 10 test files (comprehensive)
 - **Integration Tests**: 🟡 Minimal (needs expansion)
 - **End-to-End Tests**: ❌ Missing
@@ -31,6 +33,7 @@
 - **CI/CD**: 🟡 Basic setup exists
 
 ### Goals
+
 1. Achieve >80% code coverage for critical paths
 2. Validate all workflows end-to-end before production
 3. Catch integration issues early
@@ -38,6 +41,7 @@
 5. Automate regression testing
 
 ### Test Framework
+
 - **Unit/Integration**: Catch2
 - **Mocking**: Manual mocks (consider adding gmock)
 - **Build System**: CMake + CTest
@@ -61,6 +65,7 @@
 ```
 
 ### Distribution Target
+
 - **Unit Tests**: 80% - Fast, isolated, comprehensive
 - **Integration Tests**: 15% - Component interactions
 - **End-to-End Tests**: 5% - Critical workflows
@@ -72,6 +77,7 @@
 ### Status: ✅ Comprehensive (Already Implemented)
 
 **Existing Coverage** (3,123 lines):
+
 1. `test_box_spread_strategy.cpp` (234 lines)
    - BoxSpreadValidator tests
    - BoxSpreadCalculator tests
@@ -120,6 +126,7 @@
 ### Unit Test Best Practices
 
 **Naming Convention**:
+
 ```cpp
 TEST_CASE("ComponentName action expected_behavior", "[tag]") {
     // Arrange
@@ -129,6 +136,7 @@ TEST_CASE("ComponentName action expected_behavior", "[tag]") {
 ```
 
 **Example**:
+
 ```cpp
 TEST_CASE("BoxSpreadValidator detects invalid strike configuration", "[strategy][validation]") {
     // Arrange: Create box spread with invalid strikes
@@ -147,6 +155,7 @@ TEST_CASE("BoxSpreadValidator detects invalid strike configuration", "[strategy]
 ### Gaps to Fill (Priority: LOW)
 
 **Missing Unit Tests**:
+
 1. Exception handling in callbacks (after adding try-catch)
 2. Contract details parsing
 3. Combo order construction with real conIds
@@ -167,11 +176,13 @@ Integration tests verify that components work together correctly.
 ### Required Integration Test Suites
 
 #### 1. TWS Connection Integration Tests
+
 **File**: `native/tests/test_tws_integration.cpp` (NEW)
 **Purpose**: Verify TWS client connection lifecycle
 **Estimated Lines**: 300-400
 
 **Test Cases**:
+
 ```cpp
 TEST_CASE("TWS connection lifecycle", "[integration][tws]") {
     SECTION("Initial connection succeeds") {
@@ -243,11 +254,13 @@ TEST_CASE("TWS connection lifecycle", "[integration][tws]") {
 ---
 
 #### 2. Market Data Pipeline Integration Tests
+
 **File**: `native/tests/test_market_data_integration.cpp` (NEW)
 **Purpose**: Verify market data subscription, updates, and processing
 **Estimated Lines**: 400-500
 
 **Test Cases**:
+
 ```cpp
 TEST_CASE("Market data pipeline end-to-end", "[integration][market_data]") {
     SECTION("Subscribe to option chain and receive updates") {
@@ -322,11 +335,13 @@ TEST_CASE("Market data pipeline end-to-end", "[integration][market_data]") {
 ---
 
 #### 3. Box Spread End-to-End Integration Tests
+
 **File**: `native/tests/test_box_spread_e2e.cpp` (NEW)
 **Purpose**: Verify complete box spread workflow from discovery to execution
 **Estimated Lines**: 500-600
 
 **Test Cases**:
+
 ```cpp
 TEST_CASE("Box spread workflow end-to-end", "[integration][e2e][box_spread]") {
     SECTION("Find opportunities in option chain") {
@@ -413,11 +428,13 @@ TEST_CASE("Box spread workflow end-to-end", "[integration][e2e][box_spread]") {
 ---
 
 #### 4. Order Manager Integration Tests (Extension)
+
 **File**: Extend `native/tests/test_order_manager.cpp`
 **Purpose**: Test order manager with real TWS client (mocked)
 **Additional Lines**: +200-300
 
 **New Test Cases**:
+
 ```cpp
 TEST_CASE("Order manager with TWS client integration", "[integration][order]") {
     SECTION("Place order and receive confirmation") {
@@ -475,6 +492,7 @@ TEST_CASE("Order manager with TWS client integration", "[integration][order]") {
 ### Integration Test Infrastructure
 
 **Mock TWS Server** (Required):
+
 ```cpp
 class MockTWS {
 public:
@@ -499,6 +517,7 @@ public:
 ```
 
 **Test Data Files**:
+
 ```
 native/tests/data/
 ├── spy_option_chain.json          # Normal SPY option chain
@@ -522,6 +541,7 @@ End-to-end tests verify complete user workflows from start to finish.
 ### E2E Test Scenarios
 
 #### Scenario 1: Discovery to Execution (Dry-Run)
+
 ```cpp
 TEST_CASE("E2E: Discover and execute box spread (dry-run)", "[e2e]") {
     // This test runs the complete workflow:
@@ -556,6 +576,7 @@ TEST_CASE("E2E: Discover and execute box spread (dry-run)", "[e2e]") {
 ```
 
 #### Scenario 2: Reconnection Resilience
+
 ```cpp
 TEST_CASE("E2E: System recovers from disconnection", "[e2e][resilience]") {
     // 1. Connect and place order
@@ -567,6 +588,7 @@ TEST_CASE("E2E: System recovers from disconnection", "[e2e][resilience]") {
 ```
 
 #### Scenario 3: Multi-Symbol Discovery
+
 ```cpp
 TEST_CASE("E2E: Multi-symbol box spread discovery", "[e2e]") {
     // 1. Connect
@@ -592,12 +614,14 @@ Paper trading is **mandatory** before production. Test with real TWS but fake mo
 ### Phase 1: Basic Functionality (Day 1)
 
 **Objectives**:
+
 - Verify system can connect to paper trading account
 - Verify option chain data is received
 - Verify opportunities are found
 - Verify dry-run execution works
 
 **Test Plan**:
+
 ```bash
 # 1. Configure paper trading credentials
 export IB_PAPER_ACCOUNT="DU123456"
@@ -613,6 +637,7 @@ tail -f logs/ib_box_spread.log
 ```
 
 **Success Criteria**:
+
 - [ ] Connection established
 - [ ] Option chain data received
 - [ ] At least 5 opportunities found
@@ -626,12 +651,14 @@ tail -f logs/ib_box_spread.log
 ### Phase 2: Live Execution (Day 2)
 
 **Objectives**:
+
 - Execute box spread with real paper trading orders
 - Verify order submission
 - Monitor order fills
 - Verify position tracking
 
 **Test Plan**:
+
 ```bash
 # 1. Run with live execution (paper trading)
 ./ib_box_spread --symbol SPY --max-positions 1 --log-level debug
@@ -651,6 +678,7 @@ tail -f logs/ib_box_spread.log
 ```
 
 **Success Criteria**:
+
 - [ ] All 4 orders submitted to TWS
 - [ ] Orders visible in TWS interface
 - [ ] Orders filled (or partially filled with rollback)
@@ -658,6 +686,7 @@ tail -f logs/ib_box_spread.log
 - [ ] P&L calculated correctly
 
 **Screenshots Required**:
+
 - TWS Orders panel with 4 legs
 - TWS Positions panel after fill
 - Application logs showing execution
@@ -669,6 +698,7 @@ tail -f logs/ib_box_spread.log
 ### Phase 3: Edge Cases (Day 3)
 
 **Objectives**:
+
 - Test partial fill scenario
 - Test low liquidity filtering
 - Test stale data rejection
@@ -677,6 +707,7 @@ tail -f logs/ib_box_spread.log
 **Test Scenarios**:
 
 **3.1: Partial Fill with Rollback**
+
 ```bash
 # Manually cancel one leg after submission
 # 1. Run application
@@ -687,6 +718,7 @@ tail -f logs/ib_box_spread.log
 ```
 
 **3.2: Low Liquidity Filtering**
+
 ```bash
 # Use symbol with wide bid/ask spreads
 ./ib_box_spread --symbol XYZ --max-bid-ask-spread 0.10 --log-level debug
@@ -695,6 +727,7 @@ tail -f logs/ib_box_spread.log
 ```
 
 **3.3: Rate Limiting**
+
 ```bash
 # Burst 100 requests rapidly
 # Enable rate limiter
@@ -705,6 +738,7 @@ tail -f logs/ib_box_spread.log
 ```
 
 **Success Criteria**:
+
 - [ ] Rollback works on partial fill
 - [ ] Low liquidity opportunities filtered
 - [ ] Rate limiter prevents TWS errors
@@ -717,11 +751,13 @@ tail -f logs/ib_box_spread.log
 ### Phase 4: Reconnection Resilience (Day 4)
 
 **Objectives**:
+
 - Test disconnection handling
 - Test reconnection with state sync
 - Verify order recovery
 
 **Test Plan**:
+
 ```bash
 # 1. Start application
 ./ib_box_spread --symbol SPY --auto-reconnect
@@ -744,6 +780,7 @@ tail -f logs/ib_box_spread.log
 ```
 
 **Success Criteria**:
+
 - [ ] Disconnection detected immediately
 - [ ] Auto-reconnect triggered
 - [ ] Reconnection successful
@@ -757,12 +794,14 @@ tail -f logs/ib_box_spread.log
 ### Phase 5: Extended Run (Day 5-7)
 
 **Objectives**:
+
 - Run for 8 hours continuously
 - Monitor for memory leaks
 - Monitor for crashes
 - Monitor efficiency ratio
 
 **Test Plan**:
+
 ```bash
 # 1. Start application for extended run
 nohup ./ib_box_spread \
@@ -782,6 +821,7 @@ watch -n 300 'ps aux | grep ib_box_spread'
 ```
 
 **Metrics to Track**:
+
 - Total opportunities found
 - Total orders placed
 - Total orders filled
@@ -793,6 +833,7 @@ watch -n 300 'ps aux | grep ib_box_spread'
 - Reconnection count
 
 **Success Criteria**:
+
 - [ ] No crashes for 8+ hours
 - [ ] Memory usage stable (no leaks)
 - [ ] Efficiency ratio > 5%
@@ -806,6 +847,7 @@ watch -n 300 'ps aux | grep ib_box_spread'
 ### Paper Trading Checklist
 
 **Before Starting**:
+
 - [ ] TWS/Gateway installed
 - [ ] Paper trading account created
 - [ ] Application compiled in Release mode
@@ -813,6 +855,7 @@ watch -n 300 'ps aux | grep ib_box_spread'
 - [ ] Test plan reviewed
 
 **During Testing**:
+
 - [ ] Take screenshots of TWS interface
 - [ ] Log all unexpected behavior
 - [ ] Record all error messages
@@ -820,6 +863,7 @@ watch -n 300 'ps aux | grep ib_box_spread'
 - [ ] Document workarounds
 
 **After Testing**:
+
 - [ ] Review all logs
 - [ ] Calculate success metrics
 - [ ] Document issues found
@@ -833,6 +877,7 @@ watch -n 300 'ps aux | grep ib_box_spread'
 ### Status: ❌ Missing (Medium Priority)
 
 ### Objectives
+
 - Measure latency from market data to execution
 - Measure throughput (opportunities/second)
 - Test under load (1000+ option contracts)
@@ -841,6 +886,7 @@ watch -n 300 'ps aux | grep ib_box_spread'
 ### Performance Test Cases
 
 #### 1. Market Data Processing Latency
+
 ```cpp
 TEST_CASE("Performance: Market data processing latency", "[performance]") {
     // Measure time from tick received to opportunity evaluated
@@ -862,6 +908,7 @@ TEST_CASE("Performance: Market data processing latency", "[performance]") {
 ```
 
 #### 2. Option Chain Scanning Performance
+
 ```cpp
 TEST_CASE("Performance: Option chain scanning with 1000 strikes", "[performance]") {
     // Load large option chain (500 strikes x 2 types = 1000 options)
@@ -886,6 +933,7 @@ TEST_CASE("Performance: Option chain scanning with 1000 strikes", "[performance]
 ```
 
 #### 3. Memory Usage Under Load
+
 ```cpp
 TEST_CASE("Performance: Memory usage with 100 active subscriptions", "[performance]") {
     // Measure memory before
@@ -919,6 +967,7 @@ TEST_CASE("Performance: Memory usage with 100 active subscriptions", "[performan
 ### Security Checklist
 
 **Input Validation**:
+
 - [ ] Symbol validation (alphanumeric only, max length)
 - [ ] Strike validation (positive, reasonable range)
 - [ ] Quantity validation (positive, max size limits)
@@ -926,22 +975,26 @@ TEST_CASE("Performance: Memory usage with 100 active subscriptions", "[performan
 - [ ] Date validation (YYYYMMDD format, future date)
 
 **Credential Management**:
+
 - [ ] API credentials not hardcoded
 - [ ] Configuration files not in git
 - [ ] Secure storage for paper/live account IDs
 - [ ] Environment variables for sensitive data
 
 **Network Security**:
+
 - [ ] TWS connection uses localhost only (no remote)
 - [ ] No listening ports (unless intentional)
 - [ ] TLS/SSL for any external APIs (if used)
 
 **Error Handling**:
+
 - [ ] No sensitive data in error messages
 - [ ] No stack traces exposed to users
 - [ ] All exceptions caught at top level
 
 **Testing**:
+
 ```cpp
 TEST_CASE("Security: Invalid symbol rejected", "[security]") {
     // Test SQL injection attempt
@@ -1033,17 +1086,20 @@ jobs:
 ### Test Execution in CI
 
 **Tag Tests by Speed**:
+
 ```cpp
 TEST_CASE("Fast unit test", "[unit][fast]") { /* ... */ }
 TEST_CASE("Slow integration test", "[integration][slow]") { /* ... */ }
 ```
 
 **Run Fast Tests on Every Commit**:
+
 ```bash
 ctest --test-dir build -L "unit,fast" --output-on-failure
 ```
 
 **Run All Tests on PR**:
+
 ```bash
 ctest --test-dir build --output-on-failure
 ```
@@ -1057,6 +1113,7 @@ ctest --test-dir build --output-on-failure
 ### Test Data Repository
 
 **Structure**:
+
 ```
 native/tests/data/
 ├── option_chains/
@@ -1104,6 +1161,7 @@ types::BoxSpreadLeg generate_arbitrage_opportunity(
 
 **Overall**: 80%+ code coverage
 **Critical Components**: 90%+ coverage
+
 - BoxSpreadStrategy
 - OrderManager
 - TWSClient (connection/reconnection)
@@ -1112,6 +1170,7 @@ types::BoxSpreadLeg generate_arbitrage_opportunity(
 ### Coverage Tools
 
 **Linux**: gcov + lcov
+
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON
 make -C build
@@ -1125,11 +1184,13 @@ genhtml coverage.info --output-directory coverage_html
 ### Test Reporting
 
 **JUnit XML Output** (for CI):
+
 ```bash
 ctest --test-dir build --output-junit test_results.xml
 ```
 
 **HTML Report** (for developers):
+
 ```bash
 ctest --test-dir build --output-on-failure > test_report.txt
 ./scripts/generate_test_report.sh test_report.txt > test_report.html
@@ -1140,11 +1201,13 @@ ctest --test-dir build --output-on-failure > test_report.txt
 ## Testing Timeline
 
 ### Week 1
+
 **Mon-Tue**: Integration test infrastructure (Mock TWS, test data)
 **Wed-Thu**: Write integration tests (TWS, market data, box spread)
 **Fri**: Write E2E tests
 
 ### Week 2
+
 **Mon**: Paper trading Day 1 (basic functionality)
 **Tue**: Paper trading Day 2 (live execution)
 **Wed**: Paper trading Day 3 (edge cases)
@@ -1152,6 +1215,7 @@ ctest --test-dir build --output-on-failure > test_report.txt
 **Fri**: Paper trading Day 5 (extended run setup)
 
 ### Week 3
+
 **Mon-Wed**: Extended paper trading run (3 days continuous)
 **Thu**: Analyze results, fix issues
 **Fri**: Re-test fixes, prepare production deployment
@@ -1165,21 +1229,25 @@ ctest --test-dir build --output-on-failure > test_report.txt
 ### Before Production Deployment
 
 **Unit Tests**:
+
 - [x] 80%+ coverage (already achieved)
 - [ ] All tests passing
 - [ ] No flaky tests
 
 **Integration Tests**:
+
 - [ ] All component integrations tested
 - [ ] Mock TWS infrastructure complete
 - [ ] 100% pass rate
 
 **End-to-End Tests**:
+
 - [ ] Critical workflows tested
 - [ ] Dry-run E2E tests passing
 - [ ] Reconnection scenarios validated
 
 **Paper Trading**:
+
 - [ ] 1 week of stable operation
 - [ ] No crashes or unhandled exceptions
 - [ ] Order efficiency > 5%
@@ -1187,6 +1255,7 @@ ctest --test-dir build --output-on-failure > test_report.txt
 - [ ] P&L reconciles with TWS
 
 **CI/CD**:
+
 - [ ] Automated tests on every commit
 - [ ] Coverage reports generated
 - [ ] Release artifacts built automatically
@@ -1204,16 +1273,19 @@ ctest --test-dir build --output-on-failure > test_report.txt
 ## Appendix: Test Commands Reference
 
 **Run All Tests**:
+
 ```bash
 ctest --test-dir build --output-on-failure
 ```
 
 **Run Specific Test**:
+
 ```bash
 ctest --test-dir build -R test_box_spread_strategy --output-on-failure
 ```
 
 **Run Tests by Tag**:
+
 ```bash
 ./build/native/tests/test_runner "[unit]"
 ./build/native/tests/test_runner "[integration]"
@@ -1221,11 +1293,13 @@ ctest --test-dir build -R test_box_spread_strategy --output-on-failure
 ```
 
 **Run with Verbose Output**:
+
 ```bash
 ctest --test-dir build --output-on-failure --verbose
 ```
 
 **Generate Coverage**:
+
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON
 cmake --build build

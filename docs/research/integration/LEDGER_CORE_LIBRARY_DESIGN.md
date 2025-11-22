@@ -4,6 +4,7 @@
 **Last Updated:** 2025-11-18
 **Status:** Design Document
 **Related:**
+
 - `docs/RESEARCH_FINANCIAL_LEDGER_PLATFORMS.md`
 - `docs/INVESTMENT_STRATEGY_FRAMEWORK.md`
 
@@ -12,6 +13,7 @@
 This document defines the architecture for a lightweight ledger core library integrated into the IB box spread portfolio management system. The library provides double-entry accounting optimized for trading operations with minimal latency (< 1ms transaction recording), multi-currency support, and Ledger CLI-compatible transaction export for reconciliation.
 
 **Key Design Principles:**
+
 1. **Double-entry accounting:** Every transaction has balanced debits and credits
 2. **Trading-optimized:** Low-latency transaction recording for real-time trading
 3. **Ledger CLI compatible:** Export to `.ledger` format for reconciliation
@@ -915,14 +917,15 @@ async fn record_cash_flow(
 
 ## References
 
-1. Ledger CLI Documentation: https://ledger-cli.org/
-2. Ledger CLI GitHub: https://github.com/ledger/ledger
+1. Ledger CLI Documentation: <https://ledger-cli.org/>
+2. Ledger CLI GitHub: <https://github.com/ledger/ledger>
 3. Research Document: `docs/RESEARCH_FINANCIAL_LEDGER_PLATFORMS.md`
 4. Investment Strategy: `docs/INVESTMENT_STRATEGY_FRAMEWORK.md`
 
 ---
 
 **Next Steps:**
+
 1. Implement core data models (T-82)
 2. Implement transaction engine (T-82)
 3. Implement persistence layer (T-83)

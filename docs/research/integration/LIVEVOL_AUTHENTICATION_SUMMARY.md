@@ -11,6 +11,7 @@
 2. **Client Secret** - Your application secret key
 
 **Where to Find**:
+
 - LiveVol Pro account → Settings → API → Credentials
 - Or contact LiveVol support
 
@@ -19,22 +20,26 @@
 ## 🔐 Authentication Flow
 
 ### Endpoint
+
 ```
 POST https://id.livevol.com/connect/token
 ```
 
 ### Headers
+
 ```
 Authorization: Basic <base64_encoded_client_id:client_secret>
 Content-Type: application/x-www-form-urlencoded
 ```
 
 ### Body
+
 ```
 grant_type=client_credentials
 ```
 
 ### Response
+
 ```json
 {
   "access_token": "eyJ0eXAiOi...",

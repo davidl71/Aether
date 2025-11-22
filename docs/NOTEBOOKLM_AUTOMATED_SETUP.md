@@ -5,17 +5,20 @@ This guide provides step-by-step instructions for creating a NotebookLM notebook
 ## ✅ What Has Been Done
 
 ### 1. Scripts Created
+
 - **`scripts/create_notebooklm_notebook.sh`**: Bash script that opens NotebookLM and provides all URLs
 - **`scripts/create_notebooklm_resources.py`**: Python script that generates resources JSON file
 - **`docs/notebooklm_resources.json`**: JSON file with all resources and metadata
 
 ### 2. Documentation Created
+
 - **`docs/NOTEBOOKLM_ALL_RESOURCES.md`**: Complete list of all resources
 - **`docs/YOUTUBE_VIDEOS.md`**: YouTube videos tracking
 - **`docs/EXTERNAL_RESOURCES.md`**: External resources tracking
 - **`docs/NOTEBOOKLM_SETUP_GUIDE.md`**: General setup guide
 
 ### 3. Resources Compiled
+
 - **GitHub Repository**: 1 repository (47+ documentation files)
 - **YouTube Videos**: 8 videos
 - **External Articles**: 1 article
@@ -26,9 +29,11 @@ This guide provides step-by-step instructions for creating a NotebookLM notebook
 ### Option 1: Use the Automated Script (Recommended)
 
 1. **Run the script**:
+
    ```bash
    ./scripts/create_notebooklm_notebook.sh
    ```
+
    This will:
    - Open NotebookLM in your browser
    - Display all URLs for easy copy-paste
@@ -56,6 +61,7 @@ This guide provides step-by-step instructions for creating a NotebookLM notebook
 
 6. **Add to library**:
    - Return to Cursor and say:
+
    ```
    "Add [paste-the-link-here] to library tagged 'tws-api, trading, options, documentation, youtube, tutorial, ib-api, c++, socket-implementation, boost-asio'"
    ```
@@ -63,9 +69,11 @@ This guide provides step-by-step instructions for creating a NotebookLM notebook
 ### Option 2: Use the Python Script
 
 1. **Run the Python script**:
+
    ```bash
    python3 scripts/create_notebooklm_resources.py
    ```
+
    This will:
    - Generate `docs/notebooklm_resources.json`
    - Print all URLs in copy-paste format
@@ -76,11 +84,13 @@ This guide provides step-by-step instructions for creating a NotebookLM notebook
 ## 📝 All Resources to Add
 
 ### 1. GitHub Repository
+
 ```
 https://github.com/davidl71/ib_box_spread_full_universal
 ```
 
 ### 2. YouTube Videos (8 videos)
+
 ```
 https://www.youtube.com/watch?v=n-9bdREECTQ
 https://www.youtube.com/watch?v=5moyX0qwkCA
@@ -93,6 +103,7 @@ https://www.youtube.com/watch?v=W6OJy32sE_g&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQ
 ```
 
 ### 3. External Articles
+
 ```
 https://www.vitaltrades.com/2024/02/02/making-a-c-interactive-brokers-tws-client-with-a-custom-socket-implementation/
 ```
@@ -100,12 +111,15 @@ https://www.vitaltrades.com/2024/02/02/making-a-c-interactive-brokers-tws-client
 ## 🏷️ Notebook Metadata
 
 ### Name
+
 **TWS Automated Trading - Complete Resources**
 
 ### Description
+
 Complete knowledge base for TWS Automated Trading project including GitHub repository documentation, TWS API implementation videos, trading tutorials, and implementation articles.
 
 ### Topics
+
 - TWS API
 - Interactive Brokers
 - Options Trading
@@ -116,9 +130,11 @@ Complete knowledge base for TWS Automated Trading project including GitHub repos
 - API Integration
 
 ### Tags
+
 tws-api, trading, options, documentation, youtube, tutorial, ib-api, c++, socket-implementation, boost-asio
 
 ### Use Cases
+
 - Research TWS API implementation
 - Summarize YouTube tutorials
 - Create documentation from videos
@@ -126,6 +142,7 @@ tws-api, trading, options, documentation, youtube, tutorial, ib-api, c++, socket
 - Get code examples for TWS API
 
 ### Content Types
+
 - documentation
 - tutorial
 - video
@@ -138,21 +155,25 @@ tws-api, trading, options, documentation, youtube, tutorial, ib-api, c++, socket
 Once the notebook is added to the library, you can:
 
 ### 1. Research Topics
+
 ```
 "Research TWS API socket implementation in NotebookLM"
 ```
 
 ### 2. Summarize Videos
+
 ```
 "Summarize the TWS API video and create a summary in docs/video-summaries/tws-api-essential-components.md"
 ```
 
 ### 3. Create Documentation
+
 ```
 "Create documentation from the VitalTrades article in NotebookLM"
 ```
 
 ### 4. Get Code Examples
+
 ```
 "Research order placement API in NotebookLM before implementing"
 ```
@@ -160,6 +181,7 @@ Once the notebook is added to the library, you can:
 ## 📊 Resource Summary
 
 ### Total Resources: 10
+
 - **GitHub Repository**: 1 (47+ documentation files)
 - **YouTube Videos**: 8 videos
   - TWS API: 1 video
@@ -168,6 +190,7 @@ Once the notebook is added to the library, you can:
   - TWS API socket implementation
 
 ### Processing Time
+
 - **GitHub Repository**: 5-10 minutes
 - **YouTube Videos**: 2-5 minutes each (16-40 minutes total)
 - **External Articles**: 2-5 minutes
@@ -176,21 +199,25 @@ Once the notebook is added to the library, you can:
 ## 🛠️ Troubleshooting
 
 ### GitHub Repository Not Processing
+
 - Try adding the repository URL as a "Website" source
 - Or manually upload individual markdown files
 - Use `docs/DOCUMENTATION_INDEX.md` as a reference
 
 ### YouTube Videos Not Processing
+
 - Check that the video URLs are correct
 - Try re-adding videos individually
 - Wait longer for processing (some videos take longer)
 
 ### External Articles Not Processing
+
 - Verify the URL is accessible
 - Try adding as a "Website" source
 - Check if the article requires authentication
 
 ### Processing Takes Too Long
+
 - Be patient - large repositories can take 10-20 minutes
 - Check NotebookLM status in the browser
 - If it fails, try uploading files in smaller batches

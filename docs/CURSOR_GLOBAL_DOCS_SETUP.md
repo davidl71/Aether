@@ -50,10 +50,12 @@ Test that the global Docs are working:
 
 1. Open a new chat in Cursor
 2. Try this prompt:
+
    ```
    @docs API_DOCUMENTATION_INDEX.md
    What APIs are available in this project?
    ```
+
 3. The AI should reference the API documentation index
 
 ## Alternative: Using File Paths
@@ -61,6 +63,7 @@ Test that the global Docs are working:
 If Cursor requires absolute paths, use these (adjust for your system):
 
 ### macOS/Linux
+
 ```
 /Users/davidlowes/ib_box_spread_full_universal/docs/API_DOCUMENTATION_INDEX.md
 /Users/davidlowes/ib_box_spread_full_universal/docs/CODEBASE_ARCHITECTURE.md
@@ -73,6 +76,7 @@ If Cursor requires absolute paths, use these (adjust for your system):
 ```
 
 ### External Docs (Absolute Paths)
+
 ```
 /Users/davidlowes/ib_box_spread_full_universal/docs/external/TWS_API_QUICK_REFERENCE.md
 /Users/davidlowes/ib_box_spread_full_universal/docs/external/ECLIENT_EWRAPPER_PATTERNS.md
@@ -85,24 +89,28 @@ If Cursor requires absolute paths, use these (adjust for your system):
 After adding the docs, test with these prompts:
 
 ### Test 1: API Documentation
+
 ```
 @docs API_DOCUMENTATION_INDEX.md
 How do I connect to TWS API?
 ```
 
 ### Test 2: Architecture
+
 ```
 @docs CODEBASE_ARCHITECTURE.md
 How does the order manager work?
 ```
 
 ### Test 3: TWS API Quick Reference
+
 ```
 @docs external/TWS_API_QUICK_REFERENCE.md
 What's the EClient class structure?
 ```
 
 ### Test 4: Code Patterns
+
 ```
 @docs COMMON_PATTERNS.md
 How should I structure a new class?
@@ -111,16 +119,19 @@ How should I structure a new class?
 ## Troubleshooting
 
 ### Docs Not Found
+
 - **Check paths**: Ensure you're using the correct relative or absolute paths
 - **Check file exists**: Verify files exist at the specified paths
 - **Restart Cursor**: Sometimes Cursor needs a restart to index new docs
 
 ### AI Not Using Docs
+
 - **Be explicit**: Use `@docs` syntax explicitly in your prompts
 - **Check syntax**: Ensure `@docs filename.md` format is correct
 - **Multiple docs**: You can reference multiple: `@docs FILE1.md @docs FILE2.md`
 
 ### Can't Find Docs Setting
+
 - **Cursor version**: Ensure you're using a recent version of Cursor
 - **Search settings**: Try searching for "documentation" or "@docs" in settings
 - **Check docs**: See `docs/CURSOR_DOCS_USAGE.md` for more details

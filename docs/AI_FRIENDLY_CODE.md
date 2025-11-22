@@ -7,54 +7,66 @@ This guide describes best practices for writing code that AI assistants (like Cu
 ## Principles
 
 ### 1. **Explicit Over Implicit**
+
 AI works better with explicit, clear code than clever abstractions.
 
 **❌ Bad:**
+
 ```cpp
 auto result = process(data);
 ```
 
 **✅ Good:**
+
 ```cpp
 std::vector<BoxSpread> opportunities = strategy.scan_opportunities(option_chain);
 ```
 
 ### 2. **Self-Documenting Names**
+
 Use descriptive names that explain intent.
 
 **❌ Bad:**
+
 ```cpp
 void calc(double a, double b);
 ```
 
 **✅ Good:**
+
 ```cpp
 double calculate_arbitrage_profit(double strike_width, double net_debit);
 ```
 
 ### 3. **Type Clarity**
+
 Make types explicit, especially in function signatures.
 
 **❌ Bad:**
+
 ```cpp
 void process(const auto& item);
 ```
 
 **✅ Good:**
+
 ```cpp
 void process_order(const types::Order& order);
 ```
 
 ### 4. **Documentation Comments**
+
 Add comments explaining *why*, not *what*.
 
 **❌ Bad:**
+
 ```cpp
 // Increment counter
 counter++;
 ```
 
 **✅ Good:**
+
 ```cpp
 // Increment opportunity counter after successful scan
 // This tracks how many arbitrage opportunities we've found this session
@@ -66,6 +78,7 @@ stats_.opportunities_found++;
 ### Function Documentation
 
 **Use clear function documentation:**
+
 ```cpp
 /// Scans option chain for box spread arbitrage opportunities.
 ///
@@ -87,6 +100,7 @@ std::vector<BoxSpreadOpportunity> scan_opportunities(
 ### Class Documentation
 
 **Document class purpose and usage:**
+
 ```cpp
 /// Manages multi-leg box spread orders and tracks execution status.
 ///
@@ -107,6 +121,7 @@ class OrderManager {
 ### Inline Comments for Complex Logic
 
 **Explain non-obvious logic:**
+
 ```cpp
 // Calculate arbitrage profit: strike width minus net debit
 // Box spreads are risk-free if net debit < strike width
@@ -128,6 +143,7 @@ if (profit >= config.get_min_profit() &&
 ### Structured Error Messages
 
 **Make errors actionable:**
+
 ```cpp
 // ❌ Bad
 throw std::runtime_error("Error");
@@ -147,6 +163,7 @@ throw std::runtime_error(
 ### Error Context
 
 **Include context in error messages:**
+
 ```cpp
 if (order.status == OrderStatus::Rejected)
 {
@@ -171,6 +188,7 @@ if (order.status == OrderStatus::Rejected)
 ### Use Type Aliases for Clarity
 
 **Create type aliases for complex types:**
+
 ```cpp
 // In types.h
 using OrderId = int;
@@ -185,6 +203,7 @@ OrderId place_order(const Contract& contract, int quantity);
 ### Strong Types for Domain Concepts
 
 **Use strong types instead of primitives:**
+
 ```cpp
 // ❌ Bad
 double calculate_profit(double strike_width, double net_debit);
@@ -208,6 +227,7 @@ double calculate_profit(StrikeWidth strike_width, NetDebit net_debit);
 ### Document Configuration Options
 
 **Add comments to config files:**
+
 ```json
 {
   "tws": {
@@ -229,6 +249,7 @@ double calculate_profit(StrikeWidth strike_width, NetDebit net_debit);
 ### Document Test Intent
 
 **Explain what each test validates:**
+
 ```cpp
 TEST_CASE("Box spread profit calculation with valid inputs", "[strategy][profit]")
 {
@@ -262,6 +283,7 @@ TEST_CASE("Risk limits prevent oversized positions", "[risk][limits]")
 ### Group Related Code
 
 **Keep related functionality together:**
+
 ```cpp
 // ============================================================================
 // Connection Management
@@ -289,6 +311,7 @@ void TWSClient::cancel_order(int order_id) { /* ... */ }
 ### Use Section Comments
 
 **Organize large files with section comments:**
+
 ```cpp
 // ============================================================================
 // Public Interface
@@ -308,6 +331,7 @@ void TWSClient::cancel_order(int order_id) { /* ... */ }
 ### Use Domain Language
 
 **Use trading/finance terminology:**
+
 ```cpp
 // ✅ Good - uses domain language
 double calculate_net_debit(const BoxSpread& spread);
@@ -322,6 +346,7 @@ double get_diff(double x, double y);
 ### Be Consistent
 
 **Use consistent naming patterns:**
+
 ```cpp
 // All getters use "get_" prefix
 double get_strike_width() const;
@@ -339,6 +364,7 @@ bool validate_risk_limits(double position_size) const;
 ### Provide Usage Examples
 
 **Include examples in documentation:**
+
 ```cpp
 /// Creates a box spread order from a box spread opportunity.
 ///

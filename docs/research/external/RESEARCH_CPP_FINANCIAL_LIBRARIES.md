@@ -9,6 +9,7 @@
 This document analyzes 10 C++ financial software resources for potential integration with the IBKR box spread trading application. The analysis focuses on relevance to box spread trading, compatibility with C++20, integration complexity, and alignment with existing project architecture.
 
 **Key Findings:**
+
 - **QuantLib** and **Eigen** are highest priority for integration
 - **Option Pricer (GitHub)** provides lighter-weight alternative to QuantLib
 - **NLopt** useful for convexity optimization in portfolio allocation
@@ -19,7 +20,7 @@ This document analyzes 10 C++ financial software resources for potential integra
 
 ## Resource Analysis
 
-### 1. QuantLib (https://www.quantlib.org/)
+### 1. QuantLib (<https://www.quantlib.org/>)
 
 **Type:** Open-source C++ library
 **License:** BSD 3-Clause
@@ -29,6 +30,7 @@ This document analyzes 10 C++ financial software resources for potential integra
 QuantLib is the industry-standard C++ library for quantitative finance, providing comprehensive tools for derivatives pricing, risk management, portfolio optimization, and yield curve modeling.
 
 **Key Features:**
+
 - Black-Scholes, binomial trees, Monte Carlo methods
 - Greeks calculations (Delta, Gamma, Vega, Theta, Rho)
 - Volatility surfaces and term structure modeling
@@ -37,18 +39,21 @@ QuantLib is the industry-standard C++ library for quantitative finance, providin
 - Calendar and day-count conventions
 
 **Relevance to Box Spread Trading:**
+
 - ✅ **High:** Could replace or enhance existing option pricing logic
 - ✅ **Greeks Calculations:** Comprehensive Greeks for portfolio risk management
 - ✅ **Volatility Modeling:** Useful for volatility skew analysis in investment strategy
 - ✅ **Yield Curves:** Supports T-bill rate calculations and cash allocation decisions
 
 **Technical Compatibility:**
+
 - **C++ Standard:** C++17+ (compatible with C++20)
 - **CMake Support:** Yes, well-integrated with CMake
 - **Dependencies:** Boost (date_time, filesystem, system), may require additional math libraries
 - **Build Complexity:** Moderate (large library, but well-documented build process)
 
 **Integration Considerations:**
+
 - **Pros:**
   - Industry standard, widely used and tested
   - Comprehensive documentation and examples
@@ -60,6 +65,7 @@ QuantLib is the industry-standard C++ library for quantitative finance, providin
   - May be overkill if only need basic option pricing
 
 **Use Cases in Project:**
+
 1. Enhanced option pricing for box spreads (replace current Black-Scholes implementation)
 2. Portfolio Greeks aggregation (see `docs/PORTFOLIO_GREEKS_SYSTEM.md`)
 3. Volatility surface modeling for skew analysis
@@ -80,6 +86,7 @@ QuantLib is the industry-standard C++ library for quantitative finance, providin
 High-performance C++ library specifically designed for option pricing, implementing European, American, and exotic options with efficient algorithms.
 
 **Key Features:**
+
 - Black-Scholes implementation
 - Binomial tree methods
 - Monte Carlo simulation
@@ -87,17 +94,20 @@ High-performance C++ library specifically designed for option pricing, implement
 - Exotic options support
 
 **Relevance to Box Spread Trading:**
+
 - ✅ **High:** Directly applicable to box spread option pricing
 - ✅ **Performance:** Optimized for real-time trading systems
 - ✅ **Simplicity:** Lighter weight than QuantLib
 
 **Technical Compatibility:**
+
 - **C++ Standard:** Need to verify (likely C++17+)
 - **CMake Support:** Need to verify repository structure
 - **Dependencies:** Likely minimal (verify in repository)
 - **Build Complexity:** Likely low (smaller library)
 
 **Integration Considerations:**
+
 - **Pros:**
   - Focused on option pricing (no unnecessary features)
   - Likely easier to integrate than QuantLib
@@ -108,6 +118,7 @@ High-performance C++ library specifically designed for option pricing, implement
   - Need to verify license compatibility
 
 **Use Cases in Project:**
+
 1. Alternative to QuantLib for basic option pricing
 2. Performance-critical pricing calculations
 3. Lightweight option pricing module
@@ -116,7 +127,7 @@ High-performance C++ library specifically designed for option pricing, implement
 
 ---
 
-### 3. C++ for Quants (https://cppforquants.com/)
+### 3. C++ for Quants (<https://cppforquants.com/>)
 
 **Type:** Educational resource / library overview
 **License:** N/A (website)
@@ -126,23 +137,27 @@ High-performance C++ library specifically designed for option pricing, implement
 Comprehensive guide and resource platform for C++ quantitative finance development, covering essential libraries, best practices, and implementation patterns.
 
 **Key Resources:**
+
 - Library overviews (QuantLib, Eigen, Boost, NLopt)
 - Tutorials and code examples
 - Best practices for quant development
 - Performance optimization techniques
 
 **Relevance to Box Spread Trading:**
+
 - ✅ **High:** Educational resource for library selection
 - ✅ **Eigen:** Linear algebra for portfolio optimization
 - ✅ **NLopt:** Optimization for convexity calculations
 - ✅ **Best Practices:** Industry patterns and conventions
 
 **Technical Compatibility:**
+
 - **C++ Standard:** Varies by library (all C++17+ compatible)
 - **CMake Support:** Varies by library
 - **Dependencies:** Library-specific
 
 **Integration Considerations:**
+
 - **Pros:**
   - Comprehensive library ecosystem overview
   - Practical examples and patterns
@@ -152,6 +167,7 @@ Comprehensive guide and resource platform for C++ quantitative finance developme
   - Need to integrate individual libraries separately
 
 **Use Cases in Project:**
+
 1. Reference for library selection decisions
 2. Implementation patterns for portfolio optimization
 3. Best practices for quantitative finance development
@@ -170,6 +186,7 @@ Comprehensive guide and resource platform for C++ quantitative finance developme
 High-performance C++ template library for linear algebra, providing efficient matrix and vector operations, numerical solvers, and related algorithms.
 
 **Key Features:**
+
 - Matrix and vector operations
 - Linear system solvers
 - Eigenvalue/eigenvector calculations
@@ -177,17 +194,20 @@ High-performance C++ template library for linear algebra, providing efficient ma
 - Expression templates for optimization
 
 **Relevance to Box Spread Trading:**
+
 - ✅ **High:** Essential for portfolio optimization calculations
 - ✅ **Convexity Optimization:** Matrix operations for barbell strategy calculations
 - ✅ **Portfolio Allocation:** Linear algebra for allocation algorithms
 
 **Technical Compatibility:**
+
 - **C++ Standard:** C++03+ (fully compatible with C++20)
 - **CMake Support:** Yes, excellent CMake integration
 - **Dependencies:** None (header-only or minimal)
 - **Build Complexity:** Low (header-only option available)
 
 **Integration Considerations:**
+
 - **Pros:**
   - Header-only option (no linking required)
   - Excellent performance (expression templates)
@@ -198,6 +218,7 @@ High-performance C++ template library for linear algebra, providing efficient ma
   - Learning curve for advanced features
 
 **Use Cases in Project:**
+
 1. Portfolio allocation matrix calculations (see `docs/INVESTMENT_STRATEGY_FRAMEWORK.md`)
 2. Convexity optimization for barbell strategy
 3. Risk metric calculations (covariance matrices, correlation)
@@ -217,23 +238,27 @@ High-performance C++ template library for linear algebra, providing efficient ma
 Library for nonlinear optimization, providing a common interface for various optimization algorithms (gradient-based, derivative-free, global optimization).
 
 **Key Features:**
+
 - Multiple optimization algorithms (L-BFGS, Nelder-Mead, etc.)
 - Constrained and unconstrained optimization
 - Global optimization methods
 - Gradient-based and derivative-free options
 
 **Relevance to Box Spread Trading:**
+
 - ✅ **Medium-High:** Useful for convexity optimization
 - ✅ **Portfolio Rebalancing:** Optimization algorithms for allocation decisions
 - ✅ **Risk Optimization:** Constrained optimization for risk limits
 
 **Technical Compatibility:**
+
 - **C++ Standard:** C++11+ (compatible with C++20)
 - **CMake Support:** Yes
 - **Dependencies:** Minimal (may require math libraries)
 - **Build Complexity:** Low to moderate
 
 **Integration Considerations:**
+
 - **Pros:**
   - Comprehensive optimization algorithms
   - Well-documented
@@ -243,6 +268,7 @@ Library for nonlinear optimization, providing a common interface for various opt
   - Learning curve for algorithm selection
 
 **Use Cases in Project:**
+
 1. Convexity optimization for barbell strategy (see `docs/INVESTMENT_STRATEGY_FRAMEWORK.md`)
 2. Portfolio rebalancing optimization
 3. Spare cash allocation optimization
@@ -252,7 +278,7 @@ Library for nonlinear optimization, providing a common interface for various opt
 
 ---
 
-### 6. OnixS C++ FIX Engine (https://www.onixs.biz/cpp-fix-engine.html)
+### 6. OnixS C++ FIX Engine (<https://www.onixs.biz/cpp-fix-engine.html>)
 
 **Type:** Commercial C++ library
 **License:** Commercial (paid license required)
@@ -262,6 +288,7 @@ Library for nonlinear optimization, providing a common interface for various opt
 High-performance C++ implementation of the Financial Information eXchange (FIX) protocol, enabling direct market access and electronic trading.
 
 **Key Features:**
+
 - FIX protocol 4.0-5.0 support
 - Low-latency message handling
 - Session management
@@ -269,17 +296,20 @@ High-performance C++ implementation of the Financial Information eXchange (FIX) 
 - Multi-threaded architecture
 
 **Relevance to Box Spread Trading:**
+
 - ⚠️ **Low:** TWS API already integrated, FIX engine redundant unless expanding to other brokers
 - ⚠️ **Alternative Trading:** Could enable direct market access (bypass TWS API)
 - ⚠️ **Latency:** Lower latency than TWS API, but TWS API sufficient for box spreads
 
 **Technical Compatibility:**
+
 - **C++ Standard:** C++11+ (compatible with C++20)
 - **CMake Support:** Yes (commercial libraries typically support CMake)
 - **Dependencies:** Platform-specific (verify)
 - **Build Complexity:** Low (commercial library, pre-built or well-documented)
 
 **Integration Considerations:**
+
 - **Pros:**
   - Lower latency than TWS API
   - Direct market access
@@ -291,6 +321,7 @@ High-performance C++ implementation of the Financial Information eXchange (FIX) 
   - May require broker-specific FIX connectivity setup
 
 **Use Cases in Project:**
+
 1. Alternative to TWS API for direct market access (future consideration)
 2. Multi-broker support (if expanding beyond IBKR)
 3. High-frequency trading (if latency becomes critical)
@@ -299,7 +330,7 @@ High-performance C++ implementation of the Financial Information eXchange (FIX) 
 
 ---
 
-### 7. StockChartX C++ (https://www.modulusfe.com/products/stock-chart-library/stockchartx-cpp/)
+### 7. StockChartX C++ (<https://www.modulusfe.com/products/stock-chart-library/stockchartx-cpp/>)
 
 **Type:** Commercial C++ library
 **License:** Commercial (paid license required)
@@ -309,6 +340,7 @@ High-performance C++ implementation of the Financial Information eXchange (FIX) 
 C++ library for creating financial charts and technical analysis visualization, providing chart types, technical indicators, and real-time data display.
 
 **Key Features:**
+
 - Multiple chart types (candlestick, bar, line)
 - 80+ technical indicators
 - Real-time data updates
@@ -316,17 +348,20 @@ C++ library for creating financial charts and technical analysis visualization, 
 - Cross-platform support
 
 **Relevance to Box Spread Trading:**
+
 - ⚠️ **Low:** Current project focuses on CLI/TUI, not GUI visualization
 - ⚠️ **Future Consideration:** Only if adding GUI or web interface
 - ⚠️ **Not Critical:** Technical analysis not core to box spread strategy
 
 **Technical Compatibility:**
+
 - **C++ Standard:** Need to verify (likely C++11+)
 - **CMake Support:** Likely yes (commercial library)
 - **Dependencies:** Graphics libraries (verify)
 - **Build Complexity:** Low to moderate
 
 **Integration Considerations:**
+
 - **Pros:**
   - Comprehensive charting capabilities
   - Real-time updates
@@ -338,6 +373,7 @@ C++ library for creating financial charts and technical analysis visualization, 
   - May require graphics framework (Qt, etc.)
 
 **Use Cases in Project:**
+
 1. Future GUI development (if expanding beyond CLI/TUI)
 2. Web interface visualization (if adding web frontend)
 3. Technical analysis tools (if adding charting features)
@@ -356,6 +392,7 @@ C++ library for creating financial charts and technical analysis visualization, 
 Tutorial article demonstrating how to fetch fundamental and technical stock data in C++ using APIs (specifically Financial Modeling Prep API).
 
 **Key Topics:**
+
 - HTTP client implementation in C++
 - JSON parsing and data extraction
 - API authentication patterns
@@ -363,16 +400,19 @@ Tutorial article demonstrating how to fetch fundamental and technical stock data
 - Error handling
 
 **Relevance to Box Spread Trading:**
+
 - ✅ **Medium:** Useful patterns for additional data sources
 - ✅ **API Integration:** Patterns for integrating external data APIs
 - ✅ **Data Fetching:** Techniques for market data retrieval
 
 **Technical Compatibility:**
+
 - **C++ Standard:** Varies by implementation (article examples)
 - **CMake Support:** N/A (article, not library)
 - **Dependencies:** HTTP client library, JSON parser (nlohmann/json already in project)
 
 **Integration Considerations:**
+
 - **Pros:**
   - Practical implementation patterns
   - Real-world examples
@@ -383,6 +423,7 @@ Tutorial article demonstrating how to fetch fundamental and technical stock data
   - Need to adapt to project's existing HTTP client (if any)
 
 **Use Cases in Project:**
+
 1. Reference for integrating additional data sources
 2. API integration patterns
 3. Data fetching implementation examples
@@ -391,7 +432,7 @@ Tutorial article demonstrating how to fetch fundamental and technical stock data
 
 ---
 
-### 9. UnoAPI Quantitative Finance Interface (https://unoapi.org/20-quant-finance/qfi.html)
+### 9. UnoAPI Quantitative Finance Interface (<https://unoapi.org/20-quant-finance/qfi.html>)
 
 **Type:** Modern C++ parallel computing framework
 **License:** Need to verify (likely Apache 2.0 or similar)
@@ -401,23 +442,27 @@ Tutorial article demonstrating how to fetch fundamental and technical stock data
 Modern parallel C++ programming framework for quantitative finance using SYCL/oneAPI, focusing on GPU acceleration and heterogeneous computing.
 
 **Key Features:**
+
 - SYCL/oneAPI for parallel computing
 - GPU acceleration for financial calculations
 - Heterogeneous computing (CPU + GPU)
 - Performance optimization for large-scale calculations
 
 **Relevance to Box Spread Trading:**
+
 - ⚠️ **Low:** Premature optimization for current box spread focus
 - ⚠️ **Future Consideration:** Only if performance becomes bottleneck
 - ⚠️ **Complexity:** Adds GPU dependencies and SYCL learning curve
 
 **Technical Compatibility:**
+
 - **C++ Standard:** C++17+ (SYCL/oneAPI requirements)
 - **CMake Support:** Yes (oneAPI toolkits provide CMake support)
 - **Dependencies:** Intel oneAPI toolkit, GPU hardware, SYCL runtime
 - **Build Complexity:** High (requires GPU setup, oneAPI installation)
 
 **Integration Considerations:**
+
 - **Pros:**
   - Significant performance gains for large-scale calculations
   - Modern parallel computing approach
@@ -429,6 +474,7 @@ Modern parallel C++ programming framework for quantitative finance using SYCL/on
   - Learning curve for parallel computing
 
 **Use Cases in Project:**
+
 1. Portfolio optimization acceleration (if portfolio becomes very large)
 2. Monte Carlo simulation acceleration (if adding advanced pricing)
 3. Greeks calculation acceleration (if calculating for many positions)
@@ -448,6 +494,7 @@ Modern parallel C++ programming framework for quantitative finance using SYCL/on
 Article discussing C++ advantages in financial software development, covering performance benefits, algorithmic trading strategies, backtesting, and quantitative finance modeling.
 
 **Key Topics:**
+
 - C++ performance advantages in finance
 - Multi-core processing benefits
 - Static typing advantages
@@ -455,16 +502,19 @@ Article discussing C++ advantages in financial software development, covering pe
 - Algorithmic trading patterns
 
 **Relevance to Box Spread Trading:**
+
 - ✅ **Medium:** Validates C++ choice for trading applications
 - ✅ **Best Practices:** Industry patterns and conventions
 - ✅ **Context:** Understanding C++ role in finance industry
 
 **Technical Compatibility:**
+
 - **C++ Standard:** N/A (article, not library)
 - **CMake Support:** N/A
 - **Dependencies:** N/A
 
 **Integration Considerations:**
+
 - **Pros:**
   - Validates project's technology choices
   - Industry context and best practices
@@ -474,6 +524,7 @@ Article discussing C++ advantages in financial software development, covering pe
   - May reference general patterns (not specific implementations)
 
 **Use Cases in Project:**
+
 1. Validation of C++ technology choice
 2. Industry best practices reference
 3. Performance optimization insights
@@ -513,12 +564,14 @@ Article discussing C++ advantages in financial software development, covering pe
 ### Phase 1: Core Libraries (Immediate)
 
 **1. Eigen (Linear Algebra)**
+
 - **Rationale:** Essential for portfolio optimization calculations
 - **Integration:** Header-only option (minimal integration complexity)
 - **Use Cases:** Portfolio allocation matrix operations, convexity calculations
 - **CMake Integration:** Add via `FetchContent` or `find_package`
 
 **2. QuantLib (Option Pricing & Risk)**
+
 - **Rationale:** Industry standard, comprehensive features
 - **Integration:** Add via CMake `FetchContent` or system installation
 - **Use Cases:** Enhanced option pricing, Greeks calculations, volatility modeling
@@ -527,6 +580,7 @@ Article discussing C++ advantages in financial software development, covering pe
 ### Phase 2: Optimization (Near-term)
 
 **3. NLopt (Optimization)**
+
 - **Rationale:** Useful for convexity optimization and portfolio rebalancing
 - **Integration:** Add via CMake `FetchContent` or system installation
 - **Use Cases:** Barbell strategy optimization, spare cash allocation optimization
@@ -535,6 +589,7 @@ Article discussing C++ advantages in financial software development, covering pe
 ### Phase 3: Alternatives (Evaluate)
 
 **4. Option Pricer (GitHub)**
+
 - **Rationale:** Lighter alternative to QuantLib if QuantLib proves too complex
 - **Integration:** Evaluate as fallback option
 - **Use Cases:** Basic option pricing if QuantLib integration fails
@@ -543,16 +598,19 @@ Article discussing C++ advantages in financial software development, covering pe
 ### Phase 4: Future Considerations
 
 **5. OnixS FIX Engine**
+
 - **Rationale:** Only if expanding beyond TWS API or requiring lower latency
 - **Integration:** Commercial license required, evaluate cost-benefit
 - **Use Cases:** Multi-broker support, direct market access
 
 **6. StockChartX**
+
 - **Rationale:** Only if adding GUI or web interface
 - **Integration:** Commercial license required, evaluate need
 - **Use Cases:** Visualization, technical analysis tools
 
 **7. UnoAPI/SYCL**
+
 - **Rationale:** Only if performance becomes critical bottleneck
 - **Integration:** High complexity, requires GPU hardware
 - **Use Cases:** Large-scale portfolio optimization, Monte Carlo acceleration
@@ -622,6 +680,7 @@ target_link_libraries(ib_box_spread PRIVATE NLopt::nlopt)
 ### C++20 Compatibility
 
 All recommended libraries are compatible with C++20:
+
 - **QuantLib:** C++17+ (fully compatible)
 - **Eigen:** C++03+ (fully compatible)
 - **NLopt:** C++11+ (fully compatible)
@@ -630,6 +689,7 @@ All recommended libraries are compatible with C++20:
 ### Existing Project Dependencies
 
 Current project dependencies:
+
 - TWS API (Protocol Buffers, Intel Decimal, Abseil)
 - nlohmann/json
 - spdlog
@@ -637,6 +697,7 @@ Current project dependencies:
 - Catch2
 
 **Compatibility Notes:**
+
 - QuantLib may require Boost (adds dependency, but Boost is widely used)
 - Eigen is header-only (no linking conflicts)
 - NLopt is standalone (no conflicts)
@@ -645,12 +706,14 @@ Current project dependencies:
 ### Build System Integration
 
 Project uses:
+
 - CMake 3.21+
 - C++20 standard
 - Ninja generator (optional)
 - Universal binary builds (macOS)
 
 **Integration Strategy:**
+
 - Use `FetchContent` for automatic dependency management
 - Or use system-installed libraries via `find_package`
 - Maintain compatibility with existing build presets
@@ -660,6 +723,7 @@ Project uses:
 ## License Compatibility
 
 ### Project License
+
 Need to verify project license (check LICENSE file or repository).
 
 ### Library Licenses
@@ -680,21 +744,25 @@ Need to verify project license (check LICENSE file or repository).
 ## Performance Considerations
 
 ### QuantLib
+
 - **Performance:** Excellent for complex calculations, may be slower for simple operations
 - **Memory:** Moderate (large library, but efficient)
 - **Compile Time:** May increase due to template usage
 
 ### Eigen
+
 - **Performance:** Excellent (expression templates optimize operations)
 - **Memory:** Low (header-only, efficient)
 - **Compile Time:** May increase due to template-heavy code
 
 ### NLopt
+
 - **Performance:** Good (optimized algorithms)
 - **Memory:** Low to moderate
 - **Compile Time:** Low (C library with C++ wrapper)
 
 ### Option Pricer
+
 - **Performance:** Need to verify (likely optimized for speed)
 - **Memory:** Likely low (focused library)
 - **Compile Time:** Likely low
@@ -706,14 +774,17 @@ Need to verify project license (check LICENSE file or repository).
 ### Integration Risks
 
 **High Risk:**
+
 - QuantLib: Large library, Boost dependency, potential build complexity
 - UnoAPI/SYCL: High complexity, GPU requirements, learning curve
 
 **Medium Risk:**
+
 - NLopt: Algorithm selection complexity, may be overkill for simple tasks
 - Option Pricer: Need to verify license and maintenance status
 
 **Low Risk:**
+
 - Eigen: Header-only, minimal integration complexity
 - Reference resources: No integration risk (educational only)
 
@@ -748,19 +819,19 @@ Need to verify project license (check LICENSE file or repository).
 
 ### Short-term Actions
 
-4. **NLopt Evaluation:**
+1. **NLopt Evaluation:**
    - Test optimization algorithms
    - Evaluate for convexity optimization use case
    - Compare with simpler optimization approaches
 
-5. **Documentation Updates:**
+2. **Documentation Updates:**
    - Update `docs/API_DOCUMENTATION_INDEX.md` with new libraries
    - Document integration patterns
    - Add usage examples
 
 ### Long-term Considerations
 
-6. **Commercial Libraries:**
+1. **Commercial Libraries:**
    - Evaluate OnixS FIX if expanding beyond TWS API
    - Consider StockChartX if adding GUI
    - Assess UnoAPI/SYCL if performance becomes critical
@@ -769,15 +840,15 @@ Need to verify project license (check LICENSE file or repository).
 
 ## References
 
-1. **QuantLib:** https://www.quantlib.org/
-2. **Eigen:** https://eigen.tuxfamily.org/
-3. **NLopt:** https://nlopt.readthedocs.io/
-4. **Option Pricer:** https://github.com/anthonymakarewicz/option-pricer
-5. **C++ for Quants:** https://cppforquants.com/
-6. **OnixS FIX Engine:** https://www.onixs.biz/cpp-fix-engine.html
-7. **StockChartX:** https://www.modulusfe.com/products/stock-chart-library/stockchartx-cpp/
-8. **UnoAPI QFI:** https://unoapi.org/20-quant-finance/qfi.html
-9. **Quantum Zeitgeist:** https://quantumzeitgeist.com/c-financial-software/
+1. **QuantLib:** <https://www.quantlib.org/>
+2. **Eigen:** <https://eigen.tuxfamily.org/>
+3. **NLopt:** <https://nlopt.readthedocs.io/>
+4. **Option Pricer:** <https://github.com/anthonymakarewicz/option-pricer>
+5. **C++ for Quants:** <https://cppforquants.com/>
+6. **OnixS FIX Engine:** <https://www.onixs.biz/cpp-fix-engine.html>
+7. **StockChartX:** <https://www.modulusfe.com/products/stock-chart-library/stockchartx-cpp/>
+8. **UnoAPI QFI:** <https://unoapi.org/20-quant-finance/qfi.html>
+9. **Quantum Zeitgeist:** <https://quantumzeitgeist.com/c-financial-software/>
 10. **Project Documentation:** `docs/INVESTMENT_STRATEGY_FRAMEWORK.md`, `docs/PORTFOLIO_GREEKS_SYSTEM.md`
 
 ---

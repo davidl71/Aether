@@ -260,7 +260,7 @@ for transaction in transactions {
 
 ## References
 
-1. Ledger CLI Format: https://ledger-cli.org/3.0/doc/ledger3.html
+1. Ledger CLI Format: <https://ledger-cli.org/3.0/doc/ledger3.html>
 2. Export Guide: `docs/LEDGER_PERSISTENCE_USAGE.md`
 3. Integration Guide: `docs/LEDGER_INTEGRATION_GUIDE.md`
 4. Import Module: `agents/backend/crates/ledger/src/import.rs`

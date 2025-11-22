@@ -19,6 +19,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Target Audience**: Aspirational quants and individual systematic investors
 
 **Features**:
+
 - **✓ Limited Access**: 100+ essential Premium strategies (out of 900+)
 - **✓ Essential Portfolio Modeling**: Basic modeling tools
 - **✕ Research Papers**: No access to 1000s of research papers
@@ -26,6 +27,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 - **✕ Regular Updates**: Irregular updates (no regular new features)
 
 **Strategy Categories**:
+
 - Tactical asset allocation
 - Simple market timing
 - Seasonality strategies
@@ -41,6 +43,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Target Audience**: Adept quants and professionals
 
 **Features**:
+
 - **✓ Full Access**: All 900+ Premium strategies
 - **✓ Essential Portfolio Modeling**: Essential modeling tools
 - **✓ Research Papers**: 1000s of research papers
@@ -48,6 +51,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 - **✓ Regular Updates**: 10-15 new strategies added monthly
 
 **Strategy Categories**:
+
 - Arbitrage strategies
 - Asset allocation
 - Stock picking
@@ -66,6 +70,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Target Audience**: Quants and portfolio managers
 
 **Features**:
+
 - **✓ Full Access**: All 900+ Premium strategies
 - **✓ Full Portfolio Modeling**: Advanced multi-factor multi-strategy portfolio builder
 - **✓ Research Papers**: 1000s of research papers
@@ -74,6 +79,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 - **✓ AI Chatbot**: Personal quant assistant trained on QuantPedia database
 
 **Advanced Features**:
+
 - **Portfolio Manager**: Unrestricted multi-factor multi-strategy portfolio builder
 - **Custom Benchmarks**: Create custom benchmarks for portfolio analysis
 - **30+ Quant Reports**: Factor regression analysis, risk scenarios, VaR, clustering, Monte Carlo, alternative weighting schemes
@@ -93,16 +99,19 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Total Database**: 900+ Premium strategies
 
 **Content Per Strategy**:
+
 - Short description
 - Performance characteristics
 - Risk characteristics
 - Links to source academic papers
 
 **Update Frequency**:
+
 - **Prime**: Irregular updates
 - **Premium/Pro**: 10-15 new strategies monthly (bi-weekly additions)
 
 **Strategy Categories**:
+
 - Arbitrage strategies (relevant for box spreads)
 - Asset allocation
 - Stock picking
@@ -117,6 +126,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Total Database**: 2000+ links to academic research papers
 
 **Access**:
+
 - **Prime**: ✕ No access
 - **Premium**: ✓ Full access
 - **Pro**: ✓ Full access
@@ -128,6 +138,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Total Database**: 800+ out-of-sample backtests
 
 **Content Per Backtest**:
+
 - Equity curves
 - Statistics
 - Complete Python code
@@ -143,6 +154,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Charts and Tables**: 400+ charts and tables in thematically focused reports
 
 **Analysis Capabilities**:
+
 - Model portfolio analysis
 - Performance visualization
 - Relationship analysis
@@ -151,6 +163,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 - Market risks
 
 **Access**:
+
 - **Prime**: Essential Portfolio Modeling
 - **Premium**: Essential Portfolio Modeling
 - **Pro**: Full Portfolio Modeling (advanced features)
@@ -160,6 +173,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 ### 5. QuantPedia Pro Reports (Pro Only)
 
 **30+ Advanced Reports**:
+
 - Factor regression analysis
 - Risk scenarios
 - VaR (Value at Risk)
@@ -169,6 +183,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 - And many more
 
 **Portfolio Manager Features**:
+
 - Unrestricted multi-factor multi-strategy portfolio builder
 - Custom benchmarks
 - Advanced analysis tools
@@ -176,6 +191,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 ### 6. AI Chatbot (Pro Only)
 
 **Features**:
+
 - Personal quant assistant
 - Trained on extensive QuantPedia database
 - Strategy research assistance
@@ -190,6 +206,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Relevance**: ✅ High
 
 **Content**:
+
 - Arbitrage strategy ideas from academic research
 - Performance and risk characteristics
 - Academic papers on arbitrage
@@ -202,6 +219,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Relevance**: ✅ High
 
 **Content**:
+
 - Options-based trading strategies
 - Academic research on options
 - Backtest examples with Python code
@@ -214,6 +232,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Relevance**: ✅ High
 
 **Content**:
+
 - 800+ out-of-sample backtests
 - Complete Python code
 - Equity curves and statistics
@@ -225,6 +244,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Relevance**: ⚠️ Moderate
 
 **Content**:
+
 - Portfolio modeling tools
 - Risk analysis
 - Factor exposures
@@ -237,6 +257,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Relevance**: ✅ High
 
 **Content**:
+
 - 2000+ links to academic papers
 - Strategy research
 - Performance analysis
@@ -264,6 +285,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 ### Best Value: QuantPedia Pro
 
 **Why Pro is Best Value**:
+
 - Full access to all strategies and research
 - Advanced portfolio analysis tools
 - 30+ Quant Reports for deep analysis
@@ -279,11 +301,13 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Scenario**: Research arbitrage and options strategies
 
 **Tools Needed**:
+
 - Premium or Pro subscription (full strategy access)
 - Research papers access
 - Strategy screener
 
 **Benefits**:
+
 - Discover arbitrage strategies similar to box spreads
 - Understand performance characteristics
 - Learn from academic research
@@ -294,10 +318,12 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Scenario**: Learn backtesting techniques for box spreads
 
 **Tools Needed**:
+
 - Premium or Pro subscription (backtest access)
 - Python code examples
 
 **Benefits**:
+
 - Learn backtesting methodologies
 - Adapt Python code for box spreads
 - Understand performance metrics
@@ -308,9 +334,11 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Scenario**: Deep dive into academic papers on arbitrage
 
 **Tools Needed**:
+
 - Premium or Pro subscription (research papers access)
 
 **Benefits**:
+
 - Access to 2000+ academic papers
 - Research on arbitrage strategies
 - Options pricing theory
@@ -321,9 +349,11 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Scenario**: Analyze box spread portfolio performance
 
 **Tools Needed**:
+
 - Pro subscription (full portfolio modeling)
 
 **Benefits**:
+
 - Advanced portfolio analysis
 - Risk scenario analysis
 - Factor regression
@@ -335,10 +365,12 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Scenario**: Develop new box spread variations
 
 **Tools Needed**:
+
 - Premium or Pro subscription
 - AI Chatbot (Pro only)
 
 **Benefits**:
+
 - Research similar strategies
 - Understand performance patterns
 - AI assistance for research
@@ -351,11 +383,13 @@ QuantPedia is a subscription-based research platform providing access to quantit
 ### Subscription Plans
 
 **Pricing Pages**:
+
 - **Prime**: <https://quantpedia.com/prime-pricing>
 - **Premium**: <https://quantpedia.com/premium-pricing>
 - **Pro**: <https://quantpedia.com/pro-pricing>
 
 **Payment Options**:
+
 - Credit/debit card
 - PayPal
 - Bank/wire transfer (contact for invoice)
@@ -368,12 +402,14 @@ QuantPedia is a subscription-based research platform providing access to quantit
 ### Upgrades
 
 **Upgrade Process**: Contact QuantPedia to upgrade from Prime/Premium to higher tier
+
 - Pay only the difference between plans
 - Contact via contact form
 
 ### Subscription Renewal
 
 **Important**: Subscriptions **will NOT be automatically renewed** after pre-paid period ends
+
 - Account remains but loses access to Premium/Pro content
 - Manual renewal required
 
@@ -420,12 +456,14 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Recommended Tier**: **QuantPedia Premium** or **Pro**
 
 **Rationale**:
+
 - Full access to 900+ strategies (including arbitrage)
 - Access to research papers (2000+)
 - Backtest examples with Python code
 - Regular updates with new strategies
 
 **Premium vs. Pro**:
+
 - **Premium**: Good for strategy research and backtesting
 - **Pro**: Best for advanced portfolio analysis and AI assistance
 
@@ -434,6 +472,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Recommended Tier**: **QuantPedia Premium** or **Pro**
 
 **Rationale**:
+
 - Access to 2000+ academic research papers
 - Links to source papers for strategies
 - Research on arbitrage and options strategies
@@ -443,6 +482,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 **Recommended Tier**: **QuantPedia Pro**
 
 **Rationale**:
+
 - Full portfolio modeling tools
 - 30+ advanced Quant Reports
 - Factor regression, VaR, Monte Carlo
@@ -470,6 +510,7 @@ QuantPedia is a subscription-based research platform providing access to quantit
 ### Value Assessment
 
 **For Box Spread Trading**:
+
 - **High Value**: Arbitrage strategy research, academic papers, backtest examples
 - **Moderate Value**: Portfolio analysis tools (if managing multiple strategies)
 - **Low Value**: Non-arbitrage strategies, crypto strategies

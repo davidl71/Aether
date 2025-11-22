@@ -1,0 +1,80 @@
+{
+  "automation_name": "Dependency Security Scan",
+  "output_file": "docs/DEPENDENCY_SECURITY_REPORT.md",
+  "log_file": "scripts/dependency_security.log",
+  "scan_configs": {
+    "python": {
+      "enabled": true,
+      "files": [
+        "requirements.txt",
+        "python/pyproject.toml",
+        "agents/backend/python/pyproject.toml"
+      ],
+      "tools": {
+        "osv_scanner": {
+          "enabled": true,
+          "command": "osv-scanner",
+          "args": ["--format", "json"]
+        },
+        "pip_audit": {
+          "enabled": true,
+          "command": "pip-audit",
+          "args": ["--format", "json", "--desc"]
+        }
+      }
+    },
+    "rust": {
+      "enabled": true,
+      "files": [
+        "agents/backend/Cargo.toml"
+      ],
+      "tools": {
+        "cargo_audit": {
+          "enabled": true,
+          "command": "cargo-audit",
+          "args": ["audit", "--json"]
+        },
+        "osv_scanner": {
+          "enabled": true,
+          "command": "osv-scanner",
+          "args": ["--format", "json"]
+        }
+      }
+    },
+    "npm": {
+      "enabled": true,
+      "files": [
+        "web/package.json"
+      ],
+      "tools": {
+        "npm_audit": {
+          "enabled": true,
+          "command": "npm",
+          "args": ["audit", "--json"]
+        },
+        "osv_scanner": {
+          "enabled": true,
+          "command": "osv-scanner",
+          "args": ["--format", "json"]
+        }
+      }
+    }
+  },
+  "severity_levels": {
+    "critical": 4,
+    "high": 3,
+    "medium": 2,
+    "low": 1,
+    "info": 0
+  },
+  "create_todo2_tasks": {
+    "enabled": true,
+    "min_severity": "high",
+    "max_tasks": 10
+  },
+  "trend_tracking": {
+    "enabled": true,
+    "history_file": "scripts/.dependency_security_history.json",
+    "max_history_days": 90
+  }
+}

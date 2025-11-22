@@ -25,6 +25,7 @@ If you see 99 installed extensions but the CLI only shows a few, you need to che
 ### Method 2: Check Extension Settings File
 
 VS Code stores extension information in:
+
 - **macOS**: `~/Library/Application Support/Code/User/globalStorage/storage.json`
 - **Windows**: `%APPDATA%\Code\User\globalStorage\storage.json`
 - **Linux**: `~/.config/Code/User/globalStorage/storage.json`
@@ -36,6 +37,7 @@ VS Code stores extension information in:
 These extensions should be **disabled globally** and **enabled only in this workspace**:
 
 #### Language Extensions
+
 - C++: `ms-vscode.cpptools`, `ms-vscode.cmake-tools`
 - Python: `ms-python.python`, `ms-python.vscode-pylance`, `ms-python.black-formatter`
 - Rust: `rust-lang.rust-analyzer`
@@ -44,16 +46,19 @@ These extensions should be **disabled globally** and **enabled only in this work
 - Any other language-specific extensions (Go, Java, C#, PHP, Ruby, etc.)
 
 #### Build Tools
+
 - `timonwong.shellcheck`
 - Any project-specific linters or formatters
 
 #### Project-Specific Tools
+
 - `yutengjing.vscode-mcp` (MCP Integration)
 - `prompttower.prompttower` (AI tools)
 
 ### 🤖 **AI/Assistant Extensions** (Consider Workspace-Only)
 
 These can be global but may benefit from workspace-specific configs:
+
 - `github.copilot`
 - `github.copilot-chat`
 - `amazonwebservices.codewhisperer-for-command-line-companion`
@@ -63,6 +68,7 @@ These can be global but may benefit from workspace-specific configs:
 ### 🟢 **Safe to Keep Global**
 
 These extensions don't conflict across projects:
+
 - `editorconfig.editorconfig`
 - `redhat.vscode-yaml`
 - `eamodio.gitlens`
@@ -74,6 +80,7 @@ These extensions don't conflict across projects:
 ### 🔴 **Should Be Disabled/Uninstalled**
 
 Check for these unwanted extensions (see `.vscode/extensions.json` for full list):
+
 - Unused language extensions (Go, Java, C#, PHP, Ruby, etc. if not used)
 - Enterprise/Mainframe extensions (IBM i, COBOL, etc.)
 - Docker/Kubernetes (if not used)
@@ -90,6 +97,7 @@ Check for these unwanted extensions (see `.vscode/extensions.json` for full list
 ### Step 2: Categorize Each Extension
 
 For each extension, ask:
+
 1. **Is it a language extension?** → Should be workspace-only
 2. **Is it project-specific?** → Should be workspace-only
 3. **Is it in the unwanted list?** → Should be disabled
@@ -97,13 +105,15 @@ For each extension, ask:
 
 ### Step 3: Take Action
 
-#### For Workspace-Only Extensions:
+#### For Workspace-Only Extensions
+
 1. Find the extension
 2. Click the gear icon ⚙️
 3. Select "Disable" (globally)
 4. Re-enable only in this workspace
 
-#### For Unwanted Extensions:
+#### For Unwanted Extensions
+
 1. Find the extension
 2. Click the gear icon ⚙️
 3. Select "Uninstall" or "Disable"
@@ -111,17 +121,20 @@ For each extension, ask:
 ### Step 4: Verify
 
 Run the analysis script:
+
 ```bash
 ./scripts/analyze_all_extensions.sh
 ```
 
 Or check manually:
+
 - Extensions view → Filter by "Enabled in Workspace"
 - Should only show workspace-recommended extensions
 
 ## Quick Reference: Extension Categories
 
 ### Language Extensions (Workspace-Only)
+
 ```
 C++: ms-vscode.cpptools, ms-vscode.cmake-tools
 Python: ms-python.*
@@ -134,6 +147,7 @@ C#: ms-dotnettools.* (if not used)
 ```
 
 ### Universal Tools (Global OK)
+
 ```
 EditorConfig: editorconfig.editorconfig
 YAML: redhat.vscode-yaml
@@ -144,6 +158,7 @@ Error Lens: usernamehw.errorlens
 ```
 
 ### AI Tools (Global OK, but consider workspace configs)
+
 ```
 GitHub Copilot: github.copilot, github.copilot-chat
 AWS CodeWhisperer: amazonwebservices.codewhisperer-for-command-line-companion
@@ -152,17 +167,21 @@ AWS CodeWhisperer: amazonwebservices.codewhisperer-for-command-line-companion
 ## Common Issues
 
 ### "Too Many Extensions"
+
 If you have 99 extensions, many are likely:
+
 - Language extensions for unused languages → Disable globally
 - Theme/UI extensions → Can stay global
 - Utility extensions → Review individually
 
 ### "VS Code is Slow"
+
 - Disable unused language extensions globally
 - Keep only workspace-needed extensions active
 - Use `./scripts/analyze_all_extensions.sh` to identify issues
 
 ### "Extensions Conflict"
+
 - Ensure language extensions are workspace-only
 - Check for duplicate functionality (e.g., Prettier + ESLint)
 - Review `.vscode/extensions.json` unwanted list

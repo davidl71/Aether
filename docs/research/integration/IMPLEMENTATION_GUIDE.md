@@ -15,7 +15,7 @@ This guide walks you through making the application production-ready by integrat
 
 ### 1.1 Visit IBKR Developer Portal
 
-Go to: https://interactivebrokers.github.io/
+Go to: <https://interactivebrokers.github.io/>
 
 ### 1.2 Download TWS API
 
@@ -63,6 +63,7 @@ ls -la native/third_party/tws-api/
 ### 2.3 Verify Directory Structure
 
 Expected structure:
+
 ```
 native/third_party/tws-api/
 ├── IBJts/
@@ -91,6 +92,7 @@ rm -rf build
 ```
 
 **Expected output**:
+
 ```
 CMake Status: TWS API found: /path/to/native/third_party/tws-api/source/cppclient/client
 ```
@@ -102,6 +104,7 @@ CMake Status: TWS API found: /path/to/native/third_party/tws-api/source/cppclien
 ### 3.1 Understanding the TWS API
 
 The TWS API uses a **callback pattern**:
+
 - `EClient`: Your client that sends requests to TWS
 - `EWrapper`: Your callbacks that receive data from TWS
 
@@ -160,22 +163,26 @@ private:
 ### 3.5 Essential Callbacks to Implement
 
 **Priority 1 (Critical):**
+
 - `error()` - Error handling
 - `connectAck()` - Connection acknowledgment
 - `nextValidId()` - Get next order ID
 - `connectionClosed()` - Connection closed
 
 **Priority 2 (Market Data):**
+
 - `tickPrice()` - Price updates
 - `tickSize()` - Size updates
 - `tickOptionComputation()` - Greeks and IV
 
 **Priority 3 (Orders):**
+
 - `orderStatus()` - Order status updates
 - `openOrder()` - Open order details
 - `execDetails()` - Execution details
 
 **Priority 4 (Positions & Account):**
+
 - `position()` - Position updates
 - `updateAccountValue()` - Account updates
 - `updatePortfolio()` - Portfolio updates
@@ -183,6 +190,7 @@ private:
 ### 3.6 Reference Implementation
 
 See the TWS API samples:
+
 ```bash
 cd native/third_party/tws-api/samples/Cpp/TestCppClient/
 # Study the example implementation
@@ -192,7 +200,7 @@ cd native/third_party/tws-api/samples/Cpp/TestCppClient/
 
 - **Official API Guide**: native/third_party/tws-api/IBJts/Guides/
 - **Sample Code**: native/third_party/tws-api/samples/Cpp/
-- **API Reference**: https://interactivebrokers.github.io/tws-api/
+- **API Reference**: <https://interactivebrokers.github.io/tws-api/>
 
 ---
 
@@ -220,6 +228,7 @@ netstat -an | grep 7497
 ```
 
 **Expected output**:
+
 ```
 java    12345 user   123u  IPv4 0x1234  TCP *:7497 (LISTEN)
 ```
@@ -227,6 +236,7 @@ java    12345 user   123u  IPv4 0x1234  TCP *:7497 (LISTEN)
 ### 4.3 Update Configuration
 
 Edit `config/config.json`:
+
 ```json
 {
   "tws": {
@@ -247,6 +257,7 @@ Edit `config/config.json`:
 ```
 
 **Look for**:
+
 - ✅ "Connected to TWS"
 - ✅ "Received nextValidId"
 - ✅ Market data flowing
@@ -256,18 +267,21 @@ Edit `config/config.json`:
 ### 4.5 Test Scenarios
 
 **Test 1: Connection**
+
 - Start application
 - Verify connection established
 - Check logs for errors
 - Verify graceful shutdown
 
 **Test 2: Market Data**
+
 - Request option chain for SPY
 - Verify price updates received
 - Check data quality
 - Monitor for disconnections
 
 **Test 3: Order Placement**
+
 - Place a test order (small size)
 - Verify order acknowledged
 - Check order status updates
@@ -275,6 +289,7 @@ Edit `config/config.json`:
 - Verify cancellation confirmed
 
 **Test 4: Error Handling**
+
 - Disconnect TWS mid-session
 - Verify auto-reconnect works
 - Check error recovery
@@ -318,6 +333,7 @@ grep "WARNING\|ERROR" logs/ib_box_spread.log
 ### 5.2 Validation Checklist
 
 **Market Data:**
+
 - [ ] Bid/ask prices updating regularly
 - [ ] Bid-ask spreads reasonable (< $0.10 for liquid options)
 - [ ] Implied volatility values present
@@ -325,18 +341,21 @@ grep "WARNING\|ERROR" logs/ib_box_spread.log
 - [ ] Volume and open interest available
 
 **Option Chain:**
+
 - [ ] All strikes retrieved
 - [ ] All expiries in range retrieved
 - [ ] Call/put pairs match
 - [ ] No missing data for liquid options
 
 **Strategy:**
+
 - [ ] Box spreads identified correctly
 - [ ] Arbitrage calculations accurate
 - [ ] ROI calculations correct
 - [ ] Commission costs included
 
 **Risk Management:**
+
 - [ ] Position limits enforced
 - [ ] Exposure limits checked
 - [ ] Risk metrics calculated
@@ -345,12 +364,14 @@ grep "WARNING\|ERROR" logs/ib_box_spread.log
 ### 5.3 Backtesting (Optional but Recommended)
 
 Record a full day of data:
+
 ```bash
 # Run for 1 day, log everything
 ./build/bin/ib_box_spread --log-level trace > backtest_data.log 2>&1
 ```
 
 Analyze results:
+
 - How many opportunities found?
 - What was average ROI?
 - Were opportunities executable?
@@ -370,6 +391,7 @@ instruments -t "Time Profiler" ./build/bin/ib_box_spread
 ```
 
 **Expected performance:**
+
 - CPU: < 5% average
 - Memory: < 100 MB
 - Network: Minimal (< 1 MB/hour)
@@ -382,6 +404,7 @@ instruments -t "Time Profiler" ./build/bin/ib_box_spread
 ### ⚠️ WARNING - READ THIS CAREFULLY
 
 **ONLY proceed if:**
+
 - ✅ Paper trading ran flawlessly for 30+ days
 - ✅ All test scenarios passed 100%
 - ✅ You understand every line of code
@@ -391,6 +414,7 @@ instruments -t "Time Profiler" ./build/bin/ib_box_spread
 - ✅ You have tested emergency stop procedures
 
 **DO NOT proceed if:**
+
 - ❌ Any test failed or showed errors
 - ❌ You haven't tested for at least 30 days
 - ❌ You don't fully understand the strategy
@@ -453,6 +477,7 @@ instruments -t "Time Profiler" ./build/bin/ib_box_spread
 ### 6.5 Monitoring in Live Trading
 
 **Real-time monitoring:**
+
 ```bash
 # Terminal 1: Application
 ./build/bin/ib_box_spread --config config/config.json
@@ -482,18 +507,21 @@ pkill -KILL ib_box_spread
 ```
 
 **Emergency contact:**
+
 - IBKR Support: 1-877-442-2757
 - Keep your account number ready
 
 ### 6.7 Legal and Regulatory
 
 **Disclaimer**: I am not providing financial or legal advice. Consult with:
+
 - Financial advisor
 - Tax professional
 - Legal counsel if trading professionally
 - Regulatory bodies if required
 
 **Consider:**
+
 - Pattern Day Trader rules (PDT)
 - Tax implications (wash sales, mark-to-market)
 - Record keeping requirements
@@ -506,6 +534,7 @@ pkill -KILL ib_box_spread
 ### Issue: Can't connect to TWS
 
 **Solutions:**
+
 1. Verify TWS is running: `lsof -i :7497` or `:7496`
 2. Check TWS API settings are enabled
 3. Verify IP address is trusted (127.0.0.1)
@@ -515,6 +544,7 @@ pkill -KILL ib_box_spread
 ### Issue: No market data
 
 **Solutions:**
+
 1. Verify you have market data subscriptions
 2. Check TWS market data settings
 3. Ensure market is open (9:30 AM - 4:00 PM ET)
@@ -524,6 +554,7 @@ pkill -KILL ib_box_spread
 ### Issue: Orders rejected
 
 **Solutions:**
+
 1. Verify account has options trading enabled
 2. Check sufficient buying power
 3. Verify option is tradable
@@ -533,6 +564,7 @@ pkill -KILL ib_box_spread
 ### Issue: Performance problems
 
 **Solutions:**
+
 1. Reduce number of symbols
 2. Increase loop delay
 3. Filter by liquidity (volume, OI)
@@ -546,6 +578,7 @@ pkill -KILL ib_box_spread
 Before considering live trading, verify ALL of these:
 
 ### Functional Testing
+
 - [ ] Application starts without errors
 - [ ] Connects to TWS successfully
 - [ ] Receives market data
@@ -559,6 +592,7 @@ Before considering live trading, verify ALL of these:
 - [ ] Shuts down gracefully
 
 ### Edge Cases
+
 - [ ] TWS disconnects mid-session
 - [ ] Network interruption
 - [ ] Invalid market data
@@ -569,6 +603,7 @@ Before considering live trading, verify ALL of these:
 - [ ] Holiday handling
 
 ### Risk Management
+
 - [ ] Position limits enforced
 - [ ] Exposure limits checked
 - [ ] Daily loss limit works
@@ -576,6 +611,7 @@ Before considering live trading, verify ALL of these:
 - [ ] Emergency stop works
 
 ### Performance
+
 - [ ] CPU usage acceptable
 - [ ] Memory stable (no leaks)
 - [ ] Network usage reasonable
@@ -589,6 +625,7 @@ Before considering live trading, verify ALL of these:
 ### Paper Trading Phase (Minimum 30 days)
 
 **Must achieve:**
+
 - Uptime: > 99%
 - Win rate: > 80%
 - Average profit/trade: > $5
@@ -598,6 +635,7 @@ Before considering live trading, verify ALL of these:
 ### Live Trading Phase (First 90 days)
 
 **Target metrics:**
+
 - Win rate: > 70%
 - Average profit/trade: > $10
 - Max drawdown: < 5%
@@ -609,16 +647,19 @@ Before considering live trading, verify ALL of these:
 ## Resources
 
 ### Official Documentation
-- TWS API: https://interactivebrokers.github.io/tws-api/
-- IBKR Knowledge Base: https://www.interactivebrokers.com/en/support/
-- API Forums: https://groups.io/g/twsapi
+
+- TWS API: <https://interactivebrokers.github.io/tws-api/>
+- IBKR Knowledge Base: <https://www.interactivebrokers.com/en/support/>
+- API Forums: <https://groups.io/g/twsapi>
 
 ### Options Trading
-- CBOE Options Institute: https://www.cboe.com/education/
-- OCC (Options Clearing Corp): https://www.theocc.com/
+
+- CBOE Options Institute: <https://www.cboe.com/education/>
+- OCC (Options Clearing Corp): <https://www.theocc.com/>
 - Box Spread Strategy: Research academic papers on arb strategies
 
 ### Risk Management
+
 - Position Sizing: Kelly Criterion, Fixed Fractional
 - Portfolio Management: Modern Portfolio Theory
 - Risk Metrics: VaR, CVaR, Sharpe, Sortino

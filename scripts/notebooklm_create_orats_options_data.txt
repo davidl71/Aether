@@ -1,0 +1,46 @@
+
+# Create Notebook: ORATS Options Data
+# Description: ORATS API integration patterns
+
+# Step 1: Navigate to NotebookLM (if not already there)
+# browser_navigate("https://notebooklm.google.com")
+
+# Step 2: Wait for page to load
+# browser_wait_for(text="Create notebook")
+
+# Step 3: Click "Create notebook" button
+# browser_click(element="Create notebook button", ref="[find create button ref]")
+
+# Step 4: Enter notebook name
+# browser_type(element="Notebook name input", ref="[find name input ref]", text="ORATS Options Data")
+
+# Step 5: Confirm/create notebook
+# browser_click(element="Create button", ref="[find create button ref]")
+
+# Step 6: Wait for notebook to load
+# browser_wait_for(text="Add source")
+
+# Step 7: Add each source URL
+
+# Add source 1: https://orats.com/docs
+# browser_click(element="Add source button", ref="[find add source ref]")
+# browser_click(element="URL option", ref="[find URL option ref]")
+# browser_type(element="URL input", ref="[find URL input ref]", text="https://orats.com/docs")
+# browser_click(element="Add button", ref="[find add button ref]")
+# browser_wait_for(time=5)  # Wait for source to process
+
+# Add source 2: https://orats.com/data-api
+# browser_click(element="Add source button", ref="[find add source ref]")
+# browser_click(element="URL option", ref="[find URL option ref]")
+# browser_type(element="URL input", ref="[find URL input ref]", text="https://orats.com/data-api")
+# browser_click(element="Add button", ref="[find add button ref]")
+# browser_wait_for(time=5)  # Wait for source to process
+
+# Step 8: Share notebook and capture link
+# browser_click(element="Share button", ref="[find share button ref]")
+# browser_click(element="Anyone with link", ref="[find link option ref]")
+# browser_click(element="Copy link", ref="[find copy link ref]")
+# [Capture link from clipboard or page]
+
+# Step 9: Save notebook link
+# notebook_link = "[captured link]"

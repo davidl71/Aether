@@ -55,12 +55,14 @@ Design a high-performance Go service for ingesting market data from multiple sou
 ### 1. Data Ingestion Service
 
 **Responsibilities:**
+
 - Accept market data from multiple sources
 - Normalize data format
 - Validate data quality
 - Route to consumers (QuestDB, real-time subscribers)
 
 **Interfaces:**
+
 ```go
 type MarketDataEvent struct {
     Symbol      string
@@ -85,12 +87,14 @@ type IngestionService interface {
 ### 2. QuestDB Writer
 
 **Responsibilities:**
+
 - Batch market data events
 - Write to QuestDB via ILP (Influx Line Protocol)
 - Handle write errors
 - Retry failed writes
 
 **Implementation:**
+
 ```go
 type QuestDBWriter struct {
     client    *questdb.Client
@@ -111,17 +115,20 @@ func (w *QuestDBWriter) Write(event MarketDataEvent) error {
 ### 3. Data Source Adapters
 
 **TWS Adapter:**
+
 - Receive data from TWS client (via gRPC or file)
 - Convert to normalized format
 - Send to ingestion service
 
 **Alpaca Adapter:**
+
 - Connect to Alpaca WebSocket/API
 - Receive market data
 - Convert to normalized format
 - Send to ingestion service
 
 **ORATS Adapter:**
+
 - Connect to ORATS API
 - Receive option chain data
 - Convert to normalized format
@@ -192,16 +199,19 @@ type Config struct {
 ### Performance Considerations
 
 **Concurrency:**
+
 - Use goroutines for each data source
 - Channel-based communication
 - Worker pool for QuestDB writes
 
 **Batching:**
+
 - Batch writes to QuestDB (100-1000 events)
 - Flush on interval (1-5 seconds)
 - Flush on buffer full
 
 **Error Handling:**
+
 - Retry failed writes with exponential backoff
 - Dead letter queue for persistent failures
 - Monitoring and alerting
@@ -211,6 +221,7 @@ type Config struct {
 ## gRPC Interface
 
 **Service Definition:**
+
 ```protobuf
 service MarketDataGateway {
   rpc StreamMarketData(StreamRequest) returns (stream MarketDataEvent);
@@ -220,6 +231,7 @@ service MarketDataGateway {
 ```
 
 **Usage:**
+
 - Rust backend can stream data to gateway
 - Other services can subscribe to data stream
 - Health check for monitoring
@@ -229,11 +241,13 @@ service MarketDataGateway {
 ## Integration Points
 
 **With Existing Services:**
+
 - Rust backend: gRPC client → gateway
 - Python services: gRPC client → gateway
 - C++ TWS client: File or gRPC → gateway
 
 **QuestDB Integration:**
+
 - Use QuestDB Go client library
 - ILP protocol for ingestion
 - SQL for queries (separate service)
@@ -290,11 +304,13 @@ service MarketDataGateway {
 ## Dependencies
 
 **Go Packages:**
+
 - `github.com/questdb/go-questdb` - QuestDB client
 - `google.golang.org/grpc` - gRPC framework
 - `google.golang.org/protobuf` - Protocol Buffers
 
 **External:**
+
 - QuestDB server (running)
 - Data source APIs (TWS, Alpaca, ORATS)
 

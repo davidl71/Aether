@@ -12,6 +12,7 @@
 ## 🔴 Unwanted Extensions (16) - Should Be Disabled/Uninstalled
 
 ### IBM i / AS/400 (5)
+
 - `barrettotte.ibmi-languages`
 - `halcyontechltd.code-for-ibmi`
 - `halcyontechltd.vscode-displayfile`
@@ -19,33 +20,41 @@
 - `ibm.vscode-ibmi-projectexplorer`
 
 ### IBM Z / Mainframe (1)
+
 - `ibm.zopendebug`
 
 ### COBOL (2)
+
 - `broadcommfd.cobol-language-support`
 - `broadcommfd.ccf`
 
 ### Zowe / Mainframe Tooling (2)
+
 - `zowe.vscode-extension-for-zowe`
 - `zowe.zowe-explorer-ftp-extension`
 
 ### Docker/Containers (3)
+
 - `ms-azuretools.vscode-containers`
 - `ms-azuretools.vscode-docker`
 - `anysphere.remote-containers`
 
 ### Go (1)
+
 - `golang.go` (not used in this project)
 
 ### Java (1)
+
 - `redhat.java` (only vendor code, not actively developed)
 
 ### Ruby (1)
+
 - `shopify.ruby-lsp` (minimal use - only Homebrew formulas)
 
 ## ⚠️ Language Extensions (3) - Should Be Workspace-Only
 
 These should be disabled globally and enabled only in this workspace:
+
 - `golang.go` (also in unwanted - should be disabled)
 - `redhat.java` (also in unwanted - should be disabled)
 - `shopify.ruby-lsp` (also in unwanted - should be disabled)
@@ -76,6 +85,7 @@ These should be disabled globally and enabled only in this workspace:
 ## 📋 Other Extensions (67)
 
 These are uncategorized and may include:
+
 - Cursor-specific extensions (`anysphere.*`)
 - C++ development tools (various)
 - Python tools (Jupyter, debugpy)
@@ -89,6 +99,7 @@ These are uncategorized and may include:
 ### Immediate Actions
 
 1. **Disable/Uninstall 16 unwanted extensions**:
+
    ```bash
    # Open Cursor Extensions (Cmd+Shift+X)
    # For each extension above:
@@ -102,11 +113,13 @@ These are uncategorized and may include:
 ### Verification
 
 Run the analysis script:
+
 ```bash
 ./scripts/analyze_all_extensions.sh
 ```
 
 Or check unwanted extensions:
+
 ```bash
 ./scripts/quick_extension_check.sh
 ```

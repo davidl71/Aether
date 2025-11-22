@@ -151,6 +151,7 @@ Provide FTID to executing agent who appends it to both manual and electronic ord
 ### 3. Will there be a way for customers to track their activity?
 
 Yes. FTID owners receive:
+
 - Daily email statements with contracts traded and estimated fees/rebates
 - Customized reports available at <https://www.cboe.org/tphreports/default.aspx>
 
@@ -164,6 +165,7 @@ Yes. FTID owners receive:
 ### 5. Will the FTID be visible or available to the marketplace or trading counterparties?
 
 **No.** FTID is:
+
 - Recorded only on CBOE's internal order tracking system
 - Not disclosed or discoverable by any other party
 - CBOE will not disclose list or details of FTID owners

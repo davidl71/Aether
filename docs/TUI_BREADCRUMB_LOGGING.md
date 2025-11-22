@@ -3,6 +3,7 @@
 **Purpose**: Comprehensive guide for implementing and using breadcrumb logging in the TUI application for debugging and testing.
 
 **References**:
+
 - [Debug TUI Blog Post](https://www.dantleech.com/blog/2025/05/11/debug-tui/)
 - [GUI Testing Tools](https://www.browserstack.com/guide/open-source-gui-testing-tool)
 
@@ -411,11 +412,13 @@ export TUI_BREADCRUMB_MAX_ENTRIES=1000
 ### 1. Use Descriptive Component IDs
 
 **Bad**:
+
 ```cpp
 TUI_BREADCRUMB_INPUT("input1", "key", "");
 ```
 
 **Good**:
+
 ```cpp
 TUI_BREADCRUMB_INPUT("search_dialog_input_field", "key=q", "searching_for_symbol");
 ```
@@ -423,11 +426,13 @@ TUI_BREADCRUMB_INPUT("search_dialog_input_field", "key=q", "searching_for_symbol
 ### 2. Include Context in Details
 
 **Bad**:
+
 ```cpp
 TUI_BREADCRUMB_NAVIGATION("tab1", "tab2", "");
 ```
 
 **Good**:
+
 ```cpp
 TUI_BREADCRUMB_NAVIGATION("tab_dashboard", "tab_positions",
                           "triggered_by=Tab keyboard_shortcut");
@@ -436,6 +441,7 @@ TUI_BREADCRUMB_NAVIGATION("tab_dashboard", "tab_positions",
 ### 3. Dump State on Errors
 
 **Always include state when logging errors**:
+
 ```cpp
 try {
   // ... operation
@@ -449,6 +455,7 @@ try {
 ### 4. Log Before State Changes
 
 **Log before modifying state**:
+
 ```cpp
 // Log before change
 TUI_BREADCRUMB_STATE_CHANGE("config_manager", "updating_provider_type",
@@ -463,6 +470,7 @@ TUI_BREADCRUMB_STATE_CHANGE("config_manager", "provider_type_updated",
 ### 5. Use Consistent Action Names
 
 **Use consistent action naming**:
+
 - `input` for user input
 - `navigate` for navigation
 - `state_change` for state changes
@@ -531,6 +539,7 @@ TUI_BREADCRUMB_STATE_CHANGE("config_manager", "provider_type_updated",
 ### Breadcrumbs Not Appearing
 
 1. Check if breadcrumb logging is enabled:
+
    ```cpp
    auto& logger = tui::GetBreadcrumbLogger();
    if (!logger.GetConfig().enabled) {
@@ -559,6 +568,7 @@ TUI_BREADCRUMB_STATE_CHANGE("config_manager", "provider_type_updated",
 ## Example: Complete Integration
 
 See `native/src/tui_app.cpp` for complete integration examples with:
+
 - Keyboard input logging
 - Tab navigation logging
 - Dialog open/close logging

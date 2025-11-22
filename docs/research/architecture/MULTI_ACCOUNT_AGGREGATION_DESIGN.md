@@ -14,6 +14,7 @@ This document designs a comprehensive system for aggregating positions and accou
 ### User Specifications
 
 **Account Inventory:**
+
 - **US Brokers:** 8 accounts
   - IBKR: 1 live + 1 paper
   - Alpaca: 1 live + 1 paper
@@ -29,6 +30,7 @@ This document designs a comprehensive system for aggregating positions and accou
 - **Total:** 21+ accounts
 
 **Position Handling:**
+
 - **Primary:** Account-level tracking (each account maintains separate position view)
 - **Optional:** Portfolio-level aggregation for entire portfolio view
 - **Instrument Types:** TASE securities, US instruments, cash, loans, derivatives
@@ -523,12 +525,14 @@ public:
 ## Implementation Phases
 
 ### Phase 1: Account Manager Core (T-78)
+
 - Account configuration system
 - Account connector interface
 - Basic connection management
 - Account status tracking
 
 ### Phase 2: Connector Implementations (T-78)
+
 - IBKR TWS connector (extend existing)
 - Alpaca REST connector
 - Tradier REST connector (future)
@@ -536,6 +540,7 @@ public:
 - Israeli broker connectors (extend existing import system)
 
 ### Phase 3: Portfolio Aggregation (T-79)
+
 - Position aggregation logic
 - Currency conversion
 - Deduplication strategies
@@ -544,16 +549,19 @@ public:
 ## Performance Considerations
 
 ### Connection Pooling
+
 - Limit concurrent connections (e.g., max 10 simultaneous)
 - Queue connection requests
 - Prioritize high-priority accounts
 
 ### Caching
+
 - Cache account positions (5-minute TTL)
 - Cache currency rates (24-hour TTL)
 - Cache account status (1-minute TTL)
 
 ### Async Operations
+
 - Async account synchronization
 - Non-blocking position retrieval
 - Background currency rate updates
@@ -561,11 +569,13 @@ public:
 ## Error Handling
 
 ### Connection Failures
+
 - Retry logic with exponential backoff
 - Fallback to cached data
 - Partial portfolio view (available accounts only)
 
 ### Data Staleness
+
 - Mark stale accounts (>10 minutes old)
 - Alert on stale data
 - Continue with available data
@@ -573,12 +583,14 @@ public:
 ## Testing Requirements
 
 ### Unit Tests
+
 - Account configuration management
 - Position aggregation logic
 - Currency conversion
 - Deduplication strategies
 
 ### Integration Tests
+
 - Multi-account connection
 - Position synchronization
 - Aggregation accuracy

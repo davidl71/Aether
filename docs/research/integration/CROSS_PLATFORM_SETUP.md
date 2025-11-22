@@ -114,6 +114,7 @@ cmake --preset linux-x64-release
 **Compiler**: Clang (Xcode Command Line Tools)
 **Package Manager**: Homebrew
 **Include Paths**:
+
 - `/usr/local/include` (Intel Macs, Homebrew)
 - `/opt/homebrew/include` (Apple Silicon, Homebrew)
 
@@ -124,6 +125,7 @@ cmake --preset linux-x64-release
 **Compiler**: MSVC (Visual Studio) or MinGW-w64
 **Package Manager**: vcpkg or Chocolatey
 **Include Paths**:
+
 - Visual Studio: `C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/...`
 - MinGW: `C:/mingw64/include`
 
@@ -136,12 +138,14 @@ cmake --preset linux-x64-release
 **Compiler**: GCC
 **Package Manager**: apt
 **Include Paths**:
+
 - `/usr/include`
 - `/usr/local/include`
 
 **IntelliSense Mode**: `linux-gcc-x64`
 
 **Dependencies**:
+
 ```bash
 sudo apt-get update
 sudo apt-get install build-essential cmake ninja-build
@@ -155,6 +159,7 @@ sudo apt-get install libprotobuf-dev protobuf-compiler
 ### 1. CMake Auto-Detection
 
 CMake automatically detects:
+
 - Compiler (clang, gcc, msvc)
 - Architecture (x86_64, arm64)
 - Platform (macOS, Windows, Linux)
@@ -162,6 +167,7 @@ CMake automatically detects:
 ### 2. VS Code IntelliSense
 
 VS Code C++ extension can auto-detect:
+
 - Compiler path
 - IntelliSense mode
 - Include paths (from `compile_commands.json`)
@@ -199,6 +205,7 @@ fi
 Create `.vscode/settings.json.user` (gitignored) for platform-specific overrides:
 
 **macOS ARM64**:
+
 ```json
 {
   "C_Cpp.default.intelliSenseMode": "macos-clang-arm64",
@@ -211,6 +218,7 @@ Create `.vscode/settings.json.user` (gitignored) for platform-specific overrides
 ```
 
 **Windows**:
+
 ```json
 {
   "C_Cpp.default.intelliSenseMode": "windows-msvc-x64",
@@ -220,6 +228,7 @@ Create `.vscode/settings.json.user` (gitignored) for platform-specific overrides
 ```
 
 **Linux**:
+
 ```json
 {
   "C_Cpp.default.intelliSenseMode": "linux-gcc-x64",
@@ -239,11 +248,13 @@ Create `.vscode/settings.json.user` (gitignored) for platform-specific overrides
 ### IntelliSense Not Working
 
 1. **Check `compile_commands.json`**:
+
    ```bash
    ls build/*/compile_commands.json
    ```
 
 2. **Regenerate compile commands**:
+
    ```bash
    cmake --preset <your-preset>
    ```

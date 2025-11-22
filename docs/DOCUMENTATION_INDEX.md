@@ -277,6 +277,7 @@ This document serves as a comprehensive index of all documentation in the IBKR B
 ## Documentation Status
 
 See `docs/DOCUMENTATION_STATUS_REPORT.md` for comprehensive status of all documentation files, including:
+
 - Complete documentation (✅)
 - Partial documentation (🟡)
 - Outdated documentation (🔴)

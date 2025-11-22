@@ -1,6 +1,7 @@
 ## 1Password Integration
 
 The project can pull credentials directly from 1Password so secrets never land in source control. This includes:
+
 - Distcc host credentials
 - Cursor remote development credentials
 - Alpaca API credentials
@@ -84,6 +85,7 @@ After running the script:
 4. Wait for VS Code Server to install on remote Mac (first connection only)
 
 **SSH Settings Included:**
+
 - Compression enabled for better performance over slow networks
 - Keep-alive settings to prevent connection timeouts
 - Connection multiplexing for faster subsequent connections
@@ -92,6 +94,7 @@ After running the script:
 See [Remote Development Workflow](./REMOTE_DEVELOPMENT_WORKFLOW.md) for complete setup instructions.
 
 ### Notes
+
 - `OP_CURSOR_REMOTE_*` variables accept any 1Password item paths.
 - The script updates `~/.ssh/config` with Cursor-optimized settings.
 - Update `CURSOR_REMOTE_ALIAS` to match your preferred SSH host alias.
@@ -108,10 +111,12 @@ export OP_ALPACA_API_SECRET_KEY_SECRET="op://Vault/Item Name/API Secret Key"
 ```
 
 The script will automatically:
+
 1. Try to read from 1Password if `OP_ALPACA_*_SECRET` variables are set
 2. Fall back to `ALPACA_API_KEY_ID` and `ALPACA_API_SECRET_KEY` environment variables if 1Password is not available
 
 **Authentication Methods:**
+
 - **Personal Account**: Run `op signin` first (for local development)
 - **Service Account**: Set `OP_SERVICE_ACCOUNT_TOKEN` (for CI/CD, see [Service Accounts docs](https://developer.1password.com/docs/service-accounts))
 

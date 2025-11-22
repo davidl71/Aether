@@ -30,24 +30,28 @@ This document outlines the migration strategy to:
 ### 1.1 Current State
 
 **Python Market Data Handler** (`python/integration/market_data_handler.py`):
+
 - Converts nautilus_trader events to C++ `MarketData` format
 - Validates data quality (stale data, spread thresholds)
 - Callback-based event handling
 - QuestDB integration for historical data
 
 **Native C++ Market Data** (`native/include/types.h`):
+
 - Simple `MarketData` struct with bid/ask/last prices
 - No order book depth management
 - No market depth (level 2) data
 - Basic spread calculations
 
 **TWS Client** (`native/src/tws_client.cpp`):
+
 - Receives `tickPrice()` and `tickSize()` callbacks
 - Stores basic market data in `market_data_` map
 - No order book reconstruction
 - No market depth management
 
 **Rust Backend** (`agents/backend/`):
+
 - Market data pipeline and ingestion
 - State management
 - Strategy signal generation
@@ -99,11 +103,13 @@ This document outlines the migration strategy to:
 **Purpose**: Handles orders and builds order books from market data updates.
 
 **Performance**:
+
 - 3.2M messages/second (standard)
 - 8.3M messages/second (optimized)
 - 9.7M messages/second (aggressive optimized)
 
 **Key Features**:
+
 - Order book construction
 - Price level management
 - Best bid/ask tracking
@@ -116,6 +122,7 @@ This document outlines the migration strategy to:
 **Purpose**: Represents bid/ask price levels with order depth.
 
 **Structure**:
+
 ```cpp
 class OrderBook {
   // Bid side (sorted descending)
@@ -274,6 +281,7 @@ Key implementation points:
 4. **Callback Integration**: Trigger callbacks on market updates
 
 **TWS TickType Mapping**:
+
 - `BID` (1) → Bid price
 - `ASK` (2) → Ask price
 - `LAST` (4) → Last trade price
@@ -330,11 +338,13 @@ class TWSClient : public EWrapper {
 #### 3.5 Migrate Market Data Handler to C++
 
 **Current Python Flow**:
+
 1. nautilus_trader → `MarketDataHandler` → C++ `MarketData` format
 2. Data quality validation in Python
 3. Callback-based event handling
 
 **New C++ Flow**:
+
 1. TWS API → `TWSClient` → `OrderBookManager` → C++ `MarketData` format
 2. Data quality validation in C++ (order book integrity checks)
 3. Same callback interface (maintain compatibility)
@@ -467,6 +477,7 @@ CppTrader offers three optimization levels:
 **Recommendation**: Start with **Optimized** mode for best balance.
 
 **Configuration**:
+
 ```cpp
 // Use optimized market manager
 #include <trader/market/market_manager_optimized.h>
@@ -501,6 +512,7 @@ class OrderBookManager {
 **File**: `native/tests/order_book_manager_test.cpp`
 
 Test cases:
+
 - Symbol registration and ID mapping
 - Tick price updates → order book updates
 - Best bid/ask extraction
@@ -512,6 +524,7 @@ Test cases:
 **File**: `native/tests/tws_order_book_integration_test.cpp`
 
 Test cases:
+
 - TWS tick stream → Order book reconstruction
 - Multiple symbols simultaneous updates
 - Market data callback delivery
@@ -522,6 +535,7 @@ Test cases:
 **File**: `native/tests/order_book_performance_test.cpp`
 
 Compare:
+
 - Python `MarketDataHandler` vs C++ `OrderBookManager`
 - Simple map vs CppTrader order book
 - Latency measurements (tick → callback)

@@ -9,7 +9,7 @@ use tracing::{debug, warn};
 
 pub type SharedSnapshot = Arc<RwLock<SystemSnapshot>>;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct SystemSnapshot {
   pub generated_at: DateTime<Utc>,
   pub mode: String,
@@ -23,9 +23,29 @@ pub struct SystemSnapshot {
   pub decisions: Vec<StrategyDecisionSnapshot>,
   pub alerts: Vec<Alert>,
   pub risk: RiskStatus,
-  /// Optional ledger engine for transaction recording
-  #[serde(skip)]
+  /// Optional ledger engine for transaction recording (not serialized)
+  #[serde(skip_serializing, skip_deserializing)]
   pub ledger: Option<Arc<ledger::LedgerEngine>>,
+}
+
+impl std::fmt::Debug for SystemSnapshot {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("SystemSnapshot")
+      .field("generated_at", &self.generated_at)
+      .field("mode", &self.mode)
+      .field("strategy", &self.strategy)
+      .field("account_id", &self.account_id)
+      .field("metrics", &self.metrics)
+      .field("symbols", &self.symbols)
+      .field("positions", &self.positions)
+      .field("historic", &self.historic)
+      .field("orders", &self.orders)
+      .field("decisions", &self.decisions)
+      .field("alerts", &self.alerts)
+      .field("risk", &self.risk)
+      .field("ledger", &self.ledger.as_ref().map(|_| "Some(LedgerEngine)"))
+      .finish()
+  }
 }
 
 impl Default for SystemSnapshot {
@@ -101,7 +121,7 @@ impl SystemSnapshot {
     }
 
     // Track previous position state for ledger recording
-    let prev_position = self
+    let _prev_position = self
       .positions
       .iter()
       .find(|p| p.symbol == decision.symbol)
@@ -218,6 +238,16 @@ impl SystemSnapshot {
     trade_id: Option<&str>,
   ) {
     if let Some(ref ledger) = self.ledger {
+      let symbol_for_log = symbol.to_string();
+      let expiry_for_log = expiry.to_string();
+      debug!(
+        symbol = %symbol_for_log,
+        strike1,
+        strike2,
+        expiry = %expiry_for_log,
+        net_debit,
+        "Box spread transaction queued for ledger recording"
+      );
       let ledger_clone = ledger.clone();
       let symbol = symbol.to_string();
       let expiry = expiry.to_string();
@@ -235,14 +265,6 @@ impl SystemSnapshot {
         )
         .await;
       });
-      debug!(
-        symbol = %symbol,
-        strike1,
-        strike2,
-        expiry = %expiry,
-        net_debit,
-        "Box spread transaction queued for ledger recording"
-      );
     } else {
       debug!("Ledger not configured, skipping box spread transaction recording");
     }
@@ -258,6 +280,14 @@ impl SystemSnapshot {
   ) {
     if let Some(ref ledger) = self.ledger {
       let ledger_clone = ledger.clone();
+      let description_clone = description.to_string();
+      debug!(
+        amount,
+        currency = ?currency,
+        description = %description_clone,
+        is_deposit,
+        "Cash flow transaction queued for ledger recording"
+      );
       let description = description.to_string();
       tokio::spawn(async move {
         if let Err(err) = ledger::record_cash_flow(
@@ -272,13 +302,6 @@ impl SystemSnapshot {
           warn!(error = %err, description = %description, "Failed to record cash flow in ledger (non-blocking)");
         }
       });
-      debug!(
-        amount,
-        currency = ?currency,
-        description = %description,
-        is_deposit,
-        "Cash flow transaction queued for ledger recording"
-      );
     } else {
       debug!("Ledger not configured, skipping cash flow transaction recording");
     }
@@ -303,6 +326,7 @@ pub struct Metrics {
   pub tws_ok: bool,
   pub orats_ok: bool,
   pub questdb_ok: bool,
+  pub nats_ok: bool,
 }
 
 impl Default for Metrics {
@@ -317,6 +341,7 @@ impl Default for Metrics {
       tws_ok: false,
       orats_ok: false,
       questdb_ok: false,
+      nats_ok: false,
     }
   }
 }

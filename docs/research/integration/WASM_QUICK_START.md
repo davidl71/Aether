@@ -32,6 +32,7 @@ source ./emsdk_env.sh
 ```
 
 This creates:
+
 - `web/public/wasm/box_spread_wasm.js`
 - `web/public/wasm/box_spread_wasm.wasm`
 
@@ -83,12 +84,14 @@ function MyComponent() {
 ## What Gets Compiled?
 
 ### ✅ Included (Pure Calculations)
+
 - Box spread calculations
 - Risk analysis
 - Greeks calculations (delta, gamma, theta, vega)
 - Data conversion utilities
 
 ### ❌ Excluded (Has Dependencies)
+
 - TWS API client (network)
 - Order management (depends on TWS)
 - UI rendering
@@ -103,16 +106,19 @@ function MyComponent() {
 ## Troubleshooting
 
 **Emscripten not found:**
+
 ```bash
 source /path/to/emsdk/emsdk_env.sh
 ```
 
 **Build fails:**
+
 - Check that Emscripten is activated
 - Verify CMake can find Emscripten
 - Check `native/wasm/CMakeLists.txt` for configuration
 
 **WASM not loading in browser:**
+
 - Check browser console for errors
 - Verify files are in `web/public/wasm/`
 - Check that `initWasm()` is called before use

@@ -1,0 +1,47 @@
+
+# Create Notebook: TWS API Advanced Topics
+# Description: Advanced TWS API topics and troubleshooting
+
+# Step 1: Navigate to NotebookLM (if not already there)
+# browser_navigate("https://notebooklm.google.com")
+
+# Step 2: Wait for page to load
+# browser_wait_for(text="Create notebook")
+
+# Step 3: Click "Create notebook" button
+# browser_click(element="Create notebook button", ref="[find create button ref]")
+
+# Step 4: Enter notebook name
+# browser_type(element="Notebook name input", ref="[find name input ref]", text="TWS API Advanced Topics")
+
+# Step 5: Confirm/create notebook
+# browser_click(element="Create button", ref="[find create button ref]")
+
+# Step 6: Wait for notebook to load
+# browser_wait_for(text="Add source")
+
+# Step 7: Add each source URL
+
+# Add source 1: docs/research/learnings/TWS_API_MARKET_DATA_LEARNINGS.md (local file - requires file upload)
+# browser_click(element="Add source button", ref="[find add source ref]")
+# browser_click(element="Upload file option", ref="[find upload option ref]")
+# [File upload would require file path handling]
+
+# Add source 2: docs/research/learnings/TWS_API_TROUBLESHOOTING_LEARNINGS.md (local file - requires file upload)
+# browser_click(element="Add source button", ref="[find add source ref]")
+# browser_click(element="Upload file option", ref="[find upload option ref]")
+# [File upload would require file path handling]
+
+# Add source 3: docs/research/learnings/IB_ASYNC_LEARNINGS.md (local file - requires file upload)
+# browser_click(element="Add source button", ref="[find add source ref]")
+# browser_click(element="Upload file option", ref="[find upload option ref]")
+# [File upload would require file path handling]
+
+# Step 8: Share notebook and capture link
+# browser_click(element="Share button", ref="[find share button ref]")
+# browser_click(element="Anyone with link", ref="[find link option ref]")
+# browser_click(element="Copy link", ref="[find copy link ref]")
+# [Capture link from clipboard or page]
+
+# Step 9: Save notebook link
+# notebook_link = "[captured link]"

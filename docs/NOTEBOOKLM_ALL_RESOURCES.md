@@ -7,10 +7,13 @@ This document is maintained for backward compatibility. For the most up-to-date,
 ---
 
 ## Notebook Name
+
 **TWS Automated Trading - Complete Resources**
 
 ## Description
+
 Complete knowledge base for TWS Automated Trading project including:
+
 - GitHub repository documentation (47+ files)
 - TWS API implementation videos (1 video)
 - Trading & options tutorials (7 videos)
@@ -19,6 +22,7 @@ Complete knowledge base for TWS Automated Trading project including:
 ## Resources to Add
 
 ### 1. GitHub Repository (Documentation)
+
 ```
 https://github.com/davidl71/ib_box_spread_full_universal
 ```
@@ -26,11 +30,13 @@ https://github.com/davidl71/ib_box_spread_full_universal
 ### 2. YouTube Videos (8 videos)
 
 #### TWS API Video
+
 ```
 https://www.youtube.com/watch?v=n-9bdREECTQ
 ```
 
 #### Trading & Options Videos
+
 ```
 https://www.youtube.com/watch?v=5moyX0qwkCA
 https://www.youtube.com/watch?v=hJ7ewxQVhJw&list=PLePBf4ZtCKhpovbIfv85Ks3-rvyNtAwsg&index=2
@@ -42,6 +48,7 @@ https://www.youtube.com/watch?v=W6OJy32sE_g&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQ
 ```
 
 ### 3. External Articles
+
 ```
 https://www.vitaltrades.com/2024/02/02/making-a-c-interactive-brokers-tws-client-with-a-custom-socket-implementation/
 ```
@@ -49,6 +56,7 @@ https://www.vitaltrades.com/2024/02/02/making-a-c-interactive-brokers-tws-client
 ## Quick Copy-Paste List
 
 ### All URLs (One per line)
+
 ```
 https://github.com/davidl71/ib_box_spread_full_universal
 https://www.youtube.com/watch?v=n-9bdREECTQ
@@ -63,21 +71,25 @@ https://www.vitaltrades.com/2024/02/02/making-a-c-interactive-brokers-tws-client
 ```
 
 ## Tags for Library
+
 ```
 tws-api, trading, options, documentation, youtube, tutorial, ib-api, c++, socket-implementation, boost-asio
 ```
 
 ## Topics
+
 ```
 TWS API, Interactive Brokers, Options Trading, Box Spreads, C++ Implementation, Socket Programming, Trading Strategies, API Integration
 ```
 
 ## Use Cases
+
 ```
 Research TWS API implementation, Summarize YouTube tutorials, Create documentation from videos, Research trading strategies, Get code examples for TWS API
 ```
 
 ## Content Types
+
 ```
 documentation, tutorial, video, article, code examples, implementation guide
 ```
@@ -85,12 +97,15 @@ documentation, tutorial, video, article, code examples, implementation guide
 ## Metadata Summary
 
 ### Name
+
 TWS Automated Trading - Complete Resources
 
 ### Description
+
 Complete knowledge base for TWS Automated Trading project including GitHub repository documentation, TWS API implementation videos, trading tutorials, and implementation articles.
 
 ### Topics
+
 - TWS API
 - Interactive Brokers
 - Options Trading
@@ -101,6 +116,7 @@ Complete knowledge base for TWS Automated Trading project including GitHub repos
 - API Integration
 
 ### Use Cases
+
 - Research TWS API implementation
 - Summarize YouTube tutorials
 - Create documentation from videos
@@ -108,6 +124,7 @@ Complete knowledge base for TWS Automated Trading project including GitHub repos
 - Get code examples for TWS API
 
 ### Content Types
+
 - documentation
 - tutorial
 - video
@@ -116,4 +133,5 @@ Complete knowledge base for TWS Automated Trading project including GitHub repos
 - implementation guide
 
 ### Tags
+
 tws-api, trading, options, documentation, youtube, tutorial, ib-api, c++, socket-implementation, boost-asio

@@ -5,6 +5,7 @@ This document summarizes learnings from the [ib_async](https://github.com/ib-api
 ## Overview
 
 `ib_async` is a Python library that serves as a successor to `ib_insync`, providing:
+
 - **Asynchronous support** using Python's `asyncio`
 - **Synchronous interface** for traditional blocking calls
 - **Type annotations** for better code clarity
@@ -17,12 +18,14 @@ While `ib_async` is Python-based and our implementation is C++, we can learn val
 ### 1. Dual Interface Pattern (Sync/Async)
 
 **ib_async Approach:**
+
 - Provides both synchronous and asynchronous methods
 - Users choose the interface that fits their needs
 - Async methods use `async/await` syntax
 - Sync methods provide blocking behavior
 
 **Example Pattern:**
+
 ```python
 # Async interface
 async def get_market_data(self, contract):
@@ -35,12 +38,14 @@ def get_market_data_sync(self, contract):
 ```
 
 **Our C++ Implementation:**
+
 - We use **threading** for async behavior (EReader thread)
 - Methods are **non-blocking** by default (callbacks)
 - We provide **synchronous wrappers** with timeouts
 - Similar pattern but using C++ threading instead of async/await
 
 **Comparison:**
+
 ```cpp
 // Our approach: Non-blocking with callbacks
 void request_market_data(const Contract& contract, MarketDataCallback callback) {
@@ -67,16 +72,19 @@ std::optional<MarketData> request_market_data_sync(const Contract& contract, int
 ### 2. Request-Response Correlation
 
 **ib_async Pattern:**
+
 - Tracks pending requests with unique IDs
 - Correlates responses to requests
 - Provides futures/promises for async operations
 
 **Our Implementation:**
+
 - We use `request_id` and `ticker_id` for correlation
 - Callbacks are registered per request ID
 - Similar pattern but with callback-based approach
 
 **Potential Improvement:**
+
 ```cpp
 // Could add request tracking with futures
 class RequestTracker {
@@ -101,11 +109,13 @@ class RequestTracker {
 ### 3. Connection State Management
 
 **ib_async Pattern:**
+
 - Clear connection state machine
 - Automatic reconnection with backoff
 - Connection health monitoring
 
 **Our Implementation:**
+
 - ✅ We have connection state management (`ConnectionState` enum)
 - ✅ We have automatic reconnection with exponential backoff
 - ✅ We have connection health monitoring
@@ -114,11 +124,13 @@ class RequestTracker {
 ### 4. Error Handling and Recovery
 
 **ib_async Pattern:**
+
 - Comprehensive error categorization
 - Automatic retry for transient errors
 - Error callbacks with context
 
 **Our Implementation:**
+
 - ✅ We categorize errors (connection, authentication, system, informational)
 - ✅ We provide error guidance messages
 - ✅ We have error callbacks
@@ -127,11 +139,13 @@ class RequestTracker {
 ### 5. Data Structure Management
 
 **ib_async Pattern:**
+
 - Maintains live data structures (contracts, orders, positions)
 - Automatic updates via callbacks
 - Thread-safe access patterns
 
 **Our Implementation:**
+
 - ✅ We maintain live data structures (`market_data_`, `orders_`, `positions_`)
 - ✅ Automatic updates via EWrapper callbacks
 - ✅ Thread-safe with mutexes
@@ -174,6 +188,7 @@ client.request_market_data(contract, [](const MarketData& data) {
 **Pattern:** Track pending requests and correlate responses
 
 **Our Status:** ✅ Partially implemented
+
 - We track request IDs
 - We register callbacks per request
 - **Could improve:** Add timeout handling for requests
@@ -183,6 +198,7 @@ client.request_market_data(contract, [](const MarketData& data) {
 **Pattern:** Provide blocking wrappers around async operations
 
 **Our Status:** ⚠️ Not fully implemented
+
 - Our methods are callback-based (non-blocking)
 - **Could add:** Synchronous wrappers using `std::future`/`std::promise`
 
@@ -191,6 +207,7 @@ client.request_market_data(contract, [](const MarketData& data) {
 **Pattern:** Use strong typing for better code clarity
 
 **Our Status:** ✅ Implemented
+
 - We use C++ types (`types::OptionContract`, `types::Order`, etc.)
 - Type-safe conversions between TWS and our types
 
@@ -199,6 +216,7 @@ client.request_market_data(contract, [](const MarketData& data) {
 **Pattern:** Clear connection lifecycle management
 
 **Our Status:** ✅ Implemented
+
 - Connection states: Disconnected → Connecting → Connected → Error
 - Automatic reconnection
 - Health monitoring
@@ -208,6 +226,7 @@ client.request_market_data(contract, [](const MarketData& data) {
 **Pattern:** Automatic recovery from transient errors
 
 **Our Status:** ⚠️ Partially implemented
+
 - We handle connection errors
 - **Could improve:** Add retry logic for specific API errors
 
@@ -313,10 +332,12 @@ void place_order_with_retry(const Order& order, int max_retries = 3) {
 ### 4. Event-Driven Architecture
 
 **ib_async Pattern:**
+
 - Uses events for coordination
 - `updateEvent`, `fillEvent`, etc.
 
 **Our Implementation:**
+
 - We use callbacks (similar pattern)
 - **Could improve:** Add event objects for better coordination
 
@@ -374,19 +395,19 @@ public:
 
 ### Medium Priority
 
-3. **Add Automatic Retry Logic**
+1. **Add Automatic Retry Logic**
    - Retry transient errors automatically
    - Configurable retry policies
    - Exponential backoff for retries
 
-4. **Event-Based Coordination**
+2. **Event-Based Coordination**
    - Add event objects for better coordination
    - Similar to ib_async's event pattern
    - Easier to use than raw callbacks
 
 ### Low Priority
 
-5. **Request Correlation Improvements**
+1. **Request Correlation Improvements**
    - Better tracking of request-response pairs
    - Automatic cleanup of completed requests
    - Request statistics and monitoring
@@ -401,6 +422,7 @@ While `ib_async` is Python-based and uses `asyncio`, we can learn valuable patte
 4. **Event Coordination**: Event-based patterns for better coordination
 
 Our current implementation already follows many best practices:
+
 - ✅ Thread-safe data structures
 - ✅ Connection state management
 - ✅ Automatic reconnection
@@ -408,6 +430,7 @@ Our current implementation already follows many best practices:
 - ✅ Comprehensive error handling
 
 **Main gaps:**
+
 - ⚠️ Synchronous wrappers for simpler use cases
 - ⚠️ Request timeout handling
 - ⚠️ Automatic retry for transient errors

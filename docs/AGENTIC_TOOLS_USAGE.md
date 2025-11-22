@@ -57,6 +57,7 @@ Project: TWS API Integration
 ```
 
 **Benefits**:
+
 - Track progress on complex integration
 - Manage dependencies between tasks
 - Share task list with team via git
@@ -76,6 +77,7 @@ Content: Box spreads require careful risk management. Always:
 ```
 
 **Benefits**:
+
 - AI remembers your trading strategy preferences
 - Context persists across sessions
 - Team can share knowledge via git
@@ -99,11 +101,13 @@ Project: Box Spread Bag Feature
 ### Creating Tasks
 
 **Ask the AI**:
+
 - "Create a task for implementing TWS API connection"
 - "Add a subtask to test paper trading connection"
 - "Create a project for box spread bag feature"
 
 **The AI will**:
+
 - Create tasks with appropriate metadata
 - Set up hierarchy automatically
 - Add dependencies if mentioned
@@ -111,11 +115,13 @@ Project: Box Spread Bag Feature
 ### Storing Memories
 
 **Ask the AI**:
+
 - "Remember that we always use dry-run mode for testing"
 - "Store that box spreads require 4-leg orders"
 - "Save my preference for C++20 standard"
 
 **The AI will**:
+
 - Create memory files in appropriate categories
 - Store in `.agentic-tools-mcp/memories/`
 - Make it searchable for future sessions
@@ -123,11 +129,13 @@ Project: Box Spread Bag Feature
 ### Querying Tasks
 
 **Ask the AI**:
+
 - "What tasks are in progress?"
 - "Show me all tasks for TWS integration"
 - "What's blocking the box spread bag feature?"
 
 **The AI will**:
+
 - Query the task database
 - Show hierarchical structure
 - Display dependencies and status
@@ -135,11 +143,13 @@ Project: Box Spread Bag Feature
 ### Searching Memories
 
 **Ask the AI**:
+
 - "What do we know about box spread strategies?"
 - "Search memories for TWS API information"
 - "What are my preferences for testing?"
 
 **The AI will**:
+
 - Search across all memory files
 - Return relevant memories with context
 - Use text-based search for intelligent matching
@@ -149,21 +159,25 @@ Project: Box Spread Bag Feature
 ### Workflow 1: Starting a New Feature
 
 1. **Create Project**:
+
    ```
    "Create a project for implementing hedge manager"
    ```
 
 2. **Break Down into Tasks**:
+
    ```
    "Add tasks for hedge manager: design, implementation, testing"
    ```
 
 3. **Add Subtasks**:
+
    ```
    "Add subtasks to the implementation task: position calculation, risk limits, execution"
    ```
 
 4. **Set Dependencies**:
+
    ```
    "Make testing task depend on implementation task"
    ```
@@ -171,16 +185,19 @@ Project: Box Spread Bag Feature
 ### Workflow 2: Storing Knowledge
 
 1. **Store Technical Information**:
+
    ```
    "Remember that QuestDB uses PostgreSQL wire protocol on port 8812"
    ```
 
 2. **Store Preferences**:
+
    ```
    "Remember I prefer 2-space indentation and Allman braces"
    ```
 
 3. **Store Context**:
+
    ```
    "Remember this is trading software - always emphasize safety"
    ```
@@ -188,16 +205,19 @@ Project: Box Spread Bag Feature
 ### Workflow 3: Tracking Progress
 
 1. **Update Task Status**:
+
    ```
    "Mark TWS API connection task as in-progress"
    ```
 
 2. **Check Dependencies**:
+
    ```
    "What tasks are blocking the box spread bag feature?"
    ```
 
 3. **Review Progress**:
+
    ```
    "Show me all tasks in the TWS integration project"
    ```
@@ -207,6 +227,7 @@ Project: Box Spread Bag Feature
 Since task and memory data is stored in `.agentic-tools-mcp/`, you can:
 
 1. **Commit with Code**:
+
    ```bash
    git add .agentic-tools-mcp/
    git commit -m "Update task list and agent memories"

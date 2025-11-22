@@ -26,6 +26,7 @@ This document provides comprehensive research on XGBoost (eXtreme Gradient Boost
 ### Gradient Boosting Framework
 
 XGBoost implements **Gradient Boosting Decision Trees (GBDT)**, which:
+
 - Builds models sequentially, with each new model correcting errors from previous models
 - Uses gradient descent to minimize loss functions
 - Combines weak learners (decision trees) into a strong predictive model
@@ -112,6 +113,7 @@ XGBoost is written in C++, making it ideal for integration with C++ trading syst
 **Problem**: Identify profitable box spread opportunities from large option chains
 
 **XGBoost Solution**:
+
 - **Features**:
   - Bid/ask spreads for each leg
   - Volume and open interest
@@ -128,6 +130,7 @@ XGBoost is written in C++, making it ideal for integration with C++ trading syst
 **Problem**: Determine optimal timing for box spread execution
 
 **XGBoost Solution**:
+
 - **Features**:
   - Current spread width
   - Recent spread history
@@ -143,6 +146,7 @@ XGBoost is written in C++, making it ideal for integration with C++ trading syst
 **Problem**: Predict likelihood of execution risk or early assignment
 
 **XGBoost Solution**:
+
 - **Features**:
   - Option Greeks (delta, gamma, theta, vega)
   - Time to expiration
@@ -158,6 +162,7 @@ XGBoost is written in C++, making it ideal for integration with C++ trading syst
 **Problem**: Determine optimal position size based on market conditions
 
 **XGBoost Solution**:
+
 - **Features**:
   - Account equity
   - Current portfolio risk
@@ -173,6 +178,7 @@ XGBoost is written in C++, making it ideal for integration with C++ trading syst
 **Problem**: Identify market conditions that favor box spread strategies
 
 **XGBoost Solution**:
+
 - **Features**:
   - VIX level
   - Interest rate environment
@@ -535,6 +541,7 @@ shap>=0.42.0   # For model interpretability
 **Goal**: Predict if a box spread opportunity will be profitable
 
 **Features**:
+
 - Spread width (bid-ask)
 - Volume and open interest for each leg
 - Time to expiration
@@ -552,6 +559,7 @@ shap>=0.42.0   # For model interpretability
 **Goal**: Predict likelihood of execution problems
 
 **Features**:
+
 - Order book depth
 - Recent volume
 - Spread stability
@@ -568,6 +576,7 @@ shap>=0.42.0   # For model interpretability
 **Goal**: Determine optimal position size
 
 **Features**:
+
 - Account equity
 - Current portfolio risk
 - Opportunity profitability
@@ -621,6 +630,7 @@ XGBoost is an excellent choice for machine learning in trading applications due 
 - **Flexibility**: Handles various data types and problems
 
 For box spread trading, XGBoost can enhance:
+
 - Opportunity detection
 - Risk assessment
 - Execution timing

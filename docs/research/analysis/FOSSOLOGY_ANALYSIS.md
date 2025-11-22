@@ -69,12 +69,14 @@ FOSSology is an open-source license compliance software system designed to help 
 ### Existing Tools
 
 **scancode-toolkit** (Already Installed):
+
 - **Location**: `.venv/scancode/` (via `scripts/install_scancode_env.sh`)
 - **Version**: 32.2.0
 - **Purpose**: License and copyright scanning
 - **Usage**: CLI-based scanning
 
 **Current Setup**:
+
 ```bash
 # Install scancode
 ./scripts/install_scancode_env.sh
@@ -127,11 +129,13 @@ scancode --license --copyright --info -clp --json-pp build/scancode.json .
 #### License Scanning
 
 **FOSSology**:
+
 - Multiple agents (Nomos, Monk) for different detection methods
 - Database-backed for historical tracking
 - Web UI for review and bulk operations
 
 **scancode-toolkit**:
+
 - Single scanning engine
 - JSON output for programmatic processing
 - CLI-based, script-friendly
@@ -141,11 +145,13 @@ scancode --license --copyright --info -clp --json-pp build/scancode.json .
 #### Copyright Detection
 
 **FOSSology**:
+
 - Dedicated copyright agent
 - False positive filtering
 - Web UI for review
 
 **scancode-toolkit**:
+
 - Copyright detection included
 - JSON output format
 - CLI-based
@@ -155,11 +161,13 @@ scancode --license --copyright --info -clp --json-pp build/scancode.json .
 #### SPDX Generation
 
 **FOSSology**:
+
 - SPDX 2.0 support
 - Web UI for generating reports
 - Database-backed
 
 **scancode-toolkit**:
+
 - SPDX 2.0+ support
 - CLI-based generation
 - JSON/SPDX output formats
@@ -169,10 +177,12 @@ scancode --license --copyright --info -clp --json-pp build/scancode.json .
 #### Export Control Scanning
 
 **FOSSology**:
+
 - Dedicated export control agent
 - Regulatory compliance focus
 
 **scancode-toolkit**:
+
 - Limited export control scanning
 - Focus on licenses/copyrights
 
@@ -187,6 +197,7 @@ scancode --license --copyright --info -clp --json-pp build/scancode.json .
 **Action**: Continue using scancode-toolkit for license scanning.
 
 **Benefits**:
+
 - Already installed and configured
 - Simpler (CLI tool, no database)
 - Lower resource usage
@@ -194,6 +205,7 @@ scancode --license --copyright --info -clp --json-pp build/scancode.json .
 - Easy CI/CD integration
 
 **Drawbacks**:
+
 - No web UI for collaborative review
 - No historical tracking (database)
 - Manual deduplication needed
@@ -205,6 +217,7 @@ scancode --license --copyright --info -clp --json-pp build/scancode.json .
 **Action**: Deploy FOSSology alongside scancode for advanced features.
 
 **Benefits**:
+
 - Web UI for license review
 - Database for historical tracking
 - Multi-user support (if team grows)
@@ -212,6 +225,7 @@ scancode --license --copyright --info -clp --json-pp build/scancode.json .
 - Deduplication for efficiency
 
 **Drawbacks**:
+
 - Additional infrastructure (database, web server)
 - Higher resource usage
 - More complex setup
@@ -224,11 +238,13 @@ scancode --license --copyright --info -clp --json-pp build/scancode.json .
 **Action**: Use scancode for CI/CD, FOSSology for periodic audits.
 
 **Benefits**:
+
 - Fast CI/CD scans (scancode)
 - Comprehensive audits (FOSSology)
 - Best of both worlds
 
 **Drawbacks**:
+
 - Two tools to maintain
 - More complex workflow
 

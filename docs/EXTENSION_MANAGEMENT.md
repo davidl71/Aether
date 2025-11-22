@@ -9,6 +9,7 @@ This document outlines which extensions should be **workspace-only** vs **global
 These extensions should be **disabled globally** and **enabled only in this workspace** to prevent conflicts:
 
 #### Language-Specific Extensions
+
 - **C++**: `ms-vscode.cpptools`, `ms-vscode.cmake-tools`
   - Different projects may need different C++ standards or compiler settings
   - CMake configuration is project-specific
@@ -30,6 +31,7 @@ These extensions should be **disabled globally** and **enabled only in this work
   - Package.swift configurations are project-specific
 
 #### Project-Specific Tools
+
 - **MCP Integration**: `yutengjing.vscode-mcp`
   - MCP server configurations are workspace-specific
 
@@ -37,6 +39,7 @@ These extensions should be **disabled globally** and **enabled only in this work
   - Project-specific AI configurations
 
 #### AI/Assistant Extensions (Consider Workspace-Only)
+
 - **GitHub Copilot**: `github.copilot`, `github.copilot-chat`
   - Can be global but may benefit from workspace-specific settings
   - Consider workspace-only if you want project-specific suggestions
@@ -45,6 +48,7 @@ These extensions should be **disabled globally** and **enabled only in this work
   - Similar to Copilot - can be global but workspace configs may help
 
 #### Build & Linting Tools
+
 - **ShellCheck**: `timonwong.shellcheck`
   - Different projects may have different shell script standards
 
@@ -53,6 +57,7 @@ These extensions should be **disabled globally** and **enabled only in this work
 These extensions can be safely enabled globally as they don't conflict:
 
 #### General Utilities
+
 - **EditorConfig**: `editorconfig.editorconfig`
   - Respects `.editorconfig` files per-project
   - No conflicts across projects
@@ -61,16 +66,19 @@ These extensions can be safely enabled globally as they don't conflict:
   - Generic YAML support, respects project schemas
 
 #### Git Tools
+
 - **GitLens**: `eamodio.gitlens`
   - Works with any Git repository
   - No project-specific conflicts
 
 #### Markdown Tools
+
 - **Markdown All in One**: `yzhang.markdown-all-in-one`
 - **Markdown Lint**: `davidanson.vscode-markdownlint`
   - Markdown is universal, respects project-specific rules
 
 #### Code Quality (Universal)
+
 - **Code Spell Checker**: `streetsidesoftware.code-spell-checker`
   - Respects project-specific dictionaries
   - Can be configured per-workspace
@@ -145,6 +153,7 @@ These are listed in `unwantedRecommendations` to prevent installation prompts an
 ### Extension Conflicts
 
 If you experience conflicts:
+
 1. Check if extension is enabled globally and workspace
 2. Disable globally, enable workspace-only
 3. Reload VS Code window
@@ -152,6 +161,7 @@ If you experience conflicts:
 ### Performance Issues
 
 If VS Code is slow:
+
 1. Check which extensions are globally enabled
 2. Disable unused language extensions globally
 3. Enable only in workspaces that need them
@@ -160,6 +170,7 @@ If VS Code is slow:
 ### Team Consistency
 
 If team members have different extensions:
+
 1. Ensure `.vscode/extensions.json` is committed
 2. Team members should install workspace recommendations
 3. Consider adding extension version pinning if needed

@@ -297,7 +297,8 @@ If you want project-specific user overrides, create `.vscode/settings.json.user`
 
 ## Migration Checklist
 
-### Move to User Settings:
+### Move to User Settings
+
 - [ ] `editor.fontSize`
 - [ ] `editor.fontFamily`
 - [ ] `editor.fontLigatures`
@@ -316,7 +317,8 @@ If you want project-specific user overrides, create `.vscode/settings.json.user`
 - [ ] `git.autofetch` (optional)
 - [ ] `workbench.settings.enableNaturalLanguageSearch`
 
-### Keep in Workspace:
+### Keep in Workspace
+
 - [ ] All C++ compiler/path settings
 - [ ] CMake settings
 - [ ] File exclusions

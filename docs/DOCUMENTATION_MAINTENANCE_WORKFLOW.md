@@ -66,12 +66,14 @@ This document defines the workflow for maintaining `API_DOCUMENTATION_INDEX.md` 
 ```
 
 **What it does**:
+
 - Checks all URLs in documentation files
 - Validates HTTP status codes
 - Reports broken links
 - Skips local links, email links, and anchors
 
 **When to run**:
+
 - Before committing documentation changes
 - During quarterly reviews
 - When adding new APIs
@@ -83,12 +85,14 @@ This document defines the workflow for maintaining `API_DOCUMENTATION_INDEX.md` 
 ```
 
 **What it does**:
+
 - Validates entry format against template
 - Checks for required fields
 - Warns about missing recommended fields
 - Validates URL formatting
 
 **When to run**:
+
 - Before committing documentation changes
 - When adding new APIs
 - During code reviews
@@ -100,11 +104,13 @@ This document defines the workflow for maintaining `API_DOCUMENTATION_INDEX.md` 
 ```
 
 **What it does**:
+
 - Generates comparison tables from index
 - Updates summary document
 - Extracts provider information
 
 **When to run**:
+
 - After major documentation updates
 - When adding multiple new APIs
 - During quarterly reviews
@@ -147,6 +153,7 @@ exit 0
 ```
 
 **Make executable**:
+
 ```bash
 chmod +x .git/hooks/pre-commit
 ```
@@ -222,6 +229,7 @@ Consider maintaining a changelog for major API changes:
 ### Marking APIs as Deprecated
 
 1. **Add deprecation notice**:
+
    ```markdown
    - **Status**: ⚠️ Deprecated (as of 2025-01-27)
    - **Reason**: API no longer maintained / replaced by X
@@ -265,18 +273,22 @@ Consider maintaining a changelog for major API changes:
 ## Maintenance Schedule
 
 ### Daily
+
 - None (automated validation on commits)
 
 ### Weekly
+
 - Review any broken link reports
 - Check for new API announcements
 
 ### Monthly
+
 - Run full validation suite
 - Review deprecated APIs
 - Update version numbers
 
 ### Quarterly
+
 - Comprehensive documentation review
 - Update comparison tables
 - Review and update topic indices
@@ -290,12 +302,14 @@ Consider maintaining a changelog for major API changes:
 
 **Issue**: Format validation fails
 **Solution**:
+
 1. Check entry against template
 2. Ensure required fields are present
 3. Verify URL formatting
 
 **Issue**: Link validation fails
 **Solution**:
+
 1. Check if URL is accessible
 2. Verify URL format (angle brackets)
 3. Check if URL requires authentication
@@ -305,6 +319,7 @@ Consider maintaining a changelog for major API changes:
 
 **Issue**: Merge conflicts in documentation
 **Solution**:
+
 1. Resolve conflicts manually
 2. Run validation after resolution
 3. Update summary if needed

@@ -32,6 +32,7 @@
 These extensions are from well-known, trusted publishers:
 
 **Microsoft/VS Code Official:**
+
 - `ms-vscode.*` - Official VS Code extensions
 - `ms-python.*` - Official Python extensions
 - `ms-toolsai.*` - Official Jupyter extensions
@@ -39,6 +40,7 @@ These extensions are from well-known, trusted publishers:
 - `ms-azuretools.*` - Official Azure tools
 
 **Major Tech Companies:**
+
 - `github.*` - GitHub official
 - `redhat.*` - Red Hat official
 - `amazonwebservices.*` - AWS official (⚠️ verify up-to-date after July 2025 incident)
@@ -47,6 +49,7 @@ These extensions are from well-known, trusted publishers:
 - `anysphere.*` - Cursor official
 
 **Well-Known Open Source:**
+
 - `rust-lang.*` - Rust official
 - `sswg.*` - Swift official
 - `dbaeumer.*` - ESLint official
@@ -63,6 +66,7 @@ These extensions are from well-known, trusted publishers:
 These extensions are from less-known publishers and should be verified:
 
 **Low-Risk (Likely Safe, but Verify):**
+
 - `1password.op-vscode` - 1Password official (should be safe)
 - `vercel.turbo-vsc` - Vercel official (should be safe)
 - `vscodevim.vim` - Popular Vim extension (verify)
@@ -70,6 +74,7 @@ These extensions are from less-known publishers and should be verified:
 - `firefox-devtools.*` - Mozilla official (should be safe)
 
 **Medium-Risk (Review Recommended):**
+
 - `13xforever.language-x86-64-assembly` - Unknown publisher
 - `backnotprop.prompt-tower` - Unknown publisher
 - `barrettotte.ibmi-languages` - IBM i (verify if needed)
@@ -117,10 +122,12 @@ These extensions are from less-known publishers and should be verified:
 ### Immediate Actions
 
 1. **Verify Amazon Extensions**
+
    ```bash
    # Check if amazonwebservices extensions are up-to-date
    cursor --list-extensions --show-versions | grep amazonwebservices
    ```
+
    - Ensure latest versions after July 2025 security incident
    - Consider temporarily disabling if not actively used
 
@@ -141,6 +148,7 @@ These extensions are from less-known publishers and should be verified:
 ### High-Priority Reviews
 
 **Extensions to Review First:**
+
 1. `backnotprop.prompt-tower` - Unknown publisher
 2. `fridaplatform.fridagpt` - Unknown publisher
 3. `pascalx.sketchprompt` - Unknown publisher
@@ -150,6 +158,7 @@ These extensions are from less-known publishers and should be verified:
 ### Medium-Priority Reviews
 
 **Popular but Verify:**
+
 - `donjayamanne.githistory` - Popular, but verify publisher
 - `vadimcn.vscode-lldb` - Popular debugger, verify
 - `vscodevim.vim` - Popular Vim extension, verify
@@ -158,34 +167,40 @@ These extensions are from less-known publishers and should be verified:
 ### Low-Priority (Likely Safe)
 
 **Enterprise/IBM Extensions:**
+
 - `halcyontechltd.*` - IBM i tools (if you use IBM i)
 - `ibm.zopendebug` - IBM official
 - `zowe.*` - Zowe (if you use mainframe)
 
 **Specialized Tools:**
+
 - `barrettotte.ibmi-languages` - IBM i (if needed)
 - `broadcommfd.cobol-language-support` - COBOL (if needed)
 
 ## Security Best Practices
 
 ### 1. Extension Management
+
 - ✅ Keep extensions updated
 - ✅ Remove unused extensions
 - ✅ Review extension changelogs for security updates
 - ✅ Use workspace-specific extensions when possible
 
 ### 2. Publisher Verification
+
 - ✅ Verify publisher identity matches expected source
 - ✅ Check for verified publisher badges
 - ✅ Be cautious of newly published extensions
 - ✅ Review extension GitHub repository if available
 
 ### 3. Permissions Review
+
 - ✅ Review extension permissions before installing
 - ✅ Be cautious of extensions requesting broad permissions
 - ✅ Use principle of least privilege
 
 ### 4. Monitoring
+
 - ✅ Regularly audit installed extensions
 - ✅ Monitor for security advisories
 - ✅ Check extension update notes
@@ -193,7 +208,7 @@ These extensions are from less-known publishers and should be verified:
 
 ## Tools for Verification
 
-1. **VS Code Marketplace**: https://marketplace.visualstudio.com/vscode
+1. **VS Code Marketplace**: <https://marketplace.visualstudio.com/vscode>
    - Check extension details, ratings, reviews
    - Verify publisher identity
    - Check download counts
@@ -204,6 +219,7 @@ These extensions are from less-known publishers and should be verified:
    - Verify repository ownership
 
 3. **Extension Security Scanner**: Use the script:
+
    ```bash
    ./scripts/check_extension_security.sh
    ```
@@ -211,18 +227,21 @@ These extensions are from less-known publishers and should be verified:
 ## Risk Assessment
 
 ### Low Risk Extensions
+
 - All Microsoft/VS Code official extensions
 - Major tech company extensions (GitHub, Red Hat, AWS, Google)
 - Well-known open-source projects (Rust, Swift, ESLint)
 - Popular extensions with high download counts
 
 ### Medium Risk Extensions
+
 - Extensions from unknown publishers with low download counts
 - Recently published extensions
 - Extensions with broad permissions
 - Extensions that execute code or access network
 
 ### High Risk Extensions
+
 - Extensions from unverified publishers
 - Extensions with suspicious behavior
 - Extensions that request excessive permissions

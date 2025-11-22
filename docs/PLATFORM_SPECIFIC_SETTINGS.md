@@ -74,6 +74,7 @@
 **CMake Preset**: `windows-x64-debug` or `windows-x64-release`
 
 **Alternative (MinGW-w64)**:
+
 ```json
 {
   "C_Cpp.default.intelliSenseMode": "windows-gcc-x64",
@@ -108,6 +109,7 @@
 **CMake Preset**: `linux-x64-debug` or `linux-x64-release`
 
 **Dependencies**:
+
 ```bash
 sudo apt-get update
 sudo apt-get install build-essential cmake ninja-build
@@ -122,6 +124,7 @@ sudo apt-get install python3 python3-pip
 **Best Practice**: Let VS Code auto-detect from `compile_commands.json`:
 
 1. **Configure CMake**:
+
    ```bash
    cmake --preset <your-platform-preset>
    ```
@@ -140,18 +143,21 @@ sudo apt-get install python3 python3-pip
 ## Finding Your Compiler Path
 
 ### macOS
+
 ```bash
 which clang++
 # Output: /usr/bin/clang++ or /opt/homebrew/bin/clang++
 ```
 
 ### Windows (MSVC)
+
 ```bash
 where cl
 # Or check: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/
 ```
 
 ### Linux
+
 ```bash
 which g++
 # Output: /usr/bin/g++
@@ -162,6 +168,7 @@ which g++
 ## Finding Include Paths
 
 ### macOS
+
 ```bash
 # Homebrew (Apple Silicon)
 ls /opt/homebrew/include
@@ -174,12 +181,14 @@ ls /usr/include
 ```
 
 ### Windows
+
 ```bash
 # Visual Studio
 dir "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\*\include"
 ```
 
 ### Linux
+
 ```bash
 ls /usr/include
 ls /usr/local/include
@@ -193,11 +202,13 @@ ls /usr/include/c++/11  # GCC version-specific
 ### IntelliSense Not Working
 
 1. **Check `compile_commands.json` exists**:
+
    ```bash
    ls build/*/compile_commands.json
    ```
 
 2. **Regenerate**:
+
    ```bash
    cmake --preset <your-preset>
    ```

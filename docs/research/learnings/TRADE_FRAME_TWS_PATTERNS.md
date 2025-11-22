@@ -9,12 +9,13 @@
 ## Overview
 
 Trade-Frame's `TFInteractiveBrokers` library provides excellent patterns for TWS API integration, especially:
+
 - Connection establishment
 - EReader threading
 - Multi-leg order management (ComboTrading example)
 - Thread safety patterns
 
-**Repository:** https://github.com/rburkholder/trade-frame
+**Repository:** <https://github.com/rburkholder/trade-frame>
 **Key Application:** `ComboTrading` - Perfect example for 4-leg box spreads
 
 ---
@@ -54,6 +55,7 @@ Trade-Frame's `TFInteractiveBrokers` library provides excellent patterns for TWS
 **Key Finding:** Our TWS connection patterns are already aligned with Trade-Frame's best practices! ✅
 
 **What to Improve:**
+
 1. Add more error codes to error guidance map
 2. Enhance connection state management
 3. Improve error context logging
@@ -114,6 +116,7 @@ void start_reader_thread() {
 **Key Patterns:**
 
 1. **Combo Order Creation:**
+
    ```cpp
    // Use IBKR Combo Orders (BAG secType) for atomic execution
    - All legs in single order
@@ -122,6 +125,7 @@ void start_reader_thread() {
    ```
 
 2. **Leg Synchronization:**
+
    ```cpp
    // Track all legs together
    - Monitor fill status across all legs
@@ -130,6 +134,7 @@ void start_reader_thread() {
    ```
 
 3. **Rollback Logic:**
+
    ```cpp
    // If using individual orders (fallback):
    - If any leg fails, cancel remaining legs
@@ -140,6 +145,7 @@ void start_reader_thread() {
 ### Application to Box Spreads
 
 **Box Spread Structure:**
+
 - Long call at K1
 - Short call at K2
 - Long put at K2
@@ -148,6 +154,7 @@ void start_reader_thread() {
 **Trade-Frame Pattern Application:**
 
 1. **Use Combo Orders (Recommended):**
+
    ```cpp
    // Create BAG (basket) order with 4 legs
    Contract combo;
@@ -168,6 +175,7 @@ void start_reader_thread() {
    ```
 
 2. **Leg Tracking (if using individual orders):**
+
    ```cpp
    // Track all 4 legs together
    struct BoxSpreadOrder {
@@ -188,6 +196,7 @@ void start_reader_thread() {
    ```
 
 3. **Rollback Strategy:**
+
    ```cpp
    // If combo order rejected, no rollback needed (atomic)
    // If using individual orders:
@@ -301,7 +310,7 @@ private:
 
 ## 7. Resources
 
-- **Trade-Frame Repository:** https://github.com/rburkholder/trade-frame
+- **Trade-Frame Repository:** <https://github.com/rburkholder/trade-frame>
 - **ComboTrading Example:** See `ComboTrading/` directory in Trade-Frame
 - **TFInteractiveBrokers Library:** See `lib/TFInteractiveBrokers/` directory
 - **Our Learnings Document:** `docs/TRADE_FRAME_LEARNINGS.md`

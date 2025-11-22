@@ -54,22 +54,26 @@ For faster builds only:
 **Impact**: 10-100x faster rebuilds
 
 **Setup**:
+
 ```bash
 ./scripts/setup_ram_optimization.sh enable
 source .ram-optimization-env
 ```
 
 **What it does**:
+
 - Links `~/.ccache` → RAM disk
 - Links `~/.sccache` → RAM disk
 - Sets cache sizes to 4GB each
 
 **Benefits**:
+
 - Cache hits from RAM instead of SSD
 - 100x+ faster cache lookups
 - Reduced disk wear
 
 **Manual setup**:
+
 ```bash
 # ccache
 ccache --max-size=4G
@@ -89,6 +93,7 @@ sccache --start-server
 **Impact**: 2-5x faster builds (I/O bound)
 
 **Setup**:
+
 ```bash
 # Create RAM disk
 ./scripts/setup_ramdisk.sh create
@@ -102,6 +107,7 @@ cmake --build build-ramdisk
 ```
 
 **Benefits**:
+
 - Faster compilation (faster I/O)
 - Reduced SSD wear
 - Clean builds don't clutter disk
@@ -115,21 +121,25 @@ cmake --build build-ramdisk
 **Impact**: Faster Python operations, reduced disk I/O
 
 **Setup**:
+
 ```bash
 ./scripts/setup_ram_optimization.sh enable
 source .ram-optimization-env
 ```
 
 **What it does**:
+
 - Links `~/.cache/pip` → RAM disk
 - Sets `PYTHONPYCACHEPREFIX` to RAM disk
 
 **Benefits**:
+
 - Faster pip installs (cache from RAM)
 - Faster Python module imports
 - Cleaner disk
 
 **Manual setup**:
+
 ```bash
 export PYTHONPYCACHEPREFIX="/Volumes/IBBoxSpreadDev/caches/pip/__pycache__"
 export pip_cache_dir="/Volumes/IBBoxSpreadDev/caches/pip"
@@ -142,21 +152,25 @@ export pip_cache_dir="/Volumes/IBBoxSpreadDev/caches/pip"
 **Impact**: Faster Rust builds (crate downloads and compilation)
 
 **Setup**:
+
 ```bash
 ./scripts/setup_ram_optimization.sh enable
 source .ram-optimization-env
 ```
 
 **What it does**:
+
 - Links `~/.cargo/registry` → RAM disk (crate registry cache)
 - Links `~/.cargo/git` → RAM disk (git dependencies cache)
 
 **Benefits**:
+
 - Faster crate downloads (from RAM cache)
 - Faster Rust compilation
 - Reduced disk usage
 
 **Manual setup**:
+
 ```bash
 # Move cargo registry cache
 mv ~/.cargo/registry /Volumes/IBBoxSpreadDev/caches/cargo-registry
@@ -174,20 +188,24 @@ ln -sf /Volumes/IBBoxSpreadDev/caches/cargo-git ~/.cargo/git
 **Impact**: Faster npm/yarn operations
 
 **Setup**:
+
 ```bash
 ./scripts/setup_ram_optimization.sh enable
 source .ram-optimization-env
 ```
 
 **What it does**:
+
 - Links `~/.cache/node` → RAM disk
 - Sets `npm_config_cache` environment variable
 
 **Benefits**:
+
 - Faster npm/yarn installs
 - Faster package resolution
 
 **Manual setup**:
+
 ```bash
 export npm_config_cache="/Volumes/IBBoxSpreadDev/caches/node"
 # Or for yarn
@@ -201,15 +219,18 @@ export YARN_CACHE_FOLDER="/Volumes/IBBoxSpreadDev/caches/yarn"
 **Impact**: Faster temp file operations
 
 **Setup**:
+
 ```bash
 ./scripts/setup_ram_optimization.sh enable
 source .ram-optimization-env
 ```
 
 **What it does**:
+
 - Sets `TMPDIR`, `TMP`, `TEMP` to RAM disk
 
 **Benefits**:
+
 - Faster temporary file I/O
 - Cleaner disk (temp files disappear on reboot)
 
@@ -220,6 +241,7 @@ source .ram-optimization-env
 **Impact**: Shared cache across multiple machines
 
 **Setup**:
+
 ```bash
 # Install Redis (if not installed)
 brew install redis
@@ -229,16 +251,19 @@ brew install redis
 ```
 
 **What it does**:
+
 - Configures sccache to use Redis backend
 - Allows sharing cache across multiple development machines
 - Can use Redis running on RAM (via Docker with tmpfs)
 
 **Benefits**:
+
 - Shared cache across team/workstations
 - Faster clean builds on new machines
 - Centralized cache management
 
 **Configuration**:
+
 ```bash
 # Start Redis
 brew services start redis
@@ -250,6 +275,7 @@ sccache --start-server
 ```
 
 **Multi-machine setup**:
+
 ```bash
 # On Redis server (expose Redis)
 redis-cli CONFIG SET bind 0.0.0.0
@@ -283,16 +309,19 @@ export SCCACHE_REDIS="redis://your-redis-server:6379"
 ## RAM Disk Size Recommendations
 
 ### Minimal Setup (8GB)
+
 - Build artifacts only
 - For: Small projects, limited RAM
 
 ### Recommended Setup (12GB)
+
 - Build artifacts
 - Compiler caches (ccache/sccache)
 - Python cache
 - For: Most development workflows
 
 ### Full Setup (16-24GB)
+
 - Build artifacts
 - All compiler caches
 - All package manager caches
@@ -433,16 +462,19 @@ ls -la ~/.ccache ~/.sccache ~/.cache/pip
 If you run out of RAM:
 
 1. Reduce RAM disk size:
+
    ```bash
    RAMDISK_SIZE_GB=8 ./scripts/setup_ramdisk.sh create
    ```
 
 2. Disable less critical caches:
+
    ```bash
    # Keep compiler caches, disable package caches
    ```
 
 3. Unmount build RAM disk when not needed:
+
    ```bash
    ./scripts/setup_ramdisk.sh unmount
    ```
@@ -454,6 +486,7 @@ If you run out of RAM:
 ### ccache/sccache + RAM Disk
 
 Best of both worlds:
+
 - Compiler caches in RAM (fast lookups)
 - Build artifacts in RAM (fast I/O)
 
@@ -467,6 +500,7 @@ cmake --build build-ramdisk
 ### RAM Disk + Redis sccache
 
 For teams:
+
 - Shared Redis cache (across machines)
 - Local RAM disk (fast builds)
 
@@ -490,6 +524,7 @@ For teams:
 **Total RAM Usage**: ~15-20GB for full optimization
 
 **Expected Speedup**:
+
 - Clean builds: 1.2-1.5x faster
 - Rebuilds: 2-10x faster (with cache)
 - Cache operations: 10-500x faster

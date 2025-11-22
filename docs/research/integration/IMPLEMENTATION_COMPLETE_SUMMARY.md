@@ -320,13 +320,13 @@ make -j16 -C build
 
 ### Python Integration
 
-8. `python/integration/order_factory.py` - Order factory pattern
-9. `python/integration/option_chain_manager.py` - Option chain caching
+1. `python/integration/order_factory.py` - Order factory pattern
+2. `python/integration/option_chain_manager.py` - Option chain caching
 
 ### Build Scripts
 
-10. `scripts/build_fast.sh` - Fast builds with ccache
-11. `scripts/build_distributed.sh` - Distributed builds with distcc
+1. `scripts/build_fast.sh` - Fast builds with ccache
+2. `scripts/build_distributed.sh` - Distributed builds with distcc
 
 ---
 
@@ -340,9 +340,9 @@ make -j16 -C build
 
 ### Python Integration
 
-4. `python/integration/market_data_handler.py` - Data quality and events
-5. `python/integration/strategy_runner.py` - Strategy class pattern
-6. `python/integration/execution_handler.py` - Order factory integration
+1. `python/integration/market_data_handler.py` - Data quality and events
+2. `python/integration/strategy_runner.py` - Strategy class pattern
+3. `python/integration/execution_handler.py` - Order factory integration
 
 ---
 

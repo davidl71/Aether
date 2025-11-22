@@ -7,7 +7,8 @@ This document tracks external resources (articles, blog posts, documentation, tu
 ### Trading Frameworks & Libraries
 
 #### Trade-Frame - C++17 Trading Library Framework
-- **URL**: https://github.com/rburkholder/trade-frame
+
+- **URL**: <https://github.com/rburkholder/trade-frame>
 - **Author**: Raymond P. Burkholder (rburkholder)
 - **Language**: C++17
 - **Topic**: Comprehensive trading library framework with IQFeed and IB TWS API integration
@@ -30,7 +31,8 @@ This document tracks external resources (articles, blog posts, documentation, tu
 ### TWS API Implementation
 
 #### Making a C++ Interactive Brokers TWS Client with a Custom Socket Implementation
-- **URL**: https://www.vitaltrades.com/2024/02/02/making-a-c-interactive-brokers-tws-client-with-a-custom-socket-implementation/
+
+- **URL**: <https://www.vitaltrades.com/2024/02/02/making-a-c-interactive-brokers-tws-client-with-a-custom-socket-implementation/>
 - **Author**: AndrewAMD (VitalTrades LLC)
 - **Date**: February 2, 2024
 - **Topic**: Custom socket implementation for TWS API, replacing default socket implementation
@@ -62,7 +64,7 @@ This document tracks external resources (articles, blog posts, documentation, tu
 1. Click **"+ Add source"**
 2. Select **"Website"** or **"URL"**
 3. Paste the article URL:
-   - https://www.vitaltrades.com/2024/02/02/making-a-c-interactive-brokers-tws-client-with-a-custom-socket-implementation/
+   - <https://www.vitaltrades.com/2024/02/02/making-a-c-interactive-brokers-tws-client-with-a-custom-socket-implementation/>
 4. Click **"Add"** and wait for processing
 
 ### Step 3: Share the Notebook
@@ -165,25 +167,33 @@ docs/
 ## Best Practices
 
 ### 1. Tag Resources Properly
+
 Use descriptive tags when adding resources to NotebookLM:
+
 - `tws-api, socket-implementation, c++`
 - `trading, options, strategy`
 - `implementation, boost-asio, custom`
 
 ### 2. Organize by Topic
+
 Create separate notebooks for different topics:
+
 - **TWS API Resources**: All TWS API related articles
 - **Trading Strategies**: Options trading and box spread articles
 - **Implementation Guides**: Code examples and tutorials
 
 ### 3. Cross-Reference Documentation
+
 Link resource summaries to related documentation:
+
 - Reference `docs/ECLIENT_EWRAPPER_ARCHITECTURE.md` in TWS API articles
 - Link to `docs/TWS_API_BEST_PRACTICES.md` for best practices
 - Connect to `docs/TWS_INTEGRATION_STATUS.md` for integration status
 
 ### 4. Update Documentation Index
+
 After summarizing resources, update:
+
 - `docs/DOCUMENTATION_INDEX.md` - Add resource summaries
 - `docs/EXTERNAL_RESOURCES.md` - Update resource status
 
@@ -196,6 +206,7 @@ To request a resource summary, use this format:
 ```
 
 The AI will:
+
 1. Add the resource to NotebookLM (if not already added)
 2. Research the resource content
 3. Create a comprehensive summary with key points

@@ -3,6 +3,7 @@
 ## Overview
 
 Jupyter notebooks enhance our development workflow by providing:
+
 - **Interactive analysis**: Explore data and test ideas quickly
 - **Context preservation**: Document findings with code + results
 - **Knowledge sharing**: Share analysis with team members
@@ -28,12 +29,14 @@ code notebooks/
 **When to use**: Exploring new data sources, testing hypotheses, understanding patterns
 
 **Workflow**:
+
 1. Create notebook in `01-data-exploration/`
 2. Load data using utilities from `notebooks.utils`
 3. Analyze and visualize
 4. Document findings in `06-dev-workflow/research_log.ipynb`
 
 **Example**:
+
 ```python
 # notebooks/01-data-exploration/orats_data_exploration.ipynb
 from notebooks.utils.data_loaders import load_orats_data
@@ -48,12 +51,14 @@ df = load_orats_data("SPY")
 **When to use**: Prototyping strategies, testing parameters, visualizing opportunities
 
 **Workflow**:
+
 1. Create notebook in `04-strategy-dev/`
 2. Use existing Python modules (e.g., `python.integration.orats_client`)
 3. Test strategy logic interactively
 4. Document decisions in `06-dev-workflow/decision_log.ipynb`
 
 **Example**:
+
 ```python
 # notebooks/04-strategy-dev/box_spread_analysis.ipynb
 from python.integration.orats_client import ORATSClient
@@ -69,12 +74,14 @@ opportunities = find_box_spreads(client, "SPY")
 **When to use**: Feature engineering, model training, evaluation
 
 **Workflow**:
+
 1. Create notebook in `03-ml-development/`
 2. Use `python.ml` modules
 3. Experiment with features and hyperparameters
 4. Document model performance and insights
 
 **Example**:
+
 ```python
 # notebooks/03-ml-development/model_training.ipynb
 from python.ml.feature_engineering import FeatureExtractor
@@ -93,12 +100,14 @@ model = train_model(features, targets)
 **When to use**: Validating strategies, optimizing parameters, analyzing performance
 
 **Workflow**:
+
 1. Create notebook in `02-backtesting/`
 2. Load historical data from QuestDB or ORATS
 3. Simulate strategy on historical data
 4. Analyze results and document findings
 
 **Example**:
+
 ```python
 # notebooks/02-backtesting/historical_backtest.ipynb
 from notebooks.utils.data_loaders import load_questdb_data
@@ -191,6 +200,7 @@ jupyter nbconvert --to markdown notebooks/analysis.ipynb
 ### Semantic Search
 
 Cursor can index notebooks for semantic search:
+
 - Reference findings: `@notebooks research_log`
 - Search for analysis: "How did we analyze ORATS data?"
 - Find decisions: "Why did we choose ORATS over other providers?"

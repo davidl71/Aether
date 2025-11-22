@@ -7,6 +7,7 @@ This document summarizes learnings from analyzing TWS API code examples, particu
 ### Source: `git@github.com:Guitarmadillo/code.git`
 
 The repository contains several TWS API examples, including:
+
 - **Windows TWS API example** (`tws_api_windows_video/YouTube1.cpp`)
 - **Linux TWS API setup guide** (`tws_api_linux_video/`)
 - Uses **JanBoonen's TWS API implementation** (`EWrapperL0` / `EClientL0`)
@@ -16,12 +17,14 @@ The repository contains several TWS API examples, including:
 ### 1. JanBoonen's TWS API Implementation
 
 **Different Architecture:**
+
 - Uses `EWrapperL0` instead of `DefaultEWrapper`
 - Uses `EClientL0` instead of `EClientSocket`
 - Optional automatic EReader management
 - Uses `checkMessages()` loop pattern instead of EReader thread
 
 **Advantages:**
+
 - Exception safety with `OnCatch()` callback
 - Type-safe enums via `TwsApiDefs.h`
 - Simpler API for some use cases
@@ -32,6 +35,7 @@ The repository contains several TWS API examples, including:
 ### 2. Exception Safety Pattern
 
 **From Example:**
+
 ```cpp
 virtual void OnCatch( const char* MethodName, const long Id ) {
     fprintf( stderr, "*** Catch in EWrapper::%s( Id=%ld, ...) \n", MethodName, Id );
@@ -39,6 +43,7 @@ virtual void OnCatch( const char* MethodName, const long Id ) {
 ```
 
 **Our Current Implementation:**
+
 - We have try-catch in EReader thread (`processMsgs()`)
 - We have try-catch in `updateAccountValue()` for parsing
 - **Could improve:** Add exception handling to all EWrapper callbacks
@@ -48,6 +53,7 @@ virtual void OnCatch( const char* MethodName, const long Id ) {
 ### 3. Type-Safe Enums (TwsApiDefs.h)
 
 **From Example:**
+
 ```cpp
 #include "TwsApiDefs.h"
 using namespace TwsApi;
@@ -59,12 +65,14 @@ C.right = *ContractRight::CALL;        // Instead of "CALL"
 ```
 
 **Benefits:**
+
 - Compile-time type checking
 - Prevents typos in string literals
 - Self-documenting code
 - IDE autocomplete support
 
 **Our Current Implementation:**
+
 - We use string literals: `contract.secType = "STK"`
 - **Could improve:** Use type-safe enums if available in our TWS API version
 
@@ -73,6 +81,7 @@ C.right = *ContractRight::CALL;        // Instead of "CALL"
 ### 4. Connection State Callbacks
 
 **From Example:**
+
 ```cpp
 virtual void connectionOpened( void ) {
     PrintProcessId,printf( "Connection Opened\n");
@@ -88,6 +97,7 @@ virtual void checkMessagesStopped( void ) {
 ```
 
 **Our Current Implementation:**
+
 - We use `connectAck()`, `managedAccounts()`, `nextValidId()`
 - We don't have `connectionOpened()` (may not be in official API)
 - **Could improve:** Add more detailed connection state logging
@@ -95,6 +105,7 @@ virtual void checkMessagesStopped( void ) {
 ### 5. Error Handling Pattern
 
 **From Example:**
+
 ```cpp
 bool m_Done, m_ErrorForRequest;
 bool notDone( void ) { return !(m_Done || m_ErrorForRequest); }
@@ -106,6 +117,7 @@ while( YW.notDone() ) {
 ```
 
 **Our Current Implementation:**
+
 - We use `connected_` flag and `ConnectionState` enum
 - We use condition variables for waiting
 - **Our approach is better:** More sophisticated state management
@@ -113,6 +125,7 @@ while( YW.notDone() ) {
 ### 6. Position Tracking Pattern
 
 **From Example:**
+
 ```cpp
 int MyPosition = 0;
 IBString PositionSymbol = "";
@@ -131,6 +144,7 @@ virtual void position ( const IBString& account, const Contract& contract,
 ```
 
 **Our Current Implementation:**
+
 - We use `std::vector<types::Position>` for multiple positions
 - We track all positions, not just one
 - **Our approach is better:** More comprehensive position tracking
@@ -138,6 +152,7 @@ virtual void position ( const IBString& account, const Contract& contract,
 ### 7. Contract Details Request Pattern
 
 **From Example:**
+
 ```cpp
 int Req4 = 0;
 
@@ -157,6 +172,7 @@ virtual void contractDetails ( int reqId, const ContractDetails& contractDetails
 ```
 
 **Our Current Implementation:**
+
 - We have `request_option_chain()` method
 - We track request IDs properly
 - **Could improve:** Add explicit "request complete" flags for better state tracking
@@ -164,6 +180,7 @@ virtual void contractDetails ( int reqId, const ContractDetails& contractDetails
 ### 8. Option Chain Processing Pattern
 
 **From Example:**
+
 ```cpp
 // Sort strikes
 std::sort(YW.Strikes.begin(), YW.Strikes.end());
@@ -184,6 +201,7 @@ for (int i = 0; i < 20; i++) {
 ```
 
 **Our Current Implementation:**
+
 - We have option chain request functionality
 - **Could improve:** Add similar "find closest strikes" utility function
 
@@ -203,24 +221,24 @@ for (int i = 0; i < 20; i++) {
 
 ### Medium Priority
 
-3. **Consider Type-Safe Enums**
+1. **Consider Type-Safe Enums**
    - Check if our TWS API version supports type-safe enums
    - If not, consider creating our own wrapper types
    - Reduces runtime errors from typos
 
-4. **Add Utility Functions**
+2. **Add Utility Functions**
    - "Find closest strikes" function
    - Contract comparison utilities
    - Request ID management helpers
 
 ### Low Priority
 
-5. **Enhanced Connection Logging**
+1. **Enhanced Connection Logging**
    - More detailed connection state logging
    - Thread ID logging for debugging
    - Connection lifecycle tracking
 
-6. **Code Organization**
+2. **Code Organization**
    - Consider separating EWrapper callbacks into separate files
    - Group related callbacks together
    - Better documentation of callback relationships
@@ -228,6 +246,7 @@ for (int i = 0; i < 20; i++) {
 ## Implementation Status
 
 ### Already Implemented (Better Than Examples)
+
 - ✅ Comprehensive connection state management
 - ✅ Parallel port checking
 - ✅ Paper/live trading mismatch detection
@@ -238,12 +257,14 @@ for (int i = 0; i < 20; i++) {
 - ✅ Comprehensive error handling with guidance
 
 ### Could Improve
+
 - ⚠️ Exception handling in all EWrapper callbacks
 - ⚠️ Request state tracking (explicit completion flags)
 - ⚠️ Type-safe enums (if available)
 - ⚠️ Utility functions for common operations
 
 ### Not Applicable (Different Architecture)
+
 - ❌ `checkMessages()` loop (we use EReader thread - better approach)
 - ❌ `EWrapperL0` / `EClientL0` (we use official IB API)
 - ❌ Single position tracking (we track multiple positions)
@@ -251,18 +272,21 @@ for (int i = 0; i < 20; i++) {
 ## Conclusion
 
 The code examples provide valuable insights into:
+
 1. Exception safety patterns
 2. Type-safe enum usage
 3. Request state management
 4. Option chain processing
 
 However, our current implementation is already more sophisticated in many areas:
+
 - Better connection management
 - More comprehensive error handling
 - Thread-safe architecture
 - Multiple position/order tracking
 
 The main improvements we should consider are:
+
 1. Adding exception handling to all EWrapper callbacks
 2. Improving request state tracking
 3. Adding utility functions for common operations

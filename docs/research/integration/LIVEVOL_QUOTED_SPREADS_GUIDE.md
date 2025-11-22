@@ -32,18 +32,21 @@
 ### LiveVol Capabilities
 
 **Historical Data**:
+
 - Options, equities, indexes, ETFs
 - Data back to 2004
 - Implied volatilities and Greeks
 - Time and sales data
 
 **Real-time Data**:
+
 - Current market prices
 - Options quotes
 - Earnings, dividends
 - Strategy scans
 
 **Analytics**:
+
 - Option strategy scanning
 - Backtesting capabilities
 - Volatility analysis
@@ -56,12 +59,14 @@
 ### Current Status: ⚠️ UNKNOWN
 
 **What We Know**:
+
 - LiveVol is a CBOE subsidiary
 - LiveVol provides options data
 - API contract mentions "Cboe strategy quotes"
 - QSB is a CBOE service
 
 **What We Need to Verify**:
+
 - ✅ Does LiveVol API expose QSB instruments?
 - ✅ Can we get quoted box spread prices?
 - ✅ What endpoints provide strategy quotes?
@@ -79,6 +84,7 @@
 **Status**: ⚠️ **Stub Implementation** - Not fully implemented
 
 **Key Code**:
+
 ```cpp
 class LiveVolProvider : public Provider {
   // Base URL: https://api.livevol.com/v1
@@ -88,12 +94,14 @@ class LiveVolProvider : public Provider {
 ```
 
 **Current Capabilities**:
+
 - ✅ OAuth 2.0 authentication structure
 - ✅ Base URL configuration
 - ⚠️ HTTP client not fully implemented
 - ❌ No quoted spreads integration yet
 
 **API Contract Reference**:
+
 ```jsonc
 // agents/shared/API_CONTRACT.md
 "Livevol Integration Note"
@@ -108,6 +116,7 @@ class LiveVolProvider : public Provider {
 ### Day 1: API Discovery
 
 **Tasks**:
+
 1. ✅ Access LiveVol API Documentation
    - URL: <https://api.livevol.com/v1/docs/>
    - Document all available endpoints
@@ -126,6 +135,7 @@ class LiveVolProvider : public Provider {
 ### Day 2: Quoted Spreads Testing
 
 **Tasks**:
+
 1. ✅ Test Strategy Quote Endpoints
    - Try strategy quote endpoints
    - Test with SPX box spreads
@@ -146,6 +156,7 @@ class LiveVolProvider : public Provider {
 ### Day 3: Data Export & Integration
 
 **Tasks**:
+
 1. ✅ Test Data Export
    - Can we export quoted spreads?
    - What formats are available?
@@ -209,11 +220,13 @@ class LiveVolClient:
 ```
 
 **Advantages**:
+
 - Direct access to quoted spreads
 - Real-time data (if subscribed)
 - Programmatic access
 
 **Requirements**:
+
 - LiveVol API subscription
 - OAuth 2.0 authentication
 - API endpoint availability
@@ -243,11 +256,13 @@ def build_box_spread_from_livevol(
 ```
 
 **Advantages**:
+
 - Works with standard options data
 - No special subscription needed
 - Flexible (any strike combination)
 
 **Disadvantages**:
+
 - Not direct quoted spreads
 - May miss QSB opportunities
 - Execution risk (partial fills)
@@ -261,6 +276,7 @@ def build_box_spread_from_livevol(
 **Purpose**: Explore LiveVol API during trial to find quoted spread endpoints
 
 **Features**:
+
 - OAuth 2.0 authentication
 - Endpoint discovery
 - Strategy quote testing
@@ -268,6 +284,7 @@ def build_box_spread_from_livevol(
 - Data export testing
 
 **Usage**:
+
 ```bash
 python scripts/livevol_api_explorer.py \
   --client-id YOUR_CLIENT_ID \
@@ -280,30 +297,35 @@ python scripts/livevol_api_explorer.py \
 ## Key Questions to Answer
 
 ### API Access
+
 - [ ] What endpoints are available?
 - [ ] Is there a strategy/spread endpoint?
 - [ ] Can we query QSB instruments?
 - [ ] What authentication is required?
 
 ### Quoted Spreads
+
 - [ ] Can we get quoted box spread prices?
 - [ ] What data fields are available?
 - [ ] Is real-time data available?
 - [ ] What's the data latency?
 
 ### QSB Access
+
 - [ ] Does LiveVol expose QSB instruments?
 - [ ] Can we get QSB quotes?
 - [ ] What QSB instruments are available?
 - [ ] Is QSB data real-time or delayed?
 
 ### Integration
+
 - [ ] What's the API rate limit?
 - [ ] Can we export data programmatically?
 - [ ] What's the integration complexity?
 - [ ] Are there SDKs/libraries available?
 
 ### Costs
+
 - [ ] What's included in the trial?
 - [ ] What requires a subscription?
 - [ ] What are the subscription costs?
@@ -333,11 +355,13 @@ python scripts/livevol_api_explorer.py \
 ### After Trial
 
 **If LiveVol supports quoted spreads**:
+
 - ✅ Integrate LiveVol API for quoted spreads
 - ✅ Use as primary source for QSB quotes
 - ✅ Consider subscription if valuable
 
 **If LiveVol doesn't support quoted spreads**:
+
 - ⚠️ Use LiveVol for individual options data
 - ⚠️ Build box spreads from individual legs
 - ⚠️ Continue searching for QSB quote sources
@@ -351,6 +375,7 @@ python scripts/livevol_api_explorer.py \
    - Get API credentials (client ID, client secret)
 
 2. **Run API exploration script**
+
    ```bash
    python scripts/livevol_api_explorer.py \
      --client-id YOUR_CLIENT_ID \

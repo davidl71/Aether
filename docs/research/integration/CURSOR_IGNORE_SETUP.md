@@ -54,11 +54,13 @@ These large vendor directories are excluded from AI analysis:
 ## What's Still Available
 
 **Important**: Excluding files from AI analysis doesn't prevent:
+
 - **IntelliSense**: Headers are still indexed for autocomplete
 - **Build System**: CMake can still find all dependencies
 - **Compilation**: All source files are still compiled
 
 The TWS API headers (`native/third_party/tws-api/IBJts/source/cppclient/client/*.h`) remain accessible for:
+
 - IntelliSense autocomplete
 - Code navigation
 - Build system

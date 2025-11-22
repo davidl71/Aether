@@ -248,6 +248,7 @@ reader.start();  // Starts background thread
 **Important**: EWrapper callbacks are called from the **EReader thread**, not your main thread.
 
 **Best Practices**:
+
 - Use mutexes to protect shared data
 - Don't perform long-running operations in callbacks
 - Use condition variables for synchronization
@@ -389,6 +390,7 @@ class MyWrapper : public DefaultEWrapper {
 ### 1. Always Use DefaultEWrapper
 
 **Good:**
+
 ```cpp
 class MyWrapper : public DefaultEWrapper {
     // Only override what you need
@@ -396,6 +398,7 @@ class MyWrapper : public DefaultEWrapper {
 ```
 
 **Avoid:**
+
 ```cpp
 class MyWrapper : public EWrapper {
     // Must implement ALL ~130+ callbacks, even if empty
@@ -405,6 +408,7 @@ class MyWrapper : public EWrapper {
 ### 2. Thread Safety in Callbacks
 
 **Always protect shared data:**
+
 ```cpp
 void tickPrice(...) override {
     std::lock_guard<std::mutex> lock(data_mutex_);
@@ -415,6 +419,7 @@ void tickPrice(...) override {
 ### 3. Exception Handling
 
 **Wrap callbacks in try-catch:**
+
 ```cpp
 void tickPrice(...) override {
     try {
@@ -428,6 +433,7 @@ void tickPrice(...) override {
 ### 4. Keep Callbacks Fast
 
 **Good:**
+
 ```cpp
 void tickPrice(...) override {
     // Quick update to data structure
@@ -436,6 +442,7 @@ void tickPrice(...) override {
 ```
 
 **Avoid:**
+
 ```cpp
 void tickPrice(...) override {
     // Don't do heavy computation here
@@ -447,6 +454,7 @@ void tickPrice(...) override {
 ### 5. Request State Management
 
 **Track pending requests:**
+
 ```cpp
 std::atomic<int> pending_requests_{0};
 

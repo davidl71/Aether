@@ -9,6 +9,7 @@ This guide helps set up NotebookLM notebooks to enhance T-1 research on pseudoco
 **Purpose:** Research formal pseudocode standards, best practices, and industry approaches
 
 **Sources to Add:**
+
 1. **Wikipedia - Pseudocode**
    - URL: `https://en.wikipedia.org/wiki/Pseudocode`
    - Why: Foundation on pseudocode definition, styles, and conventions
@@ -32,6 +33,7 @@ This guide helps set up NotebookLM notebooks to enhance T-1 research on pseudoco
 **Tags:** `pseudocode, standards, best-practices, documentation`
 
 **Research Questions to Ask:**
+
 - What are the standard keywords and structures for writing pseudocode?
 - How do different pseudocode styles (Pascal, C-style, mathematical) compare?
 - What are best practices for making pseudocode language-agnostic?
@@ -45,6 +47,7 @@ This guide helps set up NotebookLM notebooks to enhance T-1 research on pseudoco
 **Purpose:** Find real-world examples of how trading systems document algorithms
 
 **Sources to Add:**
+
 1. **Freqtrade FTUI Repository**
    - URL: `https://github.com/freqtrade/ftui`
    - Why: Real trading system with multi-language architecture (Python, Textual TUI)
@@ -68,6 +71,7 @@ This guide helps set up NotebookLM notebooks to enhance T-1 research on pseudoco
 **Tags:** `trading-systems, algorithms, api-patterns, multi-language`
 
 **Research Questions to Ask:**
+
 - How do trading systems document complex algorithms (box spreads, risk calculations)?
 - What patterns do multi-language trading APIs use for consistency?
 - How are broker API differences abstracted in documentation?
@@ -81,6 +85,7 @@ This guide helps set up NotebookLM notebooks to enhance T-1 research on pseudoco
 **Purpose:** Research tools that generate code from pseudocode or specifications
 
 **Sources to Add:**
+
 1. **DRAKON Editor**
    - Search for: "DRAKON editor code generation"
    - Why: Visual tool that can generate code from charts
@@ -100,6 +105,7 @@ This guide helps set up NotebookLM notebooks to enhance T-1 research on pseudoco
 **Tags:** `code-generation, tools, specifications, automation`
 
 **Research Questions to Ask:**
+
 - What tools exist for generating code from pseudocode?
 - How do formal specification languages compare to pseudocode?
 - Can DRAKON charts generate code for multiple languages?
@@ -113,6 +119,7 @@ This guide helps set up NotebookLM notebooks to enhance T-1 research on pseudoco
 **Purpose:** Research how projects maintain consistency across multiple languages
 
 **Sources to Add:**
+
 1. **Protocol Buffers Documentation**
    - URL: `https://protobuf.dev/`
    - Why: Data structure consistency across languages
@@ -132,6 +139,7 @@ This guide helps set up NotebookLM notebooks to enhance T-1 research on pseudoco
 **Tags:** `multi-language, consistency, architecture, patterns`
 
 **Research Questions to Ask:**
+
 - How do projects maintain algorithm consistency across C++, Python, Rust, Go, TypeScript?
 - What patterns work best for shared business logic?
 - How do API contracts help with consistency?
@@ -155,6 +163,7 @@ This guide helps set up NotebookLM notebooks to enhance T-1 research on pseudoco
 ### Step 2: Add Notebooks to Library
 
 Once you have the notebook links, tell me:
+
 ```
 "Add [notebook-1-link] to library tagged 'pseudocode, standards, best-practices, documentation'"
 "Add [notebook-2-link] to library tagged 'trading-systems, algorithms, api-patterns, multi-language'"
@@ -167,21 +176,25 @@ Once you have the notebook links, tell me:
 Once notebooks are added, I can ask specific questions like:
 
 **From Notebook 1 (Standards):**
+
 - "What are the standard keywords for pseudocode? Compare Pascal-style vs C-style"
 - "How should pseudocode be structured to be language-agnostic?"
 - "What are the pros and cons of DRAKON vs flowcharts vs textual pseudocode?"
 
 **From Notebook 2 (Trading Systems):**
+
 - "How do trading systems document box spread algorithms?"
 - "What patterns do Alpaca and IB API use for options trading?"
 - "How should broker API differences be abstracted in pseudocode?"
 
 **From Notebook 3 (Tools):**
+
 - "What tools can generate code from pseudocode or specifications?"
 - "Can DRAKON generate code for multiple languages?"
 - "How do formal specification languages compare to pseudocode?"
 
 **From Notebook 4 (Multi-Language):**
+
 - "How do projects maintain algorithm consistency across C++, Python, Rust, Go?"
 - "What patterns work best for shared business logic?"
 - "How do projects detect and prevent code drift?"
@@ -193,6 +206,7 @@ Once notebooks are added, I can ask specific questions like:
 If you want to start quickly with just the most important sources:
 
 **Single Notebook: "Pseudocode Research"**
+
 - Add: Wikipedia Pseudocode, Codecademy Guide, DRAKON, Literate Programming
 - Add: Alpaca Options Trading docs
 - Add: Project's `docs/ALGORITHMS_AND_BEHAVIOR.md`

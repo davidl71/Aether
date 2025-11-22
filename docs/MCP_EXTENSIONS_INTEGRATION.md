@@ -7,6 +7,7 @@ This document provides a comprehensive analysis of your current Cursor setup and
 ### ✅ Currently Configured MCP Servers
 
 Your `.cursor/mcp.json` includes:
+
 1. **Semgrep** - Security scanning (via uvx/mcpower-proxy)
 2. **Filesystem** - File operations (via uvx/mcpower-proxy)
 3. **Git** - Version control (via uvx/mcpower-proxy)
@@ -15,6 +16,7 @@ Your `.cursor/mcp.json` includes:
 ### ✅ Currently Configured Extensions
 
 Your `.vscode/extensions.json` includes comprehensive language support:
+
 - **C++**: `ms-vscode.cpptools`, `ms-vscode.cmake-tools`
 - **Python**: `ms-python.python`, `ms-python.vscode-pylance`, `ms-python.black-formatter`
 - **Rust**: `rust-lang.rust-analyzer`
@@ -27,6 +29,7 @@ Your `.vscode/extensions.json` includes comprehensive language support:
 ### ✅ Currently Configured LSPs
 
 LSPs are configured via extensions in `.vscode/settings.json`:
+
 - **C++**: IntelliSense via cpptools (clang-based)
 - **Python**: Pylance (Microsoft's fast Python language server)
 - **Rust**: rust-analyzer (via extension)
@@ -38,18 +41,21 @@ LSPs are configured via extensions in `.vscode/settings.json`:
 **Extension**: `yutengjing.vscode-mcp`
 
 **Purpose**: Bridges VS Code/Cursor's Language Server Protocol (LSP) features with MCP, allowing AI assistants to access:
+
 - Real-time LSP diagnostics (errors, warnings, hints)
 - Type information from language servers
 - Code navigation features (go-to-definition, find references)
 - IntelliSense data from all configured LSPs
 
 **Benefits for Your Project**:
+
 - **Multi-language Intelligence**: AI can access diagnostics from C++, Python, Rust, TypeScript, Swift
 - **Better Code Understanding**: AI sees the same type information and errors as your editor
 - **Enhanced Suggestions**: More accurate code recommendations with full LSP context
 - **Trading Software Safety**: AI can see type errors and warnings before suggesting code changes
 
 **How It Works**:
+
 1. Extension creates an MCP server that exposes LSP data
 2. Uses Unix socket at: `/Users/davidlowes/Library/Application Support/YuTengjing.vscode-mcp/vscode-mcp-*.sock`
 3. Cursor's MCP bridge connects to this server automatically
@@ -64,6 +70,7 @@ LSPs are configured via extensions in `.vscode/settings.json`:
 **Status**: Available in your tool list but not configured in `.cursor/mcp.json`
 
 **Benefits**:
+
 - Enhanced Git operations (branches, commits, stashes, worktrees)
 - Issue tracking integration (GitHub, GitLab, Jira, Linear, Azure DevOps)
 - Pull request management (create, review, comment)
@@ -71,6 +78,7 @@ LSPs are configured via extensions in `.vscode/settings.json`:
 - Better Git workflow automation
 
 **Use Cases for Your Project**:
+
 - Automate PR creation when implementing features
 - Track issues related to TWS API integration
 - Manage multiple worktrees (you already use worktrees)
@@ -82,6 +90,7 @@ LSPs are configured via extensions in `.vscode/settings.json`:
 **Status**: Available in your tool list but not configured
 
 **Benefits**:
+
 - Browser automation for testing web components
 - Web scraping for market data (if needed)
 - Automated testing of your React web app
@@ -89,6 +98,7 @@ LSPs are configured via extensions in `.vscode/settings.json`:
 - API endpoint testing
 
 **Use Cases for Your Project**:
+
 - Test WASM builds in the browser
 - Verify web UI components
 - Automate testing of your React frontend
@@ -122,6 +132,7 @@ LSPs are configured via extensions in `.vscode/settings.json`:
 
 **Integration in `.cursorrules`**:
 Add guidance for when to use GitKraken MCP:
+
 - When creating PRs or managing branches
 - When tracking issues related to features
 - When working with multiple worktrees
@@ -153,6 +164,7 @@ Add guidance for when to use GitKraken MCP:
 
 **Integration in `.cursorrules`**:
 Add guidance for when to use browser MCP:
+
 - When testing WASM builds
 - When verifying React components
 - When testing API endpoints
@@ -254,20 +266,24 @@ Your rust-analyzer configuration is good. Consider adding:
 ### 5. Additional Extension Recommendations
 
 #### C++ Development
+
 - **clangd** (alternative to cpptools): Faster, more accurate IntelliSense
   - Extension: `llvm-vs-code-extensions.vscode-clangd`
   - Note: Disable cpptools IntelliSense if using clangd
 
 #### Code Quality
+
 - **Todo Tree** (`gruntfuggly.todo-tree`): Highlight TODO/FIXME comments
 - **Better Comments** (`aaron-bond.better-comments`): Colorize comments by type
 - **Error Lens** (already recommended): Inline error highlighting
 
 #### Testing
+
 - **Test Explorer UI** (`hbenl.vscode-test-explorer`): Unified test interface
 - **C++ TestMate** (`matepek.vscode-catch2-test-adapter`): Catch2 test integration
 
 #### Documentation
+
 - **Markdown Preview Enhanced** (`shd101wyy.markdown-preview-enhanced`): Better markdown preview
 - **Doxygen Documentation Generator** (`cschlosser.doxdocgen`): Auto-generate Doxygen comments
 
@@ -278,21 +294,25 @@ Update your prompts to explicitly leverage MCP servers:
 **Example prompts that benefit from MCP integration**:
 
 1. **Security-focused prompts**:
+
    ```
    "Before committing, scan this code with Semgrep for security vulnerabilities"
    ```
 
 2. **Git workflow prompts**:
+
    ```
    "Create a PR for this feature branch using GitKraken MCP"
    ```
 
 3. **Research prompts**:
+
    ```
    "Use NotebookLM to research TWS API error handling patterns"
    ```
 
 4. **Testing prompts**:
+
    ```
    "Use browser MCP to test the WASM build in Chrome"
    ```
@@ -300,26 +320,31 @@ Update your prompts to explicitly leverage MCP servers:
 ## Implementation Steps
 
 ### Step 1: Add GitKraken MCP
+
 1. Update `.cursor/mcp.json` with GitKraken configuration
 2. Restart Cursor
 3. Test with: "List all branches using GitKraken"
 
 ### Step 2: Add Browser MCP
+
 1. Update `.cursor/mcp.json` with browser configuration
 2. Restart Cursor
 3. Test with: "Navigate to localhost:3000 and take a screenshot"
 
 ### Step 3: Update `.cursorrules`
+
 1. Add MCP usage guidelines section
 2. Add examples of when to use each MCP
 3. Update AI assistant guidelines to reference MCPs
 
 ### Step 4: Optimize LSP Settings
+
 1. Create `.clang-tidy` file for C++
 2. Update `.vscode/settings.json` with enhanced LSP configs
 3. Test IntelliSense improvements
 
 ### Step 5: Install Additional Extensions
+
 1. Review recommendations above
 2. Install extensions that match your workflow
 3. Update `.vscode/extensions.json` if needed

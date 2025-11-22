@@ -50,6 +50,7 @@ The SmartQuant C++ Ultra-Low Latency Framework is a cross-platform algorithmic t
 ### Technical Architecture
 
 #### 1. **Multithreading & Concurrency**
+
 - Heavily multithreaded design
 - Parallel multicore optimization
 - Cloud/cluster optimization support
@@ -57,24 +58,28 @@ The SmartQuant C++ Ultra-Low Latency Framework is a cross-platform algorithmic t
 - Atomic operations for thread safety
 
 #### 2. **Memory Management**
+
 - Object pools for efficient allocation
 - Custom memory management
 - Custom garbage collector
 - Ring buffers for high-speed data flow
 
 #### 3. **Event Processing**
+
 - Ring buffers for event queuing
 - Non-locking event queues
 - Ultra-fast event dispatch
 - Scenario-based event handling
 
 #### 4. **Framework Foundation**
+
 - Built on Qt framework
 - Native C++ with aggressive optimizations
 - Compiler/linker optimizations enabled
 - Inline functions for performance
 
 #### 5. **Design Patterns**
+
 - Inherits patterns from SmartQuant C# framework
 - Scenario mechanism for strategy definition
 - Event-driven architecture
@@ -116,11 +121,13 @@ The IBKR Box Spread Generator currently uses:
 **Approach**: Replace manual event queuing with SmartQuant's event system
 
 **Benefits**:
+
 - Non-locking event queues reduce contention
 - Ring buffers provide predictable latency
 - Better multicore utilization
 
 **Implementation**:
+
 ```cpp
 // Current approach (native/src/tws_client.cpp)
 std::mutex data_mutex_;
@@ -132,6 +139,7 @@ std::vector<TickData> tick_data_;
 ```
 
 **Challenges**:
+
 - Requires refactoring TWS callback handlers
 - Need to bridge TWS API events to SmartQuant events
 - Learning curve for SmartQuant event model
@@ -141,11 +149,13 @@ std::vector<TickData> tick_data_;
 **Approach**: Use SmartQuant's scenario mechanism for box spread strategies
 
 **Benefits**:
+
 - Proven strategy framework
 - Built-in backtesting capabilities
 - Scenario-based testing
 
 **Implementation**:
+
 ```cpp
 // Define box spread strategy as SmartQuant scenario
 // Leverage SmartQuant's order management
@@ -153,6 +163,7 @@ std::vector<TickData> tick_data_;
 ```
 
 **Challenges**:
+
 - Current strategy logic is tightly coupled to TWS API
 - Would require significant refactoring
 - May lose some custom optimizations
@@ -162,11 +173,13 @@ std::vector<TickData> tick_data_;
 **Approach**: Use SmartQuant for high-frequency components, keep TWS integration as-is
 
 **Components to Integrate**:
+
 1. **Event Queue**: Replace mutex-based queues with SmartQuant ring buffers
 2. **Memory Pools**: Use object pools for frequently allocated objects (TickData, Orders)
 3. **Multicore Strategy Scanning**: Parallelize box spread scanning using SmartQuant's threading
 
 **Components to Keep**:
+
 1. **TWS Client**: Keep existing `TWSClient` wrapper
 2. **Order Manager**: Keep custom multi-leg order logic
 3. **Risk Calculator**: Keep existing risk management
@@ -174,16 +187,19 @@ std::vector<TickData> tick_data_;
 **Implementation Phases**:
 
 **Phase 1: Event Queue Optimization**
+
 - Replace `std::mutex`-protected queues with SmartQuant ring buffers
 - Measure latency improvements
 - Maintain existing API surface
 
 **Phase 2: Memory Pool Integration**
+
 - Identify hot allocation paths (TickData, Order objects)
 - Replace with SmartQuant object pools
 - Measure memory allocation improvements
 
 **Phase 3: Parallel Strategy Scanning**
+
 - Use SmartQuant's multicore optimization for option chain scanning
 - Parallelize box spread opportunity detection
 - Measure throughput improvements
@@ -193,11 +209,13 @@ std::vector<TickData> tick_data_;
 **Approach**: Complete migration to SmartQuant framework
 
 **Benefits**:
+
 - Maximum performance potential
 - Industry-standard framework
 - Built-in backtesting and optimization
 
 **Challenges**:
+
 - Complete rewrite required
 - Loss of current TWS integration work
 - Significant development time
@@ -242,14 +260,16 @@ std::vector<TickData> tick_data_;
 
 ### Use Case Fit Analysis
 
-#### Current Architecture is Better For:
+#### Current Architecture is Better For
+
 - ✅ **Rapid Development**: Existing codebase is functional
 - ✅ **Custom Logic**: Specialized box spread calculations
 - ✅ **TWS Integration**: Deep integration with IB API
 - ✅ **Low Complexity**: Easier to understand and modify
 - ✅ **No Dependencies**: No external framework licensing
 
-#### SmartQuant Framework is Better For:
+#### SmartQuant Framework is Better For
+
 - ✅ **Ultra-Low Latency**: Sub-microsecond requirements
 - ✅ **High Throughput**: Millions of events per second
 - ✅ **Backtesting**: Built-in backtesting capabilities
@@ -292,6 +312,7 @@ std::vector<TickData> tick_data_;
 ### Licensing Considerations
 
 ⚠️ **Important**: Verify SmartQuant licensing model:
+
 - Commercial license required?
 - Open source components?
 - Usage restrictions?
@@ -310,12 +331,14 @@ std::vector<TickData> tick_data_;
 ### Development Timeline Estimate
 
 **Hybrid Integration (Strategy 3)**:
+
 - Phase 1 (Event Queues): 2-4 weeks
 - Phase 2 (Memory Pools): 1-2 weeks
 - Phase 3 (Parallel Scanning): 2-3 weeks
 - **Total**: 5-9 weeks
 
 **Full Migration (Strategy 4)**:
+
 - Complete rewrite: 3-6 months
 - Testing and validation: 1-2 months
 - **Total**: 4-8 months
@@ -334,6 +357,7 @@ std::vector<TickData> tick_data_;
 ### When to Consider SmartQuant
 
 ✅ **Consider Integration If**:
+
 - Latency becomes a competitive factor
 - Scaling to high-frequency trading
 - Adding backtesting capabilities
@@ -341,6 +365,7 @@ std::vector<TickData> tick_data_;
 - Building production-grade system
 
 ❌ **Skip Integration If**:
+
 - Current performance meets requirements
 - Development timeline is tight
 - Licensing costs are prohibitive
@@ -372,6 +397,7 @@ std::vector<TickData> tick_data_;
 ### Alternative Frameworks to Research
 
 If SmartQuant doesn't fit, consider:
+
 - **QuantLib**: Open-source quantitative finance library
 - **TA-Lib**: Technical analysis library
 - **Zipline**: Algorithmic trading library (Python)
@@ -392,6 +418,7 @@ If SmartQuant doesn't fit, consider:
 ### Example 1: Event Queue Replacement
 
 **Current Implementation**:
+
 ```cpp
 // native/src/tws_client.cpp
 std::mutex data_mutex_;
@@ -404,6 +431,7 @@ void TWSClient::onTickPrice(TickPrice tick_price) {
 ```
 
 **Potential SmartQuant Integration**:
+
 ```cpp
 // Hypothetical SmartQuant integration
 SmartQuant::RingBuffer<TickData> tick_buffer_(1024);  // Non-locking
@@ -417,6 +445,7 @@ void TWSClient::onTickPrice(TickPrice tick_price) {
 ### Example 2: Object Pool Integration
 
 **Current Implementation**:
+
 ```cpp
 // Frequent allocations in hot path
 auto order = std::make_unique<Order>();
@@ -425,6 +454,7 @@ auto order = std::make_unique<Order>();
 ```
 
 **Potential SmartQuant Integration**:
+
 ```cpp
 // Object pool for frequently allocated objects
 SmartQuant::ObjectPool<Order> order_pool_(100);
@@ -437,6 +467,7 @@ order_pool_.release(order);  // Return to pool, no deallocation
 ### Example 3: Parallel Strategy Scanning
 
 **Current Implementation**:
+
 ```cpp
 // Single-threaded scanning
 void BoxSpreadStrategy::evaluate_symbol(const std::string& symbol) {
@@ -446,6 +477,7 @@ void BoxSpreadStrategy::evaluate_symbol(const std::string& symbol) {
 ```
 
 **Potential SmartQuant Integration**:
+
 ```cpp
 // Parallel scanning using SmartQuant's multicore optimization
 void BoxSpreadStrategy::evaluate_symbols_parallel(

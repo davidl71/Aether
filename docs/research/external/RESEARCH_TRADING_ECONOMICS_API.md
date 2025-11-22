@@ -54,17 +54,20 @@ The investment strategy framework requires Israeli CPI data for:
 ### Python Package
 
 **Installation:**
+
 ```bash
 pip install tradingeconomics
 ```
 
 **Authentication:**
+
 ```python
 import tradingeconomics as te
 te.login('api_key:api_secret')
 ```
 
 **Usage Example:**
+
 ```python
 import tradingeconomics as te
 
@@ -84,6 +87,7 @@ print(cpi_data)
 ### API Endpoints
 
 **Key Endpoints for Israeli CPI:**
+
 - `getIndicatorData()` - Get specific indicator data
 - `getHistoricalData()` - Historical time series
 - `getCalendar()` - Economic calendar with CPI release dates
@@ -92,6 +96,7 @@ print(cpi_data)
 ### Data Structure
 
 **Israeli CPI Data Format:**
+
 - **Country:** Israel
 - **Indicator:** Consumer Price Index (CPI)
 - **Frequency:** Monthly
@@ -103,11 +108,13 @@ print(cpi_data)
 ### 1. API Setup
 
 **Requirements:**
+
 - Trading Economics API subscription (free tier may have limitations)
 - API key and secret for authentication
 - Python package installation
 
 **Configuration:**
+
 ```python
 # config/api_config.py
 TRADING_ECONOMICS_API_KEY = os.getenv('TRADING_ECONOMICS_API_KEY')
@@ -117,6 +124,7 @@ TRADING_ECONOMICS_API_SECRET = os.getenv('TRADING_ECONOMICS_API_SECRET')
 ### 2. Data Access Pattern
 
 **Monthly Update Schedule:**
+
 ```python
 import tradingeconomics as te
 from datetime import datetime, timedelta
@@ -136,6 +144,7 @@ def get_israeli_cpi():
 ```
 
 **Historical Data Access:**
+
 ```python
 def get_israeli_cpi_history(start_date, end_date):
     """Fetch historical Israeli CPI data"""
@@ -154,11 +163,13 @@ def get_israeli_cpi_history(start_date, end_date):
 ### 3. Caching Strategy
 
 **Rationale:**
+
 - CPI data updates monthly (not real-time)
 - Reduces API calls and costs
 - Improves performance
 
 **Implementation:**
+
 ```python
 from functools import lru_cache
 from datetime import datetime
@@ -178,6 +189,7 @@ def get_current_cpi():
 ### 4. Error Handling
 
 **Fallback Strategy:**
+
 ```python
 def get_cpi_with_fallback():
     """Get CPI data with fallback to last known value"""
@@ -196,6 +208,7 @@ def get_cpi_with_fallback():
 ### 1. CPI-Linked Loan Adjustments
 
 **Calculation:**
+
 ```python
 def adjust_cpi_linked_loan(principal, base_cpi, current_cpi):
     """Adjust CPI-linked loan principal for inflation"""
@@ -207,6 +220,7 @@ def adjust_cpi_linked_loan(principal, base_cpi, current_cpi):
 ### 2. Inflation-Adjusted Returns
 
 **Real Return Calculation:**
+
 ```python
 def calculate_real_return(nominal_return, inflation_rate):
     """Calculate real return adjusted for inflation"""
@@ -217,6 +231,7 @@ def calculate_real_return(nominal_return, inflation_rate):
 ### 3. Strategy Rebalancing Triggers
 
 **CPI Change Threshold:**
+
 ```python
 def should_rebalance(current_cpi, last_cpi, threshold=0.02):
     """Check if CPI change exceeds rebalancing threshold"""
@@ -229,11 +244,13 @@ def should_rebalance(current_cpi, last_cpi, threshold=0.02):
 ### Subscription Tiers
 
 **Free Tier:**
+
 - Limited API calls per month
 - Delayed data (may not be real-time)
 - Basic indicators only
 
 **Paid Tiers:**
+
 - Higher API call limits
 - Real-time data access
 - Full indicator coverage
@@ -256,31 +273,37 @@ def should_rebalance(current_cpi, last_cpi, threshold=0.02):
 ## Alternative Data Sources
 
 ### 1. Israeli Central Bank (Bank of Israel)
+
 - **Pros:** Official source, free
 - **Cons:** May require web scraping, manual updates
 
 ### 2. IMF/World Bank APIs
+
 - **Pros:** Free, official data
 - **Cons:** Delayed updates, less frequent
 
 ### 3. Bloomberg/Reuters
+
 - **Pros:** Professional-grade, comprehensive
 - **Cons:** Expensive, overkill for this use case
 
 ## Implementation Plan
 
 ### Phase 1: Basic Integration
+
 1. Set up Trading Economics API credentials
 2. Install Python package
 3. Implement basic CPI data fetching
 4. Add to investment strategy framework
 
 ### Phase 2: Caching and Optimization
+
 1. Implement monthly caching strategy
 2. Add error handling and fallbacks
 3. Optimize API call frequency
 
 ### Phase 3: Advanced Features
+
 1. Historical data analysis
 2. Inflation trend analysis
 3. Automated rebalancing triggers

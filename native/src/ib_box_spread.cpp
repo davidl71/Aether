@@ -247,7 +247,7 @@ namespace {
     void print_banner() {
         spdlog::info("╔════════════════════════════════════════════════════════════╗");
         spdlog::info("║    IBKR Box Spread Generator v1.0.0                       ║");
-        spdlog::info("║    Automated Options Arbitrage Trading System             ║");
+        spdlog::info("║    Synthetic Financing Platform (Box Spread Rates)        ║");
         spdlog::info("╚════════════════════════════════════════════════════════════╝");
     }
 
@@ -269,7 +269,7 @@ int main(int argc, char** argv) {
     // ========================================================================
     // Command-line Parsing
     // ========================================================================
-    CLI::App app{"IBKR Box Spread Generator - Automated options arbitrage"};
+    CLI::App app{"IBKR Box Spread Generator - Synthetic financing platform"};
     app.set_version_flag("-v,--version", VERSION_STRING);
 
     std::string config_file = "config/config.json";

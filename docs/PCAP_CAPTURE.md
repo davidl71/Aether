@@ -47,6 +47,7 @@ Add the following to your `config.json`:
 ### Basic Usage
 
 1. Enable PCAP capture in configuration:
+
 ```json
 {
   "tws": {
@@ -55,12 +56,14 @@ Add the following to your `config.json`:
 }
 ```
 
-2. Run your application - PCAP file will be created automatically:
+1. Run your application - PCAP file will be created automatically:
+
 ```bash
 ./build/ib_box_spread
 ```
 
-3. Check logs for PCAP file location:
+1. Check logs for PCAP file location:
+
 ```
 [info] PCAP capture enabled: tws_capture_20241219_143052_123.pcap
 ```
@@ -68,6 +71,7 @@ Add the following to your `config.json`:
 ### Custom Output File
 
 Specify a custom output file:
+
 ```json
 {
   "tws": {
@@ -82,16 +86,19 @@ Specify a custom output file:
 #### Using Wireshark
 
 1. Open the PCAP file in Wireshark:
+
 ```bash
 wireshark tws_capture_20241219_143052_123.pcap
 ```
 
-2. Filter for TWS traffic:
+1. Filter for TWS traffic:
+
 ```
 tcp.port == 7497 || tcp.port == 7496
 ```
 
-3. View connection events:
+1. View connection events:
+
 ```
 tcp contains "CONNECTION"
 ```
@@ -138,6 +145,7 @@ The output files use standard PCAP format (version 2.4) and include:
 ### Packet Structure
 
 Each captured event is wrapped in a minimal network frame:
+
 - **Ethernet Header**: 14 bytes (localhost MAC addresses)
 - **IP Header**: 20 bytes (127.0.0.1 to 127.0.0.1)
 - **TCP Header**: 20 bytes (source/destination ports)
@@ -152,6 +160,7 @@ When PCAP capture is closed, statistics are logged:
 ```
 
 Statistics include:
+
 - Total packets captured
 - Total bytes captured
 - First packet timestamp
@@ -170,6 +179,7 @@ The current implementation captures **connection events** rather than raw socket
 ### Future Enhancements
 
 Potential improvements:
+
 - **Socket-level interception**: Wrap socket operations to capture raw data
 - **libpcap integration**: Use libpcap for true network-level capture (requires root/admin)
 - **Message-level capture**: Capture TWS API messages if exposed by the API
@@ -202,6 +212,7 @@ Potential improvements:
 ### Debugging Connection Issues
 
 1. **Enable PCAP capture**:
+
 ```json
 {
   "tws": {
@@ -211,9 +222,10 @@ Potential improvements:
 }
 ```
 
-2. **Run application and attempt connection**
+1. **Run application and attempt connection**
 
-3. **Analyze PCAP file**:
+2. **Analyze PCAP file**:
+
 ```bash
 # View connection timeline
 tshark -r connection_debug.pcap -T fields -e frame.time -e tcp.payload
@@ -222,7 +234,7 @@ tshark -r connection_debug.pcap -T fields -e frame.time -e tcp.payload
 tshark -r connection_debug.pcap -Y "tcp contains CONNECTION"
 ```
 
-4. **Correlate with logs**:
+1. **Correlate with logs**:
    - PCAP timestamps match log timestamps
    - Connection events in PCAP correspond to log messages
    - Identify timing issues or missing events

@@ -3,6 +3,7 @@
 **Purpose:** Questions to ask NotebookLM about our planning documentation to identify where we're reinventing the wheel, what frameworks can be used, and best strategy for code improvement.
 
 **Notebook:** Use existing notebook or create new one with planning docs:
+
 - `docs/ZORRO_INTEGRATION_PLAN.md`
 - `docs/CPPTRADER_INTEGRATION_PLAN.md`
 - `docs/SMARTQUANT_CPP_FRAMEWORK_RESEARCH.md`
@@ -255,7 +256,7 @@ For each risk, provide:
 
 ### Option 1: Add to Existing NotebookLM Notebook
 
-1. Go to your existing notebook: https://notebooklm.google.com/notebook/d08f66c4-e5db-480a-bdc4-50682adc045e
+1. Go to your existing notebook: <https://notebooklm.google.com/notebook/d08f66c4-e5db-480a-bdc4-50682adc045e>
 2. Add the planning documentation files as sources
 3. Ask each question one at a time
 4. Save the responses to `docs/NOTEBOOKLM_ANALYSIS_RESULTS.md`

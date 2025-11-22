@@ -15,6 +15,7 @@ This document designs a comprehensive position import system for Israeli brokers
 
 **TASE (Tel Aviv Stock Exchange) Considerations:**
 Israeli brokers typically hold positions in TASE-listed securities and derivatives. The system must handle:
+
 - **TASE Indices:** TA-35, TA-125, TA-90, TA-Banks5
 - **TASE Options:** Index options, currency options (ILS/USD, ILS/EUR), stock options
 - **TASE Futures:** Index futures (TA-35, TA-90, TA-Banks5) - relaunched September 2024
@@ -27,11 +28,13 @@ Israeli brokers typically hold positions in TASE-listed securities and derivativ
 **Purpose:** Import positions from Israeli brokers to include in portfolio allocation calculations. Positions are factored into the investment strategy framework alongside IBKR positions.
 
 **Net Portfolio Value Impact:**
+
 ```
 Net Portfolio Value = IBKR Assets + Israeli Broker Assets - Loan Liabilities
 ```
 
 **Allocation Calculation:**
+
 - Imported positions are included in total portfolio value
 - Allocation percentages apply to combined portfolio value
 - Currency conversion (ILS → USD) for position valuation
@@ -44,11 +47,13 @@ Net Portfolio Value = IBKR Assets + Israeli Broker Assets - Loan Liabilities
 **Description:** Import position data from manually exported or automatically generated Excel/CSV files.
 
 **Use Cases:**
+
 - Manual exports from broker platform
 - Scheduled automated exports to file system
 - Google Drive sync with automated exports
 
 **Implementation:**
+
 ```python
 # python/integration/israeli_broker_importer.py
 class ExcelFileImporter:
@@ -92,6 +97,7 @@ class ExcelFileImporter:
 ```
 
 **Field Mapping Configuration:**
+
 ```json
 {
   "israeli_broker_import": {
@@ -138,18 +144,21 @@ class ExcelFileImporter:
 ```
 
 **TASE-Specific Field Mapping:**
+
 - **Exchange:** Identify TASE-listed securities (value = "TASE" or "Tel Aviv")
 - **Instrument Type:** Differentiate between stocks, options, futures, bonds
 - **Underlying:** For TASE derivatives, identify underlying asset (TA-35, USD/ILS, individual stock)
 - **TASE Identifiers:** Predefined lists of TASE index options, currency options, futures for automatic classification
 
 **Supported File Formats:**
+
 - `.xlsx` (Excel 2007+)
 - `.xls` (Excel 97-2003)
 - `.csv` (Comma-separated values)
 - `.tsv` (Tab-separated values)
 
 **Dependencies:**
+
 - `pandas` - DataFrame manipulation
 - `openpyxl` - Excel file reading
 - `xlrd` - Legacy Excel support (if needed)
@@ -159,11 +168,13 @@ class ExcelFileImporter:
 **Description:** Connect to Excel RTD server for real-time position updates. Requires Excel running with RTD add-in or broker-provided RTD server.
 
 **Use Cases:**
+
 - Broker provides RTD server add-in
 - Real-time position monitoring
 - Automated updates without manual export
 
 **Implementation:**
+
 ```python
 # python/integration/excel_rtd_client.py
 import xlwings as xw  # Windows COM automation
@@ -255,12 +266,14 @@ class ExcelRTDClient:
 ```
 
 **Requirements:**
+
 - Windows OS (Excel RTD requires Windows COM automation)
 - Excel installed with RTD add-in
 - Broker-provided RTD server or Excel workbook with RTD connections
 - `xlwings` or `pywin32` library
 
 **Setup Steps:**
+
 1. Install broker RTD add-in in Excel
 2. Configure Excel workbook with RTD topic connections
 3. Set up named ranges for position data
@@ -271,11 +284,13 @@ class ExcelRTDClient:
 **Description:** Connect via DDE to broker-provided data feed. DDE is legacy Windows technology but still used by some brokers.
 
 **Use Cases:**
+
 - Broker provides DDE data feed
 - Legacy broker systems
 - Real-time position updates
 
 **Implementation:**
+
 ```python
 # python/integration/excel_dde_client.py
 import win32ui
@@ -337,11 +352,13 @@ class ExcelDDEClient:
 ```
 
 **Requirements:**
+
 - Windows OS (DDE is Windows-specific)
 - Broker-provided DDE server
 - Python DDE library (`pywin32` includes DDE support)
 
 **Limitations:**
+
 - Windows-only (DDE is legacy Windows technology)
 - Less reliable than modern APIs
 - Broker must provide DDE server
@@ -351,11 +368,13 @@ class ExcelDDEClient:
 **Description:** Automatically extract position data from broker web pages using browser automation.
 
 **Use Cases:**
+
 - Broker provides web portal but no export/API
 - Automated position monitoring
 - Real-time position tracking
 
 **Implementation:**
+
 ```python
 # python/integration/web_scraper.py
 from selenium import webdriver
@@ -507,6 +526,7 @@ class IsraeliBrokerWebScraper:
 ```
 
 **Browser Automation Options:**
+
 1. **Selenium WebDriver:**
    - Mature, widely used
    - Supports Chrome, Firefox, Edge
@@ -520,6 +540,7 @@ class IsraeliBrokerWebScraper:
    - Dependencies: `playwright`
 
 **Web Scraping Configuration:**
+
 ```json
 {
   "israeli_broker_import": {
@@ -550,6 +571,7 @@ class IsraeliBrokerWebScraper:
 ```
 
 **Security Considerations:**
+
 - Store credentials securely (environment variables, encrypted config)
 - Respect broker Terms of Service
 - Implement rate limiting to avoid being blocked
@@ -751,12 +773,14 @@ class PortfolioAggregator:
 ### TASE Index Options
 
 **Supported Indices:**
+
 - **TA-35:** Main Israeli stock index (35 largest companies)
 - **TA-125:** Broader Israeli stock index (125 companies)
 - **TA-90:** Extended index (90 companies) - includes TA-35 + next 55
 - **TA-Banks5:** Banking sector index (5 major banks)
 
 **Position Classification:**
+
 ```python
 def classify_tase_position(position: Position) -> str:
     """Classify TASE position by type."""
@@ -781,6 +805,7 @@ def classify_tase_position(position: Position) -> str:
 ### TASE Derivatives Greeks Calculation
 
 **TASE Options Greeks:**
+
 - Use Black-Scholes formulas (similar to US options)
 - Adjust for TASE-specific features:
   - ILS-denominated underlying prices
@@ -788,6 +813,7 @@ def classify_tase_position(position: Position) -> str:
   - MAOF clearing house margin requirements
 
 **TASE Futures Greeks:**
+
 - Futures delta = 1.0 (futures track underlying 1:1)
 - Futures gamma = 0 (linear relationship)
 - Futures vega ≈ 0 (unless considering volatility)
@@ -795,6 +821,7 @@ def classify_tase_position(position: Position) -> str:
 - Futures rho: Interest rate sensitivity based on time to expiration
 
 **Integration with Portfolio Greeks:**
+
 - TASE derivatives included in portfolio Greeks calculation
 - Currency conversion: ILS → USD for Greeks aggregation
 - See `docs/PORTFOLIO_GREEKS_SYSTEM.md` for Greeks calculation methodology
@@ -802,6 +829,7 @@ def classify_tase_position(position: Position) -> str:
 ## Implementation Roadmap
 
 ### Phase 1: Static File Import (Week 1-2)
+
 - [ ] Design position data models
 - [ ] Implement Excel/CSV file parser
 - [ ] Create field mapping configuration system
@@ -813,6 +841,7 @@ def classify_tase_position(position: Position) -> str:
 - [ ] Create tests for file parsing
 
 ### Phase 2: Excel RTD Integration (Week 3-4)
+
 - [ ] Research broker RTD server requirements
 - [ ] Implement RTD client using xlwings
 - [ ] Create Excel workbook template for RTD connections
@@ -821,6 +850,7 @@ def classify_tase_position(position: Position) -> str:
 - [ ] Create documentation for broker setup
 
 ### Phase 3: Web Scraping (Week 5-6)
+
 - [ ] Choose browser automation library (Selenium vs Playwright)
 - [ ] Implement login automation for Israeli brokers
 - [ ] Create position extraction logic
@@ -830,6 +860,7 @@ def classify_tase_position(position: Position) -> str:
 - [ ] Add rate limiting and retry logic
 
 ### Phase 4: Portfolio Aggregation (Week 7)
+
 - [ ] Implement PortfolioAggregator class
 - [ ] Integrate IBKR + Israeli broker positions
 - [ ] Add FX rate conversion (ILS/USD)
@@ -838,6 +869,7 @@ def classify_tase_position(position: Position) -> str:
 - [ ] Add position reconciliation logic
 
 ### Phase 5: Testing & Validation (Week 8)
+
 - [ ] Test file import with sample broker exports
 - [ ] Test RTD connection (if broker provides RTD)
 - [ ] Test web scraping (with test broker accounts)
@@ -851,32 +883,38 @@ def classify_tase_position(position: Position) -> str:
 ### Python Libraries
 
 **Core:**
+
 - `pandas` - Data manipulation for Excel/CSV parsing
 - `openpyxl` - Excel file reading/writing
 - `xlrd` - Legacy Excel support (if needed)
 
 **Excel Automation (RTD/DDE):**
+
 - `xlwings` - Excel COM automation (Windows)
 - `pywin32` - Windows COM/DDE support
 
 **Web Scraping:**
+
 - `selenium` - Browser automation (alternative)
 - `playwright` - Modern browser automation (recommended)
 - `beautifulsoup4` - HTML parsing (for non-JS pages)
 - `requests` - HTTP client
 
 **Configuration & Utilities:**
+
 - `pydantic` - Data validation (already in codebase)
 - `python-dotenv` - Environment variable management
 
 ### System Requirements
 
 **Windows (for RTD/DDE):**
+
 - Excel installed
 - Windows COM support
 - Broker RTD add-in (if using RTD)
 
 **All Platforms (for file import/web scraping):**
+
 - Python 3.12+
 - Browser driver (ChromeDriver for Selenium, or Playwright browsers)
 
@@ -1065,12 +1103,14 @@ if scraper.login():
 ---
 
 **TASE Resources:**
+
 - **TASE Index Options:** TA-35, TA-125, TA-90, TA-Banks5
 - **TASE Currency Options:** ILS/USD, ILS/EUR
 - **TASE Futures:** TA-35, TA-90, TA-Banks5 (relaunched September 2024)
 - **MAOF Clearing House:** All TASE derivatives cleared through MAOF
 
 **Next Steps:**
+
 1. Review and approve design
 2. Select import methods to implement first
 3. Add TASE instrument classification logic

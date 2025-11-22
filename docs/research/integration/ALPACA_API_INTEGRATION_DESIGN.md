@@ -17,6 +17,7 @@ This document designs the Alpaca API integration architecture following the unif
 ### Alpaca API Capabilities
 
 **REST API:**
+
 - Trading operations (orders, positions, account)
 - Market data (quotes, trades, bars)
 - Options trading support (v2 API)
@@ -24,17 +25,20 @@ This document designs the Alpaca API integration architecture following the unif
 - Paper trading and live trading
 
 **WebSocket API:**
+
 - Real-time quotes
 - Trade updates
 - Account updates
 - Market data streaming
 
 **Authentication:**
+
 - OAuth 2.0 (API keys)
 - Base URL: `https://api.alpaca.markets` (live) or `https://paper-api.alpaca.markets` (paper)
 - Rate limits: 200 requests/minute (free tier)
 
 **Options Trading:**
+
 - Options chain data via REST API
 - Options order placement
 - Multi-leg orders (spreads, combos)
@@ -81,6 +85,7 @@ public:
 ### 1. Authentication
 
 **API Key Management:**
+
 ```cpp
 struct AlpacaConfig {
     std::string api_key_id;
@@ -91,6 +96,7 @@ struct AlpacaConfig {
 ```
 
 **Authentication Headers:**
+
 ```cpp
 // All REST API requests include:
 headers["APCA-API-KEY-ID"] = config.api_key_id;
@@ -100,19 +106,23 @@ headers["APCA-API-SECRET-KEY"] = config.api_secret_key;
 ### 2. Market Data
 
 **REST API Endpoints:**
+
 - `GET /v2/stocks/{symbol}/quotes/latest` - Latest quote
 - `GET /v2/stocks/{symbol}/trades/latest` - Latest trade
 - `GET /v2/stocks/{symbol}/bars/latest` - Latest bar
 
 **WebSocket API:**
+
 - `wss://stream.data.alpaca.markets/v2/{feed}` - Real-time quotes
 - Subscribe to symbols: `{"action": "subscribe", "quotes": ["SPY"]}`
 
 **Options Data:**
+
 - `GET /v2/options/contracts` - Options chain
 - `GET /v2/options/quotes/latest` - Latest options quote
 
 **Implementation:**
+
 ```cpp
 int AlpacaAdapter::subscribe_market_data(const types::OptionContract& contract) {
     // Convert contract to Alpaca symbol format
@@ -132,6 +142,7 @@ int AlpacaAdapter::subscribe_market_data(const types::OptionContract& contract) 
 ### 3. Order Placement
 
 **Single Order:**
+
 ```cpp
 int AlpacaAdapter::place_order(const types::Order& order) {
     // Convert to Alpaca order format
@@ -153,6 +164,7 @@ int AlpacaAdapter::place_order(const types::Order& order) {
 ```
 
 **Multi-Leg Order (Combo):**
+
 ```cpp
 int AlpacaAdapter::place_combo_order(const std::vector<types::Order>& legs) {
     // Alpaca supports multi-leg orders via "legs" array
@@ -183,10 +195,12 @@ int AlpacaAdapter::place_combo_order(const std::vector<types::Order>& legs) {
 ### 4. Contract Conversion
 
 **Alpaca Symbol Format:**
+
 - Stock: `SPY`
 - Option: `SPY240119C00450000` (SPY + YYYYMMDD + C/P + Strike*1000)
 
 **Conversion Function:**
+
 ```cpp
 std::string convert_to_alpaca_symbol(const types::OptionContract& contract) {
     // Format: SYMBOL + YYYYMMDD + C/P + STRIKE*1000
@@ -202,6 +216,7 @@ std::string convert_to_alpaca_symbol(const types::OptionContract& contract) {
 ### 5. Rate Limiting
 
 **Implementation:**
+
 ```cpp
 class RateLimiter {
     std::chrono::steady_clock::time_point last_request_;

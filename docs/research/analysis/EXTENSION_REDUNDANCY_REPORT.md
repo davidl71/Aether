@@ -7,12 +7,14 @@ Found **15 groups** with potential redundancies across **94 installed extensions
 ## 🔴 High Priority Redundancies
 
 ### 1. C++ IntelliSense (2 extensions - CONFLICT)
+
 - `ms-vscode.cpptools` (Microsoft)
 - `anysphere.cpptools` (Cursor's version)
 
 **Action**: Remove `ms-vscode.cpptools` - keep `anysphere.cpptools` (Cursor-optimized)
 
 ### 2. C++ Tools (7 extensions - Many redundant)
+
 - `anysphere.cpptools` ✅ **KEEP** (Cursor's version)
 - `llvm-vs-code-extensions.vscode-clangd` (Alternative C++ language server)
 - `franneck94.c-cpp-runner` (Run C++ code)
@@ -22,12 +24,14 @@ Found **15 groups** with potential redundancies across **94 installed extensions
 - `vadimcn.vscode-lldb` (Debugger)
 
 **Action**:
+
 - Remove `ms-vscode.cpptools` (if installed)
 - Keep `anysphere.cpptools` + `vadimcn.vscode-lldb` (debugger)
 - Remove `franneck94.vscode-c-cpp-dev-extension-pack` if individual tools are installed
 - Consider removing `llvm-vs-code-extensions.vscode-clangd` (redundant with cpptools)
 
 ### 3. AI Assistants (8 extensions - Too many!)
+
 - `anthropic.claude-code`
 - `amazonwebservices.codewhisperer-for-command-line-companion`
 - `amazonwebservices.amazon-q-vscode`
@@ -38,11 +42,13 @@ Found **15 groups** with potential redundancies across **94 installed extensions
 - `continue.continue`
 
 **Action**: Keep 1-2 favorites, remove the rest. Recommended:
+
 - Keep: `continue.continue` (open-source, powerful)
 - Keep: One of Claude/Copilot/Gemini based on preference
 - Remove: Others
 
 ### 4. MCP Extensions (7 extensions - Many overlap)
+
 - `yutengjing.vscode-mcp-bridge`
 - `cjl.lsp-mcp`
 - `daninemonic.mcp4humans`
@@ -56,6 +62,7 @@ Found **15 groups** with potential redundancies across **94 installed extensions
 ## 🟡 Medium Priority Redundancies
 
 ### 5. Python Tools (5 extensions)
+
 - `ms-python.python` ✅ **KEEP** (Essential)
 - `ms-python.black-formatter` ✅ **KEEP** (Workspace recommended)
 - `ms-python.debugpy` (Debugger - useful)
@@ -63,12 +70,14 @@ Found **15 groups** with potential redundancies across **94 installed extensions
 - `guyskk.language-cython` (Cython support - if needed)
 
 **Action**:
+
 - Keep `ms-python.python` + `ms-python.black-formatter`
 - Remove `anysphere.cursorpyright` if using Pylance (check if Pylance is installed)
 - Keep `ms-python.debugpy` if debugging Python
 - Keep `guyskk.language-cython` only if using Cython
 
 ### 6. Rust Tools (5 extensions)
+
 - `rust-lang.rust-analyzer` ✅ **KEEP** (Essential)
 - `rust-lang.rust` (Legacy - may be redundant)
 - `pinage404.rust-extension-pack` ⚠️ **Extension pack**
@@ -76,39 +85,46 @@ Found **15 groups** with potential redundancies across **94 installed extensions
 - `washan.cargo-appraiser` (Cargo helper)
 
 **Action**:
+
 - Keep `rust-lang.rust-analyzer` (essential)
 - Remove `rust-lang.rust` (legacy, rust-analyzer is better)
 - Remove `pinage404.rust-extension-pack` if individual tools are installed
 - Keep helpers (`serayuzgur.crates`, `washan.cargo-appraiser`) if useful
 
 ### 7. CMake Tools (4 extensions)
+
 - `ms-vscode.cmake-tools` ✅ **KEEP** (Main tool, workspace recommended)
 - `cheshirekow.cmake-format` (Formatter)
 - `kylinideteam.cmake-intellisence` (IntelliSense)
 - `twxs.cmake` (Syntax highlighting)
 
 **Action**:
+
 - Keep `ms-vscode.cmake-tools` (essential)
 - Others are optional helpers - keep if useful, remove if not
 
 ### 8. Jupyter/Notebook (4 extensions)
+
 - `ms-toolsai.jupyter` ✅ **KEEP** (Core)
 - `ms-toolsai.jupyter-renderers` (May be included in core)
 - `ms-toolsai.vscode-jupyter-cell-tags` (Optional)
 - `ms-toolsai.vscode-jupyter-slideshow` (Optional)
 
 **Action**:
+
 - Keep `ms-toolsai.jupyter` (core)
 - Check if renderers are included - if so, remove `ms-toolsai.jupyter-renderers`
 - Remove optional ones if not using those features
 
 ### 9. Turbo (2 extensions - Redundant)
+
 - `syntaxsyndicate.turbo-vsc`
 - `vercel.turbo-vsc`
 
 **Action**: Keep one (likely `vercel.turbo-vsc` - official), remove the other
 
 ### 10. Documentation (2 extensions - Redundant)
+
 - `bbenoist.doxygen`
 - `cschlosser.doxdocgen`
 
@@ -117,12 +133,14 @@ Found **15 groups** with potential redundancies across **94 installed extensions
 ## 🟢 Low Priority (Keep Both)
 
 ### 11. Markdown (2 extensions - Both useful)
+
 - `yzhang.markdown-all-in-one` (Editing features)
 - `davidanson.vscode-markdownlint` (Linting)
 
 **Action**: ✅ **KEEP BOTH** - Different purposes (editing vs linting)
 
 ### 12. Debuggers (3 extensions - Different targets)
+
 - `firefox-devtools.vscode-firefox-debug` (Firefox)
 - `ms-edgedevtools.vscode-edge-devtools` (Edge)
 - `vadimcn.vscode-lldb` (C++/Rust)
@@ -132,6 +150,7 @@ Found **15 groups** with potential redundancies across **94 installed extensions
 ## 🔴 Disabled Extensions (Can Uninstall)
 
 ### 13. Docker/Containers (3 extensions - All disabled)
+
 - `ms-azuretools.vscode-containers`
 - `ms-azuretools.vscode-docker`
 - `ms-kubernetes-tools.vscode-kubernetes-tools`
@@ -139,6 +158,7 @@ Found **15 groups** with potential redundancies across **94 installed extensions
 **Action**: ✅ **UNINSTALL** - All disabled, not used in project
 
 ### 14. Go Tools (3 extensions - All disabled)
+
 - `golang.go`
 - `neonxp.gotools`
 - `shivamkumar.go-extras`
@@ -146,6 +166,7 @@ Found **15 groups** with potential redundancies across **94 installed extensions
 **Action**: ✅ **UNINSTALL** - All disabled, Go not used in project
 
 ### 15. Ansible (3 extensions)
+
 - `redhat.ansible` (Main tool)
 - `mattiasbaake.vscode-snippets-for-ansible` (Snippets)
 - `jborean.ansibug` (Debugger)
@@ -163,10 +184,10 @@ Found **15 groups** with potential redundancies across **94 installed extensions
 
 ### Medium Priority
 
-5. Remove `rust-lang.rust` (legacy, redundant with rust-analyzer)
-6. Remove `pinage404.rust-extension-pack` if individual tools installed
-7. Remove one Turbo extension (keep `vercel.turbo-vsc`)
-8. Remove one documentation extension (keep preferred)
+1. Remove `rust-lang.rust` (legacy, redundant with rust-analyzer)
+2. Remove `pinage404.rust-extension-pack` if individual tools installed
+3. Remove one Turbo extension (keep `vercel.turbo-vsc`)
+4. Remove one documentation extension (keep preferred)
 
 ### Estimated Reduction
 

@@ -13,6 +13,7 @@ This document designs a comprehensive future cash flow forecasting system that c
 **Purpose:** Forecast future cash flows to ensure sufficient liquidity for loan payments and optimize cash allocation based on upcoming cash inflows and outflows.
 
 **Cash Flow Impact on Allocation:**
+
 - **Loan Payments (Outflows):** Must ensure sufficient cash reserves for upcoming loan payments
 - **Option Expirations (Inflows/Outflows):** Cash returned from long options, cash required for short options
 - **Bond Coupons (Inflows):** Periodic coupon payments increase available cash
@@ -20,6 +21,7 @@ This document designs a comprehensive future cash flow forecasting system that c
 - **Dividends (Inflows):** Dividend payments increase available cash
 
 **Net Cash Flow Calculation:**
+
 ```
 Net Cash Flow = Bond Coupons + Bond Maturities + Dividends + Option Expirations - Loan Payments
 ```
@@ -29,6 +31,7 @@ Net Cash Flow = Bond Coupons + Bond Maturities + Dividends + Option Expirations 
 ### 1. Loan Payments (Cash Outflows)
 
 **Variable SHIR-Based Loans (Israel):**
+
 - **Payment Frequency:** Monthly
 - **Payment Amount:** Variable (changes with SHIR rate)
 - **Calculation:** Principal × (SHIR + spread) / 12 months
@@ -36,6 +39,7 @@ Net Cash Flow = Bond Coupons + Bond Maturities + Dividends + Option Expirations 
 - **Currency:** ILS (convert to USD for unified view)
 
 **Fixed Rate CPI-Linked Loans (Israel):**
+
 - **Payment Frequency:** Monthly
 - **Payment Amount:** Fixed interest payment + variable principal adjustment (CPI-linked)
 - **Calculation:**
@@ -45,6 +49,7 @@ Net Cash Flow = Bond Coupons + Bond Maturities + Dividends + Option Expirations 
 - **Currency:** ILS (convert to USD for unified view)
 
 **Loan Payment Cash Flow:**
+
 ```python
 @dataclass
 class LoanPaymentCashFlow:
@@ -63,15 +68,18 @@ class LoanPaymentCashFlow:
 ### 2. Option Expiration Cash Flows
 
 **Long Options (Cash Inflows at Expiration):**
+
 - **Intrinsic Value:** max(0, Spot - Strike) for calls, max(0, Strike - Spot) for puts
 - **Cash Flow:** Intrinsic value × Contract multiplier × Quantity
 - **For Box Spreads:** Cash flow = Strike width × Contract multiplier × Quantity (guaranteed)
 
 **Short Options (Cash Outflows at Expiration if ITM):**
+
 - **Intrinsic Value:** -max(0, Spot - Strike) for calls, -max(0, Strike - Spot) for puts
 - **Cash Flow:** Intrinsic value × Contract multiplier × Quantity (negative if ITM)
 
 **Option Expiration Cash Flow:**
+
 ```python
 @dataclass
 class OptionExpirationCashFlow:
@@ -91,6 +99,7 @@ class OptionExpirationCashFlow:
 ```
 
 **Box Spread Cash Flow Calculation:**
+
 ```python
 def calculate_box_spread_cash_flow(
     spread: BoxSpreadLeg,
@@ -122,21 +131,25 @@ def calculate_box_spread_cash_flow(
 ### 3. Bond Cash Flows
 
 **Bond Coupon Payments (Periodic Inflows):**
+
 - **Payment Frequency:** Semi-annual (most bonds), quarterly, or annual
 - **Payment Amount:** Face value × Coupon rate / Payment frequency
 - **Example:** $10,000 bond with 5% annual coupon = $250 semi-annually
 
 **Bond Principal at Maturity (Large Inflow):**
+
 - **Payment Date:** Bond maturity date
 - **Payment Amount:** Face value (principal returned)
 - **Example:** $10,000 bond matures → $10,000 cash inflow
 
 **Bond ETF Cash Flows:**
+
 - **Distribution Frequency:** Monthly or quarterly
 - **Distribution Amount:** Based on underlying bond portfolio
 - **Yield:** Annual yield divided by distribution frequency
 
 **Bond Cash Flow:**
+
 ```python
 @dataclass
 class BondCashFlow:
@@ -153,6 +166,7 @@ class BondCashFlow:
 ```
 
 **Bond Coupon Calculation:**
+
 ```python
 def calculate_bond_coupon_schedule(
     bond: Position,
@@ -206,12 +220,14 @@ def calculate_bond_coupon_schedule(
 ### 4. Dividend Cash Flows
 
 **Stock/ETF Dividends (Periodic Inflows):**
+
 - **Payment Frequency:** Quarterly (most common), monthly, semi-annual, or annual
 - **Payment Amount:** Dividend per share × Number of shares
 - **Ex-Dividend Date:** Shares must be held before this date to receive dividend
 - **Payment Date:** Dividend payment date (typically 1-2 months after ex-date)
 
 **Dividend Cash Flow:**
+
 ```python
 @dataclass
 class DividendCashFlow:
@@ -228,6 +244,7 @@ class DividendCashFlow:
 ```
 
 **Dividend Schedule Retrieval:**
+
 - Use ORATS API (existing integration): `ORATSClient.get_dividend_schedule()`
 - Use IBKR API: Contract details include dividend information
 - For TASE securities: Use TASE dividend announcements
@@ -744,6 +761,7 @@ class CashFlowCalculator:
 ### Cash Flow-Aware Cash Management
 
 **Updated Tier 1: Immediate Cash (3-5% of portfolio)**
+
 - **Components:**
   1. **Emergency Reserve:** 2-3% for unexpected needs
   2. **Loan Payment Reserve:** Reserve for upcoming loan payments (next 2 months)
@@ -751,6 +769,7 @@ class CashFlowCalculator:
   4. **Cash Flow Buffer:** Reserve for upcoming cash flow timing mismatches
 
 **Cash Flow-Based Liquidity Planning:**
+
 ```python
 def calculate_minimum_cash_reserve(
     portfolio_value: float,
@@ -800,6 +819,7 @@ def calculate_minimum_cash_reserve(
 ### Cash Flow-Based Rebalancing Triggers
 
 Add to rebalancing triggers:
+
 - Upcoming large cash outflow (loan payment, option expiration) exceeds available cash
 - Upcoming large cash inflow (bond maturity, option expiration) changes allocation targets
 - Cumulative cash balance projected to go negative in next 30 days
@@ -808,6 +828,7 @@ Add to rebalancing triggers:
 ### Spare Cash Allocation with Cash Flow Awareness
 
 **Updated Spare Cash Allocation Algorithm:**
+
 ```python
 def calculate_spare_cash_allocation_with_cash_flow(
     total_spare_cash: float,
@@ -898,6 +919,7 @@ class Loan:
 ### Backend API Extensions
 
 **Add to SystemSnapshot:**
+
 ```rust
 // agents/backend/crates/api/src/state.rs
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -929,6 +951,7 @@ pub struct CashFlowEvent {
 ```
 
 **New Backend Endpoint:**
+
 ```rust
 // agents/backend/crates/api/src/rest.rs
 .route("/api/v1/cash-flow/timeline", get(cash_flow_timeline))
@@ -956,6 +979,7 @@ async fn cash_flow_projection(
 ## Cash Flow Alerts
 
 **Alert Conditions:**
+
 - Upcoming cash outflow exceeds available cash in next 7 days
 - Cumulative cash balance projected to go negative in next 30 days
 - Large cash inflow upcoming (bond maturity, option expiration) - opportunity alert
@@ -965,6 +989,7 @@ async fn cash_flow_projection(
 ## Implementation Roadmap
 
 ### Phase 1: Cash Flow Calculation Framework (Week 1-2)
+
 - [ ] Design cash flow data models
 - [ ] Implement CashFlowCalculator class
 - [ ] Implement loan payment cash flow calculation
@@ -974,6 +999,7 @@ async fn cash_flow_projection(
 - [ ] Create cash flow timeline aggregation
 
 ### Phase 2: Integration with Investment Strategy (Week 3)
+
 - [ ] Integrate cash flow calculator with PortfolioAllocationManager
 - [ ] Update cash management strategy with cash flow awareness
 - [ ] Add cash flow-based liquidity planning
@@ -981,6 +1007,7 @@ async fn cash_flow_projection(
 - [ ] Add cash flow-based rebalancing triggers
 
 ### Phase 3: Backend Integration (Week 4)
+
 - [ ] Add cash flow timeline to SystemSnapshot
 - [ ] Create backend API endpoints for cash flow data
 - [ ] Integrate with existing snapshot endpoint
@@ -988,6 +1015,7 @@ async fn cash_flow_projection(
 - [ ] Test end-to-end cash flow forecasting
 
 ### Phase 4: Data Source Integration (Week 5)
+
 - [ ] Integrate ORATS dividend schedules
 - [ ] Integrate IBKR contract details (bonds, options)
 - [ ] Integrate SHIR rate fetching (Bank of Israel or IBKR)
@@ -1022,6 +1050,7 @@ async fn cash_flow_projection(
 ---
 
 **Next Steps:**
+
 1. Review and approve design
 2. Begin Phase 1 implementation (cash flow calculation framework)
 3. Integrate with existing investment strategy framework

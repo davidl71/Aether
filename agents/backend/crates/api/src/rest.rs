@@ -1,17 +1,21 @@
-use std::{net::SocketAddr, sync::Arc};
+use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use axum::{
-  extract::{Path, Query, State},
+  extract::{Extension, Path, Query},
   http::StatusCode,
   routing::{get, post, put},
   Json, Router,
 };
+use tower::make::Shared;
 use chrono::Utc;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use tokio::{sync::watch, task::JoinHandle};
-use tracing::info;
+use tokio::{sync::watch, task::JoinHandle, time::timeout};
+use tracing::{info, warn};
 
 use crate::state::{Alert, OrderSnapshot, SharedSnapshot, SystemSnapshot};
+
+const SWIFTNESS_API_URL: &str = "http://127.0.0.1:8081";
 
 #[derive(Clone)]
 pub struct StrategyController {
@@ -38,6 +42,11 @@ pub struct RestState {
   pub controller: StrategyController,
 }
 
+// Ensure RestState is Send + Sync for axum Router requirements
+// SharedSnapshot is Arc<RwLock<...>> which is Send + Sync
+// StrategyController contains Arc<...> which is Send + Sync
+// So RestState is automatically Send + Sync
+
 impl RestState {
   pub fn new(snapshot: SharedSnapshot, controller: StrategyController) -> Self {
     Self { snapshot, controller }
@@ -47,7 +56,7 @@ impl RestState {
 pub struct RestServer;
 
 impl RestServer {
-  pub fn router(state: RestState) -> Router<RestState> {
+  pub fn router(state: RestState) -> Router<()> {
     Router::new()
       .route("/health", get(health))
       .route("/api/v1/snapshot", get(snapshot))
@@ -62,15 +71,24 @@ impl RestServer {
       .route("/api/v1/config", get(get_config))
       .route("/api/v1/config", put(update_config))
       .route("/api/v1/scenarios", get(get_scenarios))
-      .with_state(state)
+      .route("/api/v1/swiftness/positions", get(swiftness_positions))
+      .route("/api/v1/swiftness/portfolio-value", get(swiftness_portfolio_value))
+      .route("/api/v1/swiftness/validate", get(swiftness_validate))
+      .route("/api/v1/swiftness/exchange-rate", get(swiftness_exchange_rate))
+      .route("/api/v1/swiftness/exchange-rate", put(swiftness_update_exchange_rate))
+      .layer(axum::Extension(state))
   }
 
   pub async fn serve(addr: SocketAddr, state: RestState) -> anyhow::Result<JoinHandle<()>> {
     let app = Self::router(state);
     info!(%addr, "starting REST server");
     let handle = tokio::spawn(async move {
-      axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+      let listener = tokio::net::TcpListener::bind(&addr)
+        .await
+        .expect("Failed to bind REST server");
+      // In axum 0.7, Router<()> implements Service<IncomingStream> directly
+      // We use Extension layer instead of with_state to make the router stateless
+      axum::serve(listener, app)
         .await
         .expect("REST server crashed");
     });
@@ -78,16 +96,69 @@ impl RestServer {
   }
 }
 
-async fn health() -> &'static str {
-  "ok"
+#[derive(Serialize)]
+struct HealthResponse {
+  status: String,
+  components: ComponentHealth,
 }
 
-async fn snapshot(State(state): State<RestState>) -> Json<SystemSnapshot> {
+#[derive(Serialize)]
+struct ComponentHealth {
+  backend: String,
+  nats: String,
+}
+
+async fn health(Extension(state): Extension<RestState>) -> Result<Json<HealthResponse>, StatusCode> {
+  // Check NATS server health (non-blocking, 1 second timeout)
+  let nats_status = check_nats_health().await;
+
+  // Update metrics with NATS status
+  {
+    let mut snapshot = state.snapshot.write().await;
+    snapshot.metrics.nats_ok = nats_status == "ok";
+  }
+
+  let response = HealthResponse {
+    status: "ok".to_string(),
+    components: ComponentHealth {
+      backend: "ok".to_string(),
+      nats: nats_status,
+    },
+  };
+
+  Ok(Json(response))
+}
+
+async fn check_nats_health() -> String {
+  const NATS_HEALTH_URL: &str = "http://localhost:8222/healthz";
+  const TIMEOUT_SECS: u64 = 1;
+
+  match timeout(Duration::from_secs(TIMEOUT_SECS), reqwest::get(NATS_HEALTH_URL)).await {
+    Ok(Ok(response)) => {
+      if response.status().is_success() {
+        "ok".to_string()
+      } else {
+        warn!("NATS health check returned non-success status: {}", response.status());
+        "degraded".to_string()
+      }
+    }
+    Ok(Err(e)) => {
+      warn!(error = %e, "NATS health check request failed");
+      "unavailable".to_string()
+    }
+    Err(_) => {
+      warn!("NATS health check timed out after {} seconds", TIMEOUT_SECS);
+      "timeout".to_string()
+    }
+  }
+}
+
+async fn snapshot(Extension(state): Extension<RestState>) -> Json<SystemSnapshot> {
   let snapshot = state.snapshot.read().await.clone();
   Json(snapshot)
 }
 
-async fn strategy_start(State(state): State<RestState>) -> Result<StatusCode, (StatusCode, String)> {
+async fn strategy_start(Extension(state): Extension<RestState>) -> Result<StatusCode, (StatusCode, String)> {
   state
     .controller
     .start()
@@ -106,7 +177,7 @@ async fn strategy_start(State(state): State<RestState>) -> Result<StatusCode, (S
   Ok(StatusCode::NO_CONTENT)
 }
 
-async fn strategy_stop(State(state): State<RestState>) -> Result<StatusCode, (StatusCode, String)> {
+async fn strategy_stop(Extension(state): Extension<RestState>) -> Result<StatusCode, (StatusCode, String)> {
   state
     .controller
     .stop()
@@ -191,7 +262,7 @@ struct ScenariosQuery {
 
 // Endpoint implementations
 
-async fn strategy_status(State(state): State<RestState>) -> Json<StrategyStatusResponse> {
+async fn strategy_status(Extension(state): Extension<RestState>) -> Json<StrategyStatusResponse> {
   let snapshot = state.snapshot.read().await;
   Json(StrategyStatusResponse {
     status: snapshot.strategy.clone(),
@@ -201,7 +272,7 @@ async fn strategy_status(State(state): State<RestState>) -> Json<StrategyStatusR
 }
 
 async fn orders_list(
-  State(state): State<RestState>,
+  Extension(state): Extension<RestState>,
   Query(params): Query<OrdersListQuery>,
 ) -> Json<OrdersListResponse> {
   let snapshot = state.snapshot.read().await;
@@ -221,7 +292,7 @@ async fn orders_list(
 }
 
 async fn order_details(
-  State(state): State<RestState>,
+  Extension(state): Extension<RestState>,
   Path(order_id): Path<String>,
 ) -> Result<Json<OrderSnapshot>, (StatusCode, Json<ApiResponse>)> {
   let snapshot = state.snapshot.read().await;
@@ -245,7 +316,7 @@ async fn order_details(
 }
 
 async fn cancel_order(
-  State(state): State<RestState>,
+  Extension(state): Extension<RestState>,
   Json(request): Json<CancelOrderRequest>,
 ) -> Result<Json<ApiResponse>, (StatusCode, Json<ApiResponse>)> {
   let mut snapshot = state.snapshot.write().await;
@@ -278,7 +349,7 @@ async fn cancel_order(
 }
 
 async fn toggle_mode(
-  State(state): State<RestState>,
+  Extension(state): Extension<RestState>,
   Json(request): Json<ModeRequest>,
 ) -> Result<Json<ApiResponse>, (StatusCode, Json<ApiResponse>)> {
   let valid_modes = ["DRY-RUN", "LIVE"];
@@ -307,7 +378,7 @@ async fn toggle_mode(
 }
 
 async fn change_account(
-  State(state): State<RestState>,
+  Extension(state): Extension<RestState>,
   Json(request): Json<AccountRequest>,
 ) -> Json<ApiResponse> {
   let mut snapshot = state.snapshot.write().await;
@@ -326,7 +397,7 @@ async fn change_account(
   })
 }
 
-async fn get_config(State(state): State<RestState>) -> Json<serde_json::Value> {
+async fn get_config(Extension(state): Extension<RestState>) -> Json<serde_json::Value> {
   let snapshot = state.snapshot.read().await;
   Json(serde_json::json!({
     "mode": snapshot.mode,
@@ -343,7 +414,7 @@ async fn get_config(State(state): State<RestState>) -> Json<serde_json::Value> {
 }
 
 async fn update_config(
-  State(state): State<RestState>,
+  Extension(state): Extension<RestState>,
   Json(request): Json<ConfigUpdateRequest>,
 ) -> Result<Json<ApiResponse>, (StatusCode, Json<ApiResponse>)> {
   let mut snapshot = state.snapshot.write().await;
@@ -380,7 +451,7 @@ async fn update_config(
 }
 
 async fn get_scenarios(
-  State(state): State<RestState>,
+  Extension(_state): Extension<RestState>,
   Query(params): Query<ScenariosQuery>,
 ) -> Json<serde_json::Value> {
   // TODO: Implement actual scenario calculation
@@ -390,4 +461,310 @@ async fn get_scenarios(
     "as_of": Utc::now(),
     "underlying": params.symbol.unwrap_or_else(|| "SPX".to_string()),
   }))
+}
+
+// Swiftness API proxy endpoints
+
+#[derive(Debug, Deserialize)]
+struct SwiftnessPositionsQuery {
+  check_validity: Option<bool>,
+  max_age_days: Option<u32>,
+}
+
+async fn swiftness_positions(
+  Query(params): Query<SwiftnessPositionsQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiResponse>)> {
+  let client = Client::builder()
+    .timeout(Duration::from_secs(5))
+    .build()
+    .map_err(|e| {
+      (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(ApiResponse {
+          status: "error".into(),
+          message: format!("Failed to create HTTP client: {}", e),
+          data: None,
+        }),
+      )
+    })?;
+
+  let mut url = format!("{}/positions", SWIFTNESS_API_URL);
+  let check_validity = params.check_validity.unwrap_or(true);
+  let max_age_days = params.max_age_days.unwrap_or(90);
+  url.push_str(&format!("?check_validity={}&max_age_days={}", check_validity, max_age_days));
+
+  match client.get(&url).send().await {
+    Ok(response) => {
+      if response.status().is_success() {
+        match response.json::<serde_json::Value>().await {
+          Ok(data) => Ok(Json(data)),
+          Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiResponse {
+              status: "error".into(),
+              message: format!("Failed to parse Swiftness API response: {}", e),
+              data: None,
+            }),
+          )),
+        }
+      } else {
+        Err((
+          StatusCode::BAD_GATEWAY,
+          Json(ApiResponse {
+            status: "error".into(),
+            message: format!("Swiftness API returned error: {}", response.status()),
+            data: None,
+          }),
+        ))
+      }
+    }
+    Err(e) => {
+      warn!(%e, "failed to call Swiftness API");
+      Err((
+        StatusCode::BAD_GATEWAY,
+        Json(ApiResponse {
+          status: "error".into(),
+          message: format!("Swiftness API unavailable: {}", e),
+          data: None,
+        }),
+      ))
+    }
+  }
+}
+
+async fn swiftness_portfolio_value() -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiResponse>)> {
+  let client = Client::builder()
+    .timeout(Duration::from_secs(5))
+    .build()
+    .map_err(|e| {
+      (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(ApiResponse {
+          status: "error".into(),
+          message: format!("Failed to create HTTP client: {}", e),
+          data: None,
+        }),
+      )
+    })?;
+
+  let url = format!("{}/portfolio-value", SWIFTNESS_API_URL);
+
+  match client.get(&url).send().await {
+    Ok(response) => {
+      if response.status().is_success() {
+        match response.json::<serde_json::Value>().await {
+          Ok(data) => Ok(Json(data)),
+          Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiResponse {
+              status: "error".into(),
+              message: format!("Failed to parse Swiftness API response: {}", e),
+              data: None,
+            }),
+          )),
+        }
+      } else {
+        Err((
+          StatusCode::BAD_GATEWAY,
+          Json(ApiResponse {
+            status: "error".into(),
+            message: format!("Swiftness API returned error: {}", response.status()),
+            data: None,
+          }),
+        ))
+      }
+    }
+    Err(e) => {
+      warn!(%e, "failed to call Swiftness API");
+      Err((
+        StatusCode::BAD_GATEWAY,
+        Json(ApiResponse {
+          status: "error".into(),
+          message: format!("Swiftness API unavailable: {}", e),
+          data: None,
+        }),
+      ))
+    }
+  }
+}
+
+async fn swiftness_validate() -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiResponse>)> {
+  let client = Client::builder()
+    .timeout(Duration::from_secs(5))
+    .build()
+    .map_err(|e| {
+      (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(ApiResponse {
+          status: "error".into(),
+          message: format!("Failed to create HTTP client: {}", e),
+          data: None,
+        }),
+      )
+    })?;
+
+  let url = format!("{}/validate", SWIFTNESS_API_URL);
+
+  match client.get(&url).send().await {
+    Ok(response) => {
+      if response.status().is_success() {
+        match response.json::<serde_json::Value>().await {
+          Ok(data) => Ok(Json(data)),
+          Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiResponse {
+              status: "error".into(),
+              message: format!("Failed to parse Swiftness API response: {}", e),
+              data: None,
+            }),
+          )),
+        }
+      } else {
+        Err((
+          StatusCode::BAD_GATEWAY,
+          Json(ApiResponse {
+            status: "error".into(),
+            message: format!("Swiftness API returned error: {}", response.status()),
+            data: None,
+          }),
+        ))
+      }
+    }
+    Err(e) => {
+      warn!(%e, "failed to call Swiftness API");
+      Err((
+        StatusCode::BAD_GATEWAY,
+        Json(ApiResponse {
+          status: "error".into(),
+          message: format!("Swiftness API unavailable: {}", e),
+          data: None,
+        }),
+      ))
+    }
+  }
+}
+
+async fn swiftness_exchange_rate() -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiResponse>)> {
+  let client = Client::builder()
+    .timeout(Duration::from_secs(5))
+    .build()
+    .map_err(|e| {
+      (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(ApiResponse {
+          status: "error".into(),
+          message: format!("Failed to create HTTP client: {}", e),
+          data: None,
+        }),
+      )
+    })?;
+
+  let url = format!("{}/exchange-rate", SWIFTNESS_API_URL);
+
+  match client.get(&url).send().await {
+    Ok(response) => {
+      if response.status().is_success() {
+        match response.json::<serde_json::Value>().await {
+          Ok(data) => Ok(Json(data)),
+          Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiResponse {
+              status: "error".into(),
+              message: format!("Failed to parse Swiftness API response: {}", e),
+              data: None,
+            }),
+          )),
+        }
+      } else {
+        Err((
+          StatusCode::BAD_GATEWAY,
+          Json(ApiResponse {
+            status: "error".into(),
+            message: format!("Swiftness API returned error: {}", response.status()),
+            data: None,
+          }),
+        ))
+      }
+    }
+    Err(e) => {
+      warn!(%e, "failed to call Swiftness API");
+      Err((
+        StatusCode::BAD_GATEWAY,
+        Json(ApiResponse {
+          status: "error".into(),
+          message: format!("Swiftness API unavailable: {}", e),
+          data: None,
+        }),
+      ))
+    }
+  }
+}
+
+#[derive(Debug, Deserialize)]
+#[derive(Serialize)]
+struct ExchangeRateUpdate {
+  rate: f64,
+}
+
+async fn swiftness_update_exchange_rate(
+  Json(update): Json<ExchangeRateUpdate>,
+) -> Result<Json<ApiResponse>, (StatusCode, Json<ApiResponse>)> {
+  if update.rate <= 0.0 {
+    return Err((
+      StatusCode::BAD_REQUEST,
+      Json(ApiResponse {
+        status: "error".into(),
+        message: "Exchange rate must be positive".into(),
+        data: None,
+      }),
+    ));
+  }
+
+  let client = Client::builder()
+    .timeout(Duration::from_secs(5))
+    .build()
+    .map_err(|e| {
+      (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(ApiResponse {
+          status: "error".into(),
+          message: format!("Failed to create HTTP client: {}", e),
+          data: None,
+        }),
+      )
+    })?;
+
+  let url = format!("{}/exchange-rate", SWIFTNESS_API_URL);
+
+  match client.put(&url).json(&update).send().await {
+    Ok(response) => {
+      if response.status().is_success() {
+        Ok(Json(ApiResponse {
+          status: "ok".into(),
+          message: "Exchange rate updated".into(),
+          data: Some(serde_json::json!({ "rate": update.rate })),
+        }))
+      } else {
+        Err((
+          StatusCode::BAD_GATEWAY,
+          Json(ApiResponse {
+            status: "error".into(),
+            message: format!("Swiftness API returned error: {}", response.status()),
+            data: None,
+          }),
+        ))
+      }
+    }
+    Err(e) => {
+      warn!(%e, "failed to call Swiftness API");
+      Err((
+        StatusCode::BAD_GATEWAY,
+        Json(ApiResponse {
+          status: "error".into(),
+          message: format!("Swiftness API unavailable: {}", e),
+          data: None,
+        }),
+      ))
+    }
+  }
 }

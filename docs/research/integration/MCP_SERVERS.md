@@ -1,6 +1,7 @@
 # MCP Servers Configuration
 
-This document describes the Model Context Protocol (MCP) servers configured for this project to enhance Cursor AI capabilities.
+This document describes the Model Context Protocol (MCP) servers configured for this project to
+enhance Cursor AI capabilities.
 
 ## Configured MCP Servers
 
@@ -28,7 +29,8 @@ This document describes the Model Context Protocol (MCP) servers configured for 
 - Provides code quality suggestions
 - Especially important for trading software where security is critical
 
-**Usage**: The AI assistant will automatically use Semgrep when analyzing code for security issues, as mentioned in `.cursorrules`.
+**Usage**: The AI assistant will automatically use Semgrep when analyzing code for security
+issues, as mentioned in `.cursorrules`.
 
 ### 2. Filesystem Server
 
@@ -241,7 +243,8 @@ This document describes the Model Context Protocol (MCP) servers configured for 
 - Test integration scripts safely
 - Execute Python strategy runner in dry-run mode
 
-**⚠️ Safety Note**: For trading software, always use `--dry-run` flag when testing via terminal MCP. Never execute live trading commands.
+**⚠️ Safety Note**: For trading software, always use `--dry-run` flag when testing via terminal
+MCP. Never execute live trading commands.
 
 ---
 
@@ -255,7 +258,8 @@ For more interactive tools like GitHub integration and database queries, see [MC
 
 **Extension**: `yutengjing.vscode-mcp` (recommended in `.vscode/extensions.json`)
 
-**Purpose**: Bridges VS Code/Cursor's Language Server Protocol (LSP) with MCP, exposing LSP diagnostics, type information, and code navigation to AI assistants.
+**Purpose**: Bridges VS Code/Cursor's Language Server Protocol (LSP) with MCP, exposing LSP
+diagnostics, type information, and code navigation to AI assistants.
 
 **Benefits**:
 
@@ -372,6 +376,7 @@ For more interactive tools like GitHub integration and database queries, see [MC
 **Integration with Launch Script**:
 
 The launch script now includes `[AI:ANALYZE]` markers that make it easy for AI to understand:
+
 - Which services are running
 - Port assignments
 - Service dependencies
@@ -380,6 +385,7 @@ The launch script now includes `[AI:ANALYZE]` markers that make it easy for AI t
 **Permissions** (configured in iTerm2):
 
 When using iTerm2's AI Chat feature, you can grant permissions for:
+
 - **Check Terminal State**: See directory, shell, commands, exit status
 - **Run Commands**: Execute diagnostic commands
 - **View History**: Access command history
@@ -387,9 +393,145 @@ When using iTerm2's AI Chat feature, you can grant permissions for:
 
 **⚠️ Security Note**: The MCP server respects iTerm2's permission system. You control what AI can access.
 
+### 11. Tractatus Thinking MCP Server
+
+**Purpose**: Logical concept analysis and structured thinking for breaking down complex problems
+
+**Status**: ✅ Cursor Rules Available (see `.cursor/rules/tractatus-thinking.mdc`)
+
+**Benefits**:
+
+- **Break Down Complex Concepts**: Decompose complex ideas into atomic truths
+- **Reveal Multiplicative Relationships**: Understand why ALL factors must align (A × B × C)
+- **Find Missing Elements**: Identify the ONE critical missing piece preventing success
+- **Separate Essential from Accidental**: Focus on what must be true vs what happens to be true
+- **Eliminate Confusion**: Create precise definitions that eliminate team confusion
+- **Understand WHY vs HOW**: Provides structural understanding beyond surface-level implementation
+
+**Use Cases for Your Project**:
+
+- **Trading Logic Analysis**: Break down box spread arbitrage into atomic components
+- **Architecture Decisions**: Understand multiplicative dependencies for successful deployments
+- **Debugging**: Find the ONE missing element causing systematic failures
+- **Requirements Analysis**: Separate essential features from nice-to-haves
+- **Concept Clarification**: Define fuzzy trading/finance terms precisely
+
+**Strategic Sequencing**:
+
+1. **Start with Tractatus Thinking** to understand WHAT (structure/logic)
+2. **Switch to sequential thinking** for HOW (process/steps)
+3. **Return to Tractatus Thinking** to formalize and verify solution structure
+
+**Example Usage**:
+
+```
+Problem: "Why do all box spread calculations fail?"
+Tractatus reveals: Success = Valid Market Data × Correct Strikes × Proper Pricing × API Connection
+Missing element: API Connection always fails
+Solution: Fix API connection, now all factors align
+```
+
+**Operations**:
+
+- `start`: Begin analysis of a concept or problem
+- `add`: Add propositions and decompose into components
+- `navigate`: Explore the logical structure
+- `export`: Export analysis in markdown, JSON, or Graphviz
+- `revise`: Update understanding as you learn more
+
+**Integration**:
+
+- Use BEFORE implementation to understand structure
+- Combine with codebase search for existing patterns
+- Use with research to determine what needs investigation
+- Store structural insights in OpenMemory for future reference
+
+**Documentation**: See `.cursor/rules/tractatus-thinking.mdc` for detailed usage guidelines.
+
+### 12. Sequential Thinking MCP Server
+
+**Purpose**: Structured problem-solving and implementation workflow
+
+**Status**: ✅ Configured
+
+**Configuration**: `.cursor/mcp.json`
+
+```json
+{
+  "sequential_thinking": {
+    "command": "python3",
+    "args": ["-m", "sequential_thinking"],
+    "description": "Sequential Thinking MCP server for structured problem-solving and implementation workflow"
+  }
+}
+```
+
+**Benefits**:
+
+- **Structured Problem-Solving**: Dynamic and reflective problem-solving through structured thought sequences
+- **Implementation Workflow**: Converts structural understanding into actionable implementation steps
+- **Step-by-Step Reasoning**: Breaks down complex problems into sequential, manageable steps
+- **Reflective Analysis**: Enables dynamic reflection and refinement of problem-solving approaches
+- **Process-Oriented Thinking**: Focuses on HOW to implement solutions (complements Tractatus Thinking's WHAT analysis)
+
+**Use Cases for Your Project**:
+
+- **Implementation Planning**: Convert Tractatus Thinking structural analysis into concrete implementation steps
+- **Workflow Design**: Create step-by-step workflows for complex features
+- **Problem Decomposition**: Break down implementation tasks into sequential, manageable components
+- **Reflective Problem-Solving**: Iteratively refine implementation approaches based on feedback
+- **Process Documentation**: Document implementation processes and workflows
+
+**Strategic Sequencing with Tractatus Thinking**:
+
+1. **Start with Tractatus Thinking** to understand WHAT (structure/logic) - breaks down concepts into atomic components
+2. **Switch to Sequential Thinking** for HOW (process/steps) - converts structural understanding into actionable implementation steps
+3. **Return to Tractatus Thinking** to formalize and verify solution structure - ensures all components align
+
+**Example Workflow**:
+
+```
+Step 1 (Tractatus): "What is the structure of box spread arbitrage?"
+→ Reveals: Success = Valid Market Data × Correct Strikes × Proper Pricing × API Connection
+
+Step 2 (Sequential): "How do we implement box spread arbitrage?"
+→ Creates:
+  1. Connect to TWS API
+  2. Fetch market data for strikes
+  3. Calculate pricing for all legs
+  4. Validate arbitrage opportunity
+  5. Execute trade if valid
+
+Step 3 (Tractatus): "Verify implementation structure"
+→ Confirms: All multiplicative dependencies are addressed in implementation
+```
+
+**Installation**:
+
+The Sequential Thinking MCP server requires Python 3.10+ and the `sequential-thinking-mcp` package. Since macOS uses externally-managed Python environments, use `pipx` (recommended for Python applications):
+
+```bash
+# Install pipx if not already installed
+brew install pipx
+
+# Install Sequential Thinking MCP server
+pipx install sequential-thinking-mcp
+```
+
+**Note**: The configuration uses the `sequential-thinking-mcp` executable installed by pipx, which runs the server in an isolated virtual environment.
+
+**Integration**:
+
+- Use AFTER Tractatus Thinking analysis to convert structural understanding into steps
+- Combine with codebase search for existing implementation patterns
+- Use with research to determine specific implementation approaches
+- Store implementation workflows in OpenMemory for future reference
+
+**Documentation**: See `.cursor/rules/sequential-thinking.mdc` for detailed usage guidelines (to be created).
+
 ---
 
-## Additional MCP Servers (Optional)
+## Optional MCP Server Examples
 
 **Configuration**: `.cursor/mcp.json`
 
@@ -411,7 +553,8 @@ When using iTerm2's AI Chat feature, you can grant permissions for:
 - Citation-backed answers with source references
 - Natural language Q&A that understands context across multiple documents
 
-**Usage**: The AI assistant can use NotebookLM to research topics, summarize videos, and create documentation. See [NotebookLM Usage Guide](NOTEBOOKLM_USAGE.md) for detailed instructions.
+**Usage**: The AI assistant can use NotebookLM to research topics, summarize videos, and create
+documentation. See [NotebookLM Usage Guide](NOTEBOOKLM_USAGE.md) for detailed instructions.
 
 **Key Features**:
 
@@ -452,7 +595,8 @@ npx -y @semgrep/mcp-server-semgrep
 
 The MCP configuration is stored at: `.cursor/mcp.json`
 
-**Note**: This file should be committed to the repository so all team members have the same MCP server setup.
+**Note**: This file should be committed to the repository so all team members have the same MCP
+server setup.
 
 ## Troubleshooting
 
@@ -527,7 +671,8 @@ If you add database support:
 - **Semgrep**: Scans code but doesn't send data externally (runs locally)
 - **Filesystem**: Only has access to `${workspaceFolder}` directory
 - **Git**: Only has access to the configured repository
-- **NotebookLM**: Uses browser automation with local Chrome profile. Credentials never leave your machine. Consider using a dedicated Google account for automation.
+- **NotebookLM**: Uses browser automation with local Chrome profile. Credentials never leave your
+  machine. Consider using a dedicated Google account for automation.
 - **Never commit**: API keys, tokens, or credentials in MCP configuration
 
 ## See Also
@@ -536,4 +681,5 @@ If you add database support:
 - [NotebookLM Usage Guide](NOTEBOOKLM_USAGE.md) - How to use NotebookLM for summarizing videos and documentation
 - [.cursorrules](../.cursorrules) - AI assistant guidelines mentioning Semgrep
 - [MCP Documentation](https://modelcontextprotocol.io/) - Official MCP documentation
-- [NotebookLM MCP Repository](https://github.com/PleasePrompto/notebooklm-mcp) - Source code and detailed documentation
+- [NotebookLM MCP Repository](https://github.com/PleasePrompto/notebooklm-mcp) - Source code
+  and detailed documentation

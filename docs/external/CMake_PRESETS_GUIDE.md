@@ -137,11 +137,13 @@ cmake --build --preset macos-arm64-debug
 ### Debug Presets
 
 **Settings**:
+
 - `CMAKE_BUILD_TYPE`: `Debug`
 - `CMAKE_EXPORT_COMPILE_COMMANDS`: `ON` (for IntelliSense)
 - `CMAKE_COLOR_DIAGNOSTICS`: `ON` (colored output)
 
 **Use For**:
+
 - Development
 - Debugging
 - Testing
@@ -150,11 +152,13 @@ cmake --build --preset macos-arm64-debug
 ### Release Presets
 
 **Settings**:
+
 - `CMAKE_BUILD_TYPE`: `Release`
 - `CMAKE_EXPORT_COMPILE_COMMANDS`: `ON`
 - `CMAKE_COLOR_DIAGNOSTICS`: `ON`
 
 **Use For**:
+
 - Production builds
 - Performance testing
 - Distribution

@@ -44,16 +44,19 @@ class MyTWSClient : public DefaultEWrapper {
 ## Available Documentation Files
 
 ### Core API Documentation
+
 - **`API_DOCUMENTATION_INDEX.md`**: Complete index of all APIs and libraries
 - **`TWS_INTEGRATION_STATUS.md`**: TWS API integration details
 - **`EWRAPPER_STATUS.md`**: EWrapper implementation status
 
 ### Implementation Guides
+
 - **`IMPLEMENTATION_GUIDE.md`**: Step-by-step implementation guide
 - **`QUICK_START.md`**: Quick start guide
 - **`WORKTREE_SETUP.md`**: Development environment setup
 
 ### Build & Configuration
+
 - **`DISTRIBUTED_COMPILATION.md`**: Build optimization guide
 - **`CURSOR_SETUP.md`**: Cursor IDE setup
 - **`CURSOR_IGNORE_SETUP.md`**: File exclusion configuration
@@ -80,6 +83,7 @@ Looking at native/src/tws_client.cpp, how should I handle connection errors?
 ### 3. Update Documentation
 
 Keep documentation current:
+
 - Update `API_DOCUMENTATION_INDEX.md` when adding dependencies
 - Document API version changes
 - Add usage examples for complex APIs
@@ -99,6 +103,7 @@ Reference docs in `.cursorrules` for project-wide context:
 ### Example 1: TWS API Connection
 
 **Prompt:**
+
 ```
 @docs API_DOCUMENTATION_INDEX.md @docs TWS_INTEGRATION_STATUS.md
 How do I connect to TWS API on port 7497 (paper trading)?
@@ -110,6 +115,7 @@ AI provides code using correct TWS API classes (`EClientSocket`, `DefaultEWrappe
 ### Example 2: Logging
 
 **Prompt:**
+
 ```
 @docs API_DOCUMENTATION_INDEX.md#spdlog
 How do I log a warning message?
@@ -121,6 +127,7 @@ AI suggests `spdlog::warn()` with proper formatting.
 ### Example 3: Testing
 
 **Prompt:**
+
 ```
 @docs API_DOCUMENTATION_INDEX.md#Catch2
 How do I write a test for the box spread calculator?

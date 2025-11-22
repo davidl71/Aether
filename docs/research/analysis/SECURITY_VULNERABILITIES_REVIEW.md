@@ -7,6 +7,7 @@
 ## Summary
 
 GitHub Dependabot detected **2 vulnerabilities** in the repository:
+
 - **1 moderate** severity
 - **1 low** severity
 
@@ -17,6 +18,7 @@ GitHub Dependabot detected **2 vulnerabilities** in the repository:
 **Affected Package**: `vite` (via `esbuild`)
 
 **Vulnerability Details**:
+
 - **CVE**: GHSA-67mh-4wv8-2f99
 - **Severity**: Moderate (CVSS 5.3)
 - **CWE**: CWE-346 (Origin Validation Error)
@@ -26,15 +28,18 @@ GitHub Dependabot detected **2 vulnerabilities** in the repository:
 **Current Version**: `vite@^5.4.8`
 
 **Impact**:
+
 - **Development Only**: This vulnerability affects the **development server** (`npm run dev`)
 - **Not Production**: Does not affect production builds (`npm run build`)
 - **Risk**: Low for production, moderate for development
 
 **Affected Files**:
+
 - `web/package.json` - vite dependency
 - `web/package-lock.json` - locked version
 
 **Fix Available**:
+
 - Upgrade `vite` to `^7.2.2` (major version upgrade)
 - This will also fix related packages:
   - `vitest` → `^4.0.8`
@@ -64,6 +69,7 @@ npm audit fix
 ```
 
 **Note**: This is a **major version upgrade** (v5 → v7), so:
+
 - Review [Vite 7 migration guide](https://vitejs.dev/guide/migration.html)
 - Test the development server thoroughly
 - Update any Vite-specific configuration if needed
@@ -71,11 +77,13 @@ npm audit fix
 #### Option B: Accept Risk (Development Only)
 
 If this is **development-only** and you're comfortable with the risk:
+
 - The vulnerability only affects the dev server
 - Production builds are not affected
 - You can defer the upgrade until convenient
 
 **Risk Assessment**:
+
 - ✅ **Low risk** if dev server is only used locally
 - ⚠️ **Moderate risk** if dev server is exposed to network
 - ❌ **High risk** if dev server is publicly accessible
@@ -83,6 +91,7 @@ If this is **development-only** and you're comfortable with the risk:
 ### Priority 2: Review Low Severity Vulnerability
 
 1. **Check GitHub Security Tab**:
+
    ```
    https://github.com/davidl71/ib_box_spread_full_universal/security/dependabot
    ```
@@ -100,6 +109,7 @@ If this is **development-only** and you're comfortable with the risk:
 **Status**: ✅ No vulnerabilities detected in audit
 
 **Packages Reviewed**:
+
 - `numpy==2.3.4` - Latest stable
 - `requests==2.32.5` - Recent version
 - `urllib3==2.5.0` - Recent version
@@ -113,6 +123,7 @@ If this is **development-only** and you're comfortable with the risk:
 **Status**: ✅ No vulnerabilities detected
 
 **Packages Reviewed**:
+
 - `axum@0.7` - Recent version
 - `tokio@1` - Stable
 - `tonic@0.11` - Recent
@@ -125,6 +136,7 @@ If this is **development-only** and you're comfortable with the risk:
 **Status**: ✅ No vulnerabilities detected
 
 **Packages Reviewed**:
+
 - `github.com/gdamore/tcell/v2@v2.8.1` - Recent
 - `github.com/rivo/tview@v0.42.0` - Recent
 - `golang.org/x/*` - Standard library extensions
@@ -136,6 +148,7 @@ If this is **development-only** and you're comfortable with the risk:
 **Status**: ✅ No vulnerabilities detected
 
 **Packages Reviewed**:
+
 - `nlohmann/json@v3.11.3` - Recent, SHA256 verified
 - `spdlog@v1.13.0` - Recent
 - `CLI11@v2.4.1` - Recent
@@ -150,7 +163,7 @@ If this is **development-only** and you're comfortable with the risk:
 ### Immediate Actions
 
 1. **Review GitHub Security Tab**:
-   - Visit: https://github.com/davidl71/ib_box_spread_full_universal/security/dependabot
+   - Visit: <https://github.com/davidl71/ib_box_spread_full_universal/security/dependabot>
    - Review both vulnerabilities in detail
    - Check if low severity vulnerability needs immediate attention
 
@@ -161,6 +174,7 @@ If this is **development-only** and you're comfortable with the risk:
 ### Short-term (This Week)
 
 1. **Upgrade Vite** (if proceeding):
+
    ```bash
    cd web
    npm install vite@^7.2.2 vitest@^4.0.8
@@ -196,6 +210,7 @@ If this is **development-only** and you're comfortable with the risk:
 ### Overall Risk: **LOW to MODERATE**
 
 **Breakdown**:
+
 - **Production Risk**: ✅ **LOW** - Vite vulnerability only affects dev server
 - **Development Risk**: ⚠️ **MODERATE** - Dev server vulnerability
 - **Data Risk**: ✅ **LOW** - No data exposure in production
@@ -204,12 +219,14 @@ If this is **development-only** and you're comfortable with the risk:
 ### Mitigation
 
 **Current Mitigations**:
+
 - ✅ Production builds don't use Vite dev server
 - ✅ All dependencies are pinned/versioned
 - ✅ Lock files are committed
 - ✅ No known production vulnerabilities
 
 **Recommended Additional Mitigations**:
+
 - ⚠️ Upgrade Vite for development security
 - ⚠️ Review and fix low severity vulnerability
 - ✅ Continue regular security audits
@@ -221,6 +238,7 @@ If this is **development-only** and you're comfortable with the risk:
 After applying fixes, verify:
 
 1. **Web Application**:
+
    ```bash
    cd web
    npm install
@@ -230,12 +248,14 @@ After applying fixes, verify:
    ```
 
 2. **Python**:
+
    ```bash
    pip install -r requirements.txt
    pytest
    ```
 
 3. **Rust**:
+
    ```bash
    cd agents/backend
    cargo build
@@ -243,6 +263,7 @@ After applying fixes, verify:
    ```
 
 4. **Go**:
+
    ```bash
    cd tui
    go build
@@ -253,9 +274,9 @@ After applying fixes, verify:
 
 ## References
 
-- **GitHub Security**: https://github.com/davidl71/ib_box_spread_full_universal/security/dependabot
-- **Vite Migration Guide**: https://vitejs.dev/guide/migration.html
-- **ESBuild CVE**: https://github.com/advisories/GHSA-67mh-4wv8-2f99
+- **GitHub Security**: <https://github.com/davidl71/ib_box_spread_full_universal/security/dependabot>
+- **Vite Migration Guide**: <https://vitejs.dev/guide/migration.html>
+- **ESBuild CVE**: <https://github.com/advisories/GHSA-67mh-4wv8-2f99>
 - **npm audit**: `npm audit` command
 - **Dependabot**: GitHub's automated security updates
 
@@ -264,10 +285,12 @@ After applying fixes, verify:
 ## Conclusion
 
 The detected vulnerabilities are:
+
 1. **Moderate**: Vite/ESBuild dev server issue (development only)
 2. **Low**: Details need review in GitHub Security tab
 
 **Recommendation**:
+
 - **For Production**: ✅ Safe to deploy (vulnerabilities don't affect production)
 - **For Development**: ⚠️ Consider upgrading Vite when convenient
 - **Action Required**: Review low severity vulnerability details

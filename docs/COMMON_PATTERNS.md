@@ -7,6 +7,7 @@ This document describes common coding patterns, conventions, and idioms used thr
 ### Naming Conventions
 
 **Types**: `PascalCase`
+
 ```cpp
 class BoxSpreadStrategy;
 struct OptionContract;
@@ -14,6 +15,7 @@ enum class OrderStatus;
 ```
 
 **Functions**: `snake_case`
+
 ```cpp
 void calculate_profit();
 bool validate_order();
@@ -21,6 +23,7 @@ std::vector<BoxSpread> scan_opportunities();
 ```
 
 **Variables**: `snake_case`
+
 ```cpp
 double net_debit;
 int order_id;
@@ -28,6 +31,7 @@ std::string symbol;
 ```
 
 **Constants**: `k` prefix + `PascalCase`
+
 ```cpp
 constexpr int kMaxPositions = 5;
 constexpr double kMinProfitThreshold = 10.0;
@@ -35,6 +39,7 @@ constexpr int kDefaultPort = 7497;
 ```
 
 **Member Variables**: `snake_case` (no prefix/suffix)
+
 ```cpp
 class OrderManager {
   std::vector<Order> orders_;
@@ -46,6 +51,7 @@ class OrderManager {
 ### Indentation & Formatting
 
 **Indentation**: 2 spaces (not tabs)
+
 ```cpp
 if (condition) {
   do_something();
@@ -56,6 +62,7 @@ if (condition) {
 ```
 
 **Braces**: Allman style for multi-line scopes
+
 ```cpp
 if (condition)
 {
@@ -64,6 +71,7 @@ if (condition)
 ```
 
 **Line Length**: 100 character soft wrap
+
 ```cpp
 // This is a long comment that wraps at 100 characters to maintain
 // readability and consistency with the codebase style.
@@ -74,6 +82,7 @@ if (condition)
 ### Exception-Based Error Handling
 
 **Throw exceptions for unrecoverable errors**:
+
 ```cpp
 if (!config.is_valid())
 {
@@ -82,6 +91,7 @@ if (!config.is_valid())
 ```
 
 **Catch and log at appropriate level**:
+
 ```cpp
 try
 {
@@ -97,6 +107,7 @@ catch (const std::exception& e)
 ### Error Codes for Recoverable Errors
 
 **Return error codes for recoverable failures**:
+
 ```cpp
 enum class ErrorCode {
   Success,
@@ -113,6 +124,7 @@ ErrorCode place_order(const Order& order);
 ### Log Levels
 
 **Use appropriate log levels**:
+
 ```cpp
 spdlog::trace("Detailed debugging info");
 spdlog::debug("Debug information");
@@ -125,6 +137,7 @@ spdlog::critical("Critical error");
 ### Log Formatting
 
 **Use structured logging with placeholders**:
+
 ```cpp
 spdlog::info("Order {} placed: {} contracts of {}",
              order_id, quantity, symbol);
@@ -133,6 +146,7 @@ spdlog::error("Connection failed: {} (code: {})",
 ```
 
 **Include context**:
+
 ```cpp
 spdlog::debug("Box spread found: profit=${}, roi={}%, strikes={}-{}",
               profit, roi_percent, strike_low, strike_high);
@@ -143,6 +157,7 @@ spdlog::debug("Box spread found: profit=${}, roi={}%, strikes={}-{}",
 ### RAII (Resource Acquisition Is Initialization)
 
 **Use RAII for all resources**:
+
 ```cpp
 class TWSClient {
 public:
@@ -157,6 +172,7 @@ public:
 ```
 
 **Use smart pointers**:
+
 ```cpp
 std::unique_ptr<OrderManager> order_mgr =
     std::make_unique<OrderManager>(config);
@@ -165,12 +181,14 @@ std::unique_ptr<OrderManager> order_mgr =
 ### Mutex Locking
 
 **Use lock guards for mutex protection**:
+
 ```cpp
 std::lock_guard<std::mutex> lock(orders_mutex_);
 orders_.push_back(order);
 ```
 
 **Use unique_lock for condition variables**:
+
 ```cpp
 std::unique_lock<std::mutex> lock(cv_mutex_);
 cv_.wait(lock, [this] { return ready_; });
@@ -181,6 +199,7 @@ cv_.wait(lock, [this] { return ready_; });
 ### Configuration Loading
 
 **Load and validate in constructor**:
+
 ```cpp
 ConfigManager::ConfigManager(const std::string& config_path)
 {
@@ -190,6 +209,7 @@ ConfigManager::ConfigManager(const std::string& config_path)
 ```
 
 **Provide typed accessors**:
+
 ```cpp
 double ConfigManager::get_min_profit() const
 {
@@ -202,6 +222,7 @@ double ConfigManager::get_min_profit() const
 ### Price Calculations
 
 **Use decimal arithmetic for financial calculations**:
+
 ```cpp
 // Use Intel Decimal Library for precision
 double net_debit = calculate_net_debit(box_spread);
@@ -210,6 +231,7 @@ double profit = strike_width - net_debit;
 ```
 
 **Always validate against thresholds**:
+
 ```cpp
 if (profit >= config.get_min_profit() &&
     roi_percent >= config.get_min_roi())
@@ -221,6 +243,7 @@ if (profit >= config.get_min_profit() &&
 ### Order Management
 
 **Create orders with all legs atomically**:
+
 ```cpp
 Order order;
 order.contracts = box_spread.legs;
@@ -229,6 +252,7 @@ order.status = OrderStatus::Pending;
 ```
 
 **Track order lifecycle**:
+
 ```cpp
 void OrderManager::update_order_status(int order_id, OrderStatus status)
 {
@@ -249,6 +273,7 @@ void OrderManager::update_order_status(int order_id, OrderStatus status)
 ### Test Structure
 
 **Use Catch2 test macros**:
+
 ```cpp
 TEST_CASE("Box spread profit calculation", "[strategy]")
 {
@@ -259,6 +284,7 @@ TEST_CASE("Box spread profit calculation", "[strategy]")
 ```
 
 **Test edge cases**:
+
 ```cpp
 TEST_CASE("Risk limits enforcement", "[risk]")
 {
@@ -270,6 +296,7 @@ TEST_CASE("Risk limits enforcement", "[risk]")
 ### Mock Objects
 
 **Mock TWS client for unit tests**:
+
 ```cpp
 class MockTWSClient : public TWSClient {
 public:
@@ -282,6 +309,7 @@ public:
 ### Thread Safety
 
 **Protect shared data with mutexes**:
+
 ```cpp
 class OptionChain {
   std::mutex data_mutex_;
@@ -299,6 +327,7 @@ public:
 ### Callback Handling
 
 **Handle TWS callbacks safely**:
+
 ```cpp
 void TWSClient::onTickPrice(TickPrice tick)
 {
@@ -314,6 +343,7 @@ void TWSClient::onTickPrice(TickPrice tick)
 ### Range-Based For Loops
 
 **Prefer range-based for loops**:
+
 ```cpp
 for (const auto& order : orders_)
 {
@@ -324,6 +354,7 @@ for (const auto& order : orders_)
 ### Auto Keyword
 
 **Use auto for iterator types**:
+
 ```cpp
 auto it = std::find_if(orders_.begin(), orders_.end(),
                        [id](const Order& o) { return o.id == id; });
@@ -332,12 +363,14 @@ auto it = std::find_if(orders_.begin(), orders_.end(),
 ### Const Correctness
 
 **Mark methods const when appropriate**:
+
 ```cpp
 double calculate_profit() const;  // Doesn't modify state
 void update_status();              // Modifies state
 ```
 
 **Use const references for parameters**:
+
 ```cpp
 void process_order(const Order& order);  // Don't copy
 ```
@@ -347,26 +380,31 @@ void process_order(const Order& order);  // Don't copy
 ### ❌ Don't Do This
 
 **Raw pointers**:
+
 ```cpp
 OrderManager* mgr = new OrderManager();  // Use smart pointers
 ```
 
 **C-style arrays**:
+
 ```cpp
 int prices[100];  // Use std::vector
 ```
 
 **Magic numbers**:
+
 ```cpp
 if (profit > 10.0)  // Use named constants
 ```
 
 **Ignoring errors**:
+
 ```cpp
 place_order(order);  // Check return value or catch exceptions
 ```
 
 **Thread-unsafe access**:
+
 ```cpp
 orders_.push_back(order);  // Protect with mutex
 ```
@@ -374,21 +412,25 @@ orders_.push_back(order);  // Protect with mutex
 ### ✅ Do This Instead
 
 **Smart pointers**:
+
 ```cpp
 auto mgr = std::make_unique<OrderManager>();
 ```
 
 **STL containers**:
+
 ```cpp
 std::vector<double> prices;
 ```
 
 **Named constants**:
+
 ```cpp
 if (profit > kMinProfitThreshold)
 ```
 
 **Error handling**:
+
 ```cpp
 try {
   place_order(order);
@@ -398,6 +440,7 @@ try {
 ```
 
 **Thread-safe access**:
+
 ```cpp
 {
   std::lock_guard<std::mutex> lock(orders_mutex_);

@@ -121,6 +121,7 @@ The IBKR Box Spread Generator uses a multi-language architecture to leverage the
 **Purpose**: Performance-critical trading engine and TWS API integration
 
 **Key Components**:
+
 - **TWS Client** (`native/src/tws_client.cpp`): Interactive Brokers API integration
 - **Box Spread Strategy** (`native/src/box_spread_strategy.cpp`): Core arbitrage detection
 - **Order Manager** (`native/src/order_manager.cpp`): Multi-leg order execution
@@ -131,12 +132,14 @@ The IBKR Box Spread Generator uses a multi-language architecture to leverage the
 **Build System**: CMake with universal binary support (Intel + Apple Silicon)
 
 **Dependencies**:
+
 - TWS API (libtwsapi.dylib)
 - Protocol Buffers
 - Intel Decimal Math Library
 - Abseil, spdlog, nlohmann/json, CLI11, Catch2
 
 **Interfaces**:
+
 - Cython bindings for Python integration
 - Header-only interfaces for C++ clients
 
@@ -147,6 +150,7 @@ The IBKR Box Spread Generator uses a multi-language architecture to leverage the
 **Purpose**: Strategy development, data analysis, integration layer
 
 **Key Components**:
+
 - **Cython Bindings** (`python/bindings/`): C++ → Python bridge
 - **Strategy Runner** (`python/integration/strategy_runner.py`): Strategy execution
 - **Nautilus Integration** (`python/integration/nautilus_strategy.py`): NautilusTrader bridge
@@ -157,6 +161,7 @@ The IBKR Box Spread Generator uses a multi-language architecture to leverage the
 **Build System**: setuptools with Cython compilation
 
 **Dependencies**:
+
 - Cython 3.0+
 - NautilusTrader (optional)
 - Alpaca SDK (optional)
@@ -164,6 +169,7 @@ The IBKR Box Spread Generator uses a multi-language architecture to leverage the
 - FastAPI (for services)
 
 **Interfaces**:
+
 - Cython bindings expose C++ functions
 - REST API services (FastAPI)
 - Python modules for strategy development
@@ -175,6 +181,7 @@ The IBKR Box Spread Generator uses a multi-language architecture to leverage the
 **Purpose**: High-performance backend services, agent coordination
 
 **Key Components**:
+
 - **Backend Agent** (`agents/backend/services/backend_service/`): Main backend service
 - **REST API** (`agents/backend/crates/api/src/rest.rs`): HTTP endpoints
 - **gRPC Service** (`agents/backend/crates/api/src/grpc.rs`): gRPC streaming
@@ -185,12 +192,14 @@ The IBKR Box Spread Generator uses a multi-language architecture to leverage the
 **Build System**: Cargo (Rust package manager)
 
 **Dependencies**:
+
 - Axum (REST framework)
 - Tonic (gRPC framework)
 - Tokio (async runtime)
 - Tracing (logging)
 
 **Interfaces**:
+
 - REST API (HTTP/JSON)
 - gRPC (Protocol Buffers)
 - Health check endpoints
@@ -202,6 +211,7 @@ The IBKR Box Spread Generator uses a multi-language architecture to leverage the
 **Purpose**: Market data ingestion, QuestDB integration, microservices
 
 **Key Components**:
+
 - **Market Data Gateway** (planned): High-throughput data ingestion
 - **QuestDB Service** (planned): Time-series data archiving
 - **Build Coordinator** (planned): Distributed build coordination
@@ -209,10 +219,12 @@ The IBKR Box Spread Generator uses a multi-language architecture to leverage the
 **Build System**: Go modules
 
 **Dependencies**:
+
 - QuestDB client library
 - gRPC (for inter-service communication)
 
 **Interfaces**:
+
 - gRPC services
 - REST APIs (if needed)
 
@@ -223,6 +235,7 @@ The IBKR Box Spread Generator uses a multi-language architecture to leverage the
 **Purpose**: Modern web interface, PWA, real-time updates
 
 **Key Components**:
+
 - **React App** (`web/src/`): Main application
 - **Components** (`web/src/components/`): UI components
 - **Services** (`web/src/services/`): API clients
@@ -231,6 +244,7 @@ The IBKR Box Spread Generator uses a multi-language architecture to leverage the
 **Build System**: Vite (modern build tool)
 
 **Dependencies**:
+
 - React 18+
 - TypeScript 5+
 - Vite
@@ -238,6 +252,7 @@ The IBKR Box Spread Generator uses a multi-language architecture to leverage the
 - State management library
 
 **Interfaces**:
+
 - REST API client
 - WebSocket (future)
 - Alpaca Service API
@@ -253,6 +268,7 @@ The IBKR Box Spread Generator uses a multi-language architecture to leverage the
 **Purpose**: Expose C++ calculations to Python
 
 **Example**:
+
 ```python
 from box_spread_bindings import calculate_arbitrage_profit, calculate_roi
 
@@ -262,6 +278,7 @@ roi = calculate_roi(spread)
 ```
 
 **Data Flow**:
+
 - Python calls Cython function
 - Cython marshals Python objects to C++ types
 - C++ function executes
@@ -276,6 +293,7 @@ roi = calculate_roi(spread)
 **Purpose**: Python services communicate with Rust backend
 
 **Example**:
+
 ```python
 import requests
 
@@ -285,6 +303,7 @@ snapshot = response.json()
 ```
 
 **Data Flow**:
+
 - Python makes HTTP request to Rust service
 - Rust processes request
 - Returns JSON response
@@ -299,6 +318,7 @@ snapshot = response.json()
 **Purpose**: Rust backend sends market data to Go ingestion service
 
 **Example**:
+
 ```rust
 // Rust client calls Go service
 let mut client = MarketDataClient::connect("http://localhost:50061").await?;
@@ -306,6 +326,7 @@ client.stream_market_data(request).await?;
 ```
 
 **Data Flow**:
+
 - Rust gRPC client calls Go service
 - Go service processes and stores in QuestDB
 - Returns acknowledgment
@@ -319,6 +340,7 @@ client.stream_market_data(request).await?;
 **Purpose**: Web frontend fetches data from backend services
 
 **Example**:
+
 ```typescript
 // TypeScript client calls Python service
 const response = await fetch('http://localhost:8000/api/v1/snapshot');
@@ -326,6 +348,7 @@ const snapshot = await response.json();
 ```
 
 **Data Flow**:
+
 - TypeScript makes HTTP request
 - Python/Rust service processes
 - Returns JSON response
@@ -338,16 +361,19 @@ const snapshot = await response.json();
 ### Shared Data Types
 
 **Protocol Buffers** (`agents/backend/proto/`, `agents/backend-market-data/proto/`):
+
 - Used for gRPC communication
 - Language-agnostic data serialization
 - Ensures type safety across languages
 
 **JSON** (`python/integration/alpaca_service.py`):
+
 - Used for REST API communication
 - Human-readable format
 - Easy to debug and inspect
 
 **C++ Types** (`native/include/types.h`):
+
 - Core data structures
 - Exposed via Cython to Python
 - Used throughout C++ codebase

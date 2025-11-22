@@ -17,6 +17,7 @@ JupyterLab can significantly enhance this IBKR box spread trading project by pro
 ### Existing Python Infrastructure
 
 **Python Services Architecture:**
+
 - Multiple FastAPI services running on separate ports:
   - Alpaca service (port 8000)
   - IB service (port 8002)
@@ -27,6 +28,7 @@ JupyterLab can significantly enhance this IBKR box spread trading project by pro
 - Configuration system via `config/config.json` with service port definitions
 
 **Python Integration Points:**
+
 - **Cython Bindings**: `python/bindings/` - Exposes C++ calculations to Python
   - `PyBoxSpreadStrategy`, `PyBoxSpreadLeg`, `PyOptionContract`
   - `calculate_arbitrage_profit()`, `calculate_roi()`
@@ -35,12 +37,14 @@ JupyterLab can significantly enhance this IBKR box spread trading project by pro
 - **Strategy Runner**: `python/integration/strategy_runner.py` - Main strategy loop
 
 **Data Sources:**
+
 - **QuestDB**: Time-series database for quotes and trades (`questdb_client.py`)
 - **ORATS**: Options data API (`orats_client.py`)
 - **IBKR Portal**: Account and portfolio snapshots (`ibkr_portal_client.py`)
 - **Ledger System**: Rust-based ledger for transaction tracking
 
 **Visualization:**
+
 - Web PWA has basic sparkline visualizations (SVG-based)
 - No advanced charting or analysis tools currently
 - Data displayed in tabular format with simple overlays
@@ -59,6 +63,7 @@ JupyterLab can significantly enhance this IBKR box spread trading project by pro
 ### JupyterLab Core Capabilities
 
 🔗 **[Jupyter.org - JupyterLab Overview](https://jupyter.org/)**
+
 - **Found via web search**: Official JupyterLab documentation
 - **Key Insights**:
   - Web-based interactive development environment
@@ -68,6 +73,7 @@ JupyterLab can significantly enhance this IBKR box spread trading project by pro
 - **Applicable to Task**: Core platform for integration
 
 🔗 **[AWS Machine Learning Blog - Jupyter AI Extensions](https://aws.amazon.com/blogs/machine-learning/announcing-new-jupyter-contributions-by-aws-to-democratize-generative-ai-and-scale-ml-workloads/)**
+
 - **Found via web search**: AWS contributions to Jupyter ecosystem
 - **Key Insights**:
   - Jupyter AI extension for generative AI capabilities
@@ -76,6 +82,7 @@ JupyterLab can significantly enhance this IBKR box spread trading project by pro
 - **Applicable to Task**: Could enhance strategy development workflow
 
 🔗 **[D4Science - JupyterLab Shared Workspaces](https://www.d4science.org/services/jupyterlab)**
+
 - **Found via web search**: Multi-user JupyterLab deployment
 - **Key Insights**:
   - Shared cloud storage capabilities
@@ -84,6 +91,7 @@ JupyterLab can significantly enhance this IBKR box spread trading project by pro
 - **Applicable to Task**: Multi-user deployment patterns
 
 🔗 **[SemanticGIS - JupyterLab Visualization](https://semanticgis.org/Geospatial-Technology-Stack/Platforms--and--Applications/Interactive-Computing-Environments/JupyterLab)**
+
 - **Found via web search**: JupyterLab visualization capabilities
 - **Key Insights**:
   - Integration with Matplotlib, Plotly, Folium
@@ -94,18 +102,21 @@ JupyterLab can significantly enhance this IBKR box spread trading project by pro
 ### Integration Patterns
 
 **Standalone Service Pattern:**
+
 - Deploy JupyterLab as separate service (similar to existing FastAPI services)
 - Access via dedicated port (e.g., 8888)
 - Can share Python environment with existing services
 - Benefits: Isolation, independent scaling, easy deployment
 
 **Embedded Pattern:**
+
 - Integrate JupyterLab into existing PWA
 - Use JupyterLab's iframe embedding capabilities
 - Share authentication with main application
 - Benefits: Unified interface, shared session
 
 **Kernel-Based Pattern:**
+
 - Configure Python kernel with project dependencies
 - Access Cython bindings directly in notebooks
 - Import integration modules for live data
@@ -116,14 +127,17 @@ JupyterLab can significantly enhance this IBKR box spread trading project by pro
 ## Specific Use Cases for This Project
 
 ### 1. Strategy Backtesting and Analysis
+
 **Current State**: ORATS integration document mentions backtesting as "Low Priority" (Phase 4)
 **JupyterLab Value**:
+
 - Interactive backtesting notebooks
 - Historical data analysis from QuestDB
 - Parameter optimization with visual feedback
 - Performance metrics visualization
 
 **Implementation**:
+
 ```python
 # Example notebook cell
 from python.integration.questdb_client import QuestDBClient
@@ -136,8 +150,10 @@ questdb = QuestDBClient()
 ```
 
 ### 2. Market Data Visualization
+
 **Current State**: Web PWA has basic sparklines, no advanced charts
 **JupyterLab Value**:
+
 - Interactive candlestick charts (Plotly)
 - Volatility surface visualization
 - Greeks analysis (delta, gamma, theta, vega)
@@ -146,32 +162,40 @@ questdb = QuestDBClient()
 **Libraries**: Plotly, Matplotlib, Bokeh
 
 ### 3. Risk Analysis and Portfolio Optimization
+
 **Current State**: Risk management config exists, but no analysis tools
 **JupyterLab Value**:
+
 - Portfolio risk metrics calculation
 - Correlation analysis
 - Position sizing optimization
 - Drawdown analysis
 
 ### 4. Research and Development
+
 **Current State**: Strategy logic in C++ and Python, hard to experiment
 **JupyterLab Value**:
+
 - Interactive strategy prototyping
 - Test new calculation methods
 - Compare different approaches side-by-side
 - Document research findings inline
 
 ### 5. Data Exploration
+
 **Current State**: QuestDB stores data but no query interface
 **JupyterLab Value**:
+
 - SQL queries against QuestDB
 - Data quality checks
 - Anomaly detection
 - Pattern recognition
 
 ### 6. Box Spread Opportunity Analysis
+
 **Current State**: Scenarios displayed in tables
 **JupyterLab Value**:
+
 - Interactive scenario explorer
 - Profit/loss heatmaps
 - Strike width analysis
@@ -184,18 +208,21 @@ questdb = QuestDBClient()
 ### Approach 1: Standalone JupyterLab Service (Recommended)
 
 **Architecture**:
+
 - New service: `python/integration/jupyterlab_service.py`
 - Port: 8888 (configurable via `config.json`)
 - Launch script: `scripts/run-jupyterlab-service.sh`
 - Integration with `launch-all-pwa-services.sh`
 
 **Benefits**:
+
 - Matches existing service pattern
 - Easy to add to current infrastructure
 - Independent scaling and management
 - Can share Python virtual environment
 
 **Configuration Addition**:
+
 ```json
 "services": {
   "jupyterlab": {
@@ -207,16 +234,19 @@ questdb = QuestDBClient()
 ### Approach 2: Embedded in PWA
 
 **Architecture**:
+
 - JupyterLab iframe in React app
 - Shared authentication
 - Proxy requests through main web server
 
 **Benefits**:
+
 - Unified user experience
 - Single entry point
 - Shared session management
 
 **Challenges**:
+
 - More complex integration
 - CORS configuration
 - Session management complexity
@@ -224,16 +254,19 @@ questdb = QuestDBClient()
 ### Approach 3: Development-Only Installation
 
 **Architecture**:
+
 - Local JupyterLab installation
 - Developers run manually
 - Not part of production deployment
 
 **Benefits**:
+
 - Simplest implementation
 - No infrastructure changes
 - Developer-focused tool
 
 **Limitations**:
+
 - Not accessible to non-developers
 - No shared notebooks
 - Manual setup required
@@ -245,22 +278,26 @@ questdb = QuestDBClient()
 ### Required Dependencies
 
 **Core JupyterLab**:
+
 ```bash
 pip install jupyterlab
 ```
 
 **Trading-Specific Extensions**:
+
 ```bash
 pip install jupyterlab-git  # Version control
 pip install jupyterlab-widgets  # Interactive widgets
 ```
 
 **Data Analysis Libraries** (likely already installed):
+
 ```bash
 pip install pandas numpy matplotlib plotly
 ```
 
 **Project Integration**:
+
 - Cython bindings: `python/bindings/` (already built)
 - Integration modules: `python/integration/` (already available)
 - Configuration loader: `python/integration/config_loader.py`
@@ -268,6 +305,7 @@ pip install pandas numpy matplotlib plotly
 ### Kernel Setup
 
 **Custom Kernel Configuration**:
+
 ```python
 # .ipython/profile_default/startup/00-project-init.py
 import sys
@@ -290,12 +328,14 @@ config = ConfigLoader.load()
 ## Security Considerations
 
 ### Trading Data Security
+
 - **Authentication**: Require login for JupyterLab access
 - **Network Isolation**: Run on localhost or VPN-only access
 - **Credential Management**: Never store API keys in notebooks
 - **Read-Only Mode**: Option for read-only notebooks in production
 
 ### Best Practices
+
 - Use environment variables for sensitive data
 - Implement notebook signing/validation
 - Audit notebook execution logs
@@ -306,16 +346,19 @@ config = ConfigLoader.load()
 ## Deployment Options
 
 ### Option 1: Development Tool
+
 - Install locally for developers
 - Not part of production deployment
 - Manual launch: `jupyter lab`
 
 ### Option 2: Service Integration
+
 - Add to service launch script
 - Accessible at `http://localhost:8888`
 - Integrated with existing service management
 
 ### Option 3: Docker Container
+
 - Containerized JupyterLab instance
 - Consistent environment across deployments
 - Easy scaling and management
@@ -325,24 +368,28 @@ config = ConfigLoader.load()
 ## Recommended Implementation Path
 
 ### Phase 1: Proof of Concept (Week 1)
+
 1. Install JupyterLab locally
 2. Create sample notebook accessing Cython bindings
 3. Test QuestDB data querying
 4. Create basic visualization example
 
 ### Phase 2: Service Integration (Week 2)
+
 1. Create JupyterLab service wrapper
 2. Add to configuration system
 3. Integrate with launch scripts
 4. Test multi-service deployment
 
 ### Phase 3: Notebook Templates (Week 3)
+
 1. Strategy backtesting template
 2. Market data visualization template
 3. Risk analysis template
 4. Box spread opportunity explorer
 
 ### Phase 4: Advanced Features (Week 4+)
+
 1. Real-time data streaming
 2. Interactive widgets
 3. Custom extensions
@@ -355,6 +402,7 @@ config = ConfigLoader.load()
 **Recommended Approach**: **Standalone JupyterLab Service**
 
 **Justification**:
+
 1. **Matches Existing Architecture**: Follows same pattern as other Python services
 2. **Easy Integration**: Minimal changes to existing infrastructure
 3. **Flexible Deployment**: Can be enabled/disabled via configuration
@@ -362,6 +410,7 @@ config = ConfigLoader.load()
 5. **Scalability**: Can be deployed separately if needed
 
 **Key Benefits**:
+
 - Interactive strategy development and testing
 - Rich data visualization capabilities
 - Historical data analysis from QuestDB
@@ -369,6 +418,7 @@ config = ConfigLoader.load()
 - Easy sharing of analysis notebooks
 
 **Next Steps**:
+
 1. Design detailed architecture (Task T-123)
 2. Create service wrapper implementation
 3. Add configuration support
@@ -382,24 +432,28 @@ config = ConfigLoader.load()
 ### Essential Extensions for Trading/Finance
 
 **1. JupyterLab Git** (`jupyterlab-git`)
+
 - **Purpose**: Version control integration for notebooks
 - **Installation**: `pip install jupyterlab-git`
 - **Use Case**: Track changes to strategy notebooks, collaborate on analysis
 - **Reference**: [JupyterLab Git Extension](https://github.com/jupyterlab/jupyterlab-git)
 
 **2. JupyterLab Widgets** (`ipywidgets`, `jupyterlab-widgets`)
+
 - **Purpose**: Interactive widgets for real-time data visualization
 - **Installation**: `pip install ipywidgets jupyterlab-widgets`
 - **Use Case**: Interactive parameter tuning, real-time market data displays
 - **Reference**: [IPyWidgets Documentation](https://ipywidgets.readthedocs.io/)
 
 **3. JupyterLab Resource Usage** (`jupyter-resource-usage`)
+
 - **Purpose**: Monitor CPU and memory usage
 - **Installation**: `pip install jupyter-resource-usage`
 - **Use Case**: Monitor resource consumption during backtesting
 - **Reference**: [Jupyter Resource Usage](https://github.com/jupyter-server/jupyter-resource-usage)
 
 **4. JupyterLab Scheduler** (`jupyterlab-scheduler`)
+
 - **Purpose**: Schedule notebook executions
 - **Installation**: `pip install jupyterlab-scheduler`
 - **Use Case**: Automated daily backtesting, scheduled data analysis
@@ -408,18 +462,21 @@ config = ConfigLoader.load()
 ### Data Visualization Extensions
 
 **5. bqplot** (`bqplot`)
+
 - **Purpose**: Interactive plotting library for Jupyter
 - **Installation**: `pip install bqplot`
 - **Use Case**: Interactive financial charts, real-time updates
 - **Reference**: [bqplot GitHub](https://github.com/bqplot/bqplot)
 
 **6. PyGWalker** (`pygwalker`)
+
 - **Purpose**: Transform pandas DataFrames into interactive visual analytics
 - **Installation**: `pip install pygwalker`
 - **Use Case**: Quick data exploration of market data, option chains
 - **Reference**: [PyGWalker Documentation](https://docs.kanaries.net/pygwalker)
 
 **7. Plotly** (`plotly`, `jupyterlab-plotly`)
+
 - **Purpose**: Interactive, publication-quality graphs
 - **Installation**: `pip install plotly jupyterlab-plotly`
 - **Use Case**: Candlestick charts, volatility surfaces, performance dashboards
@@ -428,12 +485,14 @@ config = ConfigLoader.load()
 ### Trading-Specific Tools
 
 **8. Trading Strategy Notebooks** (`notebooks_invest`)
+
 - **Purpose**: Collection of Jupyter notebooks for market analysis
 - **Installation**: Clone from [GitHub](https://github.com/danielsobrado/notebooks_invest)
 - **Use Case**: Reference implementations, learning examples
 - **Reference**: [notebooks_invest GitHub](https://github.com/danielsobrado/notebooks_invest)
 
 **9. Trading Strategy Framework** (TradingStrategy.ai)
+
 - **Purpose**: Backtesting framework with Jupyter integration
 - **Installation**: `pip install trading-strategy`
 - **Use Case**: Professional backtesting infrastructure
@@ -442,12 +501,14 @@ config = ConfigLoader.load()
 ### Integration Extensions
 
 **10. JupyterLab APIBaker** (`jupyterlab-apibaker`)
+
 - **Purpose**: Create secured APIs from notebook functions
 - **Installation**: `pip install jupyterlab_apibaker`
 - **Use Case**: Expose FastAPI service functions interactively
 - **Reference**: [JupyterLab APIBaker](https://pypi.org/project/jupyterlab-apibaker/)
 
 **11. QuestDB Integration**
+
 - **Purpose**: Direct QuestDB query interface
 - **Installation**: `pip install questdb`
 - **Use Case**: Query historical market data from notebooks
@@ -456,6 +517,7 @@ config = ConfigLoader.load()
 ### Recommended Extension Installation
 
 Create `requirements-jupyterlab.txt`:
+
 ```txt
 # Core JupyterLab
 jupyterlab>=4.0.0
@@ -486,6 +548,7 @@ jupyterlab-apibaker>=0.1.0
 ```
 
 Install with:
+
 ```bash
 pip install -r requirements-jupyterlab.txt
 ```

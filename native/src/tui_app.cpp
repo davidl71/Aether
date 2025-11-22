@@ -180,6 +180,11 @@ public:
         return RenderSetupScreen(selected_tab);
       }
 
+      // Show symbol input dialog if requested
+      if (show_symbol_input_) {
+        return RenderSymbolInputDialog();
+      }
+
       // Get snapshot atomically (non-blocking)
       Snapshot snap = GetSnapshot();
 
@@ -296,6 +301,43 @@ public:
               return true;
           }
         }
+      }
+
+      // Handle symbol input dialog
+      if (show_symbol_input_) {
+        if (event == Event::Escape) {
+          // Cancel symbol input
+          show_symbol_input_ = false;
+          symbol_input_.clear();
+          return true;
+        }
+        if (event == Event::Return) {
+          // Enter: Process symbol input
+          ProcessSymbolInput();
+          show_symbol_input_ = false;
+          symbol_input_.clear();
+          return true;
+        }
+        // Handle character input for symbol entry
+        // When dialog is open, treat all character events as text input
+        // Check for backspace first (special handling)
+        if (event == Event::Backspace) {
+          if (!symbol_input_.empty()) {
+            symbol_input_.pop_back();
+          }
+          return true;
+        }
+        // Handle all other character events as text input
+        // We check if it's a character event by trying common characters
+        // This is a workaround since FTXUI doesn't have a direct "is character" check
+        for (char c = ' '; c <= '~'; ++c) {  // Printable ASCII range
+          if (event == Event::Character(c)) {
+            symbol_input_ += c;
+            return true;
+          }
+        }
+        // Handle other events (let them through)
+        return false;
       }
 
       // Handle setup screen navigation
@@ -447,6 +489,14 @@ public:
         show_help_ = true;
         return true;
       }
+      if (event == Event::Character('g') || event == Event::Character('G')) {
+        // G: Go/Jump to symbol (or add if not found)
+        if (selected_tab == 0) {  // Only on Dashboard tab
+          show_symbol_input_ = true;
+          symbol_input_.clear();
+          return true;
+        }
+      }
 
       return false;
     });
@@ -505,6 +555,8 @@ private:
   bool show_setup_ = false;
   bool setup_saved_ = false;
   bool show_help_ = false;  // Help modal state
+  bool show_symbol_input_ = false;  // Symbol input dialog state
+  std::string symbol_input_;  // Symbol input text
   std::atomic<bool> should_exit_{false};
   ScreenInteractive* screen_ptr_ = nullptr;  // For signal handlers to access
 
@@ -777,7 +829,7 @@ private:
       case 0:  // Dashboard
         footer_keys = {
           {"F1", "Help"}, {"F2", "Setup"}, {"F3", "Search"}, {"F4", "Filter"},
-          {"F5", "Refresh"}, {"F6", "Sort"}, {"F10", "Quit"}
+          {"F5", "Refresh"}, {"F6", "Sort"}, {"G", "Jump"}, {"F10", "Quit"}
         };
         break;
       case 1:  // Positions
@@ -1354,6 +1406,9 @@ private:
       text("  D                    Toggle dry-run mode"),
       text("  B                    Buy combo order"),
       separator(),
+      text("Symbol Navigation:"),
+      text("  G                    Go/Jump to symbol (opens input dialog)"),
+      separator(),
       text("Help & Search:"),
       text("  ?                    Show help (this screen)"),
       text("  H                    Show help (same as F1/?)"),
@@ -1368,6 +1423,71 @@ private:
 
     // Center the modal on screen
     return help_content | center | bgcolor(Color::Black);
+  }
+
+  // Symbol input dialog renderer
+  Element RenderSymbolInputDialog() {
+    auto dialog_content = vbox({
+      text("Go/Jump to Symbol") | bold | center | color(Color::Cyan1),
+      separator(),
+      hbox({
+        text("Symbol: ") | bold,
+        text(symbol_input_.empty() ? "_" : symbol_input_) | color(Color::Yellow1),
+      }),
+      separator(),
+      text("Type symbol name and press Enter to jump") | dim,
+      text("Press Esc to cancel") | dim,
+      separator(),
+      text("Enter=Jump  Esc=Cancel") | dim | center,
+    }) | border;
+
+    // Center the modal on screen
+    return dialog_content | center | bgcolor(Color::Black);
+  }
+
+  // Process symbol input: search and jump to symbol
+  void ProcessSymbolInput() {
+    if (symbol_input_.empty()) {
+      spdlog::info("Symbol input is empty");
+      return;
+    }
+
+    // Normalize input (uppercase, trim whitespace)
+    std::string search_symbol = symbol_input_;
+    std::transform(search_symbol.begin(), search_symbol.end(), search_symbol.begin(), ::toupper);
+    // Trim whitespace
+    search_symbol.erase(0, search_symbol.find_first_not_of(" \t\n\r"));
+    search_symbol.erase(search_symbol.find_last_not_of(" \t\n\r") + 1);
+
+    if (search_symbol.empty()) {
+      spdlog::info("Symbol input is empty after normalization");
+      return;
+    }
+
+    auto snapshot = GetSnapshot();
+
+    // Search for symbol in snapshot.symbols (case-insensitive)
+    int found_idx = -1;
+    for (size_t i = 0; i < snapshot.symbols.size(); ++i) {
+      std::string symbol_upper = snapshot.symbols[i].symbol;
+      std::transform(symbol_upper.begin(), symbol_upper.end(), symbol_upper.begin(), ::toupper);
+      if (symbol_upper == search_symbol) {
+        found_idx = static_cast<int>(i);
+        break;
+      }
+    }
+
+    if (found_idx >= 0) {
+      // Symbol found: jump to it
+      selected_dashboard_row_ = found_idx;
+      // Note: We're already on Dashboard tab (G key only works there)
+      spdlog::info("Jumped to symbol: {} (row {})", search_symbol, found_idx);
+    } else {
+      // Symbol not found: show message (adding would require backend changes)
+      spdlog::warn("Symbol '{}' not found in watchlist. Adding symbols requires backend integration.", search_symbol);
+      // Note: In a full implementation, we could show a message to the user here
+      // For now, we just log it
+    }
   }
 
   // Legacy function kept for compatibility (now just sets flag)

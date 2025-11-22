@@ -9,6 +9,7 @@ This guide helps troubleshoot common issues with NotebookLM MCP server integrati
 **Symptom**: Queries to NotebookLM timeout with "Timeout waiting for response from NotebookLM"
 
 **Possible Causes**:
+
 1. **Resources Still Processing**: NotebookLM may still be processing resources (GitHub repos, videos, articles)
    - **Solution**: Wait 20-55 minutes for all resources to process
    - **Check**: Go to NotebookLM web interface and verify all resources show as "Ready" or "Processed"
@@ -26,6 +27,7 @@ This guide helps troubleshoot common issues with NotebookLM MCP server integrati
    - **Check**: Try accessing NotebookLM directly in browser
 
 **Diagnosis Steps**:
+
 1. Check notebook status: `"Get details about the TWS Automated Trading notebook"`
 2. Check active sessions: `"List active NotebookLM sessions"`
 3. Check health: `"Check NotebookLM health"`
@@ -37,6 +39,7 @@ This guide helps troubleshoot common issues with NotebookLM MCP server integrati
 **Symptom**: Resources in NotebookLM show as "Processing" for a long time
 
 **Possible Causes**:
+
 1. **Large Resources**: GitHub repositories or long videos take longer to process
    - **Solution**: Be patient, large resources can take 30-60 minutes
    - **Check**: Monitor progress in NotebookLM web interface
@@ -50,7 +53,8 @@ This guide helps troubleshoot common issues with NotebookLM MCP server integrati
    - **Check**: Check NotebookLM status page
 
 **Diagnosis Steps**:
-1. Check notebook in web interface: https://notebooklm.google.com
+
+1. Check notebook in web interface: <https://notebooklm.google.com>
 2. Verify all resources are accessible
 3. Check if resources are still processing
 4. Try re-adding failed resources individually
@@ -60,6 +64,7 @@ This guide helps troubleshoot common issues with NotebookLM MCP server integrati
 **Symptom**: "Not authenticated" or authentication errors
 
 **Possible Causes**:
+
 1. **Session Expired**: Google authentication session may have expired
    - **Solution**: Re-authenticate using `"Repair NotebookLM authentication"`
    - **Check**: Use `"Check NotebookLM health"` to verify authentication
@@ -69,6 +74,7 @@ This guide helps troubleshoot common issues with NotebookLM MCP server integrati
    - **Check**: Verify you can log into NotebookLM in browser
 
 **Diagnosis Steps**:
+
 1. Check health: `"Check NotebookLM health"`
 2. Verify `authenticated: true` in health status
 3. If not authenticated: `"Repair NotebookLM authentication"`
@@ -79,6 +85,7 @@ This guide helps troubleshoot common issues with NotebookLM MCP server integrati
 **Symptom**: Browser doesn't open for authentication or queries
 
 **Possible Causes**:
+
 1. **Chrome Not Installed**: Chrome/Chromium may not be installed
    - **Solution**: Install Chrome or Chromium
    - **Check**: Verify Chrome is in PATH
@@ -92,6 +99,7 @@ This guide helps troubleshoot common issues with NotebookLM MCP server integrati
    - **Check**: Try disabling headless mode
 
 **Diagnosis Steps**:
+
 1. Check if Chrome is installed: `which google-chrome` or `which chromium`
 2. Try with browser visible: Add `show_browser: true` to query
 3. Check browser automation logs
@@ -100,33 +108,43 @@ This guide helps troubleshoot common issues with NotebookLM MCP server integrati
 ## Diagnostic Commands
 
 ### Check Health
+
 ```
 "Check NotebookLM health"
 ```
+
 Returns: Authentication status, active sessions, configuration
 
 ### List Notebooks
+
 ```
 "Show our notebooks" or "List all notebooks"
 ```
+
 Returns: All notebooks in library with metadata
 
 ### Get Notebook Details
+
 ```
 "Get details about the TWS Automated Trading notebook"
 ```
+
 Returns: Detailed notebook information including use count, last used
 
 ### List Sessions
+
 ```
 "List active NotebookLM sessions"
 ```
+
 Returns: Active sessions with age, message count, notebook URL
 
 ### Check Library Stats
+
 ```
 "Get NotebookLM library statistics"
 ```
+
 Returns: Total notebooks, active notebook, usage statistics
 
 ## Solutions by Issue Type
@@ -134,38 +152,45 @@ Returns: Total notebooks, active notebook, usage statistics
 ### Timeout Issues
 
 **Option 1: Wait for Processing**
+
 - Resources may still be processing
 - Wait 20-55 minutes for all resources to complete
 - Check NotebookLM web interface for processing status
 
 **Option 2: Try Simpler Query**
+
 - Start with simple questions: `"What is TWS API?"`
 - Build up to more complex queries
 - Use shorter, more direct questions
 
 **Option 3: Use Browser Visible Mode**
+
 - Add `show_browser: true` to see what's happening
 - May help diagnose browser automation issues
 - Example: `"Research TWS API in NotebookLM"` with browser visible
 
 **Option 4: Check Network**
+
 - Verify internet connection
-- Check if NotebookLM is accessible: https://notebooklm.google.com
+- Check if NotebookLM is accessible: <https://notebooklm.google.com>
 - Try again later if service is down
 
 ### Processing Issues
 
 **Option 1: Verify Resources**
+
 - Check NotebookLM web interface
 - Verify all resources are accessible
 - Re-add failed resources individually
 
 **Option 2: Reduce Resource Count**
+
 - Try adding resources in smaller batches
 - Process GitHub repo separately from videos
 - Add videos one at a time
 
 **Option 3: Check Resource URLs**
+
 - Verify all URLs are correct
 - Test URLs in browser
 - Remove invalid or inaccessible resources
@@ -173,24 +198,31 @@ Returns: Total notebooks, active notebook, usage statistics
 ### Authentication Issues
 
 **Option 1: Re-authenticate**
+
 ```
 "Repair NotebookLM authentication"
 ```
+
 This will:
+
 - Clear authentication data
 - Open browser for fresh login
 - Save new authentication
 
 **Option 2: Switch Accounts**
+
 ```
 "Re-authenticate with a different Google account"
 ```
+
 Useful if:
+
 - Current account has rate limits
 - Need to use different account
 - Authentication is broken
 
 **Option 3: Check Account Status**
+
 - Verify Google account is active
 - Check NotebookLM access in browser
 - Ensure account has NotebookLM access
@@ -198,26 +230,31 @@ Useful if:
 ## Best Practices
 
 ### 1. Wait for Processing
+
 - Always wait for resources to fully process before querying
 - Check NotebookLM web interface for processing status
 - Large resources (GitHub repos, long videos) take longer
 
 ### 2. Start Simple
+
 - Begin with simple queries to test connectivity
 - Build up to more complex research questions
 - Use shorter, more direct questions initially
 
 ### 3. Monitor Sessions
+
 - Check active sessions regularly
 - Close unused sessions to free resources
 - Reset sessions if they become stuck
 
 ### 4. Use Browser Visible Mode for Debugging
+
 - Enable `show_browser: true` when troubleshooting
 - Watch browser automation to see what's happening
 - Helps diagnose timeout and processing issues
 
 ### 5. Verify Resources
+
 - Always verify resources are accessible
 - Check URLs in browser before adding
 - Monitor processing status in NotebookLM
@@ -225,16 +262,19 @@ Useful if:
 ## Getting Help
 
 ### Check Logs
+
 - NotebookLM MCP server logs may contain error details
 - Check Cursor/IDE logs for MCP server errors
 - Look for timeout or connection errors
 
 ### Verify Configuration
+
 - Check `.cursor/mcp.json` for NotebookLM configuration
 - Verify MCP server is properly configured
 - Ensure NotebookLM MCP server is installed
 
 ### Test Connectivity
+
 1. Check health: `"Check NotebookLM health"`
 2. List notebooks: `"Show our notebooks"`
 3. Try simple query: `"What is TWS API?"`

@@ -4,7 +4,7 @@
 
 This document captures key learnings from the [trade-frame repository](https://github.com/rburkholder/trade-frame), a C++17-based trading library framework developed by Raymond P. Burkholder. Trade-frame provides a comprehensive foundation for testing automated trading strategies across equities, futures, currencies, ETFs, and options.
 
-**Repository**: https://github.com/rburkholder/trade-frame
+**Repository**: <https://github.com/rburkholder/trade-frame>
 **Language**: C++17
 **License**: See repository
 **Stars**: 611+ (as of 2025)
@@ -15,7 +15,8 @@ This document captures key learnings from the [trade-frame repository](https://g
 
 Trade-frame organizes code into distinct, reusable libraries:
 
-#### Core Libraries (`lib/` directory):
+#### Core Libraries (`lib/` directory)
+
 - **TFTimeSeries**: Manages trades, quotes, greeks, and Level II order book data
 - **TFSimulation**: Simulation engine for backtesting
 - **TFIQFeed**: Engine for DTN IQFeed Level 1 & Level 2 data integration
@@ -51,17 +52,20 @@ Trade-frame separates library code from application code:
 Trade-frame supports multiple market data providers and execution venues:
 
 **Market Data Providers**:
+
 - **IQFeed**: Real-time and historical data (primary)
 - **Interactive Brokers**: Real-time market data via TWS API
 - **Alpaca**: Real-time data and order execution
 - **Phemex**: Real-time data and order execution (work in progress)
 
 **Execution Venues**:
+
 - **Interactive Brokers**: Via TWS API
 - **Alpaca**: Via Alpaca API
 - **Phemex**: Via Phemex API
 
 **Key Insight**: Abstracting provider-specific code behind common interfaces allows the same trading logic to work with multiple data sources and brokers. This is critical for:
+
 - Redundancy (fallback providers)
 - Testing (paper trading vs. live)
 - Multi-broker strategies
@@ -75,6 +79,7 @@ Trade-frame uses multiple storage backends:
 - **Excel**: For export and reporting (via included `exelformat`)
 
 **Key Insight**: Different data types benefit from different storage formats:
+
 - HDF5: High-frequency tick data, large time series
 - SQLite: Relational data (trades, positions, account info)
 - Excel: Human-readable reports and analysis
@@ -92,6 +97,7 @@ add_subdirectory(ApplicationName)
 ```
 
 **Key Patterns**:
+
 1. Each library has its own `CMakeLists.txt`
 2. Applications link against required libraries
 3. Dependencies are managed at the library level
@@ -102,6 +108,7 @@ add_subdirectory(ApplicationName)
 Trade-frame uses a separate repository (`libs-build`) for building dependencies:
 
 **Dependencies**:
+
 - wxWidgets (UI framework)
 - boost (C++ utilities)
 - curl (HTTP client)
@@ -113,6 +120,7 @@ Trade-frame uses a separate repository (`libs-build`) for building dependencies:
 - libtorch (PyTorch C++ API, optional)
 
 **Key Insight**: Separating dependency builds from main project builds:
+
 - Simplifies main project CMakeLists.txt
 - Allows dependency versioning independent of main project
 - Makes it easier to update dependencies
@@ -122,12 +130,14 @@ Trade-frame uses a separate repository (`libs-build`) for building dependencies:
 ### IDE Setup
 
 Trade-frame is optimized for Visual Studio Code with:
+
 - **C/C++ Extension** (Microsoft)
 - **clangd Extension** (LLVM)
 - **CMake Extension** (twxs)
 - **CMake Tools** (Microsoft)
 
 **Key Insight**: Modern C++ development benefits from:
+
 - Language server (clangd) for symbol lookup and cross-referencing
 - CMake integration for build management
 - Consistent tooling across team members
@@ -135,11 +145,13 @@ Trade-frame is optimized for Visual Studio Code with:
 ### Testing Strategy
 
 Trade-frame includes:
+
 - **IQFeed Testing**: Uses `TST$Y` symbol for 24/7 looped test data
 - **Paper Trading**: Always use IB paper trading account (port 7497) for testing
 - **Simulation**: `TFSimulation` library for backtesting
 
 **Key Insight**: Multiple testing layers:
+
 1. Unit tests (library-level)
 2. Integration tests (with mock data)
 3. Paper trading (with real broker API)
@@ -150,11 +162,13 @@ Trade-frame includes:
 ### 1. Thread Safety for TWS API
 
 Trade-frame demonstrates proper threading for IB TWS API:
+
 - Dedicated `EReader` thread for receiving messages
 - Mutex protection for shared data structures
 - Callback-based architecture (EWrapper pattern)
 
 **Relevance to Our Project**: Our `TWSClient` should follow similar patterns:
+
 - Separate thread for EReader
 - Thread-safe data structures for market data
 - Proper synchronization for order state
@@ -162,11 +176,13 @@ Trade-frame demonstrates proper threading for IB TWS API:
 ### 2. Real-Time Data Streaming
 
 Trade-frame's `Collector` application shows how to:
+
 - Stream real-time tick data to disk
 - Use HDF5 for efficient storage
 - Enable backtesting with real market data
 
 **Relevance to Our Project**: We could implement similar data collection for:
+
 - Historical analysis of box spread opportunities
 - Training ML models (if we add ML features)
 - Performance analysis
@@ -174,11 +190,13 @@ Trade-frame's `Collector` application shows how to:
 ### 3. Multi-Leg Order Management
 
 Trade-frame's `ComboTrading` demonstrates:
+
 - Managing complex multi-leg orders
 - Synchronizing order placement
 - Handling partial fills
 
 **Relevance to Our Project**: Box spreads are 4-leg orders, so we should:
+
 - Use IBKR Combo Orders for atomic execution
 - Implement rollback logic for failed legs
 - Track order state across all legs
@@ -186,11 +204,13 @@ Trade-frame's `ComboTrading` demonstrates:
 ### 4. Configuration Management
 
 Trade-frame uses configuration files for:
+
 - Market data provider settings
 - Broker connection parameters
 - Strategy parameters
 
 **Relevance to Our Project**: Our `ConfigManager` should:
+
 - Support multiple configuration sources (file, env vars, CLI)
 - Validate configuration before use
 - Provide sensible defaults
@@ -200,6 +220,7 @@ Trade-frame uses configuration files for:
 ### 1. Time Series Management
 
 **TFTimeSeries** provides:
+
 - Efficient storage of tick data
 - Query interface for historical data
 - Integration with indicators
@@ -209,6 +230,7 @@ Trade-frame uses configuration files for:
 ### 2. Options Calculations
 
 **TFOptions** handles:
+
 - Greeks calculations
 - Option pricing models
 - Volatility surfaces
@@ -218,11 +240,13 @@ Trade-frame uses configuration files for:
 ### 3. Trading Record Management
 
 **OUSQL** (ORM wrapper) provides:
+
 - Type-safe database access
 - Schema management
 - Query building
 
 **Pattern**: Use ORM for trading records to:
+
 - Reduce boilerplate
 - Ensure type safety
 - Simplify schema changes
@@ -232,11 +256,13 @@ Trade-frame uses configuration files for:
 ### AutoTrade
 
 Template for automated trading with:
+
 - Strategy framework
 - ML integration points (libtorch)
 - Risk management hooks
 
 **Key Features**:
+
 - Event-driven architecture
 - Strategy state management
 - Performance tracking
@@ -244,11 +270,13 @@ Template for automated trading with:
 ### Collector
 
 Real-time data collection:
+
 - Streams tick data to HDF5
 - Supports multiple symbols
 - Enables backtesting with real data
 
 **Key Features**:
+
 - High-performance I/O
 - Configurable data retention
 - Time-series storage
@@ -256,11 +284,13 @@ Real-time data collection:
 ### ComboTrading
 
 Multi-leg order management:
+
 - Options strategies
 - Synchronized execution
 - Position tracking
 
 **Key Features**:
+
 - Combo order support
 - Leg synchronization
 - Risk checks
@@ -296,6 +326,7 @@ Multi-leg order management:
 ### 1. Library Structure
 
 Consider organizing our code into libraries:
+
 - `libBoxSpread`: Core box spread calculations
 - `libTWS`: TWS API wrapper (already exists as `TWSClient`)
 - `libRisk`: Risk calculations
@@ -304,6 +335,7 @@ Consider organizing our code into libraries:
 ### 2. Sample Applications
 
 Create sample applications demonstrating:
+
 - Basic box spread scanning
 - Automated execution
 - Performance analysis
@@ -312,6 +344,7 @@ Create sample applications demonstrating:
 ### 3. Data Collection
 
 Implement data collection similar to trade-frame's `Collector`:
+
 - Stream real-time option chain data
 - Store in QuestDB for historical analysis
 - Enable backtesting and strategy refinement
@@ -319,6 +352,7 @@ Implement data collection similar to trade-frame's `Collector`:
 ### 4. Multi-Provider Support
 
 Consider abstracting broker interfaces:
+
 - Common interface for market data
 - Common interface for order execution
 - Provider-specific implementations
@@ -326,6 +360,7 @@ Consider abstracting broker interfaces:
 ### 5. Testing Infrastructure
 
 Adopt trade-frame's testing approach:
+
 - Unit tests for core libraries
 - Integration tests with mock data
 - Paper trading tests with real API
@@ -333,9 +368,9 @@ Adopt trade-frame's testing approach:
 
 ## Resources
 
-- **Repository**: https://github.com/rburkholder/trade-frame
-- **Blog**: http://blog.raymond.burkholder.net/index.php?/categories/23-Trading
-- **Dependencies**: https://github.com/rburkholder/libs-build
+- **Repository**: <https://github.com/rburkholder/trade-frame>
+- **Blog**: <http://blog.raymond.burkholder.net/index.php?/categories/23-Trading>
+- **Dependencies**: <https://github.com/rburkholder/libs-build>
 - **Documentation**: See repository README.md
 
 ## Related Documentation

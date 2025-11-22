@@ -1,7 +1,7 @@
 # NetworkX Integration Task Details
 
 **Task ID**: T-138
-**Status**: Pending
+**Status**: ✅ Complete
 **Priority**: High
 
 ## Task Description
@@ -85,22 +85,51 @@
 ### Example Usage
 
 ```python
-from python.integration.relationship_graph import build_relationship_graph, find_optimal_chain
+from python.integration.relationship_graph import (
+    build_relationship_graph,
+    RelationshipGraph,
+    Position,
+    Relationship,
+    RelationshipType,
+)
 
-# Load positions from ledger
-positions = ledger.get_all_positions()
-relationships = load_relationships()  # From config or database
+# Create positions
+positions = [
+    Position(id="bank-loan-5%", type="loan", rate=0.05, currency="USD"),
+    Position(id="box-spread-4%", type="box_spread", rate=0.04, currency="USD"),
+    Position(id="cheaper-loan-3%", type="loan", rate=0.03, currency="USD"),
+]
+
+# Define relationships
+relationships = [
+    Relationship(
+        source_id="bank-loan-5%",
+        target_id="box-spread-4%",
+        relationship_type=RelationshipType.MARGIN,
+        benefit=100.0,
+        weight=1.0,
+    ),
+    Relationship(
+        source_id="box-spread-4%",
+        target_id="cheaper-loan-3%",
+        relationship_type=RelationshipType.FINANCING,
+        benefit=200.0,
+        weight=1.0,
+    ),
+]
 
 # Build graph
-G = build_relationship_graph(positions, relationships)
+graph = build_relationship_graph(positions, relationships)
 
-# Find optimal chain: loan → margin → box spread → fund → cheaper loan
-result = find_optimal_chain(G, 'bank-loan-5%', 'cheaper-loan-3%')
+# Find optimal chain: loan → margin → box spread → cheaper loan
+result = graph.find_optimal_chain("bank-loan-5%", "cheaper-loan-3%", max_length=5)
 
 if result:
     print(f"Optimal path: {' → '.join(result['path'])}")
     print(f"Total benefit: ${result['benefit']:.2f}")
 ```
+
+See `python/integration/relationship_graph_example.py` for complete examples.
 
 ## References
 

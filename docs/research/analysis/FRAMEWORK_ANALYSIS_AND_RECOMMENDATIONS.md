@@ -10,6 +10,7 @@
 After reviewing all planning documentation, here are the key findings:
 
 ### ✅ Use Existing Frameworks (Don't Reinvent)
+
 1. **Zorro** - Free backtesting/optimization platform (use as-is)
 2. **CppTrader** - MIT-licensed order book engine (use as-is)
 3. **Massive.com/ORATS** - Historical data APIs (use as-is)
@@ -17,12 +18,14 @@ After reviewing all planning documentation, here are the key findings:
 5. **Existing TWS API** - Already integrated, continue using
 
 ### ⚠️ Consider Carefully
+
 1. **SmartQuant** - Verify licensing (may be commercial)
 2. **Custom backtesting** - Zorro already does this
 3. **Custom order book** - CppTrader already does this
 4. **Trade-Frame** - Full framework (too heavy, but excellent patterns to learn from)
 
 ### 🔧 Build Custom (Where Frameworks Don't Fit)
+
 1. **Box spread strategy logic** - Domain-specific, must be custom
 2. **TWS integration layer** - Already built, continue maintaining
 3. **Multi-leg order execution** - IBKR-specific, custom needed
@@ -37,12 +40,14 @@ After reviewing all planning documentation, here are the key findings:
 **Reality:** Zorro already provides this for FREE
 
 **Evidence from Planning Docs:**
+
 - ZORRO_INTEGRATION_PLAN.md plans to build `BacktestEngine` class
 - Zorro offers: 10-year backtest in 0.3 seconds
 - Zorro offers: Walk-forward optimization in <25 seconds
 - Zorro offers: Interactive visualization
 
 **Recommendation:**
+
 - ✅ **USE ZORRO** - Don't build custom backtesting
 - Integrate via DLL interface (as planned in ZORRO_INTEGRATION_PLAN.md)
 - Save 2-4 weeks of development time
@@ -58,12 +63,14 @@ After reviewing all planning documentation, here are the key findings:
 **Reality:** CppTrader already provides this with MIT license
 
 **Evidence from Planning Docs:**
+
 - CPPTRADER_INTEGRATION_PLAN.md plans to build `OrderBookManager`
 - CppTrader offers: 9.7M+ messages/second throughput
 - CppTrader offers: Market manager, order book reconstruction
 - CppTrader offers: Price level management
 
 **Recommendation:**
+
 - ✅ **USE CPPTRADER** - Don't build custom order book
 - Integrate CppTrader's `MarketManager` (as planned)
 - Save 3-4 weeks of development time
@@ -79,11 +86,13 @@ After reviewing all planning documentation, here are the key findings:
 **Reality:** SmartQuant provides optimized event system, but verify licensing
 
 **Evidence from Planning Docs:**
+
 - SMARTQUANT_CPP_FRAMEWORK_RESEARCH.md identifies current mutex-based approach
 - SmartQuant offers: 0.2 microsecond latency, 5-35M events/sec
 - SmartQuant offers: Non-locking event queues, ring buffers
 
 **Recommendation:**
+
 - ⚠️ **VERIFY LICENSING FIRST** - SmartQuant may be commercial
 - If open source or affordable: Use for event processing
 - If commercial: Keep current approach (it works, just slower)
@@ -99,10 +108,12 @@ After reviewing all planning documentation, here are the key findings:
 **Reality:** Correct approach - using existing APIs
 
 **Evidence from Planning Docs:**
+
 - MASSIVE_INTEGRATION.md plans to use Massive.com REST API
 - ORATS_INTEGRATION.md (if exists) plans to use ORATS API
 
 **Recommendation:**
+
 - ✅ **CONTINUE USING APIs** - This is correct
 - Don't build custom historical data storage
 - Use Massive.com/ORATS as planned
@@ -116,6 +127,7 @@ After reviewing all planning documentation, here are the key findings:
 ### 2.1 Zorro - Backtesting & Optimization ✅ USE AS-IS
 
 **What It Provides:**
+
 - Tick-level backtesting (10-year test in 0.3 seconds)
 - Walk-forward optimization (12-parameter system in <25 seconds)
 - Interactive visualization (option payoff diagrams)
@@ -123,6 +135,7 @@ After reviewing all planning documentation, here are the key findings:
 - C/C++ scripting compatible
 
 **Integration Approach:**
+
 - Direct DLL integration (as planned in ZORRO_INTEGRATION_PLAN.md)
 - Use Zorro's data format for historical data
 - Leverage Zorro's optimization algorithms
@@ -138,6 +151,7 @@ After reviewing all planning documentation, here are the key findings:
 ### 2.2 CppTrader - Order Book Management ✅ USE AS-IS
 
 **What It Provides:**
+
 - Ultra-fast matching engine (millions of operations/second)
 - Order book processor (9.7M+ messages/second)
 - Market manager for order book construction
@@ -145,6 +159,7 @@ After reviewing all planning documentation, here are the key findings:
 - Best bid/ask tracking
 
 **Integration Approach:**
+
 - Replace Python `MarketDataHandler` with CppTrader (as planned)
 - Use CppTrader's `MarketManager` for order book reconstruction
 - Integrate with TWS tick data
@@ -160,6 +175,7 @@ After reviewing all planning documentation, here are the key findings:
 ### 2.3 SmartQuant - Event Processing ⚠️ VERIFY FIRST
 
 **What It Provides:**
+
 - Ultra-low latency (0.2 microseconds per event)
 - High throughput (5-35M events/second)
 - Non-locking event queues
@@ -167,6 +183,7 @@ After reviewing all planning documentation, here are the key findings:
 - Object pools for efficient allocation
 
 **Integration Approach:**
+
 - Hybrid approach (as recommended in SMARTQUANT_CPP_FRAMEWORK_RESEARCH.md)
 - Use SmartQuant for event queues and memory pools
 - Keep TWS integration as-is
@@ -182,6 +199,7 @@ After reviewing all planning documentation, here are the key findings:
 ### 2.4 Massive.com - Historical Data ✅ USE AS-IS
 
 **What It Provides:**
+
 - REST API for historical trades/quotes
 - Dividend data and schedules
 - Fundamental data
@@ -189,6 +207,7 @@ After reviewing all planning documentation, here are the key findings:
 - Flat files (CSV) for bulk downloads
 
 **Integration Approach:**
+
 - Use REST API for historical data (as planned)
 - Use for backtesting data source
 - Cross-validate with TWS quotes
@@ -204,12 +223,14 @@ After reviewing all planning documentation, here are the key findings:
 ### 2.5 ORATS - Options Data ✅ USE AS-IS
 
 **What It Provides:**
+
 - Options chain data
 - Historical options data
 - Implied volatility data
 - Greeks calculations
 
 **Integration Approach:**
+
 - Use ORATS API for options data (if already planned)
 - Complement TWS market data
 
@@ -224,6 +245,7 @@ After reviewing all planning documentation, here are the key findings:
 ### 2.6 Trade-Frame - C++17 Trading Framework ⚠️ LEARN FROM PATTERNS
 
 **What It Provides:**
+
 - **TFInteractiveBrokers**: Complete TWS API integration library
 - **TFSimulation**: Backtesting engine
 - **TFOptions**: Options calculations and pricing
@@ -237,6 +259,7 @@ After reviewing all planning documentation, here are the key findings:
 Trade-Frame's `TFInteractiveBrokers` library demonstrates best practices:
 
 1. **Dedicated EReader Thread:**
+
    ```cpp
    // Trade-Frame pattern (from TRADE_FRAME_LEARNINGS.md)
    - Dedicated EReader thread for receiving messages
@@ -262,6 +285,7 @@ Trade-Frame's `TFInteractiveBrokers` library demonstrates best practices:
      - Rollback logic for failed legs
 
 **Integration Approach:**
+
 - **Don't integrate full framework** (too heavy for box spread focus)
 - **Learn from patterns** - Especially TWS connection establishment
 - **Study ComboTrading example** - Perfect for 4-leg box spreads
@@ -292,6 +316,7 @@ Trade-Frame's `TFInteractiveBrokers` library demonstrates best practices:
 **License:** ⚠️ See repository (check license)
 
 **Recommendation:** **HIGH PRIORITY FOR LEARNING** - Study Trade-Frame's TWS patterns, especially:
+
 - Connection establishment
 - EReader threading
 - Multi-leg order management (ComboTrading example)
@@ -431,6 +456,7 @@ Trade-Frame's `TFInteractiveBrokers` library demonstrates best practices:
 | **Reconnection** | ✅ Automatic | ✅ Exponential backoff | ✅ Already good |
 
 **Key Learning:** Our TWS connection patterns are already aligned with Trade-Frame's best practices! We should focus on:
+
 1. Improving error handling (add more error codes)
 2. Enhancing connection state management
 3. Learning from ComboTrading example for multi-leg orders
@@ -513,6 +539,7 @@ Box spreads are 4-leg orders, so ComboTrading patterns are directly applicable:
 **Our Current Implementation:**
 
 We already follow this pattern! ✅
+
 - `data_mutex_` for market data
 - `order_mutex_` for orders
 - `position_mutex_` for positions
@@ -527,12 +554,14 @@ We already follow this pattern! ✅
 ### 6.1 Immediate Actions (Week 1-2)
 
 **Priority 1: Integrate Zorro for Backtesting**
+
 - **Why:** No backtesting capability currently, Zorro is free
 - **Effort:** 1-2 weeks (as planned in ZORRO_INTEGRATION_PLAN.md)
 - **Benefit:** Validate strategies before live trading
 - **Risk:** Low (Zorro is proven, free)
 
 **Priority 2: Integrate CppTrader for Order Books**
+
 - **Why:** Current Python market data handler is slow
 - **Effort:** 2-3 weeks (as planned in CPPTRADER_INTEGRATION_PLAN.md)
 - **Benefit:** 9.7M+ messages/second, better performance
@@ -543,12 +572,14 @@ We already follow this pattern! ✅
 ### 6.2 Short-Term Actions (Week 3-4)
 
 **Priority 3: Complete Core Functionality**
+
 - Implement option chain scanning (ACTION_PLAN.md Priority 1)
 - Implement atomic execution (ACTION_PLAN.md Priority 2)
 - Add validation rules (ACTION_PLAN.md Priority 3)
 - Add market data quality checks (ACTION_PLAN.md Priority 4)
 
 **Priority 4: Code Quality Improvements**
+
 - Add try-catch to all callbacks (CODE_IMPROVEMENTS_ACTION_PLAN.md Priority 1)
 - Enhance error handling (CODE_IMPROVEMENTS_ACTION_PLAN.md Priority 2)
 - Implement rate limiting (CODE_IMPROVEMENTS_ACTION_PLAN.md Priority 4)
@@ -558,11 +589,13 @@ We already follow this pattern! ✅
 ### 6.3 Medium-Term Actions (Month 2-3)
 
 **Priority 5: Historical Data Integration**
+
 - Integrate Massive.com for historical data (MASSIVE_INTEGRATION.md)
 - Use for backtesting with Zorro
 - Cross-validate with TWS data
 
 **Priority 6: Event Processing Optimization**
+
 - Research SmartQuant licensing
 - If open source/affordable: Integrate for event processing
 - If commercial: Optimize current approach
@@ -572,10 +605,12 @@ We already follow this pattern! ✅
 ### 6.4 Long-Term Actions (Future)
 
 **Priority 7: Protocol Buffers Migration**
+
 - Only if performance becomes bottleneck (PROTOBUF_MIGRATION_PLAN.md)
 - Classic API works fine, migration is optional
 
 **Priority 8: Manager-Based Architecture**
+
 - Refactor into managers if codebase grows (CODE_IMPROVEMENTS_ACTION_PLAN.md)
 - Not urgent, consider when needed
 
@@ -584,25 +619,28 @@ We already follow this pattern! ✅
 ## 7. Recommended Integration Order
 
 ### Phase 1: Foundation (Weeks 1-4)
+
 1. ✅ Integrate Zorro for backtesting
 2. ✅ Integrate CppTrader for order books
 3. ✅ Complete core functionality (chain scanning, atomic execution)
 4. ✅ Add code quality improvements (try-catch, error handling, rate limiting)
 
 ### Phase 2: Enhancement (Weeks 5-8)
-5. ✅ Integrate Massive.com for historical data
-6. ✅ Research SmartQuant licensing
-7. ✅ Optimize event processing (SmartQuant or current approach)
+
+1. ✅ Integrate Massive.com for historical data
+2. ✅ Research SmartQuant licensing
+3. ✅ Optimize event processing (SmartQuant or current approach)
 
 ### Phase 3: Optimization (Future)
-8. ⏳ Protocol Buffers migration (if needed)
-9. ⏳ Manager-based architecture (if codebase grows)
+
+1. ⏳ Protocol Buffers migration (if needed)
+2. ⏳ Manager-based architecture (if codebase grows)
 
 ---
 
 ## 8. Framework Integration Architecture
 
-### Recommended Architecture:
+### Recommended Architecture
 
 ```
 ┌─────────────────────────────────────────┐
@@ -646,6 +684,7 @@ We already follow this pattern! ✅
 ```
 
 **Key Points:**
+
 - Use frameworks for what they're good at (backtesting, order books)
 - Keep custom code for domain-specific logic (box spreads, TWS integration)
 - Integrate via clean interfaces (DLL, API calls)
@@ -657,6 +696,7 @@ We already follow this pattern! ✅
 ### Using Frameworks (Recommended)
 
 **Costs:**
+
 - Zorro: ✅ Free (personal use)
 - CppTrader: ✅ Free (MIT license)
 - SmartQuant: ⚠️ Unknown (verify licensing)
@@ -664,6 +704,7 @@ We already follow this pattern! ✅
 - Development time: 3-5 weeks integration
 
 **Benefits:**
+
 - Proven, tested frameworks
 - Institutional-grade performance
 - Save 6-8 weeks of custom development
@@ -677,6 +718,7 @@ We already follow this pattern! ✅
 ### Building Custom (Not Recommended)
 
 **Costs:**
+
 - Development time: 6-8 weeks
 - Testing time: 2-3 weeks
 - Maintenance: Ongoing
@@ -684,6 +726,7 @@ We already follow this pattern! ✅
 - Performance optimization: Ongoing
 
 **Benefits:**
+
 - Full control
 - No licensing concerns
 - Customized to exact needs
@@ -720,6 +763,7 @@ We already follow this pattern! ✅
 ## 11. Action Items
 
 ### Immediate (This Week)
+
 - [ ] Review Zorro documentation
 - [ ] Review CppTrader documentation
 - [ ] **Study Trade-Frame's ComboTrading example** (perfect for box spreads!)
@@ -730,11 +774,13 @@ We already follow this pattern! ✅
 - [ ] Create integration plan for CppTrader
 
 ### Short-Term (Next 2 Weeks)
+
 - [ ] Start Zorro integration (Phase 1 from ZORRO_INTEGRATION_PLAN.md)
 - [ ] Start CppTrader integration (Phase 1 from CPPTRADER_INTEGRATION_PLAN.md)
 - [ ] Complete core functionality (ACTION_PLAN.md priorities)
 
 ### Medium-Term (Next Month)
+
 - [ ] Complete Zorro integration
 - [ ] Complete CppTrader integration
 - [ ] Integrate Massive.com for historical data
@@ -754,6 +800,7 @@ We already follow this pattern! ✅
 6. **Prioritize integration** - Integrate frameworks before building custom
 
 **Recommended Strategy:**
+
 - ✅ Integrate Zorro for backtesting (free, proven)
 - ✅ Integrate CppTrader for order books (MIT, proven)
 - ✅ **Study Trade-Frame patterns** - Especially TWS connection and ComboTrading (perfect for box spreads!)
@@ -762,6 +809,7 @@ We already follow this pattern! ✅
 - ✅ Keep custom code for domain-specific logic (box spreads, TWS integration)
 
 **Expected Outcome:**
+
 - Save 6-8 weeks of development time
 - Get proven, institutional-grade components
 - Focus on domain-specific logic (box spread strategy)

@@ -1,4 +1,5 @@
 # Merged Action Plan (2025-01-16)
+
 **Status**: Active
 **Replaces**: ACTION_PLAN.md, CODE_IMPROVEMENTS_ACTION_PLAN.md (both deprecated as out of date)
 **Based On**: CODE_VERIFICATION_REVIEW.md
@@ -8,6 +9,7 @@
 ## Executive Summary
 
 Most core functionality is **already implemented**. This plan focuses on:
+
 1. **Critical fixes** (exception handling, contract ID lookup)
 2. **Testing and validation** (integration tests, paper trading)
 3. **Production readiness** (monitoring, error handling enhancements)
@@ -19,15 +21,18 @@ Most core functionality is **already implemented**. This plan focuses on:
 ## Phase 1: Critical Fixes (Week 1, Days 1-2)
 
 ### Priority 1.1: Add Try-Catch to Active Callbacks ⚡ HIGH
+
 **Status**: 🔴 Must Fix Before Production
 **Effort**: 30 minutes
 **Risk**: System crashes on market data exceptions
 
 **Files**:
+
 - `native/src/tws_client.cpp:998` - tickSize()
 - `native/src/tws_client.cpp:1026` - tickOptionComputation()
 
 **Implementation**:
+
 ```cpp
 void TWSClient::Impl::tickSize(TickerId tickerId, TickType field, Decimal size) {
     try {
@@ -56,6 +61,7 @@ void TWSClient::Impl::tickOptionComputation(TickerId tickerId, TickType tickType
 ```
 
 **Success Criteria**:
+
 - [ ] Both callbacks wrapped in try-catch
 - [ ] Exceptions logged with context
 - [ ] System continues running after exceptions
@@ -64,18 +70,22 @@ void TWSClient::Impl::tickOptionComputation(TickerId tickerId, TickType tickType
 ---
 
 ### Priority 1.2: Contract Details Lookup for Combo Orders ⚡ HIGH
+
 **Status**: 🟡 Partially Complete (fallback works, combo order disabled)
 **Effort**: 2-3 hours
 **Benefit**: Atomic execution reduces partial fill risk
 
 **Current State**: native/src/order_manager.cpp:191
+
 ```cpp
 // TODO: Add contract details lookup to get conIds for combo orders
 bool use_combo_order = false;  // Set to true when contract IDs are available
 ```
 
 **Implementation Required**:
+
 1. **Add contract details request method** to TWSClient
+
    ```cpp
    void TWSClient::request_contract_details(
        const types::OptionContract& contract,
@@ -83,6 +93,7 @@ bool use_combo_order = false;  // Set to true when contract IDs are available
    ```
 
 2. **Implement contractDetails callback** in TWSClient::Impl
+
    ```cpp
    void contractDetails(int reqId, const ContractDetails& contractDetails) override {
        try {
@@ -93,6 +104,7 @@ bool use_combo_order = false;  // Set to true when contract IDs are available
    ```
 
 3. **Update place_box_spread** to request contract details first
+
    ```cpp
    // Request contract details for all 4 legs
    // When all conIds received, enable use_combo_order = true
@@ -100,11 +112,13 @@ bool use_combo_order = false;  // Set to true when contract IDs are available
    ```
 
 **Files to Modify**:
+
 - `native/src/tws_client.cpp` - Add reqContractDetails, contractDetails callback
 - `native/include/tws_client.h` - Add interface
 - `native/src/order_manager.cpp` - Update place_box_spread logic
 
 **Success Criteria**:
+
 - [ ] Contract details requested for all 4 legs
 - [ ] conIds stored and passed to combo order
 - [ ] use_combo_order flag enabled when conIds available
@@ -112,6 +126,7 @@ bool use_combo_order = false;  // Set to true when contract IDs are available
 - [ ] Fallback to individual orders if combo fails
 
 **Testing**:
+
 - Paper trade a box spread with combo order enabled
 - Verify all-or-nothing execution
 - Test fallback when combo order unavailable
@@ -121,6 +136,7 @@ bool use_combo_order = false;  // Set to true when contract IDs are available
 ## Phase 2: Testing & Validation (Week 1-2)
 
 ### Priority 2.1: Integration Tests 🧪 HIGH
+
 **Status**: 🟡 Partial (unit tests exist, integration tests minimal)
 **Effort**: 1 week
 **See**: TESTING_STRATEGY.md for comprehensive plan
@@ -157,6 +173,7 @@ bool use_combo_order = false;  // Set to true when contract IDs are available
    - **File**: Extend `native/tests/test_order_manager.cpp`
 
 **Success Criteria**:
+
 - [ ] All integration tests pass with mock TWS
 - [ ] Connection/reconnection tests pass
 - [ ] Market data pipeline validated
@@ -166,6 +183,7 @@ bool use_combo_order = false;  // Set to true when contract IDs are available
 ---
 
 ### Priority 2.2: Paper Trading Validation 🎯 CRITICAL
+
 **Status**: 🔴 Must Do Before Production
 **Effort**: 3-5 days
 **Risk**: Real money at stake
@@ -207,11 +225,13 @@ bool use_combo_order = false;  // Set to true when contract IDs are available
    - [ ] Verify efficiency ratio tracking
 
 **Documentation**:
+
 - Record all test results in `docs/PAPER_TRADING_LOG.md`
 - Include screenshots of TWS order window
 - Log any errors or unexpected behavior
 
 **Success Criteria**:
+
 - [ ] All scenarios pass without crashes
 - [ ] No unhandled exceptions
 - [ ] Order efficiency ratio > 5% (if executing)
@@ -224,6 +244,7 @@ bool use_combo_order = false;  // Set to true when contract IDs are available
 ## Phase 3: Production Readiness (Week 2-3)
 
 ### Priority 3.1: Enhanced Error Handling 🛡️ MEDIUM
+
 **Status**: 🟡 Basic implementation exists
 **Effort**: 1-2 hours
 **File**: `native/src/tws_client.cpp`
@@ -231,6 +252,7 @@ bool use_combo_order = false;  // Set to true when contract IDs are available
 **Expand Error Guidance Map**:
 
 Add missing error codes to `kIbErrorGuidance`:
+
 ```cpp
 static const std::unordered_map<int, std::string> kIbErrorGuidance = {
     // Connection errors
@@ -257,6 +279,7 @@ static const std::unordered_map<int, std::string> kIbErrorGuidance = {
 ```
 
 **Verify Error 1100 Auto-Reconnect**:
+
 ```cpp
 if (errorCode == 1100) {
     connected_ = false;
@@ -270,6 +293,7 @@ if (errorCode == 1100) {
 ```
 
 **Success Criteria**:
+
 - [ ] 20+ error codes in guidance map
 - [ ] Error 1100 triggers auto-reconnect
 - [ ] All critical errors have actionable guidance
@@ -278,11 +302,13 @@ if (errorCode == 1100) {
 ---
 
 ### Priority 3.2: Monitoring & Alerts 📊 MEDIUM
+
 **Status**: 🔴 Not Implemented
 **Effort**: 3-4 hours
 **Purpose**: Production monitoring
 
 **Add Health Check Endpoint** (if web interface exists):
+
 ```cpp
 struct SystemHealth {
     bool tws_connected;
@@ -300,12 +326,14 @@ SystemHealth get_system_health() const;
 ```
 
 **Add Logging Enhancements**:
+
 1. Structured logging with timestamps
 2. Log rotation (daily, keep 30 days)
 3. Separate error log for critical issues
 4. Performance metrics logging (latency, throughput)
 
 **Alert Triggers**:
+
 - Disconnection from TWS
 - Order efficiency ratio < 5% (already implemented)
 - Rate limiter triggered (already logged)
@@ -313,10 +341,12 @@ SystemHealth get_system_health() const;
 - Position mismatch with TWS
 
 **Files**:
+
 - `native/src/tws_client.cpp` - Add health check method
 - `native/src/ib_box_spread.cpp` - Add monitoring integration
 
 **Success Criteria**:
+
 - [ ] Health check returns current system state
 - [ ] Logs rotate daily
 - [ ] Critical errors trigger alerts (console/email/webhook)
@@ -325,10 +355,12 @@ SystemHealth get_system_health() const;
 ---
 
 ### Priority 3.3: Configuration Validation 🔧 LOW
+
 **Status**: 🟡 Basic validation exists
 **Effort**: 1 hour
 
 **Add Configuration Sanity Checks**:
+
 ```cpp
 bool validate_config(const config::StrategyParams& params) {
     if (params.min_roi <= 0) {
@@ -350,6 +382,7 @@ bool validate_config(const config::StrategyParams& params) {
 ```
 
 **Success Criteria**:
+
 - [ ] All config parameters validated on startup
 - [ ] Invalid config fails fast with clear error
 - [ ] Example valid config in docs/
@@ -359,6 +392,7 @@ bool validate_config(const config::StrategyParams& params) {
 ## Phase 4: Nice-to-Have Enhancements (Week 3+)
 
 ### Priority 4.1: Type Safety Improvements 🔒 LOW
+
 **Status**: 🔴 Not Implemented (strings used for enums)
 **Effort**: 2-3 hours
 **Benefit**: Compile-time type safety, prevents typos
@@ -366,6 +400,7 @@ bool validate_config(const config::StrategyParams& params) {
 **Replace String Parameters with Enums**:
 
 Currently:
+
 ```cpp
 order.orderType = "LMT";
 order.tif = "DAY";
@@ -374,6 +409,7 @@ contract.secType = "OPT";
 ```
 
 After:
+
 ```cpp
 enum class OrderType { Market, Limit, Stop, StopLimit };
 enum class TimeInForce { Day, GTC, IOC, GTD };
@@ -387,11 +423,13 @@ contract.secType = SecType::Option;
 ```
 
 **Files to Modify**:
+
 - `native/include/types.h` - Add enums
 - `native/src/tws_client.cpp` - Convert enums to strings for TWS API
 - All files using order parameters
 
 **Success Criteria**:
+
 - [ ] Compile-time type checking
 - [ ] No string typos possible
 - [ ] All existing tests pass with new types
@@ -399,11 +437,13 @@ contract.secType = SecType::Option;
 ---
 
 ### Priority 4.2: Session Recording/Replay (Optional) 📹 LOW
+
 **Status**: 🔴 Not Implemented
 **Effort**: 4-6 hours
 **Benefit**: Testing without live TWS, debugging
 
 **Implementation**:
+
 1. SQLite database to record all TWS API calls
 2. Record: timestamp, request_id, method, parameters, response
 3. Replay mode: Read from database instead of TWS
@@ -412,6 +452,7 @@ contract.secType = SecType::Option;
 **Reference**: yatws (Rust TWS library) has this feature
 
 **Success Criteria**:
+
 - [ ] Record mode captures all TWS interactions
 - [ ] Replay mode reproduces exact sequence
 - [ ] Can test strategies with historical recordings
@@ -423,6 +464,7 @@ contract.secType = SecType::Option;
 **See TESTING_STRATEGY.md for comprehensive details**
 
 **Test Pyramid**:
+
 1. **Unit Tests** (3,123 lines) - ✅ Already comprehensive
 2. **Integration Tests** (NEW) - Test component interactions
 3. **End-to-End Tests** (NEW) - Test full workflows
@@ -430,6 +472,7 @@ contract.secType = SecType::Option;
 5. **Production Monitoring** (NEW) - Live system health
 
 **Timeline**:
+
 - Week 1: Integration tests, paper trading basics
 - Week 2: Paper trading edge cases, production prep
 - Week 3: Extended paper trading, monitoring setup
@@ -439,18 +482,21 @@ contract.secType = SecType::Option;
 ## Implementation Checklist
 
 ### Week 1 (Days 1-2): Critical Fixes
+
 - [ ] Add try-catch to tickSize and tickOptionComputation
 - [ ] Implement contract details lookup
 - [ ] Enable combo orders with contract IDs
 - [ ] Test combo orders in paper trading
 
 ### Week 1 (Days 3-5): Basic Integration Tests
+
 - [ ] Write TWS connection integration tests
 - [ ] Write market data pipeline tests
 - [ ] Write box spread E2E tests (dry-run)
 - [ ] All integration tests passing
 
 ### Week 2 (Days 1-5): Paper Trading
+
 - [ ] Basic functionality tests (Day 1)
 - [ ] Execution tests (Day 2)
 - [ ] Edge case tests (Day 3)
@@ -459,12 +505,14 @@ contract.secType = SecType::Option;
 - [ ] Document all results
 
 ### Week 2 (Days 6-7): Production Prep
+
 - [ ] Expand error guidance map
 - [ ] Add monitoring/health checks
 - [ ] Configuration validation
 - [ ] Log rotation setup
 
 ### Week 3: Extended Testing & Monitoring
+
 - [ ] Run 1 week of paper trading
 - [ ] Monitor for memory leaks, crashes
 - [ ] Tune parameters (ROI thresholds, liquidity minimums)
@@ -475,6 +523,7 @@ contract.secType = SecType::Option;
 ## Success Criteria (Overall)
 
 **Before Production**:
+
 - [ ] All critical fixes complete (try-catch, contract IDs)
 - [ ] All integration tests passing
 - [ ] 1 week of stable paper trading (no crashes)
@@ -485,6 +534,7 @@ contract.secType = SecType::Option;
 - [ ] Monitoring in place
 
 **Production Deployment**:
+
 - [ ] Start with small position sizes (1 contract)
 - [ ] Monitor for 1 week
 - [ ] Gradually increase position sizes

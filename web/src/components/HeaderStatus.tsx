@@ -2,6 +2,7 @@ import type { SnapshotPayload } from '../types/snapshot';
 import { formatCurrency } from '../utils/formatters';
 import { ModeSwitcher, type TradingMode } from './ModeSwitcher';
 import { AccountSelector } from './AccountSelector';
+import { useWebSocketStatus } from '../hooks/useWebSocket';
 
 interface HeaderStatusProps {
   snapshot: SnapshotPayload | null;
@@ -33,6 +34,7 @@ export function HeaderStatus({
   const isLive = snapshot?.mode === 'LIVE' || snapshot?.mode === 'LIVE_TRADING';
   const modeClass = isLive ? 'mode-indicator--live' : 'mode-indicator--paper';
   const isStrategyRunning = snapshot?.strategy === 'RUNNING';
+  const { status: connectionStatus } = useWebSocketStatus();
 
   if (!snapshot) {
     return (
@@ -157,6 +159,26 @@ export function HeaderStatus({
         {statusBadge(metrics.orats_ok, 'ORATS')}
         {statusBadge(metrics.portal_ok, 'Portal')}
         {statusBadge(metrics.questdb_ok, 'QuestDB')}
+        <span
+          className={`status-badge ${
+            connectionStatus === 'connected'
+              ? 'status-badge--ok'
+              : connectionStatus === 'polling'
+                ? 'status-badge--ok' // Polling is a valid, working state
+                : 'status-badge--warn'
+          }`}
+          title={
+            connectionStatus === 'connected'
+              ? 'WebSocket connected - Real-time updates'
+              : connectionStatus === 'polling'
+                ? 'Using polling - Updates every 2 seconds (WebSocket server not available)'
+                : connectionStatus === 'connecting'
+                  ? 'Connecting to WebSocket...'
+                  : 'Connection error'
+          }
+        >
+          {connectionStatus === 'connected' ? 'WS' : connectionStatus === 'polling' ? 'Poll' : 'Conn'}
+        </span>
       </div>
       <div className="header__metrics">
         <span>NetLiq: <strong>{formatCurrency(metrics.net_liq)}</strong></span>

@@ -174,6 +174,7 @@ public:
 **Purpose**: Wraps existing `TWSClient` to implement `IBroker` interface.
 
 **Implementation**:
+
 - Delegates to existing `TWSClient` methods
 - Maps TWS-specific data to common types
 - Handles TWS connection state
@@ -182,6 +183,7 @@ public:
 **File**: `native/src/brokers/tws_broker_adapter.cpp`
 
 **Key Methods**:
+
 ```cpp
 class TWSBrokerAdapter : public brokers::IBroker {
 private:
@@ -195,6 +197,7 @@ private:
 **Purpose**: Implements `IBroker` interface using IB Client Portal REST API.
 
 **Implementation**:
+
 - OAuth 2.0 authentication
 - REST API client (HTTP/HTTPS)
 - Session token management
@@ -203,6 +206,7 @@ private:
 **File**: `native/src/brokers/ib_client_portal_adapter.cpp`
 
 **Key Methods**:
+
 ```cpp
 class IBClientPortalAdapter : public brokers::IBroker {
 private:
@@ -214,6 +218,7 @@ private:
 ```
 
 **Authentication Flow**:
+
 1. Redirect to IB login page
 2. User authenticates
 3. Receive OAuth code
@@ -225,6 +230,7 @@ private:
 **Purpose**: Implements `IBroker` interface using Alpaca REST API.
 
 **Implementation**:
+
 - API key authentication
 - REST API client
 - Rate limiting (200 req/min)
@@ -233,6 +239,7 @@ private:
 **File**: `native/src/brokers/alpaca_broker_adapter.cpp`
 
 **Key Methods**:
+
 ```cpp
 class AlpacaBrokerAdapter : public brokers::IBroker {
 private:
@@ -300,14 +307,17 @@ public:
 Each broker has different contract formats. Normalize to common `types::OptionContract`:
 
 **TWS API**:
+
 - Uses `Contract` object with `conId`, `symbol`, `lastTradeDateOrContractMonth`, etc.
 - Map to `OptionContract` structure
 
 **IB Client Portal**:
+
 - JSON format: `{"symbol": "SPY", "expiry": "20250117", "strike": 500, "right": "C"}`
 - Map to `OptionContract` structure
 
 **Alpaca API**:
+
 - JSON format: `{"symbol": "SPY250117C00500000", "underlying": "SPY"}`
 - Parse symbol to extract expiry, strike, type
 - Map to `OptionContract` structure
@@ -397,26 +407,31 @@ Map broker-specific errors to unified error codes:
 ## Migration Path
 
 ### Phase 1: Create Interface and TWS Adapter
+
 1. Define `IBroker` interface
 2. Create `TWSBrokerAdapter` wrapping existing `TWSClient`
 3. Test with existing code
 
 ### Phase 2: Refactor OrderManager
+
 1. Change `OrderManager` to use `IBroker*` instead of `TWSClient*`
 2. Update all method calls to use interface
 3. Test with TWS adapter
 
 ### Phase 3: Add IB Client Portal Adapter
+
 1. Implement `IBClientPortalAdapter`
 2. Add OAuth authentication
 3. Test with paper trading
 
 ### Phase 4: Add Alpaca Adapter
+
 1. Implement `AlpacaBrokerAdapter`
 2. Add API key authentication
 3. Test with paper trading (if options supported)
 
 ### Phase 5: Add Broker Manager
+
 1. Implement `BrokerFactory`
 2. Implement `BrokerSelector`
 3. Add broker switching UI (if needed)
@@ -427,18 +442,21 @@ Map broker-specific errors to unified error codes:
 ## Testing Strategy
 
 ### Unit Tests
+
 - Test each adapter independently
 - Mock broker APIs
 - Test data normalization
 - Test error handling
 
 ### Integration Tests
+
 - Test with real broker APIs (paper trading)
 - Test broker switching
 - Test fallback strategies
 - Test concurrent operations
 
 ### End-to-End Tests
+
 - Test full trading flow with each broker
 - Test box spread execution
 - Test error recovery

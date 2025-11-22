@@ -5,6 +5,7 @@ This guide explains how to use NotebookLM MCP server to summarize YouTube videos
 ## Overview
 
 NotebookLM is Google's zero-hallucination knowledge base powered by Gemini 2.5. It allows you to:
+
 - Upload YouTube videos, PDFs, Google Docs, markdown files, websites, and GitHub repos
 - Get intelligent, synthesized answers based on your sources
 - Create documentation from video content
@@ -15,6 +16,7 @@ NotebookLM is Google's zero-hallucination knowledge base powered by Gemini 2.5. 
 ### 1. Authenticate (One-Time)
 
 In Cursor chat, say:
+
 ```
 "Log me in to NotebookLM" or "Open NotebookLM auth setup"
 ```
@@ -41,6 +43,7 @@ A Chrome window will open. Log in with your Google account.
 ### 3. Add Notebook to Library
 
 In Cursor chat, say:
+
 ```
 "Add [notebook-link] to library tagged 'trading, options, ib-api'"
 ```
@@ -52,6 +55,7 @@ The AI will save the notebook with metadata (tags, description) for easy retriev
 ### Summarizing YouTube Videos
 
 **Step 1: Create a Notebook with Video**
+
 1. Go to NotebookLM
 2. Create a new notebook
 3. Add YouTube video URL (e.g., `https://www.youtube.com/watch?v=...`)
@@ -59,16 +63,19 @@ The AI will save the notebook with metadata (tags, description) for easy retriev
 5. Share the notebook and copy the link
 
 **Step 2: Add to Library**
+
 ```
 "Add [notebook-link] to library tagged 'youtube, tutorial, [topic]'"
 ```
 
 **Step 3: Summarize Video**
+
 ```
 "Research this video in NotebookLM and create a markdown summary in docs/video-summaries/[video-name].md"
 ```
 
 The AI will:
+
 1. Ask NotebookLM questions about the video content
 2. Get synthesized answers with citations
 3. Create a markdown document with key points, timestamps, and references
@@ -76,16 +83,19 @@ The AI will:
 ### Processing Documentation Links
 
 **Step 1: Create Notebook with Documentation**
+
 1. Create a new notebook in NotebookLM
 2. Add documentation URLs (e.g., API docs, GitHub README, blog posts)
 3. Share the notebook
 
 **Step 2: Research and Document**
+
 ```
 "I'm working on [feature]. Research the [topic] documentation in NotebookLM and create a guide in docs/[topic]-guide.md"
 ```
 
 The AI will:
+
 1. Ask NotebookLM specific questions about the documentation
 2. Get accurate answers (no hallucinations)
 3. Create comprehensive documentation based on the sources
@@ -99,6 +109,7 @@ When building with a new library or API:
 ```
 
 The AI will:
+
 1. Ask multiple questions to understand the API
 2. Get specific implementation details
 3. Write correct code based on accurate information
@@ -111,6 +122,7 @@ The AI will:
 ```
 
 The AI will:
+
 1. Research across multiple notebooks
 2. Synthesize information from all sources
 3. Create comprehensive documentation with citations
@@ -119,26 +131,31 @@ The AI will:
 ## Library Management
 
 ### List All Notebooks
+
 ```
 "Show our notebooks" or "List all notebooks in the library"
 ```
 
 ### Select Active Notebook
+
 ```
 "Use the [notebook-name] notebook" or "Select the notebook tagged '[tag]'"
 ```
 
 ### Update Notebook Metadata
+
 ```
 "Update notebook tags for [notebook-name] to include 'new-tag'"
 ```
 
 ### Remove Notebook
+
 ```
 "Remove [notebook-name] from library"
 ```
 
 ### Search Notebooks
+
 ```
 "Find notebooks about [topic]" or "Search notebooks tagged '[tag]'"
 ```
@@ -154,6 +171,7 @@ The AI can automatically ask follow-up questions to build complete understanding
 ```
 
 The AI will:
+
 1. Start with a broad question
 2. Ask follow-up questions based on answers
 3. Build comprehensive understanding
@@ -213,33 +231,43 @@ To start fresh:
 ## Best Practices
 
 ### 1. Tag Notebooks Properly
+
 Use descriptive tags to make notebooks easy to find:
+
 - `trading, options, strategies`
 - `tws, api, integration`
 - `youtube, tutorial, [topic]`
 - `documentation, [library-name]`
 
 ### 2. Organize by Topic
+
 Create separate notebooks for different topics:
+
 - One notebook for TWS API documentation
 - One notebook for trading strategies
 - One notebook for YouTube tutorials
 - One notebook for project-specific docs
 
 ### 3. Use Descriptive Names
+
 Give notebooks clear names:
+
 - "TWS API Documentation"
 - "Options Trading Tutorials"
 - "Project Architecture Notes"
 
 ### 4. Research Before Coding
+
 Always research in NotebookLM before implementing new features:
+
 ```
 "Research [topic] in NotebookLM before writing code"
 ```
 
 ### 5. Save Important Summaries
+
 Always save video summaries and research results to `docs/`:
+
 ```
 "Save this summary to docs/video-summaries/[name].md"
 ```
@@ -249,6 +277,7 @@ Always save video summaries and research results to `docs/`:
 ### Authentication Issues
 
 If authentication fails:
+
 ```
 "Repair NotebookLM authentication" or "Fix NotebookLM auth"
 ```
@@ -262,6 +291,7 @@ Check that Chrome is installed and accessible. The MCP server uses Chrome for au
 ### Rate Limit Reached
 
 Switch to a different Google account:
+
 ```
 "Re-authenticate with a different Google account"
 ```
@@ -269,11 +299,13 @@ Switch to a different Google account:
 ### Notebook Not Found
 
 List all notebooks to see what's available:
+
 ```
 "Show our notebooks"
 ```
 
 Then select the correct notebook:
+
 ```
 "Use the [notebook-name] notebook"
 ```
@@ -281,6 +313,7 @@ Then select the correct notebook:
 ### Session Issues
 
 Reset sessions if things aren't working:
+
 ```
 "Reset NotebookLM session" or "Close all NotebookLM sessions"
 ```
@@ -299,6 +332,7 @@ Use NotebookLM to generate documentation from videos and links:
 ### Research Before Implementation
 
 Before implementing new features:
+
 ```
 "I'm implementing [feature]. Research [topic] in NotebookLM first."
 ```
@@ -306,6 +340,7 @@ Before implementing new features:
 ### API Documentation
 
 Keep API documentation up-to-date:
+
 ```
 "Update API documentation using the TWS API notebook"
 ```

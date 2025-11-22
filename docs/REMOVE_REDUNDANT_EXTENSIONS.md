@@ -3,6 +3,7 @@
 ## Usage
 
 Run the script:
+
 ```bash
 ./scripts/remove_redundant_extensions.sh
 ```
@@ -12,6 +13,7 @@ Run the script:
 The script identifies and removes redundant extensions based on the redundancy analysis:
 
 ### High Priority Removals (8 extensions)
+
 - `rust-lang.rust` - Legacy, redundant with rust-analyzer
 - `syntaxsyndicate.turbo-vsc` - Redundant with vercel.turbo-vsc
 - `ms-azuretools.vscode-containers` - Disabled, not used
@@ -22,6 +24,7 @@ The script identifies and removes redundant extensions based on the redundancy a
 - `shivamkumar.go-extras` - Disabled, Go not used
 
 ### Medium Priority Removals (7 extensions)
+
 - `bbenoist.doxygen` - Redundant with cschlosser.doxdocgen
 - `pinage404.rust-extension-pack` - Extension pack (may include individual tools)
 - `franneck94.vscode-c-cpp-dev-extension-pack` - Extension pack
@@ -33,6 +36,7 @@ The script identifies and removes redundant extensions based on the redundancy a
 ### Manual Review Recommended
 
 **AI Assistants (6 extensions)** - Keep 1-2 favorites:
+
 - `anthropic.claude-code`
 - `amazonwebservices.amazon-q-vscode`
 - `google.gemini-cli-vscode-ide-companion`
@@ -41,6 +45,7 @@ The script identifies and removes redundant extensions based on the redundancy a
 - `fridaplatform.fridagpt`
 
 **MCP Extensions (6 extensions)** - Keep 1-2 you use:
+
 - `cjl.lsp-mcp`
 - `daninemonic.mcp4humans`
 - `interactive-mcp.interactive-mcp`
@@ -69,6 +74,7 @@ When you run the script, you'll see:
 ## Expected Results
 
 After running with option 2 (HIGH + MEDIUM):
+
 - **Before**: ~94 extensions
 - **After**: ~79 extensions
 - **Removed**: ~15 extensions
@@ -76,6 +82,7 @@ After running with option 2 (HIGH + MEDIUM):
 ## Verification
 
 After running the script, verify with:
+
 ```bash
 ./scripts/check_extension_redundancy.sh
 ./scripts/analyze_all_extensions.sh
@@ -86,4 +93,3 @@ After running the script, verify with:
 - The script won't remove `ms-vscode.cpptools` if it's not installed (you may only have `anysphere.cpptools`)
 - Extension packs are removed if you have individual tools installed
 - AI and MCP extensions are shown but not auto-removed (you decide which to keep)
-

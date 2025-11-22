@@ -16,35 +16,42 @@ IBC (Interactive Brokers Controller) is a Java-based automation tool that automa
 ## Core Capabilities
 
 ### 1. Automatic Login
+
 - **Auto-fills username and password** in the Login dialog when TWS or Gateway start
 - **Automatically clicks the Login button**
 - Handles login automation without manual intervention
 
 ### 2. Session Management
+
 - **Prevents multiple logins**: Ensures that while a TWS/Gateway session is running, attempts to logon from another computer or device do not succeed
 - **Session isolation**: Protects running sessions from interference
 
 ### 3. Two-Factor Authentication (2FA)
+
 - **IBKR Mobile integration**: Can participate in Two Factor Authentication using IBKR Mobile
 - **Retry mechanism**: Users who miss the 2FA alert automatically get further opportunities without needing to be at the computer
 - **Automated 2FA flow**: Streamlines the 2FA process
 
 ### 4. Dialog Box Handling
+
 - **Automatic dialog management**: Handles various dialog boxes that TWS sometimes displays
 - **Keeps TWS running smoothly**: No user involvement required for routine dialogs
 - **Error handling**: Manages unexpected prompts and alerts
 
 ### 5. Auto-Restart Functionality
+
 - **Daily auto-restart**: Allows TWS and Gateway to be auto-restarted each day during the week
 - **No re-authentication needed**: Restarts without requiring user to re-authenticate
 - **Weekday scheduling**: Configurable for specific days of the week
 
 ### 6. Scheduled Shutdown
+
 - **Daily shutdown**: Allows TWS and Gateway to be shut down at a specified time every day
 - **Weekly shutdown**: Allows TWS to be shut down at a specified time on a specified day of the week
 - **Flexible scheduling**: Customizable shutdown times
 
 ### 7. Remote Control
+
 - **Remote shutdown**: Can be remotely instructed to shut down TWS or Gateway
 - **Cloud deployments**: Useful if TWS/Gateway are running in the cloud or on an inaccessible computer
 - **Remote management**: Enables remote control of trading infrastructure
@@ -52,6 +59,7 @@ IBC (Interactive Brokers Controller) is a Java-based automation tool that automa
 ## Platform Support
 
 IBC runs on:
+
 - **Windows**
 - **macOS**
 - **Linux**
@@ -156,10 +164,12 @@ For assistance, queries, or suggestions:
 ### Bug Reports
 
 If you've found a bug in IBC, report via:
+
 - **IBC User Group**: Community support forum
 - **GitHub Issue Tracker**: Official bug tracking
 
 **Please provide**:
+
 - Versions of IBC and TWS/Gateway
 - Full description of incorrect behavior
 - **IBC log file** (location prominently displayed when running IBC)
@@ -167,6 +177,7 @@ If you've found a bug in IBC, report via:
 ### Log Files
 
 IBC creates detailed log files that record:
+
 - Login attempts and results
 - Dialog interactions
 - Scheduled events
@@ -186,6 +197,7 @@ IBC creates detailed log files that record:
 ### Acknowledgments
 
 IBC acknowledges past contributors to the IBController project:
+
 - Richard King (original creator and maintainer)
 - Steven Kearns
 - Ken Geis
@@ -216,6 +228,7 @@ The last section of the IBC User Guide contains useful information about differe
 ### 1. Unattended Trading Operations
 
 IBC enables running TWS/Gateway in an unattended mode:
+
 - Automated login without human intervention
 - Automatic restart after disconnections
 - Scheduled maintenance windows
@@ -224,6 +237,7 @@ IBC enables running TWS/Gateway in an unattended mode:
 ### 2. Production Deployments
 
 For production trading systems:
+
 - **Automatic daily restarts**: Ensures fresh TWS/Gateway sessions
 - **Scheduled shutdowns**: Clean shutdowns during market closures
 - **Session protection**: Prevents unauthorized access during trading hours
@@ -232,6 +246,7 @@ For production trading systems:
 ### 3. Development & Testing
 
 For development workflows:
+
 - **Automated testing**: Restart TWS automatically for test runs
 - **Session management**: Isolate test sessions from production
 - **Dialog handling**: Automate away manual interactions during testing
@@ -239,6 +254,7 @@ For development workflows:
 ### 4. Integration with Native C++ Client
 
 IBC can be used alongside your native C++ TWS client:
+
 - **IBC manages TWS/Gateway lifecycle**: Handles login, restarts, shutdowns
 - **Your C++ client connects to TWS**: Uses the TWS API for trading operations
 - **Separation of concerns**: IBC for TWS management, your code for trading logic
@@ -321,6 +337,7 @@ Use IBC for **TWS/Gateway lifecycle management** while your **native C++ client 
 ### Direct TWS API Connection
 
 Your project currently uses direct TWS API connections without IBC:
+
 - **Advantage**: Full control, no Java dependency
 - **Challenge**: Must handle all TWS management manually
 
@@ -352,6 +369,7 @@ Your project currently uses direct TWS API connections without IBC:
 ### Should You Use IBC?
 
 **Consider IBC if**:
+
 - You need unattended TWS/Gateway operations
 - You want scheduled restarts and shutdowns
 - You need remote management capabilities
@@ -359,6 +377,7 @@ Your project currently uses direct TWS API connections without IBC:
 - You want mature, tested automation for TWS management
 
 **Stick with Native Approach if**:
+
 - You want minimal dependencies (no Java runtime)
 - You need full control over connection logic
 - You prefer to handle all TWS management in C++

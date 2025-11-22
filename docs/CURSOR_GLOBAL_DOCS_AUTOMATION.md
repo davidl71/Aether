@@ -5,6 +5,7 @@ This guide explains how to automate the management and updating of global docume
 ## Overview
 
 The automation system consists of:
+
 1. **Configuration file** (`.cursor/global-docs.json`) - Defines all global docs
 2. **Validation scripts** - Check that all files exist
 3. **Path generators** - Create files with paths for easy copy-paste
@@ -50,7 +51,9 @@ python3 scripts/sync_global_docs.py --update-config --generate-paths
 The configuration file (`.cursor/global-docs.json`) defines three categories of documentation:
 
 ### High-Priority (Must-Have)
+
 These are the essential docs that should always be in global Docs:
+
 - API Documentation Index
 - Codebase Architecture
 - Common Patterns
@@ -61,14 +64,18 @@ These are the essential docs that should always be in global Docs:
 - Implementation Guide
 
 ### External Documentation
+
 Third-party reference docs:
+
 - TWS API Quick Reference
 - EClient/EWrapper Patterns
 - CMake Presets Guide
 - C++20 Features
 
 ### Secondary Documentation
+
 Additional useful docs:
+
 - EWrapper Status
 - Quick Start
 - Distributed Compilation
@@ -79,6 +86,7 @@ Additional useful docs:
 ### Python Script (`scripts/sync_global_docs.py`)
 
 **Features:**
+
 - ✅ Validates all files exist
 - ✅ Generates path lists (absolute and relative)
 - ✅ Detects new documentation files
@@ -87,6 +95,7 @@ Additional useful docs:
 - ✅ Detailed error reporting
 
 **Usage:**
+
 ```bash
 # Check only
 python3 scripts/sync_global_docs.py --check
@@ -107,12 +116,14 @@ python3 scripts/sync_global_docs.py --check --generate-paths --detect-new --upda
 ### Shell Script (`scripts/update_global_docs.sh`)
 
 **Features:**
+
 - ✅ Validates all files exist
 - ✅ Generates path lists
 - ✅ Works without Python (uses jq if available)
 - ✅ Color-coded output
 
 **Usage:**
+
 ```bash
 # Check only
 ./scripts/update_global_docs.sh --check-only
@@ -129,9 +140,11 @@ python3 scripts/sync_global_docs.py --check --generate-paths --detect-new --upda
 After running the scripts, you'll find these files in `.cursor/`:
 
 ### `global-docs-paths.txt`
+
 Absolute paths for all documentation files - ready to copy-paste into Cursor Settings.
 
 ### `global-docs-paths-relative.txt`
+
 Relative paths (useful if Cursor supports relative paths).
 
 ## Automation Workflows
@@ -169,13 +182,13 @@ Add to your `Makefile`:
 .PHONY: validate-docs sync-docs
 
 validate-docs:
-	python3 scripts/sync_global_docs.py --check
+ python3 scripts/sync_global_docs.py --check
 
 sync-docs:
-	python3 scripts/sync_global_docs.py --update-config --generate-paths
+ python3 scripts/sync_global_docs.py --update-config --generate-paths
 
 docs: validate-docs sync-docs
-	@echo "Global docs validated and synced"
+ @echo "Global docs validated and synced"
 ```
 
 ### Periodic Updates
@@ -192,6 +205,7 @@ Add to your crontab or scheduled tasks:
 ### Manual Process
 
 1. Add the file to `.cursor/global-docs.json`:
+
    ```json
    {
      "path": "docs/NEW_DOC.md",
@@ -201,11 +215,13 @@ Add to your crontab or scheduled tasks:
    ```
 
 2. Run validation:
+
    ```bash
    python3 scripts/sync_global_docs.py --check
    ```
 
 3. Generate updated paths:
+
    ```bash
    python3 scripts/sync_global_docs.py --generate-paths
    ```
@@ -225,6 +241,7 @@ This will list all `.md` files in `docs/` that aren't in the config yet.
 Currently, Cursor doesn't have a CLI for adding global docs, so you need to:
 
 1. Run the sync script to generate paths:
+
    ```bash
    python3 scripts/sync_global_docs.py --generate-paths
    ```
@@ -244,6 +261,7 @@ Currently, Cursor doesn't have a CLI for adding global docs, so you need to:
 ### Files Not Found
 
 If validation fails:
+
 1. Check that files exist at the specified paths
 2. Verify paths in `.cursor/global-docs.json` are correct
 3. Run `python3 scripts/sync_global_docs.py --detect-new` to find actual files
@@ -251,6 +269,7 @@ If validation fails:
 ### Config File Errors
 
 If the JSON is invalid:
+
 1. Validate JSON: `python3 -m json.tool .cursor/global-docs.json`
 2. Check for missing commas or brackets
 3. Restore from git if needed
@@ -258,6 +277,7 @@ If the JSON is invalid:
 ### Script Errors
 
 If scripts fail:
+
 1. Check Python version: `python3 --version` (needs 3.6+)
 2. For shell script, check if `jq` is installed: `brew install jq`
 3. Check file permissions: `chmod +x scripts/*.sh`
@@ -273,6 +293,7 @@ If scripts fail:
 ## Future Enhancements
 
 Potential future automation:
+
 - Cursor CLI integration (when available)
 - Auto-add to Cursor settings via API
 - Git hook to validate on commit

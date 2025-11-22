@@ -12,6 +12,7 @@
 **Location**: `mcp/trading_server/server.py`
 
 **Features**:
+
 - Order placement (`place_order`, `place_box_spread`)
 - Order cancellation (`cancel_order`)
 - Position tracking (`get_open_positions`)
@@ -24,6 +25,7 @@
 **Configuration**: Add to `.cursor/mcp.json` (see `mcp/trading_server/README.md`)
 
 **Next Steps**:
+
 - Integrate with native C++ `OrderManager`
 - Add remaining MCP tools (modify_order, close_position, etc.)
 - Add comprehensive error handling
@@ -32,11 +34,13 @@
 ### ✅ 2. Breadcrumb Logging System
 
 **Location**:
+
 - `native/include/tui_breadcrumb.h`
 - `native/src/tui_breadcrumb.cpp`
 - `docs/TUI_BREADCRUMB_LOGGING.md`
 
 **Features**:
+
 - Complete user interaction logging
 - State change tracking
 - Error logging with context
@@ -49,6 +53,7 @@
 **Integration**: Initialized in `native/src/tui_app.cpp`
 
 **Next Steps**:
+
 - Add breadcrumb logging to `OrderManager`
 - Add breadcrumb logging to `TWSClient`
 - Add breadcrumb logging to strategy execution
@@ -57,6 +62,7 @@
 ### ✅ 3. Documentation
 
 **Created Documents**:
+
 1. **TUI_BREADCRUMB_LOGGING.md** - Comprehensive guide for TUI breadcrumb logging
 2. **BREADCRUMB_LOGGING_TRADING_TESTING.md** - Guide for using breadcrumbs in trading operations testing
 3. **OPENALGO_INTEGRATION_PATTERNS.md** - Patterns and features from OpenAlgo
@@ -71,6 +77,7 @@
 **Current State**: Basic rate limiting exists in `native/src/rate_limiter.cpp`
 
 **Enhancements Needed** (from OpenAlgo patterns):
+
 - [ ] IP-based rate limiting
 - [ ] Per-endpoint rate limits
 - [ ] Moving window algorithm (instead of fixed 1-second windows)
@@ -82,6 +89,7 @@
 ### 🔄 5. Breadcrumb Logging Integration
 
 **Integration Points Identified**:
+
 - [ ] `OrderManager::place_order()` - Log order attempts, validation, execution
 - [ ] `OrderManager::place_box_spread()` - Log box spread operations
 - [ ] `TWSClient::connectAck()` - Log connection events
@@ -98,6 +106,7 @@
 ### ⏳ 6. Security Features
 
 **Features Needed** (from OpenAlgo patterns):
+
 - [ ] Credential encryption (Fernet-style)
 - [ ] API key management system
 - [ ] Token encryption/decryption
@@ -105,6 +114,7 @@
 - [ ] Password hashing (if user auth added)
 
 **Priority**:
+
 - **High**: API key management for MCP server
 - **Medium**: Credential encryption for stored tokens
 - **Low**: Full password hashing system
@@ -120,11 +130,13 @@
 **File**: `native/src/order_manager.cpp`
 
 **Add includes**:
+
 ```cpp
 #include "tui_breadcrumb.h"
 ```
 
 **Add logging in `place_order()`**:
+
 ```cpp
 ExecutionResult OrderManager::place_order(...) {
   // Log order attempt
@@ -167,11 +179,13 @@ ExecutionResult OrderManager::place_order(...) {
 **File**: `native/src/tws_client.cpp`
 
 **Add includes**:
+
 ```cpp
 #include "tui_breadcrumb.h"
 ```
 
 **Add logging in callbacks**:
+
 ```cpp
 void TWSClient::Impl::connectAck() override {
   TUI_BREADCRUMB_ACTION("tws_connected", "tws_client",

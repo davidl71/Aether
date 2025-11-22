@@ -1,7 +1,7 @@
 # SyntheticFi Box Spread Lending/Borrowing Analysis
 
 **Date**: 2025-01-27
-**Source**: https://app.syntheticfi.com/cob, https://www.syntheticfi.com/
+**Source**: <https://app.syntheticfi.com/cob>, <https://www.syntheticfi.com/>
 **Purpose**: Analyze SyntheticFi's approach to box spread-based lending/borrowing for implementation guidance
 
 ---
@@ -23,12 +23,14 @@
 ### How They Use Box Spreads
 
 **Box Spread Construction**:
+
 - SyntheticFi constructs box spreads using SPX (S&P 500 Index) options
 - Four-leg structure: Long Call (K1), Short Call (K2), Long Put (K2), Short Put (K1)
 - The strike width (K2 - K1) represents the loan principal
 - The net debit/credit represents the implied interest rate
 
 **Lending Mechanism**:
+
 1. Client wants to borrow funds (e.g., $100,000)
 2. SyntheticFi constructs a box spread with $100 strike width
 3. Net credit received from the spread = loan proceeds
@@ -36,6 +38,7 @@
 5. Difference between credit received and $100 strike width = implied interest rate
 
 **Rate Calculation**:
+
 - Implied Annual Interest Rate = ((Strike Width - Net Credit) / Net Credit) × (365 / Days to Expiry)
 - This rate is typically competitive with or better than T-bills, repo rates, or margin loans
 
@@ -75,6 +78,7 @@ Based on industry best practices (including CBOE and OCC guidance):
 #### Position Management
 
 **Intraday Monitoring**:
+
 - Monitor bid/ask spreads for all legs
 - Watch for rate improvements (better implied rates on different expirations)
 - Identify opportunities to improve position economics
@@ -102,6 +106,7 @@ Based on industry best practices (including CBOE and OCC guidance):
 #### 1. Implied Interest Rate Calculation
 
 **Formula**:
+
 ```cpp
 // For lending (receiving net credit):
 // implied_rate = ((strike_width - net_credit) / net_credit) * (365 / days_to_expiry) * 100
@@ -111,6 +116,7 @@ Based on industry best practices (including CBOE and OCC guidance):
 ```
 
 **Implementation**:
+
 - Add `calculate_implied_interest_rate()` to `BoxSpreadCalculator`
 - Calculate annualized rate in percentage terms
 - Compare against benchmarks (T-bills, SOFR, traditional margin rates)
@@ -118,12 +124,14 @@ Based on industry best practices (including CBOE and OCC guidance):
 #### 2. Rate Comparison and Benchmarking
 
 **Benchmarks to Compare Against**:
+
 - **T-Bills**: Risk-free rate benchmark
 - **SOFR**: Secured Overnight Financing Rate
 - **Traditional Margin Loans**: Typical rates (e.g., 6-8% APR)
 - **Repo Rates**: Overnight repurchase agreement rates
 
 **Implementation**:
+
 - Add `compare_to_benchmark()` function
 - Return spread over benchmark in basis points
 - Flag opportunities where box spread rate beats benchmark by threshold (e.g., 50-100 bps)
@@ -133,16 +141,19 @@ Based on industry best practices (including CBOE and OCC guidance):
 **Criteria Shift** (from arbitrage to financing):
 
 **Current (Arbitrage Focus)**:
+
 - Seek arbitrage profit (theoretical value > net debit)
 - Maximize ROI from mispricing
 
 **New (Lending/Borrowing Focus)**:
+
 - Seek competitive implied interest rates
 - Match or beat benchmark rates (T-bills, margin loans)
 - Optimize for loan amount and duration requirements
 - Minimize transaction costs and bid-ask spreads
 
 **Implementation**:
+
 - Add `find_lending_opportunities()` method to `BoxSpreadStrategy`
 - Filter by implied rate competitiveness vs benchmarks
 - Rank by effective rate (after transaction costs)
@@ -153,6 +164,7 @@ Based on industry best practices (including CBOE and OCC guidance):
 #### 1. Position Monitoring
 
 **Metrics to Track**:
+
 - Current implied rate vs entry implied rate
 - Current bid/ask spreads vs entry spreads
 - Unrealized P&L (mark-to-market)
@@ -160,6 +172,7 @@ Based on industry best practices (including CBOE and OCC guidance):
 - Days remaining to expiration
 
 **Implementation**:
+
 - Enhance `monitor_positions()` in `BoxSpreadStrategy`
 - Add real-time rate calculation for active positions
 - Compare current rates to entry rates
@@ -170,21 +183,25 @@ Based on industry best practices (including CBOE and OCC guidance):
 **Scenarios for Improvement**:
 
 **Scenario 1: Rate Improvement Available**
+
 - New expiration offers better implied rate
 - Calculate net benefit after transaction costs
 - If beneficial, execute roll (close + open new)
 
 **Scenario 2: Early Close Opportunity**
+
 - Market moves have improved economics significantly
 - Early close + reinvestment at current rates is better than holding to expiry
 - Calculate break-even rate for early close decision
 
 **Scenario 3: Partial Leg Improvement**
+
 - One or two legs have improved pricing
 - Evaluate cost/benefit of partial leg adjustments
 - Ensure box spread structure remains intact
 
 **Implementation**:
+
 - Add `evaluate_position_improvement()` method
 - Add `roll_box_spread()` method for position rolling
 - Add `calculate_early_close_value()` method
@@ -193,6 +210,7 @@ Based on industry best practices (including CBOE and OCC guidance):
 #### 3. Intraday Monitoring Loop
 
 **Flow**:
+
 ```
 1. Monitor active box spread positions every N seconds (e.g., 30-60 seconds)
 2. For each position:
@@ -206,6 +224,7 @@ Based on industry best practices (including CBOE and OCC guidance):
 ```
 
 **Implementation**:
+
 - Enhance `monitor_positions()` to run on configurable interval
 - Add improvement evaluation for each position
 - Add action execution when improvements are identified
@@ -257,27 +276,27 @@ Based on industry best practices (including CBOE and OCC guidance):
 
 ### Phase 2: Intraday Position Improvement (Secondary Goal)
 
-4. ✅ **Enhanced Position Monitoring**
+1. ✅ **Enhanced Position Monitoring**
    - Real-time implied rate tracking
    - Mark-to-market P&L calculation
    - Improvement opportunity detection
 
-5. ✅ **Position Improvement Actions**
+2. ✅ **Position Improvement Actions**
    - Roll positions when rates improve
    - Early close when economically beneficial
    - Partial leg adjustments (if applicable)
 
-6. ✅ **Automated Improvement Loop**
+3. ✅ **Automated Improvement Loop**
    - Configurable monitoring interval
    - Threshold-based action triggers
    - Comprehensive logging and audit trail
 
 ## Additional Resources
 
-- **CBOE Box Spread Article**: https://www.cboe.com/insights/posts/why-consider-box-spreads-as-an-alternative-borrowing-lending-strategy/
-- **OCC Box Spread Guide**: https://www.optionseducation.org/getmedia/2ae6c8bd-9a8e-4d2f-8168-19b6ff9e3589/listed-options-box-spread-strategies-for-borrowing-or-lending-cash.pdf
-- **SyntheticFi Website**: https://www.syntheticfi.com/
-- **Y Combinator Profile**: https://www.ycombinator.com/companies/syntheticfi
+- **CBOE Box Spread Article**: <https://www.cboe.com/insights/posts/why-consider-box-spreads-as-an-alternative-borrowing-lending-strategy/>
+- **OCC Box Spread Guide**: <https://www.optionseducation.org/getmedia/2ae6c8bd-9a8e-4d2f-8168-19b6ff9e3589/listed-options-box-spread-strategies-for-borrowing-or-lending-cash.pdf>
+- **SyntheticFi Website**: <https://www.syntheticfi.com/>
+- **Y Combinator Profile**: <https://www.ycombinator.com/companies/syntheticfi>
 
 ---
 

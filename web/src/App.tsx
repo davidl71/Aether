@@ -16,8 +16,11 @@ import BoxSpreadTable from './components/BoxSpreadTable';
 import { YieldCurveTable } from './components/YieldCurveTable';
 import { OptionsChainTable } from './components/OptionsChainTable';
 import { BoxSpreadCombinations } from './components/BoxSpreadCombinations';
+import { CandlestickChart } from './components/CandlestickChart';
+import { useChartData } from './hooks/useChartData';
 import type { SnapshotPayload, SymbolSnapshot, PositionSnapshot } from './types/snapshot';
 import type { BoxSpreadSummary } from './types';
+import type { Timeframe } from './types/chart';
 
 const TABS = [
   { id: 'dashboard', title: 'Dashboard' },
@@ -101,6 +104,7 @@ function App() {
   const [modal, setModal] = useState<ModalState>(null);
   const [selectedStrike, setSelectedStrike] = useState<number | null>(null);
   const [selectedExpiration, setSelectedExpiration] = useState<string | null>(null);
+  const [chartTimeframe, setChartTimeframe] = useState<Timeframe>('1D');
   const {
     snapshot,
     isLoading: snapshotLoading,
@@ -367,6 +371,14 @@ function App() {
   const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
   const apiBaseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
 
+  // Chart data for symbol modal
+  const chartSymbol = modal?.type === 'symbol' ? modal.payload.symbol : '';
+  const { data: chartData, isLoading: chartLoading } = useChartData({
+    symbol: chartSymbol,
+    timeframe: chartTimeframe,
+    apiBaseUrl
+  });
+
   return (
     <div className={`app-shell ${snapshot?.mode === 'LIVE' || snapshot?.mode === 'LIVE_TRADING' ? 'app-shell--live' : ''}`}>
       <HeaderStatus
@@ -399,7 +411,21 @@ function App() {
       <main className="app-main">
         {snapshotLoading && <div className="panel panel--fill">Loading live snapshot…</div>}
         {!snapshotLoading && snapshotError && (
-          <div className="panel panel--fill app-status app-status--error">{snapshotError}</div>
+          <div className="panel panel--fill app-status app-status--error">
+            <div style={{ padding: '20px' }}>
+              <h3 style={{ marginTop: 0, color: '#ef4444' }}>Connection Error</h3>
+              <p>{snapshotError}</p>
+              <details style={{ marginTop: '16px', fontSize: '14px', color: '#9ca3af' }}>
+                <summary style={{ cursor: 'pointer', marginBottom: '8px' }}>Troubleshooting</summary>
+                <ul style={{ marginLeft: '20px', marginTop: '8px' }}>
+                  <li>Check if the backend service is running</li>
+                  <li>Verify the API endpoint URL is correct</li>
+                  <li>Check browser console for CORS errors</li>
+                  <li>If using a local backend, ensure it's listening on the expected port</li>
+                </ul>
+              </details>
+            </div>
+          </div>
         )}
         {!snapshotLoading && !snapshotError &&
           renderTabContent(
@@ -453,6 +479,23 @@ function App() {
                     Volume: <strong>{modal.payload.volume.toLocaleString()}</strong>
                   </li>
                 </ul>
+              </div>
+
+              {/* Candlestick Chart */}
+              <div style={{ marginBottom: '24px' }}>
+                {chartLoading ? (
+                  <div style={{ padding: '40px', textAlign: 'center', color: '#9ca3af' }}>
+                    Loading chart data...
+                  </div>
+                ) : (
+                  <CandlestickChart
+                    symbol={modal.payload.symbol}
+                    data={chartData}
+                    timeframe={chartTimeframe}
+                    onTimeframeChange={setChartTimeframe}
+                    height={350}
+                  />
+                )}
               </div>
 
               {/* Options Chain Table */}

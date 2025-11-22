@@ -1,4 +1,4 @@
-// box_spread_strategy.cpp - Box spread strategy implementation (stub)
+// box_spread_strategy.cpp - Box spread synthetic financing strategy implementation
 #include "box_spread_strategy.h"
 #include "config_manager.h"
 #include <spdlog/spdlog.h>
@@ -8,7 +8,8 @@
 
 // NOTE FOR AUTOMATION AGENTS:
 // This module encapsulates the decision logic around identifying, validating, and
-// executing box spread arbitrage opportunities. It depends on three collaborators:
+// executing box spread synthetic financing opportunities (extracting risk-free rates
+// for lending/borrowing). It depends on three collaborators:
 //  * `tws::TWSClient` for live market data/event processing
 //  * `order::OrderManager` for coordinated multi-leg order placement
 //  * `config::StrategyParams` describing guardrails (liquidity, ROI, exposure)
@@ -371,18 +372,25 @@ bool BoxSpreadStrategy::is_profitable(const types::BoxSpreadLeg& spread) const {
            roi >= pimpl_->params_.min_roi_percent;
 }
 
-/// Calculate arbitrage profit for a box spread.
+/// Calculate arbitrage profit for a box spread (legacy function name).
+///
+/// NOTE: This function is used for synthetic financing rate extraction, not arbitrage.
+/// The "profit" represents the basis for calculating implied interest rates.
 ///
 /// Algorithm: Profit is the difference between theoretical value and net debit.
 /// This is a wrapper around BoxSpreadCalculator::calculate_max_profit().
 ///
 /// Formula: arbitrage_profit = theoretical_value - net_debit
 ///
+/// For synthetic financing: This value is used to calculate implied interest rate:
+///   implied_rate = ((net_debit - strike_width) / strike_width) × (365 / days_to_expiry) × 100%
+///
 /// @param spread The box spread leg structure
-/// @return Arbitrage profit (theoretical_value - net_debit)
+/// @return Profit basis (theoretical_value - net_debit) used for rate calculation
 ///
 /// @see BoxSpreadCalculator::calculate_max_profit() for implementation details
-/// @see ALGORITHMS_AND_BEHAVIOR.md for detailed algorithm documentation
+/// @see RISK_FREE_RATE_METHODOLOGY.md for synthetic financing rate extraction
+/// @todo Refactor to calculate_implied_interest_rate() for clarity
 double BoxSpreadStrategy::calculate_arbitrage_profit(
     const types::BoxSpreadLeg& spread) const {
 

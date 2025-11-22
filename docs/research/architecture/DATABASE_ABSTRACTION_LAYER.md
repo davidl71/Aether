@@ -19,6 +19,7 @@ This document designs a portable database abstraction layer that allows starting
 ## Technology Choice: SQLx
 
 **Why SQLx:**
+
 - ✅ Supports SQLite, PostgreSQL, MySQL, MSSQL
 - ✅ Compile-time query checking (catches SQL errors at compile time)
 - ✅ Async/await support (works with Tokio)
@@ -28,6 +29,7 @@ This document designs a portable database abstraction layer that allows starting
 - ✅ Migration support
 
 **Alternatives Considered:**
+
 - **Diesel:** ORM, more complex, harder to be database-agnostic
 - **Rusqlite:** SQLite-only, would require rewriting for PostgreSQL
 - **Quaint:** Lower-level, less ergonomic
@@ -576,6 +578,7 @@ query_check_mode = "runtime"  # or "sqlite", "postgres"
 ```
 
 **Environment Variable Override:**
+
 ```bash
 # Development (SQLite)
 export DATABASE_URL="sqlite://data/sqlite/backend.db"
@@ -721,18 +724,21 @@ CREATE TABLE IF NOT EXISTS positions (
 ### Phase 1: SQLite (Development)
 
 **Configuration:**
+
 ```toml
 [database]
 url = "sqlite://data/sqlite/backend.db"
 ```
 
 **Benefits:**
+
 - Zero setup (file-based)
 - Fast local development
 - Easy backups (copy file)
 - No database server needed
 
 **Limitations:**
+
 - Single writer (but fine for development)
 - Limited concurrent connections
 - File-based (can't share across instances)
@@ -740,18 +746,21 @@ url = "sqlite://data/sqlite/backend.db"
 ### Phase 2: PostgreSQL (Staging/Production)
 
 **Configuration:**
+
 ```toml
 [database]
 url = "postgresql://user:password@localhost:5432/ib_box_spread"
 ```
 
 **Benefits:**
+
 - Multiple concurrent writers
 - Higher performance
 - ACID guarantees
 - Can scale to cloud later
 
 **Migration Steps:**
+
 1. Set `DATABASE_URL` environment variable to PostgreSQL connection string
 2. Run migrations (SQLx handles SQL differences)
 3. No code changes needed!
@@ -759,24 +768,28 @@ url = "postgresql://user:password@localhost:5432/ib_box_spread"
 ### Phase 3: Cloud Database (Production)
 
 **AWS RDS:**
+
 ```toml
 [database]
 url = "postgresql://user:password@your-db.region.rds.amazonaws.com:5432/ib_box_spread"
 ```
 
 **Google Cloud SQL:**
+
 ```toml
 [database]
 url = "postgresql://user:password@your-instance-ip:5432/ib_box_spread"
 ```
 
 **Vultr Managed:**
+
 ```toml
 [database]
 url = "postgresql://user:password@your-db.vultr.com:5432/ib_box_spread"
 ```
 
 **Migration Steps:**
+
 1. Create cloud database
 2. Run migrations on cloud database
 3. Update `DATABASE_URL` environment variable
@@ -787,17 +800,20 @@ url = "postgresql://user:password@your-db.vultr.com:5432/ib_box_spread"
 When moving from SQLite to PostgreSQL:
 
 1. **Export from SQLite:**
+
 ```bash
 # Using sqlite3 CLI
 sqlite3 data/sqlite/backend.db .dump > dump.sql
 ```
 
-2. **Or use SQLx migrations:**
+1. **Or use SQLx migrations:**
+
 - SQLx migrations work with both databases
 - Run migrations on PostgreSQL to create schema
 - Then copy data using SQLx queries
 
-3. **Data Transfer Script:**
+1. **Data Transfer Script:**
+
 ```rust
 // scripts/migrate_sqlite_to_postgres.rs
 
@@ -971,6 +987,7 @@ tracing = { workspace = true }
 ---
 
 **Next Steps:**
+
 1. Review and approve design
 2. Add SQLx dependencies to Cargo.toml
 3. Implement database abstraction layer

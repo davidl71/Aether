@@ -41,6 +41,7 @@ Our implementation is **well-structured** and follows most TWS API best practice
 ### 1. EReader Thread Implementation
 
 **Current Implementation** (lines 1888-1905):
+
 ```cpp
 void start_reader_thread() {
     auto reader = std::make_unique<EReader>(&client_, &signal_);
@@ -61,6 +62,7 @@ void start_reader_thread() {
 ```
 
 **✅ This looks correct!** The pattern matches best practices:
+
 - Create EReader with client and signal
 - Call `reader->start()` to initialize
 - Process messages in a loop while connected
@@ -70,6 +72,7 @@ void start_reader_thread() {
 ### 2. Connection Sequence
 
 **Current Flow**:
+
 1. ✅ Call `eConnect()`
 2. ✅ Start reader thread **immediately** (line 464)
 3. ✅ Wait for connection acknowledgment
@@ -80,6 +83,7 @@ void start_reader_thread() {
 ### 3. Requesting Next Valid ID
 
 **Current Implementation** (line 591):
+
 ```cpp
 // In connectAck()
 client_.reqIds(-1);
@@ -92,6 +96,7 @@ client_.reqIds(-1);
 ### 4. Connection Waiting Logic
 
 **Current Implementation** (wait_for_connection_with_progress):
+
 - Waits for `nextValidId` callback
 - Uses condition variable for signaling
 - Has timeout and progress logging
@@ -199,6 +204,7 @@ void start_reader_thread() {
 ### 1. Connection Test
 
 Test the connection flow:
+
 1. ✅ Start TWS/Gateway
 2. ✅ Run client with debug logging
 3. ✅ Verify connection sequence logs
@@ -207,6 +213,7 @@ Test the connection flow:
 ### 2. Reconnection Test
 
 Test auto-reconnection:
+
 1. ✅ Connect successfully
 2. ✅ Disconnect TWS/Gateway (simulate error 1100)
 3. ✅ Verify auto-reconnect attempts
@@ -216,6 +223,7 @@ Test auto-reconnection:
 ### 3. Message Processing Test
 
 Test message processing:
+
 1. ✅ Request market data
 2. ✅ Verify `tickPrice` callbacks received
 3. ✅ Place test order
@@ -277,6 +285,7 @@ client.asyncEConnect(true);
 ### Priority 2: Optimization (Optional)
 
 1. **Reduce signal timeout** (if desired):
+
    ```cpp
    EReaderOSSignal signal_(500);  // 500ms instead of 2000ms
    ```
@@ -318,6 +327,7 @@ client.asyncEConnect(true);
 If you're experiencing issues:
 
 1. **Verify TWS/Gateway is running**:
+
    ```bash
    lsof -i :7497  # Paper trading
    # or

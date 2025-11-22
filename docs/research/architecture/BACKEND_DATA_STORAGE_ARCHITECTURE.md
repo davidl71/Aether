@@ -82,6 +82,7 @@ This document defines the comprehensive data storage architecture for the invest
 **Storage Technology:** Rust `Arc<RwLock<SystemSnapshot>>`
 
 **Data Stored:**
+
 - Current positions (`PositionSnapshot[]`)
 - Active orders (`OrderSnapshot[]`)
 - Recent market data snapshots (`SymbolSnapshot[]`)
@@ -93,6 +94,7 @@ This document defines the comprehensive data storage architecture for the invest
 - **NEW:** Portfolio Greeks (`PortfolioGreeks`)
 
 **Retention Policy:**
+
 - Positions: All current positions
 - Orders: Last 100 orders
 - Decisions: Last 50 decisions
@@ -100,11 +102,13 @@ This document defines the comprehensive data storage architecture for the invest
 - Market data: Real-time only (historical in QuestDB)
 
 **Refresh Strategy:**
+
 - Updated in real-time as events occur
 - Persisted to Layer 2 (PostgreSQL) periodically (every 5 seconds) and on state changes
 - Persisted to Layer 3 (QuestDB) for market data in real-time
 
 **Implementation:**
+
 ```rust
 // agents/backend/crates/api/src/state.rs (existing)
 pub type SharedSnapshot = Arc<RwLock<SystemSnapshot>>;
@@ -126,6 +130,7 @@ impl SystemSnapshot {
 **Storage Technology:** PostgreSQL (recommended) or SQLite (development)
 
 **Why PostgreSQL:**
+
 - Robust ACID guarantees for financial data
 - Excellent JSON support for flexible schemas (positions, cash flows)
 - Time-series extensions (TimescaleDB) if needed
@@ -133,6 +138,7 @@ impl SystemSnapshot {
 - Mature ecosystem and tooling
 
 **Why SQLite (Development):**
+
 - Zero configuration
 - File-based (easy backups)
 - Good for single-instance deployments
@@ -400,6 +406,7 @@ CREATE TABLE greek_snapshots (
 **Storage Technology:** QuestDB
 
 **Data Stored:**
+
 - Real-time quotes (bid/ask, spread, volume)
 - Trade executions
 - Market data snapshots
@@ -535,21 +542,25 @@ next_payment_date = "2025-12-01"
 ### Write Flow
 
 1. **Real-time Events** (Market data, orders, positions):
+
    ```
    Event → In-Memory Cache (SystemSnapshot) → PostgreSQL (positions/orders) → QuestDB (time-series)
    ```
 
 2. **Periodic Snapshots**:
+
    ```
    SystemSnapshot → PostgreSQL (portfolio_snapshots) [Every 5 seconds or on state change]
    ```
 
 3. **Cash Flow Forecasts**:
+
    ```
    CashFlowCalculator → PostgreSQL (cash_flow_events) [Recalculated daily or on position change]
    ```
 
 4. **Greeks Calculations**:
+
    ```
    RiskCalculator → In-Memory Cache → PostgreSQL (greek_snapshots) → QuestDB (position_values) [Real-time]
    ```
@@ -557,17 +568,20 @@ next_payment_date = "2025-12-01"
 ### Read Flow
 
 1. **Real-time API Requests**:
+
    ```
    GET /api/v1/snapshot → In-Memory Cache (SystemSnapshot) [Fast, <1ms]
    ```
 
 2. **Historical Queries**:
+
    ```
    GET /api/v1/positions/history → PostgreSQL [Structured queries]
    GET /api/v1/market-data/history → QuestDB [Time-series queries]
    ```
 
 3. **Cash Flow Timeline**:
+
    ```
    GET /api/v1/cash-flow/timeline → PostgreSQL (cash_flow_events) [Sorted by date]
    ```
@@ -577,6 +591,7 @@ next_payment_date = "2025-12-01"
 ### Recommended: PostgreSQL
 
 **Advantages:**
+
 - **Production-ready:** ACID guarantees for financial data
 - **Concurrent access:** Multiple backend instances can share database
 - **JSON support:** Flexible schema for positions, cash flows
@@ -585,6 +600,7 @@ next_payment_date = "2025-12-01"
 - **Scalability:** Can handle large datasets and high write rates
 
 **Disadvantages:**
+
 - Requires separate database server
 - More complex setup
 - More resource-intensive
@@ -592,12 +608,14 @@ next_payment_date = "2025-12-01"
 ### Alternative: SQLite (Development)
 
 **Advantages:**
+
 - **Zero configuration:** File-based database
 - **Simple setup:** No separate server needed
 - **Easy backups:** Copy the database file
 - **Good for:** Single-instance deployments, development, testing
 
 **Disadvantages:**
+
 - **Single writer:** Limited concurrent writes
 - **Not ideal for:** High-frequency writes, multiple backend instances
 - **Limited JSON support:** Requires more manual schema management
@@ -663,6 +681,7 @@ Since you have accounts with **AWS**, **Vultr**, and **Google Cloud**, here are 
 #### Option 1: AWS (Recommended for Financial Data)
 
 **Amazon RDS for PostgreSQL** (Recommended):
+
 - **Purpose:** Structured data (positions, orders, portfolio snapshots, cash flows, loans, Greeks)
 - **Advantages:**
   - Fully managed PostgreSQL with automatic backups, patching, and scaling
@@ -677,6 +696,7 @@ Since you have accounts with **AWS**, **Vultr**, and **Google Cloud**, here are 
 - **Use Case:** Production deployments requiring high availability and ACID guarantees
 
 **Amazon Aurora PostgreSQL** (High-Performance Alternative):
+
 - **Purpose:** Same as RDS, but with better performance and scaling
 - **Advantages:**
   - Up to 3x better performance than standard PostgreSQL
@@ -688,6 +708,7 @@ Since you have accounts with **AWS**, **Vultr**, and **Google Cloud**, here are 
 - **Use Case:** High-performance production deployments with global access
 
 **Amazon DynamoDB** (Alternative for NoSQL Needs):
+
 - **Purpose:** Document-based storage for flexible schemas
 - **Advantages:**
   - Single-digit millisecond latency
@@ -702,6 +723,7 @@ Since you have accounts with **AWS**, **Vultr**, and **Google Cloud**, here are 
 - **Use Case:** High-throughput, low-latency needs with flexible schemas
 
 **Setup:**
+
 ```toml
 # agents/backend/config/database.toml
 [database.aws_rds]
@@ -718,6 +740,7 @@ ssl_mode = "require"
 #### Option 2: Google Cloud
 
 **Cloud SQL for PostgreSQL** (Recommended):
+
 - **Purpose:** Structured data (same as AWS RDS)
 - **Advantages:**
   - Fully managed PostgreSQL
@@ -732,6 +755,7 @@ ssl_mode = "require"
 - **Use Case:** Production deployments with Google Cloud integration needs
 
 **Cloud Spanner** (Global Scale Alternative):
+
 - **Purpose:** Globally distributed, strongly consistent database
 - **Advantages:**
   - TrueSQL with ACID transactions
@@ -745,6 +769,7 @@ ssl_mode = "require"
 - **Use Case:** Global deployments requiring strong consistency
 
 **BigQuery** (Analytics Alternative):
+
 - **Purpose:** Analytics and historical queries on large datasets
 - **Advantages:**
   - Serverless, auto-scaling data warehouse
@@ -758,6 +783,7 @@ ssl_mode = "require"
 - **Use Case:** Analytics, reporting, historical data analysis (complement to Cloud SQL)
 
 **Setup:**
+
 ```toml
 # agents/backend/config/database.toml
 [database.gcp_cloud_sql]
@@ -775,6 +801,7 @@ use_cloud_sql_proxy = true
 #### Option 3: Vultr
 
 **Vultr Managed PostgreSQL**:
+
 - **Purpose:** Structured data (same as AWS/GCP options)
 - **Advantages:**
   - Lower cost than AWS/GCP
@@ -789,6 +816,7 @@ use_cloud_sql_proxy = true
 - **Use Case:** Cost-effective production deployments, single-region deployments
 
 **Vultr VPS with Self-Hosted PostgreSQL** (DIY Option):
+
 - **Purpose:** Full control over database configuration
 - **Advantages:**
   - Lowest cost
@@ -802,6 +830,7 @@ use_cloud_sql_proxy = true
 - **Use Case:** Development, testing, or cost-constrained production deployments
 
 **Setup:**
+
 ```toml
 # agents/backend/config/database.toml
 [database.vultr_managed]
@@ -820,6 +849,7 @@ ssl_mode = "require"
 #### Option 1: AWS
 
 **Amazon Timestream** (Managed Time-Series Database):
+
 - **Purpose:** Market data (quotes, trades, portfolio metrics)
 - **Advantages:**
   - Fully managed time-series database
@@ -835,6 +865,7 @@ ssl_mode = "require"
 - **Use Case:** Production deployments requiring managed time-series database
 
 **Self-Hosted QuestDB on AWS EC2** (Keep Existing):
+
 - **Purpose:** Market data (same as current QuestDB setup)
 - **Advantages:**
   - Keep existing QuestDB setup
@@ -848,6 +879,7 @@ ssl_mode = "require"
 - **Setup:** Deploy QuestDB on EC2 instance or ECS container
 
 **AWS S3 + Athena** (Archival Alternative):
+
 - **Purpose:** Long-term storage and analytics of historical market data
 - **Advantages:**
   - Very cheap storage (~$0.023/GB-month)
@@ -862,6 +894,7 @@ ssl_mode = "require"
 #### Option 2: Google Cloud
 
 **BigQuery** (Recommended for Analytics):
+
 - **Purpose:** Market data analytics and historical queries
 - **Advantages:**
   - Excellent for time-series analytics
@@ -876,6 +909,7 @@ ssl_mode = "require"
 - **Use Case:** Historical market data analysis, complement to real-time database
 
 **Self-Hosted QuestDB on Google Compute Engine**:
+
 - **Purpose:** Market data (same as current QuestDB setup)
 - **Advantages:**
   - Keep existing QuestDB setup
@@ -885,6 +919,7 @@ ssl_mode = "require"
 - **Setup:** Deploy QuestDB on Compute Engine VM or GKE (Kubernetes)
 
 **Cloud Bigtable** (High-Throughput Alternative):
+
 - **Purpose:** High-frequency time-series data ingestion
 - **Advantages:**
   - Single-digit millisecond latency
@@ -899,6 +934,7 @@ ssl_mode = "require"
 #### Option 3: Vultr
 
 **Self-Hosted QuestDB on Vultr VPS** (Recommended):
+
 - **Purpose:** Market data (same as current QuestDB setup)
 - **Advantages:**
   - Lowest cost
@@ -911,6 +947,7 @@ ssl_mode = "require"
 - **Setup:** Deploy QuestDB on Vultr VPS instance
 
 **Vultr Object Storage** (Archival Alternative):
+
 - **Purpose:** Long-term storage of historical market data
 - **Advantages:**
   - Very cheap storage (~$0.01/GB-month)
@@ -923,6 +960,7 @@ ssl_mode = "require"
 ### Layer 4: Backup Storage - Cloud Options
 
 #### AWS S3 (Recommended for AWS Deployments)
+
 - **Purpose:** Database backups, configuration backups
 - **Advantages:**
   - 99.999999999% (11 9's) durability
@@ -933,6 +971,7 @@ ssl_mode = "require"
 - **Setup:** Automated backups from RDS can be stored in S3
 
 #### Google Cloud Storage (Recommended for GCP Deployments)
+
 - **Purpose:** Database backups, configuration backups
 - **Advantages:**
   - 99.999999999% (11 9's) durability
@@ -943,6 +982,7 @@ ssl_mode = "require"
 - **Setup:** Cloud SQL backups automatically stored in Cloud Storage
 
 #### Vultr Object Storage (Recommended for Vultr Deployments)
+
 - **Purpose:** Database backups, configuration backups
 - **Advantages:**
   - Low cost
@@ -1040,14 +1080,17 @@ ssl_mode = "require"
 ### Recommendation Summary
 
 **For Production (Financial Data):**
+
 1. **AWS RDS PostgreSQL** + QuestDB on EC2 + S3 (Best for: High availability, regulatory compliance, enterprise features)
 2. **Google Cloud SQL** + QuestDB on Compute Engine + Cloud Storage (Best for: Integration with GCP services, BigQuery analytics)
 3. **Vultr Managed PostgreSQL** + QuestDB on VPS + Object Storage (Best for: Cost-effectiveness, simplicity)
 
 **For Development:**
+
 - Use local SQLite + local QuestDB (zero cloud costs)
 
 **Hybrid Approach:**
+
 - Development: Local SQLite + QuestDB
 - Staging: Vultr (lower cost)
 - Production: AWS or Google Cloud (high availability)
@@ -1075,12 +1118,14 @@ project_root/
 ```
 
 **To Start:**
+
 1. Set `DATABASE_URL="sqlite://data/sqlite/backend.db"` (or use default in config)
 2. Run backend - SQLite database created automatically
 3. Migrations run automatically on startup
 4. No database server setup needed!
 
 **To Scale to PostgreSQL:**
+
 1. Install PostgreSQL locally, or use cloud database
 2. Set `DATABASE_URL="postgresql://user:password@localhost:5432/ib_box_spread"`
 3. Run backend - Migrations run on PostgreSQL automatically
@@ -1089,18 +1134,21 @@ project_root/
 ### Production (Cloud-Based)
 
 **AWS:**
+
 - **PostgreSQL:** AWS RDS PostgreSQL (Multi-AZ for HA)
 - **QuestDB:** EC2 instance or ECS container
 - **Backups:** AWS S3 (with lifecycle policies to Glacier)
 - **Configuration:** Version controlled in Git, deployed with application
 
 **Google Cloud:**
+
 - **PostgreSQL:** Cloud SQL PostgreSQL (High Availability)
 - **QuestDB:** Compute Engine VM or GKE (Kubernetes)
 - **Backups:** Cloud Storage (with lifecycle policies to Archive)
 - **Configuration:** Version controlled in Git, deployed with application
 
 **Vultr:**
+
 - **PostgreSQL:** Vultr Managed PostgreSQL
 - **QuestDB:** Vultr VPS instance
 - **Backups:** Vultr Object Storage
@@ -1172,6 +1220,7 @@ project_root/
 ---
 
 **Next Steps:**
+
 1. Review and approve storage architecture
 2. Set up PostgreSQL database
 3. Create database schema

@@ -1,12 +1,16 @@
 # iPad Frontend Architecture
 
+> **Note:** This design document is preserved for future implementation reference. iPad app development has been deferred in favor of focusing on PWA functionality. This documentation remains available for when iPad app development resumes.
+
 ## Goals
+
 - Provide live visibility into account health, strategy status, positions, and orders.
 - Offer light control capabilities (strategy start/stop, staged order overrides) with safety checks.
 - Reuse existing integrations: TWS (execution), Nautilus strategy runner, ORATS enrichment, Client Portal/Web API snapshots, QuestDB historical data.
 - Deliver a native SwiftUI iPad experience with responsive layouts and offline resilience.
 
 ## High-Level Components
+
 1. **Backend Service Layer** (existing Python integration, extended in TODO #7)
    - REST API (FastAPI/Flask) hosting JSON endpoints for the app.
    - WebSocket channel for real-time pushes (optional phase 2).
@@ -25,6 +29,7 @@
    - Background refresh + manual pull-to-refresh.
 
 ## API Contract (Draft)
+
 | Endpoint | Method | Auth | Description |
 | --- | --- | --- | --- |
 | `/api/v1/health` | GET | Optional | Backend status, build info, environment |
@@ -40,11 +45,13 @@
 | `/api/v1/history/pnl` | GET | Token | QuestDB aggregated PnL data |
 
 ### Command Safeguards
+
 - Commands require a confirmation payload `{ "confirm": true }`.
 - Optional OTP second-factor for live trading.
 - Backend logs every command with user/device info.
 
 ## App Navigation
+
 1. **Onboarding/Login**
    - Server URL, API token, optional TouchID/FaceID.
 2. **Dashboard Tab**
@@ -63,6 +70,7 @@
    - Environment config, theme, notification preferences, logs.
 
 ## Data Flow
+
 ```
 iPad App (SwiftUI)
   ↕ HTTPS (REST/JSON)
@@ -74,12 +82,14 @@ Backend API (Python FastAPI)
 ```
 
 ## Security & Deployment
+
 - Initial auth: static API token stored in Keychain + HTTPS only.
 - Recommend reverse proxy (nginx) terminating TLS with client certs.
 - Stage environment for testing with paper trading + sandbox QuestDB.
 - Apple Developer setup: app identifier, profiles, TestFlight distribution.
 
 ## Milestones
+
 1. Finalize API schema and backend tasks (TODO #7).
 2. Build SwiftUI scaffold and integrate login + dashboard skeleton (TODO #8).
 3. Implement portfolio/order views using live endpoints (TODO #9).

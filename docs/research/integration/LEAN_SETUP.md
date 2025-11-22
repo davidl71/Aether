@@ -42,6 +42,7 @@ pip install lean
 ```
 
 **Verify installation:**
+
 ```bash
 lean --version
 ```
@@ -49,6 +50,7 @@ lean --version
 ### 2. Install .NET SDK (Optional - for C# support)
 
 **macOS:**
+
 ```bash
 # Using Homebrew
 brew install --cask dotnet
@@ -57,6 +59,7 @@ brew install --cask dotnet
 ```
 
 **Verify .NET installation:**
+
 ```bash
 dotnet --version
 ```
@@ -89,6 +92,7 @@ lean config
 ```
 
 **Configuration options:**
+
 - Data provider (QuantConnect, local files, etc.)
 - Broker settings (IBKR, Alpaca, etc.)
 - Logging and debugging options
@@ -235,6 +239,7 @@ lean live "Main/main.py" --brokerage Alpaca --data-provider Alpaca
 ### Broker Configuration
 
 **IBKR Configuration:**
+
 ```json
 {
   "brokerage": {
@@ -250,6 +255,7 @@ lean live "Main/main.py" --brokerage Alpaca --data-provider Alpaca
 ```
 
 **Alpaca Configuration:**
+
 ```json
 {
   "brokerage": {
@@ -291,11 +297,13 @@ pip3 install --user lean
 ### .NET SDK Issues
 
 **If you only use Python algorithms:**
+
 - .NET SDK is optional
 - LEAN's Python API works without .NET
 - Only needed for C# algorithm development
 
 **If you need .NET:**
+
 ```bash
 # macOS
 brew install --cask dotnet
@@ -326,6 +334,7 @@ dotnet --version
 ### Python 3.14 Compatibility
 
 **Issue**: LEAN CLI 1.0.221 has a compatibility issue with Python 3.14 due to Pydantic v1:
+
 ```
 Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
 ```
@@ -356,5 +365,6 @@ pip install lean
 - ⏳ Configuration setup
 
 **Virtual Environment:**
+
 - Python 3.12: `python/venv312/` (for LEAN)
 - Python 3.14: `python/venv/` (for other development)

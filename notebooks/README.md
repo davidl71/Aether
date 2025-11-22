@@ -100,6 +100,35 @@ For full extension support:
 pip install -r requirements-jupyterlab.txt
 ```
 
+For all notebook dependencies (recommended):
+```bash
+pip install -r requirements-notebooks.txt
+```
+
+## Import Resolution in Cursor/VS Code
+
+The project is configured for proper import resolution in notebooks:
+
+1. **Python Analysis Paths**: Configured in `.vscode/settings.json` to include:
+   - `${workspaceFolder}/python`
+   - `${workspaceFolder}/python/bindings`
+   - `${workspaceFolder}/python/integration`
+
+2. **Pyright Configuration**: `pyrightconfig.json` provides additional import resolution for:
+   - Project modules
+   - Notebook utilities
+   - Cython bindings
+
+3. **Notebook Dependency Checks**: All notebooks include dependency check cells that:
+   - Verify required packages are installed
+   - Provide clear installation instructions if missing
+   - Wrap imports in try/except for better error handling
+
+If you see import warnings in notebooks:
+- Ensure you've installed `requirements-notebooks.txt`
+- Select the correct Python interpreter (Cmd+Shift+P → "Python: Select Interpreter")
+- Restart the Cursor/VS Code window after installing packages
+
 ## Tips
 
 - **Save frequently**: Notebooks auto-save, but commit important work to git

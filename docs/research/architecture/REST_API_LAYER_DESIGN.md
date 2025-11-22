@@ -15,11 +15,13 @@ Design and implement comprehensive REST API endpoints to support web SPA functio
 ## Current State
 
 **Existing Endpoints:**
+
 - `GET /api/snapshot` - Snapshot data (Python FastAPI)
 - `GET /api/health` - Health check (Rust backend)
 - `GET /api/v1/snapshot` - Snapshot data (Rust backend)
 
 **Web App Needs:**
+
 - Strategy start/stop
 - Order cancellation
 - Mode switching (dry-run/live)
@@ -33,6 +35,7 @@ Design and implement comprehensive REST API endpoints to support web SPA functio
 ### 1. Strategy Control
 
 **Start Strategy:**
+
 ```
 POST /api/v1/strategy/start
 Request: {}
@@ -44,6 +47,7 @@ Response: {
 ```
 
 **Stop Strategy:**
+
 ```
 POST /api/v1/strategy/stop
 Request: {}
@@ -55,6 +59,7 @@ Response: {
 ```
 
 **Get Strategy Status:**
+
 ```
 GET /api/v1/strategy/status
 Response: {
@@ -69,6 +74,7 @@ Response: {
 ### 2. Order Management
 
 **Cancel Order:**
+
 ```
 POST /api/v1/orders/cancel
 Request: {
@@ -82,6 +88,7 @@ Response: {
 ```
 
 **Get Orders:**
+
 ```
 GET /api/v1/orders
 Query Params: ?status=pending&limit=100
@@ -99,6 +106,7 @@ Response: {
 ```
 
 **Get Order Details:**
+
 ```
 GET /api/v1/orders/{order_id}
 Response: {
@@ -117,6 +125,7 @@ Response: {
 ### 3. Mode & Configuration
 
 **Toggle Mode:**
+
 ```
 POST /api/mode
 Request: {
@@ -130,6 +139,7 @@ Response: {
 ```
 
 **Change Account:**
+
 ```
 POST /api/account
 Request: {
@@ -143,6 +153,7 @@ Response: {
 ```
 
 **Get Configuration:**
+
 ```
 GET /api/v1/config
 Response: {
@@ -158,6 +169,7 @@ Response: {
 ```
 
 **Update Configuration:**
+
 ```
 PUT /api/v1/config
 Request: {
@@ -176,6 +188,7 @@ Response: {
 ### 4. Box Spread Scenarios
 
 **Get Scenarios:**
+
 ```
 GET /api/v1/scenarios
 Query Params: ?symbol=SPX&min_apr=10.0
@@ -267,6 +280,7 @@ async fn strategy_start(State(state): State<RestState>) -> Json<serde_json::Valu
 ## Error Handling
 
 **Standard Error Response:**
+
 ```json
 {
   "status": "error",
@@ -277,6 +291,7 @@ async fn strategy_start(State(state): State<RestState>) -> Json<serde_json::Valu
 ```
 
 **HTTP Status Codes:**
+
 - `200 OK` - Success
 - `400 Bad Request` - Invalid request
 - `404 Not Found` - Resource not found
@@ -287,11 +302,13 @@ async fn strategy_start(State(state): State<RestState>) -> Json<serde_json::Valu
 ## Authentication & Security
 
 **Authentication:**
+
 - API key in header: `X-API-Key: <key>`
 - Or token-based: `Authorization: Bearer <token>`
 - Rate limiting per client
 
 **Security:**
+
 - HTTPS in production
 - Input validation
 - SQL injection prevention
@@ -302,6 +319,7 @@ async fn strategy_start(State(state): State<RestState>) -> Json<serde_json::Valu
 ## API Versioning
 
 **Version Strategy:**
+
 - `/api/v1/` - Current version
 - `/api/v2/` - Future version
 - Backward compatibility maintained
@@ -311,11 +329,13 @@ async fn strategy_start(State(state): State<RestState>) -> Json<serde_json::Valu
 ## Documentation
 
 **OpenAPI/Swagger:**
+
 - Auto-generate from FastAPI
 - Interactive API documentation
 - Request/response examples
 
 **Location:**
+
 - `/docs` - Swagger UI
 - `/redoc` - ReDoc
 
@@ -324,11 +344,13 @@ async fn strategy_start(State(state): State<RestState>) -> Json<serde_json::Valu
 ## Testing
 
 **Unit Tests:**
+
 - Test each endpoint
 - Test error cases
 - Test validation
 
 **Integration Tests:**
+
 - Test with real backend
 - Test end-to-end flows
 - Test error scenarios

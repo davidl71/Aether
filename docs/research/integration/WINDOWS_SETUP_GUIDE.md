@@ -5,6 +5,7 @@ This guide walks you through setting up the IBKR Box Spread Generator on Windows
 ## Prerequisites
 
 ### System Requirements
+
 - **Windows 10/11** (64-bit)
 - **Visual Studio 2019 or later** (with C++ Desktop Development workload)
   - Or **MinGW-w64** (alternative compiler)
@@ -20,19 +21,19 @@ This guide walks you through setting up the IBKR Box Spread Generator on Windows
    - Include "CMake tools for Windows"
 
 2. **CMake**
-   - Download from: https://cmake.org/download/
+   - Download from: <https://cmake.org/download/>
    - Or install via: `winget install Kitware.CMake`
    - Add to PATH during installation
 
 3. **Git**
-   - Download from: https://git-scm.com/download/win
+   - Download from: <https://git-scm.com/download/win>
    - Or install via: `winget install Git.Git`
 
 ## Step 1: Download TWS API
 
 ### 1.1 Get TWS API for Windows
 
-1. Visit: https://interactivebrokers.github.io/
+1. Visit: <https://interactivebrokers.github.io/>
 2. Navigate to **Downloads** section
 3. Download **TWS API for Windows** (latest version, currently 10.40.01+)
 4. File will be named: `twsapi_win_1040.01.zip` (or similar)
@@ -48,6 +49,7 @@ Expand-Archive -Path "$env:USERPROFILE\Downloads\twsapi_win_*.zip" -DestinationP
 ```
 
 **Expected structure after extraction:**
+
 ```
 native/third_party/tws-api/
 └── IBJts/
@@ -111,7 +113,7 @@ cd vcpkg
 
 ### Option B: Pre-built Binaries
 
-1. Download from: https://github.com/protocolbuffers/protobuf/releases
+1. Download from: <https://github.com/protocolbuffers/protobuf/releases>
 2. Extract to `C:\protobuf` or similar
 3. Add to PATH:
    - `C:\protobuf\bin` (for DLLs)
@@ -123,10 +125,12 @@ cd vcpkg
 ### 4.1 Open Developer Command Prompt
 
 **Option A: Visual Studio Developer Command Prompt**
+
 - Open "x64 Native Tools Command Prompt for VS 2019/2022"
 - Navigate to project directory
 
 **Option B: PowerShell with VS Environment**
+
 ```powershell
 # Load Visual Studio environment
 & "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
@@ -321,16 +325,19 @@ The TWS API on Windows uses **Winsock 2** (`ws2_32.lib`). This is automatically 
 ### Build Generators
 
 **Visual Studio (Recommended):**
+
 ```powershell
 cmake .. -G "Visual Studio 17 2022" -A x64
 ```
 
 **MinGW Makefiles (Alternative):**
+
 ```powershell
 cmake .. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
 ```
 
 **Ninja (Fast builds):**
+
 ```powershell
 cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=Release
 cmake --build . -j8
@@ -341,6 +348,7 @@ cmake --build . -j8
 ### Error: "Cannot find TwsApiCpp.dll"
 
 **Solution:** Ensure DLL is in executable directory or PATH:
+
 ```powershell
 $env:PATH += ";native\third_party\tws-api\IBJts\source\cppclient\client\build\Release"
 ```
@@ -348,6 +356,7 @@ $env:PATH += ";native\third_party\tws-api\IBJts\source\cppclient\client\build\Re
 ### Error: "Protocol Buffers not found"
 
 **Solution:** Install Protocol Buffers via vcpkg or set `Protobuf_ROOT`:
+
 ```powershell
 $env:Protobuf_ROOT = "C:\vcpkg\installed\x64-windows"
 ```
@@ -355,6 +364,7 @@ $env:Protobuf_ROOT = "C:\vcpkg\installed\x64-windows"
 ### Error: "Intel Decimal Library not found"
 
 **Solution:** Build Intel library first (Step 5) and verify path:
+
 ```powershell
 Test-Path "native\third_party\IntelRDFPMathLib20U2\LIBRARY\libbid.a"
 ```
@@ -362,6 +372,7 @@ Test-Path "native\third_party\IntelRDFPMathLib20U2\LIBRARY\libbid.a"
 ### Connection Timeout
 
 **Solution:**
+
 1. Verify TWS/Gateway is running
 2. Check API is enabled in TWS settings
 3. Verify port matches config (7497 for paper, 7496 for live)
@@ -370,6 +381,7 @@ Test-Path "native\third_party\IntelRDFPMathLib20U2\LIBRARY\libbid.a"
 ### Build Errors with Visual Studio
 
 **Solution:** Ensure you're using the correct architecture:
+
 - Use **x64 Native Tools Command Prompt** (not x86)
 - Specify `-A x64` in CMake configuration
 

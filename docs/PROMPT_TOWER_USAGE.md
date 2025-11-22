@@ -30,6 +30,7 @@ This guide explains how to use the Prompt Tower extension in Cursor IDE to enhan
    - Click Install
 
 2. **Or Install via Command**:
+
    ```bash
    cursor --install-extension prompttower.prompttower
    ```
@@ -50,11 +51,13 @@ This guide explains how to use the Prompt Tower extension in Cursor IDE to enhan
 ### Example: Before and After
 
 **Before Enhancement**:
+
 ```
 Fix the box spread calculation
 ```
 
 **After Enhancement** (with Prompt Tower):
+
 ```
 Review and fix the box spread calculation in native/src/box_spread_calc.cpp.
 Ensure calculations match the formulas documented in docs/BOX_SPREAD_COMPREHENSIVE_GUIDE.md.
@@ -69,12 +72,14 @@ Include proper error handling and validation as per COMMON_PATTERNS.md.
 Prompt Tower can help structure prompts that leverage your extensive documentation:
 
 **Example Prompt**:
+
 ```
 @docs API_DOCUMENTATION_INDEX.md @docs TWS_INTEGRATION_STATUS.md
 How do I implement error handling for TWS API connection failures?
 ```
 
 **Enhanced by Prompt Tower**:
+
 ```
 Using the documentation in API_DOCUMENTATION_INDEX.md and TWS_INTEGRATION_STATUS.md,
 implement comprehensive error handling for TWS API connection failures.
@@ -90,11 +95,13 @@ Requirements:
 ### 2. Multi-File Refactoring Prompts
 
 **Example**:
+
 ```
 Refactor the order management system
 ```
 
 **Enhanced**:
+
 ```
 Refactor the order management system across:
 - native/src/order_manager.cpp (C++ core)
@@ -111,11 +118,13 @@ Requirements:
 ### 3. Complex Feature Implementation
 
 **Example**:
+
 ```
 Add risk management for box spreads
 ```
 
 **Enhanced**:
+
 ```
 Implement comprehensive risk management for box spread positions.
 
@@ -139,12 +148,14 @@ Implementation Requirements:
 ### 1. Always Reference Documentation
 
 **Good**:
+
 ```
 @docs API_DOCUMENTATION_INDEX.md @docs TWS_INTEGRATION_STATUS.md
 [Your prompt here]
 ```
 
 **Better** (with Prompt Tower):
+
 ```
 Using API_DOCUMENTATION_INDEX.md and TWS_INTEGRATION_STATUS.md as reference,
 [Your detailed prompt with specific requirements]
@@ -153,6 +164,7 @@ Using API_DOCUMENTATION_INDEX.md and TWS_INTEGRATION_STATUS.md as reference,
 ### 2. Include Context About Project Standards
 
 Always mention:
+
 - **Code Style**: C++20, 2-space indentation, Allman braces
 - **Architecture**: Reference CODEBASE_ARCHITECTURE.md
 - **Patterns**: Reference COMMON_PATTERNS.md
@@ -162,11 +174,13 @@ Always mention:
 ### 3. Be Specific About File Locations
 
 **Good**:
+
 ```
 Fix the calculation
 ```
 
 **Better**:
+
 ```
 Fix the box spread calculation in native/src/box_spread_calc.cpp,
 ensuring it matches formulas in docs/BOX_SPREAD_COMPREHENSIVE_GUIDE.md
@@ -175,6 +189,7 @@ ensuring it matches formulas in docs/BOX_SPREAD_COMPREHENSIVE_GUIDE.md
 ### 4. Reference Multiple Documentation Files
 
 When working on complex features, reference multiple docs:
+
 ```
 @docs CODEBASE_ARCHITECTURE.md @docs COMMON_PATTERNS.md @docs IMPLEMENTATION_GUIDE.md
 [Your prompt]
@@ -183,6 +198,7 @@ When working on complex features, reference multiple docs:
 ### 5. Use Format-Specific Enhancement
 
 For JSON/YAML config files:
+
 - Prompt Tower can enhance prompts for configuration changes
 - Helps structure prompts for complex config modifications
 - Ensures proper format validation
@@ -216,11 +232,13 @@ For JSON/YAML config files:
 ### Use Case 1: Implementing TWS API Feature
 
 **Without Prompt Tower**:
+
 ```
 Add market data subscription
 ```
 
 **With Prompt Tower Enhancement**:
+
 ```
 Implement market data subscription using TWS API.
 
@@ -241,11 +259,13 @@ Requirements:
 ### Use Case 2: Adding New Test
 
 **Without Prompt Tower**:
+
 ```
 Add test for box spread calculation
 ```
 
 **With Prompt Tower Enhancement**:
+
 ```
 Add comprehensive test for box spread calculation in native/tests/.
 
@@ -265,11 +285,13 @@ Requirements:
 ### Use Case 3: Refactoring Code
 
 **Without Prompt Tower**:
+
 ```
 Refactor the strategy runner
 ```
 
 **With Prompt Tower Enhancement**:
+
 ```
 Refactor python/integration/strategy_runner.py following NautilusTrader patterns.
 
@@ -352,6 +374,7 @@ Requirements:
 ### With @docs Feature
 
 Prompt Tower works excellently with Cursor's `@docs` feature:
+
 1. Write prompt with @docs references
 2. Enhance with Prompt Tower
 3. Get better structured prompts with documentation context
@@ -359,6 +382,7 @@ Prompt Tower works excellently with Cursor's `@docs` feature:
 ### With .cursorrules
 
 Prompt Tower respects your `.cursorrules`:
+
 - Enhanced prompts align with project standards
 - References coding style guidelines
 - Includes architecture patterns
@@ -366,6 +390,7 @@ Prompt Tower respects your `.cursorrules`:
 ### With MCP Servers
 
 Prompt Tower complements MCP servers:
+
 - Semgrep MCP: Security-focused prompts
 - Filesystem MCP: File-aware prompts
 - Git MCP: Version-aware prompts
@@ -375,11 +400,13 @@ Prompt Tower complements MCP servers:
 ### Example 1: Box Spread Implementation
 
 **Original Prompt**:
+
 ```
 Implement box spread detection
 ```
 
 **Enhanced Prompt**:
+
 ```
 Implement comprehensive box spread detection system.
 
@@ -402,11 +429,13 @@ Implementation Requirements:
 ### Example 2: Python Integration
 
 **Original Prompt**:
+
 ```
 Add Python bindings for box spread calculation
 ```
 
 **Enhanced Prompt**:
+
 ```
 Add Python bindings for box spread calculation using Cython.
 
@@ -427,11 +456,13 @@ Implementation Requirements:
 ### Example 3: Documentation Update
 
 **Original Prompt**:
+
 ```
 Update the API documentation
 ```
 
 **Enhanced Prompt**:
+
 ```
 Update API_DOCUMENTATION_INDEX.md with new TWS API features.
 

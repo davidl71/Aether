@@ -72,6 +72,7 @@ tasks.md is a privacy-focused task management application that uses plain Markdo
 ```
 
 **Syntax Elements**:
+
 - `[ ]` / `[x]` - Task status (incomplete/complete)
 - `#tag` - Tags for categorization
 - `@context` - Contexts for filtering
@@ -91,6 +92,7 @@ tasks.md is a privacy-focused task management application that uses plain Markdo
 **Purpose**: Development workflow task management
 
 **Features**:
+
 - Structured JSON format
 - Rich metadata (priority, tags, dependencies)
 - Long descriptions with acceptance criteria
@@ -99,6 +101,7 @@ tasks.md is a privacy-focused task management application that uses plain Markdo
 - Project-specific storage
 
 **Example Task**:
+
 ```json
 {
   "id": "T-1",
@@ -118,6 +121,7 @@ tasks.md is a privacy-focused task management application that uses plain Markdo
 **Purpose**: Cross-agent coordination
 
 **Features**:
+
 - Simple markdown table
 - Status tracking (pending, in_progress, completed)
 - Agent ownership
@@ -130,6 +134,7 @@ tasks.md is a privacy-focused task management application that uses plain Markdo
 **Purpose**: High-level feature tracking
 
 **Features**:
+
 - Simple checkboxes
 - Status indicators (✅, 🚧, 📋)
 - Feature categorization
@@ -196,6 +201,7 @@ tasks.md is a privacy-focused task management application that uses plain Markdo
 ### Personal Task Management
 
 **tasks.md Advantages**:
+
 - Native iOS/macOS apps
 - OneDrive/iCloud sync
 - Time tracking
@@ -203,6 +209,7 @@ tasks.md is a privacy-focused task management application that uses plain Markdo
 - Better for personal productivity
 
 **Todo2 Advantages**:
+
 - AI integration for task creation
 - Rich descriptions for complex tasks
 - Dependencies for workflow
@@ -213,12 +220,14 @@ tasks.md is a privacy-focused task management application that uses plain Markdo
 ### Development Workflow
 
 **tasks.md Advantages**:
+
 - Simple markdown format
 - Easy to edit in any editor
 - Git-friendly
 - No special tools needed
 
 **Todo2 Advantages**:
+
 - MCP integration with AI
 - Structured metadata
 - Dependencies tracking
@@ -230,11 +239,13 @@ tasks.md is a privacy-focused task management application that uses plain Markdo
 ### Team Collaboration
 
 **tasks.md Advantages**:
+
 - Markdown is universal
 - Easy to share files
 - OneDrive sharing
 
 **Todo2 Advantages**:
+
 - Structured format
 - Better for automation
 - MCP server integration
@@ -250,12 +261,14 @@ tasks.md is a privacy-focused task management application that uses plain Markdo
 **Action**: Use tasks.md for personal productivity, keep Todo2 for development.
 
 **Benefits**:
+
 - Best tool for each purpose
 - Clear separation of concerns
 - Native apps for personal tasks
 - AI integration for development tasks
 
 **Implementation**:
+
 - Install tasks.md iOS/macOS app for personal tasks
 - Continue using Todo2 MCP for development workflow
 - No integration needed
@@ -267,11 +280,13 @@ tasks.md is a privacy-focused task management application that uses plain Markdo
 **Action**: Convert Todo2 tasks to tasks.md markdown format.
 
 **Benefits**:
+
 - Simpler format
 - More human-readable
 - Better for personal use
 
 **Drawbacks**:
+
 - Lose AI integration (MCP)
 - Lose structured metadata
 - Lose dependencies
@@ -284,10 +299,12 @@ tasks.md is a privacy-focused task management application that uses plain Markdo
 **Action**: Use tasks.md for personal tasks, Todo2 for development, sync manually.
 
 **Benefits**:
+
 - Best of both worlds
 - Personal productivity + development workflow
 
 **Drawbacks**:
+
 - Two systems to maintain
 - Manual sync if needed
 

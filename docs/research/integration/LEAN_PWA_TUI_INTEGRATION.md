@@ -133,11 +133,13 @@ function Dashboard() {
 The TUI uses the existing `RestProvider` class which supports configurable endpoints.
 
 **Environment Variable**:
+
 ```bash
 export LEAN_API_URL=http://localhost:8000/api/v1/snapshot
 ```
 
 **Or via config file** (`~/.config/ib_box_spread/tui_config.json`):
+
 ```json
 {
   "provider": {
@@ -175,6 +177,7 @@ Add command-line flag to TUI binary:
 ```
 
 This would:
+
 1. Create `RestProvider` with LEAN endpoint
 2. Override default Rust backend endpoint
 3. Use LEAN API for all data fetching
@@ -186,6 +189,7 @@ This would:
 ### Event Types
 
 1. **`connected`**: WebSocket connection established
+
    ```json
    {
      "type": "connected",
@@ -197,6 +201,7 @@ This would:
    ```
 
 2. **`order_filled`**: Order filled event
+
    ```json
    {
      "type": "order_filled",
@@ -211,6 +216,7 @@ This would:
    ```
 
 3. **`order_cancelled`**: Order cancelled event
+
    ```json
    {
      "type": "order_cancelled",
@@ -224,6 +230,7 @@ This would:
    ```
 
 4. **`position_updated`**: Position changed
+
    ```json
    {
      "type": "position_updated",
@@ -241,6 +248,7 @@ This would:
    ```
 
 5. **`symbol_updated`**: Symbol market data updated
+
    ```json
    {
      "type": "symbol_updated",
@@ -258,6 +266,7 @@ This would:
    ```
 
 6. **`alert`**: Alert/notification
+
    ```json
    {
      "type": "alert",
@@ -270,6 +279,7 @@ This would:
    ```
 
 7. **`snapshot`**: Full snapshot update (periodic)
+
    ```json
    {
      "type": "snapshot",
@@ -292,6 +302,7 @@ This would:
 ### Manual Testing
 
 **PWA**:
+
 ```bash
 # Start LEAN API wrapper
 cd python/lean_integration
@@ -305,6 +316,7 @@ VITE_USE_LEAN_API=true VITE_LEAN_API_URL=http://localhost:8000 npm run dev
 ```
 
 **TUI**:
+
 ```bash
 # Start LEAN API wrapper
 cd python/lean_integration
@@ -340,11 +352,13 @@ describe('LeanClient', () => {
 ### LEAN Not Running
 
 **PWA**:
+
 - `useLeanSnapshot` hook shows error state
 - Falls back to polling if WebSocket fails
 - Displays user-friendly error message
 
 **TUI**:
+
 - `RestProvider` logs error and continues polling
 - Displays error in TUI status bar
 - Retries on next poll interval
@@ -352,11 +366,13 @@ describe('LeanClient', () => {
 ### WebSocket Connection Lost
 
 **PWA**:
+
 - Automatic reconnection with exponential backoff
 - Falls back to REST polling during reconnection
 - User notification of connection status
 
 **TUI**:
+
 - WebSocket not yet implemented for TUI
 - Uses REST polling only
 
@@ -369,10 +385,12 @@ describe('LeanClient', () => {
 Both PWA and TUI support switching between Rust backend and LEAN wrapper:
 
 **PWA**:
+
 - `VITE_USE_LEAN_API=false` → Uses Rust backend (default)
 - `VITE_USE_LEAN_API=true` → Uses LEAN wrapper
 
 **TUI**:
+
 - Default endpoint → Rust backend (`/data/snapshot.json`)
 - `LEAN_API_URL` env var → LEAN wrapper
 

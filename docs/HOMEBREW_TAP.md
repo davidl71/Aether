@@ -43,6 +43,7 @@ brew install --build-from-source Formula/ib-box-spread.rb
    - Initialize with README
 
 2. **Clone locally** (use SSH for private repos):
+
    ```bash
    git clone git@github.com:davidl71/homebrew-ib-box-spread.git
    cd homebrew-ib-box-spread
@@ -66,6 +67,7 @@ Edit each formula file and update:
 3. **Dependencies**: Ensure all dependencies are listed
 
 **For private repositories**, formulas use GitDownloadStrategy:
+
 ```ruby
 url "git@github.com:davidl71/ib_box_spread_full_universal.git", tag: "v1.0.0", using: :git
 ```
@@ -214,6 +216,7 @@ ib_box_spread --help
 **Problem**: `sha256` in formula doesn't match tarball
 
 **Solution**:
+
 1. Download tarball
 2. Calculate SHA256: `shasum -a 256 <file>`
 3. Update formula
@@ -223,6 +226,7 @@ ib_box_spread --help
 **Problem**: Formula fails to build
 
 **Solution**:
+
 1. Check dependencies: `brew install <dependency>`
 2. Check build logs: `brew install --verbose <formula>`
 3. Verify source URL is accessible
@@ -233,6 +237,7 @@ ib_box_spread --help
 **Problem**: Binaries not found after installation
 
 **Solution**:
+
 1. Check installation: `brew list ib-box-spread`
 2. Verify PATH: `echo $PATH`
 3. Check binary location: `brew --prefix ib-box-spread`
@@ -274,6 +279,6 @@ echo "SHA256: ${SHA256}"
 
 ## See Also
 
-- **Homebrew Tap Documentation**: https://docs.brew.sh/Taps
-- **Formula Cookbook**: https://docs.brew.sh/Formula-Cookbook
+- **Homebrew Tap Documentation**: <https://docs.brew.sh/Taps>
+- **Formula Cookbook**: <https://docs.brew.sh/Formula-Cookbook>
 - **Tap Repository**: `homebrew-tap/` directory in project

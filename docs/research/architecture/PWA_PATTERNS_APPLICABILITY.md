@@ -247,24 +247,24 @@ Recent PWA services development introduced several robust patterns that could si
 
 ### Medium Priority (Quality Improvements)
 
-4. **1Password Integration** - Add to credential-requiring scripts
+1. **1Password Integration** - Add to credential-requiring scripts
    - Impact: Medium (security improvement)
    - Effort: Medium (requires 1Password setup)
    - Files: 2-3 scripts
 
-5. **Dependency Checking** - Enhance existing checks
+2. **Dependency Checking** - Enhance existing checks
    - Impact: Medium (better UX)
    - Effort: Low (incremental improvements)
    - Files: Multiple scripts
 
 ### Low Priority (Nice to Have)
 
-6. **Service Orchestration** - Create unified launcher for other service groups
+1. **Service Orchestration** - Create unified launcher for other service groups
    - Impact: Low (convenience)
    - Effort: High (requires design)
    - Files: New scripts
 
-7. **Error Handling** - Enhance across all scripts
+2. **Error Handling** - Enhance across all scripts
    - Impact: Low (incremental UX improvement)
    - Effort: Medium (requires review of each script)
    - Files: Many scripts

@@ -106,6 +106,7 @@ Tabnine is a viable addition to this project, offering AI-powered code completio
 | **Integration** | Extension | Built-in |
 
 **Key Insight:** They complement each other:
+
 - **Tabnine** = Fast autocomplete while typing
 - **Cursor AI** = Deep code understanding, refactoring, explanations
 
@@ -155,6 +156,7 @@ Tabnine is a viable addition to this project, offering AI-powered code completio
 ### If You Decide to Use Tabnine
 
 1. **Installation**
+
    ```bash
    # Install Tabnine extension in Cursor
    # Via Command Palette: Extensions: Install Extensions
@@ -201,12 +203,14 @@ If you prefer to avoid extension overhead:
 ### For This Project: **Conditional YES**
 
 **Use Tabnine if:**
+
 - ✅ You want faster autocomplete while typing
 - ✅ Privacy for trading algorithms is critical (on-device inference)
 - ✅ You have sufficient system resources (16GB+ RAM)
 - ✅ You want to complement Cursor AI (not replace it)
 
 **Skip Tabnine if:**
+
 - ❌ System resources are limited
 - ❌ Cursor AI already meets your needs
 - ❌ You prefer a single AI tool (simpler workflow)
@@ -235,6 +239,7 @@ If you prefer to avoid extension overhead:
 ✅ **Tabnine has been installed and configured!**
 
 See [TABNINE_SETUP.md](TABNINE_SETUP.md) for:
+
 - Installation verification
 - Configuration details
 - Usage instructions
@@ -242,6 +247,7 @@ See [TABNINE_SETUP.md](TABNINE_SETUP.md) for:
 - Privacy settings
 
 **Quick Start:**
+
 1. ✅ Extension installed (v3.324.0)
 2. ✅ Privacy settings configured (on-device inference preferred)
 3. ✅ Enabled for all project languages (C++, Python, TypeScript, Rust, Go)

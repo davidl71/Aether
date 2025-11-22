@@ -105,6 +105,7 @@ public interface IConnector
 ```
 
 **Benefits**:
+
 - Single API for all brokers
 - Easy to switch between brokers
 - Consistent error handling
@@ -123,11 +124,13 @@ python/integration/
 ```
 
 **Benefits**:
+
 - Optimized for each broker's API
 - Language-appropriate (C++ for IBKR, Python for others)
 - No abstraction overhead
 
 **Drawbacks**:
+
 - Strategy code must handle broker differences
 - More code duplication
 - Harder to add new brokers
@@ -188,6 +191,7 @@ python/integration/
 ### 1. Unified Connector Interface Pattern
 
 **StockSharp Pattern**:
+
 ```csharp
 // All brokers implement same interface
 IConnector connector = new InteractiveBrokersConnector();
@@ -216,11 +220,13 @@ class AlpacaConnector : public IBrokerConnector { /* ... */ };
 ```
 
 **Benefits**:
+
 - Strategy code becomes broker-agnostic
 - Easier to test (mock connectors)
 - Consistent error handling
 
 **Trade-offs**:
+
 - Abstraction overhead (minimal in C++)
 - May limit broker-specific optimizations
 
@@ -237,6 +243,7 @@ Broker API
 ```
 
 **Our Current Structure**:
+
 ```
 Strategy Code
     ↓
@@ -275,12 +282,14 @@ StockSharp uses **XML configuration** for connectors and strategies.
 **Action**: Study StockSharp's connector patterns and apply similar abstractions to our C++ codebase.
 
 **Benefits**:
+
 - Keep our C++20 performance advantages
 - Adopt proven architectural patterns
 - No external dependencies
 - Maintain our multi-language approach
 
 **Implementation**:
+
 1. Create `IBrokerConnector` interface in C++
 2. Refactor TWS client to implement interface
 3. Refactor Alpaca client to implement interface
@@ -293,11 +302,13 @@ StockSharp uses **XML configuration** for connectors and strategies.
 **Action**: Use StockSharp for strategy development/testing, execute via our C++ engine.
 
 **Benefits**:
+
 - Visual strategy designer for rapid prototyping
 - C# for strategy logic (faster development)
 - C++ for execution (low latency)
 
 **Challenges**:
+
 - Language bridge complexity
 - Performance overhead
 - Additional dependencies
@@ -309,6 +320,7 @@ StockSharp uses **XML configuration** for connectors and strategies.
 **Action**: Replace our TWS client with StockSharp's IBKR connector.
 
 **Why Not Recommended**:
+
 - Language mismatch (C# vs C++20)
 - Performance overhead
 - Loss of native code advantages
@@ -373,9 +385,9 @@ StockSharp uses **XML configuration** for connectors and strategies.
 
 ## References
 
-- **StockSharp GitHub**: https://github.com/StockSharp/StockSharp
-- **StockSharp Documentation**: https://doc.stocksharp.com/
-- **StockSharp IBKR Connector**: https://doc.stocksharp.com/topics/api/connectors/stock_market/interactive_brokers.html
+- **StockSharp GitHub**: <https://github.com/StockSharp/StockSharp>
+- **StockSharp Documentation**: <https://doc.stocksharp.com/>
+- **StockSharp IBKR Connector**: <https://doc.stocksharp.com/topics/api/connectors/stock_market/interactive_brokers.html>
 - **Apache 2.0 License**: Compatible with our MIT license
 
 ---
@@ -391,4 +403,3 @@ StockSharp uses **XML configuration** for connectors and strategies.
 
 **Last Updated**: 2025-01-27
 **Next Review**: When implementing unified connector interface
-

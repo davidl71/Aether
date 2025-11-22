@@ -57,31 +57,37 @@ Need historical data?
 ## Provider Details
 
 ### dxFeed
+
 - **Best For**: C++ integration, FIX protocol, options analytics
 - **Key Features**: Native C++ APIs, FIX API, Greeks, IV, multi-asset
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#dxfeed`
 
 ### ORATS
+
 - **Best For**: Options-specific analytics, liquidity scores
 - **Key Features**: Extensive options analytics, IV rank, earnings calendar
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md` (search for ORATS)
 
 ### Massive.com
+
 - **Best For**: Historical data, backtesting
 - **Key Features**: Historical and real-time data, S3-compatible interface
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#massive`
 
 ### Alpha Vantage
+
 - **Best For**: Free tier, technical indicators
 - **Key Features**: 60+ technical indicators, MCP server support
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#alpha-vantage`
 
 ### Finnhub
+
 - **Best For**: Generous free tier, fundamentals
 - **Key Features**: 60 calls/min free tier, AI-powered sentiment analysis
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#finnhub`
 
 ### OpenBB
+
 - **Best For**: Financial analytics platform
 - **Key Features**: Financial data and analytics
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#openbb`
@@ -91,19 +97,23 @@ Need historical data?
 ## Integration Considerations
 
 ### C++ Integration
+
 - **dxFeed**: Native C++ APIs available
 - **Others**: REST API only (use HTTP client libraries)
 
 ### FIX Protocol
+
 - **dxFeed**: FIX 4.4 protocol support
 - **Others**: REST API only
 
 ### Options Analytics
+
 - **dxFeed**: Pre-calculated Greeks and IV
 - **ORATS**: Extensive options analytics including liquidity scores
 - **Others**: Basic options data only
 
 ### Free Tier
+
 - **Alpha Vantage**: 5 calls/min, 500 calls/day
 - **Finnhub**: 60 calls/min (more generous)
 - **Others**: Paid subscriptions required
@@ -113,15 +123,18 @@ Need historical data?
 ## Use Cases
 
 ### Box Spread Trading
+
 - **Primary**: dxFeed (C++ APIs, options analytics)
 - **Secondary**: ORATS (options-specific analytics)
 - **Validation**: Alpha Vantage or Finnhub (free tier for cross-validation)
 
 ### Backtesting
+
 - **Historical Data**: Massive.com or dxFeed
 - **Options Data**: ORATS or dxFeed
 
 ### Real-Time Trading
+
 - **C++ Integration**: dxFeed
 - **REST API**: ORATS, Alpha Vantage, or Finnhub
 

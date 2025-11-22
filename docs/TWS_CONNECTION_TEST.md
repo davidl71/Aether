@@ -20,6 +20,7 @@ A standalone C++ program that tests the TWS API connection with comprehensive di
 **File**: `scripts/test_tws_connection.sh`
 
 A convenience script that:
+
 - Checks if TWS/Gateway is running
 - Verifies the port is listening
 - Builds and runs the test program
@@ -44,6 +45,7 @@ A convenience script that:
 ```
 
 The enhanced diagnostic logging will show:
+
 - Connection attempt details
 - Socket state at each step
 - Callback progression (connectAck → managedAccounts → nextValidId)
@@ -111,11 +113,13 @@ Possible causes:
 ### Issue 1: Port Not Listening
 
 **Symptoms**:
+
 ```
 ✗ Port 7497 is not listening
 ```
 
 **Solution**:
+
 1. Start TWS or IB Gateway
 2. Verify API is enabled in settings
 3. Check the port number matches your configuration
@@ -123,11 +127,13 @@ Possible causes:
 ### Issue 2: Connection Rejected (Error 502)
 
 **Symptoms**:
+
 ```
 Connection rejected by TWS/Gateway (error 502)
 ```
 
 **Solution**:
+
 1. Go to `File → Global Configuration → API → Settings`
 2. Enable "Enable ActiveX and Socket Clients"
 3. Verify port number matches
@@ -137,12 +143,14 @@ Connection rejected by TWS/Gateway (error 502)
 ### Issue 3: Authentication Required (Error 162/200)
 
 **Symptoms**:
+
 ```
 Authentication required (error 162)
 TWS/Gateway is waiting for you to accept the connection
 ```
 
 **Solution**:
+
 1. Check TWS/Gateway window for connection prompt
 2. Click "Accept" or "OK" to allow the connection
 3. If using IB Gateway, ensure it's not in read-only mode
@@ -150,17 +158,20 @@ TWS/Gateway is waiting for you to accept the connection
 ### Issue 4: Connection Timeout
 
 **Symptoms**:
+
 ```
 Connection timeout after 60000ms (waiting for nextValidId from TWS)
 ```
 
 **Possible Causes**:
+
 1. TWS/Gateway waiting for connection approval
 2. API not fully enabled
 3. Client ID conflict (another application using same ID)
 4. TWS/Gateway requires authentication
 
 **Solution**:
+
 - Check TWS/Gateway window for prompts
 - Verify API settings
 - Try a different client ID
@@ -169,15 +180,18 @@ Connection timeout after 60000ms (waiting for nextValidId from TWS)
 ### Issue 5: Callbacks Not Received
 
 **Symptoms**:
+
 - `connectAck` received but `managedAccounts` never arrives
 - `managedAccounts` received but `nextValidId` never arrives
 
 **Possible Causes**:
+
 1. EReader thread not running (should be logged)
 2. TWS/Gateway waiting for approval
 3. Connection stalled
 
 **Solution**:
+
 - Check logs for "EReader thread started"
 - Verify TWS/Gateway is responsive
 - Check for error messages
@@ -239,6 +253,7 @@ lsof -i :4002
 ### Step 3: Review Logs
 
 Look for:
+
 - ✅ Connection sequence completion
 - ✅ All three callbacks received
 - ✅ Next valid order ID received
@@ -247,6 +262,7 @@ Look for:
 ### Step 4: Verify Connection
 
 The test will:
+
 - Connect to TWS/Gateway
 - Wait for all callbacks
 - Verify connection stability

@@ -70,6 +70,7 @@ Add comparison tables at the start of major sections:
 
 **Current**: Single large file (2,611 lines)
 **Proposed**: Keep as comprehensive reference, add:
+
 - Metadata headers
 - Tags
 - Anchor links
@@ -79,6 +80,7 @@ Add comparison tables at the start of major sections:
 
 **Purpose**: Quick reference and decision-making
 **Contents**:
+
 - Comparison tables
 - Decision trees
 - Quick links by use case
@@ -138,6 +140,7 @@ Add metadata headers to major sections:
 ### Phase 2: Create Summary Document (Medium Effort)
 
 Create `API_DOCUMENTATION_SUMMARY.md` with:
+
 - Quick reference tables
 - Decision trees
 - Comparison matrices
@@ -146,6 +149,7 @@ Create `API_DOCUMENTATION_SUMMARY.md` with:
 ### Phase 3: Create Topic Indices (High Effort, High Value)
 
 Extract relevant sections into topic-specific index files:
+
 - FIX Protocol Index
 - Market Data Index
 - Trading Simulators Index
@@ -155,6 +159,7 @@ Extract relevant sections into topic-specific index files:
 ### Phase 4: Add Tags Throughout (Medium Effort)
 
 Add inline tags to all entries:
+
 ```markdown
 <!-- @tags: fix-api, options, institutional, c++ -->
 ```
@@ -164,11 +169,13 @@ Add inline tags to all entries:
 ## For Cursor AI
 
 ### Current Usage
+
 ```
 @docs API_DOCUMENTATION_INDEX.md How do I use TWS API?
 ```
 
 ### Optimized Usage
+
 ```
 @docs API_DOCUMENTATION_INDEX.md#tws-api How do I connect to TWS?
 @docs API_DOCUMENTATION_SUMMARY.md Which market data provider has C++ APIs?
@@ -176,6 +183,7 @@ Add inline tags to all entries:
 ```
 
 ### Benefits
+
 - Faster lookups (smaller files)
 - More focused context
 - Better section targeting
@@ -195,6 +203,7 @@ Add inline tags to all entries:
 7. **Alpaca & Alternative Brokers** - Alternative broker APIs
 
 ### Notebook Setup
+
 - Each notebook focuses on one topic
 - Add relevant sections from main index
 - Add external documentation links
@@ -207,16 +216,19 @@ Add inline tags to all entries:
 ### Indexing Strategy
 
 **Option A: Single Comprehensive Index**
+
 - Index `API_DOCUMENTATION_INDEX.md`
 - Use tags for filtering
 - Add metadata headers
 
 **Option B: Multiple Focused Indices** (Recommended)
+
 - Index main file + topic-specific indices
 - Faster searches
 - More focused results
 
 **Option C: Hybrid**
+
 - Main index for comprehensive search
 - Topic indices for focused queries
 - Summary for quick lookups
@@ -226,6 +238,7 @@ Add inline tags to all entries:
 ## Tag Taxonomy
 
 ### Technology Tags
+
 - `#c++` - C++ implementations
 - `#python` - Python implementations
 - `#go` - Go implementations
@@ -235,6 +248,7 @@ Add inline tags to all entries:
 - `#websocket` - WebSocket APIs
 
 ### Function Tags
+
 - `#options` - Options trading support
 - `#market-data` - Market data providers
 - `#simulator` - Trading simulators
@@ -243,6 +257,7 @@ Add inline tags to all entries:
 - `#risk-management` - Risk management tools
 
 ### Use Case Tags
+
 - `#box-spread` - Box spread trading relevant
 - `#institutional` - Institutional-grade
 - `#retail` - Retail-focused
@@ -250,6 +265,7 @@ Add inline tags to all entries:
 - `#forex` - FOREX trading
 
 ### Provider Type Tags
+
 - `#broker` - Brokerage APIs
 - `#data-provider` - Market data providers
 - `#platform` - Trading platforms
@@ -296,6 +312,7 @@ Create a keyword-to-section mapping:
 ### Decision Trees
 
 Add decision trees for common questions:
+
 - "Which market data provider?"
 - "Which FIX API provider?"
 - "Which trading simulator?"
@@ -306,17 +323,20 @@ Add decision trees for common questions:
 ## Maintenance Strategy
 
 ### Regular Updates
+
 1. **Weekly**: Check for API version updates
 2. **Monthly**: Review and consolidate
 3. **Quarterly**: Update comparison tables
 4. **As needed**: Add new APIs
 
 ### Version Control
+
 - Track API versions in entries
 - Note breaking changes
 - Archive deprecated APIs
 
 ### Link Validation
+
 - Periodically validate links
 - Update broken links
 - Archive deprecated resources

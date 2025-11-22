@@ -16,6 +16,7 @@ When trading box spreads on US exchanges (CBOE for SPX/SPXW options), positions 
 ### Example Scenario: USD/ILS
 
 **Initial Setup**:
+
 - Account currency: ILS (Israeli Shekel)
 - Box spread: SPX options (USD-denominated)
 - Entry date: January 1, 2025
@@ -24,6 +25,7 @@ When trading box spreads on US exchanges (CBOE for SPX/SPXW options), positions 
 - Box spread yield: 5.0% APR (USD)
 
 **Currency Risk**:
+
 - If USD/ILS appreciates (USD strengthens): ILS returns increase
 - If USD/ILS depreciates (USD weakens): ILS returns decrease
 
@@ -49,6 +51,7 @@ When trading box spreads on US exchanges (CBOE for SPX/SPXW options), positions 
 **Risk**: Exchange rate at entry may be unfavorable
 
 **Mitigation**:
+
 - Use limit orders for currency conversion
 - Monitor exchange rates before large trades
 - Consider currency futures/forwards for hedging
@@ -60,11 +63,13 @@ When trading box spreads on US exchanges (CBOE for SPX/SPXW options), positions 
 **Risk**: Currency fluctuations affect unrealized P&L
 
 **Impact**:
+
 - Daily mark-to-market in account currency
 - Margin requirements may fluctuate
 - Unrealized gains/losses in account currency
 
 **Mitigation**:
+
 - Currency hedging (futures, forwards, options)
 - Monitor currency exposure continuously
 - Set currency risk limits
@@ -76,6 +81,7 @@ When trading box spreads on US exchanges (CBOE for SPX/SPXW options), positions 
 **Risk**: Exchange rate at exit may be unfavorable
 
 **Mitigation**:
+
 - Plan exit timing around currency considerations
 - Use currency hedging to lock in rates
 - Consider rolling positions if currency moves are unfavorable
@@ -91,6 +97,7 @@ Currency Exposure = Position Notional × Exchange Rate
 ```
 
 **Example**:
+
 - Box spread notional: $100,000 USD
 - USD/ILS rate: 3.65
 - ILS exposure: 365,000 ILS
@@ -106,6 +113,7 @@ Currency Delta = Position Notional (USD)
 ```
 
 **Example**:
+
 - $100,000 USD position
 - Currency delta: $100,000
 - 1% USD/ILS move = $1,000 USD impact
@@ -119,6 +127,7 @@ Currency VaR = Position Notional × Exchange Rate Volatility × Z-Score
 ```
 
 **Example** (95% confidence, 10% annual volatility):
+
 - Position: $100,000 USD
 - Rate: 3.65
 - Daily volatility: 10% / √252 ≈ 0.63%
@@ -132,6 +141,7 @@ ILS Return = USD Return + Currency Return + (USD Return × Currency Return)
 ```
 
 **Example**:
+
 - USD return: 5.0%
 - Currency return: +4.1% (USD strengthens)
 - ILS return: 5.0% + 4.1% + (5.0% × 4.1%) ≈ 9.4%
@@ -145,16 +155,19 @@ ILS Return = USD Return + Currency Return + (USD Return × Currency Return)
 **How**: Short currency futures to hedge long USD exposure
 
 **Example (USD/ILS)**:
+
 - Long $100,000 USD box spread
 - Short ILS futures equivalent to $100,000 USD
 - Lock in exchange rate for position duration
 
 **Pros**:
+
 - Direct hedge
 - Exchange-traded (liquid, transparent)
 - No counterparty risk (cleared)
 
 **Cons**:
+
 - Basis risk (futures vs. spot)
 - Margin requirements
 - Roll costs for longer positions
@@ -164,16 +177,19 @@ ILS Return = USD Return + Currency Return + (USD Return × Currency Return)
 **How**: Enter forward contract to lock exchange rate
 
 **Example**:
+
 - Long $100,000 USD box spread
 - Forward contract: Sell $100,000 USD, buy ILS at fixed rate
 - Settlement at box spread maturity
 
 **Pros**:
+
 - Exact hedge (no basis risk)
 - Customizable terms
 - No margin (for qualified parties)
 
 **Cons**:
+
 - Counterparty risk
 - Less liquid than futures
 - May require credit lines
@@ -183,16 +199,19 @@ ILS Return = USD Return + Currency Return + (USD Return × Currency Return)
 **How**: Use currency options for asymmetric hedging
 
 **Example**:
+
 - Long $100,000 USD box spread
 - Buy USD put / ILS call to protect against USD weakness
 - Retain upside if USD strengthens
 
 **Pros**:
+
 - Asymmetric protection
 - Limited downside (premium only)
 - Flexible strike selection
 
 **Cons**:
+
 - Premium cost
 - Time decay
 - More complex than futures/forwards
@@ -202,15 +221,18 @@ ILS Return = USD Return + Currency Return + (USD Return × Currency Return)
 **How**: Offset currency exposure with other positions
 
 **Example**:
+
 - Long USD box spread (long USD exposure)
 - Short USD-denominated asset (short USD exposure)
 - Net currency exposure: zero
 
 **Pros**:
+
 - No explicit hedge cost
 - Natural portfolio offset
 
 **Cons**:
+
 - Requires offsetting positions
 - May not be available
 - Correlation risk
@@ -316,6 +338,7 @@ tws_client->reqMktData(
 ```
 
 **Available Currency Pairs**:
+
 - USD/ILS (US Dollar / Israeli Shekel)
 - USD/EUR (US Dollar / Euro)
 - USD/GBP (US Dollar / British Pound)
@@ -346,11 +369,13 @@ tws_client->reqMktData(
 ### 1. Currency Risk Limits
 
 **Position Limits**:
+
 - Maximum currency exposure per position
 - Maximum total currency exposure
 - Maximum currency exposure per currency pair
 
 **Example**:
+
 ```cpp
 struct CurrencyRiskLimits {
     double max_exposure_per_position = 100000.0;  // USD
@@ -363,6 +388,7 @@ struct CurrencyRiskLimits {
 ### 2. Currency Risk Monitoring
 
 **Real-Time Metrics**:
+
 - Current currency exposure
 - Currency delta
 - Currency VaR
@@ -370,6 +396,7 @@ struct CurrencyRiskLimits {
 - Currency hedge effectiveness
 
 **Reporting**:
+
 - Daily currency exposure report
 - Currency risk dashboard
 - Alert on limit breaches
@@ -377,6 +404,7 @@ struct CurrencyRiskLimits {
 ### 3. Currency Hedge Effectiveness
 
 **Measurement**:
+
 ```
 Hedge Effectiveness = 1 - (Hedged P&L / Unhedged P&L)
 ```
@@ -384,6 +412,7 @@ Hedge Effectiveness = 1 - (Hedged P&L / Unhedged P&L)
 **Target**: > 80% effectiveness
 
 **Monitoring**:
+
 - Track hedge effectiveness over time
 - Rebalance hedges if effectiveness drops
 - Adjust hedge ratios based on correlation
@@ -395,6 +424,7 @@ Hedge Effectiveness = 1 - (Hedged P&L / Unhedged P&L)
 ### Example 1: USD/ILS Box Spread with Currency Hedge
 
 **Setup**:
+
 - Account currency: ILS
 - Box spread: SPX $100,000 USD notional
 - Entry USD/ILS: 3.65
@@ -402,6 +432,7 @@ Hedge Effectiveness = 1 - (Hedged P&L / Unhedged P&L)
 - Position duration: 30 days
 
 **Currency Hedge**:
+
 - Short ILS futures equivalent to $100,000 USD
 - Lock rate: 3.65
 - Hedge cost: 0.1% (annualized)
@@ -419,17 +450,20 @@ Hedge Effectiveness = 1 - (Hedged P&L / Unhedged P&L)
 ### Example 2: Multi-Currency Portfolio
 
 **Setup**:
+
 - Account currencies: ILS, EUR, GBP
 - Multiple box spread positions in USD
 - Total USD exposure: $500,000
 
 **Hedging Strategy**:
+
 - Hedge each currency separately
 - USD/ILS: Short ILS futures
 - USD/EUR: Short EUR futures
 - USD/GBP: Short GBP futures
 
 **Portfolio Currency Risk**:
+
 - Aggregate exposure across all positions
 - Net currency delta: $500,000 USD
 - Currency VaR: $3,000 USD (daily, 95% confidence)
@@ -441,27 +475,32 @@ Hedge Effectiveness = 1 - (Hedged P&L / Unhedged P&L)
 ### Currency Hedge Costs
 
 **Futures**:
+
 - Margin requirement: ~2-5% of notional
 - Roll cost: ~0.05-0.1% per roll
 - Bid-ask spread: ~0.01-0.02%
 
 **Forwards**:
+
 - Spread: ~0.1-0.3% (depending on pair)
 - Credit line: May be required
 
 **Options**:
+
 - Premium: 1-3% of notional (depending on strike/maturity)
 - Time decay: Ongoing cost
 
 ### When to Hedge
 
 **Hedge When**:
+
 - Currency exposure > 10% of account value
 - Currency volatility > 10% annualized
 - Position duration > 30 days
 - Currency risk exceeds risk tolerance
 
 **Don't Hedge When**:
+
 - Currency exposure < 5% of account value
 - Position duration < 7 days
 - Natural hedging available
@@ -474,11 +513,13 @@ Hedge Effectiveness = 1 - (Hedged P&L / Unhedged P&L)
 ### Enhanced Profitability Calculation
 
 **Current** (USD only):
+
 ```
 Net Profit = Box Spread Yield - Transaction Costs
 ```
 
 **Enhanced** (with currency):
+
 ```
 Net Profit (ILS) = (Box Spread Yield - Transaction Costs) × Exchange Rate
                  - Currency Hedge Cost

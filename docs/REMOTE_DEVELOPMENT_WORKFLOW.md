@@ -57,6 +57,7 @@ export CURSOR_REMOTE_ALIAS="cursor-m4-mac"
 ```
 
 This script automatically:
+
 - Reads credentials from 1Password
 - Creates SSH key file with correct permissions
 - Updates `~/.ssh/config` with Cursor-optimized settings (compression, keep-alive, connection multiplexing)
@@ -90,6 +91,7 @@ Host cursor-m4-mac
 ### Step 4: Open Workspace
 
 After connection:
+
 1. A new Cursor window opens for the remote connection
 2. Open your workspace folder (File > Open Folder)
 3. Navigate to your project directory on the remote Mac
@@ -143,6 +145,7 @@ Optimize workspace analysis in `~/.cursor/config.json`:
 **Symptom:** "Failed to download VS Code Server (Server returned 404)"
 
 **Solutions:**
+
 1. **Manual Server Installation:**
    - SSH into remote Mac manually
    - Download VS Code Server manually from [VS Code releases](https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64)
@@ -161,14 +164,18 @@ Optimize workspace analysis in `~/.cursor/config.json`:
 **Symptom:** Connection drops or times out frequently
 
 **Solutions:**
+
 1. Configure SSH server keep-alive (see Configuration section above)
 2. Increase Cursor's SSH timeout in `~/.cursor/config.json`:
+
    ```json
    {
      "remote.SSH.connectTimeout": 120
    }
    ```
+
 3. Use SSH multiplexing (add to `~/.ssh/config`):
+
    ```
    ControlMaster auto
    ControlPath ~/.ssh/control:%h:%p:%r
@@ -180,6 +187,7 @@ Optimize workspace analysis in `~/.cursor/config.json`:
 **Symptom:** Some extensions don't work on remote
 
 **Solutions:**
+
 - Most Cursor extensions work on remote, but some may have limitations
 - Check extension documentation for remote support
 - Install extensions on remote after connecting
@@ -187,12 +195,15 @@ Optimize workspace analysis in `~/.cursor/config.json`:
 ### Issue 4: Performance Considerations
 
 **Recommendations:**
+
 - Use SSH key-based authentication (no passwords)
 - Optimize network connection (prefer wired or high-speed WiFi)
 - Configure SSH compression if network is slow:
+
   ```
   Compression yes
   ```
+
 - Use local file watching judiciously (exclude `node_modules`, `build/`, etc.)
 
 ## Workflow Integration
@@ -220,16 +231,19 @@ Optimize workspace analysis in `~/.cursor/config.json`:
 #### Distcc Remote Compilation
 
 The remote M4 Mac can serve dual purposes:
+
 - **Cursor Remote Development:** Full IDE access
 - **Distcc Compilation Worker:** Distributed C++ builds
 
 Both can run simultaneously - just use different SSH aliases:
+
 - `cursor-m4-mac` for Cursor Remote-SSH
 - `distcc-m4` for distcc compilation (existing setup)
 
 #### Git Workflow
 
 Recommended approach:
+
 1. **Single Source of Truth:** Use GitHub as primary repo
 2. **Both Machines Sync:** Pull/push to same repo
 3. **Branch Strategy:** Use feature branches for work on either machine
@@ -280,14 +294,19 @@ If Cursor Remote-SSH proves challenging:
 ### Connection Won't Establish
 
 1. **Test SSH manually:**
+
    ```bash
    ssh cursor-m4-mac
    ```
+
 2. **Check SSH config:**
+
    ```bash
    cat ~/.ssh/config | grep -A 10 cursor-m4-mac
    ```
+
 3. **Verify network access:**
+
    ```bash
    ping <remote_mac_ip>
    ```
@@ -295,9 +314,11 @@ If Cursor Remote-SSH proves challenging:
 ### Remote Extensions Won't Install
 
 1. **Check remote permissions:**
+
    ```bash
    ssh cursor-m4-mac "ls -la ~/.vscode-server"
    ```
+
 2. **Manually install extensions:**
    - Connect via SSH
    - Download extension VSIX

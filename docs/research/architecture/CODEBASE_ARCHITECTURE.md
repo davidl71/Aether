@@ -51,91 +51,109 @@ This document provides a high-level architectural overview of the IBKR Box Sprea
 ## Core Components
 
 ### 1. Box Spread Strategy Engine
+
 **Location**: `native/src/box_spread_strategy.cpp`, `native/include/box_spread_strategy.h`
 
 **Purpose**: Identifies and validates arbitrage opportunities in box spreads.
 
 **Key Responsibilities**:
+
 - Scan option chains for potential box spreads
 - Calculate arbitrage profit (strike width - net debit)
 - Validate minimum profit thresholds
 - Filter by expiration dates and strike widths
 
 **Key Classes**:
+
 - `BoxSpreadStrategy`: Main strategy class
 - `BoxSpread`: Represents a single box spread opportunity
 - `Scenario`: Represents a potential trade scenario
 
 **Dependencies**:
+
 - `OptionChain`: For option data
 - `RiskCalculator`: For risk assessment
 - `ConfigManager`: For strategy parameters
 
 ### 2. Option Chain Manager
+
 **Location**: `native/src/option_chain.cpp`, `native/include/option_chain.h`
 
 **Purpose**: Manages and queries option chain data from TWS API.
 
 **Key Responsibilities**:
+
 - Request option chains from TWS
 - Cache and organize option data
 - Filter options by expiration and strike
 - Provide efficient lookup of options
 
 **Key Classes**:
+
 - `OptionChain`: Container for option data
 - `OptionContract`: Individual option contract
 
 **Dependencies**:
+
 - `TWSClient`: For market data requests
 - `types.h`: For data structures
 
 ### 3. Risk Calculator
+
 **Location**: `native/src/risk_calculator.cpp`, `native/include/risk_calculator.h`
 
 **Purpose**: Calculates risk metrics and validates position limits.
 
 **Key Responsibilities**:
+
 - Calculate Value at Risk (VaR)
 - Compute position sizing based on risk limits
 - Validate against maximum exposure limits
 - Calculate portfolio-level risk metrics
 
 **Key Classes**:
+
 - `RiskCalculator`: Main risk calculation engine
 - `RiskMetrics`: Risk metric results
 
 **Dependencies**:
+
 - `ConfigManager`: For risk parameters
 - `types.h`: For position data
 
 ### 4. Order Manager
+
 **Location**: `native/src/order_manager.cpp`, `native/include/order_manager.h`
 
 **Purpose**: Manages multi-leg orders and tracks execution status.
 
 **Key Responsibilities**:
+
 - Create multi-leg box spread orders
 - Track order status and fills
 - Handle partial fills
 - Manage order lifecycle
 
 **Key Classes**:
+
 - `OrderManager`: Main order management class
 - `Order`: Individual order representation
 - `OrderState`: Order status tracking
 
 **Dependencies**:
+
 - `TWSClient`: For order submission
 - `BoxSpreadStrategy`: For order creation
 - `types.h`: For order data structures
 
 ### 5. TWS Client
+
 **Location**: `native/src/tws_client.cpp`, `native/include/tws_client.h`
 
 **Purpose**: Interface to Interactive Brokers TWS/Gateway API.
 
 **Key Responsibilities**:
+
 - Establish connection to TWS/Gateway
 - Request market data
 - Submit orders
@@ -143,35 +161,42 @@ This document provides a high-level architectural overview of the IBKR Box Sprea
 - Manage connection state
 
 **Key Classes**:
+
 - `TWSClient`: Main client class (inherits from `DefaultEWrapper`)
 - Uses TWS API classes: `EClientSocket`, `Contract`, `Order`
 
 **Dependencies**:
+
 - TWS API library (`libtwsapi.dylib`)
 - Protocol Buffers (for TWS messages)
 - Intel Decimal Library (for price precision)
 
 ### 6. Config Manager
+
 **Location**: `native/src/config_manager.cpp`, `native/include/config_manager.h`
 
 **Purpose**: Loads and validates JSON configuration.
 
 **Key Responsibilities**:
+
 - Parse JSON configuration file
 - Validate configuration parameters
 - Provide typed access to config values
 - Handle configuration errors
 
 **Key Classes**:
+
 - `ConfigManager`: Configuration management class
 - `Config`: Configuration data structure
 
 **Dependencies**:
+
 - nlohmann/json: For JSON parsing
 
 ## Data Flow
 
 ### 1. Initialization Flow
+
 ```
 main() → ConfigManager::load()
        → TWSClient::connect()
@@ -180,6 +205,7 @@ main() → ConfigManager::load()
 ```
 
 ### 2. Trading Flow
+
 ```
 TWSClient::onTickPrice() → OptionChain::update()
                          → BoxSpreadStrategy::scan()
@@ -189,6 +215,7 @@ TWSClient::onTickPrice() → OptionChain::update()
 ```
 
 ### 3. Order Execution Flow
+
 ```
 TWSClient::onOrderStatus() → OrderManager::update_status()
 TWSClient::onExecution()   → OrderManager::record_fill()
@@ -200,6 +227,7 @@ TWSClient::onPosition()     → OrderManager::update_position()
 ### Types (`native/include/types.h`)
 
 **OptionContract**:
+
 - `symbol`: Option symbol (e.g., "SPY 250120C00500000")
 - `underlying`: Underlying symbol (e.g., "SPY")
 - `strike`: Strike price
@@ -208,6 +236,7 @@ TWSClient::onPosition()     → OrderManager::update_position()
 - `multiplier`: Contract multiplier (usually 100)
 
 **BoxSpread**:
+
 - `legs`: Array of 4 option contracts
 - `net_debit`: Total cost to enter
 - `strike_width`: Difference between strikes
@@ -215,6 +244,7 @@ TWSClient::onPosition()     → OrderManager::update_position()
 - `roi`: Return on investment percentage
 
 **Order**:
+
 - `order_id`: TWS order ID
 - `contracts`: Array of option contracts
 - `quantities`: Array of quantities (positive = buy, negative = sell)
@@ -229,6 +259,7 @@ TWSClient::onPosition()     → OrderManager::update_position()
 - **Market Data**: Thread-safe option chain updates
 
 **Synchronization**:
+
 - Mutexes protect shared data structures
 - Atomic flags for connection state
 - Condition variables for waiting on callbacks
@@ -275,16 +306,19 @@ TWSClient::onPosition()     → OrderManager::update_position()
 ## Testing Strategy
 
 ### Unit Tests
+
 - Individual component tests (Catch2)
 - Mock TWS client for isolation
 - Test edge cases and error conditions
 
 ### Integration Tests
+
 - Full trading flow with mock TWS
 - Configuration validation
 - Risk limit enforcement
 
 ### Paper Trading Tests
+
 - Real TWS connection (paper account)
 - End-to-end validation
 - Performance monitoring

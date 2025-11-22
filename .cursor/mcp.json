@@ -10,6 +10,31 @@
         "semgrep"
       ]
     },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/davidlowes/ib_box_spread_full_universal"
+      ],
+      "description": "File system operations for reading, writing, and managing project files"
+    },
+    "agentic-tools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@pimzino/agentic-tools-mcp"
+      ],
+      "description": "Advanced task management and agent memories with project-specific storage - unlimited task hierarchy, persistent agent context, git-trackable data"
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "description": "Context7 MCP server - provides up-to-date, version-specific documentation and code examples. Access current documentation by appending 'use context7' to prompts. Ensures accurate code generation with latest API references."
+    },
     "notebooklm": {
       "command": "uvx",
       "args": [
@@ -20,58 +45,20 @@
         "notebooklm"
       ]
     },
-    "filesystem": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "${workspaceFolder}"
-      ],
-      "description": "File system operations for reading, writing, and managing project files"
-    },
     "git": {
       "command": "npx",
       "args": [
         "-y",
         "@modelcontextprotocol/server-git",
         "--repository",
-        "${workspaceFolder}"
+        "/Users/davidlowes/ib_box_spread_full_universal"
       ],
-      "description": "Git version control operations - understand history, help with commits, branch management"
+      "description": "Git version control operations - AI can understand git history, help with commit messages, and understand branch structure and diffs"
     },
-    "agentic-tools": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@pimzino/agentic-tools-mcp"
-      ],
-      "description": "Advanced task management and agent memories with project-specific storage - unlimited task hierarchy, persistent agent context, git-trackable data"
-    },
-    "gitkraken": {
-      "command": "uvx",
-      "args": [
-        "mcpower-proxy==0.0.87",
-        "--wrapped-config",
-        "{\n      \"command\": \"npx\",\n      \"args\": [\n        \"-y\",\n        \"@gitkraken/mcp-server-gitkraken\"\n      ],\n      \"description\": \"GitKraken MCP server for enhanced Git workflow, issue tracking (GitHub, GitLab, Jira, Linear, Azure DevOps), and PR management\"\n    }",
-        "--name",
-        "gitkraken"
-      ]
-    },
-    "iterm2": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@rishabkoul/iterm-mcp-server"
-      ],
-      "description": "iTerm2 MCP server - provides terminal context to Cursor agents: create/manage iTerm2 sessions, execute commands, read terminal output, view active terminals. Enables AI to understand your terminal state, service status, and command history."
-    },
-    "context7": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@upstash/context7-mcp"
-      ],
-      "description": "Context7 MCP server - provides up-to-date, version-specific documentation and code examples. Access current documentation by appending 'use context7' to prompts. Ensures accurate code generation with latest API references."
+    "sequential_thinking": {
+      "command": "sequential-thinking-mcp",
+      "args": [],
+      "description": "Sequential Thinking MCP server for structured problem-solving and implementation workflow - converts structural understanding from Tractatus Thinking into actionable implementation steps"
     }
   }
 }

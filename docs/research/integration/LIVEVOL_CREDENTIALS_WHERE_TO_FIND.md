@@ -10,6 +10,7 @@
 LiveVol uses **OAuth 2.0 Client Credentials Flow** for machine-to-machine communication.
 
 **Key Details**:
+
 - **Token Endpoint**: `https://id.livevol.com/connect/token`
 - **Authentication**: Basic Auth with base64 encoded `client_id:client_secret`
 - **Grant Type**: `client_credentials`
@@ -69,6 +70,7 @@ If credentials are not visible in your account:
 ### Step 1: Get Credentials
 
 You need:
+
 - **Client ID**: Example format: `your_client_id_here`
 - **Client Secret**: Example format: `your_client_secret_here`
 
@@ -79,17 +81,20 @@ You need:
 **Method**: `POST`
 
 **Headers**:
+
 ```
 Authorization: Basic <base64_encoded_client_id:client_secret>
 Content-Type: application/x-www-form-urlencoded
 ```
 
 **Body**:
+
 ```
 grant_type=client_credentials
 ```
 
 **Example Request**:
+
 ```bash
 curl -X POST https://id.livevol.com/connect/token \
   -H "Authorization: Basic $(echo -n 'your_client_id:your_client_secret' | base64)" \
@@ -98,6 +103,7 @@ curl -X POST https://id.livevol.com/connect/token \
 ```
 
 **Example Response**:
+
 ```json
 {
   "access_token": "eyJ0eXAiOi...",
@@ -109,11 +115,13 @@ curl -X POST https://id.livevol.com/connect/token \
 ### Step 3: Use Access Token
 
 **Header**:
+
 ```
 Authorization: Bearer <access_token>
 ```
 
 **Example Request**:
+
 ```bash
 curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   https://api.livevol.com/v1/market/symbols
@@ -173,6 +181,7 @@ curl -X POST https://id.livevol.com/connect/token \
 **Symptoms**: No API section in settings
 
 **Solutions**:
+
 - ✅ Check if trial includes API access
 - ✅ Look in different menu locations
 - ✅ Contact LiveVol support
@@ -184,6 +193,7 @@ curl -X POST https://id.livevol.com/connect/token \
 **Symptoms**: `401 Unauthorized` or `403 Forbidden`
 
 **Solutions**:
+
 - ✅ Verify Client ID and Secret are correct
 - ✅ Check if credentials are base64 encoded correctly
 - ✅ Verify endpoint: `https://id.livevol.com/connect/token`
@@ -196,6 +206,7 @@ curl -X POST https://id.livevol.com/connect/token \
 **Symptoms**: `404 Not Found`
 
 **Solutions**:
+
 - ✅ Use correct endpoint: `https://id.livevol.com/connect/token`
 - ✅ NOT: `https://api.livevol.com/v1/oauth/token`
 - ✅ Identity server is separate from API server
@@ -231,6 +242,7 @@ curl -X POST https://id.livevol.com/connect/token \
 ---
 
 **Once you have credentials, run:**
+
 ```bash
 python scripts/livevol_api_explorer.py \
   --client-id YOUR_CLIENT_ID \

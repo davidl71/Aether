@@ -33,11 +33,14 @@ I've reviewed your implementation plan and generated the foundational code struc
 As you type the adapter implementations, **Tabnine will help with:**
 
 #### T-35: Alpaca Adapter
+
 **Files to create:**
+
 - `native/include/brokers/alpaca_adapter.h`
 - `native/src/brokers/alpaca_adapter.cpp`
 
 **Tabnine will suggest:**
+
 - HTTP client initialization code
 - JSON parsing patterns
 - Error handling blocks
@@ -45,6 +48,7 @@ As you type the adapter implementations, **Tabnine will help with:**
 - REST API call patterns
 
 **Example workflow:**
+
 ```cpp
 // You type:
 class AlpacaAdapter : public brokers::IBroker {
@@ -57,22 +61,28 @@ class AlpacaAdapter : public brokers::IBroker {
 ```
 
 #### T-36: IB Client Portal Adapter
+
 **Files to create:**
+
 - `native/include/brokers/ib_client_portal_adapter.h`
 - `native/src/brokers/ib_client_portal_adapter.cpp`
 
 **Tabnine will suggest:**
+
 - OAuth 2.0 flow implementation
 - Session token management
 - REST API patterns
 - Error handling
 
 #### T-37: Broker Manager
+
 **Files to create:**
+
 - `native/include/brokers/broker_manager.h`
 - `native/src/brokers/broker_manager.cpp`
 
 **Tabnine will suggest:**
+
 - Factory pattern implementation
 - Configuration management
 - Broker selection logic
@@ -85,6 +95,7 @@ class AlpacaAdapter : public brokers::IBroker {
 ### Real-Time Suggestions
 
 **As you type, Tabnine provides:**
+
 1. **Variable Names** - Based on context and project patterns
 2. **Method Implementations** - Following existing code style
 3. **Error Handling** - Matching project error patterns
@@ -94,6 +105,7 @@ class AlpacaAdapter : public brokers::IBroker {
 ### Context-Aware Completions
 
 **Tabnine learns from:**
+
 - Existing `TWSClient` implementation
 - Project error handling patterns
 - Logging conventions (spdlog)
@@ -103,6 +115,7 @@ class AlpacaAdapter : public brokers::IBroker {
 ### Multi-Line Suggestions
 
 **Tabnine can suggest:**
+
 - Complete method implementations
 - Error handling blocks
 - Logging statements
@@ -115,6 +128,7 @@ class AlpacaAdapter : public brokers::IBroker {
 ### 1. Start with Alpaca Adapter
 
 **Create header file:**
+
 ```cpp
 // native/include/brokers/alpaca_adapter.h
 #pragma once
@@ -133,6 +147,7 @@ class AlpacaAdapter : public IBroker {
 ```
 
 **As you type, Tabnine suggests:**
+
 - Member variables for HTTP client
 - Constructor parameters
 - Method implementations
@@ -141,6 +156,7 @@ class AlpacaAdapter : public IBroker {
 ### 2. Implement Methods
 
 **Example:**
+
 ```cpp
 bool AlpacaAdapter::connect() {
   // Tabnine suggests: HTTP client initialization
@@ -153,6 +169,7 @@ bool AlpacaAdapter::connect() {
 ### 3. Use Tabnine for Boilerplate
 
 **Tabnine excels at:**
+
 - Variable declarations
 - Error handling blocks
 - Logging statements
@@ -211,17 +228,19 @@ bool AlpacaAdapter::connect() {
 
 ---
 
-## Ready to Code!
+## Ready to Code
 
 **Tabnine is installed and configured.** Start typing your adapter implementations, and Tabnine will provide real-time suggestions based on your codebase patterns.
 
 **I can help:**
+
 - Review generated code
 - Refine implementations
 - Add missing features
 - Optimize performance
 
 **Tabnine helps:**
+
 - Real-time completions
 - Boilerplate code
 - Pattern suggestions

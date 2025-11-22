@@ -280,11 +280,26 @@
   "python.analysis.typeCheckingMode": "basic",
   "python.analysis.autoImportCompletions": true,
   "python.formatting.provider": "black",
+  // Python import resolution - add project paths for notebooks and modules
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/python",
+    "${workspaceFolder}/python/bindings",
+    "${workspaceFolder}/python/integration"
+  ],
+  // Enable import resolution for Jupyter notebooks
+  "python.analysis.diagnosticMode": "workspace",
   // Disable flake8 - use trunk's ruff instead (faster, more modern)
   // Use scripts/run_linters.sh for bandit security scanning
   "python.linting.enabled": false,
   // "python.linting.pylintEnabled": false,
   // "python.linting.flake8Enabled": true,
+
+  // Jupyter Notebook Settings
+  "jupyter.notebookFileRoot": "${workspaceFolder}",
+  // Use same Python interpreter for notebooks
+  "jupyter.defaultKernel": "",
+  // Enable import resolution in notebook cells
+  "jupyter.askForKernelRestart": false,
 
   // Rust Settings (for agents/backend)
   "rust-analyzer.checkOnSave.command": "clippy",
@@ -420,6 +435,15 @@
   "python.testing.pytestArgs": ["python"],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
+  "jupyter.interactiveWindow.creationMode": "perFile",
+  "cursorpyright.analysis.autoImportCompletions": true,
+  "cursorpyright.analysis.diagnosticMode": "workspace",
+  "cursorpyright.analysis.extraPaths": [
+    "${workspaceFolder}/python",
+    "${workspaceFolder}/python/bindings",
+    "${workspaceFolder}/python/integration"
+  ],
+  "cursorpyright.analysis.typeCheckingMode": "basic",
 
   // ==========================================
   // Personal Preferences - Move to User Settings

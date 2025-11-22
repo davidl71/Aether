@@ -29,22 +29,28 @@
 The PWA needs to be rebuilt to include the new buy/sell disparity features.
 
 **Option A: Development Mode (Hot Reload)**
+
 ```bash
 cd web
 npm run dev
 ```
+
 This will:
+
 - Start Vite dev server on `http://localhost:5173`
 - Auto-reload when files change
 - Show the new buy/sell columns in the table
 
 **Option B: Production Build**
+
 ```bash
 cd web
 npm run build
 npm run preview
 ```
+
 This will:
+
 - Build optimized production bundle
 - Preview on `http://localhost:4173`
 - Include service worker for PWA features
@@ -58,6 +64,7 @@ Just rebuild and refresh the browser.
 The TUI needs to be rebuilt to include the new buy/sell calculations.
 
 **Quick Build (if CMake is already configured):**
+
 ```bash
 cd build
 cmake --build . --target ib_box_spread_tui
@@ -65,6 +72,7 @@ cmake --build . --target ib_box_spread_tui
 ```
 
 **Full Build (if needed):**
+
 ```bash
 # From project root
 ./scripts/build_universal.sh
@@ -77,11 +85,13 @@ cmake --build . --target ib_box_spread_tui
 ```
 
 **Run with Mock Data:**
+
 ```bash
 ./build/bin/ib_box_spread_tui --mock
 ```
 
 **Run with Live Backend:**
+
 ```bash
 # Terminal 1: Start backend (if you have one running)
 # Terminal 2: Run TUI
@@ -91,6 +101,7 @@ cmake --build . --target ib_box_spread_tui
 ### 3. Verify Features Work
 
 **Web UI Checks:**
+
 1. ✅ See "Buy Profit" column showing profit from buying box spread
 2. ✅ See "Sell Profit" column showing profit from selling box spread
 3. ✅ See "Disparity" column showing difference (positive = buy better, negative = sell better)
@@ -99,6 +110,7 @@ cmake --build . --target ib_box_spread_tui
 6. ✅ Filtering: European-style options shown by default
 
 **TUI Checks:**
+
 1. ✅ Data structures include buy/sell fields
 2. ✅ Mock provider populates buy/sell disparity
 3. ⚠️ **Note**: TUI display components still need to be updated to show buy/sell columns

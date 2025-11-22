@@ -33,17 +33,20 @@ CBOE's Quoted Spread Book (QSB) service allows Market Makers to rest orders dire
 ### Box Spread Availability
 
 **Instruments Available**:
+
 - **Box Spreads**: First four serial, first three quarterly, and first three December standard SPX contracts at 4000 and 5000 strikes
 - **Approximately**: ~10 quotable box spread instruments daily
 - **Exchange**: CBOE (CBOE, CBOE2, EDGX)
 
 **Additional Instruments**:
+
 - **Box Swaps**: ~25 quotable instruments daily
 - **Jelly Rolls**: ~120 quotable instruments daily
 
 ### How to Access QSB Quotes
 
 #### Option 1: CBOE Reference Data (JSON/HTML)
+
 - **URL**: Cboe U.S. Options Reference Data webpage
 - **Format**: JSON/HTML
 - **Availability**: Complete list available by 7:00 a.m. ET each trading day
@@ -51,6 +54,7 @@ CBOE's Quoted Spread Book (QSB) service allows Market Makers to rest orders dire
 - **Use Case**: Symbol discovery, instrument identification
 
 #### Option 2: Complex PITCH/TOP Feeds (Real-time)
+
 - **Feeds**: Complex PITCH and TOP feeds
 - **Message Type**: EDCID (Exchange Designated Complex Instrument Definition)
 - **Update Frequency**: Real-time
@@ -58,6 +62,7 @@ CBOE's Quoted Spread Book (QSB) service allows Market Makers to rest orders dire
 - **Access**: Requires CBOE market data subscription
 
 #### Option 3: TWS API (Indirect)
+
 - **Status**: Not directly supported
 - **Workaround**: Build box spreads from individual option legs
 - **Limitation**: No direct access to QSB quotes
@@ -116,11 +121,13 @@ The codebase includes CME research documentation (`docs/CME_RESEARCH.md`), but n
 ### CME Market Data Access
 
 **Licensed Distributors**:
+
 - **Directory**: <https://www.cmegroup.com/market-data/license-data/licensed-market-data-distributors.html>
 - **Purpose**: Official directory of authorized CME market data distributors
 - **Use Case**: Sourcing compliant CME market data feeds and understanding licensing partners
 
 **CME Client Systems Wiki**:
+
 - **Portal**: <https://cmegroupclientsite.atlassian.net/wiki/spaces/EPICSANDBOX/overview?homepageId=457314687>
 - **Scope**: Reference data, Globex connectivity, clearing services, test environments
 - **Access**: Some content requires authenticated CME client credentials
@@ -171,6 +178,7 @@ To integrate CME options data:
 The TWS API supports combo orders via the `ComboLeg` structure, but this is **not yet implemented** in the codebase.
 
 **Placeholder Code**:
+
 ```cpp
 // python/integration/order_factory.py:235-256
 def create_combo_order(
@@ -197,11 +205,13 @@ From `docs/ACTION_PLAN.md`:
 **Priority 2: Implement Atomic Execution (All-or-Nothing)**
 
 **Option A (Preferred)**: Use IBKR combo orders
+
 - Create `ComboLeg` structures for all 4 legs
 - Place as single combo order
 - Guarantees all-or-nothing execution
 
 **Option B (Fallback)**: Implement rollback logic
+
 - Place all 4 orders rapidly
 - Monitor fill status
 - If any leg fails, cancel remaining orders
@@ -228,18 +238,21 @@ OrderComboLegListSPtr orderComboLegs;
 ## Recommended Integration Priority
 
 ### 1. IBKR Combo Orders (High Priority)
+
 - **Why**: Atomic execution, better fill guarantees
 - **Effort**: Medium
 - **Benefit**: Improved execution quality, reduced partial fill risk
 - **Status**: Placeholder exists, needs implementation
 
 ### 2. CBOE QSB Integration (Medium Priority)
+
 - **Why**: Direct access to quoted box spreads on CBOE
 - **Effort**: High (requires market data subscription, feed integration)
 - **Benefit**: Access to QSB quotes, better execution opportunities
 - **Status**: Not integrated, requires significant work
 
 ### 3. CME Options Data (Low Priority)
+
 - **Why**: Expand to futures options if needed
 - **Effort**: Very High (requires CME licensing, Globex connectivity)
 - **Benefit**: Access to CME options, futures-based box spreads
@@ -252,16 +265,19 @@ OrderComboLegListSPtr orderComboLegs;
 ### Current Approach: Build from Individual Legs
 
 **How it works**:
+
 1. Get individual option quotes from TWS API
 2. Calculate box spread price from 4 legs
 3. Place 4 separate orders (or combo order when implemented)
 
 **Advantages**:
+
 - Works with existing TWS API integration
 - No additional market data subscriptions
 - Flexible (can build any strike combination)
 
 **Disadvantages**:
+
 - No direct access to exchange-quoted box spreads
 - Execution risk (partial fills)
 - May miss QSB opportunities on CBOE
@@ -269,16 +285,19 @@ OrderComboLegListSPtr orderComboLegs;
 ### Future Approach: Direct QSB Quotes
 
 **How it would work**:
+
 1. Subscribe to CBOE QSB quotes via Complex PITCH/TOP feeds
 2. Receive direct box spread quotes from exchange
 3. Execute against QSB quotes (better execution)
 
 **Advantages**:
+
 - Direct access to exchange quotes
 - Better execution (lit Market Maker quotes)
 - Reduced execution risk
 
 **Disadvantages**:
+
 - Requires CBOE market data subscription
 - Limited to QSB instruments (~10 daily)
 - Additional integration complexity
@@ -288,26 +307,30 @@ OrderComboLegListSPtr orderComboLegs;
 ## Next Steps
 
 ### Immediate (Week 1-2)
+
 1. **Implement IBKR Combo Orders**:
    - Add `ComboLeg` structure support
    - Implement `create_combo_order` method
    - Test with TWS API
 
 ### Short-term (Week 3-4)
-2. **Evaluate CBOE QSB Integration**:
+
+1. **Evaluate CBOE QSB Integration**:
    - Research CBOE market data subscription requirements
    - Assess cost vs. benefit
    - Design integration architecture
 
 ### Medium-term (Month 2-3)
-3. **CBOE QSB Integration** (if approved):
+
+1. **CBOE QSB Integration** (if approved):
    - Subscribe to CBOE Complex PITCH/TOP feeds
    - Implement EDCID message parsing
    - Integrate QSB quote subscription
    - Test with live data
 
 ### Long-term (Future)
-4. **CME Options Integration** (if needed):
+
+1. **CME Options Integration** (if needed):
    - Evaluate CME licensing requirements
    - Design CME integration architecture
    - Implement CME options data feed

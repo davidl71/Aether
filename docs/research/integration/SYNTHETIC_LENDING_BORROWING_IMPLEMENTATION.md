@@ -16,10 +16,12 @@ This document summarizes the implementation of synthetic lending/borrowing capab
 #### 1. Implied Interest Rate Calculation
 
 **Files Modified**:
+
 - `native/include/box_spread_strategy.h` - Added method declarations
 - `native/src/box_spread_strategy.cpp` - Added implementations
 
 **New Methods**:
+
 ```cpp
 // Calculate implied annual interest rate
 static double calculate_implied_interest_rate(const types::BoxSpreadLeg& spread);
@@ -41,16 +43,19 @@ static double compare_to_benchmark(
 **Rate Calculation Formulas**:
 
 **For Borrowing (Net Debit > 0)**:
+
 ```
 implied_rate = ((net_debit - strike_width) / strike_width) * (365 / days_to_expiry) * 100
 ```
 
 **For Lending (Net Credit > 0)**:
+
 ```
 implied_rate = ((strike_width - net_credit) / net_credit) * (365 / days_to_expiry) * 100
 ```
 
 **Features**:
+
 - ✅ Handles both lending (credit) and borrowing (debit) scenarios
 - ✅ Annualizes rates using 365-day convention
 - ✅ Includes transaction costs in effective rate calculation
@@ -59,6 +64,7 @@ implied_rate = ((strike_width - net_credit) / net_credit) * (365 / days_to_expir
 #### 2. Benchmark Comparison
 
 **New Methods**:
+
 ```cpp
 // Find box spread opportunities that beat benchmark rate
 std::vector<BoxSpreadOpportunity> find_lending_opportunities(
@@ -76,12 +82,14 @@ bool beats_benchmark(
 ```
 
 **Features**:
+
 - ✅ Compares implied rates to benchmarks (T-bills, SOFR, margin loan rates)
 - ✅ Returns spread in basis points (positive = box spread beats benchmark)
 - ✅ Filters opportunities by minimum spread threshold
 - ✅ Ranks opportunities by rate competitiveness
 
 **Usage Example**:
+
 ```cpp
 // Find lending opportunities beating 5.0% T-bill rate by at least 50 bps
 double t_bill_rate = 5.0;
@@ -101,6 +109,7 @@ for (const auto& opp : opportunities) {
 #### 3. Position Improvement Evaluation
 
 **New Structures**:
+
 ```cpp
 struct PositionImprovement {
     std::string position_id;
@@ -122,6 +131,7 @@ struct PositionImprovement {
 ```
 
 **New Methods**:
+
 ```cpp
 // Evaluate position for improvement opportunities
 std::optional<PositionImprovement> evaluate_position_improvement(
@@ -144,17 +154,20 @@ void monitor_positions_with_improvements(
 ```
 
 **Features**:
+
 - ✅ Framework for evaluating position improvements
 - ✅ Roll positions when better rates available on different expirations
 - ✅ Early close evaluation (compare early close value vs holding to expiry)
 - ✅ Automated monitoring loop with configurable threshold
 
 **Implementation Status**:
+
 - ✅ Framework and method signatures complete
 - ⚠️ Core evaluation logic is stubbed (requires current market data integration)
 - ✅ Roll and early close execution methods implemented
 
 **Next Steps for Full Implementation**:
+
 1. Integrate real-time market data for position mark-to-market
 2. Implement rate improvement detection logic
 3. Add scanning for better opportunities on alternative expirations
@@ -267,17 +280,21 @@ if (improvement.has_value()) {
 ### Code References
 
 **Header File**:
+
 - `native/include/box_spread_strategy.h` - Method declarations
 
 **Implementation**:
+
 - `native/src/box_spread_strategy.cpp` - Method implementations
 
 **Calculator Methods**:
+
 - `BoxSpreadCalculator::calculate_implied_interest_rate()`
 - `BoxSpreadCalculator::calculate_effective_interest_rate()`
 - `BoxSpreadCalculator::compare_to_benchmark()`
 
 **Strategy Methods**:
+
 - `BoxSpreadStrategy::find_lending_opportunities()`
 - `BoxSpreadStrategy::beats_benchmark()`
 - `BoxSpreadStrategy::evaluate_position_improvement()`

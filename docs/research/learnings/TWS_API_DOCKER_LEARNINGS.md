@@ -1,11 +1,13 @@
 # TWS API Docker Containerization Learnings
 
 ## Sources
-- **gnzsnz/ib-gateway-docker**: https://github.com/gnzsnz/ib-gateway-docker
-- **extrange/ibkr-docker**: https://github.com/extrange/ibkr-docker
-- **scmhub/ibapi** (Go implementation): https://github.com/scmhub/ibapi
+
+- **gnzsnz/ib-gateway-docker**: <https://github.com/gnzsnz/ib-gateway-docker>
+- **extrange/ibkr-docker**: <https://github.com/extrange/ibkr-docker>
+- **scmhub/ibapi** (Go implementation): <https://github.com/scmhub/ibapi>
 
 ## Overview
+
 This document captures learnings from Docker containerization solutions for IB Gateway/TWS and compares them with our current implementation. These repositories provide valuable patterns for deploying, managing, and automating IB Gateway/TWS in containerized environments.
 
 ## Key Features of Docker Implementations
@@ -13,6 +15,7 @@ This document captures learnings from Docker containerization solutions for IB G
 ### 1. gnzsnz/ib-gateway-docker
 
 **Key Features:**
+
 - ✅ **Two image variants**: `ib-gateway` (headless) and `tws-rdesktop` (RDP access)
 - ✅ **IBC integration**: Automated login using Interactive Brokers Controller
 - ✅ **SSH tunneling**: Remote access via SSH tunnels
@@ -23,6 +26,7 @@ This document captures learnings from Docker containerization solutions for IB G
 - ✅ **Auto-restart**: Automatic tunnel and process restart
 
 **Architecture:**
+
 - Uses IBC (Interactive Brokers Controller) for automated login
 - Xvfb for virtual framebuffer (headless operation)
 - VNC server for remote GUI access
@@ -33,6 +37,7 @@ This document captures learnings from Docker containerization solutions for IB G
 ### 2. extrange/ibkr-docker
 
 **Key Features:**
+
 - ✅ **Unified image**: Single image for both IB Gateway and TWS
 - ✅ **Environment-based config**: Simple configuration via env vars
 - ✅ **Docker Compose**: Easy deployment
@@ -40,6 +45,7 @@ This document captures learnings from Docker containerization solutions for IB G
 - ✅ **Headless operation**: Xvfb for headless mode
 
 **Architecture:**
+
 - Simpler setup compared to gnzsnz/ib-gateway-docker
 - Environment variables for configuration
 - Unified Dockerfile for both modes
@@ -48,6 +54,7 @@ This document captures learnings from Docker containerization solutions for IB G
 ### 3. scmhub/ibapi (Go Implementation)
 
 **Key Features:**
+
 - ✅ **Go implementation**: Native Go TWS API client
 - ✅ **Protocol Buffers**: Uses protobuf for message serialization
 - ✅ **Type safety**: Strong typing with Go structs
@@ -55,6 +62,7 @@ This document captures learnings from Docker containerization solutions for IB G
 - ✅ **Decimal precision**: Uses `fixed` package for decimal arithmetic
 
 **Architecture:**
+
 - Mirrors official Python/C++ TWS API structure
 - Protocol Buffer support for efficient serialization
 - Decimal library for precision financial calculations
@@ -67,12 +75,14 @@ This document captures learnings from Docker containerization solutions for IB G
 ### 1. IBC (Interactive Brokers Controller) Integration
 
 **What It Does:**
+
 - Automates IB Gateway/TWS login process
 - Handles 2FA challenges
 - Manages session persistence
 - Reduces manual intervention
 
 **Implementation Pattern:**
+
 ```bash
 # IBC is used to automate login
 IBC_PATH=/opt/ibc
@@ -81,12 +91,14 @@ ${IBC_PATH}/scripts/ibcstart.sh ${IBC_CONFIG}
 ```
 
 **Benefits for Our Implementation:**
+
 - ✅ Could automate weekly re-authentication
 - ✅ Could handle 2FA challenges programmatically
 - ✅ Could reduce manual intervention
 - ✅ Could enable headless operation
 
 **Current Status:**
+
 - ⚠️ We have weekly re-authentication support in config
 - ⚠️ But it requires manual 2FA approval
 - ✅ Could integrate IBC for full automation
@@ -94,12 +106,14 @@ ${IBC_PATH}/scripts/ibcstart.sh ${IBC_CONFIG}
 ### 2. Headless Operation with VNC/RDP
 
 **What It Does:**
+
 - Runs IB Gateway/TWS without physical display
 - Uses Xvfb (X Virtual Framebuffer) for headless operation
 - Provides VNC/RDP access when GUI is needed
 - Enables remote desktop access
 
 **Implementation Pattern:**
+
 ```dockerfile
 # Install Xvfb and VNC
 RUN apt-get install -y xvfb x11vnc
@@ -112,12 +126,14 @@ x11vnc -display :1 -nopw -listen localhost -xkb -forever -shared &
 ```
 
 **Benefits for Our Implementation:**
+
 - ✅ Could enable headless server deployment
 - ✅ Could provide remote GUI access when needed
 - ✅ Could reduce resource requirements
 - ✅ Could enable cloud deployment
 
 **Current Status:**
+
 - ⚠️ We assume TWS/Gateway runs locally
 - ⚠️ No headless operation support
 - ✅ Could add Docker deployment option
@@ -125,12 +141,14 @@ x11vnc -display :1 -nopw -listen localhost -xkb -forever -shared &
 ### 3. SSH Tunneling for Remote Access
 
 **What It Does:**
+
 - Creates secure SSH tunnels for remote API access
 - Maintains persistent connections
 - Auto-restarts on connection loss
 - Provides secure remote access
 
 **Implementation Pattern:**
+
 ```bash
 # SSH tunnel setup
 ssh -o ServerAliveInterval=20 -o ServerAliveCountMax=3 \
@@ -144,12 +162,14 @@ done
 ```
 
 **Benefits for Our Implementation:**
+
 - ✅ Could enable remote TWS/Gateway access
 - ✅ Could secure API connections
 - ✅ Could enable cloud deployment
 - ✅ Could provide redundancy
 
 **Current Status:**
+
 - ⚠️ We assume local TWS/Gateway connection
 - ⚠️ No remote access support
 - ✅ Could add SSH tunneling option
@@ -157,12 +177,14 @@ done
 ### 4. Secrets Management
 
 **What It Does:**
+
 - Uses Docker secrets for sensitive data
 - Supports `_FILE` environment variables
 - Avoids storing credentials in images
 - Provides secure credential management
 
 **Implementation Pattern:**
+
 ```yaml
 # docker-compose.yml
 services:
@@ -178,12 +200,14 @@ secrets:
 ```
 
 **Benefits for Our Implementation:**
+
 - ✅ Could improve security
 - ✅ Could avoid hardcoded credentials
 - ✅ Could enable automated deployment
 - ✅ Could support multiple environments
 
 **Current Status:**
+
 - ⚠️ We use config files for credentials
 - ⚠️ No Docker secrets support
 - ✅ Could add Docker deployment with secrets
@@ -191,12 +215,14 @@ secrets:
 ### 5. Configuration Management
 
 **What It Does:**
+
 - Uses environment variables for configuration
 - Supports Docker Compose for orchestration
 - Provides default values
 - Enables easy customization
 
 **Implementation Pattern:**
+
 ```yaml
 # docker-compose.yml
 environment:
@@ -209,12 +235,14 @@ environment:
 ```
 
 **Benefits for Our Implementation:**
+
 - ✅ Could simplify deployment
 - ✅ Could enable environment-specific configs
 - ✅ Could improve portability
 - ✅ Could enable cloud deployment
 
 **Current Status:**
+
 - ✅ We have JSON config files
 - ⚠️ No Docker/container support
 - ✅ Could add Docker deployment option
@@ -222,12 +250,14 @@ environment:
 ### 6. Auto-Restart and Health Monitoring
 
 **What It Does:**
+
 - Monitors process health
 - Auto-restarts on failure
 - Maintains persistent connections
 - Provides reliability
 
 **Implementation Pattern:**
+
 ```bash
 # Health check script
 while true; do
@@ -240,12 +270,14 @@ done
 ```
 
 **Benefits for Our Implementation:**
+
 - ✅ Could improve reliability
 - ✅ Could enable automatic recovery
 - ✅ Could reduce manual intervention
 - ✅ Could enable production deployment
 
 **Current Status:**
+
 - ✅ We have auto-reconnect for API connections
 - ⚠️ No TWS/Gateway process monitoring
 - ✅ Could add health monitoring
@@ -253,12 +285,14 @@ done
 ### 7. Protocol Buffers Support (from scmhub/ibapi)
 
 **What It Does:**
+
 - Uses Protocol Buffers for message serialization
 - Provides efficient binary serialization
 - Reduces message size
 - Improves performance
 
 **Implementation Pattern:**
+
 ```go
 // Go implementation uses protobuf
 import "github.com/scmhub/ibapi/proto"
@@ -272,12 +306,14 @@ data, _ := proto.Marshal(msg)
 ```
 
 **Benefits for Our Implementation:**
+
 - ✅ Could improve performance
 - ✅ Could reduce message size
 - ✅ Could enable better type safety
 - ✅ Could enable cross-language compatibility
 
 **Current Status:**
+
 - ⚠️ We use standard TWS API (text-based)
 - ⚠️ No protobuf support
 - ✅ TWS API supports protobuf (see TWS_INTEGRATION_STATUS.md)
@@ -365,13 +401,13 @@ data, _ := proto.Marshal(msg)
 
 ### Medium Priority
 
-3. **Add Remote Access Support**
+1. **Add Remote Access Support**
    - SSH tunneling for remote Gateway
    - VNC/RDP for GUI access
    - Cloud deployment options
    - Secure remote connections
 
-4. **Add Secrets Management**
+2. **Add Secrets Management**
    - Docker secrets support
    - Environment-based secrets
    - Secure credential storage
@@ -379,7 +415,7 @@ data, _ := proto.Marshal(msg)
 
 ### Low Priority
 
-5. **Add Protocol Buffers Support**
+1. **Add Protocol Buffers Support**
    - Enable protobuf mode
    - Binary serialization
    - Performance optimization
@@ -560,6 +596,7 @@ The Docker implementations provide valuable patterns for:
 ✅ **Protocol Buffers**: Efficient message serialization
 
 **Potential Benefits for Our Implementation:**
+
 - Enable cloud deployment
 - Reduce manual intervention
 - Improve reliability
@@ -568,6 +605,7 @@ The Docker implementations provide valuable patterns for:
 - Enable headless operation
 
 **Next Steps:**
+
 1. Evaluate Docker deployment needs
 2. Consider IBC integration for automation
 3. Assess remote access requirements
@@ -578,12 +616,12 @@ The Docker implementations provide valuable patterns for:
 
 ## References
 
-- **gnzsnz/ib-gateway-docker**: https://github.com/gnzsnz/ib-gateway-docker
-- **extrange/ibkr-docker**: https://github.com/extrange/ibkr-docker
-- **scmhub/ibapi**: https://github.com/scmhub/ibapi
-- **IBC (Interactive Brokers Controller)**: https://github.com/IbcAlpha/IBC
+- **gnzsnz/ib-gateway-docker**: <https://github.com/gnzsnz/ib-gateway-docker>
+- **extrange/ibkr-docker**: <https://github.com/extrange/ibkr-docker>
+- **scmhub/ibapi**: <https://github.com/scmhub/ibapi>
+- **IBC (Interactive Brokers Controller)**: <https://github.com/IbcAlpha/IBC>
 - **Our TWS Integration Docs**: `docs/TWS_INTEGRATION_STATUS.md`
-- **Docker Documentation**: https://docs.docker.com/
+- **Docker Documentation**: <https://docs.docker.com/>
 
 ---
 

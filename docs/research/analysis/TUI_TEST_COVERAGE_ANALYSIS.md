@@ -24,9 +24,11 @@
 ### 🔴 Critical Gaps (High Priority)
 
 #### 1. UI State Management (`uiState` methods)
+
 **Location**: `app.go` lines 195-326
 
 **Missing Tests**:
+
 - `newUIState()` - State initialization
 - `observeSnapshot()` - Snapshot observation and cache updates
 - `hasSymbol()` - Symbol existence checking
@@ -43,6 +45,7 @@
 **Why Critical**: These functions manage core UI state and are used throughout the application. Bugs here would affect all UI interactions.
 
 **Recommended Tests**:
+
 ```go
 func TestUIState_ObserveSnapshot(t *testing.T)
 func TestUIState_AddSymbol(t *testing.T)
@@ -57,24 +60,29 @@ func TestUIState_CurveChartWidth(t *testing.T)
 ```
 
 #### 2. Box Spread Calculations
+
 **Location**: `app.go` lines 94-188
 
 **Missing Tests**:
+
 - `selectBenchmark()` - Benchmark selection based on days to expiry
 - `computeBoxMetrics()` - Box spread metrics calculation (net debit, profit, APR, etc.)
 
 **Why Critical**: These calculations are core to the trading strategy and must be accurate.
 
 **Recommended Tests**:
+
 ```go
 func TestSelectBenchmark(t *testing.T)
 func TestComputeBoxMetrics(t *testing.T)
 ```
 
 #### 3. Formatting Functions
+
 **Location**: `app.go` lines 2210-2314
 
 **Missing Tests**:
+
 - `formatBackendLabel()` - Backend label formatting
 - `formatAPRSpread()` - APR spread formatting with color
 - `drawAPRBar()` - APR bar visualization
@@ -83,6 +91,7 @@ func TestComputeBoxMetrics(t *testing.T)
 **Why Critical**: Formatting bugs can mislead users about critical trading metrics.
 
 **Recommended Tests**:
+
 ```go
 func TestFormatBackendLabel(t *testing.T)
 func TestFormatAPRSpread(t *testing.T)
@@ -93,9 +102,11 @@ func TestDrawCandle_EdgeCases(t *testing.T)
 ### 🟡 Important Gaps (Medium Priority)
 
 #### 4. Update Functions
+
 **Location**: `app.go` lines 980-1526
 
 **Missing Tests**:
+
 - `updateHeader()` - Header updates with various snapshot states
 - `updateDashboard()` - Dashboard table updates (empty, sorted, unsorted)
 - `updateDashboardPositions()` - Position preview updates
@@ -110,6 +121,7 @@ func TestDrawCandle_EdgeCases(t *testing.T)
 **Why Important**: These functions handle all UI updates. While integration tests cover some behavior, unit tests would catch edge cases and formatting issues.
 
 **Recommended Tests**:
+
 ```go
 func TestUpdateHeader(t *testing.T)
 func TestUpdateDashboard_Empty(t *testing.T)
@@ -124,9 +136,11 @@ func TestUpdateControls(t *testing.T)
 ```
 
 #### 5. Modal and Interaction Functions
+
 **Location**: `app.go` lines 1528-2188
 
 **Missing Tests**:
+
 - `promptAddSymbol()` - Symbol addition prompt (validation, duplicate handling)
 - `showHelpModal()` - Help modal display
 - `showSymbolDetail()` - Symbol detail modal
@@ -139,9 +153,11 @@ func TestUpdateControls(t *testing.T)
 **Note**: Some of these are difficult to unit test without full tview setup, but key validation logic can be extracted and tested.
 
 #### 6. Data Provider Tests
+
 **Location**: `data/mock.go`, `data/nautilus_placeholder.go`
 
 **Missing Tests**:
+
 - `MockProvider.AddSymbol()` - Symbol addition
 - `MockProvider.generateSnapshot()` - Snapshot generation
 - `MockProvider` edge cases (empty symbols, invalid data)
@@ -150,6 +166,7 @@ func TestUpdateControls(t *testing.T)
 **Why Important**: Data providers are critical for testing and development. Bugs here affect all tests.
 
 **Recommended Tests**:
+
 ```go
 func TestMockProvider_AddSymbol(t *testing.T)
 func TestMockProvider_GenerateSnapshot(t *testing.T)
@@ -160,17 +177,21 @@ func TestNautilusPlaceholderProvider(t *testing.T)
 ### 🟢 Nice to Have (Low Priority)
 
 #### 7. Builder Functions
+
 **Location**: `app.go` lines 785-889
 
 **Missing Tests**:
+
 - `buildHeader()`, `buildTabs()`, `buildDashboard()`, etc.
 
 **Why Low Priority**: These are simple builders that create tview primitives. Integration tests already verify they work correctly.
 
 #### 8. Extraction Functions
+
 **Location**: `app.go` lines 891-968
 
 **Missing Tests**:
+
 - `extractDashboardTable()`, `extractDashboardPositions()`, etc.
 
 **Why Low Priority**: These extract components from layouts. Integration tests verify correct extraction.
@@ -196,32 +217,32 @@ func TestNautilusPlaceholderProvider(t *testing.T)
 
 ### Short-term Actions (Medium Priority)
 
-4. **Add Update Function Tests** (`tui/internal/app/app_updates_test.go`):
+1. **Add Update Function Tests** (`tui/internal/app/app_updates_test.go`):
    - Test update functions with various data states
    - Test empty data, large data, edge cases
    - Verify table/list/text view updates
 
-5. **Add Data Provider Tests** (`tui/internal/data/mock_test.go`):
+2. **Add Data Provider Tests** (`tui/internal/data/mock_test.go`):
    - Test `MockProvider` thoroughly
    - Test `NautilusPlaceholderProvider`
    - Test error cases and edge conditions
 
 ### Long-term Enhancements (Low Priority)
 
-6. **Add Integration Tests for Complex Flows**:
+1. **Add Integration Tests for Complex Flows**:
    - Tab navigation (all tabs)
    - Option chain interaction (navigation, box spread calculation)
    - Symbol addition workflow
    - Window resizing behavior
 
-7. **Add Snapshot Tests for More Views**:
+2. **Add Snapshot Tests for More Views**:
    - Yield curve tab
    - History tab
    - Orders tab
    - Alerts tab
    - FAQ tab
 
-8. **Add Performance Tests**:
+3. **Add Performance Tests**:
    - Large dataset rendering
    - Rapid snapshot updates
    - Window resize performance

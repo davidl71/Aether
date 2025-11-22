@@ -3,6 +3,7 @@
 **Purpose**: Guide for using breadcrumb logging to test and debug trading operations, similar to OpenAlgo's API Analyzer.
 
 **Reference**:
+
 - [OpenAlgo API Analyzer](https://github.com/marketcalls/openalgo) - Comprehensive testing and validation tool
 - [TUI Breadcrumb Logging Guide](./TUI_BREADCRUMB_LOGGING.md) - General breadcrumb logging documentation
 
@@ -11,6 +12,7 @@
 ## Overview
 
 Breadcrumb logging provides a complete audit trail of trading operations, enabling:
+
 - **Risk-Free Testing**: Test all trading operations without actual execution
 - **Real-Time Validation**: Instant feedback on order parameters and strategy logic
 - **Complete Debugging**: Full trail of events leading to issues
@@ -214,6 +216,7 @@ bool RateLimiter::check_message_rate() {
 **Objective**: Verify order placement with full parameter validation
 
 **Breadcrumb Trail**:
+
 ```
 1. place_order_attempt (order_manager) - symbol=SPX, side=BUY, qty=10, price=5090.50
 2. state_change (order_manager) - before_order_execution (dry_run=true, total_orders=5)
@@ -221,6 +224,7 @@ bool RateLimiter::check_message_rate() {
 ```
 
 **Assertions**:
+
 - Order attempt logged with correct parameters
 - State change captured before execution
 - Dry-run mode properly logged
@@ -231,12 +235,14 @@ bool RateLimiter::check_message_rate() {
 **Objective**: Verify validation errors are properly logged
 
 **Breadcrumb Trail**:
+
 ```
 1. place_order_attempt (order_manager) - symbol=SPX, side=BUY, qty=-10, price=5090.50
 2. error (order_manager) - validation_failed, error=Invalid quantity: must be positive
 ```
 
 **Assertions**:
+
 - Validation failure logged with error message
 - No order placed (no order_placed breadcrumb)
 - Error details captured
@@ -246,6 +252,7 @@ bool RateLimiter::check_message_rate() {
 **Objective**: Verify box spread placement with all 4 legs
 
 **Breadcrumb Trail**:
+
 ```
 1. place_box_spread_attempt (order_manager) - symbol=SPX, strikes=5000/5010, expiry=2025-02-21
 2. state_change (order_manager) - box_spread_legs (4 legs with details)
@@ -255,6 +262,7 @@ bool RateLimiter::check_message_rate() {
 ```
 
 **Assertions**:
+
 - All 4 legs logged
 - Order IDs assigned
 - Status updates tracked
@@ -265,6 +273,7 @@ bool RateLimiter::check_message_rate() {
 **Objective**: Verify rate limiting prevents excessive requests
 
 **Breadcrumb Trail**:
+
 ```
 1. place_order_attempt (order_manager) - ... (request 1-49)
 2. place_order_attempt (order_manager) - ... (request 50)
@@ -273,6 +282,7 @@ bool RateLimiter::check_message_rate() {
 ```
 
 **Assertions**:
+
 - Rate limit detected
 - Request rejected
 - Error logged with context
@@ -282,6 +292,7 @@ bool RateLimiter::check_message_rate() {
 **Objective**: Verify connection failures are logged with context
 
 **Breadcrumb Trail**:
+
 ```
 1. tws_connection_attempt (tws_client) - host=127.0.0.1, port=7497
 2. error (tws_client) - connection_failed, error=Connection refused
@@ -290,6 +301,7 @@ bool RateLimiter::check_message_rate() {
 ```
 
 **Assertions**:
+
 - Connection attempts logged
 - Failures captured with error details
 - Reconnection attempts tracked
@@ -342,6 +354,7 @@ def analyze_performance(breadcrumbs):
 ### Regulatory Requirements
 
 Breadcrumb logs provide:
+
 - **Complete Audit Trail**: Every trading operation logged
 - **Timestamp Accuracy**: Millisecond precision timestamps
 - **State Snapshots**: Full state at critical points
@@ -507,6 +520,7 @@ Use consistent naming for similar operations:
 | **Integration** | Web-based UI | ✅ Integrated in application |
 
 **Advantages of Breadcrumb Logging**:
+
 - Integrated directly into application (no separate tool)
 - Complete event trail (not just API calls)
 - State snapshots at critical points

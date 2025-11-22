@@ -21,10 +21,10 @@ impl StrategyEngine {
     let strategy_name = strategy_name.to_owned();
 
     let py_strategy = Python::with_gil(|py| -> anyhow::Result<Py<PyAny>> {
-      let module = PyModule::import(py, &module_path)
+      let module = PyModule::import(py, module_path.as_str())
         .with_context(|| format!("failed to import Python module {module_path}"))?;
       let strategy_cls = module
-        .getattr(&strategy_name)
+        .getattr(strategy_name.as_str())
         .with_context(|| format!("strategy class {strategy_name} missing from module"))?;
       let instance = strategy_cls
         .call0()

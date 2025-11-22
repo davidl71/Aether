@@ -12,6 +12,7 @@
 **Location**: `native/src/tws_client.cpp`
 
 **Current Implementation** (lines 872-957):
+
 - `tickPrice()`: Updates simple `market_data_` map with price fields (BID, ASK, LAST, etc.)
 - `tickSize()`: Updates size fields (BID_SIZE, ASK_SIZE, LAST_SIZE, VOLUME)
 - Simple map-based storage: `std::map<TickerId, types::MarketData> market_data_`
@@ -19,6 +20,7 @@
 - No market depth (level 2) data
 
 **Integration Point**:
+
 ```cpp
 // Line 883-910: tickPrice() callback
 void tickPrice(TickerId tickerId, TickType field,
@@ -47,11 +49,13 @@ void tickPrice(TickerId tickerId, TickType field,
 **Location**: `native/include/types.h`
 
 **Current Structure** (lines 164-196):
+
 - Simple `MarketData` struct with bid/ask/last prices
 - No order book depth information
 - No level 2 data
 
 **Enhancement Needed**:
+
 - Add order book depth methods
 - Add level 2 data access
 - Maintain backward compatibility
@@ -61,12 +65,14 @@ void tickPrice(TickerId tickerId, TickType field,
 **Location**: `python/integration/market_data_handler.py`
 
 **Current Implementation**:
+
 - Converts nautilus_trader events to C++ `MarketData` format
 - Data quality validation (stale data, spread thresholds)
 - Callback-based event handling
 - QuestDB integration
 
 **Migration Target**:
+
 - Replace with C++ `OrderBookManager`
 - Move validation to C++ `MarketDataValidator`
 - Maintain same callback interface for compatibility
@@ -76,6 +82,7 @@ void tickPrice(TickerId tickerId, TickType field,
 **Location**: `native/include/box_spread_calc.h` (assumed)
 
 **Enhancement Needed**:
+
 - Use order book depth for pricing
 - Consider level 2 data for better execution estimates
 - Add depth-based opportunity detection
@@ -108,36 +115,36 @@ void tickPrice(TickerId tickerId, TickType field,
 
 ### Phase 2: Data Validation (Migration)
 
-5. **Create `native/include/market_data_validator.h`**
+1. **Create `native/include/market_data_validator.h`**
    - Port validation logic from Python
    - Stale data detection
    - Spread threshold validation
 
-6. **Create `native/src/market_data_validator.cpp`**
+2. **Create `native/src/market_data_validator.cpp`**
    - Implementation of validation logic
 
-7. **Update `OrderBookManager`**
+3. **Update `OrderBookManager`**
    - Integrate validation before callbacks
    - Configurable validation thresholds
 
 ### Phase 3: Box Spread Enhancement
 
-8. **Enhance `native/include/box_spread_calc.h`**
+1. **Enhance `native/include/box_spread_calc.h`**
    - Add order book depth parameters
    - Depth-based opportunity detection methods
 
-9. **Update box spread calculations**
+2. **Update box spread calculations**
    - Use order book depth for pricing
    - Consider level 2 data for execution estimates
 
 ### Phase 4: Python Replacement
 
-10. **Deprecate `python/integration/market_data_handler.py`**
+1. **Deprecate `python/integration/market_data_handler.py`**
     - Mark as deprecated
     - Document migration path
     - Maintain for backward compatibility if needed
 
-11. **Update Python bindings** (if needed)
+2. **Update Python bindings** (if needed)
     - Expose `OrderBookManager` to Python
     - Maintain API compatibility
 
@@ -185,6 +192,7 @@ void tickPrice(TickerId tickerId, TickType field,
 ## Migration Checklist
 
 ### Phase 1: Foundation
+
 - [ ] Add CppTrader as CMake dependency
 - [ ] Create `native/include/order_book_manager.h`
 - [ ] Create `native/src/order_book_manager.cpp`
@@ -193,6 +201,7 @@ void tickPrice(TickerId tickerId, TickType field,
 - [ ] Unit tests for OrderBookManager
 
 ### Phase 2: TWS Integration
+
 - [ ] Modify `TWSClient` to use `OrderBookManager`
 - [ ] Update `tickPrice()` to use order book
 - [ ] Update `tickSize()` to use order book
@@ -200,6 +209,7 @@ void tickPrice(TickerId tickerId, TickType field,
 - [ ] Performance benchmarks
 
 ### Phase 3: Validation Migration
+
 - [ ] Create `native/include/market_data_validator.h`
 - [ ] Create `native/src/market_data_validator.cpp`
 - [ ] Port validation logic from Python
@@ -207,12 +217,14 @@ void tickPrice(TickerId tickerId, TickType field,
 - [ ] Unit tests for validation
 
 ### Phase 4: Box Spread Enhancement
+
 - [ ] Enhance `box_spread_calc.h` with order book depth
 - [ ] Update box spread calculations
 - [ ] Integration tests with order book depth
 - [ ] Performance comparison
 
 ### Phase 5: Python Replacement
+
 - [ ] Mark Python handler as deprecated
 - [ ] Update documentation
 - [ ] Migration guide for Python users

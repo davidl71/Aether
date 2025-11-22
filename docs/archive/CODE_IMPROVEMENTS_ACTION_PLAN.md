@@ -20,6 +20,7 @@ Based on NotebookLM research and code analysis, here's a prioritized action plan
 ## Priority 1: Add Try-Catch to All Callbacks (HIGH)
 
 **Status**: Only 4 callbacks have try-catch protection:
+
 - ✅ `tickPrice()` - Has try-catch
 - ✅ `tickSize()` - Has try-catch
 - ✅ `tickOptionComputation()` - Has try-catch
@@ -215,6 +216,7 @@ Based on yatws implementation, add configurable rate limiter:
    - Reject new subscriptions if limit exceeded
 
 4. **Configuration Interface**
+
    ```cpp
    struct RateLimiterConfig {
        bool enabled = false;
@@ -233,6 +235,7 @@ Based on yatws implementation, add configurable rate limiter:
    - Prevent memory leaks in long-running applications
 
 ### Benefits
+
 - **IBKR Compliance**: Prevents API violations and account restrictions
 - **Prevents Throttling**: Avoids TWS rate limiting responses
 - **Better Reliability**: Reduces connection issues from excessive requests
@@ -246,6 +249,7 @@ Based on yatws implementation, add configurable rate limiter:
 ### Implementation Needed
 
 Add tracking for:
+
 - Total orders placed
 - Executed trades
 - Calculate ratio (trades/orders)
@@ -268,6 +272,7 @@ Add tracking for:
 ### Potential Enhancement: Options Strategy Builder
 
 Consider adding a strategy builder similar to yatws:
+
 ```cpp
 class BoxSpreadBuilder {
 public:
@@ -338,6 +343,7 @@ public:
 ### Potential Refactoring
 
 Organize functionality into managers:
+
 - `OrderManager` - Order operations
 - `AccountManager` - Account data
 - `MarketDataManager` - Market data
@@ -351,28 +357,33 @@ Organize functionality into managers:
 ## Implementation Order
 
 ### Week 1: Critical Safety (Priority 1-2)
+
 1. Add try-catch to all callbacks (2-3 hours)
 2. Enhance error handling (1-2 hours)
 3. Test thoroughly
 
 ### Week 2: Reliability & Compliance (Priority 3-4)
-4. Improve state synchronization (30 min)
-5. Implement rate limiting (3-4 hours) ⭐ **NEW - High Priority**
-6. Test reconnection scenarios
-7. Test rate limiting
+
+1. Improve state synchronization (30 min)
+2. Implement rate limiting (3-4 hours) ⭐ **NEW - High Priority**
+3. Test reconnection scenarios
+4. Test rate limiting
 
 ### Week 3: Compliance & Strategy (Priority 5-6)
-8. Add order efficiency tracking (1-2 hours)
-9. Review/implement atomic multi-leg execution (2-3 hours)
-10. Consider options strategy builder (2-3 hours, optional)
+
+1. Add order efficiency tracking (1-2 hours)
+2. Review/implement atomic multi-leg execution (2-3 hours)
+3. Consider options strategy builder (2-3 hours, optional)
 
 ### Week 4: Quality of Life (Priority 7-8, Optional)
-11. Type safety improvements (2-3 hours)
-12. Session recording/replay (4-6 hours, optional)
+
+1. Type safety improvements (2-3 hours)
+2. Session recording/replay (4-6 hours, optional)
 
 ## Testing Checklist
 
 After each improvement:
+
 - [ ] Run unit tests: `ctest --test-dir build --output-on-failure`
 - [ ] Test connection/disconnection
 - [ ] Test reconnection scenarios

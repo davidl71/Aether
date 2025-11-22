@@ -22,6 +22,7 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
 ### 1. Experiment with Your Recent Documents — Even If They're Random
 
 **First Step for New Users**:
+
 - Upload your **10 most recent documents** into one notebook
 - Start experimenting by asking questions
 - Even if documents are unrelated, it's a great way to test what NotebookLM can do
@@ -33,6 +34,7 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
 ### 2. Create One Main Notebook and Then Identify Topic-Based Notebooks
 
 **The "Everything Notebook" Strategy**:
+
 - Keep a main "everything notebook" with general knowledge you work with daily
 - Include:
   - Inspirational quotes from books
@@ -41,6 +43,7 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
   - Frequently referenced materials
 
 **Topic-Specific Notebooks**:
+
 - Also create topic- or project-based notebooks
 - Example: A notebook exclusively for NotebookLM work containing:
   - Press releases
@@ -54,10 +57,12 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
 ### 3. Use NotebookLM to Connect the Dots from Different Materials
 
 **The Problem NotebookLM Solves**:
+
 - Information scattered across desktop folders, browser tabs, and various locations
 - Need to synthesize information from multiple sources
 
 **Integration with Gemini/Gems**:
+
 - Use as a **next step after using Gemini and Gems**
 - After brainstorming or open-ended conversations in those tools:
   1. Save results to NotebookLM
@@ -65,6 +70,7 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
   3. Let NotebookLM synthesize everything into one coherent format
 
 **Example Workflow (Creating a Slide Deck)**:
+
 1. Brainstorm with Gemini
 2. Open relevant article tabs
 3. Save design inspiration images
@@ -76,6 +82,7 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
 ### 4. Start with the Suggested Questions
 
 **Don't Know What to Ask?**
+
 - NotebookLM provides **suggested questions** to help you get started
 - Similar to Gemini-powered side panel in Workspace tools
 - The model helps you ask questions that guide you through the material
@@ -89,6 +96,7 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
 ### 5. Ask NotebookLM to Deliver Info in Different Ways
 
 **Different Formats for Different Needs**:
+
 - Not everyone processes information the same way
 - NotebookLM can present information in various formats using **Notebook Guide** feature:
   - **FAQ** format
@@ -99,6 +107,7 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
   - **Audio Overview** (new feature) - transforms information into an engaging conversation between two AI "hosts"
 
 **Benefits**:
+
 - See what works best for your learning style
 - Present information to others in formats they prefer
 - Different formats reveal different insights
@@ -106,6 +115,7 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
 ### 6. Don't Shy Away from Creative Uses
 
 **Beyond Work and School**:
+
 - Excellent for work and school projects (NotebookLM Business now available)
 - Great for creative projects:
   - **Writing fiction**: Fantasy and sci-fi novels
@@ -113,6 +123,7 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
   - **Screenplays**: Character development and plot tracking
 
 **Creative Example Workflow**:
+
 - For a screenplay, you might have:
   - Notes in a doc
   - Saved webpages
@@ -129,6 +140,7 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
 ### 7. Turn Your Sources into Audio Overviews
 
 **The Audio Overview Feature**:
+
 - Turn every document you upload into an **Audio Overview**
 - After a few minutes of generation, you get:
   - Entertaining audio conversation
@@ -136,6 +148,7 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
   - Two AI "hosts" discussing your material
 
 **Customization (New Feature)**:
+
 - Click **"Customize"** in Audio Overviews panel
 - Enter short description of what you want hosts to focus on
 - Adjust the approach and level of sophistication
@@ -146,6 +159,7 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
 ### 8. Revisit Your NotebookLM Chat Sessions
 
 **Don't Lose Your Insights**:
+
 - Use **"save to note"** button in every text exchange to save interesting content
 - At the end of a conversation, ask NotebookLM to:
   - Summarize key points from the conversation
@@ -153,6 +167,7 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
   - Capture all progress and insights from your dialogue
 
 **Steven's Workflow Example**:
+
 1. Have a conversation about one of your notebooks
 2. Ask questions and follow-up questions
 3. Ask it to refine your ideas

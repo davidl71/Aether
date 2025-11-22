@@ -7,6 +7,7 @@ All extension management scripts now use VS Code's built-in `@category` filter t
 ## Category Support
 
 The Cursor/VS Code CLI supports filtering extensions by category using:
+
 ```bash
 cursor --list-extensions --category "formatters"
 ```
@@ -14,6 +15,7 @@ cursor --list-extensions --category "formatters"
 ### Valid Categories
 
 The following categories are supported (use lowercase):
+
 - `formatters` - Code formatting extensions
 - `linters` - Code linting extensions
 - `debuggers` - Debugging extensions
@@ -44,11 +46,13 @@ Now includes category-based redundancy detection:
 ```
 
 **Features:**
+
 - Checks for multiple extensions in the same category (formatters, linters, debuggers, themes)
 - Provides category-specific recommendations
 - Combines category-based and functional redundancy analysis
 
 **Example Output:**
+
 ```
 ⚠️  formatters Category (6 extensions)
    • anysphere.cpptools
@@ -68,6 +72,7 @@ Now highlights security-sensitive categories:
 ```
 
 **Features:**
+
 - Identifies extensions in security-sensitive categories (SCM Providers, Debuggers)
 - Flags these for manual security review
 - Provides context about why these categories need extra scrutiny
@@ -81,12 +86,14 @@ Comprehensive category-based analysis:
 ```
 
 **Features:**
+
 - Lists all extensions organized by category
 - Shows count of extensions per category
 - Provides recommendations for categories with multiple extensions
 - Identifies uncategorized extensions
 
 **Example Output:**
+
 ```
 Formatters (6 extension(s)):
   • anysphere.cpptools
@@ -99,26 +106,31 @@ Formatters (6 extension(s)):
 ## Category-Based Recommendations
 
 ### Formatters
+
 - **Multiple formatters are usually fine** if they target different languages
 - **Watch for conflicts** between general formatters (e.g., Prettier vs ESLint)
 - **Language-specific formatters** (Black for Python, ESLint for JS/TS) are complementary
 
 ### Linters
+
 - **Multiple linters are fine** - they typically target different languages
 - Examples: ESLint (JS/TS), ShellCheck (shell), markdownlint (markdown)
 - Each linter serves a specific purpose
 
 ### Debuggers
+
 - **Different debuggers for different targets** are complementary
 - Examples: Python debugger, C++ debugger, browser debuggers
 - Keep all that you need for your development targets
 
 ### Themes
+
 - **Multiple themes are fine** - they don't conflict
 - You can switch between themes without issues
 - No redundancy concerns
 
 ### Extension Packs
+
 - **May include individual extensions** that are also installed separately
 - Check if you need both the pack and individual extensions
 - Extension packs are convenient but may duplicate functionality
@@ -126,16 +138,19 @@ Formatters (6 extension(s)):
 ## Usage Examples
 
 ### Check for category-based redundancies
+
 ```bash
 ./scripts/check_extension_redundancy.sh
 ```
 
 ### Analyze all extensions by category
+
 ```bash
 ./scripts/analyze_by_category.sh
 ```
 
 ### Check security-sensitive categories
+
 ```bash
 ./scripts/check_extension_security.sh
 ```
@@ -159,6 +174,7 @@ Formatters (6 extension(s)):
 ## Integration with Other Scripts
 
 All scripts now work together:
+
 1. `analyze_by_category.sh` - Overview by category
 2. `check_extension_redundancy.sh` - Detailed redundancy analysis (includes categories)
 3. `check_extension_security.sh` - Security audit (includes category highlights)

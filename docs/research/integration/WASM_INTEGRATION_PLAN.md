@@ -628,17 +628,20 @@ describe('WASM Performance', () => {
 ## Dependencies to Handle
 
 ### ✅ Safe for WASM
+
 - Standard library (std::vector, std::string with care)
 - Math functions (std::cmath)
 - JSON (nlohmann/json - can compile to WASM)
 
 ### ⚠️ Needs Adaptation
+
 - **spdlog**: Remove or stub (logging not needed in WASM)
 - **std::filesystem**: Not available in WASM, use alternatives
 - **std::thread**: Use Emscripten's async APIs
 - **std::chrono**: Limited support, use JavaScript Date
 
 ### ❌ Not Available in WASM
+
 - Network APIs (use fetch from JavaScript)
 - File I/O (use JavaScript APIs)
 - System calls

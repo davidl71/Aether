@@ -114,6 +114,7 @@ ib-box-spread-tui --<TAB>
 - **File paths**: Smart file path completion
 
 **Available Options:**
+
 - `-c, --config` - Configuration file path
 - `--dry-run` - Simulate trading without executing orders
 - `--validate` - Validate configuration and exit
@@ -128,11 +129,13 @@ ib-box-spread-tui --<TAB>
 - **Endpoints**: API endpoint URL completion
 
 **Available Options:**
+
 - `--mock` - Use mock data provider
 - `--endpoint` - API endpoint URL
 - `-h, --help` - Show help message
 
 **Environment Variables** (for TUI):
+
 - `TUI_BACKEND` - Backend type (mock|rest|nautilus)
 - `TUI_API_URL` - API endpoint URL (when using rest backend)
 
@@ -141,6 +144,7 @@ ib-box-spread-tui --<TAB>
 ### Completions Not Working
 
 1. **Check installation**:
+
    ```bash
    # Bash
    type _ib_box_spread
@@ -153,6 +157,7 @@ ib-box-spread-tui --<TAB>
    ```
 
 2. **Reload shell configuration**:
+
    ```bash
    # Bash
    source ~/.bashrc
@@ -165,6 +170,7 @@ ib-box-spread-tui --<TAB>
    ```
 
 3. **Regenerate completions**:
+
    ```bash
    ./scripts/generate_completions.sh
    ./scripts/install_completions.sh

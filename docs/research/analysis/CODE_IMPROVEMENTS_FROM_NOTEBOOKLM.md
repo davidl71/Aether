@@ -3,6 +3,7 @@
 This document contains specific code improvement recommendations based on NotebookLM research of TWS API best practices, videos, and articles.
 
 ## Source
+
 - **Notebook**: TWS Automated Trading - Complete Resources
 - **Date**: 2025-11-13
 - **Research Query**: "What are the best practices for implementing a TWS API client in C++?"
@@ -40,6 +41,7 @@ This document contains specific code improvement recommendations based on Notebo
 **Recommendation**: Wrap all EWrapper callbacks in try-catch blocks.
 
 **Example Implementation**:
+
 ```cpp
 void tickPrice(TickerId tickerId, TickType field, double price,
                const TickAttrib& attrib) override {
@@ -64,6 +66,7 @@ void tickPrice(TickerId tickerId, TickType field, double price,
 **Recommendation**: Enrich error handler with guidance catalog.
 
 **Example Implementation**:
+
 ```cpp
 void error(int id, int errorCode, const std::string& errorString,
            const std::string& advancedOrderRejectJson) override {
@@ -120,6 +123,7 @@ std::string get_error_guidance(int errorCode) {
 **Recommendation**: Implement exponential backoff strategy (1s, 2s, 4s, 8s, up to 30s).
 
 **Example Implementation**:
+
 ```cpp
 void attempt_reconnection() {
     if (reconnect_attempts_ >= kMaxReconnectAttempts) {
@@ -154,6 +158,7 @@ void attempt_reconnection() {
 **Recommendation**: Immediately call `reqAllOpenOrders()` upon receiving `nextValidId()` after reconnection.
 
 **Example Implementation**:
+
 ```cpp
 void nextValidId(OrderId orderId) override {
     spdlog::info("Received nextValidId: {} - Connection fully established", orderId);
@@ -192,6 +197,7 @@ void nextValidId(OrderId orderId) override {
 **Recommendation**: Implement Order Efficiency Ratio tracking (executed trades vs. order actions).
 
 **Example Implementation**:
+
 ```cpp
 class OrderEfficiencyTracker {
 private:
@@ -233,6 +239,7 @@ public:
 **Recommendation**: Use IBKR combo orders (Preferred) or implement rollback logic.
 
 **Example Implementation**:
+
 ```cpp
 bool place_box_spread_order(const BoxSpreadOrder& order) {
     // Option A: Use IBKR combo order (preferred)
@@ -275,6 +282,7 @@ bool place_box_spread_order(const BoxSpreadOrder& order) {
 **Recommendation**: Move slow operations to separate threads.
 
 **Example Implementation**:
+
 ```cpp
 void tickPrice(TickerId tickerId, TickType field, double price,
                const TickAttrib& attrib) override {
@@ -310,6 +318,7 @@ void tickPrice(TickerId tickerId, TickType field, double price,
 **Recommendation**: Implement periodic health checks (every 30 seconds).
 
 **Example Implementation**:
+
 ```cpp
 void start_health_monitoring() {
     health_monitor_thread_ = std::make_unique<std::thread>([this]() {
@@ -343,16 +352,18 @@ void check_connection_health() {
 ## Implementation Priority
 
 ### High Priority (Do First)
+
 1. ✅ Wrap callbacks in try-catch (Prevent crashes)
 2. ✅ Enhanced error handling with guidance (Better debugging)
 3. ✅ State synchronization after reconnection (Prevent inconsistencies)
 4. ✅ Atomic multi-leg execution (Critical for strategy)
 
 ### Medium Priority (Do Next)
-5. Automatic reconnection with exponential backoff
-6. Order efficiency ratio tracking
-7. Keep callbacks fast
-8. Connection health monitoring
+
+1. Automatic reconnection with exponential backoff
+2. Order efficiency ratio tracking
+3. Keep callbacks fast
+4. Connection health monitoring
 
 ## Next Steps
 

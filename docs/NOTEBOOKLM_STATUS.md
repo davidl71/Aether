@@ -5,17 +5,20 @@ This document tracks the status of NotebookLM notebooks and resources in the lib
 ## Active Notebook
 
 ### TWS Automated Trading - Complete Resources
+
 - **ID**: `tws-automated-trading-complete`
-- **URL**: https://notebooklm.google.com/notebook/d08f66c4-e5db-480a-bdc4-50682adc045e
+- **URL**: <https://notebooklm.google.com/notebook/d08f66c4-e5db-480a-bdc4-50682adc045e>
 - **Status**: ✅ Active (set as default notebook)
 - **Added**: 2025-11-13
 - **Last Used**: 2025-11-13
 - **Use Count**: 0
 
 ### Description
+
 Complete knowledge base for TWS Automated Trading project including GitHub repository documentation (47+ files), TWS API implementation videos (1 video), trading & options tutorials (7 videos), and TWS API implementation articles (1 article).
 
 ### Topics
+
 - TWS API
 - Interactive Brokers
 - Options Trading
@@ -26,9 +29,11 @@ Complete knowledge base for TWS Automated Trading project including GitHub repos
 - API Integration
 
 ### Tags
+
 tws-api, trading, options, documentation, youtube, tutorial, ib-api, c++, socket-implementation, boost-asio
 
 ### Content Types
+
 - documentation
 - tutorial
 - video
@@ -37,6 +42,7 @@ tws-api, trading, options, documentation, youtube, tutorial, ib-api, c++, socket
 - implementation guide
 
 ### Use Cases
+
 - Research TWS API implementation
 - Summarize YouTube tutorials
 - Create documentation from videos
@@ -46,29 +52,33 @@ tws-api, trading, options, documentation, youtube, tutorial, ib-api, c++, socket
 ## Resources in Notebook
 
 ### 1. GitHub Repository
-- **URL**: https://github.com/davidl71/ib_box_spread_full_universal
+
+- **URL**: <https://github.com/davidl71/ib_box_spread_full_universal>
 - **Type**: GitHub repository
 - **Content**: 47+ documentation files
 - **Status**: ✅ Added
 
 ### 2. YouTube Videos (8 videos)
-- **Video 1**: https://www.youtube.com/watch?v=n-9bdREECTQ (TWS API)
-- **Video 2**: https://www.youtube.com/watch?v=5moyX0qwkCA
-- **Video 3**: https://www.youtube.com/watch?v=hJ7ewxQVhJw (Playlist 1)
-- **Video 4**: https://www.youtube.com/watch?v=4zpYhHn5p90 (Playlist 2)
-- **Video 5**: https://www.youtube.com/watch?v=rC02897uiuc (Playlist 1)
-- **Video 6**: https://www.youtube.com/watch?v=ZxwdTgMY44g (Playlist 2)
-- **Video 7**: https://www.youtube.com/watch?v=ICZH89GdUGQ (Playlist 2)
-- **Video 8**: https://www.youtube.com/watch?v=W6OJy32sE_g (Playlist 2)
+
+- **Video 1**: <https://www.youtube.com/watch?v=n-9bdREECTQ> (TWS API)
+- **Video 2**: <https://www.youtube.com/watch?v=5moyX0qwkCA>
+- **Video 3**: <https://www.youtube.com/watch?v=hJ7ewxQVhJw> (Playlist 1)
+- **Video 4**: <https://www.youtube.com/watch?v=4zpYhHn5p90> (Playlist 2)
+- **Video 5**: <https://www.youtube.com/watch?v=rC02897uiuc> (Playlist 1)
+- **Video 6**: <https://www.youtube.com/watch?v=ZxwdTgMY44g> (Playlist 2)
+- **Video 7**: <https://www.youtube.com/watch?v=ICZH89GdUGQ> (Playlist 2)
+- **Video 8**: <https://www.youtube.com/watch?v=W6OJy32sE_g> (Playlist 2)
 - **Status**: ✅ All videos added
 
 ### 3. External Articles (1 article)
-- **Article**: https://www.vitaltrades.com/2024/02/02/making-a-c-interactive-brokers-tws-client-with-a-custom-socket-implementation/
+
+- **Article**: <https://www.vitaltrades.com/2024/02/02/making-a-c-interactive-brokers-tws-client-with-a-custom-socket-implementation/>
 - **Author**: AndrewAMD (VitalTrades LLC)
 - **Date**: February 2, 2024
 - **Status**: ✅ Added
 
 ## Total Resources
+
 - **GitHub Repository**: 1
 - **YouTube Videos**: 8
 - **External Articles**: 1
@@ -77,21 +87,25 @@ tws-api, trading, options, documentation, youtube, tutorial, ib-api, c++, socket
 ## Usage
 
 ### Query the Notebook
+
 ```
 "Research TWS API socket implementation in NotebookLM"
 ```
 
 ### Summarize Videos
+
 ```
 "Summarize the TWS API video and create a summary in docs/video-summaries/tws-api-essential-components.md"
 ```
 
 ### Create Documentation
+
 ```
 "Create documentation from the VitalTrades article in NotebookLM"
 ```
 
 ### Get Code Examples
+
 ```
 "Research order placement API in NotebookLM before implementing"
 ```

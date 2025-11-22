@@ -79,6 +79,7 @@ Cline is an open-source AI coding agent that integrates directly into IDEs (VS C
 **Purpose**: Full IDE with integrated AI assistant
 
 **Features**:
+
 - Complete IDE experience (based on VS Code)
 - Integrated AI chat (`Cmd+L` / `Ctrl+L`)
 - MCP (Model Context Protocol) server integration
@@ -87,6 +88,7 @@ Cline is an open-source AI coding agent that integrates directly into IDEs (VS C
 - File exclusion management (`.cursorignore`)
 
 **MCP Servers Configured**:
+
 - Semgrep (security analysis)
 - Ollama (local models)
 - Git (version control)
@@ -99,6 +101,7 @@ Cline is an open-source AI coding agent that integrates directly into IDEs (VS C
 - GitKraken (Git operations)
 
 **Example Usage**:
+
 ```bash
 # Cursor chat command
 Cmd+L → "Add error handling to box spread calculation"
@@ -202,12 +205,14 @@ AI uses Agentic Tools for task management
 ### Development Workflow
 
 **Cline Advantages**:
+
 - Open-source transparency
 - Model flexibility (use best model per task)
 - Client-side execution (privacy)
 - Cross-platform context (CLI, IDE, CI)
 
 **Cursor Advantages**:
+
 - Full IDE experience
 - MCP server integration (Semgrep, Git, etc.)
 - Project-specific commands
@@ -219,11 +224,13 @@ AI uses Agentic Tools for task management
 ### Security-Sensitive Projects
 
 **Cline Advantages**:
+
 - Client-side execution (code never leaves machine)
 - Open-source (auditable)
 - Full control over models and data
 
 **Cursor Advantages**:
+
 - Semgrep MCP for security analysis
 - Can use local models via Ollama MCP
 - Better security tooling integration
@@ -233,11 +240,13 @@ AI uses Agentic Tools for task management
 ### Model Flexibility Needs
 
 **Cline Advantages**:
+
 - Support for Claude, GPT, Gemini, custom endpoints
 - Easy model switching
 - No vendor lock-in
 
 **Cursor Advantages**:
+
 - Integrated model access
 - MCP for local models (Ollama)
 - Seamless workflow
@@ -247,11 +256,13 @@ AI uses Agentic Tools for task management
 ### Team Collaboration
 
 **Cline Advantages**:
+
 - Open-source (team can audit)
 - Consistent experience across platforms
 - Cross-platform context sharing
 
 **Cursor Advantages**:
+
 - Shared project configuration (`.cursor/`)
 - MCP servers for team tools
 - Better team workflow integration
@@ -267,11 +278,13 @@ AI uses Agentic Tools for task management
 **Action**: Replace Cursor with Cline extension in VS Code.
 
 **Benefits**:
+
 - Open-source transparency
 - Model flexibility
 - Client-side execution
 
 **Drawbacks**:
+
 - Lose full IDE experience
 - Lose MCP integration
 - Lose project commands
@@ -285,11 +298,13 @@ AI uses Agentic Tools for task management
 **Action**: Install Cline extension for specific tasks requiring transparency or model flexibility.
 
 **Benefits**:
+
 - Use Cline for sensitive code (client-side)
 - Use Cursor for general development
 - Best of both worlds
 
 **Drawbacks**:
+
 - Two AI assistants to manage
 - Context not shared between them
 
@@ -300,11 +315,13 @@ AI uses Agentic Tools for task management
 **Action**: Monitor Cline development, consider if MCP support is added.
 
 **Benefits**:
+
 - Stay current with Cursor
 - Evaluate Cline when it matures
 - Consider if MCP support is added
 
 **Drawbacks**:
+
 - No immediate benefits
 
 **Effort**: Low (just monitor)

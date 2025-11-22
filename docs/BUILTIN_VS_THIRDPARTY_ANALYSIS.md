@@ -3,6 +3,7 @@
 ## Summary
 
 **Total Extensions**: 61
+
 - **Built-in**: 7 extensions
 - **Third-party**: 54 extensions
 
@@ -21,6 +22,7 @@ These extensions come with Cursor/VS Code:
 ## Potential Redundancies Found (4)
 
 ### 1. Markdown Extensions
+
 - **Built-in**: Basic markdown support exists
 - **Third-party**:
   - `yzhang.markdown-all-in-one` - Adds useful editing features
@@ -29,12 +31,14 @@ These extensions come with Cursor/VS Code:
 **Verdict**: ✅ **Keep both** - They add significant value beyond built-in support
 
 ### 2. YAML Extension
+
 - **Built-in**: Basic YAML support exists
 - **Third-party**: `redhat.vscode-yaml` - Adds schema validation
 
 **Verdict**: ✅ **Keep** - Schema validation is valuable for configuration files
 
 ### 3. Git History Extension
+
 - **Built-in**: Git integration exists
 - **Third-party**: `donjayamanne.githistory` - Adds visual history viewer
 
@@ -55,6 +59,7 @@ All third-party extensions that overlap with built-in functionality **add value*
 ### Built-in Functionality (Not Extensions)
 
 Cursor/VS Code has built-in support for (not as extensions, but core features):
+
 - TypeScript/JavaScript (excellent built-in support)
 - JSON, HTML, CSS, XML
 - Basic Markdown, YAML

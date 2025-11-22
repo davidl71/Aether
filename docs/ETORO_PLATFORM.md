@@ -17,6 +17,7 @@ eToro is a social trading platform that enables users to invest in various asset
 ### 1. Social Trading
 
 **CopyTrader™ Technology**:
+
 - Replicate trades of experienced investors in real-time
 - Follow and copy successful traders
 - Social trading community
@@ -27,12 +28,14 @@ eToro is a social trading platform that enables users to invest in various asset
 ### 2. Asset Classes
 
 **Available Assets**:
+
 - **Stocks**: Global stock markets
 - **Cryptocurrencies**: Limited for U.S. customers (see restrictions below)
 - **ETFs**: Exchange-traded funds
 - **CFDs**: Contracts for Difference (not available in all jurisdictions)
 
 **Not Available**:
+
 - **Options Trading**: ❌ No options trading support
 - **Futures**: ❌ No futures trading
 - **Complex Strategies**: ❌ No multi-leg options strategies
@@ -40,6 +43,7 @@ eToro is a social trading platform that enables users to invest in various asset
 ### 3. U.S. Market Restrictions
 
 **Cryptocurrency Limitations** (September 2024 SEC Settlement):
+
 - **Limited Crypto**: U.S. customers can only trade Bitcoin, Bitcoin Cash, and Ethereum
 - **Most Crypto Removed**: eToro ceased offering most cryptocurrency trading to U.S. customers
 - **Settlement**: Result of SEC settlement in September 2024
@@ -49,12 +53,14 @@ eToro is a social trading platform that enables users to invest in various asset
 ### 4. Platform Type
 
 **Retail-Focused**:
+
 - Designed for individual retail investors
 - Social trading and copy trading emphasis
 - User-friendly interface
 - Community features
 
 **Not Designed For**:
+
 - Algorithmic trading
 - Institutional trading
 - API-driven trading systems
@@ -71,6 +77,7 @@ eToro is a social trading platform that enables users to invest in various asset
 **Note**: eToro is primarily a retail social trading platform. Unlike brokers like IBKR or Alpaca, eToro does not appear to offer a comprehensive public API for algorithmic trading.
 
 **Integration Options**:
+
 - Web-based platform
 - Mobile applications
 - CopyTrader™ functionality
@@ -85,6 +92,7 @@ eToro is a social trading platform that enables users to invest in various asset
 ### Direct Relevance: ❌ None
 
 **Reasons**:
+
 1. **No Options Trading**: eToro does not offer options trading
 2. **No API**: No comprehensive API for algorithmic trading
 3. **Retail Focus**: Designed for social/copy trading, not algorithmic strategies
@@ -93,6 +101,7 @@ eToro is a social trading platform that enables users to invest in various asset
 ### Indirect Relevance: ⚠️ Very Limited
 
 **Potential Use Cases** (if any):
+
 - **Market Research**: View stock market trends (not options)
 - **Social Signals**: Monitor what other traders are doing (not applicable to box spreads)
 - **Educational**: Learn about trading (but not options-specific)
@@ -106,6 +115,7 @@ eToro is a social trading platform that enables users to invest in various asset
 ### Current Project Needs
 
 **Required Features**:
+
 - ✅ Options trading (SPX/SPXW)
 - ✅ Multi-leg order support
 - ✅ API for algorithmic trading
@@ -115,6 +125,7 @@ eToro is a social trading platform that enables users to invest in various asset
 ### eToro Capabilities
 
 **Available Features**:
+
 - ❌ No options trading
 - ❌ No multi-leg strategies
 - ❌ No algorithmic trading API
@@ -130,6 +141,7 @@ eToro is a social trading platform that enables users to invest in various asset
 ### For Box Spread Trading
 
 **Recommended Brokers** (already documented):
+
 1. **Interactive Brokers (IBKR)**: ✅ Currently integrated - Comprehensive options support, TWS API
 2. **Alpaca Markets**: ✅ Documented - Commission-free options, REST API, Elite features
 3. **Lightspeed Trader API**: ⚠️ Evaluate - C++ native API, high performance, options support
@@ -138,6 +150,7 @@ eToro is a social trading platform that enables users to invest in various asset
 ### For Social Trading (Not Box Spreads)
 
 **If Interested in Social Trading**:
+
 - eToro: Social trading platform
 - ZuluTrade: Copy trading platform
 - Other social trading platforms
@@ -178,17 +191,20 @@ eToro is a social trading platform that enables users to invest in various asset
 **For Box Spread Trading**: ❌ **Not Recommended**
 
 **Reasons**:
+
 - No options trading capabilities
 - No algorithmic trading API
 - Retail social trading focus
 - Does not meet project requirements
 
 **Use Instead**:
+
 - **IBKR (TWS API)**: Currently integrated, comprehensive options support
 - **Alpaca Markets**: Documented alternative, commission-free options
 - **Lightspeed/Lime**: Evaluate for high-performance alternatives
 
 **For Social Trading** (if interested separately):
+
 - eToro may be useful for social/copy trading of stocks
 - Not relevant to box spread algorithmic trading
 

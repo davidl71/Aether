@@ -11,26 +11,31 @@ QuantLib is an industry-standard open-source C++ library for quantitative financ
 ## Use Cases in Project
 
 ### 1. Enhanced Option Pricing
+
 - Replace or enhance existing Black-Scholes implementation
 - Support for European, American, and exotic options
 - Volatility surface modeling
 
 ### 2. Greeks Calculations
+
 - Comprehensive Greeks (Delta, Gamma, Vega, Theta, Rho)
 - Portfolio-level Greeks aggregation
 - Risk sensitivity analysis
 
 ### 3. Volatility Modeling
+
 - Implied volatility calculations
 - Volatility skew analysis
 - Volatility surface construction
 
 ### 4. Yield Curve Construction
+
 - Risk-free rate estimation for option pricing
 - T-bill rate interpolation
 - Yield curve construction for cash allocation decisions
 
 ### 5. Risk Management
+
 - Value at Risk (VaR) calculations
 - Portfolio risk metrics
 - Stress testing capabilities
@@ -55,24 +60,30 @@ QuantLib is an industry-standard open-source C++ library for quantitative financ
 ### Installing Boost
 
 #### macOS (Homebrew)
+
 ```bash
 brew install boost
 ```
 
 #### Linux (Ubuntu/Debian)
+
 ```bash
 sudo apt-get install libboost-all-dev
 ```
 
 #### Linux (Fedora/RHEL)
+
 ```bash
 sudo dnf install boost-devel
 ```
 
 #### Manual Installation
+
 If system package manager is not available:
-1. Download Boost from https://www.boost.org/
+
+1. Download Boost from <https://www.boost.org/>
 2. Extract and build:
+
 ```bash
 ./bootstrap.sh
 ./b2 --with-date_time --with-filesystem --with-system
@@ -286,12 +297,14 @@ Real arbitrageProfit = strikeWidth - boxSpreadPrice;
 ## Integration Checklist
 
 ### Pre-Integration
+
 - [ ] Install Boost libraries (date_time, filesystem, system)
 - [ ] Verify Boost version (1.67+)
 - [ ] Verify CMake version (3.15+)
 - [ ] Verify C++ compiler (C++17+)
 
 ### CMake Integration
+
 - [ ] Add Boost find_package to CMakeLists.txt
 - [ ] Add QuantLib FetchContent declaration
 - [ ] Add QuantLib to fetchcontent_makeavailable
@@ -299,12 +312,14 @@ Real arbitrageProfit = strikeWidth - boxSpreadPrice;
 - [ ] Add Boost components to target_link_libraries
 
 ### Testing
+
 - [ ] Create basic option pricing test
 - [ ] Test Greeks calculations
 - [ ] Verify build succeeds
 - [ ] Run integration tests
 
 ### Documentation
+
 - [ ] Update API_DOCUMENTATION_INDEX.md
 - [ ] Document usage patterns
 - [ ] Add code examples
@@ -312,16 +327,19 @@ Real arbitrageProfit = strikeWidth - boxSpreadPrice;
 ## Build Complexity Considerations
 
 ### Compile Time
+
 - QuantLib is a large library and may increase compile time
 - Consider using precompiled headers if available
 - Use ccache or sccache for faster rebuilds
 
 ### Binary Size
+
 - QuantLib adds significant binary size
 - Consider static vs. shared library linking
 - Use compiler optimization flags
 
 ### Dependencies
+
 - Boost adds additional dependencies
 - Ensure all Boost components are available
 - Consider Boost version compatibility
@@ -335,11 +353,13 @@ Real arbitrageProfit = strikeWidth - boxSpreadPrice;
 ## Performance Considerations
 
 ### Optimization
+
 - QuantLib supports various pricing engines (analytical, numerical, Monte Carlo)
 - Choose appropriate engine for use case
 - Analytical engines are fastest for simple options
 
 ### Memory
+
 - QuantLib uses smart pointers for memory management
 - Consider object lifetime and shared ownership
 - Use appropriate QuantLib types (Real, Rate, etc.)
@@ -365,10 +385,10 @@ Real arbitrageProfit = strikeWidth - boxSpreadPrice;
 
 ## References
 
-- **QuantLib Website:** https://www.quantlib.org/
-- **QuantLib GitHub:** https://github.com/lballabio/quantlib
-- **QuantLib Documentation:** https://www.quantlib.org/documentation.shtml
-- **Boost Website:** https://www.boost.org/
+- **QuantLib Website:** <https://www.quantlib.org/>
+- **QuantLib GitHub:** <https://github.com/lballabio/quantlib>
+- **QuantLib Documentation:** <https://www.quantlib.org/documentation.shtml>
+- **Boost Website:** <https://www.boost.org/>
 - **Project Research:** `docs/RESEARCH_CPP_FINANCIAL_LIBRARIES.md`
 
 ## Next Steps

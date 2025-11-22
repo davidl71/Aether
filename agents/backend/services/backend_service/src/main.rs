@@ -27,7 +27,8 @@ use market_data::{
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use risk::{RiskCheck, RiskDecision, RiskEngine, RiskLimit, RiskViolation};
 use serde::Deserialize;
-use strategy::{Decision as StrategyDecisionModel, StrategySignal, TradeSide};
+use strategy::{Decision as StrategyDecisionModel, StrategySignal};
+use strategy::model::TradeSide;
 use tokio::{
   sync::{
     broadcast,
@@ -38,6 +39,9 @@ use tokio::{
   time::sleep,
 };
 use tracing::{info, warn};
+
+mod nats_integration;
+mod swiftness;
 
 #[derive(Debug, Deserialize, Clone)]
 struct BackendConfig {
@@ -137,6 +141,20 @@ async fn main() -> anyhow::Result<()> {
   let (grpc_decision_tx, _) = broadcast::channel(256);
   let risk_engine = Arc::new(RiskEngine::new(vec![Box::new(PositionLimitCheck::new(8, 250_000.0))]));
 
+  // Initialize NATS integration (graceful degradation if unavailable)
+  let nats_integration = Arc::new(
+    nats_integration::NatsIntegration::new(
+      std::env::var("NATS_URL").ok(),
+    )
+    .await,
+  );
+
+  if nats_integration.as_ref().as_ref().map_or(false, |n| n.is_active()) {
+    info!("NATS integration active");
+  } else {
+    warn!("NATS integration unavailable, continuing without NATS");
+  }
+
   let (strategy_signal_tx, strategy_signal_rx) = tokio::sync::mpsc::unbounded_channel::<StrategySignal>();
   let (strategy_decision_tx, strategy_decision_rx) = tokio::sync::mpsc::unbounded_channel::<StrategyDecisionModel>();
 
@@ -148,6 +166,7 @@ async fn main() -> anyhow::Result<()> {
     grpc_decision_tx.clone(),
     risk_engine.clone(),
     fanout_ctrl_rx,
+    nats_integration.clone(),
   );
 
   let market_ctrl_rx = strategy_ctrl_rx;
@@ -156,7 +175,11 @@ async fn main() -> anyhow::Result<()> {
     state.clone(),
     strategy_signal_tx,
     market_ctrl_rx,
+    nats_integration,
   )?;
+
+  // Spawn Swiftness position fetcher
+  swiftness::spawn_swiftness_position_fetcher(state.clone());
 
   info!(%rest_addr, %grpc_addr, "backend service online");
 
@@ -199,6 +222,7 @@ fn spawn_market_data_provider(
   state: SharedSnapshot,
   strategy_signal: UnboundedSender<StrategySignal>,
   strategy_toggle: watch::Receiver<bool>,
+  nats: Arc<Option<nats_integration::NatsIntegration>>,
 ) -> anyhow::Result<()> {
   let symbols = if settings.symbols.is_empty() {
     default_market_symbols()
@@ -217,14 +241,14 @@ fn spawn_market_data_provider(
       let base_url = polygon_cfg.base_url.as_deref();
       let source = PolygonMarketDataSource::new(symbols, interval, api_key, base_url)
         .context("failed to create polygon market data source")?;
-      spawn_market_data_loop(source, state, strategy_signal, strategy_toggle);
+      spawn_market_data_loop(source, state, strategy_signal, strategy_toggle, nats);
     }
     provider => {
       if provider != "mock" {
         warn!(%provider, "unknown market data provider requested, falling back to mock");
       }
       let source = MockMarketDataSource::new(symbols, interval);
-      spawn_market_data_loop(source, state, strategy_signal, strategy_toggle);
+      spawn_market_data_loop(source, state, strategy_signal, strategy_toggle, nats);
     }
   }
 
@@ -255,6 +279,7 @@ fn spawn_market_data_loop<S>(
   state: SharedSnapshot,
   strategy_signal: UnboundedSender<StrategySignal>,
   mut strategy_toggle: watch::Receiver<bool>,
+  nats: Arc<Option<nats_integration::NatsIntegration>>,
 ) where
   S: MarketDataSource + Send + Sync + 'static,
 {
@@ -265,7 +290,7 @@ fn spawn_market_data_loop<S>(
       match ingestor.poll().await {
         Ok(event) => {
           let running = *strategy_toggle.borrow();
-          handle_market_event(&state, &strategy_signal, event, running).await;
+          handle_market_event(&state, &strategy_signal, &event, running, nats.as_ref().as_ref()).await;
         }
         Err(err) => {
           warn!(%err, "market data poll failed, retrying");
@@ -279,15 +304,23 @@ fn spawn_market_data_loop<S>(
 async fn handle_market_event(
   state: &SharedSnapshot,
   strategy_signal: &UnboundedSender<StrategySignal>,
-  event: MarketDataEvent,
+  event: &MarketDataEvent,
   running: bool,
+  nats: Option<&nats_integration::NatsIntegration>,
 ) {
   let spread = event.ask - event.bid;
   let mid = (event.bid + event.ask) * 0.5;
 
+  // Publish market data to NATS (parallel to existing state update)
+  if let Some(nats_integration) = nats {
+    nats_integration
+      .publish_market_data(&event.symbol, event.bid, event.ask)
+      .await;
+  }
+
   {
     let mut snapshot = state.write().await;
-    snapshot.apply_market_event(&event);
+    snapshot.apply_market_event(event);
 
     if spread > 0.4 {
       snapshot
@@ -308,6 +341,13 @@ async fn handle_market_event(
     price: mid,
     timestamp: event.timestamp,
   };
+
+  // Publish strategy signal to NATS (parallel to existing channel)
+  if let Some(nats_integration) = nats {
+    nats_integration.publish_strategy_signal(&signal).await;
+  }
+
+  // Existing channel send (unchanged)
   if let Err(err) = strategy_signal.send(signal) {
     warn!(%err, "failed to queue strategy signal");
   }
@@ -349,11 +389,17 @@ fn spawn_strategy_fanout(
   broadcaster: broadcast::Sender<GrpcDecision>,
   risk_engine: Arc<RiskEngine>,
   mut strategy_toggle: watch::Receiver<bool>,
+  nats: Arc<Option<nats_integration::NatsIntegration>>,
 ) {
   tokio::spawn(async move {
     while let Some(decision) = decisions_rx.recv().await {
       if !*strategy_toggle.borrow() {
         continue;
+      }
+
+      // Publish strategy decision to NATS (parallel to existing processing)
+      if let Some(ref nats_integration) = *nats {
+        nats_integration.publish_strategy_decision(&decision).await;
       }
 
       let StrategyDecisionModel { symbol, quantity, side } = decision;

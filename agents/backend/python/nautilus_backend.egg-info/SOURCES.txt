@@ -1,0 +1,11 @@
+pyproject.toml
+nautilus_backend/__init__.py
+nautilus_backend.egg-info/PKG-INFO
+nautilus_backend.egg-info/SOURCES.txt
+nautilus_backend.egg-info/dependency_links.txt
+nautilus_backend.egg-info/requires.txt
+nautilus_backend.egg-info/top_level.txt
+nautilus_backend/strategies/__init__.py
+nautilus_backend/strategies/example.py
+nautilus_backend/strategies/registry.py
+tests/test_registry.py

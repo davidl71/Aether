@@ -11,6 +11,7 @@ This tutorial demonstrates how to build a YouTube video summarizer application u
 ## What Is Cursor AI?
 
 Cursor AI is an innovative code editor that combines:
+
 - **VS Code foundation**: Familiar interface and extensive ecosystem
 - **AI capabilities**: Powered by models like OpenAI's ChatGPT and Claude
 - **Context-aware assistance**: Understands your entire codebase
@@ -21,26 +22,31 @@ Cursor AI is an innovative code editor that combines:
 ## Key Features of Cursor AI
 
 ### 1. AI Code Completion
+
 - Predicts multi-line edits
 - Generates entire functions based on recent changes
 - Writes complex code more quickly and accurately
 
 ### 2. Error Detection and Correction
+
 - Continuously monitors code for errors
 - Provides instant suggestions for fixes
 - Proactive debugging approach
 
 ### 3. Natural Language Commands
+
 - Interact using plain English
 - Simplifies coding tasks
 - Makes codebases accessible to non-experts
 
 ### 4. Dynamic Code Optimization
+
 - Suggests improvements to existing code
 - Refactoring recommendations
 - Simplifies complex structures
 
 ### 5. Interactive Chat Features
+
 - Query the codebase directly
 - Ask questions about functions or variables
 - Get context-aware suggestions
@@ -48,6 +54,7 @@ Cursor AI is an innovative code editor that combines:
 ## Installation
 
 ### System Requirements
+
 - Available for **Linux, Windows, and macOS**
 - Free download from [trycursor.com](https://www.trycursor.com)
 
@@ -63,14 +70,17 @@ After installation, configure these options:
 ## Essential Cursor AI Shortcuts
 
 ### Cursor Composer (`CTRL + I`)
+
 - **Purpose**: Modify multiple files at once or generate entire applications
 - **Use Case**: Creating complete features or refactoring across files
 
 ### AI Pane (`CTRL + L`)
+
 - **Purpose**: Interact with Cursor, ask questions about codebase
 - **Use Case**: Getting suggestions and understanding code
 
 ### Inline Code Editing (`CTRL + K`)
+
 - **Purpose**: Ask AI to edit codebase directly
 - **Use Case**: Quick code modifications in place
 
@@ -81,12 +91,14 @@ After installation, configure these options:
 ## Available Models
 
 ### Default Models
+
 - `GPT-4o`
 - `GPT-4`
 - `Claude 3.5 Sonnet`
 - `cursor-small` - Cursor's custom model (faster, unlimited access, but less capable than GPT-4)
 
 ### Adding Models
+
 - Go to: `Cursor Settings` > `Models` > `Model Names`
 - Add additional models as needed
 
@@ -107,6 +119,7 @@ For long context chat (limited to models supporting long context):
 ### Project Overview
 
 Build a FastAPI web application that:
+
 - Takes a YouTube video URL as input
 - Extracts the video transcript
 - Summarizes the transcript using Groq's Llama 3.1 model
@@ -123,20 +136,22 @@ Build a FastAPI web application that:
 Create a FastAPI WebAPP in python which takes in a Youtube videourl and summarizes it using Groq Llama3 Model- use darkmode and daisy UI
 ```
 
-3. Cursor AI generates the complete application
-4. Press "Accept All" to accept the generated code
+1. Cursor AI generates the complete application
+2. Press "Accept All" to accept the generated code
 
 #### Step 2: Generated Code Structure
 
 The generated application includes:
 
 **Backend (FastAPI)**:
+
 - Video URL extraction from YouTube links
 - Transcript fetching using `youtube_transcript_api`
 - Text summarization using Groq API (Llama 3.1-70B model)
 - REST API endpoint for summarization
 
 **Frontend (HTML/CSS/JavaScript)**:
+
 - Dark mode UI with DaisyUI
 - Form for entering YouTube URL
 - Display area for summary results
@@ -151,6 +166,7 @@ pip install fastapi pydantic youtube_transcript_api groq python-dotenv uvicorn
 ```
 
 **Package Breakdown**:
+
 - `fastapi`: Web framework
 - `pydantic`: Data validation
 - `youtube_transcript_api`: Extract YouTube transcripts
@@ -169,6 +185,7 @@ GROQ_API_KEY=your_groq_api_key_here
 #### Step 5: Code Features
 
 **Video ID Extraction**:
+
 ```python
 def get_video_id(url):
     # Extract video ID from YouTube URL
@@ -181,6 +198,7 @@ def get_video_id(url):
 ```
 
 **Transcript Fetching**:
+
 ```python
 def get_transcript(video_id):
     transcript = YouTubeTranscriptApi.get_transcript(video_id)
@@ -188,6 +206,7 @@ def get_transcript(video_id):
 ```
 
 **Text Summarization**:
+
 ```python
 def summarize_text(text):
     prompt = f"Summarize the following YouTube video transcript:\n\n{text}\n\nSummary:"
@@ -206,6 +225,7 @@ def summarize_text(text):
 #### Step 6: Configuration Options
 
 **Model Configuration**:
+
 - **Model**: `llama-3.1-70b-versatile`
 - **Max Tokens**: 500 (adjustable)
 - **Temperature**: Configurable (affects creativity/randomness)
@@ -213,6 +233,7 @@ def summarize_text(text):
 #### Step 7: Running the Application
 
 1. **Activate virtual environment** (recommended):
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # On macOS/Linux
@@ -220,17 +241,19 @@ source venv/bin/activate  # On macOS/Linux
 venv\Scripts\activate  # On Windows
 ```
 
-2. **Install packages**:
+1. **Install packages**:
+
 ```bash
 pip install fastapi pydantic youtube_transcript_api groq python-dotenv uvicorn
 ```
 
-3. **Run the application**:
+1. **Run the application**:
+
 ```bash
 python youtube_summarizer.py
 ```
 
-4. **Access the web interface**:
+1. **Access the web interface**:
    - Navigate to: `http://localhost:8000`
    - Enter a YouTube URL
    - Click "Summarize"
@@ -249,6 +272,7 @@ You can ask Cursor AI directly for package requirements:
 **Input YouTube URL**: `https://www.youtube.com/watch?v=gqUQbjsYZLQ`
 
 **Generated Summary**: The application extracts the transcript and generates a comprehensive summary covering:
+
 - Key topics discussed
 - Main points and takeaways
 - Detailed explanations of concepts
@@ -256,16 +280,19 @@ You can ask Cursor AI directly for package requirements:
 ## Benefits of Using Cursor AI
 
 ### 1. Increased Productivity
+
 - Automates repetitive tasks
 - Provides intelligent suggestions
 - Completes projects faster with fewer errors
 
 ### 2. Enhanced Collaboration
+
 - Real-time interaction capabilities
 - Easier sharing of insights and queries
 - Improved team communication about codebase
 
 ### 3. Learning Tool for Beginners
+
 - Natural language processing makes coding more intuitive
 - Helps learn coding concepts
 - Accessible to new programmers
@@ -335,6 +362,7 @@ You can ask Cursor AI directly for package requirements:
 ### Similar Applications
 
 The YouTube summarizer pattern could be adapted for:
+
 - Document summarization
 - Code documentation generation
 - Meeting note summarization
@@ -343,12 +371,14 @@ The YouTube summarizer pattern could be adapted for:
 ## Conclusion
 
 This tutorial demonstrates how Cursor AI can accelerate development by:
+
 - Generating complete applications from natural language descriptions
 - Providing context-aware code suggestions
 - Facilitating rapid prototyping and iteration
 - Making complex development tasks more accessible
 
 For the TWS Automated Trading project, Cursor AI's capabilities can be leveraged for:
+
 - Generating boilerplate code for new features
 - Understanding complex API integrations
 - Creating test implementations

@@ -3,6 +3,7 @@
 ## Overview
 
 The TUI has been migrated from C++ (`native/src/tui_app.cpp`) to Python (`python/tui/`) to:
+
 1. Improve development velocity
 2. Share code with the PWA frontend
 3. Use official Python APIs directly
@@ -40,6 +41,7 @@ Terminal Display
 ### Shared Models
 
 The `tui/models.py` module defines data structures that match:
+
 - **TypeScript**: `web/src/types/snapshot.ts`
 - **C++**: `native/include/tui_data.h`
 
@@ -87,6 +89,7 @@ The Python TUI is designed to be migrated back to C++ incrementally using pybind
 #### Data Models (`tui/models.py`)
 
 **Current (Python)**:
+
 ```python
 @dataclass
 class SnapshotPayload:
@@ -96,6 +99,7 @@ class SnapshotPayload:
 ```
 
 **Future (C++ with pybind11)**:
+
 ```cpp
 // C++ side
 struct SnapshotPayload {
@@ -119,6 +123,7 @@ PYBIND11_MODULE(tui_cpp, m) {
 #### Providers (`tui/providers.py`)
 
 **Current (Python)**:
+
 ```python
 class Provider(ABC):
     @abstractmethod
@@ -127,6 +132,7 @@ class Provider(ABC):
 ```
 
 **Future (C++ with pybind11)**:
+
 ```cpp
 // C++ side
 class Provider {
@@ -151,6 +157,7 @@ PYBIND11_MODULE(tui_cpp, m) {
 #### UI (`tui/app.py`)
 
 **Options**:
+
 1. **Keep in Python**: Textual is Python-only, keep UI in Python
 2. **Hybrid**: C++ for data processing, Python for UI
 3. **Full C++**: Migrate to FTXUI (more complex)
@@ -248,6 +255,7 @@ Configuration is stored in `~/.config/ib_box_spread/tui_config.json`:
 ### When to Migrate to C++
 
 Consider migrating to C++ if:
+
 - Performance becomes a bottleneck
 - Memory usage is critical
 - Need to integrate with C++ trading libraries directly
@@ -260,6 +268,7 @@ Consider migrating to C++ if:
 Both Python TUI and PWA use the same data structures:
 
 **Python** (`python/tui/models.py`):
+
 ```python
 @dataclass
 class SnapshotPayload:
@@ -269,6 +278,7 @@ class SnapshotPayload:
 ```
 
 **TypeScript** (`web/src/types/snapshot.ts`):
+
 ```typescript
 export interface SnapshotPayload {
   generated_at: string;
@@ -280,6 +290,7 @@ export interface SnapshotPayload {
 ### Shared REST API
 
 Both frontends consume the same REST API:
+
 - Endpoint: `/api/snapshot` (or configurable)
 - Format: JSON matching `SnapshotPayload` structure
 - Updates: Polling (configurable interval)

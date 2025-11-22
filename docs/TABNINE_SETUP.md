@@ -72,6 +72,7 @@ The following Tabnine settings have been configured for this project:
 #### ✅ Language Support
 
 Enabled for all project languages:
+
 - **C++20** (`cpp`, `c`) - Core trading logic
 - **Python** - Cython bindings, NautilusTrader integration
 - **TypeScript/React** - Web dashboard
@@ -163,6 +164,7 @@ Enabled for all project languages:
 If Tabnine conflicts with Cursor AI or other tools, you can disable it:
 
 **Option 1: Per-File (via settings.json.user)**
+
 ```json
 {
   "[cpp]": {
@@ -172,6 +174,7 @@ If Tabnine conflicts with Cursor AI or other tools, you can disable it:
 ```
 
 **Option 2: Per-Workspace**
+
 - Open Tabnine Hub
 - Go to Settings
 - Disable for specific languages
@@ -208,10 +211,12 @@ For better suggestions (requires internet, less privacy):
 This project uses **privacy-first settings** to protect proprietary trading algorithms:
 
 ✅ **Enabled:**
+
 - `tabnine.codePrivacyEnabled: true` - Code stays local
 - `tabnine.cloudModelEnabled: false` - Prefer local inference
 
 ✅ **Benefits:**
+
 - Trading algorithms remain private
 - No code sent to external servers
 - Compliance with trading regulations
@@ -219,6 +224,7 @@ This project uses **privacy-first settings** to protect proprietary trading algo
 ### Enterprise Features
 
 For teams, Tabnine offers:
+
 - **Private model training** on your codebase
 - **Team-wide consistency** in suggestions
 - **Enhanced privacy controls**
@@ -232,9 +238,11 @@ Contact Tabnine for enterprise pricing if needed.
 ### Tabnine Not Showing Suggestions
 
 1. **Check Installation**
+
    ```bash
    code --list-extensions | grep -i tabnine
    ```
+
    Should show: `TabNine.tabnine-vscode`
 
 2. **Reload Window**
@@ -254,6 +262,7 @@ Contact Tabnine for enterprise pricing if needed.
 If Tabnine uses too much CPU/RAM:
 
 1. **Reduce Suggestions**
+
    ```json
    {
      "tabnine.maxNumResults": 3,
@@ -266,6 +275,7 @@ If Tabnine uses too much CPU/RAM:
    - Consider disabling for specific file types
 
 3. **Disable Deep Completions**
+
    ```json
    {
      "tabnine.enableDeepCompletions": false
@@ -295,6 +305,7 @@ If both tools suggest different code:
 ### System Requirements
 
 Tabnine requires:
+
 - **Minimum:** 16 GB RAM, 8 CPU cores, 100 GB storage
 - **Recommended:** 32 GB RAM, 12+ CPU cores for on-device inference
 
@@ -319,6 +330,7 @@ Tabnine requires:
 ### Test with Project Languages
 
 1. **C++ Test** (`native/src/`)
+
    ```cpp
    // Start typing a function
    void calculate_box_spread(
@@ -326,6 +338,7 @@ Tabnine requires:
    ```
 
 2. **Python Test** (`python/`)
+
    ```python
    # Start typing
    def fetch_option_chain(
@@ -333,6 +346,7 @@ Tabnine requires:
    ```
 
 3. **TypeScript Test** (`web/src/`)
+
    ```typescript
    // Start typing
    const useBoxSpreadData = (
@@ -340,6 +354,7 @@ Tabnine requires:
    ```
 
 4. **Rust Test** (`agents/backend/`)
+
    ```rust
    // Start typing
    pub fn process_market_data(

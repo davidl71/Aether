@@ -5,6 +5,7 @@ This project supports executing VS Code tasks in iTerm2 instead of the integrate
 ## Overview
 
 iTerm2 integration allows you to:
+
 - **Better Terminal Experience**: Full iTerm2 features (split panes, better rendering, etc.)
 - **tmux Integration**: Native tmux support with iTerm2 Control Mode
 - **Performance**: Better performance for long-running builds and tests
@@ -73,6 +74,7 @@ Cmd+Shift+P → "Tasks: Run Task" → "CMake: Build (iTerm2)"
 ```
 
 This will:
+
 1. Open a new iTerm2 tab
 2. Change to project directory
 3. Execute the build command
@@ -95,6 +97,7 @@ fi
 ### Long-Running Builds
 
 Universal binary builds can take 10+ minutes. Running in iTerm2 provides:
+
 - Better output rendering
 - Ability to detach/reattach to tmux session
 - More terminal space for verbose output
@@ -102,6 +105,7 @@ Universal binary builds can take 10+ minutes. Running in iTerm2 provides:
 ### Service Monitoring
 
 PWA services run continuously. iTerm2 integration provides:
+
 - Native tmux support for service management
 - Better log viewing with split panes
 - Easy session management
@@ -109,6 +113,7 @@ PWA services run continuously. iTerm2 integration provides:
 ### Test Execution
 
 ShellSpec tests and C++ tests benefit from:
+
 - Better output formatting
 - Ability to scroll through long test output
 - Terminal history preservation
@@ -153,6 +158,7 @@ Tasks inherit environment variables from VS Code settings. Configure in `.vscode
 ### Extension Not Found
 
 If the extension isn't available:
+
 1. Check VS Code Marketplace for alternative iTerm2 extensions
 2. Use AppleScript-based approach (already configured in tasks)
 3. Manually configure tasks with osascript
@@ -160,12 +166,14 @@ If the extension isn't available:
 ### Tasks Not Opening iTerm2
 
 1. **Check iTerm2 Installation**:
+
    ```bash
    which osascript
    # Should return: /usr/bin/osascript
    ```
 
 2. **Test AppleScript**:
+
    ```bash
    osascript -e 'tell application "iTerm2" to activate'
    ```
@@ -177,6 +185,7 @@ If the extension isn't available:
 ### Terminal Not Switching Directory
 
 Tasks use `${workspaceFolder}` variable. If directory is wrong:
+
 1. Ensure workspace is properly opened in VS Code
 2. Check that `workspaceFolder` resolves correctly
 3. Use absolute paths if needed

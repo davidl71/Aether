@@ -38,6 +38,7 @@ emcc --version
 ```
 
 You should see:
+
 ```
 emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 4.0.19
 ```
@@ -59,16 +60,19 @@ The build script will automatically detect and use Emscripten if it's in the PAT
 If you get "Emscripten not found" errors:
 
 1. **Check if emsdk exists:**
+
    ```bash
    ls -la emsdk/
    ```
 
 2. **Source the environment:**
+
    ```bash
    source emsdk/emsdk_env.sh
    ```
 
 3. **Verify installation:**
+
    ```bash
    emcc --version
    ```
@@ -76,6 +80,7 @@ If you get "Emscripten not found" errors:
 ### Build Script Can't Find Emscripten
 
 The build script automatically looks for Emscripten in:
+
 - `${PROJECT_ROOT}/emsdk` (project directory)
 - `${HOME}/emsdk` (home directory)
 - `/usr/local/emsdk` (system-wide)

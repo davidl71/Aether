@@ -22,6 +22,7 @@
    - Get API credentials (client ID, client secret)
 
 2. **Run exploration script**
+
    ```bash
    python scripts/livevol_api_explorer.py \
      --client-id YOUR_CLIENT_ID \
@@ -46,12 +47,14 @@
 ### ✅ Best Case: LiveVol Supports Quoted Spreads
 
 **If LiveVol API has quoted spread endpoints**:
+
 - ✅ Direct access to quoted box spread prices
 - ✅ Real-time QSB quotes (if subscribed)
 - ✅ Integration via existing `LiveVolProvider` code
 - ✅ Cost: $380/month subscription
 
 **Next Steps**:
+
 - Complete `LiveVolProvider` implementation
 - Add quoted spread endpoints
 - Integrate into box spread strategy
@@ -59,12 +62,14 @@
 ### ⚠️ Fallback: Build from Individual Legs
 
 **If LiveVol doesn't support quoted spreads directly**:
+
 - ⚠️ Use LiveVol for individual option quotes
 - ⚠️ Build box spreads from 4 legs
 - ⚠️ No direct QSB quotes
 - ⚠️ Execution risk (partial fills)
 
 **Next Steps**:
+
 - Use LiveVol for options data enrichment
 - Continue building box spreads from legs
 - Look for other QSB quote sources
@@ -120,6 +125,7 @@ python scripts/livevol_api_explorer.py \
 ```
 
 This will:
+
 - ✅ Authenticate with LiveVol API
 - ✅ Discover available endpoints
 - ✅ Test quoted spread endpoints

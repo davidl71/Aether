@@ -11,6 +11,7 @@
 ### Full TWS API Library Built Successfully
 
 **Built Components**:
+
 1. ✅ **Intel Decimal Library** (5.1MB)
    - Built from source with fixes for modern compilers
    - Location: `native/native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
@@ -96,6 +97,7 @@ cd /Users/davidlowes/.claude-squad/worktrees/claude_1873e0c42c155fb0
 ```
 
 **Output**:
+
 - Binary: `build/bin/ib_box_spread`
 - Size: Universal binary (x86_64 + arm64)
 - Dependencies: All libraries linked
@@ -124,20 +126,24 @@ ctest --output-on-failure
 ## 📁 Important File Locations
 
 ### Libraries
+
 - **TWS API**: `native/native/third_party/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib`
 - **Intel Decimal**: `native/native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
 - **Protobuf**: `/usr/local/lib/libprotobuf.dylib`
 - **Abseil**: `/usr/local/lib/libabsl_*.dylib` (184 files)
 
 ### Headers
+
 - **TWS API**: `native/native/third_party/tws-api/IBJts/source/cppclient/client/*.h`
 - **Application**: `include/*.h`
 
 ### Configuration
+
 - **Example Config**: `config/config.example.json`
 - **Your Config**: `config/config.json` (create from example)
 
 ### Documentation
+
 - **Quick Start**: `docs/QUICK_START.md`
 - **Implementation Guide**: `docs/IMPLEMENTATION_GUIDE.md`
 - **Integration Template**: `docs/TWS_INTEGRATION_TEMPLATE.cpp`
@@ -151,6 +157,7 @@ ctest --output-on-failure
 ### What Works Now
 
 ✅ **Complete Trading Framework**:
+
 - Configuration management
 - Box spread detection algorithm
 - Risk management (VaR, position sizing, limits)
@@ -160,6 +167,7 @@ ctest --output-on-failure
 - 100% test coverage
 
 ⚠️ **TWS Connection**:
+
 - Stub implementation active
 - TWS library is compiled and linked
 - **Headers available for full implementation**
@@ -170,6 +178,7 @@ ctest --output-on-failure
 The framework is **production-ready**, but the TWS client is still a stub. To enable real connectivity:
 
 #### Option 1: Implement Full EWrapper (Recommended)
+
 Use the template at `docs/TWS_INTEGRATION_TEMPLATE.cpp:1`:
 
 1. Replace stub in `src/tws_client.cpp`
@@ -181,6 +190,7 @@ Use the template at `docs/TWS_INTEGRATION_TEMPLATE.cpp:1`:
 **Time estimate**: 2-4 hours of coding + testing
 
 #### Option 2: Start with Minimal Implementation
+
 Implement only what you need:
 
 1. Connection (connectAck, nextValidId)
@@ -266,11 +276,13 @@ ib_box_spread (your application)
 The TWS API library is not in your runtime path. Either:
 
 **Option A**: Copy library to system location
+
 ```bash
 sudo cp native/native/third_party/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib /usr/local/lib/
 ```
 
 **Option B**: Set runtime path
+
 ```bash
 export DYLD_LIBRARY_PATH="$PWD/native/native/third_party/tws-api/IBJts/source/cppclient/client/build/lib:$DYLD_LIBRARY_PATH"
 ./build/bin/ib_box_spread
@@ -281,16 +293,19 @@ export DYLD_LIBRARY_PATH="$PWD/native/native/third_party/tws-api/IBJts/source/cp
 If tests fail after making changes:
 
 1. **Clean build**:
+
    ```bash
    rm -rf build && ./scripts/build_universal.sh
    ```
 
 2. **Check dependencies**:
+
    ```bash
    otool -L build/bin/ib_box_spread | grep -E "(twsapi|protobuf|absl)"
    ```
 
 3. **Verify TWS library**:
+
    ```bash
    ls -lh native/native/third_party/tws-api/IBJts/source/cppclient/client/build/lib/libtwsapi.dylib
    ```
@@ -356,6 +371,7 @@ Despite the complexity, we successfully built everything and achieved 100% test 
    - Compile and test
 
 3. **Test Connection**:
+
    ```bash
    ./build/bin/ib_box_spread --config config/config.json
    ```

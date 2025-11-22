@@ -56,6 +56,7 @@ pub struct HistoricPosition {
 ```
 
 **Current Limitations:**
+
 - ❌ No double-entry accounting (debits/credits)
 - ❌ No balance reconciliation
 - ❌ No account/chart of accounts structure
@@ -65,6 +66,7 @@ pub struct HistoricPosition {
 - ❌ No cash flow tracking (planned but not implemented)
 
 **Current System Strengths:**
+
 - ✅ Real-time position tracking
 - ✅ Order execution history
 - ✅ Unrealized/realized PnL calculation
@@ -74,12 +76,14 @@ pub struct HistoricPosition {
 ### Integration Context
 
 **Investment Strategy Framework:**
+
 - Portfolio allocation framework exists (`docs/INVESTMENT_STRATEGY_FRAMEWORK.md`)
 - Tracks cash allocation, box spreads, T-bills, ETFs
 - Net portfolio value calculation (assets - loan liabilities)
 - Cash flow forecasting planned but not yet implemented
 
 **Architecture:**
+
 - C++ core (`native/src/`) with box spread calculations
 - Rust backend (`agents/backend/`) for state management
 - Python integration layer
@@ -91,7 +95,7 @@ pub struct HistoricPosition {
 
 ### 1. Formance Platform
 
-**Website:** https://docs.formance.com/welcome
+**Website:** <https://docs.formance.com/welcome>
 **Type:** Open-source, cloud-native financial infrastructure
 **License:** Unknown (check repository)
 **Language:** Unknown (check repository)
@@ -155,12 +159,14 @@ Formance is an open-source, cloud-native financial infrastructure platform desig
 #### Integration Assessment
 
 **Pros:**
+
 - Modern, developer-first approach
 - REST APIs suitable for integration
 - Cloud-native design aligns with modern architectures
 - Comprehensive workflow orchestration
 
 **Cons:**
+
 - Unknown technology stack (need to verify)
 - May require significant integration work
 - External dependency for critical accounting functions
@@ -173,8 +179,8 @@ Highly applicable for modern ledger architecture, but need to verify technology 
 
 ### 2. Blnk Finance
 
-**Website:** https://github.com/blnkfinance/blnk
-**Repository:** https://github.com/blnkfinance/blnk
+**Website:** <https://github.com/blnkfinance/blnk>
+**Repository:** <https://github.com/blnkfinance/blnk>
 **Type:** Open-source ledger & financial core
 **License:** Apache-2.0
 **Language:** Go (95.5% of codebase)
@@ -208,6 +214,7 @@ Blnk is an open-source ledger and financial core designed to help developers shi
 #### Architecture
 
 **Technology Stack:**
+
 - **Language:** Go (95.5%)
 - **Database:** PostgreSQL
 - **Cache:** Redis
@@ -215,6 +222,7 @@ Blnk is an open-source ledger and financial core designed to help developers shi
 - **Deployment:** Docker Compose
 
 **Data Model:**
+
 - PostgreSQL for ledger data
 - Redis for caching and real-time operations
 - Typesense for search functionality
@@ -236,6 +244,7 @@ Blnk is an open-source ledger and financial core designed to help developers shi
 - Configuration via JSON (`blnk.json`)
 
 **Example Configuration:**
+
 ```json
 {
   "project_name": "Blnk",
@@ -257,6 +266,7 @@ Blnk is an open-source ledger and financial core designed to help developers shi
 #### Integration Assessment
 
 **Pros:**
+
 - Lightweight, Go-based architecture
 - Well-documented with active community
 - Reconciliation features for external record matching
@@ -264,6 +274,7 @@ Blnk is an open-source ledger and financial core designed to help developers shi
 - PostgreSQL + Redis architecture familiar to developers
 
 **Cons:**
+
 - Go-based (may require integration layer for C++/Rust)
 - External service dependency
 - May add latency for real-time trading operations
@@ -275,7 +286,7 @@ Good fit for ledger architecture, but Go-based stack may require integration bri
 
 ### 3. Firefly III
 
-**Website:** https://docs.firefly-iii.org/
+**Website:** <https://docs.firefly-iii.org/>
 **Type:** Self-hosted personal finance manager
 **License:** AGPL-3.0
 **Language:** PHP (Laravel)
@@ -313,11 +324,13 @@ Firefly III is a self-hosted personal finance manager that helps users keep trac
 #### Integration Assessment
 
 **Pros:**
+
 - Well-established double-entry patterns
 - RESTful API available
 - Active community and documentation
 
 **Cons:**
+
 - Designed for personal finance, not trading/investment portfolios
 - PHP/Laravel stack (may not integrate well with C++/Rust)
 - Focus on expense tracking rather than portfolio accounting
@@ -329,7 +342,7 @@ Good reference for double-entry patterns, but not designed for trading portfolio
 
 ### 4. Akaunting
 
-**Website:** https://akaunting.com/
+**Website:** <https://akaunting.com/>
 **Type:** Open-source online accounting software
 **License:** GPL-3.0
 **Language:** PHP (Laravel)
@@ -365,11 +378,13 @@ Akaunting is a free, open-source, online accounting software designed for small 
 #### Integration Assessment
 
 **Pros:**
+
 - Comprehensive accounting features
 - Multi-currency support
 - Web-based access
 
 **Cons:**
+
 - Traditional business accounting focus
 - Not designed for trading/investment portfolios
 - PHP/Laravel stack (integration challenges)
@@ -381,7 +396,7 @@ Reference for traditional accounting features, but not trading-focused.
 
 ### 5. GnuCash
 
-**Website:** https://www.gnucash.org/
+**Website:** <https://www.gnucash.org/>
 **Type:** Desktop accounting software
 **License:** GPL-2.0
 **Language:** C/C++
@@ -425,11 +440,13 @@ GnuCash is a free, open-source financial accounting software designed for indivi
 #### Integration Assessment
 
 **Pros:**
+
 - C/C++ codebase (potential direct integration)
 - Investment tracking features relevant to trading
 - Desktop application (can integrate as library)
 
 **Cons:**
+
 - Desktop-focused (not API-first)
 - Traditional accounting focus
 - May require significant code extraction for API use
@@ -441,8 +458,8 @@ Good reference for investment tracking patterns, but desktop-focused design limi
 
 ### 6. FINOS Foundation
 
-**Website:** https://community.finos.org/docs/collaboration-infrastructure/
-**GitHub:** https://github.com/finos
+**Website:** <https://community.finos.org/docs/collaboration-infrastructure/>
+**GitHub:** <https://github.com/finos>
 **Type:** Financial open source foundation
 **License:** Various (per project)
 **Status:** Active organization
@@ -461,6 +478,7 @@ FINOS (Fintech Open Source Foundation) provides collaborative infrastructure for
 #### Projects
 
 Various open-source projects hosted on GitHub:
+
 - Financial modeling tools
 - Regulatory reporting frameworks
 - API standards
@@ -469,11 +487,13 @@ Various open-source projects hosted on GitHub:
 #### Integration Assessment
 
 **Pros:**
+
 - Industry standards and best practices
 - Financial services focus
 - Collaborative community
 
 **Cons:**
+
 - Not a specific ledger platform
 - More focused on enterprise/compliance than trading portfolios
 - Various projects with different architectures
@@ -485,7 +505,7 @@ Resource for financial services tools and standards, but not a direct ledger sol
 
 ### 7. ERPNext
 
-**Website:** https://frappe.io/erpnext/open-source-accounting
+**Website:** <https://frappe.io/erpnext/open-source-accounting>
 **Type:** Open-source ERP with accounting module
 **License:** GPL-3.0
 **Language:** Python (Frappe framework)
@@ -522,11 +542,13 @@ ERPNext is an open-source integrated Enterprise Resource Planning (ERP) software
 #### Integration Assessment
 
 **Pros:**
+
 - Comprehensive accounting features
 - REST API available
 - Active development and community
 
 **Cons:**
+
 - Heavyweight ERP system (overkill for trading ledger)
 - Not designed for trading/investment portfolios
 - Python-based (may require integration layer)
@@ -538,7 +560,7 @@ Reference for enterprise accounting features, but too heavyweight for trading-fo
 
 ### 8. UniBee
 
-**Website:** https://unibee.dev/
+**Website:** <https://unibee.dev/>
 **Type:** Payment/subscription platform (not a ledger system)
 **Status:** Unknown (limited documentation)
 
@@ -549,9 +571,11 @@ Limited public documentation available. Appears to be a payment/subscription pla
 #### Integration Assessment
 
 **Pros:**
+
 - May have payment processing features
 
 **Cons:**
+
 - Not a ledger/accounting system
 - Limited documentation
 - Unknown architecture and features
@@ -563,8 +587,8 @@ Not relevant for ledger accounting needs.
 
 ### 9. Ledger CLI (Plain Text Accounting)
 
-**Website:** https://ledger-cli.org/
-**Repository:** https://github.com/ledger/ledger
+**Website:** <https://ledger-cli.org/>
+**Repository:** <https://github.com/ledger/ledger>
 **Type:** Command-line double-entry accounting system
 **License:** BSD
 **Language:** C++
@@ -590,6 +614,7 @@ Ledger CLI is a powerful, double-entry accounting system that operates entirely 
 #### Architecture
 
 **Technology Stack:**
+
 - **Language:** C++ (100% C++ core)
 - **Storage:** Plain text files (`.ledger` files)
 - **Interface:** Command-line tool (`ledger` command)
@@ -597,6 +622,7 @@ Ledger CLI is a powerful, double-entry accounting system that operates entirely 
 
 **Data Format:**
 Transactions stored in plain text format:
+
 ```
 2025/11/18 * Buy SPY
     Assets:IBKR:SPY           100 SPY @ $450.00
@@ -605,6 +631,7 @@ Transactions stored in plain text format:
 
 **Reporting:**
 Command-line reports and queries:
+
 ```bash
 ledger balance                    # Show account balances
 ledger register Assets:IBKR:SPY  # Show SPY transaction history
@@ -631,6 +658,7 @@ ledger report                     # Generate financial reports
 #### Integration Assessment
 
 **Pros:**
+
 - ✅ **C++ codebase** - can be embedded as library or integrated directly
 - ✅ **Plain text format** - human-readable, easy to debug
 - ✅ **No database dependency** - simple, lightweight
@@ -639,6 +667,7 @@ ledger report                     # Generate financial reports
 - ✅ **Well-established** - 20+ years of development, 5.7k stars
 
 **Cons:**
+
 - ❌ **Text file format** - may not scale for high-frequency trading
 - ❌ **Command-line focused** - not API-first (but can be wrapped)
 - ❌ **File-based** - concurrent access may require file locking
@@ -658,7 +687,7 @@ ledger report                     # Generate financial reports
 
 ### 10. LedgerSMB
 
-**Website:** https://ledgersmb.org/
+**Website:** <https://ledgersmb.org/>
 **Type:** Open-source ERP with accounting
 **License:** GPL-2.0
 **Language:** Perl
@@ -684,6 +713,7 @@ LedgerSMB is an open-source Enterprise Resource Planning (ERP) system designed f
 #### Architecture
 
 **Technology Stack:**
+
 - **Language:** Perl
 - **Database:** PostgreSQL
 - **Interface:** Web-based application
@@ -700,12 +730,14 @@ LedgerSMB is an open-source Enterprise Resource Planning (ERP) system designed f
 #### Integration Assessment
 
 **Pros:**
+
 - ✅ Comprehensive accounting features
 - ✅ Multi-currency support (relevant for ILS/USD)
 - ✅ PostgreSQL database (familiar technology)
 - ✅ Active development (recent release)
 
 **Cons:**
+
 - ❌ **Perl-based** - not aligned with C++/Rust stack
 - ❌ **Web-based ERP** - heavyweight, overkill for trading ledger
 - ❌ **Business-focused** - not designed for trading/investment portfolios
@@ -748,6 +780,7 @@ Not relevant - hardware wallet integration library, not accounting ledger.
 **Approach:** Integrate Formance or Blnk as external ledger service
 
 **Architecture:**
+
 ```
 IB Box Spread System (C++/Rust)
     ↓ REST API
@@ -757,11 +790,13 @@ PostgreSQL/Redis Database
 ```
 
 **Pros:**
+
 - Leverages existing, tested ledger implementation
 - Separation of concerns
 - Can scale independently
 
 **Cons:**
+
 - Network latency for every transaction
 - External dependency
 - Potential performance bottlenecks for high-frequency trading
@@ -772,6 +807,7 @@ PostgreSQL/Redis Database
 **Approach:** Extract ledger logic from GnuCash or build custom lightweight ledger
 
 **Architecture:**
+
 ```
 IB Box Spread System (C++/Rust)
     ↓ Native calls
@@ -781,12 +817,14 @@ Local Database (PostgreSQL/SQLite)
 ```
 
 **Pros:**
+
 - No network latency
 - Direct integration with existing codebase
 - Full control over implementation
 - Trading-optimized design
 
 **Cons:**
+
 - Requires development effort
 - Must maintain ledger logic
 - Less battle-tested than external services
@@ -796,6 +834,7 @@ Local Database (PostgreSQL/SQLite)
 **Approach:** Custom lightweight ledger with external reconciliation
 
 **Architecture:**
+
 ```
 IB Box Spread System
     ↓
@@ -807,12 +846,14 @@ External Reconciliation Service (Formance/Blnk for audit)
 ```
 
 **Pros:**
+
 - Best of both worlds
 - High performance for trading operations
 - External audit/reconciliation capabilities
 - Flexible architecture
 
 **Cons:**
+
 - Most complex implementation
 - Requires maintaining two systems
 - Sync complexity
@@ -850,6 +891,7 @@ External Reconciliation Service (Formance/Blnk for audit)
    - Adopt their reconciliation patterns for external validation
 
 **NEW DISCOVERY: Ledger CLI is highly applicable:**
+
 - ✅ **C++ codebase** matches existing architecture perfectly
 - ✅ **Plain text format** provides human-readable audit trail
 - ✅ **Investment tracking** designed for securities/portfolio accounting
@@ -862,23 +904,27 @@ External Reconciliation Service (Formance/Blnk for audit)
 **Option A: Ledger CLI Core Integration (Recommended)**
 
 **Phase 1: Ledger CLI Integration**
+
 - Extract or integrate Ledger CLI C++ core library
 - Build C++ API wrapper for transaction recording
 - Integrate with existing C++ box spread calculations
 - Create `.ledger` file format for transaction storage
 
 **Phase 2: Transaction Recording**
+
 - Record all box spread transactions to ledger
 - Record position changes (buys/sells)
 - Record cash flows (deposits/withdrawals)
 - Multi-currency transaction support (ILS → USD)
 
 **Phase 3: Reporting Integration**
+
 - Use Ledger CLI reporting commands for balance queries
 - Generate financial reports from ledger files
 - Integration with existing position tracking
 
 **Phase 4: Advanced Features**
+
 - Cash flow forecasting from ledger data
 - Reconciliation with external sources (IBKR statements)
 - Audit trail and compliance reporting
@@ -887,6 +933,7 @@ External Reconciliation Service (Formance/Blnk for audit)
 **Option B: Custom Lightweight Ledger Module**
 
 **Phase 1: Core Ledger Module**
+
 - Implement double-entry accounting in Rust (aligns with backend)
 - Use Ledger CLI transaction format as reference
 - Basic transaction journal
@@ -894,22 +941,26 @@ External Reconciliation Service (Formance/Blnk for audit)
 - Balance calculation and reconciliation
 
 **Phase 2: Integration**
+
 - Integrate with existing position tracking
 - Replace simple PnL calculation with ledger-based accounting
 - Add transaction recording for all trading operations
 
 **Phase 3: Advanced Features**
+
 - Multi-currency support
 - Cash flow tracking
 - Reconciliation with external sources (IBKR statements)
 - Audit trail and reporting
 
 **Phase 4: External Validation (Optional)**
+
 - Periodic sync with Formance/Blnk for audit
 - External reconciliation service
 - Compliance reporting
 
 **Recommendation:** Start with **Option A (Ledger CLI Core Integration)** because:
+
 1. C++ codebase matches existing architecture
 2. Proven double-entry logic (20+ years)
 3. Investment position tracking support
@@ -951,12 +1002,14 @@ While modern financial ledger platforms like Formance and Blnk offer excellent a
 - ✅ No external dependencies for critical path
 
 Use Formance and Blnk as **reference architectures** for:
+
 - Double-entry transaction models
 - Account structure patterns
 - Reconciliation approaches
 - API design principles
 
 The investment in a custom ledger module will pay off through:
+
 - Reduced latency for trading operations
 - Full control over trading-specific features
 - Direct integration with existing systems
@@ -985,6 +1038,7 @@ The investment in a custom ledger module will pay off through:
 ---
 
 **Next Steps:**
+
 1. Design lightweight ledger module architecture
 2. Define double-entry transaction model for trading operations
 3. Plan integration with existing position tracking

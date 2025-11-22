@@ -38,6 +38,7 @@ A **box spread** is an options trading strategy that combines a bull call spread
 ### The "Box" Concept
 
 The strategy is called a "box" because it creates a rectangular profit/loss profile that is flat regardless of the underlying price at expiration. The box is defined by:
+
 - **Width**: Difference between strike prices (K2 - K1)
 - **Value at Expiration**: Always equals the strike width
 - **Profit**: Difference between net premium paid/received and strike width
@@ -49,12 +50,14 @@ The strategy is called a "box" because it creates a rectangular profit/loss prof
 ### Long Box Spread (Buying the Box)
 
 A **long box spread** involves:
+
 1. **Bull Call Spread**: Buy call at K1, sell call at K2
 2. **Bear Put Spread**: Buy put at K2, sell put at K1
 
 **Net Cost**: Premium paid for long options minus premium received for short options
 
 **Profit Condition**:
+
 ```
 Profit = Strike Width - Net Premium Paid
 ```
@@ -64,12 +67,14 @@ Profit = Strike Width - Net Premium Paid
 ### Short Box Spread (Selling the Box)
 
 A **short box spread** involves:
+
 1. **Bear Call Spread**: Sell call at K1, buy call at K2
 2. **Bull Put Spread**: Sell put at K2, buy put at K1
 
 **Net Credit**: Premium received for short options minus premium paid for long options
 
 **Profit Condition**:
+
 ```
 Profit = Net Premium Received - Strike Width
 ```
@@ -96,27 +101,32 @@ Profit = Net Premium Received - Strike Width
 ### Example 1: Long Box Spread (NVDA)
 
 **Setup**:
+
 - Underlying: NVDA trading at $143.71
 - Strike Prices: K1 = $140, K2 = $150
 - Strike Width: $10 ($1,000 per contract)
 
 **Long Box Construction**:
+
 1. Buy 1 ITM call at $140: Pay $6.50 ($650 debit)
 2. Sell 1 OTM call at $150: Receive $2.10 ($210 credit)
 3. Buy 1 ITM put at $150: Pay $7.80 ($780 debit)
 4. Sell 1 OTM put at $140: Receive $1.80 ($180 credit)
 
 **Net Premium Paid**:
+
 ```
 $650 - $210 + $780 - $180 = $1,040 debit
 ```
 
 **Expiration Value**:
+
 ```
 Strike Width = $150 - $140 = $10 per share = $1,000 per contract
 ```
 
 **Profit Calculation**:
+
 ```
 Profit = $1,000 (expiration value) - $1,040 (net cost) = -$40
 ```
@@ -126,26 +136,31 @@ Profit = $1,000 (expiration value) - $1,040 (net cost) = -$40
 ### Example 2: Short Box Spread (Profitable)
 
 **Setup**:
+
 - Same strikes: K1 = $140, K2 = $150
 - Strike Width: $10 ($1,000 per contract)
 
 **Short Box Construction**:
+
 1. Sell 1 ITM call at $140: Receive $6.50 ($650 credit)
 2. Buy 1 OTM call at $150: Pay $2.10 ($210 debit)
 3. Sell 1 ITM put at $150: Receive $7.80 ($780 credit)
 4. Buy 1 OTM put at $140: Pay $1.80 ($180 debit)
 
 **Net Premium Received**:
+
 ```
 $650 - $210 + $780 - $180 = $1,040 credit
 ```
 
 **Expiration Value**:
+
 ```
 Strike Width = $10 per share = $1,000 per contract
 ```
 
 **Profit Calculation**:
+
 ```
 Profit = $1,040 (net credit) - $1,000 (expiration value) = $40
 ```
@@ -155,6 +170,7 @@ Profit = $1,040 (net credit) - $1,000 (expiration value) = $40
 ### Key Insight
 
 The examples above show the same box from opposite sides:
+
 - **Long box** at $1,040 = Losing trade (paying more than $1,000 value)
 - **Short box** at $1,040 = Profitable trade (receiving more than $1,000 value)
 
@@ -208,12 +224,14 @@ Assignment risk is the **primary practical concern** with box spreads, especiall
 **Scenario**: Short ITM put is assigned early
 
 **What Happens**:
+
 1. You receive 100 shares of stock (per contract)
 2. You pay strike price × 100 shares
 3. Your hedge (long put) is still in place
 4. You're now leveraged (borrowing to hold stock)
 
 **Risks**:
+
 - **Margin Requirements**: May exceed available margin
 - **Interest Costs**: Pay interest on borrowed funds
 - **Forced Closure**: Broker may force position closure if margin insufficient
@@ -224,6 +242,7 @@ Assignment risk is the **primary practical concern** with box spreads, especiall
 **Scenario**: Long ITM call is exercised early
 
 **What Happens**:
+
 1. You buy 100 shares of stock
 2. You pay strike price × 100 shares
 3. Your hedge (short call) is still in place
@@ -289,11 +308,13 @@ Box spreads can be used for **tax arbitrage** in some jurisdictions, though this
 ### Market Efficiency
 
 **Reality Check**: Modern markets are highly efficient
+
 - Computerized trading has reduced pricing inefficiencies
 - Arbitrage opportunities are rare and short-lived
 - Execution speed is critical
 
 **Implications**:
+
 - Box spreads may not be profitable after transaction costs
 - Need sophisticated systems to detect and execute quickly
 - Institutional traders have advantages (lower fees, faster execution)
@@ -301,12 +322,14 @@ Box spreads can be used for **tax arbitrage** in some jurisdictions, though this
 ### Transaction Costs
 
 **Components**:
+
 1. **Commissions**: Per-contract fees (can be $0.50-$1.00 per contract)
 2. **Exchange Fees**: Regulatory and exchange fees
 3. **Bid-Ask Spreads**: Slippage from market spreads
 4. **Financing Costs**: Margin interest if assigned
 
 **Example Cost Calculation**:
+
 ```
 4 contracts × $0.70 commission = $2.80
 Exchange fees = $0.50
@@ -315,6 +338,7 @@ Total costs ≈ $4.10 per box spread
 ```
 
 **Break-Even Analysis**:
+
 - If box spread profit is $40, costs are $4.10
 - Net profit = $35.90 (still profitable)
 - If box spread profit is $3, costs are $4.10
@@ -340,6 +364,7 @@ Total costs ≈ $4.10 per box spread
 ### When to Use Box Spreads
 
 **Good Candidates**:
+
 - High-liquidity underlyings (SPX, major ETFs)
 - European-style options (no early assignment)
 - Cash-settled instruments (no stock delivery)
@@ -347,6 +372,7 @@ Total costs ≈ $4.10 per box spread
 - When transaction costs are low relative to profit
 
 **Poor Candidates**:
+
 - Low-liquidity underlyings
 - American-style options on stocks (assignment risk)
 - Wide bid-ask spreads
@@ -454,52 +480,52 @@ LiquidityMetrics check_liquidity(const OptionChain& chain,
 ### Educational Resources
 
 1. **Warrior Trading - Box Spread Definition**
-   - URL: https://www.warriortrading.com/box-spread-definition-day-trading-terminology/
+   - URL: <https://www.warriortrading.com/box-spread-definition-day-trading-terminology/>
    - Focus: Day trading terminology and basics
 
 2. **Option Samurai - Short Box Spread**
-   - URL: https://optionsamurai.com/blog/short-box-spread/
+   - URL: <https://optionsamurai.com/blog/short-box-spread/>
    - Focus: Short box spread mechanics, risks, and rewards
    - Key Topics: Assignment risk, time decay, volatility impact
 
 3. **Wint Wealth - Box Spread Trading Strategy**
-   - URL: https://www.wintwealth.com/blog/what-is-the-box-spread-trading-strategy/
+   - URL: <https://www.wintwealth.com/blog/what-is-the-box-spread-trading-strategy/>
    - Focus: Comprehensive strategy guide
    - Key Topics: Benefits, risks, implementation steps
 
 4. **Day Trading.com - Box Options**
-   - URL: https://www.daytrading.com/box-options
+   - URL: <https://www.daytrading.com/box-options>
    - Focus: Day trading perspective on box spreads
 
 5. **Motilal Oswal - Box Spread Trading**
-   - URL: https://www.motilaloswal.com/learning-centre/2023/6/what-is-box-spread-trading-and-how-it-works
+   - URL: <https://www.motilaloswal.com/learning-centre/2023/6/what-is-box-spread-trading-and-how-it-works>
    - Focus: Educational content on box spread mechanics
 
 6. **Mustachian Post - SPX Box Spreads**
-   - URL: https://forum.mustachianpost.com/t/spx-box-spreads-for-cheap-margin/8350
+   - URL: <https://forum.mustachianpost.com/t/spx-box-spreads-for-cheap-margin/8350>
    - Focus: Practical discussion on SPX box spreads for margin
 
 7. **FX Options - Box Spreads**
-   - URL: https://www.fxoptions.com/what-are-box-spreads-and-how-do-they-work/
+   - URL: <https://www.fxoptions.com/what-are-box-spreads-and-how-do-they-work/>
    - Focus: FX options perspective on box spreads
 
 8. **LessWrong - Box Spread Trick**
-   - URL: https://www.lesswrong.com/posts/8NSKMMDXS8gjFHfQa/the-box-spread-trick-get-rich-slightly-faster
+   - URL: <https://www.lesswrong.com/posts/8NSKMMDXS8gjFHfQa/the-box-spread-trick-get-rich-slightly-faster>
    - Focus: Discussion on box spreads as arbitrage strategy
 
 9. **Options Trading.org - Box Spreads and Tax Arbitrage**
-   - URL: https://www.optionstrading.org/blog/box-spreads-and-tax-arbitrage/
+   - URL: <https://www.optionstrading.org/blog/box-spreads-and-tax-arbitrage/>
    - Focus: Tax implications of box spread trading
 
 10. **Tastytrade - Futures Trading**
-    - URL: https://tastytrade.com/learn/trading-products/futures/how-to-trade-futures/
+    - URL: <https://tastytrade.com/learn/trading-products/futures/how-to-trade-futures/>
     - Focus: Futures trading education (related to box spread context)
 
 ### Additional Resources
 
-- **Investopedia - Box Spread**: https://www.investopedia.com/terms/b/boxspread.asp
-- **CBOE - Early Exercise and Assignment**: https://www.cboe.com/learncenter/options/early-exercise-assignment/
-- **IBKR Combo Orders**: https://interactivebrokers.github.io/tws-api/combo_orders.html
+- **Investopedia - Box Spread**: <https://www.investopedia.com/terms/b/boxspread.asp>
+- **CBOE - Early Exercise and Assignment**: <https://www.cboe.com/learncenter/options/early-exercise-assignment/>
+- **IBKR Combo Orders**: <https://interactivebrokers.github.io/tws-api/combo_orders.html>
 
 ---
 
@@ -514,6 +540,7 @@ Box spreads are sophisticated options strategies that:
 5. **Best for**: European-style, cash-settled index options (SPX, XSP)
 
 **Key Takeaway**: Box spreads can be profitable, but success requires:
+
 - Fast execution systems
 - Low transaction costs
 - Proper risk management (assignment risk)

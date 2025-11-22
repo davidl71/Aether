@@ -3,6 +3,7 @@
 This backend serves a unified `SnapshotPayload` for both the TUI and the PWA, powered by Alpaca Market Data v2 and Trading API.
 
 ### Prerequisites
+
 - Python 3.10+
 - Packages: `fastapi`, `uvicorn`, `requests`
   - Install: `pip install fastapi uvicorn requests`
@@ -11,6 +12,7 @@ This backend serves a unified `SnapshotPayload` for both the TUI and the PWA, po
 ### Quick Start
 
 **Using the startup script (recommended):**
+
 ```bash
 export ALPACA_API_KEY_ID=your_key_id
 export ALPACA_API_SECRET_KEY=your_secret_key
@@ -23,6 +25,7 @@ export SNAPSHOT_FILE_PATH=$(pwd)/web/public/data/snapshot.json
 ```
 
 **Manual start:**
+
 ```bash
 export ALPACA_API_KEY_ID=xxx
 export ALPACA_API_SECRET_KEY=yyy
@@ -34,6 +37,7 @@ uvicorn python.integration.alpaca_service:app --host 127.0.0.1 --port 8000
 ```
 
 ### Environment Variables
+
 - `ALPACA_API_KEY_ID`: Your Alpaca API key (required)
 - `ALPACA_API_SECRET_KEY`: Your Alpaca API secret (required)
 - `ALPACA_PAPER`: Set to `1` (default) for paper trading endpoints
@@ -47,16 +51,21 @@ uvicorn python.integration.alpaca_service:app --host 127.0.0.1 --port 8000
 ### API Endpoints
 
 #### Health Check
+
 ```bash
 curl -s http://127.0.0.1:8000/api/health | jq
 ```
+
 Returns service status and Alpaca connection status.
 
 #### Snapshot (Complete Data)
+
 ```bash
 curl -s http://127.0.0.1:8000/api/snapshot | jq
 ```
+
 Returns complete snapshot with:
+
 - Market data for configured symbols
 - Account metrics (equity, buying power, etc.)
 - Open positions
@@ -64,18 +73,23 @@ Returns complete snapshot with:
 - Account ID and trading mode
 
 #### Account Information
+
 ```bash
 curl -s http://127.0.0.1:8000/api/account | jq
 ```
+
 Returns full account details from Alpaca.
 
 #### Positions
+
 ```bash
 curl -s http://127.0.0.1:8000/api/positions | jq
 ```
+
 Returns all open positions.
 
 #### Orders
+
 ```bash
 # All orders
 curl -s http://127.0.0.1:8000/api/orders | jq
@@ -90,6 +104,7 @@ curl -s "http://127.0.0.1:8000/api/orders?status=closed&limit=100" | jq
 ### TUI Integration
 
 #### Option 1: File Polling (Recommended)
+
 The TUI can use the `FileProvider` to read snapshot JSON files:
 
 ```bash
@@ -105,6 +120,7 @@ export TUI_SNAPSHOT_FILE=$(pwd)/web/public/data/snapshot.json
 The `FileProvider` automatically polls the file and updates when it changes.
 
 #### Option 2: HTTP Polling (Implemented)
+
 The TUI `RestProvider` now supports HTTP polling using libcurl:
 
 ```bash
@@ -121,15 +137,19 @@ Or configure it in the TUI config file. The `RestProvider` will automatically po
 ### PWA Integration
 
 Set an environment variable for the web app:
+
 ```bash
 # In a shell where you run `npm run dev` or build:
 export VITE_API_URL=http://127.0.0.1:8000/api/snapshot
 ```
+
 Then:
+
 ```bash
 cd web
 npm run dev
 ```
+
 The PWA will poll the backend for live data.
 
 ### Features
@@ -144,15 +164,18 @@ The PWA will poll the backend for live data.
 ### Troubleshooting
 
 **Service won't start:**
+
 - Verify `ALPACA_API_KEY_ID` and `ALPACA_API_SECRET_KEY` are set
 - Check Python dependencies: `pip install fastapi uvicorn requests`
 
 **No data in snapshot:**
+
 - Verify Alpaca credentials are correct
 - Check account has market data permissions
 - Ensure symbols are valid (e.g., `SPY`, `QQQ`, not `SPX` which requires options data subscription)
 
 **TUI not updating:**
+
 - Verify `SNAPSHOT_FILE_PATH` is set and writable
 - Check file permissions
 - Ensure TUI is configured to use `FileProvider` with the correct path

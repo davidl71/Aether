@@ -18,19 +18,23 @@ You're experiencing TWS connection issues and want to integrate with Alpaca inst
 ## Options Analysis
 
 ### Option 1: Fix TWS Connection (RECOMMENDED)
+
 **Pros**:
+
 - Keep box spread strategy intact
 - Most professional options platform
 - Comprehensive TWS API
 - Your code already 90% complete
 
 **Cons**:
+
 - TWS setup complexity
 - Connection maintenance
 
 **Effort**: 30 minutes to fix connection
 
 **Action Items**:
+
 1. Install IB Gateway
 2. Configure API settings (port 7497, enable socket clients)
 3. Accept connection in TWS popup
@@ -39,35 +43,42 @@ You're experiencing TWS connection issues and want to integrate with Alpaca inst
 ---
 
 ### Option 2: Switch to Tradier (Options Alternative)
+
 **Pros**:
+
 - REST API (easier than TWS)
 - Supports options trading
 - Lower account minimums
 - Good for options strategies
 
 **Cons**:
+
 - Need new account
 - Different fee structure
 - API differences from IBKR
 
 **Effort**: 2-3 days to integrate
 
-**Tradier API**: https://documentation.tradier.com/
+**Tradier API**: <https://documentation.tradier.com/>
 
 ---
 
 ### Option 3: Use Alpaca for Different Strategy
+
 **Pros**:
+
 - Simple REST API
 - Free data API
 - Good for stock/crypto strategies
 
 **Cons**:
+
 - **Cannot do box spreads** (no options)
 - Need to completely redesign strategy
 - Months of work to pivot
 
 **Use Cases**:
+
 - Stock arbitrage
 - Pairs trading
 - Momentum strategies
@@ -78,12 +89,15 @@ You're experiencing TWS connection issues and want to integrate with Alpaca inst
 ---
 
 ### Option 4: Hybrid Approach
+
 **Pros**:
+
 - Use IBKR for options (box spreads)
 - Use Alpaca for stock strategies
 - Diversified broker risk
 
 **Cons**:
+
 - Maintain two integrations
 - More complexity
 
@@ -98,6 +112,7 @@ Since your entire codebase is built for box spreads, fixing TWS is the fastest p
 ### TWS Connection Debug Checklist
 
 1. **Install IB Gateway**
+
    ```bash
    # macOS
    brew install --cask ib-gateway
@@ -118,6 +133,7 @@ Since your entire codebase is built for box spreads, fixing TWS is the fastest p
      - Trusted IPs: `127.0.0.1`
 
 3. **Test Connection**
+
    ```bash
    # Check if port is listening
    lsof -iTCP:7497 -sTCP:LISTEN
@@ -144,6 +160,7 @@ Since your entire codebase is built for box spreads, fixing TWS is the fastest p
    - **Fix**: In TWS settings, uncheck "Prompt for client ID"
 
 5. **Verify Connection in Code**
+
    ```bash
    # Run with debug logging
    ./ib_box_spread --config config/config.example.json --log-level debug --dry-run
@@ -293,6 +310,7 @@ private:
 #### Step 4: Alpaca REST Client (6-8 hours)
 
 **Dependencies**:
+
 ```bash
 # Add to CMakeLists.txt
 find_package(CURL REQUIRED)
@@ -300,6 +318,7 @@ find_package(nlohmann_json REQUIRED)
 ```
 
 **Example Alpaca API Call**:
+
 ```cpp
 // Get account info
 std::string AlpacaAdapter::get_account_info() {
@@ -373,12 +392,14 @@ BoxSpreadStrategy strategy(broker.get(), &order_mgr, params);
 ## Alpaca Integration Checklist
 
 ### Prerequisites
-- [ ] Alpaca account created (https://alpaca.markets)
+
+- [ ] Alpaca account created (<https://alpaca.markets>)
 - [ ] API keys generated (paper trading first!)
 - [ ] Understand Alpaca limitations (no options)
 - [ ] Decide on use case (stock strategies only)
 
 ### Implementation Tasks
+
 - [ ] Create BrokerAdapter interface
 - [ ] Refactor TWSClient into IBKRAdapter
 - [ ] Implement AlpacaAdapter
@@ -417,20 +438,23 @@ BoxSpreadStrategy strategy(broker.get(), &order_mgr, params);
 ### Key Endpoints
 
 **Account**:
+
 - GET `/v2/account` - Get account info
 - GET `/v2/positions` - Get positions
 
 **Market Data**:
+
 - GET `/v2/stocks/{symbol}/quotes/latest` - Latest quote
 - GET `/v2/stocks/{symbol}/bars` - Historical bars
 - WS `wss://stream.data.alpaca.markets/v2/iex` - Real-time streaming
 
 **Orders**:
+
 - POST `/v2/orders` - Place order
 - GET `/v2/orders` - List orders
 - DELETE `/v2/orders/{order_id}` - Cancel order
 
-**Documentation**: https://alpaca.markets/docs/api-references/trading-api/
+**Documentation**: <https://alpaca.markets/docs/api-references/trading-api/>
 
 ---
 
@@ -452,16 +476,19 @@ BoxSpreadStrategy strategy(broker.get(), &order_mgr, params);
 ## Recommendation
 
 ### For Box Spread Strategy: Use IBKR
+
 - Fix TWS connection (30 min)
 - Keep existing codebase
 - Production-ready in 2-3 weeks
 
 ### For Stock Strategies: Use Alpaca
+
 - Implement broker abstraction (1 week)
 - Add Alpaca adapter (1 week)
 - Design new stock-based strategy (2-3 weeks)
 
 ### Hybrid: Use Both
+
 - IBKR for options (box spreads)
 - Alpaca for stocks (different strategies)
 - Best of both worlds
@@ -495,6 +522,6 @@ BoxSpreadStrategy strategy(broker.get(), &order_mgr, params);
 
 ## Contact
 
-- **Alpaca Support**: support@alpaca.markets
-- **IBKR Support**: https://www.interactivebrokers.com/en/support/contact-us.php
-- **Alpaca Discord**: https://alpaca.markets/community
+- **Alpaca Support**: <support@alpaca.markets>
+- **IBKR Support**: <https://www.interactivebrokers.com/en/support/contact-us.php>
+- **Alpaca Discord**: <https://alpaca.markets/community>

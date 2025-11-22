@@ -657,6 +657,7 @@ PWA/TUI Clients (WebSocket)
 ### API Contract Compliance
 
 All endpoints must match `agents/shared/API_CONTRACT.md`:
+
 - ✅ `GET /api/v1/snapshot` → Returns `SnapshotResponse`
 - ✅ `POST /api/v1/strategy/start` → Starts strategy
 - ✅ `POST /api/v1/strategy/stop` → Stops strategy

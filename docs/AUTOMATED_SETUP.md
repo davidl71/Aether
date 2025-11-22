@@ -42,23 +42,28 @@ This guide explains how to use the automated setup scripts to configure platform
 ### 1. Platform Detection
 
 **macOS/Linux**:
+
 - Detects OS: `uname -s` (Darwin/Linux)
 - Detects architecture: `uname -m` (arm64/x86_64)
 
 **Windows**:
+
 - Detects architecture: `$env:PROCESSOR_ARCHITECTURE`
 
 ### 2. Compiler Detection
 
 **macOS**:
+
 - Checks `/opt/homebrew/bin/clang++` (Apple Silicon)
 - Checks `/usr/local/bin/clang++` (Intel)
 - Falls back to `clang++` in PATH
 
 **Linux**:
+
 - Checks `g++` in PATH
 
 **Windows**:
+
 - Searches Visual Studio 2022 installations
 - Checks MinGW-w64 locations
 - Falls back to `g++` in PATH
@@ -66,27 +71,32 @@ This guide explains how to use the automated setup scripts to configure platform
 ### 3. Include Path Detection
 
 **macOS**:
+
 - `/opt/homebrew/include` (Apple Silicon)
 - `/usr/local/include` (Intel)
 
 **Linux**:
+
 - `/usr/include`
 - `/usr/local/include`
 - GCC C++ headers (auto-detects version)
 
 **Windows**:
+
 - Visual Studio MSVC include paths
 - MinGW-w64 include paths
 
 ### 4. Python Detection
 
 **All Platforms**:
+
 - Checks common installation locations
 - Falls back to `python3`/`python` in PATH
 
 ### 5. Settings Generation
 
 Creates `.vscode/settings.json.user` with:
+
 - IntelliSense mode (platform-specific)
 - Compiler path
 - Include paths
@@ -104,14 +114,17 @@ Install via command or Cursor command:
 ```
 
 Or run the Cursor command:
+
 - `env:install-mlx`
 
 Verification:
+
 ```bash
 python3 -c "import mlx, mlx_lm; print('OK')"
 ```
 
 If `--cmake-configure` is used:
+
 - Configures appropriate CMake preset
 - Generates `compile_commands.json`
 - VS Code will auto-detect settings from `compile_commands.json`
@@ -181,12 +194,14 @@ The script generates `.vscode/settings.json.user`:
 ### Compiler Not Detected
 
 **macOS**:
+
 ```bash
 # Install Xcode Command Line Tools
 xcode-select --install
 ```
 
 **Linux**:
+
 ```bash
 # Install build tools
 sudo apt-get update
@@ -194,6 +209,7 @@ sudo apt-get install build-essential
 ```
 
 **Windows**:
+
 - Install Visual Studio 2022 (Community is free)
 - Or install MinGW-w64
 
@@ -207,6 +223,7 @@ The script detects common paths, but you may need to add custom paths manually:
 ### CMake Configuration Fails
 
 1. **Check dependencies**:
+
    ```bash
    # macOS
    brew install cmake ninja
@@ -219,11 +236,13 @@ The script detects common paths, but you may need to add custom paths manually:
    ```
 
 2. **Check TWS API**:
+
    ```bash
    ./scripts/check_tws_download.sh
    ```
 
 3. **Manual configuration**:
+
    ```bash
    cmake --preset <your-platform-preset>
    ```

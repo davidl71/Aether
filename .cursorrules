@@ -74,6 +74,21 @@ When helping with this codebase:
 7. For API questions, reference `@docs API_DOCUMENTATION_INDEX.md`
 8. Use NotebookLM MCP server for research (see `docs/NOTEBOOKLM_USAGE.md`)
 
+### Problem-Solving Workflow (Tractatus → Sequential)
+
+**For complex problems requiring analysis and implementation:**
+1. **Start with Tractatus Thinking** to understand WHAT (structure/logic) - breaks down concepts into atomic components, reveals multiplicative dependencies
+2. **Then use Sequential Thinking** to understand HOW (process/steps) - converts structural understanding into actionable implementation steps
+3. **Return to Tractatus Thinking** to verify all components are addressed in the implementation
+
+**When to use this workflow:**
+- Complex features requiring structural analysis before implementation
+- Architecture decisions needing dependency analysis
+- Debugging systematic failures where root cause is unclear
+- Requirements analysis to separate essential from accidental
+
+**See:** `.cursor/rules/tractatus-thinking.mdc` and `.cursor/rules/sequential-thinking.mdc` for detailed usage
+
 ### Deep Code Review Hint
 - For in-depth, model-driven code review on C++/CMake, prefer the local MLX command:
   - Run: `cursor run ai:review-with-mlx --arg "<file list>"`

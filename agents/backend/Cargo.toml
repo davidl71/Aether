@@ -5,6 +5,7 @@ members = [
   "crates/risk",
   "crates/api",
   "crates/ledger",
+  "crates/nats_adapter",
   "services/backend_service", "crates/discount_bank_parser",
 ]
 

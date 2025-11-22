@@ -180,18 +180,21 @@ swiftness_positions.json
 ## Update Rules
 
 ### Product Details (Sheet 3)
+
 - **Match by:** Policy number
 - **Update condition:** New data has later `data_accuracy_date`
 - **Action:** Replace entire product record if validity date is newer
 - **Conflict resolution:** Always prefer data with later validity date
 
 ### Deposit Records (Sheet 2)
+
 - **Match by:** Policy number + value date
 - **Update condition:** New deposit record doesn't exist
 - **Action:** Add new deposit records (deposits are additive/historical)
 - **Conflict resolution:** If same policy + value_date exists, skip (already imported)
 
 ### Insurance Coverage (Sheet 1)
+
 - **Match by:** Policy number
 - **Update condition:** File modification date is newer
 - **Action:** Update coverage information
@@ -274,11 +277,13 @@ Add to `config.json`:
 ## Error Handling
 
 ### File Parsing Errors
+
 - **Corrupted file:** Log error, skip import
 - **Missing sheets:** Log warning, parse available sheets
 - **Invalid dates:** Log warning, use file mod date as fallback
 
 ### Update Conflicts
+
 - **Stale data:** Log warning if imported data has older validity date
 - **Missing validity date:** Use file modification date
 - **Duplicate deposits:** Skip if policy + value_date already exists
@@ -286,12 +291,14 @@ Add to `config.json`:
 ## Testing Strategy
 
 ### Unit Tests
+
 - Parser tests for each sheet type
 - Date parsing tests (M/D/YYYY format)
 - Validity date comparison tests
 - Update logic tests
 
 ### Integration Tests
+
 - End-to-end import workflow
 - Position update scenarios
 - Conflict resolution tests

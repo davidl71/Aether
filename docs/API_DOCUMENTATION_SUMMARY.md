@@ -157,6 +157,7 @@ Need UI/UX reference?
 ## Quick Links by Use Case
 
 ### Box Spread Trading
+
 - **Primary Broker**: Interactive Brokers TWS API
 - **Secondary Broker**: Alpaca Markets (commission-free options)
 - **Market Data**: dxFeed (C++ APIs) or ORATS (options analytics)
@@ -164,18 +165,21 @@ Need UI/UX reference?
 - **Testing**: QuantReplay (order book simulation)
 
 ### FIX Protocol Development
+
 - **Engine**: QuickFIX++ (C++ implementation)
 - **Testing**: FIX Trading Simulator (open-source) or Esprow FIX Exchange Simulator
 - **Reference**: FIXimate (interactive FIX reference)
 - **Documentation**: FIX Online Specification
 
 ### Strategy Development
+
 - **Backtesting**: Zorro Trading Platform
 - **Simulation**: QuantReplay or MarS
 - **RL Training**: PyMarketSim/TradingAgents or MarS
 - **Research**: QuantPedia Subscription
 
 ### Financial Infrastructure
+
 - **Ledger**: Blnk (double-entry ledger)
 - **Banking**: Apache Fineract (if building broader platform)
 - **Reconciliation**: Blnk (automatic reconciliation)
@@ -185,6 +189,7 @@ Need UI/UX reference?
 ## Tags for Searchability
 
 ### By Technology
+
 - `#c++` - C++ native implementations
 - `#fix-api` - FIX protocol APIs
 - `#rest-api` - REST APIs
@@ -192,6 +197,7 @@ Need UI/UX reference?
 - `#go` - Go implementations
 
 ### By Function
+
 - `#options` - Options trading support
 - `#market-data` - Market data providers
 - `#simulator` - Trading simulators
@@ -199,6 +205,7 @@ Need UI/UX reference?
 - `#quantitative` - Quantitative finance libraries
 
 ### By Use Case
+
 - `#box-spread` - Relevant for box spread trading
 - `#institutional` - Institutional-grade tools
 - `#retail` - Retail-focused tools

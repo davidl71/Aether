@@ -381,18 +381,21 @@ TEST_CASE("LoanPosition - SHIR Rate Calculation") {
 ## Implementation Phases
 
 ### Phase 1: Core Data Model (T-76)
+
 - Implement `LoanPosition` structure
 - Implement `LoanManager` with JSON storage
 - Basic CRUD operations
 - Integration with portfolio calculator
 
 ### Phase 2: Entry Interface (T-77)
+
 - TUI manual entry form
 - CSV/JSON file import
 - Validation and error handling
 - Display loan positions in portfolio view
 
 ### Phase 3: Advanced Features (Future)
+
 - Database migration
 - Automated CPI/SHIR updates
 - Payment scheduling and reminders

@@ -241,6 +241,7 @@ When using CME products alongside box spreads:
 **Scenario**: Box spread on SPX options + E-mini S&P 500 (ES) futures hedge
 
 **Costs**:
+
 - SPX options: Exchange fees + market data (CBOE)
 - ES futures: Exchange fees + market data (CME)
 - **Total**: Sum of both exchange costs
@@ -266,6 +267,7 @@ When using CME products alongside box spreads:
 ### Verification
 
 **Always verify current fees and rebates**:
+
 - Check official CME Group website
 - Contact CME Group sales/support
 - Review latest fee schedule PDFs
@@ -299,6 +301,7 @@ When using CME products alongside box spreads:
 ### Example Calculation
 
 **Assumptions**:
+
 - 10,000 ES contracts/month
 - Exchange fee: $X.XX/contract
 - Rebate: $Y.YY/contract (based on volume tier)
@@ -307,6 +310,7 @@ When using CME products alongside box spreads:
 - Clearing: $B.BB/contract
 
 **Monthly Cost**:
+
 ```
 Exchange Fees: 10,000 × $X.XX = $XX,XXX
 Rebates:       10,000 × $Y.YY = -$YY,YYY
@@ -320,6 +324,7 @@ Total:                         $XX,XXX
 ### Break-Even Analysis
 
 Calculate minimum volume required to:
+
 - Qualify for rebate tiers
 - Cover fixed costs (market data, connectivity)
 - Achieve target net cost per contract

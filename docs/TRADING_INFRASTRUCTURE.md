@@ -21,6 +21,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 **Specialization**: High-performance VPS for futures trading
 
 **Key Features**:
+
 - Optimized for low-latency trading
 - Proximity to major exchanges (CME, NYSE, etc.)
 - High-performance hardware
@@ -29,12 +30,14 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 **Pricing**: See [quantvps.com/pricing](https://www.quantvps.com/pricing) for current rates
 
 **Use Cases**:
+
 - Automated trading strategies
 - High-frequency trading
 - Algorithmic execution
 - Market data processing
 
 **References**:
+
 - [Elite Trader Resource](https://www.elitetrader.com/et/resources/quantvps-high-performance-trading-vps.607/)
 
 ### TradingVPS
@@ -44,17 +47,20 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 **Specialization**: Fast & affordable VPS solutions
 
 **Key Features**:
+
 - Cost-effective options
 - Multiple data center locations
 - Easy setup and management
 - Support for various trading platforms
 
 **Use Cases**:
+
 - Budget-conscious traders
 - Multiple strategy deployment
 - Development and testing environments
 
 **References**:
+
 - [Elite Trader Resource](https://www.elitetrader.com/et/resources/tradingvps.611/)
 
 ### Ninja Mobile Trader VPS
@@ -64,6 +70,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 **Specialization**: NinjaTrader 8 on mobile with Chicago VPS
 
 **Key Features**:
+
 - **Chicago Servers**: 1ms away from CME
 - Cross-platform access (Android, iPhone, Tablet, Mac/Windows)
 - 100% uptime guarantee
@@ -72,18 +79,21 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 - 24/7 automated strategy execution
 
 **Benefits**:
+
 - Fixes performance issues with home computers
 - Never have connection problems
 - Leave trading software running 24/7
 - Instantly switch between devices
 
 **Use Cases**:
+
 - Mobile trading access
 - Multi-device trading
 - Automated strategy execution
 - Low-latency futures trading
 
 **References**:
+
 - [Elite Trader Resource](https://www.elitetrader.com/et/resources/ninja-mobile-trader-vps.587/)
 - Rating: 5/5 (1 review)
 
@@ -94,17 +104,20 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 **Specialization**: Linux VPS for Forex and trading applications
 
 **Key Features**:
+
 - Linux VPS plans optimized for trading
 - Multiple data center locations
 - Competitive pricing
 - Support for trading platforms
 
 **Use Cases**:
+
 - Forex trading applications
 - General trading infrastructure
 - Development and testing
 
 **References**:
+
 - [FXS VPS Linux Plan](https://www.fxsvps.com/linux-vps-plan/)
 
 ## Cloud Infrastructure Providers
@@ -116,6 +129,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 **Specialization**: Enterprise cloud infrastructure with trading-specific services
 
 **Key Features for Trading**:
+
 - **Amazon SageMaker**: Machine learning for algorithmic trading
 - **AWS Data Exchange**: Access to financial market data
 - **EC2**: Virtual servers with low-latency options
@@ -123,17 +137,20 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 - **Lean Engine Integration**: Official IB integration guide available
 
 **Lean Engine on AWS**:
+
 - Interactive Brokers provides official guidance for running Lean Engine (quantitative trading platform) on AWS
 - Integration with IB TWS API
 - Scalable infrastructure for backtesting and live trading
 - See [IBKR Campus Guide](https://www.interactivebrokers.com/campus/ibkr-quant-news/lean-engine-on-aws-and-interactive-brokers-guide/)
 
 **Algorithmic Trading with SageMaker**:
+
 - Use Amazon SageMaker for ML-based trading strategies
 - AWS Data Exchange for market data integration
 - See [AWS Blog: Algorithmic Trading](https://aws.amazon.com/blogs/industries/algorithmic-trading-on-aws-with-amazon-sagemaker-and-aws-data-exchange/)
 
 **Use Cases**:
+
 - Large-scale algorithmic trading
 - Machine learning-based strategies
 - Enterprise deployments
@@ -141,6 +158,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 - Data analytics and backtesting
 
 **Considerations**:
+
 - Higher cost than specialized VPS providers
 - More complex setup and management
 - Better for enterprise-scale operations
@@ -155,6 +173,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 **Specialization**: Global cloud infrastructure with competitive pricing
 
 **Key Features**:
+
 - **32 Data Center Locations**: Global reach
 - **Competitive Pricing**: Often cheaper than AWS/GCP/Azure
 - **High Performance**: NVMe SSD, latest generation CPUs
@@ -164,6 +183,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 **Pricing**: See [vultr.com/pricing](https://www.vultr.com/pricing)
 
 **Use Cases**:
+
 - Backend API hosting
 - Web interface deployment
 - Development and testing environments
@@ -171,12 +191,14 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 - Cost-effective general infrastructure
 
 **Advantages**:
+
 - More affordable than major cloud providers
 - Simple pricing structure
 - Good performance-to-price ratio
 - Easy to scale
 
 **Considerations**:
+
 - Not optimized for ultra-low latency trading
 - Better for non-critical components
 - Good for cost-conscious deployments
@@ -188,6 +210,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 **Specialization**: European cloud provider with global presence
 
 **Key Features**:
+
 - **Linux VPS**: Optimized for Linux workloads
 - **NVMe SSD Storage**: High-performance storage
 - **Unlimited Traffic**: Most plans include unlimited bandwidth
@@ -196,6 +219,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 - **Forex VPS**: Specific use case for trading applications
 
 **Linux VPS Plans**:
+
 - VPS 1, VPS 2, VPS 3, VPS 4 tiers
 - Intel next-generation architecture
 - Up to 3 Gbps bandwidth
@@ -203,6 +227,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 - Multiple OS options (Ubuntu, Debian, CentOS)
 
 **Use Cases**:
+
 - Trading application hosting
 - Forex VPS deployment
 - European market proximity
@@ -210,12 +235,14 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 - Business applications
 
 **Advantages**:
+
 - Competitive pricing
 - Strong European presence
 - Unlimited traffic (most regions)
 - Good for Forex trading applications
 
 **References**:
+
 - [OVHcloud Linux VPS](https://www.ovhcloud.com/en/vps/os/vps-linux/)
 - Includes use case: "Hosting trading applications on a Forex VPS"
 
@@ -226,6 +253,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 **Overview**: FreeBSD is an open-source Unix-like operating system known for its stability, security, and performance, making it suitable for financial applications.
 
 **Advantages for Trading**:
+
 - **Stability**: Enterprise-grade reliability
 - **Security**: Strong security features and regular updates
 - **Performance**: Excellent network stack and low overhead
@@ -233,22 +261,26 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 - **Jails**: Lightweight virtualization for isolation
 
 **Finance Ports**:
+
 - FreeBSD Ports Collection includes finance-related software
 - See [FreshPorts Finance Category](https://www.freshports.org/finance/?page_size=100&page=1) for available packages
 - Includes trading tools, data analysis software, and financial libraries
 
 **Use Cases**:
+
 - High-frequency trading systems
 - Market data servers
 - Risk management systems
 - Regulatory compliance systems
 
 **References**:
+
 - [Financial IT - FreeBSD Open Source](https://financialit.net/server-os/freebsd-open-source)
 
 ### Linux (Ubuntu/Debian/CentOS)
 
 **Advantages**:
+
 - Wide software ecosystem
 - Extensive documentation
 - Large community support
@@ -256,6 +288,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 - Easy package management
 
 **Use Cases**:
+
 - General-purpose trading infrastructure
 - Development environments
 - Containerized deployments
@@ -263,11 +296,13 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 ### macOS Server
 
 **Advantages**:
+
 - Native development environment
 - Unix-based with familiar tools
 - Good for local development and testing
 
 **Limitations**:
+
 - Not typically used for production VPS
 - Higher cost
 - Limited server hardware options
@@ -277,6 +312,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 ### Latency Requirements
 
 **Critical Factors**:
+
 1. **Geographic Location**: Proximity to exchanges
    - CME (Chicago): < 1ms ideal
    - NYSE/NASDAQ (New York): < 1ms ideal
@@ -296,6 +332,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 ### Uptime Requirements
 
 **Trading Applications Need**:
+
 - 99.9%+ uptime (less than 8.76 hours downtime/year)
 - Redundant systems
 - Automatic failover
@@ -304,6 +341,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 ### Security Considerations
 
 **Essential Security Measures**:
+
 - Encrypted connections (TLS/SSL)
 - VPN access for remote management
 - Firewall configuration
@@ -359,6 +397,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 ### Total Cost of Ownership (TCO)
 
 **Consider**:
+
 - Monthly VPS costs
 - Bandwidth/data transfer costs
 - Backup and storage costs
@@ -369,6 +408,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 ### ROI Considerations
 
 **Benefits of VPS Deployment**:
+
 - Reduced slippage (better fills)
 - 24/7 operation without local machine
 - Lower latency = better execution
@@ -380,6 +420,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 ### Development/Testing
 
 **Recommended Setup**:
+
 - Local development on macOS
 - Docker containers for testing
 - FreeBSD or Linux VPS for staging
@@ -387,6 +428,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 ### Production Deployment
 
 **Recommended Setup**:
+
 1. **Primary VPS**: QuantVPS or similar high-performance provider
    - Location: Chicago (for CME proximity)
    - Specs: High CPU, low-latency network
@@ -404,6 +446,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 ### Architecture Considerations
 
 **Multi-Tier Deployment**:
+
 ```
 ┌─────────────────┐
 │  Web Interface  │  (PWA - runs on client devices)
@@ -429,6 +472,7 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 ```
 
 **VPS Deployment Strategy**:
+
 - **Trading Engine**: Deploy on low-latency VPS (Chicago)
 - **Backend API**: Can run on same VPS or separate server
 - **Web Interface**: Static hosting (CDN) or same VPS
@@ -441,20 +485,24 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 Based on requirements:
 
 **For Trading Engine (Low Latency Critical)**:
+
 - **Ultra-low latency**: QuantVPS or Ninja Mobile Trader (Chicago proximity)
 - **Budget conscious**: TradingVPS or FXS VPS
 - **Mobile access needed**: Ninja Mobile Trader
 
 **For Backend API / Web Interface**:
+
 - **Cost-effective**: Vultr or OVHcloud
 - **Enterprise scale**: AWS
 - **European markets**: OVHcloud
 
 **For ML/AI Trading Strategies**:
+
 - **AWS**: SageMaker integration, Data Exchange
 - **Large scale**: AWS with Lean Engine
 
 **For Development/Testing**:
+
 - **Budget option**: Vultr or OVHcloud
 - **Local**: Docker containers on macOS
 
@@ -484,6 +532,7 @@ Based on requirements:
 ## References
 
 ### Specialized Trading VPS Providers
+
 - [QuantVPS](https://www.quantvps.com) - High-performance trading VPS
 - [QuantVPS Pricing](https://www.quantvps.com/pricing)
 - [TradingVPS](https://app.tradingvps.io) - Fast & affordable VPS
@@ -491,25 +540,30 @@ Based on requirements:
 - [FXS VPS](https://www.fxsvps.com) - Linux VPS for Forex and trading
 
 ### Cloud Infrastructure
+
 - [AWS](https://aws.amazon.com) - Amazon Web Services
 - [AWS Algorithmic Trading Blog](https://aws.amazon.com/blogs/industries/algorithmic-trading-on-aws-with-amazon-sagemaker-and-aws-data-exchange/) - SageMaker and Data Exchange for trading
 - [IBKR Lean Engine on AWS](https://www.interactivebrokers.com/campus/ibkr-quant-news/lean-engine-on-aws-and-interactive-brokers-guide/) - Official IB guide
 
 ### General-Purpose VPS Providers
+
 - [Vultr](https://www.vultr.com) - Global cloud infrastructure
 - [Vultr Pricing](https://www.vultr.com/pricing)
 - [OVHcloud Linux VPS](https://www.ovhcloud.com/en/vps/os/vps-linux/) - European cloud provider with Forex VPS options
 
 ### Elite Trader Resources
+
 - [QuantVPS on Elite Trader](https://www.elitetrader.com/et/resources/quantvps-high-performance-trading-vps.607/)
 - [TradingVPS on Elite Trader](https://www.elitetrader.com/et/resources/tradingvps.611/)
 - [Ninja Mobile Trader VPS on Elite Trader](https://www.elitetrader.com/et/resources/ninja-mobile-trader-vps.587/)
 
 ### Operating Systems
+
 - [FreeBSD Finance Ports](https://www.freshports.org/finance/?page_size=100&page=1)
 - [FreeBSD in Financial IT](https://financialit.net/server-os/freebsd-open-source)
 
 ### Mobile/Tablet Solutions
+
 - [iPad Solutions (MacStories)](https://www.macstories.net/stories/the-ipads-sweet-solution/)
 
 ## Related Documentation

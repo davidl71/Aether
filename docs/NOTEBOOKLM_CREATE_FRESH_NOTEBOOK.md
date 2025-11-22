@@ -13,6 +13,7 @@ Run the interactive script:
 ```
 
 This script will:
+
 - Open NotebookLM in your browser
 - Guide you through creating a new notebook
 - Provide all URLs organized by priority
@@ -28,7 +29,7 @@ Follow the steps below manually.
 
 ### Step 1: Create New Notebook
 
-1. **Open NotebookLM**: https://notebooklm.google.com
+1. **Open NotebookLM**: <https://notebooklm.google.com>
 2. **Click "+ New"** to create a new notebook
 3. **Name it**: `TWS Automated Trading - Optimized Resources`
 4. **Description**: "Optimized knowledge base with essential documentation files, TWS API videos, and implementation articles"
@@ -119,6 +120,7 @@ Once you have the notebook URL, tell me:
 ```
 
 Or I can add it for you - just provide the notebook URL and I'll:
+
 1. Add it to the library with proper metadata
 2. Update all documentation files
 3. Mark it as the active notebook

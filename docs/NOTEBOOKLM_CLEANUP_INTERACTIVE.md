@@ -2,13 +2,15 @@
 
 ## What I Can Do vs. What You Need to Do
 
-### ✅ I Can Help With:
+### ✅ I Can Help With
+
 - Providing exact URLs to add
 - Verifying the notebook after cleanup
 - Updating documentation files
 - Guiding you step-by-step
 
-### ❌ I Cannot Do (MCP Server Limitations):
+### ❌ I Cannot Do (MCP Server Limitations)
+
 - Remove sources from NotebookLM (must be done in browser)
 - Add sources to NotebookLM (must be done in browser)
 - Directly manipulate NotebookLM sources via API
@@ -22,6 +24,7 @@
 ### Phase 1: Remove GitHub Repository (You Do This)
 
 1. **Open your notebook**:
+
    ```
    https://notebooklm.google.com/notebook/d08f66c4-e5db-480a-bdc4-50682adc045e
    ```
@@ -49,7 +52,7 @@ After removing the GitHub repo, add these files one by one:
 
 **Method**: Click "+ Add source" → Select "Website" or "URL" → Paste each URL below
 
-#### Priority 1 Files (Start with these):
+#### Priority 1 Files (Start with these)
 
 1. ```
    https://raw.githubusercontent.com/davidl71/ib_box_spread_full_universal/main/README.md
@@ -73,31 +76,31 @@ After removing the GitHub repo, add these files one by one:
 
 **After adding Priority 1, tell me "Priority 1 done" and I can help verify or continue.**
 
-#### Priority 2 Files:
+#### Priority 2 Files
 
-6. ```
+1. ```
    https://raw.githubusercontent.com/davidl71/ib_box_spread_full_universal/main/docs/IMPLEMENTATION_GUIDE.md
    ```
 
-7. ```
+2. ```
    https://raw.githubusercontent.com/davidl71/ib_box_spread_full_universal/main/docs/CODEBASE_ARCHITECTURE.md
    ```
 
-8. ```
+3. ```
    https://raw.githubusercontent.com/davidl71/ib_box_spread_full_universal/main/docs/COMMON_PATTERNS.md
    ```
 
-#### Priority 3 Files:
+#### Priority 3 Files
 
-9. ```
+1. ```
    https://raw.githubusercontent.com/davidl71/ib_box_spread_full_universal/main/docs/EWRAPPER_BEST_PRACTICES.md
    ```
 
-10. ```
+2. ```
     https://raw.githubusercontent.com/davidl71/ib_box_spread_full_universal/main/docs/IBC_LEARNINGS.md
     ```
 
-11. ```
+3. ```
     https://raw.githubusercontent.com/davidl71/ib_box_spread_full_universal/main/config/config.example.json
     ```
 

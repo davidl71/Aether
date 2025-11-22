@@ -1,0 +1,54 @@
+{
+  // Pyright configuration for Python import resolution
+  // This helps Cursor/VS Code resolve imports in notebooks and Python files
+
+  "include": [
+    "python",
+    "notebooks",
+    "scripts"
+  ],
+
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    "build",
+    "dist",
+    "*.egg-info"
+  ],
+
+  // Python version
+  "pythonVersion": "3.11",
+
+  // Python path - helps resolve imports
+  "pythonPath": "",
+
+  // Extra paths for import resolution (relative to workspace root)
+  "extraPaths": [
+    "python",
+    "python/bindings",
+    "python/integration",
+    "notebooks/utils"
+  ],
+
+  // Type checking mode
+  "typeCheckingMode": "basic",
+
+  // Report missing imports
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+
+  // Report unused imports/variables (can be noisy in notebooks)
+  "reportUnusedImport": "warning",
+  "reportUnusedVariable": "warning",
+
+  // Stub paths for type checking (relative to workspace root)
+  "stubPath": "typings",
+
+  // Enable auto-import completions
+  "autoImportCompletions": true,
+
+  // Language server settings
+  "venvPath": ".",
+  "venv": "python/.venv"
+}

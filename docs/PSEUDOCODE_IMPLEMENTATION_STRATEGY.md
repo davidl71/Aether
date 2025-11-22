@@ -94,6 +94,7 @@ Based on comprehensive research (T-1) and code drift analysis (T-2), this docume
 **Objective**: Create standardized pseudocode format and documentation structure
 
 **Actions**:
+
 1. **Adopt Codecademy Pseudocode Structure**
    - Use `BEGIN`/`END` for algorithm boundaries
    - Standard keywords: `SET`, `IF/THEN/ELSE`, `FOR`, `WHILE`, `INPUT`, `OUTPUT`, `CALL`
@@ -101,6 +102,7 @@ Based on comprehensive research (T-1) and code drift analysis (T-2), this docume
    - Mathematical notation for formulas
 
 2. **Create Pseudocode Template**
+
    ```markdown
    ## Algorithm Name
 
@@ -111,6 +113,7 @@ Based on comprehensive research (T-1) and code drift analysis (T-2), this docume
 
    ### Pseudocode
    ```
+
    BEGIN Algorithm Name
      SET variable to value
      FOR each item in collection:
@@ -122,6 +125,7 @@ Based on comprehensive research (T-1) and code drift analysis (T-2), this docume
      END FOR
      OUTPUT result
    END
+
    ```
 
    ### Implementation Notes
@@ -136,6 +140,7 @@ Based on comprehensive research (T-1) and code drift analysis (T-2), this docume
    - Add missing algorithms
 
 **Deliverables**:
+
 - Pseudocode style guide document
 - Updated `docs/ALGORITHMS_AND_BEHAVIOR.md`
 - Template for new algorithm documentation
@@ -176,6 +181,7 @@ Based on comprehensive research (T-1) and code drift analysis (T-2), this docume
    - Max loss/gain calculations
 
 **Deliverables**:
+
 - Pseudocode documentation for each critical algorithm
 - Cross-language implementation verification checklist
 - Test cases derived from pseudocode
@@ -187,6 +193,7 @@ Based on comprehensive research (T-1) and code drift analysis (T-2), this docume
 **Objective**: Enhance algorithm documentation with literate programming approach
 
 **Actions**:
+
 1. **Expand Algorithm Documentation**
    - Add "why" explanations, not just "what"
    - Document design decisions
@@ -199,6 +206,7 @@ Based on comprehensive research (T-1) and code drift analysis (T-2), this docume
    - Track cross-language consistency
 
 **Deliverables**:
+
 - Enhanced algorithm documentation
 - Decision log template
 
@@ -209,6 +217,7 @@ Based on comprehensive research (T-1) and code drift analysis (T-2), this docume
 **Objective**: Evaluate DRAKON for visualizing complex decision flows
 
 **Considerations**:
+
 - Learning curve for team
 - Tool adoption and maintenance
 - Code generation capabilities
@@ -223,17 +232,20 @@ Based on comprehensive research (T-1) and code drift analysis (T-2), this docume
 ### 1. Box Spread Calculations
 
 **Current State**:
+
 - C++: Full implementation in `BoxSpreadCalculator` class
 - Python: Wrapper around C++ + fallback implementation
 - **Issue**: Python fallback uses different calculation path
 
 **Recommendation**:
+
 1. Document all calculation formulas in pseudocode
 2. Create test suite that validates C++ and Python implementations produce identical results
 3. Remove Python fallback or ensure it matches C++ exactly
 4. Use pseudocode as reference for any future implementations (Rust, Go)
 
 **Pseudocode Example**:
+
 ```
 BEGIN Calculate Arbitrage Profit
   INPUT: box_spread_leg
@@ -253,17 +265,20 @@ END
 ### 2. Broker API Integration
 
 **Current State**:
+
 - IB API: TWS callback-based (C++)
 - Alpaca: REST API + WebSocket (Python)
 - Different patterns for same operations
 
 **Recommendation**:
+
 1. Document broker-agnostic pseudocode for all operations
 2. Create abstraction layer that implements pseudocode
 3. Broker-specific implementations follow pseudocode structure
 4. Document differences in implementation notes
 
 **Pseudocode Example**:
+
 ```
 BEGIN Place Box Spread Order (Broker-Agnostic)
   INPUT: box_spread_leg, account_id, broker_type
@@ -295,11 +310,13 @@ END
 ### 3. Strategy Decision Logic
 
 **Current State**:
+
 - C++: Full strategy evaluation
 - Rust: Strategy engine with different patterns
 - Python: Execution wrapper
 
 **Recommendation**:
+
 1. Document decision tree in pseudocode
 2. Create decision flowchart (optional DRAKON)
 3. Ensure all implementations follow same decision logic
@@ -310,10 +327,12 @@ END
 ### 4. Risk Calculations
 
 **Current State**:
+
 - C++: Structured risk calculations
 - Rust: Similar patterns, different structures
 
 **Recommendation**:
+
 1. Document risk calculation formulas in pseudocode
 2. Ensure mathematical consistency
 3. Create shared test data for validation
@@ -350,6 +369,7 @@ END
 ### Documentation Structure
 
 Each algorithm should include:
+
 1. **Purpose**: What the algorithm does
 2. **Inputs**: Required parameters
 3. **Outputs**: Return values
@@ -365,21 +385,25 @@ Each algorithm should include:
 ## Migration Path
 
 ### Step 1: Document Existing Algorithms (Immediate)
+
 - Start with box spread calculations
 - Document broker API patterns
 - Create pseudocode for critical paths
 
 ### Step 2: Validate Consistency (Week 2-3)
+
 - Compare implementations against pseudocode
 - Identify and document discrepancies
 - Create test suite for validation
 
 ### Step 3: Refactor if Needed (Week 4+)
+
 - Align implementations with pseudocode
 - Remove drift where found
 - Update pseudocode as algorithms evolve
 
 ### Step 4: Maintain (Ongoing)
+
 - Update pseudocode when algorithms change
 - Use pseudocode in code reviews
 - Validate new implementations against pseudocode

@@ -11,6 +11,7 @@
 This plan provides a structured 5-day validation process to ensure the box spread trading system is production-ready. All testing will be performed in Interactive Brokers paper trading environment (port 7497) to avoid any real financial risk.
 
 **Prerequisites**:
+
 - TWS or IB Gateway running with API enabled
 - Paper trading account configured
 - API settings: "Enable ActiveX and Socket Clients" checked
@@ -22,6 +23,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 ## Day 1: Basic Functionality & Setup
 
 ### Objectives
+
 - Verify system can connect to paper trading
 - Validate basic market data subscription
 - Confirm opportunity detection works
@@ -30,6 +32,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 ### Test Checklist
 
 #### 1.1 Connection & Configuration
+
 - [ ] Connect to TWS paper trading (port 7497)
 - [ ] Verify connection state: `Connected`
 - [ ] Confirm account information retrieved
@@ -37,6 +40,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Test configuration loading and validation
 
 #### 1.2 Market Data Subscription
+
 - [ ] Subscribe to SPY option chain
 - [ ] Verify market data callbacks received
 - [ ] Check bid/ask prices are valid (> 0)
@@ -44,6 +48,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Test multiple simultaneous subscriptions
 
 #### 1.3 Opportunity Detection
+
 - [ ] Run opportunity scan for SPY
 - [ ] Find at least 5 valid box spread opportunities
 - [ ] Verify all opportunities meet criteria:
@@ -55,6 +60,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Verify opportunities sorted by profitability
 
 #### 1.4 Dry-Run Mode
+
 - [ ] Enable dry-run mode
 - [ ] Place 1 box spread order in dry-run
 - [ ] Verify order submission logged (not executed)
@@ -62,6 +68,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Verify order tracking works in dry-run
 
 ### Success Criteria
+
 - ✅ System connects to paper trading successfully
 - ✅ Market data subscriptions working
 - ✅ At least 5 valid opportunities found
@@ -69,6 +76,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - ✅ No exceptions or crashes
 
 ### Documentation
+
 - Record connection details (port, client ID)
 - Log sample opportunities found
 - Screenshot TWS connection status
@@ -79,6 +87,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 ## Day 2: Execution Tests
 
 ### Objectives
+
 - Test actual order placement (live paper trading)
 - Verify order fills and position tracking
 - Test P&L calculation accuracy
@@ -87,6 +96,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 ### Test Checklist
 
 #### 2.1 Order Placement
+
 - [ ] Disable dry-run mode
 - [ ] Select best opportunity from Day 1 results
 - [ ] Place box spread with individual orders (4 legs)
@@ -95,6 +105,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Check order IDs match system tracking
 
 #### 2.2 Order Fills
+
 - [ ] Monitor all 4 legs for fills
 - [ ] Verify fill prices match market data (within bid/ask)
 - [ ] Check fill quantities (should be 1 contract per leg)
@@ -102,6 +113,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Verify order status transitions: Pending → Submitted → Filled
 
 #### 2.3 Position Tracking
+
 - [ ] Verify positions appear in system after fills
 - [ ] Check position quantities match expected:
   - [ ] Long call: +1
@@ -113,12 +125,14 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Test position reconciliation (should match exactly)
 
 #### 2.4 P&L Calculation
+
 - [ ] Calculate unrealized P&L for box spread
 - [ ] Verify P&L matches expected (theoretical value - net debit)
 - [ ] Check P&L updates with market data changes
 - [ ] Verify P&L accuracy (within bid/ask spread tolerance)
 
 #### 2.5 Position Closure
+
 - [ ] Close position (reverse box spread)
 - [ ] Place opposite orders for all 4 legs
 - [ ] Monitor fills for closing orders
@@ -127,6 +141,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Compare realized P&L with expected
 
 ### Success Criteria
+
 - ✅ All 4 orders placed successfully
 - ✅ All orders filled within reasonable time
 - ✅ Positions match TWS exactly
@@ -134,6 +149,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - ✅ Position closure successful
 
 ### Documentation
+
 - Screenshot TWS order window showing all 4 orders
 - Log fill prices and timestamps
 - Record position quantities and prices
@@ -145,6 +161,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 ## Day 3: Edge Cases & Error Handling
 
 ### Objectives
+
 - Test partial fill scenarios
 - Verify rollback logic
 - Test low-liquidity filtering
@@ -154,6 +171,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 ### Test Checklist
 
 #### 3.1 Partial Fill Scenario
+
 - [ ] Place box spread order
 - [ ] Manually cancel 1 leg in TWS (simulate partial fill)
 - [ ] Verify system detects partial fill
@@ -163,6 +181,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Test with different leg cancellations (call vs put)
 
 #### 3.2 Low-Liquidity Filtering
+
 - [ ] Identify low-liquidity options (low volume, low OI)
 - [ ] Run opportunity scan
 - [ ] Verify low-liquidity opportunities filtered out
@@ -170,6 +189,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Confirm no orders placed for filtered opportunities
 
 #### 3.3 Stale Data Rejection
+
 - [ ] Simulate stale market data (delay updates)
 - [ ] Verify system detects stale data
 - [ ] Confirm stale opportunities rejected
@@ -177,6 +197,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Verify fresh data still accepted
 
 #### 3.4 Rate Limiting
+
 - [ ] Trigger rate limiter (burst 100+ requests)
 - [ ] Verify rate limiter activates
 - [ ] Check requests are throttled appropriately
@@ -185,6 +206,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Test market data line limits
 
 #### 3.5 Error Handling
+
 - [ ] Test invalid contract rejection
 - [ ] Verify error messages are clear and actionable
 - [ ] Test connection loss during order placement
@@ -192,6 +214,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Check error logging (all errors logged)
 
 ### Success Criteria
+
 - ✅ Rollback logic works correctly
 - ✅ Low-liquidity opportunities filtered
 - ✅ Stale data rejected
@@ -199,6 +222,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - ✅ All errors handled gracefully
 
 ### Documentation
+
 - Record partial fill scenarios and outcomes
 - Log rate limiter activations
 - Document error messages and recovery
@@ -209,6 +233,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 ## Day 4: Reconnection Resilience
 
 ### Objectives
+
 - Test system behavior during network interruptions
 - Verify state synchronization after reconnection
 - Test order recovery
@@ -217,6 +242,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 ### Test Checklist
 
 #### 4.1 Connection Loss During Operation
+
 - [ ] Start system with active positions
 - [ ] Place new box spread order
 - [ ] Disconnect TWS/Gateway (simulate network loss)
@@ -225,6 +251,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Verify auto-reconnect attempts (if enabled)
 
 #### 4.2 Reconnection & State Sync
+
 - [ ] Reconnect TWS/Gateway
 - [ ] Verify system reconnects automatically
 - [ ] Check connection state: `Connected`
@@ -235,18 +262,21 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Confirm no duplicate orders placed
 
 #### 4.3 Order Recovery
+
 - [ ] Verify pending orders recovered after reconnection
 - [ ] Check order statuses are accurate
 - [ ] Test order cancellation after reconnection
 - [ ] Verify order tracking continues correctly
 
 #### 4.4 Position Recovery
+
 - [ ] Verify positions match TWS after reconnection
 - [ ] Check position quantities accurate
 - [ ] Confirm position prices correct
 - [ ] Test position updates continue after reconnection
 
 #### 4.5 Extended Disconnection
+
 - [ ] Test 5-minute disconnection
 - [ ] Test 30-minute disconnection
 - [ ] Verify system handles extended outages
@@ -254,6 +284,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Validate state recovery accuracy
 
 ### Success Criteria
+
 - ✅ System handles disconnection gracefully
 - ✅ Auto-reconnect works (if enabled)
 - ✅ State synchronization accurate
@@ -261,6 +292,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - ✅ System recovers from extended outages
 
 ### Documentation
+
 - Record disconnection scenarios
 - Log reconnection times
 - Document state synchronization results
@@ -271,6 +303,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 ## Day 5: Multi-Symbol Testing & Extended Operation
 
 ### Objectives
+
 - Test with multiple underlying symbols
 - Run extended operation (8+ hours)
 - Monitor for exceptions and memory leaks
@@ -280,6 +313,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 ### Test Checklist
 
 #### 5.1 Multi-Symbol Testing
+
 - [ ] Test with SPY (S&P 500 ETF)
 - [ ] Test with QQQ (Nasdaq 100 ETF)
 - [ ] Test with IWM (Russell 2000 ETF)
@@ -288,6 +322,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Verify no symbol-specific issues
 
 #### 5.2 Extended Operation
+
 - [ ] Run system for 8+ hours continuously
 - [ ] Monitor for exceptions (should be zero)
 - [ ] Check for memory leaks (memory usage stable)
@@ -296,6 +331,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Monitor log file sizes (rotation working)
 
 #### 5.3 Efficiency Ratio Tracking
+
 - [ ] Verify efficiency ratio calculated correctly
 - [ ] Check efficiency ratio > 5% (if executing)
 - [ ] Monitor efficiency ratio over time
@@ -303,6 +339,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Document efficiency ratio trends
 
 #### 5.4 Auto-Discovery
+
 - [ ] Enable auto-discovery mode
 - [ ] Verify system scans multiple symbols automatically
 - [ ] Check opportunity ranking across symbols
@@ -310,6 +347,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Verify no symbol bias
 
 #### 5.5 Performance Metrics
+
 - [ ] Measure order placement latency
 - [ ] Track market data update frequency
 - [ ] Monitor system resource usage
@@ -317,6 +355,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - [ ] Document performance baselines
 
 ### Success Criteria
+
 - ✅ System runs 8+ hours without crashes
 - ✅ No memory leaks detected
 - ✅ Efficiency ratio > 5% (if executing)
@@ -324,6 +363,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 - ✅ Performance metrics acceptable
 
 ### Documentation
+
 - Record 8-hour operation log
 - Document efficiency ratio trends
 - Log performance metrics
@@ -369,6 +409,7 @@ For each day, maintain a detailed log:
 ## Success Criteria Summary
 
 **Overall Validation Success**:
+
 - ✅ All Day 1-5 tests pass
 - ✅ Zero unhandled exceptions
 - ✅ Zero system crashes
@@ -380,6 +421,7 @@ For each day, maintain a detailed log:
 - ✅ All error scenarios handled gracefully
 
 **Production Readiness Checklist**:
+
 - [ ] All integration tests pass
 - [ ] Paper trading validation complete
 - [ ] Error handling verified
@@ -399,6 +441,7 @@ Use this template for tracking issues found during validation:
 | VAL-001 | [Description] | High/Medium/Low | Day X | Open/Fixed | [Notes] |
 
 **Severity Levels**:
+
 - **High**: Blocks production deployment
 - **Medium**: Should fix before production
 - **Low**: Nice to have, can defer

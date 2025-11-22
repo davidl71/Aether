@@ -157,20 +157,20 @@ Add to `.cursor/mcp.json`:
 
 ### Position Management
 
-4. **`get_open_positions`**
+1. **`get_open_positions`**
    - Get all open positions
    - Returns: List of positions with P&L
 
 ### Market Data
 
-5. **`get_quote`**
+1. **`get_quote`**
    - Get real-time quote
    - Parameters: symbol
    - Returns: Bid, ask, last, volume
 
 ### Account Information
 
-6. **`get_funds`**
+1. **`get_funds`**
    - Get account funds and buying power
    - Returns: Net liquidation value, buying power, etc.
 
@@ -262,11 +262,13 @@ The bridge currently uses REST API to communicate with the backend service:
 See `CYTHON_BINDINGS_GUIDE.md` for implementing direct C++ integration.
 
 **When to use Cython bindings**:
+
 - High-frequency trading (microsecond latency matters)
 - Direct control over TWS connection needed
 - Running in same process as strategy execution
 
 **When to use REST API** (current):
+
 - ✅ MCP server use case (decoupled architecture)
 - ✅ Multiple clients need access
 - ✅ Easier deployment and scaling
@@ -360,6 +362,7 @@ All tools return structured error responses:
 ### For MCP Server Use Case
 
 Network latency is negligible for AI assistant use case:
+
 - Human response time: ~100-1000ms
 - Network latency: ~10-50ms
 - **Conclusion**: REST API is perfectly adequate
@@ -427,6 +430,7 @@ Network latency is negligible for AI assistant use case:
 ## Status: ✅ Complete
 
 The MCP trading server is fully implemented and ready for testing. All core functionality is in place:
+
 - ✅ Order operations
 - ✅ Position management
 - ✅ Market data queries

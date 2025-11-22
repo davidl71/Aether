@@ -1,0 +1,150 @@
+# Ona (Gitpod) Workspace Configuration
+# This file configures the cloud development environment for Ona Agents
+# See: https://ona.com/docs/ona/getting-started
+
+image:
+  # Use Ubuntu 24.04 with comprehensive development tools
+  file: .gitpod.Dockerfile
+
+# Tasks to run when workspace starts
+tasks:
+  - name: Setup & Build
+    init: |
+      echo "🚀 Setting up IBKR Box Spread Generator workspace..."
+      # Install system dependencies
+      sudo apt-get update
+      sudo apt-get install -y \
+        build-essential \
+        cmake \
+        ninja-build \
+        python3.11 \
+        python3.11-venv \
+        python3-pip \
+        nodejs \
+        npm \
+        git \
+        curl \
+        wget \
+        pkg-config \
+        libssl-dev \
+        libprotobuf-dev \
+        protobuf-compiler
+
+      # Install Rust (for backend services)
+      if ! command -v rustc &> /dev/null; then
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        source $HOME/.cargo/env
+      fi
+
+      # Install Python dependencies
+      python3.11 -m pip install --upgrade pip setuptools wheel
+      python3.11 -m pip install -r requirements.txt
+
+      # Install Node.js dependencies (for web frontend)
+      if [ -f "web/package.json" ]; then
+        cd web && npm install && cd ..
+      fi
+
+      # Fetch third-party dependencies
+      if [ -f "scripts/fetch_third_party.sh" ]; then
+        chmod +x scripts/fetch_third_party.sh
+        ./scripts/fetch_third_party.sh || echo "⚠️  Third-party fetch failed (may need manual setup)"
+      fi
+
+      # Configure CMake (but don't build yet - let user decide)
+      echo "✅ Workspace setup complete!"
+      echo "📝 Next steps:"
+      echo "   1. Run: cmake --preset linux-debug"
+      echo "   2. Run: cmake --build build"
+      echo "   3. Run: ctest --test-dir build --output-on-failure"
+    command: |
+      echo "Workspace ready. Use 'cmake --preset linux-debug' to configure build."
+
+  - name: Linter
+    init: |
+      echo "🔍 Setting up linters..."
+      # Install linting tools
+      sudo apt-get install -y shellcheck
+      python3.11 -m pip install bandit
+      # cppcheck will be installed via CMake or manually
+    command: sleep 1
+
+# Ports to expose (for web services, API servers, etc.)
+ports:
+  - port: 8080
+    name: Backend REST API
+    description: Rust backend service REST API
+    onOpen: ignore
+  - port: 50051
+    name: Backend gRPC API
+    description: Rust backend service gRPC API
+    onOpen: ignore
+  - port: 5173
+    name: Web Frontend
+    description: Vite dev server for React frontend
+    onOpen: open-preview
+  - port: 4222
+    name: NATS Server
+    description: NATS message queue server
+    onOpen: ignore
+
+# VS Code extensions to install
+vscode:
+  extensions:
+    # C++ Development
+    - ms-vscode.cpptools
+    - ms-vscode.cmake-tools
+    - twxs.cmake
+
+    # Python Development
+    - ms-python.python
+    - ms-python.vscode-pylance
+    - ms-python.black-formatter
+
+    # Rust Development
+    - rust-lang.rust-analyzer
+
+    # TypeScript/JavaScript
+    - dbaeumer.vscode-eslint
+
+    # Shell Scripts
+    - timonwong.shellcheck
+
+    # Git
+    - eamodio.gitlens
+
+    # Markdown
+    - yzhang.markdown-all-in-one
+    - davidanson.vscode-markdownlint
+
+    # Code Quality
+    - streetsidesoftware.code-spell-checker
+    - usernamehw.errorlens
+
+    # MCP Integration
+    - yutengjing.vscode-mcp
+
+    # Gitpod/Ona Integration
+    - gitpod.gitpod-flex
+
+# GitHub integration (for Ona Agents)
+github:
+  prebuilds:
+    # Enable prebuilds for faster workspace startup
+    master: true
+    branches: true
+    pullRequests: true
+    pullRequestsFromForks: false
+    addCheck: true
+    addComment: false
+    addBadge: true
+
+# Workspace environment variables
+# Note: Sensitive values should be set in Ona Secrets, not here
+env:
+  - name: TWS_MOCK
+    value: "true"  # Use mock TWS client in cloud environment (no live trading)
+  - name: CMAKE_BUILD_TYPE
+    value: "Debug"
+  - name: PYTHONPATH
+    value: "${GITPOD_REPO_ROOT}/python:${GITPOD_REPO_ROOT}"

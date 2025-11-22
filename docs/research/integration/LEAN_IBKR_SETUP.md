@@ -177,17 +177,20 @@ class TestIBKROrders(QCAlgorithm):
 ### Connection Errors
 
 **Error: "Connection rejected" (502)**
+
 - Ensure TWS/Gateway is running
 - Check API is enabled in TWS Settings
 - Verify port number matches configuration
 - Check IP address is trusted (127.0.0.1)
 
 **Error: "Not connected" (504)**
+
 - Verify TWS/Gateway is running
 - Check API port is correct
 - Restart TWS/Gateway
 
 **Error: "Connection lost" (1100)**
+
 - Check internet connection
 - Verify TWS/Gateway is still running
 - Check IB network status
@@ -195,11 +198,13 @@ class TestIBKROrders(QCAlgorithm):
 ### Market Data Errors
 
 **Error: "No security definition found" (200)**
+
 - Verify symbol is correct
 - Check market data subscriptions
 - Ensure market is open
 
 **Error: "Requested market data is not subscribed" (10167)**
+
 - Check IB account has required data subscriptions
 - Verify market data permissions
 - Some options may require additional subscriptions
@@ -207,11 +212,13 @@ class TestIBKROrders(QCAlgorithm):
 ### Order Errors
 
 **Error: "Order rejected - invalid contract" (201)**
+
 - Verify contract details (symbol, expiry, strike, right)
 - Check contract is valid for trading
 - Ensure market is open
 
 **Error: "Order size exceeds account limits" (10148)**
+
 - Check account buying power
 - Verify position limits
 - Reduce order size

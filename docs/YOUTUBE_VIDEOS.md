@@ -7,7 +7,8 @@ This document tracks YouTube videos referenced in the project documentation and 
 ### TWS API & Interactive Brokers
 
 #### Essential Components of TWS API Programs
-- **URL**: https://www.youtube.com/watch?v=n-9bdREECTQ
+
+- **URL**: <https://www.youtube.com/watch?v=n-9bdREECTQ>
 - **Referenced in**: `docs/ECLIENT_EWRAPPER_ARCHITECTURE.md`
 - **Topic**: TWS API architecture, EClient, and EWrapper implementation
 - **Status**: ✅ Added to NotebookLM notebook
@@ -17,14 +18,16 @@ This document tracks YouTube videos referenced in the project documentation and 
 ### Trading & Options Videos
 
 #### Video 1
-- **URL**: https://www.youtube.com/watch?v=5moyX0qwkCA
+
+- **URL**: <https://www.youtube.com/watch?v=5moyX0qwkCA>
 - **Topic**: (To be determined after NotebookLM processing)
 - **Status**: ✅ Added to NotebookLM notebook
 - **Notebook**: TWS Automated Trading - Complete Resources
 - **Action**: Ready for summarization
 
 #### Video 2
-- **URL**: https://www.youtube.com/watch?v=hJ7ewxQVhJw&list=PLePBf4ZtCKhpovbIfv85Ks3-rvyNtAwsg&index=2
+
+- **URL**: <https://www.youtube.com/watch?v=hJ7ewxQVhJw&list=PLePBf4ZtCKhpovbIfv85Ks3-rvyNtAwsg&index=2>
 - **Playlist**: PLePBf4ZtCKhpovbIfv85Ks3-rvyNtAwsg (Index 2)
 - **Topic**: (To be determined after NotebookLM processing)
 - **Status**: ✅ Added to NotebookLM notebook
@@ -32,7 +35,8 @@ This document tracks YouTube videos referenced in the project documentation and 
 - **Action**: Ready for summarization
 
 #### Video 3
-- **URL**: https://www.youtube.com/watch?v=4zpYhHn5p90&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2
+
+- **URL**: <https://www.youtube.com/watch?v=4zpYhHn5p90&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2>
 - **Playlist**: PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw (Index 2)
 - **Topic**: (To be determined after NotebookLM processing)
 - **Status**: ✅ Added to NotebookLM notebook
@@ -40,7 +44,8 @@ This document tracks YouTube videos referenced in the project documentation and 
 - **Action**: Ready for summarization
 
 #### Video 4
-- **URL**: https://www.youtube.com/watch?v=rC02897uiuc&list=PLePBf4ZtCKhpovbIfv85Ks3-rvyNtAwsg&index=2
+
+- **URL**: <https://www.youtube.com/watch?v=rC02897uiuc&list=PLePBf4ZtCKhpovbIfv85Ks3-rvyNtAwsg&index=2>
 - **Playlist**: PLePBf4ZtCKhpovbIfv85Ks3-rvyNtAwsg (Index 2)
 - **Topic**: (To be determined after NotebookLM processing)
 - **Status**: ✅ Added to NotebookLM notebook
@@ -48,7 +53,8 @@ This document tracks YouTube videos referenced in the project documentation and 
 - **Action**: Ready for summarization
 
 #### Video 5
-- **URL**: https://www.youtube.com/watch?v=ZxwdTgMY44g&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2
+
+- **URL**: <https://www.youtube.com/watch?v=ZxwdTgMY44g&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2>
 - **Playlist**: PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw (Index 2)
 - **Topic**: (To be determined after NotebookLM processing)
 - **Status**: ✅ Added to NotebookLM notebook
@@ -56,7 +62,8 @@ This document tracks YouTube videos referenced in the project documentation and 
 - **Action**: Ready for summarization
 
 #### Video 6
-- **URL**: https://www.youtube.com/watch?v=ICZH89GdUGQ&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2
+
+- **URL**: <https://www.youtube.com/watch?v=ICZH89GdUGQ&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2>
 - **Playlist**: PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw (Index 2)
 - **Topic**: (To be determined after NotebookLM processing)
 - **Status**: ✅ Added to NotebookLM notebook
@@ -64,7 +71,8 @@ This document tracks YouTube videos referenced in the project documentation and 
 - **Action**: Ready for summarization
 
 #### Video 7
-- **URL**: https://www.youtube.com/watch?v=W6OJy32sE_g&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2
+
+- **URL**: <https://www.youtube.com/watch?v=W6OJy32sE_g&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2>
 - **Playlist**: PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw (Index 2)
 - **Topic**: (To be determined after NotebookLM processing)
 - **Status**: ✅ Added to NotebookLM notebook
@@ -74,15 +82,17 @@ This document tracks YouTube videos referenced in the project documentation and 
 ## Video Playlists
 
 ### Playlist 1: PLePBf4ZtCKhpovbIfv85Ks3-rvyNtAwsg
-- Video 2: https://www.youtube.com/watch?v=hJ7ewxQVhJw&list=PLePBf4ZtCKhpovbIfv85Ks3-rvyNtAwsg&index=2
-- Video 4: https://www.youtube.com/watch?v=rC02897uiuc&list=PLePBf4ZtCKhpovbIfv85Ks3-rvyNtAwsg&index=2
+
+- Video 2: <https://www.youtube.com/watch?v=hJ7ewxQVhJw&list=PLePBf4ZtCKhpovbIfv85Ks3-rvyNtAwsg&index=2>
+- Video 4: <https://www.youtube.com/watch?v=rC02897uiuc&list=PLePBf4ZtCKhpovbIfv85Ks3-rvyNtAwsg&index=2>
 - **Note**: Consider adding entire playlist to NotebookLM for better context
 
 ### Playlist 2: PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw
-- Video 3: https://www.youtube.com/watch?v=4zpYhHn5p90&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2
-- Video 5: https://www.youtube.com/watch?v=ZxwdTgMY44g&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2
-- Video 6: https://www.youtube.com/watch?v=ICZH89GdUGQ&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2
-- Video 7: https://www.youtube.com/watch?v=W6OJy32sE_g&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2
+
+- Video 3: <https://www.youtube.com/watch?v=4zpYhHn5p90&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2>
+- Video 5: <https://www.youtube.com/watch?v=ZxwdTgMY44g&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2>
+- Video 6: <https://www.youtube.com/watch?v=ICZH89GdUGQ&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2>
+- Video 7: <https://www.youtube.com/watch?v=W6OJy32sE_g&list=PLePBf4ZtCKhqBGXyB1v4xvZiMju6NQlIw&index=2>
 - **Note**: Consider adding entire playlist to NotebookLM for better context
 
 ## Adding YouTube Videos to NotebookLM
@@ -196,29 +206,39 @@ docs/
 ## Best Practices
 
 ### 1. Tag Videos Properly
+
 Use descriptive tags when adding videos to NotebookLM:
+
 - `youtube, tws-api, tutorial`
 - `youtube, options-trading, strategy`
 - `youtube, ib-api, implementation`
 
 ### 2. Organize by Topic
+
 Create separate notebooks for different topics:
+
 - **TWS API Videos**: All TWS API related videos
 - **Trading Strategies**: Options trading and box spread videos
 - **Implementation Guides**: Code examples and tutorials
 
 ### 3. Include Timestamps
+
 When summarizing videos, include timestamps for key points:
+
 - `[12:34]`: Explanation of EClient vs EWrapper
 - `[23:45]`: Code example for order placement
 
 ### 4. Cross-Reference Documentation
+
 Link video summaries to related documentation:
+
 - Reference `docs/ECLIENT_EWRAPPER_ARCHITECTURE.md` in TWS API video summaries
 - Link to `docs/TWS_API_BEST_PRACTICES.md` for best practices
 
 ### 5. Update Documentation Index
+
 After summarizing videos, update:
+
 - `docs/DOCUMENTATION_INDEX.md` - Add video summaries
 - `docs/YOUTUBE_VIDEOS.md` - Update video status
 
@@ -231,6 +251,7 @@ To request a video summary, use this format:
 ```
 
 The AI will:
+
 1. Add the video to NotebookLM (if not already added)
 2. Research the video content
 3. Create a comprehensive summary with key points

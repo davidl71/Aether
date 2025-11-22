@@ -15,21 +15,25 @@ The C++ TUI uses FTXUI for rendering and is built as part of the main CMake buil
 ## Testing Strategy (To Be Implemented)
 
 ### 1. Unit Tests
+
 Test individual functions and components in isolation.
 
 **Location**: `native/tests/tui_app_test.cpp` (to be created)
 
 **Examples**:
+
 - Data conversion functions (`tui_converter.cpp`)
 - Configuration loading (`tui_config.cpp`)
 - Provider implementations (`tui_provider.cpp`)
 
 ### 2. Integration Tests
+
 Test TUI components working together.
 
 **Location**: `native/tests/tui_integration_test.cpp` (to be created)
 
 **Examples**:
+
 - Provider → Converter → Display pipeline
 - Configuration file loading
 - Mock provider data flow
@@ -53,6 +57,7 @@ TUI_BACKEND=rest ./build/ib_box_spread_tui
 ## Configuration
 
 TUI uses config files instead of command-line flags:
+
 - **Config location**: `~/.config/ib_box_spread/tui_config.json`
 - **Environment variables**: `TUI_BACKEND`, `TUI_API_URL`
 
@@ -66,6 +71,7 @@ TUI uses config files instead of command-line flags:
 ## Migration Notes
 
 The previous Go TUI (`tui/`) has been removed. All TUI functionality is now in C++:
+
 - `native/src/tui_app.cpp` - Main TUI application
 - `native/src/tui_provider.cpp` - Data providers
 - `native/src/tui_converter.cpp` - Type conversions

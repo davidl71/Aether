@@ -19,12 +19,14 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 **Purpose**: Deep reference to FIX protocol standards
 
 **Features**:
+
 - **Tag/Value Format**: Reference FIX message syntax in tag/value format
 - **Enumeration Formats**: Look up FIX field enumerations and values
 - **Standards Reference**: Comprehensive FIX protocol standards documentation
 - **Online Access**: Web-based dictionary for quick reference
 
 **Use Cases**:
+
 - Look up FIX field definitions and meanings
 - Understand FIX message structure
 - Reference FIX tag numbers and values
@@ -41,6 +43,7 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 **Purpose**: Analyze FIX messaging interactions in human-readable format
 
 **Features**:
+
 - **Log File Analysis**: Analyze FIX Engine message log files
 - **High Performance**: Optimized for large log files
 - **Query Support**: Query and search FIX messages
@@ -49,6 +52,7 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 - **Human Readable**: Convert binary/log format to readable messages
 
 **Use Cases**:
+
 - Debug FIX message exchanges
 - Validate FIX protocol compliance
 - Monitor FIX session health
@@ -56,6 +60,7 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 - Analyze order flow and execution
 
 **Benefits**:
+
 - Save time in FIX development and support
 - Reduce costs in FIX infrastructure maintenance
 - Identify protocol violations quickly
@@ -72,6 +77,7 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 **Purpose**: Ultra-low latency implementations of Simple Binary Encoding (SBE) Protocol
 
 **Features**:
+
 - **Ultra-Low Latency**: Optimized for high-performance trading
 - **Multi-Language**: C++, Java, and .NET implementations
 - **Codec Implementation**: Complete SBE encoding/decoding
@@ -79,12 +85,14 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 - **Standalone**: Can be used independently in custom applications
 
 **Technical Details**:
+
 - **SBE Protocol**: Simple Binary Encoding for FIX messages
 - **Binary Format**: High-performance binary message encoding
 - **Low Latency**: Optimized for high-frequency trading
 - **Standards Compliant**: Implements SBE protocol standards
 
 **Use Cases**:
+
 - Build high-performance FIX applications
 - Implement SBE encoding/decoding in custom systems
 - Reduce development time for SBE support
@@ -101,6 +109,7 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 **Purpose**: FIX FAST protocol implementations for high-performance messaging
 
 **Features**:
+
 - **FAST 1.1/1.2 Support**: Full standard FAST protocol support
 - **Multi-Language**: C#, C++, and Java implementations
 - **Included in FIX Engine**: Part of OnixS FIX Engine SDKs
@@ -108,18 +117,21 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 - **Sample Applications**: Quick-start reference implementations with source code
 
 **Technical Details**:
+
 - **FAST Protocol**: FIX Adapted for Streaming (FAST)
 - **Compression**: Efficient message compression
 - **Streaming**: Optimized for streaming market data
 - **Standards Compliant**: Implements FAST 1.1/1.2 standards
 
 **Use Cases**:
+
 - Implement FAST protocol for market data feeds
 - Reduce development time for FAST support
 - Stream market data efficiently
 - Integrate with FIX Engine SDKs
 
 **Benefits**:
+
 - Significantly reduce development time and costs
 - Comprehensive sample applications
 - Source code included for learning
@@ -136,6 +148,7 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 **Purpose**: Educational content about FIX Protocol standards
 
 **Topics Covered**:
+
 - **FIX Protocol Standards**: What FIX standards are
 - **Session Layer**: Understanding FIX session layer
 - **Application Layer**: Understanding FIX application layer
@@ -143,6 +156,7 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 - **FIX Dictionary/Dialect Variants**: Understanding FIX dialects
 
 **Use Cases**:
+
 - Learn FIX Protocol fundamentals
 - Understand FIX architecture
 - Learn about FIX session management
@@ -161,12 +175,14 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 **Description**: FIXP is a lightweight protocol that describes how to establish and maintain a communication session between two endpoints.
 
 **Features**:
+
 - **Lightweight**: Minimal overhead for session management
 - **Performance Focused**: Designed for high-performance trading
 - **Session Management**: Establish and maintain communication sessions
 - **Endpoint Communication**: Connect between trading endpoints
 
 **Use Cases**:
+
 - High-performance FIX session management
 - Low-latency trading connections
 - Direct exchange connectivity
@@ -183,6 +199,7 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 ### 1. FIX Protocol Development
 
 **Direct Exchange Access**:
+
 - FIX protocol required for direct CBOE/CME access
 - FIX Dictionary essential for understanding message formats
 - FIX Analyser critical for debugging connectivity issues
@@ -192,6 +209,7 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 ### 2. Debugging and Troubleshooting
 
 **FIX Analyser**:
+
 - Debug FIX message exchanges
 - Validate protocol compliance
 - Monitor session health
@@ -202,6 +220,7 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 ### 3. High-Performance Messaging
 
 **SBE and FAST**:
+
 - SBE for ultra-low latency order entry
 - FAST for streaming market data
 - Critical for arbitrage opportunities
@@ -211,6 +230,7 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 ### 4. Educational Resource
 
 **FIX Protocol Overview**:
+
 - Learn FIX fundamentals
 - Understand session management
 - Learn message structure
@@ -224,12 +244,14 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 ### SDK Integration
 
 **FIX Engine SDKs**:
+
 - OnixS FIX Engine includes FAST support
 - SBE Codec available separately
 - FIX Dictionary for reference
 - FIX Analyser for debugging
 
 **Workflow**:
+
 1. Use FIX Dictionary to understand message formats
 2. Implement FIX using OnixS FIX Engine SDK
 3. Use FIX Analyser to debug and validate
@@ -238,6 +260,7 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 ### Direct Market Access
 
 **OnixS directConnect SDKs**:
+
 - Use SBE Codec where required (CME SBE)
 - Use FAST for market data feeds
 - Reference FIX Dictionary for message formats
@@ -280,11 +303,13 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 **Scenario**: Implementing FIX protocol for direct CBOE access
 
 **Tools Needed**:
+
 - **FIX Dictionary**: Reference CBOE FIX message formats
 - **FIX Analyser**: Debug CBOE FIX message exchanges
 - **FIX Engine SDK**: Implement FIX protocol (OnixS C++ FIX Engine)
 
 **Workflow**:
+
 1. Study FIX Protocol Overview
 2. Reference FIX Dictionary for message formats
 3. Implement using FIX Engine SDK
@@ -296,11 +321,13 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 **Scenario**: Implementing CME SBE for futures hedging
 
 **Tools Needed**:
+
 - **SBE Codec**: OnixS SBE Encoder/Decoder
 - **FIX Dictionary**: Reference SBE message formats
 - **FIX Analyser**: Debug SBE message exchanges
 
 **Workflow**:
+
 1. Use SBE Codec for encoding/decoding
 2. Reference FIX Dictionary for field definitions
 3. Debug with FIX Analyser
@@ -311,11 +338,13 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 **Scenario**: Streaming CBOE market data via FAST
 
 **Tools Needed**:
+
 - **FAST Codec**: FIX FAST Encoder/Decoder (included in FIX Engine)
 - **FIX Dictionary**: Reference FAST message formats
 - **FIX Analyser**: Monitor FAST data streams
 
 **Workflow**:
+
 1. Use FAST Codec for streaming market data
 2. Reference FIX Dictionary for data formats
 3. Monitor with FIX Analyser
@@ -326,11 +355,13 @@ OnixS provides comprehensive FIX Protocol reference tools and utilities designed
 **Scenario**: Troubleshooting FIX connection issues
 
 **Tools Needed**:
+
 - **FIX Analyser**: Analyze log files
 - **FIX Dictionary**: Understand message formats
 - **FIX Protocol Overview**: Understand session management
 
 **Workflow**:
+
 1. Capture FIX log files
 2. Analyze with FIX Analyser
 3. Reference FIX Dictionary for message interpretation
