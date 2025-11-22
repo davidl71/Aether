@@ -126,20 +126,6 @@ async fn main() -> anyhow::Result<()> {
   let state: SharedSnapshot = Arc::new(RwLock::new(SystemSnapshot::default()));
   let (strategy_ctrl_tx, strategy_ctrl_rx) = watch::channel(false);
   let controller = StrategyController::new(strategy_ctrl_tx);
-  let rest_state = RestState::new(state.clone(), controller.clone());
-
-  {
-    let mut snapshot = state.write().await;
-    seed_static_data(&mut snapshot);
-    snapshot.set_strategy_status("RUNNING");
-    snapshot.risk.allowed = true;
-    snapshot.risk.reason = None;
-    snapshot.risk.updated_at = Utc::now();
-  }
-  let _ = controller.start();
-
-  let (grpc_decision_tx, _) = broadcast::channel(256);
-  let risk_engine = Arc::new(RiskEngine::new(vec![Box::new(PositionLimitCheck::new(8, 250_000.0))]));
 
   // Initialize NATS integration (graceful degradation if unavailable)
   let nats_integration = Arc::new(
@@ -154,6 +140,37 @@ async fn main() -> anyhow::Result<()> {
   } else {
     warn!("NATS integration unavailable, continuing without NATS");
   }
+
+  // Create NATS health check function
+  let nats_health_check: Option<api::rest::NatsHealthCheck> = nats_integration
+    .as_ref()
+    .as_ref()
+    .map(|nats| {
+      let nats_clone = nats.clone();
+      Arc::new(move || {
+        let nats = nats_clone.clone();
+        Box::new(async move { nats.check_connection_health().await }) as Box<dyn std::future::Future<Output = String> + Send + Unpin>
+      }) as api::rest::NatsHealthCheck
+    });
+
+  let rest_state = RestState::new(
+    state.clone(),
+    controller.clone(),
+    nats_health_check,
+  );
+
+  {
+    let mut snapshot = state.write().await;
+    seed_static_data(&mut snapshot);
+    snapshot.set_strategy_status("RUNNING");
+    snapshot.risk.allowed = true;
+    snapshot.risk.reason = None;
+    snapshot.risk.updated_at = Utc::now();
+  }
+  let _ = controller.start();
+
+  let (grpc_decision_tx, _) = broadcast::channel(256);
+  let risk_engine = Arc::new(RiskEngine::new(vec![Box::new(PositionLimitCheck::new(8, 250_000.0))]));
 
   let (strategy_signal_tx, strategy_signal_rx) = tokio::sync::mpsc::unbounded_channel::<StrategySignal>();
   let (strategy_decision_tx, strategy_decision_rx) = tokio::sync::mpsc::unbounded_channel::<StrategyDecisionModel>();

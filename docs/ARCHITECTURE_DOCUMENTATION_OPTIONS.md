@@ -239,13 +239,13 @@ docs/
 
 **Example Structure**:
 ```structurizr
-workspace "IB Box Spread Generator" "Architecture documentation" {
+workspace "Synthetic Financing Platform" "Architecture documentation" {
     model {
         // System Context
         trader = person "Trader" "User of the system"
 
-        boxSpreadSystem = softwareSystem "IB Box Spread Generator" {
-            description "Automated box spread arbitrage trading system"
+        syntheticFinancingPlatform = softwareSystem "Synthetic Financing Platform" {
+            description "Comprehensive multi-asset financing optimization platform for managing synthetic financing across options, futures, bonds, bank loans, and pension funds"
 
             // Containers
             cli = container "CLI/TUI" "C++ command-line interface"
@@ -285,7 +285,7 @@ workspace "IB Box Spread Generator" "Architecture documentation" {
     }
 
     views {
-        systemContext boxSpreadSystem {
+        systemContext syntheticFinancingPlatform {
             include *
             autoLayout
         }

@@ -139,6 +139,35 @@ impl NatsIntegration {
   pub fn is_active(&self) -> bool {
     self.client.is_some()
   }
+
+  /// Check NATS client connection health
+  ///
+  /// Attempts to flush the connection to verify it's alive.
+  /// Returns "ok" if connected and flush succeeds, "degraded" if connected but flush fails,
+  /// or "unavailable" if not connected.
+  pub async fn check_connection_health(&self) -> String {
+    if let Some(ref client) = self.client {
+      // Try to flush with a short timeout to verify connection
+      match tokio::time::timeout(
+        std::time::Duration::from_millis(500),
+        client.as_ref().flush(),
+      )
+      .await
+      {
+        Ok(Ok(_)) => "ok".to_string(),
+        Ok(Err(e)) => {
+          warn!(error = %e, "NATS client flush failed");
+          "degraded".to_string()
+        }
+        Err(_) => {
+          warn!("NATS client flush timed out");
+          "timeout".to_string()
+        }
+      }
+    } else {
+      "unavailable".to_string()
+    }
+  }
 }
 
 impl Default for NatsIntegration {

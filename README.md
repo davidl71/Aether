@@ -30,10 +30,7 @@ Comprehensive multi-asset financing optimization system for managing synthetic f
 - ✅ Unified position view across all asset types
 - ✅ Multi-broker architecture (IBKR, Alpaca, Tradier, Tastytrade, Israeli brokers)
 
-### Box Spread Strategy (One Component)
-- ✅ Automated box spread identification and analysis
-- ✅ Real-time options chain monitoring
-- ✅ Risk-based position sizing and management
+### Additional Platform Features
 - ✅ Comprehensive logging with spdlog
 - ✅ Dry-run mode for safe testing
 - ✅ Universal binary support (Intel + Apple Silicon on macOS)
@@ -48,6 +45,40 @@ Comprehensive multi-asset financing optimization system for managing synthetic f
 - ✅ IBKR Client Portal API integration for account and portfolio snapshots
 - ✅ Cython bindings exposing C++ calculations to Python
 - ✅ WebAssembly (WASM) module for code reuse between backend, TUI, and web app
+
+## Strategies
+
+### Box Spread Strategy ⭐ (Active)
+
+**Purpose**: Synthetic financing via options arbitrage
+**Allocation**: 7-10% of portfolio (spare cash)
+**Use Case**: Enhanced yield on spare cash comparable to T-bills or SOFR
+
+**Features**:
+- ✅ Automated box spread identification and analysis
+- ✅ Real-time options chain monitoring
+- ✅ Risk-based position sizing and management
+- ✅ IBKR BAG order execution (atomic 4-leg execution)
+
+**Documentation**: See [Box Spread Strategy Documentation](docs/strategies/box-spread/README.md)
+
+### Futures Strategy (Planned)
+
+**Purpose**: Implied financing rates from futures
+**Status**: Design phase
+
+### Bond Strategy (Planned)
+
+**Purpose**: Direct financing via bond ETFs
+**Allocation**: 30-40% of portfolio (core investments)
+**Status**: Design phase
+
+### Loan Strategy (Planned)
+
+**Purpose**: Secured financing via bank/pension loans
+**Status**: Design phase
+
+---
 
 ## What is a Box Spread?
 
@@ -471,6 +502,19 @@ This project has been split into multiple focused repositories for better organi
 - **[box-spread-notebooks](https://github.com/davidl71/box-spread-notebooks)** - Educational Jupyter notebooks for box spread trading strategies
 
 **Note**: These repositories are currently private. See [Project Split Strategy](docs/PROJECT_SPLIT_STRATEGY.md) for details on the modularization approach.
+
+## Platform Documentation
+
+### Core Platform
+
+- **[Platform Overview](docs/platform/README.md)** - Synthetic Financing Platform architecture
+- **[Investment Strategy Framework](docs/platform/INVESTMENT_STRATEGY_FRAMEWORK.md)** - Portfolio allocation framework
+- **[Primary Goals and Requirements](docs/platform/PRIMARY_GOALS_AND_REQUIREMENTS.md)** - System objectives
+- **[Synthetic Financing Architecture](docs/platform/SYNTHETIC_FINANCING_ARCHITECTURE.md)** - Multi-asset relationship system
+
+### Strategy Modules
+
+- **[Box Spread Strategy](docs/strategies/box-spread/README.md)** - Box spread strategy overview and documentation
 
 ## Project Structure
 

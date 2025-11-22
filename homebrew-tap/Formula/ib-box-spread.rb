@@ -7,17 +7,17 @@
 # PLEASE REMOVE ALL GENERATED COMMENTS WHEN SUBMITTING YOUR PULL REQUEST!
 
 class IbBoxSpread < Formula
-  desc "Automated options arbitrage trading system for Interactive Brokers using box spread strategies"
-  homepage "https://github.com/davidl71/ib_box_spread_full_universal"
+  desc "Comprehensive multi-asset financing optimization system. Box spreads are one strategy component of this platform."
+  homepage "https://github.com/davidl71/synthetic-financing-platform"
   version "1.3.2"
-  url "https://github.com/davidl71/ib_box_spread_full_universal/releases/download/v1.3.2/ib_box_spread-v1.3.2-macos-x86_64.tar.gz"
+  url "https://github.com/davidl71/synthetic-financing-platform/releases/download/v1.3.2/ib_box_spread-v1.3.2-macos-x86_64.tar.gz"
   sha256 "a7fcb8a50b1e80e7160dfc50cb7308b151150d71eaa1899280009277cd1278af"
   license "MIT"
 
   depends_on "fswatch"
 
   bottle do
-    root_url "https://github.com/davidl71/ib_box_spread_full_universal/releases/download/v1.3.2"
+    root_url "https://github.com/davidl71/synthetic-financing-platform/releases/download/v1.3.2"
     sha256 cellar: :any, sequoia: "6d751def669a85293e34fdfec1b488ba013305aa57b83588fb9f8f965a276f94"
   end
 

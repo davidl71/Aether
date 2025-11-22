@@ -4,6 +4,7 @@ import { ModeSwitcher, type TradingMode } from './ModeSwitcher';
 import { AccountSelector } from './AccountSelector';
 import { BrokerSelector, type BrokerType } from './BrokerSelector';
 import { useWebSocketStatus } from '../hooks/useWebSocket';
+import { useNATS } from '../hooks/useNATS';
 
 interface HeaderStatusProps {
   snapshot: SnapshotPayload | null;
@@ -40,6 +41,12 @@ export function HeaderStatus({
   const modeClass = isLive ? 'mode-indicator--live' : 'mode-indicator--paper';
   const isStrategyRunning = snapshot?.strategy === 'RUNNING';
   const { status: connectionStatus } = useWebSocketStatus();
+  const { connected: natsConnected, error: natsError } = useNATS({
+    autoConnect: true,
+    subscribeMarketData: false, // Only connection status for now
+    subscribeStrategySignals: false,
+    subscribeStrategyDecisions: false,
+  });
 
   if (!snapshot) {
     return (
@@ -191,6 +198,7 @@ export function HeaderStatus({
         >
           {connectionStatus === 'connected' ? 'WS' : connectionStatus === 'polling' ? 'Poll' : 'Conn'}
         </span>
+        {statusBadge(natsConnected, 'NATS')}
       </div>
       <div className="header__metrics">
         <span>NetLiq: <strong>{formatCurrency(metrics.net_liq)}</strong></span>

@@ -2,7 +2,9 @@
 
 ## Overview
 
-This document provides a high-level architectural overview of the IBKR Box Spread Generator. Use `@docs CODEBASE_ARCHITECTURE.md` in Cursor to give AI context about system design and component interactions.
+This document provides a high-level architectural overview of the Synthetic Financing Platform. Use `@docs CODEBASE_ARCHITECTURE.md` in Cursor to give AI context about system design and component interactions.
+
+**Note**: Box spreads are one strategy component of this platform. The platform provides comprehensive multi-asset financing optimization, including multi-account aggregation, cash flow modeling, opportunity simulation, and investment strategy framework.
 
 ## System Architecture
 

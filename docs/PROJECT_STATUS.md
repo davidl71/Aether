@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-The IB Box Spread Generator project is in active development with multiple parallel work streams:
+The Synthetic Financing Platform project is in active development with multiple parallel work streams:
 
 - ✅ **Core Framework**: Complete and production-ready
 - ✅ **Documentation**: Comprehensive (236 files, 65% complete)

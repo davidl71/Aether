@@ -80,7 +80,7 @@
 - [ ] **Review Market Data Index** (`docs/indices/MARKET_DATA_INDEX.md`)
 - [ ] **Review Trading Simulators Index** (`docs/indices/TRADING_SIMULATORS_INDEX.md`)
 - [ ] **Review Quantitative Finance Index** (`docs/indices/QUANTITATIVE_FINANCE_INDEX.md`)
-- [ ] **Review Box Spread Resources Index** (`docs/indices/BOX_SPREAD_RESOURCES_INDEX.md`)
+- [ ] **Review Box Spread Resources Index** (`docs/strategies/box-spread/BOX_SPREAD_RESOURCES_INDEX.md`)
 - [ ] **Review Trading Frameworks Index** (`docs/indices/TRADING_FRAMEWORKS_INDEX.md`)
 
 ### Summary Document

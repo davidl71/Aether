@@ -69,7 +69,7 @@ Edit each formula file and update:
 **For private repositories**, formulas use GitDownloadStrategy:
 
 ```ruby
-url "git@github.com:davidl71/ib_box_spread_full_universal.git", tag: "v1.0.0", using: :git
+url "git@github.com:davidl71/synthetic-financing-platform.git", tag: "v1.0.0", using: :git
 ```
 
 ### Step 4: Test Formulas
@@ -105,7 +105,7 @@ git tag -a v1.0.0 -m "Release v1.0.0"
 git push origin v1.0.0
 
 # Verify tag exists
-git ls-remote --tags git@github.com:davidl71/ib_box_spread_full_universal.git
+git ls-remote --tags git@github.com:davidl71/synthetic-financing-platform.git
 ```
 
 ### Step 2: Update Formulas
@@ -115,7 +115,7 @@ git ls-remote --tags git@github.com:davidl71/ib_box_spread_full_universal.git
 Update `url` in formula files:
 
 ```ruby
-url "git@github.com:davidl71/ib_box_spread_full_universal.git", tag: "v1.0.0", using: :git
+url "git@github.com:davidl71/synthetic-financing-platform.git", tag: "v1.0.0", using: :git
 ```
 
 **Note**: For private repos, we use GitDownloadStrategy which clones the repo and checks out the tag. No tarball or SHA256 is needed.
@@ -139,7 +139,7 @@ git push origin main
 ```ruby
 class IbBoxSpread < Formula
   desc "Automated options arbitrage trading system"
-  homepage "https://github.com/davidl71/ib_box_spread_full_universal"
+  homepage "https://github.com/davidl71/synthetic-financing-platform"
   url "..." # Release tarball URL
   sha256 "..." # Tarball checksum
 
@@ -265,7 +265,7 @@ TAP_DIR="$HOME/homebrew-ib-box-spread"
 
 # Download and calculate SHA256
 curl -L -o /tmp/release.tar.gz \
-  "https://github.com/davidl71/ib_box_spread_full_universal/archive/refs/tags/${VERSION}.tar.gz"
+  "https://github.com/davidl71/synthetic-financing-platform/archive/refs/tags/${VERSION}.tar.gz"
 SHA256=$(shasum -a 256 /tmp/release.tar.gz | awk '{print $1}')
 
 # Update formula

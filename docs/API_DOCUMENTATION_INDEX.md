@@ -13,11 +13,12 @@ This file serves as a reference for all external APIs and libraries used in this
 
 ### Box Spread Trading Guide
 
-- **Comprehensive Box Spread Guide**: `docs/BOX_SPREAD_COMPREHENSIVE_GUIDE.md`
+- **Comprehensive Box Spread Guide**: `docs/strategies/box-spread/BOX_SPREAD_COMPREHENSIVE_GUIDE.md`
   - Complete reference for box spread mechanics, risks, and implementation
   - Covers long/short box spreads, assignment risk, tax implications
   - Includes practical examples and implementation recommendations
   - Synthesizes information from multiple educational resources
+  - **Note**: Box spreads are one strategy component of the Synthetic Financing Platform (7-10% spare cash allocation)
 
 ### Device Task Delegation & Apple Intelligence
 

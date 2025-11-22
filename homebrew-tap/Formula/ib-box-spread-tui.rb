@@ -7,13 +7,13 @@
 # PLEASE REMOVE ALL GENERATED COMMENTS WHEN SUBMITTING YOUR PULL REQUEST!
 
 class IbBoxSpreadTui < Formula
-  desc "Terminal User Interface for IBKR Box Spread trading system"
-  homepage "https://github.com/davidl71/ib_box_spread_full_universal"
+  desc "Terminal User Interface for Synthetic Financing Platform"
+  homepage "https://github.com/davidl71/synthetic-financing-platform"
   # For private repositories, use GitDownloadStrategy with SSH URL
   # This allows Homebrew to clone the repo and checkout the tag
-  url "git@github.com:davidl71/ib_box_spread_full_universal.git", tag: "v1.0.0", using: :git
+  url "git@github.com:davidl71/synthetic-financing-platform.git", tag: "v1.0.0", using: :git
   license "MIT"
-  head "git@github.com:davidl71/ib_box_spread_full_universal.git", branch: "main", using: :git
+  head "git@github.com:davidl71/synthetic-financing-platform.git", branch: "main", using: :git
 
   depends_on "cmake" => :build
   depends_on "ftxui" => :build

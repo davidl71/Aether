@@ -31,6 +31,14 @@ except ImportError:
     ORATSClient = None
     ORATSEnricher = None
 
+# Optional NATS integration
+try:
+    from .nats_client import NATSClient
+    NATS_AVAILABLE = True
+except ImportError:
+    NATSClient = None
+    NATS_AVAILABLE = False
+
 # Import C++ bindings (will be available after compilation)
 try:
     from ..bindings.box_spread_bindings import (
@@ -142,6 +150,20 @@ class BoxSpreadStrategyRunner:
             notifier=self.notifier,
         )
 
+        # Initialize NATS client (optional, graceful degradation)
+        self.nats_client: Optional[NATSClient] = None
+        nats_url = strategy_config.get("nats_url", "nats://localhost:4222")
+        if NATS_AVAILABLE and NATSClient:
+            try:
+                self.nats_client = NATSClient(url=nats_url)
+                # Connection will be established in on_start()
+                logger.info("NATS client initialized (will connect on start)")
+            except Exception as e:
+                logger.warning(f"Failed to initialize NATS client: {e}")
+                self.nats_client = None
+        else:
+            logger.info("NATS integration not available")
+
         # Initialize C++ strategy (if bindings available)
         self.cpp_strategy: Optional[PyBoxSpreadStrategy] = None
         if PyBoxSpreadStrategy:
@@ -204,6 +226,20 @@ class BoxSpreadStrategyRunner:
                 )
             except Exception as exc:  # pragma: no cover - network interaction
                 logger.warning("Failed to fetch Client Portal account summary: %s", exc)
+
+        # Connect to NATS if available (async, but on_start is sync, so use asyncio)
+        if self.nats_client:
+            try:
+                # Create task to connect asynchronously
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # If loop is running, create task
+                    asyncio.create_task(self._connect_nats())
+                else:
+                    # If no loop running, run in new event loop
+                    asyncio.run(self._connect_nats())
+            except Exception as e:
+                logger.warning(f"Failed to connect to NATS: {e}")
 
         # Subscribe to market data for all symbols
         for symbol in self.symbols:
@@ -271,6 +307,30 @@ class BoxSpreadStrategyRunner:
             self.cpp_strategy.reset_statistics()
 
         logger.info("Strategy reset complete")
+
+    # ========================================================================
+    # NATS Integration Helpers
+    # ========================================================================
+
+    async def _connect_nats(self):
+        """Helper to connect to NATS asynchronously."""
+        if self.nats_client:
+            try:
+                connected = await self.nats_client.connect()
+                if connected:
+                    logger.info("NATS connected - will publish signals/decisions")
+                else:
+                    logger.warning("NATS connection failed - continuing without NATS")
+            except Exception as e:
+                logger.warning(f"Failed to connect to NATS: {e}")
+
+    async def _disconnect_nats(self):
+        """Helper to disconnect from NATS asynchronously."""
+        if self.nats_client:
+            try:
+                await self.nats_client.disconnect()
+            except Exception as e:
+                logger.warning(f"Error disconnecting from NATS: {e}")
 
     # ========================================================================
     # Event Handlers (Event-Driven Architecture)
@@ -494,6 +554,31 @@ class BoxSpreadStrategyRunner:
         logger.debug(
             "Market data for %s obtained from %s provider", symbol, provider or "unknown"
         )
+
+        # Publish strategy signal to NATS (if available) - fire and forget
+        if self.nats_client and self.nats_client.is_connected():
+            try:
+                mid_price = (quote.get("bid", 0) + quote.get("ask", 0)) / 2
+                # Fire and forget - don't block on NATS publish
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(
+                        self.nats_client.publish_strategy_signal(
+                            symbol=symbol,
+                            price=mid_price,
+                            signal_type="evaluation"
+                        )
+                    )
+                else:
+                    asyncio.run(
+                        self.nats_client.publish_strategy_signal(
+                            symbol=symbol,
+                            price=mid_price,
+                            signal_type="evaluation"
+                        )
+                    )
+            except Exception as e:
+                logger.debug(f"Failed to publish strategy signal to NATS: {e}")
 
         # TODO: Implement full opportunity evaluation
         # 1. Get option chain for symbol

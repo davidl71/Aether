@@ -124,7 +124,7 @@ export default defineConfig({
         ]
       },
       devOptions: {
-        enabled: true,
+        enabled: false, // Disable service worker in dev to avoid caching issues
         type: 'module'
       }
     })

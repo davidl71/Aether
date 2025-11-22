@@ -1,6 +1,8 @@
-# Homebrew Tap for IBKR Box Spread
+# Homebrew Tap for Synthetic Financing Platform
 
-This is a [Homebrew tap](https://docs.brew.sh/Taps) for installing IBKR Box Spread tools via Homebrew.
+This is a [Homebrew tap](https://docs.brew.sh/Taps) for installing Synthetic Financing Platform tools via Homebrew.
+
+**Note**: Box spreads are one strategy component of this comprehensive multi-asset financing optimization platform.
 
 ## Installation
 
@@ -50,17 +52,17 @@ brew tap davidl71/ib-box-spread git@github.com:davidl71/homebrew-ib-box-spread.g
 brew install davidl71/ib-box-spread/ib-box-spread
 
 # Install TUI (Terminal User Interface)
-brew install davidl71/ib-box-spread/ib-box-spread-tui
+brew install davidl71/synthetic-financing-platform/synthetic-financing-platform-tui
 
 # Or install both
-brew install davidl71/ib-box-spread/ib-box-spread davidl71/ib-box-spread/ib-box-spread-tui
+brew install davidl71/synthetic-financing-platform/synthetic-financing-platform davidl71/synthetic-financing-platform/synthetic-financing-platform-tui
 ```
 
 ## Packages
 
-### ib-box-spread
+### synthetic-financing-platform
 
-Main C++ trading binary with full box spread strategy implementation.
+Main C++ trading binary with comprehensive multi-asset financing optimization. Box spreads are one strategy component.
 
 **Dependencies**:
 - CMake
@@ -71,15 +73,15 @@ Main C++ trading binary with full box spread strategy implementation.
 
 **Installation**:
 ```bash
-brew install ib-box-spread
+brew install synthetic-financing-platform
 ```
 
 **Usage**:
 ```bash
-ib_box_spread --config ~/.config/ib-box-spread/config.json --dry-run
+synthetic-financing-platform --config ~/.config/synthetic-financing-platform/config.json --dry-run
 ```
 
-### ib-box-spread-tui
+### synthetic-financing-platform-tui
 
 Terminal User Interface for monitoring and managing the trading system.
 
@@ -88,13 +90,13 @@ Terminal User Interface for monitoring and managing the trading system.
 
 **Installation**:
 ```bash
-brew install ib-box-spread-tui
+brew install synthetic-financing-platform-tui
 ```
 
 **Usage**:
 ```bash
-ib-box-spread-tui --mock  # Test with mock data
-ib-box-spread-tui          # Connect to backend
+synthetic-financing-platform-tui --mock  # Test with mock data
+synthetic-financing-platform-tui          # Connect to backend
 ```
 
 ## Development
@@ -105,10 +107,10 @@ If you want to test formulas before publishing:
 
 ```bash
 # Add local tap
-brew tap --force-local davidl71/ib-box-spread /path/to/homebrew-tap
+brew tap --force-local davidl71/synthetic-financing-platform /path/to/homebrew-tap
 
 # Install from local tap
-brew install --build-from-source ib-box-spread
+brew install --build-from-source synthetic-financing-platform
 ```
 
 ### Updating Formulas
@@ -133,7 +135,7 @@ brew install --build-from-source ib-box-spread
 
 Example:
 ```ruby
-url "git@github.com:davidl71/ib_box_spread_full_universal.git", tag: "v1.0.1", using: :git
+url "git@github.com:davidl71/synthetic-financing-platform.git", tag: "v1.0.1", using: :git
 ```
 
 ## Troubleshooting
@@ -146,7 +148,7 @@ url "git@github.com:davidl71/ib_box_spread_full_universal.git", tag: "v1.0.1", u
 1. Verify SSH keys: `ls -la ~/.ssh/id_*.pub`
 2. Test GitHub SSH: `ssh -T git@github.com`
 3. Add SSH key to GitHub: https://github.com/settings/keys
-4. Ensure tap uses SSH URL: `brew tap davidl71/ib-box-spread git@github.com:davidl71/homebrew-ib-box-spread.git`
+4. Ensure tap uses SSH URL: `brew tap davidl71/synthetic-financing-platform git@github.com:davidl71/homebrew-synthetic-financing-platform.git`
 
 ### Installation Fails
 
@@ -154,25 +156,25 @@ url "git@github.com:davidl71/ib_box_spread_full_universal.git", tag: "v1.0.1", u
 - Check build logs: `brew install --verbose <formula>`
 - Check for issues: `brew doctor`
 - Verify SSH access: `ssh -T git@github.com`
-- Ensure tag exists: `git ls-remote --tags git@github.com:davidl71/ib_box_spread_full_universal.git`
+- Ensure tag exists: `git ls-remote --tags git@github.com:davidl71/synthetic-financing-platform.git`
 
 ### Binary Not Found
 
-- Check installation: `brew list ib-box-spread`
-- Check PATH: `which ib_box_spread`
-- Reinstall: `brew reinstall ib-box-spread`
+- Check installation: `brew list synthetic-financing-platform`
+- Check PATH: `which synthetic-financing-platform`
+- Reinstall: `brew reinstall synthetic-financing-platform`
 
 ### Git Tag Not Found
 
 **Problem**: `fatal: couldn't find remote ref refs/tags/v1.0.0`
 
 **Solution**:
-1. Verify tag exists: `git ls-remote --tags git@github.com:davidl71/ib_box_spread_full_universal.git`
+1. Verify tag exists: `git ls-remote --tags git@github.com:davidl71/synthetic-financing-platform.git`
 2. Create and push tag: `git tag v1.0.0 && git push origin v1.0.0`
 3. Update formula with correct tag name
 
 ## See Also
 
-- **Main Project**: https://github.com/davidl71/ib_box_spread_full_universal
+- **Main Project**: https://github.com/davidl71/synthetic-financing-platform
 - **Homebrew Docs**: https://docs.brew.sh/Taps
 - **Formula Cookbook**: https://docs.brew.sh/Formula-Cookbook

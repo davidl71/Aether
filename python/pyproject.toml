@@ -3,14 +3,14 @@ requires = ["setuptools>=65.0.0", "wheel", "cython>=3.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ib-box-spread-generator"
+name = "synthetic-financing-platform"
 version = "1.0.0"
-description = "IB Box Spread Generator - Python integration with NautilusTrader"
+description = "Synthetic Financing Platform - Comprehensive multi-asset financing optimization system. Box spreads are one strategy component of this platform."
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
-    {name = "IB Box Spread Generator Team"}
+    {name = "Synthetic Financing Platform Team"}
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -36,7 +36,7 @@ dev = [
 ]
 
 [project.scripts]
-ib-box-spread-nautilus = "python.nautilus_strategy:main"
+synthetic-financing-platform-nautilus = "python.nautilus_strategy:main"
 
 [tool.setuptools]
 package-dir = {"" = "."}
@@ -44,5 +44,3 @@ package-dir = {"" = "."}
 [tool.setuptools.packages.find]
 where = ["."]
 exclude = ["tests*", "build*", "*.egg-info*"]
-
-

@@ -26,7 +26,7 @@ docs/CODEBASE_ARCHITECTURE.md
 docs/COMMON_PATTERNS.md
 docs/AI_FRIENDLY_CODE.md
 docs/TWS_INTEGRATION_STATUS.md
-docs/BOX_SPREAD_COMPREHENSIVE_GUIDE.md
+docs/strategies/box-spread/BOX_SPREAD_COMPREHENSIVE_GUIDE.md
 docs/STATIC_ANALYSIS_ANNOTATIONS.md
 docs/IMPLEMENTATION_GUIDE.md
 ```
@@ -70,7 +70,7 @@ If Cursor requires absolute paths, use these (adjust for your system):
 /Users/davidlowes/ib_box_spread_full_universal/docs/COMMON_PATTERNS.md
 /Users/davidlowes/ib_box_spread_full_universal/docs/AI_FRIENDLY_CODE.md
 /Users/davidlowes/ib_box_spread_full_universal/docs/TWS_INTEGRATION_STATUS.md
-/Users/davidlowes/ib_box_spread_full_universal/docs/BOX_SPREAD_COMPREHENSIVE_GUIDE.md
+/Users/davidlowes/ib_box_spread_full_universal/docs/strategies/box-spread/BOX_SPREAD_COMPREHENSIVE_GUIDE.md
 /Users/davidlowes/ib_box_spread_full_universal/docs/STATIC_ANALYSIS_ANNOTATIONS.md
 /Users/davidlowes/ib_box_spread_full_universal/docs/IMPLEMENTATION_GUIDE.md
 ```
@@ -147,7 +147,7 @@ Use this checklist to track your setup:
 - [ ] Added `docs/COMMON_PATTERNS.md`
 - [ ] Added `docs/AI_FRIENDLY_CODE.md`
 - [ ] Added `docs/TWS_INTEGRATION_STATUS.md`
-- [ ] Added `docs/BOX_SPREAD_COMPREHENSIVE_GUIDE.md`
+- [ ] Added `docs/strategies/box-spread/BOX_SPREAD_COMPREHENSIVE_GUIDE.md`
 - [ ] Added `docs/STATIC_ANALYSIS_ANNOTATIONS.md`
 - [ ] Added `docs/IMPLEMENTATION_GUIDE.md`
 - [ ] Added `docs/external/TWS_API_QUICK_REFERENCE.md` (optional)

@@ -37,10 +37,14 @@ impl StrategyController {
   }
 }
 
+/// Health check function for NATS client connection
+pub type NatsHealthCheck = Arc<dyn Fn() -> Box<dyn std::future::Future<Output = String> + Send + Unpin> + Send + Sync>;
+
 #[derive(Clone)]
 pub struct RestState {
   pub snapshot: SharedSnapshot,
   pub controller: StrategyController,
+  pub nats_health_check: Option<NatsHealthCheck>,
 }
 
 // Ensure RestState is Send + Sync for axum Router requirements
@@ -49,8 +53,16 @@ pub struct RestState {
 // So RestState is automatically Send + Sync
 
 impl RestState {
-  pub fn new(snapshot: SharedSnapshot, controller: StrategyController) -> Self {
-    Self { snapshot, controller }
+  pub fn new(
+    snapshot: SharedSnapshot,
+    controller: StrategyController,
+    nats_health_check: Option<NatsHealthCheck>,
+  ) -> Self {
+    Self {
+      snapshot,
+      controller,
+      nats_health_check,
+    }
   }
 }
 
@@ -107,31 +119,50 @@ struct HealthResponse {
 #[derive(Serialize)]
 struct ComponentHealth {
   backend: String,
-  nats: String,
+  nats: NatsHealth,
+}
+
+#[derive(Serialize)]
+struct NatsHealth {
+  server: String,
+  client: String,
 }
 
 async fn health(Extension(state): Extension<RestState>) -> Result<Json<HealthResponse>, StatusCode> {
-  // Check NATS server health (non-blocking, 1 second timeout)
-  let nats_status = check_nats_health().await;
+  // Check NATS server HTTP health endpoint (non-blocking, 1 second timeout)
+  let nats_server_status = check_nats_server_health().await;
+
+  // Check NATS client connection health
+  let nats_client_status = if let Some(ref health_check) = state.nats_health_check {
+    health_check().await
+  } else {
+    "unavailable".to_string()
+  };
+
+  // Overall NATS status: ok if both server and client are ok
+  let nats_overall_ok = nats_server_status == "ok" && nats_client_status == "ok";
 
   // Update metrics with NATS status
   {
     let mut snapshot = state.snapshot.write().await;
-    snapshot.metrics.nats_ok = nats_status == "ok";
+    snapshot.metrics.nats_ok = nats_overall_ok;
   }
 
   let response = HealthResponse {
     status: "ok".to_string(),
     components: ComponentHealth {
       backend: "ok".to_string(),
-      nats: nats_status,
+      nats: NatsHealth {
+        server: nats_server_status,
+        client: nats_client_status,
+      },
     },
   };
 
   Ok(Json(response))
 }
 
-async fn check_nats_health() -> String {
+async fn check_nats_server_health() -> String {
   const NATS_HEALTH_URL: &str = "http://localhost:8222/healthz";
   const TIMEOUT_SECS: u64 = 1;
 

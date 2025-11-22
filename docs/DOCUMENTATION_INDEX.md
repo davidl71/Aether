@@ -1,12 +1,12 @@
-# TWS Automated Trading - Complete Documentation Index
+# Synthetic Financing Platform - Complete Documentation Index
 
-This document serves as a comprehensive index of all documentation in the IBKR Box Spread Generator project for NotebookLM integration.
+This document serves as a comprehensive index of all documentation in the Synthetic Financing Platform project for NotebookLM integration.
 
 ## Repository Information
 
-- **Repository**: `ib_box_spread_full_universal`
-- **GitHub**: `https://github.com/davidl71/ib_box_spread_full_universal`
-- **Purpose**: Automated options arbitrage trading system for Interactive Brokers using box spread strategies
+- **Repository**: `synthetic-financing-platform` (formerly `ib_box_spread_full_universal`)
+- **GitHub**: `https://github.com/davidl71/synthetic-financing-platform` ⚠️ *Note: URL will be active after repository rename*
+- **Purpose**: Comprehensive multi-asset financing optimization system for managing synthetic financing across options, futures, bonds, bank loans, and pension funds. Box spreads are one strategy component of this platform.
 
 ## Core Documentation
 
@@ -16,6 +16,22 @@ This document serves as a comprehensive index of all documentation in the IBKR B
 - `QUICKSTART.md` - Quick start guide
 - `docs/QUICK_START.md` - Detailed quick start guide
 - `CHANGELOG.md` - Version history and changes
+
+### Platform Core Documentation
+
+- `docs/platform/README.md` - Platform architecture overview
+- `docs/platform/INVESTMENT_STRATEGY_FRAMEWORK.md` - Portfolio allocation framework
+- `docs/platform/PRIMARY_GOALS_AND_REQUIREMENTS.md` - System goals and requirements
+- `docs/platform/SYNTHETIC_FINANCING_ARCHITECTURE.md` - Multi-asset relationship system
+- `docs/platform/MULTI_ACCOUNT_AGGREGATION_DESIGN.md` - Account aggregation system
+
+### Strategy Modules
+
+- `docs/strategies/box-spread/README.md` - Box spread strategy overview
+- `docs/strategies/box-spread/BOX_SPREAD_COMPREHENSIVE_GUIDE.md` - Complete box spread reference
+- `docs/strategies/box-spread/BOX_SPREAD_BAG_IMPLEMENTATION.md` - IBKR BAG order implementation
+- `docs/strategies/box-spread/DATA_FEEDS_BOX_SPREADS.md` - Market data sources
+- `docs/strategies/box-spread/BOX_SPREAD_RESOURCES_INDEX.md` - Box spread resources index
 
 ### Architecture & Design
 

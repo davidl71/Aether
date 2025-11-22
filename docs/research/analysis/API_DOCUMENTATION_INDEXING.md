@@ -114,7 +114,7 @@ Create focused index files for major topics:
    - Risk management tools
    - Greeks calculation
 
-5. **`docs/indices/BOX_SPREAD_RESOURCES_INDEX.md`**
+5. **`docs/strategies/box-spread/BOX_SPREAD_RESOURCES_INDEX.md`** (✅ Moved to strategies/box-spread/)
    - Box spread research
    - Cboe resources
    - CME resources

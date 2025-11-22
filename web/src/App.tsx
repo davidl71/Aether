@@ -100,6 +100,7 @@ function renderTabContent(
 }
 
 function App() {
+  console.log('App component rendering...');
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const [modal, setModal] = useState<ModalState>(null);
   const [selectedStrike, setSelectedStrike] = useState<number | null>(null);
@@ -110,6 +111,8 @@ function App() {
     isLoading: snapshotLoading,
     error: snapshotError
   } = useSnapshot();
+
+  console.log('App state:', { snapshotLoading, snapshotError, hasSnapshot: !!snapshot });
   const { data: scenarioData, isLoading: scenarioLoading, error: scenarioError } = useBoxSpreadData();
   const { watchlist, addSymbol, removeSymbol, isDefault } = useSymbolWatchlist();
 
@@ -520,7 +523,14 @@ function App() {
       <TabNavigation tabs={TABS} activeTab={activeTab} onSelect={setActiveTab} />
 
       <main className="app-main">
-        {snapshotLoading && <div className="panel panel--fill">Loading live snapshot…</div>}
+        {snapshotLoading && (
+          <div className="panel panel--fill" style={{ padding: '40px', textAlign: 'center' }}>
+            <div>Loading live snapshot…</div>
+            <div style={{ marginTop: '16px', fontSize: '14px', color: '#9ca3af' }}>
+              Connecting to backend service...
+            </div>
+          </div>
+        )}
         {!snapshotLoading && snapshotError && (
           <div className="panel panel--fill app-status app-status--error">
             <div style={{ padding: '20px' }}>
@@ -533,12 +543,13 @@ function App() {
                   <li>Verify the API endpoint URL is correct</li>
                   <li>Check browser console for CORS errors</li>
                   <li>If using a local backend, ensure it's listening on the expected port</li>
+                  <li>Try using fallback data: <code>/data/snapshot.json</code></li>
                 </ul>
               </details>
             </div>
           </div>
         )}
-        {!snapshotLoading && !snapshotError &&
+        {!snapshotLoading && !snapshotError && (
           renderTabContent(
             activeTab,
             snapshot,
@@ -550,7 +561,15 @@ function App() {
             isDefault,
             handleCancelOrder,
             apiBaseUrl
-          )}
+          ) || (
+            <div className="panel panel--fill" style={{ padding: '40px', textAlign: 'center' }}>
+              <div>No data available</div>
+              <div style={{ marginTop: '16px', fontSize: '14px', color: '#9ca3af' }}>
+                Waiting for snapshot data...
+              </div>
+            </div>
+          )
+        )}
       </main>
 
       <ActionBar onBuyCombo={handleBuyCombo} onSellCombo={handleSellCombo} />

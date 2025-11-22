@@ -16,11 +16,14 @@ export function useSnapshot() {
   });
 
   useEffect(() => {
+    console.log('useSnapshot: Subscribing to snapshot client...');
     const unsubscribe = snapshotClient.subscribe(
       (payload) => {
+        console.log('useSnapshot: Received snapshot payload', payload);
         setState({ snapshot: payload, isLoading: false, error: null });
       },
       (error) => {
+        console.error('useSnapshot: Error from snapshot client', error);
         setState((prev) => ({
           snapshot: prev.snapshot,
           isLoading: false,
@@ -29,7 +32,23 @@ export function useSnapshot() {
       }
     );
 
+    // Timeout fallback - if no data after 10 seconds, show error
+    const timeout = setTimeout(() => {
+      setState((prev) => {
+        if (prev.isLoading && !prev.snapshot) {
+          console.warn('useSnapshot: Timeout - no snapshot received after 10 seconds');
+          return {
+            ...prev,
+            isLoading: false,
+            error: 'Timeout: No snapshot data received. Check if backend is running or if /data/snapshot.json exists.'
+          };
+        }
+        return prev;
+      });
+    }, 10000);
+
     return () => {
+      clearTimeout(timeout);
       unsubscribe();
     };
   }, []);
