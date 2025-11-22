@@ -49,7 +49,25 @@ This plan outlines routine automation tasks that should run regularly to maintai
 
 ---
 
-#### 1.3 Stale Task Cleanup
+#### 1.3 Duplicate Task Detection
+**Frequency**: Daily
+**Script**: `scripts/automate_todo2_duplicate_detection.py`
+**Purpose**: Detect and report duplicate tasks
+**Actions**:
+- Detect duplicate task IDs (critical data integrity issue)
+- Find tasks with identical names
+- Identify tasks with similar names (fuzzy matching)
+- Detect tasks with similar descriptions
+- Find self-dependencies (invalid)
+- Generate comprehensive report
+
+**Cron Schedule**: `0 9 * * *` (9 AM daily, after alignment)
+
+**Output**: `docs/TODO2_DUPLICATE_DETECTION_REPORT.md`
+
+---
+
+#### 1.4 Stale Task Cleanup
 **Frequency**: Weekly
 **Script**: New - `scripts/automate_stale_task_cleanup.py`
 **Purpose**: Identify and suggest cleanup for stale tasks

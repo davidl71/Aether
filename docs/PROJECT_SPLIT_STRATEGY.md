@@ -159,6 +159,7 @@ The current monorepo contains **16+ distinct components** that would benefit fro
 - `scripts/base/intelligent_automation_base.py` (base class)
 - `scripts/automate_docs_health_v2.py` (documentation health)
 - `scripts/automate_todo2_alignment_v2.py` (task alignment)
+- `scripts/automate_todo2_duplicate_detection.py` (duplicate task detection)
 - `scripts/automate_dependency_security.py` (security scanning)
 - `scripts/automate_pwa_review.py` (PWA analysis)
 - `scripts/automate_todo_sync.py` (task synchronization)

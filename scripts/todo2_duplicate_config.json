@@ -1,0 +1,6 @@
+{
+  "output_path": "docs/TODO2_DUPLICATE_DETECTION_REPORT.md",
+  "similarity_threshold": 0.85,
+  "auto_fix": false,
+  "comment": "Configuration for automated Todo2 duplicate task detection script. Set auto_fix to true to automatically fix duplicates (experimental)."
+}
