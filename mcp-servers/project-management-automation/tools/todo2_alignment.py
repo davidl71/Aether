@@ -12,6 +12,37 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+# Import error handler at module level to avoid scoping issues
+try:
+    from ..error_handler import (
+        format_success_response,
+        format_error_response,
+        log_automation_execution,
+        ErrorCode
+    )
+except ImportError:
+    import sys
+    from pathlib import Path
+    server_dir = Path(__file__).parent.parent
+    sys.path.insert(0, str(server_dir))
+    try:
+        from error_handler import (
+            format_success_response,
+            format_error_response,
+            log_automation_execution,
+            ErrorCode
+        )
+    except ImportError:
+        # Fallback: define minimal versions if import fails
+        def format_success_response(data, message=None):
+            return {"success": True, "data": data, "timestamp": time.time()}
+        def format_error_response(error, error_code, include_traceback=False):
+            return {"success": False, "error": {"code": str(error_code), "message": str(error)}}
+        def log_automation_execution(name, duration, success, error=None):
+            logger.info(f"{name}: {duration:.2f}s, success={success}")
+        class ErrorCode:
+            AUTOMATION_ERROR = "AUTOMATION_ERROR"
+
 
 def analyze_todo2_alignment(
     create_followup_tasks: bool = True,
@@ -36,12 +67,6 @@ def analyze_todo2_alignment(
         sys.path.insert(0, str(project_root))
 
         from scripts.automate_todo2_alignment_v2 import Todo2AlignmentAnalyzerV2
-        from ..error_handler import (
-            format_success_response,
-            format_error_response,
-            log_automation_execution,
-            ErrorCode
-        )
 
         # Build config
         config = {
@@ -76,10 +101,5 @@ def analyze_todo2_alignment(
     except Exception as e:
         duration = time.time() - start_time
         log_automation_execution('analyze_todo2_alignment', duration, False, e)
-
-        from ..error_handler import (
-            format_error_response,
-            ErrorCode
-        )
         error_response = format_error_response(e, ErrorCode.AUTOMATION_ERROR)
         return json.dumps(error_response, indent=2)

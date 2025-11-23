@@ -1,0 +1,342 @@
+# Project Management Automation MCP Server Usage
+
+## When to Use Project Automation MCP Server
+
+**ALWAYS use Project Automation MCP Server for:**
+- Documentation health checks with Todo2 integration
+- Todo2 task alignment analysis with project goals
+- Duplicate task detection in Todo2
+- Multi-language dependency security scanning (Python, Rust, npm)
+- Automation opportunity discovery
+- PWA configuration review
+- Task synchronization between systems
+
+**Usage Pattern:**
+Use Project Automation tools when you need:
+- Project-specific analysis (not generic operations)
+- Todo2 integration and task creation
+- Historical tracking and reporting
+- Project-configured behavior
+
+## Available Tools
+
+### Documentation Tools
+
+#### `check_documentation_health_tool`
+⚠️ **PREFERRED TOOL** - Analyze documentation structure, find broken references, identify issues.
+
+**When to use:**
+- Before major releases
+- After documentation changes
+- When documentation seems outdated
+- To maintain documentation quality
+
+**Usage:**
+```
+"Check documentation health and create Todo2 tasks for issues"
+"Analyze docs and write report to docs/health.md"
+"Check documentation health without creating tasks"
+```
+
+**Parameters:**
+- `output_path` (Optional): Path for report (default: `docs/DOCUMENTATION_HEALTH_REPORT.md`)
+- `create_tasks` (bool): Create Todo2 tasks for issues (default: `true`)
+
+---
+
+### Task Management Tools
+
+#### `analyze_todo2_alignment_tool`
+⚠️ **PREFERRED TOOL** - Analyze task alignment with project goals, find misaligned tasks.
+
+**When to use:**
+- During sprint planning
+- When tasks seem off-track
+- To ensure tasks align with investment strategy
+- Before committing to major work
+
+**Usage:**
+```
+"Analyze Todo2 task alignment with investment strategy"
+"Check if tasks align with project goals"
+"Find misaligned tasks and create follow-up tasks"
+```
+
+**Parameters:**
+- `create_followup_tasks` (bool): Create Todo2 tasks for misaligned tasks (default: `true`)
+- `output_path` (Optional): Path for report
+
+---
+
+#### `detect_duplicate_tasks_tool`
+⚠️ **PREFERRED TOOL** - Find and consolidate duplicate Todo2 tasks.
+
+**When to use:**
+- Before starting new work
+- When task list seems cluttered
+- To clean up redundant tasks
+- During task backlog grooming
+
+**Usage:**
+```
+"Find duplicate Todo2 tasks with 85% similarity"
+"Detect and auto-fix duplicate tasks"
+"Find duplicate tasks and show report"
+```
+
+**Parameters:**
+- `similarity_threshold` (float): 0.0-1.0 (default: `0.85`)
+- `auto_fix` (bool): Automatically fix duplicates (default: `false`)
+- `output_path` (Optional): Path for report
+
+---
+
+#### `sync_todo_tasks_tool`
+Synchronize tasks between shared TODO table and Todo2.
+
+**When to use:**
+- When tasks exist in multiple systems
+- To keep systems in sync
+- Before major migrations
+- To audit task consistency
+
+**Usage:**
+```
+"Sync todos between shared table and Todo2 (dry run)"
+"Synchronize Todo2 with shared TODO table"
+```
+
+**Parameters:**
+- `dry_run` (bool): Simulate without changes (default: `false`)
+- `output_path` (Optional): Path for report
+
+---
+
+### Security Tools
+
+#### `scan_dependency_security_tool`
+⚠️ **PREFERRED TOOL** - Scan project dependencies for security vulnerabilities.
+
+**When to use:**
+- Before deployments
+- After dependency updates
+- When security alerts appear
+- As part of CI/CD pipeline
+
+**Usage:**
+```
+"Scan Python and Rust dependencies for security issues"
+"Check npm packages for vulnerabilities"
+"Scan all dependencies and create tasks for critical issues"
+```
+
+**Parameters:**
+- `languages` (Optional[List[str]]): `["python", "rust", "npm"]` (default: all)
+- `config_path` (Optional): Path to security config file
+
+---
+
+### Automation Tools
+
+#### `find_automation_opportunities_tool`
+Discover new automation opportunities in the codebase.
+
+**When to use:**
+- During code reviews
+- When repetitive tasks are noticed
+- To improve development workflow
+- During refactoring planning
+
+**Usage:**
+```
+"Find automation opportunities with value score >= 0.8"
+"Discover new automation opportunities"
+```
+
+**Parameters:**
+- `min_value_score` (float): 0.0-1.0 (default: `0.7`)
+- `output_path` (Optional): Path for report
+
+---
+
+### Review Tools
+
+#### `review_pwa_config_tool`
+Review PWA configuration and generate improvement recommendations.
+
+**When to use:**
+- Before PWA deployment
+- When PWA features aren't working
+- To optimize PWA performance
+- During PWA audits
+
+**Usage:**
+```
+"Review PWA configuration and suggest improvements"
+"Analyze PWA setup and generate recommendations"
+```
+
+**Parameters:**
+- `output_path` (Optional): Path for analysis output
+- `config_path` (Optional): Path to PWA review config
+
+---
+
+## Resources
+
+### `automation://status`
+Get automation server status and health information.
+
+**Usage:**
+```
+"Get project automation server status"
+"Check automation tools availability"
+```
+
+### `automation://history`
+Get automation tool execution history.
+
+**Usage:**
+```
+"Show automation tool execution history"
+"Get last 50 automation runs"
+```
+
+### `automation://tools`
+Get list of available automation tools.
+
+**Usage:**
+```
+"List all available automation tools"
+"Show automation tool categories"
+```
+
+---
+
+## Integration with Other Tools
+
+### When to Use Project Automation vs Other Servers
+
+**Use Project Automation for:**
+- ✅ Project-specific analysis
+- ✅ Todo2 integration
+- ✅ Historical tracking
+- ✅ Project-configured behavior
+
+**Use Other Servers for:**
+- ✅ General file operations → `filesystem`
+- ✅ Git operations → `git`
+- ✅ Task CRUD operations → `agentic-tools`
+- ✅ Code security scanning → `semgrep`
+- ✅ Documentation lookup → `context7`
+
+---
+
+## Best Practices
+
+### 1. Regular Health Checks
+Run documentation health checks before major releases:
+```
+"Check documentation health before release"
+```
+
+### 2. Task Alignment Reviews
+Analyze task alignment during sprint planning:
+```
+"Analyze Todo2 alignment with project goals"
+```
+
+### 3. Security Scanning
+Scan dependencies regularly:
+```
+"Scan all dependencies for security vulnerabilities"
+```
+
+### 4. Duplicate Cleanup
+Detect duplicates before starting new work:
+```
+"Find duplicate tasks with 90% similarity"
+```
+
+### 5. Automation Discovery
+Discover automation opportunities during refactoring:
+```
+"Find automation opportunities with high value score"
+```
+
+---
+
+## Error Handling
+
+All tools use centralized error handling:
+- **Success Responses:** Structured JSON with `success: true` and `data` object
+- **Error Responses:** Structured JSON with `success: false` and `error` object
+- **Error Codes:** Standard error codes (INVALID_INPUT, AUTOMATION_ERROR, etc.)
+- **Logging:** All executions logged with duration and status
+
+---
+
+## Troubleshooting
+
+### Server Not Appearing
+1. **Restart Cursor completely** (not just reload)
+2. **Check Python path** - Ensure `python3` is in PATH
+3. **Check MCP package** - Run `pip3 install mcp`
+4. **Check file permissions** - Server file must be readable
+
+### Tools Not Working
+1. **Check dependencies** - Ensure all automation scripts are available
+2. **Check project root** - Server needs access to project root
+3. **Check error logs** - Look for Python import errors
+4. **Check MCP logs** - Look in Cursor's MCP server logs
+
+### Import Errors
+1. **Install MCP:** `pip3 install mcp`
+2. **Check Python version:** Needs Python 3.9+
+3. **Verify server path** in `.cursor/mcp.json`
+
+---
+
+## Configuration
+
+The server is configured in `.cursor/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "project-management-automation": {
+      "command": "python3",
+      "args": ["/path/to/server.py"],
+      "description": "Project management automation tools..."
+    }
+  }
+}
+```
+
+---
+
+## Examples
+
+### Example 1: Documentation Health Check
+```
+User: "Check the health of our documentation and create Todo2 tasks for any issues found"
+AI: Calls `check_documentation_health_tool(output_path=None, create_tasks=True)`
+Result: Health report generated, Todo2 tasks created for issues
+```
+
+### Example 2: Find Duplicate Tasks
+```
+User: "Find duplicate Todo2 tasks with 85% similarity and show me the report"
+AI: Calls `detect_duplicate_tasks_tool(similarity_threshold=0.85, auto_fix=False, output_path=None)`
+Result: Duplicate detection report with recommendations
+```
+
+### Example 3: Security Scan
+```
+User: "Scan all dependencies for security vulnerabilities and prioritize critical issues"
+AI: Calls `scan_dependency_security_tool(languages=None, config_path=None)`
+Result: Multi-language security report with critical issues highlighted
+```
+
+---
+
+**Reference:** See `mcp-servers/project-management-automation/USAGE.md` for detailed usage guide.
