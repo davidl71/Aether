@@ -316,9 +316,9 @@ def register_tools():
                     result = json.dumps({"error": f"Unknown tool: {name}"})
             else:
                 result = json.dumps({"error": "Tools not available"})
-            
+
             return [TextContent(type="text", text=result)]
-        
+
         return None
 
 # Register tools
@@ -499,16 +499,20 @@ elif stdio_server_instance:
     # Main entry point for stdio server
     if __name__ == "__main__":
         logger.info("Starting stdio server...")
-        # stdio_server is typically used as: async with stdio_server(server_instance)
-        # This sets up stdin/stdout and runs the server
+        # stdio_server provides stdin/stdout streams, Server.run() handles the protocol
         async def run():
-            async with stdio_server(stdio_server_instance):
-                # Server runs until stdin closes
-                await asyncio.Event().wait()  # Wait indefinitely
+            async with stdio_server() as (read_stream, write_stream):
+                await stdio_server_instance.run(
+                    read_stream,
+                    write_stream,
+                    stdio_server_instance.create_initialization_options()
+                )
         try:
             asyncio.run(run())
         except KeyboardInterrupt:
             logger.info("Server stopped")
+        except Exception as e:
+            logger.error(f"Server error: {e}", exc_info=True)
 else:
     logger.warning("MCP not available - server structure ready for Phase 2")
     if __name__ == "__main__":
