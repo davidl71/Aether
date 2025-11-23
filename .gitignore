@@ -159,3 +159,4 @@ AGENTS.md
 
 #Ignore cursor AI rules
 # .todo2/ directory is now tracked (state.todo2.json for multi-machine sync)
+.todo2/

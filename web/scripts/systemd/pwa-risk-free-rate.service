@@ -1,0 +1,20 @@
+[Unit]
+Description=PWA Risk-Free Rate Service
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=%h/ib_box_spread_full_universal
+ExecStart=%h/ib_box_spread_full_universal/web/scripts/run-risk-free-rate-service.sh
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=pwa-risk-free-rate
+Environment="HOME=%h"
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+
+[Install]
+WantedBy=default.target

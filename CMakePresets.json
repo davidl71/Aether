@@ -147,6 +147,38 @@
         "lhs": "${hostSystemName}",
         "rhs": "Linux"
       }
+    },
+    {
+      "name": "ubuntu-x64-debug",
+      "displayName": "Ubuntu x64 Debug",
+      "generator": "Ninja",
+      "binaryDir": "build/ubuntu-x64-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_COLOR_DIAGNOSTICS": "ON"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "ubuntu-x64-release",
+      "displayName": "Ubuntu x64 Release",
+      "generator": "Ninja",
+      "binaryDir": "build/ubuntu-x64-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_COLOR_DIAGNOSTICS": "ON"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
     }
   ],
   "buildPresets": [
@@ -189,6 +221,14 @@
     {
       "name": "linux-x64-release",
       "configurePreset": "linux-x64-release"
+    },
+    {
+      "name": "ubuntu-x64-debug",
+      "configurePreset": "ubuntu-x64-debug"
+    },
+    {
+      "name": "ubuntu-x64-release",
+      "configurePreset": "ubuntu-x64-release"
     }
   ],
   "testPresets": [
@@ -258,6 +298,20 @@
     {
       "name": "linux-x64-release",
       "configurePreset": "linux-x64-release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ubuntu-x64-debug",
+      "configurePreset": "ubuntu-x64-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ubuntu-x64-release",
+      "configurePreset": "ubuntu-x64-release",
       "output": {
         "outputOnFailure": true
       }

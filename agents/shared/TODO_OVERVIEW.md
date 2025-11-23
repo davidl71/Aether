@@ -13,7 +13,7 @@
 | 9 | Build iPad dashboards | ipad | pending |
 | 10 | Add iPad order controls/testing | ipad | pending |
 | 11 | Design web SPA architecture/wireframes | web | pending |
-| 12 | Implement REST API layer for web SPA | backend/web | pending |
+| 12 | Implement REST API layer for web SPA | backend/web | in_progress |
 | 13 | Scaffold React/TypeScript web app | web | pending |
 | 14 | Build web dashboards | web | pending |
 | 15 | Add web strategy controls/testing | web | pending |

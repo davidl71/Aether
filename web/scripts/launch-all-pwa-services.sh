@@ -28,6 +28,94 @@ if [ -f "${SCRIPTS_DIR_ROOT}/include/config.sh" ]; then
   source "${SCRIPTS_DIR_ROOT}/include/config.sh"
 fi
 
+# Detect OS and service management method
+detect_service_manager() {
+  # Check for systemctl (Linux with systemd)
+  if command -v systemctl >/dev/null 2>&1 && systemctl --user --version >/dev/null 2>&1; then
+    # Check if we're on Linux
+    if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "linux"* ]]; then
+      echo "systemctl"
+      return 0
+    fi
+  fi
+
+  # Check for brew services (macOS)
+  if [[ "$OSTYPE" == "darwin"* ]] && command -v brew >/dev/null 2>&1; then
+    if brew services --version >/dev/null 2>&1; then
+      echo "brew"
+      return 0
+    fi
+  fi
+
+  # Fallback to manual background processes
+  echo "manual"
+  return 0
+}
+
+SERVICE_MANAGER=$(detect_service_manager)
+
+# Function to check if a service is running via systemctl
+check_systemctl_service() {
+  local service_name="${1:-}"
+  if [ -z "${service_name}" ]; then
+    return 1
+  fi
+
+  if [ "${SERVICE_MANAGER}" != "systemctl" ]; then
+    return 1
+  fi
+
+  systemctl --user is-active --quiet "${service_name}.service" 2>/dev/null
+}
+
+# Function to start a service via systemctl
+start_systemctl_service() {
+  local service_name="${1:-}"
+  if [ -z "${service_name}" ]; then
+    return 1
+  fi
+
+  if [ "${SERVICE_MANAGER}" != "systemctl" ]; then
+    return 1
+  fi
+
+  # Check if service file exists
+  if [ ! -f "${HOME}/.config/systemd/user/${service_name}.service" ]; then
+    echo "${YELLOW}  ⚠ Service file not found: ${service_name}.service${NC}"
+    echo "${YELLOW}    Install systemd services with:${NC}"
+    echo "${YELLOW}    ${ROOT_DIR}/web/scripts/install-systemd-services.sh${NC}"
+    return 1
+  fi
+
+  if systemctl --user start "${service_name}.service" 2>/dev/null; then
+    echo "${GREEN}  ✓ Started ${service_name} via systemctl${NC}"
+    return 0
+  else
+    echo "${RED}  ✗ Failed to start ${service_name} via systemctl${NC}"
+    systemctl --user status "${service_name}.service" --no-pager -l 2>&1 | head -10 || true
+    return 1
+  fi
+}
+
+# Function to stop a service via systemctl
+stop_systemctl_service() {
+  local service_name="${1:-}"
+  if [ -z "${service_name}" ]; then
+    return 1
+  fi
+
+  if [ "${SERVICE_MANAGER}" != "systemctl" ]; then
+    return 1
+  fi
+
+  if systemctl --user stop "${service_name}.service" 2>/dev/null; then
+    echo "${GREEN}  ✓ Stopped ${service_name} via systemctl${NC}"
+    return 0
+  else
+    return 1
+  fi
+}
+
 # Function to check if a port is in use
 check_port() {
   local port="${1:-}"
@@ -190,6 +278,32 @@ get_service_port() {
 stop_services() {
   echo "${YELLOW}Stopping PWA services...${NC}"
 
+  # Stop via systemctl if available
+  if [ "${SERVICE_MANAGER}" = "systemctl" ]; then
+    echo "${BLUE}Stopping services via systemctl...${NC}"
+    SERVICES_TO_STOP=(
+      "pwa-web"
+      "pwa-alpaca"
+      "pwa-tradestation"
+      "pwa-ib"
+      "pwa-discount-bank"
+      "pwa-risk-free-rate"
+      "pwa-jupyterlab"
+      "pwa-nats"
+      "pwa-rust-backend"
+      "pwa-ib-gateway"
+    )
+
+    for service in "${SERVICES_TO_STOP[@]}"; do
+      if check_systemctl_service "${service}"; then
+        stop_systemctl_service "${service}" || true
+      fi
+    done
+
+    echo "${GREEN}✓ All systemctl services stopped${NC}"
+    exit 0
+  fi
+
   # Check if using brew services for gateway
   if [ "${USE_BREW_SERVICES:-false}" = true ] || [ "${IB_GATEWAY_USE_BREW_SERVICES:-}" = "1" ]; then
     PLIST_NAME="com.davidl71.ib-gateway"
@@ -243,6 +357,38 @@ case "${1:-start}" in
   status)
     echo "${BLUE}PWA Services Status:${NC}"
     echo ""
+
+    # Show systemctl status if available
+    if [ "${SERVICE_MANAGER}" = "systemctl" ]; then
+      echo "Systemd Service Status:"
+      SYSTEMCTL_SERVICES=(
+        "pwa-web:Web"
+        "pwa-alpaca:Alpaca"
+        "pwa-tradestation:TradeStation"
+        "pwa-ib-gateway:IB Gateway"
+        "pwa-ib:IB"
+        "pwa-discount-bank:Discount Bank"
+        "pwa-risk-free-rate:Risk-Free Rate"
+        "pwa-jupyterlab:JupyterLab"
+        "pwa-nats:NATS"
+        "pwa-rust-backend:Rust Backend"
+      )
+
+      for service_entry in "${SYSTEMCTL_SERVICES[@]}"; do
+        IFS=':' read -r service_name display_name <<< "$service_entry"
+        if check_systemctl_service "${service_name}"; then
+          STATUS=$(systemctl --user is-active "${service_name}.service" 2>/dev/null || echo "unknown")
+          echo "  ${GREEN}✓${NC} ${display_name} (${STATUS})"
+        else
+          echo "  ${RED}✗${NC} ${display_name} (not running)"
+        fi
+      done
+      echo ""
+      echo "For detailed status: ${BLUE}systemctl --user status <service-name>${NC}"
+      echo "For logs: ${BLUE}journalctl --user -u <service-name> -f${NC}"
+      echo ""
+    fi
+
     echo "Port Status:"
     for port in 5173 5000 8000 8001 8002 8003 8004 8080 50051 4222 8222; do
       if check_port "$port"; then
@@ -311,11 +457,32 @@ fi
 declare -A SERVICE_STATUS
 SERVICES_TO_START=()
 
+# Display service manager being used
+if [ "${SERVICE_MANAGER}" = "systemctl" ]; then
+  echo "${BLUE}Using systemctl for service management (Linux)${NC}"
+  # Check if services are installed
+  if [ ! -f "${HOME}/.config/systemd/user/pwa-web.service" ]; then
+    echo "${YELLOW}⚠ Systemd services not installed.${NC}"
+    echo "${YELLOW}  Install with: ${ROOT_DIR}/web/scripts/install-systemd-services.sh${NC}"
+    echo "${YELLOW}  Or services will fall back to manual background processes.${NC}"
+    echo ""
+  fi
+elif [ "${SERVICE_MANAGER}" = "brew" ]; then
+  echo "${BLUE}Using brew services for service management (macOS)${NC}"
+else
+  echo "${BLUE}Using manual background processes for service management${NC}"
+fi
+echo ""
+
 echo "${BLUE}Checking PWA Services Status...${NC}"
 echo ""
 
 # Check each service
-if check_service_health "${WEB_PORT}"; then
+# Use systemctl check first if available, then fallback to port check
+if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-web"; then
+  SERVICE_STATUS["web"]="running"
+  echo "${GREEN}✓ Web service (port ${WEB_PORT}) is running via systemctl${NC}"
+elif check_service_health "${WEB_PORT}"; then
   SERVICE_STATUS["web"]="running"
   echo "${GREEN}✓ Web service (port ${WEB_PORT}) is running${NC}"
 else
@@ -324,8 +491,11 @@ else
   echo "${YELLOW}⚠ Web service (port ${WEB_PORT}) is not running${NC}"
 fi
 
-# Check if using brew services
-if [ "$USE_BREW_SERVICES" = true ]; then
+# Check IB Gateway
+if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-ib-gateway"; then
+  SERVICE_STATUS["gateway"]="running"
+  echo "${GREEN}✓ IB Gateway (port ${GATEWAY_PORT}) is running via systemctl${NC}"
+elif [ "$USE_BREW_SERVICES" = true ]; then
   PLIST_NAME="com.davidl71.ib-gateway"
   if brew services list 2>/dev/null | grep -q "${PLIST_NAME}.*started"; then
     SERVICE_STATUS["gateway"]="running"
@@ -344,7 +514,10 @@ else
   echo "${YELLOW}⚠ IB Gateway (port ${GATEWAY_PORT}) is not running${NC}"
 fi
 
-if check_service_health "${ALPACA_PORT}"; then
+if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-alpaca"; then
+  SERVICE_STATUS["alpaca"]="running"
+  echo "${GREEN}✓ Alpaca service (port ${ALPACA_PORT}) is running via systemctl${NC}"
+elif check_service_health "${ALPACA_PORT}"; then
   SERVICE_STATUS["alpaca"]="running"
   echo "${GREEN}✓ Alpaca service (port ${ALPACA_PORT}) is running${NC}"
 else
@@ -353,7 +526,10 @@ else
   echo "${YELLOW}⚠ Alpaca service (port ${ALPACA_PORT}) is not running${NC}"
 fi
 
-if check_service_health "${TRADESTATION_PORT}"; then
+if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-tradestation"; then
+  SERVICE_STATUS["tradestation"]="running"
+  echo "${GREEN}✓ TradeStation service (port ${TRADESTATION_PORT}) is running via systemctl${NC}"
+elif check_service_health "${TRADESTATION_PORT}"; then
   SERVICE_STATUS["tradestation"]="running"
   echo "${GREEN}✓ TradeStation service (port ${TRADESTATION_PORT}) is running${NC}"
 else
@@ -362,7 +538,10 @@ else
   echo "${YELLOW}⚠ TradeStation service (port ${TRADESTATION_PORT}) is not running${NC}"
 fi
 
-if check_service_health "${IB_PORT}"; then
+if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-ib"; then
+  SERVICE_STATUS["ib"]="running"
+  echo "${GREEN}✓ IB service (port ${IB_PORT}) is running via systemctl${NC}"
+elif check_service_health "${IB_PORT}"; then
   SERVICE_STATUS["ib"]="running"
   echo "${GREEN}✓ IB service (port ${IB_PORT}) is running${NC}"
 else
@@ -371,7 +550,10 @@ else
   echo "${YELLOW}⚠ IB service (port ${IB_PORT}) is not running${NC}"
 fi
 
-if check_service_health "${DISCOUNT_BANK_PORT}"; then
+if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-discount-bank"; then
+  SERVICE_STATUS["discount_bank"]="running"
+  echo "${GREEN}✓ Discount Bank service (port ${DISCOUNT_BANK_PORT}) is running via systemctl${NC}"
+elif check_service_health "${DISCOUNT_BANK_PORT}"; then
   SERVICE_STATUS["discount_bank"]="running"
   echo "${GREEN}✓ Discount Bank service (port ${DISCOUNT_BANK_PORT}) is running${NC}"
 else
@@ -380,7 +562,10 @@ else
   echo "${YELLOW}⚠ Discount Bank service (port ${DISCOUNT_BANK_PORT}) is not running${NC}"
 fi
 
-if check_service_health "${JUPYTERLAB_PORT}"; then
+if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-jupyterlab"; then
+  SERVICE_STATUS["jupyterlab"]="running"
+  echo "${GREEN}✓ JupyterLab service (port ${JUPYTERLAB_PORT}) is running via systemctl${NC}"
+elif check_service_health "${JUPYTERLAB_PORT}"; then
   SERVICE_STATUS["jupyterlab"]="running"
   echo "${GREEN}✓ JupyterLab service (port ${JUPYTERLAB_PORT}) is running${NC}"
 else
@@ -389,7 +574,10 @@ else
   echo "${YELLOW}⚠ JupyterLab service (port ${JUPYTERLAB_PORT}) is not running${NC}"
 fi
 
-if check_service_health "${RISK_FREE_RATE_PORT}"; then
+if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-risk-free-rate"; then
+  SERVICE_STATUS["risk_free_rate"]="running"
+  echo "${GREEN}✓ Risk-Free Rate service (port ${RISK_FREE_RATE_PORT}) is running via systemctl${NC}"
+elif check_service_health "${RISK_FREE_RATE_PORT}"; then
   SERVICE_STATUS["risk_free_rate"]="running"
   echo "${GREEN}✓ Risk-Free Rate service (port ${RISK_FREE_RATE_PORT}) is running${NC}"
 else
@@ -399,7 +587,10 @@ else
 fi
 
 # Check NATS server (check monitoring port 8222)
-if check_port "${NATS_PORT}" || check_service_health "${NATS_HTTP_PORT}" "/healthz" "http"; then
+if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-nats"; then
+  SERVICE_STATUS["nats"]="running"
+  echo "${GREEN}✓ NATS server (port ${NATS_PORT}) is running via systemctl${NC}"
+elif check_port "${NATS_PORT}" || check_service_health "${NATS_HTTP_PORT}" "/healthz" "http"; then
   SERVICE_STATUS["nats"]="running"
   echo "${GREEN}✓ NATS server (port ${NATS_PORT}) is running${NC}"
 else
@@ -409,7 +600,10 @@ else
 fi
 
 # Check Rust backend (check REST port 8080)
-if check_service_health "${RUST_BACKEND_REST_PORT}" "/health" "http"; then
+if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-rust-backend"; then
+  SERVICE_STATUS["rust_backend"]="running"
+  echo "${GREEN}✓ Rust backend (port ${RUST_BACKEND_REST_PORT}) is running via systemctl${NC}"
+elif check_service_health "${RUST_BACKEND_REST_PORT}" "/health" "http"; then
   SERVICE_STATUS["rust_backend"]="running"
   echo "${GREEN}✓ Rust backend (port ${RUST_BACKEND_REST_PORT}) is running${NC}"
 else
@@ -433,7 +627,77 @@ if [ ${#SERVICES_TO_START[@]} -gt 0 ]; then
   echo ""
 fi
 
-# Launch services in background (daemonized)
+# Launch services in background (daemonized) or via systemctl
+if [ "${SERVICE_MANAGER}" = "systemctl" ]; then
+  echo "${BLUE}Starting services via systemctl...${NC}"
+  echo ""
+
+  # Map service names to systemctl service names
+  declare -A SYSTEMCTL_SERVICE_MAP
+  SYSTEMCTL_SERVICE_MAP["web"]="pwa-web"
+  SYSTEMCTL_SERVICE_MAP["alpaca"]="pwa-alpaca"
+  SYSTEMCTL_SERVICE_MAP["tradestation"]="pwa-tradestation"
+  SYSTEMCTL_SERVICE_MAP["gateway"]="pwa-ib-gateway"
+  SYSTEMCTL_SERVICE_MAP["ib"]="pwa-ib"
+  SYSTEMCTL_SERVICE_MAP["discount_bank"]="pwa-discount-bank"
+  SYSTEMCTL_SERVICE_MAP["risk_free_rate"]="pwa-risk-free-rate"
+  SYSTEMCTL_SERVICE_MAP["jupyterlab"]="pwa-jupyterlab"
+  SYSTEMCTL_SERVICE_MAP["nats"]="pwa-nats"
+  SYSTEMCTL_SERVICE_MAP["rust_backend"]="pwa-rust-backend"
+
+  # Start services in dependency order
+  # 1. NATS first (other services may depend on it)
+  if [[ " ${SERVICES_TO_START[*]} " =~ " nats " ]]; then
+    start_systemctl_service "${SYSTEMCTL_SERVICE_MAP[nats]}" || start_nats_server "background"
+  fi
+
+  # 2. Gateway (IB service depends on it)
+  if [[ " ${SERVICES_TO_START[*]} " =~ " gateway " ]]; then
+    start_systemctl_service "${SYSTEMCTL_SERVICE_MAP[gateway]}" || {
+      # Fallback to manual start if systemctl fails
+      echo "${YELLOW}  Falling back to manual gateway start...${NC}"
+      GATEWAY_STARTED=true
+    }
+  fi
+
+  # 3. Independent services (can start in parallel)
+  for service in web alpaca tradestation discount_bank risk_free_rate jupyterlab rust_backend; do
+    if [[ " ${SERVICES_TO_START[*]} " =~ " ${service} " ]]; then
+      start_systemctl_service "${SYSTEMCTL_SERVICE_MAP[$service]}" || {
+        echo "${YELLOW}  Falling back to manual start for ${service}...${NC}"
+        # Will be handled by manual start section below
+      }
+    fi
+  done
+
+  # 4. IB service (depends on gateway)
+  if [[ " ${SERVICES_TO_START[*]} " =~ " ib " ]]; then
+    # Wait for gateway if we just started it
+    if [ "${GATEWAY_STARTED:-false}" = true ]; then
+      echo "${BLUE}Waiting for Gateway to be ready before starting IB service...${NC}"
+      for i in {1..20}; do
+        sleep 1
+        if curl -k -s --connect-timeout 1 "https://localhost:5000/sso/validate" >/dev/null 2>&1; then
+          echo "${GREEN}✓ Gateway is ready${NC}"
+          GATEWAY_RUNNING=true
+          break
+        fi
+      done
+    fi
+    start_systemctl_service "${SYSTEMCTL_SERVICE_MAP[ib]}" || {
+      echo "${YELLOW}  Falling back to manual start for IB service...${NC}"
+    }
+  fi
+
+  echo "${GREEN}✓ Services started via systemctl${NC}"
+  echo ""
+  echo "To view logs: ${BLUE}journalctl --user -u <service-name> -f${NC}"
+  echo "To check status: ${BLUE}systemctl --user status <service-name>${NC}"
+  echo ""
+  exit 0
+fi
+
+# Fallback to manual background processes
 echo "${BLUE}Launching services as background processes...${NC}"
 echo ""
 

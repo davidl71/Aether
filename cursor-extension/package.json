@@ -1,0 +1,196 @@
+{
+  "name": "project-management-automation",
+  "displayName": "Project Management Automation",
+  "description": "Cursor extension for project management automation tools - documentation health, task alignment, duplicate detection, security scanning, and more",
+  "version": "0.1.0",
+  "publisher": "davidl71",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other",
+    "Snippets"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "snippets": [
+      {
+        "language": "markdown",
+        "path": "./snippets/mcp-tools.json"
+      },
+      {
+        "language": "plaintext",
+        "path": "./snippets/mcp-tools.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "projectAutomation.documentationHealth",
+        "title": "Check Documentation Health",
+        "category": "Project Automation"
+      },
+      {
+        "command": "projectAutomation.taskAlignment",
+        "title": "Analyze Task Alignment",
+        "category": "Project Automation"
+      },
+      {
+        "command": "projectAutomation.duplicateTasks",
+        "title": "Detect Duplicate Tasks",
+        "category": "Project Automation"
+      },
+      {
+        "command": "projectAutomation.securityScan",
+        "title": "Scan Dependencies for Security",
+        "category": "Project Automation"
+      },
+      {
+        "command": "projectAutomation.automationDiscovery",
+        "title": "Discover Automation Opportunities",
+        "category": "Project Automation"
+      },
+      {
+        "command": "projectAutomation.syncTasks",
+        "title": "Sync Tasks Across Systems",
+        "category": "Project Automation"
+      },
+      {
+        "command": "projectAutomation.pwaReview",
+        "title": "Review PWA Configuration",
+        "category": "Project Automation"
+      },
+      {
+        "command": "projectAutomation.preSprintCleanup",
+        "title": "Pre-Sprint Cleanup Workflow",
+        "category": "Project Automation"
+      },
+      {
+        "command": "projectAutomation.postImplementationReview",
+        "title": "Post-Implementation Review Workflow",
+        "category": "Project Automation"
+      },
+      {
+        "command": "projectAutomation.weeklyMaintenance",
+        "title": "Weekly Maintenance Workflow",
+        "category": "Project Automation"
+      },
+      {
+        "command": "projectAutomation.serverStatus",
+        "title": "Show Server Status",
+        "category": "Project Automation"
+      },
+      {
+        "command": "projectAutomation.showQuickActions",
+        "title": "Show Quick Actions",
+        "category": "Project Automation",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "projectAutomation.showMCPHelp",
+        "title": "Show MCP Tools & Prompts Help",
+        "category": "Project Automation",
+        "icon": "$(info)"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "projectAutomation.documentationHealth",
+          "when": "true"
+        },
+        {
+          "command": "projectAutomation.taskAlignment",
+          "when": "true"
+        },
+        {
+          "command": "projectAutomation.duplicateTasks",
+          "when": "true"
+        },
+        {
+          "command": "projectAutomation.securityScan",
+          "when": "true"
+        },
+        {
+          "command": "projectAutomation.automationDiscovery",
+          "when": "true"
+        },
+        {
+          "command": "projectAutomation.syncTasks",
+          "when": "true"
+        },
+        {
+          "command": "projectAutomation.pwaReview",
+          "when": "true"
+        },
+        {
+          "command": "projectAutomation.preSprintCleanup",
+          "when": "true"
+        },
+        {
+          "command": "projectAutomation.postImplementationReview",
+          "when": "true"
+        },
+        {
+          "command": "projectAutomation.weeklyMaintenance",
+          "when": "true"
+        },
+        {
+          "command": "projectAutomation.serverStatus",
+          "when": "true"
+        },
+        {
+          "command": "projectAutomation.showQuickActions",
+          "when": "true"
+        },
+        {
+          "command": "projectAutomation.showMCPHelp",
+          "when": "true"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "projectAutomation.serverStatus",
+          "when": "view == projectAutomation",
+          "group": "navigation"
+        }
+      ]
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "projectAutomation",
+          "name": "Project Automation",
+          "when": "true"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "projectAutomation",
+          "title": "Project Automation",
+          "icon": "media/icon.svg"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "20.x",
+    "typescript": "^5.0.0",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "dependencies": {
+    "child_process": "^1.0.2"
+  }
+}

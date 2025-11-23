@@ -26,9 +26,59 @@ from typing import Any, Dict, List, Optional
 from functools import wraps
 
 # Configure logging first (before any logger usage)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+# CRITICAL: Route our INFO logs to stdout (not stderr) to prevent Cursor from showing them as errors
+# Cursor interprets all stderr output as errors, so we must separate:
+# - Our INFO/WARNING logs → stdout (normal messages)
+# - ERROR/CRITICAL logs → stderr (actual errors)
+# - MCP framework logs → suppressed (they go to stderr)
+
+# Suppress MCP framework logs - set to WARNING to hide INFO messages
+# This prevents "Processing request of type X" from appearing as errors
+logging.getLogger("mcp").setLevel(logging.WARNING)
+logging.getLogger("mcp.server").setLevel(logging.WARNING)
+logging.getLogger("mcp.server.lowlevel").setLevel(logging.WARNING)
+logging.getLogger("mcp.server.lowlevel.server").setLevel(logging.WARNING)
+logging.getLogger("mcp.server.stdio").setLevel(logging.WARNING)
+logging.getLogger("fastmcp").setLevel(logging.WARNING)
+
+# Create custom handlers to separate stdout (INFO/WARNING) from stderr (ERROR)
+# This prevents our own INFO logs from appearing as errors in Cursor
+class InfoWarningFilter(logging.Filter):
+    """Filter to allow only INFO and WARNING level messages"""
+    def filter(self, record):
+        return record.levelno in (logging.DEBUG, logging.INFO, logging.WARNING)
+
+class ErrorFilter(logging.Filter):
+    """Filter to allow only ERROR and CRITICAL level messages"""
+    def filter(self, record):
+        return record.levelno >= logging.ERROR
+
+# Create handlers
+stdout_handler = logging.StreamHandler(sys.stdout)
+stdout_handler.setLevel(logging.INFO)
+stdout_handler.addFilter(InfoWarningFilter())
+stdout_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+
+stderr_handler = logging.StreamHandler(sys.stderr)
+stderr_handler.setLevel(logging.ERROR)
+stderr_handler.addFilter(ErrorFilter())
+stderr_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+
+# Configure root logger with our custom handlers
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+root_logger.handlers = []  # Clear any existing handlers
+root_logger.addHandler(stdout_handler)
+root_logger.addHandler(stderr_handler)
+
+# Re-apply MCP logger suppression after handler setup
+logging.getLogger("mcp").setLevel(logging.WARNING)
+logging.getLogger("mcp.server").setLevel(logging.WARNING)
+logging.getLogger("mcp.server.lowlevel").setLevel(logging.WARNING)
+logging.getLogger("mcp.server.lowlevel.server").setLevel(logging.WARNING)
+logging.getLogger("mcp.server.stdio").setLevel(logging.WARNING)
+logging.getLogger("fastmcp").setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 # Add project root to path for script imports
@@ -121,14 +171,53 @@ except ImportError:
 mcp = None
 stdio_server_instance = None
 if MCP_AVAILABLE:
-    if not USE_STDIO and FastMCP:
-        mcp = FastMCP("Project Management Automation")
+    # Suppress FastMCP/stdio server initialization logging
+    # FastMCP logs "Starting MCP server" messages to stderr during initialization
+    # We temporarily redirect stderr to suppress these during initialization
+    import io
+    import contextlib
+
+    @contextlib.contextmanager
+    def suppress_fastmcp_output():
+        """Temporarily suppress stdout and stderr during FastMCP initialization"""
+        original_stdout = sys.stdout
+        original_stderr = sys.stderr
+        try:
+            # Redirect both stdout and stderr to suppress FastMCP banner and startup messages
+            sys.stdout = io.StringIO()
+            sys.stderr = io.StringIO()
+            yield
+        finally:
+            sys.stdout = original_stdout
+            sys.stderr = original_stderr
+
+    # Suppress FastMCP output during initialization (banner, startup messages)
+    with suppress_fastmcp_output():
+        if not USE_STDIO and FastMCP:
+            mcp = FastMCP("automa")
+        elif USE_STDIO and Server:
+            # Initialize stdio server
+            stdio_server_instance = Server("automa")
+            # Note: Tools will be registered below using stdio server API
+
+    # Log initialization after suppressing FastMCP output
+    if not USE_STDIO and FastMCP and mcp:
         logger.info("FastMCP server initialized")
-    elif USE_STDIO and Server:
-        # Initialize stdio server
-        stdio_server_instance = Server("Project Management Automation")
+    elif USE_STDIO and Server and stdio_server_instance:
         logger.info("Stdio server initialized")
-        # Note: Tools will be registered below using stdio server API
+
+    # Re-apply logger suppression after initialization (in case FastMCP added new loggers)
+    logging.getLogger("mcp").setLevel(logging.WARNING)
+    logging.getLogger("mcp.server").setLevel(logging.WARNING)
+    logging.getLogger("mcp.server.lowlevel").setLevel(logging.WARNING)
+    logging.getLogger("mcp.server.lowlevel.server").setLevel(logging.WARNING)
+    logging.getLogger("mcp.server.stdio").setLevel(logging.WARNING)
+    logging.getLogger("fastmcp").setLevel(logging.WARNING)
+    # Suppress any logger that might have been created by FastMCP
+    # FastMCP might create loggers with different names, so we suppress common patterns
+    for logger_name in logging.Logger.manager.loggerDict:
+        if any(x in logger_name for x in ['mcp', 'fastmcp', 'stdio']):
+            logging.getLogger(logger_name).setLevel(logging.WARNING)
 else:
     logger.warning("MCP not available - Phase 2 tools complete, install MCP to enable server")
 
@@ -166,7 +255,11 @@ def register_tools():
         # FastMCP registration (decorator-based)
         @mcp.tool()
         def server_status() -> str:
-            """Get the current status of the project management automation server."""
+            """
+            [HINT: Server status. Returns operational status, version, tools available.]
+
+            Get the current status of the project management automation server.
+            """
             return json.dumps(
                 {
                     "status": "operational",
@@ -346,6 +439,8 @@ if mcp:
             output_path: Optional[str] = None, create_tasks: bool = True
         ) -> str:
             """
+            [HINT: Docs health check. Returns score 0-100, broken links count, tasks created.]
+
             Analyze documentation structure, find broken references, identify issues.
 
             ⚠️ PREFERRED TOOL: This project-specific tool provides enhanced documentation
@@ -362,6 +457,8 @@ if mcp:
             create_followup_tasks: bool = True, output_path: Optional[str] = None
         ) -> str:
             """
+            [HINT: Task alignment analysis. Returns misaligned count, avg score, follow-up tasks.]
+
             Analyze task alignment with project goals, find misaligned tasks.
 
             ⚠️ PREFERRED TOOL: This project-specific tool analyzes Todo2 task alignment
@@ -378,6 +475,8 @@ if mcp:
             output_path: Optional[str] = None,
         ) -> str:
             """
+            [HINT: Duplicate detection. Returns duplicate count, groups, recommendations.]
+
             Find and consolidate duplicate Todo2 tasks.
 
             ⚠️ PREFERRED TOOL: This project-specific tool provides Todo2-aware duplicate
@@ -392,6 +491,8 @@ if mcp:
             languages: Optional[List[str]] = None, config_path: Optional[str] = None
         ) -> str:
             """
+            [HINT: Security scan. Returns vuln count by severity, language breakdown, remediation.]
+
             Scan project dependencies for security vulnerabilities.
 
             ⚠️ PREFERRED TOOL: This project-specific tool provides multi-language security
@@ -405,21 +506,33 @@ if mcp:
         def find_automation_opportunities_tool(
             min_value_score: float = 0.7, output_path: Optional[str] = None
         ) -> str:
-            """Discover new automation opportunities in the codebase."""
+            """
+            [HINT: Automation discovery. Returns opportunity count, value scores, recommendations.]
+
+            Discover new automation opportunities in the codebase.
+            """
             return find_automation_opportunities(min_value_score, output_path)
 
         @mcp.tool()
         def sync_todo_tasks_tool(
             dry_run: bool = False, output_path: Optional[str] = None
         ) -> str:
-            """Synchronize tasks between shared TODO table and Todo2."""
+            """
+            [HINT: Task sync. Returns matches found, conflicts, new tasks created.]
+
+            Synchronize tasks between shared TODO table and Todo2.
+            """
             return sync_todo_tasks(dry_run, output_path)
 
         @mcp.tool()
         def review_pwa_config_tool(
             output_path: Optional[str] = None, config_path: Optional[str] = None
         ) -> str:
-            """Review PWA configuration and generate improvement recommendations."""
+            """
+            [HINT: PWA review. Returns config status, missing features, recommendations.]
+
+            Review PWA configuration and generate improvement recommendations.
+            """
             return review_pwa_config(output_path, config_path)
 
     # Register prompts
@@ -462,72 +575,72 @@ if mcp:
             )
 
         @mcp.prompt()
-        def doc_health_check() -> str:
+        def doc_check() -> str:
             """Analyze documentation health and create tasks for issues."""
             return DOCUMENTATION_HEALTH_CHECK
 
         @mcp.prompt()
-        def doc_quick_check() -> str:
+        def doc_quick() -> str:
             """Quick documentation health check without creating tasks."""
             return DOCUMENTATION_QUICK_CHECK
 
         @mcp.prompt()
-        def task_alignment() -> str:
+        def align() -> str:
             """Analyze Todo2 task alignment with project goals."""
             return TASK_ALIGNMENT_ANALYSIS
 
         @mcp.prompt()
-        def duplicate_cleanup() -> str:
+        def dups() -> str:
             """Find and consolidate duplicate Todo2 tasks."""
             return DUPLICATE_TASK_CLEANUP
 
         @mcp.prompt()
-        def task_sync() -> str:
+        def sync() -> str:
             """Synchronize tasks between shared TODO table and Todo2."""
             return TASK_SYNC
 
         @mcp.prompt()
-        def security_scan_all() -> str:
+        def scan() -> str:
             """Scan all project dependencies for security vulnerabilities."""
             return SECURITY_SCAN_ALL
 
         @mcp.prompt()
-        def security_scan_python() -> str:
+        def scan_py() -> str:
             """Scan Python dependencies for security vulnerabilities."""
             return SECURITY_SCAN_PYTHON
 
         @mcp.prompt()
-        def security_scan_rust() -> str:
+        def scan_rs() -> str:
             """Scan Rust dependencies for security vulnerabilities."""
             return SECURITY_SCAN_RUST
 
         @mcp.prompt()
-        def automation_discovery() -> str:
+        def auto() -> str:
             """Discover new automation opportunities in the codebase."""
             return AUTOMATION_DISCOVERY
 
         @mcp.prompt()
-        def automation_high_value() -> str:
+        def auto_high() -> str:
             """Find only high-value automation opportunities."""
             return AUTOMATION_HIGH_VALUE
 
         @mcp.prompt()
-        def pwa_review() -> str:
+        def pwa() -> str:
             """Review PWA configuration and generate improvement recommendations."""
             return PWA_REVIEW
 
         @mcp.prompt()
-        def pre_sprint_cleanup() -> str:
+        def pre_sprint() -> str:
             """Pre-sprint cleanup workflow: duplicates, alignment, documentation."""
             return PRE_SPRINT_CLEANUP
 
         @mcp.prompt()
-        def post_implementation_review() -> str:
+        def post_impl() -> str:
             """Post-implementation review workflow: docs, security, automation."""
             return POST_IMPLEMENTATION_REVIEW
 
         @mcp.prompt()
-        def weekly_maintenance() -> str:
+        def weekly() -> str:
             """Weekly maintenance workflow: docs, duplicates, security, sync."""
             return WEEKLY_MAINTENANCE
 
@@ -571,12 +684,13 @@ if mcp:
         RESOURCES_AVAILABLE = False
         logger.warning(f"Resource handlers not available: {e}")
 
-        # Fallback resource handler
+        # Fallback resource handler (only if resources failed to load)
+        # Note: This is a minimal fallback - full status available via server_status tool
         @mcp.resource("automation://status")
-        def get_automation_status() -> str:
-            """Get automation server status."""
+        def get_automation_status_fallback() -> str:
+            """Get automation server status (fallback when resource handlers unavailable)."""
             return json.dumps(
-                {"status": "operational", "tools_available": TOOLS_AVAILABLE}
+                {"status": "operational", "tools_available": TOOLS_AVAILABLE, "note": "Using fallback status - resource handlers unavailable"}
             )
 
     # Main entry point for FastMCP

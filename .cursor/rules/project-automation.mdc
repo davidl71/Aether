@@ -303,7 +303,7 @@ The server is configured in `.cursor/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "project-management-automation": {
+    "automa": {
       "command": "python3",
       "args": ["/path/to/server.py"],
       "description": "Project management automation tools..."

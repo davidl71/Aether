@@ -404,8 +404,17 @@ else()
     message(WARNING "Extract to: ${CMAKE_CURRENT_SOURCE_DIR}/third_party/tws-api/")
 endif()
 
+# Determine library extension based on platform
+if(APPLE)
+    set(_twsapi_lib_ext ".dylib")
+elseif(UNIX)
+    set(_twsapi_lib_ext ".so")
+else()
+    set(_twsapi_lib_ext ".dll")
+endif()
+
 set(DEFAULT_TWS_API_LIB "${TWS_API_VENDOR_ROOT}")
-cmake_path(APPEND DEFAULT_TWS_API_LIB "client" "build" "lib" "libtwsapi.dylib")
+cmake_path(APPEND DEFAULT_TWS_API_LIB "client" "build" "lib" "libtwsapi${_twsapi_lib_ext}")
 set(
     TWS_API_LIB
     "${DEFAULT_TWS_API_LIB}"
@@ -422,27 +431,31 @@ endif()
 
 if(EXISTS "${TWS_API_INCLUDE_DIR}")
     set(_candidate "${TWS_API_INCLUDE_DIR}")
-    cmake_path(APPEND _candidate "build" "lib" "libtwsapi.dylib")
+    cmake_path(APPEND _candidate "build" "lib" "libtwsapi${_twsapi_lib_ext}")
     list(APPEND _ibapi_lib_candidates "${_candidate}")
 
     set(_candidate "${TWS_API_INCLUDE_DIR}")
-    cmake_path(APPEND _candidate "lib" "libtwsapi.dylib")
+    cmake_path(APPEND _candidate "lib" "libtwsapi${_twsapi_lib_ext}")
     list(APPEND _ibapi_lib_candidates "${_candidate}")
 
-    set(_candidate "${TWS_API_INCLUDE_DIR}")
-    cmake_path(APPEND _candidate "libTwsApiCpp.dylib")
-    list(APPEND _ibapi_lib_candidates "${_candidate}")
+    if(APPLE)
+        set(_candidate "${TWS_API_INCLUDE_DIR}")
+        cmake_path(APPEND _candidate "libTwsApiCpp.dylib")
+        list(APPEND _ibapi_lib_candidates "${_candidate}")
+    endif()
 endif()
 
 set(_candidate "${DEFAULT_TWS_API_LIB}")
 list(APPEND _ibapi_lib_candidates "${_candidate}")
 
-set(_candidate "${TWS_API_VENDOR_ROOT}")
-cmake_path(APPEND _candidate "libTwsApiCpp.dylib")
-list(APPEND _ibapi_lib_candidates "${_candidate}")
+if(APPLE)
+    set(_candidate "${TWS_API_VENDOR_ROOT}")
+    cmake_path(APPEND _candidate "libTwsApiCpp.dylib")
+    list(APPEND _ibapi_lib_candidates "${_candidate}")
+endif()
 
 set(_candidate "${TWS_API_VENDOR_ROOT}")
-cmake_path(APPEND _candidate "lib" "libtwsapi.dylib")
+cmake_path(APPEND _candidate "lib" "libtwsapi${_twsapi_lib_ext}")
 list(APPEND _ibapi_lib_candidates "${_candidate}")
 
 if(TWS_API_BUILD_VENDOR)
@@ -460,9 +473,16 @@ if(TWS_API_BUILD_VENDOR)
             -DCMAKE_POLICY_DEFAULT_CMP0126=NEW
     )
 
-    set(_twsapi_lib_filename "libtwsapi.dylib")
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(_twsapi_lib_filename "libtwsapid.dylib")
+    if(APPLE)
+        set(_twsapi_lib_filename "libtwsapi.dylib")
+        if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+            set(_twsapi_lib_filename "libtwsapid.dylib")
+        endif()
+    else()
+        set(_twsapi_lib_filename "libtwsapi.so")
+        if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+            set(_twsapi_lib_filename "libtwsapid.so")
+        endif()
     endif()
     set(_twsapi_lib_path "${TWS_API_EXTERNAL_BINARY_DIR}/lib/${_twsapi_lib_filename}")
     set(
@@ -491,7 +511,38 @@ endif()
 
 set(INTEL_DECIMAL_LIB "${CMAKE_CURRENT_SOURCE_DIR}")
 cmake_path(APPEND INTEL_DECIMAL_LIB "third_party" "IntelRDFPMathLib20U2" "LIBRARY" "libbid.a")
-file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.dylib")
+
+# Find Abseil libraries based on platform
+if(APPLE)
+    file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.dylib")
+elseif(UNIX)
+    file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.so")
+    if(NOT ABSEIL_LIBS)
+        file(GLOB ABSEIL_LIBS "/usr/lib/x86_64-linux-gnu/libabsl*.so")
+    endif()
+    if(NOT ABSEIL_LIBS)
+        file(GLOB ABSEIL_LIBS "/usr/lib/libabsl*.so")
+    endif()
+endif()
+
+# Find protobuf library based on platform
+if(APPLE)
+    set(PROTOBUF_LIB "/usr/local/lib/libprotobuf.dylib")
+elseif(UNIX)
+    # Try common Linux locations for protobuf
+    find_library(PROTOBUF_LIB
+        NAMES protobuf
+        PATHS
+            /usr/local/lib
+            /usr/lib/x86_64-linux-gnu
+            /usr/lib
+        NO_DEFAULT_PATH
+    )
+    if(NOT PROTOBUF_LIB)
+        # Fallback to explicit path
+        set(PROTOBUF_LIB "/usr/local/lib/libprotobuf.so")
+    endif()
+endif()
 
 set(_missing_native_deps "")
 set(_native_prereqs_met TRUE)
@@ -637,7 +688,7 @@ if(_build_native_cli)
             CURL::libcurl
             ${TWS_API_LIB}
             ${INTEL_DECIMAL_LIB}
-            /usr/local/lib/libprotobuf.dylib
+            ${PROTOBUF_LIB}
             ${ABSEIL_LIBS}
     )
 
@@ -812,7 +863,7 @@ if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/test_tws
             spdlog::spdlog
             ${TWS_API_LIB}
             ${INTEL_DECIMAL_LIB}
-            /usr/local/lib/libprotobuf.dylib
+            ${PROTOBUF_LIB}
             ${ABSEIL_LIBS}
     )
 

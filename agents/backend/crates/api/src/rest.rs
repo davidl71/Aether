@@ -196,6 +196,47 @@ struct ServiceStatusResponse {
   pid: Option<u32>,
 }
 
+// Check if systemctl is available for service control
+async fn is_systemctl_available() -> bool {
+  Command::new("systemctl")
+    .arg("--user")
+    .arg("--version")
+    .output()
+    .map(|o| o.status.success())
+    .unwrap_or(false)
+}
+
+// Execute systemctl command via helper script
+async fn execute_systemctl_command(
+  action: &str,
+  service_name: &str,
+) -> anyhow::Result<String> {
+  let project_root = std::env::current_dir()?;
+  let helper_script = project_root
+    .join("web")
+    .join("scripts")
+    .join("systemd")
+    .join("systemctl-helper.sh");
+
+  if !helper_script.exists() {
+    return Err(anyhow::anyhow!("systemctl helper script not found"));
+  }
+
+  let output = Command::new("bash")
+    .arg(&helper_script)
+    .arg(action)
+    .arg(service_name)
+    .current_dir(&project_root)
+    .output()?;
+
+  if !output.status.success() {
+    let error = String::from_utf8_lossy(&output.stderr);
+    return Err(anyhow::anyhow!("systemctl command failed: {}", error));
+  }
+
+  Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
 // Service name mapping
 fn get_service_script_name(service_name: &str) -> Option<(&'static str, &'static str)> {
   match service_name {
@@ -205,6 +246,9 @@ fn get_service_script_name(service_name: &str) -> Option<(&'static str, &'static
     "discount_bank" => Some(("start_discount_bank_service.sh", "stop_discount_bank_service.sh")),
     "risk_free_rate" => Some(("start_risk_free_rate_service.sh", "stop_risk_free_rate_service.sh")),
     "tastytrade" => Some(("start_tastytrade_service.sh", "stop_tastytrade_service.sh")),
+    "web" => Some(("", "")), // Web service handled separately
+    "nats" => Some(("", "")), // NATS handled separately
+    "rust_backend" => Some(("", "")), // Rust backend handled separately
     _ => None,
   }
 }
@@ -223,11 +267,48 @@ fn get_service_port(service_name: &str) -> Option<u16> {
 
 async fn get_service_status_internal(service_name: &str) -> ServiceStatusResponse {
   let port = get_service_port(service_name).unwrap_or(0);
-  let pid = get_service_pid(port).await;
-  let running = pid.is_some();
 
-  // Check if service is enabled (read from config file)
-  let enabled = is_service_enabled(service_name).await;
+  // Try to get status from systemctl first if available
+  let (running, enabled) = if is_systemctl_available().await {
+    // Map service name to systemd service name
+    let systemd_name = match service_name {
+      "web" => "web",
+      "alpaca" => "alpaca",
+      "tradestation" => "tradestation",
+      "ib" => "ib",
+      "ib_gateway" | "ib-gateway" | "gateway" => "ib-gateway",
+      "discount_bank" | "discount-bank" => "discount-bank",
+      "risk_free_rate" | "risk-free-rate" => "risk-free-rate",
+      "jupyterlab" => "jupyterlab",
+      "nats" => "nats",
+      "rust_backend" | "rust-backend" => "rust-backend",
+      _ => service_name,
+    };
+
+    let is_running = execute_systemctl_command("is-active", systemd_name)
+      .await
+      .map(|s| s.trim() == "active")
+      .unwrap_or(false);
+
+    let is_enabled = execute_systemctl_command("is-enabled", systemd_name)
+      .await
+      .map(|s| s.trim() == "enabled")
+      .unwrap_or(false);
+
+    (is_running, is_enabled)
+  } else {
+    // Fallback to port-based detection
+    let pid = get_service_pid(port).await;
+    let running = pid.is_some();
+    let enabled = is_service_enabled(service_name).await;
+    (running, enabled)
+  };
+
+  let pid = if running {
+    get_service_pid(port).await
+  } else {
+    None
+  };
 
   ServiceStatusResponse {
     name: service_name.to_string(),
@@ -338,20 +419,43 @@ async fn service_start(
 
   info!(service = %service_name, "Service start requested");
 
-  let (start_script, _) = match get_service_script_name(&service_name) {
-    Some(scripts) => scripts,
-    None => {
-      return Err(StatusCode::NOT_FOUND);
-    }
+  // Map service name to systemd service name
+  let systemd_name = match service_name.as_str() {
+    "web" => "web",
+    "alpaca" => "alpaca",
+    "tradestation" => "tradestation",
+    "ib" => "ib",
+    "ib_gateway" | "ib-gateway" | "gateway" => "ib-gateway",
+    "discount_bank" | "discount-bank" => "discount-bank",
+    "risk_free_rate" | "risk-free-rate" => "risk-free-rate",
+    "jupyterlab" => "jupyterlab",
+    "nats" => "nats",
+    "rust_backend" | "rust-backend" => "rust-backend",
+    _ => &service_name,
   };
 
-  // Check if service is enabled
-  let enabled = is_service_enabled(&service_name).await;
-  if !enabled {
-    return Err(StatusCode::BAD_REQUEST);
-  }
+  // Try systemctl first if available
+  let result = if is_systemctl_available().await {
+    execute_systemctl_command("start", systemd_name).await
+  } else {
+    // Fallback to script-based approach
+    let (start_script, _) = match get_service_script_name(&service_name) {
+      Some(scripts) => scripts,
+      None => {
+        return Err(StatusCode::NOT_FOUND);
+      }
+    };
 
-  match execute_service_script(start_script).await {
+    // Check if service is enabled
+    let enabled = is_service_enabled(&service_name).await;
+    if !enabled {
+      return Err(StatusCode::BAD_REQUEST);
+    }
+
+    execute_service_script(start_script).await
+  };
+
+  match result {
     Ok(_) => {
       // Wait a bit for service to start
       tokio::time::sleep(Duration::from_secs(2)).await;
@@ -380,14 +484,36 @@ async fn service_stop(
 
   info!(service = %service_name, "Service stop requested");
 
-  let (_, stop_script) = match get_service_script_name(&service_name) {
-    Some(scripts) => scripts,
-    None => {
-      return Err(StatusCode::NOT_FOUND);
-    }
+  // Map service name to systemd service name
+  let systemd_name = match service_name.as_str() {
+    "web" => "web",
+    "alpaca" => "alpaca",
+    "tradestation" => "tradestation",
+    "ib" => "ib",
+    "ib_gateway" | "ib-gateway" | "gateway" => "ib-gateway",
+    "discount_bank" | "discount-bank" => "discount-bank",
+    "risk_free_rate" | "risk-free-rate" => "risk-free-rate",
+    "jupyterlab" => "jupyterlab",
+    "nats" => "nats",
+    "rust_backend" | "rust-backend" => "rust-backend",
+    _ => &service_name,
   };
 
-  match execute_service_script(stop_script).await {
+  // Try systemctl first if available
+  let result = if is_systemctl_available().await {
+    execute_systemctl_command("stop", systemd_name).await
+  } else {
+    // Fallback to script-based approach
+    let (_, stop_script) = match get_service_script_name(&service_name) {
+      Some(scripts) => scripts,
+      None => {
+        return Err(StatusCode::NOT_FOUND);
+      }
+    };
+    execute_service_script(stop_script).await
+  };
+
+  match result {
     Ok(_) => {
       tokio::time::sleep(Duration::from_millis(500)).await;
       let status = get_service_status_internal(&service_name).await;
@@ -415,20 +541,45 @@ async fn service_restart(
 
   info!(service = %service_name, "Service restart requested");
 
-  // Stop first
-  let (_, stop_script) = match get_service_script_name(&service_name) {
-    Some(scripts) => scripts,
-    None => {
-      return Err(StatusCode::NOT_FOUND);
-    }
+  // Map service name to systemd service name
+  let systemd_name = match service_name.as_str() {
+    "web" => "web",
+    "alpaca" => "alpaca",
+    "tradestation" => "tradestation",
+    "ib" => "ib",
+    "ib_gateway" | "ib-gateway" | "gateway" => "ib-gateway",
+    "discount_bank" | "discount-bank" => "discount-bank",
+    "risk_free_rate" | "risk-free-rate" => "risk-free-rate",
+    "jupyterlab" => "jupyterlab",
+    "nats" => "nats",
+    "rust_backend" | "rust-backend" => "rust-backend",
+    _ => &service_name,
   };
 
-  let _ = execute_service_script(stop_script).await;
-  tokio::time::sleep(Duration::from_secs(1)).await;
+  // Try systemctl first if available
+  let result = if is_systemctl_available().await {
+    execute_systemctl_command("restart", systemd_name).await
+  } else {
+    // Fallback to script-based approach
+    let (_, stop_script) = match get_service_script_name(&service_name) {
+      Some(scripts) => scripts,
+      None => {
+        return Err(StatusCode::NOT_FOUND);
+      }
+    };
+    let _ = execute_service_script(stop_script).await;
+    tokio::time::sleep(Duration::from_secs(1)).await;
 
-  // Then start
-  let (start_script, _) = get_service_script_name(&service_name).unwrap();
-  match execute_service_script(start_script).await {
+    let (start_script, _) = match get_service_script_name(&service_name) {
+      Some(scripts) => scripts,
+      None => {
+        return Err(StatusCode::NOT_FOUND);
+      }
+    };
+    execute_service_script(start_script).await
+  };
+
+  match result {
     Ok(_) => {
       tokio::time::sleep(Duration::from_secs(2)).await;
       let status = get_service_status_internal(&service_name).await;
@@ -455,6 +606,30 @@ async fn service_enable(
 
   info!(service = %service_name, "Service enable requested");
 
+  // Map service name to systemd service name
+  let systemd_name = match service_name.as_str() {
+    "web" => "web",
+    "alpaca" => "alpaca",
+    "tradestation" => "tradestation",
+    "ib" => "ib",
+    "ib_gateway" | "ib-gateway" | "gateway" => "ib-gateway",
+    "discount_bank" | "discount-bank" => "discount-bank",
+    "risk_free_rate" | "risk-free-rate" => "risk-free-rate",
+    "jupyterlab" => "jupyterlab",
+    "nats" => "nats",
+    "rust_backend" | "rust-backend" => "rust-backend",
+    _ => &service_name,
+  };
+
+  // Try systemctl first if available
+  if is_systemctl_available().await {
+    if let Err(e) = execute_systemctl_command("enable", systemd_name).await {
+      error!(service = %service_name, error = %e, "Failed to enable service via systemctl");
+      return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  // Also update config file
   match set_service_enabled(&service_name, true).await {
     Ok(_) => {
       let status = get_service_status_internal(&service_name).await;
@@ -481,16 +656,37 @@ async fn service_disable(
 
   info!(service = %service_name, "Service disable requested");
 
-  // Stop the service first if it's running
-  let (_, stop_script) = match get_service_script_name(&service_name) {
-    Some(scripts) => scripts,
-    None => {
-      return Err(StatusCode::NOT_FOUND);
-    }
+  // Map service name to systemd service name
+  let systemd_name = match service_name.as_str() {
+    "web" => "web",
+    "alpaca" => "alpaca",
+    "tradestation" => "tradestation",
+    "ib" => "ib",
+    "ib_gateway" | "ib-gateway" | "gateway" => "ib-gateway",
+    "discount_bank" | "discount-bank" => "discount-bank",
+    "risk_free_rate" | "risk-free-rate" => "risk-free-rate",
+    "jupyterlab" => "jupyterlab",
+    "nats" => "nats",
+    "rust_backend" | "rust-backend" => "rust-backend",
+    _ => &service_name,
   };
 
-  let _ = execute_service_script(stop_script).await;
+  // Stop the service first if it's running
+  if is_systemctl_available().await {
+    let _ = execute_systemctl_command("stop", systemd_name).await;
+    let _ = execute_systemctl_command("disable", systemd_name).await;
+  } else {
+    // Fallback to script-based approach
+    let (_, stop_script) = match get_service_script_name(&service_name) {
+      Some(scripts) => scripts,
+      None => {
+        return Err(StatusCode::NOT_FOUND);
+      }
+    };
+    let _ = execute_service_script(stop_script).await;
+  }
 
+  // Also update config file
   match set_service_enabled(&service_name, false).await {
     Ok(_) => {
       let status = get_service_status_internal(&service_name).await;
