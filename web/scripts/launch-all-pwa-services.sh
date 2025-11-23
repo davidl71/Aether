@@ -200,8 +200,8 @@ stop_services() {
     fi
   fi
 
-  # Kill processes on service ports (including NATS)
-  for port in 5173 5000 8000 8001 8002 8003 8004 4222 8222; do
+  # Kill processes on service ports (including NATS and Rust backend)
+  for port in 5173 5000 8000 8001 8002 8003 8004 8080 50051 4222 8222; do
     if check_port "$port"; then
       echo "${BLUE}Stopping service on port ${port}...${NC}"
       if command -v lsof >/dev/null 2>&1; then
@@ -209,6 +209,12 @@ stop_services() {
       fi
     fi
   done
+
+  # Also stop Rust backend via script if available
+  if [ -f "${ROOT_DIR}/scripts/stop_rust_backend.sh" ]; then
+    echo "${BLUE}Stopping Rust backend...${NC}"
+    bash "${ROOT_DIR}/scripts/stop_rust_backend.sh" >/dev/null 2>&1 || true
+  fi
 
   echo "${GREEN}✓ All services stopped${NC}"
   exit 0
@@ -238,7 +244,7 @@ case "${1:-start}" in
     echo "${BLUE}PWA Services Status:${NC}"
     echo ""
     echo "Port Status:"
-    for port in 5173 5000 8000 8001 8002 8003 8004 4222 8222; do
+    for port in 5173 5000 8000 8001 8002 8003 8004 8080 50051 4222 8222; do
       if check_port "$port"; then
         echo "  ${GREEN}✓ Port ${port}: In use${NC}"
       else
@@ -282,8 +288,24 @@ IB_PORT=$(get_service_port "ib" 8002)
 DISCOUNT_BANK_PORT=$(get_service_port "discount_bank" 8003)
 RISK_FREE_RATE_PORT=$(get_service_port "risk_free_rate" 8004)
 JUPYTERLAB_PORT=$(get_service_port "jupyterlab" 8888)
-NATS_PORT=4222  # NATS default port
-NATS_HTTP_PORT=8222  # NATS monitoring port
+# NATS ports - use config_get_port for main port, config_get for nested ports
+NATS_PORT=$(get_service_port "nats" 4222)
+if command -v config_get >/dev/null 2>&1; then
+  NATS_HTTP_PORT=$(config_get ".services.nats.http_port" 8222)
+  NATS_WEBSOCKET_PORT=$(config_get ".services.nats.websocket_port" 8081)
+else
+  NATS_HTTP_PORT=8222
+  NATS_WEBSOCKET_PORT=8081
+fi
+
+# Rust backend ports
+if command -v config_get >/dev/null 2>&1; then
+  RUST_BACKEND_REST_PORT=$(config_get ".services.rust_backend.rest_port" 8080)
+  RUST_BACKEND_GRPC_PORT=$(config_get ".services.rust_backend.grpc_port" 50051)
+else
+  RUST_BACKEND_REST_PORT=8080
+  RUST_BACKEND_GRPC_PORT=50051
+fi
 
 # Check service health and track which are running
 declare -A SERVICE_STATUS
@@ -384,6 +406,16 @@ else
   SERVICE_STATUS["nats"]="stopped"
   SERVICES_TO_START+=("nats")
   echo "${YELLOW}⚠ NATS server (port ${NATS_PORT}) is not running${NC}"
+fi
+
+# Check Rust backend (check REST port 8080)
+if check_service_health "${RUST_BACKEND_REST_PORT}" "/health" "http"; then
+  SERVICE_STATUS["rust_backend"]="running"
+  echo "${GREEN}✓ Rust backend (port ${RUST_BACKEND_REST_PORT}) is running${NC}"
+else
+  SERVICE_STATUS["rust_backend"]="stopped"
+  SERVICES_TO_START+=("rust_backend")
+  echo "${YELLOW}⚠ Rust backend (port ${RUST_BACKEND_REST_PORT}) is not running${NC}"
 fi
 
 echo ""
@@ -586,6 +618,20 @@ if [[ " ${SERVICES_TO_START[*]} " =~ " jupyterlab " ]]; then
   fi
 fi
 
+# Rust backend service (port 8080 for REST, 50051 for gRPC)
+if [[ " ${SERVICES_TO_START[*]} " =~ " rust_backend " ]]; then
+  RUST_BACKEND_SCRIPT="${ROOT_DIR}/scripts/start_rust_backend.sh"
+  if [ -f "${RUST_BACKEND_SCRIPT}" ]; then
+    (
+      cd "$ROOT_DIR"
+      bash "${RUST_BACKEND_SCRIPT}" > /tmp/pwa-rust-backend.log 2>&1 &
+      echo $! > /tmp/pwa-rust-backend.pid
+    ) &
+  else
+    echo "${YELLOW}⚠ Rust backend startup script not found at ${RUST_BACKEND_SCRIPT}${NC}"
+  fi
+fi
+
 # Group 2: Wait for Gateway, then start IB service
 if [[ " ${SERVICES_TO_START[*]} " =~ " ib " ]]; then
   if [ "$GATEWAY_RUNNING" = false ]; then
@@ -653,6 +699,11 @@ if [[ " ${SERVICES_TO_START[*]} " =~ " nats " ]] || [ "${SERVICE_STATUS[nats]}" 
   echo "  ${GREEN}✓${NC} NATS server (port ${NATS_PORT}) - Log: ${ROOT_DIR}/logs/nats-server.log"
   echo "    ${BLUE}URL: nats://localhost:${NATS_PORT}${NC}"
   echo "    ${BLUE}Monitoring: http://localhost:${NATS_HTTP_PORT}${NC}"
+fi
+if [[ " ${SERVICES_TO_START[*]} " =~ " rust_backend " ]] || [ "${SERVICE_STATUS[rust_backend]}" = "running" ]; then
+  echo "  ${GREEN}✓${NC} Rust backend (REST: ${RUST_BACKEND_REST_PORT}, gRPC: ${RUST_BACKEND_GRPC_PORT}) - Log: /tmp/pwa-rust-backend.log"
+  echo "    ${BLUE}REST API: http://localhost:${RUST_BACKEND_REST_PORT}/api/v1/snapshot${NC}"
+  echo "    ${BLUE}gRPC API: localhost:${RUST_BACKEND_GRPC_PORT}${NC}"
 fi
 echo ""
 echo "Commands:"

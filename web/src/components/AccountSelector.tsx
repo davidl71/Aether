@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getServiceUrl, SERVICE_PORTS } from '../config/ports';
 
 export interface UnifiedAccount {
   id: string;
@@ -27,7 +28,7 @@ export function AccountSelector({ currentAccountId, onAccountChange, apiBaseUrl 
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  const baseUrl = apiBaseUrl || 'http://127.0.0.1:8000';
+  const baseUrl = apiBaseUrl || getServiceUrl('alpaca');
 
   useEffect(() => {
     loadAccounts();
@@ -41,15 +42,15 @@ export function AccountSelector({ currentAccountId, onAccountChange, apiBaseUrl 
     try {
       // Load accounts from all available services
       const services = [
-        { url: 'http://127.0.0.1:8000', source: 'IB' as const },      // IB service
-        { url: 'http://127.0.0.1:8000', source: 'Alpaca' as const },  // Alpaca service (same port, different endpoint)
-        { url: 'http://127.0.0.1:8001', source: 'TradeStation' as const },
-        { url: 'http://127.0.0.1:8003', source: 'Discount Bank' as const },
+        { url: getServiceUrl('alpaca'), source: 'IB' as const },      // IB service (uses Alpaca port)
+        { url: getServiceUrl('alpaca'), source: 'Alpaca' as const },  // Alpaca service (same port, different endpoint)
+        { url: getServiceUrl('tradestation'), source: 'TradeStation' as const },
+        { url: getServiceUrl('discountBank'), source: 'Discount Bank' as const },
       ];
 
-      // Try IB service first (port 8000)
+      // Try IB service first (uses Alpaca port)
       try {
-        const ibResponse = await fetch('http://127.0.0.1:8000/api/accounts', {
+        const ibResponse = await fetch(`${getServiceUrl('alpaca')}/api/accounts`, {
           signal: AbortSignal.timeout(2000)
         });
         if (ibResponse.ok) {
@@ -88,9 +89,9 @@ export function AccountSelector({ currentAccountId, onAccountChange, apiBaseUrl 
         // IB service not available, continue
       }
 
-      // Try TradeStation service (port 8001)
+      // Try TradeStation service
       try {
-        const tsResponse = await fetch('http://127.0.0.1:8001/api/accounts', {
+        const tsResponse = await fetch(`${getServiceUrl('tradestation')}/api/accounts`, {
           signal: AbortSignal.timeout(2000)
         });
         if (tsResponse.ok) {
@@ -110,9 +111,9 @@ export function AccountSelector({ currentAccountId, onAccountChange, apiBaseUrl 
         // TradeStation service not available, continue
       }
 
-      // Try Discount Bank service (port 8003)
+      // Try Discount Bank service
       try {
-        const dbResponse = await fetch('http://127.0.0.1:8003/api/bank-accounts', {
+        const dbResponse = await fetch(`${getServiceUrl('discountBank')}/api/bank-accounts`, {
           signal: AbortSignal.timeout(2000)
         });
         if (dbResponse.ok) {
@@ -158,11 +159,11 @@ export function AccountSelector({ currentAccountId, onAccountChange, apiBaseUrl 
         // Determine service URL based on account source
         let serviceUrl = baseUrl;
         if (selectedAccount.source === 'TradeStation') {
-          serviceUrl = 'http://127.0.0.1:8001';
+          serviceUrl = getServiceUrl('tradestation');
         } else if (selectedAccount.source === 'Discount Bank') {
-          serviceUrl = 'http://127.0.0.1:8003';
+          serviceUrl = getServiceUrl('discountBank');
         } else {
-          serviceUrl = 'http://127.0.0.1:8000'; // IB or Alpaca
+          serviceUrl = getServiceUrl('alpaca'); // IB or Alpaca
         }
 
         const response = await fetch(`${serviceUrl}/api/account`, {

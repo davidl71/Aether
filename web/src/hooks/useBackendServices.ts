@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { SERVICE_PORTS, getRustBackendUrl } from '../config/ports';
 
 export type ServiceAttentionType = 'none' | 'authentication' | 'credentials' | 'configuration' | 'error';
 
@@ -29,13 +30,13 @@ export interface BackendServicesStatus {
 }
 
 const SERVICE_CONFIG = {
-  alpaca: { name: 'Alpaca', port: 8000, healthPath: '/api/health' },
-  tradestation: { name: 'TradeStation', port: 8001, healthPath: '/api/health' },
-  ib: { name: 'IB', port: 8002, healthPath: '/api/health' },
-  discountBank: { name: 'Discount Bank', port: 8003, healthPath: '/api/health' },
-  riskFreeRate: { name: 'Risk-Free Rate', port: 8004, healthPath: '/api/health' },
-  tastytrade: { name: 'Tastytrade', port: 8005, healthPath: '/api/health' },
-  rustBackend: { name: 'Rust Backend', port: 8080, healthPath: '/health' },
+  alpaca: { name: 'Alpaca', port: SERVICE_PORTS.alpaca, healthPath: '/api/health' },
+  tradestation: { name: 'TradeStation', port: SERVICE_PORTS.tradestation, healthPath: '/api/health' },
+  ib: { name: 'IB', port: SERVICE_PORTS.ib, healthPath: '/api/health' },
+  discountBank: { name: 'Discount Bank', port: SERVICE_PORTS.discountBank, healthPath: '/api/health' },
+  riskFreeRate: { name: 'Risk-Free Rate', port: SERVICE_PORTS.riskFreeRate, healthPath: '/api/health' },
+  tastytrade: { name: 'Tastytrade', port: SERVICE_PORTS.tastytrade, healthPath: '/api/health' },
+  rustBackend: { name: 'Rust Backend', port: SERVICE_PORTS.rustBackend, healthPath: '/health' },
 } as const;
 
 // Authentication URLs for services that require web-based login
@@ -135,7 +136,7 @@ async function checkServiceHealth(
 
     // Only check status for non-rust-backend services (rust backend doesn't have service control)
     if (serviceName !== 'rustBackend') {
-      const statusUrl = `http://localhost:8080/api/v1/services/${apiServiceName}/status`;
+      const statusUrl = `${getRustBackendUrl()}/api/v1/services/${apiServiceName}/status`;
       try {
         const statusResponse = await fetch(statusUrl, {
           method: 'GET',

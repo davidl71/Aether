@@ -44,6 +44,12 @@ body {
   font-weight: 600;
 }
 
+.header__title-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .header__timestamp {
   font-size: 1rem;
   color: #94a3b8;
@@ -87,6 +93,19 @@ body {
   flex-wrap: wrap;
   font-size: 0.95rem;
   color: #cbd5f5;
+}
+
+.header__strategy-controls {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: 16px;
+}
+
+.header__dry-run-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
 }
 
 /* Mode indicator and switcher */
@@ -545,6 +564,10 @@ body {
   border: 1px solid rgba(107, 114, 128, 0.5);
   opacity: 0.6;
   text-decoration: line-through;
+}
+
+.status-badge__indicator {
+  margin-right: 4px;
 }
 
 @keyframes pulse-attention {

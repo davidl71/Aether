@@ -64,10 +64,9 @@ function statusBadge(
     <span
       className={`status-badge ${badgeClass} ${onClick ? 'status-badge--clickable' : ''}`}
       onClick={onClick}
-      style={onClick ? { cursor: 'pointer' } : {}}
       title={title}
     >
-      {indicator && <span style={{ marginRight: '4px' }}>{indicator}</span>}
+      {indicator && <span className="status-badge__indicator">{indicator}</span>}
       {label}
     </span>
   );
@@ -145,7 +144,7 @@ export function HeaderStatus({
     <header className="header">
       <div className="header__title">
         <span>IB Box Spread Terminal</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div className="header__title-controls">
           <span className={`mode-indicator ${modeClass}`}>
             <span className="mode-indicator__dot"></span>
             <span>{snapshot.mode}</span>
@@ -165,7 +164,7 @@ export function HeaderStatus({
       <div className="header__meta">
         <span>Strategy: <strong>{snapshot.strategy}</strong></span>
         {(onStrategyStart ?? onStrategyStop) && (
-          <div className="header__strategy-controls" style={{ display: 'inline-flex', gap: '8px', marginLeft: '16px' }}>
+          <div className="header__strategy-controls">
             {!isStrategyRunning ? (
               <button
                 type="button"
@@ -188,7 +187,7 @@ export function HeaderStatus({
           </div>
         )}
         {onDryRunToggle && (
-          <label className="header__dry-run-toggle" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginLeft: '16px' }}>
+          <label className="header__dry-run-toggle">
             <input
               type="checkbox"
               checked={snapshot.mode === 'DRY-RUN' || snapshot.mode === 'PAPER'}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { BackendServiceStatus } from '../hooks/useBackendServices';
+import { getRustBackendUrl } from '../config/ports';
 
 interface ServiceConfigModalProps {
   service: BackendServiceStatus;
@@ -12,6 +13,7 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [copied, setCopied] = useState(false);
   const [config, setConfig] = useState({
     port: service.port,
     healthCheckInterval: 10000,
@@ -102,7 +104,7 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/services/${apiName}/start`, {
+      const response = await fetch(`${getRustBackendUrl()}/api/v1/services/${apiName}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ force: false }),
@@ -113,6 +115,8 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
         console.log(`[Service Control] ✅ ${service.name} started:`, data);
         alert(`✅ ${service.name} started successfully!`);
         onRefresh();
+      } else if (response.status === 403) {
+        alert(`❌ Service control is disabled. Set ENABLE_SERVICE_CONTROL=true to enable this feature.`);
       } else {
         const errorText = await response.text();
         console.error(`[Service Control] ❌ Failed to start ${service.name}:`, errorText);
@@ -121,7 +125,13 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error(`[Service Control] ❌ Error starting ${service.name}:`, error);
-      alert(`❌ Error starting ${service.name}: ${errorMessage}`);
+
+      // Provide more helpful error message for network errors
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        alert(`❌ Cannot connect to backend service. The Rust backend may not be running on port 8080.\n\nError: ${errorMessage}`);
+      } else {
+        alert(`❌ Error starting ${service.name}: ${errorMessage}`);
+      }
     }
   };
 
@@ -133,7 +143,7 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/services/${apiName}/stop`, {
+      const response = await fetch(`${getRustBackendUrl()}/api/v1/services/${apiName}/stop`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ force: false }),
@@ -144,6 +154,8 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
         console.log(`[Service Control] ✅ ${service.name} stopped:`, data);
         alert(`✅ ${service.name} stopped successfully!`);
         onRefresh();
+      } else if (response.status === 403) {
+        alert(`❌ Service control is disabled. Set ENABLE_SERVICE_CONTROL=true to enable this feature.`);
       } else {
         const errorText = await response.text();
         console.error(`[Service Control] ❌ Failed to stop ${service.name}:`, errorText);
@@ -152,7 +164,13 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error(`[Service Control] ❌ Error stopping ${service.name}:`, error);
-      alert(`❌ Error stopping ${service.name}: ${errorMessage}`);
+
+      // Provide more helpful error message for network errors
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        alert(`❌ Cannot connect to backend service. The Rust backend may not be running on port 8080.\n\nError: ${errorMessage}`);
+      } else {
+        alert(`❌ Error stopping ${service.name}: ${errorMessage}`);
+      }
     }
   };
 
@@ -164,7 +182,7 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/services/${apiName}/enable`, {
+      const response = await fetch(`${getRustBackendUrl()}/api/v1/services/${apiName}/enable`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -174,6 +192,8 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
         console.log(`[Service Control] ✅ ${service.name} enabled:`, data);
         alert(`✅ ${service.name} enabled successfully!`);
         onRefresh();
+      } else if (response.status === 403) {
+        alert(`❌ Service control is disabled. Set ENABLE_SERVICE_CONTROL=true to enable this feature.`);
       } else {
         const errorText = await response.text();
         console.error(`[Service Control] ❌ Failed to enable ${service.name}:`, errorText);
@@ -182,7 +202,13 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error(`[Service Control] ❌ Error enabling ${service.name}:`, error);
-      alert(`❌ Error enabling ${service.name}: ${errorMessage}`);
+
+      // Provide more helpful error message for network errors
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        alert(`❌ Cannot connect to backend service. The Rust backend may not be running on port 8080.\n\nError: ${errorMessage}`);
+      } else {
+        alert(`❌ Error enabling ${service.name}: ${errorMessage}`);
+      }
     }
   };
 
@@ -194,7 +220,7 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/services/${apiName}/disable`, {
+      const response = await fetch(`${getRustBackendUrl()}/api/v1/services/${apiName}/disable`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -204,6 +230,8 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
         console.log(`[Service Control] ✅ ${service.name} disabled:`, data);
         alert(`✅ ${service.name} disabled successfully!`);
         onRefresh();
+      } else if (response.status === 403) {
+        alert(`❌ Service control is disabled. Set ENABLE_SERVICE_CONTROL=true to enable this feature.`);
       } else {
         const errorText = await response.text();
         console.error(`[Service Control] ❌ Failed to disable ${service.name}:`, errorText);
@@ -212,7 +240,13 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error(`[Service Control] ❌ Error disabling ${service.name}:`, error);
-      alert(`❌ Error disabling ${service.name}: ${errorMessage}`);
+
+      // Provide more helpful error message for network errors
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        alert(`❌ Cannot connect to backend service. The Rust backend may not be running on port 8080.\n\nError: ${errorMessage}`);
+      } else {
+        alert(`❌ Error disabling ${service.name}: ${errorMessage}`);
+      }
     }
   };
 
@@ -237,6 +271,33 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
         console.error(`[Service Health] ❌ ${service.name} health check failed:`, error);
         alert(`Health check failed: ${errorMessage}`);
       });
+  };
+
+  const handleCopyLogs = async () => {
+    const logText = logs.length > 0 ? logs.join('\n') : 'No logs available';
+    try {
+      await navigator.clipboard.writeText(logText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy logs:', err);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = logText;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (fallbackErr) {
+        console.error('Fallback copy failed:', fallbackErr);
+        alert('Failed to copy logs to clipboard');
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   return (
@@ -566,14 +627,38 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Service Logs</h3>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={autoRefresh}
-                  onChange={(e) => setAutoRefresh(e.target.checked)}
-                />
-                Auto-refresh (5s)
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button
+                  type="button"
+                  onClick={handleCopyLogs}
+                  disabled={logs.length === 0 && !logError}
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '0.85rem',
+                    background: copied ? '#22c55e' : 'rgba(148, 163, 184, 0.2)',
+                    color: copied ? '#fff' : '#e2e8f0',
+                    border: '1px solid rgba(148, 163, 184, 0.3)',
+                    borderRadius: '6px',
+                    cursor: (logs.length === 0 && !logError) ? 'not-allowed' : 'pointer',
+                    opacity: (logs.length === 0 && !logError) ? 0.5 : 1,
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                  title="Copy logs to clipboard"
+                >
+                  {copied ? '✓ Copied!' : '📋 Copy'}
+                </button>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={autoRefresh}
+                    onChange={(e) => setAutoRefresh(e.target.checked)}
+                  />
+                  Auto-refresh (5s)
+                </label>
+              </div>
             </div>
             <div style={{
               padding: '12px',

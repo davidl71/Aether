@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { BankAccount } from '../components/BankAccountsPanel';
+import { getServiceUrl } from '../config/ports';
 
 interface UseBankAccountsResult {
   accounts: BankAccount[];
@@ -7,7 +8,8 @@ interface UseBankAccountsResult {
   error: string | null;
 }
 
-export function useBankAccounts(serviceUrl = 'http://localhost:8003'): UseBankAccountsResult {
+export function useBankAccounts(serviceUrl?: string): UseBankAccountsResult {
+  const defaultServiceUrl = serviceUrl || getServiceUrl('discountBank');
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +18,8 @@ export function useBankAccounts(serviceUrl = 'http://localhost:8003'): UseBankAc
     const fetchAccounts = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${serviceUrl}/api/bank-accounts`, {
+        const url = serviceUrl || getServiceUrl('discountBank');
+        const response = await fetch(`${url}/api/bank-accounts`, {
           headers: { 'cache-control': 'no-cache' }
         });
 

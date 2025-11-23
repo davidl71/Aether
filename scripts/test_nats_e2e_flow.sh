@@ -20,12 +20,12 @@ if ! curl -s http://localhost:8222/healthz >/dev/null 2>&1; then
 fi
 echo "✅ NATS server running"
 
-# Check WebSocket port
-if ! lsof -i :8080 >/dev/null 2>&1; then
-  echo "❌ WebSocket port 8080 not listening"
+# Check WebSocket port (changed from 8080 to 8081 to avoid conflict with Rust backend)
+if ! lsof -i :8081 >/dev/null 2>&1; then
+  echo "❌ WebSocket port 8081 not listening"
   exit 1
 fi
-echo "✅ WebSocket port 8080 listening"
+echo "✅ WebSocket port 8081 listening"
 
 # Check nats CLI
 if ! command -v nats >/dev/null 2>&1; then
@@ -122,7 +122,7 @@ echo ""
 echo "📋 Test Summary"
 echo "=============="
 echo "✅ NATS server: Running"
-echo "✅ WebSocket: Enabled (port 8080)"
+echo "✅ WebSocket: Enabled (port 8081)"
 if [ $PYTHON_EXIT -eq 0 ]; then
   echo "✅ Python test: Passed"
 else

@@ -502,7 +502,7 @@ elif stdio_server_instance:
         logger.info(f"Server name: {stdio_server_instance.name}")
         logger.info(f"Tools available: {TOOLS_AVAILABLE}")
         logger.info(f"Resources available: {RESOURCES_AVAILABLE if 'RESOURCES_AVAILABLE' in globals() else 'Not registered'}")
-        
+
         # stdio_server provides stdin/stdout streams, Server.run() handles the protocol
         async def run():
             async with stdio_server() as (read_stream, write_stream):

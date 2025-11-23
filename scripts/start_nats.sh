@@ -46,7 +46,7 @@ sleep 2
 if kill -0 "$NATS_PID" 2>/dev/null && pgrep -f "nats-server" >/dev/null; then
   echo "[info] NATS server started in background (PID: $NATS_PID)"
   echo "[info] Server URL: nats://localhost:4222"
-  echo "[info] WebSocket URL: ws://localhost:8080"
+  echo "[info] WebSocket URL: ws://localhost:8081"
   echo "[info] Monitoring: http://localhost:8222"
   echo "[info] Health check: http://localhost:8222/healthz"
   echo "[info] Log file: $LOG_FILE"

@@ -6,6 +6,25 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 WEB_DIR="$ROOT_DIR/web"
 
+# Load shared configuration if available
+SCRIPTS_DIR_ROOT="${ROOT_DIR}/scripts"
+if [ -f "${SCRIPTS_DIR_ROOT}/include/config.sh" ]; then
+  # shellcheck source=../../scripts/include/config.sh
+  source "${SCRIPTS_DIR_ROOT}/include/config.sh"
+fi
+
+# Helper function to get service port (with fallback to config_get_port if available)
+get_service_port() {
+  local service_name="${1:-}"
+  local default_port="${2:-}"
+
+  if command -v config_get_port >/dev/null 2>&1; then
+    config_get_port "${service_name}" "${default_port}"
+  else
+    echo "${default_port}"
+  fi
+}
+
 cd "$WEB_DIR"
 
 # Check if Node.js is available
@@ -69,29 +88,75 @@ check_port() {
   fi
 }
 
-# Check if backend service is running
+# Get service ports from config
+ALPACA_PORT=$(get_service_port "alpaca" 8000)
+IB_PORT=$(get_service_port "ib" 8002)
+TRADESTATION_PORT=$(get_service_port "tradestation" 8001)
+DISCOUNT_BANK_PORT=$(get_service_port "discount_bank" 8003)
+RISK_FREE_RATE_PORT=$(get_service_port "risk_free_rate" 8004)
+TASTYTRADE_PORT=$(get_service_port "tastytrade" 8005)
+# Rust backend uses nested config path, so use config_get directly
+if command -v config_get >/dev/null 2>&1; then
+  RUST_BACKEND_REST_PORT=$(config_get ".services.rust_backend.rest_port" 8080)
+else
+  RUST_BACKEND_REST_PORT=8080
+fi
+
+# Check if backend service is running (try Alpaca first, then IB)
 BACKEND_SERVICE_TYPE="none"
-SERVICE_CHECK_RESULT=$(check_backend_service 8000 || echo $?)
+BACKEND_PORT="${ALPACA_PORT}"
+SERVICE_CHECK_RESULT=$(check_backend_service "${ALPACA_PORT}" || echo $?)
 case "${SERVICE_CHECK_RESULT}" in
   1)
     BACKEND_SERVICE_TYPE="alpaca"
-    echo "✓ Alpaca service detected on http://127.0.0.1:8000" >&2
+    BACKEND_PORT="${ALPACA_PORT}"
+    echo "✓ Alpaca service detected on http://127.0.0.1:${ALPACA_PORT}" >&2
     ;;
   2)
     BACKEND_SERVICE_TYPE="ib"
-    echo "✓ IB service detected on http://127.0.0.1:8000" >&2
+    BACKEND_PORT="${ALPACA_PORT}"  # IB also uses Alpaca port when running
+    echo "✓ IB service detected on http://127.0.0.1:${ALPACA_PORT}" >&2
     ;;
   0)
     BACKEND_SERVICE_TYPE="unknown"
-    echo "✓ Backend service detected on http://127.0.0.1:8000" >&2
+    BACKEND_PORT="${ALPACA_PORT}"
+    echo "✓ Backend service detected on http://127.0.0.1:${ALPACA_PORT}" >&2
     ;;
   *)
-    BACKEND_SERVICE_TYPE="none"
+    # Try IB port as fallback
+    IB_CHECK_RESULT=$(check_backend_service "${IB_PORT}" || echo $?)
+    if [ "${IB_CHECK_RESULT}" = "2" ]; then
+      BACKEND_SERVICE_TYPE="ib"
+      BACKEND_PORT="${IB_PORT}"
+      echo "✓ IB service detected on http://127.0.0.1:${IB_PORT}" >&2
+    else
+      BACKEND_SERVICE_TYPE="none"
+    fi
     ;;
 esac
 
-# Set up environment file
+# Set up environment file with port configuration
 ENV_FILE=".env"
+ENV_UPDATED=false
+
+# Function to update or add env var in .env file
+update_env_var() {
+  local var_name="${1}"
+  local var_value="${2}"
+
+  if [ -f "${ENV_FILE}" ]; then
+    # Remove existing entry if present
+    grep -v "^${var_name}=" "${ENV_FILE}" > "${ENV_FILE}.tmp" 2>/dev/null || true
+    mv "${ENV_FILE}.tmp" "${ENV_FILE}" 2>/dev/null || true
+    # Append new value
+    echo "${var_name}=${var_value}" >> "${ENV_FILE}"
+  else
+    echo "${var_name}=${var_value}" > "${ENV_FILE}"
+  fi
+  ENV_UPDATED=true
+}
+
+# Update VITE_API_URL if backend service is detected
 if [ ! -f "${ENV_FILE}" ] || ! grep -q "VITE_API_URL" "${ENV_FILE}" 2>/dev/null; then
   if [ "${BACKEND_SERVICE_TYPE}" != "none" ]; then
     if [ "${BACKEND_SERVICE_TYPE}" = "alpaca" ]; then
@@ -101,14 +166,7 @@ if [ ! -f "${ENV_FILE}" ] || ! grep -q "VITE_API_URL" "${ENV_FILE}" 2>/dev/null;
     else
       echo "Configuring VITE_API_URL to connect to backend service..." >&2
     fi
-    if [ -f "${ENV_FILE}" ]; then
-      # Append to existing .env
-      echo "" >> "${ENV_FILE}"
-      echo "VITE_API_URL=http://127.0.0.1:8000/api/snapshot" >> "${ENV_FILE}"
-    else
-      # Create new .env
-      echo "VITE_API_URL=http://127.0.0.1:8000/api/snapshot" > "${ENV_FILE}"
-    fi
+    update_env_var "VITE_API_URL" "http://127.0.0.1:${BACKEND_PORT}/api/snapshot"
   else
     echo "⚠ Backend service not detected. Using static JSON data." >&2
     echo "  To use live data, start a backend service:" >&2
@@ -123,9 +181,24 @@ else
   fi
 fi
 
+# Set port configuration as environment variables for frontend
+update_env_var "VITE_ALPACA_PORT" "${ALPACA_PORT}"
+update_env_var "VITE_IB_PORT" "${IB_PORT}"
+update_env_var "VITE_TRADESTATION_PORT" "${TRADESTATION_PORT}"
+update_env_var "VITE_DISCOUNT_BANK_PORT" "${DISCOUNT_BANK_PORT}"
+update_env_var "VITE_RISK_FREE_RATE_PORT" "${RISK_FREE_RATE_PORT}"
+update_env_var "VITE_TASTYTRADE_PORT" "${TASTYTRADE_PORT}"
+update_env_var "VITE_RUST_BACKEND_REST_PORT" "${RUST_BACKEND_REST_PORT}"
+
+if [ "${ENV_UPDATED}" = true ]; then
+  echo "Updated ${ENV_FILE} with port configuration" >&2
+fi
+
+# Get Vite port from config
+VITE_PORT=$(get_service_port "web" 5173)
+
 # Check if Vite port is already in use
 # If port is in use, exit - the launch script should handle port conflicts
-VITE_PORT=5173
 if check_port "${VITE_PORT}"; then
   echo "Error: Port ${VITE_PORT} is already in use." >&2
   echo "Another web service instance may be running." >&2
@@ -134,14 +207,14 @@ if check_port "${VITE_PORT}"; then
   exit 1
 fi
 
-echo "Starting web service (PWA)..." >&2
+echo "Starting web service (PWA) on port ${VITE_PORT}..." >&2
 if [ "${BACKEND_SERVICE_TYPE}" != "none" ]; then
   if [ "${BACKEND_SERVICE_TYPE}" = "alpaca" ]; then
-    echo "  Connected to Alpaca service: http://127.0.0.1:8000" >&2
+    echo "  Connected to Alpaca service: http://127.0.0.1:${ALPACA_PORT}" >&2
   elif [ "${BACKEND_SERVICE_TYPE}" = "ib" ]; then
-    echo "  Connected to IB service: http://127.0.0.1:8000" >&2
+    echo "  Connected to IB service: http://127.0.0.1:${BACKEND_PORT}" >&2
   else
-    echo "  Connected to backend service: http://127.0.0.1:8000" >&2
+    echo "  Connected to backend service: http://127.0.0.1:${BACKEND_PORT}" >&2
   fi
 else
   echo "  Using static data (backend service not running)" >&2
