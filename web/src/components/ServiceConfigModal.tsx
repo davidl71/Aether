@@ -30,6 +30,7 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
       'Risk-Free Rate': 'risk-free-rate-service.log',
       'Tastytrade': 'tastytrade-service.log',
       'Rust Backend': 'rust-backend.log', // May not exist, but placeholder
+      'NATS': 'nats-server.log',
     };
     return logMap[serviceName] || `${serviceName.toLowerCase().replace(/\s+/g, '-')}-service.log`;
   };
@@ -92,6 +93,7 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
       'Discount Bank': 'discount_bank',
       'Risk-Free Rate': 'risk_free_rate',
       'Tastytrade': 'tastytrade',
+      'NATS': 'nats', // NATS server (standalone, may not have full API support)
     };
     return nameMap[displayName] || null;
   };

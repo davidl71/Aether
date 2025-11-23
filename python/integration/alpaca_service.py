@@ -13,10 +13,10 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any, Optional
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -168,6 +168,8 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Support both OAuth and API key authentication
+    # AlpacaClient will automatically detect which method to use based on available env vars
     client = AlpacaClient()
     # Store current mode and account in memory (in production, use Redis or database)
     current_mode: str = os.getenv("ALPACA_PAPER", "1").lower() in {"1", "true", "yes", "on"} and "PAPER" or "LIVE"
@@ -179,11 +181,24 @@ def create_app() -> FastAPI:
         try:
             # Try to get account to verify credentials
             account = client.get_account()
+            # Get OAuth status if using OAuth
+            oauth_status = None
+            if hasattr(client, "_use_oauth") and client._use_oauth:
+                oauth_status = {
+                    "enabled": True,
+                    "has_token": client._access_token is not None,
+                    "expires_at": client._token_expires_at.isoformat() if client._token_expires_at else None,
+                    "expires_soon": client._token_expires_at and datetime.now() >= (client._token_expires_at - timedelta(minutes=1)) if client._token_expires_at else False,
+                }
+            else:
+                oauth_status = {"enabled": False}
+
             return {
                 "status": "ok",
                 "ts": _now_iso(),
                 "alpaca_connected": account is not None,
                 "account_id": account.get("account_number") if account else None,
+                "oauth": oauth_status,
             }
         except Exception as e:
             return {

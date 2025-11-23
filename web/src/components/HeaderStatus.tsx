@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
 import type { SnapshotPayload } from '../types/snapshot';
 import { formatCurrency } from '../utils/formatters';
 import { ModeSwitcher, type TradingMode } from './ModeSwitcher';
@@ -95,6 +95,69 @@ export function HeaderStatus({
   });
   const { statuses: backendStatuses, checkAllServices } = useBackendServices({ intervalMs: 10000, enabled: true });
   const [selectedService, setSelectedService] = useState<BackendServiceStatus | null>(null);
+  const [natsServiceStatus, setNatsServiceStatus] = useState<BackendServiceStatus>({
+    name: 'NATS',
+    port: 4222,
+    healthy: natsConnected,
+    checking: false,
+    enabled: true,
+    running: natsConnected,
+  });
+
+  // Check NATS server health periodically
+  useEffect(() => {
+    const checkNatsServerHealth = async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+        const response = await fetch('http://localhost:8222/healthz', {
+          method: 'GET',
+          signal: controller.signal,
+          headers: { 'Cache-Control': 'no-cache' },
+        });
+
+        clearTimeout(timeoutId);
+
+        const serverHealthy = response.ok;
+        const clientHealthy = natsConnected;
+
+        setNatsServiceStatus({
+          name: 'NATS',
+          port: 4222,
+          healthy: serverHealthy && clientHealthy,
+          checking: false,
+          error: serverHealthy ? undefined : 'Server health check failed',
+          enabled: true,
+          running: serverHealthy,
+          attentionRequired: serverHealthy && clientHealthy ? 'none' : 'error',
+          attentionMessage: !serverHealthy ? 'NATS server not responding' : !clientHealthy ? 'Client not connected' : undefined,
+          lastChecked: new Date(),
+        });
+      } catch (error) {
+        setNatsServiceStatus({
+          name: 'NATS',
+          port: 4222,
+          healthy: false,
+          checking: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          enabled: true,
+          running: false,
+          attentionRequired: 'error',
+          attentionMessage: 'NATS server health check failed',
+          lastChecked: new Date(),
+        });
+      }
+    };
+
+    // Initial check
+    checkNatsServerHealth();
+
+    // Check every 10 seconds
+    const intervalId = setInterval(checkNatsServerHealth, 10000);
+
+    return () => clearInterval(intervalId);
+  }, [natsConnected]);
 
   if (!snapshot) {
     return (
@@ -246,7 +309,16 @@ export function HeaderStatus({
         >
           {connectionStatus === 'connected' ? 'WS' : connectionStatus === 'polling' ? 'Poll' : 'Conn'}
         </span>
-        {statusBadge(natsConnected, 'NATS')}
+        {statusBadge(
+          natsServiceStatus.healthy,
+          'NATS',
+          () => {
+            console.log('[Service Config] Opening NATS configuration');
+            setSelectedService(natsServiceStatus);
+          },
+          natsServiceStatus.attentionRequired ?? undefined,
+          natsServiceStatus.enabled
+        )}
         {statusBadge(
           backendStatuses.rustBackend.healthy,
           'Rust',

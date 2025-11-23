@@ -32,7 +32,14 @@ if [ -f "${SCRIPTS_DIR}/include/onepassword.sh" ]; then
 fi
 
 # Read credentials from 1Password or environment variables
+# Supports both OAuth (preferred) and API key authentication
 # Supports both path format (op://Vault/Item/field) and UUID format
+
+# OAuth credentials (preferred)
+OP_CLIENT_ID_SECRET="${OP_ALPACA_CLIENT_ID_SECRET:-}"
+OP_CLIENT_SECRET_SECRET="${OP_ALPACA_CLIENT_SECRET_SECRET:-}"
+
+# API key credentials (fallback)
 OP_API_KEY_SECRET="${OP_ALPACA_API_KEY_ID_SECRET:-}"
 OP_API_SECRET_SECRET="${OP_ALPACA_API_SECRET_KEY_SECRET:-}"
 
@@ -42,56 +49,61 @@ if [ -n "${OP_ALPACA_ITEM_UUID:-}" ]; then
   KEY_FIELD=""
   SECRET_FIELD=""
   if op_detect_fields "${OP_ALPACA_ITEM_UUID}" "KEY_FIELD" "SECRET_FIELD"; then
-    KEY_FIELD_NAME="${OP_ALPACA_KEY_FIELD_NAME:-${KEY_FIELD:-API Key ID}}"
-    SECRET_FIELD_NAME="${OP_ALPACA_SECRET_FIELD_NAME:-${SECRET_FIELD:-API Secret Key}}"
+    KEY_FIELD_NAME="${OP_ALPACA_KEY_FIELD_NAME:-${KEY_FIELD:-Client ID}}"
+    SECRET_FIELD_NAME="${OP_ALPACA_SECRET_FIELD_NAME:-${SECRET_FIELD:-Client Secret}}"
 
-    # Build secret paths (only if not already set)
+    # Build secret paths for OAuth (only if not already set)
+    if [ -z "${OP_CLIENT_ID_SECRET}" ] || [ -z "${OP_CLIENT_SECRET_SECRET}" ]; then
+      op_build_secret_paths "${OP_ALPACA_ITEM_UUID}" "${KEY_FIELD_NAME}" "${SECRET_FIELD_NAME}" "OP_CLIENT_ID_SECRET" "OP_CLIENT_SECRET_SECRET"
+    fi
+
+    # Also try to build API key paths if OAuth not found
     if [ -z "${OP_API_KEY_SECRET}" ] || [ -z "${OP_API_SECRET_SECRET}" ]; then
+      KEY_FIELD_NAME="${OP_ALPACA_KEY_FIELD_NAME:-${KEY_FIELD:-API Key ID}}"
+      SECRET_FIELD_NAME="${OP_ALPACA_SECRET_FIELD_NAME:-${SECRET_FIELD:-API Secret Key}}"
       op_build_secret_paths "${OP_ALPACA_ITEM_UUID}" "${KEY_FIELD_NAME}" "${SECRET_FIELD_NAME}" "OP_API_KEY_SECRET" "OP_API_SECRET_SECRET"
     fi
   fi
 fi
 
-ALPACA_API_KEY_ID=$(read_credential "${OP_API_KEY_SECRET}" "${ALPACA_API_KEY_ID:-}" || echo "")
-ALPACA_API_SECRET_KEY=$(read_credential "${OP_API_SECRET_SECRET}" "${ALPACA_API_SECRET_KEY:-}" || echo "")
+# Try OAuth credentials first
+ALPACA_CLIENT_ID=$(read_credential "${OP_CLIENT_ID_SECRET}" "${ALPACA_CLIENT_ID:-}" || echo "")
+ALPACA_CLIENT_SECRET=$(read_credential "${OP_CLIENT_SECRET_SECRET}" "${ALPACA_CLIENT_SECRET:-}" || echo "")
 
-# Check for required credentials
-if [ -z "${ALPACA_API_KEY_ID}" ] || [ -z "${ALPACA_API_SECRET_KEY}" ]; then
-  echo "Error: Alpaca credentials not set" >&2
-  echo "" >&2
-  echo "Option 1: Use 1Password (recommended):" >&2
-  echo "  # Method A: Using item UUID (simplest):" >&2
-  echo "  op signin" >&2
-  echo "  export OP_ALPACA_ITEM_UUID='ldfc5jfigtmjvlg6ls4tgpgsuu'" >&2
-  echo "  # Script will auto-detect field names" >&2
-  echo "  # If auto-detection fails, specify field names:" >&2
-  echo "  export OP_ALPACA_KEY_FIELD_NAME='username'  # or 'API Key ID', etc." >&2
-  echo "  export OP_ALPACA_SECRET_FIELD_NAME='credential'  # or 'API Secret Key', etc." >&2
-  echo "" >&2
-  echo "  # Method B: Using full paths:" >&2
-  echo "  op signin" >&2
-  echo "  export OP_ALPACA_API_KEY_ID_SECRET='op://Vault/Item/API Key ID'" >&2
-  echo "  export OP_ALPACA_API_SECRET_KEY_SECRET='op://Vault/Item/API Secret Key'" >&2
-  echo "" >&2
-  echo "  # Method C: Using UUID with explicit paths:" >&2
-  echo "  export OP_ALPACA_API_KEY_ID_SECRET='op://Vault/<uuid>/API Key ID'" >&2
-  echo "  export OP_ALPACA_API_SECRET_KEY_SECRET='op://Vault/<uuid>/API Secret Key'" >&2
-  echo "" >&2
-  echo "  # For service account (CI/CD):" >&2
-  echo "  export OP_SERVICE_ACCOUNT_TOKEN='your_token'" >&2
-  echo "  # Then use any of the methods above" >&2
-  echo "" >&2
-  echo "Option 2: Use environment variables:" >&2
-  echo "  export ALPACA_API_KEY_ID=your_key_id" >&2
-  echo "  export ALPACA_API_SECRET_KEY=your_secret_key" >&2
-  echo "" >&2
-  echo "Optional:" >&2
-  echo "  export ALPACA_PAPER=1  # Use paper trading (default)" >&2
-  echo "  export SYMBOLS=SPY,QQQ,IWM  # Comma-separated symbols (default: SPY,QQQ)" >&2
-  exit 1
+# Fall back to API keys if OAuth not available
+if [ -z "${ALPACA_CLIENT_ID}" ] || [ -z "${ALPACA_CLIENT_SECRET}" ]; then
+  ALPACA_API_KEY_ID=$(read_credential "${OP_API_KEY_SECRET}" "${ALPACA_API_KEY_ID:-}" || echo "")
+  ALPACA_API_SECRET_KEY=$(read_credential "${OP_API_SECRET_SECRET}" "${ALPACA_API_SECRET_KEY:-}" || echo "")
+fi
+
+# Check for required credentials (either OAuth or API keys)
+if [ -z "${ALPACA_CLIENT_ID}" ] || [ -z "${ALPACA_CLIENT_SECRET}" ]; then
+  if [ -z "${ALPACA_API_KEY_ID}" ] || [ -z "${ALPACA_API_SECRET_KEY}" ]; then
+    echo "Error: Alpaca credentials not set" >&2
+    echo "" >&2
+    echo "Option 1: Use OAuth (preferred):" >&2
+    echo "  export ALPACA_CLIENT_ID=your_client_id" >&2
+    echo "  export ALPACA_CLIENT_SECRET=your_client_secret" >&2
+    echo "" >&2
+    echo "Option 2: Use API Keys (fallback):" >&2
+    echo "  export ALPACA_API_KEY_ID=your_key_id" >&2
+    echo "  export ALPACA_API_SECRET_KEY=your_secret_key" >&2
+    echo "" >&2
+    echo "Option 3: Use 1Password (recommended):" >&2
+    echo "  op signin" >&2
+    echo "  export OP_ALPACA_ITEM_UUID='your-item-uuid'" >&2
+    echo "  # Script will auto-detect field names" >&2
+    echo "" >&2
+    echo "Optional:" >&2
+    echo "  export ALPACA_PAPER=1  # Use paper trading (default)" >&2
+    echo "  export SYMBOLS=SPY,QQQ,IWM  # Comma-separated symbols (default: SPY,QQQ)" >&2
+    exit 1
+  fi
 fi
 
 # Export credentials for the Python service
+export ALPACA_CLIENT_ID
+export ALPACA_CLIENT_SECRET
 export ALPACA_API_KEY_ID
 export ALPACA_API_SECRET_KEY
 

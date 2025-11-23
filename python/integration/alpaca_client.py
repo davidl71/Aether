@@ -1,9 +1,19 @@
 """
 alpaca_client.py - Alpaca client using official alpaca-py SDK
 
-Reads API credentials from environment variables:
+Supports both API key authentication and OAuth 2.0 authentication.
+
+API Key Authentication (default):
 - ALPACA_API_KEY_ID
 - ALPACA_API_SECRET_KEY
+
+OAuth 2.0 Authentication:
+- ALPACA_CLIENT_ID
+- ALPACA_CLIENT_SECRET
+- ALPACA_ACCESS_TOKEN (optional, will be obtained via OAuth if not provided)
+- ALPACA_REFRESH_TOKEN (optional, for token refresh)
+
+Other environment variables:
 - ALPACA_BASE_URL (optional, defaults to https://paper-api.alpaca.markets)
 - ALPACA_DATA_BASE_URL (optional, defaults to https://data.alpaca.markets)
 - ALPACA_PAPER (optional, "1"/"true" uses paper endpoints)
@@ -13,6 +23,8 @@ from __future__ import annotations
 
 import os
 import time
+import logging
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 try:
@@ -27,22 +39,47 @@ except ImportError:
 
 import requests
 
+logger = logging.getLogger(__name__)
+
+
+class AlpacaError(RuntimeError):
+    """Generic error raised for Alpaca API failures."""
+
 
 class AlpacaClient:
     def __init__(
         self,
         api_key_id: Optional[str] = None,
         api_secret_key: Optional[str] = None,
+        client_id: Optional[str] = None,
+        client_secret: Optional[str] = None,
+        access_token: Optional[str] = None,
+        refresh_token: Optional[str] = None,
         base_url: Optional[str] = None,
         data_base_url: Optional[str] = None,
         session: Optional[requests.Session] = None,
     ) -> None:
+        # OAuth credentials (preferred if available)
+        self.client_id = client_id or os.getenv("ALPACA_CLIENT_ID", "")
+        self.client_secret = client_secret or os.getenv("ALPACA_CLIENT_SECRET", "")
+        self._use_oauth = bool(self.client_id and self.client_secret)
+
+        # API key credentials (fallback)
         self.api_key_id = api_key_id or os.getenv("ALPACA_API_KEY_ID", "")
         self.api_secret_key = api_secret_key or os.getenv("ALPACA_API_SECRET_KEY", "")
-        if not self.api_key_id or not self.api_secret_key:
+
+        # Require at least one authentication method
+        if not self._use_oauth and (not self.api_key_id or not self.api_secret_key):
             raise RuntimeError(
-                "Missing Alpaca credentials (ALPACA_API_KEY_ID/ALPACA_API_SECRET_KEY)"
+                "Missing Alpaca credentials. Provide either:\n"
+                "  OAuth: ALPACA_CLIENT_ID and ALPACA_CLIENT_SECRET\n"
+                "  API Keys: ALPACA_API_KEY_ID and ALPACA_API_SECRET_KEY"
             )
+
+        # OAuth token management
+        self._access_token: Optional[str] = access_token or os.getenv("ALPACA_ACCESS_TOKEN", "")
+        self._refresh_token: Optional[str] = refresh_token or os.getenv("ALPACA_REFRESH_TOKEN", "")
+        self._token_expires_at: Optional[datetime] = None
 
         paper = os.getenv("ALPACA_PAPER", "1").lower() in {"1", "true", "yes", "on"}
         default_trading_base = (
@@ -54,9 +91,10 @@ class AlpacaClient:
 
         self.base_url = base_url or os.getenv("ALPACA_BASE_URL", default_trading_base)
         self.data_base_url = data_base_url or os.getenv("ALPACA_DATA_BASE_URL", default_data_base)
+        self.paper = paper
 
-        # Use official alpaca-py SDK if available
-        if ALPACA_PY_AVAILABLE:
+        # Use official alpaca-py SDK if available (only with API keys, not OAuth)
+        if ALPACA_PY_AVAILABLE and not self._use_oauth:
             try:
                 # TradingClient for account and trading operations
                 self._trading_client = TradingClient(
@@ -72,8 +110,8 @@ class AlpacaClient:
                 )
                 self._use_official_sdk = True
             except Exception as e:
-                print(f"Warning: Failed to initialize official alpaca-py SDK: {e}")
-                print("Falling back to REST API client")
+                logger.warning(f"Failed to initialize official alpaca-py SDK: {e}")
+                logger.warning("Falling back to REST API client")
                 self._use_official_sdk = False
                 self._trading_client = None
                 self._data_client = None
@@ -82,20 +120,137 @@ class AlpacaClient:
             self._trading_client = None
             self._data_client = None
 
-        # Fallback REST client
+        # REST client
         self._session = session or requests.Session()
-        self._session.headers.update(
-            {
-                "APCA-API-KEY-ID": self.api_key_id,
-                "APCA-API-SECRET-KEY": self.api_secret_key,
-                "Accept": "application/json",
-            }
-        )
+        self._session.headers.update({"Accept": "application/json"})
+
+        # Set authentication headers based on auth method
+        if self._use_oauth:
+            self._ensure_oauth_authenticated()
+        else:
+            self._session.headers.update(
+                {
+                    "APCA-API-KEY-ID": self.api_key_id,
+                    "APCA-API-SECRET-KEY": self.api_secret_key,
+                }
+            )
+
+    def _ensure_oauth_authenticated(self) -> None:
+        """Ensure we have a valid OAuth access token."""
+        if not self._use_oauth:
+            return
+
+        # Check if access token is valid (not expired or expiring soon)
+        if self._access_token and self._token_expires_at:
+            # Refresh if expiring within 1 minute
+            if datetime.now() < self._token_expires_at - timedelta(minutes=1):
+                self._session.headers["Authorization"] = f"Bearer {self._access_token}"
+                return
+
+        # Get or refresh OAuth token
+        self._oauth_authenticate()
+
+    def _oauth_authenticate(self) -> None:
+        """
+        Authenticate using OAuth client credentials flow.
+
+        Raises:
+            AlpacaError: If authentication fails
+        """
+        if not self._use_oauth:
+            raise AlpacaError("OAuth not configured")
+
+        # Alpaca OAuth endpoint (authorization server)
+        # For paper trading, use paper OAuth endpoint
+        oauth_base = "https://api.alpaca.markets" if not self.paper else "https://paper-api.alpaca.markets"
+        token_url = f"{oauth_base}/oauth/token"
+
+        # Client credentials grant flow
+        payload = {
+            "grant_type": "client_credentials",
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+        }
+
+        try:
+            response = self._session.post(
+                token_url,
+                data=payload,  # Use form data, not JSON
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                timeout=10
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            access_token = data.get("access_token")
+            expires_in = data.get("expires_in", 3600)  # Default 1 hour
+
+            if not access_token:
+                raise AlpacaError("No access token in OAuth response")
+
+            self._access_token = access_token
+            # Set expiration time (subtract 1 minute for safety margin)
+            self._token_expires_at = datetime.now() + timedelta(seconds=expires_in - 60)
+
+            # Update session headers
+            self._session.headers["Authorization"] = f"Bearer {self._access_token}"
+
+            logger.info("Alpaca OAuth authentication successful")
+        except requests.exceptions.RequestException as e:
+            # Clear tokens on failure
+            self._access_token = None
+            self._token_expires_at = None
+            raise AlpacaError(f"OAuth authentication failed: {e}") from e
+
+    def refresh_access_token(self) -> Dict:
+        """
+        Manually refresh the OAuth access token.
+
+        Returns:
+            Dict with token information
+        """
+        if not self._use_oauth:
+            raise AlpacaError("OAuth not configured. Cannot refresh token.")
+
+        self._oauth_authenticate()
+        return {
+            "access_token": self._access_token,
+            "expires_at": self._token_expires_at.isoformat() if self._token_expires_at else None,
+        }
 
     def _get(self, url: str, params: Optional[Dict] = None) -> Dict:
+        """Make GET request and return JSON response as Dict."""
+        # Ensure OAuth token is valid if using OAuth
+        if self._use_oauth:
+            self._ensure_oauth_authenticated()
+
         resp = self._session.get(url, params=params or {}, timeout=10)
+
+        # Handle 401 errors - might need to refresh token
+        if resp.status_code == 401 and self._use_oauth:
+            # Try refreshing token once
+            try:
+                self._oauth_authenticate()
+                resp = self._session.get(url, params=params or {}, timeout=10)
+            except AlpacaError:
+                pass  # Re-raise the original 401
+
         resp.raise_for_status()
-        return resp.json()
+        result = resp.json()
+        # Ensure we return a Dict (API sometimes returns lists, wrap them)
+        if isinstance(result, list):
+            return {"items": result}
+        return result if isinstance(result, dict) else {}
+
+    def _get_list(self, url: str, params: Optional[Dict] = None) -> List[Dict]:
+        """Make GET request and return JSON response as List[Dict]."""
+        data = self._get(url, params=params)
+        # Handle both list and dict responses
+        if isinstance(data, list):
+            return data
+        if isinstance(data, dict) and "items" in data:
+            return data["items"]
+        return []
 
     def get_latest_quote(self, symbol: str) -> Optional[Dict]:
         """
@@ -247,7 +402,8 @@ class AlpacaClient:
                         return data
                     # Or sometimes wrapped in an 'accounts' key
                     if isinstance(data, dict) and "accounts" in data:
-                        return data["accounts"]
+                        accounts_list = data["accounts"]
+                        return accounts_list if isinstance(accounts_list, list) else []
                 except requests.HTTPError:
                     pass
         return []
@@ -299,7 +455,7 @@ class AlpacaClient:
         """
         url = f"{self.base_url}/v2/positions"
         try:
-            return self._get(url) or []
+            return self._get_list(url)
         except requests.HTTPError:
             return []
 
@@ -314,6 +470,6 @@ class AlpacaClient:
         url = f"{self.base_url}/v2/orders"
         params = {"status": status, "limit": limit}
         try:
-            return self._get(url, params=params) or []
+            return self._get_list(url, params=params)
         except requests.HTTPError:
             return []
