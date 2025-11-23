@@ -2,11 +2,17 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSnapshot } from './hooks/useSnapshot';
 import { useBoxSpreadData } from './hooks/useBoxSpreadData';
 import { useSymbolWatchlist } from './hooks/useSymbolWatchlist';
+import { useBankAccounts } from './hooks/useBankAccounts';
 import { HeaderStatus } from './components/HeaderStatus';
 import { TabNavigation } from './components/TabNavigation';
+import type { TabDefinition } from './components/TabNavigation';
 import { DashboardTab } from './components/DashboardTab';
 import { BankAccountsPanel } from './components/BankAccountsPanel';
 import { PositionsTable } from './components/PositionsTable';
+import { UnifiedPositionsPanel } from './components/UnifiedPositionsPanel';
+import { CashFlowPanel } from './components/CashFlowPanel';
+import { OpportunitySimulationPanel } from './components/OpportunitySimulationPanel';
+import { RelationshipVisualizationPanel } from './components/RelationshipVisualizationPanel';
 import { OrdersPanel } from './components/OrdersPanel';
 import { AlertsPanel } from './components/AlertsPanel';
 import { ActionBar } from './components/ActionBar';
@@ -21,16 +27,21 @@ import { useChartData } from './hooks/useChartData';
 import type { SnapshotPayload, SymbolSnapshot, PositionSnapshot } from './types/snapshot';
 import type { BoxSpreadSummary } from './types';
 import type { Timeframe } from './types/chart';
+import type { BrokerType } from './components/BrokerSelector';
 
-const TABS = [
+const TABS: TabDefinition[] = [
   { id: 'dashboard', title: 'Dashboard' },
+  { id: 'unified', title: 'Unified Positions' },
+  { id: 'cashflow', title: 'Cash Flow' },
+  { id: 'simulation', title: 'Simulation' },
+  { id: 'relationships', title: 'Relationships' },
   { id: 'current', title: 'Current Positions' },
   { id: 'historic', title: 'Historic Positions' },
   { id: 'orders', title: 'Orders' },
   { id: 'alerts', title: 'Alerts' }
-] as const;
+];
 
-type TabId = typeof TABS[number]['id'];
+type TabId = 'dashboard' | 'unified' | 'cashflow' | 'simulation' | 'relationships' | 'current' | 'historic' | 'orders' | 'alerts';
 
 type ModalState =
   | { type: 'symbol'; payload: SymbolSnapshot }
@@ -48,7 +59,16 @@ function renderTabContent(
   onRemoveSymbol: (symbol: string) => void,
   isDefaultSymbol: (symbol: string) => boolean,
   onCancelOrder: (orderId: string) => Promise<void>,
-  apiBaseUrl: string
+  apiBaseUrl: string,
+  bankAccounts: Array<{
+    account_path: string;
+    account_name: string;
+    bank_name: string | null;
+    balance: number;
+    currency: string;
+    credit_rate: number | null;
+    debit_rate: number | null;
+  }>
 ) {
   if (!snapshot) {
     return <div className="panel panel--fill">Awaiting live data…</div>;
@@ -90,7 +110,36 @@ function renderTabContent(
           onSelectPosition={onSelectPosition}
         />
       );
-      case 'orders':
+    case 'unified':
+      return (
+        <UnifiedPositionsPanel
+          positions={snapshot.positions}
+          bankAccounts={bankAccounts}
+          onSelectPosition={onSelectPosition}
+        />
+      );
+    case 'cashflow':
+      return (
+        <CashFlowPanel
+          positions={snapshot.positions}
+          bankAccounts={bankAccounts}
+        />
+      );
+    case 'simulation':
+      return (
+        <OpportunitySimulationPanel
+          positions={snapshot.positions}
+          bankAccounts={bankAccounts}
+        />
+      );
+    case 'relationships':
+      return (
+        <RelationshipVisualizationPanel
+          positions={snapshot.positions}
+          bankAccounts={bankAccounts}
+        />
+      );
+    case 'orders':
         return <OrdersPanel orders={snapshot.orders} onCancelOrder={onCancelOrder} apiBaseUrl={apiBaseUrl} />;
     case 'alerts':
       return <AlertsPanel alerts={snapshot.alerts} />;
@@ -106,6 +155,7 @@ function App() {
   const [selectedStrike, setSelectedStrike] = useState<number | null>(null);
   const [selectedExpiration, setSelectedExpiration] = useState<string | null>(null);
   const [chartTimeframe, setChartTimeframe] = useState<Timeframe>('1D');
+  const [currentBroker, setCurrentBroker] = useState<BrokerType>('AUTO');
   const {
     snapshot,
     isLoading: snapshotLoading,
@@ -208,6 +258,100 @@ function App() {
     });
   }, []);
 
+  const handleStrategyStart = useCallback(async () => {
+    try {
+      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
+      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
+
+      const response = await fetch(`${baseUrl}/api/v1/strategy/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (response.ok) {
+        console.log('Strategy started');
+        // Snapshot will update on next poll
+      } else {
+        console.error('Failed to start strategy:', response.statusText);
+        alert(`Failed to start strategy: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error starting strategy:', error);
+      alert(`Error starting strategy: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, []);
+
+  const handleStrategyStop = useCallback(async () => {
+    try {
+      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
+      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
+
+      const response = await fetch(`${baseUrl}/api/v1/strategy/stop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (response.ok) {
+        console.log('Strategy stopped');
+        // Snapshot will update on next poll
+      } else {
+        console.error('Failed to stop strategy:', response.statusText);
+        alert(`Failed to stop strategy: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error stopping strategy:', error);
+      alert(`Error stopping strategy: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, []);
+
+  const handleDryRunToggle = useCallback(async (enabled: boolean) => {
+    try {
+      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
+      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
+
+      const response = await fetch(`${baseUrl}/api/mode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: enabled ? 'DRY-RUN' : 'LIVE' })
+      });
+
+      if (response.ok) {
+        console.log('Dry-run mode:', enabled ? 'enabled' : 'disabled');
+        // Snapshot will update on next poll
+      } else {
+        console.error('Failed to toggle dry-run:', response.statusText);
+        alert(`Failed to toggle dry-run: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error toggling dry-run:', error);
+      alert(`Error toggling dry-run: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, []);
+
+  const handleCancelOrder = useCallback(async (orderId: string) => {
+    try {
+      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
+      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
+
+      const response = await fetch(`${baseUrl}/api/v1/orders/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId })
+      });
+
+      if (response.ok) {
+        console.log(`Order ${orderId} cancelled`);
+        // Snapshot will update on next poll
+      } else {
+        console.error('Failed to cancel order:', response.statusText);
+        throw new Error(response.statusText);
+      }
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      throw error;
+    }
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Ignore if typing in input/textarea
@@ -255,7 +399,7 @@ function App() {
       if (numKey >= 1 && numKey <= TABS.length && !event.ctrlKey && !event.metaKey && !event.altKey) {
         event.preventDefault();
         const targetTab = TABS[numKey - 1];
-        if (targetTab) {
+        if (targetTab && (targetTab.id === 'dashboard' || targetTab.id === 'current' || targetTab.id === 'historic' || targetTab.id === 'orders' || targetTab.id === 'alerts')) {
           setActiveTab(targetTab.id);
         }
       }
@@ -268,13 +412,19 @@ function App() {
           event.preventDefault();
           const currentIndex = TABS.findIndex(tab => tab.id === activeTab);
           const nextIndex = (currentIndex + 1) % TABS.length;
-          setActiveTab(TABS[nextIndex].id);
+          const nextTab = TABS[nextIndex];
+          if (nextTab && (nextTab.id === 'dashboard' || nextTab.id === 'current' || nextTab.id === 'historic' || nextTab.id === 'orders' || nextTab.id === 'alerts')) {
+            setActiveTab(nextTab.id);
+          }
         } else {
           // Shift+Tab: move to previous tab
           event.preventDefault();
           const currentIndex = TABS.findIndex(tab => tab.id === activeTab);
           const prevIndex = (currentIndex - 1 + TABS.length) % TABS.length;
-          setActiveTab(TABS[prevIndex].id);
+          const prevTab = TABS[prevIndex];
+          if (prevTab && (prevTab.id === 'dashboard' || prevTab.id === 'current' || prevTab.id === 'historic' || prevTab.id === 'orders' || prevTab.id === 'alerts')) {
+            setActiveTab(prevTab.id);
+          }
         }
       }
 
@@ -283,8 +433,11 @@ function App() {
         event.preventDefault();
         // Cancel the most recent active order if available
         if (snapshot?.orders && snapshot.orders.length > 0) {
+          // Filter orders by checking text content for active status indicators
           const activeOrders = snapshot.orders.filter(order =>
-            order.status === 'SUBMITTED' || order.status === 'PENDING'
+            order.text.toLowerCase().includes('submitted') ||
+            order.text.toLowerCase().includes('pending') ||
+            order.text.toLowerCase().includes('active')
           );
           if (activeOrders.length > 0) {
             const mostRecentOrder = activeOrders[activeOrders.length - 1];
@@ -385,103 +538,10 @@ function App() {
     }
   }, []);
 
-  const handleStrategyStart = useCallback(async () => {
-    try {
-      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
-      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
-
-      const response = await fetch(`${baseUrl}/api/v1/strategy/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (response.ok) {
-        console.log('Strategy started');
-        // Snapshot will update on next poll
-      } else {
-        console.error('Failed to start strategy:', response.statusText);
-        alert(`Failed to start strategy: ${response.statusText}`);
-      }
-    } catch (error) {
-      console.error('Error starting strategy:', error);
-      alert(`Error starting strategy: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }, []);
-
-  const handleStrategyStop = useCallback(async () => {
-    try {
-      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
-      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
-
-      const response = await fetch(`${baseUrl}/api/v1/strategy/stop`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (response.ok) {
-        console.log('Strategy stopped');
-        // Snapshot will update on next poll
-      } else {
-        console.error('Failed to stop strategy:', response.statusText);
-        alert(`Failed to stop strategy: ${response.statusText}`);
-      }
-    } catch (error) {
-      console.error('Error stopping strategy:', error);
-      alert(`Error stopping strategy: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }, []);
-
-  const handleDryRunToggle = useCallback(async (enabled: boolean) => {
-    try {
-      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
-      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
-
-      const response = await fetch(`${baseUrl}/api/mode`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: enabled ? 'DRY-RUN' : 'LIVE' })
-      });
-
-      if (response.ok) {
-        console.log('Dry-run mode:', enabled ? 'enabled' : 'disabled');
-        // Snapshot will update on next poll
-      } else {
-        console.error('Failed to toggle dry-run:', response.statusText);
-        alert(`Failed to toggle dry-run: ${response.statusText}`);
-      }
-    } catch (error) {
-      console.error('Error toggling dry-run:', error);
-      alert(`Error toggling dry-run: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }, []);
-
-  const handleCancelOrder = useCallback(async (orderId: string) => {
-    try {
-      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
-      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
-
-      const response = await fetch(`${baseUrl}/api/v1/orders/cancel`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: orderId })
-      });
-
-      if (response.ok) {
-        console.log(`Order ${orderId} cancelled`);
-        // Snapshot will update on next poll
-      } else {
-        console.error('Failed to cancel order:', response.statusText);
-        throw new Error(response.statusText);
-      }
-    } catch (error) {
-      console.error('Error cancelling order:', error);
-      throw error;
-    }
-  }, []);
-
-  // Get API base URL for account selector
+  // Get API base URL for account selector and bank accounts
   const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
   const apiBaseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
+  const { accounts: bankAccounts } = useBankAccounts(apiBaseUrl);
 
   // Chart data for symbol modal
   const chartSymbol = modal?.type === 'symbol' ? modal.payload.symbol : '';
@@ -491,8 +551,10 @@ function App() {
     apiBaseUrl
   });
 
+  console.log('App render - snapshotLoading:', snapshotLoading, 'snapshotError:', snapshotError, 'hasSnapshot:', !!snapshot);
+
   return (
-    <div className={`app-shell ${snapshot?.mode === 'LIVE' || snapshot?.mode === 'LIVE_TRADING' ? 'app-shell--live' : ''}`}>
+    <div className={`app-shell ${snapshot?.mode === 'LIVE' || snapshot?.mode === 'LIVE_TRADING' ? 'app-shell--live' : ''}`} style={{ minHeight: '100vh', background: '#020617', color: '#e2e8f0', padding: '24px' }}>
       <HeaderStatus
         snapshot={snapshot}
         onModeChange={handleModeChange}
@@ -520,7 +582,15 @@ function App() {
         )}
       </div>
 
-      <TabNavigation tabs={TABS} activeTab={activeTab} onSelect={setActiveTab} />
+      <TabNavigation
+        tabs={TABS}
+        activeTab={activeTab}
+        onSelect={(id: string) => {
+          if (id === 'dashboard' || id === 'unified' || id === 'cashflow' || id === 'simulation' || id === 'relationships' || id === 'current' || id === 'historic' || id === 'orders' || id === 'alerts') {
+            setActiveTab(id as TabId);
+          }
+        }}
+      />
 
       <main className="app-main">
         {snapshotLoading && (
@@ -560,7 +630,8 @@ function App() {
             removeSymbol,
             isDefault,
             handleCancelOrder,
-            apiBaseUrl
+            apiBaseUrl,
+            bankAccounts
           ) || (
             <div className="panel panel--fill" style={{ padding: '40px', textAlign: 'center' }}>
               <div>No data available</div>
@@ -569,7 +640,7 @@ function App() {
               </div>
             </div>
           )
-        )}
+          )}
       </main>
 
       <ActionBar onBuyCombo={handleBuyCombo} onSellCombo={handleSellCombo} />

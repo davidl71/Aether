@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-interface TabDefinition {
+export interface TabDefinition {
   id: string;
   title: string;
 }

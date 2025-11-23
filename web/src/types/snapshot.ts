@@ -35,6 +35,15 @@ export interface SymbolSnapshot {
   option_chains: OptionSeries[];
 }
 
+export type InstrumentType =
+  | 'box_spread'
+  | 'bank_loan'
+  | 'pension_loan'
+  | 'bond'
+  | 't_bill'
+  | 'futures'
+  | 'other';
+
 export interface PositionSnapshot {
   name: string;
   quantity: number;
@@ -46,6 +55,13 @@ export interface PositionSnapshot {
   theta: number;
   fair_diff: number;
   candle: Candle;
+  // Extended fields for unified positions
+  instrument_type?: InstrumentType;
+  rate?: number; // Annual rate (APR) for loans/financing
+  maturity_date?: string; // ISO 8601 date string
+  cash_flow?: number; // Expected cash flow amount
+  collateral_value?: number; // Collateral value if applicable
+  currency?: string; // Currency code (defaults to USD)
 }
 
 export interface TimelineEvent {

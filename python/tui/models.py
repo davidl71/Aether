@@ -136,6 +136,9 @@ class SymbolSnapshot:
         )
 
 
+InstrumentType = str  # 'box_spread', 'bank_loan', 'pension_loan', 'bond', 't_bill', 'futures', 'other'
+
+
 @dataclass
 class PositionSnapshot:
     """Position snapshot matching web/src/types/snapshot.ts PositionSnapshot interface"""
@@ -149,9 +152,16 @@ class PositionSnapshot:
     theta: float = 0.0
     fair_diff: float = 0.0
     candle: Candle = field(default_factory=Candle)
+    # Extended fields for unified positions
+    instrument_type: Optional[str] = None  # InstrumentType
+    rate: Optional[float] = None  # Annual rate (APR) for loans/financing
+    maturity_date: Optional[str] = None  # ISO 8601 date string
+    cash_flow: Optional[float] = None  # Expected cash flow amount
+    collateral_value: Optional[float] = None  # Collateral value if applicable
+    currency: Optional[str] = None  # Currency code (defaults to USD)
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        result = {
             "name": self.name,
             "quantity": self.quantity,
             "roi": self.roi,
@@ -163,6 +173,20 @@ class PositionSnapshot:
             "fair_diff": self.fair_diff,
             "candle": self.candle.to_dict()
         }
+        # Add extended fields if present
+        if self.instrument_type is not None:
+            result["instrument_type"] = self.instrument_type
+        if self.rate is not None:
+            result["rate"] = self.rate
+        if self.maturity_date is not None:
+            result["maturity_date"] = self.maturity_date
+        if self.cash_flow is not None:
+            result["cash_flow"] = self.cash_flow
+        if self.collateral_value is not None:
+            result["collateral_value"] = self.collateral_value
+        if self.currency is not None:
+            result["currency"] = self.currency
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> PositionSnapshot:
@@ -176,7 +200,13 @@ class PositionSnapshot:
             vega=data.get("vega", 0.0),
             theta=data.get("theta", 0.0),
             fair_diff=data.get("fair_diff", 0.0),
-            candle=Candle.from_dict(data.get("candle", {}))
+            candle=Candle.from_dict(data.get("candle", {})),
+            instrument_type=data.get("instrument_type"),
+            rate=data.get("rate"),
+            maturity_date=data.get("maturity_date"),
+            cash_flow=data.get("cash_flow"),
+            collateral_value=data.get("collateral_value"),
+            currency=data.get("currency")
         )
 
 

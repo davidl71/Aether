@@ -18,7 +18,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Dict
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
@@ -39,6 +39,10 @@ from textual.reactive import reactive
 from .models import SnapshotPayload, Severity, BoxSpreadPayload, BoxSpreadSummary
 from .providers import Provider, MockProvider, RestProvider, FileProvider
 from .config import TUIConfig, load_config
+from .components.unified_positions import UnifiedPositionsTab
+from .components.cash_flow import CashFlowTab
+from .components.opportunity_simulation import OpportunitySimulationTab
+from .components.relationship_visualization import RelationshipVisualizationTab
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +79,7 @@ class DashboardTab(Container):
     def compose(self) -> ComposeResult:
         with Vertical():
             yield Label("Dashboard", classes="tab-title")
+            yield Label(id="missing-symbols-label")
             yield DataTable(id="symbols-table")
             yield Label(id="metrics-label")
 
@@ -91,6 +96,24 @@ class DashboardTab(Container):
     def _update_data(self) -> None:
         if not self.snapshot:
             return
+
+        # Default watchlist symbols (matching PWA)
+        default_watchlist = ['SPX', 'XSP', 'NANOS', 'TLT', 'DSP']
+
+        # Find missing symbols
+        available_symbols = {s.symbol.upper() for s in self.snapshot.symbols}
+        missing_symbols = [s for s in default_watchlist if s.upper() not in available_symbols]
+
+        # Update missing symbols label
+        missing_label = self.query_one("#missing-symbols-label", Label)
+        if missing_symbols:
+            missing_label.update(
+                f"⚠️ Note: The following symbols are in your watchlist but not available in the current snapshot: {', '.join(missing_symbols)}"
+            )
+            missing_label.add_class("warning")
+        else:
+            missing_label.update("")
+            missing_label.remove_class("warning")
 
         table = self.query_one("#symbols-table", DataTable)
         table.clear()
@@ -368,6 +391,20 @@ class TUIApp(App):
         margin: 1;
         text-style: dim;
     }
+
+    .position-group-header {
+        text-style: bold;
+        color: $accent;
+        margin: 1 0;
+    }
+
+    #missing-symbols-label.warning {
+        color: $warning;
+        text-style: bold;
+        margin: 1;
+        padding: 1;
+        background: $surface-darken-1;
+    }
     """
 
     TITLE = "IB Box Spread Terminal"
@@ -388,11 +425,16 @@ class TUIApp(App):
         self.snapshot: Optional[SnapshotPayload] = None
         self.box_spread_data: Optional[BoxSpreadPayload] = None
         self._dashboard_tab: Optional[DashboardTab] = None
+        self._unified_positions_tab: Optional[UnifiedPositionsTab] = None
+        self._cash_flow_tab: Optional[CashFlowTab] = None
+        self._opportunity_simulation_tab: Optional[OpportunitySimulationTab] = None
+        self._relationship_visualization_tab: Optional[RelationshipVisualizationTab] = None
         self._positions_tab: Optional[PositionsTab] = None
         self._orders_tab: Optional[OrdersTab] = None
         self._alerts_tab: Optional[AlertsTab] = None
         self._scenarios_tab: Optional[ScenariosTab] = None
         self._box_spread_file_path = Path("web/public/data/box_spread_sample.json")
+        self._bank_accounts: List[Dict] = []
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the app"""
@@ -405,6 +447,22 @@ class TUIApp(App):
                 with TabPane("Dashboard", id="dashboard-tab"):
                     self._dashboard_tab = DashboardTab()
                     yield self._dashboard_tab
+
+                with TabPane("Unified Positions", id="unified-positions-tab"):
+                    self._unified_positions_tab = UnifiedPositionsTab()
+                    yield self._unified_positions_tab
+
+                with TabPane("Cash Flow", id="cash-flow-tab"):
+                    self._cash_flow_tab = CashFlowTab()
+                    yield self._cash_flow_tab
+
+                with TabPane("Simulation", id="simulation-tab"):
+                    self._opportunity_simulation_tab = OpportunitySimulationTab()
+                    yield self._opportunity_simulation_tab
+
+                with TabPane("Relationships", id="relationships-tab"):
+                    self._relationship_visualization_tab = RelationshipVisualizationTab()
+                    yield self._relationship_visualization_tab
 
                 with TabPane("Positions", id="positions-tab"):
                     self._positions_tab = PositionsTab()
@@ -432,6 +490,8 @@ class TUIApp(App):
         self.provider.start()
         self.set_interval(0.5, self._update_snapshot)  # Update every 500ms
         self.set_interval(2.0, self._update_box_spread_data)  # Update every 2 seconds
+        self.set_interval(30.0, self._fetch_bank_accounts)  # Update bank accounts every 30 seconds
+        self._fetch_bank_accounts()  # Initial fetch
         logger.info("TUI application mounted")
 
     def on_unmount(self) -> None:
@@ -452,12 +512,39 @@ class TUIApp(App):
             # Update tabs
             if self._dashboard_tab:
                 self._dashboard_tab.update_snapshot(new_snapshot)
+            if self._unified_positions_tab:
+                self._unified_positions_tab.update_snapshot(new_snapshot, self._bank_accounts)
+            if self._cash_flow_tab:
+                self._cash_flow_tab.update_snapshot(new_snapshot, self._bank_accounts)
+            if self._opportunity_simulation_tab:
+                self._opportunity_simulation_tab.update_snapshot(new_snapshot, self._bank_accounts)
+            if self._relationship_visualization_tab:
+                self._relationship_visualization_tab.update_snapshot(new_snapshot, self._bank_accounts)
             if self._positions_tab:
                 self._positions_tab.update_snapshot(new_snapshot)
             if self._orders_tab:
                 self._orders_tab.update_snapshot(new_snapshot)
             if self._alerts_tab:
                 self._alerts_tab.update_snapshot(new_snapshot)
+
+    def _fetch_bank_accounts(self) -> None:
+        """Fetch bank accounts from Discount Bank service"""
+        try:
+            import requests
+            response = requests.get(
+                "http://localhost:8003/api/bank-accounts",
+                timeout=2.0,
+                headers={"cache-control": "no-cache"}
+            )
+            if response.ok:
+                data = response.json()
+                self._bank_accounts = data.get("accounts", [])
+                # Update unified positions tab if it exists
+                if self._unified_positions_tab and self.snapshot:
+                    self._unified_positions_tab.update_snapshot(self.snapshot, self._bank_accounts)
+        except Exception as e:
+            logger.debug(f"Failed to fetch bank accounts: {e}")
+            # Silently fail - bank accounts are optional
 
     def _update_box_spread_data(self) -> None:
         """Update box spread data from file"""

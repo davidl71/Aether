@@ -33,11 +33,11 @@ if (!rootElement) {
 console.log('React app mounting...');
 
 try {
-  ReactDOM.createRoot(rootElement).render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
+ReactDOM.createRoot(rootElement).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
   console.log('React app mounted successfully');
 } catch (error) {
   console.error('Failed to mount React app:', error);

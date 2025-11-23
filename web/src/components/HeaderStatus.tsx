@@ -1,3 +1,4 @@
+import { useState, type ChangeEvent } from 'react';
 import type { SnapshotPayload } from '../types/snapshot';
 import { formatCurrency } from '../utils/formatters';
 import { ModeSwitcher, type TradingMode } from './ModeSwitcher';
@@ -5,6 +6,8 @@ import { AccountSelector } from './AccountSelector';
 import { BrokerSelector, type BrokerType } from './BrokerSelector';
 import { useWebSocketStatus } from '../hooks/useWebSocket';
 import { useNATS } from '../hooks/useNATS';
+import { useBackendServices, type BackendServiceStatus } from '../hooks/useBackendServices';
+import { ServiceConfigModal } from './ServiceConfigModal';
 
 interface HeaderStatusProps {
   snapshot: SnapshotPayload | null;
@@ -18,9 +21,53 @@ interface HeaderStatusProps {
   currentBroker?: BrokerType;
 }
 
-function statusBadge(ok: boolean, label: string) {
+function statusBadge(
+  ok: boolean,
+  label: string,
+  onClick?: () => void,
+  attentionType?: string,
+  enabled?: boolean
+) {
+  let badgeClass = ok ? 'status-badge--ok' : 'status-badge--warn';
+  let indicator = '';
+
+  // Check if service is disabled
+  if (enabled === false) {
+    badgeClass = 'status-badge--disabled';
+    indicator = '🚫';
+  } else if (attentionType && attentionType !== 'none') {
+    // Add attention indicator based on type (only if not disabled)
+    badgeClass = 'status-badge--attention';
+    switch (attentionType) {
+      case 'authentication':
+        indicator = '🔐';
+        break;
+      case 'credentials':
+        indicator = '🔑';
+        break;
+      case 'configuration':
+        indicator = '⚙️';
+        break;
+      case 'error':
+        indicator = '⚠️';
+        break;
+    }
+  }
+
+  const title = enabled === false
+    ? 'Service is disabled'
+    : attentionType && attentionType !== 'none'
+      ? `Requires attention: ${attentionType}`
+      : undefined;
+
   return (
-    <span className={`status-badge ${ok ? 'status-badge--ok' : 'status-badge--warn'}`}>
+    <span
+      className={`status-badge ${badgeClass} ${onClick ? 'status-badge--clickable' : ''}`}
+      onClick={onClick}
+      style={onClick ? { cursor: 'pointer' } : {}}
+      title={title}
+    >
+      {indicator && <span style={{ marginRight: '4px' }}>{indicator}</span>}
       {label}
     </span>
   );
@@ -41,12 +88,14 @@ export function HeaderStatus({
   const modeClass = isLive ? 'mode-indicator--live' : 'mode-indicator--paper';
   const isStrategyRunning = snapshot?.strategy === 'RUNNING';
   const { status: connectionStatus } = useWebSocketStatus();
-  const { connected: natsConnected, error: natsError } = useNATS({
+  const { connected: natsConnected } = useNATS({
     autoConnect: true,
     subscribeMarketData: false, // Only connection status for now
     subscribeStrategySignals: false,
     subscribeStrategyDecisions: false,
   });
+  const { statuses: backendStatuses, checkAllServices } = useBackendServices({ intervalMs: 10000, enabled: true });
+  const [selectedService, setSelectedService] = useState<BackendServiceStatus | null>(null);
 
   if (!snapshot) {
     return (
@@ -84,7 +133,7 @@ export function HeaderStatus({
     }
   };
 
-  const handleDryRunToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDryRunToggle = (event: ChangeEvent<HTMLInputElement>) => {
     if (onDryRunToggle) {
       onDryRunToggle(event.target.checked);
     } else {
@@ -115,7 +164,7 @@ export function HeaderStatus({
       </div>
       <div className="header__meta">
         <span>Strategy: <strong>{snapshot.strategy}</strong></span>
-        {(onStrategyStart || onStrategyStop) && (
+        {(onStrategyStart ?? onStrategyStop) && (
           <div className="header__strategy-controls" style={{ display: 'inline-flex', gap: '8px', marginLeft: '16px' }}>
             {!isStrategyRunning ? (
               <button
@@ -199,6 +248,76 @@ export function HeaderStatus({
           {connectionStatus === 'connected' ? 'WS' : connectionStatus === 'polling' ? 'Poll' : 'Conn'}
         </span>
         {statusBadge(natsConnected, 'NATS')}
+        {statusBadge(
+          backendStatuses.rustBackend.healthy,
+          'Rust',
+          () => {
+            console.log('[Service Config] Opening Rust Backend configuration');
+            setSelectedService(backendStatuses.rustBackend);
+          },
+          backendStatuses.rustBackend.attentionRequired ?? undefined,
+          backendStatuses.rustBackend.enabled
+        )}
+        {statusBadge(
+          backendStatuses.alpaca.healthy,
+          'Alpaca',
+          () => {
+            console.log('[Service Config] Opening Alpaca configuration');
+            setSelectedService(backendStatuses.alpaca);
+          },
+          backendStatuses.alpaca.attentionRequired ?? undefined,
+          backendStatuses.alpaca.enabled ?? undefined
+        )}
+        {statusBadge(
+          backendStatuses.tradestation.healthy,
+          'TS',
+          () => {
+            console.log('[Service Config] Opening TradeStation configuration');
+            setSelectedService(backendStatuses.tradestation);
+          },
+          backendStatuses.tradestation.attentionRequired ?? undefined,
+          backendStatuses.tradestation.enabled ?? undefined
+        )}
+        {statusBadge(
+          backendStatuses.ib.healthy,
+          'IB',
+          () => {
+            console.log('[Service Config] Opening IB configuration');
+            setSelectedService(backendStatuses.ib);
+          },
+          backendStatuses.ib.attentionRequired ?? undefined,
+          backendStatuses.ib.enabled ?? undefined
+        )}
+        {statusBadge(
+          backendStatuses.discountBank.healthy,
+          'DB',
+          () => {
+            console.log('[Service Config] Opening Discount Bank configuration');
+            setSelectedService(backendStatuses.discountBank);
+          },
+          backendStatuses.discountBank.attentionRequired ?? undefined,
+          backendStatuses.discountBank.enabled ?? undefined
+        )}
+        {statusBadge(
+          backendStatuses.riskFreeRate.healthy,
+          'RFR',
+          () => {
+            console.log('[Service Config] Opening Risk-Free Rate configuration');
+            setSelectedService(backendStatuses.riskFreeRate);
+          },
+          backendStatuses.riskFreeRate.attentionRequired ?? undefined,
+          backendStatuses.riskFreeRate.enabled ?? undefined
+        )}
+        {statusBadge(
+          backendStatuses.tastytrade.healthy,
+          'TT',
+          () => {
+            console.log('[Service Config] Opening Tastytrade configuration');
+            setSelectedService(backendStatuses.tastytrade);
+          },
+          backendStatuses.tastytrade.attentionRequired ?? undefined,
+          backendStatuses.tastytrade.enabled ?? undefined
+        )}
       </div>
       <div className="header__metrics">
         <span>NetLiq: <strong>{formatCurrency(metrics.net_liq)}</strong></span>
@@ -206,6 +325,19 @@ export function HeaderStatus({
         <span>Margin Req: <strong>{formatCurrency(metrics.margin_requirement)}</strong></span>
         <span>Commissions: <strong>{formatCurrency(metrics.commissions)}</strong></span>
       </div>
+      {selectedService && (
+        <ServiceConfigModal
+          service={selectedService}
+          onClose={() => {
+            console.log('[Service Config] Closing service configuration modal');
+            setSelectedService(null);
+          }}
+          onRefresh={() => {
+            console.log('[Service Config] Refreshing service status');
+            void checkAllServices();
+          }}
+        />
+      )}
     </header>
   );
 }

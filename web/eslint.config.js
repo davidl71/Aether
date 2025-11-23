@@ -5,6 +5,8 @@ import tseslint from '@typescript-eslint/eslint-plugin';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import json from '@eslint/json';
+import html from 'eslint-plugin-html';
 
 const baseTsLanguageOptions = {
   parser,
@@ -45,10 +47,50 @@ const reactSettings = {
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**']
+    ignores: [
+      'dist/**',
+      'dev-dist/**',
+      'node_modules/**',
+      'vitest.setup.ts',
+      'package-lock.json', // Generated file, no need to lint
+      '**/*.lock', // Lock files are generated
+      'ib-gateway/**' // Third-party gateway files
+    ]
   },
+  // JavaScript files (plain JS, not TypeScript)
+  {
+    files: ['**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.es2021,
+        ...globals.browser
+      },
+      ecmaVersion: 2021,
+      sourceType: 'module'
+    },
+    plugins: {
+      '@typescript-eslint': tseslint
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      '@typescript-eslint/no-var-requires': 'off', // Allow require() in JS files
+      'no-unused-vars': 'warn',
+      'no-undef': 'error'
+    }
+  },
+  // JSON files - use @eslint/json recommended config (must come before TypeScript configs)
+  {
+    files: ['**/*.json'],
+    language: 'json/json', // Explicitly set JSON language
+    ...json.configs.recommended
+  },
+  // HTML files - eslint-plugin-html doesn't fully support flat config yet
+  // HTML linting can be added later when plugin supports flat config
+  // For now, HTML validation is handled by browser/IDE
   {
     files: ['src/**/*.{ts,tsx}'],
+    ignores: ['**/*.json'], // Explicitly exclude JSON from TypeScript config
     languageOptions: baseTsLanguageOptions,
     plugins: baseTsPlugins,
     rules: baseTsRules,
@@ -72,7 +114,7 @@ export default [
     settings: reactSettings
   },
   {
-    files: ['vite.config.ts', 'vitest.config.ts'],
+    files: ['*.config.{js,ts}', 'vite.config.ts', 'vitest.config.ts'],
     languageOptions: {
       parser,
       parserOptions: {

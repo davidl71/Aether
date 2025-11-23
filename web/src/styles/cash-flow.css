@@ -1,0 +1,158 @@
+/* Cash Flow Panel Styles */
+.cash-flow-panel {
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.85);
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.6);
+}
+
+.cash-flow-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.cash-flow-panel__header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.cash-flow-panel__controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.cash-flow-panel__controls select {
+  padding: 6px 12px;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.cash-flow-panel__controls select:hover {
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.cash-flow-panel__summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.cash-flow-summary-card {
+  padding: 16px;
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.cash-flow-summary-card__label {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.cash-flow-summary-card__value {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.cash-flow-summary-card__value--positive {
+  color: #26a69a;
+}
+
+.cash-flow-summary-card__value--negative {
+  color: #ef5350;
+}
+
+.cash-flow-panel__table {
+  overflow-x: auto;
+}
+
+.cash-flow-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cash-flow-table thead {
+  background: rgba(30, 41, 59, 0.8);
+  border-bottom: 2px solid rgba(148, 163, 184, 0.3);
+}
+
+.cash-flow-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.cash-flow-table td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.cash-flow-table__inflow {
+  color: #26a69a;
+}
+
+.cash-flow-table__outflow {
+  color: #ef5350;
+}
+
+.cash-flow-table__net--positive {
+  color: #26a69a;
+  font-weight: 600;
+}
+
+.cash-flow-table__net--negative {
+  color: #ef5350;
+  font-weight: 600;
+}
+
+.cash-flow-events-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0 0;
+}
+
+.cash-flow-event {
+  display: flex;
+  gap: 12px;
+  padding: 8px;
+  margin-bottom: 4px;
+  background: rgba(30, 41, 59, 0.4);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.cash-flow-event__date {
+  color: #94a3b8;
+  min-width: 80px;
+}
+
+.cash-flow-event__description {
+  flex: 1;
+  color: #e2e8f0;
+}
+
+.cash-flow-event__amount--positive {
+  color: #26a69a;
+  font-weight: 600;
+}
+
+.cash-flow-event__amount--negative {
+  color: #ef5350;
+  font-weight: 600;
+}

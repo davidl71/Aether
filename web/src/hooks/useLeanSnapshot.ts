@@ -80,7 +80,7 @@ export function useLeanSnapshot(options: UseLeanSnapshotOptions = {}) {
         void fetchSnapshot();
       }
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       // Fall back to polling if WebSocket fails
       setPollingEnabled(true);
       setState((prev) => ({

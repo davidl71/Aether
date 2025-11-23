@@ -183,6 +183,22 @@ pub mod system {
   pub fn config() -> &'static str {
     "system.config"
   }
+
+  /// Service control commands: `system.service.{service_name}.{action}`
+  /// Actions: start, stop, restart, enable, disable
+  pub fn service_control(service_name: &str, action: &str) -> String {
+    format!("system.service.{}.{}", service_name, action)
+  }
+
+  /// Service status updates: `system.service.{service_name}.status`
+  pub fn service_status(service_name: &str) -> String {
+    format!("system.service.{}.status", service_name)
+  }
+
+  /// Subscribe to all service control commands: `system.service.>`
+  pub fn all_service_control() -> &'static str {
+    "system.service.>"
+  }
 }
 
 /// Dead Letter Queue (DLQ) topics

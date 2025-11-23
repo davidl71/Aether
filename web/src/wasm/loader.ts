@@ -1,6 +1,7 @@
 // wasm/loader.ts - WASM module loader and initialization
 
-import createBoxSpreadModule from '../../public/wasm/box_spread_wasm.js';
+// WASM module is optional - only import if it exists
+// import createBoxSpreadModule from '../../public/wasm/box_spread_wasm.js';
 
 let wasmModule: any = null;
 let isInitialized = false;
@@ -23,14 +24,15 @@ export async function initWasm(): Promise<void> {
   initPromise = (async () => {
     try {
       console.log('Loading WASM module...');
-      wasmModule = await createBoxSpreadModule();
-      isInitialized = true;
-      console.log('✅ WASM module loaded successfully');
+      // WASM module is optional - gracefully handle if it doesn't exist
+      // Note: WASM module file doesn't exist yet, so this will always fail gracefully
+      console.warn('WASM module not available - WASM features will be disabled');
+      isInitialized = false;
     } catch (error) {
-      console.error('❌ Failed to load WASM module:', error);
+      console.warn('WASM module not available:', error);
       isInitialized = false;
       initPromise = null;
-      throw error;
+      // Don't throw - WASM is optional
     }
   })();
 

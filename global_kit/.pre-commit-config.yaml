@@ -5,7 +5,8 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
-      - id: check-json
+      # check-json removed: ESLint now handles JSON linting via @eslint/json plugin
+      # JSON files in web/ directory are linted by ESLint (see web/eslint.config.js)
       - id: check-toml
       - id: mixed-line-ending
   - repo: https://github.com/markdownlint/markdownlint

@@ -149,6 +149,69 @@ run_swiftlint() {
 #   (cd "${ROOT_DIR}/tui" && golangci-lint run)
 # }
 
+run_eslint() {
+  if ! command -v npm >/dev/null 2>&1; then
+    warn "Skipping ESLint (npm not found)"
+    return 0
+  fi
+
+  if [ ! -f "${ROOT_DIR}/web/package.json" ]; then
+    warn "Skipping ESLint (web/package.json not found)"
+    return 0
+  fi
+
+  info "Running ESLint (React/TypeScript/JSON web frontend)"
+  (cd "${ROOT_DIR}/web" && npm run lint) || {
+    warn "ESLint found issues. Run 'cd web && npm run lint:fix' to auto-fix some issues."
+    return 1
+  }
+}
+
+run_stylelint() {
+  if ! command -v npm >/dev/null 2>&1; then
+    warn "Skipping stylelint (npm not found)"
+    return 0
+  fi
+
+  if [ ! -f "${ROOT_DIR}/web/package.json" ]; then
+    warn "Skipping stylelint (web/package.json not found)"
+    return 0
+  fi
+
+  info "Running stylelint (CSS web frontend)"
+  (cd "${ROOT_DIR}/web" && npm run lint:css) || {
+    warn "stylelint found issues. Run 'cd web && npm run lint:css:fix' to auto-fix some issues."
+    return 1
+  }
+}
+
+run_type_check() {
+  if ! command -v npm >/dev/null 2>&1; then
+    warn "Skipping TypeScript type check (npm not found)"
+    return 0
+  fi
+
+  if [ ! -f "${ROOT_DIR}/web/package.json" ]; then
+    warn "Skipping TypeScript type check (web/package.json not found)"
+    return 0
+  fi
+
+  info "Running TypeScript type check (tsc --noEmit)"
+  (cd "${ROOT_DIR}/web" && npm run type-check) || {
+    warn "TypeScript type check found errors. Fix type errors before committing."
+    return 1
+  }
+}
+
+run_js_syntax_check() {
+  if [ -f "${ROOT_DIR}/scripts/check_javascript.sh" ]; then
+    "${ROOT_DIR}/scripts/check_javascript.sh" || return 1
+  else
+    warn "Skipping JavaScript syntax check (check_javascript.sh not found)"
+    return 0
+  fi
+}
+
 run_bandit() {
   info "Running bandit (Python)"
 
@@ -235,6 +298,10 @@ main() {
   run_swiftlint
   # run_golangci_lint  # Go TUI removed - using C++ TUI instead
   run_bandit
+  run_eslint
+  run_stylelint
+  run_type_check
+  run_js_syntax_check
 
   info "Lint checks completed"
 }

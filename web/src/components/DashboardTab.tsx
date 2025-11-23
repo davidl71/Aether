@@ -55,6 +55,18 @@ export function DashboardTab({
 
   return (
     <div className="panel panel--fill">
+      {missingSymbols.length > 0 && (
+        <div className="dashboard-warning" style={{
+          padding: '12px 16px',
+          marginBottom: '16px',
+          background: 'rgba(245, 158, 11, 0.1)',
+          border: '1px solid rgba(245, 158, 11, 0.3)',
+          borderRadius: '8px',
+          color: '#fbbf24'
+        }}>
+          <strong>Note:</strong> The following symbols are in your watchlist but not available in the current snapshot: {missingSymbols.join(', ')}
+        </div>
+      )}
       <div className="panel__header">
         <div>
           <h2>Dashboard</h2>
@@ -102,16 +114,19 @@ export function DashboardTab({
 
       {missingSymbols.length > 0 && (
         <div
+          className="dashboard-missing-symbols"
           style={{
-            padding: '8px 16px',
-            background: 'rgba(148, 163, 184, 0.1)',
-            borderBottom: '1px solid rgba(148, 163, 184, 0.2)',
-            fontSize: '0.85rem',
-            color: '#94a3b8'
+            padding: '12px 16px',
+            marginBottom: '16px',
+            background: 'rgba(245, 158, 11, 0.1)',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            borderRadius: '8px',
+            fontSize: '0.9rem',
+            color: '#fbbf24'
           }}
         >
-          <strong>Note:</strong> The following symbols are in your watchlist but not available in the current snapshot:{' '}
-          {missingSymbols.join(', ')}
+          <strong>⚠️ Note:</strong> The following symbols are in your watchlist but not available in the current snapshot:{' '}
+          <strong>{missingSymbols.join(', ')}</strong>
         </div>
       )}
 

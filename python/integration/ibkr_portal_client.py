@@ -47,16 +47,81 @@ class IBKRPortalClient:
     # ------------------------------------------------------------------
 
     def ensure_session(self) -> None:
-        """Validate the current session, requesting re-auth if required."""
-        if self._call("GET", "/sso/validate", raise_for_status=False).status_code == 200:
+        """
+        Validate the current session, requesting re-auth only if necessary.
+
+        The IB Client Portal Gateway uses browser-based authentication. When you log in
+        via the browser, the gateway session is active. API clients can use this session,
+        but may need to trigger re-authentication to establish their own session token.
+
+        This method tries to use the gateway first. Only if that fails do we trigger
+        re-authentication, and only if we're confident the gateway is running.
+        """
+        # First, try to access a protected endpoint to see if we can use the gateway
+        # If gateway is authenticated via browser, this should work
+        accounts_resp = self._call("GET", "/iserver/accounts", raise_for_status=False)
+        if accounts_resp.status_code == 200:
+            logger.debug("IBKR gateway is authenticated and accessible")
             return
 
-        logger.info("IBKR portal session invalid, attempting re-authentication")
-        response = self._call("POST", "/iserver/reauthenticate", raise_for_status=False)
-        if response.status_code not in (200, 202):
-            raise IBKRPortalError(
-                f"Reauthentication failed (status={response.status_code}): {response.text[:200]}"
-            )
+        # If accounts endpoint returns 401, we need authentication
+        # However, if the gateway is already authenticated via browser, calling
+        # /iserver/reauthenticate will prompt the user unnecessarily.
+        #
+        # The IB Client Portal Gateway should allow API clients to use an authenticated
+        # gateway session. If accounts returns 401 even when gateway is authenticated,
+        # it might be a timing issue or the gateway needs the API client to establish
+        # its own session token.
+        #
+        # We'll only trigger re-authentication if:
+        # 1. The accounts endpoint returns 401 (needs auth)
+        # 2. AND we can verify the gateway is running (not a connection error)
+
+        if accounts_resp.status_code == 401:
+            # Gateway is running but needs authentication
+            # Check if gateway is at least responding (not a connection error)
+            try:
+                # Try auth status endpoint to verify gateway is running
+                auth_status_resp = self._call("GET", "/iserver/auth/status", raise_for_status=False)
+                # If we get any response (even 401), gateway is running
+                if auth_status_resp.status_code in (200, 401):
+                    logger.info("IBKR gateway requires API client authentication")
+                    logger.info("Triggering re-authentication - if already logged in via browser, you may need to approve")
+                    reauth_resp = self._call("POST", "/iserver/reauthenticate", raise_for_status=False)
+                    if reauth_resp.status_code in (200, 202):
+                        logger.info("Re-authentication triggered successfully")
+                        # Wait a moment for re-auth to complete, then verify
+                        import time
+                        time.sleep(1)
+                        # Try accounts again to verify re-auth worked
+                        verify_resp = self._call("GET", "/iserver/accounts", raise_for_status=False)
+                        if verify_resp.status_code == 200:
+                            logger.info("Re-authentication successful, gateway accessible")
+                            return
+                        else:
+                            logger.warning("Re-authentication triggered but accounts endpoint still returns %d", verify_resp.status_code)
+                            # Don't raise error - let the calling code handle it
+                            return
+                    else:
+                        raise IBKRPortalError(
+                            f"Reauthentication failed (status={reauth_resp.status_code}): {reauth_resp.text[:200]}"
+                        )
+            except IBKRPortalError:
+                # Re-raise IBKRPortalError as-is
+                raise
+            except Exception as e:
+                # Connection error or other issue
+                logger.debug(f"Gateway connectivity check failed: {e}")
+                raise IBKRPortalError(
+                    f"Unable to connect to IB Client Portal Gateway: {e}. "
+                    "Ensure the gateway is running at https://localhost:5000"
+                ) from e
+
+        # If we get here with a non-401 status, it's an unexpected error
+        raise IBKRPortalError(
+            f"Unexpected response from IB Client Portal Gateway "
+            f"(status={accounts_resp.status_code}): {accounts_resp.text[:200]}"
+        )
 
     # ------------------------------------------------------------------
     # Public API

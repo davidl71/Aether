@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, IChartApi, ISeriesApi } from 'lightweight-charts';
+import { createChart, ColorType, IChartApi, ISeriesApi, Time } from 'lightweight-charts';
 import type { Timeframe } from '../types/chart';
 import type { CandlestickData } from '../types/chart';
 
@@ -51,15 +51,20 @@ export function CandlestickChart({
     chartRef.current = chart;
 
     // Create candlestick series
-    const candlestickSeries = chart.addCandlestickSeries({
-      upColor: '#26a69a',
-      downColor: '#ef5350',
-      borderVisible: false,
-      wickUpColor: '#26a69a',
-      wickDownColor: '#ef5350'
-    });
+    // lightweight-charts v5 API: addSeries takes SeriesDefinition and options
+    // Using type assertion to work around TypeScript strictness
+    const candlestickSeriesInstance = chart.addSeries(
+      { type: 'Candlestick' } as any,
+      {
+        upColor: '#26a69a',
+        downColor: '#ef5350',
+        borderVisible: false,
+        wickUpColor: '#26a69a',
+        wickDownColor: '#ef5350'
+      }
+    ) as ISeriesApi<'Candlestick'>;
 
-    seriesRef.current = candlestickSeries;
+    seriesRef.current = candlestickSeriesInstance;
 
     // Handle resize
     const handleResize = () => {
@@ -85,7 +90,7 @@ export function CandlestickChart({
       // Convert data format if needed
       // Lightweight Charts expects time as number (Unix timestamp in seconds) or string (YYYY-MM-DD)
       const formattedData = data.map((candle) => ({
-        time: candle.time,
+        time: (typeof candle.time === 'number' ? candle.time : new Date(candle.time).getTime() / 1000) as Time,
         open: candle.open,
         high: candle.high,
         low: candle.low,

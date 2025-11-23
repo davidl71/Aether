@@ -191,8 +191,9 @@ export function AccountSelector({ currentAccountId, onAccountChange, apiBaseUrl 
   const currentAccount = accounts.find(acc => {
     const accId = acc.id || acc.account_number;
     const accNum = acc.account_number || acc.id;
+    if (!currentAccountId || !accId || !accNum) return false;
     return accId === currentAccountId || accNum === currentAccountId ||
-           currentAccountId?.includes(accId) || currentAccountId?.includes(accNum);
+           currentAccountId.includes(accId) || currentAccountId.includes(accNum);
   });
 
   if (loading && accounts.length === 0) {
@@ -251,15 +252,15 @@ export function AccountSelector({ currentAccountId, onAccountChange, apiBaseUrl 
                 const accountNum = account.account_number || account.id;
                 const isActive = accountId === currentAccountId ||
                                 accountNum === currentAccountId ||
-                                currentAccountId?.includes(accountId) ||
-                                currentAccountId?.includes(accountNum);
+                                (currentAccountId && accountId && currentAccountId.includes(accountId)) ||
+                                (currentAccountId && accountNum && currentAccountId.includes(accountNum));
                 const displayValue = account.portfolio_value || account.net_liquidation || account.cash || 0;
                 const buyingPower = account.buying_power || account.excess_liquidity || 0;
                 return (
                 <button
                   key={`${account.source}-${accountId}`}
                   className={`account-selector__item ${isActive ? 'account-selector__item--active' : ''}`}
-                  onClick={() => handleAccountSelect(accountId)}
+                  onClick={() => handleAccountSelect(accountId || null)}
                 >
                   <div className="account-selector__item-main">
                     <span className="account-selector__item-id">{accountNum}</span>

@@ -42,6 +42,13 @@
         "@semgrep/mcp-server-semgrep"
       ],
       "description": "Security scanning for code analysis - checks for security vulnerabilities, bugs, and code quality issues. Required by .cursorrules for trading software security validation."
+    },
+    "project-management-automation": {
+      "command": "python3",
+      "args": [
+        "/Volumes/SSD1_APFS/ib_box_spread_full_universal/mcp-servers/project-management-automation/server.py"
+      ],
+      "description": "Project management automation tools. \u26a0\ufe0f NOTE: This server provides enhanced, project-specific versions of documentation health, task alignment, duplicate detection, and security scanning tools. Prefer these tools over generic MCP server tools for this project."
     }
   }
 }
