@@ -68,12 +68,13 @@ except ImportError as e:
     ERROR_HANDLING_AVAILABLE = False
     logger.warning(f"Error handling module not available - using basic error handling: {e}")
 
-# Try to import MCP - will be installed in Phase 2
+# Try to import MCP - Phase 2 tools complete, MCP installation needed for runtime
 MCP_AVAILABLE = False
 USE_STDIO = False
 FastMCP = None
 
 try:
+    # Try FastMCP from mcp package (may be available in newer versions)
     from mcp import FastMCP
     from mcp.types import Tool, TextContent
 
@@ -81,22 +82,33 @@ try:
     USE_STDIO = False
     Server = None
     stdio_server = None
-    logger.info("FastMCP available - using FastMCP server")
+    logger.info("FastMCP available from mcp package - using FastMCP server")
 except ImportError:
     try:
-        from mcp.server import Server
-        from mcp.server.stdio import stdio_server
-        # For stdio server, we'll construct Tool objects manually
+        # Try FastMCP from separate fastmcp package
+        from fastmcp import FastMCP
         from mcp.types import Tool, TextContent
 
         MCP_AVAILABLE = True
-        USE_STDIO = True
-        FastMCP = None
-        logger.info("MCP stdio server available - using stdio server")
+        USE_STDIO = False
+        Server = None
+        stdio_server = None
+        logger.info("FastMCP available from fastmcp package - using FastMCP server")
     except ImportError:
-        logger.warning(
-            "MCP not installed - server structure ready, install with: pip install mcp"
-        )
+        try:
+            from mcp.server import Server
+            from mcp.server.stdio import stdio_server
+            # For stdio server, we'll construct Tool objects manually
+            from mcp.types import Tool, TextContent
+
+            MCP_AVAILABLE = True
+            USE_STDIO = True
+            FastMCP = None
+            logger.info("MCP stdio server available - using stdio server")
+        except ImportError:
+            logger.warning(
+                "MCP not installed - server structure ready, install with: pip install mcp"
+            )
         MCP_AVAILABLE = False
         Server = None
         stdio_server = None
@@ -118,7 +130,7 @@ if MCP_AVAILABLE:
         logger.info("Stdio server initialized")
         # Note: Tools will be registered below using stdio server API
 else:
-    logger.warning("MCP not available - server structure ready for Phase 2")
+    logger.warning("MCP not available - Phase 2 tools complete, install MCP to enable server")
 
 # Import automation tools (handle both relative and absolute imports)
 try:
@@ -410,6 +422,121 @@ if mcp:
             """Review PWA configuration and generate improvement recommendations."""
             return review_pwa_config(output_path, config_path)
 
+    # Register prompts
+    try:
+        # Try relative imports first (when run as module)
+        try:
+            from .prompts import (
+                DOCUMENTATION_HEALTH_CHECK,
+                DOCUMENTATION_QUICK_CHECK,
+                TASK_ALIGNMENT_ANALYSIS,
+                DUPLICATE_TASK_CLEANUP,
+                TASK_SYNC,
+                SECURITY_SCAN_ALL,
+                SECURITY_SCAN_PYTHON,
+                SECURITY_SCAN_RUST,
+                AUTOMATION_DISCOVERY,
+                AUTOMATION_HIGH_VALUE,
+                PWA_REVIEW,
+                PRE_SPRINT_CLEANUP,
+                POST_IMPLEMENTATION_REVIEW,
+                WEEKLY_MAINTENANCE,
+            )
+        except ImportError:
+            # Fallback to absolute imports (when run as script)
+            from prompts import (
+                DOCUMENTATION_HEALTH_CHECK,
+                DOCUMENTATION_QUICK_CHECK,
+                TASK_ALIGNMENT_ANALYSIS,
+                DUPLICATE_TASK_CLEANUP,
+                TASK_SYNC,
+                SECURITY_SCAN_ALL,
+                SECURITY_SCAN_PYTHON,
+                SECURITY_SCAN_RUST,
+                AUTOMATION_DISCOVERY,
+                AUTOMATION_HIGH_VALUE,
+                PWA_REVIEW,
+                PRE_SPRINT_CLEANUP,
+                POST_IMPLEMENTATION_REVIEW,
+                WEEKLY_MAINTENANCE,
+            )
+
+        @mcp.prompt()
+        def doc_health_check() -> str:
+            """Analyze documentation health and create tasks for issues."""
+            return DOCUMENTATION_HEALTH_CHECK
+
+        @mcp.prompt()
+        def doc_quick_check() -> str:
+            """Quick documentation health check without creating tasks."""
+            return DOCUMENTATION_QUICK_CHECK
+
+        @mcp.prompt()
+        def task_alignment() -> str:
+            """Analyze Todo2 task alignment with project goals."""
+            return TASK_ALIGNMENT_ANALYSIS
+
+        @mcp.prompt()
+        def duplicate_cleanup() -> str:
+            """Find and consolidate duplicate Todo2 tasks."""
+            return DUPLICATE_TASK_CLEANUP
+
+        @mcp.prompt()
+        def task_sync() -> str:
+            """Synchronize tasks between shared TODO table and Todo2."""
+            return TASK_SYNC
+
+        @mcp.prompt()
+        def security_scan_all() -> str:
+            """Scan all project dependencies for security vulnerabilities."""
+            return SECURITY_SCAN_ALL
+
+        @mcp.prompt()
+        def security_scan_python() -> str:
+            """Scan Python dependencies for security vulnerabilities."""
+            return SECURITY_SCAN_PYTHON
+
+        @mcp.prompt()
+        def security_scan_rust() -> str:
+            """Scan Rust dependencies for security vulnerabilities."""
+            return SECURITY_SCAN_RUST
+
+        @mcp.prompt()
+        def automation_discovery() -> str:
+            """Discover new automation opportunities in the codebase."""
+            return AUTOMATION_DISCOVERY
+
+        @mcp.prompt()
+        def automation_high_value() -> str:
+            """Find only high-value automation opportunities."""
+            return AUTOMATION_HIGH_VALUE
+
+        @mcp.prompt()
+        def pwa_review() -> str:
+            """Review PWA configuration and generate improvement recommendations."""
+            return PWA_REVIEW
+
+        @mcp.prompt()
+        def pre_sprint_cleanup() -> str:
+            """Pre-sprint cleanup workflow: duplicates, alignment, documentation."""
+            return PRE_SPRINT_CLEANUP
+
+        @mcp.prompt()
+        def post_implementation_review() -> str:
+            """Post-implementation review workflow: docs, security, automation."""
+            return POST_IMPLEMENTATION_REVIEW
+
+        @mcp.prompt()
+        def weekly_maintenance() -> str:
+            """Weekly maintenance workflow: docs, duplicates, security, sync."""
+            return WEEKLY_MAINTENANCE
+
+        PROMPTS_AVAILABLE = True
+        logger.info("Registered 14 prompts successfully")
+    except ImportError as e:
+        PROMPTS_AVAILABLE = False
+        logger.warning(f"Prompts not available: {e}")
+
     # Resource handlers (Phase 3)
     try:
         # Try relative imports first (when run as module)
@@ -522,6 +649,7 @@ elif stdio_server_instance:
             logger.error(f"Server error: {e}", exc_info=True)
             sys.exit(1)
 else:
-    logger.warning("MCP not available - server structure ready for Phase 2")
+    logger.warning("MCP not available - Phase 2 tools complete, install MCP to enable server")
     if __name__ == "__main__":
-        logger.info("Server ready for tool implementation in Phase 2")
+        logger.info("Phase 2 tools complete (7 tools implemented). Install MCP package to run server.")
+        logger.info("Run: pip install mcp")
