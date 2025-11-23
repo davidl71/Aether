@@ -9,6 +9,13 @@
 
 This file serves as a reference for all external APIs and libraries used in this project. Use `@docs API_DOCUMENTATION_INDEX.md` in Cursor to give the AI context about these APIs.
 
+> 💡 **AI Assistant Hint:** For up-to-date, version-specific documentation on any library or framework mentioned in this index, use the Context7 MCP server by appending `use context7` to your prompts. For example:
+> - "How do I use FastAPI async endpoints? use context7"
+> - "Show me React hooks patterns use context7"
+> - "CMake best practices 2025 use context7"
+>
+> Context7 provides current documentation (2025), version-specific API references, and real code examples without hallucinations.
+
 ## Project Documentation
 
 ### Box Spread Trading Guide

@@ -42,6 +42,31 @@
       "path": "docs/IMPLEMENTATION_GUIDE.md",
       "description": "Step-by-step implementation guide",
       "category": "implementation"
+    },
+    {
+      "path": "docs/DOCUMENTATION_INDEX.md",
+      "description": "Master index of all documentation - helps AI find and reference other docs",
+      "category": "documentation-index"
+    },
+    {
+      "path": "docs/platform/INVESTMENT_STRATEGY_FRAMEWORK.md",
+      "description": "Core business logic and portfolio allocation framework",
+      "category": "architecture"
+    },
+    {
+      "path": "docs/platform/SYNTHETIC_FINANCING_ARCHITECTURE.md",
+      "description": "Multi-asset relationship system - critical for understanding platform",
+      "category": "architecture"
+    },
+    {
+      "path": "docs/platform/PRIMARY_GOALS_AND_REQUIREMENTS.md",
+      "description": "System goals and requirements - essential context",
+      "category": "requirements"
+    },
+    {
+      "path": "docs/MCP_QUICK_REFERENCE.md",
+      "description": "Quick reference for MCP tools used by AI assistants",
+      "category": "api-reference"
     }
   ],
   "external": [
@@ -86,6 +111,26 @@
       "path": "docs/CURSOR_SETUP.md",
       "description": "Cursor IDE setup",
       "category": "development"
+    },
+    {
+      "path": "docs/WISHLIST.md",
+      "description": "Deferred decisions and wishlist items",
+      "category": "planning"
+    },
+    {
+      "path": "docs/TODO2_ENHANCEMENT_PLAN.md",
+      "description": "Detailed Todo2 workflow information",
+      "category": "workflow"
+    },
+    {
+      "path": "docs/MCP_SERVER_COMPLETE_SUMMARY.md",
+      "description": "Complete MCP server implementation summary",
+      "category": "architecture"
+    },
+    {
+      "path": "mcp-servers/project-management-automation/USAGE.md",
+      "description": "Project automation tools usage guide",
+      "category": "automation"
     }
   ]
 }

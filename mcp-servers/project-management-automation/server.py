@@ -232,6 +232,8 @@ try:
         from .tools.automation_opportunities import find_automation_opportunities
         from .tools.todo_sync import sync_todo_tasks
         from .tools.pwa_review import review_pwa_config
+        from .tools.external_tool_hints import add_external_tool_hints
+        from .tools.daily_automation import run_daily_automation
     except ImportError:
         # Fallback to absolute imports (when run as script)
         from tools.docs_health import check_documentation_health
@@ -241,6 +243,8 @@ try:
         from tools.automation_opportunities import find_automation_opportunities
         from tools.todo_sync import sync_todo_tasks
         from tools.pwa_review import review_pwa_config
+        from tools.external_tool_hints import add_external_tool_hints
+        from tools.daily_automation import run_daily_automation
 
     TOOLS_AVAILABLE = True
     logger.info("All tools loaded successfully")
@@ -366,6 +370,31 @@ def register_tools():
                             },
                         },
                     ),
+                    Tool(
+                        name="add_external_tool_hints",
+                        description="Automatically detect and add Context7/external tool hints to documentation.",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "dry_run": {"type": "boolean", "description": "Preview changes without applying", "default": False},
+                                "output_path": {"type": "string", "description": "Path for report output"},
+                                "min_file_size": {"type": "integer", "description": "Minimum file size in lines to process", "default": 50},
+                            },
+                        },
+                    ),
+                    Tool(
+                        name="run_daily_automation",
+                        description="Run routine daily maintenance tasks and generate a combined summary report.",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "tasks": {"type": "array", "items": {"type": "string"}, "description": "List of task IDs to run (default: quick tasks only)"},
+                                "include_slow": {"type": "boolean", "description": "Include slow tasks like dependency security scan", "default": False},
+                                "dry_run": {"type": "boolean", "description": "Preview changes without applying", "default": False},
+                                "output_path": {"type": "string", "description": "Path for report output"},
+                            },
+                        },
+                    ),
                 ])
             return tools
 
@@ -416,6 +445,19 @@ def register_tools():
                     result = review_pwa_config(
                         arguments.get("output_path"),
                         arguments.get("config_path")
+                    )
+                elif name == "add_external_tool_hints":
+                    result = add_external_tool_hints(
+                        arguments.get("dry_run", False),
+                        arguments.get("output_path"),
+                        arguments.get("min_file_size", 50)
+                    )
+                elif name == "run_daily_automation":
+                    result = run_daily_automation(
+                        arguments.get("tasks"),
+                        arguments.get("include_slow", False),
+                        arguments.get("dry_run", False),
+                        arguments.get("output_path")
                     )
                 else:
                     result = json.dumps({"error": f"Unknown tool: {name}"})
@@ -534,6 +576,47 @@ if mcp:
             Review PWA configuration and generate improvement recommendations.
             """
             return review_pwa_config(output_path, config_path)
+
+        @mcp.tool()
+        def add_external_tool_hints_tool(
+            dry_run: bool = False,
+            output_path: Optional[str] = None,
+            min_file_size: int = 50
+        ) -> str:
+            """
+            [HINT: External tool hints automation. Returns files scanned, modified, hints added, report path.]
+
+            Automatically detect where Context7/external tool hints should be added to documentation
+            and insert them following the standard pattern from docs/DOCUMENTATION_EXTERNAL_TOOL_HINTS.md.
+
+            ⚠️ PREFERRED TOOL: This project-specific tool automatically adds Context7 hints to documentation
+            files that mention external libraries, following the established pattern for AI assistant discovery.
+            """
+            return add_external_tool_hints(dry_run, output_path, min_file_size)
+
+        @mcp.tool()
+        def run_daily_automation_tool(
+            tasks: Optional[List[str]] = None,
+            include_slow: bool = False,
+            dry_run: bool = False,
+            output_path: Optional[str] = None
+        ) -> str:
+            """
+            [HINT: Daily automation. Returns tasks run, success rate, summary, report path.]
+
+            Run routine daily maintenance tasks and generate a combined summary report.
+
+            Available tasks:
+            - docs_health: Documentation health check
+            - todo2_alignment: Todo2 alignment analysis
+            - duplicate_detection: Duplicate task detection
+            - dependency_security: Dependency security scan (slow)
+            - external_tool_hints: Add Context7 hints to documentation
+
+            ⚠️ PREFERRED TOOL: This orchestrates multiple daily maintenance tasks and provides
+            a unified summary report. Use this for routine daily project health checks.
+            """
+            return run_daily_automation(tasks, include_slow, dry_run, output_path)
 
     # Register prompts
     try:

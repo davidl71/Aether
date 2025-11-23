@@ -4,6 +4,11 @@
 **Phase**: Phase 1 - Foundation
 **Status**: ✅ Complete
 
+> 💡 **AI Assistant Hint:** For up-to-date NATS documentation and best practices, use Context7:
+> - "NATS performance optimization patterns use context7"
+> - "NATS multi-language client examples use context7"
+> - "NATS message queue best practices 2025 use context7"
+
 ## Completed Tasks
 
 ### T-173: NATS Server Deployment ✅

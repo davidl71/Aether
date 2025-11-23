@@ -1,0 +1,311 @@
+---
+alwaysApply: true
+description: Context-aware suggestions for project automation tools based on project state, task lifecycle, and user activity
+---
+
+# Automation Tool Suggestions
+
+## Purpose
+
+This rule provides context-aware suggestions for project automation tools to help AI assistants and users discover and use relevant automation tools at appropriate times.
+
+---
+
+## Context Detection Rules
+
+### 1. Documentation Changes
+
+**Trigger**: Files in `docs/` directory are modified or created
+**Suggest**: `check_documentation_health_tool`
+**Reason**: Documentation changes may introduce broken links, format issues, or stale content
+**Usage**:
+```
+"Check documentation health after recent changes"
+"Validate documentation structure"
+```
+
+**Rate Limit**: Once per session (don't suggest repeatedly for same changes)
+
+---
+
+### 2. Task Status: Todo → In Progress
+
+**Trigger**: Todo2 task moves from "Todo" to "In Progress" status
+**Suggest**:
+- If task is high priority: `analyze_todo2_alignment_tool` (verify alignment)
+- If task mentions documentation: `check_documentation_health_tool`
+- If task has 3+ dependencies: Check dependency readiness
+
+**Reason**: Starting work is a good time to verify alignment and dependencies
+**Usage**:
+```
+"Analyze task alignment before starting work"
+"Verify task aligns with project goals"
+```
+
+**Rate Limit**: Once per task status change
+
+---
+
+### 3. Task Status: In Progress → Review
+
+**Trigger**: Todo2 task moves from "In Progress" to "Review" status
+**Suggest**:
+- `analyze_todo2_alignment_tool` (if high priority)
+- `detect_duplicate_tasks_tool` (check for similar completed tasks)
+
+**Reason**: Review is a checkpoint to verify quality and alignment
+**Usage**:
+```
+"Verify task alignment before review"
+"Check for duplicate tasks"
+```
+
+**Rate Limit**: Once per task status change
+
+---
+
+### 4. Multiple Tasks Created
+
+**Trigger**: 5+ tasks created in single session or conversation
+**Suggest**: `detect_duplicate_tasks_tool`
+**Reason**: Multiple task creation increases risk of duplicates
+**Usage**:
+```
+"Check for duplicate tasks after creating multiple tasks"
+"Detect duplicate tasks"
+```
+
+**Rate Limit**: Once per session
+
+---
+
+### 5. Dependencies Changed
+
+**Trigger**: Dependency files modified (`requirements.txt`, `Cargo.toml`, `package.json`, etc.)
+**Suggest**: `scan_dependency_security_tool`
+**Reason**: Dependency changes may introduce security vulnerabilities
+**Usage**:
+```
+"Scan dependencies for security vulnerabilities"
+"Check dependency security after updates"
+```
+
+**Rate Limit**: Once per file change
+
+---
+
+### 6. Daily Maintenance Reminder
+
+**Trigger**: First interaction of the day (time-based detection)
+**Suggest**: `run_daily_automation_tool`
+**Reason**: Daily maintenance keeps project healthy
+**Usage**:
+```
+"Run daily maintenance tasks"
+"Check project health"
+```
+
+**Rate Limit**: Once per day
+
+---
+
+### 7. Documentation Queries
+
+**Trigger**: User asks about documentation, docs health, or documentation issues
+**Suggest**: `check_documentation_health_tool`
+**Reason**: Direct match to user query
+**Usage**:
+```
+"Check documentation health"
+"Analyze documentation structure"
+```
+
+**Rate Limit**: Once per query type
+
+---
+
+### 8. Task Management Queries
+
+**Trigger**: User asks about tasks, task alignment, or task management
+**Suggest**:
+- `analyze_todo2_alignment_tool` (for alignment questions)
+- `detect_duplicate_tasks_tool` (for duplicate questions)
+
+**Reason**: Direct match to user query
+**Usage**:
+```
+"Analyze task alignment"
+"Find duplicate tasks"
+```
+
+**Rate Limit**: Once per query type
+
+---
+
+### 9. Security Queries
+
+**Trigger**: User asks about security, vulnerabilities, or dependency security
+**Suggest**: `scan_dependency_security_tool`
+**Reason**: Direct match to user query
+**Usage**:
+```
+"Scan dependencies for security issues"
+"Check for vulnerable dependencies"
+```
+
+**Rate Limit**: Once per query type
+
+---
+
+### 10. Project Health Queries
+
+**Trigger**: User asks about project status, health, or overall project state
+**Suggest**: `run_daily_automation_tool`
+**Reason**: Comprehensive project health check
+**Usage**:
+```
+"Run daily automation for project health"
+"Check overall project status"
+```
+
+**Rate Limit**: Once per query type
+
+---
+
+## Suggestion Format
+
+When suggesting tools, use this format:
+
+```markdown
+💡 **Automation Tool Available**
+
+**Tool**: `[tool_name]`
+**Context**: [why this tool is relevant to current situation]
+**When to use**: [specific trigger or situation]
+**Benefit**: [what value it provides]
+**Usage Example**: [example command or description]
+
+**Available via**: Project Automation MCP Server
+```
+
+---
+
+## Rate Limiting Rules
+
+1. **Per Tool**: Maximum 1 suggestion per tool per session
+2. **Per Context**: Maximum 1 suggestion per context change
+3. **Per Conversation Turn**: Maximum 3 suggestions per conversation turn
+4. **Per Session**: Don't repeat same suggestion in same session
+
+---
+
+## Non-Intrusive Design
+
+- **Informational Only**: Suggestions are helpful hints, not requirements
+- **Dismissible**: User can ignore or dismiss suggestions
+- **Non-Blocking**: Don't interrupt workflow for suggestions
+- **Clear Value**: Always explain why the tool is relevant
+
+---
+
+## Integration with Other Rules
+
+### Todo2 Workflow Integration
+
+When following Todo2 workflow rules (`.cursor/rules/todo2.mdc`), tool suggestions should:
+- Appear at appropriate lifecycle transitions
+- Support workflow requirements (e.g., alignment check before Review)
+- Not conflict with mandatory workflow steps
+
+### Project Automation Rules
+
+Tool suggestions complement `.cursor/rules/project-automation.mdc` by:
+- Making tools discoverable at relevant times
+- Providing context for when to use tools
+- Encouraging tool usage without being pushy
+
+---
+
+## Examples
+
+### Example 1: Documentation Change Detection
+
+**Context**: User modifies `docs/API_DOCUMENTATION_INDEX.md`
+**Suggestion**:
+```
+💡 **Automation Tool Available**
+
+**Tool**: `check_documentation_health_tool`
+**Context**: Documentation file was modified
+**When to use**: After documentation changes to validate structure
+**Benefit**: Catches broken links, format issues, and stale content early
+**Usage Example**: "Check documentation health after recent changes"
+
+**Available via**: Project Automation MCP Server
+```
+
+### Example 2: Task Review Workflow
+
+**Context**: Task T-123 moves to "Review" status (high priority)
+**Suggestion**:
+```
+💡 **Automation Tool Available**
+
+**Tool**: `analyze_todo2_alignment_tool`
+**Context**: High-priority task is in review
+**When to use**: Before final approval to verify alignment with project goals
+**Benefit**: Ensures task aligns with investment strategy framework
+**Usage Example**: "Analyze task alignment before review approval"
+
+**Available via**: Project Automation MCP Server
+```
+
+### Example 3: Daily Maintenance
+
+**Context**: First interaction of the day
+**Suggestion**:
+```
+💡 **Automation Tool Available**
+
+**Tool**: `run_daily_automation_tool`
+**Context**: Daily maintenance reminder
+**When to use**: Run routine daily maintenance tasks
+**Benefit**: Comprehensive project health check (docs, tasks, duplicates, security)
+**Usage Example**: "Run daily automation for project health"
+
+**Available via**: Project Automation MCP Server
+```
+
+---
+
+## AI Assistant Behavior
+
+### Proactive Suggestions
+
+AI assistants should:
+1. **Detect Context**: Identify when tool suggestions are relevant
+2. **Suggest Appropriately**: Use suggestion format above
+3. **Respect Rate Limits**: Don't over-suggest
+4. **Be Helpful**: Explain why tool is relevant
+
+### When NOT to Suggest
+
+- User is already using the tool
+- Tool was suggested in current session
+- Context doesn't match any triggers
+- User explicitly dismisses suggestion
+
+---
+
+## Related Documentation
+
+- `.cursor/rules/project-automation.mdc` - Complete automation tool documentation
+- `.cursor/rules/todo2.mdc` - Todo2 workflow rules
+- `docs/AUTOMATION_TOOL_PROMPTING_DESIGN.md` - Full design document
+- `mcp-servers/project-management-automation/USAGE.md` - Tool usage guide
+
+---
+
+**Last Updated**: 2025-11-23
+**Status**: Active Rule
