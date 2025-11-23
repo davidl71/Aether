@@ -21,6 +21,7 @@ set(TEST_SOURCES
     test_box_spread_bag.cpp
     eigen_integration_test.cpp
     test_convexity_calculator.cpp
+    test_alpaca_adapter.cpp
 )
 
 add_executable(box_spread_tests ${TEST_SOURCES})
