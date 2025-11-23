@@ -499,20 +499,28 @@ elif stdio_server_instance:
     # Main entry point for stdio server
     if __name__ == "__main__":
         logger.info("Starting stdio server...")
+        logger.info(f"Server name: {stdio_server_instance.name}")
+        logger.info(f"Tools available: {TOOLS_AVAILABLE}")
+        logger.info(f"Resources available: {RESOURCES_AVAILABLE if 'RESOURCES_AVAILABLE' in globals() else 'Not registered'}")
+        
         # stdio_server provides stdin/stdout streams, Server.run() handles the protocol
         async def run():
             async with stdio_server() as (read_stream, write_stream):
+                init_options = stdio_server_instance.create_initialization_options()
+                logger.info(f"Initialization options: {init_options}")
+                logger.info("Server ready, waiting for client connections...")
                 await stdio_server_instance.run(
                     read_stream,
                     write_stream,
-                    stdio_server_instance.create_initialization_options()
+                    init_options
                 )
         try:
             asyncio.run(run())
         except KeyboardInterrupt:
-            logger.info("Server stopped")
+            logger.info("Server stopped by user")
         except Exception as e:
             logger.error(f"Server error: {e}", exc_info=True)
+            sys.exit(1)
 else:
     logger.warning("MCP not available - server structure ready for Phase 2")
     if __name__ == "__main__":
