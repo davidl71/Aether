@@ -49,4 +49,14 @@
 
 **Mathematical Finance Improvements (T-201 to T-210):** Tasks 35-44 are part of the mathematical finance code improvements initiative. See `docs/analysis/code-improvements-mathematical-finance.md` and `docs/design/portfolio-optimization-framework.md` for detailed specifications.
 
+**CI/CD and Parallel Agent Setup (CI-1 to CI-5):** CI/CD infrastructure tasks for parallel agent workflows. See `docs/TODO2_TASKS_CI_CD_SETUP.md` for detailed task descriptions.
+
+| TODO ID | Description | Owner Agent | Status |
+|---------|-------------|-------------|--------|
+| CI-1 | Setup GitHub Actions runner on Ubuntu agent | ubuntu | pending |
+| CI-2 | Setup GitHub Actions runner on macOS M4 agent | macos | pending |
+| CI-3 | Configure enhanced CI/CD workflow for parallel agents | shared | pending |
+| CI-4 | Document agent environment and system specifications | shared | pending |
+| CI-5 | Test parallel agent CI/CD workflow | shared | pending |
+
 Update this table as tasks progress to keep all agents aligned.

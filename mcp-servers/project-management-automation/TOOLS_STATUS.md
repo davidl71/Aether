@@ -7,7 +7,7 @@
 
 ## Tools Overview
 
-The Project Automation MCP Server exports **7 tools** for project management automation:
+The Project Automation MCP Server exports **8 tools** for project management automation:
 
 ### ✅ All Tools Fixed
 
@@ -156,6 +156,62 @@ All tools have been updated to fix import scoping issues. Error handler imports 
 
 **File:** `tools/pwa_review.py`
 **Fix Applied:** ✅ Error handler imports moved to module level
+
+---
+
+### 8. `validate_ci_cd_workflow_tool` ✅
+**Status:** ✅ Implemented and Ready
+**Purpose:** Validate CI/CD workflows and runner configurations
+
+**Parameters:**
+- `workflow_path` (Optional[str]): Path to workflow file (default: `.github/workflows/parallel-agents-ci.yml`)
+- `check_runners` (bool): Validate runner configurations (default: `true`)
+- `output_path` (Optional[str]): Path for validation report
+
+**Returns:**
+- Workflow validation status
+- Runner configuration status
+- Job dependency validation
+- Matrix build validation
+- Trigger validation
+- Artifact validation
+- Overall status
+- Issues list
+- Report path
+
+**File:** `tools/ci_cd_validation.py`
+**Fix Applied:** ✅ Error handler imports at module level
+
+---
+
+### 9. `run_nightly_task_automation_tool` ✅
+**Status:** ✅ Implemented and Ready
+**Purpose:** Automatically execute background-capable TODO2 tasks in parallel across multiple hosts
+
+**Parameters:**
+- `max_tasks_per_host` (int): Maximum tasks to assign per host (default: `5`)
+- `max_parallel_tasks` (int): Maximum total parallel tasks (default: `10`)
+- `priority_filter` (Optional[str]): Filter by priority - 'high', 'medium', or 'low' (optional)
+- `tag_filter` (Optional[List[str]]): Filter by tags - list of tag strings (optional)
+- `dry_run` (bool): Preview mode without executing (default: `false`)
+
+**Returns:**
+- Summary (background tasks found, interactive tasks found, tasks assigned, tasks moved to review, hosts used)
+- Assigned tasks (task_id, task_name, host, hostname)
+- Moved to review (list of task IDs)
+- Background tasks remaining
+- Timestamp
+- Dry run status
+
+**Features:**
+- Automatically identifies background-capable tasks (MCP extensions, research, implementation, testing, documentation, configuration)
+- Moves interactive tasks requiring user input to Review status
+- Distributes tasks across multiple hosts using round-robin assignment
+- Safe operation with dry run mode and automatic backups
+- Comprehensive audit trail with task comments
+
+**File:** `tools/nightly_task_automation.py`
+**Documentation:** `docs/NIGHTLY_TASK_AUTOMATION.md`
 
 ---
 

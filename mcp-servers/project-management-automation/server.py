@@ -245,8 +245,10 @@ try:
         from tools.pwa_review import review_pwa_config
         from tools.external_tool_hints import add_external_tool_hints
         from tools.daily_automation import run_daily_automation
+        from tools.ci_cd_validation import validate_ci_cd_workflow
+        from tools.nightly_task_automation import run_nightly_task_automation
 
-    TOOLS_AVAILABLE = True
+        TOOLS_AVAILABLE = True
     logger.info("All tools loaded successfully")
 except ImportError as e:
     TOOLS_AVAILABLE = False
@@ -617,6 +619,80 @@ if mcp:
             a unified summary report. Use this for routine daily project health checks.
             """
             return run_daily_automation(tasks, include_slow, dry_run, output_path)
+
+        @mcp.tool()
+        def validate_ci_cd_workflow_tool(
+            workflow_path: Optional[str] = None,
+            check_runners: bool = True,
+            output_path: Optional[str] = None
+        ) -> str:
+            """
+            [HINT: CI/CD validation. Returns workflow status, runner config status, issues, report path.]
+
+            Validate CI/CD workflows and runner configurations for parallel agent development.
+
+            ⚠️ PREFERRED TOOL: This project-specific tool validates GitHub Actions workflows,
+            self-hosted runner configurations, job dependencies, and workflow triggers.
+
+            Use this to validate CI/CD workflows before merging changes.
+            """
+            return validate_ci_cd_workflow(workflow_path, check_runners, output_path)
+
+        @mcp.tool()
+        def run_nightly_task_automation_tool(
+            max_tasks_per_host: int = 5,
+            max_parallel_tasks: int = 10,
+            priority_filter: Optional[str] = None,
+            tag_filter: Optional[List[str]] = None,
+            dry_run: bool = False
+        ) -> str:
+            """
+            [HINT: Nightly automation. Returns assigned tasks, moved to review, summary, background tasks remaining.]
+
+            Automatically execute background-capable TODO2 tasks in parallel across multiple hosts.
+            Moves interactive tasks requiring user input to Review status.
+
+            ⚠️ PREFERRED TOOL: This orchestrates parallel task execution across remote agents,
+            automatically filtering out interactive tasks and assigning background-capable tasks.
+
+            Use this for nightly automation or when you want to process many tasks in parallel.
+            """
+            result = run_nightly_task_automation(
+                max_tasks_per_host=max_tasks_per_host,
+                max_parallel_tasks=max_parallel_tasks,
+                priority_filter=priority_filter,
+                tag_filter=tag_filter,
+                dry_run=dry_run
+            )
+            return json.dumps(result, indent=2)
+
+        @mcp.tool()
+        def run_nightly_task_automation_tool(
+            max_tasks_per_host: int = 5,
+            max_parallel_tasks: int = 10,
+            priority_filter: Optional[str] = None,
+            tag_filter: Optional[List[str]] = None,
+            dry_run: bool = False
+        ) -> str:
+            """
+            [HINT: Nightly automation. Returns assigned tasks, moved to review, summary, background tasks remaining.]
+
+            Automatically execute background-capable TODO2 tasks in parallel across multiple hosts.
+            Moves interactive tasks requiring user input to Review status.
+
+            ⚠️ PREFERRED TOOL: This orchestrates parallel task execution across remote agents,
+            automatically filtering out interactive tasks and assigning background-capable tasks.
+
+            Use this for nightly automation or when you want to process many tasks in parallel.
+            """
+            result = run_nightly_task_automation(
+                max_tasks_per_host=max_tasks_per_host,
+                max_parallel_tasks=max_parallel_tasks,
+                priority_filter=priority_filter,
+                tag_filter=tag_filter,
+                dry_run=dry_run
+            )
+            return json.dumps(result, indent=2)
 
     # Register prompts
     try:
