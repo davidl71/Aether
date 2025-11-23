@@ -20,6 +20,7 @@ import sys
 import json
 import logging
 import time
+import asyncio
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from functools import wraps
@@ -78,32 +79,44 @@ try:
 
     MCP_AVAILABLE = True
     USE_STDIO = False
+    Server = None
+    stdio_server = None
     logger.info("FastMCP available - using FastMCP server")
 except ImportError:
     try:
         from mcp.server import Server
         from mcp.server.stdio import stdio_server
+        # For stdio server, we'll construct Tool objects manually
+        from mcp.types import Tool, TextContent
 
         MCP_AVAILABLE = True
         USE_STDIO = True
+        FastMCP = None
         logger.info("MCP stdio server available - using stdio server")
     except ImportError:
         logger.warning(
             "MCP not installed - server structure ready, install with: pip install mcp"
         )
         MCP_AVAILABLE = False
+        Server = None
+        stdio_server = None
+        Tool = None
+        TextContent = None
 
 # Logging already configured above
 
 # Initialize MCP server
 mcp = None
+stdio_server_instance = None
 if MCP_AVAILABLE:
     if not USE_STDIO and FastMCP:
         mcp = FastMCP("Project Management Automation")
         logger.info("FastMCP server initialized")
-    elif USE_STDIO:
-        # Stdio server will be initialized in Phase 2
-        logger.info("Stdio server mode - implementation in Phase 2")
+    elif USE_STDIO and Server:
+        # Initialize stdio server
+        stdio_server_instance = Server("Project Management Automation")
+        logger.info("Stdio server initialized")
+        # Note: Tools will be registered below using stdio server API
 else:
     logger.warning("MCP not available - server structure ready for Phase 2")
 
@@ -134,23 +147,184 @@ except ImportError as e:
     TOOLS_AVAILABLE = False
     logger.warning(f"Some tools not available: {e}")
 
-# Tool registration will happen in Phase 2
-# For now, we'll create placeholder structure
+# Tool registration - support both FastMCP and stdio Server
+def register_tools():
+    """Register tools with the appropriate MCP server instance."""
+    if mcp:
+        # FastMCP registration (decorator-based)
+        @mcp.tool()
+        def server_status() -> str:
+            """Get the current status of the project management automation server."""
+            return json.dumps(
+                {
+                    "status": "operational",
+                    "version": "0.1.0",
+                    "tools_available": TOOLS_AVAILABLE,
+                    "project_root": str(project_root),
+                },
+                indent=2,
+            )
+        return server_status
+    elif stdio_server_instance:
+        # Stdio Server registration (handler-based)
+        @stdio_server_instance.list_tools()
+        async def list_tools() -> List[Tool]:
+            """List all available tools."""
+            tools = [
+                Tool(
+                    name="server_status",
+                    description="Get the current status of the project management automation server.",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {},
+                    },
+                ),
+            ]
+            if TOOLS_AVAILABLE:
+                # Add tool definitions for all automation tools
+                tools.extend([
+                    Tool(
+                        name="check_documentation_health",
+                        description="Analyze documentation structure, find broken references, identify issues.",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "output_path": {"type": "string", "description": "Output file path"},
+                                "create_tasks": {"type": "boolean", "description": "Create Todo2 tasks", "default": True},
+                            },
+                        },
+                    ),
+                    Tool(
+                        name="analyze_todo2_alignment",
+                        description="Analyze task alignment with project goals, find misaligned tasks.",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "create_followup_tasks": {"type": "boolean", "description": "Create follow-up tasks", "default": True},
+                                "output_path": {"type": "string", "description": "Output file path"},
+                            },
+                        },
+                    ),
+                    Tool(
+                        name="detect_duplicate_tasks",
+                        description="Find and consolidate duplicate Todo2 tasks.",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "similarity_threshold": {"type": "number", "description": "Similarity threshold", "default": 0.85},
+                                "auto_fix": {"type": "boolean", "description": "Auto-fix duplicates", "default": False},
+                                "output_path": {"type": "string", "description": "Output file path"},
+                            },
+                        },
+                    ),
+                    Tool(
+                        name="scan_dependency_security",
+                        description="Scan project dependencies for security vulnerabilities.",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "languages": {"type": "array", "items": {"type": "string"}, "description": "Languages to scan"},
+                                "config_path": {"type": "string", "description": "Config file path"},
+                            },
+                        },
+                    ),
+                    Tool(
+                        name="find_automation_opportunities",
+                        description="Discover new automation opportunities in the codebase.",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "min_value_score": {"type": "number", "description": "Minimum value score", "default": 0.7},
+                                "output_path": {"type": "string", "description": "Output file path"},
+                            },
+                        },
+                    ),
+                    Tool(
+                        name="sync_todo_tasks",
+                        description="Synchronize tasks between shared TODO table and Todo2.",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "dry_run": {"type": "boolean", "description": "Dry run mode", "default": False},
+                                "output_path": {"type": "string", "description": "Output file path"},
+                            },
+                        },
+                    ),
+                    Tool(
+                        name="review_pwa_config",
+                        description="Review PWA configuration and generate improvement recommendations.",
+                        inputSchema={
+                            "type": "object",
+                            "properties": {
+                                "output_path": {"type": "string", "description": "Output file path"},
+                                "config_path": {"type": "string", "description": "Config file path"},
+                            },
+                        },
+                    ),
+                ])
+            return tools
+
+        @stdio_server_instance.call_tool()
+        async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
+            """Handle tool calls."""
+            if name == "server_status":
+                result = json.dumps({
+                    "status": "operational",
+                    "version": "0.1.0",
+                    "tools_available": TOOLS_AVAILABLE,
+                    "project_root": str(project_root),
+                }, indent=2)
+            elif TOOLS_AVAILABLE:
+                # Route to appropriate tool function
+                if name == "check_documentation_health":
+                    result = check_documentation_health(
+                        arguments.get("output_path"),
+                        arguments.get("create_tasks", True)
+                    )
+                elif name == "analyze_todo2_alignment":
+                    result = analyze_todo2_alignment(
+                        arguments.get("create_followup_tasks", True),
+                        arguments.get("output_path")
+                    )
+                elif name == "detect_duplicate_tasks":
+                    result = detect_duplicate_tasks(
+                        arguments.get("similarity_threshold", 0.85),
+                        arguments.get("auto_fix", False),
+                        arguments.get("output_path")
+                    )
+                elif name == "scan_dependency_security":
+                    result = scan_dependency_security(
+                        arguments.get("languages"),
+                        arguments.get("config_path")
+                    )
+                elif name == "find_automation_opportunities":
+                    result = find_automation_opportunities(
+                        arguments.get("min_value_score", 0.7),
+                        arguments.get("output_path")
+                    )
+                elif name == "sync_todo_tasks":
+                    result = sync_todo_tasks(
+                        arguments.get("dry_run", False),
+                        arguments.get("output_path")
+                    )
+                elif name == "review_pwa_config":
+                    result = review_pwa_config(
+                        arguments.get("output_path"),
+                        arguments.get("config_path")
+                    )
+                else:
+                    result = json.dumps({"error": f"Unknown tool: {name}"})
+            else:
+                result = json.dumps({"error": "Tools not available"})
+            
+            return [TextContent(type="text", text=result)]
+        
+        return None
+
+# Register tools
+register_tools()
 
 if mcp:
-
-    @mcp.tool()
-    def server_status() -> str:
-        """Get the current status of the project management automation server."""
-        return json.dumps(
-            {
-                "status": "operational",
-                "version": "0.1.0",
-                "tools_available": TOOLS_AVAILABLE,
-                "project_root": str(project_root),
-            },
-            indent=2,
-        )
 
     # Register high-priority tools
     if TOOLS_AVAILABLE:
@@ -278,12 +452,64 @@ if mcp:
                 {"status": "operational", "tools_available": TOOLS_AVAILABLE}
             )
 
-    # Main entry point
+    # Main entry point for FastMCP
     if __name__ == "__main__":
         mcp.run()
+elif stdio_server_instance:
+    # Register resources for stdio server
+    try:
+        # Try relative imports first (when run as module)
+        try:
+            from .resources.status import get_status_resource
+            from .resources.history import get_history_resource
+            from .resources.list import get_tools_list_resource
+        except ImportError:
+            # Fallback to absolute imports (when run as script)
+            from resources.status import get_status_resource
+            from resources.history import get_history_resource
+            from resources.list import get_tools_list_resource
+
+        @stdio_server_instance.list_resources()
+        async def list_resources() -> List[str]:
+            """List all available resources."""
+            return [
+                "automation://status",
+                "automation://history",
+                "automation://tools",
+            ]
+
+        @stdio_server_instance.read_resource()
+        async def read_resource(uri: str) -> str:
+            """Handle resource reads."""
+            if uri == "automation://status":
+                return get_status_resource()
+            elif uri == "automation://history":
+                return get_history_resource(limit=50)
+            elif uri == "automation://tools":
+                return get_tools_list_resource()
+            else:
+                return json.dumps({"error": f"Unknown resource: {uri}"})
+
+        RESOURCES_AVAILABLE = True
+        logger.info("Resource handlers loaded successfully")
+    except ImportError as e:
+        RESOURCES_AVAILABLE = False
+        logger.warning(f"Resource handlers not available: {e}")
+
+    # Main entry point for stdio server
+    if __name__ == "__main__":
+        logger.info("Starting stdio server...")
+        # stdio_server is typically used as: async with stdio_server(server_instance)
+        # This sets up stdin/stdout and runs the server
+        async def run():
+            async with stdio_server(stdio_server_instance):
+                # Server runs until stdin closes
+                await asyncio.Event().wait()  # Wait indefinitely
+        try:
+            asyncio.run(run())
+        except KeyboardInterrupt:
+            logger.info("Server stopped")
 else:
-    # Stdio-based server implementation (Phase 1 - basic structure)
-    # Full implementation will be added in Phase 2
-    logger.info("MCP server framework initialized (stdio mode)")
+    logger.warning("MCP not available - server structure ready for Phase 2")
     if __name__ == "__main__":
         logger.info("Server ready for tool implementation in Phase 2")
