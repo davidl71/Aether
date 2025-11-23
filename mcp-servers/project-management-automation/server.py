@@ -38,21 +38,34 @@ sys.path.insert(0, str(project_root))
 server_dir = Path(__file__).parent
 sys.path.insert(0, str(server_dir))
 
-# Import error handling
+# Import error handling (handle both relative and absolute imports)
 try:
-    from .error_handler import (
-        handle_automation_error,
-        format_error_response,
-        format_success_response,
-        log_automation_execution,
-        AutomationError,
-        ErrorCode,
-    )
+    # Try relative imports first (when run as module)
+    try:
+        from .error_handler import (
+            handle_automation_error,
+            format_error_response,
+            format_success_response,
+            log_automation_execution,
+            AutomationError,
+            ErrorCode,
+        )
+    except ImportError:
+        # Fallback to absolute imports (when run as script)
+        from error_handler import (
+            handle_automation_error,
+            format_error_response,
+            format_success_response,
+            log_automation_execution,
+            AutomationError,
+            ErrorCode,
+        )
 
     ERROR_HANDLING_AVAILABLE = True
-except ImportError:
+    logger.info("Error handling module loaded successfully")
+except ImportError as e:
     ERROR_HANDLING_AVAILABLE = False
-    logger.warning("Error handling module not available - using basic error handling")
+    logger.warning(f"Error handling module not available - using basic error handling: {e}")
 
 # Try to import MCP - will be installed in Phase 2
 MCP_AVAILABLE = False
