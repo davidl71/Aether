@@ -210,7 +210,7 @@
    ssh david@192.168.192.57
    cd ~/ib_box_spread_full_universal
    git pull
-   
+
    # macOS
    ssh davidl@192.168.192.141
    cd /Users/davidl/Projects/Trading/ib_box_spread_full_universal
@@ -253,4 +253,3 @@
 ---
 
 **Everything is ready to go!** The automation will handle working copy checks and batch approvals automatically. Just need to sync the remote agents.
-
