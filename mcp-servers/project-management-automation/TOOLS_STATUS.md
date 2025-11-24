@@ -7,7 +7,7 @@
 
 ## Tools Overview
 
-The Project Automation MCP Server exports **10 tools** for project management automation:
+The Project Automation MCP Server exports **11 tools** for project management automation:
 
 ### ✅ All Tools Fixed
 
@@ -260,6 +260,39 @@ All tools have been updated to fix import scoping issues. Error handler imports 
 
 **File:** `tools/nightly_task_automation.py`
 **Documentation:** `docs/NIGHTLY_TASK_AUTOMATION.md`
+**Integration:** Includes automatic working copy health check before execution
+
+---
+
+### 11. `check_working_copy_health_tool` ✅
+**Status:** ✅ Implemented and Ready
+**Purpose:** Check git working copy status across all agents and runners
+
+**Parameters:**
+- `agent_name` (Optional[str]): Specific agent to check (local/ubuntu/macos)
+- `check_remote` (bool): Whether to check remote agents (default: true)
+
+**Returns:**
+- `summary` (dict): Summary with total agents, ok/warning/error counts
+- `agents` (dict): Detailed status for each agent:
+  - `status` (str): ok/warning/error
+  - `has_uncommitted_changes` (bool): Whether agent has uncommitted changes
+  - `uncommitted_files` (List[str]): List of uncommitted files
+  - `branch` (str): Current branch
+  - `latest_commit` (str): Latest commit message
+  - `behind_remote` (int): Commits behind origin/main
+  - `ahead_remote` (int): Commits ahead of origin/main
+  - `in_sync` (bool): Whether agent is in sync with remote
+- `recommendations` (List[str]): Actionable recommendations
+
+**File:** `tools/working_copy_health.py`
+**Documentation:** `docs/WORKING_COPY_HEALTH_AUTOMATION.md`
+**Integration:** Used by nightly automation before task execution
+
+**Usage:**
+- Check all agents before starting work
+- Verify agents are in sync
+- Identify uncommitted changes across agents
 
 ---
 
