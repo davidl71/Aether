@@ -12,6 +12,35 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 
 
+def _ssh_command(host: str, command: str, timeout: int = 10) -> subprocess.CompletedProcess:
+    """
+    Execute SSH command with optimized options.
+    
+    Args:
+        host: SSH host (user@host or just host)
+        command: Command to execute on remote host
+        timeout: Command timeout in seconds
+    
+    Returns:
+        CompletedProcess with stdout, stderr, returncode
+    """
+    ssh_opts = [
+        "-o", "ConnectTimeout=5",
+        "-o", "StrictHostKeyChecking=accept-new",
+        "-o", "IdentitiesOnly=yes",
+        "-o", "PreferredAuthentications=publickey",
+        "-o", "PasswordAuthentication=no",
+        "-o", "BatchMode=yes"
+    ]
+    
+    return subprocess.run(
+        ["ssh"] + ssh_opts + [host, command],
+        capture_output=True,
+        text=True,
+        timeout=timeout
+    )
+
+
 def _find_project_root(start_path: Path) -> Path:
     """
     Find project root by looking for .git directory or other markers.
@@ -169,60 +198,53 @@ def check_working_copy_health(
             path = agent_config["path"]
 
             try:
-                # Check SSH connectivity
+                # Check SSH connectivity with better options
                 ssh_test = subprocess.run(
-                    ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", host, "exit"],
+                    [
+                        "ssh",
+                        "-o", "ConnectTimeout=5",
+                        "-o", "BatchMode=yes",
+                        "-o", "StrictHostKeyChecking=accept-new",
+                        "-o", "IdentitiesOnly=yes",
+                        "-o", "PreferredAuthentications=publickey",
+                        "-o", "PasswordAuthentication=no",
+                        host, "exit"
+                    ],
                     capture_output=True,
                     timeout=10
                 )
 
                 if ssh_test.returncode != 0:
+                    error_msg = ssh_test.stderr.decode('utf-8', errors='ignore').strip()
+                    if not error_msg:
+                        error_msg = f"Cannot connect to {host}"
                     results[agent_name] = {
                         "status": "error",
-                        "error": f"Cannot connect to {host}",
+                        "error": error_msg,
                         "type": "remote"
                     }
                     continue
 
                 # Get git status
                 status_cmd = f"cd {path} && git status --porcelain 2>/dev/null || echo ''"
-                status_result = subprocess.run(
-                    ["ssh", host, status_cmd],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
-                )
+                status_result = _ssh_command(host, status_cmd)
 
                 has_changes = bool(status_result.stdout.strip())
                 uncommitted_files = status_result.stdout.strip().split('\n') if has_changes else []
 
                 # Get branch
                 branch_cmd = f"cd {path} && git branch --show-current 2>/dev/null || echo 'unknown'"
-                branch_result = subprocess.run(
-                    ["ssh", host, branch_cmd],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
-                )
+                branch_result = _ssh_command(host, branch_cmd)
                 branch = branch_result.stdout.strip() or "unknown"
 
                 # Get latest commit
                 commit_cmd = f"cd {path} && git log -1 --oneline 2>/dev/null || echo 'unknown'"
-                commit_result = subprocess.run(
-                    ["ssh", host, commit_cmd],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
-                )
+                commit_result = _ssh_command(host, commit_cmd)
                 latest_commit = commit_result.stdout.strip() or "unknown"
 
                 # Check sync status
                 fetch_cmd = f"cd {path} && git fetch --quiet 2>/dev/null || true"
-                subprocess.run(
-                    ["ssh", host, fetch_cmd],
-                    capture_output=True,
-                    timeout=15
-                )
+                _ssh_command(host, fetch_cmd, timeout=15)
 
                 behind_cmd = f"cd {path} && git rev-list --count HEAD..origin/main 2>/dev/null || echo '0'"
                 behind_result = subprocess.run(
