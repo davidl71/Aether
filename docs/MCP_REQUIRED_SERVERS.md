@@ -8,8 +8,8 @@ All of these servers must be configured in `.cursor/mcp.json` for full project f
 
 ### 1. automa (Project Management Automation)
 
-**Type**: Self-hosted  
-**Location**: `mcp-servers/project-management-automation/`  
+**Type**: Self-hosted
+**Location**: `mcp-servers/project-management-automation/`
 **Purpose**: Project management automation tools
 
 **Configuration**:
@@ -23,7 +23,7 @@ All of these servers must be configured in `.cursor/mcp.json` for full project f
 }
 ```
 
-**See Also**: 
+**See Also**:
 - [DEPENDENCIES.md](../mcp-servers/project-management-automation/DEPENDENCIES.md) - Complementary servers
 - [INTEGRATION_ANALYSIS.md](../mcp-servers/project-management-automation/INTEGRATION_ANALYSIS.md) - Integration with other servers
 
@@ -31,7 +31,7 @@ All of these servers must be configured in `.cursor/mcp.json` for full project f
 
 ### 2. filesystem
 
-**Type**: npm package  
+**Type**: npm package
 **Purpose**: File system operations
 
 **Configuration**:
@@ -53,7 +53,7 @@ All of these servers must be configured in `.cursor/mcp.json` for full project f
 
 ### 3. agentic-tools
 
-**Type**: npm package  
+**Type**: npm package
 **Purpose**: Advanced task management and agent memories
 
 **Configuration**:
@@ -71,7 +71,7 @@ All of these servers must be configured in `.cursor/mcp.json` for full project f
 
 ### 4. context7
 
-**Type**: npm package  
+**Type**: npm package
 **Purpose**: Up-to-date documentation lookup
 
 **Configuration**:
@@ -89,7 +89,7 @@ All of these servers must be configured in `.cursor/mcp.json` for full project f
 
 ### 5. git
 
-**Type**: npm package  
+**Type**: npm package
 **Purpose**: Git version control operations
 
 **Configuration**:
@@ -112,7 +112,7 @@ All of these servers must be configured in `.cursor/mcp.json` for full project f
 
 ### 6. semgrep
 
-**Type**: npm package  
+**Type**: npm package
 **Purpose**: Security scanning
 
 **Configuration**:
@@ -130,7 +130,7 @@ All of these servers must be configured in `.cursor/mcp.json` for full project f
 
 ### 7. tractatus_thinking
 
-**Type**: npm package  
+**Type**: npm package
 **Purpose**: Logical concept analysis and structured thinking
 
 **Configuration**:
@@ -144,7 +144,7 @@ All of these servers must be configured in `.cursor/mcp.json` for full project f
 }
 ```
 
-**⚠️ Important**: 
+**⚠️ Important**:
 - Package name is `tractatus_thinking` (with **underscore**), not `tractatus-thinking` (with hyphen)
 - Use `npx` for installation, not Python
 
@@ -158,7 +158,7 @@ npx -y tractatus_thinking --version
 
 ### 8. sequential_thinking
 
-**Type**: npm package  
+**Type**: npm package
 **Purpose**: Implementation workflows and structured problem-solving
 
 **Configuration**:
@@ -172,7 +172,7 @@ npx -y tractatus_thinking --version
 }
 ```
 
-**⚠️ Important**: 
+**⚠️ Important**:
 - This is an **npm package**, not a Python module
 - Package name: `@modelcontextprotocol/server-sequential-thinking`
 - Use `npx` for installation, not `python3 -m sequential_thinking`
@@ -236,7 +236,7 @@ npx -y @modelcontextprotocol/server-sequential-thinking --version
 
 **Cause**: Absolute path in `.cursor/mcp.json` is incorrect for current environment.
 
-**Fix**: 
+**Fix**:
 1. Use sync script: `python3 scripts/sync_mcp_config_agents.py`
 2. Or manually update path in `.cursor/mcp.json`
 
@@ -255,4 +255,3 @@ See [DEPENDENCIES.md](../mcp-servers/project-management-automation/DEPENDENCIES.
 - [MCP_TROUBLESHOOTING.md](MCP_TROUBLESHOOTING.md) - Detailed troubleshooting guide
 - [MCP_QUICK_REFERENCE.md](MCP_QUICK_REFERENCE.md) - Quick usage reference
 - [MCP_SERVERS.md](research/integration/MCP_SERVERS.md) - Complete MCP server documentation
-
