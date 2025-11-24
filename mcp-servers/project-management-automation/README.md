@@ -10,6 +10,27 @@ MCP server exposing project management automation tools built on `IntelligentAut
 
 **Note**: This server is configured as **"automa"** in Cursor's MCP configuration (`.cursor/mcp.json`). The directory name is `project-management-automation`, but it's accessible via the "automa" identifier in Cursor.
 
+## Complementary MCP Servers
+
+The automa server works best when used alongside these complementary MCP servers:
+
+- **`tractatus_thinking`** - For structural analysis and logical decomposition of complex problems
+  - Use BEFORE automa tools to understand WHAT needs to be analyzed
+  - Breaks down concepts into atomic components
+  - Reveals multiplicative dependencies
+
+- **`sequential_thinking`** - For converting structural understanding into implementation workflows
+  - Use AFTER tractatus_thinking analysis to plan HOW to proceed
+  - Converts automa analysis results into actionable steps
+  - Creates step-by-step implementation plans
+
+**Recommended Workflow:**
+1. Use **tractatus_thinking** to understand the structure of a problem
+2. Use **automa** tools to analyze and automate project management tasks
+3. Use **sequential_thinking** to convert analysis results into implementation workflows
+
+See `.cursor/rules/tractatus-thinking.mdc` and `.cursor/rules/sequential-thinking.mdc` for detailed usage guidelines.
+
 ## Phase 1 Status
 
 ✅ **Core Framework:** Complete
@@ -114,8 +135,17 @@ Centralized error handling via `error_handler.py`:
 - Register tools with MCP server
 - Test tool execution
 
+## Dependencies
+
+The automa server works best with complementary MCP servers:
+- **tractatus_thinking** - For structural analysis (use BEFORE automa)
+- **sequential_thinking** - For implementation workflows (use AFTER automa)
+
+See [DEPENDENCIES.md](DEPENDENCIES.md) for detailed integration guide.
+
 ## References
 
 - [IntelligentAutomationBase Guide](../../docs/INTELLIGENT_AUTOMATION_GUIDE.md)
 - [MCP Server Proposal](../../docs/MCP_PROJECT_MANAGEMENT_SERVER_PROPOSAL.md)
 - [Implementation Plan](../../docs/MCP_SERVER_IMPLEMENTATION_PLAN.md)
+- [Dependencies](DEPENDENCIES.md) - Complementary MCP servers

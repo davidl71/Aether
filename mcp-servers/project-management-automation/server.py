@@ -13,6 +13,15 @@ Provides AI assistants with access to:
 - Automation opportunity discovery
 - Todo synchronization
 - PWA configuration review
+
+Complementary MCP Servers:
+- tractatus_thinking: Use BEFORE automa tools for structural analysis (WHAT)
+- sequential_thinking: Use AFTER automa analysis for implementation workflows (HOW)
+
+Recommended workflow:
+1. tractatus_thinking → Understand problem structure
+2. automa → Analyze and automate project management tasks
+3. sequential_thinking → Convert results into implementation steps
 """
 
 import os
