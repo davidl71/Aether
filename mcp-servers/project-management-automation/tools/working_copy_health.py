@@ -210,13 +210,22 @@ def check_working_copy_health(
                 # This is actually the local machine, treat as local
                 agent_type = "local"
                 agent_config["type"] = "local"
+                # Use current project root for local agents if path not set
+                if "path" not in agent_config or not agent_config["path"]:
+                    agent_config["path"] = str(project_root)
 
         if agent_type == "local":
             # Check local working copy
+            # Use project_root if path not specified
+            agent_path = agent_config.get("path", str(project_root))
+            # Expand ~ in path
+            if agent_path.startswith("~"):
+                agent_path = os.path.expanduser(agent_path)
+            
             try:
                 result = subprocess.run(
                     ["git", "status", "--porcelain"],
-                    cwd=agent_config["path"],
+                    cwd=agent_path,
                     capture_output=True,
                     text=True,
                     timeout=5
@@ -227,7 +236,7 @@ def check_working_copy_health(
                 # Get branch and commit info
                 branch_result = subprocess.run(
                     ["git", "branch", "--show-current"],
-                    cwd=agent_config["path"],
+                    cwd=agent_path,
                     capture_output=True,
                     text=True,
                     timeout=5
@@ -237,7 +246,7 @@ def check_working_copy_health(
                 # Get latest commit
                 commit_result = subprocess.run(
                     ["git", "log", "-1", "--oneline"],
-                    cwd=agent_config["path"],
+                    cwd=agent_path,
                     capture_output=True,
                     text=True,
                     timeout=5
@@ -247,14 +256,14 @@ def check_working_copy_health(
                 # Check sync status
                 subprocess.run(
                     ["git", "fetch", "--quiet"],
-                    cwd=agent_config["path"],
+                    cwd=agent_path,
                     capture_output=True,
                     timeout=10
                 )
 
                 behind_result = subprocess.run(
                     ["git", "rev-list", "--count", "HEAD..origin/main"],
-                    cwd=agent_config["path"],
+                    cwd=agent_path,
                     capture_output=True,
                     text=True,
                     timeout=5
@@ -263,7 +272,7 @@ def check_working_copy_health(
 
                 ahead_result = subprocess.run(
                     ["git", "rev-list", "--count", "origin/main..HEAD"],
-                    cwd=agent_config["path"],
+                    cwd=agent_path,
                     capture_output=True,
                     text=True,
                     timeout=5
