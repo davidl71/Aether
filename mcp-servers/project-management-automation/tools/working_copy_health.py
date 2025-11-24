@@ -50,21 +50,14 @@ def _get_local_ip_addresses() -> List[str]:
     try:
         hostname = socket.gethostname()
         local_ips.append(hostname)
+        # Also add FQDN if available
+        fqdn = socket.getfqdn()
+        if fqdn != hostname:
+            local_ips.append(fqdn)
     except Exception:
         pass
     
-    # Get IP addresses
-    try:
-        # Try to get primary IP
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
-        local_ips.append(local_ip)
-        s.close()
-    except Exception:
-        pass
-    
-    # Get all interface IPs
+    # Get IP addresses from all interfaces
     try:
         result = subprocess.run(
             ["ifconfig"],
@@ -75,9 +68,26 @@ def _get_local_ip_addresses() -> List[str]:
         if result.returncode == 0:
             for line in result.stdout.split('\n'):
                 if 'inet ' in line and '127.0.0.1' not in line:
-                    ip = line.split()[1]
-                    if ip not in local_ips:
-                        local_ips.append(ip)
+                    parts = line.split()
+                    # Find the IP address (usually after 'inet')
+                    for i, part in enumerate(parts):
+                        if part == 'inet' and i + 1 < len(parts):
+                            ip = parts[i + 1]
+                            # Remove netmask if present (e.g., "192.168.1.1/24" -> "192.168.1.1")
+                            ip = ip.split('/')[0]
+                            if ip not in local_ips and ip != '127.0.0.1':
+                                local_ips.append(ip)
+    except Exception:
+        pass
+    
+    # Also try to get primary IP via socket (fallback)
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        if local_ip not in local_ips:
+            local_ips.append(local_ip)
+        s.close()
     except Exception:
         pass
     
@@ -87,28 +97,28 @@ def _get_local_ip_addresses() -> List[str]:
 def _is_local_host(hostname: str) -> bool:
     """
     Determine if a hostname/IP refers to the local machine.
-    
+
     Args:
         hostname: Hostname or IP address (may include user@ prefix)
-    
+
     Returns:
         True if hostname refers to local machine
     """
     # Remove user@ prefix if present
     host = hostname.split('@')[-1] if '@' in hostname else hostname
-    
+
     # Check if it's localhost
     if host in ['localhost', '127.0.0.1', '::1']:
         return True
-    
+
     # Get local IPs and hostname
     local_ips = _get_local_ip_addresses()
     local_hostname = socket.gethostname()
-    
+
     # Check if host matches local IP or hostname
     if host in local_ips or host == local_hostname:
         return True
-    
+
     # Try to resolve hostname to IP and compare
     try:
         resolved_ip = socket.gethostbyname(host)
@@ -116,7 +126,7 @@ def _is_local_host(hostname: str) -> bool:
             return True
     except Exception:
         pass
-    
+
     return False
 
 
@@ -193,7 +203,7 @@ def check_working_copy_health(
     for agent_name, agent_config in agents.items():
         agent_type = agent_config.get("type", "local")
         host = agent_config.get("host", "")
-        
+
         # Auto-detect if agent is local (even if marked as remote)
         if agent_type == "remote" and host:
             if _is_local_host(host):
