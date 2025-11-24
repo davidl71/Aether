@@ -221,6 +221,18 @@ class NightlyTaskAutomation(IntelligentAutomationBase):
 
         return task
 
+    def _check_working_copy_health(self) -> Dict[str, Any]:
+        """Check working copy health before task execution."""
+        try:
+            from tools.working_copy_health import check_working_copy_health
+            return check_working_copy_health(check_remote=True)
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to check working copy health: {e}",
+                "summary": {}
+            }
+
     def run_nightly_automation(
         self,
         max_tasks_per_host: int = 5,
@@ -242,6 +254,9 @@ class NightlyTaskAutomation(IntelligentAutomationBase):
         Returns:
             Dictionary with execution results
         """
+        # Check working copy health before execution
+        working_copy_status = self._check_working_copy_health()
+        
         state = self._load_todo2_state()
         todos = state.get('todos', [])
 
@@ -382,13 +397,15 @@ class NightlyTaskAutomation(IntelligentAutomationBase):
         results = {
             'timestamp': datetime.utcnow().isoformat() + 'Z',
             'dry_run': dry_run,
+            'working_copy_status': working_copy_status,
             'summary': {
                 'background_tasks_found': len(background_tasks),
                 'interactive_tasks_found': len(interactive_tasks),
                 'tasks_assigned': len(assigned_tasks),
                 'tasks_moved_to_review': len(moved_to_review),
                 'tasks_batch_approved': batch_approved_count,
-                'hosts_used': len(set(a['host'] for a in task_assignments.values()))
+                'hosts_used': len(set(a['host'] for a in task_assignments.values())),
+                'working_copy_warnings': working_copy_status.get('summary', {}).get('warning_agents', 0)
             },
             'assigned_tasks': [
                 {

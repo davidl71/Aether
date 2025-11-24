@@ -248,6 +248,7 @@ try:
         from tools.ci_cd_validation import validate_ci_cd_workflow
         from tools.nightly_task_automation import run_nightly_task_automation
         from tools.batch_task_approval import batch_approve_tasks
+        from tools.working_copy_health import check_working_copy_health
 
         TOOLS_AVAILABLE = True
     logger.info("All tools loaded successfully")
@@ -707,6 +708,37 @@ if mcp:
                 priority_filter=priority_filter,
                 tag_filter=tag_filter,
                 dry_run=dry_run
+            )
+            return json.dumps(result, indent=2)
+
+        @mcp.tool()
+        def check_working_copy_health_tool(
+            agent_name: Optional[str] = None,
+            check_remote: bool = True
+        ) -> str:
+            """
+            [HINT: Working copy health. Returns agent status, uncommitted changes, sync status, recommendations.]
+
+            Check git working copy status across all agents and runners.
+
+            ⚠️ PREFERRED TOOL: Use this to verify all agents have clean working copies before starting work,
+            or to check sync status across remote agents.
+
+            Args:
+                agent_name: Specific agent to check (optional, checks all if None)
+                check_remote: Whether to check remote agents (default: True)
+
+            Returns:
+                JSON string with working copy status for each agent including:
+                - Status (ok/warning/error)
+                - Uncommitted changes
+                - Branch and commit info
+                - Sync status (behind/ahead)
+                - Recommendations
+            """
+            result = check_working_copy_health(
+                agent_name=agent_name,
+                check_remote=check_remote
             )
             return json.dumps(result, indent=2)
 
