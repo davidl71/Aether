@@ -45,7 +45,7 @@ def _ssh_command(host: str, command: str, timeout: int = 10) -> subprocess.Compl
 def _get_local_ip_addresses() -> List[str]:
     """Get all local IP addresses (excluding localhost)."""
     local_ips = []
-    
+
     # Get hostname
     try:
         hostname = socket.gethostname()
@@ -56,7 +56,7 @@ def _get_local_ip_addresses() -> List[str]:
             local_ips.append(fqdn)
     except Exception:
         pass
-    
+
     # Get IP addresses from all interfaces
     try:
         result = subprocess.run(
@@ -79,7 +79,7 @@ def _get_local_ip_addresses() -> List[str]:
                                 local_ips.append(ip)
     except Exception:
         pass
-    
+
     # Also try to get primary IP via socket (fallback)
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -90,7 +90,7 @@ def _get_local_ip_addresses() -> List[str]:
         s.close()
     except Exception:
         pass
-    
+
     return local_ips
 
 
