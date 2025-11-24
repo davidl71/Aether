@@ -262,4 +262,3 @@ git pull
 - `mcp-servers/project-management-automation/tools/working_copy_health.py` - MCP tool
 - `docs/AGENT_HOSTNAMES.md` - Agent connection details
 - `docs/NIGHTLY_TASK_AUTOMATION.md` - Nightly automation details
-

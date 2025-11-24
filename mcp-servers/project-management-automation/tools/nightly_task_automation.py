@@ -256,7 +256,7 @@ class NightlyTaskAutomation(IntelligentAutomationBase):
         """
         # Check working copy health before execution
         working_copy_status = self._check_working_copy_health()
-        
+
         state = self._load_todo2_state()
         todos = state.get('todos', [])
 
