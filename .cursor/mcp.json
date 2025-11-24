@@ -52,15 +52,15 @@
       "command": "npx",
       "args": [
         "-y",
-        "tractatus-thinking"
+        "tractatus_thinking"
       ],
       "description": "Tractatus Thinking MCP server for logical concept analysis and structured thinking - breaks down complex concepts into atomic truths, reveals multiplicative relationships, and finds missing elements"
     },
     "sequential_thinking": {
-      "command": "python3",
+      "command": "npx",
       "args": [
-        "-m",
-        "sequential_thinking"
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
       ],
       "description": "Sequential Thinking MCP server for structured problem-solving and implementation workflow - converts structural understanding from Tractatus Thinking into actionable implementation steps"
     }
