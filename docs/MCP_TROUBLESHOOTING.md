@@ -1,8 +1,60 @@
 # MCP Server Troubleshooting Guide
 
+## Required MCP Servers
+
+The following MCP servers are **required** for full project functionality:
+
+1. **automa** - Project management automation (self-hosted)
+2. **filesystem** - File system operations
+3. **agentic-tools** - Advanced task management
+4. **context7** - Up-to-date documentation
+5. **git** - Git version control
+6. **semgrep** - Security scanning
+7. **tractatus_thinking** - Logical concept analysis
+8. **sequential_thinking** - Implementation workflows
+
+**Total**: 8 required MCP servers
+
 ## Common Error Causes
 
-### 1. **Variable Expansion Issues**
+### 1. **Package Name Errors (Tractatus/Sequential Thinking)**
+
+**Problem**: `No module named sequential_thinking` or `tractatus-thinking` package not found.
+
+**Root Cause**: Incorrect package names in configuration.
+
+**Solution**: Use correct npm package names:
+
+```json
+{
+  "mcpServers": {
+    "tractatus_thinking": {
+      "command": "npx",
+      "args": ["-y", "tractatus_thinking"],
+      "description": "Tractatus Thinking MCP server..."
+    },
+    "sequential_thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "description": "Sequential Thinking MCP server..."
+    }
+  }
+}
+```
+
+**Important Notes**:
+- `tractatus_thinking` uses underscore (not hyphen): `tractatus_thinking`
+- `sequential_thinking` is an npm package (not Python): `@modelcontextprotocol/server-sequential-thinking`
+- Both use `npx` for installation, not `python3 -m`
+
+**Troubleshooting Steps**:
+1. Verify package exists: `npm search tractatus_thinking`
+2. Test manually: `npx -y tractatus_thinking --version`
+3. Test manually: `npx -y @modelcontextprotocol/server-sequential-thinking --version`
+4. Update `.cursor/mcp.json` with correct package names
+5. Restart Cursor completely
+
+### 2. **Variable Expansion Issues**
 
 **Problem**: `${workspaceFolder}` may not be expanded correctly in Cursor.
 
@@ -200,6 +252,17 @@ After fixing configuration:
 ### Agentic-tools Server
 - **Issue**: Package download fails
 - **Fix**: Test manually: `npx -y @pimzino/agentic-tools-mcp`
+
+### Tractatus Thinking Server
+- **Issue**: `tractatus-thinking` package not found
+- **Fix**: Use correct package name: `tractatus_thinking` (with underscore)
+- **Test**: `npx -y tractatus_thinking --version`
+
+### Sequential Thinking Server
+- **Issue**: `No module named sequential_thinking` (Python error)
+- **Root Cause**: Configured as Python module, but it's an npm package
+- **Fix**: Use npm package: `@modelcontextprotocol/server-sequential-thinking`
+- **Test**: `npx -y @modelcontextprotocol/server-sequential-thinking --version`
 
 ## Minimal Working Configuration
 

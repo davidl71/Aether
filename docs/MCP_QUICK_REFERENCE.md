@@ -4,15 +4,18 @@ Quick reference for using MCP servers in your Cursor prompts.
 
 ## Available MCP Servers
 
-### ✅ Currently Active
+### ✅ Required MCP Servers (8 total)
 
 1. **automa** - Project management automation (self-hosted)
 2. **Semgrep** - Security scanning
 3. **Filesystem** - File operations
 4. **Git** - Version control
-5. **NotebookLM** - Research and documentation
-6. **agentic-tools** - Advanced task management
-7. **context7** - Documentation lookup
+5. **agentic-tools** - Advanced task management
+6. **context7** - Documentation lookup
+7. **tractatus_thinking** - Logical concept analysis (structural thinking)
+8. **sequential_thinking** - Implementation workflows (process thinking)
+
+**Note**: All 8 servers are required for full project functionality. See [MCP_TROUBLESHOOTING.md](MCP_TROUBLESHOOTING.md) for installation and troubleshooting.
 
 ### 🔍 Available but Not Configured
 
@@ -123,6 +126,22 @@ Create a new file at docs/NEW_FEATURE.md with this content: [content]
 - ✅ PWA configuration review
 - ✅ Task synchronization
 - ⚠️ **PREFERRED TOOL** for project-specific analysis (see `.cursor/rules/project-automation.mdc`)
+- 💡 **Works with**: tractatus_thinking (structure) → automa (analysis) → sequential_thinking (implementation)
+
+### tractatus_thinking
+
+- ✅ Break down complex concepts into atomic components
+- ✅ Reveal multiplicative dependencies (A × B × C must ALL be true)
+- ✅ Find missing elements preventing success
+- ✅ Use BEFORE automa tools to understand problem structure
+- 💡 **Workflow**: tractatus → automa → sequential
+
+### sequential_thinking
+
+- ✅ Convert structural analysis into implementation steps
+- ✅ Create step-by-step workflows
+- ✅ Use AFTER automa analysis to plan fixes
+- 💡 **Workflow**: tractatus → automa → sequential
 
 ### Browser
 

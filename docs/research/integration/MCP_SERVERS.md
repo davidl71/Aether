@@ -437,7 +437,21 @@ When using iTerm2's AI Chat feature, you can grant permissions for:
 
 **Purpose**: Logical concept analysis and structured thinking for breaking down complex problems
 
-**Status**: ✅ Cursor Rules Available (see `.cursor/rules/tractatus-thinking.mdc`)
+**Status**: ✅ Configured and Active
+
+**Configuration**: `.cursor/mcp.json`
+
+```json
+{
+  "tractatus_thinking": {
+    "command": "npx",
+    "args": ["-y", "tractatus_thinking"],
+    "description": "Tractatus Thinking MCP server for logical concept analysis and structured thinking - breaks down complex concepts into atomic truths, reveals multiplicative relationships, and finds missing elements"
+  }
+}
+```
+
+**⚠️ Important**: Package name is `tractatus_thinking` (with underscore), not `tractatus-thinking` (with hyphen).
 
 **Benefits**:
 
@@ -492,19 +506,21 @@ Solution: Fix API connection, now all factors align
 
 **Purpose**: Structured problem-solving and implementation workflow
 
-**Status**: ✅ Configured
+**Status**: ✅ Configured and Active
 
 **Configuration**: `.cursor/mcp.json`
 
 ```json
 {
   "sequential_thinking": {
-    "command": "python3",
-    "args": ["-m", "sequential_thinking"],
-    "description": "Sequential Thinking MCP server for structured problem-solving and implementation workflow"
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+    "description": "Sequential Thinking MCP server for structured problem-solving and implementation workflow - converts structural understanding from Tractatus Thinking into actionable implementation steps"
   }
 }
 ```
+
+**⚠️ Important**: This is an npm package, not a Python module. Use `npx` with `@modelcontextprotocol/server-sequential-thinking`.
 
 **Benefits**:
 
@@ -548,17 +564,14 @@ Step 3 (Tractatus): "Verify implementation structure"
 
 **Installation**:
 
-The Sequential Thinking MCP server requires Python 3.10+ and the `sequential-thinking-mcp` package. Since macOS uses externally-managed Python environments, use `pipx` (recommended for Python applications):
+The Sequential Thinking MCP server is an npm package. Installation is automatic via `npx`:
 
 ```bash
-# Install pipx if not already installed
-brew install pipx
-
-# Install Sequential Thinking MCP server
-pipx install sequential-thinking-mcp
+# Test installation
+npx -y @modelcontextprotocol/server-sequential-thinking --version
 ```
 
-**Note**: The configuration uses the `sequential-thinking-mcp` executable installed by pipx, which runs the server in an isolated virtual environment.
+**Note**: No manual installation required. `npx` automatically downloads and runs the package.
 
 **Integration**:
 

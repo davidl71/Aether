@@ -78,14 +78,17 @@
 ### 4. MCP Servers (`.cursor/mcp.json`)
 **Status**: ✅ Complete
 
-**Configured Servers**:
+**Required Servers** (8 total):
 - ✅ **automa** - Project management automation (self-hosted in `mcp-servers/project-management-automation/`)
-- ✅ **Semgrep** - Security scanning (via `uvx mcpower-proxy`)
-- ✅ **NotebookLM** - Documentation summarization (via `uvx mcpower-proxy`)
+- ✅ **Semgrep** - Security scanning (via `npx @semgrep/mcp-server-semgrep`)
 - ✅ **Filesystem** - File operations (via `npx @modelcontextprotocol/server-filesystem`)
 - ✅ **Git** - Version control operations (via `npx @modelcontextprotocol/server-git`)
 - ✅ **agentic-tools** - Advanced task management (via `npx @pimzino/agentic-tools-mcp`)
 - ✅ **context7** - Documentation lookup (via `npx @upstash/context7-mcp`)
+- ✅ **tractatus_thinking** - Logical concept analysis (via `npx -y tractatus_thinking`)
+- ✅ **sequential_thinking** - Implementation workflows (via `npx -y @modelcontextprotocol/server-sequential-thinking`)
+
+**⚠️ Troubleshooting Note**: If you see errors like "No module named sequential_thinking", ensure you're using the correct npm package names (see [MCP_TROUBLESHOOTING.md](docs/MCP_TROUBLESHOOTING.md)).
 
 **Temporarily Disabled** (commented out):
 - ⚠️ Browser server (socket server issues)
