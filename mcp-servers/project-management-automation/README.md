@@ -2,10 +2,13 @@
 
 **Version:** 0.1.0
 **Status:** Phase 1 Complete - Core Framework Ready
+**MCP Server Name:** `automa` (configured in `.cursor/mcp.json`)
 
 ## Overview
 
 MCP server exposing project management automation tools built on `IntelligentAutomationBase`. Provides AI assistants with access to documentation health checks, Todo2 analysis, duplicate detection, security scanning, and more.
+
+**Note**: This server is configured as **"automa"** in Cursor's MCP configuration (`.cursor/mcp.json`). The directory name is `project-management-automation`, but it's accessible via the "automa" identifier in Cursor.
 
 ## Phase 1 Status
 
@@ -57,18 +60,21 @@ python -m project_management_automation.server
 
 ### MCP Configuration
 
-Add to `.cursor/mcp.json`:
+Add to `.cursor/mcp.json` as **"automa"**:
 
 ```json
 {
   "mcpServers": {
-    "project-management-automation": {
-      "command": "python",
-      "args": ["-m", "project_management_automation.server"]
+    "automa": {
+      "command": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal/mcp-servers/project-management-automation/run_server.sh",
+      "args": [],
+      "description": "Project management automation tools - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
     }
   }
 }
 ```
+
+**Note**: The server is configured with the identifier "automa" for easier reference in Cursor prompts and documentation.
 
 ## Tools (Phase 2)
 

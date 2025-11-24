@@ -26,11 +26,10 @@ from typing import Any, Dict, List, Optional
 from functools import wraps
 
 # Configure logging first (before any logger usage)
-# CRITICAL: Route our INFO logs to stdout (not stderr) to prevent Cursor from showing them as errors
-# Cursor interprets all stderr output as errors, so we must separate:
-# - Our INFO/WARNING logs → stdout (normal messages)
-# - ERROR/CRITICAL logs → stderr (actual errors)
-# - MCP framework logs → suppressed (they go to stderr)
+# CRITICAL: For MCP stdio servers, stdout is EXCLUSIVELY for JSON-RPC messages
+# All logging MUST go to stderr to avoid breaking the MCP protocol
+# - All logs (INFO/WARNING/ERROR) → stderr (doesn't break JSON-RPC protocol)
+# - MCP framework logs → suppressed (set to WARNING level)
 
 # Suppress MCP framework logs - set to WARNING to hide INFO messages
 # This prevents "Processing request of type X" from appearing as errors
@@ -41,34 +40,19 @@ logging.getLogger("mcp.server.lowlevel.server").setLevel(logging.WARNING)
 logging.getLogger("mcp.server.stdio").setLevel(logging.WARNING)
 logging.getLogger("fastmcp").setLevel(logging.WARNING)
 
-# Create custom handlers to separate stdout (INFO/WARNING) from stderr (ERROR)
-# This prevents our own INFO logs from appearing as errors in Cursor
-class InfoWarningFilter(logging.Filter):
-    """Filter to allow only INFO and WARNING level messages"""
-    def filter(self, record):
-        return record.levelno in (logging.DEBUG, logging.INFO, logging.WARNING)
+# CRITICAL: For MCP stdio servers, stdout is reserved EXCLUSIVELY for JSON-RPC messages
+# All logging MUST go to stderr to avoid breaking the protocol
+# MCP protocol requires: stdout = JSON-RPC only, stderr = logging/debug output
 
-class ErrorFilter(logging.Filter):
-    """Filter to allow only ERROR and CRITICAL level messages"""
-    def filter(self, record):
-        return record.levelno >= logging.ERROR
-
-# Create handlers
-stdout_handler = logging.StreamHandler(sys.stdout)
-stdout_handler.setLevel(logging.INFO)
-stdout_handler.addFilter(InfoWarningFilter())
-stdout_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
-
+# Create a single stderr handler for all logging
 stderr_handler = logging.StreamHandler(sys.stderr)
-stderr_handler.setLevel(logging.ERROR)
-stderr_handler.addFilter(ErrorFilter())
+stderr_handler.setLevel(logging.INFO)
 stderr_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
 
-# Configure root logger with our custom handlers
+# Configure root logger - only stderr handler (no stdout logging)
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.INFO)
 root_logger.handlers = []  # Clear any existing handlers
-root_logger.addHandler(stdout_handler)
 root_logger.addHandler(stderr_handler)
 
 # Re-apply MCP logger suppression after handler setup
@@ -81,8 +65,34 @@ logging.getLogger("fastmcp").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
+# Robust project root detection
+def _find_project_root(start_path: Path) -> Path:
+    """
+    Find project root by looking for .git directory or other markers.
+    Falls back to relative path detection if markers not found.
+    """
+    # Try environment variable first
+    env_root = os.getenv('PROJECT_ROOT') or os.getenv('WORKSPACE_PATH')
+    if env_root:
+        root_path = Path(env_root)
+        if root_path.exists():
+            return root_path.resolve()
+
+    # Try relative path detection (assumes standard structure)
+    current = start_path
+    for _ in range(5):  # Go up max 5 levels
+        # Check for project markers
+        if (current / '.git').exists() or (current / '.todo2').exists() or (current / 'CMakeLists.txt').exists():
+            return current.resolve()
+        if current.parent == current:  # Reached filesystem root
+            break
+        current = current.parent
+
+    # Fallback to relative path (assumes mcp-servers/project-management-automation/server.py)
+    return start_path.parent.parent.parent.parent.resolve()
+
 # Add project root to path for script imports
-project_root = Path(__file__).parent.parent.parent.parent
+project_root = _find_project_root(Path(__file__))
 sys.path.insert(0, str(project_root))
 
 # Add server directory to path for absolute imports when run as script
@@ -956,11 +966,15 @@ if mcp:
             from .resources.status import get_status_resource
             from .resources.history import get_history_resource
             from .resources.list import get_tools_list_resource
+            from .resources.tasks import get_tasks_resource, get_agent_tasks_resource, get_agents_resource
+            from .resources.cache import get_cache_status_resource
         except ImportError:
             # Fallback to absolute imports (when run as script)
             from resources.status import get_status_resource
             from resources.history import get_history_resource
             from resources.list import get_tools_list_resource
+            from resources.tasks import get_tasks_resource, get_agent_tasks_resource, get_agents_resource
+            from resources.cache import get_cache_status_resource
 
         @mcp.resource("automation://status")
         def get_automation_status() -> str:
@@ -976,6 +990,21 @@ if mcp:
         def get_automation_tools() -> str:
             """Get list of available automation tools with descriptions."""
             return get_tools_list_resource()
+
+        @mcp.resource("automation://tasks")
+        def get_automation_tasks(agent: Optional[str] = None, status: Optional[str] = None, limit: int = 100) -> str:
+            """Get Todo2 tasks, optionally filtered by agent or status."""
+            return get_tasks_resource(agent=agent, status=status, limit=limit)
+
+        @mcp.resource("automation://agents")
+        def get_automation_agents() -> str:
+            """Get list of available agents with configurations and task counts."""
+            return get_agents_resource()
+
+        @mcp.resource("automation://cache")
+        def get_automation_cache() -> str:
+            """Get cache status - what data is cached and when it was last updated."""
+            return get_cache_status_resource()
 
         RESOURCES_AVAILABLE = True
         logger.info("Resource handlers loaded successfully")
@@ -1003,11 +1032,15 @@ elif stdio_server_instance:
             from .resources.status import get_status_resource
             from .resources.history import get_history_resource
             from .resources.list import get_tools_list_resource
+            from .resources.tasks import get_tasks_resource, get_agent_tasks_resource, get_agents_resource
+            from .resources.cache import get_cache_status_resource
         except ImportError:
             # Fallback to absolute imports (when run as script)
             from resources.status import get_status_resource
             from resources.history import get_history_resource
             from resources.list import get_tools_list_resource
+            from resources.tasks import get_tasks_resource, get_agent_tasks_resource, get_agents_resource
+            from resources.cache import get_cache_status_resource
 
         @stdio_server_instance.list_resources()
         async def list_resources() -> List[str]:
@@ -1016,6 +1049,9 @@ elif stdio_server_instance:
                 "automation://status",
                 "automation://history",
                 "automation://tools",
+                "automation://tasks",
+                "automation://agents",
+                "automation://cache",
             ]
 
         @stdio_server_instance.read_resource()
@@ -1027,6 +1063,18 @@ elif stdio_server_instance:
                 return get_history_resource(limit=50)
             elif uri == "automation://tools":
                 return get_tools_list_resource()
+            elif uri == "automation://tasks":
+                return get_tasks_resource()
+            elif uri.startswith("automation://tasks/agent/"):
+                agent_name = uri.replace("automation://tasks/agent/", "")
+                return get_agent_tasks_resource(agent_name)
+            elif uri.startswith("automation://tasks/status/"):
+                status = uri.replace("automation://tasks/status/", "")
+                return get_tasks_resource(status=status)
+            elif uri == "automation://agents":
+                return get_agents_resource()
+            elif uri == "automation://cache":
+                return get_cache_status_resource()
             else:
                 return json.dumps({"error": f"Unknown resource: {uri}"})
 

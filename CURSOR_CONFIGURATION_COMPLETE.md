@@ -79,10 +79,13 @@
 **Status**: ✅ Complete
 
 **Configured Servers**:
+- ✅ **automa** - Project management automation (self-hosted in `mcp-servers/project-management-automation/`)
 - ✅ **Semgrep** - Security scanning (via `uvx mcpower-proxy`)
 - ✅ **NotebookLM** - Documentation summarization (via `uvx mcpower-proxy`)
 - ✅ **Filesystem** - File operations (via `npx @modelcontextprotocol/server-filesystem`)
 - ✅ **Git** - Version control operations (via `npx @modelcontextprotocol/server-git`)
+- ✅ **agentic-tools** - Advanced task management (via `npx @pimzino/agentic-tools-mcp`)
+- ✅ **context7** - Documentation lookup (via `npx @upstash/context7-mcp`)
 
 **Temporarily Disabled** (commented out):
 - ⚠️ Browser server (socket server issues)

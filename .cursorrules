@@ -73,7 +73,7 @@ When helping with this codebase:
 6. Consider multi-language aspects (C++, Python, Rust, Go, TypeScript)
 7. For API questions, reference `@docs API_DOCUMENTATION_INDEX.md`
 8. Use NotebookLM MCP server for research (see `docs/NOTEBOOKLM_USAGE.md`)
-9. Use Project Automation MCP server for project-specific analysis (see `.cursor/rules/project-automation.mdc`)
+9. Use **automa** MCP server (configured as "automa" in `.cursor/mcp.json`) for project-specific analysis - documentation health, task alignment, duplicate detection, security scanning (see `.cursor/rules/project-automation.mdc`)
 
 ### Problem-Solving Workflow (Tractatus → Sequential)
 

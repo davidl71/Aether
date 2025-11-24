@@ -7,7 +7,47 @@ enhance Cursor AI capabilities.
 
 ### ✅ Currently Active
 
-### 1. Semgrep Security Scanner
+### 1. automa (Project Management Automation)
+
+**Purpose**: Self-hosted project management automation tools for documentation health, task alignment, duplicate detection, security scanning, and automation opportunities
+
+**Status**: ✅ Configured and Active
+
+**Configuration**: `.cursor/mcp.json`
+
+```json
+{
+  "automa": {
+    "command": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal/mcp-servers/project-management-automation/run_server.sh",
+    "args": [],
+    "description": "Project management automation tools - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
+  }
+}
+```
+
+**Server Location**: `mcp-servers/project-management-automation/`
+
+**Benefits**:
+
+- Documentation health checks with Todo2 integration
+- Todo2 task alignment analysis with project goals
+- Duplicate task detection and consolidation
+- Multi-language dependency security scanning (Python, Rust, npm)
+- Automation opportunity discovery
+- PWA configuration review
+- Task synchronization between systems
+- Project-specific analysis (not generic operations)
+
+**Usage**: The AI assistant will automatically use automa tools when you ask for:
+- Documentation health checks
+- Task alignment analysis
+- Duplicate task detection
+- Security scanning
+- Automation opportunities
+
+**See Also**: `.cursor/rules/project-automation.mdc` for detailed usage guide
+
+### 2. Semgrep Security Scanner
 
 **Purpose**: Automated security vulnerability scanning and code quality analysis
 

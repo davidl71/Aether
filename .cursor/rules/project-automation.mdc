@@ -1,5 +1,7 @@
 # Project Management Automation MCP Server Usage
 
+**Note**: This MCP server is configured as **"automa"** in `.cursor/mcp.json`. The server code is located in `mcp-servers/project-management-automation/` but is accessible via the "automa" identifier in Cursor.
+
 ## When to Use Project Automation MCP Server
 
 **ALWAYS use Project Automation MCP Server for:**
@@ -211,6 +213,74 @@ Get list of available automation tools.
 "Show automation tool categories"
 ```
 
+### `automation://tasks`
+Get cached Todo2 task list, optionally filtered by agent or status.
+
+**Usage:**
+```
+"Get all Todo2 tasks"
+"Get tasks for backend-agent"
+"Get tasks with status 'In Progress'"
+"Get tasks for web-agent with status 'Todo'"
+```
+
+**Parameters:**
+- `agent` (Optional): Filter by agent name (e.g., 'backend-agent', 'web-agent')
+- `status` (Optional): Filter by status (e.g., 'Todo', 'In Progress', 'Review', 'Done')
+- `limit` (Optional): Maximum number of tasks to return (default: 100)
+
+### `automation://tasks/agent/{agent_name}`
+Get tasks for a specific agent.
+
+**Usage:**
+```
+"Get tasks for backend-agent"
+"Show tasks assigned to web-agent"
+```
+
+### `automation://tasks/status/{status}`
+Get tasks filtered by status.
+
+**Usage:**
+```
+"Get all tasks with status 'Todo'"
+"Show tasks in 'Review' status"
+```
+
+### `automation://agents`
+Get list of available agents with their configurations and task counts.
+
+**Usage:**
+```
+"List all agents"
+"Show agent configurations and task counts"
+"Get agent information"
+```
+
+**Returns:**
+- Agent names and directories
+- Working directories
+- Environment variables
+- Startup/runtime commands
+- Task counts per agent
+
+### `automation://cache`
+Get cache status - what data is cached and when it was last updated.
+
+**Usage:**
+```
+"Check cache status"
+"Show what data is cached"
+"Get cache information"
+```
+
+**Returns:**
+- Todo2 state cache (task list)
+- Automation execution history caches
+- Agent configuration cache
+- Last modified timestamps
+- Cache sizes
+
 ---
 
 ## Integration with Other Tools
@@ -299,18 +369,21 @@ All tools use centralized error handling:
 
 ## Configuration
 
-The server is configured in `.cursor/mcp.json`:
+The server is configured in `.cursor/mcp.json` as **"automa"**:
 ```json
 {
   "mcpServers": {
     "automa": {
-      "command": "python3",
-      "args": ["/path/to/server.py"],
-      "description": "Project management automation tools..."
+      "command": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal/mcp-servers/project-management-automation/run_server.sh",
+      "args": [],
+      "description": "Project management automation tools - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
     }
   }
 }
 ```
+
+**Server Location**: `mcp-servers/project-management-automation/`
+**MCP Server Name**: `automa` (configured identifier in Cursor)
 
 ---
 

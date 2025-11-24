@@ -17,6 +17,11 @@
       ],
       "description": "Advanced task management and agent memories with project-specific storage - unlimited task hierarchy, persistent agent context, git-trackable data"
     },
+    "automa": {
+      "command": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal/mcp-servers/project-management-automation/run_server.sh",
+      "args": [],
+      "description": "Project management automation tools - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
+    },
     "context7": {
       "command": "npx",
       "args": [
@@ -42,11 +47,6 @@
         "@semgrep/mcp-server-semgrep"
       ],
       "description": "Security scanning for code analysis - checks for security vulnerabilities, bugs, and code quality issues. Required by .cursorrules for trading software security validation."
-    },
-    "automa": {
-      "command": "/home/david/ib_box_spread_full_universal/mcp-servers/project-management-automation/run_server.sh",
-      "args": [],
-      "description": "Project management automation tools. \u26a0\ufe0f NOTE: This server provides enhanced, project-specific versions of documentation health, task alignment, duplicate detection, and security scanning tools. Prefer these tools over generic MCP server tools for this project."
     }
   }
 }

@@ -6,10 +6,13 @@ Quick reference for using MCP servers in your Cursor prompts.
 
 ### ✅ Currently Active
 
-1. **Semgrep** - Security scanning
-2. **Filesystem** - File operations
-3. **Git** - Version control
-4. **NotebookLM** - Research and documentation
+1. **automa** - Project management automation (self-hosted)
+2. **Semgrep** - Security scanning
+3. **Filesystem** - File operations
+4. **Git** - Version control
+5. **NotebookLM** - Research and documentation
+6. **agentic-tools** - Advanced task management
+7. **context7** - Documentation lookup
 
 ### 🔍 Available but Not Configured
 
@@ -109,6 +112,17 @@ Create a new file at docs/NEW_FEATURE.md with this content: [content]
 - ✅ Modifying existing files
 - ✅ Understanding project structure
 - ℹ️ Automatically used by AI - no explicit prompt needed
+
+### automa (Project Management Automation)
+
+- ✅ Documentation health checks with Todo2 integration
+- ✅ Todo2 task alignment analysis
+- ✅ Duplicate task detection
+- ✅ Multi-language dependency security scanning
+- ✅ Automation opportunity discovery
+- ✅ PWA configuration review
+- ✅ Task synchronization
+- ⚠️ **PREFERRED TOOL** for project-specific analysis (see `.cursor/rules/project-automation.mdc`)
 
 ### Browser
 
