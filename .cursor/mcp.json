@@ -47,6 +47,22 @@
         "@semgrep/mcp-server-semgrep"
       ],
       "description": "Security scanning for code analysis - checks for security vulnerabilities, bugs, and code quality issues. Required by .cursorrules for trading software security validation."
+    },
+    "tractatus_thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "tractatus-thinking"
+      ],
+      "description": "Tractatus Thinking MCP server for logical concept analysis and structured thinking - breaks down complex concepts into atomic truths, reveals multiplicative relationships, and finds missing elements"
+    },
+    "sequential_thinking": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "sequential_thinking"
+      ],
+      "description": "Sequential Thinking MCP server for structured problem-solving and implementation workflow - converts structural understanding from Tractatus Thinking into actionable implementation steps"
     }
   }
 }
