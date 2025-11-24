@@ -153,7 +153,7 @@ Add hints to automa tool descriptions about when to use other servers:
 def check_documentation_health_tool(...):
     """
     [HINT: Documentation health check...]
-    
+
     💡 Integration Hints:
     - Use context7 MCP to verify external library documentation
     - Use filesystem MCP for better workspace context
@@ -242,4 +242,3 @@ Create integration guides for common workflows:
 - [DEPENDENCIES.md](DEPENDENCIES.md) - Complementary MCP servers
 - [README.md](README.md) - Automa server overview
 - `.cursor/rules/project-automation.mdc` - Usage guidelines
-
