@@ -1,0 +1,118 @@
+name: Nightly Task Automation
+
+on:
+  schedule:
+    # Run at 2 AM UTC daily (adjust timezone as needed)
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # Allow manual triggering
+    inputs:
+      max_tasks_per_host:
+        description: 'Max tasks per host'
+        required: false
+        default: '5'
+        type: string
+      max_parallel_tasks:
+        description: 'Max total parallel tasks'
+        required: false
+        default: '10'
+        type: string
+      priority_filter:
+        description: 'Priority filter (high/medium/low)'
+        required: false
+        default: ''
+        type: string
+      dry_run:
+        description: 'Dry run mode (preview only)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  automate-tasks:
+    name: Run Nightly Task Automation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          # Install any required dependencies for the tool
+          # pip install -r requirements.txt  # If needed
+      
+      - name: Run Nightly Task Automation
+        id: automate
+        env:
+          MAX_TASKS_PER_HOST: ${{ github.event.inputs.max_tasks_per_host || '5' }}
+          MAX_PARALLEL_TASKS: ${{ github.event.inputs.max_parallel_tasks || '10' }}
+          PRIORITY_FILTER: ${{ github.event.inputs.priority_filter || '' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: |
+          cd "${{ github.workspace }}"
+          python3 << 'PYTHON_SCRIPT'
+          import sys
+          import os
+          import json
+          sys.path.insert(0, 'mcp-servers/project-management-automation')
+          from tools.nightly_task_automation import run_nightly_task_automation
+          
+          max_tasks_per_host = int(os.getenv('MAX_TASKS_PER_HOST', '5'))
+          max_parallel_tasks = int(os.getenv('MAX_PARALLEL_TASKS', '10'))
+          priority_filter = os.getenv('PRIORITY_FILTER', '').strip() or None
+          dry_run = os.getenv('DRY_RUN', 'false').lower() == 'true'
+          
+          print(f"Running nightly automation:")
+          print(f"  Max tasks per host: {max_tasks_per_host}")
+          print(f"  Max parallel tasks: {max_parallel_tasks}")
+          print(f"  Priority filter: {priority_filter or 'None'}")
+          print(f"  Dry run: {dry_run}")
+          print()
+          
+          result = run_nightly_task_automation(
+              max_tasks_per_host=max_tasks_per_host,
+              max_parallel_tasks=max_parallel_tasks,
+              priority_filter=priority_filter,
+              dry_run=dry_run
+          )
+          
+          print()
+          print("Results:")
+          print(json.dumps(result, indent=2))
+          
+          # Save results to file for artifact
+          with open('nightly-automation-results.json', 'w') as f:
+              json.dump(result, f, indent=2)
+          
+          # Set outputs for GitHub Actions
+          print(f"::set-output name=background_tasks_found::{result['summary']['background_tasks_found']}")
+          print(f"::set-output name=tasks_assigned::{result['summary']['tasks_assigned']}")
+          print(f"::set-output name=tasks_moved_to_review::{result['summary']['tasks_moved_to_review']}")
+          print(f"::set-output name=hosts_used::{result['summary']['hosts_used']}")
+          PYTHON_SCRIPT
+      
+      - name: Upload results artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nightly-automation-results
+          path: nightly-automation-results.json
+          retention-days: 30
+      
+      - name: Create summary
+        if: always()
+        run: |
+          echo "## Nightly Task Automation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Background tasks found: ${{ steps.automate.outputs.background_tasks_found }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Tasks assigned: ${{ steps.automate.outputs.tasks_assigned }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Tasks moved to Review: ${{ steps.automate.outputs.tasks_moved_to_review }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Hosts used: ${{ steps.automate.outputs.hosts_used }}" >> $GITHUB_STEP_SUMMARY
+
