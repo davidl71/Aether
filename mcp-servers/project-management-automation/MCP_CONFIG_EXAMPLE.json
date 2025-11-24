@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "project-management-automation": {
+      "command": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal/mcp-servers/project-management-automation/run_server.sh",
+      "args": [],
+      "description": "Project management automation tools. \u26a0\ufe0f NOTE: This server provides enhanced, project-specific versions of documentation health, task alignment, duplicate detection, and security scanning tools. Prefer these tools over generic MCP server tools for this project."
+    }
+  }
+}

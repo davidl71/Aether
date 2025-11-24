@@ -26,11 +26,37 @@ except ImportError:
         pass
 
 
+def _find_project_root(start_path: Path) -> Path:
+    """
+    Find project root by looking for .git directory or other markers.
+    Falls back to relative path detection if markers not found.
+    """
+    # Try environment variable first
+    env_root = os.getenv('PROJECT_ROOT') or os.getenv('WORKSPACE_PATH')
+    if env_root:
+        root_path = Path(env_root)
+        if root_path.exists():
+            return root_path.resolve()
+
+    # Try relative path detection (assumes standard structure)
+    current = start_path
+    for _ in range(5):  # Go up max 5 levels
+        # Check for project markers
+        if (current / '.git').exists() or (current / '.todo2').exists() or (current / 'CMakeLists.txt').exists():
+            return current.resolve()
+        if current.parent == current:  # Reached filesystem root
+            break
+        current = current.parent
+
+    # Fallback to relative path (assumes mcp-servers/project-management-automation/tools/file.py)
+    return start_path.parent.parent.parent.parent.resolve()
+
+
 class NightlyTaskAutomation(IntelligentAutomationBase):
     """Automated nightly task execution across parallel hosts."""
 
     def __init__(self):
-        self.project_root = Path(__file__).parent.parent.parent.parent
+        self.project_root = _find_project_root(Path(__file__))
         self.todo2_state_file = self.project_root / ".todo2" / "state.todo2.json"
         self.batch_script = self.project_root / "scripts" / "batch_update_todos.py"
         self.agent_hostnames = self._load_agent_hostnames()
@@ -48,7 +74,7 @@ class NightlyTaskAutomation(IntelligentAutomationBase):
             },
             "macos": {
                 "hostname": "192.168.192.141",
-                "project_path": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal",
+                "project_path": "~/Projects/Trading/ib_box_spread_full_universal",
                 "type": "macos"
             }
         }

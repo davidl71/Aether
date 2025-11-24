@@ -1,6 +1,6 @@
 # Cross-Agent TODO Overview
 
-**Last Updated**: 2025-11-18
+**Last Updated**: 2025-01-27
 **Note**: Go-related tasks (1, 2, 3) removed - backend is implemented in Rust (`agents/backend/`). Market data ingestion and QuestDB integration are handled by the Rust backend service.
 
 | TODO ID | Description | Owner Agent | Status |

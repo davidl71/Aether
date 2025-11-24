@@ -5,10 +5,37 @@ MCP Tool for checking git working copy status across all agents and runners.
 """
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Any, Optional
+
+
+def _find_project_root(start_path: Path) -> Path:
+    """
+    Find project root by looking for .git directory or other markers.
+    Falls back to relative path detection if markers not found.
+    """
+    # Try environment variable first
+    env_root = os.getenv('PROJECT_ROOT') or os.getenv('WORKSPACE_PATH')
+    if env_root:
+        root_path = Path(env_root)
+        if root_path.exists():
+            return root_path.resolve()
+
+    # Try relative path detection (assumes standard structure)
+    current = start_path
+    for _ in range(5):  # Go up max 5 levels
+        # Check for project markers
+        if (current / '.git').exists() or (current / '.todo2').exists() or (current / 'CMakeLists.txt').exists():
+            return current.resolve()
+        if current.parent == current:  # Reached filesystem root
+            break
+        current = current.parent
+
+    # Fallback to relative path (assumes mcp-servers/project-management-automation/tools/file.py)
+    return start_path.parent.parent.parent.parent.resolve()
 
 
 def check_working_copy_health(
@@ -25,7 +52,7 @@ def check_working_copy_health(
     Returns:
         Dictionary with working copy status for each agent
     """
-    project_root = Path(__file__).parent.parent.parent.parent
+    project_root = _find_project_root(Path(__file__))
 
     # Agent configurations
     agents = {
@@ -44,7 +71,7 @@ def check_working_copy_health(
             },
             "macos": {
                 "host": "davidl@192.168.192.141",
-                "path": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal",
+                "path": "~/Projects/Trading/ib_box_spread_full_universal",
                 "type": "remote"
             }
         })
