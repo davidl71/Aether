@@ -992,9 +992,19 @@ if mcp:
             return get_tools_list_resource()
 
         @mcp.resource("automation://tasks")
-        def get_automation_tasks(agent: Optional[str] = None, status: Optional[str] = None, limit: int = 100) -> str:
-            """Get Todo2 tasks, optionally filtered by agent or status."""
-            return get_tasks_resource(agent=agent, status=status, limit=limit)
+        def get_automation_tasks() -> str:
+            """Get Todo2 tasks list."""
+            return get_tasks_resource()
+
+        @mcp.resource("automation://tasks/agent/{agent_name}")
+        def get_automation_tasks_by_agent(agent_name: str) -> str:
+            """Get Todo2 tasks for a specific agent."""
+            return get_agent_tasks_resource(agent_name)
+
+        @mcp.resource("automation://tasks/status/{status}")
+        def get_automation_tasks_by_status(status: str) -> str:
+            """Get Todo2 tasks filtered by status."""
+            return get_tasks_resource(status=status)
 
         @mcp.resource("automation://agents")
         def get_automation_agents() -> str:
