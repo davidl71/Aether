@@ -247,6 +247,7 @@ try:
         from tools.daily_automation import run_daily_automation
         from tools.ci_cd_validation import validate_ci_cd_workflow
         from tools.nightly_task_automation import run_nightly_task_automation
+        from tools.batch_task_approval import batch_approve_tasks
 
         TOOLS_AVAILABLE = True
     logger.info("All tools loaded successfully")
@@ -639,29 +640,42 @@ if mcp:
             return validate_ci_cd_workflow(workflow_path, check_runners, output_path)
 
         @mcp.tool()
-        def run_nightly_task_automation_tool(
-            max_tasks_per_host: int = 5,
-            max_parallel_tasks: int = 10,
-            priority_filter: Optional[str] = None,
-            tag_filter: Optional[List[str]] = None,
+        def batch_approve_tasks_tool(
+            status: str = "Review",
+            new_status: str = "Todo",
+            clarification_none: bool = True,
+            filter_tag: Optional[str] = None,
+            task_ids: Optional[List[str]] = None,
             dry_run: bool = False
         ) -> str:
             """
-            [HINT: Nightly automation. Returns assigned tasks, moved to review, summary, background tasks remaining.]
+            [HINT: Batch approval. Returns approved count, task IDs, success status.]
 
-            Automatically execute background-capable TODO2 tasks in parallel across multiple hosts.
-            Moves interactive tasks requiring user input to Review status.
+            Batch approve TODO2 tasks that don't need clarification, moving them from Review to Todo status.
 
-            ⚠️ PREFERRED TOOL: This orchestrates parallel task execution across remote agents,
-            automatically filtering out interactive tasks and assigning background-capable tasks.
+            ⚠️ PREFERRED TOOL: Use this to quickly approve research tasks and other tasks that don't require
+            user input, making them available for automated execution.
 
-            Use this for nightly automation or when you want to process many tasks in parallel.
+            Use this before running nightly automation to clear the Review queue, or when you want to
+            approve multiple tasks at once without manual review.
+
+            Args:
+                status: Current status to filter (default: "Review")
+                new_status: New status after approval (default: "Todo")
+                clarification_none: Only approve tasks with no clarification needed (default: True)
+                filter_tag: Filter by tag (e.g., "research")
+                task_ids: List of specific task IDs to approve (optional)
+                dry_run: If True, preview what would be approved without making changes
+
+            Returns:
+                JSON string with approval results including count, task IDs, and success status
             """
-            result = run_nightly_task_automation(
-                max_tasks_per_host=max_tasks_per_host,
-                max_parallel_tasks=max_parallel_tasks,
-                priority_filter=priority_filter,
-                tag_filter=tag_filter,
+            result = batch_approve_tasks(
+                status=status,
+                new_status=new_status,
+                clarification_none=clarification_none,
+                filter_tag=filter_tag,
+                task_ids=task_ids,
                 dry_run=dry_run
             )
             return json.dumps(result, indent=2)
@@ -679,9 +693,11 @@ if mcp:
 
             Automatically execute background-capable TODO2 tasks in parallel across multiple hosts.
             Moves interactive tasks requiring user input to Review status.
+            Includes automatic batch approval of research tasks that don't need clarification.
 
             ⚠️ PREFERRED TOOL: This orchestrates parallel task execution across remote agents,
             automatically filtering out interactive tasks and assigning background-capable tasks.
+            Also includes batch approval step to clear Review queue.
 
             Use this for nightly automation or when you want to process many tasks in parallel.
             """

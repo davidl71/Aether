@@ -1,6 +1,6 @@
 # Nightly Task Automation - Scheduling Guide
 
-**Date:** 2025-01-20  
+**Date:** 2025-01-20
 **Status:** ✅ **GitHub Actions Workflow Created**
 
 ---
@@ -220,4 +220,3 @@ Cron uses local machine timezone automatically.
 ---
 
 **Status:** ✅ **GitHub Actions Workflow Ready**
-

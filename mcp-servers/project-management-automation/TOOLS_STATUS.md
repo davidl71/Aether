@@ -7,7 +7,7 @@
 
 ## Tools Overview
 
-The Project Automation MCP Server exports **8 tools** for project management automation:
+The Project Automation MCP Server exports **10 tools** for project management automation:
 
 ### ✅ All Tools Fixed
 
@@ -184,9 +184,40 @@ All tools have been updated to fix import scoping issues. Error handler imports 
 
 ---
 
-### 9. `run_nightly_task_automation_tool` ✅
+### 9. `batch_approve_tasks_tool` ✅
 **Status:** ✅ Implemented and Ready
-**Purpose:** Automatically execute background-capable TODO2 tasks in parallel across multiple hosts
+**Purpose:** Batch approve TODO2 tasks that don't need clarification, moving them from Review to Todo status
+
+**Parameters:**
+- `status` (str): Current status to filter (default: `"Review"`)
+- `new_status` (str): New status after approval (default: `"Todo"`)
+- `clarification_none` (bool): Only approve tasks with no clarification needed (default: `true`)
+- `filter_tag` (Optional[str]): Filter by tag (e.g., "research") (optional)
+- `task_ids` (Optional[List[str]]): List of specific task IDs to approve (optional)
+- `dry_run` (bool): Preview mode without executing (default: `false`)
+
+**Returns:**
+- `success` (bool): Whether approval succeeded
+- `approved_count` (int): Number of tasks approved
+- `task_ids` (List[str]): List of approved task IDs
+- `status_from` (str): Original status
+- `status_to` (str): New status
+- `dry_run` (bool): Whether this was a dry run
+- `output` (str): Script output
+
+**File:** `tools/batch_task_approval.py`
+**Integration:** Uses `scripts/batch_update_todos.py` for batch operations
+
+**Usage:**
+- Use before nightly automation to clear Review queue
+- Approve research tasks that don't need clarification
+- Preview what would be approved with `dry_run=true`
+
+---
+
+### 10. `run_nightly_task_automation_tool` ✅
+**Status:** ✅ Implemented and Ready
+**Purpose:** Automatically execute background-capable TODO2 tasks in parallel across multiple hosts. Includes automatic batch approval step.
 
 **Parameters:**
 - `max_tasks_per_host` (int): Maximum tasks to assign per host (default: `5`)
@@ -194,6 +225,23 @@ All tools have been updated to fix import scoping issues. Error handler imports 
 - `priority_filter` (Optional[str]): Filter by priority - 'high', 'medium', or 'low' (optional)
 - `tag_filter` (Optional[List[str]]): Filter by tags - list of tag strings (optional)
 - `dry_run` (bool): Preview mode without executing (default: `false`)
+
+**Returns:**
+- `timestamp` (str): Execution timestamp
+- `dry_run` (bool): Whether this was a dry run
+- `summary` (dict): Summary with:
+  - `background_tasks_found` (int): Number of background-capable tasks
+  - `interactive_tasks_found` (int): Number of interactive tasks
+  - `tasks_assigned` (int): Number of tasks assigned to hosts
+  - `tasks_moved_to_review` (int): Number of tasks moved to Review
+  - `tasks_batch_approved` (int): Number of tasks batch approved
+  - `hosts_used` (int): Number of hosts used
+- `assigned_tasks` (List[dict]): List of assigned tasks with host info
+- `moved_to_review` (List[str]): List of task IDs moved to Review
+- `background_tasks_remaining` (int): Number of background tasks not yet assigned
+
+**File:** `tools/nightly_task_automation.py`
+**Integration:** Includes automatic batch approval using `batch_approve_tasks_tool`
 
 **Returns:**
 - Summary (background tasks found, interactive tasks found, tasks assigned, tasks moved to review, hosts used)

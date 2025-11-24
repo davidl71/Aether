@@ -3,6 +3,7 @@ Nightly Task Automation Tool
 
 Automatically executes background-capable TODO2 tasks in parallel across multiple hosts.
 Moves interactive tasks to Review status and proceeds to next tasks.
+Also includes batch approval of research tasks that don't need clarification.
 """
 
 import json
@@ -31,6 +32,7 @@ class NightlyTaskAutomation(IntelligentAutomationBase):
     def __init__(self):
         self.project_root = Path(__file__).parent.parent.parent.parent
         self.todo2_state_file = self.project_root / ".todo2" / "state.todo2.json"
+        self.batch_script = self.project_root / "scripts" / "batch_update_todos.py"
         self.agent_hostnames = self._load_agent_hostnames()
 
     def _load_agent_hostnames(self) -> Dict[str, str]:
@@ -335,6 +337,42 @@ class NightlyTaskAutomation(IntelligentAutomationBase):
             assigned_tasks.append(task)
             host_index += 1
 
+        # Batch approve research tasks that don't need clarification (if not dry run)
+        batch_approved_count = 0
+        if not dry_run and self.batch_script.exists():
+            try:
+                # Count Review tasks with no clarification before approval
+                review_tasks_before = [t for t in todos if t.get('status') == 'Review']
+
+                # Run batch approval script for Review tasks with no clarification needed
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(self.batch_script),
+                        'approve',
+                        '--status', 'Review',
+                        '--clarification-none',
+                        '--new-status', 'Todo',
+                        '--yes'  # Skip confirmation in automated runs
+                    ],
+                    cwd=str(self.project_root),
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+
+                if result.returncode == 0:
+                    # Reload state to get updated task list
+                    state = self._load_todo2_state()
+                    todos = state.get('todos', [])
+
+                    # Count Review tasks after approval
+                    review_tasks_after = [t for t in todos if t.get('status') == 'Review']
+                    batch_approved_count = len(review_tasks_before) - len(review_tasks_after)
+            except Exception as e:
+                # Log error but don't fail the automation
+                print(f"Warning: Batch approval failed: {e}", file=sys.stderr)
+
         # Save state (if not dry run)
         if not dry_run:
             state['todos'] = todos
@@ -349,6 +387,7 @@ class NightlyTaskAutomation(IntelligentAutomationBase):
                 'interactive_tasks_found': len(interactive_tasks),
                 'tasks_assigned': len(assigned_tasks),
                 'tasks_moved_to_review': len(moved_to_review),
+                'tasks_batch_approved': batch_approved_count,
                 'hosts_used': len(set(a['host'] for a in task_assignments.values()))
             },
             'assigned_tasks': [
