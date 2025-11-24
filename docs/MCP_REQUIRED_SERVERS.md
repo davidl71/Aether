@@ -6,26 +6,36 @@ This document lists all **required** MCP servers for the project and provides in
 
 All of these servers must be configured in `.cursor/mcp.json` for full project functionality:
 
-### 1. automa (Project Management Automation)
+### 1. exarp (Project Management Automation)
 
-**Type**: Self-hosted
-**Location**: `mcp-servers/project-management-automation/`
+**Type**: Python package (installed via pip)
 **Purpose**: Project management automation tools
+
+**Installation**:
+```bash
+# Install from separate repository
+pip install -e /path/to/project-management-automation
+
+# Or from git
+pip install git+ssh://git@github.com/davidl71/project-management-automation.git@main
+```
 
 **Configuration**:
 ```json
 {
-  "automa": {
-    "command": "/absolute/path/to/project/mcp-servers/project-management-automation/run_server.sh",
-    "args": [],
-    "description": "Project management automation tools - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
+  "exarp": {
+    "command": "python3",
+    "args": [
+      "-m",
+      "project_management_automation.server"
+    ],
+    "description": "Exarp - Project management automation tools (Enochian: Spirit of Air - Communication) - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
   }
 }
 ```
 
 **See Also**:
-- [DEPENDENCIES.md](../mcp-servers/project-management-automation/DEPENDENCIES.md) - Complementary servers
-- [INTEGRATION_ANALYSIS.md](../mcp-servers/project-management-automation/INTEGRATION_ANALYSIS.md) - Integration with other servers
+- [project-management-automation repository](https://github.com/davidl71/project-management-automation) - Separate repository with full documentation
 
 ---
 
@@ -189,8 +199,8 @@ npx -y tractatus_thinking --version
 Test all servers manually:
 
 ```bash
-# automa (self-hosted)
-/path/to/project/mcp-servers/project-management-automation/run_server.sh --help
+# exarp (Python package)
+python3 -m project_management_automation.server --help
 
 # npm packages
 npx -y @modelcontextprotocol/server-filesystem --version
@@ -232,23 +242,24 @@ npx -y @modelcontextprotocol/server-sequential-thinking --version
 }
 ```
 
-### Issue 3: automa server path errors
+### Issue 3: exarp server import errors
 
-**Cause**: Absolute path in `.cursor/mcp.json` is incorrect for current environment.
+**Cause**: Package not installed or wrong Python environment.
 
 **Fix**:
-1. Use sync script: `python3 scripts/sync_mcp_config_agents.py`
-2. Or manually update path in `.cursor/mcp.json`
+1. Install package: `pip install -e /path/to/project-management-automation`
+2. Verify installation: `python3 -m project_management_automation.server --help`
+3. Check Python path: Ensure correct Python environment is used in `.cursor/mcp.json`
 
 ## Workflow Integration
 
 These servers work together in a recommended workflow:
 
 1. **tractatus_thinking** → Understand WHAT (structure/logic)
-2. **automa** → Analyze and automate (project management)
+2. **exarp** → Analyze and automate (project management)
 3. **sequential_thinking** → Plan HOW (implementation)
 
-See [DEPENDENCIES.md](../mcp-servers/project-management-automation/DEPENDENCIES.md) for detailed workflow examples.
+See [project-management-automation repository](https://github.com/davidl71/project-management-automation) for detailed workflow examples.
 
 ## See Also
 

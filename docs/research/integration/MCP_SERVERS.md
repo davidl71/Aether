@@ -7,25 +7,30 @@ enhance Cursor AI capabilities.
 
 ### ✅ Currently Active
 
-### 1. automa (Project Management Automation)
+### 1. exarp (Project Management Automation)
 
-**Purpose**: Self-hosted project management automation tools for documentation health, task alignment, duplicate detection, security scanning, and automation opportunities
+**Purpose**: Project management automation tools for documentation health, task alignment, duplicate detection, security scanning, and automation opportunities
 
 **Status**: ✅ Configured and Active
+
+**Installation**: Installed as Python package (separate repository)
 
 **Configuration**: `.cursor/mcp.json`
 
 ```json
 {
-  "automa": {
-    "command": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal/mcp-servers/project-management-automation/run_server.sh",
-    "args": [],
-    "description": "Project management automation tools - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
+  "exarp": {
+    "command": "python3",
+    "args": [
+      "-m",
+      "project_management_automation.server"
+    ],
+    "description": "Exarp - Project management automation tools (Enochian: Spirit of Air - Communication) - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
   }
 }
 ```
 
-**Server Location**: `mcp-servers/project-management-automation/`
+**Repository**: [project-management-automation](https://github.com/davidl71/project-management-automation)
 
 **Benefits**:
 
