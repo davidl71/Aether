@@ -51,6 +51,18 @@ Debug configurations:
 - **Run Tests** - Debug test suite
 - **Attach to Process** - Attach debugger to running process
 
+### `.cursor/BUGBOT.md`
+
+Project-specific rules for Cursor Bugbot (AI-powered PR reviews):
+
+- Security requirements (trading software safety)
+- Code style guidelines
+- Build system requirements
+- Testing requirements
+- Common issues to flag
+
+**See**: [CURSOR_BUGBOT_INTEGRATION.md](CURSOR_BUGBOT_INTEGRATION.md) for complete setup guide.
+
 ### `.vscode/extensions.json`
 
 Recommended extensions:
