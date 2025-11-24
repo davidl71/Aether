@@ -24,12 +24,14 @@ The automa server is designed to work alongside these complementary MCP servers 
   "mcpServers": {
     "tractatus_thinking": {
       "command": "npx",
-      "args": ["-y", "tractatus-thinking"],
+      "args": ["-y", "tractatus_thinking"],
       "description": "Tractatus Thinking MCP server for logical concept analysis and structured thinking"
     }
   }
 }
 ```
+
+**Note**: Package name is `tractatus_thinking` (with underscore), not `tractatus-thinking`.
 
 **Documentation**: See `.cursor/rules/tractatus-thinking.mdc`
 
@@ -52,13 +54,15 @@ The automa server is designed to work alongside these complementary MCP servers 
 {
   "mcpServers": {
     "sequential_thinking": {
-      "command": "python3",
-      "args": ["-m", "sequential_thinking"],
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
       "description": "Sequential Thinking MCP server for structured problem-solving and implementation workflow"
     }
   }
 }
 ```
+
+**Note**: This is an npm package, not a Python module. Installation is automatic via `npx`.
 
 **Documentation**: See `.cursor/rules/sequential-thinking.mdc`
 
