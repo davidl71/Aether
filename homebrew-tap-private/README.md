@@ -1,6 +1,8 @@
-# Homebrew Tap for Synthetic Financing Platform
+# Homebrew Tap for Private Projects
 
-This is a [Homebrew tap](https://docs.brew.sh/Taps) for installing Synthetic Financing Platform tools via Homebrew.
+This is a [Homebrew tap](https://docs.brew.sh/Taps) for installing **private** Synthetic Financing Platform tools via Homebrew.
+
+**Note**: This tap contains formulas for private repositories that require SSH authentication. For public/open-source projects, see `homebrew-tap-public/`.
 
 **Note**: Box spreads are one strategy component of this comprehensive multi-asset financing optimization platform.
 
@@ -52,10 +54,16 @@ brew tap davidl71/ib-box-spread git@github.com:davidl71/homebrew-ib-box-spread.g
 brew install davidl71/ib-box-spread/ib-box-spread
 
 # Install TUI (Terminal User Interface)
-brew install davidl71/synthetic-financing-platform/synthetic-financing-platform-tui
+brew install davidl71/ib-box-spread/ib-box-spread-tui
 
 # Or install both
-brew install davidl71/synthetic-financing-platform/synthetic-financing-platform davidl71/synthetic-financing-platform/synthetic-financing-platform-tui
+brew install davidl71/ib-box-spread/ib-box-spread davidl71/ib-box-spread/ib-box-spread-tui
+```
+
+**Note**: For public projects like Exarp Oh My Zsh plugin, use the public tap:
+```bash
+brew tap davidl71/public-projects https://github.com/davidl71/homebrew-public-projects.git
+brew install davidl71/public-projects/exarp-oh-my-zsh
 ```
 
 ## Packages

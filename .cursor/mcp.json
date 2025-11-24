@@ -5,7 +5,7 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "/home/david/ib_box_spread_full_universal"
+        "/Volumes/SSD1_APFS/ib_box_spread_full_universal"
       ],
       "description": "File system operations for reading, writing, and managing project files"
     },
@@ -16,11 +16,6 @@
         "@pimzino/agentic-tools-mcp"
       ],
       "description": "Advanced task management and agent memories with project-specific storage - unlimited task hierarchy, persistent agent context, git-trackable data"
-    },
-    "automa": {
-      "command": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal/mcp-servers/project-management-automation/run_server.sh",
-      "args": [],
-      "description": "Project management automation tools - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
     },
     "context7": {
       "command": "npx",
@@ -34,9 +29,9 @@
       "command": "npx",
       "args": [
         "-y",
-        "/home/david/ib_box_spread_full_universal",
+        "@modelcontextprotocol/server-git",
         "--repository",
-        "/Users/davidlowes/ib_box_spread_full_universal"
+        "/Volumes/SSD1_APFS/ib_box_spread_full_universal"
       ],
       "description": "Git version control operations - AI can understand git history, help with commit messages, and understand branch structure and diffs"
     },
@@ -63,6 +58,14 @@
         "@modelcontextprotocol/server-sequential-thinking"
       ],
       "description": "Sequential Thinking MCP server for structured problem-solving and implementation workflow - converts structural understanding from Tractatus Thinking into actionable implementation steps"
+    },
+    "exarp": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "project_management_automation.server"
+      ],
+      "description": "Exarp - Project management automation tools (Enochian: Spirit of Air - Communication) - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
     }
   }
 }

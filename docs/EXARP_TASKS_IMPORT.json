@@ -1,0 +1,88 @@
+{
+  "tasks": [
+    {
+      "id": "T-1",
+      "content": "Refactor sync_todo_tasks_tool to sync_tasks_tool with adapter pattern support",
+      "status": "Todo",
+      "priority": "high",
+      "tags": [
+        "refactor",
+        "adapter-pattern",
+        "tool-reuse",
+        "high-priority"
+      ],
+      "created_at": "2025-11-25T00:16:35.949843",
+      "updated_at": "2025-11-25T00:16:35.950331"
+    },
+    {
+      "id": "T-2",
+      "content": "Create TaskSourceAdapter and TaskTargetAdapter base classes",
+      "status": "Todo",
+      "priority": "high",
+      "tags": [
+        "adapter-pattern",
+        "architecture",
+        "tool-reuse"
+      ],
+      "created_at": "2025-11-25T00:16:35.950338",
+      "updated_at": "2025-11-25T00:16:35.950340"
+    },
+    {
+      "id": "T-3",
+      "content": "Extend detect_duplicate_tasks_tool to support multiple sources",
+      "status": "Todo",
+      "priority": "high",
+      "tags": [
+        "refactor",
+        "adapter-pattern",
+        "tool-reuse"
+      ],
+      "created_at": "2025-11-25T00:16:35.950343",
+      "updated_at": "2025-11-25T00:16:35.950345"
+    },
+    {
+      "id": "T-4",
+      "content": "Refactor analyze_todo2_alignment_tool to analyze_task_alignment_tool with source parameter",
+      "status": "Todo",
+      "priority": "high",
+      "tags": [
+        "refactor",
+        "adapter-pattern",
+        "tool-reuse"
+      ],
+      "created_at": "2025-11-25T00:16:35.950347",
+      "updated_at": "2025-11-25T00:16:35.950349"
+    },
+    {
+      "id": "T-5",
+      "content": "Extend simplify_rules_tool to support Cursor rules (.cursorrules)",
+      "status": "Todo",
+      "priority": "medium",
+      "tags": [
+        "refactor",
+        "cursor-integration",
+        "tool-reuse"
+      ],
+      "created_at": "2025-11-25T00:16:35.950356",
+      "updated_at": "2025-11-25T00:16:35.950358"
+    }
+  ],
+  "migration_info": {
+    "exported_from": "ib_box_spread_full_universal",
+    "export_date": "2025-11-25T00:59:15.881711",
+    "original_ids": [
+      "T-1",
+      "T-2",
+      "T-3",
+      "T-4",
+      "T-5"
+    ],
+    "suggested_new_ids": [
+      "EXARP-1",
+      "EXARP-2",
+      "EXARP-3",
+      "EXARP-4",
+      "EXARP-5"
+    ]
+  }
+}

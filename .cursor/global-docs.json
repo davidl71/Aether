@@ -127,10 +127,5 @@
       "description": "Complete MCP server implementation summary",
       "category": "architecture"
     },
-    {
-      "path": "mcp-servers/project-management-automation/USAGE.md",
-      "description": "Project automation tools usage guide",
-      "category": "automation"
-    }
   ]
 }

@@ -26,13 +26,16 @@ C++20 trading application for Interactive Brokers implementing box spread arbitr
 ## Build System
 
 ### Commands
-```bash
-cmake --preset macos-universal-debug
-cmake --build --preset macos-universal-debug
-./scripts/build_universal.sh
-./scripts/run_linters.sh
-ctest --output-on-failure
-```
+See `.cursor/commands.json` or `docs/CURSOR_PROJECT_COMMANDS.md` for complete command list.
+
+**Primary commands:**
+- `build:debug` - Build in debug mode
+- `build:release` - Build in release mode
+- `build:universal` - Build universal binary
+- `test:run` - Run all tests
+- `lint:run` - Run all linters
+
+**Use existing scripts:** `setup_worktree.sh`, `build_universal.sh`
 
 ### Dependencies
 - **TWS API**: `native/third_party/tws-api/IBJts/source/cppclient/client/`
@@ -44,36 +47,42 @@ ctest --output-on-failure
 
 - Never commit credentials, API keys, or secrets
 - Never log sensitive information
+- **Never skip security scanning** - Always use `security_check` tool before code generation (see `.cursor/rules/semgrep.mdc`)
+- **Never use hardcoded absolute paths** - Use relative paths or environment variables
+- **Never use deprecated APIs** - Check `docs/TWS_INTEGRATION_STATUS.md` for current APIs
 - Always use paper trading port (7497) for testing
 - Gate live trading behind explicit configuration flags
 - Validate all configuration before use
 - Use spdlog for logging (already included)
-- Run linters before committing: `./scripts/run_linters.sh`
+- **Automated checks**: Dependency security scanning runs automatically via automa (see `.cursor/rules/project-automation.mdc`)
 
 ## Testing
 
 - Tests mirror source file names (use Catch2 framework)
-- Run: `ctest --output-on-failure`
+- Run: `test:run` (or `ctest --output-on-failure`)
 - All tests must pass before committing
+- **Never skip tests for trading logic** - All box spread calculations must have tests
+- **Never skip tests for risk management** - All risk calculations must have tests
 
 ## Git Workflow
 
-- Use `scripts/setup_worktree.sh` for new worktrees
+- Use `setup:worktree` command (or `scripts/setup_worktree.sh`) for new worktrees
 - Commit messages: Imperative mood, 72-character subject lines
 - Never commit build artifacts, logs, or credentials
+- **Never modify third-party code directly** - Use wrappers or adapters in `native/src/`
 
 ## AI Assistant Guidelines
 
 When helping with this codebase:
 1. Check existing patterns before suggesting new approaches
 2. Respect code style (2-space indentation, Allman braces)
-3. Suggest using existing scripts (`setup_worktree.sh`, `build_universal.sh`)
+3. Suggest using existing scripts and commands (see `.cursor/commands.json`)
 4. Remember this is trading software - emphasize safety and validation
-5. Point to relevant documentation in `docs/` when available
+5. Point to relevant documentation in `docs/` when available (see `.cursor/rules/documentation.mdc`)
 6. Consider multi-language aspects (C++, Python, Rust, Go, TypeScript)
 7. For API questions, reference `@docs API_DOCUMENTATION_INDEX.md`
-8. Use NotebookLM MCP server for research (see `docs/NOTEBOOKLM_USAGE.md`)
-9. Use **automa** MCP server (configured as "automa" in `.cursor/mcp.json`) for project-specific analysis - documentation health, task alignment, duplicate detection, security scanning (see `.cursor/rules/project-automation.mdc`)
+8. Use NotebookLM MCP server for research (see `.cursor/rules/notebooklm.mdc`)
+9. Use **automa** MCP server for project-specific analysis - documentation health, task alignment, duplicate detection, security scanning (see `.cursor/rules/project-automation.mdc`)
 
 ### Problem-Solving Workflow (Tractatus → Sequential)
 
@@ -98,19 +107,27 @@ When helping with this codebase:
 
 ## Static Analysis
 
-- Use `./scripts/run_linters.sh` for linting
+- Use `lint:run` command (or `./scripts/run_linters.sh`) for linting
 - Tools: cppcheck, Clang Static Analyzer, Infer, clang-tidy
 - Add annotations for critical functions: `[[nodiscard]]`, `__attribute__((nonnull))`
 - See `docs/STATIC_ANALYSIS_ANNOTATIONS.md` for details
 
 ## Before Committing
 
-1. Run linters: `./scripts/run_linters.sh`
-2. Run tests: `ctest --output-on-failure`
-3. Verify build: `cmake --build build`
-4. Check for credentials/secrets
+1. Run linters: `lint:run` (or `./scripts/run_linters.sh`)
+2. Run tests: `test:run` (or `ctest --output-on-failure`)
+3. Verify build: `build:debug` (or `cmake --build build`)
+4. Check for credentials/secrets (manual - no automation)
 5. Update documentation if needed
 6. Add static analysis annotations where appropriate
+
+**Automated checks (via automa - see `.cursor/rules/project-automation.mdc`):**
+- Documentation health (runs automatically on git hooks)
+- Security scanning (runs automatically on dependency changes)
+- Task alignment (runs automatically on task status changes)
+- Duplicate detection (runs automatically on task creation)
+
+**To configure automated checks:** Use automa tools (git hooks, file watchers, cron jobs)
 
 ---
 

@@ -1,6 +1,8 @@
-# Project Management Automation MCP Server Usage
+# Exarp - Project Management Automation MCP Server Usage
 
-**Note**: This MCP server is configured as **"automa"** in `.cursor/mcp.json`. The server code is located in `mcp-servers/project-management-automation/` but is accessible via the "automa" identifier in Cursor.
+**Note**: This MCP server is configured as **"exarp"** in `.cursor/mcp.json`. The server is installed from the private GitHub repository and accessible via the "exarp" identifier in Cursor.
+
+**Name Origin**: Exarp is the Enochian name for the Spirit of Air, overseeing the Air Tablet. The Air element represents communication, clarity, and agility - perfect for an MCP server that facilitates communication between AI assistants and project management tools.
 
 ## When to Use Project Automation MCP Server
 
@@ -374,16 +376,16 @@ The server is configured in `.cursor/mcp.json` as **"automa"**:
 {
   "mcpServers": {
     "automa": {
-      "command": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal/mcp-servers/project-management-automation/run_server.sh",
-      "args": [],
-      "description": "Project management automation tools - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
+      "command": "python3",
+      "args": ["-m", "exarp_project_management.server"],
+      "description": "Exarp - Project management automation tools (Enochian: Spirit of Air - Communication)"
     }
   }
 }
 ```
 
-**Server Location**: `mcp-servers/project-management-automation/`
-**MCP Server Name**: `automa` (configured identifier in Cursor)
+**Installation**: Exarp is installed via PyPI: `pip install exarp-automation-mcp`
+**MCP Server Name**: `exarp` (configured identifier in Cursor)
 
 ---
 
@@ -412,4 +414,4 @@ Result: Multi-language security report with critical issues highlighted
 
 ---
 
-**Reference:** See `mcp-servers/project-management-automation/USAGE.md` for detailed usage guide.
+**Reference:** See [Exarp Repository](https://github.com/davidl71/exarp-project-management) for detailed usage guide and documentation.

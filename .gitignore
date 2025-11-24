@@ -12,6 +12,7 @@ Makefile
 *.cmake
 !CMakeLists.txt
 compile_commands.json
+# Note: cmake_install.cmake is already covered by *.cmake, but explicit for clarity
 
 # Compiled binaries
 bin/
@@ -69,6 +70,8 @@ venv/
 python/venv*/
 __pycache__/
 *.pyc
+*.egg-info/
+agents/*/python/*.egg-info/
 
 # Dependency directories
 third_party/tws-api/
@@ -144,6 +147,12 @@ Desktop.ini
 ib_box_spread-*.tar.gz
 dist/ib_box_spread-*.tar.gz
 dist/ib_box_spread-*.sha256
+
+# Java build artifacts
+*.jar
+!native/third_party/**/*.jar  # Exception: vendor JARs in third_party (TWS API)
+!libs/**/*.jar  # Exception: vendor JARs in libs/ if needed
+ib-gateway/dist/  # IB Gateway build output directory
 
 # Todo2 - AI-powered task management directories
 # Note: .todo2/state.todo2.json is tracked for multi-machine/AI agent synchronization

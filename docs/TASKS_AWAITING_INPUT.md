@@ -33,7 +33,7 @@ These tasks have been moved to Review status because they require clarification 
 - **Priority:** High
 - **Question:** Credential storage approach, connection retry strategy, session timeout handling
 - **Context:** Security and reliability decisions needed
-- **Recommendation:** 
+- **Recommendation:**
   - Credential storage: Use system keychain/credential store
   - Retry strategy: Exponential backoff with max retries
   - Session timeout: Configurable, default 30 minutes
@@ -70,7 +70,7 @@ These tasks have been moved to Review status because they require clarification 
 - **Priority:** High
 - **Question:** Storage format preference (JSON config vs database), loan update API design
 - **Context:** Need to decide on persistence layer
-- **Recommendation:** 
+- **Recommendation:**
   - Start with JSON config for simplicity
   - Design for future database migration
   - REST API for updates
@@ -79,7 +79,7 @@ These tasks have been moved to Review status because they require clarification 
 - **Priority:** High
 - **Question:** Preferred interface (TUI form, CLI commands, config file editing), import file format
 - **Context:** User experience decision
-- **Recommendation:** 
+- **Recommendation:**
   - Primary: TUI form (interactive)
   - Secondary: Config file editing (power users)
   - Import: CSV format (common, easy to generate)
@@ -176,4 +176,3 @@ For detailed information about each task, see:
 
 **Last Updated:** 2025-11-24
 **Status:** Awaiting your input on 12 tasks
-

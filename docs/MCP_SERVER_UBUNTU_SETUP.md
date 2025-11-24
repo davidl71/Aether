@@ -124,4 +124,3 @@ Add to Ansible setup or initial agent setup:
 - `mcp-servers/project-management-automation/setup.sh` - Setup script
 - `mcp-servers/project-management-automation/run_server.sh` - Server wrapper
 - `.cursor/mcp.json` - MCP configuration
-

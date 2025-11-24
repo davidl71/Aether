@@ -10,7 +10,7 @@
 ### Daily Automation
 - **Time:** 2:00 AM UTC daily
 - **Cron:** `0 2 * * *`
-- **Purpose:** 
+- **Purpose:**
   - Batch approve tasks from Review → Todo
   - Assign background tasks to agents
   - Move interactive tasks to Review
@@ -265,4 +265,3 @@ python3 scripts/analyze_task_execution_modes.py
 - `docs/NIGHTLY_TASK_AUTOMATION.md` - Complete automation documentation
 - `docs/NIGHTLY_AUTOMATION_SCHEDULING.md` - Scheduling details
 - `.github/workflows/nightly-task-automation.yml` - Workflow file
-
