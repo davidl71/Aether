@@ -6,6 +6,7 @@ MCP Tool for checking git working copy status across all agents and runners.
 
 import json
 import os
+import socket
 import subprocess
 import sys
 from pathlib import Path
@@ -39,6 +40,84 @@ def _ssh_command(host: str, command: str, timeout: int = 10) -> subprocess.Compl
         text=True,
         timeout=timeout
     )
+
+
+def _get_local_ip_addresses() -> List[str]:
+    """Get all local IP addresses (excluding localhost)."""
+    local_ips = []
+    
+    # Get hostname
+    try:
+        hostname = socket.gethostname()
+        local_ips.append(hostname)
+    except Exception:
+        pass
+    
+    # Get IP addresses
+    try:
+        # Try to get primary IP
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        local_ips.append(local_ip)
+        s.close()
+    except Exception:
+        pass
+    
+    # Get all interface IPs
+    try:
+        result = subprocess.run(
+            ["ifconfig"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0:
+            for line in result.stdout.split('\n'):
+                if 'inet ' in line and '127.0.0.1' not in line:
+                    ip = line.split()[1]
+                    if ip not in local_ips:
+                        local_ips.append(ip)
+    except Exception:
+        pass
+    
+    return local_ips
+
+
+def _is_local_host(hostname: str) -> bool:
+    """
+    Determine if a hostname/IP refers to the local machine.
+    
+    Args:
+        hostname: Hostname or IP address (may include user@ prefix)
+    
+    Returns:
+        True if hostname refers to local machine
+    """
+    # Remove user@ prefix if present
+    host = hostname.split('@')[-1] if '@' in hostname else hostname
+    
+    # Check if it's localhost
+    if host in ['localhost', '127.0.0.1', '::1']:
+        return True
+    
+    # Get local IPs and hostname
+    local_ips = _get_local_ip_addresses()
+    local_hostname = socket.gethostname()
+    
+    # Check if host matches local IP or hostname
+    if host in local_ips or host == local_hostname:
+        return True
+    
+    # Try to resolve hostname to IP and compare
+    try:
+        resolved_ip = socket.gethostbyname(host)
+        if resolved_ip in local_ips or resolved_ip == '127.0.0.1':
+            return True
+    except Exception:
+        pass
+    
+    return False
 
 
 def _find_project_root(start_path: Path) -> Path:
@@ -113,6 +192,14 @@ def check_working_copy_health(
 
     for agent_name, agent_config in agents.items():
         agent_type = agent_config.get("type", "local")
+        host = agent_config.get("host", "")
+        
+        # Auto-detect if agent is local (even if marked as remote)
+        if agent_type == "remote" and host:
+            if _is_local_host(host):
+                # This is actually the local machine, treat as local
+                agent_type = "local"
+                agent_config["type"] = "local"
 
         if agent_type == "local":
             # Check local working copy

@@ -26,6 +26,84 @@ except ImportError:
         pass
 
 
+def _get_local_ip_addresses() -> List[str]:
+    """Get all local IP addresses (excluding localhost)."""
+    local_ips = []
+    
+    # Get hostname
+    try:
+        hostname = socket.gethostname()
+        local_ips.append(hostname)
+    except Exception:
+        pass
+    
+    # Get IP addresses
+    try:
+        # Try to get primary IP
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        local_ips.append(local_ip)
+        s.close()
+    except Exception:
+        pass
+    
+    # Get all interface IPs
+    try:
+        result = subprocess.run(
+            ["ifconfig"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0:
+            for line in result.stdout.split('\n'):
+                if 'inet ' in line and '127.0.0.1' not in line:
+                    ip = line.split()[1]
+                    if ip not in local_ips:
+                        local_ips.append(ip)
+    except Exception:
+        pass
+    
+    return local_ips
+
+
+def _is_local_host(hostname: str) -> bool:
+    """
+    Determine if a hostname/IP refers to the local machine.
+    
+    Args:
+        hostname: Hostname or IP address (may include user@ prefix)
+    
+    Returns:
+        True if hostname refers to local machine
+    """
+    # Remove user@ prefix if present
+    host = hostname.split('@')[-1] if '@' in hostname else hostname
+    
+    # Check if it's localhost
+    if host in ['localhost', '127.0.0.1', '::1']:
+        return True
+    
+    # Get local IPs and hostname
+    local_ips = _get_local_ip_addresses()
+    local_hostname = socket.gethostname()
+    
+    # Check if host matches local IP or hostname
+    if host in local_ips or host == local_hostname:
+        return True
+    
+    # Try to resolve hostname to IP and compare
+    try:
+        resolved_ip = socket.gethostbyname(host)
+        if resolved_ip in local_ips or resolved_ip == '127.0.0.1':
+            return True
+    except Exception:
+        pass
+    
+    return False
+
+
 def _find_project_root(start_path: Path) -> Path:
     """
     Find project root by looking for .git directory or other markers.
@@ -88,6 +166,15 @@ class NightlyTaskAutomation(IntelligentAutomationBase):
                 pass
             except Exception:
                 pass
+
+        # Auto-detect local agents and mark them appropriately
+        for agent_name, agent_config in default_hostnames.items():
+            hostname = agent_config.get("hostname", "")
+            if hostname and _is_local_host(hostname):
+                # This is the local machine, mark as local
+                agent_config["type"] = "local"
+                # Use current project root for local agents
+                agent_config["project_path"] = str(self.project_root)
 
         return default_hostnames
 
