@@ -9,6 +9,7 @@
       - build-essential
       - curl
       - inotify-tools
+      - git-lfs
     state: present
     update_cache: true
   when: ansible_facts['os_family'] == 'Debian'
@@ -25,6 +26,7 @@
       - act
       - uv
       - fswatch
+      - git-lfs
     state: present
   when: ansible_facts['os_family'] == 'Darwin'
 
@@ -198,3 +200,35 @@
   when:
     - ansible_facts['os_family'] == 'Debian'
     - ansible_architecture == 'x86_64'
+
+# ---------------------------------------------------------------------------
+# Git LFS Setup
+# ---------------------------------------------------------------------------
+- name: Initialize Git LFS (macOS)
+  become: false
+  ansible.builtin.command: git lfs install
+  register: git_lfs_init_macos
+  changed_when: "'Git LFS initialized' in git_lfs_init_macos.stdout or 'Updated Git hooks' in git_lfs_init_macos.stdout"
+  when: ansible_facts['os_family'] == 'Darwin'
+
+- name: Initialize Git LFS (Debian/Ubuntu)
+  become: false
+  ansible.builtin.command: git lfs install
+  register: git_lfs_init_debian
+  changed_when: "'Git LFS initialized' in git_lfs_init_debian.stdout or 'Updated Git hooks' in git_lfs_init_debian.stdout"
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Verify Git LFS installation
+  become: false
+  ansible.builtin.command: git lfs version
+  register: git_lfs_version
+  changed_when: false
+  failed_when: git_lfs_version.rc != 0
+  when: ansible_facts['os_family'] in ['Debian', 'Darwin']
+
+- name: Display Git LFS version
+  ansible.builtin.debug:
+    msg: "Git LFS version: {{ git_lfs_version.stdout }}"
+  when:
+    - ansible_facts['os_family'] in ['Debian', 'Darwin']
+    - git_lfs_version.rc == 0
