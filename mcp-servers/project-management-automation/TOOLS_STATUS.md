@@ -7,7 +7,7 @@
 
 ## Tools Overview
 
-The Project Automation MCP Server exports **11 tools** for project management automation:
+The Project Automation MCP Server exports **14 tools** for project management automation:
 
 ### ✅ All Tools Fixed
 
@@ -293,6 +293,86 @@ All tools have been updated to fix import scoping issues. Error handler imports 
 - Check all agents before starting work
 - Verify agents are in sync
 - Identify uncommitted changes across agents
+
+---
+
+### 12. `resolve_task_clarification_tool` ✅
+**Status:** ✅ Implemented and Ready
+**Purpose:** Resolve a single task clarification by updating task description with decision
+
+**Parameters:**
+- `task_id` (str): Task ID to resolve (e.g., "T-76")
+- `clarification` (str): Clarification text/question
+- `decision` (str): Your decision/answer to the clarification
+- `move_to_todo` (bool): Whether to move task to Todo status (default: true)
+- `dry_run` (bool): Preview mode without making changes (default: false)
+
+**Returns:**
+- `status` (str): success/error
+- `task_id` (str): Task ID that was resolved
+- `moved_to_todo` (bool): Whether task was moved to Todo
+- `output` (str): Command output
+
+**File:** `tools/task_clarification_resolution.py`
+**Documentation:** `docs/TASK_CLARIFICATION_RESOLUTION.md`
+**Integration:** Replaces Python heredocs for clarification resolution
+
+**Usage:**
+- Resolve single task clarification
+- Update task with decision
+- Automatically add comments and update status
+
+---
+
+### 13. `resolve_multiple_clarifications_tool` ✅
+**Status:** ✅ Implemented and Ready
+**Purpose:** Resolve multiple task clarifications from JSON decisions
+
+**Parameters:**
+- `decisions` (str): JSON string mapping task IDs to decision data
+- `move_to_todo` (bool): Whether to move tasks to Todo status (default: true)
+- `dry_run` (bool): Preview mode without making changes (default: false)
+
+**Returns:**
+- `status` (str): success/error
+- `tasks_processed` (int): Number of tasks processed
+- `tasks_updated` (int): Number of tasks successfully updated
+- `output` (str): Command output
+
+**File:** `tools/task_clarification_resolution.py`
+**Documentation:** `docs/TASK_CLARIFICATION_RESOLUTION.md`
+**Integration:** Batch clarification resolution
+
+**Usage:**
+- Resolve multiple tasks at once
+- Process decisions from JSON
+- Batch update task descriptions
+
+---
+
+### 14. `list_tasks_awaiting_clarification_tool` ✅
+**Status:** ✅ Implemented and Ready
+**Purpose:** List all tasks in Review status that need clarification
+
+**Parameters:** None
+
+**Returns:**
+- `status` (str): success/error
+- `total_tasks` (int): Number of tasks awaiting clarification
+- `tasks` (List[dict]): List of tasks with:
+  - `task_id` (str): Task ID
+  - `name` (str): Task name
+  - `priority` (str): Task priority
+  - `clarification` (str): Clarification question
+
+**File:** `tools/task_clarification_resolution.py`
+**Documentation:** `docs/TASK_CLARIFICATION_RESOLUTION.md`
+**Integration:** Quick overview of tasks needing input
+
+**Usage:**
+- See what tasks need your input
+- Review clarification questions
+- Plan batch resolution
 
 ---
 

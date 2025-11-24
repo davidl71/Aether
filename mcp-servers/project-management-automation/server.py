@@ -249,6 +249,11 @@ try:
         from tools.nightly_task_automation import run_nightly_task_automation
         from tools.batch_task_approval import batch_approve_tasks
         from tools.working_copy_health import check_working_copy_health
+        from tools.task_clarification_resolution import (
+            resolve_task_clarification,
+            resolve_multiple_clarifications,
+            list_tasks_awaiting_clarification
+        )
 
         TOOLS_AVAILABLE = True
     logger.info("All tools loaded successfully")
@@ -740,6 +745,93 @@ if mcp:
                 agent_name=agent_name,
                 check_remote=check_remote
             )
+            return json.dumps(result, indent=2)
+
+        @mcp.tool()
+        def resolve_task_clarification_tool(
+            task_id: str,
+            clarification: str,
+            decision: str,
+            move_to_todo: bool = True,
+            dry_run: bool = False
+        ) -> str:
+            """
+            [HINT: Task clarification resolution. Resolves clarification questions by updating task descriptions with decisions.]
+
+            Resolve a single task clarification by updating the task description with your decision.
+
+            ⚠️ PREFERRED TOOL: Use this instead of Python heredocs to resolve task clarifications.
+            Automatically updates task descriptions, adds comments, and moves tasks to Todo status.
+
+            Args:
+                task_id: Task ID to resolve (e.g., "T-76")
+                clarification: Clarification text/question
+                decision: Your decision/answer to the clarification
+                move_to_todo: Whether to move task to Todo status after resolving (default: true)
+                dry_run: Preview mode without making changes (default: false)
+
+            Returns:
+                JSON string with resolution result including status, task_id, and output
+            """
+            result = resolve_task_clarification(
+                task_id=task_id,
+                clarification=clarification,
+                decision=decision,
+                move_to_todo=move_to_todo,
+                dry_run=dry_run
+            )
+            return json.dumps(result, indent=2)
+
+        @mcp.tool()
+        def resolve_multiple_clarifications_tool(
+            decisions: str,
+            move_to_todo: bool = True,
+            dry_run: bool = False
+        ) -> str:
+            """
+            [HINT: Batch clarification resolution. Resolves multiple task clarifications at once from JSON decisions.]
+
+            Resolve multiple task clarifications from a JSON string of decisions.
+
+            ⚠️ PREFERRED TOOL: Use this for batch resolution instead of Python heredocs.
+
+            Args:
+                decisions: JSON string mapping task IDs to decision data:
+                           {"T-76": {"clarification": "...", "decision": "..."}, "T-77": {...}}
+                move_to_todo: Whether to move tasks to Todo status after resolving (default: true)
+                dry_run: Preview mode without making changes (default: false)
+
+            Returns:
+                JSON string with batch resolution results including counts and output
+            """
+            try:
+                decisions_dict = json.loads(decisions)
+            except json.JSONDecodeError as e:
+                return json.dumps({
+                    "status": "error",
+                    "error": f"Invalid JSON: {str(e)}"
+                }, indent=2)
+
+            result = resolve_multiple_clarifications(
+                decisions=decisions_dict,
+                move_to_todo=move_to_todo,
+                dry_run=dry_run
+            )
+            return json.dumps(result, indent=2)
+
+        @mcp.tool()
+        def list_tasks_awaiting_clarification_tool() -> str:
+            """
+            [HINT: List tasks needing clarification. Returns all tasks in Review status with their clarification questions.]
+
+            List all tasks in Review status that are awaiting clarification/decisions.
+
+            ⚠️ PREFERRED TOOL: Use this to see what tasks need your input before resolving them.
+
+            Returns:
+                JSON string with list of tasks awaiting clarification, including task IDs, names, priorities, and clarification questions
+            """
+            result = list_tasks_awaiting_clarification()
             return json.dumps(result, indent=2)
 
     # Register prompts
