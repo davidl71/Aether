@@ -158,5 +158,6 @@ AGENTS.md
 
 
 #Ignore cursor AI rules
-# .todo2/ directory is now tracked (state.todo2.json for multi-machine sync)
-.todo2/
+# .todo2/ directory - ignore everything except state.todo2.json (tracked via Git LFS)
+.todo2/*
+!.todo2/state.todo2.json
