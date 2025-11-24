@@ -61,25 +61,25 @@ def review_pwa_config(
     start_time = time.time()
 
     try:
-        # Import here to avoid circular dependencies
-        import sys
-        project_root = Path(__file__).parent.parent.parent.parent
-        sys.path.insert(0, str(project_root))
+        # Import from package
+        from project_management_automation.scripts.automate_pwa_review import PWAAnalyzer, load_config
+        from project_management_automation.utils import find_project_root
 
-        from scripts.automate_pwa_review import PWAAnalyzer, load_config
+        # Find project root
+        project_root = find_project_root(Path(__file__).parent.parent.parent.parent)
 
         # Load config
         if config_path:
             config = load_config(Path(config_path))
         else:
-            config = load_config()
+            config = load_config(project_root)
 
         # Override output path if provided
         if output_path:
             config['output_path'] = output_path
 
         # Create analyzer and run
-        analyzer = PWAAnalyzer(config)
+        analyzer = PWAAnalyzer(config, project_root)
         success = analyzer.run(Path(config['output_path']))
 
         if not success:

@@ -61,12 +61,12 @@ def check_documentation_health(
     start_time = time.time()
 
     try:
-        # Import here to avoid circular dependencies
-        import sys
-        project_root = Path(__file__).parent.parent.parent.parent
-        sys.path.insert(0, str(project_root))
+        # Import from package
+        from project_management_automation.scripts.automate_docs_health_v2 import DocumentationHealthAnalyzerV2
 
-        from scripts.automate_docs_health_v2 import DocumentationHealthAnalyzerV2
+        # Find project root
+        from project_management_automation.utils import find_project_root
+        project_root = find_project_root(Path(__file__).parent.parent.parent.parent)
 
         # Build config
         config = {
@@ -75,7 +75,7 @@ def check_documentation_health(
         }
 
         # Create analyzer and run
-        analyzer = DocumentationHealthAnalyzerV2(config)
+        analyzer = DocumentationHealthAnalyzerV2(config, project_root)
         results = analyzer.run()
 
         # Extract key metrics

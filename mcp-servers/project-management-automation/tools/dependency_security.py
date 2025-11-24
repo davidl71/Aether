@@ -61,12 +61,12 @@ def scan_dependency_security(
     start_time = time.time()
 
     try:
-        # Import here to avoid circular dependencies
-        import sys
-        project_root = Path(__file__).parent.parent.parent.parent
-        sys.path.insert(0, str(project_root))
+        # Import from package
+        from project_management_automation.scripts.automate_dependency_security import DependencySecurityAnalyzer
+        from project_management_automation.utils import find_project_root
 
-        from scripts.automate_dependency_security import DependencySecurityAnalyzer
+        # Find project root
+        project_root = find_project_root(Path(__file__).parent.parent.parent.parent)
 
         # Use default config if not provided
         if not config_path:
@@ -91,7 +91,7 @@ def scan_dependency_security(
             config_path = str(temp_config_path)
 
         # Create analyzer and run
-        analyzer = DependencySecurityAnalyzer(config_path)
+        analyzer = DependencySecurityAnalyzer(config_path, project_root)
         results = analyzer.run()
 
         # Extract key metrics

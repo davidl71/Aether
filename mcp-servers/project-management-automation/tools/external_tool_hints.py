@@ -66,12 +66,12 @@ def add_external_tool_hints(
     start_time = time.time()
 
     try:
-        # Import here to avoid circular dependencies
-        import sys
-        project_root = Path(__file__).parent.parent.parent.parent
-        sys.path.insert(0, str(project_root))
+        # Import from package
+        from project_management_automation.scripts.automate_external_tool_hints import ExternalToolHintsAutomation
+        from project_management_automation.utils import find_project_root
 
-        from scripts.automate_external_tool_hints import ExternalToolHintsAutomation
+        # Find project root
+        project_root = find_project_root(Path(__file__).parent.parent.parent.parent)
 
         # Build config
         config = {
@@ -81,7 +81,7 @@ def add_external_tool_hints(
         }
 
         # Create analyzer and run
-        analyzer = ExternalToolHintsAutomation(config)
+        analyzer = ExternalToolHintsAutomation(config, project_root)
         results = analyzer.run()
 
         # Extract key metrics

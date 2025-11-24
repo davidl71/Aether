@@ -61,12 +61,12 @@ def sync_todo_tasks(
     start_time = time.time()
 
     try:
-        # Import here to avoid circular dependencies
-        import sys
-        project_root = Path(__file__).parent.parent.parent.parent
-        sys.path.insert(0, str(project_root))
+        # Import from package
+        from project_management_automation.scripts.automate_todo_sync import TodoSyncAutomation
+        from project_management_automation.utils import find_project_root
 
-        from scripts.automate_todo_sync import TodoSyncAutomation
+        # Find project root
+        project_root = find_project_root(Path(__file__).parent.parent.parent.parent)
 
         # Build config
         config = {
@@ -75,7 +75,7 @@ def sync_todo_tasks(
         }
 
         # Create sync automation and run
-        sync_automation = TodoSyncAutomation(config)
+        sync_automation = TodoSyncAutomation(config, project_root)
         results = sync_automation.run()
 
         # Extract key metrics

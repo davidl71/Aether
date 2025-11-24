@@ -253,6 +253,9 @@ try:
         from .tools.pwa_review import review_pwa_config
         from .tools.external_tool_hints import add_external_tool_hints
         from .tools.daily_automation import run_daily_automation
+        from .tools.git_hooks import setup_git_hooks
+        from .tools.pattern_triggers import setup_pattern_triggers
+        from .tools.simplify_rules import simplify_rules
     except ImportError:
         # Fallback to absolute imports (when run as script)
         from tools.docs_health import check_documentation_health
@@ -265,6 +268,9 @@ try:
         from tools.external_tool_hints import add_external_tool_hints
         from tools.daily_automation import run_daily_automation
         from tools.ci_cd_validation import validate_ci_cd_workflow
+        from tools.git_hooks import setup_git_hooks
+        from tools.pattern_triggers import setup_pattern_triggers
+        from tools.simplify_rules import simplify_rules
         from tools.nightly_task_automation import run_nightly_task_automation
         from tools.batch_task_approval import batch_approve_tasks
         from tools.working_copy_health import check_working_copy_health
@@ -852,6 +858,116 @@ if mcp:
             """
             result = list_tasks_awaiting_clarification()
             return json.dumps(result, indent=2)
+
+        @mcp.tool()
+        def setup_git_hooks_tool(
+            hooks: Optional[List[str]] = None,
+            install: bool = True,
+            dry_run: bool = False
+        ) -> str:
+            """
+            [HINT: Git hooks setup. Returns hooks configured, skipped, installation status.]
+
+            Setup git hooks for automatic automa tool execution.
+
+            ⚠️ PREFERRED TOOL: Automatically configures git hooks to run automa tools on git events.
+
+            Hooks:
+            - pre-commit: Documentation health, security scan (quick, blocking)
+            - pre-push: Task alignment, comprehensive security scan (blocking)
+            - post-commit: Automation opportunity discovery (non-blocking)
+            - post-merge: Duplicate detection, task sync (non-blocking)
+
+            Args:
+                hooks: List of hooks to setup (default: all hooks)
+                install: Whether to install hooks (default: True)
+                dry_run: Preview mode without making changes (default: False)
+
+            Returns:
+                JSON string with setup results including configured hooks and status
+            """
+            return setup_git_hooks(hooks, install, dry_run)
+
+        @mcp.tool()
+        def setup_pattern_triggers_tool(
+            patterns: Optional[str] = None,
+            config_path: Optional[str] = None,
+            install: bool = True,
+            dry_run: bool = False
+        ) -> str:
+            """
+            [HINT: Pattern triggers setup. Returns patterns configured, integration status.]
+
+            Setup pattern-based automation triggers for automatic tool execution.
+
+            ⚠️ PREFERRED TOOL: Configures automatic tool execution based on file patterns,
+            git events, and task status changes.
+
+            Pattern Types:
+            - file_patterns: File changes trigger tools (e.g., docs/**/*.md → docs health)
+            - git_events: Git events trigger tools (e.g., pre-commit → security scan)
+            - task_status_changes: Task status changes trigger tools (e.g., Todo → In Progress → alignment check)
+
+            Args:
+                patterns: JSON string of pattern configurations (optional)
+                config_path: Path to pattern configuration file (optional)
+                install: Whether to install triggers (default: True)
+                dry_run: Preview mode without making changes (default: False)
+
+            Returns:
+                JSON string with setup results including configured patterns and integration status
+            """
+            parsed_patterns = None
+            if patterns:
+                try:
+                    parsed_patterns = json.loads(patterns)
+                except json.JSONDecodeError:
+                    return json.dumps({
+                        "status": "error",
+                        "error": "Invalid JSON in patterns parameter"
+                    }, indent=2)
+
+            return setup_pattern_triggers(parsed_patterns, config_path, install, dry_run)
+
+        @mcp.tool()
+        def simplify_rules_tool(
+            rule_files: Optional[str] = None,
+            dry_run: bool = True,
+            output_dir: Optional[str] = None
+        ) -> str:
+            """
+            [HINT: Rule simplification. Returns files processed, simplifications made, changes count.]
+
+            Automatically simplify rules based on automa automation capabilities.
+
+            ⚠️ PREFERRED TOOL: Replaces manual process descriptions with automa tool references,
+            removes redundant manual check descriptions, and adds automated check documentation.
+
+            Simplifications:
+            - Replace manual command references with command names
+            - Add automated check sections
+            - Remove redundant manual process descriptions
+            - Add notes about automatic execution
+
+            Args:
+                rule_files: JSON array of rule file paths (optional, defaults to all .cursorrules and .cursor/rules/*.mdc)
+                dry_run: Preview mode without making changes (default: True)
+                output_dir: Directory to write simplified rules (optional, defaults to same as source)
+
+            Returns:
+                JSON string with simplification results including files processed and changes made
+            """
+            parsed_files = None
+            if rule_files:
+                try:
+                    parsed_files = json.loads(rule_files)
+                except json.JSONDecodeError:
+                    return json.dumps({
+                        "status": "error",
+                        "error": "Invalid JSON in rule_files parameter"
+                    }, indent=2)
+
+            return simplify_rules(parsed_files, dry_run, output_dir)
 
     # Register prompts
     try:

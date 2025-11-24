@@ -246,4 +246,3 @@ def list_tasks_awaiting_clarification() -> Dict[str, Any]:
             "status": "error",
             "error": str(e)
         }
-

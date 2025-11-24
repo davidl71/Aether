@@ -2,7 +2,10 @@
 
 **Version:** 0.1.0
 **Status:** Phase 1 Complete - Core Framework Ready
+**License:** [MIT License](LICENSE)
 **MCP Server Name:** `automa` (configured in `.cursor/mcp.json`)
+
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 ## Overview
 
@@ -135,6 +138,50 @@ Centralized error handling via `error_handler.py`:
 - Register tools with MCP server
 - Test tool execution
 
+## Installation
+
+### Option 1: Local Development (Editable Install)
+
+```bash
+cd mcp-servers/project-management-automation
+pip install -e .
+```
+
+Or use the helper script:
+```bash
+./scripts/build_and_install_local.sh
+```
+
+### Option 2: Install from Git Repository
+
+```bash
+# From public repository
+pip install git+https://github.com/username/project-management-automation.git
+
+# From private repository (with authentication)
+pip install git+https://token@github.com/username/project-management-automation.git
+
+# Specific version
+pip install git+https://github.com/username/project-management-automation.git@v0.1.0
+```
+
+Or use the helper script:
+```bash
+export AUTOMA_REPO_URL="https://github.com/username/project-management-automation.git"
+export AUTOMA_BRANCH="main"
+./scripts/install_from_git.sh
+```
+
+### Option 3: PyPI (Future)
+
+```bash
+pip install project-management-automation-mcp
+```
+
+**Note**: Currently using private/local repository. PyPI publication planned for future release.
+
+See [PRIVATE_REPOSITORY_SETUP.md](docs/PRIVATE_REPOSITORY_SETUP.md) for detailed setup instructions.
+
 ## Dependencies
 
 The automa server works best with complementary MCP servers:
@@ -142,6 +189,10 @@ The automa server works best with complementary MCP servers:
 - **sequential_thinking** - For implementation workflows (use AFTER automa)
 
 See [DEPENDENCIES.md](DEPENDENCIES.md) for detailed integration guide.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## References
 

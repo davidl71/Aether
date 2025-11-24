@@ -61,12 +61,12 @@ def find_automation_opportunities(
     start_time = time.time()
 
     try:
-        # Import here to avoid circular dependencies
-        import sys
-        project_root = Path(__file__).parent.parent.parent.parent
-        sys.path.insert(0, str(project_root))
+        # Import from package
+        from project_management_automation.scripts.automate_automation_opportunities import AutomationOpportunityFinder
+        from project_management_automation.utils import find_project_root
 
-        from scripts.automate_automation_opportunities import AutomationOpportunityFinder
+        # Find project root
+        project_root = find_project_root(Path(__file__).parent.parent.parent.parent)
 
         # Build config
         config = {
@@ -75,7 +75,7 @@ def find_automation_opportunities(
         }
 
         # Create finder and run
-        finder = AutomationOpportunityFinder(config)
+        finder = AutomationOpportunityFinder(config, project_root)
         results = finder.run()
 
         # Extract key metrics

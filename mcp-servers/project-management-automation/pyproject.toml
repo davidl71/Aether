@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "MCP server for project management automation tools"
 readme = "README.md"
 requires-python = ">=3.9"
+license = {text = "MIT"}
 dependencies = [
     "mcp>=0.1.0",
     "pydantic>=2.0.0",
@@ -34,3 +35,6 @@ addopts = "-v --tb=short"
 
 [project.scripts]
 project-management-automation = "project_management_automation.server:main"
+
+[tool.setuptools.packages.find]
+include = ["project_management_automation*"]

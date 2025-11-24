@@ -61,12 +61,12 @@ def analyze_todo2_alignment(
     start_time = time.time()
 
     try:
-        # Import here to avoid circular dependencies
-        import sys
-        project_root = Path(__file__).parent.parent.parent.parent
-        sys.path.insert(0, str(project_root))
+        # Import from package
+        from project_management_automation.scripts.automate_todo2_alignment_v2 import Todo2AlignmentAnalyzerV2
+        from project_management_automation.utils import find_project_root
 
-        from scripts.automate_todo2_alignment_v2 import Todo2AlignmentAnalyzerV2
+        # Find project root
+        project_root = find_project_root(Path(__file__).parent.parent.parent.parent)
 
         # Build config
         config = {
@@ -75,7 +75,7 @@ def analyze_todo2_alignment(
         }
 
         # Create analyzer and run
-        analyzer = Todo2AlignmentAnalyzerV2(config)
+        analyzer = Todo2AlignmentAnalyzerV2(config, project_root)
         results = analyzer.run()
 
         # Extract key metrics
