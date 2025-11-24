@@ -15,12 +15,12 @@ from typing import Dict, List, Any, Optional
 def _ssh_command(host: str, command: str, timeout: int = 10) -> subprocess.CompletedProcess:
     """
     Execute SSH command with optimized options.
-    
+
     Args:
         host: SSH host (user@host or just host)
         command: Command to execute on remote host
         timeout: Command timeout in seconds
-    
+
     Returns:
         CompletedProcess with stdout, stderr, returncode
     """
@@ -32,7 +32,7 @@ def _ssh_command(host: str, command: str, timeout: int = 10) -> subprocess.Compl
         "-o", "PasswordAuthentication=no",
         "-o", "BatchMode=yes"
     ]
-    
+
     return subprocess.run(
         ["ssh"] + ssh_opts + [host, command],
         capture_output=True,
@@ -247,21 +247,11 @@ def check_working_copy_health(
                 _ssh_command(host, fetch_cmd, timeout=15)
 
                 behind_cmd = f"cd {path} && git rev-list --count HEAD..origin/main 2>/dev/null || echo '0'"
-                behind_result = subprocess.run(
-                    ["ssh", host, behind_cmd],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
-                )
+                behind_result = _ssh_command(host, behind_cmd)
                 behind = int(behind_result.stdout.strip() or "0")
 
                 ahead_cmd = f"cd {path} && git rev-list --count origin/main..HEAD 2>/dev/null || echo '0'"
-                ahead_result = subprocess.run(
-                    ["ssh", host, ahead_cmd],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
-                )
+                ahead_result = _ssh_command(host, ahead_cmd)
                 ahead = int(ahead_result.stdout.strip() or "0")
 
                 results[agent_name] = {
