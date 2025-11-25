@@ -2,14 +2,15 @@
 """
 Sync MCP server configuration across all agents.
 
-Ensures all agents have the correct project-management-automation MCP server
-configuration with paths that work on different Cursor servers.
+Ensures all agents have the correct exarp (project-management-automation) MCP server
+configuration using the Python package installation approach.
 """
 
 import json
 import sys
+import subprocess
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 
 # Colors for output
 class Colors:
@@ -30,25 +31,43 @@ def find_project_root(start_path: Path) -> Path:
         current = current.parent
     return start_path.resolve()
 
-def get_mcp_server_config(project_root: Path, mcp_server_dir: Path) -> Dict[str, Any]:
-    """Generate MCP server configuration entry."""
-    # Use absolute path for command (works across different servers)
-    # The run_server.sh script uses relative paths internally
-    # Use absolute path for command (required by Cursor MCP config)
-    # The run_server.sh script handles virtual environment and path detection
-    # Each server will have a different absolute path, which is correct
-    run_server_path = mcp_server_dir / "run_server.sh"
+def check_package_installed() -> Tuple[bool, str]:
+    """Check if project_management_automation package is installed."""
+    try:
+        result = subprocess.run(
+            [sys.executable, '-m', 'project_management_automation.server', '--help'],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        return True, "installed"
+    except subprocess.TimeoutExpired:
+        return False, "timeout"
+    except FileNotFoundError:
+        return False, "not_found"
+    except Exception as e:
+        # Try importing to see if package exists
+        try:
+            import project_management_automation.server
+            return True, "installed"
+        except ImportError:
+            return False, f"not_installed: {str(e)}"
 
+def get_mcp_server_config() -> Dict[str, Any]:
+    """Generate MCP server configuration entry for Python package."""
     return {
-        "command": str(run_server_path.resolve()),
-        "args": [],
+        "command": "python3",
+        "args": [
+            "-m",
+            "project_management_automation.server"
+        ],
         "description": (
-            "Project management automation tools - documentation health, task alignment, "
-            "duplicate detection, security scanning, and automation opportunities"
+            "Exarp - Project management automation tools (Enochian: Spirit of Air - Communication) - "
+            "documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
         )
     }
 
-def check_mcp_config(config_file: Path) -> tuple[bool, Optional[str]]:
+def check_mcp_config(config_file: Path) -> Tuple[bool, Optional[str]]:
     """Check if MCP config exists and has correct entry."""
     if not config_file.exists():
         return False, "not_found"
@@ -60,37 +79,40 @@ def check_mcp_config(config_file: Path) -> tuple[bool, Optional[str]]:
         if 'mcpServers' not in config:
             return False, "no_mcp_servers"
 
-        # Check for both old name and new name
-        server_name = None
-        if 'automa' in config['mcpServers']:
-            server_name = 'automa'
-        elif 'project-management-automation' in config['mcpServers']:
-            server_name = 'project-management-automation'
-        else:
-            return False, "not_configured"
+        # Check for exarp server name (current)
+        if 'exarp' in config['mcpServers']:
+            server_config = config['mcpServers']['exarp']
+            command = server_config.get('command', '')
+            args = server_config.get('args', [])
+            
+            # Check if it uses the Python module approach
+            if command == 'python3' and '-m' in args and 'project_management_automation.server' in args:
+                return True, "correct"
+            else:
+                return False, "needs_update"
+        
+        # Check for old names (automa, project-management-automation)
+        old_names = ['automa', 'project-management-automation']
+        for old_name in old_names:
+            if old_name in config['mcpServers']:
+                return False, f"old_name_{old_name}"
 
-        server_config = config['mcpServers'][server_name]
-
-        # Check if it uses the wrapper script
-        command = server_config.get('command', '')
-        if 'run_server.sh' in command:
-            return True, "correct"
-        else:
-            return False, "needs_update"
+        return False, "not_configured"
 
     except json.JSONDecodeError as e:
         return False, f"invalid_json: {e}"
     except Exception as e:
         return False, f"error: {e}"
 
-def update_mcp_config(config_file: Path, mcp_server_dir: Path) -> bool:
+def update_mcp_config(config_file: Path) -> bool:
     """Update MCP config with correct entry."""
     try:
         # Backup existing config
         if config_file.exists():
             backup_file = config_file.with_suffix('.json.bak')
             if not backup_file.exists():
-                config_file.rename(backup_file)
+                import shutil
+                shutil.copy2(config_file, backup_file)
 
         # Load or create config
         if config_file.exists():
@@ -103,14 +125,14 @@ def update_mcp_config(config_file: Path, mcp_server_dir: Path) -> bool:
         if 'mcpServers' not in config:
             config['mcpServers'] = {}
 
-        # Remove old name if it exists
-        if 'project-management-automation' in config['mcpServers']:
-            del config['mcpServers']['project-management-automation']
+        # Remove old name entries if they exist
+        old_names = ['automa', 'project-management-automation']
+        for old_name in old_names:
+            if old_name in config['mcpServers']:
+                del config['mcpServers'][old_name]
 
-        # Update automa entry (use new name)
-        config['mcpServers']['automa'] = get_mcp_server_config(
-            config_file.parent.parent, mcp_server_dir
-        )
+        # Update exarp entry (current name)
+        config['mcpServers']['exarp'] = get_mcp_server_config()
 
         # Write back
         config_file.parent.mkdir(parents=True, exist_ok=True)
@@ -127,26 +149,30 @@ def update_mcp_config(config_file: Path, mcp_server_dir: Path) -> bool:
 def main():
     script_dir = Path(__file__).parent.resolve()
     project_root = find_project_root(script_dir)
-    mcp_server_dir = project_root / "mcp-servers" / "project-management-automation"
     cursor_config_dir = project_root / ".cursor"
 
     print(f"{Colors.BLUE}=== MCP Configuration Sync for All Agents ==={Colors.NC}\n")
 
-    # Verify MCP server exists
-    if not mcp_server_dir.exists():
-        print(f"{Colors.RED}Error: MCP server directory not found at {mcp_server_dir}{Colors.NC}", file=sys.stderr)
-        sys.exit(1)
-
-    run_server_sh = mcp_server_dir / "run_server.sh"
-    if not run_server_sh.exists():
-        print(f"{Colors.RED}Error: run_server.sh not found at {run_server_sh}{Colors.NC}", file=sys.stderr)
-        sys.exit(1)
-
-    # Make run_server.sh executable
-    run_server_sh.chmod(0o755)
+    # Check if package is installed
+    print(f"{Colors.BLUE}Checking package installation...{Colors.NC}")
+    is_installed, status = check_package_installed()
+    
+    if is_installed:
+        print(f"{Colors.GREEN}  ✅ Package installed{Colors.NC}")
+    else:
+        print(f"{Colors.YELLOW}  ⚠️  Package not installed: {status}{Colors.NC}")
+        print(f"\n{Colors.YELLOW}Install the package with:{Colors.NC}")
+        print(f"  pip install -e /path/to/project-management-automation")
+        print(f"  # or")
+        print(f"  pip install git+ssh://git@github.com/davidl71/project-management-automation.git@main")
+        
+        response = input(f"\nContinue anyway? (y/N): ").strip().lower()
+        if response != 'y':
+            print(f"{Colors.RED}Aborted.{Colors.NC}")
+            sys.exit(1)
 
     # Check main project MCP config
-    print(f"{Colors.BLUE}Checking main project MCP config...{Colors.NC}")
+    print(f"\n{Colors.BLUE}Checking main project MCP config...{Colors.NC}")
     main_config = cursor_config_dir / "mcp.json"
     is_correct, status = check_mcp_config(main_config)
 
@@ -154,10 +180,10 @@ def main():
         print(f"{Colors.GREEN}  ✅ Correctly configured{Colors.NC}")
     else:
         print(f"{Colors.YELLOW}  ⚠️  {status}{Colors.NC}")
-        if status in ["not_found", "not_configured", "needs_update", "no_mcp_servers"]:
+        if status and status not in ["invalid_json", "error"]:
             response = input("  Update main project config? (y/N): ").strip().lower()
             if response == 'y':
-                if update_mcp_config(main_config, mcp_server_dir):
+                if update_mcp_config(main_config):
                     print(f"{Colors.GREEN}  ✅ Updated{Colors.NC}")
                 else:
                     print(f"{Colors.RED}  ❌ Update failed{Colors.NC}")
@@ -179,23 +205,27 @@ def main():
                     print(f"{Colors.GREEN}    ✅ Correctly configured{Colors.NC}")
                 else:
                     print(f"{Colors.YELLOW}    ⚠️  {status}{Colors.NC}")
-                    if status in ["not_found", "not_configured", "needs_update", "no_mcp_servers"]:
+                    if status and status not in ["invalid_json", "error"]:
                         response = input(f"    Update {agent_name} config? (y/N): ").strip().lower()
                         if response == 'y':
-                            if update_mcp_config(agent_config, mcp_server_dir):
+                            if update_mcp_config(agent_config):
                                 print(f"{Colors.GREEN}    ✅ Updated{Colors.NC}")
                             else:
                                 print(f"{Colors.RED}    ❌ Update failed{Colors.NC}")
+    else:
+        print(f"{Colors.YELLOW}  No agents directory found at {agents_dir}{Colors.NC}")
 
-    # Generate example config
+    # Generate example config in docs
     print(f"\n{Colors.BLUE}Generating example configuration...{Colors.NC}")
-    example_config = mcp_server_dir / "MCP_CONFIG_EXAMPLE.json"
+    docs_dir = project_root / "docs"
+    example_config = docs_dir / "MCP_CONFIG_EXAMPLE.json"
     example_config_data = {
         "mcpServers": {
-            "project-management-automation": get_mcp_server_config(project_root, mcp_server_dir)
+            "exarp": get_mcp_server_config()
         }
     }
 
+    docs_dir.mkdir(exist_ok=True)
     with open(example_config, 'w') as f:
         json.dump(example_config_data, f, indent=2)
         f.write('\n')
@@ -204,10 +234,15 @@ def main():
 
     # Summary
     print(f"\n{Colors.BLUE}=== Summary ==={Colors.NC}")
-    print(f"{Colors.GREEN}✅ MCP server path: {mcp_server_dir}{Colors.NC}")
-    print(f"{Colors.GREEN}✅ Wrapper script: {run_server_sh}{Colors.NC}")
+    print(f"{Colors.GREEN}✅ Configuration uses Python package: python3 -m project_management_automation.server{Colors.NC}")
+    if not is_installed:
+        print(f"{Colors.YELLOW}⚠️  Package installation status: {status}{Colors.NC}")
     print(f"\n{Colors.YELLOW}⚠️  Next steps:{Colors.NC}")
-    print("  1. Review updated configurations")
+    if not is_installed:
+        print("  1. Install the package: pip install -e /path/to/project-management-automation")
+        print("  2. Review updated configurations")
+    else:
+        print("  1. Review updated configurations")
     print("  2. Restart Cursor completely on each agent/server")
     print("  3. Verify MCP server appears in Cursor settings")
     print("  4. Test with: Check documentation health tool")

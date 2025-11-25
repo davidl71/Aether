@@ -7,7 +7,7 @@ description: Context-aware suggestions for project automation tools based on pro
 
 ## Purpose
 
-This rule provides context-aware suggestions for project automation tools to help AI assistants and users discover and use relevant automation tools at appropriate times.
+This rule provides context-aware suggestions for project automation tools. **Note:** Most checks now run automatically via Exarp (git hooks, file watchers, cron jobs). Suggestions are for AI awareness and manual override when needed.
 
 ---
 
@@ -18,6 +18,7 @@ This rule provides context-aware suggestions for project automation tools to hel
 **Trigger**: Files in `docs/` directory are modified or created
 **Suggest**: `check_documentation_health_tool`
 **Reason**: Documentation changes may introduce broken links, format issues, or stale content
+**Note**: Also runs automatically on git hooks (pre-commit) and file watchers (via Exarp)
 **Usage**:
 ```
 "Check documentation health after recent changes"
@@ -37,6 +38,7 @@ This rule provides context-aware suggestions for project automation tools to hel
 - If task has 3+ dependencies: Check dependency readiness
 
 **Reason**: Starting work is a good time to verify alignment and dependencies
+**Note**: Task alignment also runs automatically on status changes (configured via Exarp)
 **Usage**:
 ```
 "Analyze task alignment before starting work"
@@ -85,6 +87,7 @@ This rule provides context-aware suggestions for project automation tools to hel
 **Trigger**: Dependency files modified (`requirements.txt`, `Cargo.toml`, `package.json`, etc.)
 **Suggest**: `scan_dependency_security_tool`
 **Reason**: Dependency changes may introduce security vulnerabilities
+**Note**: Also runs automatically on file changes (configured via Exarp file watchers)
 **Usage**:
 ```
 "Scan dependencies for security vulnerabilities"
@@ -303,7 +306,7 @@ AI assistants should:
 - `.cursor/rules/project-automation.mdc` - Complete automation tool documentation
 - `.cursor/rules/todo2.mdc` - Todo2 workflow rules
 - `docs/AUTOMATION_TOOL_PROMPTING_DESIGN.md` - Full design document
-- `mcp-servers/project-management-automation/USAGE.md` - Tool usage guide
+- [Exarp Repository](https://github.com/davidl71/exarp-project-management) - Tool usage guide and documentation
 
 ---
 
