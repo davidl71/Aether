@@ -1,0 +1,50 @@
+# AI Agent Context Standards
+
+## Standard Context Files
+
+This project provides standard context files that AI coding assistants automatically discover:
+
+### Root-Level Files
+
+| File | Purpose | Tool Discovery |
+|------|---------|----------------|
+| `AGENTS.md` | Primary AI agent instructions | Cursor, Claude Code |
+| `CLAUDE.md` | Claude-specific instructions | Claude Code |
+| `CONTRIBUTING.md` | Contribution guidelines | All tools |
+| `ARCHITECTURE.md` | System architecture overview | All tools |
+| `README.md` | Project overview | All tools |
+
+### Tool-Specific Files
+
+| File | Tool | Purpose |
+|------|------|---------|
+| `.github/copilot-instructions.md` | GitHub Copilot | Repository instructions |
+| `.cursor/rules/*.mdc` | Cursor | Glob-based rules |
+| `.cursor/mcp.json` | Cursor | MCP server configuration |
+
+## Context Hierarchy
+
+1. **`AGENTS.md`** - Authoritative source of project guidelines
+2. **Tool-specific files** - Reference AGENTS.md, add tool-specific hints
+3. **`.cursor/rules/`** - Context-specific rules with glob patterns
+
+## When Adding New Context
+
+1. **Prefer updating existing files** over creating new ones
+2. **Reference AGENTS.md** instead of duplicating content
+3. **Keep tool-specific files minimal** - only add unique hints
+4. **Add glob patterns** to `.cursor/rules/` for file-type specific guidance
+
+## Design Document
+
+See `docs/design/AI_AGENT_CONTEXT_STANDARDS.md` for:
+- Complete file inventory
+- Implementation strategy
+- MCP resource plans
+
+## Quick Reference
+
+For AI agents working on this project:
+- Start with `AGENTS.md` for complete guidelines
+- Check `.cursor/rules/` for context-specific rules
+- Use MCP tools via `.cursor/mcp.json` configuration

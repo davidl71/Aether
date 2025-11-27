@@ -1,71 +1,14 @@
 {
   "mcpServers": {
-    "filesystem": {
-      "command": "npx",
+    "notebooklm": {
+      "command": "uvx",
       "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "/Volumes/SSD1_APFS/ib_box_spread_full_universal"
-      ],
-      "description": "File system operations for reading, writing, and managing project files"
-    },
-    "agentic-tools": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@pimzino/agentic-tools-mcp"
-      ],
-      "description": "Advanced task management and agent memories with project-specific storage - unlimited task hierarchy, persistent agent context, git-trackable data"
-    },
-    "context7": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@upstash/context7-mcp"
-      ],
-      "description": "Context7 MCP server - provides up-to-date, version-specific documentation and code examples. Access current documentation by appending 'use context7' to prompts. Ensures accurate code generation with latest API references."
-    },
-    "git": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-git",
-        "--repository",
-        "/Volumes/SSD1_APFS/ib_box_spread_full_universal"
-      ],
-      "description": "Git version control operations - AI can understand git history, help with commit messages, and understand branch structure and diffs"
-    },
-    "semgrep": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@semgrep/mcp-server-semgrep"
-      ],
-      "description": "Security scanning for code analysis - checks for security vulnerabilities, bugs, and code quality issues. Required by .cursorrules for trading software security validation."
-    },
-    "tractatus_thinking": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "tractatus_thinking"
-      ],
-      "description": "Tractatus Thinking MCP server for logical concept analysis and structured thinking - breaks down complex concepts into atomic truths, reveals multiplicative relationships, and finds missing elements"
-    },
-    "sequential_thinking": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
-      ],
-      "description": "Sequential Thinking MCP server for structured problem-solving and implementation workflow - converts structural understanding from Tractatus Thinking into actionable implementation steps"
-    },
-    "exarp": {
-      "command": "python3",
-      "args": [
-        "-m",
-        "project_management_automation.server"
-      ],
-      "description": "Exarp - Project management automation tools (Enochian: Spirit of Air - Communication) - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
+        "mcpower-proxy==0.0.87",
+        "--wrapped-config",
+        "{\"command\": \"npx\", \"args\": [\"-y\", \"notebooklm-mcp@latest\"], \"description\": \"NotebookLM MCP server for summarizing YouTube videos, documentation links, and creating zero-hallucination knowledge base\"}",
+        "--name",
+        "notebooklm"
+      ]
     }
   }
 }

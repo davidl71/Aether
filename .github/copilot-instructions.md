@@ -1,59 +1,41 @@
-# AI Agent Instructions for IBKR Box Spread Generator
+# GitHub Copilot Instructions
 
-This is a C++ project that generates box spread options strategies for Interactive Brokers. These instructions will help AI agents understand the key aspects of the codebase.
+This repository follows the comprehensive guidelines in [AGENTS.md](../AGENTS.md).
 
-## Project Structure
+## Quick Reference
 
-- `ib_box_spread.cpp` - Main source file containing the box spread generation logic
-- `CMakeLists.txt` - CMake build configuration
-- `build_universal.sh` - Build script for creating universal binaries
+### Code Style
+- **C++20** standard, **2-space indentation**, Allman braces
+- **snake_case** for functions/variables, **PascalCase** for types
+- Constants prefixed with `k` (e.g., `kMaxPositions`)
 
-## Build System
+### Project Structure
+- Core C++ logic: `native/src/` with headers in `native/include/`
+- Python integration: `python/`
+- Tests: `native/tests/` (mirror source file names)
+- Documentation: `docs/`
 
-The project uses CMake as its build system. Key build workflows:
-
-1. Default build:
+### Build Commands
 ```bash
-mkdir build
-cd build
-cmake ..
-make
+# Configure
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+
+# Build
+ninja -C build
+
+# Test
+ctest --test-dir build --output-on-failure
 ```
 
-2. Universal binary build (macOS):
-```bash
-./build_universal.sh
-```
+### Key Documentation
+- **API Reference**: `docs/API_DOCUMENTATION_INDEX.md`
+- **Architecture**: `docs/research/architecture/`
+- **MCP Tools**: `.cursor/mcp.json`
 
-## Development Patterns
+## Important Conventions
 
-### Code Organization
-- Single-file architecture keeping all related functionality together
-- CMake-based build system with versioning support
+1. **Trading Logic**: Always include tests for pricing calculations
+2. **Security**: Never commit credentials; use paper trading port (7497)
+3. **Dependencies**: Point to IB API at `~/IBJts/source/cppclient`
 
-### Integration Points
-- Interactive Brokers API integration - Requires proper setup and authentication
-- Box spread options calculation - Follows standard options pricing models
-
-## Key Notes for AI Agents
-
-1. When modifying options calculations, ensure:
-   - Proper handling of option contract specifications
-   - Price calculation accuracy for all legs of the box spread
-   - Risk management checks are maintained
-
-2. Build considerations:
-   - Always test both regular and universal binary builds
-   - Verify CMake configuration when adding new dependencies
-
-3. Project conventions:
-   - Maintain single-file architecture unless complexity requires splitting
-   - Follow existing error handling patterns
-   - Keep builds compatible with target platforms
-
-## References
-- Main logic: See `ib_box_spread.cpp`
-- Build configuration: `CMakeLists.txt`
-- Build scripts: `build_universal.sh`
-
-Please request clarification if you need more specific details about any of these aspects.
+For complete guidelines, see [AGENTS.md](../AGENTS.md).
