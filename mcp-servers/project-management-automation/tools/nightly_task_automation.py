@@ -166,17 +166,6 @@ class NightlyTaskAutomation(IntelligentAutomationBase):
                 "type": "macos"
             }
         }
-        
-        # Auto-detect local agents and mark them appropriately
-        for host_key, host_info in default_hostnames.items():
-            hostname = host_info.get("hostname", "")
-            if hostname and _is_local_host(hostname):
-                # This is actually the local machine
-                host_info["type"] = "local"
-                host_info["is_local"] = True
-                # Use current project root for local agents
-                if not host_info.get("project_path") or host_info["project_path"].startswith("~"):
-                    host_info["project_path"] = str(self.project_root)
 
         # Try to read from file if it exists
         if hostnames_file.exists():
@@ -295,48 +284,31 @@ class NightlyTaskAutomation(IntelligentAutomationBase):
         return task
 
     def _execute_task_on_host(self, task: Dict[str, Any], host_info: Dict[str, str]) -> Dict[str, Any]:
-        """Execute a task on a specific host via SSH (or locally if local agent)."""
+        """Execute a task on a specific host via SSH."""
         task_id = task.get('id', '')
         hostname = host_info.get('hostname', '')
         project_path = host_info.get('project_path', '')
         host_type = host_info.get('type', 'ubuntu')
-        is_local = host_info.get('is_local', False) or _is_local_host(hostname)
 
-        if is_local:
-            # Local execution - no SSH needed
-            # Expand ~ in path if present
-            if project_path.startswith("~"):
-                project_path = os.path.expanduser(project_path)
-            
-            result = {
-                'task_id': task_id,
-                'host': 'local',
-                'hostname': hostname or 'localhost',
-                'status': 'started',
-                'timestamp': datetime.utcnow().isoformat() + 'Z',
-                'note': f'Task execution on local agent (detected from {hostname}) - no SSH required'
-            }
+        # Construct SSH command
+        if '@' in hostname:
+            # User@host format
+            ssh_cmd = f"ssh {hostname}"
         else:
-            # Remote execution via SSH
-            # Construct SSH command
-            if '@' in hostname:
-                # User@host format
-                ssh_cmd = f"ssh {hostname}"
-            else:
-                # Just hostname (assume current user)
-                ssh_cmd = f"ssh {hostname}"
+            # Just hostname (assume current user)
+            ssh_cmd = f"ssh {hostname}"
 
-            # Navigate to project and execute task
-            # For now, we'll just mark as in progress and return
-            # In production, would use actual task execution via Cursor agent or script
+        # Navigate to project and execute task
+        # For now, we'll just mark as in progress and return
+        # In production, would use actual task execution via Cursor agent or script
 
-            result = {
-                'task_id': task_id,
-                'host': hostname,
-                'status': 'started',
-                'timestamp': datetime.utcnow().isoformat() + 'Z',
-                'note': 'Task execution would happen here via SSH/Cursor agent'
-            }
+        result = {
+            'task_id': task_id,
+            'host': hostname,
+            'status': 'started',
+            'timestamp': datetime.utcnow().isoformat() + 'Z',
+            'note': 'Task execution would happen here via SSH/Cursor agent'
+        }
 
         return result
 

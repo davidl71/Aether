@@ -221,7 +221,7 @@ def check_working_copy_health(
             # Expand ~ in path
             if agent_path.startswith("~"):
                 agent_path = os.path.expanduser(agent_path)
-
+            
             try:
                 result = subprocess.run(
                     ["git", "status", "--porcelain"],
