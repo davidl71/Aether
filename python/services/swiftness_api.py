@@ -8,9 +8,10 @@ import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+import os
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -18,6 +19,13 @@ sys.path.insert(0, str(project_root))
 
 from python.integration.swiftness_storage import SwiftnessStorage
 from python.integration.swiftness_integration import SwiftnessIntegration, PositionSnapshot, CashFlowEvent
+from python.services.security import (
+    PathBoundaryEnforcer,
+    RateLimiter,
+    RateLimitMiddleware,
+    AccessControl,
+    require_api_key
+)
 
 # Configure logging
 logging.basicConfig(
@@ -43,9 +51,60 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Swiftness integration
+# Initialize security components (use environment config if available, fallback to env vars)
+try:
+    from .environment_config import get_config
+    config = get_config()
+    security_config = config.get_security_config()
+    requests_per_minute = security_config['rate_limit_per_minute']
+    requests_per_second = security_config['rate_limit_per_second']
+except ImportError:
+    # Fallback to environment variables
+    requests_per_minute = int(os.getenv("RATE_LIMIT_PER_MINUTE", "60"))
+    requests_per_second = int(os.getenv("RATE_LIMIT_PER_SECOND", "10"))
+
+rate_limiter = RateLimiter(
+    requests_per_minute=requests_per_minute,
+    requests_per_second=requests_per_second
+)
+app.add_middleware(RateLimitMiddleware, rate_limiter=rate_limiter)
+
+# Path boundary enforcement
+path_enforcer = PathBoundaryEnforcer(
+    allowed_base_paths=[
+        Path.home() / ".config" / "ib_box_spread",
+        project_root / "data",
+        project_root / "storage"
+    ]
+)
+
+# Access control (optional - enable via environment variable)
+try:
+    from .environment_config import get_config
+    config = get_config()
+    security_config = config.get_security_config()
+    api_key = security_config['api_key']
+    require_auth = security_config['require_auth']
+except ImportError:
+    # Fallback to environment variables
+    api_key = os.getenv("API_KEY")
+    require_auth = os.getenv("REQUIRE_AUTH", "false").lower() == "true"
+
+access_control = AccessControl(
+    api_key=api_key,
+    require_auth=require_auth
+)
+
+# Initialize Swiftness integration with path validation
 storage_path = Path.home() / ".config" / "ib_box_spread" / "swiftness"
-storage = SwiftnessStorage(storage_path)
+try:
+    validated_storage_path = path_enforcer.validate_path(storage_path)
+except ValueError:
+    # If path doesn't exist yet, create it within allowed boundary
+    validated_storage_path = path_enforcer.sanitize_path(storage_path)
+    validated_storage_path.mkdir(parents=True, exist_ok=True)
+
+storage = SwiftnessStorage(validated_storage_path)
 integration = SwiftnessIntegration(storage, ils_to_usd_rate=0.27)
 
 

@@ -290,6 +290,6 @@ The script is available as a Cursor command:
 
 ## Related Documentation
 
-- [Cross-Platform Setup Guide](CROSS_PLATFORM_SETUP.md)
+- [Cross-Platform Setup Guide](research/integration/CROSS_PLATFORM_SETUP.md)
 - [Platform-Specific Settings](PLATFORM_SPECIFIC_SETTINGS.md)
 - [CMake Presets Guide](external/CMake_PRESETS_GUIDE.md)

@@ -28,3 +28,9 @@ xlrd>=2.0.0
 
 # NATS message queue integration
 nats-py>=2.6.0
+
+# MCP Server dependencies (for exarp project management automation)
+# Note: exarp is typically run via uvx (uvx exarp --mcp), which handles dependencies automatically
+# These dependencies are listed here for documentation and optional direct installation
+mcp>=0.1.0
+fastmcp>=0.9.0

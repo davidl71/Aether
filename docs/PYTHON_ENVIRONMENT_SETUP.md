@@ -1,15 +1,39 @@
-# Python Environment Setup for PyO3 Compatibility
+# Python Environment Setup
 
-**Issue**: PyO3 0.21 supports Python up to 3.12, but system Python is 3.14
+This guide covers Python virtual environment setup for the project, including PyO3 compatibility and modern tooling with `uv`.
+
+**Issue**: PyO3 0.21 supports Python up to 3.12, but system Python is 3.14  
 **Solution**: Use Python 3.12 virtual environment
 
+**Modern Tooling**: The project now supports `uv` (fast Python package manager) with automatic fallback to standard `venv` and `pip`.
+
 ## Quick Start
+
+### Using `uv` (Recommended - Faster)
+
+```bash
+# Install uv if not already installed
+pip install uv
+
+# Create virtual environment with uv (faster)
+cd agents/backend
+uv venv .venv
+source .venv/bin/activate
+
+# Set PyO3 to use this Python
+export PYO3_PYTHON="$(which python)"
+cargo check -p backend_service
+```
+
+### Using Standard `venv` (Fallback)
 
 ```bash
 cd agents/backend
 source scripts/activate_python_env.sh
 cargo check -p backend_service
 ```
+
+**Note**: Scripts automatically use `uv` when available, falling back to standard `venv` for compatibility.
 
 ## Detailed Setup
 
@@ -36,7 +60,33 @@ source scripts/activate_python_env.sh
 
 ### Manual Setup
 
-If you prefer manual setup:
+#### Using `uv` (Recommended)
+
+```bash
+cd agents/backend
+
+# Install uv if not already installed
+pip install uv
+
+# Create venv with uv (faster than standard venv)
+uv venv .venv --python python3.12
+
+# Activate venv
+source .venv/bin/activate
+
+# Set PyO3 to use this Python
+export PYO3_PYTHON="$(which python)"
+export PYO3_PYTHON_VERSION="3.12"
+
+# Install dependencies with uv (faster)
+uv pip install -r requirements.txt
+
+# Verify
+python --version  # Should show Python 3.12.x
+echo $PYO3_PYTHON  # Should show path to .venv/bin/python
+```
+
+#### Using Standard `venv` (Fallback)
 
 ```bash
 cd agents/backend
@@ -50,6 +100,9 @@ source .venv/bin/activate
 # Set PyO3 to use this Python
 export PYO3_PYTHON="$(which python)"
 export PYO3_PYTHON_VERSION="3.12"
+
+# Install dependencies
+pip install -r requirements.txt
 
 # Verify
 python --version  # Should show Python 3.12.x
@@ -143,20 +196,80 @@ cargo check -p backend_service
 - **System Python 3.14** is too new
 - **Solution**: Use Python 3.12 in a virtual environment
 
+## Modern Tooling: `uv` Support
+
+The project now supports `uv` (fast Python package manager) with automatic fallback to standard tools.
+
+### Benefits of `uv`
+
+- **10-100x faster** package installation
+- **Faster virtual environment creation**
+- **Better dependency resolution**
+- **Compatible** with existing `requirements.txt` files
+
+### Installation
+
+```bash
+# Install uv
+pip install uv
+
+# Or via Homebrew (macOS)
+brew install uv
+
+# Verify installation
+uv --version
+```
+
+### Usage
+
+```bash
+# Create virtual environment (faster)
+uv venv .venv
+
+# Install packages (faster)
+uv pip install -r requirements.txt
+
+# Or use uv sync with pyproject.toml
+uv sync
+```
+
+**Note**: All project scripts automatically use `uv` when available, falling back to standard `venv` and `pip` for compatibility.
+
 ## Future Options
 
 1. **Upgrade PyO3**: When PyO3 0.22+ supports Python 3.14
 2. **Use Poetry**: Could manage Python version via `pyproject.toml`
 3. **Use pyenv**: Could manage multiple Python versions
+4. **Full `uv` Migration**: Consider migrating to `pyproject.toml` with `uv sync`
 
-For now, the virtual environment approach is the simplest and most reliable.
+For now, the virtual environment approach with `uv` support is the simplest and most reliable.
 
 ## Integration with CI/CD
 
-For CI/CD pipelines, ensure Python 3.12 is available:
+For CI/CD pipelines, ensure Python 3.12 is available. Using `uv` is recommended for faster builds:
 
 ```yaml
-# Example GitHub Actions
+# Example GitHub Actions with uv (Recommended)
+- name: Install uv
+  run: pip install uv
+
+- name: Set up Python 3.12
+  uses: actions/setup-python@v4
+  with:
+    python-version: '3.12'
+
+- name: Create virtual environment and install dependencies
+  run: |
+    uv venv .venv
+    source .venv/bin/activate
+    uv pip install -r requirements.txt
+    export PYO3_PYTHON="$(which python)"
+```
+
+**Fallback** (without `uv`):
+
+```yaml
+# Example GitHub Actions (Standard venv)
 - name: Set up Python 3.12
   uses: actions/setup-python@v4
   with:
@@ -166,6 +279,7 @@ For CI/CD pipelines, ensure Python 3.12 is available:
   run: |
     python -m venv .venv
     source .venv/bin/activate
+    pip install -r requirements.txt
     export PYO3_PYTHON="$(which python)"
 ```
 
@@ -174,3 +288,6 @@ For CI/CD pipelines, ensure Python 3.12 is available:
 - [PyO3 Documentation](https://pyo3.rs/)
 - [PyO3 Python Version Support](https://pyo3.rs/latest/building_and_distribution.html#python-version)
 - [Python Virtual Environments](https://docs.python.org/3/tutorial/venv.html)
+- [uv Documentation](https://github.com/astral-sh/uv) - Fast Python package manager
+- [Project Migration Plan](./PYTHON_UV_MIGRATION_PLAN.md) - Detailed migration guide
+- [Standardization Analysis](./PYTHON_VENV_STANDARDIZATION_ANALYSIS.md) - Analysis and recommendations

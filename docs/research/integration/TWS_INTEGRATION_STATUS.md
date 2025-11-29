@@ -295,10 +295,10 @@ A: Complete Option 1 (full TWS API build with all dependencies). It's the most s
 
 ## Related Resources
 
-- [IBC Learnings](IBC_LEARNINGS.md) - IBC (Interactive Brokers Controller) automation tool for TWS/Gateway management
-- [API Documentation Index](API_DOCUMENTATION_INDEX.md) - Complete index of all external APIs
-- [TWS API Best Practices](TWS_API_BEST_PRACTICES.md) - Best practices for TWS API integration
-- [EWrapper Status](EWRAPPER_STATUS.md) - EWrapper implementation status
+- [IBC Learnings](../../research/learnings/IBC_LEARNINGS.md) - IBC (Interactive Brokers Controller) automation tool for TWS/Gateway management
+- [API Documentation Index](../../API_DOCUMENTATION_INDEX.md) - Complete index of all external APIs
+- [TWS API Best Practices](../../research/learnings/TWS_API_BEST_PRACTICES.md) - Best practices for TWS API integration
+- [EWrapper Status](../../research/learnings/EWRAPPER_STATUS.md) - EWrapper implementation status
 
 ---
 

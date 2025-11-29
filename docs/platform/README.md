@@ -297,9 +297,9 @@ All strategies follow the same integration pattern:
 ## See Also
 
 - **[Box Spread Strategy](../strategies/box-spread/README.md)** - Active strategy component
-- **[Main README](../../../README.md)** - Project overview and getting started
-- **[Project Status](../../PROJECT_STATUS.md)** - Implementation status
-- **[Project Rename Analysis](../../PROJECT_RENAME_AND_SPLIT_ANALYSIS.md)** - Rename and split strategy
+- **[Main README](../research/architecture/../../../README.md)** - Project overview and getting started
+- **[Project Status](../research/architecture/../../PROJECT_STATUS.md)** - Implementation status
+- **[Project Rename Analysis](../research/architecture/../../PROJECT_RENAME_AND_SPLIT_ANALYSIS.md)** - Rename and split strategy
 
 ---
 

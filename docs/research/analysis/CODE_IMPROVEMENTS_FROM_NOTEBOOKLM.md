@@ -375,7 +375,7 @@ void check_connection_health() {
 
 ## See Also
 
-- [TWS API Best Practices](TWS_API_BEST_PRACTICES.md) - Current best practices
-- [EWrapper Implementation](EW RAPPER_IMPLEMENTATION.md) - Implementation details
-- [NotebookLM Status](NOTEBOOKLM_STATUS.md) - Notebook status
-- [Code Architecture](CODEBASE_ARCHITECTURE.md) - System architecture
+- [TWS API Best Practices](../../research/learnings/TWS_API_BEST_PRACTICES.md) - Current best practices
+- [EWrapper Implementation](../../EW RAPPER_IMPLEMENTATION.md) - Implementation details
+- [NotebookLM Status](../../NOTEBOOKLM_STATUS.md) - Notebook status
+- [Code Architecture](../../research/architecture/CODEBASE_ARCHITECTURE.md) - System architecture

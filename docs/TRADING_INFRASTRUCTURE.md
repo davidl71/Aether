@@ -569,5 +569,5 @@ Based on requirements:
 ## Related Documentation
 
 - [Quick Start Guide](../QUICKSTART.md) - Getting started with the application
-- [Architecture Documentation](CODEBASE_ARCHITECTURE.md) - System architecture
+- [Architecture Documentation](research/architecture/CODEBASE_ARCHITECTURE.md) - System architecture
 - [Deployment Guide](DEPLOYMENT.md) - Detailed deployment instructions (if exists)

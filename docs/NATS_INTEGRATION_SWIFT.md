@@ -384,5 +384,5 @@ struct NATSConfig {
 ## References
 
 - [Swift NATS Client](https://github.com/nats-io/swift-nats)
-- [NATS Topics Registry](../NATS_TOPICS_REGISTRY.md)
-- [Message Schemas](../message_schemas/README.md)
+- [NATS Topics Registry](research/../NATS_TOPICS_REGISTRY.md)
+- [Message Schemas](research/../message_schemas/README.md)

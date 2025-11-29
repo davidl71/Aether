@@ -271,7 +271,7 @@ The box spread strategy uses LEAN's Alpaca adapter automatically when configured
 ## References
 
 - [LEAN Alpaca Integration Guide](https://www.quantconnect.com/docs/v2/lean-cli/live-trading/brokerages/alpaca)
-- [LEAN Broker Adapters Documentation](docs/LEAN_BROKER_ADAPTERS.md)
+- [LEAN Broker Adapters Documentation](LEAN_BROKER_ADAPTERS.md)
 - [Alpaca API Documentation](https://alpaca.markets/docs/)
 
 ---

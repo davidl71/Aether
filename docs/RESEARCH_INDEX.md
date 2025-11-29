@@ -39,7 +39,7 @@ Documents containing external API documentation, whitepapers, and market data re
   - Integration opportunities for box spread detection
   - **NotebookLM Priority**: HIGH - External API documentation
 
-- **[DATA_FEEDS_BOX_SPREADS.md](research/external/DATA_FEEDS_BOX_SPREADS.md)** - Market data feed analysis
+- **[DATA_FEEDS_BOX_SPREADS.md](strategies/box-spread/DATA_FEEDS_BOX_SPREADS.md)** - Market data feed analysis
 - **[MARKET_DATA_INDEX.md](indices/MARKET_DATA_INDEX.md)** - Comprehensive market data provider index
 
 ### Trading APIs & Brokers
@@ -113,13 +113,13 @@ System architecture documents, design decisions, and architectural patterns.
 - **[MESSAGE_QUEUE_RESEARCH.md](research/architecture/MESSAGE_QUEUE_RESEARCH.md)** - Message queue solution research
   - NATS, RabbitMQ, Redis, ZeroMQ comparison
   - **NotebookLM Priority**: HIGH - External documentation to synthesize
-- **[SYNTHETIC_FINANCING_ARCHITECTURE.md](research/architecture/SYNTHETIC_FINANCING_ARCHITECTURE.md)** - Synthetic financing design
+- **[SYNTHETIC_FINANCING_ARCHITECTURE.md](platform/SYNTHETIC_FINANCING_ARCHITECTURE.md)** - Synthetic financing design
 - **[REST_API_LAYER_DESIGN.md](research/architecture/REST_API_LAYER_DESIGN.md)** - REST API architecture
 - **[WEBSOCKET_IMPLEMENTATION_DESIGN.md](research/architecture/WEBSOCKET_IMPLEMENTATION_DESIGN.md)** - WebSocket architecture
 
 ### Component Design
 
-- **[BOX_SPREAD_BAG_IMPLEMENTATION.md](research/architecture/BOX_SPREAD_BAG_IMPLEMENTATION.md)** - Box spread bag design
+- **[BOX_SPREAD_BAG_IMPLEMENTATION.md](strategies/box-spread/BOX_SPREAD_BAG_IMPLEMENTATION.md)** - Box spread bag design
 - **[BANK_LOAN_POSITION_SYSTEM_DESIGN.md](research/architecture/BANK_LOAN_POSITION_SYSTEM_DESIGN.md)** - Bank loan system
 - **[PORTFOLIO_GREEKS_SYSTEM.md](research/architecture/PORTFOLIO_GREEKS_SYSTEM.md)** - Portfolio Greeks calculation
 - **[CASH_FLOW_FORECASTING_SYSTEM.md](research/architecture/CASH_FLOW_FORECASTING_SYSTEM.md)** - Cash flow forecasting
@@ -135,7 +135,7 @@ System architecture documents, design decisions, and architectural patterns.
 ### Multi-Broker & Aggregation
 
 - **[MULTI_BROKER_ARCHITECTURE_DESIGN.md](research/architecture/MULTI_BROKER_ARCHITECTURE_DESIGN.md)** - Multi-broker design
-- **[MULTI_ACCOUNT_AGGREGATION_DESIGN.md](research/architecture/MULTI_ACCOUNT_AGGREGATION_DESIGN.md)** - Account aggregation
+- **[MULTI_ACCOUNT_AGGREGATION_DESIGN.md](platform/MULTI_ACCOUNT_AGGREGATION_DESIGN.md)** - Account aggregation
 - **[UNIVERSAL_BROKERAGE_AGGREGATION.md](research/architecture/UNIVERSAL_BROKERAGE_AGGREGATION.md)** - Brokerage aggregation
 
 ---
@@ -183,7 +183,7 @@ Step-by-step integration instructions for external services, APIs, and tools.
 
 - **[LEAN_PWA_TUI_INTEGRATION.md](research/integration/LEAN_PWA_TUI_INTEGRATION.md)** - LEAN PWA/TUI integration
 - **[LEAN_PWA_TUI_INTEGRATION_ANALYSIS.md](research/integration/LEAN_PWA_TUI_INTEGRATION_ANALYSIS.md)** - Integration analysis
-- **[LEAN_PYBIND11_INTEGRATION_ANALYSIS.md](LEAN_PYBIND11_INTEGRATION_ANALYSIS.md)** - Pybind11 analysis
+- **[LEAN_PYBIND11_INTEGRATION_ANALYSIS.md](research/integration/LEAN_PYBIND11_INTEGRATION_ANALYSIS.md)** - Pybind11 analysis
 - **[LEAN_REST_API_WRAPPER_DESIGN.md](research/integration/LEAN_REST_API_WRAPPER_DESIGN.md)** - REST API wrapper
 - **[LEAN_BROKER_ADAPTERS.md](research/integration/LEAN_BROKER_ADAPTERS.md)** - Broker adapters
 - **[LEAN_MIGRATION_SUMMARY.md](research/integration/LEAN_MIGRATION_SUMMARY.md)** - Migration summary
@@ -297,7 +297,7 @@ How-to guides, setup instructions, and implementation documentation.
 - **[COMMISSIONS_AND_HEDGING_IMPLEMENTATION.md](research/integration/COMMISSIONS_AND_HEDGING_IMPLEMENTATION.md)** - Commissions & hedging
 - **[SWIFTNESS_IMPORT_DESIGN.md](research/integration/SWIFTNESS_IMPORT_DESIGN.md)** - Swiftness import
 - **[SWIFTNESS_DATA_MODEL.md](research/integration/SWIFTNESS_DATA_MODEL.md)** - Swiftness data model
-- **[BOX_SPREAD_COMPREHENSIVE_GUIDE.md](research/integration/BOX_SPREAD_COMPREHENSIVE_GUIDE.md)** - Box spread guide
+- **[BOX_SPREAD_COMPREHENSIVE_GUIDE.md](strategies/box-spread/BOX_SPREAD_COMPREHENSIVE_GUIDE.md)** - Box spread guide
 
 ---
 
@@ -307,7 +307,7 @@ Focused indices organized by specific topics. See individual index files for det
 
 ### Trading & Market Data
 
-- **[indices/BOX_SPREAD_RESOURCES_INDEX.md](indices/BOX_SPREAD_RESOURCES_INDEX.md)** - Box spread resources
+- **[indices/BOX_SPREAD_RESOURCES_INDEX.md](strategies/box-spread/BOX_SPREAD_RESOURCES_INDEX.md)** - Box spread resources
 - **[indices/MARKET_DATA_INDEX.md](indices/MARKET_DATA_INDEX.md)** - Market data providers
 - **[indices/TRADING_FRAMEWORKS_INDEX.md](indices/TRADING_FRAMEWORKS_INDEX.md)** - Trading frameworks
 - **[indices/TRADING_SIMULATORS_INDEX.md](indices/TRADING_SIMULATORS_INDEX.md)** - Trading simulators

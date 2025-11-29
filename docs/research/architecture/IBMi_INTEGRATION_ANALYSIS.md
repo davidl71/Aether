@@ -379,7 +379,7 @@ Trading System
 - [Rest4i - RPG REST API Framework](https://rest4i.com/)
 - [CGIDEV2 - Web Interfaces for IBM i](https://en.wikipedia.org/wiki/Cgidev2)
 - [IBM i HTTP Server](https://www.ibm.com/docs/en/i/7.4?topic=server-http)
-- [Your Codebase: Legacy Financial Systems](docs/LEGACY_FINANCIAL_SYSTEMS.md)
+- [Your Codebase: Legacy Financial Systems](../../LEGACY_FINANCIAL_SYSTEMS.md)
 
 ---
 

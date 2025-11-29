@@ -100,4 +100,4 @@ rm -rf .git/modules/libs/box-spread-cpp
 
 - [Project Split Strategy](PROJECT_SPLIT_STRATEGY.md)
 - [Extracted Repositories](EXTRACTED_REPOSITORIES.md)
-- [Box Spread C++ Library README](../libs/box-spread-cpp/README.md)
+- [Box Spread C++ Library README](platform/README.md)

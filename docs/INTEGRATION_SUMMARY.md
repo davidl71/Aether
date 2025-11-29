@@ -252,7 +252,7 @@ python -m mcp.trading_server.server
 - [OpenAlgo Documentation](https://docs.openalgo.in)
 - [TUI Breadcrumb Logging Guide](./TUI_BREADCRUMB_LOGGING.md)
 - [Breadcrumb Logging for Trading Testing](./BREADCRUMB_LOGGING_TRADING_TESTING.md)
-- [OpenAlgo Integration Patterns](./OPENALGO_INTEGRATION_PATTERNS.md)
+- [OpenAlgo Integration Patterns](research/integration/OPENALGO_INTEGRATION_PATTERNS.md)
 
 ---
 

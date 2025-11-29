@@ -537,8 +537,8 @@ void IBClientPortalAdapter::handle_error(int status_code, const json& error) {
 - [IB Client Portal API Documentation](https://www.interactivebrokers.com/api/doc.html)
 - [IB Client Portal Authentication](https://www.interactivebrokers.com/api/doc.html#tag/Authentication)
 - [IB Client Portal Trading API](https://www.interactivebrokers.com/api/doc.html#tag/Orders)
-- [Multi-Broker Architecture Design](docs/MULTI_BROKER_ARCHITECTURE_DESIGN.md)
-- [Unified Broker Interface](docs/MULTI_BROKER_ARCHITECTURE_DESIGN.md#unified-broker-interface)
+- [Multi-Broker Architecture Design](../../research/architecture/MULTI_BROKER_ARCHITECTURE_DESIGN.md)
+- [Unified Broker Interface](../../research/architecture/MULTI_BROKER_ARCHITECTURE_DESIGN.md)
 
 ---
 

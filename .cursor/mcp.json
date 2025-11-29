@@ -1,14 +1,43 @@
 {
   "mcpServers": {
+    "exarp": {
+      "command": "uvx",
+      "args": ["exarp", "--mcp"],
+      "description": "Exarp - Project management automation tools (Enochian: Spirit of Air - Communication) - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/david/ib_box_spread_full_universal"],
+      "description": "Filesystem server - File system operations for reading, writing, and managing project files"
+    },
     "notebooklm": {
       "command": "uvx",
       "args": [
         "mcpower-proxy==0.0.87",
         "--wrapped-config",
-        "{\"command\": \"npx\", \"args\": [\"-y\", \"notebooklm-mcp@latest\"], \"description\": \"NotebookLM MCP server for summarizing YouTube videos, documentation links, and creating zero-hallucination knowledge base\"}",
-        "--name",
-        "notebooklm"
-      ]
+        "{\"command\": \"npx\", \"args\": [\"-y\", \"notebooklm-mcp@latest\"]}"
+      ],
+      "description": "NotebookLM server - Zero-hallucination knowledge base for summarizing YouTube videos, documentation, and links"
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "description": "Context7 server - Up-to-date, version-specific documentation and code examples"
+    },
+    "agentic-tools": {
+      "command": "npx",
+      "args": ["-y", "@pimzino/agentic-tools-mcp"],
+      "description": "Agentic Tools MCP server - Advanced task management and agent memories with project-specific storage"
+    },
+    "tractatus_thinking": {
+      "command": "npx",
+      "args": ["-y", "tractatus_thinking"],
+      "description": "Tractatus Thinking MCP server - Logical concept analysis and structured thinking for breaking down complex problems"
+    },
+    "sequential_thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "description": "Sequential Thinking MCP server - Structured problem-solving and implementation workflow"
     }
   }
 }

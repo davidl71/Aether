@@ -437,6 +437,6 @@ Contract make_index_contract(const std::string& symbol,
 
 ## References
 
-- [EClient and EWrapper Architecture](../ECLIENT_EWRAPPER_ARCHITECTURE.md)
+- [EClient and EWrapper Architecture](../research/learnings/ECLIENT_EWRAPPER_ARCHITECTURE.md)
 - [TWS API Quick Reference](./TWS_API_QUICK_REFERENCE.md)
-- [TWS Integration Status](../TWS_INTEGRATION_STATUS.md)
+- [TWS Integration Status](../research/integration/TWS_INTEGRATION_STATUS.md)

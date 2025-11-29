@@ -192,4 +192,4 @@ After NATS server is running:
 - [NATS Documentation](https://docs.nats.io/)
 - [NATS Server Configuration](https://docs.nats.io/running-a-nats-service/configuration)
 - [NATS Monitoring](https://docs.nats.io/running-a-nats-service/nats_server/monitoring)
-- [Message Queue Architecture](./MESSAGE_QUEUE_ARCHITECTURE.md)
+- [Message Queue Architecture](research/architecture/MESSAGE_QUEUE_ARCHITECTURE.md)

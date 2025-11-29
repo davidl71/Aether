@@ -598,7 +598,7 @@ public:
 
 ## References
 
-- [Multi-Broker Architecture Design](../docs/MULTI_BROKER_ARCHITECTURE_DESIGN.md)
-- [Alpaca API Integration Design](../docs/ALPACA_API_INTEGRATION_DESIGN.md)
-- [Israeli Broker Position Import](../docs/ISRAELI_BROKER_POSITION_IMPORT.md)
-- [Investment Strategy Framework](../docs/INVESTMENT_STRATEGY_FRAMEWORK.md)
+- [Multi-Broker Architecture Design](../research/architecture/MULTI_BROKER_ARCHITECTURE_DESIGN.md)
+- [Alpaca API Integration Design](../research/integration/ALPACA_API_INTEGRATION_DESIGN.md)
+- [Israeli Broker Position Import](../../docs/ISRAELI_BROKER_POSITION_IMPORT.md)
+- [Investment Strategy Framework](INVESTMENT_STRATEGY_FRAMEWORK.md)

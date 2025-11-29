@@ -480,6 +480,6 @@ For box spread traders, T-bill rates provide the benchmark against which box spr
 
 ## See Also
 
-- [Box Spread Comprehensive Guide](BOX_SPREAD_COMPREHENSIVE_GUIDE.md) - Complete box spread mechanics and strategies
-- [TWS Integration Status](TWS_INTEGRATION_STATUS.md) - Interactive Brokers API integration details
+- [Box Spread Comprehensive Guide](strategies/box-spread/BOX_SPREAD_COMPREHENSIVE_GUIDE.md) - Complete box spread mechanics and strategies
+- [TWS Integration Status](research/integration/TWS_INTEGRATION_STATUS.md) - Interactive Brokers API integration details
 - [API Documentation Index](API_DOCUMENTATION_INDEX.md) - External APIs and resources

@@ -1,5 +1,7 @@
 # iTerm2 Integration Guide
 
+**⚠️ Platform Requirement**: iTerm2 is **macOS only**. This integration is not available on Linux or Windows.
+
 This project supports executing VS Code tasks in iTerm2 instead of the integrated terminal, providing better terminal features, tmux integration, and performance for long-running tasks.
 
 ## Overview
@@ -14,7 +16,10 @@ iTerm2 integration allows you to:
 
 ## Prerequisites
 
+**⚠️ macOS Only**: These prerequisites apply only to macOS. On Linux/Windows, use the standard VS Code integrated terminal instead.
+
 1. **iTerm2 Installed**: Download from [iTerm2 website](https://iterm2.com/)
+   - Install via Homebrew: `brew install --cask iterm2`
 2. **Extension Installed**: The `execute-in-iterm2` extension (or similar) should be installed
    - VS Code will prompt you to install recommended extensions
    - Or install manually: `Cmd+Shift+X` → Search "execute in iterm2"
@@ -256,9 +261,9 @@ For tasks that need tmux sessions:
 
 ## Related Documentation
 
-- [MCP Servers](./MCP_SERVERS.md) - iTerm2 MCP Server integration
-- [PWA Patterns](./PWA_PATTERNS_APPLICABILITY.md) - Service launch patterns
-- [Cursor Setup](./CURSOR_SETUP.md) - General Cursor/VS Code configuration
+- [MCP Servers](research/integration/MCP_SERVERS.md) - iTerm2 MCP Server integration
+- [PWA Patterns](research/architecture/PWA_PATTERNS_APPLICABILITY.md) - Service launch patterns
+- [Cursor Setup](research/integration/CURSOR_SETUP.md) - General Cursor/VS Code configuration
 
 ## See Also
 

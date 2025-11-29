@@ -295,7 +295,7 @@ MCP. Never execute live trading commands.
 
 ## Additional Interactive MCP Tools (Optional)
 
-For more interactive tools like GitHub integration and database queries, see [MCP_INTERACTIVE_TOOLS.md](MCP_INTERACTIVE_TOOLS.md).
+For more interactive tools like GitHub integration and database queries, see [MCP_INTERACTIVE_TOOLS.md](../../MCP_INTERACTIVE_TOOLS.md).
 
 ---
 
@@ -322,7 +322,7 @@ diagnostics, type information, and code navigation to AI assistants.
 
 **Troubleshooting**:
 
-- If you see permission errors, see [MCP_TROUBLESHOOTING.md](MCP_TROUBLESHOOTING.md) for permission fixes
+- If you see permission errors, see [MCP_TROUBLESHOOTING.md](../../MCP_TROUBLESHOOTING.md) for permission fixes
 - Extension must be installed and enabled
 - Restart Cursor after installation
 
@@ -379,7 +379,9 @@ diagnostics, type information, and code navigation to AI assistants.
 
 **Purpose**: Provide terminal context to Cursor agents by integrating with iTerm2
 
-**Status**: ✅ Configured
+**Status**: ✅ Configured (macOS only)
+
+**⚠️ Platform Requirement**: This server is **macOS only**. On Linux/Windows, the `iterm2` server entry should be removed from `.cursor/mcp.json`.
 
 **Configuration**: `.cursor/mcp.json`
 
@@ -737,7 +739,7 @@ If you add database support:
 
 - [Cursor Setup Guide](CURSOR_SETUP.md) - General Cursor IDE configuration
 - [NotebookLM Usage Guide](NOTEBOOKLM_USAGE.md) - How to use NotebookLM for summarizing videos and documentation
-- [.cursorrules](../.cursorrules) - AI assistant guidelines mentioning Semgrep
+- [.cursorrules](../../../.cursorrules) - AI assistant guidelines mentioning Semgrep
 - [MCP Documentation](https://modelcontextprotocol.io/) - Official MCP documentation
 - [NotebookLM MCP Repository](https://github.com/PleasePrompto/notebooklm-mcp) - Source code
   and detailed documentation

@@ -266,4 +266,4 @@ cmake --preset macos-arm64-debug
 
 - [CMake Presets Documentation](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html)
 - [Project CMakePresets.json](../../CMakePresets.json)
-- [Build System Documentation](../DISTRIBUTED_COMPILATION.md)
+- [Build System Documentation](../research/integration/DISTRIBUTED_COMPILATION.md)

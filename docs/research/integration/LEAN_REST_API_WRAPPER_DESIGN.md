@@ -868,7 +868,7 @@ CMD ["uvicorn", "api_wrapper:app", "--host", "0.0.0.0", "--port", "8000"]
 - [LEAN Algorithm Structure](https://www.quantconnect.com/docs/v2/lean-engine/algorithm-framework/algorithm-structure)
 - [LEAN Portfolio Management](https://www.quantconnect.com/docs/v2/lean-engine/algorithm-framework/portfolio-management)
 - [API Contract](./agents/shared/API_CONTRACT.md)
-- [LEAN Strategy Architecture](./LEAN_STRATEGY_ARCHITECTURE.md)
+- [LEAN Strategy Architecture](../../LEAN_STRATEGY_ARCHITECTURE.md)
 - [LEAN PWA/TUI Integration Analysis](./LEAN_PWA_TUI_INTEGRATION_ANALYSIS.md)
 
 ---

@@ -407,9 +407,9 @@ If SmartQuant doesn't fit, consider:
 ### References
 
 - [SmartQuant C++ Framework](https://www.smartquant.com/cpp.html)
-- [Current Architecture Documentation](./CODEBASE_ARCHITECTURE.md)
-- [TWS Integration Status](./TWS_INTEGRATION_STATUS.md)
-- [Implementation Guide](./IMPLEMENTATION_GUIDE.md)
+- [Current Architecture Documentation](../../research/architecture/CODEBASE_ARCHITECTURE.md)
+- [TWS Integration Status](../../research/integration/TWS_INTEGRATION_STATUS.md)
+- [Implementation Guide](../../research/integration/IMPLEMENTATION_GUIDE.md)
 
 ---
 

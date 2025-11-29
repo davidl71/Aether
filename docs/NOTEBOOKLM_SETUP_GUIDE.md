@@ -184,8 +184,8 @@ If you have external articles or blog posts to include:
 
 ## See Also
 
-- [NotebookLM Usage Guide](NOTEBOOKLM_USAGE.md) - Detailed usage instructions
+- [NotebookLM Usage Guide](research/integration/NOTEBOOKLM_USAGE.md) - Detailed usage instructions
 - [External Resources Documentation](EXTERNAL_RESOURCES.md) - External resources tracking
 - [YouTube Videos Setup Guide](YOUTUBE_VIDEOS_SETUP.md) - YouTube videos setup
-- [MCP Servers Configuration](MCP_SERVERS.md) - MCP server setup
+- [MCP Servers Configuration](research/integration/MCP_SERVERS.md) - MCP server setup
 - [Documentation Index](DOCUMENTATION_INDEX.md) - Complete documentation index

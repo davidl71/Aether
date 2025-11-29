@@ -146,9 +146,11 @@ python3 -m json.tool .cursor/mcp.json > /dev/null && echo "Valid" || echo "Inval
 
 **Problem**: iTerm2 MCP server may require iTerm2 to be installed.
 
+**⚠️ Platform Note**: iTerm2 is **macOS only**. On Linux/Windows, this server should be disabled in `.cursor/mcp.json`.
+
 **Solution**:
-- Install iTerm2: `brew install --cask iterm2`
-- Or disable the server if not using iTerm2
+- **macOS**: Install iTerm2: `brew install --cask iterm2`
+- **Linux/Windows**: Remove or comment out the `iterm2` server entry in `.cursor/mcp.json` (already done in current config)
 
 ## Step-by-Step Troubleshooting
 
@@ -186,7 +188,7 @@ uvx mcpower-proxy==0.0.87 --wrapped-config '{"command":"npx","args":["-y","noteb
 # GitKraken
 gk mcp
 
-# iTerm2
+# iTerm2 (macOS only - skip on Linux/Windows)
 npx -y @rishabkoul/iterm-mcp-server
 
 # Context7
@@ -242,8 +244,10 @@ After fixing configuration:
 - **Fix**: Ensure `uvx` is installed and working
 
 ### iTerm2 Server
-- **Issue**: iTerm2 not installed
-- **Fix**: `brew install --cask iterm2` or disable server
+- **Issue**: iTerm2 not installed (macOS only)
+- **Fix**: 
+  - **macOS**: `brew install --cask iterm2`
+  - **Linux/Windows**: Remove `iterm2` entry from `.cursor/mcp.json` (already done)
 
 ### Context7 Server
 - **Issue**: Package download fails

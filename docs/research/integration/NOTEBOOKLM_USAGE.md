@@ -354,9 +354,9 @@ Keep API documentation up-to-date:
 
 ## See Also
 
-- [NotebookLM Beginner Tips](NOTEBOOKLM_BEGINNER_TIPS.md) - Expert tips and best practices from Google's NotebookLM team
+- [NotebookLM Beginner Tips](../../NOTEBOOKLM_BEGINNER_TIPS.md) - Expert tips and best practices from Google's NotebookLM team
 - [MCP Servers Configuration](MCP_SERVERS.md) - General MCP server setup
-- [NotebookLM Setup Guide](NOTEBOOKLM_SETUP_GUIDE.md) - Setup instructions
+- [NotebookLM Setup Guide](../../NOTEBOOKLM_SETUP_GUIDE.md) - Setup instructions
 - [NotebookLM MCP Repository](https://github.com/PleasePrompto/notebooklm-mcp) - Source code and detailed documentation
 - [NotebookLM Official Site](https://notebooklm.google.com) - Google's NotebookLM service
 - [NotebookLM MCP Documentation](https://github.com/PleasePrompto/notebooklm-mcp/tree/main/docs) - Detailed tool reference

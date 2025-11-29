@@ -342,7 +342,7 @@ If Cursor Remote-SSH proves challenging:
 - [VS Code Remote Development](https://code.visualstudio.com/docs/remote/remote-overview)
 - [Project SSH Configuration Script](../scripts/op_sync_distcc_host.sh)
 - [1Password Integration](./ONEPASSWORD_INTEGRATION.md)
-- [Distributed Compilation Setup](./DISTRIBUTED_COMPILATION.md)
+- [Distributed Compilation Setup](research/integration/DISTRIBUTED_COMPILATION.md)
 
 ## Next Steps
 

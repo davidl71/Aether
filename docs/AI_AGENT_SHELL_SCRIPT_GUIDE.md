@@ -214,5 +214,5 @@ fi
 ## Related Documentation
 
 - [Shell Script Testing Guide](./SHELL_SCRIPT_TESTING.md) - Testing with ShellSpec
-- [PWA Patterns Applicability](./PWA_PATTERNS_APPLICABILITY.md) - Patterns applied to scripts
+- [PWA Patterns Applicability](research/architecture/PWA_PATTERNS_APPLICABILITY.md) - Patterns applied to scripts
 - [Refactoring Proof of Concept](./REFACTORING_PROOF_OF_CONCEPT.md) - Refactoring example

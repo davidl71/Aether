@@ -533,7 +533,7 @@ Use consistent naming for similar operations:
 
 - [TUI Breadcrumb Logging Guide](./TUI_BREADCRUMB_LOGGING.md)
 - [OpenAlgo API Analyzer](https://github.com/marketcalls/openalgo)
-- [OpenAlgo Integration Patterns](./OPENALGO_INTEGRATION_PATTERNS.md)
+- [OpenAlgo Integration Patterns](research/integration/OPENALGO_INTEGRATION_PATTERNS.md)
 
 ---
 

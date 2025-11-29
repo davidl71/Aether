@@ -5,7 +5,7 @@
 **Status**: ✅ Documentation Review Phase Complete
 **Purpose**: Summary of documentation review plan implementation
 
-**⚠️ Note**: This document reflects the **documentation review phase** only. For comprehensive project status including LEAN integration, multi-broker implementation, and all active work streams, see **[PROJECT_STATUS.md](./PROJECT_STATUS.md)**.
+**⚠️ Note**: This document reflects the **documentation review phase** only. For comprehensive project status including LEAN integration, multi-broker implementation, and all active work streams, see **[PROJECT_STATUS.md](../../PROJECT_STATUS.md)**.
 
 ---
 
@@ -314,10 +314,10 @@ The **documentation review plan** has been successfully implemented with:
 - **Multi-Broker Implementation** (T-35 to T-37): Design complete, implementation pending
 - **Feature Parity** (T-13, T-14, T-15, T-30, T-31): Ongoing implementation
 
-For comprehensive project status, see **[PROJECT_STATUS.md](./PROJECT_STATUS.md)**.
+For comprehensive project status, see **[PROJECT_STATUS.md](../../PROJECT_STATUS.md)**.
 
 ---
 
 **Implementation Completed By**: AI Assistant
 **Date**: 2025-11-18
-**Status Document**: See [PROJECT_STATUS.md](./PROJECT_STATUS.md) for current project-wide status
+**Status Document**: See [PROJECT_STATUS.md](../../PROJECT_STATUS.md) for current project-wide status

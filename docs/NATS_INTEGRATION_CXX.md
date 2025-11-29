@@ -342,5 +342,5 @@ bool nats_enabled = std::getenv("NATS_ENABLED") != nullptr;
 ## References
 
 - [NATS C Client Documentation](https://github.com/nats-io/nats.c)
-- [NATS Topics Registry](../NATS_TOPICS_REGISTRY.md)
-- [Message Schemas](../message_schemas/README.md)
+- [NATS Topics Registry](research/../NATS_TOPICS_REGISTRY.md)
+- [Message Schemas](research/../message_schemas/README.md)

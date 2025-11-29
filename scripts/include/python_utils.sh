@@ -10,7 +10,7 @@
 #
 # PURPOSE: Eliminate code duplication across service scripts (~95% reduction)
 # PATTERN: Functions are sourced by service scripts, not executed directly
-# DEPENDENCIES: Requires bash, Python 3, venv module
+# DEPENDENCIES: Requires bash, Python 3, venv module (or uv for faster operation)
 # TESTING: See spec/scripts/include/python_utils_spec.sh
 #
 # USAGE PATTERN IN SERVICE SCRIPTS:
@@ -73,6 +73,8 @@ find_python() {
 #
 # AI CONTEXT:
 # - Creates Python virtual environment if it doesn't exist
+# - Prefers `uv venv` when available (faster, modern tooling)
+# - Falls back to `python3 -m venv` for compatibility
 # - Activates existing venv if present
 # - Updates pip and wheel in the venv
 # - Sets global variables for use by other functions
@@ -86,6 +88,7 @@ find_python() {
 #   VENV_DIR: Path to virtual environment directory
 #   ACTIVATE_PATH: Path to venv/bin/activate script
 #   VENV_PYTHON: Path to venv/bin/python executable
+#   USE_UV: Set to "1" if uv is being used, empty otherwise
 #
 # SIDE EFFECTS:
 #   - Creates .venv directory if it doesn't exist
@@ -107,25 +110,44 @@ setup_venv() {
 
   VENV_DIR="${venv_dir}"
   ACTIVATE_PATH="${VENV_DIR}/bin/activate"
+  USE_UV=""
 
   # Create virtual environment if it doesn't exist
   if [ ! -f "${ACTIVATE_PATH}" ]; then
-    echo "Creating Python virtual environment at ${VENV_DIR}..." >&2
-    if ! "${PYTHON_CMD}" -m venv "${VENV_DIR}" 2>/dev/null; then
-      echo "Error: Failed to create virtual environment. Please ensure venv module is available." >&2
-      echo "  Try: ${PYTHON_CMD} -m ensurepip --upgrade" >&2
-      return 1
+    # Prefer uv if available (faster, modern tooling)
+    if command -v uv >/dev/null 2>&1; then
+      echo "Creating Python virtual environment with uv at ${VENV_DIR}..." >&2
+      if uv venv "${VENV_DIR}" 2>/dev/null; then
+        USE_UV="1"
+      else
+        echo "Warning: uv venv failed, falling back to standard venv" >&2
+        USE_UV=""
+      fi
+    fi
+
+    # Fallback to standard venv if uv not available or failed
+    if [ -z "${USE_UV}" ] && [ ! -f "${ACTIVATE_PATH}" ]; then
+      echo "Creating Python virtual environment with venv at ${VENV_DIR}..." >&2
+      if ! "${PYTHON_CMD}" -m venv "${VENV_DIR}" 2>/dev/null; then
+        echo "Error: Failed to create virtual environment. Please ensure venv module is available." >&2
+        echo "  Try: ${PYTHON_CMD} -m ensurepip --upgrade" >&2
+        return 1
+      fi
     fi
   else
     echo "Using existing virtual environment at ${VENV_DIR}" >&2
+    # Detect if existing venv was created with uv (check for uv-specific markers)
+    # For now, assume standard venv unless we can detect otherwise
   fi
 
   # Activate virtual environment
   # shellcheck disable=SC1090
   source "${ACTIVATE_PATH}"
 
-  # Update pip in virtual environment
-  "${PYTHON_CMD}" -m pip install --quiet --upgrade pip wheel >/dev/null 2>&1 || true
+  # Update pip in virtual environment (only if not using uv)
+  if [ -z "${USE_UV}" ]; then
+    "${PYTHON_CMD}" -m pip install --quiet --upgrade pip wheel >/dev/null 2>&1 || true
+  fi
 
   # Set venv Python path
   VENV_PYTHON="${VENV_DIR}/bin/python"
@@ -193,7 +215,12 @@ install_python_packages() {
 
   if [ ${#missing_packages[@]} -gt 0 ]; then
     echo "Installing missing packages in virtual environment: ${missing_packages[*]}..." >&2
-    "${venv_python}" -m pip install --quiet "${missing_packages[@]}" >&2 || return 1
+    # Prefer uv pip install if uv is available (faster)
+    if command -v uv >/dev/null 2>&1; then
+      uv pip install --quiet "${missing_packages[@]}" >&2 || return 1
+    else
+      "${venv_python}" -m pip install --quiet "${missing_packages[@]}" >&2 || return 1
+    fi
   fi
 
   return 0

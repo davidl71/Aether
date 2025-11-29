@@ -198,7 +198,7 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
 ## Related Resources
 
 - [NotebookLM Official Site](https://notebooklm.google.com)
-- [NotebookLM Usage Guide](NOTEBOOKLM_USAGE.md) - Project-specific usage instructions
+- [NotebookLM Usage Guide](research/integration/NOTEBOOKLM_USAGE.md) - Project-specific usage instructions
 - [NotebookLM Setup Guide](NOTEBOOKLM_SETUP_GUIDE.md) - Setup instructions
 - [NotebookLM Troubleshooting](NOTEBOOKLM_TROUBLESHOOTING.md) - Common issues and solutions
 

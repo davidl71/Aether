@@ -181,7 +181,7 @@ Box spread strategy configuration in `config/config.json`:
 
 - **[Platform Overview](../../platform/README.md)** - Synthetic Financing Platform architecture
 - **[Investment Strategy Framework](../../platform/INVESTMENT_STRATEGY_FRAMEWORK.md)** - Portfolio allocation framework
-- **[Cash Flow Forecasting](../../platform/CASH_FLOW_FORECASTING_SYSTEM.md)** - Cash flow modeling system
+- **[Cash Flow Forecasting](../../research/architecture/CASH_FLOW_FORECASTING_SYSTEM.md)** - Cash flow modeling system
 - **[Primary Goals](../../platform/PRIMARY_GOALS_AND_REQUIREMENTS.md)** - Platform primary objectives
 
 ---

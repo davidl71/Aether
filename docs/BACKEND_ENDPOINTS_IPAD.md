@@ -345,6 +345,6 @@ Accept: application/json
 
 ## Related Documentation
 
-- [REST API Layer Design](REST_API_LAYER_DESIGN.md)
+- [REST API Layer Design](research/architecture/REST_API_LAYER_DESIGN.md)
 - [Shared API Contract](../agents/shared/API_CONTRACT.md)
 - [iPad Frontend Architecture](IPAD_FRONTEND_ARCHITECTURE.md)

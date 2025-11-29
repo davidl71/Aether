@@ -287,6 +287,6 @@ Create `.vscode/settings.json.user` (gitignored) for platform-specific overrides
 
 ## Related Documentation
 
-- [CMake Presets Guide](external/CMake_PRESETS_GUIDE.md)
+- [CMake Presets Guide](../../external/CMake_PRESETS_GUIDE.md)
 - [Windows Setup Guide](WINDOWS_SETUP_GUIDE.md)
-- [User vs Workspace Settings](USER_VS_WORKSPACE_SETTINGS.md)
+- [User vs Workspace Settings](../../USER_VS_WORKSPACE_SETTINGS.md)

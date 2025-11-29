@@ -344,8 +344,8 @@ You can ask Cursor AI directly for package requirements:
 ## Related Resources
 
 - [Cursor AI Official Site](https://www.trycursor.com) - Download and documentation
-- [Cursor Setup Guide](CURSOR_SETUP.md) - Project-specific Cursor setup
-- [Cursor Docs Usage](CURSOR_DOCS_USAGE.md) - Using `@docs` in Cursor
+- [Cursor Setup Guide](research/integration/CURSOR_SETUP.md) - Project-specific Cursor setup
+- [Cursor Docs Usage](research/integration/CURSOR_DOCS_USAGE.md) - Using `@docs` in Cursor
 - [Cursor Recommendations](CURSOR_RECOMMENDATIONS.md) - Best practices for this project
 
 ## Technical Stack Reference

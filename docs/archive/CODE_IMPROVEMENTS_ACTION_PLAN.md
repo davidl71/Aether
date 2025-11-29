@@ -419,7 +419,7 @@ After each improvement:
 
 ## See Also
 
-- [Code Improvements from NotebookLM](CODE_IMPROVEMENTS_FROM_NOTEBOOKLM.md) - Detailed recommendations
-- [TWS API Best Practices](TWS_API_BEST_PRACTICES.md) - Current best practices
-- [NotebookLM Status](NOTEBOOKLM_STATUS.md) - Research source
+- [Code Improvements from NotebookLM](../research/analysis/CODE_IMPROVEMENTS_FROM_NOTEBOOKLM.md) - Detailed recommendations
+- [TWS API Best Practices](../research/learnings/TWS_API_BEST_PRACTICES.md) - Current best practices
+- [NotebookLM Status](../NOTEBOOKLM_STATUS.md) - Research source
 - [yatws Documentation](https://docs.rs/yatws/latest/yatws/) - Rust TWS API library with rate limiting, session recording, and manager architecture

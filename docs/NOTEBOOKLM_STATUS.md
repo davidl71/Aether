@@ -121,7 +121,7 @@ tws-api, trading, options, documentation, youtube, tutorial, ib-api, c++, socket
 ## See Also
 
 - **[NotebookLM Resources (Optimized)](NOTEBOOKLM_RESOURCES_OPTIMIZED.md)** - ⭐ **Single source of truth for all resources**
-- [NotebookLM Usage Guide](NOTEBOOKLM_USAGE.md) - Detailed usage instructions
+- [NotebookLM Usage Guide](research/integration/NOTEBOOKLM_USAGE.md) - Detailed usage instructions
 - [NotebookLM Setup Guide](NOTEBOOKLM_SETUP_GUIDE.md) - General setup guide
 - [NotebookLM Automated Setup](NOTEBOOKLM_AUTOMATED_SETUP.md) - Automated setup guide
 - [All Resources (Legacy)](NOTEBOOKLM_ALL_RESOURCES.md) - Legacy resource list (see optimized version)

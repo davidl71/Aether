@@ -475,8 +475,8 @@ After successful testing:
 - [LEAN Backtesting Guide](https://www.quantconnect.com/docs/v2/lean-cli/backtesting)
 - [LEAN Live Trading Guide](https://www.quantconnect.com/docs/v2/lean-cli/live-trading)
 - [LEAN Testing Best Practices](https://www.quantconnect.com/docs/v2/writing-algorithms/testing)
-- [LEAN IBKR Setup](docs/LEAN_IBKR_SETUP.md)
-- [LEAN Alpaca Setup](docs/LEAN_ALPACA_SETUP.md)
+- [LEAN IBKR Setup](LEAN_IBKR_SETUP.md)
+- [LEAN Alpaca Setup](LEAN_ALPACA_SETUP.md)
 
 ---
 

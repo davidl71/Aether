@@ -377,7 +377,7 @@ When testing feature parity:
 
 ## Related Documentation
 
-- [TUI Design](TUI_DESIGN.md) - TUI-specific design decisions
+- [TUI Design](research/architecture/TUI_DESIGN.md) - TUI-specific design decisions
 - [Web App README](../web/README.md) - Web app architecture
 - [TUI Data Schema](../native/include/tui_data.h) - Shared data structures
 - [API Contract](../agents/shared/API_CONTRACT.md) - REST API specification

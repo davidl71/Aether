@@ -224,7 +224,7 @@ Once the notebook is added to the library, you can:
 
 ## 📚 See Also
 
-- [NotebookLM Usage Guide](NOTEBOOKLM_USAGE.md) - Detailed usage instructions
+- [NotebookLM Usage Guide](research/integration/NOTEBOOKLM_USAGE.md) - Detailed usage instructions
 - [NotebookLM Setup Guide](NOTEBOOKLM_SETUP_GUIDE.md) - General setup guide
 - [YouTube Videos Setup Guide](YOUTUBE_VIDEOS_SETUP.md) - YouTube videos setup
 - [External Resources Documentation](EXTERNAL_RESOURCES.md) - External resources tracking

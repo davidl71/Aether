@@ -479,4 +479,4 @@ Legacy systems will continue to exist alongside modern systems, and understandin
 - [FPGA HFT Frameworks](FPGA_HFT_FRAMEWORKS.md) - Hardware acceleration for trading
 - [Trading Infrastructure](TRADING_INFRASTRUCTURE.md) - Trading system architecture
 - [API Documentation Index](API_DOCUMENTATION_INDEX.md) - External APIs and resources
-- [Security Vulnerabilities Review](SECURITY_VULNERABILITIES_REVIEW.md) - Security considerations
+- [Security Vulnerabilities Review](research/analysis/SECURITY_VULNERABILITIES_REVIEW.md) - Security considerations

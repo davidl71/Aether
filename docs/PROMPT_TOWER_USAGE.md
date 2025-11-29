@@ -492,8 +492,8 @@ By combining Prompt Tower with your existing documentation (`@docs`), coding sta
 
 ## See Also
 
-- [CURSOR_SETUP.md](CURSOR_SETUP.md) - Complete Cursor IDE setup
+- [CURSOR_SETUP.md](research/integration/CURSOR_SETUP.md) - Complete Cursor IDE setup
 - [CURSOR_RECOMMENDATIONS.md](CURSOR_RECOMMENDATIONS.md) - Extension recommendations
-- [CURSOR_DOCS_USAGE.md](CURSOR_DOCS_USAGE.md) - Using @docs feature
+- [CURSOR_DOCS_USAGE.md](research/integration/CURSOR_DOCS_USAGE.md) - Using @docs feature
 - [CURSOR_AI_TUTORIAL.md](CURSOR_AI_TUTORIAL.md) - Cursor AI best practices
 - [.cursorrules](../.cursorrules) - AI assistant guidelines

@@ -238,10 +238,10 @@ The AI will:
 ## See Also
 
 - [YouTube Videos Documentation](YOUTUBE_VIDEOS.md) - YouTube videos tracking
-- [NotebookLM Usage Guide](NOTEBOOKLM_USAGE.md) - Detailed NotebookLM usage instructions
+- [NotebookLM Usage Guide](research/integration/NOTEBOOKLM_USAGE.md) - Detailed NotebookLM usage instructions
 - [NotebookLM Setup Guide](NOTEBOOKLM_SETUP_GUIDE.md) - Setting up NotebookLM with repository documentation
 - [Documentation Index](DOCUMENTATION_INDEX.md) - Complete documentation index
-- [EClient EWrapper Architecture](ECLIENT_EWRAPPER_ARCHITECTURE.md) - TWS API architecture documentation
+- [EClient EWrapper Architecture](research/learnings/ECLIENT_EWRAPPER_ARCHITECTURE.md) - TWS API architecture documentation
 
 ## Notes
 

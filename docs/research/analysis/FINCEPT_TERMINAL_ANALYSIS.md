@@ -381,8 +381,8 @@ FinceptTerminal is an open-source financial intelligence platform offering CFA-l
 
 - [Open Trading Platform Analysis](OPEN_TRADING_PLATFORM_ANALYSIS.md) - Microservices architecture comparison
 - [StockSharp Analysis](STOCKSHARP_ANALYSIS.md) - Trading platform patterns
-- [Ticker TUI Analysis](TICKER_TUI_ANALYSIS.md) - Terminal UI comparison
-- [API Documentation Index](API_DOCUMENTATION_INDEX.md) - Complete API reference
+- [Ticker TUI Analysis](../../TICKER_TUI_ANALYSIS.md) - Terminal UI comparison
+- [API Documentation Index](../../API_DOCUMENTATION_INDEX.md) - Complete API reference
 
 ---
 

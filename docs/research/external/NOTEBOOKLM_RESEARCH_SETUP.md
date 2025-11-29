@@ -212,6 +212,6 @@ The AI will:
 ## See Also
 
 - **[NOTEBOOKLM_OPTIMIZATION_GUIDE.md](NOTEBOOKLM_OPTIMIZATION_GUIDE.md)** - Detailed optimization strategies
-- **[NOTEBOOKLM_USAGE.md](../NOTEBOOKLM_USAGE.md)** - Complete NotebookLM usage guide
-- **[RESEARCH_INDEX.md](../RESEARCH_INDEX.md)** - Master research index
-- **[MCP_SERVERS.md](../MCP_SERVERS.md)** - MCP server configuration
+- **[NOTEBOOKLM_USAGE.md](../../research/integration/NOTEBOOKLM_USAGE.md)** - Complete NotebookLM usage guide
+- **[RESEARCH_INDEX.md](../../research/../RESEARCH_INDEX.md)** - Master research index
+- **[MCP_SERVERS.md](../../research/integration/MCP_SERVERS.md)** - MCP server configuration

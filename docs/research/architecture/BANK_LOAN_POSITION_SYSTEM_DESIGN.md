@@ -403,6 +403,6 @@ TEST_CASE("LoanPosition - SHIR Rate Calculation") {
 
 ## References
 
-- [Investment Strategy Framework](../docs/INVESTMENT_STRATEGY_FRAMEWORK.md)
-- [Trading Economics API Research](../docs/RESEARCH_TRADING_ECONOMICS_API.md)
-- [Israeli Broker Position Import](../docs/ISRAELI_BROKER_POSITION_IMPORT.md)
+- [Investment Strategy Framework](../../platform/INVESTMENT_STRATEGY_FRAMEWORK.md)
+- [Trading Economics API Research](../../research/external/RESEARCH_TRADING_ECONOMICS_API.md)
+- [Israeli Broker Position Import](../../../docs/ISRAELI_BROKER_POSITION_IMPORT.md)

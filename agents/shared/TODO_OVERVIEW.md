@@ -59,4 +59,12 @@
 | CI-4 | Document agent environment and system specifications | shared | pending |
 | CI-5 | Test parallel agent CI/CD workflow | shared | pending |
 
+**Parallel Execution Tasks (2025-11-29):** Security and investigation tasks running in parallel. See `docs/PARALLEL_EXECUTION_PLAN.md` for coordination details.
+
+| TODO ID | Description | Owner Agent | Status |
+|---------|-------------|-------------|--------|
+| T-20251129155002 | Set up environment variable configuration | security/infrastructure | in_progress |
+| T-20251129155003 | Write security tests | security/infrastructure | in_progress |
+| T-20251129180920-1 | Investigate Exarp script discovery mechanism | investigation/automation | in_progress |
+
 Update this table as tasks progress to keep all agents aligned.

@@ -280,8 +280,8 @@ lean live --brokerage InteractiveBrokers
 
 ## References
 
-- [LEAN Setup Guide](docs/LEAN_SETUP.md)
-- [LEAN Broker Adapters](docs/LEAN_BROKER_ADAPTERS.md)
-- [LEAN Strategy Architecture](docs/LEAN_STRATEGY_ARCHITECTURE.md)
-- [LEAN IBKR Setup](docs/LEAN_IBKR_SETUP.md)
-- [LEAN Alpaca Setup](docs/LEAN_ALPACA_SETUP.md)
+- [LEAN Setup Guide](LEAN_SETUP.md)
+- [LEAN Broker Adapters](LEAN_BROKER_ADAPTERS.md)
+- [LEAN Strategy Architecture](../../LEAN_STRATEGY_ARCHITECTURE.md)
+- [LEAN IBKR Setup](LEAN_IBKR_SETUP.md)
+- [LEAN Alpaca Setup](LEAN_ALPACA_SETUP.md)

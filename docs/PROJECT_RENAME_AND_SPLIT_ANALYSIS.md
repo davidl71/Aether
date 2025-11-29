@@ -472,7 +472,7 @@ This platform provides:
 ### Box Spread Strategy (Synthetic Financing)
 - Automated box spread identification and analysis
 - Risk-based position sizing
-- [Link to box-spread strategy docs](docs/strategies/box-spread/)
+- [Link to box-spread strategy docs](strategies/box-spread)
 
 ### Futures Strategy (Implied Financing)
 - [Future implementation]

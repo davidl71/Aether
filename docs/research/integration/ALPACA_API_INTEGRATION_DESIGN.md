@@ -435,8 +435,8 @@ void AlpacaAdapter::handle_error(int status_code, const json& error) {
 - [Alpaca API Documentation](https://alpaca.markets/docs/api-documentation/)
 - [Alpaca Options Trading](https://alpaca.markets/docs/api-documentation/how-to/options/)
 - [Alpaca WebSocket API](https://alpaca.markets/docs/api-documentation/streaming/)
-- [Multi-Broker Architecture Design](docs/MULTI_BROKER_ARCHITECTURE_DESIGN.md)
-- [Unified Broker Interface](docs/MULTI_BROKER_ARCHITECTURE_DESIGN.md#unified-broker-interface)
+- [Multi-Broker Architecture Design](../../research/architecture/MULTI_BROKER_ARCHITECTURE_DESIGN.md)
+- [Unified Broker Interface](../../research/architecture/MULTI_BROKER_ARCHITECTURE_DESIGN.md)
 
 ---
 

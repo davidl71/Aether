@@ -423,7 +423,7 @@ Network latency is negligible for AI assistant use case:
 - [OpenAlgo MCP Integration](https://github.com/marketcalls/openalgo/tree/main/mcp)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
 - [Trading Bridge Guide](./mcp/trading_server/CYTHON_BINDINGS_GUIDE.md)
-- [OpenAlgo Integration Patterns](../docs/OPENALGO_INTEGRATION_PATTERNS.md)
+- [OpenAlgo Integration Patterns](research/integration/OPENALGO_INTEGRATION_PATTERNS.md)
 
 ---
 

@@ -1098,7 +1098,7 @@ if scraper.login():
 - [Selenium WebDriver](https://www.selenium.dev/documentation/)
 - [Playwright Documentation](https://playwright.dev/python/)
 - [TASE Knowledge Center - Securities & Derivatives](https://www.tase.co.il/en/content/knowledge_center/securities_derivatives)
-- [Portfolio Greeks System](docs/PORTFOLIO_GREEKS_SYSTEM.md)
+- [Portfolio Greeks System](research/architecture/PORTFOLIO_GREEKS_SYSTEM.md)
 
 ---
 

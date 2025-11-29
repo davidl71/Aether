@@ -238,7 +238,7 @@ If you prefer to avoid extension overhead:
 
 ✅ **Tabnine has been installed and configured!**
 
-See [TABNINE_SETUP.md](TABNINE_SETUP.md) for:
+See [TABNINE_SETUP.md](../../TABNINE_SETUP.md) for:
 
 - Installation verification
 - Configuration details

@@ -497,5 +497,5 @@ void copy_data(void* dest, const void* src, size_t size) ATTR_NONNULL(1, 2);
 ## Related Documentation
 
 - [STATIC_ANALYSIS.md](STATIC_ANALYSIS.md) - Overview of static analysis tools used in this project
-- [AI_FRIENDLY_CODE.md](AI_FRIENDLY_CODE.md) - Best practices for writing AI-friendly code
-- [COMMON_PATTERNS.md](COMMON_PATTERNS.md) - Common coding patterns used in this codebase
+- [AI_FRIENDLY_CODE.md](../../AI_FRIENDLY_CODE.md) - Best practices for writing AI-friendly code
+- [COMMON_PATTERNS.md](../../COMMON_PATTERNS.md) - Common coding patterns used in this codebase

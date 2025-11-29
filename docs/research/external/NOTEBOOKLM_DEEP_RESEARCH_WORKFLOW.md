@@ -347,7 +347,7 @@ Update `docs/research/external/CME_RESEARCH.md` with synthesis section.
 
 - **[NOTEBOOKLM_RESEARCH_SETUP.md](NOTEBOOKLM_RESEARCH_SETUP.md)** - Initial setup guide
 - **[NOTEBOOKLM_OPTIMIZATION_GUIDE.md](NOTEBOOKLM_OPTIMIZATION_GUIDE.md)** - Optimization strategies
-- **[RESEARCH_INDEX.md](../RESEARCH_INDEX.md)** - Master research index
+- **[RESEARCH_INDEX.md](../../research/../RESEARCH_INDEX.md)** - Master research index
 
 ---
 

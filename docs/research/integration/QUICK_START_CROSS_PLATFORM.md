@@ -178,6 +178,6 @@ If auto-detection doesn't work, edit `.vscode/settings.json.user` manually:
 
 ## Related Documentation
 
-- [Automated Setup Guide](AUTOMATED_SETUP.md) - Detailed script documentation
+- [Automated Setup Guide](../../AUTOMATED_SETUP.md) - Detailed script documentation
 - [Cross-Platform Setup](CROSS_PLATFORM_SETUP.md) - Manual setup guide
-- [Platform-Specific Settings](PLATFORM_SPECIFIC_SETTINGS.md) - Settings reference
+- [Platform-Specific Settings](../../PLATFORM_SPECIFIC_SETTINGS.md) - Settings reference

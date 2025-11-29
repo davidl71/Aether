@@ -14,7 +14,7 @@
       - shfmt
       - clang-format
     brew_casks:
-      - iterm2
+      - iterm2  # macOS only - not required on Linux/Windows
   roles:
     - role: common
       tags: ["global", "common"]

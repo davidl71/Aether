@@ -7,8 +7,8 @@
 This is a quick reference guide for the most commonly used TWS API methods. For detailed documentation, see:
 
 - [TWS API Documentation](https://interactivebrokers.github.io/tws-api/)
-- [EClient and EWrapper Architecture](../ECLIENT_EWRAPPER_ARCHITECTURE.md)
-- [TWS Integration Status](../TWS_INTEGRATION_STATUS.md)
+- [EClient and EWrapper Architecture](../research/learnings/ECLIENT_EWRAPPER_ARCHITECTURE.md)
+- [TWS Integration Status](../research/integration/TWS_INTEGRATION_STATUS.md)
 
 ---
 
@@ -389,6 +389,6 @@ class MyWrapper : public DefaultEWrapper {
 ## References
 
 - [TWS API Documentation](https://interactivebrokers.github.io/tws-api/)
-- [EClient and EWrapper Architecture](../ECLIENT_EWRAPPER_ARCHITECTURE.md)
-- [TWS Integration Status](../TWS_INTEGRATION_STATUS.md)
+- [EClient and EWrapper Architecture](../research/learnings/ECLIENT_EWRAPPER_ARCHITECTURE.md)
+- [TWS Integration Status](../research/integration/TWS_INTEGRATION_STATUS.md)
 - [IBKR Campus: EClient and EWrapper](https://www.interactivebrokers.com/campus/ibkr-quant-news/the-eclient-and-ewrapper-api-classes/)

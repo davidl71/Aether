@@ -371,7 +371,7 @@ Configure in `.vscode/settings.json`:
 - [CMake Tools Extension Docs](https://github.com/microsoft/vscode-cmake-tools)
 - [CMake Language Support](https://marketplace.visualstudio.com/items?itemName=twxs.cmake)
 - [Project CMakePresets.json](../CMakePresets.json)
-- [Cursor Setup Guide](./CURSOR_SETUP.md)
+- [Cursor Setup Guide](research/integration/CURSOR_SETUP.md)
 
 ---
 

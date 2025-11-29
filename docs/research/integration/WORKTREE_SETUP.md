@@ -226,6 +226,6 @@ git worktree remove ../ci-build
 
 ## See Also
 
-- [README.md](../README.md) - Main project documentation
+- [README.md](../../../README.md) - Main project documentation
 - [QUICK_START.md](QUICK_START.md) - Quick start guide
-- [TWS_BUILD_COMPLETE.md](TWS_BUILD_COMPLETE.md) - TWS API build documentation
+- [TWS_BUILD_COMPLETE.md](../../TWS_BUILD_COMPLETE.md) - TWS API build documentation

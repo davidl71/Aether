@@ -274,6 +274,6 @@ for header, packet in reader:
 
 ## Related Documentation
 
-- [TWS Integration Status](TWS_INTEGRATION_STATUS.md)
+- [TWS Integration Status](research/integration/TWS_INTEGRATION_STATUS.md)
 - [Configuration Guide](CONFIGURATION.md)
 - [Troubleshooting Guide](TROUBLESHOOTING.md)

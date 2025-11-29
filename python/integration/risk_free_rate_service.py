@@ -15,6 +15,17 @@ from typing import Dict, List, Optional, Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from pathlib import Path
+import sys
+
+# Add project root to path for security module
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from python.services.security_integration_helper import (
+    add_security_to_app,
+    add_security_headers_middleware
+)
 
 from .risk_free_rate_extractor import (
     RiskFreeRateExtractor,
@@ -31,14 +42,9 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Risk-Free Rate Service", version="1.0.0")
 
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Add security components
+security_components = add_security_to_app(app, project_root=project_root)
+add_security_headers_middleware(app)
 
 # Initialize clients
 extractor = RiskFreeRateExtractor(min_liquidity_score=50.0)

@@ -368,9 +368,9 @@ tasks.md is a privacy-focused task management application that uses plain Markdo
 
 ## Related Documentation
 
-- [Agentic Tools Usage](AGENTIC_TOOLS_USAGE.md) - Todo2 MCP system guide
+- [Agentic Tools Usage](../../AGENTIC_TOOLS_USAGE.md) - Todo2 MCP system guide
 - [Coordination Guidelines](agents/shared/COORDINATION.md) - Shared TODO table
-- [API Documentation Index](API_DOCUMENTATION_INDEX.md) - Complete API reference
+- [API Documentation Index](../../API_DOCUMENTATION_INDEX.md) - Complete API reference
 
 ---
 

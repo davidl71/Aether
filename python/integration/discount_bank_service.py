@@ -28,6 +28,17 @@ from collections import defaultdict
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from pathlib import Path
+import sys
+
+# Add project root to path for security module
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from python.services.security_integration_helper import (
+    add_security_to_app,
+    add_security_headers_middleware
+)
 
 
 class BalanceResponse(BaseModel):
@@ -652,13 +663,10 @@ def _read_balance_from_file(file_path: Path) -> Dict[str, Any]:
 
 
 app = FastAPI(title="Discount Bank Service")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+# Add security components
+security_components = add_security_to_app(app, project_root=project_root)
+add_security_headers_middleware(app)
 
 
 @app.get("/api/health")

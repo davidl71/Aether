@@ -282,10 +282,10 @@ Useful if:
 
 ## See Also
 
-- [NotebookLM Usage Guide](NOTEBOOKLM_USAGE.md) - Detailed usage instructions
+- [NotebookLM Usage Guide](research/integration/NOTEBOOKLM_USAGE.md) - Detailed usage instructions
 - [NotebookLM Setup Guide](NOTEBOOKLM_SETUP_GUIDE.md) - Setup instructions
 - [NotebookLM Status](NOTEBOOKLM_STATUS.md) - Current notebook status
-- [MCP Servers Configuration](MCP_SERVERS.md) - MCP server setup
+- [MCP Servers Configuration](research/integration/MCP_SERVERS.md) - MCP server setup
 
 ## Quick Reference
 

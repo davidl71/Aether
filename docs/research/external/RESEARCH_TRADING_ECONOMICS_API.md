@@ -313,7 +313,7 @@ def should_rebalance(current_cpi, last_cpi, threshold=0.02):
 - [Trading Economics API Documentation](https://api.tradingeconomics.com/)
 - [Trading Economics Python Package (PyPI)](https://pypi.org/project/tradingeconomics/)
 - [Israeli CPI Data (Trading Economics)](https://tradingeconomics.com/israel/consumer-price-index-cpi)
-- [Investment Strategy Framework](../docs/INVESTMENT_STRATEGY_FRAMEWORK.md)
+- [Investment Strategy Framework](../../platform/INVESTMENT_STRATEGY_FRAMEWORK.md)
 
 ## Next Steps
 

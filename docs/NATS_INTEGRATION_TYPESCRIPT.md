@@ -397,5 +397,5 @@ export const NATS_CONFIG = {
 ## References
 
 - [NATS TypeScript Client](https://github.com/nats-io/nats.deno)
-- [NATS Topics Registry](../NATS_TOPICS_REGISTRY.md)
-- [Message Schemas](../message_schemas/README.md)
+- [NATS Topics Registry](research/../NATS_TOPICS_REGISTRY.md)
+- [Message Schemas](research/../message_schemas/README.md)

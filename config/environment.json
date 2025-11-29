@@ -1,0 +1,55 @@
+{
+  "//": "Environment variable configuration for security and application settings",
+  "//": "Values can be overridden by actual environment variables (env vars take precedence)",
+  
+  "security": {
+    "rate_limit_per_minute": 60,
+    "rate_limit_per_second": 10,
+    "api_key": null,
+    "require_auth": false,
+    "allowed_origins": [
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "http://127.0.0.1:3000",
+      "http://127.0.0.1:5173"
+    ]
+  },
+  
+  "api": {
+    "api_key": null,
+    "require_auth": false
+  },
+  
+  "services": {
+    "web_port": 5173,
+    "alpaca_port": 8000,
+    "ib_port": 8002,
+    "tradestation_port": 8001,
+    "discount_bank_port": 8003,
+    "risk_free_rate_port": 8004,
+    "tastytrade_port": 8005,
+    "jupyterlab_port": 8888,
+    "nats_port": 4222,
+    "nats_http_port": 8222,
+    "nats_websocket_port": 8081,
+    "rust_backend_rest_port": 8080,
+    "rust_backend_grpc_port": 50051,
+    "ib_gateway_port": 5000
+  },
+  
+  "logging": {
+    "log_level": "info",
+    "log_to_console": true,
+    "log_file": "logs/ib_box_spread.log"
+  },
+  
+  "//": "Environment variable names (for reference)",
+  "env_var_mapping": {
+    "RATE_LIMIT_PER_MINUTE": "security.rate_limit_per_minute",
+    "RATE_LIMIT_PER_SECOND": "security.rate_limit_per_second",
+    "API_KEY": "security.api_key",
+    "REQUIRE_AUTH": "security.require_auth",
+    "LOG_LEVEL": "logging.log_level",
+    "LOG_TO_CONSOLE": "logging.log_to_console"
+  }
+}

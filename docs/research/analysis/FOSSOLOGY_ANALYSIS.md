@@ -315,8 +315,8 @@ scancode --license --copyright --info -clp --json-pp build/scancode.json .
 ## Related Documentation
 
 - [Static Analysis](STATIC_ANALYSIS.md) - Code quality tools
-- [Third-Party Assets](native/third_party/README.md) - Dependency management
-- [API Documentation Index](API_DOCUMENTATION_INDEX.md) - Complete API reference
+- [Third-Party Assets](../../platform/README.md) - Dependency management
+- [API Documentation Index](../../API_DOCUMENTATION_INDEX.md) - Complete API reference
 
 ---
 

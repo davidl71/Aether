@@ -290,6 +290,6 @@ Since task and memory data is stored in `.agentic-tools-mcp/`, you can:
 ## See Also
 
 - [AGENTIC_TOOLS_WORKFLOW_EXAMPLES.md](AGENTIC_TOOLS_WORKFLOW_EXAMPLES.md) - **Practical workflow examples for this project**
-- [MCP_SERVERS.md](MCP_SERVERS.md) - Complete MCP server documentation
+- [MCP_SERVERS.md](research/integration/MCP_SERVERS.md) - Complete MCP server documentation
 - [Agentic Tools MCP Repository](https://github.com/Pimzino/agentic-tools-mcp) - Official documentation
 - [.cursorrules](../.cursorrules) - AI assistant guidelines

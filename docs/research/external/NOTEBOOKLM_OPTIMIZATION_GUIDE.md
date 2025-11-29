@@ -312,8 +312,8 @@ Before creating notebooks:
 ## See Also
 
 - **[NOTEBOOKLM_RESEARCH_SETUP.md](NOTEBOOKLM_RESEARCH_SETUP.md)** - Initial setup guide
-- **[NOTEBOOKLM_USAGE.md](../NOTEBOOKLM_USAGE.md)** - Complete usage guide
-- **[RESEARCH_INDEX.md](../RESEARCH_INDEX.md)** - Master research index
+- **[NOTEBOOKLM_USAGE.md](../../research/integration/NOTEBOOKLM_USAGE.md)** - Complete usage guide
+- **[RESEARCH_INDEX.md](../../research/../RESEARCH_INDEX.md)** - Master research index
 
 ---
 

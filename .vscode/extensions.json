@@ -49,9 +49,8 @@
     "editorconfig.editorconfig",
     "redhat.vscode-yaml",
 
-    // Terminal Integration (GLOBAL - macOS only)
+    // Terminal Integration (GLOBAL)
     "tyriar.vscode-shell-launcher", // Better shell selection
-    "tlehman.execute-in-iterm2", // Execute tasks in iTerm2 (macOS only)
 
     // Git (GLOBAL)
     "eamodio.gitlens",

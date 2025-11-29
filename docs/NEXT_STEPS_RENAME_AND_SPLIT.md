@@ -267,10 +267,10 @@ Box spreads are one strategy component of the Synthetic Financing Platform, used
 
 ## Documentation
 
-- [Comprehensive Guide](BOX_SPREAD_COMPREHENSIVE_GUIDE.md)
-- [BAG Implementation](BOX_SPREAD_BAG_IMPLEMENTATION.md)
-- [Data Feeds](DATA_FEEDS_BOX_SPREADS.md)
-- [Resources Index](BOX_SPREAD_RESOURCES_INDEX.md)
+- [Comprehensive Guide](strategies/box-spread/BOX_SPREAD_COMPREHENSIVE_GUIDE.md)
+- [BAG Implementation](strategies/box-spread/BOX_SPREAD_BAG_IMPLEMENTATION.md)
+- [Data Feeds](strategies/box-spread/DATA_FEEDS_BOX_SPREADS.md)
+- [Resources Index](strategies/box-spread/BOX_SPREAD_RESOURCES_INDEX.md)
 
 ## Integration with Platform
 
@@ -281,8 +281,8 @@ Box spreads are one strategy component of the Synthetic Financing Platform, used
 
 ## See Also
 
-- [Platform Overview](../../platform/README.md)
-- [Investment Strategy Framework](../../platform/INVESTMENT_STRATEGY_FRAMEWORK.md)
+- [Platform Overview](research/architecture/../../platform/README.md)
+- [Investment Strategy Framework](research/architecture/../../platform/INVESTMENT_STRATEGY_FRAMEWORK.md)
 ```
 
 ### Platform Overview README Template
@@ -303,17 +303,17 @@ Box spreads are one strategy component of the Synthetic Financing Platform, used
 
 ## Strategy Modules
 
-- [Box Spread Strategy](../strategies/box-spread/README.md) - 7-10% spare cash allocation
+- [Box Spread Strategy](research/../strategies/box-spread/README.md) - 7-10% spare cash allocation
 - Futures Strategy (planned)
 - Bonds Strategy (planned)
 - Loans Strategy (planned)
 
 ## Core Documentation
 
-- [Investment Strategy Framework](INVESTMENT_STRATEGY_FRAMEWORK.md)
-- [Primary Goals and Requirements](PRIMARY_GOALS_AND_REQUIREMENTS.md)
-- [Synthetic Financing Architecture](SYNTHETIC_FINANCING_ARCHITECTURE.md)
-- [Multi-Account Aggregation Design](MULTI_ACCOUNT_AGGREGATION_DESIGN.md)
+- [Investment Strategy Framework](platform/INVESTMENT_STRATEGY_FRAMEWORK.md)
+- [Primary Goals and Requirements](platform/PRIMARY_GOALS_AND_REQUIREMENTS.md)
+- [Synthetic Financing Architecture](platform/SYNTHETIC_FINANCING_ARCHITECTURE.md)
+- [Multi-Account Aggregation Design](platform/MULTI_ACCOUNT_AGGREGATION_DESIGN.md)
 ```
 
 ---

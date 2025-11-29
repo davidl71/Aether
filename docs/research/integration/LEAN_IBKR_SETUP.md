@@ -248,7 +248,7 @@ The box spread strategy uses LEAN's IBKR adapter automatically when configured. 
 ## References
 
 - [LEAN IBKR Integration Guide](https://www.quantconnect.com/docs/v2/lean-cli/live-trading/brokerages/interactive-brokers)
-- [LEAN Broker Adapters Documentation](docs/LEAN_BROKER_ADAPTERS.md)
+- [LEAN Broker Adapters Documentation](LEAN_BROKER_ADAPTERS.md)
 - [TWS API Documentation](https://interactivebrokers.github.io/tws-api/)
 
 ---

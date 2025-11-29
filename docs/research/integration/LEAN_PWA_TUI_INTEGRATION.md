@@ -427,6 +427,6 @@ Both backends implement the same API contract (`agents/shared/API_CONTRACT.md`),
 ## References
 
 - [LEAN REST API Wrapper Design](./LEAN_REST_API_WRAPPER_DESIGN.md)
-- [LEAN REST API Wrapper Implementation](../python/lean_integration/README_API_WRAPPER.md)
-- [API Contract](../agents/shared/API_CONTRACT.md)
-- [PWA README](../web/README.md)
+- [LEAN REST API Wrapper Implementation](../../../python/lean_integration/README_API_WRAPPER.md)
+- [API Contract](../../../agents/shared/API_CONTRACT.md)
+- [PWA README](../../../web/README.md)

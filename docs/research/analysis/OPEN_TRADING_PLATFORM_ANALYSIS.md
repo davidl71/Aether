@@ -602,9 +602,9 @@ We could improve order state tracking:
 ## Related Documentation
 
 - [StockSharp Analysis](STOCKSHARP_ANALYSIS.md) - C# trading platform comparison
-- [Ticker TUI Analysis](TICKER_TUI_ANALYSIS.md) - Terminal UI comparison
-- [API Documentation Index](API_DOCUMENTATION_INDEX.md) - Complete API reference
-- [Codebase Architecture](CODEBASE_ARCHITECTURE.md) - Current project architecture
+- [Ticker TUI Analysis](../../TICKER_TUI_ANALYSIS.md) - Terminal UI comparison
+- [API Documentation Index](../../API_DOCUMENTATION_INDEX.md) - Complete API reference
+- [Codebase Architecture](../../research/architecture/CODEBASE_ARCHITECTURE.md) - Current project architecture
 
 ---
 
