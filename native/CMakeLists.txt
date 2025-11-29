@@ -579,6 +579,7 @@ if(_build_native_cli)
         src/ib_box_spread.cpp
         src/tws_client.cpp
         src/rate_limiter.cpp
+        src/path_validator.cpp
         src/config_manager.cpp
         src/nats_client.cpp
         src/pcap_capture.cpp
@@ -588,6 +589,7 @@ if(_build_native_cli)
     set(HEADERS
         include/tws_client.h
         include/rate_limiter.h
+        include/path_validator.h
         include/config_manager.h
         include/pcap_capture.h
         include/convexity_calculator.h
@@ -743,6 +745,7 @@ if(ENABLE_TUI)
         src/tui_config.cpp
         src/tui_data.cpp
         src/types_utils.cpp
+        src/path_validator.cpp
     )
 
     set(TUI_HEADERS
@@ -751,6 +754,7 @@ if(ENABLE_TUI)
         include/tui_converter.h
         include/tui_config.h
         include/tui_breadcrumb.h
+        include/path_validator.h
     )
 
     add_executable(ib_box_spread_tui ${TUI_SOURCES} ${TUI_HEADERS})

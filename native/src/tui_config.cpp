@@ -1,12 +1,23 @@
 // tui_config.cpp - TUI configuration implementation
 #include "tui_config.h"
+#include "path_validator.h"
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
+#include <filesystem>
 
 namespace tui {
 
 void TUIConfig::SaveToFile(const std::string& path) const {
+  // Validate path before file operations
+  auto validator = box_spread::security::create_default_path_validator();
+  auto validated_path = validator.validate_path(path);
+  
+  if (!validated_path) {
+    throw std::runtime_error("Path validation failed: " + path + 
+                           " (path outside allowed boundaries or contains traversal sequences)");
+  }
+  
   nlohmann::json j;
   j["provider_type"] = provider_type;
   j["rest_endpoint"] = rest_endpoint;
@@ -50,17 +61,28 @@ void TUIConfig::SaveToFile(const std::string& path) const {
   j["use_ta_lib"] = use_ta_lib;
   j["ta_lib_indicators"] = ta_lib_indicators;
 
-  std::ofstream file(path);
+  // Use validated path
+  std::ofstream file(validated_path->string());
   if (!file.is_open()) {
-    throw std::runtime_error("Failed to open config file for writing: " + path);
+    throw std::runtime_error("Failed to open config file for writing: " + validated_path->string());
   }
   file << j.dump(4) << std::endl;
 }
 
 void TUIConfig::LoadFromFile(const std::string& path) {
-  std::ifstream file(path);
+  // Validate path before file operations
+  auto validator = box_spread::security::create_default_path_validator();
+  auto validated_path = validator.validate_path(path);
+  
+  if (!validated_path) {
+    spdlog::warn("Path validation failed for config file: {} (using defaults)", path);
+    *this = LoadDefault();
+    return;
+  }
+  
+  std::ifstream file(validated_path->string());
   if (!file.is_open()) {
-    spdlog::warn("Config file not found: {}, using defaults", path);
+    spdlog::warn("Config file not found: {}, using defaults", validated_path->string());
     *this = LoadDefault();
     return;
   }
