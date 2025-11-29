@@ -1,0 +1,30 @@
+# Ignore generated files
+docs/**/node_modules/**
+docs/**/build/**
+docs/**/dist/**
+
+# Ignore third-party documentation
+docs/third_party/**
+
+# Ignore large generated documentation files
+docs/API_DOCUMENTATION_INDEX.md
+
+# Ignore changelog files (often have different formatting)
+CHANGELOG.md
+**/CHANGELOG.md
+
+# Ignore summary/status files that may have different formatting
+docs/**/*SUMMARY*.md
+docs/**/*STATUS*.md
+docs/**/*PROGRESS*.md
+docs/**/*COMPLETE*.md
+
+# Ignore task/analysis files
+docs/**/*TASK*.md
+docs/**/*ANALYSIS*.md
+
+# Ignore session handoff files
+docs/SESSION_HANDOFF*.md
+
+# Ignore scorecard files
+docs/SCORECARD*.md

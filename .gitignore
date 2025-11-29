@@ -93,6 +93,8 @@ native/third_party/IntelRDFPMathLib20U2/**/*.a
 /agents/backend-mock/target/
 /agents/backend-data/target/
 /web/node_modules/
+# Root-level node_modules (for markdownlint-cli2)
+node_modules/
 worktrees/
 
 # Test results

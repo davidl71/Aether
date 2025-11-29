@@ -32,6 +32,26 @@ jobs:
           chmod +x scripts/validate_docs_format.py
           ./scripts/validate_docs_format.py
 
+  validate-markdownlint:
+    name: Validate Markdown Format (markdownlint)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint markdown files
+        run: npm run lint:docs:ci
+        # Strict mode: Fail CI on markdown format errors
+
   validate-links:
     name: Validate Documentation Links
     runs-on: ubuntu-latest
