@@ -8254,6 +8254,15 @@
       },
       "format_errors": 220,
       "stale_files": 15
+    },
+    {
+      "timestamp": "2025-11-29T20:00:48.935680",
+      "health_score": 0,
+      "link_validation": {
+        "broken": 24
+      },
+      "format_errors": 220,
+      "stale_files": 15
     }
   ]
 }
