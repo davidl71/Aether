@@ -18,9 +18,16 @@ Daily automation script with documentation link fixing is complete and ready for
 **File**: `scripts/daily_automation_with_link_fixing.sh`
 
 **Tasks**:
-1. Fix documentation links (apply mode)
-2. Validate documentation format
-3. Sync shared TODO table (apply mode)
+
+**Phase 1: Exarp Checks** (via wrapper script)
+1. Documentation health check
+2. Todo2 alignment analysis
+3. Duplicate task detection
+
+**Phase 2: Documentation Automation**
+4. Fix documentation links (apply mode)
+5. Validate documentation format
+6. Sync shared TODO table (apply mode)
 
 **Features**:
 - Error handling
@@ -154,7 +161,56 @@ jobs:
 
 ## 📊 What Gets Done
 
-### Task 1: Documentation Link Fixing
+### Phase 1: Exarp Checks
+
+#### Task 1: Documentation Health Check
+
+**Action**: Checks documentation health, finds broken links, validates structure
+
+**Mode**: Check only (reports issues)
+
+**Output**: Logs to `/tmp/exarp_automation.log`
+
+**Impact**:
+- Detects documentation issues early
+- Provides health score
+- Identifies broken links and format errors
+
+---
+
+#### Task 2: Todo2 Alignment Analysis
+
+**Action**: Analyzes Todo2 tasks for alignment with project goals
+
+**Mode**: Check only (reports misalignment)
+
+**Output**: Logs to `/tmp/exarp_automation.log`
+
+**Impact**:
+- Ensures tasks align with project goals
+- Identifies misaligned tasks
+- Provides recommendations
+
+---
+
+#### Task 3: Duplicate Task Detection
+
+**Action**: Detects duplicate tasks in Todo2 system
+
+**Mode**: Check only (reports duplicates)
+
+**Output**: Logs to `/tmp/exarp_automation.log`
+
+**Impact**:
+- Identifies duplicate tasks
+- Reduces task clutter
+- Can auto-fix duplicates (optional)
+
+---
+
+### Phase 2: Documentation Automation
+
+#### Task 4: Documentation Link Fixing
 
 **Action**: Automatically fixes broken documentation links
 
@@ -169,7 +225,7 @@ jobs:
 
 ---
 
-### Task 2: Documentation Format Validation
+#### Task 5: Documentation Format Validation
 
 **Action**: Validates API documentation entry format
 
@@ -184,7 +240,7 @@ jobs:
 
 ---
 
-### Task 3: Shared TODO Table Synchronization
+#### Task 6: Shared TODO Table Synchronization
 
 **Action**: Syncs shared TODO table with Todo2
 
@@ -234,6 +290,7 @@ LOG_TODO="$LOG_DIR/todo_sync.log"
 ## 📝 Log Files
 
 ### Location
+- `/tmp/exarp_automation.log` - Exarp checks output (Phase 1)
 - `/tmp/link_fix.log` - Link fixing output
 - `/tmp/format_validation.log` - Format validation output
 - `/tmp/todo_sync.log` - TODO sync output
@@ -373,9 +430,19 @@ cat /tmp/todo_sync.log
 
 ## 📝 Files Created
 
-1. `scripts/daily_automation_with_link_fixing.sh` - Main automation script
-2. `scripts/setup_daily_automation_cron.sh` - Cron setup script
-3. `docs/DAILY_AUTOMATION_SETUP_COMPLETE.md` - This documentation
+1. `scripts/daily_automation_with_link_fixing.sh` - Main automation script (enhanced with Exarp)
+2. `scripts/exarp_daily_automation_wrapper.py` - Exarp wrapper script
+3. `scripts/setup_daily_automation_cron.sh` - Cron setup script
+4. `docs/DAILY_AUTOMATION_SETUP_COMPLETE.md` - This documentation
+5. `docs/EXARP_MCP_TOOLS_USAGE.md` - Exarp MCP tools usage guide
+
+---
+
+## 🔗 Related Documentation
+
+- `docs/EXARP_MCP_TOOLS_USAGE.md` - Complete guide to using Exarp MCP tools
+- `docs/EXARP_SCRIPT_PATH_ISSUE_RESOLVED.md` - Exarp script path issue resolution
+- `docs/EXARP_SCRIPT_PATH_TODO2_PLAN.md` - Todo2 execution plan
 
 ---
 
