@@ -59,12 +59,22 @@
 | CI-4 | Document agent environment and system specifications | shared | pending |
 | CI-5 | Test parallel agent CI/CD workflow | shared | pending |
 
-**Parallel Execution Tasks (2025-11-29):** Security and investigation tasks running in parallel. See `docs/PARALLEL_EXECUTION_PLAN.md` for coordination details.
+**Parallel Execution Tasks V2 (2025-11-29):** 6 high-priority tasks running in parallel across 3 agent groups. See `docs/PARALLEL_EXECUTION_PLAN_V2.md` for coordination details.
 
 | TODO ID | Description | Owner Agent | Status |
 |---------|-------------|-------------|--------|
-| T-20251129155002 | Set up environment variable configuration | security/infrastructure | in_progress |
-| T-20251129155003 | Write security tests | security/infrastructure | in_progress |
-| T-20251129180920-1 | Investigate Exarp script discovery mechanism | investigation/automation | in_progress |
+| T-20251129155001 | Add security to C++ components | Agent 1: Security | in_progress |
+| T-20251129155004 | Create CodeQL workflow | Agent 1: Security | in_progress |
+| T-20251129155005 | Fix failing tests | Agent 2: Testing | in_progress |
+| T-20251129155006 | Increase test coverage to 30% | Agent 2: Testing | in_progress |
+| T-20251129175822-71 | Implement Shared TODO Table Synchronization | Agent 3: Automation | in_progress |
+| T-20251129175822-72 | Implement Automate validate_docs_format | Agent 3: Automation | in_progress |
+
+**Previous Parallel Execution (Completed):**
+| TODO ID | Description | Owner Agent | Status |
+|---------|-------------|-------------|--------|
+| T-20251129155002 | Set up environment variable configuration | security/infrastructure | done |
+| T-20251129155003 | Write security tests | security/infrastructure | done |
+| T-20251129180920-1 | Investigate Exarp script discovery mechanism | investigation/automation | done |
 
 Update this table as tasks progress to keep all agents aligned.
