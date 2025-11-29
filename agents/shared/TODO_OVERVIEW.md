@@ -65,10 +65,10 @@
 |---------|-------------|-------------|--------|
 | T-20251129155001 | Add security to C++ components | Agent 1: Security | review |
 | T-20251129155004 | Create CodeQL workflow | Agent 1: Security | review |
-| T-20251129155005 | Fix failing tests | Agent 2: Testing | in_progress |
-| T-20251129155006 | Increase test coverage to 30% | Agent 2: Testing | in_progress |
-| T-20251129175822-71 | Implement Shared TODO Table Synchronization | Agent 3: Automation | in_progress |
-| T-20251129175822-72 | Implement Automate validate_docs_format | Agent 3: Automation | in_progress |
+| T-20251129155005 | Fix failing tests | Agent 2: Testing | review |
+| T-20251129155006 | Increase test coverage to 30% | Agent 2: Testing | review |
+| T-20251129175822-71 | Implement Shared TODO Table Synchronization | Agent 3: Automation | review |
+| T-20251129175822-72 | Implement Automate validate_docs_format | Agent 3: Automation | review |
 
 **Previous Parallel Execution (Completed):**
 | TODO ID | Description | Owner Agent | Status |
