@@ -22,6 +22,7 @@ set(TEST_SOURCES
     eigen_integration_test.cpp
     test_convexity_calculator.cpp
     test_alpaca_adapter.cpp
+    test_path_validator.cpp
 )
 
 add_executable(box_spread_tests ${TEST_SOURCES})
@@ -97,6 +98,7 @@ endif()
 # (This avoids code duplication)
 target_sources(box_spread_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/native/src/config_manager.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/path_validator.cpp
     ${CMAKE_SOURCE_DIR}/native/src/tws_client.cpp
     ${CMAKE_SOURCE_DIR}/native/src/rate_limiter.cpp
     ${CMAKE_SOURCE_DIR}/native/src/hedge_manager.cpp
