@@ -27,10 +27,12 @@
 
 ```bash
 $ ./scripts/validate_docs_format.py
+
 # Found 48 entries (skipped section headers)
 # Reports format issues
 
 $ ./scripts/validate_docs_links.sh
+
 # Validates all URLs
 # Reports broken links (if any)
 ```
@@ -95,13 +97,17 @@ $ ./scripts/validate_docs_links.sh
 ### Run Validation Manually
 
 ```bash
+
 # Format validation
+
 ./scripts/validate_docs_format.py
 
 # Link validation
+
 ./scripts/validate_docs_links.sh
 
 # Both
+
 ./scripts/validate_docs_format.py && ./scripts/validate_docs_links.sh
 ```
 

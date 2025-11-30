@@ -33,6 +33,7 @@ This document designs a Domain-Specific Language (DSL) for expressing complex re
 ### 1. Collateral Relationships
 
 **Syntax:**
+
 ```python
 collateral(
     source="T-BILL-3M-USD",
@@ -44,6 +45,7 @@ collateral(
 ```
 
 **Semantics:**
+
 - Source asset can be used as collateral for target asset
 - Ratio specifies collateral value (after haircut)
 - Brokers specify where relationship is valid
@@ -52,6 +54,7 @@ collateral(
 ### 2. Financing Relationships
 
 **Syntax:**
+
 ```python
 financing(
     source="BOX-SPREAD-SPX",
@@ -63,6 +66,7 @@ financing(
 ```
 
 **Semantics:**
+
 - Source provides financing for target
 - Rate advantage specifies cost savings
 - Amount constraints limit relationship scope
@@ -70,6 +74,7 @@ financing(
 ### 3. Cross-Currency Relationships
 
 **Syntax:**
+
 ```python
 cross_currency(
     source="USD-CASH",
@@ -81,6 +86,7 @@ cross_currency(
 ```
 
 **Semantics:**
+
 - Source currency can fund target currency position
 - FX rate specifies conversion
 - Hedge requirement flags need for FX hedging
@@ -89,6 +95,7 @@ cross_currency(
 ### 4. Regulatory Relationships
 
 **Syntax:**
+
 ```python
 regulatory(
     source="SPX-OPTIONS",
@@ -100,6 +107,7 @@ regulatory(
 ```
 
 **Semantics:**
+
 - Source and target have margin offset relationship
 - Margin offset specifies reduction percentage
 - Regime specifies margin calculation method
@@ -112,6 +120,7 @@ regulatory(
 ### Relationship Builder
 
 ```python
+
 # python/dsl/relationship_dsl.py
 
 from typing import List, Optional
@@ -323,15 +332,18 @@ relationships = AssetRelationships() \
     )
 
 # Validate
+
 errors = relationships.validate()
 if errors:
     print(f"Validation errors: {errors}")
 
 # Generate C++ code
+
 cpp_code = relationships.to_cpp()
 print(cpp_code)
 
 # Generate graph
+
 graph = relationships.to_graphviz()
 with open("relationships.dot", "w") as f:
     f.write(graph)
@@ -417,6 +429,7 @@ relationships = AssetRelationships() \
 
 ```cpp
 // Generated relationships integrate with AssetRelationshipGraph
+
 #include "asset_relationship.h"
 
 namespace generated {
@@ -438,16 +451,21 @@ void register_relationships(AssetRelationshipGraph& graph) {
 ### Python Integration
 
 ```python
+
 # DSL relationships can be loaded into C++ graph
+
 from box_spread_bindings import AssetRelationshipGraph
 
 relationships = AssetRelationships() \
     .collateral(source="T-BILL", target="SPX-OPTIONS", ratio=0.95)
 
 # Register with C++ graph
+
 graph = AssetRelationshipGraph()
 cpp_code = relationships.to_cpp()
+
 # Execute generated code to register relationships
+
 exec(cpp_code)  # In production, would compile and link
 ```
 

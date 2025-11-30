@@ -288,7 +288,9 @@ fi
 ### Before (Current)
 
 ```bash
+
 # Find Python
+
 PYTHON_CMD=""
 if command -v python3 >/dev/null 2>&1; then
   PYTHON_CMD="python3"
@@ -301,6 +303,7 @@ if [ -z "${PYTHON_CMD}" ]; then
 fi
 
 # Setup venv
+
 VENV_DIR="${PYTHON_DIR}/.venv"
 if [ ! -f "${VENV_DIR}/bin/activate" ]; then
   "${PYTHON_CMD}" -m venv "${VENV_DIR}"
@@ -312,13 +315,17 @@ VENV_PYTHON="${VENV_DIR}/bin/python"
 ### After (Proposed)
 
 ```bash
+
 # Load shared functions
+
 source "${SCRIPTS_DIR}/include/python_utils.sh"
 
 # Find Python
+
 find_python || exit 1
 
 # Setup venv
+
 setup_venv "${PYTHON_DIR}" || exit 1
 ```
 

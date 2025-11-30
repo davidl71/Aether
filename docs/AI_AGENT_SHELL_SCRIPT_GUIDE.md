@@ -32,6 +32,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 SCRIPTS_DIR="${ROOT_DIR}/scripts"
 
 # Load shared utility functions
+
 source "${SCRIPTS_DIR}/include/config.sh"
 source "${SCRIPTS_DIR}/include/python_utils.sh"
 source "${SCRIPTS_DIR}/include/service_utils.sh"
@@ -41,26 +42,34 @@ source "${SCRIPTS_DIR}/include/onepassword.sh"
 ### Pattern 2: Python Setup
 
 ```bash
+
 # Find Python
+
 find_python || exit 1
 
 # Set up virtual environment
+
 setup_venv "${PYTHON_DIR}" || exit 1
 
 # Install packages
+
 install_python_packages "${VENV_PYTHON}" "fastapi" "uvicorn[standard]" || exit 1
 
 # Use venv Python
+
 PYTHON_CMD="${VENV_PYTHON}"
 ```
 
 ### Pattern 3: Port Configuration
 
 ```bash
+
 # Get port from config (with env var override)
+
 PORT=$(config_get_port "alpaca" 8000)
 
 # Check port availability
+
 if ! check_port_with_service "${PYTHON_CMD}" "127.0.0.1" "${PORT}" "ALPACA_SERVICE" "Alpaca"; then
   exit 1
 fi
@@ -69,10 +78,13 @@ fi
 ### Pattern 4: Credential Management
 
 ```bash
+
 # Read from 1Password or environment variable
+
 API_KEY=$(read_credential "${OP_API_KEY_SECRET}" "${API_KEY:-}" || echo "")
 
 # Check for required credentials
+
 if [ -z "${API_KEY}" ]; then
   echo "Error: API key not set" >&2
   exit 1
@@ -180,6 +192,7 @@ __Solution__: Call `find_python` before using `PYTHON_CMD`:
 
 ```bash
 find_python || exit 1
+
 # Now PYTHON_CMD is set
 ```
 
@@ -189,6 +202,7 @@ __Solution__: Call `setup_venv` before using `VENV_PYTHON`:
 
 ```bash
 setup_venv "${PYTHON_DIR}" || exit 1
+
 # Now VENV_PYTHON is set
 ```
 

@@ -127,6 +127,7 @@ This article provides a comprehensive guide to building a multi-threaded stock t
   - **TWS Callback Thread**: EWrapper callbacks (from TWS API)
   - **Order Tracking**: Thread-safe order status updates
   - **Market Data**: Thread-safe option chain updates
+
 - Synchronization via mutexes, atomic flags, and condition variables
 - Rust backend uses Tokio async runtime for concurrent operations
 
@@ -158,6 +159,7 @@ This article provides a comprehensive guide to building a multi-threaded stock t
   - Better CPU utilization
   - Reduced latency for order processing
   - Clearer separation of concerns
+
 - **Considerations:**
   - Current TWS API integration uses callback model (single callback thread)
   - Need to ensure thread safety when accessing TWS client

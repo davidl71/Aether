@@ -26,7 +26,9 @@ Your IBKR Box Spread Generator is **built and tested** but needs TWS API integra
 ### Step 1: Download TWS API ⏳
 
 ```bash
+
 # Visit and download
+
 open https://interactivebrokers.github.io/
 ```
 
@@ -46,7 +48,9 @@ unzip ~/Downloads/twsapi_macunix*.zip -d native/third_party/tws-api/
 ### Step 4: Test Paper Trading ⏳
 
 ```bash
+
 # Port 7497 = Paper Trading
+
 ./build/bin/ib_box_spread --config config/config.json
 ```
 

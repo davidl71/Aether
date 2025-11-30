@@ -37,22 +37,26 @@ Your project is properly configured for Ona:
 ### 1. Open Project in Ona
 
 **Option A: From VS Code/Cursor**
+
 1. Open Command Palette (Cmd+Shift+P / Ctrl+Shift+P)
 2. Type "Gitpod: Open in Gitpod"
 3. Select your repository
 
 **Option B: Direct URL**
+
 ```
 https://gitpod.io/#https://github.com/YOUR_USERNAME/YOUR_REPO
 ```
 
 **Option C: From GitHub**
+
 1. Navigate to your repository
 2. Click the "Ona" button (if browser extension installed)
 
 ### 2. Verify Workspace Startup
 
 When workspace starts, you should see:
+
 - ✅ Automatic dependency installation
 - ✅ VS Code extensions installing
 - ✅ Port forwarding active
@@ -73,6 +77,7 @@ Once workspace is running:
    - Sequential Thinking
 
 3. **Test MCP functionality**:
+
    ```
    Agent: "Scan this file for security issues"
    → Should use Semgrep MCP server
@@ -116,6 +121,7 @@ To run the connectivity test locally:
 ```
 
 This will verify:
+
 - Configuration files exist
 - Syntax is valid
 - Required components are configured
@@ -124,6 +130,7 @@ This will verify:
 ## Configuration Files
 
 ### `.gitpod.yml`
+
 - Workspace configuration
 - Task definitions
 - Port forwarding
@@ -131,11 +138,13 @@ This will verify:
 - Environment variables
 
 ### `.gitpod.Dockerfile`
+
 - Custom Docker image
 - Pre-installed development tools
 - System dependencies
 
 ### `.ona/mcp-config.json`
+
 - MCP server configurations
 - Timeout settings
 - Environment variables

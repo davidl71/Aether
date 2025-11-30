@@ -32,6 +32,8 @@ Comprehensive REST API endpoint specification for iPad app, extending existing R
 ### 1. Account Information
 
 #### Get Account Summary
+
+
 ```
 GET /api/v1/account/summary
 Authorization: Bearer <token>
@@ -51,7 +53,9 @@ Response:
 
 **Implementation**: Extend existing snapshot endpoint or create dedicated account summary endpoint.
 
+
 #### Get Account Positions
+
 ```
 GET /api/v1/account/positions
 Authorization: Bearer <token>
@@ -79,7 +83,9 @@ Response:
 
 ### 2. Strategy Information
 
+
 #### Get Strategy Statistics
+
 ```
 GET /api/v1/strategy/stats
 Authorization: Bearer <token>
@@ -104,9 +110,11 @@ Response:
 
 **Implementation**: New endpoint - aggregate data from QuestDB or strategy runner.
 
+
 ### 3. Historical Data
 
 #### Get Historical PnL
+
 ```
 GET /api/v1/history/pnl
 Authorization: Bearer <token>
@@ -131,9 +139,11 @@ Response:
 
 **Implementation**: Query QuestDB for historical PnL data.
 
+
 ### 4. Events/Notifications
 
 #### Get Events Feed
+
 ```
 GET /api/v1/events
 Authorization: Bearer <token>
@@ -164,11 +174,13 @@ Response:
 }
 ```
 
+
 **Implementation**: Query from alerts/notifications system or NATS message history.
 
 ### 5. Enhanced Order Management
 
 #### Get Recent Orders
+
 ```
 GET /api/v1/orders/recent
 Authorization: Bearer <token>
@@ -239,12 +251,15 @@ Response:
 
 - Real-time snapshot updates
 - Order status changes
+
 - Strategy status changes
 - Alert notifications
 
 ## Request/Response Schemas
 
 ### Common Request Headers
+
+
 ```
 Authorization: Bearer <token>
 Content-Type: application/json
@@ -252,8 +267,10 @@ Accept: application/json
 ```
 
 ### Common Response Format
+
 ```json
 {
+
   "status": "ok" | "error",
   "data": { ... },
   "message": "Success message",
@@ -262,32 +279,41 @@ Accept: application/json
 ```
 
 ### Error Response Format
+
 ```json
 {
   "status": "error",
   "error": {
     "code": "ORDER_NOT_FOUND",
     "message": "Order with ID 12345 not found",
+
     "details": {}
   },
   "timestamp": "2025-11-22T10:00:00Z"
 }
+
 ```
 
 ## Authentication
 
 ### Current Implementation
+
 - Token-based authentication (Bearer token)
+
 - Token passed in `Authorization` header
 
 ### Future Enhancements
+
 - OAuth 2.0 support
 - Refresh token mechanism
 - Biometric authentication integration
 
+
 ## Rate Limiting
 
 ### Recommendations
+
+
 - 100 requests per minute per client
 - Burst allowance: 20 requests per 10 seconds
 - WebSocket connections: 1 per client
@@ -295,28 +321,38 @@ Accept: application/json
 ## Caching Strategy
 
 ### Client-Side (iPad)
+
+
 - Cache snapshot for offline access
 - Cache configuration
 - Cache historical data (with TTL)
 
+
 ### Server-Side
+
 - Cache account summary (30 seconds)
 - Cache strategy stats (60 seconds)
 - Cache scenarios (5 minutes)
 
+
 ## Testing
 
 ### Unit Tests
+
 - Test each endpoint handler
 - Test request validation
+
 - Test error cases
 
 ### Integration Tests
+
 - Test with real backend
+
 - Test authentication flow
 - Test error scenarios
 
 ### End-to-End Tests
+
 - Test complete user flows
 - Test offline/online transitions
 - Test error recovery
@@ -324,11 +360,13 @@ Accept: application/json
 ## Documentation
 
 ### OpenAPI/Swagger
+
 - Auto-generate from Rust code
 - Interactive API documentation
 - Request/response examples
 
 ### Location
+
 - `/docs` - Swagger UI
 - `/redoc` - ReDoc
 

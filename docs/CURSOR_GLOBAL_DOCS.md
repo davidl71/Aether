@@ -192,16 +192,21 @@ Should I add [[nodiscard]] to this function?
 ### Quick Commands
 
 ```bash
+
 # Validate all docs exist
+
 python3 scripts/sync_global_docs.py --check
 
 # Generate path lists for Cursor
+
 python3 scripts/sync_global_docs.py --generate-paths
 
 # Detect new documentation files
+
 python3 scripts/sync_global_docs.py --detect-new
 
 # Full sync (validate + generate + update)
+
 python3 scripts/sync_global_docs.py --update-config --generate-paths
 ```
 

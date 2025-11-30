@@ -12,6 +12,7 @@
 **File**: `scripts/automate_pwa_review.py`
 
 A Python script that:
+
 - Reads Todo2 task files (`.todo2/state.todo2.json`)
 - Analyzes PWA codebase structure (components, hooks, API integrations)
 - Compares current state against investment strategy goals
@@ -19,6 +20,7 @@ A Python script that:
 - Writes updated analysis document
 
 **Features:**
+
 - ✅ Works without AI API (basic analysis)
 - ✅ Optional AI insights via OpenAI or Anthropic
 - ✅ Configurable via JSON config file
@@ -30,6 +32,7 @@ A Python script that:
 **File**: `scripts/pwa_review_config.json`
 
 Configuration for:
+
 - AI API provider selection
 - Model selection
 - Output path
@@ -40,17 +43,22 @@ Configuration for:
 **File**: `scripts/setup_pwa_review_cron.sh`
 
 Automated setup for local cron jobs:
+
 - Easy scheduling (daily, weekly, monthly)
 - Automatic log file management
 - Error logging
 - Simple installation/removal
 
 **Usage:**
+
 ```bash
+
 # Weekly on Sunday at 2 AM
+
 ./scripts/setup_pwa_review_cron.sh weekly sunday 02:00
 
 # Daily at 4 AM
+
 ./scripts/setup_pwa_review_cron.sh daily 04:00
 ```
 
@@ -59,12 +67,14 @@ Automated setup for local cron jobs:
 **File**: `.github/workflows/pwa-review-scheduled.yml`
 
 Automated workflow that:
+
 - Runs weekly on Sunday at 02:00 UTC
 - Can be manually triggered
 - Automatically commits updated analysis
 - Provides summary in GitHub Actions UI
 
 **Benefits:**
+
 - No local machine required
 - Automatic version control
 - Team visibility
@@ -75,6 +85,7 @@ Automated workflow that:
 **File**: `docs/PWA_REVIEW_AUTOMATION.md`
 
 Complete guide covering:
+
 - Quick start instructions
 - Scheduling options (cron vs GitHub Actions)
 - AI API configuration
@@ -88,10 +99,13 @@ Complete guide covering:
 ### Quick Start (No AI)
 
 ```bash
+
 # Run once manually
+
 python3 scripts/automate_pwa_review.py
 
 # Set up weekly cron job
+
 ./scripts/setup_pwa_review_cron.sh weekly sunday 02:00
 ```
 
@@ -99,10 +113,13 @@ python3 scripts/automate_pwa_review.py
 
 1. **Get API key** (OpenAI or Anthropic)
 2. **Set environment variable:**
+
    ```bash
    export OPENAI_API_KEY="your-key-here"
    ```
+
 3. **Update config:**
+
    ```json
    {
      "ai_api": {
@@ -111,11 +128,15 @@ python3 scripts/automate_pwa_review.py
      }
    }
    ```
+
 4. **Install library:**
+
    ```bash
    pip install openai
    ```
+
 5. **Run script:**
+
    ```bash
    python3 scripts/automate_pwa_review.py
    ```
@@ -159,9 +180,11 @@ python3 scripts/automate_pwa_review.py
 ## Output
 
 The script generates/updates:
+
 - **`docs/PWA_IMPROVEMENT_ANALYSIS.md`** - Complete analysis document
 
 Includes:
+
 - Executive summary
 - Current PWA state analysis
 - Todo2 task alignment statistics
@@ -175,17 +198,20 @@ Includes:
 ### Option 1: Local Cron (Development)
 
 **Pros:**
+
 - Runs on your machine
 - Full control
 - Can use local AI API keys
 - Immediate feedback
 
 **Cons:**
+
 - Requires machine to be on
 - Manual setup
 - Local logs only
 
 **Setup:**
+
 ```bash
 ./scripts/setup_pwa_review_cron.sh weekly sunday 02:00
 ```
@@ -193,6 +219,7 @@ Includes:
 ### Option 2: GitHub Actions (Production)
 
 **Pros:**
+
 - Runs automatically in cloud
 - No local machine needed
 - Automatic commits
@@ -200,11 +227,13 @@ Includes:
 - Integration with CI/CD
 
 **Cons:**
+
 - Requires GitHub repository
 - API keys via secrets
 - Less control over timing
 
 **Setup:**
+
 - Already configured!
 - Runs weekly on Sunday at 02:00 UTC
 - Can customize schedule in workflow file
@@ -214,6 +243,7 @@ Includes:
 ## Next Steps
 
 1. **Test the script:**
+
    ```bash
    python3 scripts/automate_pwa_review.py
    ```

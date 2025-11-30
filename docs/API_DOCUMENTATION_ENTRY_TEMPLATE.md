@@ -7,6 +7,7 @@
 ## Standard Entry Format
 
 ```markdown
+
 ### Provider/Service Name
 
 - **Website**: <https://example.com>
@@ -18,42 +19,52 @@
   - Feature 1
   - Feature 2
   - Feature 3
+
 - **API Types**:
   - REST API
   - WebSocket API
   - FIX API
   - Native C++ APIs
+
 - **Data Coverage**:
   - Asset classes supported
   - Geographic coverage
   - Data types available
+
 - **Auth**: Authentication method (apiKey, OAuth, etc.)
 - **API Limits**:
   - Free tier: Limits
   - Paid plans: Higher limits
+
 - **Integration**:
   - Language support
   - SDKs available
   - Documentation links
+
 - **Relevance to Box Spread Trading**:
   - Specific use case 1
   - Specific use case 2
   - Specific use case 3
+
 - **Integration Considerations**:
   - Technical requirement 1
   - Technical requirement 2
   - Cost/pricing considerations
+
 - **Comparison with Current Solutions**:
   - vs. TWS API: Key differences
   - vs. Other solutions: Key differences
+
 - **Use Cases**:
   - Use case 1
   - Use case 2
   - Use case 3
+
 - **Contact**: Contact information (email, website)
 - **Pricing**:
   - Free tier: Details
   - Paid plans: Details
+
 - **Note**: Additional context, warnings, or recommendations
 ```
 
@@ -118,6 +129,7 @@
 ### Simple Entry (Market Data Provider)
 
 ```markdown
+
 ### Alpha Vantage
 
 - **URL**: <https://www.alphavantage.co/>
@@ -127,18 +139,22 @@
   - Real-time and historical stock market data
   - 60+ technical indicators
   - Market news API with sentiment analysis
+
 - **Auth**: apiKey required (free tier available)
 - **API Limits**:
   - Free tier: 5 API calls per minute, 500 calls per day
+
 - **Relevance to Box Spread Trading**:
   - Complements TWS API with additional market data sources
   - Useful for technical analysis with 60+ indicators
+
 - **Note**: Free tier available but limited. Paid plans start at $49.99/month.
 ```
 
 ### Complex Entry (Trading API)
 
 ```markdown
+
 ### Interactive Brokers TWS API
 
 - **Official Docs**: <https://interactivebrokers.github.io/tws-api/>
@@ -148,16 +164,20 @@
   - ✅ Full Protocol Buffers support
   - ✅ Order Recovery: Automatic order resubmission
   - ✅ Enhanced error handling
+
 - **Key Classes**:
   - `EClient` / `EClientSocket`: Client connection
   - `EWrapper`: Callback interface (93+ methods)
+
 - **Ports**:
   - `7497`: Paper Trading (TWS)
   - `7496`: Live Trading (TWS)
+
 - **Relevance to Box Spread Trading**:
   - Primary broker API for options trading
   - Comprehensive options support
   - Global market access
+
 - **Note**: Primary trading API for this project.
 ```
 

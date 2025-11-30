@@ -35,7 +35,9 @@ The IB box spread system currently uses basic position tracking without formal a
 **Current Implementation (`agents/backend/crates/api/src/state.rs`):**
 
 ```rust
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
+
 pub struct PositionSnapshot {
   pub id: String,
   pub symbol: String,
@@ -46,6 +48,7 @@ pub struct PositionSnapshot {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+
 pub struct HistoricPosition {
   pub id: String,
   pub symbol: String,

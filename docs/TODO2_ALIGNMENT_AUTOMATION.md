@@ -18,13 +18,17 @@ The automated Todo2 alignment system analyzes task priorities against the invest
 Run the analysis script manually:
 
 ```bash
+
 # Basic run (no AI insights)
+
 python3 scripts/automate_todo2_alignment.py
 
 # With custom config
+
 python3 scripts/automate_todo2_alignment.py --config scripts/todo2_alignment_config.json
 
 # With custom output path
+
 python3 scripts/automate_todo2_alignment.py --output docs/my_alignment.md
 ```
 
@@ -33,11 +37,13 @@ python3 scripts/automate_todo2_alignment.py --output docs/my_alignment.md
 To get AI-generated insights, configure an API provider:
 
 **Option A: OpenAI**
+
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
 ```
 
 Edit `scripts/todo2_alignment_config.json`:
+
 ```json
 {
   "ai_api": {
@@ -48,16 +54,19 @@ Edit `scripts/todo2_alignment_config.json`:
 ```
 
 Install OpenAI library:
+
 ```bash
 pip install openai
 ```
 
 **Option B: Anthropic**
+
 ```bash
 export ANTHROPIC_API_KEY="your-api-key-here"
 ```
 
 Edit `scripts/todo2_alignment_config.json`:
+
 ```json
 {
   "ai_api": {
@@ -68,6 +77,7 @@ Edit `scripts/todo2_alignment_config.json`:
 ```
 
 Install Anthropic library:
+
 ```bash
 pip install anthropic
 ```
@@ -81,27 +91,34 @@ pip install anthropic
 Set up a cron job to run the analysis automatically:
 
 ```bash
+
 # Run weekly on Monday at 2:00 AM
+
 ./scripts/setup_todo2_alignment_cron.sh weekly monday 02:00
 
 # Run daily at 4:00 AM
+
 ./scripts/setup_todo2_alignment_cron.sh daily 04:00
 
 # Run monthly on the 1st at 3:00 AM
+
 ./scripts/setup_todo2_alignment_cron.sh monthly 1 03:00
 ```
 
 **View cron jobs:**
+
 ```bash
 crontab -l
 ```
 
 **Remove cron job:**
+
 ```bash
 crontab -l | grep -v 'run_todo2_alignment_cron.sh' | crontab -
 ```
 
 **Logs:**
+
 - Success logs: `scripts/todo2_alignment.log`
 - Error logs: `scripts/todo2_alignment_errors.log`
 
@@ -123,6 +140,7 @@ crontab -l | grep -v 'run_todo2_alignment_cron.sh' | crontab -
 ```
 
 **Options:**
+
 - `ai_api.provider`: `"none"`, `"openai"`, or `"anthropic"`
 - `ai_api.model`: Model name (e.g., `"gpt-4"`, `"claude-3-5-sonnet-20241022"`)
 - `ai_api.api_key`: Leave `null` and use environment variables for security
@@ -162,6 +180,7 @@ The script generates/updates `docs/TODO2_PRIORITY_ALIGNMENT_ANALYSIS.md` with:
 ### Alignment Score Calculation
 
 The alignment score (0-100%) considers:
+
 - **40%**: Strategy-critical tasks are high priority
 - **30%**: High priority tasks are strategy-aligned
 - **20%**: Tasks are not stale
@@ -176,17 +195,22 @@ The alignment score (0-100%) considers:
 ### Script Fails to Run
 
 **Check Python version:**
+
 ```bash
 python3 --version  # Should be 3.8+
 ```
 
 **Check dependencies:**
+
 ```bash
+
 # If using AI features
+
 pip install openai  # or anthropic
 ```
 
 **Check file permissions:**
+
 ```bash
 chmod +x scripts/automate_todo2_alignment.py
 chmod +x scripts/setup_todo2_alignment_cron.sh
@@ -195,20 +219,26 @@ chmod +x scripts/setup_todo2_alignment_cron.sh
 ### Cron Job Not Running
 
 **Check cron logs:**
+
 ```bash
+
 # macOS
+
 grep CRON /var/log/system.log
 
 # Linux
+
 grep CRON /var/log/syslog
 ```
 
 **Test cron script manually:**
+
 ```bash
 ./scripts/run_todo2_alignment_cron.sh
 ```
 
 **Verify cron entry:**
+
 ```bash
 crontab -l | grep todo2_alignment
 ```
@@ -216,11 +246,13 @@ crontab -l | grep todo2_alignment
 ### Low Alignment Score
 
 **Common causes:**
+
 - High-priority tasks not aligned with strategy
 - Many stale tasks
 - Many blocked tasks
 
 **Solutions:**
+
 - Review misaligned tasks and adjust priorities
 - Update or complete stale tasks
 - Complete dependencies to unblock tasks
@@ -229,18 +261,22 @@ crontab -l | grep todo2_alignment
 ### AI API Errors
 
 **Check API key:**
+
 ```bash
 echo $OPENAI_API_KEY  # or $ANTHROPIC_API_KEY
 ```
 
 **Test API connection:**
+
 ```python
 import openai  # or anthropic
 client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
 # Test call...
 ```
 
 **Fallback to basic insights:**
+
 - Set `"provider": "none"` in config
 - Script will use basic analysis without AI
 
@@ -265,9 +301,13 @@ client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 Run both analyses together:
 
 ```bash
+
 # Create combined script
+
 cat > scripts/run_all_analyses.sh << 'EOF'
+
 #!/bin/bash
+
 python3 scripts/automate_pwa_review.py
 python3 scripts/automate_todo2_alignment.py
 EOF
@@ -279,8 +319,11 @@ chmod +x scripts/run_all_analyses.sh
 Add to pre-commit to check alignment before commits:
 
 ```bash
+
 # In .git/hooks/pre-commit
+
 python3 scripts/automate_todo2_alignment.py --output /tmp/alignment_check.md
+
 # Check alignment score and warn if below threshold
 ```
 
@@ -291,6 +334,7 @@ python3 scripts/automate_todo2_alignment.py --output /tmp/alignment_check.md
 ### Custom Analysis
 
 Modify `scripts/automate_todo2_alignment.py` to:
+
 - Add custom alignment criteria
 - Check additional task attributes
 - Generate different output formats
@@ -299,13 +343,17 @@ Modify `scripts/automate_todo2_alignment.py` to:
 ### Integration with Notification Systems
 
 **Combine with notification systems:**
+
 - Add email notifications on low alignment scores
 - Send Slack messages with summary
 - Create GitHub issues for misaligned tasks
 
 **Example:**
+
 ```python
+
 # In automate_todo2_alignment.py
+
 if alignment_score < 70:
     send_notification(f"Todo2 alignment dropped to {alignment_score}%")
 ```

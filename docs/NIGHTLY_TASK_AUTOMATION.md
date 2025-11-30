@@ -38,10 +38,13 @@ The **Nightly Task Automation Tool** automatically executes background-capable T
 ### Via MCP Tool
 
 ```python
+
 # Run nightly automation with defaults
+
 run_nightly_task_automation_tool()
 
 # Custom configuration
+
 run_nightly_task_automation_tool(
     max_tasks_per_host=5,      # Max tasks per host (default: 5)
     max_parallel_tasks=10,     # Max total parallel tasks (default: 10)
@@ -54,11 +57,14 @@ run_nightly_task_automation_tool(
 ### Via Command Line (Future)
 
 ```bash
+
 # Dry run to preview
+
 python3 -m mcp-servers.project-management-automation.tools.nightly_task_automation \
     --dry-run
 
 # Execute with custom limits
+
 python3 -m mcp-servers.project-management-automation.tools.nightly_task_automation \
     --max-tasks-per-host 10 \
     --max-parallel-tasks 20 \
@@ -72,6 +78,7 @@ python3 -m mcp-servers.project-management-automation.tools.nightly_task_automati
 ### ✅ Background-Capable Tasks (Executed)
 
 **Automatically identified by:**
+
 - MCP extension tasks (MCP-EXT-*)
 - Research tasks ("Research" in name)
 - Implementation tasks ("Implement", "Create", "Add", "Update" in name)
@@ -80,6 +87,7 @@ python3 -m mcp-servers.project-management-automation.tools.nightly_task_automati
 - Configuration tasks ("Config", "Configure", "Setup" in name)
 
 **Excluded if:**
+
 - Status is "Review" or "Done"
 - Needs clarification (has "clarification required")
 - Requires user input (has "user input" or "user interaction")
@@ -90,6 +98,7 @@ python3 -m mcp-servers.project-management-automation.tools.nightly_task_automati
 ### ❌ Interactive Tasks (Moved to Review)
 
 **Automatically moved to Review if:**
+
 - Needs clarification
 - Requires user input
 - Design decisions needed
@@ -104,10 +113,12 @@ python3 -m mcp-servers.project-management-automation.tools.nightly_task_automati
 ### Agent Hostnames
 
 The tool automatically loads agent configuration from:
+
 - **File:** `docs/AGENT_HOSTNAMES.md`
 - **Default Configuration:** Built-in Ubuntu and macOS agent details
 
 **Current Agents:**
+
 - **Ubuntu:** `david@192.168.192.57` → `~/ib_box_spread_full_universal`
 - **macOS M4:** `davidl@192.168.192.141` → `/Users/davidl/Projects/Trading/ib_box_spread_full_universal`
 
@@ -183,11 +194,13 @@ The tool automatically loads agent configuration from:
 
 ```python
 result = run_nightly_task_automation_tool()
+
 # Assigns up to 10 tasks (5 per host) across 2 hosts
 # Moves interactive tasks to Review
 ```
 
 **Expected Output:**
+
 - 10 background tasks assigned (5 to Ubuntu, 5 to macOS)
 - 5-10 interactive tasks moved to Review
 - Summary of actions taken
@@ -201,11 +214,13 @@ result = run_nightly_task_automation_tool(
     priority_filter="high",
     max_parallel_tasks=20
 )
+
 # Only processes high-priority tasks
 # Up to 20 tasks in parallel
 ```
 
 **Expected Output:**
+
 - 20 high-priority background tasks assigned
 - Interactive high-priority tasks moved to Review
 - Summary focused on high-priority work
@@ -219,10 +234,12 @@ result = run_nightly_task_automation_tool(
     tag_filter=["mcp"],
     max_parallel_tasks=10
 )
+
 # Only processes MCP extension tasks
 ```
 
 **Expected Output:**
+
 - 10 MCP-EXT tasks assigned
 - Other tasks skipped
 - Summary of MCP extension progress
@@ -236,10 +253,12 @@ result = run_nightly_task_automation_tool(
     dry_run=True,
     max_parallel_tasks=10
 )
+
 # Preview what would happen without executing
 ```
 
 **Expected Output:**
+
 - List of tasks that would be assigned
 - List of tasks that would be moved to Review
 - No actual state changes made
@@ -272,7 +291,9 @@ jobs:
 ### With Cron (Local)
 
 ```bash
+
 # Add to crontab: Run nightly at 2 AM
+
 0 2 * * * cd /path/to/project && python3 -m mcp-servers.project-management-automation.tools.nightly_task_automation
 ```
 
@@ -291,6 +312,7 @@ State file is automatically backed up before changes.
 ### ✅ Audit Trail
 
 All changes logged in:
+
 - Task comments (why moved to Review)
 - Task status changes (In Progress, Review)
 - TODO2 state file changes array
@@ -298,6 +320,7 @@ All changes logged in:
 ### ✅ Idempotent Operation
 
 Can be run multiple times safely:
+
 - Already "In Progress" tasks are skipped
 - Already "Review" tasks are skipped
 - Already "Done" tasks are skipped
@@ -330,6 +353,7 @@ Can be run multiple times safely:
 ### Tasks Not Being Assigned
 
 **Check:**
+
 1. Tasks are in "Todo" status (not "In Progress" or "Done")
 2. Tasks are background-capable (not interactive)
 3. Host limits not exceeded (`max_tasks_per_host`)
@@ -342,6 +366,7 @@ Can be run multiple times safely:
 **Expected:** Interactive tasks are intentionally moved to Review
 
 **If unexpected:**
+
 1. Review task descriptions for "clarification required"
 2. Check for "user input" or "user interaction" mentions
 3. Verify tasks are actually interactive vs. background-capable
@@ -353,6 +378,7 @@ Can be run multiple times safely:
 **Backup Location:** `.todo2/state.todo2.json.bak`
 
 **If state corrupted:**
+
 1. Restore from backup: `.todo2/state.todo2.json.bak`
 2. Review task changes in comments
 3. Manually fix any issues

@@ -1,7 +1,7 @@
 # Integration Testing Status
 
-**Date**: 2025-11-01  
-**Version**: 1.0.0  
+**Date**: 2025-11-01
+**Version**: 1.0.0
 **Status**: ✅ READY FOR PAPER TRADING
 
 ---
@@ -172,17 +172,22 @@ https://www.interactivebrokers.com/en/trading/tws.php
 ### 2. Run Integration Tests
 
 ```bash
+
 # Start TWS paper trading first, then:
+
 ./scripts/integration_test.sh
 ```
 
 ### 3. Monitor First Connection
 
 ```bash
+
 # Terminal 1: Run application
+
 build/bin/ib_box_spread --config config/config.json --dry-run
 
 # Terminal 2: Monitor logs
+
 tail -f logs/ib_box_spread.log
 ```
 
@@ -319,5 +324,5 @@ The application is **production-ready from a code perspective** and needs real-w
 
 ---
 
-**Status**: Ready for Paper Trading ✅  
+**Status**: Ready for Paper Trading ✅
 **Next Milestone**: 1 week of stable paper trading

@@ -32,6 +32,7 @@ Add Cursor rules that detect context and suggest relevant automation tools.
 Create `.cursor/rules/automation-tool-suggestions.mdc` with context-aware rules:
 
 ```markdown
+
 # Automation Tool Suggestions
 
 ## Context Detection Rules
@@ -62,12 +63,16 @@ Create `.cursor/rules/automation-tool-suggestions.mdc` with context-aware rules:
 **Reason**: "Daily maintenance tasks available"
 ```
 
+
 ### Pros
+
 - ✅ Simple to implement
 - ✅ Works with existing Cursor rules system
 - ✅ No code changes required
 
+
 ### Cons
+
 - ❌ Limited context detection (file changes, not semantic)
 - ❌ Static rules (don't adapt to project state)
 
@@ -84,11 +89,13 @@ Integrate tool suggestions into Todo2 task lifecycle states.
 Extend Todo2 workflow rules to suggest tools at lifecycle transitions:
 
 ```markdown
+
 ## Task Lifecycle Tool Suggestions
 
 ### Todo → In Progress
 **When**: Task moves to "In Progress"
 **Suggest**:
+
 - If task mentions documentation: `check_documentation_health_tool`
 - If task is high priority: `analyze_todo2_alignment_tool`
 - If task has many dependencies: Check dependency health
@@ -96,23 +103,29 @@ Extend Todo2 workflow rules to suggest tools at lifecycle transitions:
 ### In Progress → Review
 **When**: Task moves to "Review"
 **Suggest**:
+
 - `analyze_todo2_alignment_tool` (verify alignment)
 - Check for duplicate tasks
 - Review documentation if task involved docs
 
 ### Review → Done
 **When**: Task moves to "Done"
+
 **Suggest**:
+
 - `detect_duplicate_tasks_tool` (check for similar completed tasks)
 - `run_daily_automation_tool` (if multiple tasks completed)
 ```
 
+
 ### Pros
+
 - ✅ Natural workflow integration
 - ✅ Context-aware (based on task state)
 - ✅ Actionable (suggestions at decision points)
 
 ### Cons
+
 - ❌ Requires Todo2 workflow awareness
 - ❌ May be too frequent if not filtered
 
@@ -129,6 +142,7 @@ Monitor file changes and suggest relevant tools.
 Add rules that detect file patterns and suggest tools:
 
 ```markdown
+
 ## File Change Detection
 
 ### Documentation Files
@@ -141,21 +155,25 @@ Add rules that detect file patterns and suggest tools:
 **Suggest**: `scan_dependency_security_tool`
 **Frequency**: Once per change
 
+
 ### Configuration Files
 **Pattern**: `*.config.json`, `CMakeLists.txt` modified
 **Suggest**: Review configuration (no specific tool, but suggest review)
 
 ### Multiple Files Changed
+
 **Pattern**: 10+ files modified in single session
 **Suggest**: `run_daily_automation_tool` (comprehensive check)
 ```
 
 ### Pros
+
 - ✅ Direct correlation with user activity
 - ✅ Immediate relevance
 - ✅ Easy to implement
 
 ### Cons
+
 - ❌ May be too frequent
 - ❌ Requires rate limiting
 - ❌ File patterns may be too broad
@@ -173,35 +191,44 @@ Create prompt templates that include tool suggestions based on query type.
 Create templates for common query patterns:
 
 ```markdown
+
 ## Prompt Templates
 
 ### Documentation Queries
 **Template**: "When user asks about documentation:"
+
 - Suggest: `check_documentation_health_tool`
 - Context: "Documentation health check available"
 
 ### Task Management Queries
 **Template**: "When user asks about tasks:"
+
+
 - Suggest: `analyze_todo2_alignment_tool` or `detect_duplicate_tasks_tool`
 - Context: "Task analysis tools available"
 
 ### Security Queries
 **Template**: "When user asks about security:"
+
+
 - Suggest: `scan_dependency_security_tool`
 - Context: "Dependency security scan available"
 
 ### Project Health Queries
 **Template**: "When user asks about project status:"
+
 - Suggest: `run_daily_automation_tool`
 - Context: "Comprehensive project health check available"
 ```
 
 ### Pros
+
 - ✅ Natural language integration
 - ✅ Context-aware based on user intent
 - ✅ Non-intrusive (suggested, not forced)
 
 ### Cons
+
 - ❌ Requires query classification
 - ❌ May miss implicit needs
 
@@ -218,18 +245,23 @@ Add hooks at key workflow points to suggest tools.
 Define workflow hooks:
 
 ```markdown
+
 ## Workflow Hooks
 
 ### Before Major Commits
 **Hook**: User mentions "commit" or "push"
 **Suggest**:
+
+
 - `check_documentation_health_tool` (if docs changed)
 - `detect_duplicate_tasks_tool` (if tasks created)
 - `scan_dependency_security_tool` (if dependencies changed)
 
+
 ### After Task Completion
 **Hook**: Task marked "Done"
 **Suggest**:
+
 - `analyze_todo2_alignment_tool` (if high priority)
 - `detect_duplicate_tasks_tool` (check for similar tasks)
 
@@ -243,11 +275,13 @@ Define workflow hooks:
 ```
 
 ### Pros
+
 - ✅ Natural workflow integration
 - ✅ Actionable at decision points
 - ✅ Context-aware
 
 ### Cons
+
 - ❌ Requires workflow detection
 - ❌ May be too frequent
 
@@ -264,12 +298,16 @@ Add rules that make AI assistants proactively suggest tools based on detected co
 Create rules for AI assistant behavior:
 
 ```markdown
+
+
 ## AI Assistant Tool Suggestion Rules
 
 ### Proactive Suggestions
 **Rule**: "When AI detects relevant context, suggest automation tools"
 
+
 **Examples**:
+
 - User asks about documentation → Suggest `check_documentation_health_tool`
 - User creates multiple tasks → Suggest `detect_duplicate_tasks_tool`
 - User mentions security → Suggest `scan_dependency_security_tool`
@@ -289,11 +327,13 @@ Create rules for AI assistant behavior:
 ```
 
 ### Pros
+
 - ✅ Natural conversation flow
 - ✅ Context-aware
 - ✅ Non-intrusive
 
 ### Cons
+
 - ❌ Requires AI assistant awareness
 - ❌ May be inconsistent
 
@@ -368,12 +408,14 @@ Use multiple approaches together for comprehensive coverage:
 ### Example 1: Cursor Rule for Documentation Changes
 
 ```markdown
+
 # Automation Tool Suggestions
 
 ## Documentation Context
 
 **When**: Files in `docs/` directory are modified
 **Suggest**: Consider running `check_documentation_health_tool` to:
+
 - Validate links and references
 - Check format compliance
 - Identify stale documents
@@ -385,11 +427,13 @@ Use multiple approaches together for comprehensive coverage:
 ### Example 2: Task Lifecycle Integration
 
 ```markdown
+
 ## Task Review Workflow
 
 **When**: Task moves to "Review" status
 **If**: Task is high priority
 **Suggest**: Run `analyze_todo2_alignment_tool` to verify:
+
 - Task aligns with project goals
 - No misalignment issues
 - Dependencies are satisfied
@@ -400,6 +444,7 @@ Use multiple approaches together for comprehensive coverage:
 ### Example 3: AI Assistant Proactive Suggestion
 
 ```markdown
+
 ## AI Assistant Behavior
 
 **Rule**: When user asks about project status or health

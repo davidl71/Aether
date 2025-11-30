@@ -120,9 +120,10 @@ This document establishes design goals for providing standardized context files 
 All cross-tool files should **reference** `AGENTS.md` as the source of truth:
 
 ```markdown
+
 # Example: CLAUDE.md
 
-See [AGENTS.md](AGENTS.md) for complete project guidelines.
+See [AGENTS.md](../../AGENTS.md) for complete project guidelines.
 
 ## Claude-Specific Notes
 - Use MCP tools for project automation (see .cursor/mcp.json)
@@ -132,10 +133,12 @@ See [AGENTS.md](AGENTS.md) for complete project guidelines.
 ### Principle: Keep Tool-Specific Files Minimal
 
 ```markdown
+
 # Example: .github/copilot-instructions.md
 
 This repository follows the guidelines in AGENTS.md.
 Key points for Copilot:
+
 - C++20 standard, 2-space indentation
 - snake_case for functions, PascalCase for types
 - See docs/API_DOCUMENTATION_INDEX.md for APIs
@@ -158,6 +161,7 @@ The following MCP resources should be available for AI agents:
 ### Implementation via Exarp MCP Server
 
 Add resources to project-management-automation MCP server:
+
 - `project://context/summary` - High-level project context
 - `project://context/architecture` - Architecture overview
 - `project://context/conventions` - Coding conventions
@@ -186,6 +190,7 @@ Add resources to project-management-automation MCP server:
 ## Tasks
 
 See Todo2 tasks with tag `ai-context-standards`:
+
 - ✅ AI-CONTEXT-1: Create .github/copilot-instructions.md (Updated)
 - ✅ AI-CONTEXT-2: Create CLAUDE.md (Created)
 - ✅ AI-CONTEXT-3: Create CONTRIBUTING.md (Created)

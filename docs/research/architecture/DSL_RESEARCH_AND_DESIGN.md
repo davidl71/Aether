@@ -10,6 +10,7 @@
 This document researches existing financial Domain-Specific Languages (DSLs) and designs a DSL architecture for expressing box spread synthetic financing scenarios, multi-asset relationships, and cash flow modeling in the IBKR box spread project.
 
 **Key Findings:**
+
 - **Quant DSL** (Python) and **MLFi** (OCaml) use combinator-based approaches for financial contracts
 - **Rebel** (ING bank) provides lightweight formal specification with domain types (Money, IBAN)
 - **COBOL** patterns show importance of domain-specific types and business-readable syntax
@@ -26,19 +27,24 @@ This document researches existing financial Domain-Specific Languages (DSLs) and
 **Source:** [dslfin.org/resources.html](https://www.dslfin.org/resources.html)
 
 **Key Characteristics:**
+
 - Python-based DSL for expressing financial contracts
 - Follows combinator approach from MLFi paper
 - Can be evaluated against price processes (e.g., multi-market Black-Scholes)
 - Based on "Composing Contracts: An Adventure in Financial Engineering" paper
 
 **Relevance to Box Spreads:**
+
 - Combinator approach could express box spread legs declaratively
 - Python integration aligns with existing Python bindings
 - Can generate pricing formulas and documentation
 
 **Example Pattern (Inferred):**
+
 ```python
+
 # Hypothetical Quant DSL pattern
+
 contract = BoxSpread("SPX") \
     .strike_width(50) \
     .expiration("2025-12-19") \
@@ -51,12 +57,14 @@ contract = BoxSpread("SPX") \
 **Source:** [dslfin.org/resources.html](https://www.dslfin.org/resources.html), [Stack Overflow Discussion](https://stackoverflow.com/questions/23448/dsls-domain-specific-languages-in-finance)
 
 **Key Characteristics:**
+
 - OCaml-based contract modeling language
 - Combinator library for composing contracts
 - Used in production pricing and operations management
 - Based on "Composing Contracts: An Adventure in Financial Engineering" (Simon Peyton Jones, Jean-Marc Eber)
 
 **Relevance:**
+
 - Demonstrates combinator pattern for financial instruments
 - Shows how to compose complex contracts from primitives
 - Production-proven approach
@@ -68,6 +76,7 @@ contract = BoxSpread("SPX") \
 **Source:** [CWI Rebel Page](https://www.cwi.nl/en/research/software-analysis-and-transformation/software/rebel-a-domain-specific-language-for-product-development-in-finance/)
 
 **Key Characteristics:**
+
 - Lightweight formal specification language
 - Domain-specific types: `Money`, `IBAN`
 - High-level primitives for financial transactions and states
@@ -76,6 +85,7 @@ contract = BoxSpread("SPX") \
 - Deployed in product development at ING bank
 
 **Relevance:**
+
 - Shows importance of domain-specific types (Money, IBAN) - we need `Rate`, `StrikeWidth`, `Expiration`
 - Formal specification approach could validate box spread scenarios
 - Visualization and simulation capabilities align with our needs
@@ -87,12 +97,14 @@ contract = BoxSpread("SPX") \
 **Source:** Web search results, [IBM COBOL](https://www.ibm.com/think/topics/cobol)
 
 **Key Characteristics:**
+
 - English-like, self-documenting syntax
 - Strong support for fixed-point decimal calculations (critical for finance)
 - Designed for business, finance, and administrative systems
 - Still supports $3+ trillion in daily commerce
 
 **Relevance:**
+
 - Emphasizes readability for domain experts
 - Fixed-point decimal precision important for interest rate calculations
 - Business-readable syntax aligns with our goal of enabling domain experts
@@ -104,6 +116,7 @@ contract = BoxSpread("SPX") \
 **Source:** [Icon Solutions DSL Article](https://iconsolutions.com/blog/accelerating-software-engineering-through-the-adoption-of-domain-specific-languages)
 
 **Key Characteristics:**
+
 - Uses JetBrains Meta Programming System (MPS) for external DSL
 - Generates Java code, BDD tests, graphs, and documentation
 - Projectional editor (AST-based, not text-based)
@@ -111,6 +124,7 @@ contract = BoxSpread("SPX") \
 - Can generate multiple outputs from same model
 
 **Relevance:**
+
 - Code generation approach could generate C++ from DSL
 - Multiple output formats (code, tests, docs, graphs) valuable
 - Projectional editor ensures consistency
@@ -124,6 +138,7 @@ contract = BoxSpread("SPX") \
 ### Existing Patterns in Codebase
 
 **1. Box Spread Scenario Definition:**
+
 ```typescript
 // web/src/types.ts
 export interface BoxSpreadScenario {
@@ -140,6 +155,7 @@ export interface BoxSpreadScenario {
 ```
 
 **2. JSON Configuration:**
+
 ```json
 // config/config.example.json
 {
@@ -153,6 +169,7 @@ export interface BoxSpreadScenario {
 ```
 
 **3. C++ Box Spread Structure:**
+
 ```cpp
 // native/include/types.h
 struct BoxSpreadLeg {
@@ -189,11 +206,13 @@ struct BoxSpreadLeg {
 ### Proposed Syntax (Python Embedded DSL)
 
 ```python
+
 # python/dsl/box_spread_dsl.py
 
 from box_spread_dsl import *
 
 # Simple box spread scenario
+
 scenario = BoxSpread("SPX") \
     .strike_width(50) \
     .expiration("2025-12-19") \
@@ -204,6 +223,7 @@ scenario = BoxSpread("SPX") \
     .execute()
 
 # Multi-asset financing strategy
+
 strategy = FinancingStrategy("optimize_loan_to_box_spread") \
     .source(bank_loan(rate=5.5, amount=100000)) \
     .use_as(margin_for(
@@ -213,6 +233,7 @@ strategy = FinancingStrategy("optimize_loan_to_box_spread") \
     .optimize(minimize_total_cost())
 
 # Cash flow modeling
+
 cash_flow = CashFlowModel() \
     .add_position(
         box_spread_lending(
@@ -235,7 +256,9 @@ cash_flow = CashFlowModel() \
 ### Domain-Specific Types
 
 ```python
+
 # Domain types for type safety and expressiveness
+
 @dataclass
 class Rate:
     value: float
@@ -260,7 +283,9 @@ class Money:
 ### Multi-Asset Relationship DSL
 
 ```python
+
 # Express asset relationships declaratively
+
 relationships = AssetRelationships() \
     .collateral(
         source="T-BILL-3M-USD",
@@ -291,12 +316,14 @@ relationships = AssetRelationships() \
 **Goal:** Rapid prototyping with Python syntax
 
 **Deliverables:**
+
 - `python/dsl/box_spread_dsl.py` - DSL builder classes
 - `python/dsl/types.py` - Domain-specific types
 - `python/dsl/generator.py` - Code generator to C++
 - Tests and examples
 
 **Benefits:**
+
 - Fast to implement
 - Leverages existing Python bindings
 - Domain experts can use Python
@@ -307,11 +334,13 @@ relationships = AssetRelationships() \
 **Goal:** Production-ready DSL with full code generation
 
 **Options:**
+
 - **MPS (Meta Programming System):** Generate C++ from DSL model
 - **Xtext (Eclipse):** Text-based DSL with code generation
 - **Custom Parser:** ANTLR/Lark parser with code generation
 
 **Deliverables:**
+
 - DSL syntax definition
 - Parser/compiler
 - Code generator (DSL → C++)
@@ -320,6 +349,7 @@ relationships = AssetRelationships() \
 - Graph visualization generator
 
 **Benefits:**
+
 - Complete separation of domain model from implementation
 - Multiple output formats (code, tests, docs, graphs)
 - Compile-time validation
@@ -330,6 +360,7 @@ relationships = AssetRelationships() \
 **Goal:** Declarative language for asset relationships
 
 **Deliverables:**
+
 - Relationship DSL syntax
 - Relationship validator
 - Optimization engine integration
@@ -364,6 +395,7 @@ relationships = AssetRelationships() \
 ### Example: DSL → C++ Generation
 
 **DSL Input:**
+
 ```python
 scenario = BoxSpread("SPX") \
     .strike_width(50) \
@@ -372,6 +404,7 @@ scenario = BoxSpread("SPX") \
 ```
 
 **Generated C++:**
+
 ```cpp
 // Generated from DSL
 namespace generated {
@@ -416,7 +449,9 @@ namespace generated {
 ### Python Bindings Integration
 
 ```python
+
 # DSL uses existing Python bindings
+
 from box_spread_bindings import BoxSpreadStrategy, BoxSpreadLeg
 
 scenario = BoxSpread("SPX").strike_width(50)
@@ -428,7 +463,9 @@ opportunity = strategy.evaluate_box_spread(leg)
 ### Configuration Integration
 
 ```python
+
 # DSL can read from config
+
 from config_manager import load_config
 
 config = load_config("config/config.json")

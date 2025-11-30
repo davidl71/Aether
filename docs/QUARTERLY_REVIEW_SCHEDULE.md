@@ -180,6 +180,7 @@
 Create a recurring GitHub issue template:
 
 ```markdown
+
 ## Quarterly Documentation Review - [QUARTER] [YEAR]
 
 **Due Date**: [Date]
@@ -194,6 +195,7 @@ Create a recurring GitHub issue template:
 - [ ] Update summary document
 
 ### Notes
+
 [Add notes during review]
 ```
 

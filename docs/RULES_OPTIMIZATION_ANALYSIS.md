@@ -8,6 +8,7 @@
 ## 🔍 Executive Summary
 
 ### Key Findings
+
 1. **Redundancies**: 8 major redundancies identified between `.cursorrules` and `.cursor/rules/*.mdc`
 2. **Pattern-Matching Opportunities**: 12 rules that could be scoped to specific file patterns
 3. **"May Never Be Used" Cases**: 5 additional forbidden patterns identified
@@ -18,97 +19,121 @@
 ## 1. Redundancies
 
 ### 1.1 Build Commands Redundancy
+
 **Location**: `.cursorrules` lines 28-35 vs `.cursor/commands.json`
 
 **Issue**: Build commands are documented in both places with slight variations:
+
 - `.cursorrules`: Shows `cmake --preset macos-universal-debug` (incorrect preset name)
 - `.cursor/commands.json`: Shows `cmake --build --preset macos-arm64-debug` (correct)
 
 **Recommendation**:
+
 - Remove build command examples from `.cursorrules`
 - Reference `.cursor/commands.json` or `docs/CURSOR_PROJECT_COMMANDS.md` instead
 - Add pattern: `**/*.cpp`, `**/*.h`, `CMakeLists.txt`, `CMakePresets.json` → Reference build commands
 
 ### 1.2 Linting Command Redundancy
+
 **Location**: `.cursorrules` lines 51, 101, 108
 
 **Issue**: `./scripts/run_linters.sh` mentioned 3 times:
+
 - Line 51: "Run linters before committing"
 - Line 101: "Use `./scripts/run_linters.sh` for linting"
 - Line 108: "1. Run linters: `./scripts/run_linters.sh`"
 
 **Recommendation**:
+
 - Keep only in "Before Committing" section (line 108)
 - Add pattern: `**/*.cpp`, `**/*.h` → Mention linting
 - Reference command: `lint:run` from `.cursor/commands.json`
 
 ### 1.3 Script References Redundancy
+
 **Location**: `.cursorrules` lines 61, 70
 
 **Issue**: `scripts/setup_worktree.sh` and `build_universal.sh` mentioned twice:
+
 - Line 61: "Use `scripts/setup_worktree.sh` for new worktrees"
 - Line 70: "Suggest using existing scripts (`setup_worktree.sh`, `build_universal.sh`)"
 
 **Recommendation**:
+
 - Consolidate to single reference
 - Add pattern: Git workflow questions → Reference `setup:worktree` command
 
 ### 1.4 Testing Command Redundancy
+
 **Location**: `.cursorrules` lines 56-57, 109
 
 **Issue**: `ctest --output-on-failure` mentioned twice:
+
 - Line 56: "Run: `ctest --output-on-failure`"
 - Line 109: "Run tests: `ctest --output-on-failure`"
 
 **Recommendation**:
+
 - Keep only in "Before Committing" section
 - Reference command: `test:run` from `.cursor/commands.json`
 - Add pattern: `**/*test*.cpp`, `**/*test*.py` → Reference testing
 
 ### 1.5 Documentation References Redundancy
+
 **Location**: `.cursorrules` line 72 vs `.cursor/rules/documentation.mdc`
 
 **Issue**: Documentation references mentioned in both:
+
 - `.cursorrules`: "Point to relevant documentation in `docs/` when available"
 - `.cursor/rules/documentation.mdc`: Complete documentation reference guide
 
 **Recommendation**:
+
 - Remove from `.cursorrules`
 - Add pattern: Documentation questions → Reference `documentation.mdc` rule
 
 ### 1.6 MCP Server References Redundancy
+
 **Location**: `.cursorrules` lines 75-76 vs `.cursor/rules/*.mdc`
 
 **Issue**: MCP server usage mentioned in multiple places:
+
 - `.cursorrules`: NotebookLM and automa MCP servers
 - `.cursor/rules/notebooklm.mdc`: Complete NotebookLM guide
 - `.cursor/rules/project-automation.mdc`: Complete automa guide
 
 **Recommendation**:
+
 - Keep only high-level reference in `.cursorrules`
 - Add pattern: Research questions → Reference `notebooklm.mdc`
 - Add pattern: Project automation → Reference `project-automation.mdc`
 
 ### 1.7 Code Style Redundancy
+
 **Location**: `.cursorrules` lines 6-18 vs Repository Guidelines in workspace rules
 
 **Issue**: C++ code style rules duplicated:
+
 - `.cursorrules`: Basic style rules
 - Workspace rules: More comprehensive style guide
 
 **Recommendation**:
+
 - Keep comprehensive version in workspace rules
 - `.cursorrules` should reference workspace rules
 - Add pattern: `**/*.cpp`, `**/*.h` → Apply C++ style rules
 
 ### 1.8 Security Rules Redundancy
+
 **Location**: `.cursorrules` lines 43-50 vs `.cursor/rules/semgrep.mdc`
 
 **Issue**: Security rules mentioned in both:
+
 - `.cursorrules`: Basic security guidelines
 - `.cursor/rules/semgrep.mdc`: "MUST first ensure safety by scanning with security_check tool"
 
 **Recommendation**:
+
 - Keep basic rules in `.cursorrules`
 - Add pattern: Code generation → MUST use security_check tool
 - Reference `semgrep.mdc` for detailed security scanning
@@ -148,16 +173,19 @@
 | Refactoring | Todo2 required | Todo2 required | Code changes |
 
 **Recommendation**: Add pattern matching to Todo2 rule:
+
 ```markdown
 **⚠️ ABSOLUTE RULE: EVERY USER REQUEST MUST USE TODO2 WORKFLOW ⚠️**
 
 **EXCEPTIONS (Skip Todo2):**
+
 - Simple git commands: `git pull`, `git status`, `git log`, `git diff` (no code changes)
 - File read-only operations: `read_file`, `list_dir`, `grep` (no code changes)
 - Pure information queries: Questions that don't require code changes
 - Quick lookups: Documentation references, API lookups (no code changes)
 
 **REQUIRED (Todo2 Mandatory):**
+
 - Code generation/modification: Any file creation, editing, deletion
 - Bug fixes: Any code changes to fix issues
 - Refactoring: Any code restructuring
@@ -178,19 +206,23 @@
 | Refactoring | Full Phase 1-2-3 | Phase 1 + Phase 2 | Code restructuring |
 
 **Recommendation**: Add pattern matching to OpenMemory rule:
+
 ```markdown
 **NON-NEGOTIABLE: Memory-First Development**
 
 **Full Phase 1-2-3 Required:**
+
 - New features (new files, new functions, new components)
 - Architecture changes (new systems, major refactoring)
 - Multi-file changes (3+ files modified)
 
 **Phase 1 + Phase 3 Only:**
+
 - Bug fixes (existing code modifications)
 - Single-file changes (1-2 files)
 
 **Skip Phases (Direct Implementation):**
+
 - Trivial fixes (typos, single-line changes)
 - Configuration updates (no code logic changes)
 - Documentation-only changes
@@ -201,9 +233,12 @@
 ## 3. Additional "May Never Be Used" Cases
 
 ### 3.1 Never Use Hardcoded Paths
+
 **Current**: Not explicitly forbidden
 **Recommendation**: Add to `.cursorrules`:
+
 ```markdown
+
 ## Security & Best Practices
 
 - Never commit credentials, API keys, or secrets
@@ -216,9 +251,12 @@
 ```
 
 ### 3.2 Never Skip Security Scanning
+
 **Current**: Mentioned in `semgrep.mdc` but not in main rules
 **Recommendation**: Add to `.cursorrules`:
+
 ```markdown
+
 ## Security & Best Practices
 
 - **Never generate code without security scanning** - Always use `security_check` tool before code generation
@@ -227,9 +265,12 @@
 ```
 
 ### 3.3 Never Use Deprecated APIs
+
 **Current**: Not explicitly forbidden
 **Recommendation**: Add to `.cursorrules`:
+
 ```markdown
+
 ## Code Style & Conventions
 
 - **Never use deprecated TWS API methods** - Check `docs/TWS_INTEGRATION_STATUS.md` for current APIs
@@ -238,9 +279,12 @@
 ```
 
 ### 3.4 Never Modify Third-Party Code
+
 **Current**: Not explicitly forbidden
 **Recommendation**: Add to `.cursorrules`:
+
 ```markdown
+
 ## File Organization
 
 - **Never modify third-party code directly** - Use wrappers or adapters in `native/src/`
@@ -251,9 +295,12 @@
 ```
 
 ### 3.5 Never Skip Tests for Critical Code
+
 **Current**: "All tests must pass" but not explicit about critical code
 **Recommendation**: Add to `.cursorrules`:
+
 ```markdown
+
 ## Testing
 
 - Tests mirror source file names (use Catch2 framework)
@@ -316,11 +363,14 @@ The following commands exist but aren't referenced in `.cursorrules`:
 Add new sections:
 
 ```markdown
+
 ## Build System
 
 ### Commands
 ```bash
+
 # Primary build commands (use commands from .cursor/commands.json)
+
 build:debug          # Build in debug mode
 build:release         # Build in release mode
 build:universal       # Build universal binary
@@ -332,6 +382,7 @@ build:dependencies    # Build Intel Decimal and TWS API
 ```
 
 ### Performance Optimization
+
 - Use `setup:ramdisk` for faster builds on macOS
 - Use `build:universal` for distribution binaries
 - See `docs/DISTRIBUTED_COMPILATION.md` for distributed builds
@@ -339,6 +390,7 @@ build:dependencies    # Build Intel Decimal and TWS API
 ## Testing
 
 ### Commands
+
 ```bash
 test:run              # Run all tests (debug mode)
 test:run-release       # Run tests in release mode
@@ -348,6 +400,7 @@ test:tws-connection    # Test TWS connection
 ## Code Quality
 
 ### Commands
+
 ```bash
 lint:run              # Run all linters
 format:code           # Format code with clang-format
@@ -357,6 +410,7 @@ ai:review-with-mlx    # MLX-powered code review
 ## Running Applications
 
 ### Commands
+
 ```bash
 run:tui               # Run TUI application (dry-run)
 run:cli                # Run CLI application (dry-run)
@@ -366,6 +420,7 @@ run:cli-with-config    # Run CLI with config file
 ## Documentation
 
 ### Commands
+
 ```bash
 docs:list             # List global docs paths
 docs:sync             # Sync global docs configuration
@@ -376,6 +431,7 @@ summarize:test-log    # Summarize latest test log
 ## Validation & Checking
 
 ### Commands
+
 ```bash
 check:tws             # Check TWS API setup
 check:feature-parity   # Check feature parity
@@ -385,6 +441,7 @@ validate:config        # Validate configuration file
 ## Cleanup
 
 ### Commands
+
 ```bash
 clean:all             # Clean all build artifacts
 ```
@@ -392,6 +449,7 @@ clean:all             # Clean all build artifacts
 ## Setup & Configuration
 
 ### Commands
+
 ```bash
 setup:platform        # Auto-detect and configure platform
 setup:platform-full   # Setup platform and configure CMake
@@ -402,8 +460,10 @@ env:install-mlx       # Install MLX for code review
 ## macOS Shortcuts Integration
 
 For macOS users, see `docs/SHORTCUTS_SETUP.md` for Shortcuts integration:
+
 - `shortcuts:build` - Run build via Shortcut
 - `shortcuts:test` - Run tests via Shortcut
+
 ```
 
 ---
@@ -466,18 +526,21 @@ alwaysApply: false  # Only apply when pattern matches
 ## 6. Implementation Priority
 
 ### High Priority (Do First)
+
 1. Remove build command redundancies
 2. Add pattern matching to C++ style rules
 3. Add "Never skip security scanning" rule
 4. Add command references to relevant sections
 
 ### Medium Priority
+
 1. Scope Todo2 workflow exceptions
 2. Scope OpenMemory phases
 3. Add remaining "May Never Be Used" cases
 4. Document macOS Shortcuts integration
 
 ### Low Priority (Nice to Have)
+
 1. Further pattern matching optimizations
 2. Command quick reference guide
 3. Rule performance optimization

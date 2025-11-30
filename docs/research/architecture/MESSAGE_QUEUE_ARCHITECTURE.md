@@ -56,6 +56,7 @@ NATS uses hierarchical subject names with dot (`.`) separators. Our convention:
 ### Core Topics
 
 #### Market Data Topics
+
 ```
 market-data.tick.{symbol}              # Real-time tick updates
 market-data.candle.{symbol}            # OHLCV candle updates
@@ -64,6 +65,7 @@ market-data.volume.{symbol}            # Volume updates
 ```
 
 #### Strategy Topics
+
 ```
 strategy.signal.{symbol}               # Market signals for strategy
 strategy.decision.{symbol}             # Trading decisions
@@ -72,6 +74,7 @@ strategy.control                       # Control commands (start/stop)
 ```
 
 #### Order Topics
+
 ```
 orders.new                             # New order requests
 orders.status.{order_id}               # Order status updates
@@ -80,12 +83,14 @@ orders.cancel.{order_id}               # Order cancellation
 ```
 
 #### Position Topics
+
 ```
 positions.update.{symbol}              # Position changes
 positions.snapshot                     # Full position snapshot
 ```
 
 #### Risk Topics
+
 ```
 risk.check                             # Risk check requests
 risk.decision                          # Risk check results
@@ -94,6 +99,7 @@ risk.violation                         # Risk limit violations
 ```
 
 #### System Topics
+
 ```
 system.health                          # System health status
 system.events                          # System-wide events
@@ -102,6 +108,7 @@ system.config                          # Configuration updates
 ```
 
 #### Request/Reply Topics
+
 ```
 rpc.snapshot                           # Request full snapshot
 rpc.positions                          # Request positions
@@ -147,11 +154,13 @@ See `docs/message_schemas/` for complete schema definitions.
 **Location**: `agents/backend/services/backend_service/src/main.rs`
 
 **Integration Strategy**:
+
 - Replace Tokio channels with NATS adapters
 - Bridge existing channels to NATS topics
 - Maintain backward compatibility during migration
 
 **Key Changes**:
+
 ```rust
 // Before: Tokio channels
 let (strategy_signal_tx, strategy_signal_rx) = mpsc::unbounded_channel();
@@ -162,6 +171,7 @@ let strategy_signal_tx = NatsAdapter::new(nats_client, "strategy.signal".into())
 ```
 
 **Components to Integrate**:
+
 - Market data provider → `market-data.*` topics
 - Strategy engine → `strategy.*` topics
 - Risk engine → `risk.*` topics
@@ -169,6 +179,7 @@ let strategy_signal_tx = NatsAdapter::new(nats_client, "strategy.signal".into())
 - REST/gRPC servers → Subscribe to relevant topics
 
 **New Module**: `agents/backend/crates/nats_adapter/`
+
 - NATS client wrapper
 - Channel-to-NATS bridge
 - Message serialization/deserialization
@@ -179,15 +190,19 @@ let strategy_signal_tx = NatsAdapter::new(nats_client, "strategy.signal".into())
 **Location**: `native/src/tws_client.cpp`
 
 **Integration Strategy**:
+
 - Add NATS C client (`nats.c`)
 - Bridge TWS callbacks to NATS messages
 - Publish market data events
 - Subscribe to order commands
 
 **Key Changes**:
+
 ```cpp
 // Add NATS client
+
 #include <nats/nats.h>
+
 natsConnection* nc = nullptr;
 natsConnection_ConnectTo(&nc, "nats://localhost:4222");
 
@@ -203,11 +218,13 @@ void TWSClient::onTickPrice(TickPrice tick) {
 ```
 
 **New Files**:
+
 - `native/include/nats_bridge.h` - NATS bridge interface
 - `native/src/nats_bridge.cpp` - NATS bridge implementation
 - Update `CMakeLists.txt` to link `libnats.a`
 
 **CMake Integration**:
+
 ```cmake
 find_library(NATS_LIB nats PATHS /usr/local/lib)
 target_link_libraries(ib_box_spread ${NATS_LIB})
@@ -218,12 +235,14 @@ target_link_libraries(ib_box_spread ${NATS_LIB})
 **Location**: `python/integration/strategy_runner.py`
 
 **Integration Strategy**:
+
 - Add `nats-py` dependency
 - Subscribe to strategy signals
 - Publish strategy decisions
 - Async/await pattern
 
 **Key Changes**:
+
 ```python
 import asyncio
 from nats.aio.client import Client as NATS
@@ -242,6 +261,7 @@ async def strategy_runner():
 ```
 
 **Dependencies**:
+
 - Add `nats-py` to `requirements.txt`
 - Update `python/setup.py` if needed
 
@@ -250,11 +270,13 @@ async def strategy_runner():
 **Location**: `web/src/`
 
 **Integration Strategy**:
+
 - Use NATS WebSocket connection
 - Replace REST polling with NATS subscriptions
 - Real-time updates for all data
 
 **Key Changes**:
+
 ```typescript
 import { connect, NatsConnection } from 'nats.ws';
 
@@ -274,6 +296,7 @@ const sub = nc.subscribe('system.snapshot', {
 ```
 
 **New Files**:
+
 - `web/src/services/natsClient.ts` - NATS client wrapper
 - `web/src/hooks/useNatsSubscription.ts` - React hook for subscriptions
 - Update `web/package.json` to include `nats.ws`
@@ -283,11 +306,13 @@ const sub = nc.subscribe('system.snapshot', {
 **Location**: `ios/BoxSpreadIPad/`
 
 **Integration Strategy**:
+
 - Use `nats.swift` client
 - Replace REST polling with NATS subscriptions
 - Real-time position and order updates
 
 **Key Changes**:
+
 ```swift
 import Nats
 
@@ -301,6 +326,7 @@ let subscription = try await connection.subscribe(subject: "positions.update.>")
 ```
 
 **Dependencies**:
+
 - Add `nats.swift` via Swift Package Manager
 - Update `Package.swift`
 
@@ -309,10 +335,12 @@ let subscription = try await connection.subscribe(subject: "positions.update.>")
 **Location**: Future Go components
 
 **Integration Strategy**:
+
 - Use `nats.go` client
 - Standard Go patterns
 
 **Example**:
+
 ```go
 nc, err := nats.Connect("nats://localhost:4222")
 if err != nil {
@@ -370,6 +398,7 @@ nc.Subscribe("market-data.tick.>", func(msg *nats.Msg) {
 ### Configuration
 
 **NATS Server Config** (`nats-server.conf`):
+
 ```conf
 port: 4222
 http_port: 8222
@@ -388,6 +417,7 @@ jetstream {
 ```
 
 **Client Configuration**:
+
 - Connection URL: `nats://localhost:4222` (dev) or cluster URLs
 - Reconnect: Automatic with exponential backoff
 - Timeout: 5 seconds
@@ -467,6 +497,7 @@ let nc = async_nats::connect("nats://localhost:4222")
 ```
 
 **Backoff Schedule**:
+
 - Initial: 1 second
 - Max: 30 seconds
 - Multiplier: 2x
@@ -480,6 +511,7 @@ Topic: system.dlq.{component}.{error_type}
 ```
 
 **Retry Policy**:
+
 - Max retries: 3
 - Retry delay: 1s, 5s, 30s
 - After max retries: Send to DLQ
@@ -497,6 +529,7 @@ struct CircuitBreaker {
 ```
 
 **States**:
+
 - **Closed**: Normal operation
 - **Open**: Failures exceed threshold, reject requests
 - **HalfOpen**: Test if service recovered
@@ -504,24 +537,28 @@ struct CircuitBreaker {
 ## Migration Strategy
 
 ### Phase 1: Foundation (Week 1-2)
+
 1. Deploy NATS server
 2. Create Rust NATS adapter crate
 3. Integrate Rust backend with NATS (parallel to existing channels)
 4. Test with mock data
 
 ### Phase 2: Core Integration (Week 3-4)
+
 1. Bridge C++ TWS client to NATS
 2. Connect Python strategy runner
 3. Replace REST polling in TypeScript frontend
 4. Monitor performance and latency
 
 ### Phase 3: Full Migration (Week 5-6)
+
 1. Remove Tokio channels (replace with NATS)
 2. Add Swift iPad app integration
 3. Implement JetStream for persistence (if needed)
 4. Performance optimization
 
 ### Phase 4: Production Hardening (Week 7-8)
+
 1. Add monitoring and alerting
 2. Implement circuit breakers
 3. Load testing
@@ -530,16 +567,19 @@ struct CircuitBreaker {
 ## Performance Considerations
 
 ### Latency Targets
+
 - Market data: < 1ms (publish to subscribe)
 - Strategy decisions: < 5ms (end-to-end)
 - Order execution: < 10ms (request to confirmation)
 
 ### Throughput Targets
+
 - Market data: 10,000 messages/second
 - Strategy signals: 1,000 messages/second
 - Order updates: 500 messages/second
 
 ### Optimization Strategies
+
 1. **Message Batching**: Batch multiple updates into single message
 2. **Compression**: Enable message compression for large payloads
 3. **Connection Pooling**: Reuse connections across components
@@ -548,18 +588,22 @@ struct CircuitBreaker {
 ## Security Considerations
 
 ### Authentication
+
 - Use NATS credentials file for authentication
 - Per-component credentials with least privilege
 
 ### Authorization
+
 - Subject-based permissions
 - Read-only vs read-write access
 
 ### Encryption
+
 - TLS for all connections (production)
 - Certificate-based authentication
 
 ### Example Config
+
 ```conf
 authorization {
   users = [
@@ -572,6 +616,7 @@ authorization {
 ## Monitoring and Observability
 
 ### Metrics to Track
+
 - Message publish rate (per topic)
 - Message subscribe rate (per topic)
 - Message latency (publish to receive)
@@ -580,11 +625,13 @@ authorization {
 - Queue depths (if using JetStream)
 
 ### Tools
+
 - NATS monitoring: `nats-server --http_port 8222`
 - Prometheus exporter: `nats-prometheus-exporter`
 - Grafana dashboards: Custom dashboards for trading metrics
 
 ### Logging
+
 - Structured logging (JSON)
 - Correlation IDs for message tracing
 - Component-level log aggregation
@@ -592,21 +639,25 @@ authorization {
 ## Testing Strategy
 
 ### Unit Tests
+
 - Message serialization/deserialization
 - NATS adapter logic
 - Error handling
 
 ### Integration Tests
+
 - End-to-end message flow
 - Multi-component coordination
 - Failure scenarios
 
 ### Performance Tests
+
 - Latency benchmarks
 - Throughput tests
 - Load testing
 
 ### Test Environment
+
 - Local NATS server for development
 - Docker Compose for integration tests
 - Staging cluster for pre-production
@@ -616,6 +667,7 @@ authorization {
 ### New Dependencies
 
 **Rust**:
+
 ```toml
 [dependencies]
 async-nats = "0.32"
@@ -623,15 +675,18 @@ serde_json = "1.0"
 ```
 
 **C++**:
+
 - `libnats.a` (NATS C client library)
 - CMake integration
 
 **Python**:
+
 ```txt
 nats-py>=2.6.0
 ```
 
 **TypeScript**:
+
 ```json
 {
   "dependencies": {
@@ -641,6 +696,7 @@ nats-py>=2.6.0
 ```
 
 **Swift**:
+
 - `nats.swift` via Swift Package Manager
 
 ## Next Steps
@@ -655,4 +711,3 @@ nats-py>=2.6.0
 - [NATS Documentation](https://docs.nats.io/)
 - [NATS Architecture Guide](https://docs.nats.io/nats-concepts/architecture)
 - [Message Queue Research](./MESSAGE_QUEUE_RESEARCH.md)
-- [Component Coordination Analysis](./COMPONENT_COORDINATION_ANALYSIS.md)

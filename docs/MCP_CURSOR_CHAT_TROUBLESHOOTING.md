@@ -13,10 +13,13 @@ If you're getting errors when running `/mcp list` in Cursor chat terminal, follo
 **Solution**: Check each server configuration in `.cursor/mcp.json`:
 
 ```bash
+
 # Validate JSON syntax
+
 python3 -m json.tool .cursor/mcp.json > /dev/null && echo "✅ Valid" || echo "❌ Invalid"
 
 # List configured servers
+
 cat .cursor/mcp.json | python3 -c "import json, sys; print('\n'.join(json.load(sys.stdin)['mcpServers'].keys()))"
 ```
 
@@ -25,28 +28,36 @@ cat .cursor/mcp.json | python3 -c "import json, sys; print('\n'.join(json.load(s
 **Symptom**: Specific servers fail to load (e.g., semgrep)
 
 **Known Issues**:
+
 - `mcp-server-semgrep` has dependency issues with `@modelcontextprotocol/sdk`
 - Some servers require specific Node.js/npm versions
 
 **Solution**: Test each server manually:
 
 ```bash
+
 # Test exarp
+
 uvx exarp --mcp --help
 
 # Test filesystem
+
 npx -y @modelcontextprotocol/server-filesystem --help
 
 # Test tractatus_thinking
+
 npx -y tractatus_thinking --version
 
 # Test sequential_thinking
+
 npx -y @modelcontextprotocol/server-sequential-thinking --version
 
 # Test context7
+
 npx -y @upstash/context7-mcp --version
 
 # Test agentic-tools
+
 npx -y @pimzino/agentic-tools-mcp --version
 ```
 
@@ -68,7 +79,8 @@ npx -y @pimzino/agentic-tools-mcp --version
 
 **Symptom**: Changes to `.cursor/mcp.json` not taking effect
 
-**Solution**: 
+**Solution**:
+
 1. **Quit Cursor completely** (Cmd+Q on macOS, Alt+F4 on Linux/Windows)
 2. **Restart Cursor**
 3. Try `/mcp list` again
@@ -106,13 +118,17 @@ If a specific server is causing issues, temporarily comment it out in `.cursor/m
 ### Fix 2: Verify Prerequisites
 
 ```bash
+
 # Check Node.js version (should be v18+ or v20+)
+
 node --version
 
 # Check npm version (should be 9+)
+
 npm --version
 
 # Check uvx availability
+
 which uvx || echo "uvx not found - install with: pip install uv"
 ```
 

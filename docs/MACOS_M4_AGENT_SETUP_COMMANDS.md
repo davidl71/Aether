@@ -10,10 +10,13 @@
 ## Quick Connection
 
 ```bash
+
 # Connect to macOS M4 agent
+
 ssh davidl@192.168.192.141
 
 # Navigate to project
+
 cd /Users/davidl/Projects/Trading/ib_box_spread_full_universal
 ```
 
@@ -31,13 +34,17 @@ cd /Users/davidl/Projects/Trading/ib_box_spread_full_universal
 ### Step 2: Setup Runner
 
 ```bash
+
 # Connect to macOS M4 agent
+
 ssh davidl@192.168.192.141
 
 # Navigate to project
+
 cd /Users/davidl/Projects/Trading/ib_box_spread_full_universal
 
 # Run setup script
+
 bash scripts/setup_github_runner_macos.sh \
     https://github.com/YOUR_USERNAME/YOUR_REPO \
     YOUR_REGISTRATION_TOKEN \
@@ -45,6 +52,7 @@ bash scripts/setup_github_runner_macos.sh \
 ```
 
 **One-liner (from local machine):**
+
 ```bash
 ssh davidl@192.168.192.141 "cd /Users/davidl/Projects/Trading/ib_box_spread_full_universal && bash scripts/setup_github_runner_macos.sh https://github.com/YOUR_USERNAME/YOUR_REPO YOUR_TOKEN macos-m4-agent"
 ```
@@ -54,10 +62,13 @@ ssh davidl@192.168.192.141 "cd /Users/davidl/Projects/Trading/ib_box_spread_full
 ## System Information Collection
 
 ```bash
+
 # From local machine
+
 ssh davidl@192.168.192.141 "cd /Users/davidl/Projects/Trading/ib_box_spread_full_universal && python3 scripts/collect_system_info_python.py" > system_info_macos.json
 
 # View results
+
 cat system_info_macos.json | jq .
 ```
 
@@ -68,23 +79,30 @@ cat system_info_macos.json | jq .
 ### Test Connection
 
 ```bash
+
 # Test SSH access
+
 ssh davidl@192.168.192.141 "hostname && pwd"
 
 # Test project access
+
 ssh davidl@192.168.192.141 "cd /Users/davidl/Projects/Trading/ib_box_spread_full_universal && pwd && ls -la"
 
 # Test runner status
+
 ssh davidl@192.168.192.141 "cd ~/actions-runner && ~/actions-runner/svc.sh status"
 ```
 
 ### Check Runner Logs
 
 ```bash
+
 # View runner logs
+
 ssh davidl@192.168.192.141 "log show --predicate 'process == \"Runner.Listener\"' --last 50"
 
 # Follow logs in real-time
+
 ssh davidl@192.168.192.141 "log show --predicate 'process == \"Runner.Listener\"' --last 5m --style syslog"
 ```
 
@@ -145,26 +163,34 @@ ssh davidl@192.168.192.141 "cd /Users/davidl/Projects/Trading/ib_box_spread_full
 ### Can't Connect
 
 ```bash
+
 # Test connectivity
+
 ping 192.168.192.141
 
 # Test SSH port
+
 nc -zv 192.168.192.141 22
 
 # Verbose SSH
+
 ssh -v davidl@192.168.192.141
 ```
 
 ### Runner Not Working
 
 ```bash
+
 # Check runner process
+
 ssh davidl@192.168.192.141 "ps aux | grep Runner.Listener"
 
 # Check service status
+
 ssh davidl@192.168.192.141 "cd ~/actions-runner && ./svc.sh status"
 
 # View recent logs
+
 ssh davidl@192.168.192.141 "log show --predicate 'process == \"Runner.Listener\"' --since '10 minutes ago'"
 ```
 
@@ -176,22 +202,28 @@ ssh davidl@192.168.192.141 "log show --predicate 'process == \"Runner.Listener\"
 
 ```bash
 ssh davidl@192.168.192.141 "sysctl machdep.cpu.brand_string"
+
 # Should show "Apple M4" or similar
 
 # Check if Neural Engine available
+
 ssh davidl@192.168.192.141 "sysctl machdep.cpu.brand_string | grep -E 'M[1-4]'"
 ```
 
 ### System Information
 
 ```bash
+
 # macOS version
+
 ssh davidl@192.168.192.141 "sw_vers"
 
 # CPU info
+
 ssh davidl@192.168.192.141 "sysctl machdep.cpu.brand_string hw.ncpu"
 
 # Memory
+
 ssh davidl@192.168.192.141 "sysctl hw.memsize"
 ```
 

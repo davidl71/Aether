@@ -17,6 +17,7 @@
 ## Ubuntu Agent
 
 **Connection Details:**
+
 - **IP Address:** `192.168.192.57`
 - **User:** `david`
 - **SSH Command:** `ssh david@192.168.192.57`
@@ -25,18 +26,21 @@
 - **Project Path (Short):** `~/ib_box_spread_full_universal`
 
 **Full SSH Connection:**
+
 ```bash
 ssh david@192.168.192.57
 cd ~/ib_box_spread_full_universal
 ```
 
 **With SSH Alias (if configured):**
+
 ```bash
 ssh cursor-ubuntu
 cd ~/ib_box_spread_full_universal
 ```
 
 **Setup GitHub Actions Runner:**
+
 ```bash
 ssh david@192.168.192.57
 cd ~/ib_box_spread_full_universal
@@ -51,6 +55,7 @@ bash scripts/setup_github_runner_ubuntu.sh \
 ## macOS M4 Agent
 
 **Connection Details:**
+
 - **IP Address:** `192.168.192.141`
 - **User:** `davidl`
 - **SSH Command:** `ssh davidl@192.168.192.141`
@@ -58,18 +63,21 @@ bash scripts/setup_github_runner_ubuntu.sh \
 - **Project Path:** `/Users/davidl/Projects/Trading/ib_box_spread_full_universal`
 
 **Full SSH Connection:**
+
 ```bash
 ssh davidl@192.168.192.141
 cd /Users/davidl/Projects/Trading/ib_box_spread_full_universal
 ```
 
 **With SSH Alias (if configured):**
+
 ```bash
 ssh cursor-m4-mac
 cd /Users/davidl/Projects/Trading/ib_box_spread_full_universal
 ```
 
 **Setup GitHub Actions Runner:**
+
 ```bash
 ssh davidl@192.168.192.141
 cd /Users/davidl/Projects/Trading/ib_box_spread_full_universal
@@ -86,33 +94,43 @@ bash scripts/setup_github_runner_macos.sh \
 ### SSH Connection Commands
 
 ```bash
+
 # Ubuntu Agent
+
 ssh david@192.168.192.57
 
 # macOS M4 Agent
+
 ssh davidl@192.168.192.141
+
 # or: ssh cursor-m4-mac  (if SSH alias configured)
 ```
 
 ### Project Paths
 
 ```bash
+
 # Ubuntu Agent
+
 cd ~/ib_box_spread_full_universal
 
 # macOS M4 Agent
+
 cd /Users/davidl/Projects/Trading/ib_box_spread_full_universal
 ```
 
 ### Runner Setup Commands
 
 ```bash
+
 # Ubuntu Agent
+
 cd ~/ib_box_spread_full_universal
 bash scripts/setup_github_runner_ubuntu.sh \
     <REPO_URL> <TOKEN> ubuntu-agent
 
 # macOS M4 Agent
+
 cd /Users/davidl/Projects/Trading/ib_box_spread_full_universal
 bash scripts/setup_github_runner_macos.sh \
     <REPO_URL> <TOKEN> macos-m4-agent
@@ -127,7 +145,9 @@ bash scripts/setup_github_runner_macos.sh \
 Location: `~/.ssh/config`
 
 ```ssh-config
+
 # Ubuntu Agent
+
 Host cursor-ubuntu
   HostName 192.168.192.57
   User david
@@ -135,6 +155,7 @@ Host cursor-ubuntu
   StrictHostKeyChecking accept-new
 
 # macOS M4 Agent
+
 Host cursor-m4-mac
   HostName 192.168.192.141
   User davidl
@@ -149,20 +170,26 @@ Host cursor-m4-mac
 ### Test Ubuntu Connection
 
 ```bash
+
 # Test SSH connection
+
 ssh david@192.168.192.57 "hostname && pwd"
 
 # Test project access
+
 ssh david@192.168.192.57 "cd ~/ib_box_spread_full_universal && pwd && ls -la"
 ```
 
 ### Test macOS Connection
 
 ```bash
+
 # Test SSH connection
+
 ssh davidl@192.168.192.141 "hostname && pwd"
 
 # Test project access
+
 ssh davidl@192.168.192.141 "cd /Users/davidl/Projects/Trading/ib_box_spread_full_universal && pwd && ls -la"
 ```
 

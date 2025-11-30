@@ -11,6 +11,7 @@
 ### **Local Codebase Analysis:**
 
 **Existing Data Infrastructure:**
+
 1. **Time-Series Database**: QuestDB (partially integrated)
    - Location: `python/integration/questdb_client.py`
    - Protocol: InfluxDB Line Protocol (ILP) on port 9009
@@ -31,6 +32,7 @@
    - **Layer 4**: Configuration storage (TOML files)
 
 **Code References:**
+
 ```21:27:docs/research/architecture/BACKEND_DATA_STORAGE_ARCHITECTURE.md
 2. **QuestDB (Time-Series Database):**
    - **Status:** Partially integrated
@@ -46,18 +48,21 @@
 ### **Internet Research (2025):**
 
 🔗 **[ClickHouse Quick Start Guide](https://clickhouse.com/docs/get-started/quick-start)**
+
 - **Found via web search:** ClickHouse official documentation for quick start
 - **Key Insights:**
   - High-performance, open-source columnar database for real-time analytical processing
   - Offers both cloud and open-source solutions
   - Supports multiple data ingestion methods: CDC, SQL console, local client, file upload
   - Optimized for analytical queries on large datasets
+
 - **Applicable to Task:**
   - Potential alternative to QuestDB for time-series analytics
   - Better suited for analytical workloads vs. real-time streaming
   - Cloud option available (ClickHouse Cloud on AWS/GCP/Azure)
 
 🔗 **[Financial Modeling Prep (FMP) API Documentation](https://site.financialmodelingprep.com/developer/docs)**
+
 - **Found via web search:** FMP comprehensive API documentation
 - **Key Insights:**
   - **Comprehensive Coverage**: Over 100 API endpoints
@@ -70,6 +75,7 @@
     - Options data available
   - **Auth**: API key required (`?apikey=YOUR_API_KEY`)
   - **Free Tier**: Limited (requires API key registration)
+
 - **Applicable to Task:**
   - **Complementary to existing providers**: More comprehensive than Alpha Vantage/Finnhub
   - **Financial statements**: Detailed financial data for fundamental analysis
@@ -78,6 +84,7 @@
   - **Use Case**: Cross-validation with TWS API data, fundamental analysis, research
 
 🔗 **[Daloopa: Pros & Cons of Open Source Financial Data](https://daloopa.com/blog/analyst-best-practices/pros-cons-open-source-financial-data-for-analysis)**
+
 - **Found via web search:** Daloopa blog on open-source financial data analysis
 - **Key Insights:**
   - **Pros of Open Source Data**:
@@ -91,12 +98,14 @@
     - Limited support compared to commercial providers
     - Potential gaps in coverage
   - **Best Practices**: Validate data quality, implement data governance, use multiple sources for cross-validation
+
 - **Applicable to Task:**
   - **Strategy**: Use open-source data for research/backtesting, commercial data for live trading
   - **Validation**: Cross-validate data from multiple sources (TWS + FMP + Alpha Vantage)
   - **Risk Management**: Understand limitations of open-source financial data
 
 🔗 **[QuestDB Market Data Features](https://questdb.com/market-data/)**
+
 - **Found via web search:** QuestDB specialized features for capital markets
 - **Key Insights:**
   - **Capital Markets Optimization**: Purpose-built for financial data
@@ -108,12 +117,14 @@
     - Exchange surveillance features
   - **Performance**: Optimized for rapid data ingestion and near-instant queries
   - **Extended SQL**: Time-series SQL extensions for financial queries
+
 - **Applicable to Task:**
   - **Current Integration**: Already partially integrated (`python/integration/questdb_client.py`)
   - **Strengths**: Optimized for capital markets use case
   - **Recommendation**: Continue using QuestDB for time-series market data storage
 
 🔗 **[QuestDB Documentation](https://questdb.com/docs/)**
+
 - **Found via web search:** QuestDB comprehensive documentation
 - **Key Insights:**
   - **Installation**: Multiple deployment options (Docker, Homebrew, binaries)
@@ -121,12 +132,14 @@
   - **SQL Extensions**: Time-series specific SQL features (SAMPLE BY, LATEST ON, ASOF JOIN)
   - **Performance**: Sub-millisecond queries on billions of rows
   - **Integration**: Python, Java, Node.js, Go clients available
+
 - **Applicable to Task:**
   - **Enhancement Opportunity**: Expand QuestDB usage beyond quotes/trades
   - **Potential Use**: Store positions history, orders history, Greeks snapshots
   - **Integration**: Already using ILP protocol, could leverage PostgreSQL protocol for easier Rust integration
 
 🔗 **[FinanceDatabase by JerBouma (GitHub)](https://github.com/JerBouma/FinanceDatabase)**
+
 - **Found via web search:** Python library providing comprehensive financial instrument database
 - **Key Insights:**
   - **Scope**: Over 300,000 financial symbols
@@ -141,6 +154,7 @@
   - **Purpose**: Research, backtesting, symbol lookup
   - **Format**: Python library, structured data access
   - **License**: Open-source (check specific license)
+
 - **Applicable to Task:**
   - **Symbol Lookup**: Comprehensive symbol database for research
   - **Backtesting**: Historical symbol reference for backtesting strategies
@@ -148,6 +162,7 @@
   - **Limitation**: Static reference data, not real-time market data
 
 🔗 **[FinanceToolkit by JerBouma (GitHub)](https://github.com/JerBouma/FinanceToolkit)**
+
 - **Found via web search:** Open-source Python toolkit for transparent financial analysis
 - **Key Insights:**
   - **Comprehensive Metrics**: 150+ financial ratios, indicators, and performance measurements
@@ -167,12 +182,14 @@
     - Caching support (`use_cached_data=True`)
     - Multi-ticker analysis
   - **Complementary to FinanceDatabase**: Works together for comprehensive analysis
+
 - **Applicable to Task:**
   - **Risk Metrics Cross-Validation**: Project already has C++ risk calculator (Sharpe, Sortino, Calmar, Information Ratio) - FinanceToolkit can validate calculations
   - **Fundamental Analysis**: Analyze underlying securities for box spread opportunities
   - **Performance Analysis**: Calculate portfolio-level risk-adjusted returns
   - **Research & Backtesting**: Comprehensive financial analysis for strategy development
   - **Transparent Calculations**: All methods are documented - useful for understanding methodology
+
 - **Integration Priority**: Medium (complementary to existing risk calculator)
 
 ---
@@ -200,6 +217,7 @@
 | **ORATS** | Paid | ✅ Extensive | ❌ No | ⚠️ Limited | Options analytics |
 
 **Recommendation**: **FMP as complementary data source** for:
+
 - Financial statement analysis
 - Cross-validation with TWS data
 - Research and backtesting
@@ -261,6 +279,7 @@
 #### **Open Source Data Strategy:**
 
 **From Daloopa Analysis:**
+
 - **Use Open Source for**: Research, backtesting, validation
 - **Use Commercial for**: Live trading, critical decisions
 - **Cross-Validation**: Always validate open-source data against commercial sources
@@ -275,7 +294,9 @@
 **Current State**: QuestDB only stores `quotes` and `trades`
 
 **Recommended Expansion**:
+
 ```python
+
 # Additional QuestDB tables to add:
 # 1. positions_history - Time-series position snapshots
 # 2. orders_history - Time-series order status updates
@@ -284,6 +305,7 @@
 ```
 
 **Benefits**:
+
 - Historical analysis of positions, orders, Greeks
 - Real-time monitoring and alerting
 - Backtesting capabilities
@@ -292,6 +314,7 @@
 ### **Priority 2: Add FMP API Integration** (Medium Impact, Medium Effort)
 
 **Integration Points**:
+
 1. **Financial Statements Module**:
    - Income statements, balance sheets, cash flow statements
    - Use for fundamental analysis of underlying securities
@@ -305,7 +328,9 @@
    - Historical financial data for backtesting
 
 **Implementation**:
+
 ```python
+
 # New module: python/integration/fmp_client.py
 # - Financial statements API
 # - Bulk data APIs
@@ -315,6 +340,7 @@
 ### **Priority 3: FinanceDatabase Integration** (Low Impact, Low Effort)
 
 **Integration Points**:
+
 1. **Symbol Lookup Tool**:
    - Comprehensive symbol search
    - Research and backtesting reference
@@ -324,7 +350,9 @@
    - Historical symbol reference
 
 **Implementation**:
+
 ```python
+
 # Add to research tools: python/research/symbol_lookup.py
 # - Use FinanceDatabase for symbol exploration
 # - Reference data for backtesting
@@ -333,6 +361,7 @@
 ### **Priority 4: FinanceToolkit Integration** (Medium Impact, Low Effort)
 
 **Integration Points**:
+
 1. **Risk Metrics Cross-Validation**:
    - Project already has C++ risk calculator (`native/src/risk_calculator.cpp`)
    - Existing metrics: Sharpe, Sortino, Calmar, Information Ratio, Max Drawdown
@@ -355,16 +384,20 @@
    - Multi-ticker analysis for sector/industry comparisons
 
 **Implementation**:
+
 ```python
+
 # New module: python/integration/finance_toolkit_client.py
 # - Risk metrics validation against C++ calculator
 # - Fundamental analysis for underlying securities
 # - Performance analysis for portfolio tracking
 
 # Example usage:
+
 from financetoolkit import Toolkit
 
 # Initialize with FMP API key (shared with FMP client)
+
 toolkit = Toolkit(
     tickers=['SPY', 'QQQ'],  # Underlying securities
     api_key="YOUR_FMP_API_KEY",
@@ -373,6 +406,7 @@ toolkit = Toolkit(
 )
 
 # Cross-validate risk metrics
+
 sharpe_ratio = toolkit.ratios.get_sharpe_ratio(trailing=252)
 sortino_ratio = toolkit.ratios.get_sortino_ratio(trailing=252)
 
@@ -380,6 +414,7 @@ sortino_ratio = toolkit.ratios.get_sortino_ratio(trailing=252)
 ```
 
 **Benefits**:
+
 - **Transparency**: All calculation methods are documented (open-source)
 - **Comprehensive**: 150+ ratios vs. ~10 in existing risk calculator
 - **Validation**: Cross-validate existing C++ risk calculations

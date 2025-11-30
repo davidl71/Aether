@@ -8,6 +8,7 @@
 ## What It Does
 
 The Nightly Task Automation tool automatically:
+
 1. ✅ **Identifies** background-capable tasks (MCP extensions, research, implementation, etc.)
 2. ✅ **Assigns** them to remote agents (Ubuntu + macOS) in parallel
 3. ✅ **Moves** interactive tasks to Review status (requires user input)
@@ -24,6 +25,7 @@ Run nightly task automation with default settings (5 tasks per host, 10 total)
 ```
 
 Or with parameters:
+
 ```
 Run nightly task automation: max 10 tasks per host, 20 total parallel tasks, high priority only, dry run mode
 ```
@@ -47,6 +49,7 @@ Run nightly task automation in dry run mode to preview what would happen
 ```
 
 This shows:
+
 - Which tasks would be assigned
 - Which tasks would be moved to Review
 - No actual changes made
@@ -76,6 +79,7 @@ This processes only MCP extension tasks.
 ## What Gets Assigned
 
 **Background-Capable Tasks:**
+
 - ✅ MCP extension tasks (MCP-EXT-*)
 - ✅ Research tasks
 - ✅ Implementation tasks
@@ -84,6 +88,7 @@ This processes only MCP extension tasks.
 - ✅ Configuration tasks
 
 **Excluded:**
+
 - ❌ Design tasks (need decisions)
 - ❌ Tasks requiring clarification
 - ❌ Tasks needing user input
@@ -94,6 +99,7 @@ This processes only MCP extension tasks.
 ## What Gets Moved to Review
 
 **Interactive Tasks:**
+
 - Tasks with "clarification required"
 - Tasks needing user input
 - Design decision tasks
@@ -106,6 +112,7 @@ This processes only MCP extension tasks.
 ## Output
 
 The tool returns:
+
 - **Summary:** Statistics (tasks found, assigned, moved, hosts used)
 - **Assigned Tasks:** List of tasks assigned to each host
 - **Moved to Review:** List of task IDs moved to Review
@@ -136,6 +143,7 @@ on:
 ### ✅ Dry Run Mode
 
 Always test first:
+
 ```
 Run nightly task automation in dry run mode
 ```
@@ -147,6 +155,7 @@ State file automatically backed up before changes (`.todo2/state.todo2.json.bak`
 ### ✅ Audit Trail
 
 All changes logged in:
+
 - Task comments (why moved to Review)
 - Task status changes
 - TODO2 state file
@@ -158,6 +167,7 @@ All changes logged in:
 ### No Tasks Assigned
 
 **Check:**
+
 1. Tasks are in "Todo" status
 2. Tasks are background-capable
 3. Host limits not exceeded
@@ -174,11 +184,13 @@ All changes logged in:
 ## Next Steps
 
 1. **Test with Dry Run:**
+
    ```
    Run nightly task automation in dry run mode
    ```
 
 2. **Execute First Run:**
+
    ```
    Run nightly task automation with default settings
    ```

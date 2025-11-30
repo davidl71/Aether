@@ -1,6 +1,6 @@
 # CodeQL Workflow Push Instructions
 
-**Date**: 2025-11-29  
+**Date**: 2025-11-29
 **Status**: ⚠️ **Requires Manual Push**
 
 ---
@@ -20,10 +20,13 @@ The CodeQL workflow file (`.github/workflows/codeql.yml`) requires GitHub OAuth 
 ### Option 1: Push with GitHub CLI (Recommended)
 
 ```bash
+
 # Refresh auth with workflow scope
+
 gh auth refresh -s workflow
 
 # Push the workflow commit
+
 git push origin main
 ```
 
@@ -39,10 +42,13 @@ git push origin main
 ### Option 3: Use SSH with Workflow Permissions
 
 ```bash
+
 # Switch to SSH remote
+
 git remote set-url origin git@github.com:davidl71/ib_box_spread_full_universal.git
 
 # Push (if SSH key has workflow permissions)
+
 git push origin main
 ```
 
@@ -50,16 +56,18 @@ git push origin main
 
 ## Current Status
 
-✅ **Pushed**: All commits except CodeQL workflow  
+✅ **Pushed**: All commits except CodeQL workflow
 ⚠️ **Pending**: Commit `[latest]` - "Restore CodeQL workflow (requires manual push with workflow scope)"
 
 **Files Pushed**:
+
 - Agent 1 Security: Path validator, CMake updates
 - Agent 2 Testing: Test infrastructure, coverage setup
 - Agent 3 Automation: Integration documentation
 - All Todo2 updates and documentation
 
 **File Pending Push**:
+
 - `.github/workflows/codeql.yml` - CodeQL security analysis workflow
 
 ---
@@ -69,7 +77,9 @@ git push origin main
 After pushing the workflow:
 
 ```bash
+
 # Verify workflow exists on GitHub
+
 gh workflow list
 
 # Or check via web interface
@@ -78,5 +88,5 @@ gh workflow list
 
 ---
 
-**Last Updated**: 2025-11-29  
+**Last Updated**: 2025-11-29
 **Action Required**: Manual push of CodeQL workflow file

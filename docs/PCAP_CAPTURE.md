@@ -227,10 +227,13 @@ Potential improvements:
 2. **Analyze PCAP file**:
 
 ```bash
+
 # View connection timeline
+
 tshark -r connection_debug.pcap -T fields -e frame.time -e tcp.payload
 
 # Filter connection events
+
 tshark -r connection_debug.pcap -Y "tcp contains CONNECTION"
 ```
 
@@ -257,9 +260,11 @@ tshark -r connection_debug.pcap -Y "tcp contains CONNECTION"
 import pcapy
 
 # Read PCAP file
+
 reader = pcapy.open_offline("tws_capture.pcap")
 
 # Process packets
+
 for header, packet in reader:
     # Analyze packet data
     pass
@@ -275,5 +280,5 @@ for header, packet in reader:
 ## Related Documentation
 
 - [TWS Integration Status](research/integration/TWS_INTEGRATION_STATUS.md)
-- [Configuration Guide](CONFIGURATION.md)
-- [Troubleshooting Guide](TROUBLESHOOTING.md)
+- [Configuration Guide](ENVIRONMENT_CONFIGURATION.md)
+- [Troubleshooting Guide](TROUBLESHOOTING_BLANK_PAGE.md)

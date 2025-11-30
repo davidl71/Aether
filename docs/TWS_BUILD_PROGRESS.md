@@ -141,10 +141,13 @@ Your Application
 **Implementation**:
 
 ```cmake
+
 # In your main CMakeLists.txt
+
 set(TWS_CLIENT_DIR "${CMAKE_SOURCE_DIR}/native/third_party/tws-api/IBJts/source/cppclient/client")
 
 # Essential TWS sources (without protobuf)
+
 set(TWS_ESSENTIAL_SOURCES
     ${TWS_CLIENT_DIR}/EClient.cpp
     ${TWS_CLIENT_DIR}/EClientSocket.cpp

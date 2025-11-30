@@ -14,6 +14,7 @@
 **Schedule:** Runs daily at 2 AM UTC
 
 **Features:**
+
 - Automatic daily execution
 - Manual trigger via GitHub Actions UI
 - Configurable parameters
@@ -37,6 +38,7 @@ on:
 ### Manual Trigger
 
 You can also trigger manually from GitHub Actions UI:
+
 - Go to Actions → Nightly Task Automation
 - Click "Run workflow"
 - Configure parameters:
@@ -59,6 +61,7 @@ You can also trigger manually from GitHub Actions UI:
 ### Custom Settings
 
 Override via workflow_dispatch inputs:
+
 - `max_tasks_per_host`: Integer
 - `max_parallel_tasks`: Integer
 - `priority_filter`: "high", "medium", or "low"
@@ -71,6 +74,7 @@ Override via workflow_dispatch inputs:
 ### Artifacts
 
 Results are saved as artifacts:
+
 - **Name:** `nightly-automation-results`
 - **File:** `nightly-automation-results.json`
 - **Retention:** 30 days
@@ -78,6 +82,7 @@ Results are saved as artifacts:
 ### Summary
 
 Summary appears in GitHub Actions UI:
+
 - Background tasks found
 - Tasks assigned
 - Tasks moved to Review
@@ -92,19 +97,26 @@ If you prefer to run locally instead of GitHub Actions:
 ### Setup Cron Job
 
 ```bash
+
 # Edit crontab
+
 crontab -e
 
 # Add line (runs at 2 AM local time daily)
+
 0 2 * * * cd /path/to/project && python3 -m mcp-servers.project-management-automation.tools.nightly_task_automation >> /tmp/nightly-automation.log 2>&1
 ```
 
 ### With Custom Settings
 
 ```bash
+
 # Create wrapper script
+
 cat > scripts/run_nightly_automation.sh << 'EOF'
+
 #!/bin/bash
+
 cd /path/to/project
 python3 << 'PYTHON'
 import sys
@@ -125,6 +137,7 @@ EOF
 chmod +x scripts/run_nightly_automation.sh
 
 # Add to crontab
+
 0 2 * * * /path/to/project/scripts/run_nightly_automation.sh
 ```
 
@@ -153,7 +166,9 @@ chmod +x scripts/run_nightly_automation.sh
 Default is UTC. To change schedule:
 
 ```yaml
+
 # Example: 2 AM EST (UTC-5) = 7 AM UTC
+
 on:
   schedule:
     - cron: '0 7 * * *'  # 2 AM EST
@@ -196,6 +211,7 @@ Cron uses local machine timezone automatically.
 ### Workflow Not Running
 
 **Check:**
+
 1. Workflow file is in `.github/workflows/` directory
 2. File syntax is valid YAML
 3. Repository has Actions enabled
@@ -204,6 +220,7 @@ Cron uses local machine timezone automatically.
 ### Tasks Not Assigned
 
 **Check:**
+
 1. Tasks are in "Todo" status
 2. Tasks are background-capable
 3. Limits not too restrictive

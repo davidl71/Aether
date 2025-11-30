@@ -84,7 +84,9 @@ This document captures learnings from Docker containerization solutions for IB G
 **Implementation Pattern:**
 
 ```bash
+
 # IBC is used to automate login
+
 IBC_PATH=/opt/ibc
 IBC_CONFIG=/config/ibc-config.ini
 ${IBC_PATH}/scripts/ibcstart.sh ${IBC_CONFIG}
@@ -115,13 +117,17 @@ ${IBC_PATH}/scripts/ibcstart.sh ${IBC_CONFIG}
 **Implementation Pattern:**
 
 ```dockerfile
+
 # Install Xvfb and VNC
+
 RUN apt-get install -y xvfb x11vnc
 
 # Start Xvfb
+
 Xvfb :1 -screen 0 1024x768x24 &
 
 # Start VNC server
+
 x11vnc -display :1 -nopw -listen localhost -xkb -forever -shared &
 ```
 
@@ -150,11 +156,14 @@ x11vnc -display :1 -nopw -listen localhost -xkb -forever -shared &
 **Implementation Pattern:**
 
 ```bash
+
 # SSH tunnel setup
+
 ssh -o ServerAliveInterval=20 -o ServerAliveCountMax=3 \
     -fNL 4001:localhost:4001 user@remote-server
 
 # Auto-restart on failure
+
 while true; do
     ssh -fNL 4001:localhost:4001 user@remote-server
     sleep 5
@@ -186,7 +195,9 @@ done
 **Implementation Pattern:**
 
 ```yaml
+
 # docker-compose.yml
+
 services:
   ib-gateway:
     environment:
@@ -224,7 +235,9 @@ secrets:
 **Implementation Pattern:**
 
 ```yaml
+
 # docker-compose.yml
+
 environment:
   - IB_GATEWAY_VERSION=stable
   - TWS_USERID=${TWS_USERID}
@@ -259,7 +272,9 @@ environment:
 **Implementation Pattern:**
 
 ```bash
+
 # Health check script
+
 while true; do
     if ! pgrep -x "java.*IBGateway" > /dev/null; then
         echo "IB Gateway stopped, restarting..."
@@ -527,6 +542,7 @@ volumes:
 FROM ubuntu:22.04
 
 # Install dependencies
+
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
@@ -536,20 +552,25 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy source code
+
 COPY . /app
 WORKDIR /app
 
 # Build application
+
 RUN ./scripts/build_universal.sh
 
 # Set entrypoint
+
 ENTRYPOINT ["./build/bin/ib_box_spread"]
 ```
 
 ### Step 2: Create Docker Compose
 
 ```yaml
+
 # docker-compose.yml
+
 version: '3.8'
 
 services:
@@ -567,6 +588,7 @@ services:
 ### Step 3: Add IBC Integration
 
 ```bash
+
 # Install IBC
 # Configure IBC for automated login
 # Integrate with application

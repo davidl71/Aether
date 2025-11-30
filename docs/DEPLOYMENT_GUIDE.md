@@ -106,10 +106,13 @@ This guide provides step-by-step procedures for deploying the box spread trading
 **Linux (Ubuntu/Debian)**:
 
 ```bash
+
 # Update system
+
 sudo apt update && sudo apt upgrade -y
 
 # Install build dependencies
+
 sudo apt install -y \
     build-essential \
     cmake \
@@ -123,6 +126,7 @@ sudo apt install -y \
     golang
 
 # Install runtime dependencies
+
 sudo apt install -y \
     libprotobuf-dev \
     libabsl-dev \
@@ -132,17 +136,22 @@ sudo apt install -y \
 **macOS**:
 
 ```bash
+
 # Install Homebrew (if not installed)
+
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # Install dependencies
+
 brew install cmake ninja git python@3.11 rust go
 ```
 
 ### 1.3 User and Permissions
 
 ```bash
+
 # Create dedicated user for trading system
+
 sudo useradd -m -s /bin/bash ib_trading
 sudo mkdir -p /opt/ib_box_spread
 sudo chown ib_trading:ib_trading /opt/ib_box_spread
@@ -169,12 +178,15 @@ sudo -u ib_trading git checkout <production-branch>
 cd /opt/ib_box_spread
 
 # Configure build
+
 cmake --preset macos-universal-release  # or linux-release
 
 # Build
+
 cmake --build --preset macos-universal-release
 
 # Verify build
+
 ./build/ib_box_spread --version
 ```
 
@@ -185,6 +197,7 @@ cd /opt/ib_box_spread/python
 sudo -u ib_trading pip3 install --user -r requirements.txt
 
 # Build Cython bindings
+
 cd bindings
 sudo -u ib_trading pip3 install --user -e .
 ```
@@ -203,13 +216,17 @@ sudo -u ib_trading cargo build --release
 ### 3.1 Create Production Configuration
 
 ```bash
+
 # Create config directory
+
 sudo -u ib_trading mkdir -p ~/.config/ib_box_spread
 
 # Generate sample config
+
 sudo -u ib_trading /opt/ib_box_spread/build/ib_box_spread --init-config
 
 # Edit configuration
+
 sudo -u ib_trading nano ~/.config/ib_box_spread/config.json
 ```
 
@@ -261,11 +278,14 @@ sudo -u ib_trading nano ~/.config/ib_box_spread/config.json
 **File Permissions**:
 
 ```bash
+
 # Secure configuration file
+
 chmod 600 ~/.config/ib_box_spread/config.json
 chown ib_trading:ib_trading ~/.config/ib_box_spread/config.json
 
 # Secure log directory
+
 sudo mkdir -p /var/log/ib_box_spread
 sudo chown ib_trading:ib_trading /var/log/ib_box_spread
 chmod 750 /var/log/ib_box_spread
@@ -274,7 +294,9 @@ chmod 750 /var/log/ib_box_spread
 **Environment Variables** (if needed):
 
 ```bash
+
 # Add to ~/.bashrc or systemd service file
+
 export IB_BOX_SPREAD_CONFIG=/home/ib_trading/.config/ib_box_spread/config.json
 export TWS_MOCK=false
 ```
@@ -353,6 +375,7 @@ StandardOutput=journal
 StandardError=journal
 
 # Security settings
+
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
@@ -360,6 +383,7 @@ ProtectHome=read-only
 ReadWritePaths=/var/log/ib_box_spread
 
 # Resource limits
+
 LimitNOFILE=65536
 MemoryMax=4G
 
@@ -421,7 +445,9 @@ launchctl start com.ib_box_spread
 **Log Rotation** (logrotate):
 
 ```bash
+
 # Create logrotate config: /etc/logrotate.d/ib-box-spread
+
 /var/log/ib_box_spread/*.log {
     daily
     rotate 30
@@ -442,10 +468,12 @@ launchctl start com.ib_box_spread
 **Health Check Script**:
 
 ```bash
+
 #!/bin/bash
 # /opt/ib_box_spread/scripts/health_check.sh
 
 # Check if service is running
+
 if ! systemctl is-active --quiet ib-box-spread; then
     echo "ERROR: Service is not running"
     exit 1
@@ -455,6 +483,7 @@ fi
 # curl -f http://localhost:8080/health || exit 1
 
 # Check log for recent errors
+
 if tail -n 100 /var/log/ib_box_spread/ib_box_spread.log | grep -q "ERROR\|CRITICAL"; then
     echo "WARNING: Recent errors in log"
 fi
@@ -466,6 +495,7 @@ exit 0
 **Cron Job** (every 5 minutes):
 
 ```bash
+
 # Add to crontab: crontab -e
 */5 * * * * /opt/ib_box_spread/scripts/health_check.sh
 ```
@@ -506,28 +536,36 @@ exit 0
 **Firewall Rules**:
 
 ```bash
+
 # Allow only localhost connections to TWS
+
 sudo ufw allow from 127.0.0.1 to any port 7496
 sudo ufw deny 7496
 
 # Allow SSH (if remote)
+
 sudo ufw allow 22/tcp
 
 # Enable firewall
+
 sudo ufw enable
 ```
 
 ### 7.2 File System Security
 
 ```bash
+
 # Restrict access to trading directory
+
 sudo chmod 750 /opt/ib_box_spread
 sudo chown -R ib_trading:ib_trading /opt/ib_box_spread
 
 # Secure configuration
+
 chmod 600 ~/.config/ib_box_spread/config.json
 
 # Secure logs
+
 chmod 640 /var/log/ib_box_spread/*.log
 ```
 
@@ -542,7 +580,9 @@ chmod 640 /var/log/ib_box_spread/*.log
 **Example**:
 
 ```bash
+
 # Use environment variables
+
 export IB_API_KEY=$(vault kv get -field=api_key secret/ib_box_spread)
 export IB_API_SECRET=$(vault kv get -field=api_secret secret/ib_box_spread)
 ```
@@ -556,8 +596,10 @@ export IB_API_SECRET=$(vault kv get -field=api_secret secret/ib_box_spread)
 **Configuration Backup**:
 
 ```bash
+
 # Daily backup script
 #!/bin/bash
+
 BACKUP_DIR="/backup/ib_box_spread"
 DATE=$(date +%Y%m%d)
 
@@ -566,13 +608,16 @@ cp ~/.config/ib_box_spread/config.json "$BACKUP_DIR/$DATE/"
 cp -r /var/log/ib_box_spread "$BACKUP_DIR/$DATE/logs/"
 
 # Keep last 30 days
+
 find "$BACKUP_DIR" -type d -mtime +30 -exec rm -rf {} +
 ```
 
 **Database Backup** (if using QuestDB):
 
 ```bash
+
 # Backup QuestDB data
+
 questdb backup /backup/ib_box_spread/questdb_$(date +%Y%m%d).tar.gz
 ```
 
@@ -581,20 +626,26 @@ questdb backup /backup/ib_box_spread/questdb_$(date +%Y%m%d).tar.gz
 **Service Recovery**:
 
 ```bash
+
 # Restart service
+
 sudo systemctl restart ib-box-spread
 
 # Check status
+
 sudo systemctl status ib-box-spread
 
 # View logs
+
 sudo journalctl -u ib-box-spread -f
 ```
 
 **Configuration Recovery**:
 
 ```bash
+
 # Restore from backup
+
 cp /backup/ib_box_spread/YYYYMMDD/config.json ~/.config/ib_box_spread/
 sudo systemctl restart ib-box-spread
 ```
@@ -608,11 +659,14 @@ sudo systemctl restart ib-box-spread
 **Linux**:
 
 ```bash
+
 # Increase file descriptor limits
+
 echo "* soft nofile 65536" | sudo tee -a /etc/security/limits.conf
 echo "* hard nofile 65536" | sudo tee -a /etc/security/limits.conf
 
 # Network tuning
+
 sudo sysctl -w net.core.somaxconn=4096
 sudo sysctl -w net.ipv4.tcp_max_syn_backlog=4096
 ```
@@ -620,7 +674,9 @@ sudo sysctl -w net.ipv4.tcp_max_syn_backlog=4096
 **macOS**:
 
 ```bash
+
 # Increase file descriptor limits
+
 sudo launchctl limit maxfiles 65536 200000
 ```
 
@@ -649,13 +705,16 @@ sudo launchctl limit maxfiles 65536 200000
 ### 10.1 Pre-Production Verification
 
 ```bash
+
 # 1. Verify service is running
+
 sudo systemctl status ib-box-spread
 
 # 2. Check TWS connection
 # (Service should log "Connected to TWS")
 
 # 3. Verify configuration
+
 /opt/ib_box_spread/build/ib_box_spread --validate --config ~/.config/ib_box_spread/config.json
 
 # 4. Test in dry-run mode first
@@ -663,6 +722,7 @@ sudo systemctl status ib-box-spread
 # Run for 1 hour, verify no real orders placed
 
 # 5. Check logs for errors
+
 tail -f /var/log/ib_box_spread/ib_box_spread.log
 ```
 
@@ -727,13 +787,17 @@ tail -f /var/log/ib_box_spread/ib_box_spread.log
 **Service Won't Start**:
 
 ```bash
+
 # Check logs
+
 sudo journalctl -u ib-box-spread -n 50
 
 # Verify configuration
+
 /opt/ib_box_spread/build/ib_box_spread --validate
 
 # Check permissions
+
 ls -la /opt/ib_box_spread/build/ib_box_spread
 ls -la ~/.config/ib_box_spread/config.json
 ```
@@ -741,23 +805,29 @@ ls -la ~/.config/ib_box_spread/config.json
 **TWS Connection Failures**:
 
 ```bash
+
 # Verify TWS is running
+
 netstat -an | grep 7496
 
 # Check TWS API settings
 # TWS → Configure → API → Settings
 
 # Test connection manually
+
 telnet 127.0.0.1 7496
 ```
 
 **High Error Rates**:
 
 ```bash
+
 # Check error logs
+
 grep ERROR /var/log/ib_box_spread/ib_box_spread.log | tail -20
 
 # Review system resources
+
 top
 df -h
 free -h
@@ -770,18 +840,23 @@ free -h
 ### Quick Rollback
 
 ```bash
+
 # Stop service
+
 sudo systemctl stop ib-box-spread
 
 # Restore previous version
+
 cd /opt/ib_box_spread
 git checkout <previous-version>
 cmake --build build
 
 # Restore previous configuration
+
 cp /backup/ib_box_spread/YYYYMMDD/config.json ~/.config/ib_box_spread/
 
 # Restart service
+
 sudo systemctl start ib-box-spread
 ```
 

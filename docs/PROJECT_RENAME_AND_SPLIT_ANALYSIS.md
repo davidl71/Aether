@@ -9,6 +9,7 @@
 ## Executive Summary
 
 **Current Situation:**
+
 - **Repository Name**: `synthetic-financing-platform` (formerly `ib_box_spread_full_universal`)
 - **Current Identity**: "IBKR Box Spread Generator"
 - **Actual Scope**: Comprehensive multi-asset financing optimization platform
@@ -17,6 +18,7 @@
 The README states: *"Comprehensive synthetic financing platform utilizing options, futures, bonds, bank loans, and pension funds across multiple currencies and brokers. Box spreads are one component of a larger multi-asset financing optimization system."*
 
 **Recommendation:**
+
 1. **Rename** the main repository to reflect its true purpose
 2. **Split** box-spread-specific code/docs into separate module
 3. **Reorganize** to show box spreads as one component among many
@@ -28,12 +30,14 @@ The README states: *"Comprehensive synthetic financing platform utilizing option
 ### Primary Purpose (From Planning Documents)
 
 **From `PRIMARY_GOALS_AND_REQUIREMENTS.md`:**
+
 1. **Unified Position View** - All positions across multiple accounts/instruments
 2. **Cash Flow Modeling** - Project cash flows across all positions
 3. **Opportunity Simulation** - What-if analysis for loan usage and optimization
 4. **Multi-Instrument Relationship Modeling** - Model relationships between instruments (loan → margin → box spread → fund → cheaper loan)
 
 **From `INVESTMENT_STRATEGY_FRAMEWORK.md`:**
+
 - Portfolio allocation framework
 - Convexity optimization
 - Volatility skew management
@@ -43,6 +47,7 @@ The README states: *"Comprehensive synthetic financing platform utilizing option
 - **Box spreads** (as spare cash allocation strategy)
 
 **From `SYNTHETIC_FINANCING_ARCHITECTURE.md`:**
+
 - Multi-asset relationship system
 - Cross-currency optimization
 - Multi-broker aggregation
@@ -92,66 +97,78 @@ The README states: *"Comprehensive synthetic financing platform utilizing option
 ### Option 1: `synthetic-financing-platform` ⭐ **RECOMMENDED**
 
 **Rationale:**
+
 - Accurately reflects the system's purpose (from README line 7)
 - Encompasses all asset types (box spreads, futures, bonds, loans, etc.)
 - Professional and descriptive
 - Not broker-specific (works with multiple brokers)
 
 **Pros:**
+
 - ✅ Accurately describes purpose
 - ✅ Professional naming
 - ✅ Future-proof (not tied to specific strategy)
 - ✅ Works for all asset types
 
 **Cons:**
+
 - ❌ Generic (might conflict with existing projects)
 - ❌ Longer name
 
 ### Option 2: `multi-asset-financing-optimizer`
 
 **Rationale:**
+
 - Emphasizes optimization aspect
 - Clearly states multi-asset nature
 - Professional naming
 
 **Pros:**
+
 - ✅ Clear about optimization focus
 - ✅ Multi-asset emphasis
 - ✅ Professional
 
 **Cons:**
+
 - ❌ Long name
 - ❌ Generic
 
 ### Option 3: `portfolio-financing-platform`
 
 **Rationale:**
+
 - Emphasizes portfolio-level approach
 - Shorter name
 - Clear purpose
 
 **Pros:**
+
 - ✅ Shorter name
 - ✅ Portfolio-level focus
 - ✅ Clear purpose
 
 **Cons:**
+
 - ❌ Less specific about synthetic financing
 - ❌ Could be confused with portfolio management
 
 ### Option 4: `financing-optimization-system`
 
 **Rationale:**
+
 - Generic and professional
 - Emphasizes optimization
 - Short and clear
 
 **Pros:**
+
 - ✅ Short name
 - ✅ Clear purpose
 - ✅ Professional
 
 **Cons:**
+
 - ❌ Generic
 - ❌ Doesn't emphasize synthetic/multi-asset nature
 
@@ -160,6 +177,7 @@ The README states: *"Comprehensive synthetic financing platform utilizing option
 ## Recommended Rename: `synthetic-financing-platform`
 
 **Reasoning:**
+
 - **Matches README**: Line 7 explicitly states "synthetic financing platform"
 - **Comprehensive**: Encompasses all strategies (box spreads, futures, bonds, loans)
 - **Professional**: Sounds enterprise-grade
@@ -167,6 +185,7 @@ The README states: *"Comprehensive synthetic financing platform utilizing option
 - **Accurate**: Reflects actual system capabilities
 
 **New Repository Names:**
+
 - **Main Repository**: `synthetic-financing-platform`
 - **Box Spread Module**: `box-spread-strategy` or `box-spread-engine`
 - **Public Libraries**: Keep existing names (`box-spread-cpp`, `box-spread-python`)
@@ -260,6 +279,7 @@ The README states: *"Comprehensive synthetic financing platform utilizing option
 ### Option 1: Module-Based Split (Recommended) ⭐
 
 **Structure:**
+
 ```
 synthetic-financing-platform/
 ├── strategies/
@@ -295,6 +315,7 @@ synthetic-financing-platform/
 ```
 
 **Benefits:**
+
 - ✅ Clear modular structure
 - ✅ Box spreads as one strategy among many
 - ✅ Easy to add new strategies
@@ -302,6 +323,7 @@ synthetic-financing-platform/
 - ✅ Box-spread code isolated but accessible
 
 **Implementation:**
+
 1. Move box-spread code to `strategies/box-spread/`
 2. Update includes/imports to reference new paths
 3. Add module README explaining box-spread as strategy component
@@ -312,6 +334,7 @@ synthetic-financing-platform/
 ### Option 2: Separate Repository Split
 
 **Structure:**
+
 ```
 synthetic-financing-platform/          # Main platform
 ├── strategies/
@@ -327,11 +350,13 @@ box-spread-strategy/                   # Separate repository
 ```
 
 **Benefits:**
+
 - ✅ Complete separation
 - ✅ Can version independently
 - ✅ Clear boundaries
 
 **Cons:**
+
 - ❌ More complex dependency management
 - ❌ Requires git submodules or package managers
 - ❌ Harder to refactor across boundaries
@@ -343,6 +368,7 @@ box-spread-strategy/                   # Separate repository
 ### Option 3: Documentation-Only Split
 
 **Structure:**
+
 ```
 synthetic-financing-platform/          # Main platform (all code stays)
 └── docs/
@@ -361,11 +387,13 @@ synthetic-financing-platform/          # Main platform (all code stays)
 ```
 
 **Benefits:**
+
 - ✅ Minimal code changes
 - ✅ Better documentation organization
 - ✅ Easy to implement
 
 **Cons:**
+
 - ❌ Doesn't actually split code
 - ❌ Still have box-spread code mixed in
 
@@ -398,6 +426,7 @@ docs/
 ```
 
 **Update README.md:**
+
 - Change title from "IBKR Box Spread Generator" to "Synthetic Financing Platform"
 - Emphasize box spreads as **one strategy component**
 - Update description to reflect full platform scope
@@ -427,10 +456,12 @@ native/src/
 ### Phase 3: Repository Rename
 
 **Rename repository:**
+
 - Old: `ib_box_spread_full_universal`
 - New: `synthetic-financing-platform`
 
 **Update all references:**
+
 - README.md
 - CMakeLists.txt
 - Package.json files
@@ -444,19 +475,25 @@ native/src/
 ### Step 1: Update README.md
 
 **Current Title:**
+
 ```markdown
+
 # IBKR Box Spread Generator
 ```
 
 **New Title:**
+
 ```markdown
+
 # Synthetic Financing Platform
 
 Comprehensive multi-asset financing optimization system for managing synthetic financing across options, futures, bonds, bank loans, and pension funds.
 ```
 
 **New Structure:**
+
 ```markdown
+
 ## Overview
 
 This platform provides:
@@ -493,12 +530,14 @@ mkdir -p docs/strategies/box-spread
 mkdir -p docs/platform
 
 # Move box-spread specific docs
+
 mv docs/research/integration/BOX_SPREAD_COMPREHENSIVE_GUIDE.md docs/strategies/box-spread/
 mv docs/research/architecture/BOX_SPREAD_BAG_IMPLEMENTATION.md docs/strategies/box-spread/
 mv docs/research/external/DATA_FEEDS_BOX_SPREADS.md docs/strategies/box-spread/
 mv docs/indices/BOX_SPREAD_RESOURCES_INDEX.md docs/strategies/box-spread/
 
 # Move platform core docs
+
 mv docs/INVESTMENT_STRATEGY_FRAMEWORK.md docs/platform/
 mv docs/PRIMARY_GOALS_AND_REQUIREMENTS.md docs/platform/
 mv docs/research/architecture/SYNTHETIC_FINANCING_ARCHITECTURE.md docs/platform/
@@ -514,17 +553,20 @@ mkdir -p native/src/strategies/box_spread
 mkdir -p native/include/strategies/box_spread
 
 # Move box-spread strategy files
+
 mv native/src/box_spread_strategy.cpp native/src/strategies/box_spread/
 mv native/include/box_spread_strategy.h native/include/strategies/box_spread/
 ```
 
 **Update includes:**
+
 - Change `#include "box_spread_strategy.h"` → `#include "strategies/box_spread/box_spread_strategy.h"`
 - Update CMakeLists.txt paths
 
 ### Step 4: Update Project References
 
 **Files to update:**
+
 - `README.md` - Title and description
 - `CMakeLists.txt` - Project name
 - `homebrew-tap/README.md` - Package descriptions
@@ -567,21 +609,25 @@ mv native/include/box_spread_strategy.h native/include/strategies/box_spread/
 ## Benefits of Rename + Split
 
 ### 1. Accurate Representation
+
 - Repository name reflects actual purpose
 - Documentation accurately describes capabilities
 - Clear that box spreads are one component
 
 ### 2. Better Organization
+
 - Strategies organized as modules
 - Clear separation of concerns
 - Easy to add new strategies
 
 ### 3. Improved Maintainability
+
 - Box-spread code isolated but accessible
 - Platform core clearly separated
 - Strategy-specific docs organized together
 
 ### 4. Future-Proof
+
 - Easy to add futures strategy
 - Easy to add bond strategy
 - Easy to add loan strategy
@@ -628,6 +674,7 @@ mv native/include/box_spread_strategy.h native/include/strategies/box_spread/
 
 **Key Insight:**
 Box spreads are **one strategy component** of a larger platform. The platform provides:
+
 - Multi-account aggregation
 - Cash flow modeling
 - Opportunity simulation

@@ -8,6 +8,7 @@
 ## Prerequisites
 
 1. **NATS Server Running**
+
    ```bash
    ./scripts/start_nats.sh
    ```
@@ -18,6 +19,7 @@
    - Check: `curl http://localhost:8222/varz | grep -i websocket`
 
 3. **TypeScript Dependencies Installed**
+
    ```bash
    cd web && npm install
    # Should show: nats.ws@1.30.3
@@ -30,16 +32,20 @@
 ### Step 1: Verify NATS Server WebSocket Support
 
 ```bash
+
 # Check NATS server config
+
 cat config/nats-server.conf | grep -i websocket
 
 # Check if WebSocket port is listening
+
 lsof -i :8080 | grep LISTEN
 ```
 
 **Expected:** WebSocket port 8080 should be listening
 
 **If not enabled:** Add to `config/nats-server.conf`:
+
 ```conf
 websocket {
   port: 8080
@@ -63,6 +69,7 @@ npm run dev
 3. Check Console tab for NATS connection messages
 
 **Expected Console Output:**
+
 ```
 Connected to NATS at ws://localhost:8080
 Subscribed to market-data.tick.>
@@ -79,12 +86,14 @@ Subscribed to market-data.tick.>
 ### Step 5: Test Message Reception
 
 **Terminal 1 - Publish test message:**
+
 ```bash
 echo '{"id":"test","timestamp":"2025-11-20T00:00:00Z","source":"test","type":"MarketDataTick","payload":{"symbol":"SPY","bid":100.0,"ask":100.1,"timestamp":"2025-11-20T00:00:00Z"}}' | \
   nats pub "market-data.tick.SPY" --stdin
 ```
 
 **Browser Console:**
+
 - Should see message received
 - Check for any errors
 
@@ -97,6 +106,7 @@ echo '{"id":"test","timestamp":"2025-11-20T00:00:00Z","source":"test","type":"Ma
 **Error:** `Failed to connect to NATS: ...`
 
 **Solutions:**
+
 1. Check NATS server is running: `curl http://localhost:8222/healthz`
 2. Check WebSocket port: `lsof -i :8080`
 3. Verify NATS server has WebSocket enabled
@@ -107,6 +117,7 @@ echo '{"id":"test","timestamp":"2025-11-20T00:00:00Z","source":"test","type":"Ma
 **Error:** Connection refused on port 8080
 
 **Solution:** Enable WebSocket in NATS server config:
+
 ```conf
 websocket {
   port: 8080
@@ -115,6 +126,7 @@ websocket {
 ```
 
 Then restart NATS:
+
 ```bash
 ./scripts/stop_nats.sh
 ./scripts/start_nats.sh
@@ -123,6 +135,7 @@ Then restart NATS:
 ### NATS Status Badge Not Showing
 
 **Check:**
+
 1. Is `useNATS` hook imported in HeaderStatus?
 2. Is the badge rendered in the JSX?
 3. Check browser console for React errors
@@ -130,6 +143,7 @@ Then restart NATS:
 ### Messages Not Received
 
 **Check:**
+
 1. Is subscription enabled? (Currently set to `false` in HeaderStatus)
 2. Check topic name matches publisher
 3. Verify message format matches expected structure
@@ -140,16 +154,19 @@ Then restart NATS:
 ## Expected Behavior
 
 ### On Page Load
+
 - NATS hook auto-connects (`autoConnect: true`)
 - Connection attempt logged to console
 - NATS status badge updates based on connection status
 
 ### When Connected
+
 - Badge shows green/ok status
 - Console shows: "Connected to NATS at ws://localhost:8080"
 - Ready to receive messages (if subscriptions enabled)
 
 ### When Disconnected
+
 - Badge shows yellow/warn status
 - Console shows error message
 - Graceful degradation (app continues to work)

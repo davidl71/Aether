@@ -9,6 +9,7 @@
 ## Overview
 
 Execution context metadata helps parallel agents understand:
+
 1. **Where** tasks can be executed (local, remote agent, either)
 2. **How** tasks can be executed (background, foreground, interactive)
 3. **What** resources are required (specific agent type, local tools, network access)
@@ -73,6 +74,7 @@ Add execution context section to task long_description:
 
 ```markdown
 📋 **Execution Context:**
+
 - **Location:** `local` | `remote` | `any` | `ubuntu` | `macos` | `ubuntu-or-macos`
 - **Location Type:** `local` | `worktree` (where to execute)
 - **Best Mode:** `Agent` | `Plan` | `Ask` (Cursor AI mode)
@@ -86,11 +88,13 @@ Add execution context section to task long_description:
 ### Mode Definitions
 
 **Best Mode (Cursor AI Mode):**
+
 - **Agent:** Full AI agent mode - makes decisions, implements changes autonomously
 - **Plan:** Planning mode - creates detailed plan, requires approval before execution
 - **Ask:** Question mode - asks clarifying questions, minimal autonomous action
 
 **Location Type:**
+
 - **Local:** Execute on local machine directly (main repository)
 - **Worktree:** Execute in isolated git worktree (parallel development, isolation)
 
@@ -165,17 +169,20 @@ Add execution context section to task long_description:
 ### Task Delegation Logic
 
 **For Agent Assignment:**
+
 1. Check `execution-location-*` tags
 2. Match agent type (ubuntu/macos/any)
 3. Assign to appropriate agent
 
 **For Execution Planning:**
+
 1. Check `execution-mode-*` tags
 2. Background tasks → Schedule first, run in parallel
 3. Interactive tasks → Require human availability
 4. Automated tasks → Can run anytime
 
 **For Resource Management:**
+
 1. Check `execution-resource-*` tags
 2. Heavy tasks → Schedule during low-usage periods
 3. Network tasks → Ensure connectivity
@@ -263,15 +270,18 @@ task = {
 ### Task Filtering
 
 **By Location:**
+
 - Filter: `execution-location-ubuntu` → Show Ubuntu tasks
 - Filter: `execution-location-macos` → Show macOS tasks
 - Filter: `execution-location-any` → Show parallelizable tasks
 
 **By Mode:**
+
 - Filter: `execution-mode-background` → Show background tasks
 - Filter: `execution-mode-interactive` → Show interactive tasks
 
 **By Resource:**
+
 - Filter: `execution-resource-cpu-intensive` → Show CPU-heavy tasks
 - Filter: `execution-resource-network` → Show network-required tasks
 
@@ -282,18 +292,21 @@ task = {
 ### MCP Extension Tasks
 
 **Tool 1: validate_ci_cd_workflow_tool**
+
 - **Location:** `any` (can run on any agent)
 - **Mode:** `automated` | `background`
 - **Background:** `yes`
 - **Local Interaction:** `not-required`
 
 **Tool 2: validate_agent_coordination_tool**
+
 - **Location:** `any` (can run on any agent)
 - **Mode:** `automated` | `background`
 - **Background:** `yes`
 - **Local Interaction:** `not-required`
 
 **Tool 3: collect_agent_environment_tool**
+
 - **Location:** `remote` (requires SSH to remote agent)
 - **Mode:** `automated` | `background`
 - **Resources:** `network` (SSH connection)

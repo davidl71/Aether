@@ -12,15 +12,20 @@ All of these servers must be configured in `.cursor/mcp.json` for full project f
 **Purpose**: Project management automation tools
 
 **Installation**:
+
 ```bash
+
 # Install from separate repository
+
 pip install -e /path/to/project-management-automation
 
 # Or from git
+
 pip install git+ssh://git@github.com/davidl71/project-management-automation.git@main
 ```
 
 **Configuration**:
+
 ```json
 {
   "exarp": {
@@ -35,6 +40,7 @@ pip install git+ssh://git@github.com/davidl71/project-management-automation.git@
 ```
 
 **See Also**:
+
 - [project-management-automation repository](https://github.com/davidl71/project-management-automation) - Separate repository with full documentation
 
 ---
@@ -45,6 +51,7 @@ pip install git+ssh://git@github.com/davidl71/project-management-automation.git@
 **Purpose**: File system operations
 
 **Configuration**:
+
 ```json
 {
   "filesystem": {
@@ -67,6 +74,7 @@ pip install git+ssh://git@github.com/davidl71/project-management-automation.git@
 **Purpose**: Advanced task management and agent memories
 
 **Configuration**:
+
 ```json
 {
   "agentic-tools": {
@@ -85,6 +93,7 @@ pip install git+ssh://git@github.com/davidl71/project-management-automation.git@
 **Purpose**: Up-to-date documentation lookup
 
 **Configuration**:
+
 ```json
 {
   "context7": {
@@ -103,6 +112,7 @@ pip install git+ssh://git@github.com/davidl71/project-management-automation.git@
 **Purpose**: Git version control operations
 
 **Configuration**:
+
 ```json
 {
   "git": {
@@ -126,6 +136,7 @@ pip install git+ssh://git@github.com/davidl71/project-management-automation.git@
 **Purpose**: Security scanning
 
 **Configuration**:
+
 ```json
 {
   "semgrep": {
@@ -144,6 +155,7 @@ pip install git+ssh://git@github.com/davidl71/project-management-automation.git@
 **Purpose**: Logical concept analysis and structured thinking
 
 **Configuration**:
+
 ```json
 {
   "tractatus_thinking": {
@@ -155,10 +167,12 @@ pip install git+ssh://git@github.com/davidl71/project-management-automation.git@
 ```
 
 **⚠️ Important**:
+
 - Package name is `tractatus_thinking` (with **underscore**), not `tractatus-thinking` (with hyphen)
 - Use `npx` for installation, not Python
 
 **Troubleshooting**: If you see "package not found", verify the package name:
+
 ```bash
 npm search tractatus_thinking
 npx -y tractatus_thinking --version
@@ -172,6 +186,7 @@ npx -y tractatus_thinking --version
 **Purpose**: Implementation workflows and structured problem-solving
 
 **Configuration**:
+
 ```json
 {
   "sequential_thinking": {
@@ -183,11 +198,13 @@ npx -y tractatus_thinking --version
 ```
 
 **⚠️ Important**:
+
 - This is an **npm package**, not a Python module
 - Package name: `@modelcontextprotocol/server-sequential-thinking`
 - Use `npx` for installation, not `python3 -m sequential_thinking`
 
 **Troubleshooting**: If you see "No module named sequential_thinking":
+
 1. The error indicates it's trying to run as a Python module
 2. Update configuration to use npm package: `@modelcontextprotocol/server-sequential-thinking`
 3. Test manually: `npx -y @modelcontextprotocol/server-sequential-thinking --version`
@@ -199,10 +216,13 @@ npx -y tractatus_thinking --version
 Test all servers manually:
 
 ```bash
+
 # exarp (Python package)
+
 python3 -m project_management_automation.server --help
 
 # npm packages
+
 npx -y @modelcontextprotocol/server-filesystem --version
 npx -y @pimzino/agentic-tools-mcp --version
 npx -y @upstash/context7-mcp --version
@@ -219,6 +239,7 @@ npx -y @modelcontextprotocol/server-sequential-thinking --version
 **Cause**: Configuration uses Python module syntax instead of npm package.
 
 **Fix**: Update `.cursor/mcp.json`:
+
 ```json
 {
   "sequential_thinking": {
@@ -233,6 +254,7 @@ npx -y @modelcontextprotocol/server-sequential-thinking --version
 **Cause**: Wrong package name (hyphen instead of underscore).
 
 **Fix**: Use `tractatus_thinking` (with underscore):
+
 ```json
 {
   "tractatus_thinking": {
@@ -247,6 +269,7 @@ npx -y @modelcontextprotocol/server-sequential-thinking --version
 **Cause**: Package not installed or wrong Python environment.
 
 **Fix**:
+
 1. Install package: `pip install -e /path/to/project-management-automation`
 2. Verify installation: `python3 -m project_management_automation.server --help`
 3. Check Python path: Ensure correct Python environment is used in `.cursor/mcp.json`

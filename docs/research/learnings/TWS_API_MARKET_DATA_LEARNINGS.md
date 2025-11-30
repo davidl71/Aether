@@ -153,6 +153,7 @@ Based on the URL and standard TWS API market data patterns, IBKR's guide likely 
 - Market data lines: Limited by account type
   - Paper trading: 100 lines
   - Live trading: Varies by subscription
+
 - Exceeding limits causes errors or throttling
 
 **Best Practices**:
@@ -405,7 +406,7 @@ Based on the URL and standard TWS API market data patterns, IBKR's guide likely 
 
         // Notify callback if registered
         if (market_data_callbacks_.count(tickerId)) {
-            market_data_callbacks_[tickerId](market_data);
+            market_data_callbacks_tickerId;
             }
 
             // Fulfill promise if waiting for synchronous request

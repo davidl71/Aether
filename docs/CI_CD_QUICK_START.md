@@ -15,10 +15,12 @@
 ## Remote Agents
 
 **Ubuntu Agent:**
+
 - **Host:** `david@192.168.192.57`
 - **Project Path:** `~/ib_box_spread_full_universal`
 
 **macOS M4 Agent:**
+
 - **Host:** `davidl@192.168.192.141`
 - **Project Path:** `/Users/davidl/Projects/Trading/ib_box_spread_full_universal`
 
@@ -29,6 +31,7 @@
 ### 1. Get Registration Tokens
 
 **From GitHub:**
+
 1. Go to: Repository → **Settings** → **Actions** → **Runners**
 2. Click **"New self-hosted runner"**
 3. Select **Linux** (Ubuntu) or **macOS** (M4)
@@ -37,12 +40,15 @@
 ### 2. Setup Ubuntu Agent Runner
 
 **SSH to Ubuntu agent:**
+
 ```bash
 ssh david@192.168.192.57
+
 # or: ssh cursor-ubuntu  (if SSH alias configured)
 ```
 
 **Run setup script:**
+
 ```bash
 cd ~/ib_box_spread_full_universal
 bash scripts/setup_github_runner_ubuntu.sh \
@@ -54,12 +60,15 @@ bash scripts/setup_github_runner_ubuntu.sh \
 ### 3. Setup macOS M4 Agent Runner
 
 **SSH to macOS M4 agent:**
+
 ```bash
 ssh davidl@192.168.192.141
+
 # or: ssh cursor-m4-mac  (if SSH alias configured)
 ```
 
 **Run setup script:**
+
 ```bash
 cd /Users/davidl/Projects/Trading/ib_box_spread_full_universal
 bash scripts/setup_github_runner_macos.sh \
@@ -71,12 +80,14 @@ bash scripts/setup_github_runner_macos.sh \
 ### 4. Verify Runners
 
 **In GitHub:**
+
 - Go to: Repository → **Settings** → **Actions** → **Runners**
 - Verify both runners show as **"Online"** (green status)
 
 ### 5. Test Workflow
 
 **Create test PR:**
+
 - Make a small change
 - Push to branch
 - Create PR
@@ -89,6 +100,7 @@ bash scripts/setup_github_runner_macos.sh \
 ### Workflows
 
 ✅ **`.github/workflows/parallel-agents-ci.yml`**
+
 - Parallel agent testing (Ubuntu + macOS)
 - Integration tests
 - Coordination validation
@@ -96,20 +108,25 @@ bash scripts/setup_github_runner_macos.sh \
 ### Scripts
 
 ✅ **`scripts/setup_github_runner_ubuntu.sh`**
+
 - Automated Ubuntu runner setup
 
 ✅ **`scripts/setup_github_runner_macos.sh`**
+
 - Automated macOS runner setup
 
 ### Validation Scripts
 
 ✅ **`scripts/validate_api_contract.sh`**
+
 - API contract validation
 
 ✅ **`scripts/validate_todo_table.sh`**
+
 - TODO table validation
 
 ✅ **`scripts/run_integration_tests.sh`**
+
 - Integration test runner
 
 ---

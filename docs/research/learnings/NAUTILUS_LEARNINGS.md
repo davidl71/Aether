@@ -1,7 +1,7 @@
 # Learnings from NautilusTrader Documentation and Architecture
 
-**Date**: 2025-01-27  
-**Source**: NautilusTrader official documentation and architecture  
+**Date**: 2025-01-27
+**Source**: NautilusTrader official documentation and architecture
 **Purpose**: Document patterns and recommendations from NautilusTrader that could enhance this project
 
 ---
@@ -36,9 +36,11 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
   - Real-time market data processing
   - Order matching and execution logic
   - Risk calculations
+
 - **Keep C++ for:**
   - Existing TWS API integration (well-established)
   - Legacy code that works well
+
 - **Hybrid approach:**
   - Use Rust for new performance-critical features
   - Maintain C++ for TWS client
@@ -74,6 +76,7 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
   - Market data subscriptions
   - Order status monitoring
   - Position updates
+
 - **Implement event bus for decoupling:**
   - Market data events → Strategy evaluation
   - Order events → Position tracking
@@ -104,11 +107,11 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
           # Subscribe to market data
           # Initialize state
           pass
-      
+
       def on_quote_tick(self, tick: QuoteTick):
           # Evaluate opportunities on each quote
           self._evaluate_box_spreads(tick)
-      
+
       def on_order_filled(self, event: OrderFilled):
           # Update position tracking
           # Check if box spread is complete
@@ -137,7 +140,7 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
   ```python
   # Instead of: symbol = "SPY"
   instrument_id = InstrumentId.from_str("SPY.US")
-  
+
   # For options:
   option_id = InstrumentId.from_str("SPY240412C00500000.US")
   ```
@@ -221,6 +224,7 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
 - **Handle both quote and trade ticks:**
   - Quote ticks for bid/ask updates
   - Trade ticks for execution price validation
+
 - **Use NautilusTrader's data aggregation:**
   - Request bars if needed for analysis
   - Use order book snapshots for depth
@@ -246,10 +250,12 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
   - Option chain scanning (already using Cython bindings)
   - Profitability calculations
   - Market data filtering
+
 - **Minimize data copying:**
   - Pass references where possible
   - Use views instead of copies
   - Cache frequently accessed data
+
 - **Profile and optimize:**
   - Identify bottlenecks
   - Optimize critical paths
@@ -327,7 +333,9 @@ NautilusTrader is a high-performance algorithmic trading platform that uses **Ru
 
 ```rust
 // Rust library
+
 #[no_mangle]
+
 pub extern "C" fn scan_option_chain(
     chain_ptr: *const OptionChain,
     opportunities: *mut Vec<BoxSpreadOpportunity>
@@ -342,6 +350,7 @@ pub extern "C" fn scan_option_chain(
 use pyo3::prelude::*;
 
 #[pyfunction]
+
 fn scan_option_chain_py(chain: PyObject) -> PyResult<Vec<BoxSpreadOpportunity>> {
     // Implementation
     Ok(opportunities)
@@ -376,20 +385,20 @@ class BoxSpreadStrategyRunner:
         self._cache = {}  # Cache option chains
         self._pending_orders = {}  # Track multi-leg orders
         self._event_bus = EventBus()  # Event system
-    
+
     def on_start(self):
         # Subscribe to all required instruments
         # Initialize state
         # Start event loop
         pass
-    
+
     def on_quote_tick(self, tick: QuoteTick):
         # Immediately evaluate on new quote
         instrument_id = tick.instrument_id
         if self._is_option(instrument_id):
             self._update_option_chain(instrument_id, tick)
             self._evaluate_opportunities(instrument_id)
-    
+
     def on_order_filled(self, event: OrderFilled):
         # Update position
         # Check if box spread complete
@@ -411,17 +420,17 @@ class BoxSpreadStrategyRunner:
 def _convert_quote_tick(self, tick: QuoteTick) -> Dict:
     # Use actual timestamp from tick
     timestamp = datetime.fromtimestamp(tick.ts_event / 1e9)
-    
+
     # Validate data quality
     if not tick.bid_price or not tick.ask_price:
         return None  # Invalid data
-    
+
     # Check for stale data
     age = (datetime.now() - timestamp).total_seconds()
     if age > 5.0:  # 5 second threshold
         logger.warning(f"Stale data for {tick.instrument_id}")
         return None
-    
+
     return {
         "symbol": str(tick.instrument_id),
         "bid": float(tick.bid_price),
@@ -450,10 +459,10 @@ def create_box_spread_orders(self, spread: BoxSpreadLeg) -> List[Order]:
     # Try combo order first (atomic execution)
     if self._supports_combo_orders():
         return self._create_combo_order(spread)
-    
+
     # Fallback to individual orders
     orders = []
-    for leg in [spread.long_call, spread.short_call, 
+    for leg in [spread.long_call, spread.short_call,
                 spread.long_put, spread.short_put]:
         order = self._order_factory.limit(
             instrument_id=leg.instrument_id,
@@ -482,24 +491,24 @@ class OptionChainManager:
     def __init__(self):
         self._chains: Dict[str, OptionChain] = {}
         self._expiry_cache: Dict[str, List[str]] = {}
-    
+
     def update_chain(self, instrument_id: InstrumentId, tick: QuoteTick):
         """Update option chain with new market data."""
         symbol = self._get_underlying(instrument_id)
         expiry = self._get_expiry(instrument_id)
         strike = self._get_strike(instrument_id)
-        
+
         if symbol not in self._chains:
             self._chains[symbol] = OptionChain(symbol)
-        
+
         chain = self._chains[symbol]
         chain.update_option(expiry, strike, tick)
-    
+
     def get_box_spread_opportunities(self, symbol: str) -> List[BoxSpreadOpportunity]:
         """Get all valid box spreads for symbol."""
         if symbol not in self._chains:
             return []
-        
+
         chain = self._chains[symbol]
         return chain.find_box_spreads()
 ```

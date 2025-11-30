@@ -9,6 +9,7 @@
 - Created test files for shared functions:
   - `spec/scripts/include/python_utils_spec.sh`
   - `spec/scripts/include/config_spec.sh`
+
 - Created test runner script: `scripts/run_tests.sh`
 
 ### 2. AI-Friendly Comments Added
@@ -68,6 +69,7 @@ curl -fsSL https://git.io/shellspec | sh
 Add to GitHub Actions workflow:
 
 ```yaml
+
 - name: Run shell script tests
   run: ./scripts/run_tests.sh --format tap
 ```

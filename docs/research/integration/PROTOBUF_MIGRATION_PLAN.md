@@ -1,7 +1,7 @@
 # Protocol Buffers Migration Plan
 
-**Date**: 2025-01-27  
-**Status**: Future Enhancement (Not Required)  
+**Date**: 2025-01-27
+**Status**: Future Enhancement (Not Required)
 **TWS API Version**: 10.40.01+
 
 ## Overview
@@ -26,7 +26,7 @@ class TWSClient::Impl : public DefaultEWrapper {
                    double price, const TickAttrib& attribs) override {
         // Handle classic callback
     }
-    
+
     void orderStatus(OrderId orderId, const std::string& status,
                     Decimal filled, Decimal remaining,
                     double avgFillPrice, ...) override {
@@ -42,7 +42,7 @@ class TWSClient::Impl : public DefaultEWrapper {
     void tickPriceProtoBuf(TickerId tickerId, const TickPriceProto& tickPrice) override {
         // Handle protobuf callback - more efficient
     }
-    
+
     void orderStatusProtoBuf(OrderId orderId, const OrderStatusProto& orderStatus) override {
         // Handle protobuf callback - more efficient
     }
@@ -79,14 +79,14 @@ class TWSClient::Impl : public DefaultEWrapper {
                    double price, const TickAttrib& attribs) override {
         // Existing implementation
     }
-    
+
     // Protobuf callbacks (new)
     void tickPriceProtoBuf(TickerId tickerId, const TickPriceProto& tickPrice) override {
         // Convert protobuf to internal types
         // Reuse existing processing logic
         handle_tick_price(tickerId, tickPrice.field(), tickPrice.price(), ...);
     }
-    
+
 private:
     // Shared processing logic
     void handle_tick_price(TickerId tickerId, TickType field, double price, ...) {
@@ -175,7 +175,7 @@ void tickPrice(TickerId tickerId, TickType field,
                double price, const TickAttrib& attribs) override {
     std::lock_guard<std::mutex> lock(data_mutex_);
     auto& market_data = market_data_[tickerId];
-    
+
     switch (field) {
         case BID:
             market_data.bid = price;
@@ -185,11 +185,11 @@ void tickPrice(TickerId tickerId, TickType field,
             break;
         // ... more cases
     }
-    
+
     market_data.timestamp = std::chrono::system_clock::now();
-    
+
     if (market_data_callbacks_.count(tickerId)) {
-        market_data_callbacks_[tickerId](market_data);
+        market_data_callbacks_tickerId;
     }
 }
 ```
@@ -203,17 +203,17 @@ void tickPriceProtoBuf(TickerId tickerId, const TickPriceProto& tickPrice) overr
     double price = tickPrice.price();
     TickAttrib attribs;
     // Convert protobuf TickAttrib to classic TickAttrib if needed
-    
+
     // Reuse existing processing logic
     handle_tick_price(tickerId, field, price, attribs);
 }
 
 private:
-void handle_tick_price(TickerId tickerId, TickType field, 
+void handle_tick_price(TickerId tickerId, TickType field,
                        double price, const TickAttrib& attribs) {
     std::lock_guard<std::mutex> lock(data_mutex_);
     auto& market_data = market_data_[tickerId];
-    
+
     switch (field) {
         case BID:
             market_data.bid = price;
@@ -223,11 +223,11 @@ void handle_tick_price(TickerId tickerId, TickType field,
             break;
         // ... more cases
     }
-    
+
     market_data.timestamp = std::chrono::system_clock::now();
-    
+
     if (market_data_callbacks_.count(tickerId)) {
-        market_data_callbacks_[tickerId](market_data);
+        market_data_callbacks_tickerId;
     }
 }
 ```
@@ -257,7 +257,9 @@ Key message types:
 ### Finding Protobuf Definitions
 
 ```bash
+
 # List all protobuf message types
+
 find native/third_party/tws-api/IBJts/source/cppclient/client -name "*.pb.h" | xargs grep "class.*Proto" | head -20
 ```
 
@@ -425,5 +427,5 @@ native/third_party/tws-api/IBJts/source/cppclient/client/*.pb.h
 
 ---
 
-**Last Updated**: 2025-01-27  
+**Last Updated**: 2025-01-27
 **Status**: Planning Document - Not Yet Implemented

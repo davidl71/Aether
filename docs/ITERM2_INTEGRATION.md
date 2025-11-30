@@ -74,7 +74,9 @@ Tasks are configured in `.vscode/tasks.json` with both standard and iTerm2 varia
 ### Example: Building in iTerm2
 
 ```bash
+
 # Via Command Palette
+
 Cmd+Shift+P → "Tasks: Run Task" → "CMake: Build (iTerm2)"
 ```
 
@@ -90,7 +92,9 @@ This will:
 The project's launch scripts (`web/scripts/launch-all-pwa-services.sh`) automatically detect iTerm2 and use native tmux integration:
 
 ```bash
+
 # Script detects iTerm2 and uses Control Mode
+
 if [ -n "${ITERM_PROFILE:-}" ] || [ -n "${ITERM_SESSION_ID:-}" ]; then
   echo "Detected iTerm2 - using native tmux integration"
   tmux -CC new-session -d -s pwa-services

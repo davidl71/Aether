@@ -92,7 +92,9 @@ To verify exclusions are working:
 To add more exclusions, edit `.cursorignore` using `.gitignore` syntax:
 
 ```bash
+
 # Example: Exclude a specific directory
+
 path/to/exclude/
 
 # Example: Exclude a file pattern

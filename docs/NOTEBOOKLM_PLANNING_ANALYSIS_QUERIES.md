@@ -31,6 +31,7 @@ Based on all the planning documentation, identify where we're planning to build 
 5. What other areas show signs of reinventing the wheel?
 
 For each area identified, provide:
+
 - What we're planning to build
 - What existing solution already does this
 - The license/cost of the existing solution
@@ -52,6 +53,7 @@ Review all planning documentation and identify existing frameworks, libraries, o
 6. Are there other open-source alternatives we haven't considered?
 
 For each framework, provide:
+
 - What it provides
 - License/cost information
 - Integration complexity
@@ -72,6 +74,7 @@ Based on all planning documentation, what is the best strategy for improving our
 5. What's the estimated time savings from using frameworks vs. building custom?
 
 Provide a prioritized action plan with:
+
 - Immediate actions (this week)
 - Short-term actions (next 2-4 weeks)
 - Medium-term actions (next 1-3 months)
@@ -92,6 +95,7 @@ Focusing on open-source solutions, identify:
 5. What open-source historical data providers exist besides Massive.com/ORATS?
 
 For each alternative, provide:
+
 - License information
 - Community support/activity
 - Documentation quality
@@ -117,6 +121,7 @@ Based on all planning documentation, provide architecture recommendations:
 5. How do we maintain flexibility to switch frameworks if needed?
 
 Provide:
+
 - Recommended architecture diagram
 - Integration patterns
 - Abstraction layers needed
@@ -176,6 +181,7 @@ Create a detailed implementation roadmap based on all planning documentation:
 5. What are the risks and how to mitigate them?
 
 Provide:
+
 - Phased implementation plan
 - Timeline estimates
 - Resource requirements
@@ -191,12 +197,14 @@ Provide:
 Create a comparison matrix for all frameworks and alternatives mentioned in the planning docs:
 
 Compare:
+
 - Zorro vs. custom backtesting
 - CppTrader vs. custom order book
 - SmartQuant vs. custom event processing
 - Massive.com vs. ORATS vs. custom historical data
 
 For each comparison, evaluate:
+
 - Feature completeness
 - Performance
 - License/cost
@@ -223,6 +231,7 @@ Based on the CODE_IMPROVEMENTS_ACTION_PLAN.md, what are the best practices we sh
 5. What testing strategies should we use for framework integrations?
 
 Provide:
+
 - Prioritized list of code quality improvements
 - Best practices for framework integration
 - Testing strategies
@@ -244,6 +253,7 @@ Perform a comprehensive risk assessment:
 6. What are the business/legal risks (licensing)?
 
 For each risk, provide:
+
 - Risk level (low/medium/high)
 - Impact assessment
 - Mitigation strategies

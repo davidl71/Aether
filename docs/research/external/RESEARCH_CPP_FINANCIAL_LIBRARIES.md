@@ -59,6 +59,7 @@ QuantLib is the industry-standard C++ library for quantitative finance, providin
   - Comprehensive documentation and examples
   - Active community and maintenance
   - BSD license (permissive)
+
 - **Cons:**
   - Large library size (may increase build time)
   - Boost dependency (adds complexity)
@@ -112,6 +113,7 @@ High-performance C++ library specifically designed for option pricing, implement
   - Focused on option pricing (no unnecessary features)
   - Likely easier to integrate than QuantLib
   - Performance-optimized
+
 - **Cons:**
   - Less comprehensive than QuantLib
   - May lack advanced features (Greeks, volatility surfaces)
@@ -162,6 +164,7 @@ Comprehensive guide and resource platform for C++ quantitative finance developme
   - Comprehensive library ecosystem overview
   - Practical examples and patterns
   - Industry best practices
+
 - **Cons:**
   - Not a library itself (resource only)
   - Need to integrate individual libraries separately
@@ -213,6 +216,7 @@ High-performance C++ template library for linear algebra, providing efficient ma
   - Excellent performance (expression templates)
   - Well-documented and widely used
   - MPL2 license (permissive)
+
 - **Cons:**
   - Template-heavy (may increase compile time)
   - Learning curve for advanced features
@@ -263,6 +267,7 @@ Library for nonlinear optimization, providing a common interface for various opt
   - Comprehensive optimization algorithms
   - Well-documented
   - Dual license (LGPL or MIT)
+
 - **Cons:**
   - May be overkill for simple optimization tasks
   - Learning curve for algorithm selection
@@ -314,6 +319,7 @@ High-performance C++ implementation of the Financial Information eXchange (FIX) 
   - Lower latency than TWS API
   - Direct market access
   - Industry-standard protocol
+
 - **Cons:**
   - Commercial license cost
   - Redundant with existing TWS API integration
@@ -366,6 +372,7 @@ C++ library for creating financial charts and technical analysis visualization, 
   - Comprehensive charting capabilities
   - Real-time updates
   - Professional appearance
+
 - **Cons:**
   - Commercial license cost
   - Not needed for CLI/TUI focus
@@ -417,6 +424,7 @@ Tutorial article demonstrating how to fetch fundamental and technical stock data
   - Practical implementation patterns
   - Real-world examples
   - API integration best practices
+
 - **Cons:**
   - Not a library (educational resource)
   - May reference outdated patterns
@@ -467,6 +475,7 @@ Modern parallel C++ programming framework for quantitative finance using SYCL/on
   - Significant performance gains for large-scale calculations
   - Modern parallel computing approach
   - Industry-leading performance optimization
+
 - **Cons:**
   - High complexity (GPU programming, SYCL)
   - Hardware requirements (GPU)
@@ -519,6 +528,7 @@ Article discussing C++ advantages in financial software development, covering pe
   - Validates project's technology choices
   - Industry context and best practices
   - Performance optimization insights
+
 - **Cons:**
   - Not a library (educational resource)
   - May reference general patterns (not specific implementations)
@@ -622,7 +632,9 @@ Article discussing C++ advantages in financial software development, covering pe
 ### Eigen (Header-Only)
 
 ```cmake
+
 # Option 1: FetchContent (recommended)
+
 include(FetchContent)
 FetchContent_Declare(
     Eigen3
@@ -632,6 +644,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Eigen3)
 
 # Option 2: find_package (if system-installed)
+
 find_package(Eigen3 REQUIRED)
 
 target_link_libraries(ib_box_spread PRIVATE Eigen3::Eigen)
@@ -640,7 +653,9 @@ target_link_libraries(ib_box_spread PRIVATE Eigen3::Eigen)
 ### QuantLib
 
 ```cmake
+
 # Option 1: FetchContent
+
 include(FetchContent)
 FetchContent_Declare(
     QuantLib
@@ -650,6 +665,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(QuantLib)
 
 # Option 2: find_package (if system-installed)
+
 find_package(QuantLib REQUIRED)
 
 target_link_libraries(ib_box_spread PRIVATE QuantLib::QuantLib)
@@ -658,7 +674,9 @@ target_link_libraries(ib_box_spread PRIVATE QuantLib::QuantLib)
 ### NLopt
 
 ```cmake
+
 # Option 1: FetchContent
+
 include(FetchContent)
 FetchContent_Declare(
     NLopt
@@ -668,6 +686,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(NLopt)
 
 # Option 2: find_package (if system-installed)
+
 find_package(NLopt REQUIRED)
 
 target_link_libraries(ib_box_spread PRIVATE NLopt::nlopt)

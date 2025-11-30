@@ -7,6 +7,7 @@ This page summarizes options to connect to multiple brokers via a single API and
 - SnapTrade — multi-broker read/write, near real-time; single schema for accounts, balances, positions, orders. Supports connection portal per user (`userId`/`userSecret`) and checked-order flow before placement. Recommended when you need to aggregate and trade across users’ existing brokers.
   - Docs: <https://docs.snaptrade.com/docs/getting-started>
   - CLI (quick testing across brokers): <https://github.com/passiv/snaptrade-cli>
+
 - Read-only alternatives — Plaid, Sophtron: broad coverage but no trading. Good for portfolio aggregation/analytics without execution.
   - Overview and tradeoffs: <https://konfigthis.com/blog/asset-management-integrations/>
 

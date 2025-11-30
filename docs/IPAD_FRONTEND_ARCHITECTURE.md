@@ -71,6 +71,7 @@ struct BoxSpreadIPadApp: App {
 ### 2. Core Views
 
 #### DashboardView
+
 - **Purpose**: Main overview with account metrics, strategy status, alerts
 - **Components**:
   - AccountSummaryCard
@@ -79,6 +80,7 @@ struct BoxSpreadIPadApp: App {
   - QuickActionsPanel
 
 #### PositionsView
+
 - **Purpose**: Display current and historic positions
 - **Components**:
   - PositionsList
@@ -86,6 +88,7 @@ struct BoxSpreadIPadApp: App {
   - Filters (strategy vs manual, symbol, date range)
 
 #### OrdersView
+
 - **Purpose**: Timeline of orders and fills
 - **Components**:
   - OrdersTimeline
@@ -93,6 +96,7 @@ struct BoxSpreadIPadApp: App {
   - CancelOrderButton (with confirmation)
 
 #### ControlsView
+
 - **Purpose**: Strategy control and configuration
 - **Components**:
   - StrategyStartStopButton
@@ -101,6 +105,7 @@ struct BoxSpreadIPadApp: App {
   - RiskSettingsPanel
 
 #### SettingsView
+
 - **Purpose**: App configuration and preferences
 - **Components**:
   - ServerConfiguration
@@ -111,6 +116,7 @@ struct BoxSpreadIPadApp: App {
 ### 3. ViewModels
 
 #### DashboardViewModel
+
 ```swift
 @MainActor
 class DashboardViewModel: ObservableObject {
@@ -135,6 +141,7 @@ class DashboardViewModel: ObservableObject {
 ```
 
 #### PositionsViewModel
+
 ```swift
 @MainActor
 class PositionsViewModel: ObservableObject {
@@ -153,6 +160,7 @@ class PositionsViewModel: ObservableObject {
 ```
 
 #### OrdersViewModel
+
 ```swift
 @MainActor
 class OrdersViewModel: ObservableObject {
@@ -172,6 +180,7 @@ class OrdersViewModel: ObservableObject {
 ### 4. Services Layer
 
 #### APIClient
+
 ```swift
 class APIClient {
     private let baseURL: URL
@@ -201,6 +210,7 @@ class APIClient {
 ```
 
 #### AuthService
+
 ```swift
 class AuthService {
     private let keychain: KeychainService
@@ -220,6 +230,7 @@ class AuthService {
 ```
 
 #### DataService
+
 ```swift
 class DataService {
     private let cache: NSCache<NSString, SnapshotPayload>
@@ -273,6 +284,7 @@ ContentView (TabView)
 ## Data Models
 
 ### SnapshotPayload
+
 ```swift
 struct SnapshotPayload: Codable {
     let generatedAt: Date
@@ -290,6 +302,7 @@ struct SnapshotPayload: Codable {
 ```
 
 ### AccountMetrics
+
 ```swift
 struct AccountMetrics: Codable {
     let netLiq: Double
@@ -306,6 +319,7 @@ struct AccountMetrics: Codable {
 ```
 
 ### PositionSnapshot
+
 ```swift
 struct PositionSnapshot: Codable, Identifiable {
     let id: String
@@ -321,6 +335,7 @@ struct PositionSnapshot: Codable, Identifiable {
 ```
 
 ### OrderSnapshot
+
 ```swift
 struct OrderSnapshot: Codable, Identifiable {
     let id: String
@@ -357,6 +372,7 @@ struct OrderSnapshot: Codable, Identifiable {
 ### Request/Response Examples
 
 **Start Strategy:**
+
 ```swift
 // Request
 POST /api/v1/strategy/start
@@ -371,6 +387,7 @@ Headers: ["Authorization": "Bearer <token>"]
 ```
 
 **Cancel Order:**
+
 ```swift
 // Request
 POST /api/v1/orders/cancel
@@ -389,29 +406,34 @@ Body: { "order_id": "12345" }
 ### Reusable Components
 
 #### AccountSummaryCard
+
 - Net Liquidity
 - Buying Power
 - Excess Liquidity
 - Margin Requirement
 
 #### StrategyStatusCard
+
 - Strategy state (RUNNING/STOPPED)
 - Mode indicator (DRY-RUN/LIVE)
 - Last update timestamp
 - Quick start/stop button
 
 #### AlertsFeed
+
 - Real-time alert stream
 - Color-coded by severity
 - Tap to view details
 
 #### PositionsList
+
 - Grid/List view toggle
 - Filter by symbol, strategy, date
 - Pull-to-refresh
 - Swipe actions (view details, close position)
 
 #### OrdersTimeline
+
 - Chronological order list
 - Status indicators
 - Cancel action for pending orders
@@ -420,6 +442,7 @@ Body: { "order_id": "12345" }
 ## State Management
 
 ### AppState (Global)
+
 ```swift
 @MainActor
 class AppState: ObservableObject {
@@ -432,6 +455,7 @@ class AppState: ObservableObject {
 ```
 
 ### View-Specific State
+
 - Each view has its own ViewModel
 - ViewModels are `@StateObject` in parent views
 - Shared state passed via `@EnvironmentObject`
@@ -439,12 +463,14 @@ class AppState: ObservableObject {
 ## Offline Support
 
 ### Caching Strategy
+
 - Cache last snapshot in UserDefaults/NSCache
 - Display cached data when offline
 - Show offline indicator
 - Queue actions for when connection restored
 
 ### Background Refresh
+
 - Use `Task` with background refresh
 - Refresh every 5 seconds when app is active
 - Manual pull-to-refresh available
@@ -452,11 +478,13 @@ class AppState: ObservableObject {
 ## Security
 
 ### Authentication
+
 - API token stored in Keychain
 - Biometric authentication (TouchID/FaceID) for sensitive actions
 - Token refresh mechanism
 
 ### Secure Storage
+
 ```swift
 class KeychainService {
     func store(_ value: String, forKey key: String) throws {
@@ -470,6 +498,7 @@ class KeychainService {
 ```
 
 ### Network Security
+
 - HTTPS only
 - Certificate pinning (optional)
 - Request signing (future)
@@ -477,6 +506,7 @@ class KeychainService {
 ## Error Handling
 
 ### Error Types
+
 ```swift
 enum AppError: LocalizedError {
     case networkError(URLError)
@@ -492,6 +522,7 @@ enum AppError: LocalizedError {
 ```
 
 ### Error Display
+
 - Toast notifications for transient errors
 - Alert dialogs for critical errors
 - Inline error states in views
@@ -499,16 +530,19 @@ enum AppError: LocalizedError {
 ## Testing Strategy
 
 ### Unit Tests
+
 - ViewModel logic
 - API client parsing
 - Data model validation
 
 ### UI Tests
+
 - Navigation flows
 - User interactions
 - Error scenarios
 
 ### Integration Tests
+
 - API communication
 - Authentication flow
 - Data persistence
@@ -516,12 +550,14 @@ enum AppError: LocalizedError {
 ## Performance Considerations
 
 ### Optimization
+
 - Lazy loading for large lists
 - Image caching
 - Debounced API calls
 - Efficient state updates
 
 ### Memory Management
+
 - Weak references in closures
 - Proper cleanup in view lifecycle
 - Cache size limits
@@ -529,6 +565,7 @@ enum AppError: LocalizedError {
 ## Accessibility
 
 ### Support
+
 - VoiceOver labels
 - Dynamic Type support
 - High contrast mode
@@ -537,11 +574,13 @@ enum AppError: LocalizedError {
 ## Deployment
 
 ### Build Configuration
+
 - Development: Local server
 - Staging: Staging server
 - Production: Production server
 
 ### Distribution
+
 - TestFlight for beta testing
 - App Store for production
 - Enterprise distribution (if needed)
@@ -549,24 +588,28 @@ enum AppError: LocalizedError {
 ## Implementation Phases
 
 ### Phase 1: Foundation
+
 1. SwiftUI project setup
 2. Navigation structure
 3. API client implementation
 4. Authentication flow
 
 ### Phase 2: Core Views
+
 1. Dashboard view
 2. Positions view
 3. Orders view
 4. Settings view
 
 ### Phase 3: Controls
+
 1. Strategy start/stop
 2. Order cancellation
 3. Mode switching
 4. Account selection
 
 ### Phase 4: Polish
+
 1. Offline support
 2. Error handling
 3. Performance optimization

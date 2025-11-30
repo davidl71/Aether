@@ -55,18 +55,22 @@ No additional configuration needed - GitKraken MCP handles Linear authentication
 from python.integration.linear_client import LinearClient
 
 # Initialize client (reads LINEAR_API_KEY from environment)
+
 client = LinearClient()
 
 # Get all teams
+
 teams = client.get_teams()
 print(f"Found {len(teams)} teams")
 
 # Get issues for a team
+
 team_id = teams[0]["id"]
 issues = client.get_issues(team_id=team_id, state="In Progress")
 print(f"Found {len(issues)} in-progress issues")
 
 # Create a new issue
+
 new_issue = client.create_issue(
     team_id=team_id,
     title="Fix box spread calculation bug",
@@ -76,12 +80,14 @@ new_issue = client.create_issue(
 print(f"Created issue: {new_issue['identifier']}")
 
 # Update an issue
+
 client.update_issue(
     issue_id=new_issue["id"],
     state_id="done_state_id",  # Move to Done
 )
 
 # Add a comment
+
 client.add_comment(
     issue_id=new_issue["id"],
     body="Fixed in commit abc123",
@@ -153,7 +159,9 @@ def log_trading_error_to_linear(error: str, context: dict):
 Linear uses GraphQL for all API operations. The client abstracts common operations, but you can extend it for custom queries:
 
 ```python
+
 # Custom GraphQL query
+
 custom_query = """
 query {
   issues(filter: { priority: { eq: 0 } }) {

@@ -200,6 +200,7 @@ effective_rate = implied_rate - (total_commission / net_debit) * (365 / days_to_
   - Minimum volume threshold
   - Maximum bid/ask spread
   - Minimum open interest
+
 - Calculates profitability metrics
 - Validates against risk limits
 - Returns sorted list of opportunities
@@ -244,6 +245,7 @@ effective_rate = implied_rate - (total_commission / net_debit) * (365 / days_to_
 - Evaluate improvement opportunities:
   - Rolling to better rate
   - Early close if beneficial
+
 - Close positions near expiry
 - Close positions if profit target reached
 - Close positions if stop-loss triggered

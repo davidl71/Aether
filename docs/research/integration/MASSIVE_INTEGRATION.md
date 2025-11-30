@@ -91,7 +91,9 @@
 **Implementation**:
 
 ```python
+
 # python/integration/massive_client.py
+
 class MassiveClient:
     def get_historical_trades(
         self,
@@ -145,7 +147,9 @@ class MassiveClient:
 **Implementation**:
 
 ```python
+
 # python/integration/massive_websocket.py
+
 class MassiveWebSocketClient:
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -435,7 +439,9 @@ struct StrategyParams {
 ### Python Massive.com Client
 
 ```python
+
 # python/integration/massive_client.py
+
 """
 massive_client.py - Client for Massive.com API integration
 """
@@ -446,7 +452,6 @@ from datetime import datetime, timedelta
 from functools import lru_cache
 
 logger = logging.getLogger(__name__)
-
 
 class MassiveClient:
     """
@@ -776,7 +781,9 @@ Fundamental Filtering:
 **After (With Massive.com)**:
 
 ```python
+
 # python/backtesting/backtest_runner.py
+
 class BoxSpreadBacktester:
     def run_backtest(
         self,

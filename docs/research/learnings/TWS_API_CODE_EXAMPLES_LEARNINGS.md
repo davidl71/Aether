@@ -55,7 +55,9 @@ virtual void OnCatch( const char* MethodName, const long Id ) {
 **From Example:**
 
 ```cpp
+
 #include "TwsApiDefs.h"
+
 using namespace TwsApi;
 
 Contract C;

@@ -1,14 +1,14 @@
 # Action Plan: Top 4 Priorities
 
-**Date**: 2025-01-27  
+**Date**: 2025-01-27
 **Based on**: Learnings from icli and ibkrbox projects
 
 ---
 
 ## Priority 1: Complete Option Chain Scanning Implementation
 
-**Status**: 🔴 Not Started  
-**File**: `src/box_spread_strategy.cpp`  
+**Status**: 🔴 Not Started
+**File**: `src/box_spread_strategy.cpp`
 **Method**: `find_box_spreads_in_chain()`
 
 ### Current State
@@ -49,8 +49,8 @@ std::vector<BoxSpreadOpportunity> BoxSpreadStrategy::find_box_spreads_in_chain(
 
 ## Priority 2: Implement Atomic Execution (All-or-Nothing)
 
-**Status**: 🔴 Not Started  
-**File**: `src/order_manager.cpp`  
+**Status**: 🔴 Not Started
+**File**: `src/order_manager.cpp`
 **Method**: `place_box_spread()`
 
 ### Current State
@@ -94,8 +94,8 @@ ExecutionResult OrderManager::place_box_spread(
 
 ## Priority 3: Add Comprehensive Validation Rules
 
-**Status**: 🟡 Partially Complete  
-**File**: `src/box_spread_strategy.cpp`  
+**Status**: 🟡 Partially Complete
+**File**: `src/box_spread_strategy.cpp`
 **Class**: `BoxSpreadValidator`
 
 ### Current State
@@ -145,8 +145,8 @@ bool BoxSpreadValidator::validate(
 
 ## Priority 4: Market Data Quality Checks
 
-**Status**: 🔴 Not Started  
-**File**: `src/box_spread_strategy.cpp`  
+**Status**: 🔴 Not Started
+**File**: `src/box_spread_strategy.cpp`
 **Method**: `evaluate_box_spread()`
 
 ### Current State

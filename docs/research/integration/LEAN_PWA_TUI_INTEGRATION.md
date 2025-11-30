@@ -19,13 +19,17 @@ This document describes how to integrate the LEAN REST API wrapper (T-50) and We
 Set environment variables in `.env` or `.env.local`:
 
 ```bash
+
 # Use LEAN API wrapper instead of Rust backend
+
 VITE_USE_LEAN_API=true
 
 # LEAN API base URL (default: http://localhost:8000)
+
 VITE_LEAN_API_URL=http://localhost:8000
 
 # Optional: API key for authentication (future)
+
 VITE_LEAN_API_KEY=your_api_key_here
 ```
 
@@ -155,6 +159,7 @@ export LEAN_API_URL=http://localhost:8000/api/v1/snapshot
 The TUI already has a `RestProvider` class that can connect to any REST endpoint:
 
 ```cpp
+
 #include "tui_provider.h"
 
 // Create REST provider pointing to LEAN API
@@ -304,11 +309,14 @@ This would:
 **PWA**:
 
 ```bash
+
 # Start LEAN API wrapper
+
 cd python/lean_integration
 uvicorn api_wrapper:app --reload
 
 # Start PWA with LEAN API
+
 cd web
 VITE_USE_LEAN_API=true VITE_LEAN_API_URL=http://localhost:8000 npm run dev
 
@@ -318,11 +326,14 @@ VITE_USE_LEAN_API=true VITE_LEAN_API_URL=http://localhost:8000 npm run dev
 **TUI**:
 
 ```bash
+
 # Start LEAN API wrapper
+
 cd python/lean_integration
 uvicorn api_wrapper:app --reload
 
 # Run TUI with LEAN endpoint
+
 LEAN_API_URL=http://localhost:8000/api/v1/snapshot ./build/ib_box_spread
 ```
 

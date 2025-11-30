@@ -46,6 +46,7 @@ target_link_libraries(ib_box_spread
 ### Basic Includes
 
 ```cpp
+
 #include <Eigen/Dense>  // For dense matrices and vectors
 #include <Eigen/Sparse> // For sparse matrices (if needed)
 ```
@@ -55,6 +56,7 @@ target_link_libraries(ib_box_spread
 #### 1. Portfolio Allocation Matrix Operations
 
 ```cpp
+
 #include <Eigen/Dense>
 
 // Portfolio weights vector (must sum to 1.0)
@@ -78,6 +80,7 @@ double portfolio_variance = weights.transpose() * covariance * weights;
 #### 2. Convexity Optimization (Barbell Strategy)
 
 ```cpp
+
 #include <Eigen/Dense>
 
 // Bond durations for convexity calculation
@@ -103,6 +106,7 @@ double portfolio_convexity = barbell_weights.dot(convexities);
 #### 3. Linear System Solving (Portfolio Optimization)
 
 ```cpp
+
 #include <Eigen/Dense>
 
 // Solve: A * x = b
@@ -122,6 +126,7 @@ Eigen::VectorXd x = A.colPivHouseholderQr().solve(b);
 #### 4. Matrix Operations for Risk Metrics
 
 ```cpp
+
 #include <Eigen/Dense>
 
 // Correlation matrix

@@ -25,17 +25,20 @@
 **Migrate to:** `@eslint/json` plugin (official ESLint plugin)
 
 **Benefits:**
+
 - Unified configuration with TypeScript/React linting
 - Better integration with VS Code ESLint extension
 - Consistent error reporting format
 - Can lint JSON files in `web/` directory (package.json, tsconfig.json, etc.)
 
 **Implementation:**
+
 ```bash
 npm install --save-dev @eslint/json
 ```
 
 **Files to lint:**
+
 - `web/package.json`
 - `web/tsconfig.json`
 - `web/tsconfig.node.json`
@@ -48,16 +51,19 @@ npm install --save-dev @eslint/json
 **Migrate to:** `eslint-plugin-html`
 
 **Benefits:**
+
 - Lint `web/index.html` for accessibility issues
 - Catch common HTML errors (missing alt tags, invalid attributes, etc.)
 - Unified linting workflow
 
 **Implementation:**
+
 ```bash
 npm install --save-dev eslint-plugin-html
 ```
 
 **Files to lint:**
+
 - `web/index.html`
 - Any other HTML files in `web/`
 
@@ -67,12 +73,14 @@ npm install --save-dev eslint-plugin-html
 **Keep:** Current tools
 
 **Reason:**
+
 - ESLint has no official YAML plugin
 - `yamllint` is the industry standard for YAML
 - YAML files are primarily config files (not in `web/` directory)
 - Trunk already provides `yamllint` integration
 
 **Files:**
+
 - `global_kit/.pre-commit-config.yaml`
 - `ib-gateway/root/conf.*.yaml`
 - `.trunk/trunk.yaml`
@@ -83,12 +91,14 @@ npm install --save-dev eslint-plugin-html
 **Keep:** Current tools
 
 **Reason:**
+
 - ESLint's `eslint-plugin-markdown` is limited (only lints code blocks)
 - `markdownlint` is the industry standard for Markdown
 - Better rule coverage for documentation
 - Already integrated with pre-commit and Trunk
 
 **Files:**
+
 - All `docs/**/*.md` files
 - `README.md`
 - Other documentation
@@ -97,23 +107,27 @@ npm install --save-dev eslint-plugin-html
 
 **Current:** No CSS linting
 **Options:**
+
 1. **ESLint with `eslint-plugin-css`** - Limited CSS support
 2. **stylelint** (recommended) - Industry standard, separate tool
 
 **Recommendation:** Use **stylelint** (separate tool)
 
 **Reason:**
+
 - ESLint's CSS support is very limited
 - `stylelint` is the industry standard for CSS/SCSS/SASS
 - Better rule coverage and auto-fixing
 - Can integrate with pre-commit hooks
 
 **Implementation:**
+
 ```bash
 npm install --save-dev stylelint stylelint-config-standard
 ```
 
 **Files to lint:**
+
 - `web/src/styles/app.css`
 - Any future CSS/SCSS files
 
@@ -122,6 +136,7 @@ npm install --save-dev stylelint stylelint-config-standard
 ### Phase 1: JSON + HTML (ESLint) ✅ **COMPLETED**
 
 1. ✅ Install ESLint plugins:
+
    ```bash
    cd web
    npm install --save-dev @eslint/json eslint-plugin-html
@@ -145,12 +160,14 @@ npm install --save-dev stylelint stylelint-config-standard
 ### Phase 2: CSS (stylelint) ⚠️
 
 1. Install stylelint:
+
    ```bash
    cd web
    npm install --save-dev stylelint stylelint-config-standard
    ```
 
 2. Create `web/.stylelintrc.json`:
+
    ```json
    {
      "extends": ["stylelint-config-standard"],
@@ -161,6 +178,7 @@ npm install --save-dev stylelint stylelint-config-standard
    ```
 
 3. Add to `web/package.json`:
+
    ```json
    {
      "scripts": {
@@ -176,27 +194,32 @@ npm install --save-dev stylelint stylelint-config-standard
 ## Summary
 
 **Migrate to ESLint:**
+
 - ✅ **JSON files** (`@eslint/json`) - **COMPLETED**
 - ⚠️ **HTML files** (`eslint-plugin-html`) - Deferred (flat config support issues)
 
 **Keep separate tools:**
+
 - ❌ YAML (`yamllint` via Trunk)
 - ❌ Markdown (`markdownlint` via pre-commit + Trunk)
 - ⚠️ CSS (`stylelint` - recommended separate tool)
 
 **Benefits of migration:**
+
 - ✅ Unified linting for web frontend (TS/TSX/JSON)
 - ✅ Better VS Code integration
 - ✅ Consistent error reporting
 - ✅ Simplified workflow
 
 **Implementation Status:**
+
 - ✅ JSON linting fully functional
 - ✅ Detects duplicate keys, empty keys, unsafe values
 - ✅ Lints package.json, tsconfig.json, and other JSON config files
 - ✅ Generated files (package-lock.json) properly ignored
 
 **Next Steps:**
+
 - Consider removing `check-json` from pre-commit hooks (ESLint now handles it)
 - Monitor `eslint-plugin-html` for flat config support
 - Consider adding stylelint for CSS linting

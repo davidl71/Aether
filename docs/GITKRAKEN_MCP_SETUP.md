@@ -3,6 +3,7 @@
 ## Overview
 
 GitKraken MCP server provides enhanced Git workflow capabilities, including:
+
 - **Git Operations**: Branch management, commit history, diffs
 - **Issue Tracking**: GitHub, GitLab, Jira, Linear, Azure DevOps
 - **PR Management**: Create, review, and manage pull requests
@@ -13,11 +14,13 @@ GitKraken MCP server provides enhanced Git workflow capabilities, including:
 ### 1. Install GitKraken CLI
 
 **macOS (Homebrew)**:
+
 ```bash
 brew install gitkraken-cli
 ```
 
 **Or download directly**:
+
 - Visit: https://www.gitkraken.com/cli
 - Download the latest release for your platform
 - Follow installation instructions
@@ -31,6 +34,7 @@ gk auth login
 ```
 
 This will:
+
 - Open a browser for authentication
 - Link your GitKraken account
 - Enable access to your repositories and integrations
@@ -61,6 +65,7 @@ The GitKraken MCP server is already configured in `.cursor/mcp.json`:
 ### 5. Restart Cursor
 
 After installing GitKraken CLI:
+
 1. Restart Cursor IDE
 2. The MCP server should automatically connect
 3. You can verify in Cursor's MCP settings
@@ -70,6 +75,7 @@ After installing GitKraken CLI:
 Once enabled, you can use GitKraken MCP through Cursor's AI assistant:
 
 ### Git Operations
+
 ```
 List all branches using GitKraken
 Show me the git status using GitKraken
@@ -77,6 +83,7 @@ Create a new branch for feature X using GitKraken
 ```
 
 ### Pull Requests
+
 ```
 Create a PR for the current branch using GitKraken
 List all open PRs using GitKraken
@@ -84,6 +91,7 @@ Show me PR #123 details using GitKraken
 ```
 
 ### Issue Tracking
+
 ```
 List all open issues using GitKraken
 Create an issue for bug X using GitKraken
@@ -97,6 +105,7 @@ Show me issue #456 using GitKraken
 If you see errors about `gk` command not found:
 
 1. **Check installation**:
+
    ```bash
    which gk
    ```
@@ -106,6 +115,7 @@ If you see errors about `gk` command not found:
    - Add to your shell profile if not in PATH
 
 3. **Reinstall**:
+
    ```bash
    brew reinstall gitkraken-cli
    ```
@@ -115,16 +125,19 @@ If you see errors about `gk` command not found:
 If authentication fails:
 
 1. **Re-authenticate**:
+
    ```bash
    gk auth login
    ```
 
 2. **Check authentication status**:
+
    ```bash
    gk auth status
    ```
 
 3. **Logout and re-login**:
+
    ```bash
    gk auth logout
    gk auth login
@@ -154,4 +167,3 @@ Configure these integrations through your GitKraken account settings.
 - [GitKraken CLI Documentation](https://help.gitkraken.com/cli/)
 - [GitKraken MCP Getting Started](https://help.gitkraken.com/mcp/mcp-getting-started/)
 - [GitKraken CLI Download](https://www.gitkraken.com/cli)
-

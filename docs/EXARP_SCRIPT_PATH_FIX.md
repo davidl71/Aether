@@ -1,7 +1,7 @@
 # Exarp Script Path Fix
 
-**Date**: 2025-11-29  
-**Issue**: Exarp daily automation reports "Script not found" for all tasks  
+**Date**: 2025-11-29
+**Issue**: Exarp daily automation reports "Script not found" for all tasks
 **Status**: Investigating
 
 ---
@@ -11,7 +11,7 @@
 Exarp daily automation (`mcp_exarp_run_daily_automation`) is skipping all tasks with "Script not found" errors:
 
 - Documentation Health Check: Script not found
-- Todo2 Alignment Analysis: Script not found  
+- Todo2 Alignment Analysis: Script not found
 - Duplicate Task Detection: Script not found
 
 ---
@@ -21,13 +21,14 @@ Exarp daily automation (`mcp_exarp_run_daily_automation`) is skipping all tasks 
 ### What Exarp Expects
 
 Exarp daily automation looks for these scripts in the project:
+
 1. `scripts/automate_docs_health_v2.py` - Documentation health check
 2. `scripts/automate_todo2_alignment_v2.py` - Todo2 alignment analysis
 3. `scripts/automate_todo2_duplicate_detection.py` - Duplicate detection
 
 ### Current Status
 
-✅ **Scripts Created**: All three placeholder scripts created  
+✅ **Scripts Created**: All three placeholder scripts created
 ❌ **Still Not Found**: Exarp still reports "Script not found"
 
 ### Possible Causes
@@ -45,6 +46,7 @@ Exarp daily automation looks for these scripts in the project:
 ### Solution 1: Create Placeholder Scripts ✅
 
 Created three placeholder scripts:
+
 - `scripts/automate_docs_health_v2.py`
 - `scripts/automate_todo2_alignment_v2.py`
 - `scripts/automate_todo2_duplicate_detection.py`
@@ -57,23 +59,27 @@ Created three placeholder scripts:
 
 ### Option 1: Use MCP Tools Directly (Current Workaround) ✅
 
-**Status**: Working  
+**Status**: Working
 **Approach**: Call Exarp MCP tools directly instead of using daily automation
 
 ```python
+
 # Instead of: mcp_exarp_run_daily_automation
 # Use:
+
 mcp_exarp_check_documentation_health()
 mcp_exarp_analyze_todo2_alignment()
 mcp_exarp_detect_duplicate_tasks()
 ```
 
 **Pros**:
+
 - ✅ Works immediately
 - ✅ No script path issues
 - ✅ Direct access to tools
 
 **Cons**:
+
 - ❌ Requires manual orchestration
 - ❌ Not using daily automation feature
 
@@ -82,16 +88,21 @@ mcp_exarp_detect_duplicate_tasks()
 ### Option 2: Investigate Exarp Source Code
 
 **Action**: Check Exarp package source to understand:
+
 - How it finds scripts
 - What directory structure it expects
 - What configuration it needs
 
 **Command**:
+
 ```bash
+
 # Find Exarp installation
+
 python3 -c "import exarp_project_management; print(exarp_project_management.__file__)"
 
 # Or check uvx cache
+
 ls ~/.cache/uv/archive-v0/*/lib/exarp_project_management/
 ```
 
@@ -102,18 +113,23 @@ ls ~/.cache/uv/archive-v0/*/lib/exarp_project_management/
 **Action**: Implement scripts that actually call Exarp functionality
 
 **Requirements**:
+
 - Scripts must be executable
 - Must accept project directory as argument
 - Must return proper exit codes
 - Should call Exarp's internal functions or MCP tools
 
 **Example**:
+
 ```python
+
 #!/usr/bin/env python3
+
 import sys
 from pathlib import Path
 
 # Try to import Exarp functions
+
 try:
     from exarp_project_management.scripts import automate_docs_health_v2
     automate_docs_health_v2.main()
@@ -129,11 +145,13 @@ except ImportError:
 **Action**: Create configuration file telling Exarp where to find scripts
 
 **Possible Config Locations**:
+
 - `.exarp/config.json`
 - `exarp_config.json`
 - `scripts/exarp_config.json`
 
 **Possible Config Format**:
+
 ```json
 {
   "scripts": {
@@ -153,13 +171,17 @@ except ImportError:
 Instead of `mcp_exarp_run_daily_automation`, call tools individually:
 
 ```python
+
 # Documentation health
+
 mcp_exarp_check_documentation_health()
 
-# Todo2 alignment  
+# Todo2 alignment
+
 mcp_exarp_analyze_todo2_alignment()
 
 # Duplicate detection
+
 mcp_exarp_detect_duplicate_tasks(auto_fix=True)
 ```
 
@@ -170,6 +192,7 @@ mcp_exarp_detect_duplicate_tasks(auto_fix=True)
 ```
 
 This script runs:
+
 1. Documentation link fixing
 2. Format validation
 3. TODO sync
@@ -195,5 +218,5 @@ This script runs:
 
 ---
 
-**Last Updated**: 2025-11-29  
+**Last Updated**: 2025-11-29
 **Status**: Scripts created, but Exarp still can't find them. Investigation ongoing.

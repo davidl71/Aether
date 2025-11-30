@@ -45,6 +45,7 @@ Net Cash Flow = Bond Coupons + Bond Maturities + Dividends + Option Expirations 
 - **Calculation:**
   - Interest payment: Fixed rate × Principal / 12
   - Principal adjustment: Principal × CPI change
+
 - **Projection:** Use current principal value, adjust monthly with CPI
 - **Currency:** ILS (convert to USD for unified view)
 
@@ -317,7 +318,9 @@ class CashFlowEvent:
 ### Cash Flow Calculator
 
 ```python
+
 # python/integration/cash_flow_calculator.py
+
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
@@ -922,13 +925,16 @@ class Loan:
 
 ```rust
 // agents/backend/crates/api/src/state.rs
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
+
 pub struct SystemSnapshot {
     // ... existing fields ...
     pub cash_flow_timeline: CashFlowTimeline,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+
 pub struct CashFlowTimeline {
     pub cash_flows: Vec<CashFlowEvent>,
     pub total_inflows: f64,
@@ -939,6 +945,7 @@ pub struct CashFlowTimeline {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+
 pub struct CashFlowEvent {
     pub date: String,  // ISO 8601 date
     pub amount: f64,   // Positive for inflows, negative for outflows

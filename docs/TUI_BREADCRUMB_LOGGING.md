@@ -51,6 +51,7 @@ Breadcrumb logging provides a trail of user interactions and application state c
 Initialize breadcrumb logging at application startup:
 
 ```cpp
+
 #include "tui_breadcrumb.h"
 
 // In main() or TUIApp constructor
@@ -72,7 +73,7 @@ tui::InitializeBreadcrumbLogging(breadcrumb_config);
 
 ```cpp
 // In event handler (tui_app.cpp)
-component |= CatchEvent([&](Event event) {
+component |= CatchEvent(& {
   // Log the input
   std::string event_str;
   if (event == Event::F1) event_str = "F1";
@@ -375,16 +376,21 @@ TEST_F(TUITestFixture, TestTabNavigation) {
 ### Environment Variables
 
 ```bash
+
 # Enable breadcrumb logging
+
 export TUI_BREADCRUMB_ENABLED=true
 
 # Set log file path
+
 export TUI_BREADCRUMB_LOG_FILE=/tmp/tui_breadcrumbs.log
 
 # Enable console logging (for debugging)
+
 export TUI_BREADCRUMB_CONSOLE=true
 
 # Maximum entries in memory
+
 export TUI_BREADCRUMB_MAX_ENTRIES=1000
 ```
 

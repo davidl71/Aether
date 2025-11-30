@@ -9,6 +9,7 @@
   - After cross‑platform verification (macOS ARM64/x86_64, Windows, Linux)
   - Post initial debugging sessions on each platform
   - Once team preference on IntelliSense behavior and performance is clear
+
 - Temporary guidance: Do not enable both simultaneously in the same workspace.
 
 ## Debugger Choice on Windows

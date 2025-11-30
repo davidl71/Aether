@@ -31,7 +31,7 @@ Use this format when documentation mentions external libraries or frameworks:
 For shorter, inline references:
 
 ```markdown
-For more information, see [Library Documentation](link) or query Context7: "[Library] patterns use context7"
+For more information, see Library Documentation or query Context7: "[Library] patterns use context7"
 ```
 
 ### NotebookLM Hints
@@ -78,6 +78,7 @@ For research tasks or when processing external sources:
 ### Example 1: API Documentation Index
 
 ```markdown
+
 # API Documentation Index
 
 > 💡 **AI Assistant Hint:** For up-to-date, version-specific documentation on any library or framework mentioned in this index, use the Context7 MCP server by appending `use context7` to your prompts. For example:
@@ -91,6 +92,7 @@ For research tasks or when processing external sources:
 ### Example 2: Integration Guide
 
 ```markdown
+
 ## NATS Integration
 
 We use NATS for message queuing. For current NATS patterns:
@@ -113,6 +115,7 @@ We use FastAPI for the REST API. For current FastAPI patterns, see the [official
 **Purpose**: Up-to-date, version-specific documentation and code examples
 
 **Best For**:
+
 - Library/framework documentation
 - API references
 - Code examples
@@ -127,6 +130,7 @@ We use FastAPI for the REST API. For current FastAPI patterns, see the [official
 **Purpose**: Research and knowledge base creation
 
 **Best For**:
+
 - Summarizing YouTube videos
 - Processing documentation links
 - Creating knowledge bases

@@ -101,12 +101,15 @@
 ## Proposed New Structure
 
 ```
+
 ## Core Trading APIs
+
   - Interactive Brokers TWS API
   - Alpaca Markets
   - Zorro Trading Platform
 
 ## Market Data & Analytics
+
   - Market Data Providers (consolidated)
     - dxFeed
     - Massive.com
@@ -118,6 +121,7 @@
     - LiveVol (if documented)
 
 ## FIX Protocol & Providers
+
   - FIX Protocol & Standards
   - FIX Development Tools & Libraries
   - FIX API Providers (consolidated)
@@ -129,25 +133,30 @@
     - FIXAPI.cc (consulting)
 
 ## Trading Simulators & Testing
+
   - QuantReplay
   - Stotra
   - PyMarketSim/TradingAgents
   - MarS
 
 ## Quantitative Finance
+
   - QuantLib
   - Other libraries (if any)
 
 ## Financial Infrastructure
+
   - Ledger Systems (Blnk, Apache Fineract)
   - Banking Systems
 
 ## Trading Frameworks
+
   - FLOX
   - SmartQuant
   - Nautilus Trader
 
 ## Build & Development Tools
+
   - CMake
   - Testing (Catch2)
   - Logging (spdlog)
@@ -155,12 +164,14 @@
   - CLI (CLI11)
 
 ## Market Structure & Research
+
   - CME Group Resources
   - Cboe Resources
   - Box Spread Research
   - Risk Management
 
 ## Brokerage Resources
+
   - Broker Selection Guides
   - Brokerage API Lists
   - Regulatory Information

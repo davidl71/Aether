@@ -9,16 +9,20 @@
 ## Issues Found
 
 ### 1. Duplicate Tractatus Thinking Server
+
 - **Problem**: `tractatus_thinking` was configured in both:
   - Global config (`~/.cursor/mcp.json`) ✅ Correct
   - Project config (`.cursor/mcp.json`) ❌ Duplicate
+
 - **Impact**: Unnecessary duplication, potential conflicts
 - **Solution**: Removed from project config (already correctly in global)
 
 ### 2. Incorrect Sequential Thinking Configuration
+
 - **Problem**: `sequential_thinking` was configured incorrectly in project config:
   - Project config: `python3 -m sequential_thinking` ❌ Module doesn't exist
   - Global config: `sequential-thinking-mcp` (via pipx) ✅ Correct
+
 - **Impact**: Project config would fail to start the server
 - **Solution**: Removed from project config (already correctly in global)
 
@@ -29,10 +33,12 @@
 ### ✅ Project Configuration (`.cursor/mcp.json`)
 
 **Removed:**
+
 - ❌ `tractatus_thinking` - Duplicate (already in global config)
 - ❌ `sequential_thinking` - Incorrect config (already in global config with correct setup)
 
 **Current Project Servers (5):**
+
 1. ✅ `filesystem` - Workspace-scoped file operations
 2. ✅ `git` - Repository-specific version control
 3. ✅ `agentic-tools` - Project-specific task management
@@ -42,6 +48,7 @@
 ### ✅ Global Configuration (`~/.cursor/mcp.json`)
 
 **Current Global Servers (3):**
+
 1. ✅ `tractatus_thinking` - Universal logical analysis (via `uvx mcpower-proxy`)
 2. ✅ `sequential_thinking` - Universal structured problem-solving (via `pipx sequential-thinking-mcp`)
 3. ✅ `openmemory` - Agent memory storage
@@ -51,12 +58,14 @@
 ## Verification
 
 ### ✅ Configuration Validation
+
 - Project config JSON is valid
 - Global config JSON is valid
 - No duplicate servers between global and project
 - All required servers present
 
 ### ✅ Server Installation Status
+
 - `sequential-thinking-mcp` installed via pipx: ✅ (version 0.10.1)
 - `tractatus_thinking` available via npx: ✅
 - All project servers available via npx: ✅

@@ -355,7 +355,7 @@ class MyWrapper : public DefaultEWrapper {
         if (callbacks_.count(tickerId)) {
             MarketData data;
             data.update(field, price);
-            callbacks_[tickerId](data);  // Notify registered callback
+            callbacks_tickerId;  // Notify registered callback
         }
     }
 };

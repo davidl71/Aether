@@ -623,16 +623,20 @@ Paper trading is **mandatory** before production. Test with real TWS but fake mo
 **Test Plan**:
 
 ```bash
+
 # 1. Configure paper trading credentials
+
 export IB_PAPER_ACCOUNT="DU123456"
 export IB_PAPER_PORT=7497
 
 # 2. Start TWS/Gateway in paper trading mode
 
 # 3. Run application in dry-run mode
+
 ./ib_box_spread --dry-run --symbol SPY --log-level debug
 
 # 4. Verify logs
+
 tail -f logs/ib_box_spread.log
 ```
 
@@ -660,7 +664,9 @@ tail -f logs/ib_box_spread.log
 **Test Plan**:
 
 ```bash
+
 # 1. Run with live execution (paper trading)
+
 ./ib_box_spread --symbol SPY --max-positions 1 --log-level debug
 
 # 2. Monitor TWS Trader Workstation
@@ -709,6 +715,7 @@ tail -f logs/ib_box_spread.log
 **3.1: Partial Fill with Rollback**
 
 ```bash
+
 # Manually cancel one leg after submission
 # 1. Run application
 # 2. When box spread placed, go to TWS
@@ -720,7 +727,9 @@ tail -f logs/ib_box_spread.log
 **3.2: Low Liquidity Filtering**
 
 ```bash
+
 # Use symbol with wide bid/ask spreads
+
 ./ib_box_spread --symbol XYZ --max-bid-ask-spread 0.10 --log-level debug
 
 # Verify: Opportunities filtered out
@@ -729,8 +738,10 @@ tail -f logs/ib_box_spread.log
 **3.3: Rate Limiting**
 
 ```bash
+
 # Burst 100 requests rapidly
 # Enable rate limiter
+
 ./ib_box_spread --enable-rate-limiter --symbols SPY,QQQ,IWM,...[50 symbols]
 
 # Verify: Rate limiter warnings logged
@@ -759,7 +770,9 @@ tail -f logs/ib_box_spread.log
 **Test Plan**:
 
 ```bash
+
 # 1. Start application
+
 ./ib_box_spread --symbol SPY --auto-reconnect
 
 # 2. Place box spread
@@ -803,7 +816,9 @@ tail -f logs/ib_box_spread.log
 **Test Plan**:
 
 ```bash
+
 # 1. Start application for extended run
+
 nohup ./ib_box_spread \
     --symbols SPY,QQQ,IWM \
     --max-positions 5 \
@@ -811,12 +826,15 @@ nohup ./ib_box_spread \
     > extended_run.log 2>&1 &
 
 # 2. Monitor every hour
+
 watch -n 3600 'tail -100 extended_run.log'
 
 # 3. Monitor memory usage
+
 watch -n 300 'ps aux | grep ib_box_spread'
 
 # 4. After 8 hours, analyze results
+
 ./scripts/analyze_paper_trading_run.sh extended_run.log
 ```
 

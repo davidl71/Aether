@@ -5,16 +5,21 @@ This guide covers setting up and running the NATS message queue server for local
 ## Quick Start
 
 ```bash
+
 # Install NATS server
+
 ./scripts/install_nats.sh
 
 # Start NATS server
+
 ./scripts/start_nats.sh
 
 # Verify it's running
+
 curl http://localhost:8222/healthz
 
 # Stop NATS server
+
 ./scripts/stop_nats.sh
 ```
 
@@ -55,6 +60,7 @@ The NATS server configuration is located at `config/nats-server.conf`.
 ### Production Settings
 
 For production, you should:
+
 1. Enable authentication (see `config/nats-server.conf` comments)
 2. Enable TLS encryption
 3. Configure clustering (if needed)
@@ -69,6 +75,7 @@ For production, you should:
 ```
 
 Or manually:
+
 ```bash
 nats-server -c config/nats-server.conf
 ```
@@ -80,6 +87,7 @@ nats-server -c config/nats-server.conf
 ```
 
 Or manually:
+
 ```bash
 pkill nats-server
 ```
@@ -87,16 +95,21 @@ pkill nats-server
 ### Check Status
 
 ```bash
+
 # Health check
+
 curl http://localhost:8222/healthz
 
 # Server info
+
 curl http://localhost:8222/varz
 
 # Connections
+
 curl http://localhost:8222/connz
 
 # Subscriptions
+
 curl http://localhost:8222/subsz
 ```
 
@@ -115,16 +128,21 @@ curl http://localhost:8222/subsz
 If you installed the NATS CLI tools:
 
 ```bash
+
 # Subscribe to a topic
+
 nats sub "market-data.tick.>"
 
 # Publish a message
+
 nats pub "market-data.tick.SPY" "Hello World"
 
 # Request/Reply
+
 nats req "rpc.snapshot" ""
 
 # Monitor server
+
 nats server check
 ```
 
@@ -133,7 +151,9 @@ nats server check
 The NATS server can be started automatically with other agents:
 
 ```bash
+
 # Start all agents (including NATS)
+
 ./agents/launch_all_agents.sh
 ```
 
@@ -144,7 +164,9 @@ The NATS server can be started automatically with other agents:
 If port 4222 is already in use:
 
 ```bash
+
 # Find process using port
+
 lsof -i :4222
 
 # Kill process or change port in config/nats-server.conf
@@ -155,10 +177,13 @@ lsof -i :4222
 If you get permission errors:
 
 ```bash
+
 # Make scripts executable
+
 chmod +x scripts/*.sh
 
 # Check NATS server permissions
+
 ls -l $(which nats-server)
 ```
 
@@ -174,6 +199,7 @@ If clients can't connect:
 ### High Memory Usage
 
 For development, NATS uses minimal memory. If you see high usage:
+
 - Check for message backlog (unconsumed messages)
 - Reduce max connections in config
 - Enable JetStream with storage limits

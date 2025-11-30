@@ -39,7 +39,7 @@ void tickPrice(TickerId tickerId, TickType field,
     // Get updated market data from order book
     auto updated_data = order_book_manager_->get_market_data(symbol);
     if (updated_data && market_data_callbacks_.count(tickerId)) {
-        market_data_callbacks_[tickerId](*updated_data);
+        market_data_callbacks_tickerId;
     }
 }
 ```

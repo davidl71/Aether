@@ -36,14 +36,17 @@
 **Instead of**: One notebook with all 10 TWS API learnings documents
 
 **Create**:
+
 - **Notebook 1**: "TWS API Core Patterns" (3-4 core documents)
   - TWS_API_BEST_PRACTICES.md
   - ECLIENT_EWRAPPER_ARCHITECTURE.md
   - TWS_API_CODE_EXAMPLES_LEARNINGS.md
+
 - **Notebook 2**: "TWS API Advanced Topics" (3-4 advanced documents)
   - TWS_API_MARKET_DATA_LEARNINGS.md
   - TWS_API_TROUBLESHOOTING_LEARNINGS.md
   - IB_ASYNC_LEARNINGS.md
+
 - **Notebook 3**: "TWS API Integration & Deployment" (3-4 integration documents)
   - TWS_API_DOCKER_LEARNINGS.md
   - TWS_INTEGRATION_STATUS.md
@@ -82,6 +85,7 @@
 **Instead of**: 10 separate sources (uses 10/50 slots)
 
 **Combine into**:
+
 - "TWS API Best Practices" (combines 3-4 learnings documents)
 - "TWS API Troubleshooting" (combines 2-3 troubleshooting documents)
 - "TWS API Integration Patterns" (combines 2-3 integration documents)
@@ -89,6 +93,7 @@
 **Result**: 3 sources instead of 10 (saves 7 slots)
 
 **How to Combine**:
+
 1. Create a new markdown file
 2. Add sections from related documents
 3. Maintain clear section headers
@@ -138,6 +143,7 @@
 #### Example: API_DOCUMENTATION_INDEX.md (2,611 lines)
 
 **Chunk Strategy**:
+
 - **Chunk 1**: FIX Protocol APIs (sources 1-20)
 - **Chunk 2**: Market Data Providers (sources 21-40)
 - **Chunk 3**: Trading Simulators (sources 41-60)
@@ -161,14 +167,17 @@
 #### Example: CME Research
 
 **Priority 1** (Add First):
+
 - CME Group whitepapers (official sources)
 - Cboe official articles
 
 **Priority 2** (Add if Space):
+
 - Third-party analysis articles
 - Integration guides
 
 **Priority 3** (Skip or Combine):
+
 - Forum discussions
 - Reddit threads
 
@@ -188,11 +197,13 @@
 #### Example Queries by Notebook
 
 **CME Financing Notebook**:
+
 - "Compare box spreads, AIR TRFs, and futures financing for capital efficiency"
 - "What are the counterparty risk differences between these financing methods?"
 - "Summarize the integration requirements for CME market data feeds"
 
 **Message Queue Notebook**:
+
 - "Compare NATS, RabbitMQ, Redis Streams, and ZeroMQ for sub-millisecond trading systems"
 - "Which solution has the best multi-language support for C++, Python, Rust, Go, TypeScript?"
 - "What are the deployment complexity differences?"
@@ -204,16 +215,19 @@
 ### For High-Priority Research (External Sources)
 
 **Notebook 1: CME Financing Strategies**
+
 - Sources: 4 external URLs from CME_RESEARCH.md
 - Focus: Financing strategy comparison
 - Queries: Capital efficiency, counterparty risk, integration requirements
 
 **Notebook 2: Message Queue Solutions**
+
 - Sources: 4 documentation URLs (NATS, RabbitMQ, Redis, ZeroMQ)
 - Focus: Performance and integration comparison
 - Queries: Latency, multi-language support, deployment
 
 **Notebook 3: ORATS Options Data**
+
 - Sources: ORATS API documentation URLs
 - Focus: Options data integration
 - Queries: Features, integration patterns, best practices
@@ -221,18 +235,22 @@
 ### For Large Document Sets (Internal Learnings)
 
 **Notebook 4: TWS API Core Patterns** (Split 1 of 3)
+
 - Sources: 3-4 core TWS API learnings documents
 - Focus: Fundamental patterns and best practices
 
 **Notebook 5: TWS API Advanced Topics** (Split 2 of 3)
+
 - Sources: 3-4 advanced TWS API documents
 - Focus: Market data, troubleshooting, async patterns
 
 **Notebook 6: TWS API Integration** (Split 3 of 3)
+
 - Sources: 3-4 integration and deployment documents
 - Focus: Docker, integration status, IBC patterns
 
 **Notebook 7: TWS API Synthesis**
+
 - Sources: Key findings from Notebooks 4, 5, 6
 - Focus: Unified best practices and consolidated insights
 
@@ -243,6 +261,7 @@
 ### Step 1: Plan Notebook Structure
 
 Before creating notebooks:
+
 1. Count total sources needed
 2. Identify documents >500k words (need chunking)
 3. Group related documents
@@ -275,11 +294,13 @@ Before creating notebooks:
 ### Free Plan Suitability
 
 **✅ Good For**:
+
 - Small research projects (<20 sources)
 - Focused topic research
 - External source synthesis (4-10 URLs)
 
 **⚠️ Limitations**:
+
 - Large document sets (10+ internal documents)
 - Comprehensive research (50+ sources)
 - Multiple simultaneous research projects
@@ -287,6 +308,7 @@ Before creating notebooks:
 ### NotebookLM Plus Consideration
 
 **Consider Upgrading If**:
+
 - Regularly working with 50+ sources per notebook
 - Need to combine multiple large research projects
 - Working on comprehensive documentation synthesis

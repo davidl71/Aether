@@ -19,20 +19,26 @@
 **Location**: `scripts/batch_update_todos.py`
 
 **Best For:**
+
 - ✅ Batch approving multiple tasks
 - ✅ Command-line automation
 - ✅ Reusable workflows
 - ✅ CI/CD integration
 
 **Quick Examples:**
+
 ```bash
+
 # Approve all Review tasks with no clarification needed
+
 python3 scripts/batch_update_todos.py approve --status Review --clarification-none --yes
 
 # List tasks needing decisions
+
 python3 scripts/batch_update_todos.py list --status Review
 
 # Update specific tasks
+
 python3 scripts/batch_update_todos.py update-status --task-ids T-156,T-157 --new-status Todo
 ```
 
@@ -45,18 +51,21 @@ python3 scripts/batch_update_todos.py update-status --task-ids T-156,T-157 --new
 **Location**: `mcp-servers/project-management-automation/`
 
 **Available Tools:**
+
 - `update_todos` - Update task status, content, tags, dependencies
 - `add_comments` - Add research, result, note, or manualsetup comments
 - `list_todos` - View filtered task lists
 - `get_todo_details` - Retrieve full task details
 
 **Best For:**
+
 - ✅ Interactive Cursor chat workflows
 - ✅ Single task updates
 - ✅ Complex updates with multiple fields
 - ✅ Integration with AI assistant
 
 **Example (via Cursor chat):**
+
 ```
 "Update task T-156 to Todo status and add a note comment"
 ```
@@ -68,20 +77,25 @@ python3 scripts/batch_update_todos.py update-status --task-ids T-156,T-157 --new
 ## 3. Python Heredoc (Not Recommended)
 
 **Best For:**
+
 - ❌ Quick one-off scripts (but script is better)
 - ❌ Temporary throwaway code (but script is better)
 
 **Why Not Recommended:**
+
 - ❌ Not reusable
 - ❌ Hard to maintain
 - ❌ No documentation
 - ❌ Error-prone
 
 **Example (Old Way - Don't Use):**
+
 ```bash
 python3 << 'EOF'
 import json
+
 # ... 100+ lines ...
+
 EOF
 ```
 
@@ -94,16 +108,20 @@ EOF
 ### For Batch Operations (Most Common)
 
 ```bash
+
 # Step 1: See what needs approval
+
 python3 scripts/batch_update_todos.py list --status Review --clarification-none
 
 # Step 2: Approve them
+
 python3 scripts/batch_update_todos.py approve --status Review --clarification-none --yes
 ```
 
 ### For Interactive Updates
 
 Use MCP tools via Cursor chat:
+
 ```
 "Show me all Review tasks"
 "Approve task T-156"
@@ -113,7 +131,9 @@ Use MCP tools via Cursor chat:
 ### For Automation Scripts
 
 ```bash
+
 # In your automation script
+
 python3 scripts/batch_update_todos.py approve --status Review --clarification-none --yes
 ```
 
@@ -136,20 +156,25 @@ python3 scripts/batch_update_todos.py approve --status Review --clarification-no
 ### Replacing Python Heredocs
 
 **Before:**
+
 ```bash
 python3 << 'EOF'
 import json
 from pathlib import Path
+
 # ... 100+ lines of code ...
+
 EOF
 ```
 
 **After:**
+
 ```bash
 python3 scripts/batch_update_todos.py approve --status Review --clarification-none --yes
 ```
 
 **Benefits:**
+
 - ✅ 1 line instead of 100+
 - ✅ Reusable
 - ✅ Documented

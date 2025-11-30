@@ -6,6 +6,7 @@
 ## Executive Summary
 
 This document analyzes the box spread arbitrage codebase against mathematical finance best practices and identifies specific improvements for:
+
 1. **Calculation Accuracy & Numerical Stability**
 2. **Portfolio Optimization Opportunities**
 3. **Risk Management Enhancements**
@@ -18,6 +19,7 @@ This document analyzes the box spread arbitrage codebase against mathematical fi
 ### 1.1 Implied Rate Calculation - Day Count Convention
 
 **Current Implementation:**
+
 ```1174:1200:native/src/box_spread_strategy.cpp
 double BoxSpreadCalculator::calculate_implied_interest_rate(
     const types::BoxSpreadLeg& spread) {
@@ -63,6 +65,7 @@ double BoxSpreadCalculator::calculate_implied_interest_rate(
    - **Recommendation:** Add minimum threshold checks
 
 **Improved Implementation:**
+
 ```cpp
 enum class DayCountConvention {
     ACT_365,    // Actual/365 (bond convention)
@@ -141,6 +144,7 @@ double BoxSpreadCalculator::calculate_implied_interest_rate(
 ### 1.2 ROI Calculation - Annualization
 
 **Current Implementation:**
+
 ```1090:1095:native/src/box_spread_strategy.cpp
 double BoxSpreadCalculator::calculate_roi(const types::BoxSpreadLeg& spread) {
     if (spread.net_debit > 0) {
@@ -153,6 +157,7 @@ double BoxSpreadCalculator::calculate_roi(const types::BoxSpreadLeg& spread) {
 **Issue:** ROI is not annualized, making it difficult to compare opportunities with different time horizons.
 
 **Recommendation:** Add annualized ROI calculation:
+
 ```cpp
 double BoxSpreadCalculator::calculate_roi(
     const types::BoxSpreadLeg& spread,
@@ -178,6 +183,7 @@ double BoxSpreadCalculator::calculate_roi(
 ### 1.3 Put-Call Parity Violation - Dividend Adjustment
 
 **Current Implementation:**
+
 ```1340:1348:native/src/box_spread_strategy.cpp
 double BoxSpreadCalculator::calculate_put_call_parity_violation(
     const types::BoxSpreadLeg& spread,
@@ -193,6 +199,7 @@ double BoxSpreadCalculator::calculate_put_call_parity_violation(
 **Issue:** Doesn't account for dividends, which affect put-call parity.
 
 **Recommendation:** Add dividend-adjusted put-call parity calculation:
+
 ```cpp
 double BoxSpreadCalculator::calculate_put_call_parity_violation(
     const types::BoxSpreadLeg& spread,
@@ -224,6 +231,7 @@ double BoxSpreadCalculator::calculate_put_call_parity_violation(
 **Current Implementation:** The codebase focuses on individual box spread opportunities without portfolio-level optimization.
 
 **Missing Capabilities:**
+
 - Multi-position allocation
 - Capital constraint handling
 - Correlation analysis
@@ -237,6 +245,7 @@ double BoxSpreadCalculator::calculate_put_call_parity_violation(
 **Objective:** Maximize portfolio return while minimizing variance (risk).
 
 **Mathematical Framework:**
+
 ```
 Maximize: μ^T * w - λ * w^T * Σ * w
 Subject to:
@@ -247,12 +256,14 @@ Subject to:
 ```
 
 Where:
+
 - `μ` = vector of expected returns (implied rates)
 - `w` = vector of position weights
 - `Σ` = covariance matrix of returns
 - `λ` = risk aversion parameter
 
 **Implementation Proposal:**
+
 ```cpp
 struct PortfolioOptimizationParams {
     double risk_aversion = 1.0;           // Risk aversion parameter (lambda)
@@ -307,6 +318,7 @@ private:
 #### 2.2.2 Kelly Criterion Enhancement
 
 **Current Implementation:**
+
 ```380:405:native/src/risk_calculator.cpp
 int RiskCalculator::calculate_kelly_position_size(
     double win_probability,
@@ -338,11 +350,13 @@ int RiskCalculator::calculate_kelly_position_size(
 ```
 
 **Issues:**
+
 1. **Single Position:** Only calculates for one position, not portfolio
 2. **No Correlation:** Doesn't account for correlation between positions
 3. **Fixed Fractional:** Uses fixed 0.5 multiplier without justification
 
 **Recommendation:** Multi-Asset Kelly Criterion
+
 ```cpp
 // Multi-asset Kelly Criterion
 // f* = Σ^(-1) * μ
@@ -377,6 +391,7 @@ Eigen::VectorXd RiskCalculator::calculate_multi_asset_kelly(
 **Advantage:** Works well with highly correlated assets (box spreads on same underlying).
 
 **Implementation Proposal:**
+
 ```cpp
 class HierarchicalRiskParity {
 public:
@@ -401,6 +416,7 @@ private:
 **Current Gap:** No correlation analysis between box spread opportunities.
 
 **Recommendation:** Add correlation calculation
+
 ```cpp
 class CorrelationAnalyzer {
 public:
@@ -421,6 +437,7 @@ public:
 ```
 
 **Correlation Factors:**
+
 - Same underlying vs different underlyings
 - Same expiration vs different expirations
 - Same strike width vs different strike widths
@@ -433,6 +450,7 @@ public:
 ### 3.1 Value at Risk (VaR) Improvements
 
 **Current Implementation:**
+
 ```443:456:native/src/risk_calculator.cpp
 double RiskCalculator::calculate_var_historical(
     const std::vector<double>& returns,
@@ -451,11 +469,13 @@ double RiskCalculator::calculate_var_historical(
 ```
 
 **Issues:**
+
 1. **Single Position:** Only calculates for one position
 2. **No Portfolio VaR:** Doesn't account for portfolio diversification
 3. **Historical Only:** No parametric or Monte Carlo methods for box spreads
 
 **Recommendation:** Portfolio VaR
+
 ```cpp
 // Portfolio VaR accounting for correlation
 double RiskCalculator::calculate_portfolio_var(
@@ -487,6 +507,7 @@ double RiskCalculator::calculate_portfolio_var(
 **Missing:** CVaR (Expected Shortfall) provides better tail risk measure.
 
 **Recommendation:**
+
 ```cpp
 double RiskCalculator::calculate_cvar(
     const std::vector<double>& returns,
@@ -517,6 +538,7 @@ double RiskCalculator::calculate_cvar(
 **Current Implementation:** All Greeks are set to 0.0 (correct for box spreads).
 
 **Recommendation:** Add individual leg Greeks for monitoring:
+
 ```cpp
 struct LegGreeks {
     double delta;
@@ -559,6 +581,7 @@ BoxSpreadGreeks calculate_box_spread_greeks(
 **Issue:** Using `double` for all calculations without precision considerations.
 
 **Recommendation:**
+
 - Use `std::numeric_limits<double>::epsilon()` for comparison tolerances
 - Consider `decimal` type for exact financial calculations (Intel Decimal Library already included)
 
@@ -567,6 +590,7 @@ BoxSpreadGreeks calculate_box_spread_greeks(
 **Current:** Basic tests exist, but need more edge cases.
 
 **Recommendation:** Add tests for:
+
 - Numerical stability (very small/large values)
 - Day count conventions
 - Compounding frequencies
@@ -578,6 +602,7 @@ BoxSpreadGreeks calculate_box_spread_greeks(
 **Current:** Good inline documentation exists.
 
 **Recommendation:** Add mathematical derivations document:
+
 - Why box spreads are risk-free (mathematical proof)
 - Put-call parity derivation
 - Implied rate formula derivation
@@ -588,16 +613,19 @@ BoxSpreadGreeks calculate_box_spread_greeks(
 ## 5. Implementation Priority
 
 ### High Priority (Immediate)
+
 1. ✅ **Day Count Convention** - Fix rate calculation accuracy
 2. ✅ **Annualized ROI** - Enable comparison across time horizons
 3. ✅ **Portfolio VaR** - Better risk measurement
 
 ### Medium Priority (Next Sprint)
+
 4. ✅ **Mean-Variance Optimization** - Core portfolio optimization
 5. ✅ **Correlation Analysis** - Diversification insights
 6. ✅ **Multi-Asset Kelly** - Better position sizing
 
 ### Low Priority (Future)
+
 7. ✅ **HRP Optimization** - Advanced diversification
 8. ✅ **CVaR Calculation** - Tail risk measurement
 9. ✅ **Greeks Monitoring** - Early exercise risk detection
@@ -607,11 +635,13 @@ BoxSpreadGreeks calculate_box_spread_greeks(
 ## 6. Dependencies & Libraries
 
 ### Required Libraries
+
 - **Eigen3** - Matrix operations for portfolio optimization
 - **Intel Decimal Library** - Already included, use for exact calculations
 - **Optimization Library** - Consider `nlopt` or `OSQP` for quadratic programming
 
 ### CMake Integration
+
 ```cmake
 find_package(Eigen3 REQUIRED)
 target_link_libraries(box_spread_strategy
@@ -635,12 +665,14 @@ target_link_libraries(box_spread_strategy
 ## Summary
 
 This analysis identifies **15 specific improvements** across 4 categories:
+
 - **Calculation Accuracy:** 3 improvements (day count, compounding, annualization)
 - **Portfolio Optimization:** 4 major additions (mean-variance, Kelly, HRP, correlation)
 - **Risk Management:** 3 enhancements (portfolio VaR, CVaR, Greeks monitoring)
 - **Code Quality:** 5 improvements (precision, testing, documentation)
 
 **Estimated Impact:**
+
 - **Accuracy:** +5-10% improvement in rate calculations
 - **Portfolio Returns:** +10-20% through optimization
 - **Risk Reduction:** -15-25% portfolio variance through diversification

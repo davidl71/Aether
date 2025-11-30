@@ -2,7 +2,7 @@
 
 This guide covers Python virtual environment setup for the project, including PyO3 compatibility and modern tooling with `uv`.
 
-**Issue**: PyO3 0.21 supports Python up to 3.12, but system Python is 3.14  
+**Issue**: PyO3 0.21 supports Python up to 3.12, but system Python is 3.14
 **Solution**: Use Python 3.12 virtual environment
 
 **Modern Tooling**: The project now supports `uv` (fast Python package manager) with automatic fallback to standard `venv` and `pip`.
@@ -12,15 +12,19 @@ This guide covers Python virtual environment setup for the project, including Py
 ### Using `uv` (Recommended - Faster)
 
 ```bash
+
 # Install uv if not already installed
+
 pip install uv
 
 # Create virtual environment with uv (faster)
+
 cd agents/backend
 uv venv .venv
 source .venv/bin/activate
 
 # Set PyO3 to use this Python
+
 export PYO3_PYTHON="$(which python)"
 cargo check -p backend_service
 ```
@@ -52,6 +56,7 @@ source scripts/activate_python_env.sh
 ```
 
 **What it does:**
+
 1. Checks for Python 3.12
 2. Creates `.venv/` if it doesn't exist
 3. Activates the virtual environment
@@ -66,22 +71,28 @@ source scripts/activate_python_env.sh
 cd agents/backend
 
 # Install uv if not already installed
+
 pip install uv
 
 # Create venv with uv (faster than standard venv)
+
 uv venv .venv --python python3.12
 
 # Activate venv
+
 source .venv/bin/activate
 
 # Set PyO3 to use this Python
+
 export PYO3_PYTHON="$(which python)"
 export PYO3_PYTHON_VERSION="3.12"
 
 # Install dependencies with uv (faster)
+
 uv pip install -r requirements.txt
 
 # Verify
+
 python --version  # Should show Python 3.12.x
 echo $PYO3_PYTHON  # Should show path to .venv/bin/python
 ```
@@ -92,19 +103,24 @@ echo $PYO3_PYTHON  # Should show path to .venv/bin/python
 cd agents/backend
 
 # Create venv with Python 3.12
+
 /usr/local/bin/python3.12 -m venv .venv
 
 # Activate venv
+
 source .venv/bin/activate
 
 # Set PyO3 to use this Python
+
 export PYO3_PYTHON="$(which python)"
 export PYO3_PYTHON_VERSION="3.12"
 
 # Install dependencies
+
 pip install -r requirements.txt
 
 # Verify
+
 python --version  # Should show Python 3.12.x
 echo $PYO3_PYTHON  # Should show path to .venv/bin/python
 ```
@@ -114,18 +130,23 @@ echo $PYO3_PYTHON  # Should show path to .venv/bin/python
 If you have `direnv` installed:
 
 ```bash
+
 # Install direnv
+
 brew install direnv
 
 # Add to shell config (~/.zshrc or ~/.bashrc)
+
 echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc
 
 # Allow direnv in backend directory
+
 cd agents/backend
 direnv allow
 ```
 
 The `.envrc` file will automatically:
+
 - Activate the virtual environment
 - Set PyO3 environment variables
 
@@ -134,16 +155,23 @@ The `.envrc` file will automatically:
 After activation, verify the setup:
 
 ```bash
+
 # Check Python version
+
 python --version
+
 # Should show: Python 3.12.x
 
 # Check PyO3 environment variable
+
 echo $PYO3_PYTHON
+
 # Should show: /path/to/agents/backend/.venv/bin/python
 
 # Test Rust build
+
 cargo check -p backend_service
+
 # Should succeed without pyo3-ffi errors
 ```
 
@@ -152,28 +180,37 @@ cargo check -p backend_service
 ### Python 3.12 Not Found
 
 ```bash
+
 # Install Python 3.12
+
 brew install python@3.12
 
 # Verify installation
+
 /usr/local/bin/python3.12 --version
 ```
 
 ### PyO3 Still Using System Python
 
 ```bash
+
 # Explicitly set PYO3_PYTHON
+
 export PYO3_PYTHON="$(which python)"
 
 # Verify
+
 echo $PYO3_PYTHON
+
 # Should point to .venv/bin/python, not system python
 ```
 
 ### Virtual Environment Issues
 
 ```bash
+
 # Remove and recreate
+
 cd agents/backend
 rm -rf .venv
 source scripts/activate_python_env.sh
@@ -182,10 +219,13 @@ source scripts/activate_python_env.sh
 ### Cargo Still Fails
 
 ```bash
+
 # Clean build cache
+
 cargo clean
 
 # Rebuild with correct Python
+
 source scripts/activate_python_env.sh
 cargo check -p backend_service
 ```
@@ -210,26 +250,34 @@ The project now supports `uv` (fast Python package manager) with automatic fallb
 ### Installation
 
 ```bash
+
 # Install uv
+
 pip install uv
 
 # Or via Homebrew (macOS)
+
 brew install uv
 
 # Verify installation
+
 uv --version
 ```
 
 ### Usage
 
 ```bash
+
 # Create virtual environment (faster)
+
 uv venv .venv
 
 # Install packages (faster)
+
 uv pip install -r requirements.txt
 
 # Or use uv sync with pyproject.toml
+
 uv sync
 ```
 
@@ -249,6 +297,7 @@ For now, the virtual environment approach with `uv` support is the simplest and 
 For CI/CD pipelines, ensure Python 3.12 is available. Using `uv` is recommended for faster builds:
 
 ```yaml
+
 # Example GitHub Actions with uv (Recommended)
 - name: Install uv
   run: pip install uv
@@ -269,6 +318,7 @@ For CI/CD pipelines, ensure Python 3.12 is available. Using `uv` is recommended 
 **Fallback** (without `uv`):
 
 ```yaml
+
 # Example GitHub Actions (Standard venv)
 - name: Set up Python 3.12
   uses: actions/setup-python@v4

@@ -18,6 +18,7 @@ React linting is fully configured using **ESLint** with React-specific plugins. 
 **File**: `web/eslint.config.js` (ESLint 9 flat config)
 
 **Plugins Configured**:
+
 - `eslint-plugin-react` - React-specific linting rules
 - `eslint-plugin-react-hooks` - React Hooks linting (Rules of Hooks)
 - `eslint-plugin-react-refresh` - React Fast Refresh linting
@@ -25,6 +26,7 @@ React linting is fully configured using **ESLint** with React-specific plugins. 
 - `@typescript-eslint/parser` - TypeScript parser
 
 **Rules Enabled**:
+
 - React recommended rules
 - React Hooks recommended rules
 - TypeScript recommended rules (type-checked)
@@ -41,6 +43,7 @@ React linting is fully configured using **ESLint** with React-specific plugins. 
 ```
 
 **Usage**:
+
 ```bash
 cd web
 npm run lint        # Check for linting errors
@@ -52,6 +55,7 @@ npm run lint:fix    # Auto-fix linting errors
 **File**: `.vscode/settings.json`
 
 ESLint is configured as the default formatter for:
+
 - TypeScript (`.ts`)
 - TypeScript React (`.tsx`)
 - JavaScript (`.js`)
@@ -72,6 +76,7 @@ ESLint is now integrated into the universal linter script:
 ```
 
 This runs ESLint along with:
+
 - C++ linting (cppcheck, clang-analyze, Infer)
 - Python linting (bandit)
 - Swift linting (swiftlint)
@@ -107,6 +112,7 @@ The configuration includes:
 ### Ignored Files
 
 The following are automatically ignored:
+
 - `dist/**` - Build output
 - `dev-dist/**` - Development build output
 - `node_modules/**` - Dependencies
@@ -130,15 +136,18 @@ The following are automatically ignored:
 Some linting errors exist in the codebase (these are code quality issues, not configuration problems):
 
 **App.tsx**:
+
 - Floating promises (lines 320, 326, 334)
 - Prefer RegExp.exec() (line 386, 387)
 - Prefer nullish coalescing (line 386)
 - Unsafe any assignments (lines 445, 471)
 
 **To Fix**:
+
 ```bash
 cd web
 npm run lint:fix  # Auto-fix some issues
+
 # Manually fix remaining issues
 ```
 
@@ -203,6 +212,7 @@ npm run lint:fix
 ### VS Code
 
 ESLint runs automatically in VS Code when you:
+
 - Open a `.tsx` or `.ts` file
 - Save a file (if format on save is enabled)
 - See red/yellow underlines for linting errors
@@ -216,6 +226,7 @@ ESLint runs automatically in VS Code when you:
 **Location**: `web/eslint.config.js`
 
 **Key Features**:
+
 - ESLint 9 flat config format
 - React plugins configured
 - TypeScript type-checked rules
@@ -226,6 +237,7 @@ ESLint runs automatically in VS Code when you:
 **Location**: `.vscode/settings.json`
 
 **Key Settings**:
+
 - ESLint as formatter for TS/TSX/JS/JSX
 - Format on save (if enabled)
 - ESLint extension required
@@ -235,10 +247,12 @@ ESLint runs automatically in VS Code when you:
 **Location**: `web/package.json`
 
 **Scripts**:
+
 - `lint` - Check for errors
 - `lint:fix` - Auto-fix errors
 
 **Dependencies**:
+
 - `eslint` - Core ESLint
 - `eslint-plugin-react` - React rules
 - `eslint-plugin-react-hooks` - Hooks rules

@@ -111,6 +111,7 @@
 - ❌ **Missing protection (ACTIVE callbacks)**:
   - `tickSize()` - Line 998 (processes market data)
   - `tickOptionComputation()` - Line 1026 (processes greeks/IV)
+
 - 📝 Empty stubs (32 methods): No protection needed but not implemented
 
 **Effort**: 30 minutes to add try-catch to 2 active callbacks

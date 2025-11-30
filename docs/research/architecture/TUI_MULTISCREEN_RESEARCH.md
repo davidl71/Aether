@@ -189,6 +189,7 @@ auto tab_container = Container::Tab({
 **Example Usage:**
 
 ```cpp
+
 #include <ftxui/component/component.hpp>
 
 using namespace ftxui;

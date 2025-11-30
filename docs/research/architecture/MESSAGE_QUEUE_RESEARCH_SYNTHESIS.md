@@ -11,12 +11,14 @@
 ### Performance & Latency
 
 **Key Findings:**
+
 - NATS supports **ping/pong** mechanisms for connection health monitoring
 - Configurable ping intervals (default 20 seconds) and max outstanding pings (default 2)
 - Supports **RTT (Round Trip Time)** measurement for latency diagnostics
 - Built-in benchmarking tool (`nats-bench`) for performance testing
 
 **Multi-Language Support:**
+
 - **Go**: `nats.Connect()` with ping configuration
 - **Java**: `Options.Builder()` with ping settings
 - **JavaScript/TypeScript**: `connect()` with ping options
@@ -26,6 +28,7 @@
 - **C**: `natsOptions_SetPingInterval()` and `natsOptions_SetMaxPingsOut()`
 
 **Connection Patterns:**
+
 - Supports wildcard subscriptions (`time.>`)
 - Multi-language examples show consistent API patterns
 - Connection pooling and clustering support
@@ -33,6 +36,7 @@
 ### Code Examples (Context7)
 
 **Go Example:**
+
 ```go
 nc, err := nats.Connect("demo.nats.io",
     nats.Name("API Ping Example"),
@@ -41,6 +45,7 @@ nc, err := nats.Connect("demo.nats.io",
 ```
 
 **JavaScript Example:**
+
 ```javascript
 const nc = await connect({
     pingInterval: 20 * 1000,
@@ -50,6 +55,7 @@ const nc = await connect({
 ```
 
 **Python Example:**
+
 ```python
 nc = NATS()
 await nc.connect(
@@ -66,12 +72,14 @@ await nc.connect(
 ### Performance & Latency
 
 **Key Findings:**
+
 - **AMQP 0.9.1 vs AMQP 1.0**: Performance differences documented
 - **Best Practice**: Separate connections for publishing and consuming to avoid backpressure issues
 - **Quorum Queues**: High-performance option with improved durability
 - **Benchmarking Tools**: `quiver` tool for performance testing
 
 **Performance Characteristics:**
+
 - AMQP 1.0 shows improved performance in RabbitMQ 4.0
 - Quorum queues provide better performance than classic queues
 - Credit-based flow control affects performance
@@ -80,6 +88,7 @@ await nc.connect(
 ### Multi-Language Support
 
 **Client Libraries:**
+
 - **Java**: `Connection` builder pattern
 - **C#**: `IConnection` with async support
 - **Python**: `environment.connection()`
@@ -87,6 +96,7 @@ await nc.connect(
 - **JavaScript**: `environment.createConnection()`
 
 **Connection Patterns:**
+
 - Long-lived connections recommended
 - Connection pooling supported
 - Environment-based connection management
@@ -94,6 +104,7 @@ await nc.connect(
 ### Code Examples (Context7)
 
 **Java Example:**
+
 ```java
 Connection connection = environment.connectionBuilder()
     .uri("amqp://admin:admin@localhost:5672/%2f")
@@ -101,13 +112,17 @@ Connection connection = environment.connectionBuilder()
 ```
 
 **Python Example:**
+
 ```python
 connection = environment.connection()
+
 # ... use connection
+
 connection.close()
 ```
 
 **Go Example:**
+
 ```go
 connection, err := env.NewConnection(context.Background())
 // ... use connection
@@ -141,12 +156,14 @@ connection.close()
 ### Performance Optimization
 
 **NATS:**
+
 - Built-in benchmarking (`nats-bench`)
 - Connection pooling
 - Account pinning for dedicated routes
 - JetStream for persistence (optional)
 
 **RabbitMQ:**
+
 - Separate connections for pub/sub (best practice)
 - Quorum queues for high performance
 - AMQP 1.0 for better performance (RabbitMQ 4.0+)
@@ -169,12 +186,14 @@ connection.close()
 ### Implementation Considerations
 
 **NATS Integration:**
+
 - Use ping/pong configuration for connection health
 - Monitor RTT for latency diagnostics
 - Use JetStream only if persistence needed (adds latency)
 - Leverage multi-language client support
 
 **RabbitMQ Alternative:**
+
 - Consider if AMQP protocol required
 - Use separate connections for publishing/consuming
 - Prefer AMQP 1.0 (RabbitMQ 4.0+) for better performance

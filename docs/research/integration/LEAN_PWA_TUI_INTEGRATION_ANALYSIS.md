@@ -199,7 +199,9 @@ From `agents/shared/API_CONTRACT.md`:
 **Option A: Python Wrapper**
 
 ```python
+
 # python/lean_integration/api_wrapper.py
+
 from fastapi import FastAPI
 from lean_integration.lean_client import LeanClient
 
@@ -245,7 +247,9 @@ async def start_strategy():
 **Implementation**:
 
 ```python
+
 # python/lean_integration/websocket_bridge.py
+
 from fastapi import WebSocket
 from lean_integration.lean_client import LeanClient
 

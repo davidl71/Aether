@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "fixes": [
+    {
+      "line": 400,
+      "old": "- [FastMCP Configuration](EXARP_FASTMCP_CONFIGURATION.md) - FastMCP setup",
+      "new": "Removed (file does not exist)",
+      "method": "removed_link"
+    }
+  ],
+  "file": "/home/david/ib_box_spread_full_universal/docs/GITHUB_WORKFLOWS.md",
+  "updated": "2025-11-30T00:22:37.153732",
+  "note": "Link removed entirely as file does not exist and is in non-critical Related Documentation section"
+}

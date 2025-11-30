@@ -5,6 +5,7 @@ This directory contains JSON schema definitions for all NATS messages used in th
 ## Schema Format
 
 All schemas follow JSON Schema Draft 7 format and include:
+
 - Message type identifier
 - Required fields
 - Field types and constraints
@@ -13,30 +14,36 @@ All schemas follow JSON Schema Draft 7 format and include:
 ## Message Types
 
 ### Market Data Messages
+
 - ✅ `MarketDataTick.json` - Real-time price tick updates
 - ✅ `MarketDataCandle.json` - OHLCV candle data
 - ✅ `MarketDataQuote.json` - Bid/ask quote updates
 
 ### Strategy Messages
+
 - ✅ `StrategySignal.json` - Market signals for strategy evaluation
 - ✅ `StrategyDecision.json` - Trading decisions from strategy engine
 - ✅ `StrategyStatus.json` - Strategy state changes
 
 ### Order Messages
+
 - ✅ `OrderRequest.json` - New order submission
 - ✅ `OrderStatus.json` - Order status updates
 - ✅ `OrderFill.json` - Order fill notifications
 
 ### Position Messages
+
 - ✅ `PositionUpdate.json` - Position changes
 - ✅ `PositionSnapshot.json` - Full position snapshot
 
 ### Risk Messages
+
 - ✅ `RiskCheck.json` - Risk validation requests
 - ✅ `RiskDecision.json` - Risk check results
 - ✅ `RiskLimitEvent.json` - Risk limit events
 
 ### System Messages
+
 - ✅ `SystemEvent.json` - System-wide events
 - ✅ `Alert.json` - Alert notifications
 - ✅ `HealthStatus.json` - System health status
@@ -45,6 +52,7 @@ All schemas follow JSON Schema Draft 7 format and include:
 ## Schema Status
 
 ✅ **All schemas complete** - 18 message schemas defined:
+
 - Market Data: 3 schemas
 - Strategy: 3 schemas
 - Orders: 3 schemas
@@ -55,6 +63,7 @@ All schemas follow JSON Schema Draft 7 format and include:
 ## Usage
 
 These schemas can be used for:
+
 - Code generation (TypeScript types, Rust structs, C++ classes, Python dataclasses, Swift structs)
 - Message validation
 - API documentation
@@ -64,6 +73,7 @@ These schemas can be used for:
 ## Integration Guides
 
 See language-specific integration guides:
+
 - [C++ Integration Guide](../NATS_INTEGRATION_CXX.md)
 - [Python Integration Guide](../NATS_INTEGRATION_PYTHON.md)
 - [TypeScript Integration Guide](../NATS_INTEGRATION_TYPESCRIPT.md)

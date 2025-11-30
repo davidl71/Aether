@@ -43,6 +43,7 @@
 ### 🔴 Should Be GLOBAL (Available in All Projects)
 
 **Criteria:**
+
 - ✅ Not project-specific (doesn't need workspace path)
 - ✅ Useful across all projects (not tied to single project)
 - ✅ System-level tools (OS operations, universal utilities)
@@ -50,15 +51,18 @@
 - ✅ No project-specific storage or configuration
 
 **Current Global Servers:**
+
 1. ✅ **tractatus_thinking** - **CORRECT** - Universal thinking tool
 2. ✅ **desktop-commander** - **CORRECT** - System-level operations
 
 **Missing from Global (Should Add):**
+
 - ⚠️ None identified - current global setup is appropriate
 
 ### 🟡 Should Be PROJECT (Project-Specific)
 
 **Criteria:**
+
 - ✅ Needs workspace path (filesystem with `${workspaceFolder}`)
 - ✅ Needs repository path (git with `--repository`)
 - ✅ Project-specific storage (agentic-tools stores in `.agentic-tools-mcp/`)
@@ -66,6 +70,7 @@
 - ✅ Project-specific documentation (context7 queries per project)
 
 **Current Project Servers:**
+
 1. ✅ **filesystem** - **CORRECT** - Needs workspace path
 2. ✅ **git** - **CORRECT** - Needs repository path
 3. ✅ **agentic-tools** - **CORRECT** - Stores project-specific tasks
@@ -76,6 +81,7 @@
 ### 🟢 Should Be ADDED to Project (Missing)
 
 **Missing Servers:**
+
 1. ⚠️ **semgrep** - **ADD TO PROJECT** - Security scanning (required by `.cursorrules`)
 2. ✅ **tractatus_thinking** - **ALREADY IN GLOBAL** - No need to duplicate in project
 
@@ -90,6 +96,7 @@
 **Current Location:** Global (`~/.cursor/mcp.json`)
 
 **Analysis:**
+
 - ✅ Universal thinking tool - no project dependencies
 - ✅ Works across all projects - not project-specific
 - ✅ No workspace path needed
@@ -104,6 +111,7 @@
 **Current Location:** Global (`~/.cursor/mcp.json`)
 
 **Analysis:**
+
 - ✅ System-level operations (file access, terminal commands)
 - ✅ OS-level tools (not project-specific)
 - ✅ Useful across all projects
@@ -118,6 +126,7 @@
 **Current Location:** Project (`.cursor/mcp.json`)
 
 **Analysis:**
+
 - ✅ Needs workspace path (`${workspaceFolder}`)
 - ✅ Scoped to project directory
 - ✅ Project-specific file operations
@@ -131,6 +140,7 @@
 **Current Location:** Project (`.cursor/mcp.json`)
 
 **Analysis:**
+
 - ✅ Needs repository path (`--repository`)
 - ✅ Scoped to specific git repository
 - ✅ Project-specific git operations
@@ -144,6 +154,7 @@
 **Current Location:** Project (`.cursor/mcp.json`)
 
 **Analysis:**
+
 - ✅ Stores data in project (`.agentic-tools-mcp/`)
 - ✅ Project-specific tasks and memories
 - ✅ Git-trackable project data
@@ -157,6 +168,7 @@
 **Current Location:** Project (`.cursor/mcp.json`)
 
 **Analysis:**
+
 - ✅ No project dependency (just documentation lookup)
 - ⚠️ Could work globally (same docs across projects)
 - ✅ Project-specific placement is fine (allows project-specific doc preferences)
@@ -172,6 +184,7 @@
 **Current Location:** Project (`.cursor/mcp.json`)
 
 **Analysis:**
+
 - ✅ Project-specific notebooks (TWS API notebook for this project)
 - ✅ Different notebooks per project make sense
 - ✅ Project-specific research context
@@ -185,6 +198,7 @@
 **Current Location:** Project (`.cursor/mcp.json`)
 
 **Analysis:**
+
 - ✅ Universal thinking tool (same as tractatus_thinking)
 - ✅ No project dependency
 - ✅ Works across all projects
@@ -195,6 +209,7 @@
 **Rationale:** Sequential Thinking is a universal problem-solving tool that complements Tractatus Thinking. It doesn't need project-specific configuration and would be useful across all projects.
 
 **Decision:**
+
 - **Keep in Project** - If you want project-specific thinking workflows
 - **Move to Global** - If you want same thinking tools across all projects (recommended)
 
@@ -203,6 +218,7 @@
 **Current Location:** Not configured
 
 **Analysis:**
+
 - ✅ Required by `.cursorrules` (security scanning mandate)
 - ✅ Project-specific security scanning makes sense
 - ✅ Can have project-specific security rules
@@ -220,19 +236,23 @@
 **None Found** ✅
 
 **Previous Duplicates (Fixed):**
+
 - `context7` - Was in both global and project (fixed per `MCP_DUPLICATE_FIX.md`)
 - `GitKraken` - Was in both global and project (fixed per `MCP_DUPLICATE_FIX.md`)
 
 **Potential Duplicate Risk:**
+
 - ⚠️ `tractatus_thinking` - In global, but project review says it's "missing" (it's not - it's in global!)
 
 ### ✅ Correct Separation
 
 **Global (2 servers):**
+
 - tractatus_thinking ✅
 - desktop-commander ✅
 
 **Project (6 servers):**
+
 - filesystem ✅
 - git ✅
 - agentic-tools ✅
@@ -251,6 +271,7 @@
 #### 1. Add Missing Server to Project
 
 **Add `semgrep` to project config:**
+
 ```json
 {
   "semgrep": {
@@ -268,6 +289,7 @@
 **Recommendation:** ✅ **YES** - Move to global for consistency
 
 **Rationale:**
+
 - Both are universal thinking tools
 - Complement each other (Tractatus → Sequential workflow)
 - No project-specific configuration needed
@@ -282,6 +304,7 @@
 ### ✅ Global Configuration (`~/.cursor/mcp.json`)
 
 **Keep (2 servers):**
+
 1. ✅ tractatus_thinking - Universal logical analysis
 2. ✅ desktop-commander - System-level operations
 
@@ -293,6 +316,7 @@
 ### ✅ Project Configuration (`.cursor/mcp.json`)
 
 **Keep (6 servers):**
+
 1. ✅ filesystem - Workspace-scoped file operations
 2. ✅ git - Repository-specific version control
 3. ✅ agentic-tools - Project-specific task management
@@ -352,12 +376,14 @@
 ### ✅ Global Placement Guidelines
 
 **Use Global For:**
+
 - Universal thinking/problem-solving tools
 - System-level operations (OS, terminal, file system access outside workspace)
 - Tools that work the same across all projects
 - Tools without project-specific configuration
 
 **Examples:**
+
 - tractatus_thinking ✅
 - sequential_thinking ✅ (should move)
 - desktop-commander ✅
@@ -365,6 +391,7 @@
 ### ✅ Project Placement Guidelines
 
 **Use Project For:**
+
 - Tools that need workspace path (`${workspaceFolder}`)
 - Tools that need repository path (`--repository`)
 - Tools with project-specific storage
@@ -372,6 +399,7 @@
 - Project-specific security/configuration rules
 
 **Examples:**
+
 - filesystem ✅ (needs workspace path)
 - git ✅ (needs repository path)
 - agentic-tools ✅ (stores in project directory)
@@ -385,6 +413,7 @@
 ### After Adding Semgrep (Project)
 
 **What you gain:**
+
 - ✅ Security scanning (required by `.cursorrules`)
 - ✅ Code quality analysis
 - ✅ Compliance with project rules
@@ -394,11 +423,13 @@
 ### After Moving Sequential Thinking (Project → Global)
 
 **What changes:**
+
 - ✅ Consistent placement with tractatus_thinking
 - ✅ Available across all projects
 - ✅ No project-specific dependency
 
 **What stays the same:**
+
 - ✅ Same functionality
 - ✅ Same workflow (Tractatus → Sequential)
 
@@ -417,6 +448,7 @@
 **Recommendation:** ✅ **YES** - Move to global for consistency with `tractatus_thinking`
 
 **Rationale:**
+
 - Both are universal thinking tools
 - Both work across all projects
 - No project-specific configuration
@@ -433,6 +465,7 @@
 **Recommendation:** ✅ **KEEP IN PROJECT** - Current placement is fine
 
 **Rationale:**
+
 - Can have project-specific documentation preferences
 - Not critical either way
 - Current placement works well
@@ -459,11 +492,13 @@
 ### ✅ Current Configuration Status
 
 **Global (3 servers after changes):**
+
 - tractatus_thinking ✅
 - desktop-commander ✅
 - sequential_thinking ✅ (move from project)
 
 **Project (6 servers after changes):**
+
 - filesystem ✅
 - git ✅
 - agentic-tools ✅

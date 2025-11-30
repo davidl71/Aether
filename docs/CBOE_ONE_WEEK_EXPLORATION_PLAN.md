@@ -1,6 +1,6 @@
 # CBOE One-Week Exploration Plan
 
-**Date**: 2025-01-27
+**Date**: 2025-11-30
 **Access Period**: 1 week
 **Goal**: Identify free resources vs. subscription-required tools for box spread data
 
@@ -461,4 +461,4 @@ By end of week, you should have:
 
 ---
 
-**Last Updated**: 2025-01-27
+**Last Updated**: 2025-11-30

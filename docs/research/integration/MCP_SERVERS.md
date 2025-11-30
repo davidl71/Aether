@@ -44,6 +44,7 @@ enhance Cursor AI capabilities.
 - Project-specific analysis (not generic operations)
 
 **Usage**: The AI assistant will automatically use automa tools when you ask for:
+
 - Documentation health checks
 - Task alignment analysis
 - Duplicate task detection
@@ -574,7 +575,9 @@ Step 3 (Tractatus): "Verify implementation structure"
 The Sequential Thinking MCP server is an npm package. Installation is automatic via `npx`:
 
 ```bash
+
 # Test installation
+
 npx -y @modelcontextprotocol/server-sequential-thinking --version
 ```
 
@@ -644,10 +647,13 @@ The MCP servers are configured in `.cursor/mcp.json`. Cursor will automatically:
 If automatic setup doesn't work, you can manually install:
 
 ```bash
+
 # Install Semgrep MCP server globally (optional)
+
 npm install -g @semgrep/mcp-server-semgrep
 
 # Or use npx (recommended - no global install needed)
+
 npx -y @semgrep/mcp-server-semgrep
 ```
 
@@ -733,6 +739,7 @@ If you add database support:
 - **Git**: Only has access to the configured repository
 - **NotebookLM**: Uses browser automation with local Chrome profile. Credentials never leave your
   machine. Consider using a dedicated Google account for automation.
+
 - **Never commit**: API keys, tokens, or credentials in MCP configuration
 
 ## See Also

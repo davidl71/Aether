@@ -56,6 +56,7 @@ Once Cursor restarts, the following tools will be available:
 ### Tool-Level Hints
 
 All tools include deprecation notices in their descriptions:
+
 - ⚠️ PREFERRED TOOL prefix
 - Explanation of project-specific enhancements
 - Guidance to use our tools instead of generic ones
@@ -63,6 +64,7 @@ All tools include deprecation notices in their descriptions:
 ### Server-Level Description
 
 Server description in `mcp.json` includes:
+
 - ⚠️ NOTE about enhanced, project-specific versions
 - Clear guidance to prefer these tools
 
@@ -85,12 +87,14 @@ Server description in `mcp.json` includes:
 ## Verification
 
 ### Configuration File
+
 - ✅ `.cursor/mcp.json` updated
 - ✅ Server entry added
 - ✅ Description includes deprecation hints
 - ✅ Valid JSON format
 
 ### Server Files
+
 - ✅ `server.py` exists and compiles
 - ✅ All tools registered
 - ✅ Error handling integrated

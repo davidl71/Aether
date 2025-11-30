@@ -1,7 +1,7 @@
 # Python Virtual Environment Migration Plan: Standardizing on `uv`
 
-**Date**: 2025-11-29  
-**Status**: In Progress  
+**Date**: 2025-11-29
+**Status**: In Progress
 **Goal**: Migrate from `python3 -m venv` + `pip` to `uv venv` + `uv pip` for better performance and modern tooling
 
 ---
@@ -11,6 +11,7 @@
 This migration plan outlines the gradual adoption of `uv` (the fast Python package manager) across the project while maintaining backward compatibility with standard `venv` and `pip`.
 
 **Benefits**:
+
 - **10-100x faster** package installation
 - **Faster virtual environment creation**
 - **Better dependency resolution**
@@ -23,12 +24,14 @@ This migration plan outlines the gradual adoption of `uv` (the fast Python packa
 ## Current State
 
 ### Virtual Environment Usage
+
 - **13+ scripts** use `setup_venv()` from `scripts/include/python_utils.sh`
 - **Standard `python3 -m venv`** is the current method
 - **`uvx` already in use** for MCP servers (exarp, notebooklm)
 - **`uv` installed** but not used for venv management
 
 ### Scripts Using `setup_venv()`
+
 1. `web/scripts/run-alpaca-service.sh`
 2. `web/scripts/run-ib-service.sh`
 3. `web/scripts/run-tastytrade-service.sh`
@@ -45,10 +48,11 @@ This migration plan outlines the gradual adoption of `uv` (the fast Python packa
 
 ### ✅ Phase 1: Update Core Utilities (COMPLETE)
 
-**Status**: ✅ Complete  
+**Status**: ✅ Complete
 **Date**: 2025-11-29
 
 **Changes Made**:
+
 1. Updated `scripts/include/python_utils.sh`:
    - `setup_venv()` now prefers `uv venv` when available
    - Falls back to `python3 -m venv` for compatibility
@@ -58,6 +62,7 @@ This migration plan outlines the gradual adoption of `uv` (the fast Python packa
    - Falls back to `pip install` for compatibility
 
 **Testing**:
+
 - ✅ Scripts continue to work with standard `venv`
 - ✅ Scripts automatically use `uv` when available
 - ✅ No breaking changes for existing workflows
@@ -66,27 +71,33 @@ This migration plan outlines the gradual adoption of `uv` (the fast Python packa
 
 ### ⏳ Phase 2: Update Service Scripts (OPTIONAL)
 
-**Status**: Pending  
+**Status**: Pending
 **Estimated Time**: 1-2 hours
 
 **Goal**: Update service scripts to explicitly prefer `uv` and provide better feedback
 
 **Changes**:
+
 1. Add `uv` detection messages to service scripts
 2. Document `uv` usage in script comments
 3. Add `uv` installation instructions to error messages
 
 **Scripts to Update**:
+
 - `web/scripts/run-*.sh` (all service scripts)
 - `scripts/run-jupyterlab-service.sh`
 - `scripts/start_rust_backend.sh`
 
 **Example Update**:
+
 ```bash
+
 # Before
+
 setup_venv "${PYTHON_DIR}" || exit 1
 
 # After (with better feedback)
+
 if command -v uv >/dev/null 2>&1; then
   echo "ℹ️  Using uv for faster virtual environment management" >&2
 fi
@@ -97,18 +108,21 @@ setup_venv "${PYTHON_DIR}" || exit 1
 
 ### ⏳ Phase 3: Update CI/CD (RECOMMENDED)
 
-**Status**: Pending  
+**Status**: Pending
 **Estimated Time**: 30 minutes
 
 **Goal**: Use `uv` in CI/CD pipelines for faster builds
 
 **Changes**:
+
 1. Install `uv` in GitHub Actions workflows
 2. Use `uv venv` and `uv pip install` in CI scripts
 3. Document `uv` usage in CI/CD documentation
 
 **Example GitHub Actions Update**:
+
 ```yaml
+
 # Before
 - name: Set up Python
   uses: actions/setup-python@v4
@@ -138,6 +152,7 @@ setup_venv "${PYTHON_DIR}" || exit 1
 ```
 
 **Benefits**:
+
 - Faster CI builds (10-100x faster package installation)
 - More reliable dependency resolution
 - Consistent with local development
@@ -146,10 +161,11 @@ setup_venv "${PYTHON_DIR}" || exit 1
 
 ### ⏳ Phase 4: Documentation Updates (COMPLETE)
 
-**Status**: ✅ Complete  
+**Status**: ✅ Complete
 **Date**: 2025-11-29
 
 **Changes Made**:
+
 1. Created `docs/PYTHON_VENV_STANDARDIZATION_ANALYSIS.md`
 2. Created `docs/PYTHON_UV_MIGRATION_PLAN.md` (this document)
 3. Updated `docs/PYTHON_ENVIRONMENT_SETUP.md` with `uv` instructions
@@ -163,20 +179,26 @@ setup_venv "${PYTHON_DIR}" || exit 1
 **Goal**: Inform team about `uv` adoption and benefits
 
 **Actions**:
+
 1. Announce `uv` adoption in team communication
 2. Share migration benefits and performance improvements
 3. Provide installation instructions
 4. Document troubleshooting guide
 
 **Installation Instructions**:
+
 ```bash
+
 # Install uv (recommended)
+
 pip install uv
 
 # Or via Homebrew (macOS)
+
 brew install uv
 
 # Verify installation
+
 uv --version
 ```
 
@@ -197,6 +219,7 @@ If issues arise, rollback is simple:
 ## Testing Checklist
 
 ### Pre-Migration Testing
+
 - [x] Verify `uv` is installed: `uv --version`
 - [x] Test `uv venv` creates valid virtual environments
 - [x] Test `uv pip install` works correctly
@@ -204,6 +227,7 @@ If issues arise, rollback is simple:
 - [x] Verify scripts work without `uv` (fallback)
 
 ### Post-Migration Testing
+
 - [ ] Test all service scripts with `uv` available
 - [ ] Test all service scripts without `uv` (fallback)
 - [ ] Verify CI/CD pipelines work with `uv`
@@ -217,14 +241,17 @@ If issues arise, rollback is simple:
 ### Expected Improvements
 
 **Virtual Environment Creation**:
+
 - Standard `venv`: ~2-5 seconds
 - `uv venv`: ~0.5-1 second (2-5x faster)
 
 **Package Installation** (example: FastAPI + dependencies):
+
 - Standard `pip`: ~30-60 seconds
 - `uv pip`: ~3-6 seconds (10x faster)
 
 **Dependency Resolution**:
+
 - Standard `pip`: Can be slow for complex dependencies
 - `uv pip`: Much faster resolution with better conflict detection
 
@@ -235,9 +262,12 @@ If issues arise, rollback is simple:
 ### Issue: `uv` Not Found
 
 **Solution**: Install `uv`:
+
 ```bash
 pip install uv
+
 # Or
+
 brew install uv  # macOS
 ```
 
@@ -248,6 +278,7 @@ brew install uv  # macOS
 **Solution**: Scripts automatically fall back to `python3 -m venv`.
 
 **Debug**: Check `uv` version:
+
 ```bash
 uv --version  # Should be 0.9.0+
 ```
@@ -257,6 +288,7 @@ uv --version  # Should be 0.9.0+
 **Solution**: Scripts automatically fall back to `pip install`.
 
 **Debug**: Check if package is compatible with `uv`:
+
 ```bash
 uv pip install --dry-run package-name
 ```
@@ -266,22 +298,26 @@ uv pip install --dry-run package-name
 ## Success Criteria
 
 ### Phase 1 (Core Utilities) ✅
+
 - [x] `setup_venv()` uses `uv` when available
 - [x] `install_python_packages()` uses `uv pip` when available
 - [x] Fallback to standard tools works correctly
 - [x] No breaking changes
 
 ### Phase 2 (Service Scripts) ⏳
+
 - [ ] All service scripts tested with `uv`
 - [ ] Better user feedback about tool usage
 - [ ] Documentation updated
 
 ### Phase 3 (CI/CD) ⏳
+
 - [ ] CI/CD pipelines use `uv`
 - [ ] Faster CI build times verified
 - [ ] CI/CD documentation updated
 
 ### Overall Success
+
 - [ ] `uv` is the preferred tool when available
 - [ ] Standard tools remain as fallback
 - [ ] Performance improvements verified
@@ -309,5 +345,5 @@ uv pip install --dry-run package-name
 
 ---
 
-**Last Updated**: 2025-11-29  
+**Last Updated**: 2025-11-29
 **Status**: Phase 1 Complete, Phases 2-5 Pending

@@ -182,6 +182,7 @@ The Synthetic Financing Platform project is in active development with multiple 
   - Cancel orders
   - Toggle dry-run mode
   - Keyboard navigation
+
 - ⏳ **T-30**: Options chain table with strike selection - **IN PROGRESS**
 - ⏳ **T-31**: Default symbols (SPX/XSP/NANOS) and symbol management - **IN PROGRESS**
 

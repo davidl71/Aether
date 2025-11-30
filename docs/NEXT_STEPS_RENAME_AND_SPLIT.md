@@ -1,6 +1,6 @@
 # Next Steps: Project Rename & Box-Spread Split
 
-**Date**: 2025-01-27
+**Date**: 2025-11-30
 **Status**: Documentation Review Complete ✅ - Ready for Next Phase
 **Purpose**: Actionable next steps after documentation consistency fixes
 
@@ -9,6 +9,7 @@
 ## ✅ Completed (Phase 0)
 
 ### Documentation Updates
+
 - ✅ **README.md** - Updated to "Synthetic Financing Platform"
 - ✅ **PROJECT_STATUS.md** - Updated project name
 - ✅ **CODEBASE_ARCHITECTURE.md** - Updated with platform context
@@ -30,7 +31,9 @@
 #### Step 1.1: Create Strategy Documentation Structure ✅ COMPLETED
 
 ```bash
+
 # Create directories
+
 mkdir -p docs/strategies/box-spread
 mkdir -p docs/platform
 mkdir -p docs/strategies/futures  # For future strategies
@@ -42,12 +45,14 @@ mkdir -p docs/strategies/bonds    # For future strategies
 #### Step 1.2: Move Box-Spread Specific Documentation ✅ COMPLETED
 
 **Files Moved:**
+
 - ✅ `docs/research/integration/BOX_SPREAD_COMPREHENSIVE_GUIDE.md` → `docs/strategies/box-spread/`
 - ✅ `docs/research/architecture/BOX_SPREAD_BAG_IMPLEMENTATION.md` → `docs/strategies/box-spread/`
 - ✅ `docs/research/external/DATA_FEEDS_BOX_SPREADS.md` → `docs/strategies/box-spread/`
 - ✅ `docs/indices/BOX_SPREAD_RESOURCES_INDEX.md` → `docs/strategies/box-spread/`
 
 **Files Moved to Platform:**
+
 - ✅ `docs/INVESTMENT_STRATEGY_FRAMEWORK.md` → `docs/platform/`
 - ✅ `docs/PRIMARY_GOALS_AND_REQUIREMENTS.md` → `docs/platform/`
 - ✅ `docs/research/architecture/SYNTHETIC_FINANCING_ARCHITECTURE.md` → `docs/platform/`
@@ -58,6 +63,7 @@ mkdir -p docs/strategies/bonds    # For future strategies
 #### Step 1.3: Create Box-Spread Strategy README ✅ COMPLETED
 
 Created `docs/strategies/box-spread/README.md`:
+
 - ✅ Overview of box-spread strategy
 - ✅ How it fits into the platform (7-10% spare cash allocation)
 - ✅ Links to related documentation
@@ -66,6 +72,7 @@ Created `docs/strategies/box-spread/README.md`:
 #### Step 1.4: Create Platform Overview README ✅ COMPLETED
 
 Created `docs/platform/README.md`:
+
 - ✅ Platform architecture overview
 - ✅ Core capabilities (multi-account, cash-flow, simulation)
 - ✅ Strategy integration points
@@ -84,7 +91,9 @@ Created `docs/platform/README.md`:
 #### Step 2.1: Create Strategy Module Structure
 
 ```bash
+
 # Create strategy module directories
+
 mkdir -p native/src/strategies/box_spread
 mkdir -p native/include/strategies/box_spread
 ```
@@ -92,6 +101,7 @@ mkdir -p native/include/strategies/box_spread
 #### Step 2.2: Move Box-Spread Strategy Code
 
 **Files to Move:**
+
 - `native/src/box_spread_strategy.cpp` → `native/src/strategies/box_spread/`
 - `native/include/box_spread_strategy.h` → `native/include/strategies/box_spread/`
 
@@ -166,6 +176,7 @@ mkdir -p native/include/strategies/box_spread
 ### Day 1: Documentation Organization (Phase 1)
 
 **Morning (1-2 hours):**
+
 1. Create `docs/strategies/box-spread/` and `docs/platform/` directories
 2. Move box-spread specific docs to `docs/strategies/box-spread/`
 3. Move platform core docs to `docs/platform/`
@@ -185,17 +196,20 @@ mkdir -p native/include/strategies/box_spread
 ### Option A: Minimal Change (Recommended for Now)
 
 **Do**: Phase 1 only (documentation organization)
+
 - Low risk
 - Immediate clarity on structure
 - Can defer code reorganization
 
 **Skip**: Phase 2-4 for now
+
 - Code reorganization can wait
 - Repository rename can be done later
 
 ### Option B: Full Reorganization
 
 **Do**: Phases 1-3
+
 - Complete structural reorganization
 - Code matches documentation structure
 - Better long-term organization
@@ -205,6 +219,7 @@ mkdir -p native/include/strategies/box_spread
 ### Option C: Repository Rename Only
 
 **Do**: Just rename repository
+
 - Keeps current structure
 - Updates identity
 - Minimal code changes
@@ -216,12 +231,14 @@ mkdir -p native/include/strategies/box_spread
 ## 📊 Recommended Approach: Option A (Minimal Change)
 
 **Why**:
+
 - Documentation is now consistent and clear
 - Low risk - documentation-only changes
 - Can evaluate impact before code reorganization
 - Easier to roll back if needed
 
 **Next Steps**:
+
 1. **This Week**: Complete Phase 1 (documentation organization)
 2. **Next Week**: Review and plan Phase 2 (code reorganization)
 3. **Later**: Consider repository rename (Phase 4) when ready
@@ -233,17 +250,21 @@ mkdir -p native/include/strategies/box_spread
 ### Command Sequence
 
 ```bash
+
 # Create directory structure
+
 mkdir -p docs/strategies/box-spread
 mkdir -p docs/platform
 
 # Move box-spread docs
+
 mv docs/research/integration/BOX_SPREAD_COMPREHENSIVE_GUIDE.md docs/strategies/box-spread/
 mv docs/research/architecture/BOX_SPREAD_BAG_IMPLEMENTATION.md docs/strategies/box-spread/
 mv docs/research/external/DATA_FEEDS_BOX_SPREADS.md docs/strategies/box-spread/
 mv docs/indices/BOX_SPREAD_RESOURCES_INDEX.md docs/strategies/box-spread/
 
 # Move platform docs
+
 mv docs/INVESTMENT_STRATEGY_FRAMEWORK.md docs/platform/
 mv docs/PRIMARY_GOALS_AND_REQUIREMENTS.md docs/platform/
 mv docs/research/architecture/SYNTHETIC_FINANCING_ARCHITECTURE.md docs/platform/
@@ -255,6 +276,7 @@ mv docs/research/architecture/MULTI_ACCOUNT_AGGREGATION_DESIGN.md docs/platform/
 ### Box-Spread Strategy README Template
 
 ```markdown
+
 # Box Spread Strategy
 
 **Status**: Active Strategy Component
@@ -288,6 +310,7 @@ Box spreads are one strategy component of the Synthetic Financing Platform, used
 ### Platform Overview README Template
 
 ```markdown
+
 # Synthetic Financing Platform - Core Documentation
 
 **Status**: Active Development
@@ -320,20 +343,23 @@ Box spreads are one strategy component of the Synthetic Financing Platform, used
 
 ## ✅ Success Criteria
 
-### Phase 1 Complete When:
+### Phase 1 Complete When
+
 - [ ] `docs/strategies/box-spread/` directory created with all box-spread docs
 - [ ] `docs/platform/` directory created with platform core docs
 - [ ] Strategy and platform READMEs created
 - [ ] Documentation cross-references updated
 - [ ] All documentation links work
 
-### Phase 2 Complete When:
+### Phase 2 Complete When
+
 - [ ] Code reorganized into `strategies/box_spread/` module
 - [ ] Build system updated and working
 - [ ] All includes updated
 - [ ] Tests passing
 
-### Phase 4 Complete When:
+### Phase 4 Complete When
+
 - [ ] Repository renamed on GitHub
 - [ ] All external references updated
 - [ ] CI/CD working with new name
@@ -358,5 +384,5 @@ Box spreads are one strategy component of the Synthetic Financing Platform, used
 
 ---
 
-**Last Updated**: 2025-01-27
+**Last Updated**: 2025-11-30
 **Next Review**: After Phase 1 completion

@@ -85,13 +85,17 @@ The integration wrapper now runs the CLI with `--mock-tws` after validation. Thi
 ### 3. Run Application
 
 ```bash
+
 # Dry-run mode (no real trades)
+
 build/bin/ib_box_spread --config config/config.json --dry-run
 
 # Live mode (executes orders)
+
 build/bin/ib_box_spread --config config/config.json
 
 # Monitor logs
+
 tail -f logs/ib_box_spread.log
 ```
 
@@ -268,16 +272,21 @@ tail -f logs/ib_box_spread.log
 ### Log Monitoring
 
 ```bash
+
 # Real-time log monitoring
+
 tail -f logs/ib_box_spread.log
 
 # Search for errors
+
 grep -i error logs/ib_box_spread.log
 
 # Monitor connections
+
 grep -i "connect" logs/ib_box_spread.log
 
 # Track orders
+
 grep -i "order" logs/ib_box_spread.log
 ```
 

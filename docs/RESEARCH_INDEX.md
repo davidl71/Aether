@@ -87,6 +87,7 @@ Documents capturing patterns, best practices, and learnings from specific tools 
   - Rust/Python hybrid architecture
   - Event-driven design patterns
   - Performance optimization techniques
+
 - **[NAUTILUS_IMPLEMENTATION_SUMMARY.md](research/learnings/NAUTILUS_IMPLEMENTATION_SUMMARY.md)** - Implementation details
 - **[TRADE_FRAME_LEARNINGS.md](research/learnings/TRADE_FRAME_LEARNINGS.md)** - TradeFrame patterns
 - **[TRADE_FRAME_TWS_PATTERNS.md](research/learnings/TRADE_FRAME_TWS_PATTERNS.md)** - TradeFrame TWS integration
@@ -113,6 +114,7 @@ System architecture documents, design decisions, and architectural patterns.
 - **[MESSAGE_QUEUE_RESEARCH.md](research/architecture/MESSAGE_QUEUE_RESEARCH.md)** - Message queue solution research
   - NATS, RabbitMQ, Redis, ZeroMQ comparison
   - **NotebookLM Priority**: HIGH - External documentation to synthesize
+
 - **[SYNTHETIC_FINANCING_ARCHITECTURE.md](platform/SYNTHETIC_FINANCING_ARCHITECTURE.md)** - Synthetic financing design
 - **[REST_API_LAYER_DESIGN.md](research/architecture/REST_API_LAYER_DESIGN.md)** - REST API architecture
 - **[WEBSOCKET_IMPLEMENTATION_DESIGN.md](research/architecture/WEBSOCKET_IMPLEMENTATION_DESIGN.md)** - WebSocket architecture
@@ -198,6 +200,7 @@ Code analysis, framework evaluations, and comparison documents.
 
 - **[TRADING_FRAMEWORK_EVALUATION.md](research/analysis/TRADING_FRAMEWORK_EVALUATION.md)** - Trading framework comparison
   - **NotebookLM Priority**: HIGH - Synthesize framework comparisons
+
 - **[FRAMEWORK_ANALYSIS_AND_RECOMMENDATIONS.md](research/analysis/FRAMEWORK_ANALYSIS_AND_RECOMMENDATIONS.md)** - Framework analysis
 - **[SMARTQUANT_CPP_FRAMEWORK_RESEARCH.md](research/analysis/SMARTQUANT_CPP_FRAMEWORK_RESEARCH.md)** - SmartQuant research
 - **[STOCKSHARP_ANALYSIS.md](research/analysis/STOCKSHARP_ANALYSIS.md)** - StockSharp analysis
@@ -368,6 +371,7 @@ Documents marked for deeper research using NotebookLM MCP to synthesize external
 ### Archive
 
 Deprecated or superseded documents:
+
 - **[archive/ACTION_PLAN.md](archive/ACTION_PLAN.md)**
 - **[archive/CODE_IMPROVEMENTS_ACTION_PLAN.md](archive/CODE_IMPROVEMENTS_ACTION_PLAN.md)**
 - **[archive/ALPACA_INTEGRATION_PLAN_DEPRECATED.md](archive/ALPACA_INTEGRATION_PLAN_DEPRECATED.md)**
@@ -375,6 +379,7 @@ Deprecated or superseded documents:
 ### External References
 
 External documentation and quick references:
+
 - **[external/TWS_API_QUICK_REFERENCE.md](external/TWS_API_QUICK_REFERENCE.md)**
 - **[external/CMake_PRESETS_GUIDE.md](external/CMake_PRESETS_GUIDE.md)**
 - **[external/ECLIENT_EWRAPPER_PATTERNS.md](external/ECLIENT_EWRAPPER_PATTERNS.md)**

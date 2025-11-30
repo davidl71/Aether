@@ -54,23 +54,30 @@ This automation keeps the shared TODO table and Todo2 tasks in sync, ensuring al
 ### Manual Run
 
 ```bash
+
 # Dry run (simulate without changes)
+
 python3 scripts/automate_todo_sync.py --dry-run
 
 # Live sync
+
 python3 scripts/automate_todo_sync.py
 
 # Custom output
+
 python3 scripts/automate_todo_sync.py --output docs/MY_SYNC_REPORT.md
 ```
 
 ### Automated (Cron)
 
 ```bash
+
 # Setup hourly cron job
+
 ./scripts/setup_todo_sync_cron.sh
 
 # Test cron script manually
+
 ./scripts/run_todo_sync_cron.sh
 ```
 
@@ -101,6 +108,7 @@ Edit `scripts/todo_sync_config.json`:
 Generated at: `docs/TODO_SYNC_REPORT.md`
 
 **Contents**:
+
 - Executive summary
 - Matches found
 - Conflicts resolved
@@ -120,6 +128,7 @@ Generated at: `docs/TODO_SYNC_REPORT.md`
 ### Strategy
 
 **Todo2 is source of truth** for status conflicts:
+
 - If Todo2 says "In Progress" and shared TODO says "pending"
 - → Shared TODO updated to "in_progress"
 
@@ -136,6 +145,7 @@ Generated at: `docs/TODO_SYNC_REPORT.md`
 ### New Shared TODOs
 
 When a shared TODO has no Todo2 match:
+
 - Creates new Todo2 task
 - ID format: `SHARED-{TODO_ID}`
 - Tags: `shared-todo`, `synced`, `{owner}`
@@ -144,6 +154,7 @@ When a shared TODO has no Todo2 match:
 ### New Todo2 Tasks
 
 When a Todo2 task has no shared TODO match:
+
 - Logged in report
 - **Not** automatically created in shared TODO (manual review needed)
 - Can be reviewed and manually added if needed
@@ -155,6 +166,7 @@ When a Todo2 task has no shared TODO match:
 ### Description Similarity
 
 Uses word overlap (Jaccard similarity):
+
 - Tokenizes both descriptions
 - Calculates intersection / union
 - Match if similarity > 0.7 (70%)
@@ -162,6 +174,7 @@ Uses word overlap (Jaccard similarity):
 ### Explicit ID Reference
 
 Matches if Todo2 description contains:
+
 - `TODO {ID}` (e.g., "TODO 5")
 - `#{ID}` (e.g., "#5")
 
@@ -172,6 +185,7 @@ Matches if Todo2 description contains:
 ### Dry Run Mode
 
 Always test with `--dry-run` first:
+
 - Simulates all operations
 - Shows what would be changed
 - No actual file modifications
@@ -179,17 +193,22 @@ Always test with `--dry-run` first:
 ### Backup
 
 Before first live run:
+
 ```bash
+
 # Backup shared TODO
+
 cp agents/shared/TODO_OVERVIEW.md agents/shared/TODO_OVERVIEW.md.backup
 
 # Backup Todo2
+
 cp .todo2/state.todo2.json .todo2/state.todo2.json.backup
 ```
 
 ### Logging
 
 All operations logged:
+
 - What was matched
 - What was updated
 - What was created
@@ -200,6 +219,7 @@ All operations logged:
 ## Integration with Intelligent Automation
 
 Uses `IntelligentAutomationBase`:
+
 - **Tractatus Thinking**: Understands sync structure
 - **Sequential Thinking**: Plans sync workflow
 - **Todo2 Integration**: Creates tracking tasks
@@ -214,6 +234,7 @@ Uses `IntelligentAutomationBase`:
 **Cause**: Descriptions too different or no ID references
 
 **Solution**:
+
 - Add explicit TODO ID to Todo2 description
 - Improve description similarity
 - Manually link tasks
@@ -223,6 +244,7 @@ Uses `IntelligentAutomationBase`:
 **Cause**: Systems out of sync
 
 **Solution**:
+
 - Run sync more frequently
 - Review conflict resolution strategy
 - Manually align high-priority tasks
@@ -230,6 +252,7 @@ Uses `IntelligentAutomationBase`:
 ### Sync Fails
 
 **Check**:
+
 1. File permissions
 2. JSON validity (Todo2)
 3. Markdown table format (shared TODO)

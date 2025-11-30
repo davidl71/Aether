@@ -18,6 +18,7 @@ This document tracks external resources (articles, blog posts, documentation, tu
   - Sample applications for automated trading
   - Real-time data collection and backtesting
   - Options calculations and multi-leg order management
+
 - **Status**: ✅ Documented in `docs/TRADE_FRAME_LEARNINGS.md`
 - **Notebook**: Can be added to NotebookLM for future reference
 - **Relevance**: Highly relevant - demonstrates best practices for C++ trading applications
@@ -42,6 +43,7 @@ This document tracks external resources (articles, blog posts, documentation, tu
   - Template structure for custom TWS client
   - Message encoding/decoding process
   - Socket operations and connection flow
+
 - **Status**: ✅ Added to NotebookLM notebook
 - **Notebook**: TWS Automated Trading - Complete Resources
 - **Action**: Ready for summarization
@@ -111,6 +113,7 @@ Once added to the library, you can summarize the resource:
 When summarizing articles, use this template:
 
 ```markdown
+
 # [Article Title]
 
 ## Resource Information

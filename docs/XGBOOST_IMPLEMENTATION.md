@@ -48,12 +48,15 @@ The implementation follows a 3-phase approach:
 ### Usage
 
 ```bash
+
 # Train all models
+
 python -m python.ml.train_models \
   --data data/training_data.json \
   --output python/ml/models
 
 # Evaluate models
+
 python -m python.ml.evaluate_models \
   --models-dir python/ml/models \
   --test-data data/test_data.json
@@ -162,13 +165,16 @@ python -m python.ml.evaluate_models \
 ### Usage
 
 ```bash
+
 # Retrain models
+
 python -m python.ml.continuous_learning \
   --data-db data/trading_records.db \
   --models-dir python/ml/models \
   --retrain
 
 # Monitor performance
+
 python -m python.ml.continuous_learning \
   --data-db data/trading_records.db \
   --models-dir python/ml/models \
@@ -196,10 +202,12 @@ The system collects:
 ### 1. Training Initial Models
 
 ```bash
+
 # Prepare training data (JSON format)
 # See python/ml/README.md for format
 
 # Train models
+
 python -m python.ml.train_models \
   --data data/training_data.json \
   --output python/ml/models
@@ -237,12 +245,15 @@ if (prediction.profitability &&
 ### 4. Collecting Data for Retraining
 
 ```python
+
 # In trading system
+
 from python.ml.continuous_learning import DataCollector
 
 collector = DataCollector('data/trading_records.db')
 
 # Record opportunity
+
 collector.record_opportunity(
   symbol='SPX',
   legs=legs_data,
@@ -254,6 +265,7 @@ collector.record_opportunity(
 )
 
 # Update with outcome
+
 collector.update_outcome(
   record_id=record_id,
   actual_profitable=True,
@@ -267,7 +279,9 @@ collector.update_outcome(
 Set up a cron job or scheduled task:
 
 ```bash
+
 # Daily check (runs retraining if needed)
+
 0 2 * * * python -m python.ml.continuous_learning \
   --data-db data/trading_records.db \
   --models-dir python/ml/models

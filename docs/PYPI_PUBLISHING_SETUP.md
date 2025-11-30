@@ -46,11 +46,13 @@ This guide explains how to set up PyPI trusted publishing (Pending Publisher) fo
 ### 1.3 Verify Pending Publisher
 
 PyPI will show the pending publisher status. It will be **"Pending"** until you:
+
 1. ✅ Set up the GitHub Actions workflow (Already created)
 2. ✅ Create the GitHub environment (see Step 2)
 3. ✅ Run the workflow successfully (see Step 4)
 
 **What "Pending" means**:
+
 - The publisher is configured but not yet verified
 - Verification happens automatically on first successful publish
 - After first successful publish, status changes to **"Active"**
@@ -70,11 +72,13 @@ PyPI will show the pending publisher status. It will be **"Pending"** until you:
 ### 2.2 Configure Environment (Optional but Recommended)
 
 **Protection rules** (optional):
+
 - **Required reviewers**: Add yourself (optional)
 - **Wait timer**: 0 minutes (or set if you want manual approval)
 - **Deployment branches**: `main` only (or `main` and `release/*`)
 
 **Environment secrets** (not needed for trusted publishing):
+
 - Trusted publishing uses OIDC, so no secrets needed!
 
 Click **Save protection rules**
@@ -86,11 +90,13 @@ Click **Save protection rules**
 ### 3.1 Check Workflow File
 
 The workflow file is already created at:
+
 ```
 .github/workflows/publish-pypi.yml
 ```
 
 **Key Features**:
+
 - ✅ Uses `pypa/gh-action-pypi-publish@release/v1` (trusted publishing)
 - ✅ Requires `id-token: write` permission (for OIDC)
 - ✅ Uses `pypi` environment
@@ -102,6 +108,7 @@ The workflow file is already created at:
 ### 3.2 Verify pyproject.toml
 
 Ensure `pyproject.toml` has correct package name:
+
 ```toml
 [project]
 name = "exarp-automation-mcp"
@@ -146,10 +153,13 @@ version = "0.2.0"
 ### 5.2 Test Installation
 
 ```bash
+
 # Install from PyPI
+
 pip install exarp-automation-mcp
 
 # Verify installation
+
 python3 -c "from exarp_project_management.server import main; print('✅ Installed successfully')"
 ```
 
@@ -160,6 +170,7 @@ python3 -c "from exarp_project_management.server import main; print('✅ Install
 ### Issue: "Publisher not found" or "Pending publisher not verified"
 
 **Solution**:
+
 1. Verify the **Publisher ID** in PyPI matches your repository
 2. Ensure workflow file path is exactly: `.github/workflows/publish-pypi.yml`
 3. Ensure environment name is exactly: `pypi`
@@ -168,6 +179,7 @@ python3 -c "from exarp_project_management.server import main; print('✅ Install
 ### Issue: "Permission denied" or "Authentication failed"
 
 **Solution**:
+
 1. Verify `id-token: write` permission is set in workflow
 2. Ensure environment `pypi` exists in GitHub
 3. Check that trusted publishing is enabled in PyPI
@@ -175,6 +187,7 @@ python3 -c "from exarp_project_management.server import main; print('✅ Install
 ### Issue: "Package name already exists"
 
 **Solution**:
+
 1. Check if package name `exarp-automation-mcp` is available on PyPI
 2. If taken, update `pyproject.toml` with a different name
 3. Update pending publisher with new package name
@@ -182,6 +195,7 @@ python3 -c "from exarp_project_management.server import main; print('✅ Install
 ### Issue: "Version already exists"
 
 **Solution**:
+
 1. Increment version in `pyproject.toml`
 2. Create new release with new version
 3. Re-run workflow
@@ -191,10 +205,12 @@ python3 -c "from exarp_project_management.server import main; print('✅ Install
 ## Workflow Triggers
 
 ### Automatic (Release)
+
 - **Trigger**: When a release is published
 - **Action**: Automatically builds and publishes to PyPI
 
 ### Manual (Workflow Dispatch)
+
 - **Trigger**: Manual workflow run
 - **Action**: Allows testing before release
 - **Inputs**:
@@ -208,6 +224,7 @@ python3 -c "from exarp_project_management.server import main; print('✅ Install
 ### Version Format
 
 Follow [Semantic Versioning](https://semver.org/):
+
 - **Major**: Breaking changes (1.0.0)
 - **Minor**: New features (0.3.0)
 - **Patch**: Bug fixes (0.2.1)
@@ -215,6 +232,7 @@ Follow [Semantic Versioning](https://semver.org/):
 ### Pre-release Versions
 
 For testing:
+
 - **Alpha**: `0.2.0a1`
 - **Beta**: `0.2.0b1`
 - **Release Candidate**: `0.2.0rc1`
@@ -245,12 +263,14 @@ For testing:
 ## OIDC (OpenID Connect) Explanation
 
 **What is OIDC?**
+
 - OIDC is an authentication protocol that uses short-lived, cryptographically signed tokens
 - **No API tokens needed** - GitHub automatically issues tokens
 - **No secrets to manage** - Tokens are generated on-demand
 - **More secure** - Tokens expire quickly and are repository-specific
 
 **How it works:**
+
 1. GitHub Actions workflow requests OIDC token from GitHub
 2. GitHub issues short-lived token (~10 minutes)
 3. Token contains claims (repository, workflow, environment)

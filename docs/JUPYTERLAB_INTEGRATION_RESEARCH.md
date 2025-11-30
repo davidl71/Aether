@@ -24,6 +24,7 @@ JupyterLab can significantly enhance this IBKR box spread trading project by pro
   - TradeStation service (port 8001)
   - Discount Bank service (port 8003)
   - Tastytrade service (port 8004)
+
 - All services follow similar patterns with `/api/health` endpoints
 - Configuration system via `config/config.json` with service port definitions
 
@@ -32,6 +33,7 @@ JupyterLab can significantly enhance this IBKR box spread trading project by pro
 - **Cython Bindings**: `python/bindings/` - Exposes C++ calculations to Python
   - `PyBoxSpreadStrategy`, `PyBoxSpreadLeg`, `PyOptionContract`
   - `calculate_arbitrage_profit()`, `calculate_roi()`
+
 - **NautilusTrader Integration**: `python/integration/nautilus_client.py`
 - **Data Clients**: Multiple market data providers (ORATS, IBKR Portal, QuestDB)
 - **Strategy Runner**: `python/integration/strategy_runner.py` - Main strategy loop
@@ -70,6 +72,7 @@ JupyterLab can significantly enhance this IBKR box spread trading project by pro
   - Supports 40+ programming languages via kernels
   - Modular extension system for customization
   - Built-in file browser, terminal, and notebook interface
+
 - **Applicable to Task**: Core platform for integration
 
 🔗 **[AWS Machine Learning Blog - Jupyter AI Extensions](https://aws.amazon.com/blogs/machine-learning/announcing-new-jupyter-contributions-by-aws-to-democratize-generative-ai-and-scale-ml-workloads/)**
@@ -79,6 +82,7 @@ JupyterLab can significantly enhance this IBKR box spread trading project by pro
   - Jupyter AI extension for generative AI capabilities
   - Code generation and debugging assistance
   - Integration with cloud ML services
+
 - **Applicable to Task**: Could enhance strategy development workflow
 
 🔗 **[D4Science - JupyterLab Shared Workspaces](https://www.d4science.org/services/jupyterlab)**
@@ -88,6 +92,7 @@ JupyterLab can significantly enhance this IBKR box spread trading project by pro
   - Shared cloud storage capabilities
   - Single sign-on (SSO) integration
   - Collaborative development features
+
 - **Applicable to Task**: Multi-user deployment patterns
 
 🔗 **[SemanticGIS - JupyterLab Visualization](https://semanticgis.org/Geospatial-Technology-Stack/Platforms--and--Applications/Interactive-Computing-Environments/JupyterLab)**
@@ -97,6 +102,7 @@ JupyterLab can significantly enhance this IBKR box spread trading project by pro
   - Integration with Matplotlib, Plotly, Folium
   - Interactive charts and maps
   - Rich data visualization ecosystem
+
 - **Applicable to Task**: Critical for trading data visualization
 
 ### Integration Patterns
@@ -139,13 +145,17 @@ JupyterLab can significantly enhance this IBKR box spread trading project by pro
 **Implementation**:
 
 ```python
+
 # Example notebook cell
+
 from python.integration.questdb_client import QuestDBClient
 from python.integration.orats_client import ORATSClient
 from python.bindings.box_spread_bindings import calculate_arbitrage_profit
 
 # Query historical data
+
 questdb = QuestDBClient()
+
 # Analyze and visualize
 ```
 
@@ -307,19 +317,24 @@ pip install pandas numpy matplotlib plotly
 **Custom Kernel Configuration**:
 
 ```python
+
 # .ipython/profile_default/startup/00-project-init.py
+
 import sys
 from pathlib import Path
 
 # Add project to path
+
 project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root / "python"))
 
 # Import common modules
+
 from integration.config_loader import ConfigLoader
 from integration.questdb_client import QuestDBClient
 
 # Load config
+
 config = ConfigLoader.load()
 ```
 
@@ -519,30 +534,37 @@ config = ConfigLoader.load()
 Create `requirements-jupyterlab.txt`:
 
 ```txt
+
 # Core JupyterLab
+
 jupyterlab>=4.0.0
 
 # Essential Extensions
+
 jupyterlab-git>=0.45.0
 ipywidgets>=8.1.0
 jupyterlab-widgets>=3.0.0
 jupyter-resource-usage>=0.6.0
 
 # Visualization
+
 plotly>=5.18.0
 jupyterlab-plotly>=5.18.0
 bqplot>=0.12.0
 pygwalker>=0.3.0
 
 # Data Analysis
+
 pandas>=2.0.0
 numpy>=1.24.0
 matplotlib>=3.7.0
 
 # Trading-Specific
+
 questdb>=1.0.0
 
 # Optional: Advanced
+
 jupyterlab-scheduler>=0.1.0
 jupyterlab-apibaker>=0.1.0
 ```

@@ -1,7 +1,7 @@
 # Exarp Script Discovery Investigation
 
-**Date**: 2025-11-29  
-**Status**: Investigation Complete  
+**Date**: 2025-11-29
+**Status**: Investigation Complete
 **Task**: T-20251129180920-1
 
 ---
@@ -23,6 +23,7 @@ Investigation into why Exarp daily automation cannot discover scripts in the `sc
 **Hypothesis**: Exarp looks for scripts in a specific location relative to its package installation.
 
 **Testing**:
+
 - Created scripts in `scripts/` directory ✅
 - Made scripts executable ✅
 - Verified scripts can be run directly ✅
@@ -30,6 +31,7 @@ Investigation into why Exarp daily automation cannot discover scripts in the `sc
 - Tested via MCP server ❌ (fails)
 
 **Findings**:
+
 - Scripts work when called directly
 - Scripts work via `uvx exarp <command>` CLI
 - Scripts fail via `mcp_exarp_run_daily_automation` MCP tool
@@ -43,6 +45,7 @@ Investigation into why Exarp daily automation cannot discover scripts in the `sc
 3. **Path Resolution**: Relative paths resolved from MCP server location, not project
 
 **Evidence**:
+
 - MCP server runs in separate process
 - Script paths are relative to where MCP server executes
 - Project root may not be known to MCP server
@@ -52,6 +55,7 @@ Investigation into why Exarp daily automation cannot discover scripts in the `sc
 **Tested Configurations**:
 
 1. **`.exarp/config.json`** (Created):
+
    ```json
    {
      "scripts": {
@@ -61,6 +65,7 @@ Investigation into why Exarp daily automation cannot discover scripts in the `sc
      }
    }
    ```
+
    **Result**: ❌ Not read by Exarp daily automation
 
 2. **Absolute Paths**: Not tested (would break portability)
@@ -74,6 +79,7 @@ Investigation into why Exarp daily automation cannot discover scripts in the `sc
 **Limitation**: Exarp package not installed locally (runs via `uvx`)
 
 **Inference**: Exarp likely expects scripts in:
+
 - Package installation directory
 - Fixed relative path from package
 - Not configurable per-project
@@ -103,11 +109,13 @@ Investigation into why Exarp daily automation cannot discover scripts in the `sc
 ### How Exarp Should Discover Scripts
 
 **Expected Behavior**:
+
 1. Exarp receives project directory as parameter
 2. Resolves script paths relative to project directory
 3. Executes scripts from project context
 
 **Actual Behavior**:
+
 1. Exarp receives project directory as parameter ✅
 2. Resolves script paths relative to Exarp package ❌
 3. Cannot find scripts in project directory ❌
@@ -115,6 +123,7 @@ Investigation into why Exarp daily automation cannot discover scripts in the `sc
 ### Script Discovery Code Path
 
 **Inferred Flow** (based on behavior):
+
 ```
 mcp_exarp_run_daily_automation(project_dir)
   → Exarp internal: find_scripts()
@@ -139,11 +148,13 @@ mcp_exarp_detect_duplicate_tasks()
 ```
 
 **Pros**:
+
 - ✅ Works immediately
 - ✅ No script path issues
 - ✅ Direct access to results
 
 **Cons**:
+
 - ❌ Requires manual orchestration
 - ❌ Not using aggregate feature
 
@@ -152,16 +163,19 @@ mcp_exarp_detect_duplicate_tasks()
 **Status**: Working perfectly
 
 Created `scripts/exarp_daily_automation_wrapper.py` that:
+
 - Calls all three Exarp tools via CLI
 - Generates combined report
 - Handles errors gracefully
 
 **Pros**:
+
 - ✅ Works immediately
 - ✅ Provides aggregate functionality
 - ✅ Can be scheduled via cron
 
 **Cons**:
+
 - ❌ Not using MCP aggregate tool
 - ❌ Requires wrapper script
 
@@ -172,6 +186,7 @@ Created `scripts/exarp_daily_automation_wrapper.py` that:
 ### Short-Term (Current)
 
 **Continue Using Workarounds**:
+
 1. Use individual MCP tools for direct access
 2. Use wrapper script for aggregate functionality
 3. Both approaches work reliably
@@ -194,11 +209,12 @@ Created `scripts/exarp_daily_automation_wrapper.py` that:
    - Provide clear error messages
 
 **Implementation Suggestion**:
+
 ```python
 def find_scripts(project_dir: Path) -> Dict[str, Path]:
     """Find scripts with proper project root resolution."""
     project_root = Path(project_dir).resolve()
-    
+
     # Try config file first
     config_file = project_root / ".exarp" / "config.json"
     if config_file.exists():
@@ -206,14 +222,14 @@ def find_scripts(project_dir: Path) -> Dict[str, Path]:
         scripts = config.get("scripts", {})
         # Resolve paths relative to project root
         return {k: project_root / v for k, v in scripts.items()}
-    
+
     # Fall back to default script names
     default_scripts = {
         "docs_health": project_root / "scripts" / "automate_docs_health_v2.py",
         "todo2_alignment": project_root / "scripts" / "automate_todo2_alignment_v2.py",
         "duplicate_detection": project_root / "scripts" / "automate_todo2_duplicate_detection.py",
     }
-    
+
     # Verify scripts exist
     return {k: v for k, v in default_scripts.items() if v.exists()}
 ```
@@ -221,6 +237,7 @@ def find_scripts(project_dir: Path) -> Dict[str, Path]:
 ### Long-Term (Architecture)
 
 **Consider**:
+
 1. **MCP Context Passing**: Pass project root explicitly to MCP tools
 2. **Script Registry**: Register scripts in project metadata
 3. **Discovery API**: Provide script discovery as separate MCP tool
@@ -230,35 +247,45 @@ def find_scripts(project_dir: Path) -> Dict[str, Path]:
 ## Testing Results
 
 ### Test 1: Direct Script Execution
+
 ```bash
 python3 scripts/automate_docs_health_v2.py .
 ```
+
 **Result**: ✅ Works
 
 ### Test 2: CLI Execution
+
 ```bash
 uvx exarp check-documentation-health .
 ```
+
 **Result**: ✅ Works
 
 ### Test 3: MCP Aggregate Tool
+
 ```python
 mcp_exarp_run_daily_automation(project_dir=".")
 ```
+
 **Result**: ❌ Fails with "Script not found"
 
 ### Test 4: Individual MCP Tools
+
 ```python
 mcp_exarp_check_documentation_health()
 mcp_exarp_analyze_todo2_alignment()
 mcp_exarp_detect_duplicate_tasks()
 ```
+
 **Result**: ✅ All work
 
 ### Test 5: Wrapper Script
+
 ```bash
 python3 scripts/exarp_daily_automation_wrapper.py .
 ```
+
 **Result**: ✅ Works
 
 ---
@@ -284,5 +311,5 @@ python3 scripts/exarp_daily_automation_wrapper.py .
 
 ---
 
-**Investigation Completed**: 2025-11-29  
+**Investigation Completed**: 2025-11-29
 **Next Steps**: Monitor Exarp updates for script discovery fix

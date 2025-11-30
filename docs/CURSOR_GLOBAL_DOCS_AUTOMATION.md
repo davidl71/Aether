@@ -16,27 +16,35 @@ The automation system consists of:
 ### Validate All Docs
 
 ```bash
+
 # Using Python script (recommended)
+
 python3 scripts/sync_global_docs.py --check
 
 # Using shell script
+
 ./scripts/update_global_docs.sh --check-only
 ```
 
 ### Generate Path Lists
 
 ```bash
+
 # Generate both absolute and relative path files
+
 python3 scripts/sync_global_docs.py --generate-paths
 
 # Or use shell script
+
 ./scripts/update_global_docs.sh
 ```
 
 ### Detect New Documentation Files
 
 ```bash
+
 # Find new .md files in docs/ that aren't in config
+
 python3 scripts/sync_global_docs.py --detect-new
 ```
 
@@ -97,19 +105,25 @@ Additional useful docs:
 **Usage:**
 
 ```bash
+
 # Check only
+
 python3 scripts/sync_global_docs.py --check
 
 # Generate paths
+
 python3 scripts/sync_global_docs.py --generate-paths
 
 # Detect new files
+
 python3 scripts/sync_global_docs.py --detect-new
 
 # Full sync
+
 python3 scripts/sync_global_docs.py --update-config --generate-paths
 
 # All options
+
 python3 scripts/sync_global_docs.py --check --generate-paths --detect-new --update-config
 ```
 
@@ -125,13 +139,17 @@ python3 scripts/sync_global_docs.py --check --generate-paths --detect-new --upda
 **Usage:**
 
 ```bash
+
 # Check only
+
 ./scripts/update_global_docs.sh --check-only
 
 # Generate paths
+
 ./scripts/update_global_docs.sh
 
 # With sync instructions
+
 ./scripts/update_global_docs.sh --sync
 ```
 
@@ -154,8 +172,10 @@ Relative paths (useful if Cursor supports relative paths).
 Add to `.git/hooks/pre-commit`:
 
 ```bash
+
 #!/bin/bash
 # Validate global docs before committing
+
 python3 scripts/sync_global_docs.py --check
 if [ $? -ne 0 ]; then
   echo "Error: Some global docs are missing!"
@@ -168,6 +188,7 @@ fi
 Add to your CI pipeline (GitHub Actions example):
 
 ```yaml
+
 - name: Validate Global Docs
   run: |
     python3 scripts/sync_global_docs.py --check
@@ -196,7 +217,9 @@ docs: validate-docs sync-docs
 Add to your crontab or scheduled tasks:
 
 ```bash
+
 # Run daily at 9 AM
+
 0 9 * * * cd /path/to/project && python3 scripts/sync_global_docs.py --update-config --generate-paths
 ```
 

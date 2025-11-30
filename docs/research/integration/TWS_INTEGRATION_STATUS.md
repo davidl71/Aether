@@ -90,6 +90,7 @@ During TWS API library compilation, we discovered it has **complex dependencies*
 
 ```
 Linking TWS API library failed with:
+
 - Missing protobuf symbols (partially resolved)
 - Missing Intel Decimal library symbols (___bid64_*)
   - ___bid64_add, ___bid64_sub, ___bid64_mul, ___bid64_div
@@ -253,14 +254,19 @@ Given that your **framework is 100% complete and tested**, I recommend:
 ## Current Build Status
 
 ```bash
+
 # Your application builds successfully
+
 ./scripts/build_universal.sh
+
 # ✅ Build successful!
 # ✅ Universal binary: x86_64 + arm64
 # ✅ All tests pass: 29/29 (100%)
 
 # Run in dry-run mode (no TWS connection needed)
+
 ./build/bin/ib_box_spread --config config/config.json --dry-run
+
 # ✅ Application runs successfully
 # ⚠️  Uses stub TWS client (not connected to broker)
 ```

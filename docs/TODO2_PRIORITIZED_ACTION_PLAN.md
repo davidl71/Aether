@@ -9,6 +9,7 @@
 This action plan provides a comprehensive, prioritized roadmap for completing all high-priority Todo items in the Todo2 system. The plan is organized by functional areas with clear sequencing, dependencies, and execution strategies.
 
 **Key Metrics:**
+
 - **Total High-Priority Tasks:** 33
 - **Research Tasks Created:** 19 (to ensure workflow compliance)
 - **Implementation Tasks:** 14 (awaiting research completion)
@@ -47,6 +48,7 @@ All research tasks can be executed in parallel to maximize efficiency:
 | T-160 | TUI configuration integration | T-158 | 2-3 hours |
 
 **Execution Strategy:**
+
 - Start all research tasks simultaneously
 - Focus on codebase analysis first (local research)
 - Then conduct internet research for 2025 best practices
@@ -54,6 +56,7 @@ All research tasks can be executed in parallel to maximize efficiency:
 - Complete within 2 weeks
 
 **Success Criteria:**
+
 - All 19 research tasks completed with research_with_links comments
 - Dependencies updated on implementation tasks
 - Ready to proceed to Phase 2
@@ -75,11 +78,13 @@ All research tasks can be executed in parallel to maximize efficiency:
 | T-114 | Update TUI to use shared config | T-112, T-160 | 3-4 hours |
 
 **Execution Strategy:**
+
 - Sequential execution (each depends on previous)
 - Test each component before moving to next
 - Total time: ~16-23 hours (2-3 weeks)
 
 **Success Criteria:**
+
 - Unified configuration system working across TUI and PWA
 - Settings UI functional in PWA
 - TUI reading from shared config
@@ -95,11 +100,13 @@ All research tasks can be executed in parallel to maximize efficiency:
 | T-37 | Implement broker selection/switching | T-34, T-35, T-36, T-144 | 6-8 hours |
 
 **Execution Strategy:**
+
 - T-35 and T-36 can be parallel (after research)
 - T-37 depends on both adapters
 - Total time: ~22-32 hours (3-4 weeks)
 
 **Success Criteria:**
+
 - Both adapters functional
 - Broker switching working
 - Unified interface operational
@@ -119,11 +126,13 @@ All research tasks can be executed in parallel to maximize efficiency:
 | T-65 | Implement web scraping for Israeli brokers | T-62, T-147 | 8-10 hours |
 
 **Execution Strategy:**
+
 - T-63 first (foundation)
 - T-64 and T-65 can be parallel after T-63
 - Total time: ~22-28 hours (3-4 weeks)
 
 **Success Criteria:**
+
 - All three import methods functional
 - Data validation working
 - Integration with portfolio system
@@ -138,10 +147,12 @@ All research tasks can be executed in parallel to maximize efficiency:
 | T-68 | Implement portfolio Greeks aggregation | T-66, T-67, T-149 | 8-10 hours |
 
 **Execution Strategy:**
+
 - Sequential (T-68 depends on T-67)
 - Total time: ~14-18 hours (2 weeks)
 
 **Success Criteria:**
+
 - Greeks calculated for all asset types
 - Portfolio-level aggregation working
 - Risk metrics functional
@@ -156,10 +167,12 @@ All research tasks can be executed in parallel to maximize efficiency:
 | T-71 | Integrate cash flow with backend/strategy | T-69, T-70, T-151 | 6-8 hours |
 
 **Execution Strategy:**
+
 - Sequential execution
 - Total time: ~14-18 hours (2 weeks)
 
 **Success Criteria:**
+
 - All cash flow types calculated
 - Backend integration complete
 - Strategy integration working
@@ -174,10 +187,12 @@ All research tasks can be executed in parallel to maximize efficiency:
 | T-79 | Implement portfolio aggregation | T-78, T-155 | 8-10 hours |
 
 **Execution Strategy:**
+
 - Sequential (T-79 depends on T-78)
 - Total time: ~16-20 hours (2-3 weeks)
 
 **Success Criteria:**
+
 - Multiple accounts connected
 - Aggregation working
 - Currency conversion functional
@@ -192,10 +207,12 @@ All research tasks can be executed in parallel to maximize efficiency:
 | T-77 | Implement loan entry interface | T-76, T-153 | 6-8 hours |
 
 **Execution Strategy:**
+
 - Sequential (T-77 depends on T-76)
 - Total time: ~12-16 hours (2 weeks)
 
 **Success Criteria:**
+
 - Loan data model complete
 - Entry interface functional
 - Integration with portfolio
@@ -214,10 +231,12 @@ All research tasks can be executed in parallel to maximize efficiency:
 | T-61 | Document user requirements/assumptions | T-60 | 4-6 hours |
 
 **Execution Strategy:**
+
 - Sequential execution
 - Total time: ~12-16 hours (2 weeks)
 
 **Success Criteria:**
+
 - Framework designed
 - Requirements documented
 - Ready for implementation
@@ -231,11 +250,13 @@ All research tasks can be executed in parallel to maximize efficiency:
 | T-98 | Implement ConvexityCalculator with NLopt | NLopt integration, Eigen | 6-8 hours |
 
 **Execution Strategy:**
+
 - Can be parallel with other strategy work
 - Already has research completed
 - Total time: ~6-8 hours (1 week)
 
 **Success Criteria:**
+
 - NLopt integrated
 - ConvexityCalculator functional
 - Optimization working
@@ -257,11 +278,13 @@ All research tasks can be executed in parallel to maximize efficiency:
 | T-57 | Implement help modal | In Progress | 4-6 hours |
 
 **Execution Strategy:**
+
 - Some can be parallel (T-57, T-58)
 - Others depend on current work
 - Total time: ~24-34 hours (3-4 weeks)
 
 **Success Criteria:**
+
 - All TUI enhancements complete
 - Better user experience
 - Real-time updates working
@@ -279,10 +302,12 @@ All research tasks can be executed in parallel to maximize efficiency:
 | T-127 | Integrate Tastytrade into PWA UI | T-124, T-125 | 4-6 hours |
 
 **Execution Strategy:**
+
 - Final integration work
 - Total time: ~4-6 hours (1 week)
 
 **Success Criteria:**
+
 - Tastytrade visible in PWA
 - Snapshot integration complete
 
@@ -290,7 +315,7 @@ All research tasks can be executed in parallel to maximize efficiency:
 
 ## Parallel Execution Opportunities
 
-### Can Run Simultaneously (After Dependencies Met):
+### Can Run Simultaneously (After Dependencies Met)
 
 1. **Research Phase (Week 1-2):**
    - All 19 research tasks (T-142 through T-160)
@@ -323,7 +348,7 @@ All research tasks can be executed in parallel to maximize efficiency:
 
 ## Risk Mitigation
 
-### High-Risk Areas:
+### High-Risk Areas
 
 1. **Multi-Broker Integration (T-35, T-36, T-37)**
    - Risk: Complex API integrations
@@ -341,7 +366,7 @@ All research tasks can be executed in parallel to maximize efficiency:
    - Risk: Breaking existing functionality
    - Mitigation: Backward compatibility, gradual migration
 
-### Dependencies to Watch:
+### Dependencies to Watch
 
 - T-62 (Position import design) - blocks T-63, T-64, T-65
 - T-66 (Greeks design) - blocks T-67, T-68
@@ -353,7 +378,7 @@ All research tasks can be executed in parallel to maximize efficiency:
 
 ## Success Metrics
 
-### Phase Completion Criteria:
+### Phase Completion Criteria
 
 - **Phase 1:** All research tasks have research_with_links comments
 - **Phase 2:** Configuration system working across all apps
@@ -362,7 +387,7 @@ All research tasks can be executed in parallel to maximize efficiency:
 - **Phase 5:** UI enhancements complete
 - **Phase 6:** All integrations working
 
-### Quality Gates:
+### Quality Gates
 
 - All tasks have research comments before implementation
 - All tasks have result comments before Review status

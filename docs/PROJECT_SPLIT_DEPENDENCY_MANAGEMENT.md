@@ -24,6 +24,7 @@ This document defines the **dependency management mechanism** for split projects
 ### Decision: Use Native Package Managers (Recommended)
 
 **Rationale**: Native package managers provide:
+
 - ✅ Standard tooling (pip, cargo, npm, CMake)
 - ✅ Version resolution and dependency management
 - ✅ Easy installation for users
@@ -31,6 +32,7 @@ This document defines the **dependency management mechanism** for split projects
 - ✅ Security scanning support
 
 **Alternative Considered**: Git submodules
+
 - ❌ More complex to manage
 - ❌ Harder versioning
 - ❌ Less standard tooling
@@ -46,6 +48,7 @@ This document defines the **dependency management mechanism** for split projects
 **Current State**: Uses CMake FetchContent for dependencies
 
 **Strategy**:
+
 1. **Phase 1**: Publish to GitHub Releases (CMake FetchContent)
    - Tag releases: `v1.0.0`, `v1.1.0`, etc.
    - CMake can fetch from GitHub releases
@@ -57,6 +60,7 @@ This document defines the **dependency management mechanism** for split projects
    - Requires registry setup
 
 **CMake FetchContent Example**:
+
 ```cmake
 include(FetchContent)
 
@@ -72,8 +76,11 @@ target_link_libraries(my_app PRIVATE box_spread_cpp)
 ```
 
 **Conan Example** (Future):
+
 ```cmake
+
 # conanfile.txt
+
 [requires]
 box-spread-cpp/1.0.0@davidl71/stable
 
@@ -91,22 +98,26 @@ CMakeToolchain
 **Strategy**: Publish to PyPI (Python Package Index)
 
 **Registry Setup**:
+
 1. **Create PyPI Account**: `davidl71` (or organization account)
 2. **API Token**: Generate token for CI/CD publishing
 3. **TestPyPI**: Use for testing before production
 
 **PyPI Package Names**:
+
 - `box-spread-python` - Main Python package
 - `project-housekeeping-tools` - Automation framework
 
 **Versioning**: Semantic versioning (see below)
 
 **Installation Example**:
+
 ```bash
 pip install box-spread-python>=1.0.0
 ```
 
 **pyproject.toml Example**:
+
 ```toml
 [project]
 name = "box-spread-python"
@@ -118,14 +129,19 @@ dependencies = [
 ```
 
 **Publishing Workflow**:
+
 ```bash
+
 # Build package
+
 python -m build
 
 # Publish to TestPyPI (testing)
+
 python -m twine upload --repository testpypi dist/*
 
 # Publish to PyPI (production)
+
 python -m twine upload dist/*
 ```
 
@@ -138,6 +154,7 @@ python -m twine upload dist/*
 **Strategy**: Publish to crates.io (Rust package registry)
 
 **Registry Setup**:
+
 1. **Create crates.io Account**: Link GitHub account
 2. **API Token**: Generate for CI/CD
 3. **Publishing**: Use `cargo publish`
@@ -145,6 +162,7 @@ python -m twine upload dist/*
 **Package Name**: `box-spread-rust` (if extracted)
 
 **Cargo.toml Example**:
+
 ```toml
 [package]
 name = "box-spread-rust"
@@ -163,6 +181,7 @@ box-spread-cpp = "1.0.0"  # If C++ lib has Rust bindings
 **Strategy**: Publish to npm (Node Package Manager)
 
 **Registry Setup**:
+
 1. **Create npm Account**: `davidl71` (or organization)
 2. **Access Token**: Generate for CI/CD
 3. **Scoped Packages**: Use `@davidl71/` scope
@@ -170,6 +189,7 @@ box-spread-cpp = "1.0.0"  # If C++ lib has Rust bindings
 **Package Name**: `@davidl71/trading-mcp-servers` (if MCP servers have Node components)
 
 **package.json Example**:
+
 ```json
 {
   "name": "@davidl71/trading-mcp-servers",
@@ -187,6 +207,7 @@ box-spread-cpp = "1.0.0"  # If C++ lib has Rust bindings
 ### Version Format: `MAJOR.MINOR.PATCH`
 
 **Rules**:
+
 - **MAJOR**: Breaking changes (incompatible API changes)
 - **MINOR**: New features (backward compatible)
 - **PATCH**: Bug fixes (backward compatible)
@@ -194,19 +215,23 @@ box-spread-cpp = "1.0.0"  # If C++ lib has Rust bindings
 ### Versioning Examples
 
 **Initial Release**:
+
 - `box-spread-cpp`: `1.0.0`
 - `box-spread-python`: `1.0.0`
 - `trading-mcp-servers`: `1.0.0`
 
 **Feature Addition** (Backward Compatible):
+
 - `box-spread-cpp`: `1.0.0` → `1.1.0`
 - `box-spread-python`: `1.0.0` → `1.1.0`
 
 **Bug Fix**:
+
 - `box-spread-cpp`: `1.1.0` → `1.1.1`
 - `box-spread-python`: `1.1.0` → `1.1.1`
 
 **Breaking Change**:
+
 - `box-spread-cpp`: `1.1.1` → `2.0.0`
 - `box-spread-python`: `1.1.1` → `2.0.0` (must update to match)
 
@@ -219,6 +244,7 @@ box-spread-cpp = "1.0.0"  # If C++ lib has Rust bindings
 Each public repository should include:
 
 ```markdown
+
 ## Dependencies
 
 ### Runtime Dependencies
@@ -242,6 +268,7 @@ pip install box-spread-python>=1.0.0
 | 1.0.x             | 1.0.x          | >=3.11 |
 | 1.1.x             | 1.0.x - 1.1.x  | >=3.11 |
 | 2.0.x             | 2.0.x          | >=3.11 |
+
 ```
 
 ---
@@ -265,6 +292,7 @@ pip install box-spread-python>=1.0.0
 3. Changing dependency requirements significantly
 
 **Coordination**:
+
 - If `box-spread-cpp` bumps to 2.0.0, `box-spread-python` should also bump to 2.0.0
 - Document breaking changes in CHANGELOG.md
 - Provide migration guide
@@ -367,6 +395,7 @@ jobs:
 ### Automated Updates
 
 **Dependabot Configuration** (`.github/dependabot.yml`):
+
 ```yaml
 version: 2
 updates:
@@ -390,6 +419,7 @@ updates:
 ### Manual Updates
 
 **Process**:
+
 1. Review dependency updates
 2. Test compatibility
 3. Update version constraints
@@ -404,12 +434,14 @@ updates:
 ### Dependency Scanning
 
 **Tools**:
+
 - **Python**: `pip-audit`, `safety`
 - **Rust**: `cargo audit`
 - **npm**: `npm audit`
 - **C++**: Manual review (no standard tool)
 
 **Automation**:
+
 - Run scans in CI/CD
 - Block merges if critical vulnerabilities found
 - Auto-update non-breaking security patches
@@ -417,6 +449,7 @@ updates:
 ### Supply Chain Security
 
 **Best Practices**:
+
 1. Pin exact versions in production (lock files)
 2. Use dependency scanning tools
 3. Review dependency licenses
@@ -493,6 +526,7 @@ updates:
 ## Summary
 
 **Package Managers**:
+
 - C++: CMake FetchContent (GitHub Releases) → Conan/vcpkg (future)
 - Python: PyPI
 - Rust: crates.io (if needed)

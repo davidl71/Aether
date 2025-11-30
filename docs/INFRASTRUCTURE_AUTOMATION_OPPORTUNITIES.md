@@ -14,6 +14,7 @@ From 147 high-priority infrastructure tasks, I've identified **8 repetitive task
 ## High-Value Automation Opportunities
 
 ### 1. ✅ Todo2 Task Alignment Analysis (DONE)
+
 - **Task**: T-163 - "Analyze Todo2 task priorities alignment with investment strategy framework"
 - **Status**: ✅ **AUTOMATED** - Runs weekly on Monday at 02:00
 - **Script**: `scripts/automate_todo2_alignment.py`
@@ -22,6 +23,7 @@ From 147 high-priority infrastructure tasks, I've identified **8 repetitive task
 ---
 
 ### 2. ✅ PWA Review Analysis (DONE)
+
 - **Task**: Similar analysis for PWA state
 - **Status**: ✅ **AUTOMATED** - Runs weekly on Sunday at 02:00
 - **Script**: `scripts/automate_pwa_review.py`
@@ -36,11 +38,13 @@ From 147 high-priority infrastructure tasks, I've identified **8 repetitive task
 **Task**: T-140 (implicit) - Keep TODO_OVERVIEW.md in sync with Todo2
 
 **Automation Value**: ⭐⭐⭐⭐⭐
+
 - **Frequency**: Daily or on Todo2 changes
 - **Benefit**: Automatic synchronization, no manual updates needed
 - **Output**: Updated `agents/shared/TODO_OVERVIEW.md`
 
 **Recommendation**:
+
 - Create `scripts/automate_todo_overview_sync.py`
 - Read Todo2 state
 - Update TODO_OVERVIEW.md table automatically
@@ -48,7 +52,9 @@ From 147 high-priority infrastructure tasks, I've identified **8 repetitive task
 - Generate commit-ready changes
 
 **Implementation**:
+
 ```python
+
 # Read .todo2/state.todo2.json
 # Parse agents/shared/TODO_OVERVIEW.md
 # Update status based on Todo2 state
@@ -64,11 +70,13 @@ From 147 high-priority infrastructure tasks, I've identified **8 repetitive task
 **Task**: Implicit - Keep API contract in sync with backend code
 
 **Automation Value**: ⭐⭐⭐⭐⭐
+
 - **Frequency**: Daily or on code changes
 - **Benefit**: Detect API drift early, prevent integration issues
 - **Output**: `docs/API_CONTRACT_DRIFT_REPORT.md`
 
 **Recommendation**:
+
 - Create `scripts/automate_api_contract_check.py`
 - Parse backend code (Rust/Python) for API endpoints
 - Extract endpoint definitions, request/response schemas
@@ -77,6 +85,7 @@ From 147 high-priority infrastructure tasks, I've identified **8 repetitive task
 - Generate diff report
 
 **Tools Needed**:
+
 - Rust AST parser (syn crate)
 - Python AST parser
 - Markdown parser for API_CONTRACT.md
@@ -90,11 +99,13 @@ From 147 high-priority infrastructure tasks, I've identified **8 repetitive task
 **Task**: T-140 (implicit) - Documentation validation
 
 **Automation Value**: ⭐⭐⭐⭐
+
 - **Frequency**: Weekly
 - **Benefit**: Catch broken links, format issues early
 - **Output**: `docs/DOCUMENTATION_HEALTH_REPORT.md`
 
 **Recommendation**:
+
 - Create `scripts/automate_docs_health.py`
 - Combine existing validation scripts
 - Check:
@@ -103,6 +114,7 @@ From 147 high-priority infrastructure tasks, I've identified **8 repetitive task
   - Missing required sections
   - Outdated "Last Updated" dates
   - Cross-reference integrity
+
 - Generate comprehensive health report
 
 **Enhancement**: Add trend tracking (link health over time)
@@ -116,17 +128,20 @@ From 147 high-priority infrastructure tasks, I've identified **8 repetitive task
 **Task**: Implicit - Track TUI vs PWA feature gaps
 
 **Automation Value**: ⭐⭐⭐⭐
+
 - **Frequency**: Weekly
 - **Benefit**: Track feature gaps automatically
 - **Output**: `docs/FEATURE_PARITY_STATUS.md` with trends
 
 **Recommendation**:
+
 - Create `scripts/automate_feature_parity_check.py`
 - Enhance existing script with:
   - Component detection
   - Feature mapping
   - Gap analysis
   - Trend tracking
+
 - Generate status report with recommendations
 
 ---
@@ -138,11 +153,13 @@ From 147 high-priority infrastructure tasks, I've identified **8 repetitive task
 **Task**: Implicit - Monitor test coverage trends
 
 **Automation Value**: ⭐⭐⭐
+
 - **Frequency**: After each commit or daily
 - **Benefit**: Track coverage trends, identify gaps
 - **Output**: `docs/TEST_COVERAGE_REPORT.md` with trends
 
 **Recommendation**:
+
 - Create `scripts/automate_test_coverage.py`
 - Run tests with coverage
 - Compare with previous runs
@@ -151,6 +168,7 @@ From 147 high-priority infrastructure tasks, I've identified **8 repetitive task
 - Alert on coverage drops
 
 **Tools**:
+
 - C++: kcov or gcov
 - Python: coverage.py
 - Rust: cargo-tarpaulin
@@ -164,20 +182,24 @@ From 147 high-priority infrastructure tasks, I've identified **8 repetitive task
 **Task**: Implicit - Stay on latest secure versions
 
 **Automation Value**: ⭐⭐⭐
+
 - **Frequency**: Weekly
 - **Benefit**: Stay on latest secure versions
 - **Output**: `docs/DEPENDENCY_UPDATE_REPORT.md`
 
 **Recommendation**:
+
 - Create `scripts/automate_dependency_check.py`
 - Check for outdated packages:
   - Python: `pip list --outdated`
   - Node.js: `npm outdated`
   - Rust: `cargo outdated` (if available)
+
 - Check for security vulnerabilities:
   - Python: `pip-audit`
   - Node.js: `npm audit`
   - Rust: `cargo audit`
+
 - Generate update report with recommendations
 
 ---
@@ -191,11 +213,13 @@ From 147 high-priority infrastructure tasks, I've identified **8 repetitive task
 **Task**: Implicit - Keep Cursor global docs in sync
 
 **Automation Value**: ⭐⭐
+
 - **Frequency**: Weekly
 - **Benefit**: Keep global docs updated automatically
 - **Output**: Sync status report
 
 **Recommendation**:
+
 - Enhance existing scripts with automation
 - Schedule weekly sync
 - Generate sync report
@@ -210,16 +234,19 @@ From 147 high-priority infrastructure tasks, I've identified **8 repetitive task
 **Task**: Implicit - Monitor build health
 
 **Automation Value**: ⭐⭐
+
 - **Frequency**: Daily or nightly
 - **Benefit**: Catch build issues early
 - **Output**: `docs/BUILD_HEALTH_REPORT.md`
 
 **Recommendation**:
+
 - Create `scripts/automate_build_health.py`
 - Test builds for all platforms:
   - macOS universal
   - Linux (if applicable)
   - WASM builds
+
 - Check build times (regression detection)
 - Generate health report
 
@@ -253,7 +280,9 @@ From 147 high-priority infrastructure tasks, I've identified **8 repetitive task
 All automation scripts follow this pattern:
 
 ```python
+
 # scripts/automate_[task_name].py
+
 1. Load configuration
 2. Analyze current state
 3. Compare against baseline/expected state
@@ -263,8 +292,11 @@ All automation scripts follow this pattern:
 ```
 
 **Cron Setup Pattern:**
+
 ```bash
+
 # scripts/setup_[task_name]_cron.sh
+
 1. Create cron runner script
 2. Set up logging
 3. Add to crontab
@@ -302,16 +334,19 @@ All automation scripts follow this pattern:
 ## Benefits Summary
 
 **Time Savings**:
+
 - Manual coordination: ~1-2 hours/week
 - Automated: ~5 minutes/week to review reports
 - **Savings: ~95%**
 
 **Consistency**:
+
 - Regular, scheduled checks
 - No missed updates
 - Historical trends
 
 **Early Detection**:
+
 - Catch issues before they become problems
 - Track trends over time
 - Proactive maintenance

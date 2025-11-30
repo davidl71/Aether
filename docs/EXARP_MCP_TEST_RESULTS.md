@@ -30,12 +30,14 @@ All Exarp MCP tools tested successfully! The server is operational and all tools
 **Result**: ✅ Success
 
 **Data**:
+
 - **Health Score**: 0 (needs improvement)
 - **Report Path**: `docs/DOCUMENTATION_HEALTH_REPORT.md`
 - **Link Validation**:
   - Total Links: 1,346
   - Broken Internal: 24
   - Broken External: 0
+
 - **Format Errors**: 220
 - **Tasks Created**: 0 (create_tasks=False)
 
@@ -50,6 +52,7 @@ All Exarp MCP tools tested successfully! The server is operational and all tools
 **Result**: ✅ Success
 
 **Data**:
+
 - **Total Tasks Analyzed**: 0 (may need to scan more tasks)
 - **Misaligned Count**: 0
 - **Infrastructure Count**: 0
@@ -69,6 +72,7 @@ All Exarp MCP tools tested successfully! The server is operational and all tools
 **Result**: ✅ Success
 
 **Data**:
+
 - **Total Tasks**: 87
 - **Duplicate IDs**: 1
 - **Exact Name Matches**: 5
@@ -90,11 +94,13 @@ All Exarp MCP tools tested successfully! The server is operational and all tools
 **Result**: ✅ Success
 
 **Data**:
+
 - **Overall Score**: 55.0%
 - **Production Ready**: No
 - **Blockers**: Security controls incomplete, Test coverage too low
 
 **Component Scores**:
+
 - Documentation: 100.0% ✅
 - Parallelizable: 100.0% ✅
 - Uniqueness: 90.0% ✅
@@ -108,6 +114,7 @@ All Exarp MCP tools tested successfully! The server is operational and all tools
 - Completion: 0.0% 🔴
 
 **Key Metrics**:
+
 - Tasks: 8 pending, 0 completed
 - Parallelizable: 8 tasks (100.0%)
 - Dogfooding: 3/10 self-checks
@@ -115,6 +122,7 @@ All Exarp MCP tools tested successfully! The server is operational and all tools
 - CodeQL Languages: cpp, python, javascript
 
 **Recommendations**:
+
 1. 🔴 [Security] Implement path boundary enforcement, rate limiting, and access control (+25%)
 2. 🟠 [Testing] Fix failing tests and increase coverage to 30% (+15%)
 3. 🟡 [Tasks] Complete pending tasks to show progress (+5%)
@@ -129,6 +137,7 @@ All Exarp MCP tools tested successfully! The server is operational and all tools
 ✅ **ALL EXARP MCP TOOLS ARE OPERATIONAL**
 
 All tested tools:
+
 1. ✅ Server status check - Working
 2. ✅ Documentation health check - Working
 3. ✅ Todo2 alignment analysis - Working
@@ -150,6 +159,7 @@ Based on the server status, Exarp provides 28 MCP tools. Tested tools include:
 5. ✅ `mcp_exarp_generate_project_scorecard` - Project scorecard generation
 
 **Other available tools** (not tested in this session):
+
 - `mcp_exarp_scan_dependency_security` - Security scanning
 - `mcp_exarp_find_automation_opportunities` - Automation discovery
 - `mcp_exarp_sync_todo_tasks` - Todo2 task synchronization

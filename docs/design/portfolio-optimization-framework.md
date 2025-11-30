@@ -145,6 +145,7 @@ Subject to:
 ```
 
 **Implementation:**
+
 ```cpp
 class MeanVarianceOptimizer {
 public:
@@ -172,6 +173,7 @@ private:
 ```
 
 **Algorithm:**
+
 1. Calculate expected returns vector `μ` from implied rates
 2. Calculate covariance matrix `Σ` from historical returns or correlation
 3. Set up quadratic programming problem
@@ -188,11 +190,13 @@ f* = Σ^(-1) * μ
 ```
 
 Where:
+
 - `f*` = optimal position weights
 - `Σ` = covariance matrix
 - `μ` = expected returns vector
 
 **Implementation:**
+
 ```cpp
 class KellyOptimizer {
 public:
@@ -214,6 +218,7 @@ private:
 ```
 
 **Algorithm:**
+
 1. Calculate covariance matrix `Σ`
 2. Calculate expected returns vector `μ`
 3. Compute Kelly weights: `f* = Σ^(-1) * μ`
@@ -226,12 +231,14 @@ private:
 **Advantage:** Works well with highly correlated assets (box spreads on same underlying).
 
 **Algorithm:**
+
 1. Calculate correlation matrix
 2. Build hierarchical clustering tree (linkage matrix)
 3. Calculate HRP weights using inverse variance allocation
 4. Apply constraints
 
 **Implementation:**
+
 ```cpp
 class HierarchicalRiskParityOptimizer {
 public:
@@ -334,6 +341,7 @@ public:
 ### Margin Calculation
 
 For box spreads, margin requirements depend on:
+
 - **Reg-T Margin:** Typically strike width difference
 - **Portfolio Margin:** Reduced margin due to offsetting positions
 - **SPAN Margin:** Exchange-specific margin calculation
@@ -511,11 +519,13 @@ class BoxSpreadStrategy {
 ### Required Libraries
 
 1. **Eigen3** - Matrix operations
+
    ```cmake
    find_package(Eigen3 REQUIRED)
    ```
 
 2. **OSQP** (Optional) - Quadratic programming solver
+
    ```cmake
    find_package(osqp REQUIRED)
    ```
@@ -525,7 +535,9 @@ class BoxSpreadStrategy {
 ### CMake Configuration
 
 ```cmake
+
 # Portfolio optimization library
+
 add_library(portfolio_optimizer
     src/portfolio_optimizer.cpp
     src/mean_variance_optimizer.cpp
@@ -543,6 +555,7 @@ target_link_libraries(portfolio_optimizer
 )
 
 # Optional: OSQP for QP solving
+
 if(ENABLE_OSQP)
     target_link_libraries(portfolio_optimizer PRIVATE osqp::osqp)
 endif()

@@ -12,9 +12,11 @@
 ### ✅ Project Configuration (`.cursor/mcp.json`)
 
 **Removed:**
+
 - ❌ `notebooklm` - Research & documentation server
 
 **Kept:**
+
 - ✅ `filesystem` - File operations (workspace-scoped)
 - ✅ `git` - Version control (repository-specific)
 - ✅ `agentic-tools` - Task management (required for Todo2)
@@ -31,21 +33,25 @@
 ### ✅ Expected Savings
 
 **Tools Removed:**
+
 - Estimated **10-15 tools** removed (NotebookLM tool count)
 
 **Expected Tool Count After Removal:**
+
 - **Before:** ~81-128 tools (after removing desktop-commander)
 - **After:** ~71-113 tools (still may exceed 80, but reduced)
 
 ### ✅ Functionality Impact
 
 **What You Lose:**
+
 - ❌ Access to TWS API knowledge base notebook
 - ❌ YouTube video summarization via NotebookLM
 - ❌ Documentation link processing via NotebookLM
 - ❌ Zero-hallucination knowledge base queries
 
 **What You Keep:**
+
 - ✅ All other research capabilities (web search)
 - ✅ All core development tools
 - ✅ All Todo2 workflow functionality
@@ -54,12 +60,14 @@
 ### ✅ Alternative Solutions
 
 **For Research:**
+
 - ✅ Use web search for general research
 - ✅ Use official documentation websites
 - ✅ Use Context7 for library documentation (still configured)
 - ✅ Create documentation from research manually
 
 **For TWS API Knowledge:**
+
 - ✅ Use official TWS API documentation
 - ✅ Use project documentation in `docs/` directory
 - ✅ Re-enable NotebookLM temporarily when needed
@@ -121,6 +129,7 @@ If you need to use NotebookLM for specific research tasks:
 
 1. Edit `.cursor/mcp.json` (project config)
 2. Add back `notebooklm` entry:
+
    ```json
    {
      "notebooklm": {
@@ -135,6 +144,7 @@ If you need to use NotebookLM for specific research tasks:
      }
    }
    ```
+
 3. Save and restart Cursor
 4. Use NotebookLM for research
 5. Disable again after research is complete
@@ -142,6 +152,7 @@ If you need to use NotebookLM for specific research tasks:
 ### Permanent Re-Enable
 
 If you find NotebookLM is essential and frequently used:
+
 1. Re-add NotebookLM configuration
 2. Remove `context7` instead (redundant with web search)
 3. Or remove thinking tools if still over 80-tool limit
@@ -200,12 +211,14 @@ If tool count is still over 80 after disabling NotebookLM:
 **Expected Tool Count:** ~71-113 tools (down from ~81-128)
 
 **Remaining Servers:**
+
 - ✅ Core development: filesystem, git, semgrep
 - ✅ Todo2 workflow: agentic-tools
 - ✅ Documentation: context7
 - ✅ Thinking tools: tractatus_thinking, sequential_thinking
 
 **If Still Over 80:**
+
 - Next step: Remove context7 (saves 8-12 tools)
 - Last resort: Remove thinking tools (saves 10-16 tools)
 

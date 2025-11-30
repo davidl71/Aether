@@ -174,6 +174,7 @@ All research tasks follow this structure:
 🎯 **Objective:** Research [topic] implementation patterns and best practices
 
 📋 **Acceptance Criteria:**
+
 - Local codebase analysis completed
 - Internet research with 2-10 verified links (2025)
 - Implementation patterns documented
@@ -181,6 +182,7 @@ All research tasks follow this structure:
 - Dependencies updated on implementation task
 
 🚫 **Scope Boundaries:**
+
 - **Included:** Research only, no implementation
 - **Excluded:** Actual implementation
 

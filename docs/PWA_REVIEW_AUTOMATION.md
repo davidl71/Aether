@@ -18,13 +18,17 @@ The automated PWA review system analyzes the current PWA state, compares it agai
 Run the analysis script manually:
 
 ```bash
+
 # Basic run (no AI insights)
+
 python3 scripts/automate_pwa_review.py
 
 # With custom config
+
 python3 scripts/automate_pwa_review.py --config scripts/pwa_review_config.json
 
 # With custom output path
+
 python3 scripts/automate_pwa_review.py --output docs/my_analysis.md
 ```
 
@@ -33,11 +37,13 @@ python3 scripts/automate_pwa_review.py --output docs/my_analysis.md
 To get AI-generated insights, configure an API provider:
 
 **Option A: OpenAI**
+
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
 ```
 
 Edit `scripts/pwa_review_config.json`:
+
 ```json
 {
   "ai_api": {
@@ -48,16 +54,19 @@ Edit `scripts/pwa_review_config.json`:
 ```
 
 Install OpenAI library:
+
 ```bash
 pip install openai
 ```
 
 **Option B: Anthropic**
+
 ```bash
 export ANTHROPIC_API_KEY="your-api-key-here"
 ```
 
 Edit `scripts/pwa_review_config.json`:
+
 ```json
 {
   "ai_api": {
@@ -68,6 +77,7 @@ Edit `scripts/pwa_review_config.json`:
 ```
 
 Install Anthropic library:
+
 ```bash
 pip install anthropic
 ```
@@ -81,27 +91,34 @@ pip install anthropic
 Set up a cron job to run the analysis automatically:
 
 ```bash
+
 # Run weekly on Sunday at 2:00 AM
+
 ./scripts/setup_pwa_review_cron.sh weekly sunday 02:00
 
 # Run daily at 4:00 AM
+
 ./scripts/setup_pwa_review_cron.sh daily 04:00
 
 # Run monthly on the 1st at 3:00 AM
+
 ./scripts/setup_pwa_review_cron.sh monthly 1 03:00
 ```
 
 **View cron jobs:**
+
 ```bash
 crontab -l
 ```
 
 **Remove cron job:**
+
 ```bash
 crontab -l | grep -v 'run_pwa_review_cron.sh' | crontab -
 ```
 
 **Logs:**
+
 - Success logs: `scripts/pwa_review.log`
 - Error logs: `scripts/pwa_review_errors.log`
 
@@ -110,23 +127,27 @@ crontab -l | grep -v 'run_pwa_review_cron.sh' | crontab -
 The GitHub Actions workflow runs automatically on a schedule and commits updates.
 
 **Enable the workflow:**
+
 1. The workflow file is already created: `.github/workflows/pwa-review-scheduled.yml`
 2. It runs weekly on Sunday at 02:00 UTC
 3. Results are automatically committed to the repository
 
 **Manual trigger:**
+
 - Go to Actions tab in GitHub
 - Select "Scheduled PWA Review Analysis"
 - Click "Run workflow"
 
 **Configure schedule:**
 Edit `.github/workflows/pwa-review-scheduled.yml`:
+
 ```yaml
 schedule:
   - cron: '0 2 * * 0'  # Change to your preferred schedule
 ```
 
 **Add AI API keys (optional):**
+
 1. Go to repository Settings → Secrets and variables → Actions
 2. Add secrets:
    - `OPENAI_API_KEY` (if using OpenAI)
@@ -151,6 +172,7 @@ schedule:
 ```
 
 **Options:**
+
 - `ai_api.provider`: `"none"`, `"openai"`, or `"anthropic"`
 - `ai_api.model`: Model name (e.g., `"gpt-4"`, `"claude-3-5-sonnet-20241022"`)
 - `ai_api.api_key`: Leave `null` and use environment variables for security
@@ -188,17 +210,22 @@ The script generates/updates `docs/PWA_IMPROVEMENT_ANALYSIS.md` with:
 ### Script Fails to Run
 
 **Check Python version:**
+
 ```bash
 python3 --version  # Should be 3.8+
 ```
 
 **Check dependencies:**
+
 ```bash
+
 # If using AI features
+
 pip install openai  # or anthropic
 ```
 
 **Check file permissions:**
+
 ```bash
 chmod +x scripts/automate_pwa_review.py
 chmod +x scripts/setup_pwa_review_cron.sh
@@ -207,20 +234,26 @@ chmod +x scripts/setup_pwa_review_cron.sh
 ### Cron Job Not Running
 
 **Check cron logs:**
+
 ```bash
+
 # macOS
+
 grep CRON /var/log/system.log
 
 # Linux
+
 grep CRON /var/log/syslog
 ```
 
 **Test cron script manually:**
+
 ```bash
 ./scripts/run_pwa_review_cron.sh
 ```
 
 **Verify cron entry:**
+
 ```bash
 crontab -l | grep pwa_review
 ```
@@ -228,11 +261,13 @@ crontab -l | grep pwa_review
 ### GitHub Actions Not Running
 
 **Check workflow status:**
+
 - Go to Actions tab in GitHub
 - Look for "Scheduled PWA Review Analysis" workflow
 - Check for errors in workflow logs
 
 **Verify schedule:**
+
 - GitHub Actions uses UTC time
 - Check that the cron expression is valid
 - Workflows may be delayed during high load
@@ -240,18 +275,22 @@ crontab -l | grep pwa_review
 ### AI API Errors
 
 **Check API key:**
+
 ```bash
 echo $OPENAI_API_KEY  # or $ANTHROPIC_API_KEY
 ```
 
 **Test API connection:**
+
 ```python
 import openai  # or anthropic
 client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
 # Test call...
 ```
 
 **Fallback to basic insights:**
+
 - Set `"provider": "none"` in config
 - Script will use basic analysis without AI
 
@@ -273,6 +312,7 @@ client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 ### Custom Analysis
 
 Modify `scripts/automate_pwa_review.py` to:
+
 - Add custom analysis logic
 - Check additional files/directories
 - Generate different output formats
@@ -281,11 +321,13 @@ Modify `scripts/automate_pwa_review.py` to:
 ### Integration with Other Tools
 
 **Combine with notification systems:**
+
 - Add email notifications on completion
 - Send Slack messages with summary
 - Create GitHub issues for high-priority items
 
 **Combine with CI/CD:**
+
 - Run analysis before deployments
 - Block deployments if alignment drops below threshold
 - Generate reports for stakeholders

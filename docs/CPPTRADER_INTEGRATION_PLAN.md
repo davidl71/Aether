@@ -158,7 +158,9 @@ class OrderBook {
 **File**: `native/CMakeLists.txt`
 
 ```cmake
+
 # CppTrader integration
+
 option(ENABLE_CPPTRADER "Enable CppTrader order book processing" ON)
 
 if(ENABLE_CPPTRADER)
@@ -190,6 +192,7 @@ endif()
 **File**: `native/include/order_book_manager.h`
 
 ```cpp
+
 #pragma once
 
 #include <memory>
@@ -299,6 +302,7 @@ Replace simple `market_data_` map with `OrderBookManager`:
 
 ```cpp
 // In TWSClient class:
+
 #include "order_book_manager.h"
 
 class TWSClient : public EWrapper {
@@ -352,6 +356,7 @@ class TWSClient : public EWrapper {
 **File**: `native/include/market_data_validator.h`
 
 ```cpp
+
 #pragma once
 
 #include "types.h"
@@ -416,7 +421,9 @@ std::vector<BoxSpreadOpportunity> find_box_spreads_with_depth(
 Add CppTrader dependency with git submodule or FetchContent:
 
 ```cmake
+
 # CppTrader requires gil (git links) tool
+
 find_program(GIL_EXECUTABLE gil)
 if(NOT GIL_EXECUTABLE)
   message(WARNING "gil tool not found. Install with: pip3 install gil")
@@ -453,10 +460,13 @@ endif()
 Add CppTrader submodule initialization:
 
 ```bash
+
 # Initialize git submodules (including CppTrader)
+
 git submodule update --init --recursive
 
 # If using gil, update submodules
+
 if command -v gil &> /dev/null; then
   cd native/third_party/cpptrader 2>/dev/null && gil update || true
 fi
@@ -480,6 +490,7 @@ CppTrader offers three optimization levels:
 
 ```cpp
 // Use optimized market manager
+
 #include <trader/market/market_manager_optimized.h>
 
 using MarketManager = CppTrader::MarketManagerOptimized;

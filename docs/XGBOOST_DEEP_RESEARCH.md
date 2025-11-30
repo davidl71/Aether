@@ -53,6 +53,7 @@ XGBoost is written in C++, making it ideal for integration with C++ trading syst
   - `Learner`: Main learning interface
   - `Booster`: Model interface
   - `Predictor`: Prediction interface
+
 - **CMake Integration**: Native CMake support for easy integration
 - **Performance**: Direct C++ usage avoids Python overhead
 
@@ -104,6 +105,7 @@ XGBoost is written in C++, making it ideal for integration with C++ trading syst
   - `gamma`: Minimum loss reduction for split
   - `lambda` (L2): L2 regularization
   - `alpha` (L1): L1 regularization
+
 - **Auto-tuning**: Integration with Optuna, Hyperopt, or Ray Tune
 
 ## Use Cases for Box Spread Trading
@@ -122,6 +124,7 @@ XGBoost is written in C++, making it ideal for integration with C++ trading syst
   - Underlying price
   - Risk-free rate
   - Historical profitability patterns
+
 - **Target**: Binary classification (profitable/not profitable) or regression (expected profit)
 - **Advantage**: Can learn complex non-linear relationships between market conditions and profitability
 
@@ -138,6 +141,7 @@ XGBoost is written in C++, making it ideal for integration with C++ trading syst
   - Time of day
   - Market volatility
   - Order book depth
+
 - **Target**: Regression (optimal wait time) or classification (execute now/wait)
 - **Advantage**: Learn from historical execution data to optimize timing
 
@@ -154,6 +158,7 @@ XGBoost is written in C++, making it ideal for integration with C++ trading syst
   - Earnings dates
   - Historical assignment rates
   - Liquidity metrics
+
 - **Target**: Binary classification (high risk/low risk) or probability
 - **Advantage**: Combine multiple risk factors into single risk score
 
@@ -170,6 +175,7 @@ XGBoost is written in C++, making it ideal for integration with C++ trading syst
   - Market volatility
   - Historical success rate
   - Correlation with existing positions
+
 - **Target**: Regression (position size) or classification (size category)
 - **Advantage**: Adaptive position sizing based on learned patterns
 
@@ -186,6 +192,7 @@ XGBoost is written in C++, making it ideal for integration with C++ trading syst
   - Options volume
   - Spread patterns
   - Historical regime indicators
+
 - **Target**: Multi-class classification (regime type)
 - **Advantage**: Automatically adapt strategy to market conditions
 
@@ -194,16 +201,20 @@ XGBoost is written in C++, making it ideal for integration with C++ trading syst
 ### Building XGBoost for C++
 
 ```bash
+
 # Clone repository
+
 git clone --recursive https://github.com/dmlc/xgboost.git
 cd xgboost
 
 # Build with CMake
+
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
 
 # Install (optional)
+
 sudo make install
 ```
 
@@ -212,7 +223,9 @@ sudo make install
 Add to your `CMakeLists.txt`:
 
 ```cmake
+
 # Find or add XGBoost
+
 find_package(xgboost QUIET)
 if(NOT xgboost_FOUND)
   # Option 1: Use FetchContent
@@ -226,12 +239,14 @@ if(NOT xgboost_FOUND)
 endif()
 
 # Link to your target
+
 target_link_libraries(your_target PRIVATE xgboost::xgboost)
 ```
 
 ### Basic C++ Usage Example
 
 ```cpp
+
 #include <xgboost/c_api.h>
 #include <vector>
 #include <iostream>
@@ -279,6 +294,7 @@ For this project's box spread calculator:
 
 ```cpp
 // native/include/ib_box_spread/ml_predictor.h
+
 #include <xgboost/c_api.h>
 #include <memory>
 #include <vector>
@@ -350,14 +366,17 @@ import xgboost
 import shap
 
 # Train model
+
 model = xgboost.XGBRegressor()
 model.fit(X_train, y_train)
 
 # Explain predictions
+
 explainer = shap.TreeExplainer(model)
 shap_values = explainer.shap_values(X_test)
 
 # Visualize
+
 shap.summary_plot(shap_values, X_test)
 ```
 
@@ -513,7 +532,9 @@ python/
 Add to `native/CMakeLists.txt`:
 
 ```cmake
+
 # XGBoost
+
 find_package(xgboost QUIET)
 if(NOT xgboost_FOUND)
   include(FetchContent)

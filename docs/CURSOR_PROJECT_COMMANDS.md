@@ -328,10 +328,13 @@ Check the build status
 Commands can also be run directly:
 
 ```bash
+
 # Using the command name
+
 cursor-command build:debug
 
 # Or using the underlying command
+
 cmake --build --preset macos-arm64-debug
 ```
 

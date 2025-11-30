@@ -134,11 +134,14 @@ curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
 ### Test Authentication
 
 ```bash
+
 # Set your credentials
+
 export LIVEVOL_CLIENT_ID="your_client_id"
 export LIVEVOL_CLIENT_SECRET="your_client_secret"
 
 # Test authentication
+
 python scripts/livevol_api_explorer.py \
   --client-id "$LIVEVOL_CLIENT_ID" \
   --client-secret "$LIVEVOL_CLIENT_SECRET"
@@ -147,10 +150,13 @@ python scripts/livevol_api_explorer.py \
 ### Manual Test with curl
 
 ```bash
+
 # Encode credentials
+
 CREDENTIALS=$(echo -n "your_client_id:your_client_secret" | base64)
 
 # Request token
+
 curl -X POST https://id.livevol.com/connect/token \
   -H "Authorization: Basic $CREDENTIALS" \
   -H "Content-Type: application/x-www-form-urlencoded" \

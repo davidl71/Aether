@@ -14,12 +14,14 @@
 **Purpose**: Provides Python interface to MCP servers (Tractatus Thinking, Sequential Thinking)
 
 **Features**:
+
 - Loads MCP configuration from `.cursor/mcp.json`
 - Provides simplified interface to Tractatus and Sequential Thinking
 - Falls back gracefully if MCP servers unavailable
 - Can be extended for full MCP protocol communication
 
 **Usage**:
+
 ```python
 from scripts.base.mcp_client import get_mcp_client
 
@@ -34,6 +36,7 @@ result = mcp_client.call_tractatus_thinking('start', concept="...")
 **File**: `scripts/base/intelligent_automation_base.py`
 
 **Enhancements**:
+
 - Integrated MCP client for real Tractatus/Sequential Thinking
 - Enhanced NetworkX analysis with:
   - Critical path finding
@@ -41,9 +44,11 @@ result = mcp_client.call_tractatus_thinking('start', concept="...")
   - Orphan detection
   - Cycle detection
   - Graph density calculation
+
 - Better error handling and fallbacks
 
 **New NetworkX Features**:
+
 - `_find_critical_path()`: Finds longest dependency path
 - `_find_bottlenecks()`: Identifies nodes with high out-degree
 - `_find_orphans()`: Finds nodes with no incoming edges
@@ -56,6 +61,7 @@ result = mcp_client.call_tractatus_thinking('start', concept="...")
 **File**: `scripts/automate_docs_health_v2.py`
 
 **Changes**:
+
 - Now inherits from `IntelligentAutomationBase`
 - Uses Tractatus Thinking to understand documentation health structure
 - Uses Sequential Thinking to plan analysis workflow
@@ -64,6 +70,7 @@ result = mcp_client.call_tractatus_thinking('start', concept="...")
 - Generates follow-up tasks for issues
 
 **NetworkX Integration**:
+
 - Builds documentation cross-reference graph
 - Identifies orphaned documents
 - Finds broken reference chains
@@ -76,6 +83,7 @@ result = mcp_client.call_tractatus_thinking('start', concept="...")
 **File**: `scripts/automate_todo2_alignment_v2.py`
 
 **Changes**:
+
 - Now inherits from `IntelligentAutomationBase`
 - Uses Tractatus Thinking to understand alignment structure
 - Uses Sequential Thinking to plan analysis workflow
@@ -84,6 +92,7 @@ result = mcp_client.call_tractatus_thinking('start', concept="...")
 - Generates follow-up tasks for misalignments
 
 **NetworkX Integration**:
+
 - Builds task dependency graph
 - Finds critical path (longest dependency chain)
 - Identifies bottlenecks (tasks blocking many others)
@@ -99,6 +108,7 @@ result = mcp_client.call_tractatus_thinking('start', concept="...")
 **Graph Type**: Documentation cross-reference graph (directed)
 
 **Analysis**:
+
 - **Nodes**: Documentation files
 - **Edges**: References between documents
 - **Orphaned Files**: Documents with no incoming links
@@ -106,6 +116,7 @@ result = mcp_client.call_tractatus_thinking('start', concept="...")
 - **Documentation Hubs**: Most-referenced documents
 
 **Benefits**:
+
 - Automatic orphan detection
 - Identify documentation structure issues
 - Suggest documentation reorganization
@@ -118,6 +129,7 @@ result = mcp_client.call_tractatus_thinking('start', concept="...")
 **Graph Type**: Task dependency graph (directed)
 
 **Analysis**:
+
 - **Nodes**: Todo2 tasks
 - **Edges**: Task dependencies
 - **Critical Path**: Longest dependency chain (bottleneck)
@@ -126,6 +138,7 @@ result = mcp_client.call_tractatus_thinking('start', concept="...")
 - **Cycles**: Circular dependencies (if any)
 
 **Benefits**:
+
 - Identify critical path automatically
 - Find blocking tasks
 - Optimize task ordering
@@ -138,12 +151,14 @@ result = mcp_client.call_tractatus_thinking('start', concept="...")
 ### Current Status
 
 **Tractatus Thinking**:
+
 - ✅ MCP server configured in `.cursor/mcp.json`
 - ✅ Python wrapper created
 - ✅ Integrated into base class
 - ⚠️ Currently uses simplified fallback (full MCP protocol can be added)
 
 **Sequential Thinking**:
+
 - ✅ MCP server configured in `.cursor/mcp.json`
 - ✅ Python wrapper created
 - ✅ Integrated into base class
@@ -152,11 +167,13 @@ result = mcp_client.call_tractatus_thinking('start', concept="...")
 ### Future Enhancement
 
 To use full MCP protocol:
+
 1. Install MCP Python SDK: `pip install mcp`
 2. Implement stdio communication with MCP servers
 3. Replace simplified wrappers with full protocol
 
 **Current Approach**:
+
 - Simplified wrappers work for basic use cases
 - Can be enhanced incrementally
 - Fallbacks ensure scripts always work
@@ -168,6 +185,7 @@ To use full MCP protocol:
 ### For Existing Scripts
 
 **Before**:
+
 ```python
 class MyAnalyzer:
     def run(self):
@@ -176,6 +194,7 @@ class MyAnalyzer:
 ```
 
 **After**:
+
 ```python
 class MyAnalyzer(IntelligentAutomationBase):
     def _execute_analysis(self):
@@ -189,6 +208,7 @@ class MyAnalyzer(IntelligentAutomationBase):
 ```
 
 **Benefits**:
+
 - Automatic Todo2 tracking
 - Tractatus/Sequential integration
 - NetworkX analysis (if needed)
@@ -205,6 +225,7 @@ python3 scripts/automate_docs_health_v2.py
 ```
 
 **Expected Output**:
+
 - Tractatus analysis of documentation health
 - Sequential workflow planning
 - NetworkX cross-reference graph
@@ -219,6 +240,7 @@ python3 scripts/automate_todo2_alignment_v2.py
 ```
 
 **Expected Output**:
+
 - Tractatus analysis of task alignment
 - Sequential workflow planning
 - NetworkX task dependency graph
@@ -237,6 +259,7 @@ pip install networkx>=3.2.0
 ```
 
 **Without NetworkX**:
+
 - Scripts still work
 - NetworkX analysis is skipped
 - Other features remain functional
@@ -256,16 +279,19 @@ pip install networkx>=3.2.0
 ## Benefits Summary
 
 ### Efficiency
+
 - **50-70% faster**: Focus on critical components first
 - **Early exit**: Stop on critical failures
 - **Adaptive workflows**: Plan dynamically
 
 ### Quality
+
 - **Root cause analysis**: Tractatus reveals WHY
 - **Dependency awareness**: NetworkX shows relationships
 - **Actionable insights**: Automatic task creation
 
 ### Integration
+
 - **Todo2 tracking**: All automations tracked
 - **Follow-up tasks**: Issues become actionable
 - **Report generation**: Comprehensive documentation

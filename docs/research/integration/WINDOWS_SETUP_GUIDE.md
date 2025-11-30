@@ -9,6 +9,7 @@ This guide walks you through setting up the IBKR Box Spread Generator on Windows
 - **Windows 10/11** (64-bit)
 - **Visual Studio 2019 or later** (with C++ Desktop Development workload)
   - Or **MinGW-w64** (alternative compiler)
+
 - **CMake 3.21 or higher**
 - **Git for Windows**
 - **Interactive Brokers TWS or IB Gateway** installed
@@ -41,10 +42,13 @@ This guide walks you through setting up the IBKR Box Spread Generator on Windows
 ### 1.2 Extract TWS API
 
 ```powershell
+
 # Create target directory
+
 New-Item -ItemType Directory -Force -Path "native\third_party\tws-api"
 
 # Extract to target (adjust path to your download location)
+
 Expand-Archive -Path "$env:USERPROFILE\Downloads\twsapi_win_*.zip" -DestinationPath "native\third_party\tws-api" -Force
 ```
 
@@ -70,19 +74,24 @@ The TWS API requires the Intel Decimal Math Library for precision decimal arithm
 ### 2.1 Download from Netlib
 
 ```powershell
+
 # Create cache directory
+
 New-Item -ItemType Directory -Force -Path "native\third_party\cache"
 
 # Download Intel Decimal Library (adjust URL for latest version)
+
 $url = "https://netlib.org/misc/intel/IntelRDFPMathLib20U2.tar.gz"
 $output = "native\third_party\cache\IntelRDFPMathLib20U2.tar.gz"
 Invoke-WebRequest -Uri $url -OutFile $output
 
 # Extract (requires 7-Zip or tar for Windows 10+)
 # If you have 7-Zip:
+
 & "C:\Program Files\7-Zip\7z.exe" x $output -o"native\third_party" -y
 
 # Or use Windows 10+ built-in tar:
+
 tar -xzf $output -C "native\third_party"
 ```
 
@@ -102,12 +111,15 @@ TWS API 10.40+ requires Protocol Buffers.
 ### Option A: Using vcpkg (Recommended)
 
 ```powershell
+
 # Install vcpkg if not already installed
+
 git clone https://github.com/Microsoft/vcpkg.git
 cd vcpkg
 .\bootstrap-vcpkg.bat
 
 # Install protobuf
+
 .\vcpkg install protobuf:x64-windows
 ```
 
@@ -132,21 +144,27 @@ cd vcpkg
 **Option B: PowerShell with VS Environment**
 
 ```powershell
+
 # Load Visual Studio environment
+
 & "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
 ```
 
 ### 4.2 Set Environment Variables
 
 ```powershell
+
 # TWS API paths
+
 $env:TWS_API_INCLUDE_DIR = "$PWD\native\third_party\tws-api\IBJts\source\cppclient\client"
 $env:TWS_API_LIB_DIR = "$PWD\native\third_party\tws-api\IBJts\source\cppclient\client\build\lib"
 
 # Intel Decimal Library
+
 $env:INTEL_DECIMAL_LIB = "$PWD\native\third_party\IntelRDFPMathLib20U2\LIBRARY\libbid.a"
 
 # Protocol Buffers (if using vcpkg)
+
 $env:Protobuf_ROOT = "C:\vcpkg\installed\x64-windows"
 ```
 
@@ -158,13 +176,16 @@ $env:Protobuf_ROOT = "C:\vcpkg\installed\x64-windows"
 cd native\third_party\IntelRDFPMathLib20U2\LIBRARY
 
 # Create build directory
+
 New-Item -ItemType Directory -Force -Path "build"
 cd build
 
 # Configure
+
 cmake .. -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 17 2022" -A x64
 
 # Build
+
 cmake --build . --config Release
 ```
 
@@ -178,10 +199,12 @@ cmake --build . --config Release
 cd native\third_party\tws-api\IBJts\source\cppclient\client
 
 # Create build directory
+
 New-Item -ItemType Directory -Force -Path "build"
 cd build
 
 # Configure (adjust paths as needed)
+
 cmake .. `
     -DCMAKE_BUILD_TYPE=Release `
     -G "Visual Studio 17 2022" `
@@ -190,6 +213,7 @@ cmake .. `
     -DINTEL_BID_LIB="$PWD\..\..\..\..\..\..\IntelRDFPMathLib20U2\LIBRARY\libbid.a"
 
 # Build
+
 cmake --build . --config Release
 ```
 
@@ -203,10 +227,12 @@ cmake --build . --config Release
 cd <project_root>
 
 # Create build directory
+
 New-Item -ItemType Directory -Force -Path "build-windows"
 cd build-windows
 
 # Configure
+
 cmake .. `
     -G "Visual Studio 17 2022" `
     -A x64 `
@@ -219,10 +245,13 @@ cmake .. `
 ### 7.2 Build
 
 ```powershell
+
 # Build all targets
+
 cmake --build . --config Release
 
 # Or build specific target
+
 cmake --build . --config Release --target ib_box_spread
 ```
 
@@ -284,13 +313,17 @@ Create `config\config.json`:
 ### 9.2 Run Application
 
 ```powershell
+
 # From build directory
+
 .\Release\ib_box_spread.exe
 
 # Or with config file
+
 .\Release\ib_box_spread.exe -c config\config.json
 
 # Dry run mode (safe testing)
+
 .\Release\ib_box_spread.exe --dry-run
 ```
 
@@ -307,7 +340,9 @@ The application requires several DLLs to be in the PATH or same directory:
 **Solution:** Copy DLLs to executable directory or add to PATH:
 
 ```powershell
+
 # Copy DLLs to executable directory
+
 Copy-Item "native\third_party\tws-api\IBJts\source\cppclient\client\build\Release\TwsApiCpp.dll" -Destination "build-windows\Release\"
 Copy-Item "C:\vcpkg\installed\x64-windows\bin\protobuf.dll" -Destination "build-windows\Release\"
 ```

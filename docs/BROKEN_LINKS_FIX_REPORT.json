@@ -1,0 +1,112 @@
+[
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/TABNINE_SETUP.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/GIT_LFS_CANDIDATES_ANALYSIS.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/ECLIENT_EWRAPPER_ARCHITECTURE.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/CPPTRADER_INTEGRATION_POINTS.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TRADING_SERVER_COMPLETE.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/TASKS_MD_ANALYSIS.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/TUI_BREADCRUMB_LOGGING.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/design/AI_AGENT_CONTEXT_STANDARDS.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TWS_API_MARKET_DATA_LEARNINGS.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/COMMON_PATTERNS.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_AUTOMATION_MCP_EXTENSIONS.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/SMARTQUANT_CPP_FRAMEWORK_RESEARCH.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/TRADING_INFRASTRUCTURE.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKS_WORKFLOW.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/IB_ASYNC_LEARNINGS.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/MESSAGE_QUEUE_ARCHITECTURE.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_EXTERNAL_TOOL_HINTS.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/PROTOBUF_MIGRATION_PLAN.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/GITHUB_WORKFLOWS.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_REST_API_WRAPPER_DESIGN.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/GITIGNORE_BUILD_ARTIFACTS_ANALYSIS.md",
+    "success": true,
+    "fixes": []
+  },
+  {
+    "file": "/home/david/ib_box_spread_full_universal/docs/PCAP_CAPTURE.md",
+    "success": true,
+    "fixes": []
+  }
+]

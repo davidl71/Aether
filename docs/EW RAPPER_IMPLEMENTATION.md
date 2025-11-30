@@ -160,6 +160,7 @@ client_.cancelOrder(order_id, cancelOrder);
 Need to include:
 
 ```cpp
+
 #include "OrderState.h"   // For OrderState access
 #include "Execution.h"    // For Execution access
 #include "OrderCancel.h"  // For OrderCancel struct
@@ -168,6 +169,7 @@ Need to include:
 Or use Protocol Buffer versions:
 
 ```cpp
+
 #include "OrderState.pb.h"
 #include "Execution.pb.h"
 ```

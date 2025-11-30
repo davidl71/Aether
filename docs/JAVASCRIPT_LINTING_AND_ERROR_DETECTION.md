@@ -16,12 +16,14 @@ This document describes the tools and strategies for linting JavaScript files an
 **Configuration:** `web/eslint.config.js`
 
 **Features:**
+
 - ✅ Lints both `.js` and `.ts` files
 - ✅ TypeScript-aware rules for JS files
 - ✅ Catches common errors (undefined variables, unused vars, etc.)
 - ✅ Enforces code style and best practices
 
 **Usage:**
+
 ```bash
 cd web
 npm run lint          # Check for issues
@@ -29,6 +31,7 @@ npm run lint:fix      # Auto-fix issues
 ```
 
 **What it catches:**
+
 - Undefined variables (`no-undef`)
 - Unused variables (`no-unused-vars`)
 - Common mistakes (missing semicolons, etc.)
@@ -42,12 +45,14 @@ npm run lint:fix      # Auto-fix issues
 **Configuration:** `web/tsconfig.json`
 
 **Features:**
+
 - ✅ Type checking without emitting files (`--noEmit`)
 - ✅ Catches type mismatches before runtime
 - ✅ Finds null/undefined access issues
 - ✅ Validates function signatures
 
 **Usage:**
+
 ```bash
 cd web
 npm run type-check          # One-time check
@@ -55,6 +60,7 @@ npm run type-check:watch    # Watch mode
 ```
 
 **What it catches:**
+
 - Type mismatches
 - Null/undefined access (`strictNullChecks`)
 - Missing properties
@@ -70,21 +76,27 @@ npm run type-check:watch    # Watch mode
 **Tool:** `node --check`
 
 **Features:**
+
 - ✅ Fast syntax validation
 - ✅ Catches syntax errors immediately
 - ✅ Works on all `.js` files
 - ✅ No dependencies required
 
 **Usage:**
+
 ```bash
+
 # Check single file
+
 node --check path/to/file.js
 
 # Check all JS files (via script)
+
 ./scripts/check_javascript.sh
 ```
 
 **What it catches:**
+
 - Syntax errors (missing brackets, etc.)
 - Invalid JavaScript syntax
 - Parse errors
@@ -98,12 +110,14 @@ node --check path/to/file.js
 **Configuration:** `web/vitest.config.ts`
 
 **Features:**
+
 - ✅ Unit and integration tests
 - ✅ Test coverage reports
 - ✅ Fast execution
 - ✅ Watch mode for development
 
 **Usage:**
+
 ```bash
 cd web
 npm test                 # Run tests once
@@ -112,6 +126,7 @@ npm run test:coverage    # With coverage
 ```
 
 **What it catches:**
+
 - Runtime errors
 - Logic bugs
 - Integration issues
@@ -120,21 +135,25 @@ npm run test:coverage    # With coverage
 ## Silent Error Detection Strategy
 
 ### Layer 1: Static Analysis (ESLint)
+
 - **When:** During development, before commit
 - **Catches:** Code quality issues, undefined variables, unused code
 - **Speed:** Fast (< 1 second)
 
 ### Layer 2: Type Checking (TypeScript)
+
 - **When:** During development, before commit
 - **Catches:** Type errors, null/undefined access, incorrect API usage
 - **Speed:** Medium (2-5 seconds)
 
 ### Layer 3: Syntax Validation (Node.js --check)
+
 - **When:** During development, before commit
 - **Catches:** Syntax errors, parse failures
 - **Speed:** Fast (< 1 second)
 
 ### Layer 4: Runtime Testing (Vitest)
+
 - **When:** During development, CI/CD
 - **Catches:** Runtime errors, logic bugs, integration issues
 - **Speed:** Depends on test suite size
@@ -148,6 +167,7 @@ All checks run automatically via `./scripts/run_linters.sh`:
 ```
 
 **Execution Order:**
+
 1. ESLint (JS/TS linting)
 2. Stylelint (CSS linting)
 3. TypeScript type check (`tsc --noEmit`)
@@ -156,6 +176,7 @@ All checks run automatically via `./scripts/run_linters.sh`:
 ## Common Silent Errors Caught
 
 ### 1. Undefined Variables
+
 ```javascript
 // ❌ Error caught by ESLint
 function calculate() {
@@ -164,6 +185,7 @@ function calculate() {
 ```
 
 ### 2. Type Mismatches
+
 ```typescript
 // ❌ Error caught by TypeScript
 function process(data: string) {
@@ -173,6 +195,7 @@ process(123); // Type error: number not assignable to string
 ```
 
 ### 3. Null/Undefined Access
+
 ```typescript
 // ❌ Error caught by TypeScript (strictNullChecks)
 function getName(user: User | null) {
@@ -181,6 +204,7 @@ function getName(user: User | null) {
 ```
 
 ### 4. Syntax Errors
+
 ```javascript
 // ❌ Error caught by node --check
 function test() {
@@ -190,6 +214,7 @@ function test() {
 ```
 
 ### 5. Runtime Logic Errors
+
 ```typescript
 // ❌ Error caught by tests
 function divide(a: number, b: number) {
@@ -200,16 +225,19 @@ function divide(a: number, b: number) {
 ## VS Code Integration
 
 ### ESLint Extension
+
 - Shows errors inline
 - Auto-fixes on save (if configured)
 - Real-time feedback
 
 ### TypeScript Extension
+
 - Shows type errors inline
 - IntelliSense support
 - Quick fixes
 
 ### Recommended Settings
+
 ```json
 {
   "editor.codeActionsOnSave": {
@@ -224,6 +252,7 @@ function divide(a: number, b: number) {
 All checks should run in CI:
 
 ```yaml
+
 # Example GitHub Actions
 - name: Lint and type check
   run: |
@@ -236,6 +265,7 @@ All checks should run in CI:
 ## Best Practices
 
 1. **Run checks before committing:**
+
    ```bash
    ./scripts/run_linters.sh
    ```
@@ -260,6 +290,7 @@ All checks should run in CI:
 ## Summary
 
 **Current Setup:**
+
 - ✅ ESLint for JS/TS linting
 - ✅ TypeScript type checking
 - ✅ Node.js syntax validation
@@ -267,6 +298,7 @@ All checks should run in CI:
 - ✅ All integrated into universal linter
 
 **Coverage:**
+
 - Static analysis: ✅
 - Type checking: ✅
 - Syntax validation: ✅
@@ -277,6 +309,7 @@ All checks should run in CI:
 ---
 
 **Reference:**
+
 - [ESLint Documentation](https://eslint.org/)
 - [TypeScript Documentation](https://www.typescriptlang.org/)
 - [Vitest Documentation](https://vitest.dev/)

@@ -205,6 +205,7 @@ app = FastAPI(
 )
 
 # CORS middleware for PWA access
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Configure appropriately for production
@@ -214,6 +215,7 @@ app.add_middleware(
 )
 
 # Global LEAN client instance
+
 lean_client = LeanClient()
 api_converter = ApiConverter()
 
@@ -831,7 +833,9 @@ uvicorn api_wrapper:app --reload --host 0.0.0.0 --port 8000
 ### Production
 
 ```bash
+
 # Use gunicorn with uvicorn workers
+
 gunicorn api_wrapper:app \
   --workers 4 \
   --worker-class uvicorn.workers.UvicornWorker \
@@ -867,7 +871,7 @@ CMD ["uvicorn", "api_wrapper:app", "--host", "0.0.0.0", "--port", "8000"]
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [LEAN Algorithm Structure](https://www.quantconnect.com/docs/v2/lean-engine/algorithm-framework/algorithm-structure)
 - [LEAN Portfolio Management](https://www.quantconnect.com/docs/v2/lean-engine/algorithm-framework/portfolio-management)
-- [API Contract](./agents/shared/API_CONTRACT.md)
+- [API Contract](../../../agents/shared/API_CONTRACT.md)
 - [LEAN Strategy Architecture](../../LEAN_STRATEGY_ARCHITECTURE.md)
 - [LEAN PWA/TUI Integration Analysis](./LEAN_PWA_TUI_INTEGRATION_ANALYSIS.md)
 

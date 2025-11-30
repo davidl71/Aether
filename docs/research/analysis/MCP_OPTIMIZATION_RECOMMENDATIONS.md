@@ -115,18 +115,21 @@ Edit `.cursor/mcp.json` and remove these sections:
 ### After Removing 4 Optional Servers (8 → 4 servers)
 
 **What you lose:**
+
 - GitKraken-specific git features (but `git` server still works)
 - NotebookLM video/documentation summarization
 - Context7 version-specific documentation
 - iTerm2 terminal context awareness
 
 **What you keep:**
+
 - ✅ Core file operations (filesystem)
 - ✅ Git version control (git)
 - ✅ Security scanning (semgrep)
 - ✅ Task management (agentic-tools)
 
 **Alternative solutions:**
+
 - Use web search instead of NotebookLM/Context7
 - Use regular terminal instead of iTerm2 MCP
 - Use `git` CLI instead of GitKraken MCP
@@ -134,12 +137,14 @@ Edit `.cursor/mcp.json` and remove these sections:
 ## Final Recommendation
 
 **Remove these 4 servers:**
+
 1. gitkraken (redundant)
 2. notebooklm (optional)
 3. context7 (redundant)
 4. iterm2 (optional)
 
 **Keep these 4 servers:**
+
 1. filesystem (essential)
 2. git (essential)
 3. semgrep (required)

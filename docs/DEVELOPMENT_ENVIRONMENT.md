@@ -11,6 +11,7 @@
 This document provides comprehensive information about the development environment, including system specifications, software versions, and configuration details for both remote Cursor agents (Ubuntu and macOS M4).
 
 **Purpose:**
+
 - Enable informed task delegation based on hardware capabilities
 - Track system specifications for optimization
 - Document software versions for compatibility
@@ -32,20 +33,28 @@ This document provides comprehensive information about the development environme
 ### Automated Collection Scripts
 
 **Script 1: Bash Script (Cross-platform)**
+
 ```bash
+
 # Collect system information
+
 ./scripts/collect_system_info.sh > system_info_$(hostname).json
 
 # View formatted output
+
 cat system_info_$(hostname).json | jq .
 ```
 
 **Script 2: Python Script (More reliable)**
+
 ```bash
+
 # Collect system information
+
 python3 scripts/collect_system_info_python.py > system_info_$(hostname).json
 
 # View formatted output
+
 cat system_info_$(hostname).json | jq .
 ```
 
@@ -54,41 +63,55 @@ cat system_info_$(hostname).json | jq .
 For detailed information, use system-specific commands:
 
 **Ubuntu:**
+
 ```bash
+
 # OS Version
+
 cat /etc/os-release
 
 # CPU Information
+
 lscpu
 
 # Memory
+
 free -h
 
 # Disk Usage
+
 df -h
 
 # Network Interfaces
+
 ip addr show
 ```
 
 **macOS:**
+
 ```bash
+
 # OS Version
+
 sw_vers
 
 # CPU Information
+
 sysctl machdep.cpu.brand_string
 sysctl hw.ncpu
 sysctl hw.physicalcpu
 
 # Memory
+
 sysctl hw.memsize
 vm_stat
 
 # Disk Usage
+
 df -h
 
 # Network Interfaces
+
 networksetup -listallhardwareports
 ifconfig
 ```
@@ -102,11 +125,14 @@ ifconfig
 *[To be populated after running collection script]*
 
 ```bash
+
 # Collect information
+
 ssh cursor-ubuntu "python3 /path/to/collect_system_info_python.py" > system_info_ubuntu.json
 ```
 
 **Template:**
+
 ```json
 {
   "hostname": "ubuntu-agent",
@@ -181,11 +207,14 @@ ssh cursor-ubuntu "python3 /path/to/collect_system_info_python.py" > system_info
 *[To be populated after running collection script]*
 
 ```bash
+
 # Collect information
+
 ssh cursor-m4-mac "python3 /path/to/collect_system_info_python.py" > system_info_macos.json
 ```
 
 **Template:**
+
 ```json
 {
   "hostname": "macos-m4-agent",
@@ -263,6 +292,7 @@ ssh cursor-m4-mac "python3 /path/to/collect_system_info_python.py" > system_info
   - Image Playground (diagram generation)
   - Summarization (research papers, logs)
   - Error analysis (plain-language explanations)
+
 - ✅ **Neural Engine** (38 TOPS for AI tasks)
 - ✅ **Fast builds** (M4 performance)
 
@@ -291,7 +321,9 @@ ssh cursor-m4-mac "python3 /path/to/collect_system_info_python.py" > system_info
 **In Cursor Remote Session:**
 
 ```bash
+
 # Quick system check
+
 uname -a
 
 # CPU info
@@ -303,13 +335,16 @@ uname -a
 # Linux: free -h
 
 # Disk space
+
 df -h
 
 # Run collection script
+
 python3 scripts/collect_system_info_python.py
 ```
 
 **Via Background Agent:**
+
 - Agents can execute commands on remote hosts
 - Output can be captured and stored
 - System info helps with task delegation decisions
@@ -352,15 +387,19 @@ python3 scripts/collect_system_info_python.py
 ### Common Environment Variables
 
 ```bash
+
 # Platform Detection
+
 export OS_TYPE="$(uname -s)"
 export HOSTNAME="$(hostname)"
 
 # Build Configuration
+
 export CMAKE_BUILD_TYPE="Debug"
 export DISTCC_HOSTS="localhost/8 ubuntu-agent.local/8"
 
 # Development Tools
+
 export PYTHONPATH="/path/to/project:$PYTHONPATH"
 export RUST_LOG="debug"
 ```
@@ -368,12 +407,14 @@ export RUST_LOG="debug"
 ### Agent-Specific Variables
 
 **Ubuntu Agent:**
+
 ```bash
 export LINUX_BUILD=true
 export DOCKER_AVAILABLE=true
 ```
 
 **macOS M4 Agent:**
+
 ```bash
 export MACOS_BUILD=true
 export APPLE_INTELLIGENCE_AVAILABLE=true
@@ -413,6 +454,7 @@ export NEURAL_ENGINE_AVAILABLE=true
 ### Recommended Directory Structure
 
 **Both Agents:**
+
 ```
 ~/ib_box_spread_full_universal/
 ├── native/          # C++ core
@@ -427,12 +469,14 @@ export NEURAL_ENGINE_AVAILABLE=true
 ### Disk Space Requirements
 
 **Minimum:**
+
 - Source code: ~500 MB
 - Build artifacts: ~2 GB
 - Dependencies: ~1 GB
 - **Total: ~4 GB**
 
 **Recommended:**
+
 - Source code: ~500 MB
 - Build artifacts: ~10 GB (with debug symbols)
 - Dependencies: ~2 GB
@@ -446,6 +490,7 @@ export NEURAL_ENGINE_AVAILABLE=true
 ### SSH Access
 
 **Ubuntu Agent:**
+
 ```ssh-config
 Host cursor-ubuntu
   HostName <ubuntu_ip>
@@ -455,6 +500,7 @@ Host cursor-ubuntu
 ```
 
 **macOS M4 Agent:**
+
 ```ssh-config
 Host cursor-m4-mac
   HostName <mac_ip>
@@ -466,6 +512,7 @@ Host cursor-m4-mac
 ### Port Forwarding
 
 **Common Ports:**
+
 - `22` - SSH
 - `8080` - Backend REST API
 - `50051` - Backend gRPC API
@@ -504,11 +551,13 @@ Host cursor-m4-mac
 ### Regular Updates
 
 **Weekly:**
+
 - Update system information if hardware changes
 - Review software version compatibility
 - Update this document with changes
 
 **Monthly:**
+
 - Review performance benchmarks
 - Update task delegation strategy
 - Optimize based on system specs
@@ -516,8 +565,11 @@ Host cursor-m4-mac
 ### Collection Script Updates
 
 Run collection scripts regularly:
+
 ```bash
+
 # Monthly collection
+
 ./scripts/collect_system_info_python.py > system_info_$(hostname)_$(date +%Y%m).json
 ```
 
@@ -530,6 +582,7 @@ Run collection scripts regularly:
 **Problem:** Collection script fails
 
 **Solution:**
+
 1. Check script permissions: `chmod +x scripts/collect_system_info_python.py`
 2. Verify Python 3 is installed: `python3 --version`
 3. Run manually with verbose output
@@ -540,6 +593,7 @@ Run collection scripts regularly:
 **Problem:** Different output formats between agents
 
 **Solution:**
+
 - Use Python script (more consistent)
 - Validate JSON output with `jq`
 - Check for OS-specific differences
@@ -549,6 +603,7 @@ Run collection scripts regularly:
 **Problem:** Cannot access system information
 
 **Solution:**
+
 - Verify SSH access works
 - Check user permissions
 - Review sudo requirements
@@ -558,6 +613,7 @@ Run collection scripts regularly:
 ## Next Steps
 
 1. **Run Collection Scripts:**
+
    ```bash
    # On Ubuntu agent
    ssh cursor-ubuntu "python3 /path/to/collect_system_info_python.py" > system_info_ubuntu.json

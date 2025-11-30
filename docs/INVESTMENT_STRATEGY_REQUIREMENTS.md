@@ -178,6 +178,7 @@ This document captures user requirements, investment goals, risk tolerance, and 
   - Box spread option chains
   - Account summary including cash balances and accrued interest (`AccruedCash` tag)
   - Margin requirements (`InitMarginReq`, `MaintMarginReq`, `AvailableFunds`, `ExcessLiquidity`, `Cushion`)
+
 - IBKR interest rates on cash balances are available via account summary or web portal
 - IBKR margin rates are available via web portal ([IBKR Margin Rates](https://www.interactivebrokers.com/en/trading/margin-rates.php))
 - Order execution is reliable for all asset classes

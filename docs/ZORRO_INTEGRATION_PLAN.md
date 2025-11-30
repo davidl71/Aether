@@ -1,6 +1,6 @@
 # Zorro Trading Platform Integration Plan
 
-**Date**: 2025-01-27
+**Date**: 2025-11-30
 **Source**: <https://zorro-project.com/>
 **Purpose**: Comprehensive integration plan for leveraging Zorro's backtesting, optimization, and visualization capabilities with the IBKR box spread arbitrage system
 
@@ -75,6 +75,7 @@ Zorro supports DLL interface for external C++ code:
 
 ```cpp
 // native/src/zorro_backtest_adapter.cpp
+
 #include <zorro.h>
 #include "box_spread_strategy.h"
 #include "option_chain.h"
@@ -203,7 +204,9 @@ Add Zorro backtesting configuration:
 ### 1.6 Usage Example
 
 ```bash
+
 # Run backtest via Zorro
+
 ./build/bin/zorro_backtest \
   --config config/config.json \
   --symbol SPY \
@@ -212,6 +215,7 @@ Add Zorro backtesting configuration:
   --output results/backtest_spy_2020_2024.json
 
 # Or use Python wrapper
+
 python python/integration/zorro_backtest.py \
   --symbol SPY \
   --start-date 2020-01-01 \
@@ -323,6 +327,7 @@ function run() {
 
 ```cpp
 // native/src/zorro_optimizer.cpp
+
 #include <zorro.h>
 #include "box_spread_strategy.h"
 
@@ -401,7 +406,9 @@ Zorro generates:
 ### 2.8 Usage Example
 
 ```bash
+
 # Run optimization
+
 python python/integration/zorro_optimize.py \
   --config config/config.json \
   --method genetic \
@@ -409,6 +416,7 @@ python python/integration/zorro_optimize.py \
   --symbols SPY,QQQ,IWM
 
 # View results
+
 open results/optimization_report.html
 ```
 
@@ -445,6 +453,7 @@ Zorro can generate interactive payoff diagrams for box spreads:
 
 ```cpp
 // native/src/zorro_visualizer.cpp
+
 #include <zorro.h>
 #include "box_spread_strategy.h"
 
@@ -534,12 +543,15 @@ Zorro's optimization generates:
 ### 3.6 Usage Example
 
 ```bash
+
 # Generate payoff diagram for a box spread
+
 python python/integration/zorro_visualize.py \
   --spread-file data/spread_example.json \
   --output diagrams/box_spread_payoff.html
 
 # Visualize backtest results
+
 python python/integration/zorro_visualize.py \
   --backtest-results results/backtest_spy_2020_2024.json \
   --output reports/backtest_report.html
@@ -651,6 +663,7 @@ python python/integration/zorro_visualize.py \
 
 ```cpp
 // native/src/zorro_backtest_runner.cpp
+
 #include "box_spread_strategy.h"
 #include "backtest_engine.h"
 #include "zorro_data_adapter.h"
@@ -696,7 +709,9 @@ int main(int argc, char* argv[]) {
 ### 5.2 Optimization Script
 
 ```python
+
 # python/integration/zorro_optimize.py
+
 import json
 import subprocess
 from pathlib import Path
@@ -733,7 +748,9 @@ def generate_zorro_script(config: dict, symbol: str) -> str:
     opt_config = config["zorro"]["optimization"]
 
     script = f"""
+
 #include <zorro.h>
+
 var optimizeParameters() {{
     var min_profit = optimize({opt_config["parameters"]["min_arbitrage_profit"]["min"]},
                                {opt_config["parameters"]["min_arbitrage_profit"]["max"]},
@@ -767,7 +784,9 @@ function run() {{
 ### 5.3 Visualization Script
 
 ```python
+
 # python/integration/zorro_visualize.py
+
 import json
 import matplotlib.pyplot as plt
 import numpy as np
@@ -916,7 +935,9 @@ def plot_backtest_results(results_path: str, output_path: str):
 ### Python Dependencies
 
 ```txt
+
 # Add to requirements.txt
+
 matplotlib>=3.7.0
 numpy>=1.24.0
 pandas>=2.0.0
@@ -949,13 +970,17 @@ TEST_CASE("Zorro backtesting adapter", "[zorro][backtest]") {
 ### Integration Tests
 
 ```bash
+
 # Test backtesting integration
+
 python python/tests/test_zorro_backtest.py
 
 # Test optimization integration
+
 python python/tests/test_zorro_optimize.py
 
 # Test visualization
+
 python python/tests/test_zorro_visualize.py
 ```
 
@@ -1089,6 +1114,6 @@ This integration plan provides a comprehensive roadmap for implementation, with 
 ---
 
 **Document Status**: Draft
-**Last Updated**: 2025-01-27
+**Last Updated**: 2025-11-30
 **Author**: AI Assistant
 **Review Status**: Pending

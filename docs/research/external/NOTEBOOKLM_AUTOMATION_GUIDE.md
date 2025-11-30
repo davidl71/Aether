@@ -26,6 +26,7 @@ This guide explains how to automate NotebookLM notebook creation using browser c
 Use browser control MCP to automate:
 
 1. **Navigate to NotebookLM**
+
    ```
    browser_navigate("https://notebooklm.google.com")
    ```
@@ -63,13 +64,12 @@ Save notebook links to `docs/research/external/NOTEBOOKLM_NOTEBOOK_LINKS.json`:
 
 The following notebooks are configured for automation:
 
-
 ### CME Financing Strategies
 
 - **Category**: external
 - **Description**: Synthesize CME/Cboe whitepapers on financing strategies
 - **Sources**: 4 sources
-    - https://www.cmegroup.com/articles/whitepapers/capital-efficiencies-and-air-trfs.html
+  - https://www.cmegroup.com/articles/whitepapers/capital-efficiencies-and-air-trfs.html
   - https://www.cboe.com/insights/posts/why-consider-box-spreads-as-an-alternative-borrowing-lending-strategy/
   - https://www.cmegroup.com/articles/2025/quantifying-and-hedging-equity-financing-risk.html
     - ...
@@ -79,7 +79,7 @@ The following notebooks are configured for automation:
 - **Category**: architecture
 - **Description**: Compare NATS, RabbitMQ, Redis Streams, and ZeroMQ
 - **Sources**: 4 sources
-    - https://docs.nats.io/
+  - https://docs.nats.io/
   - https://www.rabbitmq.com/docs/
   - https://redis.io/docs/data-types/streams/
     - ...
@@ -89,47 +89,45 @@ The following notebooks are configured for automation:
 - **Category**: external
 - **Description**: ORATS API integration patterns
 - **Sources**: 2 sources
-    - https://orats.com/docs
+  - https://orats.com/docs
   - https://orats.com/data-api
-  
 
 ### TWS API Core Patterns
 
 - **Category**: learnings
 - **Description**: Core TWS API patterns and best practices
 - **Sources**: 3 sources
-    - docs/research/learnings/TWS_API_BEST_PRACTICES.md
+  - docs/research/learnings/TWS_API_BEST_PRACTICES.md
   - docs/research/learnings/ECLIENT_EWRAPPER_ARCHITECTURE.md
   - docs/research/learnings/TWS_API_CODE_EXAMPLES_LEARNINGS.md
-  
 
 ### TWS API Advanced Topics
 
 - **Category**: learnings
 - **Description**: Advanced TWS API topics and troubleshooting
 - **Sources**: 3 sources
-    - docs/research/learnings/TWS_API_MARKET_DATA_LEARNINGS.md
+  - docs/research/learnings/TWS_API_MARKET_DATA_LEARNINGS.md
   - docs/research/learnings/TWS_API_TROUBLESHOOTING_LEARNINGS.md
   - docs/research/learnings/IB_ASYNC_LEARNINGS.md
-  
 
 ### TWS API Integration
 
 - **Category**: learnings
 - **Description**: TWS API integration and deployment patterns
 - **Sources**: 3 sources
-    - docs/research/learnings/TWS_API_DOCKER_LEARNINGS.md
+  - docs/research/learnings/TWS_API_DOCKER_LEARNINGS.md
   - docs/research/integration/TWS_INTEGRATION_STATUS.md
   - docs/research/learnings/IBC_LEARNINGS.md
-  
 
 ## Browser Control MCP Commands
 
 ### Navigation
+
 - `browser_navigate(url)` - Navigate to URL
 - `browser_wait_for(text="...")` - Wait for text to appear
 
 ### Interaction
+
 - `browser_click(element="...", ref="...")` - Click element
 - `browser_type(element="...", ref="...", text="...")` - Type text
 - `browser_snapshot()` - Get page state
@@ -137,19 +135,25 @@ The following notebooks are configured for automation:
 ### Example Workflow
 
 ```python
+
 # 1. Navigate
+
 browser_navigate("https://notebooklm.google.com")
 
 # 2. Get page state
+
 snapshot = browser_snapshot()
 
 # 3. Find and click "Create notebook"
+
 browser_click(element="Create notebook button", ref="[from snapshot]")
 
 # 4. Enter name
+
 browser_type(element="Notebook name", ref="[from snapshot]", text="CME Financing Strategies")
 
 # 5. Create
+
 browser_click(element="Create", ref="[from snapshot]")
 ```
 
@@ -163,16 +167,19 @@ browser_click(element="Create", ref="[from snapshot]")
 ## Troubleshooting
 
 ### "Element not found"
+
 - Use `browser_snapshot()` to get current page state
 - Update element references
 - Check if page has loaded completely
 
 ### "Authentication required"
+
 - Sign in manually first
 - Check if session expired
 - Re-authenticate if needed
 
 ### "Source not processing"
+
 - Wait longer (10-15 seconds)
 - Check if URL is accessible
 - Verify URL format is correct

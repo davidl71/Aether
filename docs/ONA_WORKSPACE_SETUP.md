@@ -39,17 +39,20 @@ The Gitpod Flex extension is already recommended in `.vscode/extensions.json`. I
 ### 3. Open Project in Ona
 
 **Option A: From Cursor/VS Code**
+
 1. Open Command Palette
 2. Type "Gitpod: Open in Gitpod"
 3. Select your repository
 4. Workspace opens in browser
 
 **Option B: From GitHub/GitLab**
+
 1. Navigate to your repository
 2. Click the "Ona" button (added by browser extension)
 3. Workspace opens automatically
 
 **Option C: Direct URL**
+
 ```
 https://gitpod.io/#https://github.com/YOUR_USERNAME/YOUR_REPO
 ```
@@ -61,6 +64,7 @@ https://gitpod.io/#https://github.com/YOUR_USERNAME/YOUR_REPO
 The project includes a comprehensive `.gitpod.yml` configuration:
 
 **Features**:
+
 - **Multi-language support**: C++, Python, Rust, TypeScript
 - **Automatic setup**: Installs all dependencies on workspace start
 - **Port forwarding**: Exposes backend APIs, web frontend, NATS server
@@ -68,12 +72,14 @@ The project includes a comprehensive `.gitpod.yml` configuration:
 - **Prebuilds**: Faster startup with pre-configured environments
 
 **Configured Ports**:
+
 - `8080` - Backend REST API
 - `50051` - Backend gRPC API
 - `5173` - Web Frontend (Vite dev server)
 - `4222` - NATS Server
 
 **Environment Variables**:
+
 - `TWS_MOCK=true` - Uses mock TWS client (no live trading in cloud)
 - `CMAKE_BUILD_TYPE=Debug` - Debug build configuration
 - `PYTHONPATH` - Python module path
@@ -81,6 +87,7 @@ The project includes a comprehensive `.gitpod.yml` configuration:
 ### `.gitpod.Dockerfile`
 
 Custom Docker image with:
+
 - Build tools (CMake, Ninja, GCC/Clang)
 - Python 3.11 with pip
 - Node.js and npm
@@ -100,36 +107,46 @@ When workspace first starts:
 ### Building the Project
 
 ```bash
+
 # Configure CMake
+
 cmake --preset linux-debug
 
 # Build project
+
 cmake --build build
 
 # Run tests
+
 ctest --test-dir build --output-on-failure
 ```
 
 ### Running Services
 
 **Backend Service**:
+
 ```bash
 cd agents/backend
 cargo run
+
 # REST API available at http://localhost:8080
 # gRPC API available at localhost:50051
 ```
 
 **Web Frontend**:
+
 ```bash
 cd web
 npm run dev
+
 # Frontend available at http://localhost:5173
 ```
 
 **NATS Server**:
+
 ```bash
 nats-server -c config/nats-server.conf
+
 # NATS available at nats://localhost:4222
 ```
 
@@ -175,16 +192,19 @@ See [ONA_MCP_SETUP.md](ONA_MCP_SETUP.md) for detailed MCP configuration.
 ### Gitpod Flex Extension Features
 
 **Command Palette Commands**:
+
 - `Gitpod: Open in Gitpod` - Open current workspace in Ona
 - `Gitpod: Sign In` - Authenticate with Ona
 - `Gitpod: Sign Out` - Sign out from Ona
 - `Gitpod: Open Workspace` - Open existing workspace
 
 **Status Bar**:
+
 - Shows Ona workspace status
 - Quick access to workspace actions
 
 **Remote Development**:
+
 - Full VS Code/Cursor experience in cloud
 - All extensions work in cloud environment
 - Terminal, debugger, IntelliSense all functional
@@ -201,16 +221,19 @@ See [ONA_MCP_SETUP.md](ONA_MCP_SETUP.md) for detailed MCP configuration.
 ### Build Failures
 
 1. **Third-party dependencies**: May need manual setup
+
    ```bash
    ./scripts/fetch_third_party.sh
    ```
 
 2. **CMake configuration**: Verify preset exists
+
    ```bash
    cmake --list-presets
    ```
 
 3. **Missing tools**: Check if all tools installed
+
    ```bash
    which cmake ninja python3 rustc node npm
    ```
@@ -253,6 +276,7 @@ See [ONA_MCP_SETUP.md](ONA_MCP_SETUP.md) for detailed MCP configuration.
 ### Free Tier
 
 Ona free tier includes:
+
 - Limited workspace hours per month
 - Basic workspace resources
 - Public repository access

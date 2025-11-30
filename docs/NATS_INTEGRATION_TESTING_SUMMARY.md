@@ -15,10 +15,12 @@ Successfully fixed backend service compilation issues and verified NATS integrat
 **Problem**: NATS server failed to start due to invalid configuration format.
 
 **Errors**:
+
 - `ping_interval` and `write_deadline` required duration format (e.g., `"20s"` not `20`)
 - Invalid field `max_log_file` not recognized by NATS server
 
 **Solution**:
+
 - Updated `config/nats-server.conf`:
   - Changed `ping_interval: 20` → `ping_interval: "20s"`
   - Changed `write_deadline: 10` → `write_deadline: "10s"`
@@ -61,6 +63,7 @@ Successfully fixed backend service compilation issues and verified NATS integrat
 **Error**: `error: unknown long flag '--stdin'`
 
 **Solution**: Updated all occurrences in `scripts/test_nats_integration.sh`:
+
 - Changed `--stdin` → `--force-stdin` (4 occurrences)
 
 **Result**: Test scripts execute successfully ✅
@@ -74,6 +77,7 @@ Successfully fixed backend service compilation issues and verified NATS integrat
 ```
 
 **Result**: ✅ **PASSED**
+
 - Test subject: `test.basic.1763820165`
 - Message published successfully (76 bytes)
 - Message received and verified
@@ -85,6 +89,7 @@ Successfully fixed backend service compilation issues and verified NATS integrat
 ```
 
 **Result**: ✅ **PASSED**
+
 - Topic: `market-data.tick.SPY`
 - Message published successfully (76 bytes)
 - Topic structure verified
@@ -96,6 +101,7 @@ Successfully fixed backend service compilation issues and verified NATS integrat
 ```
 
 **Result**: ✅ **ALL CHECKS PASSED**
+
 - ✅ NATS server is running
 - ✅ Backend service compiles successfully
 - ✅ nats_adapter compiles successfully
@@ -125,77 +131,98 @@ Successfully fixed backend service compilation issues and verified NATS integrat
 ## Files Modified
 
 ### Configuration Files
+
 - `config/nats-server.conf` - Fixed duration format for ping_interval and write_deadline
 
 ### Source Code
+
 - `agents/backend/crates/api/src/rest.rs` - Fixed state move error
 - `agents/backend/crates/api/src/websocket.rs` - Fixed field names and Send trait
 - `agents/backend/crates/api/Cargo.toml` - Added ws feature to axum
 
 ### Test Scripts
+
 - `scripts/test_nats_integration.sh` - Updated nats CLI syntax
 
 ## Verification Commands
 
 ### Quick Verification
+
 ```bash
+
 # Verify NATS server
+
 curl http://localhost:8222/healthz
 
 # Verify backend compilation
+
 cd agents/backend
 source scripts/activate_python_env.sh
 export PYO3_PYTHON="$(which python)"
 cargo check -p backend_service
 
 # Run integration verification
+
 ./scripts/verify_nats_integration.sh
 ```
 
 ### Testing
+
 ```bash
+
 # Basic test
+
 ./scripts/test_nats_integration.sh basic
 
 # Market data test
+
 ./scripts/test_nats_integration.sh market-data
 
 # Full test suite
+
 ./scripts/test_nats_integration.sh all
 ```
 
 ### Runtime Testing (Next Steps)
+
 ```bash
+
 # Start backend service
+
 cd agents/backend
 source scripts/activate_python_env.sh
 export PYO3_PYTHON="$(which python)"
 cargo run -p backend_service
 
 # In another terminal, subscribe to topics
+
 nats sub "market-data.tick.>"
 nats sub "strategy.signal.>"
 nats sub "strategy.decision.>"
 
 # Check health endpoint
+
 curl http://localhost:8080/health | jq '.'
 ```
 
 ## Next Steps
 
 ### Immediate (Ready Now)
+
 1. ✅ **Start Backend Service** - Compilation complete, ready to run
 2. ✅ **Monitor NATS Messages** - Subscribe to topics and verify publishing
 3. ✅ **Test Health Endpoint** - Verify NATS status in health response
 4. ✅ **Run Full Test Suite** - Execute all integration tests
 
 ### Short Term
+
 - Performance testing with high message rates
 - Error scenario testing (NATS server down, reconnection)
 - Integration with actual market data provider
 - Verify message serialization/deserialization
 
 ### Phase 2 (Future)
+
 - C++ TWS client integration
 - Python strategy runner integration
 - TypeScript frontend integration

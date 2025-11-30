@@ -86,13 +86,17 @@ For each extension needing review:
 ## Quick Verification Commands
 
 ```bash
+
 # Check extension versions
+
 cursor --list-extensions --show-versions | grep -E "(amazonwebservices|backnotprop|pascalx|fridaplatform|quantconnect)"
 
 # Check for updates
+
 cursor --update-extensions
 
 # List all extensions with details
+
 cursor --list-extensions --show-versions > extensions_list.txt
 ```
 

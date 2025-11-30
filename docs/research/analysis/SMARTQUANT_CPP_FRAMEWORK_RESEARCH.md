@@ -483,7 +483,7 @@ void BoxSpreadStrategy::evaluate_symbol(const std::string& symbol) {
 void BoxSpreadStrategy::evaluate_symbols_parallel(
     const std::vector<std::string>& symbols) {
     SmartQuant::ParallelFor(symbols.begin(), symbols.end(),
-        [this](const std::string& symbol) {
+        this {
             evaluate_symbol(symbol);  // Parallel execution
         });
 }

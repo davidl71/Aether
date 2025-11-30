@@ -103,10 +103,13 @@ Cline is an open-source AI coding agent that integrates directly into IDEs (VS C
 **Example Usage**:
 
 ```bash
+
 # Cursor chat command
+
 Cmd+L → "Add error handling to box spread calculation"
 
 # MCP server usage
+
 AI automatically uses Semgrep for security analysis
 AI uses NotebookLM for research tasks
 AI uses Agentic Tools for task management

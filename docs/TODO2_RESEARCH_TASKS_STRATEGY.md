@@ -41,10 +41,12 @@
 **Naming Convention**: `T-XXX-R` (where XXX is original task ID)
 
 **Example**:
+
 - T-35: Implement Alpaca API adapter
 - T-35-R: Research Alpaca API adapter implementation patterns
 
 **Benefits**:
+
 - Clear 1:1 mapping
 - Easy to track dependencies
 - Follows existing pattern (T-142, T-143, etc.)
@@ -56,15 +58,18 @@
 **Approach**: Create research tasks for related groups
 
 **Example Groups**:
+
 - T-GROUP-ALPACA: Research Alpaca API adapter patterns (covers T-35)
 - T-GROUP-BROKER: Research multi-broker patterns (covers T-36, T-37)
 - T-GROUP-GREEKS: Research Greeks calculation (covers T-66, T-67, T-68)
 
 **Benefits**:
+
 - Fewer tasks to manage
 - Research can cover multiple related implementations
 
 **Drawbacks**:
+
 - Less granular tracking
 - Harder to manage dependencies
 
@@ -73,10 +78,12 @@
 **Approach**: Add `research_with_links` comments to existing tasks
 
 **Benefits**:
+
 - No new tasks needed
 - Faster workflow
 
 **Drawbacks**:
+
 - Tasks should have research BEFORE implementation
 - Violates workflow requirement
 
@@ -129,6 +136,7 @@
 🎯 **Objective:** Research [topic] implementation patterns and best practices for [specific use case]
 
 📋 **Acceptance Criteria:**
+
 - Local codebase analysis completed
 - Internet research with 2-10 verified links (2025)
 - Implementation patterns documented
@@ -136,23 +144,28 @@
 - Dependencies updated on implementation task
 
 🚫 **Scope Boundaries:**
+
 - **Included:** Research only, no implementation
 - **Excluded:** Actual implementation
 
 🔧 **Technical Requirements:**
+
 - Search local codebase for existing patterns
 - Research 2025 best practices
 - Document findings with verified links
 
 📁 **Files/Components:**
+
 - Create: Research findings document (optional)
 - Update: Implementation task with research comment
 
 🧪 **Testing Requirements:**
+
 - Verify all links are real and accessible
 - Cross-reference multiple sources
 
 ⚠️ **Edge Cases:**
+
 - Some patterns may be project-specific
 - Tool availability may vary
 
@@ -191,18 +204,23 @@
 ## Task List (52 Tasks Needing Research)
 
 ### Implementation Tasks (18)
+
 - T-35, T-36, T-37, T-56, T-57, T-58, T-63, T-67, T-68, T-70, T-72, T-73, T-74, T-75, T-76, T-77, T-78, T-79
 
 ### Design Tasks (6)
+
 - T-60, T-62, T-66, T-69, T-80, T-81
 
 ### Integration Tasks (3)
+
 - T-71, T-86, T-162
 
 ### Project Split Tasks (9)
+
 - T-213, T-214, T-215, T-216, T-217, T-218, T-219, T-220, T-221
 
 ### Other Categories (16)
+
 - Automation, Backend, Eigen, MCP, Monitoring, NATS, NLopt, Planning, PWA, QuantLib, Rust, Security, Testing
 
 ---

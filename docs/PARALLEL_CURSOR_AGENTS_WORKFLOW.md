@@ -47,6 +47,7 @@ Cursor 2.0 supports **background agents** that can work on remote machines:
 ### Apple Intelligence Capabilities on M4
 
 The M4 chip features:
+
 - **Neural Engine**: 38 trillion operations per second optimized for AI tasks
 - **Up to 1.7x faster** than M1 in development workloads
 - **System-wide AI**: Available in all macOS applications
@@ -123,6 +124,7 @@ The M4 chip features:
 #### Option A: Use Existing 1Password Integration (Recommended)
 
 **For Ubuntu Agent:**
+
 ```bash
 export OP_CURSOR_REMOTE_HOST_SECRET="op://Engineering/Cursor Remote Ubuntu/host"
 export OP_CURSOR_REMOTE_USER_SECRET="op://Engineering/Cursor Remote Ubuntu/username"
@@ -134,6 +136,7 @@ export CURSOR_REMOTE_ALIAS="cursor-ubuntu"
 ```
 
 **For macOS Agent:**
+
 ```bash
 export OP_CURSOR_REMOTE_HOST_SECRET="op://Engineering/Cursor Remote M4/host"
 export OP_CURSOR_REMOTE_USER_SECRET="op://Engineering/Cursor Remote M4/username"
@@ -149,7 +152,9 @@ export CURSOR_REMOTE_ALIAS="cursor-m4-mac"
 Add to `~/.ssh/config`:
 
 ```ssh-config
+
 # Ubuntu Remote Agent
+
 Host cursor-ubuntu
   HostName <ubuntu_ip_or_hostname>
   User <your_username>
@@ -161,6 +166,7 @@ Host cursor-ubuntu
   ServerAliveCountMax 10
 
 # macOS Remote Agent
+
 Host cursor-m4-mac
   HostName <mac_ip_or_hostname>
   User <your_username>
@@ -197,6 +203,7 @@ Host cursor-m4-mac
 On each remote machine, create isolated worktrees:
 
 **On Ubuntu:**
+
 ```bash
 cd /path/to/repo
 git worktree add ../ib_box_spread_ubuntu-agent -b feature/ubuntu-agent
@@ -204,6 +211,7 @@ cd ../ib_box_spread_ubuntu-agent
 ```
 
 **On macOS:**
+
 ```bash
 cd /path/to/repo
 git worktree add ../ib_box_spread_macos-agent -b feature/macos-agent
@@ -241,6 +249,7 @@ cd ../ib_box_spread_macos-agent
 **Strategy:** Each agent handles platform-specific work
 
 **Ubuntu Agent Tasks:**
+
 - Linux-specific builds and testing
 - Docker container development
 - CI/CD pipeline testing
@@ -248,6 +257,7 @@ cd ../ib_box_spread_macos-agent
 - Backend services (Rust, Go)
 
 **macOS Agent Tasks (with Apple Intelligence):**
+
 - macOS-specific builds (Universal binaries)
 - AppKit bundle development
 - macOS system integration
@@ -258,6 +268,7 @@ cd ../ib_box_spread_macos-agent
 - **Documentation Quality:** Improve technical writing, summarize research
 
 **Coordination:**
+
 - Use shared TODO table (`agents/shared/TODO_OVERVIEW.md`)
 - Update API contracts (`agents/shared/API_CONTRACT.md`)
 - Document platform-specific changes
@@ -268,20 +279,25 @@ cd ../ib_box_spread_macos-agent
 **Strategy:** Each agent works on different feature branches
 
 **Setup:**
+
 ```bash
+
 # Ubuntu agent works on feature/backend-api
 # macOS agent works on feature/frontend-ui
 
 # Both pull from main regularly
+
 git checkout main
 git pull origin main
 
 # Create feature branches
+
 git checkout -b feature/backend-api
 git checkout -b feature/frontend-ui
 ```
 
 **Coordination:**
+
 - Regular sync: Pull main → Rebase feature branch
 - Communication: Document breaking changes in `API_CONTRACT.md`
 - Integration: Merge both features → Test together
@@ -291,10 +307,12 @@ git checkout -b feature/frontend-ui
 **Strategy:** Split work by component/system
 
 **Example Division:**
+
 - **Ubuntu Agent:** Backend services, NATS integration, Rust components
 - **macOS Agent:** Frontend UI, native macOS app, Swift integration
 
 **Coordination:**
+
 - Shared API contracts
 - Update TODO table when starting/completing work
 - Document component dependencies
@@ -308,11 +326,13 @@ git checkout -b feature/frontend-ui
 **Location:** `agents/shared/TODO_OVERVIEW.md`
 
 **Usage:**
+
 - Update status: `pending` → `in_progress` → `completed`
 - Add notes for blockers or dependencies
 - Single source of truth for overall status
 
 **Example:**
+
 ```markdown
 | Task | Agent | Status | Notes |
 |------|-------|--------|-------|
@@ -325,6 +345,7 @@ git checkout -b feature/frontend-ui
 **Location:** `agents/shared/API_CONTRACT.md`
 
 **Usage:**
+
 - Document API changes immediately
 - Keep frontend/backend compatible
 - Link to PRs/commits for context
@@ -332,23 +353,30 @@ git checkout -b feature/frontend-ui
 ### 3. Git Workflow Coordination
 
 **Branch Strategy:**
+
 ```bash
+
 # Both agents sync regularly
+
 git checkout main
 git pull origin main
 
 # Work in feature branches
+
 git checkout -b feature/agent-name/task-description
 
 # Regular rebasing
+
 git checkout feature/agent-name/task-description
 git rebase main
 
 # Push when ready for review
+
 git push origin feature/agent-name/task-description
 ```
 
 **Conflict Prevention:**
+
 - Different branches per agent
 - Different components per agent
 - Different files per agent
@@ -361,12 +389,14 @@ git push origin feature/agent-name/task-description
 ### 1. Isolation
 
 ✅ **DO:**
+
 - Use separate git worktrees or branches
 - Work on different components/systems
 - Update shared documentation (TODO, API contracts)
 - Sync regularly with main branch
 
 ❌ **DON'T:**
+
 - Edit the same files simultaneously
 - Work on overlapping functionality without coordination
 - Forget to update shared TODO table
@@ -375,6 +405,7 @@ git push origin feature/agent-name/task-description
 ### 4. Leverage Apple Intelligence (macOS M4 Agent)
 
 ✅ **DO:**
+
 - Use Writing Tools to improve all documentation
 - Generate commit messages with AI assistance
 - Create visual diagrams (Image Playground) for complex concepts
@@ -383,6 +414,7 @@ git push origin feature/agent-name/task-description
 - Use AI to explain complex errors in plain language
 
 ❌ **DON'T:**
+
 - Rely solely on Apple Intelligence for code generation (use Cursor AI)
 - Skip human review of AI-generated content
 - Use AI for security-sensitive or proprietary algorithm descriptions
@@ -390,6 +422,7 @@ git push origin feature/agent-name/task-description
 **Apple Intelligence Workflow Examples:**
 
 ```bash
+
 # Example 1: Improve commit message
 # Before: "fixed bug"
 # After (AI-assisted): "Fix box spread calculation error when strike width is zero"
@@ -405,12 +438,14 @@ git push origin feature/agent-name/task-description
 ### 2. Communication
 
 ✅ **DO:**
+
 - Update `agents/shared/TODO_OVERVIEW.md` regularly
 - Document breaking changes in `API_CONTRACT.md`
 - Add notes about blockers or dependencies
 - Communicate major architectural decisions
 
 ❌ **DON'T:**
+
 - Work in isolation without updates
 - Make breaking changes without documenting
 - Skip TODO table updates
@@ -419,12 +454,14 @@ git push origin feature/agent-name/task-description
 ### 3. Testing
 
 ✅ **DO:**
+
 - Test on both platforms when possible
 - Run cross-platform compatibility tests
 - Test integration points regularly
 - Document platform-specific behavior
 
 ❌ **DON'T:**
+
 - Assume Linux behavior = macOS behavior
 - Skip testing after major changes
 - Ignore platform-specific edge cases
@@ -437,44 +474,52 @@ git push origin feature/agent-name/task-description
 ### Scenario: Implementing NATS Integration + macOS UI (with Apple Intelligence)
 
 **Setup:**
+
 1. Ubuntu agent: Feature branch `feature/nats-integration`
 2. macOS agent (M4 with Apple Intelligence): Feature branch `feature/macos-ui-improvements`
 
 **Session Flow:**
 
 **Hour 1:**
+
 - Ubuntu agent: NATS adapter implementation (Rust backend)
 - macOS agent: AppKit UI improvements
 - **macOS agent (Apple Intelligence):** Use Writing Tools to improve code comments, generate README updates
 - Both: Update TODO table, pull latest main
 
 **Hour 2:**
+
 - Ubuntu agent: NATS topic registry and validation
 - macOS agent: Native macOS menu integration
 - **macOS agent (Apple Intelligence):** Generate architecture diagram (Image Playground) showing UI components
 - Both: Rebase on main, check for conflicts
 
 **Hour 3:**
+
 - Ubuntu agent: NATS health check endpoint
 - macOS agent: Universal binary build testing
 - **macOS agent (Apple Intelligence):**
   - Summarize Ubuntu agent's NATS implementation for documentation
   - Improve error messages in build logs with plain-language explanations
   - Generate commit message: "Add macOS universal binary support with improved error handling"
+
 - Both: Update API contracts, document changes
 
 **Integration:**
+
 - Ubuntu agent: Create PR for NATS integration
 - macOS agent: Create PR for macOS UI (with AI-improved documentation and diagrams)
 - **macOS agent (Apple Intelligence):** Generate PR description summary
 - Both: Review each other's PRs, test integration
 
 **Merge:**
+
 - Merge NATS integration first (dependency)
 - Merge macOS UI improvements (includes AI-enhanced documentation)
 - Run integration tests on both platforms
 
 **Apple Intelligence Contributions:**
+
 - ✅ Improved documentation quality (code comments, README)
 - ✅ Visual architecture diagrams (Image Playground)
 - ✅ Better commit messages
@@ -490,6 +535,7 @@ git push origin feature/agent-name/task-description
 **Symptoms:** Git conflicts when merging
 
 **Solution:**
+
 - Use separate branches or worktrees
 - Work on different components
 - Sync regularly with main
@@ -500,6 +546,7 @@ git push origin feature/agent-name/task-description
 **Symptoms:** Agent doesn't update or respond
 
 **Solution:**
+
 - Check SSH connection to remote machine
 - Verify remote machine is accessible
 - Check Background Agent Sidebar for status
@@ -510,6 +557,7 @@ git push origin feature/agent-name/task-description
 **Symptoms:** Agents have different code versions
 
 **Solution:**
+
 - Regular `git pull origin main` on both
 - Rebase feature branches regularly
 - Use shared TODO table to track progress
@@ -520,6 +568,7 @@ git push origin feature/agent-name/task-description
 **Symptoms:** Can't connect to remote agent
 
 **Solution:**
+
 - Check SSH connectivity: `ssh cursor-ubuntu` or `ssh cursor-m4-mac`
 - Verify remote machine is online
 - Check SSH config settings
@@ -540,6 +589,7 @@ The project already has coordination patterns in `agents/shared/COORDINATION.md`
 ### Use Existing Remote Development Scripts
 
 Leverage existing scripts:
+
 - `scripts/op_sync_cursor_remote.sh` - SSH configuration
 - `scripts/op_sync_distcc_host.sh` - Remote compilation setup
 - `scripts/setup_worktree.sh` - Git worktree management
@@ -558,18 +608,25 @@ Leverage existing scripts:
 Both remote agents can also serve as distributed compilation workers:
 
 **Ubuntu Agent:**
+
 ```bash
+
 # Run distcc daemon for distributed C++ builds
+
 distccd --daemon --allow 192.168.1.0/24 --jobs $(nproc)
 ```
 
 **macOS Agent:**
+
 ```bash
+
 # Run distcc daemon for distributed C++ builds
+
 distccd --daemon --allow 192.168.1.0/24 --jobs $(sysctl -n hw.ncpu)
 ```
 
 **Client Configuration:**
+
 ```bash
 export DISTCC_HOSTS="localhost/8 \
   ubuntu-agent.local/8 \
@@ -606,6 +663,7 @@ make -j24 -C build  # Uses all machines
 ## Summary
 
 ✅ **Parallel Development is Feasible:**
+
 - Cursor 2.0 supports multi-agent workflows
 - Background agents work on remote machines
 - Git worktrees provide isolation
@@ -613,6 +671,7 @@ make -j24 -C build  # Uses all machines
 - **Apple Intelligence on M4 provides AI-enhanced documentation and quality improvements**
 
 ✅ **Recommended Setup:**
+
 - Configure SSH for both Ubuntu and macOS
 - Use separate git worktrees or branches
 - Leverage Background Agent Sidebar
@@ -620,6 +679,7 @@ make -j24 -C build  # Uses all machines
 - **Enable Apple Intelligence on macOS M4 agent for enhanced workflows**
 
 ✅ **Best Practices:**
+
 - Isolate work (different branches/components)
 - Communicate regularly (TODO updates, API contracts)
 - Test on both platforms
@@ -627,6 +687,7 @@ make -j24 -C build  # Uses all machines
 - **Leverage Apple Intelligence for documentation, summaries, and visual content**
 
 ✅ **Apple Intelligence Advantage:**
+
 - Use macOS M4 agent for documentation-heavy tasks
 - Generate visual diagrams with Image Playground
 - Improve all text content with Writing Tools
@@ -634,6 +695,7 @@ make -j24 -C build  # Uses all machines
 - Create better commit messages automatically
 
 **Next Steps:**
+
 1. Configure SSH access for both remote machines
 2. Set up git worktrees on each remote
 3. **Enable Apple Intelligence on macOS M4** (System Settings → General → Apple Intelligence)
@@ -641,6 +703,7 @@ make -j24 -C build  # Uses all machines
 5. **Start parallel development with AI-enhanced workflows!**
 
 **Workflow Optimization:**
+
 - **Ubuntu Agent:** Focus on implementation, testing, builds
 - **macOS M4 Agent:** Focus on implementation + documentation quality, visual content, summaries
 - Both coordinate via shared TODO table and API contracts

@@ -31,11 +31,13 @@
 **Status:** ✅ Implemented, needs PyYAML installation
 
 **Files:**
+
 - ✅ `mcp-servers/project-management-automation/tools/ci_cd_validation.py`
 - ✅ Registered in `server.py`
 - ✅ Updated `TOOLS_STATUS.md`
 
 **Features:**
+
 - Validates GitHub Actions workflow YAML syntax
 - Checks self-hosted runner configurations
 - Validates job dependencies
@@ -45,6 +47,7 @@
 - Generates validation report
 
 **Next Steps:**
+
 - Install PyYAML: `pip install pyyaml`
 - Test tool via MCP interface
 - Update TODO2 task status to "Done"
@@ -56,11 +59,13 @@
 **Status:** Ready to implement
 
 **Implementation Plan:**
+
 - Create `tools/agent_coordination.py`
 - Wrap existing validation scripts:
   - `scripts/validate_todo_table.sh`
   - `scripts/validate_api_contract.sh`
   - `scripts/validate_todo2_sync.sh`
+
 - Combine results into unified report
 - Register in `server.py`
 
@@ -73,6 +78,7 @@
 **Status:** Ready to implement
 
 **Implementation Plan:**
+
 - Create `tools/agent_environment.py`
 - Wrap `scripts/collect_system_info_python.py`
 - Support SSH connection to remote agents
@@ -86,16 +92,19 @@
 ### Phase 2: Medium Priority (Pending)
 
 #### 📋 4. `validate_api_contract_tool`
+
 - Parse backend code for API endpoints
 - Compare with API_CONTRACT.md
 - Detect API drift
 
 #### 📋 5. `monitor_feature_parity_tool`
+
 - Enhance existing feature parity script
 - Track TUI vs PWA features
 - Generate parity reports
 
 #### 📋 6. `track_test_coverage_tool`
+
 - Run coverage for C++, Python, Rust
 - Track coverage trends
 - Generate coverage reports
@@ -105,6 +114,7 @@
 ### Phase 3: Lower Priority (Pending)
 
 #### 📋 7-10. Remaining Tools
+
 - Build health monitoring
 - Task distribution analysis
 - Runner health monitoring
@@ -117,6 +127,7 @@
 ### Test Tool 1
 
 **1. Install PyYAML:**
+
 ```bash
 pip install pyyaml
 ```
@@ -124,8 +135,11 @@ pip install pyyaml
 **2. Restart Cursor** to reload MCP server
 
 **3. Test via MCP:**
+
 ```python
+
 # Use the tool via MCP interface
+
 validate_ci_cd_workflow_tool(
     workflow_path=".github/workflows/parallel-agents-ci.yml",
     check_runners=True
@@ -137,6 +151,7 @@ validate_ci_cd_workflow_tool(
 ## TODO2 Tasks
 
 All 10 tasks created:
+
 - **MCP-EXT-1:** ✅ validate_ci_cd_workflow_tool (Implemented)
 - **MCP-EXT-2:** 📋 validate_agent_coordination_tool (Next)
 - **MCP-EXT-3:** 📋 collect_agent_environment_tool (Ready)

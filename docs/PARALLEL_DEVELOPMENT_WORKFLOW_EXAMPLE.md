@@ -19,28 +19,37 @@
 ### 1. Environment Check
 
 **Ubuntu Agent:**
+
 ```bash
+
 # Connect to Ubuntu agent
+
 ssh cursor-ubuntu
 
 # Verify system info
+
 uname -a
 lscpu | grep "Model name"
 free -h
 df -h
 
 # Check development tools
+
 git --version
 cmake --version
 rustc --version
 ```
 
 **macOS M4 Agent:**
+
 ```bash
+
 # Connect to macOS agent
+
 ssh cursor-m4-mac
 
 # Verify system info
+
 sw_vers
 sysctl machdep.cpu.brand_string
 sysctl hw.memsize
@@ -50,6 +59,7 @@ df -h
 # System Settings → General → Apple Intelligence (should be enabled)
 
 # Check development tools
+
 git --version
 cmake --version
 rustc --version
@@ -58,16 +68,21 @@ rustc --version
 ### 2. Repository Setup
 
 **Both Agents:**
+
 ```bash
+
 # Pull latest from main
+
 git checkout main
 git pull origin main
 
 # Create feature branches
 # Ubuntu: NATS integration
+
 git checkout -b feature/nats-integration
 
 # macOS: UI improvements (in separate terminal/SSH session)
+
 git checkout -b feature/macos-ui-improvements
 ```
 
@@ -76,6 +91,7 @@ git checkout -b feature/macos-ui-improvements
 **Update Shared TODO Table** (`agents/shared/TODO_OVERVIEW.md`):
 
 ```markdown
+
 ## Current Session Tasks
 
 | Task | Agent | Status | Notes |
@@ -93,25 +109,32 @@ git checkout -b feature/macos-ui-improvements
 **Focus:** NATS adapter implementation
 
 ```bash
+
 # Create NATS adapter module
+
 mkdir -p agents/backend/src/nats
 cd agents/backend
 
 # Implement basic NATS adapter
 # File: src/nats/adapter.rs
+
 cargo new --lib nats_adapter
 cd nats_adapter
 ```
 
 **Implementation:**
+
 - Connect to NATS server
 - Implement publish/subscribe functionality
 - Add error handling
 - Write unit tests
 
 **Progress Update:**
+
 ```bash
+
 # Commit progress
+
 git add .
 git commit -m "Add NATS adapter basic structure"
 
@@ -124,17 +147,22 @@ git commit -m "Add NATS adapter basic structure"
 **Focus:** AppKit UI improvements with Apple Intelligence
 
 ```bash
+
 # Create macOS UI improvements branch
+
 cd native/app
+
 # Work on AppKit bundle improvements
 ```
 
 **Implementation:**
+
 - Improve menu bar integration
 - Add keyboard shortcuts
 - Enhance native macOS look and feel
 
 **Apple Intelligence Usage:**
+
 1. **Improve Code Comments:**
    - Select existing comments
    - Right-click → "Rewrite" → "Professional"
@@ -146,6 +174,7 @@ cd native/app
    - AI fixes grammar and improves clarity
 
 3. **Commit Message Generation:**
+
    ```bash
    # Draft commit message
    git add .
@@ -157,8 +186,11 @@ cd native/app
    ```
 
 **Progress Update:**
+
 ```bash
+
 # Commit with improved message
+
 git commit -m "Enhance macOS AppKit UI with improved menu bar and keyboard shortcuts"
 
 # Update TODO table
@@ -174,31 +206,39 @@ git commit -m "Enhance macOS AppKit UI with improved menu bar and keyboard short
 **Focus:** NATS topic registry and validation
 
 ```bash
+
 # Implement topic registry
 # File: src/nats/topics.rs
 ```
 
 **Implementation:**
+
 - Create centralized topic definitions
 - Add topic validation
 - Implement wildcard subscription helpers
 - Write comprehensive tests
 
 **Test Execution:**
+
 ```bash
+
 # Run tests
+
 cargo test nats_adapter
 
 # Check coverage
+
 cargo test --coverage
 ```
 
 **Progress Update:**
+
 ```bash
 git add .
 git commit -m "Add NATS topic registry and validation layer"
 
 # Push for review
+
 git push origin feature/nats-integration
 ```
 
@@ -207,6 +247,7 @@ git push origin feature/nats-integration
 **Focus:** Native macOS menu integration + Documentation
 
 **Implementation:**
+
 - Integrate native macOS menu items
 - Add system menu bar integration
 - Implement native dialogs
@@ -214,6 +255,7 @@ git push origin feature/nats-integration
 **Apple Intelligence Usage:**
 
 1. **Generate Architecture Diagram:**
+
    ```bash
    # Open Shortcuts app
    # Create shortcut: "Generate Architecture Diagram"
@@ -229,6 +271,7 @@ git push origin feature/nats-integration
    - Use summary for implementation reference
 
 3. **Improve Error Messages:**
+
    ```swift
    // Original error handling
    print("Error: Failed to show dialog")
@@ -243,11 +286,15 @@ git push origin feature/nats-integration
    - Generate code examples from descriptions
 
 **Progress Update:**
+
 ```bash
+
 # Add generated diagram to docs
+
 git add docs/architecture/macos_ui_architecture.png
 
 # Commit with AI-improved message
+
 git commit -m "Integrate native macOS menu with system menu bar and native dialogs
 
 - Add menu bar integration
@@ -267,21 +314,28 @@ git push origin feature/macos-ui-improvements
 **Focus:** NATS health check endpoint
 
 **Implementation:**
+
 - Add health check endpoint to backend
 - Integrate NATS status monitoring
 - Add metrics collection
 
 **Testing:**
+
 ```bash
+
 # Run integration tests
+
 cargo test --test integration
 
 # Test NATS connection
+
 curl http://localhost:8080/health/nats
 ```
 
 **Documentation:**
+
 ```bash
+
 # Update API contract
 # File: agents/shared/API_CONTRACT.md
 
@@ -289,6 +343,7 @@ curl http://localhost:8080/health/nats
 ```
 
 **Progress Update:**
+
 ```bash
 git add .
 git commit -m "Add NATS health check endpoint to backend API
@@ -306,6 +361,7 @@ git commit -m "Add NATS health check endpoint to backend API
 **Focus:** Universal binary build + Documentation
 
 **Implementation:**
+
 - Configure universal binary build
 - Test on both Intel and Apple Silicon
 - Fix platform-specific issues
@@ -324,6 +380,7 @@ git commit -m "Add NATS health check endpoint to backend API
    - Generate code examples
 
 3. **Error Analysis:**
+
    ```bash
    # Build error occurs
    # Copy error message
@@ -334,17 +391,22 @@ git commit -m "Add NATS health check endpoint to backend API
    ```
 
 **Testing:**
+
 ```bash
+
 # Build universal binary
+
 cmake --preset macos-universal-debug
 cmake --build build
 
 # Test on both architectures
+
 arch -x86_64 ./build/ib_box_spread_app.app/Contents/MacOS/ib_box_spread_app
 arch -arm64 ./build/ib_box_spread_app.app/Contents/MacOS/ib_box_spread_app
 ```
 
 **Progress Update:**
+
 ```bash
 git add .
 git commit -m "Complete macOS UI improvements with universal binary support
@@ -365,7 +427,9 @@ git commit -m "Complete macOS UI improvements with universal binary support
 ### Both Agents Coordinate
 
 **1. Review Each Other's Work:**
+
 ```bash
+
 # Ubuntu agent reviews macOS PR
 # macOS agent reviews Ubuntu PR
 
@@ -373,14 +437,18 @@ git commit -m "Complete macOS UI improvements with universal binary support
 ```
 
 **2. Update API Contracts:**
+
 ```bash
+
 # Both update agents/shared/API_CONTRACT.md
 # Document any breaking changes
 # Ensure compatibility
 ```
 
 **3. Integration Testing:**
+
 ```bash
+
 # macOS agent: Test UI with NATS backend
 # Ubuntu agent: Verify NATS endpoint accessible from macOS UI
 
@@ -388,15 +456,20 @@ git commit -m "Complete macOS UI improvements with universal binary support
 ```
 
 **4. Merge Strategy:**
+
 ```bash
+
 # Merge NATS integration first (dependency)
+
 git checkout main
 git merge feature/nats-integration
 
 # Then merge macOS UI improvements
+
 git merge feature/macos-ui-improvements
 
 # Run full integration tests
+
 ./scripts/run_integration_tests.sh
 ```
 
@@ -407,11 +480,13 @@ git merge feature/macos-ui-improvements
 ### Ubuntu Agent
 
 **Documentation Updates:**
+
 - NATS integration guide
 - API endpoint documentation
 - Testing procedures
 
 **Files Created/Modified:**
+
 - `agents/backend/src/nats/adapter.rs`
 - `agents/backend/src/nats/topics.rs`
 - `agents/shared/API_CONTRACT.md`
@@ -437,6 +512,7 @@ git merge feature/macos-ui-improvements
    - Professional documentation
 
 **Files Created/Modified:**
+
 - `native/app/AppKitBundle.mm`
 - `docs/architecture/macos_ui_architecture.png` (AI-generated)
 - `docs/macos_ui_integration.md`

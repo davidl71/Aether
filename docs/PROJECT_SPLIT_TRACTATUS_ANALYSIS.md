@@ -20,16 +20,19 @@
 **Proposition 1.1**: Clear public/private boundaries must be established.
 
 **Decomposition**:
+
 - **1.1.1**: Public components contain NO sensitive information
   - No broker API keys or patterns
   - No trading strategies
   - No account information
   - No internal research
+
 - **1.1.2**: Private components contain ALL sensitive information
   - Broker integrations stay private
   - Trading strategies stay private
   - Configuration patterns stay private
   - Research insights stay private
+
 - **1.1.3**: Boundaries are enforceable
   - Git repository access controls
   - Clear documentation of what stays private
@@ -44,16 +47,19 @@
 **Proposition 1.2**: Public components must provide value to other developers.
 
 **Decomposition**:
+
 - **1.2.1**: Components are truly reusable
   - Broker-agnostic implementations
   - Well-documented APIs
   - Clear use cases
   - No dependencies on private code
+
 - **1.2.2**: Components solve common problems
   - Box spread calculations (generic problem)
   - Python DSL patterns (innovative pattern)
   - MCP servers (growing ecosystem)
   - Build tools (community benefit)
+
 - **1.2.3**: Components are maintainable
   - Clear ownership
   - Good documentation
@@ -69,14 +75,17 @@
 **Proposition 1.3**: Each split project must be analyzable in NotebookLM efficiently.
 
 **Decomposition**:
+
 - **1.3.1**: Each project fits within source limits
   - <50 sources per notebook (free plan)
   - Related docs grouped together
   - No unnecessary chunking
+
 - **1.3.2**: Project boundaries align with analysis topics
   - One project = one focused notebook topic
   - Clear documentation organization
   - Logical grouping of related files
+
 - **1.3.3**: Analysis workflow is optimized
   - Easy to create notebooks per project
   - Synthesis notebooks for cross-project insights
@@ -91,14 +100,17 @@
 **Proposition 1.4**: Dependencies between split projects must be manageable.
 
 **Decomposition**:
+
 - **1.4.1**: Dependency direction is clear
   - Public libraries have NO dependencies on private code
   - Private code can depend on public libraries
   - No circular dependencies
+
 - **1.4.2**: Dependency mechanism is reliable
   - Package managers (Conan, PyPI, npm)
   - Git submodules (simple but manual)
   - Monorepo tools (complex but powerful)
+
 - **1.4.3**: Dependency updates are manageable
   - Version pinning
   - Automated updates (where safe)
@@ -113,14 +125,17 @@
 **Proposition 1.5**: Migration from monorepo to split repos must be safe and reversible.
 
 **Decomposition**:
+
 - **1.5.1**: Migration is incremental
   - Extract one project at a time
   - Keep old structure working during migration
   - Test each extraction thoroughly
+
 - **1.5.2**: Rollback is possible
   - Git history preserved
   - Old structure still accessible
   - Can revert if problems occur
+
 - **1.5.3**: Migration doesn't break existing workflows
   - Build systems still work
   - Tests still pass
@@ -184,18 +199,22 @@
 ## Logical Contradictions to Avoid
 
 ### Contradiction 1: Public Code Depends on Private Code
+
 - **Problem**: Public library imports from private repo
 - **Solution**: Extract shared code to public repo first, or make public library independent
 
 ### Contradiction 2: Private Code Loses Access to Public Code
+
 - **Problem**: Private repo can't use extracted public libraries
 - **Solution**: Use package managers or Git submodules to maintain access
 
 ### Contradiction 3: Migration Breaks Existing Workflows
+
 - **Problem**: Extracted projects break build/test/CI
 - **Solution**: Migrate incrementally, keep old structure working
 
 ### Contradiction 4: NotebookLM Analysis Becomes Harder
+
 - **Problem**: Split makes analysis more difficult
 - **Solution**: Ensure each project fits in one notebook, organize docs clearly
 
@@ -254,6 +273,7 @@
 ## Conclusion
 
 The project split strategy is logically sound IF:
+
 - All five factors (boundaries, reuse, NotebookLM, dependencies, migration) are addressed
 - Essential factors are prioritized over accidental factors
 - Migration is incremental and reversible

@@ -305,11 +305,13 @@ Curated list of COBOL resources including:
   - EBCDIC to ASCII conversion
   - ETL ISAM data to any platform
   - PC COBOL (ASCII) support
+
 - **Use Cases**:
   - Data migration from legacy systems
   - ETL operations for mainframe data
   - Converting legacy data formats to modern formats
   - Integration with modern systems
+
 - **License**: GNU Library or Lesser General Public License version 2.0 (LGPLv2)
 - **Platform**: Java-based, runs on Linux, Windows, Mac, BSD
 - **Reference**: [SourceForge: COBOL2J](https://sourceforge.net/projects/cobol2j/)

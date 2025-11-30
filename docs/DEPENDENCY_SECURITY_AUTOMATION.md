@@ -8,6 +8,7 @@
 ## Overview
 
 This automation scans all project dependencies for known security vulnerabilities using multiple tools:
+
 - **osv-scanner**: Multi-language vulnerability scanner (already in Trunk config)
 - **pip-audit**: Python-specific vulnerability scanner
 - **cargo-audit**: Rust-specific vulnerability scanner
@@ -18,17 +19,20 @@ This automation scans all project dependencies for known security vulnerabilitie
 ## Features
 
 ### Multi-Language Support
+
 - **Python**: Scans `requirements.txt` and `pyproject.toml` files
 - **Rust**: Scans `Cargo.toml` files
 - **npm**: Scans `package.json` files
 
 ### Vulnerability Detection
+
 - Detects known CVEs and security advisories
 - Categorizes by severity (critical, high, medium, low)
 - Tracks trends over time
 - Creates Todo2 tasks for high-priority vulnerabilities
 
 ### Reporting
+
 - Generates detailed markdown reports
 - Tracks vulnerability trends
 - Provides actionable recommendations
@@ -42,15 +46,21 @@ This automation scans all project dependencies for known security vulnerabilitie
 Install scanning tools (optional - script handles missing tools gracefully):
 
 ```bash
+
 # osv-scanner (recommended - already in Trunk)
+
 trunk install osv-scanner
+
 # OR
+
 brew install osv-scanner
 
 # pip-audit (Python)
+
 pip install pip-audit
 
 # cargo-audit (Rust)
+
 cargo install cargo-audit
 ```
 
@@ -59,17 +69,20 @@ cargo install cargo-audit
 ### Setup
 
 1. **Configure** (optional - defaults work):
+
    ```bash
    # Edit configuration if needed
    vim scripts/dependency_security_config.json
    ```
 
 2. **Set up cron job** (recommended):
+
    ```bash
    ./scripts/setup_dependency_security_cron.sh
    ```
 
 3. **Test manually**:
+
    ```bash
    python3 scripts/automate_dependency_security.py
    ```
@@ -81,19 +94,24 @@ cargo install cargo-audit
 ### Manual Execution
 
 ```bash
+
 # Run with default config
+
 python3 scripts/automate_dependency_security.py
 
 # Run with custom config
+
 python3 scripts/automate_dependency_security.py --config path/to/config.json
 
 # Dry-run mode (no file changes)
+
 python3 scripts/automate_dependency_security.py --dry-run
 ```
 
 ### Automated Execution
 
 The cron job runs daily at 6 AM and:
+
 1. Scans all dependencies
 2. Generates report: `docs/DEPENDENCY_SECURITY_REPORT.md`
 3. Creates Todo2 tasks for critical/high vulnerabilities
@@ -148,6 +166,7 @@ Edit `scripts/dependency_security_config.json`:
 ### Report File
 
 `docs/DEPENDENCY_SECURITY_REPORT.md` contains:
+
 - Executive summary
 - Summary statistics (total, by severity, by language)
 - Critical vulnerabilities (detailed)
@@ -169,11 +188,13 @@ Edit `scripts/dependency_security_config.json`:
 ## Todo2 Integration
 
 The automation automatically creates Todo2 tasks for:
+
 - **Critical** vulnerabilities (always)
 - **High** vulnerabilities (configurable)
 - Limited to 10 tasks per run (configurable)
 
 Tasks include:
+
 - Package name and version
 - Vulnerability ID
 - Severity level
@@ -187,6 +208,7 @@ Tasks include:
 ### Tools Not Found
 
 If tools are missing, the script will:
+
 - Log warnings
 - Continue with available tools
 - Report which tools are unavailable
@@ -196,6 +218,7 @@ If tools are missing, the script will:
 ### False Positives
 
 Some vulnerability databases may have false positives:
+
 - Review each vulnerability manually
 - Check if updates are available
 - Verify vulnerability applies to your usage
@@ -203,6 +226,7 @@ Some vulnerability databases may have false positives:
 ### Rate Limiting
 
 Some vulnerability APIs may rate limit:
+
 - Script includes timeouts
 - Retry logic can be added if needed
 - Consider caching results
@@ -222,6 +246,7 @@ Some vulnerability APIs may rate limit:
 ## Integration with Other Automations
 
 This automation works alongside:
+
 - **Linter Automation**: Catches code quality issues
 - **Test Coverage**: Ensures tests cover security-critical code
 - **Build Health**: Monitors build system health
@@ -240,6 +265,7 @@ This automation works alongside:
 ## Future Enhancements
 
 Potential improvements:
+
 1. **Automated Updates**: Create PRs for safe dependency updates
 2. **License Scanning**: Check for license compliance issues
 3. **Dependency Graph**: Visualize dependency relationships

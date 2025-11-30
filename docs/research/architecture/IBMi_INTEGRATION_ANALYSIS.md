@@ -10,6 +10,7 @@
 **Key Finding**: IBM i CL (Control Language) and RPG (Report Program Generator) are **IBM i platform-specific languages** (formerly AS/400). They cannot be used directly for this modern C++20/Python trading application, but **integration is possible** if you have existing IBM i infrastructure.
 
 **Recommendation**:
+
 - ❌ **Do NOT use CL/RPG for core trading system** - Platform/language mismatch
 - ✅ **Consider integration** if you have IBM i systems that need to interface with trading data
 - ✅ **Use REST APIs** for modern integration patterns
@@ -21,6 +22,7 @@
 ### IBM i Platform
 
 **IBM i** (formerly AS/400, iSeries):
+
 - **Platform**: IBM midrange system (not mainframe, not PC)
 - **Operating System**: IBM i OS (proprietary)
 - **Database**: DB2 for i (integrated)
@@ -29,12 +31,14 @@
 ### Control Language (CL)
 
 **CL** is:
+
 - **Purpose**: System control and automation language
 - **Use Cases**: Job scheduling, program calls, system commands
 - **Syntax**: Command-based (similar to shell scripts)
 - **Platform**: IBM i only
 
 **Example CL Program**:
+
 ```cl
 PGM
   DCL VAR(&ACCOUNT) TYPE(*CHAR) LEN(10)
@@ -51,6 +55,7 @@ ENDPGM
 ### RPG (Report Program Generator)
 
 **RPG** is:
+
 - **Purpose**: Business application programming
 - **Use Cases**: Financial systems, ERP, manufacturing, distribution
 - **Syntax**: Originally fixed-format, modern RPG IV is free-format
@@ -58,6 +63,7 @@ ENDPGM
 - **Market**: Powers many manufacturing and distribution systems
 
 **Example RPG IV (Free-Format)**:
+
 ```rpg
 **free
 dcl-proc GetTradingBalance;
@@ -82,11 +88,13 @@ end-proc;
 ### 1. Platform Incompatibility
 
 **IBM i Requirements**:
+
 - IBM i hardware (Power Systems)
 - IBM i operating system
 - IBM i development tools (RDi, ACS)
 
 **Your Trading System**:
+
 - Runs on macOS/Linux (modern Unix)
 - Uses CMake, C++20, Python
 - No IBM i infrastructure
@@ -94,12 +102,14 @@ end-proc;
 ### 2. Language Mismatch
 
 **CL/RPG Characteristics**:
+
 - Platform-specific languages
 - Cannot compile on Unix/macOS/Linux
 - Require IBM i runtime environment
 - No direct C++/Python interop
 
 **Your Trading System**:
+
 - C++20 with modern libraries (FTXUI, spdlog, nlohmann/json)
 - Python with modern frameworks (Textual, FastAPI)
 - Cross-platform compatibility required
@@ -107,12 +117,14 @@ end-proc;
 ### 3. Architecture Mismatch
 
 **IBM i Architecture**:
+
 - Integrated database (DB2 for i)
 - Native file system
 - Job-based execution model
 - Green-screen interfaces (5250)
 
 **Your Trading System**:
+
 - REST APIs (FastAPI services)
 - Time-series database (QuestDB)
 - Real-time market data (TWS, ORATS)
@@ -131,11 +143,13 @@ end-proc;
 **Modern Approach**: Expose IBM i data via REST APIs
 
 **Tools**:
+
 - **Rest4i**: Generate REST APIs from RPG code
 - **CGIDEV2**: Web interfaces for IBM i
 - **IBM i HTTP Server**: Native web server
 
 **Integration Pattern**:
+
 ```
 IBM i System (RPG/CL)
     ↓ (REST API)
@@ -145,6 +159,7 @@ Trading System
 ```
 
 **Example Use Case**:
+
 - IBM i system tracks account balances
 - Expose via REST API: `GET /api/ibmi/account/{id}/balance`
 - Trading system consumes this data
@@ -154,11 +169,13 @@ Trading System
 **Approach**: Direct database access to DB2 for i
 
 **Tools**:
+
 - **ibm_db** (Python): DB2 for i driver
 - **ODBC**: Standard database connectivity
 - **JDBC**: Java database connectivity
 
 **Integration Pattern**:
+
 ```
 IBM i System (DB2 for i)
     ↓ (ODBC/JDBC)
@@ -168,6 +185,7 @@ Trading System
 ```
 
 **Example Use Case**:
+
 - IBM i stores historical trading data
 - Python service queries DB2 for i
 - Provides data to trading system
@@ -177,10 +195,12 @@ Trading System
 **Approach**: Use IBM MQ or other message queues
 
 **Tools**:
+
 - **IBM MQ**: Enterprise message queuing
 - **NATS**: Modern message queue (your system uses this)
 
 **Integration Pattern**:
+
 ```
 IBM i System (RPG)
     ↓ (MQ Messages)
@@ -190,6 +210,7 @@ Trading System
 ```
 
 **Example Use Case**:
+
 - IBM i publishes trade confirmations
 - Trading system subscribes via NATS
 - Real-time integration
@@ -201,6 +222,7 @@ Trading System
 **Recommendation**: ❌ **Do NOT add IBM i infrastructure**
 
 **Why**:
+
 - Significant cost (hardware, software, licensing)
 - Complexity (specialized skills required)
 - No clear benefit for modern trading system
@@ -213,13 +235,16 @@ Trading System
 ### For System Automation (CL Alternative)
 
 **Instead of CL**, use:
+
 - **Python scripts**: `scripts/` directory
 - **Shell scripts**: Bash/Zsh automation
 - **CMake**: Build automation
 - **GitHub Actions**: CI/CD automation
 
 **Example** (Your codebase):
+
 ```bash
+
 # scripts/build_universal.sh
 # Modern alternative to CL job scheduling
 ```
@@ -227,11 +252,13 @@ Trading System
 ### For Business Logic (RPG Alternative)
 
 **Instead of RPG**, use:
+
 - **C++**: Core trading logic (`native/src/`)
 - **Python**: Business logic (`python/integration/`)
 - **Rust**: Backend services (`agents/backend/`)
 
 **Example** (Your codebase):
+
 ```cpp
 // native/src/box_spread_strategy.cpp
 // Modern C++20 alternative to RPG business logic
@@ -240,12 +267,15 @@ Trading System
 ### For Database (DB2 for i Alternative)
 
 **Instead of DB2 for i**, use:
+
 - **QuestDB**: Time-series data (already in use)
 - **PostgreSQL**: Relational data
 - **SQLite**: Embedded database
 
 **Example** (Your codebase):
+
 ```python
+
 # python/integration/questdb_client.py
 # Modern time-series database alternative
 ```
@@ -316,11 +346,13 @@ Trading System
 ### Current State
 
 **IBM i References Found**:
+
 - `docs/LEGACY_FINANCIAL_SYSTEMS.md` - Documents RPG/COBOL for reference
 - `.vscode/extensions.json` - **Explicitly excludes IBM i extensions**
 - No IBM i integration code found
 
 **Extension Configuration**:
+
 ```json
 // .vscode/extensions.json
 "unwantedRecommendations": [
@@ -341,6 +373,7 @@ Trading System
 ### If You Have IBM i Infrastructure
 
 **✅ Consider Integration**:
+
 1. Expose IBM i data via REST APIs (Rest4i)
 2. Create Python integration service
 3. Integrate with existing trading system architecture
@@ -351,6 +384,7 @@ Trading System
 ### If You Don't Have IBM i Infrastructure
 
 **❌ Do NOT Add IBM i**:
+
 - Significant cost and complexity
 - No clear benefit for trading system
 - Modern alternatives are better suited
@@ -363,6 +397,7 @@ Trading System
 **IBM i CL and RPG are platform-specific languages** that cannot be used directly for your modern trading system. However, **integration is possible** if you have existing IBM i infrastructure.
 
 **Key Points**:
+
 1. ❌ CL/RPG cannot replace C++/Python in your trading system
 2. ✅ REST API integration is possible (if you have IBM i)
 3. ✅ Database integration is possible (DB2 for i → Python)

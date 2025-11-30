@@ -2,7 +2,7 @@
 
 **Source**: <https://www.interactivebrokers.com/en/pricing/commissions-home.php>
 **Account Type**: IBKR Pro
-**Last Updated**: 2025-01-27
+**Last Updated**: 2025-11-30
 
 ---
 

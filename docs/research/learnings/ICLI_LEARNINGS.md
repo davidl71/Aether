@@ -1,7 +1,7 @@
 # Learnings from icli Project
 
-**Date**: 2025-01-27  
-**Source**: <https://github.com/mattsta/icli>  
+**Date**: 2025-01-27
+**Source**: <https://github.com/mattsta/icli>
 **Purpose**: Document patterns and approaches from icli that could enhance this C++ box spread project
 
 ---
@@ -128,6 +128,7 @@
   - Peg to midpoint
   - Snap to market/primary/midpoint
   - Market with protection
+
 - Emphasizes avoiding "marketable orders" (hitting bid/ask exactly) for better commissions
 
 **Current State:**

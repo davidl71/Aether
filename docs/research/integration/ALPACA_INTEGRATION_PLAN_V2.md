@@ -178,6 +178,7 @@ Short put @ K1   (covers long call @ K1)
 **File**: `native/include/alpaca_adapter.h`
 
 ```cpp
+
 #pragma once
 #include "broker_adapter.h"
 #include <string>
@@ -262,6 +263,7 @@ target_link_libraries(ib_box_spread PRIVATE
 **File**: `native/src/alpaca_adapter.cpp`
 
 ```cpp
+
 #include "alpaca_adapter.h"
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>

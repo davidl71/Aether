@@ -85,6 +85,7 @@ Using the documentation in API_DOCUMENTATION_INDEX.md and TWS_INTEGRATION_STATUS
 implement comprehensive error handling for TWS API connection failures.
 
 Requirements:
+
 - Follow patterns in EWRAPPER_BEST_PRACTICES.md
 - Use error handling patterns from COMMON_PATTERNS.md
 - Ensure thread-safety per CODEBASE_ARCHITECTURE.md
@@ -104,10 +105,12 @@ Refactor the order management system
 
 ```
 Refactor the order management system across:
+
 - native/src/order_manager.cpp (C++ core)
 - python/integration/strategy_runner.py (Python integration)
 
 Requirements:
+
 - Maintain consistency with CODEBASE_ARCHITECTURE.md
 - Follow patterns in COMMON_PATTERNS.md
 - Ensure all tests pass (29/29 tests)
@@ -129,11 +132,13 @@ Add risk management for box spreads
 Implement comprehensive risk management for box spread positions.
 
 Reference Documentation:
+
 - @docs BOX_SPREAD_COMPREHENSIVE_GUIDE.md (risk factors)
 - @docs IMPLEMENTATION_GUIDE.md (implementation patterns)
 - @docs COMMON_PATTERNS.md (coding patterns)
 
 Implementation Requirements:
+
 - Add VaR calculations per existing risk management patterns
 - Implement position sizing limits
 - Add real-time risk monitoring
@@ -243,11 +248,13 @@ Add market data subscription
 Implement market data subscription using TWS API.
 
 Reference:
+
 - @docs TWS_INTEGRATION_STATUS.md (API version 10.40.01)
 - @docs EWRAPPER_BEST_PRACTICES.md (callback patterns)
 - @docs COMMON_PATTERNS.md (error handling)
 
 Requirements:
+
 - Use EWrapper callbacks (tickPrice, tickSize)
 - Implement proper error handling
 - Follow thread-safe patterns
@@ -270,11 +277,13 @@ Add test for box spread calculation
 Add comprehensive test for box spread calculation in native/tests/.
 
 Reference:
+
 - Existing test patterns in native/tests/box_spread_calc_test.cpp
 - Test framework: Catch2
 - Test naming: snake_case with descriptive names
 
 Requirements:
+
 - Test edge cases (zero width, negative prices)
 - Test boundary conditions
 - Follow existing test structure
@@ -296,11 +305,13 @@ Refactor the strategy runner
 Refactor python/integration/strategy_runner.py following NautilusTrader patterns.
 
 Reference:
+
 - @docs NAUTILUS_LEARNINGS.md (event-driven patterns)
 - @docs COMMON_PATTERNS.md (Python patterns)
 - @docs CODEBASE_ARCHITECTURE.md (system design)
 
 Requirements:
+
 - Implement event-driven architecture
 - Add proper lifecycle management
 - Follow Python 3.11+ standards
@@ -411,11 +422,13 @@ Implement box spread detection
 Implement comprehensive box spread detection system.
 
 Documentation References:
+
 - @docs BOX_SPREAD_COMPREHENSIVE_GUIDE.md (mechanics and strategies)
 - @docs IMPLEMENTATION_GUIDE.md (step-by-step implementation)
 - @docs COMMON_PATTERNS.md (coding patterns)
 
 Implementation Requirements:
+
 - Create box_spread_detector.cpp in native/src/
 - Follow C++20 standards with 2-space indentation
 - Use Allman braces for multi-line scopes
@@ -440,10 +453,12 @@ Add Python bindings for box spread calculation
 Add Python bindings for box spread calculation using Cython.
 
 Documentation References:
+
 - @docs IMPLEMENTATION_GUIDE.md (Python integration patterns)
 - @docs COMMON_PATTERNS.md (Python coding standards)
 
 Implementation Requirements:
+
 - Create bindings in python/bindings/
 - Follow Python 3.11+ standards
 - Use Cython for C++ integration
@@ -467,10 +482,12 @@ Update the API documentation
 Update API_DOCUMENTATION_INDEX.md with new TWS API features.
 
 Reference:
+
 - @docs TWS_INTEGRATION_STATUS.md (current status)
 - @docs API_DOCUMENTATION_INDEX.md (existing format)
 
 Requirements:
+
 - Follow existing documentation format
 - Include version information (TWS API 10.40.01)
 - Add examples where appropriate

@@ -28,11 +28,14 @@
 **Installation:**
 
 ```bash
+
 # macOS
+
 brew tap julien-cpsn/atac
 brew install atac
 
 # Arch Linux
+
 pacman -S atac
 ```
 
@@ -62,29 +65,38 @@ pacman -S atac
 **Example Usage for LEAN Wrapper:**
 
 ```bash
+
 # Test snapshot endpoint
+
 http GET http://localhost:8000/api/v1/snapshot
 
 # Start strategy
+
 http POST http://localhost:8000/api/v1/strategy/start
 
 # Test with authentication
+
 http GET http://localhost:8000/api/v1/account/summary Authorization:"Bearer token"
 ```
 
 **Installation:**
 
 ```bash
+
 # macOS
+
 brew install httpie
 
 # Debian
+
 sudo apt install httpie
 
 # Arch Linux
+
 pacman -Syu httpie
 
 # Windows
+
 choco install httpie
 ```
 
@@ -109,19 +121,24 @@ choco install httpie
 **Example Usage:**
 
 ```bash
+
 # Get snapshot and extract net_liq
+
 http GET http://localhost:8000/api/v1/snapshot | jq '.metrics.net_liq'
 
 # Filter positions by symbol
+
 http GET http://localhost:8000/api/v1/snapshot | jq '.positions[] | select(.symbol == "SPY")'
 
 # Count active orders
+
 http GET http://localhost:8000/api/v1/snapshot | jq '.orders | length'
 ```
 
 **Installation:**
 
 ```bash
+
 # Download from GitHub releases
 # https://github.com/jqlang/jq/releases
 ```
@@ -163,13 +180,17 @@ export default function () {
 **Installation:**
 
 ```bash
+
 # macOS
+
 brew install k6
 
 # Debian
+
 sudo apt-get install k6
 
 # Windows
+
 choco install k6
 ```
 
@@ -199,10 +220,13 @@ choco install k6
 **Installation:**
 
 ```bash
+
 # macOS
+
 brew install btop
 
 # Debian (via snap)
+
 sudo snap install btop
 ```
 
@@ -217,6 +241,7 @@ sudo snap install btop
   - REST API wrapper (FastAPI)
   - PWA backend
   - TUI client
+
 - Monitor logs from multiple services
 - Session persistence (survives disconnections)
 
@@ -230,13 +255,17 @@ sudo snap install btop
 **Installation:**
 
 ```bash
+
 # tmux (macOS)
+
 brew install tmux
 
 # zellij (macOS) - Modern alternative
+
 brew install zellij
 
 # Debian
+
 sudo apt install tmux
 ```
 
@@ -275,13 +304,17 @@ sudo apt install tmux
 **Installation:**
 
 ```bash
+
 # macOS
+
 brew install bat
 
 # Debian
+
 sudo apt install bat
 
 # Arch Linux
+
 pacman -S bat
 ```
 
@@ -306,13 +339,17 @@ pacman -S bat
 **Installation:**
 
 ```bash
+
 # macOS
+
 brew install ripgrep
 
 # Debian
+
 sudo apt-get install ripgrep
 
 # Arch Linux
+
 pacman -S ripgrep
 ```
 
@@ -337,13 +374,17 @@ pacman -S ripgrep
 **Installation:**
 
 ```bash
+
 # macOS
+
 brew install asciinema
 
 # Debian
+
 sudo apt install asciinema
 
 # Arch Linux
+
 sudo pacman -S asciinema
 ```
 
@@ -369,10 +410,13 @@ sudo pacman -S asciinema
 **Installation:**
 
 ```bash
+
 # macOS
+
 brew install gping
 
 # Windows
+
 choco install gping
 ```
 
@@ -469,7 +513,9 @@ Pane 4: API testing (ATAC or httpie)
 ### Install Essential Tools (macOS)
 
 ```bash
+
 # API Testing
+
 brew tap julien-cpsn/atac
 brew install atac
 brew install httpie
@@ -478,31 +524,41 @@ brew install httpie
 # Download jq from: https://github.com/jqlang/jq/releases
 
 # Terminal Multiplexer
+
 brew install tmux
+
 # OR
+
 brew install zellij
 
 # Load Testing
+
 brew install k6
 
 # Monitoring
+
 brew install btop
 
 # Code Tools
+
 brew install bat ripgrep
 ```
 
 ### Test LEAN REST API Wrapper (After T-50)
 
 ```bash
+
 # Start LEAN wrapper
+
 cd python/lean_integration
 uvicorn api_wrapper:app --reload
 
 # In another terminal, test endpoints
+
 http GET http://localhost:8000/api/v1/snapshot | jq
 
 # Or use ATAC
+
 atac http://localhost:8000/api/v1/snapshot
 ```
 

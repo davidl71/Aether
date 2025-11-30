@@ -1,6 +1,6 @@
 # CME Group Fee Schedules and Rebate Products
 
-**Date**: 2025-01-27
+**Date**: 2025-11-30
 **Source**: <https://www.cmegroup.com/markets/products.html>
 **Exchange**: CME Group (CME, CBOT, NYMEX, COMEX)
 
@@ -375,5 +375,5 @@ Calculate minimum volume required to:
 
 ---
 
-**Last Updated**: 2025-01-27
+**Last Updated**: 2025-11-30
 **Next Review**: Verify current fee schedules quarterly or before major trading decisions

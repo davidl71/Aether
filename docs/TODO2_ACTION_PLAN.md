@@ -22,7 +22,9 @@
 **Status:** ✅ Implemented, needs testing
 
 ```bash
+
 # Install dependency
+
 pip install pyyaml
 
 # Restart Cursor to reload MCP server
@@ -42,12 +44,14 @@ pip install pyyaml
 **Status:** Ready with execution context ✅
 
 **Execution Context:**
+
 - **Best Mode:** Agent (autonomous)
 - **Location Type:** Local
 - **Background:** Yes
 - **Dependencies:** MCP-EXT-1 (for pattern reference)
 
 **Actions:**
+
 1. Create `tools/agent_coordination.py`
 2. Wrap existing validation scripts
 3. Generate unified coordination report
@@ -65,12 +69,14 @@ pip install pyyaml
 **Status:** Ready with execution context ✅
 
 **Execution Context:**
+
 - **Best Mode:** Agent (autonomous)
 - **Location Type:** Local
 - **Background:** Yes
 - **Dependencies:** None
 
 **Actions:**
+
 1. Create `tools/agent_environment.py`
 2. Wrap `collect_system_info_python.py`
 3. Support SSH to remote agents
@@ -86,6 +92,7 @@ pip install pyyaml
 ### Monday-Tuesday (4-6 hours)
 
 **Complete:**
+
 1. ✅ Test MCP-EXT-1 (15 min)
 2. 🚀 Implement MCP-EXT-2 (2 hours)
 3. 🚀 Implement MCP-EXT-3 (2 hours)
@@ -99,6 +106,7 @@ pip install pyyaml
 ### Wednesday-Thursday (4-6 hours)
 
 **Implement:**
+
 1. 🚀 MCP-EXT-4 (API contract validation) - 2 hours
 2. 🚀 MCP-EXT-5 (Feature parity monitoring) - 2 hours
 
@@ -110,11 +118,13 @@ pip install pyyaml
 ### Friday (4-6 hours)
 
 **Research Sprint:**
+
 1. 🔬 Execute 3-5 research tasks in parallel
 2. 📋 Use NotebookLM for synthesis
 3. 📝 Document all findings
 
 **Candidates:**
+
 - T-143: IB Client Portal API
 - T-144: Broker selection patterns
 - T-145: Excel/CSV import libraries
@@ -128,6 +138,7 @@ pip install pyyaml
 **Status:** 50+ high-priority research tasks ready (missing execution context)
 
 **Top Candidates:**
+
 - **T-143:** IB Client Portal API patterns
 - **T-144:** Broker selection/switching patterns
 - **T-145:** Excel/CSV import libraries
@@ -137,6 +148,7 @@ pip install pyyaml
 - **T-151:** Cash flow forecasting integration
 
 **Strategy:**
+
 1. Add execution context metadata first (Agent mode, Local, Background)
 2. Execute in parallel (different topics)
 3. Use NotebookLM for synthesis
@@ -170,11 +182,13 @@ pip install pyyaml
 ### Action Plan
 
 **This Week:**
+
 1. Add execution context to 10 research tasks (T-143-T-151)
 2. Use MCP-EXT tasks as templates
 3. Bulk-add using script
 
 **This Month:**
+
 1. Add execution context to all high-priority ready tasks
 2. Add to tasks as they're created
 3. Update existing in-progress tasks
@@ -188,6 +202,7 @@ pip install pyyaml
 **Status:** All ready with execution context
 
 **Plan:**
+
 - ✅ Complete MCP-EXT-1 testing
 - 🚀 Implement MCP-EXT-2, MCP-EXT-3 (this week)
 - 📋 Continue with MCP-EXT-4 through MCP-EXT-10 (next week)
@@ -201,6 +216,7 @@ pip install pyyaml
 **Status:** 50+ ready, missing execution context
 
 **Plan:**
+
 - Add execution context metadata (30 min)
 - Execute in parallel (this week)
 - Document findings with NotebookLM
@@ -214,6 +230,7 @@ pip install pyyaml
 **Status:** 58 tasks in progress
 
 **Plan:**
+
 - Complete before starting new work
 - Focus on high-priority in-progress tasks
 - Reduce context switching
@@ -227,6 +244,7 @@ pip install pyyaml
 ### ✅ Can Execute in Parallel
 
 **This Week:**
+
 - **MCP-EXT-2 + MCP-EXT-3** (different tools, can do simultaneously)
 - **Research tasks** (T-143, T-144, T-145, T-148, T-149) - all different topics
 - **MCP extensions + Research** (different domains)
@@ -252,9 +270,11 @@ pip install pyyaml
 ### Tasks Ready for Parallel Execution
 
 **Research (All can run simultaneously):**
+
 - T-143, T-144, T-145, T-148, T-149, T-150, T-151
 
 **MCP Extensions (Can work in parallel sessions):**
+
 - MCP-EXT-3, MCP-EXT-4, MCP-EXT-5 (no dependencies on each other)
 
 ---

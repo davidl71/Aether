@@ -21,17 +21,20 @@ This document defines the workflow for maintaining `API_DOCUMENTATION_INDEX.md` 
   - [ ] Website URL
   - [ ] Description
   - [ ] Relevance to Box Spread Trading
+
 - [ ] **Include recommended fields**:
   - [ ] Key Features
   - [ ] API Types
   - [ ] Integration Considerations
   - [ ] Use Cases
+
 - [ ] **Format URLs** using angle brackets: `<https://example.com>`
 - [ ] **Add to appropriate section** (or create new section if needed)
 - [ ] **Update comparison tables** if applicable
 - [ ] **Run validation scripts**:
   - [ ] `./scripts/validate_docs_links.sh`
   - [ ] `./scripts/validate_docs_format.py`
+
 - [ ] **Update summary document** if needed (`API_DOCUMENTATION_SUMMARY.md`)
 - [ ] **Update topic indices** if applicable (`docs/indices/`)
 
@@ -124,6 +127,7 @@ This document defines the workflow for maintaining `API_DOCUMENTATION_INDEX.md` 
 Create `.git/hooks/pre-commit`:
 
 ```bash
+
 #!/bin/bash
 # Pre-commit hook for documentation validation
 
@@ -131,6 +135,7 @@ DOCS_DIR="docs"
 SCRIPTS_DIR="scripts"
 
 # Check if documentation files changed
+
 if git diff --cached --name-only | grep -q "$DOCS_DIR/API_DOCUMENTATION_INDEX.md"; then
   echo "🔍 Validating documentation..."
 
@@ -203,6 +208,7 @@ jobs:
 For APIs with version numbers, include in entry:
 
 ```markdown
+
 ### API Name
 
 - **Version**: 1.2.3
@@ -215,6 +221,7 @@ For APIs with version numbers, include in entry:
 Consider maintaining a changelog for major API changes:
 
 ```markdown
+
 ### Version History
 
 - **1.2.3** (2025-01-27): Added new endpoint

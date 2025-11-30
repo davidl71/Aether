@@ -1,6 +1,6 @@
 # Exarp Script Path Issue - Todo2 Plan
 
-**Date**: 2025-11-29  
+**Date**: 2025-11-29
 **Status**: Plan Created
 
 ---
@@ -14,13 +14,15 @@ This document outlines the Todo2 plan for addressing the Exarp script path issue
 ## Tasks Created
 
 ### 1. T-20251129180920-1: Investigate Exarp script discovery mechanism
-**Priority**: Medium 🟡  
-**Status**: Todo  
+
+**Priority**: Medium 🟡
+**Status**: Todo
 **Tags**: #exarp #investigation #debugging #automation
 
 **Objective**: Understand how Exarp daily automation discovers and executes scripts to resolve the "Script not found" issue.
 
 **Key Deliverables**:
+
 - Document how Exarp finds scripts
 - Identify why scripts in `scripts/` directory aren't being found
 - Create findings document with recommendations
@@ -29,13 +31,15 @@ This document outlines the Todo2 plan for addressing the Exarp script path issue
 ---
 
 ### 2. T-20251129180920-2: Create wrapper script for Exarp daily automation using MCP tools
-**Priority**: High 🟠  
-**Status**: Todo  
+
+**Priority**: High 🟠
+**Status**: Todo
 **Tags**: #exarp #automation #mcp #scripting #workaround
 
 **Objective**: Create a wrapper script that orchestrates Exarp MCP tools to replicate daily automation functionality.
 
 **Key Deliverables**:
+
 - Python/bash script that calls all three Exarp MCP tools
 - Generates combined report similar to daily automation
 - Handles errors gracefully
@@ -47,13 +51,15 @@ This document outlines the Todo2 plan for addressing the Exarp script path issue
 ---
 
 ### 3. T-20251129180920-3: Integrate Exarp MCP tools into daily automation script
-**Priority**: High 🟠  
-**Status**: Todo  
+
+**Priority**: High 🟠
+**Status**: Todo
 **Tags**: #exarp #automation #integration #daily-automation
 
 **Objective**: Enhance existing daily automation script to include Exarp MCP tools alongside current automation tasks.
 
 **Key Deliverables**:
+
 - Modify `scripts/daily_automation_with_link_fixing.sh` to call Exarp MCP tools
 - Combine Exarp reports with existing reports
 - Maintain backward compatibility
@@ -64,13 +70,15 @@ This document outlines the Todo2 plan for addressing the Exarp script path issue
 ---
 
 ### 4. T-20251129180920-4: Monitor Exarp package updates for script discovery fix
-**Priority**: Low 🟢  
-**Status**: Todo  
+
+**Priority**: Low 🟢
+**Status**: Todo
 **Tags**: #exarp #monitoring #maintenance #updates
 
 **Objective**: Set up monitoring to detect when Exarp package updates fix the script discovery issue.
 
 **Key Deliverables**:
+
 - Document current Exarp version
 - Create update check script
 - Create test script to verify script discovery fix
@@ -82,13 +90,15 @@ This document outlines the Todo2 plan for addressing the Exarp script path issue
 ---
 
 ### 5. T-20251129180920-5: Document Exarp script path workaround and best practices
-**Priority**: Medium 🟡  
-**Status**: Todo  
+
+**Priority**: Medium 🟡
+**Status**: Todo
 **Tags**: #exarp #documentation #best-practices #workaround
 
 **Objective**: Create comprehensive documentation for using Exarp MCP tools as workaround for script discovery issue.
 
 **Key Deliverables**:
+
 - Enhance `docs/EXARP_SCRIPT_PATH_ISSUE_RESOLVED.md` with examples
 - Create `docs/EXARP_MCP_TOOLS_USAGE.md` (if needed)
 - Add to main project documentation index
@@ -109,6 +119,7 @@ T-20251129180920-4 (Monitor Updates) ──┘
 ```
 
 **Notes**:
+
 - Tasks 2 and 3 can be worked on in parallel
 - Task 5 (Documentation) should be done after tasks 2 and 3 are complete
 - Task 4 (Monitoring) is independent and can be done anytime
@@ -118,6 +129,7 @@ T-20251129180920-4 (Monitor Updates) ──┘
 ## Recommended Execution Order
 
 ### Phase 1: Immediate Workarounds (High Priority)
+
 1. **T-20251129180920-2**: Create wrapper script for Exarp daily automation
    - Provides immediate workaround
    - Can be used independently
@@ -129,6 +141,7 @@ T-20251129180920-4 (Monitor Updates) ──┘
    - Estimated: 2-3 hours
 
 ### Phase 2: Investigation and Documentation (Medium Priority)
+
 3. **T-20251129180920-1**: Investigate Exarp script discovery mechanism
    - Helps understand root cause
    - May reveal permanent fix
@@ -140,6 +153,7 @@ T-20251129180920-4 (Monitor Updates) ──┘
    - Estimated: 1-2 hours
 
 ### Phase 3: Long-term Monitoring (Low Priority)
+
 5. **T-20251129180920-4**: Monitor Exarp package updates
    - Ongoing task
    - Can be automated
@@ -150,6 +164,7 @@ T-20251129180920-4 (Monitor Updates) ──┘
 ## Success Criteria
 
 ### Task 2 (Wrapper Script) ✅
+
 - [ ] Script executes all three Exarp MCP tools
 - [ ] Generates combined report
 - [ ] Handles errors gracefully
@@ -157,23 +172,27 @@ T-20251129180920-4 (Monitor Updates) ──┘
 - [ ] Returns proper exit codes
 
 ### Task 3 (Integration) ✅
+
 - [ ] Daily automation script calls Exarp MCP tools
 - [ ] Combined report includes Exarp results
 - [ ] No breaking changes to existing functionality
 - [ ] Documentation updated
 
 ### Task 1 (Investigation) ✅
+
 - [ ] Documented how Exarp finds scripts
 - [ ] Identified root cause of script discovery issue
 - [ ] Created findings document with recommendations
 
 ### Task 5 (Documentation) ✅
+
 - [ ] Enhanced existing documentation with examples
 - [ ] Created usage guide (if needed)
 - [ ] Added to documentation index
 - [ ] Included troubleshooting guide
 
 ### Task 4 (Monitoring) ✅
+
 - [ ] Current Exarp version documented
 - [ ] Update check script created
 - [ ] Test script created to verify fixes
@@ -184,18 +203,22 @@ T-20251129180920-4 (Monitor Updates) ──┘
 ## Current Status
 
 **Workaround**: ✅ Working
+
 - Individual MCP tools work perfectly
 - Our daily automation script works perfectly
 
 **Scripts Created**: ✅ Complete
+
 - `scripts/automate_docs_health_v2.py`
 - `scripts/automate_todo2_alignment_v2.py`
 - `scripts/automate_todo2_duplicate_detection.py`
 
 **Configuration**: ✅ Complete
+
 - `.exarp/config.json` created
 
 **Issue**: ❌ Still Present
+
 - Exarp daily automation still reports "Script not found"
 - Likely an Exarp internal issue with script discovery
 
@@ -220,5 +243,5 @@ T-20251129180920-4 (Monitor Updates) ──┘
 
 ---
 
-**Last Updated**: 2025-11-29  
+**Last Updated**: 2025-11-29
 **Status**: Plan created, ready for execution

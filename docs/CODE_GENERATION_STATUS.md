@@ -131,6 +131,7 @@ class AlpacaAdapter : public brokers::IBroker {
 
 ```cpp
 // native/include/brokers/alpaca_adapter.h
+
 #pragma once
 
 #include "broker_interface.h"

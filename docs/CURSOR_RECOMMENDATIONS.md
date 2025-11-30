@@ -74,19 +74,25 @@ MCP (Model Context Protocol) servers enhance Cursor's AI capabilities. See [MCP_
 These tools are used by `scripts/run_linters.sh` and should be installed:
 
 ```bash
+
 # C++ Static Analysis
+
 brew install cppcheck
 
 # Python Security Scanning
+
 pip install bandit
 
 # Go Linting
+
 brew install golangci-lint
 
 # Swift Linting
+
 brew install swiftlint
 
 # Clang Static Analyzer (usually comes with Xcode)
+
 xcode-select --install
 ```
 

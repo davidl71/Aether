@@ -8,6 +8,7 @@
 ## Overview
 
 The automated documentation health system monitors documentation quality across multiple dimensions:
+
 - **Link Validity**: Internal and external links
 - **Format Compliance**: Markdown syntax and template adherence
 - **Content Completeness**: Required sections and fields
@@ -25,13 +26,17 @@ This runs on a schedule (cron) to keep documentation healthy and catch issues ea
 Run the analysis script manually:
 
 ```bash
+
 # Basic run
+
 python3 scripts/automate_docs_health.py
 
 # With custom config
+
 python3 scripts/automate_docs_health.py --config scripts/docs_health_config.json
 
 # With custom output path
+
 python3 scripts/automate_docs_health.py --output docs/my_health_report.md
 ```
 
@@ -40,27 +45,34 @@ python3 scripts/automate_docs_health.py --output docs/my_health_report.md
 Set up a cron job to run automatically:
 
 ```bash
+
 # Run weekly on Tuesday at 2:00 AM (default)
+
 ./scripts/setup_docs_health_cron.sh weekly tuesday 02:00
 
 # Run daily at 4:00 AM
+
 ./scripts/setup_docs_health_cron.sh daily 04:00
 
 # Run monthly on the 1st at 3:00 AM
+
 ./scripts/setup_docs_health_cron.sh monthly 1 03:00
 ```
 
 **View cron jobs:**
+
 ```bash
 crontab -l
 ```
 
 **Remove cron job:**
+
 ```bash
 crontab -l | grep -v 'run_docs_health_cron.sh' | crontab -
 ```
 
 **Logs:**
+
 - Success logs: `scripts/docs_health.log`
 - Error logs: `scripts/docs_health_errors.log`
 
@@ -78,6 +90,7 @@ crontab -l | grep -v 'run_docs_health_cron.sh' | crontab -
 ```
 
 **Options:**
+
 - `stale_threshold_days`: Number of days before a document is considered stale (default: 90)
 - `output_path`: Path to write the health report
 
@@ -130,6 +143,7 @@ crontab -l | grep -v 'run_docs_health_cron.sh' | crontab -
 ### 6. Health Score Calculation
 
 **Overall Score (0-100%)** based on:
+
 - **40%**: Link Health (broken links ratio)
 - **20%**: Format Health (format errors)
 - **20%**: Date Currency (stale documents)
@@ -170,11 +184,13 @@ The script generates/updates `docs/DOCUMENTATION_HEALTH_REPORT.md` with:
 **Issue**: External link checking is slow
 
 **Solutions**:
+
 - External links are checked with 10-second timeout
 - Consider running with limited external link checking
 - Network issues may cause delays
 
 **Workaround**: Run with timeout:
+
 ```bash
 timeout 300 python3 scripts/automate_docs_health.py
 ```
@@ -184,6 +200,7 @@ timeout 300 python3 scripts/automate_docs_health.py
 **Issue**: Some external links fail but are actually valid
 
 **Causes**:
+
 - Rate limiting
 - Temporary network issues
 - Sites requiring authentication
@@ -201,6 +218,7 @@ timeout 300 python3 scripts/automate_docs_health.py
 **Issue**: Format validation reports errors
 
 **Solution**:
+
 - Review `scripts/validate_docs_format.py` output
 - Fix entries in `API_DOCUMENTATION_INDEX.md`
 - Ensure entries follow template in `API_DOCUMENTATION_ENTRY_TEMPLATE.md`
@@ -225,9 +243,13 @@ timeout 300 python3 scripts/automate_docs_health.py
 Run multiple health checks together:
 
 ```bash
+
 # Create combined script
+
 cat > scripts/run_all_health_checks.sh << 'EOF'
+
 #!/bin/bash
+
 python3 scripts/automate_pwa_review.py
 python3 scripts/automate_todo2_alignment.py
 python3 scripts/automate_docs_health.py
@@ -240,8 +262,11 @@ chmod +x scripts/run_all_health_checks.sh
 Add to pre-commit to check documentation before commits:
 
 ```bash
+
 # In .git/hooks/pre-commit
+
 python3 scripts/automate_docs_health.py --output /tmp/docs_check.md
+
 # Check health score and warn if below threshold
 ```
 
@@ -252,6 +277,7 @@ python3 scripts/automate_docs_health.py --output /tmp/docs_check.md
 ### Custom Validation Rules
 
 Modify `scripts/automate_docs_health.py` to:
+
 - Add custom validation rules
 - Check additional file types
 - Validate specific document structures
@@ -260,13 +286,17 @@ Modify `scripts/automate_docs_health.py` to:
 ### Integration with Notification Systems
 
 **Combine with notification systems:**
+
 - Add email notifications on low health scores
 - Send Slack messages with summary
 - Create GitHub issues for broken links
 
 **Example:**
+
 ```python
+
 # In automate_docs_health.py
+
 if health_score < 70:
     send_notification(f"Documentation health dropped to {health_score}%")
 ```

@@ -237,7 +237,9 @@ def summarize_text(text):
 ```bash
 python -m venv venv
 source venv/bin/activate  # On macOS/Linux
+
 # OR
+
 venv\Scripts\activate  # On Windows
 ```
 

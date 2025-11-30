@@ -10,6 +10,7 @@
 Cursor Bugbot is an AI-powered tool that automatically reviews GitHub pull requests (PRs), identifying bugs, security vulnerabilities, and code quality issues. It analyzes PR diffs and provides comments with explanations and suggested fixes.
 
 **Key Features:**
+
 - Automatic PR reviews on each update
 - Manual triggering via comments
 - Security vulnerability detection
@@ -35,6 +36,7 @@ Cursor Bugbot is an AI-powered tool that automatically reviews GitHub pull reque
    - Grant necessary permissions
 
 **Requirements:**
+
 - Admin access to Cursor account
 - Admin access to GitHub organization (for org-level installation)
 - Or repository admin access (for repo-level installation)
@@ -53,17 +55,20 @@ Cursor Bugbot is an AI-powered tool that automatically reviews GitHub pull reque
 ### Repository Settings
 
 **Enable/Disable Bugbot:**
+
 - Toggle Bugbot per repository from your installations list
 - Bugbot runs only on PRs you author (default behavior)
 
 ### Personal Settings
 
 **Review Triggers:**
+
 - **Automatic**: Run on every PR update (default)
 - **Manual Only**: Run only when mentioned by commenting `cursor review` or `bugbot run`
 - **Once Per PR**: Run only once per PR, skipping subsequent commits
 
 **Configuration Location:**
+
 - Cursor Dashboard → Bugbot → Personal Settings
 
 ---
@@ -75,11 +80,13 @@ Cursor Bugbot is an AI-powered tool that automatically reviews GitHub pull reque
 Create `.cursor/BUGBOT.md` in your project root to provide context for reviews.
 
 **How It Works:**
+
 - Bugbot includes the root `.cursor/BUGBOT.md` file
 - Additional `.cursor/BUGBOT.md` files found while traversing upward from changed files are also included
 - This allows directory-specific rules for different parts of the codebase
 
 **Example Structure:**
+
 ```
 .cursor/
   BUGBOT.md          # Root-level rules (always included)
@@ -98,6 +105,7 @@ agents/backend/
 **Location**: `.cursor/BUGBOT.md`
 
 **Contents:**
+
 - Project overview and context
 - Critical security requirements (trading software safety)
 - Code style requirements (C++20, 2-space indent, Allman braces)
@@ -117,6 +125,7 @@ agents/backend/
 ### Automatic Reviews
 
 Bugbot automatically reviews PRs when:
+
 - A new PR is created
 - New commits are pushed to an existing PR
 - PR is updated in any way
@@ -152,6 +161,7 @@ bugbot run verbose=true
 ```
 
 **Verbose Output Includes:**
+
 - Detailed analysis logs
 - Request ID for support
 - Step-by-step review process
@@ -213,11 +223,13 @@ If Bugbot isn't functioning as expected:
 ## Pricing
 
 ### Pro Plan
+
 - **Cost**: $40 per month
 - **Features**: Unlimited Bugbot reviews
 - **Limit**: Up to 200 PRs per month across all repositories
 
 ### Teams Plan
+
 - **Cost**: $40 per user per month
 - **Features**: Unlimited code reviews across all PRs
 - **Usage**: Pooled usage across your team
@@ -281,6 +293,7 @@ Bugbot complements existing CI/CD workflows:
 - **Static Analysis**: Complements linters and analyzers
 
 **Workflow:**
+
 1. Developer creates PR
 2. Bugbot reviews code quality and security
 3. CI/CD runs tests and builds
@@ -304,6 +317,7 @@ Bugbot works alongside static analysis tools:
 ### Example 1: Security Issue Detection
 
 **Bugbot Comment:**
+
 ```
 ⚠️ Security Issue: Hardcoded API Key Detected
 
@@ -312,6 +326,7 @@ File: native/src/market_data_client.cpp:42
 Found hardcoded API key in source code. This is a security risk.
 
 Recommendation:
+
 - Move API key to environment variable
 - Use secure configuration management
 - Never commit credentials to repository
@@ -320,6 +335,7 @@ Recommendation:
 ### Example 2: Code Style Issue
 
 **Bugbot Comment:**
+
 ```
 ⚠️ Code Style: Incorrect Indentation
 
@@ -337,6 +353,7 @@ Should be:
 ### Example 3: Missing Test Coverage
 
 **Bugbot Comment:**
+
 ```
 ⚠️ Testing: Missing Test Coverage
 
@@ -345,6 +362,7 @@ File: native/src/order_manager.cpp
 New function `execute_order()` has no corresponding test file.
 
 Recommendation:
+
 - Create test file: native/tests/order_manager_test.cpp
 - Add test cases for all code paths
 - Ensure tests pass before merging
@@ -371,6 +389,7 @@ Recommendation:
 - Ready for GitHub connection and activation
 
 **Next Steps:**
+
 1. Connect GitHub account in Cursor dashboard
 2. Enable Bugbot on repository
 3. Create a test PR to verify integration

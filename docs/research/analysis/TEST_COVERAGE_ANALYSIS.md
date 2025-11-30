@@ -243,29 +243,39 @@
 ### Running All Tests
 
 ```bash
+
 # From build directory
+
 ctest --test-dir build --output-on-failure
 
 # Or with verbose output
+
 ctest --test-dir build --output-on-failure --verbose
 ```
 
 ### Running Specific Test Suite
 
 ```bash
+
 # Run option chain tests (when created)
+
 ctest --test-dir build -R test_option_chain
 
 # Run rate limiter tests (when created)
+
 ctest --test-dir build -R test_rate_limiter
 ```
 
 ### Test Coverage Report
 
 ```bash
+
 # Generate coverage report (requires coverage build)
+
 cmake --build build --target coverage
+
 # View report
+
 open build/coverage/index.html
 ```
 

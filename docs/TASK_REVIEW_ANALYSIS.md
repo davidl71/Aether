@@ -10,6 +10,7 @@
 **Total Tasks in Review:** 17
 
 **Breakdown:**
+
 - Research Tasks: 4 (can proceed with investigation)
 - Design Tasks: 2 (need clarification)
 - Implementation Tasks: 10 (need clarification)
@@ -56,6 +57,7 @@ These research tasks can proceed with investigation - clarification can come dur
 ## Implementation Tasks (Need Clarification)
 
 ### Multi-Broker & Account Management
+
 1. **T-36:** Implement IB Client Portal API adapter
    - **Clarification:** Use alongside TWS API or as alternative?
 2. **T-37:** Implement broker selection and switching mechanism
@@ -66,12 +68,14 @@ These research tasks can proceed with investigation - clarification can come dur
    - **Clarification:** Duplicate handling, update frequency
 
 ### Bank Loan Integration
+
 5. **T-76:** Implement bank loan position data model and storage
    - **Clarification:** JSON config vs database, API design
 6. **T-77:** Implement loan position entry interface
    - **Clarification:** TUI form vs CLI vs config file, import format
 
 ### Configuration System
+
 7. **T-112:** Implement shared configuration loader
    - **Clarification:** Python, TypeScript, or both?
 8. **T-113:** Add data source configuration UI to PWA
@@ -80,9 +84,11 @@ These research tasks can proceed with investigation - clarification can come dur
    - **Clarification:** Watch for changes vs startup-only?
 
 ### Documentation
+
 10. **T-61:** Document user requirements and assumptions for strategy
-   - **Clarification:** User input needed for risk tolerance, goals, preferences
-   - **Action:** Can proceed with template/documentation structure
+
+- **Clarification:** User input needed for risk tolerance, goals, preferences
+- **Action:** Can proceed with template/documentation structure
 
 ---
 
@@ -99,6 +105,7 @@ These research tasks can proceed with investigation - clarification can come dur
 ## Recommended Actions
 
 ### Immediate (Can Proceed)
+
 1. ✅ **Approve Research Tasks** (T-72, T-73, T-92, T-165)
    - Move to Todo status
    - Begin research phase
@@ -108,6 +115,7 @@ These research tasks can proceed with investigation - clarification can come dur
    - Low priority refactoring
 
 ### Needs Your Input
+
 3. ⚠️ **Review Design Tasks** (T-60, T-111)
    - Provide architectural decisions
    - Define default values or requirements
@@ -125,6 +133,7 @@ These research tasks can proceed with investigation - clarification can come dur
 ## Batch Approval Commands
 
 ### Approve Research Tasks
+
 ```bash
 python3 scripts/batch_update_todos.py update-status \
   --task-ids T-72,T-73,T-92,T-165 \
@@ -132,6 +141,7 @@ python3 scripts/batch_update_todos.py update-status \
 ```
 
 ### Approve Configuration Task
+
 ```bash
 python3 scripts/batch_update_todos.py update-status \
   --task-ids T-20251122115543 \
@@ -151,5 +161,6 @@ python3 scripts/batch_update_todos.py update-status \
 ---
 
 **See Also:**
+
 - `scripts/batch_update_todos.py` - Batch operations tool
 - `docs/BATCH_TODO_UPDATE_SCRIPT.md` - Batch script documentation

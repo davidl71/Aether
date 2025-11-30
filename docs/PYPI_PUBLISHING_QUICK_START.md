@@ -30,11 +30,13 @@
 ### Method 1: Release-Based (Recommended)
 
 1. Update version in `pyproject.toml`:
+
    ```toml
    version = "0.2.0"
    ```
 
 2. Commit and push:
+
    ```bash
    git add pyproject.toml
    git commit -m "Bump version to 0.2.0"
@@ -61,10 +63,13 @@
 ## Verify
 
 ```bash
+
 # Check PyPI
+
 open https://pypi.org/project/exarp-automation-mcp/
 
 # Test installation
+
 pip install exarp-automation-mcp
 python3 -c "from exarp_project_management.server import main; print('✅ OK')"
 ```

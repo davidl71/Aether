@@ -19,7 +19,9 @@ pip install nats-py
 ### Requirements
 
 ```python
+
 # requirements.txt
+
 nats-py>=2.6.0
 ```
 
@@ -148,6 +150,7 @@ async def subscribe_market_data(nc: NATS, symbol: str, callback):
     print(f"Subscribed to {topic}")
 
 # Usage
+
 async def on_market_data(symbol: str, bid: float, ask: float, price: float):
     """Process market data update"""
     print(f"{symbol}: bid={bid}, ask={ask}, last={price}")

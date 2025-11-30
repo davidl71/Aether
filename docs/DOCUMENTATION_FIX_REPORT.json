@@ -1,0 +1,5470 @@
+{
+  "links": [
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_SCORECARD.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_BATCH_APPROVAL_INTEGRATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_QUICK_REFERENCE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PLANNING_DOCS_COMPILED.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BATCH_TODO_QUICK_REFERENCE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SHARED_SCRIPT_FUNCTIONS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_CLEANUP_INTERACTIVE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/HOMEBREW_TAP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/JUPYTERLAB_INTEGRATION_RESEARCH.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/HTML_LINTING_MONITORING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CURSOR_GLOBAL_DOCS_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_EXECUTION_MODE_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/GLOBAL_KIT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TICKER_TUI_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/T-200_MCP_EXTRACTION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_CI_CD_INTEGRATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_SETUP_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/WORKING_COPY_HEALTH_AUTOMATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/RESEARCH_TASKS_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_CLEANUP_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PARALLEL_EXECUTION_PLAN_V2.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/UNIVERSAL_SCRIPTS_COMPATIBILITY_REPORT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DAILY_AUTOMATION_SETUP_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NEXT_STEPS_1-3_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_INTEGRATION_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/XGBOOST_DEEP_RESEARCH.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/QUANTPEDIA_SUBSCRIPTION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/RESEARCH_TASKS_CREATION_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DAILY_AUTOMATION_RUN_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_EXECUTION_CONTEXT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REPOSITORY_HEALTH_AUTOMATION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CURSOR_GLOBAL_DOCS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_ACTION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BROKER_SELECTION_ISRAEL.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NIGHTLY_AUTOMATION_EXECUTION_LOG.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/T_BILLS_AND_FUTURES_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_DEPENDENCIES_ADDED.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TWS_BUILD_PROGRESS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AUTOMATED_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/IBKR_PRO_COMMISSIONS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/INFRASTRUCTURE_AUTOMATION_OPPORTUNITIES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTENSION_SECURITY_AUDIT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SECURITY_INTEGRATION_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_RESOURCES_OPTIMIZED.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TABNINE_CODE_GENERATION_WORKFLOW.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REMOTE_DEVELOPMENT_WORKFLOW.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CME_FEE_SCHEDULE_REBATES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_NEXT_STEPS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_AUTOMATION_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TWS_CONNECTION_TEST.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MONOREPO_REORGANIZATION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CURSOR_PROJECT_COMMANDS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SECURITY_CONTROLS_VERIFICATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AUTOMATION_INTEGRATION_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_PHASE2_PREPARATION_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_HEALTH_AUTOMATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/YOUTUBE_VIDEOS_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ENOCHIAN_MAGIC_NAMES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TOOL_MIGRATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTENSION_MANAGEMENT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_SYNC_SETUP_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NIGHTLY_AUTOMATION_BATCH_APPROVAL.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_FIX_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/VIRTUAL_SECURITIES_INTEGRATION_RESEARCH.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BUILTIN_VS_THIRDPARTY_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REFACTORING_PROOF_OF_CONCEPT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/INTEGRATION_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_BEGINNER_TIPS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_OPTIMIZATION_SESSION_ARCHIVE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/INVESTMENT_STRATEGY_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/WORKSPACE_RAM_DISK_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REACT_LINTING_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NIGHTLY_AUTOMATION_IMPLEMENTATION_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TROUBLESHOOTING_BLANK_PAGE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_ALL_RESOURCES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TOOL_LEVEL_CHERRY_PICKING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TROUBLESHOOTING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CURSOR_GLOBAL_DOCS_AUTOMATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TRACTATUS_TROUBLESHOOTING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AUTOMATION_TOOL_PROMPTING_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/UBUNTU_AGENT_QUICK_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_ALIGNMENT_AUTOMATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SCORECARD_RECOMMENDATIONS_PROGRESS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_REVIEW_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/GO_MARKET_DATA_GATEWAY_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTENSION_AUDIT_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_SPLIT_STRATEGY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CODE_GENERATION_STATUS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_INTEGRATION_TESTING_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_EXTENSIONS_IMPLEMENTATION_STATUS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXARP_SCRIPT_PATH_TODO2_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SHELL_COMPLETION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTENSION_SECURITY_PRIORITY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ETORO_PLATFORM.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/GIT_LFS_CANDIDATES_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_BUILD_STATUS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_PARALLEL_IMPLEMENTATION_PROGRESS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NIGHTLY_AUTOMATION_QUICK_START.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_CONSISTENCY_REVIEW.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DESIGN_DECISIONS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_TROUBLESHOOTING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_INDEX.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DEVICE_TASK_DELEGATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_STATUS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXARP_LINK_FIXING_INTEGRATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ios_certificate_pinning.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ANSIBLE_GIT_LFS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ENVIRONMENT_DOCUMENTATION_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ISRAELI_FUND_TYPES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NETWORKX_ANALYSIS_FINDINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_MESSAGE_SCHEMAS_FOR_API_DOCS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CODEQL_WORKFLOW_PUSH.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DEPLOYMENT_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PWA_AUTOMATION_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_EXTERNAL_TOOL_HINTS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_UBUNTU_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ROUTINE_AUTOMATION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/RESEARCH_TASKS_PROGRESS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TOOL_DEPRECATION_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/API_DOCUMENTATION_ENTRY_TEMPLATE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_SPLIT_SEQUENTIAL_WORKFLOW.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BACKEND_SERVICES_DAEMONIZED.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NIGHTLY_AUTOMATION_SCHEDULING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DEPENDENCY_SECURITY_AUTOMATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ECN_EXECUTION_FINANCIAL_TOOLS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/T-200_MCP_EXTRACTION_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AGENTIC_TOOLS_WORKFLOW_EXAMPLES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PYTHON_VENV_STANDARDIZATION_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CBOE_EDGX_FEE_SCHEDULE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PISTIS_SOPHIA_NAMES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_PRIORITY_ALIGNMENT_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TOOL_COUNT_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PWA_IMPROVEMENT_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CI_CD_ENHANCEMENT_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_REORGANIZATION_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AUTOMATION_INTEGRATION_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_PARALLEL_WORK_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ONA_WORKSPACE_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_SPLIT_DOCS_STRATEGY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_INTEGRATION_STATUS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PWA_REVIEW_AUTOMATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AI_FRIENDLY_CODE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ANSIBLE_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/INTELLIGENT_AUTOMATION_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TOOLS_FOR_BROKERS_FIX_API.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_PLANNING_ANALYSIS_QUERIES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REPOSITORY_RENAME_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NEXT_STEPS_1-3_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_TYPESCRIPT_TESTING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/LEAN_STRATEGY_ARCHITECTURE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TASKS_T191_T197_T140_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CURSOR_AI_TUTORIAL.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXARP_SCRIPT_DISCOVERY_INVESTIGATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_MESSAGE_FORMAT_VALIDATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PHASE_CONFLICT_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CRITICAL_ACTION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/STYLELINT_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PYPI_PUBLISHING_QUICK_START.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/IPAD_FRONTEND_ARCHITECTURE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROMPT_TOWER_USAGE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MERGED_ACTION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MONOREPO_REORGANIZATION_STATUS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_NAME_RESEARCH.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/LIBRARY_USAGE_IN_PWA_TUI.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_ANALYSIS_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ISRAELI_BROKER_POSITION_IMPORT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/QUARTERLY_REVIEW_SCHEDULE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTERNAL_COMPONENTS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TEST_FIXES_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TASKS_AWAITING_INPUT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_TESTING_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REVIEW_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MACOS_M4_AGENT_QUICK_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_STATUS_REPORT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTERNAL_RESOURCES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_E2E_TEST_RESULTS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TABNINE_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/API_DOCUMENTATION_INDEX.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_TOPICS_REGISTRY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_PHASE2_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NIGHTLY_TASK_AUTOMATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CBOE_FREQUENT_TRADER_PROGRAM.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_PROJECT_MANAGEMENT_SERVER_PROPOSAL.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/decimal_migration_planning.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_CONFIGURATION_FIX.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_EXECUTION_CONTEXT_ENHANCED.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_CURSOR_CHAT_TROUBLESHOOTING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_EXECUTION_CONTEXT_IMPLEMENTED.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_ADD_SOURCES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_EXTENSIONS_INTEGRATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SHELLSPEC_INTEGRATION_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_UPDATE_METHODS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ADVANCED_AUTOMATION_STRATEGY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_API_DOCUMENTATION_SUGGESTIONS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_INTEGRATION_CXX.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_NEXT_TASKS_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/FPGA_HFT_FRAMEWORKS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_RESPONSIVENESS_REPORT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_PHASE2_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/WEB_SPA_ARCHITECTURE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CPPTRADER_INTEGRATION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/LINEAR_INTEGRATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PSEUDOCODE_IMPLEMENTATION_STRATEGY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_INTEGRATION_SPLIT_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PWA_FEATURE_PRIORITIZATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_SPLIT_TRACTATUS_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PARALLEL_EXECUTION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AUTOMATION_OPPORTUNITIES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_PSEUDOCODE_RESEARCH.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ARCHITECTURE_DOCUMENTATION_OPTIONS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_PRIORITIZED_ACTION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ZORRO_INTEGRATION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/USER_VS_WORKSPACE_SETTINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXARP_SCRIPT_PATH_ISSUE_RESOLVED.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BOX_SPREAD_CPP_INTEGRATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/INVESTMENT_STRATEGY_REQUIREMENTS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_MAINTENANCE_WORKFLOW.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_NOTEBOOKLM_DISABLED.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ENVIRONMENT_CONFIGURATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PYPI_PUBLISHING_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AUTOMATION_INTEGRATION_STATUS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PARALLEL_EXECUTION_STATUS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_STATUS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ONA_CONNECTIVITY_TEST.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_INTEGRATION_PYTHON.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/LIBRARIES_FOR_PRIMARY_GOALS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EWRAPPER_BEST_PRACTICES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PARALLEL_DEVELOPMENT_WORKFLOW_EXAMPLE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_CREATE_FRESH_NOTEBOOK.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTENSION_CATEGORIES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/RESEARCH_INDEX.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_SYNTHETIC_FINANCING_ALIGNMENT_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_REVIEW.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_SPLIT_TODO2_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TASK_REVIEW_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_READY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CLI_TUI_TOOLS_RECOMMENDATIONS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ONEPASSWORD_INTEGRATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/UBUNTU_AGENT_SETUP_COMMANDS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AI_AGENT_SHELL_SCRIPT_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AGENT_DELEGATION_AUTOMATION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SCORECARD_2025-11-29.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_AUTOMATED_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NEXT_STEPS_RENAME_AND_SPLIT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_CONFIGURATION_UPDATE_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_INTERACTIVE_TOOLS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/JAVASCRIPT_LINTING_AND_ERROR_DETECTION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_SPLIT_BOUNDARIES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/YOUTUBE_VIDEOS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DAILY_AUTOMATION_REPORT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_RENAME_AND_SPLIT_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/GITHUB_WORKFLOWS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_DESKTOP_COMMANDER_REMOVAL.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_GLOBAL_VS_PROJECT_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_TASKS_CI_CD_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/RULES_OPTIMIZATION_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AGENTIC_TOOLS_USAGE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_RESEARCH_TASKS_STRATEGY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_CONFIG_LINT_REPORT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXARP_SCRIPT_PATH_FIX.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SYSTEMD_INTEGRATION_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CURSOR_RECOMMENDATIONS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REMOVE_REDUNDANT_EXTENSIONS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_TRACTATUS_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/GITKRAKEN_MCP_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TASK_CLARIFICATION_RESOLUTION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_T230_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SHORTCUTS_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTENSIONS_DISABLED.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_ENHANCEMENT_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/APPLE_INTELLIGENCE_QUICK_REFERENCE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EW RAPPER_IMPLEMENTATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/THREE_AUTOMATION_TASKS_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_DLQ_IMPLEMENTATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PYPI_OIDC_EXPLANATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_SPLIT_DEPENDENCY_MANAGEMENT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PLATFORM_SPECIFIC_SETTINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_AUTOMATION_MCP_EXTENSIONS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AUTOMATION_OPPORTUNITIES_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BROKEREE_SOLUTIONS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PARALLEL_CURSOR_AGENTS_WORKFLOW.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_GUI_VS_HEADLESS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BREADCRUMB_LOGGING_TRADING_TESTING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TUI_BREADCRUMB_LOGGING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TRADING_INFRASTRUCTURE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO_SYNC_AUTOMATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_PHASE3_4_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ITERM2_INTEGRATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/COMMON_PATTERNS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_PARALLEL_IMPLEMENTATION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REFACTORING_SUMMARY_2025-11-19.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_DUPLICATE_FIX.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/XGBOOST_IMPLEMENTATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REMOTE_AGENTS_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/INTEGRATION_STATUS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_ANALYSIS_AND_NEXT_STEPS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_REQUIRED_SERVERS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DISCOUNT_BANK_RECONCILIATION_FORMAT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SELF_HOSTED_RUNNER_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/GITIGNORE_BUILD_ARTIFACTS_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ESLINT_MIGRATION_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_BACKGROUND_VS_INTERACTIVE_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TEST_COVERAGE_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NIGHTLY_AUTOMATION_MONITORING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKS_WORKFLOW.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_POST_RESTART_REVIEW.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_CLEANUP_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/RAM_OPTIMIZATION_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXARP_MCP_TEST_RESULTS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXARP_MCP_TOOLS_USAGE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ONA_MCP_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PYTHON_ENVIRONMENT_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AGENT_HOSTNAMES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_STATUS_REVIEW.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SECURE_SERVICE_CONTROL_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_IMPLEMENTATION_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_EXECUTION_CONTEXT_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_IMPLEMENTATION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_DUPLICATE_DETECTION_REPORT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_PHASE2_HIGH_PRIORITY_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CBOE_ONE_WEEK_EXPLORATION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_COMPLETE_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PYTHON_UV_MIGRATION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/LEGACY_FINANCIAL_SYSTEMS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/indices/TRADING_FRAMEWORKS_INDEX.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/indices/FIX_PROTOCOL_INDEX.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/indices/QUANTITATIVE_FINANCE_INDEX.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/indices/TRADING_SIMULATORS_INDEX.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/indices/MARKET_DATA_INDEX.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CPPTRADER_INTEGRATION_POINTS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SSH_SETUP_FOR_AUTOMATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_NAME_RECOMMENDATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MACOS_M4_AGENT_SETUP_COMMANDS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BACKEND_ENDPOINTS_IPAD.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/FEATURE_TRACKING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_PHASE1_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_HEALTH_REPORT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_CLEANUP_STEPS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/API_DOCUMENTATION_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/platform/MULTI_ACCOUNT_AGGREGATION_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/platform/INVESTMENT_STRATEGY_FRAMEWORK.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/platform/SYNTHETIC_FINANCING_ARCHITECTURE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/platform/README.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/platform/PRIMARY_GOALS_AND_REQUIREMENTS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/message_schemas/README.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/external/TWS_API_QUICK_REFERENCE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/external/CPP20_FEATURES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/external/ECLIENT_EWRAPPER_PATTERNS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/external/CMake_PRESETS_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BATCH_TODO_UPDATE_SCRIPT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SESSION_HANDOFF_2025-11-29.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MAINTENANCE_SCRIPTS_VALIDATION_REPORT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_INDEX_UPDATED.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTRACTED_REPOSITORIES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_AGENT_CONFIGURATION_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SHELL_SCRIPT_TESTING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/RAM_OPTIMIZATION_OPPORTUNITIES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DAILY_AUTOMATION_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CMake_EXTENSION_ENHANCEMENTS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/EWRAPPER_STATUS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TWS_API_IMPLEMENTATION_COMPARISON.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TWS_API_MARKET_DATA_LEARNINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TWS_API_BEST_PRACTICES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TWS_API_DOCKER_LEARNINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/ICLI_LEARNINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/IB_API_QUICK_REFERENCE_LEARNINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TWS_API_CODE_EXAMPLES_LEARNINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TWS_API_TROUBLESHOOTING_LEARNINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TRADE_FRAME_TWS_PATTERNS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/WASM_INTEGRATION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/INTEGRATION_TESTING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/ALPACA_INTEGRATION_PLAN_V2.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/TWS_INTEGRATION_STATUS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/SYNTHETIC_LENDING_BORROWING_IMPLEMENTATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/CURSOR_DOCS_USAGE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEDGER_PERSISTENCE_USAGE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/OPENALGO_INTEGRATION_PATTERNS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/QUANTLIB_INTEGRATION_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/CURSOR_IGNORE_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/MCP_SERVERS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LIVEVOL_AUTHENTICATION_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/WINDOWS_SETUP_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_PWA_TUI_INTEGRATION_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/IMPLEMENTATION_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LIVEVOL_API_CREDENTIALS_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEDGER_IMPORT_USAGE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/NLOPT_INTEGRATION_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEDGER_CORE_LIBRARY_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/VALIDATION_SETUP_FINAL.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_REST_API_WRAPPER_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/QUICK_START.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_PWA_TUI_INTEGRATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LIVEVOL_TRIAL_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/ONIXS_FIX_DICTIONARY_TOOLS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_PYBIND11_INTEGRATION_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/CURSOR_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_ALPACA_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_BROKER_ADAPTERS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEDGER_INTEGRATION_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/archive/ACTION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/archive/CODE_IMPROVEMENTS_ACTION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/archive/ALPACA_INTEGRATION_PLAN_DEPRECATED.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/design/portfolio-optimization-framework.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/design/AI_AGENT_CONTEXT_STANDARDS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/analysis/TYPESCRIPT_ERRORS_ALIGNMENT_INTEGRATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/analysis/TYPESCRIPT_ERRORS_INTEGRATION_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/analysis/PARALLEL_EXECUTION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/analysis/code-improvements-mathematical-finance.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/analysis/TODO2_PLAN_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/IMPLEMENTATION_COMPLETE_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/ALPACA_BACKEND_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/PLAN_IMPLEMENTATION_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/EMSCRIPTEN_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/CURSOR_BUGBOT_INTEGRATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/WASM_QUICK_START.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_IBKR_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/DISTRIBUTED_COMPILATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/QUICK_START_CROSS_PLATFORM.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LIVEVOL_CREDENTIALS_WHERE_TO_FIND.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NETWORKX_INTEGRATION_TASK.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_DUPLICATE_DETECTION_AUTOMATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TRADING_SERVER_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_IMPORT_FIX.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TWS_BUILD_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TOOL_COUNT_ANALYSIS_TODO2.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_TASKS_1_2_STATUS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_INTEGRATION_TYPESCRIPT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DEVELOPMENT_ENVIRONMENT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/WISHLIST.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/CURRENCY_EXCHANGE_RISK.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/SETTINGS_DUPLICATION_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/SYNTHETICFI_LENDING_BORROWING_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/FOSSOLOGY_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/MCP_OPTIMIZATION_RECOMMENDATIONS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/SECURITY_VULNERABILITIES_REVIEW.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/TUI_TEST_COVERAGE_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/CODE_IMPROVEMENTS_FROM_NOTEBOOKLM.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/TASK_ALIGNMENT_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/STATIC_ANALYSIS_ANNOTATIONS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/ALPACA_API_INTEGRATION_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LIVEVOL_QUICK_START.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LIVEVOL_QUOTED_SPREADS_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/CROSS_PLATFORM_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/PAPER_TRADING_VALIDATION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/MASSIVE_INTEGRATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/SWIFTNESS_DATA_MODEL.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_MIGRATION_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/COMMISSIONS_AND_HEDGING_IMPLEMENTATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NEXT_STEPS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/INTELLIGENT_AUTOMATION_REFACTORING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PARALLEL_SCORECARD_TASKS_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CI_CD_QUICK_START.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MODELING_TOOLS_OVERVIEW.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_NEXT_STEPS_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ALGORITHMS_AND_BEHAVIOR.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_INTEGRATION_SWIFT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PCAP_CAPTURE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_NEXT_STEPS_RECOMMENDATIONS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/RESEARCH_IB_PYTHON_TRADING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/NOTEBOOKLM_DEEP_RESEARCH_WORKFLOW.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/CME_RESEARCH.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/RESEARCH_CPP_FINANCIAL_LIBRARIES.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/QUANTPEDIA_BROKERAGE_APIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/SWIFTNESS_IMPORT_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/WORKTREE_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/EIGEN_INTEGRATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/TESTING_STRATEGY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/VALIDATION_SETUP_COMPLETE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/API_DOCUMENTATION_CONSOLIDATION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/STATIC_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/OPEN_TRADING_PLATFORM_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/TABNINE_EVALUATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/RISK_FREE_RATE_METHODOLOGY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/EXTENSION_AUDIT_RESULTS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/MESSAGE_QUEUE_RESEARCH_SYNTHESIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/REST_API_LAYER_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/MULTI_BROKER_ARCHITECTURE_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/BANK_LOAN_POSITION_SYSTEM_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/MULTITHREADED_TRADING_LEARNINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/RESEARCH_FPGA_OPTION_PRICING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/NOTEBOOKLM_OPTIMIZATION_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/RESEARCH_TRADING_ECONOMICS_API.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/IB_CLIENT_PORTAL_API_INTEGRATION_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/RESEARCH_FINANCIAL_LEDGER_PLATFORMS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/NOTEBOOKLM_AUTOMATION_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/NOTEBOOKLM_RESEARCH_SETUP.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/FINANCIAL_DATA_SOURCES_RESEARCH.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/ORATS_INTEGRATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/UNIVERSAL_BROKERAGE_AGGREGATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/strategies/box-spread/BOX_SPREAD_BAG_IMPLEMENTATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/strategies/box-spread/README.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/strategies/box-spread/DATA_FEEDS_BOX_SPREADS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/strategies/box-spread/BOX_SPREAD_COMPREHENSIVE_GUIDE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/strategies/box-spread/BOX_SPREAD_RESOURCES_INDEX.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/CLAUDE_SKILLS_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/FRAMEWORK_ANALYSIS_AND_RECOMMENDATIONS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/STOCKSHARP_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/TRADING_FRAMEWORK_EVALUATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/TEST_COVERAGE_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/CODE_VERIFICATION_REVIEW.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/SMARTQUANT_CPP_FRAMEWORK_RESEARCH.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/mathematical-finance-tools.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/CLINE_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/EXTENSION_REDUNDANCY_REPORT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/DSL_RESEARCH_AND_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/PORTFOLIO_GREEKS_SYSTEM.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/BACKEND_DATA_STORAGE_ARCHITECTURE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/CASH_FLOW_FORECASTING_SYSTEM.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/WEBSOCKET_IMPLEMENTATION_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/MULTI_LANGUAGE_ARCHITECTURE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/TUI_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/IPAD_APP_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/TUI_ALTERNATIVES_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/TUI_MULTISCREEN_RESEARCH.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/analysis/TUI_PWA_ALIGNMENT_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/IBKRBOX_LEARNINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/LEAN_LEARNINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/IB_ASYNC_LEARNINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/NAUTILUS_IMPLEMENTATION_SUMMARY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/ECLIENT_EWRAPPER_ARCHITECTURE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/IBC_LEARNINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/YATWS_LEARNINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/NAUTILUS_LEARNINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TRADE_FRAME_LEARNINGS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/MESSAGE_QUEUE_RESEARCH.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/PWA_PATTERNS_APPLICABILITY.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/CODEBASE_ARCHITECTURE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/MULTI_ASSET_RELATIONSHIP_DSL_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/TUI_SCENARIO_EXPLORER_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/MESSAGE_QUEUE_ARCHITECTURE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/TUI_PYTHON_MIGRATION.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/DSL_ARCHITECTURE_DESIGN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/IBMi_INTEGRATION_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/DATABASE_ABSTRACTION_LAYER.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/TUI_TESTING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/ONIXS_DIRECTCONNECT.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_TESTING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/NOTEBOOKLM_USAGE.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/PROTOBUF_MIGRATION_PLAN.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/FINCEPT_TERMINAL_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/NETWORKX_PROJECT_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/BUY_SELL_DISPARITY_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/API_DOCUMENTATION_INDEXING.md",
+      "success": true,
+      "fixes_count": 0
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/TASKS_MD_ANALYSIS.md",
+      "success": true,
+      "fixes_count": 0
+    }
+  ],
+  "format": [
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/WORKSPACE_RAM_DISK_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REACT_LINTING_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NIGHTLY_AUTOMATION_IMPLEMENTATION_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TROUBLESHOOTING_BLANK_PAGE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_ALL_RESOURCES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TOOL_LEVEL_CHERRY_PICKING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TROUBLESHOOTING.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CURSOR_GLOBAL_DOCS_AUTOMATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TRACTATUS_TROUBLESHOOTING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AUTOMATION_TOOL_PROMPTING_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CURSOR_GLOBAL_DOCS_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_EXECUTION_MODE_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/GLOBAL_KIT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TICKER_TUI_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/T-200_MCP_EXTRACTION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_CI_CD_INTEGRATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_SETUP_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/WORKING_COPY_HEALTH_AUTOMATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/RESEARCH_TASKS_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_CLEANUP_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_SYNC_SETUP_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NIGHTLY_AUTOMATION_BATCH_APPROVAL.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_FIX_SUMMARY.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/VIRTUAL_SECURITIES_INTEGRATION_RESEARCH.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BUILTIN_VS_THIRDPARTY_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REFACTORING_PROOF_OF_CONCEPT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/INTEGRATION_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_BEGINNER_TIPS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_OPTIMIZATION_SESSION_ARCHIVE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/INVESTMENT_STRATEGY_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/RESEARCH_INDEX.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_SYNTHETIC_FINANCING_ALIGNMENT_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_REVIEW.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_SPLIT_TODO2_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TASK_REVIEW_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_READY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CLI_TUI_TOOLS_RECOMMENDATIONS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ONEPASSWORD_INTEGRATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/UBUNTU_AGENT_SETUP_COMMANDS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AI_AGENT_SHELL_SCRIPT_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PARALLEL_EXECUTION_PLAN_V2.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/UNIVERSAL_SCRIPTS_COMPATIBILITY_REPORT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DAILY_AUTOMATION_SETUP_COMPLETE.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NEXT_STEPS_1-3_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_INTEGRATION_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/XGBOOST_DEEP_RESEARCH.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/QUANTPEDIA_SUBSCRIPTION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/RESEARCH_TASKS_CREATION_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DAILY_AUTOMATION_RUN_SUMMARY.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_EXECUTION_CONTEXT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/UBUNTU_AGENT_QUICK_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_ALIGNMENT_AUTOMATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SCORECARD_RECOMMENDATIONS_PROGRESS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_REVIEW_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/GO_MARKET_DATA_GATEWAY_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTENSION_AUDIT_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_SPLIT_STRATEGY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CODE_GENERATION_STATUS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_INTEGRATION_TESTING_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_EXTENSIONS_IMPLEMENTATION_STATUS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_TROUBLESHOOTING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_INDEX.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DEVICE_TASK_DELEGATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_STATUS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXARP_LINK_FIXING_INTEGRATION.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ios_certificate_pinning.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ANSIBLE_GIT_LFS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ENVIRONMENT_DOCUMENTATION_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ISRAELI_FUND_TYPES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NETWORKX_ANALYSIS_FINDINGS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_SCORECARD.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_BATCH_APPROVAL_INTEGRATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_QUICK_REFERENCE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PLANNING_DOCS_COMPILED.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BATCH_TODO_QUICK_REFERENCE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SHARED_SCRIPT_FUNCTIONS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_CLEANUP_INTERACTIVE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/HOMEBREW_TAP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/JUPYTERLAB_INTEGRATION_RESEARCH.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/HTML_LINTING_MONITORING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REPOSITORY_HEALTH_AUTOMATION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CURSOR_GLOBAL_DOCS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_ACTION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BROKER_SELECTION_ISRAEL.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NIGHTLY_AUTOMATION_EXECUTION_LOG.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/T_BILLS_AND_FUTURES_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_DEPENDENCIES_ADDED.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TWS_BUILD_PROGRESS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AUTOMATED_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/IBKR_PRO_COMMISSIONS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXARP_SCRIPT_PATH_TODO2_PLAN.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SHELL_COMPLETION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTENSION_SECURITY_PRIORITY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ETORO_PLATFORM.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/GIT_LFS_CANDIDATES_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_BUILD_STATUS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_PARALLEL_IMPLEMENTATION_PROGRESS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NIGHTLY_AUTOMATION_QUICK_START.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_CONSISTENCY_REVIEW.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DESIGN_DECISIONS.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_MESSAGE_SCHEMAS_FOR_API_DOCS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CODEQL_WORKFLOW_PUSH.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DEPLOYMENT_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PWA_AUTOMATION_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_EXTERNAL_TOOL_HINTS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_UBUNTU_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ROUTINE_AUTOMATION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/RESEARCH_TASKS_PROGRESS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TOOL_DEPRECATION_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/API_DOCUMENTATION_ENTRY_TEMPLATE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/INFRASTRUCTURE_AUTOMATION_OPPORTUNITIES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTENSION_SECURITY_AUDIT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SECURITY_INTEGRATION_SUMMARY.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_RESOURCES_OPTIMIZED.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TABNINE_CODE_GENERATION_WORKFLOW.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REMOTE_DEVELOPMENT_WORKFLOW.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CME_FEE_SCHEDULE_REBATES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_NEXT_STEPS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_AUTOMATION_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TWS_CONNECTION_TEST.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MONOREPO_REORGANIZATION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CURSOR_PROJECT_COMMANDS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SECURITY_CONTROLS_VERIFICATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AUTOMATION_INTEGRATION_COMPLETE.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_PHASE2_PREPARATION_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_HEALTH_AUTOMATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/YOUTUBE_VIDEOS_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ENOCHIAN_MAGIC_NAMES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TOOL_MIGRATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTENSION_MANAGEMENT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MERGED_ACTION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MONOREPO_REORGANIZATION_STATUS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_NAME_RESEARCH.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/LIBRARY_USAGE_IN_PWA_TUI.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_ANALYSIS_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ISRAELI_BROKER_POSITION_IMPORT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/QUARTERLY_REVIEW_SCHEDULE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTERNAL_COMPONENTS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TEST_FIXES_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TASKS_AWAITING_INPUT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/APPLE_INTELLIGENCE_QUICK_REFERENCE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EW RAPPER_IMPLEMENTATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/THREE_AUTOMATION_TASKS_COMPLETE.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_DLQ_IMPLEMENTATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PYPI_OIDC_EXPLANATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_SPLIT_DEPENDENCY_MANAGEMENT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PLATFORM_SPECIFIC_SETTINGS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_AUTOMATION_MCP_EXTENSIONS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AUTOMATION_OPPORTUNITIES_ANALYSIS.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BROKEREE_SOLUTIONS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_RENAME_AND_SPLIT_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/GITHUB_WORKFLOWS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_DESKTOP_COMMANDER_REMOVAL.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_GLOBAL_VS_PROJECT_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_TASKS_CI_CD_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/RULES_OPTIMIZATION_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AGENTIC_TOOLS_USAGE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_RESEARCH_TASKS_STRATEGY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_CONFIG_LINT_REPORT.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXARP_SCRIPT_PATH_FIX.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TASKS_T191_T197_T140_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CURSOR_AI_TUTORIAL.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXARP_SCRIPT_DISCOVERY_INVESTIGATION.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_MESSAGE_FORMAT_VALIDATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PHASE_CONFLICT_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CRITICAL_ACTION_PLAN.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/STYLELINT_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PYPI_PUBLISHING_QUICK_START.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/IPAD_FRONTEND_ARCHITECTURE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROMPT_TOWER_USAGE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_PRIORITY_ALIGNMENT_ANALYSIS.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TOOL_COUNT_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PWA_IMPROVEMENT_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CI_CD_ENHANCEMENT_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_REORGANIZATION_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AUTOMATION_INTEGRATION_GUIDE.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_PARALLEL_WORK_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ONA_WORKSPACE_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_SPLIT_DOCS_STRATEGY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_INTEGRATION_STATUS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_SPLIT_SEQUENTIAL_WORKFLOW.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BACKEND_SERVICES_DAEMONIZED.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NIGHTLY_AUTOMATION_SCHEDULING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DEPENDENCY_SECURITY_AUTOMATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ECN_EXECUTION_FINANCIAL_TOOLS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/T-200_MCP_EXTRACTION_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AGENTIC_TOOLS_WORKFLOW_EXAMPLES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PYTHON_VENV_STANDARDIZATION_ANALYSIS.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CBOE_EDGX_FEE_SCHEDULE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PISTIS_SOPHIA_NAMES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PWA_REVIEW_AUTOMATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AI_FRIENDLY_CODE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ANSIBLE_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/INTELLIGENT_AUTOMATION_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TOOLS_FOR_BROKERS_FIX_API.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_PLANNING_ANALYSIS_QUERIES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REPOSITORY_RENAME_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NEXT_STEPS_1-3_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_TYPESCRIPT_TESTING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/LEAN_STRATEGY_ARCHITECTURE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_PRIORITIZED_ACTION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ZORRO_INTEGRATION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/USER_VS_WORKSPACE_SETTINGS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXARP_SCRIPT_PATH_ISSUE_RESOLVED.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BOX_SPREAD_CPP_INTEGRATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/INVESTMENT_STRATEGY_REQUIREMENTS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_MAINTENANCE_WORKFLOW.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_NOTEBOOKLM_DISABLED.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ENVIRONMENT_CONFIGURATION.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PYPI_PUBLISHING_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AGENT_DELEGATION_AUTOMATION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SCORECARD_2025-11-29.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_AUTOMATED_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NEXT_STEPS_RENAME_AND_SPLIT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_CONFIGURATION_UPDATE_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_INTERACTIVE_TOOLS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/JAVASCRIPT_LINTING_AND_ERROR_DETECTION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_SPLIT_BOUNDARIES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/YOUTUBE_VIDEOS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DAILY_AUTOMATION_REPORT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/GITIGNORE_BUILD_ARTIFACTS_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ESLINT_MIGRATION_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_BACKGROUND_VS_INTERACTIVE_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TEST_COVERAGE_SETUP.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NIGHTLY_AUTOMATION_MONITORING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKS_WORKFLOW.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_POST_RESTART_REVIEW.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_CLEANUP_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/RAM_OPTIMIZATION_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXARP_MCP_TEST_RESULTS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_TESTING_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REVIEW_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MACOS_M4_AGENT_QUICK_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_STATUS_REPORT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTERNAL_RESOURCES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_E2E_TEST_RESULTS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TABNINE_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/API_DOCUMENTATION_INDEX.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_TOPICS_REGISTRY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_PHASE2_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CPPTRADER_INTEGRATION_POINTS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SSH_SETUP_FOR_AUTOMATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_NAME_RECOMMENDATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MACOS_M4_AGENT_SETUP_COMMANDS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BACKEND_ENDPOINTS_IPAD.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/FEATURE_TRACKING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_PHASE1_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_HEALTH_REPORT.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_CLEANUP_STEPS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/API_DOCUMENTATION_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SHELLSPEC_INTEGRATION_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_UPDATE_METHODS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ADVANCED_AUTOMATION_STRATEGY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_API_DOCUMENTATION_SUGGESTIONS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_INTEGRATION_CXX.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_NEXT_TASKS_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/FPGA_HFT_FRAMEWORKS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_RESPONSIVENESS_REPORT.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_PHASE2_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/WEB_SPA_ARCHITECTURE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SYSTEMD_INTEGRATION_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CURSOR_RECOMMENDATIONS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REMOVE_REDUNDANT_EXTENSIONS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_TRACTATUS_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/GITKRAKEN_MCP_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TASK_CLARIFICATION_RESOLUTION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_T230_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SHORTCUTS_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTENSIONS_DISABLED.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_ENHANCEMENT_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NIGHTLY_TASK_AUTOMATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CBOE_FREQUENT_TRADER_PROGRAM.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_PROJECT_MANAGEMENT_SERVER_PROPOSAL.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/decimal_migration_planning.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_CONFIGURATION_FIX.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_EXECUTION_CONTEXT_ENHANCED.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_CURSOR_CHAT_TROUBLESHOOTING.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_EXECUTION_CONTEXT_IMPLEMENTED.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_ADD_SOURCES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_EXTENSIONS_INTEGRATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PARALLEL_CURSOR_AGENTS_WORKFLOW.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_GUI_VS_HEADLESS.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BREADCRUMB_LOGGING_TRADING_TESTING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TUI_BREADCRUMB_LOGGING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TRADING_INFRASTRUCTURE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO_SYNC_AUTOMATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_PHASE3_4_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ITERM2_INTEGRATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/COMMON_PATTERNS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_PARALLEL_IMPLEMENTATION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NETWORKX_INTEGRATION_TASK.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_DUPLICATE_DETECTION_AUTOMATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TRADING_SERVER_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_IMPORT_FIX.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TWS_BUILD_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_TOOL_COUNT_ANALYSIS_TODO2.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_TASKS_1_2_STATUS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_INTEGRATION_TYPESCRIPT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DEVELOPMENT_ENVIRONMENT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/WISHLIST.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CPPTRADER_INTEGRATION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/LINEAR_INTEGRATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PSEUDOCODE_IMPLEMENTATION_STRATEGY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_INTEGRATION_SPLIT_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PWA_FEATURE_PRIORITIZATION.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PROJECT_SPLIT_TRACTATUS_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PARALLEL_EXECUTION_PLAN.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AUTOMATION_OPPORTUNITIES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_PSEUDOCODE_RESEARCH.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ARCHITECTURE_DOCUMENTATION_OPTIONS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/platform/MULTI_ACCOUNT_AGGREGATION_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/platform/INVESTMENT_STRATEGY_FRAMEWORK.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/platform/SYNTHETIC_FINANCING_ARCHITECTURE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/platform/README.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/platform/PRIMARY_GOALS_AND_REQUIREMENTS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/message_schemas/README.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/external/TWS_API_QUICK_REFERENCE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/external/CPP20_FEATURES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/external/ECLIENT_EWRAPPER_PATTERNS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/external/CMake_PRESETS_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AUTOMATION_INTEGRATION_STATUS.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PARALLEL_EXECUTION_STATUS.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_STATUS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ONA_CONNECTIVITY_TEST.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_INTEGRATION_PYTHON.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/LIBRARIES_FOR_PRIMARY_GOALS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EWRAPPER_BEST_PRACTICES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PARALLEL_DEVELOPMENT_WORKFLOW_EXAMPLE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NOTEBOOKLM_CREATE_FRESH_NOTEBOOK.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTENSION_CATEGORIES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REFACTORING_SUMMARY_2025-11-19.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_DUPLICATE_FIX.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/XGBOOST_IMPLEMENTATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/REMOTE_AGENTS_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/INTEGRATION_STATUS.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_ANALYSIS_AND_NEXT_STEPS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_REQUIRED_SERVERS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DISCOUNT_BANK_RECONCILIATION_FORMAT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SELF_HOSTED_RUNNER_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_PHASE2_HIGH_PRIORITY_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CBOE_ONE_WEEK_EXPLORATION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_COMPLETE_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PYTHON_UV_MIGRATION_PLAN.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/LEGACY_FINANCIAL_SYSTEMS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/indices/TRADING_FRAMEWORKS_INDEX.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/indices/FIX_PROTOCOL_INDEX.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/indices/QUANTITATIVE_FINANCE_INDEX.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/indices/TRADING_SIMULATORS_INDEX.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/indices/MARKET_DATA_INDEX.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/analysis/TUI_PWA_ALIGNMENT_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/IBKRBOX_LEARNINGS.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/LEAN_LEARNINGS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/IB_ASYNC_LEARNINGS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/NAUTILUS_IMPLEMENTATION_SUMMARY.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/ECLIENT_EWRAPPER_ARCHITECTURE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/IBC_LEARNINGS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/YATWS_LEARNINGS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/NAUTILUS_LEARNINGS.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TRADE_FRAME_LEARNINGS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NEXT_STEPS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/INTELLIGENT_AUTOMATION_REFACTORING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PARALLEL_SCORECARD_TASKS_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CI_CD_QUICK_START.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MODELING_TOOLS_OVERVIEW.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_NEXT_STEPS_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ALGORITHMS_AND_BEHAVIOR.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_INTEGRATION_SWIFT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PCAP_CAPTURE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_NEXT_STEPS_RECOMMENDATIONS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXARP_MCP_TOOLS_USAGE.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/ONA_MCP_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/PYTHON_ENVIRONMENT_SETUP.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/AGENT_HOSTNAMES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_STATUS_REVIEW.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SECURE_SERVICE_CONTROL_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/NATS_IMPLEMENTATION_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_EXECUTION_CONTEXT_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_SERVER_IMPLEMENTATION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/TODO2_DUPLICATE_DETECTION_REPORT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/BATCH_TODO_UPDATE_SCRIPT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SESSION_HANDOFF_2025-11-29.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MAINTENANCE_SCRIPTS_VALIDATION_REPORT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DOCUMENTATION_INDEX_UPDATED.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/EXTRACTED_REPOSITORIES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/MCP_AGENT_CONFIGURATION_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/SHELL_SCRIPT_TESTING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/RAM_OPTIMIZATION_OPPORTUNITIES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/DAILY_AUTOMATION_COMPLETE.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/CMake_EXTENSION_ENHANCEMENTS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/archive/ACTION_PLAN.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/archive/CODE_IMPROVEMENTS_ACTION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/archive/ALPACA_INTEGRATION_PLAN_DEPRECATED.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/design/portfolio-optimization-framework.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/design/AI_AGENT_CONTEXT_STANDARDS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/analysis/TYPESCRIPT_ERRORS_ALIGNMENT_INTEGRATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/analysis/TYPESCRIPT_ERRORS_INTEGRATION_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/analysis/PARALLEL_EXECUTION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/analysis/code-improvements-mathematical-finance.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/analysis/TODO2_PLAN_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/ALPACA_API_INTEGRATION_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LIVEVOL_QUICK_START.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LIVEVOL_QUOTED_SPREADS_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/CROSS_PLATFORM_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/PAPER_TRADING_VALIDATION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/MASSIVE_INTEGRATION.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/SWIFTNESS_DATA_MODEL.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_MIGRATION_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/COMMISSIONS_AND_HEDGING_IMPLEMENTATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/EWRAPPER_STATUS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TWS_API_IMPLEMENTATION_COMPARISON.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TWS_API_MARKET_DATA_LEARNINGS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TWS_API_BEST_PRACTICES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TWS_API_DOCKER_LEARNINGS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/ICLI_LEARNINGS.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/IB_API_QUICK_REFERENCE_LEARNINGS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TWS_API_CODE_EXAMPLES_LEARNINGS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TWS_API_TROUBLESHOOTING_LEARNINGS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/TRADE_FRAME_TWS_PATTERNS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/TUI_TESTING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/ONIXS_DIRECTCONNECT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_TESTING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/NOTEBOOKLM_USAGE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/PROTOBUF_MIGRATION_PLAN.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/FINCEPT_TERMINAL_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/NETWORKX_PROJECT_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/BUY_SELL_DISPARITY_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/API_DOCUMENTATION_INDEXING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/TASKS_MD_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/WASM_INTEGRATION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/INTEGRATION_TESTING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/ALPACA_INTEGRATION_PLAN_V2.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/TWS_INTEGRATION_STATUS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/SYNTHETIC_LENDING_BORROWING_IMPLEMENTATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/CURSOR_DOCS_USAGE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEDGER_PERSISTENCE_USAGE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/OPENALGO_INTEGRATION_PATTERNS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/QUANTLIB_INTEGRATION_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/CURSOR_IGNORE_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/RESEARCH_IB_PYTHON_TRADING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/NOTEBOOKLM_DEEP_RESEARCH_WORKFLOW.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/CME_RESEARCH.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/RESEARCH_CPP_FINANCIAL_LIBRARIES.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/QUANTPEDIA_BROKERAGE_APIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/SWIFTNESS_IMPORT_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/WORKTREE_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/EIGEN_INTEGRATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/TESTING_STRATEGY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/VALIDATION_SETUP_COMPLETE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_REST_API_WRAPPER_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/QUICK_START.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_PWA_TUI_INTEGRATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LIVEVOL_TRIAL_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/ONIXS_FIX_DICTIONARY_TOOLS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_PYBIND11_INTEGRATION_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/CURSOR_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_ALPACA_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_BROKER_ADAPTERS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEDGER_INTEGRATION_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/IMPLEMENTATION_COMPLETE_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/ALPACA_BACKEND_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/PLAN_IMPLEMENTATION_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/EMSCRIPTEN_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/CURSOR_BUGBOT_INTEGRATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/WASM_QUICK_START.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_IBKR_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/DISTRIBUTED_COMPILATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/QUICK_START_CROSS_PLATFORM.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LIVEVOL_CREDENTIALS_WHERE_TO_FIND.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/learnings/MULTITHREADED_TRADING_LEARNINGS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/RESEARCH_FPGA_OPTION_PRICING.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/NOTEBOOKLM_OPTIMIZATION_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/RESEARCH_TRADING_ECONOMICS_API.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/IB_CLIENT_PORTAL_API_INTEGRATION_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/RESEARCH_FINANCIAL_LEDGER_PLATFORMS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/NOTEBOOKLM_AUTOMATION_GUIDE.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/NOTEBOOKLM_RESEARCH_SETUP.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/FINANCIAL_DATA_SOURCES_RESEARCH.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/external/ORATS_INTEGRATION.md",
+      "success": true,
+      "fixed": true
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/MCP_SERVERS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LIVEVOL_AUTHENTICATION_SUMMARY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/WINDOWS_SETUP_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_PWA_TUI_INTEGRATION_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/IMPLEMENTATION_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LIVEVOL_API_CREDENTIALS_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEDGER_IMPORT_USAGE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/NLOPT_INTEGRATION_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEDGER_CORE_LIBRARY_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/VALIDATION_SETUP_FINAL.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/CURRENCY_EXCHANGE_RISK.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/SETTINGS_DUPLICATION_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/SYNTHETICFI_LENDING_BORROWING_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/FOSSOLOGY_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/MCP_OPTIMIZATION_RECOMMENDATIONS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/SECURITY_VULNERABILITIES_REVIEW.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/TUI_TEST_COVERAGE_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/CODE_IMPROVEMENTS_FROM_NOTEBOOKLM.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/TASK_ALIGNMENT_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/STATIC_ANALYSIS_ANNOTATIONS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/API_DOCUMENTATION_CONSOLIDATION_PLAN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/STATIC_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/OPEN_TRADING_PLATFORM_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/TABNINE_EVALUATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/RISK_FREE_RATE_METHODOLOGY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/EXTENSION_AUDIT_RESULTS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/MESSAGE_QUEUE_RESEARCH_SYNTHESIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/REST_API_LAYER_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/MULTI_BROKER_ARCHITECTURE_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/BANK_LOAN_POSITION_SYSTEM_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/UNIVERSAL_BROKERAGE_AGGREGATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/strategies/box-spread/BOX_SPREAD_BAG_IMPLEMENTATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/strategies/box-spread/README.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/strategies/box-spread/DATA_FEEDS_BOX_SPREADS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/strategies/box-spread/BOX_SPREAD_COMPREHENSIVE_GUIDE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/strategies/box-spread/BOX_SPREAD_RESOURCES_INDEX.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/CLAUDE_SKILLS_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/FRAMEWORK_ANALYSIS_AND_RECOMMENDATIONS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/STOCKSHARP_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/TRADING_FRAMEWORK_EVALUATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/TEST_COVERAGE_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/CODE_VERIFICATION_REVIEW.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/SMARTQUANT_CPP_FRAMEWORK_RESEARCH.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/mathematical-finance-tools.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/CLINE_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/analysis/EXTENSION_REDUNDANCY_REPORT.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/MESSAGE_QUEUE_RESEARCH.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/PWA_PATTERNS_APPLICABILITY.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/CODEBASE_ARCHITECTURE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/MULTI_ASSET_RELATIONSHIP_DSL_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/TUI_SCENARIO_EXPLORER_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/MESSAGE_QUEUE_ARCHITECTURE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/TUI_PYTHON_MIGRATION.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/DSL_ARCHITECTURE_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/IBMi_INTEGRATION_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/DATABASE_ABSTRACTION_LAYER.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/DSL_RESEARCH_AND_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/PORTFOLIO_GREEKS_SYSTEM.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/BACKEND_DATA_STORAGE_ARCHITECTURE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/CASH_FLOW_FORECASTING_SYSTEM.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/WEBSOCKET_IMPLEMENTATION_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/MULTI_LANGUAGE_ARCHITECTURE.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/TUI_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/IPAD_APP_DESIGN.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/TUI_ALTERNATIVES_ANALYSIS.md",
+      "success": true,
+      "fixed": false
+    },
+    {
+      "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/TUI_MULTISCREEN_RESEARCH.md",
+      "success": true,
+      "fixed": false
+    }
+  ],
+  "total_files": 546,
+  "start_time": 1764454484.4438527,
+  "end_time": 1764454485.2140145,
+  "duration": 0.7701618671417236
+}

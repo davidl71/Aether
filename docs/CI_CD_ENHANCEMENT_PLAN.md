@@ -17,6 +17,7 @@ This document outlines a comprehensive CI/CD enhancement strategy specifically d
 ### Existing CI/CD Setup
 
 ✅ **What's Working:**
+
 - Basic GitHub Actions workflow (`.github/workflows/ci.yml`)
 - Toolchain validation (Linux + macOS)
 - TUI Go tests
@@ -24,6 +25,7 @@ This document outlines a comprehensive CI/CD enhancement strategy specifically d
 - Documentation validation workflow
 
 🟡 **What Needs Enhancement:**
+
 - Parallel agent workflow support
 - Cross-platform integration testing
 - Coordination validation (TODO table, API contracts)
@@ -38,6 +40,7 @@ This document outlines a comprehensive CI/CD enhancement strategy specifically d
 ### GitHub Actions (Recommended)
 
 **Why GitHub Actions:**
+
 - ✅ **Native Integration:** Already in use, seamless Git integration
 - ✅ **Parallel Execution:** Supports matrix builds for multi-platform testing
 - ✅ **Cost-Effective:** Free for public repos, generous free tier for private
@@ -46,6 +49,7 @@ This document outlines a comprehensive CI/CD enhancement strategy specifically d
 - ✅ **Artifact Management:** Store build artifacts, test results, reports
 
 **Alternative Options:**
+
 - **Jenkins:** More complex setup, better for on-premises
 - **GitLab CI:** Good if using GitLab (you're on GitHub)
 - **CircleCI:** Similar to GitHub Actions, more complex pricing
@@ -362,6 +366,7 @@ jobs:
 **File:** `scripts/validate_api_contract.sh`
 
 ```bash
+
 #!/usr/bin/env bash
 # Validate API contract hasn't been broken by parallel agent changes
 
@@ -372,6 +377,7 @@ CONTRACT_FILE="agents/shared/API_CONTRACT.md"
 echo "Validating API Contract..."
 
 # Check for breaking changes
+
 if git diff HEAD~1 "$CONTRACT_FILE" | grep -q "^\-.*:"; then
     echo "⚠️  Breaking API changes detected!"
     echo "Please document breaking changes in PR description"
@@ -379,6 +385,7 @@ if git diff HEAD~1 "$CONTRACT_FILE" | grep -q "^\-.*:"; then
 fi
 
 # Validate format
+
 if ! grep -q "## API Endpoints" "$CONTRACT_FILE"; then
     echo "❌ API Contract missing required sections"
     exit 1
@@ -392,6 +399,7 @@ echo "✅ API Contract validation passed"
 **File:** `scripts/validate_todo_table.sh`
 
 ```bash
+
 #!/usr/bin/env bash
 # Validate TODO table format and completeness
 
@@ -402,18 +410,21 @@ TODO_FILE="agents/shared/TODO_OVERVIEW.md"
 echo "Validating TODO Table..."
 
 # Check file exists
+
 if [ ! -f "$TODO_FILE" ]; then
     echo "❌ TODO_OVERVIEW.md not found"
     exit 1
 fi
 
 # Check for required columns
+
 if ! grep -q "| Task | Agent | Status |" "$TODO_FILE"; then
     echo "❌ TODO table missing required columns"
     exit 1
 fi
 
 # Check for in-progress tasks with notes
+
 if grep -q "| .* | .* | in_progress |" "$TODO_FILE"; then
     echo "✅ TODO table validation passed (has in-progress tasks)"
 fi
@@ -426,6 +437,7 @@ echo "✅ TODO Table validation passed"
 **File:** `scripts/run_integration_tests.sh`
 
 ```bash
+
 #!/usr/bin/env bash
 # Run cross-platform integration tests
 
@@ -434,10 +446,12 @@ set -euo pipefail
 echo "Running integration tests..."
 
 # Test NATS communication between platforms
+
 cd agents/backend
 cargo test --test integration_nats_cross_platform
 
 # Test API endpoint compatibility
+
 curl -f http://localhost:8080/health || echo "Backend not running (expected in CI)"
 
 # Test macOS UI can connect to backend
@@ -497,10 +511,13 @@ echo "✅ Integration tests passed"
 ### 1. Add Enhanced Workflows
 
 ```bash
+
 # Create enhanced workflow file
+
 cp .github/workflows/ci.yml .github/workflows/parallel-agents-ci.yml
 
 # Add validation scripts
+
 chmod +x scripts/validate_api_contract.sh
 chmod +x scripts/validate_todo_table.sh
 chmod +x scripts/run_integration_tests.sh
@@ -509,23 +526,29 @@ chmod +x scripts/run_integration_tests.sh
 ### 2. Configure GitHub Actions
 
 **Repository Settings:**
+
 1. Go to Settings → Actions → General
 2. Enable "Allow all actions and reusable workflows"
 3. Enable "Allow actions to create and approve pull requests"
 
 **Secrets (if needed):**
+
 - Add any API keys or tokens to repository secrets
 - Configure self-hosted runners (optional)
 
 ### 3. Test Workflows
 
 ```bash
+
 # Test locally
+
 act -j ubuntu-agent-tests  # Requires act (GitHub Actions local runner)
 
 # Or push to test branch
+
 git checkout -b test/ci-enhancement
 git push origin test/ci-enhancement
+
 # Create PR to trigger workflows
 ```
 
@@ -536,12 +559,14 @@ git push origin test/ci-enhancement
 ### 1. Workflow Performance
 
 **Track:**
+
 - Workflow duration
 - Test execution time
 - Resource usage
 - Failure rates
 
 **Optimize:**
+
 - Parallel execution
 - Caching dependencies
 - Skipping unnecessary jobs
@@ -550,11 +575,13 @@ git push origin test/ci-enhancement
 ### 2. Notification Setup
 
 **GitHub Notifications:**
+
 - PR status updates
 - Workflow failure alerts
 - Success notifications (optional)
 
 **Slack/Discord Integration:**
+
 - Workflow failure notifications
 - Weekly CI health reports
 - Test coverage trends
@@ -566,6 +593,7 @@ git push origin test/ci-enhancement
 ### Using Your Agents as Runners
 
 **Benefits:**
+
 - Use actual Ubuntu and macOS M4 hardware
 - Faster builds (local network)
 - Access to local dependencies
@@ -574,12 +602,15 @@ git push origin test/ci-enhancement
 **Setup:**
 
 ```bash
+
 # On Ubuntu agent
+
 cd actions-runner
 ./config.sh --url https://github.com/your-repo --token YOUR_TOKEN
 ./run.sh
 
 # On macOS M4 agent
+
 cd actions-runner
 ./config.sh --url https://github.com/your-repo --token YOUR_TOKEN
 ./run.sh

@@ -22,7 +22,9 @@ The workspace includes:
 Add to your shell profile (`.zshrc` or `.bashrc`):
 
 ```bash
+
 # Auto-start RAM disk when opening workspace in Cursor/VS Code
+
 if [[ -n "$VSCODE_INJECTION" ]] || [[ -n "$CURSOR_INJECTION" ]]; then
   # Only run if we're in the project directory
   if [[ "$PWD" == *"ib_box_spread_full_universal"* ]]; then
@@ -34,8 +36,10 @@ fi
 Or create a simple startup script:
 
 ```bash
+
 # ~/bin/cursor-workspace-startup.sh
 #!/bin/bash
+
 cd /path/to/ib_box_spread_full_universal
 ./scripts/workspace_ram_disk_manager.sh startup
 ```
@@ -52,7 +56,9 @@ cd /path/to/ib_box_spread_full_universal
 Add to your shell profile:
 
 ```bash
+
 # Save RAM disk on shell exit (if in workspace)
+
 cursor_save_ramdisk() {
   if [[ "$PWD" == *"ib_box_spread_full_universal"* ]]; then
     "${PWD}/scripts/workspace_ram_disk_manager.sh" shutdown >/dev/null 2>&1
@@ -60,12 +66,14 @@ cursor_save_ramdisk() {
 }
 
 # Hook into shell exit (zsh)
+
 if [[ "$SHELL" == *"zsh"* ]]; then
   autoload -Uz add-zsh-hook
   add-zsh-hook zshexit cursor_save_ramdisk
 fi
 
 # Hook into shell exit (bash)
+
 if [[ "$SHELL" == *"bash"* ]]; then
   trap cursor_save_ramdisk EXIT
 fi
@@ -106,8 +114,11 @@ fi
 ### Step 1: Copy Example Keybindings
 
 ```bash
+
 # Copy example to your keybindings
+
 cp .vscode/keybindings.json.example ~/Library/Application\ Support/Cursor/User/keybindings.json
+
 # Or merge manually
 ```
 
@@ -201,28 +212,36 @@ Build artifacts are saved to `.saved-builds/` directory:
 ### Startup
 
 ```bash
+
 # Run startup manually
+
 ./scripts/workspace_ram_disk_manager.sh startup
 ```
 
 ### Save Current Build
 
 ```bash
+
 # Save without shutdown
+
 ./scripts/workspace_ram_disk_manager.sh save
 ```
 
 ### Shutdown & Save
 
 ```bash
+
 # Save and optionally unmount
+
 ./scripts/workspace_ram_disk_manager.sh shutdown
 ```
 
 ### Check Status
 
 ```bash
+
 # Show RAM disk status
+
 ./scripts/workspace_ram_disk_manager.sh status
 ```
 
@@ -235,13 +254,16 @@ Build artifacts are saved to `.saved-builds/` directory:
 **Check 1**: Verify task exists
 
 ```bash
+
 # In Cursor: Cmd+Shift+P → "Tasks: Run Task" → "RAM Disk: Startup (Auto)"
 ```
 
 **Check 2**: Check shell profile
 
 ```bash
+
 # Verify startup command in ~/.zshrc or ~/.bashrc
+
 grep "workspace_ram_disk_manager" ~/.zshrc ~/.bashrc
 ```
 
@@ -282,7 +304,9 @@ ls -lt .saved-builds/
 **Manual restore**:
 
 ```bash
+
 # Copy from latest save
+
 cp -r .saved-builds/$(ls -t .saved-builds/ | head -1)/* build-ramdisk/
 ```
 
@@ -293,7 +317,9 @@ cp -r .saved-builds/$(ls -t .saved-builds/ | head -1)/* build-ramdisk/
 ### Custom RAM Disk Size
 
 ```bash
+
 # Set custom size (before startup)
+
 export RAMDISK_SIZE_GB=16
 ./scripts/workspace_ram_disk_manager.sh startup
 ```
@@ -303,6 +329,7 @@ export RAMDISK_SIZE_GB=16
 Edit `scripts/workspace_ram_disk_manager.sh`:
 
 ```bash
+
 # In handle_shutdown() function, uncomment:
 # "${SCRIPT_DIR}/setup_ramdisk.sh" unmount || true
 ```
@@ -312,7 +339,9 @@ Edit `scripts/workspace_ram_disk_manager.sh`:
 Add to your shell profile:
 
 ```bash
+
 # Auto-save every 30 minutes (background)
+
 cursor_auto_save() {
   while true; do
     sleep 1800  # 30 minutes
@@ -323,6 +352,7 @@ cursor_auto_save() {
 }
 
 # Start in background
+
 cursor_auto_save &
 ```
 
@@ -335,8 +365,10 @@ cursor_auto_save &
 Add to `.git/hooks/pre-commit`:
 
 ```bash
+
 #!/bin/bash
 # Save RAM disk before commit
+
 "${PWD}/scripts/workspace_ram_disk_manager.sh" save >/dev/null 2>&1
 ```
 
@@ -345,7 +377,9 @@ Add to `.git/hooks/pre-commit`:
 Modify build scripts to use RAM disk:
 
 ```bash
+
 # In build scripts, use build-ramdisk if available
+
 if [ -d "build-ramdisk" ]; then
   BUILD_DIR="build-ramdisk"
 else

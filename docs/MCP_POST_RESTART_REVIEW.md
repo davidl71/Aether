@@ -70,12 +70,14 @@
 ### ⚠️ New Discovery: openmemory Server
 
 **Found in Global Config:**
+
 - **Server:** `openmemory`
 - **Type:** URL-based MCP server (api.openmemory.dev)
 - **Status:** Unknown - not in previous analysis
 - **Tool Count:** Unknown ⚠️ **NEEDS INVESTIGATION**
 
 **Questions:**
+
 1. What is openmemory used for?
 2. How many tools does it provide?
 3. Is it essential or can it be disabled?
@@ -101,6 +103,7 @@
 **Estimated Total: 61-113 + openmemory (unknown)**
 
 **Without openmemory count:**
+
 - Minimum: 61 tools (if openmemory has 0-5 tools)
 - Maximum: 113+ tools (if openmemory has 10+ tools)
 
@@ -111,29 +114,36 @@
 ### 1. ⚠️ CRITICAL: Investigate openmemory
 
 **Action Required:**
+
 - Check what openmemory does
 - Determine tool count
 - Assess if it's essential
 - Decide if it should be removed
 
 **Questions to Answer:**
+
 1. What is openmemory used for?
 2. How many tools does it provide?
 3. Is it essential for your workflow?
 4. Can it be disabled to save tools?
 
 **Investigation Steps:**
+
 ```bash
+
 # Check if openmemory is in project documentation
+
 grep -r "openmemory" docs/
 
 # Check if there's any mention of openmemory in rules
+
 grep -r "openmemory" .cursor/rules/
 ```
 
 ### 2. Verify Actual Tool Count in Cursor
 
 **Action:**
+
 1. Open Cursor Settings → MCP Servers
 2. Check actual tool count displayed
 3. Compare with estimated counts
@@ -142,6 +152,7 @@ grep -r "openmemory" .cursor/rules/
 ### 3. If Still Over 80 Tools
 
 **Priority Removal Order:**
+
 1. ⚠️ **openmemory** - If tool count is high and not essential (unknown impact)
 2. 🔴 **context7** - Known 8-12 tools, redundant with web search
 3. 🟡 **agentic-tools advanced tools** - If tool filtering supported (potential 15-30 tools)
@@ -161,14 +172,17 @@ grep -r "openmemory" .cursor/rules/
 ### If Still Over 80 Tools
 
 **Phase 1: Quick Wins**
+
 - Remove `context7` (saves 8-12 tools)
 - Investigate `openmemory` removal (unknown savings)
 
 **Phase 2: Tool Filtering**
+
 - Investigate `agentic-tools` tool filtering support
 - Disable advanced tools if supported (potential 15-30 tool savings)
 
 **Phase 3: Last Resort**
+
 - Remove thinking tools if still over 80 (saves 10-16 tools)
 
 ---
@@ -176,15 +190,18 @@ grep -r "openmemory" .cursor/rules/
 ## Summary
 
 **Current Status:**
+
 - ✅ Removed desktop-commander and notebooklm (saved ~50-75 tools)
 - ⚠️ Discovered openmemory server (unknown impact - needs investigation)
 - ⚠️ Estimated remaining: 61-113 + openmemory tools
 
 **Key Finding:**
+
 - ⚠️ **openmemory** was not in previous analysis - may be contributing significant tools
 - Needs investigation to determine impact
 
 **Immediate Action:**
+
 1. Check Cursor Settings → MCP Servers for actual tool count
 2. Investigate openmemory purpose and tool count
 3. Report back with actual numbers

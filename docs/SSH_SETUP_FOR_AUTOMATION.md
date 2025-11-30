@@ -14,42 +14,54 @@ The automation tool is configured to connect to:
 ### Step 1: Generate SSH Key (if not already done)
 
 ```bash
+
 # Check if you have an SSH key
+
 ls -la ~/.ssh/id_*
 
 # If no key exists, generate one
+
 ssh-keygen -t ed25519 -C "your_email@example.com"
 ```
 
 ### Step 2: Copy Public Key to Remote Hosts
 
-#### For macOS host (192.168.192.141):
+#### For macOS host (192.168.192.141)
 
 ```bash
+
 # Copy your public key to the remote host
+
 ssh-copy-id davidl@192.168.192.141
 
 # Or manually:
+
 cat ~/.ssh/id_ed25519.pub | ssh davidl@192.168.192.141 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
 ```
 
-#### For Ubuntu host (192.168.192.57):
+#### For Ubuntu host (192.168.192.57)
 
 ```bash
+
 # Copy your public key to the remote host
+
 ssh-copy-id david@192.168.192.57
 
 # Or manually:
+
 cat ~/.ssh/id_ed25519.pub | ssh david@192.168.192.57 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
 ```
 
 ### Step 3: Test SSH Connection
 
 ```bash
+
 # Test macOS host
+
 ssh -o ConnectTimeout=5 davidl@192.168.192.141 "echo 'Connection successful'"
 
 # Test Ubuntu host
+
 ssh -o ConnectTimeout=5 david@192.168.192.57 "echo 'Connection successful'"
 ```
 
@@ -58,10 +70,13 @@ ssh -o ConnectTimeout=5 david@192.168.192.57 "echo 'Connection successful'"
 The automation tool will automatically accept new host keys, but you can pre-add them:
 
 ```bash
+
 # Add macOS host
+
 ssh-keyscan -H 192.168.192.141 >> ~/.ssh/known_hosts
 
 # Add Ubuntu host (when it's reachable)
+
 ssh-keyscan -H 192.168.192.57 >> ~/.ssh/known_hosts
 ```
 
@@ -72,8 +87,10 @@ ssh-keyscan -H 192.168.192.57 >> ~/.ssh/known_hosts
 **Cause**: SSH public key not authorized on remote host.
 
 **Solution**:
+
 1. Copy your public key to the remote host (see Step 2 above)
 2. Verify permissions on remote host:
+
    ```bash
    ssh davidl@192.168.192.141 "chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys"
    ```
@@ -83,11 +100,15 @@ ssh-keyscan -H 192.168.192.57 >> ~/.ssh/known_hosts
 **Cause**: Host key not in known_hosts.
 
 **Solution**:
+
 ```bash
+
 # Remove old host key (if exists)
+
 ssh-keygen -R 192.168.192.141
 
 # Add new host key
+
 ssh-keyscan -H 192.168.192.141 >> ~/.ssh/known_hosts
 ```
 
@@ -96,6 +117,7 @@ ssh-keyscan -H 192.168.192.141 >> ~/.ssh/known_hosts
 **Cause**: Host is unreachable or SSH service not running.
 
 **Solution**:
+
 1. Check if host is reachable: `ping 192.168.192.141`
 2. Check if SSH service is running on remote host
 3. Check firewall settings
@@ -134,16 +156,20 @@ Then update the automation tool configuration to use these host aliases.
 After setup, verify SSH access works:
 
 ```bash
+
 # Test macOS host
+
 ssh davidl@192.168.192.141 "cd ~/Projects/Trading/ib_box_spread_full_universal && git status"
 
 # Test Ubuntu host (when reachable)
+
 ssh david@192.168.192.57 "cd ib_box_spread_full_universal && git status"
 ```
 
 ## Automation Tool Updates
 
 The automation tool has been updated to:
+
 - Use `StrictHostKeyChecking=accept-new` to automatically accept new host keys
 - Use `IdentitiesOnly=yes` to prevent authentication failures
 - Use `PreferredAuthentications=publickey` for key-based auth only
@@ -153,4 +179,3 @@ The automation tool has been updated to:
 
 - [Nightly Automation Tool](../mcp-servers/project-management-automation/tools/nightly_task_automation.py)
 - [Working Copy Health Tool](../mcp-servers/project-management-automation/tools/working_copy_health.py)
-

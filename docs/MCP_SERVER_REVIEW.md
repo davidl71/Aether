@@ -43,28 +43,34 @@
 ### 🔴 ESSENTIAL - Must Keep
 
 #### 1. **filesystem** - Core File Operations
+
 - **Status:** ✅ Installed & Active
 - **Tools:** File read/write, directory listing, file search
 - **Why Essential:**
   - Core AI functionality - AI needs to read/write files
   - No alternative - required for any code changes
+
 - **Usefulness for Project:** 🔥 **Critical**
   - C++ code modifications require file access
   - Multi-language project (C++, Python, Rust, Go, TypeScript)
   - Documentation management
+
 - **Recommendation:** ✅ **KEEP** - Core functionality
 
 #### 2. **git** - Version Control
+
 - **Status:** ✅ Installed & Active
 - **Tools:** Git status, diff, commit, branch operations, history
 - **Why Essential:**
   - AI needs git context for code changes
   - Project uses worktrees extensively (per docs)
   - Required for understanding code history
+
 - **Usefulness for Project:** 🔥 **Critical**
   - Worktree management
   - Commit message assistance
   - Understanding code evolution
+
 - **Recommendation:** ✅ **KEEP** - Core functionality
 
 ---
@@ -72,29 +78,35 @@
 ### 🟡 IMPORTANT - Should Keep (Project-Specific)
 
 #### 3. **agentic-tools** - Task Management (Todo2)
+
 - **Status:** ✅ Installed & Active
 - **Tools:** Task creation, management, memories, project organization
 - **Why Important:**
   - Required by Todo2 workflow (mandatory per `.cursorrules`)
   - Project-specific storage (`.agentic-tools-mcp/`)
   - Git-trackable task data
+
 - **Usefulness for Project:** 🔥 **Critical for Workflow**
   - Todo2 workflow is mandatory in rules
   - Tracks TWS API integration tasks
   - Stores agent memories about trading strategies
+
 - **Recommendation:** ✅ **KEEP** - Required by workflow rules
 
 #### 4. **sequential_thinking** - Structured Problem-Solving
+
 - **Status:** ✅ Installed & Active
 - **Tools:** Step-by-step workflow creation, implementation planning
 - **Why Important:**
   - Complements Tractatus Thinking (workflow: Tractatus → Sequential → Tractatus)
   - Converts structural analysis into actionable steps
   - Useful for complex trading logic implementation
+
 - **Usefulness for Project:** 🔥 **High Value**
   - Box spread arbitrage implementation
   - Multi-step TWS API integration
   - Complex feature development
+
 - **Recommendation:** ✅ **KEEP** - Important for complex development
 
 ---
@@ -102,22 +114,27 @@
 ### 🟢 OPTIONAL - Evaluate for Removal
 
 #### 5. **context7** - Documentation Lookup
+
 - **Status:** ✅ Installed & Active
 - **Tools:** Up-to-date library documentation, version-specific code examples
 - **Why Optional:**
   - Overlaps with web search
   - Redundant with NotebookLM for some use cases
   - C++ trading project may not need extensive library docs
+
 - **Usefulness for Project:** ⚠️ **Moderate**
   - Useful for: FastAPI (if used), React docs, Rust docs, TypeScript docs
   - Less useful for: C++ (TWS API), proprietary APIs
+
 - **Recommendation:** ⚠️ **CONSIDER DISABLING** - Redundant with web search for C++ focus
 
 **Decision Factors:**
+
 - ✅ **Keep if:** Actively using React/TypeScript frontend, Rust backend
 - ❌ **Disable if:** Primarily C++ development, web search sufficient
 
 #### 6. **notebooklm** - Research & Documentation
+
 - **Status:** ✅ Installed & Active
 - **Tools:** YouTube video summarization, documentation processing, knowledge base queries
 - **Resources Available:** 1 active notebook (TWS Automated Trading - Complete Resources)
@@ -125,12 +142,15 @@
   - Nice to have, not essential for code development
   - Overlaps with web search for general research
   - Browser automation adds complexity
+
 - **Usefulness for Project:** ⚠️ **Moderate**
   - ✅ **Useful for:** TWS API research, video tutorials, documentation synthesis
   - ❌ **Less useful for:** Day-to-day coding, debugging, implementation
+
 - **Recommendation:** ⚠️ **CONSIDER DISABLING** - Specialized tool, not daily use
 
 **Decision Factors:**
+
 - ✅ **Keep if:** Actively researching TWS API, processing many videos/docs
 - ❌ **Disable if:** Focused on implementation, web search sufficient
 
@@ -141,20 +161,24 @@
 ### 🔴 MISSING - Should Add
 
 #### 7. **semgrep** - Security Scanning
+
 - **Status:** ❌ **MISSING** from config
 - **Tools:** Security vulnerability scanning, code quality analysis
 - **Why Critical:**
   - **Required by `.cursorrules`** (security scanning mandate)
   - Trading software requires security validation
   - C++ code needs vulnerability scanning
+
 - **Usefulness for Project:** 🔥 **CRITICAL**
   - Security-sensitive trading logic
   - API key handling
   - Credential management
   - Code quality for financial software
+
 - **Recommendation:** ✅ **ADD IMMEDIATELY** - Required by rules
 
 **Configuration:**
+
 ```json
 {
   "semgrep": {
@@ -166,19 +190,23 @@
 ```
 
 #### 8. **tractatus_thinking** - Logical Concept Analysis
+
 - **Status:** ❌ **MISSING** from config (rules exist but server not configured)
 - **Tools:** Concept decomposition, multiplicative relationship analysis, structured thinking
 - **Why Important:**
   - Required by workflow rules (Tractatus → Sequential → Tractatus)
   - Essential for complex trading logic analysis
   - Works in tandem with sequential_thinking
+
 - **Usefulness for Project:** 🔥 **HIGH VALUE**
   - Box spread arbitrage logic analysis
   - Trading system architecture decisions
   - Debugging complex failures
+
 - **Recommendation:** ✅ **ADD** - Important for complex analysis
 
 **Configuration:**
+
 ```json
 {
   "tractatus_thinking": {
@@ -205,12 +233,14 @@
 #### Phase 2: Evaluate Optional Servers
 
 **Option A: Keep All Research Tools** (Conservative)
+
 - Keep: context7 + notebooklm
 - **Total:** 8 servers
 - **Benefit:** Full research capability
 - **Cost:** More tools, potential overlap
 
 **Option B: Consolidate Research Tools** (Optimized)
+
 - Remove: context7 (redundant with web search)
 - Keep: notebooklm (has active TWS API notebook)
 - **Total:** 7 servers
@@ -218,6 +248,7 @@
 - **Cost:** Lose version-specific doc lookup
 
 **Option C: Minimal Research Tools** (Minimalist)
+
 - Remove: context7 + notebooklm
 - **Total:** 6 servers
 - **Benefit:** Minimal toolset, web search sufficient
@@ -245,6 +276,7 @@
 | **Web Search** | General | Universal, always available | Context7, NotebookLM |
 
 **Recommendation:**
+
 - **Keep 1 research tool** (NotebookLM recommended due to active TWS API notebook)
 - **Remove context7** (redundant - web search sufficient for library docs)
 
@@ -256,6 +288,7 @@
 | **sequential_thinking** | HOW (process/steps) | tractatus_thinking |
 
 **Recommendation:**
+
 - **Keep both** - They're complementary, not redundant
 - **Workflow:** Tractatus → Sequential → Tractatus
 
@@ -293,6 +326,7 @@
 ### Optimal Setup (7 servers)
 
 **Keep:**
+
 - ✅ filesystem (essential)
 - ✅ git (essential)
 - ✅ agentic-tools (required by Todo2)
@@ -302,6 +336,7 @@
 - ✅ tractatus_thinking (add - required by workflow)
 
 **Remove:**
+
 - ❌ context7 (redundant with web search)
 
 **Total: 7 servers**
@@ -309,6 +344,7 @@
 ### Minimal Setup (6 servers)
 
 **Keep:**
+
 - ✅ filesystem
 - ✅ git
 - ✅ agentic-tools
@@ -317,6 +353,7 @@
 - ✅ tractatus_thinking (add)
 
 **Remove:**
+
 - ❌ context7
 - ❌ notebooklm
 
@@ -336,10 +373,12 @@
 ### Step 2: Evaluate Research Tools
 
 **Decision: Keep NotebookLM?**
+
 - ✅ **Yes** - Keep if actively using TWS API notebook
 - ❌ **No** - Remove if minimal use
 
 **Decision: Keep Context7?**
+
 - ❌ **No** - Remove (redundant with web search)
 
 ### Step 3: Update Configuration
@@ -362,6 +401,7 @@
 ### After Adding Missing Servers (6 → 8)
 
 **What you gain:**
+
 - ✅ Security scanning (required)
 - ✅ Logical analysis tools (workflow support)
 - ✅ Compliance with `.cursorrules`
@@ -369,21 +409,25 @@
 ### After Removing Context7 (8 → 7)
 
 **What you lose:**
+
 - ❌ Version-specific library documentation lookup
 - **Alternative:** Use web search for library docs
 
 **What you keep:**
+
 - ✅ NotebookLM for specialized research
 - ✅ Web search for general docs
 
 ### After Removing NotebookLM (7 → 6)
 
 **What you lose:**
+
 - ❌ Access to TWS API knowledge base notebook
 - ❌ Video/documentation summarization
 - **Alternative:** Use web search for research
 
 **What you keep:**
+
 - ✅ All core functionality
 - ✅ Essential development tools
 
@@ -394,16 +438,19 @@
 ### C++ Trading Application Needs
 
 **High Priority:**
+
 - ✅ Security scanning (semgrep) - Financial software
 - ✅ File operations (filesystem) - Code development
 - ✅ Version control (git) - Code management
 - ✅ Task management (agentic-tools) - Project organization
 
 **Medium Priority:**
+
 - ✅ Structured thinking (sequential + tractatus) - Complex logic
 - ⚠️ Research tools (notebooklm/context7) - API documentation
 
 **Low Priority:**
+
 - ❌ Generic documentation lookup - Can use web search
 
 ### Multi-Language Project Needs
@@ -411,6 +458,7 @@
 **Languages:** C++, Python, Rust, Go, TypeScript
 
 **Recommendation:**
+
 - **Keep NotebookLM** if researching APIs for multiple languages
 - **Remove Context7** if Python/Rust/TypeScript docs can be found via web search
 
@@ -449,6 +497,7 @@
 ---
 
 **See Also:**
+
 - [MCP_SERVERS.md](research/integration/MCP_SERVERS.md) - Detailed server documentation
 - [MCP_OPTIMIZATION_RECOMMENDATIONS.md](research/analysis/MCP_OPTIMIZATION_RECOMMENDATIONS.md) - Previous optimization analysis
 - [.cursorrules](../.cursorrules) - Project rules mentioning MCP servers

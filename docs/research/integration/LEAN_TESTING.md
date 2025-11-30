@@ -60,7 +60,9 @@ Validate results:
 Create a simple test algorithm to verify basic functionality:
 
 ```python
+
 # Main/test_basic.py
+
 from AlgorithmImports import *
 
 class TestBasic(QCAlgorithm):
@@ -82,13 +84,17 @@ class TestBasic(QCAlgorithm):
 ### 1.2 Run Backtest
 
 ```bash
+
 # Activate LEAN environment
+
 source python/venv312/bin/activate
 
 # Run backtest
+
 lean backtest Main/test_basic.py
 
 # Check results
+
 ls -la results/
 ```
 
@@ -119,20 +125,26 @@ ls -la results/
 ### 2.2 Test Connection
 
 ```bash
+
 # Test IBKR connection
+
 lean live --brokerage InteractiveBrokers --data-provider InteractiveBrokers
 
 # Test Alpaca connection
+
 lean live --brokerage Alpaca --data-provider Alpaca
 ```
 
 ### 2.3 Run Box Spread Strategy
 
 ```bash
+
 # Run with IBKR
+
 lean live Main/box_spread_algorithm.py --brokerage InteractiveBrokers
 
 # Run with Alpaca
+
 lean live Main/box_spread_algorithm.py --brokerage Alpaca
 ```
 
@@ -432,6 +444,7 @@ Watch for:
 ## Test Results Template
 
 ```markdown
+
 ## Test Results - [Date]
 
 ### Configuration

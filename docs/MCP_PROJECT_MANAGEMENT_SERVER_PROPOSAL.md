@@ -73,26 +73,31 @@ IntelligentAutomationBase
 ## Benefits of MCP Server
 
 ### 1. **AI Assistant Integration**
+
 - AI assistants can discover and use your tools directly
 - No need to manually run scripts
 - Natural language interface to automation
 
 ### 2. **Cross-Project Reusability**
+
 - Tools can be used in other projects
 - Consistent automation patterns
 - Shared best practices
 
 ### 3. **Discoverability**
+
 - Tools become self-documenting
 - AI can suggest appropriate tools
 - Better tool utilization
 
 ### 4. **Unified Interface**
+
 - Single entry point for all automations
 - Consistent error handling
 - Standardized responses
 
 ### 5. **Real-Time Execution**
+
 - Run automations on-demand
 - Get immediate results
 - No manual script execution needed
@@ -102,11 +107,13 @@ IntelligentAutomationBase
 ## Proposed MCP Server Architecture
 
 ### Server Name
+
 `project-management-automation` or `unified-automation-tools`
 
 ### Tools to Expose
 
 #### 1. **Documentation Health Check**
+
 ```python
 {
   "name": "check_documentation_health",
@@ -122,6 +129,7 @@ IntelligentAutomationBase
 ```
 
 #### 2. **Todo2 Alignment Analysis**
+
 ```python
 {
   "name": "analyze_todo2_alignment",
@@ -136,6 +144,7 @@ IntelligentAutomationBase
 ```
 
 #### 3. **Detect Duplicate Tasks**
+
 ```python
 {
   "name": "detect_duplicate_tasks",
@@ -150,6 +159,7 @@ IntelligentAutomationBase
 ```
 
 #### 4. **Dependency Security Scan**
+
 ```python
 {
   "name": "scan_dependency_security",
@@ -164,6 +174,7 @@ IntelligentAutomationBase
 ```
 
 #### 5. **Find Automation Opportunities**
+
 ```python
 {
   "name": "find_automation_opportunities",
@@ -178,6 +189,7 @@ IntelligentAutomationBase
 ```
 
 #### 6. **Sync Todo Tasks**
+
 ```python
 {
   "name": "sync_todo_tasks",
@@ -192,6 +204,7 @@ IntelligentAutomationBase
 ```
 
 #### 7. **Review PWA Configuration**
+
 ```python
 {
   "name": "review_pwa_config",
@@ -208,6 +221,7 @@ IntelligentAutomationBase
 ### Resources to Expose
 
 #### 1. **Automation Status**
+
 ```python
 {
   "uri": "automation://status",
@@ -218,6 +232,7 @@ IntelligentAutomationBase
 ```
 
 #### 2. **Automation History**
+
 ```python
 {
   "uri": "automation://history",
@@ -228,6 +243,7 @@ IntelligentAutomationBase
 ```
 
 #### 3. **Available Automations**
+
 ```python
 {
   "uri": "automation://list",
@@ -244,12 +260,14 @@ IntelligentAutomationBase
 ### Phase 1: Core Server (Week 1)
 
 1. **Create MCP Server Package**
+
    ```bash
    mkdir -p mcp-servers/project-management-automation
    cd mcp-servers/project-management-automation
    ```
 
 2. **Server Structure**
+
    ```
    project-management-automation/
    ├── __init__.py
@@ -268,6 +286,7 @@ IntelligentAutomationBase
    ```
 
 3. **Dependencies**
+
    ```toml
    [project]
    name = "project-management-automation-mcp"
@@ -364,27 +383,32 @@ async with stdio_client(StdioServerParameters(
 ## Technical Considerations
 
 ### 1. **Script Execution**
+
 - Run automations in subprocess
 - Capture stdout/stderr
 - Handle long-running operations
 - Provide progress updates
 
 ### 2. **Configuration Management**
+
 - Load configs from JSON files
 - Allow runtime overrides
 - Support project-specific configs
 
 ### 3. **Result Storage**
+
 - Store execution results
 - Link to generated reports
 - Track execution history
 
 ### 4. **Error Handling**
+
 - Graceful degradation
 - Helpful error messages
 - Retry logic for transient failures
 
 ### 5. **Performance**
+
 - Async execution where possible
 - Caching for expensive operations
 - Progress reporting for long tasks
@@ -407,17 +431,20 @@ async with stdio_client(StdioServerParameters(
 ## Recommended Approach
 
 ### Option 1: Full MCP Server (Recommended)
+
 - **Pros:** Complete integration, discoverable, reusable
 - **Cons:** More initial setup
 - **Best for:** Long-term, multi-project use
 
 ### Option 2: Hybrid Approach
+
 - Keep scripts as-is
 - Add MCP wrapper layer
 - **Pros:** Minimal changes, backward compatible
 - **Cons:** Some duplication
 
 ### Option 3: Gradual Migration
+
 - Start with 2-3 most-used tools
 - Add more tools over time
 - **Pros:** Lower risk, incremental
@@ -459,6 +486,7 @@ async with stdio_client(StdioServerParameters(
 **Creating an MCP server for your project management tools is highly recommended.**
 
 **Benefits:**
+
 - ✅ Makes tools discoverable and accessible
 - ✅ Enables AI assistant integration
 - ✅ Supports cross-project reuse
@@ -474,6 +502,7 @@ async with stdio_client(StdioServerParameters(
 ---
 
 **Reference:**
+
 - [MCP Specification](https://modelcontextprotocol.io/)
 - [IntelligentAutomationBase Guide](./INTELLIGENT_AUTOMATION_GUIDE.md)
 - [Project Split Strategy](./PROJECT_SPLIT_STRATEGY.md)

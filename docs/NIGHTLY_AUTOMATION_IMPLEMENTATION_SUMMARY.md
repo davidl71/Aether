@@ -14,6 +14,7 @@ A new **Nightly Task Automation Tool** that automatically executes background-ca
 ## Files Created
 
 ### 1. Tool Implementation
+
 - **`mcp-servers/project-management-automation/tools/nightly_task_automation.py`**
   - Main tool implementation
   - Task categorization logic
@@ -21,11 +22,13 @@ A new **Nightly Task Automation Tool** that automatically executes background-ca
   - State management
 
 ### 2. Server Registration
+
 - **`mcp-servers/project-management-automation/server.py`** (updated)
   - Added tool import
   - Registered `run_nightly_task_automation_tool` MCP tool
 
 ### 3. Documentation
+
 - **`docs/NIGHTLY_TASK_AUTOMATION.md`**
   - Complete tool documentation
   - Usage examples
@@ -47,6 +50,7 @@ A new **Nightly Task Automation Tool** that automatically executes background-ca
 ### ✅ Automatic Task Filtering
 
 **Background-Capable Tasks (Executed):**
+
 - MCP extension tasks (MCP-EXT-*)
 - Research tasks
 - Implementation tasks
@@ -55,6 +59,7 @@ A new **Nightly Task Automation Tool** that automatically executes background-ca
 - Configuration tasks
 
 **Interactive Tasks (Moved to Review):**
+
 - Tasks needing clarification
 - Tasks requiring user input
 - Design decision tasks
@@ -77,6 +82,7 @@ A new **Nightly Task Automation Tool** that automatically executes background-ca
 ## Test Results
 
 **Dry Run Test:**
+
 ```
 Summary: {
   'background_tasks_found': 45,
@@ -96,16 +102,19 @@ Summary: {
 ### Via MCP Tool
 
 **Default Run:**
+
 ```
 Run nightly task automation with default settings
 ```
 
 **Dry Run (Preview):**
+
 ```
 Run nightly task automation in dry run mode
 ```
 
 **Custom Configuration:**
+
 ```
 Run nightly task automation: max 10 tasks per host, 20 total parallel tasks, high priority only
 ```
@@ -115,6 +124,7 @@ Run nightly task automation: max 10 tasks per host, 20 total parallel tasks, hig
 ## Configuration
 
 **Default Settings:**
+
 - Max tasks per host: 5
 - Max parallel tasks: 10
 - Priority filter: None (all)
@@ -122,6 +132,7 @@ Run nightly task automation: max 10 tasks per host, 20 total parallel tasks, hig
 - Dry run: False
 
 **Agent Configuration:**
+
 - Loaded from `docs/AGENT_HOSTNAMES.md`
 - Ubuntu: `david@192.168.192.57`
 - macOS M4: `davidl@192.168.192.141`
@@ -158,14 +169,18 @@ Run nightly task automation: max 10 tasks per host, 20 total parallel tasks, hig
 ### 1. Test with Dry Run
 
 ```bash
+
 # Via MCP tool
+
 "Run nightly task automation in dry run mode"
 ```
 
 ### 2. First Real Run
 
 ```bash
+
 # Start with small limits
+
 "Run nightly task automation: max 3 tasks per host, 5 total parallel tasks"
 ```
 

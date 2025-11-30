@@ -8263,6 +8263,114 @@
       },
       "format_errors": 220,
       "stale_files": 15
+    },
+    {
+      "timestamp": "2025-11-29T23:48:53.796329",
+      "health_score": 0,
+      "link_validation": {
+        "broken": 24
+      },
+      "format_errors": 220,
+      "stale_files": 15
+    },
+    {
+      "timestamp": "2025-11-30T00:11:30.803575",
+      "health_score": 0,
+      "link_validation": {
+        "broken": 24
+      },
+      "format_errors": 220,
+      "stale_files": 15
+    },
+    {
+      "timestamp": "2025-11-30T00:14:55.013854",
+      "health_score": 0,
+      "link_validation": {
+        "broken": 24
+      },
+      "format_errors": 220,
+      "stale_files": 15
+    },
+    {
+      "timestamp": "2025-11-30T00:28:39.446441",
+      "health_score": 0,
+      "link_validation": {
+        "broken": 19
+      },
+      "format_errors": 220,
+      "stale_files": 0
+    },
+    {
+      "timestamp": "2025-11-30T00:31:18.623286",
+      "health_score": 0,
+      "link_validation": {
+        "broken": 21
+      },
+      "format_errors": 220,
+      "stale_files": 0
+    },
+    {
+      "timestamp": "2025-11-30T00:31:30.688124",
+      "health_score": 0,
+      "link_validation": {
+        "broken": 20
+      },
+      "format_errors": 220,
+      "stale_files": 0
+    },
+    {
+      "timestamp": "2025-11-30T00:31:49.872519",
+      "health_score": 0,
+      "link_validation": {
+        "broken": 8
+      },
+      "format_errors": 220,
+      "stale_files": 0
+    },
+    {
+      "timestamp": "2025-11-30T00:33:04.862372",
+      "health_score": 0,
+      "link_validation": {
+        "broken": 4
+      },
+      "format_errors": 220,
+      "stale_files": 0
+    },
+    {
+      "timestamp": "2025-11-30T00:33:20.675758",
+      "health_score": 0,
+      "link_validation": {
+        "broken": 0
+      },
+      "format_errors": 220,
+      "stale_files": 0
+    },
+    {
+      "timestamp": "2025-11-30T00:34:57.140586",
+      "health_score": 0,
+      "link_validation": {
+        "broken": 0
+      },
+      "format_errors": 220,
+      "stale_files": 0
+    },
+    {
+      "timestamp": "2025-11-30T00:35:27.433447",
+      "health_score": 0,
+      "link_validation": {
+        "broken": 0
+      },
+      "format_errors": 220,
+      "stale_files": 0
+    },
+    {
+      "timestamp": "2025-11-30T00:35:38.442947",
+      "health_score": 0,
+      "link_validation": {
+        "broken": 0
+      },
+      "format_errors": 220,
+      "stale_files": 0
     }
   ]
 }

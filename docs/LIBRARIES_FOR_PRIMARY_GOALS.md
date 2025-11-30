@@ -89,12 +89,14 @@
 #### Existing (Use These First)
 
 **Ledger System** (`agents/backend/crates/ledger/`)
+
 - ✅ Already tracks all positions
 - ✅ Multi-currency support
 - ✅ Account hierarchy (Assets:Bank:*, Assets:Investments:*, etc.)
 - **Action**: Extend ledger queries to return unified position view
 
 **Rust Position Types** (`agents/backend/crates/api/src/state.rs`)
+
 - ✅ `PositionSnapshot` already exists
 - ✅ Real-time position tracking
 - **Action**: Extend to include loan positions, box spreads, bonds
@@ -102,20 +104,24 @@
 #### Recommended Additions
 
 **Pandas** (Python) - ✅ **ALREADY IN CODEBASE** (`requirements-notebooks.txt`)
+
 - **Purpose**: Data manipulation and aggregation for positions
 - **Use Case**:
   - Aggregate positions by type (loans, box spreads, bonds)
   - Calculate totals, averages, weighted rates
   - Time-series operations for cash flow
+
 - **Status**: ✅ Available in notebooks environment
 - **Why**: Industry standard for financial data manipulation
 
 **React Table / TanStack Table** (TypeScript) - **FOR PWA**
+
 - **Purpose**: Advanced table component for positions panel
 - **Use Case**:
   - Sortable, filterable positions table
   - Grouping by instrument type
   - Real-time updates
+
 - **Install**: `npm install @tanstack/react-table`
 - **Why**: Best-in-class table library for React
 
@@ -126,40 +132,48 @@
 #### Existing (Use These First)
 
 **Ledger System** (`agents/backend/crates/ledger/`)
+
 - ✅ Transaction history (source of cash flows)
 - ✅ Date tracking
 - ✅ Multi-currency
 - **Action**: Add cash flow projection queries
 
 **Chrono** (Rust) - Already in `Cargo.toml`
+
 - ✅ Date/time calculations
 - ✅ Duration arithmetic
 - ✅ **Use for**: Maturity date calculations, cash flow scheduling
 
 **Rust Decimal** - Already in `Cargo.toml`
+
 - ✅ Precise decimal arithmetic (no floating-point errors)
 - ✅ **Use for**: Interest calculations, cash flow amounts
 
 #### Recommended Additions
 
 **Pandas** (Python) - ✅ **ALREADY IN CODEBASE** (`requirements-notebooks.txt`)
+
 - **Purpose**: Time-series cash flow modeling
 - **Use Case**:
   - Project future cash flows by date
   - Aggregate cash flows by period (daily, weekly, monthly)
   - Calculate net cash flow at any point
   - Handle multiple currencies
+
 - **Key Features**:
   - `pd.date_range()` for cash flow scheduling
   - `groupby()` for aggregating by period
   - `resample()` for time-series operations
+
 - **Status**: ✅ Available in notebooks environment
 - **Example**:
+
 ```python
 import pandas as pd
 from datetime import datetime, timedelta
 
 # Project cash flows from positions
+
 cash_flows = pd.DataFrame({
     'date': [datetime(2025, 12, 1), datetime(2025, 12, 15)],
     'amount': [-1000.0, 500.0],  # Negative = outflow, Positive = inflow
@@ -168,26 +182,31 @@ cash_flows = pd.DataFrame({
 })
 
 # Calculate net cash flow by date
+
 net_cash_flow = cash_flows.groupby('date')['amount'].sum()
 ```
 
 **QuantLib-Python** - **NOT YET IN CODEBASE**
+
 - **Purpose**: Financial date calculations, cash flow scheduling
 - **Use Case**:
   - Day count conventions (Actual/360, 30/360, etc.)
   - Business day calendars
   - Cash flow schedule generation
   - Interest accrual calculations
+
 - **Install**: `pip install QuantLib-Python`
 - **Why**: Industry standard for financial date/cash flow calculations
 - **Note**: You have QuantLib C++ integration guide, Python bindings are easier for cash flow modeling
 
 **dateutil** (Python) - **NOT YET IN CODEBASE**
+
 - **Purpose**: Date parsing and manipulation
 - **Use Case**:
   - Parse maturity dates from various formats
   - Calculate days between dates
   - Handle business days
+
 - **Install**: `pip install python-dateutil`
 - **Why**: Simple, reliable date handling
 
@@ -198,11 +217,13 @@ net_cash_flow = cash_flows.groupby('date')['amount'].sum()
 #### Existing (Use These First)
 
 **Risk Calculator** (`native/src/risk_calculator.cpp`)
+
 - ✅ Position sizing calculations
 - ✅ Risk metrics
 - ✅ **Use for**: Validate simulated scenarios
 
 **Box Spread Strategy** (`native/src/box_spread_strategy.cpp`)
+
 - ✅ Opportunity evaluation
 - ✅ Profitability calculations
 - ✅ **Use for**: Evaluate box spread opportunities in scenarios
@@ -210,11 +231,13 @@ net_cash_flow = cash_flows.groupby('date')['amount'].sum()
 #### Recommended Additions
 
 **NLopt** (C++) - **DOCUMENTATION READY, NOT INTEGRATED**
+
 - **Purpose**: Constrained optimization for opportunity simulation
 - **Use Case**:
   - Optimize loan allocation across opportunities
   - Find optimal multi-instrument chains
   - Constrained optimization (e.g., "maximize benefit subject to risk limits")
+
 - **Status**: Integration guide exists (`docs/NLOPT_INTEGRATION_GUIDE.md`)
 - **Why**: Best-in-class optimization library, perfect for "what-if" scenarios
 - **Example Use**:
@@ -222,26 +245,32 @@ net_cash_flow = cash_flows.groupby('date')['amount'].sum()
   - "What's the best multi-instrument chain given constraints?"
 
 **Eigen** (C++) - **INTEGRATED** ✅
+
 - **Purpose**: Linear algebra for optimization
 - **Use Case**:
   - Matrix operations for portfolio optimization
   - Solve linear systems for cash flow optimization
   - Portfolio allocation calculations
+
 - **Status**: Already integrated (from `docs/RESEARCH_CPP_FINANCIAL_LIBRARIES.md`)
 - **Why**: Essential for multi-instrument optimization
 
 **Pandas** (Python) - ✅ **ALREADY IN CODEBASE** (`requirements-notebooks.txt`)
+
 - **Purpose**: Scenario comparison and analysis
 - **Use Case**:
   - Compare multiple "what-if" scenarios side-by-side
   - Calculate scenario metrics (net benefit, cash flow impact, risk)
   - Filter and rank scenarios
+
 - **Status**: ✅ Available in notebooks environment
 - **Example**:
+
 ```python
 import pandas as pd
 
 # Compare scenarios
+
 scenarios = pd.DataFrame({
     'scenario': ['consolidate', 'margin', 'invest'],
     'net_benefit': [500.0, 300.0, 400.0],
@@ -250,28 +279,34 @@ scenarios = pd.DataFrame({
 })
 
 # Rank by net benefit
+
 best_scenario = scenarios.loc[scenarios['net_benefit'].idxmax()]
 ```
 
 **NetworkX** (Python) - **NOT YET IN CODEBASE**
+
 - **Purpose**: Graph algorithms for relationship chains
 - **Use Case**:
   - Model multi-instrument relationships as graph
   - Find optimal paths (loan → margin → box spread → fund → cheaper loan)
   - Calculate shortest/optimal paths
+
 - **Install**: `pip install networkx`
 - **Why**: Perfect for modeling instrument relationships and finding chains
 - **Example**:
+
 ```python
 import networkx as nx
 
 # Model relationships as graph
+
 G = nx.DiGraph()
 G.add_edge('loan-5%', 'box-spread-margin', weight=0.04, benefit=100)
 G.add_edge('box-spread-margin', 'fund-investment', weight=0.06, benefit=200)
 G.add_edge('fund-investment', 'loan-3%', weight=0.03, benefit=300)
 
 # Find optimal path
+
 path = nx.shortest_path(G, 'loan-5%', 'loan-3%', weight='weight')
 ```
 
@@ -282,11 +317,13 @@ path = nx.shortest_path(G, 'loan-5%', 'loan-3%', weight='weight')
 #### Existing (Use These First)
 
 **Synthetic Financing Architecture** (`docs/SYNTHETIC_FINANCING_ARCHITECTURE.md`)
+
 - ✅ Complete design for asset relationships
 - ✅ Relationship types defined (Collateral, Financing, Cross-Currency)
 - ✅ **Action**: Implement the designed architecture
 
 **Ledger System** (`agents/backend/crates/ledger/`)
+
 - ✅ Account structure supports relationships
 - ✅ Multi-currency
 - ✅ **Action**: Extend to track relationship metadata
@@ -294,22 +331,27 @@ path = nx.shortest_path(G, 'loan-5%', 'loan-3%', weight='weight')
 #### Recommended Additions
 
 **NetworkX** (Python) - **NOT YET IN CODEBASE** ⭐ **HIGHLY RECOMMENDED**
+
 - **Purpose**: Graph-based relationship modeling
 - **Use Case**:
   - Model asset relationships as directed graph
   - Find relationship chains (loan → margin → box spread → fund → cheaper loan)
   - Calculate optimal paths
   - Visualize relationships
+
 - **Why**: Perfect fit for your use case - relationships are graphs!
 - **Install**: `pip install networkx`
 - **Example**:
+
 ```python
 import networkx as nx
 
 # Create relationship graph
+
 G = nx.DiGraph()
 
 # Add relationships
+
 G.add_edge('bank-loan-5%', 'box-spread-margin',
            relationship='collateral',
            rate_benefit=0.01,  # 1% benefit
@@ -321,23 +363,28 @@ G.add_edge('box-spread-margin', 'fund-investment',
            return_rate=0.06)
 
 # Find optimal chain
+
 paths = list(nx.all_simple_paths(G, 'bank-loan-5%', 'cheaper-loan-3%'))
 optimal_path = max(paths, key=lambda p: calculate_path_benefit(G, p))
 ```
 
 **Eigen** (C++) - **INTEGRATED** ✅
+
 - **Purpose**: Matrix operations for relationship calculations
 - **Use Case**:
   - Collateral valuation matrices
   - Portfolio margin calculations
   - Relationship strength calculations
+
 - **Status**: Already integrated
 
 **NLopt** (C++) - **DOCUMENTATION READY**
+
 - **Purpose**: Optimize relationship chains
 - **Use Case**:
   - Find optimal multi-instrument chain
   - Constrained optimization (e.g., "maximize benefit subject to risk")
+
 - **Status**: Integration guide exists
 
 ---
@@ -451,6 +498,7 @@ optimal_path = max(paths, key=lambda p: calculate_path_benefit(G, p))
 ### For Cash Flow Modeling
 
 **Start with**: Pandas + Chrono (Rust) + Ledger System
+
 - Ledger provides transaction history
 - Chrono handles dates
 - Pandas models and projects cash flows
@@ -458,6 +506,7 @@ optimal_path = max(paths, key=lambda p: calculate_path_benefit(G, p))
 ### For Opportunity Simulation
 
 **Start with**: NetworkX + NLopt + Existing Risk Calculator
+
 - NetworkX models relationships
 - NLopt optimizes scenarios
 - Risk Calculator validates scenarios
@@ -465,6 +514,7 @@ optimal_path = max(paths, key=lambda p: calculate_path_benefit(G, p))
 ### For Unified Positions Panel
 
 **Start with**: Extend Ledger System + React Table
+
 - Ledger already tracks positions
 - Extend queries to return unified view
 - React Table displays in PWA
@@ -472,6 +522,7 @@ optimal_path = max(paths, key=lambda p: calculate_path_benefit(G, p))
 ### For Relationship Modeling
 
 **Start with**: NetworkX + Existing Architecture Design
+
 - Architecture document has complete design
 - NetworkX implements the graph model
 - Find optimal chains automatically
@@ -588,6 +639,7 @@ def find_optimal_chain(G, start_id, end_id, max_length=5):
 
 ```cpp
 // C++ example using NLopt for opportunity optimization
+
 #include <nlopt.hpp>
 #include <vector>
 

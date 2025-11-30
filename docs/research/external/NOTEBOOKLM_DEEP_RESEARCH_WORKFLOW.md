@@ -21,16 +21,19 @@ Use Context7 to get up-to-date API documentation before creating notebooks.
 ### For Message Queue Research
 
 **NATS Documentation:**
+
 - Library ID: `/nats-io/nats.docs`
 - Topics: performance, latency, multi-language support
 - Use Context7 to get latest NATS patterns and best practices
 
 **RabbitMQ Documentation:**
+
 - Library ID: `/rabbitmq/rabbitmq-website`
 - Topics: performance, latency, AMQP, multi-language clients
 - Use Context7 to get latest RabbitMQ patterns
 
 **Usage:**
+
 ```
 "Get NATS documentation on performance and multi-language support use context7"
 "Get RabbitMQ documentation on latency and AMQP use context7"
@@ -39,12 +42,14 @@ Use Context7 to get up-to-date API documentation before creating notebooks.
 ### For CME Research
 
 **CME/Cboe Sources:**
+
 - Use web search for official whitepapers (Context7 may not have CME-specific docs)
 - Add URLs directly to NotebookLM
 
 ### For ORATS Research
 
 **ORATS API:**
+
 - Check Context7 for ORATS library documentation
 - If not available, use ORATS official documentation URLs
 
@@ -62,6 +67,7 @@ Use Context7 to get up-to-date API documentation before creating notebooks.
    - Complete 2FA if required
 
 2. **Use browser control MCP** to automate:
+
    ```python
    # Navigate to NotebookLM
    browser_navigate("https://notebooklm.google.com")
@@ -80,6 +86,7 @@ Use Context7 to get up-to-date API documentation before creating notebooks.
    ```
 
 3. **Add sources automatically**:
+
    ```python
    # For each source URL
    browser_click(element="Add source", ref="[from snapshot]")
@@ -100,21 +107,25 @@ Use Context7 to get up-to-date API documentation before creating notebooks.
 3. Name the notebook (e.g., "CME Financing Strategies")
 4. Add sources manually
 
-### For Each High-Priority Research:
+### For Each High-Priority Research
 
 **Notebook 1: CME Financing Strategies**
+
 - Name: "CME Financing Strategies"
 - Purpose: Synthesize CME/Cboe whitepapers
 
 **Notebook 2: Message Queue Solutions**
+
 - Name: "Message Queue Solutions"
 - Purpose: Compare NATS, RabbitMQ, Redis, ZeroMQ
 
 **Notebook 3: ORATS Options Data**
+
 - Name: "ORATS Options Data"
 - Purpose: ORATS API integration patterns
 
 **Notebook 4-6: TWS API Learnings** (Split into 3 notebooks per optimization guide)
+
 - Notebook 4: "TWS API Core Patterns"
 - Notebook 5: "TWS API Advanced Topics"
 - Notebook 6: "TWS API Integration"
@@ -132,24 +143,28 @@ Use Context7 to get up-to-date API documentation before creating notebooks.
 ### Option B: Via NotebookLM MCP (If Supported)
 
 Check if NotebookLM MCP supports adding sources programmatically. If yes:
+
 - Use MCP tools to add URLs
 - Add local markdown files
 
 ### Sources by Notebook
 
 **CME Financing Strategies:**
+
 1. https://www.cmegroup.com/articles/whitepapers/capital-efficiencies-and-air-trfs.html
 2. https://www.cboe.com/insights/posts/why-consider-box-spreads-as-an-alternative-borrowing-lending-strategy/
 3. https://www.cmegroup.com/articles/2025/quantifying-and-hedging-equity-financing-risk.html
 4. https://www.cmegroup.com/market-data/license-data/licensed-market-data-distributors.html
 
 **Message Queue Solutions:**
+
 1. NATS Documentation (from Context7 or https://docs.nats.io/)
 2. RabbitMQ Documentation (from Context7 or https://www.rabbitmq.com/docs/)
 3. Redis Streams: https://redis.io/docs/data-types/streams/
 4. ZeroMQ: https://zeromq.org/
 
 **ORATS Options Data:**
+
 1. ORATS API Documentation: https://orats.com/docs
 2. ORATS Data API: https://orats.com/data-api
 
@@ -157,21 +172,23 @@ Check if NotebookLM MCP supports adding sources programmatically. If yes:
 
 ## Step 4: Share Notebook and Add to Library
 
-### Share Notebook:
+### Share Notebook
 
 1. In NotebookLM, click **⚙️ Share**
 2. Select **"Anyone with link"**
 3. Click **Copy link**
 4. Save the notebook link
 
-### Add to Library (Via MCP or Manual):
+### Add to Library (Via MCP or Manual)
 
 **Via Cursor Chat:**
+
 ```
 "Add [notebook-link] to library tagged '[topic], research, [category]'"
 ```
 
 Example:
+
 ```
 "Add https://notebooklm.google.com/notebook/abc123 to library tagged 'cme, financing, research, external'"
 ```
@@ -182,24 +199,27 @@ Example:
 
 Once notebooks are created and added to library, use NotebookLM MCP to query them.
 
-### Query Patterns:
+### Query Patterns
 
 **For CME Financing:**
+
 ```
 "Research CME financing strategies in NotebookLM and compare box spreads vs AIR TRFs vs futures financing for capital efficiency"
 ```
 
 **For Message Queues:**
+
 ```
 "Research message queue solutions in NotebookLM and compare NATS, RabbitMQ, Redis Streams, and ZeroMQ for sub-millisecond trading systems"
 ```
 
 **For ORATS:**
+
 ```
 "Research ORATS options data in NotebookLM and summarize key integration patterns for box spread detection"
 ```
 
-### Synthesis Queries:
+### Synthesis Queries
 
 1. **Comparison Queries:**
    - "Compare [option A] vs [option B] for [use case]"
@@ -217,12 +237,14 @@ Once notebooks are created and added to library, use NotebookLM MCP to query the
 
 ## Step 6: Document Findings
 
-### Update Research Documents:
+### Update Research Documents
 
 After NotebookLM research, update the original research documents with synthesized findings.
 
 **Format:**
+
 ```markdown
+
 ## Synthesis (NotebookLM Research)
 
 **Date**: 2025-11-20
@@ -244,29 +266,30 @@ After NotebookLM research, update the original research documents with synthesiz
 - [Source 2]
 ```
 
-### Create Consolidated Documents:
+### Create Consolidated Documents
 
 For TWS API research, create:
+
 - `docs/research/learnings/TWS_API_BEST_PRACTICES_CONSOLIDATED.md`
 
 ---
 
 ## Context7 + NotebookLM Integration Strategy
 
-### When to Use Context7:
+### When to Use Context7
 
 - **API Documentation**: Get latest library/framework docs
 - **Code Examples**: Get up-to-date code patterns
 - **Best Practices**: Get current best practices (2025)
 
-### When to Use NotebookLM:
+### When to Use NotebookLM
 
 - **External Whitepapers**: CME/Cboe research papers
 - **Multiple Sources**: Synthesize information from multiple documents
 - **Research Papers**: Academic or industry research
 - **Video Content**: YouTube tutorials and talks
 
-### Combined Workflow:
+### Combined Workflow
 
 1. **Get API Docs** (Context7) → Understand current patterns
 2. **Create Notebook** (NotebookLM) → Add external sources
@@ -292,6 +315,7 @@ For TWS API research, create:
 ### Step 3: Add Sources
 
 Add 4 external URLs:
+
 - CME Capital Efficiencies whitepaper
 - Cboe Box Spreads article
 - CME Equity Financing Risk whitepaper
@@ -320,21 +344,21 @@ Update `docs/research/external/CME_RESEARCH.md` with synthesis section.
 
 ## Troubleshooting
 
-### NotebookLM MCP Not Working:
+### NotebookLM MCP Not Working
 
 1. Check authentication: "Log me in to NotebookLM"
 2. Verify notebook is shared: "Anyone with link"
 3. Check notebook link is correct
 4. Verify notebook is in library
 
-### Context7 Not Finding Library:
+### Context7 Not Finding Library
 
 1. Try different library name variations
 2. Check if library exists in Context7
 3. Use web search as fallback
 4. Use official documentation URLs in NotebookLM
 
-### Sources Not Processing:
+### Sources Not Processing
 
 1. Check URL accessibility
 2. Verify authentication for protected sources

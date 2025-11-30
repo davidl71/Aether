@@ -19,16 +19,19 @@ The workspace-level versions are kept as they're more up-to-date and project-spe
 ## Configuration Locations
 
 ### User-Level (`~/.cursor/mcp.json`)
+
 - Global MCP servers available in all projects
 - Contains: `claude-scientific-skills`, `claude-skills-mcp`, `codacy`, `cycode`, `desktop-commander`, `docfork`, `GitKraken`, `openmemory`, `tractatus_thinking`
 
 ### Workspace-Level (`./.cursor/mcp.json`)
+
 - Project-specific MCP servers
 - Contains: `agentic-tools`, `context7`, `filesystem`, `git`, `gitkraken`, `iterm2`, `notebooklm`, `semgrep`
 
 ## How Cursor Merges Configurations
 
 Cursor merges both configurations, which means:
+
 - If a server exists in both, it appears twice (duplicate)
 - User-level servers are available in all projects
 - Workspace-level servers are only available in this project
@@ -51,6 +54,7 @@ cp ~/.cursor/mcp.json.backup ~/.cursor/mcp.json
 ## Verification
 
 After fixing, restart Cursor and check:
+
 1. Open Cursor Settings
 2. Go to MCP Servers
 3. Verify `context7` appears only once
