@@ -645,6 +645,7 @@ next_payment_date = "2025-12-01"
   - `CashFlowRepository` (database-agnostic queries)
   - `LoanRepository` (database-agnostic queries)
   - `GreekSnapshotRepository` (database-agnostic queries)
+
 - [ ] Test repositories with SQLite (local development)
 - [ ] Test repositories with PostgreSQL (verify portability)
 - [ ] Implement periodic snapshot persistence (every 5 seconds)
@@ -692,6 +693,7 @@ Since you have accounts with **AWS**, **Vultr**, and **Google Cloud**, here are 
   - Read replicas for scaling read operations
   - VPC integration for security
   - Performance Insights for monitoring
+
 - **Cost:** ~$15-50/month (db.t3.micro to db.t3.small, varies by region)
 - **Use Case:** Production deployments requiring high availability and ACID guarantees
 
@@ -704,6 +706,7 @@ Since you have accounts with **AWS**, **Vultr**, and **Google Cloud**, here are 
   - Fast failover (<30 seconds)
   - Global database replication
   - Serverless option for variable workloads
+
 - **Cost:** ~$30-100/month (varies by region and instance size)
 - **Use Case:** High-performance production deployments with global access
 
@@ -715,17 +718,21 @@ Since you have accounts with **AWS**, **Vultr**, and **Google Cloud**, here are 
   - Automatic scaling
   - Built-in backup and restore
   - Encryption at rest
+
 - **Disadvantages:**
   - NoSQL (less structured than PostgreSQL)
   - Different query patterns required
   - Less suitable for complex relational data
+
 - **Cost:** Pay-per-request pricing (~$1.25/million writes, $0.25/million reads)
 - **Use Case:** High-throughput, low-latency needs with flexible schemas
 
 **Setup:**
 
 ```toml
+
 # agents/backend/config/database.toml
+
 [database.aws_rds]
 provider = "postgres"
 host = "your-db-instance.region.rds.amazonaws.com"
@@ -751,6 +758,7 @@ ssl_mode = "require"
   - Read replicas
   - Integration with BigQuery for analytics
   - Google Cloud IAM integration
+
 - **Cost:** ~$15-50/month (db-f1-micro to db-n1-standard-1, varies by region)
 - **Use Case:** Production deployments with Google Cloud integration needs
 
@@ -762,9 +770,11 @@ ssl_mode = "require"
   - Global distribution with low latency
   - Automatic sharding and replication
   - 99.999% availability SLA
+
 - **Disadvantages:**
   - More expensive than Cloud SQL
   - Overkill for single-region deployments
+
 - **Cost:** ~$100+/month (minimum 3 nodes required)
 - **Use Case:** Global deployments requiring strong consistency
 
@@ -776,16 +786,20 @@ ssl_mode = "require"
   - Excellent for time-series analytics
   - SQL interface
   - Built-in ML capabilities
+
 - **Disadvantages:**
   - Not ideal for transactional workloads
   - Higher latency for real-time queries
+
 - **Cost:** Pay-per-query pricing (~$5/TB scanned, first 1 TB/month free)
 - **Use Case:** Analytics, reporting, historical data analysis (complement to Cloud SQL)
 
 **Setup:**
 
 ```toml
+
 # agents/backend/config/database.toml
+
 [database.gcp_cloud_sql]
 provider = "postgres"
 host = "your-instance-ip:5432"  # Private IP or public IP
@@ -794,7 +808,9 @@ username_env = "GCP_CLOUD_SQL_USERNAME"
 password_env = "GCP_CLOUD_SQL_PASSWORD"
 pool_size = 10
 ssl_mode = "require"
+
 # Option: Use Cloud SQL Proxy for secure connections
+
 use_cloud_sql_proxy = true
 ```
 
@@ -808,10 +824,12 @@ use_cloud_sql_proxy = true
   - Fully managed with automatic backups
   - Simple setup and management
   - Multiple regions available
+
 - **Disadvantages:**
   - Less feature-rich than AWS RDS/Cloud SQL
   - Smaller ecosystem and tooling
   - Limited high-availability options
+
 - **Cost:** ~$15-40/month (varies by instance size)
 - **Use Case:** Cost-effective production deployments, single-region deployments
 
@@ -822,17 +840,21 @@ use_cloud_sql_proxy = true
   - Lowest cost
   - Full control over configuration
   - Can host multiple services (PostgreSQL + QuestDB)
+
 - **Disadvantages:**
   - Manual management (backups, updates, monitoring)
   - Requires database administration expertise
   - No automatic failover
+
 - **Cost:** ~$6-24/month (VPS instances)
 - **Use Case:** Development, testing, or cost-constrained production deployments
 
 **Setup:**
 
 ```toml
+
 # agents/backend/config/database.toml
+
 [database.vultr_managed]
 provider = "postgres"
 host = "your-db.vultr.com"
@@ -857,10 +879,12 @@ ssl_mode = "require"
   - Automatic scaling
   - Built-in analytics functions
   - Automatic data lifecycle management (move old data to cheaper storage)
+
 - **Disadvantages:**
   - Different query language (SQL-like but not standard SQL)
   - Migration from QuestDB required
   - Newer service (less mature than QuestDB)
+
 - **Cost:** ~$0.50/GB-month for hot storage, $0.03/GB-month for cold storage
 - **Use Case:** Production deployments requiring managed time-series database
 
@@ -872,9 +896,11 @@ ssl_mode = "require"
   - Full control over configuration
   - Standard SQL queries
   - Lower cost than managed services
+
 - **Disadvantages:**
   - Manual management required
   - Need to handle backups and scaling
+
 - **Cost:** ~$10-50/month (EC2 instance, varies by size)
 - **Setup:** Deploy QuestDB on EC2 instance or ECS container
 
@@ -885,9 +911,11 @@ ssl_mode = "require"
   - Very cheap storage (~$0.023/GB-month)
   - Query with SQL via Athena
   - Automatic lifecycle management
+
 - **Disadvantages:**
   - Not for real-time queries (cold storage)
   - Higher query costs for frequent access
+
 - **Cost:** ~$5/TB scanned (first 1 TB/month free)
 - **Use Case:** Archival storage and infrequent historical queries
 
@@ -902,9 +930,11 @@ ssl_mode = "require"
   - Automatic scaling
   - Built-in ML capabilities
   - Partitioning by timestamp for efficient queries
+
 - **Disadvantages:**
   - Higher latency than QuestDB (not for real-time)
   - Better for analytics than real-time ingestion
+
 - **Cost:** ~$5/TB scanned (first 1 TB/month free), $20/TB/month storage
 - **Use Case:** Historical market data analysis, complement to real-time database
 
@@ -915,6 +945,7 @@ ssl_mode = "require"
   - Keep existing QuestDB setup
   - Full control
   - Integration with Google Cloud networking
+
 - **Cost:** ~$10-50/month (Compute Engine instance)
 - **Setup:** Deploy QuestDB on Compute Engine VM or GKE (Kubernetes)
 
@@ -925,9 +956,11 @@ ssl_mode = "require"
   - Single-digit millisecond latency
   - Handles millions of writes/second
   - Automatic scaling
+
 - **Disadvantages:**
   - NoSQL (different query patterns)
   - More complex setup than QuestDB
+
 - **Cost:** ~$65/month (minimum cluster with 3 nodes)
 - **Use Case:** Very high-frequency market data ingestion
 
@@ -941,8 +974,10 @@ ssl_mode = "require"
   - Keep existing QuestDB setup
   - Full control
   - Can co-locate with backend if needed
+
 - **Disadvantages:**
   - Manual management required
+
 - **Cost:** ~$6-24/month (VPS instance)
 - **Setup:** Deploy QuestDB on Vultr VPS instance
 
@@ -952,8 +987,10 @@ ssl_mode = "require"
 - **Advantages:**
   - Very cheap storage (~$0.01/GB-month)
   - S3-compatible API
+
 - **Disadvantages:**
   - Not for real-time queries
+
 - **Cost:** ~$5/month (500GB included, then $0.01/GB)
 - **Use Case:** Archival storage and backups
 
@@ -967,6 +1004,7 @@ ssl_mode = "require"
   - Automatic lifecycle policies (move to cheaper storage)
   - Versioning and cross-region replication
   - Encryption at rest
+
 - **Cost:** ~$0.023/GB-month (Standard), ~$0.004/GB-month (Glacier for long-term)
 - **Setup:** Automated backups from RDS can be stored in S3
 
@@ -978,6 +1016,7 @@ ssl_mode = "require"
   - Automatic lifecycle management
   - Integration with Cloud SQL automatic backups
   - Encryption at rest
+
 - **Cost:** ~$0.020/GB-month (Standard), ~$0.004/GB-month (Archive for long-term)
 - **Setup:** Cloud SQL backups automatically stored in Cloud Storage
 
@@ -988,6 +1027,7 @@ ssl_mode = "require"
   - Low cost
   - S3-compatible API
   - Simple setup
+
 - **Cost:** ~$0.01/GB-month (500GB included)
 - **Setup:** Use `pg_dump` or similar to backup to Vultr Object Storage
 

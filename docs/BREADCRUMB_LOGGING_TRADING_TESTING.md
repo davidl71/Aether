@@ -331,7 +331,9 @@ TUI_BREADCRUMB_ACTION("order_placed", "order_manager",
 Extract performance metrics from breadcrumbs:
 
 ```python
+
 # Analyze breadcrumb log for performance
+
 def analyze_performance(breadcrumbs):
     order_times = []
     for entry in breadcrumbs:
@@ -375,7 +377,9 @@ config.capture_screen_dumps = false;  // Not needed for compliance
 ### Log Analysis
 
 ```python
+
 # Extract compliance-relevant breadcrumbs
+
 def extract_compliance_logs(breadcrumbs):
     compliance_events = []
     for entry in breadcrumbs:
@@ -537,4 +541,4 @@ Use consistent naming for similar operations:
 
 ---
 
-**Last Updated**: 2025-01-27
+**Last Updated**: 2025-11-30

@@ -93,6 +93,7 @@ Keep documentation current:
 Reference docs in `.cursorrules` for project-wide context:
 
 ```markdown
+
 ## API References
 - See `docs/API_DOCUMENTATION_INDEX.md` for all external APIs
 - See `docs/TWS_INTEGRATION_STATUS.md` for TWS API details
@@ -152,9 +153,11 @@ Documentation files should include:
 ### Template
 
 ```markdown
+
 # API Name
 
 ## Overview
+
 Brief description of what this API does.
 
 ## Official Documentation
@@ -166,6 +169,7 @@ Brief description of what this API does.
 - `function_name()`: Description
 
 ## Usage Examples
+
 \`\`\`cpp
 // Example code
 \`\`\`

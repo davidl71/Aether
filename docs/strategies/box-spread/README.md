@@ -54,12 +54,14 @@ Cash Management Strategy:
 ### Opportunity Simulation
 
 Box spreads can be simulated in "what-if" scenarios:
+
 - **Scenario**: "I have a loan at 4% APR. Can I use it as margin for box spreads?"
 - **Simulation**: Use loan as collateral, execute box spread, calculate effective financing rate
 
 ### Multi-Instrument Relationships
 
 Box spreads can be part of financing chains:
+
 ```
 Bank Loan (5% APR)
   ↓ (use as collateral)
@@ -128,6 +130,7 @@ Investment Fund (6% return)
 from box_spread_dsl import BoxSpreadStrategy
 
 # Create box spread opportunity
+
 strategy = BoxSpreadStrategy(
     symbol="SPX",
     lower_strike=5000,
@@ -136,6 +139,7 @@ strategy = BoxSpreadStrategy(
 )
 
 # Calculate implied rate
+
 rate = strategy.calculate_implied_rate()
 print(f"Implied financing rate: {rate:.2f}% APR")
 ```
@@ -143,6 +147,7 @@ print(f"Implied financing rate: {rate:.2f}% APR")
 ### C++ Usage
 
 ```cpp
+
 #include "box_spread_strategy.h"
 
 BoxSpreadStrategy strategy(config);

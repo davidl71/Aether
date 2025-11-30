@@ -9,6 +9,7 @@
 ### ✅ Phase 1: CMake Configuration Updates - COMPLETE
 
 **Changes Made:**
+
 1. ✅ Updated `native/CMakeLists.txt` to conditionally exclude local source files when `USE_BOX_SPREAD_CPP_LIB=ON`
 2. ✅ Added library include directory configuration
 3. ✅ Updated test CMakeLists.txt to conditionally exclude local files
@@ -16,16 +17,19 @@
 5. ✅ Added `USE_BOX_SPREAD_CPP_LIB` preprocessor macro definition
 
 **Files Modified:**
+
 - `native/CMakeLists.txt` - Conditional source file inclusion, compile definitions
 - `native/tests/CMakeLists.txt` - Conditional test source files
 
 **Current Behavior:**
+
 - When `USE_BOX_SPREAD_CPP_LIB=OFF` (default): Uses local source files (current behavior)
 - When `USE_BOX_SPREAD_CPP_LIB=ON`: Excludes local files, expects library to be linked
 
 ### ✅ Phase 2: TWS Adapter Implementation - COMPLETE
 
 **Changes Made:**
+
 1. ✅ Created `native/include/brokers/tws_adapter.h` - TWS adapter header implementing `IBroker` interface
 2. ✅ Created `native/src/brokers/tws_adapter.cpp` - TWS adapter implementation with type conversions
 3. ✅ Updated `native/src/ib_box_spread.cpp` - Conditional compilation for library vs local implementation
@@ -34,14 +38,17 @@
 6. ✅ **Fixed config field mapping** - Corrected StrategyParams and RiskConfig field names
 
 **Files Created:**
+
 - `native/include/brokers/tws_adapter.h` - Adapter header (180 lines)
 - `native/src/brokers/tws_adapter.cpp` - Adapter implementation (490 lines)
 
 **Files Modified:**
+
 - `native/src/ib_box_spread.cpp` - Conditional compilation throughout, config mapping fixed
 - `native/CMakeLists.txt` - Added compile definition for preprocessor macro
 
 **Key Features:**
+
 - **Type Conversion**: Bidirectional conversion between `types::` (local) and `box_spread::types::` (library)
 - **Interface Implementation**: All `IBroker` methods implemented by delegating to `TWSClient`
 - **Thread Safety**: Mutex protection for all adapter methods
@@ -52,6 +59,7 @@
 - **Config Mapping**: Correctly maps local config to library config format
 
 **Config Mapping Fixes:**
+
 - ✅ `StrategyParams`: Fixed field names (`min_arbitrage_profit`, `min_days_to_expiry`, `max_days_to_expiry`)
 - ✅ `RiskConfig`: Fixed field names (`max_loss_per_position`, `max_total_exposure`)
 - ✅ `CommissionConfig`: Basic fields mapped (IBKR tier conversion pending)
@@ -61,16 +69,19 @@
 ### ⚠️ Blocked: System Dependency Issue
 
 **Issue**: Boost dependency configuration
+
 - CMake cannot find `boost_system` component
 - This is a system-level dependency issue, not a code problem
 - The code changes are correct and ready for testing
 
 **Error Message:**
+
 ```
 CMake Error: Could not find a package configuration file provided by "boost_system"
 ```
 
 **Resolution Options:**
+
 1. Install Boost system component: `brew install boost` (macOS)
 2. Configure CMake to find Boost: Set `CMAKE_PREFIX_PATH` or `Boost_DIR`
 3. Use existing build directory that already has Boost configured
@@ -78,6 +89,7 @@ CMake Error: Could not find a package configuration file provided by "boost_syst
 ### ✅ Config Field Mapping - VERIFIED
 
 **StrategyParams Mapping:**
+
 - ✅ `symbols` → `symbols`
 - ✅ `min_arbitrage_profit` → `min_arbitrage_profit`
 - ✅ `min_roi_percent` → `min_roi_percent`
@@ -90,6 +102,7 @@ CMake Error: Could not find a package configuration file provided by "boost_syst
 - ✅ `commissions` → `commissions` (basic fields mapped)
 
 **RiskConfig Mapping:**
+
 - ✅ `max_total_exposure` → `max_total_exposure`
 - ✅ `max_positions` → `max_positions`
 - ✅ `max_loss_per_position` → `max_loss_per_position`
@@ -117,6 +130,7 @@ CMake Error: Could not find a package configuration file provided by "boost_syst
 ## Next Steps
 
 1. **Resolve Boost Dependency** (System-level):
+
    ```bash
    # macOS
    brew install boost
@@ -128,12 +142,14 @@ CMake Error: Could not find a package configuration file provided by "boost_syst
    ```
 
 2. **Test Compilation**: Once Boost is resolved, build with library enabled
+
    ```bash
    cmake -S native -B build-test -DUSE_BOX_SPREAD_CPP_LIB=ON
    cmake --build build-test --target ib_box_spread
    ```
 
 3. **Test Runtime**: Execute with library enabled
+
    ```bash
    ./build-test/bin/ib_box_spread --dry-run --mock-tws
    ```
@@ -142,30 +158,41 @@ CMake Error: Could not find a package configuration file provided by "boost_syst
 
 ## Usage
 
-### Building with Extracted Library:
+### Building with Extracted Library
+
 ```bash
+
 # Initialize submodule
+
 git submodule update --init --recursive
 
 # Configure with library enabled (requires Boost to be properly installed)
+
 cmake -S native -B build -DUSE_BOX_SPREAD_CPP_LIB=ON
 
 # Build
+
 cmake --build build
 
 # Run
+
 ./build/bin/ib_box_spread --dry-run
 ```
 
-### Building with Local Implementation (Default):
+### Building with Local Implementation (Default)
+
 ```bash
+
 # Configure (library disabled by default)
+
 cmake -S native -B build
 
 # Build
+
 cmake --build build
 
 # Run
+
 ./build/bin/ib_box_spread --dry-run
 ```
 

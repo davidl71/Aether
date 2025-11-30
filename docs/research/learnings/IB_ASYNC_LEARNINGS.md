@@ -27,12 +27,15 @@ While `ib_async` is Python-based and our implementation is C++, we can learn val
 **Example Pattern:**
 
 ```python
+
 # Async interface
+
 async def get_market_data(self, contract):
     await self.reqMktData(contract)
     return await self.wait_for_tick()
 
 # Sync interface (wrapper around async)
+
 def get_market_data_sync(self, contract):
     return asyncio.run(self.get_market_data(contract))
 ```
@@ -58,7 +61,7 @@ std::optional<MarketData> request_market_data_sync(const Contract& contract, int
     std::promise<MarketData> promise;
     auto future = promise.get_future();
 
-    request_market_data(contract, [&promise](const MarketData& data) {
+    request_market_data(contract, &promise {
         promise.set_value(data);
     });
 
@@ -247,7 +250,7 @@ std::optional<MarketData> request_market_data_sync(
     auto future = promise.get_future();
     std::atomic<bool> received{false};
 
-    request_market_data(contract, [&promise, &received](const MarketData& data) {
+    request_market_data(contract, &promise, &received {
         promise.set_value(data);
         received = true;
     });

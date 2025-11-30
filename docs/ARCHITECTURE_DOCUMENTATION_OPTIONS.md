@@ -1,6 +1,6 @@
 # Architecture Documentation & DSL Enhancement Options
 
-**Date**: 2025-01-19
+**Date**: 2025-11-30
 **Purpose**: Document research findings and future enhancement options for architecture documentation and DSL development
 **Status**: Research Complete - Options Documented for Future Reference
 
@@ -29,18 +29,24 @@ This document captures research findings on architecture documentation tools (St
 **Location**: `docs/CODEBASE_ARCHITECTURE.md`
 
 **Current Approach**:
+
+
 - ASCII-based diagrams for system architecture visualization
 - Multi-layer architecture representation (Application → Core Engine → External Services)
 - Component descriptions with locations and responsibilities
 - Dependency documentation
 
+
 **Strengths**:
+
 - ✅ Human-readable and version-controlled
 - ✅ Works well with Markdown documentation
 - ✅ Easy to update manually
 - ✅ Good for high-level overview
 
+
 **Limitations**:
+
 - ❌ Manual maintenance (no automation)
 - ❌ Limited visualization options (text-only)
 - ❌ Difficult to generate multiple views (system context, deployment, etc.)
@@ -49,9 +55,11 @@ This document captures research findings on architecture documentation tools (St
 
 ### Existing DSL Implementation
 
+
 **Location**: `python/dsl/`
 
 **Current State**:
+
 - ✅ Box spread strategy DSL (`box_spread_dsl.py`)
 - ✅ Cash flow modeling DSL (`cash_flow_dsl.py`)
 - ✅ Financing strategy DSL (`financing_strategy_dsl.py`)
@@ -69,26 +77,32 @@ This document captures research findings on architecture documentation tools (St
 
 **Source**: [Structurizr DSL Documentation](https://docs.structurizr.com/dsl)
 
+
 **Overview**:
 Structurizr DSL is a domain-specific language for creating software architecture models. It uses a text-based DSL to define architecture models that can be rendered into multiple diagram formats following the C4 model (Context → Container → Component → Code).
 
 **Key Features**:
+
 - **Text-based DSL**: Architecture models defined as code, version-controllable
 - **C4 Model Support**: System Context, Container, Component, and Deployment views
 - **Multi-format Output**: Renders to web diagrams, PlantUML, Mermaid, etc.
 - **Relationship Modeling**: Explicit modeling of dependencies and interactions
+
 - **Technology Tags**: Tag components by technology stack (C++, Python, Rust, etc.)
 - **Deployment Views**: Model deployment architecture and infrastructure
 - **Interactive Diagrams**: Web-based interactive architecture diagrams
 
 **Relevance to This Project**:
+
 - ✅ Can document multi-language architecture (C++/Python/Rust/Go/TypeScript)
+
 - ✅ Visualize broker service interactions (Tastytrade, IBKR, Alpaca)
 - ✅ Model data flows between components
 - ✅ Document deployment architecture for broker services
 - ✅ Version-controlled architecture documentation
 
 **Example Application**:
+
 ```structurizr
 workspace "IB Box Spread Generator" {
     model {
@@ -127,6 +141,7 @@ workspace "IB Box Spread Generator" {
         }
     }
 }
+
 ```
 
 ### 2. Domain-Specific Languages
@@ -134,43 +149,56 @@ workspace "IB Box Spread Generator" {
 **Source**: [Domain-Specific Languages Article](https://opensource.com/article/20/2/domain-specific-languages)
 
 **Key Concepts**:
+
+
 - **Internal DSLs**: Embedded within a host language (e.g., Python DSL for box spreads)
 - **External DSLs**: Standalone languages with custom syntax
 - **Benefits**: Improved productivity, domain-appropriate abstractions, better maintainability
 - **Examples**: SQL, HTML, Gradle, Makefile
 
+
 **Relevance to This Project**:
 The project already implements an internal DSL in Python (`python/dsl/`) following best practices:
+
 - Fluent builder interface
 - Domain-specific types
 - Code generation capabilities
 - Validation and constraint checking
 
+
 **Enhancement Opportunities**:
+
 - Extend DSL for additional trading strategies
 - Add strategy composition DSL
+
 - Multi-broker strategy DSL
 - Risk parameter DSL
 
 ### 3. Open Banking Solutions
 
 **Source**:
+
+
 - [Open Bank Project](https://www.openbankproject.com/)
 - [Open-Source Core Banking Software](https://sdk.finance/blog/open-source-core-banking-software-benefits-risks-and-alternatives/)
 
 **Findings**:
+
+
 - Open Bank Project provides standardized REST APIs for banking data
 - OAuth-based authentication patterns
 - Account aggregation and payment APIs
 - PSD2 compliance features
 
 **Relevance to This Project**:
+
 - **Limited Direct Relevance**: Open banking focuses on retail banking, not trading
 - **Pattern Reference**: Broker service APIs (Tastytrade, IBKR) already follow similar REST patterns
 - **API Design Patterns**: Can reference OBP patterns for standardizing broker service APIs
 - **Note**: Project is trading-focused, not banking-focused
 
 **Notable Solutions** (for reference):
+
 - Mifos X: Core banking platform with mobile apps
 - Apache Fineract: Digital financial services platform
 - OpenCBS: Cloud-based core banking for microfinance
@@ -203,29 +231,36 @@ The project already implements an internal DSL in Python (`python/dsl/`) followi
    - Validate architecture consistency
    - Export to multiple formats (PlantUML, Mermaid, SVG)
 
+
 4. **Multi-Language Support**
    - Tag components by technology (C++, Python, Rust, Go, TypeScript)
    - Visualize language boundaries and FFI calls
    - Document bindings and integrations
+
 
 5. **Documentation Maintenance**
    - Single source of truth for architecture
    - Automatic diagram generation
    - Consistent documentation across views
 
+
 #### Implementation Considerations
 
 **Prerequisites**:
+
 - Install Structurizr CLI or use Structurizr Lite (Docker)
 - Learn Structurizr DSL syntax
 - Map existing architecture to C4 model
 
 **Effort Estimation**:
+
 - **Initial Setup**: 2-4 hours (install, learn syntax, create first model)
+
 - **Migration**: 4-8 hours (convert existing diagrams, create new views)
 - **Ongoing**: Minimal (update as architecture evolves)
 
 **File Structure**:
+
 ```
 docs/
 ├── architecture/
@@ -238,6 +273,7 @@ docs/
 ```
 
 **Example Structure**:
+
 ```structurizr
 workspace "Synthetic Financing Platform" "Architecture documentation" {
     model {
@@ -292,6 +328,7 @@ workspace "Synthetic Financing Platform" "Architecture documentation" {
 
         container boxSpreadSystem {
             include *
+
             autoLayout
         }
 
@@ -310,14 +347,19 @@ workspace "Synthetic Financing Platform" "Architecture documentation" {
 ```
 
 **Integration with CI/CD**:
+
 ```yaml
+
 # .github/workflows/architecture-docs.yml
+
+
 name: Generate Architecture Diagrams
 on: [push, pull_request]
 jobs:
   generate-diagrams:
     runs-on: ubuntu-latest
     steps:
+
       - uses: actions/checkout@v3
       - name: Generate diagrams
         run: |
@@ -332,6 +374,8 @@ jobs:
 #### Decision Criteria
 
 **Choose Option 1 if**:
+
+
 - ✅ You want interactive, web-based architecture diagrams
 - ✅ You need multiple views (system context, containers, deployment)
 - ✅ You want version-controlled architecture documentation
@@ -339,12 +383,15 @@ jobs:
 - ✅ You have 6-12 hours for initial setup and migration
 
 **Don't choose Option 1 if**:
+
+
 - ❌ Current ASCII diagrams are sufficient
 - ❌ You don't need multiple views or automation
 - ❌ You prefer simple, text-based documentation
 - ❌ You have limited time for tool setup and learning
 
 ---
+
 
 ### Option 2: Extend Existing DSL for Additional Trading Scenarios
 
@@ -353,7 +400,9 @@ jobs:
 #### Current DSL Capabilities
 
 **Existing Features** (from `python/dsl/README.md`):
+
 - ✅ Box spread strategy DSL (`BoxSpread`, `Direction`, `Benchmark`)
+
 - ✅ Multi-asset financing strategy DSL (`FinancingStrategy`)
 - ✅ Cash flow modeling DSL (`CashFlowModel`)
 - ✅ Fluent builder interface
@@ -361,32 +410,39 @@ jobs:
 - ✅ Domain-specific types
 
 **Phase 2 Status** (In Progress):
+
 - C++ bindings integration
+
 - Full evaluation logic
 - Test generation
 
 #### Enhancement Opportunities
 
 1. **Strategy Composition DSL**
+
    ```python
    # Example: Compose multiple strategies
    strategy = CompositeStrategy("multi_strategy") \
        .add(box_spread(symbol="SPX", min_rate=4.5)) \
        .add(iron_condor(symbol="QQQ", max_risk=1000)) \
+
        .add(covered_call(symbol="AAPL", min_premium=0.50)) \
        .optimize(portfolio_roi())
    ```
 
 2. **Multi-Broker Strategy DSL**
+
    ```python
    # Example: Execute strategy across multiple brokers
    strategy = MultiBrokerStrategy("arbitrage") \
        .buy_at(broker="tastytrade", symbol="SPX", leg="call") \
        .sell_at(broker="alpaca", symbol="SPX", leg="call") \
        .execute_when(price_difference(min=0.10))
+
    ```
 
 3. **Risk Parameter DSL**
+
    ```python
    # Example: Define risk constraints in DSL
    strategy = BoxSpread("SPX") \
@@ -399,11 +455,14 @@ jobs:
    ```
 
 4. **Backtesting DSL**
+
+
    ```python
    # Example: Define backtest scenarios in DSL
    backtest = BacktestScenario("box_spread_2024") \
        .strategy(box_spread(symbol="SPX", strike_width=50)) \
        .data_source("questdb", start="2024-01-01", end="2024-12-31") \
+
        .benchmark("SPY") \
        .metrics(sharpe_ratio, max_drawdown, win_rate)
 
@@ -411,6 +470,8 @@ jobs:
    ```
 
 5. **Portfolio Optimization DSL**
+
+
    ```python
    # Example: Optimize portfolio allocation
    portfolio = PortfolioOptimizer("box_spread_portfolio") \
@@ -418,6 +479,7 @@ jobs:
        .add_strategy(iron_condor(symbol="QQQ"), weight=0.3) \
        .add_strategy(covered_call(symbol="AAPL"), weight=0.3) \
        .constraints(
+
            max_total_exposure(50000),
            max_correlation(0.5),
            min_diversification(3)
@@ -425,14 +487,17 @@ jobs:
        .optimize(sharpe_ratio())
    ```
 
+
 #### Implementation Considerations
 
 **Prerequisites**:
+
 - Existing DSL implementation (`python/dsl/`)
 - Domain expertise in trading strategies
 - Understanding of current DSL architecture
 
 **Effort Estimation**:
+
 - **Strategy Composition**: 8-16 hours (design, implement, test)
 - **Multi-Broker DSL**: 12-24 hours (broker abstraction, execution logic)
 - **Risk Parameter DSL**: 4-8 hours (validation, constraint checking)
@@ -440,6 +505,7 @@ jobs:
 - **Portfolio Optimization**: 16-32 hours (optimization algorithms, constraints)
 
 **Priority Recommendation**:
+
 1. **High Priority**: Risk Parameter DSL (complements existing box spread DSL)
 2. **Medium Priority**: Strategy Composition DSL (enables complex strategies)
 3. **Low Priority**: Multi-Broker DSL (requires broker abstraction layer)
@@ -448,6 +514,7 @@ jobs:
 #### Decision Criteria
 
 **Choose Option 2 if**:
+
 - ✅ You want to expand DSL capabilities beyond box spreads
 - ✅ You need domain-specific abstractions for trading strategies
 - ✅ You value fluent, readable strategy definitions
@@ -455,6 +522,7 @@ jobs:
 - ✅ You want to reduce boilerplate code for strategy definition
 
 **Don't choose Option 2 if**:
+
 - ❌ Current DSL is sufficient for your needs
 - ❌ You prefer programmatic strategy definition
 - ❌ You don't have time for DSL development
@@ -466,18 +534,21 @@ jobs:
 
 **Objective**: Research and document best practices for multi-language architecture in trading systems, focusing on C++/Python/Rust/Go/TypeScript interactions.
 
+
 #### Research Areas
 
 1. **FFI (Foreign Function Interface) Patterns**
    - C++ ↔ Python (Cython, pybind11)
    - C++ ↔ Rust (C ABI, FFI bindings)
    - C++ ↔ Go (CGO)
+
    - Rust ↔ Python (PyO3)
 
 2. **Performance Considerations**
    - Latency-critical paths (C++/Rust)
    - High-level abstractions (Python/TypeScript)
    - Data serialization between languages
+
    - Memory management across language boundaries
 
 3. **Architecture Patterns**
@@ -501,18 +572,23 @@ jobs:
 #### Research Sources
 
 **Academic/Technical Papers**:
+
 - High-frequency trading system architectures
 - Multi-language financial system designs
 - FFI performance analysis
 - Event-driven architecture in finance
 
 **Industry Examples**:
+
 - NautilusTrader (Rust core, Python strategy)
 - QuantConnect/Lean (C# core, Python strategies)
+
 - Interactive Brokers architecture
 - High-frequency trading firm architectures
 
 **Open Source Projects**:
+
+
 - NautilusTrader: Multi-language trading platform
 - QuantLib: C++ financial library with Python bindings
 - Trading frameworks with multi-language support
@@ -520,6 +596,7 @@ jobs:
 #### Deliverables
 
 1. **Architecture Patterns Document**
+
    - FFI patterns and best practices
    - Performance optimization strategies
    - Error handling across language boundaries
@@ -531,6 +608,7 @@ jobs:
    - Communication patterns
    - Data flow documentation
 
+
 3. **Best Practices Guide**
    - Code organization across languages
    - Build system integration (CMake for C++, Cargo for Rust, etc.)
@@ -538,6 +616,7 @@ jobs:
    - Debugging multi-language systems
 
 4. **Performance Benchmarks**
+
    - FFI overhead analysis
    - Serialization performance (JSON, Protocol Buffers, custom)
    - Memory allocation patterns
@@ -546,11 +625,13 @@ jobs:
 #### Implementation Considerations
 
 **Prerequisites**:
+
 - Research time allocation (8-16 hours)
 - Access to academic/technical resources
 - Industry contacts (optional, for case studies)
 
 **Effort Estimation**:
+
 - **Literature Review**: 4-8 hours
 - **Industry Research**: 4-8 hours
 - **Pattern Documentation**: 8-16 hours
@@ -558,6 +639,7 @@ jobs:
 - **Total**: 24-48 hours
 
 **Output Format**:
+
 ```
 docs/
 ├── MULTI_LANGUAGE_ARCHITECTURE_PATTERNS.md
@@ -569,6 +651,7 @@ docs/
 #### Decision Criteria
 
 **Choose Option 3 if**:
+
 - ✅ You want to optimize multi-language architecture
 - ✅ You need guidance on language placement decisions
 - ✅ You want to understand FFI performance implications
@@ -576,6 +659,7 @@ docs/
 - ✅ You value research-backed decisions
 
 **Don't choose Option 3 if**:
+
 - ❌ Current architecture is working well
 - ❌ You don't have time for research
 - ❌ You prefer practical experimentation over research
@@ -583,13 +667,16 @@ docs/
 
 ---
 
+
 ## Recommendations
 
 ### Immediate Actions (Next 1-2 Weeks)
 
+
 1. **Option 1 (Structurizr DSL) - Recommended** ⭐
    - **Priority**: High
    - **Effort**: Low (6-12 hours)
+
    - **Impact**: High (better documentation, automation)
    - **Rationale**: Quick win with significant documentation improvements
 
@@ -625,14 +712,17 @@ docs/
 ### Combined Approach (Recommended)
 
 **Phase 1 (Now)**: Implement Structurizr DSL for architecture documentation
+
 - Quick win, improves documentation quality
 - Low effort, high impact
 
 **Phase 2 (Next Month)**: Extend DSL with Risk Parameter DSL
+
 - Complements existing box spread DSL
 - Medium effort, medium impact
 
 **Phase 3 (Ongoing)**: Incremental research on architecture patterns
+
 - Research specific patterns as needed
 - Document findings incrementally
 
@@ -679,10 +769,13 @@ docs/
 ### Option 1: Structurizr DSL Quick Start
 
 ```bash
+
 # Install Structurizr Lite (Docker)
+
 docker pull structurizr/lite
 
 # Create workspace file
+
 mkdir -p docs/architecture/structurizr
 cat > docs/architecture/structurizr/workspace.dsl << 'EOF'
 workspace "IB Box Spread Generator" {
@@ -696,16 +789,20 @@ workspace "IB Box Spread Generator" {
 EOF
 
 # Generate diagrams
+
 docker run -it --rm -p 8080:8080 \
   -v $(pwd)/docs/architecture/structurizr:/usr/local/structurizr \
   structurizr/lite
+
 # Open http://localhost:8080
 ```
 
 ### Option 2: DSL Extension Quick Start
 
 ```python
+
 # Example: Add Risk Parameter DSL to existing DSL
+
 from box_spread_dsl import BoxSpread, RiskConstraints
 
 strategy = BoxSpread("SPX") \
@@ -721,12 +818,16 @@ strategy = BoxSpread("SPX") \
 ### Option 3: Research Quick Start
 
 ```bash
+
 # Create research document structure
+
 mkdir -p docs/research/multi-language
 cat > docs/research/multi-language/RESEARCH_PLAN.md << 'EOF'
+
 # Multi-Language Architecture Research Plan
 
 ## Research Questions
+
 1. What are the performance implications of FFI calls?
 2. Which language should handle latency-critical operations?
 3. What are best practices for data serialization across languages?
@@ -743,7 +844,7 @@ EOF
 
 ## Document Maintenance
 
-**Last Updated**: 2025-01-19
+**Last Updated**: 2025-11-30
 **Next Review**: 2025-04-19 (Quarterly)
 **Owner**: Architecture Team
 **Status**: Research Complete - Ready for Implementation Decisions

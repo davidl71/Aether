@@ -40,14 +40,18 @@
 **Setup**:
 
 ```bash
+
 # Primary development environment
+
 cd ~/ib_box_spread_full_universal
 
 # Use ccache for fast rebuilds
+
 brew install ccache
 export CMAKE_CXX_COMPILER_LAUNCHER=ccache
 
 # Configure for distributed builds (use other machines)
+
 export DISTCC_HOSTS="localhost/8 imac-intel.local/8 mac-pro.local/8"
 ```
 
@@ -74,7 +78,9 @@ export DISTCC_HOSTS="localhost/8 imac-intel.local/8 mac-pro.local/8"
 **Remote Development Setup**:
 
 ```bash
+
 # On iPad: SSH to Mac M4
+
 ssh user@mac-m4.local
 
 # Use Cursor/VS Code Remote
@@ -120,28 +126,35 @@ ssh user@mac-m4.local
 **Setup as distcc Server**:
 
 ```bash
+
 # Install distcc
+
 brew install distcc
 
 # Start distcc daemon
+
 distccd --daemon \
   --allow 192.168.1.0/24 \
   --jobs $(sysctl -n hw.ncpu) \
   --log-level error
 
 # Verify running
+
 ps aux | grep distccd
 ```
 
 **Intel-Specific Testing**:
 
 ```bash
+
 # Build for Intel architecture
+
 cmake -S . -B build-intel \
   -DCMAKE_OSX_ARCHITECTURES=x86_64 \
   -DCMAKE_BUILD_TYPE=Release
 
 # Run Intel-specific tests
+
 cd build-intel && ctest --output-on-failure
 ```
 
@@ -166,10 +179,13 @@ cd build-intel && ctest --output-on-failure
 **Setup as Build Server**:
 
 ```bash
+
 # Install build tools
+
 brew install distcc ccache cmake ninja
 
 # Start distcc with high parallelism
+
 distccd --daemon \
   --allow 192.168.1.0/24 \
   --jobs $(sysctl -n hw.ncpu) \
@@ -182,7 +198,9 @@ distccd --daemon \
 **CI/CD Setup**:
 
 ```bash
+
 # Install CI tools
+
 brew install jenkins  # or use GitHub Actions runner
 
 # Configure automated builds
@@ -193,10 +211,13 @@ brew install jenkins  # or use GitHub Actions runner
 **Database Server**:
 
 ```bash
+
 # Run QuestDB for time-series data
+
 docker run -p 9000:9000 questdb/questdb
 
 # Or install natively
+
 brew install questdb
 ```
 
@@ -321,6 +342,7 @@ Apple Intelligence is Apple's on-device AI system available on:
 **Workflow**:
 
 ```bash
+
 # Write code in Cursor/VS Code
 # Use AI to:
 # - Explain complex trading logic
@@ -356,6 +378,7 @@ Apple Intelligence is Apple's on-device AI system available on:
 **Workflow**:
 
 ```python
+
 # Trading system generates alert
 # Apple Intelligence summarizes:
 # "High-profit box spread detected: SPX $10 wide, $0.40 profit,
@@ -445,12 +468,15 @@ Apple Intelligence is Apple's on-device AI system available on:
 **Mac M4** (Client):
 
 ```bash
+
 # Configure distributed build
+
 export DISTCC_HOSTS="localhost/8 \
   imac-intel.local/8 \
   mac-pro.local/16"
 
 # Build with all machines
+
 cmake -S . -B build -DENABLE_DISTCC=ON
 make -j32 -C build  # Uses all machines
 ```
@@ -458,14 +484,18 @@ make -j32 -C build  # Uses all machines
 **iMac Intel** (Server):
 
 ```bash
+
 # Running distccd daemon
+
 distccd --daemon --allow 192.168.1.0/24 --jobs 8
 ```
 
 **Mac Pro** (Server):
 
 ```bash
+
 # Running distccd with many cores
+
 distccd --daemon --allow 192.168.1.0/24 --jobs 16
 ```
 
@@ -493,7 +523,9 @@ distccd --daemon --allow 192.168.1.0/24 --jobs 16
 **On Mac M4 (Client)**:
 
 ```bash
+
 # Create ~/.distcc/hosts
+
 cat > ~/.distcc/hosts << 'EOF'
 localhost/8
 imac-intel.local/8
@@ -501,13 +533,16 @@ mac-pro.local/16
 EOF
 
 # Or use environment variable
+
 export DISTCC_HOSTS="localhost/8 imac-intel.local/8 mac-pro.local/16"
 ```
 
 **On iMac Intel (Server)**:
 
 ```bash
+
 # Install and start distcc
+
 brew install distcc
 distccd --daemon --allow 192.168.1.0/24 --jobs 8
 ```
@@ -515,7 +550,9 @@ distccd --daemon --allow 192.168.1.0/24 --jobs 8
 **On Mac Pro (Server)**:
 
 ```bash
+
 # Install and start distcc
+
 brew install distcc
 distccd --daemon --allow 192.168.1.0/24 --jobs 16
 ```
@@ -525,10 +562,13 @@ distccd --daemon --allow 192.168.1.0/24 --jobs 16
 **SSH Access**:
 
 ```bash
+
 # On Mac M4: Enable Remote Login
+
 System Settings → General → Sharing → Remote Login
 
 # On iPad: Install SSH client (Blink Shell, Termius)
+
 ssh user@mac-m4.local
 ```
 
@@ -549,6 +589,7 @@ ssh user@mac-m4.local
 **Web-Based Dashboard**:
 
 ```python
+
 # Create Flask/FastAPI dashboard
 # Accessible from all devices
 # Shows:
@@ -626,7 +667,9 @@ ssh user@mac-m4.local
 ### Morning: Development (Mac M4)
 
 ```bash
+
 # 1. Pull latest changes
+
 git pull
 
 # 2. Write code with AI assistance
@@ -635,14 +678,17 @@ git pull
 # - Use Image Playground for diagrams
 
 # 3. Build with distributed compilation
+
 export DISTCC_HOSTS="localhost/8 imac-intel.local/8 mac-pro.local/16"
 cmake -S . -B build -DENABLE_DISTCC=ON
 make -j32 -C build
 
 # 4. Test
+
 cd build && ctest --output-on-failure
 
 # 5. Commit with AI-improved message
+
 git commit -m "Add box spread validation (AI-generated message)"
 ```
 

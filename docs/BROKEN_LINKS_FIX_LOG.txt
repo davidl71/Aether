@@ -1,0 +1,12 @@
+📋 Processing 22 files with broken links...
+⚙️  Using 8 parallel workers
+  ⏳ 1/22 - No fixes needed  ⏳ 2/22 - No fixes needed  ⏳ 3/22 - No fixes needed  ⏳ 4/22 - No fixes needed  ⏳ 5/22 - No fixes needed  ⏳ 6/22 - No fixes needed  ⏳ 7/22 - No fixes needed  ⏳ 8/22 - No fixes needed  ⏳ 9/22 - No fixes needed  ⏳ 10/22 - No fixes needed  ⏳ 11/22 - No fixes needed  ⏳ 12/22 - No fixes needed  ⏳ 13/22 - No fixes needed  ⏳ 14/22 - No fixes needed  ⏳ 15/22 - No fixes needed  ⏳ 16/22 - No fixes needed  ⏳ 17/22 - No fixes needed  ⏳ 18/22 - No fixes needed  ⏳ 19/22 - No fixes needed  ⏳ 20/22 - No fixes needed  ⏳ 21/22 - No fixes needed  ⏳ 22/22 - No fixes needed
+============================================================
+📊 SUMMARY
+============================================================
+Files processed: 22
+Files with fixes: 0
+Total links fixed: 0
+============================================================
+
+✅ Report saved to docs/BROKEN_LINKS_FIX_REPORT.json

@@ -10,6 +10,7 @@
 ## Current State Analysis
 
 ### Files to Extract
+
 - `mcp/trading_server/server.py` - Main MCP server
 - `mcp/trading_server/bridge.py` - Trading bridge
 - `mcp/trading_server/__init__.py` - Package init
@@ -20,12 +21,14 @@
 ### Broker-Specific Code Found
 
 **Issues to Fix**:
+
 1. ✅ **TWS_HOST/TWS_PORT** - Already environment variables (GOOD)
 2. ✅ **TWS references in docs** - Need to make generic
 3. ⚠️ **bridge.py** - References TWS but uses REST API (configurable)
 4. ⚠️ **CYTHON_BINDINGS_GUIDE.md** - Contains TWS-specific implementation details
 
 **Action Required**:
+
 - Make TWS references generic (broker-agnostic)
 - Update documentation to be broker-agnostic
 - Keep REST API approach (already generic)
@@ -35,6 +38,7 @@
 ## Extraction Steps
 
 ### Step 1: Create Repository Structure
+
 ```
 trading-mcp-servers/
 ├── README.md
@@ -58,6 +62,7 @@ trading-mcp-servers/
 ### Step 2: Make Broker-Agnostic
 
 **Changes Needed**:
+
 1. Replace "TWS" references with "broker" or "trading backend"
 2. Update environment variable names to be generic:
    - `TWS_HOST` → `BROKER_HOST` (or keep as is, document as generic)
@@ -68,6 +73,7 @@ trading-mcp-servers/
 ### Step 3: Update Package Configuration
 
 **pyproject.toml Updates**:
+
 - Change name to `trading-mcp-servers`
 - Update version to `1.0.0`
 - Add proper metadata
@@ -76,6 +82,7 @@ trading-mcp-servers/
 ### Step 4: Create GitHub Repository
 
 **Repository Setup**:
+
 - Name: `trading-mcp-servers`
 - Description: "MCP servers for trading operations - broker-agnostic"
 - License: MIT
@@ -84,6 +91,7 @@ trading-mcp-servers/
 ### Step 5: Update Documentation
 
 **README.md Updates**:
+
 - Remove TWS-specific language
 - Make it broker-agnostic
 - Add generic configuration examples
@@ -94,21 +102,25 @@ trading-mcp-servers/
 ## Files to Modify
 
 ### 1. server.py
+
 - ✅ Already uses environment variables (GOOD)
 - ⚠️ Update comments to be broker-agnostic
 - ✅ API key validation is generic (GOOD)
 
 ### 2. bridge.py
+
 - ✅ Uses REST API (generic) (GOOD)
 - ⚠️ Update TWS_HOST/TWS_PORT comments to be generic
 - ✅ No hardcoded broker code (GOOD)
 
 ### 3. README.md
+
 - ⚠️ Replace "TWS" with "broker" or "trading backend"
 - ⚠️ Update configuration examples
 - ✅ Keep REST API architecture (generic)
 
 ### 4. CYTHON_BINDINGS_GUIDE.md
+
 - ⚠️ Move TWS-specific details to "Advanced Integration" section
 - ⚠️ Make main content broker-agnostic
 - ✅ Keep as development guide (useful)

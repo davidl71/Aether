@@ -24,7 +24,9 @@ dependencies: [
 #### CocoaPods
 
 ```ruby
+
 # Podfile
+
 pod 'SwiftNATS', '~> 0.1.0'
 ```
 

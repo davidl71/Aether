@@ -57,6 +57,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
   - [ ] `min_days_to_expiry` and `max_days_to_expiry` within range
   - [ ] Bid/ask spreads within `max_bid_ask_spread` limit
   - [ ] All 4 legs have valid market data
+
 - [ ] Verify opportunities sorted by profitability
 
 #### 1.4 Dry-Run Mode
@@ -120,6 +121,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
   - [ ] Short call: -1
   - [ ] Long put: +1
   - [ ] Short put: -1
+
 - [ ] Verify position prices (average fill price)
 - [ ] Compare system positions with TWS positions
 - [ ] Test position reconciliation (should match exactly)
@@ -259,6 +261,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
   - [ ] Positions recovered
   - [ ] Open orders recovered
   - [ ] Market data subscriptions restored
+
 - [ ] Confirm no duplicate orders placed
 
 #### 4.3 Order Recovery
@@ -377,6 +380,7 @@ This plan provides a structured 5-day validation process to ensure the box sprea
 For each day, maintain a detailed log:
 
 ```markdown
+
 ## Day X: [Day Name] - [Date]
 
 ### Test Results

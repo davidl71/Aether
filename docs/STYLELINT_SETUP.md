@@ -19,6 +19,7 @@ npm install --save-dev stylelint stylelint-config-standard
 **File:** `web/.stylelintrc.json`
 
 **Key Settings:**
+
 - Extends `stylelint-config-standard` for base rules
 - Disabled overly strict rules for our codebase:
   - `rule-empty-line-before` - Allow rules without preceding empty lines
@@ -31,6 +32,7 @@ npm install --save-dev stylelint stylelint-config-standard
   - `font-family-name-quotes` - Allow quotes around font names
 
 **Ignored Files:**
+
 - `dist/**` - Build output
 - `dev-dist/**` - Development build output
 - `node_modules/**` - Dependencies
@@ -62,6 +64,7 @@ Stylelint runs automatically as part of `./scripts/run_linters.sh`:
 ## Rules Enabled
 
 The `stylelint-config-standard` preset includes:
+
 - ✅ Syntax validation
 - ✅ Property validation
 - ✅ Value validation
@@ -72,9 +75,11 @@ The `stylelint-config-standard` preset includes:
 ## Custom Rules
 
 **Enabled:**
+
 - `color-hex-length: "short"` - Prefer short hex colors (#fff vs #ffffff)
 
 **Disabled (for flexibility):**
+
 - Formatting rules that conflict with our code style
 - Modern CSS features that may not be needed
 - Strict shorthand/longhand property rules
@@ -82,6 +87,7 @@ The `stylelint-config-standard` preset includes:
 ## Integration with ESLint
 
 Stylelint runs alongside ESLint but is a separate tool:
+
 - **ESLint:** TypeScript/React/JSON linting
 - **Stylelint:** CSS linting
 - **Both:** Run via `./scripts/run_linters.sh`
@@ -89,6 +95,7 @@ Stylelint runs alongside ESLint but is a separate tool:
 ## VS Code Integration
 
 Install the Stylelint extension:
+
 ```json
 {
   "recommendations": [
@@ -98,6 +105,7 @@ Install the Stylelint extension:
 ```
 
 The extension will:
+
 - Show linting errors inline
 - Auto-fix on save (if configured)
 - Format CSS files

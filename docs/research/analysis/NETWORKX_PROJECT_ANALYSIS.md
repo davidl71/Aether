@@ -21,6 +21,7 @@ A comprehensive Python tool that uses NetworkX to analyze:
 ### 2. Documentation (`python/tools/README_PROJECT_ANALYZER.md`)
 
 Complete usage guide with:
+
 - Installation instructions
 - Usage examples
 - Output interpretation
@@ -36,6 +37,7 @@ Added `networkx>=3.2.0` to `requirements.in` for graph analysis capabilities.
 ### Todo2 Task Analysis
 
 **Insights Provided:**
+
 - Total tasks and dependencies
 - Critical path (longest dependency chain)
 - Bottlenecks (tasks blocking others)
@@ -45,6 +47,7 @@ Added `networkx>=3.2.0` to `requirements.in` for graph analysis capabilities.
 - Cycle detection (circular dependencies)
 
 **Use Cases:**
+
 - Identify blocking tasks
 - Find critical path for project completion
 - Understand task relationships
@@ -53,12 +56,14 @@ Added `networkx>=3.2.0` to `requirements.in` for graph analysis capabilities.
 ### Documentation Analysis
 
 **Insights Provided:**
+
 - Total documents and cross-references
 - Central documents (most referenced)
 - Isolated documents (no references)
 - Average references per document
 
 **Use Cases:**
+
 - Find key reference documents
 - Identify documentation gaps
 - Improve documentation structure
@@ -67,11 +72,13 @@ Added `networkx>=3.2.0` to `requirements.in` for graph analysis capabilities.
 ### Architecture Analysis
 
 **Insights Provided:**
+
 - Total source files
 - Total dependencies (imports/includes)
 - Average dependencies per file
 
 **Use Cases:**
+
 - Understand code structure
 - Identify tightly coupled components
 - Plan refactoring efforts
@@ -82,16 +89,21 @@ Added `networkx>=3.2.0` to `requirements.in` for graph analysis capabilities.
 ### Basic Usage
 
 ```bash
+
 # Analyze Todo2 tasks
+
 python python/tools/project_analyzer.py --tasks
 
 # Analyze documentation
+
 python python/tools/project_analyzer.py --docs
 
 # Analyze architecture
+
 python python/tools/project_analyzer.py --architecture
 
 # Run all analyses
+
 python python/tools/project_analyzer.py --all
 ```
 
@@ -164,16 +176,19 @@ avg_references_per_doc: 4.23
 ### 1. Task Management
 
 **Identify Blocking Tasks:**
+
 - Find tasks that many others depend on
 - Prioritize these tasks to unblock others
 - Consider breaking them down if too large
 
 **Find Critical Path:**
+
 - Understand minimum time to complete project
 - Focus resources on critical path tasks
 - Identify opportunities to parallelize work
 
 **Detect Issues:**
+
 - Find isolated tasks (may be forgotten)
 - Detect circular dependencies (planning errors)
 - Understand task distribution (status, tags)
@@ -181,16 +196,19 @@ avg_references_per_doc: 4.23
 ### 2. Documentation Quality
 
 **Find Key Documents:**
+
 - Central documents are important reference points
 - Keep them up-to-date and comprehensive
 - Ensure they're well-maintained
 
 **Identify Gaps:**
+
 - Isolated documents may need better integration
 - Add cross-references to improve navigation
 - Consolidate related documentation
 
 **Improve Structure:**
+
 - Understand documentation connectivity
 - Plan documentation improvements
 - Ensure comprehensive coverage
@@ -198,11 +216,13 @@ avg_references_per_doc: 4.23
 ### 3. Architecture Understanding
 
 **Understand Dependencies:**
+
 - See which modules are most connected
 - Identify tightly coupled components
 - Plan refactoring efforts
 
 **Track Evolution:**
+
 - Run analysis regularly to track changes
 - Understand architecture growth
 - Plan for scalability
@@ -212,6 +232,7 @@ avg_references_per_doc: 4.23
 ### Todo2 MCP
 
 The analyzer reads from `.todo2/state.todo2.json`, the same format used by Todo2 MCP. This means:
+
 - Analysis stays in sync with task management
 - No additional data format needed
 - Works with existing Todo2 workflow
@@ -219,6 +240,7 @@ The analyzer reads from `.todo2/state.todo2.json`, the same format used by Todo2
 ### Documentation System
 
 The analyzer scans all markdown files in `docs/` directory, matching your existing documentation structure. It:
+
 - Works with existing documentation
 - No changes needed to documentation format
 - Automatically detects cross-references
@@ -226,6 +248,7 @@ The analyzer scans all markdown files in `docs/` directory, matching your existi
 ### Codebase Structure
 
 The analyzer understands your multi-language codebase:
+
 - C++ includes (`#include`)
 - Python imports (`import`, `from`)
 - TypeScript/JavaScript imports (`import`)

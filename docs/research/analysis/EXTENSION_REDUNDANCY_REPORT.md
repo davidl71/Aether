@@ -198,19 +198,25 @@ Found **15 groups** with potential redundancies across **94 installed extensions
 ## Commands to Remove Redundant Extensions
 
 ```bash
+
 # C++ conflict
+
 cursor --uninstall-extension ms-vscode.cpptools
 
 # Rust legacy
+
 cursor --uninstall-extension rust-lang.rust
 
 # Turbo (keep vercel, remove other)
+
 cursor --uninstall-extension syntaxsyndicate.turbo-vsc
 
 # Documentation (keep one)
+
 cursor --uninstall-extension bbenoist.doxygen  # or cschlosser.doxdocgen
 
 # Disabled extensions
+
 cursor --uninstall-extension ms-azuretools.vscode-containers
 cursor --uninstall-extension ms-azuretools.vscode-docker
 cursor --uninstall-extension ms-kubernetes-tools.vscode-kubernetes-tools

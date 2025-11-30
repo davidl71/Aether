@@ -10,12 +10,14 @@
 ## Current State Analysis
 
 ### Documentation Count
+
 - **Total markdown files**: 351
 - **Top-level docs**: ~150 files
 - **Research subdirectory**: ~100 files (stays private)
 - **Archive**: Excluded from public docs
 
 ### Problem
+
 - **Single `trading-docs` repo**: Would need 3-7 notebooks (exceeds 50 sources each)
 - **Poor NotebookLM efficiency**: Too many unrelated topics mixed together
 - **Hard to analyze**: Can't focus on specific topics
@@ -29,6 +31,7 @@
 **Purpose**: Complete API reference and integration documentation
 
 **Components**:
+
 - `API_DOCUMENTATION_INDEX.md` (2,611 lines - might need chunking)
 - `API_DOCUMENTATION_SUMMARY.md`
 - `API_DOCUMENTATION_ENTRY_TEMPLATE.md`
@@ -39,11 +42,13 @@
 **Estimated Sources**: 30-40 files
 
 **NotebookLM Strategy**:
+
 - **Notebook 1**: "API Documentation Index" (if >50 sources, split by category)
 - **Notebook 2**: "Integration Guides" (if needed)
 - **Analysis**: API patterns, integration approaches, decision trees
 
 **Benefits**:
+
 - ✅ Focused on API/integration topics
 - ✅ Useful to developers integrating trading APIs
 - ✅ Clear boundaries (no architecture, no setup)
@@ -55,6 +60,7 @@
 **Purpose**: System architecture, design patterns, and architectural decisions
 
 **Components**:
+
 - `ARCHITECTURE_DOCUMENTATION_OPTIONS.md`
 - `MULTI_LANGUAGE_ARCHITECTURE.md`
 - `MULTI_BROKER_ARCHITECTURE_DESIGN.md`
@@ -68,11 +74,13 @@
 **Estimated Sources**: 20-30 files
 
 **NotebookLM Strategy**:
+
 - **Notebook**: "Trading System Architecture"
 - **Analysis**: Architecture patterns, design decisions, system structure
 - **Benefit**: ✅ Entire repo fits in one focused notebook
 
 **Benefits**:
+
 - ✅ Focused on architecture topics
 - ✅ Useful to developers designing trading systems
 - ✅ Clear separation from implementation guides
@@ -84,6 +92,7 @@
 **Purpose**: Getting started, setup guides, configuration, and deployment
 
 **Components**:
+
 - `DEPLOYMENT_GUIDE.md`
 - `PYTHON_ENVIRONMENT_SETUP.md`
 - `CURSOR_SETUP.md`
@@ -99,11 +108,13 @@
 **Estimated Sources**: 25-35 files
 
 **NotebookLM Strategy**:
+
 - **Notebook**: "Trading System Setup & Deployment"
 - **Analysis**: Setup patterns, configuration approaches, deployment strategies
 - **Benefit**: ✅ Entire repo fits in one focused notebook
 
 **Benefits**:
+
 - ✅ Focused on setup/deployment topics
 - ✅ Useful to developers setting up trading systems
 - ✅ Clear separation from architecture
@@ -115,6 +126,7 @@
 **Purpose**: Project automation, maintenance, and housekeeping documentation
 
 **Components**:
+
 - `INTELLIGENT_AUTOMATION_GUIDE.md`
 - `ROUTINE_AUTOMATION_PLAN.md`
 - `DOCUMENTATION_HEALTH_AUTOMATION.md`
@@ -129,11 +141,13 @@
 **Estimated Sources**: 20-30 files
 
 **NotebookLM Strategy**:
+
 - **Notebook**: "Project Automation & Maintenance"
 - **Analysis**: Automation patterns, maintenance workflows, best practices
 - **Benefit**: ✅ Entire repo fits in one focused notebook
 
 **Benefits**:
+
 - ✅ Focused on automation topics
 - ✅ Useful to developers automating project maintenance
 - ✅ Complements `project-housekeeping-tools` repository
@@ -145,6 +159,7 @@
 **Purpose**: Tool usage guides, framework documentation, and best practices
 
 **Components**:
+
 - `MCP_QUICK_REFERENCE.md`
 - `MCP_TRADING_SERVER_COMPLETE.md`
 - `NOTEBOOKLM_SETUP_GUIDE.md`
@@ -160,11 +175,13 @@
 **Estimated Sources**: 30-40 files
 
 **NotebookLM Strategy**:
+
 - **Notebook**: "Trading Tools & Frameworks"
 - **Analysis**: Tool usage patterns, framework integration, best practices
 - **Benefit**: ✅ Entire repo fits in one focused notebook
 
 **Benefits**:
+
 - ✅ Focused on tools/frameworks
 - ✅ Useful to developers choosing and using tools
 - ✅ Clear separation from architecture/setup
@@ -178,31 +195,37 @@ If you prefer a single `trading-docs` repository, create focused notebooks by to
 ### Notebook Strategy for Single Repo
 
 **Notebook 1: "API Documentation & Integration"** (30-40 sources)
+
 - API_DOCUMENTATION_INDEX.md (chunked if needed)
 - Integration guides
 - API indices
 
 **Notebook 2: "Architecture & Design"** (20-30 sources)
+
 - Architecture documents
 - Design patterns
 - System design
 
 **Notebook 3: "Setup & Deployment"** (25-35 sources)
+
 - Setup guides
 - Configuration docs
 - Deployment guides
 
 **Notebook 4: "Automation & Maintenance"** (20-30 sources)
+
 - Automation guides
 - Maintenance workflows
 - Health monitoring
 
 **Notebook 5: "Tools & Frameworks"** (30-40 sources)
+
 - Tool usage guides
 - Framework documentation
 - Best practices
 
 **Synthesis Notebook: "Complete Trading Documentation"**
+
 - Key findings from all 5 notebooks
 - Cross-topic insights
 - Unified patterns
@@ -236,7 +259,9 @@ If you prefer a single `trading-docs` repository, create focused notebooks by to
 ### Repository Structure
 
 ```
+
 # Public documentation repositories
+
 davidl71/trading-api-docs          (API reference & integration)
 davidl71/trading-architecture-docs (Architecture & design)
 davidl71/trading-setup-docs        (Setup & deployment)
@@ -273,21 +298,25 @@ davidl71/trading-tools-docs        (Tools & frameworks)
 ## Benefits of Split
 
 ### ✅ NotebookLM Optimization
+
 - Each repo fits in one notebook (<50 sources)
 - No chunking needed
 - Focused analysis per topic
 
 ### ✅ Better Organization
+
 - Clear topic boundaries
 - Easy to find relevant docs
 - Better navigation
 
 ### ✅ Better Reusability
+
 - Developers can use specific repos
 - Smaller, focused repositories
 - Independent maintenance
 
 ### ✅ Better Analysis
+
 - Focused questions per topic
 - Better context and synthesis
 - Clearer relationships
@@ -297,16 +326,19 @@ davidl71/trading-tools-docs        (Tools & frameworks)
 ## Considerations
 
 ### Challenge 1: Cross-References
+
 - **Solution**: Use relative links between repos
 - Document relationships clearly
 - Create synthesis notebooks if needed
 
 ### Challenge 2: API_DOCUMENTATION_INDEX.md Size
+
 - **Problem**: 2,611 lines might be too large
 - **Solution**: Chunk by category (FIX, Market Data, etc.)
 - Or split into multiple index files
 
 ### Challenge 3: Maintenance Overhead
+
 - **Solution**: Use GitHub organizations
 - Automate cross-repo updates
 - Clear ownership per repo

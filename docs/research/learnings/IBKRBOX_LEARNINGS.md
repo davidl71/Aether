@@ -1,7 +1,7 @@
 # Learnings from ibkrbox Project
 
-**Date**: 2025-01-27  
-**Source**: <https://github.com/asemx/ibkrbox>  
+**Date**: 2025-01-27
+**Source**: <https://github.com/asemx/ibkrbox>
 **Purpose**: Document patterns and approaches from ibkrbox that could enhance this C++ box spread project
 
 ---
@@ -78,6 +78,7 @@
   - Requesting option chains efficiently
   - Subscribing to market data for all 4 legs simultaneously
   - Order placement timing and sequencing
+
 - Consider request ID management to avoid conflicts
 - Implement proper cleanup of market data subscriptions
 
@@ -102,6 +103,7 @@
   3. For each strike pair, check if all 4 legs exist
   4. Calculate profitability for each combination
   5. Sort by profit/ROI
+
 - Consider caching option chain data to reduce API calls
 - Filter by liquidity early (bid/ask spread, volume, open interest)
 
@@ -128,6 +130,7 @@
   - IBKR commissions per contract
   - Exchange fees if applicable
   - Slippage estimates
+
 - Calculate net profit after all costs
 - Consider bid/ask midpoint vs actual execution prices
 
@@ -153,6 +156,7 @@
   - Maximum number of concurrent positions
   - Maximum loss per trade
   - Account balance checks
+
 - Add margin requirement calculations
 - Consider early assignment risk (for American options)
 
@@ -178,9 +182,11 @@
   - Market data unavailable
   - Order rejection reasons
   - Partial fills (critical for box spreads)
+
 - Implement partial fill recovery:
   - If 1-3 legs fill, attempt to close the position
   - Or attempt to complete the remaining legs
+
 - Log all errors with full context for debugging
 
 ### 8. Market Data Management
@@ -223,6 +229,7 @@
   - Market open/close behavior
   - Volatility spikes
   - Low liquidity periods
+
 - Implement execution delay if spread is too narrow (may widen)
 - Add timeout for opportunity validity (arbitrage may disappear)
 
@@ -249,6 +256,7 @@
   - Close positions near expiry
   - Close positions if profit target reached
   - Close positions if stop-loss triggered
+
 - Update position values in real-time as market data arrives
 
 ---
@@ -304,6 +312,7 @@ bool BoxSpreadValidator::validate_strikes(const types::BoxSpreadLeg& spread) {
   - Slippage estimates
   - Risk-free rate (for time value)
   - Minimum absolute profit (not just percentage)
+
 - Consider dynamic thresholds based on market conditions
 
 ### Order Execution Strategy
@@ -327,6 +336,7 @@ bool BoxSpreadValidator::validate_strikes(const types::BoxSpreadLeg& spread) {
   - Monitor fill status
   - Cancel remaining if any leg fails
   - Implement rollback logic
+
 - Add execution timeout (if not filled within X seconds, cancel all)
 
 ### Market Data Requirements
@@ -418,6 +428,7 @@ bool BoxSpreadValidator::validate_strikes(const types::BoxSpreadLeg& spread) {
   - Test edge cases (missing legs, invalid strikes, etc.)
   - Test error recovery scenarios
   - Test partial fill handling
+
 - Add integration tests with paper trading account
 - Test with various market conditions
 

@@ -8,6 +8,7 @@
 ## Summary
 
 Execution context metadata has been enhanced to include:
+
 1. **Best Mode:** Cursor AI mode (Agent/Plan/Ask)
 2. **Location Type:** Execution location (Local/Worktree)
 
@@ -22,11 +23,13 @@ This enables better task execution planning and optimal Cursor AI mode selection
 **Purpose:** Indicates the optimal Cursor AI mode for task execution
 
 **Values:**
+
 - **Agent:** Full AI agent mode - makes decisions, implements changes autonomously
 - **Plan:** Planning mode - creates detailed plan, requires approval before execution
 - **Ask:** Question mode - asks clarifying questions, minimal autonomous action
 
 **Usage:**
+
 - **Agent mode:** For well-defined implementation tasks (most MCP extension tasks)
 - **Plan mode:** For complex tasks requiring coordination (e.g., MCP-EXT-8, MCP-EXT-10)
 - **Ask mode:** For tasks requiring clarification or human input
@@ -36,10 +39,12 @@ This enables better task execution planning and optimal Cursor AI mode selection
 **Purpose:** Indicates where to execute the task within the repository
 
 **Values:**
+
 - **Local:** Execute on local machine directly (main repository)
 - **Worktree:** Execute in isolated git worktree (parallel development, isolation)
 
 **Usage:**
+
 - **Local:** For quick tasks, single-file changes, documentation updates
 - **Worktree:** For feature development, large refactoring, parallel work streams
 
@@ -49,6 +54,7 @@ This enables better task execution planning and optimal Cursor AI mode selection
 
 ```markdown
 📋 **Execution Context:**
+
 - **Location:** `any` | `remote` | `local` (which agent can run it)
 - **Location Type:** `local` | `worktree` (where to execute)
 - **Best Mode:** `Agent` | `Plan` | `Ask` (Cursor AI mode)
@@ -66,11 +72,13 @@ This enables better task execution planning and optimal Cursor AI mode selection
 ### New Tags Added
 
 **Best Mode Tags:**
+
 - `execution-mode-cursor-agent` - Use Cursor Agent mode
 - `execution-mode-cursor-plan` - Use Cursor Plan mode
 - `execution-mode-cursor-ask` - Use Cursor Ask mode
 
 **Location Type Tags:**
+
 - `execution-location-type-local` - Execute in local repository
 - `execution-location-type-worktree` - Execute in git worktree
 
@@ -88,6 +96,7 @@ All 10 MCP-EXT tasks now include:
 | **Plan** | 2 | MCP-EXT-8, MCP-EXT-10 |
 
 **Rationale:**
+
 - **Agent mode (8 tasks):** Implementation tasks - clear requirements, autonomous execution
 - **Plan mode (2 tasks):** Analysis/coordination tasks - benefit from planning before execution
 
@@ -98,6 +107,7 @@ All 10 MCP-EXT tasks now include:
 | **Local** | 10 | All MCP-EXT tasks |
 
 **Rationale:**
+
 - **Local:** All MCP extension tasks are tool implementations that work on the main repository
 - **Worktree:** Not needed for these tasks (can be used for feature branches if desired)
 
@@ -108,38 +118,47 @@ All 10 MCP-EXT tasks now include:
 ### When to Use Each Best Mode
 
 #### Agent Mode
+
 **Use when:**
+
 - Task has clear, well-defined requirements
 - Implementation approach is straightforward
 - Autonomous execution is safe
 - No major architectural decisions needed
 
 **Examples:**
+
 - Tool implementation (MCP-EXT-1 through MCP-EXT-7, MCP-EXT-9)
 - Standard patterns to follow
 - Clear acceptance criteria
 
 #### Plan Mode
+
 **Use when:**
+
 - Task requires coordination or analysis
 - Multiple approaches possible
 - Benefits from structured planning
 - Complex task requiring approval
 
 **Examples:**
+
 - Task distribution analysis (MCP-EXT-8)
 - Coordination reports (MCP-EXT-10)
 - Architecture decisions
 - Multi-component changes
 
 #### Ask Mode
+
 **Use when:**
+
 - Requirements need clarification
 - Multiple valid approaches exist
 - Human input/decision required
 - Task scope is ambiguous
 
 **Examples:**
+
 - Configuration decisions
 - User preference choices
 - Ambiguous requirements
@@ -148,7 +167,9 @@ All 10 MCP-EXT tasks now include:
 ### When to Use Each Location Type
 
 #### Local
+
 **Use when:**
+
 - Quick tasks (< 1 hour)
 - Single-file changes
 - Documentation updates
@@ -156,12 +177,15 @@ All 10 MCP-EXT tasks now include:
 - Tool implementations (like MCP extensions)
 
 **Advantages:**
+
 - Direct access to repository
 - No worktree overhead
 - Faster execution
 
 #### Worktree
+
 **Use when:**
+
 - Feature development
 - Large refactoring (> 5 files)
 - Parallel work streams
@@ -169,6 +193,7 @@ All 10 MCP-EXT tasks now include:
 - Branch-specific changes
 
 **Advantages:**
+
 - Isolation from main branch
 - Parallel development safe
 - Easy to discard if needed
@@ -181,6 +206,7 @@ All 10 MCP-EXT tasks now include:
 
 ```markdown
 📋 **Execution Context:**
+
 - **Location:** `any` (can run on any agent)
 - **Location Type:** `local` (where to execute)
 - **Best Mode:** `Agent` (Cursor AI mode: Agent/Plan/Ask)
@@ -194,6 +220,7 @@ All 10 MCP-EXT tasks now include:
 **Task:** MCP-EXT-1 (validate_ci_cd_workflow_tool implementation)
 
 **Reasoning:**
+
 - Clear requirements → Agent mode
 - Tool implementation → Local (main repository)
 - Well-defined pattern to follow
@@ -202,6 +229,7 @@ All 10 MCP-EXT tasks now include:
 
 ```markdown
 📋 **Execution Context:**
+
 - **Location:** `any` (can run on any agent)
 - **Location Type:** `local` (where to execute)
 - **Best Mode:** `Plan` (Cursor AI mode: Agent/Plan/Ask)
@@ -215,6 +243,7 @@ All 10 MCP-EXT tasks now include:
 **Task:** MCP-EXT-8 (analyze_agent_task_distribution_tool)
 
 **Reasoning:**
+
 - Analysis task → Plan mode (benefits from structured planning)
 - Tool implementation → Local (main repository)
 - Requires coordination analysis
@@ -223,6 +252,7 @@ All 10 MCP-EXT tasks now include:
 
 ```markdown
 📋 **Execution Context:**
+
 - **Location:** `local` (local machine)
 - **Location Type:** `worktree` (where to execute)
 - **Best Mode:** `Ask` (Cursor AI mode: Agent/Plan/Ask)
@@ -236,6 +266,7 @@ All 10 MCP-EXT tasks now include:
 **Task:** Feature development requiring architectural decisions
 
 **Reasoning:**
+
 - Ambiguous requirements → Ask mode (needs clarification)
 - Feature development → Worktree (isolation needed)
 - Requires human input
@@ -276,16 +307,19 @@ All 10 MCP-EXT tasks now include:
 ### Filter by Best Mode
 
 **Agent Mode Tasks:**
+
 ```bash
 grep -l "execution-mode-cursor-agent" .todo2/state.todo2.json
 ```
 
 **Plan Mode Tasks:**
+
 ```bash
 grep -l "execution-mode-cursor-plan" .todo2/state.todo2.json
 ```
 
 **Ask Mode Tasks:**
+
 ```bash
 grep -l "execution-mode-cursor-ask" .todo2/state.todo2.json
 ```
@@ -293,11 +327,13 @@ grep -l "execution-mode-cursor-ask" .todo2/state.todo2.json
 ### Filter by Location Type
 
 **Local Tasks:**
+
 ```bash
 grep -l "execution-location-type-local" .todo2/state.todo2.json
 ```
 
 **Worktree Tasks:**
+
 ```bash
 grep -l "execution-location-type-worktree" .todo2/state.todo2.json
 ```
@@ -305,10 +341,12 @@ grep -l "execution-location-type-worktree" .todo2/state.todo2.json
 ### Combined Filters
 
 **Agent Mode + Local:**
+
 - Quick autonomous tasks
 - Can execute immediately
 
 **Plan Mode + Worktree:**
+
 - Complex feature work
 - Requires planning and isolation
 

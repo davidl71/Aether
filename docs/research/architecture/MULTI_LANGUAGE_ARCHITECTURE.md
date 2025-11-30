@@ -273,6 +273,7 @@ The IBKR Box Spread Generator uses a multi-language architecture to leverage the
 from box_spread_bindings import calculate_arbitrage_profit, calculate_roi
 
 # Call C++ functions from Python
+
 profit = calculate_arbitrage_profit(spread)
 roi = calculate_roi(spread)
 ```
@@ -298,6 +299,7 @@ roi = calculate_roi(spread)
 import requests
 
 # Call Rust REST API
+
 response = requests.get("http://localhost:8080/api/v1/snapshot")
 snapshot = response.json()
 ```

@@ -570,4 +570,4 @@ Based on requirements:
 
 - [Quick Start Guide](../QUICKSTART.md) - Getting started with the application
 - [Architecture Documentation](research/architecture/CODEBASE_ARCHITECTURE.md) - System architecture
-- [Deployment Guide](DEPLOYMENT.md) - Detailed deployment instructions (if exists)
+- [Deployment Guide](DEPLOYMENT_GUIDE.md) - Detailed deployment instructions (if exists)

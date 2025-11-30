@@ -15,6 +15,7 @@ Based on `docs/RESEARCH_INDEX.md`, the following notebooks should be created for
 **Source Document**: `docs/research/external/CME_RESEARCH.md`
 
 **External URLs to Add**:
+
 1. CME Group – Capital Efficiencies and AIR TRFs
    - https://www.cmegroup.com/articles/whitepapers/capital-efficiencies-and-air-trfs.html
 2. Cboe – Box Spreads as Alternative Borrowing & Lending
@@ -25,6 +26,7 @@ Based on `docs/RESEARCH_INDEX.md`, the following notebooks should be created for
    - https://www.cmegroup.com/market-data/license-data/licensed-market-data-distributors.html
 
 **Synthesis Queries**:
+
 - "Compare box spreads vs AIR TRFs vs futures financing for capital efficiency"
 - "What are the key differences in counterparty risk between box spreads and other financing methods?"
 - "Summarize the integration requirements for CME market data feeds"
@@ -39,6 +41,7 @@ Based on `docs/RESEARCH_INDEX.md`, the following notebooks should be created for
 **Source Document**: `docs/research/architecture/MESSAGE_QUEUE_RESEARCH.md`
 
 **External URLs to Add**:
+
 1. NATS Documentation
    - https://docs.nats.io/
 2. RabbitMQ Documentation
@@ -49,6 +52,7 @@ Based on `docs/RESEARCH_INDEX.md`, the following notebooks should be created for
    - https://zeromq.org/
 
 **Synthesis Queries**:
+
 - "Compare NATS, RabbitMQ, Redis Streams, and ZeroMQ for trading system message queues"
 - "What are the latency characteristics of each solution?"
 - "Which solution is best for multi-language coordination (C++, Python, Rust, Go, TypeScript)?"
@@ -63,6 +67,7 @@ Based on `docs/RESEARCH_INDEX.md`, the following notebooks should be created for
 **Source Document**: `docs/research/external/ORATS_INTEGRATION.md`
 
 **External URLs to Add**:
+
 1. ORATS API Documentation
    - https://orats.com/docs
 2. ORATS Data API
@@ -71,6 +76,7 @@ Based on `docs/RESEARCH_INDEX.md`, the following notebooks should be created for
    - (Add any additional ORATS documentation URLs)
 
 **Synthesis Queries**:
+
 - "What are the key features of ORATS options data APIs?"
 - "How can ORATS enhance box spread detection and execution?"
 - "What are the integration requirements for ORATS APIs?"
@@ -85,6 +91,7 @@ Based on `docs/RESEARCH_INDEX.md`, the following notebooks should be created for
 **Source Documents**: Multiple learnings documents in `docs/research/learnings/`
 
 **Documents to Add**:
+
 1. `TWS_API_BEST_PRACTICES.md`
 2. `TWS_API_CODE_EXAMPLES_LEARNINGS.md`
 3. `TWS_API_MARKET_DATA_LEARNINGS.md`
@@ -97,6 +104,7 @@ Based on `docs/RESEARCH_INDEX.md`, the following notebooks should be created for
 10. `ECLIENT_EWRAPPER_ARCHITECTURE.md`
 
 **Synthesis Queries**:
+
 - "Consolidate all TWS API best practices into a unified guide"
 - "What are the common patterns for EClient/EWrapper implementation?"
 - "What are the best practices for handling market data in TWS API?"
@@ -112,6 +120,7 @@ Based on `docs/RESEARCH_INDEX.md`, the following notebooks should be created for
 **Source Document**: `docs/research/analysis/TRADING_FRAMEWORK_EVALUATION.md`
 
 **Synthesis Queries**:
+
 - "Compare trading frameworks for box spread trading"
 - "What are the key criteria for evaluating trading frameworks?"
 - "Which frameworks are best suited for multi-leg options strategies?"
@@ -148,6 +157,7 @@ In Cursor chat, say:
 ```
 
 Example:
+
 ```
 "Add https://notebooklm.google.com/notebook/abc123 to library tagged 'cme, financing, research, external'"
 ```
@@ -161,11 +171,13 @@ In Cursor chat, say:
 ```
 
 Example:
+
 ```
 "Research CME financing strategies in NotebookLM and update docs/research/external/CME_RESEARCH.md with synthesized findings"
 ```
 
 The AI will:
+
 1. Query NotebookLM with synthesis questions
 2. Get citation-backed answers
 3. Update the research document with synthesized insights

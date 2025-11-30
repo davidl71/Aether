@@ -51,6 +51,7 @@ After comprehensive research, **NATS** is recommended as the optimal message que
 **Overview**: High-performance, lightweight messaging system designed for cloud-native applications.
 
 **Multi-Language Support**:
+
 - **C++**: `nats.c` (official client, 1591 code snippets)
 - **Python**: `nats.py` (asyncio client, 24 code snippets)
 - **Rust**: `nats.rs` (Tokio-based, 7 code snippets) + `async-nats` (6538 code snippets)
@@ -58,6 +59,7 @@ After comprehensive research, **NATS** is recommended as the optimal message que
 - **TypeScript/JavaScript**: `nats.js` (810 code snippets)
 
 **Key Features**:
+
 - **Ultra-low latency**: Sub-millisecond message delivery (critical for trading)
 - **Lightweight**: ~10MB binary, minimal resource footprint
 - **JetStream**: Optional persistence and streaming
@@ -65,11 +67,13 @@ After comprehensive research, **NATS** is recommended as the optimal message que
 - **Simple patterns**: Pub/sub, request/reply, queueing
 
 **Performance**:
+
 - Millions of messages per second
 - Sub-millisecond latency
 - Low memory footprint
 
 **Pros**:
+
 - ✅ Excellent for trading applications (low latency)
 - ✅ Simple deployment (single binary)
 - ✅ Strong multi-language support
@@ -77,15 +81,18 @@ After comprehensive research, **NATS** is recommended as the optimal message que
 - ✅ Easy integration with existing Tokio channels
 
 **Cons**:
+
 - ⚠️ Less feature-rich than RabbitMQ (but sufficient for most use cases)
 - ⚠️ JetStream adds complexity if persistence needed
 
 **Integration Complexity**: **Low**
+
 - Simple pub/sub model
 - Easy to integrate with existing Tokio channels
 - Minimal configuration required
 
 **Use Cases**:
+
 - Real-time market data distribution
 - Strategy signal coordination
 - Order execution events
@@ -97,6 +104,7 @@ After comprehensive research, **NATS** is recommended as the optimal message que
 **Overview**: Mature, enterprise-grade message broker with rich routing capabilities.
 
 **Multi-Language Support**:
+
 - **C++**: AMQP-CPP libraries available
 - **Python**: `pika` (official client, 97 code snippets)
 - **Rust**: `lapin` (AMQP 0.9.1 client, 2 code snippets)
@@ -104,34 +112,40 @@ After comprehensive research, **NATS** is recommended as the optimal message que
 - **TypeScript/JavaScript**: `amqplib` (21 code snippets)
 
 **Key Features**:
+
 - **Rich routing**: Exchanges, queues, bindings, topic routing
 - **Message persistence**: Durable queues and messages
 - **Management UI**: Web-based monitoring and management
 - **Enterprise features**: Clustering, high availability, monitoring
 
 **Performance**:
+
 - Good throughput
 - Higher latency than NATS (milliseconds)
 - Higher resource usage
 
 **Pros**:
+
 - ✅ Mature and battle-tested
 - ✅ Rich routing capabilities
 - ✅ Excellent management tools
 - ✅ Strong enterprise support
 
 **Cons**:
+
 - ⚠️ Higher latency (not ideal for trading)
 - ⚠️ More complex setup and configuration
 - ⚠️ Higher resource requirements
 - ⚠️ Operational overhead
 
 **Integration Complexity**: **Medium**
+
 - Requires broker setup
 - Exchange/queue configuration needed
 - More complex than NATS
 
 **Use Cases**:
+
 - Complex routing requirements
 - Enterprise integration
 - When rich management features are needed
@@ -141,26 +155,31 @@ After comprehensive research, **NATS** is recommended as the optimal message que
 **Overview**: Lightweight, in-memory data structure with message queue capabilities.
 
 **Multi-Language Support**:
+
 - All languages have Redis clients
 - Stream-specific APIs available
 
 **Key Features**:
+
 - **Lightweight**: In-memory, fast
 - **Consumer groups**: Load balancing
 - **Message persistence**: Optional persistence
 - **Simple**: Easy to understand and use
 
 **Performance**:
+
 - Very fast (in-memory)
 - Low latency
 - Limited by memory size
 
 **Pros**:
+
 - ✅ Simple integration if Redis already present
 - ✅ Fast and lightweight
 - ✅ Good for simple queueing needs
 
 **Cons**:
+
 - ⚠️ Less feature-rich than dedicated MQ
 - ⚠️ Memory limitations
 - ⚠️ No built-in clustering (requires Redis Cluster)
@@ -169,6 +188,7 @@ After comprehensive research, **NATS** is recommended as the optimal message que
 **Integration Complexity**: **Low** (if Redis present), **Medium** (if not)
 
 **Use Cases**:
+
 - Simple queueing needs
 - When Redis already in use
 - Caching + queueing combined use case
@@ -178,38 +198,45 @@ After comprehensive research, **NATS** is recommended as the optimal message que
 **Overview**: High-performance, brokerless messaging library.
 
 **Multi-Language Support**:
+
 - Bindings for all target languages
 - C++ native implementation
 
 **Key Features**:
+
 - **Ultra-low latency**: Nanosecond-level latency
 - **No broker**: Library-based, no central server
 - **Multiple patterns**: REQ/REP, PUB/SUB, PUSH/PULL
 - **Lightweight**: Minimal overhead
 
 **Performance**:
+
 - Lowest latency option
 - Very high throughput
 - No broker overhead
 
 **Pros**:
+
 - ✅ Lowest latency (nanoseconds)
 - ✅ No broker required
 - ✅ Very high performance
 - ✅ Simple for point-to-point communication
 
 **Cons**:
+
 - ⚠️ No message persistence (application-level concern)
 - ⚠️ More complex coordination (no central broker)
 - ⚠️ Requires pattern selection and application-level coordination
 - ⚠️ Less suitable for multi-consumer scenarios
 
 **Integration Complexity**: **Medium-High**
+
 - Requires pattern selection
 - Application-level coordination needed
 - No central broker for management
 
 **Use Cases**:
+
 - Ultra-low latency requirements
 - Point-to-point communication
 - When broker overhead is unacceptable

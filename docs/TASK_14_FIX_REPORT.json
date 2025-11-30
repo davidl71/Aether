@@ -1,0 +1,12 @@
+{
+  "success": true,
+  "fixes": [
+    {
+      "line": 870,
+      "old": "- [API Contract](./agents/shared/API_CONTRACT.md)",
+      "new": "<!-- - [API Contract](./agents/shared/API_CONTRACT.md) - File not found -->",
+      "method": "commented_out"
+    }
+  ],
+  "file": "/home/david/ib_box_spread_full_universal/docs/research/integration/LEAN_REST_API_WRAPPER_DESIGN.md"
+}

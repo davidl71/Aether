@@ -30,11 +30,13 @@ Our `project-management-automation` MCP server provides enhanced, project-specif
 ### Documentation Health Check
 
 **Generic Tools (e.g., `filesystem` server):**
+
 - Basic file existence checks
 - Simple link validation
 - No project context
 
 **Our Tool: `check_documentation_health_tool`**
+
 - ✅ Project-aware link validation
 - ✅ Todo2 task creation for issues
 - ✅ Cross-reference graph analysis
@@ -49,11 +51,13 @@ Our `project-management-automation` MCP server provides enhanced, project-specif
 ### Task Alignment Analysis
 
 **Generic Tools (e.g., `agentic-tools` server):**
+
 - Generic task analysis
 - No project context
 - No strategy alignment
 
 **Our Tool: `analyze_todo2_alignment_tool`**
+
 - ✅ Todo2-specific analysis
 - ✅ Investment strategy framework alignment
 - ✅ Phase-based categorization
@@ -67,11 +71,13 @@ Our `project-management-automation` MCP server provides enhanced, project-specif
 ### Duplicate Detection
 
 **Generic Tools:**
+
 - Basic similarity matching
 - No context awareness
 - No auto-fix
 
 **Our Tool: `detect_duplicate_tasks_tool`**
+
 - ✅ Todo2-aware duplicate detection
 - ✅ Configurable similarity threshold
 - ✅ Auto-fix capability
@@ -85,11 +91,13 @@ Our `project-management-automation` MCP server provides enhanced, project-specif
 ### Security Scanning
 
 **Generic Tools (e.g., `semgrep` server):**
+
 - Single-language focus
 - Basic vulnerability detection
 - No trend tracking
 
 **Our Tool: `scan_dependency_security_tool`**
+
 - ✅ Multi-language support (Python, Rust, npm)
 - ✅ Multiple scanning tools (osv-scanner, pip-audit, cargo-audit, npm audit)
 - ✅ Severity-based prioritization
@@ -105,6 +113,7 @@ Our `project-management-automation` MCP server provides enhanced, project-specif
 ### When to Use Our MCP Server
 
 Use `project-management-automation` server tools when:
+
 - ✅ You need project-specific analysis
 - ✅ You want Todo2 integration
 - ✅ You need historical tracking
@@ -113,6 +122,7 @@ Use `project-management-automation` server tools when:
 ### When to Use Other Servers
 
 Continue using other MCP servers for:
+
 - ✅ General file operations (`filesystem`)
 - ✅ Git operations (`git`)
 - ✅ Task management CRUD (`agentic-tools`)
@@ -124,6 +134,7 @@ Continue using other MCP servers for:
 ## AI Assistant Guidance
 
 When AI assistants see both:
+
 - Generic tool: `analyze_tasks` (from `agentic-tools`)
 - Our tool: `analyze_todo2_alignment_tool` (from `project-management-automation`)
 

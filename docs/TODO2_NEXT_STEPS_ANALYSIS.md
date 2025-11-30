@@ -9,6 +9,7 @@
 ## Executive Summary
 
 **Current State:**
+
 - **Total Tasks:** 320
 - **In Progress:** 58 tasks
 - **Done:** 102 tasks
@@ -17,6 +18,7 @@
 - **Blocked by Dependencies:** ~89 tasks
 
 **Key Insights:**
+
 1. ✅ MCP Extension tasks (MCP-EXT-1 through MCP-EXT-10) are ready with execution context
 2. ✅ T-191 and T-197 are already Done (MCP servers configured)
 3. 🚀 MCP-EXT-1 is implemented but needs testing (install PyYAML)
@@ -64,6 +66,7 @@
 **Status:** ✅ Implemented, needs testing
 
 **Actions:**
+
 1. Install PyYAML: `pip install pyyaml`
 2. Restart Cursor to reload MCP server
 3. Test tool via MCP interface
@@ -81,12 +84,14 @@
 **Task:** `validate_agent_coordination_tool`
 
 **Execution Context:**
+
 - **Best Mode:** Agent (autonomous)
 - **Location Type:** Local
 - **Background:** Yes
 - **Dependencies:** MCP-EXT-1 (for pattern reference)
 
 **Actions:**
+
 1. Create `tools/agent_coordination.py`
 2. Wrap existing validation scripts:
    - `scripts/validate_todo_table.sh`
@@ -117,6 +122,7 @@
 | **T-151** | Research cash flow forecasting | High | ❌ Missing |
 
 **Strategy:**
+
 - Can execute all in parallel
 - Use NotebookLM for synthesis
 - Add execution context metadata first
@@ -149,6 +155,7 @@
 ### Today (2-3 hours)
 
 **Quick Wins:**
+
 1. ✅ **Test MCP-EXT-1** (15 min)
    - Install PyYAML
    - Test tool
@@ -168,16 +175,19 @@
 ### This Week (10-15 hours)
 
 **Monday-Tuesday:**
+
 1. Complete MCP-EXT-2 and MCP-EXT-3 (4 hours)
 2. Complete 2-3 in-progress tasks (4 hours)
 3. Start parallel research tasks (2-3 hours)
 
 **Wednesday-Thursday:**
+
 1. Continue MCP extensions (MCP-EXT-4, MCP-EXT-5) (4 hours)
 2. Continue research tasks in parallel (2-3 hours)
 3. Add execution context to 10 more tasks (1 hour)
 
 **Friday:**
+
 1. Research sprint - complete 3-5 research tasks (4-6 hours)
 2. Document findings
 3. Plan next week's work
@@ -200,6 +210,7 @@
 **Status:** All 10 tasks ready with execution context ✅
 
 **Execution Strategy:**
+
 - **MCP-EXT-1:** Test and mark Done (15 min)
 - **MCP-EXT-2, MCP-EXT-3:** Implement in parallel (4 hours total)
 - **MCP-EXT-4-10:** Implement sequentially or in parallel sessions (16-20 hours)
@@ -215,12 +226,14 @@
 **Status:** High priority, no dependencies, missing execution context
 
 **Execution Strategy:**
+
 - Add execution context metadata first (use script)
 - Execute in parallel (different topics)
 - Use NotebookLM for synthesis
 - Document findings in research_with_links comments
 
 **Recommended Execution:**
+
 - **Best Mode:** Agent (autonomous research)
 - **Location Type:** Local
 - **Background:** Yes (can run in background)
@@ -232,10 +245,12 @@
 ### 3. Infrastructure Tasks
 
 **In Progress:**
+
 - **T-173, T-174, T-175:** NATS Integration (sequential)
 - **T-194:** Topic registry (in progress)
 
 **Execution Strategy:**
+
 - Complete sequentially (dependencies)
 - Continue in-progress work before starting new
 - Can work in parallel with MCP extensions (different domains)
@@ -247,6 +262,7 @@
 **Status:** Many ready, but most depend on research
 
 **Execution Strategy:**
+
 - Wait for research completion
 - Use execution context for parallel planning
 - Start with tasks that don't depend on research
@@ -260,6 +276,7 @@
 **Target:** 50 high-priority ready tasks
 
 **Priority Order:**
+
 1. **Research Tasks** (T-143-T-151) - 10 tasks
    - **Template:** Agent mode, Local, Background
    - **Time:** 30 min to add to all
@@ -281,14 +298,17 @@
 ### ✅ Can Execute in Parallel
 
 **MCP Extensions:**
+
 - MCP-EXT-2 and MCP-EXT-3 (different tools)
 - MCP-EXT-4-10 (can be done in separate sessions)
 
 **Research Tasks:**
+
 - All research tasks (T-143-T-151) can run simultaneously
 - Different agents or separate sessions
 
 **Different Domains:**
+
 - MCP extensions + NATS integration (different codebases)
 - Research + Implementation (research informs implementation)
 
@@ -297,12 +317,15 @@
 ### ❌ Must Be Sequential
 
 **NATS Integration:**
+
 - T-173 → T-174 → T-175 (sequential chain)
 
 **MCP Extensions:**
+
 - MCP-EXT-1 → MCP-EXT-2 (validation pattern reference)
 
 **Research → Implementation:**
+
 - Many implementation tasks depend on research completion
 
 ---
@@ -351,8 +374,10 @@
 ### 1. Test MCP-EXT-1 (15 minutes) ⚡ **IMMEDIATE**
 
 **Action:**
+
 ```bash
 pip install pyyaml
+
 # Restart Cursor
 # Test tool via MCP interface
 ```

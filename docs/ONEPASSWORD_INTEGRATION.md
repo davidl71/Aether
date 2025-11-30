@@ -13,6 +13,7 @@ The project can pull credentials directly from 1Password so secrets never land i
 - Authentication method (choose one):
   - **Personal account**: Signed-in session (`op signin …`) - for local development
   - **Service Account**: `OP_SERVICE_ACCOUNT_TOKEN` environment variable - for CI/CD and automation
+
 - Optional: Cursor 1Password extension (for inline secret references)
 
 See [1Password Secrets Automation](https://developer.1password.com/docs/secrets-automation) for details on Service Accounts vs Connect Servers.
@@ -30,7 +31,9 @@ Use `scripts/op_sync_distcc_host.sh` to populate:
 export OP_DISTCC_HOST_SECRET="op://Engineering/Distcc M4/host"
 export OP_DISTCC_USER_SECRET="op://Engineering/Distcc M4/username"
 export OP_DISTCC_KEY_SECRET="op://Engineering/Distcc M4/private key"
+
 # optional
+
 export OP_DISTCC_CORES_SECRET="op://Engineering/Distcc M4/cores"
 export DISTCC_REMOTE_ALIAS="distcc-m4"
 
@@ -70,7 +73,9 @@ Use `scripts/op_sync_cursor_remote.sh` to populate SSH config for Cursor remote 
 export OP_CURSOR_REMOTE_HOST_SECRET="op://Engineering/Cursor Remote M4/host"
 export OP_CURSOR_REMOTE_USER_SECRET="op://Engineering/Cursor Remote M4/username"
 export OP_CURSOR_REMOTE_KEY_SECRET="op://Engineering/Cursor Remote M4/private key"
+
 # optional
+
 export OP_CURSOR_REMOTE_PORT_SECRET="op://Engineering/Cursor Remote M4/port"
 export CURSOR_REMOTE_ALIAS="cursor-m4-mac"
 

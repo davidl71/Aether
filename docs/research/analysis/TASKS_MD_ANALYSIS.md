@@ -61,12 +61,14 @@ tasks.md is a privacy-focused task management application that uses plain Markdo
 ### Markdown Task Format
 
 ```markdown
+
 # My Task List
 
 ## Project: Website Redesign 🚀 @webdev
 - [ ] Draft new homepage mockups #design +inprogress due:2025-06-10
   - [ ] Research competitor websites
   - [ ] Sketch wireframes
+
 - [x] Setup project structure _done:2025-06-01
 - [ ] Code HTML and CSS _spent:4500
 ```
@@ -369,7 +371,7 @@ tasks.md is a privacy-focused task management application that uses plain Markdo
 ## Related Documentation
 
 - [Agentic Tools Usage](../../AGENTIC_TOOLS_USAGE.md) - Todo2 MCP system guide
-- [Coordination Guidelines](agents/shared/COORDINATION.md) - Shared TODO table
+- [Coordination Guidelines](../../../agents/shared/COORDINATION.md) - Shared TODO table
 - [API Documentation Index](../../API_DOCUMENTATION_INDEX.md) - Complete API reference
 
 ---

@@ -105,10 +105,13 @@ Create or update `config/lean_ibkr_config.json`:
 ### 1. Test Connection
 
 ```bash
+
 # Activate LEAN environment
+
 source python/venv312/bin/activate
 
 # Test connection (will use config.json)
+
 lean live --brokerage InteractiveBrokers
 ```
 
@@ -117,7 +120,9 @@ lean live --brokerage InteractiveBrokers
 Create a simple test algorithm to verify market data:
 
 ```python
+
 # Main/test_ibkr_connection.py
+
 from AlgorithmImports import *
 
 class TestIBKRConnection(QCAlgorithm):
@@ -147,7 +152,9 @@ lean backtest Main/test_ibkr_connection.py
 ### 3. Test Order Placement (Paper Trading)
 
 ```python
+
 # Main/test_ibkr_orders.py
+
 from AlgorithmImports import *
 
 class TestIBKROrders(QCAlgorithm):

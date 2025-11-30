@@ -11,9 +11,11 @@
 ### ✅ Global Configuration (`~/.cursor/mcp.json`)
 
 **Removed:**
+
 - ❌ `desktop-commander` - System-level operations server
 
 **Kept:**
+
 - ✅ `tractatus_thinking` - Universal logical analysis
 - ✅ `sequential_thinking` - Universal structured problem-solving
 
@@ -27,15 +29,18 @@
 ### ✅ Expected Savings
 
 **Tools Removed:**
+
 - Estimated **40-60 tools** removed (Desktop Commander tool count)
 
 **Expected Tool Count After Removal:**
+
 - **Before:** 121-188 tools (exceeded 80 limit by 41-108 tools)
 - **After:** ~81-128 tools (may still exceed limit, but significantly reduced)
 
 ### ✅ Functionality Impact
 
 **What You Lose:**
+
 - ❌ System-level file operations outside workspace
 - ❌ Terminal/process management operations
 - ❌ System information tools (processes, environment)
@@ -43,6 +48,7 @@
 - ❌ Advanced file search outside workspace
 
 **What You Keep:**
+
 - ✅ Workspace file operations via `filesystem` server
 - ✅ Regular terminal commands (via terminal/command line)
 - ✅ All project-specific operations via `filesystem` and `git` servers
@@ -51,15 +57,18 @@
 ### ✅ Alternative Solutions
 
 **For Workspace File Operations:**
+
 - ✅ Use `filesystem` server (already configured in project config)
 - ✅ Workspace-scoped file operations are still available
 
 **For System Operations:**
+
 - ✅ Use regular terminal commands
 - ✅ Use macOS system commands directly
 - ✅ Use shell scripts for automation
 
 **For Terminal/Process Operations:**
+
 - ✅ Use regular terminal commands
 - ✅ Use system terminal applications (iTerm2, Terminal.app)
 - ✅ Use shell scripts for automation
@@ -145,6 +154,7 @@ If tool count is still over 80 after removing Desktop Commander:
 ### Before Removal
 
 **Global Config (`~/.cursor/mcp.json`):**
+
 ```json
 {
   "mcpServers": {
@@ -160,6 +170,7 @@ If tool count is still over 80 after removing Desktop Commander:
 ### After Removal
 
 **Global Config (`~/.cursor/mcp.json`):**
+
 ```json
 {
   "mcpServers": {
@@ -182,6 +193,7 @@ If tool count is still over 80 after removing Desktop Commander:
 - [x] Configuration documented
 
 **Next Steps:**
+
 - [ ] Restart Cursor completely
 - [ ] Verify tool count is reduced
 - [ ] Test file operations via filesystem server

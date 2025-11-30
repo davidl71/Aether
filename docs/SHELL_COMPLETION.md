@@ -13,10 +13,13 @@ Shell completion provides tab-completion for command-line options and arguments,
 ### Generate Completions
 
 ```bash
+
 # Generate all completion scripts
+
 ./scripts/generate_completions.sh
 
 # Generate for specific shell
+
 ./scripts/generate_completions.sh bash
 ./scripts/generate_completions.sh zsh
 ./scripts/generate_completions.sh fish
@@ -25,15 +28,19 @@ Shell completion provides tab-completion for command-line options and arguments,
 ### Install Completions
 
 ```bash
+
 # Install for all shells
+
 ./scripts/install_completions.sh
 
 # Install for specific shell
+
 ./scripts/install_completions.sh bash
 ./scripts/install_completions.sh zsh
 ./scripts/install_completions.sh fish
 
 # Auto-detect shell
+
 ./scripts/install_completions.sh auto
 ```
 
@@ -42,29 +49,38 @@ Shell completion provides tab-completion for command-line options and arguments,
 ### Bash
 
 ```bash
+
 # Generate completion
+
 ./scripts/generate_completions.sh bash
 
 # Source in current session
+
 source completions/ib_box_spread.bash
 
 # Add to ~/.bashrc for persistence
+
 echo "source $(pwd)/completions/ib_box_spread.bash" >> ~/.bashrc
 ```
 
 ### Zsh
 
 ```bash
+
 # Generate completion
+
 ./scripts/generate_completions.sh zsh
 
 # Add to fpath
+
 fpath=($(pwd)/completions $fpath)
 
 # Initialize completions
+
 compinit
 
 # Add to ~/.zshrc for persistence
+
 echo "fpath=($(pwd)/completions \$fpath)" >> ~/.zshrc
 echo "autoload -U compinit && compinit" >> ~/.zshrc
 ```
@@ -72,10 +88,13 @@ echo "autoload -U compinit && compinit" >> ~/.zshrc
 ### Fish
 
 ```bash
+
 # Generate completion
+
 ./scripts/generate_completions.sh fish
 
 # Copy to fish completions directory
+
 mkdir -p ~/.config/fish/completions
 cp completions/*.fish ~/.config/fish/completions/
 
@@ -87,20 +106,29 @@ cp completions/*.fish ~/.config/fish/completions/
 After installation, you can use tab completion:
 
 ```bash
+
 # Tab-complete options
+
 ib_box_spread --<TAB>
+
 # Shows: --config --dry-run --validate --use-nautilus --log-level --version --help
 
 # Tab-complete log levels
+
 ib_box_spread --log-level <TAB>
+
 # Shows: trace debug info warn error
 
 # Tab-complete config files
+
 ib_box_spread --config <TAB>
+
 # Shows: config/config.json config/config.example.json
 
 # TUI completions
+
 ib-box-spread-tui --<TAB>
+
 # Shows: --mock --endpoint --help
 ```
 
@@ -181,10 +209,13 @@ ib-box-spread-tui --<TAB>
 If the binary isn't found for completion generation:
 
 ```bash
+
 # Build first
+
 ./scripts/build_universal.sh
 
 # Then generate completions
+
 ./scripts/generate_completions.sh
 ```
 
@@ -193,10 +224,13 @@ If the binary isn't found for completion generation:
 If you get permission errors during installation:
 
 ```bash
+
 # Use sudo for system-wide installation
+
 sudo ./scripts/install_completions.sh
 
 # Or install to user directory (no sudo needed)
+
 ./scripts/install_completions.sh
 ```
 
@@ -207,7 +241,9 @@ sudo ./scripts/install_completions.sh
 The C++ binary uses [CLI11](https://github.com/CLIUtils/CLI11) which provides built-in completion generation:
 
 ```bash
+
 # CLI11 automatically adds --generate-completion flag
+
 ib_box_spread --generate-completion bash
 ib_box_spread --generate-completion zsh
 ib_box_spread --generate-completion fish
@@ -229,7 +265,9 @@ For cases where CLI11 completion generation isn't available, we provide manually
 When installed via Homebrew, completions can be installed system-wide:
 
 ```bash
+
 # Install via Homebrew
+
 brew install davidl71/ib-box-spread/ib-box-spread
 
 # Completions are available in the formula
@@ -241,10 +279,13 @@ brew install davidl71/ib-box-spread/ib-box-spread
 When adding new CLI options, update completions:
 
 ```bash
+
 # Regenerate completions
+
 ./scripts/generate_completions.sh
 
 # Reinstall
+
 ./scripts/install_completions.sh
 ```
 

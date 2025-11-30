@@ -12,6 +12,7 @@
 **Goal**: See all current positions in one panel (TUI/PWA)
 
 **Instruments to Display**:
+
 - Box spreads (synthetic financing positions)
 - Bank loans (e.g., Discount Bank)
 - Pension loans
@@ -19,6 +20,7 @@
 - Other financing instruments
 
 **Requirements**:
+
 - Single unified panel showing all positions
 - Group by instrument type
 - Show key metrics: rate, maturity, cash flow, collateral
@@ -26,6 +28,7 @@
 - Available in both TUI and PWA
 
 **Current State**:
+
 - ✅ Positions tracking exists (PositionSnapshot, PositionsTable)
 - ✅ Bank accounts panel exists (BankAccountsPanel)
 - ❌ Not unified - separate panels for different instrument types
@@ -40,6 +43,7 @@
 **Goal**: Model and project cash flows across all positions
 
 **Requirements**:
+
 - Track cash inflows/outflows from all positions
 - Project future cash flows based on maturity dates
 - Calculate net cash flow at any point in time
@@ -47,11 +51,13 @@
 - Account for interest payments, principal repayments, dividends
 
 **Use Cases**:
+
 - "What's my cash flow next month?"
 - "When do I need to repay this loan?"
 - "How much cash will I have available for new opportunities?"
 
 **Current State**:
+
 - ✅ Ledger system tracks transactions
 - ✅ Position tracking exists
 - ❌ No cash flow projection/modeling
@@ -68,26 +74,31 @@
 **Key Scenarios**:
 
 #### Scenario 1: Loan Consolidation
+
 - "I have a loan at 5% APR. Can I use cash flow to consolidate other loans?"
 - Simulate: Use loan proceeds to pay off higher-rate loans
 - Calculate: Net benefit, cash flow impact, risk reduction
 
 #### Scenario 2: Margin for Box Spreads
+
 - "I have a loan at 4% APR. Can I use it as margin for box spreads?"
 - Simulate: Use loan as collateral for box spread margin
 - Calculate: Effective financing rate, net benefit vs. direct box spread
 
 #### Scenario 3: Investment Fund Strategy
+
 - "I have a loan at 3% APR. Can I invest in a fund and get cheaper loans?"
 - Simulate: Use loan to invest in fund, use fund as collateral for cheaper loan
 - Calculate: Net benefit, cash flow impact, risk profile
 
 #### Scenario 4: Multi-Instrument Optimization
+
 - "What's the optimal chain: loan → margin → box spread → fund → cheaper loan?"
 - Simulate: Complete multi-instrument relationship chain
 - Calculate: Total benefit, cash flow, risk, capital efficiency
 
 **Requirements**:
+
 - Interactive what-if analysis
 - Real-time simulation as user changes parameters
 - Compare multiple scenarios side-by-side
@@ -95,6 +106,7 @@
 - Visualize relationships between instruments
 
 **Current State**:
+
 - ✅ Opportunity evaluation exists (BoxSpreadStrategy)
 - ✅ Risk calculator exists
 - ❌ No what-if simulation engine
@@ -110,12 +122,14 @@
 **Goal**: Model relationships between instruments (loan → margin → box spread → fund → cheaper loan)
 
 **Relationship Types**:
+
 1. **Collateral Relationships**: Asset can be used as collateral for another
 2. **Financing Relationships**: Asset provides financing for another
 3. **Cash Flow Relationships**: Asset generates cash flow used by another
 4. **Optimization Chains**: Optimal sequence of instrument usage
 
 **Example Chain**:
+
 ```
 Bank Loan (5% APR)
   ↓ (use as collateral)
@@ -128,6 +142,7 @@ Cheaper Loan (3% APR)
 ```
 
 **Requirements**:
+
 - Model asset relationships (from SYNTHETIC_FINANCING_ARCHITECTURE.md)
 - Find optimal chains
 - Calculate net benefit of chains
@@ -135,6 +150,7 @@ Cheaper Loan (3% APR)
 - Real-time updates as positions change
 
 **Current State**:
+
 - ✅ Architecture document exists (SYNTHETIC_FINANCING_ARCHITECTURE.md)
 - ✅ Asset relationship graph design exists
 - ❌ Not implemented in code
@@ -147,6 +163,7 @@ Cheaper Loan (3% APR)
 ## Implementation Priority
 
 ### Phase 1: Foundation (High Priority)
+
 1. **T-125**: Unified positions panel
    - Enables visibility into all positions
    - Foundation for other features
@@ -156,6 +173,7 @@ Cheaper Loan (3% APR)
    - Needed for all what-if scenarios
 
 ### Phase 2: Simulation (High Priority)
+
 3. **T-127**: Opportunity simulation engine
    - Enables what-if analysis
    - Core user value proposition
@@ -165,6 +183,7 @@ Cheaper Loan (3% APR)
    - Builds on cash flow modeling
 
 ### Phase 3: Visualization (Medium Priority)
+
 5. **T-129**: Cash flow visualization
    - Enhances user experience
    - Makes cash flow modeling more accessible
@@ -234,24 +253,28 @@ Cheaper Loan (3% APR)
 ## Success Criteria
 
 ### Unified Positions Panel
+
 - ✅ All instrument types visible in one panel
 - ✅ Real-time updates
 - ✅ Key metrics displayed (rate, maturity, cash flow)
 - ✅ Works in both TUI and PWA
 
 ### Cash Flow Modeling
+
 - ✅ Accurate cash flow projections
 - ✅ Multi-currency support
 - ✅ Handles all instrument types
 - ✅ Real-time updates as positions change
 
 ### Opportunity Simulation
+
 - ✅ Interactive what-if analysis
 - ✅ Multiple scenarios supported
 - ✅ Accurate calculations
 - ✅ Clear visualization of results
 
 ### Multi-Instrument Relationships
+
 - ✅ Relationship chains identified
 - ✅ Optimal chains suggested
 - ✅ Net benefit calculated

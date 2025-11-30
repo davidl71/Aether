@@ -72,6 +72,7 @@ shellspec --quick
 Tests use ShellSpec's BDD syntax:
 
 ```bash
+
 #!/usr/bin/env bash
 #shellcheck shell=sh
 

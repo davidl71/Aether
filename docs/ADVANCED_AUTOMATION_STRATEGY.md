@@ -8,6 +8,7 @@
 ## Executive Summary
 
 This document outlines:
+
 1. **Remaining Automation Opportunities** - What else can be automated
 2. **NetworkX Integration** - Using graph analysis for smarter automation
 3. **Intelligent Automation** - How automation scripts can use Todo2, Tractatus, and Sequential Thinking to be more efficient
@@ -23,11 +24,13 @@ This document outlines:
 **Current State**: Manual updates to `agents/shared/TODO_OVERVIEW.md`
 
 **Automation Value**: ⭐⭐⭐⭐⭐
+
 - **Frequency**: Daily or on Todo2 changes
 - **Benefit**: Automatic synchronization, eliminates manual coordination work
 - **Output**: Updated `agents/shared/TODO_OVERVIEW.md`
 
 **Implementation**:
+
 - Read Todo2 state (`.todo2/state.todo2.json`)
 - Parse `agents/shared/TODO_OVERVIEW.md` table
 - Map Todo2 tasks to TODO_OVERVIEW entries
@@ -43,11 +46,13 @@ This document outlines:
 **Current State**: Manual updates to `agents/shared/API_CONTRACT.md`
 
 **Automation Value**: ⭐⭐⭐⭐⭐
+
 - **Frequency**: Daily or on code changes
 - **Benefit**: Detect API drift early, prevent integration issues
 - **Output**: `docs/API_CONTRACT_DRIFT_REPORT.md`
 
 **Implementation**:
+
 - Parse backend code (Rust/Python) for API endpoints
 - Extract request/response schemas
 - Compare with `API_CONTRACT.md`
@@ -63,11 +68,13 @@ This document outlines:
 **Current State**: `scripts/check_feature_parity.sh` exists but runs manually
 
 **Automation Value**: ⭐⭐⭐⭐
+
 - **Frequency**: Weekly
 - **Benefit**: Track TUI vs PWA feature gaps automatically
 - **Output**: `docs/FEATURE_PARITY_STATUS.md` with trends
 
 **Implementation**:
+
 - Enhance existing script
 - Add component detection
 - Feature mapping
@@ -83,11 +90,13 @@ This document outlines:
 **Current State**: Manual test runs, coverage not tracked over time
 
 **Automation Value**: ⭐⭐⭐
+
 - **Frequency**: Daily or after commits
 - **Benefit**: Track coverage trends, identify gaps
 - **Output**: `docs/TEST_COVERAGE_REPORT.md` with trends
 
 **Implementation**:
+
 - Run tests with coverage tools
 - Compare with previous runs
 - Track trends
@@ -103,11 +112,13 @@ This document outlines:
 **Current State**: Manual dependency updates
 
 **Automation Value**: ⭐⭐⭐
+
 - **Frequency**: Weekly
 - **Benefit**: Stay on latest secure versions
 - **Output**: `docs/DEPENDENCY_UPDATE_REPORT.md`
 
 **Implementation**:
+
 - Check outdated packages (Python, Node.js, Rust)
 - Check security vulnerabilities
 - Generate update report
@@ -131,6 +142,7 @@ This document outlines:
 ### Current NetworkX Usage
 
 **Existing Tool**: `python/tools/project_analyzer.py`
+
 - Analyzes project structure using NetworkX
 - Creates graph representations
 - Identifies relationships between components
@@ -140,17 +152,20 @@ This document outlines:
 #### 1. Task Dependency Analysis
 
 **Use Case**: Analyze Todo2 task dependencies to identify:
+
 - Critical path tasks
 - Blocking relationships
 - Parallel work opportunities
 - Dependency cycles
 
 **Implementation**:
+
 ```python
 import networkx as nx
 from todo2_mcp import get_todos
 
 # Build task dependency graph
+
 G = nx.DiGraph()
 todos = get_todos()
 
@@ -160,16 +175,20 @@ for todo in todos:
         G.add_edge(dep_id, todo['id'])
 
 # Find critical path
+
 critical_path = nx.dag_longest_path(G)
 
 # Find blocking tasks
+
 blocking_tasks = [n for n in G.nodes() if G.out_degree(n) > 3]
 
 # Find parallel opportunities
+
 parallel_groups = list(nx.topological_generations(G))
 ```
 
 **Benefits**:
+
 - Identify bottlenecks automatically
 - Suggest task reordering
 - Find parallel work opportunities
@@ -180,14 +199,18 @@ parallel_groups = list(nx.topological_generations(G))
 #### 2. Documentation Cross-Reference Graph
 
 **Use Case**: Build graph of documentation references to:
+
 - Identify orphaned documents
 - Find broken reference chains
 - Suggest documentation structure improvements
 - Track documentation dependencies
 
 **Implementation**:
+
 ```python
+
 # Build documentation reference graph
+
 G = nx.DiGraph()
 
 for doc_file in docs_path.rglob('*.md'):
@@ -200,16 +223,20 @@ for doc_file in docs_path.rglob('*.md'):
             G.add_edge(doc_file.name, ref)
 
 # Find orphaned documents
+
 orphaned = [n for n in G.nodes() if G.in_degree(n) == 0]
 
 # Find most referenced documents
+
 most_referenced = sorted(G.in_degree(), key=lambda x: x[1], reverse=True)[:10]
 
 # Find documentation clusters
+
 clusters = list(nx.weakly_connected_components(G))
 ```
 
 **Benefits**:
+
 - Automatic orphan detection
 - Identify documentation hubs
 - Suggest documentation reorganization
@@ -220,17 +247,22 @@ clusters = list(nx.weakly_connected_components(G))
 #### 3. Code Dependency Graph
 
 **Use Case**: Build graph of code dependencies to:
+
 - Identify circular dependencies
 - Find unused code
 - Track API contract changes
 - Analyze impact of changes
 
 **Implementation**:
+
 ```python
+
 # Build code dependency graph
+
 G = nx.DiGraph()
 
 # Parse code files
+
 for code_file in codebase:
     G.add_node(code_file.name)
 
@@ -239,16 +271,20 @@ for code_file in codebase:
         G.add_edge(code_file.name, dep)
 
 # Find circular dependencies
+
 cycles = list(nx.simple_cycles(G))
 
 # Find unused code
+
 unused = [n for n in G.nodes() if G.in_degree(n) == 0 and not is_entry_point(n)]
 
 # Find most depended-upon modules
+
 core_modules = sorted(G.in_degree(), key=lambda x: x[1], reverse=True)[:10]
 ```
 
 **Benefits**:
+
 - Detect architectural issues
 - Identify refactoring opportunities
 - Track code health
@@ -259,17 +295,22 @@ core_modules = sorted(G.in_degree(), key=lambda x: x[1], reverse=True)[:10]
 #### 4. Feature Dependency Graph
 
 **Use Case**: Build graph of feature dependencies to:
+
 - Identify feature prerequisites
 - Track feature parity
 - Suggest feature implementation order
 - Analyze feature impact
 
 **Implementation**:
+
 ```python
+
 # Build feature dependency graph
+
 G = nx.DiGraph()
 
 # Map features to components
+
 features = extract_features_from_code()
 for feature in features:
     G.add_node(feature['name'])
@@ -277,13 +318,16 @@ for feature in features:
         G.add_edge(prereq, feature['name'])
 
 # Find feature implementation order
+
 implementation_order = list(nx.topological_sort(G))
 
 # Find missing prerequisites
+
 missing_prereqs = [n for n in G.nodes() if not is_implemented(n) and G.in_degree(n) > 0]
 ```
 
 **Benefits**:
+
 - Optimize feature implementation order
 - Identify missing prerequisites
 - Track feature parity automatically
@@ -300,6 +344,7 @@ missing_prereqs = [n for n in G.nodes() if not is_implemented(n) and G.in_degree
 **Current Approach**: Scripts analyze everything statically
 
 **Intelligent Approach**: Use Tractatus Thinking to:
+
 - Break down analysis into atomic components
 - Identify multiplicative dependencies
 - Focus on critical checks first
@@ -308,7 +353,9 @@ missing_prereqs = [n for n in G.nodes() if not is_implemented(n) and G.in_degree
 **Example**: Documentation Health Script
 
 ```python
+
 # Before: Static analysis
+
 def analyze_docs():
     check_links()
     check_format()
@@ -316,6 +363,7 @@ def analyze_docs():
     check_references()
 
 # After: Tractatus-guided analysis
+
 def analyze_docs():
     # Use Tractatus to understand structure
     tractatus_analysis = tractatus_thinking.start_analysis(
@@ -337,6 +385,7 @@ def analyze_docs():
 ```
 
 **Benefits**:
+
 - Focus on critical issues first
 - Early exit on critical failures
 - Understand root causes
@@ -349,6 +398,7 @@ def analyze_docs():
 **Current Approach**: Scripts follow fixed workflow
 
 **Intelligent Approach**: Use Sequential Thinking to:
+
 - Plan analysis workflow dynamically
 - Adapt to findings
 - Optimize execution order
@@ -357,7 +407,9 @@ def analyze_docs():
 **Example**: Todo2 Alignment Script
 
 ```python
+
 # Before: Fixed workflow
+
 def analyze_alignment():
     load_tasks()
     analyze_priorities()
@@ -365,6 +417,7 @@ def analyze_alignment():
     generate_report()
 
 # After: Sequential-guided workflow
+
 def analyze_alignment():
     # Plan workflow using Sequential Thinking
     workflow = sequential_thinking.start_workflow(
@@ -391,6 +444,7 @@ def analyze_alignment():
 ```
 
 **Benefits**:
+
 - Adaptive workflows
 - Dynamic step planning
 - Better error handling
@@ -403,6 +457,7 @@ def analyze_alignment():
 **Current Approach**: Automation scripts run independently
 
 **Intelligent Approach**: Use Todo2 to:
+
 - Track automation tasks
 - Store automation results
 - Create follow-up tasks
@@ -411,12 +466,15 @@ def analyze_alignment():
 **Example**: Documentation Health Script
 
 ```python
+
 # Before: Just generate report
+
 def run_health_check():
     results = analyze_docs()
     generate_report(results)
 
 # After: Todo2-integrated
+
 def run_health_check():
     # Create automation task in Todo2
     automation_task = todo2.create_todo(
@@ -458,6 +516,7 @@ def run_health_check():
 ```
 
 **Benefits**:
+
 - Track automation execution
 - Create actionable follow-up tasks
 - Monitor automation health

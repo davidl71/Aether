@@ -57,6 +57,7 @@ DlqConfig {
 ### Retry Delay Calculation
 
 Retry delays use exponential backoff:
+
 - Attempt 0: 100ms
 - Attempt 1: 200ms
 - Attempt 2: 400ms
@@ -123,13 +124,17 @@ let dlq_service = DlqService::with_config(client, "backend", config);
 ### Subscribing to DLQ
 
 ```bash
+
 # Subscribe to all DLQ messages
+
 nats sub "system.dlq.>"
 
 # Subscribe to backend DLQ messages
+
 nats sub "system.dlq.backend.>"
 
 # Subscribe to specific error type
+
 nats sub "system.dlq.backend.publish_error"
 ```
 
@@ -182,16 +187,20 @@ All NATS publishers in the backend service are now DLQ-enabled:
 ### Subscribe to DLQ Messages
 
 ```bash
+
 # Monitor all failed messages
+
 nats sub "system.dlq.>" --count 0
 
 # Monitor backend failures
+
 nats sub "system.dlq.backend.>" --count 0
 ```
 
 ### Health Checks
 
 DLQ service status can be monitored via:
+
 - NATS server monitoring endpoints
 - Application health endpoints
 - DLQ topic subscription counts
@@ -215,24 +224,30 @@ DLQ service status can be monitored via:
 ### Test Commands
 
 ```bash
+
 # Stop NATS server to test connection errors
+
 ./scripts/stop_nats.sh
 
 # Start backend service (will retry and send to DLQ)
+
 cd agents/backend && cargo run -p backend_service
 
 # Monitor DLQ in another terminal
+
 nats sub "system.dlq.>"
 ```
 
 ## Files Created/Modified
 
 ### New Files
+
 - `agents/backend/crates/nats_adapter/src/dlq.rs` - DLQ service implementation
 - `docs/message_schemas/DeadLetterMessage.json` - DLQ message schema
 - `docs/NATS_DLQ_IMPLEMENTATION.md` - This documentation
 
 ### Modified Files
+
 - `agents/backend/crates/nats_adapter/src/bridge.rs` - Added DLQ support to Publisher
 - `agents/backend/crates/nats_adapter/src/topics.rs` - Added DLQ topic functions
 - `agents/backend/crates/nats_adapter/src/lib.rs` - Exported DLQ types
@@ -243,6 +258,7 @@ nats sub "system.dlq.>"
 ### Environment Variables
 
 DLQ can be configured via environment variables (future enhancement):
+
 - `NATS_DLQ_ENABLED` - Enable/disable DLQ (default: true)
 - `NATS_DLQ_MAX_RETRIES` - Max retry attempts (default: 3)
 - `NATS_DLQ_INITIAL_DELAY_MS` - Initial retry delay (default: 100)

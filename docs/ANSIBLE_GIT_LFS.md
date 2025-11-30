@@ -13,10 +13,14 @@
 Git LFS is automatically installed when running the devtools Ansible role:
 
 ### macOS
+
+
 - Installed via Homebrew: `git-lfs`
 - Automatically initialized after installation
 
+
 ### Ubuntu/Debian
+
 - Installed via apt: `git-lfs`
 - Automatically initialized after installation
 
@@ -27,10 +31,13 @@ Git LFS is automatically installed when running the devtools Ansible role:
 ### Run Devtools Setup
 
 ```bash
+
 # Via setup script
+
 ./setup_global_tools.sh
 
 # Or directly via Ansible
+
 ansible-playbook -i localhost, --connection=local ansible/playbooks/setup_devtools.yml
 ```
 
@@ -40,9 +47,11 @@ After running the playbook, Git LFS should be installed and initialized:
 
 ```bash
 git lfs version
+
 # Should show: git-lfs/3.7.1 (or similar)
 
 git lfs ls-files
+
 # Should show any LFS-tracked files
 ```
 
@@ -61,6 +70,7 @@ git lfs ls-files
 
 3. **Verification**
    - Checks that Git LFS is installed
+
    - Displays version information
 
 ---
@@ -68,17 +78,22 @@ git lfs ls-files
 ## Integration
 
 Git LFS is part of the `devtools` role, which is used by:
+
+
 - `ansible/playbooks/setup_devtools.yml` - Main devtools setup
 - `setup_global_tools.sh` - Global tools setup script
+
 
 ---
 
 ## Files Tracked with LFS
 
 Currently tracked:
+
 - `.todo2/state.todo2.json` (62.54 MB)
 
 To add more files to LFS:
+
 ```bash
 git lfs track "path/to/large/file"
 git add .gitattributes

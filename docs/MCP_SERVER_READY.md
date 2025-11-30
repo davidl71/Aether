@@ -50,6 +50,7 @@ $ python3 mcp-servers/project-management-automation/server.py
 ### 1. Restart Cursor
 
 **Completely restart Cursor IDE** (not just reload window):
+
 - Quit Cursor completely
 - Reopen Cursor
 - This allows Cursor to discover the MCP server
@@ -64,6 +65,7 @@ $ python3 mcp-servers/project-management-automation/server.py
 ### 3. Test Tools
 
 Try asking the AI assistant:
+
 - "Check documentation health"
 - "Find duplicate Todo2 tasks"
 - "Scan dependencies for security issues"
@@ -96,17 +98,21 @@ Try asking the AI assistant:
 ### Server Not Appearing in Cursor
 
 1. **Check MCP package:**
+
    ```bash
    python3 -c "import mcp; print('MCP installed')"
    ```
 
 2. **Verify server file:**
+
    ```bash
    python3 mcp-servers/project-management-automation/server.py
    ```
+
    Should show "All tools loaded successfully"
 
 3. **Check configuration:**
+
    ```bash
    cat .cursor/mcp.json | grep -A 5 "project-management-automation"
    ```
@@ -116,6 +122,7 @@ Try asking the AI assistant:
 ### Import Errors
 
 If you see import errors:
+
 1. Check Python version: `python3 --version` (needs 3.9+)
 2. Verify project structure is intact
 3. Check that all `__init__.py` files exist

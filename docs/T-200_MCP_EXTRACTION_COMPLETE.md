@@ -14,6 +14,7 @@ Successfully extracted and prepared MCP trading server for standalone public rep
 ### Files Created
 
 **Repository Structure**:
+
 ```
 trading-mcp-servers/
 ├── LICENSE (MIT)
@@ -37,6 +38,7 @@ trading-mcp-servers/
 ### Changes Made
 
 **Broker-Agnostic Updates**:
+
 1. ✅ **bridge.py**:
    - Changed `TWS_HOST`/`TWS_PORT` to `BROKER_HOST`/`BROKER_PORT` (with backward compatibility)
    - Updated comments to be broker-agnostic
@@ -77,6 +79,7 @@ trading-mcp-servers/
 ### 1. Create GitHub Repository
 
 ```bash
+
 # Create repository on GitHub
 # Name: trading-mcp-servers
 # Description: MCP servers for trading operations - broker-agnostic
@@ -101,12 +104,14 @@ git push -u origin main
 ```bash
 git tag v1.0.0
 git push origin v1.0.0
+
 # Create release on GitHub
 ```
 
 ### 4. Publish to PyPI (Optional)
 
 ```bash
+
 # Set up PyPI API token in GitHub Secrets
 # Workflow will auto-publish on release
 ```
@@ -114,6 +119,7 @@ git push origin v1.0.0
 ### 5. Update Main Repository
 
 Update main repo to reference new repository:
+
 - Update `.cursor/mcp.json` to use published package (if desired)
 - Document dependency in main repo README
 - Remove `mcp/trading_server/` from main repo (after verification)
@@ -123,6 +129,7 @@ Update main repo to reference new repository:
 ## Repository Contents
 
 **Total Files**: 10 files
+
 - 3 Python source files
 - 1 README.md
 - 1 LICENSE
@@ -130,7 +137,7 @@ Update main repo to reference new repository:
 - 1 .gitignore
 - 1 GitHub Actions workflow
 - 1 example config
-- 1 __init__.py
+- 1 **init**.py
 
 **Package Name**: `trading-mcp-servers`
 **Version**: `1.0.0`
@@ -142,6 +149,7 @@ Update main repo to reference new repository:
 ## Testing Checklist
 
 Before publishing:
+
 - [ ] Test installation: `pip install -e .`
 - [ ] Test MCP server: `python -m trading_mcp_server.server`
 - [ ] Verify all tools work in dry-run mode

@@ -101,6 +101,7 @@ use uuid::Uuid;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq)]
+
 pub struct Transaction {
     /// Unique transaction identifier
     pub id: Uuid,
@@ -158,6 +159,7 @@ A posting represents one side (debit or credit) of a transaction.
 use rust_decimal::Decimal;
 
 #[derive(Debug, Clone, PartialEq)]
+
 pub struct Posting {
     /// Account path (e.g., "Assets:IBKR:SPY", "Assets:IBKR:Cash")
     pub account: AccountPath,
@@ -173,6 +175,7 @@ pub struct Posting {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+
 pub struct Cost {
     /// Quantity (e.g., 100 shares)
     pub quantity: Decimal,
@@ -190,6 +193,7 @@ Account paths follow Ledger CLI format with hierarchical structure.
 use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+
 pub struct AccountPath {
     segments: Vec<String>,
 }
@@ -249,6 +253,7 @@ Represents an amount in a specific currency.
 use rust_decimal::Decimal;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+
 pub struct Money {
     /// Amount (always positive, sign handled by posting direction)
     pub amount: Decimal,
@@ -320,6 +325,7 @@ Currency enumeration with conversion support.
 use rust_decimal::Decimal;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+
 pub enum Currency {
     USD,
     ILS,
@@ -357,6 +363,7 @@ Account represents a ledger account with balance tracking.
 use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone)]
+
 pub struct Account {
     /// Account path (e.g., "Assets:IBKR:SPY")
     pub path: AccountPath,
@@ -400,6 +407,7 @@ pub struct LedgerEngine {
 }
 
 #[async_trait]
+
 pub trait PersistenceLayer: Send + Sync {
     async fn save_transaction(&self, transaction: &Transaction) -> Result<(), LedgerError>;
     async fn load_transaction(&self, id: &Uuid) -> Result<Option<Transaction>, LedgerError>;
@@ -496,6 +504,7 @@ impl LedgerEngine {
 }
 
 #[derive(Debug, Clone, Default)]
+
 pub struct TransactionFilter {
     pub account: Option<AccountPath>,
     pub start_date: Option<DateTime<Utc>>,

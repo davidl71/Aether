@@ -23,6 +23,7 @@ Successfully implemented secure service control from the web application on Ubun
 - Installed to `/etc/polkit-1/rules.d/`
 
 **Installation:**
+
 ```bash
 sudo ./web/scripts/systemd/install-polkit-rules.sh
 ```
@@ -32,17 +33,20 @@ sudo ./web/scripts/systemd/install-polkit-rules.sh
 **File:** `web/scripts/systemd/systemctl-helper.sh`
 
 **Security Features:**
+
 - Service name whitelist (only allows predefined PWA services)
 - Action validation (only safe systemctl actions)
 - Service name mapping (API names → systemd names)
 - Prevents command injection
 
 **Allowed Services:**
+
 - pwa-web, pwa-alpaca, pwa-tradestation, pwa-ib-gateway, pwa-ib
 - pwa-discount-bank, pwa-risk-free-rate, pwa-jupyterlab
 - pwa-nats, pwa-rust-backend
 
 **Allowed Actions:**
+
 - start, stop, restart, status, enable, disable, is-active, is-enabled
 
 ### 3. ✅ Rust Backend Integration
@@ -50,6 +54,7 @@ sudo ./web/scripts/systemd/install-polkit-rules.sh
 **File:** `agents/backend/crates/api/src/rest.rs`
 
 **Updates:**
+
 - Added `is_systemctl_available()` - Detects if systemctl is available
 - Added `execute_systemctl_command()` - Executes systemctl via helper script
 - Updated `get_service_status_internal()` - Uses systemctl for status when available
@@ -60,12 +65,14 @@ sudo ./web/scripts/systemd/install-polkit-rules.sh
 - Updated `service_disable()` - Uses systemctl when available
 
 **Fallback Behavior:**
+
 - If systemctl not available, falls back to shell scripts
 - Maintains backward compatibility
 
 ### 4. ✅ Documentation
 
 **Files:**
+
 - `web/scripts/systemd/README_SECURE_CONTROL.md` - Complete guide
 - Updated `web/scripts/systemd/README.md` - Added secure control section
 
@@ -76,31 +83,37 @@ sudo ./web/scripts/systemd/install-polkit-rules.sh
 All endpoints require `ENABLE_SERVICE_CONTROL=true` environment variable.
 
 ### Start Service
+
 ```
 POST /api/v1/services/{service_name}/start
 ```
 
 ### Stop Service
+
 ```
 POST /api/v1/services/{service_name}/stop
 ```
 
 ### Restart Service
+
 ```
 POST /api/v1/services/{service_name}/restart
 ```
 
 ### Enable Service
+
 ```
 POST /api/v1/services/{service_name}/enable
 ```
 
 ### Disable Service
+
 ```
 POST /api/v1/services/{service_name}/disable
 ```
 
 ### Get Service Status
+
 ```
 GET /api/v1/services/{service_name}/status
 ```
@@ -165,10 +178,13 @@ sudo ./web/scripts/systemd/install-polkit-rules.sh
 ### 3. Enable Service Control in Backend
 
 ```bash
+
 # Set environment variable
+
 export ENABLE_SERVICE_CONTROL=true
 
 # Or add to .env file
+
 echo "ENABLE_SERVICE_CONTROL=true" >> .env
 ```
 
@@ -190,15 +206,19 @@ The backend will now use systemctl for service control when available.
 ### Test API Endpoints
 
 ```bash
+
 # Start service
+
 curl -X POST http://localhost:8080/api/v1/services/web/start \
   -H "Content-Type: application/json" \
   -d '{}'
 
 # Check status
+
 curl http://localhost:8080/api/v1/services/web/status
 
 # Stop service
+
 curl -X POST http://localhost:8080/api/v1/services/web/stop \
   -H "Content-Type: application/json" \
   -d '{}'
@@ -208,14 +228,16 @@ curl -X POST http://localhost:8080/api/v1/services/web/stop \
 
 ## Files Created/Modified
 
-### Created:
+### Created
+
 - `web/scripts/systemd/polkit-rules/10-pwa-services.rules`
 - `web/scripts/systemd/install-polkit-rules.sh`
 - `web/scripts/systemd/systemctl-helper.sh`
 - `web/scripts/systemd/README_SECURE_CONTROL.md`
 - `docs/SECURE_SERVICE_CONTROL_COMPLETE.md` (this file)
 
-### Modified:
+### Modified
+
 - `agents/backend/crates/api/src/rest.rs` (added systemctl support)
 - `web/scripts/systemd/README.md` (added secure control section)
 

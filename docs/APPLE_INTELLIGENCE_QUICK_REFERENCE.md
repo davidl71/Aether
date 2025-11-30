@@ -19,6 +19,8 @@ This guide provides quick reference commands and workflows for leveraging Apple 
 **Available in:** All text fields, Notes, Mail, Pages, TextEdit, code editors
 
 **Access Methods:**
+
+
 - **Right-click** → "Rewrite" or "Proofread"
 - **Keyboard shortcut:** Select text → Context menu
 - **Menu bar:** Edit → Writing Tools
@@ -32,7 +34,9 @@ This guide provides quick reference commands and workflows for leveraging Apple 
 | **Documentation clarity** | Select doc text → "Proofread" | Fix grammar, improve readability |
 | **Error message improvement** | Select error text → "Rewrite" → "Friendly" | User-friendly error descriptions |
 
+
 **Example:**
+
 ```cpp
 // Before (select and use Writing Tools):
 // This function does stuff with options
@@ -48,7 +52,9 @@ This guide provides quick reference commands and workflows for leveraging Apple 
 
 **Available in:** Safari, Notes, Mail, most text fields
 
+
 **How to Use:**
+
 - Select long text (research papers, API docs, logs)
 - Right-click → "Summarize"
 - AI generates concise summary
@@ -60,9 +66,11 @@ This guide provides quick reference commands and workflows for leveraging Apple 
 | **Research paper** | Summarize | Key findings, methodology, conclusions |
 | **API documentation** | Summarize | Main concepts, usage patterns, examples |
 | **Build logs** | Summarize | Errors, warnings, key build steps |
+
 | **Error stack traces** | Summarize | Root cause, affected components |
 
 **Workflow:**
+
 1. Copy long documentation or error log
 2. Paste into Notes or TextEdit
 3. Select all → Right-click → "Summarize"
@@ -81,19 +89,25 @@ This guide provides quick reference commands and workflows for leveraging Apple 
 |------|-------------|---------|
 | **Architecture diagrams** | System design visuals | "Box spread trading system architecture" |
 | **Flow charts** | Process workflows | "NATS message flow diagram" |
+
 | **Concept diagrams** | Visual explanations | "Options pricing relationships" |
 | **Documentation images** | Technical illustrations | "Git workflow branching strategy" |
 
 **How to Access:**
+
 1. Open Shortcuts app
 2. Create new shortcut
+
 3. Add "Generate Image" action
 4. Describe what you want
 5. Save and run
 
 **Or via Command Line:**
+
 ```bash
+
 # Generate diagram via Shortcuts
+
 shortcuts run "Generate Architecture Diagram" \
   --input-text "Box spread trading system with NATS, TWS API, Rust backend"
 ```
@@ -106,6 +120,7 @@ shortcuts run "Generate Architecture Diagram" \
 
 **Use Cases:**
 
+
 | Task | Voice Command | Benefit |
 |------|---------------|---------|
 | **Quick information** | "What's the status of the trading system?" | Context-aware system queries |
@@ -113,12 +128,15 @@ shortcuts run "Generate Architecture Diagram" \
 | **Quick actions** | "Run tests on Mac Pro" | Voice-activated automation |
 
 **Enable:**
+
 1. System Settings → Siri & Search
 2. Enable "Listen for 'Hey Siri'"
 3. Enable "Allow Siri When Locked"
 4. Customize activation phrase
 
+
 ---
+
 
 ## Development Workflow Examples
 
@@ -126,8 +144,11 @@ shortcuts run "Generate Architecture Diagram" \
 
 **Context:** Writing C++ trading code on macOS M4 remote agent
 
+
 **Steps:**
+
 1. Write initial code comment:
+
    ```cpp
    // This function calculates profit
    ```
@@ -135,10 +156,13 @@ shortcuts run "Generate Architecture Diagram" \
 2. Select comment → Right-click → "Rewrite" → "Professional"
 
 3. AI improves to:
+
    ```cpp
    // Calculates box spread profit by comparing net premium received
    // against the strike width, accounting for transaction costs
    ```
+
+
 
 4. Accept improvement → Continue coding
 
@@ -146,33 +170,43 @@ shortcuts run "Generate Architecture Diagram" \
 
 ---
 
+
 ### Example 2: Generate Commit Message
 
 **Context:** About to commit changes after Ubuntu agent review
 
 **Steps:**
+
+
 1. Review changes:
+
    ```bash
    git diff
    ```
 
 2. Draft initial message:
+
    ```
+
    fixed bug
    ```
 
 3. Select text → Right-click → "Rewrite" → "Concise"
 
 4. AI improves to:
+
    ```
    Fix box spread calculation error when strike width is zero
 
    - Add validation to prevent division by zero
    - Update error handling for edge cases
    - Add unit tests for zero-width scenarios
+
    ```
 
 5. Use improved message:
+
+
    ```bash
    git commit -m "Fix box spread calculation error when strike width is zero"
    ```
@@ -186,10 +220,12 @@ shortcuts run "Generate Architecture Diagram" \
 **Context:** Ubuntu agent shared long API documentation that needs to be understood
 
 **Steps:**
+
 1. Copy documentation text from Ubuntu agent's work
 2. Paste into Notes app
 3. Select all → Right-click → "Summarize"
 4. AI generates:
+
    ```
    Summary: NATS API Documentation
 
@@ -205,10 +241,12 @@ shortcuts run "Generate Architecture Diagram" \
 
    Usage Pattern:
    1. Connect to NATS server
+
    2. Subscribe to topics
    3. Publish messages
    4. Handle responses
    ```
+
 
 5. Use summary for:
    - TODO table updates
@@ -217,6 +255,7 @@ shortcuts run "Generate Architecture Diagram" \
 
 **Time Saved:** 15-20 minutes reading → 2 minutes summary
 
+
 ---
 
 ### Example 4: Generate Architecture Diagram
@@ -224,10 +263,14 @@ shortcuts run "Generate Architecture Diagram" \
 **Context:** Need to document system architecture for both agents
 
 **Steps:**
+
 1. Open Shortcuts app
 2. Create shortcut: "Generate Architecture Diagram"
 3. Add action: "Generate Image"
 4. Description:
+
+
+
    ```
    Box spread trading system architecture diagram showing:
    - Frontend (macOS AppKit UI)
@@ -236,6 +279,8 @@ shortcuts run "Generate Architecture Diagram" \
    - Market Data (TWS API)
    - Database (QuestDB)
    ```
+
+
 5. Run shortcut
 6. Export image → Add to documentation
 
@@ -248,7 +293,9 @@ shortcuts run "Generate Architecture Diagram" \
 **Context:** Complex compiler error that needs explanation
 
 **Steps:**
+
 1. Copy error message:
+
    ```
    error: no matching function for call to 'calculate_profit'
    candidate template ignored: could not match 'Option<BoxSpread>' to 'const BoxSpread&'
@@ -257,6 +304,7 @@ shortcuts run "Generate Architecture Diagram" \
 2. Select error → Right-click → "Rewrite" → "Friendly"
 
 3. AI improves to:
+
    ```
    Error: Function call mismatch
 
@@ -264,6 +312,7 @@ shortcuts run "Generate Architecture Diagram" \
    but you're passing an Option<BoxSpread> (which may be empty).
 
    Solution: Unwrap the Option first, or handle the None case:
+
 
    if let Some(spread) = spread_option {
        let profit = calculate_profit(&spread);
@@ -290,6 +339,7 @@ shortcuts run "Generate Architecture Diagram" \
 | **Research Summaries** | macOS M4 | Summarization |
 
 **Workflow:**
+
 1. **Ubuntu Agent:** Implements feature, writes initial code
 2. **macOS M4 Agent:**
    - Implements macOS-specific components
@@ -309,7 +359,9 @@ shortcuts run "Generate Architecture Diagram" \
 ### Enable Apple Intelligence
 
 ```bash
+
 # Check if Apple Intelligence is available
+
 sysctl machdep.cpu.brand_string
 
 # Verify M4 chip (should show "Apple M4")
@@ -328,12 +380,15 @@ sysctl machdep.cpu.brand_string
 ### Image Playground Shortcuts
 
 ```bash
+
 # Create shortcut via command line
+
 shortcuts create "Generate Diagram" \
   --action "Generate Image" \
   --description "Box spread trading system architecture"
 
 # Run shortcut
+
 shortcuts run "Generate Diagram"
 ```
 
@@ -350,6 +405,7 @@ shortcuts run "Generate Diagram"
 - **Explain errors** using AI before debugging
 
 ### ❌ DON'T
+
 
 - Don't rely solely on Apple Intelligence for code generation (use Cursor AI)
 - Don't use AI for security-sensitive descriptions
@@ -382,6 +438,7 @@ shortcuts run "Generate Diagram"
 ---
 
 **Quick Start:**
+
 1. Enable Apple Intelligence (System Settings → General → Apple Intelligence)
 2. Try Writing Tools on any code comment
 3. Generate first diagram with Image Playground

@@ -30,10 +30,13 @@ Go to: <https://interactivebrokers.github.io/>
 ### 1.3 Verify Download
 
 ```bash
+
 # Check the downloaded file
+
 ls -lh ~/Downloads/twsapi_macunix*.zip
 
 # Verify it's not corrupted
+
 unzip -t ~/Downloads/twsapi_macunix*.zip
 ```
 
@@ -53,10 +56,13 @@ mkdir -p native/third_party/tws-api
 ### 2.2 Extract Archive
 
 ```bash
+
 # Extract to vendor directory
+
 unzip ~/Downloads/twsapi_macunix*.zip -d native/third_party/tws-api/
 
 # Verify extraction
+
 ls -la native/third_party/tws-api/
 ```
 
@@ -84,10 +90,13 @@ native/third_party/tws-api/
 ### 2.4 Rebuild to Detect API
 
 ```bash
+
 # Clean previous build
+
 rm -rf build
 
 # Rebuild - should now detect TWS API
+
 ./scripts/build_universal.sh
 ```
 
@@ -193,6 +202,7 @@ See the TWS API samples:
 
 ```bash
 cd native/third_party/tws-api/samples/Cpp/TestCppClient/
+
 # Study the example implementation
 ```
 
@@ -221,9 +231,13 @@ cd native/third_party/tws-api/samples/Cpp/TestCppClient/
 ### 4.2 Verify TWS is Running
 
 ```bash
+
 # Check if TWS is listening on port 7497
+
 lsof -i :7497
+
 # or
+
 netstat -an | grep 7497
 ```
 
@@ -252,7 +266,9 @@ Edit `config/config.json`:
 ### 4.4 Test Connection
 
 ```bash
+
 # Run with debug logging
+
 ./build/bin/ib_box_spread --config config/config.json --log-level debug
 ```
 
@@ -315,18 +331,22 @@ Edit `config/config.json`:
 **Create a validation script:**
 
 ```bash
+
 #!/bin/bash
 # scripts/validate_data.sh
 
 echo "Validating market data quality..."
 
 # Check logs for data gaps
+
 grep "tickPrice" logs/ib_box_spread.log | tail -100
 
 # Check for bid-ask spread quality
+
 grep "bid_ask_spread" logs/ib_box_spread.log | tail -50
 
 # Check for missing data
+
 grep "WARNING\|ERROR" logs/ib_box_spread.log
 ```
 
@@ -366,7 +386,9 @@ grep "WARNING\|ERROR" logs/ib_box_spread.log
 Record a full day of data:
 
 ```bash
+
 # Run for 1 day, log everything
+
 ./build/bin/ib_box_spread --log-level trace > backtest_data.log 2>&1
 ```
 
@@ -380,13 +402,17 @@ Analyze results:
 ### 5.4 Performance Validation
 
 ```bash
+
 # Monitor resource usage
+
 top -pid $(pgrep ib_box_spread)
 
 # Check memory leaks (macOS)
+
 leaks ib_box_spread
 
 # Profile if needed
+
 instruments -t "Time Profiler" ./build/bin/ib_box_spread
 ```
 
@@ -479,13 +505,17 @@ instruments -t "Time Profiler" ./build/bin/ib_box_spread
 **Real-time monitoring:**
 
 ```bash
+
 # Terminal 1: Application
+
 ./build/bin/ib_box_spread --config config/config.json
 
 # Terminal 2: Live log monitoring
+
 tail -f logs/ib_box_spread.log | grep -E "ERROR|WARNING|TRADE|FILL"
 
 # Terminal 3: System monitoring
+
 watch -n 5 'ps aux | grep ib_box_spread; netstat -an | grep 7496'
 ```
 
@@ -494,10 +524,13 @@ watch -n 5 'ps aux | grep ib_box_spread; netstat -an | grep 7496'
 **If anything goes wrong:**
 
 ```bash
+
 # 1. Stop the application (graceful)
+
 pkill -TERM ib_box_spread
 
 # 2. If not responding (force kill)
+
 pkill -KILL ib_box_spread
 
 # 3. Login to TWS manually

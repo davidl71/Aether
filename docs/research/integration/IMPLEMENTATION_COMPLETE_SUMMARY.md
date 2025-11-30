@@ -286,14 +286,18 @@ orders = factory.create_box_spread_orders(
 **Usage**:
 
 ```bash
+
 # Fast builds with ccache (10-100x speedup on rebuilds)
+
 ./scripts/build_fast.sh
 
 # Distributed builds (2-10x speedup on clean builds)
+
 export DISTCC_HOSTS="localhost/4 remote-ip/8"
 ./scripts/build_distributed.sh
 
 # Or with CMake directly
+
 cmake -S . -B build -DENABLE_CCACHE=ON -DENABLE_DISTCC=ON ...
 make -j16 -C build
 ```

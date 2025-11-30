@@ -10,10 +10,13 @@
 ## Quick Connection
 
 ```bash
+
 # Connect to Ubuntu agent
+
 ssh david@192.168.192.57
 
 # Navigate to project
+
 cd ~/ib_box_spread_full_universal
 ```
 
@@ -31,13 +34,17 @@ cd ~/ib_box_spread_full_universal
 ### Step 2: Setup Runner
 
 ```bash
+
 # Connect to Ubuntu agent
+
 ssh david@192.168.192.57
 
 # Navigate to project
+
 cd ~/ib_box_spread_full_universal
 
 # Run setup script
+
 bash scripts/setup_github_runner_ubuntu.sh \
     https://github.com/YOUR_USERNAME/YOUR_REPO \
     YOUR_REGISTRATION_TOKEN \
@@ -45,6 +52,7 @@ bash scripts/setup_github_runner_ubuntu.sh \
 ```
 
 **One-liner (from local machine):**
+
 ```bash
 ssh david@192.168.192.57 "cd ~/ib_box_spread_full_universal && bash scripts/setup_github_runner_ubuntu.sh https://github.com/YOUR_USERNAME/YOUR_REPO YOUR_TOKEN ubuntu-agent"
 ```
@@ -54,10 +62,13 @@ ssh david@192.168.192.57 "cd ~/ib_box_spread_full_universal && bash scripts/setu
 ## System Information Collection
 
 ```bash
+
 # From local machine
+
 ssh david@192.168.192.57 "cd ~/ib_box_spread_full_universal && python3 scripts/collect_system_info_python.py" > system_info_ubuntu.json
 
 # View results
+
 cat system_info_ubuntu.json | jq .
 ```
 
@@ -68,23 +79,30 @@ cat system_info_ubuntu.json | jq .
 ### Test Connection
 
 ```bash
+
 # Test SSH access
+
 ssh david@192.168.192.57 "hostname && pwd"
 
 # Test project access
+
 ssh david@192.168.192.57 "cd ~/ib_box_spread_full_universal && pwd && ls -la"
 
 # Test runner status
+
 ssh david@192.168.192.57 "cd ~/actions-runner && sudo ~/actions-runner/svc.sh status"
 ```
 
 ### Check Runner Logs
 
 ```bash
+
 # View runner logs
+
 ssh david@192.168.192.57 "sudo journalctl -u actions.runner.* -n 50"
 
 # Follow logs in real-time
+
 ssh david@192.168.192.57 "sudo journalctl -u actions.runner.* -f"
 ```
 
@@ -145,26 +163,34 @@ ssh david@192.168.192.57 "cd ~/ib_box_spread_full_universal && git pull origin m
 ### Can't Connect
 
 ```bash
+
 # Test connectivity
+
 ping 192.168.192.57
 
 # Test SSH port
+
 nc -zv 192.168.192.57 22
 
 # Verbose SSH
+
 ssh -v david@192.168.192.57
 ```
 
 ### Runner Not Working
 
 ```bash
+
 # Check runner process
+
 ssh david@192.168.192.57 "ps aux | grep Runner.Listener"
 
 # Check service status
+
 ssh david@192.168.192.57 "sudo systemctl status actions.runner.*"
 
 # View recent logs
+
 ssh david@192.168.192.57 "sudo journalctl -u actions.runner.* --since '10 minutes ago'"
 ```
 

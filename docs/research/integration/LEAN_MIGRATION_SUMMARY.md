@@ -198,10 +198,13 @@ docs/
 ### 1. Setup LEAN Environment
 
 ```bash
+
 # Activate LEAN virtual environment
+
 source python/venv312/bin/activate
 
 # Verify LEAN installation
+
 lean --version
 ```
 
@@ -222,10 +225,13 @@ lean --version
 ### 3. Run Strategy
 
 ```bash
+
 # Backtest
+
 lean backtest Main/box_spread_algorithm.py
 
 # Paper trading
+
 lean live --brokerage InteractiveBrokers
 ```
 

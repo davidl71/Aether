@@ -13,10 +13,13 @@ A Homebrew tap is a Git repository containing formula files that define how to i
 **Prerequisites**: SSH access to private repositories
 
 ```bash
+
 # Add the tap (use SSH URL for private repos)
+
 brew tap davidl71/ib-box-spread git@github.com:davidl71/homebrew-ib-box-spread.git
 
 # Install packages
+
 brew install davidl71/ib-box-spread/ib-box-spread        # Main trading binary
 brew install davidl71/ib-box-spread/ib-box-spread-tui    # Terminal UI
 ```
@@ -24,11 +27,14 @@ brew install davidl71/ib-box-spread/ib-box-spread-tui    # Terminal UI
 ### For Developers
 
 ```bash
+
 # Clone the tap repository
+
 git clone https://github.com/davidl71/homebrew-ib-box-spread.git
 cd homebrew-ib-box-spread
 
 # Test formulas locally
+
 brew install --build-from-source Formula/ib-box-spread.rb
 ```
 
@@ -54,7 +60,9 @@ brew install --build-from-source Formula/ib-box-spread.rb
 Copy formula files from `homebrew-tap/Formula/`:
 
 ```bash
+
 # From project root
+
 cp homebrew-tap/Formula/*.rb /path/to/homebrew-ib-box-spread/Formula/
 ```
 
@@ -75,13 +83,17 @@ url "git@github.com:davidl71/synthetic-financing-platform.git", tag: "v1.0.0", u
 ### Step 4: Test Formulas
 
 ```bash
+
 # Test installation
+
 brew install --build-from-source Formula/ib-box-spread.rb
 
 # Run audit
+
 brew audit --new --formula Formula/ib-box-spread.rb
 
 # Test functionality
+
 brew test ib-box-spread
 ```
 
@@ -100,11 +112,14 @@ git push origin main
 **For private repositories using GitDownloadStrategy:**
 
 ```bash
+
 # Create a release tag
+
 git tag -a v1.0.0 -m "Release v1.0.0"
 git push origin v1.0.0
 
 # Verify tag exists
+
 git ls-remote --tags git@github.com:davidl71/synthetic-financing-platform.git
 ```
 
@@ -123,10 +138,13 @@ url "git@github.com:davidl71/synthetic-financing-platform.git", tag: "v1.0.0", u
 ### Step 4: Test and Commit
 
 ```bash
+
 # Test installation
+
 brew install --build-from-source Formula/ib-box-spread.rb
 
 # Commit changes
+
 git add Formula/
 git commit -m "Update to v1.0.0"
 git push origin main
@@ -177,20 +195,26 @@ end
 ### Local Testing
 
 ```bash
+
 # Install from local tap
+
 brew tap --force-local davidl71/ib-box-spread /path/to/homebrew-ib-box-spread
 
 # Install formula
+
 brew install --build-from-source ib-box-spread
 
 # Test formula
+
 brew test ib-box-spread
 ```
 
 ### Audit Checks
 
 ```bash
+
 # Run Homebrew audit
+
 brew audit --new --formula Formula/ib-box-spread.rb
 
 # Fix any issues reported
@@ -199,14 +223,18 @@ brew audit --new --formula Formula/ib-box-spread.rb
 ### Manual Testing
 
 ```bash
+
 # Install
+
 brew install ib-box-spread
 
 # Verify installation
+
 which ib_box_spread
 ib_box_spread --version
 
 # Test functionality
+
 ib_box_spread --help
 ```
 
@@ -257,6 +285,7 @@ ib_box_spread --help
 ### Script to Update Formula
 
 ```bash
+
 #!/bin/bash
 # scripts/update_homebrew_formula.sh
 
@@ -264,11 +293,13 @@ VERSION="v1.0.0"
 TAP_DIR="$HOME/homebrew-ib-box-spread"
 
 # Download and calculate SHA256
+
 curl -L -o /tmp/release.tar.gz \
   "https://github.com/davidl71/synthetic-financing-platform/archive/refs/tags/${VERSION}.tar.gz"
 SHA256=$(shasum -a 256 /tmp/release.tar.gz | awk '{print $1}')
 
 # Update formula
+
 sed -i '' "s|url \".*\"|url \"https://github.com/davidl71/ib_box_spread_full_universal/archive/refs/tags/${VERSION}.tar.gz\"|" \
   "${TAP_DIR}/Formula/ib-box-spread.rb"
 sed -i '' "s|sha256 \".*\"|sha256 \"${SHA256}\"|" \

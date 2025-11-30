@@ -42,6 +42,7 @@ def check_documentation_health_tool(
 ```
 
 **Benefits:**
+
 - ✅ Visible to AI assistants when they read tool descriptions
 - ✅ No configuration changes needed
 - ✅ Works with any MCP client
@@ -53,18 +54,22 @@ def check_documentation_health_tool(
 Use clear, descriptive names that indicate they're the preferred/project-specific version:
 
 ```python
+
 # Good: Clear project-specific naming
+
 @mcp.tool()
 def project_management_check_documentation_health(...) -> str:
     """Project-specific documentation health check with Todo2 integration."""
 
 # Alternative: Version suffix
+
 @mcp.tool()
 def check_documentation_health_v2(...) -> str:
     """Enhanced documentation health check (v2) with Todo2 integration."""
 ```
 
 **Benefits:**
+
 - ✅ AI assistants can identify preferred tools by name
 - ✅ Clear indication of project-specific functionality
 
@@ -87,6 +92,7 @@ Add server-level documentation in `mcp.json`:
 ```
 
 **Benefits:**
+
 - ✅ Server-level context for AI assistants
 - ✅ Explains why this server exists
 
@@ -112,6 +118,7 @@ def detect_duplicate_tasks_tool(...) -> str:
 ```
 
 **Benefits:**
+
 - ✅ Structured metadata for AI parsing
 - ✅ Clear replacement information
 
@@ -122,6 +129,7 @@ def detect_duplicate_tasks_tool(...) -> str:
 Create a documentation file that maps deprecated tools to our replacements:
 
 ```markdown
+
 # MCP Tool Migration Guide
 
 ## Deprecated Tools → Our MCP Server Replacements
@@ -134,6 +142,7 @@ Create a documentation file that maps deprecated tools to our replacements:
 ```
 
 **Benefits:**
+
 - ✅ Comprehensive reference
 - ✅ Can be referenced in tool descriptions
 
@@ -182,14 +191,14 @@ Create `docs/MCP_TOOL_MIGRATION.md` with tool mapping.
 
 ## Limitations
 
-### What MCP/Cursor Doesn't Support:
+### What MCP/Cursor Doesn't Support
 
 1. ❌ **No built-in deprecation field** - MCP spec doesn't include a `deprecated` boolean
 2. ❌ **No automatic tool hiding** - Can't automatically hide deprecated tools from other servers
 3. ❌ **No tool priority system** - Can't set tool priority in mcp.json
 4. ❌ **No tool aliasing** - Can't redirect deprecated tool names to new tools
 
-### What We Can Do:
+### What We Can Do
 
 1. ✅ **Description-based hints** - AI assistants read descriptions
 2. ✅ **Naming conventions** - Clear, descriptive names
@@ -200,14 +209,14 @@ Create `docs/MCP_TOOL_MIGRATION.md` with tool mapping.
 
 ## Best Practices
 
-### ✅ DO:
+### ✅ DO
 
 1. **Add deprecation notices in tool descriptions** - Most visible to AI
 2. **Use clear, descriptive tool names** - Indicate project-specific functionality
 3. **Document tool replacements** - Create migration guides
 4. **Add server-level description** - Explain server purpose
 
-### ❌ DON'T:
+### ❌ DON'T
 
 1. **Don't rely on automatic deprecation** - MCP doesn't support it
 2. **Don't remove other servers** - They may have other useful tools
@@ -251,6 +260,7 @@ def check_documentation_health_tool(
 ## Summary
 
 **Best Approach:** Combine all strategies:
+
 1. ✅ Add deprecation notices in tool descriptions
 2. ✅ Use clear, descriptive tool names
 3. ✅ Add server description in mcp.json

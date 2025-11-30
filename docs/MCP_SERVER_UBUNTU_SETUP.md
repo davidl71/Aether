@@ -21,14 +21,17 @@ Or manually:
 cd ~/ib_box_spread_full_universal/mcp-servers/project-management-automation
 
 # Create venv if missing
+
 python3 -m venv venv
 
 # Activate and install
+
 source venv/bin/activate
 pip install --upgrade pip
 pip install mcp
 
 # Verify
+
 python3 -c "import mcp; print('✅ MCP installed')"
 ```
 
@@ -52,6 +55,7 @@ bash mcp-servers/project-management-automation/run_server.sh --help
 **Cause:** `run_server.sh` not found or not executable
 
 **Fix:**
+
 ```bash
 cd ~/ib_box_spread_full_universal
 git pull  # Ensure latest changes
@@ -63,6 +67,7 @@ chmod +x mcp-servers/project-management-automation/run_server.sh
 **Cause:** `venv/` directory missing
 
 **Fix:**
+
 ```bash
 cd ~/ib_box_spread_full_universal/mcp-servers/project-management-automation
 python3 -m venv venv
@@ -75,6 +80,7 @@ pip install mcp
 **Cause:** MCP package not in venv
 
 **Fix:**
+
 ```bash
 cd ~/ib_box_spread_full_universal/mcp-servers/project-management-automation
 source venv/bin/activate
@@ -86,6 +92,7 @@ pip install mcp
 **Cause:** Server structure changed or dependencies missing
 
 **Fix:**
+
 ```bash
 cd ~/ib_box_spread_full_universal
 git pull  # Get latest server.py
@@ -110,6 +117,7 @@ pip install mcp
 Add to Ansible setup or initial agent setup:
 
 ```bash
+
 # In ansible/roles/devtools/tasks/main.yml or setup script
 - name: Setup MCP server virtual environment
   command: bash setup.sh
@@ -121,6 +129,7 @@ Add to Ansible setup or initial agent setup:
 ---
 
 **See Also:**
+
 - `mcp-servers/project-management-automation/setup.sh` - Setup script
 - `mcp-servers/project-management-automation/run_server.sh` - Server wrapper
 - `.cursor/mcp.json` - MCP configuration

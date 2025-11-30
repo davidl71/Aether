@@ -9,6 +9,7 @@
 ## Overview
 
 Git LFS (Large File Storage) is recommended for files that are:
+
 - **Large** (>50MB typically, but can be smaller for binaries)
 - **Binary** (not diff-friendly)
 - **Frequently changing** (causes repository bloat)
@@ -34,15 +35,18 @@ Git LFS (Large File Storage) is recommended for files that are:
 #### Library Files (.dylib, .so, .a, .lib)
 
 **Common Locations**:
+
 - `native/third_party/` - Third-party libraries
 - `build/` - Build artifacts (should be in .gitignore)
 - System libraries
 
 **Recommendation**:
+
 - ✅ **Third-party libraries**: Use Git LFS if >1MB
 - ❌ **Build artifacts**: Should be in `.gitignore`, not Git LFS
 
 **Example Patterns**:
+
 ```
 *.dylib
 *.so
@@ -58,11 +62,13 @@ lib*.a
 **Status**: Checking for archive files...
 
 **Recommendation**:
+
 - ✅ **Vendor archives**: Use Git LFS if tracked
 - ❌ **Build artifacts**: Should be in `.gitignore`
 - ✅ **Documentation archives**: Use Git LFS if >10MB
 
 **Example Patterns**:
+
 ```
 *.zip
 *.tar.gz
@@ -79,11 +85,13 @@ lib*.a
 **Status**: Checking for database files...
 
 **Recommendation**:
+
 - ✅ **Test databases**: Use Git LFS if >1MB
 - ❌ **Production databases**: Should NOT be in Git
 - ✅ **Sample databases**: Use Git LFS if tracked
 
 **Example Patterns**:
+
 ```
 *.db
 *.sqlite
@@ -98,11 +106,13 @@ lib*.a
 **Status**: Checking for large image files...
 
 **Recommendation**:
+
 - ✅ **Large images** (>1MB): Use Git LFS
 - ✅ **Screenshots/documentation images**: Use Git LFS if >500KB
 - ❌ **Small icons/logos**: Can stay in Git (<100KB)
 
 **Example Patterns**:
+
 ```
 *.jpg
 *.jpeg
@@ -120,11 +130,13 @@ lib*.a
 **Status**: Checking for document files...
 
 **Recommendation**:
+
 - ✅ **PDFs**: Use Git LFS if >1MB
 - ✅ **Documentation PDFs**: Use Git LFS if tracked
 - ✅ **E-books**: Use Git LFS if tracked
 
 **Example Patterns**:
+
 ```
 *.pdf
 *.epub
@@ -199,10 +211,13 @@ lib*.a
 ### Step 1: Install Git LFS
 
 ```bash
+
 # macOS
+
 brew install git-lfs
 
 # Linux
+
 sudo apt-get install git-lfs  # Debian/Ubuntu
 sudo yum install git-lfs       # RHEL/CentOS
 
@@ -221,7 +236,9 @@ git lfs install
 **Recommended `.gitattributes` additions:**
 
 ```gitattributes
+
 # Third-party libraries
+
 native/third_party/**/*.dylib filter=lfs diff=lfs merge=lfs -text
 native/third_party/**/*.so filter=lfs diff=lfs merge=lfs -text
 native/third_party/**/*.a filter=lfs diff=lfs merge=lfs -text
@@ -267,15 +284,19 @@ native/third_party/**/*.lib filter=lfs diff=lfs merge=lfs -text
 **If files are already tracked:**
 
 ```bash
+
 # Find large files
+
 git ls-files | xargs ls -lh | awk '$5 > 10485760 {print $9}'
 
 # Migrate specific files to LFS
+
 git lfs migrate import --include="*.dylib" --everything
 git lfs migrate import --include="*.a" --everything
 git lfs migrate import --include="*.so" --everything
 
 # Or migrate by size
+
 git lfs migrate import --include="*" --above=10MB --everything
 ```
 
@@ -345,13 +366,17 @@ These can stay in Git:
 **Run the following to identify candidates:**
 
 ```bash
+
 # Find large tracked files
+
 git ls-files | xargs -I {} sh -c 'size=$(stat -f%z "{}" 2>/dev/null || echo 0); if [ $size -gt 10485760 ]; then echo "$(numfmt --to=iec-i --suffix=B $size) {}"; fi' | sort -rn
 
 # Find binary files
+
 git ls-files | file -f - | grep -i "binary\|executable\|archive" | cut -d: -f1
 
 # Find specific patterns
+
 git ls-files | grep -E "\.(dylib|so|a|lib|zip|tar|gz|db|sqlite|pdf|jpg|jpeg|png|gif)$"
 ```
 
@@ -391,7 +416,7 @@ git ls-files | grep -E "\.(dylib|so|a|lib|zip|tar|gz|db|sqlite|pdf|jpg|jpeg|png|
 
 ## Git LFS Best Practices
 
-### Do Use Git LFS For:
+### Do Use Git LFS For
 
 - ✅ Large binary files (>10MB)
 - ✅ Third-party libraries
@@ -400,7 +425,7 @@ git ls-files | grep -E "\.(dylib|so|a|lib|zip|tar|gz|db|sqlite|pdf|jpg|jpeg|png|
 - ✅ Test databases
 - ✅ Vendor archives
 
-### Don't Use Git LFS For:
+### Don't Use Git LFS For
 
 - ❌ Source code (text files)
 - ❌ Small files (<1MB typically)
@@ -421,7 +446,7 @@ git ls-files | grep -E "\.(dylib|so|a|lib|zip|tar|gz|db|sqlite|pdf|jpg|jpeg|png|
 
 - [Git LFS Documentation](https://git-lfs.github.com/)
 - [Git LFS Migration Guide](https://github.com/git-lfs/git-lfs/wiki/Tutorial#migrating-existing-repository-data-to-git-lfs)
-- [.gitignore Best Practices](.gitignore)
+- .gitignore Best Practices
 
 ---
 

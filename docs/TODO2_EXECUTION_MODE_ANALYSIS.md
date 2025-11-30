@@ -9,11 +9,13 @@
 ## Executive Summary
 
 **Task Distribution:**
+
 - **Interactive Tasks:** ~255 tasks (require user input/approval/clarification)
 - **Background Tasks:** ~40 tasks (can run quietly in background agents)
 - **Ambiguous Tasks:** ~25 tasks (need manual review)
 
 **Key Findings:**
+
 1. Most tasks (80%) require some form of interaction or decision-making
 2. Only ~13% of tasks can run completely autonomously in background
 3. All MCP extension tasks (MCP-EXT-*) are background-capable ✅
@@ -27,6 +29,7 @@
 ### Characteristics
 
 **Interactive tasks require:**
+
 - User decisions or choices
 - Human approval (Review status)
 - Clarification of requirements
@@ -41,11 +44,13 @@
 **Count:** ~5 tasks
 
 **Characteristics:**
+
 - Status is "Review"
 - Must wait for human approval before completion
 - Cannot be auto-completed
 
 **Examples:**
+
 - Tasks awaiting final approval
 - Tasks with pending feedback
 
@@ -58,11 +63,13 @@
 **Count:** ~50+ tasks
 
 **Characteristics:**
+
 - Long description contains "clarification required"
 - Ambiguous requirements
 - Need user input to proceed
 
 **Examples:**
+
 - Design tasks with unclear scope
 - Implementation tasks needing user preferences
 - Tasks with multiple valid approaches
@@ -76,11 +83,13 @@
 **Count:** ~30+ tasks
 
 **Characteristics:**
+
 - Task name contains "Design"
 - Related to frameworks, systems, strategies
 - Require architectural decisions
 
 **Examples:**
+
 - "Design investment strategy framework"
 - "Design position import system"
 - "Design configuration system"
@@ -94,11 +103,13 @@
 **Count:** ~20+ tasks
 
 **Characteristics:**
+
 - Task name contains "strategy", "plan", "workflow"
 - Long description mentions "recommend", "suggest", "propose"
 - Require planning input
 
 **Examples:**
+
 - "Generate prioritized action plan"
 - "Create research strategy"
 - "Design workflow"
@@ -112,11 +123,13 @@
 **Count:** ~10+ tasks
 
 **Characteristics:**
+
 - Long description explicitly mentions "user input" or "user interaction"
 - Require manual setup or configuration
 - Need human decisions
 
 **Examples:**
+
 - Tasks requiring API key configuration
 - Tasks needing user preferences
 - Manual setup tasks
@@ -130,6 +143,7 @@
 ### Characteristics
 
 **Background tasks can:**
+
 - Run autonomously without user input
 - Execute in background agents
 - Complete without human interaction
@@ -142,12 +156,14 @@
 **Count:** 10 tasks (MCP-EXT-1 through MCP-EXT-10)
 
 **Characteristics:**
+
 - All have execution context metadata ✅
 - Clear requirements
 - Autonomous implementation
 - Agent mode capable
 
 **Examples:**
+
 - MCP-EXT-1: Validate CI/CD workflow tool
 - MCP-EXT-2: Validate agent coordination tool
 - MCP-EXT-3: Collect agent environment tool
@@ -161,12 +177,14 @@
 **Count:** ~50+ tasks
 
 **Characteristics:**
+
 - Task name contains "Research"
 - No user decisions required
 - Can execute autonomously
 - Document findings
 
 **Examples:**
+
 - "Research Alpaca API adapter patterns"
 - "Research broker selection patterns"
 - "Research Excel/CSV import libraries"
@@ -182,12 +200,14 @@
 **Count:** ~30+ tasks
 
 **Characteristics:**
+
 - Task name contains "Implement", "Create", "Add", "Update"
 - Clear requirements
 - Autonomous coding work
 - No design decisions needed
 
 **Examples:**
+
 - "Implement Alpaca API adapter"
 - "Create Rust NATS adapter"
 - "Add exception handling"
@@ -203,11 +223,13 @@
 **Count:** ~10+ tasks
 
 **Characteristics:**
+
 - Task name contains "Test", "Testing", "Validate"
 - Automated testing
 - No user interaction needed
 
 **Examples:**
+
 - "Create integration tests"
 - "Validate API contracts"
 - "Test NATS integration"
@@ -221,11 +243,13 @@
 **Count:** ~20+ tasks
 
 **Characteristics:**
+
 - Task name contains "Document", "Documentation"
 - Autonomous writing
 - No user decisions needed
 
 **Examples:**
+
 - "Document API patterns"
 - "Create usage guide"
 - "Update documentation"
@@ -239,11 +263,13 @@
 **Count:** ~10+ tasks
 
 **Characteristics:**
+
 - Task name contains "Config", "Configure", "Setup"
 - Standard configuration
 - No user preferences needed
 
 **Examples:**
+
 - "Configure MCP server"
 - "Setup GitHub Actions runner"
 - "Configure NATS server"
@@ -257,11 +283,13 @@
 **Count:** ~5+ tasks
 
 **Characteristics:**
+
 - Task name contains "Refactor"
 - Code improvements
 - No design decisions needed
 
 **Examples:**
+
 - "Refactor error handling"
 - "Refactor API client"
 
@@ -276,6 +304,7 @@
 **Recommended Mode:** **Ask** or **Plan**
 
 **Why:**
+
 - Ask mode: For tasks needing clarification or user input
 - Plan mode: For design/strategy tasks requiring approval before execution
 
@@ -290,6 +319,7 @@
 **Recommended Mode:** **Agent**
 
 **Why:**
+
 - Full autonomous execution
 - No user interaction needed
 - Can run in background
@@ -307,6 +337,7 @@
 **Count:** ~150+ tasks
 
 **Categories:**
+
 - Design tasks: ~20 tasks
 - Strategy/Planning: ~15 tasks
 - Needs Clarification: ~30 tasks
@@ -322,6 +353,7 @@
 **Count:** ~30+ tasks
 
 **Categories:**
+
 - MCP Extensions: 10 tasks ✅
 - Research: ~15 tasks ✅
 - Implementation: ~5 tasks ✅
@@ -339,6 +371,7 @@
 **Count:** ~100+ tasks
 
 **Action Required:**
+
 1. Clarify requirements
 2. Get user input/decisions
 3. Obtain approval for design/strategy
@@ -353,6 +386,7 @@
 **Count:** ~30+ tasks
 
 **Can Start Immediately:**
+
 - MCP-EXT-1 through MCP-EXT-10 (all ready) ✅
 - Research tasks (T-143, T-144, T-145, etc.) ✅
 - Implementation tasks with clear requirements ✅
@@ -387,12 +421,14 @@
 ### Execution Strategy
 
 **Background Agents Should:**
+
 - Focus on MCP extensions first (clear requirements)
 - Execute research tasks in parallel
 - Implement tasks with clear requirements
 - Test and validate autonomously
 
 **Human/Interactive Should:**
+
 - Review and approve Review status tasks
 - Clarify requirements for ambiguous tasks
 - Make design decisions
@@ -453,6 +489,7 @@
 ## Next Steps
 
 1. **Run Analysis Script:**
+
    ```bash
    python3 scripts/analyze_task_execution_modes.py
    ```

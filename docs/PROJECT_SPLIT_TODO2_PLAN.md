@@ -4,6 +4,7 @@
 **Purpose**: Todo2 tasks for executing project split strategy
 
 **Based on**:
+
 - [PROJECT_SPLIT_TRACTATUS_ANALYSIS.md](PROJECT_SPLIT_TRACTATUS_ANALYSIS.md) - Structural analysis
 - [PROJECT_SPLIT_SEQUENTIAL_WORKFLOW.md](PROJECT_SPLIT_SEQUENTIAL_WORKFLOW.md) - Implementation workflow
 - [PROJECT_SPLIT_STRATEGY.md](PROJECT_SPLIT_STRATEGY.md) - Overall strategy
@@ -13,20 +14,24 @@
 ## Todo2 Tasks Overview
 
 ### Phase 1: Foundation (Steps 1-2)
+
 - T-300: Define public/private boundaries and audit dependencies
 - T-301: Set up dependency management mechanism
 
 ### Phase 2: Quick Wins (Step 3) - Can execute in parallel
+
 - T-302: Extract MCP servers repository
 - T-303: Extract notebooks repository
 - T-304: Extract build tools repository
 - T-310: Extract project housekeeping tools repository
 
 ### Phase 3: Core Libraries (Steps 4-5) - Sequential
+
 - T-305: Extract core C++ engine library
 - T-306: Extract Python package
 
 ### Phase 4: Documentation Extraction (Step 6) - Can execute in parallel
+
 - T-307: Extract trading-api-docs repository
 - T-308: Extract trading-architecture-docs repository
 - T-309: Extract trading-setup-docs repository
@@ -34,9 +39,11 @@
 - T-311: Extract trading-tools-docs repository
 
 ### Phase 5: Reorganization (Step 7)
+
 - T-312: Reorganize private monorepo to use extracted libraries
 
 ### Phase 6: Optional Future Work (Step 8)
+
 - T-313: Evaluate and optionally split private repos further
 
 ---

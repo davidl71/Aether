@@ -1,6 +1,6 @@
 # MCP Trading Server - Implementation Complete
 
-**Date**: 2025-01-27
+**Date**: 2025-11-30
 **Status**: ✅ Complete and Ready for Testing
 
 ---
@@ -197,7 +197,9 @@ With the MCP server configured, AI assistants can use natural language:
 The MCP server exposes tools that can be called programmatically:
 
 ```python
+
 # Example: Place order via MCP
+
 result = mcp_client.call_tool(
     "place_order",
     {
@@ -218,16 +220,20 @@ result = mcp_client.call_tool(
 ### Test MCP Server
 
 ```bash
+
 # Install dependencies
+
 cd mcp/trading_server
 pip install -e .
 
 # Set environment variables
+
 export TRADING_API_KEY=test-key
 export DRY_RUN=true
 export BACKEND_REST_URL=http://localhost:8080
 
 # Run server (for testing)
+
 python -m mcp.trading_server.server
 ```
 
@@ -422,7 +428,7 @@ Network latency is negligible for AI assistant use case:
 - [OpenAlgo GitHub](https://github.com/marketcalls/openalgo)
 - [OpenAlgo MCP Integration](https://github.com/marketcalls/openalgo/tree/main/mcp)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
-- [Trading Bridge Guide](./mcp/trading_server/CYTHON_BINDINGS_GUIDE.md)
+- [Trading Bridge Guide](../mcp/trading_server/CYTHON_BINDINGS_GUIDE.md)
 - [OpenAlgo Integration Patterns](research/integration/OPENALGO_INTEGRATION_PATTERNS.md)
 
 ---
@@ -444,4 +450,4 @@ The MCP trading server is fully implemented and ready for testing. All core func
 
 ---
 
-**Last Updated**: 2025-01-27
+**Last Updated**: 2025-11-30

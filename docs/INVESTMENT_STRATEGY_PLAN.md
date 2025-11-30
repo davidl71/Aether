@@ -68,6 +68,7 @@ The strategy is designed to work alongside the existing IBKR box spread arbitrag
 - **Positive Skew Assets:** 60% of equity allocation
   - SPDR S&P 500 ETF (SPY) - broad market exposure
   - Growth-oriented ETFs for asymmetric upside potential
+
 - **Neutral/Negative Skew Assets:** 40% of equity allocation
   - Value ETFs, dividend-focused strategies
 
@@ -92,6 +93,7 @@ The strategy is designed to work alongside the existing IBKR box spread arbitrag
   - Money market funds
   - Ultra-short T-bills (0-1 month)
   - **ETF:** SPDR Bloomberg 1-3 Month T-Bill ETF (BIL)
+
 - **Characteristics:**
   - Maximum liquidity (same-day access)
   - Minimal yield (near zero)
@@ -104,6 +106,7 @@ The strategy is designed to work alongside the existing IBKR box spread arbitrag
   - **Primary:** Short box spreads (30-90 day DTE) targeting T-bill + 0.5-1.0% yield
   - **Alternative:** Short-term bond ETFs (SHY) if box spreads unavailable
   - T-bills (1-3 month maturity ladder)
+
 - **Characteristics:**
   - Liquidity: 30-90 days
   - Yield: T-bill rate + 0.5-1.5% (via box spreads)
@@ -116,6 +119,7 @@ The strategy is designed to work alongside the existing IBKR box spread arbitrag
   - Short-term bond ETFs (SHY, IEF)
   - T-bill ladders (3-12 month maturities)
   - Longer-dated box spreads (90-180 day DTE) if rates justify
+
 - **Characteristics:**
   - Liquidity: 3-12 months
   - Yield: Intermediate-term rates
@@ -143,10 +147,13 @@ The strategy is designed to work alongside the existing IBKR box spread arbitrag
 - **Growth ETFs:** 20% of equity allocation
   - Positive skew exposure
   - Growth-oriented for asymmetric upside
+
 - **International ETFs:** 20% of equity allocation
   - Geographic diversification
+
 - **Sector ETFs:** 15% of equity allocation
   - Targeted exposure based on market conditions
+
 - **Alternative ETFs:** 15% of equity allocation
   - Commodities, REITs for diversification
 
@@ -214,6 +221,7 @@ Target Short Box Rate = max(
 - **T-bills (direct):** 10-15% of portfolio
   - Ladder structure matching box spread opportunities
   - Direct ownership for precise maturity matching
+
 - **T-bill ETFs (BIL):** 5-10% of portfolio
   - For ultra-short liquidity needs
   - Automatic rolling for convenience
@@ -325,6 +333,7 @@ Box Spreads:                  5%  (Deployed from Tier 2 cash)
   - Emergency reserves (2-3 months expenses)
   - Immediate trading opportunities
   - Margin requirements buffer
+
 - Tier 2 cash available for box spreads with 30-90 day DTE
 - Tier 3 cash can fund longer-dated box spreads if rates justify
 
@@ -347,6 +356,7 @@ For each box spread opportunity:
 - **Minimum Spread:** Box spread must beat T-bill + 0.5% (after commissions)
 - **Tax-Adjusted:** Box spread gains often taxed as capital gains (lower rate)
   - Adjust threshold for tax efficiency (may accept smaller spread)
+
 - **Liquidity Premium:** Willing to accept 0.25% lower yield for higher liquidity
 
 ---

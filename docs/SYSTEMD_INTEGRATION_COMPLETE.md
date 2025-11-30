@@ -19,6 +19,7 @@ Successfully integrated systemd/systemctl support for all PWA services on Linux,
 **Location:** `web/scripts/systemd/`
 
 Created 10 systemd user service files:
+
 - `pwa-web.service` - Web frontend (Vite dev server)
 - `pwa-alpaca.service` - Alpaca trading service
 - `pwa-tradestation.service` - TradeStation service
@@ -31,6 +32,7 @@ Created 10 systemd user service files:
 - `pwa-rust-backend.service` - Rust backend (depends on NATS)
 
 **Features:**
+
 - User-level systemd services (no sudo required)
 - Proper working directories
 - Environment variables (HOME, PATH)
@@ -43,6 +45,7 @@ Created 10 systemd user service files:
 **File:** `web/scripts/install-systemd-services.sh`
 
 **Features:**
+
 - Detects Linux OS and systemctl availability
 - Replaces %h and %i placeholders with actual values
 - Installs to `~/.config/systemd/user/`
@@ -56,6 +59,7 @@ Created 10 systemd user service files:
 **File:** `web/scripts/launch-all-pwa-services.sh`
 
 **Features:**
+
 - Automatic OS detection (Linux, macOS, other)
 - Service manager detection (systemctl, brew, manual)
 - Service status checking via systemctl
@@ -65,6 +69,7 @@ Created 10 systemd user service files:
 - Helpful messages when services not installed
 
 **Functions Added:**
+
 - `detect_service_manager()` - Detects available service manager
 - `check_systemctl_service()` - Checks service status via systemctl
 - `start_systemctl_service()` - Starts service via systemctl
@@ -75,6 +80,7 @@ Created 10 systemd user service files:
 **File:** `web/scripts/systemd/README.md`
 
 **Contents:**
+
 - Installation instructions
 - Usage examples (systemctl commands)
 - Service management commands
@@ -90,48 +96,63 @@ Created 10 systemd user service files:
 ### Install Services (Linux)
 
 ```bash
+
 # Install service files
+
 ./web/scripts/install-systemd-services.sh
 
 # Install and enable (start on login)
+
 ./web/scripts/install-systemd-services.sh --enable
 
 # Install, enable, and start all services
+
 ./web/scripts/install-systemd-services.sh --enable --start
 ```
 
 ### Launch All Services (Cross-Platform)
 
 ```bash
+
 # Automatically detects systemctl/brew/manual
+
 ./web/scripts/launch-all-pwa-services.sh
 
 # Check status
+
 ./web/scripts/launch-all-pwa-services.sh status
 
 # Stop all services
+
 ./web/scripts/launch-all-pwa-services.sh stop
 
 # Restart all services
+
 ./web/scripts/launch-all-pwa-services.sh restart
 ```
 
 ### Manual systemctl Commands (Linux)
 
 ```bash
+
 # Start a service
+
 systemctl --user start pwa-web.service
 
 # Stop a service
+
 systemctl --user stop pwa-web.service
 
 # Check status
+
 systemctl --user status pwa-web.service
 
 # View logs
+
 journalctl --user -u pwa-web.service -f
 
 # Enable service (start on login)
+
 systemctl --user enable pwa-web.service
 ```
 
@@ -158,13 +179,15 @@ The launch script automatically detects the platform and uses the appropriate se
 
 ## Files Created/Modified
 
-### Created:
+### Created
+
 - `web/scripts/systemd/pwa-*.service` (10 service files)
 - `web/scripts/systemd/README.md`
 - `web/scripts/install-systemd-services.sh`
 - `docs/SYSTEMD_INTEGRATION_COMPLETE.md` (this file)
 
-### Modified:
+### Modified
+
 - `web/scripts/launch-all-pwa-services.sh` (added systemctl integration)
 
 ---

@@ -97,10 +97,13 @@ sudo ./b2 install
 Add to `native/CMakeLists.txt` in the dependencies section:
 
 ```cmake
+
 # Find Boost (required for QuantLib)
+
 find_package(Boost REQUIRED COMPONENTS date_time filesystem system)
 
 # QuantLib via FetchContent
+
 set(QUANTLIB_REPOSITORY "https://github.com/lballabio/quantlib.git")
 fetchcontent_declare(
     QuantLib
@@ -142,6 +145,7 @@ target_link_libraries(ib_box_spread
 ### 1. Option Pricing (Black-Scholes)
 
 ```cpp
+
 #include <ql/quantlib.hpp>
 #include <ql/instruments/vanillaoption.hpp>
 #include <ql/pricingengines/vanilla/analyticeuropeanengine.hpp>
@@ -224,6 +228,7 @@ std::cout << "Rho: " << rho << std::endl;
 ### 3. Implied Volatility
 
 ```cpp
+
 #include <ql/instruments/vanillaoption.hpp>
 #include <ql/pricingengines/vanilla/analyticeuropeanengine.hpp>
 #include <ql/volatility/blackformula.hpp>
@@ -252,6 +257,7 @@ try {
 ### 4. Yield Curve Construction
 
 ```cpp
+
 #include <ql/termstructures/yield/flatforward.hpp>
 #include <ql/termstructures/yield/interpolatedzerocurve.hpp>
 

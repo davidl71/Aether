@@ -146,6 +146,7 @@ sudo apt-get install python3 python3-pip
 
 ```bash
 which clang++
+
 # Output: /usr/bin/clang++ or /opt/homebrew/bin/clang++
 ```
 
@@ -153,6 +154,7 @@ which clang++
 
 ```bash
 where cl
+
 # Or check: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/
 ```
 
@@ -160,6 +162,7 @@ where cl
 
 ```bash
 which g++
+
 # Output: /usr/bin/g++
 ```
 
@@ -170,20 +173,26 @@ which g++
 ### macOS
 
 ```bash
+
 # Homebrew (Apple Silicon)
+
 ls /opt/homebrew/include
 
 # Homebrew (Intel)
+
 ls /usr/local/include
 
 # System
+
 ls /usr/include
 ```
 
 ### Windows
 
 ```bash
+
 # Visual Studio
+
 dir "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\*\include"
 ```
 

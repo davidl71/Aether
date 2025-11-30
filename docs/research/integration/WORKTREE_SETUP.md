@@ -54,10 +54,13 @@ Specify both worktree name and branch:
 ### Full Example
 
 ```bash
+
 # From the repository root
+
 cd /path/to/ib_box_spread_full_universal
 
 # Create worktree for a new feature
+
 ./scripts/setup_worktree.sh feature-tws-integration main
 
 # The script will:
@@ -118,10 +121,13 @@ The script provides colored output showing:
 If the worktree directory already exists:
 
 ```bash
+
 # Remove the existing worktree
+
 git worktree remove ../worktree-name
 
 # Or manually remove and try again
+
 rm -rf ../worktree-name
 ./scripts/setup_worktree.sh worktree-name
 ```
@@ -131,7 +137,9 @@ rm -rf ../worktree-name
 If prerequisites are missing, the script will list them:
 
 ```bash
+
 # Install missing dependencies
+
 brew install cmake protobuf abseil
 ```
 
@@ -140,7 +148,9 @@ brew install cmake protobuf abseil
 Ensure TWS API is extracted to the correct location:
 
 ```bash
+
 # Check if TWS API exists
+
 ls -la native/third_party/tws-api/IBJts/source/cppclient/client/
 ```
 
@@ -149,7 +159,9 @@ ls -la native/third_party/tws-api/IBJts/source/cppclient/client/
 Ensure Intel Decimal library is extracted:
 
 ```bash
+
 # Check if Intel Decimal library exists
+
 ls -la native/third_party/IntelRDFPMathLib20U2/LIBRARY/src/
 ```
 
@@ -188,10 +200,13 @@ Once the script completes, you can:
 To remove a worktree when you're done:
 
 ```bash
+
 # From the main repository
+
 git worktree remove ../worktree-name
 
 # Or manually
+
 rm -rf ../worktree-name
 git worktree prune
 ```
@@ -208,18 +223,23 @@ The script accepts two optional arguments:
 The script can be used in CI/CD pipelines:
 
 ```bash
+
 #!/bin/bash
+
 set -euo pipefail
 
 # Create worktree for CI build
+
 ./scripts/setup_worktree.sh ci-build main
 
 # Run tests
+
 cd ../ci-build
 cd build
 ctest --output-on-failure
 
 # Cleanup
+
 cd ../..
 git worktree remove ../ci-build
 ```

@@ -1,6 +1,6 @@
 # GitHub Actions Workflows
 
-**Date**: 2025-01-27
+**Date**: 2025-11-30
 **Status**: Active CI/CD Pipeline
 
 ---
@@ -18,15 +18,18 @@ Exarp uses GitHub Actions for continuous integration, testing, linting, security
 **Purpose**: Run test suite across multiple Python versions and operating systems
 
 **Triggers**:
+
 - Push to `main` or `develop` branches
 - Pull requests to `main` or `develop`
 - Manual dispatch
 
 **Matrix Strategy**:
+
 - **OS**: Ubuntu Latest, macOS Latest
 - **Python**: 3.9, 3.10, 3.11, 3.12
 
 **Steps**:
+
 1. Checkout repository
 2. Set up Python (matrix version)
 3. Install dependencies (`pip install -e ".[dev]"`)
@@ -34,7 +37,9 @@ Exarp uses GitHub Actions for continuous integration, testing, linting, security
 5. Upload coverage (Ubuntu + Python 3.11 only)
 
 **Usage**:
+
 ```bash
+
 # Tests run automatically on push/PR
 # Manual trigger: GitHub Actions → Test → Run workflow
 ```
@@ -46,11 +51,13 @@ Exarp uses GitHub Actions for continuous integration, testing, linting, security
 **Purpose**: Check code style and quality
 
 **Triggers**:
+
 - Push to `main` or `develop` branches
 - Pull requests to `main` or `develop`
 - Manual dispatch
 
 **Steps**:
+
 1. Checkout repository
 2. Set up Python 3.11
 3. Install dependencies
@@ -59,12 +66,15 @@ Exarp uses GitHub Actions for continuous integration, testing, linting, security
 6. Run MyPy (type checking)
 
 **Usage**:
+
 ```bash
+
 # Linting runs automatically on push/PR
 # Manual trigger: GitHub Actions → Lint → Run workflow
 ```
 
 **Tools**:
+
 - **Black**: Code formatting check
 - **Ruff**: Fast Python linter
 - **MyPy**: Static type checking
@@ -76,10 +86,12 @@ Exarp uses GitHub Actions for continuous integration, testing, linting, security
 **Purpose**: Auto-format code and create PR with formatted changes
 
 **Triggers**:
+
 - Manual dispatch (recommended)
 - Pull requests (optional)
 
 **Steps**:
+
 1. Checkout repository
 2. Set up Python 3.11
 3. Install dependencies
@@ -88,7 +100,9 @@ Exarp uses GitHub Actions for continuous integration, testing, linting, security
 6. Create Pull Request (if manual dispatch)
 
 **Usage**:
+
 ```bash
+
 # Manual trigger: GitHub Actions → Format → Run workflow
 # Creates PR with auto-formatted code
 ```
@@ -100,11 +114,13 @@ Exarp uses GitHub Actions for continuous integration, testing, linting, security
 **Purpose**: Build Python package and verify build artifacts
 
 **Triggers**:
+
 - Push to `main` or `develop` branches
 - Pull requests to `main` or `develop`
 - Manual dispatch
 
 **Steps**:
+
 1. Checkout repository
 2. Set up Python 3.11
 3. Install build dependencies (`build`, `twine`)
@@ -113,12 +129,15 @@ Exarp uses GitHub Actions for continuous integration, testing, linting, security
 6. Upload build artifacts
 
 **Usage**:
+
 ```bash
+
 # Build runs automatically on push/PR
 # Manual trigger: GitHub Actions → Build → Run workflow
 ```
 
 **Artifacts**:
+
 - `dist/` directory with built packages
 - Retained for 7 days
 
@@ -129,10 +148,12 @@ Exarp uses GitHub Actions for continuous integration, testing, linting, security
 **Purpose**: Publish package to PyPI using trusted publishing (OIDC)
 
 **Triggers**:
+
 - Release published (GitHub release)
 - Manual dispatch (with version input)
 
 **Steps**:
+
 1. Checkout repository
 2. Set up Python 3.9
 3. Install build dependencies
@@ -142,10 +163,13 @@ Exarp uses GitHub Actions for continuous integration, testing, linting, security
 7. Publish to PyPI (using OIDC trusted publishing)
 
 **Environment**:
+
 - `pypi` - PyPI trusted publishing environment
 
 **Usage**:
+
 ```bash
+
 # Automatic: Create GitHub release → triggers publish
 # Manual: GitHub Actions → Publish to PyPI → Run workflow (with version)
 ```
@@ -161,12 +185,14 @@ Exarp uses GitHub Actions for continuous integration, testing, linting, security
 **Purpose**: Scan for security vulnerabilities in dependencies and code
 
 **Triggers**:
+
 - Push to `main` or `develop` branches
 - Pull requests to `main` or `develop`
 - Weekly schedule (Mondays at midnight UTC)
 - Manual dispatch
 
 **Steps**:
+
 1. Checkout repository
 2. Set up Python 3.11
 3. Install dependencies
@@ -175,16 +201,20 @@ Exarp uses GitHub Actions for continuous integration, testing, linting, security
 6. Upload security reports
 
 **Usage**:
+
 ```bash
+
 # Runs automatically on push/PR and weekly
 # Manual trigger: GitHub Actions → Security Scan → Run workflow
 ```
 
 **Tools**:
+
 - **Safety**: Dependency vulnerability scanning
 - **Bandit**: Security linting for Python code
 
 **Artifacts**:
+
 - `bandit-report.json` - Security linting report
 - Retained for 30 days
 
@@ -195,11 +225,13 @@ Exarp uses GitHub Actions for continuous integration, testing, linting, security
 **Purpose**: Verify FastMCP configuration and server entrypoint
 
 **Triggers**:
+
 - Push to `main` or `develop` branches
 - Pull requests to `main` or `develop`
 - Manual dispatch
 
 **Steps**:
+
 1. Checkout repository
 2. Set up Python 3.11
 3. Install FastMCP CLI
@@ -207,7 +239,9 @@ Exarp uses GitHub Actions for continuous integration, testing, linting, security
 5. Verify server entrypoint
 
 **Usage**:
+
 ```bash
+
 # Runs automatically on push/PR
 # Manual trigger: GitHub Actions → FastMCP Inspect → Run workflow
 ```
@@ -269,6 +303,7 @@ strategy:
 Use pip caching to speed up workflow runs:
 
 ```yaml
+
 - uses: actions/setup-python@v5
   with:
     cache: 'pip'
@@ -277,6 +312,7 @@ Use pip caching to speed up workflow runs:
 ### 3. Artifact Retention
 
 Set appropriate retention periods for artifacts:
+
 - Build artifacts: 7 days
 - Security reports: 30 days
 
@@ -285,6 +321,7 @@ Set appropriate retention periods for artifacts:
 Use conditional steps to avoid unnecessary work:
 
 ```yaml
+
 - name: Upload coverage
   if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
 ```
@@ -294,6 +331,7 @@ Use conditional steps to avoid unnecessary work:
 Allow workflows to continue on non-critical failures:
 
 ```yaml
+
 - name: Run MyPy
   run: |
     mypy exarp_project_management/ tools/ --ignore-missing-imports || true
@@ -313,6 +351,7 @@ Allow workflows to continue on non-critical failures:
 ### Manual Triggers
 
 All workflows support `workflow_dispatch` for manual execution:
+
 - Test - Test specific scenarios
 - Lint - Check code quality
 - Format - Auto-format code
@@ -397,9 +436,8 @@ jobs:
 ## Related Documentation
 
 - [PyPI Publishing Setup](PYPI_PUBLISHING_SETUP.md) - PyPI trusted publishing configuration
-- [FastMCP Configuration](EXARP_FASTMCP_CONFIGURATION.md) - FastMCP setup
 - [Contributing Guide](../CONTRIBUTING.md) - Development guidelines
 
 ---
 
-**Last Updated**: 2025-01-27
+**Last Updated**: 2025-11-30

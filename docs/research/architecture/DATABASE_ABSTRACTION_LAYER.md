@@ -83,12 +83,14 @@ use std::sync::Arc;
 use anyhow::{Result, Context};
 
 #[derive(Clone, Debug)]
+
 pub enum DatabaseBackend {
     Sqlite,
     Postgres,
 }
 
 #[derive(Clone)]
+
 pub enum DBPool {
     Sqlite(Pool<Sqlite>),
     Postgres(Pool<Postgres>),
@@ -556,16 +558,20 @@ pub async fn run_migrations_shared(pool: &DBPool) -> Result<()> {
 Add database configuration to backend config:
 
 ```toml
+
 # agents/backend/config/default.toml
 
 [database]
+
 # Use SQLite for development (local file)
+
 url = "sqlite://data/sqlite/backend.db"
 
 # Or use PostgreSQL for production
 # url = "postgresql://user:password@localhost:5432/ib_box_spread"
 
 # Connection pool settings
+
 max_connections = 10
 min_connections = 2
 acquire_timeout_seconds = 30
@@ -574,25 +580,32 @@ idle_timeout_seconds = 600
 # Enable compile-time query checking
 # Set to "sqlite" or "postgres" to enable compile-time checking
 # Leave unset or "runtime" for runtime checking (works with both)
+
 query_check_mode = "runtime"  # or "sqlite", "postgres"
 ```
 
 **Environment Variable Override:**
 
 ```bash
+
 # Development (SQLite)
+
 export DATABASE_URL="sqlite://data/sqlite/backend.db"
 
 # Production (PostgreSQL local)
+
 export DATABASE_URL="postgresql://user:password@localhost:5432/ib_box_spread"
 
 # Production (AWS RDS PostgreSQL)
+
 export DATABASE_URL="postgresql://user:password@your-db.region.rds.amazonaws.com:5432/ib_box_spread"
 
 # Production (Google Cloud SQL)
+
 export DATABASE_URL="postgresql://user:password@your-instance-ip:5432/ib_box_spread"
 
 # Production (Vultr Managed PostgreSQL)
+
 export DATABASE_URL="postgresql://user:password@your-db.vultr.com:5432/ib_box_spread"
 ```
 
@@ -606,6 +619,7 @@ Update backend service to use database pool:
 use database::{DBPool, PositionRepository, OrderRepository, /* ... */};
 
 #[derive(Debug, Deserialize, Clone)]
+
 struct BackendConfig {
     #[serde(default = "default_rest_addr")]
     rest_addr: SocketAddr,
@@ -618,6 +632,7 @@ struct BackendConfig {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+
 struct DatabaseSettings {
     #[serde(default = "default_database_url")]
     url: String,
@@ -636,6 +651,7 @@ fn default_max_connections() -> u32 {
 }
 
 #[tokio::main]
+
 async fn main() -> anyhow::Result<()> {
     init_tracing();
     let config = load_config().context("failed to load backend config")?;
@@ -802,7 +818,9 @@ When moving from SQLite to PostgreSQL:
 1. **Export from SQLite:**
 
 ```bash
+
 # Using sqlite3 CLI
+
 sqlite3 data/sqlite/backend.db .dump > dump.sql
 ```
 
@@ -843,7 +861,9 @@ async fn migrate_data(
 ### Unit Tests
 
 ```rust
+
 #[cfg(test)]
+
 mod tests {
     use super::*;
 
@@ -950,7 +970,9 @@ Add to `agents/backend/Cargo.toml`:
 
 ```toml
 [workspace.dependencies]
+
 # ... existing dependencies ...
+
 sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "postgres", "chrono", "uuid"] }
 
 # For compile-time query checking (optional but recommended)

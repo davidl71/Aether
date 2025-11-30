@@ -13,17 +13,20 @@ Mathematical finance employs a variety of mathematical tools to model and analyz
 **Purpose:** Modeling random processes in financial markets, particularly in derivative pricing.
 
 **Key Concepts:**
+
 - **Brownian Motion (Wiener Process):** Models random price movements
 - **Itô's Lemma:** Fundamental tool for stochastic differential equations
 - **Stochastic Differential Equations (SDEs):** Describe asset price evolution
 
 **Application to Box Spreads:**
 While box spreads are theoretically risk-free (delta-neutral, gamma-neutral, vega-neutral), stochastic calculus underlies:
+
 - The pricing models for individual options (Black-Scholes framework)
 - Understanding why box spreads converge to their theoretical value
 - Modeling the time decay component (theta) of individual legs
 
 **References:**
+
 - Used implicitly in option pricing models that determine individual leg prices
 - Box spreads eliminate stochastic risk through delta-neutral construction
 
@@ -32,16 +35,19 @@ While box spreads are theoretically risk-free (delta-neutral, gamma-neutral, veg
 **Purpose:** Describe the evolution of financial variables over time.
 
 **Key Equation:** Black-Scholes PDE
+
 ```
 ∂V/∂t + (1/2)σ²S²(∂²V/∂S²) + rS(∂V/∂S) - rV = 0
 ```
 
 **Application to Box Spreads:**
+
 - Individual options are priced using Black-Scholes or similar models
 - Box spreads eliminate PDE complexity through synthetic position construction
 - The theoretical value of a box spread is simply the strike width difference (no PDE solving needed)
 
 **In This Codebase:**
+
 ```278:278:native/src/box_spread_strategy.cpp
         spread.buy_implied_rate = ((spread.buy_net_debit - strike_width) / strike_width) * (365.0 / days_to_expiry) * 100.0;
 ```
@@ -53,17 +59,20 @@ The implied rate calculation uses simple arithmetic, not PDE solving, because bo
 **Purpose:** Approximate solutions to complex financial models that cannot be solved analytically.
 
 **Key Techniques:**
+
 - **Finite Difference Methods:** Solve PDEs numerically
 - **Monte Carlo Simulations:** Price complex derivatives through random sampling
 - **Binomial/Trinomial Trees:** Discrete-time option pricing models
 
 **Application to Box Spreads:**
+
 - **Not Required:** Box spreads have analytical solutions (strike width difference)
 - **Used Indirectly:** Individual option prices may be calculated using numerical methods
 - **Monte Carlo:** Could be used for stress testing or scenario analysis, but not for pricing
 
 **In This Codebase:**
 Box spread calculations use direct arithmetic rather than numerical methods:
+
 ```257:260:native/src/box_spread_strategy.cpp
     spread.net_debit = BoxSpreadCalculator::calculate_net_debit(spread);
     spread.theoretical_value = BoxSpreadCalculator::calculate_theoretical_value(spread);
@@ -76,16 +85,19 @@ Box spread calculations use direct arithmetic rather than numerical methods:
 **Purpose:** Determine optimal asset allocation strategies and portfolio optimization.
 
 **Key Methods:**
+
 - **Linear Programming:** Portfolio optimization with constraints
 - **Quadratic Programming:** Mean-variance optimization
 - **Dynamic Programming:** Multi-period optimization problems
 
 **Application to Box Spreads:**
+
 - **Position Sizing:** Kelly Criterion or fixed fractional sizing
 - **Portfolio Allocation:** Determining how much capital to allocate to box spreads vs other strategies
 - **Yield Curve Optimization:** Finding the best expiration dates and strike widths
 
 **In This Codebase:**
+
 ```394:404:native/src/risk_calculator.cpp
     double kelly_fraction = (b * p - q) / b;
 
@@ -107,18 +119,21 @@ The Kelly Criterion is used for optimal position sizing based on expected return
 **Purpose:** Analyze financial data, estimate model parameters, and assess risk.
 
 **Key Techniques:**
+
 - **Time Series Analysis:** Modeling price movements over time
 - **Regression Analysis:** Estimating relationships between variables
 - **Value at Risk (VaR):** Quantifying potential losses
 - **Correlation Analysis:** Understanding relationships between assets
 
 **Application to Box Spreads:**
+
 - **Historical Analysis:** Analyzing past box spread opportunities
 - **Risk Metrics:** VaR calculations for portfolio risk assessment
 - **Yield Curve Analysis:** Statistical modeling of implied rates across expirations
 - **Put-Call Parity Validation:** Statistical tests for market efficiency
 
 **In This Codebase:**
+
 ```443:456:native/src/risk_calculator.cpp
 double RiskCalculator::calculate_var_historical(
     const std::vector<double>& returns,
@@ -143,11 +158,13 @@ Historical VaR calculation for risk assessment.
 ### Put-Call Parity
 
 **Fundamental Relationship:**
+
 ```
 C - P = S - K * e^(-rT)
 ```
 
 Where:
+
 - C = Call price
 - P = Put price
 - S = Underlying price
@@ -157,12 +174,14 @@ Where:
 
 **Box Spread Application:**
 A box spread is constructed from:
+
 - Long call at K1, Short call at K2
 - Long put at K2, Short put at K1
 
 The box spread value equals (K2 - K1) regardless of underlying price, creating a risk-free position.
 
 **In This Codebase:**
+
 ```300:306:native/src/box_spread_strategy.cpp
     // Calculate disparity and put-call parity violation
     spread.buy_sell_disparity = BoxSpreadCalculator::calculate_buy_sell_disparity(
@@ -178,16 +197,19 @@ Put-call parity violations are detected and measured to identify arbitrage oppor
 ### Implied Rate Calculation
 
 **Borrowing Scenario (Buying Box Spread):**
+
 ```
 Implied Rate = ((Net Debit - Strike Width) / Strike Width) * (365 / Days to Expiry) * 100
 ```
 
 **Lending Scenario (Selling Box Spread):**
+
 ```
 Implied Rate = ((Strike Width - Net Credit) / Net Credit) * (365 / Days to Expiry) * 100
 ```
 
 **In This Codebase:**
+
 ```276:281:native/src/box_spread_strategy.cpp
     if (days_to_expiry > 0 && spread.buy_net_debit > 0) {
         // Implied rate when buying (borrowing scenario: pay now, receive at expiry)
@@ -209,12 +231,14 @@ Implied Rate = ((Strike Width - Net Credit) / Net Credit) * (365 / Days to Expir
 ### Risk Metrics (Greeks)
 
 **Box Spread Greeks:**
+
 - **Delta:** 0.0 (delta-neutral by construction)
 - **Gamma:** 0.0 (no sensitivity to price movements)
 - **Theta:** ~0.0 (minimal time decay due to offsetting positions)
 - **Vega:** 0.0 (no sensitivity to volatility changes)
 
 **In This Codebase:**
+
 ```75:82:native/src/risk_calculator.cpp
     // Box spreads are delta-neutral
     risk.delta = 0.0;
@@ -233,11 +257,13 @@ Box spreads are constructed to eliminate all Greeks, creating a risk-free positi
 ### 1. Opportunity Identification
 
 **Mathematical Tools Used:**
+
 - **Arithmetic Operations:** Net debit/credit calculations
 - **Rate Conversions:** Annualized implied rate calculations
 - **Comparison Logic:** Benchmark rate comparisons
 
 **Implementation:**
+
 ```531:538:native/src/box_spread_strategy.cpp
 bool BoxSpreadStrategy::beats_benchmark(
     const types::BoxSpreadLeg& spread,
@@ -252,11 +278,13 @@ bool BoxSpreadStrategy::beats_benchmark(
 ### 2. Risk Management
 
 **Mathematical Tools Used:**
+
 - **Kelly Criterion:** Optimal position sizing
 - **Value at Risk (VaR):** Historical and parametric methods
 - **Risk-Reward Ratios:** Simple division operations
 
 **Implementation:**
+
 ```62:98:native/src/risk_calculator.cpp
 PositionRisk RiskCalculator::calculate_box_spread_risk(
     const types::BoxSpreadLeg& spread,
@@ -288,11 +316,13 @@ PositionRisk RiskCalculator::calculate_box_spread_risk(
 ### 3. Yield Curve Analysis
 
 **Mathematical Tools Used:**
+
 - **Interpolation:** Connecting implied rates across expirations
 - **Statistical Analysis:** Comparing rates across symbols
 - **Time Value Calculations:** Days to expiry conversions
 
 **Implementation:**
+
 ```222:228:native/include/box_spread_strategy.h
     types::YieldCurve build_yield_curve(
         const std::string& symbol,

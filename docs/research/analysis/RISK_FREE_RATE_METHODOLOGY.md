@@ -72,6 +72,7 @@ from integration.risk_free_rate_extractor import RiskFreeRateExtractor
 extractor = RiskFreeRateExtractor(min_liquidity_score=50.0)
 
 # Extract rate from a single box spread
+
 point = extractor.extract_from_box_spread(
     symbol="SPX",
     expiry="20250131",
@@ -90,13 +91,17 @@ point = extractor.extract_from_box_spread(
 Aggregate rates across multiple expirations to build a term structure:
 
 ```python
+
 # Build curve from multiple opportunities
+
 curve = extractor.build_curve_from_opportunities(opportunities, symbol="SPX")
 
 # Get rate at specific days to expiry
+
 rate_30d = curve.get_rate_at_dte(30, tolerance=5)
 
 # Filter by liquidity
+
 liquid_curve = curve.filter_by_liquidity(min_liquidity=70.0)
 ```
 
@@ -110,13 +115,17 @@ from integration.sofr_treasury_client import SOFRTreasuryClient, RateComparison
 client = SOFRTreasuryClient()
 
 # Get SOFR overnight rate
+
 sofr = client.get_sofr_overnight()
 
 # Compare curves
+
 comparison = RateComparison.compare_curves(box_spread_curve, benchmark_rates)
 
 # Calculate spread in basis points
+
 spread_bps = RateComparison.calculate_spread(box_rate=5.20, benchmark_rate=5.00)
+
 # Result: 20 bps
 ```
 
@@ -261,7 +270,9 @@ Use box spread rates to:
 **Example:**
 
 ```python
+
 # Get funding cost for 30-day period
+
 rate_30d = curve.get_rate_at_dte(30)
 if rate_30d:
     funding_cost = principal * (rate_30d / 100) * (30 / 365)
@@ -280,7 +291,9 @@ When SOFR/Treasury data is unavailable or delayed:
 **Example:**
 
 ```python
+
 # Use box spread rate for option pricing
+
 risk_free_rate = curve.get_rate_at_dte(option_dte) / 100.0
 discount_factor = math.exp(-risk_free_rate * (option_dte / 365.0))
 ```
@@ -376,6 +389,7 @@ from integration.risk_free_rate_extractor import RiskFreeRateExtractor
 extractor = RiskFreeRateExtractor()
 
 # Build from C++ YieldCurve data (via bindings)
+
 cpp_curve = native_strategy.build_yield_curve("SPX", 50.0)
 python_curve = extractor.build_curve_from_cpp_yield_curve(cpp_curve, "SPX")
 ```

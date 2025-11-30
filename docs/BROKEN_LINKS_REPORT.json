@@ -1,0 +1,184 @@
+[
+  {
+    "file": "docs/TABNINE_SETUP.md",
+    "line": 387,
+    "link_text": "support@tabnine.com",
+    "link_path": "mailto:support@tabnine.com",
+    "full_line": "- **Tabnine Support:** [support@tabnine.com](mailto:support@tabnine.com)"
+  },
+  {
+    "file": "docs/GIT_LFS_CANDIDATES_ANALYSIS.md",
+    "line": 424,
+    "link_text": ".gitignore Best Practices",
+    "link_path": ".gitignore",
+    "full_line": "- [.gitignore Best Practices](.gitignore)"
+  },
+  {
+    "file": "docs/DOCUMENTATION_EXTERNAL_TOOL_HINTS.md",
+    "line": 34,
+    "link_text": "Library Documentation",
+    "link_path": "link",
+    "full_line": "For more information, see [Library Documentation](link) or query Context7: \"[Library] patterns use c"
+  },
+  {
+    "file": "docs/PROJECT_AUTOMATION_MCP_EXTENSIONS.md",
+    "line": 544,
+    "link_text": "Project Automation MCP Server Tools Status",
+    "link_path": "../mcp-servers/project-management-automation/TOOLS_STATUS.md",
+    "full_line": "- [Project Automation MCP Server Tools Status](../mcp-servers/project-management-automation/TOOLS_ST"
+  },
+  {
+    "file": "docs/GITHUB_WORKFLOWS.md",
+    "line": 400,
+    "link_text": "FastMCP Configuration",
+    "link_path": "EXARP_FASTMCP_CONFIGURATION.md",
+    "full_line": "- [FastMCP Configuration](EXARP_FASTMCP_CONFIGURATION.md) - FastMCP setup"
+  },
+  {
+    "file": "docs/GITIGNORE_BUILD_ARTIFACTS_ANALYSIS.md",
+    "line": 379,
+    "link_text": "Build System Documentation",
+    "link_path": "../docs/BUILD_SYSTEM.md",
+    "full_line": "- [Build System Documentation](../docs/BUILD_SYSTEM.md) - Build process documentation"
+  },
+  {
+    "file": "docs/NOTEBOOKS_WORKFLOW.md",
+    "line": 236,
+    "link_text": "Decision Log",
+    "link_path": "../notebooks/06-dev-workflow/decision_log.ipynb",
+    "full_line": "Decision rationale documented in [Decision Log](../notebooks/06-dev-workflow/decision_log.ipynb)."
+  },
+  {
+    "file": "docs/TUI_BREADCRUMB_LOGGING.md",
+    "line": 75,
+    "link_text": "&",
+    "link_path": "Event event",
+    "full_line": "component |= CatchEvent([&](Event event) {"
+  },
+  {
+    "file": "docs/TRADING_INFRASTRUCTURE.md",
+    "line": 573,
+    "link_text": "Deployment Guide",
+    "link_path": "DEPLOYMENT.md",
+    "full_line": "- [Deployment Guide](DEPLOYMENT.md) - Detailed deployment instructions (if exists)"
+  },
+  {
+    "file": "docs/COMMON_PATTERNS.md",
+    "line": 261,
+    "link_text": "order_id",
+    "link_path": "const Order& o",
+    "full_line": "[order_id](const Order& o) {"
+  },
+  {
+    "file": "docs/COMMON_PATTERNS.md",
+    "line": 360,
+    "link_text": "id",
+    "link_path": "const Order& o",
+    "full_line": "[id](const Order& o) { return o.id == id; });"
+  },
+  {
+    "file": "docs/CPPTRADER_INTEGRATION_POINTS.md",
+    "line": 42,
+    "link_text": "tickerId",
+    "link_path": "*updated_data",
+    "full_line": "market_data_callbacks_[tickerId](*updated_data);"
+  },
+  {
+    "file": "docs/PCAP_CAPTURE.md",
+    "line": 278,
+    "link_text": "Configuration Guide",
+    "link_path": "CONFIGURATION.md",
+    "full_line": "- [Configuration Guide](CONFIGURATION.md)"
+  },
+  {
+    "file": "docs/PCAP_CAPTURE.md",
+    "line": 279,
+    "link_text": "Troubleshooting Guide",
+    "link_path": "TROUBLESHOOTING.md",
+    "full_line": "- [Troubleshooting Guide](TROUBLESHOOTING.md)"
+  },
+  {
+    "file": "docs/MCP_TRADING_SERVER_COMPLETE.md",
+    "line": 425,
+    "link_text": "Trading Bridge Guide",
+    "link_path": "./mcp/trading_server/CYTHON_BINDINGS_GUIDE.md",
+    "full_line": "- [Trading Bridge Guide](./mcp/trading_server/CYTHON_BINDINGS_GUIDE.md)"
+  },
+  {
+    "file": "docs/design/AI_AGENT_CONTEXT_STANDARDS.md",
+    "line": 125,
+    "link_text": "AGENTS.md",
+    "link_path": "AGENTS.md",
+    "full_line": "See [AGENTS.md](AGENTS.md) for complete project guidelines."
+  },
+  {
+    "file": "docs/research/learnings/IB_ASYNC_LEARNINGS.md",
+    "line": 61,
+    "link_text": "&promise",
+    "link_path": "const MarketData& data",
+    "full_line": "request_market_data(contract, [&promise](const MarketData& data) {"
+  },
+  {
+    "file": "docs/research/learnings/IB_ASYNC_LEARNINGS.md",
+    "line": 250,
+    "link_text": "&promise, &received",
+    "link_path": "const MarketData& data",
+    "full_line": "request_market_data(contract, [&promise, &received](const MarketData& data) {"
+  },
+  {
+    "file": "docs/research/learnings/ECLIENT_EWRAPPER_ARCHITECTURE.md",
+    "line": 358,
+    "link_text": "tickerId",
+    "link_path": "data",
+    "full_line": "callbacks_[tickerId](data);  // Notify registered callback"
+  },
+  {
+    "file": "docs/research/learnings/TWS_API_MARKET_DATA_LEARNINGS.md",
+    "line": 408,
+    "link_text": "tickerId",
+    "link_path": "market_data",
+    "full_line": "market_data_callbacks_[tickerId](market_data);"
+  },
+  {
+    "file": "docs/research/integration/LEAN_REST_API_WRAPPER_DESIGN.md",
+    "line": 870,
+    "link_text": "API Contract",
+    "link_path": "./agents/shared/API_CONTRACT.md",
+    "full_line": "- [API Contract](./agents/shared/API_CONTRACT.md)"
+  },
+  {
+    "file": "docs/research/integration/PROTOBUF_MIGRATION_PLAN.md",
+    "line": 192,
+    "link_text": "tickerId",
+    "link_path": "market_data",
+    "full_line": "market_data_callbacks_[tickerId](market_data);"
+  },
+  {
+    "file": "docs/research/integration/PROTOBUF_MIGRATION_PLAN.md",
+    "line": 230,
+    "link_text": "tickerId",
+    "link_path": "market_data",
+    "full_line": "market_data_callbacks_[tickerId](market_data);"
+  },
+  {
+    "file": "docs/research/analysis/TASKS_MD_ANALYSIS.md",
+    "line": 372,
+    "link_text": "Coordination Guidelines",
+    "link_path": "agents/shared/COORDINATION.md",
+    "full_line": "- [Coordination Guidelines](agents/shared/COORDINATION.md) - Shared TODO table"
+  },
+  {
+    "file": "docs/research/analysis/SMARTQUANT_CPP_FRAMEWORK_RESEARCH.md",
+    "line": 486,
+    "link_text": "this",
+    "link_path": "const std::string& symbol",
+    "full_line": "[this](const std::string& symbol) {"
+  },
+  {
+    "file": "docs/research/architecture/MESSAGE_QUEUE_ARCHITECTURE.md",
+    "line": 658,
+    "link_text": "Component Coordination Analysis",
+    "link_path": "./COMPONENT_COORDINATION_ANALYSIS.md",
+    "full_line": "- [Component Coordination Analysis](./COMPONENT_COORDINATION_ANALYSIS.md)"
+  }
+]

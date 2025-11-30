@@ -59,6 +59,7 @@ Need modular/extensible?
   - Modular architecture
   - Extensible components
   - Modern C++ design
+
 - **Best For**: Modular trading systems requiring flexibility
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#flox`
 
@@ -71,6 +72,7 @@ Need modular/extensible?
   - Ultra-low latency design
   - Institutional-grade
   - High-frequency trading optimized
+
 - **Best For**: Institutional HFT systems requiring maximum performance
 - **Note**: Commercial license required, significant refactoring needed for integration
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#smartquant-cpp`
@@ -84,6 +86,7 @@ Need modular/extensible?
   - Event-driven architecture
   - Comprehensive backtesting
   - Strategy lifecycle management
+
 - **Best For**: Python-based strategies, backtesting, event-driven trading
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#nautilus-trader`
 - **Integration**: `../NAUTILUS_LEARNINGS.md`

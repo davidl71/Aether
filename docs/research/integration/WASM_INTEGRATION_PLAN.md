@@ -96,7 +96,9 @@ These require network/system APIs and should stay server-side:
 #### 1.1 Install Emscripten
 
 ```bash
+
 # Install Emscripten SDK
+
 git clone https://github.com/emscripten-core/emsdk.git
 cd emsdk
 ./emsdk install latest
@@ -120,7 +122,9 @@ native/
 #### 1.3 Create WASM CMakeLists.txt
 
 ```cmake
+
 # native/wasm/CMakeLists.txt
+
 cmake_minimum_required(VERSION 3.21)
 project(ib_box_spread_wasm)
 
@@ -128,11 +132,13 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Emscripten settings
+
 set(CMAKE_C_COMPILER emcc)
 set(CMAKE_CXX_COMPILER em++)
 set(CMAKE_EXECUTABLE_SUFFIX ".js")
 
 # WASM-specific flags
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -s WASM=1 -s EXPORT_ES6=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s MODULARIZE=1 -s EXPORT_NAME=createBoxSpreadModule")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s ALLOW_MEMORY_GROWTH=1")
@@ -140,12 +146,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s EXPORTED_FUNCTIONS='[\"_malloc\",\"_f
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s EXPORTED_RUNTIME_METHODS='[\"ccall\",\"cwrap\",\"UTF8ToString\",\"stringToUTF8\"]'")
 
 # Include directories
+
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/../include
   ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 # Source files (calculation modules only)
+
 set(WASM_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/../src/box_spread_strategy.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/../src/risk_calculator.cpp
@@ -156,6 +164,7 @@ set(WASM_SOURCES
 )
 
 # Headers
+
 set(WASM_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/../include/box_spread_strategy.h
   ${CMAKE_CURRENT_SOURCE_DIR}/../include/risk_calculator.h
@@ -166,6 +175,7 @@ set(WASM_HEADERS
 )
 
 # Create WASM module
+
 add_executable(box_spread_wasm ${WASM_SOURCES} ${WASM_HEADERS})
 
 # Link libraries (if needed)
@@ -178,6 +188,7 @@ add_executable(box_spread_wasm ${WASM_SOURCES} ${WASM_HEADERS})
 
 ```cpp
 // native/wasm/include/wasm_types.h
+
 #pragma once
 
 #include <cstdint>
@@ -223,6 +234,7 @@ struct BoxSpreadResult {
 
 ```cpp
 // native/wasm/src/wasm_bindings.cpp
+
 #include <emscripten/bind.h>
 #include "wasm_types.h"
 #include "../include/box_spread_strategy.h"
@@ -536,6 +548,7 @@ export default defineConfig({
 #### 5.2 Create Build Script
 
 ```bash
+
 #!/bin/bash
 # scripts/build_wasm.sh
 
@@ -547,12 +560,14 @@ WASM_DIR="${PROJECT_ROOT}/native/wasm"
 WEB_WASM_DIR="${PROJECT_ROOT}/web/public/wasm"
 
 # Source Emscripten
+
 if [ -z "$EMSDK" ]; then
   echo "Error: Emscripten not found. Install and activate emsdk first."
   exit 1
 fi
 
 # Build WASM
+
 cd "${WASM_DIR}"
 mkdir -p build
 cd build
@@ -560,6 +575,7 @@ cmake ..
 cmake --build . --config Release
 
 # Copy to web public directory
+
 mkdir -p "${WEB_WASM_DIR}"
 cp box_spread_wasm.js "${WEB_WASM_DIR}/"
 cp box_spread_wasm.wasm "${WEB_WASM_DIR}/"

@@ -21,10 +21,13 @@ The broker-agnostic C++ engine has been extracted to a separate repository and i
 ### Option 1: Enable Library (Future Migration)
 
 ```bash
+
 # Configure CMake to use the extracted library
+
 cmake -B build -DUSE_BOX_SPREAD_CPP_LIB=ON
 
 # Build
+
 cmake --build build
 ```
 
@@ -35,7 +38,9 @@ cmake --build build
 The main repo continues to use local source files in `native/src/` and `native/include/`. This is the default behavior.
 
 ```bash
+
 # Build with local implementation (default)
+
 cmake -B build
 cmake --build build
 ```
@@ -55,19 +60,24 @@ To fully migrate to the extracted library:
 ### Initialize Submodule
 
 ```bash
+
 # Initialize and clone the submodule
+
 git submodule update --init --recursive
 ```
 
 ### Update Submodule
 
 ```bash
+
 # Update to latest commit
+
 cd libs/box-spread-cpp
 git pull origin main
 cd ../..
 
 # Commit the submodule update
+
 git add libs/box-spread-cpp
 git commit -m "Update box-spread-cpp submodule"
 ```
@@ -75,7 +85,9 @@ git commit -m "Update box-spread-cpp submodule"
 ### Remove Submodule (if needed)
 
 ```bash
+
 # Remove submodule
+
 git submodule deinit libs/box-spread-cpp
 git rm libs/box-spread-cpp
 rm -rf .git/modules/libs/box-spread-cpp

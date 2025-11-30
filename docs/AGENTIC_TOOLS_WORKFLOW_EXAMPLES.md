@@ -22,6 +22,7 @@ Ask AI: "Create a project called 'TWS API Integration' with description 'Complet
 
 ```
 Ask AI: "Add these tasks to TWS API Integration project:
+
 - Implement EWrapper interface
 - Test paper trading connection
 - Implement order execution
@@ -32,6 +33,7 @@ Ask AI: "Add these tasks to TWS API Integration project:
 
 ```
 Ask AI: "Add subtasks to 'Implement EWrapper interface':
+
 - Implement market data callbacks (priority 8, complexity 6)
 - Implement order status callbacks (priority 9, complexity 5)
 - Implement position callbacks (priority 7, complexity 4)
@@ -74,6 +76,7 @@ Ask AI: "Create a project 'Box Spread Bag Implementation' for managing multiple 
 
 ```
 Ask AI: "Add tasks to Box Spread Bag project:
+
 - Design data structures (priority 9, complexity 7)
 - Implement core bag operations (priority 10, complexity 8)
 - Add risk aggregation (priority 8, complexity 9)
@@ -85,6 +88,7 @@ Ask AI: "Add tasks to Box Spread Bag project:
 
 ```
 Ask AI: "Break down 'Implement core bag operations' into subtasks:
+
 - Add box spread to bag
 - Remove box spread from bag
 - Calculate aggregate profit/loss
@@ -223,6 +227,7 @@ git push
 
 ```bash
 git log --oneline -- .agentic-tools-mcp/
+
 # See task list evolution over time
 ```
 
@@ -240,6 +245,7 @@ Ask AI: "Create project 'Hedge Manager Implementation' for managing position hed
 
 ```
 Ask AI: "Add tasks:
+
 - Design hedge strategy (priority 10, complexity 8)
 - Implement position calculation (priority 9, complexity 7)
 - Implement risk limits (priority 10, complexity 9)
@@ -251,6 +257,7 @@ Ask AI: "Add tasks:
 
 ```
 Ask AI: "Add subtasks to 'Implement position calculation':
+
 - Calculate net delta (depends on: Design hedge strategy)
 - Calculate net gamma (depends on: Calculate net delta)
 - Calculate net theta (depends on: Calculate net delta)
@@ -345,6 +352,7 @@ Ask AI: "Remember: Order IDs must be unique and sequential. Start from nextValid
 
 ```
 Ask AI: "Add task 'Integration testing' with subtasks:
+
 - Test paper trading connection
 - Test order placement (dry-run)
 - Test error handling

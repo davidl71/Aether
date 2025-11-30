@@ -36,7 +36,9 @@ Add metadata to each major section:
 Add tags to each entry:
 
 ```markdown
+
 ### QuickFIX Engine
+
 <!-- @tags: fix-protocol, c++, java, python, library, open-source -->
 ```
 
@@ -45,6 +47,7 @@ Add tags to each entry:
 Ensure all sections have anchor-friendly headers:
 
 ```markdown
+
 ### FIX Protocol & FIX Trading Community {#fix-protocol}
 ```
 
@@ -53,6 +56,7 @@ Ensure all sections have anchor-friendly headers:
 Add comparison tables at the start of major sections:
 
 ```markdown
+
 ## FIX API Providers
 
 | Provider | Focus | Latency | Options | Best For |
@@ -281,6 +285,7 @@ Add inline tags to all entries:
 Create a keyword-to-section mapping:
 
 ```markdown
+
 ## Keyword Index
 
 ### FIX

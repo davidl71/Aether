@@ -1,7 +1,7 @@
 # Critical Action Plan - Project Scorecard Recommendations
 
-**Generated**: 2025-11-29  
-**Overall Score**: 50.3% (Target: 80%+ for production readiness)  
+**Generated**: 2025-11-29
+**Overall Score**: 50.3% (Target: 80%+ for production readiness)
 **Priority**: Critical blockers must be addressed
 
 ---
@@ -9,8 +9,9 @@
 ## 🎯 Executive Summary
 
 This action plan addresses the **3 critical blockers** preventing production readiness:
+
 1. **Security Controls** (45.5% → Target: 70%+) - +25% impact
-2. **CodeQL Setup** (0% → Target: 100%) - +10% impact  
+2. **CodeQL Setup** (0% → Target: 100%) - +10% impact
 3. **Testing** (0% → Target: 30%+) - +15% impact
 
 **Total Potential Impact**: +50% to overall score (50.3% → 100.3%)
@@ -19,17 +20,17 @@ This action plan addresses the **3 critical blockers** preventing production rea
 
 ## 🔴 CRITICAL PRIORITY 1: Security Controls
 
-**Current Score**: 45.5%  
-**Target Score**: 70%+  
-**Impact**: +25% to security score  
+**Current Score**: 45.5%
+**Target Score**: 70%+
+**Impact**: +25% to security score
 **Status**: ⚠️ Partially Complete (security.py created, needs integration)
 
 ### 1.1 Complete Security Module Integration
 
-**Status**: ✅ Security module created (`python/services/security.py`)  
+**Status**: ✅ Security module created (`python/services/security.py`)
 **Remaining Work**: Integration across all services
 
-#### Tasks:
+#### Tasks
 
 1. **Integrate security into all FastAPI services**
    - [ ] Review all FastAPI services in `python/services/`
@@ -87,8 +88,8 @@ This action plan addresses the **3 critical blockers** preventing production rea
    - `python/tests/test_security.py`
    - `native/tests/security_test.cpp`
 
-**Estimated Time**: 8-12 hours  
-**Dependencies**: None  
+**Estimated Time**: 8-12 hours
+**Dependencies**: None
 **Priority**: Critical
 
 ---
@@ -102,25 +103,26 @@ This action plan addresses the **3 critical blockers** preventing production rea
 - [ ] Add security checklist for new features
 
 **Files to Create**:
+
 - `docs/SECURITY.md`
 - `docs/SECURITY_BEST_PRACTICES.md`
 
-**Estimated Time**: 2-3 hours  
-**Dependencies**: 1.1 (after implementation)  
+**Estimated Time**: 2-3 hours
+**Dependencies**: 1.1 (after implementation)
 **Priority**: High
 
 ---
 
 ## 🔴 CRITICAL PRIORITY 2: CodeQL Setup
 
-**Current Score**: 0%  
-**Target Score**: 100%  
-**Impact**: +10% to security score  
+**Current Score**: 0%
+**Target Score**: 100%
+**Impact**: +10% to security score
 **Status**: ❌ Not Started
 
 ### 2.1 Enable CodeQL Workflow
 
-#### Tasks:
+#### Tasks
 
 1. **Create CodeQL workflow file**
    - [ ] Create `.github/workflows/codeql.yml`
@@ -134,9 +136,10 @@ This action plan addresses the **3 critical blockers** preventing production rea
    - `.github/workflows/codeql.yml`
 
    **Template**:
+
    ```yaml
    name: "CodeQL"
-   
+
    on:
      push:
        branches: [ "main" ]
@@ -144,7 +147,7 @@ This action plan addresses the **3 critical blockers** preventing production rea
        branches: [ "main" ]
      schedule:
        - cron: '0 0 * * 0' # Weekly on Sunday
-   
+
    jobs:
      analyze:
        name: Analyze
@@ -153,24 +156,24 @@ This action plan addresses the **3 critical blockers** preventing production rea
          actions: read
          contents: read
          security-events: write
-       
+
        strategy:
          fail-fast: false
          matrix:
            language: [ 'cpp', 'python', 'javascript' ]
-       
+
        steps:
        - name: Checkout repository
          uses: actions/checkout@v4
-       
+
        - name: Initialize CodeQL
          uses: github/codeql-action/init@v3
          with:
            languages: ${{ matrix.language }}
-       
+
        - name: Autobuild
          uses: github/codeql-action/autobuild@v3
-       
+
        - name: Perform CodeQL Analysis
          uses: github/codeql-action/analyze@v3
    ```
@@ -195,8 +198,8 @@ This action plan addresses the **3 critical blockers** preventing production rea
    - [ ] Document how to fix CodeQL findings
    - [ ] Add CodeQL to security documentation
 
-**Estimated Time**: 2-3 hours  
-**Dependencies**: None  
+**Estimated Time**: 2-3 hours
+**Dependencies**: None
 **Priority**: Critical
 
 ---
@@ -209,22 +212,22 @@ This action plan addresses the **3 critical blockers** preventing production rea
 - [ ] Fix low-hanging fruit (quick fixes)
 - [ ] Document complex findings for later
 
-**Estimated Time**: 4-8 hours (depends on findings)  
-**Dependencies**: 2.1 (after first scan)  
+**Estimated Time**: 4-8 hours (depends on findings)
+**Dependencies**: 2.1 (after first scan)
 **Priority**: High
 
 ---
 
 ## 🔴 CRITICAL PRIORITY 3: Testing
 
-**Current Score**: 0.0%  
-**Target Score**: 30%+  
-**Impact**: +15% to testing score  
+**Current Score**: 0.0%
+**Target Score**: 30%+
+**Impact**: +15% to testing score
 **Status**: ❌ Not Started
 
 ### 3.1 Fix Failing Tests
 
-#### Tasks:
+#### Tasks
 
 1. **Identify failing tests**
    - [ ] Run test suite: `ctest --test-dir build --output-on-failure`
@@ -234,10 +237,11 @@ This action plan addresses the **3 critical blockers** preventing production rea
    - [ ] Prioritize by criticality
 
    **Commands**:
+
    ```bash
    # C++ tests
    cd build && ctest --output-on-failure
-   
+
    # Python tests
    pytest python/tests/ -v
    ```
@@ -261,15 +265,15 @@ This action plan addresses the **3 critical blockers** preventing production rea
    - [ ] Fix floating-point comparison issues
    - [ ] Fix timing-related test failures
 
-**Estimated Time**: 8-16 hours  
-**Dependencies**: None  
+**Estimated Time**: 8-16 hours
+**Dependencies**: None
 **Priority**: Critical
 
 ---
 
 ### 3.2 Increase Test Coverage
 
-#### Tasks:
+#### Tasks
 
 1. **Measure current coverage**
    - [ ] Set up coverage tools (gcov for C++, coverage.py for Python)
@@ -312,8 +316,8 @@ This action plan addresses the **3 critical blockers** preventing production rea
    - [ ] Generate HTML coverage reports
    - [ ] Track coverage over time
 
-**Estimated Time**: 16-24 hours  
-**Dependencies**: 3.1 (after tests are fixed)  
+**Estimated Time**: 16-24 hours
+**Dependencies**: 3.1 (after tests are fixed)
 **Priority**: Critical
 
 ---
@@ -327,12 +331,13 @@ This action plan addresses the **3 critical blockers** preventing production rea
 - [ ] Document test setup process
 
 **Files to Create**:
+
 - `python/tests/fixtures/`
 - `python/tests/mocks/`
 - `docs/TESTING.md`
 
-**Estimated Time**: 4-6 hours  
-**Dependencies**: 3.1, 3.2  
+**Estimated Time**: 4-6 hours
+**Dependencies**: 3.1, 3.2
 **Priority**: Medium
 
 ---
@@ -340,19 +345,23 @@ This action plan addresses the **3 critical blockers** preventing production rea
 ## 📊 Implementation Timeline
 
 ### Week 1: Security & CodeQL Setup
+
 - **Days 1-2**: Complete security module integration (1.1)
 - **Days 3-4**: CodeQL workflow setup (2.1)
 - **Day 5**: Security documentation (1.2)
 
 ### Week 2: Testing Foundation
+
 - **Days 1-3**: Fix failing tests (3.1)
 - **Days 4-5**: Initial coverage analysis (3.2.1)
 
 ### Week 3: Test Coverage
+
 - **Days 1-4**: Add critical path tests (3.2.2)
 - **Day 5**: Integration tests (3.2.3)
 
 ### Week 4: Polish & Documentation
+
 - **Days 1-2**: Test infrastructure (3.3)
 - **Days 3-4**: Address CodeQL findings (2.2)
 - **Day 5**: Final documentation and review
@@ -364,6 +373,7 @@ This action plan addresses the **3 critical blockers** preventing production rea
 ## 🎯 Success Criteria
 
 ### Security (Target: 70%+)
+
 - ✅ Rate limiting enabled on all API endpoints
 - ✅ Path boundary enforcement active
 - ✅ Access control configured
@@ -371,12 +381,14 @@ This action plan addresses the **3 critical blockers** preventing production rea
 - ✅ Security documentation complete
 
 ### Testing (Target: 30%+)
+
 - ✅ All existing tests passing
 - ✅ 30%+ code coverage achieved
 - ✅ Critical paths have tests
 - ✅ Coverage reporting in CI/CD
 
 ### Overall Score (Target: 80%+)
+
 - ✅ Security score: 70%+
 - ✅ Testing score: 30%+
 - ✅ CodeQL: 100%
@@ -387,12 +399,14 @@ This action plan addresses the **3 critical blockers** preventing production rea
 ## 📝 Tracking
 
 ### Progress Tracking
+
 - [ ] Create Todo2 tasks for each major task above
 - [ ] Set up weekly progress reviews
 - [ ] Track time spent on each area
 - [ ] Update scorecard weekly
 
 ### Metrics to Track
+
 - Security score (current: 45.5%, target: 70%+)
 - Testing score (current: 0%, target: 30%+)
 - CodeQL status (current: 0%, target: 100%)
@@ -427,12 +441,14 @@ This action plan addresses the **3 critical blockers** preventing production rea
 ## 📚 Resources
 
 ### Documentation
+
 - [GitHub CodeQL Documentation](https://docs.github.com/en/code-security/codeql-cli)
 - [FastAPI Security Best Practices](https://fastapi.tiangolo.com/tutorial/security/)
 - [C++ Testing Best Practices](https://github.com/catchorg/Catch2)
 - [Python Testing Best Practices](https://docs.pytest.org/)
 
 ### Internal Documentation
+
 - `docs/SECURITY.md` (to be created)
 - `docs/TESTING.md` (to be created)
 - `docs/DESIGN_DECISIONS.md` (already exists)
@@ -459,6 +475,6 @@ This action plan addresses the **3 critical blockers** preventing production rea
 
 ---
 
-**Last Updated**: 2025-11-29  
-**Status**: Ready for Implementation  
+**Last Updated**: 2025-11-29
+**Status**: Ready for Implementation
 **Owner**: Development Team

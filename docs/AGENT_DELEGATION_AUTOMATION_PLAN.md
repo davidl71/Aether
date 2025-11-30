@@ -8,6 +8,7 @@
 ## Overview
 
 This automation determines:
+
 1. **Scope**: Where should the agent run? (local/worktree/cloud)
 2. **Model**: Which model/composer should be used? (auto/composer1/etc.)
 3. **Agent Type**: Which specialized agent should handle this? (backend/web/ipad/etc.)
@@ -17,6 +18,7 @@ This automation determines:
 ## Problem Statement
 
 Currently, agent delegation and model selection is manual. We need to automate:
+
 - **Scope Detection**: Determine if task needs local files, worktree isolation, or cloud resources
 - **Model Selection**: Choose optimal model based on task complexity, language, and requirements
 - **Agent Routing**: Route tasks to appropriate specialized agents
@@ -27,7 +29,7 @@ Currently, agent delegation and model selection is manual. We need to automate:
 
 **Agent Delegation = Task Analysis × Scope Detection × Model Selection × Agent Routing × Resource Availability**
 
-### Components:
+### Components
 
 1. **Task Analysis**: Understand task requirements, complexity, dependencies
 2. **Scope Detection**: Determine execution environment (local/worktree/cloud)
@@ -40,23 +42,27 @@ Currently, agent delegation and model selection is manual. We need to automate:
 ## Sequential Planning: How to Automate Delegation?
 
 ### Step 1: Task Classification
+
 - Analyze task description and requirements
 - Identify task type (code/design/debug/research)
 - Determine complexity level
 - Extract language/technology requirements
 
 ### Step 2: Scope Detection
+
 - **Local**: File operations, quick edits, local testing
 - **Worktree**: Isolated changes, feature branches, parallel work
 - **Cloud**: Heavy compute, large datasets, shared resources
 
 ### Step 3: Model Selection
+
 - **Auto**: Let system decide (default)
 - **Composer1**: Complex multi-file changes, architecture
 - **Claude**: Code review, documentation, analysis
 - **Specialized**: Language-specific models if available
 
 ### Step 4: Agent Routing
+
 - **Backend**: Rust, C++, Python backend work
 - **Web**: React, TypeScript, frontend
 - **iPad**: Swift, SwiftUI, iOS
@@ -65,6 +71,7 @@ Currently, agent delegation and model selection is manual. We need to automate:
 - **Data**: Data pipelines, analysis
 
 ### Step 5: Execution Planning
+
 - Generate execution plan
 - Check resource availability
 - Create delegation task
@@ -75,7 +82,9 @@ Currently, agent delegation and model selection is manual. We need to automate:
 ## Scope Detection Rules
 
 ### Local Scope
+
 **Use when:**
+
 - Quick file edits (< 5 files)
 - Simple refactoring
 - Documentation updates
@@ -84,13 +93,16 @@ Currently, agent delegation and model selection is manual. We need to automate:
 - No isolation needed
 
 **Indicators:**
+
 - Task mentions "update", "fix", "add" (simple)
 - Single file or small scope
 - No branch/feature context
 - Quick turnaround expected
 
 ### Worktree Scope
+
 **Use when:**
+
 - Feature development
 - Large refactoring (> 5 files)
 - Parallel work streams
@@ -99,6 +111,7 @@ Currently, agent delegation and model selection is manual. We need to automate:
 - Multi-component changes
 
 **Indicators:**
+
 - Task mentions "feature", "implement", "refactor"
 - Multiple files/components
 - Requires branch context
@@ -106,7 +119,9 @@ Currently, agent delegation and model selection is manual. We need to automate:
 - Needs isolation
 
 ### Cloud Scope
+
 **Use when:**
+
 - Heavy computation
 - Large dataset processing
 - Shared resources needed
@@ -115,6 +130,7 @@ Currently, agent delegation and model selection is manual. We need to automate:
 - Resource-intensive tasks
 
 **Indicators:**
+
 - Task mentions "analysis", "processing", "compute"
 - Large data operations
 - Requires shared infrastructure
@@ -126,14 +142,18 @@ Currently, agent delegation and model selection is manual. We need to automate:
 ## Model Selection Rules
 
 ### Auto (Default)
+
 **Use when:**
+
 - Standard coding tasks
 - Well-defined requirements
 - No special needs
 - General purpose work
 
 ### Composer1
+
 **Use when:**
+
 - Complex multi-file changes
 - Architecture decisions
 - Cross-component refactoring
@@ -141,13 +161,16 @@ Currently, agent delegation and model selection is manual. We need to automate:
 - Requires deep understanding
 
 **Indicators:**
+
 - Task mentions "architecture", "refactor", "redesign"
 - Multiple components affected
 - Requires system understanding
 - Complex dependencies
 
 ### Claude (or specific model)
+
 **Use when:**
+
 - Code review needed
 - Documentation writing
 - Analysis tasks
@@ -155,6 +178,7 @@ Currently, agent delegation and model selection is manual. We need to automate:
 - High-quality output critical
 
 **Indicators:**
+
 - Task mentions "review", "document", "analyze", "research"
 - Quality over speed
 - Requires reasoning
@@ -165,7 +189,9 @@ Currently, agent delegation and model selection is manual. We need to automate:
 ## Agent Routing Rules
 
 ### Backend Agent
+
 **Route when:**
+
 - Rust code (`agents/backend/`)
 - C++ core (`native/src/`)
 - Python backend (`python/`)
@@ -175,7 +201,9 @@ Currently, agent delegation and model selection is manual. We need to automate:
 **Keywords**: rust, c++, python, backend, api, server, service
 
 ### Web Agent
+
 **Route when:**
+
 - React/TypeScript (`web/src/`)
 - Frontend components
 - UI/UX work
@@ -184,7 +212,9 @@ Currently, agent delegation and model selection is manual. We need to automate:
 **Keywords**: react, typescript, web, frontend, ui, spa, component
 
 ### iPad Agent
+
 **Route when:**
+
 - Swift/SwiftUI (`ios/` or iPad-specific)
 - iOS development
 - iPad-specific features
@@ -192,7 +222,9 @@ Currently, agent delegation and model selection is manual. We need to automate:
 **Keywords**: swift, swiftui, ios, ipad, apple
 
 ### Desktop Agent
+
 **Route when:**
+
 - macOS app (`desktop/`)
 - Desktop-specific features
 - AppKit development
@@ -200,7 +232,9 @@ Currently, agent delegation and model selection is manual. We need to automate:
 **Keywords**: desktop, macos, appkit, app
 
 ### TUI Agent
+
 **Route when:**
+
 - C++ TUI (`native/src/tui/`)
 - Terminal interfaces
 - CLI improvements
@@ -208,7 +242,9 @@ Currently, agent delegation and model selection is manual. We need to automate:
 **Keywords**: tui, terminal, cli, c++
 
 ### Data Agent
+
 **Route when:**
+
 - Data pipelines
 - Analysis scripts
 - Data processing
@@ -220,30 +256,35 @@ Currently, agent delegation and model selection is manual. We need to automate:
 ## Implementation Strategy
 
 ### Phase 1: Task Classification (Week 1)
+
 1. Create task classifier
 2. Extract task characteristics
 3. Identify task type and complexity
 4. Generate classification metadata
 
 ### Phase 2: Scope Detection (Week 1)
+
 1. Implement scope detection rules
 2. Analyze file/dependency patterns
 3. Determine optimal scope
 4. Generate scope recommendation
 
 ### Phase 3: Model Selection (Week 2)
+
 1. Implement model selection rules
 2. Consider task complexity
 3. Check model availability
 4. Generate model recommendation
 
 ### Phase 4: Agent Routing (Week 2)
+
 1. Implement agent routing rules
 2. Match tasks to agents
 3. Check agent availability
 4. Generate routing recommendation
 
 ### Phase 5: Integration (Week 3)
+
 1. Integrate with Todo2
 2. Create delegation automation
 3. Monitor and learn
@@ -321,18 +362,21 @@ class AgentDelegationAutomation(IntelligentAutomationBase):
 ## Integration Points
 
 ### Todo2 Integration
+
 - Add metadata fields: `scope`, `model`, `agent`
 - Auto-populate on task creation
 - Allow manual override
 - Track delegation accuracy
 
 ### Cursor Integration
+
 - Use Cursor's agent selection
 - Leverage worktree support
 - Integrate with model selection
 - Provide delegation hints
 
 ### Learning System
+
 - Track delegation success
 - Learn from corrections
 - Refine rules over time
@@ -343,15 +387,18 @@ class AgentDelegationAutomation(IntelligentAutomationBase):
 ## Success Metrics
 
 ### Accuracy
+
 - **Target**: 80%+ correct scope detection
 - **Target**: 75%+ correct model selection
 - **Target**: 85%+ correct agent routing
 
 ### Efficiency
+
 - **Target**: Save 30% time on task setup
 - **Measurement**: Time to start work before/after
 
 ### User Satisfaction
+
 - **Target**: 90%+ tasks don't need manual override
 - **Measurement**: Manual override rate
 

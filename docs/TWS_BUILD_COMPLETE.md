@@ -114,10 +114,13 @@ ctest --output-on-failure
 ### Running the Application
 
 ```bash
+
 # Dry-run mode (safe, no real trades)
+
 ./build/bin/ib_box_spread --config config/config.json --dry-run
 
 # With TWS connection (requires TWS/Gateway running)
+
 ./build/bin/ib_box_spread --config config/config.json
 ```
 
@@ -209,17 +212,21 @@ Implement only what you need:
 If you need to rebuild from scratch:
 
 ```bash
+
 # Clean everything
+
 rm -rf build
 rm -rf native/native/third_party/tws-api/IBJts/source/cppclient/client/build
 
 # Rebuild TWS API library
+
 cd native/native/third_party/tws-api/IBJts/source/cppclient/client
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j4
 
 # Rebuild main project
+
 cd /Users/davidlowes/.claude-squad/worktrees/claude_1873e0c42c155fb0
 ./scripts/build_universal.sh
 ```
@@ -232,6 +239,7 @@ If Protobuf or Abseil are updated:
 brew upgrade protobuf abseil
 
 # Regenerate Protocol Buffer files
+
 cd native/native/third_party/tws-api/IBJts/source
 protoc --proto_path=./proto --cpp_out=./cppclient/client proto/*.proto
 

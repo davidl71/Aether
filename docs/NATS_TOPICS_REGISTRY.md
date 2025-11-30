@@ -8,11 +8,13 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Wildcards**:
   - `>` matches one or more tokens (e.g., `market-data.>` matches all market data)
   - `*` matches exactly one token (e.g., `market-data.*.SPY` matches any action for SPY)
+
 - **Validation**: All topics are validated using `nats_adapter::topics::validate_topic()`
 
 ## Market Data Topics
 
 ### `market-data.tick.{symbol}`
+
 - **Purpose**: Real-time price tick updates
 - **Publisher**: Market data provider
 - **Subscribers**: Strategy engine, frontends
@@ -20,6 +22,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Schema**: `MarketDataTick.json`
 
 ### `market-data.candle.{symbol}`
+
 - **Purpose**: OHLCV candle data
 - **Publisher**: Market data provider
 - **Subscribers**: Strategy engine, analytics
@@ -27,6 +30,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Schema**: `MarketDataCandle.json`
 
 ### `market-data.quote.{symbol}`
+
 - **Purpose**: Bid/ask quote updates
 - **Publisher**: Market data provider
 - **Subscribers**: Strategy engine
@@ -34,6 +38,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Schema**: `MarketDataQuote.json`
 
 ### `market-data.volume.{symbol}`
+
 - **Purpose**: Volume updates
 - **Publisher**: Market data provider
 - **Subscribers**: Analytics
@@ -41,6 +46,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Schema**: `MarketDataVolume.json`
 
 ### Subscription Patterns
+
 - `market-data.>` - All market data for all symbols
 - `market-data.tick.>` - All tick updates
 - `market-data.tick.SPY` - Tick updates for SPY only
@@ -48,6 +54,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 ## Strategy Topics
 
 ### `strategy.signal.{symbol}`
+
 - **Purpose**: Market signals for strategy evaluation
 - **Publisher**: Market data provider → Strategy engine
 - **Subscribers**: Strategy engine
@@ -55,6 +62,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Schema**: `StrategySignal.json`
 
 ### `strategy.decision.{symbol}`
+
 - **Purpose**: Trading decisions from strategy engine
 - **Publisher**: Strategy engine
 - **Subscribers**: Risk engine, Order manager, Frontends
@@ -62,30 +70,35 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Schema**: `StrategyDecision.json`
 
 ### `strategy.status`
+
 - **Purpose**: Strategy state changes (start/stop/pause)
 - **Publisher**: Strategy controller
 - **Subscribers**: Frontends, monitoring
 - **Schema**: `StrategyStatus.json`
 
 ### `strategy.control`
+
 - **Purpose**: Control commands (start/stop/pause)
 - **Publisher**: Frontends, REST API
 - **Subscribers**: Strategy controller
 - **Schema**: `StrategyControl.json`
 
 ### Subscription Patterns
+
 - `strategy.signal.>` - All strategy signals
 - `strategy.decision.>` - All strategy decisions
 
 ## Order Topics
 
 ### `orders.new`
+
 - **Purpose**: New order requests
 - **Publisher**: Strategy engine (via risk engine)
 - **Subscribers**: Order manager, TWS client
 - **Schema**: `OrderRequest.json`
 
 ### `orders.status.{order_id}`
+
 - **Purpose**: Order status updates
 - **Publisher**: Order manager, TWS client
 - **Subscribers**: Strategy engine, Frontends
@@ -93,6 +106,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Schema**: `OrderStatus.json`
 
 ### `orders.fill.{order_id}`
+
 - **Purpose**: Order fill notifications
 - **Publisher**: TWS client
 - **Subscribers**: Strategy engine, Position manager
@@ -100,6 +114,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Schema**: `OrderFill.json`
 
 ### `orders.cancel.{order_id}`
+
 - **Purpose**: Order cancellation
 - **Publisher**: Order manager, Frontends
 - **Subscribers**: TWS client, Strategy engine
@@ -107,12 +122,14 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Schema**: `OrderCancel.json`
 
 ### Subscription Patterns
+
 - `orders.status.>` - All order status updates
 - `orders.fill.>` - All order fills
 
 ## Position Topics
 
 ### `positions.update.{symbol}`
+
 - **Purpose**: Position changes
 - **Publisher**: Position manager
 - **Subscribers**: Frontends, Risk engine
@@ -120,29 +137,34 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Schema**: `PositionUpdate.json`
 
 ### `positions.snapshot`
+
 - **Purpose**: Full position snapshot
 - **Publisher**: Position manager
 - **Subscribers**: Frontends (on request)
 - **Schema**: `PositionSnapshot.json`
 
 ### Subscription Patterns
+
 - `positions.update.>` - All position updates
 
 ## Risk Topics
 
 ### `risk.check`
+
 - **Purpose**: Risk validation requests
 - **Publisher**: Strategy engine
 - **Subscribers**: Risk engine
 - **Schema**: `RiskCheck.json`
 
 ### `risk.decision`
+
 - **Purpose**: Risk check results
 - **Publisher**: Risk engine
 - **Subscribers**: Strategy engine, Order manager
 - **Schema**: `RiskDecision.json`
 
 ### `risk.limit.{type}`
+
 - **Purpose**: Risk limit events
 - **Publisher**: Risk engine
 - **Subscribers**: Frontends, Alerts
@@ -150,6 +172,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Schema**: `RiskLimitEvent.json`
 
 ### `risk.violation`
+
 - **Purpose**: Risk limit violations
 - **Publisher**: Risk engine
 - **Subscribers**: Alerts, Frontends
@@ -158,24 +181,28 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 ## System Topics
 
 ### `system.health`
+
 - **Purpose**: System health status
 - **Publisher**: Backend service
 - **Subscribers**: Monitoring, Frontends
 - **Schema**: `HealthStatus.json`
 
 ### `system.events`
+
 - **Purpose**: System-wide events
 - **Publisher**: All components
 - **Subscribers**: Monitoring, Logging
 - **Schema**: `SystemEvent.json`
 
 ### `system.alerts`
+
 - **Purpose**: Alert notifications
 - **Publisher**: All components
 - **Subscribers**: Frontends, Monitoring
 - **Schema**: `Alert.json`
 
 ### `system.config`
+
 - **Purpose**: Configuration updates
 - **Publisher**: Config manager
 - **Subscribers**: All components
@@ -184,12 +211,14 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 ## RPC (Request/Reply) Topics
 
 ### `rpc.strategy.status`
+
 - **Purpose**: Request strategy status
 - **Request**: Frontend, Monitoring
 - **Reply**: Strategy controller
 - **Schema**: `StrategyStatus.json`
 
 ### `rpc.system.snapshot`
+
 - **Purpose**: Request system snapshot
 - **Request**: Frontend
 - **Reply**: Backend service
@@ -198,6 +227,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 ## Dead Letter Queue Topics
 
 ### `system.dlq.{component}.{error_type}`
+
 - **Purpose**: Failed messages that couldn't be processed
 - **Publisher**: Message processors (on failure)
 - **Subscribers**: Monitoring, Debugging
@@ -227,6 +257,7 @@ let publisher = bridge.create_publisher(
 ## Topic Validation
 
 All topics must pass validation:
+
 - Not empty
 - Not start/end with `.`
 - No consecutive `.`

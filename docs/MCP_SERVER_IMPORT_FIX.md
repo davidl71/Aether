@@ -9,6 +9,7 @@
 ## Problem
 
 When Cursor tried to start the MCP server, it encountered:
+
 1. `Error handling module not available` - relative import failed
 2. `Some tools not available: attempted relative import with no known parent package` - relative imports don't work when running as script
 3. `MCP not installed` - package needs to be installed
@@ -22,11 +23,13 @@ When Cursor tried to start the MCP server, it encountered:
 Updated all imports to support **both** relative (module) and absolute (script) execution:
 
 **Before:**
+
 ```python
 from .error_handler import ErrorCode  # Only works as module
 ```
 
 **After:**
+
 ```python
 try:
     from .error_handler import ErrorCode  # Try relative first
@@ -78,6 +81,7 @@ cd mcp-servers/project-management-automation
 ```
 
 Or manually:
+
 ```bash
 pip3 install mcp
 ```
@@ -87,6 +91,7 @@ pip3 install mcp
 ## Next Steps
 
 1. **Install MCP package:**
+
    ```bash
    pip3 install mcp
    ```

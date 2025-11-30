@@ -14,8 +14,10 @@ Successfully refactored `web/scripts/run-discount-bank-service.sh` to use shared
 ### Before: 80 lines
 
 ```bash
+
 #!/usr/bin/env bash
 # Run Discount Bank service for PWA integration
+
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -24,6 +26,7 @@ PYTHON_DIR="$ROOT_DIR/python"
 cd "$PYTHON_DIR"
 
 # Find Python command
+
 PYTHON_CMD=""
 if command -v python3 >/dev/null 2>&1; then
   PYTHON_CMD="python3"
@@ -37,10 +40,12 @@ if [ -z "${PYTHON_CMD}" ]; then
 fi
 
 # Set up virtual environment
+
 VENV_DIR="${PYTHON_DIR}/.venv"
 ACTIVATE_PATH="${VENV_DIR}/bin/activate"
 
 # Create virtual environment if it doesn't exist
+
 if [ ! -f "${ACTIVATE_PATH}" ]; then
   echo "Creating Python virtual environment at ${VENV_DIR}..." >&2
   "${PYTHON_CMD}" -m venv "${VENV_DIR}" || {
@@ -54,12 +59,15 @@ fi
 
 # Activate virtual environment
 # shellcheck disable=SC1090
+
 source "${ACTIVATE_PATH}"
 
 # Update pip in virtual environment
+
 "${PYTHON_CMD}" -m pip install --quiet --upgrade pip wheel >/dev/null 2>&1 || true
 
 # Check if required packages are installed (using venv Python)
+
 "${PYTHON_CMD}" -c "import fastapi" 2>/dev/null || {
   echo "Installing required packages (fastapi, uvicorn with WebSocket support)..." >&2
   "${PYTHON_CMD}" -m pip install --quiet fastapi "uvicorn[standard]" pydantic || {
@@ -69,6 +77,7 @@ source "${ACTIVATE_PATH}"
 }
 
 # Check if port is available
+
 PORT="${PORT:-8003}"
 if lsof -Pi :"${PORT}" -sTCP:LISTEN -t >/dev/null 2>&1; then
   echo "Warning: Port ${PORT} is already in use. Service may not start." >&2
@@ -76,6 +85,7 @@ if lsof -Pi :"${PORT}" -sTCP:LISTEN -t >/dev/null 2>&1; then
 fi
 
 # Set default file path if not provided
+
 if [ -z "${DISCOUNT_BANK_FILE_PATH:-}" ]; then
   export DISCOUNT_BANK_FILE_PATH="${HOME}/Downloads/DISCOUNT.dat"
   echo "Using default file path: ${DISCOUNT_BANK_FILE_PATH}" >&2
@@ -83,6 +93,7 @@ if [ -z "${DISCOUNT_BANK_FILE_PATH:-}" ]; then
 fi
 
 # Run the service
+
 echo "Starting Discount Bank service on port ${PORT}..." >&2
 echo "  File path: ${DISCOUNT_BANK_FILE_PATH}" >&2
 echo "  Health: http://localhost:${PORT}/api/health" >&2
@@ -98,8 +109,10 @@ exec "${PYTHON_CMD}" -m uvicorn integration.discount_bank_service:app \
 ### After: 70 lines (but much cleaner!)
 
 ```bash
+
 #!/usr/bin/env bash
 # Run Discount Bank service for PWA integration
+
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -108,11 +121,13 @@ SCRIPTS_DIR="${ROOT_DIR}/scripts"
 
 # Load shared utility functions
 # shellcheck source=../../scripts/include/config.sh
+
 if [ -f "${SCRIPTS_DIR}/include/config.sh" ]; then
   source "${SCRIPTS_DIR}/include/config.sh"
 fi
 
 # shellcheck source=../../scripts/include/python_utils.sh
+
 if [ -f "${SCRIPTS_DIR}/include/python_utils.sh" ]; then
   source "${SCRIPTS_DIR}/include/python_utils.sh"
 else
@@ -121,6 +136,7 @@ else
 fi
 
 # shellcheck source=../../scripts/include/service_utils.sh
+
 if [ -f "${SCRIPTS_DIR}/include/service_utils.sh" ]; then
   source "${SCRIPTS_DIR}/include/service_utils.sh"
 fi
@@ -128,21 +144,27 @@ fi
 cd "$PYTHON_DIR"
 
 # Find Python command
+
 find_python || exit 1
 
 # Set up virtual environment
+
 setup_venv "${PYTHON_DIR}" || exit 1
 
 # Install required packages
+
 install_python_packages "${VENV_PYTHON}" "fastapi" "uvicorn[standard]" "pydantic" || exit 1
 
 # Use venv Python for all subsequent operations
+
 PYTHON_CMD="${VENV_PYTHON}"
 
 # Get Discount Bank service port from config (default: 8003)
+
 DISCOUNT_BANK_PORT=$(config_get_port "discount_bank" 8003)
 
 # Check if port is available (with basic check, no health endpoint for this service)
+
 if ! config_check_port_available "${DISCOUNT_BANK_PORT}"; then
   echo "Warning: Port ${DISCOUNT_BANK_PORT} is already in use. Service may not start." >&2
   echo "  To use a different port, set DISCOUNT_BANK_PORT environment variable" >&2
@@ -150,6 +172,7 @@ if ! config_check_port_available "${DISCOUNT_BANK_PORT}"; then
 fi
 
 # Set default file path if not provided
+
 if [ -z "${DISCOUNT_BANK_FILE_PATH:-}" ]; then
   export DISCOUNT_BANK_FILE_PATH="${HOME}/Downloads/DISCOUNT.dat"
   echo "Using default file path: ${DISCOUNT_BANK_FILE_PATH}" >&2
@@ -157,6 +180,7 @@ if [ -z "${DISCOUNT_BANK_FILE_PATH:-}" ]; then
 fi
 
 # Run the service
+
 echo "Starting Discount Bank service on port ${DISCOUNT_BANK_PORT}..." >&2
 echo "  File path: ${DISCOUNT_BANK_FILE_PATH}" >&2
 echo "  Health: http://localhost:${DISCOUNT_BANK_PORT}/api/health" >&2

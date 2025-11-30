@@ -1,0 +1,12 @@
+{
+  "success": true,
+  "fixes": [
+    {
+      "line": 658,
+      "old": "- [Component Coordination Analysis](./COMPONENT_COORDINATION_ANALYSIS.md)",
+      "new": "<!-- - [Component Coordination Analysis](./COMPONENT_COORDINATION_ANALYSIS.md) - File not found -->",
+      "method": "commented_out"
+    }
+  ],
+  "file": "/home/david/ib_box_spread_full_universal/docs/research/architecture/MESSAGE_QUEUE_ARCHITECTURE.md"
+}

@@ -60,7 +60,9 @@ NLopt is self-contained and does not require Boost or other external libraries (
 Add to `native/CMakeLists.txt` in the dependencies section:
 
 ```cmake
+
 # NLopt via FetchContent
+
 set(NLOPT_REPOSITORY "https://github.com/stevengj/nlopt.git")
 fetchcontent_declare(
     NLopt
@@ -117,6 +119,7 @@ set(NLOPT_LICENSE_MIT ON CACHE BOOL "Use MIT license instead of LGPL")
 ### 1. Convexity Optimization (Barbell Strategy)
 
 ```cpp
+
 #include <nlopt.hpp>
 #include <vector>
 #include <cmath>
@@ -222,6 +225,7 @@ void optimize_barbell_strategy()
 ### 2. Portfolio Rebalancing Optimization
 
 ```cpp
+
 #include <nlopt.hpp>
 #include <vector>
 
@@ -302,6 +306,7 @@ void optimize_rebalancing(const std::vector<double>& oldWeights,
 ### 3. Spare Cash Allocation Optimization
 
 ```cpp
+
 #include <nlopt.hpp>
 #include <vector>
 

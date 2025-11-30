@@ -12,26 +12,34 @@ This guide explains how to use the automated setup scripts to configure platform
 ### macOS / Linux
 
 ```bash
+
 # Basic setup (detects platform and generates settings.json.user)
+
 ./scripts/setup_platform_settings.sh
 
 # Full setup (also configures CMake)
+
 ./scripts/setup_platform_settings.sh --cmake-configure
 
 # Force overwrite existing settings
+
 ./scripts/setup_platform_settings.sh --force
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
+
 # Basic setup
+
 .\scripts\setup_platform_settings.ps1
 
 # Full setup (also configures CMake)
+
 .\scripts\setup_platform_settings.ps1 -CmakeConfigure
 
 # Force overwrite existing settings
+
 .\scripts\setup_platform_settings.ps1 -Force
 ```
 
@@ -109,7 +117,9 @@ Creates `.vscode/settings.json.user` with:
 Install via command or Cursor command:
 
 ```bash
+
 # Bash script (safe no-op on unsupported platforms)
+
 ./scripts/install_mlx.sh
 ```
 
@@ -136,7 +146,9 @@ If `--cmake-configure` is used:
 ### First-Time Setup
 
 ```bash
+
 # macOS ARM64
+
 ./scripts/setup_platform_settings.sh --cmake-configure
 
 # Output:
@@ -152,17 +164,22 @@ If `--cmake-configure` is used:
 ### Update Settings
 
 ```bash
+
 # Force regenerate settings
+
 ./scripts/setup_platform_settings.sh --force
 ```
 
 ### Manual CMake Configuration
 
 ```bash
+
 # Generate settings only
+
 ./scripts/setup_platform_settings.sh
 
 # Then configure CMake manually
+
 cmake --preset macos-arm64-debug
 ```
 
@@ -196,14 +213,18 @@ The script generates `.vscode/settings.json.user`:
 **macOS**:
 
 ```bash
+
 # Install Xcode Command Line Tools
+
 xcode-select --install
 ```
 
 **Linux**:
 
 ```bash
+
 # Install build tools
+
 sudo apt-get update
 sudo apt-get install build-essential
 ```

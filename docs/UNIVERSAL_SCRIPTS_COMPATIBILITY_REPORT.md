@@ -88,12 +88,16 @@ These scripts require specific project structure but are configurable:
 - ✅ Optional MCP integration (graceful fallback)
 
 **Project Root Detection**:
+
 ```python
+
 # Works in both monorepo and extracted repos
+
 project_root = Path(__file__).parent.parent.parent  # scripts/base/ -> project root
 ```
 
 **Test Results**:
+
 - ✅ Detects project root correctly in monorepo
 - ✅ Would detect project root correctly in extracted repo
 - ✅ Base class imports work correctly
@@ -105,6 +109,7 @@ project_root = Path(__file__).parent.parent.parent  # scripts/base/ -> project r
 ### ✅ All Scripts Work
 
 **Test Results** (2025-11-22):
+
 - ✅ `automate_todo2_duplicate_detection.py` - Works correctly
 - ✅ `automate_todo2_alignment_v2.py` - Works correctly
 - ✅ `automate_docs_health_v2.py` - Works correctly
@@ -136,6 +141,7 @@ ib_box_spread_full_universal/
 **Status**: ✅ **Scripts are universal and will work when extracted**
 
 **What Gets Extracted**:
+
 - ✅ `scripts/base/intelligent_automation_base.py` - Universal base class
 - ✅ `scripts/automate_*.py` - All automation scripts
 - ✅ Configuration templates
@@ -151,14 +157,18 @@ ib_box_spread_full_universal/
 **Usage in Other Projects**:
 
 ```bash
+
 # Clone trading-automation-tools
+
 git clone https://github.com/davidl71/trading-automation-tools
 
 # Use universal scripts (work in any project)
+
 python3 trading-automation-tools/scripts/automate_dependency_security.py
 
 # Use Todo2 scripts (need .todo2/ in project)
 # Project must have .todo2/state.todo2.json
+
 python3 trading-automation-tools/scripts/automate_todo2_duplicate_detection.py
 ```
 
@@ -216,6 +226,7 @@ When using scripts in other projects:
 | `automate_notebooklm_creation.py` | ✅ | ❌ | ❌ | ❌ | ❌ Legacy (no base class) |
 
 **Summary**:
+
 - ✅ **10/10 scripts load correctly**
 - ✅ **6/10 scripts use IntelligentAutomationBase** (modern, universal)
 - ✅ **1/10 scripts fully universal** (no dependencies)

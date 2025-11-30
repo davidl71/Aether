@@ -26,6 +26,7 @@ Identified **7 key opportunities** for speeding up your development workflow usi
 - **What it optimizes**:
   - `~/.ccache` (ccache cache)
   - `~/.sccache` (sccache cache)
+
 - **Current size**: ~73MB (sccache), can grow to several GB
 - **RAM needed**: ~4GB for both caches
 - **Setup**: `./scripts/setup_ram_optimization.sh enable`
@@ -37,6 +38,7 @@ Identified **7 key opportunities** for speeding up your development workflow usi
 - **What it optimizes**:
   - `~/.cache/pip` (pip package cache)
   - Python `__pycache__` directories
+
 - **Current size**: Part of ~3.3GB in `~/.cache`
 - **RAM needed**: ~1-2GB
 - **Setup**: `./scripts/setup_ram_optimization.sh enable`
@@ -48,6 +50,7 @@ Identified **7 key opportunities** for speeding up your development workflow usi
 - **What it optimizes**:
   - `~/.cargo/registry` (crate registry cache)
   - `~/.cargo/git` (git dependencies cache)
+
 - **RAM needed**: ~2-4GB (if actively developing in Rust)
 - **Setup**: `./scripts/setup_ram_optimization.sh enable`
 
@@ -58,6 +61,7 @@ Identified **7 key opportunities** for speeding up your development workflow usi
 - **What it optimizes**:
   - `~/.cache/node` (npm cache)
   - `~/.cache/yarn` (yarn cache)
+
 - **RAM needed**: ~1-2GB (if using web frontend)
 - **Setup**: `./scripts/setup_ram_optimization.sh enable`
 
@@ -67,6 +71,7 @@ Identified **7 key opportunities** for speeding up your development workflow usi
 - **Impact**: Faster temp file operations, cleaner disk
 - **What it optimizes**:
   - `$TMPDIR`, `$TMP`, `$TEMP` environment variables
+
 - **RAM needed**: ~1GB
 - **Setup**: `./scripts/setup_ram_optimization.sh enable`
 
@@ -78,6 +83,7 @@ Identified **7 key opportunities** for speeding up your development workflow usi
   - sccache with Redis backend
   - Team-wide cache sharing
   - Faster clean builds on new machines
+
 - **RAM needed**: Redis can run in RAM (via Docker tmpfs)
 - **Setup**: `./scripts/setup_ram_optimization.sh redis`
 
@@ -129,34 +135,44 @@ Identified **7 key opportunities** for speeding up your development workflow usi
 ### Option 1: Comprehensive (All Caches)
 
 ```bash
+
 # Enable all RAM optimizations
+
 ./scripts/setup_ram_optimization.sh enable
 
 # Source environment
+
 source .ram-optimization-env
 
 # Check status
+
 ./scripts/setup_ram_optimization.sh status
 ```
 
 ### Option 2: Build-Only
 
 ```bash
+
 # Create RAM disk for builds
+
 ./scripts/setup_ramdisk.sh create
 
 # Build on RAM disk
+
 ./scripts/build_ramdisk.sh build
 ```
 
 ### Option 3: Both (Recommended)
 
 ```bash
+
 # Caches on RAM
+
 ./scripts/setup_ram_optimization.sh enable
 source .ram-optimization-env
 
 # Builds on RAM
+
 ./scripts/setup_ramdisk.sh create
 ./scripts/build_ramdisk.sh build
 ```
@@ -191,10 +207,13 @@ source .ram-optimization-env
 ### Daily Use
 
 ```bash
+
 # Check status
+
 ./scripts/setup_ram_optimization.sh status
 
 # If RAM disk unmounted (after reboot), re-enable
+
 ./scripts/setup_ram_optimization.sh enable
 source .ram-optimization-env
 ```
@@ -202,10 +221,13 @@ source .ram-optimization-env
 ### Cleanup (if needed)
 
 ```bash
+
 # Disable optimization
+
 ./scripts/setup_ram_optimization.sh disable
 
 # Unmount build RAM disk
+
 ./scripts/setup_ramdisk.sh unmount
 ```
 
@@ -224,7 +246,9 @@ source .ram-optimization-env
 If working with a team or multiple machines:
 
 ```bash
+
 # Setup Redis backend
+
 ./scripts/setup_ram_optimization.sh redis
 
 # Share cache across machines

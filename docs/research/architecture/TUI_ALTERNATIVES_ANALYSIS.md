@@ -10,6 +10,7 @@
 **Key Finding**: KICKS is **NOT a TUI framework** - it's a CICS replacement for IBM mainframes (MVS 3.8, z/OS, VM/370). It cannot be used as a TUI alternative for modern C++/Python trading applications.
 
 **Current State**: The project has two TUI implementations:
+
 - **C++ TUI**: Using FTXUI (`native/src/tui_app.cpp`) ✅
 - **Python TUI**: Using Textual (`python/tui/app.py`) ✅
 
@@ -22,6 +23,7 @@
 ### What KICKS Actually Is
 
 **KICKS** (KICKS for TSO/CMS) is:
+
 - A **CICS replacement** for IBM mainframe environments
 - Designed for **MVS 3.8, z/OS, VM/370** systems
 - Allows running CICS applications **without installing CICS**
@@ -50,6 +52,7 @@
 **Status**: Production-ready
 
 **Features**:
+
 - Modern C++20 declarative UI
 - Real-time data updates
 - Tab navigation (Dashboard, Positions, Orders, Alerts)
@@ -59,6 +62,7 @@
 - Multiple providers (Mock, REST, File)
 
 **Pros**:
+
 - ✅ Native C++ performance
 - ✅ Header-only library (easy CMake integration)
 - ✅ Modern declarative API
@@ -67,6 +71,7 @@
 - ✅ Cross-platform (macOS, Linux, Windows)
 
 **Cons**:
+
 - ⚠️ C++ complexity for rapid UI development
 
 ### 2. Python TUI with Textual ✅
@@ -76,6 +81,7 @@
 **Status**: Production-ready
 
 **Features**:
+
 - Modern Python reactive UI framework
 - Shared data models with PWA
 - Multiple providers (Mock, REST, File)
@@ -84,6 +90,7 @@
 - Real-time updates
 
 **Pros**:
+
 - ✅ Rapid development
 - ✅ Easy Python API integration
 - ✅ Shared models with PWA (TypeScript)
@@ -92,6 +99,7 @@
 - ✅ Rich widget library
 
 **Cons**:
+
 - ⚠️ Python performance overhead (acceptable for TUI)
 
 ---
@@ -104,6 +112,7 @@
 
 **Status**: Currently in use
 **Why It's Best**:
+
 - Modern C++20 design
 - Declarative API
 - Header-only (easy CMake integration)
@@ -118,6 +127,7 @@
 **Framework**: [notcurses](https://github.com/dankamongmen/notcurses)
 
 **Features**:
+
 - Modern ncurses replacement
 - True color support
 - Multimedia support (images, video)
@@ -131,6 +141,7 @@
 **Framework**: Traditional ncurses
 
 **Features**:
+
 - Industry standard
 - Mature and stable
 - Wide platform support
@@ -143,6 +154,7 @@
 
 **Status**: Currently in use
 **Why It's Best**:
+
 - Modern reactive framework
 - Excellent documentation
 - Rich widget library
@@ -156,6 +168,7 @@
 **Framework**: [Rich](https://github.com/Textualize/rich)
 
 **Features**:
+
 - Beautiful terminal output
 - Rich formatting
 - Progress bars, tables, syntax highlighting
@@ -167,6 +180,7 @@
 **Framework**: [prompt_toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit)
 
 **Features**:
+
 - Advanced input handling
 - Auto-completion
 - Syntax highlighting
@@ -192,6 +206,7 @@
 ### ✅ Keep Current Implementations
 
 **Why**:
+
 - FTXUI is the best modern C++ TUI framework available
 - Textual is the best modern Python TUI framework available
 - Both are actively maintained and well-documented
@@ -202,6 +217,7 @@
 ### Trading System Requirements Met
 
 **Core Requirements**:
+
 - ✅ Real-time data updates (500ms-1s refresh)
 - ✅ Multiple tabs (Dashboard, Positions, Orders, Alerts)
 - ✅ Keyboard shortcuts (Q, F1-F10, Tab navigation)
@@ -210,6 +226,7 @@
 - ✅ Cross-platform (macOS, Linux)
 
 **Advanced Features**:
+
 - ✅ Modal dialogs/popovers
 - ✅ Data tables with sorting
 - ✅ Real-time metrics display
@@ -223,6 +240,7 @@
 **KICKS is not a TUI framework** - it's a CICS replacement for IBM mainframes and cannot be used for modern trading applications.
 
 **Your current TUI implementations are excellent choices**:
+
 - **FTXUI (C++)** is the best modern C++ TUI framework
 - **Textual (Python)** is the best modern Python TUI framework
 

@@ -58,6 +58,7 @@
 **Estimated Current Total: 81-128 tools** ⚠️ **STILL EXCEEDS 80 LIMIT**
 
 **Breakdown:**
+
 - Must keep: 63-101 tools
 - Can remove: 18-27 tools
 - **Total:** 81-128 tools
@@ -73,6 +74,7 @@ Since Todo2 is actively used, `agentic-tools` (30-50 tools) must be kept. This m
 #### Priority 1: Remove Context7 (Saves 8-12 tools)
 
 **Rationale:**
+
 - Redundant with web search
 - Low value for C++ trading project
 - Can use web search for library documentation
@@ -84,6 +86,7 @@ Since Todo2 is actively used, `agentic-tools` (30-50 tools) must be kept. This m
 #### Priority 2: Evaluate NotebookLM (Saves 10-15 tools if removed)
 
 **Decision Criteria:**
+
 - ✅ **Keep if:** Actively using TWS API notebook regularly
 - ❌ **Remove if:** Not actively querying notebook
 
@@ -92,6 +95,7 @@ Since Todo2 is actively used, `agentic-tools` (30-50 tools) must be kept. This m
 **Expected Result (if removed):** Tool count drops to ~63-101 tools
 
 **Recommendation:**
+
 - If you actively query the TWS API notebook → **KEEP** (saves research time)
 - If you rarely use the notebook → **REMOVE** (saves 10-15 tools, brings count under 80)
 
@@ -102,10 +106,12 @@ Since Todo2 is actively used, `agentic-tools` (30-50 tools) must be kept. This m
 ### Option A: Remove Context7 Only (Conservative)
 
 **Keep:**
+
 - ✅ All must-keep servers (63-101 tools)
 - ✅ notebooklm (10-15 tools)
 
 **Remove:**
+
 - ❌ context7 (8-12 tools)
 
 **Result: 73-116 tools** ⚠️ **MAY STILL EXCEED 80 IF AGENTIC-TOOLS HAS 50+ TOOLS**
@@ -113,9 +119,11 @@ Since Todo2 is actively used, `agentic-tools` (30-50 tools) must be kept. This m
 ### Option B: Remove Context7 + NotebookLM (Optimal - Recommended)
 
 **Keep:**
+
 - ✅ All must-keep servers (63-101 tools)
 
 **Remove:**
+
 - ❌ context7 (8-12 tools)
 - ❌ notebooklm (10-15 tools)
 
@@ -128,12 +136,14 @@ Since Todo2 is actively used, `agentic-tools` (30-50 tools) must be kept. This m
 If Option B still exceeds 80 tools (if agentic-tools has 50+ tools), consider:
 
 **Keep Only:**
+
 - ✅ filesystem (10-15 tools)
 - ✅ git (10-15 tools)
 - ✅ agentic-tools (30-50 tools) - **REQUIRED FOR TODO2**
 - ✅ semgrep (3-5 tools)
 
 **Remove:**
+
 - ❌ tractatus_thinking (5-8 tools)
 - ❌ sequential_thinking (5-8 tools)
 - ❌ context7 (8-12 tools)
@@ -150,11 +160,13 @@ If Option B still exceeds 80 tools (if agentic-tools has 50+ tools), consider:
 ### Step 1: Remove Context7 (Immediate - Saves 8-12 tools)
 
 **Rationale:**
+
 - Redundant with web search
 - Low value for trading project
 - Easy removal
 
 **Action:**
+
 1. Edit `.cursor/mcp.json` (project config)
 2. Remove `context7` entry
 3. Save and restart Cursor
@@ -166,11 +178,13 @@ If Option B still exceeds 80 tools (if agentic-tools has 50+ tools), consider:
 **Question:** How often do you query the TWS API notebook?
 
 **If frequently (> once per day):**
+
 - ✅ **KEEP** notebooklm
 - Tool count: ~73-116 tools
 - May still exceed 80 if agentic-tools is large
 
 **If rarely (< once per week):**
+
 - ❌ **REMOVE** notebooklm
 - Tool count: ~63-101 tools
 - Should be under 80 if agentic-tools is closer to 30 tools
@@ -178,6 +192,7 @@ If Option B still exceeds 80 tools (if agentic-tools has 50+ tools), consider:
 ### Step 3: Verify Tool Count
 
 After removing context7 (+ notebooklm if removed):
+
 1. Restart Cursor
 2. Check tool count in Cursor Settings → MCP Servers
 3. If under 80 → ✅ Done!
@@ -190,10 +205,12 @@ After removing context7 (+ notebooklm if removed):
 Consider removing thinking tools (only as last resort):
 
 **Remove:**
+
 - ❌ tractatus_thinking (5-8 tools)
 - ❌ sequential_thinking (5-8 tools)
 
 **Impact:**
+
 - ✅ Saves 10-16 tools
 - ❌ Lose structured problem-solving tools
 - ✅ Can use web search for similar thinking patterns
@@ -218,6 +235,7 @@ Consider removing thinking tools (only as last resort):
 ### ✅ Recommended Configuration
 
 **Keep (6 servers - 63-101 tools):**
+
 1. ✅ **agentic-tools** - **REQUIRED** - Todo2 workflow (30-50 tools)
 2. ✅ **filesystem** - Essential file operations (10-15 tools)
 3. ✅ **git** - Essential version control (10-15 tools)
@@ -226,6 +244,7 @@ Consider removing thinking tools (only as last resort):
 6. ✅ **sequential_thinking** - Universal thinking tool (5-8 tools)
 
 **Remove (2 servers - 18-27 tools):**
+
 1. ❌ **context7** - Redundant with web search (8-12 tools)
 2. ❌ **notebooklm** - Remove if not actively using TWS API notebook (10-15 tools)
 
@@ -290,6 +309,7 @@ Start: 81-128 tools (after removing desktop-commander)
 **Key Constraint:** Todo2 is actively used → Must keep `agentic-tools` (30-50 tools)
 
 **Recommendation:**
+
 1. ✅ **Remove context7** (saves 8-12 tools) - Immediate action
 2. ⚠️ **Evaluate notebooklm** (saves 10-15 tools if removed) - Decision based on usage
 3. 🔴 **Remove thinking tools** (saves 10-16 tools) - Last resort if still over 80
@@ -297,6 +317,7 @@ Start: 81-128 tools (after removing desktop-commander)
 **Expected Final Tool Count:** 53-101 tools (should be under 80 after optimizations)
 
 **Priority Order:**
+
 1. Remove context7 (immediate)
 2. Remove notebooklm if not using (if needed)
 3. Remove thinking tools if still over 80 (last resort)

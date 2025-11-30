@@ -62,6 +62,7 @@
 ### 4. useWebSocket Export Missing (T-205/T-207 Related) ⚠️
 
 **Error**:
+
 - `src/hooks/useLeanSnapshot.ts(10,10): error TS2305: Module '"./useWebSocket"' has no exported member 'useWebSocket'.`
 - `src/hooks/useLeanSnapshot.ts(10,29): error TS2305: Module '"./useWebSocket"' has no exported member 'WebSocketMessage'.`
 
@@ -78,6 +79,7 @@
 ### 5. CandlestickChart Type Errors (General PWA) ⚠️
 
 **Error**:
+
 - `src/components/CandlestickChart.tsx(54,37): error TS2339: Property 'addCandlestickSeries' does not exist on type 'IChartApi'.`
 - `src/components/CandlestickChart.tsx(95,33): error TS2345: Argument of type '{ time: number; ... }' is not assignable`
 
@@ -124,6 +126,7 @@
 ### Critical Blockers (Must Fix Now)
 
 **T-203 (Unified Positions Panel) - 3 Errors:**
+
 1. ✅ TabId type mismatch - **BLOCKS unified tab**
 2. ✅ bankAccounts variable - **BLOCKS bank account integration**
 3. ✅ GroupedPositions type - **BLOCKS component compilation**
@@ -135,6 +138,7 @@
 ### Future Blockers (Fix Before T-205/T-207)
 
 **T-205 (Cash Flow Modeling) / T-207 (Simulation) - 3 Errors:**
+
 1. ⚠️ useWebSocket exports - **BLOCKS real-time updates**
 2. ⚠️ useLeanSnapshot error type - **BLOCKS TypeScript compilation**
 3. ⚠️ CandlestickChart types - **BLOCKS visualization**
@@ -146,6 +150,7 @@
 ### Low Priority (Can Defer)
 
 **WASM Module - 1 Error:**
+
 1. ⚠️ Missing WASM module - **Optional feature**, doesn't block alignment
 
 **Impact**: **None for alignment tasks** - can be deferred
@@ -206,6 +211,7 @@
 **Status**: Implementation complete, but **blocked by TypeScript errors**
 
 **Required Fixes**:
+
 - TabId type update
 - bankAccounts variable fix
 - GroupedPositions type fix
@@ -217,6 +223,7 @@
 ### T-205: Cash Flow Modeling ⚠️
 
 **Status**: Not started, but **will be blocked** by:
+
 - useWebSocket exports (needed for real-time cash flow updates)
 - useLeanSnapshot error type (blocks compilation)
 - CandlestickChart types (needed for cash flow charts)
@@ -228,6 +235,7 @@
 ### T-207: Opportunity Simulation ⚠️
 
 **Status**: Not started, but **will be blocked** by:
+
 - useWebSocket exports (needed for real-time simulation updates)
 - useLeanSnapshot error type (blocks compilation)
 
@@ -240,18 +248,21 @@
 ### Create New Tasks for TypeScript Fixes
 
 **T-211: Fix TypeScript errors blocking unified positions panel (T-203)**
+
 - Priority: **CRITICAL**
 - Dependencies: None
 - Blocks: T-203 completion
 - Fixes: TabId type, bankAccounts variable, GroupedPositions type
 
 **T-212: Fix TypeScript errors blocking cash flow and simulation (T-205/T-207)**
+
 - Priority: **HIGH**
 - Dependencies: T-211 (should fix Phase 1 first)
 - Blocks: T-205, T-207
 - Fixes: useWebSocket exports, useLeanSnapshot error type, CandlestickChart types
 
 **T-213: Fix optional TypeScript errors (WASM, etc.)**
+
 - Priority: **LOW**
 - Dependencies: None
 - Blocks: None
@@ -292,6 +303,7 @@
 **Key Insight**: TypeScript errors are **directly caused by** our TUI/PWA alignment work and **must be fixed** for the alignment plan to succeed.
 
 **Critical Path**:
+
 1. Fix T-203 blockers → Complete T-203
 2. Fix T-205/T-207 blockers → Enable T-205, T-207
 3. Continue alignment plan → T-205, T-206, T-207, T-208

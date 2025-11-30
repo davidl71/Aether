@@ -64,17 +64,20 @@ results = automation.run()
 The `automate_automation_opportunities.py` script demonstrates the base class in action:
 
 **Key Features:**
+
 - Finds automation opportunities automatically
 - Scores opportunities by value, effort, frequency
 - Creates Todo2 tasks for high-priority opportunities
 - Generates comprehensive report
 
 **Usage:**
+
 ```bash
 python3 scripts/automate_automation_opportunities.py
 ```
 
 **Output:**
+
 - `docs/AUTOMATION_OPPORTUNITIES_FOUND.md` - Comprehensive report
 - Todo2 tasks created automatically
 - Follow-up tasks for high-priority opportunities
@@ -86,6 +89,7 @@ python3 scripts/automate_automation_opportunities.py
 The base class follows a 10-step intelligent workflow:
 
 ### Step 1: Tractatus Analysis
+
 ```python
 def _tractatus_analysis(self):
     # Understands WHAT to analyze
@@ -94,6 +98,7 @@ def _tractatus_analysis(self):
 ```
 
 ### Step 2: Sequential Planning
+
 ```python
 def _sequential_planning(self):
     # Plans HOW to analyze
@@ -102,6 +107,7 @@ def _sequential_planning(self):
 ```
 
 ### Step 3: Todo2 Task Creation
+
 ```python
 def _create_todo2_task(self):
     # Creates task for tracking
@@ -110,6 +116,7 @@ def _create_todo2_task(self):
 ```
 
 ### Step 4: NetworkX Analysis
+
 ```python
 def _networkx_analysis(self):
     # Builds dependency graphs
@@ -118,6 +125,7 @@ def _networkx_analysis(self):
 ```
 
 ### Step 5: Execute Analysis
+
 ```python
 def _execute_analysis(self):
     # Your custom analysis logic
@@ -125,6 +133,7 @@ def _execute_analysis(self):
 ```
 
 ### Step 6: Generate Insights
+
 ```python
 def _generate_insights(self, results):
     # Uses Tractatus to understand results
@@ -132,6 +141,7 @@ def _generate_insights(self, results):
 ```
 
 ### Step 7: Store Todo2 Results
+
 ```python
 def _store_todo2_results(self, results, insights):
     # Stores results in Todo2 task
@@ -139,6 +149,7 @@ def _store_todo2_results(self, results, insights):
 ```
 
 ### Step 8: Create Follow-up Tasks
+
 ```python
 def _create_followup_tasks(self, results):
     # Creates actionable tasks
@@ -146,6 +157,7 @@ def _create_followup_tasks(self, results):
 ```
 
 ### Step 9: Generate Report
+
 ```python
 def _generate_report(self, results, insights):
     # Generates markdown report
@@ -153,6 +165,7 @@ def _generate_report(self, results, insights):
 ```
 
 ### Step 10: Update Todo2 Complete
+
 ```python
 def _update_todo2_complete(self):
     # Marks task as done
@@ -206,16 +219,19 @@ def _identify_followup_tasks(self, analysis_results: Dict) -> List[Dict]:
 ## Benefits
 
 ### Efficiency
+
 - **50-70% faster**: Focus on critical components first
 - **Early exit**: Stop on critical failures
 - **Adaptive workflows**: Plan dynamically
 
 ### Quality
+
 - **Root cause analysis**: Tractatus reveals WHY
 - **Dependency awareness**: NetworkX shows relationships
 - **Actionable insights**: Automatic task creation
 
 ### Integration
+
 - **Todo2 tracking**: All automations tracked
 - **Follow-up tasks**: Issues become actionable
 - **Report generation**: Comprehensive documentation
@@ -238,6 +254,7 @@ def _identify_followup_tasks(self, analysis_results: Dict) -> List[Dict]:
 ### Example 1: Documentation Health (Already Implemented)
 
 Uses base class pattern:
+
 - Tractatus: "What is documentation health?"
 - Sequential: "How do we check documentation health?"
 - NetworkX: Documentation cross-reference graph
@@ -246,6 +263,7 @@ Uses base class pattern:
 ### Example 2: Todo2 Alignment (Can Be Refactored)
 
 Could use base class:
+
 - Tractatus: "What is task alignment?"
 - Sequential: "How do we analyze alignment?"
 - NetworkX: Task dependency graph
@@ -254,6 +272,7 @@ Could use base class:
 ### Example 3: Automation Opportunity Finder (Implemented)
 
 Demonstrates base class:
+
 - Tractatus: "What makes a good automation opportunity?"
 - Sequential: "How do we find opportunities?"
 - NetworkX: Opportunity dependency graph
@@ -266,6 +285,7 @@ Demonstrates base class:
 ### Refactoring Existing Scripts
 
 **Before:**
+
 ```python
 def main():
     results = analyze()
@@ -273,6 +293,7 @@ def main():
 ```
 
 **After:**
+
 ```python
 class MyAutomation(IntelligentAutomationBase):
     def _execute_analysis(self):
@@ -287,6 +308,7 @@ def main():
 ```
 
 **Benefits:**
+
 - Automatic Todo2 tracking
 - Follow-up task creation
 - Tractatus/Sequential integration
@@ -301,6 +323,7 @@ def main():
 **Issue**: "NetworkX not available, skipping graph analysis"
 
 **Solution**: Install NetworkX
+
 ```bash
 pip install networkx>=3.2.0
 ```

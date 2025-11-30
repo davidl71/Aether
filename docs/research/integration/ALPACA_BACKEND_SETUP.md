@@ -7,6 +7,7 @@ This backend serves a unified `SnapshotPayload` for both the TUI and the PWA, po
 - Python 3.10+
 - Packages: `fastapi`, `uvicorn`, `requests`
   - Install: `pip install fastapi uvicorn requests`
+
 - Alpaca API keys (paper recommended for testing)
 
 ### Quick Start
@@ -18,7 +19,9 @@ export ALPACA_API_KEY_ID=your_key_id
 export ALPACA_API_SECRET_KEY=your_secret_key
 export ALPACA_PAPER=1
 export SYMBOLS=SPY,QQQ
+
 # Optional: enable file polling for TUI
+
 export SNAPSHOT_FILE_PATH=$(pwd)/web/public/data/snapshot.json
 
 ./scripts/start_alpaca_service.sh
@@ -91,13 +94,17 @@ Returns all open positions.
 #### Orders
 
 ```bash
+
 # All orders
+
 curl -s http://127.0.0.1:8000/api/orders | jq
 
 # Open orders only
+
 curl -s "http://127.0.0.1:8000/api/orders?status=open" | jq
 
 # Closed orders
+
 curl -s "http://127.0.0.1:8000/api/orders?status=closed&limit=100" | jq
 ```
 
@@ -108,11 +115,14 @@ curl -s "http://127.0.0.1:8000/api/orders?status=closed&limit=100" | jq
 The TUI can use the `FileProvider` to read snapshot JSON files:
 
 ```bash
+
 # Start service with file output
+
 export SNAPSHOT_FILE_PATH=$(pwd)/web/public/data/snapshot.json
 ./scripts/start_alpaca_service.sh
 
 # In another terminal, run TUI with file provider
+
 export TUI_SNAPSHOT_FILE=$(pwd)/web/public/data/snapshot.json
 ./build/ib_box_spread --tui
 ```
@@ -124,10 +134,13 @@ The `FileProvider` automatically polls the file and updates when it changes.
 The TUI `RestProvider` now supports HTTP polling using libcurl:
 
 ```bash
+
 # Start service
+
 ./scripts/start_alpaca_service.sh
 
 # In another terminal, run TUI with REST endpoint
+
 export TUI_API_URL=http://127.0.0.1:8000/api/snapshot
 ./build/ib_box_spread --tui --backend rest
 ```
@@ -139,7 +152,9 @@ Or configure it in the TUI config file. The `RestProvider` will automatically po
 Set an environment variable for the web app:
 
 ```bash
+
 # In a shell where you run `npm run dev` or build:
+
 export VITE_API_URL=http://127.0.0.1:8000/api/snapshot
 ```
 

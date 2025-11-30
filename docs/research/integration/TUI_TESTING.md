@@ -43,13 +43,17 @@ Test TUI components working together.
 Since FTXUI is an interactive library, manual testing is important:
 
 ```bash
+
 # Build TUI
+
 cmake --build build --target ib_box_spread_tui
 
 # Run with mock data
+
 ./build/ib_box_spread_tui
 
 # Test with different backends (via config file)
+
 TUI_BACKEND=mock ./build/ib_box_spread_tui
 TUI_BACKEND=rest ./build/ib_box_spread_tui
 ```

@@ -16,12 +16,14 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 ### 1. 🔍 Code Quality & Static Analysis
 
 #### 1.1 Linter & Static Analysis Automation
+
 **Frequency**: Daily
 **Script**: New - `scripts/automate_linter_analysis.py`
 **Purpose**: Automate existing linter runs and track trends
 **Current**: `scripts/run_linters.sh` exists but not automated
 
 **Actions**:
+
 - Run `scripts/run_linters.sh` (cppcheck, clang-tidy, Infer)
 - Run Trunk linters (bandit, ruff, clippy, shellcheck, etc.)
 - Parse and aggregate results
@@ -35,6 +37,7 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 **Output**: `docs/LINTER_ANALYSIS_REPORT.md`
 
 **Tools Available**:
+
 - ✅ cppcheck (C++)
 - ✅ clang-tidy (C++)
 - ✅ Trunk (multi-language: Python, Rust, Go, TypeScript, Shell)
@@ -46,11 +49,13 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 ---
 
 #### 1.2 Test Coverage Analysis
+
 **Frequency**: Daily
 **Script**: New - `scripts/automate_test_coverage.py`
 **Purpose**: Monitor test coverage trends and identify gaps
 
 **Actions**:
+
 - Run C++ tests with coverage (gcov/lcov)
 - Run Python tests with coverage (pytest-cov)
 - Run Rust tests with coverage (cargo-tarpaulin)
@@ -66,6 +71,7 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 **Output**: `docs/TEST_COVERAGE_REPORT.md`
 
 **Target Coverage**:
+
 - Critical code: 90%+
 - Core logic: 80%+
 - Utilities: 70%+
@@ -73,11 +79,13 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 ---
 
 #### 1.3 Code Complexity Analysis
+
 **Frequency**: Weekly
 **Script**: New - `scripts/automate_complexity_analysis.py`
 **Purpose**: Identify overly complex code that needs refactoring
 
 **Actions**:
+
 - Analyze cyclomatic complexity (C++, Python, Rust)
 - Identify functions with high complexity (>15)
 - Track complexity trends
@@ -90,6 +98,7 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 **Output**: `docs/COMPLEXITY_ANALYSIS_REPORT.md`
 
 **Tools**:
+
 - lizard (multi-language complexity)
 - radon (Python complexity)
 - clippy (Rust complexity hints)
@@ -99,11 +108,13 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 ### 2. 🔒 Security & Dependency Health
 
 #### 2.1 Dependency Security Scan
+
 **Frequency**: Daily
 **Script**: New - `scripts/automate_dependency_security.py`
 **Purpose**: Check for vulnerable dependencies
 
 **Actions**:
+
 - Scan Python dependencies (pip-audit, safety, osv-scanner)
 - Scan Rust dependencies (cargo-audit)
 - Scan npm dependencies (npm audit)
@@ -118,6 +129,7 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 **Output**: `docs/DEPENDENCY_SECURITY_REPORT.md`
 
 **Tools Available**:
+
 - ✅ osv-scanner (configured in Trunk)
 - ✅ pip-audit (Python)
 - ✅ cargo-audit (Rust)
@@ -127,11 +139,13 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 ---
 
 #### 2.2 Secret Scanning
+
 **Frequency**: Daily
 **Script**: New - `scripts/automate_secret_scanning.py`
 **Purpose**: Detect accidentally committed secrets
 
 **Actions**:
+
 - Run trufflehog (already in Trunk config)
 - Scan for API keys, tokens, passwords
 - Check git history for secrets
@@ -144,16 +158,19 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 **Output**: `docs/SECRET_SCAN_REPORT.md`
 
 **Tools**:
+
 - ✅ trufflehog (configured in Trunk)
 
 ---
 
 #### 2.3 Dependency Update Check
+
 **Frequency**: Weekly
 **Script**: New - `scripts/automate_dependency_updates.py`
 **Purpose**: Identify outdated dependencies
 
 **Actions**:
+
 - Check Python dependencies (pip list --outdated)
 - Check Rust dependencies (cargo outdated)
 - Check npm dependencies (npm outdated)
@@ -167,6 +184,7 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 **Output**: `docs/DEPENDENCY_UPDATE_REPORT.md`
 
 **Tools**:
+
 - pip list --outdated
 - cargo-outdated (Rust)
 - npm outdated
@@ -176,11 +194,13 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 ### 3. 🏗️ Build & Infrastructure Health
 
 #### 3.1 Build Health Check
+
 **Frequency**: Daily
 **Script**: New - `scripts/automate_build_health.py`
 **Purpose**: Monitor build system health
 
 **Actions**:
+
 - Test build on all platforms/configs
 - Measure build times (trend analysis)
 - Identify build failures
@@ -195,6 +215,7 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 **Output**: `docs/BUILD_HEALTH_REPORT.md`
 
 **Build Configs to Test**:
+
 - Debug (macOS)
 - Release (macOS)
 - Universal binary
@@ -205,11 +226,13 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 ---
 
 #### 3.2 Configuration Drift Detection
+
 **Frequency**: Weekly
 **Script**: New - `scripts/automate_config_drift.py`
 **Purpose**: Detect configuration inconsistencies
 
 **Actions**:
+
 - Compare CMakeLists.txt across components
 - Check for missing configs
 - Validate config formats
@@ -225,11 +248,13 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 ---
 
 #### 3.3 File System Health Check
+
 **Frequency**: Weekly
 **Script**: New - `scripts/automate_filesystem_health.py`
 **Purpose**: Monitor repository file system health
 
 **Actions**:
+
 - Check for large files (>10MB)
 - Find duplicate files
 - Identify orphaned files
@@ -248,11 +273,13 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 ### 4. 📊 Repository Metrics & Trends
 
 #### 4.1 Code Metrics Dashboard
+
 **Frequency**: Daily
 **Script**: New - `scripts/automate_code_metrics.py`
 **Purpose**: Track codebase metrics and trends
 
 **Actions**:
+
 - Count lines of code by language
 - Track file counts
 - Measure code growth rate
@@ -266,6 +293,7 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 **Output**: `docs/CODE_METRICS_DASHBOARD.md`
 
 **Metrics Tracked**:
+
 - Total LOC (by language)
 - Test LOC vs. production LOC
 - Files by type
@@ -276,11 +304,13 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 ---
 
 #### 4.2 Git Repository Health
+
 **Frequency**: Weekly
 **Script**: New - `scripts/automate_git_health.py`
 **Purpose**: Monitor git repository health
 
 **Actions**:
+
 - Check for large commits
 - Find merge conflicts in history
 - Detect force pushes
@@ -299,11 +329,13 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 ### 5. 🔗 Integration & API Health
 
 #### 5.1 API Contract Validation
+
 **Frequency**: Daily
 **Script**: New - `scripts/automate_api_contract_validation.py`
 **Purpose**: Validate API contract consistency
 
 **Actions**:
+
 - Validate `agents/shared/API_CONTRACT.md` format
 - Check for breaking changes
 - Verify endpoint consistency
@@ -318,11 +350,13 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 ---
 
 #### 5.2 Integration Status Monitoring
+
 **Frequency**: Weekly
 **Script**: New - `scripts/automate_integration_health.py`
 **Purpose**: Monitor integration health
 
 **Actions**:
+
 - Check TWS API connectivity
 - Verify NATS server status
 - Test database connections
@@ -339,22 +373,26 @@ This plan outlines automation tasks to monitor and maintain repository health, c
 ## Implementation Priority
 
 ### Phase 1: Critical Security & Quality (Week 1)
+
 1. ✅ Dependency Security Scan (highest priority)
 2. ✅ Linter Automation (enhance existing)
 3. ✅ Test Coverage Analysis
 
 ### Phase 2: Build & Infrastructure (Week 2)
+
 4. Build Health Check
 5. Secret Scanning
 6. Code Metrics Dashboard
 
 ### Phase 3: Advanced Monitoring (Week 3-4)
+
 7. Code Complexity Analysis
 8. Dependency Update Check
 9. Configuration Drift Detection
 10. Git Repository Health
 
 ### Phase 4: Integration & API (Week 5+)
+
 11. API Contract Validation
 12. Integration Status Monitoring
 13. File System Health Check
@@ -417,6 +455,7 @@ Health Score = (
 ## Existing Tools to Leverage
 
 ### Already Configured
+
 - ✅ **Trunk**: Multi-language linting (bandit, ruff, clippy, shellcheck, etc.)
 - ✅ **run_linters.sh**: C++ static analysis (cppcheck, clang-tidy)
 - ✅ **osv-scanner**: Dependency vulnerability scanning
@@ -424,6 +463,7 @@ Health Score = (
 - ✅ **validate_docs_format.py**: API documentation validation
 
 ### To Install/Configure
+
 - **pip-audit**: Python dependency security
 - **cargo-audit**: Rust dependency security
 - **cargo-outdated**: Rust dependency updates
@@ -437,15 +477,18 @@ Health Score = (
 ## Success Metrics
 
 ### Automation Coverage
+
 - **Target**: 80% of health checks automated
 - **Current**: ~20% (docs health, TODO sync)
 - **Goal**: Reach 80% in 4 weeks
 
 ### Issue Detection
+
 - **Target**: Catch 90% of issues before they become critical
 - **Measurement**: Track issues found by automation vs. manual
 
 ### Time Savings
+
 - **Target**: Save 5+ hours/week on manual health checks
 - **Measurement**: Track time spent on manual checks before/after
 

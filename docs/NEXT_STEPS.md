@@ -74,13 +74,17 @@ cmake --build . --target ib_box_spread_tui
 **Full Build (if needed):**
 
 ```bash
+
 # From project root
+
 ./scripts/build_universal.sh
 
 # Or fast build with caching
+
 ./scripts/build_fast.sh
 
 # Then run TUI
+
 ./build/bin/ib_box_spread_tui --mock
 ```
 
@@ -93,8 +97,10 @@ cmake --build . --target ib_box_spread_tui
 **Run with Live Backend:**
 
 ```bash
+
 # Terminal 1: Start backend (if you have one running)
 # Terminal 2: Run TUI
+
 ./build/bin/ib_box_spread_tui
 ```
 
@@ -171,19 +177,25 @@ Once connected to live market data:
 ## Quick Reference Commands
 
 ```bash
+
 # Update PWA (Development)
+
 cd web && npm run dev
 
 # Build PWA (Production)
+
 cd web && npm run build && npm run preview
 
 # Build TUI
+
 cd build && cmake --build . --target ib_box_spread_tui
 
 # Run TUI with Mock Data
+
 ./build/bin/ib_box_spread_tui --mock
 
 # Full Rebuild (if needed)
+
 ./scripts/build_universal.sh
 ```
 

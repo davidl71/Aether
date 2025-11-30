@@ -250,6 +250,7 @@ Dedicated bandwidth for order entry connectivity.
 - **Fee Waiver**: No fee for bandwidth required to access:
   - BZX, BYX, EDGA, EDGX (Equities)
   - BZX Options, EDGX Options
+
 - Bandwidth requirements depend on order volume and latency needs
 
 ---

@@ -18,6 +18,7 @@ python3 scripts/resolve_task_clarifications.py \
 ### Resolve Multiple Tasks from File
 
 Create `decisions.json`:
+
 ```json
 {
   "T-76": {
@@ -32,6 +33,7 @@ Create `decisions.json`:
 ```
 
 Then run:
+
 ```bash
 python3 scripts/resolve_task_clarifications.py --file decisions.json
 ```
@@ -62,6 +64,7 @@ python3 scripts/resolve_task_clarifications.py --file decisions.json --dry-run
 ### Example 1: Resolve All Remaining Tasks
 
 Create `remaining_decisions.json`:
+
 ```json
 {
   "T-76": {
@@ -92,6 +95,7 @@ Create `remaining_decisions.json`:
 ```
 
 Run:
+
 ```bash
 python3 scripts/resolve_task_clarifications.py --file remaining_decisions.json
 ```
@@ -99,7 +103,9 @@ python3 scripts/resolve_task_clarifications.py --file remaining_decisions.json
 ### Example 2: Single Task with Custom Options
 
 ```bash
+
 # Resolve but don't move to Todo
+
 python3 scripts/resolve_task_clarifications.py \
   --task-id T-76 \
   --clarification "Storage format" \
@@ -136,10 +142,13 @@ python3 scripts/resolve_task_clarifications.py \
 ### With Batch Update Script
 
 ```bash
+
 # First resolve clarifications
+
 python3 scripts/resolve_task_clarifications.py --file decisions.json
 
 # Then approve/move to Todo (if not already done)
+
 python3 scripts/batch_update_todos.py update-status \
   --task-ids T-76,T-77,T-111,T-112,T-113,T-114 \
   --new-status Todo \
@@ -149,6 +158,7 @@ python3 scripts/batch_update_todos.py update-status \
 ### With Nightly Automation
 
 The nightly automation will automatically:
+
 1. Check for tasks in Review
 2. Batch approve those with "Clarification Required: None"
 3. Assign background tasks
@@ -162,4 +172,3 @@ After resolving clarifications, tasks will be picked up by nightly automation.
 - `scripts/batch_update_todos.py` - Batch task operations
 - `docs/TASKS_AWAITING_INPUT.md` - Current tasks needing input
 - `docs/BATCH_TODO_UPDATE_SCRIPT.md` - Batch script documentation
-

@@ -17,10 +17,12 @@ Comprehensive environment documentation has been created to support parallel dev
 ### 1. System Information Collection Scripts
 
 **Scripts:**
+
 - ✅ `scripts/collect_system_info.sh` - Bash-based collection script (cross-platform)
 - ✅ `scripts/collect_system_info_python.py` - Python-based collection script (recommended)
 
 **Features:**
+
 - Collects OS version, CPU, RAM, disk information
 - Gathers network interface details
 - Reports development tool versions
@@ -28,11 +30,15 @@ Comprehensive environment documentation has been created to support parallel dev
 - Outputs JSON format for easy parsing
 
 **Usage:**
+
 ```bash
+
 # Collect system information
+
 python3 scripts/collect_system_info_python.py > system_info_$(hostname).json
 
 # View formatted output
+
 cat system_info_$(hostname).json | jq .
 ```
 
@@ -41,6 +47,7 @@ cat system_info_$(hostname).json | jq .
 **Document:** `docs/DEVELOPMENT_ENVIRONMENT.md`
 
 **Contents:**
+
 - System specifications for both agents
 - Development tool versions
 - Network configuration
@@ -56,6 +63,7 @@ cat system_info_$(hostname).json | jq .
 **Document:** `docs/PARALLEL_DEVELOPMENT_WORKFLOW_EXAMPLE.md`
 
 **Contents:**
+
 - 3-hour parallel development session example
 - Step-by-step workflow for both agents
 - Apple Intelligence usage examples
@@ -89,6 +97,7 @@ cat system_info_$(hostname).json | jq .
 ### What Information Can Be Collected?
 
 **Ubuntu Agent:**
+
 - OS version and kernel
 - CPU model, cores, frequency
 - Total and available RAM
@@ -97,6 +106,7 @@ cat system_info_$(hostname).json | jq .
 - Development tool versions (Git, CMake, Rust, etc.)
 
 **macOS M4 Agent:**
+
 - macOS version and build
 - CPU brand (M4 with Neural Engine info)
 - Total and available RAM
@@ -115,6 +125,7 @@ cat system_info_$(hostname).json | jq .
 1. **Collect System Information:**
 
    **On Ubuntu Agent:**
+
    ```bash
    ssh cursor-ubuntu
    cd /path/to/project
@@ -122,6 +133,7 @@ cat system_info_$(hostname).json | jq .
    ```
 
    **On macOS M4 Agent:**
+
    ```bash
    ssh cursor-m4-mac
    cd /path/to/project
@@ -142,12 +154,14 @@ cat system_info_$(hostname).json | jq .
 ### Ongoing Maintenance
 
 **Monthly:**
+
 - Re-run collection scripts
 - Update environment documentation
 - Review performance benchmarks
 - Update task delegation strategy
 
 **When Hardware/Software Changes:**
+
 - Immediately update system information
 - Re-run collection scripts
 - Update documentation
@@ -209,25 +223,31 @@ scripts/
 ### Query System Info from Cursor
 
 **In Cursor Remote Session:**
+
 ```bash
+
 # Quick system check
+
 uname -a
 sysctl hw.ncpu  # macOS
 lscpu          # Linux
 
 # Full collection
+
 python3 scripts/collect_system_info_python.py
 ```
 
 ### Use in Workflow Planning
 
 **Before Starting Parallel Session:**
+
 1. Review `docs/DEVELOPMENT_ENVIRONMENT.md`
 2. Understand each agent's capabilities
 3. Plan task delegation based on specs
 4. Reference workflow example for patterns
 
 **During Development:**
+
 - Query system info as needed
 - Update documentation with findings
 - Reference environment doc for compatibility

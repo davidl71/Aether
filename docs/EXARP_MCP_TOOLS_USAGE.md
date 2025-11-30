@@ -1,6 +1,6 @@
 # Exarp MCP Tools Usage Guide
 
-**Date**: 2025-11-29  
+**Date**: 2025-11-29
 **Status**: Active
 
 ---
@@ -20,17 +20,22 @@ This guide documents how to use Exarp MCP tools as a workaround for the Exarp sc
 **Purpose**: Checks documentation health, finds broken links, and validates documentation structure.
 
 **Usage**:
+
 ```python
+
 # Via MCP tool (in Cursor chat)
+
 mcp_exarp_check_documentation_health()
 
 # Via CLI
+
 uvx exarp check-documentation-health /path/to/project [--dry-run]
 ```
 
 **Output**: Documentation health report with broken links, format errors, and recommendations.
 
 **Example**:
+
 ```bash
 $ uvx exarp check-documentation-health . --dry-run
 📚 Documentation Health Check
@@ -48,17 +53,22 @@ $ uvx exarp check-documentation-health . --dry-run
 **Purpose**: Analyzes Todo2 tasks for alignment with project goals and investment strategy framework.
 
 **Usage**:
+
 ```python
+
 # Via MCP tool (in Cursor chat)
+
 mcp_exarp_analyze_todo2_alignment(create_followup_tasks=True)
 
 # Via CLI
+
 uvx exarp analyze-todo2-alignment /path/to/project [--dry-run]
 ```
 
 **Output**: Alignment analysis report with misaligned tasks and recommendations.
 
 **Example**:
+
 ```bash
 $ uvx exarp analyze-todo2-alignment .
 🎯 Todo2 Alignment Analysis
@@ -76,17 +86,22 @@ $ uvx exarp analyze-todo2-alignment .
 **Purpose**: Detects duplicate tasks in Todo2 system.
 
 **Usage**:
+
 ```python
+
 # Via MCP tool (in Cursor chat)
+
 mcp_exarp_detect_duplicate_tasks(auto_fix=True, similarity_threshold=0.85)
 
 # Via CLI
+
 uvx exarp detect-duplicate-tasks /path/to/project [--auto-fix] [--dry-run]
 ```
 
 **Output**: Duplicate detection report with duplicate groups and auto-fix results.
 
 **Example**:
+
 ```bash
 $ uvx exarp detect-duplicate-tasks . --auto-fix
 🔍 Duplicate Task Detection
@@ -106,21 +121,28 @@ $ uvx exarp detect-duplicate-tasks . --auto-fix
 **Purpose**: Orchestrates all three Exarp MCP tools in a single script.
 
 **Usage**:
+
 ```bash
+
 # Run all Exarp checks
+
 python3 scripts/exarp_daily_automation_wrapper.py /path/to/project
 
 # Dry-run mode
+
 python3 scripts/exarp_daily_automation_wrapper.py /path/to/project --dry-run
 
 # JSON output
+
 python3 scripts/exarp_daily_automation_wrapper.py /path/to/project --json
 
 # Auto-fix duplicates
+
 python3 scripts/exarp_daily_automation_wrapper.py /path/to/project --auto-fix
 ```
 
 **Features**:
+
 - ✅ Calls all three Exarp tools
 - ✅ Generates combined report
 - ✅ Handles errors gracefully
@@ -129,6 +151,7 @@ python3 scripts/exarp_daily_automation_wrapper.py /path/to/project --auto-fix
 - ✅ Proper exit codes
 
 **Example Output**:
+
 ```
 🚀 Starting Exarp daily automation...
 Project directory: /home/david/ib_box_spread_full_universal
@@ -162,20 +185,26 @@ Project directory: /home/david/ib_box_spread_full_universal
 **Purpose**: Comprehensive daily automation including Exarp checks and documentation automation.
 
 **Usage**:
+
 ```bash
+
 # Run all automation tasks
+
 ./scripts/daily_automation_with_link_fixing.sh
 
 # Dry-run mode
+
 ./scripts/daily_automation_with_link_fixing.sh . --dry-run
 
 # Custom project directory
+
 ./scripts/daily_automation_with_link_fixing.sh /path/to/project
 ```
 
 **Tasks Executed**:
 
 **Phase 1: Exarp Checks**
+
 1. Documentation health check
 2. Todo2 alignment analysis
 3. Duplicate task detection
@@ -186,6 +215,7 @@ Project directory: /home/david/ib_box_spread_full_universal
 6. Shared TODO table synchronization
 
 **Example Output**:
+
 ```
 🚀 Starting daily automation tasks...
 Project directory: /home/david/ib_box_spread_full_universal
@@ -233,16 +263,20 @@ Reports saved to:
 To run daily automation automatically:
 
 ```bash
+
 # Edit crontab
+
 crontab -e
 
 # Add daily automation (runs at 2 AM)
+
 0 2 * * * /home/david/ib_box_spread_full_universal/scripts/daily_automation_with_link_fixing.sh /home/david/ib_box_spread_full_universal >> /tmp/daily_automation.log 2>&1
 ```
 
 ### Systemd Timer (Alternative)
 
 Create `/etc/systemd/user/daily-automation.timer`:
+
 ```ini
 [Unit]
 Description=Daily Automation Timer
@@ -257,6 +291,7 @@ WantedBy=timers.target
 ```
 
 Create `/etc/systemd/user/daily-automation.service`:
+
 ```ini
 [Unit]
 Description=Daily Automation Service
@@ -273,22 +308,30 @@ ExecStart=/home/david/ib_box_spread_full_universal/scripts/daily_automation_with
 ### Issue: "uvx or exarp not found"
 
 **Solution**: Install `uvx`:
+
 ```bash
+
 # Install uv (includes uvx)
+
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Verify installation
+
 uvx --version
 ```
 
 ### Issue: "Script not found" errors
 
 **Solution**: Use individual MCP tools or wrapper script instead of aggregate daily automation:
+
 ```bash
+
 # ✅ Works: Use wrapper script
+
 python3 scripts/exarp_daily_automation_wrapper.py .
 
 # ✅ Works: Use individual tools
+
 uvx exarp check-documentation-health .
 uvx exarp analyze-todo2-alignment .
 uvx exarp detect-duplicate-tasks .
@@ -300,8 +343,11 @@ uvx exarp detect-duplicate-tasks .
 ### Issue: Tasks timing out
 
 **Solution**: Increase timeout in wrapper script or run tasks individually:
+
 ```python
+
 # In scripts/exarp_daily_automation_wrapper.py
+
 timeout=600  # Increase from 300 to 600 seconds
 ```
 
@@ -325,5 +371,5 @@ timeout=600  # Increase from 300 to 600 seconds
 
 ---
 
-**Last Updated**: 2025-11-29  
+**Last Updated**: 2025-11-29
 **Status**: Active

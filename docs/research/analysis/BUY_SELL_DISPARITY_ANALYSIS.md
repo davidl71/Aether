@@ -20,6 +20,7 @@ This document explains the factors that cause disparities between buying and sel
   - Dividend expectations (affects synthetic forward price)
   - Early exercise risk (American options)
   - Interest rate changes
+
 - **Visualization**: Show put-call parity violation in basis points
 
 ### 3. **Liquidity Imbalance**
@@ -29,6 +30,7 @@ This document explains the factors that cause disparities between buying and sel
   - Market open: High liquidity, narrow disparity
   - Lunch: Lower liquidity, wider disparity
   - Market close: Mixed, depends on expiration
+
 - **Visualization**: Track liquidity score over time
 
 ### 4. **Market Maker Inventory**

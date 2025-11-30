@@ -128,13 +128,16 @@ Israel offers a diverse range of investment funds catering to various financial 
   - Capital sum (lump sum)
   - Installments
   - Tax-free monthly annuity
+
 - **Contributions**:
   - **Employees**: Employer participates with employee in monthly deposits (according to employment contract)
   - **Self-Employed**: Deposit into fund themselves
+
 - **Investment Options**: Wide range of investment routes available; can switch between funds without tax or seniority loss
 - **Tax Benefits**:
   - Self-employed depositors enjoy significant tax benefits (credit and deduction)
   - Employer participation increases savings
+
 - **Amendment 190**: Heirs of deceased member can transfer funds to independent provident fund in
   their name, enjoy capital and liquid savings at any time without tax event
 
@@ -155,6 +158,7 @@ regularly for the whole family. Can be withdrawn at any time (unlike regular pro
 - **Investment Provident Fund**: Savings can be withdrawn at any time, without withdrawal or exit penalties
 - **Tax Treatment**: 25% capital gains tax on real profit accumulated in the fund (when
   withdrawn before age 60)
+
 - **After Age 60**: Long-term savers enjoy tax benefit - exemption from capital gains tax and can
   withdraw as monthly annuity
 
@@ -163,13 +167,16 @@ regularly for the whole family. Can be withdrawn at any time (unlike regular pro
 - **Deposit Limits (as of 2021)**:
   - Up to NIS 70,913 per calendar year per person (according to ID)
   - No limit for family unit
+
 - **Deposit Methods**:
   - **Current Deposit**: Standing order with fixed monthly amount (can change or stop at any stage)
   - **One-Time Deposits**: Bank transfers from current account or deposit by check
   - Can combine both methods
+
 - **Liquidity**: Funds are liquid at all times; can withdraw and use for any purpose
 - **Investment Options**: Wide range of investment paths; can switch between funds and investment
   paths at any time without tax or seniority loss
+
 - **Suitability**: Suitable for all ages (children, adults, seniors) and all savings terms
   (short, medium, long)
 
@@ -805,6 +812,7 @@ struct IsraeliFundPosition {
   - ETF listings and real-time pricing
   - Index data (TA-35, TA-125, TA-90)
   - Historical market data
+
 - **Fund Management Companies**: Direct websites with fund information and account access
 - **Bank Integration**: Some funds accessible through bank portals (Discount Bank, Bank Hapoalim, etc.)
 

@@ -14,10 +14,13 @@ This guide explains how to use CMake presets in this project for building across
 #### macOS x86_64 (Intel Macs)
 
 ```bash
+
 # Debug build
+
 cmake --preset macos-x86_64-debug
 
 # Release build
+
 cmake --preset macos-x86_64-release
 ```
 
@@ -26,10 +29,13 @@ cmake --preset macos-x86_64-release
 #### macOS ARM64 (Apple Silicon)
 
 ```bash
+
 # Debug build
+
 cmake --preset macos-arm64-debug
 
 # Release build
+
 cmake --preset macos-arm64-release
 ```
 
@@ -38,10 +44,13 @@ cmake --preset macos-arm64-release
 #### Universal (Deprecated)
 
 ```bash
+
 # Debug build (DEPRECATED - use macos-x86_64-debug)
+
 cmake --preset macos-universal-debug
 
 # Release build (DEPRECATED - use macos-x86_64-release)
+
 cmake --preset macos-universal-release
 ```
 
@@ -54,16 +63,21 @@ cmake --preset macos-universal-release
 After configuring, use build presets:
 
 ```bash
+
 # Build debug
+
 cmake --build --preset macos-x86_64-debug
 
 # Build release
+
 cmake --build --preset macos-x86_64-release
 
 # Build ARM64 debug
+
 cmake --build --preset macos-arm64-debug
 
 # Build ARM64 release
+
 cmake --build --preset macos-arm64-release
 ```
 
@@ -74,16 +88,21 @@ cmake --build --preset macos-arm64-release
 Run tests with test presets:
 
 ```bash
+
 # Run tests (debug)
+
 ctest --preset macos-x86_64-debug --output-on-failure
 
 # Run tests (release)
+
 ctest --preset macos-x86_64-release --output-on-failure
 
 # Run tests (ARM64 debug)
+
 ctest --preset macos-arm64-debug --output-on-failure
 
 # Run tests (ARM64 release)
+
 ctest --preset macos-arm64-release --output-on-failure
 ```
 
@@ -94,39 +113,51 @@ ctest --preset macos-arm64-release --output-on-failure
 ### 1. Configure and Build (Debug)
 
 ```bash
+
 # Configure
+
 cmake --preset macos-arm64-debug
 
 # Build
+
 cmake --build --preset macos-arm64-debug
 
 # Run tests
+
 ctest --preset macos-arm64-debug --output-on-failure
 ```
 
 ### 2. Configure and Build (Release)
 
 ```bash
+
 # Configure
+
 cmake --preset macos-arm64-release
 
 # Build
+
 cmake --build --preset macos-arm64-release
 
 # Run tests
+
 ctest --preset macos-arm64-release --output-on-failure
 ```
 
 ### 3. Clean Build
 
 ```bash
+
 # Remove build directory
+
 rm -rf build/macos-arm64-debug
 
 # Reconfigure
+
 cmake --preset macos-arm64-debug
 
 # Rebuild
+
 cmake --build --preset macos-arm64-debug
 ```
 
@@ -208,11 +239,14 @@ Pre-configured tasks in `.vscode/tasks.json`:
 Some presets may require environment variables:
 
 ```bash
+
 # TWS API path (if not using default)
+
 export IBAPI_INCLUDE_DIR=~/IBJts/source/cppclient
 export IBAPI_LIB=~/IBJts/source/cppclient/libTwsApiCpp.dylib
 
 # Intel Decimal Library path
+
 export INTEL_DECIMAL_LIB=~/path/to/libbid.a
 ```
 
@@ -223,17 +257,22 @@ export INTEL_DECIMAL_LIB=~/path/to/libbid.a
 ### Preset Not Found
 
 ```bash
+
 # List available presets
+
 cmake --list-presets
 
 # Verify CMakePresets.json exists
+
 ls -la CMakePresets.json
 ```
 
 ### Wrong Architecture
 
 ```bash
+
 # Check current architecture
+
 uname -m
 
 # Use appropriate preset
@@ -244,7 +283,9 @@ uname -m
 ### Build Directory Mismatch
 
 ```bash
+
 # Clean and reconfigure
+
 rm -rf build/*
 cmake --preset macos-arm64-debug
 ```

@@ -72,9 +72,11 @@ te.login('api_key:api_secret')
 import tradingeconomics as te
 
 # Authenticate
+
 te.login('your_api_key:your_api_secret')
 
 # Get Israeli CPI data
+
 cpi_data = te.getIndicatorData(
     country=['israel'],
     indicator=['consumer price index cpi'],
@@ -116,7 +118,9 @@ print(cpi_data)
 **Configuration:**
 
 ```python
+
 # config/api_config.py
+
 TRADING_ECONOMICS_API_KEY = os.getenv('TRADING_ECONOMICS_API_KEY')
 TRADING_ECONOMICS_API_SECRET = os.getenv('TRADING_ECONOMICS_API_SECRET')
 ```

@@ -102,10 +102,13 @@ Create or update `config/lean_alpaca_config.json`:
 ### 1. Test Connection
 
 ```bash
+
 # Activate LEAN environment
+
 source python/venv312/bin/activate
 
 # Test connection (will use config.json)
+
 lean live --brokerage Alpaca
 ```
 
@@ -114,7 +117,9 @@ lean live --brokerage Alpaca
 Create a simple test algorithm:
 
 ```python
+
 # Main/test_alpaca_connection.py
+
 from AlgorithmImports import *
 
 class TestAlpacaConnection(QCAlgorithm):
@@ -140,7 +145,9 @@ lean backtest Main/test_alpaca_connection.py
 ### 3. Test Order Placement (Paper Trading)
 
 ```python
+
 # Main/test_alpaca_orders.py
+
 from AlgorithmImports import *
 
 class TestAlpacaOrders(QCAlgorithm):

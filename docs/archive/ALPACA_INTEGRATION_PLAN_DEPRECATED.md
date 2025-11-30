@@ -312,7 +312,9 @@ private:
 **Dependencies**:
 
 ```bash
+
 # Add to CMakeLists.txt
+
 find_package(CURL REQUIRED)
 find_package(nlohmann_json REQUIRED)
 ```

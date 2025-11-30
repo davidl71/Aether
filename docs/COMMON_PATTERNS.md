@@ -258,7 +258,7 @@ void OrderManager::update_order_status(int order_id, OrderStatus status)
 {
   std::lock_guard<std::mutex> lock(orders_mutex_);
   auto it = std::find_if(orders_.begin(), orders_.end(),
-                         [order_id](const Order& o) {
+                         order_id {
                            return o.order_id == order_id;
                          });
   if (it != orders_.end())
@@ -357,7 +357,7 @@ for (const auto& order : orders_)
 
 ```cpp
 auto it = std::find_if(orders_.begin(), orders_.end(),
-                       [id](const Order& o) { return o.id == id; });
+                       id { return o.id == id; });
 ```
 
 ### Const Correctness

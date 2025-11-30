@@ -9,6 +9,7 @@
 ## Executive Summary
 
 **Current State**:
+
 - **TUI**: Focused on box spread strategy only, missing multi-asset platform features
 - **PWA**: Basic box spread dashboard, missing core platform goals (24.1% alignment)
 - **Gap**: Both UIs are box-spread-centric, not aligned with comprehensive synthetic financing platform vision
@@ -43,6 +44,7 @@
 ### 2.1 Current Features
 
 **✅ Implemented:**
+
 - C++ TUI with FTXUI (`native/src/tui_app.cpp`) - Box spread focused
 - Python TUI with Textual (`python/tui/app.py`) - Box spread focused
 - Dashboard tab (symbols, box spread scenarios)
@@ -53,6 +55,7 @@
 - Real-time updates
 
 **❌ Missing Goal Features:**
+
 - **Unified Positions**: Only shows box spread positions, not bank loans, pension loans, bonds, T-bills
 - **Cash Flow Modeling**: No cash flow projection or modeling
 - **Opportunity Simulation**: No what-if analysis or scenario comparison
@@ -75,6 +78,7 @@ Box Spread Positions Only
 ### 2.3 Alignment Score
 
 **Goal Alignment**: ~15%
+
 - ✅ Basic position tracking (box spreads only)
 - ❌ Unified positions (missing 4+ instrument types)
 - ❌ Cash flow modeling (not implemented)
@@ -88,6 +92,7 @@ Box Spread Positions Only
 ### 3.1 Current Features
 
 **✅ Implemented:**
+
 - React/TypeScript PWA with service worker
 - Dashboard tab (symbols, box spread scenarios)
 - Current/Historic positions tab (box spread positions only)
@@ -99,6 +104,7 @@ Box Spread Positions Only
 - Offline support, installable PWA
 
 **❌ Missing Goal Features:**
+
 - **Unified Positions**: Bank accounts panel exists but separate from positions; missing pension loans, bonds, T-bills
 - **Cash Flow Modeling**: No cash flow projection, forecasting, or visualization
 - **Opportunity Simulation**: No what-if analysis, scenario comparison, or optimization
@@ -121,6 +127,7 @@ Box Spread Data + Bank Accounts (separate)
 ### 3.3 Alignment Score
 
 **Goal Alignment**: ~24.1% (from PWA_IMPROVEMENT_ANALYSIS.md)
+
 - ✅ Basic position tracking (box spreads + bank accounts separately)
 - ⚠️ Partial unified positions (bank accounts exist but not integrated)
 - ❌ Cash flow modeling (not implemented)
@@ -136,10 +143,12 @@ Box Spread Data + Bank Accounts (separate)
 **Goal**: See all positions (box spreads, bank loans, pension loans, bonds, T-bills) in one unified panel
 
 **Current State**:
+
 - TUI: Only box spread positions
 - PWA: Box spread positions + separate bank accounts panel
 
 **Gap**:
+
 - Missing instrument types: pension loans, bonds, T-bills, futures
 - No unified view combining all instrument types
 - No grouping by instrument type
@@ -154,10 +163,12 @@ Box Spread Data + Bank Accounts (separate)
 **Goal**: Model and project cash flows across all positions
 
 **Current State**:
+
 - TUI: No cash flow features
 - PWA: No cash flow features
 
 **Gap**:
+
 - No cash flow tracking
 - No future cash flow projection
 - No maturity date tracking
@@ -174,10 +185,12 @@ Box Spread Data + Bank Accounts (separate)
 **Goal**: Simulate what-if scenarios for loan usage and optimization
 
 **Current State**:
+
 - TUI: No simulation features
 - PWA: No simulation features
 
 **Gap**:
+
 - No what-if analysis engine
 - No scenario comparison
 - No loan consolidation simulation
@@ -194,10 +207,12 @@ Box Spread Data + Bank Accounts (separate)
 **Goal**: Model relationships between instruments (loan → margin → box spread → fund → cheaper loan)
 
 **Current State**:
+
 - TUI: No relationship features
 - PWA: No relationship features
 
 **Gap**:
+
 - No asset relationship graph
 - No collateral relationship modeling
 - No financing relationship modeling
@@ -219,6 +234,7 @@ Box Spread Data + Bank Accounts (separate)
 | **Multi-Instrument Relationships** | ❌ Not implemented | ❌ Not implemented | MEDIUM | MEDIUM |
 
 **Overall Alignment**:
+
 - TUI: ~15%
 - PWA: ~24.1%
 - **Target**: 80%+
@@ -267,12 +283,14 @@ Box Spread Data + Bank Accounts (separate)
 ### 7.1 Backend Requirements
 
 **New Backend Services Needed**:
+
 - Unified positions aggregator (combines all instrument types)
 - Cash flow engine (projects future cash flows)
 - Simulation engine (what-if analysis)
 - Relationship graph service (asset relationships)
 
 **Integration Points**:
+
 - Ledger system (source of truth for positions)
 - Multi-broker APIs (IBKR, Alpaca, bank APIs, pension APIs)
 - NATS messaging (real-time updates)
@@ -280,12 +298,14 @@ Box Spread Data + Bank Accounts (separate)
 ### 7.2 Frontend Requirements
 
 **TUI Enhancements**:
+
 - New unified positions panel
 - Cash flow visualization (text-based charts)
 - Basic simulation interface (parameter input)
 - Relationship graph (ASCII visualization)
 
 **PWA Enhancements**:
+
 - Unified positions panel (combine existing panels)
 - Cash flow charts (interactive visualizations)
 - Simulation interface (interactive what-if analysis)
@@ -296,24 +316,28 @@ Box Spread Data + Bank Accounts (separate)
 ## 8. Success Criteria
 
 ### Unified Positions Panel
+
 - ✅ All instrument types visible in one panel
 - ✅ Real-time updates
 - ✅ Key metrics displayed (rate, maturity, cash flow)
 - ✅ Works in both TUI and PWA
 
 ### Cash Flow Modeling
+
 - ✅ Accurate cash flow projections
 - ✅ Multi-currency support
 - ✅ Handles all instrument types
 - ✅ Real-time updates as positions change
 
 ### Opportunity Simulation
+
 - ✅ Interactive what-if analysis
 - ✅ Multiple scenarios supported
 - ✅ Accurate calculations
 - ✅ Clear visualization of results
 
 ### Multi-Instrument Relationships
+
 - ✅ Relationship chains identified
 - ✅ Optimal chains suggested
 - ✅ Net benefit calculated

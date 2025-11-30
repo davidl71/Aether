@@ -37,22 +37,26 @@
 ## Integration Points Verified
 
 ### Market Data Publishing ✅
+
 - Integration module created
 - Publisher caching per symbol
 - Topic: `market-data.tick.{symbol}`
 - Parallel to existing channels
 
 ### Strategy Signal Publishing ✅
+
 - Publisher created
 - Topic: `strategy.signal.>`
 - Parallel to existing channels
 
 ### Strategy Decision Publishing ✅
+
 - Publisher created
 - Topic: `strategy.decision.>`
 - Parallel to existing channels
 
 ### Health Monitoring ✅
+
 - `/health` endpoint enhanced
 - NATS status included
 - Non-blocking check
@@ -60,11 +64,13 @@
 ## Testing Infrastructure
 
 ### Test Scripts ✅
+
 - `scripts/test_nats_integration.sh` - Comprehensive test suite
 - `scripts/verify_nats_integration.sh` - Quick verification
 - `docs/NATS_TESTING_GUIDE.md` - Complete testing guide
 
 ### Integration Tests ✅
+
 - `agents/backend/services/backend_service/tests/integration_test.rs`
 - Market data publishing tests
 - Strategy topic tests
@@ -74,6 +80,7 @@
 ## Next Steps
 
 ### Immediate (Can Do Now)
+
 1. ✅ **Start NATS server**: `./scripts/start_nats.sh`
 2. ✅ **Run verification**: `./scripts/verify_nats_integration.sh`
 3. ✅ **Run basic tests**: `./scripts/test_nats_integration.sh basic`
@@ -81,12 +88,14 @@
 5. ✅ **Subscribe to topics**: `nats sub "market-data.tick.>"`
 
 ### Short Term
+
 - Manual testing with running backend
 - Performance benchmarking
 - Error scenario testing
 - Documentation updates
 
 ### Phase 2 (Complete) ✅
+
 - ✅ **Dead letter queue (T-195)** - Complete with retry logic and DLQ topics
 - ✅ **C++ TWS client integration** - NATS wrapper implemented, integrated into TWSClient
 - ✅ **Python strategy runner integration** - NATS client integrated, tested and passing
@@ -97,6 +106,7 @@
 ## Files Summary
 
 ### Created (15 files)
+
 - NATS server config and scripts (4 files)
 - NATS adapter crate (6 files)
 - Integration module (1 file)
@@ -104,6 +114,7 @@
 - Documentation (4 files)
 
 ### Modified (6 files)
+
 - Backend service main.rs
 - API rest.rs and state.rs
 - Cargo.toml files
@@ -112,33 +123,42 @@
 ## Verification Commands
 
 ```bash
+
 # 1. Verify Python environment
+
 cd agents/backend
 source scripts/activate_python_env.sh
 python --version  # Should show 3.12.x
 
 # 2. Verify compilation
+
 cargo check -p backend_service  # Should succeed
 
 # 3. Start NATS server
+
 ./scripts/start_nats.sh
 
 # 4. Verify NATS
+
 curl http://localhost:8222/healthz  # Should return OK
 
 # 5. Run verification script
+
 ./scripts/verify_nats_integration.sh
 
 # 6. Run basic tests
+
 ./scripts/test_nats_integration.sh basic
 
 # 7. Start backend (in separate terminal)
+
 cd agents/backend
 source scripts/activate_python_env.sh
 export PYO3_PYTHON="$(which python)"
 cargo run -p backend_service
 
 # 8. Subscribe to topics (in another terminal)
+
 nats sub "market-data.tick.>"
 nats sub "strategy.signal.>"
 nats sub "strategy.decision.>"

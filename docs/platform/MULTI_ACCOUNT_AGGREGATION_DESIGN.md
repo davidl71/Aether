@@ -20,12 +20,15 @@ This document designs a comprehensive system for aggregating positions and accou
   - Alpaca: 1 live + 1 paper
   - Tradier: 1 live + 1 paper
   - Tastytrade: 1 live + 1 paper
+
 - **Israeli Banks:** 2 accounts
   - Fibi: Market securities + cash/loans
   - Discount: Market securities + cash/loans
+
 - **Israeli Brokers:** 2 accounts (live)
   - Meitav: Cache, margin, TASE + US instruments
   - IBI: Cache, margin, TASE + US instruments
+
 - **Pension Funds:** 9 accounts
 - **Total:** 21+ accounts
 

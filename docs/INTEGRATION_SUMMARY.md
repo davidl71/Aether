@@ -1,6 +1,6 @@
 # Integration Summary: OpenAlgo Patterns & Breadcrumb Logging
 
-**Date**: 2025-01-27
+**Date**: 2025-11-30
 **Status**: Implementation in Progress
 
 ---
@@ -132,6 +132,7 @@
 **Add includes**:
 
 ```cpp
+
 #include "tui_breadcrumb.h"
 ```
 
@@ -181,6 +182,7 @@ ExecutionResult OrderManager::place_order(...) {
 **Add includes**:
 
 ```cpp
+
 #include "tui_breadcrumb.h"
 ```
 
@@ -209,29 +211,37 @@ void TWSClient::Impl::error(...) override {
 ### Test Breadcrumb Logging
 
 ```bash
+
 # Enable breadcrumb logging
+
 export TUI_BREADCRUMB_ENABLED=true
 export TUI_BREADCRUMB_LOG_FILE=/tmp/test_breadcrumbs.log
 
 # Run application
+
 ./build/ib_box_spread_tui
 
 # Check breadcrumbs
+
 cat /tmp/test_breadcrumbs.log
 ```
 
 ### Test MCP Trading Server
 
 ```bash
+
 # Install dependencies
+
 cd mcp/trading_server
 pip install -e .
 
 # Set environment variables
+
 export TRADING_API_KEY=test-key
 export DRY_RUN=true
 
 # Run server (for testing)
+
 python -m mcp.trading_server.server
 ```
 
@@ -256,4 +266,4 @@ python -m mcp.trading_server.server
 
 ---
 
-**Last Updated**: 2025-01-27
+**Last Updated**: 2025-11-30

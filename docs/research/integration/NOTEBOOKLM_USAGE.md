@@ -325,7 +325,9 @@ Reset sessions if things aren't working:
 Use NotebookLM to generate documentation from videos and links:
 
 ```bash
+
 # In Cursor chat:
+
 "Summarize [youtube-video-link] and save to docs/video-summaries/"
 ```
 

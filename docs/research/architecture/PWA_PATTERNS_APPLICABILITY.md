@@ -284,10 +284,13 @@ export PORT="${PORT:-8000}"
 **After:**
 
 ```bash
+
 # Load config functions
+
 source "${SCRIPT_DIR}/include/config.sh"
 
 # Get port from config with env override
+
 PORT=$(config_get_port "alpaca" 8000)
 ```
 
@@ -302,7 +305,9 @@ exec python3 -m uvicorn python.integration.alpaca_service:app ...
 **After:**
 
 ```bash
+
 # Set up virtual environment
+
 VENV_DIR="${PROJECT_ROOT}/python/.venv"
 if [ ! -f "${VENV_DIR}/bin/activate" ]; then
   python3 -m venv "${VENV_DIR}"
@@ -310,6 +315,7 @@ fi
 source "${VENV_DIR}/bin/activate"
 
 # Use venv Python
+
 exec "${VENV_DIR}/bin/python" -m uvicorn python.integration.alpaca_service:app ...
 ```
 

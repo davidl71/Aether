@@ -18,18 +18,21 @@ These tasks have been moved to Review status because they require clarification 
 ### 🔴 Multi-Broker & Account Management (4 tasks)
 
 #### T-36: Implement IB Client Portal API adapter
+
 - **Priority:** High
 - **Question:** Use alongside TWS API or as alternative?
 - **Context:** Need to decide if Client Portal API complements or replaces TWS API
 - **Recommendation:** Consider using alongside TWS for different use cases (web-based vs desktop)
 
 #### T-37: Implement broker selection and switching mechanism
+
 - **Priority:** High
 - **Question:** Can users switch brokers at runtime or only at startup?
 - **Context:** Affects architecture - runtime switching requires more complex state management
 - **Recommendation:** Start with startup-only, add runtime switching later if needed
 
 #### T-78: Implement multi-account connection and authentication
+
 - **Priority:** High
 - **Question:** Credential storage approach, connection retry strategy, session timeout handling
 - **Context:** Security and reliability decisions needed
@@ -39,6 +42,7 @@ These tasks have been moved to Review status because they require clarification 
   - Session timeout: Configurable, default 30 minutes
 
 #### T-79: Implement portfolio position aggregation logic
+
 - **Priority:** High
 - **Question:** Duplicate handling strategy (merge vs separate), update frequency (real-time vs periodic)
 - **Context:** How to handle positions from multiple accounts/brokers
@@ -51,12 +55,14 @@ These tasks have been moved to Review status because they require clarification 
 ### 🔴 Investment Strategy (2 tasks)
 
 #### T-60: Design investment strategy framework with allocation rules
+
 - **Priority:** High
 - **Question:** User's risk tolerance, return targets, liquidity needs
 - **Context:** Need to define default values or gather user requirements
 - **Recommendation:** Create configurable framework with sensible defaults, allow user customization
 
 #### T-61: Document user requirements and assumptions for strategy
+
 - **Priority:** Medium
 - **Question:** User input needed for risk tolerance, goals, preferences
 - **Context:** Documentation task - can proceed with template structure
@@ -67,6 +73,7 @@ These tasks have been moved to Review status because they require clarification 
 ### 🔴 Bank Loan Integration (2 tasks)
 
 #### T-76: Implement bank loan position data model and storage
+
 - **Priority:** High
 - **Question:** Storage format preference (JSON config vs database), loan update API design
 - **Context:** Need to decide on persistence layer
@@ -76,6 +83,7 @@ These tasks have been moved to Review status because they require clarification 
   - REST API for updates
 
 #### T-77: Implement loan position entry interface
+
 - **Priority:** High
 - **Question:** Preferred interface (TUI form, CLI commands, config file editing), import file format
 - **Context:** User experience decision
@@ -89,24 +97,28 @@ These tasks have been moved to Review status because they require clarification 
 ### 🔴 Configuration System (4 tasks)
 
 #### T-111: Design shared configuration file format for data sources
+
 - **Priority:** High
 - **Question:** Should config support multiple active sources or single source selection?
 - **Context:** Architecture decision for data source management
 - **Recommendation:** Support multiple active sources with priority/fallback order
 
 #### T-112: Implement shared configuration loader for TUI, PWA, and standalone
+
 - **Priority:** High
 - **Question:** Should loader be in Python, TypeScript, or both?
 - **Context:** Multi-language codebase decision
 - **Recommendation:** Both - Python for TUI/backend, TypeScript for PWA, shared JSON schema
 
 #### T-113: Add data source configuration UI to PWA
+
 - **Priority:** High
 - **Question:** Should this be a settings page, modal, or both?
 - **Context:** UI/UX decision
 - **Recommendation:** Settings page (primary) with modal for quick edits
 
 #### T-114: Update TUI to use shared configuration file
+
 - **Priority:** High
 - **Question:** Should TUI watch for config file changes or only read on startup?
 - **Context:** Real-time vs static configuration
@@ -116,7 +128,7 @@ These tasks have been moved to Review status because they require clarification 
 
 ## Quick Decision Guide
 
-### If You Want to Proceed Quickly:
+### If You Want to Proceed Quickly
 
 1. **Use Defaults/Recommendations Above**
    - Each task has a recommendation
@@ -129,6 +141,7 @@ These tasks have been moved to Review status because they require clarification 
    - Add implementation notes
 
 3. **Move to Todo Status**
+
    ```bash
    python3 scripts/batch_update_todos.py update-status \
      --task-ids T-36,T-37,T-60,T-61,T-76,T-77,T-78,T-79,T-111,T-112,T-113,T-114 \
@@ -136,7 +149,7 @@ These tasks have been moved to Review status because they require clarification 
      --yes
    ```
 
-### If You Want to Review First:
+### If You Want to Review First
 
 1. **Review Each Category**
    - Multi-broker decisions affect architecture
@@ -159,6 +172,7 @@ These tasks have been moved to Review status because they require clarification 
 ## Task Details
 
 For detailed information about each task, see:
+
 - `.todo2/state.todo2.json` - Full task details
 - `docs/TASK_REVIEW_ANALYSIS.md` - Detailed analysis
 

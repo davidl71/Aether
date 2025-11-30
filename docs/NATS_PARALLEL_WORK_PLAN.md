@@ -12,23 +12,28 @@
 These tasks have **no dependencies** and can all run simultaneously:
 
 #### 1. **Build C++ with NATS** ⏱️ ~5-10 minutes
+
 ```bash
 cd native
 cmake -B build -DENABLE_NATS=ON
 cmake --build build
 ```
+
 **Status:** Can start immediately
 **Blocks:** C++ testing
 
 #### 2. **Install TypeScript Dependencies** ⏱️ ~2-3 minutes
+
 ```bash
 cd web
 npm install
 ```
+
 **Status:** Can start immediately
 **Blocks:** TypeScript testing
 
 #### 3. **Update Documentation** ⏱️ ~10-15 minutes
+
 - Update `docs/NATS_INTEGRATION_STATUS.md` (mark C++, Python, TypeScript complete)
 - Update `docs/NATS_TESTING_GUIDE.md` (add new test procedures)
 - Document C++ NATS integration patterns
@@ -39,6 +44,7 @@ npm install
 **Blocks:** Nothing
 
 #### 4. **Message Format Validation** ⏱️ ~15-20 minutes
+
 - Compare C++ message format with Rust backend
 - Compare Python message format with Rust backend
 - Compare TypeScript message format expectations
@@ -49,6 +55,7 @@ npm install
 **Blocks:** Nothing
 
 #### 5. **Create Integration Test Scripts** ⏱️ ~20-30 minutes
+
 - Enhance `scripts/test_nats_e2e.sh` with more test cases
 - Add performance benchmarking
 - Add error handling test scenarios
@@ -64,22 +71,29 @@ npm install
 These tasks depend on Group 1 completion but can run **in parallel with each other**:
 
 #### 6. **Test C++ Integration** ⏱️ ~5 minutes
+
 **Depends on:** Build C++ with NATS (Group 1, Task 1)
+
 ```bash
 cd native
 ./build/ib_box_spread --help  # Verify compilation
+
 # Then test with actual TWS connection
 ```
+
 **Status:** Wait for Group 1, Task 1
 **Can run parallel with:** Task 7
 
 #### 7. **Test TypeScript Integration** ⏱️ ~5 minutes
+
 **Depends on:** Install TypeScript dependencies (Group 1, Task 2)
+
 ```bash
 cd web
 npm run build  # Verify compilation
 npm run dev    # Test in browser
 ```
+
 **Status:** Wait for Group 1, Task 2
 **Can run parallel with:** Task 6
 
@@ -90,13 +104,16 @@ npm run dev    # Test in browser
 These tasks require **multiple dependencies**:
 
 #### 8. **End-to-End Message Flow Test** ⏱️ ~15-20 minutes
+
 **Depends on:**
+
 - Build C++ with NATS (Group 1, Task 1)
 - Install TypeScript dependencies (Group 1, Task 2)
 - Test C++ integration (Group 2, Task 6)
 - Test TypeScript integration (Group 2, Task 7)
 
 **Steps:**
+
 1. Start NATS: `./scripts/start_nats.sh`
 2. Subscribe to all topics: `nats sub ">"`
 3. Start C++ client and verify market data publishing
@@ -151,11 +168,15 @@ Time 0:35 ───────────────────────�
 ## 🚀 Recommended Execution Order
 
 ### **Phase 1: Start All Independent Tasks (Now)**
+
 ```bash
+
 # Terminal 1: Build C++
+
 cd native && cmake -B build -DENABLE_NATS=ON && cmake --build build
 
 # Terminal 2: Install TypeScript deps
+
 cd web && npm install
 
 # Terminal 3: Update documentation (I can do this)
@@ -164,20 +185,28 @@ cd web && npm install
 ```
 
 ### **Phase 2: Test Individual Components (After Phase 1)**
+
 ```bash
+
 # After C++ build completes:
+
 cd native && ./build/ib_box_spread --help
 
 # After npm install completes:
+
 cd web && npm run build
 ```
 
 ### **Phase 3: End-to-End Testing (After Phase 2)**
+
 ```bash
+
 # Start NATS
+
 ./scripts/start_nats.sh
 
 # Run comprehensive test
+
 ./scripts/test_nats_e2e.sh all
 ```
 
@@ -192,6 +221,7 @@ I can execute these **simultaneously**:
 3. ✅ **Enhance Test Scripts** - Add more test cases to existing scripts
 
 While you (or the system) can run:
+
 - Build C++ with NATS
 - Install TypeScript dependencies
 
@@ -200,22 +230,31 @@ While you (or the system) can run:
 ## 📋 Quick Start Commands
 
 ### Run Everything in Parallel (Recommended)
+
 ```bash
+
 # Start all Group 1 tasks
+
 (cd native && cmake -B build -DENABLE_NATS=ON && cmake --build build) &
 (cd web && npm install) &
+
 # Documentation and validation can be done by AI in parallel
 ```
 
 ### Check Progress
+
 ```bash
+
 # Check C++ build
+
 ls -lh native/build/ib_box_spread
 
 # Check TypeScript deps
+
 cd web && npm list nats.ws
 
 # Check NATS server
+
 curl http://localhost:8222/healthz
 ```
 
@@ -224,6 +263,7 @@ curl http://localhost:8222/healthz
 ## 🎯 Success Criteria
 
 After parallel execution:
+
 - ✅ C++ builds successfully with NATS
 - ✅ TypeScript dependencies installed
 - ✅ Documentation updated

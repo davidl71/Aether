@@ -83,6 +83,7 @@ C++ (pybind11) ←→ Python ←→ LEAN (Python bindings)
 
 ```cpp
 // native/src/pybind11_bindings.cpp
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include "box_spread_strategy.h"
@@ -118,7 +119,9 @@ pybind11_add_module(box_spread_cpp src/pybind11_bindings.cpp)
 **Bridge between C++ and LEAN:**
 
 ```python
+
 # python/strategy/lean_box_spread_strategy.py
+
 import box_spread_cpp  # pybind11 module
 from QuantConnect import *
 

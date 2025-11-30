@@ -105,6 +105,7 @@ class LiveVolProvider : public Provider {
 ```jsonc
 // agents/shared/API_CONTRACT.md
 "Livevol Integration Note"
+
 - When Livevol credentials are present, backend should enrich
   symbols[].candle and positions[] data with Cboe strategy quotes.
 ```
@@ -205,7 +206,9 @@ Based on typical options data APIs, LiveVol might have:
 **If LiveVol API supports quoted spreads**:
 
 ```python
+
 # python/integration/livevol_client.py
+
 class LiveVolClient:
     def get_quoted_box_spread(
         self,
@@ -236,7 +239,9 @@ class LiveVolClient:
 **If LiveVol doesn't support quoted spreads directly**:
 
 ```python
+
 # Build box spread from individual option quotes
+
 def build_box_spread_from_livevol(
     livevol_client: LiveVolClient,
     symbol: str,

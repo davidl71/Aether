@@ -55,7 +55,9 @@ Net Portfolio Value = IBKR Assets + Israeli Broker Assets - Loan Liabilities
 **Implementation:**
 
 ```python
+
 # python/integration/israeli_broker_importer.py
+
 class ExcelFileImporter:
     """Import positions from static Excel/CSV files."""
 
@@ -176,7 +178,9 @@ class ExcelFileImporter:
 **Implementation:**
 
 ```python
+
 # python/integration/excel_rtd_client.py
+
 import xlwings as xw  # Windows COM automation
 import win32com.client  # Alternative COM interface
 
@@ -292,7 +296,9 @@ class ExcelRTDClient:
 **Implementation:**
 
 ```python
+
 # python/integration/excel_dde_client.py
+
 import win32ui
 import dde  # Python DDE module
 
@@ -376,7 +382,9 @@ class ExcelDDEClient:
 **Implementation:**
 
 ```python
+
 # python/integration/web_scraper.py
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -583,7 +591,9 @@ class IsraeliBrokerWebScraper:
 ### Position Data Model
 
 ```python
+
 # python/integration/models.py
+
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -661,7 +671,9 @@ class Position:
 ### Portfolio Aggregation
 
 ```python
+
 # python/integration/portfolio_aggregator.py
+
 class PortfolioAggregator:
     """Aggregate positions from multiple sources (IBKR + Israeli brokers)."""
 
@@ -971,7 +983,9 @@ def validate_position(position: Position) -> List[str]:
 ### Credentials Management
 
 ```python
+
 # Store credentials in environment variables or encrypted config
+
 import os
 from cryptography.fernet import Fernet
 

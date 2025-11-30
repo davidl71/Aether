@@ -18,6 +18,7 @@ Execution context metadata has been added to all TODO2 tasks to support parallel
 **Document:** `docs/TODO2_EXECUTION_CONTEXT.md`
 
 **Defines:**
+
 - Location tags (`execution-location-local`, `execution-location-remote`, `execution-location-any`, etc.)
 - Execution mode tags (`execution-mode-background`, `execution-mode-automated`, `execution-mode-interactive`)
 - Resource tags (`execution-resource-network`, `execution-resource-cpu-intensive`, etc.)
@@ -30,6 +31,7 @@ Execution context metadata has been added to all TODO2 tasks to support parallel
 **Updated Tasks:** MCP-EXT-1 through MCP-EXT-10 (all 10 tasks)
 
 **Added to Each Task:**
+
 - Execution context tags
 - Execution context section in long_description
 
@@ -46,11 +48,13 @@ Execution context metadata has been added to all TODO2 tasks to support parallel
 ### Tool 1: validate_ci_cd_workflow_tool
 
 **Tags:**
+
 - `execution-location-any`
 - `execution-mode-background`
 - `execution-mode-automated`
 
 **Execution Context:**
+
 - **Location:** `any` (can run on any agent)
 - **Mode:** `automated` | `background`
 - **Resources:** None
@@ -61,12 +65,14 @@ Execution context metadata has been added to all TODO2 tasks to support parallel
 ### Tool 3: collect_agent_environment_tool
 
 **Tags:**
+
 - `execution-location-remote`
 - `execution-mode-background`
 - `execution-mode-automated`
 - `execution-resource-network`
 
 **Execution Context:**
+
 - **Location:** `remote` (requires SSH to remote agent)
 - **Mode:** `automated` | `background`
 - **Resources:** `network` (SSH connection)
@@ -115,20 +121,29 @@ Execution context metadata has been added to all TODO2 tasks to support parallel
 ### Filter Tasks by Execution Context
 
 **Background Tasks:**
+
 ```bash
+
 # Filter for background tasks
+
 grep -l "execution-mode-background" .todo2/state.todo2.json
 ```
 
 **Remote Agent Tasks:**
+
 ```bash
+
 # Filter for remote agent tasks
+
 grep -l "execution-location-remote" .todo2/state.todo2.json
 ```
 
 **Any Agent Tasks (Parallelizable):**
+
 ```bash
+
 # Filter for tasks that can run on any agent
+
 grep -l "execution-location-any" .todo2/state.todo2.json
 ```
 
@@ -221,11 +236,13 @@ grep -l "execution-location-any" .todo2/state.todo2.json
 ### Verify Updates
 
 **Check a task has execution context:**
+
 ```bash
 grep -A 10 "MCP-EXT-1" .todo2/state.todo2.json | grep "Execution Context"
 ```
 
 **Check tags were added:**
+
 ```bash
 grep -A 5 "MCP-EXT-1" .todo2/state.todo2.json | grep "execution-"
 ```

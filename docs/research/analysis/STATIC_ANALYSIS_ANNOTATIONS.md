@@ -202,6 +202,7 @@ void process_data(const int* data, size_t len)
 Indicates a variable must be accessed while holding a specific mutex:
 
 ```cpp
+
 #include <mutex>
 
 std::mutex data_mutex;
@@ -215,29 +216,38 @@ The `#pragma` directive can issue tool-specific instructions or provide addition
 ### Clang Static Analyzer Pragmas
 
 ```cpp
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-variable"
+
 int unused_var = 42;
+
 #pragma clang diagnostic pop
 ```
 
 ### GCC Pragmas
 
 ```cpp
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
+
 int unused_var = 42;
+
 #pragma GCC diagnostic pop
 ```
 
 ### MSVC Pragmas
 
 ```cpp
+
 #pragma warning(push)
 #pragma warning(disable: 4100)  // Unused parameter
+
 void function(int unused_param) {
     // ...
 }
+
 #pragma warning(pop)
 ```
 
@@ -246,7 +256,9 @@ void function(int unused_param) {
 Some tools support custom pragmas:
 
 ```cpp
+
 #pragma ANALYZER_SUPPRESS("warning_id")
+
 void function_with_suppressed_warning() {
     // ...
 }
@@ -260,9 +272,12 @@ For proprietary APIs or domain-specific logic, you can define custom macros that
 
 ```cpp
 // In header file
+
 #ifdef __clang_analyzer__
 #define CUSTOM_ALLOC(size) \
+
     (__attribute__((malloc)) void*)custom_alloc_impl(size)
+
 #else
 #define CUSTOM_ALLOC(size) custom_alloc_impl(size)
 #endif
@@ -274,7 +289,9 @@ void* custom_alloc_impl(size_t size);
 
 ```cpp
 // Macro that provides null-safety hints
+
 #define SAFE_ACCESS(ptr, member) \
+
     ((ptr) != nullptr ? (ptr)->member : decltype((ptr)->member){})
 
 // Usage
@@ -287,6 +304,7 @@ int val = SAFE_ACCESS(data, value);  // Analyzer understands null check
 
 ```cpp
 // For trading software: mark functions that must check return values
+
 #define MUST_CHECK [[nodiscard]] __attribute__((warn_unused_result))
 
 MUST_CHECK bool place_order(const Order& order);
@@ -458,18 +476,25 @@ For maximum compatibility, use macros to handle compiler differences:
 
 ```cpp
 // In common header
+
 #ifdef __GNUC__
+
     #define ATTR_NONNULL(...) __attribute__((nonnull(__VA_ARGS__)))
     #define ATTR_WARN_UNUSED __attribute__((warn_unused_result))
     #define ATTR_MALLOC __attribute__((malloc))
+
 #elif defined(_MSC_VER)
+
     #define ATTR_NONNULL(...)  // MSVC doesn't support nonnull
     #define ATTR_WARN_UNUSED [[nodiscard]]
     #define ATTR_MALLOC  // MSVC doesn't support malloc attribute
+
 #else
+
     #define ATTR_NONNULL(...)
     #define ATTR_WARN_UNUSED
     #define ATTR_MALLOC
+
 #endif
 
 // Usage

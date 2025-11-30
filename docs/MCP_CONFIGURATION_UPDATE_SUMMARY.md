@@ -11,12 +11,15 @@
 ### ✅ Project Configuration (`.cursor/mcp.json`)
 
 **Removed:**
+
 - ❌ `sequential_thinking` - Moved to global config
 
 **Added:**
+
 - ✅ `semgrep` - Security scanning (required by `.cursorrules`)
 
 **Current Project Servers (6):**
+
 1. ✅ `filesystem` - Workspace-scoped file operations
 2. ✅ `git` - Repository-specific version control
 3. ✅ `agentic-tools` - Project-specific task management
@@ -27,9 +30,11 @@
 ### ✅ Global Configuration (`~/.cursor/mcp.json`)
 
 **Added:**
+
 - ✅ `sequential_thinking` - Universal structured problem-solving (**MOVED from project**)
 
 **Current Global Servers (3):**
+
 1. ✅ `tractatus_thinking` - Universal logical analysis
 2. ✅ `desktop-commander` - System-level operations
 3. ✅ `sequential_thinking` - Universal structured problem-solving (**NEW**)
@@ -123,6 +128,7 @@ After restarting, verify:
 ### 3. Update Documentation
 
 Documentation updated:
+
 - ✅ `docs/MCP_SERVER_REVIEW.md` - Comprehensive server review
 - ✅ `docs/MCP_GLOBAL_VS_PROJECT_ANALYSIS.md` - Placement analysis
 - ✅ `docs/MCP_CONFIGURATION_UPDATE_SUMMARY.md` - This file
@@ -138,6 +144,7 @@ Documentation updated:
 **Status:** ✅ Updated
 
 **Servers:**
+
 - filesystem
 - git
 - agentic-tools
@@ -152,6 +159,7 @@ Documentation updated:
 **Status:** ✅ Updated
 
 **Servers:**
+
 - tractatus_thinking
 - desktop-commander
 - sequential_thinking (MOVED from project)

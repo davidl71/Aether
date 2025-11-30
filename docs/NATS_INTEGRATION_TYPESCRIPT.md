@@ -13,10 +13,13 @@ This guide covers integrating NATS message queue into TypeScript frontend applic
 ### Installation
 
 ```bash
+
 # For Node.js backend
+
 npm install nats
 
 # For browser/WebSocket
+
 npm install nats.ws
 ```
 

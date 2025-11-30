@@ -1,6 +1,6 @@
 # Environment Variable Configuration
 
-**Date**: 2025-11-29  
+**Date**: 2025-11-29
 **Status**: Implemented
 
 ---
@@ -8,6 +8,7 @@
 ## Overview
 
 Centralized environment variable configuration system that provides:
+
 - File-based defaults (`config/environment.json`)
 - Environment variable overrides (env vars take precedence)
 - Type-safe configuration access
@@ -20,6 +21,7 @@ Centralized environment variable configuration system that provides:
 **Location**: `config/environment.json`
 
 **Structure**:
+
 ```json
 {
   "security": {
@@ -49,10 +51,12 @@ from python.services.environment_config import get_config
 config = get_config()
 
 # Get security configuration
+
 security = config.get_security_config()
 rate_limit = security['rate_limit_per_minute']
 
 # Get specific value
+
 value = config.get('security.rate_limit_per_minute', default=60)
 ```
 
@@ -61,7 +65,9 @@ value = config.get('security.rate_limit_per_minute', default=60)
 Environment variables take precedence over config file:
 
 ```bash
+
 # Override rate limit via environment variable
+
 export RATE_LIMIT_PER_MINUTE=120
 python3 app.py  # Uses 120, not config file value
 ```
@@ -72,6 +78,7 @@ python3 app.py  # Uses 120, not config file value
 config = get_config()
 
 # Get service port (checks env var first, then config file)
+
 web_port = config.get_service_port('web', default=5173)
 alpaca_port = config.get_service_port('alpaca', default=8000)
 ```
@@ -173,10 +180,13 @@ reload_config()  # Reloads config file
 Security tests verify configuration system:
 
 ```bash
+
 # Run security tests
+
 python3 python/tests/run_security_tests.py
 
 # Or with pytest (if available)
+
 pytest python/tests/test_security.py -v
 ```
 
@@ -191,5 +201,5 @@ pytest python/tests/test_security.py -v
 
 ---
 
-**Last Updated**: 2025-11-29  
+**Last Updated**: 2025-11-29
 **Status**: ✅ Implemented and tested

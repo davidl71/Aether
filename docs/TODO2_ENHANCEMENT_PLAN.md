@@ -162,24 +162,30 @@
 🎯 **Objective:** [Clear goal]
 
 📋 **Acceptance Criteria:**
+
 - [Specific requirement 1]
 - [Specific requirement 2]
 
 🚫 **Scope Boundaries:**
+
 - **Included:** [What IS part of this]
 - **Excluded:** [What is NOT part of this]
 
 🔧 **Technical Requirements:**
+
 - [Technology/pattern to use]
 
 📁 **Files/Components:**
+
 - Create: [path] ([purpose])
 - Update: [path] ([changes])
 
 🧪 **Testing Requirements:**
+
 - [How to validate]
 
 ⚠️ **Edge Cases:**
+
 - [Potential issue and mitigation]
 
 📚 **Dependencies:** [List todo IDs or "None"]

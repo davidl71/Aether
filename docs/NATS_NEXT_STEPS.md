@@ -6,11 +6,13 @@
 ## ✅ Completed (Just Now)
 
 ### Phase 2 Language Integrations
+
 - ✅ **C++ TWS Client** - NATS wrapper implemented and integrated
 - ✅ **Python Strategy Runner** - NATS client integrated, tested
 - ✅ **TypeScript Frontend** - NATS hook integrated into HeaderStatus
 
 ### Swift Integration
+
 - ⏸️ **Deferred to Very Low Priority** - T-20251122115547
 
 ---
@@ -22,32 +24,41 @@
 **Goal:** Verify complete message flow across all components
 
 **Tasks:**
+
 - [ ] Test C++ → NATS → TypeScript flow
   - Start C++ TWS client with `ENABLE_NATS=ON`
   - Verify market data published to NATS
   - Verify TypeScript frontend receives messages
+
 - [ ] Test Python → NATS → TypeScript flow
   - Run Python strategy runner
   - Verify strategy signals/decisions published
   - Verify TypeScript frontend receives messages
+
 - [ ] Test Rust Backend → NATS → TypeScript flow
   - Start Rust backend service
   - Verify all message types published
   - Verify TypeScript frontend receives messages
 
 **Test Script:**
+
 ```bash
+
 # Terminal 1: Subscribe to all topics
+
 nats sub ">"
 
 # Terminal 2: Start C++ TWS client
+
 cd native && cmake -B build -DENABLE_NATS=ON && cmake --build build
 ./build/ib_box_spread
 
 # Terminal 3: Start Python strategy
+
 python3 python/integration/strategy_runner.py
 
 # Terminal 4: Start TypeScript frontend
+
 cd web && npm run dev
 ```
 
@@ -56,12 +67,14 @@ cd web && npm run dev
 **Goal:** Ensure all components use consistent message format
 
 **Tasks:**
+
 - [ ] Verify C++ messages match Rust backend format
 - [ ] Verify Python messages match Rust backend format
 - [ ] Verify TypeScript can parse all message types
 - [ ] Document message schema differences (if any)
 
 **Validation Points:**
+
 - Message ID (UUID format)
 - Timestamp (ISO 8601 format)
 - Source field (consistent naming)
@@ -72,6 +85,7 @@ cd web && npm run dev
 **Goal:** Automated testing of all integrations
 
 **Tasks:**
+
 - [ ] Create end-to-end test script
 - [ ] Add integration tests for each language
 - [ ] Performance benchmarks
@@ -84,6 +98,7 @@ cd web && npm run dev
 **Goal:** Update docs to reflect completed integrations
 
 **Tasks:**
+
 - [ ] Update NATS_INTEGRATION_STATUS.md
 - [ ] Update NATS_TESTING_GUIDE.md with new test procedures
 - [ ] Document C++ NATS integration
@@ -95,6 +110,7 @@ cd web && npm run dev
 **Goal:** Ensure graceful degradation across all components
 
 **Tasks:**
+
 - [ ] Test C++ behavior when NATS unavailable
 - [ ] Test Python behavior when NATS unavailable
 - [ ] Test TypeScript behavior when NATS unavailable
@@ -106,18 +122,24 @@ cd web && npm run dev
 ## 📋 Immediate Next Steps (Priority Order)
 
 ### Step 1: Build and Test C++ Integration
+
 ```bash
+
 # Build with NATS enabled
+
 cd native
 cmake -B build -DENABLE_NATS=ON
 cmake --build build
 
 # Test market data publishing
+
 ./build/ib_box_spread --help  # Verify it compiles
 ```
 
 ### Step 2: Create End-to-End Test Script
+
 Create `scripts/test_nats_e2e.sh` that:
+
 1. Starts NATS server
 2. Starts C++ client (if available)
 3. Starts Python strategy runner
@@ -126,12 +148,14 @@ Create `scripts/test_nats_e2e.sh` that:
 6. Cleans up
 
 ### Step 3: Test Message Flow
+
 1. Start NATS: `./scripts/start_nats.sh`
 2. Subscribe to topics: `nats sub ">"`
 3. Start each component and verify messages
 4. Check message format consistency
 
 ### Step 4: Update Documentation
+
 - Mark C++, Python, TypeScript integrations as complete
 - Add testing procedures
 - Document any issues found
@@ -141,6 +165,7 @@ Create `scripts/test_nats_e2e.sh` that:
 ## 🔍 Testing Checklist
 
 ### C++ Integration
+
 - [ ] Compiles with `ENABLE_NATS=ON`
 - [ ] Connects to NATS on startup
 - [ ] Publishes market data when bid/ask available
@@ -148,6 +173,7 @@ Create `scripts/test_nats_e2e.sh` that:
 - [ ] Message format matches Rust backend
 
 ### Python Integration
+
 - [ ] Connects to NATS on strategy start
 - [ ] Publishes strategy signals correctly
 - [ ] Publishes strategy decisions correctly
@@ -155,6 +181,7 @@ Create `scripts/test_nats_e2e.sh` that:
 - [ ] Message format matches Rust backend
 
 ### TypeScript Integration
+
 - [ ] Connects to NATS on component mount
 - [ ] Receives market data updates
 - [ ] Receives strategy signals
@@ -163,6 +190,7 @@ Create `scripts/test_nats_e2e.sh` that:
 - [ ] Updates UI with real-time data
 
 ### End-to-End
+
 - [ ] C++ → NATS → TypeScript works
 - [ ] Python → NATS → TypeScript works
 - [ ] Rust → NATS → TypeScript works

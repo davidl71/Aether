@@ -185,6 +185,7 @@ OpenAlgo implements comprehensive security at multiple levels:
   - Hashed storage using Argon2 with pepper
   - Encrypted storage for retrieval
   - Time-based caching with TTL
+
 - **SQL Injection Protection**: SQLAlchemy ORM with parameterized queries
 - **Connection Pooling**: Optimized database connections
 

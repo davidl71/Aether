@@ -9,6 +9,7 @@
 ## Overview
 
 Automated script to detect duplicate tasks in Todo2 by analyzing:
+
 - **Duplicate Task IDs** (critical data integrity issue)
 - **Exact Name Matches** (tasks with identical names)
 - **Similar Name Matches** (fuzzy matching, configurable threshold)
@@ -22,26 +23,34 @@ Automated script to detect duplicate tasks in Todo2 by analyzing:
 ### Run Once
 
 ```bash
+
 # Basic run with default settings
+
 python3 scripts/automate_todo2_duplicate_detection.py
 
 # Custom similarity threshold (0.0-1.0)
+
 python3 scripts/automate_todo2_duplicate_detection.py --threshold 0.90
 
 # Custom output path
+
 python3 scripts/automate_todo2_duplicate_detection.py --output docs/my_report.md
 ```
 
 ### Setup Automated Daily Run
 
 ```bash
+
 # Daily at 9 AM
+
 ./scripts/setup_todo2_duplicate_detection_cron.sh daily 09:00
 
 # Weekly on Mondays at 9 AM
+
 ./scripts/setup_todo2_duplicate_detection_cron.sh weekly monday 09:00
 
 # Monthly on the 1st at 9 AM
+
 ./scripts/setup_todo2_duplicate_detection_cron.sh monthly 1 09:00
 ```
 
@@ -66,6 +75,7 @@ python3 scripts/automate_todo2_duplicate_detection.py --output docs/my_report.md
   - `0.85` = 85% similarity (default, good balance)
   - `0.90` = 90% similarity (stricter, fewer false positives)
   - `0.80` = 80% similarity (looser, more potential matches)
+
 - **`auto_fix`**: Automatically fix duplicates (experimental, not recommended)
 
 ---
@@ -77,8 +87,10 @@ python3 scripts/automate_todo2_duplicate_detection.py --output docs/my_report.md
 Multiple tasks with the same ID. This should never happen and indicates a data integrity issue.
 
 **Example**:
+
 ```
 Task ID: T-199 (appears 2 times)
+
 - T-199: Set up dependency management mechanism (Status: Review)
 - T-199: Research financial data sources (Status: Review)
 ```
@@ -88,8 +100,10 @@ Task ID: T-199 (appears 2 times)
 Tasks with identical names but different IDs (likely duplicates).
 
 **Example**:
+
 ```
 Name: "Define public/private boundaries" (2 tasks)
+
 - T-198: Define public/private boundaries (Status: Review)
 - T-208: Define public/private boundaries (Status: Review)
 ```
@@ -99,8 +113,10 @@ Name: "Define public/private boundaries" (2 tasks)
 Tasks with similar names (fuzzy matching based on similarity threshold).
 
 **Example**:
+
 ```
 Similarity: 87.5%
+
 - T-207: Reorganize private monorepo to use extracted libraries
 - T-221: Reorganize private monorepo to use extracted libraries
 ```
@@ -114,7 +130,9 @@ Tasks with similar long descriptions (potential duplicates with different names)
 Tasks that depend on themselves (invalid - tasks cannot depend on themselves).
 
 **Example**:
+
 ```
+
 - T-199: Set up dependency management mechanism
   Dependencies: T-199 (invalid!)
 ```
@@ -147,6 +165,7 @@ This script is part of the **project-housekeeping-tools** collection:
 - ✅ Generates markdown reports
 
 **Related Scripts**:
+
 - `automate_todo2_alignment_v2.py` - Task alignment analysis
 - `automate_todo_sync.py` - Task synchronization
 - `automate_docs_health_v2.py` - Documentation health
@@ -158,30 +177,39 @@ This script is part of the **project-housekeeping-tools** collection:
 ### Manual Run
 
 ```bash
+
 # Check for duplicates
+
 python3 scripts/automate_todo2_duplicate_detection.py
 
 # View report
+
 cat docs/TODO2_DUPLICATE_DETECTION_REPORT.md
 ```
 
 ### Automated Daily Check
 
 ```bash
+
 # Setup cron job
+
 ./scripts/setup_todo2_duplicate_detection_cron.sh daily 09:00
 
 # View cron log
+
 tail -f scripts/todo2_duplicate_detection_cron.log
 ```
 
 ### Custom Threshold
 
 ```bash
+
 # Stricter matching (90% similarity)
+
 python3 scripts/automate_todo2_duplicate_detection.py --threshold 0.90
 
 # Looser matching (80% similarity)
+
 python3 scripts/automate_todo2_duplicate_detection.py --threshold 0.80
 ```
 
@@ -192,6 +220,7 @@ python3 scripts/automate_todo2_duplicate_detection.py --threshold 0.80
 ### Report Not Generated
 
 Check that the output directory exists:
+
 ```bash
 mkdir -p docs
 python3 scripts/automate_todo2_duplicate_detection.py
@@ -200,6 +229,7 @@ python3 scripts/automate_todo2_duplicate_detection.py
 ### Too Many False Positives
 
 Increase the similarity threshold:
+
 ```bash
 python3 scripts/automate_todo2_duplicate_detection.py --threshold 0.90
 ```
@@ -207,6 +237,7 @@ python3 scripts/automate_todo2_duplicate_detection.py --threshold 0.90
 ### Too Few Matches
 
 Decrease the similarity threshold:
+
 ```bash
 python3 scripts/automate_todo2_duplicate_detection.py --threshold 0.80
 ```
@@ -214,11 +245,15 @@ python3 scripts/automate_todo2_duplicate_detection.py --threshold 0.80
 ### Cron Job Not Running
 
 Check cron logs:
+
 ```bash
+
 # View cron log
+
 tail -f scripts/todo2_duplicate_detection_cron.log
 
 # Verify cron job is installed
+
 crontab -l | grep duplicate
 ```
 
@@ -237,6 +272,7 @@ crontab -l | grep duplicate
 ## Future Enhancements
 
 Potential improvements:
+
 - [ ] Auto-fix mode (with confirmation)
 - [ ] Integration with GitHub Actions
 - [ ] Email/Slack notifications for critical issues

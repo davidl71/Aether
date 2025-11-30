@@ -32,6 +32,7 @@ T add(T a, T b) {
 **Purpose**: Modern iteration and algorithms
 
 ```cpp
+
 #include <ranges>
 
 std::vector<int> numbers = {1, 2, 3, 4, 5};
@@ -51,6 +52,7 @@ auto result = numbers
 **Purpose**: Asynchronous programming
 
 ```cpp
+
 #include <coroutine>
 
 generator<int> fibonacci() {
@@ -99,6 +101,7 @@ int main() {
 **Purpose**: Type-safe string formatting
 
 ```cpp
+
 #include <format>
 
 std::string message = std::format("Price: ${:.2f}, Volume: {}", price, volume);
@@ -113,6 +116,7 @@ std::string message = std::format("Price: ${:.2f}, Volume: {}", price, volume);
 **Purpose**: Non-owning view of contiguous sequence
 
 ```cpp
+
 #include <span>
 
 void process_prices(std::span<const double> prices) {
@@ -135,6 +139,7 @@ process_prices({data.data(), 3});  // Works with raw array
 **Purpose**: Joinable thread with automatic join
 
 ```cpp
+
 #include <thread>
 
 void worker() {
@@ -154,6 +159,7 @@ std::jthread t(worker);  // Automatically joins on destruction
 **Purpose**: Atomic operations on non-atomic objects
 
 ```cpp
+
 #include <atomic>
 
 int counter = 0;
@@ -171,6 +177,7 @@ atomic_counter.fetch_add(1);  // Thread-safe increment
 **Purpose**: Get current source location
 
 ```cpp
+
 #include <source_location>
 
 void log_error(const std::string& message,
@@ -212,6 +219,7 @@ Config config{
 **Purpose**: Unified comparison operators
 
 ```cpp
+
 #include <compare>
 
 struct Price {

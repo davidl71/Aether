@@ -63,10 +63,13 @@ python scripts/livevol_api_explorer.py \
 ### Using curl
 
 ```bash
+
 # Encode credentials
+
 CREDENTIALS=$(echo -n "your_client_id:your_client_secret" | base64)
 
 # Request token
+
 curl -X POST https://id.livevol.com/connect/token \
   -H "Authorization: Basic $CREDENTIALS" \
   -H "Content-Type: application/x-www-form-urlencoded" \

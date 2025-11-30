@@ -32,10 +32,13 @@ This guide covers the installation and configuration of LEAN for use with the IB
 ### 1. Install LEAN CLI
 
 ```bash
+
 # Install LEAN CLI globally
+
 pip3 install lean --user
 
 # Or install in virtual environment
+
 python3 -m venv venv
 source venv/bin/activate  # On macOS/Linux
 pip install lean
@@ -52,7 +55,9 @@ lean --version
 **macOS:**
 
 ```bash
+
 # Using Homebrew
+
 brew install --cask dotnet
 
 # Or download from: https://dotnet.microsoft.com/download
@@ -69,11 +74,14 @@ dotnet --version
 ### 3. Initialize LEAN Project
 
 ```bash
+
 # Create LEAN project directory
+
 mkdir -p lean_project
 cd lean_project
 
 # Initialize LEAN project
+
 lean init
 
 # This creates:
@@ -85,7 +93,9 @@ lean init
 ### 4. Configure LEAN
 
 ```bash
+
 # Configure LEAN (interactive)
+
 lean config
 
 # Or edit config.json directly
@@ -153,7 +163,9 @@ python/
 ### 1. Run Sample Algorithm
 
 ```bash
+
 # Create a simple test algorithm
+
 cat > Main/main.py << 'EOF'
 from AlgorithmImports import *
 
@@ -169,16 +181,20 @@ class TestAlgorithm(QCAlgorithm):
 EOF
 
 # Run backtest
+
 lean backtest "Main/main.py"
 ```
 
 ### 2. Verify Broker Connections
 
 ```bash
+
 # Test IBKR connection (paper trading)
+
 lean live "Main/main.py" --brokerage InteractiveBrokers --data-provider InteractiveBrokers
 
 # Test Alpaca connection
+
 lean live "Main/main.py" --brokerage Alpaca --data-provider Alpaca
 ```
 
@@ -287,10 +303,13 @@ lean live "Main/main.py" --brokerage Alpaca --data-provider Alpaca
 ### LEAN CLI Not Found
 
 ```bash
+
 # Add user bin to PATH (macOS/Linux)
+
 export PATH="$HOME/.local/bin:$PATH"
 
 # Or reinstall with --user flag
+
 pip3 install --user lean
 ```
 
@@ -305,10 +324,13 @@ pip3 install --user lean
 **If you need .NET:**
 
 ```bash
+
 # macOS
+
 brew install --cask dotnet
 
 # Verify
+
 dotnet --version
 ```
 
@@ -342,10 +364,13 @@ Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
 **Workaround**: Use Python 3.11 or 3.12 for LEAN development:
 
 ```bash
+
 # Install Python 3.12 via Homebrew
+
 brew install python@3.12
 
 # Create virtual environment with Python 3.12
+
 python3.12 -m venv python/venv312
 source python/venv312/bin/activate
 pip install lean

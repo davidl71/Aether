@@ -121,6 +121,7 @@
 ## Key Research Findings Summary
 
 ### Broker Integration
+
 - **IBroker interface** exists and is well-designed
 - **TWS adapter** provides implementation pattern to follow
 - **Alpaca**: REST API v2, 200 req/min, Python SDK available
@@ -128,23 +129,27 @@
 - **Multi-broker**: Adapter pattern suitable, selection strategies needed
 
 ### Greeks & Risk
+
 - **Portfolio Greeks**: Comprehensive design document exists
 - **Aggregation**: Eigen VectorXd already in use
 - **Non-options**: Formulas documented (stocks, bonds, futures)
 - **Currency**: FX conversion formulas documented
 
 ### Cash Flow
+
 - **System Design**: CASH_FLOW_FORECASTING_SYSTEM.md exists
 - **Python DSL**: cash_flow_dsl.py implementation exists
 - **Integration**: PortfolioAllocationManager integration planned
 
 ### NATS Integration
+
 - **Architecture**: MESSAGE_QUEUE_ARCHITECTURE.md comprehensive
 - **Topic Design**: Hierarchical topic structure designed
 - **Rust Client**: async-nats recommended
 - **Deployment**: Docker deployment patterns documented
 
 ### Library Integration
+
 - **Eigen**: Already integrated via CMake, used in risk_calculator.cpp
 - **QuantLib**: Already in CMakeLists.txt (v1.32), needs integration
 - **Usage**: Eigen VectorXd for Greeks aggregation working

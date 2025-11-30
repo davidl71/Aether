@@ -28,9 +28,11 @@ Service worker is now disabled in dev mode. To apply:
    - Click **Storage** in left sidebar
    - Click **Clear site data**
 4. **Restart dev server:**
+
    ```bash
    cd web && npm run dev
    ```
+
 5. **Hard refresh browser:**
    - Mac: `Cmd + Shift + R`
    - Windows/Linux: `Ctrl + Shift + R`
@@ -83,9 +85,11 @@ After applying the fix, you should see:
 If the page is still blank after clearing service workers:
 
 1. **Check if backend is running:**
+
    ```bash
    curl http://localhost:8000/api/snapshot
    ```
+
    - If backend is not running, the app will show a loading state or error message (not blank)
 
 2. **Check for JavaScript errors:**

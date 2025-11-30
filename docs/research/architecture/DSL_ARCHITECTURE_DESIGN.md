@@ -43,12 +43,15 @@
 #### Basic Syntax
 
 ```python
+
 # Minimal box spread
+
 scenario = BoxSpread("SPX") \
     .strike_width(50) \
     .expiration("2025-12-19")
 
 # With financing constraints
+
 scenario = BoxSpread("SPX") \
     .strike_width(50) \
     .expiration("2025-12-19") \
@@ -62,7 +65,9 @@ scenario = BoxSpread("SPX") \
 #### Advanced Syntax
 
 ```python
+
 # Multi-expiration scan
+
 scenarios = BoxSpread("SPX") \
     .strike_width(50) \
     .scan_expirations(
@@ -74,6 +79,7 @@ scenarios = BoxSpread("SPX") \
     .rank_by(rate_advantage)
 
 # Multi-symbol comparison
+
 comparison = BoxSpread.multi_symbol(
     ["SPX", "XSP", "NDX"]
 ) \
@@ -86,6 +92,7 @@ comparison = BoxSpread.multi_symbol(
 ### 2. Domain-Specific Types
 
 ```python
+
 # python/dsl/types.py
 
 from dataclasses import dataclass
@@ -166,6 +173,7 @@ class LiquidityConstraints:
 ### 3. Box Spread Builder Implementation
 
 ```python
+
 # python/dsl/box_spread_dsl.py
 
 from typing import Optional, List
@@ -272,6 +280,7 @@ namespace generated {{
 ### 4. Multi-Asset Financing Strategy DSL
 
 ```python
+
 # python/dsl/financing_strategy_dsl.py
 
 class FinancingStrategy:
@@ -304,6 +313,7 @@ class FinancingStrategy:
         return self
 
 # Example usage
+
 strategy = FinancingStrategy("loan_to_box_spread") \
     .source(bank_loan(rate=5.5, amount=100000)) \
     .use_as(margin_for(
@@ -316,6 +326,7 @@ strategy = FinancingStrategy("loan_to_box_spread") \
 ### 5. Cash Flow Modeling DSL
 
 ```python
+
 # python/dsl/cash_flow_dsl.py
 
 class CashFlowModel:
@@ -347,6 +358,7 @@ class CashFlowModel:
         pass
 
 # Example usage
+
 cash_flow = CashFlowModel() \
     .add_position(
         box_spread_lending(
@@ -373,6 +385,7 @@ cash_flow = CashFlowModel() \
 ### Generator Interface
 
 ```python
+
 # python/dsl/generator.py
 
 from abc import ABC, abstractmethod
@@ -459,7 +472,9 @@ struct SPX_BoxSpread_50_2025_12_19 {
 ### 1. Python Bindings Integration
 
 ```python
+
 # DSL uses existing C++ bindings
+
 from box_spread_bindings import (
     BoxSpreadStrategy,
     BoxSpreadLeg,
@@ -468,10 +483,12 @@ from box_spread_bindings import (
 )
 
 # DSL scenario evaluates to C++ types
+
 scenario = BoxSpread("SPX").strike_width(50).expiration("2025-12-19")
 leg = scenario.evaluate()  # Returns BoxSpreadLeg (C++ type)
 
 # Use with existing strategy
+
 strategy = BoxSpreadStrategy(client, order_mgr, params)
 opportunity = strategy.evaluate_box_spread(leg)
 ```
@@ -479,7 +496,9 @@ opportunity = strategy.evaluate_box_spread(leg)
 ### 2. Configuration Integration
 
 ```python
+
 # DSL reads from existing config
+
 from config_manager import load_config
 
 config = load_config("config/config.json")
@@ -491,7 +510,9 @@ scenario = BoxSpread(config.strategy.symbols[0]) \
 ### 3. Multi-Asset Relationship Integration
 
 ```python
+
 # DSL integrates with asset relationship system
+
 from asset_relationship_graph import AssetRelationshipGraph
 
 relationships = AssetRelationshipGraph()
@@ -548,6 +569,7 @@ class BoxSpreadValidator:
 ### DSL Unit Tests
 
 ```python
+
 # tests/dsl/test_box_spread_dsl.py
 
 def test_basic_box_spread():
@@ -569,7 +591,9 @@ def test_validation():
 ### Generated Code Tests
 
 ```python
+
 # Tests for generated C++ code
+
 def test_generated_cpp():
     scenario = BoxSpread("SPX").strike_width(50).expiration("2025-12-19")
     cpp_code = scenario.to_cpp()
@@ -584,24 +608,28 @@ def test_generated_cpp():
 ## Implementation Plan
 
 ### Phase 1: Core DSL (Week 1-2)
+
 - [ ] Domain-specific types (Rate, StrikeWidth, Expiration, Money)
 - [ ] BoxSpread builder class
 - [ ] Basic validation
 - [ ] Unit tests
 
 ### Phase 2: Code Generation (Week 3-4)
+
 - [ ] C++ code generator
 - [ ] Test generator
 - [ ] Documentation generator
 - [ ] Integration tests
 
 ### Phase 3: Advanced Features (Week 5-6)
+
 - [ ] Multi-asset financing strategy DSL
 - [ ] Cash flow modeling DSL
 - [ ] Relationship validation
 - [ ] Graph visualization
 
 ### Phase 4: Production (Week 7-8)
+
 - [ ] Performance optimization
 - [ ] Error handling improvements
 - [ ] Documentation

@@ -123,7 +123,9 @@ curl -X POST https://api.livevol.com/v1/oauth/token \
 ### Test Strategy Endpoints
 
 ```bash
+
 # Get access token first, then:
+
 curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   https://api.livevol.com/v1/strategy/quotes?symbol=SPX
 ```

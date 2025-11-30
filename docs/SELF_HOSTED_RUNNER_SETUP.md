@@ -29,6 +29,7 @@ This guide shows how to set up your Ubuntu and macOS M4 remote Cursor agents as 
 ### Remote Agents
 
 **Ubuntu Agent:**
+
 - **SSH Alias:** `cursor-ubuntu`
 - **Host:** `192.168.192.57`
 - **User:** `david`
@@ -37,6 +38,7 @@ This guide shows how to set up your Ubuntu and macOS M4 remote Cursor agents as 
 - **Role:** GitHub Actions runner for Ubuntu/Linux tests
 
 **macOS M4 Agent:**
+
 - **SSH Alias:** `cursor-m4-mac`
 - **Host:** `192.168.192.141`
 - **User:** `davidl`
@@ -82,14 +84,17 @@ This guide shows how to set up your Ubuntu and macOS M4 remote Cursor agents as 
 **Or via GitHub CLI:**
 
 ```bash
+
 # Install GitHub CLI if not installed
 # macOS: brew install gh
 # Ubuntu: sudo apt install gh
 
 # Authenticate
+
 gh auth login
 
 # Get registration token
+
 gh api repos/:owner/:repo/actions/runners/registration-token --method POST
 ```
 
@@ -98,43 +103,59 @@ gh api repos/:owner/:repo/actions/runners/registration-token --method POST
 ### Step 2: Install Runner on Ubuntu Agent
 
 **Connect to Ubuntu Agent:**
+
 ```bash
+
 # Option 1: Using SSH alias (if configured)
+
 ssh cursor-ubuntu
 
 # Option 2: Direct connection
+
 ssh david@192.168.192.57
 ```
 
 **Download and Install Runner:**
+
 ```bash
+
 # Create actions-runner directory
+
 mkdir -p ~/actions-runner
 cd ~/actions-runner
 
 # Download runner (replace X.Y.Z with latest version)
+
 curl -o actions-runner-linux-x64-2.311.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.311.0/actions-runner-linux-x64-2.311.0.tar.gz
 
 # Extract
+
 tar xzf ./actions-runner-linux-x64-2.311.0.tar.gz
 
 # Configure runner (replace TOKEN with your registration token)
+
 ./config.sh --url https://github.com/YOUR_USERNAME/YOUR_REPO --token YOUR_REGISTRATION_TOKEN --name ubuntu-agent --labels ubuntu,linux --work _work
 
 # Install as systemd service (runs automatically)
+
 sudo ./svc.sh install
 sudo ./svc.sh start
 
 # Check status
+
 sudo ./svc.sh status
 ```
 
 **Verify Runner:**
+
 ```bash
+
 # Check runner is running
+
 ps aux | grep Runner.Listener
 
 # View logs
+
 sudo journalctl -u actions.runner.* -f
 ```
 
@@ -143,43 +164,59 @@ sudo journalctl -u actions.runner.* -f
 ### Step 3: Install Runner on macOS M4 Agent
 
 **Connect to macOS M4 Agent:**
+
 ```bash
+
 # Option 1: Using SSH alias (if configured)
+
 ssh cursor-m4-mac
 
 # Option 2: Direct connection
+
 ssh davidl@192.168.192.141
 ```
 
 **Download and Install Runner:**
+
 ```bash
+
 # Create actions-runner directory
+
 mkdir -p ~/actions-runner
 cd ~/actions-runner
 
 # Download runner (replace X.Y.Z with latest version)
+
 curl -o actions-runner-osx-arm64-2.311.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.311.0/actions-runner-osx-arm64-2.311.0.tar.gz
 
 # Extract
+
 tar xzf ./actions-runner-osx-arm64-2.311.0.tar.gz
 
 # Configure runner (replace TOKEN with your registration token)
+
 ./config.sh --url https://github.com/YOUR_USERNAME/YOUR_REPO --token YOUR_REGISTRATION_TOKEN --name macos-m4-agent --labels macos,apple-silicon,m4 --work _work
 
 # Install as launchd service (runs automatically)
+
 ./svc.sh install
 ./svc.sh start
 
 # Check status
+
 ./svc.sh status
 ```
 
 **Verify Runner:**
+
 ```bash
+
 # Check runner is running
+
 ps aux | grep Runner.Listener
 
 # View logs
+
 log show --predicate 'process == "Runner.Listener"' --last 5m
 ```
 
@@ -190,17 +227,20 @@ log show --predicate 'process == "Runner.Listener"' --last 5m
 ### Runner Labels
 
 **Ubuntu Agent:**
+
 - `ubuntu` - Platform identifier
 - `linux` - OS type
 - `self-hosted` - Auto-added by GitHub
 
 **macOS M4 Agent:**
+
 - `macos` - Platform identifier
 - `apple-silicon` - Chip type
 - `m4` - Specific chip model
 - `self-hosted` - Auto-added by GitHub
 
 **Usage in Workflows:**
+
 ```yaml
 runs-on: self-hosted
 labels: [ubuntu, linux]  # For Ubuntu agent
@@ -214,11 +254,15 @@ labels: [macos, apple-silicon, m4]  # For macOS M4 agent
 **Default:** `~/actions-runner/_work`
 
 **Custom Location:**
+
 ```bash
+
 # During configuration
+
 ./config.sh ... --work /path/to/work
 
 # Or edit config after setup
+
 nano ~/actions-runner/.runner
 ```
 
@@ -254,24 +298,31 @@ runs-on: [self-hosted, ubuntu, linux]  # Must match all labels
 ### Updating Runners
 
 **Check for Updates:**
+
 ```bash
 cd ~/actions-runner
 ./run.sh --check-update
 ```
 
 **Update Runner:**
+
 ```bash
+
 # Stop service
+
 sudo ./svc.sh stop  # Linux
 ./svc.sh stop       # macOS
 
 # Download latest version
+
 curl -o actions-runner-linux-x64-2.311.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.311.0/actions-runner-linux-x64-2.311.0.tar.gz
 
 # Extract (overwrites old files)
+
 tar xzf ./actions-runner-linux-x64-2.311.0.tar.gz
 
 # Restart service
+
 sudo ./svc.sh start  # Linux
 ./svc.sh start       # macOS
 ```
@@ -279,27 +330,37 @@ sudo ./svc.sh start  # Linux
 ### Monitoring
 
 **View Runner Status:**
+
 - GitHub: Repository → Settings → Actions → Runners
 - See runner status, last job, labels
 
 **Check Logs:**
+
 ```bash
+
 # Ubuntu (systemd)
+
 sudo journalctl -u actions.runner.* -f
 
 # macOS (launchd)
+
 log show --predicate 'process == "Runner.Listener"' --last 1h
 ```
 
 **Runner Health:**
+
 ```bash
+
 # Check runner process
+
 ps aux | grep Runner.Listener
 
 # Check disk space
+
 df -h ~/actions-runner/_work
 
 # Check network connectivity
+
 curl -I https://github.com
 ```
 
@@ -310,28 +371,35 @@ curl -I https://github.com
 ### 1. Runner Isolation
 
 **Best Practices:**
+
 - Use dedicated user accounts for runners
 - Restrict file system access
 - Limit network access if possible
 - Use separate runners for different projects
 
 **User Account:**
+
 ```bash
+
 # Create dedicated user
+
 sudo useradd -m -s /bin/bash actions-runner
 
 # Run as that user
+
 sudo -u actions-runner ./config.sh ...
 ```
 
 ### 2. Secret Management
 
 **GitHub Secrets:**
+
 - Secrets are encrypted in transit
 - Secrets are not logged in runner logs
 - Secrets are cleared after job completion
 
 **Best Practices:**
+
 - Never commit secrets to repository
 - Use GitHub Secrets for sensitive data
 - Rotate secrets regularly
@@ -340,13 +408,16 @@ sudo -u actions-runner ./config.sh ...
 ### 3. Network Security
 
 **Firewall Rules:**
+
 ```bash
+
 # Allow GitHub Actions communication
 # Outbound HTTPS (port 443) to github.com
 # Outbound HTTPS (port 443) to api.github.com
 ```
 
 **VPN Considerations:**
+
 - Runners need direct access to GitHub
 - VPN may interfere with runner communication
 - Test runner connectivity after VPN setup
@@ -360,16 +431,20 @@ sudo -u actions-runner ./config.sh ...
 **Issue:** Runner configured but not visible in GitHub
 
 **Solutions:**
+
 1. Check registration token is valid
 2. Verify network connectivity to GitHub
 3. Check runner logs for errors
 4. Restart runner service
 
 ```bash
+
 # Check logs
+
 sudo journalctl -u actions.runner.* -n 50
 
 # Restart service
+
 sudo ./svc.sh restart  # Linux
 ./svc.sh restart       # macOS
 ```
@@ -379,20 +454,25 @@ sudo ./svc.sh restart  # Linux
 **Issue:** Jobs queue but don't run on self-hosted runner
 
 **Solutions:**
+
 1. Verify runner is online (green status in GitHub)
 2. Check runner labels match workflow requirements
 3. Verify runner has required tools installed
 4. Check runner disk space
 
 ```bash
+
 # Check runner status
+
 cd ~/actions-runner
 ./run.sh --version
 
 # Check labels
+
 cat .runner | grep -i label
 
 # Check disk space
+
 df -h ~/actions-runner/_work
 ```
 
@@ -401,19 +481,24 @@ df -h ~/actions-runner/_work
 **Issue:** Service fails to start
 
 **Solutions:**
+
 1. Check service logs
 2. Verify configuration file
 3. Check file permissions
 4. Reinstall service
 
 ```bash
+
 # Check service status
+
 sudo ./svc.sh status
 
 # Check configuration
+
 cat .runner
 
 # Reinstall service
+
 sudo ./svc.sh uninstall
 sudo ./svc.sh install
 sudo ./svc.sh start
@@ -428,6 +513,7 @@ sudo ./svc.sh start
 **File:** `scripts/setup_github_runner_ubuntu.sh`
 
 ```bash
+
 #!/usr/bin/env bash
 # Setup GitHub Actions runner on Ubuntu agent
 
@@ -447,6 +533,7 @@ mkdir -p ~/actions-runner
 cd ~/actions-runner
 
 # Download latest runner
+
 RUNNER_VERSION="2.311.0"
 curl -o actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz -L \
     https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz
@@ -454,10 +541,12 @@ curl -o actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz -L \
 tar xzf actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz
 
 # Configure
+
 ./config.sh --url "$REPO_URL" --token "$REGISTRATION_TOKEN" \
     --name "$RUNNER_NAME" --labels ubuntu,linux --work _work
 
 # Install service
+
 sudo ./svc.sh install
 sudo ./svc.sh start
 
@@ -469,6 +558,7 @@ echo "✅ GitHub Actions runner installed and started"
 **File:** `scripts/setup_github_runner_macos.sh`
 
 ```bash
+
 #!/usr/bin/env bash
 # Setup GitHub Actions runner on macOS M4 agent
 
@@ -488,6 +578,7 @@ mkdir -p ~/actions-runner
 cd ~/actions-runner
 
 # Download latest runner
+
 RUNNER_VERSION="2.311.0"
 curl -o actions-runner-osx-arm64-${RUNNER_VERSION}.tar.gz -L \
     https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-osx-arm64-${RUNNER_VERSION}.tar.gz
@@ -495,10 +586,12 @@ curl -o actions-runner-osx-arm64-${RUNNER_VERSION}.tar.gz -L \
 tar xzf actions-runner-osx-arm64-${RUNNER_VERSION}.tar.gz
 
 # Configure
+
 ./config.sh --url "$REPO_URL" --token "$REGISTRATION_TOKEN" \
     --name "$RUNNER_NAME" --labels macos,apple-silicon,m4 --work _work
 
 # Install service
+
 ./svc.sh install
 ./svc.sh start
 
@@ -514,7 +607,9 @@ echo "✅ GitHub Actions runner installed and started"
 Create a test workflow to verify runners are working:
 
 ```yaml
+
 # .github/workflows/test-runners.yml
+
 name: Test Runners
 
 on:

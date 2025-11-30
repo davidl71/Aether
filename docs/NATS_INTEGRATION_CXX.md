@@ -13,7 +13,9 @@ This guide covers integrating NATS message queue into the C++ TWS client for pub
 ### Installation
 
 ```bash
+
 # Install nats.c library
+
 git clone https://github.com/nats-io/nats.c.git
 cd nats.c
 mkdir build && cd build
@@ -25,7 +27,9 @@ sudo make install
 ### CMake Integration
 
 ```cmake
+
 # Find NATS library
+
 find_library(NATS_LIB nats REQUIRED)
 find_path(NATS_INCLUDE_DIR nats/nats.h REQUIRED)
 
@@ -38,6 +42,7 @@ target_include_directories(tws_client PRIVATE ${NATS_INCLUDE_DIR})
 ### Connect to NATS Server
 
 ```cpp
+
 #include <nats/nats.h>
 
 natsConnection* conn = nullptr;
@@ -64,6 +69,7 @@ natsConnection_Connect(&conn, opts);
 ### Market Data Publishing
 
 ```cpp
+
 #include <nlohmann/json.hpp>
 
 // Topic: market-data.tick.{symbol}
@@ -186,6 +192,7 @@ void on_strategy_signal(natsConnection* nc,
 ### Header File: `nats_topics.h`
 
 ```cpp
+
 #ifndef NATS_TOPICS_H
 #define NATS_TOPICS_H
 
@@ -249,6 +256,7 @@ void TWSClient::tickPrice(TickerId tickerId, TickType field, double price) {
 Use `nlohmann/json` for JSON serialization:
 
 ```cpp
+
 #include <nlohmann/json.hpp>
 
 // Serialize message
@@ -299,6 +307,7 @@ if (status != NATS_OK) {
 ### Unit Tests
 
 ```cpp
+
 #include <gtest/gtest.h>
 
 TEST(NatsIntegration, PublishMarketData) {

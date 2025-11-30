@@ -34,6 +34,7 @@ Where:
   - Balance: Current ILS balance from latest header record
   - Interest: 3.00% credit (positive balance), 10.30% debit (negative balance)
   - Ledger Account: `Assets:Bank:Discount:276689`
+
 - **Currency Conversion:** Israeli positions (ILS) converted to USD for unified portfolio view
 
 **Existing Loan Liabilities (User-Specific):**
@@ -42,6 +43,7 @@ Where:
   - Currency: Israeli Shekel (ILS)
   - Interest Rate Risk: Variable, tied to SHIR fluctuations
   - Impact: Monthly payments increase when SHIR rises
+
 - **Fixed Rate CPI-Linked Loans (Israel):**
   - Currency: Israeli Shekel (ILS)
   - Interest Rate: Fixed, but principal/value adjusts with CPI
@@ -124,6 +126,7 @@ PortfolioConvexity = Σ(Weight_i × Convexity_i)
      - Calculate: (Monthly SHIR loan payment × 2) + (Monthly CPI-linked loan payment × 2)
      - Maintain 2 months of payments as buffer for rate changes
   3. **Margin Buffer:** Reserve sufficient cash to cover margin requirements for existing positions and potential new trades
+
 - **Vehicles:**
   - **IBKR Cash Balance:** Earns interest on positive settled cash balances ([IBKR Interest Rates](https://www.interactivebrokers.com/en/accounts/fees/pricing-interest-rates.php))
   - **Discount Bank Account (535-0000-276689):** Israeli Shekel (ILS) account
@@ -136,6 +139,7 @@ PortfolioConvexity = Σ(Weight_i × Convexity_i)
   - Money market fund (MMF)
   - Ultra-short T-bills (0-1 month)
   - **Israeli Shekel (ILS) accounts:** For direct loan payment access (if loans are in ILS)
+
 - **IBKR Interest:** IBKR pays interest on positive cash balances; rates vary and should be compared against alternatives
 - **Discount Bank Interest:** 3.00% credit rate competitive with T-bills; 10.30% debit rate is high - avoid negative balances
 - **Loan Payment Timing:** Factor in loan payment dates when planning cash allocation
@@ -150,6 +154,7 @@ PortfolioConvexity = Σ(Weight_i × Convexity_i)
   - **Bond Coupons (Inflows):** Periodic coupon payments from bonds/bond ETFs
   - **Bond Maturities (Inflows):** Principal returned at bond maturity
   - **Dividends (Inflows):** Scheduled dividend payments from stocks/ETFs
+
 - **Cash Flow Timeline:** Generate timeline of all future cash flows (next 12 months)
 - **Liquidity Planning:** Ensure sufficient cash reserves to cover upcoming outflows
 - **Allocation Optimization:** Adjust spare cash allocation based on upcoming cash flows (favor liquidity if large outflows, favor yield if large inflows)
@@ -171,9 +176,11 @@ PortfolioConvexity = Σ(Weight_i × Convexity_i)
 - **Core Holdings (70% of equity allocation):**
   - SPY or VOO (S&P 500) - 40%
   - QQQ (Nasdaq 100) - 30%
+
 - **International Diversification (20% of equity allocation):**
   - VEA (Developed Markets) - 10%
   - VWO (Emerging Markets) - 10%
+
 - **Sector/Style Tilt (10% of equity allocation):**
   - Based on market regime and skew preferences
 
@@ -182,6 +189,7 @@ PortfolioConvexity = Σ(Weight_i × Convexity_i)
 - **Short-Term (50% of bond allocation):** SHY, BIL, or VGSH
   - Duration: 1-3 years
   - Purpose: Liquidity, convexity barbell component
+
 - **Long-Term (50% of bond allocation):** TLT, EDV, or VGLT
   - Duration: 20+ years
   - Purpose: Yield, convexity barbell component
@@ -225,6 +233,7 @@ TargetRate = max(
   - New T-bills
   - Short-term bonds
   - Box spread opportunities
+
 - Allocate to highest yield vehicle after accounting for:
   - Liquidity needs
   - Transaction costs
@@ -413,6 +422,7 @@ SpareCashAllocation calculate_allocation(
 - **Option Expiration:** Cash returned from long options, cash required for short options (inflows/outflows)
   - Box spreads: Guaranteed cash flow = Strike width × Contract multiplier × Quantity
   - Regular options: Projected intrinsic value based on current underlying price
+
 - **Bond Coupons:** Periodic coupon payments from bonds/bond ETFs (inflows)
 - **Bond Maturities:** Principal returned at bond maturity (large inflows)
 - **Dividends:** Scheduled dividend payments from stocks/ETFs (inflows)
@@ -436,6 +446,7 @@ SpareCashAllocation calculate_allocation(
   - Direct loan payment access (SHIR-based and CPI-linked loans in ILS)
   - ILS liquidity buffer
   - Competitive yield on positive balances (3% ≈ T-bill rates)
+
 - **Risk Management:**
   - Monitor balance via reconciliation file imports
   - Maintain positive balance to earn interest (avoid 10.30% debit rate)
@@ -452,11 +463,13 @@ SpareCashAllocation calculate_allocation(
   - **Interest Rate Shifts:** Central bank decisions can trigger rapid unwinding (e.g., Bank of Japan rate hikes in 2024)
   - **Market Sentiment:** "Safe haven" currency flows can reverse positions quickly
   - **Leverage Risk:** Amplifies losses when markets turn (margin calls on currency positions)
+
 - **Recommendation:** Only for sophisticated investors with:
   - Large multi-currency accounts (10M+ USD)
   - ECP qualification
   - Strong understanding of currency and interest rate risks
   - Ability to monitor and adjust positions quickly
+
 - **Integration:** Consider alongside box spreads, T-bills, and IBKR cash as an advanced cash allocation strategy, but limit exposure due to currency risk
 
 **Margin Considerations:**
@@ -492,6 +505,7 @@ SpareCashAllocation calculate_allocation(
   - **Cash Flow Impact:** Monthly payments fluctuate with SHIR changes; reserve 2 months of payments as buffer
   - **Monitoring:** Track SHIR rate changes and adjust cash reserves accordingly
   - **Hedging Considerations:** Consider ILS/USD hedging if portfolio is USD-denominated; rate increases can reduce available capital
+
 - **Fixed Rate CPI-Linked Loans (Israel):**
   - **Structure:** Fixed interest rate, but principal value adjusts with CPI (Consumer Price Index)
   - **Currency:** Israeli Shekel (ILS)
@@ -499,11 +513,13 @@ SpareCashAllocation calculate_allocation(
   - **Cash Flow Impact:** Monthly payments may adjust with CPI; principal value increases over time
   - **Real Value Impact:** Loan becomes "cheaper" in real terms during inflation; consider this when allocating assets
   - **Monitoring:** Track Israeli CPI changes and principal adjustments
+
 - **Loan Payment Reserve Strategy:**
   - **Calculation:** Total monthly loan payments × 2 months (buffer for rate changes)
   - **Allocation:** Factor into Tier 1 Immediate Cash allocation
   - **Currency Matching:** Consider maintaining ILS reserves for direct loan payments (if loans are in ILS)
   - **Interest Optimization:** Balance between maintaining ILS reserves vs. earning higher USD rates (account for FX risk)
+
 - **Impact on Portfolio Allocation:**
   - **Net Portfolio Value:** Calculate allocations based on net portfolio value (assets minus loan liabilities)
   - **Effective Cash Flow:** Consider monthly loan payments as a liability reducing available cash flow

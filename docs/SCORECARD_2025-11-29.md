@@ -48,6 +48,7 @@
 ### 🔴 Critical Priority
 
 **Security** - Implement path boundary enforcement, rate limiting, and access control
+
 - **Impact**: +25% to security score
 - **Status**: ✅ **COMPLETE** (verified in `docs/SECURITY_CONTROLS_VERIFICATION.md`)
 - **Note**: Scorecard may need time to reflect changes
@@ -55,26 +56,31 @@
 ### 🟠 High Priority
 
 **Testing** - Fix failing tests and increase coverage to 30%
+
 - **Impact**: +15% to testing score
 - **Status**: ✅ **COMPLETE**
   - ✅ All 30 tests passing (100% pass rate)
   - ✅ 75% coverage achieved (exceeds 30% target)
   - ✅ Test infrastructure working
+
 - **Note**: Scorecard may need time to reflect changes
 
 ### 🟡 Medium Priority
 
 **Tasks** - Complete pending tasks to show progress
+
 - **Impact**: +5% to overall score
 - **Status**: 🔄 **IN PROGRESS**
   - ✅ 2 quick-win tasks completed
   - 🔄 More tasks available
 
 **Dogfooding** - Enable more self-maintenance: pre_commit_hook, pre_push_hook, pre_commit_config
+
 - **Impact**: +13% to dogfooding score
 - **Status**: ✅ **COMPLETE**
   - ✅ Pre-commit hooks installed (8 hooks active)
   - ✅ `.pre-commit-config.yaml` configured
+
 - **Note**: Scorecard may need time to reflect changes
 
 ---
@@ -153,6 +159,7 @@
 ## Files Created/Modified Today
 
 ### Created
+
 - `.venv/` - Python virtual environment
 - `.pre-commit-config.yaml` - Pre-commit hooks configuration
 - `docs/SECURITY_CONTROLS_VERIFICATION.md` - Security verification
@@ -165,6 +172,7 @@
 - `docs/SCORECARD_2025-11-29.md` - This file
 
 ### Modified
+
 - `python/tests/test_security.py` - Fixed 6 failing tests
 - `.todo2/state.todo2.json` - Updated task statuses
 

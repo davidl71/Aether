@@ -49,6 +49,7 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
   - Press releases
   - Feature descriptions
   - Internal documentation
+
 - This creates a **personalized AI** that understands your specific context
 - You can ask contextual questions like: *"Draft the outline of a blog post for that feature we were discussing last week"*
 
@@ -128,6 +129,7 @@ NotebookLM is Google's AI-powered research assistant designed for deeper underst
   - Notes in a doc
   - Saved webpages
   - Photos and videos as inspiration
+
 - Put everything into a single notebook
 - Ask questions like:
   - *"What was the deal with that one character?"*

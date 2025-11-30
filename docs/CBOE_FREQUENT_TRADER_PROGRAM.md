@@ -111,6 +111,7 @@ Available to **non-Trading Permit Holder, non-broker/dealer** (i.e., customer) u
   - Contracts traded
   - Total estimated fees
   - Potential rebate amount
+
 - Request customized reports: <https://www.cboe.org/tphreports/default.aspx>
 
 ---

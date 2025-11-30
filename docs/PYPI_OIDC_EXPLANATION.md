@@ -22,12 +22,14 @@
 ### Traditional Method (API Tokens) ❌
 
 **Old Way**:
+
 1. Generate API token in PyPI
 2. Store token as GitHub secret
 3. Use token in workflow
 4. **Risk**: Token can be leaked, stolen, or misused
 
 **Problems**:
+
 - Long-lived credentials
 - Must be stored as secrets
 - Can be compromised
@@ -37,6 +39,7 @@
 ### OIDC Method (Trusted Publishing) ✅
 
 **New Way**:
+
 1. Configure "Pending Publisher" in PyPI
 2. GitHub Actions requests OIDC token from GitHub
 3. GitHub issues short-lived token (valid for ~10 minutes)
@@ -45,6 +48,7 @@
 6. **No secrets needed!**
 
 **Benefits**:
+
 - ✅ No long-lived credentials
 - ✅ No secrets to manage
 - ✅ Automatic token rotation
@@ -112,6 +116,7 @@ permissions:
 ```
 
 **`id-token: write`**:
+
 - Allows workflow to request OIDC token from GitHub
 - **Critical**: Without this, OIDC won't work
 
@@ -124,6 +129,7 @@ environment:
 ```
 
 **Environment**:
+
 - Optional but recommended
 - Allows protection rules (approvals, branch restrictions)
 - Must match environment name in PyPI pending publisher (if specified)
@@ -131,6 +137,7 @@ environment:
 ### Publishing Action
 
 ```yaml
+
 - name: Publish to PyPI
   uses: pypa/gh-action-pypi-publish@release/v1
   with:
@@ -139,6 +146,7 @@ environment:
 ```
 
 **`pypa/gh-action-pypi-publish@release/v1`**:
+
 - Automatically uses OIDC if configured
 - No `username` or `password` needed
 - No `__token__` needed
@@ -151,6 +159,7 @@ environment:
 ### What PyPI Stores
 
 When you create a pending publisher, PyPI stores:
+
 - **Repository**: `davidl71/project-management-automation`
 - **Workflow**: `.github/workflows/publish-pypi.yml`
 - **Environment**: `pypi` (if specified)
@@ -176,7 +185,9 @@ When you create a pending publisher, PyPI stores:
 ### 1. No Secrets Management
 
 **Before (API Token)**:
+
 ```yaml
+
 - name: Publish
   env:
     TWINE_USERNAME: __token__
@@ -184,7 +195,9 @@ When you create a pending publisher, PyPI stores:
 ```
 
 **After (OIDC)**:
+
 ```yaml
+
 - name: Publish
   uses: pypa/gh-action-pypi-publish@release/v1
   # ✅ No secrets needed!
@@ -216,6 +229,7 @@ When you create a pending publisher, PyPI stores:
 ### Issue: "Permission denied" or "Authentication failed"
 
 **Check**:
+
 1. ✅ `id-token: write` permission in workflow
 2. ✅ Environment name matches PyPI pending publisher
 3. ✅ Repository name matches PyPI pending publisher
@@ -224,6 +238,7 @@ When you create a pending publisher, PyPI stores:
 ### Issue: "Publisher not found"
 
 **Check**:
+
 1. ✅ Pending publisher created in PyPI
 2. ✅ Repository owner matches (case-sensitive)
 3. ✅ Workflow path is exactly `.github/workflows/publish-pypi.yml`
@@ -231,6 +246,7 @@ When you create a pending publisher, PyPI stores:
 ### Issue: "Token validation failed"
 
 **Check**:
+
 1. ✅ GitHub Actions is enabled for repository
 2. ✅ Workflow file is in correct location
 3. ✅ Environment exists in GitHub (if specified)
@@ -248,6 +264,7 @@ When you create a pending publisher, PyPI stores:
 ### Token Claims
 
 Example OIDC token claims:
+
 ```json
 {
   "iss": "https://token.actions.githubusercontent.com",
@@ -262,6 +279,7 @@ Example OIDC token claims:
 ### Token Verification
 
 PyPI verifies:
+
 1. **Signature**: Token signed by GitHub
 2. **Issuer**: `https://token.actions.githubusercontent.com`
 3. **Audience**: `pypi`
@@ -295,6 +313,7 @@ environment:
 ```
 
 **Benefits**:
+
 - Can require approvals
 - Can restrict to specific branches
 - Can add wait timers
@@ -302,6 +321,7 @@ environment:
 ### 2. Restrict to Main Branch
 
 In GitHub environment settings:
+
 - **Deployment branches**: `main` only
 - Prevents accidental publishes from feature branches
 
@@ -314,6 +334,7 @@ on:
 ```
 
 **Benefits**:
+
 - Only publishes on official releases
 - Prevents accidental publishes
 - Clear version tracking
@@ -321,11 +342,13 @@ on:
 ### 4. Verify Before Publishing
 
 ```yaml
+
 - name: Check package
   run: twine check dist/*
 ```
 
 **Benefits**:
+
 - Catches errors before publishing
 - Validates package structure
 - Prevents broken releases
@@ -343,6 +366,7 @@ on:
 ## Summary
 
 **OIDC for PyPI Publishing**:
+
 - ✅ **Secure**: No long-lived credentials
 - ✅ **Simple**: No secrets to manage
 - ✅ **Automatic**: Token rotation handled automatically
@@ -350,6 +374,7 @@ on:
 - ✅ **Recommended**: PyPI's preferred method
 
 **Our Setup**:
+
 - ✅ Workflow configured with `id-token: write`
 - ✅ Environment configured (`pypi`)
 - ✅ Using `pypa/gh-action-pypi-publish@release/v1`

@@ -18,6 +18,7 @@ The **Synthetic Financing Platform** provides comprehensive multi-asset financin
 **Purpose**: Unified view across all accounts and brokers
 
 **Features**:
+
 - Aggregates positions from 21+ accounts
 - Supports US brokers (IBKR, Alpaca, Tradier, Tastytrade)
 - Supports Israeli banks (Fibi, Discount)
@@ -27,6 +28,7 @@ The **Synthetic Financing Platform** provides comprehensive multi-asset financin
 - Currency conversion (ILS → USD)
 
 **Documentation**:
+
 - [Multi-Account Aggregation Design](MULTI_ACCOUNT_AGGREGATION_DESIGN.md)
 
 ---
@@ -36,6 +38,7 @@ The **Synthetic Financing Platform** provides comprehensive multi-asset financin
 **Purpose**: Project and optimize cash flows across all positions
 
 **Features**:
+
 - Track cash inflows/outflows from all positions
 - Project future cash flows based on maturity dates
 - Calculate net cash flow at any point in time
@@ -43,11 +46,13 @@ The **Synthetic Financing Platform** provides comprehensive multi-asset financin
 - Account for interest payments, principal repayments, dividends
 
 **Use Cases**:
+
 - "What's my cash flow next month?"
 - "When do I need to repay this loan?"
 - "How much cash will I have available for new opportunities?"
 
 **Documentation**:
+
 - [Primary Goals and Requirements](PRIMARY_GOALS_AND_REQUIREMENTS.md) - Section 2: Cash Flow Modeling
 
 ---
@@ -57,18 +62,21 @@ The **Synthetic Financing Platform** provides comprehensive multi-asset financin
 **Purpose**: What-if analysis for loan usage and optimization
 
 **Key Scenarios**:
+
 - **Loan Consolidation**: Use loan proceeds to consolidate other loans
 - **Margin for Box Spreads**: Use loan as collateral for box spread margin
 - **Investment Fund Strategy**: Use loan to invest in fund, use fund as collateral for cheaper loan
 - **Multi-Instrument Optimization**: Optimal chains (loan → margin → box spread → fund → cheaper loan)
 
 **Features**:
+
 - Interactive what-if analysis
 - Real-time simulation as user changes parameters
 - Compare multiple scenarios side-by-side
 - Show cash flow impact, net benefit, risk metrics
 
 **Documentation**:
+
 - [Primary Goals and Requirements](PRIMARY_GOALS_AND_REQUIREMENTS.md) - Section 3: Opportunity Simulation
 
 ---
@@ -78,12 +86,14 @@ The **Synthetic Financing Platform** provides comprehensive multi-asset financin
 **Purpose**: Model relationships between instruments (loan → margin → box spread → fund → cheaper loan)
 
 **Relationship Types**:
+
 1. **Collateral Relationships**: Asset can be used as collateral for another
 2. **Financing Relationships**: Asset provides financing for another
 3. **Cash Flow Relationships**: Asset generates cash flow used by another
 4. **Optimization Chains**: Optimal sequence of instrument usage
 
 **Features**:
+
 - Asset relationship graph
 - Find optimal chains
 - Calculate net benefit of chains
@@ -91,6 +101,7 @@ The **Synthetic Financing Platform** provides comprehensive multi-asset financin
 - Real-time updates as positions change
 
 **Documentation**:
+
 - [Synthetic Financing Architecture](SYNTHETIC_FINANCING_ARCHITECTURE.md)
 
 ---
@@ -100,6 +111,7 @@ The **Synthetic Financing Platform** provides comprehensive multi-asset financin
 **Purpose**: Portfolio allocation, convexity optimization, volatility skew management
 
 **Components**:
+
 - **Portfolio Allocation**: 70-80% core investments (equity + bond ETFs)
 - **Convexity Optimization**: Barbell strategy (short-term + long-term bonds)
 - **Volatility Skew Management**: Positive-skew assets for risk-adjusted returns
@@ -107,6 +119,7 @@ The **Synthetic Financing Platform** provides comprehensive multi-asset financin
 - **T-Bill/Bond Ladder**: 10-15% target allocation
 
 **Documentation**:
+
 - [Investment Strategy Framework](INVESTMENT_STRATEGY_FRAMEWORK.md)
 
 ---
@@ -260,6 +273,7 @@ Synthetic Financing Platform
 ### Strategy Module Pattern
 
 All strategies follow the same integration pattern:
+
 1. **Strategy Engine**: Core calculation logic
 2. **Platform Integration**: Cash flow, risk, opportunity simulation
 3. **Broker Abstraction**: Works with all supported brokers

@@ -16,10 +16,12 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ### 1. 📋 Task Management Automation
 
 #### 1.1 Todo2 Alignment Analysis
+
 **Frequency**: Daily
 **Script**: `scripts/automate_todo2_alignment_v2.py`
 **Purpose**: Ensure tasks align with project strategy
 **Actions**:
+
 - Identify misaligned high-priority tasks
 - Detect stale tasks (>30 days)
 - Find blocked tasks
@@ -33,10 +35,12 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ---
 
 #### 1.2 Task Dependency Health Check
+
 **Frequency**: Daily
 **Script**: New - `scripts/automate_task_dependency_health.py`
 **Purpose**: Monitor task dependency graph health
 **Actions**:
+
 - Detect circular dependencies (shouldn't exist in DAG)
 - Identify bottleneck tasks (blocking many others)
 - Find critical path
@@ -50,10 +54,12 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ---
 
 #### 1.3 Duplicate Task Detection
+
 **Frequency**: Daily
 **Script**: `scripts/automate_todo2_duplicate_detection.py`
 **Purpose**: Detect and report duplicate tasks
 **Actions**:
+
 - Detect duplicate task IDs (critical data integrity issue)
 - Find tasks with identical names
 - Identify tasks with similar names (fuzzy matching)
@@ -68,10 +74,12 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ---
 
 #### 1.4 Stale Task Cleanup
+
 **Frequency**: Weekly
 **Script**: New - `scripts/automate_stale_task_cleanup.py`
 **Purpose**: Identify and suggest cleanup for stale tasks
 **Actions**:
+
 - Find tasks not updated in 60+ days
 - Categorize by status (todo, in_progress, review)
 - Suggest cancellation for obsolete tasks
@@ -87,10 +95,12 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ### 2. 📚 Documentation Automation
 
 #### 2.1 Documentation Health Check
+
 **Frequency**: Daily
 **Script**: `scripts/automate_docs_health_v2.py`
 **Purpose**: Monitor documentation quality and structure
 **Actions**:
+
 - Validate all links (internal/external)
 - Check format compliance
 - Identify stale documents (>90 days)
@@ -104,10 +114,12 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ---
 
 #### 2.2 Documentation Structure Analysis
+
 **Frequency**: Weekly
 **Script**: New - `scripts/automate_docs_structure_analysis.py`
 **Purpose**: Analyze and improve documentation structure
 **Actions**:
+
 - Identify orphaned documents (not referenced)
 - Find documentation hubs (most referenced)
 - Detect broken reference chains
@@ -121,10 +133,12 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ---
 
 #### 2.3 API Documentation Validation
+
 **Frequency**: Daily
 **Script**: `scripts/validate_docs_format.py` (existing)
 **Purpose**: Ensure API docs follow template
 **Actions**:
+
 - Validate API documentation entries
 - Check required fields
 - Verify format compliance
@@ -139,10 +153,12 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ### 3. 🔍 Code Quality Automation
 
 #### 3.1 Linter & Static Analysis
+
 **Frequency**: Daily
 **Script**: `scripts/run_linters.sh` (existing)
 **Purpose**: Catch code quality issues early
 **Actions**:
+
 - Run cppcheck, clang-tidy, Infer
 - Check for security issues
 - Validate code style
@@ -155,10 +171,12 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ---
 
 #### 3.2 Test Coverage Analysis
+
 **Frequency**: Daily
 **Script**: New - `scripts/automate_test_coverage.py`
 **Purpose**: Monitor test coverage trends
 **Actions**:
+
 - Run test suite
 - Calculate coverage metrics
 - Track coverage over time
@@ -172,10 +190,12 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ---
 
 #### 3.3 Dependency Security Scan
+
 **Frequency**: Daily
 **Script**: New - `scripts/automate_dependency_security.py`
 **Purpose**: Check for vulnerable dependencies
 **Actions**:
+
 - Scan Python dependencies (pip audit, safety)
 - Scan C++ dependencies (if applicable)
 - Check for known vulnerabilities
@@ -191,10 +211,12 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ### 4. 🏗️ Build & Infrastructure Automation
 
 #### 4.1 Build Health Check
+
 **Frequency**: Daily
 **Script**: New - `scripts/automate_build_health.py`
 **Purpose**: Monitor build system health
 **Actions**:
+
 - Test build on all platforms/configs
 - Check build times (trend analysis)
 - Identify build failures
@@ -208,10 +230,12 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ---
 
 #### 4.2 Dependency Update Check
+
 **Frequency**: Weekly
 **Script**: New - `scripts/automate_dependency_updates.py`
 **Purpose**: Identify outdated dependencies
 **Actions**:
+
 - Check for dependency updates
 - Identify security updates
 - Check compatibility
@@ -225,10 +249,12 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ---
 
 #### 4.3 Configuration Drift Detection
+
 **Frequency**: Weekly
 **Script**: New - `scripts/automate_config_drift.py`
 **Purpose**: Detect configuration inconsistencies
 **Actions**:
+
 - Compare configs across environments
 - Check for missing configs
 - Validate config formats
@@ -244,10 +270,12 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ### 5. 📊 Project Health Dashboard
 
 #### 5.1 Project Health Summary
+
 **Frequency**: Daily
 **Script**: New - `scripts/automate_project_health_dashboard.py`
 **Purpose**: Generate comprehensive health dashboard
 **Actions**:
+
 - Aggregate all health metrics
 - Calculate overall health score
 - Identify critical issues
@@ -259,6 +287,7 @@ This plan outlines routine automation tasks that should run regularly to maintai
 **Output**: `docs/PROJECT_HEALTH_DASHBOARD.md`
 
 **Metrics Included**:
+
 - Task alignment score
 - Documentation health score
 - Test coverage percentage
@@ -271,10 +300,12 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ### 6. 🔄 Integration & Sync Automation
 
 #### 6.1 Shared TODO Table Synchronization
+
 **Frequency**: Hourly
 **Script**: New - `scripts/automate_todo_sync.py`
 **Purpose**: Sync Todo2 with shared TODO table
 **Actions**:
+
 - Read from shared TODO table
 - Sync with Todo2 tasks
 - Resolve conflicts
@@ -290,10 +321,12 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ---
 
 #### 6.2 Cross-Reference Validation
+
 **Frequency**: Daily
 **Script**: New - `scripts/automate_cross_reference_validation.py`
 **Purpose**: Validate all cross-references in project
 **Actions**:
+
 - Check documentation cross-refs
 - Validate code references
 - Check TODO references
@@ -309,24 +342,28 @@ This plan outlines routine automation tasks that should run regularly to maintai
 ## Implementation Priority
 
 ### Phase 1: High-Value, Low-Effort (Week 1)
+
 1. ✅ Todo2 Alignment Analysis (already automated)
 2. ✅ Documentation Health Check (already automated)
 3. Task Dependency Health Check
 4. Project Health Dashboard
 
 ### Phase 2: Critical Infrastructure (Week 2)
+
 5. Shared TODO Table Synchronization
 6. Dependency Security Scan
 7. Linter Automation (enhance existing)
 8. Test Coverage Analysis
 
 ### Phase 3: Quality & Maintenance (Week 3-4)
+
 9. Stale Task Cleanup
 10. Documentation Structure Analysis
 11. Dependency Update Check
 12. Build Health Check
 
 ### Phase 4: Advanced Monitoring (Week 5+)
+
 13. Configuration Drift Detection
 14. Cross-Reference Validation
 15. Advanced analytics and reporting
@@ -386,6 +423,7 @@ class MyAutomation(IntelligentAutomationBase):
 Create `scripts/setup_all_automation_cron.sh`:
 
 ```bash
+
 #!/bin/bash
 # Sets up all routine automation cron jobs
 
@@ -412,6 +450,7 @@ PYTHON_BIN="python3"
 ### Individual Scripts
 
 Each automation should have:
+
 - `scripts/automate_<name>.py` - Main script
 - `scripts/<name>_config.json` - Configuration
 - `scripts/setup_<name>_cron.sh` - Cron setup script
@@ -440,15 +479,18 @@ Each automation should have:
 ## Success Metrics
 
 ### Automation Coverage
+
 - **Target**: 80% of routine tasks automated
 - **Current**: ~30% (docs health, Todo2 alignment)
 - **Goal**: Reach 80% in 4 weeks
 
 ### Time Savings
+
 - **Target**: Save 5+ hours/week on routine tasks
 - **Measurement**: Track manual task time before/after
 
 ### Issue Detection
+
 - **Target**: Catch 90% of issues before they become critical
 - **Measurement**: Track issues found by automation vs. manual
 

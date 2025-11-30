@@ -37,10 +37,13 @@ This project supports distributed compilation using **distcc** and **ccache** to
 Already have distcc installed! Just enable it:
 
 ```bash
+
 # Set up distcc hosts (add your machines)
+
 export DISTCC_HOSTS="localhost/4 192.168.1.100/8 192.168.1.101/8"
 
 # Configure CMake to use distcc
+
 cd /Users/davidlowes/Documents/ib_box_spread_full_universal
 cmake -S . -B build \
   -DCMAKE_CXX_COMPILER_LAUNCHER=distcc \
@@ -48,6 +51,7 @@ cmake -S . -B build \
   -DIBAPI_LIB=~/IBJts/source/cppclient/libTwsApiCpp.dylib
 
 # Build with parallelism
+
 make -j16 -C build
 ```
 
@@ -56,20 +60,25 @@ make -j16 -C build
 Install ccache first:
 
 ```bash
+
 # Install ccache
+
 brew install ccache
 
 # Set up environment
+
 export DISTCC_HOSTS="localhost/4 192.168.1.100/8"
 export CCACHE_PREFIX="distcc"  # Use distcc via ccache
 
 # Configure CMake
+
 cmake -S . -B build \
   -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
   -DIBAPI_INCLUDE_DIR=~/IBJts/source/cppclient \
   -DIBAPI_LIB=~/IBJts/source/cppclient/libTwsApiCpp.dylib
 
 # Build
+
 make -j16 -C build
 ```
 
@@ -82,34 +91,46 @@ make -j16 -C build
 #### 1. Server Configuration (on remote machines)
 
 ```bash
+
 # On each remote machine (Linux or macOS)
 # Install distcc
+
 brew install distcc  # macOS
+
 # or
+
 sudo apt-get install distcc  # Linux
 
 # Start distccd daemon
+
 distccd --daemon --allow 192.168.1.0/24 --jobs 8 --log-level error
 
 # Verify running
+
 ps aux | grep distccd
 ```
 
 #### 2. Client Configuration (your development machine)
 
 ```bash
+
 # Create ~/.distcc/hosts file
+
 cat > ~/.distcc/hosts << 'EOF'
+
 # Format: hostname/limit
+
 localhost/4
 192.168.1.100/8
 192.168.1.101/8
 EOF
 
 # Or use environment variable
+
 export DISTCC_HOSTS="localhost/4 192.168.1.100/8 192.168.1.101/8"
 
 # Enable verbose logging (optional)
+
 export DISTCC_VERBOSE=1
 export DISTCC_LOG=/tmp/distcc.log
 ```
@@ -129,7 +150,9 @@ cmake -S . -B build \
 Or add to `CMakeLists.txt`:
 
 ```cmake
+
 # Distributed compilation support
+
 option(ENABLE_DISTCC "Enable distcc distributed compilation" OFF)
 option(ENABLE_CCACHE "Enable ccache compilation caching" OFF)
 
@@ -169,25 +192,32 @@ endif()
 ### Installation
 
 ```bash
+
 # macOS
+
 brew install ccache
 
 # Linux
+
 sudo apt-get install ccache
 ```
 
 ### Configuration
 
 ```bash
+
 # Configure ccache
+
 ccache --max-size=10G  # Set cache size
 ccache --set-config=compression=true
 ccache --set-config=compression_level=6
 
 # View configuration
+
 ccache --show-config
 
 # View statistics
+
 ccache --show-stats
 ```
 
@@ -210,7 +240,9 @@ sccache is a Rust-based compilation cache that's faster and more feature-rich th
 ### Installation
 
 ```bash
+
 # macOS
+
 brew install sccache
 
 # Or download from GitHub
@@ -220,17 +252,21 @@ brew install sccache
 ### Configuration
 
 ```bash
+
 # Set environment variables
+
 export SCCACHE_DIR=~/.sccache
 export SCCACHE_CACHE_SIZE="10G"
 
 # CMake integration
+
 cmake -S . -B build \
   -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
   -DIBAPI_INCLUDE_DIR=~/IBJts/source/cppclient \
   -DIBAPI_LIB=~/IBJts/source/cppclient/libTwsApiCpp.dylib
 
 # View statistics
+
 sccache --show-stats
 ```
 
@@ -268,7 +304,9 @@ Current build structure:
 ### For Solo Development
 
 ```bash
+
 # Use ccache only (most benefit for solo dev)
+
 brew install ccache
 cmake -S . -B build -DENABLE_CCACHE=ON ...
 ```
@@ -276,22 +314,28 @@ cmake -S . -B build -DENABLE_CCACHE=ON ...
 ### For Team Development
 
 ```bash
+
 # Use ccache + distcc
+
 brew install ccache distcc
 
 # Set up distcc hosts
+
 export DISTCC_HOSTS="localhost/4 team-machine-1/8 team-machine-2/8"
 export CCACHE_PREFIX="distcc"
 
 # Configure
+
 cmake -S . -B build -DENABLE_CCACHE=ON -DENABLE_DISTCC=ON ...
 ```
 
 ### For CI/CD
 
 ```bash
+
 # Use sccache with cloud storage backend
 # Supports S3, Redis, GCS for shared cache
+
 export SCCACHE_BUCKET="my-build-cache"
 export SCCACHE_REGION="us-east-1"
 
@@ -307,7 +351,9 @@ cmake -S . -B build -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ...
 Update `CMakeLists.txt` to add distributed compilation options:
 
 ```cmake
+
 # Add after line 22
+
 option(ENABLE_DISTCC "Enable distcc distributed compilation" OFF)
 option(ENABLE_CCACHE "Enable ccache compilation caching" OFF)
 option(ENABLE_SCCACHE "Enable sccache compilation caching" OFF)
@@ -318,6 +364,7 @@ option(ENABLE_SCCACHE "Enable sccache compilation caching" OFF)
 # ============================================================================
 
 # Prioritize: sccache > ccache > distcc
+
 if(ENABLE_SCCACHE)
     find_program(SCCACHE_EXECUTABLE sccache)
     if(SCCACHE_EXECUTABLE)
@@ -374,7 +421,9 @@ brew install ccache
 If you have multiple machines:
 
 ```bash
+
 # On each remote machine
+
 brew install distcc
 distccd --daemon --allow 192.168.1.0/24 --jobs 8
 ```
@@ -382,7 +431,9 @@ distccd --daemon --allow 192.168.1.0/24 --jobs 8
 ### Step 4: Build with Optimizations
 
 ```bash
+
 # Clean rebuild with ccache
+
 cmake -S . -B build-fast \
   -DCMAKE_BUILD_TYPE=Release \
   -DENABLE_CCACHE=ON \
@@ -399,25 +450,30 @@ make -j$(sysctl -n hw.ncpu) -C build-fast
 ### scripts/build_fast.sh (with ccache)
 
 ```bash
+
 #!/bin/bash
 # build_fast.sh - Fast build with ccache
 
 set -e
 
 # Install ccache if not present
+
 if ! command -v ccache &> /dev/null; then
     echo "Installing ccache..."
     brew install ccache
 fi
 
 # Configure ccache
+
 ccache --max-size=10G
 ccache --set-config=compression=true
 
 # Build directory
+
 BUILD_DIR="build-fast"
 
 # Configure with ccache
+
 cmake -S . -B "$BUILD_DIR" \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
@@ -426,9 +482,11 @@ cmake -S . -B "$BUILD_DIR" \
   -DIBAPI_LIB="${IBAPI_LIB:-$HOME/IBJts/source/cppclient/libTwsApiCpp.dylib}"
 
 # Build with all cores
+
 make -j$(sysctl -n hw.ncpu) -C "$BUILD_DIR"
 
 # Show ccache statistics
+
 echo ""
 echo "=== ccache Statistics ==="
 ccache --show-stats
@@ -437,12 +495,14 @@ ccache --show-stats
 ### scripts/build_distributed.sh (with distcc + ccache)
 
 ```bash
+
 #!/bin/bash
 # build_distributed.sh - Distributed build with distcc and ccache
 
 set -e
 
 # Check for required tools
+
 if ! command -v distcc &> /dev/null; then
     echo "Error: distcc not found"
     exit 1
@@ -454,16 +514,20 @@ if ! command -v ccache &> /dev/null; then
 fi
 
 # distcc hosts (customize for your network)
+
 export DISTCC_HOSTS="${DISTCC_HOSTS:-localhost/4}"
 export CCACHE_PREFIX="distcc"
 
 # Configure ccache
+
 ccache --max-size=10G
 
 # Build directory
+
 BUILD_DIR="build-distributed"
 
 # Configure
+
 cmake -S . -B "$BUILD_DIR" \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
@@ -472,9 +536,11 @@ cmake -S . -B "$BUILD_DIR" \
   -DIBAPI_LIB="${IBAPI_LIB:-$HOME/IBJts/source/cppclient/libTwsApiCpp.dylib}"
 
 # Build with high parallelism
+
 make -j32 -C "$BUILD_DIR"
 
 # Statistics
+
 echo ""
 echo "=== ccache Statistics ==="
 ccache --show-stats
@@ -490,10 +556,13 @@ distcc --show-stats
 ### macOS Server
 
 ```bash
+
 # Install distcc
+
 brew install distcc
 
 # Start distccd daemon
+
 distccd --daemon \
   --allow 192.168.1.0/24 \
   --jobs $(sysctl -n hw.ncpu) \
@@ -501,29 +570,36 @@ distccd --daemon \
   --log-file /tmp/distccd.log
 
 # Verify running
+
 ps aux | grep distccd
 
 # Test from client
+
 DISTCC_HOSTS="server-ip/8" distcc gcc --version
 ```
 
 ### Linux Server
 
 ```bash
+
 # Install distcc
+
 sudo apt-get install distcc
 
 # Configure
+
 sudo systemctl enable distcc
 sudo systemctl start distcc
 
 # Edit /etc/default/distcc
+
 STARTDISTCC="true"
 ALLOWEDNETS="192.168.1.0/24"
 LISTENER="0.0.0.0"
 JOBS="8"
 
 # Restart
+
 sudo systemctl restart distcc
 ```
 
@@ -534,6 +610,7 @@ sudo systemctl restart distcc
 ### Optimal Parallelism
 
 ```bash
+
 # Formula: (local_cores + sum(remote_cores)) * 1.5
 # Example: 4 local cores + 8 remote + 8 remote = 20 cores
 # Optimal -j flag: 20 * 1.5 = 30
@@ -544,28 +621,36 @@ make -j30 -C build
 ### Monitor Performance
 
 ```bash
+
 # distcc monitor (shows which hosts are being used)
+
 distccmon-text 1  # Update every 1 second
 
 # ccache statistics
+
 watch -n 1 ccache --show-stats
 
 # Real-time build progress
+
 make -j16 -C build 2>&1 | tee build.log
 ```
 
 ### Troubleshooting
 
 ```bash
+
 # Enable verbose logging
+
 export DISTCC_VERBOSE=1
 export DISTCC_LOG=/tmp/distcc.log
 
 # Check what's happening
+
 tail -f /tmp/distcc.log
 
 # Pump mode (preprocessing distribution)
 # Faster for large projects
+
 pump make -j32 -C build
 ```
 
@@ -576,6 +661,7 @@ pump make -j32 -C build
 ### Option 1: AWS EC2 Build Farm
 
 ```bash
+
 # Launch EC2 instances for compilation
 # Use spot instances for cost savings
 # Configure distcc to use EC2 IPs
@@ -591,16 +677,20 @@ make -j64 -C build
 ### Option 2: sccache with S3 Backend
 
 ```bash
+
 # Install sccache
+
 brew install sccache
 
 # Configure S3 backend
+
 export SCCACHE_BUCKET="my-build-cache"
 export SCCACHE_REGION="us-east-1"
 export AWS_ACCESS_KEY_ID="..."
 export AWS_SECRET_ACCESS_KEY="..."
 
 # Use with CMake
+
 cmake -S . -B build \
   -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
   -DENABLE_SCCACHE=ON \
@@ -616,26 +706,31 @@ cmake -S . -B build \
 ### Measure Build Times
 
 ```bash
+
 # Benchmark script
 #!/bin/bash
 
 echo "=== Build Time Benchmark ==="
 
 # Clean build without cache
+
 echo "1. Clean build (no cache)..."
 rm -rf build-bench
 time cmake -S . -B build-bench ... && time make -j4 -C build-bench
 
 # Rebuild without changes
+
 echo "2. Rebuild (no changes, with ccache)..."
 time make -j4 -C build-bench
 
 # Change one file
+
 echo "3. Incremental (1 file changed)..."
 touch src/box_spread_strategy.cpp
 time make -j4 -C build-bench
 
 # Show ccache stats
+
 ccache --show-stats
 ```
 
@@ -646,10 +741,12 @@ ccache --show-stats
 Update `build_universal.sh` to support distributed compilation:
 
 ```bash
+
 #!/bin/bash
 # Add at the top
 
 # Enable ccache if available
+
 if command -v ccache &> /dev/null; then
     export CMAKE_CXX_COMPILER_LAUNCHER=ccache
     echo "Using ccache for faster builds"
@@ -725,14 +822,18 @@ jobs:
 ## Testing Distributed Compilation
 
 ```bash
+
 # Test 1: Verify distcc is working
+
 DISTCC_VERBOSE=1 distcc g++ -c test.cpp -o test.o
 
 # Test 2: Build with statistics
+
 time make -j16 -C build
 distcc --show-stats
 
 # Test 3: Monitor distribution
+
 distccmon-text 1  # In separate terminal
 make -j16 -C build  # In main terminal
 ```
@@ -746,18 +847,23 @@ make -j16 -C build  # In main terminal
 **Problem**: "Connection refused"
 
 ```bash
+
 # Check distccd is running on server
+
 ssh server "ps aux | grep distccd"
 
 # Test connectivity
+
 telnet server-ip 3632  # distcc default port
 ```
 
 **Problem**: "Access denied"
 
 ```bash
+
 # Check allowed networks on server
 # Edit /etc/default/distcc (Linux) or restart with --allow
+
 distccd --daemon --allow 192.168.1.0/24
 ```
 
@@ -766,13 +872,17 @@ distccd --daemon --allow 192.168.1.0/24
 **Problem**: "Cache hit rate low"
 
 ```bash
+
 # Check ccache configuration
+
 ccache --show-config
 
 # Increase cache size
+
 ccache --max-size=20G
 
 # Check what's being compiled
+
 ccache --zero-stats
 make -C build
 ccache --show-stats

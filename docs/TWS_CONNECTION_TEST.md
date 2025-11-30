@@ -30,17 +30,22 @@ A convenience script that:
 ### Option 1: Using the Shell Script (Recommended)
 
 ```bash
+
 # Basic usage (uses defaults: 127.0.0.1, port 4002, client_id 999)
+
 ./scripts/test_tws_connection.sh
 
 # Custom host, port, and client ID
+
 ./scripts/test_tws_connection.sh 127.0.0.1 4002 999
 ```
 
 ### Option 2: Using the Main Application
 
 ```bash
+
 # Run with debug logging
+
 ./build/ib_box_spread --config config/config.json --log-level debug
 ```
 
@@ -233,20 +238,26 @@ The enhanced logging shows the complete connection flow:
 ### Step 1: Verify TWS/Gateway is Running
 
 ```bash
+
 # Check if port is listening
+
 lsof -i :7497
 
 # Or for IB Gateway
+
 lsof -i :4002
 ```
 
 ### Step 2: Run the Test
 
 ```bash
+
 # Using shell script
+
 ./scripts/test_tws_connection.sh
 
 # Or using main application with debug logging
+
 ./build/ib_box_spread --config config/config.json --log-level debug
 ```
 

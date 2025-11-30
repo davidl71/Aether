@@ -154,6 +154,7 @@ Once added to the library, you can summarize the video:
 When summarizing videos, use this template:
 
 ```markdown
+
 # [Video Title]
 
 ## Video Information

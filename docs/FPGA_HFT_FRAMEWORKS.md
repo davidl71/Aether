@@ -590,6 +590,7 @@ Field-Programmable Gate Arrays (FPGAs) offer significant advantages for high-fre
 
 - **GitHub**: Search for FPGA trading projects
   - [Kodoh/Orderbook](https://github.com/Kodoh/Orderbook) - HFT order book implementation
+
 - **FPGA Forums**: Vendor-specific and general FPGA communities
 - **Trading Forums**: HFT and algorithmic trading communities
 

@@ -76,11 +76,14 @@ The project uses **platform-specific settings** that automatically adapt to your
 ### macOS Presets
 
 ```bash
+
 # ARM64 (Apple Silicon)
+
 cmake --preset macos-arm64-debug
 cmake --preset macos-arm64-release
 
 # x86_64 (Intel)
+
 cmake --preset macos-x86_64-debug
 cmake --preset macos-x86_64-release
 ```
@@ -88,20 +91,26 @@ cmake --preset macos-x86_64-release
 ### Windows Presets
 
 ```bash
+
 # x64 Debug
+
 cmake --preset windows-x64-debug
 
 # x64 Release
+
 cmake --preset windows-x64-release
 ```
 
 ### Linux Presets
 
 ```bash
+
 # x64 Debug
+
 cmake --preset linux-x64-debug
 
 # x64 Release
+
 cmake --preset linux-x64-release
 ```
 
@@ -179,7 +188,9 @@ VS Code C++ extension can auto-detect:
 Scripts use `uname` or environment variables to detect platform:
 
 ```bash
+
 # Detect architecture
+
 ARCH=$(uname -m)
 if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
   # Apple Silicon
@@ -188,6 +199,7 @@ elif [ "$ARCH" = "x86_64" ]; then
 fi
 
 # Detect OS
+
 OS=$(uname -s)
 if [ "$OS" = "Darwin" ]; then
   # macOS

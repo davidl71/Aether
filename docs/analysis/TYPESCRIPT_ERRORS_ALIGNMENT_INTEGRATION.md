@@ -138,6 +138,7 @@ T-212 (Fix T-205/T-207) ──> T-204 (TUI) ──┘
 **T-211: Fix TypeScript errors blocking unified positions panel**
 
 1. **Fix TabId type** (`App.tsx:38`)
+
    ```typescript
    // Current:
    type TabId = 'dashboard' | 'current' | 'historic' | 'orders' | 'alerts';
@@ -147,6 +148,7 @@ T-212 (Fix T-205/T-207) ──> T-204 (TUI) ──┘
    ```
 
 2. **Fix bankAccounts variable** (`App.tsx:132-136`)
+
    ```typescript
    // Current: Using undefined bankAccounts
    // Fix: Add hook call
@@ -154,6 +156,7 @@ T-212 (Fix T-205/T-207) ──> T-204 (TUI) ──┘
    ```
 
 3. **Fix GroupedPositions type** (`UnifiedPositionsPanel.tsx:117-119`)
+
    ```typescript
    // Current: Type assertion issue
    // Fix: Proper type initialization
@@ -173,6 +176,7 @@ T-212 (Fix T-205/T-207) ──> T-204 (TUI) ──┘
 **T-212: Fix TypeScript errors blocking cash flow and simulation**
 
 1. **Fix useWebSocket exports** (`useWebSocket.ts`)
+
    ```typescript
    // Current: Only exports useWebSocketStatus
    // Fix: Export useWebSocket and WebSocketMessage
@@ -181,6 +185,7 @@ T-212 (Fix T-205/T-207) ──> T-204 (TUI) ──┘
    ```
 
 2. **Fix useLeanSnapshot error type** (`useLeanSnapshot.ts:83`)
+
    ```typescript
    // Current: error parameter has implicit any
    // Fix: Add type annotation

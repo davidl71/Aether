@@ -23,13 +23,17 @@ This guide covers all RAM-based optimizations available for speeding up your dev
 Enable all RAM-based optimizations with one command:
 
 ```bash
+
 # Enable RAM optimization (creates 12GB RAM disk, links all caches)
+
 ./scripts/setup_ram_optimization.sh enable
 
 # Source environment in current shell
+
 source .ram-optimization-env
 
 # Check status
+
 ./scripts/setup_ram_optimization.sh status
 ```
 
@@ -38,10 +42,13 @@ source .ram-optimization-env
 For faster builds only:
 
 ```bash
+
 # Create RAM disk for builds
+
 ./scripts/setup_ramdisk.sh create
 
 # Build on RAM disk
+
 ./scripts/build_ramdisk.sh build
 ```
 
@@ -75,11 +82,14 @@ source .ram-optimization-env
 **Manual setup**:
 
 ```bash
+
 # ccache
+
 ccache --max-size=4G
 export CCACHE_DIR="/Volumes/IBBoxSpreadDev/caches/ccache"
 
 # sccache
+
 export SCCACHE_DIR="/Volumes/IBBoxSpreadDev/caches/sccache"
 export SCCACHE_CACHE_SIZE="4G"
 sccache --stop-server
@@ -95,13 +105,17 @@ sccache --start-server
 **Setup**:
 
 ```bash
+
 # Create RAM disk
+
 ./scripts/setup_ramdisk.sh create
 
 # Build on RAM disk
+
 ./scripts/build_ramdisk.sh build
 
 # Or manually
+
 cmake --preset macos-universal-debug -B build-ramdisk
 cmake --build build-ramdisk
 ```
@@ -172,11 +186,14 @@ source .ram-optimization-env
 **Manual setup**:
 
 ```bash
+
 # Move cargo registry cache
+
 mv ~/.cargo/registry /Volumes/IBBoxSpreadDev/caches/cargo-registry
 ln -sf /Volumes/IBBoxSpreadDev/caches/cargo-registry ~/.cargo/registry
 
 # Move cargo git cache
+
 mv ~/.cargo/git /Volumes/IBBoxSpreadDev/caches/cargo-git
 ln -sf /Volumes/IBBoxSpreadDev/caches/cargo-git ~/.cargo/git
 ```
@@ -208,7 +225,9 @@ source .ram-optimization-env
 
 ```bash
 export npm_config_cache="/Volumes/IBBoxSpreadDev/caches/node"
+
 # Or for yarn
+
 export YARN_CACHE_FOLDER="/Volumes/IBBoxSpreadDev/caches/yarn"
 ```
 
@@ -243,10 +262,13 @@ source .ram-optimization-env
 **Setup**:
 
 ```bash
+
 # Install Redis (if not installed)
+
 brew install redis
 
 # Setup Redis backend for sccache
+
 ./scripts/setup_ram_optimization.sh redis
 ```
 
@@ -265,10 +287,13 @@ brew install redis
 **Configuration**:
 
 ```bash
+
 # Start Redis
+
 brew services start redis
 
 # Configure sccache
+
 export SCCACHE_REDIS="redis://localhost:6379"
 sccache --stop-server
 sccache --start-server
@@ -277,10 +302,13 @@ sccache --start-server
 **Multi-machine setup**:
 
 ```bash
+
 # On Redis server (expose Redis)
+
 redis-cli CONFIG SET bind 0.0.0.0
 
 # On client machines
+
 export SCCACHE_REDIS="redis://your-redis-server:6379"
 ```
 
@@ -391,7 +419,9 @@ For active development with frequent rebuilds:
 Add to your shell profile (`.zshrc` or `.bashrc`):
 
 ```bash
+
 # RAM optimization (if RAM disk exists)
+
 if [ -f "${HOME}/path/to/project/.ram-optimization-env" ]; then
   source "${HOME}/path/to/project/.ram-optimization-env"
 fi
@@ -402,15 +432,18 @@ fi
 Create a startup script:
 
 ```bash
+
 #!/bin/bash
 # ~/bin/dev-setup.sh
 
 # Enable RAM optimization
+
 cd ~/path/to/project
 ./scripts/setup_ram_optimization.sh enable || true
 source .ram-optimization-env || true
 
 # Create build RAM disk
+
 ./scripts/setup_ramdisk.sh create || true
 ```
 
@@ -419,13 +452,17 @@ source .ram-optimization-env || true
 Monitor RAM usage:
 
 ```bash
+
 # Check RAM disk usage
+
 df -h /Volumes/IBBoxSpreadDev
 
 # Check cache sizes
+
 du -sh ~/.ccache ~/.sccache ~/.cache/pip
 
 # Check overall RAM usage
+
 vm_stat
 ```
 
@@ -436,23 +473,30 @@ vm_stat
 ### RAM Disk Not Mounting
 
 ```bash
+
 # Check if already mounted
+
 df -h | grep IBBoxSpread
 
 # Unmount any existing instance
+
 ./scripts/setup_ramdisk.sh unmount
 
 # Recreate
+
 ./scripts/setup_ramdisk.sh create
 ```
 
 ### Cache Links Broken
 
 ```bash
+
 # Check links
+
 ls -la ~/.ccache ~/.sccache ~/.cache/pip
 
 # Re-enable
+
 ./scripts/setup_ram_optimization.sh disable
 ./scripts/setup_ram_optimization.sh enable
 ```

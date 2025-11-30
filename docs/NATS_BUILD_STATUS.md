@@ -10,7 +10,9 @@
 The NATS integration is correctly configured in `native/CMakeLists.txt`:
 
 ```cmake
+
 # NATS C client library (optional, for message queue integration)
+
 option(ENABLE_NATS "Enable NATS message queue integration" OFF)
 if(ENABLE_NATS)
     set(NATS_C_REPOSITORY "https://github.com/nats-io/nats.c.git")
@@ -25,8 +27,11 @@ endif()
 ```
 
 And in the linking section:
+
 ```cmake
+
 # Link NATS library if enabled
+
 if(ENABLE_NATS)
     fetchcontent_makeavailable(nats_c)
     if(TARGET nats)
@@ -47,16 +52,20 @@ endif()
 ## Build Issue ⚠️
 
 ### Problem
+
 CMake configuration fails with Boost dependency error:
+
 ```
 Could not find a package configuration file provided by "boost_system"
 (requested version 1.89.0)
 ```
 
 ### Root Cause
+
 This is a **pre-existing build system issue**, not related to NATS integration. The Boost library configuration needs to be fixed separately.
 
 ### Impact
+
 - NATS code is implemented correctly ✅
 - NATS CMake configuration is correct ✅
 - Cannot build C++ project until Boost issue is resolved ⚠️
@@ -66,12 +75,14 @@ This is a **pre-existing build system issue**, not related to NATS integration. 
 ## Verification
 
 ### NATS Code Implementation ✅
+
 - `native/include/nats_client.h` - Header file created
 - `native/src/nats_client.cpp` - Implementation complete
 - `native/src/tws_client.cpp` - Integration complete
 - `native/CMakeLists.txt` - Build configuration correct
 
 ### NATS Configuration ✅
+
 - CMake option `ENABLE_NATS` defined correctly
 - NATS C library fetch configured correctly
 - Linking configuration correct
@@ -82,10 +93,13 @@ This is a **pre-existing build system issue**, not related to NATS integration. 
 ## Next Steps
 
 ### 1. Fix Boost Configuration (Required)
+
 This is a pre-existing issue that needs to be resolved:
 
 ```bash
+
 # Option 1: Install Boost via Homebrew
+
 brew install boost
 
 # Option 2: Use system Boost if available
@@ -96,6 +110,7 @@ brew install boost
 ```
 
 ### 2. Build with NATS (After Boost Fixed)
+
 ```bash
 cd native
 cmake --preset macos-x86_64-debug -DENABLE_NATS=ON
@@ -103,11 +118,15 @@ cmake --build --preset macos-x86_64-debug
 ```
 
 ### 3. Verify NATS Integration
+
 ```bash
+
 # Check if NATS symbols are present
+
 nm build/macos-x86_64-debug/ib_box_spread | grep -i nats
 
 # Run the binary
+
 ./build/macos-x86_64-debug/ib_box_spread --help
 ```
 

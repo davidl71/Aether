@@ -5,18 +5,22 @@
 ### 1. **Server Not Found / Connection Failed**
 
 **Error Message:**
+
 ```
 Failed to connect to tractatus_thinking server
 Tool not found: tractatus_thinking
 ```
 
 **Possible Causes:**
+
 - MCP server not configured in `.cursor/mcp.json`
 - Incorrect package name in configuration
 - Server process not running
 
 **Solutions:**
+
 1. Verify configuration in `.cursor/mcp.json`:
+
 ```json
 {
   "mcpServers": {
@@ -36,22 +40,26 @@ Tool not found: tractatus_thinking
 ### 2. **Invalid Operation Parameters**
 
 **Error Message:**
+
 ```
 Invalid operation: [operation_name]
 Missing required parameter: [parameter_name]
 ```
 
 **Common Issues:**
+
 - Missing `operation` parameter (must be: "start", "add", "navigate", "export", "revise", "undo", "move")
 - Missing `concept` parameter for "start" operation
 - Missing `session_id` for operations after "start"
 
 **Solutions:**
+
 - Always start with `operation: "start"` and provide a `concept` query
 - Save the `session_id` returned from "start" operation
 - Use the `session_id` for subsequent operations
 
 **Example Correct Usage:**
+
 ```json
 {
   "operation": "start",
@@ -64,17 +72,20 @@ Missing required parameter: [parameter_name]
 ### 3. **Session ID Errors**
 
 **Error Message:**
+
 ```
 Invalid session_id
 Session not found
 ```
 
 **Possible Causes:**
+
 - Using expired or invalid session_id
 - Session was cleared/expired
 - Typo in session_id
 
 **Solutions:**
+
 - Start a new session with `operation: "start"`
 - Sessions may expire after inactivity
 - Always use the session_id returned from the "start" operation
@@ -82,6 +93,7 @@ Session not found
 ### 4. **Missing Required Wrapper Parameters**
 
 **Error Message:**
+
 ```
 Missing required parameter: __wrapper_contextSummary
 Missing required parameter: __wrapper_userPrompt
@@ -91,6 +103,7 @@ Missing required parameter: __wrapper_userPromptId
 **Note:** These are internal wrapper parameters that should be automatically provided by Cursor. If you see these errors:
 
 **Solutions:**
+
 - This indicates an MCP integration issue, not a user error
 - Try restarting Cursor
 - Check Cursor's MCP server connection status
@@ -99,18 +112,22 @@ Missing required parameter: __wrapper_userPromptId
 ### 5. **Package Installation Errors**
 
 **Error Message:**
+
 ```
 Cannot find module 'tractatus-thinking'
 Package not found
 ```
 
 **Possible Causes:**
+
 - Package name is incorrect
 - Package not published to npm
 - Network issues preventing package download
 
 **Solutions:**
+
 1. Verify package name:
+
    ```bash
    npm search tractatus-thinking
    ```
@@ -121,11 +138,13 @@ Package not found
    - `tractatus_thinking`
 
 3. Check npm registry:
+
    ```bash
    npm view tractatus-thinking
    ```
 
 4. Manual installation test:
+
    ```bash
    npx -y tractatus-thinking --help
    ```
@@ -133,17 +152,20 @@ Package not found
 ### 6. **Tool Execution Errors**
 
 **Error Message:**
+
 ```
 Tool execution failed
 Error during tool execution
 ```
 
 **Possible Causes:**
+
 - Invalid operation parameters
 - Server-side error
 - Network connectivity issues
 
 **Solutions:**
+
 - Verify all required parameters are provided
 - Check operation type is valid
 - Review Cursor's MCP server logs
@@ -154,6 +176,7 @@ Error during tool execution
 ### Check Current Configuration
 
 1. **Verify `.cursor/mcp.json` exists and contains:**
+
 ```json
 {
   "mcpServers": {

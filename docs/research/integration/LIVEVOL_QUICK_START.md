@@ -114,10 +114,13 @@
 Once you have LiveVol credentials:
 
 ```bash
+
 # Install dependencies (if needed)
+
 pip install requests
 
 # Run exploration
+
 python scripts/livevol_api_explorer.py \
   --client-id YOUR_CLIENT_ID \
   --client-secret YOUR_CLIENT_SECRET \

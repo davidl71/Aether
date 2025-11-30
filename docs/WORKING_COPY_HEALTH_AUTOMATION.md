@@ -19,8 +19,11 @@ Working copy health checking ensures all agents have clean working copies and ar
 **Location:** `scripts/check_working_copy_status.sh`
 
 **Usage:**
+
 ```bash
+
 # Check all agents
+
 bash scripts/check_working_copy_status.sh
 
 # Output shows:
@@ -31,11 +34,13 @@ bash scripts/check_working_copy_status.sh
 ```
 
 **What It Checks:**
+
 - Local agent (current machine)
 - Ubuntu agent (192.168.192.57)
 - macOS M4 agent (192.168.192.141)
 
 **Output:**
+
 - ✅ Clean working copy
 - ⚠️ Uncommitted changes
 - ⚠️ Behind/ahead of remote
@@ -48,6 +53,7 @@ bash scripts/check_working_copy_status.sh
 **Tool:** `check_working_copy_health_tool`
 
 **Usage via Cursor Chat:**
+
 ```
 "Check working copy status across all agents"
 "Check if ubuntu agent has clean working copy"
@@ -55,10 +61,12 @@ bash scripts/check_working_copy_status.sh
 ```
 
 **Parameters:**
+
 - `agent_name` (Optional): Specific agent to check (local/ubuntu/macos)
 - `check_remote` (bool): Whether to check remote agents (default: true)
 
 **Returns:**
+
 ```json
 {
   "summary": {
@@ -93,11 +101,13 @@ bash scripts/check_working_copy_status.sh
 **Location:** `mcp-servers/project-management-automation/tools/nightly_task_automation.py`
 
 **What It Does:**
+
 - Automatically checks working copy health before task execution
 - Includes warnings in results if agents have issues
 - Reports `working_copy_warnings` count in summary
 
 **Results Include:**
+
 ```json
 {
   "working_copy_status": {
@@ -117,11 +127,13 @@ bash scripts/check_working_copy_status.sh
 ## Current Status Across Agents
 
 ### Local Agent
+
 - **Status:** ⚠️ Has uncommitted changes
 - **Sync:** ✅ In sync with origin/main
 - **Branch:** main
 
 ### Ubuntu Agent
+
 - **Status:** ⚠️ Has uncommitted changes
 - **Sync:** ⚠️ Behind origin/main by 6 commits
 - **Branch:** main
@@ -132,6 +144,7 @@ bash scripts/check_working_copy_status.sh
   - Untracked: Several cursor-extension files
 
 ### macOS M4 Agent
+
 - **Status:** ⚠️ Has uncommitted changes
 - **Sync:** ⚠️ Behind origin/main by 38 commits
 - **Branch:** main
@@ -145,6 +158,7 @@ bash scripts/check_working_copy_status.sh
 ### Immediate Actions
 
 1. **Commit and Push Local Changes**
+
    ```bash
    git add -A
    git commit -m "Your commit message"
@@ -152,6 +166,7 @@ bash scripts/check_working_copy_status.sh
    ```
 
 2. **Sync Ubuntu Agent**
+
    ```bash
    ssh david@192.168.192.57
    cd ~/ib_box_spread_full_universal
@@ -161,6 +176,7 @@ bash scripts/check_working_copy_status.sh
    ```
 
 3. **Sync macOS Agent**
+
    ```bash
    ssh davidl@192.168.192.141
    cd /Users/davidl/Projects/Trading/ib_box_spread_full_universal
@@ -176,6 +192,7 @@ bash scripts/check_working_copy_status.sh
 ### Nightly Automation
 
 The nightly automation now:
+
 1. ✅ Checks working copy health before task execution
 2. ✅ Reports warnings in results
 3. ✅ Includes recommendations in output
@@ -183,6 +200,7 @@ The nightly automation now:
 ### GitHub Actions
 
 GitHub Actions workflows automatically:
+
 - ✅ Checkout clean working copy
 - ✅ Pull latest changes
 - ✅ Run in isolated environment
@@ -194,11 +212,13 @@ GitHub Actions workflows automatically:
 ### Before Starting Work
 
 1. **Check Working Copy Status**
+
    ```bash
    bash scripts/check_working_copy_status.sh
    ```
 
 2. **Or Use MCP Tool**
+
    ```
    "Check working copy status"
    ```
@@ -227,6 +247,7 @@ GitHub Actions workflows automatically:
 ### Agent Shows "Cannot Connect"
 
 **Check:**
+
 1. SSH connectivity: `ssh david@192.168.192.57`
 2. Network connectivity
 3. SSH keys configured
@@ -234,6 +255,7 @@ GitHub Actions workflows automatically:
 ### Agent Shows "Error Checking Status"
 
 **Check:**
+
 1. Git repository exists at path
 2. Permissions are correct
 3. Git is installed on remote agent
@@ -241,6 +263,7 @@ GitHub Actions workflows automatically:
 ### Agent Behind Remote
 
 **Fix:**
+
 ```bash
 ssh <agent>
 cd <project_path>
@@ -250,6 +273,7 @@ git pull
 ### Agent Has Uncommitted Changes
 
 **Options:**
+
 1. Commit changes: `git add -A && git commit -m "message"`
 2. Stash changes: `git stash`
 3. Discard changes: `git restore .` (careful!)

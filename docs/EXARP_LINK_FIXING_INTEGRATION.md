@@ -1,6 +1,6 @@
 # Exarp Documentation Link Fixing Integration
 
-**Date**: 2025-11-29  
+**Date**: 2025-11-29
 **Status**: Ready for Integration
 
 ---
@@ -33,24 +33,33 @@ This document describes how to integrate the documentation link fixing automatio
 ### Option 1: Direct Script Execution (Current)
 
 **Usage**:
+
 ```bash
+
 # Dry run (default)
+
 python3 scripts/exarp_fix_documentation_links.py .
 
 # Apply fixes
+
 python3 scripts/exarp_fix_documentation_links.py . --apply
 
 # JSON output
+
 python3 scripts/exarp_fix_documentation_links.py . --json
 
 # Save report
+
 python3 scripts/exarp_fix_documentation_links.py . --apply --output report.json
 ```
 
 **Integration with Daily Automation**:
 Add to your daily automation script or cron job:
+
 ```bash
+
 #!/bin/bash
+
 cd /path/to/project
 python3 scripts/exarp_fix_documentation_links.py . --apply
 ```
@@ -61,14 +70,16 @@ python3 scripts/exarp_fix_documentation_links.py . --apply
 
 If Exarp supports adding custom scripts, you can register:
 
-**Script Path**: `scripts/exarp_fix_documentation_links.py`  
-**Command**: `python3 scripts/exarp_fix_documentation_links.py {project_dir}`  
+**Script Path**: `scripts/exarp_fix_documentation_links.py`
+**Command**: `python3 scripts/exarp_fix_documentation_links.py {project_dir}`
 **Parameters**:
+
 - `--dry-run` (default) or `--apply`
 - `--json` for JSON output
 - `--output <file>` for report file
 
 **Expected Output**:
+
 ```json
 {
   "timestamp": "2025-11-29T18:00:00",
@@ -93,7 +104,9 @@ If Exarp supports adding custom scripts, you can register:
 ### Option 3: Git Hooks Integration
 
 **Pre-commit Hook** (Dry-run check):
+
 ```bash
+
 #!/bin/bash
 # .git/hooks/pre-commit
 
@@ -105,11 +118,14 @@ fi
 ```
 
 **Post-commit Hook** (Auto-fix):
+
 ```bash
+
 #!/bin/bash
 # .git/hooks/post-commit
 
 # Auto-fix links after commit (optional)
+
 python3 scripts/exarp_fix_documentation_links.py . --apply > /dev/null 2>&1
 ```
 
@@ -118,8 +134,11 @@ python3 scripts/exarp_fix_documentation_links.py . --apply > /dev/null 2>&1
 ### Option 4: File Watcher Integration
 
 **Watch docs/ directory for changes**:
+
 ```python
+
 # scripts/watch_docs_and_fix_links.py
+
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import subprocess
@@ -148,7 +167,9 @@ observer.start()
 ### Daily Automation
 
 **Add to daily automation script**:
+
 ```bash
+
 #!/bin/bash
 # scripts/daily_automation.sh
 
@@ -161,6 +182,7 @@ echo "✅ Documentation links fixed"
 ### CI/CD Integration
 
 **GitHub Actions**:
+
 ```yaml
 name: Fix Documentation Links
 
@@ -192,16 +214,19 @@ jobs:
 ### Manual Execution
 
 **Check status**:
+
 ```bash
 python3 scripts/exarp_fix_documentation_links.py . --dry-run
 ```
 
 **Apply fixes**:
+
 ```bash
 python3 scripts/exarp_fix_documentation_links.py . --apply
 ```
 
 **Get JSON report**:
+
 ```bash
 python3 scripts/exarp_fix_documentation_links.py . --json > link_fix_report.json
 ```
@@ -231,16 +256,19 @@ python3 scripts/exarp_fix_documentation_links.py . --json > link_fix_report.json
 ## 📈 Expected Results
 
 ### Before Automation
+
 - 186 broken links
 - Manual fixing required
 - Links accumulate over time
 
 ### After Automation
+
 - < 50 broken links maintained
 - Automatic fixing on changes
 - No manual intervention needed
 
 ### Performance
+
 - **Processing time**: ~2-5 seconds for 200+ files
 - **Fix rate**: ~80% of broken links automatically fixable
 - **False positives**: Minimal (mostly code references)
@@ -250,10 +278,11 @@ python3 scripts/exarp_fix_documentation_links.py . --json > link_fix_report.json
 ## 🚀 Next Steps
 
 1. **Test Integration**:
+
    ```bash
    # Test dry-run
    python3 scripts/exarp_fix_documentation_links.py . --dry-run
-   
+
    # Test apply
    python3 scripts/exarp_fix_documentation_links.py . --apply
    ```
@@ -282,5 +311,5 @@ python3 scripts/exarp_fix_documentation_links.py . --json > link_fix_report.json
 
 ---
 
-**Last Updated**: 2025-11-29  
+**Last Updated**: 2025-11-29
 **Status**: Ready for integration and testing

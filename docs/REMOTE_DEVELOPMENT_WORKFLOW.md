@@ -49,7 +49,9 @@ The project provides a dedicated script for Cursor remote development SSH config
 export OP_CURSOR_REMOTE_HOST_SECRET="op://Engineering/Cursor Remote M4/host"
 export OP_CURSOR_REMOTE_USER_SECRET="op://Engineering/Cursor Remote M4/username"
 export OP_CURSOR_REMOTE_KEY_SECRET="op://Engineering/Cursor Remote M4/private key"
+
 # optional
+
 export OP_CURSOR_REMOTE_PORT_SECRET="op://Engineering/Cursor Remote M4/port"
 export CURSOR_REMOTE_ALIAS="cursor-m4-mac"
 
@@ -103,7 +105,9 @@ After connection:
 To prevent SSH timeouts and improve stability, configure the SSH server on your remote Mac:
 
 ```bash
+
 # Edit SSH daemon config on remote Mac
+
 sudo nano /etc/ssh/sshd_config
 ```
 
@@ -118,7 +122,9 @@ ClientAliveCountMax 10
 Restart SSH service:
 
 ```bash
+
 # macOS uses launchd
+
 sudo launchctl unload /System/Library/LaunchDaemons/ssh.plist
 sudo launchctl load -w /System/Library/LaunchDaemons/ssh.plist
 

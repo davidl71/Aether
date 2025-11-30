@@ -48,5 +48,6 @@ These parts are useful across projects and benefit from independent versioning a
 - Add update bots:
   - Weekly submodule bump PR
   - Dependabot for packaged components
+
 - Pin versions; avoid floating main for critical toolchains
 - Verify with `ctest --output-on-failure` and lint steps

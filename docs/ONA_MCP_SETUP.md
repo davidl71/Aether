@@ -28,6 +28,7 @@ Ona supports MCP to extend AI agent capabilities beyond built-in features, simil
 ### Configuration File Structure
 
 **Cursor Format** (`.cursor/mcp.json`):
+
 ```json
 {
   "mcpServers": {
@@ -40,6 +41,7 @@ Ona supports MCP to extend AI agent capabilities beyond built-in features, simil
 ```
 
 **Ona Format** (`.ona/mcp-config.json`):
+
 ```json
 {
   "mcpServers": {
@@ -92,6 +94,7 @@ Ona supports dynamic environment variable resolution:
 ```
 
 **Patterns**:
+
 - `${exec:...}` - Execute command and use output
 - `${file:/path}` - Read from file (for secrets)
 - `${workspaceFolder}` - Resolves to workspace root
@@ -123,6 +126,7 @@ Ona supports running MCP servers in Docker containers:
 ### Security Controls
 
 **Tool Deny List**:
+
 ```json
 {
   "toolDenyList": ["dangerous*", "rm*", "delete_*"]
@@ -130,6 +134,7 @@ Ona supports running MCP servers in Docker containers:
 ```
 
 **Timeouts**:
+
 ```json
 {
   "timeout": 30,  // Per-server timeout
@@ -138,6 +143,7 @@ Ona supports running MCP servers in Docker containers:
 ```
 
 **Process Isolation**:
+
 - Each MCP server runs as a separate process
 - Docker containers provide additional isolation
 - Environment variables isolated per server
@@ -166,6 +172,7 @@ The `.ona/mcp-config.json` file is already configured in this repository. Ona wi
 3. Reference in MCP config: `${exec:printenv YOUR_VAR}`
 
 **Example**:
+
 ```json
 {
   "env": {
@@ -184,6 +191,7 @@ Organization owners can control MCP usage:
 3. Toggle MCP on/off for the organization
 
 When disabled:
+
 - `.ona/mcp-config.json` files are ignored
 - Ona Agent operates with built-in tools only
 - External MCP server connections are blocked
@@ -200,24 +208,28 @@ When disabled:
 ### Example Workflows
 
 **Security Scanning**:
+
 ```
 Agent: "Scan this code for security vulnerabilities"
 → Uses Semgrep MCP server automatically
 ```
 
 **Research**:
+
 ```
 Agent: "Summarize this YouTube video about TWS API"
 → Uses NotebookLM MCP server
 ```
 
 **Documentation**:
+
 ```
 Agent: "Show me FastAPI async patterns use context7"
 → Uses Context7 MCP server for current docs
 ```
 
 **Problem Solving**:
+
 ```
 Agent: "Analyze why box spread calculations fail"
 → Uses Tractatus Thinking to break down the problem
@@ -233,12 +245,14 @@ Agent: "Analyze why box spread calculations fail"
    - Check connection status for each server
 
 2. **Verify Node.js/Python**:
+
    ```bash
    node --version
    python3 --version
    ```
 
 3. **Test MCP server manually**:
+
    ```bash
    npx -y @semgrep/mcp-server-semgrep --help
    ```

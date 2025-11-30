@@ -78,10 +78,13 @@ FOSSology is an open-source license compliance software system designed to help 
 **Current Setup**:
 
 ```bash
+
 # Install scancode
+
 ./scripts/install_scancode_env.sh
 
 # Run scan
+
 source .venv/scancode/bin/activate
 scancode --license --copyright --info -clp --json-pp build/scancode.json .
 ```

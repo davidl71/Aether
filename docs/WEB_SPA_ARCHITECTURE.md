@@ -98,6 +98,7 @@ App
 ### Key Components
 
 #### App.tsx
+
 - **Purpose**: Main application container
 - **State**: Active tab, modal state, snapshot data
 - **Responsibilities**:
@@ -107,26 +108,31 @@ App
   - API calls (strategy control, order cancellation)
 
 #### HeaderStatus
+
 - **Purpose**: System status banner
 - **Displays**: Connection status, account info, mode, strategy status
 - **Actions**: Mode toggle, account change, strategy start/stop
 
 #### DashboardTab
+
 - **Purpose**: Main overview
 - **Displays**: Symbols, metrics, watchlist
 - **Features**: Symbol filtering, watchlist management
 
 #### PositionsTable
+
 - **Purpose**: Display positions
 - **Displays**: Current or historic positions
 - **Features**: Sorting, filtering, detail view
 
 #### OrdersPanel
+
 - **Purpose**: Order timeline
 - **Displays**: Orders with status
 - **Features**: Cancel order action
 
 #### BoxSpreadTable
+
 - **Purpose**: Box spread scenarios
 - **Displays**: Arbitrage opportunities
 - **Features**: Sorting, filtering by APR/ROI
@@ -258,11 +264,13 @@ App
 ## Routing Strategy
 
 ### Current Implementation
+
 - **No routing library**: Tab-based navigation using state
 - **Tab switching**: `useState` for active tab
 - **Modal navigation**: State-based modal management
 
 ### Future Consideration
+
 - **React Router**: If multi-page navigation needed
 - **URL state**: Sync tab selection with URL hash
 
@@ -271,6 +279,7 @@ App
 ### Custom Hooks
 
 #### useSnapshot
+
 ```typescript
 function useSnapshot(apiBaseUrl: string) {
   const [snapshot, setSnapshot] = useState<SnapshotPayload | null>(null);
@@ -286,6 +295,7 @@ function useSnapshot(apiBaseUrl: string) {
 ```
 
 #### useBoxSpreadData
+
 ```typescript
 function useBoxSpreadData() {
   const [scenarios, setScenarios] = useState<BoxSpreadScenario[]>([]);
@@ -295,6 +305,7 @@ function useBoxSpreadData() {
 ```
 
 #### useSymbolWatchlist
+
 ```typescript
 function useSymbolWatchlist() {
   const [watchlist, setWatchlist] = useState<string[]>(['SPX', 'XSP']);
@@ -331,12 +342,14 @@ export async function fetchSnapshot(apiBaseUrl: string): Promise<SnapshotPayload
 ## Styling Architecture
 
 ### Current Approach
+
 - **Global CSS**: `src/styles/app.css`
 - **Dark theme**: Trading desk palette
 - **Responsive**: Mobile-first design
 - **Component-scoped**: CSS classes per component
 
 ### Color Palette
+
 ```css
 :root {
   --bg-primary: #1a1a1a;
@@ -352,12 +365,14 @@ export async function fetchSnapshot(apiBaseUrl: string): Promise<SnapshotPayload
 ## Performance Optimization
 
 ### Current Optimizations
+
 - **Memoization**: `useMemo` for expensive calculations
 - **Callback memoization**: `useCallback` for event handlers
 - **Lazy loading**: Components loaded on demand
 - **PWA caching**: Service worker for offline access
 
 ### Future Optimizations
+
 - **Code splitting**: Route-based code splitting
 - **Virtual scrolling**: For large lists
 - **Image optimization**: Lazy loading, WebP format
@@ -366,6 +381,7 @@ export async function fetchSnapshot(apiBaseUrl: string): Promise<SnapshotPayload
 ## PWA Features
 
 ### Current Implementation
+
 - ✅ Service worker
 - ✅ Offline support
 - ✅ Installable
@@ -373,6 +389,7 @@ export async function fetchSnapshot(apiBaseUrl: string): Promise<SnapshotPayload
 - ✅ Smart caching
 
 ### Caching Strategy
+
 - **Images**: Cache-first (30 days)
 - **API calls**: Network-first (5-minute cache)
 - **Data files**: Stale-while-revalidate (1 day)
@@ -381,11 +398,13 @@ export async function fetchSnapshot(apiBaseUrl: string): Promise<SnapshotPayload
 ## Accessibility
 
 ### Current Support
+
 - Semantic HTML
 - ARIA labels (partial)
 - Keyboard navigation (partial)
 
 ### Future Enhancements
+
 - Full keyboard navigation
 - Screen reader support
 - High contrast mode
@@ -394,11 +413,13 @@ export async function fetchSnapshot(apiBaseUrl: string): Promise<SnapshotPayload
 ## Testing Strategy
 
 ### Current Tests
+
 - **Unit tests**: `App.test.tsx`
 - **Testing Library**: React Testing Library
 - **Test runner**: Vitest
 
 ### Test Coverage
+
 - Component rendering
 - User interactions
 - API integration (mocked)
@@ -406,6 +427,7 @@ export async function fetchSnapshot(apiBaseUrl: string): Promise<SnapshotPayload
 ## Future Enhancements
 
 ### Planned Features
+
 1. **WebSocket Support** (T-15)
    - Real-time updates
    - Push notifications
@@ -429,6 +451,7 @@ export async function fetchSnapshot(apiBaseUrl: string): Promise<SnapshotPayload
 ## Wireframe Mockups
 
 ### Mobile View (Responsive)
+
 ```
 ┌─────────────────┐
 │ HeaderStatus    │
@@ -448,6 +471,7 @@ export async function fetchSnapshot(apiBaseUrl: string): Promise<SnapshotPayload
 ```
 
 ### Desktop View (Wide)
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │ HeaderStatus (Full Width)                              │

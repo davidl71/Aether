@@ -20,6 +20,7 @@ We have installed `eslint-plugin-html` but are not using it yet because:
 **Monitor:** Check for updates that add full flat config support
 
 **When to Revisit:**
+
 - Plugin version 9.0.0+ (if released)
 - Official announcement of flat config support
 - GitHub issues/PRs showing flat config work
@@ -31,6 +32,7 @@ We have installed `eslint-plugin-html` but are not using it yet because:
 **Action Required:** Replace `eslint-plugin-html` with `@html-eslint/eslint-plugin`
 
 **Migration Steps:**
+
 ```bash
 cd web
 npm uninstall eslint-plugin-html
@@ -38,6 +40,7 @@ npm install --save-dev @html-eslint/eslint-plugin
 ```
 
 **Configuration Example:**
+
 ```javascript
 import html from '@html-eslint/eslint-plugin';
 
@@ -58,10 +61,12 @@ export default [
 ## Recommendation
 
 **Action:** Monitor `eslint-plugin-html` for 3 months, then evaluate:
+
 - If no flat config support → Migrate to `@html-eslint/eslint-plugin`
 - If flat config support added → Configure `eslint-plugin-html`
 
 **Current Workaround:**
+
 - HTML validation handled by browser/IDE
 - VS Code HTML extension provides basic linting
 - Manual review for accessibility issues
@@ -80,6 +85,7 @@ export default [
 ---
 
 **Note:** HTML linting is lower priority than JSON/CSS since:
+
 - HTML files are minimal (mostly `index.html`)
 - Browser/IDE validation covers basic issues
 - React components handle most HTML structure

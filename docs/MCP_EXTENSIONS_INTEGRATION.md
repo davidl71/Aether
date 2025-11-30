@@ -175,6 +175,7 @@ Add guidance for when to use browser MCP:
 Add a new section to `.cursorrules`:
 
 ```markdown
+
 ## MCP Server Usage Guidelines
 
 ### Semgrep MCP
@@ -354,6 +355,7 @@ Update your prompts to explicitly leverage MCP servers:
 ### Test MCP Servers
 
 ```bash
+
 # Test Semgrep
 # In Cursor chat: "Scan native/src/box_spread_strategy.cpp with Semgrep"
 

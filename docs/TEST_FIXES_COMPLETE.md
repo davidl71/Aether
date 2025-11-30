@@ -18,6 +18,7 @@ Fixed 6 failing tests in `python/tests/test_security.py` by converting unittest-
 **Root Cause**: Tests were using `unittest.TestCase` but trying to use pytest fixtures (`tmp_path`). Unittest-style tests don't support pytest fixtures directly.
 
 **Failing Tests**:
+
 1. `test_validate_path_within_boundary`
 2. `test_validate_path_outside_boundary`
 3. `test_sanitize_path_relative`
@@ -32,6 +33,7 @@ Fixed 6 failing tests in `python/tests/test_security.py` by converting unittest-
 **Approach**: Converted the 6 failing test methods from unittest-style to pytest-style functions.
 
 **Changes Made**:
+
 1. ✅ Added `import pytest` to imports
 2. ✅ Moved 6 test methods out of `TestPathBoundaryEnforcer` class
 3. ✅ Converted to standalone pytest functions (not methods)
@@ -45,11 +47,13 @@ Fixed 6 failing tests in `python/tests/test_security.py` by converting unittest-
 ## Test Results
 
 ### Before Fix
+
 - ✅ 24 tests passing
 - ❌ 6 tests failing
 - ⚠️ 12 warnings
 
 ### After Fix
+
 - ✅ **30 tests passing** (100% pass rate)
 - ⚠️ 12 warnings (deprecation warnings - non-critical)
 
@@ -70,6 +74,7 @@ TOTAL                           101     25    75%
 **Status**: ✅ **Target exceeded** (75% > 30% target)
 
 **Next Steps**:
+
 1. ✅ Coverage measured - 75% achieved
 2. ✅ Target exceeded (30% required)
 3. Address deprecation warnings (optional)

@@ -209,18 +209,23 @@ core_data = client.get_core_data("SPX")
 ### Basic Usage
 
 ```bash
+
 # Install dependencies
+
 pip install textual requests
 
 # Run with mock provider
+
 python -m python.tui
 
 # Run with REST provider
+
 export TUI_BACKEND=rest
 export TUI_API_URL=http://localhost:8080/api/snapshot
 python -m python.tui
 
 # Run with file provider
+
 export TUI_BACKEND=file
 export TUI_SNAPSHOT_FILE=web/public/data/snapshot.json
 python -m python.tui

@@ -12,13 +12,17 @@ Jupyter notebooks enhance our development workflow by providing:
 ## Quick Start
 
 ```bash
+
 # Install dependencies
+
 pip install -r requirements-notebooks.txt
 
 # Start JupyterLab
+
 jupyter lab
 
 # Or use VS Code
+
 code notebooks/
 ```
 
@@ -38,11 +42,14 @@ code notebooks/
 **Example**:
 
 ```python
+
 # notebooks/01-data-exploration/orats_data_exploration.ipynb
+
 from notebooks.utils.data_loaders import load_orats_data
 from notebooks.utils.visualizations import plot_correlation_matrix
 
 df = load_orats_data("SPY")
+
 # ... analysis ...
 ```
 
@@ -60,11 +67,14 @@ df = load_orats_data("SPY")
 **Example**:
 
 ```python
+
 # notebooks/04-strategy-dev/box_spread_analysis.ipynb
+
 from python.integration.orats_client import ORATSClient
 from python.ml.feature_engineering import FeatureExtractor
 
 # Test strategy logic
+
 client = ORATSClient(api_token=token)
 opportunities = find_box_spreads(client, "SPY")
 ```
@@ -83,15 +93,19 @@ opportunities = find_box_spreads(client, "SPY")
 **Example**:
 
 ```python
+
 # notebooks/03-ml-development/model_training.ipynb
+
 from python.ml.feature_engineering import FeatureExtractor
 from python.ml.train_models import train_model
 
 # Engineer features
+
 extractor = FeatureExtractor()
 features = extractor.extract_features(legs, market_data)
 
 # Train model
+
 model = train_model(features, targets)
 ```
 
@@ -109,17 +123,22 @@ model = train_model(features, targets)
 **Example**:
 
 ```python
+
 # notebooks/02-backtesting/historical_backtest.ipynb
+
 from notebooks.utils.data_loaders import load_questdb_data
 from notebooks.utils.visualizations import plot_performance_metrics
 
 # Load historical data
+
 df = load_questdb_data("SPY", "2025-01-01", "2025-01-27")
 
 # Run backtest
+
 results = backtest_strategy(df)
 
 # Visualize
+
 plot_performance_metrics(results)
 ```
 
@@ -185,13 +204,17 @@ save_decision_log_entry(entry)
 ### Exporting for Sharing
 
 ```bash
+
 # Export notebook as HTML
+
 jupyter nbconvert --to html notebooks/analysis.ipynb
 
 # Export as PDF (requires LaTeX)
+
 jupyter nbconvert --to pdf notebooks/analysis.ipynb
 
 # Export as Markdown
+
 jupyter nbconvert --to markdown notebooks/analysis.ipynb
 ```
 
@@ -210,6 +233,7 @@ Cursor can index notebooks for semantic search:
 Link notebooks in code comments:
 
 ```python
+
 # See notebooks/01-data-exploration/orats_data_exploration.ipynb
 # for analysis of ORATS data quality
 
@@ -228,12 +252,11 @@ def filter_by_liquidity(options, min_score=70):
 Reference notebooks in markdown docs:
 
 ```markdown
+
 ## ORATS Integration
 
 See [ORATS Data Exploration](../notebooks/01-data-exploration/orats_data_exploration.ipynb)
 for detailed analysis of ORATS data structure and quality.
-
-Decision rationale documented in [Decision Log](../notebooks/06-dev-workflow/decision_log.ipynb).
 ```
 
 ## Best Practices
@@ -270,7 +293,9 @@ Decision rationale documented in [Decision Log](../notebooks/06-dev-workflow/dec
 ### Import Errors
 
 ```python
+
 # Add project root to path
+
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -279,11 +304,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 ### Data Connection Issues
 
 ```python
+
 # Check QuestDB connection
+
 from notebooks.utils.data_loaders import check_questdb_connection
 check_questdb_connection()
 
 # Check ORATS API
+
 from python.integration.orats_client import ORATSClient
 client = ORATSClient(api_token="your-token")
 client.get_core_data("SPY")
@@ -292,7 +320,9 @@ client.get_core_data("SPY")
 ### Memory Issues
 
 ```python
+
 # Use chunked loading for large datasets
+
 from notebooks.utils.data_loaders import load_questdb_data_chunked
 
 for chunk in load_questdb_data_chunked(symbol="SPY", chunk_size=10000):

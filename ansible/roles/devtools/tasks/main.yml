@@ -7,6 +7,9 @@
       - python3-venv
       - jq
       - build-essential
+      - cmake
+      - ninja-build
+      - libboost-all-dev
       - curl
       - inotify-tools
       - git-lfs

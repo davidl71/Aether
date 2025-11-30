@@ -13,6 +13,7 @@ This document contains all NATS message schemas used in the trading system. Thes
 ## Schema Format
 
 All schemas follow **JSON Schema Draft 7** format and include:
+
 - Message type identifier
 - Required fields
 - Field types and constraints
@@ -48,6 +49,7 @@ All NATS messages follow this common structure:
 ### Market Data Messages
 
 #### MarketDataTick
+
 - **Topic**: `market-data.tick.{symbol}`
 - **Purpose**: Real-time price tick updates
 - **Publisher**: Market data provider (TWS client, Polygon, etc.)
@@ -55,6 +57,7 @@ All NATS messages follow this common structure:
 - **Schema**: See `MarketDataTick.json`
 
 #### MarketDataCandle
+
 - **Topic**: `market-data.candle.{symbol}`
 - **Purpose**: OHLCV candle data
 - **Publisher**: Market data provider
@@ -62,6 +65,7 @@ All NATS messages follow this common structure:
 - **Schema**: `MarketDataCandle.json` (to be created)
 
 #### MarketDataQuote
+
 - **Topic**: `market-data.quote.{symbol}`
 - **Purpose**: Bid/ask quote updates
 - **Publisher**: Market data provider
@@ -73,6 +77,7 @@ All NATS messages follow this common structure:
 ### Strategy Messages
 
 #### StrategySignal
+
 - **Topic**: `strategy.signal.{symbol}`
 - **Purpose**: Market signals for strategy evaluation
 - **Publisher**: Market data provider → Strategy engine
@@ -80,6 +85,7 @@ All NATS messages follow this common structure:
 - **Schema**: `StrategySignal.json` (to be created)
 
 #### StrategyDecision
+
 - **Topic**: `strategy.decision.{symbol}`
 - **Purpose**: Trading decisions from strategy engine
 - **Publisher**: Strategy engine
@@ -87,6 +93,7 @@ All NATS messages follow this common structure:
 - **Schema**: See `StrategyDecision.json`
 
 #### StrategyStatus
+
 - **Topic**: `strategy.status`
 - **Purpose**: Strategy state changes (start/stop/pause)
 - **Publisher**: Strategy controller
@@ -98,6 +105,7 @@ All NATS messages follow this common structure:
 ### Order Messages
 
 #### OrderRequest
+
 - **Topic**: `orders.new`
 - **Purpose**: New order requests
 - **Publisher**: Strategy engine (via risk engine)
@@ -105,6 +113,7 @@ All NATS messages follow this common structure:
 - **Schema**: `OrderRequest.json` (to be created)
 
 #### OrderStatus
+
 - **Topic**: `orders.status.{order_id}`
 - **Purpose**: Order status updates
 - **Publisher**: Order manager, TWS client
@@ -112,6 +121,7 @@ All NATS messages follow this common structure:
 - **Schema**: See `OrderStatus.json`
 
 #### OrderFill
+
 - **Topic**: `orders.fill.{order_id}`
 - **Purpose**: Order fill notifications
 - **Publisher**: TWS client
@@ -123,6 +133,7 @@ All NATS messages follow this common structure:
 ### Risk Messages
 
 #### RiskCheck
+
 - **Topic**: `risk.check`
 - **Purpose**: Risk validation requests
 - **Publisher**: Strategy engine
@@ -130,6 +141,7 @@ All NATS messages follow this common structure:
 - **Schema**: `RiskCheck.json` (to be created)
 
 #### RiskDecision
+
 - **Topic**: `risk.decision`
 - **Purpose**: Risk check results
 - **Publisher**: Risk engine
@@ -169,6 +181,7 @@ The following JSON Schema files should be copied to `trading-api-docs/docs/nats/
 ### For Code Generation
 
 These schemas can be used to generate:
+
 - TypeScript types (`typescript-json-schema`)
 - Rust structs (`schemars`)
 - Python dataclasses (`dataclasses-json`)
@@ -189,11 +202,13 @@ These schemas can be used to generate:
 **Schema Format**: JSON Schema Draft 7
 
 **Versioning Strategy**:
+
 - Breaking changes: Increment major version
 - New optional fields: Increment minor version
 - Bug fixes: Increment patch version
 
 **Backward Compatibility**:
+
 - New fields should be optional
 - Deprecated fields should be marked but not removed immediately
 - Version number included in message metadata (future enhancement)
@@ -203,16 +218,19 @@ These schemas can be used to generate:
 ## Integration with Extracted Libraries
 
 ### box-spread-cpp
+
 - Use schemas to define C++ structs for message types
 - Validate messages before publishing
 - Document topic usage in library README
 
 ### box-spread-python
+
 - Use schemas to define Python dataclasses
 - Validate messages before publishing
 - Document topic usage in package README
 
 ### Frontends (TypeScript/Swift)
+
 - Use schemas to generate types
 - Validate messages on receipt
 - Document subscription patterns
@@ -234,4 +252,3 @@ These schemas can be used to generate:
 - [NATS Topics Registry](research/../NATS_TOPICS_REGISTRY.md)
 - [NATS Integration Architecture](research/../research/architecture/MESSAGE_QUEUE_ARCHITECTURE.md)
 - [JSON Schema Specification](https://json-schema.org/specification.html)
-

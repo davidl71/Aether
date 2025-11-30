@@ -20,6 +20,7 @@ Convert the structural understanding from Tractatus analysis into actionable imp
 **Purpose**: Establish clear public/private boundaries and understand all dependencies
 
 **Tasks**:
+
 1. Create comprehensive boundary definition document
    - List all public components (no sensitive info)
    - List all private components (sensitive info)
@@ -39,6 +40,7 @@ Convert the structural understanding from Tractatus analysis into actionable imp
    - Create config migration plan
 
 **Output**:
+
 - Boundary definition document
 - Dependency graph
 - Migration readiness assessment
@@ -52,6 +54,7 @@ Convert the structural understanding from Tractatus analysis into actionable imp
 **Purpose**: Establish how split projects will reference each other
 
 **Tasks**:
+
 1. Choose dependency management approach
    - Option A: Git submodules (simple)
    - Option B: Package managers (Conan, PyPI, npm)
@@ -71,6 +74,7 @@ Convert the structural understanding from Tractatus analysis into actionable imp
    - Version compatibility matrix
 
 **Output**:
+
 - Dependency management configuration
 - Registry accounts set up
 - Versioning strategy documented
@@ -88,6 +92,7 @@ Convert the structural understanding from Tractatus analysis into actionable imp
 #### 3.1 Extract MCP Servers
 
 **Tasks**:
+
 1. Create `trading-mcp-servers` repository
    - Initialize with proper README
    - Set up MIT license
@@ -116,6 +121,7 @@ Convert the structural understanding from Tractatus analysis into actionable imp
 #### 3.2 Extract Notebooks
 
 **Tasks**:
+
 1. Create `box-spread-notebooks` repository
    - Initialize with proper README
    - Set up MIT license
@@ -145,6 +151,7 @@ Convert the structural understanding from Tractatus analysis into actionable imp
 #### 3.3 Extract Build Tools
 
 **Tasks**:
+
 1. Create `trading-build-tools` repository
    - Initialize with proper README
    - Set up MIT license
@@ -173,6 +180,7 @@ Convert the structural understanding from Tractatus analysis into actionable imp
 #### 3.4 Extract Project Housekeeping Tools
 
 **Tasks**:
+
 1. Create `project-housekeeping-tools` repository
    - Initialize with proper README
    - Set up MIT license
@@ -208,6 +216,7 @@ Convert the structural understanding from Tractatus analysis into actionable imp
 **Dependencies**: Steps 1-2
 
 **Why This is Valuable**:
+
 - ✅ Generic automation framework
 - ✅ IntelligentAutomationBase is innovative
 - ✅ NetworkX integration for graph analysis
@@ -221,6 +230,7 @@ Convert the structural understanding from Tractatus analysis into actionable imp
 **Purpose**: Extract the foundation library that other projects depend on
 
 **Tasks**:
+
 1. Create `box-spread-cpp` repository
    - Initialize with proper README
    - Set up MIT license
@@ -269,6 +279,7 @@ Convert the structural understanding from Tractatus analysis into actionable imp
 **Purpose**: Extract Python bindings and utilities
 
 **Tasks**:
+
 1. Create `box-spread-python` repository
    - Initialize with proper README
    - Set up MIT license
@@ -315,6 +326,7 @@ Convert the structural understanding from Tractatus analysis into actionable imp
 **Purpose**: Consolidate public documentation
 
 **Tasks**:
+
 1. Create `trading-docs` repository
    - Initialize with proper README
    - Set up MIT license
@@ -354,6 +366,7 @@ Convert the structural understanding from Tractatus analysis into actionable imp
 **Purpose**: Update main repo to use extracted libraries
 
 **Tasks**:
+
 1. Update dependency references
    - Replace local code with package references
    - Update CMakeLists.txt to use `box-spread-cpp`
@@ -392,6 +405,7 @@ Convert the structural understanding from Tractatus analysis into actionable imp
 **Purpose**: Further organize private code if needed
 
 **Tasks**:
+
 1. Evaluate if further splitting is needed
    - Review private repo size
    - Review team structure
@@ -447,6 +461,7 @@ Step 8: Optional - Further Private Splits
 ## Critical Path
 
 **Minimum viable path**:
+
 1. Step 1 (Define Boundaries)
 2. Step 2 (Dependency Management)
 3. Step 4 (Core C++ Engine) - Blocks Step 5
@@ -487,6 +502,7 @@ Step 8: Optional - Further Private Splits
 ### Risk: Extraction Breaks Main Repo
 
 **Mitigation**:
+
 - Extract incrementally
 - Keep old code until new code proven
 - Test thoroughly before removing
@@ -495,6 +511,7 @@ Step 8: Optional - Further Private Splits
 ### Risk: Dependencies Break
 
 **Mitigation**:
+
 - Pin versions carefully
 - Test dependency updates
 - Maintain compatibility matrix
@@ -503,6 +520,7 @@ Step 8: Optional - Further Private Splits
 ### Risk: Too Much Work
 
 **Mitigation**:
+
 - Start with quick wins (Step 3)
 - Do one extraction at a time
 - Don't do Step 8 unless necessary

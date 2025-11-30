@@ -88,82 +88,102 @@ Tasks with identical names but different IDs:
 Tasks with similar names (similarity ≥ 90%):
 
 **Similarity**: 90.2%
+
 - `T-44`: Configure and test IBKR broker integration in LEAN (Status: Done)
 - `T-45`: Configure and test Alpaca broker integration in LEAN (Status: Done)
 
 **Similarity**: 100.0%
+
 - `T-110`: Research existing configuration patterns and data source handling (Status: Todo)
 - `T-118`: Research existing configuration patterns and data source handling (Status: Done)
 
 **Similarity**: 100.0%
+
 - `T-111`: Design shared configuration file format for data sources (Status: Todo)
 - `T-119`: Design shared configuration file format for data sources (Status: Done)
 
 **Similarity**: 100.0%
+
 - `T-112`: Implement shared configuration loader for TUI, PWA, and standalone (Status: Todo)
 - `T-120`: Implement shared configuration loader for TUI, PWA, and standalone (Status: Done)
 
 **Similarity**: 100.0%
+
 - `T-142`: Research Alpaca API adapter implementation patterns and best practices (Status: Todo)
 - `T-35-R`: Research Alpaca API adapter implementation patterns and best practices (Status: Todo)
 
 **Similarity**: 100.0%
+
 - `T-143`: Research IB Client Portal API adapter implementation patterns (Status: Todo)
 - `T-36-R`: Research IB Client Portal API adapter implementation patterns (Status: Todo)
 
 **Similarity**: 100.0%
+
 - `T-144`: Research broker selection and switching patterns for multi-broker systems (Status: Todo)
 - `T-37-R`: Research broker selection and switching patterns for multi-broker systems (Status: Todo)
 
 **Similarity**: 93.9%
+
 - `T-148`: Research Greeks calculation methods for non-option products (stocks, ETFs, bonds) (Status: Todo)
 - `T-67-R`: Research Greeks calculation methods for non-option products (stocks, ETFs, futures) (Status: Todo)
 
 **Similarity**: 100.0%
+
 - `T-149`: Research portfolio-level Greeks aggregation and risk management patterns (Status: Todo)
 - `T-68-R`: Research portfolio-level Greeks aggregation and risk management patterns (Status: Todo)
 
 **Similarity**: 95.1%
+
 - `T-151`: Research cash flow forecasting integration patterns with portfolio management systems (Status: Todo)
 - `T-71-R`: Research cash flow forecasting integration patterns with portfolio management (Status: Todo)
 
 **Similarity**: 100.0%
+
 - `T-175`: Integrate NATS adapter into Rust backend service (Status: In Progress)
 - `T-195`: Integrate NATS adapter into Rust backend service (Status: Todo)
 
 **Similarity**: 100.0%
+
 - `T-201`: Extract notebooks repository (Status: Done)
 - `T-211`: Extract notebooks repository (Status: Done)
 
 **Similarity**: 100.0%
+
 - `T-202`: Extract build tools repository (Status: Done)
 - `T-212`: Extract build tools repository (Status: Done)
 
 **Similarity**: 100.0%
+
 - `T-203`: Extract project housekeeping tools repository (Status: Done)
 - `T-213`: Extract project housekeeping tools repository (Status: Todo)
 
 **Similarity**: 100.0%
+
 - `T-204`: Extract core C++ engine library (Status: Done)
 - `T-214`: Extract core C++ engine library (Status: Todo)
 
 **Similarity**: 100.0%
+
 - `T-205`: Extract Python package (Status: Done)
 - `T-215`: Extract Python package (Status: Todo)
 
 **Similarity**: 91.7%
+
 - `T-216`: Extract trading-api-docs repository (Status: Todo)
 - `T-218`: Extract trading-setup-docs repository (Status: Todo)
 
 **Similarity**: 100.0%
+
 - `AUTO-20251122221556`: Automation: Todo2 Duplicate Detection (Status: done)
 - `AUTO-20251122221822`: Automation: Todo2 Duplicate Detection (Status: done)
 
 **Similarity**: 100.0%
+
 - `AUTO-20251122221556`: Automation: Todo2 Duplicate Detection (Status: done)
 - `AUTO-20251122222330`: Automation: Todo2 Duplicate Detection (Status: in_progress)
 
 **Similarity**: 100.0%
+
 - `AUTO-20251122221822`: Automation: Todo2 Duplicate Detection (Status: done)
 - `AUTO-20251122222330`: Automation: Todo2 Duplicate Detection (Status: in_progress)
 
@@ -172,26 +192,32 @@ Tasks with similar names (similarity ≥ 90%):
 Tasks with similar descriptions (similarity ≥ 90%):
 
 **Similarity**: 95.5%
+
 - `T-175`: Integrate NATS adapter into Rust backend service (Status: In Progress)
 - `T-195`: Integrate NATS adapter into Rust backend service (Status: Todo)
 
 **Similarity**: 100.0%
+
 - `T-201`: Extract notebooks repository (Status: Done)
 - `T-211`: Extract notebooks repository (Status: Done)
 
 **Similarity**: 100.0%
+
 - `T-202`: Extract build tools repository (Status: Done)
 - `T-212`: Extract build tools repository (Status: Done)
 
 **Similarity**: 100.0%
+
 - `T-203`: Extract project housekeeping tools repository (Status: Done)
 - `T-213`: Extract project housekeeping tools repository (Status: Todo)
 
 **Similarity**: 100.0%
+
 - `T-204`: Extract core C++ engine library (Status: Done)
 - `T-214`: Extract core C++ engine library (Status: Todo)
 
 **Similarity**: 100.0%
+
 - `T-205`: Extract Python package (Status: Done)
 - `T-215`: Extract Python package (Status: Todo)
 

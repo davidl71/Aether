@@ -31,6 +31,7 @@ The Project Automation MCP Server currently provides:
 **Value:** Supports the parallel agent CI/CD setup we just implemented
 
 **Features:**
+
 - Validate GitHub Actions workflow syntax
 - Check self-hosted runner configurations
 - Verify workflow job dependencies
@@ -40,11 +41,13 @@ The Project Automation MCP Server currently provides:
 - Test workflow execution (dry-run)
 
 **Parameters:**
+
 - `workflow_path` (Optional[str]): Path to workflow file (default: `.github/workflows/parallel-agents-ci.yml`)
 - `check_runners` (bool): Validate runner configurations (default: `true`)
 - `output_path` (Optional[str]): Path for validation report
 
 **Returns:**
+
 - Workflow validation status
 - Runner configuration status
 - Job dependency issues
@@ -65,6 +68,7 @@ The Project Automation MCP Server currently provides:
 **Value:** Critical for parallel agent workflows
 
 **Features:**
+
 - Validate shared TODO table format
 - Check API contract consistency
 - Validate TODO2 sync status
@@ -74,12 +78,14 @@ The Project Automation MCP Server currently provides:
 - Report coordination issues
 
 **Parameters:**
+
 - `check_todo_table` (bool): Validate shared TODO table (default: `true`)
 - `check_api_contract` (bool): Validate API contract (default: `true`)
 - `check_todo2_sync` (bool): Validate TODO2 sync (default: `true`)
 - `output_path` (Optional[str]): Path for coordination report
 
 **Returns:**
+
 - TODO table validation status
 - API contract validation status
 - TODO2 sync status
@@ -91,6 +97,7 @@ The Project Automation MCP Server currently provides:
 **File:** `tools/agent_coordination.py`
 
 **Related Scripts:**
+
 - `scripts/validate_todo_table.sh`
 - `scripts/validate_api_contract.sh`
 - `scripts/validate_todo2_sync.sh`
@@ -104,6 +111,7 @@ The Project Automation MCP Server currently provides:
 **Value:** Supports environment documentation we just set up
 
 **Features:**
+
 - Collect system info from remote agents
 - Document OS, CPU, RAM, disk info
 - Detect Apple Intelligence availability
@@ -112,12 +120,14 @@ The Project Automation MCP Server currently provides:
 - Compare agent environments
 
 **Parameters:**
+
 - `agent_host` (Optional[str]): SSH hostname for remote agent
 - `agent_path` (Optional[str]): Project path on remote agent
 - `output_path` (Optional[str]): Path for environment report
 - `update_docs` (bool): Update DEVELOPMENT_ENVIRONMENT.md (default: `true`)
 
 **Returns:**
+
 - Agent system information
 - Development tool versions
 - Apple Intelligence availability
@@ -138,6 +148,7 @@ The Project Automation MCP Server currently provides:
 **Value:** Prevents integration issues between agents
 
 **Features:**
+
 - Parse backend code for API endpoints (Rust/Python)
 - Extract request/response schemas
 - Compare with `API_CONTRACT.md`
@@ -146,11 +157,13 @@ The Project Automation MCP Server currently provides:
 - Generate diff report
 
 **Parameters:**
+
 - `check_backend_code` (bool): Parse backend code (default: `true`)
 - `check_contract_file` (bool): Validate contract file format (default: `true`)
 - `output_path` (Optional[str]): Path for drift report
 
 **Returns:**
+
 - API endpoints detected
 - Contract discrepancies
 - Breaking changes detected
@@ -161,6 +174,7 @@ The Project Automation MCP Server currently provides:
 **File:** `tools/api_contract_validation.py`
 
 **Related Scripts:**
+
 - `scripts/validate_api_contract.sh`
 
 ---
@@ -174,6 +188,7 @@ The Project Automation MCP Server currently provides:
 **Value:** Track feature gaps automatically
 
 **Features:**
+
 - Compare TUI vs PWA features
 - Identify feature gaps
 - Track parity trends over time
@@ -181,11 +196,13 @@ The Project Automation MCP Server currently provides:
 - Create TODO2 tasks for gaps
 
 **Parameters:**
+
 - `track_trends` (bool): Track parity trends (default: `true`)
 - `create_tasks` (bool): Create TODO2 tasks for gaps (default: `false`)
 - `output_path` (Optional[str]): Path for parity report
 
 **Returns:**
+
 - Feature parity percentage
 - Gap analysis
 - Trend data
@@ -205,6 +222,7 @@ The Project Automation MCP Server currently provides:
 **Value:** Monitor code quality metrics
 
 **Features:**
+
 - Run tests with coverage (C++, Python, Rust)
 - Compare coverage with previous runs
 - Track trends over time
@@ -213,11 +231,13 @@ The Project Automation MCP Server currently provides:
 - Alert on coverage drops
 
 **Parameters:**
+
 - `languages` (Optional[List[str]]): Languages to check (default: `["cpp", "python", "rust"]`)
 - `track_trends` (bool): Track coverage trends (default: `true`)
 - `output_path` (Optional[str]): Path for coverage report
 
 **Returns:**
+
 - Coverage percentages by language
 - Trend data
 - Coverage gaps identified
@@ -237,6 +257,7 @@ The Project Automation MCP Server currently provides:
 **Value:** Catch build issues early
 
 **Features:**
+
 - Test builds for all platforms (macOS, Linux, WASM)
 - Check build times (regression detection)
 - Validate build outputs
@@ -244,11 +265,13 @@ The Project Automation MCP Server currently provides:
 - Generate build health report
 
 **Parameters:**
+
 - `platforms` (Optional[List[str]]): Platforms to test (default: `["macos", "linux"]`)
 - `track_trends` (bool): Track build health trends (default: `true`)
 - `output_path` (Optional[str]): Path for build health report
 
 **Returns:**
+
 - Build status by platform
 - Build times
 - Trend data
@@ -270,17 +293,20 @@ The Project Automation MCP Server currently provides:
 **Value:** Balance workload between agents
 
 **Features:**
+
 - Analyze TODO2 task distribution by agent
 - Identify workload imbalances
 - Suggest task reassignments
 - Track agent productivity metrics
 
 **Parameters:**
+
 - `agent_filter` (Optional[List[str]]): Filter by agents (default: all)
 - `time_period` (Optional[str]): Time period for analysis (default: `"30d"`)
 - `output_path` (Optional[str]): Path for distribution report
 
 **Returns:**
+
 - Task distribution by agent
 - Workload balance score
 - Reassignment suggestions
@@ -300,6 +326,7 @@ The Project Automation MCP Server currently provides:
 **Value:** Ensure CI/CD runners are available
 
 **Features:**
+
 - Check runner connectivity
 - Monitor runner status
 - Detect offline runners
@@ -307,11 +334,13 @@ The Project Automation MCP Server currently provides:
 - Generate runner health report
 
 **Parameters:**
+
 - `runner_labels` (Optional[List[str]]): Filter by runner labels (default: all)
 - `check_resources` (bool): Check resource usage (default: `true`)
 - `output_path` (Optional[str]): Path for health report
 
 **Returns:**
+
 - Runner status by label
 - Resource usage metrics
 - Offline runners
@@ -331,6 +360,7 @@ The Project Automation MCP Server currently provides:
 **Value:** Single command for all coordination status
 
 **Features:**
+
 - Combine all coordination validations
 - Generate unified report
 - Track coordination health trends
@@ -338,11 +368,13 @@ The Project Automation MCP Server currently provides:
 - Create follow-up tasks
 
 **Parameters:**
+
 - `include_all_checks` (bool): Include all validation checks (default: `true`)
 - `create_tasks` (bool): Create TODO2 tasks for issues (default: `false`)
 - `output_path` (Optional[str]): Path for coordination report
 
 **Returns:**
+
 - Combined validation status
 - Coordination health score
 - Issues summary
@@ -399,7 +431,9 @@ The Project Automation MCP Server currently provides:
 All new tools should follow the existing pattern:
 
 ```python
+
 # tools/[tool_name].py
+
 from ..error_handler import handle_automation_error, format_success_response
 from scripts.base.intelligent_automation_base import IntelligentAutomationBase
 
@@ -434,6 +468,7 @@ def [tool_name]_tool(
 ```
 
 **Register in `server.py`:**
+
 ```python
 @mcp.tool()
 def [tool_name]_tool(...):
@@ -451,11 +486,13 @@ def [tool_name]_tool(...):
 New tools can be orchestrated by existing tools:
 
 **Example: `validate_agent_coordination_tool`**
+
 - Uses `sync_todo_tasks_tool` for TODO2 sync validation
 - Uses `check_documentation_health_tool` for API contract docs
 - Combines results into unified report
 
 **Example: `generate_coordination_report_tool`**
+
 - Orchestrates all coordination tools
 - Combines results into single report
 - Creates TODO2 tasks for issues
@@ -467,11 +504,13 @@ New tools can be orchestrated by existing tools:
 ### Immediate Benefits (Phase 1)
 
 **Parallel Agent Support:**
+
 - ✅ CI/CD workflow validation
 - ✅ Agent coordination validation
 - ✅ Environment documentation
 
 **Time Savings:**
+
 - Manual coordination checks: ~30 min/week
 - Automated validation: ~2 min/week
 - **Savings: ~93%**
@@ -479,11 +518,13 @@ New tools can be orchestrated by existing tools:
 ### Enhanced Benefits (Phase 2)
 
 **Quality Monitoring:**
+
 - ✅ API contract validation
 - ✅ Feature parity tracking
 - ✅ Test coverage monitoring
 
 **Prevention:**
+
 - Catch integration issues early
 - Track quality trends
 - Prevent regressions
@@ -491,11 +532,13 @@ New tools can be orchestrated by existing tools:
 ### Advanced Benefits (Phase 3)
 
 **Insights:**
+
 - Build health trends
 - Task distribution analysis
 - Runner health monitoring
 
 **Optimization:**
+
 - Identify optimization opportunities
 - Balance agent workloads
 - Improve CI/CD efficiency
@@ -522,6 +565,7 @@ New tools can be orchestrated by existing tools:
 ### Testing
 
 **For Each Tool:**
+
 1. Unit tests for core logic
 2. Integration tests with existing tools
 3. Manual testing via MCP interface
@@ -532,6 +576,7 @@ New tools can be orchestrated by existing tools:
 ## Documentation Updates
 
 **For Each New Tool:**
+
 1. Update `TOOLS_STATUS.md`
 2. Add usage examples to `USAGE.md`
 3. Add prompts to `PROMPTS.md` (if applicable)
@@ -541,7 +586,6 @@ New tools can be orchestrated by existing tools:
 
 ## References
 
-- [Project Automation MCP Server Tools Status](../mcp-servers/project-management-automation/TOOLS_STATUS.md)
 - [Infrastructure Automation Opportunities](./INFRASTRUCTURE_AUTOMATION_OPPORTUNITIES.md)
 - [TODO2 CI/CD Integration](./TODO2_CI_CD_INTEGRATION.md)
 - [Parallel Agents Workflow](./PARALLEL_CURSOR_AGENTS_WORKFLOW.md)

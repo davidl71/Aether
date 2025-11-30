@@ -70,6 +70,7 @@ Need CME-specific information?
   - Box spreads replicate risk-free borrowing/lending via put-call parity
   - Competitive rates vs Treasury bills
   - OCC clearing mitigates counterparty risk
+
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#cboe-box-spreads`
 
 #### OCC Options Education – Box Spread Strategies
@@ -80,6 +81,7 @@ Need CME-specific information?
   - Implied interest rate calculations
   - Tax treatment (Section 1256)
   - Capital efficiency through portfolio margining
+
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#occ-box-spread-strategies`
 
 ### Implementation Examples
@@ -93,6 +95,7 @@ Need CME-specific information?
   - Loans at rates 1-3% lower than traditional lenders
   - Uses SPX options for box spread construction
   - Full tax-deductible interest expenses
+
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#syntheticfi`
 
 ### Market Structure
@@ -105,6 +108,7 @@ Need CME-specific information?
   - Box spreads on SPX contracts at 4000 and 5000 strikes
   - Market Maker rest orders in Complex Order Books
   - ~10 quotable instruments daily
+
 - **Documentation**: `../API_DOCUMENTATION_INDEX.md#cboe-qsb`
 
 #### Cboe Frequent Trader Program (FTID)

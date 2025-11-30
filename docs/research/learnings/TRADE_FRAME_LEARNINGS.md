@@ -91,7 +91,9 @@ Trade-frame uses multiple storage backends:
 Trade-frame uses CMake with a modular structure:
 
 ```cmake
+
 # Main CMakeLists.txt includes subdirectories
+
 add_subdirectory(lib)
 add_subdirectory(ApplicationName)
 ```
