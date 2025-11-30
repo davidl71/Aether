@@ -121,6 +121,14 @@ When helping with this codebase:
 5. Update documentation if needed
 6. Add static analysis annotations where appropriate
 
+**Automated checks (via exarp - see `.cursor/rules/project-automation.mdc`):**
+- Documentation health (runs automatically on git hooks)
+- Security scanning (runs automatically on dependency changes)
+- Task alignment (runs automatically on task status changes)
+- Duplicate detection (runs automatically on task creation)
+
+**To configure automated checks:** Use exarp tools (git hooks, file watchers, cron jobs)
+
 **Automated checks (via automa - see `.cursor/rules/project-automation.mdc`):**
 - Documentation health (runs automatically on git hooks)
 - Security scanning (runs automatically on dependency changes)

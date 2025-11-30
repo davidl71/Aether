@@ -21,7 +21,7 @@ This rule provides context-aware suggestions for project automation tools. **Not
 **Note**: Also runs automatically on git hooks (pre-commit) and file watchers (via Exarp)
 **Usage**:
 ```
-"Check documentation health after recent changes"
+"Check documentation health after recent changes (also runs automatically on git hooks)"
 "Validate documentation structure"
 ```
 
@@ -41,7 +41,7 @@ This rule provides context-aware suggestions for project automation tools. **Not
 **Note**: Task alignment also runs automatically on status changes (configured via Exarp)
 **Usage**:
 ```
-"Analyze task alignment before starting work"
+"Analyze task alignment before starting work (also runs automatically on task status changes)"
 "Verify task aligns with project goals"
 ```
 
@@ -90,7 +90,7 @@ This rule provides context-aware suggestions for project automation tools. **Not
 **Note**: Also runs automatically on file changes (configured via Exarp file watchers)
 **Usage**:
 ```
-"Scan dependencies for security vulnerabilities"
+"Scan dependencies for security vulnerabilities (also runs automatically on dependency file changes)"
 "Check dependency security after updates"
 ```
 
@@ -243,7 +243,7 @@ Tool suggestions complement `.cursor/rules/project-automation.mdc` by:
 **Context**: Documentation file was modified
 **When to use**: After documentation changes to validate structure
 **Benefit**: Catches broken links, format issues, and stale content early
-**Usage Example**: "Check documentation health after recent changes"
+**Usage Example**: "Check documentation health after recent changes (also runs automatically on git hooks)"
 
 **Available via**: Project Automation MCP Server
 ```
