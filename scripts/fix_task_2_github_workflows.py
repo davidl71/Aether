@@ -14,7 +14,7 @@ def find_similar_file(target_name: str, docs_dir: Path, base_file: Path) -> tupl
     """Find similar file by name"""
     target_stem = Path(target_name).stem.lower()
     base_dir = base_file.parent
-    
+
     # Search for similar files
     candidates = []
     for md_file in docs_dir.rglob("*.md"):
@@ -32,7 +32,7 @@ def find_similar_file(target_name: str, docs_dir: Path, base_file: Path) -> tupl
                     up_levels = len(base_parts)
                     rel_path_str = '../' * up_levels + str(rel_path)
                     candidates.append((md_file, rel_path_str))
-    
+
     if candidates:
         # Prefer files in same directory
         candidates.sort(key=lambda x: (
@@ -40,27 +40,27 @@ def find_similar_file(target_name: str, docs_dir: Path, base_file: Path) -> tupl
             len(Path(x[1]).parts)
         ))
         return candidates[0]
-    
+
     return None, None
 
 def fix_github_workflows_links():
     """Fix broken links in GITHUB_WORKFLOWS.md"""
     docs_dir = Path('/home/david/ib_box_spread_full_universal/docs')
     md_file = docs_dir / 'GITHUB_WORKFLOWS.md'
-    
+
     if not md_file.exists():
         return {
             'success': False,
             'error': f'File not found: {md_file}',
             'fixes': []
         }
-    
+
     fixes = []
-    
+
     try:
         content = md_file.read_text(encoding='utf-8')
         lines = content.split('\n')
-        
+
         # Fix EXARP_FASTMCP_CONFIGURATION.md link (line 400)
         target_line_num = 400
         if target_line_num <= len(lines):
@@ -68,7 +68,7 @@ def fix_github_workflows_links():
             if 'EXARP_FASTMCP_CONFIGURATION.md' in line:
                 # Search for similar file
                 similar_file, rel_path = find_similar_file('EXARP_FASTMCP_CONFIGURATION.md', docs_dir, md_file)
-                
+
                 if similar_file:
                     # Update link
                     old_link = 'EXARP_FASTMCP_CONFIGURATION.md'
@@ -91,18 +91,18 @@ def fix_github_workflows_links():
                         'new': lines[target_line_num - 1],
                         'method': 'commented_out'
                     })
-        
+
         # Write back if fixes were made
         if fixes:
             md_file.write_text('\n'.join(lines), encoding='utf-8')
-            
+
     except Exception as e:
         return {
             'success': False,
             'error': str(e),
             'fixes': []
         }
-    
+
     return {
         'success': True,
         'fixes': fixes,
@@ -111,11 +111,11 @@ def fix_github_workflows_links():
 
 if __name__ == '__main__':
     result = fix_github_workflows_links()
-    
+
     # Write report
     report_file = Path('/home/david/ib_box_spread_full_universal/docs/TASK_2_FIX_REPORT.json')
     report_file.write_text(json.dumps(result, indent=2), encoding='utf-8')
-    
+
     # Print summary
     print(f"Task 2 (GITHUB_WORKFLOWS.md): {'✅ Success' if result['success'] else '❌ Failed'}")
     print(f"  Fixes: {len(result.get('fixes', []))}")

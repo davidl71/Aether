@@ -7,7 +7,7 @@ from pathlib import Path
 def find_file_by_path(target_path: str, base_file: Path, docs_dir: Path) -> tuple[Path | None, str | None]:
     """Find file by resolving relative path or searching"""
     base_dir = base_file.parent
-    
+
     # Try resolving relative path
     if target_path.startswith('../'):
         target_file = (base_dir.parent / target_path[3:]).resolve()
@@ -17,7 +17,7 @@ def find_file_by_path(target_path: str, base_file: Path, docs_dir: Path) -> tupl
                 return target_file, str(rel_path)
             except ValueError:
                 pass
-    
+
     # Search by filename
     target_name = Path(target_path).name
     for md_file in docs_dir.rglob(target_name):
@@ -33,23 +33,23 @@ def find_file_by_path(target_path: str, base_file: Path, docs_dir: Path) -> tupl
                 up_levels = len(base_parts)
                 rel_path_str = '../' * up_levels + str(rel_path)
                 return md_file, rel_path_str
-    
+
     return None, None
 
 def fix_gitignore_links():
     """Fix broken links in GITIGNORE_BUILD_ARTIFACTS_ANALYSIS.md"""
     docs_dir = Path('/home/david/ib_box_spread_full_universal/docs')
     md_file = docs_dir / 'GITIGNORE_BUILD_ARTIFACTS_ANALYSIS.md'
-    
+
     if not md_file.exists():
         return {'success': False, 'error': 'File not found', 'fixes': []}
-    
+
     fixes = []
-    
+
     try:
         content = md_file.read_text(encoding='utf-8')
         lines = content.split('\n')
-        
+
         # Fix ../docs/BUILD_SYSTEM.md (line 379)
         target_line_num = 379
         if target_line_num <= len(lines):
@@ -60,7 +60,7 @@ def fix_gitignore_links():
                     md_file,
                     Path('/home/david/ib_box_spread_full_universal/docs')
                 )
-                
+
                 if found_file and found_file.exists():
                     old_link = '../docs/BUILD_SYSTEM.md'
                     lines[target_line_num - 1] = line.replace(old_link, rel_path)
@@ -79,13 +79,13 @@ def fix_gitignore_links():
                         'new': lines[target_line_num - 1],
                         'method': 'commented_out'
                     })
-        
+
         if fixes:
             md_file.write_text('\n'.join(lines), encoding='utf-8')
-            
+
     except Exception as e:
         return {'success': False, 'error': str(e), 'fixes': []}
-    
+
     return {'success': True, 'fixes': fixes, 'file': str(md_file)}
 
 if __name__ == '__main__':

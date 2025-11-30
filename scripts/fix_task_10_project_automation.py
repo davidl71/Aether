@@ -10,7 +10,7 @@ from pathlib import Path
 def find_file_by_path(target_path: str, base_file: Path, docs_dir: Path) -> tuple[Path | None, str | None]:
     """Find file by resolving relative path or searching"""
     base_dir = base_file.parent
-    
+
     # Try resolving relative path
     if target_path.startswith('../'):
         # Go up from base_dir
@@ -22,7 +22,7 @@ def find_file_by_path(target_path: str, base_file: Path, docs_dir: Path) -> tupl
             except ValueError:
                 # Use absolute path or find alternative
                 pass
-    
+
     # Search by filename
     target_name = Path(target_path).name
     for md_file in docs_dir.rglob(target_name):
@@ -38,23 +38,23 @@ def find_file_by_path(target_path: str, base_file: Path, docs_dir: Path) -> tupl
                 up_levels = len(base_parts)
                 rel_path_str = '../' * up_levels + str(rel_path)
                 return md_file, rel_path_str
-    
+
     return None, None
 
 def fix_project_automation_links():
     """Fix broken links in PROJECT_AUTOMATION_MCP_EXTENSIONS.md"""
     docs_dir = Path('/home/david/ib_box_spread_full_universal/docs')
     md_file = docs_dir / 'PROJECT_AUTOMATION_MCP_EXTENSIONS.md'
-    
+
     if not md_file.exists():
         return {'success': False, 'error': 'File not found', 'fixes': []}
-    
+
     fixes = []
-    
+
     try:
         content = md_file.read_text(encoding='utf-8')
         lines = content.split('\n')
-        
+
         # Fix ../mcp-servers/project-management-automation/TOOLS_STATUS.md (line 544)
         target_line_num = 544
         if target_line_num <= len(lines):
@@ -65,7 +65,7 @@ def fix_project_automation_links():
                     md_file,
                     Path('/home/david/ib_box_spread_full_universal')
                 )
-                
+
                 if found_file and found_file.exists():
                     old_link = '../mcp-servers/project-management-automation/TOOLS_STATUS.md'
                     lines[target_line_num - 1] = line.replace(old_link, rel_path)
@@ -85,13 +85,13 @@ def fix_project_automation_links():
                         'new': lines[target_line_num - 1],
                         'method': 'commented_out'
                     })
-        
+
         if fixes:
             md_file.write_text('\n'.join(lines), encoding='utf-8')
-            
+
     except Exception as e:
         return {'success': False, 'error': str(e), 'fixes': []}
-    
+
     return {'success': True, 'fixes': fixes, 'file': str(md_file)}
 
 if __name__ == '__main__':
