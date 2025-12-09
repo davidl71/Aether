@@ -1,16 +1,3 @@
 {
-  "mcpServers": {
-    "exarp_pma": {
-      "command": "/Users/davidl/Projects/project-management-automation/exarp-uvx-wrapper.sh",
-      "args": [
-        "--mcp"
-      ],
-      "env": {
-        "EXARP_DEV_MODE": "1",
-        "PROJECT_ROOT": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal",
-        "EXARP_FORCE_STDIO": "1"
-      },
-      "description": "Exarp for Project Management Automation - auto-detects uvx location across platforms. Documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
-    }
-  }
+  "mcpServers": {}
 }

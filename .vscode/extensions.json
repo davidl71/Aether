@@ -9,7 +9,8 @@
     // C++ Development (WORKSPACE-ONLY)
     "ms-vscode.cpptools",
     "ms-vscode.cmake-tools",
-    "twxs.cmake", // Enhanced CMake language support with IntelliSense
+    // NOTE: twxs.cmake is NOT recommended - it's redundant with CMake Tools built-in Language Services
+    // See docs/EXTENSION_SECURITY_AUDIT.md and docs/EXTENSION_SECURITY_PRIORITY.md
 
     // Python Development (WORKSPACE-ONLY)
     "ms-python.python",
@@ -144,6 +145,10 @@
     "redhat.ansible",
     // PowerShell
     "ms-vscode.powershell",
+
+    // Redundant CMake extension - CMake Tools includes built-in Language Services
+    // See docs/EXTENSION_SECURITY_AUDIT.md and docs/EXTENSION_SECURITY_PRIORITY.md
+    "twxs.cmake",
 
     // Enterprise/Mainframe - not used in this trading application
     // IBM i / AS/400
