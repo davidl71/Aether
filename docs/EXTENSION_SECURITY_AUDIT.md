@@ -109,7 +109,7 @@ These extensions are from less-known publishers and should be verified:
 - `syntaxsyndicate.*` - Unknown publisher
 - `tamasfe.*` - Unknown publisher
 - `todo2.todo2` - Unknown publisher
-- `twxs.cmake` - Unknown publisher
+- `twxs.cmake` - Unknown publisher ❌ **DO NOT RECOMMEND** (Redundant with CMake Tools built-in services)
 - `vadimcn.vscode-lldb` - Unknown publisher (popular but verify)
 - `virgilsisoe.*` - Unknown publisher
 - `washan.cargo-appraiser` - Unknown publisher

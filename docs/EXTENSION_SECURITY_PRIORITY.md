@@ -57,8 +57,8 @@ Based on recent security incidents, here are the priority extensions to review:
 - `jbenden.*` - C++ linter (verify if needed)
 - `jeff-hykin.better-cpp-syntax` - Syntax helper (verify)
 - `kylinideteam.cmake-intellisence` - CMake helper (verify)
-- `twxs.cmake` - CMake helper (verify)
-- **Action**: Review if these add value beyond `anysphere.cpptools`
+- `twxs.cmake` - ❌ **DO NOT RECOMMEND** (Redundant - CMake Tools includes built-in Language Services)
+- **Action**: Review if these add value beyond `anysphere.cpptools`. Do not install `twxs.cmake`.
 
 ### 🟢 Low Priority - Likely Safe
 

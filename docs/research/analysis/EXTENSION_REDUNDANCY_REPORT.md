@@ -96,12 +96,13 @@ Found **15 groups** with potential redundancies across **94 installed extensions
 - `ms-vscode.cmake-tools` ✅ **KEEP** (Main tool, workspace recommended)
 - `cheshirekow.cmake-format` (Formatter)
 - `kylinideteam.cmake-intellisence` (IntelliSense)
-- `twxs.cmake` (Syntax highlighting)
+- `twxs.cmake` ❌ **DO NOT RECOMMEND** (Redundant - CMake Tools now includes built-in Language Services)
 
 **Action**:
 
 - Keep `ms-vscode.cmake-tools` (essential)
 - Others are optional helpers - keep if useful, remove if not
+- **Do not install `twxs.cmake`** - it's redundant with CMake Tools built-in services
 
 ### 8. Jupyter/Notebook (4 extensions)
 

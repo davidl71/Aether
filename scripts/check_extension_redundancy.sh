@@ -145,6 +145,7 @@ fi
 # CMake Tools
 if check_group "CMake Tools" "ms-vscode.cmake-tools" "cheshirekow.cmake-format" "kylinideteam.cmake-intellisence" "twxs.cmake"; then
   echo -e "   ${BLUE}Recommendation:${NC} Keep ${GREEN}ms-vscode.cmake-tools${NC} (main tool), others are optional helpers"
+  echo -e "   ${YELLOW}Note:${NC} ${RED}twxs.cmake${NC} is redundant - CMake Tools includes built-in Language Services. Do not install."
   echo ""
   REDUNDANCIES_FOUND=$((REDUNDANCIES_FOUND + 1))
 fi
