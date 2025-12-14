@@ -13,7 +13,6 @@
 🎯 **Objective:** Integrate NetworkX Python library to model multi-instrument relationships as graphs and find optimal paths for opportunity simulation (e.g., loan → margin → box spread → fund → cheaper loan).
 
 📋 **Acceptance Criteria:**
-
 - NetworkX added to Python requirements (`requirements.txt` or `requirements-notebooks.txt`)
 - Relationship graph builder module created (`python/integration/relationship_graph.py`)
 - Functions to build graph from positions and relationships
@@ -24,13 +23,11 @@
 - Example usage documented
 
 🚫 **Scope Boundaries (CRITICAL):**
-
 - **Included:** NetworkX installation, graph building, path finding, basic integration
 - **Excluded:** UI visualization (separate task), advanced optimization (NLopt integration), full opportunity simulation engine
 - **Clarification Required:** Should this be in main requirements or notebooks-only?
 
 🔧 **Technical Requirements:**
-
 - Python 3.11+ (compatible with existing setup)
 - NetworkX library (latest stable version)
 - Integration with ledger system for position data
@@ -39,7 +36,6 @@
 - Support relationship attributes (rate_benefit, collateral_ratio, etc.)
 
 📁 **Files/Components:**
-
 - Create: `python/integration/relationship_graph.py` (new module)
 - Update: `requirements.txt` or `requirements-notebooks.txt` (add networkx)
 - Create: `python/tests/test_relationship_graph.py` (unit tests)
@@ -47,7 +43,6 @@
 - Reference: `docs/LIBRARIES_FOR_PRIMARY_GOALS.md` (usage examples)
 
 🧪 **Testing Requirements:**
-
 - Test graph building from positions
 - Test optimal path finding
 - Test with multiple relationship chains
@@ -55,7 +50,6 @@
 - Verify path benefit calculations
 
 ⚠️ **Edge Cases:**
-
 - No path exists between instruments
 - Multiple optimal paths (tie-breaking)
 - Circular relationships (cycles)
@@ -100,7 +94,6 @@ from python.integration.relationship_graph import (
 )
 
 # Create positions
-
 positions = [
     Position(id="bank-loan-5%", type="loan", rate=0.05, currency="USD"),
     Position(id="box-spread-4%", type="box_spread", rate=0.04, currency="USD"),
@@ -108,7 +101,6 @@ positions = [
 ]
 
 # Define relationships
-
 relationships = [
     Relationship(
         source_id="bank-loan-5%",
@@ -127,11 +119,9 @@ relationships = [
 ]
 
 # Build graph
-
 graph = build_relationship_graph(positions, relationships)
 
 # Find optimal chain: loan → margin → box spread → cheaper loan
-
 result = graph.find_optimal_chain("bank-loan-5%", "cheaper-loan-3%", max_length=5)
 
 if result:

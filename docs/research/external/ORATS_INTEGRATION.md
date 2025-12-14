@@ -1,7 +1,7 @@
 # ORATS Integration Opportunities
 
-**Date**: 2025-01-27
-**Source**: <https://orats.com/docs>
+**Date**: 2025-01-27  
+**Source**: <https://orats.com/docs>  
 **Purpose**: Analyze how ORATS can enhance this box spread arbitrage project
 
 ---
@@ -127,14 +127,12 @@ struct OptionChainEntry {
 **Implementation**:
 
 ```python
-
 # python/integration/orats_client.py
-
 class ORATSClient:
     def get_historical_options(
-        self,
-        symbol: str,
-        start_date: str,
+        self, 
+        symbol: str, 
+        start_date: str, 
         end_date: str
     ) -> List[Dict]:
         """Fetch historical options data from ORATS."""
@@ -177,7 +175,7 @@ class ORATSClient:
 // In types.h - enhance MarketData
 struct MarketData {
     // Existing fields...
-
+    
     // Add ORATS IV data
     std::optional<double> orats_smoothed_iv;
     std::optional<double> iv_rank;        // 0-100
@@ -372,17 +370,17 @@ struct StrategyParams {
     "enabled": true,
     "api_token": "${ORATS_API_TOKEN}",
     "base_url": "https://api.orats.io",
-
+    
     "use_for_liquidity_scoring": true,
     "use_for_iv_data": true,
     "use_for_risk_events": true,
-
+    
     "min_liquidity_score": 70.0,
     "max_iv_percentile": 80.0,
-
+    
     "earnings_blackout_days": 7,
     "dividend_blackout_days": 2,
-
+    
     "cache_duration_seconds": 300,
     "rate_limit_per_second": 10
   }
@@ -392,34 +390,32 @@ struct StrategyParams {
 ### Python ORATS Client
 
 ```python
-
 # python/integration/orats_client.py
-
 import requests
 from typing import Dict, List, Optional
 from datetime import datetime
 
 class ORATSClient:
     """Client for ORATS API integration."""
-
+    
     def __init__(self, api_token: str, base_url: str = "https://api.orats.io"):
         self.api_token = api_token
         self.base_url = base_url
         self._session = requests.Session()
         self._session.headers.update({"Authorization": f"Token {api_token}"})
-
+    
     def get_option_chain(
-        self,
-        ticker: str,
+        self, 
+        ticker: str, 
         trade_date: Optional[str] = None
     ) -> Dict:
         """
         Get option chain data from ORATS.
-
+        
         Args:
             ticker: Stock ticker (e.g., "SPY")
             trade_date: Date in YYYY-MM-DD format (default: today)
-
+            
         Returns:
             Option chain data with ORATS indicators
         """
@@ -428,22 +424,22 @@ class ORATSClient:
             "ticker": ticker,
             "tradeDate": trade_date or datetime.now().strftime("%Y-%m-%d"),
         }
-
+        
         response = self._session.get(endpoint, params=params)
         response.raise_for_status()
-
+        
         return response.json()
-
+    
     def get_liquidity_scores(self, ticker: str) -> Dict:
         """Get ORATS liquidity scores for a symbol."""
         # Implementation
         pass
-
+    
     def get_earnings_calendar(self, ticker: str) -> Dict:
         """Get earnings dates for a symbol."""
         # Implementation
         pass
-
+    
     def get_dividend_schedule(self, ticker: str) -> Dict:
         """Get dividend ex-dates for a symbol."""
         # Implementation
@@ -457,11 +453,11 @@ class ORATSClient:
 struct OptionChainEntry {
     types::OptionContract contract;
     types::MarketData market_data;
-
+    
     // Existing fields
     int open_interest = 0;
     int volume = 0;
-
+    
     // ORATS-enhanced fields
     double orats_liquidity_score = 0.0;        // 0-100
     double orats_execution_probability = 0.0; // 0-1.0
@@ -469,7 +465,7 @@ struct OptionChainEntry {
     double orats_smoothed_iv = 0.0;           // Smoothed IV
     double orats_iv_rank = 0.0;               // 0-100
     double orats_iv_percentile = 0.0;         // 0-100
-
+    
     bool has_orats_data() const {
         return orats_liquidity_score > 0;
     }
@@ -572,8 +568,8 @@ bool meets_liquidity = volume >= min_volume && open_interest >= min_oi;
 **After (TWS + ORATS)**:
 
 ```cpp
-bool meets_liquidity =
-    volume >= min_volume &&
+bool meets_liquidity = 
+    volume >= min_volume && 
     open_interest >= min_oi &&
     orats_liquidity_score >= min_orats_liquidity_score &&
     orats_execution_probability >= min_execution_probability;
@@ -605,7 +601,7 @@ if (is_profitable(spread) && !is_earnings_blackout(symbol)) {
 bool is_earnings_blackout(const std::string& symbol) {
     auto earnings_date = orats_client.get_next_earnings(symbol);
     if (!earnings_date.has_value()) return false;
-
+    
     int days_to_earnings = calculate_days_to(earnings_date.value());
     return days_to_earnings <= earnings_blackout_days;
 }
@@ -626,9 +622,7 @@ bool is_earnings_blackout(const std::string& symbol) {
 **After (With ORATS)**:
 
 ```python
-
 # python/backtesting/backtest_runner.py
-
 class BoxSpreadBacktester:
     def run_backtest(
         self,
@@ -638,15 +632,15 @@ class BoxSpreadBacktester:
         strategy_params: Dict
     ) -> Dict:
         """Run historical backtest using ORATS data."""
-
+        
         # Fetch historical option chains from ORATS
         historical_chains = orats_client.get_historical_chains(
             symbol, start_date, end_date
         )
-
+        
         # Simulate strategy on historical data
         results = self._simulate_strategy(historical_chains, strategy_params)
-
+        
         return results  # P&L, win rate, Sharpe ratio, etc.
 ```
 
@@ -664,7 +658,7 @@ class BoxSpreadBacktester:
 
 ```cpp
 // Only check prices
-bool is_profitable =
+bool is_profitable = 
     arbitrage_profit >= min_arbitrage_profit &&
     roi_percent >= min_roi_percent;
 ```
@@ -673,7 +667,7 @@ bool is_profitable =
 
 ```cpp
 // Check prices AND IV conditions
-bool is_profitable =
+bool is_profitable = 
     arbitrage_profit >= min_arbitrage_profit &&
     roi_percent >= min_roi_percent &&
     iv_rank < max_iv_rank &&  // Avoid high IV periods
@@ -693,9 +687,7 @@ bool is_profitable =
 ### Python ORATS Client
 
 ```python
-
 # python/integration/orats_client.py
-
 """
 orats_client.py - Client for ORATS API integration
 """
@@ -707,12 +699,13 @@ from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
+
 class ORATSClient:
     """
     Client for ORATS API.
     Provides options data, liquidity scores, and corporate events.
     """
-
+    
     def __init__(self, api_token: str, base_url: str = "https://api.orats.io"):
         self.api_token = api_token
         self.base_url = base_url
@@ -723,58 +716,58 @@ class ORATSClient:
         })
         self._cache = {}
         self._cache_duration = timedelta(minutes=5)
-
+    
     def get_strikes(self, ticker: str, trade_date: Optional[str] = None) -> List[Dict]:
         """
         Get option strikes with ORATS indicators.
-
+        
         Args:
             ticker: Stock ticker
             trade_date: Date in YYYY-MM-DD format
-
+            
         Returns:
             List of option data with ORATS indicators
         """
         cache_key = f"strikes_{ticker}_{trade_date}"
         if self._is_cached(cache_key):
             return self._cache[cache_key]["data"]
-
+        
         endpoint = f"{self.base_url}/datav2/strikes"
         params = {
             "ticker": ticker,
             "tradeDate": trade_date or datetime.now().strftime("%Y-%m-%d"),
         }
-
+        
         try:
             response = self._session.get(endpoint, params=params, timeout=10)
             response.raise_for_status()
             data = response.json().get("data", [])
-
+            
             self._cache[cache_key] = {
                 "data": data,
                 "timestamp": datetime.now()
             }
-
+            
             return data
-
+            
         except requests.exceptions.RequestException as e:
             logger.error(f"ORATS API error: {e}")
             return []
-
+    
     def get_earnings_calendar(self, ticker: str) -> Optional[Dict]:
         """Get next earnings date for a ticker."""
         # Implementation similar to above
         pass
-
+    
     def get_dividend_schedule(self, ticker: str) -> Optional[Dict]:
         """Get next dividend ex-date for a ticker."""
         pass
-
+    
     def _is_cached(self, key: str) -> bool:
         """Check if data is cached and not stale."""
         if key not in self._cache:
             return False
-
+        
         age = datetime.now() - self._cache[key]["timestamp"]
         return age < self._cache_duration
 ```
@@ -787,17 +780,17 @@ struct ORATSConfig {
     bool enabled = false;
     std::string api_token;
     std::string base_url = "https://api.orats.io";
-
+    
     bool use_for_liquidity = true;
     bool use_for_iv_data = true;
     bool use_for_risk_events = true;
-
+    
     double min_liquidity_score = 70.0;
     double max_iv_percentile = 80.0;
-
+    
     int earnings_blackout_days = 7;
     int dividend_blackout_days = 2;
-
+    
     int cache_duration_seconds = 300;
     int rate_limit_per_second = 10;
 };
@@ -808,7 +801,7 @@ struct Config {
     RiskConfig risk;
     LogConfig logging;
     ORATSConfig orats;  // Add ORATS config
-
+    
     // Existing fields...
 };
 ```

@@ -172,6 +172,20 @@ async fn main() -> anyhow::Result<()> {
   let (grpc_decision_tx, _) = broadcast::channel(256);
   let risk_engine = Arc::new(RiskEngine::new(vec![Box::new(PositionLimitCheck::new(8, 250_000.0))]));
 
+  // Initialize NATS integration (graceful degradation if unavailable)
+  let nats_integration = Arc::new(
+    nats_integration::NatsIntegration::new(
+      std::env::var("NATS_URL").ok(),
+    )
+    .await,
+  );
+
+  if nats_integration.as_ref().as_ref().map_or(false, |n| n.is_active()) {
+    info!("NATS integration active");
+  } else {
+    warn!("NATS integration unavailable, continuing without NATS");
+  }
+
   let (strategy_signal_tx, strategy_signal_rx) = tokio::sync::mpsc::unbounded_channel::<StrategySignal>();
   let (strategy_decision_tx, strategy_decision_rx) = tokio::sync::mpsc::unbounded_channel::<StrategyDecisionModel>();
 

@@ -2,17 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSnapshot } from './hooks/useSnapshot';
 import { useBoxSpreadData } from './hooks/useBoxSpreadData';
 import { useSymbolWatchlist } from './hooks/useSymbolWatchlist';
-import { useBankAccounts } from './hooks/useBankAccounts';
 import { HeaderStatus } from './components/HeaderStatus';
 import { TabNavigation } from './components/TabNavigation';
-import type { TabDefinition } from './components/TabNavigation';
 import { DashboardTab } from './components/DashboardTab';
 import { BankAccountsPanel } from './components/BankAccountsPanel';
 import { PositionsTable } from './components/PositionsTable';
-import { UnifiedPositionsPanel } from './components/UnifiedPositionsPanel';
-import { CashFlowPanel } from './components/CashFlowPanel';
-import { OpportunitySimulationPanel } from './components/OpportunitySimulationPanel';
-import { RelationshipVisualizationPanel } from './components/RelationshipVisualizationPanel';
 import { OrdersPanel } from './components/OrdersPanel';
 import { AlertsPanel } from './components/AlertsPanel';
 import { ActionBar } from './components/ActionBar';
@@ -27,21 +21,16 @@ import { useChartData } from './hooks/useChartData';
 import type { SnapshotPayload, SymbolSnapshot, PositionSnapshot } from './types/snapshot';
 import type { BoxSpreadSummary } from './types';
 import type { Timeframe } from './types/chart';
-import type { BrokerType } from './components/BrokerSelector';
 
-const TABS: TabDefinition[] = [
+const TABS = [
   { id: 'dashboard', title: 'Dashboard' },
-  { id: 'unified', title: 'Unified Positions' },
-  { id: 'cashflow', title: 'Cash Flow' },
-  { id: 'simulation', title: 'Simulation' },
-  { id: 'relationships', title: 'Relationships' },
   { id: 'current', title: 'Current Positions' },
   { id: 'historic', title: 'Historic Positions' },
   { id: 'orders', title: 'Orders' },
   { id: 'alerts', title: 'Alerts' }
-];
+] as const;
 
-type TabId = 'dashboard' | 'unified' | 'cashflow' | 'simulation' | 'relationships' | 'current' | 'historic' | 'orders' | 'alerts';
+type TabId = typeof TABS[number]['id'];
 
 type ModalState =
   | { type: 'symbol'; payload: SymbolSnapshot }
@@ -59,16 +48,7 @@ function renderTabContent(
   onRemoveSymbol: (symbol: string) => void,
   isDefaultSymbol: (symbol: string) => boolean,
   onCancelOrder: (orderId: string) => Promise<void>,
-  apiBaseUrl: string,
-  bankAccounts: Array<{
-    account_path: string;
-    account_name: string;
-    bank_name: string | null;
-    balance: number;
-    currency: string;
-    credit_rate: number | null;
-    debit_rate: number | null;
-  }>
+  apiBaseUrl: string
 ) {
   if (!snapshot) {
     return <div className="panel panel--fill">Awaiting live data…</div>;
@@ -110,36 +90,7 @@ function renderTabContent(
           onSelectPosition={onSelectPosition}
         />
       );
-    case 'unified':
-      return (
-        <UnifiedPositionsPanel
-          positions={snapshot.positions}
-          bankAccounts={bankAccounts}
-          onSelectPosition={onSelectPosition}
-        />
-      );
-    case 'cashflow':
-      return (
-        <CashFlowPanel
-          positions={snapshot.positions}
-          bankAccounts={bankAccounts}
-        />
-      );
-    case 'simulation':
-      return (
-        <OpportunitySimulationPanel
-          positions={snapshot.positions}
-          bankAccounts={bankAccounts}
-        />
-      );
-    case 'relationships':
-      return (
-        <RelationshipVisualizationPanel
-          positions={snapshot.positions}
-          bankAccounts={bankAccounts}
-        />
-      );
-    case 'orders':
+      case 'orders':
         return <OrdersPanel orders={snapshot.orders} onCancelOrder={onCancelOrder} apiBaseUrl={apiBaseUrl} />;
     case 'alerts':
       return <AlertsPanel alerts={snapshot.alerts} />;
@@ -149,20 +100,16 @@ function renderTabContent(
 }
 
 function App() {
-  console.log('App component rendering...');
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const [modal, setModal] = useState<ModalState>(null);
   const [selectedStrike, setSelectedStrike] = useState<number | null>(null);
   const [selectedExpiration, setSelectedExpiration] = useState<string | null>(null);
   const [chartTimeframe, setChartTimeframe] = useState<Timeframe>('1D');
-  const [currentBroker, setCurrentBroker] = useState<BrokerType>('AUTO');
   const {
     snapshot,
     isLoading: snapshotLoading,
     error: snapshotError
   } = useSnapshot();
-
-  console.log('App state:', { snapshotLoading, snapshotError, hasSnapshot: !!snapshot });
   const { data: scenarioData, isLoading: scenarioLoading, error: scenarioError } = useBoxSpreadData();
   const { watchlist, addSymbol, removeSymbol, isDefault } = useSymbolWatchlist();
 
@@ -256,6 +203,74 @@ function App() {
           'Submitting offsetting combo to flatten position (mock). Wire to strategy endpoint once ready.'
       }
     });
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() === 'b') {
+        event.preventDefault();
+        handleBuyCombo();
+      }
+      if (event.key.toLowerCase() === 's' && event.shiftKey) {
+        event.preventDefault();
+        handleSellCombo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleBuyCombo, handleSellCombo]);
+
+  const handleModeChange = useCallback(async (mode: 'PAPER' | 'LIVE') => {
+    try {
+      // Get API URL from environment or use default
+      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
+      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
+
+      // Send mode change request to backend
+      const response = await fetch(`${baseUrl}/api/mode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Mode changed to:', data.mode);
+        // The snapshot will update on next poll with the new mode
+      } else {
+        console.error('Failed to change mode:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error changing mode:', error);
+      // If API call fails, still allow UI change (for development/offline)
+    }
+  }, []);
+
+  const handleAccountChange = useCallback(async (accountId: string | null) => {
+    try {
+      // Get API URL from environment or use default
+      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
+      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
+
+      // Send account change request to backend
+      const response = await fetch(`${baseUrl}/api/account`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account_id: accountId })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Account changed to:', data.account_id);
+        // The snapshot will update on next poll with the new account
+      } else {
+        console.error('Failed to change account:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error changing account:', error);
+    }
   }, []);
 
   const handleStrategyStart = useCallback(async () => {
@@ -352,196 +367,9 @@ function App() {
     }
   }, []);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ignore if typing in input/textarea
-      if (
-        event.target instanceof HTMLInputElement ||
-        event.target instanceof HTMLTextAreaElement ||
-        (event.target instanceof HTMLElement && event.target.isContentEditable)
-      ) {
-        return;
-      }
-
-      // Strategy control shortcuts
-      if (event.key.toLowerCase() === 's' && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        event.preventDefault();
-        if (snapshot?.strategy !== 'RUNNING') {
-          handleStrategyStart();
-        }
-      }
-      if (event.key.toLowerCase() === 't' && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        event.preventDefault();
-        if (snapshot?.strategy === 'RUNNING') {
-          handleStrategyStop();
-        }
-      }
-
-      // Toggle dry-run mode
-      if (event.key.toLowerCase() === 'd' && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        event.preventDefault();
-        const isDryRun = snapshot?.mode === 'DRY-RUN' || snapshot?.mode === 'PAPER';
-        handleDryRunToggle(!isDryRun);
-      }
-
-      // Combo actions
-      if (event.key.toLowerCase() === 'b' && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        event.preventDefault();
-        handleBuyCombo();
-      }
-      if (event.key.toLowerCase() === 's' && event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        event.preventDefault();
-        handleSellCombo();
-      }
-
-      // Tab navigation shortcuts (1-5)
-      const numKey = parseInt(event.key, 10);
-      if (numKey >= 1 && numKey <= TABS.length && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        event.preventDefault();
-        const targetTab = TABS[numKey - 1];
-        if (targetTab && (targetTab.id === 'dashboard' || targetTab.id === 'current' || targetTab.id === 'historic' || targetTab.id === 'orders' || targetTab.id === 'alerts')) {
-          setActiveTab(targetTab.id);
-        }
-      }
-
-      // Tab/Shift+Tab for cycling through tabs
-      if (event.key === 'Tab' && !event.ctrlKey && !event.metaKey) {
-        // Only prevent default if we're not in a form element (already handled above)
-        if (!event.shiftKey) {
-          // Tab: move to next tab
-          event.preventDefault();
-          const currentIndex = TABS.findIndex(tab => tab.id === activeTab);
-          const nextIndex = (currentIndex + 1) % TABS.length;
-          const nextTab = TABS[nextIndex];
-          if (nextTab && (nextTab.id === 'dashboard' || nextTab.id === 'current' || nextTab.id === 'historic' || nextTab.id === 'orders' || nextTab.id === 'alerts')) {
-            setActiveTab(nextTab.id);
-          }
-        } else {
-          // Shift+Tab: move to previous tab
-          event.preventDefault();
-          const currentIndex = TABS.findIndex(tab => tab.id === activeTab);
-          const prevIndex = (currentIndex - 1 + TABS.length) % TABS.length;
-          const prevTab = TABS[prevIndex];
-          if (prevTab && (prevTab.id === 'dashboard' || prevTab.id === 'current' || prevTab.id === 'historic' || prevTab.id === 'orders' || prevTab.id === 'alerts')) {
-            setActiveTab(prevTab.id);
-          }
-        }
-      }
-
-      // Cancel orders (Ctrl+K to avoid conflict with help shortcut)
-      if (event.key.toLowerCase() === 'k' && event.ctrlKey && !event.metaKey && !event.altKey) {
-        event.preventDefault();
-        // Cancel the most recent active order if available
-        if (snapshot?.orders && snapshot.orders.length > 0) {
-          // Filter orders by checking text content for active status indicators
-          const activeOrders = snapshot.orders.filter(order =>
-            order.text.toLowerCase().includes('submitted') ||
-            order.text.toLowerCase().includes('pending') ||
-            order.text.toLowerCase().includes('active')
-          );
-          if (activeOrders.length > 0) {
-            const mostRecentOrder = activeOrders[activeOrders.length - 1];
-            // Extract order ID from order text (heuristic)
-            const orderIdMatch = mostRecentOrder.text.match(/order[_\s]*#?(\d+)/i) ||
-                                 mostRecentOrder.text.match(/id[:\s]+(\d+)/i);
-            if (orderIdMatch) {
-              handleCancelOrder(orderIdMatch[1]).catch(err => {
-                console.error('Failed to cancel order:', err);
-              });
-            }
-          }
-        }
-      }
-
-      // Escape to close modal
-      if (event.key === 'Escape' && modal) {
-        event.preventDefault();
-        setModal(null);
-      }
-
-      // Keyboard shortcuts help (K or ?)
-      if ((event.key.toLowerCase() === 'k' || event.key === '?') && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        event.preventDefault();
-        setModal({
-          type: 'action',
-          payload: {
-            title: 'Keyboard Shortcuts',
-            message: `Keyboard Shortcuts:
-• S - Start strategy (when stopped)
-• T - Stop strategy (when running)
-• D - Toggle dry-run mode
-• B - Buy combo
-• Shift+S - Sell combo
-• 1-5 - Switch tabs (Dashboard, Positions, Historic, Orders, Alerts)
-• Tab/Shift+Tab - Cycle through tabs
-• Ctrl+K - Cancel most recent active order
-• Escape - Close modal
-• K or ? - Show this help`
-          }
-        });
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [handleBuyCombo, handleSellCombo, handleStrategyStart, handleStrategyStop, handleDryRunToggle, handleCancelOrder, modal, snapshot, activeTab]);
-
-  const handleModeChange = useCallback(async (mode: 'PAPER' | 'LIVE') => {
-    try {
-      // Get API URL from environment or use default
-      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
-      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
-
-      // Send mode change request to backend
-      const response = await fetch(`${baseUrl}/api/mode`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Mode changed to:', data.mode);
-        // The snapshot will update on next poll with the new mode
-      } else {
-        console.error('Failed to change mode:', response.statusText);
-      }
-    } catch (error) {
-      console.error('Error changing mode:', error);
-      // If API call fails, still allow UI change (for development/offline)
-    }
-  }, []);
-
-  const handleAccountChange = useCallback(async (accountId: string | null) => {
-    try {
-      // Get API URL from environment or use default
-      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
-      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
-
-      // Send account change request to backend
-      const response = await fetch(`${baseUrl}/api/account`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ account_id: accountId })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Account changed to:', data.account_id);
-        // The snapshot will update on next poll with the new account
-      } else {
-        console.error('Failed to change account:', response.statusText);
-      }
-    } catch (error) {
-      console.error('Error changing account:', error);
-    }
-  }, []);
-
-  // Get API base URL for account selector and bank accounts
+  // Get API base URL for account selector
   const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
   const apiBaseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
-  const { accounts: bankAccounts } = useBankAccounts(apiBaseUrl);
 
   // Chart data for symbol modal
   const chartSymbol = modal?.type === 'symbol' ? modal.payload.symbol : '';
@@ -551,20 +379,16 @@ function App() {
     apiBaseUrl
   });
 
-  console.log('App render - snapshotLoading:', snapshotLoading, 'snapshotError:', snapshotError, 'hasSnapshot:', !!snapshot);
-
   return (
-    <div className={`app-shell ${snapshot?.mode === 'LIVE' || snapshot?.mode === 'LIVE_TRADING' ? 'app-shell--live' : ''}`} style={{ minHeight: '100vh', background: '#020617', color: '#e2e8f0', padding: '24px' }}>
+    <div className={`app-shell ${snapshot?.mode === 'LIVE' || snapshot?.mode === 'LIVE_TRADING' ? 'app-shell--live' : ''}`}>
       <HeaderStatus
         snapshot={snapshot}
         onModeChange={handleModeChange}
         onAccountChange={handleAccountChange}
-        onBrokerChange={setCurrentBroker}
         onStrategyStart={handleStrategyStart}
         onStrategyStop={handleStrategyStop}
         onDryRunToggle={handleDryRunToggle}
         apiBaseUrl={apiBaseUrl}
-        currentBroker={currentBroker}
       />
 
       <div className="scenario-section">
@@ -582,25 +406,10 @@ function App() {
         )}
       </div>
 
-      <TabNavigation
-        tabs={TABS}
-        activeTab={activeTab}
-        onSelect={(id: string) => {
-          if (id === 'dashboard' || id === 'unified' || id === 'cashflow' || id === 'simulation' || id === 'relationships' || id === 'current' || id === 'historic' || id === 'orders' || id === 'alerts') {
-            setActiveTab(id as TabId);
-          }
-        }}
-      />
+      <TabNavigation tabs={TABS} activeTab={activeTab} onSelect={setActiveTab} />
 
       <main className="app-main">
-        {snapshotLoading && (
-          <div className="panel panel--fill" style={{ padding: '40px', textAlign: 'center' }}>
-            <div>Loading live snapshot…</div>
-            <div style={{ marginTop: '16px', fontSize: '14px', color: '#9ca3af' }}>
-              Connecting to backend service...
-            </div>
-          </div>
-        )}
+        {snapshotLoading && <div className="panel panel--fill">Loading live snapshot…</div>}
         {!snapshotLoading && snapshotError && (
           <div className="panel panel--fill app-status app-status--error">
             <div style={{ padding: '20px' }}>
@@ -613,13 +422,12 @@ function App() {
                   <li>Verify the API endpoint URL is correct</li>
                   <li>Check browser console for CORS errors</li>
                   <li>If using a local backend, ensure it's listening on the expected port</li>
-                  <li>Try using fallback data: <code>/data/snapshot.json</code></li>
                 </ul>
               </details>
             </div>
           </div>
         )}
-        {!snapshotLoading && !snapshotError && (
+        {!snapshotLoading && !snapshotError &&
           renderTabContent(
             activeTab,
             snapshot,
@@ -630,16 +438,7 @@ function App() {
             removeSymbol,
             isDefault,
             handleCancelOrder,
-            apiBaseUrl,
-            bankAccounts
-          ) || (
-            <div className="panel panel--fill" style={{ padding: '40px', textAlign: 'center' }}>
-              <div>No data available</div>
-              <div style={{ marginTop: '16px', fontSize: '14px', color: '#9ca3af' }}>
-                Waiting for snapshot data...
-              </div>
-            </div>
-          )
+            apiBaseUrl
           )}
       </main>
 

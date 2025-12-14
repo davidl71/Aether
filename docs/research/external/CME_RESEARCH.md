@@ -52,7 +52,6 @@ This memo consolidates references, whitepapers, and integration portals relevant
 **Status**: Ready for creation
 **Sources**: 4 external URLs listed above
 **Synthesis Queries**:
-
 - "Compare box spreads vs AIR TRFs vs futures financing for capital efficiency"
 - "What are the key differences in counterparty risk between box spreads and other financing methods?"
 - "Summarize the integration requirements for CME market data feeds"

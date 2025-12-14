@@ -7,53 +7,7 @@ enhance Cursor AI capabilities.
 
 ### ✅ Currently Active
 
-### 1. exarp (Project Management Automation)
-
-**Purpose**: Project management automation tools for documentation health, task alignment, duplicate detection, security scanning, and automation opportunities
-
-**Status**: ✅ Configured and Active
-
-**Installation**: Installed as Python package (separate repository)
-
-**Configuration**: `.cursor/mcp.json`
-
-```json
-{
-  "exarp": {
-    "command": "python3",
-    "args": [
-      "-m",
-      "project_management_automation.server"
-    ],
-    "description": "Exarp - Project management automation tools (Enochian: Spirit of Air - Communication) - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
-  }
-}
-```
-
-**Repository**: [project-management-automation](https://github.com/davidl71/project-management-automation)
-
-**Benefits**:
-
-- Documentation health checks with Todo2 integration
-- Todo2 task alignment analysis with project goals
-- Duplicate task detection and consolidation
-- Multi-language dependency security scanning (Python, Rust, npm)
-- Automation opportunity discovery
-- PWA configuration review
-- Task synchronization between systems
-- Project-specific analysis (not generic operations)
-
-**Usage**: The AI assistant will automatically use automa tools when you ask for:
-
-- Documentation health checks
-- Task alignment analysis
-- Duplicate task detection
-- Security scanning
-- Automation opportunities
-
-**See Also**: `.cursor/rules/project-automation.mdc` for detailed usage guide
-
-### 2. Semgrep Security Scanner
+### 1. Semgrep Security Scanner
 
 **Purpose**: Automated security vulnerability scanning and code quality analysis
 
@@ -296,7 +250,7 @@ MCP. Never execute live trading commands.
 
 ## Additional Interactive MCP Tools (Optional)
 
-For more interactive tools like GitHub integration and database queries, see [MCP_INTERACTIVE_TOOLS.md](../../MCP_INTERACTIVE_TOOLS.md).
+For more interactive tools like GitHub integration and database queries, see [MCP_INTERACTIVE_TOOLS.md](MCP_INTERACTIVE_TOOLS.md).
 
 ---
 
@@ -323,7 +277,7 @@ diagnostics, type information, and code navigation to AI assistants.
 
 **Troubleshooting**:
 
-- If you see permission errors, see [MCP_TROUBLESHOOTING.md](../../MCP_TROUBLESHOOTING.md) for permission fixes
+- If you see permission errors, see [MCP_TROUBLESHOOTING.md](MCP_TROUBLESHOOTING.md) for permission fixes
 - Extension must be installed and enabled
 - Restart Cursor after installation
 
@@ -380,9 +334,7 @@ diagnostics, type information, and code navigation to AI assistants.
 
 **Purpose**: Provide terminal context to Cursor agents by integrating with iTerm2
 
-**Status**: ✅ Configured (macOS only)
-
-**⚠️ Platform Requirement**: This server is **macOS only**. On Linux/Windows, the `iterm2` server entry should be removed from `.cursor/mcp.json`.
+**Status**: ✅ Configured
 
 **Configuration**: `.cursor/mcp.json`
 
@@ -445,21 +397,7 @@ When using iTerm2's AI Chat feature, you can grant permissions for:
 
 **Purpose**: Logical concept analysis and structured thinking for breaking down complex problems
 
-**Status**: ✅ Configured and Active
-
-**Configuration**: `.cursor/mcp.json`
-
-```json
-{
-  "tractatus_thinking": {
-    "command": "npx",
-    "args": ["-y", "tractatus_thinking"],
-    "description": "Tractatus Thinking MCP server for logical concept analysis and structured thinking - breaks down complex concepts into atomic truths, reveals multiplicative relationships, and finds missing elements"
-  }
-}
-```
-
-**⚠️ Important**: Package name is `tractatus_thinking` (with underscore), not `tractatus-thinking` (with hyphen).
+**Status**: ✅ Cursor Rules Available (see `.cursor/rules/tractatus-thinking.mdc`)
 
 **Benefits**:
 
@@ -514,21 +452,19 @@ Solution: Fix API connection, now all factors align
 
 **Purpose**: Structured problem-solving and implementation workflow
 
-**Status**: ✅ Configured and Active
+**Status**: ✅ Configured
 
 **Configuration**: `.cursor/mcp.json`
 
 ```json
 {
   "sequential_thinking": {
-    "command": "npx",
-    "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
-    "description": "Sequential Thinking MCP server for structured problem-solving and implementation workflow - converts structural understanding from Tractatus Thinking into actionable implementation steps"
+    "command": "python3",
+    "args": ["-m", "sequential_thinking"],
+    "description": "Sequential Thinking MCP server for structured problem-solving and implementation workflow"
   }
 }
 ```
-
-**⚠️ Important**: This is an npm package, not a Python module. Use `npx` with `@modelcontextprotocol/server-sequential-thinking`.
 
 **Benefits**:
 
@@ -572,16 +508,17 @@ Step 3 (Tractatus): "Verify implementation structure"
 
 **Installation**:
 
-The Sequential Thinking MCP server is an npm package. Installation is automatic via `npx`:
+The Sequential Thinking MCP server requires Python 3.10+ and the `sequential-thinking-mcp` package. Since macOS uses externally-managed Python environments, use `pipx` (recommended for Python applications):
 
 ```bash
+# Install pipx if not already installed
+brew install pipx
 
-# Test installation
-
-npx -y @modelcontextprotocol/server-sequential-thinking --version
+# Install Sequential Thinking MCP server
+pipx install sequential-thinking-mcp
 ```
 
-**Note**: No manual installation required. `npx` automatically downloads and runs the package.
+**Note**: The configuration uses the `sequential-thinking-mcp` executable installed by pipx, which runs the server in an isolated virtual environment.
 
 **Integration**:
 
@@ -647,13 +584,10 @@ The MCP servers are configured in `.cursor/mcp.json`. Cursor will automatically:
 If automatic setup doesn't work, you can manually install:
 
 ```bash
-
 # Install Semgrep MCP server globally (optional)
-
 npm install -g @semgrep/mcp-server-semgrep
 
 # Or use npx (recommended - no global install needed)
-
 npx -y @semgrep/mcp-server-semgrep
 ```
 
@@ -739,14 +673,13 @@ If you add database support:
 - **Git**: Only has access to the configured repository
 - **NotebookLM**: Uses browser automation with local Chrome profile. Credentials never leave your
   machine. Consider using a dedicated Google account for automation.
-
 - **Never commit**: API keys, tokens, or credentials in MCP configuration
 
 ## See Also
 
 - [Cursor Setup Guide](CURSOR_SETUP.md) - General Cursor IDE configuration
 - [NotebookLM Usage Guide](NOTEBOOKLM_USAGE.md) - How to use NotebookLM for summarizing videos and documentation
-- [.cursorrules](../../../.cursorrules) - AI assistant guidelines mentioning Semgrep
+- [.cursorrules](../.cursorrules) - AI assistant guidelines mentioning Semgrep
 - [MCP Documentation](https://modelcontextprotocol.io/) - Official MCP documentation
 - [NotebookLM MCP Repository](https://github.com/PleasePrompto/notebooklm-mcp) - Source code
   and detailed documentation

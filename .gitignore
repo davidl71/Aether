@@ -176,6 +176,7 @@ AGENTS.md
 
 
 #Ignore cursor AI rules
+.cursor/rules/codacy.mdc
 # .todo2/ directory - ignore everything except state.todo2.json (tracked via Git LFS)
 .todo2/*
 !.todo2/state.todo2.json

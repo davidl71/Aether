@@ -280,11 +280,6 @@ export class SnapshotClient {
         headers: { 'cache-control': 'no-cache' }
       });
       if (!response.ok) {
-        // If API endpoint fails and we're not already using the fallback, try fallback
-        if (this.endpoint !== DEFAULT_ENDPOINT && (response.status === 404 || response.status === 0)) {
-          console.log(`API endpoint ${this.endpoint} unavailable, falling back to ${DEFAULT_ENDPOINT}`);
-          return this.fetchFallback();
-        }
         const errorMessage = response.status === 404
           ? `Snapshot endpoint not found: ${this.endpoint}. Make sure the backend service is running.`
           : response.status === 0
@@ -297,12 +292,6 @@ export class SnapshotClient {
         listener(payload);
       });
     } catch (error) {
-      // If API endpoint fails and we're not already using the fallback, try fallback
-      if (this.endpoint !== DEFAULT_ENDPOINT && error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        console.log(`API endpoint ${this.endpoint} unavailable, falling back to ${DEFAULT_ENDPOINT}`);
-        return this.fetchFallback();
-      }
-
       let err: Error;
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         // Network error - provide helpful message
@@ -317,31 +306,6 @@ export class SnapshotClient {
         err = new Error('Unknown snapshot error');
       }
 
-      this.listeners.forEach((onError) => {
-        if (onError) {
-          onError(err);
-        }
-      });
-    }
-  }
-
-  private async fetchFallback() {
-    try {
-      const response = await fetch(DEFAULT_ENDPOINT, {
-        headers: { 'cache-control': 'no-cache' }
-      });
-      if (!response.ok) {
-        throw new Error(`Fallback endpoint ${DEFAULT_ENDPOINT} also failed with status ${response.status}`);
-      }
-      const payload = (await response.json()) as SnapshotPayload;
-      console.log('Using fallback snapshot data from', DEFAULT_ENDPOINT);
-      this.listeners.forEach((onError, listener) => {
-        listener(payload);
-      });
-    } catch (error) {
-      const err = error instanceof Error
-        ? error
-        : new Error('Failed to fetch fallback snapshot data');
       this.listeners.forEach((onError) => {
         if (onError) {
           onError(err);

@@ -438,14 +438,6 @@
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "jupyter.interactiveWindow.creationMode": "perFile",
-  "cursorpyright.analysis.autoImportCompletions": true,
-  "cursorpyright.analysis.diagnosticMode": "workspace",
-  "cursorpyright.analysis.extraPaths": [
-    "${workspaceFolder}/python",
-    "${workspaceFolder}/python/bindings",
-    "${workspaceFolder}/python/integration"
-  ],
-  "cursorpyright.analysis.typeCheckingMode": "basic",
 
   // ==========================================
   // Personal Preferences - Move to User Settings
