@@ -36,7 +36,7 @@ add_executable(box_spread_tests ${TEST_SOURCES})
 # provided via cache entries.
 if(NOT TWS_API_INCLUDE_DIR)
     set(TWS_API_INCLUDE_DIR
-        "${CMAKE_SOURCE_DIR}/native/third_party/tws-api/IBJts/source/cppclient/client"
+        "${CMAKE_SOURCE_DIR}/third_party/tws-api/IBJts/source/cppclient/client"
     )
 endif()
 
@@ -48,7 +48,7 @@ endif()
 
 if(NOT INTEL_DECIMAL_LIB)
     set(INTEL_DECIMAL_LIB
-        "${CMAKE_SOURCE_DIR}/native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a"
+        "${CMAKE_SOURCE_DIR}/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a"
     )
 endif()
 
@@ -57,7 +57,7 @@ if(NOT ABSEIL_LIBS)
 endif()
 
 target_include_directories(box_spread_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/native/include
+    ${CMAKE_SOURCE_DIR}/include
     ${TWS_API_INCLUDE_DIR}
 )
 
@@ -96,23 +96,24 @@ endif()
 
 # Link with the same object files as the main executable
 # (This avoids code duplication)
+# Note: CMAKE_SOURCE_DIR in tests subdirectory points to native/, so use relative paths
 target_sources(box_spread_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/native/src/config_manager.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/path_validator.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/tws_client.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/rate_limiter.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/hedge_manager.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/strategies/box_spread/box_spread_bag.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/convexity_calculator.cpp
+    ${CMAKE_SOURCE_DIR}/src/config_manager.cpp
+    ${CMAKE_SOURCE_DIR}/src/path_validator.cpp
+    ${CMAKE_SOURCE_DIR}/src/tws_client.cpp
+    ${CMAKE_SOURCE_DIR}/src/rate_limiter.cpp
+    ${CMAKE_SOURCE_DIR}/src/hedge_manager.cpp
+    ${CMAKE_SOURCE_DIR}/src/strategies/box_spread/box_spread_bag.cpp
+    ${CMAKE_SOURCE_DIR}/src/convexity_calculator.cpp
 )
 
 # Conditionally include local source files only if NOT using extracted library
 if(NOT USE_BOX_SPREAD_CPP_LIB)
     target_sources(box_spread_tests PRIVATE
-        ${CMAKE_SOURCE_DIR}/native/src/option_chain.cpp
-        ${CMAKE_SOURCE_DIR}/native/src/strategies/box_spread/box_spread_strategy.cpp
-        ${CMAKE_SOURCE_DIR}/native/src/order_manager.cpp
-        ${CMAKE_SOURCE_DIR}/native/src/risk_calculator.cpp
+        ${CMAKE_SOURCE_DIR}/src/option_chain.cpp
+        ${CMAKE_SOURCE_DIR}/src/strategies/box_spread/box_spread_strategy.cpp
+        ${CMAKE_SOURCE_DIR}/src/order_manager.cpp
+        ${CMAKE_SOURCE_DIR}/src/risk_calculator.cpp
     )
 endif()
 

@@ -247,15 +247,25 @@ fetchcontent_declare(
 # Find Boost (required for QuantLib)
 # Set Boost root if installed via Homebrew
 set(BOOST_FOUND_DIRECTLY FALSE)
-if(APPLE AND EXISTS "/usr/local/Cellar/boost")
-    # Find the actual Boost version directory
-    file(GLOB BOOST_CELLAR_DIRS "/usr/local/Cellar/boost/*")
-    if(BOOST_CELLAR_DIRS)
-        list(GET BOOST_CELLAR_DIRS 0 BOOST_CELLAR_DIR)
-        set(Boost_ROOT "${BOOST_CELLAR_DIR}")
-        set(BOOST_LIB_DIR "${BOOST_CELLAR_DIR}/lib")
-        set(BOOST_INCLUDE_DIR "${BOOST_CELLAR_DIR}/include")
-        message(STATUS "Found Boost in Homebrew Cellar: ${BOOST_CELLAR_DIR}")
+# Check both Intel (/usr/local) and Apple Silicon (/opt/homebrew) Homebrew paths
+set(BOOST_CELLAR_PATHS "/opt/homebrew/Cellar/boost" "/usr/local/Cellar/boost")
+set(BOOST_CELLAR_DIR "")
+foreach(BOOST_CELLAR_PATH ${BOOST_CELLAR_PATHS})
+    if(EXISTS "${BOOST_CELLAR_PATH}")
+        # Find the actual Boost version directory
+        file(GLOB BOOST_CELLAR_DIRS "${BOOST_CELLAR_PATH}/*")
+        if(BOOST_CELLAR_DIRS)
+            list(GET BOOST_CELLAR_DIRS 0 BOOST_CELLAR_DIR)
+            break()
+        endif()
+    endif()
+endforeach()
+
+if(BOOST_CELLAR_DIR)
+    set(Boost_ROOT "${BOOST_CELLAR_DIR}")
+    set(BOOST_LIB_DIR "${BOOST_CELLAR_DIR}/lib")
+    set(BOOST_INCLUDE_DIR "${BOOST_CELLAR_DIR}/include")
+    message(STATUS "Found Boost in Homebrew Cellar: ${BOOST_CELLAR_DIR}")
 
         # Try to find libraries directly (check both .dylib and .a)
         find_library(BOOST_DATE_TIME_LIB
@@ -306,7 +316,6 @@ if(APPLE AND EXISTS "/usr/local/Cellar/boost")
             set(Boost_FOUND TRUE)
             message(STATUS "Found Boost libraries directly")
         endif()
-    endif()
 endif()
 
 # Try find_package if direct finding didn't work
@@ -323,7 +332,7 @@ set(QUANTLIB_REPOSITORY "https://github.com/lballabio/quantlib.git")
 fetchcontent_declare(
     QuantLib
     GIT_REPOSITORY ${QUANTLIB_REPOSITORY}
-    GIT_TAG QuantLib-v1.32
+    GIT_TAG v1.36
     GIT_SHALLOW TRUE
 )
 
@@ -332,7 +341,7 @@ set(NLOPT_REPOSITORY "https://github.com/stevengj/nlopt.git")
 fetchcontent_declare(
     NLopt
     GIT_REPOSITORY ${NLOPT_REPOSITORY}
-    GIT_TAG v2.7.1
+    GIT_TAG v2.9.1
     GIT_SHALLOW TRUE
 )
 set(NLOPT_LICENSE_MIT ON CACHE BOOL "Use MIT license instead of LGPL")
@@ -929,10 +938,21 @@ endif()
 # ====================================================================================
 # Testing
 # ============================================================================
-if(BUILD_TESTING AND _build_native_cli)
+# Allow tests to be built even if native CLI is disabled, as tests may not require
+# all the same dependencies (tests can use mock/stub implementations)
+if(BUILD_TESTING)
+    # Check if TWS API and Intel decimal libraries exist for tests
+    # Tests can work with fallback paths defined in tests/CMakeLists.txt
+    set(_can_build_tests ON)
+
+    # Warn if dependencies are missing, but still try to build tests
+    # (tests/CMakeLists.txt has fallback logic)
+    if(NOT _native_prereqs_met)
+        message(WARNING "Native CLI dependencies missing, but attempting to build tests anyway.")
+        message(WARNING "Tests may fail if TWS API or Intel decimal libraries are not available.")
+    endif()
+
     add_subdirectory(tests)
-elseif(BUILD_TESTING AND NOT _build_native_cli)
-    message(STATUS "Skipping native C++ tests because the native CLI target is not being built.")
 endif()
 
 # ====================================================================================

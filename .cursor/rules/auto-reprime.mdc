@@ -1,0 +1,91 @@
+# Automatic Session Repriming on Project Root Change
+
+## Purpose
+
+Automatically reprime the AI session when the project root changes, ensuring the AI always has correct context for the current project.
+
+## When to Auto-Reprime
+
+**Detect project root change when:**
+- User changes directory to a different project (detected by different project markers)
+- Current working directory has different project markers than previous session
+- Project root detection would return a different path
+
+**Project markers checked:**
+- `.git` directory
+- `.todo2` directory
+- `CMakeLists.txt` file (C++/CMake projects)
+- `go.mod` file (Go projects)
+
+## Auto-Reprime Trigger
+
+**Trigger repriming when:**
+1. User explicitly changes directory (`cd` command)
+2. User opens a file from a different project root
+3. User mentions switching projects or working directories
+4. Session starts and project root differs from last known root
+
+## Repriming Process
+
+When project root change is detected:
+
+1. **Call Exarp auto-primer:**
+   ```
+   "ask exarp to prime my session"
+   ```
+   Or use the auto_prime tool:
+   ```
+   auto_prime_session() from exarp_pma
+   ```
+
+2. **Get project context:**
+   - Read `openmemory.md` from new project root
+   - Check project health/scorecard
+   - Load recent memories for new project
+   - Update session context with new project information
+
+3. **Verify project root:**
+   - Confirm Exarp detected the correct project root
+   - Display detected project root to user
+   - If incorrect, help fix project root detection
+
+## Implementation
+
+**AI Assistant Behavior:**
+
+When you detect a project root change:
+1. **Acknowledge the change:**
+   "I notice we've switched to a different project. Let me reprime the session with the new project context."
+
+2. **Call Exarp auto-primer:**
+   - Use `auto_prime_session()` tool from exarp_pma
+   - Or request: "ask exarp to prime my session"
+
+3. **Verify and confirm:**
+   - Display detected project root
+   - Confirm it matches user's expectation
+   - Load project-specific context
+
+## Example Workflow
+
+```
+User: cd @ib_box_spread_full_universal
+AI: [Detects project root change]
+AI: "I notice we've switched to ib_box_spread_full_universal. Let me reprime the session..."
+AI: [Calls auto_prime_session()]
+AI: "Session reprimed. Project root: /Users/davidl/Projects/Trading/ib_box_spread_full_universal"
+```
+
+## Integration with Exarp
+
+This rule works with:
+- **Exarp auto-primer tool**: `auto_prime_session()`
+- **Exarp context primer resource**: `automation://context-primer`
+- **Exarp project root detection**: Now supports `.git`, `.todo2`, `CMakeLists.txt`, `go.mod`
+
+## Notes
+
+- Don't reprime unnecessarily (only on actual project root change)
+- Store last known project root to detect changes
+- If project root detection fails, help user debug
+- Always confirm the detected project root with user

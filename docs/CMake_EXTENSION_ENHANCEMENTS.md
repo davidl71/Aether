@@ -25,17 +25,6 @@ The official Microsoft CMake Tools extension provides:
 - Test explorer integration
 - Status bar quick actions
 
-### 2. CMake Language Support (`twxs.cmake`)
-
-**Status**: ✅ Newly added
-
-Enhanced CMake language support with:
-
-- Syntax highlighting for `CMakeLists.txt` and `.cmake` files
-- IntelliSense and code completion
-- Formatting support
-- Better error detection
-
 ---
 
 ## Enhanced Configuration
@@ -201,15 +190,6 @@ ctest --preset macos-x86_64-debug --output-on-failure
    - Or: Status bar → "Debug"
    - Or: `Cmd+Shift+P` → "CMake: Debug"
 
-### CMake Script Editing
-
-With `twxs.cmake` extension:
-
-- **Syntax highlighting** for CMakeLists.txt
-- **IntelliSense** for CMake commands
-- **Format on save** (configured)
-- **Error detection** for invalid CMake syntax
-
 ---
 
 ## Keyboard Shortcuts
@@ -334,24 +314,6 @@ Override debug settings in `.vscode/launch.json`:
 }
 ```
 
-### CMake Script Formatting
-
-CMake files are automatically formatted on save with:
-
-- 2-space indentation
-- Consistent spacing
-- Proper line breaks
-
-Configure in `.vscode/settings.json`:
-
-```json
-"[cmake]": {
-  "editor.defaultFormatter": "twxs.cmake",
-  "editor.formatOnSave": true,
-  "editor.tabSize": 2
-}
-```
-
 ---
 
 ## Best Practices
@@ -369,7 +331,6 @@ Configure in `.vscode/settings.json`:
 
 - [CMake Presets Documentation](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html)
 - [CMake Tools Extension Docs](https://github.com/microsoft/vscode-cmake-tools)
-- [CMake Language Support](https://marketplace.visualstudio.com/items?itemName=twxs.cmake)
 - [Project CMakePresets.json](../CMakePresets.json)
 - [Cursor Setup Guide](research/integration/CURSOR_SETUP.md)
 

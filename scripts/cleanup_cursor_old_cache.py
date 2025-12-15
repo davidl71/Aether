@@ -3,7 +3,7 @@
 Clean up old Cursor project cache directories for ib_box_spread_full_universal.
 
 Removes cache directories for old paths while keeping the active workspace at:
-/Volumes/SSD1_APFS/ib_box_spread_full_universal
+/Users/davidl/Projects/Trading/ib_box_spread_full_universal
 """
 
 import os

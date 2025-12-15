@@ -454,9 +454,22 @@ When enabled, the strategy validates the session during startup and logs account
 
 ### Run All Tests
 
+**Python Tests:**
+```bash
+# Run all Python tests
+./scripts/run_python_tests.sh
+
+# Run with coverage
+./scripts/run_python_tests.sh --coverage
+
+# Run with HTML coverage report
+./scripts/run_python_tests.sh --html
+```
+
+**C++ Tests:**
 ```bash
 # Run test suite
-cd build
+cd native/build
 ctest --output-on-failure
 
 # Or use the build script
@@ -465,8 +478,18 @@ ctest --output-on-failure
 
 ### Run Specific Test Categories
 
+**Python:**
 ```bash
-cd build/bin
+# Run specific test file
+pytest python/tests/test_security.py
+
+# Run with coverage for specific module
+pytest python/tests/test_security.py --cov=python/services/security --cov-report=term
+```
+
+**C++:**
+```bash
+cd native/build
 ./box_spread_tests "[config]"  # Only config tests
 ./box_spread_tests "[strategy]"  # Only strategy tests
 ./box_spread_tests "[risk]"  # Only risk tests
@@ -474,13 +497,36 @@ cd build/bin
 
 ### Test Coverage
 
+**Coverage Target**: 30%+ overall coverage
+
+**Generate Coverage Reports:**
+```bash
+# Generate Python coverage
+./scripts/generate_python_coverage.sh --html
+
+# Generate C++ coverage (when libraries available)
+./scripts/generate_cpp_coverage.sh
+
+# Generate combined coverage
+./scripts/generate_coverage.sh --html
+```
+
+**Coverage Reports:**
+- **Python HTML**: `htmlcov/index.html`
+- **C++ HTML**: `native/build-coverage/coverage_html/index.html`
+
+**Documentation:**
+- See [Test Coverage Setup Guide](docs/TEST_COVERAGE_SETUP.md) for detailed coverage instructions
+- See [Coverage Gap Analysis](docs/COVERAGE_GAP_ANALYSIS.md) for prioritized test additions
+
 The test suite includes:
 
 - Configuration validation tests
 - Box spread strategy tests
 - Risk calculator tests
 - Order manager tests
-- Input validation tests
+- Security and path validation tests
+- Integration tests
 - Edge case handling
 
 ## Extracted Components

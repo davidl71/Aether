@@ -116,25 +116,13 @@ xdg-open htmlcov/index.html  # Linux
 
 ### Coverage Configuration
 
-Create `python/.coveragerc`:
+**File**: `.coveragerc` (root directory) - ✅ **Already Created**
 
-```ini
-[run]
-source = python
-omit =
-    */tests/*
-    */test_*.py
-    */__pycache__/*
-
-[report]
-exclude_lines =
-    pragma: no cover
-    def __repr__
-    raise AssertionError
-    raise NotImplementedError
-    if __name__ == .__main__.:
-    if TYPE_CHECKING:
-```
+The coverage configuration file is located at the project root and includes:
+- Source paths: `python/services`, `python/tui`, `python/integration`
+- Exclusions: Tests, `__pycache__`, bindings, setup files
+- Branch coverage: Enabled
+- Report precision: 2 decimal places
 
 ### Coverage Target: 30%
 
@@ -190,7 +178,7 @@ exclude_lines =
 cd native
 mkdir -p build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Debug
+cmake .. -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
 cmake --build .
 
 # Run all tests
@@ -206,7 +194,19 @@ ctest --output-on-failure
 
 ```bash
 
-# Run all tests
+# Run all tests (using test runner script)
+
+./scripts/run_python_tests.sh
+
+# Run with coverage
+
+./scripts/run_python_tests.sh --coverage
+
+# Run with HTML coverage report
+
+./scripts/run_python_tests.sh --html
+
+# Or use pytest directly
 
 pytest python/tests/ python/integration/
 
@@ -218,6 +218,66 @@ pytest python/tests/test_security.py
 
 python python/tests/run_security_tests.py
 ```
+
+---
+
+## Coverage Generation Scripts
+
+### Automated Coverage Generation
+
+We've created automated scripts to generate coverage reports:
+
+#### Python Coverage
+
+```bash
+# Generate Python coverage report
+./scripts/generate_python_coverage.sh
+
+# Generate with HTML report
+./scripts/generate_python_coverage.sh --html
+
+# Generate with XML report (for CI/CD)
+./scripts/generate_python_coverage.sh --xml
+
+# Generate all report formats
+./scripts/generate_python_coverage.sh --all
+```
+
+#### C++ Coverage
+
+```bash
+# Generate C++ coverage report
+./scripts/generate_cpp_coverage.sh
+
+# Rebuild with coverage enabled
+./scripts/generate_cpp_coverage.sh --rebuild
+```
+
+#### Combined Coverage
+
+```bash
+# Generate both C++ and Python coverage
+./scripts/generate_coverage.sh
+
+# Generate only Python coverage
+./scripts/generate_coverage.sh --python-only
+
+# Generate only C++ coverage
+./scripts/generate_coverage.sh --cpp-only
+
+# Generate with HTML reports
+./scripts/generate_coverage.sh --html
+```
+
+### Coverage Configuration
+
+**File**: `.coveragerc` (root directory)
+
+**Source paths**: `python/services`, `python/tui`, `python/integration`
+
+**Exclusions**: Tests, `__pycache__`, bindings, setup files
+
+**Branch coverage**: Enabled
 
 ---
 
@@ -243,15 +303,81 @@ python python/tests/run_security_tests.py
 
 ---
 
-## Next Steps
+## Coverage Interpretation
 
-1. ✅ **COMPLETE**: Test infrastructure setup
-2. ✅ **COMPLETE**: Added path_validator tests
-3. 🔄 **IN PROGRESS**: Run tests to identify failures
-4. 🔄 **PENDING**: Measure coverage baseline
-5. 🔄 **PENDING**: Add tests to reach 30% coverage
+### Understanding Coverage Reports
+
+**Line Coverage**: Percentage of executable lines that were executed during tests.
+
+**Branch Coverage**: Percentage of decision branches (if/else, loops, etc.) that were taken.
+
+**Target Metrics**:
+- **Overall Coverage**: 30%+ (project goal)
+- **Critical Paths**: 50%+ (core trading logic, security, order management)
+- **Security Module**: 30%+ (minimum requirement)
+
+### Coverage Report Locations
+
+- **Python HTML Report**: `htmlcov/index.html`
+- **C++ HTML Report**: `native/build-coverage/coverage_html/index.html`
+- **Python XML Report**: `coverage.xml` (for CI/CD integration)
+- **C++ Coverage Data**: `native/build-coverage/coverage_filtered.info`
+
+### Troubleshooting Coverage Issues
+
+#### Low Coverage on Specific Files
+
+1. **Check if file is excluded**: Review `.coveragerc` omit patterns
+2. **Verify source paths**: Ensure file is in included source directories
+3. **Check for test files**: Ensure corresponding test files exist
+4. **Review uncovered lines**: Focus on critical business logic first
+
+#### Coverage Not Generating
+
+1. **Verify tools installed**: `pytest-cov` for Python, `lcov` for C++
+2. **Check build flags**: C++ needs `--coverage` flags in CMake
+3. **Verify test execution**: Tests must run to generate coverage data
+4. **Check file paths**: Ensure coverage tools can find source files
+
+#### Coverage Reports Not Updating
+
+1. **Clear old reports**: Delete `htmlcov/` and rebuild
+2. **Rebuild with coverage**: Use `--rebuild` flag for C++
+3. **Verify test execution**: Ensure tests actually ran
+4. **Check coverage data**: Verify `.coverage` (Python) or `coverage.info` (C++) exists
 
 ---
 
-**Last Updated**: 2025-11-29
-**Status**: Test infrastructure ready, coverage measurement setup complete
+## Next Steps
+
+1. ✅ **COMPLETE**: Test infrastructure setup
+2. ✅ **COMPLETE**: Coverage configuration and automation scripts
+3. ✅ **COMPLETE**: Test runner scripts created
+4. 🔄 **IN PROGRESS**: Run tests to identify failures
+5. 🔄 **PENDING**: Measure coverage baseline
+6. 🔄 **PENDING**: Add tests to reach 30% coverage
+
+---
+
+## Quick Reference
+
+### Common Commands
+
+```bash
+# Run Python tests with coverage
+./scripts/run_python_tests.sh --coverage
+
+# Generate all coverage reports
+./scripts/generate_coverage.sh --html
+
+# View Python coverage report
+open htmlcov/index.html
+
+# View C++ coverage report
+open native/build-coverage/coverage_html/index.html
+```
+
+---
+
+**Last Updated**: 2025-12-11
+**Status**: ✅ Coverage automation complete, ready for baseline measurement

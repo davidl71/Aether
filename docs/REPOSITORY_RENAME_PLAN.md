@@ -109,25 +109,53 @@ Update all documentation files to use new repository name in URLs:
 - `github.com/davidl71/ib_box_spread_full_universal` → `github.com/davidl71/synthetic-financing-platform`
 - Note: Links won't work until actual GitHub rename is complete
 
-### Step 2: GitHub Repository Rename (Manual - Requires Coordination)
+### Step 2: GitHub Repository Rename (Automated with `gh` CLI)
+
+**Option A: Automated Script (Recommended)**
+
+```bash
+# Dry run to see what would happen
+./scripts/rename_repository.sh --dry-run
+
+# Execute rename (with confirmation)
+./scripts/rename_repository.sh
+
+# Execute rename (skip confirmation)
+./scripts/rename_repository.sh --yes
+```
+
+The script will:
+1. ✅ Rename the repository on GitHub using `gh repo rename`
+2. ✅ Update local git remote URL automatically
+3. ✅ Verify the remote URL update
+
+**Option B: Manual GitHub CLI**
+
+```bash
+# Rename repository on GitHub
+gh repo rename synthetic-financing-platform
+
+# Update local git remote
+git remote set-url origin git@github.com:davidl71/synthetic-financing-platform.git
+
+# Verify update
+git remote -v
+```
+
+**Option C: Manual via GitHub Web UI**
 
 1. Go to GitHub repository settings: https://github.com/davidl71/ib_box_spread_full_universal/settings
 2. Navigate to "Repository name" section
 3. Rename to: `synthetic-financing-platform`
 4. Confirm rename
+5. Then update local remote: `git remote set-url origin git@github.com:davidl71/synthetic-financing-platform.git`
 
 **⚠️ Important:**
 
 - GitHub will automatically redirect old URLs
 - All clones will need to update remote URL
 - Notify any collaborators before rename
-
-### Step 3: Update Local Git Remote (After GitHub Rename)
-
-```bash
-git remote set-url origin git@github.com:davidl71/synthetic-financing-platform.git
-git remote -v  # Verify update
-```
+- Script requires GitHub CLI (`gh`) to be installed and authenticated
 
 ### Step 4: Update Homebrew Tap (After GitHub Rename)
 

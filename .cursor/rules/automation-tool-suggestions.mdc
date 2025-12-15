@@ -5,6 +5,17 @@ description: Context-aware suggestions for project automation tools based on pro
 
 # Automation Tool Suggestions
 
+## 🚨 CRITICAL: Working Directory Parameter
+
+**ALL exarp_pma tool calls MUST include:**
+```python
+workingDirectory="/Users/davidl/Projects/Trading/ib_box_spread_full_universal"
+```
+
+This ensures tools operate on the correct project context. See `.cursor/rules/project-automation.mdc` for details.
+
+---
+
 ## Purpose
 
 This rule provides context-aware suggestions for project automation tools. **Note:** Most checks now run automatically via Exarp (git hooks, file watchers, cron jobs). Suggestions are for AI awareness and manual override when needed.
@@ -25,6 +36,8 @@ This rule provides context-aware suggestions for project automation tools. **Not
 "Validate documentation structure"
 ```
 
+**Note**: Always pass `workingDirectory="/Users/davidl/Projects/Trading/ib_box_spread_full_universal"` when calling tools.
+
 **Rate Limit**: Once per session (don't suggest repeatedly for same changes)
 
 ---
@@ -44,6 +57,8 @@ This rule provides context-aware suggestions for project automation tools. **Not
 "Analyze task alignment before starting work (also runs automatically on task status changes)"
 "Verify task aligns with project goals"
 ```
+
+**Note**: Always pass `workingDirectory="/Users/davidl/Projects/Trading/ib_box_spread_full_universal"` when calling tools.
 
 **Rate Limit**: Once per task status change
 
@@ -244,6 +259,7 @@ Tool suggestions complement `.cursor/rules/project-automation.mdc` by:
 **When to use**: After documentation changes to validate structure
 **Benefit**: Catches broken links, format issues, and stale content early
 **Usage Example**: "Check documentation health after recent changes (also runs automatically on git hooks)"
+**Required Parameter**: `workingDirectory="/Users/davidl/Projects/Trading/ib_box_spread_full_universal"`
 
 **Available via**: Project Automation MCP Server
 ```
@@ -260,6 +276,7 @@ Tool suggestions complement `.cursor/rules/project-automation.mdc` by:
 **When to use**: Before final approval to verify alignment with project goals
 **Benefit**: Ensures task aligns with investment strategy framework
 **Usage Example**: "Analyze task alignment before review approval"
+**Required Parameter**: `workingDirectory="/Users/davidl/Projects/Trading/ib_box_spread_full_universal"`
 
 **Available via**: Project Automation MCP Server
 ```
@@ -276,6 +293,7 @@ Tool suggestions complement `.cursor/rules/project-automation.mdc` by:
 **When to use**: Run routine daily maintenance tasks
 **Benefit**: Comprehensive project health check (docs, tasks, duplicates, security)
 **Usage Example**: "Run daily automation for project health"
+**Required Parameter**: `workingDirectory="/Users/davidl/Projects/Trading/ib_box_spread_full_universal"`
 
 **Available via**: Project Automation MCP Server
 ```
