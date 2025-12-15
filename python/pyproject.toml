@@ -33,6 +33,7 @@ dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
     "cython>=3.0.0",
+    "fastapi>=0.100.0",  # Required for security tests
 ]
 
 [project.scripts]
@@ -44,3 +45,6 @@ package-dir = {"" = "."}
 [tool.setuptools.packages.find]
 where = ["."]
 exclude = ["tests*", "build*", "*.egg-info*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

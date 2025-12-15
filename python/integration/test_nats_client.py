@@ -18,6 +18,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+import pytest
+
+@pytest.mark.asyncio
 async def test_nats_client():
     """Test NATS client functionality."""
     client = NATSClient(url="nats://localhost:4222")

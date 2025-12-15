@@ -4,9 +4,8 @@ Tests for security utilities.
 Tests PathBoundaryEnforcer, RateLimiter, AccessControl, and related functionality.
 """
 import unittest
-import time
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch
 from fastapi import Request, HTTPException
 import pytest
 
@@ -123,7 +122,7 @@ class TestRateLimiter(unittest.TestCase):
         limiter = RateLimiter(requests_per_minute=60, requests_per_second=10)
 
         # Should allow requests
-        for i in range(5):
+        for _ in range(5):
             assert limiter.check_rate_limit("127.0.0.1") is True
 
     def test_rate_limit_blocks_per_second(self):
@@ -142,7 +141,7 @@ class TestRateLimiter(unittest.TestCase):
         limiter = RateLimiter(requests_per_minute=5, requests_per_second=10)
 
         # First 5 requests should be allowed
-        for i in range(5):
+        for _ in range(5):
             assert limiter.check_rate_limit("127.0.0.1") is True
 
         # Sixth request should be blocked
@@ -268,105 +267,117 @@ class TestAccessControl(unittest.TestCase):
         assert ip == "unknown"
 
 
-class TestRateLimitMiddleware(unittest.TestCase):
-    """Tests for RateLimitMiddleware."""
+# Pytest-style async tests for RateLimitMiddleware (not unittest.TestCase to avoid warnings)
+@pytest.mark.asyncio
+async def test_middleware_allows_request():
+    """Test that middleware allows requests within rate limit."""
+    limiter = RateLimiter(requests_per_minute=60, requests_per_second=10)
+    app = Mock()
+    middleware = RateLimitMiddleware(app, limiter)
 
-    async def test_middleware_allows_request(self):
-        """Test that middleware allows requests within rate limit."""
-        limiter = RateLimiter(requests_per_minute=60, requests_per_second=10)
-        app = Mock()
-        middleware = RateLimitMiddleware(app, limiter)
+    request = Mock()
+    request.client.host = "127.0.0.1"
 
-        request = Mock()
-        request.client.host = "127.0.0.1"
+    async def call_next(req):
+        response = Mock()
+        response.status_code = 200
+        response.headers = {}  # Support item assignment
+        return response
 
-        async def call_next(req):
-            return Mock(status_code=200)
-
-        response = await middleware.dispatch(request, call_next)
-        self.assertEqual(response.status_code, 200)
-
-    async def test_middleware_blocks_request(self):
-        """Test that middleware blocks requests exceeding rate limit."""
-        limiter = RateLimiter(requests_per_minute=60, requests_per_second=1)
-        app = Mock()
-        middleware = RateLimitMiddleware(app, limiter)
-
-        request = Mock()
-        request.client.host = "127.0.0.1"
-
-        async def call_next(req):
-            return Mock(status_code=200)
-
-        # First request should succeed
-        response = await middleware.dispatch(request, call_next)
-        self.assertEqual(response.status_code, 200)
-
-        # Second request should be blocked
-        with self.assertRaises(HTTPException) as context:
-            await middleware.dispatch(request, call_next)
-
-        self.assertEqual(context.exception.status_code, 429)
-        self.assertIn("Rate limit exceeded", str(context.exception.detail))
+    response = await middleware.dispatch(request, call_next)
+    assert response.status_code == 200
 
 
-class TestRequireApiKey(unittest.TestCase):
-    """Tests for require_api_key decorator."""
+@pytest.mark.asyncio
+async def test_middleware_blocks_request():
+    """Test that middleware blocks requests exceeding rate limit."""
+    limiter = RateLimiter(requests_per_minute=60, requests_per_second=1)
+    app = Mock()
+    middleware = RateLimitMiddleware(app, limiter)
 
-    async def test_decorator_with_valid_key(self):
-        """Test decorator with valid API key."""
-        access = AccessControl(api_key="test-key", require_auth=True)
+    request = Mock()
+    request.client.host = "127.0.0.1"
 
-        @require_api_key(access)
-        async def test_func(request: Request):
-            return {"status": "ok"}
+    async def call_next(req):
+        response = Mock()
+        response.status_code = 200
+        response.headers = {}  # Support item assignment
+        return response
 
-        request = Mock()
-        request.headers = {"X-API-Key": "test-key"}
+    # First request should succeed
+    response = await middleware.dispatch(request, call_next)
+    assert response.status_code == 200
 
-        result = await test_func(request=request)
-        self.assertEqual(result, {"status": "ok"})
+    # Second request should be blocked
+    with pytest.raises(HTTPException) as exc_info:
+        await middleware.dispatch(request, call_next)
 
-    async def test_decorator_with_invalid_key(self):
-        """Test decorator with invalid API key."""
-        access = AccessControl(api_key="test-key", require_auth=True)
+    assert exc_info.value.status_code == 429
+    assert "Rate limit exceeded" in str(exc_info.value.detail)
 
-        @require_api_key(access)
-        async def test_func(request: Request):
-            return {"status": "ok"}
 
-        request = Mock()
-        request.headers = {"X-API-Key": "wrong-key"}
+# Pytest-style async tests for require_api_key decorator (not unittest.TestCase to avoid warnings)
+@pytest.mark.asyncio
+async def test_decorator_with_valid_key():
+    """Test decorator with valid API key."""
+    access = AccessControl(api_key="test-key", require_auth=True)
 
-        with self.assertRaises(HTTPException) as context:
-            await test_func(request=request)
+    @require_api_key(access)
+    async def test_func(request: Request):
+        return {"status": "ok"}
 
-        self.assertEqual(context.exception.status_code, 401)
+    request = Mock()
+    request.headers = {"X-API-Key": "test-key"}
 
-    async def test_decorator_with_bearer_token(self):
-        """Test decorator with Bearer token."""
-        access = AccessControl(api_key="test-key", require_auth=True)
+    result = await test_func(request=request)
+    assert result == {"status": "ok"}
 
-        @require_api_key(access)
-        async def test_func(request: Request):
-            return {"status": "ok"}
 
-        request = Mock()
-        request.headers = {"Authorization": "Bearer test-key"}
+@pytest.mark.asyncio
+async def test_decorator_with_invalid_key():
+    """Test decorator with invalid API key."""
+    access = AccessControl(api_key="test-key", require_auth=True)
 
-        result = await test_func(request=request)
-        self.assertEqual(result, {"status": "ok"})
+    @require_api_key(access)
+    async def test_func(request: Request):
+        return {"status": "ok"}
 
-    async def test_decorator_no_auth_required(self):
-        """Test decorator when auth not required."""
-        access = AccessControl(api_key=None, require_auth=False)
+    request = Mock()
+    request.headers = {"X-API-Key": "wrong-key"}
 
-        @require_api_key(access)
-        async def test_func(request: Request):
-            return {"status": "ok"}
+    with pytest.raises(HTTPException) as exc_info:
+        await test_func(request=request)
 
-        request = Mock()
-        request.headers = {}
+    assert exc_info.value.status_code == 401
 
-        result = await test_func(request=request)
-        self.assertEqual(result, {"status": "ok"})
+
+@pytest.mark.asyncio
+async def test_decorator_with_bearer_token():
+    """Test decorator with Bearer token."""
+    access = AccessControl(api_key="test-key", require_auth=True)
+
+    @require_api_key(access)
+    async def test_func(request: Request):
+        return {"status": "ok"}
+
+    request = Mock()
+    request.headers = {"Authorization": "Bearer test-key"}
+
+    result = await test_func(request=request)
+    assert result == {"status": "ok"}
+
+
+@pytest.mark.asyncio
+async def test_decorator_no_auth_required():
+    """Test decorator when auth not required."""
+    access = AccessControl(api_key=None, require_auth=False)
+
+    @require_api_key(access)
+    async def test_func(request: Request):
+        return {"status": "ok"}
+
+    request = Mock()
+    request.headers = {}
+
+    result = await test_func(request=request)
+    assert result == {"status": "ok"}
