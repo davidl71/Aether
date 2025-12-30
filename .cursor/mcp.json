@@ -1,3 +1,81 @@
 {
-  "mcpServers": {}
+  "mcpServers": {
+    "agentic-tools": {
+      "args": [
+        "-y",
+        "@pimzino/agentic-tools-mcp"
+      ],
+      "command": "npx"
+    },
+    "context7": {
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "command": "npx"
+    },
+    "exarp": {
+      "command": "/Users/davidl/Projects/project-management-automation/exarp-uvx-wrapper.sh",
+      "args": [
+        "--mcp"
+      ],
+      "env": {
+        "PROJECT_ROOT": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"
+      }
+    },
+    "filesystem": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"
+      ],
+      "command": "npx"
+    },
+    "ollama": {
+      "args": [
+        "mcp-ollama"
+      ],
+      "command": "uvx",
+      "env": {
+        "OLLAMA_BASE_URL": "http://localhost:11434"
+      }
+    },
+    "semgrep": {
+      "args": [
+        "-y",
+        "@semgrep/mcp-server-semgrep"
+      ],
+      "command": "npx"
+    },
+    "sequential_thinking": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "command": "npx"
+    },
+    "tractatus_thinking": {
+      "args": [
+        "-y",
+        "tractatus_thinking"
+      ],
+      "command": "npx"
+    },
+    "mcp-stdio-tools": {
+      "command": "/Users/davidl/Projects/mcp-stdio-tools/run_server.sh",
+      "args": [],
+      "env": {
+        "PROJECT_ROOT": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"
+      },
+      "description": "Stdio-based MCP tools (broken in FastMCP) - 24 tools, 8 prompts, 6 resources migrated from exarp_pma"
+    },
+    "mcp-generic-tools": {
+      "command": "/Users/davidl/Projects/mcp-generic-tools/run_server.sh",
+      "args": [],
+      "env": {
+        "PROJECT_ROOT": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"
+      },
+      "description": "Generic MCP tools (context management, prompt tracking, recommendations) - 8 tools, 2 prompts migrated from exarp_pma"
+    }
+  }
 }

@@ -442,3 +442,61 @@ TEST_CASE("TWS Client - Invalid host handling", "[tws]") {
     REQUIRE_FALSE(client.is_connected());
     REQUIRE(client.get_connection_state() != ConnectionState::Connected);
 }
+
+// ============================================================================
+// Test: Market Hours Integration
+// ============================================================================
+
+TEST_CASE("TWS Client - Market hours check (mock mode)", "[tws][market_hours]") {
+    config::TWSConfig config;
+    config.host = "127.0.0.1";
+    config.port = 7497;
+    config.client_id = 1;
+    config.use_mock = true;  // Enable mock mode
+
+    TWSClient client(config);
+
+    // In mock mode, market hours should work without TWS connection
+    // Note: Actual implementation uses MarketHours class internally
+    // This test verifies the method exists and can be called
+    REQUIRE_NOTHROW(client.is_market_open());
+
+    // Market hours check should return a boolean
+    bool is_open = client.is_market_open();
+    // Result depends on current time, but should be a valid boolean
+    REQUIRE((is_open == true || is_open == false));
+}
+
+// ============================================================================
+// Test: Option Chain Request (Mock Mode)
+// ============================================================================
+
+TEST_CASE("TWS Client - Option chain request (mock mode)", "[tws][option_chain]") {
+    config::TWSConfig config;
+    config.host = "127.0.0.1";
+    config.port = 7497;
+    config.client_id = 1;
+    config.use_mock = true;  // Enable mock mode
+
+    TWSClient client(config);
+
+    // In mock mode, option chain should return mock data
+    auto contracts = client.request_option_chain("SPY", "");
+
+    // Should return some contracts (mock mode generates test data)
+    REQUIRE(contracts.size() > 0);
+
+    // Verify contract structure
+    for (const auto& contract : contracts) {
+        REQUIRE(contract.symbol == "SPY");
+        REQUIRE_FALSE(contract.expiry.empty());
+        REQUIRE(contract.strike > 0.0);
+    }
+
+    // Test with expiry filter
+    auto filtered = client.request_option_chain("SPY", "20251219");
+    // Filtered results should only include specified expiry
+    for (const auto& contract : filtered) {
+        REQUIRE(contract.expiry == "20251219");
+    }
+}

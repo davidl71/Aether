@@ -16,6 +16,7 @@ set(TEST_SOURCES
     test_market_data_integration.cpp
     test_box_spread_e2e.cpp
     test_option_chain.cpp
+    test_market_hours.cpp
     test_rate_limiter.cpp
     test_hedge_manager.cpp
     test_box_spread_bag.cpp
@@ -36,7 +37,7 @@ add_executable(box_spread_tests ${TEST_SOURCES})
 # provided via cache entries.
 if(NOT TWS_API_INCLUDE_DIR)
     set(TWS_API_INCLUDE_DIR
-        "${CMAKE_SOURCE_DIR}/third_party/tws-api/IBJts/source/cppclient/client"
+        "${CMAKE_SOURCE_DIR}/native/third_party/tws-api/IBJts/source/cppclient/client"
     )
 endif()
 
@@ -48,7 +49,7 @@ endif()
 
 if(NOT INTEL_DECIMAL_LIB)
     set(INTEL_DECIMAL_LIB
-        "${CMAKE_SOURCE_DIR}/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a"
+        "${CMAKE_SOURCE_DIR}/native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a"
     )
 endif()
 
@@ -57,7 +58,7 @@ if(NOT ABSEIL_LIBS)
 endif()
 
 target_include_directories(box_spread_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/native/include
     ${TWS_API_INCLUDE_DIR}
 )
 
@@ -72,16 +73,76 @@ target_link_libraries(box_spread_tests
         spdlog::spdlog
         CLI11::CLI11
         Eigen3::Eigen
-        QuantLib::QuantLib
-        Boost::date_time
-        Boost::filesystem
-        Boost::system
-        NLopt::nlopt
         ${TWS_API_LIB}
         ${INTEL_DECIMAL_LIB}
         /usr/local/lib/libprotobuf.dylib
         ${ABSEIL_LIBS}
 )
+
+# Link Boost libraries (use same approach as main CMakeLists.txt)
+# The parent CMakeLists.txt uses find_library and sets Boost_LIBRARIES
+if(Boost_LIBRARIES)
+    target_link_libraries(box_spread_tests PRIVATE ${Boost_LIBRARIES})
+else()
+    # Fallback: try to find Boost libraries directly in tests subdirectory
+    # Check both Intel (/usr/local) and Apple Silicon (/opt/homebrew) Homebrew paths
+    set(BOOST_CELLAR_PATHS "/opt/homebrew/Cellar/boost" "/usr/local/Cellar/boost")
+    set(BOOST_CELLAR_DIR "")
+    foreach(BOOST_CELLAR_PATH ${BOOST_CELLAR_PATHS})
+        if(EXISTS "${BOOST_CELLAR_PATH}")
+            file(GLOB BOOST_CELLAR_DIRS "${BOOST_CELLAR_PATH}/*")
+            if(BOOST_CELLAR_DIRS)
+                list(GET BOOST_CELLAR_DIRS 0 BOOST_CELLAR_DIR)
+                break()
+            endif()
+        endif()
+    endforeach()
+
+    if(BOOST_CELLAR_DIR)
+        set(BOOST_LIB_DIR "${BOOST_CELLAR_DIR}/lib")
+        find_library(BOOST_DATE_TIME_LIB
+            NAMES boost_date_time libboost_date_time
+            PATHS ${BOOST_LIB_DIR} /usr/local/lib
+            NO_DEFAULT_PATH
+        )
+        find_library(BOOST_FILESYSTEM_LIB
+            NAMES boost_filesystem libboost_filesystem
+            PATHS ${BOOST_LIB_DIR} /usr/local/lib
+            NO_DEFAULT_PATH
+        )
+        find_library(BOOST_SYSTEM_LIB
+            NAMES boost_system libboost_system
+            PATHS ${BOOST_LIB_DIR} /usr/local/lib
+            NO_DEFAULT_PATH
+        )
+
+        if(BOOST_DATE_TIME_LIB AND BOOST_FILESYSTEM_LIB)
+            set(BOOST_TEST_LIBS "${BOOST_DATE_TIME_LIB}" "${BOOST_FILESYSTEM_LIB}")
+            if(BOOST_SYSTEM_LIB)
+                list(APPEND BOOST_TEST_LIBS "${BOOST_SYSTEM_LIB}")
+            endif()
+            target_link_libraries(box_spread_tests PRIVATE ${BOOST_TEST_LIBS})
+        else()
+            message(WARNING "Boost libraries not found - tests may fail")
+        endif()
+    else()
+        message(WARNING "Boost not found - tests may fail")
+    endif()
+endif()
+
+# Link NLopt if available (fetched via FetchContent)
+if(TARGET NLopt::nlopt)
+    target_link_libraries(box_spread_tests PRIVATE NLopt::nlopt)
+else()
+    message(WARNING "NLopt::nlopt target not found - tests may fail")
+endif()
+
+# Link QuantLib if available (fetched via FetchContent)
+if(TARGET QuantLib::QuantLib)
+    target_link_libraries(box_spread_tests PRIVATE QuantLib::QuantLib)
+else()
+    message(WARNING "QuantLib::QuantLib target not found - tests may fail")
+endif()
 
 # Platform-specific libraries (needed for TWS API)
 if(APPLE)
@@ -96,24 +157,25 @@ endif()
 
 # Link with the same object files as the main executable
 # (This avoids code duplication)
-# Note: CMAKE_SOURCE_DIR in tests subdirectory points to native/, so use relative paths
+# Note: CMAKE_SOURCE_DIR points to project root, so paths need native/ prefix
 target_sources(box_spread_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/config_manager.cpp
-    ${CMAKE_SOURCE_DIR}/src/path_validator.cpp
-    ${CMAKE_SOURCE_DIR}/src/tws_client.cpp
-    ${CMAKE_SOURCE_DIR}/src/rate_limiter.cpp
-    ${CMAKE_SOURCE_DIR}/src/hedge_manager.cpp
-    ${CMAKE_SOURCE_DIR}/src/strategies/box_spread/box_spread_bag.cpp
-    ${CMAKE_SOURCE_DIR}/src/convexity_calculator.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/config_manager.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/path_validator.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/tws_client.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/market_hours.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/rate_limiter.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/hedge_manager.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/strategies/box_spread/box_spread_bag.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/convexity_calculator.cpp
 )
 
 # Conditionally include local source files only if NOT using extracted library
 if(NOT USE_BOX_SPREAD_CPP_LIB)
     target_sources(box_spread_tests PRIVATE
-        ${CMAKE_SOURCE_DIR}/src/option_chain.cpp
-        ${CMAKE_SOURCE_DIR}/src/strategies/box_spread/box_spread_strategy.cpp
-        ${CMAKE_SOURCE_DIR}/src/order_manager.cpp
-        ${CMAKE_SOURCE_DIR}/src/risk_calculator.cpp
+        ${CMAKE_SOURCE_DIR}/native/src/option_chain.cpp
+        ${CMAKE_SOURCE_DIR}/native/src/strategies/box_spread/box_spread_strategy.cpp
+        ${CMAKE_SOURCE_DIR}/native/src/order_manager.cpp
+        ${CMAKE_SOURCE_DIR}/native/src/risk_calculator.cpp
     )
 endif()
 

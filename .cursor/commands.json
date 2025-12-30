@@ -51,6 +51,18 @@
       "category": "quality"
     },
     {
+      "name": "ai:review-with-ollama",
+      "description": "Run Ollama code review (privacy-preserving, uses codellama:7b)",
+      "command": "python3 python/tools/ollama_code_review.py --files $ARG --model codellama:7b",
+      "category": "quality"
+    },
+    {
+      "name": "ai:docs-with-ollama",
+      "description": "Generate API documentation using Ollama (privacy-preserving, uses mistral:7b)",
+      "command": "python3 python/tools/ollama_documentation.py --file $ARG --model mistral:7b --output docs/${ARG##*/}_API.md",
+      "category": "docs"
+    },
+    {
       "name": "setup:platform",
       "description": "Auto-detect and configure platform-specific settings",
       "command": "./scripts/setup_platform_settings.sh",

@@ -1,0 +1,145 @@
+---
+- name: Setup Todo2 MCP Server Configuration
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  vars:
+    project_root: "{{ playbook_dir }}/../.."
+    cursor_dir: "{{ project_root }}/.cursor"
+    mcp_config_file: "{{ cursor_dir }}/mcp.json"
+    todo2_dir: "{{ project_root }}/.todo2"
+
+  tasks:
+    - name: Check if project has Todo2 directory
+      stat:
+        path: "{{ todo2_dir }}"
+      register: todo2_dir_stat
+
+    - name: Display Todo2 directory status
+      debug:
+        msg: "Todo2 directory found: {{ todo2_dir_stat.stat.exists }}"
+      when: todo2_dir_stat.stat.exists
+
+    - name: Skip if no Todo2 directory
+      meta: end_play
+      when: not todo2_dir_stat.stat.exists
+
+    - name: Ensure .cursor directory exists
+      file:
+        path: "{{ cursor_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Check if MCP config file exists
+      stat:
+        path: "{{ mcp_config_file }}"
+      register: mcp_config_stat
+
+    - name: Initialize empty MCP config if missing
+      copy:
+        dest: "{{ mcp_config_file }}"
+        content: |
+          {
+            "mcpServers": {}
+          }
+        mode: "0644"
+      when: not mcp_config_stat.stat.exists
+
+    - name: Read existing MCP configuration
+      slurp:
+        src: "{{ mcp_config_file }}"
+      register: mcp_config_content
+      when: mcp_config_stat.stat.exists
+
+    - name: Parse existing MCP configuration
+      block:
+        - name: Decode and parse JSON
+          set_fact:
+            mcp_config: "{{ mcp_config_content.content | b64decode | from_json }}"
+      rescue:
+        - name: Handle invalid JSON in existing config
+          set_fact:
+            mcp_config:
+              mcpServers: {}
+        - name: Display JSON parse error
+          debug:
+            msg: "⚠️  Warning: Existing mcp.json has invalid JSON. Starting with empty config."
+      when: mcp_config_stat.stat.exists
+
+    - name: Initialize MCP config if file was just created
+      set_fact:
+        mcp_config:
+          mcpServers: {}
+      when: not mcp_config_stat.stat.exists
+
+    - name: Remove duplicate MCP servers (Python-based)
+      shell: |
+        echo '{{ mcp_config | to_json }}' | python3 {{ project_root }}/scripts/deduplicate_mcp_servers.py
+      register: deduplicated_result
+      changed_when: >
+        deduplicated_result.rc == 0 and
+        (deduplicated_result.stdout | from_json | json_query('count') | default(0)) > 0
+      failed_when: false
+      when: mcp_config_stat.stat.exists and (mcp_config.mcpServers | default({}) | length > 0)
+
+    - name: Update config with deduplicated servers
+      set_fact:
+        mcp_config: "{{ deduplicated_result.stdout | from_json | json_query('config') }}"
+        duplicates_removed: "{{ deduplicated_result.stdout | from_json | json_query('duplicates_removed') }}"
+      when:
+        - mcp_config_stat.stat.exists
+        - deduplicated_result.rc | default(1) == 0
+        - deduplicated_result.changed | default(false)
+      failed_when: false
+
+    - name: Display duplicate removal status
+      debug:
+        msg: "Removed {{ duplicates_removed | length }} duplicate MCP server(s): {{ duplicates_removed | join(', ') }}"
+      when:
+        - mcp_config_stat.stat.exists
+        - deduplicated_result.changed | default(false)
+        - duplicates_removed is defined
+
+    - name: Check if Todo2 MCP server already configured
+      set_fact:
+        todo2_configured: "{{ 'Todo2' in (mcp_config.mcpServers | default({})) }}"
+
+    - name: Display Todo2 MCP status
+      debug:
+        msg: "Todo2 MCP server already configured: {{ todo2_configured }}"
+
+    - name: Add Todo2 MCP server configuration
+      set_fact:
+        mcp_config:
+          mcpServers: "{{ mcp_config.mcpServers | default({}) | combine({'Todo2': {'command': 'npx', 'args': ['-y', 'todo2-extension-todo2']}}, recursive=False) }}"
+      when: not todo2_configured
+
+    - name: Write updated MCP configuration
+      copy:
+        dest: "{{ mcp_config_file }}"
+        content: "{{ mcp_config | to_nice_json(indent=2) }}"
+        mode: "0644"
+      when:
+        - not todo2_configured or (deduplicated_result.changed | default(false) | bool)
+      # Validate JSON before writing
+      vars:
+        _validate_json: "{{ mcp_config | to_json }}"
+
+    - name: Display success message
+      debug:
+        msg: "✅ Todo2 MCP server configured successfully in {{ mcp_config_file }}"
+      when: not todo2_configured
+
+    - name: Display duplicate removal only message
+      debug:
+        msg: "✅ Removed duplicate MCP servers from {{ mcp_config_file }}"
+      when:
+        - todo2_configured
+        - deduplicated_result.changed | default(false)
+
+    - name: Display already configured message
+      debug:
+        msg: "ℹ️  Todo2 MCP server already configured, no changes needed"
+      when:
+        - todo2_configured
+        - not (deduplicated_result.changed | default(false))

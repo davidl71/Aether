@@ -361,7 +361,7 @@ TEST_CASE("TWS Integration - Connection state machine (mock)", "[tws][integratio
     // When: Error occurs (simulated by invalid operation)
     // Then: Should handle error state appropriately
     // Note: Mock mode may not trigger all error states, but structure is verified
-    REQUIRE(client.get_connection_state() != ConnectionState::Error ||
-            client.get_connection_state() == ConnectionState::Disconnected);
+    auto state = client.get_connection_state();
+    REQUIRE((state != ConnectionState::Error || state == ConnectionState::Disconnected));
   }
 }

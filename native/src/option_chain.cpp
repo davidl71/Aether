@@ -1,5 +1,6 @@
 // option_chain.cpp - Option chain implementation
 #include "option_chain.h"
+#include "market_hours.h"
 #include <spdlog/spdlog.h>
 #include <ql/quantlib.hpp>
 #include <ql/instruments/vanillaoption.hpp>
@@ -83,8 +84,65 @@ void ExpiryChain::add_option(const OptionChainEntry& entry) {
 }
 
 int ExpiryChain::get_days_to_expiry() const {
-    // NOTE: Proper DTE calculation would go here
-    return 30;  // Stub
+    if (expiry_.empty()) {
+        return 0;
+    }
+
+    // Parse YYYYMMDD expiry string
+    if (expiry_.length() != 8) {
+        spdlog::warn("Invalid expiry format: {} (expected YYYYMMDD)", expiry_);
+        return 0;
+    }
+
+    try {
+        int year = std::stoi(expiry_.substr(0, 4));
+        int month = std::stoi(expiry_.substr(4, 2));
+        int day = std::stoi(expiry_.substr(6, 2));
+
+        // Create expiry date
+        std::tm tm_expiry = {};
+        tm_expiry.tm_year = year - 1900;
+        tm_expiry.tm_mon = month - 1;
+        tm_expiry.tm_mday = day;
+        tm_expiry.tm_hour = 16;  // Market close (4:00 PM ET)
+        tm_expiry.tm_min = 0;
+        tm_expiry.tm_sec = 0;
+
+        auto expiry_time = std::chrono::system_clock::from_time_t(std::mktime(&tm_expiry));
+        auto now = std::chrono::system_clock::now();
+
+        // Count trading days using MarketHours
+        market_hours::MarketHours market_hours;
+        int trading_days = 0;
+        auto current = now;
+
+        // If expiry is in the past, return 0
+        if (expiry_time <= now) {
+            return 0;
+        }
+
+        // Count trading days (weekdays excluding holidays)
+        while (current < expiry_time) {
+            auto status = market_hours.get_market_status_at(current);
+            // Trading day = weekday and not holiday
+            if (status.current_session != market_hours::MarketSession::Closed ||
+                (!status.is_holiday && status.reason != "weekend")) {
+                trading_days++;
+            }
+            current += std::chrono::hours(24);
+
+            // Safety limit to prevent infinite loops
+            if (trading_days > 365) {
+                spdlog::warn("DTE calculation exceeded 365 days for expiry: {}", expiry_);
+                break;
+            }
+        }
+
+        return trading_days;
+    } catch (const std::exception& e) {
+        spdlog::warn("Failed to calculate DTE for expiry {}: {}", expiry_, e.what());
+        return 0;
+    }
 }
 
 std::vector<double> ExpiryChain::get_strikes() const {

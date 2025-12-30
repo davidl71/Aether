@@ -5,61 +5,45 @@
     // ============================================
     // These should be DISABLED globally and enabled only in this workspace
     // to prevent conflicts with other projects. See docs/EXTENSION_MANAGEMENT.md
-
     // C++ Development (WORKSPACE-ONLY)
     "ms-vscode.cpptools",
     "ms-vscode.cmake-tools",
     // NOTE: twxs.cmake is NOT recommended - it's redundant with CMake Tools built-in Language Services
     // See docs/EXTENSION_SECURITY_AUDIT.md and docs/EXTENSION_SECURITY_PRIORITY.md
-
     // Python Development (WORKSPACE-ONLY)
     "ms-python.python",
     "ms-python.vscode-pylance",
     "ms-python.black-formatter",
-
     // Rust Development (WORKSPACE-ONLY - for agents/backend)
     "rust-lang.rust-analyzer",
-
     // TypeScript/JavaScript (WORKSPACE-ONLY - for web/)
     "dbaeumer.vscode-eslint",
-
     // Shell Scripts (WORKSPACE-ONLY)
     "timonwong.shellcheck",
-
     // Swift (WORKSPACE-ONLY - for ios/ and desktop/)
     "sswg.swift-lang",
-
     // MCP Integration (WORKSPACE-ONLY)
     "yutengjing.vscode-mcp",
-
     // Ona/Gitpod Integration (WORKSPACE-ONLY)
     "gitpod.gitpod-flex",
-
     // AI & Prompt Enhancement (WORKSPACE-ONLY)
     "prompttower.prompttower",
-    "TabNine.tabnine-vscode", // AI code completion for C++, Python, TypeScript, Rust, Go
     // Note: GitHub Copilot and AWS CodeWhisperer can be global
     // but may benefit from workspace-specific configurations
-
     // ============================================
     // GLOBAL EXTENSIONS (Safe to Enable Globally)
     // ============================================
     // These can be safely enabled globally as they don't conflict across projects
-
     // General Development (GLOBAL)
     "editorconfig.editorconfig",
     "redhat.vscode-yaml",
-
     // Terminal Integration (GLOBAL)
     "tyriar.vscode-shell-launcher", // Better shell selection
-
     // Git (GLOBAL)
     "eamodio.gitlens",
-
     // Markdown (GLOBAL)
     "yzhang.markdown-all-in-one",
     "davidanson.vscode-markdownlint",
-
     // Code Quality & Security (GLOBAL)
     "streetsidesoftware.code-spell-checker",
     "usernamehw.errorlens"
@@ -67,23 +51,18 @@
   "unwantedRecommendations": [
     // Redundant - cpptools-extension-pack includes cpptools which is already recommended
     "ms-vscode.cpptools-extension-pack",
-
     // Not needed - no Docker/Kubernetes configuration in this project
     "ms-azuretools.vscode-containers",
     "ms-kubernetes-tools.vscode-kubernetes-tools",
     "ms-vscode-remote.remote-containers",
-
     // Not used - no Go code in this project
     "golang.go",
-
     // Optional - Prettier may conflict with ESLint formatting rules configured in web/eslint.config.js
     // Keep if you prefer Prettier's formatting style, otherwise ESLint handles formatting
     "esbenp.prettier-vscode",
-
     // Trunk CLI is used via scripts/run_linters.sh, not as VS Code formatter extension
     // Explicit formatters are configured in settings.json to prevent auto-detection
     "trunk.io",
-
     // Unused languages - disable to reduce extension clutter and improve performance
     // Java (only vendor code in third_party, not actively developed)
     "vscjava.vscode-java-pack",
@@ -145,11 +124,9 @@
     "redhat.ansible",
     // PowerShell
     "ms-vscode.powershell",
-
     // Redundant CMake extension - CMake Tools includes built-in Language Services
     // See docs/EXTENSION_SECURITY_AUDIT.md and docs/EXTENSION_SECURITY_PRIORITY.md
     "twxs.cmake",
-
     // Enterprise/Mainframe - not used in this trading application
     // IBM i / AS/400
     "halcyontechltd.code-for-ibmi",

@@ -587,6 +587,8 @@ if(_build_native_cli)
     set(SOURCES
         src/ib_box_spread.cpp
         src/tws_client.cpp
+        src/market_hours.cpp
+        src/greeks_calculator.cpp
         src/rate_limiter.cpp
         src/path_validator.cpp
         src/config_manager.cpp
@@ -598,6 +600,8 @@ if(_build_native_cli)
     set(HEADERS
         include/tws_client.h
         include/rate_limiter.h
+        include/market_hours.h
+        include/greeks_calculator.h
         include/path_validator.h
         include/config_manager.h
         include/pcap_capture.h
@@ -613,12 +617,14 @@ if(_build_native_cli)
             src/strategies/box_spread/box_spread_bag.cpp
             src/order_manager.cpp
             src/risk_calculator.cpp
+            src/greeks_calculator.cpp
         )
         list(APPEND HEADERS
             include/option_chain.h
             include/strategies/box_spread/box_spread_strategy.h
             include/strategies/box_spread/box_spread_bag.h
             include/order_manager.h
+            include/greeks_calculator.h
             include/risk_calculator.h
         )
         message(STATUS "Including local box spread implementation files")

@@ -1,6 +1,7 @@
 // risk_calculator.cpp - Risk management implementation
 #include "risk_calculator.h"
 #include "option_chain.h"
+#include "greeks_calculator.h"
 #include <spdlog/spdlog.h>
 #include <Eigen/Dense>
 #include <cmath>
@@ -172,44 +173,32 @@ types::RiskMetrics RiskCalculator::calculate_aggregate_greeks(
         return metrics;
     }
 
-    // Use Eigen VectorXd for Greeks aggregation
-    // Greeks vector: [delta, gamma, theta, vega, rho]
-    Eigen::VectorXd aggregate_greeks = Eigen::VectorXd::Zero(5);
+    // Calculate Greeks using GreeksCalculator
+    GreeksCalculator greeks_calc;
 
-    for (const auto& pos : positions) {
-        // TODO: Get Greeks from position
-        // For now, we'll need to calculate Greeks using OptionChainBuilder
-        // Once QuantLib is integrated, this will be populated from QuantLib calculations
-        // For box spreads, Greeks would be calculated from the four legs
+    // Use default values for underlying price, risk-free rate, and IV
+    // In production, these would come from market data
+    double underlying_price = 100.0;  // TODO: Get from market data
+    double risk_free_rate = 0.05;     // TODO: Get from market data (5% default)
+    double implied_volatility = 0.20; // TODO: Get from market data (20% default)
 
-        // Placeholder: In real implementation, get Greeks from:
-        // 1. OptionChainBuilder::calculate_delta/gamma/theta/vega() (after QuantLib integration)
-        // 2. Or from MarketData if Greeks are pre-calculated
-        // 3. Or from position's risk metrics if stored
-
-        // For now, create a vector for this position's Greeks
-        // This will be populated once QuantLib integration is complete
-        Eigen::VectorXd position_greeks(5);
-        position_greeks << 0.0,  // delta (placeholder)
-                           0.0,  // gamma (placeholder)
-                           0.0,  // theta (placeholder)
-                           0.0,  // vega (placeholder)
-                           0.0;  // rho (placeholder)
-
-        // Scale by position quantity (long = positive, short = negative)
-        double position_multiplier = static_cast<double>(pos.quantity);
-        position_greeks *= position_multiplier;
-
-        // Aggregate: sum all position Greeks
-        aggregate_greeks += position_greeks;
+    // Try to get underlying price from first position if available
+    if (!positions.empty() && positions[0].current_price > 0.0) {
+        underlying_price = positions[0].current_price * 10.0;  // Rough estimate
     }
 
-    // Extract aggregated Greeks
-    metrics.delta = aggregate_greeks(0);
-    metrics.gamma = aggregate_greeks(1);
-    metrics.theta = aggregate_greeks(2);
-    metrics.vega = aggregate_greeks(3);
-    metrics.rho = aggregate_greeks(4);
+    auto aggregate = greeks_calc.aggregate_greeks(
+        positions,
+        underlying_price,
+        risk_free_rate,
+        implied_volatility
+    );
+
+    metrics.delta = aggregate.delta;
+    metrics.gamma = aggregate.gamma;
+    metrics.theta = aggregate.theta;
+    metrics.vega = aggregate.vega;
+    metrics.rho = aggregate.rho;
 
     spdlog::debug("Aggregate Greeks: delta={:.4f}, gamma={:.4f}, theta={:.4f}, vega={:.4f}, rho={:.4f}",
                   metrics.delta, metrics.gamma, metrics.theta, metrics.vega, metrics.rho);
@@ -231,14 +220,11 @@ double RiskCalculator::calculate_correlation_risk(
     size_t n = positions.size();
     Eigen::MatrixXd correlation_matrix = Eigen::MatrixXd::Identity(n, n);
 
-    // TODO: Calculate actual correlation from:
-    // 1. Historical returns of underlying assets
-    // 2. Or use pre-calculated correlation matrix from market data
-    // 3. Or use asset class correlations (equity, fixed income, etc.)
+    // Calculate correlation based on underlying symbols
+    // Same underlying = 1.0, different = calculate from historical returns if available
+    // For now, use simplified approach with same-underlying detection
 
-    // For now, use simplified correlation based on underlying symbols
-    // Positions with same underlying have correlation = 1.0
-    // Different underlyings have correlation = 0.5 (placeholder)
+    // Step 1: Same underlying detection (correlation = 1.0)
     for (size_t i = 0; i < n; ++i) {
         for (size_t j = i + 1; j < n; ++j) {
             const auto& pos1 = positions[i];
@@ -249,13 +235,39 @@ double RiskCalculator::calculate_correlation_risk(
                 correlation_matrix(i, j) = 1.0;
                 correlation_matrix(j, i) = 1.0;
             } else {
-                // Different underlyings - use placeholder correlation
-                // In real implementation, calculate from historical data
-                correlation_matrix(i, j) = 0.5;
-                correlation_matrix(j, i) = 0.5;
+                // Different underlyings - calculate from historical returns
+                // For now, use simplified correlation based on price movements
+                // In production, would fetch historical data from TWS API
+
+                // Simplified: Use price correlation if both have current prices
+                if (pos1.current_price > 0.0 && pos2.current_price > 0.0 &&
+                    pos1.avg_price > 0.0 && pos2.avg_price > 0.0) {
+                    // Calculate returns from entry to current
+                    double ret1 = (pos1.current_price - pos1.avg_price) / pos1.avg_price;
+                    double ret2 = (pos2.current_price - pos2.avg_price) / pos2.avg_price;
+
+                    // Simple correlation estimate (would need more data points in production)
+                    // For now, use sign correlation: if both moved same direction, positive correlation
+                    if ((ret1 > 0 && ret2 > 0) || (ret1 < 0 && ret2 < 0)) {
+                        correlation_matrix(i, j) = 0.7;  // Positive correlation
+                    } else {
+                        correlation_matrix(i, j) = 0.3;  // Lower correlation
+                    }
+                } else {
+                    // Fallback: Use default correlation for different underlyings
+                    correlation_matrix(i, j) = 0.5;
+                }
+                correlation_matrix(j, i) = correlation_matrix(i, j);  // Symmetric
             }
         }
     }
+
+    // TODO: In production, implement full historical returns correlation:
+    // 1. Fetch historical prices for each underlying (TWS API reqHistoricalData)
+    // 2. Calculate daily returns: (price[t] - price[t-1]) / price[t-1]
+    // 3. Compute covariance matrix: (returns^T * returns) / (n-1)
+    // 4. Normalize to correlation: cov[i,j] / (std[i] * std[j])
+    // 5. Cache results (update daily)
 
     // Calculate portfolio variance using Eigen: w^T * C * w
     // where w = position weights, C = correlation matrix

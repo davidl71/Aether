@@ -103,6 +103,13 @@ Testing/
 *.gcno
 *.gcov
 
+# Coverage reports
+.coverage
+.coveragerc
+coverage.json
+coverage.xml
+*.coverage
+
 # Package managers
 .conan/
 vcpkg/
@@ -182,3 +189,4 @@ AGENTS.md
 !.todo2/state.todo2.json
 .exarp/
 mcp-servers/project-management-automation/
+.todo2/

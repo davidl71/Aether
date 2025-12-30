@@ -1,0 +1,138 @@
+---
+alwaysApply: true
+---
+# Ollama MCP Server Usage
+
+## When to Use Ollama
+
+**ALWAYS use Ollama for:**
+- Privacy-sensitive code analysis (proprietary trading algorithms)
+- Security review of trading logic and risk management code
+- Documentation generation for proprietary code
+- Code review of sensitive financial calculations
+- Analysis of trading strategies and algorithms
+- Any code that should not leave your local machine
+
+**Usage Pattern:**
+Use Ollama when:
+- Analyzing proprietary trading code
+- Reviewing risk management implementations
+- Generating documentation for sensitive modules
+- Debugging trading logic
+- Researching trading strategies with local data
+
+## Examples
+
+✅ **Good:**
+- "Use Ollama to analyze this box spread calculation for security issues"
+- "Review this risk management code with Ollama for potential bugs"
+- "Generate documentation for the order manager using Ollama"
+- "Explain this convexity calculation using Ollama"
+- "Check this C++ code for memory leaks using Ollama"
+
+❌ **Avoid:**
+- General coding questions (use Cursor AI instead)
+- Quick lookups (use Context7 or web search)
+- Questions that don't involve proprietary code
+- Real-time collaboration needs (use Cursor AI)
+
+## Benefits
+
+- **Privacy**: All code stays on your local machine
+- **Cost Savings**: No API costs for frequent analysis
+- **Offline Capability**: Works without internet connection
+- **Security**: Proprietary algorithms never transmitted to cloud
+
+## Integration with Other Tools
+
+- **Before cloud services**: Use Ollama for sensitive code, then Cursor AI for general questions
+- **With Semgrep**: Ollama for code analysis, Semgrep for security scanning
+- **With Context7**: Ollama for proprietary code, Context7 for library documentation
+- **With NotebookLM**: Ollama for code analysis, NotebookLM for research synthesis
+
+## Workflow for Code Review
+
+1. **Identify sensitive code** - Trading algorithms, risk calculations, proprietary logic
+2. **Use Ollama** - Analyze code locally for bugs, security, documentation
+3. **Review suggestions** - Always review Ollama's suggestions before implementing
+4. **Combine with human review** - Ollama assists, human decides
+
+## Best Practices
+
+### Query Optimization
+
+- **Be specific**: "Review this box spread calculation function for potential bugs, focusing on edge cases and error handling"
+- **Provide context**: Include relevant code or file references
+- **Break down complex questions**: Split large analyses into smaller, focused queries
+- **Review output**: Always review and test Ollama's suggestions
+
+### Model Selection
+
+- **Code Analysis**: Use `codellama` (when available) or `llama3.2`
+- **Documentation**: Use `llama3.2` or `mistral` (when available)
+- **Quick Questions**: Use `llama3.2` or `phi3` (when available)
+- **Complex Analysis**: Use `llama3.1` or `mistral` (when available)
+
+### Privacy Guidelines
+
+- ✅ **Use Ollama for**: Proprietary trading code, risk calculations, order execution logic
+- ✅ **Use Cursor AI for**: General development questions, library usage, non-sensitive code
+- ❌ **Never send**: Trading strategies, proprietary algorithms, sensitive calculations to cloud services
+
+## Available MCP Tools
+
+The Ollama MCP server provides:
+
+1. **`list_models`** - List all available Ollama models
+2. **`show_model`** - Get detailed information about a specific model
+3. **`ask_model`** - Query a model with a question
+
+## Usage Examples
+
+### Code Review
+
+```
+"Use Ollama to review this box spread calculation for potential bugs and security issues"
+```
+
+### Documentation Generation
+
+```
+"Generate API documentation for the risk calculator module using Ollama"
+```
+
+### Code Explanation
+
+```
+"Explain this convexity calculation and add detailed comments using Ollama"
+```
+
+### Security Analysis
+
+```
+"Analyze this order execution code for security vulnerabilities using Ollama"
+```
+
+## Troubleshooting
+
+### Ollama Not Responding
+
+1. Check Ollama service: `brew services list | grep ollama`
+2. Verify models: `ollama list`
+3. Test API: `curl http://localhost:11434/api/tags`
+
+### MCP Server Not Available
+
+1. Restart Cursor completely (not just reload)
+2. Check `.cursor/mcp.json` configuration
+3. Verify `uvx mcp-ollama` works: `uvx mcp-ollama --help`
+
+### Model Not Found
+
+1. List models: Use `list_models` MCP tool
+2. Pull model: `ollama pull <model-name>`
+3. Verify installation: `ollama list`
+
+---
+
+**Reference:** See `docs/MCP_OLLAMA_INTEGRATION.md` for detailed technical configuration and `docs/OLLAMA_INTEGRATION_PLAN.md` for integration strategy.

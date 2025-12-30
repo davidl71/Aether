@@ -1,5 +1,6 @@
 // tws_client.cpp - TWS API Client implementation with full EWrapper integration
 #include "tws_client.h"
+#include "market_hours.h"
 #include "rate_limiter.h"
 #include "pcap_capture.h"
 #include "margin_calculator.h"
@@ -1792,9 +1793,134 @@ public:
             return contracts;
         }
 
-        // TODO: Implement option chain request using reqSecDefOptParams
-        // This is complex and requires handling multiple callbacks
-        return {};
+        if (!is_connected()) {
+            spdlog::error("Cannot request option chain: Not connected to TWS");
+            return {};
+        }
+
+        // Check rate limits
+        if (!rate_limiter_.check_message_rate()) {
+            spdlog::error("Rate limit exceeded: Cannot request option chain for {}", symbol);
+            return {};
+        }
+
+        int request_id = next_request_id_++;
+
+        // Create promise for synchronous request
+        auto promise = std::make_shared<std::promise<std::vector<types::OptionContract>>>();
+        auto future = promise->get_future();
+
+        // Initialize option chain data storage
+        {
+            std::lock_guard<std::mutex> lock(option_chain_mutex_);
+            option_chain_promises_[request_id] = promise;
+            option_chain_expirations_[request_id] = std::set<std::string>();
+            option_chain_strikes_[request_id] = std::set<double>();
+            option_chain_symbols_[request_id] = symbol;
+            option_chain_complete_ = false;
+        }
+
+        // Get underlying contract ID (conId) by requesting contract details for the underlying stock
+        // Create a TWS Contract for the underlying stock (not an option)
+        Contract underlying_tws_contract;
+        underlying_tws_contract.symbol = symbol;
+        underlying_tws_contract.secType = "STK";  // Stock, not option
+        underlying_tws_contract.currency = "USD";
+        underlying_tws_contract.exchange = "SMART";
+
+        // Request contract details synchronously to get conId (with shorter timeout for underlying lookup)
+        int underlying_request_id = next_request_id_++;
+        auto underlying_promise = std::make_shared<std::promise<long>>();
+        auto underlying_future = underlying_promise->get_future();
+
+        {
+            std::lock_guard<std::mutex> lock(contract_details_mutex_);
+            contract_details_promises_[underlying_request_id] = underlying_promise;
+        }
+
+        rate_limiter_.record_message();
+        if (config_.log_raw_messages) {
+            spdlog::trace("[RAW API] → reqContractDetails(requestId={}, underlying={}) [for option chain]",
+                        underlying_request_id, symbol);
+        }
+        client_.reqContractDetails(underlying_request_id, underlying_tws_contract);
+
+        // Wait for underlying contract details (3 second timeout)
+        auto underlying_status = underlying_future.wait_for(std::chrono::milliseconds(3000));
+        long underlying_con_id = 0;
+
+        if (underlying_status == std::future_status::ready) {
+            underlying_con_id = underlying_future.get();
+            {
+                std::lock_guard<std::mutex> lock(contract_details_mutex_);
+                contract_details_promises_.erase(underlying_request_id);
+            }
+            if (underlying_con_id > 0) {
+                spdlog::debug("Retrieved underlying conId={} for symbol {}", underlying_con_id, symbol);
+            } else {
+                spdlog::warn("Failed to get underlying contract ID for {} (conId={}), using 0 as fallback",
+                            symbol, underlying_con_id);
+                underlying_con_id = 0;  // Fallback: TWS may accept 0 for some symbols
+            }
+        } else {
+            spdlog::warn("Underlying contract details request timeout for {} (id={}), using 0 as fallback",
+                        symbol, underlying_request_id);
+            {
+                std::lock_guard<std::mutex> lock(contract_details_mutex_);
+                contract_details_promises_.erase(underlying_request_id);
+            }
+            underlying_con_id = 0;  // Fallback
+        }
+
+        // Record message
+        rate_limiter_.record_message();
+
+        // Request option chain parameters
+        if (config_.log_raw_messages) {
+            spdlog::trace("[RAW API] → reqSecDefOptParams(requestId={}, symbol={}, conId={})",
+                        request_id, symbol, underlying_con_id);
+        }
+        client_.reqSecDefOptParams(request_id, symbol, "", "STK", underlying_con_id);
+
+        spdlog::debug("Requested option chain for {} (id={})", symbol, request_id);
+
+        // Wait for response with timeout (10 seconds for option chain)
+        auto status = future.wait_for(std::chrono::milliseconds(10000));
+        if (status == std::future_status::timeout) {
+            spdlog::warn("Option chain request timeout for {} (id={}, timeout=10000ms)", symbol, request_id);
+            {
+                std::lock_guard<std::mutex> lock(option_chain_mutex_);
+                option_chain_promises_.erase(request_id);
+                option_chain_expirations_.erase(request_id);
+                option_chain_strikes_.erase(request_id);
+                option_chain_symbols_.erase(request_id);
+            }
+            return {};
+        }
+
+        // Get result
+        std::vector<types::OptionContract> contracts = future.get();
+        {
+            std::lock_guard<std::mutex> lock(option_chain_mutex_);
+            option_chain_promises_.erase(request_id);
+            option_chain_expirations_.erase(request_id);
+            option_chain_strikes_.erase(request_id);
+            option_chain_symbols_.erase(request_id);
+        }
+
+        // Filter by expiry if specified
+        if (!expiry.empty()) {
+            contracts.erase(
+                std::remove_if(contracts.begin(), contracts.end(),
+                    [&expiry](const types::OptionContract& c) { return c.expiry != expiry; }),
+                contracts.end()
+            );
+        }
+
+        spdlog::info("Retrieved {} option contracts for {} (filtered by expiry: {})",
+                    contracts.size(), symbol, expiry.empty() ? "none" : expiry);
+
+        return contracts;
     }
 
     // ========================================================================
@@ -2586,17 +2712,10 @@ public:
     }
 
     bool is_market_open() const {
-        // TODO: Implement proper market hours check
-        auto now = std::chrono::system_clock::now();
-        auto time_t_now = std::chrono::system_clock::to_time_t(now);
-        auto tm_now = *std::localtime(&time_t_now);
-
-        // Simple check: weekday and between 9:30 AM and 4:00 PM ET
-        // This is approximate and doesn't account for holidays
-        int hour = tm_now.tm_hour;
-        int wday = tm_now.tm_wday;
-
-        return (wday >= 1 && wday <= 5) && (hour >= 9 && hour < 16);
+        // Use MarketHours for accurate market status
+        static market_hours::MarketHours market_hours;
+        auto status = market_hours.get_market_status();
+        return status.is_open && status.current_session == market_hours::MarketSession::Regular;
     }
 
     std::chrono::system_clock::time_point get_server_time() const {
@@ -3251,8 +3370,96 @@ private:
     void securityDefinitionOptionalParameter(int reqId, const std::string& exchange,
                                             int underlyingConId, const std::string& tradingClass,
                                             const std::string& multiplier, const std::set<std::string>& expirations,
-                                            const std::set<double>& strikes) override {}
-    void securityDefinitionOptionalParameterEnd(int reqId) override {}
+                                            const std::set<double>& strikes) override {
+        try {
+            spdlog::debug("securityDefinitionOptionalParameter: reqId={}, exchange={}, expirations={}, strikes={}",
+                         reqId, exchange, expirations.size(), strikes.size());
+
+            std::lock_guard<std::mutex> lock(option_chain_mutex_);
+
+            // Check if this request is being tracked
+            if (option_chain_promises_.count(reqId) == 0) {
+                spdlog::warn("Option chain callback for unknown request ID: {}", reqId);
+                return;
+            }
+
+            // Accumulate expirations and strikes (multiple callbacks possible for different exchanges)
+            option_chain_expirations_[reqId].insert(expirations.begin(), expirations.end());
+            option_chain_strikes_[reqId].insert(strikes.begin(), strikes.end());
+
+            spdlog::debug("Option chain data accumulated: {} expirations, {} strikes for reqId={}",
+                         option_chain_expirations_[reqId].size(), option_chain_strikes_[reqId].size(), reqId);
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in securityDefinitionOptionalParameter(reqId={}): {}", reqId, e.what());
+        } catch (...) {
+            spdlog::error("Unknown exception in securityDefinitionOptionalParameter(reqId={})", reqId);
+        }
+    }
+
+    void securityDefinitionOptionalParameterEnd(int reqId) override {
+        try {
+            spdlog::debug("securityDefinitionOptionalParameterEnd: reqId={}", reqId);
+
+            std::lock_guard<std::mutex> lock(option_chain_mutex_);
+
+            // Check if this request is being tracked
+            if (option_chain_promises_.count(reqId) == 0) {
+                spdlog::warn("Option chain end callback for unknown request ID: {}", reqId);
+                return;
+            }
+
+            // Get accumulated data
+            auto& expirations = option_chain_expirations_[reqId];
+            auto& strikes = option_chain_strikes_[reqId];
+            std::string symbol = option_chain_symbols_[reqId];
+
+            // Convert expirations and strikes to OptionContract vector
+            std::vector<types::OptionContract> contracts;
+            for (const auto& exp : expirations) {
+                for (double strike : strikes) {
+                    // Create both call and put contracts
+                    types::OptionContract call_contract;
+                    call_contract.symbol = symbol;
+                    call_contract.expiry = exp;
+                    call_contract.strike = strike;
+                    call_contract.type = types::OptionType::Call;
+                    call_contract.exchange = "SMART";
+                    call_contract.style = types::OptionStyle::American;  // Most US options are American
+                    contracts.push_back(call_contract);
+
+                    types::OptionContract put_contract;
+                    put_contract.symbol = symbol;
+                    put_contract.expiry = exp;
+                    put_contract.strike = strike;
+                    put_contract.type = types::OptionType::Put;
+                    put_contract.exchange = "SMART";
+                    put_contract.style = types::OptionStyle::American;
+                    contracts.push_back(put_contract);
+                }
+            }
+
+            spdlog::info("Option chain complete: {} contracts for {} (reqId={})",
+                        contracts.size(), symbol, reqId);
+
+            // Fulfill promise
+            if (option_chain_promises_.count(reqId)) {
+                option_chain_promises_[reqId]->set_value(contracts);
+            }
+        } catch (const std::exception& e) {
+            spdlog::error("Exception in securityDefinitionOptionalParameterEnd(reqId={}): {}", reqId, e.what());
+            // Fulfill promise with empty vector on error
+            std::lock_guard<std::mutex> lock(option_chain_mutex_);
+            if (option_chain_promises_.count(reqId)) {
+                option_chain_promises_[reqId]->set_value(std::vector<types::OptionContract>());
+            }
+        } catch (...) {
+            spdlog::error("Unknown exception in securityDefinitionOptionalParameterEnd(reqId={})", reqId);
+            std::lock_guard<std::mutex> lock(option_chain_mutex_);
+            if (option_chain_promises_.count(reqId)) {
+                option_chain_promises_[reqId]->set_value(std::vector<types::OptionContract>());
+            }
+        }
+    }
     void softDollarTiers(int reqId, const std::vector<SoftDollarTier>& tiers) override {}
     void familyCodes(const std::vector<FamilyCode>& familyCodes) override {}
     void symbolSamples(int reqId, const std::vector<ContractDescription>& contractDescriptions) override {}
@@ -3362,6 +3569,14 @@ private:
     std::map<int, ContractDetailsCallback> contract_details_callbacks_;
     std::map<int, long> contract_details_results_;  // Store conId by request ID
     std::map<int, std::shared_ptr<std::promise<long>>> contract_details_promises_;
+
+    // Option chain data
+    mutable std::mutex option_chain_mutex_;
+    std::map<int, std::set<std::string>> option_chain_expirations_;  // Store expirations by request ID
+    std::map<int, std::set<double>> option_chain_strikes_;           // Store strikes by request ID
+    std::map<int, std::string> option_chain_symbols_;               // Store symbol by request ID
+    std::map<int, std::shared_ptr<std::promise<std::vector<types::OptionContract>>>> option_chain_promises_;
+    std::atomic<bool> option_chain_complete_{false};
 
     // Orders
     mutable std::mutex order_mutex_;
@@ -3591,6 +3806,67 @@ void TWSClient::cleanup_stale_rate_limiter_requests(std::chrono::seconds max_age
     pimpl_->cleanup_stale_rate_limiter_requests(max_age);
 }
 
+// Calculate DTE (days to expiry) using trading days
+int calculate_dte(const std::string& expiry) {
+    if (expiry.empty() || expiry.length() != 8) {
+        spdlog::warn("Invalid expiry format: {} (expected YYYYMMDD)", expiry);
+        return 0;
+    }
+
+    try {
+        int year = std::stoi(expiry.substr(0, 4));
+        int month = std::stoi(expiry.substr(4, 2));
+        int day = std::stoi(expiry.substr(6, 2));
+
+        // Create expiry date (market close: 4:00 PM ET)
+        std::tm tm_expiry = {};
+        tm_expiry.tm_year = year - 1900;
+        tm_expiry.tm_mon = month - 1;
+        tm_expiry.tm_mday = day;
+        tm_expiry.tm_hour = 16;  // 4:00 PM ET
+        tm_expiry.tm_min = 0;
+        tm_expiry.tm_sec = 0;
+
+        auto expiry_time = std::chrono::system_clock::from_time_t(std::mktime(&tm_expiry));
+        auto now = std::chrono::system_clock::now();
+
+        // If expiry is in the past, return 0
+        if (expiry_time <= now) {
+            return 0;
+        }
+
+        // Count trading days using MarketHours
+        market_hours::MarketHours market_hours;
+        int trading_days = 0;
+        auto current = now;
+
+        // Count trading days (weekdays excluding holidays)
+        while (current < expiry_time) {
+            auto status = market_hours.get_market_status_at(current);
+            // Trading day = not closed OR (closed but not holiday/weekend)
+            // Actually, we want: weekday AND not holiday
+            if (status.current_session != market_hours::MarketSession::Closed) {
+                trading_days++;
+            } else if (!status.is_holiday && status.reason != "weekend") {
+                // Edge case: early close day (still a trading day)
+                trading_days++;
+            }
+            current += std::chrono::hours(24);
+
+            // Safety limit
+            if (trading_days > 365) {
+                spdlog::warn("DTE calculation exceeded 365 days for expiry: {}", expiry);
+                break;
+            }
+        }
+
+        return trading_days;
+    } catch (const std::exception& e) {
+        spdlog::warn("Failed to calculate DTE for expiry {}: {}", expiry, e.what());
+        return 0;
+    }
+}
+
 } // namespace tws
 
 // ============================================================================
@@ -3624,8 +3900,11 @@ double BoxSpreadLeg::get_strike_width() const {
 }
 
 int BoxSpreadLeg::get_days_to_expiry() const {
-    // TODO: Implement proper DTE calculation
-    return 30;  // Stub
+    // Use the expiry from any leg (all legs have same expiry)
+    if (!long_call.expiry.empty()) {
+        return tws::calculate_dte(long_call.expiry);
+    }
+    return 0;
 }
 
 double BoxSpreadLeg::get_effective_margin() const {
