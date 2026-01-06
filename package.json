@@ -4,9 +4,9 @@
   "description": "IBKR Box Spread Generator - C++20 trading application with multi-language agents",
   "private": true,
   "scripts": {
-    "lint:docs": "markdownlint-cli2 \"docs/**/*.md\"",
-    "lint:docs:fix": "markdownlint-cli2 --fix \"docs/**/*.md\"",
-    "lint:docs:ci": "markdownlint-cli2 \"docs/**/*.md\" --config .markdownlint.json"
+    "lint:docs": "markdownlint-cli2 \"docs/**/*.md\" \"!docs/archive/**/*.md\"",
+    "lint:docs:fix": "markdownlint-cli2 --fix \"docs/**/*.md\" \"!docs/archive/**/*.md\"",
+    "lint:docs:ci": "markdownlint-cli2 \"docs/**/*.md\" \"!docs/archive/**/*.md\" --config .markdownlint.json"
   },
   "devDependencies": {
     "markdownlint-cli2": "^0.15.0"

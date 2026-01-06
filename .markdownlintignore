@@ -28,3 +28,6 @@ docs/SESSION_HANDOFF*.md
 
 # Ignore scorecard files
 docs/SCORECARD*.md
+
+# Ignore archived files
+docs/archive/**
