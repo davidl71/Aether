@@ -1,5 +1,9 @@
 # NotebookLM Status
 
+> ⚠️ **STATUS**: NotebookLM MCP server is currently **DISABLED** in this project (as of 2025-01-20).
+> This document is kept for reference but NotebookLM is not available via MCP.
+> See `docs/MCP_NOTEBOOKLM_DISABLED.md` for details.
+
 This document tracks the status of NotebookLM notebooks and resources in the library.
 
 ## Active Notebook

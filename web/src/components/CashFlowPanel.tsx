@@ -1,6 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { PositionSnapshot } from '../types/snapshot';
 import { formatCurrency, formatPercent } from '../utils/formatters';
+import {
+  calculateCashFlowTimeline,
+  type CashFlowTimelineResponse,
+  type MonthlyCashFlow,
+} from '../api/calculations';
 import '../styles/cash-flow.css';
 
 interface CashFlowPanelProps {
@@ -16,21 +21,7 @@ interface CashFlowPanelProps {
   }>;
 }
 
-interface CashFlowEvent {
-  date: string; // ISO date string
-  amount: number; // Positive for inflows, negative for outflows
-  description: string;
-  positionName: string;
-  type: 'loan_payment' | 'maturity' | 'interest' | 'dividend' | 'other';
-}
-
-interface MonthlyCashFlow {
-  month: string; // YYYY-MM
-  inflows: number;
-  outflows: number;
-  net: number;
-  events: CashFlowEvent[];
-}
+// Types imported from calculations API
 
 export function CashFlowPanel({
   positions,
@@ -38,134 +29,67 @@ export function CashFlowPanel({
 }: CashFlowPanelProps) {
   const [projectionMonths, setProjectionMonths] = useState(12);
   const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
+  const [timelineData, setTimelineData] = useState<CashFlowTimelineResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Calculate cash flows from positions
-  const cashFlows = useMemo(() => {
-    const events: CashFlowEvent[] = [];
-    const now = new Date();
+  // Fetch cash flow timeline from API
+  useEffect(() => {
+    let cancelled = false;
 
-    // Process positions
-    for (const position of positions) {
-      if (position.maturity_date) {
-        const maturityDate = new Date(position.maturity_date);
-        const monthsAhead = Math.ceil(
-          (maturityDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30)
+    async function fetchTimeline() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const result = await calculateCashFlowTimeline(
+          positions,
+          bankAccounts,
+          projectionMonths
         );
-
-        if (monthsAhead >= 0 && monthsAhead <= projectionMonths) {
-          // Maturity cash flow
-          const cashFlowAmount = position.cash_flow || position.candle.close || 0;
-          events.push({
-            date: position.maturity_date,
-            amount: cashFlowAmount,
-            description: `${position.instrument_type || 'Position'} maturity`,
-            positionName: position.name,
-            type: 'maturity',
-          });
-
-          // Monthly interest/rate payments for loans
-          if (position.instrument_type === 'bank_loan' || position.instrument_type === 'pension_loan') {
-            const rate = position.rate || 0;
-            const principal = position.cash_flow || position.candle.close || 0;
-            const monthlyPayment = (principal * rate) / 12;
-
-            for (let month = 1; month <= Math.min(monthsAhead, projectionMonths); month++) {
-              const paymentDate = new Date(now);
-              paymentDate.setMonth(paymentDate.getMonth() + month);
-              events.push({
-                date: paymentDate.toISOString().split('T')[0],
-                amount: -monthlyPayment, // Outflow
-                description: `Monthly interest payment`,
-                positionName: position.name,
-                type: 'loan_payment',
-              });
-            }
-          }
+        if (!cancelled) {
+          setTimelineData(result);
         }
-      }
-
-      // Current cash flow (if available)
-      if (position.cash_flow !== undefined && position.cash_flow !== 0) {
-        events.push({
-          date: now.toISOString().split('T')[0],
-          amount: position.cash_flow,
-          description: `Current ${position.instrument_type || 'position'} cash flow`,
-          positionName: position.name,
-          type: 'other',
-        });
-      }
-    }
-
-    // Process bank accounts (as loans if debit_rate exists)
-    for (const account of bankAccounts) {
-      if (account.debit_rate && account.debit_rate > 0) {
-        const principal = account.balance;
-        const monthlyPayment = (principal * account.debit_rate) / 12;
-
-        for (let month = 1; month <= projectionMonths; month++) {
-          const paymentDate = new Date(now);
-          paymentDate.setMonth(paymentDate.getMonth() + month);
-          events.push({
-            date: paymentDate.toISOString().split('T')[0],
-            amount: -monthlyPayment, // Outflow
-            description: `Monthly interest payment`,
-            positionName: account.account_name,
-            type: 'loan_payment',
-          });
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to calculate cash flow timeline');
+          console.error('Cash flow calculation error:', err);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
         }
       }
     }
 
-    return events;
+    fetchTimeline();
+
+    return () => {
+      cancelled = true;
+    };
   }, [positions, bankAccounts, projectionMonths]);
 
-  // Group cash flows by month
+  // Convert monthly flows to array and sort
   const monthlyCashFlows = useMemo(() => {
-    const monthly: Map<string, MonthlyCashFlow> = new Map();
+    if (!timelineData) return [];
 
-    for (const event of cashFlows) {
-      const month = event.date.substring(0, 7); // YYYY-MM
-      if (!monthly.has(month)) {
-        monthly.set(month, {
-          month,
-          inflows: 0,
-          outflows: 0,
-          net: 0,
-          events: [],
-        });
-      }
-
-      const monthlyFlow = monthly.get(month)!;
-      monthlyFlow.events.push(event);
-
-      if (event.amount > 0) {
-        monthlyFlow.inflows += event.amount;
-      } else {
-        monthlyFlow.outflows += Math.abs(event.amount);
-      }
-      monthlyFlow.net = monthlyFlow.inflows - monthlyFlow.outflows;
-    }
-
-    // Sort by month
-    return Array.from(monthly.values()).sort((a, b) => a.month.localeCompare(b.month));
-  }, [cashFlows]);
+    return Object.values(timelineData.monthly_flows).sort((a, b) =>
+      a.month.localeCompare(b.month)
+    );
+  }, [timelineData]);
 
   // Calculate totals
   const totals = useMemo(() => {
-    let totalInflows = 0;
-    let totalOutflows = 0;
-
-    for (const monthly of monthlyCashFlows) {
-      totalInflows += monthly.inflows;
-      totalOutflows += monthly.outflows;
+    if (!timelineData) {
+      return { inflows: 0, outflows: 0, net: 0 };
     }
 
     return {
-      inflows: totalInflows,
-      outflows: totalOutflows,
-      net: totalInflows - totalOutflows,
+      inflows: timelineData.total_inflows,
+      outflows: timelineData.total_outflows,
+      net: timelineData.net_cash_flow,
     };
-  }, [monthlyCashFlows]);
+  }, [timelineData]);
 
   return (
     <div className="cash-flow-panel">
@@ -177,6 +101,7 @@ export function CashFlowPanel({
             <select
               value={projectionMonths}
               onChange={(e) => setProjectionMonths(Number(e.target.value))}
+              disabled={loading}
             >
               <option value={6}>6 months</option>
               <option value={12}>12 months</option>
@@ -186,6 +111,25 @@ export function CashFlowPanel({
           </label>
         </div>
       </div>
+
+      {error && (
+        <div className="cash-flow-panel__error" style={{
+          padding: '12px 16px',
+          marginBottom: '16px',
+          background: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          borderRadius: '8px',
+          color: '#ef4444'
+        }}>
+          <strong>Error:</strong> {error}
+        </div>
+      )}
+
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '20px', color: '#9ca3af' }}>
+          Calculating cash flow timeline...
+        </div>
+      )}
 
       <div className="cash-flow-panel__summary">
         <div className="cash-flow-summary-card">
@@ -214,73 +158,76 @@ export function CashFlowPanel({
         </div>
       </div>
 
-      <div className="cash-flow-panel__table">
-        <table className="cash-flow-table">
-          <thead>
-            <tr>
-              <th>Month</th>
-              <th>Inflows</th>
-              <th>Outflows</th>
-              <th>Net</th>
-              <th>Events</th>
-            </tr>
-          </thead>
-          <tbody>
-            {monthlyCashFlows.length === 0 ? (
+      {!loading && !error && (
+        <div className="cash-flow-panel__table">
+          <table className="cash-flow-table">
+            <thead>
               <tr>
-                <td colSpan={5} style={{ textAlign: 'center', padding: '20px', color: '#9ca3af' }}>
-                  No cash flow events in projection period
-                </td>
+                <th>Month</th>
+                <th>Inflows</th>
+                <th>Outflows</th>
+                <th>Net</th>
+                <th>Events</th>
               </tr>
-            ) : (
-              monthlyCashFlows.map((monthly) => (
-                <tr key={monthly.month}>
-                  <td>{new Date(monthly.month + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</td>
-                  <td className="cash-flow-table__inflow">
-                    {monthly.inflows > 0 ? formatCurrency(monthly.inflows) : '—'}
-                  </td>
-                  <td className="cash-flow-table__outflow">
-                    {monthly.outflows > 0 ? formatCurrency(monthly.outflows) : '—'}
-                  </td>
-                  <td
-                    className={
-                      monthly.net >= 0
-                        ? 'cash-flow-table__net--positive'
-                        : 'cash-flow-table__net--negative'
-                    }
-                  >
-                    {formatCurrency(monthly.net)}
-                  </td>
-                  <td>
-                    <details>
-                      <summary>{monthly.events.length} event{monthly.events.length !== 1 ? 's' : ''}</summary>
-                      <ul className="cash-flow-events-list">
-                        {monthly.events.map((event, idx) => (
-                          <li key={idx} className={`cash-flow-event cash-flow-event--${event.type}`}>
-                            <span className="cash-flow-event__date">
-                              {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </span>
-                            <span className="cash-flow-event__description">{event.description}</span>
-                            <span
-                              className={
-                                event.amount >= 0
-                                  ? 'cash-flow-event__amount--positive'
-                                  : 'cash-flow-event__amount--negative'
-                              }
-                            >
-                              {formatCurrency(event.amount)}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
+            </thead>
+            <tbody>
+              {monthlyCashFlows.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '20px', color: '#9ca3af' }}>
+                    No cash flow events in projection period
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                monthlyCashFlows.map((monthly) => (
+                  <tr key={monthly.month}>
+                    <td>{new Date(monthly.month + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</td>
+                    <td className="cash-flow-table__inflow">
+                      {monthly.inflows > 0 ? formatCurrency(monthly.inflows) : '—'}
+                    </td>
+                    <td className="cash-flow-table__outflow">
+                      {monthly.outflows > 0 ? formatCurrency(monthly.outflows) : '—'}
+                    </td>
+                    <td
+                      className={
+                        monthly.net >= 0
+                          ? 'cash-flow-table__net--positive'
+                          : 'cash-flow-table__net--negative'
+                      }
+                    >
+                      {formatCurrency(monthly.net)}
+                    </td>
+                    <td>
+                      <details>
+                        <summary>{monthly.events.length} event{monthly.events.length !== 1 ? 's' : ''}</summary>
+                        <ul className="cash-flow-events-list">
+                          {monthly.events.map((event, idx) => (
+                            <li key={idx} className={`cash-flow-event cash-flow-event--${event.type}`}>
+                              <span className="cash-flow-event__date">
+                                {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </span>
+                              <span className="cash-flow-event__description">{event.description}</span>
+                              <span className="cash-flow-event__position">{event.position_name}</span>
+                              <span
+                                className={
+                                  event.amount >= 0
+                                    ? 'cash-flow-event__amount--positive'
+                                    : 'cash-flow-event__amount--negative'
+                                }
+                              >
+                                {formatCurrency(event.amount)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

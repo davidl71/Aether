@@ -1,8 +1,10 @@
 # Static Analysis Annotations Guide
 
-This guide explains how to leave "breadcrumbs" for static analysis tools in C++ code. These annotations help compilers and static analyzers understand code intent, reduce false positives, and catch real issues more effectively.
+This guide explains how to leave "breadcrumbs" for static analysis tools in C++ code. These annotations help compilers and static analyzers
+understand code intent, reduce false positives, and catch real issues more effectively.
 
-**Bonus Benefit**: Static analysis annotations also improve [Cursor's codebase indexing](https://cursor.com/docs/context/codebase-indexing) by providing semantic hints about code behavior, making AI suggestions more accurate and relevant.
+**Bonus Benefit**: Static analysis annotations also improve [Cursor's codebase indexing](https://cursor.com/docs/context/codebase-indexing) by
+providing semantic hints about code behavior, making AI suggestions more accurate and relevant.
 
 ## Table of Contents
 
@@ -77,7 +79,8 @@ const char* get_legacy_string() {
 
 ## Function Attributes
 
-C++ compilers (GCC and Clang) support function attributes that provide explicit information about function behavior, which static analyzers can leverage.
+C++ compilers (GCC and Clang) support function attributes that provide explicit information about function behavior, which static analyzers can
+leverage.
 
 ### Memory Management Attributes
 
@@ -266,7 +269,8 @@ void function_with_suppressed_warning() {
 
 ## Custom Macros
 
-For proprietary APIs or domain-specific logic, you can define custom macros that expand into standard C++ code while also providing hints to static analysis tools.
+For proprietary APIs or domain-specific logic, you can define custom macros that expand into standard C++ code while also providing hints to static
+analysis tools.
 
 ### Example: Custom Memory Allocation
 
@@ -458,7 +462,8 @@ types::OrderStatus parse_status(const std::string& status_str) {
 
 ## Best Practices
 
-1. **Use Standard Attributes**: Prefer standard attributes (`[[nodiscard]]`, `[[maybe_unused]]`) when available (C++17+), fall back to `__attribute__` for compatibility.
+1. **Use Standard Attributes**: Prefer standard attributes (`[[nodiscard]]`, `[[maybe_unused]]`) when available (C++17+), fall back to
+`__attribute__` for compatibility.
 
 2. **Document Intent**: Combine attributes with comments explaining _why_ the annotation is needed.
 
@@ -506,7 +511,8 @@ void copy_data(void* dest, const void* src, size_t size) ATTR_NONNULL(1, 2);
 
 ### Academic Research
 
-- **Breadcrumbs: Static Analysis Annotations (PLDI 2010)** - Research paper on using annotations to guide static analysis tools: [https://mdbond.github.io/breadcrumbs-pldi-2010.pdf](https://mdbond.github.io/breadcrumbs-pldi-2010.pdf)
+- **Breadcrumbs: Static Analysis Annotations (PLDI 2010)** - Research paper on using annotations to guide static analysis tools:
+  [https://mdbond.github.io/breadcrumbs-pldi-2010.pdf](https://mdbond.github.io/breadcrumbs-pldi-2010.pdf)
   - This paper introduced the concept of "breadcrumbs" - lightweight annotations that help static analysis tools understand code intent and reduce false positives
   - The techniques documented in this guide are inspired by and build upon the concepts presented in this research
 

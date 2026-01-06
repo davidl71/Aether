@@ -34,6 +34,7 @@
 ## Detailed Server Information
 
 ### 1. Todo2 ✅ ENABLED
+
 - **Source Type**: npm
 - **Package**: `todo2-extension-todo2`
 - **Command**: `npx`
@@ -42,6 +43,7 @@
 - **Install**: `npm install -g todo2-extension-todo2`
 
 ### 2. agentic-tools ✅ ENABLED
+
 - **Source Type**: npm
 - **Package**: `@pimzino/agentic-tools-mcp`
 - **Command**: `npx`
@@ -50,6 +52,7 @@
 - **Install**: `npm install -g @pimzino/agentic-tools-mcp`
 
 ### 3. context7 ✅ ENABLED
+
 - **Source Type**: npm
 - **Package**: `@upstash/context7-mcp`
 - **Command**: `npx`
@@ -58,6 +61,7 @@
 - **Install**: `npm install -g @upstash/context7-mcp`
 
 ### 4. exarp ✅ ENABLED
+
 - **Source Type**: python (uvx)
 - **Package**: `exarp`
 - **Command**: `uvx`
@@ -67,6 +71,7 @@
 - **Environment Variables**: `PROJECT_ROOT`
 
 ### 5. filesystem ✅ ENABLED
+
 - **Source Type**: npm
 - **Package**: `@modelcontextprotocol/server-filesystem`
 - **Command**: `npx`
@@ -75,6 +80,7 @@
 - **Install**: `npm install -g @modelcontextprotocol/server-filesystem`
 
 ### 6. git ✅ ENABLED
+
 - **Source Type**: npm
 - **Package**: `@modelcontextprotocol/server-git`
 - **Command**: `npx`
@@ -83,6 +89,7 @@
 - **Install**: `npm install -g @modelcontextprotocol/server-git`
 
 ### 7. ollama ✅ ENABLED
+
 - **Source Type**: python (uvx)
 - **Package**: `mcp-ollama`
 - **Command**: `uvx`
@@ -92,6 +99,7 @@
 - **Environment Variables**: `OLLAMA_BASE_URL`
 
 ### 8. semgrep ✅ ENABLED
+
 - **Source Type**: npm
 - **Package**: `@semgrep/mcp-server-semgrep`
 - **Command**: `npx`
@@ -100,6 +108,7 @@
 - **Install**: `npm install -g @semgrep/mcp-server-semgrep`
 
 ### 9. sequential_thinking ✅ ENABLED
+
 - **Source Type**: npm
 - **Package**: `@modelcontextprotocol/server-sequential-thinking`
 - **Command**: `npx`
@@ -108,6 +117,7 @@
 - **Install**: `npm install -g @modelcontextprotocol/server-sequential-thinking`
 
 ### 10. tractatus_thinking ✅ ENABLED
+
 - **Source Type**: npm
 - **Package**: `tractatus-thinking-mcp`
 - **Command**: `npx`
@@ -118,18 +128,22 @@
 ## Observations
 
 ### Distribution
+
 - **80% npm packages** (8 servers)
 - **20% Python via uvx** (2 servers)
 
 ### All Servers Enabled
+
 - No disabled servers found
 - All 10 servers are active and configured
 
 ### Environment Variables
+
 - **exarp**: Uses `PROJECT_ROOT` environment variable
 - **ollama**: Uses `OLLAMA_BASE_URL` environment variable
 
 ### Package Sources
+
 - **npm packages**: All use `npx -y` for execution (no global install required)
 - **Python packages**: All use `uvx` for execution (fast, isolated environments)
   - `exarp` uses `uvx exarp --mcp`

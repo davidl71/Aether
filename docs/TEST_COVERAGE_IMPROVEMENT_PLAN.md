@@ -8,6 +8,7 @@
 ## Current State Analysis
 
 ### Test Infrastructure
+
 - ✅ Python: pytest with pytest-cov configured
 - ✅ C++: Catch2 framework with CMake/CTest
 - ✅ Coverage scripts: `generate_coverage.sh`, `generate_python_coverage.sh`, `generate_cpp_coverage.sh`
@@ -16,6 +17,7 @@
 - ❌ Coverage enforcement: No minimum coverage threshold
 
 ### Current Test Coverage
+
 - **Test Files**: 43 files
 - **Test Lines**: 10,806 lines
 - **Test Ratio**: 9.1% (target: 30%+)
@@ -24,6 +26,7 @@
 ### Coverage Gaps Identified
 
 **Critical Modules with Low/No Coverage:**
+
 1. **TWS Client** (`native/src/tws_client.cpp`) - Core trading integration
 2. **Risk Calculator** (`native/src/risk_calculator.cpp`) - Risk management
 3. **Box Spread Strategy** (`native/src/strategies/box_spread/`) - Core strategy logic
@@ -35,6 +38,7 @@
 ### Phase 1: Infrastructure Setup (High Priority)
 
 **Tasks:**
+
 1. ✅ Add coverage reporting to CI/CD workflow
 2. ✅ Set minimum coverage threshold (50%)
 3. ✅ Generate coverage reports in CI/CD
@@ -42,6 +46,7 @@
 5. ✅ Add coverage badges to README
 
 **Files to Update:**
+
 - `.github/workflows/test.yml` - Add coverage collection and reporting
 - `pyproject.toml` or `setup.cfg` - Add coverage configuration
 - `CMakeLists.txt` - Ensure C++ coverage is enabled
@@ -49,6 +54,7 @@
 ### Phase 2: Critical Module Testing (High Priority)
 
 **Priority Order:**
+
 1. **TWS Client** - Core trading functionality
    - Connection management
    - Market data requests
@@ -75,6 +81,7 @@
 ### Phase 3: Integration Testing (Medium Priority)
 
 **Areas:**
+
 1. End-to-end box spread workflow
 2. TWS API integration (paper trading)
 3. Risk limit enforcement
@@ -83,6 +90,7 @@
 ### Phase 4: Python Services Testing (Medium Priority)
 
 **Modules:**
+
 1. `python/services/` - Backend services
 2. `python/integration/` - Integration modules
 3. `python/tui/` - TUI components
@@ -125,6 +133,7 @@ fail_under = 50.0
 ### Step 3: Create Test Files for Critical Modules
 
 **Priority Test Files:**
+
 1. `native/tests/tws_client_test.cpp` - TWS client tests
 2. `native/tests/risk_calculator_test.cpp` - Risk calculator tests
 3. `native/tests/box_spread_strategy_test.cpp` - Strategy tests
@@ -134,6 +143,7 @@ fail_under = 50.0
 ### Step 4: Add Mock/Stub Infrastructure
 
 **For TWS API Testing:**
+
 - Create mock TWS client for unit tests
 - Use paper trading for integration tests
 - Stub market data responses
@@ -141,16 +151,19 @@ fail_under = 50.0
 ## Success Metrics
 
 ### Short-term (1-2 weeks)
+
 - Coverage increases from 27.2% to 40%+
 - Critical modules (TWS client, risk calculator) have 60%+ coverage
 - CI/CD reports coverage in every run
 
 ### Medium-term (1 month)
+
 - Overall coverage reaches 50%+
 - All critical trading paths have tests
 - Coverage reports generated automatically
 
 ### Long-term (2-3 months)
+
 - Coverage reaches 70%+ (stretch goal)
 - Integration tests cover end-to-end workflows
 - Test ratio reaches 30%+
@@ -174,6 +187,7 @@ fail_under = 50.0
 ---
 
 **Related Tasks:**
+
 - T-198: Analyze test coverage gaps and create improvement plan
 - T-199: Add test coverage for python/services modules
 - T-200: Add test coverage for critical integration modules

@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include <optional>
+#include <string>
 
 namespace risk {
 
@@ -40,6 +41,25 @@ public:
     // Calculate Greeks for a stock position (non-option)
     // Stocks have delta=1.0, other Greeks=0.0
     Greeks calculate_stock_greeks(int quantity) const;
+
+    // Calculate Greeks for a bond/ETF position
+    // Uses duration and convexity for Rho and Gamma
+    // Returns Greeks based on bond duration, convexity, and price
+    Greeks calculate_bond_greeks(
+        const std::string& symbol,
+        double price,
+        double quantity,
+        double duration,      // Modified duration in years
+        double convexity      // Convexity value
+    ) const;
+
+    // Calculate Greeks for a foreign currency position
+    // Delta represents FX rate sensitivity
+    Greeks calculate_currency_greeks(
+        double position_value_local,
+        double fx_rate_usd,
+        const std::string& currency
+    ) const;
 
     // Aggregate Greeks across multiple positions
     // Multiplies by quantity and sums

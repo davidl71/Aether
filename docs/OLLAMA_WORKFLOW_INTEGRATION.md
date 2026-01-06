@@ -14,6 +14,7 @@ Ollama has been integrated into the development workflow for privacy-preserving 
 **Purpose**: Review C++ code for security, correctness, and best practices using CodeLlama.
 
 **Usage**:
+
 ```bash
 # Review single file
 python3 python/tools/ollama_code_review.py \
@@ -27,6 +28,7 @@ python3 python/tools/ollama_code_review.py \
 ```
 
 **Features**:
+
 - Privacy-preserving (all code stays local)
 - Security-focused analysis
 - Edge case detection
@@ -34,6 +36,7 @@ python3 python/tools/ollama_code_review.py \
 - Best practices suggestions
 
 **Best For**:
+
 - Proprietary trading algorithms
 - Risk management code
 - Order execution logic
@@ -44,6 +47,7 @@ python3 python/tools/ollama_code_review.py \
 **Purpose**: Generate comprehensive API documentation using Mistral.
 
 **Usage**:
+
 ```bash
 # Generate documentation
 python3 python/tools/ollama_documentation.py \
@@ -53,6 +57,7 @@ python3 python/tools/ollama_documentation.py \
 ```
 
 **Features**:
+
 - Comprehensive API documentation
 - Usage examples
 - Edge cases and error conditions
@@ -60,6 +65,7 @@ python3 python/tools/ollama_documentation.py \
 - Performance considerations
 
 **Best For**:
+
 - Proprietary code documentation
 - Internal API documentation
 - Code that shouldn't leave your machine
@@ -71,6 +77,7 @@ Two new commands have been added to `.cursor/commands.json`:
 ### `ai:review-with-ollama`
 
 Review code using Ollama (privacy-preserving):
+
 ```
 ai:review-with-ollama native/src/risk_calculator.cpp
 ```
@@ -78,6 +85,7 @@ ai:review-with-ollama native/src/risk_calculator.cpp
 ### `ai:docs-with-ollama`
 
 Generate documentation using Ollama:
+
 ```
 ai:docs-with-ollama native/src/risk_calculator.cpp
 ```

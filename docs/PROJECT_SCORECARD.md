@@ -1,7 +1,6 @@
-======================================================================
-  📊 EXARP PROJECT SCORE CARD
-  Generated: 2025-12-25 17:19
-======================================================================
+# EXARP PROJECT SCORE CARD
+
+**Generated:** 2025-12-25 17:19
 
   OVERALL SCORE: 56.6% 🟡
   Production Ready: NO ❌

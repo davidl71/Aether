@@ -1,6 +1,7 @@
 # Trading Infrastructure Guide
 
-This guide covers infrastructure options for deploying and running the IB Box Spread trading application, including VPS providers, server operating systems, and deployment strategies.
+This guide covers infrastructure options for deploying and running the IB Box Spread trading application, including VPS providers, server operating
+systems, and deployment strategies.
 
 ## Table of Contents
 
@@ -250,7 +251,8 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 
 ### FreeBSD for Financial IT
 
-**Overview**: FreeBSD is an open-source Unix-like operating system known for its stability, security, and performance, making it suitable for financial applications.
+**Overview**: FreeBSD is an open-source Unix-like operating system known for its stability, security, and performance, making it suitable for
+financial applications.
 
 **Advantages for Trading**:
 
@@ -383,14 +385,14 @@ This guide covers infrastructure options for deploying and running the IB Box Sp
 
 | Provider | Type | Starting Price | Key Features | Best For |
 |----------|------|---------------|--------------|----------|
-| **Specialized Trading VPS** |
+| **Specialized Trading VPS** | | | | |
 | QuantVPS | Trading VPS | See pricing | High-performance, low-latency | Professional traders, HFT |
 | TradingVPS | Trading VPS | Affordable | Cost-effective, multiple locations | Budget-conscious, multiple strategies |
 | Ninja Mobile Trader | Trading VPS | Varies | Chicago proximity, mobile access | NinjaTrader users, mobile trading |
 | FXS VPS | Trading VPS | Competitive | Linux-optimized, Forex-focused | Forex trading, general trading |
-| **Cloud Infrastructure** |
+| **Cloud Infrastructure** | | | | |
 | AWS | Cloud | Pay-as-you-go | SageMaker, Data Exchange, Lean Engine | Enterprise, ML strategies, large scale |
-| **General-Purpose VPS** |
+| **General-Purpose VPS** | | | | |
 | Vultr | VPS | $6/month | 32 locations, competitive pricing | Backend APIs, web hosting, dev/test |
 | OVHcloud | VPS | Varies | Unlimited traffic, European focus | Forex VPS, European markets |
 

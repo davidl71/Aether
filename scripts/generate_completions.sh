@@ -145,38 +145,36 @@ EOF
   echo -e "${GREEN}✓ Fish completion generated: $COMPLETIONS_DIR/ib_box_spread.fish${NC}"
 }
 
-# Function to generate TUI completion (C++ TUI uses config files, not CLI args)
+# Function to generate TUI completion (Python TUI)
 generate_tui_completions() {
   echo -e "${GREEN}Generating TUI completions...${NC}"
 
-  # Note: C++ TUI (ib_box_spread_tui) uses config files and environment variables
-  # instead of command-line flags. These completions are minimal.
+  # Note: Python TUI uses environment variables and config files
+  # Run with: python -m python.tui
 
   # Bash completion for TUI
   cat > "$COMPLETIONS_DIR/ib_box_spread_tui.bash" << 'EOF'
-# Bash completion for ib_box_spread_tui (C++ TUI)
-# Note: TUI uses config files (~/.config/ib_box_spread/tui_config.json)
-# and environment variables (TUI_BACKEND, TUI_API_URL) instead of CLI flags
+# Bash completion for Python TUI
+# Run with: python -m python.tui
+# Uses environment variables: TUI_BACKEND, TUI_API_URL, TUI_SNAPSHOT_FILE
 _ib_box_spread_tui() {
   local cur prev words cword
   _init_completion || return
 
-  # C++ TUI doesn't have CLI flags yet, but we can add basic completion
-  if [[ "$cur" == -* ]]; then
-    COMPREPLY=($(compgen -W "-h --help" -- "$cur"))
+  # Python TUI module completion
+  if [[ "$prev" == "-m" ]]; then
+    COMPREPLY=($(compgen -W "python.tui" -- "$cur"))
   fi
 }
 
-complete -F _ib_box_spread_tui ib_box_spread_tui
-# Also complete the symlink name for compatibility
-complete -F _ib_box_spread_tui ib-box-spread-tui
+complete -F _ib_box_spread_tui python
 EOF
 
   # Zsh completion for TUI
   cat > "$COMPLETIONS_DIR/_ib_box_spread_tui" << 'EOF'
-#compdef ib_box_spread_tui ib-box-spread-tui
+#compdef python
 
-# C++ TUI uses config files, not CLI flags
+# Python TUI uses module execution: python -m python.tui
 # Config: ~/.config/ib_box_spread/tui_config.json
 # Env vars: TUI_BACKEND, TUI_API_URL
 
@@ -196,12 +194,11 @@ EOF
 
   # Fish completion for TUI
   cat > "$COMPLETIONS_DIR/ib_box_spread_tui.fish" << 'EOF'
-# Fish completion for ib_box_spread_tui (C++ TUI)
-# Note: TUI uses config files (~/.config/ib_box_spread/tui_config.json)
-# and environment variables (TUI_BACKEND, TUI_API_URL) instead of CLI flags
+# Fish completion for Python TUI
+# Run with: python -m python.tui
+# Uses environment variables: TUI_BACKEND, TUI_API_URL, TUI_SNAPSHOT_FILE
 
-complete -c ib_box_spread_tui -s h -l help -d "Show help message"
-complete -c ib-box-spread-tui -s h -l help -d "Show help message"
+complete -c python -n '__fish_seen_subcommand_from -m' -a "python.tui" -d "Run TUI application"
 EOF
 
   chmod +x "$COMPLETIONS_DIR"/*tui* 2>/dev/null || true

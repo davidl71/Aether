@@ -9,12 +9,14 @@
 ## Current Status
 
 ### Test Status
+
 - **Python Tests**: ✅ 30 tests passing (75% coverage for `security.py`)
 - **C++ Tests**: ⚠️ Status unknown (needs verification)
 - **Overall Coverage**: 🟠 14.5% (scorecard metric)
 - **Target Coverage**: 🎯 30%+
 
 ### Known Issues
+
 - Python tests fixed (per `TEST_FIXES_COMPLETE.md`)
 - C++ test build status unknown
 - Coverage measurement not automated
@@ -29,6 +31,7 @@
 **Objective**: Verify C++ tests compile and run successfully
 
 **Tasks**:
+
 1. [ ] Check if build directory exists
 2. [ ] Configure CMake build with test support
 3. [ ] Build test executable (`box_spread_tests`)
@@ -38,6 +41,7 @@
 7. [ ] Document any assertion failures
 
 **Commands**:
+
 ```bash
 cd native
 mkdir -p build
@@ -58,6 +62,7 @@ ctest --output-on-failure
 **Objective**: Resolve any build/compilation issues
 
 **Common Issues to Check**:
+
 - Missing dependencies
 - Incorrect include paths
 - Linker errors
@@ -65,6 +70,7 @@ ctest --output-on-failure
 - Missing source files
 
 **Tasks**:
+
 1. [ ] Fix missing includes
 2. [ ] Fix linker errors
 3. [ ] Update CMakeLists.txt if needed
@@ -80,6 +86,7 @@ ctest --output-on-failure
 **Objective**: Resolve test execution failures
 
 **Common Issues**:
+
 - Test setup/teardown problems
 - Mock data initialization
 - API client initialization
@@ -87,6 +94,7 @@ ctest --output-on-failure
 - Memory leaks or crashes
 
 **Tasks**:
+
 1. [ ] Fix test fixture initialization
 2. [ ] Fix mock data setup
 3. [ ] Fix API client configuration
@@ -103,6 +111,7 @@ ctest --output-on-failure
 **Objective**: Fix incorrect test expectations
 
 **Common Issues**:
+
 - Outdated assertions
 - Floating-point comparison issues
 - Timing-related failures
@@ -110,6 +119,7 @@ ctest --output-on-failure
 - Incorrect test logic
 
 **Tasks**:
+
 1. [ ] Review failing assertions
 2. [ ] Update outdated expectations
 3. [ ] Fix floating-point comparisons (use Approx)
@@ -126,12 +136,14 @@ ctest --output-on-failure
 **Objective**: Ensure all Python tests still pass
 
 **Tasks**:
+
 1. [ ] Run all Python tests: `pytest python/tests/ python/integration/ -v`
 2. [ ] Fix any new failures
 3. [ ] Address deprecation warnings (optional)
 4. [ ] Verify test coverage still > 30% for security module
 
 **Commands**:
+
 ```bash
 pytest python/tests/ python/integration/ -v
 pytest python/tests/test_security.py --cov=python/services/security --cov-report=term
@@ -148,6 +160,7 @@ pytest python/tests/test_security.py --cov=python/services/security --cov-report
 **Objective**: Configure coverage measurement for C++ code
 
 **Tasks**:
+
 1. [ ] Install coverage tools (gcov, lcov)
 2. [ ] Configure CMake with coverage flags
 3. [ ] Build with coverage enabled
@@ -155,6 +168,7 @@ pytest python/tests/test_security.py --cov=python/services/security --cov-report
 5. [ ] Generate coverage report
 
 **Commands**:
+
 ```bash
 # macOS
 brew install lcov
@@ -198,12 +212,14 @@ open coverage_html/index.html
 **Objective**: Configure coverage measurement for Python code
 
 **Tasks**:
+
 1. [ ] Install pytest-cov: `pip install pytest-cov coverage`
 2. [ ] Create `.coveragerc` configuration file
 3. [ ] Run tests with coverage
 4. [ ] Generate coverage report
 
 **Commands**:
+
 ```bash
 pip install pytest-cov coverage
 
@@ -248,6 +264,7 @@ open htmlcov/index.html
 **Objective**: Document current coverage state
 
 **Tasks**:
+
 1. [ ] Run C++ coverage analysis
 2. [ ] Run Python coverage analysis
 3. [ ] Combine coverage metrics
@@ -255,6 +272,7 @@ open htmlcov/index.html
 5. [ ] Identify coverage gaps
 
 **Coverage Metrics to Track**:
+
 - Overall coverage percentage
 - Coverage by module/component
 - Uncovered lines/files
@@ -274,6 +292,7 @@ open htmlcov/index.html
 **Priority Areas** (based on `TEST_COVERAGE_ANALYSIS.md`):
 
 **High Priority**:
+
 1. Core trading logic (`box_spread_strategy.cpp`)
 2. Order management (`order_manager.cpp`)
 3. Risk calculations (`risk_calculator.cpp`)
@@ -281,17 +300,20 @@ open htmlcov/index.html
 5. Configuration (`config_manager.cpp`)
 
 **Medium Priority**:
+
 1. Option chain (`option_chain.cpp`)
 2. Rate limiter (`rate_limiter.cpp`)
 3. Hedge manager (`hedge_manager.cpp`)
 4. Box spread bag (`box_spread_bag.cpp`)
 
 **Low Priority**:
+
 1. ML predictor (optional)
 2. Mock data generator (testing utility)
 3. TUI components (separate testing)
 
 **Tasks**:
+
 1. [ ] Review coverage report
 2. [ ] Identify uncovered critical paths
 3. [ ] Prioritize by business impact
@@ -306,6 +328,7 @@ open htmlcov/index.html
 **Objective**: Increase C++ coverage to 30%+
 
 **Focus Areas**:
+
 - Box spread calculation logic
 - Order validation and execution
 - Risk management calculations
@@ -313,6 +336,7 @@ open htmlcov/index.html
 - Configuration validation
 
 **Tasks**:
+
 1. [ ] Review existing test files
 2. [ ] Identify missing test cases
 3. [ ] Add tests for uncovered code paths
@@ -321,6 +345,7 @@ open htmlcov/index.html
 6. [ ] Verify coverage increases
 
 **Test Files to Enhance**:
+
 - `test_box_spread_strategy.cpp` - Add full execution flow tests
 - `test_order_manager.cpp` - Add multi-leg execution tests
 - `test_tws_client.cpp` - Add market data request tests
@@ -335,11 +360,13 @@ open htmlcov/index.html
 **Objective**: Increase Python coverage to 30%+
 
 **Focus Areas**:
+
 - Service layer (`python/services/`)
 - Integration modules (`python/integration/`)
 - TUI models (`python/tui/`)
 
 **Tasks**:
+
 1. [ ] Review existing Python tests
 2. [ ] Identify uncovered modules
 3. [ ] Add tests for `swiftness_api.py`
@@ -348,6 +375,7 @@ open htmlcov/index.html
 6. [ ] Verify coverage increases
 
 **Test Files to Create/Enhance**:
+
 - `python/tests/test_swiftness_api.py` (if missing)
 - `python/integration/test_*.py` (expand existing)
 - `python/tui/tests/test_models.py` (enhance existing)
@@ -361,6 +389,7 @@ open htmlcov/index.html
 **Objective**: Test component interactions
 
 **Tasks**:
+
 1. [ ] Review existing integration tests
 2. [ ] Add TWS client integration tests (if missing)
 3. [ ] Add market data pipeline tests
@@ -368,6 +397,7 @@ open htmlcov/index.html
 5. [ ] Add multi-component interaction tests
 
 **Integration Test Files**:
+
 - `test_tws_integration.cpp` (verify exists and passes)
 - `test_market_data_integration.cpp` (verify exists and passes)
 - `test_box_spread_e2e.cpp` (verify exists and passes)
@@ -381,6 +411,7 @@ open htmlcov/index.html
 **Objective**: Confirm 30%+ coverage across codebase
 
 **Tasks**:
+
 1. [ ] Run full coverage analysis
 2. [ ] Verify overall coverage >= 30%
 3. [ ] Verify critical paths covered
@@ -388,6 +419,7 @@ open htmlcov/index.html
 5. [ ] Update coverage baseline
 
 **Success Criteria**:
+
 - ✅ Overall coverage >= 30%
 - ✅ All critical paths covered
 - ✅ All tests passing
@@ -404,6 +436,7 @@ open htmlcov/index.html
 **Objective**: Make coverage reporting part of build process
 
 **Tasks**:
+
 1. [ ] Create coverage generation script
 2. [ ] Add CMake target for coverage
 3. [ ] Add Python coverage script
@@ -411,6 +444,7 @@ open htmlcov/index.html
 5. [ ] Test coverage automation
 
 **Scripts to Create**:
+
 - `scripts/generate_coverage.sh` - Combined C++ and Python coverage
 - `scripts/generate_cpp_coverage.sh` - C++ coverage only
 - `scripts/generate_python_coverage.sh` - Python coverage only
@@ -424,6 +458,7 @@ open htmlcov/index.html
 **Objective**: Track coverage in continuous integration
 
 **Tasks**:
+
 1. [ ] Review existing CI/CD setup
 2. [ ] Add coverage generation step
 3. [ ] Add coverage threshold check (30%)
@@ -431,6 +466,7 @@ open htmlcov/index.html
 5. [ ] Add coverage badge to README (optional)
 
 **CI/CD Integration**:
+
 - GitHub Actions workflow
 - Coverage threshold enforcement
 - Coverage report artifacts
@@ -445,6 +481,7 @@ open htmlcov/index.html
 **Objective**: Make coverage measurement repeatable
 
 **Tasks**:
+
 1. [ ] Update `TEST_COVERAGE_SETUP.md` with current process
 2. [ ] Document coverage commands
 3. [ ] Document coverage interpretation
@@ -458,6 +495,7 @@ open htmlcov/index.html
 ## Implementation Timeline
 
 ### Week 1: Fix Failing Tests
+
 - **Day 1**: Build and run C++ tests, identify failures
 - **Day 2**: Fix compilation errors
 - **Day 3**: Fix runtime errors
@@ -465,6 +503,7 @@ open htmlcov/index.html
 - **Day 5**: Verify all tests passing
 
 ### Week 2: Measure Coverage
+
 - **Day 1**: Set up C++ coverage tools
 - **Day 2**: Set up Python coverage tools
 - **Day 3**: Generate baseline coverage report
@@ -472,11 +511,13 @@ open htmlcov/index.html
 - **Day 5**: Prioritize coverage improvements
 
 ### Week 3: Increase Coverage
+
 - **Days 1-2**: Add C++ tests for critical components
 - **Days 3-4**: Add Python tests
 - **Day 5**: Add integration tests
 
 ### Week 4: Automation & Documentation
+
 - **Days 1-2**: Set up coverage automation
 - **Day 3**: Add CI/CD integration
 - **Days 4-5**: Documentation and verification
@@ -488,24 +529,28 @@ open htmlcov/index.html
 ## Success Criteria
 
 ### Phase 1: Tests Fixed
+
 - ✅ All C++ tests compile successfully
 - ✅ All C++ tests pass
 - ✅ All Python tests pass
 - ✅ No flaky tests
 
 ### Phase 2: Coverage Measured
+
 - ✅ Coverage tools configured
 - ✅ Baseline coverage report generated
 - ✅ Coverage gaps identified
 - ✅ Coverage metrics documented
 
 ### Phase 3: Coverage Increased
+
 - ✅ Overall coverage >= 30%
 - ✅ Critical paths covered
 - ✅ All new tests passing
 - ✅ Coverage report shows improvement
 
 ### Phase 4: Automation Complete
+
 - ✅ Coverage generation automated
 - ✅ CI/CD integration working
 - ✅ Coverage documentation complete
@@ -516,15 +561,19 @@ open htmlcov/index.html
 ## Risk Mitigation
 
 ### Risk 1: C++ Tests Don't Compile
+
 **Mitigation**: Fix dependencies, update CMake configuration, check compiler compatibility
 
 ### Risk 2: Coverage Tools Not Available
+
 **Mitigation**: Use alternative tools (llvm-cov for macOS), document platform-specific setup
 
 ### Risk 3: Coverage Target Too Ambitious
+
 **Mitigation**: Focus on critical paths first, set intermediate targets (20%, 25%, 30%)
 
 ### Risk 4: Tests Take Too Long
+
 **Mitigation**: Prioritize high-impact tests, use test fixtures, optimize test execution
 
 ---

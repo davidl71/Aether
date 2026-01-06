@@ -1,16 +1,16 @@
 # TUI Testing Guide
 
-**Note**: TUI has been migrated from Go to C++ (FTXUI library). This document is being updated.
+**Note**: TUI has been migrated from C++ (FTXUI) to Python (Textual). This document has been updated.
 
 ## Overview
 
-The C++ TUI uses FTXUI for rendering and is built as part of the main CMake build system.
+The Python TUI uses Textual for rendering and is run as a Python module.
 
 ## Current Status
 
-- **Implementation**: C++ with FTXUI (`native/src/tui_app.cpp`)
-- **Build**: `cmake --build build --target ib_box_spread_tui`
-- **Testing**: C++ TUI tests should be added to `native/tests/`
+- **Implementation**: Python with Textual (`python/tui/app.py`)
+- **Run**: `python -m python.tui`
+- **Testing**: Python TUI tests are in `python/tests/test_tui_*.py`
 
 ## Testing Strategy (To Be Implemented)
 
@@ -40,22 +40,18 @@ Test TUI components working together.
 
 ### 3. Manual Testing
 
-Since FTXUI is an interactive library, manual testing is important:
+Since Textual is an interactive library, manual testing is important:
 
 ```bash
+# Install dependencies
+pip install textual requests
 
-# Build TUI
+# Run with mock data (default)
+python -m python.tui
 
-cmake --build build --target ib_box_spread_tui
-
-# Run with mock data
-
-./build/ib_box_spread_tui
-
-# Test with different backends (via config file)
-
-TUI_BACKEND=mock ./build/ib_box_spread_tui
-TUI_BACKEND=rest ./build/ib_box_spread_tui
+# Test with different backends (via environment variables)
+TUI_BACKEND=rest TUI_API_URL=http://localhost:8080/api/snapshot python -m python.tui
+TUI_BACKEND=file TUI_SNAPSHOT_FILE=web/public/data/snapshot.json python -m python.tui
 ```
 
 ## Configuration
@@ -67,17 +63,17 @@ TUI uses config files instead of command-line flags:
 
 ## Future Testing Improvements
 
-1. Add Catch2 tests for TUI components
+1. Add pytest tests for TUI components
 2. Add snapshot testing for UI rendering
 3. Add integration tests for provider → display pipeline
 4. Add performance tests for real-time updates
 
 ## Migration Notes
 
-The previous Go TUI (`tui/`) has been removed. All TUI functionality is now in C++:
+The C++ TUI (`native/src/tui_app.cpp`) has been removed. All TUI functionality is now in Python:
 
-- `native/src/tui_app.cpp` - Main TUI application
-- `native/src/tui_provider.cpp` - Data providers
-- `native/src/tui_converter.cpp` - Type conversions
-- `native/src/tui_config.cpp` - Configuration management
-- `native/include/tui_*.h` - Headers
+- `python/tui/app.py` - Main TUI application (Textual)
+- `python/tui/providers.py` - Data providers
+- `python/tui/models.py` - Data models (shared with PWA)
+
+See `docs/research/architecture/TUI_PYTHON_MIGRATION.md` for migration details.

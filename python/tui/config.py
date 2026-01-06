@@ -5,6 +5,8 @@ MIGRATION NOTES FOR FUTURE C++ MIGRATION (pybind11):
 - Configuration can be shared with C++ via JSON serialization
 - Consider using a shared config format (JSON/YAML) between Python and C++
 - C++ config loading can be exposed via pybind11
+
+Uses SharedConfigLoader for unified configuration format (see T-112).
 """
 
 from __future__ import annotations
@@ -12,9 +14,11 @@ from __future__ import annotations
 import json
 import logging
 import os
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Optional
+
+from ..integration.shared_config_loader import SharedConfigLoader
 
 logger = logging.getLogger(__name__)
 
@@ -96,24 +100,69 @@ class TUIConfig:
 
 def load_config() -> TUIConfig:
     """
-    Load configuration from file or environment variables
+    Load configuration from shared config file or fallback to legacy config.
+
+    Uses SharedConfigLoader (T-112) for unified configuration format.
+    Falls back to legacy TUI config file if shared config not available.
 
     Environment variables override config file:
     - TUI_BACKEND: provider type (mock, rest, file, etc.)
     - TUI_API_URL: REST endpoint URL
     - TUI_SNAPSHOT_FILE: file path for file provider
+    - IB_BOX_SPREAD_CONFIG: path to shared config file
     """
+    # Try shared config first
+    try:
+        shared_config = SharedConfigLoader.load_config()
+        if shared_config.tui:
+            # Convert shared config TUI section (dataclass) to TUI TUIConfig
+            shared_tui = shared_config.tui  # This is a TUIConfig dataclass from shared_config_loader
+
+            # Extract ibkr_rest dict fields (shared config uses Dict[str, Any])
+            ibkr_rest_dict = shared_tui.ibkr_rest if hasattr(shared_tui, 'ibkr_rest') and isinstance(shared_tui.ibkr_rest, dict) else {}
+            display_dict = shared_tui.display if hasattr(shared_tui, 'display') and isinstance(shared_tui.display, dict) else {}
+
+            config = TUIConfig(
+                provider_type=shared_tui.provider_type,
+                rest_endpoint=shared_tui.rest_endpoint,
+                update_interval_ms=shared_tui.update_interval_ms,
+                refresh_rate_ms=shared_tui.refresh_rate_ms,
+                rest_timeout_ms=shared_tui.rest_timeout_ms,
+                rest_verify_ssl=shared_tui.rest_verify_ssl,
+                file_path=shared_tui.file_path,
+                ibkr_rest_base_url=ibkr_rest_dict.get("baseUrl", "https://localhost:5000/v1/portal"),
+                ibkr_rest_account_id=ibkr_rest_dict.get("accountId", ""),
+                ibkr_rest_verify_ssl=ibkr_rest_dict.get("verifySsl", False),
+                ibkr_rest_timeout_ms=ibkr_rest_dict.get("timeoutMs", 5000),
+                show_colors=display_dict.get("showColors", True),
+                show_footer=display_dict.get("showFooter", True),
+            )
+            logger.info("Loaded TUI configuration from shared config file")
+            # Apply environment variable overrides
+            _apply_env_overrides(config)
+            return config
+    except Exception as e:
+        logger.debug(f"Shared config not available ({e}), falling back to legacy config")
+
+    # Fallback to legacy config file
     config_path = TUIConfig.get_config_path()
     config = TUIConfig.load_from_file(config_path)
 
     # Override with environment variables
+    _apply_env_overrides(config)
+
+    return config
+
+
+def _apply_env_overrides(config: TUIConfig) -> None:
+    """Apply environment variable overrides to config."""
     if os.getenv("TUI_BACKEND"):
         config.provider_type = os.getenv("TUI_BACKEND", "mock")
 
-    if os.getenv("TUI_API_URL"):
-        config.rest_endpoint = os.getenv("TUI_API_URL")
+    env_api_url = os.getenv("TUI_API_URL")
+    if env_api_url:
+        config.rest_endpoint = env_api_url
 
-    if os.getenv("TUI_SNAPSHOT_FILE"):
-        config.file_path = os.getenv("TUI_SNAPSHOT_FILE")
-
-    return config
+    env_file = os.getenv("TUI_SNAPSHOT_FILE")
+    if env_file:
+        config.file_path = env_file

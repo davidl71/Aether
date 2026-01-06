@@ -18,7 +18,6 @@ All backend services now have daemonized start/stop scripts for easy management.
 
 ### Start a single service
 
-
 ```bash
 ./scripts/start_alpaca_service.sh
 ./scripts/start_ib_service.sh
@@ -26,7 +25,6 @@ All backend services now have daemonized start/stop scripts for easy management.
 
 # etc.
 ```
-
 
 ### Stop a single service
 
@@ -66,7 +64,6 @@ tail -f logs/discount-bank-service.log
 
 ## Features
 
-
 All daemonized scripts include:
 
 - ✅ **Port conflict detection** - Checks if service is already running
@@ -80,7 +77,6 @@ All daemonized scripts include:
 
 ### Alpaca Service (Port 8000)
 
-
 - **Endpoint**: `http://localhost:8000/api/snapshot`
 - **Health**: `http://localhost:8000/api/health`
 - **Requirements**: Alpaca API credentials (1Password or env vars)
@@ -88,12 +84,10 @@ All daemonized scripts include:
 
 ### TradeStation Service (Port 8001)
 
-
 - **Endpoint**: `http://localhost:8001/api/snapshot`
 - **Health**: `http://localhost:8001/api/health`
 - **Requirements**: TradeStation API credentials
 - **Log**: `logs/tradestation-service.log`
-
 
 ### IB Service (Port 8002)
 
@@ -102,14 +96,12 @@ All daemonized scripts include:
 - **Requirements**: IB Gateway must be running (port 5000)
 - **Log**: `logs/ib-service.log`
 
-
 ### Discount Bank Service (Port 8003)
 
 - **Endpoint**: `http://localhost:8003/api/bank-accounts`
 - **Health**: `http://localhost:8003/api/health`
 - **Requirements**: DISCOUNT.dat file (default: `~/Downloads/DISCOUNT.dat`)
 - **Log**: `logs/discount-bank-service.log`
-
 
 ### Risk-Free Rate Service (Port 8004)
 
@@ -124,7 +116,6 @@ All daemonized scripts include:
 - **Health**: `http://localhost:8005/api/health`
 - **Requirements**: Tastytrade API credentials
 - **Log**: `logs/tastytade-service.log`
-
 
 ## Configuration
 

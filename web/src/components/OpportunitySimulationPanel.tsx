@@ -1,6 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { PositionSnapshot } from '../types/snapshot';
 import { formatCurrency, formatPercent } from '../utils/formatters';
+import {
+  findSimulationScenarios,
+  calculateScenarioResults,
+  type SimulationScenario,
+  type ScenarioCalculationResponse,
+} from '../api/calculations';
 import '../styles/opportunity-simulation.css';
 
 interface OpportunitySimulationPanelProps {
@@ -42,145 +48,88 @@ export function OpportunitySimulationPanel({
   bankAccounts = [],
 }: OpportunitySimulationPanelProps) {
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
-  const [scenarioParams, setScenarioParams] = useState<Record<string, any>>({});
+  const [availableScenarios, setAvailableScenarios] = useState<SimulationScenario[]>([]);
+  const [scenarioResults, setScenarioResults] = useState<ScenarioCalculationResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingResults, setLoadingResults] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Available scenarios based on current positions
-  const availableScenarios = useMemo(() => {
-    const scenarios: SimulationScenario[] = [];
+  // Fetch available scenarios from API
+  useEffect(() => {
+    let cancelled = false;
 
-    // Find loans
-    const loans = positions.filter(
-      p => p.instrument_type === 'bank_loan' || p.instrument_type === 'pension_loan'
-    );
-    const bankLoans = bankAccounts.filter(a => a.debit_rate && a.debit_rate > 0);
+    async function fetchScenarios() {
+      setLoading(true);
+      setError(null);
 
-    // Scenario 1: Loan Consolidation
-    if (loans.length > 1 || bankLoans.length > 0) {
-      interface LoanCandidate { rate: number; name: string; balance: number }
-      const loanCandidates: LoanCandidate[] = [
-        ...loans.map(l => ({
-          rate: l.rate || 0,
-          name: l.name,
-          balance: l.cash_flow || l.candle.close || 0
-        })),
-        ...bankLoans.map(a => ({
-          rate: a.debit_rate || 0,
-          name: a.account_name,
-          balance: a.balance
-        }))
-      ].filter((l): l is LoanCandidate => l.rate > 0);
-
-      if (loanCandidates.length > 0) {
-        const highestRateLoan = loanCandidates.sort((a, b) => b.rate - a.rate)[0];
-
-        if (highestRateLoan.rate > 0.03) { // Only if rate > 3%
-          scenarios.push({
-            id: 'loan_consolidation',
-            name: 'Loan Consolidation',
-            description: `Consolidate high-rate loans using lower-rate financing`,
-            type: 'loan_consolidation',
-            parameters: {
-              loanAmount: highestRateLoan.balance,
-              loanRate: highestRateLoan.rate,
-              targetLoanRate: 0.04, // Assume 4% consolidation rate
-            }
-          });
+      try {
+        const scenarios = await findSimulationScenarios(positions, bankAccounts);
+        if (!cancelled) {
+          setAvailableScenarios(scenarios);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to find scenarios');
+          console.error('Scenario discovery error:', err);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
         }
       }
     }
 
-    // Scenario 2: Margin for Box Spreads
-    const boxSpreads = positions.filter(p => p.instrument_type === 'box_spread');
-    if (loans.length > 0 && boxSpreads.length > 0) {
-      const loan = loans[0];
-      const loanAmount = loan.cash_flow || loan.candle.close || 0;
-      if (loanAmount > 0) {
-        scenarios.push({
-          id: 'margin_for_box_spread',
-          name: 'Use Loan as Margin for Box Spreads',
-          description: `Use loan proceeds as margin collateral for box spread positions`,
-          type: 'margin_for_box_spread',
-          parameters: {
-            loanAmount,
-            loanRate: loan.rate || 0,
-            boxSpreadRate: boxSpreads[0].rate || 0.05,
-          }
-        });
-      }
-    }
+    fetchScenarios();
 
-    // Scenario 3: Investment Fund Strategy
-    if (loans.length > 0) {
-      const loan = loans[0];
-      const loanAmount = loan.cash_flow || loan.candle.close || 0;
-      if (loanAmount > 0) {
-        scenarios.push({
-          id: 'investment_fund',
-          name: 'Investment Fund Strategy',
-          description: `Use loan to invest in fund, use fund as collateral for cheaper loan`,
-          type: 'investment_fund',
-          parameters: {
-            loanAmount,
-            loanRate: loan.rate || 0,
-            fundReturn: 0.06, // Assume 6% fund return
-          }
-        });
-      }
-    }
-
-    return scenarios;
+    return () => {
+      cancelled = true;
+    };
   }, [positions, bankAccounts]);
 
-  // Calculate scenario results
-  const scenarioResults = useMemo(() => {
-    if (!selectedScenario) return null;
-
-    const scenario = availableScenarios.find(s => s.id === selectedScenario);
-    if (!scenario) return null;
-
-    const params = scenarioParams[selectedScenario] || scenario.parameters;
-
-    switch (scenario.type) {
-      case 'loan_consolidation': {
-        const currentCost = (params.loanAmount || 0) * (params.loanRate || 0);
-        const newCost = (params.loanAmount || 0) * (params.targetLoanRate || 0);
-        const netBenefit = currentCost - newCost;
-        return {
-          netBenefit,
-          cashFlowImpact: netBenefit / 12, // Monthly benefit
-          riskReduction: 0.15, // Estimated risk reduction
-          capitalEfficiency: 1.0,
-        };
-      }
-
-      case 'margin_for_box_spread': {
-        const loanCost = (params.loanAmount || 0) * (params.loanRate || 0);
-        const boxSpreadReturn = (params.loanAmount || 0) * (params.boxSpreadRate || 0);
-        const netBenefit = boxSpreadReturn - loanCost;
-        return {
-          netBenefit,
-          cashFlowImpact: netBenefit / 12,
-          riskReduction: 0.05,
-          capitalEfficiency: 1.2,
-        };
-      }
-
-      case 'investment_fund': {
-        const loanCost = (params.loanAmount || 0) * (params.loanRate || 0);
-        const fundReturn = (params.loanAmount || 0) * (params.fundReturn || 0);
-        const netBenefit = fundReturn - loanCost;
-        return {
-          netBenefit,
-          cashFlowImpact: netBenefit / 12,
-          riskReduction: 0.10,
-          capitalEfficiency: 1.5,
-        };
-      }
-
-      default:
-        return null;
+  // Calculate results when scenario is selected
+  useEffect(() => {
+    if (!selectedScenario) {
+      setScenarioResults(null);
+      return;
     }
-  }, [selectedScenario, scenarioParams, availableScenarios]);
+
+    let cancelled = false;
+
+    async function fetchResults() {
+      const scenario = availableScenarios.find(s => s.id === selectedScenario);
+      if (!scenario) return;
+
+      setLoadingResults(true);
+
+      try {
+        const results = await calculateScenarioResults({
+          id: scenario.id,
+          name: scenario.name,
+          type: scenario.type,
+          description: scenario.description,
+          parameters: scenario.parameters,
+        });
+        if (!cancelled) {
+          setScenarioResults(results);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Scenario calculation error:', err);
+          setScenarioResults(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingResults(false);
+        }
+      }
+    }
+
+    fetchResults();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedScenario, availableScenarios]);
 
   return (
     <div className="opportunity-simulation-panel">
@@ -191,10 +140,27 @@ export function OpportunitySimulationPanel({
         </p>
       </div>
 
+      {error && (
+        <div className="opportunity-simulation-panel__error" style={{
+          padding: '12px 16px',
+          marginBottom: '16px',
+          background: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          borderRadius: '8px',
+          color: '#ef4444'
+        }}>
+          <strong>Error:</strong> {error}
+        </div>
+      )}
+
       <div className="opportunity-simulation-panel__content">
         <div className="opportunity-simulation-panel__scenarios">
           <h3>Available Scenarios</h3>
-          {availableScenarios.length === 0 ? (
+          {loading ? (
+            <div className="opportunity-simulation-panel__empty">
+              Loading scenarios...
+            </div>
+          ) : availableScenarios.length === 0 ? (
             <div className="opportunity-simulation-panel__empty">
               No scenarios available based on current positions
             </div>
@@ -213,13 +179,26 @@ export function OpportunitySimulationPanel({
                     <span className="scenario-card__type">{scenario.type.replace(/_/g, ' ')}</span>
                   </div>
                   <p className="scenario-card__description">{scenario.description}</p>
+                  {scenario.net_benefit !== undefined && (
+                    <div className="scenario-card__net-benefit">
+                      Net Benefit: {formatCurrency(scenario.net_benefit)}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {selectedScenario && scenarioResults && (
+        {selectedScenario && (
+          loadingResults ? (
+            <div className="opportunity-simulation-panel__results">
+              <h3>Simulation Results</h3>
+              <div style={{ textAlign: 'center', padding: '20px', color: '#9ca3af' }}>
+                Calculating results...
+              </div>
+            </div>
+          ) : scenarioResults && (
           <div className="opportunity-simulation-panel__results">
             <h3>Simulation Results</h3>
             <div className="simulation-results">
@@ -227,12 +206,12 @@ export function OpportunitySimulationPanel({
                 <div className="simulation-result-card__label">Net Benefit (Annual)</div>
                 <div
                   className={`simulation-result-card__value ${
-                    scenarioResults.netBenefit >= 0
+                    scenarioResults.net_benefit >= 0
                       ? 'simulation-result-card__value--positive'
                       : 'simulation-result-card__value--negative'
                   }`}
                 >
-                  {formatCurrency(scenarioResults.netBenefit)}
+                  {formatCurrency(scenarioResults.net_benefit)}
                 </div>
               </div>
 
@@ -240,30 +219,33 @@ export function OpportunitySimulationPanel({
                 <div className="simulation-result-card__label">Cash Flow Impact (Monthly)</div>
                 <div
                   className={`simulation-result-card__value ${
-                    scenarioResults.cashFlowImpact >= 0
+                    scenarioResults.cash_flow_impact >= 0
                       ? 'simulation-result-card__value--positive'
                       : 'simulation-result-card__value--negative'
                   }`}
                 >
-                  {formatCurrency(scenarioResults.cashFlowImpact)}
+                  {formatCurrency(scenarioResults.cash_flow_impact)}
                 </div>
               </div>
 
               <div className="simulation-result-card">
                 <div className="simulation-result-card__label">Risk Reduction</div>
                 <div className="simulation-result-card__value">
-                  {formatPercent(scenarioResults.riskReduction)}
+                  {formatPercent(scenarioResults.risk_reduction)}
                 </div>
               </div>
 
-              <div className="simulation-result-card">
-                <div className="simulation-result-card__label">Capital Efficiency</div>
-                <div className="simulation-result-card__value">
-                  {scenarioResults.capitalEfficiency.toFixed(2)}x
+              {scenarioResults.capital_efficiency !== null && scenarioResults.capital_efficiency !== undefined && (
+                <div className="simulation-result-card">
+                  <div className="simulation-result-card__label">Capital Efficiency</div>
+                  <div className="simulation-result-card__value">
+                    {scenarioResults.capital_efficiency.toFixed(2)}x
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
+          )
         )}
       </div>
     </div>

@@ -20,7 +20,6 @@ This guide explains how to integrate project automation scripts with Exarp MCP s
 
 **Usage**:
 
-
 ```bash
 
 # Dry run (default)
@@ -39,7 +38,6 @@ python3 scripts/automate_documentation_link_fixing.py --apply --output report.js
 
 **Features**:
 
-
 - Combines both link fixing approaches
 - Dry-run mode for safety
 - JSON report generation
@@ -53,19 +51,16 @@ python3 scripts/automate_documentation_link_fixing.py --apply --output report.js
 
 ---
 
-
 ### 2. Documentation Format Validation
 
 **Script**: `scripts/validate_docs_format.py`
 **Purpose**: Validates API documentation entry format
-
 
 **Usage**:
 
 ```bash
 python3 scripts/validate_docs_format.py
 ```
-
 
 **Features**:
 
@@ -82,7 +77,6 @@ python3 scripts/validate_docs_format.py
 - File watchers (on API docs changes)
 
 ---
-
 
 ## 🔌 Exarp Integration Options
 
@@ -207,7 +201,6 @@ if __name__ == '__main__':
 
 **Use**: Direct script execution via Exarp's existing infrastructure
 
-
 **Steps**:
 
 1. ✅ Scripts already exist and work
@@ -215,13 +208,11 @@ if __name__ == '__main__':
 3. Add to daily automation workflow
 4. Test integration
 
-
 **Pros**:
 
 - No Exarp modification needed
 - Quick to implement
 - Works with current Exarp version
-
 
 **Cons**:
 
@@ -231,7 +222,6 @@ if __name__ == '__main__':
 ---
 
 ### Phase 2: Git Hooks Integration (Short-Term)
-
 
 **Use**: Git hooks to trigger automation
 
@@ -246,7 +236,6 @@ if __name__ == '__main__':
 python3 scripts/validate_docs_format.py || exit 1
 python3 scripts/automate_documentation_link_fixing.py --dry-run
 ```
-
 
 **Pros**:
 
@@ -306,7 +295,6 @@ python3 scripts/automate_documentation_link_fixing.py --dry-run
 - [ ] Add to CI/CD pipeline
 - [ ] Document integration
 
-
 ### Shared TODO Table Sync
 
 - [ ] Create sync script
@@ -343,7 +331,6 @@ python3 scripts/automate_documentation_link_fixing.py --apply --output report.js
 ```bash
 python3 scripts/validate_docs_format.py
 ```
-
 
 ### Integrate with Daily Automation
 

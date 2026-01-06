@@ -57,7 +57,6 @@ These are automatically copied to `web/public/wasm/` for use in the React app.
 - `box_spread_strategy.cpp` - Box spread calculations
 - `risk_calculator.cpp` - Risk analysis
 - `option_chain.cpp` - Greeks calculations
-- `tui_converter.cpp` - Data conversion
 
 ### Excluded Modules
 

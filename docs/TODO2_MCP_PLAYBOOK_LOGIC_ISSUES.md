@@ -10,11 +10,13 @@
 **Location**: Line 54-57 (Parse existing MCP configuration)
 
 **Problem**:
+
 - If `mcp.json` has invalid JSON, `from_json` filter will fail
 - Playbook will stop with error
 - No graceful fallback
 
 **Fix Applied**: ✅
+
 - Added `block/rescue` structure
 - Falls back to empty config if JSON invalid
 - Displays warning message
@@ -24,11 +26,13 @@
 **Location**: Line 76-84 (Remove duplicate MCP servers)
 
 **Problem**:
+
 - If Python script fails, `stdout` might not be valid JSON
 - `from_json` filter would fail in later tasks
 - Playbook would stop
 
 **Fix Applied**: ✅
+
 - Added `failed_when: false` to prevent playbook failure
 - Added `rc == 0` check before using output
 - Added `default(0)` for count query
@@ -39,10 +43,12 @@
 **Location**: Multiple tasks referencing `deduplicated_result`
 
 **Problem**:
+
 - If deduplication task is skipped, variable might not be registered
 - Accessing `.changed` on undefined variable could fail
 
 **Fix Applied**: ✅
+
 - All accesses use `default(false)` pattern
 - Task only runs when needed (file exists + has servers)
 - Safe fallback values used
@@ -52,6 +58,7 @@
 **Location**: Line 123-124
 
 **Test Results**: All scenarios work correctly
+
 - File doesn't exist → Writes ✅
 - Todo2 not configured → Writes ✅
 - Todo2 configured, no dupes → Doesn't write ✅
@@ -116,6 +123,7 @@
 ## Test Results
 
 ### Deduplication Script ✅
+
 ```
 Test: Remove 2 duplicates
 Result: ✅ Correct
@@ -124,7 +132,9 @@ Result: ✅ Correct
 ```
 
 ### Write Condition Logic ✅
+
 All 5 test cases pass:
+
 - ✅ File doesn't exist → Writes
 - ✅ Todo2 not configured, no dupes → Writes
 - ✅ Todo2 not configured, has dupes → Writes
@@ -136,6 +146,7 @@ All 5 test cases pass:
 ### ✅ Logic is Correct
 
 **All scenarios handled:**
+
 - New projects
 - Existing projects
 - Invalid JSON

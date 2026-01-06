@@ -47,3 +47,10 @@ try:
     __all__.extend(["MassiveClient", "MassiveWebSocketClient", "QuoteCrossValidator"])
 except ImportError:
     pass
+
+try:
+    from .israeli_broker_scraper import IsraeliBrokerWebScraper, Position, IsraeliBrokerScraperError
+
+    __all__.extend(["IsraeliBrokerWebScraper", "Position", "IsraeliBrokerScraperError"])
+except ImportError:
+    pass

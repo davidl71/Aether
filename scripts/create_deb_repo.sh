@@ -219,9 +219,9 @@ create_native_deb() {
     chmod +x "$pkg_dir/usr/bin/ib_box_spread"
   fi
 
-  if [ -f "$PROJECT_ROOT/build/bin/ib_box_spread_tui" ]; then
-    cp "$PROJECT_ROOT/build/bin/ib_box_spread_tui" "$pkg_dir/usr/bin/"
-    chmod +x "$pkg_dir/usr/bin/ib_box_spread_tui"
+  # Note: C++ TUI has been removed, Python TUI is now used
+  # Install Python TUI wrapper script if needed
+  # python -m python.tui
   fi
 
   # Create control file

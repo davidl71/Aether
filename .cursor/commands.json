@@ -235,6 +235,18 @@
       "description": "Show project information and status",
       "command": "echo 'Project: IB Box Spread Universal' && echo 'Architecture: $(uname -m)' && echo 'Build Presets:' && cmake --list-presets 2>/dev/null | grep -E 'macos-(arm64|x86_64)|windows|linux' || echo 'Run: cmake --list-presets'",
       "category": "info"
+    },
+    {
+      "name": "docs:scorecard",
+      "description": "Generate accurate project scorecard with real metrics",
+      "command": "python3 python/tools/generate_project_scorecard.py",
+      "category": "docs"
+    },
+    {
+      "name": "docs:scorecard-custom",
+      "description": "Generate project scorecard to custom path (provide path as ARG)",
+      "command": "python3 python/tools/generate_project_scorecard.py \"$ARG\"",
+      "category": "docs"
     }
   ]
 }

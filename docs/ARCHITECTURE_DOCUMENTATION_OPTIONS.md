@@ -30,12 +30,10 @@ This document captures research findings on architecture documentation tools (St
 
 **Current Approach**:
 
-
 - ASCII-based diagrams for system architecture visualization
 - Multi-layer architecture representation (Application → Core Engine → External Services)
 - Component descriptions with locations and responsibilities
 - Dependency documentation
-
 
 **Strengths**:
 
@@ -43,7 +41,6 @@ This document captures research findings on architecture documentation tools (St
 - ✅ Works well with Markdown documentation
 - ✅ Easy to update manually
 - ✅ Good for high-level overview
-
 
 **Limitations**:
 
@@ -54,7 +51,6 @@ This document captures research findings on architecture documentation tools (St
 - ❌ Hard to visualize relationships across C++/Python/Rust/Go/TypeScript boundaries
 
 ### Existing DSL Implementation
-
 
 **Location**: `python/dsl/`
 
@@ -76,7 +72,6 @@ This document captures research findings on architecture documentation tools (St
 ### 1. Structurizr DSL
 
 **Source**: [Structurizr DSL Documentation](https://docs.structurizr.com/dsl)
-
 
 **Overview**:
 Structurizr DSL is a domain-specific language for creating software architecture models. It uses a text-based DSL to define architecture models that can be rendered into multiple diagram formats following the C4 model (Context → Container → Component → Code).
@@ -150,12 +145,10 @@ workspace "IB Box Spread Generator" {
 
 **Key Concepts**:
 
-
 - **Internal DSLs**: Embedded within a host language (e.g., Python DSL for box spreads)
 - **External DSLs**: Standalone languages with custom syntax
 - **Benefits**: Improved productivity, domain-appropriate abstractions, better maintainability
 - **Examples**: SQL, HTML, Gradle, Makefile
-
 
 **Relevance to This Project**:
 The project already implements an internal DSL in Python (`python/dsl/`) following best practices:
@@ -164,7 +157,6 @@ The project already implements an internal DSL in Python (`python/dsl/`) followi
 - Domain-specific types
 - Code generation capabilities
 - Validation and constraint checking
-
 
 **Enhancement Opportunities**:
 
@@ -178,12 +170,10 @@ The project already implements an internal DSL in Python (`python/dsl/`) followi
 
 **Source**:
 
-
 - [Open Bank Project](https://www.openbankproject.com/)
 - [Open-Source Core Banking Software](https://sdk.finance/blog/open-source-core-banking-software-benefits-risks-and-alternatives/)
 
 **Findings**:
-
 
 - Open Bank Project provides standardized REST APIs for banking data
 - OAuth-based authentication patterns
@@ -231,18 +221,15 @@ The project already implements an internal DSL in Python (`python/dsl/`) followi
    - Validate architecture consistency
    - Export to multiple formats (PlantUML, Mermaid, SVG)
 
-
 4. **Multi-Language Support**
    - Tag components by technology (C++, Python, Rust, Go, TypeScript)
    - Visualize language boundaries and FFI calls
    - Document bindings and integrations
 
-
 5. **Documentation Maintenance**
    - Single source of truth for architecture
    - Automatic diagram generation
    - Consistent documentation across views
-
 
 #### Implementation Considerations
 
@@ -375,7 +362,6 @@ jobs:
 
 **Choose Option 1 if**:
 
-
 - ✅ You want interactive, web-based architecture diagrams
 - ✅ You need multiple views (system context, containers, deployment)
 - ✅ You want version-controlled architecture documentation
@@ -384,14 +370,12 @@ jobs:
 
 **Don't choose Option 1 if**:
 
-
 - ❌ Current ASCII diagrams are sufficient
 - ❌ You don't need multiple views or automation
 - ❌ You prefer simple, text-based documentation
 - ❌ You have limited time for tool setup and learning
 
 ---
-
 
 ### Option 2: Extend Existing DSL for Additional Trading Scenarios
 
@@ -456,7 +440,6 @@ jobs:
 
 4. **Backtesting DSL**
 
-
    ```python
    # Example: Define backtest scenarios in DSL
    backtest = BacktestScenario("box_spread_2024") \
@@ -470,7 +453,6 @@ jobs:
    ```
 
 5. **Portfolio Optimization DSL**
-
 
    ```python
    # Example: Optimize portfolio allocation
@@ -486,7 +468,6 @@ jobs:
        ) \
        .optimize(sharpe_ratio())
    ```
-
 
 #### Implementation Considerations
 
@@ -533,7 +514,6 @@ jobs:
 ### Option 3: Research Multi-Language Architecture Patterns for Trading Systems
 
 **Objective**: Research and document best practices for multi-language architecture in trading systems, focusing on C++/Python/Rust/Go/TypeScript interactions.
-
 
 #### Research Areas
 
@@ -588,7 +568,6 @@ jobs:
 
 **Open Source Projects**:
 
-
 - NautilusTrader: Multi-language trading platform
 - QuantLib: C++ financial library with Python bindings
 - Trading frameworks with multi-language support
@@ -607,7 +586,6 @@ jobs:
    - Component placement guidelines (which language for what)
    - Communication patterns
    - Data flow documentation
-
 
 3. **Best Practices Guide**
    - Code organization across languages
@@ -667,11 +645,9 @@ docs/
 
 ---
 
-
 ## Recommendations
 
 ### Immediate Actions (Next 1-2 Weeks)
-
 
 1. **Option 1 (Structurizr DSL) - Recommended** ⭐
    - **Priority**: High

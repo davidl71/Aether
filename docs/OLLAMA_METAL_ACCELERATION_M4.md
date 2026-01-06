@@ -9,11 +9,13 @@
 **Your Ollama is already using Metal GPU acceleration!**
 
 Verify with:
+
 ```bash
 ollama ps
 ```
 
 **Example Output:**
+
 ```
 NAME          ID              SIZE      PROCESSOR    CONTEXT    UNTIL
 mistral:7b    6577803aa9a0    4.9 GB    100% GPU     4096       3 minutes from now
@@ -28,6 +30,7 @@ The **`100% GPU`** indicator confirms Metal acceleration is active.
 Ollama **automatically detects and uses Metal** on Apple Silicon (M1, M2, M3, M4) devices. **No configuration required!**
 
 **What happens:**
+
 1. Ollama detects Apple Silicon on startup
 2. Automatically enables Metal GPU acceleration
 3. Uses GPU for model inference (much faster than CPU)
@@ -36,12 +39,14 @@ Ollama **automatically detects and uses Metal** on Apple Silicon (M1, M2, M3, M4
 ### M4 GPU Architecture
 
 **Apple M4 GPU:**
+
 - **10-core GPU** (M4 Pro/Max have more cores)
 - **Metal Performance Shaders (MPS)** backend
 - **Unified Memory Architecture** (GPU and CPU share memory)
 - **Automatic optimization** for neural network operations
 
 **Benefits:**
+
 - ✅ **50-100+ tokens/second** for 7B models
 - ✅ **Lower latency** than CPU-only inference
 - ✅ **Efficient memory usage** (unified memory)
@@ -56,6 +61,7 @@ ollama ps
 ```
 
 **Look for:**
+
 - `PROCESSOR` column showing `100% GPU` or `GPU`
 - If it shows `CPU`, GPU acceleration is not active
 
@@ -64,15 +70,18 @@ ollama ps
 1. **Open Activity Monitor** (Applications → Utilities)
 2. **Window → GPU History** (or press `Cmd+4`)
 3. **Run a model:**
+
    ```bash
    ollama run codellama:7b "Hello, how are you?"
    ```
+
 4. **Observe GPU usage:**
    - GPU graph should show activity
    - CPU usage should be relatively low
    - Memory usage will increase (model loading)
 
 **Expected Behavior:**
+
 - **GPU Usage**: 50-100% during inference
 - **CPU Usage**: 10-30% (coordination, not computation)
 - **Memory**: 4-6 GB per 7B model
@@ -85,6 +94,7 @@ system_profiler SPDisplaysDataType | grep -i metal
 ```
 
 **Expected Output:**
+
 ```
 Metal: Supported, feature set macOS GPUFamily2 v1
 ```
@@ -92,11 +102,13 @@ Metal: Supported, feature set macOS GPUFamily2 v1
 ### Method 4: Performance Monitoring
 
 **During model inference, you should see:**
+
 - **Fast response times**: 10-30 seconds for 7B models
 - **High GPU utilization**: 80-100% during inference
 - **Low CPU usage**: <30% during inference
 
 **If GPU is NOT working:**
+
 - Response times: 60+ seconds for 7B models
 - High CPU usage: 80-100%
 - Low GPU usage: <10%
@@ -106,6 +118,7 @@ Metal: Supported, feature set macOS GPUFamily2 v1
 ### 1. Keep Models Loaded
 
 **Pre-load frequently used models:**
+
 ```bash
 # Load model into GPU memory
 ollama run codellama:7b "test"
@@ -113,11 +126,13 @@ ollama run codellama:7b "test"
 ```
 
 **Benefits:**
+
 - ✅ Faster first response (no loading time)
 - ✅ GPU memory stays allocated
 - ✅ Better performance for repeated queries
 
 **Check loaded models:**
+
 ```bash
 ollama ps
 ```
@@ -125,12 +140,14 @@ ollama ps
 ### 2. Use Appropriate Model Sizes
 
 **For M4 (10-core GPU):**
+
 - ✅ **7B models**: Optimal (codellama:7b, mistral:7b)
 - ✅ **3-4B models**: Very fast (llama3.2, phi3:mini)
 - ⚠️ **13B+ models**: May be slower, use more memory
 - ❌ **70B models**: Not recommended (too large for M4)
 
 **Current Setup (Optimal):**
+
 - codellama:7b (3.8 GB) - Code analysis
 - mistral:7b (4.4 GB) - Documentation
 - llama3.2 (2.0 GB) - Quick tasks
@@ -138,6 +155,7 @@ ollama ps
 ### 3. Monitor GPU Memory
 
 **Check GPU memory usage:**
+
 ```bash
 # Activity Monitor → GPU History
 # Or use system_profiler
@@ -145,11 +163,13 @@ system_profiler SPDisplaysDataType
 ```
 
 **M4 GPU Memory:**
+
 - **Shared with system RAM** (unified memory)
 - **Typical allocation**: 4-6 GB per 7B model
 - **Total system RAM**: Check with `sysctl hw.memsize`
 
 **Optimization:**
+
 - Unload unused models: `ollama ps` → let models timeout
 - Use smaller models for quick tasks
 - Close other GPU-intensive apps if needed
@@ -171,11 +191,13 @@ ollama --version
 ### 5. Update Ollama Regularly
 
 **Keep Ollama updated for best Metal performance:**
+
 ```bash
 brew upgrade ollama
 ```
 
 **Recent updates improve:**
+
 - Metal backend optimization
 - Memory efficiency
 - Model loading speed
@@ -185,6 +207,7 @@ brew upgrade ollama
 ### GPU Not Being Used
 
 **Symptoms:**
+
 - `ollama ps` shows `CPU` instead of `GPU`
 - Slow inference times (60+ seconds)
 - High CPU usage, low GPU usage
@@ -192,12 +215,14 @@ brew upgrade ollama
 **Solutions:**
 
 1. **Check Ollama version:**
+
    ```bash
    ollama --version
    # Should be 0.1.0+ for Metal support
    ```
 
 2. **Restart Ollama:**
+
    ```bash
    brew services restart ollama
    ```
@@ -212,6 +237,7 @@ brew upgrade ollama
    - Check Activity Monitor for GPU usage
 
 5. **Reinstall Ollama:**
+
    ```bash
    brew uninstall ollama
    brew install ollama
@@ -240,12 +266,14 @@ brew upgrade ollama
 **If models fail to load:**
 
 1. **Check available RAM:**
+
    ```bash
    sysctl hw.memsize
    # Divide by 1024^3 for GB
    ```
 
 2. **Unload other models:**
+
    ```bash
    ollama ps
    # Let models timeout or restart Ollama
@@ -266,6 +294,7 @@ brew upgrade ollama
 | **mistral:7b**   | 4.4 GB | 50-70         | 2-3s        | 10-20s                     |
 
 **Note:** Performance varies based on:
+
 - Query complexity
 - Context length
 - System load
@@ -274,11 +303,13 @@ brew upgrade ollama
 ### GPU Utilization
 
 **During inference:**
+
 - **GPU Usage**: 80-100%
 - **CPU Usage**: 10-30%
 - **Memory**: 4-6 GB per 7B model
 
 **Idle (model loaded):**
+
 - **GPU Usage**: 0-5%
 - **CPU Usage**: <5%
 - **Memory**: 4-6 GB (model in memory)
@@ -288,11 +319,13 @@ brew upgrade ollama
 **Apple M4 also has Neural Engine (16-core):**
 
 **Current Status:**
+
 - ❌ Ollama does **not** use Neural Engine (as of 2025-12-24)
 - ✅ Uses **Metal GPU** instead (which is excellent)
 - 🔮 Future: Neural Engine support may come in future Ollama updates
 
 **Why GPU is Better for LLMs:**
+
 - **More flexible**: Supports all model architectures
 - **Better performance**: Optimized for large matrix operations
 - **Proven**: Metal GPU acceleration is mature and stable

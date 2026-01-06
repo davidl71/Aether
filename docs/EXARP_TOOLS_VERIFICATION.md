@@ -8,6 +8,7 @@
 ### ✅ Configuration Verified
 
 **Current Configuration:**
+
 ```json
 {
   "exarp": {
@@ -262,6 +263,7 @@ Based on `.cursor/rules/project-automation.mdc`, the following tools should be a
 Test the following core tools:
 
 1. **Health Check**
+
    ```python
    mcp_exarp_pma_health(
        action="server",
@@ -270,6 +272,7 @@ Test the following core tools:
    ```
 
 2. **Documentation Health**
+
    ```python
    mcp_exarp_pma_check_documentation_health_tool(
        workingDirectory="/Users/davidl/Projects/Trading/ib_box_spread_full_universal",
@@ -278,6 +281,7 @@ Test the following core tools:
    ```
 
 3. **Task Alignment**
+
    ```python
    mcp_exarp_pma_analyze_todo2_alignment_tool(
        workingDirectory="/Users/davidl/Projects/Trading/ib_box_spread_full_universal",
@@ -286,6 +290,7 @@ Test the following core tools:
    ```
 
 4. **Security Scan**
+
    ```python
    mcp_exarp_pma_security(
        action="report",
@@ -330,12 +335,14 @@ $ uvx exarp --help
    - Check MCP server logs for errors
 
 3. **Verify uvx Installation**
+
    ```bash
    uvx --version
    uvx exarp --help
    ```
 
 4. **Check Configuration**
+
    ```bash
    cat .cursor/mcp.json | python3 -m json.tool | grep -A 8 '"exarp"'
    ```

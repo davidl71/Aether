@@ -20,7 +20,6 @@ This guide provides quick reference commands and workflows for leveraging Apple 
 
 **Access Methods:**
 
-
 - **Right-click** → "Rewrite" or "Proofread"
 - **Keyboard shortcut:** Select text → Context menu
 - **Menu bar:** Edit → Writing Tools
@@ -33,7 +32,6 @@ This guide provides quick reference commands and workflows for leveraging Apple 
 | **Better commit messages** | Select commit message → "Rewrite" → "Concise" | More descriptive, follow conventions |
 | **Documentation clarity** | Select doc text → "Proofread" | Fix grammar, improve readability |
 | **Error message improvement** | Select error text → "Rewrite" → "Friendly" | User-friendly error descriptions |
-
 
 **Example:**
 
@@ -51,7 +49,6 @@ This guide provides quick reference commands and workflows for leveraging Apple 
 ### 2. Summarization (System-Wide)
 
 **Available in:** Safari, Notes, Mail, most text fields
-
 
 **How to Use:**
 
@@ -120,7 +117,6 @@ shortcuts run "Generate Architecture Diagram" \
 
 **Use Cases:**
 
-
 | Task | Voice Command | Benefit |
 |------|---------------|---------|
 | **Quick information** | "What's the status of the trading system?" | Context-aware system queries |
@@ -134,16 +130,13 @@ shortcuts run "Generate Architecture Diagram" \
 3. Enable "Allow Siri When Locked"
 4. Customize activation phrase
 
-
 ---
-
 
 ## Development Workflow Examples
 
 ### Example 1: Improve Code Comments
 
 **Context:** Writing C++ trading code on macOS M4 remote agent
-
 
 **Steps:**
 
@@ -162,21 +155,17 @@ shortcuts run "Generate Architecture Diagram" \
    // against the strike width, accounting for transaction costs
    ```
 
-
-
 4. Accept improvement → Continue coding
 
 **Time Saved:** 30 seconds per comment × 20 comments = 10 minutes
 
 ---
 
-
 ### Example 2: Generate Commit Message
 
 **Context:** About to commit changes after Ubuntu agent review
 
 **Steps:**
-
 
 1. Review changes:
 
@@ -205,7 +194,6 @@ shortcuts run "Generate Architecture Diagram" \
    ```
 
 5. Use improved message:
-
 
    ```bash
    git commit -m "Fix box spread calculation error when strike width is zero"
@@ -247,14 +235,12 @@ shortcuts run "Generate Architecture Diagram" \
    4. Handle responses
    ```
 
-
 5. Use summary for:
    - TODO table updates
    - API contract documentation
    - Quick reference
 
 **Time Saved:** 15-20 minutes reading → 2 minutes summary
-
 
 ---
 
@@ -269,8 +255,6 @@ shortcuts run "Generate Architecture Diagram" \
 3. Add action: "Generate Image"
 4. Description:
 
-
-
    ```
    Box spread trading system architecture diagram showing:
    - Frontend (macOS AppKit UI)
@@ -279,7 +263,6 @@ shortcuts run "Generate Architecture Diagram" \
    - Market Data (TWS API)
    - Database (QuestDB)
    ```
-
 
 5. Run shortcut
 6. Export image → Add to documentation
@@ -405,7 +388,6 @@ shortcuts run "Generate Diagram"
 - **Explain errors** using AI before debugging
 
 ### ❌ DON'T
-
 
 - Don't rely solely on Apple Intelligence for code generation (use Cursor AI)
 - Don't use AI for security-sensitive descriptions

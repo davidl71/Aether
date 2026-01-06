@@ -7,7 +7,7 @@
 # PLEASE REMOVE ALL GENERATED COMMENTS WHEN SUBMITTING YOUR PULL REQUEST!
 
 class IbBoxSpreadTui < Formula
-  desc "Terminal User Interface for Synthetic Financing Platform"
+  desc "Terminal User Interface for Synthetic Financing Platform (Python)"
   homepage "https://github.com/davidl71/synthetic-financing-platform"
   # For private repositories, use GitDownloadStrategy with SSH URL
   # This allows Homebrew to clone the repo and checkout the tag
@@ -15,26 +15,23 @@ class IbBoxSpreadTui < Formula
   license "MIT"
   head "git@github.com:davidl71/synthetic-financing-platform.git", branch: "main", using: :git
 
-  depends_on "cmake" => :build
-  depends_on "ftxui" => :build
-  depends_on "fswatch"
+  depends_on "python@3.11"
 
   def install
-    # Build C++ TUI using CMake
-    mkdir "build" do
-      system "cmake", "..", "-DENABLE_TUI=ON", *std_cmake_args
-      system "cmake", "--build", "."
-      system "cmake", "--install", ".", "--component", "tui"
-    end
+    # Install Python TUI dependencies
+    system "python3", "-m", "pip", "install", "--prefix=#{prefix}", "textual>=0.40.0", "requests>=2.31.0"
 
-    # Install binary (CMake installs to bin/ib_box_spread_tui)
-    # Create symlink for compatibility with old name
-    bin.install_symlink "ib_box_spread_tui" => "ib-box-spread-tui"
+    # Create wrapper script
+    (bin/"ib-box-spread-tui").write <<~EOS
+      #!/bin/bash
+      exec python3 -m python.tui "$@"
+    EOS
+    chmod 0755, bin/"ib-box-spread-tui"
   end
 
   test do
-    # Test that binary exists and can be executed
-    assert_predicate bin/"ib_box_spread_tui", :exist?
-    system bin/"ib_box_spread_tui", "--help" rescue nil  # May not have --help flag yet
+    # Test that script exists and Python module can be imported
+    assert_predicate bin/"ib-box-spread-tui", :exist?
+    system "python3", "-c", "import python.tui" rescue nil
   end
 end

@@ -21,17 +21,20 @@ ollama pull codellama:7b
 ```
 
 **Why:**
+
 - ✅ **Code-specialized**: Trained specifically on code, better understanding of programming patterns
 - ✅ **M4 Optimized**: 7B models run efficiently on M4 (good balance of quality and speed)
 - ✅ **Better Code Analysis**: Superior to general models for code review tasks
 - ✅ **Apple Silicon Support**: Excellent performance on M4 with Metal acceleration
 
 **Performance:**
+
 - Size: ~3.8 GB
 - Speed: Fast inference on M4
 - Quality: Excellent for code tasks
 
 **Use Cases:**
+
 - Code review and bug detection
 - Code explanation and commenting
 - Security analysis
@@ -48,17 +51,20 @@ ollama pull mistral:7b
 ```
 
 **Why:**
+
 - ✅ **Excellent Language Generation**: Better for documentation and explanations
 - ✅ **M4 Optimized**: 7B size works well on M4
 - ✅ **Good Reasoning**: Strong for complex analysis
 - ✅ **Balanced**: Good for both code and natural language
 
 **Performance:**
+
 - Size: ~4.1 GB
 - Speed: Fast on M4
 - Quality: Excellent for documentation
 
 **Use Cases:**
+
 - Documentation generation
 - Strategy research
 - Code explanation (natural language)
@@ -75,17 +81,20 @@ ollama pull phi3:mini
 ```
 
 **Why:**
+
 - ✅ **Very Fast**: Smallest model, fastest responses
 - ✅ **Low Resource**: Minimal RAM usage
 - ✅ **Good for Simple Tasks**: Quick answers to straightforward questions
 - ⚠️ **Limited for Complex Code**: May miss advanced patterns
 
 **Performance:**
+
 - Size: ~2.3 GB
 - Speed: Very fast on M4
 - Quality: Good for simple tasks
 
 **Use Cases:**
+
 - Quick code questions
 - Simple explanations
 - Fast documentation snippets
@@ -108,11 +117,13 @@ ollama pull phi3:mini
 ### Primary Model: CodeLlama 7B
 
 **Install:**
+
 ```bash
 ollama pull codellama:7b
 ```
 
 **Use for:**
+
 - ✅ Code review of trading algorithms
 - ✅ Security analysis of risk management code
 - ✅ Bug detection in C++ trading code
@@ -122,11 +133,13 @@ ollama pull codellama:7b
 ### Secondary Model: Mistral 7B
 
 **Install:**
+
 ```bash
 ollama pull mistral:7b
 ```
 
 **Use for:**
+
 - ✅ Documentation generation
 - ✅ Strategy research
 - ✅ Natural language explanations
@@ -135,6 +148,7 @@ ollama pull mistral:7b
 ### Keep Current: llama3.2
 
 **Keep for:**
+
 - ✅ Quick general questions
 - ✅ Fast responses when speed matters
 - ✅ Backup when other models are busy
@@ -145,11 +159,13 @@ ollama pull mistral:7b
 ### 1. Metal GPU Acceleration
 
 Ollama automatically uses Metal on Apple Silicon:
+
 - ✅ **Automatic**: No configuration needed
 - ✅ **Fast**: GPU acceleration for inference
 - ✅ **Efficient**: Better than CPU-only inference
 
 **Verify GPU usage:**
+
 ```bash
 # Check if Metal is being used
 ollama run codellama:7b "test"  # Monitor Activity Monitor for GPU usage
@@ -158,11 +174,13 @@ ollama run codellama:7b "test"  # Monitor Activity Monitor for GPU usage
 ### 2. Memory Management
 
 **M4 Memory Considerations:**
+
 - **16GB RAM**: Use 7B models (codellama, mistral)
 - **32GB+ RAM**: Can use larger models (13B, 70B) but slower
 - **Recommended**: Stick with 7B models for best performance
 
 **Current Setup:**
+
 - llama3.2 (2.0 GB) - ✅ Good
 - codellama:7b (3.8 GB) - ✅ Recommended
 - mistral:7b (4.1 GB) - ✅ Recommended
@@ -171,6 +189,7 @@ ollama run codellama:7b "test"  # Monitor Activity Monitor for GPU usage
 ### 3. Quantization
 
 **Current Models:**
+
 - llama3.2 uses Q4_K_M quantization (good balance)
 - codellama:7b and mistral:7b also use efficient quantization
 
@@ -209,6 +228,7 @@ ollama list
 **Best Model:** `codellama:7b`
 
 **Query Example:**
+
 ```
 "Use codellama to review this C++ trading code for bugs and security issues"
 ```
@@ -220,6 +240,7 @@ ollama list
 **Best Model:** `mistral:7b`
 
 **Query Example:**
+
 ```
 "Use mistral to generate API documentation for this module"
 ```
@@ -231,6 +252,7 @@ ollama list
 **Best Model:** `llama3.2` or `phi3:mini`
 
 **Query Example:**
+
 ```
 "Quick question: explain this calculation"
 ```
@@ -242,6 +264,7 @@ ollama list
 **Best Model:** `mistral:7b` or `codellama:7b`
 
 **Query Example:**
+
 ```
 "Analyze this complex trading algorithm for optimization opportunities"
 ```
@@ -260,6 +283,7 @@ Based on M4 capabilities and similar Apple Silicon benchmarks:
 | phi3:mini (3.8B) | 90-110+                  | Very quick tasks |
 
 **Note:** Actual performance depends on:
+
 - System load
 - Model quantization
 - Query complexity
@@ -291,16 +315,19 @@ What's your task?
 ### Immediate (Recommended)
 
 1. **Install CodeLlama 7B** (primary for code analysis):
+
    ```bash
    ollama pull codellama:7b
    ```
 
 2. **Test CodeLlama** with a code review:
+
    ```
    "Use codellama to review native/src/risk_calculator.cpp for potential bugs"
    ```
 
 3. **Install Mistral 7B** (for documentation):
+
    ```bash
    ollama pull mistral:7b
    ```
@@ -321,11 +348,13 @@ What's your task?
 ## Cost-Benefit Analysis
 
 ### Current Setup (llama3.2 only)
+
 - ✅ Fast and efficient
 - ⚠️ Limited code-specific training
 - ✅ Good for general tasks
 
 ### Recommended Setup (codellama + mistral)
+
 - ✅ Best code analysis (codellama)
 - ✅ Best documentation (mistral)
 - ✅ Keep llama3.2 for quick tasks
@@ -343,6 +372,7 @@ What's your task?
 3. **Keep**: `llama3.2` - Fast general-purpose model
 
 This combination provides:
+
 - ✅ Excellent code analysis (codellama)
 - ✅ Excellent documentation (mistral)
 - ✅ Fast general assistance (llama3.2)

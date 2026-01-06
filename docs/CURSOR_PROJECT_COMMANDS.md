@@ -131,11 +131,16 @@ Format code using clang-format.
 
 ### `run:tui`
 
-Run TUI application (dry-run mode).
+Run Python TUI application.
 
-**Command**: `./build/macos-arm64-debug/bin/ib_box_spread_tui --dry-run`
+**Command**: `python -m python.tui`
 
 **Use When**: Testing TUI interface without live trading
+
+**Environment Variables**:
+- `TUI_BACKEND`: `mock`, `rest`, or `file` (default: `mock`)
+- `TUI_API_URL`: REST API endpoint (for `rest` backend)
+- `TUI_SNAPSHOT_FILE`: JSON file path (for `file` backend)
 
 ---
 

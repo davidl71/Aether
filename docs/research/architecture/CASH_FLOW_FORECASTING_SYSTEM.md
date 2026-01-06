@@ -759,7 +759,7 @@ class CashFlowCalculator:
         return 0.03  # Placeholder: 3% annual CPI growth
 ```
 
-## Integration with Investment Strategy Framework
+## Cash Flow Integration with Investment Strategy
 
 ### Cash Flow-Aware Cash Management
 

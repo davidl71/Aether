@@ -63,13 +63,11 @@ Create `.cursor/rules/automation-tool-suggestions.mdc` with context-aware rules:
 **Reason**: "Daily maintenance tasks available"
 ```
 
-
 ### Pros
 
 - ✅ Simple to implement
 - ✅ Works with existing Cursor rules system
 - ✅ No code changes required
-
 
 ### Cons
 
@@ -116,7 +114,6 @@ Extend Todo2 workflow rules to suggest tools at lifecycle transitions:
 - `detect_duplicate_tasks_tool` (check for similar completed tasks)
 - `run_daily_automation_tool` (if multiple tasks completed)
 ```
-
 
 ### Pros
 

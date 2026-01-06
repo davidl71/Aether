@@ -8,9 +8,12 @@
 
 ## Overview
 
-Brokeree Solutions provides turnkey technology solutions for retail forex and CFD brokers, primarily focused on MetaTrader 4/5 (MT4/MT5) and cTrader platforms. The company offers liquidity bridges, PAMM systems, social trading, prop trading solutions, and various plugins for broker infrastructure management.
+Brokeree Solutions provides turnkey technology solutions for retail forex and CFD brokers, primarily focused on MetaTrader 4/5 (MT4/MT5) and cTrader
+platforms. The company offers liquidity bridges, PAMM systems, social trading, prop trading solutions, and various plugins for broker infrastructure
+management.
 
-**Note**: This platform is primarily designed for retail forex/CFD brokers using MetaTrader platforms, which is different from the institutional options trading focus of this project. However, some components may have indirect relevance.
+**Note**: This platform is primarily designed for retail forex/CFD brokers using MetaTrader platforms, which is different from the institutional
+options trading focus of this project. However, some components may have indirect relevance.
 
 ---
 
@@ -49,7 +52,8 @@ Brokeree Solutions provides turnkey technology solutions for retail forex and CF
 
 **Platforms**: DXtrade, cTrader
 
-**Relevance**: Moderate - TradingView is a popular charting platform that could be used for options analysis, though this specific integration is for retail brokers.
+**Relevance**: Moderate - TradingView is a popular charting platform that could be used for options analysis, though this specific integration is for
+retail brokers.
 
 ---
 
@@ -66,7 +70,8 @@ Brokeree Solutions provides turnkey technology solutions for retail forex and CF
 
 **Platforms**: MetaTrader 4, MetaTrader 5
 
-**Relevance**: Moderate - FIX protocol is relevant for direct exchange access, though this is specifically for MetaTrader integration (not directly applicable to C++ project).
+**Relevance**: Moderate - FIX protocol is relevant for direct exchange access, though this is specifically for MetaTrader integration (not directly
+applicable to C++ project).
 
 ---
 
@@ -125,9 +130,11 @@ Brokeree Solutions provides turnkey technology solutions for retail forex and CF
 - Direct market access and Service Bureau FIX connectivity
 - Maintains direct pipes to Nasdaq and NY Equinox data centers
 
-**Relevance**: **Moderate** - DASTrader provides direct access to CBOE, which is relevant for box spread trading. However, this gateway is specifically for MetaTrader 5 integration, not direct C++ integration.
+**Relevance**: **Moderate** - DASTrader provides direct access to CBOE, which is relevant for box spread trading. However, this gateway is
+specifically for MetaTrader 5 integration, not direct C++ integration.
 
-**Use Case**: If using MetaTrader 5 as a trading platform, this gateway could provide CBOE access. However, the project uses C++ with TWS API, so direct integration would be more appropriate.
+**Use Case**: If using MetaTrader 5 as a trading platform, this gateway could provide CBOE access. However, the project uses C++ with TWS API, so
+direct integration would be more appropriate.
 
 ---
 
@@ -189,7 +196,8 @@ Brokeree Solutions provides turnkey technology solutions for retail forex and CF
 
 ### Direct Relevance: Limited
 
-**Primary Focus**: Brokeree Solutions is designed for retail forex/CFD brokers using MetaTrader platforms, which is quite different from institutional options trading on CBOE.
+**Primary Focus**: Brokeree Solutions is designed for retail forex/CFD brokers using MetaTrader platforms, which is quite different from
+institutional options trading on CBOE.
 
 **Key Differences**:
 
@@ -343,4 +351,6 @@ Brokeree Solutions provides turnkey technology solutions for retail forex and CF
 
 ---
 
-**Note**: Brokeree Solutions is primarily designed for retail forex/CFD brokers using MetaTrader platforms. While some components (DASTrader gateway, Exante gateway) provide access to options markets, the platform is not well-suited for institutional C++ options trading systems. For box spread trading, OnixS directConnect, TFB FIX API, or direct FIX implementation would be more appropriate alternatives.
+**Note**: Brokeree Solutions is primarily designed for retail forex/CFD brokers using MetaTrader platforms. While some components (DASTrader gateway,
+Exante gateway) provide access to options markets, the platform is not well-suited for institutional C++ options trading systems. For box spread
+trading, OnixS directConnect, TFB FIX API, or direct FIX implementation would be more appropriate alternatives.

@@ -55,6 +55,7 @@ public:
 **API Type:** Socket-based (TWS API)
 
 **Key Features:**
+
 - Direct socket connection to TWS/Gateway
 - EClient/EWrapper pattern
 - Comprehensive options support
@@ -69,6 +70,7 @@ public:
 **Design Based on T-143 Research:**
 
 **Authentication:**
+
 - OAuth 1.0a for individual accounts
 - OAuth 2.0 for institutional accounts
 - Client Portal Gateway required (Java-based, local installation)
@@ -76,6 +78,7 @@ public:
 - Web browser authentication on same machine
 
 **Implementation Pattern:**
+
 ```cpp
 class IBClientPortalAdapter : public IBroker {
 private:
@@ -109,12 +112,14 @@ private:
 ```
 
 **Key Endpoints:**
+
 - `/iserver/account/{account_id}/positions` - Get positions
 - `/iserver/marketdata/snapshot` - Market data
 - `/iserver/secdef/search` - Contract search
 - `/iserver/account/{account_id}/orders` - Order management
 
 **Error Handling:**
+
 - Handle gateway connection errors gracefully
 - Retry with exponential backoff
 - Fallback to TWS adapter if gateway unavailable
@@ -128,12 +133,14 @@ private:
 **Design Based on T-142 Research:**
 
 **Authentication:**
+
 - API key-based (APCA-API-KEY-ID, APCA-API-SECRET-KEY headers)
 - Paper trading: `paper-api.alpaca.markets`
 - Live trading: `api.alpaca.markets`
 - Store keys in environment variables (secure)
 
 **Rate Limiting:**
+
 - Trading API: 200 requests/minute
 - Market Data API: 10,000 requests/minute (paid subscription)
 - Monitor response headers: `X-Ratelimit-Limit`, `X-Ratelimit-Remaining`, `X-Ratelimit-Reset`
@@ -141,6 +148,7 @@ private:
 - Use `Retry-After` header for retry timing
 
 **Implementation Pattern:**
+
 ```cpp
 class AlpacaAdapter : public IBroker {
 private:
@@ -195,6 +203,7 @@ private:
 ```
 
 **Key Endpoints:**
+
 - `/v2/account` - Account information
 - `/v2/positions` - Get positions
 - `/v2/orders` - Order management
@@ -202,6 +211,7 @@ private:
 - `/v2/options/positions` - Options positions
 
 **Options Trading:**
+
 - Level 3 options trading support (announced Feb 2025)
 - Multi-leg orders (up to 4 legs) - perfect for box spreads
 - OCC symbol format for options
@@ -306,6 +316,7 @@ public:
 All brokers return data in unified formats:
 
 **Position:**
+
 ```cpp
 struct Position {
   std::string symbol;
@@ -319,6 +330,7 @@ struct Position {
 ```
 
 **Order:**
+
 ```cpp
 struct Order {
   int order_id;  // Broker-specific, but normalized
@@ -331,6 +343,7 @@ struct Order {
 ```
 
 **Market Data:**
+
 ```cpp
 struct MarketData {
   double bid;
@@ -501,6 +514,7 @@ public:
 ## Implementation Roadmap
 
 ### Phase 1: IB Client Portal Adapter
+
 1. Implement OAuth 1.0a authentication
 2. Create REST API client wrapper
 3. Implement position/order/market data methods
@@ -508,6 +522,7 @@ public:
 5. Test with Client Portal Gateway
 
 ### Phase 2: Alpaca Adapter
+
 1. Implement API key authentication
 2. Create REST API client with rate limiting
 3. Implement position/order/market data methods
@@ -515,6 +530,7 @@ public:
 5. Test with paper trading account
 
 ### Phase 3: Broker Manager & Selection
+
 1. Implement BrokerFactory
 2. Implement BrokerManager
 3. Add performance-based selection (algo wheel)
@@ -522,6 +538,7 @@ public:
 5. Add health checks
 
 ### Phase 4: Data Normalization
+
 1. Create DataNormalizer class
 2. Implement field mapping for each broker
 3. Add currency conversion

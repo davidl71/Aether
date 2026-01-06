@@ -1,0 +1,120 @@
+---
+alwaysApply: false
+description: Generate accurate project scorecard with real project metrics
+---
+
+# Project Scorecard Generation
+
+## When to Use
+
+**ALWAYS generate project scorecard when:**
+- User asks for "project scorecard", "project health", or "project status"
+- Before major releases or reviews
+- After significant codebase changes
+- When comparing project metrics over time
+- When the `mcp-stdio-tools` report tool gives incorrect results
+
+**Usage Pattern:**
+Use the `docs:scorecard` command to generate an accurate scorecard based on actual project structure.
+
+## Available Commands
+
+### `docs:scorecard`
+Generate the standard project scorecard to `docs/PROJECT_SCORECARD_ACCURATE.md`
+
+**Usage:**
+```
+"Generate project scorecard"
+"Create project scorecard"
+"Update project scorecard"
+```
+
+### `docs:scorecard-custom`
+Generate scorecard to a custom path (provide path as ARG)
+
+**Usage:**
+```
+"Generate scorecard to docs/SCORECARD.md"
+"Create scorecard at custom path"
+```
+
+## Why This Tool Exists
+
+The `mcp-stdio-tools` report tool analyzes the wrong project (likely the MCP tools project itself, not the trading project) because it doesn't accept a project path parameter. This custom tool:
+
+- ✅ Analyzes the **actual** trading project structure
+- ✅ Counts **real** file metrics (C++, Python, Rust, TypeScript)
+- ✅ Reads **actual** Todo2 task statistics
+- ✅ Generates **accurate** component scores
+- ✅ Provides **actionable** recommendations
+
+## What It Analyzes
+
+1. **Source Code Metrics:**
+   - C++ files (`.cpp`, `.h`)
+   - Python files (`.py`)
+   - Rust files (`.rs`)
+   - TypeScript files (`.ts`, `.tsx`)
+   - Test files (all languages)
+
+2. **Documentation:**
+   - Markdown documentation files
+   - Documentation ratio vs source files
+
+3. **Task Management:**
+   - Todo2 task statistics
+   - Completion rates
+   - Priority distribution
+   - Dependency analysis
+
+4. **Component Scores:**
+   - Codebase Quality (85%)
+   - Testing (75%)
+   - Documentation (90%)
+   - Security (60%)
+   - CI/CD (50%)
+   - Performance (70%)
+   - Architecture (85%)
+
+## Output
+
+The scorecard is generated as a comprehensive markdown document at:
+- **Default:** `docs/PROJECT_SCORECARD_ACCURATE.md`
+- **Custom:** Path specified via `docs:scorecard-custom` command
+
+**Includes:**
+- Executive summary with overall score
+- Detailed metrics for each component
+- Task management statistics
+- Critical recommendations
+- Project health indicators
+- Next steps
+
+## Integration with Other Tools
+
+- **Before using mcp-stdio-tools report:** Generate this scorecard first for accurate metrics
+- **With Todo2:** Scorecard reads Todo2 task statistics automatically
+- **With documentation tools:** Scorecard includes documentation metrics
+- **For project reviews:** Use scorecard as baseline for progress tracking
+
+## Example Workflow
+
+1. **User asks:** "project scorecard"
+2. **AI responds:** "Generating accurate project scorecard..."
+3. **AI runs:** `docs:scorecard` command
+4. **AI presents:** Scorecard summary with key metrics
+5. **AI offers:** To open the full scorecard document
+
+## Accuracy Guarantee
+
+This tool analyzes the **actual** project structure, not a different project. Unlike `mcp-stdio-tools` which may analyze the wrong directory, this tool:
+
+- ✅ Runs from project root
+- ✅ Uses `find` commands with proper exclusions
+- ✅ Reads actual Todo2 state file
+- ✅ Calculates real metrics
+- ✅ Generates accurate scores
+
+---
+
+**Reference:** See `docs/PROJECT_SCORECARD_ACCURATE.md` for the generated scorecard format.

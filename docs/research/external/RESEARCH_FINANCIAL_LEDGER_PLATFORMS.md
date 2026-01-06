@@ -7,11 +7,17 @@
 
 ## Executive Summary
 
-This document provides comprehensive research and analysis of modern financial ledger and accounting platforms for potential integration with the IB box spread portfolio management system. The research evaluates **Ledger CLI**, Formance, Blnk, Firefly III, Akaunting, GnuCash, LedgerSMB, FINOS, ERPNext, and UniBee platforms to understand their architectures, features, and integration patterns.
+This document provides comprehensive research and analysis of modern financial ledger and accounting platforms for potential integration with the IB
+box spread portfolio management system. The research evaluates **Ledger CLI**, Formance, Blnk, Firefly III, Akaunting, GnuCash, LedgerSMB, FINOS,
+ERPNext, and UniBee platforms to understand their architectures, features, and integration patterns.
 
-**Key Finding:** The current system tracks positions and calculates PnL but lacks formal double-entry ledger accounting. **Ledger CLI** emerges as the most applicable solution due to its C++ codebase that aligns perfectly with the existing architecture. Modern platforms like Formance and Blnk offer developer-first approaches with REST APIs suitable for integration, while traditional accounting software provides proven patterns but may not fit trading-focused use cases.
+**Key Finding:** The current system tracks positions and calculates PnL but lacks formal double-entry ledger accounting. **Ledger CLI** emerges as
+the most applicable solution due to its C++ codebase that aligns perfectly with the existing architecture. Modern platforms like Formance and Blnk
+offer developer-first approaches with REST APIs suitable for integration, while traditional accounting software provides proven patterns but may not
+fit trading-focused use cases.
 
-**Recommended Approach:** Integrate Ledger CLI C++ core library directly into the IB box spread system, or use it as a reference implementation for a custom lightweight ledger module optimized for trading operations.
+**Recommended Approach:** Integrate Ledger CLI C++ core library directly into the IB box spread system, or use it as a reference implementation for a
+custom lightweight ledger module optimized for trading operations.
 
 ## Table of Contents
 
@@ -106,7 +112,8 @@ pub struct HistoricPosition {
 
 #### Overview
 
-Formance is an open-source, cloud-native financial infrastructure platform designed to help developers build bespoke flows of funds with precision and scalability.
+Formance is an open-source, cloud-native financial infrastructure platform designed to help developers build bespoke flows of funds with precision
+and scalability.
 
 #### Core Modules
 
@@ -191,7 +198,8 @@ Highly applicable for modern ledger architecture, but need to verify technology 
 
 #### Overview
 
-Blnk is an open-source ledger and financial core designed to help developers ship fintech products fast without compromising compliance and correctness.
+Blnk is an open-source ledger and financial core designed to help developers ship fintech products fast without compromising compliance and
+correctness.
 
 #### Core Features
 
@@ -599,7 +607,8 @@ Not relevant for ledger accounting needs.
 
 #### Overview
 
-Ledger CLI is a powerful, double-entry accounting system that operates entirely via the command line. Created in 2003 by John Wiegley, it allows users to maintain financial records using plain text files with Ledger's transaction format.
+Ledger CLI is a powerful, double-entry accounting system that operates entirely via the command line. Created in 2003 by John Wiegley, it allows
+users to maintain financial records using plain text files with Ledger's transaction format.
 
 #### Key Features
 
@@ -684,7 +693,8 @@ ledger report                     # Generate financial reports
 4. **C++ Port Integration:** Use C++ core directly, build API wrapper
 
 **Applicability to IB Box Spread System:** ⭐⭐⭐⭐⭐ (5/5)
-**Highly applicable** - C++ codebase aligns perfectly with existing architecture. Can be embedded as library or used for text-based transaction recording.
+**Highly applicable** - C++ codebase aligns perfectly with existing architecture. Can be embedded as library or used for text-based transaction
+recording.
 
 ---
 
@@ -698,7 +708,8 @@ ledger report                     # Generate financial reports
 
 #### Overview
 
-LedgerSMB is an open-source Enterprise Resource Planning (ERP) system designed for small and mid-sized businesses. It provides a comprehensive accounting foundation with multi-currency support and integrated business management features.
+LedgerSMB is an open-source Enterprise Resource Planning (ERP) system designed for small and mid-sized businesses. It provides a comprehensive
+accounting foundation with multi-currency support and integrated business management features.
 
 #### Key Features
 
@@ -753,7 +764,9 @@ Good reference for multi-currency accounting patterns, but Perl-based and ERP-fo
 
 **Note on LedgerHQ (Hardware Wallet):**
 
-The user also provided links to LedgerHQ's `lib-ledger-core`, which is **NOT a financial ledger/accounting system**. LedgerHQ is a cryptocurrency hardware wallet company, and `lib-ledger-core` is their C++ library for integrating with Ledger hardware wallets. This library was **archived on Feb 12, 2025** and is not relevant for financial accounting/ledger needs.
+The user also provided links to LedgerHQ's `lib-ledger-core`, which is **NOT a financial ledger/accounting system**. LedgerHQ is a cryptocurrency
+hardware wallet company, and `lib-ledger-core` is their C++ library for integrating with Ledger hardware wallets. This library was **archived on Feb
+12, 2025** and is not relevant for financial accounting/ledger needs.
 
 **Applicability to IB Box Spread System:** ⭐ (1/5)
 Not relevant - hardware wallet integration library, not accounting ledger.
@@ -997,7 +1010,8 @@ External Reconciliation Service (Formance/Blnk for audit)
 
 ## Conclusion
 
-While modern financial ledger platforms like Formance and Blnk offer excellent architectures and features, a custom lightweight ledger module integrated directly into the IB box spread system would provide:
+While modern financial ledger platforms like Formance and Blnk offer excellent architectures and features, a custom lightweight ledger module
+integrated directly into the IB box spread system would provide:
 
 - ✅ Better performance for trading operations
 - ✅ Native integration with existing C++/Rust codebase
@@ -1036,7 +1050,8 @@ The investment in a custom ledger module will pay off through:
 12. Investment Strategy Framework: `docs/INVESTMENT_STRATEGY_FRAMEWORK.md`
 13. Current System State: `agents/backend/crates/api/src/state.rs`
 
-**Note:** LedgerHQ (`lib-ledger-core`) is a cryptocurrency hardware wallet library, not a financial accounting ledger. The repository was archived on Feb 12, 2025, and is not relevant for this research.
+**Note:** LedgerHQ (`lib-ledger-core`) is a cryptocurrency hardware wallet library, not a financial accounting ledger. The repository was archived on
+Feb 12, 2025, and is not relevant for this research.
 
 ---
 

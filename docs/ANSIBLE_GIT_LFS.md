@@ -14,10 +14,8 @@ Git LFS is automatically installed when running the devtools Ansible role:
 
 ### macOS
 
-
 - Installed via Homebrew: `git-lfs`
 - Automatically initialized after installation
-
 
 ### Ubuntu/Debian
 
@@ -79,10 +77,8 @@ git lfs ls-files
 
 Git LFS is part of the `devtools` role, which is used by:
 
-
 - `ansible/playbooks/setup_devtools.yml` - Main devtools setup
 - `setup_global_tools.sh` - Global tools setup script
-
 
 ---
 

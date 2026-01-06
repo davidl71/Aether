@@ -263,7 +263,7 @@ If working with a team or multiple machines:
 
 ---
 
-## Summary
+## Final Summary
 
 **7 optimization opportunities** identified:
 

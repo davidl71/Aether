@@ -100,11 +100,13 @@ open htmlcov/index.html
 ### Test Files to Execute
 
 **Unit Tests** (`python/tests/`):
+
 - `test_security.py` - 5 test classes, multiple pytest-style tests
   - Expected: All tests should pass
   - Coverage target: > 30% for security module
 
 **Integration Tests** (`python/integration/`):
+
 - `test_swiftness_integration.py`
 - `test_swiftness_integration_simple.py`
 - `test_swiftness_import.py`
@@ -120,6 +122,7 @@ open htmlcov/index.html
 ### Import Errors
 
 If you see import errors:
+
 ```bash
 # Add python directory to PYTHONPATH
 export PYTHONPATH="${PYTHONPATH}:$(pwd)/python"
@@ -132,6 +135,7 @@ pytest tests/ -v
 ### Missing Dependencies
 
 If dependencies are missing:
+
 ```bash
 # Install from requirements
 pip install -r requirements.txt
@@ -143,6 +147,7 @@ pip install pytest pytest-cov coverage
 ### FastAPI Import Issues
 
 If FastAPI imports fail:
+
 ```bash
 # Install FastAPI
 pip install fastapi

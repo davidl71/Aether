@@ -43,6 +43,7 @@ from .components.unified_positions import UnifiedPositionsTab
 from .components.cash_flow import CashFlowTab
 from .components.opportunity_simulation import OpportunitySimulationTab
 from .components.relationship_visualization import RelationshipVisualizationTab
+from .components.loan_entry import LoanListTab, LoanManager
 
 logger = logging.getLogger(__name__)
 
@@ -433,8 +434,10 @@ class TUIApp(App):
         self._orders_tab: Optional[OrdersTab] = None
         self._alerts_tab: Optional[AlertsTab] = None
         self._scenarios_tab: Optional[ScenariosTab] = None
+        self._loan_tab: Optional[LoanListTab] = None
         self._box_spread_file_path = Path("web/public/data/box_spread_sample.json")
         self._bank_accounts: List[Dict] = []
+        self._loan_manager = LoanManager("config/loans.json")
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the app"""
@@ -482,6 +485,10 @@ class TUIApp(App):
                 with TabPane("Scenarios", id="scenarios-tab"):
                     self._scenarios_tab = ScenariosTab()
                     yield self._scenarios_tab
+
+                with TabPane("Loans", id="loans-tab"):
+                    self._loan_tab = LoanListTab(self._loan_manager)
+                    yield self._loan_tab
 
         yield Footer()
 

@@ -6,13 +6,15 @@
 
 ## Overview
 
-This document defines a comprehensive investment strategy framework that integrates convexity optimization, volatility skew considerations, cash management, ETF allocation, T-bill/bond targets, and spare cash allocation through box spreads.
+This document defines a comprehensive investment strategy framework that integrates convexity optimization, volatility skew considerations, cash
+management, ETF allocation, T-bill/bond targets, and spare cash allocation through box spreads.
 
 ## Strategy Components
 
 ### 1. Portfolio Allocation Framework
 
-The strategy divides capital into distinct allocation buckets. **Important:** Portfolio allocation should consider net portfolio value after accounting for existing liabilities (loans).
+The strategy divides capital into distinct allocation buckets. **Important:** Portfolio allocation should consider net portfolio value after
+accounting for existing liabilities (loans).
 
 **Net Portfolio Value Calculation:**
 
@@ -157,7 +159,8 @@ PortfolioConvexity = Σ(Weight_i × Convexity_i)
 
 - **Cash Flow Timeline:** Generate timeline of all future cash flows (next 12 months)
 - **Liquidity Planning:** Ensure sufficient cash reserves to cover upcoming outflows
-- **Allocation Optimization:** Adjust spare cash allocation based on upcoming cash flows (favor liquidity if large outflows, favor yield if large inflows)
+- **Allocation Optimization:** Adjust spare cash allocation based on upcoming cash flows (favor liquidity if large outflows,
+  favor yield if large inflows)
 - See `docs/CASH_FLOW_FORECASTING_SYSTEM.md` for detailed cash flow calculation methodology
 
 #### Tier 2: Spare Cash (7-10% of portfolio)
@@ -455,7 +458,9 @@ SpareCashAllocation calculate_allocation(
 
 **Currency Carry Trade Considerations (Advanced - Multi-Currency Accounts):**
 
-- **FX Swap Program:** For qualifying accounts (10M+ USD, ECP status), IBKR's FX Swap Program is essentially a currency carry trade mechanism that can provide 2-10 bps spreads per currency ([Investopedia: Currency Carry Trade](https://www.investopedia.com/terms/c/currencycarrytrade.asp))
+- **FX Swap Program:** For qualifying accounts (10M+ USD, ECP status),
+  IBKR's FX Swap Program is essentially a currency carry trade mechanism that can provide 2-10 bps spreads per currency ([Investopedia:
+  Currency Carry Trade](https://www.investopedia.com/terms/c/currencycarrytrade.asp))
 - **Strategy:** Borrow in low-interest-rate currencies (e.g., JPY) to invest in higher-yielding currencies (e.g., USD, AUD)
 - **Benefits:** Can enhance yield on multi-currency cash positions beyond local currency rates
 - **Significant Risks:**
@@ -470,12 +475,14 @@ SpareCashAllocation calculate_allocation(
   - Strong understanding of currency and interest rate risks
   - Ability to monitor and adjust positions quickly
 
-- **Integration:** Consider alongside box spreads, T-bills, and IBKR cash as an advanced cash allocation strategy, but limit exposure due to currency risk
+- **Integration:** Consider alongside box spreads, T-bills, and IBKR cash as an advanced cash allocation strategy,
+  but limit exposure due to currency risk
 
 **Margin Considerations:**
 
 - **Margin Rates:** IBKR charges margin interest on borrowed funds ([IBKR Margin Rates](https://www.interactivebrokers.com/en/trading/margin-rates.php))
-- **Margin Requirements:** Box spreads use margin/collateral; monitor margin requirements via Account Summary API (`InitMarginReq`, `MaintMarginReq`, `AvailableFunds`, `ExcessLiquidity`)
+- **Margin Requirements:** Box spreads use margin/collateral;
+  monitor margin requirements via Account Summary API (`InitMarginReq`, `MaintMarginReq`, `AvailableFunds`, `ExcessLiquidity`)
 - **Net Return Calculation:** When box spreads require margin, net return = Box Spread Return - Margin Interest Cost
 - **Cash Buffer:** Reserve sufficient cash buffer above margin requirements to avoid margin calls
 - **Margin Efficiency:** Box spreads that don't require additional margin (fully collateralized) are preferred
@@ -484,17 +491,23 @@ SpareCashAllocation calculate_allocation(
 **Broker-Specific Margin Notes:**
 
 - **IBKR-Specific:** This framework is designed for Interactive Brokers; margin requirements, rates, and calculations are IBKR-specific
-- **Other Brokers:** Margin requirements vary significantly by broker (e.g., [Alpaca Margin Account](https://alpaca.markets/support/determine-margin-account)); concepts like maintenance margin and pattern day trading (PDT) rules are universal, but specific requirements differ
-- **Pattern Day Trading (PDT):** Accounts with <$25k equity are subject to PDT restrictions; this affects strategy execution frequency (IBKR and most brokers enforce PDT rules)
-- **Maintenance Margin:** Minimum equity required to maintain positions; varies by broker and asset class (options typically require higher maintenance margin than stocks)
-- **Multi-Broker Strategies:** If expanding to multiple brokers, account for broker-specific margin requirements, rates, and API capabilities in allocation decisions
+- **Other Brokers:** Margin requirements vary significantly by broker (e.g.,
+  [Alpaca Margin Account](https://alpaca.markets/support/determine-margin-account));
+  concepts like maintenance margin and pattern day trading (PDT) rules are universal, but specific requirements differ
+- **Pattern Day Trading (PDT):** Accounts with <$25k equity are subject to PDT restrictions;
+  this affects strategy execution frequency (IBKR and most brokers enforce PDT rules)
+- **Maintenance Margin:** Minimum equity required to maintain positions;
+  varies by broker and asset class (options typically require higher maintenance margin than stocks)
+- **Multi-Broker Strategies:** If expanding to multiple brokers, account for broker-specific margin requirements, rates,
+  and API capabilities in allocation decisions
 
 **Currency Risk (Multi-Currency Accounts):**
 
 - **FX Exposure:** Multi-currency accounts face exchange rate risk on non-base currency positions
 - **Currency Carry Trades:** FX Swap Program and currency carry strategies can enhance yields but introduce significant currency risk
 - **Risk Management:** Limit currency carry exposure, hedge when appropriate, monitor currency correlations
-- **2024 Lessons:** Japanese yen carry trade unwinding demonstrated how quickly these strategies can reverse (see [Investopedia: Currency Carry Trade](https://www.investopedia.com/terms/c/currencycarrytrade.asp))
+- **2024 Lessons:** Japanese yen carry trade unwinding demonstrated how quickly these strategies can reverse (see [Investopedia:
+  Currency Carry Trade](https://www.investopedia.com/terms/c/currencycarrytrade.asp))
 
 **Existing Loan Liabilities (User-Specific):**
 

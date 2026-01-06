@@ -24,6 +24,7 @@ set(TEST_SOURCES
     test_convexity_calculator.cpp
     test_alpaca_adapter.cpp
     test_path_validator.cpp
+    test_loan_position.cpp
 )
 
 add_executable(box_spread_tests ${TEST_SOURCES})
@@ -167,6 +168,8 @@ target_sources(box_spread_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/native/src/hedge_manager.cpp
     ${CMAKE_SOURCE_DIR}/native/src/strategies/box_spread/box_spread_bag.cpp
     ${CMAKE_SOURCE_DIR}/native/src/convexity_calculator.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/loan_position.cpp
+    ${CMAKE_SOURCE_DIR}/native/src/loan_manager.cpp
 )
 
 # Conditionally include local source files only if NOT using extracted library

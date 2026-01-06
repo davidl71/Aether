@@ -23,6 +23,7 @@ Based on duplicate detection analysis, **19 tasks can be automatically processed
 **Reason**: Work is already complete (0 broken links remaining per T-20251130001249)
 
 **Tasks**:
+
 - T-20251129200048-83: Fix broken documentation links
 - T-20251130001455-89: Fix broken documentation links
 - T-20251130002839-107: Fix broken documentation links
@@ -41,6 +42,7 @@ Based on duplicate detection analysis, **19 tasks can be automatically processed
 **Reason**: Data integrity issue - same ID used for two different tasks
 
 **Issue**:
+
 - ID `AUTO-20251129200049` appears twice:
   1. "Automation: Todo2 Alignment Analysis" (status: done)
   2. "Automation: Todo2 Duplicate Detection" (status: in_progress)
@@ -58,6 +60,7 @@ Based on duplicate detection analysis, **19 tasks can be automatically processed
 **Reason**: All have exact same name and are completed
 
 **Tasks**: All named "Automation: Documentation Health Analysis" (all `done`)
+
 - AUTO-20251129173956 (keep this one)
 - AUTO-20251129200048
 - AUTO-20251130001454
@@ -86,6 +89,7 @@ Based on duplicate detection analysis, **19 tasks can be automatically processed
 **Action**: Can be worked on in parallel batches
 
 **Characteristics**:
+
 - No blocking dependencies
 - Not critical priority
 - Ready for immediate work
@@ -101,6 +105,7 @@ Based on duplicate detection analysis, **19 tasks can be automatically processed
 **Action**: Can be batched for review
 
 **Strategy**:
+
 - Batch into groups of 10-20 for review
 - Some may be intentional (related but distinct work)
 - Need to clarify task names/descriptions
@@ -155,6 +160,7 @@ python3 scripts/automate_todo2_duplicate_cleanup.py --all
 ```
 
 **Expected Results**:
+
 - 6 tasks auto-closed
 - 1 duplicate ID fixed
 - 12 tasks merged
@@ -163,6 +169,7 @@ python3 scripts/automate_todo2_duplicate_cleanup.py --all
 ### Phase 2: Parallel Task Processing
 
 Process 49 ready tasks in parallel batches:
+
 - Batch 1: 10 tasks
 - Batch 2: 10 tasks
 - Batch 3: 10 tasks
@@ -172,6 +179,7 @@ Process 49 ready tasks in parallel batches:
 ### Phase 3: Review Similar Matches
 
 Batch review 97 similar name matches:
+
 - Review in groups of 20
 - Consolidate true duplicates
 - Clarify distinct tasks
@@ -181,17 +189,20 @@ Batch review 97 similar name matches:
 ## Impact Summary
 
 ### Before Automation
+
 - **Total Tasks**: 121
 - **Duplicate Issues**: 219 matches
 - **Data Integrity Issues**: 1 critical
 
 ### After Phase 1 Automation
+
 - **Tasks Processed**: 19 automatically
 - **Duplicate ID Fixed**: 1 critical issue resolved
 - **Tasks Consolidated**: 12 → 1
 - **Tasks Closed**: 6 completed tasks
 
 ### Expected Reduction
+
 - **~15% reduction** in task count (19 tasks processed)
 - **100% resolution** of critical data integrity issue
 - **Improved task clarity** through consolidation
@@ -201,12 +212,14 @@ Batch review 97 similar name matches:
 ## Safety Considerations
 
 ✅ **Safe to Run**:
+
 - All automations are reversible (can restore from git)
 - Dry-run mode available for preview
 - Only processes completed/duplicate tasks
 - No content changes, only status/metadata updates
 
 ⚠️ **Review Required**:
+
 - Similar name matches (97 tasks) need human review
 - Some tasks may be intentionally similar
 
@@ -215,6 +228,7 @@ Batch review 97 similar name matches:
 ## Next Steps
 
 1. **Run Phase 1 automation** (immediate):
+
    ```bash
    python3 scripts/automate_todo2_duplicate_cleanup.py --all
    ```

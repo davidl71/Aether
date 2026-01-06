@@ -113,7 +113,7 @@ class ${CLASS_NAME} < Formula
     bin.install "build/ib_box_spread"
 
     # C++ TUI is built as part of main CMake build
-    # No separate build step needed - ib_box_spread_tui is built with ENABLE_TUI=ON
+    # Note: C++ TUI has been removed, Python TUI is now used (python -m python.tui)
   end
 
   test do

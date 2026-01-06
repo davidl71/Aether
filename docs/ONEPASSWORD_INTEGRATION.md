@@ -98,7 +98,7 @@ After running the script:
 
 See [Remote Development Workflow](./REMOTE_DEVELOPMENT_WORKFLOW.md) for complete setup instructions.
 
-### Notes
+### Additional Notes
 
 - `OP_CURSOR_REMOTE_*` variables accept any 1Password item paths.
 - The script updates `~/.ssh/config` with Cursor-optimized settings.

@@ -1,5 +1,9 @@
 # NotebookLM Beginner Tips - Expert Guide
 
+> ⚠️ **STATUS**: NotebookLM MCP server is currently **DISABLED** in this project (as of 2025-01-20).
+> This guide is kept for reference but NotebookLM is not available via MCP.
+> See `docs/MCP_NOTEBOOKLM_DISABLED.md` for details.
+
 **Source**: [8 expert tips for getting started with NotebookLM](https://blog.google/technology/ai/notebooklm-beginner-tips/) - Google Blog, October 18, 2024
 
 **Author**: Steven Johnson (NotebookLM Team Member & Author)

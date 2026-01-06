@@ -8,13 +8,13 @@ with monthly breakdown and totals.
 from __future__ import annotations
 
 from typing import Optional, Dict, List
-from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime
 from textual.widgets import Container, DataTable, Label, Select
 from textual.containers import Vertical, Horizontal
 from textual.app import ComposeResult
 
-from ..models import SnapshotPayload, PositionSnapshot
+from ..models import SnapshotPayload
+from ...integration.cash_flow_timeline import calculate_cash_flow_timeline
 
 
 class CashFlowTab(Container):
@@ -24,7 +24,7 @@ class CashFlowTab(Container):
         self,
         snapshot: Optional[SnapshotPayload] = None,
         bank_accounts: Optional[List[Dict]] = None,
-        projection_months: int = 12
+        projection_months: int = 12,
     ):
         super().__init__()
         self.snapshot = snapshot
@@ -40,7 +40,7 @@ class CashFlowTab(Container):
                 yield Select(
                     [(str(i), str(i)) for i in [6, 12, 24, 36]],
                     value=str(self.projection_months),
-                    id="projection-select"
+                    id="projection-select",
                 )
 
             yield Label(id="summary-label")
@@ -48,19 +48,11 @@ class CashFlowTab(Container):
 
     def on_mount(self) -> None:
         table = self.query_one("#cash-flow-table", DataTable)
-        table.add_columns(
-            "Month",
-            "Inflows",
-            "Outflows",
-            "Net",
-            "Events"
-        )
+        table.add_columns("Month", "Inflows", "Outflows", "Net", "Events")
         self._update_data()
 
     def update_snapshot(
-        self,
-        snapshot: SnapshotPayload,
-        bank_accounts: Optional[List[Dict]] = None
+        self, snapshot: SnapshotPayload, bank_accounts: Optional[List[Dict]] = None
     ) -> None:
         """Update with new snapshot data"""
         self.snapshot = snapshot
@@ -79,23 +71,32 @@ class CashFlowTab(Container):
         if not self.snapshot:
             return
 
-        # Calculate cash flows
-        cash_flows = self._calculate_cash_flows()
+        # Convert positions to dict format for shared calculator
+        positions_dict = [
+            {
+                "name": p.name,
+                "maturity_date": p.maturity_date,
+                "cash_flow": p.cash_flow,
+                "candle": {"close": p.candle.close if p.candle else None},
+                "instrument_type": p.instrument_type,
+                "rate": p.rate,
+            }
+            for p in self.snapshot.positions
+        ]
 
-        # Group by month
-        monthly_flows = self._group_by_month(cash_flows)
-
-        # Calculate totals
-        total_inflows = sum(m['inflows'] for m in monthly_flows.values())
-        total_outflows = sum(m['outflows'] for m in monthly_flows.values())
-        net_cash_flow = total_inflows - total_outflows
+        # Calculate cash flows using shared module
+        result = calculate_cash_flow_timeline(
+            positions=positions_dict,
+            bank_accounts=self.bank_accounts,
+            projection_months=self.projection_months,
+        )
 
         # Update summary
         summary_label = self.query_one("#summary-label", Label)
         summary_label.update(
-            f"Total Inflows: ${total_inflows:,.2f} | "
-            f"Total Outflows: ${total_outflows:,.2f} | "
-            f"Net Cash Flow: ${net_cash_flow:,.2f}"
+            f"Total Inflows: ${result.total_inflows:,.2f} | "
+            f"Total Outflows: ${result.total_outflows:,.2f} | "
+            f"Net Cash Flow: ${result.net_cash_flow:,.2f}"
         )
 
         # Update table
@@ -103,113 +104,15 @@ class CashFlowTab(Container):
         table.clear()
 
         # Sort months
-        sorted_months = sorted(monthly_flows.keys())
+        sorted_months = sorted(result.monthly_flows.keys())
 
         for month in sorted_months:
-            monthly = monthly_flows[month]
+            monthly = result.monthly_flows[month]
             month_display = datetime.strptime(month, "%Y-%m").strftime("%b %Y")
             table.add_row(
                 month_display,
-                f"${monthly['inflows']:,.2f}" if monthly['inflows'] > 0 else "—",
-                f"${monthly['outflows']:,.2f}" if monthly['outflows'] > 0 else "—",
-                f"${monthly['net']:,.2f}",
-                str(len(monthly['events']))
+                f"${monthly.inflows:,.2f}" if monthly.inflows > 0 else "—",
+                f"${monthly.outflows:,.2f}" if monthly.outflows > 0 else "—",
+                f"${monthly.net:,.2f}",
+                str(len(monthly.events)),
             )
-
-    def _calculate_cash_flows(self) -> List[Dict]:
-        """Calculate cash flow events from positions"""
-        events = []
-        now = datetime.now()
-
-        # Process positions
-        for position in self.snapshot.positions:
-            if position.maturity_date:
-                try:
-                    maturity_date = datetime.fromisoformat(
-                        position.maturity_date.replace('Z', '+00:00')
-                    )
-                    months_ahead = (maturity_date.year - now.year) * 12 + (
-                        maturity_date.month - now.month
-                    )
-
-                    if 0 <= months_ahead <= self.projection_months:
-                        # Maturity cash flow
-                        cash_flow_amount = position.cash_flow or position.candle.close or 0.0
-                        events.append({
-                            'date': position.maturity_date,
-                            'amount': cash_flow_amount,
-                            'description': f"{position.instrument_type or 'Position'} maturity",
-                            'position_name': position.name,
-                            'type': 'maturity'
-                        })
-
-                        # Monthly interest payments for loans
-                        if position.instrument_type in ('bank_loan', 'pension_loan'):
-                            rate = position.rate or 0.0
-                            principal = position.cash_flow or position.candle.close or 0.0
-                            monthly_payment = (principal * rate) / 12
-
-                            for month in range(1, min(months_ahead, self.projection_months) + 1):
-                                payment_date = now + timedelta(days=30 * month)
-                                events.append({
-                                    'date': payment_date.isoformat().split('T')[0],
-                                    'amount': -monthly_payment,  # Outflow
-                                    'description': 'Monthly interest payment',
-                                    'position_name': position.name,
-                                    'type': 'loan_payment'
-                                })
-                except (ValueError, AttributeError):
-                    pass
-
-            # Current cash flow
-            if position.cash_flow is not None and position.cash_flow != 0:
-                events.append({
-                    'date': now.isoformat().split('T')[0],
-                    'amount': position.cash_flow,
-                    'description': f"Current {position.instrument_type or 'position'} cash flow",
-                    'position_name': position.name,
-                    'type': 'other'
-                })
-
-        # Process bank accounts (as loans if debit_rate exists)
-        for account in self.bank_accounts:
-            debit_rate = account.get('debit_rate')
-            if debit_rate and debit_rate > 0:
-                principal = account.get('balance', 0.0)
-                monthly_payment = (principal * debit_rate) / 12
-
-                for month in range(1, self.projection_months + 1):
-                    payment_date = now + timedelta(days=30 * month)
-                    events.append({
-                        'date': payment_date.isoformat().split('T')[0],
-                        'amount': -monthly_payment,  # Outflow
-                        'description': 'Monthly interest payment',
-                        'position_name': account.get('account_name', 'Bank Account'),
-                        'type': 'loan_payment'
-                    })
-
-        return events
-
-    def _group_by_month(self, events: List[Dict]) -> Dict[str, Dict]:
-        """Group cash flow events by month"""
-        monthly: Dict[str, Dict] = defaultdict(lambda: {
-            'inflows': 0.0,
-            'outflows': 0.0,
-            'net': 0.0,
-            'events': []
-        })
-
-        for event in events:
-            month = event['date'][:7]  # YYYY-MM
-            monthly[month]['events'].append(event)
-
-            if event['amount'] > 0:
-                monthly[month]['inflows'] += event['amount']
-            else:
-                monthly[month]['outflows'] += abs(event['amount'])
-
-            monthly[month]['net'] = (
-                monthly[month]['inflows'] - monthly[month]['outflows']
-            )
-
-        return dict(monthly)

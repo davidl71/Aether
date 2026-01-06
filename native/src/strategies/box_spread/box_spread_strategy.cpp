@@ -109,11 +109,92 @@ void BoxSpreadStrategy::evaluate_symbol(const std::string& symbol) {
 std::vector<BoxSpreadOpportunity> BoxSpreadStrategy::find_box_spreads(
     const std::string& symbol) {
 
-    // NOTE: Full implementation would scan option chains
-    // Stub keeps interface intact while allowing offline tests to progress
-    std::vector<BoxSpreadOpportunity> opportunities;
+    spdlog::trace("Finding box spreads for {}", symbol);
 
-    return opportunities;
+    if (!pimpl_->client_) {
+        spdlog::warn("TWS client not available, cannot find box spreads");
+        return {};
+    }
+
+    // Request option chain from TWS
+    std::vector<types::OptionContract> contracts = pimpl_->client_->request_option_chain(symbol);
+    if (contracts.empty()) {
+        spdlog::warn("No option contracts found for {}", symbol);
+        return {};
+    }
+
+    spdlog::debug("Retrieved {} option contracts for {}", contracts.size(), symbol);
+
+    // Get market data for all contracts
+    std::map<std::string, types::MarketData> market_data_map;
+
+    // Request market data for underlying to get current price
+    // Create a stock contract (not option) for underlying
+    types::OptionContract underlying_contract;
+    underlying_contract.symbol = symbol;
+    underlying_contract.expiry = "";
+    underlying_contract.strike = 0.0;
+    underlying_contract.type = types::OptionType::Call;  // Dummy, not used for underlying
+
+    double underlying_price = 0.0;
+    auto underlying_market_data = pimpl_->client_->request_market_data_sync(underlying_contract, 5000);
+    if (underlying_market_data.has_value()) {
+        underlying_price = underlying_market_data->get_mid_price();
+        spdlog::debug("Underlying price for {}: ${:.2f}", symbol, underlying_price);
+    } else {
+        spdlog::warn("Could not get underlying price for {}, will use 0.0 for calculations", symbol);
+    }
+
+    // Request market data for all option contracts (limit to avoid rate limits)
+    const int max_contracts_to_fetch = 200;  // Limit to prevent rate limit issues
+    int contracts_fetched = 0;
+    for (const auto& contract : contracts) {
+        if (contracts_fetched >= max_contracts_to_fetch) {
+            spdlog::warn("Limiting market data requests to {} contracts to avoid rate limits", max_contracts_to_fetch);
+            break;
+        }
+
+        std::string contract_key = contract.to_string();
+        auto market_data = pimpl_->client_->request_market_data_sync(contract, 2000);
+        if (market_data.has_value()) {
+            market_data_map[contract_key] = market_data.value();
+            contracts_fetched++;
+        } else {
+            spdlog::trace("No market data for contract: {}", contract_key);
+        }
+    }
+
+    spdlog::debug("Retrieved market data for {}/{} contracts",
+                  market_data_map.size(), std::min(static_cast<int>(contracts.size()), max_contracts_to_fetch));
+
+    if (market_data_map.empty()) {
+        spdlog::warn("No market data available for any contracts, cannot evaluate box spreads");
+        return {};
+    }
+
+    // Build OptionChain from contracts and market data
+    option_chain::OptionChain chain = option_chain::OptionChainBuilder::build_from_market_data(
+        symbol, contracts, market_data_map
+    );
+
+    // Set underlying price in chain
+    chain.set_underlying_price(underlying_price);
+
+    // Calculate metrics for all entries (Greeks, IV, etc.)
+    for (const auto& expiry : chain.get_expiries()) {
+        auto expiry_chain_opt = chain.get_expiry_chain(expiry);
+        if (!expiry_chain_opt.has_value()) {
+            continue;
+        }
+        const auto& expiry_chain = expiry_chain_opt.value();
+        auto all_options = expiry_chain.get_all_options();
+        for (auto& entry : all_options) {
+            option_chain::OptionChainBuilder::calculate_metrics(entry, underlying_price);
+        }
+    }
+
+    // Use existing find_box_spreads_in_chain() method to scan for opportunities
+    return find_box_spreads_in_chain(chain, underlying_price);
 }
 
 std::vector<BoxSpreadOpportunity> BoxSpreadStrategy::find_box_spreads_in_chain(

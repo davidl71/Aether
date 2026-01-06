@@ -73,16 +73,19 @@ done
 ## Duplicate Removal
 
 The playbook automatically detects and removes duplicate MCP servers based on:
+
 - **Command**: Same command (e.g., `npx`, `python3`)
 - **Args**: Same arguments array
 
 **Implementation:**
+
 - Uses `scripts/deduplicate_mcp_servers.py` for duplicate detection
 - Keeps first occurrence of each unique (command, args) combination
 - Reports which duplicates were removed
 
 **Example:**
 If you have:
+
 ```json
 {
   "mcpServers": {
@@ -96,6 +99,7 @@ The playbook will remove `fs` (duplicate of `filesystem`) and keep `filesystem`.
 
 **Manual Usage:**
 You can also run the deduplication script directly:
+
 ```bash
 cat .cursor/mcp.json | python3 scripts/deduplicate_mcp_servers.py
 ```
@@ -105,6 +109,7 @@ cat .cursor/mcp.json | python3 scripts/deduplicate_mcp_servers.py
 After running the playbook:
 
 1. **Check MCP Config:**
+
    ```bash
    cat .cursor/mcp.json | python3 -m json.tool | grep -A 5 Todo2
    ```
@@ -126,10 +131,12 @@ After running the playbook:
 ### Playbook Fails
 
 **Error: "Todo2 directory not found"**
+
 - ✅ This is expected if project doesn't use Todo2
 - Playbook skips projects without `.todo2/` directory
 
 **Error: "Permission denied"**
+
 - Check file permissions on `.cursor/mcp.json`
 - May need to run with appropriate user permissions
 
@@ -168,17 +175,20 @@ To include Todo2 MCP setup in standard devtools setup:
 If you prefer manual setup:
 
 1. **Check for Todo2:**
+
    ```bash
    test -d .todo2 && echo "Todo2 found" || echo "No Todo2"
    ```
 
 2. **Create/Edit MCP Config:**
+
    ```bash
    mkdir -p .cursor
    # Edit .cursor/mcp.json and add Todo2 server
    ```
 
 3. **Add Todo2 Server:**
+
    ```json
    {
      "mcpServers": {

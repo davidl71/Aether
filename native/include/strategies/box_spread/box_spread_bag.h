@@ -172,9 +172,9 @@ public:
         double volume = 0.0
     );
 
-    // Convert bag to TUI-compatible format
-    // (For integration with existing TUI data structures)
-    static void to_tui_format(
+    // Convert bag to display format (for Python TUI or PWA)
+    // Note: C++ TUI has been removed, use Python TUI (python/tui/) instead
+    static void to_display_format(
         const BoxSpreadBag& bag,
         // Output parameters would be passed by reference
         // This is a placeholder - actual implementation depends on TUI types

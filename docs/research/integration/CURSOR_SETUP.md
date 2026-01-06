@@ -15,7 +15,8 @@ Main AI assistant rules file that guides Cursor's AI when helping with this code
 - Static analysis tools and annotations
 - Project structure information
 
-**Note**: For examples of `.cursorrules` files from other projects, see [awesome-cursorrules](https://github.com/PatrickJS/awesome-cursorrules) - a curated collection of Cursor rules for various technologies and frameworks.
+**Note**: For examples of `.cursorrules` files from other projects, see [awesome-cursorrules](https://github.com/PatrickJS/awesome-cursorrules) - a
+curated collection of Cursor rules for various technologies and frameworks.
 
 ### `.vscode/settings.json`
 
@@ -235,7 +236,8 @@ Add debug configurations to `.vscode/launch.json`:
 
 ## Codebase Indexing
 
-Cursor automatically indexes your codebase to enable semantic search and improve AI suggestions. Understanding how indexing works can help you optimize your code for better AI assistance.
+Cursor automatically indexes your codebase to enable semantic search and improve AI suggestions. Understanding how indexing works can help you
+optimize your code for better AI assistance.
 
 ### How It Works
 
@@ -286,7 +288,8 @@ To get the best results from codebase indexing:
 1. **Use Descriptive Names**: Function and class names that clearly describe purpose help semantic search
 2. **Add Documentation Comments**: Comments explaining *why* (not just *what*) improve semantic understanding
 3. **Structure Code Logically**: Well-organized code with clear boundaries (functions, classes) chunks better
-4. **Use Static Analysis Annotations**: Attributes like `[[nodiscard]]` and `__attribute__((nonnull))` provide semantic hints (see [STATIC_ANALYSIS_ANNOTATIONS.md](../../research/analysis/STATIC_ANALYSIS_ANNOTATIONS.md))
+4. **Use Static Analysis Annotations**: Attributes like `[[nodiscard]]` and `__attribute__((nonnull))` provide semantic hints (see
+[STATIC_ANALYSIS_ANNOTATIONS.md](../../research/analysis/STATIC_ANALYSIS_ANNOTATIONS.md))
 5. **Follow Naming Conventions**: Consistent naming patterns help the AI understand code relationships
 
 ### Automatic Updates
@@ -314,8 +317,10 @@ For more details, see [Cursor's Codebase Indexing Documentation](https://cursor.
 
 ### Learning Resources
 
-- **[Write C++ and Python Code Faster And Better With Cursor](https://supercomputingblog.com/coding-with-ai/write-c-and-python-code-faster-and-better-with-cursor/)** - Practical guide for C++ developers using Cursor, including examples with Z3 solver and build system integration
-- **[Why I'm Back Using Cursor (And Why Their CLI Changes Everything)](https://www.ksred.com/why-im-back-using-cursor-and-why-their-cli-changes-everything/)** - Comparison of Cursor CLI vs Claude Code, performance considerations, and workflow optimization
+- **[Write C++ and Python Code Faster And Better With Cursor](https://supercomputingblog.com/coding-with-ai/write-c-and-python-code-faster-and-better-with-cursor/)** - Practical guide for C++ developers using Cursor,
+  including examples with Z3 solver and build system integration
+- **[Why I'm Back Using Cursor (And Why Their CLI Changes Everything)](https://www.ksred.com/why-im-back-using-cursor-and-why-their-cli-changes-everything/)** - Comparison of Cursor CLI vs Claude Code,
+  performance considerations, and workflow optimization
 - **[Cursor Community Forum](https://forum.cursor.com/)** - Community discussions, tips, and best practices from Cursor users
 
 ### Alternative AI Coding Tools
@@ -326,7 +331,8 @@ While this project is configured for Cursor, other AI coding assistants are avai
 - **Windsurf** - AI-powered editor with Cascade agent (see [windsurf.com](https://windsurf.com/))
 - **GitHub Copilot** - Microsoft's AI pair programmer
 
-**Note**: The static analysis annotations and code quality practices documented in this project work with any AI coding assistant that understands code semantics.
+**Note**: The static analysis annotations and code quality practices documented in this project work with any AI coding assistant that understands
+code semantics.
 
 ### Tips from the Community
 

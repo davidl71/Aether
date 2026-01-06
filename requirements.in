@@ -20,14 +20,33 @@ scikit-learn>=1.3.0
 optuna>=3.0.0
 shap>=0.42.0
 
+# MLX (Apple Silicon Neural Engine acceleration)
+# Note: MLX is optimized for Apple Silicon and uses Neural Engine + Metal GPU
+# Only installs on Apple Silicon macOS (arm64/aarch64), safe no-op elsewhere
+mlx>=0.20.0
+mlx-lm>=0.20.0
+
 # Graph analysis and relationship modeling
 networkx>=3.2.0
 
 # Swiftness Excel file parsing
 xlrd>=2.0.0
 
+# Excel/CSV file import for Israeli broker positions
+pandas>=2.0.0
+openpyxl>=3.1.0
+
+# Excel RTD/DDE for real-time position data (Windows-only)
+# Note: These packages are Windows-only and will fail to install on macOS/Linux
+# Install manually on Windows: pip install xlwings pywin32
+xlwings>=0.31.0; sys_platform == "win32"
+pywin32>=306; sys_platform == "win32"
+
 # NATS message queue integration
 nats-py>=2.6.0
+
+# Web scraping for Israeli broker position extraction
+playwright>=1.40.0
 
 # MCP Server dependencies (for exarp project management automation)
 # Note: exarp is typically run via uvx (uvx exarp --mcp), which handles dependencies automatically

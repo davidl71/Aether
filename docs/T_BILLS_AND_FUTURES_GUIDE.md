@@ -7,11 +7,13 @@
 @last-updated: 2025-01-27
 -->
 
-This guide provides comprehensive information about Treasury Bills (T-bills) and T-bill futures, with particular relevance to box spread trading and risk-free rate calculations.
+This guide provides comprehensive information about Treasury Bills (T-bills) and T-bill futures, with particular relevance to box spread trading and
+risk-free rate calculations.
 
 ## Overview
 
-Treasury bills (T-bills) are short-term debt securities issued by the U.S. government, typically maturing in one year or less. They are considered one of the safest investments, backed by the full faith and credit of the U.S. government.
+Treasury bills (T-bills) are short-term debt securities issued by the U.S. government, typically maturing in one year or less. They are considered
+one of the safest investments, backed by the full faith and credit of the U.S. government.
 
 ## Key Characteristics
 
@@ -136,7 +138,8 @@ When box spread implied rate differs from T-bill rate:
 
 ## Alternative Hedging Instruments
 
-Beyond physical T-bills and T-bill futures, several ETF-based alternatives offer different risk-return profiles and implementation approaches for hedging box spread positions.
+Beyond physical T-bills and T-bill futures, several ETF-based alternatives offer different risk-return profiles and implementation approaches for
+hedging box spread positions.
 
 ### BOXX ETF (Alpha Architect 1-3 Month Box ETF)
 
@@ -382,7 +385,8 @@ Beyond physical T-bills and T-bill futures, several ETF-based alternatives offer
 
 ### Educational Resources
 
-- **CME Group Article**: [Key Factors That Will Drive T-Bill Futures and How Traders Can Prepare](https://www.cmegroup.com/articles/2025/key-factors-that-will-drive-t-bill-futures-and-how-traders-can-prepare.html)
+- **CME Group Article**:
+  [Key Factors That Will Drive T-Bill Futures and How Traders Can Prepare](https://www.cmegroup.com/articles/2025/key-factors-that-will-drive-t-bill-futures-and-how-traders-can-prepare.html)
 - **Interactive Brokers**: [T-Bills 101](https://www.interactivebrokers.com/campus/traders-insight/t-bills-101/)
 - **Investopedia**: [Treasury Bill (T-Bill) Definition](https://www.investopedia.com/terms/t/treasurybill.asp)
 
@@ -415,11 +419,13 @@ Beyond physical T-bills and T-bill futures, several ETF-based alternatives offer
 
 ## International Risk-Free Rate Equivalents
 
-While U.S. T-bills are the standard risk-free rate benchmark for U.S. markets, other countries have equivalent instruments that serve similar purposes for their respective markets.
+While U.S. T-bills are the standard risk-free rate benchmark for U.S. markets, other countries have equivalent instruments that serve similar
+purposes for their respective markets.
 
 ### SHIR (Shekel Overnight Interest Rate) - Israel
 
-**Overview**: SHIR is the Israeli equivalent of a risk-free rate, administered by the Bank of Israel. It serves as the benchmark overnight interest rate for the Israeli Shekel (ILS) market.
+**Overview**: SHIR is the Israeli equivalent of a risk-free rate, administered by the Bank of Israel. It serves as the benchmark overnight interest
+rate for the Israeli Shekel (ILS) market.
 
 **Key Characteristics**:
 
@@ -474,9 +480,11 @@ Understanding T-bills and T-bill futures is essential for:
 - Making informed decisions about capital allocation
 - Understanding the broader fixed income market context
 
-For box spread traders, T-bill rates provide the benchmark against which box spread profitability should be measured, helping to identify true arbitrage opportunities versus risk-adjusted returns.
+For box spread traders, T-bill rates provide the benchmark against which box spread profitability should be measured, helping to identify true
+arbitrage opportunities versus risk-adjusted returns.
 
-**International Considerations**: Traders operating in multiple currencies should use the appropriate risk-free rate for each currency (e.g., SHIR for ILS, T-bills for USD) when pricing options and evaluating arbitrage opportunities.
+**International Considerations**: Traders operating in multiple currencies should use the appropriate risk-free rate for each currency (e.g., SHIR
+for ILS, T-bills for USD) when pricing options and evaluating arbitrage opportunities.
 
 ## See Also
 

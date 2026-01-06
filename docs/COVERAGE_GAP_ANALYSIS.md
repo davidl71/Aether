@@ -169,6 +169,7 @@ This document identifies coverage gaps and prioritizes test additions to achieve
 ### Existing Test Files
 
 **C++ Tests** (`native/tests/`):
+
 - ✅ `test_box_spread_strategy.cpp` - Needs enhancement
 - ✅ `test_order_manager.cpp` - Needs enhancement
 - ✅ `test_risk_calculator.cpp` - Needs enhancement
@@ -186,10 +187,12 @@ This document identifies coverage gaps and prioritizes test additions to achieve
 - ✅ `test_box_spread_e2e.cpp` - End-to-end tests
 
 **Python Tests** (`python/tests/`):
+
 - ✅ `test_security.py` - Good coverage (5 test classes)
 - ✅ `run_security_tests.py` - Test runner
 
 **Python Integration Tests** (`python/integration/`):
+
 - ✅ `test_swiftness_integration.py` - Integration tests
 - ✅ `test_swiftness_integration_simple.py` - Simple integration tests
 - ✅ `test_swiftness_import.py` - Import tests
@@ -197,11 +200,13 @@ This document identifies coverage gaps and prioritizes test additions to achieve
 - ✅ `test_nats_client.py` - NATS client tests
 
 **TUI Tests** (`python/tui/tests/`):
+
 - ✅ `test_models.py` - Basic model tests (needs enhancement)
 
 ### Missing Test Files (Need Creation)
 
 **Python Tests**:
+
 - ❌ `python/tests/test_swiftness_api.py` - **HIGH PRIORITY**
 - ❌ `python/tests/test_environment_config.py` - **HIGH PRIORITY**
 - ❌ `python/tests/test_security_integration_helper.py` - **MEDIUM PRIORITY**

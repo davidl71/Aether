@@ -9,10 +9,12 @@
 **Solution**: Replace with absolute path or relative path.
 
 **Files affected**:
+
 - `filesystem` server uses `${workspaceFolder}`
 - `git` server uses `${workspaceFolder}`
 
 **Fix**: Update `.cursor/mcp.json`:
+
 ```json
 {
   "filesystem": {
@@ -38,16 +40,20 @@
 ### 2. **Missing Dependencies**
 
 **GitKraken CLI**:
+
 - **Error**: `gk: command not found`
 - **Solution**: Install GitKraken CLI:
+
   ```bash
   brew install gitkraken-cli
   gk auth login
   ```
 
 **uvx/mcpower-proxy**:
+
 - **Error**: `uvx: command not found` or proxy errors
 - **Solution**: Install uvx:
+
   ```bash
   pip install uv
   # or
@@ -59,6 +65,7 @@
 **Problem**: npm packages fail to download on first run.
 
 **Solution**: Pre-download packages:
+
 ```bash
 # Test each package manually
 npx -y @modelcontextprotocol/server-filesystem --help
@@ -75,6 +82,7 @@ npx -y @upstash/context7-mcp --help
 **Problem**: Commands can't execute due to permissions.
 
 **Solution**: Check permissions:
+
 ```bash
 ls -la $(which npx)
 ls -la $(which uvx)
@@ -86,6 +94,7 @@ chmod +x $(which npx)  # if needed
 **Problem**: Invalid JSON in `.cursor/mcp.json`.
 
 **Solution**: Validate JSON:
+
 ```bash
 python3 -m json.tool .cursor/mcp.json > /dev/null && echo "Valid" || echo "Invalid"
 ```
@@ -95,6 +104,7 @@ python3 -m json.tool .cursor/mcp.json > /dev/null && echo "Valid" || echo "Inval
 **Problem**: iTerm2 MCP server may require iTerm2 to be installed.
 
 **Solution**:
+
 - Install iTerm2: `brew install --cask iterm2`
 - Or disable the server if not using iTerm2
 
@@ -163,6 +173,7 @@ Based on errors found:
 ### Step 5: Restart Cursor
 
 After fixing configuration:
+
 1. **Quit Cursor completely** (Cmd+Q on macOS)
 2. **Restart Cursor**
 3. **Check MCP server status** in settings
@@ -170,34 +181,42 @@ After fixing configuration:
 ## Quick Fixes by Server
 
 ### Filesystem Server
+
 - **Issue**: `${workspaceFolder}` not expanded
 - **Fix**: Use absolute path
 
 ### Git Server
+
 - **Issue**: `${workspaceFolder}` not expanded
 - **Fix**: Use absolute path
 
 ### GitKraken Server
+
 - **Issue**: `gk` command not found
 - **Fix**: `brew install gitkraken-cli && gk auth login`
 
 ### Semgrep Server
+
 - **Issue**: uvx/mcpower-proxy errors
 - **Fix**: Ensure `uvx` is installed and working
 
 ### NotebookLM Server
+
 - **Issue**: uvx/mcpower-proxy errors
 - **Fix**: Ensure `uvx` is installed and working
 
 ### iTerm2 Server
+
 - **Issue**: iTerm2 not installed
 - **Fix**: `brew install --cask iterm2` or disable server
 
 ### Context7 Server
+
 - **Issue**: Package download fails
 - **Fix**: Test manually: `npx -y @upstash/context7-mcp`
 
 ### Agentic-tools Server
+
 - **Issue**: Package download fails
 - **Fix**: Test manually: `npx -y @pimzino/agentic-tools-mcp`
 

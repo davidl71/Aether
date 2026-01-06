@@ -1,5 +1,9 @@
 # NotebookLM Troubleshooting Guide
 
+> ⚠️ **STATUS**: NotebookLM MCP server is currently **DISABLED** in this project (as of 2025-01-20).
+> This guide is kept for reference but NotebookLM is not available via MCP.
+> See `docs/MCP_NOTEBOOKLM_DISABLED.md` for details.
+
 This guide helps troubleshoot common issues with NotebookLM MCP server integration.
 
 ## Common Issues

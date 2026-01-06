@@ -33,7 +33,6 @@ Comprehensive REST API endpoint specification for iPad app, extending existing R
 
 #### Get Account Summary
 
-
 ```
 GET /api/v1/account/summary
 Authorization: Bearer <token>
@@ -52,7 +51,6 @@ Response:
 ```
 
 **Implementation**: Extend existing snapshot endpoint or create dedicated account summary endpoint.
-
 
 #### Get Account Positions
 
@@ -83,7 +81,6 @@ Response:
 
 ### 2. Strategy Information
 
-
 #### Get Strategy Statistics
 
 ```
@@ -109,7 +106,6 @@ Response:
 ```
 
 **Implementation**: New endpoint - aggregate data from QuestDB or strategy runner.
-
 
 ### 3. Historical Data
 
@@ -138,7 +134,6 @@ Response:
 ```
 
 **Implementation**: Query QuestDB for historical PnL data.
-
 
 ### 4. Events/Notifications
 
@@ -173,7 +168,6 @@ Response:
   }
 }
 ```
-
 
 **Implementation**: Query from alerts/notifications system or NATS message history.
 
@@ -259,7 +253,6 @@ Response:
 
 ### Common Request Headers
 
-
 ```
 Authorization: Bearer <token>
 Content-Type: application/json
@@ -308,11 +301,9 @@ Accept: application/json
 - Refresh token mechanism
 - Biometric authentication integration
 
-
 ## Rate Limiting
 
 ### Recommendations
-
 
 - 100 requests per minute per client
 - Burst allowance: 20 requests per 10 seconds
@@ -322,18 +313,15 @@ Accept: application/json
 
 ### Client-Side (iPad)
 
-
 - Cache snapshot for offline access
 - Cache configuration
 - Cache historical data (with TTL)
-
 
 ### Server-Side
 
 - Cache account summary (30 seconds)
 - Cache strategy stats (60 seconds)
 - Cache scenarios (5 minutes)
-
 
 ## Testing
 

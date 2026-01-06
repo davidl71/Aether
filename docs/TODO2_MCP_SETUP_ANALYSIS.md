@@ -18,6 +18,7 @@
 **Status**: ✅ **Todo2 MCP Configured**
 
 **Configuration:**
+
 - Task T-206 completed: "Configure Todo2 MCP server in Cursor"
 - MCP server configured in `.cursor/mcp.json`
 - Server name: `Todo2`
@@ -25,6 +26,7 @@
 - Package: `todo2-extension-todo2`
 
 **Verification:**
+
 ```bash
 # Check if Todo2 MCP is configured
 cat .cursor/mcp.json | python3 -m json.tool | grep -A 5 -i todo2
@@ -37,15 +39,18 @@ cat .cursor/mcp.json | python3 -m json.tool | grep -A 5 -i todo2
 **Location**: `/Users/davidl/Projects/project-management-automation`
 
 **Status:**
+
 - ✅ Has `.todo2/` directory
 - ✅ Has `.cursor/mcp.json` file
 - ❌ **Todo2 MCP server NOT configured**
 
 **Current MCP Servers:**
+
 - `filesystem` (via mcpower-proxy)
 - `interactive` (interactive-mcp)
 
 **Action Needed:**
+
 - Add Todo2 MCP server to `.cursor/mcp.json`
 
 ### 2. devwisdom-go
@@ -53,11 +58,13 @@ cat .cursor/mcp.json | python3 -m json.tool | grep -A 5 -i todo2
 **Location**: `/Users/davidl/Projects/devwisdom-go`
 
 **Status:**
+
 - ✅ Has `.todo2/` directory
 - ❌ No `.cursor/` directory found
 - ❌ **Todo2 MCP server NOT configured**
 
 **Action Needed:**
+
 - Create `.cursor/` directory
 - Create `.cursor/mcp.json` with Todo2 MCP server
 
@@ -66,18 +73,21 @@ cat .cursor/mcp.json | python3 -m json.tool | grep -A 5 -i todo2
 ### Current Ansible Setup
 
 **Existing Playbooks:**
+
 1. `ansible/playbooks/setup_devtools.yml` - Global developer tools
 2. `ansible/playbooks/setup_distcc_macos.yml` - Distributed compilation
 3. `ansible/playbooks/backend_setup.yml` - Backend environment
 4. `ansible/playbooks/fetch_third_party.yml` - Third-party dependencies
 
 **MCP Configuration Handling:**
+
 - `setup_distcc_macos.yml` copies `.cursor/mcp.json` to worker machines
 - **No dedicated Todo2 MCP setup playbook exists**
 
 ### Missing: Todo2 MCP Setup Playbook
 
 **What's Needed:**
+
 - Ansible playbook to configure Todo2 MCP server
 - Should work across multiple projects
 - Should check for existing `.todo2/` directory
@@ -90,6 +100,7 @@ cat .cursor/mcp.json | python3 -m json.tool | grep -A 5 -i todo2
 **File**: `ansible/playbooks/setup_todo2_mcp.yml`
 
 **Features:**
+
 - Check for `.todo2/` directory in project
 - Create `.cursor/` directory if missing
 - Merge Todo2 MCP config into existing `mcp.json`
@@ -100,12 +111,14 @@ cat .cursor/mcp.json | python3 -m json.tool | grep -A 5 -i todo2
 **File**: `ansible/playbooks/setup_devtools.yml` or `ansible/roles/devtools/tasks/main.yml`
 
 **Features:**
+
 - Add Todo2 MCP configuration task
 - Run as part of standard devtools setup
 
 ## Todo2 MCP Configuration Template
 
 **Standard Configuration:**
+
 ```json
 {
   "mcpServers": {
@@ -129,6 +142,7 @@ cat .cursor/mcp.json | python3 -m json.tool | grep -A 5 -i todo2
 **File**: `ansible/playbooks/setup_todo2_mcp.yml`
 
 **Tasks:**
+
 1. Check if project has `.todo2/` directory
 2. Ensure `.cursor/` directory exists
 3. Read existing `mcp.json` (if exists)
@@ -139,6 +153,7 @@ cat .cursor/mcp.json | python3 -m json.tool | grep -A 5 -i todo2
 ### Step 2: Update Other Projects
 
 **For each project with `.todo2/` directory:**
+
 1. Run playbook to configure Todo2 MCP
 2. Verify MCP server is active
 3. Test Todo2 MCP tools
@@ -146,6 +161,7 @@ cat .cursor/mcp.json | python3 -m json.tool | grep -A 5 -i todo2
 ### Step 3: Document Usage
 
 **Create documentation:**
+
 - How to run the playbook
 - How to verify Todo2 MCP is working
 - Troubleshooting guide
@@ -155,12 +171,14 @@ cat .cursor/mcp.json | python3 -m json.tool | grep -A 5 -i todo2
 ### Manual Configuration
 
 **For project-management-automation:**
+
 ```bash
 cd ~/Projects/project-management-automation
 # Edit .cursor/mcp.json and add Todo2 server
 ```
 
 **For devwisdom-go:**
+
 ```bash
 cd ~/Projects/devwisdom-go
 mkdir -p .cursor

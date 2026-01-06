@@ -136,7 +136,8 @@ brew install infer
 
 ### Option 3: Build from Source
 
-Infer is written in OCaml and requires OCaml, opam, and other dependencies. See the [official installation guide](https://fbinfer.com/docs/getting-started) for detailed instructions.
+Infer is written in OCaml and requires OCaml, opam, and other dependencies. See the [official installation
+guide](https://fbinfer.com/docs/getting-started) for detailed instructions.
 
 Quick install from source:
 
@@ -284,7 +285,8 @@ Configure via CMake flags or `.clang-tidy` file.
 
 ## Handling Legacy Code
 
-When introducing static analysis to an existing codebase, you may face thousands of warnings from legacy code. Rather than fixing everything at once (which is impractical), you can use a **mass suppression** strategy:
+When introducing static analysis to an existing codebase, you may face thousands of warnings from legacy code. Rather than fixing everything at once
+(which is impractical), you can use a **mass suppression** strategy:
 
 ### Strategy: Suppress Legacy, Focus on New Code
 
@@ -355,7 +357,8 @@ cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 To help static analysis tools understand your code better and reduce false positives, see:
 
-- **[STATIC_ANALYSIS_ANNOTATIONS.md](STATIC_ANALYSIS_ANNOTATIONS.md)** - Comprehensive guide on using function attributes, comments, and pragmas to leave "breadcrumbs" for static analyzers
+- **[STATIC_ANALYSIS_ANNOTATIONS.md](STATIC_ANALYSIS_ANNOTATIONS.md)** - Comprehensive guide on using function attributes, comments,
+  and pragmas to leave "breadcrumbs" for static analyzers
 
 This guide covers:
 
@@ -378,5 +381,6 @@ This guide covers:
 
 ### Best Practices & Guides
 
-- **[A gentle introduction to static analyzers for C](https://nrk.neocities.org/articles/c-static-analyzers)** - Practical guide covering compiler warnings, cppcheck, GCC's fanalyzer, and clang-tidy with emphasis on low false-positive tools
+- **[A gentle introduction to static analyzers for C](https://nrk.neocities.org/articles/c-static-analyzers)** - Practical guide covering compiler warnings,
+  cppcheck, GCC's fanalyzer, and clang-tidy with emphasis on low false-positive tools
 - **[How to Step Over Legacy and Start Using Static Code Analysis](https://pvs-studio.com/en/blog/posts/0527/)** - PVS-Studio's guide on handling legacy code with mass suppression strategies (concepts apply to other tools)

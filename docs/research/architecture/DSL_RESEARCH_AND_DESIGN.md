@@ -7,7 +7,8 @@
 
 ## Executive Summary
 
-This document researches existing financial Domain-Specific Languages (DSLs) and designs a DSL architecture for expressing box spread synthetic financing scenarios, multi-asset relationships, and cash flow modeling in the IBKR box spread project.
+This document researches existing financial Domain-Specific Languages (DSLs) and designs a DSL architecture for expressing box spread synthetic
+financing scenarios, multi-asset relationships, and cash flow modeling in the IBKR box spread project.
 
 **Key Findings:**
 
@@ -16,7 +17,8 @@ This document researches existing financial Domain-Specific Languages (DSLs) and
 - **COBOL** patterns show importance of domain-specific types and business-readable syntax
 - **Icon Solutions MPS** demonstrates code generation from DSL models to executable code
 
-**Recommendation:** Start with Python embedded DSL (internal DSL) for rapid prototyping, then consider external DSL with code generation for production use.
+**Recommendation:** Start with Python embedded DSL (internal DSL) for rapid prototyping, then consider external DSL with code generation for
+production use.
 
 ---
 
@@ -54,7 +56,8 @@ contract = BoxSpread("SPX") \
 
 ### 2. MLFi (LexiFi - OCaml)
 
-**Source:** [dslfin.org/resources.html](https://www.dslfin.org/resources.html), [Stack Overflow Discussion](https://stackoverflow.com/questions/23448/dsls-domain-specific-languages-in-finance)
+**Source:** [dslfin.org/resources.html](https://www.dslfin.org/resources.html), [Stack Overflow
+Discussion](https://stackoverflow.com/questions/23448/dsls-domain-specific-languages-in-finance)
 
 **Key Characteristics:**
 
@@ -73,7 +76,8 @@ contract = BoxSpread("SPX") \
 
 ### 3. Rebel DSL (ING Bank / CWI)
 
-**Source:** [CWI Rebel Page](https://www.cwi.nl/en/research/software-analysis-and-transformation/software/rebel-a-domain-specific-language-for-product-development-in-finance/)
+**Source:** [CWI Rebel
+Page](https://www.cwi.nl/en/research/software-analysis-and-transformation/software/rebel-a-domain-specific-language-for-product-development-in-finance/)
 
 **Key Characteristics:**
 
@@ -113,7 +117,8 @@ contract = BoxSpread("SPX") \
 
 ### 5. Icon Solutions MPS Approach
 
-**Source:** [Icon Solutions DSL Article](https://iconsolutions.com/blog/accelerating-software-engineering-through-the-adoption-of-domain-specific-languages)
+**Source:** [Icon Solutions DSL
+Article](https://iconsolutions.com/blog/accelerating-software-engineering-through-the-adoption-of-domain-specific-languages)
 
 **Key Characteristics:**
 
@@ -491,7 +496,8 @@ scenario = BoxSpread(config.strategy.symbols[0]) \
 - [dslfin.org/resources.html](https://www.dslfin.org/resources.html) - Comprehensive financial DSL listing
 - [Stack Overflow: DSLs in Finance](https://stackoverflow.com/questions/23448/dsls-domain-specific-languages-in-finance) - Community discussion
 - [CWI Rebel DSL](https://www.cwi.nl/en/research/software-analysis-and-transformation/software/rebel-a-domain-specific-language-for-product-development-in-finance/) - ING bank DSL
-- [Icon Solutions: DSL Adoption](https://iconsolutions.com/blog/accelerating-software-engineering-through-the-adoption-of-domain-specific-languages) - MPS approach
+- [Icon Solutions:
+  DSL Adoption](https://iconsolutions.com/blog/accelerating-software-engineering-through-the-adoption-of-domain-specific-languages) - MPS approach
 - [IBM COBOL](https://www.ibm.com/think/topics/cobol) - Legacy financial language patterns
 
 ---

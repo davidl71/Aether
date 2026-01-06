@@ -9,7 +9,9 @@
 
 ## Overview
 
-IBC (Interactive Brokers Controller) is a Java-based automation tool that automates many aspects of running Interactive Brokers Trader Workstation (TWS) and Gateway that would otherwise require manual intervention. It's especially useful for automated trading systems based on the Interactive Brokers API, but many manual traders also find it helpful.
+IBC (Interactive Brokers Controller) is a Java-based automation tool that automates many aspects of running Interactive Brokers Trader Workstation
+(TWS) and Gateway that would otherwise require manual intervention. It's especially useful for automated trading systems based on the Interactive
+Brokers API, but many manual traders also find it helpful.
 
 **Key Point**: IBC is a fork of the original IBController project, maintained by Richard L King (rlktradewright) since 2018.
 
@@ -70,28 +72,33 @@ IBC runs on:
 
 **CRITICAL**: IBC **DOES NOT WORK** with the self-updating version of TWS.
 
-> IMPORTANT: By far the most common problem that users have when setting up IBC is the result of trying to use it with the self-updating version of TWS.
+> IMPORTANT: By far the most common problem that users have when setting up IBC is the result of trying to use it with the self-updating version of
+TWS.
 >
 > **IBC DOES NOT WORK with the self-updating version of TWS.**
 >
 > You must install the offline version of TWS for use with IBC.
 >
-> Note however that there is no self-updating version of the Gateway, so the normal Gateway installer will work fine if you only want to use the Gateway.
+> Note however that there is no self-updating version of the Gateway, so the normal Gateway installer will work fine if you only want to use the
+Gateway.
 
 ### Two-Factor Authentication Limitations
 
-IBC **cannot automatically complete your login** if Interactive Brokers have given you a card or device that you must use during login. IBC can still enter your username and password, but you will have to:
+IBC **cannot automatically complete your login** if Interactive Brokers have given you a card or device that you must use during login. IBC can still
+enter your username and password, but you will have to:
 
 - Type in the relevant code manually, or
 - Use the IBKR Mobile app to complete the login
 
-**Security Note**: You can request Interactive Brokers (via your Account Management page on their website) to relax this requirement when logging in to TWS or Gateway, but you will lose certain guarantees should you suffer losses as a result of your account being compromised.
+**Security Note**: You can request Interactive Brokers (via your Account Management page on their website) to relax this requirement when logging in
+to TWS or Gateway, but you will lose certain guarantees should you suffer losses as a result of your account being compromised.
 
 ### Migration from IBController
 
 If you're moving to IBC from IBController, there are some changes that you'll have to make. See the IBC User Guide for further information.
 
-**Best Practice**: Install IBC from scratch using the download on the Releases page rather than trying to migrate an existing IBController installation.
+**Best Practice**: Install IBC from scratch using the download on the Releases page rather than trying to migrate an existing IBController
+installation.
 
 ## Installation & Usage
 
@@ -121,7 +128,8 @@ If you want to make changes to IBC:
 3. **Test thoroughly** before deploying
 4. Repository may not always be in a fully self-consistent state
 
-**Warning**: If you build IBC.jar directly from the repository, you should test thoroughly before deploying it (especially important when composing a Docker image).
+**Warning**: If you build IBC.jar directly from the repository, you should test thoroughly before deploying it (especially important when composing a
+Docker image).
 
 ## Technical Details
 

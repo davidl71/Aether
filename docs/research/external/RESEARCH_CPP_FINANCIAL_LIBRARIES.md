@@ -6,7 +6,8 @@
 
 ## Executive Summary
 
-This document analyzes 10 C++ financial software resources for potential integration with the IBKR box spread trading application. The analysis focuses on relevance to box spread trading, compatibility with C++20, integration complexity, and alignment with existing project architecture.
+This document analyzes 10 C++ financial software resources for potential integration with the IBKR box spread trading application. The analysis
+focuses on relevance to box spread trading, compatibility with C++20, integration complexity, and alignment with existing project architecture.
 
 **Key Findings:**
 
@@ -27,7 +28,8 @@ This document analyzes 10 C++ financial software resources for potential integra
 **Status:** Actively maintained (2025)
 
 **Description:**
-QuantLib is the industry-standard C++ library for quantitative finance, providing comprehensive tools for derivatives pricing, risk management, portfolio optimization, and yield curve modeling.
+QuantLib is the industry-standard C++ library for quantitative finance, providing comprehensive tools for derivatives pricing, risk management,
+portfolio optimization, and yield curve modeling.
 
 **Key Features:**
 
@@ -136,7 +138,8 @@ High-performance C++ library specifically designed for option pricing, implement
 **Status:** Active (2025)
 
 **Description:**
-Comprehensive guide and resource platform for C++ quantitative finance development, covering essential libraries, best practices, and implementation patterns.
+Comprehensive guide and resource platform for C++ quantitative finance development, covering essential libraries, best practices, and implementation
+patterns.
 
 **Key Resources:**
 
@@ -239,7 +242,8 @@ High-performance C++ template library for linear algebra, providing efficient ma
 **Status:** Actively maintained (2025)
 
 **Description:**
-Library for nonlinear optimization, providing a common interface for various optimization algorithms (gradient-based, derivative-free, global optimization).
+Library for nonlinear optimization, providing a common interface for various optimization algorithms (gradient-based, derivative-free, global
+optimization).
 
 **Key Features:**
 
@@ -343,7 +347,8 @@ High-performance C++ implementation of the Financial Information eXchange (FIX) 
 **Status:** Active (2025)
 
 **Description:**
-C++ library for creating financial charts and technical analysis visualization, providing chart types, technical indicators, and real-time data display.
+C++ library for creating financial charts and technical analysis visualization, providing chart types, technical indicators, and real-time data
+display.
 
 **Key Features:**
 
@@ -500,7 +505,8 @@ Modern parallel C++ programming framework for quantitative finance using SYCL/on
 **Status:** Published 2024
 
 **Description:**
-Article discussing C++ advantages in financial software development, covering performance benefits, algorithmic trading strategies, backtesting, and quantitative finance modeling.
+Article discussing C++ advantages in financial software development, covering performance benefits, algorithmic trading strategies, backtesting, and
+quantitative finance modeling.
 
 **Key Topics:**
 
@@ -560,12 +566,12 @@ Article discussing C++ advantages in financial software development, covering pe
 | **Eigen** | **HIGH** | Portfolio optimization, linear algebra | Low | MPL2 | ✅ Integrated |
 | **Option Pricer** | **MEDIUM** | Lightweight option pricing | Low | Verify | ⏳ Pending |
 | **NLopt** | **MEDIUM** | Convexity optimization, portfolio rebalancing | Low-Moderate | LGPL/MIT | 📋 Docs Ready |
-| **OnixS FIX** | **LOW** | Alternative to TWS API (future) | Moderate | Commercial |
-| **StockChartX** | **LOW** | GUI visualization (future) | Low-Moderate | Commercial |
-| **UnoAPI/SYCL** | **LOW** | Performance optimization (future) | High | Verify |
-| **C++ for Quants** | **REFERENCE** | Library selection guide | N/A | N/A |
-| **Medium Article** | **REFERENCE** | API integration patterns | N/A | N/A |
-| **Quantum Zeitgeist** | **REFERENCE** | Best practices validation | N/A | N/A |
+| **OnixS FIX** | **LOW** | Alternative to TWS API (future) | Moderate | Commercial | ⏳ Pending |
+| **StockChartX** | **LOW** | GUI visualization (future) | Low-Moderate | Commercial | ⏳ Pending |
+| **UnoAPI/SYCL** | **LOW** | Performance optimization (future) | High | Verify | ⏳ Pending |
+| **C++ for Quants** | **REFERENCE** | Library selection guide | N/A | N/A | 📋 Reference |
+| **Medium Article** | **REFERENCE** | API integration patterns | N/A | N/A | 📋 Reference |
+| **Quantum Zeitgeist** | **REFERENCE** | Best practices validation | N/A | N/A | 📋 Reference |
 
 ---
 

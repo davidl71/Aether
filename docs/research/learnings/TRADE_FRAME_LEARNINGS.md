@@ -2,7 +2,9 @@
 
 ## Overview
 
-This document captures key learnings from the [trade-frame repository](https://github.com/rburkholder/trade-frame), a C++17-based trading library framework developed by Raymond P. Burkholder. Trade-frame provides a comprehensive foundation for testing automated trading strategies across equities, futures, currencies, ETFs, and options.
+This document captures key learnings from the [trade-frame repository](https://github.com/rburkholder/trade-frame), a C++17-based trading library
+framework developed by Raymond P. Burkholder. Trade-frame provides a comprehensive foundation for testing automated trading strategies across
+equities, futures, currencies, ETFs, and options.
 
 **Repository**: <https://github.com/rburkholder/trade-frame>
 **Language**: C++17
@@ -29,7 +31,8 @@ Trade-frame organizes code into distinct, reusable libraries:
 - **OUCharting**: Wrapper around ChartDirector for plots and charts
 - **OUSQL**: ORM wrapper around SQLite for maintaining trading records
 
-**Key Insight**: Clear separation of concerns with each library having a single, well-defined responsibility. This makes the codebase maintainable and allows applications to link only the libraries they need.
+**Key Insight**: Clear separation of concerns with each library having a single, well-defined responsibility. This makes the codebase maintainable
+and allows applications to link only the libraries they need.
 
 ### 2. Application Layer Pattern
 
@@ -45,7 +48,8 @@ Trade-frame separates library code from application code:
   - `DepthOfMarket`: Level II ladder for trading futures
   - `LiveChart`: Real-time instrument viewing
 
-**Key Insight**: Applications serve as both working examples and templates for new trading strategies. This pattern helps developers understand how to use the libraries effectively.
+**Key Insight**: Applications serve as both working examples and templates for new trading strategies. This pattern helps developers understand how
+to use the libraries effectively.
 
 ### 3. Multi-Provider Architecture
 
@@ -64,7 +68,8 @@ Trade-frame supports multiple market data providers and execution venues:
 - **Alpaca**: Via Alpaca API
 - **Phemex**: Via Phemex API
 
-**Key Insight**: Abstracting provider-specific code behind common interfaces allows the same trading logic to work with multiple data sources and brokers. This is critical for:
+**Key Insight**: Abstracting provider-specific code behind common interfaces allows the same trading logic to work with multiple data sources and
+brokers. This is critical for:
 
 - Redundancy (fallback providers)
 - Testing (paper trading vs. live)

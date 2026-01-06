@@ -1,5 +1,9 @@
 # NotebookLM Usage Guide
 
+> ⚠️ **STATUS**: NotebookLM MCP server is currently **DISABLED** in this project (as of 2025-01-20).
+> This guide is kept for reference but NotebookLM is not available via MCP.
+> See `docs/MCP_NOTEBOOKLM_DISABLED.md` for details.
+
 This guide explains how to use NotebookLM MCP server to summarize YouTube videos, documentation links, and other resources for better AI assistance in your workflow.
 
 ## Overview

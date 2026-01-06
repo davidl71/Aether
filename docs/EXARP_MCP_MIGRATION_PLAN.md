@@ -9,6 +9,7 @@
 ## Executive Summary
 
 Currently, the daily automation scripts use a mixed approach:
+
 - `exarp_daily_automation_wrapper.py` calls Exarp via CLI (`uvx exarp`)
 - Other wrappers call local scripts that may import from Exarp package
 
@@ -19,6 +20,7 @@ Currently, the daily automation scripts use a mixed approach:
 ## Current Architecture
 
 ### Phase 1: Exarp Checks (via CLI)
+
 - **Script**: `scripts/exarp_daily_automation_wrapper.py`
 - **Method**: Subprocess calls to `uvx exarp check-documentation-health`, etc.
 - **Issues**:
@@ -28,6 +30,7 @@ Currently, the daily automation scripts use a mixed approach:
   - No direct access to structured results
 
 ### Phase 2: Documentation Automation (Local Scripts)
+
 - **Scripts**:
   - `exarp_fix_documentation_links.py` → calls `automate_documentation_link_fixing.py`
   - `exarp_validate_docs_format.py` → local validation
@@ -41,11 +44,13 @@ Currently, the daily automation scripts use a mixed approach:
 ### Approach: Direct Python Function Calls
 
 Instead of:
+
 ```python
 subprocess.run(['uvx', 'exarp', 'check-documentation-health', project_dir])
 ```
 
 Use:
+
 ```python
 from project_management_automation.tools.docs_health import check_documentation_health
 result = check_documentation_health(project_dir=project_dir, create_tasks=True)
@@ -62,6 +67,7 @@ result = check_documentation_health(project_dir=project_dir, create_tasks=True)
 **Purpose**: Centralized module for calling Exarp tools programmatically
 
 **Implementation**:
+
 ```python
 #!/usr/bin/env python3
 """
@@ -167,6 +173,7 @@ class ExarpToolClient:
 **New**: Uses `ExarpToolClient` for direct function calls
 
 **Changes**:
+
 ```python
 # OLD
 command = ['uvx', 'exarp', 'check-documentation-health', str(self.project_dir)]
@@ -179,6 +186,7 @@ result = client.check_documentation_health(dry_run=self.dry_run)
 ```
 
 **Benefits**:
+
 - ✅ No subprocess overhead
 - ✅ Direct access to structured results
 - ✅ Better error handling (exceptions vs exit codes)
@@ -198,6 +206,7 @@ result = client.check_documentation_health(dry_run=self.dry_run)
 ### Step 4: Update Local Scripts (Optional)
 
 **Scripts to Review**:
+
 - `scripts/automate_docs_health_v2.py` - Already tries to import from Exarp
 - `scripts/automate_todo2_alignment_v2.py` - Already tries to import from Exarp
 - `scripts/automate_todo2_duplicate_detection.py` - Already tries to import from Exarp
@@ -211,18 +220,21 @@ result = client.check_documentation_health(dry_run=self.dry_run)
 **Test Plan**:
 
 1. **Unit Tests**:
+
    ```bash
    # Test ExarpToolClient
    python3 -c "from scripts.exarp_mcp_client import ExarpToolClient; client = ExarpToolClient('.'); print('✅ Client initialized')"
    ```
 
 2. **Integration Tests**:
+
    ```bash
    # Test migrated wrapper
    python3 scripts/exarp_daily_automation_wrapper.py . --dry-run
    ```
 
 3. **End-to-End Tests**:
+
    ```bash
    # Test full daily automation
    ./scripts/daily_automation_with_link_fixing.sh . --dry-run
@@ -238,6 +250,7 @@ result = client.check_documentation_health(dry_run=self.dry_run)
 ### Step 6: Documentation Updates
 
 **Files to Update**:
+
 - `docs/DAILY_AUTOMATION_SETUP_COMPLETE.md` - Update usage examples
 - `docs/EXARP_MCP_TOOLS_USAGE.md` - Add programmatic usage section
 - `scripts/exarp_daily_automation_wrapper.py` - Update docstring
@@ -247,24 +260,28 @@ result = client.check_documentation_health(dry_run=self.dry_run)
 ## Implementation Checklist
 
 ### Phase 1: Foundation
+
 - [ ] Create `scripts/exarp_mcp_client.py` module
 - [ ] Add error handling and fallback logic
 - [ ] Add logging for debugging
 - [ ] Test Exarp package import paths
 
 ### Phase 2: Migration
+
 - [ ] Migrate `exarp_daily_automation_wrapper.py` to use `ExarpToolClient`
 - [ ] Update all three tool calls (docs health, alignment, duplicates)
 - [ ] Maintain backward compatibility (same CLI interface)
 - [ ] Add `--use-cli` flag for fallback
 
 ### Phase 3: Testing
+
 - [ ] Unit tests for `ExarpToolClient`
 - [ ] Integration tests for migrated wrapper
 - [ ] End-to-end test with daily automation script
 - [ ] Compare old vs new results
 
 ### Phase 4: Cleanup
+
 - [ ] Remove unused subprocess code
 - [ ] Update documentation
 - [ ] Update cron job setup scripts if needed
@@ -275,11 +292,13 @@ result = client.check_documentation_health(dry_run=self.dry_run)
 ## Rollback Plan
 
 **If migration fails**:
+
 1. Keep old CLI-based version as `exarp_daily_automation_wrapper.py.old`
 2. Add `--use-cli` flag to fallback to subprocess calls
 3. Revert git commit if needed
 
 **Safety Measures**:
+
 - Test in dry-run mode first
 - Keep old version until new version validated
 - Monitor first few automated runs
@@ -289,16 +308,19 @@ result = client.check_documentation_health(dry_run=self.dry_run)
 ## Benefits
 
 ### Performance
+
 - **Faster**: No subprocess overhead
 - **More Reliable**: Direct function calls vs CLI parsing
 - **Better Errors**: Python exceptions vs exit codes
 
 ### Maintainability
+
 - **Simpler**: Direct imports vs CLI command construction
 - **Type Safety**: Python types vs string arguments
 - **Debugging**: Easier to debug Python code vs subprocess
 
 ### Flexibility
+
 - **No uvx Dependency**: Works if `uvx` not installed
 - **Direct Access**: Can access intermediate results
 - **Extensible**: Easy to add new tools
@@ -308,19 +330,25 @@ result = client.check_documentation_health(dry_run=self.dry_run)
 ## Risks & Mitigation
 
 ### Risk 1: Exarp Package Not Available
+
 **Mitigation**:
+
 - Check for package at import time
 - Provide clear error message
 - Fallback to CLI if needed
 
 ### Risk 2: API Changes
+
 **Mitigation**:
+
 - Pin Exarp package version
 - Test with specific version
 - Document version requirements
 
 ### Risk 3: Breaking Changes
+
 **Mitigation**:
+
 - Maintain backward compatibility
 - Keep CLI fallback option
 - Gradual migration with testing
@@ -381,6 +409,7 @@ result = client.check_documentation_health(dry_run=self.dry_run)
 **If adding wisdom to daily automation:**
 
 1. **Create DevWisdom MCP Client** (similar to `ExarpToolClient`):
+
    ```python
    # scripts/devwisdom_mcp_client.py
    from project_management_automation.utils.wisdom_client import (
@@ -410,6 +439,7 @@ result = client.check_documentation_health(dry_run=self.dry_run)
    - See `project_management_automation/utils/wisdom_client.py` for reference implementation
 
 4. **Example Usage**:
+
    ```python
    # In exarp_daily_automation_wrapper.py
    from devwisdom_mcp_client import DevWisdomClient
@@ -420,6 +450,7 @@ result = client.check_documentation_health(dry_run=self.dry_run)
    ```
 
 **References**:
+
 - DevWisdom MCP Server: `devwisdom-go` repository
 - Exarp Wisdom Client: `project_management_automation/utils/wisdom_client.py`
 - MCP Client Library: `pip install mcp>=1.0.0`

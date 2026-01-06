@@ -20,6 +20,7 @@ Cursor reads MCP configuration in this order (later ones override earlier ones):
 ### Project-Level (Current)
 
 **Location**: `.cursor/mcp.json`
+
 - ✅ This is the file we've been editing
 - ✅ Should be the primary config for this project
 - ✅ Currently has 10 servers, 1 context7 entry
@@ -27,11 +28,13 @@ Cursor reads MCP configuration in this order (later ones override earlier ones):
 ### User-Level (Global)
 
 **Possible locations:**
+
 - `~/Library/Application Support/Cursor/User/settings.json` (macOS)
 - `~/Library/Application Support/Cursor/User/globalStorage/mcp.json` (macOS)
 - `~/.cursor/mcp.json` (Unix)
 
 **Check for MCP settings:**
+
 ```bash
 # macOS
 cat ~/Library/Application\ Support/Cursor/User/settings.json | grep -i mcp
@@ -40,10 +43,12 @@ cat ~/Library/Application\ Support/Cursor/User/settings.json | grep -i mcp
 ### Workspace-Level
 
 **Possible locations:**
+
 - `.vscode/settings.json` (workspace settings)
 - `.cursor/settings.json` (Cursor-specific workspace settings)
 
 **Check:**
+
 ```bash
 cat .vscode/settings.json | grep -i mcp
 cat .cursor/settings.json | grep -i mcp 2>/dev/null
@@ -85,6 +90,7 @@ for loc in locations:
 ### If Multiple Configs Found
 
 1. **Check each file for context7 duplicates:**
+
    ```bash
    # Check project config
    cat .cursor/mcp.json | python3 -m json.tool | grep -i context7
@@ -125,11 +131,13 @@ for loc in locations:
 After cleaning all config files:
 
 1. **Verify project config is clean:**
+
    ```bash
    python3 scripts/deduplicate_mcp_servers.py .cursor/mcp.json
    ```
 
 2. **Check for other configs:**
+
    ```bash
    find ~/Library/Application\ Support/Cursor -name "*mcp*.json" 2>/dev/null
    ```

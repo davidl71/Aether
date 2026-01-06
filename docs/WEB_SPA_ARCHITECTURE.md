@@ -2,7 +2,7 @@
 
 **Date**: 2025-11-22
 **Status**: Design Complete
-**Task**: T-217 (Web SPA architecture/wireframes)
+**Task**: T-21 (Web SPA architecture/wireframes)
 
 ## Overview
 

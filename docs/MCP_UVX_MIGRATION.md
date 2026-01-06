@@ -12,6 +12,7 @@ Migrated Python-based MCP servers to use `uvx` wherever possible for faster, mor
 ### ✅ exarp Server
 
 **Before:**
+
 ```json
 {
   "exarp": {
@@ -25,6 +26,7 @@ Migrated Python-based MCP servers to use `uvx` wherever possible for faster, mor
 ```
 
 **After:**
+
 ```json
 {
   "exarp": {
@@ -38,6 +40,7 @@ Migrated Python-based MCP servers to use `uvx` wherever possible for faster, mor
 ```
 
 **Benefits:**
+
 - ✅ Faster package resolution (uvx uses uv's fast resolver)
 - ✅ Automatic environment management (no manual venv needed)
 - ✅ Better dependency isolation
@@ -75,10 +78,12 @@ The following servers use npm packages and cannot be migrated to `uvx` (uvx is f
 ## Final Configuration
 
 ### uvx Servers (2 total) ✅
+
 - ✅ **exarp** - `uvx exarp --mcp` (migrated from `python3 -m`)
 - ✅ **ollama** - `uvx mcp-ollama` (already using uvx)
 
 ### npm Servers (8 total)
+
 - **Todo2** - `npx -y todo2-extension-todo2`
 - **agentic-tools** - `npx -y @pimzino/agentic-tools-mcp`
 - **context7** - `npx -y @upstash/context7-mcp`

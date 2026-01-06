@@ -11,6 +11,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 ## Current Status
 
 ✅ **Completed:**
+
 - Ollama installed and running (Homebrew)
 - llama3.2 model downloaded (2.0 GB)
 - MCP server configured (`mcp-ollama` via `uvx`)
@@ -18,6 +19,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 - Documentation created (`docs/MCP_OLLAMA_INTEGRATION.md`)
 
 ⏳ **In Progress:**
+
 - Workflow integration
 - Use case definition
 - Best practices documentation
@@ -60,6 +62,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 **Use Case:** Review trading code for security vulnerabilities and bugs before committing.
 
 **Workflow:**
+
 ```
 1. Developer writes/modifies trading code
 2. Use Ollama via MCP: "Analyze this code for security issues"
@@ -69,11 +72,13 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 ```
 
 **Example Commands:**
+
 - "Review this box spread calculation for potential bugs"
 - "Check this risk management code for security vulnerabilities"
 - "Analyze this order execution logic for race conditions"
 
 **Benefits:**
+
 - Privacy: Proprietary algorithms never leave local machine
 - Speed: No API rate limits or network latency
 - Cost: No per-request charges
@@ -83,6 +88,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 **Use Case:** Generate comprehensive documentation from code comments and structure.
 
 **Workflow:**
+
 ```
 1. Code with minimal comments exists
 2. Use Ollama: "Generate API documentation for this module"
@@ -92,11 +98,13 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 ```
 
 **Example Commands:**
+
 - "Generate API documentation for the box spread calculator"
 - "Create usage examples for the risk manager"
 - "Document the TWS adapter interface"
 
 **Target Modules:**
+
 - `native/src/box_spread_calc.cpp` - Core calculations
 - `native/src/risk_calculator.cpp` - Risk management
 - `native/src/order_manager.cpp` - Order execution
@@ -107,6 +115,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 **Use Case:** Add explanatory comments to complex trading mathematics.
 
 **Workflow:**
+
 ```
 1. Complex calculation exists with minimal comments
 2. Use Ollama: "Explain this calculation and add comments"
@@ -115,11 +124,13 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 ```
 
 **Example Commands:**
+
 - "Explain this convexity calculation and add comments"
 - "Document the APR scaling logic in this function"
 - "Add comments explaining the margin calculation"
 
 **Target Areas:**
+
 - Box spread pricing formulas
 - Risk calculations (Greeks, convexity)
 - Margin and capital efficiency calculations
@@ -129,6 +140,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 **Use Case:** Identify potential bugs in trading logic before they cause issues.
 
 **Workflow:**
+
 ```
 1. Code written or modified
 2. Use Ollama: "Find potential bugs in this trading logic"
@@ -138,11 +150,13 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 ```
 
 **Example Commands:**
+
 - "Find potential bugs in this order execution path"
 - "Check for memory leaks in this C++ code"
 - "Identify race conditions in this async code"
 
 **Focus Areas:**
+
 - Order execution paths
 - Position management
 - Market data handling
@@ -153,6 +167,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 **Use Case:** Identify performance bottlenecks in trading system.
 
 **Workflow:**
+
 ```
 1. Performance issue identified
 2. Use Ollama: "Analyze this code for performance issues"
@@ -162,6 +177,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 ```
 
 **Example Commands:**
+
 - "Optimize this market data processing loop"
 - "Suggest improvements for this calculation performance"
 - "Analyze memory usage in this component"
@@ -171,6 +187,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 **Use Case:** Research trading strategies and concepts using local models.
 
 **Workflow:**
+
 ```
 1. Research question about trading strategy
 2. Use Ollama: "Explain box spread arbitrage mechanics"
@@ -179,6 +196,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 ```
 
 **Example Topics:**
+
 - Box spread construction and pricing
 - Risk-free rate arbitrage
 - Margin efficiency strategies
@@ -203,6 +221,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 **Status:** 🔄 In Progress
 
 **Tasks:**
+
 - [ ] Create Cursor rules for Ollama usage
 - [ ] Document best practices for code analysis
 - [ ] Create templates for common queries
@@ -210,6 +229,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 - [ ] Add Ollama usage to code review checklist
 
 **Deliverables:**
+
 - `.cursor/rules/ollama.mdc` - Usage guidelines
 - `docs/OLLAMA_WORKFLOW_GUIDE.md` - Workflow documentation
 - Query templates for common tasks
@@ -220,6 +240,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 **Status:** 📋 Planned
 
 **Tasks:**
+
 - [ ] Set up automated documentation generation
 - [ ] Create code review automation scripts
 - [ ] Integrate with CI/CD for documentation updates
@@ -227,6 +248,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 - [ ] Create model fine-tuning dataset (if needed)
 
 **Deliverables:**
+
 - Automated documentation generation scripts
 - Code review automation
 - Custom prompt library
@@ -238,6 +260,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 **Status:** 🔮 Future
 
 **Tasks:**
+
 - [ ] Evaluate additional models (codellama, mistral)
 - [ ] Optimize model selection for specific tasks
 - [ ] Create model comparison guide
@@ -245,6 +268,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 - [ ] Monitor and optimize performance
 
 **Deliverables:**
+
 - Model comparison matrix
 - Performance benchmarks
 - GPU setup guide (if applicable)
@@ -306,11 +330,13 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 ### 1. Pre-Commit Workflow
 
 **Optional Integration:**
+
 - Run Ollama code review before committing
 - Generate documentation updates automatically
 - Check for security issues
 
 **Implementation:**
+
 ```bash
 # .git/hooks/pre-commit (optional)
 #!/bin/bash
@@ -321,11 +347,13 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 ### 2. Code Review Process
 
 **Integration:**
+
 - Use Ollama for initial code review
 - Human reviewer focuses on trading logic correctness
 - Ollama handles style, security, documentation
 
 **Workflow:**
+
 1. Developer creates PR
 2. Ollama analyzes code (automated or manual)
 3. Human reviewer reviews trading logic
@@ -334,11 +362,13 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 ### 3. Documentation Maintenance
 
 **Integration:**
+
 - Auto-generate API docs from code
 - Update documentation when code changes
 - Maintain consistency across modules
 
 **Workflow:**
+
 1. Code changes committed
 2. Ollama generates/updates documentation
 3. Review generated docs
@@ -349,28 +379,33 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 ### Current Model: llama3.2
 
 **Pros:**
+
 - ✅ Fast inference (2.0 GB, efficient)
 - ✅ Good for general code analysis
 - ✅ Low memory requirements
 - ✅ Quick response times
 
 **Cons:**
+
 - ⚠️ Limited code-specific training
 - ⚠️ May miss some advanced patterns
 
 ### Recommended Additional Models
 
 **For Code Analysis:**
+
 - `codellama` - Specialized for code (7B-34B variants)
 - Better understanding of code patterns
 - Improved code generation and analysis
 
 **For Documentation:**
+
 - `mistral` - Good for natural language tasks
 - Better documentation generation
 - Improved explanations
 
 **For Quick Tasks:**
+
 - `phi3` - Small, fast model (3.8B)
 - Quick responses for simple queries
 - Lower resource usage
@@ -390,6 +425,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 ### 1. Privacy-First Approach
 
 **Guidelines:**
+
 - ✅ Use Ollama for proprietary trading code
 - ✅ Use Cursor AI for general development questions
 - ✅ Never send trading strategies to cloud services
@@ -398,12 +434,14 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 ### 2. Query Optimization
 
 **Tips:**
+
 - Be specific in queries
 - Provide context when needed
 - Break complex questions into smaller parts
 - Review and refine generated content
 
 **Example:**
+
 ```
 ❌ Bad: "Review this code"
 ✅ Good: "Review this box spread calculation function for potential bugs, focusing on edge cases and error handling"
@@ -412,6 +450,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 ### 3. Model Management
 
 **Guidelines:**
+
 - Keep models updated
 - Monitor disk space (models are large)
 - Use appropriate model for task
@@ -420,6 +459,7 @@ This plan outlines the integration of Ollama (local LLM) into the IBKR Box Sprea
 ### 4. Performance Optimization
 
 **Tips:**
+
 - Use smaller models for quick tasks
 - Use GPU acceleration if available
 - Batch similar queries

@@ -119,6 +119,7 @@ xdg-open htmlcov/index.html  # Linux
 **File**: `.coveragerc` (root directory) - ✅ **Already Created**
 
 The coverage configuration file is located at the project root and includes:
+
 - Source paths: `python/services`, `python/tui`, `python/integration`
 - Exclusions: Tests, `__pycache__`, bindings, setup files
 - Branch coverage: Enabled
@@ -312,6 +313,7 @@ We've created automated scripts to generate coverage reports:
 **Branch Coverage**: Percentage of decision branches (if/else, loops, etc.) that were taken.
 
 **Target Metrics**:
+
 - **Overall Coverage**: 30%+ (project goal)
 - **Critical Paths**: 50%+ (core trading logic, security, order management)
 - **Security Module**: 30%+ (minimum requirement)

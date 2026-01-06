@@ -10,11 +10,13 @@ User reported duplicates in MCP server configuration after restarting Cursor.
 ## Investigation
 
 ### Initial Check
+
 - Found 9 servers in configuration (Todo2 was missing)
 - No duplicates found by deduplication script
 - All servers had unique (command, args) tuples
 
 ### Root Cause
+
 - **Todo2 server was missing** from configuration
 - This may have been removed during the uvx migration
 - No actual duplicates found in the file
@@ -40,6 +42,7 @@ User reported duplicates in MCP server configuration after restarting Cursor.
 ### All Servers (10 total)
 
 **npx servers (8):**
+
 - Todo2
 - agentic-tools
 - context7
@@ -50,12 +53,14 @@ User reported duplicates in MCP server configuration after restarting Cursor.
 - tractatus_thinking
 
 **uvx servers (2):**
+
 - exarp
 - ollama
 
 ### Duplicate Check Results
 
 ✅ **No duplicates found**
+
 - All servers have unique (command, args) combinations
 - Deduplication script confirms: 0 duplicates
 
@@ -64,6 +69,7 @@ User reported duplicates in MCP server configuration after restarting Cursor.
 If you still see duplicates in Cursor's UI after this fix:
 
 1. **Clear Cursor cache:**
+
    ```bash
    # macOS
    rm -rf ~/Library/Application\ Support/Cursor/Cache
@@ -79,6 +85,7 @@ If you still see duplicates in Cursor's UI after this fix:
    - Check for any error messages
 
 4. **Verify configuration file:**
+
    ```bash
    cat .cursor/mcp.json | python3 -m json.tool
    python3 scripts/deduplicate_mcp_servers.py .cursor/mcp.json

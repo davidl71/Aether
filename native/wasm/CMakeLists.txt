@@ -66,7 +66,6 @@ set(WASM_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/../src/box_spread_strategy.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/../src/risk_calculator.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/../src/option_chain.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/../src/tui_converter.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm_bindings.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/wasm_exports.cpp
 )
@@ -76,7 +75,6 @@ set(WASM_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/../include/strategies/box_spread/box_spread_strategy.h
   ${CMAKE_CURRENT_SOURCE_DIR}/../include/risk_calculator.h
   ${CMAKE_CURRENT_SOURCE_DIR}/../include/option_chain.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/../include/tui_converter.h
   ${CMAKE_CURRENT_SOURCE_DIR}/../include/types.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/wasm_types.h
 )

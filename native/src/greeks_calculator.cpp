@@ -133,6 +133,60 @@ Greeks GreeksCalculator::calculate_stock_greeks(int quantity) const {
     return greeks;
 }
 
+Greeks GreeksCalculator::calculate_bond_greeks(
+    const std::string& symbol,
+    double price,
+    double quantity,
+    double duration,
+    double convexity) const {
+
+    Greeks greeks{};
+
+    // Bond Greeks based on duration and convexity
+    // Delta ≈ 0 (bonds don't move 1:1 with stock index)
+    // Alternative: Can use -Duration × Price for price sensitivity
+    greeks.delta = 0.0;  // Bonds don't have direct delta like stocks
+
+    // Gamma: Convexity (second-order price sensitivity)
+    // Formula: Gamma ≈ Convexity × Price × (Δyield)²
+    // For Greeks calculation, use simplified convexity approximation
+    greeks.gamma = convexity * price * 0.0001;  // Approximate gamma
+
+    // Vega = 0 (bonds don't have implied volatility)
+    greeks.vega = 0.0;
+
+    // Theta ≈ 0 (time decay minimal unless approaching maturity)
+    greeks.theta = 0.0;
+
+    // Rho: Interest rate sensitivity (dollar duration)
+    // Formula: Rho = -Duration × Price
+    greeks.rho = -duration * price;
+
+    return greeks;
+}
+
+Greeks GreeksCalculator::calculate_currency_greeks(
+    double position_value_local,
+    double fx_rate_usd,
+    const std::string& currency) const {
+
+    Greeks greeks{};
+
+    // Currency Delta: Sensitivity to FX rate changes
+    // Formula: Delta_currency = Position_Value_Local
+    // This represents sensitivity to FX rate changes
+    // For a 1 unit change in FX rate, the USD value changes by position_value_local
+    greeks.delta = position_value_local;  // Sensitivity to FX rate changes
+
+    // Other Greeks = 0 for currency positions
+    greeks.gamma = 0.0;
+    greeks.vega = 0.0;
+    greeks.theta = 0.0;
+    greeks.rho = 0.0;
+
+    return greeks;
+}
+
 Greeks GreeksCalculator::aggregate_greeks(
     const std::vector<types::Position>& positions,
     double underlying_price,
@@ -177,5 +231,47 @@ Greeks GreeksCalculator::aggregate_greeks(
 double GreeksCalculator::days_to_years(int days) const {
     return static_cast<double>(days) / 365.0;
 }
+
+// Helper: Get bond duration from ETF symbol (lookup table)
+namespace {
+double get_etf_duration(const std::string& symbol) {
+    // Common bond ETF durations (approximate modified duration)
+    if (symbol == "TLT") {
+        // iShares 20+ Year Treasury Bond ETF
+        return 18.5;
+    } else if (symbol == "SHY") {
+        // iShares 1-3 Year Treasury Bond ETF
+        return 1.9;
+    } else if (symbol == "BIL") {
+        // SPDR Bloomberg 1-3 Month T-Bill ETF
+        return 0.15;
+    } else if (symbol == "IEF") {
+        // iShares 7-10 Year Treasury Bond ETF
+        return 7.5;
+    }
+    // Default: Unknown ETF, return 0 (will need external data)
+    return 0.0;
+}
+
+double get_etf_convexity(const std::string& symbol) {
+    // Common bond ETF convexity values (approximate)
+    if (symbol == "TLT") {
+        // iShares 20+ Year Treasury Bond ETF
+        return 350.0;
+    } else if (symbol == "SHY") {
+        // iShares 1-3 Year Treasury Bond ETF
+        return 5.0;
+    } else if (symbol == "BIL") {
+        // SPDR Bloomberg 1-3 Month T-Bill ETF
+        return 0.1;
+    } else if (symbol == "IEF") {
+        // iShares 7-10 Year Treasury Bond ETF
+        return 70.0;
+    }
+    // Default: Unknown ETF, return 0 (will need external data)
+    return 0.0;
+}
+
+} // anonymous namespace
 
 } // namespace risk

@@ -131,9 +131,40 @@ When helping with this codebase:
 5. Point to relevant documentation in `docs/` when available (see `.cursor/rules/documentation.mdc`)
 6. Consider multi-language aspects (C++, Python, Rust, Go, TypeScript)
 7. For API questions, reference `@docs API_DOCUMENTATION_INDEX.md`
-8. Use NotebookLM MCP server for research (see `.cursor/rules/notebooklm.mdc`)
-9. Use **exarp_pma** MCP server for project-specific analysis - documentation health, task alignment, duplicate detection, security scanning (see `.cursor/rules/project-automation.mdc`)
-   - **🚨 CRITICAL**: ALL exarp_pma tool calls MUST include `workingDirectory="/Users/davidl/Projects/Trading/ib_box_spread_full_universal"` parameter
+
+### MCP Server Usage
+
+This project uses multiple MCP (Model Context Protocol) servers to enhance AI capabilities. Use them appropriately:
+
+**Security & Code Quality:**
+- **Semgrep** - Always use for security scanning before code generation (see `.cursor/rules/semgrep.mdc`)
+- **Ollama** - Use for privacy-sensitive code analysis (proprietary trading algorithms, risk calculations) - see `.cursor/rules/ollama.mdc`
+
+**Documentation & Research:**
+- **Context7** - Use for up-to-date library documentation and code examples (append `use context7` to prompts) - see `.cursor/rules/context7.mdc`
+- **NotebookLM** - Use for summarizing YouTube videos, documentation links, and creating knowledge bases - see `.cursor/rules/notebooklm.mdc`
+
+**Project Management:**
+- **exarp_pma** - Use for project-specific analysis (documentation health, task alignment, duplicate detection, security scanning) - see `.cursor/rules/project-automation.mdc`
+  - **🚨 CRITICAL**: ALL exarp_pma tool calls MUST include `workingDirectory="/Users/davidl/Projects/Trading/ib_box_spread_full_universal"` parameter
+- **Agentic Tools** - Advanced task management with unlimited hierarchy and agent memories (see `docs/research/integration/MCP_SERVERS.md`)
+
+**Problem-Solving Workflows:**
+- **Tractatus Thinking** - Use FIRST to understand WHAT (structure/logic) - breaks down complex concepts - see `.cursor/rules/tractatus-thinking.mdc`
+- **Sequential Thinking** - Use AFTER Tractatus for HOW (process/steps) - creates implementation workflows - see `.cursor/rules/sequential-thinking.mdc`
+
+**Development Tools:**
+- **Filesystem** - Enhanced file operations (automatic)
+- **Git** - Version control operations (automatic)
+- **Browser** - Web UI testing and PWA verification
+- **Terminal** - Safe command execution for builds and tests
+- **iTerm2** - Terminal context and session management
+
+**Additional Tools:**
+- **mcp-stdio-tools** - Various development utilities
+- **mcp-generic-tools** - Generic tooling support
+
+**Reference:** See `docs/research/integration/MCP_SERVERS.md` for complete MCP server documentation and configuration.
 
 ### Problem-Solving Workflow (Tractatus → Sequential)
 

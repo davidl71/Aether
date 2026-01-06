@@ -339,28 +339,28 @@ After comprehensive evaluation, **NautilusTrader** is the best fit for this proj
 
 | Feature                  | NautilusTrader | LEAN        | QuantConnect | Backtrader  | Lumibot     | Zipline     | CppTrader   |
 | ------------------------ | -------------- | ----------- | ------------ | ----------- | ----------- | ----------- | ----------- |
-| **Multi-Broker Support** |
+| **Multi-Broker Support** |                |             |              |             |              |             |             |
 | IBKR TWS                 | ✅ Native       | ✅ Native    | ✅            | ⚠️ Extension | ✅           | ⚠️ Extension | ❌           |
 | IB Client Portal         | ⚠️ Adapter      | ✅ Native    | ✅            | ❌           | ✅           | ❌           | ❌           |
 | Alpaca                   | ⚠️ Adapter      | ✅ Native    | ✅            | ✅           | ✅           | ⚠️ Extension | ❌           |
-| **Options Trading**      |
+| **Options Trading**      |                |             |              |             |              |             |             |
 | Options Support          | ✅ Native       | ✅ Native    | ✅            | ⚠️ Limited   | ✅           | ⚠️ Limited   | ❌           |
 | Multi-Leg Orders         | ✅              | ✅           | ✅            | ⚠️           | ✅           | ⚠️           | ❌           |
 | Box Spreads              | ✅              | ✅           | ✅            | ⚠️           | ✅           | ⚠️           | ❌           |
-| **Performance**          |
+| **Performance**          |                |             |              |             |              |             |             |
 | Core Language            | Rust           | C#          | C#/Python    | Python      | Python      | Python      | C++         |
 | Latency                  | < 1μs          | ~5μs        | Network      | ~10μs       | ~10μs       | ~10μs       | < 1μs       |
 | Throughput               | Very High      | High        | High         | Medium      | Medium      | Medium      | Ultra High  |
-| **Integration**          |
+| **Integration**          |                |             |              |             |              |             |             |
 | C++ Support              | ✅ (via Python) | ❌           | ❌            | ⚠️           | ⚠️           | ⚠️           | ✅ Native    |
 | Python Support           | ✅              | ✅           | ✅            | ✅           | ✅           | ✅           | ❌           |
 | C# Support               | ❌              | ✅           | ✅            | ❌           | ❌           | ❌           | ❌           |
 | Existing Integration     | ✅ Complete     | ❌           | ❌            | ❌           | ❌           | ❌           | ❌           |
-| **Cost**                 |
+| **Cost**                 |                |             |              |             |              |             |             |
 | License                  | Apache 2.0     | Apache 2.0  | Proprietary  | MIT         | MIT         | Apache 2.0  | Apache 2.0  |
 | Hosting                  | Self-hosted    | Self-hosted | Cloud        | Self-hosted | Self-hosted | Self-hosted | Self-hosted |
 | Free Tier                | ✅ Full         | ✅ Full      | ⚠️ Limited    | ✅ Full      | ✅ Full      | ✅ Full      | ✅ Full      |
-| **Community**            |
+| **Community**            |                |             |              |             |              |             |             |
 | Documentation            | ⚠️ Good         | ✅ Excellent | ✅ Excellent  | ✅ Excellent | ✅ Good      | ⚠️ Limited   | ⚠️ Limited   |
 | Community Size           | ⚠️ Medium       | ✅ Large     | ✅ Large      | ✅ Large     | ⚠️ Growing   | ⚠️ Small     | ⚠️ Small     |
 | Active Development       | ✅ Yes          | ✅ Yes       | ✅ Yes        | ⚠️ Slow      | ✅ Yes       | ❌ No        | ⚠️ Slow      |

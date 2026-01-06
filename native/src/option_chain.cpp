@@ -371,9 +371,33 @@ OptionChain OptionChainBuilder::build_from_market_data(
 
     OptionChain chain(symbol);
 
-    // NOTE: Full implementation would build the chain from market data
-    spdlog::debug("Building option chain for {} ({} contracts)",
-                  symbol, contracts.size());
+    spdlog::debug("Building option chain for {} ({} contracts, {} with market data)",
+                  symbol, contracts.size(), market_data.size());
+
+    // Build chain entries from contracts and market data
+    for (const auto& contract : contracts) {
+        std::string contract_key = contract.to_string();
+        auto market_data_it = market_data.find(contract_key);
+
+        if (market_data_it == market_data.end()) {
+            spdlog::trace("No market data for contract: {}", contract_key);
+            continue;
+        }
+
+        OptionChainEntry entry;
+        entry.contract = contract;
+        entry.market_data = market_data_it->second;
+
+        // Set default liquidity scores (can be enhanced with actual volume/OI data)
+        entry.volume = 0;
+        entry.open_interest = 0;
+        entry.liquidity_score = 50.0;  // Default score
+
+        chain.add_option(entry);
+    }
+
+    spdlog::debug("Built option chain with {} expiries, {} total options",
+                  chain.get_expiry_count(), chain.get_total_option_count());
 
     return chain;
 }

@@ -150,7 +150,7 @@ echo "  4. Test connection:"
 echo "     ./scripts/test_tws_connection.sh"
 echo ""
 echo "  5. Run your application:"
-echo "     ./build/macos-arm64-release/bin/ib_box_spread_tui"
+echo "     python -m python.tui"
 echo ""
 
 # Offer to launch

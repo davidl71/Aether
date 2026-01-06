@@ -67,7 +67,6 @@ python3 scripts/batch_update_todos.py add-comment --task-ids T-156 --comment "Ap
 
 ### `approve`
 
-
 Approve tasks (typically move Review → Todo).
 
 **Options:**
@@ -114,7 +113,6 @@ Update status for tasks matching criteria.
 - `--comment`: Comment to add
 - `--yes` / `-y`: Skip confirmation
 
-
 **Examples:**
 
 ```bash
@@ -128,13 +126,11 @@ python3 scripts/batch_update_todos.py update-status --status Review --new-status
 python3 scripts/batch_update_todos.py update-status --task-ids T-156 --new-status "In Progress"
 ```
 
-
 ### `add-comment`
 
 Add comments to specific tasks.
 
 **Options:**
-
 
 - `--task-ids`: Comma-separated list of task IDs (required)
 - `--comment`: Comment content (required)
@@ -195,7 +191,6 @@ python3 scripts/batch_update_todos.py list --status Review --clarification-none
 python3 scripts/batch_update_todos.py approve --status Review --clarification-none --yes
 ```
 
-
 ### 2. Review and Approve Specific Tasks
 
 ```bash
@@ -233,7 +228,6 @@ This script complements the MCP tools available in the Project Automation MCP Se
 
 - **MCP Tools**: Single task updates, interactive workflows, Cursor chat integration
 - **This Script**: Batch operations, automation scripts, command-line workflows
-
 
 ---
 

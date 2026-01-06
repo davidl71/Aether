@@ -20,11 +20,13 @@ Ollama MCP server integration enables local LLM capabilities within Cursor IDE f
 ### Prerequisites
 
 1. **Ollama Installed**: ✅ Already installed via Homebrew
+
    ```bash
    brew services start ollama
    ```
 
 2. **Model Available**: ✅ llama3.2 model installed
+
    ```bash
    ollama list
    ```
@@ -105,9 +107,11 @@ ollama run llama3.2 "Generate documentation for this function: [code]"
 ### Model Selection
 
 Currently installed model:
+
 - **llama3.2**: 2.0 GB, fast and efficient for code analysis
 
 To install additional models:
+
 ```bash
 ollama pull codellama    # Code-specific model
 ollama pull mistral       # General purpose
@@ -128,17 +132,20 @@ Ollama works alongside other MCP servers:
 ### Ollama Not Responding
 
 1. **Check Ollama Service**:
+
    ```bash
    brew services list | grep ollama
    ollama list
    ```
 
 2. **Restart Ollama**:
+
    ```bash
    brew services restart ollama
    ```
 
 3. **Verify API Endpoint**:
+
    ```bash
    curl http://localhost:11434/api/tags
    ```
@@ -152,11 +159,13 @@ Ollama works alongside other MCP servers:
 ### Model Not Found
 
 1. **List Available Models**:
+
    ```bash
    ollama list
    ```
 
 2. **Pull Missing Model**:
+
    ```bash
    ollama pull llama3.2
    ```
@@ -166,6 +175,7 @@ Ollama works alongside other MCP servers:
 ### When to Use Ollama
 
 ✅ **Use Ollama for:**
+
 - Privacy-sensitive code analysis
 - Proprietary trading strategy review
 - Frequent code analysis (cost savings)
@@ -173,6 +183,7 @@ Ollama works alongside other MCP servers:
 - Custom model fine-tuning
 
 ✅ **Use Cursor AI for:**
+
 - General coding assistance
 - Quick questions and answers
 - Real-time collaboration

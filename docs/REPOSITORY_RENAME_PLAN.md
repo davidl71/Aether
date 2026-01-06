@@ -125,6 +125,7 @@ Update all documentation files to use new repository name in URLs:
 ```
 
 The script will:
+
 1. ✅ Rename the repository on GitHub using `gh repo rename`
 2. ✅ Update local git remote URL automatically
 3. ✅ Verify the remote URL update
