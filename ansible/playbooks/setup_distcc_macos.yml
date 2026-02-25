@@ -21,8 +21,6 @@
         if ! command -v brew >/dev/null 2>&1; then
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
         fi
-      args:
-        warn: false
 
     - name: Ensure Homebrew prefix is in PATH for this session
       shell: echo "{{ homebrew_prefix }}/bin" >> /etc/paths.d/homebrew

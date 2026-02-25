@@ -1,0 +1,8 @@
+---
+repo_root: "{{ playbook_dir }}/.."
+ibjts_dir: ""
+protobuf_lib: "/usr/local/lib/libprotobuf.dylib"
+abseil_lib_dir: "/usr/local/lib"
+build_type: "Debug"
+build_dir: "{{ repo_root }}/build"
+python_bin: "python3"

@@ -24,7 +24,6 @@
       - jq
       - go
       - python
-      - poetry
       - curl
       - act
       - uv
@@ -32,6 +31,18 @@
       - git-lfs
     state: present
   when: ansible_facts['os_family'] == 'Darwin'
+
+- name: Install uv on Debian/Ubuntu
+  become: false
+  ansible.builtin.shell: |
+    if ! command -v uv >/dev/null 2>&1; then
+      curl -LsSf https://astral.sh/uv/install.sh | sh
+    fi
+  args:
+    executable: /bin/bash
+  register: uv_install_debian
+  changed_when: "'installed' in uv_install_debian.stdout"
+  when: ansible_facts['os_family'] == 'Debian'
 
 - name: Install act on Debian/Ubuntu
   become: true
@@ -60,55 +71,35 @@
     - ansible_architecture == 'x86_64'
     - ansible_env.SUDO_USER is defined
 
-- name: Install Poetry via pip
+- name: Install Poetry via uv
   become: false
-  ansible.builtin.command: >-
-    python3 -m pip install --user --upgrade poetry
+  ansible.builtin.command: uv tool install poetry
   register: poetry_install
-  changed_when: "'Requirement already satisfied' not in poetry_install.stdout"
+  changed_when: "'Installed' in poetry_install.stdout"
+  failed_when: false
   when: ansible_facts['os_family'] == 'Debian'
 
-- name: Install uvx via pip (macOS)
+- name: Verify uv installation
   become: false
-  ansible.builtin.command: >-
-    python3 -m pip install --user --upgrade uvx
-  register: uvx_install_macos
-  changed_when: "'Requirement already satisfied' not in uvx_install_macos.stdout"
-  when: ansible_facts['os_family'] == 'Darwin'
-
-- name: Install uvx via pip (Debian/Ubuntu)
-  become: false
-  ansible.builtin.command: >-
-    python3 -m pip install --user --upgrade uvx
-  register: uvx_install_debian
-  changed_when: "'Requirement already satisfied' not in uvx_install_debian.stdout"
-  when: ansible_facts['os_family'] == 'Debian'
-
-- name: Verify uvx installation
-  become: false
-  ansible.builtin.command: >-
-    uvx --version
-  register: uvx_version
+  ansible.builtin.command: uv --version
+  register: uv_version
   changed_when: false
   failed_when: false
-  when: ansible_facts['os_family'] in ['Debian', 'Darwin']
 
-- name: Display uvx version
+- name: Display uv version
   ansible.builtin.debug:
-    msg: "uvx version: {{ uvx_version.stdout }}"
-  when:
-    - ansible_facts['os_family'] in ['Debian', 'Darwin']
-    - uvx_version.rc == 0
+    msg: "uv version: {{ uv_version.stdout }}"
+  when: uv_version.rc == 0
 
 # ---------------------------------------------------------------------------
-# MLX / MLX-LM (Apple Silicon only)
+# MLX / MLX-LM (Apple Silicon only) -- installed via uv
 # ---------------------------------------------------------------------------
-- name: Install MLX and MLX-LM (Apple Silicon/macOS) via pip
+- name: Install MLX and MLX-LM (Apple Silicon/macOS) via uv
   become: false
-  ansible.builtin.command: >-
-    python3 -m pip install --user --upgrade mlx mlx-lm
+  ansible.builtin.command: uv pip install --system mlx mlx-lm
   register: mlx_install_result
-  changed_when: "'Successfully installed' in mlx_install_result.stdout or 'Installing collected packages' in mlx_install_result.stdout or 'Requirement already satisfied' not in mlx_install_result.stdout"
+  changed_when: "'Installed' in mlx_install_result.stdout or 'installed' in mlx_install_result.stdout"
+  failed_when: false
   when:
     - ansible_facts['os_family'] == 'Darwin'
     - ansible_facts['architecture'] is defined
@@ -145,29 +136,29 @@
 
 - name: Determine nvm profile path
   set_fact:
-    nvm_profile: "{{ ansible_env.HOME }}/.zshrc"
+    nvm_profile: "{{ ansible_facts.env.HOME }}/.zshrc"
   when: ansible_facts['os_family'] == 'Darwin'
 
 - name: Fallback nvm profile path
   set_fact:
-    nvm_profile: "{{ ansible_env.HOME }}/.bashrc"
+    nvm_profile: "{{ ansible_facts.env.HOME }}/.bashrc"
   when: nvm_profile is not defined
 
 - name: Ensure nvm directory exists
   file:
-    path: "{{ ansible_env.HOME }}/.nvm"
+    path: "{{ ansible_facts.env.HOME }}/.nvm"
     state: directory
     mode: "0755"
 
 - name: Ensure nvm is installed
   shell: |
     export PROFILE="{{ nvm_profile }}"
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
   args:
-    creates: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
+    creates: "{{ ansible_facts.env.HOME }}/.nvm/nvm.sh"
   when: ansible_facts['os_family'] in ['Debian', 'Darwin']
 
-- name: Install Node.js 20 via nvm when available
+- name: Install Node.js LTS via nvm when available
   shell: |
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"

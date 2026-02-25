@@ -80,6 +80,12 @@ struct StrategyParams {
     int min_volume = 100;               // Minimum daily volume
     int min_open_interest = 500;        // Minimum open interest
     CommissionConfig commissions;       // Commission configuration
+
+    // Benchmark rate configuration for financing comparison
+    double benchmark_rate_percent = 5.0;           // Default benchmark rate (%)
+    std::string benchmark_source = "static";       // "static", "treasury_api", "sofr"
+    std::string treasury_api_url;                  // Treasury API URL (empty = default)
+    double min_spread_over_benchmark_bps = 50.0;   // Min spread to flag opportunity (bps)
 };
 
 // ============================================================================
@@ -283,7 +289,11 @@ inline void to_json(nlohmann::json& j, const StrategyParams& params) {
         {"max_days_to_expiry", params.max_days_to_expiry},
         {"max_bid_ask_spread", params.max_bid_ask_spread},
         {"min_volume", params.min_volume},
-        {"min_open_interest", params.min_open_interest}
+        {"min_open_interest", params.min_open_interest},
+        {"benchmark_rate_percent", params.benchmark_rate_percent},
+        {"benchmark_source", params.benchmark_source},
+        {"treasury_api_url", params.treasury_api_url},
+        {"min_spread_over_benchmark_bps", params.min_spread_over_benchmark_bps}
     };
 }
 
@@ -305,6 +315,14 @@ inline void from_json(const nlohmann::json& j, StrategyParams& params) {
         j.at("min_volume").get_to(params.min_volume);
     if (j.contains("min_open_interest"))
         j.at("min_open_interest").get_to(params.min_open_interest);
+    if (j.contains("benchmark_rate_percent"))
+        j.at("benchmark_rate_percent").get_to(params.benchmark_rate_percent);
+    if (j.contains("benchmark_source"))
+        j.at("benchmark_source").get_to(params.benchmark_source);
+    if (j.contains("treasury_api_url"))
+        j.at("treasury_api_url").get_to(params.treasury_api_url);
+    if (j.contains("min_spread_over_benchmark_bps"))
+        j.at("min_spread_over_benchmark_bps").get_to(params.min_spread_over_benchmark_bps);
 }
 
 // Risk Config

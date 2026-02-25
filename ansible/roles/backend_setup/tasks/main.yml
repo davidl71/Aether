@@ -3,27 +3,50 @@
   ansible.builtin.set_fact:
     backend_dir: "{{ repo_root }}/agents/backend"
 
-- name: Ensure backend virtualenv exists and pip is current
-  ansible.builtin.pip:
-    name: pip
-    state: latest
-    virtualenv: "{{ backend_dir }}/.venv"
-    virtualenv_python: "{{ python_bin }}"
+- name: Check if uv is available
+  ansible.builtin.command: uv --version
+  register: uv_check
+  changed_when: false
+  failed_when: false
 
-- name: Install backend Python package in editable mode
-  ansible.builtin.pip:
-    name: "{{ backend_dir }}/python"
-    editable: true
-    virtualenv: "{{ backend_dir }}/.venv"
+- name: Create backend venv and install deps with uv
+  when: uv_check.rc == 0
+  block:
+    - name: Create backend virtualenv with uv
+      ansible.builtin.command: uv venv "{{ backend_dir }}/.venv" --python "{{ python_bin }}"
+      args:
+        creates: "{{ backend_dir }}/.venv/bin/python"
 
-- name: Install Nautilus Trader wheel when provided
-  ansible.builtin.pip:
-    name: "{{ nautilus_trader_wheel }}"
-    virtualenv: "{{ backend_dir }}/.venv"
-  when: nautilus_trader_wheel | length > 0
+    - name: Install backend Python package in editable mode with uv
+      ansible.builtin.command: uv pip install --python "{{ backend_dir }}/.venv/bin/python" -e "{{ backend_dir }}/python"
+
+    - name: Install Nautilus Trader wheel with uv when provided
+      ansible.builtin.command: uv pip install --python "{{ backend_dir }}/.venv/bin/python" "{{ nautilus_trader_wheel }}"
+      when: nautilus_trader_wheel | length > 0
+
+- name: Fallback to pip if uv not available
+  when: uv_check.rc != 0
+  block:
+    - name: Ensure backend virtualenv exists and pip is current (fallback)
+      ansible.builtin.pip:
+        name: pip
+        state: latest
+        virtualenv: "{{ backend_dir }}/.venv"
+        virtualenv_python: "{{ python_bin }}"
+
+    - name: Install backend Python package in editable mode (fallback)
+      ansible.builtin.pip:
+        name: "{{ backend_dir }}/python"
+        editable: true
+        virtualenv: "{{ backend_dir }}/.venv"
+
+    - name: Install Nautilus Trader wheel when provided (fallback)
+      ansible.builtin.pip:
+        name: "{{ nautilus_trader_wheel }}"
+        virtualenv: "{{ backend_dir }}/.venv"
+      when: nautilus_trader_wheel | length > 0
 
 - name: Fetch Rust dependencies
   ansible.builtin.command: cargo fetch --manifest-path "{{ backend_dir }}/Cargo.toml"
   args:
     chdir: "{{ backend_dir }}"
-

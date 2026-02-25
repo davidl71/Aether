@@ -1,0 +1,305 @@
+{
+  "_description": "Shared test vectors for cross-language rate calculation validation. All implementations (C++, Python, Rust) must produce matching results within the specified tolerance.",
+  "_version": "1.0.0",
+  "_generated": "2026-02-26",
+  "tolerance": {
+    "absolute": 0.01,
+    "relative_percent": 0.1,
+    "bps": 1.0
+  },
+  "theoretical_value": [
+    {
+      "id": "tv-1",
+      "description": "Standard 10-point box spread",
+      "input": { "strike_low": 500.0, "strike_high": 510.0 },
+      "expected": 10.0
+    },
+    {
+      "id": "tv-2",
+      "description": "Wide 50-point box spread (SPX-style)",
+      "input": { "strike_low": 5800.0, "strike_high": 5850.0 },
+      "expected": 50.0
+    },
+    {
+      "id": "tv-3",
+      "description": "Narrow 5-point box spread",
+      "input": { "strike_low": 100.0, "strike_high": 105.0 },
+      "expected": 5.0
+    }
+  ],
+  "net_debit": [
+    {
+      "id": "nd-1",
+      "description": "Standard box spread net debit from mid prices",
+      "input": {
+        "long_call_price": 12.50,
+        "short_call_price": 5.00,
+        "long_put_price": 4.80,
+        "short_put_price": 2.30
+      },
+      "expected": 10.0
+    },
+    {
+      "id": "nd-2",
+      "description": "Box spread where short positions are more expensive",
+      "input": {
+        "long_call_price": 2.50,
+        "short_call_price": 1.00,
+        "long_put_price": 2.00,
+        "short_put_price": 0.75
+      },
+      "expected": 2.75
+    },
+    {
+      "id": "nd-3",
+      "description": "Near-theoretical-value box spread (efficient market)",
+      "input": {
+        "long_call_price": 30.00,
+        "short_call_price": 5.10,
+        "long_put_price": 5.00,
+        "short_put_price": 20.10
+      },
+      "expected": 9.80
+    }
+  ],
+  "max_profit": [
+    {
+      "id": "mp-1",
+      "description": "Profitable box spread (net debit below theoretical)",
+      "input": { "theoretical_value": 10.0, "net_debit": 9.80 },
+      "expected": 0.20
+    },
+    {
+      "id": "mp-2",
+      "description": "Large profit spread (mispriced)",
+      "input": { "theoretical_value": 10.0, "net_debit": 2.75 },
+      "expected": 7.25
+    },
+    {
+      "id": "mp-3",
+      "description": "At-fair-value (no profit)",
+      "input": { "theoretical_value": 50.0, "net_debit": 50.0 },
+      "expected": 0.0
+    }
+  ],
+  "roi": [
+    {
+      "id": "roi-1",
+      "description": "Small ROI (efficient market)",
+      "input": { "theoretical_value": 10.0, "net_debit": 9.80 },
+      "expected_percent": 2.0408
+    },
+    {
+      "id": "roi-2",
+      "description": "Large ROI (mispriced)",
+      "input": { "theoretical_value": 10.0, "net_debit": 2.75 },
+      "expected_percent": 263.6364
+    },
+    {
+      "id": "roi-3",
+      "description": "Zero net debit edge case",
+      "input": { "theoretical_value": 10.0, "net_debit": 0.0 },
+      "expected_percent": 0.0
+    }
+  ],
+  "implied_interest_rate": [
+    {
+      "id": "iir-1",
+      "description": "30-day borrowing at near risk-free rate",
+      "input": {
+        "strike_width": 50.0,
+        "net_debit": 49.80,
+        "days_to_expiry": 30
+      },
+      "expected_annual_percent": -4.8667,
+      "notes": "Negative because net_debit < strike_width: ((49.80 - 50) / 50) * (365/30) * 100"
+    },
+    {
+      "id": "iir-2",
+      "description": "90-day borrowing",
+      "input": {
+        "strike_width": 50.0,
+        "net_debit": 49.40,
+        "days_to_expiry": 90
+      },
+      "expected_annual_percent": -4.8667,
+      "notes": "((49.40 - 50) / 50) * (365/90) * 100"
+    },
+    {
+      "id": "iir-3",
+      "description": "180-day borrowing",
+      "input": {
+        "strike_width": 100.0,
+        "net_debit": 97.50,
+        "days_to_expiry": 180
+      },
+      "expected_annual_percent": -5.0694,
+      "notes": "((97.50 - 100) / 100) * (365/180) * 100"
+    },
+    {
+      "id": "iir-4",
+      "description": "Zero days to expiry edge case",
+      "input": {
+        "strike_width": 50.0,
+        "net_debit": 49.80,
+        "days_to_expiry": 0
+      },
+      "expected_annual_percent": 0.0,
+      "notes": "Division by zero protection"
+    },
+    {
+      "id": "iir-5",
+      "description": "Zero net debit edge case",
+      "input": {
+        "strike_width": 50.0,
+        "net_debit": 0.0,
+        "days_to_expiry": 30
+      },
+      "expected_annual_percent": 0.0,
+      "notes": "No cost means no implied rate"
+    },
+    {
+      "id": "iir-6",
+      "description": "365-day (1 year) borrowing simplifies annualization",
+      "input": {
+        "strike_width": 100.0,
+        "net_debit": 95.24,
+        "days_to_expiry": 365
+      },
+      "expected_annual_percent": -4.76,
+      "notes": "((95.24 - 100) / 100) * (365/365) * 100 = -4.76"
+    }
+  ],
+  "effective_interest_rate": [
+    {
+      "id": "eir-1",
+      "description": "30-day with $0.65 per contract commission",
+      "input": {
+        "strike_width": 50.0,
+        "net_debit": 49.80,
+        "days_to_expiry": 30,
+        "per_contract_fee": 0.65
+      },
+      "expected_annual_percent": 1.4600,
+      "notes": "Commission = 4 * 0.65 = 2.60. Total cost = 49.80 + 2.60 = 52.40. ((52.40 - 50) / 50) * (365/30) * 100"
+    },
+    {
+      "id": "eir-2",
+      "description": "90-day with $0.65 per contract commission",
+      "input": {
+        "strike_width": 50.0,
+        "net_debit": 49.40,
+        "days_to_expiry": 90,
+        "per_contract_fee": 0.65
+      },
+      "expected_annual_percent": 3.2444,
+      "notes": "Commission = 2.60. Total cost = 52.00. ((52.00 - 50) / 50) * (365/90) * 100"
+    }
+  ],
+  "compare_to_benchmark": [
+    {
+      "id": "ctb-1",
+      "description": "Box spread rate vs 5% benchmark (borrowing, box spread is cheaper)",
+      "input": {
+        "strike_width": 50.0,
+        "net_debit": 49.80,
+        "days_to_expiry": 30,
+        "per_contract_fee": 0.65,
+        "benchmark_rate_percent": 5.0
+      },
+      "notes": "Effective rate = 1.46%. For borrowing (net_debit > 0): spread_bps = -(1.46 - 5.0) * 100 = 354 bps advantage"
+    }
+  ],
+  "buy_sell_disparity": [
+    {
+      "id": "bsd-1",
+      "description": "Buy net debit calculation (ASK for long, BID for short)",
+      "input": {
+        "long_call_ask": 12.80,
+        "short_call_bid": 4.70,
+        "long_put_ask": 5.10,
+        "short_put_bid": 2.00
+      },
+      "expected_buy_net_debit": 11.20,
+      "notes": "12.80 - 4.70 + 5.10 - 2.00 = 11.20"
+    },
+    {
+      "id": "bsd-2",
+      "description": "Sell net credit calculation (BID for long, ASK for short)",
+      "input": {
+        "long_call_bid": 12.20,
+        "short_call_ask": 5.30,
+        "long_put_bid": 4.50,
+        "short_put_ask": 2.60
+      },
+      "expected_sell_net_credit": 8.80,
+      "notes": "12.20 - 5.30 + 4.50 - 2.60 = 8.80"
+    },
+    {
+      "id": "bsd-3",
+      "description": "Buy vs sell disparity",
+      "input": {
+        "buy_profit": -1.20,
+        "sell_profit": -1.20
+      },
+      "expected_disparity": 0.0,
+      "notes": "-1.20 - (-1.20) = 0.0 (symmetric market)"
+    }
+  ],
+  "commission": [
+    {
+      "id": "comm-1",
+      "description": "Standard 4-leg commission at $0.65/contract",
+      "input": { "per_contract_fee": 0.65 },
+      "expected": 2.60
+    },
+    {
+      "id": "comm-2",
+      "description": "Discounted rate at $0.25/contract",
+      "input": { "per_contract_fee": 0.25 },
+      "expected": 1.00
+    }
+  ],
+  "financing_comparison": [
+    {
+      "id": "fc-1",
+      "description": "30-day comparison: box spread vs 4.5% Treasury",
+      "input": {
+        "principal": 100000.0,
+        "days": 30,
+        "box_spread_rate_percent": 4.25,
+        "treasury_rate_percent": 4.50,
+        "per_contract_fee": 0.65,
+        "federal_tax_rate": 0.37,
+        "state_tax_rate": 0.05
+      },
+      "expected": {
+        "box_spread_gross_return": 349.32,
+        "treasury_gross_return": 369.86,
+        "box_spread_after_tax_rate": 3.1025,
+        "treasury_after_tax_rate": 2.61,
+        "box_spread_beats_treasury_after_tax": true
+      },
+      "notes": "Box spread Section 1256 tax: 60% LTCG (20%) + 40% STCG (37%) = blended 26.8%. Treasury: ordinary income (37%) + state exempt. After-tax: box spread 4.25 * (1 - 0.268) = 3.11%, treasury 4.50 * (1 - 0.42) = 2.61%"
+    },
+    {
+      "id": "fc-2",
+      "description": "90-day comparison: box spread vs 4.75% Treasury",
+      "input": {
+        "principal": 50000.0,
+        "days": 90,
+        "box_spread_rate_percent": 4.50,
+        "treasury_rate_percent": 4.75,
+        "per_contract_fee": 0.65,
+        "federal_tax_rate": 0.24,
+        "state_tax_rate": 0.06
+      },
+      "expected": {
+        "box_spread_after_tax_rate": 3.5370,
+        "treasury_after_tax_rate": 3.3250,
+        "box_spread_beats_treasury_after_tax": true
+      },
+      "notes": "Section 1256 blended rate: 60% * 15% + 40% * 24% = 18.6%. Box after-tax: 4.50 * (1 - 0.186) = 3.663%. Treasury after-tax: 4.75 * (1 - 0.30) = 3.325%"
+    }
+  ]
+}

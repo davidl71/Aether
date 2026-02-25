@@ -489,13 +489,82 @@ double BoxSpreadStrategy::calculate_confidence_score(
     const types::BoxSpreadLeg& spread,
     const option_chain::OptionChain& chain) const {
 
-    // NOTE: Full implementation would consider:
-    // - Liquidity scores
-    // - Bid-ask spreads
-    // - Volume and open interest
-    // - Market conditions
+    double score = 0.0;
+    constexpr double kMaxScore = 100.0;
 
-    return 50.0;  // Stub
+    // --- Component 1: Bid-ask spread tightness (0-30 points) ---
+    // Tighter spreads indicate better liquidity and more reliable pricing
+    double avg_spread = (spread.long_call_bid_ask_spread +
+                         spread.short_call_bid_ask_spread +
+                         spread.long_put_bid_ask_spread +
+                         spread.short_put_bid_ask_spread) / 4.0;
+
+    if (avg_spread <= 0.02) {
+        score += 30.0;  // Penny-wide or better
+    } else if (avg_spread <= 0.05) {
+        score += 25.0;
+    } else if (avg_spread <= 0.10) {
+        score += 20.0;
+    } else if (avg_spread <= 0.20) {
+        score += 12.0;
+    } else if (avg_spread <= 0.50) {
+        score += 5.0;
+    }
+    // > $0.50 avg spread: 0 points
+
+    // --- Component 2: Pricing efficiency (0-25 points) ---
+    // How close is net_debit to theoretical value? Efficient markets trade near parity.
+    double strike_width = spread.get_strike_width();
+    if (strike_width > 0) {
+        double pricing_ratio = spread.net_debit / strike_width;
+        // Perfect efficiency: ratio near 1.0 (slight discount for time value)
+        if (pricing_ratio >= 0.95 && pricing_ratio <= 1.005) {
+            score += 25.0;
+        } else if (pricing_ratio >= 0.90 && pricing_ratio <= 1.01) {
+            score += 20.0;
+        } else if (pricing_ratio >= 0.80) {
+            score += 10.0;
+        } else {
+            score += 2.0;  // Significant mispricing may indicate stale quotes
+        }
+    }
+
+    // --- Component 3: Buy/sell disparity (0-20 points) ---
+    // Low disparity indicates consistent pricing across sides
+    double disparity = std::abs(spread.buy_sell_disparity);
+    if (disparity <= 0.02) {
+        score += 20.0;
+    } else if (disparity <= 0.05) {
+        score += 15.0;
+    } else if (disparity <= 0.10) {
+        score += 10.0;
+    } else if (disparity <= 0.25) {
+        score += 5.0;
+    }
+
+    // --- Component 4: Put-call parity adherence (0-15 points) ---
+    // Low violation means the market is consistent and the box spread is reliable
+    double parity_violation_bps = std::abs(spread.put_call_parity_violation);
+    if (parity_violation_bps <= 5.0) {
+        score += 15.0;
+    } else if (parity_violation_bps <= 15.0) {
+        score += 10.0;
+    } else if (parity_violation_bps <= 50.0) {
+        score += 5.0;
+    }
+
+    // --- Component 5: Days to expiry appropriateness (0-10 points) ---
+    // Very short DTE has high gamma risk; very long DTE ties up capital
+    int dte = spread.get_days_to_expiry();
+    if (dte >= 14 && dte <= 90) {
+        score += 10.0;  // Sweet spot for financing
+    } else if (dte >= 7 && dte <= 180) {
+        score += 7.0;
+    } else if (dte > 0) {
+        score += 3.0;
+    }
+
+    return std::min(score, kMaxScore);
 }
 
 bool BoxSpreadStrategy::execute_box_spread(const BoxSpreadOpportunity& opportunity) {

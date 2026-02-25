@@ -1,0 +1,110 @@
+---
+- name: Validate IB API path is set
+  assert:
+    that: ibjts_dir | length > 0
+    fail_msg: >
+      IBJTS_DIR not provided. Set it via:
+        export IBJTS_DIR=~/IBJts/source/cppclient
+        ansible-playbook playbooks/project.yml -e ibjts_dir="$IBJTS_DIR"
+    success_msg: "IB API path: {{ ibjts_dir }}"
+  tags: ["project", "ib"]
+
+- name: Verify IB API directory exists
+  stat:
+    path: "{{ ibjts_dir }}"
+  register: ibjts_stat
+  tags: ["project", "ib"]
+
+- name: Warn if IB API not found
+  debug:
+    msg: >
+      IB API directory not found at {{ ibjts_dir }}.
+      Run: ansible-playbook ansible/playbooks/fetch_third_party.yml
+      or download from https://interactivebrokers.github.io/
+  when: not ibjts_stat.stat.exists
+  tags: ["project", "ib"]
+
+- name: Check for protobuf library
+  stat:
+    path: "{{ protobuf_lib }}"
+  register: protobuf_stat
+  tags: ["project", "cmake"]
+
+- name: Warn if protobuf not found
+  debug:
+    msg: "protobuf library not found at {{ protobuf_lib }}. Install via: brew install protobuf"
+  when: not protobuf_stat.stat.exists
+  tags: ["project", "cmake"]
+
+- name: Check for abseil libraries
+  stat:
+    path: "{{ abseil_lib_dir }}/libabsl_strings.dylib"
+  register: abseil_stat
+  tags: ["project", "cmake"]
+
+- name: Warn if abseil not found
+  debug:
+    msg: "abseil not found at {{ abseil_lib_dir }}. Install via: brew install abseil"
+  when: not abseil_stat.stat.exists
+  tags: ["project", "cmake"]
+
+- name: Check if uv is available
+  command: uv --version
+  register: uv_check
+  changed_when: false
+  failed_when: false
+  tags: ["project", "cmake"]
+
+- name: Create Python virtualenv with uv
+  command: uv venv "{{ repo_root }}/.venv" --python "{{ python_bin }}"
+  args:
+    creates: "{{ repo_root }}/.venv/bin/python"
+  when: uv_check.rc == 0
+  tags: ["project", "cmake"]
+
+- name: Install Python dependencies with uv (from requirements.in)
+  command: uv pip install --python "{{ repo_root }}/.venv/bin/python" -r "{{ repo_root }}/requirements.in"
+  register: uv_pip_result
+  failed_when: false
+  changed_when: "'Installed' in uv_pip_result.stdout or 'installed' in uv_pip_result.stdout"
+  when: uv_check.rc == 0
+  tags: ["project", "cmake"]
+
+- name: Report uv pip install issues
+  debug:
+    msg: >
+      Some packages could not be installed (platform incompatibility is normal):
+      {{ uv_pip_result.stderr | default('') | regex_search('Failed to build.*') | default('none') }}
+  when: uv_check.rc == 0 and uv_pip_result.rc != 0
+  tags: ["project", "cmake"]
+
+- name: Install project Python package in editable mode with uv
+  command: uv pip install --python "{{ repo_root }}/.venv/bin/python" -e "{{ repo_root }}/python"
+  when: uv_check.rc == 0
+  tags: ["project", "cmake"]
+
+- name: Ensure build directory exists
+  file:
+    path: "{{ build_dir }}"
+    state: directory
+    mode: "0755"
+  tags: ["project", "cmake"]
+
+- name: Configure CMake
+  command: >-
+    cmake -S {{ repo_root }} -B {{ build_dir }}
+    -G Ninja
+    -DCMAKE_BUILD_TYPE={{ build_type }}
+    -DIBAPI_INCLUDE_DIR={{ ibjts_dir }}
+  args:
+    creates: "{{ build_dir }}/build.ninja"
+  when: ibjts_stat.stat.exists
+  tags: ["project", "cmake"]
+
+- name: Display project setup status
+  debug:
+    msg: >
+      Project setup complete.
+      Build with: ninja -C {{ build_dir }}
+      Test with: ctest --test-dir {{ build_dir }} --output-on-failure
+  tags: ["project", "cmake"]

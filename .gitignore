@@ -22,7 +22,7 @@ bin/
 *.dll
 *.exe
 *.out
-ib_box_spread
+/build/ib_box_spread
 
 # Configuration files (keep examples only)
 config/config.json

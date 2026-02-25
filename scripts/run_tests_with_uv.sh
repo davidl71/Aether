@@ -51,24 +51,24 @@ echo ""
 echo "🧪 Running Python tests..."
 
 # Build pytest arguments
-PYTEST_ARGS="tests/ ../python/integration/ -v"
+PYTEST_ARGS=(tests/ ../python/integration/ -v)
 
 if [[ "$COVERAGE" == "true" ]]; then
-    PYTEST_ARGS="$PYTEST_ARGS --cov=services --cov=tui --cov=integration"
+    PYTEST_ARGS+=(--cov=services --cov=tui --cov=integration)
 
     if [[ "$HTML" == "true" ]]; then
-        PYTEST_ARGS="$PYTEST_ARGS --cov-report=html --cov-report=term"
-        echo "📊 Running tests with coverage (HTML report)..."
+        PYTEST_ARGS+=(--cov-report=html --cov-report=term)
+        echo "Running tests with coverage (HTML report)..."
     else
-        PYTEST_ARGS="$PYTEST_ARGS --cov-report=term"
-        echo "📊 Running tests with coverage..."
+        PYTEST_ARGS+=(--cov-report=term)
+        echo "Running tests with coverage..."
     fi
 else
     echo "Running tests without coverage..."
 fi
 
 # Run tests using uv run (uses project-managed environment)
-uv run pytest "$PYTEST_ARGS"
+uv run pytest "${PYTEST_ARGS[@]}"
 
 echo ""
 echo "✅ Tests completed!"

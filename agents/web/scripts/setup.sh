@@ -20,4 +20,3 @@ if [ -d "$WEB_DIR" ]; then
 else
   echo "[info] web/ directory not present yet; create SPA scaffold before running setup." >&2
 fi
-

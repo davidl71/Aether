@@ -18,13 +18,13 @@ pydantic>=2.0.0
 xgboost>=2.0.0
 scikit-learn>=1.3.0
 optuna>=3.0.0
-shap>=0.42.0
+# shap requires numba/llvmlite which may not build on all platforms
+shap>=0.42.0; platform_machine == "arm64"
 
 # MLX (Apple Silicon Neural Engine acceleration)
 # Note: MLX is optimized for Apple Silicon and uses Neural Engine + Metal GPU
-# Only installs on Apple Silicon macOS (arm64/aarch64), safe no-op elsewhere
-mlx>=0.20.0
-mlx-lm>=0.20.0
+mlx>=0.20.0; platform_machine == "arm64"
+mlx-lm>=0.20.0; platform_machine == "arm64"
 
 # Graph analysis and relationship modeling
 networkx>=3.2.0

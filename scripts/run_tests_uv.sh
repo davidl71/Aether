@@ -53,29 +53,25 @@ fi
 echo ""
 echo "🧪 Running Python tests with uv..."
 
-# Build coverage arguments
-COV_ARGS=""
-REPORT_ARGS=""
+# Build pytest arguments
+PYTEST_ARGS=(python/tests/ python/integration/ -v)
 
 if [[ "$COVERAGE" == "true" ]]; then
-    COV_ARGS="--cov=python/services --cov=python/tui --cov=python/integration"
+    PYTEST_ARGS+=(--cov=python/services --cov=python/tui --cov=python/integration)
 
     if [[ "$HTML" == "true" ]]; then
-        REPORT_ARGS="--cov-report=html --cov-report=term"
-        echo "📊 Running tests with coverage (HTML report)..."
+        PYTEST_ARGS+=(--cov-report=html --cov-report=term)
+        echo "Running tests with coverage (HTML report)..."
     else
-        REPORT_ARGS="--cov-report=term"
-        echo "📊 Running tests with coverage..."
+        PYTEST_ARGS+=(--cov-report=term)
+        echo "Running tests with coverage..."
     fi
 else
     echo "Running tests without coverage..."
 fi
 
 # Run tests using uv run (ensures correct environment)
-uv run pytest python/tests/ python/integration/ \
-    "$COV_ARGS" \
-    "$REPORT_ARGS" \
-    -v
+uv run pytest "${PYTEST_ARGS[@]}"
 
 echo ""
 echo "✅ Tests completed!"
