@@ -15,7 +15,7 @@ try:
         PyBoxSpreadLeg,
         PyMarketData,
         OptionType,
-        calculate_arbitrage_profit,
+        calculate_implied_interest_rate,
         calculate_roi,
         validate_box_spread,
     )
@@ -93,8 +93,8 @@ class TestBoxSpreadLeg:
 class TestCalculationFunctions:
     """Tests for calculation functions"""
     
-    def test_calculate_arbitrage_profit(self):
-        """Test arbitrage profit calculation"""
+    def test_calculate_implied_interest_rate(self):
+        """Test implied interest rate basis calculation"""
         long_call = PyOptionContract("SPY", "20241220", 500.0, OptionType.Call)
         short_call = PyOptionContract("SPY", "20241220", 510.0, OptionType.Call)
         long_put = PyOptionContract("SPY", "20241220", 510.0, OptionType.Put)
@@ -105,7 +105,7 @@ class TestCalculationFunctions:
         spread.theoretical_value = 10.0
         spread.arbitrage_profit = 7.25
         
-        profit = calculate_arbitrage_profit(spread)
+        profit = calculate_implied_interest_rate(spread)
         assert profit == 7.25
     
     def test_calculate_roi(self):

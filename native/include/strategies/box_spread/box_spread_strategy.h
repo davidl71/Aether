@@ -89,9 +89,8 @@ public:
     // Check if box spread meets profit criteria
     bool is_profitable(const types::BoxSpreadLeg& spread) const;
 
-    // Calculate arbitrage profit (legacy name - actually calculates implied interest rate basis)
-    // TODO: Refactor to calculate_implied_interest_rate() for synthetic financing focus
-    double calculate_arbitrage_profit(const types::BoxSpreadLeg& spread) const;
+    // Calculate implied interest rate basis from box spread pricing
+    double calculate_implied_interest_rate(const types::BoxSpreadLeg& spread) const;
 
     // Calculate ROI
     double calculate_roi(const types::BoxSpreadLeg& spread) const;

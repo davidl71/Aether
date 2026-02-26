@@ -308,6 +308,76 @@ class TestBondCashFlows:
         assert len(maturity_flows) == 0
 
 
+class TestCPILinkedLoanAdjustment:
+    def test_cpi_adjustment_increases_payment(self, now):
+        calc = CashFlowCalculator(
+            cpi_index_current=120.0,
+            cpi_index_base=100.0,
+        )
+        loan = Loan(
+            id="CPI1",
+            loan_type="CPI_LINKED",
+            principal=800_000.0,
+            currency="ILS",
+            fixed_rate=0.036,
+            cpi_linked=True,
+        )
+        end_date = now + timedelta(days=60)
+        flows = calc.calculate_loan_cash_flows(loan, end_date)
+        assert len(flows) > 0
+        adjusted_principal = 800_000.0 * (120.0 / 100.0)
+        expected_payment = adjusted_principal * 0.036 / 12.0
+        assert abs(abs(flows[0].amount) - expected_payment) < 0.01
+
+    def test_no_cpi_data_uses_original_principal(self, calculator, now):
+        loan = Loan(
+            id="CPI2",
+            loan_type="CPI_LINKED",
+            principal=800_000.0,
+            currency="ILS",
+            fixed_rate=0.036,
+            cpi_linked=True,
+        )
+        end_date = now + timedelta(days=60)
+        flows = calculator.calculate_loan_cash_flows(loan, end_date)
+        expected = 800_000.0 * 0.036 / 12.0
+        assert abs(abs(flows[0].amount) - expected) < 0.01
+
+    def test_cpi_not_linked_ignores_index(self, now):
+        calc = CashFlowCalculator(
+            cpi_index_current=150.0,
+            cpi_index_base=100.0,
+        )
+        loan = Loan(
+            id="CPI3",
+            loan_type="CPI_LINKED",
+            principal=500_000.0,
+            currency="ILS",
+            fixed_rate=0.04,
+            cpi_linked=False,
+        )
+        flows = calc.calculate_loan_cash_flows(loan, now + timedelta(days=60))
+        expected = 500_000.0 * 0.04 / 12.0
+        assert abs(abs(flows[0].amount) - expected) < 0.01
+
+    def test_cpi_base_zero_skips_adjustment(self, now):
+        calc = CashFlowCalculator(
+            cpi_index_current=120.0,
+            cpi_index_base=0.0,
+        )
+        loan = Loan(
+            id="CPI4",
+            loan_type="CPI_LINKED",
+            principal=500_000.0,
+            currency="ILS",
+            fixed_rate=0.04,
+            cpi_linked=True,
+        )
+        flows = calc.calculate_loan_cash_flows(loan, now + timedelta(days=60))
+        expected = 500_000.0 * 0.04 / 12.0
+        assert abs(abs(flows[0].amount) - expected) < 0.01
+
+
 class TestDividendCashFlows:
     def test_no_orats_client(self, calculator, now):
         position = Position(
@@ -318,6 +388,81 @@ class TestDividendCashFlows:
             currency="USD",
         )
         flows = calculator.calculate_dividend_cash_flows(position, now + timedelta(days=365))
+        assert len(flows) == 0
+
+    def test_orats_dividend_schedule(self, now):
+        next_ex = (now + timedelta(days=30)).strftime("%Y-%m-%d")
+
+        class MockORATS:
+            def get_dividend_schedule(self, symbol):
+                return {
+                    "ticker": symbol,
+                    "next_div_ex_date": next_ex,
+                    "next_div_amount": 0.24,
+                    "div_frequency": 4,
+                    "div_yield": 0.005,
+                }
+
+        calc = CashFlowCalculator(orats_client=MockORATS())
+        position = Position(
+            id="S2",
+            symbol="AAPL",
+            instrument_type="stock",
+            quantity=100.0,
+            currency="USD",
+        )
+        flows = calc.calculate_dividend_cash_flows(position, now + timedelta(days=365))
+
+        assert len(flows) >= 3
+        assert all(f.cash_flow_type == CashFlowType.DIVIDEND for f in flows)
+        assert all(f.amount == 0.24 * 100 for f in flows)
+
+    def test_orats_no_dividend_amount(self, now):
+        class MockORATS:
+            def get_dividend_schedule(self, symbol):
+                return {"ticker": symbol, "next_div_amount": 0}
+
+        calc = CashFlowCalculator(orats_client=MockORATS())
+        position = Position(
+            id="S3",
+            symbol="GOOG",
+            instrument_type="stock",
+            quantity=50.0,
+            currency="USD",
+        )
+        flows = calc.calculate_dividend_cash_flows(position, now + timedelta(days=365))
+        assert len(flows) == 0
+
+    def test_orats_api_failure_returns_empty(self, now):
+        class FailingORATS:
+            def get_dividend_schedule(self, symbol):
+                raise ConnectionError("API down")
+
+        calc = CashFlowCalculator(orats_client=FailingORATS())
+        position = Position(
+            id="S4",
+            symbol="MSFT",
+            instrument_type="stock",
+            quantity=50.0,
+            currency="USD",
+        )
+        flows = calc.calculate_dividend_cash_flows(position, now + timedelta(days=365))
+        assert len(flows) == 0
+
+    def test_orats_none_schedule(self, now):
+        class NoneORATS:
+            def get_dividend_schedule(self, symbol):
+                return None
+
+        calc = CashFlowCalculator(orats_client=NoneORATS())
+        position = Position(
+            id="S5",
+            symbol="TSLA",
+            instrument_type="stock",
+            quantity=10.0,
+            currency="USD",
+        )
+        flows = calc.calculate_dividend_cash_flows(position, now + timedelta(days=365))
         assert len(flows) == 0
 
 

@@ -446,7 +446,7 @@ std::optional<BoxSpreadOpportunity> BoxSpreadStrategy::evaluate_box_spread(
 ///
 /// @see ALGORITHMS_AND_BEHAVIOR.md for detailed algorithm documentation
 bool BoxSpreadStrategy::is_profitable(const types::BoxSpreadLeg& spread) const {
-    double profit = calculate_arbitrage_profit(spread);
+    double profit = calculate_implied_interest_rate(spread);
     double roi = calculate_roi(spread);
 
     return profit >= pimpl_->params_.min_arbitrage_profit &&
@@ -471,8 +471,7 @@ bool BoxSpreadStrategy::is_profitable(const types::BoxSpreadLeg& spread) const {
 ///
 /// @see BoxSpreadCalculator::calculate_max_profit() for implementation details
 /// @see RISK_FREE_RATE_METHODOLOGY.md for synthetic financing rate extraction
-/// @todo Refactor to calculate_implied_interest_rate() for clarity
-double BoxSpreadStrategy::calculate_arbitrage_profit(
+double BoxSpreadStrategy::calculate_implied_interest_rate(
     const types::BoxSpreadLeg& spread) const {
 
     return spread.theoretical_value - spread.net_debit;
@@ -694,11 +693,8 @@ bool BoxSpreadStrategy::beats_benchmark(
 std::optional<BoxSpreadStrategy::PositionImprovement> BoxSpreadStrategy::evaluate_position_improvement(
     const std::string& position_id) {
 
-    // Find position
     auto pos_it = std::find_if(pimpl_->positions_.begin(), pimpl_->positions_.end(),
         [&position_id](const types::Position& pos) {
-            // NOTE: Position ID matching would need to be implemented
-            // For now, using symbol matching as placeholder
             return position_id == pos.contract.symbol;
         });
 
@@ -707,25 +703,92 @@ std::optional<BoxSpreadStrategy::PositionImprovement> BoxSpreadStrategy::evaluat
         return std::nullopt;
     }
 
-    // NOTE: This is a stub implementation
-    // Full implementation would:
-    // 1. Get current market data for the position
-    // 2. Calculate current implied rate
-    // 3. Compare to entry implied rate
-    // 4. Scan for better opportunities on different expirations
-    // 5. Evaluate early close value vs holding to expiry
+    const auto& position = *pos_it;
 
     PositionImprovement improvement;
     improvement.position_id = position_id;
-    improvement.current_implied_rate = 0.0;  // Would calculate from current market data
-    improvement.entry_implied_rate = 0.0;     // Would retrieve from position history
-    improvement.improvement_bps = 0.0;
     improvement.has_improvement_opportunity = false;
     improvement.improvement_action = "none";
     improvement.early_close_beneficial = false;
+    improvement.roll_benefit_bps = 0.0;
 
-    // TODO: Implement full evaluation logic
-    spdlog::debug("Evaluating position improvement for {}", position_id);
+    // 1. Derive entry implied rate from the position's average cost
+    //    entry_rate ~ (strike_width - avg_price) / avg_price * 365/DTE
+    double entry_price = position.avg_price;
+    double strike_width = position.contract.strike;
+    if (entry_price > 0 && strike_width > entry_price) {
+        improvement.entry_implied_rate =
+            ((strike_width - entry_price) / entry_price) * 100.0;
+    } else {
+        improvement.entry_implied_rate = 0.0;
+    }
+
+    // 2. Get current market data and compute current implied rate
+    if (pimpl_->client_) {
+        auto md = pimpl_->client_->request_market_data_sync(position.contract, 2000);
+        double current_mid = md.has_value() ? md->get_mid_price() : position.current_price;
+        if (current_mid > 0 && strike_width > current_mid) {
+            improvement.current_implied_rate =
+                ((strike_width - current_mid) / current_mid) * 100.0;
+        } else {
+            improvement.current_implied_rate = 0.0;
+        }
+    } else {
+        improvement.current_implied_rate = improvement.entry_implied_rate;
+    }
+
+    // 3. Improvement = current_rate - entry_rate (positive = rates moved in our favor)
+    improvement.improvement_bps =
+        (improvement.current_implied_rate - improvement.entry_implied_rate) * 100.0;
+
+    // 4. Early close evaluation
+    //    If rates rose significantly since entry, closing early and re-deploying
+    //    at the new higher rate can be beneficial.
+    improvement.hold_to_expiry_value = strike_width - entry_price;
+    improvement.early_close_value = 0.0;
+    if (pimpl_->client_) {
+        auto md = pimpl_->client_->request_market_data_sync(position.contract, 2000);
+        if (md.has_value()) {
+            double current_mid = md->get_mid_price();
+            improvement.early_close_value = current_mid - entry_price;
+        }
+    }
+
+    constexpr double kTransactionCostBps = 5.0;
+    improvement.early_close_beneficial =
+        improvement.early_close_value > 0 &&
+        improvement.improvement_bps > kTransactionCostBps * 2;
+
+    // 5. Scan for rolling opportunities on the same symbol
+    auto opportunities = find_box_spreads(position.contract.symbol);
+    if (!opportunities.empty()) {
+        auto best = std::max_element(opportunities.begin(), opportunities.end(),
+            [](const BoxSpreadOpportunity& a, const BoxSpreadOpportunity& b) {
+                return a.confidence_score < b.confidence_score;
+            });
+
+        double best_rate = calculate_implied_interest_rate(best->spread);
+        double net_roll_benefit_bps =
+            (best_rate - improvement.entry_implied_rate) * 100.0 - kTransactionCostBps;
+
+        if (net_roll_benefit_bps > 0) {
+            improvement.has_improvement_opportunity = true;
+            improvement.roll_opportunity = *best;
+            improvement.roll_benefit_bps = net_roll_benefit_bps;
+            improvement.improvement_action = "roll";
+        }
+    }
+
+    if (!improvement.has_improvement_opportunity && improvement.early_close_beneficial) {
+        improvement.has_improvement_opportunity = true;
+        improvement.improvement_action = "close_early";
+    }
+
+    spdlog::debug("Position {} improvement: current_rate={:.2f}% entry_rate={:.2f}% "
+                  "improvement={:.1f}bps action={}",
+                  position_id, improvement.current_implied_rate,
+                  improvement.entry_implied_rate, improvement.improvement_bps,
+                  improvement.improvement_action);
 
     return improvement;
 }

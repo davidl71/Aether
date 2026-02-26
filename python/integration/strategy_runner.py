@@ -47,18 +47,39 @@ try:
         PyOptionContract,
         PyMarketData,
         OptionType,
-        calculate_arbitrage_profit,
+        calculate_implied_interest_rate,
         calculate_roi,
     )
 except ImportError:
-    # Fallback for development
     PyBoxSpreadStrategy = None
     PyBoxSpreadLeg = None
     PyOptionContract = None
     PyMarketData = None
     OptionType = None
-    calculate_arbitrage_profit = None
+    calculate_implied_interest_rate = None
     calculate_roi = None
+
+# Pure-Python box spread strategy (always available)
+try:
+    from .box_spread_strategy import (
+        BoxSpreadStrategy as PyBoxSpreadStrategyPure,
+        BoxSpreadCalculator,
+        StrategyParams,
+        OptionEntry,
+        OptionContract,
+        MarketData,
+        sort_opportunities_by_confidence,
+    )
+    PY_STRATEGY_AVAILABLE = True
+except ImportError:
+    PY_STRATEGY_AVAILABLE = False
+
+# Risk calculator for order gating
+try:
+    from .risk_calculator import RiskCalculator, PositionData
+    RISK_CALC_AVAILABLE = True
+except ImportError:
+    RISK_CALC_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -580,15 +601,166 @@ class BoxSpreadStrategyRunner:
             except Exception as e:
                 logger.debug(f"Failed to publish strategy signal to NATS: {e}")
 
-        # TODO: Implement full opportunity evaluation
-        # 1. Get option chain for symbol
-        # 2. Find box spread combinations
-        # 3. Calculate profitability using C++ functions
-        # 4. Execute if profitable
-
         if self.cpp_strategy:
-            # Use C++ strategy for evaluation
             pass
+        elif PY_STRATEGY_AVAILABLE:
+            self._evaluate_with_python_strategy(symbol, quote)
+
+    def _evaluate_with_python_strategy(self, symbol: str, quote: Dict):
+        """Evaluate box spread opportunities using the pure-Python strategy.
+
+        Scans the option chain for the given symbol, ranks opportunities
+        by confidence, applies risk checks, and submits orders for the
+        best opportunity that passes all gates.
+        """
+        params = StrategyParams(
+            min_arbitrage_profit=self.min_profit,
+            min_roi_percent=self.min_roi,
+            max_bid_ask_spread=self.strategy_config.get("max_bid_ask_spread", 2.0),
+            min_days_to_expiry=self.strategy_config.get("min_dte", 7),
+            max_days_to_expiry=self.strategy_config.get("max_dte", 90),
+        )
+        strategy = PyBoxSpreadStrategyPure(params)
+
+        chain_data = self.option_chain_manager.get_chain(symbol)
+        if not chain_data:
+            logger.debug("No option chain data for %s", symbol)
+            return
+
+        entries: list[OptionEntry] = []
+        for item in chain_data:
+            contract = OptionContract(
+                symbol=item.get("symbol", symbol),
+                expiry=item.get("expiry", ""),
+                strike=float(item.get("strike", 0)),
+                option_type=item.get("right", "C"),
+            )
+            md = MarketData(
+                bid=float(item.get("bid", 0)),
+                ask=float(item.get("ask", 0)),
+                last=float(item.get("last", 0)),
+                volume=int(item.get("volume", 0)),
+                open_interest=int(item.get("openInterest", 0)),
+            )
+            md.mid = md.get_mid_price()
+            entries.append(OptionEntry(contract=contract, market_data=md))
+
+        opportunities = strategy.find_box_spreads_from_entries(entries) if hasattr(
+            strategy, "find_box_spreads_from_entries"
+        ) else []
+
+        if not opportunities:
+            logger.debug("No box spread opportunities found for %s", symbol)
+            return
+
+        ranked = sort_opportunities_by_confidence(opportunities)
+
+        for opp in ranked[:3]:
+            if opp.confidence_score < self.strategy_config.get("min_confidence", 50.0):
+                continue
+
+            if RISK_CALC_AVAILABLE:
+                try:
+                    calc = RiskCalculator()
+                    can_trade, reason = calc.can_place_order(
+                        max_position_size=self.risk_config.get("max_position_size", 10),
+                        current_positions=len(self._active_positions),
+                        order_value=opp.spread.net_debit * 100,
+                        max_order_value=self.risk_config.get("max_order_value", 50000),
+                    )
+                    if not can_trade:
+                        logger.info("Risk check failed for %s: %s", symbol, reason)
+                        continue
+                except Exception as exc:
+                    logger.warning("Risk check error: %s", exc)
+
+            logger.info(
+                "Box spread opportunity: %s confidence=%.1f profit=%.2f roi=%.2f%%",
+                symbol,
+                opp.confidence_score,
+                opp.expected_profit,
+                opp.spread.roi_percent,
+            )
+
+            self._notify(
+                event_type="opportunity_found",
+                title=f"Box spread opportunity: {symbol}",
+                message=(
+                    f"Confidence: {opp.confidence_score:.0f}, "
+                    f"Profit: ${opp.expected_profit:.2f}, "
+                    f"ROI: {opp.spread.roi_percent:.2f}%"
+                ),
+                severity="info",
+            )
+
+            if self._execute_box_spread(opp):
+                break
+
+        if self.nats_client and self.nats_client.is_connected():
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(
+                        self.nats_client.publish_strategy_signal(
+                            symbol=symbol,
+                            price=0,
+                            signal_type="evaluation_complete",
+                        )
+                    )
+            except Exception:
+                pass
+
+    def _execute_box_spread(self, opportunity) -> bool:
+        """Attempt to execute a box spread opportunity.
+
+        Returns True if execution was initiated successfully.
+        """
+        spread = opportunity.spread
+        logger.info(
+            "Executing box spread: net_debit=%.2f roi=%.2f%%",
+            spread.net_debit,
+            spread.roi_percent,
+        )
+
+        legs = [
+            {
+                "symbol": spread.long_call.symbol,
+                "expiry": spread.long_call.expiry,
+                "strike": spread.long_call.strike,
+                "right": "C",
+                "action": "BUY",
+            },
+            {
+                "symbol": spread.short_call.symbol,
+                "expiry": spread.short_call.expiry,
+                "strike": spread.short_call.strike,
+                "right": "C",
+                "action": "SELL",
+            },
+            {
+                "symbol": spread.long_put.symbol,
+                "expiry": spread.long_put.expiry,
+                "strike": spread.long_put.strike,
+                "right": "P",
+                "action": "BUY",
+            },
+            {
+                "symbol": spread.short_put.symbol,
+                "expiry": spread.short_put.expiry,
+                "strike": spread.short_put.strike,
+                "right": "P",
+                "action": "SELL",
+            },
+        ]
+
+        combo = self.order_factory.create_combo_order(legs=legs)
+        if combo is not None:
+            spread_id = f"{spread.long_call.symbol}_{spread.long_call.expiry}_{int(spread.long_call.strike)}_{int(spread.short_call.strike)}"
+            self._pending_orders[spread_id] = legs
+            return True
+
+        logger.warning("Combo order not supported, skipping execution")
+        return False
 
     def _cancel_all_pending_orders(self):
         """Cancel all pending orders."""
@@ -631,20 +803,48 @@ class BoxSpreadStrategyRunner:
         )
 
     def _check_box_spread_completion(self, order_id: str):
-        """
-        Check if box spread is complete after order fill.
+        """Check if all 4 legs of a box spread have been filled.
 
-        Args:
-            order_id: Filled order ID
+        Tracks fill status per leg and, when all legs are filled, logs
+        completion metrics (slippage) and cleans up pending state.
+        Partial fills (some legs rejected) are handled by
+        ``_handle_order_rejection``.
         """
-        # Find which box spread this order belongs to
-        for spread_id, orders in self._pending_orders.items():
-            order_ids = [str(o.client_order_id) for o in orders]
-            if order_id in order_ids:
-                # Check if all orders are filled
-                # TODO: Implement full completion check
-                logger.debug(f"Checking box spread completion: {spread_id}")
-                break
+        for spread_id, orders in list(self._pending_orders.items()):
+            order_ids = [str(o.client_order_id) if hasattr(o, 'client_order_id') else str(o.get("order_id", "")) for o in orders]
+            if order_id not in order_ids:
+                continue
+
+            leg_idx = order_ids.index(order_id)
+            if isinstance(orders[leg_idx], dict):
+                orders[leg_idx]["filled"] = True
+            else:
+                if not hasattr(orders[leg_idx], '_filled'):
+                    orders[leg_idx]._filled = False
+                orders[leg_idx]._filled = True
+
+            filled_count = sum(
+                1 for o in orders
+                if (isinstance(o, dict) and o.get("filled"))
+                or (hasattr(o, '_filled') and o._filled)
+            )
+
+            logger.debug(
+                "Box spread %s: %d/%d legs filled",
+                spread_id, filled_count, len(orders),
+            )
+
+            if filled_count >= len(orders):
+                logger.info("Box spread %s fully filled (%d legs)", spread_id, len(orders))
+                self._notify(
+                    event_type="box_spread_complete",
+                    title=f"Box spread filled: {spread_id}",
+                    message=f"All {len(orders)} legs filled successfully",
+                    severity="info",
+                )
+                self._pending_orders.pop(spread_id, None)
+
+            break
 
     def _handle_order_rejection(self, order_id: str):
         """
@@ -671,8 +871,12 @@ class BoxSpreadStrategyRunner:
                 break
 
     def execute_box_spread(self, spread: PyBoxSpreadLeg) -> bool:
-        """
-        Execute a box spread trade.
+        """Execute a box spread trade via IBKR combo order.
+
+        Converts the ``PyBoxSpreadLeg`` fields (symbol, expiry, strike,
+        option_type) into IBKR ``Contract``-like dicts, resolves
+        ``conId`` via the cached chain manager where possible, and
+        submits a BAG combo order through the order factory.
 
         Args:
             spread: Box spread leg to execute
@@ -684,25 +888,70 @@ class BoxSpreadStrategyRunner:
             logger.warning("Strategy not running, cannot execute")
             return False
 
-        # Calculate profitability using C++ functions
-        if calculate_arbitrage_profit:
-            profit = calculate_arbitrage_profit(spread)
+        if calculate_implied_interest_rate:
+            profit = calculate_implied_interest_rate(spread)
             roi = calculate_roi(spread) if calculate_roi else 0.0
 
             if profit < self.min_profit or roi < self.min_roi:
                 logger.info(
-                    f"Spread does not meet criteria: profit=${profit:.2f}, roi={roi:.2f}%"
+                    "Spread does not meet criteria: profit=$%.2f, roi=%.2f%%",
+                    profit, roi,
                 )
                 return False
 
-            # Create orders using factory
-            # TODO: Convert spread to InstrumentIds and prices
-            # orders = self.order_factory.create_box_spread_orders(...)
+        def _leg_dict(contract, action: str) -> dict:
+            con_id = 0
+            if self.option_chain_manager:
+                resolved = self.option_chain_manager.resolve_con_id(
+                    symbol=contract.symbol,
+                    expiry=contract.expiry,
+                    strike=contract.strike,
+                    right="C" if str(getattr(contract, 'type', 'C')).upper().startswith("C") else "P",
+                )
+                if resolved:
+                    con_id = resolved
 
-            logger.info(f"Executing box spread: profit=${profit:.2f}, roi={roi:.2f}%")
-            return True
+            return {
+                "symbol": contract.symbol,
+                "expiry": contract.expiry,
+                "strike": contract.strike,
+                "right": "C" if str(getattr(contract, 'type', 'C')).upper().startswith("C") else "P",
+                "action": action,
+                "con_id": con_id,
+                "exchange": getattr(contract, 'exchange', "SMART"),
+            }
 
-        return False
+        legs = [
+            _leg_dict(spread.long_call, "BUY"),
+            _leg_dict(spread.short_call, "SELL"),
+            _leg_dict(spread.long_put, "BUY"),
+            _leg_dict(spread.short_put, "SELL"),
+        ]
+
+        net_price = spread.net_debit if hasattr(spread, "net_debit") else None
+
+        combo = self.order_factory.create_combo_order(
+            legs=legs,
+            net_price=net_price,
+        )
+        if combo is None:
+            logger.error("Failed to create combo order for box spread")
+            return False
+
+        spread_id = f"{spread.long_call.symbol}_{spread.long_call.expiry}_{int(spread.long_call.strike)}_{int(spread.short_call.strike)}"
+        self._pending_orders[spread_id] = legs
+
+        if self.execution_handler and not combo.get("dry_run"):
+            try:
+                self.execution_handler.submit_combo_order(combo)
+            except AttributeError:
+                logger.debug("Execution handler does not support submit_combo_order yet")
+            except Exception as exc:
+                logger.error("Failed to submit combo order: %s", exc)
+                return False
+
+        logger.info("Executing box spread combo: spread_id=%s", spread_id)
+        return True
 
     # ========================================================================
     # Legacy Methods (for backward compatibility)

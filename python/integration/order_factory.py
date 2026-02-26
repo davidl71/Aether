@@ -236,22 +236,96 @@ class OrderFactory:
         self,
         legs: List[dict],
         time_in_force: TimeInForce = TimeInForce.DAY,
-    ) -> Optional[Order]:
-        """
-        Create a combo order (if supported by venue).
-        
-        Note: IBKR combo orders require special handling.
-        This is a placeholder for future implementation.
-        
+        quantity: int = 1,
+        net_price: Optional[float] = None,
+        dry_run: bool = False,
+    ) -> Optional[dict]:
+        """Create an IBKR BAG (combo) order for a multi-leg spread.
+
+        Each *leg* dict should contain:
+          - ``symbol``, ``expiry``, ``strike``, ``right`` (C/P)
+          - ``action`` (BUY / SELL)
+          - ``con_id`` (optional -- IBKR contract ID, resolved upstream)
+          - ``ratio`` (optional, default 1)
+          - ``exchange`` (optional, default SMART)
+          - ``price`` (optional per-leg price for logging)
+
+        When *net_price* is provided the combo is submitted as a LMT
+        order at that net debit/credit.  Otherwise the order is sent as
+        MKT.
+
         Args:
-            legs: List of leg dictionaries with instrument_id, side, quantity, price
-            time_in_force: Time in force
-            
+            legs: Leg descriptors (at least 2 required).
+            time_in_force: DAY, GTC, or IOC.
+            quantity: Contract multiplier (number of combos).
+            net_price: Net limit price for the combo.
+            dry_run: If True, log the order but do not submit.
+
         Returns:
-            Combo order or None if not supported
+            A dict describing the combo order (suitable for submission
+            via the execution handler), or *None* if validation fails.
         """
-        # TODO: Implement IBKR combo order support
-        # IBKR combo orders use ComboLeg structure
-        logger.warning("Combo orders not yet implemented, using individual orders")
-        return None
+        if len(legs) < 2:
+            logger.error("Combo order requires at least 2 legs, got %d", len(legs))
+            return None
+
+        combo_legs = []
+        for i, leg in enumerate(legs):
+            action = leg.get("action", "BUY").upper()
+            if action not in ("BUY", "SELL"):
+                logger.error("Invalid action '%s' in leg %d", action, i)
+                return None
+
+            combo_legs.append({
+                "con_id": leg.get("con_id", 0),
+                "symbol": leg.get("symbol", ""),
+                "expiry": leg.get("expiry", ""),
+                "strike": float(leg.get("strike", 0)),
+                "right": leg.get("right", "C"),
+                "action": action,
+                "ratio": int(leg.get("ratio", 1)),
+                "exchange": leg.get("exchange", "SMART"),
+            })
+
+        order_type = "LMT" if net_price is not None else "MKT"
+        tif_str = {
+            TimeInForce.DAY: "DAY",
+            TimeInForce.GTC: "GTC",
+            TimeInForce.IOC: "IOC",
+        }.get(time_in_force, "DAY")
+
+        client_order_id = self._generate_client_order_id()
+
+        combo_order = {
+            "order_id": str(client_order_id),
+            "sec_type": "BAG",
+            "order_type": order_type,
+            "time_in_force": tif_str,
+            "quantity": quantity,
+            "net_price": net_price,
+            "legs": combo_legs,
+            "created_at": datetime.now().isoformat(),
+            "dry_run": dry_run,
+        }
+
+        if dry_run:
+            logger.info(
+                "DRY RUN combo order %s: %d legs, type=%s, net_price=%s, qty=%d",
+                client_order_id, len(combo_legs), order_type,
+                net_price, quantity,
+            )
+            for cl in combo_legs:
+                logger.info(
+                    "  Leg: %s %s %s %.1f%s con_id=%s",
+                    cl["action"], cl["symbol"], cl["expiry"],
+                    cl["strike"], cl["right"], cl["con_id"],
+                )
+        else:
+            logger.info(
+                "Created combo order %s: %d legs, type=%s, net_price=%s, qty=%d",
+                client_order_id, len(combo_legs), order_type,
+                net_price, quantity,
+            )
+
+        return combo_order
 

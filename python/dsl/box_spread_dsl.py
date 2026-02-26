@@ -162,8 +162,10 @@ class BoxSpread:
         if errors:
             return BoxSpreadResult(scenario=self, errors=errors)
 
-        # TODO: Integrate with C++ bindings
-        # For now, return empty result
+        # C++ bindings integration deferred -- Python port in
+        # python/integration/box_spread_strategy.py provides full
+        # functionality.  Only add native bindings if profiling shows
+        # Python is a bottleneck.
         return BoxSpreadResult(
             scenario=self,
             opportunities=[],

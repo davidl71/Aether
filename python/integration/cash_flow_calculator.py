@@ -111,11 +111,15 @@ class CashFlowCalculator:
         self,
         orats_client=None,  # For dividend schedules
         ibkr_client=None,  # For option/bond details
-        fx_rates: Optional[Dict[str, float]] = None  # ILS/USD, etc.
+        fx_rates: Optional[Dict[str, float]] = None,  # ILS/USD, etc.
+        cpi_index_current: Optional[float] = None,
+        cpi_index_base: Optional[float] = None,
     ):
         self.orats_client = orats_client
         self.ibkr_client = ibkr_client
         self.fx_rates = fx_rates or {"ILS_USD": 0.27}  # Default ILS/USD rate
+        self.cpi_index_current = cpi_index_current
+        self.cpi_index_base = cpi_index_base
 
     def calculate_portfolio_cash_flows(
         self,
@@ -333,14 +337,66 @@ class CashFlowCalculator:
         position: Position,
         end_date: datetime
     ) -> List[CashFlowEvent]:
-        """Calculate dividend cash flows."""
+        """Calculate dividend cash flows.
+
+        Fetches the next ex-dividend date and amount from ORATS (if the
+        client is available).  The schedule is then extrapolated forward
+        through *end_date* using the reported frequency.  When no client
+        is configured, the method returns an empty list.
+        """
         cash_flows: List[CashFlowEvent] = []
 
-        # TODO: Get dividend schedule from ORATS or IBKR
-        # For now, return empty list (dividend schedules require external data)
+        div_amount: Optional[float] = None
+        div_freq: Optional[int] = None
+        next_ex_date: Optional[datetime] = None
+
         if self.orats_client:
-            # Would fetch dividend schedule here
-            pass
+            try:
+                sched = self.orats_client.get_dividend_schedule(position.symbol)
+                if sched:
+                    div_amount = sched.get("next_div_amount")
+                    raw_date = sched.get("next_div_ex_date")
+                    if raw_date and isinstance(raw_date, str):
+                        for fmt in ("%Y-%m-%d", "%Y%m%d"):
+                            try:
+                                next_ex_date = datetime.strptime(raw_date, fmt)
+                                break
+                            except ValueError:
+                                continue
+                    freq_raw = sched.get("div_frequency")
+                    if freq_raw is not None:
+                        try:
+                            div_freq = int(freq_raw)
+                        except (ValueError, TypeError):
+                            div_freq = None
+            except Exception as exc:
+                logger.warning("Failed to fetch dividend schedule for %s: %s",
+                               position.symbol, exc)
+
+        if div_amount is None or div_amount <= 0:
+            return cash_flows
+
+        if div_freq is None or div_freq <= 0:
+            div_freq = 4
+
+        days_between = 365 // div_freq
+
+        if next_ex_date is None:
+            next_ex_date = datetime.now() + timedelta(days=days_between)
+
+        current = next_ex_date
+        while current <= end_date:
+            total_dividend = div_amount * abs(position.quantity)
+            cash_flows.append(CashFlowEvent(
+                date=current,
+                amount=total_dividend,
+                currency=position.currency,
+                cash_flow_type=CashFlowType.DIVIDEND,
+                description=f"Dividend: {position.symbol}",
+                position_id=position.id,
+                dividend_per_share=div_amount,
+            ))
+            current = current + timedelta(days=days_between)
 
         return cash_flows
 
@@ -358,17 +414,30 @@ class CashFlowCalculator:
         return payment
 
     def _calculate_cpi_linked_loan_payment(self, loan: Loan) -> float:
-        """Calculate CPI-linked loan payment."""
+        """Calculate CPI-linked loan payment with principal indexation.
+
+        When CPI index values are available the outstanding principal is
+        scaled by ``cpi_index_current / cpi_index_base`` before the
+        interest calculation, matching Israeli CPI-linked mortgage
+        conventions.
+        """
         if not loan.fixed_rate:
             logger.warning(f"Fixed rate not provided for loan {loan.id}, using default 3.5%")
             loan.fixed_rate = 0.035
 
-        # Fixed interest payment (principal adjustment for CPI happens separately)
-        monthly_rate = loan.fixed_rate / 12.0
-        interest_payment = loan.principal * monthly_rate
+        principal = loan.principal
 
-        # TODO: Add CPI adjustment to principal
-        # For now, return interest payment only
+        if (
+            loan.cpi_linked
+            and self.cpi_index_current is not None
+            and self.cpi_index_base is not None
+            and self.cpi_index_base > 0
+        ):
+            cpi_factor = self.cpi_index_current / self.cpi_index_base
+            principal = loan.principal * cpi_factor
+
+        monthly_rate = loan.fixed_rate / 12.0
+        interest_payment = principal * monthly_rate
 
         return interest_payment
 
