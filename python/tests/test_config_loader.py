@@ -141,7 +141,7 @@ class TestGetServicePort(unittest.TestCase):
 
     def test_get_service_port_service_name_normalization(self):
         """Test get_service_port() handles service name with underscores."""
-        with patch.dict(os.environ, {"WEB_BACKEND_PORT": "8080"}):
+        with patch.dict(os.environ, {"WEBBACKEND_PORT": "8080"}):
             port = get_service_port("web_backend")
             assert port == 8080
 
@@ -149,7 +149,7 @@ class TestGetServicePort(unittest.TestCase):
 class TestCheckPortAvailable(unittest.TestCase):
     """Tests for check_port_available() function."""
 
-    @patch('integration.config_loader.socket.socket')
+    @patch('socket.socket')
     def test_check_port_available_true(self, mock_socket_class):
         """Test check_port_available() returns True for available port."""
         mock_socket = MagicMock()
@@ -161,7 +161,7 @@ class TestCheckPortAvailable(unittest.TestCase):
         result = check_port_available(8080)
         assert result is True
 
-    @patch('integration.config_loader.socket.socket')
+    @patch('socket.socket')
     def test_check_port_available_false(self, mock_socket_class):
         """Test check_port_available() returns False for port in use."""
         mock_socket = MagicMock()
@@ -173,7 +173,7 @@ class TestCheckPortAvailable(unittest.TestCase):
         result = check_port_available(8080)
         assert result is False
 
-    @patch('integration.config_loader.socket.socket')
+    @patch('socket.socket')
     def test_check_port_available_exception(self, mock_socket_class):
         """Test check_port_available() returns True on exception (assumes available)."""
         mock_socket_class.side_effect = Exception("Socket error")

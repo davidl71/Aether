@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from typing import Optional, Dict, List
 from datetime import datetime
-from textual.widgets import Container, DataTable, Label, Select
-from textual.containers import Vertical, Horizontal
+from textual.widgets import DataTable, Label, Select
+from textual.containers import Container, Vertical, Horizontal
 from textual.app import ComposeResult
 
 from ..models import SnapshotPayload

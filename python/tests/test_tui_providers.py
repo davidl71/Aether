@@ -107,7 +107,7 @@ class TestMockProvider(unittest.TestCase):
         assert snapshot.mode == "DRY-RUN"
         assert snapshot.strategy == "RUNNING"
         assert len(snapshot.symbols) == 3  # SPX, XSP, NDX
-        assert snapshot.symbols[0]["symbol"] == "SPX"
+        assert snapshot.symbols[0].symbol == "SPX"
         assert snapshot.metrics.net_liq == 100000.0
 
 

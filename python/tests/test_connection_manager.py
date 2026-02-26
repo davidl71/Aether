@@ -301,13 +301,13 @@ class TestReauthScheduler(unittest.TestCase):
         config = ReauthConfig(enabled=True, day_of_week=0, time_utc=dt_time(10, 0))
         scheduler = ReauthScheduler(config)
 
-        original_next = scheduler._next_reauth_utc
+        scheduler._next_reauth_utc = datetime(2020, 1, 6, 10, 0)
         scheduler._reminder_issued = True
 
         scheduler.mark_reauth_complete()
 
         assert scheduler._next_reauth_utc is not None
-        assert scheduler._next_reauth_utc != original_next
+        assert scheduler._next_reauth_utc > datetime(2020, 1, 6, 10, 0)
         assert scheduler._reminder_issued is False
 
     @patch("integration.connection_manager.time.sleep")
@@ -338,6 +338,7 @@ class TestReauthScheduler(unittest.TestCase):
         mock_client.connect.side_effect = [False, True]  # Second attempt succeeds
         mock_runner = Mock()
         mock_runner.is_running = True
+        mock_runner.pause.side_effect = lambda: setattr(mock_runner, 'is_running', False)
 
         # Mock time.monotonic() to return values that allow reconnection
         mock_monotonic.side_effect = [0, 30, 60]  # Start, first attempt, second attempt
@@ -393,6 +394,7 @@ class TestReauthScheduler(unittest.TestCase):
         mock_client.connect.return_value = True
         mock_runner = Mock()
         mock_runner.is_running = True
+        mock_runner.pause.side_effect = lambda: setattr(mock_runner, 'is_running', False)
 
         # Mock time.monotonic() for manual reconnect
         mock_monotonic.side_effect = [0, 600]  # Start, end of window
@@ -492,6 +494,10 @@ class TestConnectionSupervisor(unittest.TestCase):
     @patch("integration.connection_manager.datetime")
     def test_run_housekeeping_reminder(self, mock_datetime):
         """Test run_housekeeping() issues reminder when appropriate."""
+        mock_datetime.utcnow.return_value = datetime(2025, 1, 6, 9, 46)
+        mock_datetime.combine = datetime.combine
+        mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
+
         config = ReauthConfig(
             enabled=True,
             day_of_week=0,
@@ -500,14 +506,8 @@ class TestConnectionSupervisor(unittest.TestCase):
         )
         scheduler = ReauthScheduler(config)
 
-        # Set up next reauth
-        reference = datetime(2025, 1, 6, 9, 0)
-        scheduler._next_reauth_utc = scheduler._calculate_next_occurrence(reference)
-
-        # Mock current time during reminder window
-        mock_datetime.utcnow.return_value = datetime(2025, 1, 6, 9, 46)
-        mock_datetime.combine = datetime.combine
-        mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
+        # Set next reauth to known value
+        scheduler._next_reauth_utc = datetime(2025, 1, 6, 10, 0)
 
         notifier = Mock()
         supervisor = ConnectionSupervisor(scheduler, notifier)
@@ -523,17 +523,15 @@ class TestConnectionSupervisor(unittest.TestCase):
     @patch("integration.connection_manager.datetime")
     def test_run_housekeeping_trigger_reauth(self, mock_datetime):
         """Test run_housekeeping() triggers reauthentication when appropriate."""
-        config = ReauthConfig(enabled=True, day_of_week=0, time_utc=dt_time(10, 0))
-        scheduler = ReauthScheduler(config)
-
-        # Set up next reauth
-        reference = datetime(2025, 1, 6, 9, 0)
-        scheduler._next_reauth_utc = scheduler._calculate_next_occurrence(reference)
-
-        # Mock current time at reauth time
         mock_datetime.utcnow.return_value = datetime(2025, 1, 6, 10, 0)
         mock_datetime.combine = datetime.combine
         mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
+
+        config = ReauthConfig(enabled=True, day_of_week=0, time_utc=dt_time(10, 0))
+        scheduler = ReauthScheduler(config)
+
+        # Set next reauth to known value
+        scheduler._next_reauth_utc = datetime(2025, 1, 6, 10, 0)
 
         supervisor = ConnectionSupervisor(scheduler)
         mock_client = Mock()
@@ -549,15 +547,14 @@ class TestConnectionSupervisor(unittest.TestCase):
     @patch("integration.connection_manager.datetime")
     def test_run_housekeeping_reauth_failure(self, mock_datetime):
         """Test run_housekeeping() handles reauthentication failure."""
-        config = ReauthConfig(enabled=True, day_of_week=0, time_utc=dt_time(10, 0))
-        scheduler = ReauthScheduler(config)
-
-        reference = datetime(2025, 1, 6, 9, 0)
-        scheduler._next_reauth_utc = scheduler._calculate_next_occurrence(reference)
-
         mock_datetime.utcnow.return_value = datetime(2025, 1, 6, 10, 0)
         mock_datetime.combine = datetime.combine
         mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
+
+        config = ReauthConfig(enabled=True, day_of_week=0, time_utc=dt_time(10, 0))
+        scheduler = ReauthScheduler(config)
+
+        scheduler._next_reauth_utc = datetime(2025, 1, 6, 10, 0)
 
         notifier = Mock()
         supervisor = ConnectionSupervisor(scheduler, notifier)

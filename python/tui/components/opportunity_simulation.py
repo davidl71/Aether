@@ -7,8 +7,8 @@ Displays what-if scenarios for loan usage and optimization.
 from __future__ import annotations
 
 from typing import Optional, Dict, List
-from textual.widgets import Container, DataTable, Label
-from textual.containers import Vertical
+from textual.widgets import DataTable, Label
+from textual.containers import Container, Vertical
 from textual.app import ComposeResult
 
 from ..models import SnapshotPayload

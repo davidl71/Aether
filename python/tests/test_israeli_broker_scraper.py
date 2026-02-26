@@ -98,15 +98,14 @@ class TestIsraeliBrokerWebScraper:
             )
 
     @patch('integration.israeli_broker_scraper.sync_playwright')
-    def test_connect(self, mock_playwright, scraper):
+    def test_connect(self, mock_sync_playwright, scraper):
         """Test browser connection."""
-        # Mock Playwright objects
         mock_playwright_instance = MagicMock()
         mock_browser = MagicMock()
         mock_context = MagicMock()
         mock_page = MagicMock()
 
-        mock_playwright.return_value = mock_playwright_instance
+        mock_sync_playwright.return_value.start.return_value = mock_playwright_instance
         mock_playwright_instance.chromium.launch.return_value = mock_browser
         mock_browser.new_context.return_value = mock_context
         mock_context.new_page.return_value = mock_page
