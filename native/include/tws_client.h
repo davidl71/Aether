@@ -236,6 +236,9 @@ public:
     // Cleanup stale requests (for long-running applications)
     void cleanup_stale_rate_limiter_requests(std::chrono::seconds max_age);
 
+    // Get last error message and hourly error count
+    std::pair<std::string, int> get_last_error() const;
+
 private:
     class Impl;
     std::unique_ptr<Impl> pimpl_;

@@ -10,11 +10,14 @@ Reads API credentials from environment variables:
 """
 from __future__ import annotations
 
+import logging
 import os
 import time
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 
 class TradeStationClient:
@@ -147,3 +150,70 @@ class TradeStationClient:
             "quote_ts": quote.get("timestamp") or "",
             "received_at": int(time.time()),
         }
+
+    def get_accounts(self) -> List[Dict]:
+        """Return a list of account dicts (id, type, status)."""
+        url = f"{self.base_url}/brokerage/accounts"
+        try:
+            data = self._get(url)
+        except requests.HTTPError as exc:
+            logger.warning("Failed to fetch TradeStation accounts: %s", exc)
+            return []
+
+        accounts = data.get("Accounts", data) if isinstance(data, dict) else data
+        if not isinstance(accounts, list):
+            accounts = [accounts] if accounts else []
+        return accounts
+
+    def get_positions(self, account_id: Optional[str] = None) -> List[Dict]:
+        """Fetch positions for the given (or default) account.
+
+        Returns a list of dicts with standardized keys:
+        ``symbol``, ``quantity``, ``avg_price``, ``current_price``,
+        ``market_value``, ``unrealized_pl``, ``currency``.
+        """
+        acct = account_id or self.account_id
+        if not acct:
+            accounts = self.get_accounts()
+            if accounts:
+                acct = accounts[0].get("AccountID") or accounts[0].get("Key", "")
+            if not acct:
+                logger.error("No TradeStation account ID available")
+                return []
+
+        url = f"{self.base_url}/brokerage/accounts/{acct}/positions"
+        try:
+            data = self._get(url)
+        except requests.HTTPError as exc:
+            logger.warning("Failed to fetch TradeStation positions: %s", exc)
+            return []
+
+        raw_positions = data.get("Positions", data) if isinstance(data, dict) else data
+        if not isinstance(raw_positions, list):
+            raw_positions = [raw_positions] if raw_positions else []
+
+        formatted: List[Dict] = []
+        for pos in raw_positions:
+            if not isinstance(pos, dict):
+                continue
+            quantity = float(pos.get("Quantity") or pos.get("LongShort", 0))
+            if pos.get("LongShort", "").upper() == "SHORT":
+                quantity = -abs(quantity)
+
+            formatted.append({
+                "symbol": pos.get("Symbol", ""),
+                "quantity": quantity,
+                "avg_price": float(pos.get("AveragePrice") or 0.0),
+                "current_price": float(
+                    pos.get("Last") or pos.get("MarketPrice") or 0.0
+                ),
+                "market_value": float(pos.get("MarketValue") or 0.0),
+                "unrealized_pl": float(
+                    pos.get("UnrealizedProfitLoss")
+                    or pos.get("UnrealizedPL")
+                    or 0.0
+                ),
+                "currency": pos.get("Currency", "USD"),
+            })
+
+        return formatted

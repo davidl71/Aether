@@ -2,6 +2,7 @@
 #pragma once
 
 #include <chrono>
+#include <map>
 #include <string>
 #include <set>
 #include <vector>
@@ -63,28 +64,27 @@ public:
 private:
     // US Market Holidays 2025
     std::set<std::string> holidays_2025_;
-
-    // Early close dates 2025 (1:00 PM ET close)
     std::set<std::string> early_closes_2025_;
 
-    // Convert time_point to YYYYMMDD string
+    // Dynamic year calendars
+    std::map<int, std::set<std::string>> holidays_by_year_;
+    std::map<int, std::set<std::string>> early_closes_by_year_;
+
     std::string date_to_string(const std::chrono::system_clock::time_point& date) const;
-
-    // Convert time_point to ET time components (hour, minute, weekday)
     std::tuple<int, int, int> get_et_time(const std::chrono::system_clock::time_point& time) const;
-
-    // Check if time is within regular trading hours (9:30 AM - 4:00 PM ET)
     bool is_regular_hours(int hour_et, int minute_et) const;
-
-    // Check if time is within pre-market hours (4:00 AM - 9:30 AM ET)
     bool is_pre_market_hours(int hour_et, int minute_et) const;
-
-    // Check if time is within after-hours (4:00 PM - 8:00 PM ET)
     bool is_after_hours(int hour_et, int minute_et) const;
-
-    // Private helper methods (used internally)
     bool is_holiday_date(const std::chrono::system_clock::time_point& date) const;
     bool is_early_close_date(const std::chrono::system_clock::time_point& date) const;
+
+    // Next open/close calculation
+    std::string calculate_next_open(const std::chrono::system_clock::time_point& from) const;
+    std::string calculate_next_close(const std::chrono::system_clock::time_point& from) const;
+
+    // Holiday generation for arbitrary years
+    std::set<std::string> generate_holidays_for_year(int year) const;
+    std::set<std::string> generate_early_closes_for_year(int year) const;
 };
 
 } // namespace market_hours

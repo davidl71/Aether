@@ -1412,6 +1412,15 @@ public:
     }
 
     // ========================================================================
+    // EWrapper Callbacks - Server Time
+    // ========================================================================
+
+    void currentTime(long time) override {
+        server_time_epoch_.store(time);
+        spdlog::debug("TWS server time: {}", time);
+    }
+
+    // ========================================================================
     // EWrapper Callbacks - Error Handling
     // ========================================================================
 
@@ -1428,6 +1437,8 @@ public:
                 std::lock_guard<std::mutex> lock(error_mutex_);
                 last_error_code_ = errorCode;
                 last_error_message_ = errorString;
+                last_error_time_ = std::chrono::system_clock::now();
+                error_count_last_hour_++;
             }
 
             std::vector<std::string> guidance_notes;
@@ -2719,8 +2730,16 @@ public:
     }
 
     std::chrono::system_clock::time_point get_server_time() const {
-        // TODO: Request and return actual TWS server time
+        if (server_time_epoch_.load() > 0) {
+            return std::chrono::system_clock::from_time_t(server_time_epoch_.load());
+        }
         return std::chrono::system_clock::now();
+    }
+
+    void request_server_time() {
+        if (!connected_) return;
+        rate_limiter_.record_message();
+        client_.reqCurrentTime();
     }
 
     // ========================================================================
@@ -2746,6 +2765,18 @@ public:
 
     void cleanup_stale_rate_limiter_requests(std::chrono::seconds max_age) {
         rate_limiter_.cleanup_stale_requests(max_age);
+    }
+
+    std::pair<std::string, int> get_last_error() const {
+        std::lock_guard<std::mutex> lock(error_mutex_);
+        auto now = std::chrono::system_clock::now();
+        auto one_hour = std::chrono::hours(1);
+        int recent_errors = error_count_last_hour_;
+        if (last_error_time_ != std::chrono::system_clock::time_point{} &&
+            (now - last_error_time_) > one_hour) {
+            recent_errors = 0;
+        }
+        return {last_error_message_, recent_errors};
     }
 
 private:
@@ -3012,11 +3043,9 @@ private:
                         connectionClosed(); // This will trigger reconnection if enabled
                         break;
                     } else {
-                        // Socket is connected but no messages - might be idle
-                        // Request server time as a heartbeat
                         spdlog::debug("Connection alive but idle. Requesting server time as heartbeat...");
-                        // Note: reqCurrentTime() would be ideal but may not be available
-                        // Instead, we'll just log and continue monitoring
+                        client_.reqCurrentTime();
+                        rate_limiter_.record_message();
                     }
                 }
 
@@ -3600,6 +3629,13 @@ private:
     // Callbacks
     ErrorCallback error_callback_;
 
+    // Server time (from reqCurrentTime callback)
+    std::atomic<long> server_time_epoch_{0};
+
+    // Error tracking
+    std::chrono::system_clock::time_point last_error_time_{};
+    int error_count_last_hour_{0};
+
     // Rate limiting
     RateLimiter rate_limiter_;
     bool mock_mode_ = false;
@@ -3804,6 +3840,10 @@ std::optional<RateLimiterStatus> TWSClient::get_rate_limiter_status() const {
 
 void TWSClient::cleanup_stale_rate_limiter_requests(std::chrono::seconds max_age) {
     pimpl_->cleanup_stale_rate_limiter_requests(max_age);
+}
+
+std::pair<std::string, int> TWSClient::get_last_error() const {
+    return pimpl_->get_last_error();
 }
 
 // Calculate DTE (days to expiry) using trading days

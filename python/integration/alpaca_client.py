@@ -473,3 +473,209 @@ class AlpacaClient:
             return self._get_list(url, params=params)
         except requests.HTTPError:
             return []
+
+    # ========================================================================
+    # Option Chain
+    # ========================================================================
+
+    def get_option_contracts(
+        self,
+        underlying_symbol: str,
+        expiration_date: Optional[str] = None,
+        option_type: Optional[str] = None,
+        strike_price_gte: Optional[float] = None,
+        strike_price_lte: Optional[float] = None,
+        limit: int = 100,
+    ) -> List[Dict]:
+        """Fetch option contracts from Alpaca Options API.
+
+        Args:
+            underlying_symbol: Underlying ticker (e.g. "SPY").
+            expiration_date: Filter by expiration (YYYY-MM-DD).
+            option_type: "call" or "put".
+            strike_price_gte: Minimum strike price.
+            strike_price_lte: Maximum strike price.
+            limit: Max contracts to return (API caps at 10000).
+
+        Returns:
+            List of option contract dicts with keys: id, symbol,
+            underlying_symbol, expiration_date, strike_price, type,
+            status, tradable, size, style.
+        """
+        url = f"{self.base_url}/v2/options/contracts"
+        params: Dict = {
+            "underlying_symbols": underlying_symbol,
+            "limit": limit,
+        }
+        if expiration_date:
+            params["expiration_date"] = expiration_date
+        if option_type:
+            params["type"] = option_type
+        if strike_price_gte is not None:
+            params["strike_price_gte"] = str(strike_price_gte)
+        if strike_price_lte is not None:
+            params["strike_price_lte"] = str(strike_price_lte)
+
+        if self._use_oauth:
+            self._ensure_oauth_authenticated()
+
+        try:
+            resp = self._session.get(url, params=params, timeout=10)
+            if resp.status_code == 401 and self._use_oauth:
+                self._oauth_authenticate()
+                resp = self._session.get(url, params=params, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+        except requests.HTTPError:
+            return []
+
+        contracts = data.get("option_contracts") or data.get("items") or []
+        if isinstance(contracts, list):
+            return contracts
+        return []
+
+    def get_option_chain(
+        self,
+        underlying_symbol: str,
+        expiration_date: Optional[str] = None,
+    ) -> Dict[str, List[Dict]]:
+        """Return option chain grouped by expiration date.
+
+        Returns:
+            Dict mapping expiration date strings to lists of contracts.
+        """
+        contracts = self.get_option_contracts(
+            underlying_symbol,
+            expiration_date=expiration_date,
+            limit=10000,
+        )
+        chain: Dict[str, List[Dict]] = {}
+        for c in contracts:
+            exp = c.get("expiration_date", "unknown")
+            chain.setdefault(exp, []).append(c)
+        return chain
+
+    # ========================================================================
+    # Order Placement & Cancellation
+    # ========================================================================
+
+    def _post(self, url: str, json_data: Optional[Dict] = None) -> Dict:
+        """Make authenticated POST request."""
+        if self._use_oauth:
+            self._ensure_oauth_authenticated()
+        resp = self._session.post(url, json=json_data or {}, timeout=10)
+        if resp.status_code == 401 and self._use_oauth:
+            self._oauth_authenticate()
+            resp = self._session.post(url, json=json_data or {}, timeout=10)
+        resp.raise_for_status()
+        result = resp.json()
+        return result if isinstance(result, dict) else {}
+
+    def _delete(self, url: str) -> bool:
+        """Make authenticated DELETE request. Returns True on success."""
+        if self._use_oauth:
+            self._ensure_oauth_authenticated()
+        resp = self._session.delete(url, timeout=10)
+        if resp.status_code == 401 and self._use_oauth:
+            self._oauth_authenticate()
+            resp = self._session.delete(url, timeout=10)
+        return resp.status_code in (200, 204)
+
+    def place_order(
+        self,
+        symbol: str,
+        qty: int,
+        side: str,
+        order_type: str = "market",
+        time_in_force: str = "day",
+        limit_price: Optional[float] = None,
+        stop_price: Optional[float] = None,
+        extended_hours: bool = False,
+    ) -> Optional[Dict]:
+        """Place a single-leg order.
+
+        Args:
+            symbol: Ticker or OCC option symbol.
+            qty: Number of shares/contracts.
+            side: "buy" or "sell".
+            order_type: "market", "limit", "stop", "stop_limit".
+            time_in_force: "day", "gtc", "ioc", "fok".
+            limit_price: Required for limit/stop_limit orders.
+            stop_price: Required for stop/stop_limit orders.
+            extended_hours: Allow extended hours trading.
+
+        Returns:
+            Order dict on success, None on failure.
+        """
+        payload: Dict = {
+            "symbol": symbol,
+            "qty": str(qty),
+            "side": side,
+            "type": order_type,
+            "time_in_force": time_in_force,
+        }
+        if limit_price is not None:
+            payload["limit_price"] = str(limit_price)
+        if stop_price is not None:
+            payload["stop_price"] = str(stop_price)
+        if extended_hours:
+            payload["extended_hours"] = True
+
+        url = f"{self.base_url}/v2/orders"
+        try:
+            return self._post(url, json_data=payload)
+        except requests.HTTPError as exc:
+            logger.error("Failed to place order: %s", exc)
+            return None
+
+    def place_multi_leg_order(
+        self,
+        legs: List[Dict],
+        order_type: str = "limit",
+        time_in_force: str = "day",
+        limit_price: Optional[float] = None,
+    ) -> Optional[Dict]:
+        """Place a multi-leg (combo) options order.
+
+        Args:
+            legs: List of dicts, each with keys:
+                  symbol (OCC symbol), qty, side ("buy"/"sell"),
+                  position_effect ("open"/"close").
+            order_type: "market" or "limit".
+            time_in_force: "day", "gtc".
+            limit_price: Net debit (positive) or credit (negative).
+
+        Returns:
+            Order dict on success, None on failure.
+        """
+        payload: Dict = {
+            "order_class": "mleg",
+            "type": order_type,
+            "time_in_force": time_in_force,
+            "legs": legs,
+        }
+        if limit_price is not None:
+            payload["limit_price"] = str(limit_price)
+
+        url = f"{self.base_url}/v2/orders"
+        try:
+            return self._post(url, json_data=payload)
+        except requests.HTTPError as exc:
+            logger.error("Failed to place multi-leg order: %s", exc)
+            return None
+
+    def cancel_order(self, order_id: str) -> bool:
+        """Cancel an order by ID. Returns True on success."""
+        url = f"{self.base_url}/v2/orders/{order_id}"
+        try:
+            return self._delete(url)
+        except requests.HTTPError:
+            return False
+
+    def cancel_all_orders(self) -> bool:
+        """Cancel all open orders. Returns True on success."""
+        url = f"{self.base_url}/v2/orders"
+        try:
+            return self._delete(url)
+        except requests.HTTPError:
+            return False

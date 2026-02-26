@@ -101,14 +101,28 @@ namespace {
             health.efficiency_ratio = 0.0;
         }
 
-        // Rate limiter metrics (placeholder - would need to expose from TWSClient)
-        health.rate_limiter_messages_per_sec = 0;  // TODO: Expose from TWSClient
-        health.rate_limiter_active_market_data = 0;  // TODO: Expose from TWSClient
-        health.rate_limiter_active_historical = 0;  // TODO: Expose from TWSClient
+        if (tws_client) {
+            auto rl_status = tws_client->get_rate_limiter_status();
+            if (rl_status.has_value()) {
+                health.rate_limiter_messages_per_sec = rl_status->messages_in_last_second;
+                health.rate_limiter_active_market_data = rl_status->active_market_data_lines;
+                health.rate_limiter_active_historical = rl_status->active_historical_requests;
+            } else {
+                health.rate_limiter_messages_per_sec = 0;
+                health.rate_limiter_active_market_data = 0;
+                health.rate_limiter_active_historical = 0;
+            }
 
-        // Error tracking (placeholder - would need error tracking system)
-        health.last_error = "";  // TODO: Track last error
-        health.error_count_last_hour = 0;  // TODO: Track error count
+            auto err_info = tws_client->get_last_error();
+            health.last_error = err_info.first;
+            health.error_count_last_hour = err_info.second;
+        } else {
+            health.rate_limiter_messages_per_sec = 0;
+            health.rate_limiter_active_market_data = 0;
+            health.rate_limiter_active_historical = 0;
+            health.last_error = "";
+            health.error_count_last_hour = 0;
+        }
 
         return health;
     }

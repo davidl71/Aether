@@ -133,49 +133,65 @@ def _find_latest_file(file_path: str) -> Optional[Path]:
 
 
 def _parse_file_via_rust(file_path: Path) -> Dict[str, Any]:
-    """Parse Discount Bank file using Rust parser via subprocess."""
-    # Build path to Rust example binary
+    """Parse Discount Bank file using Rust parser via subprocess.
+
+    Tries two strategies:
+    1. Pre-built binary at ``agents/backend/target/debug/examples/show_balances``
+    2. ``cargo run --example show_balances``
+
+    Both are expected to emit a JSON object on stdout.  If neither
+    succeeds, falls back to the pure-Python ``_read_balance_from_file``.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
     root_dir = Path(__file__).parent.parent.parent
-    rust_example = (
-        root_dir
-        / "agents"
-        / "backend"
-        / "target"
-        / "debug"
-        / "examples"
-        / "show_balances"
+    rust_binary = (
+        root_dir / "agents" / "backend" / "target" / "debug"
+        / "examples" / "show_balances"
     )
 
-    # If binary doesn't exist, try to build it or use alternative approach
-    if not rust_example.exists():
-        # Alternative: try cargo run
+    def _try_run(cmd: list, cwd: str) -> Optional[Dict[str, Any]]:
         try:
             result = subprocess.run(
-                [
-                    "cargo",
-                    "run",
-                    "--example",
-                    "show_balances",
-                    "--manifest-path",
-                    str(root_dir / "agents" / "backend" / "Cargo.toml"),
-                    "--",
-                    str(file_path),
-                ],
-                cwd=str(root_dir / "agents" / "backend"),
+                cmd,
+                cwd=cwd,
                 capture_output=True,
                 text=True,
-                timeout=10,
+                timeout=15,
             )
-            if result.returncode == 0:
-                # Parse output (would need to modify show_balances to output JSON)
-                # For now, fall back to direct file reading
-                pass
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            pass
+            if result.returncode == 0 and result.stdout.strip():
+                return json.loads(result.stdout)
+        except (subprocess.TimeoutExpired, FileNotFoundError, json.JSONDecodeError) as exc:
+            logger.debug("Rust parser attempt failed: %s", exc)
+        return None
 
-    # For now, read file directly and parse basic info
-    # TODO: Integrate with Rust parser properly
-    raise NotImplementedError("Rust parser integration pending")
+    # Strategy 1: pre-built binary
+    if rust_binary.exists():
+        parsed = _try_run(
+            [str(rust_binary), str(file_path)],
+            cwd=str(root_dir / "agents" / "backend"),
+        )
+        if parsed:
+            return parsed
+
+    # Strategy 2: cargo run
+    cargo_toml = root_dir / "agents" / "backend" / "Cargo.toml"
+    if cargo_toml.exists():
+        parsed = _try_run(
+            [
+                "cargo", "run", "--example", "show_balances",
+                "--manifest-path", str(cargo_toml),
+                "--", str(file_path),
+            ],
+            cwd=str(root_dir / "agents" / "backend"),
+        )
+        if parsed:
+            return parsed
+
+    # Fallback: pure-Python parser
+    logger.info("Rust parser unavailable, using Python fallback for %s", file_path)
+    return _read_balance_from_file(file_path)
 
 
 def _get_ledger_database_path() -> Optional[Path]:
@@ -464,6 +480,19 @@ def _fetch_alpaca_positions() -> List[Dict[str, Any]]:
         return []
 
 
+def _fetch_tradestation_positions(
+    account_id: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """Fetch positions from TradeStation API."""
+    try:
+        from .tradestation_client import TradeStationClient
+
+        client = TradeStationClient()
+        return client.get_positions(account_id)
+    except Exception:
+        return []
+
+
 def _extract_bank_accounts_from_ledger() -> List[Dict[str, Any]]:
     """Extract all bank accounts from ledger database."""
     db_path = _get_ledger_database_path()
@@ -662,6 +691,70 @@ def _read_balance_from_file(file_path: Path) -> Dict[str, Any]:
         raise ValueError(f"Failed to parse file: {e}") from e
 
 
+def _parse_transactions_from_file(
+    file_path: Path, limit: int = 20
+) -> List[TransactionResponse]:
+    """Parse transaction records from Discount Bank reconciliation file.
+
+    Transaction lines start with record type ``01`` (detail records).
+    Layout (0-indexed):
+      0-1   record type (``01``)
+      2-9   value date (YYYYMMDD or DDMMYYYY)
+      10-24 amount (last 2 digits are agorot/cents)
+      25    sign (``+`` credit, ``-`` or `` `` debit)
+      26-65 reference text
+    """
+    try:
+        raw = file_path.read_bytes()
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            text = raw.decode("windows-1255", errors="replace")
+
+        transactions: List[TransactionResponse] = []
+        for line in text.splitlines():
+            line_str = line.strip() if isinstance(line, str) else line.decode("utf-8", errors="replace").strip()
+            if not line_str.startswith("01") or len(line_str) < 26:
+                continue
+
+            date_raw = line_str[2:10].strip()
+            if len(date_raw) == 8:
+                # Try YYYYMMDD first, then DDMMYYYY
+                if int(date_raw[:4]) > 1900:
+                    value_date = f"{date_raw[:4]}-{date_raw[4:6]}-{date_raw[6:8]}"
+                else:
+                    value_date = f"20{date_raw[4:6]}-{date_raw[2:4]}-{date_raw[0:2]}"
+            else:
+                value_date = date_raw
+
+            amount_str = line_str[10:25].strip()
+            try:
+                amount_int = int(amount_str)
+                amount = abs(amount_int) / 100.0
+            except ValueError:
+                continue
+
+            sign_char = line_str[25] if len(line_str) > 25 else " "
+            is_debit = sign_char != "+"
+
+            reference = line_str[26:66].strip() if len(line_str) > 26 else ""
+
+            transactions.append(
+                TransactionResponse(
+                    value_date=value_date,
+                    amount=amount,
+                    is_debit=is_debit,
+                    reference=reference,
+                )
+            )
+
+        # Return most recent first, limited
+        transactions.reverse()
+        return transactions[:limit]
+    except Exception:
+        return []
+
+
 app = FastAPI(title="Discount Bank Service")
 
 # Add security components
@@ -726,12 +819,18 @@ def get_transactions(limit: int = 20) -> TransactionsResponse:
             status_code=404, detail=f"Discount Bank file not found: {file_path}"
         )
 
-    # TODO: Parse transactions from file
-    # For now, return empty list
+    try:
+        balance_data = _read_balance_from_file(latest_file)
+        account_str = balance_data.get("account", "unknown")
+    except Exception:
+        account_str = "unknown"
+
+    transactions = _parse_transactions_from_file(latest_file, limit)
+
     return TransactionsResponse(
-        account="535-0000-276689",
-        transactions=[],
-        total_count=0,
+        account=account_str,
+        transactions=transactions,
+        total_count=len(transactions),
     )
 
 
@@ -767,8 +866,7 @@ def import_positions(
     elif broker.lower() == "alpaca":
         broker_positions = _fetch_alpaca_positions()
     elif broker.lower() == "tradestation":
-        # TODO: Implement TradeStation position fetching
-        raise HTTPException(status_code=501, detail="TradeStation not yet implemented")
+        broker_positions = _fetch_tradestation_positions(account_id)
     else:
         raise HTTPException(
             status_code=400, detail=f"Unknown broker: {broker}. Use: ibkr, alpaca, tradestation"

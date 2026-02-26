@@ -337,21 +337,165 @@ class TastytradeClient:
             Market data dictionary with bid, ask, last, etc.
         """
         try:
-            # Tastytrade API endpoint for quotes
-            # Note: Exact endpoint may vary, this is a common pattern
             endpoint = f"{self.base_url}/quotes/{symbol}"
             data = self._get(endpoint)
 
-            # Extract quote data from response
             if "data" in data:
                 return data["data"]
             return data
         except requests.exceptions.RequestException as e:
             logger.warning(f"Failed to get snapshot for {symbol}: {e}")
-            # Return empty snapshot on error (graceful degradation)
             return {
                 "last": 0.0,
                 "bid": 0.0,
                 "ask": 0.0,
                 "volume": 0,
             }
+
+    # ========================================================================
+    # Option Chain
+    # ========================================================================
+
+    def get_option_chain(
+        self,
+        underlying_symbol: str,
+        expiration_date: Optional[str] = None,
+    ) -> Dict[str, List[Dict]]:
+        """Fetch option chain for an underlying, grouped by expiration.
+
+        Args:
+            underlying_symbol: Underlying ticker (e.g. "SPY").
+            expiration_date: Optional filter (YYYY-MM-DD).
+
+        Returns:
+            Dict mapping expiration dates to lists of option dicts.
+        """
+        endpoint = f"{self.base_url}/option-chains/{underlying_symbol}/nested"
+        params: Dict = {}
+        if expiration_date:
+            params["expiration-date"] = expiration_date
+
+        try:
+            data = self._get(endpoint, params=params)
+        except requests.exceptions.RequestException as exc:
+            logger.warning("Failed to get option chain for %s: %s", underlying_symbol, exc)
+            return {}
+
+        items = []
+        if "data" in data and "items" in data["data"]:
+            items = data["data"]["items"]
+        elif "data" in data and isinstance(data["data"], list):
+            items = data["data"]
+        elif isinstance(data, list):
+            items = data
+
+        chain: Dict[str, List[Dict]] = {}
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            expirations = item.get("expirations", [item])
+            for exp in expirations:
+                if not isinstance(exp, dict):
+                    continue
+                exp_date = exp.get("expiration-date", "unknown")
+                strikes = exp.get("strikes", [exp])
+                chain.setdefault(exp_date, []).extend(
+                    s for s in strikes if isinstance(s, dict)
+                )
+        return chain
+
+    def get_option_expirations(self, underlying_symbol: str) -> List[str]:
+        """Return available expiration dates for an underlying."""
+        chain = self.get_option_chain(underlying_symbol)
+        return sorted(chain.keys())
+
+    # ========================================================================
+    # Order Placement & Management
+    # ========================================================================
+
+    def get_orders(
+        self,
+        account_number: str,
+        status: Optional[str] = None,
+        per_page: int = 50,
+    ) -> List[Dict]:
+        """Fetch orders for an account.
+
+        Args:
+            account_number: Account number.
+            status: Optional filter (e.g. "Received", "Filled", "Cancelled").
+            per_page: Page size.
+
+        Returns:
+            List of order dicts.
+        """
+        endpoint = f"{self.base_url}/accounts/{account_number}/orders"
+        params: Dict = {"per-page": per_page}
+        if status:
+            params["status"] = status
+
+        try:
+            data = self._get(endpoint, params=params)
+        except requests.exceptions.RequestException as exc:
+            logger.error("Failed to get orders for %s: %s", account_number, exc)
+            raise TastytradeError(f"Failed to get orders: {exc}") from exc
+
+        if "data" in data and "items" in data["data"]:
+            return data["data"]["items"]
+        elif "data" in data and isinstance(data["data"], list):
+            return data["data"]
+        return []
+
+    def place_order(
+        self,
+        account_number: str,
+        order_type: str,
+        time_in_force: str,
+        legs: List[Dict],
+        price: Optional[float] = None,
+    ) -> Optional[Dict]:
+        """Place an order (single or multi-leg).
+
+        Args:
+            account_number: Account to place order in.
+            order_type: "Limit", "Market", "Stop", "Stop Limit".
+            time_in_force: "Day", "GTC", "IOC".
+            legs: List of leg dicts, each with:
+                  instrument-type ("Equity Option"), action ("Buy to Open",
+                  "Sell to Open", etc.), symbol, quantity.
+            price: Net price for limit orders. Positive = debit,
+                   negative = credit.
+
+        Returns:
+            Order dict on success, None on failure.
+        """
+        payload: Dict = {
+            "order-type": order_type,
+            "time-in-force": time_in_force,
+            "legs": legs,
+        }
+        if price is not None:
+            payload["price"] = str(price)
+
+        endpoint = f"{self.base_url}/accounts/{account_number}/orders"
+        try:
+            data = self._post(endpoint, json_data=payload)
+            if "data" in data:
+                return data["data"]
+            return data
+        except requests.exceptions.RequestException as exc:
+            logger.error("Failed to place order: %s", exc)
+            return None
+
+    def cancel_order(self, account_number: str, order_id: str) -> bool:
+        """Cancel an order. Returns True on success."""
+        endpoint = f"{self.base_url}/accounts/{account_number}/orders/{order_id}"
+        self._ensure_authenticated()
+        try:
+            resp = self._session.delete(endpoint, timeout=10)
+            if resp.status_code == 401 and self._use_oauth:
+                self._oauth_authenticate()
+                resp = self._session.delete(endpoint, timeout=10)
+            return resp.status_code in (200, 204)
+        except requests.exceptions.RequestException:
+            return False
