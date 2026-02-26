@@ -1,7 +1,7 @@
 # Cursor Rules for IBKR Box Spread Generator
 
 ## Project Overview
-C++20 trading application for Interactive Brokers implementing box spread arbitrage. Uses CMake, Python bindings (Cython), and multi-language agents (Rust, Go, TypeScript).
+Comprehensive multi-asset synthetic financing optimization platform. Manages financing across options, futures, bonds, bank loans, and pension funds with unified portfolio management, cash flow modeling, opportunity simulation, and multi-instrument relationship optimization across 21+ accounts and multiple brokers (IBKR, Alpaca, Tradier, Tastytrade). Box spreads are one active strategy component (7-10% of portfolio, spare cash allocation for T-bill-equivalent yields). C++20 core engine with CMake, Python bindings (Cython/NautilusTrader), and multi-language agents (Rust, Go, TypeScript). Multi-platform: CLI, TUI (Python/Textual), Web (React), iOS/iPad (SwiftUI), Desktop (Swift/AppKit).
 
 ## Code Style & Conventions
 

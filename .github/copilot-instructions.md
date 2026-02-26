@@ -2,40 +2,67 @@
 
 This repository follows the comprehensive guidelines in [AGENTS.md](../AGENTS.md).
 
-## Quick Reference
+## Project
 
-### Code Style
-- **C++20** standard, **2-space indentation**, Allman braces
-- **snake_case** for functions/variables, **PascalCase** for types
-- Constants prefixed with `k` (e.g., `kMaxPositions`)
+Comprehensive multi-asset synthetic financing platform. Manages financing across options, futures, bonds, loans, and pension funds with unified portfolio management across 21+ accounts and multiple brokers (IBKR, Alpaca, Tradier, Tastytrade). Box spreads are one active strategy (spare cash, T-bill-equivalent yields). Multi-language: C++ core, Python integration, Rust backend. Multi-platform: CLI, TUI, Web, iOS/iPad, Desktop.
 
-### Project Structure
-- Core C++ logic: `native/src/` with headers in `native/include/`
-- Python integration: `python/`
-- Tests: `native/tests/` (mirror source file names)
-- Documentation: `docs/`
+## Structure
 
-### Build Commands
+| Directory | Contents |
+|-----------|----------|
+| `native/src/` | C++ source files |
+| `native/include/` | C++ headers |
+| `native/tests/` | Catch2 tests (mirror source names with `test_` prefix) |
+| `native/CMakeLists.txt` | Build definition |
+| `python/` | Python integration (TUI, bindings, tests) |
+| `agents/` | Rust backend services |
+| `config/` | Config templates |
+| `docs/` | Documentation |
+
+## Code Style
+
+- **C++20**, 2-space indentation, Allman braces, 100-char lines
+- Types: `PascalCase` (`Scenario`, `OrderManager`)
+- Functions/variables: `snake_case` (`make_scenario`, `strike_price`)
+- Constants: `k` prefix (`kMaxPositions`, `kDefaultPort`)
+- Comment only non-obvious trading math
+
+## Build & Test
+
 ```bash
-# Configure
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
-
-# Build
 ninja -C build
-
-# Test
 ctest --test-dir build --output-on-failure
+./scripts/run_linters.sh
 ```
 
-### Key Documentation
-- **API Reference**: `docs/API_DOCUMENTATION_INDEX.md`
-- **Architecture**: `docs/research/architecture/`
-- **MCP Tools**: `.cursor/mcp.json`
+## Key Files
 
-## Important Conventions
+| File | Purpose |
+|------|---------|
+| `native/src/ib_box_spread.cpp` | CLI entry point |
+| `native/src/risk_calculator.cpp` | Risk calculations |
+| `native/src/greeks_calculator.cpp` | Options Greeks |
+| `native/src/order_manager.cpp` | Order lifecycle |
+| `native/src/tws_client.cpp` | TWS API wrapper |
+| `native/include/types.h` | Core type definitions |
+| `ARCHITECTURE.md` | System architecture |
 
-1. **Trading Logic**: Always include tests for pricing calculations
-2. **Security**: Never commit credentials; use paper trading port (7497)
-3. **Dependencies**: Point to IB API at `~/IBJts/source/cppclient`
+## Dependencies
+
+FetchContent: nlohmann/json (3.11.3), spdlog (1.13.0), CLI11 (2.4.1), Catch2 (3.5.2), Eigen3 (3.4.0), QuantLib (1.36), NLopt (2.9.1).
+Vendored: TWS API, Intel Decimal. System: Boost (Homebrew).
+
+## Safety Rules
+
+- Never commit credentials or API keys
+- Paper trading port 7497 only
+- Never modify `native/third_party/` — use wrappers
+- All trading/risk calculations must have Catch2 tests
+- Imperative commit messages, 72-char subject lines
+
+## Python
+
+Prefer `uv` for package management. Fallback: `pip`.
 
 For complete guidelines, see [AGENTS.md](../AGENTS.md).

@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ninja -C build*)",
+      "Bash(ctest --test-dir build*)",
+      "Bash(cmake -S . -B build*)",
+      "Bash(cmake --build build*)",
+      "Bash(./scripts/build_universal.sh*)",
+      "Bash(./scripts/run_linters.sh*)",
+      "Bash(./build/ib_box_spread*)",
+      "Bash(./build/bin/ib_box_spread*)",
+      "Bash(open build/ib_box_spread_app.app*)",
+      "Bash(uv sync*)",
+      "Bash(uv run*)",
+      "Bash(uv pip*)",
+      "Bash(python -m pytest*)",
+      "Bash(ls *)",
+      "Bash(pwd)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git branch*)",
+      "Bash(git show*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git stash*)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)",
+      "Bash(rm -rf /*)"]
+  }
+}
