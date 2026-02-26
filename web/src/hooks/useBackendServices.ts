@@ -26,6 +26,7 @@ export interface BackendServicesStatus {
   discountBank: BackendServiceStatus;
   riskFreeRate: BackendServiceStatus;
   tastytrade: BackendServiceStatus;
+  tradier: BackendServiceStatus;
   rustBackend: BackendServiceStatus;
 }
 
@@ -36,6 +37,7 @@ const SERVICE_CONFIG = {
   discountBank: { name: 'Discount Bank', port: SERVICE_PORTS.discountBank, healthPath: '/api/health' },
   riskFreeRate: { name: 'Risk-Free Rate', port: SERVICE_PORTS.riskFreeRate, healthPath: '/api/health' },
   tastytrade: { name: 'Tastytrade', port: SERVICE_PORTS.tastytrade, healthPath: '/api/health' },
+  tradier: { name: 'Tradier', port: SERVICE_PORTS.tradier, healthPath: '/api/health' },
   rustBackend: { name: 'Rust Backend', port: SERVICE_PORTS.rustBackend, healthPath: '/health' },
 } as const;
 

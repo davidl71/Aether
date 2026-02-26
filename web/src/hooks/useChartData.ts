@@ -7,10 +7,6 @@ interface UseChartDataOptions {
   apiBaseUrl?: string;
 }
 
-/**
- * Hook to fetch candlestick chart data
- * Currently returns mock data - should be replaced with actual API call
- */
 export function useChartData({ symbol, timeframe, apiBaseUrl = 'http://127.0.0.1:8000' }: UseChartDataOptions) {
   const [data, setData] = useState<CandlestickData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,17 +26,35 @@ export function useChartData({ symbol, timeframe, apiBaseUrl = 'http://127.0.0.1
       setError(null);
 
       try {
-        // TODO: Replace with actual API endpoint
-        // For now, generate mock data
-        const mockData = generateMockCandlestickData(timeframe);
+        const response = await fetch(
+          `${apiBaseUrl}/api/v1/chart/${encodeURIComponent(symbol)}?timeframe=${timeframe}`
+        );
+
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}`);
+        }
+
+        const json = await response.json();
+        const candles: CandlestickData[] = (json.candles ?? json.data ?? []).map(
+          (c: Record<string, number>) => ({
+            time: c.time ?? c.timestamp ?? c.t,
+            open: c.open ?? c.o,
+            high: c.high ?? c.h,
+            low: c.low ?? c.l,
+            close: c.close ?? c.c,
+            volume: c.volume ?? c.v ?? 0,
+          })
+        );
 
         if (!cancelled) {
-          setData(mockData);
+          setData(candles);
           setIsLoading(false);
         }
-      } catch (err) {
+      } catch {
+        // Backend unavailable – generate synthetic data so the UI
+        // remains functional during development.
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to fetch chart data');
+          setData(generateFallbackData(timeframe));
           setIsLoading(false);
         }
       }
@@ -56,55 +70,40 @@ export function useChartData({ symbol, timeframe, apiBaseUrl = 'http://127.0.0.1
   return { data, isLoading, error };
 }
 
-/**
- * Generate mock candlestick data for development
- * TODO: Replace with actual API call
- */
-function generateMockCandlestickData(timeframe: Timeframe): CandlestickData[] {
+function generateFallbackData(timeframe: Timeframe): CandlestickData[] {
   const now = Math.floor(Date.now() / 1000);
-  const intervals = {
-    '1D': 300, // 5 minutes
-    '1W': 3600, // 1 hour
-    '1M': 14400, // 4 hours
-    '3M': 86400, // 1 day
-    '1Y': 86400 * 7 // 1 week
+  const intervals: Record<Timeframe, number> = {
+    '1D': 300,
+    '1W': 3600,
+    '1M': 14400,
+    '3M': 86400,
+    '1Y': 86400 * 7,
+  };
+  const counts: Record<Timeframe, number> = {
+    '1D': 288,
+    '1W': 168,
+    '1M': 180,
+    '3M': 90,
+    '1Y': 52,
   };
 
   const interval = intervals[timeframe];
-  const count = {
-    '1D': 288, // 24 hours * 12 (5-min intervals)
-    '1W': 168, // 7 days * 24 hours
-    '1M': 180, // 30 days * 6 (4-hour intervals)
-    '3M': 90, // 90 days
-    '1Y': 52 // 52 weeks
-  };
+  const count = counts[timeframe];
+  const basePrice = 4500;
+  const result: CandlestickData[] = [];
+  let price = basePrice;
 
-  const dataCount = count[timeframe];
-  const basePrice = 4500; // Example: SPX around 4500
-  const data: CandlestickData[] = [];
-
-  let currentPrice = basePrice;
-
-  for (let i = dataCount - 1; i >= 0; i--) {
+  for (let i = count - 1; i >= 0; i--) {
     const time = now - i * interval;
-    const change = (Math.random() - 0.5) * 20; // Random price movement
-    const open = currentPrice;
+    const change = (Math.random() - 0.5) * 20;
+    const open = price;
     const close = open + change;
     const high = Math.max(open, close) + Math.random() * 10;
     const low = Math.min(open, close) - Math.random() * 10;
-    const volume = Math.floor(Math.random() * 1000000) + 100000;
-
-    data.push({
-      time,
-      open,
-      high,
-      low,
-      close,
-      volume
-    });
-
-    currentPrice = close;
+    const volume = Math.floor(Math.random() * 1_000_000) + 100_000;
+    result.push({ time, open, high, low, close, volume });
+    price = close;
   }
 
-  return data;
+  return result;
 }

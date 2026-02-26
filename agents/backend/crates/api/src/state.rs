@@ -12,6 +12,7 @@ pub type SharedSnapshot = Arc<RwLock<SystemSnapshot>>;
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SystemSnapshot {
   pub generated_at: DateTime<Utc>,
+  pub started_at: DateTime<Utc>,
   pub mode: String,
   pub strategy: String,
   pub account_id: String,
@@ -32,6 +33,7 @@ impl std::fmt::Debug for SystemSnapshot {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("SystemSnapshot")
       .field("generated_at", &self.generated_at)
+      .field("started_at", &self.started_at)
       .field("mode", &self.mode)
       .field("strategy", &self.strategy)
       .field("account_id", &self.account_id)
@@ -52,6 +54,7 @@ impl Default for SystemSnapshot {
   fn default() -> Self {
     Self {
       generated_at: Utc::now(),
+      started_at: Utc::now(),
       mode: "DRY-RUN".into(),
       strategy: "IDLE".into(),
       account_id: "DU123456".into(),

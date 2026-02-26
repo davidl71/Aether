@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "config_manager.h"
+#include <Eigen/Dense>
 #include <vector>
 #include <optional>
 
@@ -124,6 +125,12 @@ public:
     double calculate_correlation_risk(
         const std::vector<types::Position>& positions
     ) const __attribute__((pure));
+
+    // Build a proper correlation matrix from pre-computed daily return series.
+    // returns_matrix[i] holds the daily return vector for asset i.
+    Eigen::MatrixXd calculate_correlation_from_returns(
+        const std::vector<std::vector<double>>& returns_matrix
+    ) const;
 
     // ========================================================================
     // Risk Limits and Validation

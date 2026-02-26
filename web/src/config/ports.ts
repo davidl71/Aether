@@ -27,6 +27,7 @@ export const SERVICE_PORTS = {
   discountBank: getEnvVar('VITE_DISCOUNT_BANK_PORT', 8003),
   riskFreeRate: getEnvVar('VITE_RISK_FREE_RATE_PORT', 8004),
   tastytrade: getEnvVar('VITE_TASTYTRADE_PORT', 8005),
+  tradier: getEnvVar('VITE_TRADIER_PORT', 8006),
   rustBackend: getEnvVar('VITE_RUST_BACKEND_REST_PORT', 8080),
 } as const;
 

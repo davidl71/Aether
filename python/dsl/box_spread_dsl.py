@@ -6,10 +6,25 @@ Provides fluent interface for defining box spread synthetic financing scenarios.
 
 from typing import Optional, List
 from decimal import Decimal
+import logging
 from .types import (
     Rate, StrikeWidth, Expiration, Money,
     Direction, Benchmark, LiquidityConstraints
 )
+
+logger = logging.getLogger(__name__)
+
+try:
+    from python.integration.box_spread_strategy import BoxSpreadStrategy as _PyStrategy
+except ImportError:
+    _PyStrategy = None
+
+try:
+    from python.bindings.box_spread_bindings import (
+        PyBoxSpreadStrategy as _CppStrategy,
+    )
+except ImportError:
+    _CppStrategy = None
 
 
 class BoxSpreadResult:
@@ -146,14 +161,10 @@ class BoxSpread:
         return errors
 
     def evaluate(self) -> BoxSpreadResult:
-        """Evaluate scenario and return result
+        """Evaluate scenario against live/cached market data.
 
-        Note: This is a stub implementation. Full implementation would:
-        1. Call C++ bindings to get option chain data
-        2. Find box spreads matching criteria
-        3. Calculate implied rates
-        4. Filter by constraints
-        5. Return opportunities
+        Attempts C++ bindings first for performance, then falls back to
+        the pure-Python BoxSpreadStrategy in ``python/integration/``.
 
         Returns:
             BoxSpreadResult with opportunities and errors
@@ -162,15 +173,58 @@ class BoxSpread:
         if errors:
             return BoxSpreadResult(scenario=self, errors=errors)
 
-        # C++ bindings integration deferred -- Python port in
-        # python/integration/box_spread_strategy.py provides full
-        # functionality.  Only add native bindings if profiling shows
-        # Python is a bottleneck.
-        return BoxSpreadResult(
-            scenario=self,
-            opportunities=[],
-            errors=[]
-        )
+        min_rate = float(self.min_implied_rate.to_percent()) if self.min_implied_rate else 0.0
+        strike_w = float(self.strike_width.value) if self.strike_width else 0.0
+        expiry = self.expiration.date if self.expiration else None
+
+        # Attempt 1: C++ native bindings
+        if _CppStrategy is not None:
+            try:
+                cpp = _CppStrategy(min_roi=min_rate, max_position_size=10)
+                raw = cpp.find_box_spreads(self.symbol)
+                opportunities = self._filter(raw, strike_w, expiry, min_rate)
+                if opportunities:
+                    logger.debug("C++ bindings returned %d opportunities", len(opportunities))
+                    return BoxSpreadResult(scenario=self, opportunities=opportunities)
+            except Exception as exc:
+                logger.warning("C++ evaluation failed, falling back to Python: %s", exc)
+
+        # Attempt 2: pure-Python strategy
+        if _PyStrategy is not None:
+            try:
+                py_strat = _PyStrategy(
+                    min_roi=min_rate,
+                    min_days_to_expiry=7,
+                    max_days_to_expiry=365,
+                )
+                raw = py_strat.find_opportunities(self.symbol)
+                opportunities = self._filter(raw, strike_w, expiry, min_rate)
+                if opportunities:
+                    logger.debug("Python strategy returned %d opportunities", len(opportunities))
+                    return BoxSpreadResult(scenario=self, opportunities=opportunities)
+            except Exception as exc:
+                logger.warning("Python strategy evaluation failed: %s", exc)
+
+        return BoxSpreadResult(scenario=self, opportunities=[], errors=[])
+
+    def _filter(self, raw: list, strike_w: float, expiry: Optional[str], min_rate: float) -> list:
+        """Apply DSL constraints (strike width, expiry, rate, liquidity)."""
+        filtered = []
+        for opp in raw:
+            sw = opp.get("strike_width", opp.get("high_strike", 0) - opp.get("low_strike", 0))
+            if strike_w > 0 and abs(sw - strike_w) > 0.01:
+                continue
+            if expiry and opp.get("expiry", "") != expiry.replace("-", ""):
+                continue
+            if opp.get("roi_percent", 0) < min_rate:
+                continue
+            if self.liquidity:
+                vol = opp.get("volume", 0)
+                oi = opp.get("open_interest", 0)
+                if vol < self.liquidity.min_volume or oi < self.liquidity.min_open_interest:
+                    continue
+            filtered.append(opp)
+        return filtered
 
     def to_cpp(self) -> str:
         """Generate C++ code for this scenario

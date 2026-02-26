@@ -185,7 +185,7 @@ class BoxSpreadAlgorithm(QCAlgorithm):
 
         Args:
             symbol: Underlying symbol
-            cpp_options: List of C++ option dictionaries
+            cpp_options: List of C++ option dictionaries with 'contract' and 'market_data' keys
 
         Returns:
             List of opportunity dictionaries
@@ -194,16 +194,94 @@ class BoxSpreadAlgorithm(QCAlgorithm):
             return []
 
         try:
-            # Group options by expiry for C++ processing
-            # Note: This is a simplified version - full implementation would
-            # build a proper OptionChain structure for C++
+            # Group options by expiry date
+            by_expiry: Dict[str, List[Dict]] = {}
+            for opt in cpp_options:
+                contract = opt.get("contract")
+                if contract is None:
+                    continue
+                expiry = contract.expiry
+                by_expiry.setdefault(expiry, []).append(opt)
+
             opportunities = []
 
-            # For now, return empty list - full implementation requires
-            # building C++ OptionChain from cpp_options
-            # TODO: Implement full C++ OptionChain building
+            for expiry, expiry_opts in by_expiry.items():
+                # Separate calls and puts, keyed by strike
+                calls: Dict[float, Dict] = {}
+                puts: Dict[float, Dict] = {}
+                for opt in expiry_opts:
+                    contract = opt["contract"]
+                    md = opt.get("market_data")
+                    if md is None:
+                        continue
+                    strike = contract.strike
+                    if contract.type == 0:  # Call
+                        calls[strike] = opt
+                    else:
+                        puts[strike] = opt
 
+                # Get sorted strikes that have both a call and a put
+                common_strikes = sorted(set(calls.keys()) & set(puts.keys()))
+                if len(common_strikes) < 2:
+                    continue
+
+                # Evaluate every pair of strikes as a box spread
+                for i, low_strike in enumerate(common_strikes):
+                    for high_strike in common_strikes[i + 1:]:
+                        long_call = calls[low_strike]
+                        short_call = calls[high_strike]
+                        long_put = puts[high_strike]
+                        short_put = puts[low_strike]
+
+                        lc_md = long_call["market_data"]
+                        sc_md = short_call["market_data"]
+                        lp_md = long_put["market_data"]
+                        sp_md = short_put["market_data"]
+
+                        # Require valid bid/ask on all legs
+                        if any(
+                            getattr(m, "bid", 0) <= 0 or getattr(m, "ask", 0) <= 0
+                            for m in [lc_md, sc_md, lp_md, sp_md]
+                        ):
+                            continue
+
+                        lc_mid = (lc_md.bid + lc_md.ask) / 2.0
+                        sc_mid = (sc_md.bid + sc_md.ask) / 2.0
+                        lp_mid = (lp_md.bid + lp_md.ask) / 2.0
+                        sp_mid = (sp_md.bid + sp_md.ask) / 2.0
+
+                        strike_width = high_strike - low_strike
+                        net_debit = (lc_mid - sc_mid) + (lp_mid - sp_mid)
+                        theoretical = strike_width
+                        profit = theoretical - net_debit
+
+                        if net_debit <= 0 or profit <= 0:
+                            continue
+
+                        roi = (profit / net_debit) * 100.0
+
+                        if roi < self.min_roi:
+                            continue
+
+                        opportunities.append({
+                            "symbol": symbol,
+                            "expiry": expiry,
+                            "low_strike": low_strike,
+                            "high_strike": high_strike,
+                            "net_debit": net_debit,
+                            "theoretical_value": theoretical,
+                            "profit": profit,
+                            "roi_percent": roi,
+                            "long_call": long_call["contract"],
+                            "short_call": short_call["contract"],
+                            "long_put": long_put["contract"],
+                            "short_put": short_put["contract"],
+                        })
+
+            # Sort by ROI descending
+            opportunities.sort(key=lambda x: x.get("roi_percent", 0), reverse=True)
             return opportunities
+
         except Exception as e:
             self.Log(f"Error in C++ box spread detection: {e}")
             return []

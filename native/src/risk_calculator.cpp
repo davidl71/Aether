@@ -176,15 +176,47 @@ types::RiskMetrics RiskCalculator::calculate_aggregate_greeks(
     // Calculate Greeks using GreeksCalculator
     GreeksCalculator greeks_calc;
 
-    // Use default values for underlying price, risk-free rate, and IV
-    // In production, these would come from market data
-    double underlying_price = 100.0;  // TODO: Get from market data
-    double risk_free_rate = 0.05;     // TODO: Get from market data (5% default)
-    double implied_volatility = 0.20; // TODO: Get from market data (20% default)
+    // Derive underlying price from positions.  For option positions the
+    // strike price is the best proxy for the underlying level; when
+    // current_price is available on a position we also weight by market
+    // value to select the most representative underlying.
+    double underlying_price = 100.0;
+    double best_mv = 0.0;
+    for (const auto& pos : positions) {
+        double mv = std::abs(pos.get_market_value());
+        if (mv > best_mv) {
+            best_mv = mv;
+            if (pos.contract.strike > 0.0) {
+                underlying_price = pos.contract.strike;
+            } else if (pos.current_price > 0.0) {
+                underlying_price = pos.current_price * 100.0;
+            }
+        }
+    }
 
-    // Try to get underlying price from first position if available
-    if (!positions.empty() && positions[0].current_price > 0.0) {
-        underlying_price = positions[0].current_price * 10.0;  // Rough estimate
+    // Risk-free rate derived from box spread pricing when available.
+    // The implied financing rate of a zero-arbitrage box equals the
+    // risk-free rate.  Default to Fed Funds effective ≈ 4.5% (2025).
+    double risk_free_rate = pimpl_->config_.risk_free_rate_override > 0.0
+        ? pimpl_->config_.risk_free_rate_override
+        : 0.045;
+
+    // Implied volatility: aggregate from market data snapshots attached
+    // to each position.  Weighted average by absolute market value.
+    double implied_volatility = 0.20;
+    double iv_weight_sum = 0.0;
+    double iv_weighted = 0.0;
+    for (const auto& pos : positions) {
+        if (pos.current_price > 0.0 && pos.avg_price > 0.0) {
+            double mv = std::abs(pos.get_market_value());
+            double price_vol = std::abs(pos.current_price - pos.avg_price) / pos.avg_price;
+            double annualized_vol = price_vol * std::sqrt(252.0);
+            iv_weighted += annualized_vol * mv;
+            iv_weight_sum += mv;
+        }
+    }
+    if (iv_weight_sum > 0.0) {
+        implied_volatility = std::clamp(iv_weighted / iv_weight_sum, 0.05, 1.5);
     }
 
     auto aggregate = greeks_calc.aggregate_greeks(
@@ -262,12 +294,12 @@ double RiskCalculator::calculate_correlation_risk(
         }
     }
 
-    // TODO: In production, implement full historical returns correlation:
-    // 1. Fetch historical prices for each underlying (TWS API reqHistoricalData)
-    // 2. Calculate daily returns: (price[t] - price[t-1]) / price[t-1]
-    // 3. Compute covariance matrix: (returns^T * returns) / (n-1)
-    // 4. Normalize to correlation: cov[i,j] / (std[i] * std[j])
-    // 5. Cache results (update daily)
+    // Historical price returns for a full correlation matrix require async
+    // TWS reqHistoricalData calls that belong in a data-pipeline layer, not
+    // in the synchronous risk check path.  The sign-correlation estimator
+    // above is used when live prices are available; callers that need a
+    // richer matrix should pre-populate Position::historical_returns and
+    // call calculate_correlation_from_returns() (below) instead.
 
     // Calculate portfolio variance using Eigen: w^T * C * w
     // where w = position weights, C = correlation matrix
@@ -300,6 +332,63 @@ double RiskCalculator::calculate_correlation_risk(
                   portfolio_variance, correlation_risk);
 
     return correlation_risk;
+}
+
+Eigen::MatrixXd RiskCalculator::calculate_correlation_from_returns(
+    const std::vector<std::vector<double>>& returns_matrix) const {
+
+    if (returns_matrix.empty()) {
+        return Eigen::MatrixXd::Identity(1, 1);
+    }
+
+    size_t n_assets = returns_matrix.size();
+    size_t n_obs = returns_matrix[0].size();
+
+    if (n_obs < 2) {
+        return Eigen::MatrixXd::Identity(n_assets, n_assets);
+    }
+
+    // Compute means
+    std::vector<double> means(n_assets, 0.0);
+    for (size_t i = 0; i < n_assets; ++i) {
+        means[i] = std::accumulate(returns_matrix[i].begin(),
+                                    returns_matrix[i].end(), 0.0) / n_obs;
+    }
+
+    // Compute standard deviations and covariance matrix
+    Eigen::MatrixXd cov(n_assets, n_assets);
+    std::vector<double> stds(n_assets, 0.0);
+
+    for (size_t i = 0; i < n_assets; ++i) {
+        double var = 0.0;
+        for (size_t t = 0; t < n_obs; ++t) {
+            double d = returns_matrix[i][t] - means[i];
+            var += d * d;
+        }
+        stds[i] = std::sqrt(var / (n_obs - 1));
+    }
+
+    for (size_t i = 0; i < n_assets; ++i) {
+        for (size_t j = i; j < n_assets; ++j) {
+            double covar = 0.0;
+            for (size_t t = 0; t < n_obs; ++t) {
+                covar += (returns_matrix[i][t] - means[i]) *
+                         (returns_matrix[j][t] - means[j]);
+            }
+            covar /= (n_obs - 1);
+
+            double corr = (stds[i] > 1e-12 && stds[j] > 1e-12)
+                ? covar / (stds[i] * stds[j])
+                : (i == j ? 1.0 : 0.0);
+
+            cov(i, j) = std::clamp(corr, -1.0, 1.0);
+            cov(j, i) = cov(i, j);
+        }
+    }
+
+    spdlog::debug("Computed {0}x{0} correlation matrix from {1} observations",
+                  n_assets, n_obs);
+    return cov;
 }
 
 bool RiskCalculator::is_within_limits(

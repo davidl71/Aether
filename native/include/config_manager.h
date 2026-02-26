@@ -100,6 +100,7 @@ struct RiskConfig {
     double position_size_percent = 0.1;         // Position size as % of account
     bool enable_stop_loss = true;
     double stop_loss_percent = 0.2;             // Stop loss at 20% of investment
+    double risk_free_rate_override = 0.0;       // 0 = auto-detect from market data
 };
 
 // ============================================================================

@@ -13,6 +13,8 @@
 #include <cstdlib>
 #include <sstream>
 #include <algorithm>
+#include <fstream>
+#include <nlohmann/json.hpp>
 
 #include "config_manager.h"
 #include "tws_client.h"
@@ -141,6 +143,118 @@ namespace {
             spdlog::warn("  Errors (last hour): {}", health.error_count_last_hour);
         }
         spdlog::info("═══════════════════════════════════════");
+    }
+
+    void write_snapshot_json(
+        const std::string& output_path,
+        const SystemHealth& health,
+        const config::Config& cfg,
+        strategy::BoxSpreadStrategy* strategy,
+        order::OrderManager* order_manager
+    ) {
+        namespace fs = std::filesystem;
+        using json = nlohmann::json;
+
+        try {
+            json snapshot;
+
+            auto now = std::chrono::system_clock::now();
+            auto epoch = std::chrono::duration_cast<std::chrono::milliseconds>(
+                now.time_since_epoch()
+            ).count();
+            snapshot["generated_at"] = epoch;
+            snapshot["mode"] = cfg.dry_run ? "DRY-RUN" : "LIVE";
+            snapshot["strategy"] = health.tws_connected ? "RUNNING" : "IDLE";
+
+            // Symbols from strategy configuration
+            json symbols_arr = json::array();
+            for (const auto& sym : cfg.strategy.symbols) {
+                json sym_obj;
+                sym_obj["symbol"] = sym;
+                sym_obj["last"] = 0.0;
+                sym_obj["bid"] = 0.0;
+                sym_obj["ask"] = 0.0;
+                sym_obj["spread"] = 0.0;
+                sym_obj["candle"] = {
+                    {"open", 0.0}, {"high", 0.0}, {"low", 0.0}, {"close", 0.0}, {"volume", 0}
+                };
+                symbols_arr.push_back(sym_obj);
+            }
+            snapshot["symbols"] = symbols_arr;
+
+            // Positions
+            json positions_arr = json::array();
+            if (strategy) {
+                auto positions = strategy->get_active_positions();
+                for (const auto& pos : positions) {
+                    json p;
+                    p["symbol"] = pos.contract.symbol;
+                    p["quantity"] = pos.quantity;
+                    p["avg_price"] = pos.avg_price;
+                    p["current_price"] = pos.current_price;
+                    p["unrealized_pnl"] = pos.get_unrealized_pnl();
+                    p["market_value"] = pos.get_market_value();
+                    positions_arr.push_back(p);
+                }
+            }
+            snapshot["positions"] = positions_arr;
+
+            // Orders
+            json orders_arr = json::array();
+            if (order_manager) {
+                auto stats = order_manager->get_statistics();
+                json o;
+                o["total_placed"] = stats.total_orders_placed;
+                o["total_filled"] = stats.total_orders_filled;
+                o["total_cancelled"] = stats.total_orders_cancelled;
+                o["efficiency_ratio"] = stats.efficiency_ratio;
+                orders_arr.push_back(o);
+            }
+            snapshot["orders"] = orders_arr;
+
+            // Alerts
+            json alerts_arr = json::array();
+            if (!health.last_error.empty()) {
+                json alert;
+                alert["level"] = "ERROR";
+                alert["message"] = health.last_error;
+                alert["timestamp"] = epoch;
+                alerts_arr.push_back(alert);
+            }
+            snapshot["alerts"] = alerts_arr;
+
+            // Metrics
+            snapshot["metrics"] = {
+                {"tws_connected", health.tws_connected},
+                {"active_positions", health.active_positions},
+                {"pending_orders", health.pending_orders},
+                {"efficiency_ratio", health.efficiency_ratio},
+                {"error_count_last_hour", health.error_count_last_hour},
+            };
+
+            // Atomic write: write to temp file, then rename
+            fs::path out_path(output_path);
+            fs::path parent = out_path.parent_path();
+            if (!parent.empty()) {
+                fs::create_directories(parent);
+            }
+
+            fs::path tmp_path = out_path;
+            tmp_path += ".tmp";
+            {
+                std::ofstream ofs(tmp_path, std::ios::trunc);
+                if (!ofs.is_open()) {
+                    spdlog::warn("Failed to open snapshot temp file: {}", tmp_path.string());
+                    return;
+                }
+                ofs << snapshot.dump(2);
+            }
+            fs::rename(tmp_path, out_path);
+            spdlog::debug("Wrote snapshot to {}", output_path);
+
+        } catch (const std::exception& e) {
+            spdlog::warn("Failed to write snapshot JSON: {}", e.what());
+        }
     }
 
     void setup_logging(const config::LogConfig& log_config) {
@@ -325,6 +439,13 @@ int main(int argc, char** argv) {
 
     app.add_flag("--mock-tws", mock_tws,
                  "Use the in-process mock TWS client (no live IB connection required)");
+
+    bool no_snapshot = false;
+    std::string snapshot_path = "data/snapshot.json";
+    app.add_flag("--no-snapshot", no_snapshot,
+                 "Disable periodic JSON snapshot writing for PWA consumption");
+    app.add_option("--snapshot-path", snapshot_path,
+                  "Path for the JSON snapshot file (default: data/snapshot.json)");
 
     app.add_option("--log-level", log_level_override,
                   "Override log level (trace|debug|info|warn|error)")
@@ -794,6 +915,16 @@ int main(int argc, char** argv) {
                     );
 #endif
                     log_system_health(health);
+
+                    if (!no_snapshot) {
+                        write_snapshot_json(
+                            snapshot_path,
+                            health,
+                            config,
+                            strategy.get(),
+                            order_manager.get()
+                        );
+                    }
                 }
 
                 // Sleep to maintain loop timing
