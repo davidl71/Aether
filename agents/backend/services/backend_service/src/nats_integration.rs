@@ -6,7 +6,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use nats_adapter::{ChannelBridge, DlqService, NatsClient, Publisher, topics};
+use nats_adapter::{ChannelBridge, DlqService, NatsClient, ProtoPublisher, Publisher, topics};
+use nats_adapter::proto::v1 as pb;
 use strategy::{Decision as StrategyDecisionModel, StrategySignal};
 use tokio::sync::RwLock;
 use tracing::{error, info, warn};
@@ -16,17 +17,7 @@ pub struct NatsIntegration {
   client: Option<Arc<NatsClient>>,
   strategy_signal_publisher: Option<Arc<Publisher<StrategySignal>>>,
   strategy_decision_publisher: Option<Arc<Publisher<StrategyDecisionModel>>>,
-  // Cache publishers per symbol for market data
-  market_data_publishers: Arc<RwLock<HashMap<String, Arc<Publisher<MarketDataTick>>>>>,
-}
-
-/// Market data tick message for NATS
-#[derive(serde::Serialize, Clone, Debug)]
-struct MarketDataTick {
-  symbol: String,
-  bid: f64,
-  ask: f64,
-  timestamp: chrono::DateTime<chrono::Utc>,
+  market_data_publishers: Arc<RwLock<HashMap<String, Arc<ProtoPublisher<pb::MarketDataEvent>>>>>,
 }
 
 impl NatsIntegration {
@@ -79,35 +70,34 @@ impl NatsIntegration {
     })
   }
 
-  /// Publish market data tick (non-blocking, logs errors)
+  /// Publish market data tick as protobuf (non-blocking, logs errors)
   pub async fn publish_market_data(&self, symbol: &str, bid: f64, ask: f64) {
     if let Some(ref client) = self.client {
-      // Get or create publisher for this symbol
       let publisher = {
         let mut publishers = self.market_data_publishers.write().await;
         publishers
           .entry(symbol.to_string())
           .or_insert_with(|| {
-            let bridge = ChannelBridge::new(client.as_ref().clone());
-            let dlq = DlqService::new(client.as_ref().clone(), "backend");
-            Arc::new(bridge.create_publisher_with_dlq(
+            Arc::new(ProtoPublisher::new(
+              client.as_ref().clone(),
               topics::market_data::tick(symbol),
               "backend",
-              "MarketDataTick",
-              dlq,
+              "MarketDataEvent",
             ))
           })
           .clone()
       };
 
-      let tick = MarketDataTick {
+      let event = pb::MarketDataEvent {
         symbol: symbol.to_string(),
         bid,
         ask,
-        timestamp: chrono::Utc::now(),
+        last: (bid + ask) * 0.5,
+        volume: 0,
+        timestamp: Some(prost_types::Timestamp::from(std::time::SystemTime::now())),
       };
 
-      if let Err(e) = publisher.publish(tick).await {
+      if let Err(e) = publisher.publish(&event).await {
         error!(error = %e, symbol = %symbol, "Failed to publish market data to NATS");
       }
     }

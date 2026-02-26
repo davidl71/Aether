@@ -243,7 +243,7 @@ nats sub "system.dlq.>"
 ### New Files
 
 - `agents/backend/crates/nats_adapter/src/dlq.rs` - DLQ service implementation
-- `docs/message_schemas/DeadLetterMessage.json` - DLQ message schema
+- `proto/messages.proto` - Canonical message schemas (replaced JSON schemas)
 - `docs/NATS_DLQ_IMPLEMENTATION.md` - This documentation
 
 ### Modified Files

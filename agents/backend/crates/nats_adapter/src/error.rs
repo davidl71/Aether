@@ -27,6 +27,12 @@ pub enum NatsAdapterError {
   #[error("Message encoding error: {0}")]
   Encoding(String),
 
+  #[error("Protobuf encode error: {0}")]
+  ProtoEncode(#[from] prost::EncodeError),
+
+  #[error("Protobuf decode error: {0}")]
+  ProtoDecode(#[from] prost::DecodeError),
+
   #[error("Bridge error: {0}")]
   Bridge(String),
 }

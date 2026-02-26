@@ -1,12 +1,14 @@
 //! NATS request-reply RPC layer.
 //!
-//! Services register handlers on well-known subjects.  Callers use
-//! `request` to send a payload and await a single response, replacing
-//! HTTP round-trips with a NATS hop.
+//! Two encoding paths:
+//!   - `request` / `serve`  -- JSON  (serde, backward-compat)
+//!   - `request_proto` / `serve_proto` -- protobuf (prost, preferred)
 
 use std::time::Duration;
 
 use bytes::Bytes;
+use futures::StreamExt;
+use prost::Message as ProstMessage;
 use serde::{de::DeserializeOwned, Serialize};
 use tracing::warn;
 
@@ -15,7 +17,10 @@ use crate::error::{NatsAdapterError, Result};
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(5);
 
-/// Send a request and await a response (typed).
+// ---------------------------------------------------------------------------
+// JSON path (backward-compatible)
+// ---------------------------------------------------------------------------
+
 pub async fn request<Req, Res>(
     client: &NatsClient,
     subject: &str,
@@ -28,7 +33,6 @@ where
     request_with_timeout(client, subject, payload, DEFAULT_TIMEOUT).await
 }
 
-/// Send a request with a custom timeout.
 pub async fn request_with_timeout<Req, Res>(
     client: &NatsClient,
     subject: &str,
@@ -40,21 +44,17 @@ where
     Res: DeserializeOwned,
 {
     let body = serde_json::to_vec(payload).map_err(NatsAdapterError::Serialization)?;
-    let msg = client
-        .client()
-        .request(subject.into(), Bytes::from(body))
-        .await
-        .map_err(|e| NatsAdapterError::Publish(format!("request to {subject}: {e}")))?;
+    let msg = tokio::time::timeout(
+        timeout,
+        client.client().request(subject.into(), Bytes::from(body)),
+    )
+    .await
+    .map_err(|_| NatsAdapterError::Publish(format!("request to {subject}: timeout")))?
+    .map_err(|e| NatsAdapterError::Publish(format!("request to {subject}: {e}")))?;
 
-    // Check for timeout (async-nats handles this differently)
     serde_json::from_slice(&msg.payload).map_err(NatsAdapterError::Serialization)
 }
 
-/// Register a handler for requests on a subject.
-///
-/// The handler receives the deserialized request and returns a
-/// serializable response.  Runs until the returned subscription is
-/// dropped.
 pub async fn serve<Req, Res, F, Fut>(
     client: &NatsClient,
     subject: &str,
@@ -79,7 +79,6 @@ where
                 Some(ref r) => r.clone(),
                 None => continue,
             };
-
             match serde_json::from_slice::<Req>(&msg.payload) {
                 Ok(req) => {
                     let res = handler(req).await;
@@ -100,7 +99,83 @@ where
     Ok(handle)
 }
 
-use futures::StreamExt;
+// ---------------------------------------------------------------------------
+// Protobuf path (preferred for cross-language services)
+// ---------------------------------------------------------------------------
+
+pub async fn request_proto<Req, Res>(
+    client: &NatsClient,
+    subject: &str,
+    payload: &Req,
+) -> Result<Res>
+where
+    Req: ProstMessage,
+    Res: ProstMessage + Default,
+{
+    request_proto_with_timeout(client, subject, payload, DEFAULT_TIMEOUT).await
+}
+
+pub async fn request_proto_with_timeout<Req, Res>(
+    client: &NatsClient,
+    subject: &str,
+    payload: &Req,
+    timeout: Duration,
+) -> Result<Res>
+where
+    Req: ProstMessage,
+    Res: ProstMessage + Default,
+{
+    let body = payload.encode_to_vec();
+    let msg = tokio::time::timeout(
+        timeout,
+        client.client().request(subject.into(), Bytes::from(body)),
+    )
+    .await
+    .map_err(|_| NatsAdapterError::Publish(format!("proto request to {subject}: timeout")))?
+    .map_err(|e| NatsAdapterError::Publish(format!("proto request to {subject}: {e}")))?;
+
+    Res::decode(msg.payload.as_ref()).map_err(NatsAdapterError::ProtoDecode)
+}
+
+pub async fn serve_proto<Req, Res, F, Fut>(
+    client: &NatsClient,
+    subject: &str,
+    handler: F,
+) -> Result<tokio::task::JoinHandle<()>>
+where
+    Req: ProstMessage + Default + Send + 'static,
+    Res: ProstMessage + Send + 'static,
+    F: Fn(Req) -> Fut + Send + Sync + 'static,
+    Fut: std::future::Future<Output = Res> + Send + 'static,
+{
+    let mut sub = client
+        .client()
+        .subscribe(subject.into())
+        .await
+        .map_err(|e| NatsAdapterError::Subscribe(format!("{e}")))?;
+
+    let nc = client.client().clone();
+    let handle = tokio::spawn(async move {
+        while let Some(msg) = sub.next().await {
+            let reply = match msg.reply {
+                Some(ref r) => r.clone(),
+                None => continue,
+            };
+            match Req::decode(msg.payload.as_ref()) {
+                Ok(req) => {
+                    let res = handler(req).await;
+                    let body = res.encode_to_vec();
+                    if let Err(e) = nc.publish(reply, Bytes::from(body)).await {
+                        warn!("proto rpc reply publish: {e}");
+                    }
+                }
+                Err(e) => warn!("proto rpc decode request: {e}"),
+            }
+        }
+    });
+
+    Ok(handle)
+}
 
 #[cfg(test)]
 mod tests {

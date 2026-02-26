@@ -330,6 +330,122 @@ where
   }
 }
 
+// ---------------------------------------------------------------------------
+// Proto-native publisher / subscriber (prost::Message types)
+// ---------------------------------------------------------------------------
+
+/// Publisher that encodes payloads as protobuf (no JSON envelope).
+pub struct ProtoPublisher<T: prost::Message> {
+  client: NatsClient,
+  subject: String,
+  source: String,
+  message_type: String,
+  _phantom: PhantomData<T>,
+}
+
+impl<T> ProtoPublisher<T>
+where
+  T: prost::Message + Send + Sync + 'static,
+{
+  pub fn new(
+    client: NatsClient,
+    subject: impl Into<String>,
+    source: impl Into<String>,
+    message_type: impl Into<String>,
+  ) -> Self {
+    Self {
+      client,
+      subject: subject.into(),
+      source: source.into(),
+      message_type: message_type.into(),
+      _phantom: PhantomData,
+    }
+  }
+
+  pub async fn publish(&self, payload: &T) -> Result<()> {
+    let bytes =
+      crate::serde::encode_envelope(&self.source, &self.message_type, payload)?;
+    self
+      .client
+      .client()
+      .publish(self.subject.clone(), bytes)
+      .await
+      .map_err(|e| {
+        error!(subject = %self.subject, error = %e, "proto publish failed");
+        NatsAdapterError::from(e)
+      })
+  }
+}
+
+impl<T: prost::Message> Clone for ProtoPublisher<T> {
+  fn clone(&self) -> Self {
+    Self {
+      client: self.client.clone(),
+      subject: self.subject.clone(),
+      source: self.source.clone(),
+      message_type: self.message_type.clone(),
+      _phantom: PhantomData,
+    }
+  }
+}
+
+/// Subscriber that decodes protobuf payloads from a NatsEnvelope.
+pub struct ProtoSubscriber<T: prost::Message + Default> {
+  client: NatsClient,
+  subject: String,
+  _phantom: PhantomData<T>,
+}
+
+impl<T> ProtoSubscriber<T>
+where
+  T: prost::Message + Default + Send + Sync + 'static,
+{
+  pub fn new(client: NatsClient, subject: impl Into<String>) -> Self {
+    Self {
+      client,
+      subject: subject.into(),
+      _phantom: PhantomData,
+    }
+  }
+
+  pub async fn spawn_bridge(
+    &self,
+    tx: mpsc::UnboundedSender<T>,
+  ) -> Result<tokio::task::JoinHandle<()>> {
+    let subject = self.subject.clone();
+    let mut subscriber = self
+      .client
+      .client()
+      .subscribe(subject.clone())
+      .await
+      .map_err(|e| {
+        error!(subject = %subject, error = %e, "proto subscribe failed");
+        NatsAdapterError::from(e)
+      })?;
+
+    info!(subject = %subject, "proto subscriber active");
+
+    let handle = tokio::spawn(async move {
+      while let Some(msg) = subscriber.next().await {
+        match crate::serde::extract_proto_payload::<T>(&msg.payload) {
+          Ok(payload) => {
+            if tx.send(payload).is_err() {
+              warn!("proto subscriber channel closed");
+              break;
+            }
+          }
+          Err(e) => {
+            error!(error = %e, subject = %subject, "proto decode failed");
+          }
+        }
+      }
+      info!(subject = %subject, "proto subscription closed");
+    });
+
+    Ok(handle)
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
