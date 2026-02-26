@@ -27,7 +27,7 @@ export function OrdersPanel({ orders, onCancelOrder, apiBaseUrl }: OrdersPanelPr
         onCancelOrder(orderId);
       } else {
         // Fallback: call API directly
-        const baseUrl = apiBaseUrl || 'http://127.0.0.1:8000';
+        const baseUrl = apiBaseUrl || 'http://127.0.0.1:8080';
         const response = await fetch(`${baseUrl}/api/v1/orders/cancel`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -554,28 +554,40 @@ class TUIApp(App):
             # Silently fail - bank accounts are optional
 
     def _update_box_spread_data(self) -> None:
-        """Update box spread data from file"""
+        """Update box spread data from REST API, falling back to local file"""
+        data = None
+
+        api_url = self.config.rest_endpoint.rsplit("/", 1)[0] + "/scenarios"
         try:
-            if not self._box_spread_file_path.exists():
-                logger.debug(f"Box spread data file not found: {self._box_spread_file_path}")
+            import requests as _req
+            resp = _req.get(api_url, timeout=2.0, headers={"Accept": "application/json"})
+            if resp.ok:
+                data = resp.json()
+        except Exception:
+            pass
+
+        if data is None:
+            try:
+                if not self._box_spread_file_path.exists():
+                    return
+                current_mtime = self._box_spread_file_path.stat().st_mtime
+                if hasattr(self, '_last_box_spread_mtime'):
+                    if current_mtime <= self._last_box_spread_mtime:
+                        return
+                self._last_box_spread_mtime = current_mtime
+                with open(self._box_spread_file_path, 'r') as f:
+                    data = json.load(f)
+            except Exception as e:
+                logger.error(f"Error reading box spread file: {e}")
                 return
 
-            # Check if file was modified
-            current_mtime = self._box_spread_file_path.stat().st_mtime
-            if hasattr(self, '_last_box_spread_mtime'):
-                if current_mtime <= self._last_box_spread_mtime:
-                    return  # No changes
-            self._last_box_spread_mtime = current_mtime
+        if data is None:
+            return
 
-            # Load data from file
-            with open(self._box_spread_file_path, 'r') as f:
-                data = json.load(f)
-
+        try:
             new_data = BoxSpreadPayload.from_dict(data)
             if new_data != self.box_spread_data:
                 self.box_spread_data = new_data
-
-                # Update scenarios tab
                 if self._scenarios_tab:
                     self._scenarios_tab.update_data(new_data)
         except Exception as e:
@@ -622,7 +634,7 @@ def create_provider_from_config(config: TUIConfig) -> Provider:
         return MockProvider(update_interval_ms=config.update_interval_ms)
 
     elif provider_type == "rest":
-        endpoint = config.rest_endpoint or "http://localhost:8080/api/snapshot"
+        endpoint = config.rest_endpoint or "http://localhost:8080/api/v1/snapshot"
         return RestProvider(
             endpoint=endpoint,
             update_interval_ms=config.update_interval_ms,

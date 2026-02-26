@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import type { BoxSpreadPayload, BoxSpreadScenario } from '../types';
+import { getRustBackendUrl } from '../config/ports';
 
 interface HookState {
   data: BoxSpreadPayload | null;
@@ -7,8 +8,8 @@ interface HookState {
   error: string | null;
 }
 
-const API_URL = 'http://127.0.0.1:8080/api/v1/scenarios';
 const STATIC_FALLBACK_URL = '/data/box_spread_sample.json';
+const POLL_INTERVAL_MS = 10_000;
 
 export function useBoxSpreadData(): HookState {
   const [state, setState] = useState<HookState>({
@@ -16,52 +17,65 @@ export function useBoxSpreadData(): HookState {
     isLoading: true,
     error: null
   });
+  const generationRef = useRef(0);
+  const usingApiRef = useRef(false);
 
-  useEffect(() => {
-    let isCancelled = false;
+  const fetchData = useCallback(async (gen: number) => {
+    const apiUrl = getRustBackendUrl('/api/v1/scenarios');
 
-    async function fetchData() {
-      try {
-        const response = await fetch(API_URL);
-        if (!response.ok) {
-          throw new Error(`API returned ${response.status}`);
-        }
-        const json = await response.json();
-        const payload = mapApiResponse(json);
-        if (!isCancelled) {
-          setState({ data: payload, isLoading: false, error: null });
-        }
-        return;
-      } catch {
-        // API unavailable -- fall back to static JSON
+    try {
+      const response = await fetch(apiUrl, {
+        headers: { 'cache-control': 'no-cache' },
+      });
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
       }
-
-      try {
-        const response = await fetch(STATIC_FALLBACK_URL);
-        if (!response.ok) {
-          throw new Error(`Static fallback failed with ${response.status}`);
-        }
-        const payload = (await response.json()) as BoxSpreadPayload;
-        if (!isCancelled) {
-          setState({ data: payload, isLoading: false, error: null });
-        }
-      } catch (err) {
-        if (!isCancelled) {
-          setState({
-            data: null,
-            isLoading: false,
-            error: err instanceof Error ? err.message : 'Unknown error',
-          });
-        }
+      const json = await response.json();
+      const payload = mapApiResponse(json);
+      if (gen === generationRef.current) {
+        usingApiRef.current = true;
+        setState({ data: payload, isLoading: false, error: null });
       }
+      return;
+    } catch {
+      // API unavailable -- fall back to static JSON
     }
 
-    void fetchData();
+    try {
+      const response = await fetch(STATIC_FALLBACK_URL);
+      if (!response.ok) {
+        throw new Error(`Static fallback failed with ${response.status}`);
+      }
+      const payload = (await response.json()) as BoxSpreadPayload;
+      if (gen === generationRef.current) {
+        usingApiRef.current = false;
+        setState({ data: payload, isLoading: false, error: null });
+      }
+    } catch (err) {
+      if (gen === generationRef.current) {
+        setState({
+          data: null,
+          isLoading: false,
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const gen = ++generationRef.current;
+
+    void fetchData(gen);
+
+    const intervalId = setInterval(() => {
+      void fetchData(gen);
+    }, POLL_INTERVAL_MS);
 
     return () => {
-      isCancelled = true;
+      generationRef.current++;
+      clearInterval(intervalId);
     };
-  }, []);
+  }, [fetchData]);
 
   return state;
 }

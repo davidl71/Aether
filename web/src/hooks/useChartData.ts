@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getRustBackendUrl } from '../config/ports';
 import type { CandlestickData, Timeframe } from '../types/chart';
 
 interface UseChartDataOptions {
@@ -7,10 +8,12 @@ interface UseChartDataOptions {
   apiBaseUrl?: string;
 }
 
-export function useChartData({ symbol, timeframe, apiBaseUrl = 'http://127.0.0.1:8000' }: UseChartDataOptions) {
+export function useChartData({ symbol, timeframe, apiBaseUrl }: UseChartDataOptions) {
   const [data, setData] = useState<CandlestickData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const resolvedBase = apiBaseUrl ?? getRustBackendUrl();
 
   useEffect(() => {
     let cancelled = false;
@@ -27,7 +30,7 @@ export function useChartData({ symbol, timeframe, apiBaseUrl = 'http://127.0.0.1
 
       try {
         const response = await fetch(
-          `${apiBaseUrl}/api/v1/chart/${encodeURIComponent(symbol)}?timeframe=${timeframe}`
+          `${resolvedBase}/api/v1/chart/${encodeURIComponent(symbol)}?timeframe=${timeframe}`
         );
 
         if (!response.ok) {
@@ -51,8 +54,6 @@ export function useChartData({ symbol, timeframe, apiBaseUrl = 'http://127.0.0.1
           setIsLoading(false);
         }
       } catch {
-        // Backend unavailable – generate synthetic data so the UI
-        // remains functional during development.
         if (!cancelled) {
           setData(generateFallbackData(timeframe));
           setIsLoading(false);
@@ -65,7 +66,7 @@ export function useChartData({ symbol, timeframe, apiBaseUrl = 'http://127.0.0.1
     return () => {
       cancelled = true;
     };
-  }, [symbol, timeframe, apiBaseUrl]);
+  }, [symbol, timeframe, resolvedBase]);
 
   return { data, isLoading, error };
 }

@@ -21,6 +21,7 @@ import { CandlestickChart } from './components/CandlestickChart';
 import { useChartData } from './hooks/useChartData';
 import { useTastytrade } from './hooks/useTastytrade';
 import { TastytradeDashboard } from './components/TastytradeDashboard';
+import { getRustBackendUrl } from './config/ports';
 import type { SnapshotPayload, SymbolSnapshot, PositionSnapshot } from './types/snapshot';
 import type { BoxSpreadSummary } from './types';
 import type { Timeframe } from './types/chart';
@@ -232,154 +233,100 @@ function App() {
     };
   }, [handleBuyCombo, handleSellCombo]);
 
+  const apiBaseUrl = getRustBackendUrl();
+
   const handleModeChange = useCallback(async (mode: 'PAPER' | 'LIVE') => {
     try {
-      // Get API URL from environment or use default
-      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
-      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
-
-      // Send mode change request to backend
-      const response = await fetch(`${baseUrl}/api/mode`, {
+      const response = await fetch(`${apiBaseUrl}/api/mode`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode })
       });
-
       if (response.ok) {
-        const data = await response.json();
-        console.log('Mode changed to:', data.mode);
-        // The snapshot will update on next poll with the new mode
+        console.log('Mode changed to:', (await response.json()).mode);
       } else {
         console.error('Failed to change mode:', response.statusText);
       }
     } catch (error) {
       console.error('Error changing mode:', error);
-      // If API call fails, still allow UI change (for development/offline)
     }
-  }, []);
+  }, [apiBaseUrl]);
 
   const handleAccountChange = useCallback(async (accountId: string | null) => {
     try {
-      // Get API URL from environment or use default
-      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
-      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
-
-      // Send account change request to backend
-      const response = await fetch(`${baseUrl}/api/account`, {
+      const response = await fetch(`${apiBaseUrl}/api/account`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ account_id: accountId })
       });
-
       if (response.ok) {
-        const data = await response.json();
-        console.log('Account changed to:', data.account_id);
-        // The snapshot will update on next poll with the new account
+        console.log('Account changed to:', (await response.json()).account_id);
       } else {
         console.error('Failed to change account:', response.statusText);
       }
     } catch (error) {
       console.error('Error changing account:', error);
     }
-  }, []);
+  }, [apiBaseUrl]);
 
   const handleStrategyStart = useCallback(async () => {
     try {
-      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
-      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
-
-      const response = await fetch(`${baseUrl}/api/v1/strategy/start`, {
+      const response = await fetch(`${apiBaseUrl}/api/v1/strategy/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
-
-      if (response.ok) {
-        console.log('Strategy started');
-        // Snapshot will update on next poll
-      } else {
-        console.error('Failed to start strategy:', response.statusText);
+      if (!response.ok) {
         alert(`Failed to start strategy: ${response.statusText}`);
       }
     } catch (error) {
-      console.error('Error starting strategy:', error);
       alert(`Error starting strategy: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }, []);
+  }, [apiBaseUrl]);
 
   const handleStrategyStop = useCallback(async () => {
     try {
-      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
-      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
-
-      const response = await fetch(`${baseUrl}/api/v1/strategy/stop`, {
+      const response = await fetch(`${apiBaseUrl}/api/v1/strategy/stop`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
-
-      if (response.ok) {
-        console.log('Strategy stopped');
-        // Snapshot will update on next poll
-      } else {
-        console.error('Failed to stop strategy:', response.statusText);
+      if (!response.ok) {
         alert(`Failed to stop strategy: ${response.statusText}`);
       }
     } catch (error) {
-      console.error('Error stopping strategy:', error);
       alert(`Error stopping strategy: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }, []);
+  }, [apiBaseUrl]);
 
   const handleDryRunToggle = useCallback(async (enabled: boolean) => {
     try {
-      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
-      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
-
-      const response = await fetch(`${baseUrl}/api/mode`, {
+      const response = await fetch(`${apiBaseUrl}/api/mode`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode: enabled ? 'DRY-RUN' : 'LIVE' })
       });
-
-      if (response.ok) {
-        console.log('Dry-run mode:', enabled ? 'enabled' : 'disabled');
-        // Snapshot will update on next poll
-      } else {
-        console.error('Failed to toggle dry-run:', response.statusText);
+      if (!response.ok) {
         alert(`Failed to toggle dry-run: ${response.statusText}`);
       }
     } catch (error) {
-      console.error('Error toggling dry-run:', error);
       alert(`Error toggling dry-run: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }, []);
+  }, [apiBaseUrl]);
 
   const handleCancelOrder = useCallback(async (orderId: string) => {
     try {
-      const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
-      const baseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
-
-      const response = await fetch(`${baseUrl}/api/v1/orders/cancel`, {
+      const response = await fetch(`${apiBaseUrl}/api/v1/orders/cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ order_id: orderId })
       });
-
-      if (response.ok) {
-        console.log(`Order ${orderId} cancelled`);
-        // Snapshot will update on next poll
-      } else {
-        console.error('Failed to cancel order:', response.statusText);
+      if (!response.ok) {
         throw new Error(response.statusText);
       }
     } catch (error) {
       console.error('Error cancelling order:', error);
       throw error;
     }
-  }, []);
-
-  // Get API base URL for account selector
-  const apiUrl = (import.meta as unknown as { env?: Record<string, unknown> }).env?.VITE_API_URL as string | undefined;
-  const apiBaseUrl = apiUrl ? apiUrl.replace('/api/snapshot', '') : 'http://127.0.0.1:8000';
+  }, [apiBaseUrl]);
 
   // Chart data for symbol modal
   const chartSymbol = modal?.type === 'symbol' ? modal.payload.symbol : '';

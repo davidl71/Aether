@@ -46,7 +46,7 @@ export function BrokerSelector({ currentBroker, onBrokerChange, apiBaseUrl }: Br
   const [isOpen, setIsOpen] = useState(false);
   const [availableBrokers, setAvailableBrokers] = useState<BrokerType[]>(['TWS', 'AUTO']);
 
-  const baseUrl = apiBaseUrl || 'http://127.0.0.1:8000';
+  const baseUrl = apiBaseUrl || 'http://127.0.0.1:8080';
 
   useEffect(() => {
     // Check which brokers are available

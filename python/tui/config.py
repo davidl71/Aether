@@ -32,7 +32,7 @@ class TUIConfig:
     using nlohmann/json
     """
     provider_type: str = "mock"  # "mock", "rest", "file", "ibkr_rest", "livevol", "nautilus"
-    rest_endpoint: str = "http://localhost:8080/api/snapshot"
+    rest_endpoint: str = "http://localhost:8080/api/v1/snapshot"
     update_interval_ms: int = 1000
     refresh_rate_ms: int = 500
     rest_timeout_ms: int = 5000
