@@ -1,0 +1,24 @@
+# Aider configuration
+# See: https://aider.chat/docs/config/aider_conf.html
+
+read:
+  - AGENTS.md
+  - ARCHITECTURE.md
+
+lint-cmd:
+  cpp: ./scripts/run_linters.sh
+  python: uv run ruff check
+
+test-cmd: ctest --test-dir build --output-on-failure
+
+auto-commits: false
+
+# Ignore vendored and generated code
+ignore:
+  - native/third_party/
+  - build/
+  - node_modules/
+  - .venv/
+  - __pycache__/
+  - "*.pb.cc"
+  - "*.pb.h"

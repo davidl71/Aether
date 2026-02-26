@@ -1,0 +1,28 @@
+---
+globs: native/src/**/*.cpp,native/include/**/*.h
+alwaysApply: false
+---
+
+# C++ Source Conventions
+
+When editing C++ source or header files in `native/`:
+
+## Style
+- C++20, 2-space indentation, Allman braces, 100-char soft wrap
+- Types: `PascalCase` — Functions/variables: `snake_case` — Constants: `kPrefixed`
+- Use `[[nodiscard]]` on functions whose return value must be checked
+- Use `std::optional` or `std::expected` over error codes where appropriate
+
+## Structure
+- Every `.cpp` in `native/src/` should have a corresponding `.h` in `native/include/`
+- New source files must be added to the SOURCES/HEADERS lists in `native/CMakeLists.txt`
+- Never modify code under `native/third_party/` — write wrappers instead
+
+## Financial Code
+- Use `double` (never `float`) for monetary values and prices
+- Comment non-obvious trading math (APR scaling, day-count conventions, multipliers)
+- All pricing and risk functions must have corresponding Catch2 tests
+
+## After Changes
+- Build: `ninja -C build`
+- Test: `ctest --test-dir build --output-on-failure`

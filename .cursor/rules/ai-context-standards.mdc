@@ -6,41 +6,74 @@ This project provides standard context files that AI coding assistants automatic
 
 ### Root-Level Files
 
-| File | Purpose | Tool Discovery |
-|------|---------|----------------|
-| `AGENTS.md` | Primary AI agent instructions | Cursor, Claude Code |
-| `CLAUDE.md` | Claude-specific instructions | Claude Code |
-| `CONTRIBUTING.md` | Contribution guidelines | All tools |
+| File | Purpose | Discovered By |
+|------|---------|---------------|
+| `AGENTS.md` | Primary AI agent instructions (canonical source) | Claude Code, Cursor, Codex, OpenCode, Aider |
+| `CLAUDE.md` | Claude-specific instructions and quick reference | Claude Code |
+| `CODEX.md` | OpenAI Codex instructions | Codex |
 | `ARCHITECTURE.md` | System architecture overview | All tools |
 | `README.md` | Project overview | All tools |
+| `CONTRIBUTING.md` | Contribution guidelines | All tools |
 
 ### Tool-Specific Files
 
 | File | Tool | Purpose |
 |------|------|---------|
+| `.cursorrules` | Cursor IDE | Project-wide rules |
+| `.cursor/rules/*.mdc` | Cursor IDE | Glob-based auto-attach rules |
+| `.cursor/commands.json` | Cursor IDE | Custom slash commands |
+| `.cursor/mcp.json` | Cursor IDE | MCP server configuration |
+| `.windsurfrules` | Windsurf IDE | Project rules |
+| `.clinerules` | Cline | Project rules |
 | `.github/copilot-instructions.md` | GitHub Copilot | Repository instructions |
-| `.cursor/rules/*.mdc` | Cursor | Glob-based rules |
-| `.cursor/mcp.json` | Cursor | MCP server configuration |
+| `.claude/settings.json` | Claude Code | Permissions and safety |
+| `.claude/agents/*.md` | Claude Code | Custom sub-agents |
+| `.aider.conf.yml` | Aider | Configuration, lint/test commands |
+| `.opencode.json` | OpenCode | Config, LSP servers |
+| `.opencode/commands/*.md` | OpenCode | Custom slash commands |
+
+### Custom Claude Agents
+
+| Agent | File | Purpose |
+|-------|------|---------|
+| `code-reviewer` | `.claude/agents/code-reviewer.md` | General code quality review |
+| `test-writer` | `.claude/agents/test-writer.md` | Generate Catch2 tests for C++ modules |
+| `trading-reviewer` | `.claude/agents/trading-reviewer.md` | Financial code correctness and safety audit |
+| `refactor` | `.claude/agents/refactor.md` | Safe incremental refactoring with test verification |
+
+### OpenCode Custom Commands
+
+| Command | File | Purpose |
+|---------|------|---------|
+| `project:prime-context` | `.opencode/commands/prime-context.md` | Load key files and recent git history |
+| `project:build` | `.opencode/commands/build.md` | Configure (if needed) and build |
+| `project:test` | `.opencode/commands/test.md` | Run full test suite |
+| `project:test-one` | `.opencode/commands/test-one.md` | Run a single test by name |
+| `project:lint` | `.opencode/commands/lint.md` | Run all linters |
+| `project:review-file` | `.opencode/commands/review-file.md` | Review a file for correctness and safety |
+| `project:write-tests` | `.opencode/commands/write-tests.md` | Generate Catch2 tests for a source file |
+
+### Cursor Glob Rules
+
+| Rule | Glob | Purpose |
+|------|------|---------|
+| `cpp-source.mdc` | `native/src/**/*.cpp`, `native/include/**/*.h` | C++ style, financial code standards |
+| `cpp-tests.mdc` | `native/tests/**/*.cpp` | Catch2 test conventions |
+| `python-code.mdc` | `python/**/*.py` | Python style, uv, pytest |
 
 ## Context Hierarchy
 
-1. **`AGENTS.md`** - Authoritative source of project guidelines
-2. **Tool-specific files** - Reference AGENTS.md, add tool-specific hints
-3. **`.cursor/rules/`** - Context-specific rules with glob patterns
+1. **`AGENTS.md`** — Authoritative source of project guidelines
+2. **Tool-specific files** — Reference AGENTS.md, add tool-specific hints
+3. **`.cursor/rules/`** — Context-specific rules with glob patterns
+4. **`.claude/agents/`** — Specialized sub-agents for repeated workflows
 
 ## When Adding New Context
 
 1. **Prefer updating existing files** over creating new ones
 2. **Reference AGENTS.md** instead of duplicating content
-3. **Keep tool-specific files minimal** - only add unique hints
+3. **Keep tool-specific files minimal** — only add unique hints
 4. **Add glob patterns** to `.cursor/rules/` for file-type specific guidance
-
-## Design Document
-
-See `docs/design/AI_AGENT_CONTEXT_STANDARDS.md` for:
-- Complete file inventory
-- Implementation strategy
-- MCP resource plans
 
 ## Quick Reference
 
@@ -48,3 +81,4 @@ For AI agents working on this project:
 - Start with `AGENTS.md` for complete guidelines
 - Check `.cursor/rules/` for context-specific rules
 - Use MCP tools via `.cursor/mcp.json` configuration
+- Use Claude agents for specialized workflows (test writing, trading review, refactoring)

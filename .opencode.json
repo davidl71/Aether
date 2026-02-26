@@ -1,0 +1,18 @@
+{
+  "data": {
+    "directory": ".opencode"
+  },
+  "lsp": {
+    "cpp": {
+      "disabled": false,
+      "command": "clangd",
+      "args": ["--background-index", "--compile-commands-dir=build"]
+    },
+    "python": {
+      "disabled": false,
+      "command": "pyright-langserver",
+      "args": ["--stdio"]
+    }
+  },
+  "autoCompact": true
+}

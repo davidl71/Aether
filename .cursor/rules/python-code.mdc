@@ -1,0 +1,33 @@
+---
+globs: python/**/*.py
+alwaysApply: false
+---
+
+# Python Code Conventions
+
+When editing Python files in `python/`:
+
+## Package Management
+- Prefer `uv` over `pip` when available
+- `uv sync` to install deps, `uv run pytest` to test
+- Dependencies go in `requirements.in` (compiled to `requirements.txt`)
+
+## Style
+- Follow PEP 8
+- Type hints on all public function signatures
+- Docstrings on public functions and classes (Google style)
+
+## Testing
+- Tests in `python/tests/` using pytest
+- Run: `uv run pytest python/tests/ -v`
+- Use `pytest.mark.parametrize` for data-driven tests
+
+## Key Modules
+- `python/tui/` — Terminal UI (Textual framework)
+- `python/bindings/` — Cython bindings to C++ core
+- `python/tools/` — Developer tooling (MLX review, log summarizer, scorecard)
+- `python/tests/` — Test suite
+
+## Security
+- Never hardcode credentials or API keys
+- Use environment variables or config files for sensitive values

@@ -140,7 +140,8 @@ Follow imperative, 72-character subject lines ("Add TSV formatter for CLI"). In 
 | `AGENTS.md` | All AI agents (canonical source) |
 | `CLAUDE.md` | Claude Code |
 | `CODEX.md` | OpenAI Codex |
-| `opencode.toml` | OpenCode |
+| `.opencode.json` | OpenCode (config, LSP) |
+| `.opencode/commands/` | OpenCode (custom commands) |
 | `.cursorrules` | Cursor IDE |
 | `.windsurfrules` | Windsurf IDE |
 | `.clinerules` | Cline |
