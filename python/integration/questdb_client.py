@@ -1,12 +1,14 @@
 """
-questdb_client.py - Minimal QuestDB ILP writer for market/trade data.
+questdb_client.py - QuestDB ILP writer and REST query client for market/trade data.
 """
 from __future__ import annotations
 
 import logging
 import socket
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Any, Dict, List, Optional
+
+import requests
 
 
 logger = logging.getLogger(__name__)
@@ -17,16 +19,19 @@ class QuestDBClient:
         self,
         host: str = "127.0.0.1",
         port: int = 9009,
+        http_port: int = 9000,
         quote_table: str = "quotes",
         trade_table: str = "trades",
         max_retries: int = 3,
     ) -> None:
         self.host = host
         self.port = port
+        self.http_port = http_port
         self.quote_table = quote_table
         self.trade_table = trade_table
         self.max_retries = max_retries
         self._socket: Optional[socket.socket] = None
+        self._http_base = f"http://{host}:{http_port}"
 
     def connect(self) -> None:
         self.close()
@@ -95,4 +100,55 @@ class QuestDBClient:
         field_parts = [f"{name}={value}" for name, value in fields.items() if value is not None]
         line = f"{self.trade_table},symbol={symbol} {','.join(field_parts)} {timestamp}"
         self._send_line(line)
+
+    # ------------------------------------------------------------------
+    # Query layer (QuestDB REST/HTTP)
+    # ------------------------------------------------------------------
+
+    def query(self, sql: str) -> List[Dict[str, Any]]:
+        """Execute a SQL query against QuestDB and return rows as dicts."""
+        try:
+            resp = requests.get(
+                f"{self._http_base}/exec",
+                params={"query": sql},
+                timeout=5,
+            )
+            resp.raise_for_status()
+            payload = resp.json()
+            columns = [c["name"] for c in payload.get("columns", [])]
+            return [dict(zip(columns, row)) for row in payload.get("dataset", [])]
+        except Exception as exc:
+            logger.warning("QuestDB query failed: %s", exc)
+            return []
+
+    def get_ohlcv(
+        self,
+        symbol: str,
+        interval: str = "1h",
+        limit: int = 100,
+    ) -> List[Dict[str, Any]]:
+        """Return OHLCV bars for a symbol using SAMPLE BY."""
+        sql = (
+            f"SELECT timestamp, first(last) AS open, max(last) AS high, "
+            f"min(last) AS low, last(last) AS close, sum(volume) AS volume "
+            f"FROM {self.quote_table} "
+            f"WHERE symbol = '{symbol}' "
+            f"SAMPLE BY {interval} "
+            f"ORDER BY timestamp DESC LIMIT {limit}"
+        )
+        return self.query(sql)
+
+    def get_latest_quotes(self, symbols: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+        """Return the most recent quote for each symbol."""
+        where = ""
+        if symbols:
+            syms = ",".join(f"'{s}'" for s in symbols)
+            where = f"WHERE symbol IN ({syms}) "
+        sql = (
+            f"SELECT symbol, last(bid) AS bid, last(ask) AS ask, "
+            f"last(last) AS last, last(spread) AS spread, max(timestamp) AS ts "
+            f"FROM {self.quote_table} {where}"
+            f"LATEST ON timestamp PARTITION BY symbol"
+        )
+        return self.query(sql)
 

@@ -1,8 +1,10 @@
 """
-Integration package for NautilusTrader and ORATS.
+Integration package for broker clients and trading integrations.
 """
 
-__all__ = []
+from .broker_client_base import BrokerClientBase, BrokerClientError
+
+__all__ = ["BrokerClientBase", "BrokerClientError"]
 
 # Core modules that may require nautilus_trader (import conditionally)
 try:
@@ -40,17 +42,3 @@ try:
 except ImportError:
     pass
 
-try:
-    from .massive_client import MassiveClient
-    from .massive_websocket import MassiveWebSocketClient, QuoteCrossValidator
-
-    __all__.extend(["MassiveClient", "MassiveWebSocketClient", "QuoteCrossValidator"])
-except ImportError:
-    pass
-
-try:
-    from .israeli_broker_scraper import IsraeliBrokerWebScraper, Position, IsraeliBrokerScraperError
-
-    __all__.extend(["IsraeliBrokerWebScraper", "Position", "IsraeliBrokerScraperError"])
-except ImportError:
-    pass

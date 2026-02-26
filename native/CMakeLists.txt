@@ -522,38 +522,6 @@ endif()
 set(INTEL_DECIMAL_LIB "${CMAKE_CURRENT_SOURCE_DIR}")
 cmake_path(APPEND INTEL_DECIMAL_LIB "third_party" "IntelRDFPMathLib20U2" "LIBRARY" "libbid.a")
 
-# Find Abseil libraries based on platform
-if(APPLE)
-    file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.dylib")
-elseif(UNIX)
-    file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.so")
-    if(NOT ABSEIL_LIBS)
-        file(GLOB ABSEIL_LIBS "/usr/lib/x86_64-linux-gnu/libabsl*.so")
-    endif()
-    if(NOT ABSEIL_LIBS)
-        file(GLOB ABSEIL_LIBS "/usr/lib/libabsl*.so")
-    endif()
-endif()
-
-# Find protobuf library based on platform
-if(APPLE)
-    set(PROTOBUF_LIB "/usr/local/lib/libprotobuf.dylib")
-elseif(UNIX)
-    # Try common Linux locations for protobuf
-    find_library(PROTOBUF_LIB
-        NAMES protobuf
-        PATHS
-            /usr/local/lib
-            /usr/lib/x86_64-linux-gnu
-            /usr/lib
-        NO_DEFAULT_PATH
-    )
-    if(NOT PROTOBUF_LIB)
-        # Fallback to explicit path
-        set(PROTOBUF_LIB "/usr/local/lib/libprotobuf.so")
-    endif()
-endif()
-
 set(_missing_native_deps "")
 set(_native_prereqs_met TRUE)
 
@@ -565,10 +533,6 @@ endif()
 if(NOT EXISTS "${INTEL_DECIMAL_LIB}")
     list(APPEND _missing_native_deps "Intel decimal math library (libbid.a)")
     set(_native_prereqs_met FALSE)
-endif()
-
-if(NOT ABSEIL_LIBS)
-    message(STATUS "Abseil libraries not detected in /usr/local/lib; continuing without optional Abseil linkage.")
 endif()
 
 if(ENABLE_NATIVE_CLI AND NOT _native_prereqs_met)
@@ -714,8 +678,6 @@ if(_build_native_cli)
             CURL::libcurl
             ${TWS_API_LIB}
             ${INTEL_DECIMAL_LIB}
-            ${PROTOBUF_LIB}
-            ${ABSEIL_LIBS}
     )
 
     # Link to extracted box-spread-cpp library if enabled
@@ -783,8 +745,6 @@ if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/test_tws
             spdlog::spdlog
             ${TWS_API_LIB}
             ${INTEL_DECIMAL_LIB}
-            ${PROTOBUF_LIB}
-            ${ABSEIL_LIBS}
     )
 
     # Link with TWS client source files

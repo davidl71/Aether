@@ -7,6 +7,8 @@ pub mod bridge;
 pub mod client;
 pub mod dlq;
 pub mod error;
+pub mod proto;
+pub mod rpc;
 pub mod serde;
 pub mod topics;
 

@@ -59,7 +59,7 @@ class TestGetQuotes:
     def test_single_symbol(self):
         session = MagicMock()
         session.headers = {}
-        session.get.return_value = _mock_response({
+        session.request.return_value = _mock_response({
             "quotes": {
                 "quote": {
                     "symbol": "SPY",
@@ -87,7 +87,7 @@ class TestGetQuotes:
     def test_multiple_symbols(self):
         session = MagicMock()
         session.headers = {}
-        session.get.return_value = _mock_response({
+        session.request.return_value = _mock_response({
             "quotes": {
                 "quote": [
                     {"symbol": "SPY", "bid": 450.0, "ask": 450.5, "last": 450.2,
@@ -113,7 +113,7 @@ class TestGetQuotes:
         session.headers = {}
         resp = MagicMock()
         resp.raise_for_status.side_effect = Exception("HTTP 401")
-        session.get.return_value = resp
+        session.request.return_value = resp
         client = _make_client(session)
         with pytest.raises(Exception, match="401"):
             client.get_quotes(["SPY"])
@@ -127,7 +127,7 @@ class TestGetSnapshot:
     def test_snapshot(self):
         session = MagicMock()
         session.headers = {}
-        session.get.return_value = _mock_response({
+        session.request.return_value = _mock_response({
             "quotes": {
                 "quote": {
                     "symbol": "SPY", "bid": 450.0, "ask": 450.5, "last": 450.2,
@@ -144,7 +144,7 @@ class TestGetSnapshot:
     def test_snapshot_no_data(self):
         session = MagicMock()
         session.headers = {}
-        session.get.return_value = _mock_response({"quotes": {}})
+        session.request.return_value = _mock_response({"quotes": {}})
         client = _make_client(session)
         snap = client.get_snapshot("UNKNOWN")
         assert snap["last"] == 0.0
@@ -158,7 +158,7 @@ class TestGetOptionExpirations:
     def test_expirations(self):
         session = MagicMock()
         session.headers = {}
-        session.get.return_value = _mock_response({
+        session.request.return_value = _mock_response({
             "expirations": {
                 "date": ["2025-12-19", "2025-11-21", "2026-01-16"]
             }
@@ -171,7 +171,7 @@ class TestGetOptionExpirations:
     def test_single_expiration(self):
         session = MagicMock()
         session.headers = {}
-        session.get.return_value = _mock_response({
+        session.request.return_value = _mock_response({
             "expirations": {"date": "2025-12-19"}
         })
         client = _make_client(session)
@@ -181,7 +181,7 @@ class TestGetOptionExpirations:
     def test_empty_expirations(self):
         session = MagicMock()
         session.headers = {}
-        session.get.return_value = _mock_response({"expirations": {}})
+        session.request.return_value = _mock_response({"expirations": {}})
         client = _make_client(session)
         assert client.get_option_expirations("SPY") == []
 
@@ -194,7 +194,7 @@ class TestGetOptionChain:
     def test_option_chain(self):
         session = MagicMock()
         session.headers = {}
-        session.get.return_value = _mock_response({
+        session.request.return_value = _mock_response({
             "options": {
                 "option": [
                     {
@@ -250,14 +250,14 @@ class TestGetOptionChain:
     def test_option_chain_empty(self):
         session = MagicMock()
         session.headers = {}
-        session.get.return_value = _mock_response({"options": {}})
+        session.request.return_value = _mock_response({"options": {}})
         client = _make_client(session)
         assert client.get_option_chain("SPY") == {}
 
     def test_option_chain_single(self):
         session = MagicMock()
         session.headers = {}
-        session.get.return_value = _mock_response({
+        session.request.return_value = _mock_response({
             "options": {
                 "option": {
                     "symbol": "SPY251219C00450000",

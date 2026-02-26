@@ -10,11 +10,8 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true, features = ["sync"] }
-prost = { workspace = true }
 chrono = { workspace = true }
 futures = { workspace = true }
-tonic = { workspace = true }
-tonic-health = { workspace = true }
 tower = { workspace = true }
 tracing = { workspace = true }
 reqwest = { workspace = true }
@@ -23,6 +20,3 @@ risk = { path = "../risk" }
 strategy = { path = "../strategy" }
 ledger = { path = "../ledger" }
 
-[build-dependencies]
-tonic-build = "0.11"
-prost-build = "0.12"

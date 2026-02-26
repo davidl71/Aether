@@ -655,7 +655,37 @@ async fn get_chart(
   }))
 }
 
-// Swiftness API proxy endpoints
+// Swiftness API proxy helper
+
+type SwiftnessResult<T> = Result<T, (StatusCode, Json<ApiResponse>)>;
+
+fn swiftness_error(code: StatusCode, msg: String) -> (StatusCode, Json<ApiResponse>) {
+  (code, Json(ApiResponse { status: "error".into(), message: msg, data: None }))
+}
+
+fn swiftness_client() -> SwiftnessResult<Client> {
+  Client::builder()
+    .timeout(Duration::from_secs(5))
+    .build()
+    .map_err(|e| swiftness_error(StatusCode::INTERNAL_SERVER_ERROR, format!("HTTP client error: {e}")))
+}
+
+async fn swiftness_proxy_get(path: &str) -> SwiftnessResult<Json<serde_json::Value>> {
+  let client = swiftness_client()?;
+  let url = format!("{}{}", SWIFTNESS_API_URL, path);
+  match client.get(&url).send().await {
+    Ok(resp) if resp.status().is_success() => resp
+      .json::<serde_json::Value>()
+      .await
+      .map(Json)
+      .map_err(|e| swiftness_error(StatusCode::INTERNAL_SERVER_ERROR, format!("Parse error: {e}"))),
+    Ok(resp) => Err(swiftness_error(StatusCode::BAD_GATEWAY, format!("Swiftness API error: {}", resp.status()))),
+    Err(e) => {
+      warn!(%e, "failed to call Swiftness API");
+      Err(swiftness_error(StatusCode::BAD_GATEWAY, format!("Swiftness API unavailable: {e}")))
+    }
+  }
+}
 
 #[derive(Debug, Deserialize)]
 struct SwiftnessPositionsQuery {
@@ -665,298 +695,47 @@ struct SwiftnessPositionsQuery {
 
 async fn swiftness_positions(
   Query(params): Query<SwiftnessPositionsQuery>,
-) -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiResponse>)> {
-  let client = Client::builder()
-    .timeout(Duration::from_secs(5))
-    .build()
-    .map_err(|e| {
-      (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(ApiResponse {
-          status: "error".into(),
-          message: format!("Failed to create HTTP client: {}", e),
-          data: None,
-        }),
-      )
-    })?;
-
-  let mut url = format!("{}/positions", SWIFTNESS_API_URL);
-  let check_validity = params.check_validity.unwrap_or(true);
-  let max_age_days = params.max_age_days.unwrap_or(90);
-  url.push_str(&format!("?check_validity={}&max_age_days={}", check_validity, max_age_days));
-
-  match client.get(&url).send().await {
-    Ok(response) => {
-      if response.status().is_success() {
-        match response.json::<serde_json::Value>().await {
-          Ok(data) => Ok(Json(data)),
-          Err(e) => Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ApiResponse {
-              status: "error".into(),
-              message: format!("Failed to parse Swiftness API response: {}", e),
-              data: None,
-            }),
-          )),
-        }
-      } else {
-        Err((
-          StatusCode::BAD_GATEWAY,
-          Json(ApiResponse {
-            status: "error".into(),
-            message: format!("Swiftness API returned error: {}", response.status()),
-            data: None,
-          }),
-        ))
-      }
-    }
-    Err(e) => {
-      warn!(%e, "failed to call Swiftness API");
-      Err((
-        StatusCode::BAD_GATEWAY,
-        Json(ApiResponse {
-          status: "error".into(),
-          message: format!("Swiftness API unavailable: {}", e),
-          data: None,
-        }),
-      ))
-    }
-  }
+) -> SwiftnessResult<Json<serde_json::Value>> {
+  let cv = params.check_validity.unwrap_or(true);
+  let max_age = params.max_age_days.unwrap_or(90);
+  swiftness_proxy_get(&format!("/positions?check_validity={cv}&max_age_days={max_age}")).await
 }
 
-async fn swiftness_portfolio_value() -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiResponse>)> {
-  let client = Client::builder()
-    .timeout(Duration::from_secs(5))
-    .build()
-    .map_err(|e| {
-      (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(ApiResponse {
-          status: "error".into(),
-          message: format!("Failed to create HTTP client: {}", e),
-          data: None,
-        }),
-      )
-    })?;
-
-  let url = format!("{}/portfolio-value", SWIFTNESS_API_URL);
-
-  match client.get(&url).send().await {
-    Ok(response) => {
-      if response.status().is_success() {
-        match response.json::<serde_json::Value>().await {
-          Ok(data) => Ok(Json(data)),
-          Err(e) => Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ApiResponse {
-              status: "error".into(),
-              message: format!("Failed to parse Swiftness API response: {}", e),
-              data: None,
-            }),
-          )),
-        }
-      } else {
-        Err((
-          StatusCode::BAD_GATEWAY,
-          Json(ApiResponse {
-            status: "error".into(),
-            message: format!("Swiftness API returned error: {}", response.status()),
-            data: None,
-          }),
-        ))
-      }
-    }
-    Err(e) => {
-      warn!(%e, "failed to call Swiftness API");
-      Err((
-        StatusCode::BAD_GATEWAY,
-        Json(ApiResponse {
-          status: "error".into(),
-          message: format!("Swiftness API unavailable: {}", e),
-          data: None,
-        }),
-      ))
-    }
-  }
+async fn swiftness_portfolio_value() -> SwiftnessResult<Json<serde_json::Value>> {
+  swiftness_proxy_get("/portfolio-value").await
 }
 
-async fn swiftness_validate() -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiResponse>)> {
-  let client = Client::builder()
-    .timeout(Duration::from_secs(5))
-    .build()
-    .map_err(|e| {
-      (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(ApiResponse {
-          status: "error".into(),
-          message: format!("Failed to create HTTP client: {}", e),
-          data: None,
-        }),
-      )
-    })?;
-
-  let url = format!("{}/validate", SWIFTNESS_API_URL);
-
-  match client.get(&url).send().await {
-    Ok(response) => {
-      if response.status().is_success() {
-        match response.json::<serde_json::Value>().await {
-          Ok(data) => Ok(Json(data)),
-          Err(e) => Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ApiResponse {
-              status: "error".into(),
-              message: format!("Failed to parse Swiftness API response: {}", e),
-              data: None,
-            }),
-          )),
-        }
-      } else {
-        Err((
-          StatusCode::BAD_GATEWAY,
-          Json(ApiResponse {
-            status: "error".into(),
-            message: format!("Swiftness API returned error: {}", response.status()),
-            data: None,
-          }),
-        ))
-      }
-    }
-    Err(e) => {
-      warn!(%e, "failed to call Swiftness API");
-      Err((
-        StatusCode::BAD_GATEWAY,
-        Json(ApiResponse {
-          status: "error".into(),
-          message: format!("Swiftness API unavailable: {}", e),
-          data: None,
-        }),
-      ))
-    }
-  }
+async fn swiftness_validate() -> SwiftnessResult<Json<serde_json::Value>> {
+  swiftness_proxy_get("/validate").await
 }
 
-async fn swiftness_exchange_rate() -> Result<Json<serde_json::Value>, (StatusCode, Json<ApiResponse>)> {
-  let client = Client::builder()
-    .timeout(Duration::from_secs(5))
-    .build()
-    .map_err(|e| {
-      (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(ApiResponse {
-          status: "error".into(),
-          message: format!("Failed to create HTTP client: {}", e),
-          data: None,
-        }),
-      )
-    })?;
-
-  let url = format!("{}/exchange-rate", SWIFTNESS_API_URL);
-
-  match client.get(&url).send().await {
-    Ok(response) => {
-      if response.status().is_success() {
-        match response.json::<serde_json::Value>().await {
-          Ok(data) => Ok(Json(data)),
-          Err(e) => Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ApiResponse {
-              status: "error".into(),
-              message: format!("Failed to parse Swiftness API response: {}", e),
-              data: None,
-            }),
-          )),
-        }
-      } else {
-        Err((
-          StatusCode::BAD_GATEWAY,
-          Json(ApiResponse {
-            status: "error".into(),
-            message: format!("Swiftness API returned error: {}", response.status()),
-            data: None,
-          }),
-        ))
-      }
-    }
-    Err(e) => {
-      warn!(%e, "failed to call Swiftness API");
-      Err((
-        StatusCode::BAD_GATEWAY,
-        Json(ApiResponse {
-          status: "error".into(),
-          message: format!("Swiftness API unavailable: {}", e),
-          data: None,
-        }),
-      ))
-    }
-  }
+async fn swiftness_exchange_rate() -> SwiftnessResult<Json<serde_json::Value>> {
+  swiftness_proxy_get("/exchange-rate").await
 }
 
-#[derive(Debug, Deserialize)]
-#[derive(Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct ExchangeRateUpdate {
   rate: f64,
 }
 
 async fn swiftness_update_exchange_rate(
   Json(update): Json<ExchangeRateUpdate>,
-) -> Result<Json<ApiResponse>, (StatusCode, Json<ApiResponse>)> {
+) -> SwiftnessResult<Json<ApiResponse>> {
   if update.rate <= 0.0 {
-    return Err((
-      StatusCode::BAD_REQUEST,
-      Json(ApiResponse {
-        status: "error".into(),
-        message: "Exchange rate must be positive".into(),
-        data: None,
-      }),
-    ));
+    return Err(swiftness_error(StatusCode::BAD_REQUEST, "Exchange rate must be positive".into()));
   }
-
-  let client = Client::builder()
-    .timeout(Duration::from_secs(5))
-    .build()
-    .map_err(|e| {
-      (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(ApiResponse {
-          status: "error".into(),
-          message: format!("Failed to create HTTP client: {}", e),
-          data: None,
-        }),
-      )
-    })?;
-
+  let client = swiftness_client()?;
   let url = format!("{}/exchange-rate", SWIFTNESS_API_URL);
-
   match client.put(&url).json(&update).send().await {
-    Ok(response) => {
-      if response.status().is_success() {
-        Ok(Json(ApiResponse {
-          status: "ok".into(),
-          message: "Exchange rate updated".into(),
-          data: Some(serde_json::json!({ "rate": update.rate })),
-        }))
-      } else {
-        Err((
-          StatusCode::BAD_GATEWAY,
-          Json(ApiResponse {
-            status: "error".into(),
-            message: format!("Swiftness API returned error: {}", response.status()),
-            data: None,
-          }),
-        ))
-      }
-    }
+    Ok(resp) if resp.status().is_success() => Ok(Json(ApiResponse {
+      status: "ok".into(),
+      message: "Exchange rate updated".into(),
+      data: Some(serde_json::json!({ "rate": update.rate })),
+    })),
+    Ok(resp) => Err(swiftness_error(StatusCode::BAD_GATEWAY, format!("Swiftness API error: {}", resp.status()))),
     Err(e) => {
       warn!(%e, "failed to call Swiftness API");
-      Err((
-        StatusCode::BAD_GATEWAY,
-        Json(ApiResponse {
-          status: "error".into(),
-          message: format!("Swiftness API unavailable: {}", e),
-          data: None,
-        }),
-      ))
+      Err(swiftness_error(StatusCode::BAD_GATEWAY, format!("Swiftness API unavailable: {e}")))
     }
   }
 }

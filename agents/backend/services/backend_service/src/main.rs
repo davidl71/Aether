@@ -5,9 +5,7 @@ use std::{
 };
 
 use api::{
-  ib_backend_proto::v1::StrategyDecision as GrpcDecision,
   Alert,
-  GrpcServer,
   HistoricPosition,
   OrderSnapshot,
   PositionSnapshot,
@@ -29,15 +27,14 @@ use risk::{RiskCheck, RiskDecision, RiskEngine, RiskLimit, RiskViolation};
 use serde::Deserialize;
 use strategy::{Decision as StrategyDecisionModel, StrategySignal};
 use strategy::model::TradeSide;
-use tokio::{
-  sync::{
-    broadcast,
-    mpsc::{UnboundedReceiver, UnboundedSender},
-    watch,
-    RwLock,
-  },
-  time::sleep,
-};
+use   tokio::{
+    sync::{
+      mpsc::{UnboundedReceiver, UnboundedSender},
+      watch,
+      RwLock,
+    },
+    time::sleep,
+  };
 use tracing::{info, warn};
 
 mod nats_integration;
@@ -47,8 +44,6 @@ mod swiftness;
 struct BackendConfig {
   #[serde(default = "default_rest_addr")]
   rest_addr: SocketAddr,
-  #[serde(default = "default_grpc_addr")]
-  grpc_addr: SocketAddr,
   #[serde(default)]
   market_data: MarketDataSettings,
 }
@@ -57,7 +52,6 @@ impl Default for BackendConfig {
   fn default() -> Self {
     Self {
       rest_addr: default_rest_addr(),
-      grpc_addr: default_grpc_addr(),
       market_data: MarketDataSettings::default(),
     }
   }
@@ -97,10 +91,6 @@ fn default_rest_addr() -> SocketAddr {
   SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8080)
 }
 
-fn default_grpc_addr() -> SocketAddr {
-  SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 50051)
-}
-
 fn default_market_provider() -> String {
   "mock".into()
 }
@@ -121,7 +111,6 @@ async fn main() -> anyhow::Result<()> {
   let config = load_config().context("failed to load backend config")?;
 
   let rest_addr = config.rest_addr;
-  let grpc_addr = config.grpc_addr;
 
   let state: SharedSnapshot = Arc::new(RwLock::new(SystemSnapshot::default()));
   let (strategy_ctrl_tx, strategy_ctrl_rx) = watch::channel(false);
@@ -141,22 +130,9 @@ async fn main() -> anyhow::Result<()> {
     warn!("NATS integration unavailable, continuing without NATS");
   }
 
-  // Create NATS health check function
-  let nats_health_check: Option<api::rest::NatsHealthCheck> = nats_integration
-    .as_ref()
-    .as_ref()
-    .map(|nats| {
-      let nats_clone = nats.clone();
-      Arc::new(move || {
-        let nats = nats_clone.clone();
-        Box::new(async move { nats.check_connection_health().await }) as Box<dyn std::future::Future<Output = String> + Send + Unpin>
-      }) as api::rest::NatsHealthCheck
-    });
-
   let rest_state = RestState::new(
     state.clone(),
     controller.clone(),
-    nats_health_check,
   );
 
   {
@@ -169,22 +145,7 @@ async fn main() -> anyhow::Result<()> {
   }
   let _ = controller.start();
 
-  let (grpc_decision_tx, _) = broadcast::channel(256);
   let risk_engine = Arc::new(RiskEngine::new(vec![Box::new(PositionLimitCheck::new(8, 250_000.0))]));
-
-  // Initialize NATS integration (graceful degradation if unavailable)
-  let nats_integration = Arc::new(
-    nats_integration::NatsIntegration::new(
-      std::env::var("NATS_URL").ok(),
-    )
-    .await,
-  );
-
-  if nats_integration.as_ref().as_ref().map_or(false, |n| n.is_active()) {
-    info!("NATS integration active");
-  } else {
-    warn!("NATS integration unavailable, continuing without NATS");
-  }
 
   let (strategy_signal_tx, strategy_signal_rx) = tokio::sync::mpsc::unbounded_channel::<StrategySignal>();
   let (strategy_decision_tx, strategy_decision_rx) = tokio::sync::mpsc::unbounded_channel::<StrategyDecisionModel>();
@@ -194,7 +155,6 @@ async fn main() -> anyhow::Result<()> {
   spawn_strategy_fanout(
     strategy_decision_rx,
     state.clone(),
-    grpc_decision_tx.clone(),
     risk_engine.clone(),
     fanout_ctrl_rx,
     nats_integration.clone(),
@@ -212,17 +172,15 @@ async fn main() -> anyhow::Result<()> {
   // Spawn Swiftness position fetcher
   swiftness::spawn_swiftness_position_fetcher(state.clone());
 
-  info!(%rest_addr, %grpc_addr, "backend service online");
+  info!(%rest_addr, "backend service online");
 
   let rest_handle = RestServer::serve(rest_addr, rest_state).await?;
-  let grpc_handle = GrpcServer::serve(grpc_addr, state.clone(), grpc_decision_tx).await?;
 
   tokio::signal::ctrl_c()
     .await
     .context("failed to listen for shutdown signal")?;
 
   rest_handle.abort();
-  grpc_handle.abort();
 
   Ok(())
 }
@@ -417,7 +375,6 @@ fn spawn_mock_strategy(
 fn spawn_strategy_fanout(
   mut decisions_rx: UnboundedReceiver<StrategyDecisionModel>,
   state: SharedSnapshot,
-  broadcaster: broadcast::Sender<GrpcDecision>,
   risk_engine: Arc<RiskEngine>,
   mut strategy_toggle: watch::Receiver<bool>,
   nats: Arc<Option<nats_integration::NatsIntegration>>,
@@ -503,15 +460,6 @@ fn spawn_strategy_fanout(
         }
       }
 
-      if outcome.allowed {
-        if let Err(err) = broadcaster.send(GrpcDecision {
-          symbol,
-          quantity,
-          side: side_str.into(),
-        }) {
-          warn!(%err, "failed to broadcast gRPC decision");
-        }
-      }
     }
   });
 }

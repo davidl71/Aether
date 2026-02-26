@@ -1,0 +1,188 @@
+syntax = "proto3";
+
+package ib.platform.v1;
+
+option go_package = "github.com/dlowes/ib-platform/proto/v1;pbv1";
+
+import "google/protobuf/timestamp.proto";
+
+// ---------------------------------------------------------------------------
+// Market Data
+// ---------------------------------------------------------------------------
+
+message MarketDataEvent {
+  string symbol = 1;
+  double bid = 2;
+  double ask = 3;
+  double last = 4;
+  uint64 volume = 5;
+  google.protobuf.Timestamp timestamp = 6;
+}
+
+message CandleSnapshot {
+  double open = 1;
+  double high = 2;
+  double low = 3;
+  double close = 4;
+  uint64 volume = 5;
+  double entry = 6;
+  google.protobuf.Timestamp updated = 7;
+}
+
+message SymbolSnapshot {
+  string symbol = 1;
+  double last = 2;
+  double bid = 3;
+  double ask = 4;
+  double spread = 5;
+  double roi = 6;
+  uint32 maker_count = 7;
+  uint32 taker_count = 8;
+  uint64 volume = 9;
+  CandleSnapshot candle = 10;
+}
+
+// ---------------------------------------------------------------------------
+// Positions & Orders
+// ---------------------------------------------------------------------------
+
+message Position {
+  string id = 1;
+  string symbol = 2;
+  int32 quantity = 3;
+  double cost_basis = 4;
+  double mark = 5;
+  double unrealized_pnl = 6;
+}
+
+message HistoricPosition {
+  string id = 1;
+  string symbol = 2;
+  int32 quantity = 3;
+  double realized_pnl = 4;
+  google.protobuf.Timestamp closed_at = 5;
+}
+
+message Order {
+  string id = 1;
+  string symbol = 2;
+  string side = 3;
+  int32 quantity = 4;
+  string status = 5;
+  google.protobuf.Timestamp submitted_at = 6;
+}
+
+// ---------------------------------------------------------------------------
+// Strategy
+// ---------------------------------------------------------------------------
+
+message StrategyDecision {
+  string symbol = 1;
+  int32 quantity = 2;
+  string side = 3;
+  double mark = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+message StrategySignal {
+  string symbol = 1;
+  double price = 2;
+  google.protobuf.Timestamp timestamp = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Risk
+// ---------------------------------------------------------------------------
+
+message RiskStatus {
+  bool allowed = 1;
+  string reason = 2;
+  google.protobuf.Timestamp updated_at = 3;
+}
+
+message RiskLimit {
+  string symbol = 1;
+  int32 max_position = 2;
+  double max_notional = 3;
+}
+
+// ---------------------------------------------------------------------------
+// System
+// ---------------------------------------------------------------------------
+
+message Alert {
+  AlertLevel level = 1;
+  string message = 2;
+  google.protobuf.Timestamp timestamp = 3;
+}
+
+enum AlertLevel {
+  ALERT_LEVEL_UNSPECIFIED = 0;
+  ALERT_LEVEL_INFO = 1;
+  ALERT_LEVEL_WARNING = 2;
+  ALERT_LEVEL_ERROR = 3;
+}
+
+message Metrics {
+  double net_liq = 1;
+  double buying_power = 2;
+  double excess_liquidity = 3;
+  double margin_requirement = 4;
+  double commissions = 5;
+  bool portal_ok = 6;
+  bool tws_ok = 7;
+  bool orats_ok = 8;
+  bool questdb_ok = 9;
+  bool nats_ok = 10;
+}
+
+message SystemSnapshot {
+  google.protobuf.Timestamp generated_at = 1;
+  google.protobuf.Timestamp started_at = 2;
+  string mode = 3;
+  string strategy = 4;
+  string account_id = 5;
+  Metrics metrics = 6;
+  repeated SymbolSnapshot symbols = 7;
+  repeated Position positions = 8;
+  repeated HistoricPosition historic = 9;
+  repeated Order orders = 10;
+  repeated StrategyDecision decisions = 11;
+  repeated Alert alerts = 12;
+  RiskStatus risk = 13;
+}
+
+// ---------------------------------------------------------------------------
+// NATS Envelope
+// ---------------------------------------------------------------------------
+
+message NatsEnvelope {
+  string id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  string source = 3;
+  string message_type = 4;
+  bytes payload = 5;
+}
+
+// ---------------------------------------------------------------------------
+// Box Spread
+// ---------------------------------------------------------------------------
+
+message BoxSpreadScenario {
+  string symbol = 1;
+  double strike_width = 2;
+  double theoretical_value = 3;
+  double estimated_net_debit = 4;
+  double implied_apr = 5;
+  string scenario_type = 6;
+}
+
+message BoxSpreadExecution {
+  string symbol = 1;
+  int32 lower_strike = 2;
+  int32 upper_strike = 3;
+  string expiry = 4;
+  double net_debit = 5;
+  string trade_id = 6;
+  google.protobuf.Timestamp executed_at = 7;
+}
