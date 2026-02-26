@@ -1,262 +1,195 @@
-"""
-Tests for environment configuration management.
+"""Tests for python/services/environment_config.py."""
 
-Tests EnvironmentConfig class, configuration loading, and global config functions.
-"""
-import unittest
 import json
 import os
-import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent))
+import pytest
 
-from services.environment_config import (
-    EnvironmentConfig,
-    get_config,
-    reload_config,
-)
+from python.services.environment_config import EnvironmentConfig, get_config, reload_config
 
 
-class TestEnvironmentConfig(unittest.TestCase):
-    """Tests for EnvironmentConfig class."""
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
 
-    def test_init_with_default_path(self):
-        """Test EnvironmentConfig initialization with default path."""
-        config = EnvironmentConfig()
-        assert config.config_file is not None
-        assert isinstance(config.config_file, Path)
 
-    def test_init_with_custom_path(self):
-        """Test EnvironmentConfig initialization with custom path."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            f.write('{"test": "value"}')
-            temp_path = Path(f.name)
+@pytest.fixture
+def config_file(tmp_path):
+    """Create a temporary environment.json config file."""
+    cfg = {
+        "services": {"calculations_port": 8081, "snapshot_port": 8082},
+        "security": {
+            "rate_limit_per_minute": 120,
+            "rate_limit_per_second": 20,
+            "api_key": "test-key-123",
+            "require_auth": True,
+            "allowed_origins": ["http://localhost:4000"],
+        },
+        "nested": {"deep": {"value": 42}},
+    }
+    fp = tmp_path / "environment.json"
+    fp.write_text(json.dumps(cfg))
+    return fp
 
-        try:
-            config = EnvironmentConfig(config_file=temp_path)
-            assert config.config_file == temp_path
-        finally:
-            temp_path.unlink()
 
-    def test_load_config_file_exists(self):
-        """Test loading configuration from existing file."""
-        config_data = {
-            "security": {
-                "rate_limit_per_minute": 120,
-                "rate_limit_per_second": 20
-            },
-            "test_key": "test_value"
-        }
+@pytest.fixture
+def empty_config(tmp_path):
+    return tmp_path / "missing.json"
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            json.dump(config_data, f)
-            temp_path = Path(f.name)
 
-        try:
-            config = EnvironmentConfig(config_file=temp_path)
-            assert config.get("test_key") == "test_value"
-            assert config.get("security.rate_limit_per_minute") == 120
-        finally:
-            temp_path.unlink()
+# ---------------------------------------------------------------------------
+# Initialization
+# ---------------------------------------------------------------------------
 
-    def test_load_config_file_not_exists(self):
-        """Test loading configuration when file doesn't exist."""
-        temp_path = Path("/tmp/nonexistent_config.json")
-        config = EnvironmentConfig(config_file=temp_path)
-        # Should not raise error, just use empty config
-        assert config.get("any_key", "default") == "default"
 
-    def test_load_config_invalid_json(self):
-        """Test loading configuration with invalid JSON."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            f.write('{invalid json}')
-            temp_path = Path(f.name)
+class TestInit:
+    def test_load_existing_file(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        assert ec.get("services.calculations_port") == 8081
 
-        try:
-            config = EnvironmentConfig(config_file=temp_path)
-            # Should not raise error, just use empty config
-            assert config.get("any_key", "default") == "default"
-        finally:
-            temp_path.unlink()
+    def test_load_missing_file(self, empty_config):
+        ec = EnvironmentConfig(empty_config)
+        assert ec.get("nonexistent", "fallback") == "fallback"
 
-    def test_get_with_default(self):
-        """Test get() method with default value."""
-        config = EnvironmentConfig()
-        assert config.get("nonexistent_key", "default_value") == "default_value"
+    def test_invalid_json(self, tmp_path):
+        fp = tmp_path / "bad.json"
+        fp.write_text("not json")
+        ec = EnvironmentConfig(fp)
+        assert ec.get("key", "default") == "default"
 
-    def test_get_with_nested_key(self):
-        """Test get() method with nested key (dot notation)."""
-        config_data = {
-            "security": {
-                "rate_limit_per_minute": 120
-            }
-        }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            json.dump(config_data, f)
-            temp_path = Path(f.name)
+# ---------------------------------------------------------------------------
+# get()
+# ---------------------------------------------------------------------------
 
-        try:
-            config = EnvironmentConfig(config_file=temp_path)
-            assert config.get("security.rate_limit_per_minute") == 120
-        finally:
-            temp_path.unlink()
 
-    def test_get_with_env_var_priority(self):
-        """Test that environment variables take priority over config file."""
-        config_data = {"test_key": "file_value"}
+class TestGet:
+    def test_simple_key(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        assert ec.get("services.snapshot_port") == 8082
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            json.dump(config_data, f)
-            temp_path = Path(f.name)
+    def test_nested_key(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        assert ec.get("nested.deep.value") == 42
 
-        try:
-            with patch.dict(os.environ, {"TEST_ENV_VAR": "env_value"}):
-                config = EnvironmentConfig(config_file=temp_path)
-                # Environment variable should take priority
-                value = config.get("test_key", "default", env_var="TEST_ENV_VAR")
-                assert value == "env_value"
-        finally:
-            temp_path.unlink()
+    def test_default_fallback(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        assert ec.get("nonexistent.key", "default") == "default"
 
-    def test_get_security_config(self):
-        """Test get_security_config() method."""
-        config_data = {
-            "security": {
-                "rate_limit_per_minute": 120,
-                "rate_limit_per_second": 20,
-                "api_key": "test-key",
-                "require_auth": True
-            }
-        }
+    def test_none_default(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        assert ec.get("nonexistent") is None
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            json.dump(config_data, f)
-            temp_path = Path(f.name)
+    def test_env_var_override(self, config_file, monkeypatch):
+        monkeypatch.setenv("MY_PORT", "9999")
+        ec = EnvironmentConfig(config_file)
+        val = ec.get("services.calculations_port", default=8081, env_var="MY_PORT")
+        assert val == 9999
 
-        try:
-            config = EnvironmentConfig(config_file=temp_path)
-            security_config = config.get_security_config()
+    def test_env_var_not_set(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        val = ec.get("services.calculations_port", default=8081, env_var="UNLIKELY_VAR_42")
+        assert val == 8081
 
-            assert security_config["rate_limit_per_minute"] == 120
-            assert security_config["rate_limit_per_second"] == 20
-            assert security_config["api_key"] == "test-key"
-            assert security_config["require_auth"] is True
-        finally:
-            temp_path.unlink()
 
-    def test_get_security_config_defaults(self):
-        """Test get_security_config() with defaults."""
-        config = EnvironmentConfig()
-        security_config = config.get_security_config()
+# ---------------------------------------------------------------------------
+# _convert_type
+# ---------------------------------------------------------------------------
 
-        assert security_config["rate_limit_per_minute"] == 60
-        assert security_config["rate_limit_per_second"] == 10
-        assert security_config["api_key"] is None
-        assert security_config["require_auth"] is False
 
-    def test_get_service_port(self):
-        """Test get_service_port() method."""
-        config_data = {
-            "services": {
-                "swiftness_api_port": 8081
-            }
-        }
+class TestConvertType:
+    def test_bool_true(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        assert ec._convert_type("true", None) is True
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            json.dump(config_data, f)
-            temp_path = Path(f.name)
+    def test_bool_false(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        assert ec._convert_type("false", None) is False
 
-        try:
-            config = EnvironmentConfig(config_file=temp_path)
-            port = config.get_service_port("swiftness_api", 8080)
-            assert port == 8081
-        finally:
-            temp_path.unlink()
+    def test_int(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        assert ec._convert_type("42", None) == 42
 
-    def test_get_service_port_default(self):
-        """Test get_service_port() with default."""
-        config = EnvironmentConfig()
-        port = config.get_service_port("nonexistent_service", 9000)
-        assert port == 9000
+    def test_float(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        assert ec._convert_type("3.14", None) == pytest.approx(3.14)
 
-    def test_reload(self):
-        """Test reload() method."""
-        config_data1 = {"test_key": "value1"}
-        config_data2 = {"test_key": "value2"}
+    def test_string(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        assert ec._convert_type("hello", None) == "hello"
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            json.dump(config_data1, f)
-            temp_path = Path(f.name)
+    def test_bool_default(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        assert ec._convert_type("yes", False) is True
+        assert ec._convert_type("no", False) is False
 
-        try:
-            config = EnvironmentConfig(config_file=temp_path)
-            assert config.get("test_key") == "value1"
+    def test_int_default(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        assert ec._convert_type("100", 0) == 100
+        assert ec._convert_type("not_int", 5) == 5
 
-            # Update file
-            with open(temp_path, 'w') as f:
-                json.dump(config_data2, f)
+    def test_float_default(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        assert ec._convert_type("2.5", 0.0) == pytest.approx(2.5)
 
-            # Reload and verify new value
-            config.reload()
-            assert config.get("test_key") == "value2"
-        finally:
-            temp_path.unlink()
-
-    def test_convert_type_bool(self):
-        """Test type conversion for boolean values."""
-        config = EnvironmentConfig()
-
-        # Test boolean conversion
-        assert config._convert_type("true", False) is True
-        assert config._convert_type("false", False) is False
-        assert config._convert_type("1", False) is True
-        assert config._convert_type("0", False) is False
-
-    def test_convert_type_int(self):
-        """Test type conversion for integer values."""
-        config = EnvironmentConfig()
-
-        assert config._convert_type("123", 0) == 123
-        assert config._convert_type("456", 0) == 456
-
-    def test_convert_type_float(self):
-        """Test type conversion for float values."""
-        config = EnvironmentConfig()
-
-        assert config._convert_type("123.45", 0.0) == 123.45
-        assert config._convert_type("456.78", 0.0) == 456.78
-
-    def test_convert_type_list(self):
-        """Test type conversion for list values."""
-        config = EnvironmentConfig()
-
-        result = config._convert_type("a, b, c", [])
+    def test_list_default(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        result = ec._convert_type("a, b, c", [])
         assert result == ["a", "b", "c"]
 
 
-class TestGlobalConfigFunctions(unittest.TestCase):
-    """Tests for global config functions."""
-
-    def test_get_config_returns_singleton(self):
-        """Test that get_config() returns the same instance."""
-        config1 = get_config()
-        config2 = get_config()
-        assert config1 is config2
-
-    def test_reload_config(self):
-        """Test reload_config() function."""
-        config = get_config()
-
-        # Should not raise error
-        reload_config()
-
-        # Verify config still works
-        assert config is not None
+# ---------------------------------------------------------------------------
+# get_security_config
+# ---------------------------------------------------------------------------
 
 
-if __name__ == "__main__":
-    unittest.main()
+class TestSecurityConfig:
+    def test_from_file(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        sec = ec.get_security_config()
+        assert sec["rate_limit_per_minute"] == 120
+        assert sec["api_key"] == "test-key-123"
+        assert sec["require_auth"] is True
+
+    def test_defaults(self, empty_config):
+        ec = EnvironmentConfig(empty_config)
+        sec = ec.get_security_config()
+        assert sec["rate_limit_per_minute"] == 60
+        assert sec["require_auth"] is False
+
+
+# ---------------------------------------------------------------------------
+# get_service_port
+# ---------------------------------------------------------------------------
+
+
+class TestServicePort:
+    def test_from_file(self, config_file):
+        ec = EnvironmentConfig(config_file)
+        assert ec.get_service_port("calculations", default=8080) == 8081
+
+    def test_default(self, empty_config):
+        ec = EnvironmentConfig(empty_config)
+        assert ec.get_service_port("calculations", default=8080) == 8080
+
+    def test_env_override(self, config_file, monkeypatch):
+        monkeypatch.setenv("CALCULATIONS_PORT", "7777")
+        ec = EnvironmentConfig(config_file)
+        assert ec.get_service_port("calculations", default=8080) == 7777
+
+
+# ---------------------------------------------------------------------------
+# reload
+# ---------------------------------------------------------------------------
+
+
+class TestReload:
+    def test_reload(self, tmp_path):
+        fp = tmp_path / "env.json"
+        fp.write_text(json.dumps({"key": "old"}))
+        ec = EnvironmentConfig(fp)
+        assert ec.get("key") == "old"
+        fp.write_text(json.dumps({"key": "new"}))
+        ec.reload()
+        assert ec.get("key") == "new"

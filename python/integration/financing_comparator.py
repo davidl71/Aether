@@ -81,6 +81,8 @@ class InstrumentMetrics:
     commission_cost: float = 0.0
     effective_rate_pct: float = 0.0
     margin_requirement: float = 0.0
+    notional_exposure: float = 0.0
+    capital_outlay: float = 0.0
     capital_efficiency_pct: float = 0.0
     liquidity_score: float = 0.0
     available: bool = True
@@ -89,10 +91,23 @@ class InstrumentMetrics:
 
     @property
     def after_tax_return_on_capital(self) -> float:
-        """After-tax return per unit of capital deployed (including margin)."""
-        if self.margin_requirement > 0:
-            return (self.after_tax_rate_pct / 100.0) * (1.0 / self.margin_requirement) * 100.0
+        """After-tax return per dollar of capital actually tied up."""
+        if self.capital_outlay > 0:
+            notional = self.notional_exposure or self.capital_outlay
+            return self.after_tax_rate_pct * (notional / self.capital_outlay)
         return self.after_tax_rate_pct
+
+    @property
+    def margin_leverage(self) -> float:
+        """Ratio of notional exposure to capital outlay. >1 means leveraged."""
+        if self.capital_outlay > 0 and self.notional_exposure > 0:
+            return self.notional_exposure / self.capital_outlay
+        return 1.0
+
+    @property
+    def freed_capital(self) -> float:
+        """Capital available for other uses vs full notional deployment."""
+        return max(0.0, self.notional_exposure - self.capital_outlay)
 
 
 @dataclass
@@ -174,6 +189,13 @@ class DecisionMatrix:
                     "tax_rate": row.box_spread.tax_rate_applied,
                     "commission": row.box_spread.commission_cost,
                     "liquidity_score": row.box_spread.liquidity_score,
+                    "margin_requirement": row.box_spread.margin_requirement,
+                    "notional_exposure": row.box_spread.notional_exposure,
+                    "capital_outlay": row.box_spread.capital_outlay,
+                    "capital_efficiency": row.box_spread.capital_efficiency_pct,
+                    "return_on_capital": row.box_spread.after_tax_return_on_capital,
+                    "margin_leverage": row.box_spread.margin_leverage,
+                    "freed_capital": row.box_spread.freed_capital,
                 }
             if row.treasury and row.treasury.available:
                 row_dict["treasury"] = {
@@ -181,6 +203,9 @@ class DecisionMatrix:
                     "after_tax_rate": row.treasury.after_tax_rate_pct,
                     "tax_rate": row.treasury.tax_rate_applied,
                     "source": row.treasury.source,
+                    "capital_outlay": row.treasury.capital_outlay,
+                    "capital_efficiency": row.treasury.capital_efficiency_pct,
+                    "return_on_capital": row.treasury.after_tax_return_on_capital,
                 }
             row_dict["spread_bps_pretax"] = row.spread_bps_pretax
             row_dict["spread_bps_aftertax"] = row.spread_bps_aftertax
@@ -247,11 +272,12 @@ class FinancingComparator:
         strike_width: float = 50.0,
         liquidity_score: float = 75.0,
         is_qualified_index: bool = True,
+        margin_type: str = "reg_t",
     ) -> InstrumentMetrics:
         """Build metrics for a box spread at a specific tenor."""
         commission = 4.0 * self.per_contract_fee
-        # Effective rate accounts for commission drag
-        commission_drag_pct = (commission / (strike_width * 100.0)) * (365.0 / tenor_days) * 100.0
+        notional = strike_width * 100.0
+        commission_drag_pct = (commission / notional) * (365.0 / tenor_days) * 100.0
 
         effective_rate = gross_rate_pct - commission_drag_pct
         tax_rate = (
@@ -261,6 +287,15 @@ class FinancingComparator:
         )
         after_tax = effective_rate * (1.0 - tax_rate)
 
+        # Box spread margin: max loss = notional under Reg-T,
+        # but portfolio margin typically ~20-30% of notional
+        if margin_type == "portfolio":
+            margin = notional * 0.25
+        else:
+            margin = notional
+
+        capital_eff = (notional / margin * 100.0) if margin > 0 else 100.0
+
         return InstrumentMetrics(
             instrument_type="box_spread",
             tenor_days=tenor_days,
@@ -269,8 +304,10 @@ class FinancingComparator:
             tax_rate_applied=tax_rate,
             commission_cost=commission,
             effective_rate_pct=effective_rate,
-            margin_requirement=strike_width * 100.0,
-            capital_efficiency_pct=100.0,
+            margin_requirement=margin,
+            notional_exposure=notional,
+            capital_outlay=margin,
+            capital_efficiency_pct=capital_eff,
             liquidity_score=liquidity_score,
             available=True,
             source="box_spread",
@@ -278,11 +315,16 @@ class FinancingComparator:
         )
 
     def build_treasury_metrics(
-        self, tenor_days: int, gross_rate_pct: float, source: str = "Treasury API"
+        self, tenor_days: int, gross_rate_pct: float, source: str = "Treasury API",
+        principal: float = 0.0,
     ) -> InstrumentMetrics:
         """Build metrics for a Treasury security at a specific tenor."""
         tax_rate = self.tax_config.treasury_tax_rate
         after_tax = gross_rate_pct * (1.0 - tax_rate)
+
+        # Treasuries require full capital outlay but can serve as margin collateral
+        # (~95% of T-bill face value accepted as margin at IBKR)
+        notional = principal if principal > 0 else 0.0
 
         return InstrumentMetrics(
             instrument_type="treasury",
@@ -291,7 +333,9 @@ class FinancingComparator:
             after_tax_rate_pct=after_tax,
             tax_rate_applied=tax_rate,
             effective_rate_pct=gross_rate_pct,
-            margin_requirement=0.0,
+            margin_requirement=notional,
+            notional_exposure=notional,
+            capital_outlay=notional,
             capital_efficiency_pct=100.0,
             liquidity_score=100.0,
             available=True,
@@ -433,40 +477,45 @@ class FinancingComparator:
     def format_text_report(self, matrix: DecisionMatrix) -> str:
         """Format the decision matrix as a human-readable text table."""
         lines: List[str] = []
-        lines.append("=" * 95)
+        lines.append("=" * 115)
         lines.append(f"  FINANCING COMPARISON: Box Spread vs U.S. Treasury  ({matrix.direction.value.upper()})")
         lines.append(f"  Principal: ${matrix.principal:,.0f}  |  "
                      f"Federal Tax: {matrix.tax_config.federal_rate*100:.0f}%  |  "
                      f"Sec. 1256 Blended: {matrix.tax_config.section_1256_blended_rate*100:.1f}%")
-        lines.append("=" * 95)
+        lines.append("=" * 115)
         lines.append(
             f"{'Tenor':>8}  "
-            f"{'BS Gross':>9}  {'BS After':>9}  "
+            f"{'BS Gross':>9}  {'BS After':>9}  {'BS RoC':>8}  "
             f"{'Tsy Gross':>9}  {'Tsy After':>9}  "
-            f"{'Spread':>8}  {'Winner':>12}"
+            f"{'Spread':>8}  {'Leverage':>8}  {'Winner':>12}"
         )
-        lines.append("-" * 95)
+        lines.append("-" * 115)
 
         for row in matrix.rows:
             tenor_str = f"{row.tenor_days}d"
             bs_gross = f"{row.box_spread.gross_rate_pct:.2f}%" if row.box_spread and row.box_spread.available else "N/A"
             bs_after = f"{row.box_spread.after_tax_rate_pct:.2f}%" if row.box_spread and row.box_spread.available else "N/A"
+            bs_roc = f"{row.box_spread.after_tax_return_on_capital:.2f}%" if row.box_spread and row.box_spread.available else "N/A"
             tr_gross = f"{row.treasury.gross_rate_pct:.2f}%" if row.treasury and row.treasury.available else "N/A"
             tr_after = f"{row.treasury.after_tax_rate_pct:.2f}%" if row.treasury and row.treasury.available else "N/A"
             spread = f"{row.spread_bps_aftertax:+.0f}bp" if row.spread_bps_aftertax is not None else "N/A"
+            leverage = f"{row.box_spread.margin_leverage:.1f}x" if row.box_spread and row.box_spread.available else "1.0x"
             winner = row.winner or "N/A"
 
             lines.append(
-                f"{tenor_str:>8}  {bs_gross:>9}  {bs_after:>9}  "
-                f"{tr_gross:>9}  {tr_after:>9}  {spread:>8}  {winner:>12}"
+                f"{tenor_str:>8}  {bs_gross:>9}  {bs_after:>9}  {bs_roc:>8}  "
+                f"{tr_gross:>9}  {tr_after:>9}  {spread:>8}  {leverage:>8}  {winner:>12}"
             )
 
-        lines.append("-" * 95)
+        lines.append("-" * 115)
         s = matrix.summary
         lines.append(
             f"  Box spread wins: {s['box_spread_wins']}  |  "
             f"Treasury wins: {s['treasury_wins']}  |  "
             f"Ties: {s['ties']}"
         )
-        lines.append("=" * 95)
+        lines.append("")
+        lines.append("  RoC = Return on Capital (after-tax rate adjusted for margin leverage)")
+        lines.append("  Leverage = Notional / Capital outlay (>1x = capital freed for other uses)")
+        lines.append("=" * 115)
         return "\n".join(lines)

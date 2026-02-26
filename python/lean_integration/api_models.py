@@ -100,6 +100,30 @@ class RiskStatus(BaseModel):
     updated_at: datetime
 
 
+class CashFlowEventModel(BaseModel):
+    """Single cash flow event."""
+    date: str
+    amount: float
+    description: str
+    position_name: str
+    type: str
+
+class MonthlyCashFlowModel(BaseModel):
+    """Aggregated monthly cash flow."""
+    month: str
+    inflows: float
+    outflows: float
+    net: float
+    events: List[CashFlowEventModel] = []
+
+class CashFlowTimelineModel(BaseModel):
+    """Cash flow timeline for snapshot."""
+    events: List[CashFlowEventModel] = []
+    monthly_flows: dict = {}
+    total_inflows: float = 0.0
+    total_outflows: float = 0.0
+    net_cash_flow: float = 0.0
+
 class SnapshotResponse(BaseModel):
     """Complete system snapshot response matching API contract."""
     generated_at: datetime
@@ -114,6 +138,7 @@ class SnapshotResponse(BaseModel):
     decisions: List[StrategyDecisionSnapshot]
     alerts: List[Alert]
     risk: RiskStatus
+    cash_flow_timeline: Optional[CashFlowTimelineModel] = None
 
 
 class StrategyStartRequest(BaseModel):

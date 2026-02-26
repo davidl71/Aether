@@ -285,6 +285,60 @@ async def calculate_scenario_endpoint(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class CashManagementRequest(BaseModel):
+    """Request for cash management analysis"""
+    positions: List[PositionInput]
+    bank_accounts: List[BankAccountInput] = []
+    available_cash: float
+    projection_months: int = 12
+
+
+@app.post("/api/v1/cash-flow/management")
+async def cash_management_endpoint(request: CashManagementRequest) -> Dict[str, Any]:
+    """
+    Analyze portfolio cash position against upcoming obligations.
+
+    Returns reserves analysis, alerts, and allocation recommendations.
+    """
+    try:
+        from python.integration.cash_flow_portfolio_manager import CashFlowPortfolioManager
+
+        positions_dict = [
+            {
+                'name': p.name,
+                'maturity_date': p.maturity_date,
+                'cash_flow': p.cash_flow,
+                'candle': p.candle or {},
+                'instrument_type': p.instrument_type,
+                'rate': p.rate,
+            }
+            for p in request.positions
+        ]
+
+        bank_accounts_dict = [
+            {
+                'account_name': a.account_name,
+                'balance': a.balance,
+                'debit_rate': a.debit_rate,
+                'credit_rate': a.credit_rate,
+                'currency': a.currency,
+            }
+            for a in request.bank_accounts
+        ]
+
+        manager = CashFlowPortfolioManager()
+        snapshot = manager.analyze(
+            positions=positions_dict,
+            bank_accounts=bank_accounts_dict,
+            available_cash=request.available_cash,
+            projection_months=request.projection_months,
+        )
+
+        return snapshot.to_dict()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint"""

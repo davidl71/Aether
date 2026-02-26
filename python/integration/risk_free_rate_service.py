@@ -296,6 +296,53 @@ def compare_rates(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/yield-curve/comparison")
+def yield_curve_comparison(
+    box_spread_rates: Dict[str, Dict[str, float]],
+    treasury_rates: Optional[Dict[str, float]] = None,
+    sofr_rates: Optional[Dict[str, float]] = None,
+    fetch_live: bool = False,
+) -> Dict[str, Any]:
+    """
+    Overlay Treasury/SOFR yield curves on box spread implied rate curves.
+
+    Request body:
+        box_spread_rates: {symbol: {dte_str: rate_pct}}
+        treasury_rates:   optional {dte_str: rate_pct}
+        sofr_rates:       optional {dte_str: rate_pct}
+        fetch_live:       if true, fetch live rates when manual not provided
+
+    Returns YieldCurveComparison with spread analysis at each tenor point.
+    """
+    try:
+        from .yield_curve_comparison import YieldCurveComparer
+
+        comparer = YieldCurveComparer(
+            treasury_client=None,
+            sofr_client=benchmark_client if fetch_live else None,
+        )
+
+        box_rates_int = {
+            sym: {int(dte): rate for dte, rate in rates.items()}
+            for sym, rates in box_spread_rates.items()
+        }
+        treas_int = {int(k): v for k, v in treasury_rates.items()} if treasury_rates else None
+        sofr_int = {int(k): v for k, v in sofr_rates.items()} if sofr_rates else None
+
+        comparison = comparer.compare(
+            box_spread_rates=box_rates_int,
+            treasury_rates=treas_int,
+            sofr_rates=sofr_int,
+            fetch_live=fetch_live,
+        )
+
+        return comparison.to_dict()
+
+    except Exception as e:
+        logger.error(f"Error comparing yield curves: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8004)

@@ -14,10 +14,13 @@ import { DetailModal } from './components/DetailModal';
 import ScenarioSummary from './components/ScenarioSummary';
 import BoxSpreadTable from './components/BoxSpreadTable';
 import { YieldCurveTable } from './components/YieldCurveTable';
+import { FinancingComparisonTable } from './components/FinancingComparisonTable';
 import { OptionsChainTable } from './components/OptionsChainTable';
 import { BoxSpreadCombinations } from './components/BoxSpreadCombinations';
 import { CandlestickChart } from './components/CandlestickChart';
 import { useChartData } from './hooks/useChartData';
+import { useTastytrade } from './hooks/useTastytrade';
+import { TastytradeDashboard } from './components/TastytradeDashboard';
 import type { SnapshotPayload, SymbolSnapshot, PositionSnapshot } from './types/snapshot';
 import type { BoxSpreadSummary } from './types';
 import type { Timeframe } from './types/chart';
@@ -112,6 +115,13 @@ function App() {
   } = useSnapshot();
   const { data: scenarioData, isLoading: scenarioLoading, error: scenarioError } = useBoxSpreadData();
   const { watchlist, addSymbol, removeSymbol, isDefault } = useSymbolWatchlist();
+  const {
+    snapshot: tastySnapshot,
+    isLoading: tastyLoading,
+    error: tastyError,
+    isAvailable: tastyAvailable,
+    refresh: tastyRefresh,
+  } = useTastytrade();
 
   const scenarioSummary = useMemo<BoxSpreadSummary | null>(() => {
     if (!scenarioData || scenarioData.scenarios.length === 0) {
@@ -440,6 +450,15 @@ function App() {
             handleCancelOrder,
             apiBaseUrl
           )}
+        {activeTab === 'dashboard' && (
+          <TastytradeDashboard
+            snapshot={tastySnapshot}
+            isLoading={tastyLoading}
+            error={tastyError}
+            isAvailable={tastyAvailable}
+            onRefresh={tastyRefresh}
+          />
+        )}
       </main>
 
       <ActionBar onBuyCombo={handleBuyCombo} onSellCombo={handleSellCombo} />
@@ -532,6 +551,13 @@ function App() {
               {scenarioData && scenarioData.underlying === modal.payload.symbol && (
                 <div style={{ marginTop: '24px' }}>
                   <YieldCurveTable scenarios={scenarioData.scenarios} symbol={modal.payload.symbol} />
+                </div>
+              )}
+
+              {/* Financing Comparison: Box Spread vs Treasury */}
+              {scenarioData && scenarioData.underlying === modal.payload.symbol && (
+                <div style={{ marginTop: '24px' }}>
+                  <FinancingComparisonTable scenarios={scenarioData.scenarios} symbol={modal.payload.symbol} />
                 </div>
               )}
             </>

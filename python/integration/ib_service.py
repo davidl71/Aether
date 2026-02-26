@@ -70,6 +70,43 @@ def _extract_account_value(summary: Dict, key: str, default: float = 0.0) -> flo
     return default
 
 
+def _build_cash_flow_timeline(positions: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Generate cash flow timeline from positions for inclusion in snapshot."""
+    try:
+        from .cash_flow_timeline import calculate_cash_flow_timeline
+    except ImportError:
+        return None
+
+    if not positions:
+        return None
+
+    try:
+        result = calculate_cash_flow_timeline(positions=positions, bank_accounts=[], projection_months=12)
+        return {
+            "events": [
+                {"date": e.date, "amount": e.amount, "description": e.description,
+                 "position_name": e.position_name, "type": e.type}
+                for e in result.events
+            ],
+            "monthly_flows": {
+                month: {"month": m.month, "inflows": m.inflows, "outflows": m.outflows,
+                        "net": m.net, "events": [
+                            {"date": ev.date, "amount": ev.amount, "description": ev.description,
+                             "position_name": ev.position_name, "type": ev.type}
+                            for ev in m.events
+                        ]}
+                for month, m in result.monthly_flows.items()
+            },
+            "total_inflows": result.total_inflows,
+            "total_outflows": result.total_outflows,
+            "net_cash_flow": result.net_cash_flow,
+        }
+    except Exception:
+        import logging
+        logging.getLogger(__name__).warning("Failed to generate cash flow timeline", exc_info=True)
+        return None
+
+
 def build_snapshot_payload(
     symbols: List[str], client: IBKRPortalClient, account_id: Optional[str] = None
 ) -> Dict[str, Any]:
@@ -187,6 +224,9 @@ def build_snapshot_payload(
     # Orders would require TWS API or more complex Client Portal integration
     orders_data: List[Dict[str, Any]] = []
 
+    # Generate cash flow timeline from positions
+    cash_flow_timeline = _build_cash_flow_timeline(positions_data)
+
     payload: Dict[str, Any] = {
         "generated_at": _now_iso(),
         "mode": "LIVE",  # IB Client Portal is always live trading
@@ -205,6 +245,8 @@ def build_snapshot_payload(
             "updated_at": _now_iso(),
         },
     }
+    if cash_flow_timeline:
+        payload["cash_flow_timeline"] = cash_flow_timeline
     return payload
 
 

@@ -82,6 +82,30 @@ export interface AccountMetrics {
   questdb_ok: boolean;
 }
 
+export interface CashFlowEvent {
+  date: string;
+  amount: number;
+  description: string;
+  position_name: string;
+  type: 'maturity' | 'loan_payment' | 'other';
+}
+
+export interface MonthlyCashFlow {
+  month: string;
+  inflows: number;
+  outflows: number;
+  net: number;
+  events: CashFlowEvent[];
+}
+
+export interface CashFlowTimeline {
+  events: CashFlowEvent[];
+  monthly_flows: Record<string, MonthlyCashFlow>;
+  total_inflows: number;
+  total_outflows: number;
+  net_cash_flow: number;
+}
+
 export interface SnapshotPayload {
   generated_at: string;
   mode: string;
@@ -93,6 +117,7 @@ export interface SnapshotPayload {
   historic: PositionSnapshot[];
   orders: TimelineEvent[];
   alerts: TimelineEvent[];
+  cash_flow_timeline?: CashFlowTimeline;
 }
 
 export type Severity = TimelineEvent['severity'];
