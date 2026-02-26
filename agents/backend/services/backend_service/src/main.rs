@@ -267,7 +267,7 @@ fn spawn_market_data_loop<S>(
   source: S,
   state: SharedSnapshot,
   strategy_signal: UnboundedSender<StrategySignal>,
-  mut strategy_toggle: watch::Receiver<bool>,
+  strategy_toggle: watch::Receiver<bool>,
   nats: Arc<Option<nats_integration::NatsIntegration>>,
 ) where
   S: MarketDataSource + Send + Sync + 'static,
@@ -376,7 +376,7 @@ fn spawn_strategy_fanout(
   mut decisions_rx: UnboundedReceiver<StrategyDecisionModel>,
   state: SharedSnapshot,
   risk_engine: Arc<RiskEngine>,
-  mut strategy_toggle: watch::Receiver<bool>,
+  strategy_toggle: watch::Receiver<bool>,
   nats: Arc<Option<nats_integration::NatsIntegration>>,
 ) {
   tokio::spawn(async move {

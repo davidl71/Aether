@@ -1,13 +1,11 @@
-use std::sync::Arc;
 use std::time::Duration;
 
 use api::{Alert, PositionSnapshot, SharedSnapshot};
 use anyhow::Context;
-use chrono::Utc;
 use reqwest::Client;
 use serde::Deserialize;
 use tokio::time::interval;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 
 const SWIFTNESS_API_URL: &str = "http://127.0.0.1:8081";
 const UPDATE_INTERVAL_SECS: u64 = 60; // Update every minute
@@ -115,6 +113,7 @@ async fn fetch_and_merge_positions(client: &Client, state: &SharedSnapshot) -> a
 }
 
 /// Check if Swiftness API is available
+#[allow(dead_code)]
 pub async fn check_swiftness_api_health() -> bool {
     let client = match Client::builder()
         .timeout(Duration::from_secs(2))

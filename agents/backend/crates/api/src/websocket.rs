@@ -67,7 +67,7 @@ async fn handle_socket(socket: WebSocket, state: RestState) {
       // Send periodic snapshot updates
       _ = interval.tick() => {
         if let Ok(snapshot_json) = get_snapshot_json(&state).await {
-          if let Err(e) = sender.send(Message::Text(snapshot_json)).await {
+          if let Err(_) = sender.send(Message::Text(snapshot_json)).await {
             warn!("WebSocket send error, client disconnected");
             break;
           }

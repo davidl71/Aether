@@ -2,9 +2,7 @@ module github.com/dlowes/ib-platform/agents/go
 
 go 1.22
 
-require (
-	github.com/nats-io/nats.go v1.37.0
-)
+require github.com/nats-io/nats.go v1.37.0
 
 require (
 	github.com/klauspost/compress v1.17.9 // indirect

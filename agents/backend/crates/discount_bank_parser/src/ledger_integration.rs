@@ -36,7 +36,7 @@ pub fn convert_to_transactions(
     };
 
     // Determine target currency (convert to USD if exchange rate provided, otherwise use original)
-    let target_currency = if exchange_rate.is_some() && currency == Currency::ILS {
+    let _target_currency = if exchange_rate.is_some() && currency == Currency::ILS {
         Currency::USD
     } else {
         currency

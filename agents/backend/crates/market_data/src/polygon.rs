@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use async_trait::async_trait;
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use reqwest::{Client, StatusCode, Url};
 use tokio::sync::Mutex;
 use tracing::debug;
@@ -85,35 +85,17 @@ impl PolygonMarketDataSource {
         if ts > 1_000_000_000_000_000_000 {
             let secs = ts / 1_000_000_000;
             let nanos = (ts % 1_000_000_000) as u32;
-            DateTime::<Utc>::from_utc(
-                NaiveDateTime::from_timestamp_opt(secs, nanos)
-                    .unwrap_or_else(|| NaiveDateTime::from_timestamp(0, 0)),
-                Utc,
-            )
+            DateTime::from_timestamp(secs, nanos).unwrap_or_default()
         } else if ts > 1_000_000_000_000 {
-            // microseconds
             let secs = ts / 1_000_000;
             let micros = (ts % 1_000_000) as u32;
-            DateTime::<Utc>::from_utc(
-                NaiveDateTime::from_timestamp_opt(secs, micros * 1_000)
-                    .unwrap_or_else(|| NaiveDateTime::from_timestamp(0, 0)),
-                Utc,
-            )
+            DateTime::from_timestamp(secs, micros * 1_000).unwrap_or_default()
         } else if ts > 1_000_000_000 {
-            // milliseconds
             let secs = ts / 1_000;
             let millis = (ts % 1_000) as u32;
-            DateTime::<Utc>::from_utc(
-                NaiveDateTime::from_timestamp_opt(secs, millis * 1_000_000)
-                    .unwrap_or_else(|| NaiveDateTime::from_timestamp(0, 0)),
-                Utc,
-            )
+            DateTime::from_timestamp(secs, millis * 1_000_000).unwrap_or_default()
         } else {
-            DateTime::<Utc>::from_utc(
-                NaiveDateTime::from_timestamp_opt(ts, 0)
-                    .unwrap_or_else(|| NaiveDateTime::from_timestamp(0, 0)),
-                Utc,
-            )
+            DateTime::from_timestamp(ts, 0).unwrap_or_default()
         }
     }
 }
@@ -172,6 +154,7 @@ impl MarketDataSource for PolygonMarketDataSource {
 }
 
 #[derive(Debug, serde::Deserialize)]
+#[allow(dead_code)]
 struct NbboResponse {
     #[serde(default)]
     pub status: Option<String>,

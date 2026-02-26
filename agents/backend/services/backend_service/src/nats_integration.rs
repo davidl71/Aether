@@ -135,6 +135,7 @@ impl NatsIntegration {
   /// Attempts to flush the connection to verify it's alive.
   /// Returns "ok" if connected and flush succeeds, "degraded" if connected but flush fails,
   /// or "unavailable" if not connected.
+  #[allow(dead_code)]
   pub async fn check_connection_health(&self) -> String {
     if let Some(ref client) = self.client {
       // Try to flush with a short timeout to verify connection
