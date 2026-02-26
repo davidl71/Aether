@@ -43,7 +43,7 @@ export class NATSService {
   private connected: boolean = false;
   private url: string;
 
-  constructor(url: string = 'ws://localhost:8080') {
+  constructor(url: string = 'ws://localhost:8081') {
     this.url = url;
   }
 
