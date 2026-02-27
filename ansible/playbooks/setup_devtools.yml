@@ -1,6 +1,7 @@
 ---
 - name: Configure global developer tools
   hosts: localhost
+  connection: local
   become: false
   gather_facts: true
   vars:

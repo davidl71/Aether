@@ -32,6 +32,42 @@ endfunction()
 cmake_minimum_required(VERSION 3.21)
 
 # ============================================================================
+# macOS SDK / Toolchain Fix (must be before project() for correct compiler checks)
+# On macOS 26 (Tahoe) and some CLT installs, the toolchain may ship without
+# C++ stdlib headers in /Library/Developer/CommandLineTools/usr/include/c++/v1.
+# Detect this and inject the SDK header path so that try_compile and builds succeed.
+# If builds still fail with missing <string> etc., run: xcode-select --install
+# ============================================================================
+if(APPLE)
+    if(NOT CMAKE_OSX_SYSROOT)
+        execute_process(
+            COMMAND xcrun --show-sdk-path
+            OUTPUT_VARIABLE _DETECTED_SDK
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+        )
+        if(_DETECTED_SDK)
+            set(CMAKE_OSX_SYSROOT "${_DETECTED_SDK}" CACHE PATH "macOS SDK path")
+        endif()
+    endif()
+    # Fix incomplete C++ stdlib in toolchain: use SDK C++ headers when CLT path lacks them
+    if(CMAKE_OSX_SYSROOT)
+        set(_SDK_CXX "${CMAKE_OSX_SYSROOT}/usr/include/c++/v1")
+        set(_TC_CXX "/Library/Developer/CommandLineTools/usr/include/c++/v1")
+        if(EXISTS "${_SDK_CXX}/string" AND NOT EXISTS "${_TC_CXX}/string")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib++-isystem${_SDK_CXX}" CACHE STRING "" FORCE)
+            message(STATUS "Injecting SDK C++ headers (CLT headers missing): ${_SDK_CXX}")
+        elseif(EXISTS "${_SDK_CXX}/string")
+            # SDK has C++ headers; add for subprojects (e.g. FetchContent NLopt) that run try_compile without CLT path
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib++-isystem${_SDK_CXX}" CACHE STRING "" FORCE)
+            message(STATUS "Injecting SDK C++ headers for subprojects: ${_SDK_CXX}")
+        elseif(NOT EXISTS "${_TC_CXX}/string")
+            message(WARNING "C++ stdlib headers not found in CLT or SDK. Run: xcode-select --install")
+        endif()
+    endif()
+endif()
+
+# ============================================================================
 # Project Configuration
 # ============================================================================
 project(SyntheticFinancingPlatform
@@ -259,7 +295,7 @@ set(EIGEN3_REPOSITORY "https://gitlab.com/libeigen/eigen.git")
 fetchcontent_declare(
     Eigen3
     GIT_REPOSITORY ${EIGEN3_REPOSITORY}
-    GIT_TAG 3.4.0
+    GIT_TAG master
     GIT_SHALLOW TRUE
     PATCH_COMMAND ${CMAKE_COMMAND} -P ${PATCH_CMAKE_MINIMUM}
 )
@@ -369,6 +405,7 @@ fetchcontent_declare(
     GIT_REPOSITORY ${NLOPT_REPOSITORY}
     GIT_TAG v2.9.1
     GIT_SHALLOW TRUE
+    PATCH_COMMAND patch -p1 -i "${CMAKE_CURRENT_SOURCE_DIR}/cmake/nlopt-enable-cxx.patch"
 )
 set(NLOPT_LICENSE_MIT ON CACHE BOOL "Use MIT license instead of LGPL")
 
@@ -383,6 +420,18 @@ if(ENABLE_NATS)
         GIT_SHALLOW TRUE
     )
     message(STATUS "NATS integration enabled - will fetch nats.c library")
+endif()
+
+# Ensure macOS SDK C++ headers are in CXX flags for FetchContent subprojects (e.g. NLopt try_compile)
+if(APPLE)
+    execute_process(COMMAND xcrun --show-sdk-path OUTPUT_VARIABLE _NLOPT_SDK OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+    if(_NLOPT_SDK)
+        set(_NLOPT_SDK_CXX "${_NLOPT_SDK}/usr/include/c++/v1")
+        if(EXISTS "${_NLOPT_SDK_CXX}/string")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib++-isystem${_NLOPT_SDK_CXX}" CACHE STRING "" FORCE)
+            message(STATUS "NLopt/FetchContent: using SDK C++ headers ${_NLOPT_SDK_CXX}")
+        endif()
+    endif()
 endif()
 
 fetchcontent_makeavailable(nlohmann_json spdlog CLI11 Eigen3 QuantLib NLopt)
@@ -451,6 +500,64 @@ if(BUILD_TESTING)
 endif()
 
 # ====================================================================================
+# Protobuf (generated from proto/messages.proto via proto/generate.sh)
+# ============================================================================
+set(PROTO_GENERATED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/generated")
+if(EXISTS "${PROTO_GENERATED_DIR}/messages.pb.cc")
+    find_package(Protobuf QUIET)
+    if(Protobuf_FOUND)
+        add_library(platform_proto STATIC
+            "${PROTO_GENERATED_DIR}/messages.pb.cc"
+        )
+        target_include_directories(platform_proto PUBLIC
+            "${PROTO_GENERATED_DIR}"
+        )
+        target_link_libraries(platform_proto PUBLIC protobuf::libprotobuf)
+        message(STATUS "Protobuf generated code: ${PROTO_GENERATED_DIR} (run proto/generate.sh to regenerate)")
+    else()
+        message(WARNING "Generated proto found but Protobuf not found. Install: brew install protobuf")
+    endif()
+else()
+    message(STATUS "Proto generated code not found at ${PROTO_GENERATED_DIR}. Run ./proto/generate.sh from repo root to enable.")
+endif()
+
+# Proto adapter (types <-> proto at boundaries); only when platform_proto exists
+if(TARGET platform_proto)
+    add_library(proto_adapter STATIC src/proto_adapter.cpp)
+    target_include_directories(proto_adapter
+        PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${PROTO_GENERATED_DIR}
+    )
+    target_link_libraries(proto_adapter PUBLIC platform_proto)
+    message(STATUS "Proto adapter library: proto_adapter")
+
+    # Standalone test for proto adapter (no TWS/Intel deps)
+    if(BUILD_TESTING)
+        add_executable(proto_adapter_tests tests/test_proto_adapter.cpp)
+        target_include_directories(proto_adapter_tests PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${PROTO_GENERATED_DIR}
+        )
+        target_link_libraries(proto_adapter_tests PRIVATE
+            proto_adapter
+            Catch2::Catch2WithMain
+        )
+        if(NOT ABSEIL_LIBS)
+            file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.dylib")
+        endif()
+        if(ABSEIL_LIBS)
+            target_link_libraries(proto_adapter_tests PRIVATE ${ABSEIL_LIBS})
+        endif()
+        target_sources(proto_adapter_tests PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/types_stub_for_proto_test.cpp
+        )
+        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+        add_test(NAME proto_adapter_tests COMMAND $<TARGET_FILE:proto_adapter_tests>)
+    endif()
+endif()
+
+# ====================================================================================
 # TWS API (IBKR C++ API)
 # Prefer GitHub repo layout (source/cppclient/client) via TWS_API_SOURCE_DIR,
 # e.g. -DTWS_API_SOURCE_DIR=/path/to/tws-api or ../tws-api. Falls back to
@@ -478,7 +585,7 @@ endif()
 if(NOT _tws_api_use_github_dir)
 set(TWS_API_VENDOR_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 cmake_path(APPEND TWS_API_VENDOR_ROOT
-    "third_party" "tws-api" "IBJts" "source" "cppclient"
+    "third_party" "tws-api" "source" "cppclient"
 )
 
 set(DEFAULT_TWS_API_INCLUDE_DIR "${TWS_API_VENDOR_ROOT}")
@@ -694,6 +801,15 @@ if(_build_native_cli)
     set(SOURCES
         src/ib_box_spread.cpp
         src/tws_client.cpp
+        src/tws_conversions.cpp
+        src/tws_connection.cpp
+        src/tws_market_data.cpp
+        src/tws_orders.cpp
+        src/tws_positions.cpp
+        src/tws_contracts.cpp
+        src/types.cpp
+        src/connection_utils.cpp
+        src/tws_error_codes.cpp
         src/market_hours.cpp
         src/greeks_calculator.cpp
         src/rate_limiter.cpp
@@ -705,10 +821,19 @@ if(_build_native_cli)
         src/loan_position.cpp
         src/loan_manager.cpp
         src/margin_calculator.cpp
+        src/cache_client.cpp
     )
 
     set(HEADERS
         include/tws_client.h
+        include/tws_conversions.h
+        include/tws_connection.h
+        include/tws_market_data.h
+        include/tws_orders.h
+        include/tws_positions.h
+        include/tws_contracts.h
+        include/connection_utils.h
+        include/tws_error_codes.h
         include/rate_limiter.h
         include/market_hours.h
         include/greeks_calculator.h
@@ -720,6 +845,7 @@ if(_build_native_cli)
         include/loan_position.h
         include/loan_manager.h
         include/margin_calculator.h
+        include/cache_client.h
     )
 
     # Conditionally include local source files only if NOT using extracted library
@@ -909,6 +1035,10 @@ if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tws_conn
     # Link with TWS client source files
     target_sources(test_tws_connection PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_conversions.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/types.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/connection_utils.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_error_codes.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/config_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/rate_limiter.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/pcap_capture.cpp

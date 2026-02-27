@@ -1,0 +1,11 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -16,7 +16,7 @@
+ 
+ set (CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
+ 
+-project (nlopt)
++project (nlopt LANGUAGES C CXX)
+ 
+ #==============================================================================
+ # version
