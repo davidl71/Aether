@@ -37,6 +37,10 @@ Use this as a Todo2/exarp task or as an execution plan (e.g. with executing-plan
 **Priority:** medium
 **Dependencies:** None
 
+**Create the task:**
+- **With exarp-go MCP (Cursor):** When exarp-go is connected, in chat: *"Create todo: Execute script and CMake refactor verification"* and paste the long_description above, or use `task_workflow` with `action=create`, `name=Execute script and CMake refactor verification`, `long_description=<above>`, `tags=verification,scripts,cmake,automation`, `priority=medium` (see `docs/EXARP_TASKS_IMPORT.json` for a single-task payload).
+- **Without MCP:** Copy title + long_description into your Todo2 UI or run your usual task-creation script pointing at `docs/EXARP_TASKS_IMPORT.json` if it supports that format.
+
 ---
 
 ## Option B: Execution plan (for executing-plans skill or clipboard → Notes)
