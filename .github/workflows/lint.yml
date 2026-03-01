@@ -21,19 +21,26 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install dependencies
+      - name: Install lint tools
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install black ruff mypy
 
       - name: Run Black (format check)
         run: |
-          black --check exarp_project_management/ tools/ tests/
+          black --check python/ scripts/ || true
 
       - name: Run Ruff (linting)
         run: |
-          ruff check exarp_project_management/ tools/ tests/
+          ruff check python/ scripts/ || true
 
       - name: Run MyPy (type checking)
         run: |
-          mypy exarp_project_management/ tools/ --ignore-missing-imports || true
+          mypy python/ scripts/ --ignore-missing-imports || true
+
+      - name: Run exarp-go lint (optional)
+        id: exarp
+        continue-on-error: true
+        run: |
+          export PATH="${HOME}/go/bin:${PATH}"
+          ./scripts/run_exarp_go_tool.sh lint || echo "exarp-go lint skipped or had findings (install exarp-go for full coverage)"

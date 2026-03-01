@@ -109,11 +109,43 @@ Test TWS connection (requires TWS/Gateway running).
 
 ### `lint:run`
 
-Run all linters (cppcheck, clang-tidy, etc.).
+Run all linters (cppcheck, clang-tidy, bandit, ESLint, etc.). Includes exarp-go lint when the binary is available.
 
 **Command**: `./scripts/run_linters.sh`
 
 **Use When**: Before committing code or during code review
+
+**Also**: `cmake --build build --target lint` (from configured build dir), or `make lint` (root Makefile).
+
+---
+
+### `lint:exarp`
+
+Run exarp-go lint only (Go/shell/etc.). Requires exarp-go in PATH (e.g. `~/go/bin`).
+
+**Command**: `./scripts/run_exarp_go_tool.sh lint`
+
+**Use When**: Running exarp-go linters separately
+
+---
+
+### `exarp:tool`
+
+Run a specific exarp-go tool (e.g. lint, testing, security). Set `ARG` to the tool name (default: lint).
+
+**Command**: `./scripts/run_exarp_go_tool.sh "${ARG:-lint}"`
+
+**Use When**: Automation or CI; use MCP tools in Cursor for interactive use.
+
+---
+
+### `exarp:list-tools`
+
+List available exarp-go tools.
+
+**Command**: `./scripts/run_exarp_go_tool.sh --list`
+
+**Use When**: Discovering which tools exarp-go provides
 
 ---
 
@@ -342,6 +374,13 @@ cursor-command build:debug
 
 cmake --build --preset macos-arm64-debug
 ```
+
+**Make and CMake**: From the repo root you can also use:
+
+- **Make** (wraps CMake presets and scripts): `make build`, `make test`, `make lint`, `make exarp-lint`. Default preset is OS-based (e.g. macos-arm64-debug on macOS); override with `PRESET=linux-x64-debug`. Run `make help`.
+- **CMake** (from a configured build dir): `cmake --build build --target lint`, `cmake --build build --target exarp-lint`, `cmake --build build --target exarp-list`.
+
+See `docs/ANSIBLE_SETUP.md` (§ MCP / exarp-go) for exarp-go CI/scripts integration.
 
 ---
 

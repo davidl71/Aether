@@ -24,8 +24,20 @@
       - libcurl4-openssl-dev
       # Compiler cache for faster rebuilds (scripts/build_fast.sh)
       - ccache
+      # Pre-commit / lint: shellcheck, markdownlint (Ruby gem for pre-commit)
+      - shellcheck
+      - ruby
+      - ruby-dev
     state: present
     update_cache: true
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Install markdownlint gem (Debian, for pre-commit)
+  become: false
+  ansible.builtin.command: gem install markdownlint
+  register: markdownlint_gem
+  changed_when: "'1 gem installed' in markdownlint_gem.stdout or 'Successfully installed' in markdownlint_gem.stdout"
+  failed_when: false
   when: ansible_facts['os_family'] == 'Debian'
 
 - name: Ensure Homebrew packages on macOS
@@ -49,6 +61,9 @@
       # Compiler cache for faster rebuilds (scripts/build_fast.sh; sccache preferred when present)
       - ccache
       - sccache
+      # Pre-commit / lint (matches .pre-commit-config.yaml)
+      - shellcheck
+      - markdownlint
     state: present
   when: ansible_facts['os_family'] == 'Darwin'
 

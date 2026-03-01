@@ -233,6 +233,8 @@ export DISTCC_HOSTS="localhost/4 remote-ip/8"
 ./scripts/build_distributed.sh
 ```
 
+From repo root you can also use **Make** (wraps CMake presets): `make build`, `make test`, `make lint` (see `make help`). Or **CMake** directly: `cmake --build build --target lint` from a configured build dir.
+
 The binary will be created at: `build/bin/ib_box_spread`
 
 **Build Optimization** (see `docs/DISTRIBUTED_COMPILATION.md` for details):

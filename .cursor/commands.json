@@ -123,6 +123,24 @@
       "category": "quality"
     },
     {
+      "name": "lint:exarp",
+      "description": "Run exarp-go lint (Go/shell/etc.; requires exarp-go in PATH)",
+      "command": "./scripts/run_exarp_go_tool.sh lint",
+      "category": "quality"
+    },
+    {
+      "name": "exarp:tool",
+      "description": "Run exarp-go tool (usage: ARG=tool_name, e.g. lint, testing, security)",
+      "command": "./scripts/run_exarp_go_tool.sh \"${ARG:-lint}\"",
+      "category": "quality"
+    },
+    {
+      "name": "exarp:list-tools",
+      "description": "List available exarp-go tools",
+      "command": "./scripts/run_exarp_go_tool.sh --list",
+      "category": "quality"
+    },
+    {
       "name": "run:tui",
       "description": "Run TUI application (dry-run mode)",
       "command": "./build/macos-arm64-debug/bin/ib_box_spread_tui --dry-run",

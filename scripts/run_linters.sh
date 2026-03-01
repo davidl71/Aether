@@ -149,7 +149,8 @@ run_swiftlint() {
 #   (cd "${ROOT_DIR}/tui" && golangci-lint run)
 # }
 
-run_eslint() {
+run_bandit() {
+  info "Running bandit (Python)"
   if ! command -v npm >/dev/null 2>&1; then
     warn "Skipping ESLint (npm not found)"
     return 0
@@ -291,12 +292,30 @@ run_infer() {
   info "RacerD (thread safety) analysis included. For details: https://fbinfer.com/docs/checker-racerd"
 }
 
+run_exarp_go_lint() {
+  local exarp_script="${ROOT_DIR}/scripts/run_exarp_go_tool.sh"
+  if [[ ! -x "${exarp_script}" ]]; then
+    warn "Skipping exarp-go lint (run_exarp_go_tool.sh not executable)"
+    return 0
+  fi
+  if ! "${exarp_script}" --list &>/dev/null; then
+    warn "Skipping exarp-go lint (exarp-go not found or not in PATH)"
+    return 0
+  fi
+  info "Running exarp-go lint"
+  "${exarp_script}" lint || {
+    warn "exarp-go lint reported issues (optional; install exarp-go for full coverage)"
+    return 0
+  }
+}
+
 main() {
   run_cppcheck
   run_clang_analyze
   run_infer
   run_swiftlint
   # run_golangci_lint  # Go TUI removed - using C++ TUI instead
+  run_exarp_go_lint
   run_bandit
   run_eslint
   run_stylelint

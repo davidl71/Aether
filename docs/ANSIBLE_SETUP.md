@@ -101,3 +101,16 @@ After upgrading Ansible or collections, run a playbook with `deprecation_warning
 ansible --version
 ansible-galaxy collection list
 ```
+
+### MCP / exarp-go
+
+This project uses **exarp-go** (Go MCP server) for project automation in Cursor, not the old Python/uvx Exarp stack. Configure it in `.cursor/mcp.json`; `scripts/run_exarp_go.sh` sets `PROJECT_ROOT` and runs the `exarp-go` binary (from PATH or `~/go/bin`, `~/Projects/exarp-go/bin`, or `/usr/local/bin`). Install exarp-go separately (e.g. build from source or `go install` if you have the module path). See `docs/EXARP_GO_MIGRATION_LEFTOVERS.md` and `docs/MCP_REQUIRED_SERVERS.md`.
+
+**CI / scripts / make:** exarp-go is wired in so you can use it outside Cursor:
+
+- **CMake:** From a configured build dir: `cmake --build build --target lint` (all linters, includes exarp-go when available), `cmake --build build --target exarp-lint`, `cmake --build build --target exarp-list`.
+- **Scripts:** `scripts/run_exarp_go_tool.sh <tool_name> [json_args]` (e.g. `./scripts/run_exarp_go_tool.sh lint`). List tools with `--list`.
+- **Linters:** `./scripts/run_linters.sh` runs exarp-go lint when the binary is available (optional; no failure if missing).
+- **CI:** `.github/workflows/lint.yml` has an optional "Run exarp-go lint" step (`continue-on-error`; install exarp-go in CI to enable).
+- **Cursor commands:** `lint:exarp`, `exarp:tool`, `exarp:list-tools` in `.cursor/commands.json`.
+- **Make (optional):** Root `Makefile` wraps CMake and scripts: `make build` / `make test` / `make clean` use the default preset (macOS: macos-arm64-debug, Linux: linux-x64-debug; override with `PRESET=...`). `make lint`, `make exarp-lint`, etc. run the script-based targets. Run `make help`.
