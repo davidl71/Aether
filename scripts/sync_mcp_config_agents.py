@@ -94,7 +94,7 @@ def check_mcp_config(config_file: Path) -> Tuple[bool, Optional[str]]:
         # exarp-go may be registered under "exarp-go" key
         if 'exarp-go' in config['mcpServers']:
             return True, "correct"
-        
+
         # Check for old names (automa, project-management-automation)
         old_names = ['automa', 'project-management-automation']
         for old_name in old_names:
@@ -160,7 +160,7 @@ def main():
     # Check if package is installed
     print(f"{Colors.BLUE}Checking package installation...{Colors.NC}")
     is_installed, status = check_package_installed()
-    
+
     if is_installed:
         print(f"{Colors.GREEN}  ✅ Package installed{Colors.NC}")
     else:
@@ -169,7 +169,7 @@ def main():
         print(f"  pip install -e /path/to/project-management-automation")
         print(f"  # or")
         print(f"  pip install git+ssh://git@github.com/davidl71/project-management-automation.git@main")
-        
+
         response = input(f"\nContinue anyway? (y/N): ").strip().lower()
         if response != 'y':
             print(f"{Colors.RED}Aborted.{Colors.NC}")

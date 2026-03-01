@@ -14,22 +14,22 @@ from pathlib import Path
 def main():
     """Main entry point for Exarp daily automation"""
     project_dir = Path(sys.argv[1] if len(sys.argv) > 1 else '.').resolve()
-    
+
     try:
         # Try to import and use Exarp's documentation health check
         # This should work if Exarp package is installed
         from exarp_project_management.scripts import automate_docs_health_v2 as exarp_docs_health
-        
+
         # Call the Exarp function directly
         # The function should accept project_dir as argument
         exarp_docs_health.main(str(project_dir))
         sys.exit(0)
-        
+
     except ImportError:
         # If Exarp package not available, try alternative approach
         # Use subprocess to call via uvx
         import subprocess
-        
+
         try:
             result = subprocess.run(
                 ['uvx', 'exarp', 'check-documentation-health', str(project_dir)],

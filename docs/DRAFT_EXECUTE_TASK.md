@@ -33,9 +33,9 @@ Use this as a Todo2/exarp task or as an execution plan (e.g. with executing-plan
 🧪 **Verification:** Build and test commands above; ctest after build if desired (`ctest --preset <preset>`).
 ```
 
-**Suggested tags:** `#verification` `#scripts` `#cmake` `#automation`  
-**Priority:** medium  
-**Dependencies:** None  
+**Suggested tags:** `#verification` `#scripts` `#cmake` `#automation`
+**Priority:** medium
+**Dependencies:** None
 
 ---
 
@@ -45,23 +45,23 @@ Use this as a Todo2/exarp task or as an execution plan (e.g. with executing-plan
 
 **Steps:**
 
-1. **Verify build_fast.sh**  
+1. **Verify build_fast.sh**
    From repo root run `./scripts/build_fast.sh`. Expect preset configure + build (sccache or ccache). If missing sccache/ccache, script may install ccache. On success, binary at `build/<preset>/bin/ib_box_spread`. Mark done and note platform.
 
-2. **Verify build_distributed.sh**  
+2. **Verify build_distributed.sh**
    Run `./scripts/build_distributed.sh`. Expect `cmake --preset` and `cmake --build` (no `make -C`). If distcc/ccache available, preset should be `*-release-distcc`. Mark done and note platform.
 
-3. **Verify test_repo_install.sh**  
+3. **Verify test_repo_install.sh**
    Run `./scripts/test_repo_install.sh` (dry-run). Then, only in a safe environment, optionally run `sudo ./scripts/test_repo_install.sh --install` and confirm it runs `install_deb_repo.sh`. Mark done.
 
-4. **Spot-check release_x86.sh**  
+4. **Spot-check release_x86.sh**
    Open `scripts/release_x86.sh` and confirm first build block is `cmake --preset macos-x86_64-release` and `cmake --build --preset macos-x86_64-release`. No need to run full release. Mark done.
 
-5. **Report**  
+5. **Report**
    Summarize: platforms tested, any failures or fixes. If all pass, add result comment to task or note “Execute task complete” in SCRIPTS_AUDIT or a follow-up task.
 
-**Optional follow-up (separate batch):**  
-- setup_worktree.sh: switch verify step to `cmake --preset <host-preset>`.  
+**Optional follow-up (separate batch):**
+- setup_worktree.sh: switch verify step to `cmake --preset <host-preset>`.
 - test_nats_e2e.sh: add preset with ENABLE_NATS=ON if desired.
 
 ---

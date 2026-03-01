@@ -30,39 +30,39 @@
 
 ## Execution plan (ordered)
 
-1. **P1 – MCP config (quick wins)**  
-   - **update_mcp_config.sh:** Emit `exarp-go` block (or omit exarp) instead of `exarp` with `exarp_automation_mcp.server`. Use repo-agnostic path or env (e.g. `PROJECT_ROOT`) so it works on different machines.  
-   - **sync_mcp_config_agents.py:** When validating MCP config, treat server name `exarp-go` (or command path containing `exarp-go`) as valid; do not require or suggest `project_management_automation.server`.  
+1. **P1 – MCP config (quick wins)**
+   - **update_mcp_config.sh:** Emit `exarp-go` block (or omit exarp) instead of `exarp` with `exarp_automation_mcp.server`. Use repo-agnostic path or env (e.g. `PROJECT_ROOT`) so it works on different machines.
+   - **sync_mcp_config_agents.py:** When validating MCP config, treat server name `exarp-go` (or command path containing `exarp-go`) as valid; do not require or suggest `project_management_automation.server`.
    - **.cursor/rules/project-automation.mdc:** Replace the example MCP server block with exarp-go (or "see .cursor/mcp.json") and update any "Installation" line that references the Python package.
 
-2. **P4 – Cursor UI**  
+2. **P4 – Cursor UI**
    - **.cursor/commands/exarpauto.md:** Change the described command from `project_management_automation.scripts.automate_daily` to exarp-go or "use Exarp MCP tools in chat."
 
-3. **P2 – automate_* scripts (shared pattern)**  
-   - Decide: (a) exarp-go CLI wrapper (one script or three thin wrappers), or (b) deprecate and document "use exarp-go MCP."  
-   - If (a): implement one small helper (e.g. `run_exarp_go_tool(project_dir, tool_name)`) and refactor all three `automate_*` scripts to use it (or replace with three one-liners).  
-   - If (b): add a short deprecation note at top of each script and point to this doc or the MCP doc; optionally remove the import path and keep only a clear "not available" message.  
+3. **P2 – automate_* scripts (shared pattern)**
+   - Decide: (a) exarp-go CLI wrapper (one script or three thin wrappers), or (b) deprecate and document "use exarp-go MCP."
+   - If (a): implement one small helper (e.g. `run_exarp_go_tool(project_dir, tool_name)`) and refactor all three `automate_*` scripts to use it (or replace with three one-liners).
+   - If (b): add a short deprecation note at top of each script and point to this doc or the MCP doc; optionally remove the import path and keep only a clear "not available" message.
    - Re-run the Shared patterns search patterns above to ensure no stray references remain in scripts.
 
-4. **P3 – exarp_daily_automation_wrapper.py**  
-   - If exarp-go has a CLI: refactor to call it (same pattern as P2 if you built a helper).  
+4. **P3 – exarp_daily_automation_wrapper.py**
+   - If exarp-go has a CLI: refactor to call it (same pattern as P2 if you built a helper).
    - If not: add a one-line comment and/or docstring that "Exarp automation is primarily via exarp-go MCP in Cursor; this script is an optional fallback when `uvx exarp` is installed."
 
-5. **P6 – GitHub workflows**  
-   - In each of lint, format, security-scan, fastmcp-inspect: remove or replace steps that reference `exarp_project_management/` or `from exarp_project_management.server import main`.  
+5. **P6 – GitHub workflows**
+   - In each of lint, format, security-scan, fastmcp-inspect: remove or replace steps that reference `exarp_project_management/` or `from exarp_project_management.server import main`.
    - If you run exarp-go in CI, add a single step that runs the exarp-go binary (e.g. `exarp-go --help` or a small smoke test).
 
-6. **P5 – Documentation**  
-   - In a central place (e.g. `docs/MCP_SERVERS.md` or this file), add: "Exarp is now provided by **exarp-go** (Go MCP server). The following docs may still mention the old Python/uvx stack for context; prefer exarp-go and `.cursor/mcp.json` for current setup."  
-   - For each doc in §3: add a one-line note at the top (or in a "Status" section) that Exarp is now exarp-go, and replace or qualify every `uvx exarp` / `project_management_automation` example.  
+6. **P5 – Documentation**
+   - In a central place (e.g. `docs/MCP_SERVERS.md` or this file), add: "Exarp is now provided by **exarp-go** (Go MCP server). The following docs may still mention the old Python/uvx stack for context; prefer exarp-go and `.cursor/mcp.json` for current setup."
+   - For each doc in §3: add a one-line note at the top (or in a "Status" section) that Exarp is now exarp-go, and replace or qualify every `uvx exarp` / `project_management_automation` example.
    - Run the search patterns above across `docs/` to catch any missed references.
 
-7. **Oh My Zsh plugin**  
-   - **scripts/oh-my-zsh-exarp-plugin/exarp.plugin.zsh:** Either (a) switch every command to invoke the exarp-go binary (e.g. `exarp-go docs-health`, `exarp-go task-align`, …) if the binary supports them, or (b) add a clear "Legacy: requires Python exarp package" notice and point to exarp-go for MCP usage.  
+7. **Oh My Zsh plugin**
+   - **scripts/oh-my-zsh-exarp-plugin/exarp.plugin.zsh:** Either (a) switch every command to invoke the exarp-go binary (e.g. `exarp-go docs-health`, `exarp-go task-align`, …) if the binary supports them, or (b) add a clear "Legacy: requires Python exarp package" notice and point to exarp-go for MCP usage.
    - **scripts/oh-my-zsh-exarp-plugin/README.md:** Match the chosen behavior and mention exarp-go.
 
-8. **Final consistency pass**  
-   - Grep for: `exarp_project_management`, `exarp_automation_mcp`, `project_management_automation\.server`, `uvx exarp`.  
+8. **Final consistency pass**
+   - Grep for: `exarp_project_management`, `exarp_automation_mcp`, `project_management_automation\.server`, `uvx exarp`.
    - Resolve any remaining hits (either update or add an explicit "legacy/optional" comment).
 
 ---

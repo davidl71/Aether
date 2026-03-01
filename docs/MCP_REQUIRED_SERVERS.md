@@ -10,7 +10,7 @@ All of these servers must be configured in `.cursor/mcp.json` for full project f
 
 ### 1. exarp (Project Management Automation)
 
-**Type**: exarp-go (Go binary) or legacy Python package  
+**Type**: exarp-go (Go binary) or legacy Python package
 **Purpose**: Project management automation tools (docs health, task alignment, duplicate detection, security scanning).
 
 **Current setup:** Prefer **exarp-go**. Configure in `.cursor/mcp.json` with the path to your exarp-go binary and `PROJECT_ROOT` env. Example:

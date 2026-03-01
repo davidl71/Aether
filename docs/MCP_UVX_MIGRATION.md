@@ -1,7 +1,7 @@
 # MCP Server uvx Migration
 
-**Date**: 2025-12-24  
-**Status**: ✅ Migration Complete  
+**Date**: 2025-12-24
+**Status**: ✅ Migration Complete
 
 **Note:** Exarp is now typically provided by **exarp-go** (Go binary). The uvx exarp option below is legacy; see `docs/EXARP_GO_MIGRATION_LEFTOVERS.md`.
 

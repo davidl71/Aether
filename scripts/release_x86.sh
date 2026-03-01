@@ -73,4 +73,3 @@ echo "Next steps:"
 echo "  1. git add ${FORMULA_PATH}"
 echo "  2. git commit / push formula updates"
 echo "  3. Upload artifacts via gh release upload v${VERSION} ..."
-

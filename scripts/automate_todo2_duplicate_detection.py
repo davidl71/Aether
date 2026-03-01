@@ -14,7 +14,7 @@ from pathlib import Path
 def main():
     """Main entry point for Exarp daily automation"""
     project_dir = Path(sys.argv[1] if len(sys.argv) > 1 else '.').resolve()
-    
+
     try:
         from exarp_project_management.scripts import duplicate_detection as exarp_duplicates
         exarp_duplicates.main(str(project_dir))
