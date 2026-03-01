@@ -126,6 +126,7 @@ docs/latex/
 # Auto-generated reports
 docs/TODO_SYNC_REPORT.md
 docs/*_REPORT.md
+docs/task_discovery_report.json
 !docs/*_COMPLETE.md
 
 # Core dumps
