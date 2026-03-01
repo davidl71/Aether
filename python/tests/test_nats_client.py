@@ -6,10 +6,13 @@ Tests connection, publishing, and subscription functionality.
 """
 import asyncio
 import sys
-import os
+from pathlib import Path
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add python directory to path for imports (conftest adds repo root when run via pytest)
+_tests_dir = Path(__file__).resolve().parent
+_python_dir = _tests_dir.parent
+if str(_python_dir) not in sys.path:
+    sys.path.insert(0, str(_python_dir))
 
 from integration.nats_client import NATSClient
 import logging

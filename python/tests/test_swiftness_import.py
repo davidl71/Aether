@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
-test_swiftness_import.py - Test script for Swiftness import system
+Manual script: Swiftness import from Excel (not a pytest test).
+
+Run from repo root: python python/tests/test_swiftness_import.py
+Update file_path in main() to point to your Swiftness Excel export.
 """
 import logging
 import sys
