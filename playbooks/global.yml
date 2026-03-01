@@ -1,5 +1,5 @@
 ---
-- name: Global developer environment setup (macOS)
+- name: Global developer environment setup
   hosts: localhost
   connection: local
   gather_facts: yes
@@ -14,11 +14,12 @@
       - shfmt
       - clang-format
     brew_casks:
-      - iterm2  # macOS only - not required on Linux/Windows
+      - iterm2
   roles:
     - role: common
       tags: ["global", "common"]
     - role: editor
       tags: ["global", "editor"]
+      when: ansible_facts['os_family'] == 'Darwin'
     - role: langs
       tags: ["global", "langs"]

@@ -1,6 +1,7 @@
 # Claude Code Instructions
 
-See [AGENTS.md](AGENTS.md) for complete project guidelines.
+See [AGENTS.md](AGENTS.md) for complete project guidelines. For multi-editor setup
+(OpenCode, Cursor, skills, subagents), see [docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md).
 
 ## Project at a Glance
 

@@ -1,12 +1,24 @@
 #!/usr/bin/env bash
-# Test script to verify repository installation setup (dry-run)
-# Usage: ./scripts/test_repo_install.sh
+# Test script to verify repository installation setup (dry-run), or install if run as root with --install.
+# Usage:
+#   ./scripts/test_repo_install.sh              # Dry-run: show status and required tools
+#   sudo ./scripts/test_repo_install.sh --install   # Install repo (after status checks)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_DIR="${PROJECT_ROOT}/deb-repo"
+
+INSTALL_MODE=false
+REMAINING_ARGS=()
+for arg in "$@"; do
+  if [ "$arg" = "--install" ]; then
+    INSTALL_MODE=true
+  else
+    REMAINING_ARGS+=("$arg")
+  fi
+done
 
 echo "=== Repository Installation Test ==="
 echo ""
@@ -71,5 +83,20 @@ echo "=== Installation Command ==="
 echo "To install the repository, run:"
 echo "  sudo $PROJECT_ROOT/scripts/install_deb_repo.sh"
 echo ""
+echo "Or use this script with --install (as root):"
+echo "  sudo $0 --install"
+echo ""
 echo "Or if repository is on a remote server:"
 echo "  sudo $PROJECT_ROOT/scripts/install_deb_repo.sh --repo-url http://your-server/deb-repo"
+echo ""
+
+if [ "$INSTALL_MODE" = true ]; then
+  if [ "$EUID" -eq 0 ]; then
+    echo "Running as root - proceeding with installation..."
+    echo ""
+    exec "$SCRIPT_DIR/install_deb_repo.sh" "${REMAINING_ARGS[@]}"
+  else
+    echo "⚠ This script must be run as root to install. Run: sudo $0 --install"
+    exit 1
+  fi
+fi

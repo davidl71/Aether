@@ -1,8 +1,27 @@
 ---
 repo_root: "{{ playbook_dir }}/.."
 ibjts_dir: ""
-protobuf_lib: "/usr/local/lib/libprotobuf.dylib"
-abseil_lib_dir: "/usr/local/lib"
+protobuf_lib: >-
+  {{ '/usr/local/lib/libprotobuf.dylib'
+     if ansible_facts['os_family'] == 'Darwin'
+     else '/usr/lib/x86_64-linux-gnu/libprotobuf.so' }}
+abseil_lib_dir: >-
+  {{ '/usr/local/lib'
+     if ansible_facts['os_family'] == 'Darwin'
+     else '/usr/lib/x86_64-linux-gnu' }}
 build_type: "Debug"
 build_dir: "{{ repo_root }}/build"
 python_bin: "python3"
+
+# C++ build dependencies (Debian/Ubuntu)
+cpp_apt_packages:
+  - libprotobuf-dev
+  - protobuf-compiler
+  - libabsl-dev
+  - libboost-dev
+  - libboost-date-time-dev
+  - libboost-filesystem-dev
+  - libboost-system-dev
+  - libblas-dev
+  - liblapack-dev
+  - pkg-config

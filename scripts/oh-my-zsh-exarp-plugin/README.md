@@ -2,6 +2,8 @@
 
 Oh My Zsh plugin for Exarp project management automation tools.
 
+**Legacy notice:** This plugin invokes the **Python** Exarp package (`exarp_project_management`). For current setups, Exarp is typically provided by **exarp-go** (Go MCP server) in Cursor; use exarp-go MCP tools in Cursor for automation. This plugin remains for users who still have the Python package installed. See `docs/EXARP_GO_MIGRATION_LEFTOVERS.md`.
+
 ## Installation
 
 ### Option 1: Custom Plugins Directory (Recommended)

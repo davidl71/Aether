@@ -27,8 +27,4 @@ jobs:
 
       - name: Inspect FastMCP configuration
         run: |
-          fastmcp inspect fastmcp.json || echo "Inspection completed with warnings"
-
-      - name: Verify server entrypoint
-        run: |
-          python -c "from exarp_project_management.server import main; print('Server entrypoint OK')"
+          fastmcp inspect fastmcp.json || echo "No fastmcp.json or inspection completed with warnings"

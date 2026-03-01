@@ -179,6 +179,162 @@
         "lhs": "${hostSystemName}",
         "rhs": "Linux"
       }
+    },
+    {
+      "name": "macos-arm64-release-sccache",
+      "displayName": "macOS ARM64 Release (sccache)",
+      "generator": "Ninja",
+      "binaryDir": "build/macos-arm64-release-sccache",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "15.0",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_COLOR_DIAGNOSTICS": "ON",
+        "ENABLE_SCCACHE": "ON",
+        "ENABLE_LTO": "ON",
+        "ENABLE_NATIVE_CLI": "ON"
+      }
+    },
+    {
+      "name": "macos-x86_64-release-sccache",
+      "displayName": "macOS x86_64 Release (sccache)",
+      "generator": "Ninja",
+      "binaryDir": "build/macos-x86_64-release-sccache",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_OSX_ARCHITECTURES": "x86_64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "15.0",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_COLOR_DIAGNOSTICS": "ON",
+        "ENABLE_SCCACHE": "ON",
+        "ENABLE_LTO": "ON",
+        "ENABLE_NATIVE_CLI": "ON"
+      }
+    },
+    {
+      "name": "linux-x64-release-sccache",
+      "displayName": "Linux x64 Release (sccache)",
+      "generator": "Ninja",
+      "binaryDir": "build/linux-x64-release-sccache",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_COLOR_DIAGNOSTICS": "ON",
+        "ENABLE_SCCACHE": "ON",
+        "ENABLE_LTO": "ON",
+        "ENABLE_NATIVE_CLI": "ON"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "macos-arm64-release-ccache",
+      "displayName": "macOS ARM64 Release (ccache)",
+      "generator": "Ninja",
+      "binaryDir": "build/macos-arm64-release-ccache",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "15.0",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_COLOR_DIAGNOSTICS": "ON",
+        "ENABLE_CCACHE": "ON",
+        "ENABLE_LTO": "ON",
+        "ENABLE_NATIVE_CLI": "ON"
+      }
+    },
+    {
+      "name": "macos-x86_64-release-ccache",
+      "displayName": "macOS x86_64 Release (ccache)",
+      "generator": "Ninja",
+      "binaryDir": "build/macos-x86_64-release-ccache",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_OSX_ARCHITECTURES": "x86_64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "15.0",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_COLOR_DIAGNOSTICS": "ON",
+        "ENABLE_CCACHE": "ON",
+        "ENABLE_LTO": "ON",
+        "ENABLE_NATIVE_CLI": "ON"
+      }
+    },
+    {
+      "name": "linux-x64-release-ccache",
+      "displayName": "Linux x64 Release (ccache)",
+      "generator": "Ninja",
+      "binaryDir": "build/linux-x64-release-ccache",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_COLOR_DIAGNOSTICS": "ON",
+        "ENABLE_CCACHE": "ON",
+        "ENABLE_LTO": "ON",
+        "ENABLE_NATIVE_CLI": "ON"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "macos-arm64-release-distcc",
+      "displayName": "macOS ARM64 Release (distcc+ccache)",
+      "generator": "Ninja",
+      "binaryDir": "build/macos-arm64-release-distcc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "15.0",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_COLOR_DIAGNOSTICS": "ON",
+        "ENABLE_CCACHE": "ON",
+        "ENABLE_DISTCC": "ON",
+        "ENABLE_LTO": "ON",
+        "ENABLE_NATIVE_CLI": "ON"
+      }
+    },
+    {
+      "name": "macos-x86_64-release-distcc",
+      "displayName": "macOS x86_64 Release (distcc+ccache)",
+      "generator": "Ninja",
+      "binaryDir": "build/macos-x86_64-release-distcc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_OSX_ARCHITECTURES": "x86_64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "15.0",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_COLOR_DIAGNOSTICS": "ON",
+        "ENABLE_CCACHE": "ON",
+        "ENABLE_DISTCC": "ON",
+        "ENABLE_LTO": "ON",
+        "ENABLE_NATIVE_CLI": "ON"
+      }
+    },
+    {
+      "name": "linux-x64-release-distcc",
+      "displayName": "Linux x64 Release (distcc+ccache)",
+      "generator": "Ninja",
+      "binaryDir": "build/linux-x64-release-distcc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_COLOR_DIAGNOSTICS": "ON",
+        "ENABLE_CCACHE": "ON",
+        "ENABLE_DISTCC": "ON",
+        "ENABLE_LTO": "ON",
+        "ENABLE_NATIVE_CLI": "ON"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
     }
   ],
   "buildPresets": [
@@ -229,6 +385,42 @@
     {
       "name": "ubuntu-x64-release",
       "configurePreset": "ubuntu-x64-release"
+    },
+    {
+      "name": "macos-arm64-release-sccache",
+      "configurePreset": "macos-arm64-release-sccache"
+    },
+    {
+      "name": "macos-x86_64-release-sccache",
+      "configurePreset": "macos-x86_64-release-sccache"
+    },
+    {
+      "name": "linux-x64-release-sccache",
+      "configurePreset": "linux-x64-release-sccache"
+    },
+    {
+      "name": "macos-arm64-release-ccache",
+      "configurePreset": "macos-arm64-release-ccache"
+    },
+    {
+      "name": "macos-x86_64-release-ccache",
+      "configurePreset": "macos-x86_64-release-ccache"
+    },
+    {
+      "name": "linux-x64-release-ccache",
+      "configurePreset": "linux-x64-release-ccache"
+    },
+    {
+      "name": "macos-arm64-release-distcc",
+      "configurePreset": "macos-arm64-release-distcc"
+    },
+    {
+      "name": "macos-x86_64-release-distcc",
+      "configurePreset": "macos-x86_64-release-distcc"
+    },
+    {
+      "name": "linux-x64-release-distcc",
+      "configurePreset": "linux-x64-release-distcc"
     }
   ],
   "testPresets": [
@@ -312,6 +504,69 @@
     {
       "name": "ubuntu-x64-release",
       "configurePreset": "ubuntu-x64-release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "macos-arm64-release-sccache",
+      "configurePreset": "macos-arm64-release-sccache",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "macos-x86_64-release-sccache",
+      "configurePreset": "macos-x86_64-release-sccache",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "linux-x64-release-sccache",
+      "configurePreset": "linux-x64-release-sccache",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "macos-arm64-release-ccache",
+      "configurePreset": "macos-arm64-release-ccache",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "macos-x86_64-release-ccache",
+      "configurePreset": "macos-x86_64-release-ccache",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "linux-x64-release-ccache",
+      "configurePreset": "linux-x64-release-ccache",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "macos-arm64-release-distcc",
+      "configurePreset": "macos-arm64-release-distcc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "macos-x86_64-release-distcc",
+      "configurePreset": "macos-x86_64-release-distcc",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "linux-x64-release-distcc",
+      "configurePreset": "linux-x64-release-distcc",
       "output": {
         "outputOnFailure": true
       }

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Exarp Documentation Health Check Script
+Exarp Documentation Health Check Script (legacy / fallback).
 
-This script is called by Exarp daily automation.
-It uses Exarp's internal functions to check documentation health.
+Prefer using the exarp-go MCP server in Cursor for documentation health checks.
+This script is an optional fallback when the Python package is installed or
+when `uvx exarp` is available. See docs/EXARP_GO_MIGRATION_LEFTOVERS.md.
 """
 
 import sys
@@ -45,7 +46,7 @@ def main():
         except (subprocess.TimeoutExpired, FileNotFoundError) as e:
             # If all else fails, return success to avoid breaking automation
             print(f"Warning: Could not execute documentation health check: {e}", file=sys.stderr)
-            print("Script exists but Exarp package may not be properly installed.")
+            print("Prefer exarp-go MCP in Cursor, or install: pip install exarp-automation-mcp / uvx exarp")
             sys.exit(0)
 
 if __name__ == '__main__':

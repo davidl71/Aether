@@ -143,8 +143,13 @@ Follow imperative, 72-character subject lines ("Add TSV formatter for CLI"). In 
 | `.opencode.json` | OpenCode (config, LSP) |
 | `.opencode/commands/` | OpenCode (custom commands) |
 | `.cursorrules` | Cursor IDE |
+| `.cursor/rules/*.mdc` | Cursor IDE (glob-based rules) |
+| `.cursor/commands.json` | Cursor (slash commands) |
+| `.cursor/mcp.json` | Cursor (MCP servers) |
 | `.windsurfrules` | Windsurf IDE |
 | `.clinerules` | Cline |
 | `.github/copilot-instructions.md` | GitHub Copilot |
 | `.claude/settings.json` | Claude Code permissions |
 | `.claude/agents/` | Custom Claude agents |
+
+**Skills & subagents:** Cursor/plugin skills and subagents (e.g. mcp_task, exarp-go, Claude agents) should use AGENTS.md and CLAUDE.md as canonical context. See [docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md) for setup and command parity across OpenCode, Claude, Cursor, skills, and subagents.

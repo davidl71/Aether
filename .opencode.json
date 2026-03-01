@@ -1,18 +1,1 @@
-{
-  "data": {
-    "directory": ".opencode"
-  },
-  "lsp": {
-    "cpp": {
-      "disabled": false,
-      "command": "clangd",
-      "args": ["--background-index", "--compile-commands-dir=build"]
-    },
-    "python": {
-      "disabled": false,
-      "command": "pyright-langserver",
-      "args": ["--stdio"]
-    }
-  },
-  "autoCompact": true
-}
+{"description":"IB Box Spread / multi-asset financing platform. Canonical guidelines: AGENTS.md, CLAUDE.md. See docs/AI_EDITOR_SETUP.md for OpenCode, Claude, Cursor, skills, subagents.","data":{"directory":".opencode"},"lsp":{"cpp":{"disabled":false,"command":"clangd","args":["--background-index","--compile-commands-dir=build"]},"python":{"disabled":false,"command":"pyright-langserver","args":["--stdio"]}},"autoCompact":true}

@@ -410,21 +410,11 @@ All tools use centralized error handling:
 
 ## Configuration
 
-The server is configured in `.cursor/mcp.json` as **"automa"**:
-```json
-{
-  "mcpServers": {
-    "automa": {
-      "command": "python3",
-      "args": ["-m", "exarp_project_management.server"],
-      "description": "Exarp - Project management automation tools (Enochian: Spirit of Air - Communication)"
-    }
-  }
-}
-```
+The server is configured in `.cursor/mcp.json` as **"exarp"** or **"exarp-go"**. Prefer the **exarp-go** (Go) binary when available.
 
-**Installation**: Exarp is installed via PyPI: `pip install exarp-automation-mcp`
-**MCP Server Name**: `exarp` (configured identifier in Cursor)
+**Current setup:** See your `.cursor/mcp.json` for the active exarp/exarp-go entry. Exarp is now typically provided by **exarp-go** (Go MCP server); the former Python package (`exarp-automation-mcp` / `project_management_automation`) is legacy.
+
+**MCP Server Name**: `exarp` or `exarp-go` (configured identifier in Cursor)
 
 ---
 

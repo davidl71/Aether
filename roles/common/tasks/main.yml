@@ -1,21 +1,30 @@
 ---
-- name: Ensure running on macOS
-  assert:
-    that: ansible_facts['os_family'] == 'Darwin'
-    fail_msg: "This playbook currently targets macOS (Darwin) only."
-    success_msg: "macOS detected."
+- name: Detect platform
+  ansible.builtin.debug:
+    msg: "Detected OS family: {{ ansible_facts['os_family'] }} ({{ ansible_facts['distribution'] | default('unknown') }})"
   tags: ["global", "common"]
 
+- name: Assert supported platform
+  ansible.builtin.assert:
+    that: ansible_facts['os_family'] in ['Darwin', 'Debian']
+    fail_msg: "Unsupported OS family '{{ ansible_facts['os_family'] }}'. Supported: Darwin (macOS), Debian (Ubuntu/Debian)."
+    success_msg: "{{ ansible_facts['os_family'] }} is supported."
+  tags: ["global", "common"]
+
+# --- macOS (Homebrew) ---
 - name: Ensure Homebrew is installed
-  stat:
+  ansible.builtin.stat:
     path: /opt/homebrew/bin/brew
   register: brew_stat
+  when: ansible_facts['os_family'] == 'Darwin'
   tags: ["global", "common"]
 
 - name: Install Homebrew (manual step)
-  debug:
+  ansible.builtin.debug:
     msg: "Homebrew not found. Install from https://brew.sh then re-run."
-  when: not brew_stat.stat.exists
+  when:
+    - ansible_facts['os_family'] == 'Darwin'
+    - not brew_stat.stat.exists
   tags: ["global", "common"]
 
 - name: Install brew packages
@@ -23,7 +32,9 @@
     name: "{{ item }}"
     state: present
   loop: "{{ brew_packages | default([]) }}"
-  when: brew_stat.stat.exists
+  when:
+    - ansible_facts['os_family'] == 'Darwin'
+    - brew_stat.stat.exists
   tags: ["global", "common"]
 
 - name: Install brew casks
@@ -31,5 +42,30 @@
     name: "{{ item }}"
     state: present
   loop: "{{ brew_casks | default([]) }}"
-  when: brew_stat.stat.exists
+  when:
+    - ansible_facts['os_family'] == 'Darwin'
+    - brew_stat.stat.exists
   tags: ["global", "common"]
+
+# --- Debian/Ubuntu (apt) ---
+- name: Install common apt packages
+  become: true
+  ansible.builtin.apt:
+    name: "{{ apt_packages | default(apt_packages_default) }}"
+    state: present
+    update_cache: true
+  when: ansible_facts['os_family'] == 'Debian'
+  tags: ["global", "common"]
+  vars:
+    apt_packages_default:
+      - build-essential
+      - cmake
+      - ninja-build
+      - git
+      - jq
+      - curl
+      - python3
+      - python3-pip
+      - python3-venv
+      - shellcheck
+      - clang-format

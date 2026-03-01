@@ -2,8 +2,8 @@
 """
 Sync MCP server configuration across all agents.
 
-Ensures all agents have the correct exarp (project-management-automation) MCP server
-configuration using the Python package installation approach.
+Supports both exarp-go (Go binary) and legacy Python package. Prefers exarp-go
+when present in .cursor/mcp.json; does not overwrite exarp-go with Python config.
 """
 
 import json
@@ -79,17 +79,21 @@ def check_mcp_config(config_file: Path) -> Tuple[bool, Optional[str]]:
         if 'mcpServers' not in config:
             return False, "no_mcp_servers"
 
-        # Check for exarp server name (current)
+        # Check for exarp server (exarp-go or legacy Python)
         if 'exarp' in config['mcpServers']:
             server_config = config['mcpServers']['exarp']
             command = server_config.get('command', '')
             args = server_config.get('args', [])
-            
-            # Check if it uses the Python module approach
+            # exarp-go: command is path to binary (e.g. .../exarp-go/bin/exarp-go)
+            if 'exarp-go' in command or (args and any('exarp-go' in str(a) for a in args)):
+                return True, "correct"
+            # Legacy Python module
             if command == 'python3' and '-m' in args and 'project_management_automation.server' in args:
                 return True, "correct"
-            else:
-                return False, "needs_update"
+            return False, "needs_update"
+        # exarp-go may be registered under "exarp-go" key
+        if 'exarp-go' in config['mcpServers']:
+            return True, "correct"
         
         # Check for old names (automa, project-management-automation)
         old_names = ['automa', 'project-management-automation']
@@ -234,7 +238,19 @@ def main():
 
     # Summary
     print(f"\n{Colors.BLUE}=== Summary ==={Colors.NC}")
-    print(f"{Colors.GREEN}✅ Configuration uses Python package: python3 -m project_management_automation.server{Colors.NC}")
+    if main_config.exists():
+        try:
+            with open(main_config) as f:
+                c = json.load(f)
+            servers = c.get('mcpServers', {})
+            if 'exarp-go' in servers or ('exarp' in servers and 'exarp-go' in str(servers.get('exarp', {}).get('command', ''))):
+                print(f"{Colors.GREEN}✅ Configuration uses exarp-go (Go MCP server){Colors.NC}")
+            else:
+                print(f"{Colors.GREEN}✅ Configuration uses exarp (Python or exarp-go){Colors.NC}")
+        except Exception:
+            print(f"{Colors.GREEN}✅ Configuration check complete{Colors.NC}")
+    else:
+        print(f"{Colors.GREEN}✅ Configuration check complete{Colors.NC}")
     if not is_installed:
         print(f"{Colors.YELLOW}⚠️  Package installation status: {status}{Colors.NC}")
     print(f"\n{Colors.YELLOW}⚠️  Next steps:{Colors.NC}")

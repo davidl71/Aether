@@ -329,7 +329,10 @@ if(NOT BOOST_FOUND_DIRECTLY)
 endif()
 
 # QuantLib via FetchContent
-set(QUANTLIB_REPOSITORY "https://github.com/lballabio/quantlib.git")
+set(QUANTLIB_REPOSITORY "https://github.com/lballabio/QuantLib.git")
+# Reduce build and optional deps when used as subproject
+set(QL_BUILD_EXAMPLES OFF CACHE BOOL "Build QuantLib examples" FORCE)
+set(QL_BUILD_TEST_SUITE OFF CACHE BOOL "Build QuantLib test suite" FORCE)
 fetchcontent_declare(
     QuantLib
     GIT_REPOSITORY ${QUANTLIB_REPOSITORY}
@@ -361,6 +364,33 @@ if(ENABLE_NATS)
 endif()
 
 fetchcontent_makeavailable(nlohmann_json spdlog CLI11 Eigen3 QuantLib NLopt)
+
+# QuantLib when built via FetchContent defines target "ql_library" in ql/CMakeLists.txt
+# (EXPORT_NAME QuantLib); the namespace alias QuantLib::QuantLib is only created at install.
+if(NOT TARGET QuantLib::QuantLib)
+  if(TARGET ql_library)
+    add_library(QuantLib::QuantLib ALIAS ql_library)
+    message(STATUS "QuantLib: using alias QuantLib::QuantLib -> ql_library")
+  elseif(TARGET ql)
+    add_library(QuantLib::QuantLib ALIAS ql)
+    message(STATUS "QuantLib: using alias QuantLib::QuantLib -> ql")
+  elseif(TARGET QuantLib)
+    add_library(QuantLib::QuantLib ALIAS QuantLib)
+    message(STATUS "QuantLib: using alias QuantLib::QuantLib -> QuantLib")
+  else()
+    message(FATAL_ERROR "QuantLib FetchContent did not define target ql_library, ql, or QuantLib")
+  endif()
+endif()
+
+# NLopt when built via FetchContent defines target "nlopt"; NLopt::nlopt is only created at install.
+if(NOT TARGET NLopt::nlopt)
+  if(TARGET nlopt)
+    add_library(NLopt::nlopt ALIAS nlopt)
+    message(STATUS "NLopt: using alias NLopt::nlopt -> nlopt")
+  else()
+    message(FATAL_ERROR "NLopt FetchContent did not define target nlopt")
+  endif()
+endif()
 
 if(BUILD_TESTING)
     set(CATCH2_REPOSITORY "https://github.com/catchorg/Catch2.git")
@@ -469,18 +499,42 @@ cmake_path(APPEND _candidate "lib" "libtwsapi${_twsapi_lib_ext}")
 list(APPEND _ibapi_lib_candidates "${_candidate}")
 
 if(TWS_API_BUILD_VENDOR)
+    # Discover Protobuf so we can pass Protobuf_ROOT to the TWS API build (ibapi_cmake).
+    # Avoids "No rule to make target '/usr/local/lib/libprotobuf.dylib'" when lib is elsewhere (e.g. Homebrew).
+    set(Protobuf_ROOT "" CACHE PATH "Root of Protocol Buffers install (include + lib)")
+    if(NOT Protobuf_ROOT)
+        find_library(_protobuf_lib NAMES protobuf libprotobuf
+            PATHS /opt/homebrew/lib /usr/local/lib /usr/lib
+            NO_DEFAULT_PATH
+        )
+        if(_protobuf_lib)
+            get_filename_component(Protobuf_ROOT "${_protobuf_lib}" DIRECTORY)
+            get_filename_component(Protobuf_ROOT "${Protobuf_ROOT}" DIRECTORY)
+            message(STATUS "Found Protobuf for TWS API build: ${Protobuf_ROOT}")
+        endif()
+    endif()
+
+    # Build TWS API using our ibapi_cmake (finds protobuf/Abseil; vendored client CMakeLists has hardcoded paths).
     if(NOT EXISTS "${TWS_API_VENDOR_ROOT}/../../CMakeLists.txt")
         message(FATAL_ERROR "Vendored TWS API source not found at ${TWS_API_VENDOR_ROOT}/../../CMakeLists.txt")
     endif()
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/ibapi_cmake/CMakeLists.txt")
+        message(FATAL_ERROR "ibapi_cmake not found; required for TWS_API_BUILD_VENDOR")
+    endif()
     include(ExternalProject)
     set(TWS_API_EXTERNAL_BINARY_DIR "${CMAKE_BINARY_DIR}/tws_api_vendor_build")
+    set(_twsapi_cmake_args
+        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+        -DCMAKE_INSTALL_PREFIX=${TWS_API_EXTERNAL_BINARY_DIR}/install
+        -DCMAKE_POLICY_DEFAULT_CMP0126=NEW
+    )
+    if(Protobuf_ROOT)
+        list(APPEND _twsapi_cmake_args -DProtobuf_ROOT=${Protobuf_ROOT})
+    endif()
     ExternalProject_Add(twsapi_external
-        SOURCE_DIR "${TWS_API_VENDOR_ROOT}/../.."
+        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ibapi_cmake"
         BINARY_DIR "${TWS_API_EXTERNAL_BINARY_DIR}"
-        CMAKE_ARGS
-            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-            -DCMAKE_INSTALL_PREFIX=${TWS_API_EXTERNAL_BINARY_DIR}/install
-            -DCMAKE_POLICY_DEFAULT_CMP0126=NEW
+        CMAKE_ARGS ${_twsapi_cmake_args}
     )
 
     if(APPLE)
@@ -729,8 +783,8 @@ endif()
 # ============================================================================
 # TWS Connection Test Program
 # ============================================================================
-if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/test_tws_connection.cpp")
-    add_executable(test_tws_connection ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/test_tws_connection.cpp)
+if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tws_connection.cpp")
+    add_executable(test_tws_connection ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tws_connection.cpp)
 
     target_include_directories(test_tws_connection
         PRIVATE

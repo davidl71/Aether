@@ -16,9 +16,27 @@ if(WIN32)
     set(PROTOBUF_SRC_DIR "${Protobuf_ROOT}/include" CACHE PATH "Protocol Buffers include directory")
     set(PROTOBUF_BUILD_DIR "${Protobuf_ROOT}/lib" CACHE PATH "Protocol Buffers library directory")
 else()
-    # macOS/Linux: typically in /usr/local
-    set(PROTOBUF_SRC_DIR "/usr/local/include")
-    set(PROTOBUF_BUILD_DIR "/usr/local/lib")
+    # macOS/Linux: allow Protobuf_ROOT override (e.g. -DProtobuf_ROOT=/opt/homebrew), else discover
+    if(Protobuf_ROOT)
+        set(PROTOBUF_SRC_DIR "${Protobuf_ROOT}/include" CACHE PATH "Protocol Buffers include directory")
+        set(PROTOBUF_BUILD_DIR "${Protobuf_ROOT}/lib" CACHE PATH "Protocol Buffers library directory")
+    else()
+        set(PROTOBUF_SRC_DIR "/usr/local/include")
+        set(PROTOBUF_BUILD_DIR "/usr/local/lib")
+    endif()
+    # Prefer find_library so versioned names (e.g. libprotobuf.32.dylib) and Homebrew are found
+    find_library(Protobuf_LIBRARY
+        NAMES protobuf libprotobuf
+        PATHS "${PROTOBUF_BUILD_DIR}" /opt/homebrew/lib /usr/local/lib /usr/lib
+        NO_DEFAULT_PATH
+    )
+    if(NOT Protobuf_LIBRARY)
+        find_library(Protobuf_LIBRARY NAMES protobuf libprotobuf)
+    endif()
+    if(Protobuf_LIBRARY)
+        get_filename_component(PROTOBUF_BUILD_DIR "${Protobuf_LIBRARY}" DIRECTORY)
+        message(STATUS "Found protobuf: ${Protobuf_LIBRARY}")
+    endif()
 endif()
 
 set(INTEL_BID_LIB "${PROJECT_ROOT}")
@@ -54,23 +72,21 @@ if(WIN32)
         "ws2_32"
     )
 elseif(APPLE)
-    # macOS: use .dylib and pthread
-    target_link_libraries(twsapi
-      PUBLIC
-        "${PROTOBUF_BUILD_DIR}/libprotobuf.dylib"
-        "${INTEL_BID_LIB}"
-        "-lz"
-        "-lpthread"
-    )
+    # macOS: use found library or fallback path (find_library gets versioned dylib e.g. libprotobuf.32.dylib)
+    if(Protobuf_LIBRARY)
+        target_link_libraries(twsapi PUBLIC "${Protobuf_LIBRARY}")
+    else()
+        target_link_libraries(twsapi PUBLIC "${PROTOBUF_BUILD_DIR}/libprotobuf.dylib")
+    endif()
+    target_link_libraries(twsapi PUBLIC "${INTEL_BID_LIB}" "-lz" "-lpthread")
 else()
-    # Linux: use .so and pthread
-    target_link_libraries(twsapi
-      PUBLIC
-        "${PROTOBUF_BUILD_DIR}/libprotobuf.so"
-        "${INTEL_BID_LIB}"
-        "-lz"
-        "-lpthread"
-    )
+    # Linux: use found library or fallback path
+    if(Protobuf_LIBRARY)
+        target_link_libraries(twsapi PUBLIC "${Protobuf_LIBRARY}")
+    else()
+        target_link_libraries(twsapi PUBLIC "${PROTOBUF_BUILD_DIR}/libprotobuf.so")
+    endif()
+    target_link_libraries(twsapi PUBLIC "${INTEL_BID_LIB}" "-lz" "-lpthread")
 endif()
 
 # Link Abseil libraries if available (required by modern protobuf)
@@ -82,12 +98,19 @@ if(WIN32)
         file(GLOB ABSEIL_LIBS "C:/vcpkg/installed/x64-windows/lib/absl*.lib")
     endif()
 else()
-    # macOS/Linux: typically in /usr/local/lib
-    if(APPLE)
-        file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.dylib")
-    else()
-        file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.so")
-    endif()
+    # macOS/Linux: search same prefix as protobuf, then common paths
+    set(_abseil_search_dirs "${PROTOBUF_BUILD_DIR}" /opt/homebrew/lib /usr/local/lib /usr/lib)
+    foreach(_dir ${_abseil_search_dirs})
+        if(APPLE)
+            file(GLOB _absl "${_dir}/libabsl*.dylib")
+        else()
+            file(GLOB _absl "${_dir}/libabsl*.so")
+        endif()
+        if(_absl)
+            set(ABSEIL_LIBS ${_absl})
+            break()
+        endif()
+    endforeach()
 endif()
 if(ABSEIL_LIBS)
     target_link_libraries(twsapi PUBLIC ${ABSEIL_LIBS})
@@ -95,7 +118,7 @@ endif()
 
 set_target_properties(twsapi PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-  OUTPUT_NAME "TwsApiCpp"
+  OUTPUT_NAME "twsapi"
   VERSION 1.0.0
   SOVERSION 1
 )

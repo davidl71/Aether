@@ -1,4 +1,5 @@
 ---
+# --- macOS (Homebrew) ---
 - name: Ensure base language toolchains (macOS via Homebrew)
   community.general.homebrew:
     name: "{{ item }}"
@@ -7,14 +8,28 @@
     - python
     - node
     - rustup-init
+  when: ansible_facts['os_family'] == 'Darwin'
   tags: ["global", "langs"]
 
-- name: Initialize Rust toolchain (idempotent)
-  shell: |
+- name: Initialize Rust toolchain via Homebrew (macOS)
+  ansible.builtin.shell: |
     if ! command -v rustup >/dev/null 2>&1; then
       /opt/homebrew/bin/rustup-init -y
     fi
   args:
     executable: /bin/zsh
   changed_when: false
+  when: ansible_facts['os_family'] == 'Darwin'
+  tags: ["global", "langs"]
+
+# --- Debian/Ubuntu ---
+- name: Initialize Rust toolchain (Debian/Ubuntu)
+  ansible.builtin.shell: |
+    if ! command -v rustup >/dev/null 2>&1; then
+      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    fi
+  args:
+    executable: /bin/bash
+  changed_when: false
+  when: ansible_facts['os_family'] == 'Debian'
   tags: ["global", "langs"]

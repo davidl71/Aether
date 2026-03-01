@@ -20,10 +20,8 @@ FORMULA_PATH="${ROOT_DIR}/homebrew-tap/Formula/ib-box-spread.rb"
 TAP_FORMULA_PATH="$(brew --repository)/Library/Taps/davidl71/homebrew-ib-box-spread/Formula/ib-box-spread.rb"
 
 echo "==> Building Release (x86_64)"
-cmake -S "${ROOT_DIR}" -B "${BUILD_DIR}" -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_OSX_ARCHITECTURES=x86_64
-cmake --build "${BUILD_DIR}"
+cmake --preset macos-x86_64-release
+cmake --build --preset macos-x86_64-release
 
 echo "==> Packaging artifacts"
 rm -rf "${PACKAGE_DIR}" "${PACKAGE_TARBALL}" "${BOTTLE_TARBALL}"

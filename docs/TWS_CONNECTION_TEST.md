@@ -11,7 +11,7 @@ This guide helps you test the TWS API connection using the test programs we've c
 
 ### 1. C++ Test Program
 
-**File**: `scripts/test_tws_connection.cpp`
+**File**: `native/tests/test_tws_connection.cpp`
 
 A standalone C++ program that tests the TWS API connection with comprehensive diagnostics.
 
@@ -331,7 +331,7 @@ After successful connection test:
 
 - **TWS API Best Practices**: `docs/TWS_API_BEST_PRACTICES.md`
 - **Implementation Comparison**: `docs/TWS_API_IMPLEMENTATION_COMPARISON.md`
-- **Connection Test Script**: `scripts/test_tws_connection.cpp`
+- **Connection Test Source**: `native/tests/test_tws_connection.cpp`
 - **Connection Test Shell Script**: `scripts/test_tws_connection.sh`
 
 ---

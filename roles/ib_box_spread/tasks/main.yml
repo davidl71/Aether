@@ -1,6 +1,29 @@
 ---
+# --- Install C++ build dependencies (Debian/Ubuntu) ---
+- name: Install C++ build dependencies (apt)
+  become: true
+  ansible.builtin.apt:
+    name: "{{ cpp_apt_packages }}"
+    state: present
+    update_cache: true
+  when: ansible_facts['os_family'] == 'Debian'
+  tags: ["project", "deps"]
+
+# --- Install C++ build dependencies (macOS) ---
+- name: Install C++ build dependencies (brew)
+  community.general.homebrew:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - protobuf
+    - abseil
+    - boost
+  when: ansible_facts['os_family'] == 'Darwin'
+  tags: ["project", "deps"]
+
+# --- Validate IB API ---
 - name: Validate IB API path is set
-  assert:
+  ansible.builtin.assert:
     that: ibjts_dir | length > 0
     fail_msg: >
       IBJTS_DIR not provided. Set it via:
@@ -10,13 +33,13 @@
   tags: ["project", "ib"]
 
 - name: Verify IB API directory exists
-  stat:
+  ansible.builtin.stat:
     path: "{{ ibjts_dir }}"
   register: ibjts_stat
   tags: ["project", "ib"]
 
 - name: Warn if IB API not found
-  debug:
+  ansible.builtin.debug:
     msg: >
       IB API directory not found at {{ ibjts_dir }}.
       Run: ansible-playbook ansible/playbooks/fetch_third_party.yml
@@ -24,46 +47,65 @@
   when: not ibjts_stat.stat.exists
   tags: ["project", "ib"]
 
+# --- Verify protobuf ---
 - name: Check for protobuf library
-  stat:
-    path: "{{ protobuf_lib }}"
+  ansible.builtin.stat:
+    path: "{{ protobuf_lib | trim }}"
   register: protobuf_stat
   tags: ["project", "cmake"]
 
 - name: Warn if protobuf not found
-  debug:
-    msg: "protobuf library not found at {{ protobuf_lib }}. Install via: brew install protobuf"
+  ansible.builtin.debug:
+    msg: >-
+      protobuf library not found at {{ protobuf_lib | trim }}.
+      {{ 'Install via: brew install protobuf'
+         if ansible_facts['os_family'] == 'Darwin'
+         else 'Install via: sudo apt install libprotobuf-dev protobuf-compiler' }}
   when: not protobuf_stat.stat.exists
   tags: ["project", "cmake"]
 
+# --- Verify abseil ---
+- name: Determine abseil check path
+  ansible.builtin.set_fact:
+    abseil_check_lib: >-
+      {{ (abseil_lib_dir | trim) + '/libabsl_strings.dylib'
+         if ansible_facts['os_family'] == 'Darwin'
+         else (abseil_lib_dir | trim) + '/libabsl_strings.so' }}
+  tags: ["project", "cmake"]
+
 - name: Check for abseil libraries
-  stat:
-    path: "{{ abseil_lib_dir }}/libabsl_strings.dylib"
+  ansible.builtin.stat:
+    path: "{{ abseil_check_lib | trim }}"
   register: abseil_stat
   tags: ["project", "cmake"]
 
 - name: Warn if abseil not found
-  debug:
-    msg: "abseil not found at {{ abseil_lib_dir }}. Install via: brew install abseil"
+  ansible.builtin.debug:
+    msg: >-
+      abseil not found at {{ abseil_lib_dir | trim }}.
+      {{ 'Install via: brew install abseil'
+         if ansible_facts['os_family'] == 'Darwin'
+         else 'Install via: sudo apt install libabsl-dev' }}
   when: not abseil_stat.stat.exists
   tags: ["project", "cmake"]
 
+# --- Python environment ---
 - name: Check if uv is available
-  command: uv --version
+  ansible.builtin.command: uv --version
   register: uv_check
   changed_when: false
   failed_when: false
   tags: ["project", "cmake"]
 
 - name: Create Python virtualenv with uv
-  command: uv venv "{{ repo_root }}/.venv" --python "{{ python_bin }}"
+  ansible.builtin.command: uv venv "{{ repo_root }}/.venv" --python "{{ python_bin }}"
   args:
     creates: "{{ repo_root }}/.venv/bin/python"
   when: uv_check.rc == 0
   tags: ["project", "cmake"]
 
 - name: Install Python dependencies with uv (from requirements.in)
-  command: uv pip install --python "{{ repo_root }}/.venv/bin/python" -r "{{ repo_root }}/requirements.in"
+  ansible.builtin.command: uv pip install --python "{{ repo_root }}/.venv/bin/python" -r "{{ repo_root }}/requirements.in"
   register: uv_pip_result
   failed_when: false
   changed_when: "'Installed' in uv_pip_result.stdout or 'installed' in uv_pip_result.stdout"
@@ -71,7 +113,7 @@
   tags: ["project", "cmake"]
 
 - name: Report uv pip install issues
-  debug:
+  ansible.builtin.debug:
     msg: >
       Some packages could not be installed (platform incompatibility is normal):
       {{ uv_pip_result.stderr | default('') | regex_search('Failed to build.*') | default('none') }}
@@ -79,30 +121,30 @@
   tags: ["project", "cmake"]
 
 - name: Install project Python package in editable mode with uv
-  command: uv pip install --python "{{ repo_root }}/.venv/bin/python" -e "{{ repo_root }}/python"
+  ansible.builtin.command: uv pip install --python "{{ repo_root }}/.venv/bin/python" -e "{{ repo_root }}/python"
   when: uv_check.rc == 0
   tags: ["project", "cmake"]
 
+# --- CMake configure ---
 - name: Ensure build directory exists
-  file:
+  ansible.builtin.file:
     path: "{{ build_dir }}"
     state: directory
     mode: "0755"
   tags: ["project", "cmake"]
 
 - name: Configure CMake
-  command: >-
+  ansible.builtin.command: >-
     cmake -S {{ repo_root }} -B {{ build_dir }}
     -G Ninja
     -DCMAKE_BUILD_TYPE={{ build_type }}
-    -DIBAPI_INCLUDE_DIR={{ ibjts_dir }}
+    -Wno-dev
   args:
     creates: "{{ build_dir }}/build.ninja"
-  when: ibjts_stat.stat.exists
   tags: ["project", "cmake"]
 
 - name: Display project setup status
-  debug:
+  ansible.builtin.debug:
     msg: >
       Project setup complete.
       Build with: ninja -C {{ build_dir }}

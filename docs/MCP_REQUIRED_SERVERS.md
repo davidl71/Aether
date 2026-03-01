@@ -2,39 +2,42 @@
 
 This document lists all **required** MCP servers for the project and provides installation/configuration guidance.
 
+**Status:** Exarp is now typically provided by **exarp-go** (Go MCP server). The Python/uvx options below are legacy; see `docs/EXARP_GO_MIGRATION_LEFTOVERS.md` for migration details.
+
 ## Required Servers (8 total)
 
 All of these servers must be configured in `.cursor/mcp.json` for full project functionality:
 
 ### 1. exarp (Project Management Automation)
 
-**Type**: Python package (installed via pip)
-**Purpose**: Project management automation tools
+**Type**: exarp-go (Go binary) or legacy Python package  
+**Purpose**: Project management automation tools (docs health, task alignment, duplicate detection, security scanning).
 
-**Installation**:
+**Current setup:** Prefer **exarp-go**. Configure in `.cursor/mcp.json` with the path to your exarp-go binary and `PROJECT_ROOT` env. Example:
 
-```bash
-
-# Install from separate repository
-
-pip install -e /path/to/project-management-automation
-
-# Or from git
-
-pip install git+ssh://git@github.com/davidl71/project-management-automation.git@main
+```json
+{
+  "exarp-go": {
+    "command": "/path/to/exarp-go/bin/exarp-go",
+    "args": [],
+    "env": { "PROJECT_ROOT": "/absolute/path/to/this/repo" }
+  }
+}
 ```
 
-**Configuration**:
+**Legacy (Python):** If using the Python package instead:
+
+```bash
+pip install -e /path/to/project-management-automation
+# or: pip install git+ssh://git@github.com/davidl71/project-management-automation.git@main
+```
 
 ```json
 {
   "exarp": {
     "command": "python3",
-    "args": [
-      "-m",
-      "project_management_automation.server"
-    ],
-    "description": "Exarp - Project management automation tools (Enochian: Spirit of Air - Communication) - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
+    "args": ["-m", "project_management_automation.server"],
+    "description": "Exarp - Project management automation tools"
   }
 }
 ```
@@ -216,9 +219,10 @@ npx -y tractatus_thinking --version
 Test all servers manually:
 
 ```bash
+# exarp-go (if using Go binary)
+/path/to/exarp-go/bin/exarp-go --help
 
-# exarp (Python package)
-
+# exarp (legacy Python package)
 python3 -m project_management_automation.server --help
 
 # npm packages

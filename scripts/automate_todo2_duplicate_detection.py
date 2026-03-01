@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Exarp Todo2 Duplicate Detection Script
+Exarp Todo2 Duplicate Detection Script (legacy / fallback).
 
-This script is called by Exarp daily automation.
-It uses Exarp's internal functions for duplicate task detection.
+Prefer using the exarp-go MCP server in Cursor for duplicate detection.
+This script is an optional fallback when the Python package is installed or
+when `uvx exarp` is available. See docs/EXARP_GO_MIGRATION_LEFTOVERS.md.
 """
 
 import sys
@@ -35,6 +36,7 @@ def main():
                 sys.exit(result.returncode)
         except (subprocess.TimeoutExpired, FileNotFoundError) as e:
             print(f"Warning: Could not execute duplicate detection: {e}", file=sys.stderr)
+            print("Prefer exarp-go MCP in Cursor, or install: pip install exarp-automation-mcp / uvx exarp", file=sys.stderr)
             sys.exit(0)
 
 if __name__ == '__main__':

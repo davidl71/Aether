@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Exarp Daily Automation Wrapper
+Exarp Daily Automation Wrapper (optional fallback).
 
-This script orchestrates Exarp MCP tools to replicate daily automation functionality.
-It calls all three Exarp checks and generates a combined report.
+Exarp automation is primarily via the exarp-go MCP server in Cursor. This script
+is an optional fallback when `uvx exarp` is installed. It runs all three checks
+(docs health, todo2 alignment, duplicate detection) via the uvx exarp CLI.
 
 Usage:
     python3 scripts/exarp_daily_automation_wrapper.py [project_dir] [--dry-run] [--json]

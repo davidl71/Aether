@@ -365,7 +365,7 @@
   "tabnine.debounceMs": 200, // Debounce delay for completions
   // Extension Management
   // Ensure workspace extensions take precedence over global extensions
-  "extensions.ignoreRecommendations": false,
+  "extensions.ignoreRecommendations": true,
   "extensions.showRecommendationsOnlyOnDemand": false,
   // Auto-install workspace recommendations when opening workspace
   "extensions.autoCheckUpdates": true,

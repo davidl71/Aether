@@ -1,8 +1,5 @@
-// test_tws_connection.cpp - Simple TWS API connection test
-// This script tests the TWS API connection with detailed diagnostics
-//
-// Compile: g++ -std=c++20 -o test_tws_connection test_tws_connection.cpp -I../native/include -I../native/third_party/tws-api/IBJts/source/cppclient/client -L../native/third_party/tws-api/IBJts/source/cppclient/client/build/lib -ltwsapi -lprotobuf -labsl_hash -lpthread -lspdlog
-// Or use CMake to build it
+// test_tws_connection.cpp - Standalone TWS API connection test (not a Catch2 test)
+// Build via main native CMake; binary: build/bin/test_tws_connection (or build-native/bin/...)
 //
 // Usage: ./test_tws_connection [host] [port] [client_id]
 // Example: ./test_tws_connection 127.0.0.1 7497 1

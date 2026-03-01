@@ -2,6 +2,9 @@
 
 This project includes comprehensive Cursor IDE configuration to enhance your development experience.
 
+**See also:** [AI_EDITOR_SETUP.md](../../AI_EDITOR_SETUP.md) — setup for OpenCode, Claude Code,
+Cursor, skills, and subagents (canonical context: AGENTS.md, CLAUDE.md).
+
 ## Configuration Files
 
 ### `.cursorrules`

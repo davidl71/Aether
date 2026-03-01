@@ -1,6 +1,8 @@
 #!/bin/bash
 # Script to update .cursor/mcp.json with optimized direct MCP server configurations
-# Removes mcpower-proxy wrappers for better performance
+# Removes mcpower-proxy wrappers for better performance.
+# Note: exarp/exarp-go is not included here so your existing .cursor/mcp.json
+# entry (e.g. exarp-go binary) is preserved; add it manually if needed.
 
 set -e
 
@@ -72,16 +74,6 @@ cat > "$MCP_CONFIG" << 'EOF'
         "-y",
         "@modelcontextprotocol/server-sequential-thinking"
       ]
-    },
-    "exarp": {
-      "command": "python3",
-      "args": [
-        "-m",
-        "exarp_automation_mcp.server"
-      ],
-      "env": {
-        "PROJECT_ROOT": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"
-      }
     }
   }
 }

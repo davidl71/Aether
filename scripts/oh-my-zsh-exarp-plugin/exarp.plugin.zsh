@@ -1,5 +1,8 @@
 # Exarp Oh My Zsh Plugin
 # Provides aliases, functions, and completions for Exarp project management automation
+#
+# LEGACY: These commands use the Python package (exarp_project_management). Prefer
+# exarp-go MCP server in Cursor for automation. See docs/EXARP_GO_MIGRATION_LEFTOVERS.md
 
 # Plugin metadata
 export EXARP_PLUGIN_VERSION="1.1.0"

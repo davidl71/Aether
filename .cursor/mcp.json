@@ -1,81 +1,40 @@
 {
   "mcpServers": {
-    "agentic-tools": {
-      "args": [
-        "-y",
-        "@pimzino/agentic-tools-mcp"
-      ],
-      "command": "npx"
-    },
     "context7": {
+      "command": "npx",
       "args": [
         "-y",
         "@upstash/context7-mcp"
-      ],
-      "command": "npx"
+      ]
     },
     "exarp-go": {
-      "command": "/Users/dlowes/Projects/exarp-go/bin/exarp-go",
+      "command": "/home/david/ib_box_spread_full_universal/scripts/run_exarp_go.sh",
       "args": [],
       "env": {
-        "PROJECT_ROOT": "/Users/dlowes/Projects/ib_box_spread_full_universal"
+        "PROJECT_ROOT": "/home/david/ib_box_spread_full_universal"
       }
     },
     "filesystem": {
+      "command": "npx",
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "/Users/dlowes/Projects/ib_box_spread_full_universal"
-      ],
-      "command": "npx"
-    },
-    "ollama": {
-      "args": [
-        "mcp-ollama"
-      ],
-      "command": "uvx",
-      "env": {
-        "OLLAMA_BASE_URL": "http://localhost:11434"
-      }
-    },
-    "semgrep": {
-      "args": [
-        "-y",
-        "@semgrep/mcp-server-semgrep"
-      ],
-      "command": "npx"
+        "/home/david/ib_box_spread_full_universal"
+      ]
     },
     "sequential_thinking": {
+      "command": "npx",
       "args": [
         "-y",
         "@modelcontextprotocol/server-sequential-thinking"
-      ],
-      "command": "npx"
+      ]
     },
     "tractatus_thinking": {
+      "command": "npx",
       "args": [
         "-y",
         "tractatus_thinking"
-      ],
-      "command": "npx"
-    },
-    "mcp-stdio-tools": {
-      "disabled": true,
-      "command": "/Users/dlowes/Projects/mcp-stdio-tools/run_server.sh",
-      "args": [],
-      "env": {
-        "PROJECT_ROOT": "/Users/dlowes/Projects/ib_box_spread_full_universal"
-      },
-      "description": "Stdio-based MCP tools - disabled (project not found on this machine)"
-    },
-    "mcp-generic-tools": {
-      "disabled": true,
-      "command": "/Users/dlowes/Projects/mcp-generic-tools/run_server.sh",
-      "args": [],
-      "env": {
-        "PROJECT_ROOT": "/Users/dlowes/Projects/ib_box_spread_full_universal"
-      },
-      "description": "Generic MCP tools - disabled (project not found on this machine)"
+      ]
     }
   }
 }
