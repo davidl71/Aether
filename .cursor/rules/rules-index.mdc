@@ -1,0 +1,31 @@
+---
+description: Index of Cursor rules; when to use each
+alwaysApply: false
+---
+
+# Cursor rules index
+
+Use this to pick the right rule for the current task.
+
+| Rule | When to use |
+|------|-------------|
+| `ai-editors-skills-subagents.mdc` | Canonical context (AGENTS.md, CLAUDE.md), skills, subagents, multi-editor setup |
+| `ai-context-standards.mdc` | Map of context files, which rule when, OpenCode/Claude/Cursor commands |
+| `documentation.mdc` | @docs usage, global docs, API/architecture references (auto when editing `docs/**/*.md`) |
+| `hooks.mdc` | Git hooks (pre-commit, docs validation), exarp-go setup_hooks |
+| `project-automation.mdc` | exarp-go MCP tools, docs health, Todo2 alignment, security scanning |
+| `automation-tool-suggestions.mdc` | When to suggest automation tools (context-aware) |
+| `todo2.mdc` | Todo2 workflow (create_todos, research, review, refinement) |
+| `cpp-source.mdc` | Editing C++ source/headers (`native/src/**`, `native/include/**`) |
+| `cpp-tests.mdc` | Editing C++ tests (`native/tests/**`) |
+| `python-code.mdc` | Editing Python (`python/**`) |
+| `semgrep.mdc` | Before generating code; security_check |
+| `ollama.mdc` | Privacy-sensitive code analysis (trading logic, risk) |
+| `context7.mdc` | Library/docs lookups; append "use context7" to prompts |
+| `notebooklm.mdc` | Summarize videos, create knowledge bases from links |
+| `tractatus-thinking.mdc` | Understand WHAT (structure); use first for complex problems |
+| `sequential-thinking.mdc` | Understand HOW (steps); use after Tractatus |
+| `auto-reprime.mdc` | Session prime / handoff with exarp-go |
+| `project-scorecard.mdc` | Generate project scorecard (on request) |
+
+Full setup: docs/AI_EDITOR_SETUP.md.

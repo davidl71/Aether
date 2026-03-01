@@ -24,40 +24,20 @@ Use Project Automation tools when you need:
 
 ## 🚨 CRITICAL: Working Directory Parameter
 
-**ALL exarp_pma tools MUST be called with the `workingDirectory` parameter set to this project's root directory.**
+**All exarp-go (MCP "exarp") tools must be called with `workingDirectory` set to this project's root.**
 
-**Project Root Directory:**
+- **In Cursor:** Use the workspace root path (the repo root where you opened the project).
+- **Path varies by machine**, e.g.:
+  - Linux: `/home/david/ib_box_spread_full_universal`
+  - macOS: `/Users/davidl/Projects/Trading/ib_box_spread_full_universal`
+- exarp-go uses this to find `.todo2`, `CMakeLists.txt`, `.git`, etc.
+
+**When calling any exarp-go tool, include:**
 ```
-/Users/davidl/Projects/Trading/ib_box_spread_full_universal
-```
-
-**Why This Matters:**
-- The exarp_pma server's default `project_root` is set at startup to `/Users/davidl/Projects/project-management-automation`
-- To operate on this project, tools must receive the correct `workingDirectory` parameter
-- Without this parameter, tools may operate on the wrong project or fail to find project files
-
-**Usage Pattern:**
-When calling ANY exarp_pma tool, ALWAYS include:
-```python
-workingDirectory="/Users/davidl/Projects/Trading/ib_box_spread_full_universal"
+workingDirectory="<path to this repo root>"
 ```
 
-**Example:**
-```python
-# ✅ CORRECT: Include workingDirectory
-mcp_exarp_pma_health(
-    action="server",
-    workingDirectory="/Users/davidl/Projects/Trading/ib_box_spread_full_universal"
-)
-
-# ❌ WRONG: Missing workingDirectory
-mcp_exarp_pma_health(action="server")
-```
-
-**Tools That Require workingDirectory:**
-- All `mcp_exarp_pma_*` tools accept and should use this parameter
-- Tools will auto-detect project markers (`.git`, `CMakeLists.txt`, `.todo2`, `go.mod`) from the working directory
-- This ensures tools operate on the correct project context
+Use the actual workspace path; do not assume a fixed path across machines.
 
 ---
 

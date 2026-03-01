@@ -35,7 +35,7 @@ When project root change is detected:
    ```
    Or use the auto_prime tool:
    ```
-   auto_prime_session() from exarp_pma
+   auto_prime_session() from exarp-go
    ```
 
 2. **Get project context:**
@@ -58,7 +58,7 @@ When you detect a project root change:
    "I notice we've switched to a different project. Let me reprime the session with the new project context."
 
 2. **Call Exarp auto-primer:**
-   - Use `auto_prime_session()` tool from exarp_pma
+   - Use `auto_prime_session()` tool from exarp-go
    - Or request: "ask exarp to prime my session"
 
 3. **Verify and confirm:**

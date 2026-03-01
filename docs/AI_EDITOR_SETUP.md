@@ -94,6 +94,16 @@ Cursor also has presets (e.g. `macos-arm64-debug`); see
 
 ---
 
+## Hooks
+
+- **Pre-commit (framework):** `.pre-commit-config.yaml` — install with `pre-commit install`. Runs trailing-whitespace, end-of-file-fixer, check-yaml, check-toml, mixed-line-ending, shfmt, shellcheck. Markdownlint is not in pre-commit (see [LINT_AND_AUTOMATION_MATRIX.md](LINT_AND_AUTOMATION_MATRIX.md)).
+- **Optional docs validation:** `scripts/setup_pre_commit_hook.sh` — installs a custom pre-commit hook that validates docs when `docs/API_DOCUMENTATION_INDEX.md` is staged.
+- **exarp-go:** Use the `setup_hooks` MCP tool (action: git or patterns) to install git hooks or automation patterns; pass `workingDirectory` = this project’s root.
+
+See [.cursor/rules/hooks.mdc](../.cursor/rules/hooks.mdc) and [LINT_AND_AUTOMATION_MATRIX.md](LINT_AND_AUTOMATION_MATRIX.md) for details.
+
+---
+
 ## Adding or changing AI context
 
 1. **Project-wide rules:** Update [AGENTS.md](../AGENTS.md) (and

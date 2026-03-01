@@ -26,7 +26,7 @@ Comprehensive multi-asset synthetic financing optimization platform. Manages fin
 ## Build System
 
 ### Commands
-See `.cursor/commands.json` or `docs/CURSOR_PROJECT_COMMANDS.md` for complete command list.
+See `.cursor/commands.json` or `docs/CURSOR_PROJECT_COMMANDS.md` for complete command list. For Cursor rules, skills, and multi-editor setup see `.cursor/rules/` and `docs/AI_EDITOR_SETUP.md`. Canonical project guidelines: `AGENTS.md`, `CLAUDE.md`.
 
 **Primary commands:**
 - `build:debug` - Build in debug mode
@@ -145,8 +145,8 @@ This project uses multiple MCP (Model Context Protocol) servers to enhance AI ca
 - **NotebookLM** - Use for summarizing YouTube videos, documentation links, and creating knowledge bases - see `.cursor/rules/notebooklm.mdc`
 
 **Project Management:**
-- **exarp_pma** - Use for project-specific analysis (documentation health, task alignment, duplicate detection, security scanning) - see `.cursor/rules/project-automation.mdc`
-  - **🚨 CRITICAL**: ALL exarp_pma tool calls MUST include `workingDirectory="/Users/davidl/Projects/Trading/ib_box_spread_full_universal"` parameter
+- **exarp-go** (MCP server "exarp") - Use for project-specific analysis (documentation health, task alignment, duplicate detection, security scanning) - see `.cursor/rules/project-automation.mdc`
+  - **🚨 CRITICAL**: Pass `workingDirectory` set to **this project's root** (Cursor workspace root; path varies by machine, e.g. `/home/david/ib_box_spread_full_universal` or `/Users/davidl/Projects/Trading/ib_box_spread_full_universal`)
 - **Agentic Tools** - Advanced task management with unlimited hierarchy and agent memories (see `docs/research/integration/MCP_SERVERS.md`)
 
 **Problem-Solving Workflows:**
@@ -203,15 +203,14 @@ This project uses multiple MCP (Model Context Protocol) servers to enhance AI ca
 5. Update documentation if needed
 6. Add static analysis annotations where appropriate
 
-**Automated checks (via exarp_pma - see `.cursor/rules/project-automation.mdc`):**
+**Automated checks (via exarp-go - see `.cursor/rules/project-automation.mdc`):**
 - Documentation health (runs automatically on git hooks)
 - Security scanning (runs automatically on dependency changes)
 - Task alignment (runs automatically on task status changes)
 - Duplicate detection (runs automatically on task creation)
 
-**To configure automated checks:** Use exarp_pma tools (git hooks, file watchers, cron jobs)
-**🚨 CRITICAL**: All exarp_pma tool calls MUST include `workingDirectory="/Users/davidl/Projects/Trading/ib_box_spread_full_universal"` parameter
+**To configure automated checks:** Use exarp-go MCP tools (git hooks, file watchers, cron jobs). Pass `workingDirectory` = this project's root (workspace root in Cursor).
 
 ---
 
-**For detailed documentation references and API usage, see `.cursor/rules/documentation.mdc`**
+**For detailed documentation references and API usage, see `.cursor/rules/documentation.mdc`. For AI editors, skills, and subagents setup, see `docs/AI_EDITOR_SETUP.md`.**

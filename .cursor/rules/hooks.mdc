@@ -1,0 +1,38 @@
+---
+description: Git hooks and automation hooks (pre-commit, exarp-go setup_hooks)
+alwaysApply: false
+globs: ".pre-commit-config.yaml,scripts/setup_pre_commit_hook.sh"
+---
+
+# Hooks
+
+## Pre-commit (framework)
+
+- **Config:** `.pre-commit-config.yaml`
+- **Install:** `pre-commit install` (in repo root)
+- **Runs on:** `git commit` (on staged files)
+- **Hooks:** trailing-whitespace, end-of-file-fixer, check-yaml, check-toml, mixed-line-ending, shfmt, shellcheck. Markdownlint is **not** in pre-commit (doc edits don’t block commits; use CI or `npm run lint:docs`).
+
+See `docs/LINT_AND_AUTOMATION_MATRIX.md` for how pre-commit relates to `run_linters.sh` and CI.
+
+## Optional: documentation validation hook
+
+- **Script:** `scripts/setup_pre_commit_hook.sh`
+- **Effect:** Installs a custom `.git/hooks/pre-commit` that validates docs when `docs/API_DOCUMENTATION_INDEX.md` is staged (format + link checks). Non-blocking link warnings; use `git commit --no-verify` to skip.
+- **Note:** If you use the pre-commit framework (`pre-commit install`), this script’s hook may conflict; prefer one or merge logic into a single pre-commit hook.
+
+## exarp-go: setup_hooks
+
+- **Tool:** exarp-go MCP `setup_hooks` (action: git or patterns)
+- **Use:** Install git hooks or automation patterns for exarp-go (e.g. task alignment, docs health). Call via Cursor with `workingDirectory` set to this project’s root.
+- **Docs:** `docs/EXARP_TOOLS_VERIFICATION.md` (setup_hooks), `.cursor/rules/project-automation.mdc`.
+
+## Summary
+
+| Hook type | Config / script | Install / trigger |
+|-----------|-----------------|-------------------|
+| Pre-commit (format, shell) | `.pre-commit-config.yaml` | `pre-commit install` |
+| Docs validation (optional) | `scripts/setup_pre_commit_hook.sh` | Run script once |
+| exarp-go (git/patterns) | exarp-go MCP | Use `setup_hooks` tool in Cursor |
+
+See also: `docs/LINT_AND_AUTOMATION_MATRIX.md`, `docs/AI_EDITOR_SETUP.md` (Hooks section).

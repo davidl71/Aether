@@ -1,5 +1,6 @@
 ---
 alwaysApply: false
+globs: docs/**/*.md
 ---
 
 # Documentation References
@@ -12,6 +13,7 @@ See `docs/CURSOR_GLOBAL_DOCS.md` for complete guide on setting up global Docs in
 
 ### High-Priority Global Docs (Must-Have)
 - ✅ `docs/API_DOCUMENTATION_INDEX.md` - Complete index of all external APIs and libraries
+- ✅ `docs/AI_EDITOR_SETUP.md` - OpenCode, Claude, Cursor, skills, subagents setup; canonical context (AGENTS.md, CLAUDE.md)
 - ✅ `docs/CODEBASE_ARCHITECTURE.md` - System design and component interactions
 - ✅ `docs/COMMON_PATTERNS.md` - Coding patterns, conventions, and idioms
 - ✅ `docs/AI_FRIENDLY_CODE.md` - Best practices for writing AI-friendly code
@@ -27,6 +29,10 @@ See `docs/CURSOR_GLOBAL_DOCS.md` for complete guide on setting up global Docs in
 - ✅ `docs/external/CPP20_FEATURES.md` - C++20 features reference
 
 ## When to Reference Documentation
+
+### AI setup and canonical context
+- **Multi-editor / skills / subagents:** Use `@docs AI_EDITOR_SETUP.md`
+- **Project guidelines:** AGENTS.md and CLAUDE.md (canonical; reference when answering project-wide questions)
 
 ### API Usage
 - Use `@docs API_DOCUMENTATION_INDEX.md` when suggesting code using external APIs

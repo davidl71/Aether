@@ -63,6 +63,20 @@ This project provides standard context files that AI coding assistants automatic
 
 Full setup and command parity: [docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md). See also `.cursor/rules/ai-editors-skills-subagents.mdc`.
 
+### Which rule when
+
+| When working with | Use rule | Purpose |
+|-------------------|----------|---------|
+| C++ source/headers | `cpp-source.mdc` | Style, financial code standards |
+| C++ tests | `cpp-tests.mdc` | Catch2 conventions |
+| Python | `python-code.mdc` | Style, uv, pytest |
+| Automation / Todo2 / docs health | `project-automation.mdc`, `automation-tool-suggestions.mdc` | exarp-go, task alignment |
+| Canonical context, skills, subagents | `ai-editors-skills-subagents.mdc`, docs/AI_EDITOR_SETUP.md | AGENTS.md/CLAUDE.md, multi-editor setup |
+| Documentation references | `documentation.mdc` | @docs, global docs |
+| Git / pre-commit / exarp-go hooks | `hooks.mdc` | pre-commit, setup_pre_commit_hook.sh, setup_hooks |
+| Security before code gen | `semgrep.mdc` | security_check |
+| Rule index | `rules-index.mdc` | List of all rules and when to use each |
+
 ### Cursor Glob Rules
 
 | Rule | Glob | Purpose |
