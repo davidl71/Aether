@@ -23,15 +23,23 @@ run_cppcheck() {
   fi
 
   info "Running cppcheck (C++ core)"
+  local cpp_src="${ROOT_DIR}/native/src"
+  local cpp_include="${ROOT_DIR}/native/include"
+  local cpp_tests="${ROOT_DIR}/native/tests"
+  if [ ! -d "${cpp_src}" ]; then
+    cpp_src="${ROOT_DIR}/src"
+    cpp_include="${ROOT_DIR}/include"
+    cpp_tests="${ROOT_DIR}/tests"
+  fi
   cppcheck \
     --enable=warning,performance,style,portability \
     --std=c++17 \
     --suppress=missingIncludeSystem \
     --inline-suppr \
     --force \
-    "${ROOT_DIR}/src" \
-    "${ROOT_DIR}/include" \
-    "${ROOT_DIR}/tests"
+    "${cpp_src}" \
+    "${cpp_include}" \
+    "${cpp_tests}"
 }
 
 run_clang_analyze() {
@@ -58,7 +66,7 @@ run_clang_analyze() {
     dir=$(printf '%s' "${entry}" | jq -r '.directory')
 
     case "${file}" in
-    "${ROOT_DIR}/src/"* | "${ROOT_DIR}/tests/"* | "${ROOT_DIR}/include/"*) ;;
+    "${ROOT_DIR}/native/src/"* | "${ROOT_DIR}/native/tests/"* | "${ROOT_DIR}/native/include/"* | "${ROOT_DIR}/src/"* | "${ROOT_DIR}/tests/"* | "${ROOT_DIR}/include/"*) ;;
     *)
       continue
       ;;
@@ -149,8 +157,8 @@ run_swiftlint() {
 #   (cd "${ROOT_DIR}/tui" && golangci-lint run)
 # }
 
-run_bandit() {
-  info "Running bandit (Python)"
+run_eslint() {
+  info "Running ESLint (React/TypeScript/JSON web frontend)"
   if ! command -v npm >/dev/null 2>&1; then
     warn "Skipping ESLint (npm not found)"
     return 0
@@ -161,7 +169,6 @@ run_bandit() {
     return 0
   fi
 
-  info "Running ESLint (React/TypeScript/JSON web frontend)"
   (cd "${ROOT_DIR}/web" && npm run lint) || {
     warn "ESLint found issues. Run 'cd web && npm run lint:fix' to auto-fix some issues."
     return 1
@@ -213,6 +220,22 @@ run_js_syntax_check() {
   fi
 }
 
+run_shellcheck() {
+  if ! command -v shellcheck >/dev/null 2>&1; then
+    warn "Skipping shellcheck (executable not found)"
+    return 0
+  fi
+  info "Running shellcheck (shell scripts)"
+  local script_dir="${ROOT_DIR}/scripts"
+  local failed=0
+  while IFS= read -r -d '' f; do
+    if ! shellcheck "$f"; then
+      failed=1
+    fi
+  done < <(find "${script_dir}" -maxdepth 1 -name '*.sh' -print0 2>/dev/null)
+  [ "${failed}" -eq 0 ]
+}
+
 run_bandit() {
   info "Running bandit (Python)"
 
@@ -249,6 +272,8 @@ run_infer() {
     "${ROOT_DIR}/build/macos-x86_64-release" \
     "${ROOT_DIR}/build/macos-universal-debug" \
     "${ROOT_DIR}/build/macos-universal-release" \
+    "${ROOT_DIR}/build/linux-x64-debug" \
+    "${ROOT_DIR}/build/linux-x64-release" \
     "${ROOT_DIR}/build"; do
     if [ -f "${possible_dir}/compile_commands.json" ]; then
       compile_db="${possible_dir}/compile_commands.json"
@@ -316,6 +341,7 @@ main() {
   run_swiftlint
   # run_golangci_lint  # Go TUI removed - using C++ TUI instead
   run_exarp_go_lint
+  run_shellcheck
   run_bandit
   run_eslint
   run_stylelint

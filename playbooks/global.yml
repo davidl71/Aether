@@ -11,6 +11,7 @@
       - jq
       - python
       - shellcheck
+      - cppcheck
       - shfmt
       - clang-format
     brew_casks:
