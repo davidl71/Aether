@@ -1,5 +1,5 @@
 // box_spread_strategy.cpp - Box spread synthetic financing strategy implementation
-#include "box_spread_strategy.h"
+#include "strategies/box_spread/box_spread_strategy.h"
 #include "config_manager.h"
 #include <spdlog/spdlog.h>
 #include <algorithm>

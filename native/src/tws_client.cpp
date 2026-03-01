@@ -3550,7 +3550,7 @@ private:
     ConnectionState state_;
     std::atomic<int> last_error_code_{0};
     std::string last_error_message_;
-    std::mutex error_mutex_;
+    mutable std::mutex error_mutex_;
 
     // Reconnection state
     std::atomic<int> reconnect_attempts_{0};

@@ -30,7 +30,7 @@ struct NatsClientImpl {
     NatsClientImpl(const std::string& server_url) : url(server_url) {}
 
     ~NatsClientImpl() {
-        disconnect();
+        disconnect_impl();
     }
 
     bool connect_impl() {

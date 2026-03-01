@@ -65,6 +65,14 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Export compile commands for IDE support
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Silence CMake deprecation/developer warnings (policies)
+if(POLICY CMP0135)
+  cmake_policy(SET CMP0135 NEW)  # FetchContent: use extraction time for URL downloads
+endif()
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 OLD)  # Keep using FindBoost until BoostConfig is used everywhere
+endif()
+
 # ============================================================================
 # Distributed Compilation and Caching
 # ============================================================================
@@ -210,6 +218,7 @@ fetchcontent_declare(
     nlohmann_json
     URL ${NLOHMANN_JSON_URL}
     URL_HASH ${NLOHMANN_JSON_SHA256}
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
 set(SPDLOG_REPOSITORY "https://github.com/gabime/spdlog.git")
@@ -322,6 +331,9 @@ endif()
 # Try find_package if direct finding didn't work
 if(NOT BOOST_FOUND_DIRECTLY)
     set(Boost_NO_BOOST_CMAKE ON)
+    # Suppress "New Boost version may have incorrect or missing dependencies" when
+    # system Boost is newer than FindBoost's hardcoded list (e.g. Boost 1.88 on CMake 3.31).
+    set(Boost_NO_WARN_NEW_VERSIONS ON)
     find_package(Boost QUIET COMPONENTS date_time filesystem system)
     if(NOT Boost_FOUND)
         message(FATAL_ERROR "Could not find Boost. Please install via: brew install boost")
@@ -681,6 +693,11 @@ if(_build_native_cli)
 
     add_executable(ib_box_spread ${SOURCES} ${HEADERS})
 
+    # Suppress -Wdangling-reference from spdlog/fmt when formatting std::string (false positives)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        target_compile_options(ib_box_spread PRIVATE -Wno-dangling-reference)
+    endif()
+
     # Include the generated version header in the build
     target_include_directories(ib_box_spread
         PRIVATE
@@ -748,6 +765,10 @@ if(_build_native_cli)
         endif()
     elseif(UNIX)
         target_link_libraries(ib_box_spread PRIVATE pthread)
+        find_library(UUID_LIBRARY uuid)
+        if(UUID_LIBRARY)
+            target_link_libraries(ib_box_spread PRIVATE ${UUID_LIBRARY})
+        endif()
     endif()
 
     install(TARGETS ib_box_spread

@@ -1,6 +1,7 @@
 // convexity_calculator.h - Convexity optimization for barbell strategy
 #pragma once
 
+#include <string>
 #include <vector>
 #include <optional>
 

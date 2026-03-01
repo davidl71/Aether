@@ -166,7 +166,7 @@ BoxSpreadBag::BagGreeks BoxSpreadBagManager::calculate_bag_greeks(
     double volatility,
     double risk_free_rate) {
 
-    BagGreeks greeks;
+    BoxSpreadBag::BagGreeks greeks;
     greeks.calculated_at = std::chrono::system_clock::now();
 
     // Convert days to expiry to years

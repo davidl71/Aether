@@ -46,10 +46,10 @@ MarketStatus MarketHours::get_market_status_at(std::chrono::system_clock::time_p
     std::string date_str = date_to_string(time);
 
     // Check if holiday
-    bool is_holiday = is_holiday(time);
+    bool holiday = is_holiday(time);
     bool is_early_close_day = is_early_close(time);
 
-    if (is_holiday) {
+    if (holiday) {
         status.is_open = false;
         status.current_session = MarketSession::Closed;
         status.is_holiday = true;
@@ -90,7 +90,7 @@ MarketStatus MarketHours::get_market_status_at(std::chrono::system_clock::time_p
         status.reason = "closed";
     }
 
-    status.is_holiday = is_holiday;
+    status.is_holiday = holiday;
     status.is_early_close = is_early_close_day;
 
     // Calculate next open and close times

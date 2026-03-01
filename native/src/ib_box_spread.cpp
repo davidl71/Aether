@@ -137,7 +137,8 @@ namespace {
         spdlog::info("  Pending Orders: {}", health.pending_orders);
         spdlog::info("  Efficiency Ratio: {:.2f}%", health.efficiency_ratio * 100.0);
         if (!health.last_error.empty()) {
-            spdlog::info("  Last Error: {}", health.last_error);
+            std::string last_err = health.last_error;
+            spdlog::info("  Last Error: {}", last_err);
         }
         if (health.error_count_last_hour > 0) {
             spdlog::warn("  Errors (last hour): {}", health.error_count_last_hour);
@@ -192,7 +193,7 @@ namespace {
                     p["quantity"] = pos.quantity;
                     p["avg_price"] = pos.avg_price;
                     p["current_price"] = pos.current_price;
-                    p["unrealized_pnl"] = pos.get_unrealized_pnl();
+                    p["unrealized_pnl"] = pos.unrealized_pnl;
                     p["market_value"] = pos.get_market_value();
                     positions_arr.push_back(p);
                 }
@@ -244,7 +245,8 @@ namespace {
             {
                 std::ofstream ofs(tmp_path, std::ios::trunc);
                 if (!ofs.is_open()) {
-                    spdlog::warn("Failed to open snapshot temp file: {}", tmp_path.string());
+                    std::string tmp_path_str = tmp_path.string();
+                    spdlog::warn("Failed to open snapshot temp file: {}", tmp_path_str);
                     return;
                 }
                 ofs << snapshot.dump(2);
@@ -370,7 +372,8 @@ namespace {
         std::error_code ec;
         for (const auto& candidate : candidates) {
             if (fs::exists(candidate, ec) && fs::is_regular_file(candidate, ec)) {
-                spdlog::debug("Resolved configuration candidate: {}", candidate.string());
+                std::string candidate_str = candidate.string();
+                spdlog::debug("Resolved configuration candidate: {}", candidate_str);
                 return candidate;
             }
             ec.clear();

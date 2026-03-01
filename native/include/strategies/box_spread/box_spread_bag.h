@@ -139,7 +139,7 @@ public:
     );
 
     // Calculate Greeks for box spread bag
-    static BagGreeks calculate_bag_greeks(
+    static BoxSpreadBag::BagGreeks calculate_bag_greeks(
         const types::BoxSpreadLeg& spread,
         double underlying_price,
         double time_to_expiry,
@@ -174,11 +174,7 @@ public:
 
     // Convert bag to display format (for Python TUI or PWA)
     // Note: C++ TUI has been removed, use Python TUI (python/tui/) instead
-    static void to_display_format(
-        const BoxSpreadBag& bag,
-        // Output parameters would be passed by reference
-        // This is a placeholder - actual implementation depends on TUI types
-    );
+    static void to_display_format(const BoxSpreadBag& bag);
 };
 
 } // namespace types

@@ -5,10 +5,10 @@
 #include <ql/quantlib.hpp>
 #include <ql/instruments/vanillaoption.hpp>
 #include <ql/pricingengines/vanilla/analyticeuropeanengine.hpp>
-#include <ql/processes/blackscholesmertonprocess.hpp>
+#include <ql/processes/blackscholesprocess.hpp>
 #include <ql/termstructures/volatility/equityfx/blackconstantvol.hpp>
 #include <ql/termstructures/yield/flatforward.hpp>
-#include <ql/volatility/blackformula.hpp>
+#include <ql/pricingengines/blackformula.hpp>
 #include <cmath>
 #include <algorithm>
 #include <iterator>
@@ -483,11 +483,16 @@ double OptionChainBuilder::calculate_theoretical_price(
         // Create option type
         Option::Type ql_type = (option_type == types::OptionType::Call) ? Option::Call : Option::Put;
 
-        // Create handles for spot, rate, and volatility
+        // Create handles for spot, rate, dividend (0), and volatility
         Handle<Quote> spotHandle(ext::shared_ptr<Quote>(new SimpleQuote(underlying_price)));
         Handle<YieldTermStructure> rateHandle(
             ext::shared_ptr<YieldTermStructure>(
                 new FlatForward(today, risk_free_rate, dayCounter)
+            )
+        );
+        Handle<YieldTermStructure> divHandle(
+            ext::shared_ptr<YieldTermStructure>(
+                new FlatForward(today, 0.0, dayCounter)
             )
         );
         Handle<BlackVolTermStructure> volHandle(
@@ -496,9 +501,9 @@ double OptionChainBuilder::calculate_theoretical_price(
             )
         );
 
-        // Create Black-Scholes-Merton process
+        // Create Black-Scholes-Merton process (spot, dividend, risk-free, vol)
         ext::shared_ptr<BlackScholesMertonProcess> process(
-            new BlackScholesMertonProcess(spotHandle, rateHandle, volHandle)
+            new BlackScholesMertonProcess(spotHandle, divHandle, rateHandle, volHandle)
         );
 
         // Create pricing engine
@@ -560,6 +565,11 @@ double OptionChainBuilder::calculate_delta(
                 new FlatForward(today, risk_free_rate, dayCounter)
             )
         );
+        Handle<YieldTermStructure> divHandle(
+            ext::shared_ptr<YieldTermStructure>(
+                new FlatForward(today, 0.0, dayCounter)
+            )
+        );
         Handle<BlackVolTermStructure> volHandle(
             ext::shared_ptr<BlackVolTermStructure>(
                 new BlackConstantVol(today, calendar, volatility, dayCounter)
@@ -568,7 +578,7 @@ double OptionChainBuilder::calculate_delta(
 
         // Create process and engine
         ext::shared_ptr<BlackScholesMertonProcess> process(
-            new BlackScholesMertonProcess(spotHandle, rateHandle, volHandle)
+            new BlackScholesMertonProcess(spotHandle, divHandle, rateHandle, volHandle)
         );
         ext::shared_ptr<PricingEngine> engine(
             new AnalyticEuropeanEngine(process)
@@ -619,6 +629,11 @@ double OptionChainBuilder::calculate_gamma(
                 new FlatForward(today, risk_free_rate, dayCounter)
             )
         );
+        Handle<YieldTermStructure> divHandle(
+            ext::shared_ptr<YieldTermStructure>(
+                new FlatForward(today, 0.0, dayCounter)
+            )
+        );
         Handle<BlackVolTermStructure> volHandle(
             ext::shared_ptr<BlackVolTermStructure>(
                 new BlackConstantVol(today, calendar, volatility, dayCounter)
@@ -627,7 +642,7 @@ double OptionChainBuilder::calculate_gamma(
 
         // Create process and engine
         ext::shared_ptr<BlackScholesMertonProcess> process(
-            new BlackScholesMertonProcess(spotHandle, rateHandle, volHandle)
+            new BlackScholesMertonProcess(spotHandle, divHandle, rateHandle, volHandle)
         );
         ext::shared_ptr<PricingEngine> engine(
             new AnalyticEuropeanEngine(process)
@@ -681,6 +696,11 @@ double OptionChainBuilder::calculate_theta(
                 new FlatForward(today, risk_free_rate, dayCounter)
             )
         );
+        Handle<YieldTermStructure> divHandle(
+            ext::shared_ptr<YieldTermStructure>(
+                new FlatForward(today, 0.0, dayCounter)
+            )
+        );
         Handle<BlackVolTermStructure> volHandle(
             ext::shared_ptr<BlackVolTermStructure>(
                 new BlackConstantVol(today, calendar, volatility, dayCounter)
@@ -689,7 +709,7 @@ double OptionChainBuilder::calculate_theta(
 
         // Create process and engine
         ext::shared_ptr<BlackScholesMertonProcess> process(
-            new BlackScholesMertonProcess(spotHandle, rateHandle, volHandle)
+            new BlackScholesMertonProcess(spotHandle, divHandle, rateHandle, volHandle)
         );
         ext::shared_ptr<PricingEngine> engine(
             new AnalyticEuropeanEngine(process)
@@ -740,6 +760,11 @@ double OptionChainBuilder::calculate_vega(
                 new FlatForward(today, risk_free_rate, dayCounter)
             )
         );
+        Handle<YieldTermStructure> divHandle(
+            ext::shared_ptr<YieldTermStructure>(
+                new FlatForward(today, 0.0, dayCounter)
+            )
+        );
         Handle<BlackVolTermStructure> volHandle(
             ext::shared_ptr<BlackVolTermStructure>(
                 new BlackConstantVol(today, calendar, volatility, dayCounter)
@@ -748,7 +773,7 @@ double OptionChainBuilder::calculate_vega(
 
         // Create process and engine
         ext::shared_ptr<BlackScholesMertonProcess> process(
-            new BlackScholesMertonProcess(spotHandle, rateHandle, volHandle)
+            new BlackScholesMertonProcess(spotHandle, divHandle, rateHandle, volHandle)
         );
         ext::shared_ptr<PricingEngine> engine(
             new AnalyticEuropeanEngine(process)
