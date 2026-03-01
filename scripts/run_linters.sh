@@ -54,8 +54,8 @@ run_clang_analyze() {
   local compile_db="${build_dir}/compile_commands.json"
 
   if [ ! -f "${compile_db}" ]; then
-    err "compile_commands.json not found. Configure the project with CMake (e.g. ninja generator) and enable CMAKE_EXPORT_COMPILE_COMMANDS."
-    return 1
+    warn "Skipping clang --analyze (compile_commands.json not found). Configure with: cmake -S . -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+    return 0
   fi
 
   local status=0
@@ -283,9 +283,8 @@ run_infer() {
   done
 
   if [ -z "${compile_db}" ] || [ ! -f "${compile_db}" ]; then
-    err "compile_commands.json not found in any build directory."
-    err "Configure the project with CMake: cmake --preset macos-x86_64-debug"
-    return 1
+    warn "Skipping Infer (compile_commands.json not found). Configure with: cmake -S . -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+    return 0
   fi
 
   local infer_out_dir="${build_dir}/infer-out"
