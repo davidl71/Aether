@@ -54,7 +54,9 @@ The Intel Decimal Floating-Point Math Library is available from [Netlib](https:/
    ```
    Or place in Downloads folder (any subdirectory) - will be auto-detected.
    Or unzip manually into `native/third_party/tws-api/` so that headers live at `native/third_party/tws-api/IBJts/source/cppclient/client/`.
-3. Re-run CMake; it will detect the headers and the prebuilt `libtwsapi`.
+3. Re-run CMake; it will detect the headers and the prebuilt `libtwsapi.so` (Linux) or `libtwsapi.dylib` (macOS).
+
+**Linux:** Build requires system protobuf (`sudo apt install libprotobuf-dev`). The Intel Decimal library is built with `-fPIC` so it can be linked into the TWS API shared library. See TWS API `IBJts/source/cppclient/Intel_lib_build.txt` for official Intel library build notes.
 
 ## Cache Layout
 

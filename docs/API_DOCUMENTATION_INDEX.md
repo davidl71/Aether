@@ -363,7 +363,7 @@ for large multi-leg positions.
 - **Official Docs**: <https://www.intel.com/content/www/us/en/developer/articles/tool/intel-decimal-floating-point-math-library.html>
 - **Version**: 20U2
 - **Purpose**: Precision decimal arithmetic for financial calculations
-- **Key Functions**: `___bid64_add`, `___bid64_div`, `___bid64_mul`, etc.
+- **Key Functions**: `__bid64_add`, `__bid64_div`, `__bid64_mul`, etc. (from libbid)
 - **Location**: `native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
 - **Note**: Required by TWS API for decimal price handling
 
@@ -374,7 +374,7 @@ for large multi-leg positions.
 - **Version**: 6.33.0+
 - **Purpose**: Serialization for TWS API messages
 - **Generated Files**: `*.pb.cc`, `*.pb.h` in TWS API client directory
-- **Location**: `/usr/local/lib/libprotobuf.dylib`
+- **Location**: macOS: `/usr/local/lib/libprotobuf.dylib`; Linux: e.g. `/usr/lib/x86_64-linux-gnu/libprotobuf.so` (install `libprotobuf-dev`)
 
 ## Logging & Utilities
 

@@ -22,6 +22,8 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i386|i686|x86")
 endif()
 
 # Set compile definitions based on TWS API requirements
+# Matches TWS SDK Intel_lib_build.txt: CALL_BY_REF=0 GLOBAL_RND=0 GLOBAL_FLAGS=0 UNCHANGED_BINARY_FLAGS=0
+# See IntelRDFPMathLib20U2/LIBRARY/README for flag details.
 add_compile_definitions(
   DECIMAL_CALL_BY_REFERENCE=0
   DECIMAL_GLOBAL_ROUNDING=0
@@ -56,9 +58,13 @@ target_compile_options(bid_decimal PRIVATE
   -Wno-dangling-else
 )
 
+# Position-independent code required when this static lib is linked into a shared library (.so/.dylib)
+if(UNIX)
+  target_compile_options(bid_decimal PRIVATE -fPIC)
+endif()
+
 # Set output name to match expected libbid.a
 set_target_properties(bid_decimal PROPERTIES
   OUTPUT_NAME "bid"
   ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 )
-

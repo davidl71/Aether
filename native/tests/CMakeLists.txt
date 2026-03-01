@@ -43,8 +43,13 @@ if(NOT TWS_API_INCLUDE_DIR)
 endif()
 
 if(NOT TWS_API_LIB)
+    if(APPLE)
+        set(_twsapi_ext ".dylib")
+    else()
+        set(_twsapi_ext ".so")
+    endif()
     set(TWS_API_LIB
-        "${TWS_API_INCLUDE_DIR}/build/lib/libtwsapi.dylib"
+        "${TWS_API_INCLUDE_DIR}/build/lib/libtwsapi${_twsapi_ext}"
     )
 endif()
 
@@ -55,7 +60,20 @@ if(NOT INTEL_DECIMAL_LIB)
 endif()
 
 if(NOT ABSEIL_LIBS)
-    file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.dylib")
+    if(APPLE)
+        foreach(_dir /opt/homebrew/lib /usr/local/lib)
+            file(GLOB _absl "${_dir}/libabsl*.dylib")
+            if(_absl)
+                set(ABSEIL_LIBS ${_absl})
+                break()
+            endif()
+        endforeach()
+        if(NOT ABSEIL_LIBS)
+            file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.dylib")
+        endif()
+    else()
+        file(GLOB ABSEIL_LIBS "/usr/local/lib/libabsl*.so" "/usr/lib/x86_64-linux-gnu/libabsl*.so")
+    endif()
 endif()
 
 target_include_directories(box_spread_tests PRIVATE
@@ -63,9 +81,29 @@ target_include_directories(box_spread_tests PRIVATE
     ${TWS_API_INCLUDE_DIR}
 )
 
-# ============================================================================
-# Link Libraries
-# ============================================================================
+# Platform-specific protobuf for tests (TWS API dependency)
+if(APPLE)
+    find_library(Protobuf_LIBRARY NAMES protobuf libprotobuf
+        PATHS /opt/homebrew/lib /usr/local/lib /usr/lib
+        NO_DEFAULT_PATH
+    )
+    if(NOT Protobuf_LIBRARY)
+        find_library(Protobuf_LIBRARY NAMES protobuf libprotobuf)
+    endif()
+    set(_test_protobuf_lib "${Protobuf_LIBRARY}")
+    if(NOT _test_protobuf_lib)
+        set(_test_protobuf_lib "/usr/local/lib/libprotobuf.dylib")
+    endif()
+elseif(UNIX)
+    find_library(Protobuf_LIBRARY NAMES protobuf PATHS "/usr/lib/x86_64-linux-gnu" "/usr/lib64" "/usr/local/lib")
+    if(Protobuf_LIBRARY)
+        set(_test_protobuf_lib "${Protobuf_LIBRARY}")
+    else()
+        set(_test_protobuf_lib "protobuf")
+    endif()
+else()
+    set(_test_protobuf_lib "protobuf")
+endif()
 
 target_link_libraries(box_spread_tests
     PRIVATE
@@ -76,7 +114,7 @@ target_link_libraries(box_spread_tests
         Eigen3::Eigen
         ${TWS_API_LIB}
         ${INTEL_DECIMAL_LIB}
-        /usr/local/lib/libprotobuf.dylib
+        ${_test_protobuf_lib}
         ${ABSEIL_LIBS}
 )
 

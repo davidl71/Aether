@@ -49,7 +49,12 @@ BUILD_DIR="build-fast"
 # IBAPI paths - use third_party directory if available
 TWS_API_INCLUDE_DIR="${TWS_API_INCLUDE_DIR:-native/third_party/tws-api/IBJts/source/cppclient/client}"
 TWS_CLIENT_DIR="native/third_party/tws-api/IBJts/source/cppclient/client"
-TWS_LIB_PATH="${TWS_CLIENT_DIR}/build/lib/libtwsapi.dylib"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  TWS_LIB_EXT=".dylib"
+else
+  TWS_LIB_EXT=".so"
+fi
+TWS_LIB_PATH="${TWS_CLIENT_DIR}/build/lib/libtwsapi${TWS_LIB_EXT}"
 # Check if TWS API library already exists, if so disable vendor build
 if [ -f "$TWS_LIB_PATH" ]; then
   TWS_API_BUILD_VENDOR="OFF"
@@ -59,10 +64,21 @@ fi
 
 # Build Intel Decimal library if needed
 INTEL_LIB_PATH="native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a"
+INTEL_DIR="native/third_party/IntelRDFPMathLib20U2/LIBRARY"
+INTEL_BUILD_DIR="${INTEL_DIR}/build"
+
+# If we will build TWS API and libbid.a already exists, force rebuild of Intel lib with -fPIC
+# (required when linking static lib into shared lib; stale libbid.a may have been built without -fPIC)
+if [ ! -f "$TWS_LIB_PATH" ] && [ -f "$INTEL_LIB_PATH" ]; then
+  echo "Forcing rebuild of Intel Decimal library with -fPIC for TWS API shared library..."
+  rm -f "$INTEL_LIB_PATH"
+  rm -rf "$INTEL_BUILD_DIR"
+  # Clean TWS API build so it reconfigures and links against the new libbid.a
+  rm -rf "${TWS_CLIENT_DIR}/build"
+fi
+
 if [ ! -f "$INTEL_LIB_PATH" ]; then
   echo "Building Intel Decimal library (libbid.a)..."
-  INTEL_DIR="native/third_party/IntelRDFPMathLib20U2/LIBRARY"
-  INTEL_BUILD_DIR="${INTEL_DIR}/build"
 
   if [ -d "$INTEL_DIR" ]; then
     mkdir -p "$INTEL_BUILD_DIR"
@@ -81,9 +97,14 @@ fi
 
 # Build TWS API library if needed
 TWS_CLIENT_DIR="native/third_party/tws-api/IBJts/source/cppclient/client"
-TWS_LIB_PATH="${TWS_CLIENT_DIR}/build/lib/libtwsapi.dylib"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  TWS_LIB_EXT=".dylib"
+else
+  TWS_LIB_EXT=".so"
+fi
+TWS_LIB_PATH="${TWS_CLIENT_DIR}/build/lib/libtwsapi${TWS_LIB_EXT}"
 if [ ! -f "$TWS_LIB_PATH" ]; then
-  echo "Building TWS API library (libtwsapi.dylib)..."
+  echo "Building TWS API library (libtwsapi${TWS_LIB_EXT})..."
 
   if [ -d "$TWS_CLIENT_DIR" ]; then
     TWS_BUILD_DIR="${TWS_CLIENT_DIR}/build"
