@@ -79,11 +79,10 @@ The project has converged on REST + NATS + WebSocket; gRPC adds build complexity
 ### 1.7 Misplaced Files
 
 5 test files in `python/integration/` instead of `python/tests/`:
-- `test_swiftness_integration_simple.py`
-- `test_swiftness_integration.py`
 - `test_swiftness_import.py`
 - `test_relationship_graph.py`
 - `test_nats_client.py`
+- (Swiftness integration manual script moved to `scripts/swiftness_integration_manual.py`)
 
 ### 1.8 Docs Archive
 

@@ -193,8 +193,7 @@ This document identifies coverage gaps and prioritizes test additions to achieve
 
 **Python Integration Tests** (`python/integration/`):
 
-- ✅ `test_swiftness_integration.py` - Integration tests
-- ✅ `test_swiftness_integration_simple.py` - Simple integration tests
+- ✅ `scripts/swiftness_integration_manual.py` – Manual Swiftness integration check
 - ✅ `test_swiftness_import.py` - Import tests
 - ✅ `test_relationship_graph.py` - Graph tests
 - ✅ `test_nats_client.py` - NATS client tests

@@ -107,8 +107,7 @@ open htmlcov/index.html
 
 **Integration Tests** (`python/integration/`):
 
-- `test_swiftness_integration.py`
-- `test_swiftness_integration_simple.py`
+- `scripts/swiftness_integration_manual.py` – Manual Swiftness integration check (mock or real data)
 - `test_swiftness_import.py`
 - `test_relationship_graph.py`
 - `test_nats_client.py`

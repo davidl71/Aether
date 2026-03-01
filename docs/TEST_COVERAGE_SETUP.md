@@ -164,7 +164,7 @@ The coverage configuration file is located at the project root and includes:
 
 - ✅ `python/tests/test_security.py` - Security tests (unittest)
 - `python/tests/run_security_tests.py` - Security test runner
-- `python/integration/test_swiftness_integration.py` - Integration tests
+- `scripts/swiftness_integration_manual.py` – Manual Swiftness integration check
 
 ---
 
