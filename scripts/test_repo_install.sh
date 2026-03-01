@@ -44,9 +44,9 @@ else
 fi
 
 # Check for packages
-if [ -d "$REPO_DIR/pool" ] && [ "$(ls -A $REPO_DIR/pool 2>/dev/null)" ]; then
+if [ -d "$REPO_DIR/pool" ] && [ "$(ls -A "$REPO_DIR/pool" 2>/dev/null)" ]; then
   echo "✓ Packages found in pool/"
-  ls -1 "$REPO_DIR/pool" | head -5
+  find "$REPO_DIR/pool" -maxdepth 1 -mindepth 1 | head -5
 else
   echo "⚠ No packages found in pool/"
   echo "  Packages will be created when building repository"
@@ -54,6 +54,7 @@ fi
 
 # Check Ubuntu version
 if [ -f /etc/os-release ]; then
+  # shellcheck disable=SC1091
   source /etc/os-release
   echo ""
   echo "Detected OS: $ID $VERSION_ID"

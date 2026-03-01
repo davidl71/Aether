@@ -135,6 +135,29 @@ Synchronize tasks between shared TODO table and Todo2.
 
 ---
 
+#### `task_discovery`
+Discover tasks from code comments (TODO/FIXME), markdown checklists, and planning docs. **Use with `create_tasks: true` to create Todo2 tasks** for undocumented work.
+
+**When to use:**
+- To find work that isn't in Todo2 yet
+- After scanning code/docs for TODOs or markdown checklists
+- To create tasks from code comments or markdown in one go
+
+**Usage:**
+```
+"Discover tasks from code and docs, and create Todo2 tasks"
+"Run task discovery with create_tasks=true"
+"Scan for TODOs and create tasks (action=comments)"
+```
+
+**Parameters:**
+- `action`: `comments` | `markdown` | `orphans` | `git_json` | `planning_links` | `all` (default: `all`)
+- `create_tasks` (bool): **Create Todo2 tasks for discoveries** (default: `false`). Set to `true` to create tasks.
+- `create_tasks=true` is required to create tasks; discovery alone only reports.
+- `output_path` (Optional): Path for report (e.g. `docs/task_discovery_report.json`)
+
+---
+
 ### Security Tools
 
 #### `scan_dependency_security_tool`

@@ -141,6 +141,12 @@
       "category": "quality"
     },
     {
+      "name": "exarp:task-discovery",
+      "description": "Run exarp task discovery and create Todo2 tasks (use MCP task_discovery with create_tasks=true in chat)",
+      "command": "echo 'In Cursor chat, ask: Run task_discovery with create_tasks=true. Or: ./scripts/run_exarp_go_tool.sh task_discovery \"{\\\"action\\\":\\\"comments\\\",\\\"create_tasks\\\":true}\"'",
+      "category": "quality"
+    },
+    {
       "name": "run:tui",
       "description": "Run TUI application (dry-run mode)",
       "command": "./build/macos-arm64-debug/bin/ib_box_spread_tui --dry-run",
