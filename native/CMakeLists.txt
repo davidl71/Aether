@@ -234,11 +234,13 @@ fetchcontent_declare(
 )
 
 set(CLI11_REPOSITORY "https://github.com/CLIUtils/CLI11.git")
+set(PATCH_CMAKE_MINIMUM "${CMAKE_SOURCE_DIR}/scripts/patch_cmake_minimum.cmake")
 fetchcontent_declare(
     CLI11
     GIT_REPOSITORY ${CLI11_REPOSITORY}
     GIT_TAG v2.4.1
     GIT_SHALLOW TRUE
+    PATCH_COMMAND ${CMAKE_COMMAND} -P ${PATCH_CMAKE_MINIMUM}
 )
 
 # FTXUI removed - C++ TUI has been replaced by Python TUI
@@ -256,6 +258,7 @@ fetchcontent_declare(
     GIT_REPOSITORY ${EIGEN3_REPOSITORY}
     GIT_TAG 3.4.0
     GIT_SHALLOW TRUE
+    PATCH_COMMAND ${CMAKE_COMMAND} -P ${PATCH_CMAKE_MINIMUM}
 )
 
 # Find Boost (required for QuantLib)

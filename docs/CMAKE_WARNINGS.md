@@ -25,12 +25,14 @@ you may still see **developer/deprecation warnings** from third-party code fetch
 
 | Source | Warning | Cause |
 |--------|---------|--------|
-| **CLI11** (`_deps/cli11-src/CMakeLists.txt`) | Deprecation: compatibility with CMake &lt; 3.10 will be removed | Old `cmake_minimum_required(VERSION ...)` |
-| **Eigen3** (`_deps/eigen3-src/CMakeLists.txt`) | Same as above | Old `cmake_minimum_required` |
+| **CLI11** (`_deps/cli11-src/CMakeLists.txt`) | ~~Deprecation: compatibility with CMake &lt; 3.10 will be removed~~ | **Patched** via `PATCH_COMMAND` in `native/CMakeLists.txt` (script: `scripts/patch_cmake_minimum.cmake`) |
+| **Eigen3** (`_deps/eigen3-src/CMakeLists.txt`) | ~~Same as above~~ | **Patched** via same script (supports `VERSION x.y` and `x.y.z`) |
 | **Eigen3 test** | CMP0167 not set (FindBoost module removed) | Eigen’s `find_package(Boost)` |
 | **Eigen3 unsupported/test** | CMP0146 not set (FindCUDA module removed) | Eigen’s `find_package(CUDA)` |
 
 These do **not** affect the build or our code; they are in dependency CMake scripts.
+
+**CLI11 and Eigen3** are patched at fetch time via `scripts/patch_cmake_minimum.cmake`: their `cmake_minimum_required(VERSION ...)` is set to **3.10** (i.e. require CMake ≥ 3.10), so the "Compatibility with CMake < 3.10" deprecation is removed. On a **fresh** configure (or after removing `build/_deps/cli11-*` and `build/_deps/eigen3-*`), the patch runs and the warning no longer appears for them.
 
 ---
 
