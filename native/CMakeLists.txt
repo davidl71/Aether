@@ -54,6 +54,7 @@ option(ENABLE_DISTCC "Enable distcc distributed compilation" OFF)
 option(ENABLE_CCACHE "Enable ccache compilation caching" OFF)
 option(ENABLE_SCCACHE "Enable sccache compilation caching" OFF)
 option(ENABLE_NATIVE_CLI "Build the native ib_box_spread CLI" ON)
+option(TWS_API_BUILD_VENDOR "Build TWS API library from source (ibapi_cmake)" OFF)
 
 # ============================================================================
 # C++ Standard and Compiler Requirements
@@ -71,6 +72,9 @@ if(POLICY CMP0135)
 endif()
 if(POLICY CMP0167)
   cmake_policy(SET CMP0167 OLD)  # Keep using FindBoost until BoostConfig is used everywhere
+endif()
+if(POLICY CMP0146)
+  cmake_policy(SET CMP0146 OLD)  # Keep FindCUDA in Eigen tests; suppresses deprecation in deps
 endif()
 
 # ============================================================================
@@ -419,7 +423,30 @@ endif()
 
 # ====================================================================================
 # TWS API (IBKR C++ API)
+# Prefer GitHub repo layout (source/cppclient/client) via TWS_API_SOURCE_DIR,
+# e.g. -DTWS_API_SOURCE_DIR=/path/to/tws-api or ../tws-api. Falls back to
+# vendored zip layout (third_party/tws-api/IBJts/source/cppclient).
 # ============================================================================
+get_filename_component(_tws_api_default_source_dir "${CMAKE_CURRENT_SOURCE_DIR}/../tws-api" REALPATH)
+set(TWS_API_SOURCE_DIR "" CACHE PATH "Root of tws-api repo (GitHub layout: source/cppclient/client). Example: ../tws-api")
+if(NOT TWS_API_SOURCE_DIR AND EXISTS "${_tws_api_default_source_dir}/source/cppclient/client")
+  set(TWS_API_SOURCE_DIR "${_tws_api_default_source_dir}" CACHE PATH "Root of tws-api repo (GitHub layout). Auto-detected ../tws-api." FORCE)
+endif()
+
+set(_tws_api_use_github_dir OFF)
+if(TWS_API_SOURCE_DIR)
+  _expand_user_path(TWS_API_SOURCE_DIR _resolved_tws_api_source_dir)
+  if(_resolved_tws_api_source_dir AND EXISTS "${_resolved_tws_api_source_dir}/source/cppclient/client")
+    set(_tws_api_use_github_dir ON)
+    set(TWS_API_VENDOR_ROOT "${_resolved_tws_api_source_dir}/source/cppclient")
+    set(TWS_API_INCLUDE_DIR "${TWS_API_VENDOR_ROOT}/client" CACHE PATH "Path to TWS API include directory" FORCE)
+    message(STATUS "Using TWS API from GitHub layout: ${_resolved_tws_api_source_dir}")
+  else()
+    message(WARNING "TWS_API_SOURCE_DIR set but source/cppclient/client not found: ${TWS_API_SOURCE_DIR}")
+  endif()
+endif()
+
+if(NOT _tws_api_use_github_dir)
 set(TWS_API_VENDOR_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 cmake_path(APPEND TWS_API_VENDOR_ROOT
     "third_party" "tws-api" "IBJts" "source" "cppclient"
@@ -432,6 +459,7 @@ set(
     "${DEFAULT_TWS_API_INCLUDE_DIR}"
     CACHE PATH "Path to TWS API include directory"
 )
+endif()
 
 if(DEFINED IBAPI_INCLUDE_DIR AND NOT IBAPI_INCLUDE_DIR STREQUAL "")
     _expand_user_path(IBAPI_INCLUDE_DIR _resolved_ibapi_include_dir)
@@ -454,6 +482,7 @@ else()
     message(WARNING "TWS API headers not found at ${TWS_API_INCLUDE_DIR}")
     message(WARNING "Download from: https://interactivebrokers.github.io/")
     message(WARNING "Extract to: ${CMAKE_CURRENT_SOURCE_DIR}/third_party/tws-api/")
+    message(WARNING "Or use GitHub repo: -DTWS_API_SOURCE_DIR=/path/to/tws-api")
 endif()
 
 # Determine library extension based on platform
@@ -465,8 +494,12 @@ else()
     set(_twsapi_lib_ext ".dll")
 endif()
 
+if(NOT _tws_api_use_github_dir)
 set(DEFAULT_TWS_API_LIB "${TWS_API_VENDOR_ROOT}")
 cmake_path(APPEND DEFAULT_TWS_API_LIB "client" "build" "lib" "libtwsapi${_twsapi_lib_ext}")
+else()
+set(DEFAULT_TWS_API_LIB "")
+endif()
 set(
     TWS_API_LIB
     "${DEFAULT_TWS_API_LIB}"
@@ -510,6 +543,12 @@ set(_candidate "${TWS_API_VENDOR_ROOT}")
 cmake_path(APPEND _candidate "lib" "libtwsapi${_twsapi_lib_ext}")
 list(APPEND _ibapi_lib_candidates "${_candidate}")
 
+# When using GitHub layout there is no prebuilt lib; build from source.
+if(_tws_api_use_github_dir AND NOT TWS_API_BUILD_VENDOR)
+  set(TWS_API_BUILD_VENDOR ON CACHE BOOL "Build TWS API library from source (ibapi_cmake)" FORCE)
+  message(STATUS "TWS_API_BUILD_VENDOR enabled (required for GitHub TWS API layout)")
+endif()
+
 if(TWS_API_BUILD_VENDOR)
     # Discover Protobuf so we can pass Protobuf_ROOT to the TWS API build (ibapi_cmake).
     # Avoids "No rule to make target '/usr/local/lib/libprotobuf.dylib'" when lib is elsewhere (e.g. Homebrew).
@@ -527,8 +566,10 @@ if(TWS_API_BUILD_VENDOR)
     endif()
 
     # Build TWS API using our ibapi_cmake (finds protobuf/Abseil; vendored client CMakeLists has hardcoded paths).
-    if(NOT EXISTS "${TWS_API_VENDOR_ROOT}/../../CMakeLists.txt")
-        message(FATAL_ERROR "Vendored TWS API source not found at ${TWS_API_VENDOR_ROOT}/../../CMakeLists.txt")
+    if(_tws_api_use_github_dir)
+        set(_tws_api_client_dir "${TWS_API_VENDOR_ROOT}/client")
+    elseif(NOT EXISTS "${TWS_API_VENDOR_ROOT}/../../CMakeLists.txt")
+        message(FATAL_ERROR "Vendored TWS API source not found at ${TWS_API_VENDOR_ROOT}/../../CMakeLists.txt. Use -DTWS_API_SOURCE_DIR=/path/to/tws-api for GitHub layout.")
     endif()
     if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/ibapi_cmake/CMakeLists.txt")
         message(FATAL_ERROR "ibapi_cmake not found; required for TWS_API_BUILD_VENDOR")
@@ -543,10 +584,14 @@ if(TWS_API_BUILD_VENDOR)
     if(Protobuf_ROOT)
         list(APPEND _twsapi_cmake_args -DProtobuf_ROOT=${Protobuf_ROOT})
     endif()
+    if(_tws_api_use_github_dir)
+        list(APPEND _twsapi_cmake_args -DTWS_API_CLIENT_DIR=${_tws_api_client_dir})
+    endif()
     ExternalProject_Add(twsapi_external
         SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ibapi_cmake"
         BINARY_DIR "${TWS_API_EXTERNAL_BINARY_DIR}"
         CMAKE_ARGS ${_twsapi_cmake_args}
+        INSTALL_COMMAND ""
     )
 
     if(APPLE)
@@ -592,8 +637,10 @@ set(_missing_native_deps "")
 set(_native_prereqs_met TRUE)
 
 if(NOT TWS_API_LIB OR NOT EXISTS "${TWS_API_LIB}")
-    list(APPEND _missing_native_deps "TWS API shared library")
-    set(_native_prereqs_met FALSE)
+    if(NOT TWS_API_BUILD_VENDOR)
+        list(APPEND _missing_native_deps "TWS API shared library")
+        set(_native_prereqs_met FALSE)
+    endif()
 endif()
 
 if(NOT EXISTS "${INTEL_DECIMAL_LIB}")

@@ -138,17 +138,16 @@ This script downloads/extracts:
 
 - **Protobuf v3.20.3** (override with `PROTOBUF_URL` if you mirror releases)
 - **Intel decimal math library** (provide `INTEL_DECIMAL_URL` or drop the tarball into `native/third_party/cache/`)
-- **IBKR TWS API** (set `IB_API_ARCHIVE` to a local/remote zip or manually unpack to `native/third_party/tws-api/`)
+- **IBKR TWS API** (set `IB_API_ARCHIVE` to a local/remote zip or manually unpack to `native/third_party/tws-api/`; or use the GitHub repo with `-DTWS_API_SOURCE_DIR=/path/to/tws-api`)
 
 All artifacts land in `native/third_party/cache/` and remain untracked.
 
 ### TWS API (Manual Installation Required)
 
-The Interactive Brokers TWS C++ API must be downloaded manually:
+The Interactive Brokers TWS C++ API can be used in two ways:
 
-1. Visit https://interactivebrokers.github.io/
-2. Download the TWS API for your platform
-3. Extract to `native/third_party/tws-api/`
+1. **GitHub repo (recommended):** Clone [InteractiveBrokers/tws-api](https://github.com/InteractiveBrokers/tws-api) next to this repo (e.g. `../tws-api`). CMake auto-detects it and builds the client with `-DTWS_API_BUILD_VENDOR=ON`.
+2. **IBKR zip:** Download from https://interactivebrokers.github.io/, extract to `native/third_party/tws-api/` (zip layout: `IBJts/source/cppclient/client/`).
 
 **Note**: The current implementation uses stub functions. Full TWS API integration requires implementing the actual IBKR client callbacks.
 

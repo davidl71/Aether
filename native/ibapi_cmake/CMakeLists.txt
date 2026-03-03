@@ -1,14 +1,22 @@
 cmake_minimum_required(VERSION 3.15)
 project(twsapi_builder LANGUAGES C CXX)
 
-# Use relative paths from the project root
+# Use relative paths from the project root when TWS_API_CLIENT_DIR not provided (zip layout).
 get_filename_component(PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 
-set(IBAPI_CLIENT_DIR "${PROJECT_ROOT}")
-cmake_path(APPEND IBAPI_CLIENT_DIR "native" "third_party" "tws-api" "IBJts" "source" "cppclient" "client")
-
-set(IBAPI_PROTO_DIR "${PROJECT_ROOT}")
-cmake_path(APPEND IBAPI_PROTO_DIR "native" "third_party" "tws-api" "IBJts" "source" "cppclient" "client")
+if(DEFINED TWS_API_CLIENT_DIR AND TWS_API_CLIENT_DIR)
+  set(IBAPI_CLIENT_DIR "${TWS_API_CLIENT_DIR}")
+  # GitHub layout: proto sources in source/proto; generate .pb.cc into build dir
+  get_filename_component(IBAPI_PROTO_SOURCE "${IBAPI_CLIENT_DIR}/../../proto" REALPATH)
+  set(IBAPI_PROTO_DIR "${IBAPI_PROTO_SOURCE}")
+  message(STATUS "TWS API client directory (GitHub layout): ${IBAPI_CLIENT_DIR}")
+  message(STATUS "TWS API proto source: ${IBAPI_PROTO_SOURCE}")
+else()
+  set(IBAPI_CLIENT_DIR "${PROJECT_ROOT}")
+  cmake_path(APPEND IBAPI_CLIENT_DIR "native" "third_party" "tws-api" "IBJts" "source" "cppclient" "client")
+  set(IBAPI_PROTO_DIR "${PROJECT_ROOT}")
+  cmake_path(APPEND IBAPI_PROTO_DIR "native" "third_party" "tws-api" "IBJts" "source" "cppclient" "client")
+endif()
 
 # Platform-specific Protocol Buffers paths
 if(WIN32)
@@ -43,7 +51,37 @@ set(INTEL_BID_LIB "${PROJECT_ROOT}")
 cmake_path(APPEND INTEL_BID_LIB "native" "third_party" "IntelRDFPMathLib20U2" "LIBRARY" "libbid.a")
 
 file(GLOB IBAPI_CORE_SOURCES "${IBAPI_CLIENT_DIR}/*.cpp")
-file(GLOB IBAPI_PROTO_SOURCES "${IBAPI_PROTO_DIR}/*.pb.cc")
+
+# GitHub layout: generate .pb.cc from source/proto; zip layout: use existing .pb.cc in client
+set(IBAPI_PROTO_SOURCES "")
+set(IBAPI_PROTO_GENERATED_DIR "")
+if(DEFINED TWS_API_CLIENT_DIR AND TWS_API_CLIENT_DIR AND EXISTS "${IBAPI_PROTO_SOURCE}")
+  find_package(Protobuf REQUIRED)
+  file(GLOB IBAPI_PROTO_FILES "${IBAPI_PROTO_SOURCE}/*.proto")
+  if(IBAPI_PROTO_FILES)
+    set(PROTOBUF_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/proto_generated")
+    file(MAKE_DIRECTORY "${PROTOBUF_OUTPUT_DIR}")
+    foreach(_proto ${IBAPI_PROTO_FILES})
+      get_filename_component(_name ${_proto} NAME_WE)
+      set(_pb_cpp "${PROTOBUF_OUTPUT_DIR}/${_name}.pb.cc")
+      set(_pb_h "${PROTOBUF_OUTPUT_DIR}/${_name}.pb.h")
+      add_custom_command(
+        OUTPUT "${_pb_cpp}" "${_pb_h}"
+        COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+        ARGS --proto_path="${IBAPI_PROTO_SOURCE}"
+             --cpp_out="${PROTOBUF_OUTPUT_DIR}"
+             --experimental_allow_proto3_optional
+             "${_proto}"
+        DEPENDS "${_proto}"
+        COMMENT "Generating ${_name}.pb.cc"
+      )
+      list(APPEND IBAPI_PROTO_SOURCES "${_pb_cpp}")
+    endforeach()
+    set(IBAPI_PROTO_GENERATED_DIR "${PROTOBUF_OUTPUT_DIR}")
+  endif()
+else()
+  file(GLOB IBAPI_PROTO_SOURCES "${IBAPI_PROTO_DIR}/*.pb.cc")
+endif()
 
 set(IBAPI_STDAFX "${IBAPI_CLIENT_DIR}/StdAfx.cpp")
 list(REMOVE_ITEM IBAPI_CORE_SOURCES "${IBAPI_STDAFX}")
@@ -55,6 +93,9 @@ target_include_directories(twsapi
     "${IBAPI_CLIENT_DIR}"
     "${IBAPI_PROTO_DIR}"
 )
+if(IBAPI_PROTO_GENERATED_DIR)
+  target_include_directories(twsapi PUBLIC "${IBAPI_PROTO_GENERATED_DIR}")
+endif()
 
 target_compile_features(twsapi PUBLIC cxx_std_17)
 target_compile_options(twsapi PRIVATE
@@ -119,6 +160,7 @@ endif()
 set_target_properties(twsapi PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
   OUTPUT_NAME "twsapi"
+  DEBUG_POSTFIX "d"
   VERSION 1.0.0
   SOVERSION 1
 )

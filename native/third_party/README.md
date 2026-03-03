@@ -46,6 +46,19 @@ The Intel Decimal Floating-Point Math Library is available from [Netlib](https:/
 
 ## Manual TWS API Installation
 
+You can use either the **GitHub repo** (recommended) or the **IBKR zip**:
+
+**Option A – GitHub repo (recommended)**
+Clone the official [InteractiveBrokers/tws-api](https://github.com/InteractiveBrokers/tws-api) repo next to this project (e.g. `../tws-api`). CMake will auto-detect it and build the C++ client from source:
+
+```bash
+git clone https://github.com/InteractiveBrokers/tws-api.git ../tws-api
+# From the repo root, configure; TWS_API_SOURCE_DIR is auto-detected when ../tws-api exists
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+# Or point explicitly: -DTWS_API_SOURCE_DIR=/path/to/tws-api
+```
+
+**Option B – IBKR zip**
 1. Visit <https://interactivebrokers.github.io/> and download the latest TWS API zip.
 2. Place the archive somewhere local and run:
    ```bash
