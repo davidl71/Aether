@@ -1047,15 +1047,19 @@ public:
 
             switch (field) {
                 case BID_SIZE:
+                case DELAYED_BID_SIZE:
                     market_data.bid_size = static_cast<int>(size);
                     break;
                 case ASK_SIZE:
+                case DELAYED_ASK_SIZE:
                     market_data.ask_size = static_cast<int>(size);
                     break;
                 case LAST_SIZE:
+                case DELAYED_LAST_SIZE:  // TWS API 10.44+: returns Decimal instead of int
                     market_data.last_size = static_cast<int>(size);
                     break;
                 case VOLUME:
+                case DELAYED_VOLUME:
                     market_data.volume = static_cast<double>(size);
                     break;
                 default:
