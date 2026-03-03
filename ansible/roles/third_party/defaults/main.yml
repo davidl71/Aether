@@ -1,5 +1,5 @@
 ---
-repo_root: "{{ ansible_env.PWD }}"
+repo_root: "{{ ansible_facts['env']['PWD'] }}"
 fetch_components:
   - protobuf
   - intel

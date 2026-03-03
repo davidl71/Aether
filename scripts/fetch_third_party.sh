@@ -25,6 +25,8 @@ log_note "Delegating third-party fetch to Ansible playbook: ${PLAYBOOK}"
 export ANSIBLE_ROLES_PATH="${REPO_ROOT}/ansible/roles:${ANSIBLE_ROLES_PATH:-}"
 
 ANSIBLE_OPTS=("--extra-vars" "repo_root=${REPO_ROOT}")
+# Run against localhost without SSH (same as setup_global_tools.sh)
+ANSIBLE_OPTS+=("-i" "localhost," "--connection=local")
 
 trim() {
   local trimmed="$1"

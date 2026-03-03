@@ -29,6 +29,12 @@
       - cppcheck
       - ruby
       - ruby-dev
+      # SQLite CLI and dev headers (exarp-go, MCP, local DBs)
+      - sqlite3
+      - libsqlite3-dev
+      # Rust toolchain (agents/, Rust backends)
+      - cargo
+      - rustc
     state: present
     update_cache: true
   when: ansible_facts['os_family'] == 'Debian'
@@ -66,6 +72,10 @@
       - shellcheck
       - cppcheck
       - markdownlint
+      # SQLite CLI and libs (exarp-go, MCP, local DBs)
+      - sqlite
+      # Rust toolchain (agents/, Rust backends)
+      - rust
     state: present
   when: ansible_facts['os_family'] == 'Darwin'
 
@@ -115,6 +125,27 @@
   changed_when: "'Installed' in poetry_install.stdout"
   failed_when: false
   when: ansible_facts['os_family'] == 'Debian'
+
+- name: Install pip-audit via uv (Python dependency vulnerability scanner)
+  become: false
+  ansible.builtin.command: uv tool install pip-audit
+  register: pip_audit_install
+  changed_when: "'Installed' in pip_audit_install.stdout"
+  failed_when: false
+
+- name: Verify pip-audit installation
+  become: false
+  ansible.builtin.command: pip-audit --version
+  register: pip_audit_version
+  changed_when: false
+  failed_when: false
+  environment:
+    PATH: "{{ ansible_facts.env.HOME }}/.local/bin:{{ ansible_facts.env.PATH }}"
+
+- name: Display pip-audit version
+  ansible.builtin.debug:
+    msg: "pip-audit: {{ pip_audit_version.stdout | default('(install with: uv tool install pip-audit)') }}"
+  when: pip_audit_version.rc == 0
 
 - name: Verify uv installation
   become: false

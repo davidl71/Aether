@@ -96,3 +96,16 @@ if [ -s "$HOME/.nvm/nvm.sh" ]; then
 else
   echo "[warn] nvm not detected; skip Node.js LTS bootstrap." >&2
 fi
+
+# --- Ensure Cargo (Rust) is available ---
+export PATH="${HOME}/.cargo/bin:${PATH}"
+if ! command -v cargo >/dev/null 2>&1; then
+  echo "[info] Cargo not detected; installing Rust via rustup."
+  curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+  export PATH="${HOME}/.cargo/bin:${PATH}"
+fi
+if command -v cargo >/dev/null 2>&1; then
+  echo "[ok] Cargo $(cargo --version) available."
+else
+  echo "[warn] Cargo not in PATH. Add ${HOME}/.cargo/bin to PATH and re-run." >&2
+fi

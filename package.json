@@ -9,7 +9,7 @@
     "lint:docs:ci": "markdownlint-cli2 \"docs/**/*.md\" \"!docs/archive/**/*.md\" --config .markdownlint.json"
   },
   "devDependencies": {
-    "markdownlint-cli2": "^0.15.0"
+    "markdownlint-cli2": "^0.21.0"
   },
   "engines": {
     "node": ">=18.0.0",

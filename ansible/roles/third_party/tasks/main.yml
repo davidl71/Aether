@@ -71,7 +71,7 @@
   block:
     - name: Search Downloads folder recursively for Intel decimal archive
       ansible.builtin.find:
-        paths: "{{ ansible_env.HOME }}/Downloads"
+        paths: "{{ ansible_facts['env']['HOME'] }}/Downloads"
         patterns:
           - "IntelRDFPMathLib*.tar.gz"
           - "intel*decimal*.tar.gz"
@@ -159,7 +159,7 @@
   block:
     - name: Search Downloads folder recursively for TWS API archive
       ansible.builtin.find:
-        paths: "{{ ansible_env.HOME }}/Downloads"
+        paths: "{{ ansible_facts['env']['HOME'] }}/Downloads"
         patterns:
           - "twsapi*.zip"
         recurse: true

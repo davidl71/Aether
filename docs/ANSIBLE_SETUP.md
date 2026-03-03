@@ -52,6 +52,7 @@ ansible-galaxy collection install community.general
 - `playbooks/site.yml` — runs both in sequence
 - `roles/common`, `roles/editor`, `roles/langs` — global roles
 - `roles/ib_box_spread` — project-specific role
+- `ansible/playbooks/setup_devtools.yml` — dev tools (uv, cmake, npm/nvm, **pip-audit**, etc.); role `ansible/roles/devtools`. Run via `./setup_global_tools.sh`.
 
 ### Usage
 
