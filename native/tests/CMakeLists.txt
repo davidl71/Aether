@@ -196,27 +196,33 @@ endif()
 
 # Link with the same object files as the main executable
 # (This avoids code duplication)
-# Note: CMAKE_SOURCE_DIR points to project root, so paths need native/ prefix
+# Note: When building from repo root, use native/ prefix
+set(_native_src_dir "${CMAKE_SOURCE_DIR}/native/src")
+if(NOT EXISTS "${_native_src_dir}")
+    # Building from native/ directory directly
+    set(_native_src_dir "${CMAKE_SOURCE_DIR}/src")
+endif()
+
 target_sources(box_spread_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/native/src/config_manager.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/path_validator.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/tws_client.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/market_hours.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/rate_limiter.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/hedge_manager.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/strategies/box_spread/box_spread_bag.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/convexity_calculator.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/loan_position.cpp
-    ${CMAKE_SOURCE_DIR}/native/src/loan_manager.cpp
+    ${_native_src_dir}/config_manager.cpp
+    ${_native_src_dir}/path_validator.cpp
+    ${_native_src_dir}/tws_client.cpp
+    ${_native_src_dir}/market_hours.cpp
+    ${_native_src_dir}/rate_limiter.cpp
+    ${_native_src_dir}/hedge_manager.cpp
+    ${_native_src_dir}/strategies/box_spread/box_spread_bag.cpp
+    ${_native_src_dir}/convexity_calculator.cpp
+    ${_native_src_dir}/loan_position.cpp
+    ${_native_src_dir}/loan_manager.cpp
 )
 
 # Conditionally include local source files only if NOT using extracted library
 if(NOT USE_BOX_SPREAD_CPP_LIB)
     target_sources(box_spread_tests PRIVATE
-        ${CMAKE_SOURCE_DIR}/native/src/option_chain.cpp
-        ${CMAKE_SOURCE_DIR}/native/src/strategies/box_spread/box_spread_strategy.cpp
-        ${CMAKE_SOURCE_DIR}/native/src/order_manager.cpp
-        ${CMAKE_SOURCE_DIR}/native/src/risk_calculator.cpp
+        ${_native_src_dir}/option_chain.cpp
+        ${_native_src_dir}/strategies/box_spread/box_spread_strategy.cpp
+        ${_native_src_dir}/order_manager.cpp
+        ${_native_src_dir}/risk_calculator.cpp
     )
 endif()
 

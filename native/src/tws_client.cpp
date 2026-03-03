@@ -289,8 +289,8 @@ public:
         , last_heartbeat_(std::chrono::steady_clock::now())
         , rate_limiter_(RateLimiterConfig{})
         , mock_mode_(should_use_mock_client(config)) {
-        // Enable async connection mode for non-blocking connections
-        client_.asyncEConnect(true);
+        // Use synchronous connection mode (same as official Python sample)
+        client_.asyncEConnect(false);
 
         // Initialize callback tracking
         connection_callbacks_received_.connectAck = false;

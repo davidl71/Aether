@@ -874,6 +874,8 @@ if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tws_conn
         ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/config_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/rate_limiter.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/pcap_capture.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/market_hours.cpp
     )
 
     if(APPLE)
@@ -887,6 +889,169 @@ if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tws_conn
     endif()
 
     message(STATUS "TWS connection test program: test_tws_connection")
+endif()
+
+# ============================================================================
+# Position Retrieval Test Program
+# ============================================================================
+if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_positions_live.cpp")
+    add_executable(test_positions_live ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_positions_live.cpp)
+
+    target_include_directories(test_positions_live
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${TWS_API_INCLUDE_DIR}
+    )
+
+    target_link_libraries(test_positions_live
+        PRIVATE
+            nlohmann_json::nlohmann_json
+            spdlog::spdlog
+            ${TWS_API_LIB}
+            ${INTEL_DECIMAL_LIB}
+    )
+
+    # Link with TWS client source files
+    target_sources(test_positions_live PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/config_manager.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/rate_limiter.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/market_hours.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/pcap_capture.cpp
+    )
+
+    if(APPLE)
+        target_link_libraries(test_positions_live PRIVATE "-framework CoreFoundation")
+        find_library(PTHREAD_LIBRARY pthread)
+        if(PTHREAD_LIBRARY)
+            target_link_libraries(test_positions_live PRIVATE ${PTHREAD_LIBRARY})
+        endif()
+    elseif(UNIX)
+        target_link_libraries(test_positions_live PRIVATE pthread)
+    endif()
+
+    message(STATUS "Position retrieval test program: test_positions_live")
+endif()
+
+# Simple connection diagnostic test
+if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_simple_connect.cpp")
+    add_executable(test_simple_connect ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_simple_connect.cpp)
+
+    target_include_directories(test_simple_connect
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${TWS_API_INCLUDE_DIR}
+    )
+
+    target_link_libraries(test_simple_connect
+        PRIVATE
+            nlohmann_json::nlohmann_json
+            spdlog::spdlog
+            ${TWS_API_LIB}
+            ${INTEL_DECIMAL_LIB}
+    )
+
+    target_sources(test_simple_connect PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/config_manager.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/rate_limiter.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/market_hours.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/pcap_capture.cpp
+    )
+
+    if(APPLE)
+        target_link_libraries(test_simple_connect PRIVATE "-framework CoreFoundation")
+        find_library(PTHREAD_LIBRARY pthread)
+        if(PTHREAD_LIBRARY)
+            target_link_libraries(test_simple_connect PRIVATE ${PTHREAD_LIBRARY})
+        endif()
+    elseif(UNIX)
+        target_link_libraries(test_simple_connect PRIVATE pthread)
+    endif()
+
+    message(STATUS "Simple connection diagnostic: test_simple_connect")
+endif()
+
+# Deep diagnostic connection test with callback tracing
+if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_diagnostic_connect.cpp")
+    add_executable(test_diagnostic_connect ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_diagnostic_connect.cpp)
+
+    target_include_directories(test_diagnostic_connect
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${TWS_API_INCLUDE_DIR}
+    )
+
+    target_link_libraries(test_diagnostic_connect
+        PRIVATE
+            nlohmann_json::nlohmann_json
+            spdlog::spdlog
+            ${TWS_API_LIB}
+            ${INTEL_DECIMAL_LIB}
+    )
+
+    target_sources(test_diagnostic_connect PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/config_manager.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/rate_limiter.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/market_hours.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/pcap_capture.cpp
+    )
+
+    if(APPLE)
+        target_link_libraries(test_diagnostic_connect PRIVATE "-framework CoreFoundation")
+        find_library(PTHREAD_LIBRARY pthread)
+        if(PTHREAD_LIBRARY)
+            target_link_libraries(test_diagnostic_connect PRIVATE ${PTHREAD_LIBRARY})
+        endif()
+    elseif(UNIX)
+        target_link_libraries(test_diagnostic_connect PRIVATE pthread)
+    endif()
+
+    message(STATUS "Deep diagnostic test: test_diagnostic_connect")
+endif()
+
+# Packet-level trace diagnostic
+if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_packet_trace.cpp")
+    add_executable(test_packet_trace ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_packet_trace.cpp)
+
+    target_include_directories(test_packet_trace
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${TWS_API_INCLUDE_DIR}
+    )
+
+    target_link_libraries(test_packet_trace
+        PRIVATE
+            nlohmann_json::nlohmann_json
+            spdlog::spdlog
+            ${TWS_API_LIB}
+            ${INTEL_DECIMAL_LIB}
+    )
+
+    target_sources(test_packet_trace PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/config_manager.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/rate_limiter.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/market_hours.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/pcap_capture.cpp
+    )
+
+    if(APPLE)
+        target_link_libraries(test_packet_trace PRIVATE "-framework CoreFoundation")
+        find_library(PTHREAD_LIBRARY pthread)
+        if(PTHREAD_LIBRARY)
+            target_link_libraries(test_packet_trace PRIVATE ${PTHREAD_LIBRARY})
+        endif()
+    elseif(UNIX)
+        target_link_libraries(test_packet_trace PRIVATE pthread)
+    endif()
+
+    message(STATUS "Packet trace diagnostic: test_packet_trace")
 endif()
 
 # ====================================================================================
