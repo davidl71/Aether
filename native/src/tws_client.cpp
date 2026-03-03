@@ -694,10 +694,14 @@ public:
             } else {
                 spdlog::warn("Connection timeout on {}:{}, trying next port...", config_.host, port);
                 // Stop reader thread if it was started
+                std::unique_lock<std::mutex> rlock(reader_mutex_);
                 if (reader_thread_ && reader_thread_->joinable()) {
                     connected_ = false;
                     signal_.issueSignal();
-                    reader_thread_->join();
+                    std::thread* old = reader_thread_.get();
+                    rlock.unlock();
+                    old->join();
+                    rlock.lock();
                     reader_thread_.reset();
                 }
                 client_.eDisconnect();
@@ -746,10 +750,15 @@ public:
             stop_health_monitoring();
 
             // Stop reader thread
+            std::unique_lock<std::mutex> rlock(reader_mutex_);
             if (reader_thread_ && reader_thread_->joinable()) {
                 connected_ = false;
                 signal_.issueSignal();  // Wake up the thread
-                reader_thread_->join();
+                std::thread* old = reader_thread_.get();
+                rlock.unlock();
+                old->join();
+                rlock.lock();
+                reader_thread_.reset();
             }
 
             client_.eDisconnect();
@@ -829,6 +838,7 @@ public:
             spdlog::warn("Connection closed by TWS");
             connected_ = false;
             state_ = ConnectionState::Disconnected;
+            signal_.issueSignal();  // Wake reader thread so it exits and can be joined before reconnect
 
             // Capture disconnection event in PCAP
             if (pcap_capture_ && pcap_capture_->is_open()) {
@@ -895,7 +905,7 @@ public:
         }
     }
 
-    void nextValidId(OrderId orderId) override {
+    void nextValidId(int orderId) override {
         try {
             if (config_.log_raw_messages) {
                 spdlog::trace("[RAW API] ← nextValidId(orderId={}) callback received", orderId);
@@ -963,7 +973,7 @@ public:
     // EWrapper Callbacks - Market Data
     // ========================================================================
 
-    void tickPrice(TickerId tickerId, TickType field,
+    void tickPrice(int tickerId, TickType field,
                    double price, const TickAttrib& attribs) override {
         try {
             if (config_.log_raw_messages) {
@@ -1044,7 +1054,7 @@ public:
         }
     }
 
-    void tickSize(TickerId tickerId, TickType field, Decimal size) override {
+    void tickSize(int tickerId, TickType field, Decimal size) override {
         try {
             if (config_.log_raw_messages) {
                 spdlog::trace("[RAW API] ← tickSize(tickerId={}, field={}, size={})",
@@ -1082,7 +1092,7 @@ public:
         }
     }
 
-    void tickOptionComputation(TickerId tickerId, TickType tickType,
+    void tickOptionComputation(int tickerId, TickType tickType,
                                int tickAttrib, double impliedVol,
                                double delta, double optPrice,
                                double pvDividend, double gamma,
@@ -1121,7 +1131,7 @@ public:
     // EWrapper Callbacks - Orders
     // ========================================================================
 
-    void orderStatus(OrderId orderId, const std::string& status,
+    void orderStatus(int orderId, const std::string& status,
                     Decimal filled, Decimal remaining,
                     double avgFillPrice, long long permId, int parentId,
                     double lastFillPrice, int clientId,
@@ -1164,7 +1174,7 @@ public:
         }
     }
 
-    void openOrder(OrderId orderId, const Contract& contract,
+    void openOrder(int orderId, const Contract& contract,
                    const Order& order, const OrderState& orderState) override {
         try {
             spdlog::debug("Open order: #{}, {}, {}, status={}",
@@ -2889,6 +2899,19 @@ private:
             spdlog::debug("Mock mode enabled - reader thread not required.");
             return;
         }
+        {
+            std::unique_lock<std::mutex> lock(reader_mutex_);
+            if (reader_thread_ && reader_thread_->joinable()) {
+                spdlog::debug("Stopping existing EReader thread before starting new one...");
+                connected_ = false;
+                signal_.issueSignal();
+                std::thread* old_thread = reader_thread_.get();
+                lock.unlock();
+                old_thread->join();
+                lock.lock();
+                reader_thread_.reset();
+            }
+        }
         spdlog::debug("Starting EReader thread...");
         auto reader = std::make_unique<EReader>(&client_, &signal_);
 
@@ -2898,7 +2921,7 @@ private:
             std::chrono::steady_clock::now() - reader_start_time).count();
         spdlog::debug("EReader::start() completed in {}ms", reader_start_duration);
 
-        reader_thread_ = std::make_unique<std::thread>([this, r = std::move(reader)]() mutable {
+        std::unique_ptr<std::thread> new_reader_thread = std::make_unique<std::thread>([this, r = std::move(reader)]() mutable {
             spdlog::debug("EReader thread started (thread_id: {})",
                          std::hash<std::thread::id>{}(std::this_thread::get_id()));
             int message_count = 0;
@@ -2977,7 +3000,10 @@ private:
             spdlog::debug("EReader thread stopped after {}s (processed {} messages, {} errors)",
                          thread_uptime, message_count, error_count);
         });
-
+        {
+            std::lock_guard<std::mutex> lock(reader_mutex_);
+            reader_thread_ = std::move(new_reader_thread);
+        }
         spdlog::debug("EReader thread created (waiting for signals from TWS...)");
     }
 
@@ -3296,19 +3322,19 @@ private:
     // Note: Most callbacks have default implementations from DefaultEWrapper
     // ========================================================================
 
-    void tickString(TickerId tickerId, TickType tickType,
+    void tickString(int tickerId, TickType tickType,
                    const std::string& value) override {}
-    void tickEFP(TickerId tickerId, TickType tickType, double basisPoints,
+    void tickEFP(int tickerId, TickType tickType, double basisPoints,
                 const std::string& formattedBasisPoints, double totalDividends,
                 int holdDays, const std::string& futureLastTradeDate,
                 double dividendImpact, double dividendsToLastTradeDate) override {}
-    void tickGeneric(TickerId tickerId, TickType tickType, double value) override {}
+    void tickGeneric(int tickerId, TickType tickType, double value) override {}
     void tickSnapshotEnd(int reqId) override {}
-    void marketDataType(TickerId reqId, int marketDataType) override {}
-    void realtimeBar(TickerId reqId, long time, double open, double high,
+    void marketDataType(int reqId, int marketDataType) override {}
+    void realtimeBar(int reqId, long time, double open, double high,
                     double low, double close, Decimal volume, Decimal wap,
                     int count) override {}
-    void historicalData(TickerId reqId, const Bar& bar) override {}
+    void historicalData(int reqId, const Bar& bar) override {}
     void historicalDataEnd(int reqId, const std::string& startDateStr,
                           const std::string& endDateStr) override {}
     void scannerParameters(const std::string& xml) override {}
@@ -3520,7 +3546,7 @@ private:
     void historicalNewsEnd(int requestId, bool hasMore) override {}
     void headTimestamp(int reqId, const std::string& headTimestamp) override {}
     void histogramData(int reqId, const HistogramDataVector& data) override {}
-    void historicalDataUpdate(TickerId reqId, const Bar& bar) override {}
+    void historicalDataUpdate(int reqId, const Bar& bar) override {}
     void rerouteMktDataReq(int reqId, int conid, const std::string& exchange) override {}
     void rerouteMktDepthReq(int reqId, int conid, const std::string& exchange) override {}
     void marketRule(int marketRuleId, const std::vector<PriceIncrement>& priceIncrements) override {}
@@ -3585,6 +3611,7 @@ private:
         std::chrono::steady_clock::time_point managedAccounts_time;
     } connection_callbacks_received_;
 
+    std::mutex reader_mutex_;
     std::unique_ptr<std::thread> reader_thread_;
 
     // PCAP capture for debugging

@@ -55,6 +55,9 @@ See `docs/CURSOR_GLOBAL_DOCS.md` for complete guide on setting up global Docs in
 ### Research & Documentation
 - **NotebookLM Usage**: Use `@docs NOTEBOOKLM_USAGE.md` when researching topics, summarizing videos, or creating documentation from links
 
+### TWS / Native build and runtime
+- **TWS/native crashes, build failures, live test**: Use `@docs AI_TROUBLESHOOTING_AND_FIXES.md` - Reconnection crash, EWrapper types (OrderId/TickerId), QuantLib warnings, proto includes, live test run
+
 ## Writing AI-Friendly Code
 
 When writing or suggesting code:
@@ -82,3 +85,4 @@ When writing or suggesting code:
 ### Implementation Guides
 - **Implementation Guide**: `docs/IMPLEMENTATION_GUIDE.md` - Step-by-step implementation guide
 - **Box Spread Guide**: `docs/BOX_SPREAD_COMPREHENSIVE_GUIDE.md` - Box spread mechanics and implementation
+- **Troubleshooting (AI)**: `docs/AI_TROUBLESHOOTING_AND_FIXES.md` - Fixes that helped (TWS reconnection, EWrapper types, QuantLib, live test)
