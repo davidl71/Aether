@@ -352,7 +352,7 @@ set(QL_BUILD_TEST_SUITE OFF CACHE BOOL "Build QuantLib test suite" FORCE)
 fetchcontent_declare(
     QuantLib
     GIT_REPOSITORY ${QUANTLIB_REPOSITORY}
-    GIT_TAG v1.36
+    GIT_TAG v1.41
     GIT_SHALLOW TRUE
 )
 
@@ -383,6 +383,29 @@ fetchcontent_makeavailable(nlohmann_json spdlog CLI11 Eigen3 QuantLib NLopt)
 
 # QuantLib when built via FetchContent defines target "ql_library" in ql/CMakeLists.txt
 # (EXPORT_NAME QuantLib); the namespace alias QuantLib::QuantLib is only created at install.
+# Our global add_compile_options(-Wunused etc.) apply to subprojects; suppress unused-parameter
+# (and similar) for the QuantLib target so third-party code does not fail the build.
+set(_ql_target "")
+if(TARGET ql_library)
+  set(_ql_target ql_library)
+elseif(TARGET ql)
+  set(_ql_target ql)
+elseif(TARGET QuantLib)
+  set(_ql_target QuantLib)
+endif()
+if(_ql_target AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+  target_compile_options(${_ql_target} PRIVATE
+    -Wno-unused-parameter
+    -Wno-unused-variable
+    -Wno-shadow
+    -Wno-conversion
+    -Wno-sign-conversion
+    -Wno-old-style-cast
+    -Wno-overloaded-virtual
+  )
+  message(STATUS "QuantLib: suppressed third-party warnings for ${_ql_target}")
+endif()
+
 if(NOT TARGET QuantLib::QuantLib)
   if(TARGET ql_library)
     add_library(QuantLib::QuantLib ALIAS ql_library)
@@ -862,6 +885,10 @@ if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tws_conn
             ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${TWS_API_INCLUDE_DIR}
     )
+    if(TWS_API_BUILD_VENDOR)
+        target_include_directories(test_tws_connection PRIVATE "${TWS_API_EXTERNAL_BINARY_DIR}/proto_generated")
+        add_dependencies(test_tws_connection twsapi_external)
+    endif()
 
     target_link_libraries(test_tws_connection
         PRIVATE
@@ -905,6 +932,10 @@ if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_position
             ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${TWS_API_INCLUDE_DIR}
     )
+    if(TWS_API_BUILD_VENDOR)
+        target_include_directories(test_positions_live PRIVATE "${TWS_API_EXTERNAL_BINARY_DIR}/proto_generated")
+        add_dependencies(test_positions_live twsapi_external)
+    endif()
 
     target_link_libraries(test_positions_live
         PRIVATE
@@ -946,6 +977,10 @@ if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_simple_c
             ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${TWS_API_INCLUDE_DIR}
     )
+    if(TWS_API_BUILD_VENDOR)
+        target_include_directories(test_simple_connect PRIVATE "${TWS_API_EXTERNAL_BINARY_DIR}/proto_generated")
+        add_dependencies(test_simple_connect twsapi_external)
+    endif()
 
     target_link_libraries(test_simple_connect
         PRIVATE
@@ -986,6 +1021,10 @@ if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_diagnost
             ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${TWS_API_INCLUDE_DIR}
     )
+    if(TWS_API_BUILD_VENDOR)
+        target_include_directories(test_diagnostic_connect PRIVATE "${TWS_API_EXTERNAL_BINARY_DIR}/proto_generated")
+        add_dependencies(test_diagnostic_connect twsapi_external)
+    endif()
 
     target_link_libraries(test_diagnostic_connect
         PRIVATE
@@ -1026,6 +1065,10 @@ if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_packet_t
             ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${TWS_API_INCLUDE_DIR}
     )
+    if(TWS_API_BUILD_VENDOR)
+        target_include_directories(test_packet_trace PRIVATE "${TWS_API_EXTERNAL_BINARY_DIR}/proto_generated")
+        add_dependencies(test_packet_trace twsapi_external)
+    endif()
 
     target_link_libraries(test_packet_trace
         PRIVATE

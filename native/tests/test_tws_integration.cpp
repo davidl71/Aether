@@ -24,6 +24,7 @@ config::TWSConfig create_mock_config() {
   config.auto_reconnect = true;
   config.max_reconnect_attempts = 5;
   config.connection_timeout_ms = 5000;
+  config.connect_options = "+PACEAPI";
   return config;
 }
 

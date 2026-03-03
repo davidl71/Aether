@@ -23,6 +23,12 @@ struct TWSConfig {
     bool log_raw_messages = false;   // Log raw API messages/data for debugging (verbose, use with trace log_level)
     bool use_mock = false;           // Use in-process mock TWS client (no network connection)
 
+    // TWS API connection options (set before eConnect; see TWS API sample Main.cpp)
+    // Default "+PACEAPI" matches official sample; use empty in config to clear.
+    std::string connect_options = "+PACEAPI";
+    // Optional capabilities string for newer API features. Empty = do not set.
+    std::string optional_capabilities;
+
     // PCAP Capture Configuration
     bool enable_pcap_capture = false;  // Enable PCAP packet capture for TWS API traffic
     std::string pcap_output_file = ""; // Output file path (empty = auto-generate with timestamp)
@@ -241,6 +247,10 @@ inline void to_json(nlohmann::json& j, const TWSConfig& config) {
         {"pcap_output_file", config.pcap_output_file},
         {"pcap_nanosecond_precision", config.pcap_nanosecond_precision}
     };
+    if (!config.connect_options.empty())
+        j["connect_options"] = config.connect_options;
+    if (!config.optional_capabilities.empty())
+        j["optional_capabilities"] = config.optional_capabilities;
 }
 
 // Broker Config
@@ -277,6 +287,10 @@ inline void from_json(const nlohmann::json& j, TWSConfig& config) {
         j.at("pcap_output_file").get_to(config.pcap_output_file);
     if (j.contains("pcap_nanosecond_precision"))
         j.at("pcap_nanosecond_precision").get_to(config.pcap_nanosecond_precision);
+    if (j.contains("connect_options"))
+        j.at("connect_options").get_to(config.connect_options);
+    if (j.contains("optional_capabilities"))
+        j.at("optional_capabilities").get_to(config.optional_capabilities);
 }
 
 // Strategy Params

@@ -96,6 +96,22 @@ void ConfigManager::validate_tws_config(const TWSConfig& tws) {
     if (tws.connection_timeout_ms <= 0) {
         throw std::invalid_argument("Connection timeout must be positive");
     }
+
+    // connect_options: if set, must be ASCII printable (TWS API requirement)
+    if (!tws.connect_options.empty()) {
+        bool all_printable = std::all_of(tws.connect_options.begin(), tws.connect_options.end(),
+            [](unsigned char c) { return c >= 32 && c < 127; });
+        if (!all_printable) {
+            throw std::invalid_argument("TWS connect_options must be ASCII printable");
+        }
+    }
+    if (!tws.optional_capabilities.empty()) {
+        bool all_printable = std::all_of(tws.optional_capabilities.begin(), tws.optional_capabilities.end(),
+            [](unsigned char c) { return c >= 32 && c < 127; });
+        if (!all_printable) {
+            throw std::invalid_argument("TWS optional_capabilities must be ASCII printable");
+        }
+    }
 }
 
 void ConfigManager::validate_strategy_params(const StrategyParams& strategy) {

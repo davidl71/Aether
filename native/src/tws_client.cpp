@@ -517,6 +517,16 @@ public:
 
         spdlog::info("Connecting to {}:{}...", config_.host, port_to_use);
 
+        // Set connection options before eConnect (align with TWS API sample; e.g. "+PACEAPI")
+        if (!config_.connect_options.empty()) {
+            client_.setConnectOptions(config_.connect_options);
+            spdlog::debug("TWS connect_options set: \"{}\"", config_.connect_options);
+        }
+        if (!config_.optional_capabilities.empty()) {
+            client_.setOptionalCapabilities(config_.optional_capabilities);
+            spdlog::debug("TWS optional_capabilities set: \"{}\"", config_.optional_capabilities);
+        }
+
         // Try connecting to each open port until one succeeds
         bool connected = false;
         int successful_port = port_to_use;

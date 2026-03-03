@@ -13,6 +13,7 @@ TEST_CASE("ConfigManager loads default configuration", "[config]") {
     REQUIRE(config.tws.host == "127.0.0.1");
     REQUIRE(config.tws.port == 7497);
     REQUIRE(config.tws.client_id == 1);
+    REQUIRE(config.tws.connect_options == "+PACEAPI");
 }
 
 TEST_CASE("ConfigManager validates TWS configuration", "[config]") {
@@ -23,6 +24,38 @@ TEST_CASE("ConfigManager validates TWS configuration", "[config]") {
         tws.client_id = 1;
 
         REQUIRE_NOTHROW(ConfigManager::validate_tws_config(tws));
+    }
+
+    SECTION("Valid TWS config with connect_options passes validation") {
+        TWSConfig tws;
+        tws.host = "127.0.0.1";
+        tws.port = 7497;
+        tws.client_id = 1;
+        tws.connect_options = "+PACEAPI";
+
+        REQUIRE_NOTHROW(ConfigManager::validate_tws_config(tws));
+    }
+
+    SECTION("Non-ASCII connect_options fails validation") {
+        TWSConfig tws;
+        tws.host = "127.0.0.1";
+        tws.port = 7497;
+        tws.client_id = 1;
+        tws.connect_options = "+PACEAPI\x01";  // non-printable
+
+        REQUIRE_THROWS_AS(ConfigManager::validate_tws_config(tws),
+                         std::invalid_argument);
+    }
+
+    SECTION("Non-ASCII optional_capabilities fails validation") {
+        TWSConfig tws;
+        tws.host = "127.0.0.1";
+        tws.port = 7497;
+        tws.client_id = 1;
+        tws.optional_capabilities = "cap\x7f";
+
+        REQUIRE_THROWS_AS(ConfigManager::validate_tws_config(tws),
+                         std::invalid_argument);
     }
 
     SECTION("Empty host fails validation") {
@@ -146,9 +179,48 @@ TEST_CASE("ConfigManager JSON serialization", "[config]") {
 
         REQUIRE(config.tws.host == "127.0.0.1");
         REQUIRE(config.tws.port == 7497);
+        REQUIRE(config.tws.connect_options == "+PACEAPI");  // default when key omitted
         REQUIRE(config.strategy.symbols[0] == "SPY");
         REQUIRE_THAT(config.strategy.min_arbitrage_profit,
                     Catch::Matchers::WithinRel(0.10, 0.001));
+    }
+
+    SECTION("connect_options and optional_capabilities round-trip") {
+        Config config = ConfigManager::get_default();
+        config.tws.connect_options = "+PACEAPI";
+        config.tws.optional_capabilities = "cap123";
+
+        nlohmann::json j = ConfigManager::to_json(config);
+        REQUIRE(j["tws"]["connect_options"] == "+PACEAPI");
+        REQUIRE(j["tws"]["optional_capabilities"] == "cap123");
+
+        Config loaded = ConfigManager::from_json(j);
+        REQUIRE(loaded.tws.connect_options == "+PACEAPI");
+        REQUIRE(loaded.tws.optional_capabilities == "cap123");
+    }
+
+    SECTION("empty connect_options omits from JSON and loads as empty") {
+        nlohmann::json j = {
+            {"tws", {
+                {"host", "127.0.0.1"},
+                {"port", 7497},
+                {"client_id", 1},
+                {"connect_options", ""}
+            }},
+            {"strategy", {
+                {"symbols", {"SPY"}},
+                {"min_arbitrage_profit", 0.10},
+                {"min_roi_percent", 0.5},
+                {"max_position_size", 10000.0},
+                {"min_days_to_expiry", 30},
+                {"max_days_to_expiry", 90},
+                {"max_bid_ask_spread", 0.10},
+                {"min_volume", 100},
+                {"min_open_interest", 500}
+            }}
+        };
+        Config config = ConfigManager::from_json(j);
+        REQUIRE(config.tws.connect_options.empty());
     }
 }
 
@@ -175,6 +247,7 @@ TEST_CASE("ConfigManager file operations", "[config]") {
 
         REQUIRE(loaded.tws.host == original.tws.host);
         REQUIRE(loaded.tws.port == original.tws.port);
+        REQUIRE(loaded.tws.connect_options == original.tws.connect_options);
         REQUIRE(loaded.strategy.symbols == original.strategy.symbols);
     }
 

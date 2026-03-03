@@ -27,6 +27,7 @@ config::TWSConfig create_mock_config() {
   config.use_mock = true;  // Use mock mode for testing
   config.auto_reconnect = true;
   config.connection_timeout_ms = 5000;
+  config.connect_options = "+PACEAPI";
   return config;
 }
 
