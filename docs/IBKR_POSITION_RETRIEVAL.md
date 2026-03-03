@@ -73,7 +73,7 @@ These dependencies are **not yet built** in the current checkout. Build them wit
 
 ```bash
 # 1. Build Intel Decimal Math Library (if needed)
-cd native/third_party/IntelRDFPMathLib20U2/LIBRARY
+cd native/third_party/IntelRDFPMathLib20U4/LIBRARY
 # Follow Intel's build instructions (see README in that directory)
 
 # 2. Build TWS API library
@@ -93,7 +93,7 @@ ninja -C build
 ### Current Status
 
 ⚠️ **Build blocked** - Missing compiled dependencies:
-- `IntelRDFPMathLib20U2/LIBRARY/libbid.a` - Not found
+- `IntelRDFPMathLib20U4/LIBRARY/libbid.a` - Not found
 - `ibapi_cmake/build/lib/libtwsapi.dylib` - Build failed due to missing libbid.a
 
 ## Using Position Retrieval in Code
@@ -111,7 +111,7 @@ config.client_id = 1;
 tws::TWSClient client(config);
 if (client.connect()) {
     auto positions = client.request_positions_sync(10000);  // 10 sec timeout
-    
+
     for (const auto& pos : positions) {
         std::cout << pos.contract.symbol << " "
                   << (pos.contract.type == types::OptionType::Call ? "CALL" : "PUT")
@@ -146,12 +146,12 @@ if (pos) {
 // Just query the cache periodically
 while (trading) {
     auto positions = client.get_positions();  // Fast - returns cached data
-    
+
     for (const auto& pos : positions) {
         double pnl = (pos.current_price - pos.avg_price) * pos.quantity * 100;
         std::cout << pos.contract.symbol << " P&L: $" << pnl << std::endl;
     }
-    
+
     std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 ```
@@ -233,10 +233,10 @@ for pos in positions:
 
 ## Summary
 
-✅ **Position retrieval is fully implemented and production-ready**  
-⚠️ **Build dependencies required before testing**  
-📝 **Test utility created for validation**  
-🔧 **Both sync and async APIs available**  
+✅ **Position retrieval is fully implemented and production-ready**
+⚠️ **Build dependencies required before testing**
+📝 **Test utility created for validation**
+🔧 **Both sync and async APIs available**
 🔒 **Thread-safe with proper error handling**
 
 The code is ready to pull real positions from IBKR once the build dependencies are resolved.

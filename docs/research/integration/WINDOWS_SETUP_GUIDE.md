@@ -81,8 +81,8 @@ New-Item -ItemType Directory -Force -Path "native\third_party\cache"
 
 # Download Intel Decimal Library (adjust URL for latest version)
 
-$url = "https://netlib.org/misc/intel/IntelRDFPMathLib20U2.tar.gz"
-$output = "native\third_party\cache\IntelRDFPMathLib20U2.tar.gz"
+$url = "https://netlib.org/misc/intel/IntelRDFPMathLib20U4.tar.gz"
+$output = "native\third_party\cache\IntelRDFPMathLib20U4.tar.gz"
 Invoke-WebRequest -Uri $url -OutFile $output
 
 # Extract (requires 7-Zip or tar for Windows 10+)
@@ -98,7 +98,7 @@ tar -xzf $output -C "native\third_party"
 ### 2.2 Verify Intel Library Location
 
 ```
-native/third_party/IntelRDFPMathLib20U2/
+native/third_party/IntelRDFPMathLib20U4/
 └── LIBRARY/
     ├── libbid.a          <- Static library (will be built)
     └── src/              <- Source files
@@ -161,7 +161,7 @@ $env:TWS_API_LIB_DIR = "$PWD\native\third_party\tws-api\IBJts\source\cppclient\c
 
 # Intel Decimal Library
 
-$env:INTEL_DECIMAL_LIB = "$PWD\native\third_party\IntelRDFPMathLib20U2\LIBRARY\libbid.a"
+$env:INTEL_DECIMAL_LIB = "$PWD\native\third_party\IntelRDFPMathLib20U4\LIBRARY\libbid.a"
 
 # Protocol Buffers (if using vcpkg)
 
@@ -173,7 +173,7 @@ $env:Protobuf_ROOT = "C:\vcpkg\installed\x64-windows"
 ### 5.1 Build with CMake
 
 ```powershell
-cd native\third_party\IntelRDFPMathLib20U2\LIBRARY
+cd native\third_party\IntelRDFPMathLib20U4\LIBRARY
 
 # Create build directory
 
@@ -210,7 +210,7 @@ cmake .. `
     -G "Visual Studio 17 2022" `
     -A x64 `
     -DPROTOBUF_ROOT="C:\vcpkg\installed\x64-windows" `
-    -DINTEL_BID_LIB="$PWD\..\..\..\..\..\..\IntelRDFPMathLib20U2\LIBRARY\libbid.a"
+    -DINTEL_BID_LIB="$PWD\..\..\..\..\..\..\IntelRDFPMathLib20U4\LIBRARY\libbid.a"
 
 # Build
 
@@ -401,7 +401,7 @@ $env:Protobuf_ROOT = "C:\vcpkg\installed\x64-windows"
 **Solution:** Build Intel library first (Step 5) and verify path:
 
 ```powershell
-Test-Path "native\third_party\IntelRDFPMathLib20U2\LIBRARY\libbid.a"
+Test-Path "native\third_party\IntelRDFPMathLib20U4\LIBRARY\libbid.a"
 ```
 
 ### Connection Timeout

@@ -104,7 +104,7 @@ Add short `//` comments only where the trading math is non-obvious (e.g., APR sc
 | Dependency | Location | Purpose |
 |------------|----------|---------|
 | TWS API | `native/third_party/tws-api/` | IBKR connectivity |
-| Intel Decimal | `native/third_party/IntelRDFPMathLib20U2/` | Exact decimal arithmetic |
+| Intel Decimal | `native/third_party/IntelRDFPMathLib20U4/` | Exact decimal arithmetic |
 | nlohmann/json | FetchContent (v3.11.3) | JSON parsing |
 | spdlog | FetchContent (v1.13.0) | Logging |
 | CLI11 | FetchContent (v2.4.1) | CLI argument parsing |

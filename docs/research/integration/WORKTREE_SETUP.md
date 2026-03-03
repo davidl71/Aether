@@ -21,7 +21,7 @@ Before running the script, ensure you have:
 - **Protocol Buffers** - `brew install protobuf`
 - **Abseil libraries** - `brew install abseil` (required by modern protobuf)
 - **TWS API source** - Extracted to `native/third_party/tws-api/`
-- **Intel Decimal library source** - Extracted to `native/third_party/IntelRDFPMathLib20U2/`
+- **Intel Decimal library source** - Extracted to `native/third_party/IntelRDFPMathLib20U4/`
 
 ## Usage
 
@@ -87,7 +87,7 @@ Creates a new git worktree at `../${WORKTREE_NAME}` from the specified branch.
 
 - Configures CMake build for Intel Decimal Floating-Point Math Library
 - Compiles `libbid.a` static library
-- Output: `native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
+- Output: `native/third_party/IntelRDFPMathLib20U4/LIBRARY/libbid.a`
 
 ### Step 4: Build TWS API Library
 
@@ -150,7 +150,7 @@ Ensure Intel Decimal library is extracted:
 
 ```bash
 # Check if Intel Decimal library exists
-ls -la native/third_party/IntelRDFPMathLib20U2/LIBRARY/src/
+ls -la native/third_party/IntelRDFPMathLib20U4/LIBRARY/src/
 ```
 
 ## After Setup

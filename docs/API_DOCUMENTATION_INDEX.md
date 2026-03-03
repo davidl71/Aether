@@ -364,7 +364,7 @@ for large multi-leg positions.
 - **Version**: 20U2
 - **Purpose**: Precision decimal arithmetic for financial calculations
 - **Key Functions**: `__bid64_add`, `__bid64_div`, `__bid64_mul`, etc. (from libbid)
-- **Location**: `native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
+- **Location**: `native/third_party/IntelRDFPMathLib20U4/LIBRARY/libbid.a`
 - **Note**: Required by TWS API for decimal price handling
 
 ### Protocol Buffers

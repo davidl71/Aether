@@ -55,7 +55,7 @@ endif()
 
 if(NOT INTEL_DECIMAL_LIB)
     set(INTEL_DECIMAL_LIB
-        "${CMAKE_SOURCE_DIR}/native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a"
+        "${CMAKE_SOURCE_DIR}/native/third_party/IntelRDFPMathLib20U4/LIBRARY/libbid.a"
     )
 endif()
 

@@ -631,7 +631,7 @@ if(NOT TWS_API_LIB OR NOT EXISTS "${TWS_API_LIB}")
 endif()
 
 set(INTEL_DECIMAL_LIB "${CMAKE_CURRENT_SOURCE_DIR}")
-cmake_path(APPEND INTEL_DECIMAL_LIB "third_party" "IntelRDFPMathLib20U2" "LIBRARY" "libbid.a")
+cmake_path(APPEND INTEL_DECIMAL_LIB "third_party" "IntelRDFPMathLib20U4" "LIBRARY" "libbid.a")
 
 set(_missing_native_deps "")
 set(_native_prereqs_met TRUE)
@@ -752,8 +752,10 @@ if(_build_native_cli)
             ${CMAKE_CURRENT_BINARY_DIR}/include  # For generated version.h
             ${TWS_API_INCLUDE_DIR}
     )
-
-    # Add box-spread-cpp library include directory if using extracted library
+    # When building TWS API from GitHub layout, generated proto headers live in the vendor build dir
+    if(TWS_API_BUILD_VENDOR)
+        target_include_directories(ib_box_spread PRIVATE "${TWS_API_EXTERNAL_BINARY_DIR}/proto_generated")
+    endif()
     if(USE_BOX_SPREAD_CPP_LIB AND DEFINED BOX_SPREAD_CPP_INCLUDE_DIR)
         target_include_directories(ib_box_spread
             PRIVATE

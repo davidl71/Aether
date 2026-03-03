@@ -48,7 +48,7 @@ else()
 endif()
 
 set(INTEL_BID_LIB "${PROJECT_ROOT}")
-cmake_path(APPEND INTEL_BID_LIB "native" "third_party" "IntelRDFPMathLib20U2" "LIBRARY" "libbid.a")
+cmake_path(APPEND INTEL_BID_LIB "native" "third_party" "IntelRDFPMathLib20U4" "LIBRARY" "libbid.a")
 
 file(GLOB IBAPI_CORE_SOURCES "${IBAPI_CLIENT_DIR}/*.cpp")
 
