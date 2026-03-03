@@ -654,7 +654,7 @@ if(NOT TWS_API_LIB OR NOT EXISTS "${TWS_API_LIB}")
 endif()
 
 set(INTEL_DECIMAL_LIB "${CMAKE_CURRENT_SOURCE_DIR}")
-cmake_path(APPEND INTEL_DECIMAL_LIB "third_party" "IntelRDFPMathLib20U4" "LIBRARY" "libbid.a")
+cmake_path(APPEND INTEL_DECIMAL_LIB "third_party" "IntelRDFPMathLib20U2" "LIBRARY" "libbid.a")
 
 set(_missing_native_deps "")
 set(_native_prereqs_met TRUE)

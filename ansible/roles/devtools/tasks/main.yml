@@ -71,7 +71,7 @@
       # Pre-commit / lint (matches .pre-commit-config.yaml)
       - shellcheck
       - cppcheck
-      - markdownlint
+      - markdownlint-cli
       # SQLite CLI and libs (exarp-go, MCP, local DBs)
       - sqlite
       # Rust toolchain (agents/, Rust backends)
