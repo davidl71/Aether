@@ -101,7 +101,24 @@ build/<preset-name>/bin/ib_box_spread_tui
 
 Examples: `build/macos-arm64-debug/bin/ib_box_spread`, `build/macos-x86_64-release/bin/ib_box_spread`, `build-ramdisk/bin/ib_box_spread` (when using a -ramdisk preset).
 
+### OS and homedir
+
+**OS (same machine)**  
+On a single Mac, the OS is the same whether you build or run arm64 or x86_64: **macOS (Darwin)**. `uname -s` is `Darwin` for both. The only runtime difference is **Rosetta 2** when you run an x86_64 binary on Apple Silicon. There are no separate “ARM OS” vs “Intel OS” paths; the split is **build/output** paths (e.g. `build/macos-arm64-*` vs `build/macos-x86_64-*`).
+
+**HOME / homedir (same machine)**  
+On that same Mac, **`$HOME` is the same** for both architectures (e.g. `/Users/yourname`). So these do **not** differ by arch:
+
+- `~/.cargo` (registry, git, config)
+- `~/.cache` (pip, etc.)
+- `~/.ccache`, `~/.sccache`
+- Project path if under `$HOME` (e.g. `~/Projects/.../ib_box_spread_full_universal`)
+
+Homedir can differ **by OS** (e.g. macOS `/Users/...` vs Linux `/home/...`) or **by machine/user**; it does not change when you switch between building for arm64 vs x86_64 on the same login. Scripts that use `$HOME` or `~` (including `setup_ram_optimization.sh` when it links `~/.cargo`, `~/.ccache`, etc.) see the same homedir for both arches.
+
 ---
+
+## Integration tests and CI
 
 - **integration_test.sh** defaults to `macos-x86_64-release`; override with `CMAKE_PRESET`.
 - CI / release: use the preset that matches the runner (e.g. macOS Intel runner → `macos-x86_64-*`). Release scripts like `release_x86.sh` target Intel explicitly.
