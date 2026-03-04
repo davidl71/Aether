@@ -11,7 +11,7 @@ These occur when compiling the **TWS API** (and can affect other targets). The c
 
 ### Cause
 
-On macOS, this usually means **Xcode Command Line Tools (CLT)** are missing, incomplete, or the active developer directory is wrong. The project’s main CMake tries to inject the SDK C++ path when CLT headers are missing; the TWS API is built as a separate ExternalProject and must receive the same path.
+On macOS, this usually means **Xcode Command Line Tools (CLT)** are missing, incomplete, or the active developer directory is wrong. The project’s main CMake injects the SDK C++ path when CLT headers are missing; the TWS API sub-build (`native/ibapi_cmake/CMakeLists.txt`) does the same injection so it works when built via ExternalProject or standalone.
 
 ### Fix: Install or repair Command Line Tools
 
@@ -115,3 +115,18 @@ The TWS API ships pre-generated `.pb.h`/`.pb.cc` built with **Protobuf C++ 6.33.
 1. **First step:** Fix C++ headers with `xcode-select --install` (and, if needed, the reinstall or `xcode-select -s` steps above), then run `./scripts/verify_toolchain.sh`.
 2. **Then:** Re-run the build; the TWS API and rest of the tree should get the same C++ header path.
 3. **Optional:** Use `BUILD_KEEP_GOING=1` to collect multiple errors in one run.
+
+---
+
+## Market data cache (memcached)
+
+The C++ engine can use **memcached** as the backend for the market data cache (instead of in-memory only). This is optional.
+
+**To enable:**
+
+1. Install libmemcached: `brew install libmemcached` (macOS) or `apt install libmemcached-dev` (Linux).
+2. Run memcached, e.g. `memcached -l 127.0.0.1 -p 11211`.
+3. Configure the build with `-DENABLE_MEMCACHED=ON` (e.g. `cmake -S . -B build -G Ninja -DENABLE_MEMCACHED=ON`).
+4. Configure the app to use the memcached backend (host/port) if your config supports it; otherwise the cache layer may need to be wired to memcached at runtime (see `native/include/cache_client.h` and `MarketDataHandler::set_market_data_cache()`).
+
+If `ENABLE_MEMCACHED` is ON but libmemcached is not found, CMake prints a warning and the build continues using the in-memory cache only.

@@ -4,6 +4,10 @@
 `proto/messages.proto` (protobuf), which is the canonical cross-language
 contract.
 
+## Single proto story
+
+Platform messages live in **`proto/messages.proto`**. TWS API vendor protos (when using GitHub layout) are built separately via `native/ibapi_cmake`. There is no gRPC server or backend proto in this repo; REST and NATS use the platform proto only.
+
 ## Where to find schemas
 
 | Language   | Source                                           |

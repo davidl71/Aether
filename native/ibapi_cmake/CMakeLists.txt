@@ -1,6 +1,38 @@
 cmake_minimum_required(VERSION 3.15)
 project(twsapi_builder LANGUAGES C CXX)
 
+# ============================================================================
+# macOS SDK / Toolchain Fix (mirror of root native/CMakeLists.txt)
+# When CLT C++ headers are missing, inject SDK C++ path so TWS API build finds
+# <string>, <mutex>, etc. Required when ibapi_cmake runs as ExternalProject or standalone.
+# ============================================================================
+if(APPLE)
+  if(NOT CMAKE_OSX_SYSROOT)
+    execute_process(
+      COMMAND xcrun --show-sdk-path
+      OUTPUT_VARIABLE _DETECTED_SDK
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      ERROR_QUIET
+    )
+    if(_DETECTED_SDK)
+      set(CMAKE_OSX_SYSROOT "${_DETECTED_SDK}" CACHE PATH "macOS SDK path")
+    endif()
+  endif()
+  if(CMAKE_OSX_SYSROOT)
+    set(_SDK_CXX "${CMAKE_OSX_SYSROOT}/usr/include/c++/v1")
+    set(_TC_CXX "/Library/Developer/CommandLineTools/usr/include/c++/v1")
+    if(EXISTS "${_SDK_CXX}/string" AND NOT EXISTS "${_TC_CXX}/string")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib++-isystem${_SDK_CXX}" CACHE STRING "" FORCE)
+      message(STATUS "TWS API: Injecting SDK C++ headers (CLT headers missing): ${_SDK_CXX}")
+    elseif(EXISTS "${_SDK_CXX}/string")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib++-isystem${_SDK_CXX}" CACHE STRING "" FORCE)
+      message(STATUS "TWS API: Injecting SDK C++ headers for subprojects: ${_SDK_CXX}")
+    elseif(NOT EXISTS "${_TC_CXX}/string")
+      message(WARNING "TWS API: C++ stdlib headers not found in CLT or SDK. Run: xcode-select --install")
+    endif()
+  endif()
+endif()
+
 # Use relative paths from the project root when TWS_API_CLIENT_DIR not provided (zip layout).
 get_filename_component(PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 
@@ -67,6 +99,16 @@ else()
     if(Protobuf_LIBRARY)
         get_filename_component(PROTOBUF_BUILD_DIR "${Protobuf_LIBRARY}" DIRECTORY)
         message(STATUS "Found protobuf: ${Protobuf_LIBRARY}")
+        # Keep PROTOBUF_SRC_DIR in sync with library prefix when Protobuf_ROOT was not set
+        if(NOT Protobuf_ROOT)
+            get_filename_component(_pb_prefix "${Protobuf_LIBRARY}" DIRECTORY)
+            get_filename_component(_pb_prefix "${_pb_prefix}" DIRECTORY)
+            set(PROTOBUF_SRC_DIR "${_pb_prefix}/include")
+            if(EXISTS "${PROTOBUF_SRC_DIR}/google/protobuf")
+                message(STATUS "TWS API: Protobuf include from library prefix: ${PROTOBUF_SRC_DIR}")
+            endif()
+            unset(_pb_prefix)
+        endif()
     endif()
 endif()
 
@@ -142,8 +184,15 @@ else()
   )
 endif()
 if(PROTOBUF_SRC_DIR AND EXISTS "${PROTOBUF_SRC_DIR}/google/protobuf")
+  # Verify runtime header exists (required by generated .pb.h)
+  if(NOT EXISTS "${PROTOBUF_SRC_DIR}/google/protobuf/runtime_version.h")
+    message(WARNING "TWS API: ${PROTOBUF_SRC_DIR}/google/protobuf/runtime_version.h not found; .pb.h may fail to compile")
+  else()
+    message(STATUS "TWS API: Protobuf include ${PROTOBUF_SRC_DIR} (runtime_version.h verified)")
+  endif()
   target_include_directories(twsapi PUBLIC "${PROTOBUF_SRC_DIR}")
-  message(STATUS "TWS API: Protobuf include ${PROTOBUF_SRC_DIR}")
+elseif(IBAPI_PROTO_GENERATED_DIR)
+  message(WARNING "TWS API: PROTOBUF_SRC_DIR missing or invalid (no google/protobuf); generated .pb.h may fail")
 endif()
 
 # macOS: add SDK C++ stdlib include so TWS API finds <string>, <mutex>, etc. (CLT headers)

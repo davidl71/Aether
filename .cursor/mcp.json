@@ -26,20 +26,6 @@
         "/Users/dlowes/Projects/trading/ib_box_spread_full_universal"
       ]
     },
-    "semgrep": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@semgrep/mcp-server-semgrep"
-      ]
-    },
-    "agentic-tools": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@pimzino/agentic-tools-mcp"
-      ]
-    },
     "context7": {
       "command": "npx",
       "args": [

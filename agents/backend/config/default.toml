@@ -1,7 +1,7 @@
 # Bind to 0.0.0.0 to allow remote connections
 # For security, consider using SSH tunneling instead (see README)
 rest_addr = "0.0.0.0:8080"
-grpc_addr = "0.0.0.0:50051"
+# gRPC is not in use; REST and NATS are the supported interfaces.
 
 [market_data]
 provider = "mock"

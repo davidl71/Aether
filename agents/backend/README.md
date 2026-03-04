@@ -3,14 +3,13 @@
 ## Responsibilities
 - Ingest market data and normalise events for downstream consumers.
 - Execute Nautilus Trader strategies through a Rust/Python bridge.
-- Perform pre-trade risk checks and expose REST/gRPC surfaces for clients.
+- Perform pre-trade risk checks and expose REST (and NATS) for clients.
 
 ## Layout
 - `Cargo.toml`: Rust workspace aggregating core crates.
 - `crates/`: library crates for market data, strategy bridge, risk, and API layers.
 - `services/backend_service/`: Tokio binary wiring crates together.
 - `python/`: Nautilus Trader strategy scaffold packaged for reuse.
-- `proto/`: gRPC service definitions.
 - `config/`: runtime configuration templates (`default.toml`).
 - `scripts/`: setup and CI entrypoints.
 
@@ -18,29 +17,30 @@
 
 ### Python Environment (Required for PyO3)
 
-The backend uses PyO3 0.21 which requires Python 3.12 or earlier. Activate the Python 3.12 environment:
+The backend uses PyO3 0.21 which officially supports Python up to 3.12. You can either:
 
-```bash
-cd agents/backend
-source scripts/activate_python_env.sh
-```
+- **Option A (recommended for full backend/Python bridge):** Use a Python 3.12 virtual environment:
+  ```bash
+  cd agents/backend
+  source scripts/activate_python_env.sh
+  ```
+  See [Python Environment Setup](../../docs/PYTHON_ENVIRONMENT_SETUP.md) for details.
 
-This creates a virtual environment and configures PyO3 to use Python 3.12. See [Python Environment Setup](../docs/PYTHON_ENVIRONMENT_SETUP.md) for details.
+- **Option B (Rust-only builds):** The workspace sets `PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1` in `.cargo/config.toml`, so `cargo build` and `cargo test` work with system Python 3.14+ without a venv. Use a 3.12 venv when running the Python/Nautilus integration.
 
 ### Backend Setup
 
 1. Run `bash agents/backend/scripts/setup.sh` to create the virtualenv, install Python deps, and fetch Rust crates.
 2. Start the live service with `cargo run -p backend_service` from `agents/backend`.
 3. Hit the REST surface via `curl http://127.0.0.1:8080/api/v1/snapshot`.
-4. Stream strategy decisions with a gRPC client against `ib.backend.v1.StrategyService/StreamDecisions` on port `50051`.
-5. Execute checks via `bash agents/backend/scripts/run-tests.sh`.
+4. Execute checks via `bash agents/backend/scripts/run-tests.sh`.
 
 ### Nautilus Trader Wheel
 The backend setup no longer installs the Nautilus Trader wheel automatically. Download a prebuilt wheel via `./scripts/fetch_third_party.sh` (or set `NAUTILUS_TRADER_RELEASE=<tag>`) to place it under `native/third_party/nautilus/`, then install it manually (for example, `pip install <path-to-wheel>`) before enabling Nautilus integration. The backend Python package does not declare Nautilus Trader as a dependency; install it separately when you are ready to wire in the integration.
 
 ## Current Behaviour
 - Periodic mock market data updates drive the shared snapshot returned to TUI/mobile/web clients.
-- Strategy signals flow through a mock Nautilus loop, risk checks vet each decision, and both REST/gRPC surfaces stream the approved trades plus risk status.
+- Strategy signals flow through a mock Nautilus loop, risk checks vet each decision, and the REST surface streams the approved trades plus risk status.
 - REST now exposes `POST /api/v1/strategy/{start,stop}` to toggle the mock engine, updating risk status and alert stream in lockstep.
 - Alerts, positions, historic fills, and orders are seeded with example data for UI prototyping.
 - Polygon.io integration is available via the market data configuration; set `market_data.provider = "polygon"` and provide an API key (see below).

@@ -234,7 +234,15 @@ cargo check -p backend_service
 
 - **PyO3 0.21** supports Python 3.8-3.12
 - **System Python 3.14** is too new
-- **Solution**: Use Python 3.12 in a virtual environment
+- **Solution**: Use Python 3.12 in a virtual environment **or** use the forward-compat option below
+
+### Building with system Python 3.14+ (no venv)
+
+If you only need to build the Rust backend (e.g. `cargo build`, `cargo test`) and do not need to run the PyO3/Python bridge, the project sets **`PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1`** in `agents/backend/.cargo/config.toml`. That lets PyO3 build against Python 3.14+ using the stable ABI, so you can run `cargo build` without activating a Python 3.12 venv.
+
+- **When to use**: Local Rust-only builds, CI that doesn't run the Python bridge.
+- **When to use a 3.12 venv**: Running the full backend with Nautilus/Python integration, or if you see ABI/runtime issues.
+- **Removing it**: When upgrading to a PyO3 version that supports your system Python, you can delete the `[env]` block from `agents/backend/.cargo/config.toml`.
 
 ## Modern Tooling: `uv` Support
 
@@ -285,12 +293,12 @@ uv sync
 
 ## Future Options
 
-1. **Upgrade PyO3**: When PyO3 0.22+ supports Python 3.14
+1. **Upgrade PyO3**: When PyO3 0.22+ supports Python 3.14 (then remove `PYO3_USE_ABI3_FORWARD_COMPATIBILITY` from `agents/backend/.cargo/config.toml`).
 2. **Use Poetry**: Could manage Python version via `pyproject.toml`
 3. **Use pyenv**: Could manage multiple Python versions
 4. **Full `uv` Migration**: Consider migrating to `pyproject.toml` with `uv sync`
 
-For now, the virtual environment approach with `uv` support is the simplest and most reliable.
+For now, the virtual environment approach with `uv` support is the simplest and most reliable. For Rust-only builds, the `.cargo/config.toml` forward-compat setting avoids needing a 3.12 venv.
 
 ## Integration with CI/CD
 

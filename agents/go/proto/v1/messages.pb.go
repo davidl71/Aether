@@ -1795,6 +1795,345 @@ func (x *BoxSpreadExecution) GetExecutedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+// Yield curve: points per expiry for a given symbol/strike width.
+type YieldCurvePoint struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DaysToExpiry  int32                  `protobuf:"varint,1,opt,name=days_to_expiry,json=daysToExpiry,proto3" json:"days_to_expiry,omitempty"`
+	ImpliedRate   float64                `protobuf:"fixed64,2,opt,name=implied_rate,json=impliedRate,proto3" json:"implied_rate,omitempty"`
+	EffectiveRate float64                `protobuf:"fixed64,3,opt,name=effective_rate,json=effectiveRate,proto3" json:"effective_rate,omitempty"`
+	NetDebit      float64                `protobuf:"fixed64,4,opt,name=net_debit,json=netDebit,proto3" json:"net_debit,omitempty"`
+	SpreadBps     float64                `protobuf:"fixed64,5,opt,name=spread_bps,json=spreadBps,proto3" json:"spread_bps,omitempty"`
+	AsOf          *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=as_of,json=asOf,proto3" json:"as_of,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *YieldCurvePoint) Reset() {
+	*x = YieldCurvePoint{}
+	mi := &file_messages_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *YieldCurvePoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*YieldCurvePoint) ProtoMessage() {}
+
+func (x *YieldCurvePoint) ProtoReflect() protoreflect.Message {
+	mi := &file_messages_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use YieldCurvePoint.ProtoReflect.Descriptor instead.
+func (*YieldCurvePoint) Descriptor() ([]byte, []int) {
+	return file_messages_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *YieldCurvePoint) GetDaysToExpiry() int32 {
+	if x != nil {
+		return x.DaysToExpiry
+	}
+	return 0
+}
+
+func (x *YieldCurvePoint) GetImpliedRate() float64 {
+	if x != nil {
+		return x.ImpliedRate
+	}
+	return 0
+}
+
+func (x *YieldCurvePoint) GetEffectiveRate() float64 {
+	if x != nil {
+		return x.EffectiveRate
+	}
+	return 0
+}
+
+func (x *YieldCurvePoint) GetNetDebit() float64 {
+	if x != nil {
+		return x.NetDebit
+	}
+	return 0
+}
+
+func (x *YieldCurvePoint) GetSpreadBps() float64 {
+	if x != nil {
+		return x.SpreadBps
+	}
+	return 0
+}
+
+func (x *YieldCurvePoint) GetAsOf() *timestamppb.Timestamp {
+	if x != nil {
+		return x.AsOf
+	}
+	return nil
+}
+
+type YieldCurve struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Symbol        string                 `protobuf:"bytes,1,opt,name=symbol,proto3" json:"symbol,omitempty"`
+	StrikeWidth   float64                `protobuf:"fixed64,2,opt,name=strike_width,json=strikeWidth,proto3" json:"strike_width,omitempty"`
+	BenchmarkRate float64                `protobuf:"fixed64,3,opt,name=benchmark_rate,json=benchmarkRate,proto3" json:"benchmark_rate,omitempty"`
+	Points        []*YieldCurvePoint     `protobuf:"bytes,4,rep,name=points,proto3" json:"points,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *YieldCurve) Reset() {
+	*x = YieldCurve{}
+	mi := &file_messages_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *YieldCurve) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*YieldCurve) ProtoMessage() {}
+
+func (x *YieldCurve) ProtoReflect() protoreflect.Message {
+	mi := &file_messages_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use YieldCurve.ProtoReflect.Descriptor instead.
+func (*YieldCurve) Descriptor() ([]byte, []int) {
+	return file_messages_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *YieldCurve) GetSymbol() string {
+	if x != nil {
+		return x.Symbol
+	}
+	return ""
+}
+
+func (x *YieldCurve) GetStrikeWidth() float64 {
+	if x != nil {
+		return x.StrikeWidth
+	}
+	return 0
+}
+
+func (x *YieldCurve) GetBenchmarkRate() float64 {
+	if x != nil {
+		return x.BenchmarkRate
+	}
+	return 0
+}
+
+func (x *YieldCurve) GetPoints() []*YieldCurvePoint {
+	if x != nil {
+		return x.Points
+	}
+	return nil
+}
+
+// Discovered opportunity (pre-trade) with confidence and execution metrics.
+type BoxSpreadOpportunity struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Spread               float64                `protobuf:"fixed64,1,opt,name=spread,proto3" json:"spread,omitempty"`
+	ConfidenceScore      float64                `protobuf:"fixed64,2,opt,name=confidence_score,json=confidenceScore,proto3" json:"confidence_score,omitempty"`
+	ExpectedProfit       float64                `protobuf:"fixed64,3,opt,name=expected_profit,json=expectedProfit,proto3" json:"expected_profit,omitempty"`
+	RiskAdjustedReturn   float64                `protobuf:"fixed64,4,opt,name=risk_adjusted_return,json=riskAdjustedReturn,proto3" json:"risk_adjusted_return,omitempty"`
+	LiquidityScore       float64                `protobuf:"fixed64,5,opt,name=liquidity_score,json=liquidityScore,proto3" json:"liquidity_score,omitempty"`
+	ExecutionProbability float64                `protobuf:"fixed64,6,opt,name=execution_probability,json=executionProbability,proto3" json:"execution_probability,omitempty"`
+	DiscoveredTime       *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=discovered_time,json=discoveredTime,proto3" json:"discovered_time,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *BoxSpreadOpportunity) Reset() {
+	*x = BoxSpreadOpportunity{}
+	mi := &file_messages_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BoxSpreadOpportunity) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BoxSpreadOpportunity) ProtoMessage() {}
+
+func (x *BoxSpreadOpportunity) ProtoReflect() protoreflect.Message {
+	mi := &file_messages_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BoxSpreadOpportunity.ProtoReflect.Descriptor instead.
+func (*BoxSpreadOpportunity) Descriptor() ([]byte, []int) {
+	return file_messages_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *BoxSpreadOpportunity) GetSpread() float64 {
+	if x != nil {
+		return x.Spread
+	}
+	return 0
+}
+
+func (x *BoxSpreadOpportunity) GetConfidenceScore() float64 {
+	if x != nil {
+		return x.ConfidenceScore
+	}
+	return 0
+}
+
+func (x *BoxSpreadOpportunity) GetExpectedProfit() float64 {
+	if x != nil {
+		return x.ExpectedProfit
+	}
+	return 0
+}
+
+func (x *BoxSpreadOpportunity) GetRiskAdjustedReturn() float64 {
+	if x != nil {
+		return x.RiskAdjustedReturn
+	}
+	return 0
+}
+
+func (x *BoxSpreadOpportunity) GetLiquidityScore() float64 {
+	if x != nil {
+		return x.LiquidityScore
+	}
+	return 0
+}
+
+func (x *BoxSpreadOpportunity) GetExecutionProbability() float64 {
+	if x != nil {
+		return x.ExecutionProbability
+	}
+	return 0
+}
+
+func (x *BoxSpreadOpportunity) GetDiscoveredTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.DiscoveredTime
+	}
+	return nil
+}
+
+// Strategy filter and limit parameters (box spread / opportunity screening).
+type StrategyParams struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	MinDaysToExpiry    int32                  `protobuf:"varint,1,opt,name=min_days_to_expiry,json=minDaysToExpiry,proto3" json:"min_days_to_expiry,omitempty"`
+	MaxDaysToExpiry    int32                  `protobuf:"varint,2,opt,name=max_days_to_expiry,json=maxDaysToExpiry,proto3" json:"max_days_to_expiry,omitempty"`
+	MinArbitrageProfit float64                `protobuf:"fixed64,3,opt,name=min_arbitrage_profit,json=minArbitrageProfit,proto3" json:"min_arbitrage_profit,omitempty"`
+	MinRoiPercent      float64                `protobuf:"fixed64,4,opt,name=min_roi_percent,json=minRoiPercent,proto3" json:"min_roi_percent,omitempty"`
+	MaxPositions       int32                  `protobuf:"varint,5,opt,name=max_positions,json=maxPositions,proto3" json:"max_positions,omitempty"`
+	MaxTotalExposure   float64                `protobuf:"fixed64,6,opt,name=max_total_exposure,json=maxTotalExposure,proto3" json:"max_total_exposure,omitempty"`
+	MaxBidAskSpread    float64                `protobuf:"fixed64,7,opt,name=max_bid_ask_spread,json=maxBidAskSpread,proto3" json:"max_bid_ask_spread,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *StrategyParams) Reset() {
+	*x = StrategyParams{}
+	mi := &file_messages_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StrategyParams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StrategyParams) ProtoMessage() {}
+
+func (x *StrategyParams) ProtoReflect() protoreflect.Message {
+	mi := &file_messages_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StrategyParams.ProtoReflect.Descriptor instead.
+func (*StrategyParams) Descriptor() ([]byte, []int) {
+	return file_messages_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *StrategyParams) GetMinDaysToExpiry() int32 {
+	if x != nil {
+		return x.MinDaysToExpiry
+	}
+	return 0
+}
+
+func (x *StrategyParams) GetMaxDaysToExpiry() int32 {
+	if x != nil {
+		return x.MaxDaysToExpiry
+	}
+	return 0
+}
+
+func (x *StrategyParams) GetMinArbitrageProfit() float64 {
+	if x != nil {
+		return x.MinArbitrageProfit
+	}
+	return 0
+}
+
+func (x *StrategyParams) GetMinRoiPercent() float64 {
+	if x != nil {
+		return x.MinRoiPercent
+	}
+	return 0
+}
+
+func (x *StrategyParams) GetMaxPositions() int32 {
+	if x != nil {
+		return x.MaxPositions
+	}
+	return 0
+}
+
+func (x *StrategyParams) GetMaxTotalExposure() float64 {
+	if x != nil {
+		return x.MaxTotalExposure
+	}
+	return 0
+}
+
+func (x *StrategyParams) GetMaxBidAskSpread() float64 {
+	if x != nil {
+		return x.MaxBidAskSpread
+	}
+	return 0
+}
+
 var File_messages_proto protoreflect.FileDescriptor
 
 const file_messages_proto_rawDesc = "" +
@@ -1965,7 +2304,37 @@ const file_messages_proto_rawDesc = "" +
 	"\tnet_debit\x18\x05 \x01(\x01R\bnetDebit\x12\x19\n" +
 	"\btrade_id\x18\x06 \x01(\tR\atradeId\x12;\n" +
 	"\vexecuted_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"executedAt*o\n" +
+	"executedAt\"\xee\x01\n" +
+	"\x0fYieldCurvePoint\x12$\n" +
+	"\x0edays_to_expiry\x18\x01 \x01(\x05R\fdaysToExpiry\x12!\n" +
+	"\fimplied_rate\x18\x02 \x01(\x01R\vimpliedRate\x12%\n" +
+	"\x0eeffective_rate\x18\x03 \x01(\x01R\reffectiveRate\x12\x1b\n" +
+	"\tnet_debit\x18\x04 \x01(\x01R\bnetDebit\x12\x1d\n" +
+	"\n" +
+	"spread_bps\x18\x05 \x01(\x01R\tspreadBps\x12/\n" +
+	"\x05as_of\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\x04asOf\"\xa7\x01\n" +
+	"\n" +
+	"YieldCurve\x12\x16\n" +
+	"\x06symbol\x18\x01 \x01(\tR\x06symbol\x12!\n" +
+	"\fstrike_width\x18\x02 \x01(\x01R\vstrikeWidth\x12%\n" +
+	"\x0ebenchmark_rate\x18\x03 \x01(\x01R\rbenchmarkRate\x127\n" +
+	"\x06points\x18\x04 \x03(\v2\x1f.ib.platform.v1.YieldCurvePointR\x06points\"\xd7\x02\n" +
+	"\x14BoxSpreadOpportunity\x12\x16\n" +
+	"\x06spread\x18\x01 \x01(\x01R\x06spread\x12)\n" +
+	"\x10confidence_score\x18\x02 \x01(\x01R\x0fconfidenceScore\x12'\n" +
+	"\x0fexpected_profit\x18\x03 \x01(\x01R\x0eexpectedProfit\x120\n" +
+	"\x14risk_adjusted_return\x18\x04 \x01(\x01R\x12riskAdjustedReturn\x12'\n" +
+	"\x0fliquidity_score\x18\x05 \x01(\x01R\x0eliquidityScore\x123\n" +
+	"\x15execution_probability\x18\x06 \x01(\x01R\x14executionProbability\x12C\n" +
+	"\x0fdiscovered_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x0ediscoveredTime\"\xc4\x02\n" +
+	"\x0eStrategyParams\x12+\n" +
+	"\x12min_days_to_expiry\x18\x01 \x01(\x05R\x0fminDaysToExpiry\x12+\n" +
+	"\x12max_days_to_expiry\x18\x02 \x01(\x05R\x0fmaxDaysToExpiry\x120\n" +
+	"\x14min_arbitrage_profit\x18\x03 \x01(\x01R\x12minArbitrageProfit\x12&\n" +
+	"\x0fmin_roi_percent\x18\x04 \x01(\x01R\rminRoiPercent\x12#\n" +
+	"\rmax_positions\x18\x05 \x01(\x05R\fmaxPositions\x12,\n" +
+	"\x12max_total_exposure\x18\x06 \x01(\x01R\x10maxTotalExposure\x12+\n" +
+	"\x12max_bid_ask_spread\x18\a \x01(\x01R\x0fmaxBidAskSpread*o\n" +
 	"\n" +
 	"AlertLevel\x12\x1b\n" +
 	"\x17ALERT_LEVEL_UNSPECIFIED\x10\x00\x12\x14\n" +
@@ -1990,7 +2359,7 @@ func file_messages_proto_rawDescGZIP() []byte {
 }
 
 var file_messages_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_messages_proto_goTypes = []any{
 	(AlertLevel)(0),               // 0: ib.platform.v1.AlertLevel
 	(OptionTypeEnum)(0),           // 1: ib.platform.v1.OptionTypeEnum
@@ -2012,21 +2381,25 @@ var file_messages_proto_goTypes = []any{
 	(*BoxSpreadLeg)(nil),          // 17: ib.platform.v1.BoxSpreadLeg
 	(*BoxSpreadScenario)(nil),     // 18: ib.platform.v1.BoxSpreadScenario
 	(*BoxSpreadExecution)(nil),    // 19: ib.platform.v1.BoxSpreadExecution
-	(*timestamppb.Timestamp)(nil), // 20: google.protobuf.Timestamp
+	(*YieldCurvePoint)(nil),       // 20: ib.platform.v1.YieldCurvePoint
+	(*YieldCurve)(nil),            // 21: ib.platform.v1.YieldCurve
+	(*BoxSpreadOpportunity)(nil),  // 22: ib.platform.v1.BoxSpreadOpportunity
+	(*StrategyParams)(nil),        // 23: ib.platform.v1.StrategyParams
+	(*timestamppb.Timestamp)(nil), // 24: google.protobuf.Timestamp
 }
 var file_messages_proto_depIdxs = []int32{
-	20, // 0: ib.platform.v1.MarketDataEvent.timestamp:type_name -> google.protobuf.Timestamp
-	20, // 1: ib.platform.v1.CandleSnapshot.updated:type_name -> google.protobuf.Timestamp
+	24, // 0: ib.platform.v1.MarketDataEvent.timestamp:type_name -> google.protobuf.Timestamp
+	24, // 1: ib.platform.v1.CandleSnapshot.updated:type_name -> google.protobuf.Timestamp
 	3,  // 2: ib.platform.v1.SymbolSnapshot.candle:type_name -> ib.platform.v1.CandleSnapshot
-	20, // 3: ib.platform.v1.HistoricPosition.closed_at:type_name -> google.protobuf.Timestamp
-	20, // 4: ib.platform.v1.Order.submitted_at:type_name -> google.protobuf.Timestamp
-	20, // 5: ib.platform.v1.StrategyDecision.created_at:type_name -> google.protobuf.Timestamp
-	20, // 6: ib.platform.v1.StrategySignal.timestamp:type_name -> google.protobuf.Timestamp
-	20, // 7: ib.platform.v1.RiskStatus.updated_at:type_name -> google.protobuf.Timestamp
+	24, // 3: ib.platform.v1.HistoricPosition.closed_at:type_name -> google.protobuf.Timestamp
+	24, // 4: ib.platform.v1.Order.submitted_at:type_name -> google.protobuf.Timestamp
+	24, // 5: ib.platform.v1.StrategyDecision.created_at:type_name -> google.protobuf.Timestamp
+	24, // 6: ib.platform.v1.StrategySignal.timestamp:type_name -> google.protobuf.Timestamp
+	24, // 7: ib.platform.v1.RiskStatus.updated_at:type_name -> google.protobuf.Timestamp
 	0,  // 8: ib.platform.v1.Alert.level:type_name -> ib.platform.v1.AlertLevel
-	20, // 9: ib.platform.v1.Alert.timestamp:type_name -> google.protobuf.Timestamp
-	20, // 10: ib.platform.v1.SystemSnapshot.generated_at:type_name -> google.protobuf.Timestamp
-	20, // 11: ib.platform.v1.SystemSnapshot.started_at:type_name -> google.protobuf.Timestamp
+	24, // 9: ib.platform.v1.Alert.timestamp:type_name -> google.protobuf.Timestamp
+	24, // 10: ib.platform.v1.SystemSnapshot.generated_at:type_name -> google.protobuf.Timestamp
+	24, // 11: ib.platform.v1.SystemSnapshot.started_at:type_name -> google.protobuf.Timestamp
 	13, // 12: ib.platform.v1.SystemSnapshot.metrics:type_name -> ib.platform.v1.Metrics
 	4,  // 13: ib.platform.v1.SystemSnapshot.symbols:type_name -> ib.platform.v1.SymbolSnapshot
 	5,  // 14: ib.platform.v1.SystemSnapshot.positions:type_name -> ib.platform.v1.Position
@@ -2035,18 +2408,21 @@ var file_messages_proto_depIdxs = []int32{
 	8,  // 17: ib.platform.v1.SystemSnapshot.decisions:type_name -> ib.platform.v1.StrategyDecision
 	12, // 18: ib.platform.v1.SystemSnapshot.alerts:type_name -> ib.platform.v1.Alert
 	10, // 19: ib.platform.v1.SystemSnapshot.risk:type_name -> ib.platform.v1.RiskStatus
-	20, // 20: ib.platform.v1.NatsEnvelope.timestamp:type_name -> google.protobuf.Timestamp
+	24, // 20: ib.platform.v1.NatsEnvelope.timestamp:type_name -> google.protobuf.Timestamp
 	1,  // 21: ib.platform.v1.OptionContract.option_type:type_name -> ib.platform.v1.OptionTypeEnum
 	16, // 22: ib.platform.v1.BoxSpreadLeg.long_call:type_name -> ib.platform.v1.OptionContract
 	16, // 23: ib.platform.v1.BoxSpreadLeg.short_call:type_name -> ib.platform.v1.OptionContract
 	16, // 24: ib.platform.v1.BoxSpreadLeg.long_put:type_name -> ib.platform.v1.OptionContract
 	16, // 25: ib.platform.v1.BoxSpreadLeg.short_put:type_name -> ib.platform.v1.OptionContract
-	20, // 26: ib.platform.v1.BoxSpreadExecution.executed_at:type_name -> google.protobuf.Timestamp
-	27, // [27:27] is the sub-list for method output_type
-	27, // [27:27] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	24, // 26: ib.platform.v1.BoxSpreadExecution.executed_at:type_name -> google.protobuf.Timestamp
+	24, // 27: ib.platform.v1.YieldCurvePoint.as_of:type_name -> google.protobuf.Timestamp
+	20, // 28: ib.platform.v1.YieldCurve.points:type_name -> ib.platform.v1.YieldCurvePoint
+	24, // 29: ib.platform.v1.BoxSpreadOpportunity.discovered_time:type_name -> google.protobuf.Timestamp
+	30, // [30:30] is the sub-list for method output_type
+	30, // [30:30] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_messages_proto_init() }
@@ -2060,7 +2436,7 @@ func file_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_messages_proto_rawDesc), len(file_messages_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   18,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

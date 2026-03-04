@@ -10,6 +10,8 @@
 #   ./scripts/run_linters.sh --parallel        # run independent linters in parallel (faster)
 #   LINT_PARALLEL=1 ./scripts/run_linters.sh   # same as --parallel
 #
+# ansible-lint: ANSIBLE_LINT_TIMEOUT (default 300s); use timeout(1)/gtimeout(1) when available.
+#
 # Caches (faster re-runs): cppcheck (.cppcheck-cache/), ESLint (web/.eslintcache),
 # Stylelint (web/.stylelintcache), SwiftLint (desktop/.swiftlint-cache), Infer (build/*/infer-out).
 # Set LINT_INFER_FULL=1 to force a full Infer run (delete infer-out first).
@@ -72,6 +74,9 @@ fi
 # Usage: LINT_MAX_LINES=80 ./scripts/run_linters.sh   or   LINT_QUIET=1 ./scripts/run_linters.sh
 [[ -n "${LINT_QUIET:-}" ]] && [[ -z "${LINT_MAX_LINES:-}" ]] && LINT_MAX_LINES=80
 LINT_MAX_LINES="${LINT_MAX_LINES:-0}"
+
+# ansible-lint can be slow (Galaxy/collections). Allow up to this many seconds; 0 = no limit.
+ANSIBLE_LINT_TIMEOUT="${ANSIBLE_LINT_TIMEOUT:-300}"
 
 info() {
   printf '\n\033[1m==> %s\033[0m\n' "$1"
@@ -384,10 +389,18 @@ run_ansible_lint() {
     return 0
   fi
   info "Running ansible-lint (ansible/ playbooks and roles)"
+  local timeout_cmd=()
+  if [[ "${ANSIBLE_LINT_TIMEOUT}" -gt 0 ]]; then
+    if command -v timeout >/dev/null 2>&1; then
+      timeout_cmd=(timeout "${ANSIBLE_LINT_TIMEOUT}")
+    elif command -v gtimeout >/dev/null 2>&1; then
+      timeout_cmd=(gtimeout "${ANSIBLE_LINT_TIMEOUT}")
+    fi
+  fi
   if [[ "${LINT_MAX_LINES}" -gt 0 ]]; then
-    run_limited ansible-lint ansible/ || return 1
+    run_limited "${timeout_cmd[@]}" ansible-lint ansible/ || return 1
   else
-    ansible-lint ansible/ || return 1
+    "${timeout_cmd[@]}" ansible-lint ansible/ || return 1
   fi
 }
 
@@ -404,6 +417,8 @@ run_cmake_lint() {
     cmake-lint "${files[@]}" || return 1
   fi
 }
+
+run_bandit() {
   info "Running bandit (Python)"
 
   local bandit_cmd=()

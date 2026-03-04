@@ -228,3 +228,42 @@ message BoxSpreadExecution {
   string trade_id = 6;
   google.protobuf.Timestamp executed_at = 7;
 }
+
+// Yield curve: points per expiry for a given symbol/strike width.
+message YieldCurvePoint {
+  int32 days_to_expiry = 1;
+  double implied_rate = 2;
+  double effective_rate = 3;
+  double net_debit = 4;
+  double spread_bps = 5;
+  google.protobuf.Timestamp as_of = 6;
+}
+
+message YieldCurve {
+  string symbol = 1;
+  double strike_width = 2;
+  double benchmark_rate = 3;
+  repeated YieldCurvePoint points = 4;
+}
+
+// Discovered opportunity (pre-trade) with confidence and execution metrics.
+message BoxSpreadOpportunity {
+  double spread = 1;
+  double confidence_score = 2;
+  double expected_profit = 3;
+  double risk_adjusted_return = 4;
+  double liquidity_score = 5;
+  double execution_probability = 6;
+  google.protobuf.Timestamp discovered_time = 7;
+}
+
+// Strategy filter and limit parameters (box spread / opportunity screening).
+message StrategyParams {
+  int32 min_days_to_expiry = 1;
+  int32 max_days_to_expiry = 2;
+  double min_arbitrage_profit = 3;
+  double min_roi_percent = 4;
+  int32 max_positions = 5;
+  double max_total_exposure = 6;
+  double max_bid_ask_spread = 7;
+}

@@ -20,7 +20,7 @@ if [ -f "$MCP_CONFIG" ]; then
 fi
 
 # Create optimized configuration
-cat > "$MCP_CONFIG" << 'EOF'
+cat >"$MCP_CONFIG" <<'EOF'
 {
   "mcpServers": {
     "filesystem": {
@@ -38,20 +38,6 @@ cat > "$MCP_CONFIG" << 'EOF'
         "@modelcontextprotocol/server-git",
         "--repository",
         "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"
-      ]
-    },
-    "semgrep": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@semgrep/mcp-server-semgrep"
-      ]
-    },
-    "agentic-tools": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@pimzino/agentic-tools-mcp"
       ]
     },
     "context7": {
@@ -80,7 +66,7 @@ cat > "$MCP_CONFIG" << 'EOF'
 EOF
 
 # Validate JSON
-if python3 -m json.tool "$MCP_CONFIG" > /dev/null 2>&1; then
+if python3 -m json.tool "$MCP_CONFIG" >/dev/null 2>&1; then
   echo "✅ Configuration updated successfully"
   echo "✅ JSON syntax validated"
   echo ""
