@@ -505,53 +505,6 @@ EOF
   log_success "Repository metadata generated with apt-ftparchive"
 }
 
-# Create Debian package for Project Management Automation MCP Server
-create_project_management_mcp_deb() {
-  log_info "Creating Debian package for Project Management Automation MCP Server"
-
-  local pkg_name="project-management-automation-mcp"
-  local pkg_version="0.1.0"
-  local pkg_dir="$PROJECT_ROOT/deb-packages/$pkg_name"
-
-  mkdir -p "$pkg_dir"/{DEBIAN,usr/{lib/python3/dist-packages,share/doc/$pkg_name,bin}}
-
-  # Build Python package
-  log_info "Building Project Management Automation MCP Server..."
-  cd "$PROJECT_ROOT/mcp-servers/project-management-automation"
-
-  # Install to staging directory
-  python3 -m pip install . --target "$pkg_dir/usr/lib/python3/dist-packages" --no-deps || {
-    log_warn "pip install failed, using setup.py"
-    python3 setup.py install --prefix="$pkg_dir/usr" --single-version-externally-managed --record="$pkg_dir/install.log"
-  }
-
-  # Create symlink for CLI
-  if [ -f "$pkg_dir/usr/lib/python3/dist-packages/bin/project-management-automation" ]; then
-    ln -s ../lib/python3/dist-packages/bin/project-management-automation "$pkg_dir/usr/bin/project-management-automation"
-  fi
-
-  # Create control file
-  cat > "$pkg_dir/DEBIAN/control" <<EOF
-Package: $pkg_name
-Version: $pkg_version
-Section: python
-Priority: optional
-Architecture: all
-Depends: python3 (>= 3.9), python3-mcp (>= 0.1.0), python3-pydantic (>= 2.0.0)
-Maintainer: IB Box Spread Platform Team <platform@example.com>
-Description: Project Management Automation MCP Server
- MCP server exposing project management automation tools.
- Provides documentation health checks, Todo2 analysis, duplicate detection,
- security scanning, and automation opportunity discovery.
-EOF
-
-  # Build .deb package
-  log_info "Building .deb package..."
-  dpkg-deb --build "$pkg_dir" "$REPO_DIR/pool/${pkg_name}_${pkg_version}_all.deb"
-
-  log_success "Created $pkg_name package"
-}
-
 # Create Debian package for Trading MCP Server
 create_trading_mcp_deb() {
   log_info "Creating Debian package for Trading MCP Server"
@@ -655,12 +608,9 @@ create_automation_tools_deb() {
 
   mkdir -p "$pkg_dir"/{DEBIAN,usr/{share/ib-box-spread/automation,bin,share/doc/$pkg_name}}
 
-  # Copy automation scripts
+  # Copy automation scripts (exarp-go is preferred; these are optional/legacy if present)
   log_info "Copying automation tools..."
   local automation_scripts=(
-    "automate_docs_health_v2.py"
-    "automate_todo2_alignment_v2.py"
-    "automate_todo2_duplicate_detection.py"
     "automate_dependency_security.py"
     "automate_todo_sync.py"
     "automate_automation_opportunities.py"
@@ -685,16 +635,18 @@ create_automation_tools_deb() {
     fi
   done
 
-  # Create wrapper scripts
+  # Create wrapper scripts (exarp-go preferred; call exarp-go -tool when available)
   cat > "$pkg_dir/usr/bin/ib-box-spread-docs-health" <<'EOF'
 #!/bin/bash
-exec python3 /usr/share/ib-box-spread/automation/automate_docs_health_v2.py "$@"
+# Prefer exarp-go: run exarp-go -tool docs_health (or use MCP in Cursor)
+exec exarp-go -tool docs_health "$@" 2>/dev/null || { echo "exarp-go required (install and ensure on PATH)" >&2; exit 1; }
 EOF
   chmod +x "$pkg_dir/usr/bin/ib-box-spread-docs-health"
 
   cat > "$pkg_dir/usr/bin/ib-box-spread-todo-align" <<'EOF'
 #!/bin/bash
-exec python3 /usr/share/ib-box-spread/automation/automate_todo2_alignment_v2.py "$@"
+# Prefer exarp-go: run exarp-go -tool todo2_alignment (or use MCP in Cursor)
+exec exarp-go -tool todo2_alignment "$@" 2>/dev/null || { echo "exarp-go required (install and ensure on PATH)" >&2; exit 1; }
 EOF
   chmod +x "$pkg_dir/usr/bin/ib-box-spread-todo-align"
 
@@ -734,7 +686,6 @@ main() {
   create_python_deb || log_warn "Failed to create Python package"
   create_web_deb || log_warn "Failed to create web package"
   create_rust_deb || log_warn "Failed to create Rust backend package"
-  create_project_management_mcp_deb || log_warn "Failed to create Project Management MCP package"
   create_trading_mcp_deb || log_warn "Failed to create Trading MCP package"
   create_build_tools_deb || log_warn "Failed to create build tools package"
   create_automation_tools_deb || log_warn "Failed to create automation tools package"
@@ -752,10 +703,9 @@ main() {
   log_info "  - synthetic-financing-platform (Python integration)"
   log_info "  - ib-box-spread-web (PWA dashboard)"
   log_info "  - ib-box-spread-backend (Rust services)"
-  log_info "  - project-management-automation-mcp (MCP server)"
   log_info "  - trading-mcp-server (Trading MCP server)"
   log_info "  - ib-box-spread-build-tools (Build scripts)"
-  log_info "  - ib-box-spread-automation-tools (Automation scripts)"
+  log_info "  - ib-box-spread-automation-tools (Automation scripts; exarp-go preferred)"
 }
 
 main "$@"

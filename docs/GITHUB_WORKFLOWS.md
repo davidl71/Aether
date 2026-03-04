@@ -174,9 +174,9 @@ Exarp uses GitHub Actions for continuous integration, testing, linting, security
 # Manual: GitHub Actions → Publish to PyPI → Run workflow (with version)
 ```
 
-**Setup**: See [PyPI Publishing Setup](PYPI_PUBLISHING_SETUP.md) for configuration.
+**Setup**: Use exarp-go for project automation. PyPI publishing for the deprecated Python MCP package was removed; see `docs/MCP_REQUIRED_SERVERS.md`.
 
-**Reference**: [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)
+- [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/) (for Python packages; exarp-go is used for project automation, not the deprecated Python MCP package)
 
 ---
 
@@ -435,7 +435,7 @@ jobs:
 
 ## Related Documentation
 
-- [PyPI Publishing Setup](PYPI_PUBLISHING_SETUP.md) - PyPI trusted publishing configuration
+- [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/) - For Python packages; project automation uses exarp-go (see docs/MCP_REQUIRED_SERVERS.md).
 - [Contributing Guide](../CONTRIBUTING.md) - Development guidelines
 
 ---

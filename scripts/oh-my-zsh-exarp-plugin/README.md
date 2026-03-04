@@ -1,8 +1,10 @@
 # Exarp Oh My Zsh Plugin
 
-Oh My Zsh plugin for Exarp project management automation tools.
+Uses **exarp-go** CLI when available. Python MCP server is deprecated.
 
-**Legacy notice:** This plugin invokes the **Python** Exarp package (`exarp_project_management`). For current setups, Exarp is typically provided by **exarp-go** (Go MCP server) in Cursor; use exarp-go MCP tools in Cursor for automation. This plugin remains for users who still have the Python package installed. See `docs/EXARP_GO_MIGRATION_LEFTOVERS.md`.
+Oh My Zsh plugin for Exarp project management automation (docs health, task alignment, security, etc.).
+
+**Deprecated:** The Python Exarp MCP server (`exarp_project_management`) is no longer used. This plugin now calls **exarp-go** only. Install exarp-go (e.g. `go install` or build from source) and ensure it is on PATH, or set `EXARP_GO_ROOT`. See `docs/MCP_REQUIRED_SERVERS.md` and `docs/EXARP_GO_MIGRATION_LEFTOVERS.md`.
 
 ## Installation
 
@@ -114,8 +116,7 @@ exm
 
 ## Requirements
 
-- Python 3.9+
-- Exarp installed: `pip install exarp-automation-mcp`
+- **exarp-go** on PATH, or `EXARP_GO_ROOT` set to the exarp-go repo, or `scripts/run_exarp_go.sh` in project root.
 
 ## Completion Support
 
@@ -209,15 +210,12 @@ You can customize the plugin by editing `exarp.plugin.zsh`:
 
 ### Commands not found
 
-1. Check if exarp is installed:
+1. Check if exarp-go is available:
    ```bash
    excheck
    ```
 
-2. Install exarp if needed:
-   ```bash
-   pip install exarp-automation-mcp
-   ```
+2. Install exarp-go (see `docs/MCP_REQUIRED_SERVERS.md`) or set `EXARP_GO_ROOT` to the exarp-go repo.
 
 ### Completion not working
 

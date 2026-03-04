@@ -2,49 +2,30 @@
 
 This document lists all **required** MCP servers for the project and provides installation/configuration guidance.
 
-**Status:** Exarp is now typically provided by **exarp-go** (Go MCP server). The Python/uvx options below are legacy; see `docs/EXARP_GO_MIGRATION_LEFTOVERS.md` for migration details.
+**Status:** Use **exarp-go** only. The Python MCP server (project-management-automation / exarp_automation_mcp) is **deprecated** and no longer used in this repo. See `docs/EXARP_GO_MIGRATION_LEFTOVERS.md` for context.
 
 ## Required Servers (8 total)
 
 All of these servers must be configured in `.cursor/mcp.json` for full project functionality:
 
-### 1. exarp (Project Management Automation)
+### 1. exarp-go (Project Management Automation)
 
-**Type**: exarp-go (Go binary) or legacy Python package
-**Purpose**: Project management automation tools (docs health, task alignment, duplicate detection, security scanning).
+**Type**: exarp-go (Go binary, installed or on PATH)
+**Purpose**: Project management automation (docs health, task alignment, duplicate detection, security scanning).
 
-**Current setup:** Prefer **exarp-go**. Configure in `.cursor/mcp.json` with the path to your exarp-go binary and `PROJECT_ROOT` env. Example:
+**Setup:** Configure in `.cursor/mcp.json` using the project's runner script so exarp-go sees the correct project root. Example (see `docs/MCP_CONFIG_EXAMPLE.json`):
 
 ```json
 {
   "exarp-go": {
-    "command": "/path/to/exarp-go/bin/exarp-go",
+    "command": "{{PROJECT_ROOT}}/scripts/run_exarp_go.sh",
     "args": [],
-    "env": { "PROJECT_ROOT": "/absolute/path/to/this/repo" }
+    "env": { "PROJECT_ROOT": "{{PROJECT_ROOT}}", "EXARP_WATCH": "0" }
   }
 }
 ```
 
-**Legacy (Python):** If using the Python package instead:
-
-```bash
-pip install -e /path/to/project-management-automation
-# or: pip install git+ssh://git@github.com/davidl71/project-management-automation.git@main
-```
-
-```json
-{
-  "exarp": {
-    "command": "python3",
-    "args": ["-m", "project_management_automation.server"],
-    "description": "Exarp - Project management automation tools"
-  }
-}
-```
-
-**See Also**:
-
-- [project-management-automation repository](https://github.com/davidl71/project-management-automation) - Separate repository with full documentation
+Ensure **exarp-go** is installed (on PATH or set `EXARP_GO_ROOT`). See `docs/PORTABLE_BUILD_AND_RUNNER.md`.
 
 ---
 
@@ -216,17 +197,18 @@ npx -y tractatus_thinking --version
 
 ## Installation Verification
 
-Test all servers manually:
+Test exarp-go:
 
 ```bash
-# exarp-go (if using Go binary)
-/path/to/exarp-go/bin/exarp-go --help
+# exarp-go (required)
+exarp-go --help
+# or via project script:
+./scripts/run_exarp_go.sh --help
+```
 
-# exarp (legacy Python package)
-python3 -m project_management_automation.server --help
+**npm packages:**
 
-# npm packages
-
+```bash
 npx -y @modelcontextprotocol/server-filesystem --version
 npx -y @pimzino/agentic-tools-mcp --version
 npx -y @upstash/context7-mcp --version
@@ -268,25 +250,24 @@ npx -y @modelcontextprotocol/server-sequential-thinking --version
 }
 ```
 
-### Issue 3: exarp server import errors
+### Issue 3: exarp-go not found or not starting
 
-**Cause**: Package not installed or wrong Python environment.
+**Cause**: exarp-go not on PATH or wrapper script not used.
 
 **Fix**:
 
-1. Install package: `pip install -e /path/to/project-management-automation`
-2. Verify installation: `python3 -m project_management_automation.server --help`
-3. Check Python path: Ensure correct Python environment is used in `.cursor/mcp.json`
+1. Install exarp-go (e.g. `go install` or build from source) and ensure it is on PATH, or set `EXARP_GO_ROOT` to the exarp-go repo and use `scripts/run_exarp_go.sh`.
+2. In `.cursor/mcp.json` use `"exarp-go"` with command `{{PROJECT_ROOT}}/scripts/run_exarp_go.sh` and env `PROJECT_ROOT`. See `docs/MCP_CONFIG_EXAMPLE.json` and `docs/PORTABLE_BUILD_AND_RUNNER.md`.
 
 ## Workflow Integration
 
 These servers work together in a recommended workflow:
 
 1. **tractatus_thinking** → Understand WHAT (structure/logic)
-2. **exarp** → Analyze and automate (project management)
+2. **exarp-go** → Analyze and automate (project management)
 3. **sequential_thinking** → Plan HOW (implementation)
 
-See [project-management-automation repository](https://github.com/davidl71/project-management-automation) for detailed workflow examples.
+See `docs/PORTABLE_BUILD_AND_RUNNER.md` and `docs/MCP_CONFIG_EXAMPLE.json` for exarp-go setup.
 
 ## See Also
 

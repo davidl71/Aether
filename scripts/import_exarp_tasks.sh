@@ -1,6 +1,7 @@
 #!/bin/bash
-# Import Exarp tasks from main repository to Exarp repository
-# Usage: ./scripts/import_exarp_tasks.sh [path-to-exarp-repo]
+# Import tasks from EXARP_TASKS_IMPORT.json into an exarp-go repo's .todo2 (legacy).
+# Usage: ./scripts/import_exarp_tasks.sh [path-to-exarp-go-repo]
+# We only use exarp-go; exarp-project-management is no longer used.
 
 set -e
 
@@ -14,36 +15,35 @@ if [ ! -f "$IMPORT_FILE" ]; then
     exit 1
 fi
 
-# Get Exarp repository path
+# Get exarp-go repository path
 if [ -n "$1" ]; then
     EXARP_REPO="$1"
 else
-    # Try common locations
-    if [ -d "$PROJECT_ROOT/../exarp-project-management" ]; then
-        EXARP_REPO="$PROJECT_ROOT/../exarp-project-management"
-    elif [ -d "$PROJECT_ROOT/../project-management-automation" ]; then
-        EXARP_REPO="$PROJECT_ROOT/../project-management-automation"
+    if [ -n "${EXARP_GO_ROOT:-}" ] && [ -d "$EXARP_GO_ROOT" ]; then
+        EXARP_REPO="$EXARP_GO_ROOT"
+    elif [ -d "$PROJECT_ROOT/../exarp-go" ]; then
+        EXARP_REPO="$PROJECT_ROOT/../exarp-go"
     else
-        echo "❌ Exarp repository not found"
-        echo "Usage: $0 [path-to-exarp-repo]"
-        echo "Or clone it: git clone git@github.com:davidl71/exarp-project-management.git"
+        echo "❌ exarp-go repository not found"
+        echo "Usage: $0 [path-to-exarp-go-repo]"
+        echo "Or set EXARP_GO_ROOT to the exarp-go repo root."
         exit 1
     fi
 fi
 
-# Verify Exarp repository
+# Verify exarp-go repository
 if [ ! -d "$EXARP_REPO" ]; then
-    echo "❌ Exarp repository not found: $EXARP_REPO"
+    echo "❌ exarp-go repository not found: $EXARP_REPO"
     exit 1
 fi
 
 if [ ! -d "$EXARP_REPO/.todo2" ]; then
-    echo "⚠️  Creating .todo2 directory in Exarp repository..."
+    echo "⚠️  Creating .todo2 directory in exarp-go repository..."
     mkdir -p "$EXARP_REPO/.todo2"
 fi
 
 # Copy import file
-echo "📋 Copying import file to Exarp repository..."
+echo "📋 Copying import file to exarp-go repository..."
 cp "$IMPORT_FILE" "$EXARP_REPO/EXARP_TASKS_IMPORT.json"
 echo "✅ Copied to: $EXARP_REPO/EXARP_TASKS_IMPORT.json"
 
@@ -54,7 +54,7 @@ if [ ! -f "$IMPORT_SCRIPT" ]; then
     mkdir -p "$EXARP_REPO/scripts"
     cat > "$IMPORT_SCRIPT" << 'PYTHON_SCRIPT'
 #!/usr/bin/env python3
-"""Import tasks from EXARP_TASKS_IMPORT.json into Exarp's Todo2 state."""
+"""Import tasks from EXARP_TASKS_IMPORT.json into Todo2 state (legacy; exarp-go repo)."""
 import json
 import sys
 from datetime import datetime
@@ -127,7 +127,7 @@ def import_tasks():
     with open(todo2_file, 'w') as f:
         json.dump(todo2_data, f, indent=2)
 
-    print(f"\n✅ Successfully imported {imported_count} tasks into Exarp repository")
+    print(f"\n✅ Successfully imported {imported_count} tasks")
     print(f"📁 Todo2 state: {todo2_file}")
 
     return imported_count
@@ -152,5 +152,5 @@ python3 "$IMPORT_SCRIPT"
 
 echo ""
 echo "✅ Import complete!"
-echo "📁 Exarp repository: $EXARP_REPO"
+echo "📁 exarp-go repository: $EXARP_REPO"
 echo "📋 Tasks imported as EXARP-1 through EXARP-5"

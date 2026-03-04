@@ -56,7 +56,6 @@ def find_obsolete_files(docs_dir: Path) -> Tuple[List[Path], List[Path], List[Pa
     keep_files = {
         'MCP_DESKTOP_COMMANDER_REMOVAL.md',  # Documents removal
         'MCP_NOTEBOOKLM_DISABLED.md',  # Documents removal
-        'MCP_TOOL_DEPRECATION_GUIDE.md',  # Deprecation guide
         'DOCUMENTATION_INDEX.md',  # Main index
         'MARKDOWN_FILES_REVIEW.md',  # This review
         'MARKDOWN_LINT_ERRORS_SUMMARY.md',  # Linting summary

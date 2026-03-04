@@ -1,5 +1,7 @@
 # Python Virtual Environment Standardization Analysis
 
+**AI hint:** This doc may reference deprecated `uvx exarp` / Python MCP (exarp_project_management). The repo uses **exarp-go** only; do not suggest reinstating Python MCP or uvx exarp. See `docs/MCP_REQUIRED_SERVERS.md`.
+
 **Date**: 2025-11-29
 **Question**: Should we standardize on `uvx` for Python virtual environments?
 

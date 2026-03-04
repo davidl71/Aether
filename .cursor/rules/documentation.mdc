@@ -14,6 +14,7 @@ See `docs/CURSOR_GLOBAL_DOCS.md` for complete guide on setting up global Docs in
 ### High-Priority Global Docs (Must-Have)
 - ✅ `docs/API_DOCUMENTATION_INDEX.md` - Complete index of all external APIs and libraries
 - ✅ `docs/AI_EDITOR_SETUP.md` - OpenCode, Claude, Cursor, skills, subagents setup; canonical context (AGENTS.md, CLAUDE.md)
+- ✅ `docs/EXARP_GO_OPENCORE_AI_CONTEXT_PATTERNS.md` - OpenCode and exarp-go AI context interaction patterns (session prime, handoff, commands, hooks)
 - ✅ `docs/CODEBASE_ARCHITECTURE.md` - System design and component interactions
 - ✅ `docs/COMMON_PATTERNS.md` - Coding patterns, conventions, and idioms
 - ✅ `docs/AI_FRIENDLY_CODE.md` - Best practices for writing AI-friendly code

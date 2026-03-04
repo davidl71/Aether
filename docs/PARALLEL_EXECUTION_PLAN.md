@@ -60,9 +60,7 @@ This document coordinates parallel execution of independent tasks across multipl
    - **Dependencies**: None
    - **Estimated Time**: 2-3 hours
    - **Deliverables**:
-     - `docs/EXARP_SCRIPT_DISCOVERY_INVESTIGATION.md`
-     - Findings and recommendations
-     - Potential upstream fix suggestions
+     - Findings and recommendations (Python MCP docs were removed; use exarp-go per docs/MCP_REQUIRED_SERVERS.md)
 
 **Coordination Notes**:
 

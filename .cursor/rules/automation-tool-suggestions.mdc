@@ -322,7 +322,7 @@ AI assistants should:
 - `.cursor/rules/project-automation.mdc` - Complete automation tool documentation
 - `.cursor/rules/todo2.mdc` - Todo2 workflow rules
 - `docs/AUTOMATION_TOOL_PROMPTING_DESIGN.md` - Full design document
-- [Exarp Repository](https://github.com/davidl71/exarp-project-management) - Tool usage guide and documentation
+- Use exarp-go (install via Go or `scripts/run_exarp_go.sh`); see `docs/MCP_REQUIRED_SERVERS.md`
 
 ---
 

@@ -61,7 +61,7 @@ This project provides standard context files that AI coding assistants automatic
 | Cursor / plugin skills | AGENTS.md, CLAUDE.md, `.cursor/rules/` | Use Skill tool; project root = workspace root |
 | Subagents (mcp_task, exarp-go, Claude agents) | Pass in prompt: project root + “Canonical guidelines: AGENTS.md, CLAUDE.md” | They do not auto-load workspace context |
 
-Full setup and command parity: [docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md). See also `.cursor/rules/ai-editors-skills-subagents.mdc`.
+Full setup and command parity: [docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md). See also [docs/EXARP_GO_OPENCORE_AI_CONTEXT_PATTERNS.md](docs/EXARP_GO_OPENCORE_AI_CONTEXT_PATTERNS.md) for OpenCode and exarp-go AI context patterns.
 
 ### Which rule when
 

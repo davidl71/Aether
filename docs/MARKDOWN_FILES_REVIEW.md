@@ -277,7 +277,6 @@ Files that may still reference the old name:
 
 - `docs/MCP_DESKTOP_COMMANDER_REMOVAL.md` - Documents removal
 - `docs/MCP_NOTEBOOKLM_DISABLED.md` - Documents removal
-- `docs/MCP_TOOL_DEPRECATION_GUIDE.md` - Deprecation guide
 
 ---
 

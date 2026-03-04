@@ -289,5 +289,4 @@ Potential additions:
 **See Also:**
 
 - `docs/TODO2_EXECUTION_CONTEXT.md` - Task execution context metadata
-- `docs/NIGHTLY_TASK_AUTOMATION.md` - Automated task processing
-- `mcp-servers/project-management-automation/` - MCP tools for TODO2
+- exarp-go MCP (see docs/MCP_REQUIRED_SERVERS.md) for task automation

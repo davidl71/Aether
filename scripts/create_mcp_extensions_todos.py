@@ -2,7 +2,10 @@
 """
 Create TODO2 tasks for Project Automation MCP Server extensions.
 
-Creates 10 TODO2 tasks for the recommended MCP server extensions.
+DEPRECATED: The Python project-management-automation MCP server is no longer used.
+Use exarp-go for project automation (see docs/MCP_REQUIRED_SERVERS.md).
+This script is kept for historical reference; tasks refer to mcp-servers/project-management-automation
+which is not part of this repo anymore.
 """
 
 import json

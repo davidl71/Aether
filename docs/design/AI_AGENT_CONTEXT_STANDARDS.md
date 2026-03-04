@@ -158,13 +158,11 @@ The following MCP resources should be available for AI agents:
 4. **Git Status** - Recent changes
 5. **Architecture Summary** - System overview
 
-### Implementation via Exarp MCP Server
+### Implementation via exarp-go
 
-Add resources to project-management-automation MCP server:
+Use exarp-go MCP server for project context (session prime, report, health). Resources are provided by exarp-go tools; no separate project-management-automation server.
 
-- `project://context/summary` - High-level project context
-- `project://context/architecture` - Architecture overview
-- `project://context/conventions` - Coding conventions
+- Session prime / report tools provide high-level context, architecture hints, and conventions.
 
 ---
 
