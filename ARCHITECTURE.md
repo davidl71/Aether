@@ -110,6 +110,7 @@ ib_box_spread_full_universal/
 
 ## Detailed Documentation
 
+- **What we track vs ignore**: `docs/planning/TRACKING_AND_GITIGNORE.md`
 - **API Reference**: `docs/API_DOCUMENTATION_INDEX.md`
 - **NATS Integration**: `docs/NATS_INTEGRATION_STATUS.md`
 - **Backend Design**: `docs/research/architecture/`

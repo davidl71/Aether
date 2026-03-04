@@ -1,0 +1,33 @@
+---
+# macOS (Homebrew) package list for devtools role
+# macOS uses system keychain for SSL; no update-ca-certificates step (exarp-go pattern).
+_ca_bundle_path: /etc/ssl/cert.pem
+_devtools_packages:
+  - jq
+  - go
+  - python
+  - curl
+  - act
+  - uv
+  - fswatch
+  - git-lfs
+  # C++ build and native CLI
+  - cmake
+  - ninja
+  - boost
+  - protobuf
+  - abseil
+  # Compiler cache (scripts/build_fast.sh; sccache preferred when present)
+  - ccache
+  - sccache
+  # Pre-commit / lint (matches .pre-commit-config.yaml)
+  - shellcheck
+  - cppcheck
+  - markdownlint-cli
+  # SQLite CLI and libs (exarp-go, MCP, local DBs)
+  - sqlite
+  # Optional: docs (BUILD_DOCS=ON) and NATS (ENABLE_NATS=ON)
+  - doxygen
+  - nats-server
+  # Rust toolchain (agents/, Rust backends)
+  - rust

@@ -2,6 +2,7 @@
 build/
 build-*/
 cmake-build-*/
+build-ramdisk
 
 # CMake generated files
 CMakeCache.txt
@@ -82,6 +83,10 @@ third_party/cache/
 third_party/IntelRDFPMathLib20U2/
 third_party/ib/
 ibapi_build/
+native/third_party/tws-api/
+native/third_party/nautilus/
+native/third_party/cache/
+native/third_party/IntelRDFPMathLib20U4/
 native/third_party/tws-api/IBJts/source/cppclient/client/build/
 native/third_party/tws-api/IBJts/source/cppclient/client/lib/
 native/third_party/IntelRDFPMathLib20U2/**
@@ -128,6 +133,12 @@ docs/TODO_SYNC_REPORT.md
 docs/*_REPORT.md
 docs/task_discovery_report.json
 !docs/*_COMPLETE.md
+
+# Generated code (reproducible at build; see docs/planning/TRACKING_AND_GITIGNORE.md)
+native/generated/
+python/generated/
+web/src/generated/
+web/src/proto/
 
 # Core dumps
 core

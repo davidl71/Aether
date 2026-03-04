@@ -1,0 +1,42 @@
+---
+# Debian/Ubuntu (apt) package list for devtools role
+_ca_bundle_path: /etc/ssl/certs/ca-certificates.crt
+_devtools_packages:
+  - ca-certificates
+  - python3
+  - python3-pip
+  - python3-venv
+  - python3-dev
+  - jq
+  - build-essential
+  - cmake
+  - ninja-build
+  - pkg-config
+  - curl
+  - inotify-tools
+  - git-lfs
+  # C++ build dependencies
+  - libboost-all-dev
+  - libprotobuf-dev
+  - protobuf-compiler
+  - libabsl-dev
+  - libblas-dev
+  - liblapack-dev
+  # libcurl for native HTTP client (find_package(CURL))
+  - libcurl4-openssl-dev
+  # Compiler cache for faster rebuilds (scripts/build_fast.sh)
+  - ccache
+  # Pre-commit / lint: shellcheck, markdownlint (Ruby gem for pre-commit)
+  - shellcheck
+  - cppcheck
+  - ruby
+  - ruby-dev
+  # SQLite CLI and dev headers (exarp-go, MCP, local DBs)
+  - sqlite3
+  - libsqlite3-dev
+  # Optional: docs (BUILD_DOCS=ON) and NATS (ENABLE_NATS=ON)
+  - doxygen
+  - nats-server
+  # Rust toolchain (agents/, Rust backends)
+  - cargo
+  - rustc

@@ -1,0 +1,13 @@
+---
+# Development inventory variables (pattern from exarp-go)
+# Override in -e or extra vars as needed.
+
+# Project (use env for portability)
+project_name: "ib_box_spread_full_universal"
+project_user: "{{ lookup('env', 'USER') | default(ansible_user_id | default('vagrant')) }}"
+project_path: "{{ lookup('env', 'HOME') | default('/Users/' + project_user) }}/Projects/trading/{{ project_name }}"
+
+# Optional roles — set to true to include in development.yml when roles are added
+# install_linters: false
+# install_security_scanners: false
+# install_ollama: false

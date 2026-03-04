@@ -1,0 +1,26 @@
+---
+# Development environment setup (pattern from exarp-go development.yml)
+# Usage: ansible-playbook -i inventories/development playbooks/development.yml [--tags devtools] [--limit localhost]
+
+- name: Setup development environment
+  hosts: development
+  gather_facts: true
+  become: false
+  vars:
+    ansible_python_interpreter: auto
+
+  roles:
+    - role: devtools
+      tags:
+        - devtools
+        - always
+
+  tasks:
+    - name: Display development environment summary
+      ansible.builtin.debug:
+        msg:
+          - "Development setup complete"
+          - "Project: {{ project_name }}"
+          - "Path: {{ project_path }}"
+          - "Devtools role applied (cmake, ninja, boost, protobuf, uv, linters, etc.)"
+      tags: always
