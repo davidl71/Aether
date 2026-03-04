@@ -205,8 +205,8 @@ export async function loadSharedConfig(
     config = {
       version: '1.0.0',
       dataSources: {
-        primary: 'alpaca',
-        fallback: [],
+        primary: 'ib',  // Changed from 'alpaca' to 'ib' for real IBKR data
+        fallback: ['alpaca'],
         sources: {},
       },
       services: {},

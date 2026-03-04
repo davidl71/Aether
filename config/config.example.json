@@ -4,13 +4,13 @@
   // ============================================================================
   "tws": {
     "host": "127.0.0.1", // TWS/Gateway hostname (localhost)
-    "port": 7497, // Port: 7497 = Paper Trading (safe), 7496 = Live Trading (real money!)
+    "port": 7497, // Port: 7497 = Paper Trading (safe, REAL DATA), 7496 = Live Trading (REAL MONEY!)
     "client_id": 1, // Unique client ID (1-32), must be unique per connection
     "connection_timeout_ms": 60000, // Connection timeout in milliseconds (60 seconds - timeout for waiting for nextValidId after socket connection)
     "auto_reconnect": true, // Automatically reconnect on disconnection
     "reconnect_delay_ms": 3000, // Delay before reconnection attempt (milliseconds)
     "log_raw_messages": false, // Log raw API messages/data for debugging (verbose - use with "trace" log_level)
-    "use_mock": false // Use mock TWS client (no live IB connection)
+    "use_mock": false // Use mock TWS client (no live IB connection, set to true for simulated data)
   },
 
   // ============================================================================
@@ -84,11 +84,11 @@
   "continue_on_error": false, // Continue running after errors (false = exit on error)
 
   // ============================================================================
-  // Broker Selection (Primary integration defaults to Alpaca)
+  // Broker Selection (Primary integration defaults to IB for real data)
   // ============================================================================
   "broker": {
-    "primary": "ALPACA", // Options: "ALPACA", "IB"
-    "priorities": ["mock", "alpaca", "ib", "fibi", "meitav", "ibi", "discount"]
+    "primary": "IB", // Options: "IB", "ALPACA" (changed to IB for real IBKR data)
+    "priorities": ["ib", "alpaca", "fibi", "meitav", "ibi", "discount", "mock"]
   },
 
   // ============================================================================
@@ -140,6 +140,28 @@
     // Performance settings
     "cache_duration_seconds": 300, // Cache duration (5 minutes)
     "rate_limit_per_second": 10 // Max requests per second
+  },
+
+  // ============================================================================
+  // TUI Configuration (Python Textual Interface)
+  // ============================================================================
+  "tui": {
+    "provider_type": "rest", // "mock", "rest", "file", "ibkr_rest" (changed from mock to rest for real data)
+    "rest_endpoint": "http://localhost:8002/api/v1/snapshot", // IB service endpoint
+    "update_interval_ms": 1000,
+    "refresh_rate_ms": 500,
+    "rest_timeout_ms": 5000,
+    "rest_verify_ssl": false,
+    "ibkr_rest": {
+      "base_url": "https://localhost:5000/v1/portal",
+      "account_id": "",
+      "verify_ssl": false,
+      "timeout_ms": 5000
+    },
+    "display": {
+      "show_colors": true,
+      "show_footer": true
+    }
   },
 
   // ============================================================================

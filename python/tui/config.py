@@ -31,8 +31,11 @@ class TUIConfig:
     MIGRATION NOTE: This can be serialized to JSON and loaded in C++
     using nlohmann/json
     """
-    provider_type: str = "mock"  # "mock", "rest", "file", "ibkr_rest", "livevol", "nautilus"
-    rest_endpoint: str = "http://localhost:8080/api/v1/snapshot"
+
+    provider_type: str = (
+        "rest"  # "mock", "rest", "file", "ibkr_rest", "livevol", "nautilus"
+    )
+    rest_endpoint: str = "http://localhost:8002/api/v1/snapshot"  # IB service port (changed from 8080 Rust backend to 8002 IB)
     update_interval_ms: int = 1000
     refresh_rate_ms: int = 500
     rest_timeout_ms: int = 5000
@@ -63,7 +66,7 @@ class TUIConfig:
         config_dir = Path(file_path).parent
         config_dir.mkdir(parents=True, exist_ok=True)
 
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             json.dump(self.to_dict(), f, indent=2)
         logger.info(f"Configuration saved to {file_path}")
 
@@ -75,7 +78,7 @@ class TUIConfig:
             return cls()
 
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 data = json.load(f)
             return cls.from_dict(data)
         except Exception as e:
@@ -116,11 +119,23 @@ def load_config() -> TUIConfig:
         shared_config = SharedConfigLoader.load_config()
         if shared_config.tui:
             # Convert shared config TUI section (dataclass) to TUI TUIConfig
-            shared_tui = shared_config.tui  # This is a TUIConfig dataclass from shared_config_loader
+            shared_tui = (
+                shared_config.tui
+            )  # This is a TUIConfig dataclass from shared_config_loader
 
             # Extract ibkr_rest dict fields (shared config uses Dict[str, Any])
-            ibkr_rest_dict = shared_tui.ibkr_rest if hasattr(shared_tui, 'ibkr_rest') and isinstance(shared_tui.ibkr_rest, dict) else {}
-            display_dict = shared_tui.display if hasattr(shared_tui, 'display') and isinstance(shared_tui.display, dict) else {}
+            ibkr_rest_dict = (
+                shared_tui.ibkr_rest
+                if hasattr(shared_tui, "ibkr_rest")
+                and isinstance(shared_tui.ibkr_rest, dict)
+                else {}
+            )
+            display_dict = (
+                shared_tui.display
+                if hasattr(shared_tui, "display")
+                and isinstance(shared_tui.display, dict)
+                else {}
+            )
 
             config = TUIConfig(
                 provider_type=shared_tui.provider_type,
@@ -130,7 +145,9 @@ def load_config() -> TUIConfig:
                 rest_timeout_ms=shared_tui.rest_timeout_ms,
                 rest_verify_ssl=shared_tui.rest_verify_ssl,
                 file_path=shared_tui.file_path,
-                ibkr_rest_base_url=ibkr_rest_dict.get("baseUrl", "https://localhost:5000/v1/portal"),
+                ibkr_rest_base_url=ibkr_rest_dict.get(
+                    "baseUrl", "https://localhost:5000/v1/portal"
+                ),
                 ibkr_rest_account_id=ibkr_rest_dict.get("accountId", ""),
                 ibkr_rest_verify_ssl=ibkr_rest_dict.get("verifySsl", False),
                 ibkr_rest_timeout_ms=ibkr_rest_dict.get("timeoutMs", 5000),
@@ -142,7 +159,9 @@ def load_config() -> TUIConfig:
             _apply_env_overrides(config)
             return config
     except Exception as e:
-        logger.debug(f"Shared config not available ({e}), falling back to legacy config")
+        logger.debug(
+            f"Shared config not available ({e}), falling back to legacy config"
+        )
 
     # Fallback to legacy config file
     config_path = TUIConfig.get_config_path()
