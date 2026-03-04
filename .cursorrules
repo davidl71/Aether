@@ -32,6 +32,7 @@ See `.cursor/commands.json` or `docs/CURSOR_PROJECT_COMMANDS.md` for complete co
 - `build:debug` - Build in debug mode
 - `build:release` - Build in release mode
 - `build:universal` - Build universal binary
+- `build:ai-friendly` - Quiet build with JSON result (for tools/AI); `build:ai-friendly-json` for stdout-only JSON
 - `test:run` - Run all tests
 - `lint:run` - Run all linters
 
@@ -40,7 +41,7 @@ See `.cursor/commands.json` or `docs/CURSOR_PROJECT_COMMANDS.md` for complete co
 ### Dependencies
 - **TWS API**: `native/third_party/tws-api/IBJts/source/cppclient/client/`
 - **Intel Decimal**: `native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
-- **Protocol Buffers**: System-installed (`/usr/local/lib/libprotobuf.dylib`)
+- **Protocol Buffers**: System-installed (`/usr/local/lib/libprotobuf.dylib`). C++ from `proto/messages.proto` is generated at build time (CMake runs `protoc`); run `./proto/generate.sh` only for Python/Go/TypeScript or to pre-generate.
 - **Abseil**: System-installed (`/usr/local/lib/libabsl*.dylib`)
 
 ## Python Package Management
@@ -198,7 +199,7 @@ This project uses multiple MCP (Model Context Protocol) servers to enhance AI ca
 
 1. Run linters: `lint:run` (or `./scripts/run_linters.sh`)
 2. Run tests: `test:run` (or `ctest --output-on-failure`)
-3. Verify build: `build:debug` (or `cmake --build build`)
+3. Verify build: `build:debug` (or `cmake --build build`). For quiet + JSON result: `build:ai-friendly` or `./scripts/build_ai_friendly.sh --json-only`.
 4. Check for credentials/secrets (manual - no automation)
 5. Update documentation if needed
 6. Add static analysis annotations where appropriate

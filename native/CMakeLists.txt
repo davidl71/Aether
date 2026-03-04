@@ -91,6 +91,7 @@ option(ENABLE_CCACHE "Enable ccache compilation caching" OFF)
 option(ENABLE_SCCACHE "Enable sccache compilation caching" OFF)
 option(ENABLE_NATIVE_CLI "Build the native ib_box_spread CLI" ON)
 option(TWS_API_BUILD_VENDOR "Build TWS API library from source (ibapi_cmake)" OFF)
+option(BUILD_AI_FRIENDLY "Quieter build + JSON compiler diagnostics for tools/AI" OFF)
 
 # ============================================================================
 # C++ Standard and Compiler Requirements
@@ -204,6 +205,18 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     if(ENABLE_TSAN)
         add_compile_options(-fsanitize=thread)
         add_link_options(-fsanitize=thread)
+    endif()
+
+    # AI-friendly: emit compiler diagnostics as JSON (parseable by tools/AI)
+    if(BUILD_AI_FRIENDLY)
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+            add_compile_options(-fdiagnostics-format=json)
+            message(STATUS "Build AI-friendly: Clang JSON diagnostics enabled")
+        elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            # GCC 13+ supports -fdiagnostics-format=json
+            add_compile_options(-fdiagnostics-format=json)
+            message(STATUS "Build AI-friendly: GCC JSON diagnostics enabled")
+        endif()
     endif()
 endif()
 
@@ -387,6 +400,10 @@ if(NOT BOOST_FOUND_DIRECTLY)
 endif()
 
 # QuantLib via FetchContent
+# CMP0167: Keep FindBoost (OLD) so QuantLib's find_package(Boost) does not warn when CMake has removed FindBoost (NEW).
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 OLD)
+endif()
 set(QUANTLIB_REPOSITORY "https://github.com/lballabio/QuantLib.git")
 # Reduce build and optional deps when used as subproject
 set(QL_BUILD_EXAMPLES OFF CACHE BOOL "Build QuantLib examples" FORCE)
@@ -500,25 +517,38 @@ if(BUILD_TESTING)
 endif()
 
 # ====================================================================================
-# Protobuf (generated from proto/messages.proto via proto/generate.sh)
+# Protobuf (generated from proto/messages.proto; regenerated at build if needed)
 # ============================================================================
 set(PROTO_GENERATED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/generated")
-if(EXISTS "${PROTO_GENERATED_DIR}/messages.pb.cc")
-    find_package(Protobuf QUIET)
-    if(Protobuf_FOUND)
-        add_library(platform_proto STATIC
-            "${PROTO_GENERATED_DIR}/messages.pb.cc"
-        )
-        target_include_directories(platform_proto PUBLIC
-            "${PROTO_GENERATED_DIR}"
-        )
-        target_link_libraries(platform_proto PUBLIC protobuf::libprotobuf)
-        message(STATUS "Protobuf generated code: ${PROTO_GENERATED_DIR} (run proto/generate.sh to regenerate)")
-    else()
-        message(WARNING "Generated proto found but Protobuf not found. Install: brew install protobuf")
-    endif()
+set(_platform_proto_src "${CMAKE_SOURCE_DIR}/proto/messages.proto")
+find_package(Protobuf QUIET)
+if(Protobuf_FOUND)
+    set(_platform_pb_cc "${PROTO_GENERATED_DIR}/messages.pb.cc")
+    set(_platform_pb_h  "${PROTO_GENERATED_DIR}/messages.pb.h")
+    add_custom_command(
+        OUTPUT "${_platform_pb_cc}" "${_platform_pb_h}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${PROTO_GENERATED_DIR}"
+        COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+            -I "${CMAKE_SOURCE_DIR}/proto"
+            --cpp_out="${PROTO_GENERATED_DIR}"
+            "${_platform_proto_src}"
+        DEPENDS "${_platform_proto_src}"
+        COMMENT "Generating C++ protobuf from proto/messages.proto"
+    )
+    add_custom_target(generate_platform_proto
+        DEPENDS "${_platform_pb_cc}" "${_platform_pb_h}"
+    )
+    add_library(platform_proto STATIC "${_platform_pb_cc}")
+    add_dependencies(platform_proto generate_platform_proto)
+    target_include_directories(platform_proto PUBLIC "${PROTO_GENERATED_DIR}")
+    target_link_libraries(platform_proto PUBLIC protobuf::libprotobuf)
+    message(STATUS "Protobuf: C++ codegen from proto/messages.proto (run at build)")
 else()
-    message(STATUS "Proto generated code not found at ${PROTO_GENERATED_DIR}. Run ./proto/generate.sh from repo root to enable.")
+    if(EXISTS "${PROTO_GENERATED_DIR}/messages.pb.cc")
+        message(WARNING "Generated proto found but Protobuf not found. Install: brew install protobuf")
+    else()
+        message(STATUS "Protobuf not found; platform_proto disabled. Install: brew install protobuf")
+    endif()
 endif()
 
 # Proto adapter (types <-> proto at boundaries); only when platform_proto exists
@@ -595,6 +625,12 @@ set(
     "${DEFAULT_TWS_API_INCLUDE_DIR}"
     CACHE PATH "Path to TWS API include directory"
 )
+# Vendored GitHub layout: third_party/tws-api/source/cppclient/client exists; enable build from source
+set(_tws_vendor_client "${TWS_API_VENDOR_ROOT}/client")
+if(EXISTS "${_tws_vendor_client}")
+  set(_tws_api_use_github_dir ON)
+  message(STATUS "Using TWS API from vendored GitHub layout: ${TWS_API_VENDOR_ROOT}")
+endif()
 endif()
 
 if(DEFINED IBAPI_INCLUDE_DIR AND NOT IBAPI_INCLUDE_DIR STREQUAL "")
@@ -723,13 +759,6 @@ if(TWS_API_BUILD_VENDOR)
     if(_tws_api_use_github_dir)
         list(APPEND _twsapi_cmake_args -DTWS_API_CLIENT_DIR=${_tws_api_client_dir})
     endif()
-    ExternalProject_Add(twsapi_external
-        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ibapi_cmake"
-        BINARY_DIR "${TWS_API_EXTERNAL_BINARY_DIR}"
-        CMAKE_ARGS ${_twsapi_cmake_args}
-        INSTALL_COMMAND ""
-    )
-
     if(APPLE)
         set(_twsapi_lib_filename "libtwsapi.dylib")
         if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -742,6 +771,13 @@ if(TWS_API_BUILD_VENDOR)
         endif()
     endif()
     set(_twsapi_lib_path "${TWS_API_EXTERNAL_BINARY_DIR}/lib/${_twsapi_lib_filename}")
+    ExternalProject_Add(twsapi_external
+        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ibapi_cmake"
+        BINARY_DIR "${TWS_API_EXTERNAL_BINARY_DIR}"
+        CMAKE_ARGS ${_twsapi_cmake_args}
+        INSTALL_COMMAND ""
+        BUILD_BYPRODUCTS "${_twsapi_lib_path}"
+    )
     set(
         TWS_API_LIB
         "${_twsapi_lib_path}"

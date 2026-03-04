@@ -8,7 +8,20 @@ ROOT_DIR="$(dirname "$PROTO_DIR")"
 
 echo "=== Protobuf codegen ==="
 
-# Python (betterproto)
+# C++ (platform proto only; used by native/ with system protobuf)
+CPP_OUT="$ROOT_DIR/native/generated"
+if command -v protoc >/dev/null 2>&1; then
+  echo "[c++] generating..."
+  mkdir -p "$CPP_OUT"
+  protoc -I "$PROTO_DIR" \
+    --cpp_out="$CPP_OUT" \
+    "$PROTO_DIR/messages.proto"
+  echo "[c++] wrote $CPP_OUT/messages.pb.{h,cc} (use same protoc version as build)"
+else
+  echo "[c++] protoc not found, skipping"
+fi
+
+echo ""
 PYTHON_OUT="$ROOT_DIR/python/generated"
 mkdir -p "$PYTHON_OUT"
 if command -v protoc >/dev/null 2>&1; then

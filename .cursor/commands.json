@@ -81,6 +81,18 @@
       "category": "build"
     },
     {
+      "name": "build:ai-friendly",
+      "description": "Quiet build with JSON result (for tools/AI). Use --json-only for stdout-only JSON.",
+      "command": "./scripts/build_ai_friendly.sh",
+      "category": "build"
+    },
+    {
+      "name": "build:ai-friendly-json",
+      "description": "Build and print only JSON result to stdout (quiet, parseable)",
+      "command": "./scripts/build_ai_friendly.sh --json-only",
+      "category": "build"
+    },
+    {
       "name": "build:release",
       "description": "Build project in release mode (ARM64)",
       "command": "cmake --build --preset macos-arm64-release",
@@ -271,6 +283,12 @@
       "description": "Generate project scorecard to custom path (provide path as ARG)",
       "command": "python3 python/tools/generate_project_scorecard.py \"$ARG\"",
       "category": "docs"
+    },
+    {
+      "name": "git:pull-safe",
+      "description": "Pull with uncommitted changes: stash → pull → pop",
+      "command": "./scripts/git_pull_safe.sh",
+      "category": "git"
     }
   ]
 }

@@ -63,6 +63,26 @@ Build universal binary (auto-detects architecture).
 
 ---
 
+### `build:ai-friendly`
+
+Quiet build with JSON result (for tools/AI). Build output goes to `logs/build_ai_friendly.log`; one JSON object is printed (success, exit_code, duration_sec, log_path, errors).
+
+**Command**: `./scripts/build_ai_friendly.sh`
+
+**Use When**: Scripts or AI need parseable build result, or you want minimal console output
+
+---
+
+### `build:ai-friendly-json`
+
+Same as `build:ai-friendly` but prints only the JSON line to stdout (no log tail on failure).
+
+**Command**: `./scripts/build_ai_friendly.sh --json-only`
+
+**Use When**: Piping build result to a tool (e.g. `./scripts/build_ai_friendly.sh --json-only | jq .`)
+
+---
+
 ### `build:portable`
 
 Portable build across macOS (Intel/ARM) and Linux: auto-detects OS and arch and uses the matching CMake preset.

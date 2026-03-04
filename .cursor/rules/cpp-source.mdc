@@ -24,5 +24,6 @@ When editing C++ source or header files in `native/`:
 - All pricing and risk functions must have corresponding Catch2 tests
 
 ## After Changes
-- Build: `ninja -C build`
+- Build: `ninja -C build` or `build:debug`. For quiet + JSON: `build:ai-friendly` or `./scripts/build_ai_friendly.sh --json-only`.
 - Test: `ctest --test-dir build --output-on-failure`
+- **Proto:** C++ from `proto/messages.proto` is generated at build by CMake; no need to run `./proto/generate.sh` for C++.

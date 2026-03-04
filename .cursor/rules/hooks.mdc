@@ -1,10 +1,15 @@
 ---
-description: Git hooks and automation hooks (pre-commit, exarp-go setup_hooks)
+description: Git hooks and automation hooks (pre-commit, exarp-go setup_hooks, Cursor session hooks)
 alwaysApply: false
-globs: ".pre-commit-config.yaml,scripts/setup_pre_commit_hook.sh"
+globs: ".pre-commit-config.yaml,scripts/setup_pre_commit_hook.sh,.cursor/hooks/*,scripts/git-hooks/*"
 ---
 
 # Hooks
+
+## Cursor session hooks (.cursor/hooks/)
+
+- **session-prime.sh:** Runs when a new Composer conversation starts (sessionStart). Calls exarp-go session prime for this project via `scripts/run_exarp_go.sh` and returns `additional_context` (task summary, suggested next, handoff) so the AI has context without being asked. See `.cursor/hooks/README.md`.
+- **Requires:** exarp-go (PATH or EXARP_GO_ROOT), optional `jq`. Cursor must have session-start / context hooks enabled (see Cursor docs).
 
 ## Pre-commit (framework)
 
@@ -25,14 +30,18 @@ See `docs/LINT_AND_AUTOMATION_MATRIX.md` for how pre-commit relates to `run_lint
 
 - **Tool:** exarp-go MCP `setup_hooks` (action: git or patterns)
 - **Use:** Install git hooks or automation patterns for exarp-go (e.g. task alignment, docs health). Call via Cursor with `workingDirectory` set to this project’s root.
-- **Docs:** `docs/EXARP_TOOLS_VERIFICATION.md` (setup_hooks), `.cursor/rules/project-automation.mdc`.
+- **Docs:** `docs/EXARP_TOOLS_VERIFICATION.md` (setup_hooks), `.cursor/rules/project-automation.mdc`. See also `docs/EXARP_GO_GIT_HOOKS_LEARNINGS.md`.
 
 ## Summary
 
 | Hook type | Config / script | Install / trigger |
 |-----------|-----------------|-------------------|
+| Cursor sessionStart | `.cursor/hooks/session-prime.sh` | Automatic when Composer starts (if Cursor hooks enabled) |
 | Pre-commit (format, shell) | `.pre-commit-config.yaml` | `pre-commit install` |
+| Versioned hooks (Co-authored-by, etc.) | `scripts/git-hooks/` | `git config core.hooksPath scripts/git-hooks` |
 | Docs validation (optional) | `scripts/setup_pre_commit_hook.sh` | Run script once |
 | exarp-go (git/patterns) | exarp-go MCP | Use `setup_hooks` tool in Cursor |
+
+**Build / proto:** C++ from `proto/messages.proto` is generated at build by CMake. For quiet + JSON build result use `build:ai-friendly` or `./scripts/build_ai_friendly.sh` (see `.cursor/rules/just-cmake-shortcuts.mdc`).
 
 See also: `docs/LINT_AND_AUTOMATION_MATRIX.md`, `docs/AI_EDITOR_SETUP.md` (Hooks section).

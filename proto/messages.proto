@@ -168,6 +168,48 @@ message NatsEnvelope {
 // Box Spread
 // ---------------------------------------------------------------------------
 
+enum OptionTypeEnum {
+  OPTION_TYPE_UNSPECIFIED = 0;
+  OPTION_TYPE_CALL = 1;
+  OPTION_TYPE_PUT = 2;
+}
+
+message OptionContract {
+  string symbol = 1;
+  string expiry = 2;
+  double strike = 3;
+  OptionTypeEnum option_type = 4;
+  string exchange = 5;
+  string local_symbol = 6;
+}
+
+message BoxSpreadLeg {
+  OptionContract long_call = 1;
+  OptionContract short_call = 2;
+  OptionContract long_put = 3;
+  OptionContract short_put = 4;
+  double net_debit = 5;
+  double theoretical_value = 6;
+  double arbitrage_profit = 7;
+  double roi_percent = 8;
+  double long_call_price = 9;
+  double short_call_price = 10;
+  double long_put_price = 11;
+  double short_put_price = 12;
+  double long_call_bid_ask_spread = 13;
+  double short_call_bid_ask_spread = 14;
+  double long_put_bid_ask_spread = 15;
+  double short_put_bid_ask_spread = 16;
+  double buy_net_debit = 17;
+  double buy_profit = 18;
+  double buy_implied_rate = 19;
+  double sell_net_credit = 20;
+  double sell_profit = 21;
+  double sell_implied_rate = 22;
+  double buy_sell_disparity = 23;
+  double put_call_parity_violation = 24;
+}
+
 message BoxSpreadScenario {
   string symbol = 1;
   double strike_width = 2;

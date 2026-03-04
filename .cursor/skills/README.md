@@ -1,0 +1,16 @@
+# Project skills
+
+Reusable workflows and checklists for this repo. Use by opening or @-mentioning a skill file when asking the AI to perform the task.
+
+**Canonical context:** AGENTS.md and CLAUDE.md in repo root. Skills reference these and project scripts/commands.
+
+| Skill | File | When to use |
+|-------|------|--------------|
+| **When to use subagents** | [when-to-use-subagents.md](when-to-use-subagents.md) | Code review, refactor, tests, trading audit, tasks/reports — which subagent or exarp-go to use |
+| Pull with uncommitted changes | [git-pull-with-wip.md](git-pull-with-wip.md) | Before pulling; you have local WIP |
+| Add native C++ module | [add-native-module.md](add-native-module.md) | Adding a new .cpp/.h and test |
+| Before commit | [before-commit.md](before-commit.md) | Checklist before committing |
+| Trading safety | [trading-safety.md](trading-safety.md) | Any change touching orders, config, or live trading |
+| Build from clean | [build-from-clean.md](build-from-clean.md) | Clean configure + build (deps, presets) |
+
+**Commands:** Many of these map to [.cursor/commands.json](../commands.json) (e.g. `git:pull-safe`, `build:debug`, `build:ai-friendly`, `test:run`, `lint:run`).
