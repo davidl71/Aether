@@ -31,6 +31,12 @@ endfunction()
 
 cmake_minimum_required(VERSION 3.21)
 
+# Suppress CMP0167 warning from QuantLib's find_package(Boost) (CMake 3.30+ removed FindBoost;
+# we keep OLD behavior so FetchContent QuantLib builds without warning).
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 OLD)
+endif()
+
 # ============================================================================
 # macOS SDK / Toolchain Fix (must be before project() for correct compiler checks)
 # On macOS 26 (Tahoe) and some CLT installs, the toolchain may ship without
@@ -400,10 +406,6 @@ if(NOT BOOST_FOUND_DIRECTLY)
 endif()
 
 # QuantLib via FetchContent
-# CMP0167: Keep FindBoost (OLD) so QuantLib's find_package(Boost) does not warn when CMake has removed FindBoost (NEW).
-if(POLICY CMP0167)
-    cmake_policy(SET CMP0167 OLD)
-endif()
 set(QUANTLIB_REPOSITORY "https://github.com/lballabio/QuantLib.git")
 # Reduce build and optional deps when used as subproject
 set(QL_BUILD_EXAMPLES OFF CACHE BOOL "Build QuantLib examples" FORCE)
