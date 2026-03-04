@@ -1,0 +1,35 @@
+#!/bin/sh
+# Pre-commit hook: run exarp-go docs health + multi-language dependency security scan.
+# Uses scan_dependency_security (Python/Rust/npm etc.); if exarp-go only has Go-only "security scan",
+# that failure is skipped so commit is not blocked. Uses scripts/run_exarp_go.sh so PROJECT_ROOT is this repo.
+# Redirect stdin so exarp-go does not see git refs.
+set -e
+export GIT_HOOK=1
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+[ -n "$ROOT" ] || exit 0
+export PROJECT_ROOT="$ROOT"
+RUNNER="$ROOT/scripts/run_exarp_go.sh"
+if [ ! -x "$RUNNER" ]; then
+  if command -v exarp-go >/dev/null 2>&1; then
+    RUNNER="exarp-go"
+  else
+    echo "exarp-go not found, skipping pre-commit hook" >&2
+    exit 0
+  fi
+fi
+"$RUNNER" -tool health -args '{"action":"docs"}' </dev/null || exit 1
+# Multi-language dependency security scan (Python, Rust, npm). If runner fails with "only supported for Go",
+# or tool unknown (older exarp-go), skip so commit is not blocked.
+OUT=$(mktemp)
+if "$RUNNER" -tool scan_dependency_security -args '{}' </dev/null >"$OUT" 2>&1; then
+  rm -f "$OUT"
+  exit 0
+fi
+RC=$?
+if grep -qE "only supported for Go|go\.mod|unknown tool|tool.*not found" "$OUT" 2>/dev/null; then
+  rm -f "$OUT"
+  exit 0
+fi
+cat "$OUT" >&2
+rm -f "$OUT"
+exit $RC
