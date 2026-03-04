@@ -63,6 +63,16 @@ Build universal binary (auto-detects architecture).
 
 ---
 
+### `build:portable`
+
+Portable build across macOS (Intel/ARM) and Linux: auto-detects OS and arch and uses the matching CMake preset.
+
+**Command**: `./scripts/build_portable.sh` or `just build-portable [build|clean|test|install] [--debug|--release]`
+
+**Use When**: Building on different hosts or CI without changing commands. See [PORTABLE_BUILD_AND_RUNNER.md](PORTABLE_BUILD_AND_RUNNER.md).
+
+---
+
 ### `build:dependencies`
 
 Build Intel Decimal and TWS API dependencies.

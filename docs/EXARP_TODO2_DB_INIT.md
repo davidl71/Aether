@@ -35,13 +35,15 @@ exarp-go task sync
 ```
 
 **Option B – Script**
-If `EXARP_GO_ROOT` is set (or exarp-go is at `../exarp-go`):
+If exarp-go is on PATH or at `EXARP_GO_ROOT` / `../exarp-go`, the script uses the same resolution as the MCP runner (global install, then working-dir fallback):
 
 ```bash
 ./scripts/init_exarp_todo2_db.sh
 ```
 
 Then **restart Cursor** (or reload MCP). After that, `task_workflow` (create/list/update) and other task tools should work.
+
+**Portable runner**: `scripts/run_exarp_go.sh` (used by MCP and by the init script) prefers the exarp-go working-dir build when run from inside the exarp-go repo, otherwise uses the global `exarp-go` and falls back to `EXARP_GO_ROOT` or `../exarp-go`. See [PORTABLE_BUILD_AND_RUNNER.md](PORTABLE_BUILD_AND_RUNNER.md).
 
 ## Separate migrate command (optional)
 
