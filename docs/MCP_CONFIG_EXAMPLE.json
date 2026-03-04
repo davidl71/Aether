@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "exarp": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "project_management_automation.server"
+      ],
+      "description": "Exarp - Project management automation tools (Enochian: Spirit of Air - Communication) - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
+    }
+  }
+}
