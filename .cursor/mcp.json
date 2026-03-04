@@ -1,1 +1,21 @@
-{"mcpServers":{"context7":{"command":"npx","args":["-y","@upstash/context7-mcp"]},"exarp-go":{"disabled":false,"command":"/home/david/ib_box_spread_full_universal/scripts/run_exarp_go.sh","args":[],"env":{"PROJECT_ROOT":"/home/david/ib_box_spread_full_universal","EXARP_MIGRATIONS_DIR":"/home/david/exarp-go/migrations"}},"filesystem":{"command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/home/david/ib_box_spread_full_universal"]},"sequential_thinking":{"command":"npx","args":["-y","@modelcontextprotocol/server-sequential-thinking"]},"tractatus_thinking":{"command":"npx","args":["-y","tractatus_thinking"]}}}
+{
+  "mcpServers": {
+    "exarp-go": {
+      "disabled": false,
+      "command": "/home/david/ib_box_spread_full_universal/scripts/run_exarp_go.sh",
+      "args": [],
+      "env": {
+        "PROJECT_ROOT": "/home/david/ib_box_spread_full_universal",
+        "EXARP_MIGRATIONS_DIR": "/home/david/exarp-go/migrations"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/home/david/ib_box_spread_full_universal"
+      ]
+    }
+  }
+}
