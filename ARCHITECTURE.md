@@ -91,6 +91,8 @@ This document provides a high-level overview of the IBKR Box Spread Generator sy
 
 ## Directory Structure
 
+See **`docs/design/DIRECTORY_STRUCTURE_BY_LANGUAGE.md`** for a language-to-directory mapping and discussion of by-component vs by-language layout.
+
 ```
 ib_box_spread_full_universal/
 ├── native/              # C++ core (calculations, TUI, CLI)

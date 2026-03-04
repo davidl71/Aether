@@ -33,6 +33,15 @@ Skips merge/squash commits and does nothing if `Co-authored-by:` is already in t
 
 Runs exarp-go **docs health** and **multi-language dependency security scan** (`scan_dependency_security`) for this repo (via `scripts/run_exarp_go.sh`). Blocks commit if either fails. If exarp-go reports "only supported for Go" or tool unknown, the security step is skipped so commit is not blocked.
 
+**Why did I get "security scan is only supported for Go projects"?**  
+Git is running the hook from **`.git/hooks/pre-commit`** (installed by exarp-go's `setup_hooks`). That hook calls `-tool security` (Go-only) and has no skip for non-Go repos. This repo is not Go, so it fails. **Fix:** use our versioned hooks so the security step is skipped for this repo:
+
+```bash
+git config core.hooksPath scripts/git-hooks
+```
+
+Then Git runs `scripts/git-hooks/pre-commit`, which uses `scan_dependency_security` and skips when exarp-go reports Go-only. You do **not** need to run `make install` in sibling exarp-go for commits to succeed; you only need Git to use this directory as the hooks path.
+
 ### pre-push
 
 Runs exarp-go **task alignment** (todo2) and **multi-language dependency security scan** (`scan_dependency_security`) for this repo. Blocks push if either fails. If exarp-go reports "only supported for Go" or tool unknown, the security step is skipped so push is not blocked.
