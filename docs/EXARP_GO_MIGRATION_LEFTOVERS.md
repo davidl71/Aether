@@ -4,6 +4,8 @@
 
 **Context:** MCP is configured to use **exarp-go** (Go binary) in `.cursor/mcp.json`. The **Python MCP server** (project-management-automation / exarp_automation_mcp) is **deprecated**; this repo uses exarp-go only. The items below are remaining references to the old Python/uvx stack that can be updated or removed.
 
+**Execution (2026-03-04):** Removed remaining exarp Python tools from repo: `exarp_validate_docs_format.py`, `exarp_sync_shared_todo.py`, `scripts/oh-my-zsh-exarp-plugin/exarp_context_tasks.py`. Pre-commit and docs-validation workflow no longer call them; docs format/health and task sync use exarp-go only. **Also removed scripts that wrote to Todo2:** `create_mcp_extensions_todos.py`, `resolve_task_clarifications.py`, `process_tasks_parallel.py`, `batch_update_todos.py`, `automate_todo2_duplicate_cleanup.py`, `import_exarp_tasks.sh`. exarp-go is the source of task/package updates; this repo does not perform direct Todo2 edits. See scripts/SCRIPTS_AUDIT.md and scripts/DEDUPLICATION_PLAN.md.
+
 **Execution (2025-03-01):** … completed. **Cleanup (prefer released exarp):** The Python fallback scripts `automate_docs_health_v2.py`, `automate_todo2_alignment_v2.py`, `automate_todo2_duplicate_detection.py`, `exarp_daily_automation_wrapper.py`, and `exarp_fix_documentation_links.py` were removed. Use **exarp-go** (MCP or CLI) only; see `.cursor/mcp.json`, `docs/MCP_CONFIG_EXAMPLE.json`, and `scripts/run_exarp_go.sh`.
 
 **Status:** Exarp is now provided by **exarp-go** (Go MCP server). The following docs may still mention the old Python/uvx stack for context; prefer exarp-go and `.cursor/mcp.json` for current setup. See the execution plan in this document for full cleanup.

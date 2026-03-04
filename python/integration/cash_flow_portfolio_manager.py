@@ -19,7 +19,6 @@ from typing import Dict, List, Optional
 from .cash_flow_timeline import (
     calculate_cash_flow_timeline,
     CashFlowTimelineResult,
-    CashFlowEvent,
 )
 
 logger = logging.getLogger(__name__)

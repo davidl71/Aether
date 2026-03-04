@@ -11,7 +11,6 @@ from .swiftness_models import (
     InsuranceCoverage,
     DepositRecord,
     ProductDetails,
-    SwiftnessData,
 )
 
 logger = logging.getLogger(__name__)

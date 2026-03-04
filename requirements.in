@@ -4,6 +4,7 @@ setuptools>=65.0.0
 numpy>=1.24.0
 pytest>=7.4.0
 pytest-cov>=4.1.0
+ruff>=0.8.0
 requests>=2.31.0
 urllib3>=2.0.0
 websockets>=12.0
@@ -48,8 +49,6 @@ nats-py>=2.6.0
 # Web scraping for Israeli broker position extraction
 playwright>=1.40.0
 
-# MCP Server dependencies (for exarp project management automation)
-# Note: exarp is typically run via uvx (uvx exarp --mcp), which handles dependencies automatically
-# These dependencies are listed here for documentation and optional direct installation
+# MCP Server dependencies (for Cursor/IDE MCP clients; exarp is exarp-go only, not Python)
 mcp>=0.1.0
 fastmcp>=0.9.0

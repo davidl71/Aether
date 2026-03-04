@@ -10,8 +10,8 @@ Total scripts: 116 (after deduplication)
 **Duplicates consolidated:**
 1. `generate_cpp_coverage.sh` → Use `generate_coverage.sh --cpp`
 2. `generate_python_coverage.sh` → Use `generate_coverage.sh --python`
-3. `validate_docs_format.py` → Use `exarp_validate_docs_format.py`
-4. `automate_documentation_link_fixing.py` → Use `exarp_fix_documentation_links.py`
+3. `validate_docs_format.py` → ~~Use `exarp_validate_docs_format.py`~~ **Removed.** Use exarp-go (check_documentation_health_tool) for docs format/health.
+4. ~~`automate_documentation_link_fixing.py` → `exarp_fix_documentation_links.py`~~ **Removed.** Use exarp-go for docs health/link fixing.
 5. `update_global_docs.sh` → Use `sync_global_docs.py`
 6. `collect_system_info.sh` → Use `collect_system_info_python.py`
 7. `setup_ramdisk.sh` → Use `workspace_ram_disk_manager.sh`
@@ -45,26 +45,26 @@ Total scripts: 116 (after deduplication)
 - `generate_coverage.sh` - Combined C++/Python coverage ✅ CONSOLIDATED
 
 ### Documentation (7)
-- `exarp_validate_docs_format.py` - Validate doc format ✅ ACTIVE
-- `exarp_fix_documentation_links.py` - Fix broken links ✅ ACTIVE
+- ~~`exarp_validate_docs_format.py`~~ **Removed** – use exarp-go (check_documentation_health_tool)
+- ~~`exarp_fix_documentation_links.py`~~ **Removed** – use exarp-go
 - `sync_global_docs.py` - Sync documentation ✅ ACTIVE
 - `list_global_docs.sh` - List all docs
 - `generate_docs_summary_tables.py` - Generate doc summaries
 - `update_stale_docs.py` - Update stale documentation
 - `validate_docs_links.sh` - Validate doc links
-- `automate_docs_health_v2.py` - Automated doc health checks
+- ~~`automate_docs_health_v2.py`~~ **Removed** – use exarp-go MCP/CLI
 
 ### TODO/Task Management (10)
 - `analyze_task_execution_modes.py` - Analyze task execution patterns
 - `audit_in_progress_tasks.py` - Audit in-progress tasks
-- `automate_todo2_alignment_v2.py` - Align TODO2 with requirements
-- `automate_todo2_duplicate_cleanup.py` - Clean duplicate todos
-- `automate_todo2_duplicate_detection.py` - Detect duplicate todos
-- `batch_update_todos.py` - Batch update operations
-- `create_mcp_extensions_todos.py` - Create MCP extension todos
-- `exarp_sync_shared_todo.py` - Sync shared todo lists
-- `process_tasks_parallel.py` - Parallel task processing
-- `resolve_task_clarifications.py` - Resolve task clarifications
+- ~~`automate_todo2_alignment_v2.py`~~ **Removed** – use exarp-go MCP/CLI
+- ~~`automate_todo2_duplicate_cleanup.py`~~ **Removed** – no direct Todo2 edits; use exarp-go
+- ~~`automate_todo2_duplicate_detection.py`~~ **Removed** – use exarp-go MCP/CLI
+- ~~`batch_update_todos.py`~~ **Removed** – no direct Todo2 edits; use exarp-go
+- ~~`create_mcp_extensions_todos.py`~~ **Removed** – no direct Todo2 edits; use exarp-go
+- ~~`exarp_sync_shared_todo.py`~~ **Removed** – use exarp-go sync_todo_tasks_tool
+- ~~`process_tasks_parallel.py`~~ **Removed** – no direct Todo2 edits; use exarp-go
+- ~~`resolve_task_clarifications.py`~~ **Removed** – no direct Todo2 edits; use exarp-go
 
 ### Installation (5)
 - `install_ib_gateway.sh` - Install IB Gateway ✅ ACTIVE
@@ -128,9 +128,9 @@ Total scripts: 116 (after deduplication)
 
 **Documentation:**
 ```bash
-./scripts/exarp_validate_docs_format.py  # Validate docs
-./scripts/exarp_fix_documentation_links.py  # Fix links
+# Docs format/health: use exarp-go MCP (check_documentation_health_tool) or CLI
 ./scripts/sync_global_docs.py    # Sync documentation
+# See docs/MCP_REQUIRED_SERVERS.md for exarp-go setup
 ```
 
 **System Setup:**
@@ -148,8 +148,9 @@ If you were using removed scripts:
 |------------|------------|---------|
 | `generate_cpp_coverage.sh` | `generate_coverage.sh` | `--cpp` flag |
 | `generate_python_coverage.sh` | `generate_coverage.sh` | `--python` flag |
-| `validate_docs_format.py` | `exarp_validate_docs_format.py` | Direct replacement |
-| `automate_documentation_link_fixing.py` | `exarp_fix_documentation_links.py` | Direct replacement |
+| `validate_docs_format.py` | **Removed** | Use exarp-go check_documentation_health_tool |
+| `exarp_validate_docs_format.py` | **Removed** | Use exarp-go (exarp Python tools removed) |
+| ~~`automate_documentation_link_fixing.py` / `exarp_fix_documentation_links.py`~~ | **Removed** | Use exarp-go MCP/CLI |
 | `update_global_docs.sh` | `sync_global_docs.py` | Direct replacement |
 | `collect_system_info.sh` | `collect_system_info_python.py` | Direct replacement |
 | `setup_ramdisk.sh` | `workspace_ram_disk_manager.sh` | `setup` subcommand |

@@ -35,11 +35,6 @@ impl AccountPath {
         Ok(Self { segments })
     }
 
-    /// Convert to string representation
-    pub fn to_string(&self) -> String {
-        self.segments.join(":")
-    }
-
     /// Get parent account path (if exists)
     pub fn parent(&self) -> Option<Self> {
         if self.segments.len() > 1 {
@@ -58,10 +53,7 @@ impl AccountPath {
 
     /// Get account name (last segment)
     pub fn name(&self) -> &str {
-        self.segments
-            .last()
-            .map(|s| s.as_str())
-            .unwrap_or("")
+        self.segments.last().map(|s| s.as_str()).unwrap_or("")
     }
 }
 
@@ -75,7 +67,7 @@ impl FromStr for AccountPath {
 
 impl fmt::Display for AccountPath {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", self.segments.join(":"))
     }
 }
 

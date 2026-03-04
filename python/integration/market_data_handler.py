@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from nautilus_trader.core.nautilus_pyo3 import (
     QuoteTick,
     TradeTick,
-    InstrumentId,
 )
 
 if TYPE_CHECKING:  # pragma: no cover - typing only

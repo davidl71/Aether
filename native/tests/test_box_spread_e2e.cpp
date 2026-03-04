@@ -106,7 +106,8 @@ TEST_CASE("Box Spread E2E - Opportunity detection (mock)", "[box-spread][e2e][mo
   REQUIRE(client->is_connected());
 
   config::StrategyParams strategy_params = create_test_strategy_params();
-  BoxSpreadStrategy strategy(strategy_params, client);
+  OrderManager order_manager(client.get(), false);
+  BoxSpreadStrategy strategy(client.get(), &order_manager, strategy_params);
 
   SECTION("Find box spreads in chain") {
     // Given: A strategy with mock TWS client
@@ -153,7 +154,7 @@ TEST_CASE("Box Spread E2E - Execution in dry-run (mock)", "[box-spread][e2e][moc
   client->connect();
   REQUIRE(client->is_connected());
 
-  OrderManager order_manager(client, true);  // dry_run = true
+  OrderManager order_manager(client.get(), true);  // dry_run = true
 
   SECTION("Place box spread in dry-run") {
     // Given: A valid box spread and order manager in dry-run mode
@@ -235,7 +236,7 @@ TEST_CASE("Box Spread E2E - Error scenarios (mock)", "[box-spread][e2e][mock]") 
   client->connect();
   REQUIRE(client->is_connected());
 
-  OrderManager order_manager(client, true);  // dry_run = true
+  OrderManager order_manager(client.get(), true);  // dry_run = true
 
   SECTION("Invalid box spread execution") {
     // Given: An invalid box spread
@@ -273,8 +274,8 @@ TEST_CASE("Box Spread E2E - Complete workflow (mock)", "[box-spread][e2e][mock]"
   REQUIRE(client->is_connected());
 
   config::StrategyParams strategy_params = create_test_strategy_params();
-  BoxSpreadStrategy strategy(strategy_params, client);
-  OrderManager order_manager(client, true);  // dry_run = true
+  OrderManager order_manager(client.get(), true);  // dry_run = true
+  BoxSpreadStrategy strategy(client.get(), &order_manager, strategy_params);
 
   SECTION("End-to-end workflow") {
     // Given: Strategy and order manager
@@ -348,7 +349,7 @@ TEST_CASE("Box Spread E2E - Real TWS execution (integration)", "[box-spread][e2e
     REQUIRE(client->is_connected());
 
     // When: We execute box spread in dry-run mode
-    OrderManager order_manager(client, true);  // dry_run = true
+    OrderManager order_manager(client.get(), true);  // dry_run = true
     BoxSpreadLeg spread = create_test_box_spread();
 
     ExecutionResult result = order_manager.place_box_spread(spread, "test-strategy");

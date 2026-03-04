@@ -1,8 +1,14 @@
 # Batch TODO2 Task Update Script
 
-**Location**: `scripts/batch_update_todos.py`
+**Status:** **Removed.** This repo does not perform direct Todo2 edits. The script `scripts/batch_update_todos.py` was removed. Use **exarp-go** for task updates (MCP tools: task_workflow, sync_todo_tasks_tool, etc., or exarp-go CLI with workingDirectory = project root). See `docs/MCP_REQUIRED_SERVERS.md` and `.cursor/rules/project-automation.mdc`.
 
-**Purpose**: Provides a command-line interface for batch operations on TODO2 tasks, replacing the need for Python heredocs in terminal commands.
+---
+
+**Historical reference below.**
+
+**Location**: ~~`scripts/batch_update_todos.py`~~ (removed)
+
+**Purpose**: Provided a command-line interface for batch operations on TODO2 tasks.
 
 ---
 

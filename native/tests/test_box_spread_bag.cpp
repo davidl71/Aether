@@ -224,7 +224,7 @@ TEST_CASE("BoxSpreadBagManager calculates Greeks", "[bag][greeks]") {
 
     // Then: Should be approximately neutral
     // (May not be exactly zero due to implementation details)
-    REQUIRE(is_neutral == true || is_neutral == false);
+    REQUIRE((is_neutral == true || is_neutral == false));
   }
 
   SECTION("Update bag Greeks") {

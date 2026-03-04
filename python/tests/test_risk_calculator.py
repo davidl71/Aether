@@ -1,21 +1,14 @@
 """Tests for risk_calculator.py - Python port of C++ risk calculator."""
 
 import math
-from datetime import datetime
 
 import pytest
 
 from python.integration.risk_calculator import (
-    AccountInfo,
-    PortfolioRisk,
-    PositionRisk,
-    RiskAlert,
     RiskAlertLevel,
     RiskCalculator,
     RiskConfig,
-    RiskMetrics,
     RiskMonitor,
-    ScenarioResult,
     SimpleBoxSpreadLeg,
     SimplePosition,
     annualize_return,

@@ -10,8 +10,6 @@ from datetime import datetime, timedelta
 from python.integration.cash_flow_timeline import (
     calculate_cash_flow_timeline,
     CashFlowEvent,
-    MonthlyCashFlow,
-    CashFlowTimelineResult,
 )
 
 

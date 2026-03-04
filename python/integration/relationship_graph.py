@@ -15,7 +15,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 
 try:
     import networkx as nx
@@ -151,13 +151,13 @@ class RelationshipGraph:
             if maximize_benefit:
                 # Sum benefits along path (negative weight = benefit)
                 total_benefit = sum(
-                    self.graph[u][v].get("benefit", 0.0) for u, v in zip(path[:-1], path[1:])
+                    self.graph[u][v].get("benefit", 0.0) for u, v in zip(path[:-1], path[1:], strict=False)
                 )
                 metric = total_benefit
             else:
                 # Sum weights along path
                 total_weight = sum(
-                    self.graph[u][v].get("weight", 1.0) for u, v in zip(path[:-1], path[1:])
+                    self.graph[u][v].get("weight", 1.0) for u, v in zip(path[:-1], path[1:], strict=False)
                 )
                 metric = -total_weight  # Negative for sorting (higher is better)
 
@@ -169,7 +169,7 @@ class RelationshipGraph:
 
         # Calculate total benefit for optimal path
         total_benefit = sum(
-            self.graph[u][v].get("benefit", 0.0) for u, v in zip(optimal_path[:-1], optimal_path[1:])
+            self.graph[u][v].get("benefit", 0.0) for u, v in zip(optimal_path[:-1], optimal_path[1:], strict=False)
         )
 
         return {
@@ -193,7 +193,7 @@ class RelationshipGraph:
             return 0.0
 
         total_benefit = 0.0
-        for u, v in zip(path[:-1], path[1:]):
+        for u, v in zip(path[:-1], path[1:], strict=False):
             if self.graph.has_edge(u, v):
                 total_benefit += self.graph[u][v].get("benefit", 0.0)
 
@@ -316,11 +316,11 @@ def load_positions_from_ledger(
 
                             # Determine position type
                             if broker_or_type in ["ibkr", "alpaca", "tastytrade", "tradestation"]:
-                                pos_type = "position"
+                                pass
                             elif broker_or_type == "bank":
-                                pos_type = "bank_account"
+                                pass
                             else:
-                                pos_type = broker_or_type
+                                pass
 
                             # Get amount
                             amount_data = posting.get("amount", {})
@@ -335,7 +335,7 @@ def load_positions_from_ledger(
                             position_balances[symbol_or_account][currency] += amount
                             position_currencies[symbol_or_account] = currency
 
-            except (json.JSONDecodeError, KeyError, ValueError) as e:
+            except (json.JSONDecodeError, KeyError, ValueError):
                 # Skip invalid transactions
                 continue
 

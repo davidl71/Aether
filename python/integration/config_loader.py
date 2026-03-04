@@ -6,7 +6,7 @@ Supports environment variable overrides
 import json
 import os
 from pathlib import Path
-from typing import Optional, Any, Dict
+from typing import Optional, Any
 
 
 def _find_config_file(config_path: Optional[str] = None) -> Optional[Path]:

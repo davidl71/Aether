@@ -1,0 +1,6 @@
+# Ruff config at repo root so `uv run ruff check python/` picks it up.
+# Trunk uses .trunk/configs/ruff.toml; keep in sync there.
+[lint]
+select = ["B", "D3", "E", "F"]
+ignore = ["E501"]
+extend-ignore = ["E402", "F401", "F403", "F405", "B008", "B904", "B905", "D301"]

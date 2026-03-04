@@ -2,7 +2,7 @@
 swiftness_integration.py - Integration layer for Swiftness positions with investment strategy framework
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional, Dict
 from dataclasses import dataclass
 
@@ -15,8 +15,7 @@ def add_months(date: datetime, months: int) -> datetime:
     day = min(date.day, [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
     return date.replace(year=year, month=month, day=day)
 
-from .swiftness_storage import SwiftnessStorage, SwiftnessPositions
-from .swiftness_models import ProductDetails, DepositRecord, InsuranceCoverage
+from .swiftness_storage import SwiftnessStorage
 
 logger = logging.getLogger(__name__)
 

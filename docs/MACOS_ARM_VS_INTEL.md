@@ -85,7 +85,7 @@ So `build-ramdisk` holds only one architecture at a time (whichever preset you l
 - **Cache RAM disk** (`setup_ram_optimization.sh`): `/Volumes/IBBoxSpreadDev/caches/` — same for both; no arch in path.
 - **Rust `CARGO_TARGET_DIR`** (when using ramdisk env): e.g. `/Volumes/IBBoxSpreadDev/caches/cargo-target` — same for both.
 - **Project dirs** (config, scripts, proto, native source): no arch-specific paths.
-- **Cursor/Just commands**: Some commands hardcode `build/macos-arm64-debug`; on Intel use `CMAKE_PRESET=macos-x86_64-debug` and run the binary from `build/macos-x86_64-debug/bin/...`, or change the command to your preset’s path.
+- **Cursor/Just commands**: Some commands hardcode `build/macos-arm64-debug`; on Intel use the `-intel` command variants (e.g. build:debug-intel, run:cli-intel) or see CURSOR_PROJECT_COMMANDS.md.
 
 ### Scripts that derive build dir from preset
 

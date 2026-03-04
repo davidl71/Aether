@@ -41,7 +41,10 @@ impl LedgerImporter {
             }
         }
 
-        debug!(count = transactions.len(), "Imported transactions from Ledger CLI format");
+        debug!(
+            count = transactions.len(),
+            "Imported transactions from Ledger CLI format"
+        );
         Ok(transactions)
     }
 
@@ -93,7 +96,12 @@ impl LedgerImporter {
                 let (key, value) = Self::parse_metadata(trimmed)?;
                 metadata.insert(key, value);
                 *line_index += 1;
-            } else if trimmed.chars().next().map(|c| c.is_alphanumeric() || c == ':').unwrap_or(false) {
+            } else if trimmed
+                .chars()
+                .next()
+                .map(|c| c.is_alphanumeric() || c == ':')
+                .unwrap_or(false)
+            {
                 // Posting line: Account    Amount
                 let posting = Self::parse_posting(trimmed)?;
                 postings.push(posting);
@@ -125,7 +133,9 @@ impl LedgerImporter {
     fn parse_header(line: &str) -> Result<(DateTime<Utc>, bool, String)> {
         let parts: Vec<&str> = line.split_whitespace().collect();
         if parts.is_empty() {
-            return Err(LedgerError::InvalidDecimal("Empty transaction header".to_string()));
+            return Err(LedgerError::InvalidDecimal(
+                "Empty transaction header".to_string(),
+            ));
         }
 
         // Parse date: YYYY/MM/DD
@@ -157,7 +167,10 @@ impl LedgerImporter {
     fn parse_date(date_str: &str) -> Result<DateTime<Utc>> {
         let parts: Vec<&str> = date_str.split('/').collect();
         if parts.len() != 3 {
-            return Err(LedgerError::InvalidDecimal(format!("Invalid date format: {}", date_str)));
+            return Err(LedgerError::InvalidDecimal(format!(
+                "Invalid date format: {}",
+                date_str
+            )));
         }
 
         let year: i32 = parts[0]
@@ -183,9 +196,9 @@ impl LedgerImporter {
         let trimmed = line.trim();
 
         // Find the boundary between account and amount (2+ spaces)
-        let account_end = trimmed
-            .find("  ")
-            .ok_or_else(|| LedgerError::InvalidDecimal("No separator found in posting line".to_string()))?;
+        let account_end = trimmed.find("  ").ok_or_else(|| {
+            LedgerError::InvalidDecimal("No separator found in posting line".to_string())
+        })?;
 
         let account_str = trimmed[..account_end].trim();
         let amount_str = trimmed[account_end..].trim_start();
@@ -224,15 +237,30 @@ impl LedgerImporter {
 
         // Parse currency and amount
         let (currency, amount_str) = if positive_str.starts_with('$') {
-            (Currency::USD, positive_str.strip_prefix('$').unwrap_or(positive_str))
+            (
+                Currency::USD,
+                positive_str.strip_prefix('$').unwrap_or(positive_str),
+            )
         } else if positive_str.starts_with("USD ") {
-            (Currency::USD, positive_str.strip_prefix("USD ").unwrap_or(positive_str))
+            (
+                Currency::USD,
+                positive_str.strip_prefix("USD ").unwrap_or(positive_str),
+            )
         } else if positive_str.starts_with("ILS ") {
-            (Currency::ILS, positive_str.strip_prefix("ILS ").unwrap_or(positive_str))
+            (
+                Currency::ILS,
+                positive_str.strip_prefix("ILS ").unwrap_or(positive_str),
+            )
         } else if positive_str.starts_with("EUR ") {
-            (Currency::EUR, positive_str.strip_prefix("EUR ").unwrap_or(positive_str))
+            (
+                Currency::EUR,
+                positive_str.strip_prefix("EUR ").unwrap_or(positive_str),
+            )
         } else if positive_str.starts_with("GBP ") {
-            (Currency::GBP, positive_str.strip_prefix("GBP ").unwrap_or(positive_str))
+            (
+                Currency::GBP,
+                positive_str.strip_prefix("GBP ").unwrap_or(positive_str),
+            )
         } else {
             // Default to USD if no currency specified
             (Currency::USD, positive_str)
@@ -273,20 +301,28 @@ impl LedgerImporter {
         }
 
         let quantity_str = quantity_parts[0];
-        let quantity = Decimal::from_str(quantity_str)
-            .map_err(|_| LedgerError::InvalidDecimal(format!("Invalid quantity: {}", quantity_str)))?;
+        let quantity = Decimal::from_str(quantity_str).map_err(|_| {
+            LedgerError::InvalidDecimal(format!("Invalid quantity: {}", quantity_str))
+        })?;
 
         // Parse price
         let (price_currency, price_amount_str) = if price_str.starts_with('$') {
-            (Currency::USD, price_str.strip_prefix('$').unwrap_or(price_str))
+            (
+                Currency::USD,
+                price_str.strip_prefix('$').unwrap_or(price_str),
+            )
         } else if price_str.starts_with("USD ") {
-            (Currency::USD, price_str.strip_prefix("USD ").unwrap_or(price_str))
+            (
+                Currency::USD,
+                price_str.strip_prefix("USD ").unwrap_or(price_str),
+            )
         } else {
             (Currency::USD, price_str)
         };
 
-        let price_amount = Decimal::from_str(price_amount_str)
-            .map_err(|_| LedgerError::InvalidDecimal(format!("Invalid price: {}", price_amount_str)))?;
+        let price_amount = Decimal::from_str(price_amount_str).map_err(|_| {
+            LedgerError::InvalidDecimal(format!("Invalid price: {}", price_amount_str))
+        })?;
 
         let price = Money::new(price_amount, price_currency);
         let cost = Cost::new(quantity, price.clone());
@@ -304,7 +340,10 @@ impl LedgerImporter {
         let parts: Vec<&str> = line.splitn(2, ':').collect();
 
         if parts.len() != 2 {
-            return Err(LedgerError::InvalidDecimal(format!("Invalid metadata format: {}", line)));
+            return Err(LedgerError::InvalidDecimal(format!(
+                "Invalid metadata format: {}",
+                line
+            )));
         }
 
         let key = parts[0].trim().to_string();
@@ -442,8 +481,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_import_from_file() {
-        use tempfile::NamedTempFile;
         use std::io::Write;
+        use tempfile::NamedTempFile;
 
         let content = r#"
 2025/11/18 * Test Transaction

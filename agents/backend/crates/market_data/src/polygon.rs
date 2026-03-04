@@ -189,7 +189,7 @@ mod tests {
         Mock::given(method("GET"))
             .and(path("/v2/last/nbbo/SPY"))
             .respond_with(ResponseTemplate::new(200).set_body_raw(
-        r#"{
+                r#"{
           "status": "success",
           "symbol": "SPY",
           "last": {
@@ -206,7 +206,7 @@ mod tests {
         Mock::given(method("GET"))
             .and(path("/v2/last/nbbo/QQQ"))
             .respond_with(ResponseTemplate::new(200).set_body_raw(
-        r#"{
+                r#"{
           "status": "success",
           "symbol": "QQQ",
           "last": {

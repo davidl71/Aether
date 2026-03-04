@@ -68,7 +68,7 @@ if [ -n "${GITHUB_BASE_REF:-}" ] && [ -n "${GITHUB_HEAD_REF:-}" ]; then
 fi
 
 # Validate JSON/format if contract contains examples
-if grep -q "```json" "$CONTRACT_FILE"; then
+if grep -q '```json' "$CONTRACT_FILE"; then
     echo "✅ Validating JSON examples..."
     # Extract and validate JSON examples (if any)
     # This is a placeholder - implement full JSON validation if needed

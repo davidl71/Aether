@@ -71,7 +71,10 @@ impl LedgerEngine {
         let balance = self.calculate_balance(account).await?;
 
         // Update cache
-        self.balance_cache.write().await.insert(account.clone(), balance.clone());
+        self.balance_cache
+            .write()
+            .await
+            .insert(account.clone(), balance.clone());
 
         Ok(balance)
     }
@@ -140,7 +143,10 @@ impl LedgerEngine {
         self.clear_cache().await;
 
         // Load all transactions
-        let transactions = self.persistence.load_transactions(&TransactionFilter::default()).await?;
+        let transactions = self
+            .persistence
+            .load_transactions(&TransactionFilter::default())
+            .await?;
 
         // Rebuild cache from all transactions
         for transaction in transactions {
@@ -184,11 +190,7 @@ mod tests {
 
             // Apply filters
             if let Some(ref account) = filter.account {
-                result.retain(|t| {
-                    t.postings
-                        .iter()
-                        .any(|p| p.account == *account)
-                });
+                result.retain(|t| t.postings.iter().any(|p| p.account == *account));
             }
 
             if let Some(ref desc) = filter.description {

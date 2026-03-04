@@ -18,11 +18,9 @@ from dataclasses import dataclass, asdict
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical, ScrollableContainer
 from textual.widgets import (
-    Input, Select, Button, Label, DataTable, Static, Log,
-    Checkbox, RadioSet
+    Input, Select, Button, Label, DataTable, Static, Log
 )
 from textual.message import Message
-from textual.reactive import reactive
 
 logger = logging.getLogger(__name__)
 
@@ -206,6 +204,16 @@ class LoanEntryForm(Container):
         self.loan_manager = loan_manager
         self.existing_loan = existing_loan
         self.is_editing = existing_loan is not None
+
+    class LoanSaved(Message):
+        """Message sent when loan is saved"""
+        def __init__(self, loan: LoanPosition):
+            super().__init__()
+            self.loan = loan
+
+    class LoanFormCancelled(Message):
+        """Message sent when form is cancelled"""
+        pass
 
     def compose(self) -> ComposeResult:
         with ScrollableContainer():
@@ -414,22 +422,12 @@ class LoanEntryForm(Container):
 
                 if success:
                     self.loan_manager.save()
-                    self.post_message(LoanSaved(loan))
+                    self.post_message(self.LoanSaved(loan))
                 else:
                     self.query_one("#error-message", Static).update(f"Error: {error}")
 
         elif event.button.id == "cancel-button":
-            self.post_message(LoanFormCancelled())
-
-    class LoanSaved(Message):
-        """Message sent when loan is saved"""
-        def __init__(self, loan: LoanPosition):
-            super().__init__()
-            self.loan = loan
-
-    class LoanFormCancelled(Message):
-        """Message sent when form is cancelled"""
-        pass
+            self.post_message(self.LoanFormCancelled())
 
 
 class LoanListTab(Container):
@@ -481,7 +479,7 @@ class LoanListTab(Container):
             )
 
         status = self.query_one("#loan-status", Static)
-        status.update(f"Total Loans: {len(loans)} | Active: {len([l for l in loans if l.status == 'ACTIVE'])}")
+        status.update(f"Total Loans: {len(loans)} | Active: {len([ln for ln in loans if ln.status == 'ACTIVE'])}")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses"""
@@ -498,7 +496,6 @@ class LoanListTab(Container):
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         """Handle row selection"""
-        table = self.query_one("#loans-table", DataTable)
         row_key = event.cursor_row
         # Could show loan details or edit form here
         log = self.query_one("#loan-log", Log)
@@ -595,7 +592,7 @@ class LoanImporter:
                     except ValueError:
                         continue
                 return now
-            except:
+            except Exception:
                 return now
 
         return LoanPosition(

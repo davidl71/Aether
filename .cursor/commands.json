@@ -82,8 +82,14 @@
     },
     {
       "name": "build:debug",
-      "description": "Build project in debug mode (ARM64)",
+      "description": "Build project in debug mode (Apple Silicon preset). On Intel use build:debug-intel.",
       "command": "cmake --build --preset macos-arm64-debug",
+      "category": "build"
+    },
+    {
+      "name": "build:debug-intel",
+      "description": "Build project in debug mode (Intel macOS preset)",
+      "command": "cmake --build --preset macos-x86_64-debug",
       "category": "build"
     },
     {
@@ -100,20 +106,38 @@
     },
     {
       "name": "build:release",
-      "description": "Build project in release mode (ARM64)",
+      "description": "Build in release mode (Apple Silicon). On Intel use build:release-intel.",
       "command": "cmake --build --preset macos-arm64-release",
       "category": "build"
     },
     {
+      "name": "build:release-intel",
+      "description": "Build in release mode (Intel macOS)",
+      "command": "cmake --build --preset macos-x86_64-release",
+      "category": "build"
+    },
+    {
       "name": "build:configure",
-      "description": "Configure CMake for debug build",
+      "description": "Configure CMake for debug (Apple Silicon). On Intel use build:configure-intel.",
       "command": "cmake --preset macos-arm64-debug",
       "category": "build"
     },
     {
+      "name": "build:configure-intel",
+      "description": "Configure CMake for debug (Intel macOS)",
+      "command": "cmake --preset macos-x86_64-debug",
+      "category": "build"
+    },
+    {
       "name": "build:clean",
-      "description": "Clean build artifacts",
+      "description": "Clean debug build (Apple Silicon). On Intel use build:clean-intel.",
       "command": "cmake --build --preset macos-arm64-debug --target clean",
+      "category": "build"
+    },
+    {
+      "name": "build:clean-intel",
+      "description": "Clean debug build (Intel macOS)",
+      "command": "cmake --build --preset macos-x86_64-debug --target clean",
       "category": "build"
     },
     {
@@ -124,14 +148,26 @@
     },
     {
       "name": "test:run",
-      "description": "Run all tests with output on failure",
+      "description": "Run tests (Apple Silicon preset). On Intel use test:run-intel.",
       "command": "ctest --preset macos-arm64-debug --output-on-failure",
       "category": "test"
     },
     {
+      "name": "test:run-intel",
+      "description": "Run tests (Intel macOS preset)",
+      "command": "ctest --preset macos-x86_64-debug --output-on-failure",
+      "category": "test"
+    },
+    {
       "name": "test:run-release",
-      "description": "Run tests in release mode",
+      "description": "Run tests in release (Apple Silicon). On Intel use test:run-release-intel.",
       "command": "ctest --preset macos-arm64-release --output-on-failure",
+      "category": "test"
+    },
+    {
+      "name": "test:run-release-intel",
+      "description": "Run tests in release (Intel macOS)",
+      "command": "ctest --preset macos-x86_64-release --output-on-failure",
       "category": "test"
     },
     {
@@ -166,7 +202,7 @@
     },
     {
       "name": "exarp:list-tools",
-      "description": "List available exarp-go tools",
+      "description": "List available exarp-go tools (lint, testing, security, task_workflow, report, etc.)",
       "command": "./scripts/run_exarp_go_tool.sh --list",
       "category": "quality"
     },
@@ -178,20 +214,38 @@
     },
     {
       "name": "run:tui",
-      "description": "Run TUI application (dry-run mode)",
+      "description": "Run TUI (dry-run). Apple Silicon path; on Intel use run:tui-intel.",
       "command": "./build/macos-arm64-debug/bin/ib_box_spread_tui --dry-run",
       "category": "run"
     },
     {
+      "name": "run:tui-intel",
+      "description": "Run TUI (dry-run) on Intel macOS",
+      "command": "./build/macos-x86_64-debug/bin/ib_box_spread_tui --dry-run",
+      "category": "run"
+    },
+    {
       "name": "run:cli",
-      "description": "Run CLI application (dry-run mode)",
+      "description": "Run CLI (dry-run). Apple Silicon path; on Intel use run:cli-intel.",
       "command": "./build/macos-arm64-debug/bin/ib_box_spread --dry-run",
       "category": "run"
     },
     {
+      "name": "run:cli-intel",
+      "description": "Run CLI (dry-run) on Intel macOS",
+      "command": "./build/macos-x86_64-debug/bin/ib_box_spread --dry-run",
+      "category": "run"
+    },
+    {
       "name": "run:cli-with-config",
-      "description": "Run CLI with config file (dry-run)",
+      "description": "Run CLI with config (dry-run). Apple Silicon path; on Intel use run:cli-with-config-intel.",
       "command": "./build/macos-arm64-debug/bin/ib_box_spread --config config/config.json --dry-run",
+      "category": "run"
+    },
+    {
+      "name": "run:cli-with-config-intel",
+      "description": "Run CLI with config (dry-run) on Intel macOS",
+      "command": "./build/macos-x86_64-debug/bin/ib_box_spread --config config/config.json --dry-run",
       "category": "run"
     },
     {
@@ -250,8 +304,14 @@
     },
     {
       "name": "validate:config",
-      "description": "Validate configuration file",
+      "description": "Validate config. Apple Silicon path; on Intel use validate:config-intel.",
       "command": "./build/macos-arm64-debug/bin/ib_box_spread --config config/config.json --validate",
+      "category": "validate"
+    },
+    {
+      "name": "validate:config-intel",
+      "description": "Validate config on Intel macOS",
+      "command": "./build/macos-x86_64-debug/bin/ib_box_spread --config config/config.json --validate",
       "category": "validate"
     },
     {

@@ -1,10 +1,17 @@
 #!/bin/bash
 # Run Python tests with coverage reporting
 # Usage: ./scripts/run_python_tests.sh [--coverage] [--html]
+# Use USE_NIX=1 to run inside the Nix dev shell (uv, pytest from flake).
 
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# shellcheck source=./with_nix.sh
+. "${SCRIPT_DIR}/with_nix.sh"
+run_with_nix_if_requested "$@"
+
+cd "${PROJECT_ROOT}"
 
 COVERAGE=false
 HTML=false

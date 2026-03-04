@@ -4,13 +4,12 @@ Supports Interactive Brokers and Alpaca via NautilusTrader adapters.
 """
 
 import logging
-from typing import Optional, Dict, List, Callable, TYPE_CHECKING
+from typing import Optional, Dict, TYPE_CHECKING
 from nautilus_trader.core.nautilus_pyo3 import (
     LiveDataClient,
     LiveExecutionClient,
     InstrumentId,
     Venue,
-    AccountId,
 )
 from nautilus_trader.adapters.interactive_brokers import (
     InteractiveBrokersDataClient,
@@ -31,7 +30,6 @@ try:
     _ALPACA_AVAILABLE = True
 except Exception:  # pragma: no cover - optional dependency
     _ALPACA_AVAILABLE = False
-from nautilus_trader.config import LiveDataClientConfig, LiveExecutionClientConfig
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from .notification_center import NotificationCenter

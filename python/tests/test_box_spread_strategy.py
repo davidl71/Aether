@@ -1,6 +1,5 @@
 """Tests for box_spread_strategy.py - Python port of C++ box spread strategy."""
 
-import math
 from datetime import datetime, timedelta
 
 import pytest
@@ -13,14 +12,11 @@ from python.integration.box_spread_strategy import (
     BoxSpreadOpportunity,
     BoxSpreadStrategy,
     BoxSpreadValidator,
-    BagCandle,
-    BagPosition,
     CommissionConfig,
     MarketData,
     OptionContract,
     OptionEntry,
     StrategyParams,
-    StrategyStats,
     YieldCurve,
     YieldCurvePoint,
     filter_by_min_profit,

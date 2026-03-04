@@ -31,14 +31,15 @@ mod tests {
             Ok(transactions.iter().find(|t| t.id == *id).cloned())
         }
 
-        async fn load_transactions(&self, filter: &TransactionFilter) -> ledger::Result<Vec<Transaction>> {
+        async fn load_transactions(
+            &self,
+            filter: &TransactionFilter,
+        ) -> ledger::Result<Vec<Transaction>> {
             let transactions = self.transactions.read().await;
             let mut result = transactions.clone();
 
             if let Some(ref account) = filter.account {
-                result.retain(|t| {
-                    t.postings.iter().any(|p| p.account == *account)
-                });
+                result.retain(|t| t.postings.iter().any(|p| p.account == *account));
             }
 
             Ok(result)
@@ -55,13 +56,8 @@ mod tests {
         let mut snapshot = SystemSnapshot::default();
         snapshot.set_ledger(ledger_engine.clone());
 
-        let decision = StrategyDecisionSnapshot::new(
-            "SPY".to_string(),
-            100,
-            "BUY",
-            450.0,
-            chrono::Utc::now(),
-        );
+        let decision =
+            StrategyDecisionSnapshot::new("SPY".to_string(), 100, "BUY", 450.0, chrono::Utc::now());
 
         snapshot.apply_strategy_execution(decision);
 
@@ -85,14 +81,7 @@ mod tests {
             ..Default::default()
         };
 
-        snapshot.record_box_spread_async(
-            "SPY",
-            450,
-            460,
-            "20251219",
-            1000.0,
-            Some("BOX-12345"),
-        );
+        snapshot.record_box_spread_async("SPY", 450, 460, "20251219", 1000.0, Some("BOX-12345"));
 
         // Wait a bit for async ledger recording
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;

@@ -5,12 +5,10 @@ import logging
 from typing import Dict, Optional, Callable, List
 from nautilus_trader.core.nautilus_pyo3 import (
     Order,
-    OrderType,
     TimeInForce,
     OrderSide,
     InstrumentId,
     Venue,
-    AccountId,
 )
 from nautilus_trader.execution.messages import SubmitOrder
 from .order_factory import OrderFactory
@@ -180,7 +178,7 @@ class ExecutionHandler:
     def cancel_order(self, order_id: str):
         """Cancel an order."""
         if order_id in self._pending_orders:
-            order = self._pending_orders[order_id]
+            self._pending_orders[order_id]
             # Cancel order via nautilus_trader
             # Implementation depends on nautilus_trader API
             logger.info(f"Cancelling order: {order_id}")

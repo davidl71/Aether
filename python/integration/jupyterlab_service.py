@@ -22,7 +22,6 @@ import os
 import sys
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 # Add project root to path for imports
 project_root = Path(__file__).parent.parent.parent
@@ -109,7 +108,7 @@ def main() -> int:
 
     print(f"Starting JupyterLab on http://127.0.0.1:{port}", file=sys.stderr)
     print(f"Notebook directory: {notebook_dir}", file=sys.stderr)
-    print(f"Access token will be displayed in the output", file=sys.stderr)
+    print("Access token will be displayed in the output", file=sys.stderr)
     print("", file=sys.stderr)
 
     # Launch JupyterLab

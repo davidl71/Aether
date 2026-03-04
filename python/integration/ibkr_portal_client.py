@@ -267,7 +267,7 @@ class IBKRPortalClient:
         self.ensure_session()
         # Convert conid to string and fields to comma-separated string
         fields_str = ",".join(str(f) for f in fields)
-        endpoint = f"/iserver/marketdata/snapshot"
+        endpoint = "/iserver/marketdata/snapshot"
         params = {
             "conids": str(conid),
             "fields": fields_str,

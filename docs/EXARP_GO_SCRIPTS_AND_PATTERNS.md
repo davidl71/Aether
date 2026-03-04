@@ -13,6 +13,12 @@ Patterns and scripts in exarp-go (`../mcp/exarp-go` or `EXARP_GO_ROOT`) that we 
 
 **Reuse here:** We added **`ansible/run-dev-setup.sh`** with the same SSL block and flow (no development-user playbook; single playbook). Run from repo root or from `ansible/`: `./ansible/run-dev-setup.sh` or `bash ansible/run-dev-setup.sh`.
 
+### 1a. Ansible linters
+
+- **`just ansible-check`** — Playbook syntax-check only (`ansible-playbook --syntax-check` on `ansible/playbooks/development.yml`). No extra deps.
+- **`just ansible-lint`** — Run **ansible-lint** on `ansible/` (playbooks and roles). Requires: `pip install ansible-lint` or `uv tool install ansible-lint`. Config: `.ansible-lint` in repo root (profile: basic; excludes `.git/`, `.github/`).
+- **`just lint`** / **`./scripts/run_linters.sh`** — Run ansible-lint when the `ansible-lint` executable is present; otherwise skip with a warning. Shellcheck already covers `ansible/run-dev-setup.sh`.
+
 **SSL block (portable):**
 
 ```bash
@@ -97,7 +103,7 @@ We use Justfile and `just verify-toolchain` instead; the idea (single config ste
 
 **exarp-go:** `make lint-shellcheck`, `make lint-yaml`, `make lint-ansible` — run shellcheck on `scripts/*.sh` and `ansible/run-dev-setup.sh`, yamllint on `.github` and `ansible`, ansible-lint on playbooks.
 
-**Reuse here:** We have `./scripts/run_linters.sh` for C++/Python. We added `just lint-shell` (shellcheck on `scripts/*.sh` and `ansible/run-dev-setup.sh`), `just ansible-dev` (run `ansible/run-dev-setup.sh`), and `just ansible-check` (playbook syntax-check only). Optional: yamllint/ansible-lint on `ansible/`.
+**Reuse here:** We have `./scripts/run_linters.sh` for C++/Python/JS/shell/Ansible. We added `just lint-shell` (shellcheck on `scripts/*.sh` and `ansible/run-dev-setup.sh`), `just ansible-dev` (run `ansible/run-dev-setup.sh`), `just ansible-check` (playbook syntax-check only), and `just ansible-lint` (ansible-lint on `ansible/` when installed). `run_linters.sh` runs ansible-lint when the executable is present; optional yamllint not wired yet.
 
 ---
 

@@ -1,6 +1,5 @@
 // test_path_validator.cpp - Tests for path validation security utility
-#define CATCH_CONFIG_MAIN
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include "path_validator.h"
 #include <filesystem>
 #include <vector>

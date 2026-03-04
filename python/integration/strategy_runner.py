@@ -5,7 +5,6 @@ Implements proper Strategy class pattern with lifecycle methods.
 import logging
 import asyncio
 from typing import Dict, List, Optional, Set
-from datetime import datetime
 
 from nautilus_trader.core.nautilus_pyo3 import (
     InstrumentId,

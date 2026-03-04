@@ -65,7 +65,7 @@ def example_basic_usage():
     result = graph.find_optimal_chain("bank-loan-5%", "cheaper-loan-3%", max_length=5)
 
     if result:
-        print(f"\n✅ Optimal path found:")
+        print("\n✅ Optimal path found:")
         print(f"   Path: {' → '.join(result['path'])}")
         print(f"   Total benefit: ${result['benefit']:.2f}")
         print(f"   Path count: {result['path_count']}")
@@ -131,11 +131,11 @@ def example_multiple_paths():
     result = graph.find_optimal_chain("loan-A", "fund-D", max_length=3)
 
     if result:
-        print(f"\n✅ Optimal path found:")
+        print("\n✅ Optimal path found:")
         print(f"   Path: {' → '.join(result['path'])}")
         print(f"   Total benefit: ${result['benefit']:.2f}")
         print(f"   All paths: {result['path_count']}")
-        print(f"\n   All possible paths:")
+        print("\n   All possible paths:")
         for i, path in enumerate(result["all_paths"], 1):
             benefit = graph.calculate_path_benefit(path)
             print(f"   {i}. {' → '.join(path)} (benefit: ${benefit:.2f})")

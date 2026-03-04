@@ -262,9 +262,9 @@ fn parse_date(date_str: &str, line_number: usize) -> Result<DateTime<Utc>> {
     let year_2digit: u32 = year_str
         .parse::<u32>()
         .map_err(|_| ParseError::InvalidDate(format!("Invalid year: {}", year_str), line_number))?;
-    let month: u32 = month_str
-        .parse::<u32>()
-        .map_err(|_| ParseError::InvalidDate(format!("Invalid month: {}", month_str), line_number))?;
+    let month: u32 = month_str.parse::<u32>().map_err(|_| {
+        ParseError::InvalidDate(format!("Invalid month: {}", month_str), line_number)
+    })?;
     let day: u32 = day_str
         .parse::<u32>()
         .map_err(|_| ParseError::InvalidDate(format!("Invalid day: {}", day_str), line_number))?;

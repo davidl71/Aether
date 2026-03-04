@@ -1,12 +1,13 @@
 {
   "mcpServers": {
-    "exarp": {
-      "command": "python3",
-      "args": [
-        "-m",
-        "project_management_automation.server"
-      ],
-      "description": "Exarp - Project management automation tools (Enochian: Spirit of Air - Communication) - documentation health, task alignment, duplicate detection, security scanning, and automation opportunities"
+    "exarp-go": {
+      "command": "{{PROJECT_ROOT}}/../../mcp/exarp-go/scripts/run_exarp_go.sh",
+      "args": [],
+      "env": {
+        "PROJECT_ROOT": "{{PROJECT_ROOT}}",
+        "EXARP_WATCH": "0"
+      },
+      "description": "exarp-go MCP: docs health, task alignment, duplicates, security. Set workingDirectory to project root. Use installed exarp-go (PATH or EXARP_GO_ROOT)."
     }
   }
 }

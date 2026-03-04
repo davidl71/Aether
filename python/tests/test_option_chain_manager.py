@@ -5,7 +5,7 @@ Tests OptionChainManager class for option chain caching and management.
 """
 import unittest
 from datetime import datetime, timezone, timedelta
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 
 import sys
 from pathlib import Path

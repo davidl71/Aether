@@ -13,8 +13,8 @@ build a term structure of risk-free rates.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import Dict, List, Optional
 from dataclasses import dataclass
 from collections import defaultdict
 
@@ -24,7 +24,7 @@ try:
   TREASURY_API_AVAILABLE = True
 except ImportError:
   TREASURY_API_AVAILABLE = False
-  logger.warning("Treasury API client not available")
+  logging.warning("Treasury API client not available")
 
 logger = logging.getLogger(__name__)
 
@@ -235,7 +235,7 @@ class RiskFreeRateExtractor:
 
         # Aggregate points at same DTE
         aggregated_points: List[RiskFreeRatePoint] = []
-        for dte, points in grouped.items():
+        for _dte, points in grouped.items():
             if len(points) == 1:
                 aggregated_points.append(points[0])
             else:

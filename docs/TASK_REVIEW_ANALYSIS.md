@@ -3,6 +3,8 @@
 **Date:** 2025-11-24
 **Status:** 17 tasks in Review
 
+**Note:** Task updates are done via **exarp-go** (this repo does not edit Todo2 directly). The batch_update_todos.py script was removed.
+
 ---
 
 ## Summary

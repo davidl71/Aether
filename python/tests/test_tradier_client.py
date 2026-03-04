@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 from conftest import mock_http_response
-from python.integration.tradier_client import TradierClient, TradierError
+from python.integration.tradier_client import TradierClient
 
 
 # ---------------------------------------------------------------------------

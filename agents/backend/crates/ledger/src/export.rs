@@ -32,12 +32,23 @@ impl LedgerExporter {
         // Date and cleared status
         let date_str = Self::format_date(&transaction.date);
         let cleared = if transaction.cleared { "*" } else { "!" };
-        writeln!(output, "{} {} {}", date_str, cleared, transaction.description).unwrap();
+        writeln!(
+            output,
+            "{} {} {}",
+            date_str, cleared, transaction.description
+        )
+        .unwrap();
 
         // Postings
         for posting in &transaction.postings {
             let amount_str = Self::format_posting_amount(posting, &transaction.postings);
-            writeln!(output, "    {:40} {}", posting.account.to_string(), amount_str).unwrap();
+            writeln!(
+                output,
+                "    {:40} {}",
+                posting.account.to_string(),
+                amount_str
+            )
+            .unwrap();
         }
 
         // Metadata as comments
@@ -52,7 +63,10 @@ impl LedgerExporter {
     }
 
     /// Format posting amount with cost basis if present
-    fn format_posting_amount(posting: &crate::posting::Posting, _all_postings: &[crate::posting::Posting]) -> String {
+    fn format_posting_amount(
+        posting: &crate::posting::Posting,
+        _all_postings: &[crate::posting::Posting],
+    ) -> String {
         let mut result = String::new();
 
         // Add cost basis if present (e.g., "100 SPY @ $450.00")
@@ -65,7 +79,11 @@ impl LedgerExporter {
 
         // Format amount with currency sign
         let amount = posting.amount.abs();
-        let sign = if posting.amount.is_positive() { "" } else { "-" };
+        let sign = if posting.amount.is_positive() {
+            ""
+        } else {
+            "-"
+        };
 
         // Use currency code or $ for USD
         let currency_symbol = match amount.currency {
@@ -86,9 +104,9 @@ impl LedgerExporter {
         file_path: &std::path::Path,
     ) -> Result<(), crate::error::LedgerError> {
         let content = Self::export_transactions(transactions);
-        tokio::fs::write(file_path, content)
-            .await
-            .map_err(|e| crate::error::LedgerError::Persistence(anyhow::anyhow!("Failed to write file: {}", e)))?;
+        tokio::fs::write(file_path, content).await.map_err(|e| {
+            crate::error::LedgerError::Persistence(anyhow::anyhow!("Failed to write file: {}", e))
+        })?;
         Ok(())
     }
 }
@@ -110,7 +128,10 @@ mod tests {
                 accounts::ibkr_position("SPY"),
                 Money::new(Decimal::from(45000), Currency::USD),
             )
-            .credit(accounts::ibkr_cash(), Money::new(Decimal::from(45000), Currency::USD))
+            .credit(
+                accounts::ibkr_cash(),
+                Money::new(Decimal::from(45000), Currency::USD),
+            )
             .with_metadata("trade_id", "ORD-12345")
             .build()
             .unwrap();
@@ -135,7 +156,10 @@ mod tests {
 
         let transaction = TransactionBuilder::new("Buy SPY")
             .add_posting(posting)
-            .credit(accounts::ibkr_cash(), Money::new(Decimal::from(45000), Currency::USD))
+            .credit(
+                accounts::ibkr_cash(),
+                Money::new(Decimal::from(45000), Currency::USD),
+            )
             .build()
             .unwrap();
 
@@ -148,14 +172,26 @@ mod tests {
     #[test]
     fn test_export_multiple_transactions() {
         let tx1 = TransactionBuilder::new("Transaction 1")
-            .debit(accounts::ibkr_cash(), Money::new(Decimal::from(100), Currency::USD))
-            .credit(accounts::equity_capital(), Money::new(Decimal::from(100), Currency::USD))
+            .debit(
+                accounts::ibkr_cash(),
+                Money::new(Decimal::from(100), Currency::USD),
+            )
+            .credit(
+                accounts::equity_capital(),
+                Money::new(Decimal::from(100), Currency::USD),
+            )
             .build()
             .unwrap();
 
         let tx2 = TransactionBuilder::new("Transaction 2")
-            .debit(accounts::ibkr_cash(), Money::new(Decimal::from(200), Currency::USD))
-            .credit(accounts::equity_capital(), Money::new(Decimal::from(200), Currency::USD))
+            .debit(
+                accounts::ibkr_cash(),
+                Money::new(Decimal::from(200), Currency::USD),
+            )
+            .credit(
+                accounts::equity_capital(),
+                Money::new(Decimal::from(200), Currency::USD),
+            )
             .build()
             .unwrap();
 

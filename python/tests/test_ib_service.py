@@ -5,9 +5,8 @@ Tests FastAPI endpoints, helper functions, and IBKR Portal client integration.
 """
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from datetime import datetime
-import pytest
 import os
 import json
 import tempfile
@@ -281,7 +280,7 @@ class TestFastAPIEndpoints(unittest.TestCase):
                 with patch('integration.ib_service.IBKRPortalClient') as mock_client_class:
                     mock_client_class.return_value = self.mock_client
                     app = create_app()
-                    client = TestClient(app)
+                    TestClient(app)
 
                     with tempfile.TemporaryDirectory() as tmpdir:
                         snapshot_path = os.path.join(tmpdir, "snapshot.json")

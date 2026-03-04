@@ -116,7 +116,7 @@ exm
 
 ## Requirements
 
-- **exarp-go** on PATH, or `EXARP_GO_ROOT` set to the exarp-go repo, or `scripts/run_exarp_go.sh` in project root.
+- **exarp-go** on PATH, or `EXARP_GO_ROOT` set to the exarp-go repo, or `scripts/run_exarp_go.sh` in project root. No Python exarp tools; all commands use exarp-go.
 
 ## Completion Support
 
@@ -136,16 +136,7 @@ The plugin includes context-aware task filtering that automatically shows tasks 
 
 ### How It Works
 
-When you run `exarp_tasks` or `exarp_motd`, the plugin:
-
-1. Detects your current directory and project root
-2. Identifies git repository name (if available)
-3. Filters Todo2 tasks that match:
-   - Current folder name
-   - Module/submodule paths
-   - Git repository name
-   - Task tags
-4. Displays relevant tasks or summary
+When you run `exarp_tasks` or `exarp_motd`, the plugin calls **exarp-go** (no local Python script). exarp-go:
 
 ### Example
 

@@ -13,7 +13,6 @@ import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pathlib import Path
 import sys
@@ -29,8 +28,7 @@ from python.services.security_integration_helper import (
 
 from .risk_free_rate_extractor import (
     RiskFreeRateExtractor,
-    RiskFreeRatePoint,
-    RiskFreeRateCurve
+    RiskFreeRatePoint
 )
 from .sofr_treasury_client import (
     SOFRTreasuryClient,

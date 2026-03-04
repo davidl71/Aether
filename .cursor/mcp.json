@@ -1,20 +1,64 @@
 {
   "mcpServers": {
     "exarp-go": {
-      "disabled": false,
-      "command": "/home/david/ib_box_spread_full_universal/scripts/run_exarp_go.sh",
+      "command": "/Users/dlowes/Projects/trading/ib_box_spread_full_universal/scripts/run_exarp_go.sh",
       "args": [],
       "env": {
-        "PROJECT_ROOT": "/home/david/ib_box_spread_full_universal",
-        "EXARP_MIGRATIONS_DIR": "/home/david/exarp-go/migrations"
-      }
+        "PROJECT_ROOT": "/Users/dlowes/Projects/trading/ib_box_spread_full_universal",
+        "EXARP_WATCH": "0"
+      },
+      "description": "exarp-go MCP: task_workflow, session, report, docs health, alignment, security. Used by both Cursor IDE and CLI agent. PROJECT_ROOT = this repo."
     },
     "filesystem": {
       "command": "npx",
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "/home/david/ib_box_spread_full_universal"
+        "/Users/dlowes/Projects/trading/ib_box_spread_full_universal"
+      ]
+    },
+    "git": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-git",
+        "--repository",
+        "/Users/dlowes/Projects/trading/ib_box_spread_full_universal"
+      ]
+    },
+    "semgrep": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@semgrep/mcp-server-semgrep"
+      ]
+    },
+    "agentic-tools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@pimzino/agentic-tools-mcp"
+      ]
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ]
+    },
+    "tractatus_thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "tractatus-thinking-mcp"
+      ]
+    },
+    "sequential_thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
       ]
     }
   }

@@ -7,7 +7,6 @@ methods when events occur.
 """
 
 import logging
-from typing import Optional
 
 from .event_bridge import event_bridge
 

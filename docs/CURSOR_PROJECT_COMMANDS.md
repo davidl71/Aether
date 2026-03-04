@@ -9,6 +9,8 @@ This document describes the project-specific commands available in Cursor IDE. T
 - **AI Chat**: Ask AI to run a command (e.g., "run the build command")
 - **Terminal**: Commands are also available as shell scripts
 
+**Intel Macs:** Several build/run commands in `.cursor/commands.json` use the **Apple Silicon** preset and path (`macos-arm64-debug`, `build/macos-arm64-debug/bin/...`). On an Intel Mac use preset `macos-x86_64-debug` and path `build/macos-x86_64-debug/bin/...` instead (e.g. run `build:debug-intel` or override in terminal: `CMAKE_PRESET=macos-x86_64-debug cmake --build --preset macos-x86_64-debug`). See [MACOS_ARM_VS_INTEL.md](MACOS_ARM_VS_INTEL.md).
+
 ---
 
 ## Cursor Agent CLI
@@ -41,7 +43,7 @@ Build with AI-friendly JSON output (quiet, parseable). This is the default build
 
 ### `build:debug`
 
-Build project in debug mode (ARM64).
+Build project in debug mode. Uses **Apple Silicon** preset by default; on Intel use `build:debug-intel` or see [MACOS_ARM_VS_INTEL.md](MACOS_ARM_VS_INTEL.md).
 
 **Command**: `cmake --build --preset macos-arm64-debug`
 

@@ -1,9 +1,7 @@
 """Tests for loan_manager.py - Python port of C++ loan manager."""
 
 import json
-import tempfile
 from datetime import datetime
-from pathlib import Path
 
 import pytest
 

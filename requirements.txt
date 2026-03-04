@@ -287,6 +287,8 @@ rpds-py==0.30.0
     # via
     #   jsonschema
     #   referencing
+ruff==0.15.4
+    # via -r requirements.in
 scikit-learn==1.8.0
     # via -r requirements.in
 scipy==1.16.3

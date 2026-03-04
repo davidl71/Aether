@@ -11,7 +11,7 @@ import json
 import subprocess
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 
 def count_files(pattern: str, exclude_dirs: List[str] = None) -> int:
@@ -586,7 +586,6 @@ def generate_scorecard(output_path: Path = None) -> str:
 
 
 if __name__ == '__main__':
-    import sys
     import argparse
 
     parser = argparse.ArgumentParser(

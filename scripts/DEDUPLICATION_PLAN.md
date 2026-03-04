@@ -24,11 +24,12 @@ Total scripts analyzed: **130+** files in `scripts/` directory
 ## 2. Documentation Validation (CONSOLIDATE → 1 script)
 
 **Current** (2 scripts):
-- `validate_docs_format.py` (199 lines)
-- `exarp_validate_docs_format.py` (253 lines) - **Different implementation**
+- `validate_docs_format.py` (199 lines) – **deleted**
+- `exarp_validate_docs_format.py` (253 lines) – **removed** (exarp Python tools removed from repo)
 
-**Action**: ✅ KEEP `exarp_validate_docs_format.py` (more features)
-- **DELETE**: `validate_docs_format.py` (older version)
+**Action**: Use **exarp-go** for docs format/health (check_documentation_health_tool). No local Python exarp scripts.
+- **DELETE**: `validate_docs_format.py` (older version) – already gone
+- **REMOVED**: `exarp_validate_docs_format.py` – exarp Python tools removed; use exarp-go
 
 ---
 
@@ -84,20 +85,19 @@ Total scripts analyzed: **130+** files in `scripts/` directory
 
 ## 7. TODO/Task Scripts (EVALUATE)
 
-**Current** (10 scripts):
-- `analyze_task_execution_modes.py` - Analysis tool
-- `audit_in_progress_tasks.py` - Audit tool
-- `automate_todo2_alignment_v2.py` - Alignment automation
-- `automate_todo2_duplicate_cleanup.py` - Cleanup automation
-- `automate_todo2_duplicate_detection.py` - Detection automation
-- `batch_update_todos.py` - Batch updates
-- `create_mcp_extensions_todos.py` - MCP extension todos
-- `exarp_sync_shared_todo.py` - Sync tool
-- `process_tasks_parallel.py` - Parallel processing
-- `resolve_task_clarifications.py` - Clarification resolver
+**Current** (10 scripts – exarp-go updates Todo2; no direct edits from this repo):
+- `analyze_task_execution_modes.py` - Analysis (read-only) ✅ KEEP
+- `audit_in_progress_tasks.py` - Audit (read-only) ✅ KEEP
+- ~~`automate_todo2_alignment_v2.py`~~ **Removed** – use exarp-go
+- ~~`automate_todo2_duplicate_cleanup.py`~~ **Removed** – no direct Todo2 edits
+- ~~`automate_todo2_duplicate_detection.py`~~ **Removed** – use exarp-go
+- ~~`batch_update_todos.py`~~ **Removed** – no direct Todo2 edits
+- ~~`create_mcp_extensions_todos.py`~~ **Removed** – no direct Todo2 edits
+- ~~`exarp_sync_shared_todo.py`~~ **Removed** – use exarp-go sync_todo_tasks_tool
+- ~~`process_tasks_parallel.py`~~ **Removed** – no direct Todo2 edits
+- ~~`resolve_task_clarifications.py`~~ **Removed** – no direct Todo2 edits
 
-**Action**: ✅ KEEP ALL (different purposes, actively used)
-- These scripts serve different purposes in the task management workflow
+**Action**: exarp-go is the source of task/todo updates. Scripts that wrote to `.todo2/state.todo2.json` were removed. Use exarp-go MCP (task_workflow, sync_todo_tasks_tool, etc.) or CLI.
 
 ---
 
@@ -155,7 +155,7 @@ Total scripts analyzed: **130+** files in `scripts/` directory
 ### High Confidence Deletions (12 scripts):
 1. ❌ `generate_cpp_coverage.sh` → Use `generate_coverage.sh --cpp`
 2. ❌ `generate_python_coverage.sh` → Use `generate_coverage.sh --python`
-3. ❌ `validate_docs_format.py` → Use `exarp_validate_docs_format.py`
+3. ❌ `validate_docs_format.py` / `exarp_validate_docs_format.py` → Use exarp-go (check_documentation_health_tool)
 4. ❌ `automate_documentation_link_fixing.py` → Use `exarp_fix_documentation_links.py`
 5. ❌ `update_global_docs.sh` → Use `sync_global_docs.py`
 6. ❌ `collect_system_info.sh` → Use `collect_system_info_python.py`
@@ -186,11 +186,11 @@ Estimated: **~2,500 lines** of redundant code removed
 
 2. **Documentation**:
    ```bash
-   # Old: ./scripts/validate_docs_format.py
-   # New: ./scripts/exarp_validate_docs_format.py
+   # Old: ./scripts/validate_docs_format.py or exarp_validate_docs_format.py
+   # New: exarp-go MCP check_documentation_health_tool (workingDirectory = project root)
    
    # Old: ./scripts/automate_documentation_link_fixing.py
-   # New: ./scripts/exarp_fix_documentation_links.py
+   # New: exarp-go MCP/CLI (exarp Python tools removed)
    
    # Old: ./scripts/update_global_docs.sh
    # New: ./scripts/sync_global_docs.py

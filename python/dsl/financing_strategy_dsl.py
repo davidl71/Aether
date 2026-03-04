@@ -4,7 +4,7 @@ Financing Strategy DSL - Multi-asset financing relationships
 Provides DSL for expressing complex multi-asset financing strategies.
 """
 
-from typing import List, Optional
+from typing import List
 from dataclasses import dataclass
 
 

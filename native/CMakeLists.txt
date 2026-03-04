@@ -36,6 +36,10 @@ cmake_minimum_required(VERSION 3.21)
 if(POLICY CMP0167)
   cmake_policy(SET CMP0167 OLD)
 endif()
+# Suppress any remaining developer/policy warnings from FetchContent subprojects (e.g. QuantLib).
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.25")
+  set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON)
+endif()
 
 # ============================================================================
 # macOS SDK / Toolchain Fix (must be before project() for correct compiler checks)
@@ -98,6 +102,47 @@ option(ENABLE_SCCACHE "Enable sccache compilation caching" OFF)
 option(ENABLE_NATIVE_CLI "Build the native ib_box_spread CLI" ON)
 option(TWS_API_BUILD_VENDOR "Build TWS API library from source (ibapi_cmake)" OFF)
 option(BUILD_AI_FRIENDLY "Quieter build + JSON compiler diagnostics for tools/AI" OFF)
+
+# ============================================================================
+# Early dependency check (fail fast before FetchContent / heavy configure)
+# When ENABLE_NATIVE_CLI is ON, require TWS API and Intel decimal to exist so
+# configure fails quickly with a clear hint instead of failing later.
+# ============================================================================
+if(ENABLE_NATIVE_CLI)
+  set(_tws_found OFF)
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/tws-api/source/cppclient/client"
+      OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/tws-api/IBJts")
+    set(_tws_found ON)
+  endif()
+  if(NOT _tws_found AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../tws-api/source/cppclient/client")
+    set(_tws_found ON)
+  endif()
+  if(NOT _tws_found AND TWS_API_SOURCE_DIR
+      AND EXISTS "${TWS_API_SOURCE_DIR}/source/cppclient/client")
+    set(_tws_found ON)
+  endif()
+
+  set(_intel_found OFF)
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a"
+      OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/IntelRDFPMathLib20U4/LIBRARY/libbid.a")
+    set(_intel_found ON)
+  endif()
+
+  if(NOT _tws_found OR NOT _intel_found)
+    set(_early_missing "")
+    if(NOT _tws_found)
+      list(APPEND _early_missing "TWS API")
+    endif()
+    if(NOT _intel_found)
+      list(APPEND _early_missing "Intel decimal (libbid.a)")
+    endif()
+    string(REPLACE ";" ", " _early_missing_str "${_early_missing}")
+    message(FATAL_ERROR
+      "Native CLI requires: ${_early_missing_str}.\n"
+      "Run from repo root: ./scripts/fetch_third_party.sh\n"
+      "Then reconfigure. See README for TWS API and Intel decimal setup.")
+  endif()
+endif()
 
 # ============================================================================
 # C++ Standard and Compiler Requirements
@@ -755,6 +800,23 @@ if(TWS_API_BUILD_VENDOR)
         -DCMAKE_INSTALL_PREFIX=${TWS_API_EXTERNAL_BINARY_DIR}/install
         -DCMAKE_POLICY_DEFAULT_CMP0126=NEW
     )
+    # Pass SDK and C++ header fix to TWS API sub-build (ExternalProject does not inherit CMAKE_CXX_FLAGS).
+    # ibapi_cmake adds the SDK C++ include dir when CMAKE_OSX_SYSROOT is set.
+    if(APPLE)
+        set(_tws_sysroot "${CMAKE_OSX_SYSROOT}")
+        if(NOT _tws_sysroot)
+            execute_process(
+                COMMAND xcrun --show-sdk-path
+                OUTPUT_VARIABLE _tws_sysroot
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET
+            )
+        endif()
+        if(_tws_sysroot)
+            list(APPEND _twsapi_cmake_args -DCMAKE_OSX_SYSROOT=${_tws_sysroot})
+            list(APPEND _twsapi_cmake_args "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}")
+        endif()
+    endif()
     if(Protobuf_ROOT)
         list(APPEND _twsapi_cmake_args -DProtobuf_ROOT=${Protobuf_ROOT})
     endif()
@@ -824,7 +886,10 @@ endif()
 
 if(ENABLE_NATIVE_CLI AND NOT _native_prereqs_met)
     string(REPLACE ";" ", " _missing_native_deps_str "${_missing_native_deps}")
-    message(WARNING "Native CLI prerequisites missing: ${_missing_native_deps_str}. The native binary will be skipped.")
+    message(FATAL_ERROR
+        "Native CLI requires: ${_missing_native_deps_str}.\n"
+        "Run from repo root: ./scripts/fetch_third_party.sh\n"
+        "Then reconfigure. See README for TWS API and Intel decimal setup.")
 endif()
 
 set(_build_native_cli OFF)

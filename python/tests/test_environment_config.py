@@ -1,12 +1,10 @@
 """Tests for python/services/environment_config.py."""
 
 import json
-import os
-from pathlib import Path
 
 import pytest
 
-from python.services.environment_config import EnvironmentConfig, get_config, reload_config
+from python.services.environment_config import EnvironmentConfig
 
 
 # ---------------------------------------------------------------------------

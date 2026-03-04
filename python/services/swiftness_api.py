@@ -5,10 +5,10 @@ Exposes Swiftness positions, cash flows, and validation via REST API
 """
 import logging
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import os
@@ -23,8 +23,7 @@ from python.services.security import (
     PathBoundaryEnforcer,
     RateLimiter,
     RateLimitMiddleware,
-    AccessControl,
-    require_api_key
+    AccessControl
 )
 
 # Configure logging

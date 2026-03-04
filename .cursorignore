@@ -47,6 +47,19 @@ cmake-build-*/
 **/build/
 **/build-*/
 
+# DMG images (third-party read-only disk images; binary)
+.dmg/
+
+# Generated code (reproducible at build; reduces AI context)
+native/generated/
+python/generated/
+web/src/generated/
+web/src/proto/
+
+# Web build output
+web/dist/
+web/dev-dist/
+
 # CMake generated files
 CMakeFiles/
 CMakeCache.txt

@@ -1,6 +1,10 @@
 # Batch TODO Update - Quick Reference
 
-## Most Common Commands
+**Status:** **Removed.** `scripts/batch_update_todos.py` was removed. Use **exarp-go** for task updates. See `docs/MCP_REQUIRED_SERVERS.md`.
+
+---
+
+## Most Common Commands (historical – use exarp-go instead)
 
 ### ✅ Batch Approve Research Tasks
 

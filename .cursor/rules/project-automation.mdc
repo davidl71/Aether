@@ -1,6 +1,6 @@
 # Exarp - Project Management Automation MCP Server Usage
 
-**Note**: This MCP server is configured as **"exarp"** in `.cursor/mcp.json`. The server is installed from the private GitHub repository and accessible via the "exarp" identifier in Cursor.
+**Note**: This MCP server is configured as **"exarp-go"** in `.cursor/mcp.json`, using the installed exarp-go binary (via `scripts/run_exarp_go.sh`). Use the "exarp-go" identifier in Cursor.
 
 **Name Origin**: Exarp is the Enochian name for the Spirit of Air, overseeing the Air Tablet. The Air element represents communication, clarity, and agility - perfect for an MCP server that facilitates communication between AI assistants and project management tools.
 
@@ -24,7 +24,7 @@ Use Project Automation tools when you need:
 
 ## 🚨 CRITICAL: Working Directory Parameter
 
-**All exarp-go (MCP "exarp") tools must be called with `workingDirectory` set to this project's root.**
+**All exarp-go (MCP "exarp-go") tools must be called with `workingDirectory` set to this project's root.**
 
 - **In Cursor:** Use the workspace root path (the repo root where you opened the project).
 - **Path varies by machine**, e.g.:
@@ -394,30 +394,21 @@ All tools use centralized error handling:
 
 ### Server Not Appearing
 1. **Restart Cursor completely** (not just reload)
-2. **Check Python path** - Ensure `python3` is in PATH
-3. **Check MCP package** - Run `pip3 install mcp`
-4. **Check file permissions** - Server file must be readable
+2. **Ensure exarp-go is installed** – On PATH or set `EXARP_GO_ROOT`; see `scripts/run_exarp_go.sh` and `docs/PORTABLE_BUILD_AND_RUNNER.md`
+3. **Check `.cursor/mcp.json`** – Should reference `run_exarp_go.sh` or exarp-go binary; see `docs/MCP_CONFIG_EXAMPLE.json`
 
 ### Tools Not Working
-1. **Check dependencies** - Ensure all automation scripts are available
-2. **Check project root** - Server needs access to project root
-3. **Check error logs** - Look for Python import errors
-4. **Check MCP logs** - Look in Cursor's MCP server logs
-
-### Import Errors
-1. **Install MCP:** `pip3 install mcp`
-2. **Check Python version:** Needs Python 3.9+
-3. **Verify server path** in `.cursor/mcp.json`
+1. **Set workingDirectory** – All tools need `workingDirectory` = this project's root (workspace root)
+2. **Check project root** – Server needs access to `.todo2`, `CMakeLists.txt`, etc.
+3. **Check MCP logs** – Look in Cursor's MCP server logs for exarp-go errors
 
 ---
 
 ## Configuration
 
-The server is configured in `.cursor/mcp.json` as **"exarp"** or **"exarp-go"**. Prefer the **exarp-go** (Go) binary when available.
+The server is configured in `.cursor/mcp.json` as **"exarp-go"**. Use the installed exarp-go binary (see `docs/MCP_CONFIG_EXAMPLE.json` and `docs/PORTABLE_BUILD_AND_RUNNER.md`).
 
-**Current setup:** See your `.cursor/mcp.json` for the active exarp/exarp-go entry. Exarp is now typically provided by **exarp-go** (Go MCP server); the former Python package (`exarp-automation-mcp` / `project_management_automation`) is legacy.
-
-**MCP Server Name**: `exarp` or `exarp-go` (configured identifier in Cursor)
+**MCP Server Name**: `exarp-go` (configured identifier in Cursor)
 
 ---
 
@@ -446,4 +437,4 @@ Result: Multi-language security report with critical issues highlighted
 
 ---
 
-**Reference:** See [Exarp Repository](https://github.com/davidl71/exarp-project-management) for detailed usage guide and documentation.
+**Reference:** See `docs/PORTABLE_BUILD_AND_RUNNER.md` and `docs/MCP_REQUIRED_SERVERS.md` for setup. Exarp-go repository: exarp-go (install via Go or use run_exarp_go.sh).

@@ -1,0 +1,56 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"
+      ]
+    },
+    "git": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-git",
+        "--repository",
+        "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"
+      ]
+    },
+    "semgrep": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@semgrep/mcp-server-semgrep"
+      ]
+    },
+    "agentic-tools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@pimzino/agentic-tools-mcp"
+      ]
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ]
+    },
+    "tractatus_thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "tractatus-thinking-mcp"
+      ]
+    },
+    "sequential_thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    }
+  }
+}

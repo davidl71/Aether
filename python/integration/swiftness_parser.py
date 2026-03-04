@@ -288,14 +288,14 @@ class SwiftnessParser:
 
         value = cell.value
 
-        if target_type == str:
+        if target_type is str:
             return str(value) if value is not None else ""
-        elif target_type == float:
+        elif target_type is float:
             try:
                 return float(value) if value is not None else (default or 0.0)
             except (ValueError, TypeError):
                 return default or 0.0
-        elif target_type == int:
+        elif target_type is int:
             try:
                 return int(value) if value is not None else (default or 0)
             except (ValueError, TypeError):

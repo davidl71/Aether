@@ -9,7 +9,6 @@ from python.integration.financing_comparator import (
     TaxConfig,
     InstrumentMetrics,
     ComparisonRow,
-    DecisionMatrix,
 )
 
 

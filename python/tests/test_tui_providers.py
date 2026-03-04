@@ -8,7 +8,7 @@ import json
 import tempfile
 import time
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock, mock_open
+from unittest.mock import Mock, patch
 
 import sys
 

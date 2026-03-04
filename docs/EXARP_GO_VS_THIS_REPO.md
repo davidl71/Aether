@@ -21,6 +21,13 @@ These stay in exarp-go; we only invoke them (MCP or `run_exarp_go.sh` / `run_exa
 
 ---
 
+## Duplicate script: run_exarp_go.sh (optional)
+
+- **In this repo:** `scripts/run_exarp_go.sh` is a **copy** of exarp-go's portable runner (with extra fallbacks for `../mcp/exarp-go` and `../../mcp/exarp-go`).
+- **Native exarp-go:** If you use exarp-go from the sibling repo or a global install, you can point MCP at that and **remove** `scripts/run_exarp_go.sh`; `run_exarp_go_tool.sh` and `just exarp-list` / `just exarp` prefer PATH / EXARP_GO_ROOT / sibling and only fall back to the in-repo script. See `docs/MCP_REQUIRED_SERVERS.md` (§ Using native exarp-go).
+
+---
+
 ## Overlap: shellcheck
 
 - **exarp-go:** The **lint** tool can run shellcheck when invoked with `linter=shellcheck` and a path (e.g. `path=scripts`). So `./scripts/run_exarp_go_tool.sh lint` with appropriate args can run shellcheck.

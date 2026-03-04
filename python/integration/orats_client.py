@@ -5,8 +5,7 @@ Provides options data, liquidity scores, and corporate events.
 import logging
 import requests
 from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta, timezone
-from functools import lru_cache
+from datetime import datetime, timedelta
 import time
 
 logger = logging.getLogger(__name__)
@@ -178,7 +177,7 @@ class ORATSClient:
                 return cached
         
         # Make request
-        endpoint = f"datav2/strikes"
+        endpoint = "datav2/strikes"
         params = {
             "ticker": ticker,
             "tradeDate": trade_date,
@@ -223,7 +222,7 @@ class ORATSClient:
             if cached is not None:
                 return cached
         
-        endpoint = f"datav2/cores"
+        endpoint = "datav2/cores"
         params = {
             "ticker": ticker,
             "tradeDate": trade_date,
@@ -444,7 +443,7 @@ class ORATSClient:
             if cached is not None:
                 return cached
         
-        endpoint = f"datav2/hist/strikes"
+        endpoint = "datav2/hist/strikes"
         params = {
             "ticker": ticker,
             "startDate": start_date,

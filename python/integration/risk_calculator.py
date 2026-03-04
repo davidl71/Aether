@@ -13,10 +13,10 @@ from __future__ import annotations
 
 import logging
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +182,7 @@ def calculate_correlation(x: List[float], y: List[float]) -> float:
         return 0.0
     mx, my = calculate_mean(x), calculate_mean(y)
     sxy, sx2, sy2 = 0.0, 0.0, 0.0
-    for xi, yi in zip(x, y):
+    for xi, yi in zip(x, y, strict=False):
         dx, dy = xi - mx, yi - my
         sxy += dx * dy
         sx2 += dx * dx
@@ -470,7 +470,7 @@ class RiskCalculator:
     ) -> float:
         if len(returns) != len(benchmark_returns) or not returns:
             return 0.0
-        excess = [r - b for r, b in zip(returns, benchmark_returns)]
+        excess = [r - b for r, b in zip(returns, benchmark_returns, strict=False)]
         mean_ex = calculate_mean(excess)
         te = calculate_standard_deviation(excess)
         if te == 0:

@@ -6,12 +6,11 @@ Uses mocked HTTP responses to avoid hitting the real API during testing.
 
 import pytest
 from unittest.mock import patch, MagicMock
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from python.integration.treasury_api_client import (
     TreasuryAPIClient,
     TreasuryRate,
-    get_treasury_benchmark,
     TREASURY_API_BASE,
 )
 

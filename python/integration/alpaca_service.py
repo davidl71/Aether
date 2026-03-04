@@ -17,7 +17,6 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any, Optional
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pathlib import Path
 import sys
@@ -173,7 +172,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="IB Box Spread Alpaca Service", version="0.1.0")
     
     # Add security components
-    security_components = add_security_to_app(app, project_root=project_root)
+    add_security_to_app(app, project_root=project_root)
     add_security_headers_middleware(app)
 
     # Support both OAuth and API key authentication

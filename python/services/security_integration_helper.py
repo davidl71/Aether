@@ -2,7 +2,6 @@
 Security integration helper for FastAPI services.
 Provides reusable functions to add security to any FastAPI app.
 """
-import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -102,7 +101,6 @@ def add_security_headers_middleware(app: FastAPI):
     Add security headers middleware to FastAPI app.
     """
     from starlette.middleware.base import BaseHTTPMiddleware
-    from starlette.responses import Response
     
     class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         async def dispatch(self, request, call_next):

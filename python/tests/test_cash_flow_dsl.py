@@ -7,8 +7,6 @@ import pytest
 
 from python.dsl.cash_flow_dsl import (
     CashFlowModel,
-    CashFlowResult,
-    Position,
     box_spread_lending,
     bank_loan,
     pension_loan,

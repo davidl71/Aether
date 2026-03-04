@@ -8,7 +8,7 @@ This script demonstrates how to:
 3. Compare with SOFR/Treasury benchmarks
 """
 
-from risk_free_rate_extractor import RiskFreeRateExtractor, RiskFreeRateCurve
+from risk_free_rate_extractor import RiskFreeRateExtractor
 from sofr_treasury_client import SOFRTreasuryClient, RateComparison
 
 # Example box spread opportunities (from your strategy)

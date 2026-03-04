@@ -26,17 +26,13 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from python.integration.cash_flow_timeline import (
-    calculate_cash_flow_timeline,
-    CashFlowTimelineResult,
-    CashFlowEvent,
-    MonthlyCashFlow
+    calculate_cash_flow_timeline
 )
 from python.integration.opportunity_simulation_calculator import (
     find_available_scenarios,
     calculate_net_benefit,
     calculate_scenario_results,
-    SimulationScenario,
-    ScenarioResult
+    SimulationScenario
 )
 
 # Initialize FastAPI app

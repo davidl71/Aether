@@ -2,7 +2,7 @@
 nautilus_bridge.py - Python bridge connecting nautilus_trader to C++ bindings
 """
 import logging
-from typing import Optional, Dict, List
+from typing import Optional, Dict
 
 logger = logging.getLogger(__name__)
 

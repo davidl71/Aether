@@ -5,12 +5,11 @@ This module manages WebSocket connections and broadcasts events to all connected
 """
 
 import asyncio
-import json
 import logging
 from typing import Set, Dict, Any
 from datetime import datetime, timezone
 
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
 

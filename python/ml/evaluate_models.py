@@ -152,7 +152,7 @@ def main():
 
   args = parser.parse_args()
 
-  evaluator = ModelEvaluator(args.models_dir)
+  ModelEvaluator(args.models_dir)
 
   # Load test data (same format as training data)
   # This would use the same data loading logic as train_models.py

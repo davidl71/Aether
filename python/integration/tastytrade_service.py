@@ -16,15 +16,15 @@ Environment:
 """
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 import os
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any, Optional
 
-from fastapi import FastAPI, Response, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
-import asyncio
 from pathlib import Path
 import sys
 
@@ -38,7 +38,6 @@ from python.services.security_integration_helper import (
 )
 
 from .tastytrade_client import TastytradeClient, TastytradeError
-from .config_loader import get_service_port
 
 # Optional DXLink import
 try:
@@ -48,6 +47,9 @@ except ImportError:
     DXLINK_AVAILABLE = False
     DXLinkClient = None
     DXLinkError = None
+
+
+logger = logging.getLogger(__name__)
 
 
 class AccountRequest(BaseModel):
@@ -228,10 +230,16 @@ def build_snapshot_payload(
     return payload
 
 
+async def _send_quote_async(websocket: WebSocket, quote: Dict[str, Any]) -> None:
+    """Send quote to WebSocket client."""
+    try:
+        await websocket.send_text(json.dumps({"type": "quote", "data": quote}))
+    except Exception as e:
+        logger.warning("Failed to send quote to WebSocket client: %s", e)
+
+
 async def _init_dxlink(dxlink_client: DXLinkClient, connected_websockets: List[WebSocket]) -> None:
     """Initialize DXLink connection in background."""
-    import logging
-    logger = logging.getLogger(__name__)
     try:
         await dxlink_client.connect()
         # Subscribe to default symbols
@@ -242,7 +250,7 @@ async def _init_dxlink(dxlink_client: DXLinkClient, connected_websockets: List[W
         # Register callback to broadcast quotes to all connected clients
         def broadcast_quote(quote: Dict[str, Any]) -> None:
             """Broadcast quote to all connected WebSocket clients."""
-            quote_message = json.dumps({
+            json.dumps({
                 "type": "quote",
                 "data": quote,
             })
@@ -263,7 +271,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="IB Box Spread Tastytrade Service", version="0.1.0")
     
     # Add security components
-    security_components = add_security_to_app(app, project_root=project_root)
+    add_security_to_app(app, project_root=project_root)
     add_security_headers_middleware(app)
 
     # Initialize Tastytrade client with OAuth or session-based auth
@@ -294,7 +302,6 @@ def create_app() -> FastAPI:
     # DXLink client for real-time streaming (optional)
     dxlink_client: Optional[DXLinkClient] = None
     connected_websockets: List[WebSocket] = []
-    dxlink_connected = False
 
     # Initialize DXLink if available (will connect on first use)
     if DXLINK_AVAILABLE:
@@ -559,16 +566,6 @@ def create_app() -> FastAPI:
             if websocket in connected_websockets:
                 connected_websockets.remove(websocket)
             logger.info(f"WebSocket client disconnected. Total clients: {len(connected_websockets)}")
-
-    async def _send_quote_async(websocket: WebSocket, quote: Dict[str, Any]) -> None:
-        """Send quote to WebSocket client (async wrapper)."""
-        try:
-            await websocket.send_text(json.dumps({
-                "type": "quote",
-                "data": quote,
-            }))
-        except Exception as e:
-            logger.warning(f"Failed to send quote to WebSocket client: {e}")
 
     @app.post("/api/auth/refresh")
     def refresh_token() -> Dict[str, Any]:

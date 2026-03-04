@@ -182,7 +182,6 @@ create_native_deb() {
   local pkg_name="ib-box-spread-native"
   local pkg_version="1.3.3"
   local pkg_dir="$PROJECT_ROOT/deb-packages/$pkg_name"
-  local build_dir="$pkg_dir/build"
 
   mkdir -p "$pkg_dir"/{DEBIAN,usr/{bin,lib,share/doc/$pkg_name,share/man/man1}}
 
@@ -208,7 +207,7 @@ create_native_deb() {
     mkdir -p build
     cd build
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr "$PROJECT_ROOT/native"
-    cmake --build . -j$(nproc)
+    cmake --build . -j"$(nproc)"
     DESTDIR="$pkg_dir" cmake --install .
     cd ..
   }
@@ -222,7 +221,6 @@ create_native_deb() {
   # Note: C++ TUI has been removed, Python TUI is now used
   # Install Python TUI wrapper script if needed
   # python -m python.tui
-  fi
 
   # Create control file
   cat > "$pkg_dir/DEBIAN/control" <<EOF

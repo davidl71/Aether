@@ -7,7 +7,6 @@ via REST endpoints matching the API contract defined in agents/shared/API_CONTRA
 
 import os
 import logging
-from typing import Optional
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect

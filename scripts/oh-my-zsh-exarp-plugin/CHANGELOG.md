@@ -36,10 +36,7 @@ Tasks are automatically filtered based on:
 - `exm` - `exarp_motd` (task summary MOTD)
 
 ### New Helper Script
-- `exarp_context_tasks.py` - Python script for context-aware task querying
-  - Commands: `list`, `summary`, `motd`
-  - Automatically detects project root and git repo
-  - Filters tasks by directory context
+- ~~`exarp_context_tasks.py`~~ **Removed:** Context-aware task querying is now provided by exarp-go (`exarp_tasks`, `exarp_motd`). No Python exarp tools in this repo.
 
 ### Usage Examples
 

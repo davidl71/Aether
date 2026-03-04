@@ -13,7 +13,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 DEFAULT_PRESET="macos-x86_64-release"
 PRESET="${CMAKE_PRESET:-${DEFAULT_PRESET}}"
-BUILD_DIR="${PROJECT_ROOT}/build/${PRESET}"
+# Ramdisk presets use binaryDir "build-ramdisk"; others use "build/${PRESET}"
+if [[ "${PRESET}" == *-ramdisk ]]; then
+  BUILD_DIR="${PROJECT_ROOT}/build-ramdisk"
+else
+  BUILD_DIR="${PROJECT_ROOT}/build/${PRESET}"
+fi
 LOG_DIR="${PROJECT_ROOT}/build/integration_logs"
 mkdir -p "${LOG_DIR}"
 timestamp="$(date +%Y%m%d-%H%M%S)"

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -190,15 +190,15 @@ class LoanManager:
         return list(self._loans.values())
 
     def get_active_loans(self) -> List[LoanPosition]:
-        return [l for l in self._loans.values() if l.status == LoanStatus.ACTIVE]
+        return [loan for loan in self._loans.values() if loan.status == LoanStatus.ACTIVE]
 
     # -- aggregates --
 
     def get_total_loan_liabilities(self) -> float:
         return sum(
-            l.get_adjusted_principal()
-            for l in self._loans.values()
-            if l.status == LoanStatus.ACTIVE
+            loan.get_adjusted_principal()
+            for loan in self._loans.values()
+            if loan.status == LoanStatus.ACTIVE
         )
 
     def get_total_loan_liabilities_usd(self, exchange_rate: float = 1.0) -> float:
@@ -206,9 +206,9 @@ class LoanManager:
 
     def get_monthly_payment_total(self) -> float:
         return sum(
-            l.monthly_payment
-            for l in self._loans.values()
-            if l.status == LoanStatus.ACTIVE
+            loan.monthly_payment
+            for loan in self._loans.values()
+            if loan.status == LoanStatus.ACTIVE
         )
 
     # -- CPI / SHIR updates --
@@ -248,7 +248,7 @@ class LoanManager:
             data = {
                 "version": "1.0",
                 "last_updated": datetime.now().isoformat(),
-                "loans": [l.to_dict() for l in self._loans.values()],
+                "loans": [loan.to_dict() for loan in self._loans.values()],
             }
             Path(self._file_path).parent.mkdir(parents=True, exist_ok=True)
             with open(self._file_path, "w") as f:

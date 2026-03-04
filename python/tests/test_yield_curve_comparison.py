@@ -11,7 +11,6 @@ from python.integration.yield_curve_comparison import (
     YieldCurveComparison,
     YieldCurveComparer,
     _tenor_label,
-    TENOR_LABELS,
 )
 
 

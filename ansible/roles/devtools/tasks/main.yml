@@ -1,47 +1,36 @@
+- name: Load OS-specific variables
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+  tags: [devtools, packages]
+
 - name: Ensure required packages on Debian/Ubuntu
   become: true
   ansible.builtin.apt:
-    name:
-      - python3
-      - python3-pip
-      - python3-venv
-      - python3-dev
-      - jq
-      - build-essential
-      - cmake
-      - ninja-build
-      - pkg-config
-      - curl
-      - inotify-tools
-      - git-lfs
-      # C++ build dependencies
-      - libboost-all-dev
-      - libprotobuf-dev
-      - protobuf-compiler
-      - libabsl-dev
-      - libblas-dev
-      - liblapack-dev
-      # libcurl for native HTTP client (find_package(CURL))
-      - libcurl4-openssl-dev
-      # Compiler cache for faster rebuilds (scripts/build_fast.sh)
-      - ccache
-      # Pre-commit / lint: shellcheck, markdownlint (Ruby gem for pre-commit)
-      - shellcheck
-      - cppcheck
-      - ruby
-      - ruby-dev
-      # SQLite CLI and dev headers (exarp-go, MCP, local DBs)
-      - sqlite3
-      - libsqlite3-dev
-      # Optional: docs (BUILD_DOCS=ON) and NATS (ENABLE_NATS=ON)
-      - doxygen
-      - nats-server
-      # Rust toolchain (agents/, Rust backends)
-      - cargo
-      - rustc
+    name: "{{ _devtools_packages }}"
     state: present
     update_cache: true
   when: ansible_facts['os_family'] == 'Debian'
+  tags: [devtools, packages]
+
+# --- CA certificates (exarp-go pattern: update trust store, verify bundle) ---
+- name: Update CA trust store (Debian/Ubuntu)
+  ansible.builtin.command: update-ca-certificates
+  register: ca_update_debian
+  changed_when: "'0 added' not in (ca_update_debian.stdout | default(''))"
+  when: ansible_facts['os_family'] == 'Debian'
+  tags: [devtools, security]
+
+- name: Verify CA certificate bundle exists (Debian)
+  ansible.builtin.stat:
+    path: "{{ _ca_bundle_path }}"
+  register: ca_bundle
+  when: ansible_facts['os_family'] == 'Debian'
+  tags: [devtools, security]
+
+- name: Display CA certificate status
+  ansible.builtin.debug:
+    msg: "Mozilla CA certificates: {{ '✅ Installed' if ca_bundle.stat.exists | default(false) else '❌ Not found' }} ({{ _ca_bundle_path }})"
+  when: ansible_facts['os_family'] == 'Debian'
+  tags: [devtools, security]
 
 - name: Install markdownlint gem (Debian, for pre-commit)
   become: false
@@ -54,37 +43,69 @@
 - name: Ensure Homebrew packages on macOS
   become: false
   community.general.homebrew:
-    name:
-      - jq
-      - go
-      - python
-      - curl
-      - act
-      - uv
-      - fswatch
-      - git-lfs
-      # C++ build and native CLI
-      - cmake
-      - ninja
-      - boost
-      - protobuf
-      - abseil
-      # Compiler cache for faster rebuilds (scripts/build_fast.sh; sccache preferred when present)
-      - ccache
-      - sccache
-      # Pre-commit / lint (matches .pre-commit-config.yaml)
-      - shellcheck
-      - cppcheck
-      - markdownlint-cli
-      # SQLite CLI and libs (exarp-go, MCP, local DBs)
-      - sqlite
-      # Optional: docs (BUILD_DOCS=ON) and NATS (ENABLE_NATS=ON)
-      - doxygen
-      - nats-server
-      # Rust toolchain (agents/, Rust backends)
-      - rust
+    name: "{{ _devtools_packages }}"
     state: present
   when: ansible_facts['os_family'] == 'Darwin'
+  tags: [devtools, packages]
+
+# ---------------------------------------------------------------------------
+# Nix (dev shell: flake.nix, USE_NIX=1, just nix <recipe>)
+# ---------------------------------------------------------------------------
+- name: Check if Nix is already installed
+  become: false
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: nix_install_check
+  loop:
+    - /nix/store
+    - "{{ ansible_facts.env.HOME }}/.nix-profile"
+  failed_when: false
+
+- name: Install Nix (macOS, multi-user recommended)
+  become: false
+  ansible.builtin.shell: |
+    set -e
+    curl -LsSf https://nixos.org/nix/install | sh
+  args:
+    executable: /bin/bash
+  environment:
+    HOME: "{{ ansible_facts.env.HOME }}"
+  register: nix_install_macos
+  changed_when: nix_install_macos.rc == 0
+  # Note: First run may prompt for confirmation; re-run playbook if skipped.
+  when:
+    - ansible_facts['os_family'] == 'Darwin'
+    - not (nix_install_check.results[0].stat.exists | default(false) or nix_install_check.results[1].stat.exists | default(false))
+
+- name: Install Nix (Debian/Ubuntu, single-user when not root)
+  become: false
+  ansible.builtin.shell: |
+    set -e
+    curl -LsSf https://nixos.org/nix/install | sh -s -- --no-daemon
+  args:
+    executable: /bin/bash
+  environment:
+    HOME: "{{ ansible_facts.env.HOME }}"
+  register: nix_install_debian
+  changed_when: nix_install_debian.rc == 0
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+    - not (nix_install_check.results[0].stat.exists | default(false) or nix_install_check.results[1].stat.exists | default(false))
+
+- name: Ensure Nix config directory exists
+  become: false
+  ansible.builtin.file:
+    path: "{{ ansible_facts.env.HOME }}/.config/nix"
+    state: directory
+    mode: "0755"
+
+- name: Enable Nix flakes and nix-command in user config
+  become: false
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_facts.env.HOME }}/.config/nix/nix.conf"
+    line: "experimental-features = nix-command flakes"
+    create: true
+    mode: "0644"
 
 - name: Add NATS Homebrew tap (macOS) for nats CLI
   community.general.homebrew_tap:

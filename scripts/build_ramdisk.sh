@@ -1,229 +1,80 @@
 #!/usr/bin/env bash
-# build_ramdisk.sh - Build project on RAM disk for faster compilation
-# Usage: ./build_ramdisk.sh [build|clean|test|install|setup]
+# build_ramdisk.sh - Thin wrapper: RAM disk setup + build_portable with -ramdisk preset (macOS).
 #
-# This script:
-# 1. Creates/sets up RAM disk if needed
-# 2. Configures CMake to use RAM disk build directory
-# 3. Builds the project on RAM disk
-# 4. Optionally runs tests
-
+# Usage: ./scripts/build_ramdisk.sh [setup|configure|build|test|clean|status|help]
+#
+# Delegates to setup_ramdisk.sh (create/status) and build_portable.sh (configure/build/test/clean).
+# Uses CMake preset macos-<arch>-debug-ramdisk when build-ramdisk is available (see setup_ramdisk.sh).
+# On non-macOS or when ramdisk is not set up, falls back to build_portable without -ramdisk.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-
 cd "${PROJECT_ROOT}"
 
-# Ensure third-party deps exist before configure/build
-# shellcheck source=./include/ensure_third_party.sh
-. "${SCRIPT_DIR}/include/ensure_third_party.sh"
-ensure_third_party
-
-# RAM disk configuration
-RAMDISK_NAME="IBBoxSpreadBuild"
-RAMDISK_PATH="/Volumes/${RAMDISK_NAME}"
-RAMDISK_BUILD="${RAMDISK_PATH}/build"
-
-# Use RAM disk build if available, otherwise fall back to regular build
-if [ -d "${RAMDISK_PATH}" ] && [ -d "${RAMDISK_BUILD}" ]; then
-  BUILD_DIR="${RAMDISK_BUILD}"
-  log_info() { echo "ℹ️  [RAM] $*"; }
-else
-  BUILD_DIR="${PROJECT_ROOT}/build"
-  log_info() { echo "ℹ️  $*"; }
-fi
-
-DEFAULT_PRESET="macos-x86_64-debug"
-PRESET="${CMAKE_PRESET:-${DEFAULT_PRESET}}"
-
-# Source logging functions
-if [ -f "${SCRIPT_DIR}/include/logging.sh" ]; then
-  # shellcheck source=./include/logging.sh
-  . "${SCRIPT_DIR}/include/logging.sh"
-fi
-type log_success &>/dev/null || log_success() { ( type log_info &>/dev/null && log_info "✓ $*" ) || echo "✓ $*"; }
-
-function check_ramdisk() {
-  if [ -d "${RAMDISK_PATH}" ] && [ -d "${RAMDISK_BUILD}" ]; then
-    local available_space
-    available_space=$(df -h "${RAMDISK_PATH}" | awk 'NR==2 {print $4}')
-    log_info "Using RAM disk build: ${BUILD_DIR}"
-    log_info "Available RAM disk space: ${available_space}"
-    return 0
-  else
-    log_info "RAM disk not available, using regular build directory: ${BUILD_DIR}"
-    log_info "Run './scripts/setup_ramdisk.sh create' to use RAM disk"
+# Resolve ramdisk preset (macOS only; preset exists in CMakePresets.json).
+ramdisk_preset() {
+  if [[ "$(uname -s)" != "Darwin" ]]; then
     return 1
   fi
+  local arch
+  arch="$(uname -m 2>/dev/null || echo unknown)"
+  case "${arch}" in
+    arm64|aarch64) echo "macos-arm64-debug-ramdisk" ;;
+    x86_64)        echo "macos-x86_64-debug-ramdisk" ;;
+    *)             return 1 ;;
+  esac
 }
 
-function setup_ramdisk() {
-  log_info "Setting up RAM disk..."
-  "${SCRIPT_DIR}/setup_ramdisk.sh" create || {
-    echo "Failed to create RAM disk, continuing with regular build"
-    return 1
-  }
-
-  # Update BUILD_DIR to use RAM disk
-  BUILD_DIR="${RAMDISK_BUILD}"
+# Use -ramdisk preset only if build-ramdisk link/dir exists (ramdisk was set up).
+use_ramdisk_preset() {
+  [[ -e "${PROJECT_ROOT}/build-ramdisk" ]] && ramdisk_preset || return 1
 }
 
-function configure_cmake() {
-  log_info "Configuring CMake with preset: ${PRESET}"
-  log_info "Build directory: ${BUILD_DIR}"
-
-  # Override binaryDir in preset to use RAM disk build directory
-  local build_subdir
-  build_subdir=$(echo "${PRESET}" | sed 's/macos-//')
-
-  cmake --preset "${PRESET}" -B "${BUILD_DIR}" || {
-    log_error "CMake configuration failed"
-    return 1
-  }
-
-  log_success "CMake configured successfully"
-}
-
-function build_project() {
-  log_info "Building project..."
-
-  if [ ! -f "${BUILD_DIR}/build.ninja" ] && [ ! -f "${BUILD_DIR}/Makefile" ]; then
-    log_info "Build files not found, configuring first..."
-    configure_cmake
-  fi
-
-  cmake --build "${BUILD_DIR}" "$@" || {
-    log_error "Build failed"
-    return 1
-  }
-
-  log_success "Build completed successfully"
-}
-
-function run_tests() {
-  log_info "Running tests..."
-
-  if [ ! -d "${BUILD_DIR}" ]; then
-    log_error "Build directory not found: ${BUILD_DIR}"
-    log_info "Run './scripts/build_ramdisk.sh build' first"
-    return 1
-  fi
-
-  ctest --test-dir "${BUILD_DIR}" --output-on-failure "$@" || {
-    log_error "Tests failed"
-    return 1
-  }
-
-  log_success "All tests passed"
-}
-
-function clean_build() {
-  log_info "Cleaning build directory: ${BUILD_DIR}"
-
-  if [ -d "${BUILD_DIR}" ]; then
-    rm -rf "${BUILD_DIR:?}"/*
-    log_success "Build directory cleaned"
-  else
-    log_info "Build directory does not exist"
-  fi
-}
-
-function show_status() {
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "  RAM Disk Build Status"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo ""
-
-  if check_ramdisk; then
-    echo "RAM Disk: ✓ Mounted"
-    df -h "${RAMDISK_PATH}" | tail -1 | awk '{printf "  Location: %s\n  Size: %s\n  Used: %s\n  Available: %s\n", $9, $2, $3, $4}'
-
-    if [ -d "${BUILD_DIR}" ]; then
-      echo ""
-      echo "Build Directory: ✓ ${BUILD_DIR}"
-      local build_size
-      build_size=$(du -sh "${BUILD_DIR}" 2>/dev/null | cut -f1 || echo "0")
-      echo "  Size: ${build_size}"
-    fi
-  else
-    echo "RAM Disk: ✗ Not mounted"
-    echo "  Run './scripts/setup_ramdisk.sh create' to enable RAM disk builds"
-    echo ""
-    echo "Using regular build directory: ${BUILD_DIR}"
-  fi
-  echo ""
-}
-
-function usage() {
+usage() {
   cat <<EOF
-Usage: $0 [command] [options...]
+Usage: $0 [command]
 
 Commands:
-  setup     - Create and configure RAM disk for builds
-  configure - Configure CMake (uses RAM disk if available)
-  build     - Build the project (uses RAM disk if available)
-  test      - Run tests (uses RAM disk build if available)
-  clean     - Clean build directory
-  status    - Show RAM disk and build status
-  help      - Show this help message
+  setup     - Create RAM disk and link build-ramdisk, then configure (macOS)
+  configure - Configure CMake (uses -ramdisk preset if build-ramdisk exists)
+  build     - Build (delegates to build_portable.sh)
+  test      - Run tests (delegates to build_portable.sh)
+  clean     - Clean build (delegates to build_portable.sh)
+  status    - Show RAM disk status (delegates to setup_ramdisk.sh status)
+  help      - This message
 
-Examples:
-  # Setup RAM disk and build
-  $0 setup
-  $0 build
-
-  # Or do it all at once
-  $0 build
-
-  # Run tests
-  $0 test
-
-  # Clean and rebuild
-  $0 clean
-  $0 build
-
-Environment variables:
-  CMAKE_PRESET - CMake preset to use (default: macos-x86_64-debug)
-  RAMDISK_SIZE_GB - RAM disk size in GB (default: 8)
-
-Notes:
-  - Automatically uses RAM disk if available, falls back to regular build
-  - RAM disk contents are lost on unmount or reboot
-  - Recommended for faster iteration during development
+Environment:
+  CMAKE_PRESET  Override preset (e.g. macos-arm64-debug-ramdisk)
+  USE_NIX=1     Passed through to build_portable.sh
 EOF
 }
 
-# Check if we're using RAM disk
-check_ramdisk || true
-
-# Main command handler
-case "${1:-build}" in
-setup)
-  setup_ramdisk
-  configure_cmake
-  ;;
-configure)
-  configure_cmake
-  ;;
-build)
-  build_project "${@:2}"
-  ;;
-test)
-  run_tests "${@:2}"
-  ;;
-clean)
-  clean_build
-  ;;
-status)
-  show_status
-  ;;
-help | --help | -h)
-  usage
-  ;;
-*)
-  log_error "Unknown command: $1"
-  usage
-  exit 1
-  ;;
+CMD="${1:-build}"
+case "${CMD}" in
+  setup)
+    "${SCRIPT_DIR}/setup_ramdisk.sh" create
+    PRESET="$(use_ramdisk_preset)" || PRESET="$(ramdisk_preset)"
+    export CMAKE_PRESET="${PRESET}"
+    exec "${SCRIPT_DIR}/build_portable.sh" configure
+    ;;
+  configure|build|test|clean)
+    PRESET="$(use_ramdisk_preset)" || PRESET=""
+    if [[ -n "${PRESET}" ]]; then
+      export CMAKE_PRESET="${PRESET}"
+    fi
+    exec "${SCRIPT_DIR}/build_portable.sh" "${CMD}" "${@:2}"
+    ;;
+  status)
+    exec "${SCRIPT_DIR}/setup_ramdisk.sh" status
+    ;;
+  help|--help|-h)
+    usage
+    exit 0
+    ;;
+  *)
+    echo "Unknown command: ${CMD}" >&2
+    usage
+    exit 1
+    ;;
 esac

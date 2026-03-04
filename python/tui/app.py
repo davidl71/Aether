@@ -14,31 +14,31 @@ MIGRATION NOTES FOR FUTURE C++ MIGRATION (pybind11):
 
 from __future__ import annotations
 
-import json
 import logging
-import os
 from pathlib import Path
 from typing import Optional, List, Dict
 
 from textual.app import App, ComposeResult
-from textual.containers import Container, Horizontal, Vertical
+from textual.containers import Container
 from textual.widgets import (
     Header,
     Footer,
-    Static,
-    DataTable,
     TabbedContent,
     TabPane,
-    Label,
-    Log,
-    Button,
 )
 from textual.binding import Binding
-from textual.reactive import reactive
 
-from .models import SnapshotPayload, Severity, BoxSpreadPayload, BoxSpreadSummary
+from .models import SnapshotPayload, BoxSpreadPayload
 from .providers import Provider, MockProvider, RestProvider, FileProvider
 from .config import TUIConfig, load_config
+from .box_spread_loader import get_box_spread_payload
+from .components.snapshot_display import SnapshotDisplay
+from .components.dashboard import DashboardTab
+from .components.positions import PositionsTab
+from .components.orders import OrdersTab
+from .components.alerts import AlertsTab
+from .components.scenarios import ScenariosTab
+from .components.historic import HistoricTab
 from .components.unified_positions import UnifiedPositionsTab
 from .components.cash_flow import CashFlowTab
 from .components.opportunity_simulation import OpportunitySimulationTab
@@ -46,320 +46,6 @@ from .components.relationship_visualization import RelationshipVisualizationTab
 from .components.loan_entry import LoanListTab, LoanManager
 
 logger = logging.getLogger(__name__)
-
-
-class SnapshotDisplay(Static):
-    """Widget that displays snapshot data reactively"""
-
-    snapshot: reactive[Optional[SnapshotPayload]] = reactive(None)
-
-    def watch_snapshot(self, snapshot: Optional[SnapshotPayload]) -> None:
-        """Called when snapshot changes"""
-        if snapshot:
-            self.update(self._format_snapshot(snapshot))
-        else:
-            self.update("Waiting for data...")
-
-    def _format_snapshot(self, snapshot: SnapshotPayload) -> str:
-        """Format snapshot for display"""
-        time_str = (
-            snapshot.generated_at.split("T")[1].split(".")[0]
-            if snapshot.generated_at
-            else "--:--:--"
-        )
-        return f"Time: {time_str} | Mode: {snapshot.mode} | Strategy: {snapshot.strategy} | Account: {snapshot.account_id}"
-
-
-class DashboardTab(Container):
-    """Dashboard tab showing symbols and metrics"""
-
-    def __init__(self, snapshot: Optional[SnapshotPayload] = None):
-        super().__init__()
-        self.snapshot = snapshot
-
-    def compose(self) -> ComposeResult:
-        with Vertical():
-            yield Label("Dashboard", classes="tab-title")
-            yield Label(id="missing-symbols-label")
-            yield DataTable(id="symbols-table")
-            yield Label(id="metrics-label")
-
-    def on_mount(self) -> None:
-        table = self.query_one("#symbols-table", DataTable)
-        table.add_columns("Symbol", "Last", "Bid", "Ask", "Spread", "ROI%")
-        self._update_data()
-
-    def update_snapshot(self, snapshot: SnapshotPayload) -> None:
-        """Update with new snapshot data"""
-        self.snapshot = snapshot
-        self._update_data()
-
-    def _update_data(self) -> None:
-        if not self.snapshot:
-            return
-
-        # Default watchlist symbols (matching PWA)
-        default_watchlist = ['SPX', 'XSP', 'NANOS', 'TLT', 'DSP']
-
-        # Find missing symbols
-        available_symbols = {s.symbol.upper() for s in self.snapshot.symbols}
-        missing_symbols = [s for s in default_watchlist if s.upper() not in available_symbols]
-
-        # Update missing symbols label
-        missing_label = self.query_one("#missing-symbols-label", Label)
-        if missing_symbols:
-            missing_label.update(
-                f"⚠️ Note: The following symbols are in your watchlist but not available in the current snapshot: {', '.join(missing_symbols)}"
-            )
-            missing_label.add_class("warning")
-        else:
-            missing_label.update("")
-            missing_label.remove_class("warning")
-
-        table = self.query_one("#symbols-table", DataTable)
-        table.clear()
-
-        for symbol in self.snapshot.symbols:
-            table.add_row(
-                symbol.symbol,
-                f"{symbol.last:.2f}" if symbol.last > 0 else "--",
-                f"{symbol.bid:.2f}" if symbol.bid > 0 else "--",
-                f"{symbol.ask:.2f}" if symbol.ask > 0 else "--",
-                f"{symbol.spread:.2f}" if symbol.spread > 0 else "--",
-                f"{symbol.roi:.2f}" if symbol.roi > 0 else "--",
-            )
-
-        metrics = self.snapshot.metrics
-        metrics_label = self.query_one("#metrics-label", Label)
-        metrics_label.update(
-            f"Positions: {len(self.snapshot.positions)} | "
-            f"Orders: {len(self.snapshot.orders)} | "
-            f"Alerts: {len(self.snapshot.alerts)} | "
-            f"Net Liq: ${metrics.net_liq:,.0f}"
-        )
-
-
-class PositionsTab(Container):
-    """Positions tab showing current positions"""
-
-    def __init__(self, snapshot: Optional[SnapshotPayload] = None):
-        super().__init__()
-        self.snapshot = snapshot
-
-    def compose(self) -> ComposeResult:
-        with Vertical():
-            yield Label("Current Positions", classes="tab-title")
-            yield DataTable(id="positions-table")
-
-    def on_mount(self) -> None:
-        table = self.query_one("#positions-table", DataTable)
-        table.add_columns("Name", "Qty", "ROI%", "Mk/Tk", "Rebate", "Vega", "Theta")
-        self._update_data()
-
-    def update_snapshot(self, snapshot: SnapshotPayload) -> None:
-        """Update with new snapshot data"""
-        self.snapshot = snapshot
-        self._update_data()
-
-    def _update_data(self) -> None:
-        if not self.snapshot:
-            return
-
-        table = self.query_one("#positions-table", DataTable)
-        table.clear()
-
-        for pos in self.snapshot.positions:
-            table.add_row(
-                pos.name,
-                str(pos.quantity),
-                f"{pos.roi:.2f}",
-                f"{pos.maker_count}/{pos.taker_count}",
-                f"{pos.rebate_estimate:.2f}",
-                f"{pos.vega:.2f}",
-                f"{pos.theta:.2f}",
-            )
-
-
-class OrdersTab(Container):
-    """Orders tab showing recent orders"""
-
-    def __init__(self, snapshot: Optional[SnapshotPayload] = None):
-        super().__init__()
-        self.snapshot = snapshot
-
-    def compose(self) -> ComposeResult:
-        with Vertical():
-            yield Label("Recent Orders", classes="tab-title")
-            yield Log(id="orders-log")
-
-    def on_mount(self) -> None:
-        """Called when tab is mounted"""
-        self._update_data()
-
-    def update_snapshot(self, snapshot: SnapshotPayload) -> None:
-        """Update with new snapshot data"""
-        self.snapshot = snapshot
-        self._update_data()
-
-    def _update_data(self) -> None:
-        if not self.snapshot:
-            return
-
-        try:
-            log = self.query_one("#orders-log", Log)
-            log.clear()
-
-            for order in self.snapshot.orders:
-                time_str = (
-                    order.timestamp.split("T")[1].split(".")[0]
-                    if order.timestamp
-                    else "--:--:--"
-                )
-                log.write(f"[{time_str}] {order.text}")
-        except Exception:
-            # Widget might not be mounted yet
-            pass
-
-
-class AlertsTab(Container):
-    """Alerts tab showing system alerts"""
-
-    def __init__(self, snapshot: Optional[SnapshotPayload] = None):
-        super().__init__()
-        self.snapshot = snapshot
-
-    def compose(self) -> ComposeResult:
-        with Vertical():
-            yield Label("Alerts", classes="tab-title")
-            yield Log(id="alerts-log")
-
-    def on_mount(self) -> None:
-        """Called when tab is mounted"""
-        self._update_data()
-
-    def update_snapshot(self, snapshot: SnapshotPayload) -> None:
-        """Update with new snapshot data"""
-        self.snapshot = snapshot
-        self._update_data()
-
-    def _update_data(self) -> None:
-        if not self.snapshot:
-            return
-
-        try:
-            log = self.query_one("#alerts-log", Log)
-            log.clear()
-
-            for alert in self.snapshot.alerts:
-                time_str = (
-                    alert.timestamp.split("T")[1].split(".")[0]
-                    if alert.timestamp
-                    else "--:--:--"
-                )
-                severity_style = self._get_severity_style(alert.severity)
-                log.write(
-                    f"[{time_str}] [{severity_style}]{alert.text}[/]", markup=True
-                )
-        except Exception:
-            # Widget might not be mounted yet
-            pass
-
-    def _get_severity_style(self, severity: Severity) -> str:
-        """Get Textual markup style for severity"""
-        styles = {
-            Severity.INFO: "cyan",
-            Severity.SUCCESS: "green",
-            Severity.WARN: "yellow",
-            Severity.WARNING: "yellow",
-            Severity.ERROR: "red",
-            Severity.CRITICAL: "bold red",
-        }
-        return styles.get(severity, "white")
-
-
-class ScenariosTab(Container):
-    """Scenarios tab showing box spread scenarios"""
-
-    def __init__(self, box_spread_data: Optional[BoxSpreadPayload] = None):
-        super().__init__()
-        self.box_spread_data = box_spread_data
-
-    def compose(self) -> ComposeResult:
-        with Vertical():
-            yield Label("Box Spread Scenarios", classes="tab-title")
-            yield Static(id="scenario-summary")
-            yield DataTable(id="scenarios-table")
-
-    def on_mount(self) -> None:
-        """Called when tab is mounted"""
-        table = self.query_one("#scenarios-table", DataTable)
-        table.add_columns(
-            "Width", "Style", "Buy Profit", "Sell Profit", "APR %", "Fill Prob"
-        )
-        self._update_data()
-
-    def update_data(self, box_spread_data: BoxSpreadPayload) -> None:
-        """Update with new box spread data"""
-        self.box_spread_data = box_spread_data
-        self._update_data()
-
-    def _update_data(self) -> None:
-        if not self.box_spread_data:
-            try:
-                summary = self.query_one("#scenario-summary", Static)
-                summary.update("Loading scenarios...")
-            except Exception:
-                pass
-            return
-
-        try:
-            # Calculate summary
-            summary_stats = BoxSpreadSummary.calculate(self.box_spread_data)
-
-            # Update summary
-            summary = self.query_one("#scenario-summary", Static)
-            summary_text = (
-                f"Total Scenarios: {summary_stats.total_scenarios} | "
-                f"Average APR: {summary_stats.avg_apr:.2f}% | "
-                f"Probable (fill_prob > 0): {summary_stats.probable_count}"
-            )
-            if summary_stats.max_apr_scenario:
-                summary_text += (
-                    f" | Max APR: {summary_stats.max_apr_scenario.annualized_return:.2f}% "
-                    f"({summary_stats.max_apr_scenario.width:.2f} pts)"
-                )
-            summary.update(summary_text)
-
-            # Update table
-            table = self.query_one("#scenarios-table", DataTable)
-            table.clear()
-
-            # Filter to European-style scenarios (default behavior, matching web app)
-            european_scenarios = [
-                s for s in self.box_spread_data.scenarios
-                if s.option_style == "European"
-            ]
-            scenarios_to_show = european_scenarios if european_scenarios else self.box_spread_data.scenarios
-
-            for scenario in scenarios_to_show:
-                buy_profit = scenario.buy_profit if scenario.buy_profit is not None else 0.0
-                sell_profit = scenario.sell_profit if scenario.sell_profit is not None else 0.0
-
-                table.add_row(
-                    f"{scenario.width:.2f}",
-                    scenario.option_style,
-                    f"${buy_profit:.2f}" if buy_profit != 0.0 else "—",
-                    f"${sell_profit:.2f}" if sell_profit != 0.0 else "—",
-                    f"{scenario.annualized_return:.2f}%",
-                    f"{scenario.fill_probability:.0f}%"
-                )
-        except Exception as e:
-            logger.error(f"Error updating scenarios: {e}")
-            try:
-                summary = self.query_one("#scenario-summary", Static)
-                summary.update(f"Error loading scenarios: {e}")
-            except Exception:
-                pass
 
 
 class TUIApp(App):
@@ -415,8 +101,6 @@ class TUIApp(App):
         Binding("f2", "setup", "Setup"),
         Binding("f5", "refresh", "Refresh"),
         Binding("f10", "quit", "Quit"),
-        Binding("tab", "next_tab", "Next Tab"),
-        Binding("shift+tab", "prev_tab", "Previous Tab"),
     ]
 
     def __init__(self, provider: Provider, config: Optional[TUIConfig] = None):
@@ -434,8 +118,10 @@ class TUIApp(App):
         self._orders_tab: Optional[OrdersTab] = None
         self._alerts_tab: Optional[AlertsTab] = None
         self._scenarios_tab: Optional[ScenariosTab] = None
+        self._historic_tab: Optional[HistoricTab] = None
         self._loan_tab: Optional[LoanListTab] = None
         self._box_spread_file_path = Path("web/public/data/box_spread_sample.json")
+        self._last_box_spread_mtime: Optional[float] = None
         self._bank_accounts: List[Dict] = []
         self._loan_manager = LoanManager("config/loans.json")
 
@@ -472,7 +158,8 @@ class TUIApp(App):
                     yield self._positions_tab
 
                 with TabPane("Historic", id="historic-tab"):
-                    yield Label("Historic Positions (coming soon)")
+                    self._historic_tab = HistoricTab()
+                    yield self._historic_tab
 
                 with TabPane("Orders", id="orders-tab"):
                     self._orders_tab = OrdersTab()
@@ -533,6 +220,8 @@ class TUIApp(App):
                 self._orders_tab.update_snapshot(new_snapshot)
             if self._alerts_tab:
                 self._alerts_tab.update_snapshot(new_snapshot)
+            if self._historic_tab:
+                self._historic_tab.update_snapshot(new_snapshot)
 
     def _fetch_bank_accounts(self) -> None:
         """Fetch bank accounts from Discount Bank service"""
@@ -554,44 +243,20 @@ class TUIApp(App):
             # Silently fail - bank accounts are optional
 
     def _update_box_spread_data(self) -> None:
-        """Update box spread data from REST API, falling back to local file"""
-        data = None
-
-        api_url = self.config.rest_endpoint.rsplit("/", 1)[0] + "/scenarios"
-        try:
-            import requests as _req
-            resp = _req.get(api_url, timeout=2.0, headers={"Accept": "application/json"})
-            if resp.ok:
-                data = resp.json()
-        except Exception:
-            pass
-
-        if data is None:
-            try:
-                if not self._box_spread_file_path.exists():
-                    return
-                current_mtime = self._box_spread_file_path.stat().st_mtime
-                if hasattr(self, '_last_box_spread_mtime'):
-                    if current_mtime <= self._last_box_spread_mtime:
-                        return
-                self._last_box_spread_mtime = current_mtime
-                with open(self._box_spread_file_path, 'r') as f:
-                    data = json.load(f)
-            except Exception as e:
-                logger.error(f"Error reading box spread file: {e}")
-                return
-
-        if data is None:
+        """Update box spread data from REST or file via loader."""
+        payload, new_mtime = get_box_spread_payload(
+            self.config,
+            self._box_spread_file_path,
+            self._last_box_spread_mtime,
+        )
+        if new_mtime is not None:
+            self._last_box_spread_mtime = new_mtime
+        if payload is None:
             return
-
-        try:
-            new_data = BoxSpreadPayload.from_dict(data)
-            if new_data != self.box_spread_data:
-                self.box_spread_data = new_data
-                if self._scenarios_tab:
-                    self._scenarios_tab.update_data(new_data)
-        except Exception as e:
-            logger.error(f"Error updating box spread data: {e}")
+        if payload != self.box_spread_data:
+            self.box_spread_data = payload
+            if self._scenarios_tab:
+                self._scenarios_tab.update_data(payload)
 
     def action_quit(self) -> None:
         """Quit the application"""
@@ -609,16 +274,6 @@ class TUIApp(App):
         """Force refresh snapshot"""
         self._update_snapshot()
         self.notify("Refreshed", title="Refresh")
-
-    def action_next_tab(self) -> None:
-        """Switch to next tab"""
-        tabs = self.query_one("#tabs", TabbedContent)
-        # Textual handles tab switching automatically
-
-    def action_prev_tab(self) -> None:
-        """Switch to previous tab"""
-        tabs = self.query_one("#tabs", TabbedContent)
-        # Textual handles tab switching automatically
 
 
 def create_provider_from_config(config: TUIConfig) -> Provider:
@@ -654,7 +309,6 @@ def create_provider_from_config(config: TUIConfig) -> Provider:
 
 def main():
     """Main entry point for Python TUI"""
-    import sys
 
     # Setup logging
     logging.basicConfig(

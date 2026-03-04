@@ -1,7 +1,7 @@
 // ib_client_portal_stub_adapter.h - IB Client Portal stub adapter implementing IBroker interface with mock data
 #pragma once
 
-#include <box_spread/brokers/broker_interface.h>
+#include "brokers/broker_interface.h"
 #include <string>
 #include <mutex>
 #include <map>

@@ -20,8 +20,7 @@ fn to_timestamp(dt: &chrono::DateTime<chrono::Utc>) -> Timestamp {
 }
 
 fn from_timestamp(ts: &Timestamp) -> chrono::DateTime<chrono::Utc> {
-    chrono::DateTime::from_timestamp(ts.seconds, ts.nanos.max(0) as u32)
-        .unwrap_or_default()
+    chrono::DateTime::from_timestamp(ts.seconds, ts.nanos.max(0) as u32).unwrap_or_default()
 }
 
 fn opt_ts(dt: &chrono::DateTime<chrono::Utc>) -> Option<Timestamp> {
@@ -254,7 +253,11 @@ impl From<pb::RiskStatus> for RiskStatusSnapshot {
     fn from(r: pb::RiskStatus) -> Self {
         Self {
             allowed: r.allowed,
-            reason: if r.reason.is_empty() { None } else { Some(r.reason) },
+            reason: if r.reason.is_empty() {
+                None
+            } else {
+                Some(r.reason)
+            },
             updated_at: unwrap_ts(r.updated_at.as_ref()),
         }
     }

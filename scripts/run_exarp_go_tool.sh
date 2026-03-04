@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
-# Run a single exarp-go tool from scripts/CI/make. PROJECT_ROOT is set by run_exarp_go.sh.
+# Run a single exarp-go tool (lint, testing, security, etc.). Prefers native exarp-go
+# from PATH, EXARP_GO_ROOT, or sibling repo (../mcp/exarp-go); falls back to in-repo
+# scripts/run_exarp_go.sh if present.
 # Usage: run_exarp_go_tool.sh <tool_name> [json_args]
 # Example: run_exarp_go_tool.sh lint
 #          run_exarp_go_tool.sh lint '{"path":"native/src"}'
+#          run_exarp_go_tool.sh --list
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+export PROJECT_ROOT
+
 TOOL="${1:-}"
 ARGS="${2:-{}}"
 
@@ -16,9 +22,30 @@ if [[ -z "${TOOL}" ]]; then
   exit 1
 fi
 
-if [[ "${TOOL}" == "--list" ]]; then
-  exec "${SCRIPT_DIR}/run_exarp_go.sh" -list -quiet
+# Resolve exarp-go: PATH -> EXARP_GO_ROOT -> sibling mcp/exarp-go -> in-repo run_exarp_go.sh
+EXARP_GO_CMD=""
+if command -v exarp-go &>/dev/null; then
+  EXARP_GO_CMD="exarp-go"
+elif [[ -n "${EXARP_GO_ROOT:-}" ]] && [[ -x "${EXARP_GO_ROOT}/bin/exarp-go" ]]; then
+  EXARP_GO_CMD="${EXARP_GO_ROOT}/bin/exarp-go"
+elif [[ -x "${PROJECT_ROOT}/../mcp/exarp-go/bin/exarp-go" ]]; then
+  EXARP_GO_CMD="${PROJECT_ROOT}/../mcp/exarp-go/bin/exarp-go"
+elif [[ -x "${PROJECT_ROOT}/../../mcp/exarp-go/bin/exarp-go" ]]; then
+  EXARP_GO_CMD="${PROJECT_ROOT}/../../mcp/exarp-go/bin/exarp-go"
+elif [[ -x "${SCRIPT_DIR}/run_exarp_go.sh" ]]; then
+  # Fallback: in-repo portable runner (duplicate of exarp-go's script)
+  if [[ "${TOOL}" == "--list" ]]; then
+    exec "${SCRIPT_DIR}/run_exarp_go.sh" -list -quiet
+  fi
+  exec "${SCRIPT_DIR}/run_exarp_go.sh" -tool "${TOOL}" -args "${ARGS}" -quiet
 fi
 
-# -quiet for script/CI; optional -json for machine-readable
-exec "${SCRIPT_DIR}/run_exarp_go.sh" -tool "${TOOL}" -args "${ARGS}" -quiet
+if [[ -z "${EXARP_GO_CMD}" ]]; then
+  echo "exarp-go not found. Install it (go install or build from exarp-go repo), set PATH or EXARP_GO_ROOT, or keep scripts/run_exarp_go.sh in this repo." >&2
+  exit 1
+fi
+
+if [[ "${TOOL}" == "--list" ]]; then
+  exec "${EXARP_GO_CMD}" -list -quiet
+fi
+exec "${EXARP_GO_CMD}" -tool "${TOOL}" -args "${ARGS}" -quiet

@@ -11,7 +11,7 @@ import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import List, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal
 
 logger = logging.getLogger(__name__)
@@ -129,7 +129,7 @@ class CashFlowModel:
             rate = float(pos.rate)
             maturity = _parse_maturity(pos.maturity)
             ppy = _payment_multiplier(pos.payments)
-            months_per_payment = 12 // ppy
+            12 // ppy
 
             if pos.type in _LOAN_TYPES:
                 monthly_rate = rate / 12.0

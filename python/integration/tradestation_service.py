@@ -16,8 +16,7 @@ import os
 from datetime import datetime, timezone
 from typing import Dict, List, Any
 
-from fastapi import FastAPI, Response
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
 from pathlib import Path
 import sys
 
@@ -100,7 +99,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="IB Box Spread TradeStation Service", version="0.1.0")
     
     # Add security components
-    security_components = add_security_to_app(app, project_root=project_root)
+    add_security_to_app(app, project_root=project_root)
     add_security_headers_middleware(app)
 
     client = TradeStationClient()

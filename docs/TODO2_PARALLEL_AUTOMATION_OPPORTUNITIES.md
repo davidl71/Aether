@@ -1,9 +1,11 @@
 # Todo2 Parallel/Background Automation Opportunities
 
 **Date**: 2025-11-30
-**Status**: ✅ **Automation Script Created - Ready to Execute**
+**Status:** **Scripts removed.** This repo does not perform direct Todo2 edits. `scripts/automate_todo2_duplicate_cleanup.py` and other Todo2-writing scripts were removed. Use **exarp-go** for duplicate detection, sync, and task updates. See `docs/MCP_REQUIRED_SERVERS.md`.
 
-## Executive Summary
+---
+
+## Executive Summary (historical)
 
 Based on duplicate detection analysis, **19 tasks can be automatically processed in parallel/background** without human intervention:
 

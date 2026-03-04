@@ -13,12 +13,32 @@ cd "${PROJECT_ROOT}"
 . "${SCRIPT_DIR}/include/ensure_third_party.sh"
 ensure_third_party
 
+# Default preset from OS/arch (same logic as build_ai_friendly.sh / shortcuts/run_build.sh)
+detect_default_preset() {
+  local arch os
+  arch="$(uname -m 2>/dev/null || echo unknown)"
+  os="$(uname -s 2>/dev/null || echo unknown)"
+  case "${os}" in
+    Darwin)
+      if [[ "${arch}" == "arm64" || "${arch}" == "aarch64" ]]; then
+        echo "macos-arm64-debug"
+      else
+        echo "macos-x86_64-debug"
+      fi
+      ;;
+    Linux)
+      echo "linux-x64-debug"
+      ;;
+    *) echo "macos-x86_64-debug" ;;
+  esac
+}
+
 # Log file in project directory
 LOG_FILE="${PROJECT_ROOT}/logs/build_$(date +%Y%m%d_%H%M%S).log"
 mkdir -p "${PROJECT_ROOT}/logs"
 
-# Preset (default to macos-arm64-debug)
-PRESET="${1:-macos-arm64-debug}"
+# Preset (default from arch on macOS, else first arg)
+PRESET="${1:-$(detect_default_preset)}"
 
 # Function to log with timestamp
 log() {

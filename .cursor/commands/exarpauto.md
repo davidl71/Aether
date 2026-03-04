@@ -1,34 +1,29 @@
 # Exarp Daily Automation
 
-Run daily automation checks including documentation health, task alignment, duplicate detection, and security scanning.
+Run project automation via **exarp-go** (released/installed). Prefer the exarp-go MCP server in Cursor.
 
 ## Usage
 
-Run Exarp MCP tools in Cursor chat (exarp-go server must be configured in `.cursor/mcp.json`). For example:
+1. **In Cursor** – exarp-go is configured in `.cursor/mcp.json` to use the sibling repo’s runner (`../../mcp/exarp-go/scripts/run_exarp_go.sh`). See `docs/MCP_CONFIG_EXAMPLE.json`. In chat you can ask:
+   - "Check documentation health and create Todo2 tasks for issues"
+   - "Analyze Todo2 alignment with project goals"
+   - "Find duplicate Todo2 tasks"
 
-- "Check documentation health and create Todo2 tasks for issues"
-- "Analyze Todo2 alignment with project goals"
-- "Find duplicate Todo2 tasks with 85% similarity"
-
-**Manual fallback** (when exarp-go MCP isn't available and `uvx exarp` is installed):
-
-```bash
-cd /path/to/ib_box_spread_full_universal
-uvx exarp check-documentation-health . --dry-run
-uvx exarp analyze-todo2-alignment .
-uvx exarp detect-duplicate-tasks .
-```
-
-Or use `scripts/exarp_daily_automation_wrapper.py` which runs all three via `uvx exarp`.
+2. **CLI** – With exarp-go on PATH (e.g. `go install` or system install):
+   ```bash
+   cd /path/to/ib_box_spread_full_universal
+   exarp-go task sync
+   ./scripts/run_exarp_go_tool.sh lint
+   ```
+   The tool script uses this project’s `scripts/run_exarp_go.sh` (or set `EXARP_GO_ROOT` / PATH so exarp-go is found).
 
 ## What It Does
 
-1. **Documentation Health Check** - Validates documentation structure, broken links, format issues
-2. **Task Alignment Analysis** - Evaluates Todo2 task alignment with project goals
-3. **Duplicate Task Detection** - Finds and reports duplicate tasks
-4. **Security Scanning** - Scans dependencies for vulnerabilities (when supported by the server)
+- **Documentation health** – Validate docs, broken links, format
+- **Task alignment** – Todo2 vs project goals
+- **Duplicate detection** – Find duplicate tasks
+- **Security scanning** – Dependency vulnerabilities (when supported)
 
 ## Requirements
 
-- Exarp MCP server (exarp-go) configured in `.cursor/mcp.json`, or
-- Optional: `uvx exarp` for script fallback
+- exarp-go installed and on PATH, or `EXARP_GO_ROOT` set, or a runner script (this project’s `scripts/run_exarp_go.sh` or the sibling `../../mcp/exarp-go/scripts/run_exarp_go.sh`) that finds the binary. See `docs/PORTABLE_BUILD_AND_RUNNER.md` and `docs/MCP_REQUIRED_SERVERS.md`.

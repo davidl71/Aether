@@ -1,4 +1,4 @@
-"""
+r"""
 Box Spread DSL - Domain-Specific Language for Synthetic Financing
 
 This module provides a Python embedded DSL for expressing box spread

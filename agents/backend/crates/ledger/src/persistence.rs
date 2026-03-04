@@ -44,7 +44,9 @@ impl SqlitePersistence {
             .acquire_timeout(Duration::from_secs(5))
             .connect_with(options)
             .await
-            .map_err(|e| LedgerError::Persistence(anyhow::anyhow!("Failed to connect to database: {}", e)))?;
+            .map_err(|e| {
+                LedgerError::Persistence(anyhow::anyhow!("Failed to connect to database: {}", e))
+            })?;
 
         // Initialize database schema
         Self::init_schema(&pool).await?;
@@ -75,7 +77,9 @@ impl SqlitePersistence {
         sqlx::query("CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date)")
             .execute(pool)
             .await
-            .map_err(|e| LedgerError::Persistence(anyhow::anyhow!("Failed to create index: {}", e)))?;
+            .map_err(|e| {
+                LedgerError::Persistence(anyhow::anyhow!("Failed to create index: {}", e))
+            })?;
 
         sqlx::query(
             "CREATE INDEX IF NOT EXISTS idx_transactions_accounts ON transactions(account_paths)",
@@ -101,7 +105,9 @@ impl SqlitePersistence {
     /// Export all transactions to Ledger CLI format
     pub async fn export_to_ledger_cli(&self) -> Result<String> {
         use crate::export::LedgerExporter;
-        let transactions = self.load_transactions(&TransactionFilter::default()).await?;
+        let transactions = self
+            .load_transactions(&TransactionFilter::default())
+            .await?;
         Ok(LedgerExporter::export_transactions(&transactions))
     }
 }
@@ -109,8 +115,9 @@ impl SqlitePersistence {
 #[async_trait]
 impl PersistenceLayer for SqlitePersistence {
     async fn save_transaction(&self, transaction: &Transaction) -> Result<()> {
-        let transaction_json = serde_json::to_string(transaction)
-            .map_err(|e| LedgerError::Persistence(anyhow::anyhow!("Failed to serialize transaction: {}", e)))?;
+        let transaction_json = serde_json::to_string(transaction).map_err(|e| {
+            LedgerError::Persistence(anyhow::anyhow!("Failed to serialize transaction: {}", e))
+        })?;
 
         let account_paths = Self::extract_account_paths(transaction);
 
@@ -129,25 +136,31 @@ impl PersistenceLayer for SqlitePersistence {
         .bind(&account_paths)
         .execute(&self.pool)
         .await
-        .map_err(|e| LedgerError::Persistence(anyhow::anyhow!("Failed to save transaction: {}", e)))?;
+        .map_err(|e| {
+            LedgerError::Persistence(anyhow::anyhow!("Failed to save transaction: {}", e))
+        })?;
 
         debug!(transaction_id = %transaction.id, "Transaction saved to database");
         Ok(())
     }
 
     async fn load_transaction(&self, id: &Uuid) -> Result<Option<Transaction>> {
-        let row = sqlx::query(
-            "SELECT transaction_json FROM transactions WHERE id = ?",
-        )
-        .bind(id.to_string())
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| LedgerError::Persistence(anyhow::anyhow!("Failed to load transaction: {}", e)))?;
+        let row = sqlx::query("SELECT transaction_json FROM transactions WHERE id = ?")
+            .bind(id.to_string())
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| {
+                LedgerError::Persistence(anyhow::anyhow!("Failed to load transaction: {}", e))
+            })?;
 
         if let Some(row) = row {
             let json_str: String = row.get(0);
-            let transaction: Transaction = serde_json::from_str(&json_str)
-                .map_err(|e| LedgerError::Persistence(anyhow::anyhow!("Failed to deserialize transaction: {}", e)))?;
+            let transaction: Transaction = serde_json::from_str(&json_str).map_err(|e| {
+                LedgerError::Persistence(anyhow::anyhow!(
+                    "Failed to deserialize transaction: {}",
+                    e
+                ))
+            })?;
             Ok(Some(transaction))
         } else {
             Ok(None)
@@ -189,10 +202,9 @@ impl PersistenceLayer for SqlitePersistence {
             sql_query = sql_query.bind(value);
         }
 
-        let rows = sql_query
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| LedgerError::Persistence(anyhow::anyhow!("Failed to query transactions: {}", e)))?;
+        let rows = sql_query.fetch_all(&self.pool).await.map_err(|e| {
+            LedgerError::Persistence(anyhow::anyhow!("Failed to query transactions: {}", e))
+        })?;
 
         let mut transactions = Vec::new();
         for row in rows {
@@ -248,8 +260,14 @@ mod tests {
         let persistence = SqlitePersistence::new(&db_url).await.unwrap();
 
         let transaction = TransactionBuilder::new("Test transaction")
-            .debit(accounts::ibkr_cash(), Money::new(Decimal::from(100), Currency::USD))
-            .credit(accounts::equity_capital(), Money::new(Decimal::from(100), Currency::USD))
+            .debit(
+                accounts::ibkr_cash(),
+                Money::new(Decimal::from(100), Currency::USD),
+            )
+            .credit(
+                accounts::equity_capital(),
+                Money::new(Decimal::from(100), Currency::USD),
+            )
             .build()
             .unwrap();
 
@@ -275,8 +293,14 @@ mod tests {
         // Save multiple transactions
         for i in 0..5 {
             let transaction = TransactionBuilder::new(format!("Transaction {}", i))
-                .debit(accounts::ibkr_cash(), Money::new(Decimal::from(10 * i), Currency::USD))
-                .credit(accounts::equity_capital(), Money::new(Decimal::from(10 * i), Currency::USD))
+                .debit(
+                    accounts::ibkr_cash(),
+                    Money::new(Decimal::from(10 * i), Currency::USD),
+                )
+                .credit(
+                    accounts::equity_capital(),
+                    Money::new(Decimal::from(10 * i), Currency::USD),
+                )
                 .build()
                 .unwrap();
             persistence.save_transaction(&transaction).await.unwrap();
@@ -308,8 +332,14 @@ mod tests {
 
         // Save transaction
         let transaction = TransactionBuilder::new("Buy SPY")
-            .debit(accounts::ibkr_position("SPY"), Money::new(Decimal::from(45000), Currency::USD))
-            .credit(accounts::ibkr_cash(), Money::new(Decimal::from(45000), Currency::USD))
+            .debit(
+                accounts::ibkr_position("SPY"),
+                Money::new(Decimal::from(45000), Currency::USD),
+            )
+            .credit(
+                accounts::ibkr_cash(),
+                Money::new(Decimal::from(45000), Currency::USD),
+            )
             .with_metadata("trade_id", "ORD-12345")
             .build()
             .unwrap();

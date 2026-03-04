@@ -164,7 +164,7 @@ def main():
     print(f"Scanning {docs_dir} for obsolete files...")
     status_files, json_reports, deprecated_refs = find_obsolete_files(docs_dir)
 
-    print(f"\nFound:")
+    print("\nFound:")
     print(f"  Status/Summary files: {len(status_files)}")
     print(f"  JSON reports: {len(json_reports)}")
     print(f"  Deprecated references: {len(deprecated_refs)}")
@@ -193,7 +193,7 @@ def main():
         archived_json, skipped_json = archive_files(json_reports, archive_dir, 'json-reports', docs_dir, args.dry_run)
         archived_deprecated, skipped_deprecated = archive_files(deprecated_refs, archive_dir, 'deprecated-refs', docs_dir, args.dry_run)
 
-        print(f"\nArchived:")
+        print("\nArchived:")
         print(f"  Status/Summary: {len(archived_status)}")
         print(f"  JSON reports: {len(archived_json)}")
         print(f"  Deprecated refs: {len(archived_deprecated)}")

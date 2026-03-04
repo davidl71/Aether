@@ -73,7 +73,8 @@ Configuration is stored in `~/.config/ib_box_spread/tui_config.json`:
 - `F1`: Help
 - `F2`: Setup (coming soon)
 - `F5`: Refresh
-- `Tab` / `Shift+Tab`: Switch tabs
+
+Use Tab / Shift+Tab in the terminal to switch focus; tab content is switched via the tab bar.
 
 ## Architecture
 
@@ -88,6 +89,20 @@ TUI App (Textual)
     ↓
 Terminal Display
 ```
+
+### File layout
+
+- **`app.py`** – Main `TUIApp`, composition, refresh intervals, provider factory. No inline tab classes.
+- **`box_spread_loader.py`** – Loads box spread scenarios from REST or file (`get_box_spread_payload()`).
+- **`components/`** – Tab and widget components:
+  - **`base.py`** – `SnapshotTabBase` for tabs that display `SnapshotPayload`.
+  - **`snapshot_display.py`** – Header line (time, mode, strategy, account).
+  - **`dashboard.py`**, **`positions.py`**, **`orders.py`**, **`alerts.py`** – Snapshot-based tabs.
+  - **`scenarios.py`** – Box spread scenarios (uses `update_data(box_spread_data)`).
+  - **`historic.py`** – Historic positions (stub; “No historic data” until implemented).
+  - **`unified_positions.py`**, **`cash_flow.py`**, **`opportunity_simulation.py`**, **`relationship_visualization.py`**, **`loan_entry.py`** – Extended tabs.
+
+See `docs/TUI_REFACTORING_PLAN.md` for the refactoring plan.
 
 ### Shared Models
 

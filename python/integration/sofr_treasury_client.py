@@ -16,9 +16,12 @@ from __future__ import annotations
 import logging
 import os
 import requests
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from datetime import datetime
+from typing import Dict, List, Optional, TYPE_CHECKING
 from dataclasses import dataclass
+
+if TYPE_CHECKING:
+    from .risk_free_rate_extractor import RiskFreeRateCurve
 
 logger = logging.getLogger(__name__)
 
@@ -338,7 +341,7 @@ class RateComparison:
 
     @staticmethod
     def compare_curves(
-        box_spread_curve: 'RiskFreeRateCurve',  # Forward reference
+        box_spread_curve: RiskFreeRateCurve,
         benchmark_rates: List[BenchmarkRate]
     ) -> Dict[int, Dict]:
         """

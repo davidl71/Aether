@@ -6,7 +6,6 @@ from pathlib import Path
 from python.integration.discount_bank_service import (
     _parse_transactions_from_file,
     _parse_file_via_rust,
-    _read_balance_from_file,
 )
 
 

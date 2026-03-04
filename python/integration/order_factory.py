@@ -5,8 +5,6 @@ import logging
 from typing import List, Optional
 from datetime import datetime
 from nautilus_trader.core.nautilus_pyo3 import (
-    Order,
-    OrderType,
     TimeInForce,
     OrderSide,
     InstrumentId,

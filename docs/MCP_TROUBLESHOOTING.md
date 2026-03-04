@@ -4,9 +4,11 @@
 
 ### 1. **Variable Expansion Issues**
 
-**Problem**: `${workspaceFolder}` may not be expanded correctly in Cursor.
+**Problem**: `${workspaceFolder}` or `{{PROJECT_ROOT}}` may not be expanded correctly in Cursor.
 
-**Solution**: Replace with absolute path or relative path.
+**Solution**: Replace with the absolute path to this repo (or use `{{PROJECT_ROOT}}` if your Cursor expands it).
+
+**This project**: `.cursor/mcp.json` is committed with absolute paths (`/Users/dlowes/Projects/trading/ib_box_spread_full_universal`) so MCP works without variable expansion. On another machine, replace that path with your workspace root or switch back to `{{PROJECT_ROOT}}`.
 
 **Files affected**:
 
@@ -219,6 +221,21 @@ After fixing configuration:
 
 - **Issue**: Package download fails
 - **Fix**: Test manually: `npx -y @pimzino/agentic-tools-mcp`
+
+### exarp-go Server
+
+- **Issue**: "exarp-go MCP error" or server not starting / tools not listed.
+- **Checks**:
+  1. **Runner from project root** (Cursor substitutes `{{PROJECT_ROOT}}` with workspace root):
+     ```bash
+     cd /path/to/ib_box_spread_full_universal
+     ./scripts/run_exarp_go.sh -list -quiet
+     ```
+     If this fails, exarp-go is not on PATH or not found by the script (install it or set `EXARP_GO_ROOT`).
+  2. **PROJECT_ROOT**: Cursor must pass `PROJECT_ROOT` in env; `.cursor/mcp.json` should have `"env": { "PROJECT_ROOT": "{{PROJECT_ROOT}}" }`. If the runner is started with a wrong or empty PROJECT_ROOT, exarp-go may fail or use the wrong project.
+  3. **Use sibling/global**: If you use native exarp-go (sibling repo or global install), set `command` to that runner path (e.g. `{{PROJECT_ROOT}}/../../mcp/exarp-go/scripts/run_exarp_go.sh`) and keep `PROJECT_ROOT` in env. See `docs/MCP_REQUIRED_SERVERS.md` (§ Using native exarp-go).
+  4. **Actual error**: In Cursor go to **Help → Toggle Developer Tools → Console**, or check **Settings → MCP** for the exarp-go server log. Paste the exact message for a precise fix.
+- **Fix**: Ensure exarp-go is installed (on PATH or `EXARP_GO_ROOT` set), `scripts/run_exarp_go.sh` is executable (`chmod +x scripts/run_exarp_go.sh`), and restart Cursor (Cmd+Q then reopen) after changing `.cursor/mcp.json`.
 
 ## Minimal Working Configuration
 

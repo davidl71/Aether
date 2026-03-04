@@ -186,7 +186,7 @@ class LeanClient:
                 # Get orders from LEAN Transactions (if available)
                 if hasattr(self.algorithm, 'Transactions'):
                     try:
-                        for transaction in self.algorithm.Transactions:
+                        for _transaction in self.algorithm.Transactions:
                             # LEAN Transaction format may vary
                             # This is a placeholder - actual implementation depends on LEAN API
                             pass
@@ -384,7 +384,7 @@ class LeanClient:
                 except ValueError:
                     # Try to find order by string ID
                     order_id_int = None
-                    for oid, order_info in self.algorithm.pending_orders.items():
+                    for oid, _order_info in self.algorithm.pending_orders.items():
                         if str(oid) == order_id:
                             order_id_int = oid
                             break

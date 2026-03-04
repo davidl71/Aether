@@ -163,6 +163,8 @@ With `USE_THIRD_PARTY_DMG=1`, `ensure_third_party` (used by build scripts) will 
 - No writes to vendor trees during build.
 - Same `native/third_party` paths for CMake; no config changes.
 
+**Note (TWS API / Protobuf)**: The DMG only replaces `native/third_party/tws-api` and Intel* with symlinks to the mount. It does **not** change system Protobuf (`/usr/local` or Homebrew). The TWS API build uses a **client staging** copy (sources without vendored `.pb.h`) so that generated `.pb.h` from the build match the system Protobuf version; this works the same with or without the DMG.
+
 ---
 
 ### 3. Python Cache Optimization

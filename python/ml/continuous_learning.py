@@ -15,11 +15,9 @@ import sqlite3
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 
-import numpy as np
 from .train_models import ModelTrainer
-from .evaluate_models import ModelEvaluator
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -393,7 +391,7 @@ class ContinuousLearningPipeline:
         'retrained_at': datetime.utcnow().isoformat(),
       }
 
-      version_id = self.version_manager.create_version(
+      self.version_manager.create_version(
         model_name, model_path, metrics, f"Retrained on {len(training_data)} samples"
       )
 
@@ -444,7 +442,7 @@ class ContinuousLearningPipeline:
     )
     accuracy = correct_profitable / len(rows) if rows else 0.0
 
-    logger.info(f"Model Performance (last 24h):")
+    logger.info("Model Performance (last 24h):")
     logger.info(f"  Accuracy: {accuracy:.2%}")
     logger.info(f"  Total predictions: {len(rows)}")
 

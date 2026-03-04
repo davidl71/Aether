@@ -14,8 +14,26 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # shellcheck source=./with_nix.sh
 . "${SCRIPT_DIR}/with_nix.sh"
-run_with_nix_if_requested "$@"
+  run_with_nix_if_requested "$@"
 cd "${PROJECT_ROOT}"
+
+# Default preset from OS/arch (same logic as build_ai_friendly.sh)
+detect_default_preset() {
+  local arch os
+  arch="$(uname -m 2>/dev/null || echo unknown)"
+  os="$(uname -s 2>/dev/null || echo unknown)"
+  case "${os}" in
+    Darwin)
+      if [[ "${arch}" == "arm64" || "${arch}" == "aarch64" ]]; then
+        echo "macos-arm64-debug"
+      else
+        echo "macos-x86_64-debug"
+      fi
+      ;;
+    Linux) echo "linux-x64-debug" ;;
+    *) echo "macos-x86_64-debug" ;;
+  esac
+}
 
 # Ensure third-party deps exist before configure/build
 # shellcheck source=./include/ensure_third_party.sh
@@ -60,7 +78,7 @@ case "$variant" in
     exec "${SCRIPT_DIR}/build_ramdisk.sh" "$@"
     ;;
   logging)
-    PRESET="${1:-macos-arm64-debug}"
+    PRESET="${1:-$(detect_default_preset)}"
     LOG_FILE="${PROJECT_ROOT}/logs/build_$(date +%Y%m%d_%H%M%S).log"
     mkdir -p "${PROJECT_ROOT}/logs"
     exec > >(tee -a "$LOG_FILE") 2>&1

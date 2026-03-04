@@ -5,7 +5,7 @@ This module converts LEAN internal data structures to the API contract format
 defined in agents/shared/API_CONTRACT.md.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List
 from datetime import datetime, timezone
 import logging
 
@@ -15,8 +15,6 @@ from .api_models import (
     SymbolSnapshot,
     PositionSnapshot,
     OrderSnapshot,
-    StrategyDecisionSnapshot,
-    Alert,
     RiskStatus,
     CandleData
 )

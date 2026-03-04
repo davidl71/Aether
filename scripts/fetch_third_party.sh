@@ -15,6 +15,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PLAYBOOK="${REPO_ROOT}/ansible/playbooks/fetch_third_party.yml"
 
+# Use system CA bundle on macOS so Ansible/Python HTTPS requests verify (avoids CERTIFICATE_VERIFY_FAILED)
+if [[ "$(uname)" == "Darwin" ]]; then
+  for f in /etc/ssl/cert.pem /usr/local/etc/openssl/cert.pem "$(brew --prefix 2>/dev/null)/etc/openssl@3/cert.pem"; do
+    if [[ -n "${f:-}" ]] && [[ -f "$f" ]]; then
+      export SSL_CERT_FILE="$f"
+      export REQUESTS_CA_BUNDLE="$f"
+      break
+    fi
+  done
+fi
+
 if ! command -v ansible-playbook >/dev/null 2>&1; then
   log_error "ansible-playbook not found. Run setup_global_tools.sh first."
   exit 1

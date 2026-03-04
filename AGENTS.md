@@ -55,17 +55,21 @@ ib_box_spread_full_universal/
 ## Build, Test & Development Commands
 
 ```bash
-# Configure (one-time)
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+# Configure (one-time) — use a preset so build dir matches CMakePresets.json
+cmake --preset macos-arm64-debug   # or macos-x86_64-debug on Intel, linux-x64-debug, etc.
 
-# Build
-ninja -C build
+# Build (Ninja uses CMAKE_BUILD_PARALLEL_LEVEL if set; scripts set it when unset)
+cmake --build --preset macos-arm64-debug
 
-# Run CLI
-./build/bin/ib_box_spread
+# Or configure + build in one go (scripts set parallelism)
+./scripts/shortcuts/run_build.sh build
+./scripts/build_fast.sh
+
+# Run CLI (path depends on preset: build/<preset>/bin/ib_box_spread)
+./build/macos-arm64-debug/bin/ib_box_spread   # or build/macos-x86_64-debug on Intel
 
 # Run tests
-ctest --test-dir build --output-on-failure
+ctest --preset macos-arm64-debug --output-on-failure
 
 # Build universal binary (macOS arm64+x86_64)
 ./scripts/build_universal.sh
@@ -73,6 +77,10 @@ ctest --test-dir build --output-on-failure
 # Lint
 ./scripts/run_linters.sh
 ```
+
+If configure fails with missing **TWS API** or **Intel decimal** dependencies, run from repo root: `./scripts/fetch_third_party.sh`, then reconfigure. Or run `cmake --build <build-dir> --target fetch_third_party` then reconfigure. Set `CMAKE_BUILD_PARALLEL_LEVEL` (e.g. `$(nproc)` or `$(sysctl -n hw.ncpu)`) for parallel builds when not using the wrapper scripts.
+
+**Optional (macOS):** To reduce disk reads for third-party trees, create a read-only compressed DMG and use it in builds: run `./scripts/third_party_dmg.sh create` after fetch, then set `USE_THIRD_PARTY_DMG=1` so build scripts mount the DMG automatically. See `docs/RAM_OPTIMIZATION_GUIDE.md` (§ Third-party on read-only compressed DMG).
 
 ### CMake Options
 

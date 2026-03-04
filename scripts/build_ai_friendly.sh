@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # Run CMake build in AI-friendly mode: quiet (log to file) and emit a single JSON result.
 # Use with BUILD_AI_FRIENDLY preset so compiler diagnostics are JSON when build fails.
+# When build-ramdisk is set up (e.g. ./scripts/setup_ramdisk.sh create), uses the -ramdisk
+# preset automatically so the build runs on the ramdisk.
 #
 # Usage:
 #   ./scripts/build_ai_friendly.sh [build|configure] [<preset>]
 #   ./scripts/build_ai_friendly.sh --json-only [<preset>]   # build and print only JSON to stdout
+#   BUILD_KEEP_GOING=1 ./scripts/build_ai_friendly.sh       # continue past failures to surface more errors (-k 0)
 #
 # Output (stdout): one JSON object
 #   {"success": true, "exit_code": 0, "duration_sec": 12.3, "log_path": "...", "errors": []}
@@ -39,7 +42,14 @@ detect_default_preset() {
       echo "windows-x64-debug"
       ;;
     *)
-      echo "macos-arm64-debug"
+      # Unknown OS: prefer arch from uname -m to avoid assuming Apple Silicon
+      if [[ "${arch}" == "x86_64" || "${arch}" == "amd64" ]]; then
+        echo "macos-x86_64-debug"
+      elif [[ "${arch}" == "arm64" || "${arch}" == "aarch64" ]]; then
+        echo "macos-arm64-debug"
+      else
+        echo "macos-x86_64-debug"
+      fi
       ;;
   esac
 }
@@ -59,6 +69,21 @@ resolve_preset() {
   fi
 }
 
+# If build-ramdisk is set up (symlink or dir), prefer the -ramdisk preset when it exists
+prefer_ramdisk_if_setup() {
+  local p="$1"
+  [[ -z "${p}" ]] && return
+  local ramdisk_dir="${PROJECT_ROOT}/build-ramdisk"
+  if [[ -d "${ramdisk_dir}" ]] && [[ -w "${ramdisk_dir}" ]]; then
+    local ramdisk_preset="${p}-ramdisk"
+    if cmake --list-presets 2>/dev/null | grep -q "^\s*${ramdisk_preset}\s"; then
+      echo "${ramdisk_preset}"
+      return
+    fi
+  fi
+  echo "${p}"
+}
+
 ACTION="${1:-build}"
 PRESET="${2:-${CMAKE_PRESET:-$(detect_default_preset)}}"
 if [[ "${ACTION}" == "--json-only" ]]; then
@@ -67,6 +92,7 @@ if [[ "${ACTION}" == "--json-only" ]]; then
   PRESET="${3:-${CMAKE_PRESET:-$(detect_default_preset)}}"
 fi
 PRESET="$(resolve_preset "${PRESET}")"
+PRESET="$(prefer_ramdisk_if_setup "${PRESET}")"
 
 cd "${PROJECT_ROOT}"
 START="$(date +%s.%N)"
@@ -76,7 +102,12 @@ run_build() {
     cmake --preset "${PRESET}" >> "${BUILD_LOG}" 2>&1
   else
     cmake --preset "${PRESET}" >> "${BUILD_LOG}" 2>&1 || true
-    cmake --build --preset "${PRESET}" >> "${BUILD_LOG}" 2>&1
+    if [[ -n "${BUILD_KEEP_GOING:-}" ]] && [[ "${BUILD_KEEP_GOING}" != "0" ]]; then
+      # Pass -k 0 to Ninja: continue building after failures to detect more issues
+      cmake --build --preset "${PRESET}" -- -k 0 >> "${BUILD_LOG}" 2>&1
+    else
+      cmake --build --preset "${PRESET}" >> "${BUILD_LOG}" 2>&1
+    fi
   fi
 }
 

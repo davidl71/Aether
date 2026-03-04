@@ -187,5 +187,5 @@ class UnifiedPositionsTab(Container):
             from datetime import datetime
             date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
             return date.strftime('%Y-%m-%d')
-        except:
+        except Exception:
             return date_str

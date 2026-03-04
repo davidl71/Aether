@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use api::{Alert, PositionSnapshot, SharedSnapshot};
 use anyhow::Context;
+use api::{Alert, PositionSnapshot, SharedSnapshot};
 use reqwest::Client;
 use serde::Deserialize;
 use tokio::time::interval;
@@ -47,7 +47,10 @@ pub fn spawn_swiftness_position_fetcher(state: SharedSnapshot) {
 }
 
 async fn fetch_and_merge_positions(client: &Client, state: &SharedSnapshot) -> anyhow::Result<()> {
-    let url = format!("{}/positions?check_validity=true&max_age_days=90", SWIFTNESS_API_URL);
+    let url = format!(
+        "{}/positions?check_validity=true&max_age_days=90",
+        SWIFTNESS_API_URL
+    );
 
     debug!(%url, "fetching Swiftness positions");
 
@@ -58,10 +61,7 @@ async fn fetch_and_merge_positions(client: &Client, state: &SharedSnapshot) -> a
         .context("failed to send HTTP request to Swiftness API")?;
 
     if !response.status().is_success() {
-        anyhow::bail!(
-            "Swiftness API returned error status: {}",
-            response.status()
-        );
+        anyhow::bail!("Swiftness API returned error status: {}", response.status());
     }
 
     let positions: Vec<SwiftnessPosition> = response
@@ -77,7 +77,9 @@ async fn fetch_and_merge_positions(client: &Client, state: &SharedSnapshot) -> a
         snapshot.touch();
 
         // Remove existing Swiftness positions (identified by symbol prefix "SWIFTNESS-")
-        snapshot.positions.retain(|p| !p.symbol.starts_with("SWIFTNESS-"));
+        snapshot
+            .positions
+            .retain(|p| !p.symbol.starts_with("SWIFTNESS-"));
 
         // Add new Swiftness positions
         let new_count = positions.len();
@@ -95,8 +97,7 @@ async fn fetch_and_merge_positions(client: &Client, state: &SharedSnapshot) -> a
         if new_count > 0 {
             info!(
                 count = new_count,
-                "merged {} Swiftness positions into SystemSnapshot",
-                new_count
+                "merged {} Swiftness positions into SystemSnapshot", new_count
             );
             snapshot.alerts.push(Alert::info(format!(
                 "Swiftness positions updated: {} positions",
@@ -115,9 +116,7 @@ async fn fetch_and_merge_positions(client: &Client, state: &SharedSnapshot) -> a
 /// Check if Swiftness API is available
 #[allow(dead_code)]
 pub async fn check_swiftness_api_health() -> bool {
-    let client = match Client::builder()
-        .timeout(Duration::from_secs(2))
-        .build() {
+    let client = match Client::builder().timeout(Duration::from_secs(2)).build() {
         Ok(c) => c,
         Err(_) => return false,
     };

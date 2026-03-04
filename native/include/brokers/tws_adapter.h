@@ -1,7 +1,7 @@
 // tws_adapter.h - TWS adapter implementing IBroker interface
 #pragma once
 
-#include <box_spread/brokers/broker_interface.h>
+#include "brokers/broker_interface.h"
 #include "tws_client.h"
 #include "config_manager.h"
 #include <memory>

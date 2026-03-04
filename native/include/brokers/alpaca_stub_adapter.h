@@ -1,7 +1,7 @@
 // alpaca_stub_adapter.h - Alpaca stub adapter implementing IBroker interface with mock data
 #pragma once
 
-#include <box_spread/brokers/broker_interface.h>
+#include "brokers/broker_interface.h"
 #include <string>
 #include <mutex>
 #include <map>

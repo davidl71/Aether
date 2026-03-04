@@ -10,9 +10,7 @@ use tracing::{info, Level};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize tracing
-    tracing_subscriber::fmt()
-        .with_max_level(Level::INFO)
-        .init();
+    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
     // Get file path from command line
     let args: Vec<String> = env::args().collect();
@@ -62,7 +60,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Show first few transactions
     info!("\nFirst 5 Transactions:");
     for (i, txn) in parsed.transactions.iter().take(5).enumerate() {
-        info!("  {}: Date={}, Amount={}, Sign={}, Ref={}",
+        info!(
+            "  {}: Date={}, Amount={}, Sign={}, Ref={}",
             i + 1,
             txn.value_date.format("%Y-%m-%d"),
             txn.amount,
@@ -75,7 +74,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("\nConverting to ledger transactions...");
     let ledger_txns = convert_to_transactions(&parsed, None, None)?;
 
-    info!("Converted {} transactions to ledger format", ledger_txns.len());
+    info!(
+        "Converted {} transactions to ledger format",
+        ledger_txns.len()
+    );
 
     // Show first ledger transaction
     if let Some(txn) = ledger_txns.first() {
@@ -102,7 +104,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if errors == 0 {
-        info!("All {} transactions validated successfully!", ledger_txns.len());
+        info!(
+            "All {} transactions validated successfully!",
+            ledger_txns.len()
+        );
     } else {
         eprintln!("Warning: {} transactions failed validation", errors);
     }

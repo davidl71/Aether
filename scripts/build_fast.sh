@@ -82,12 +82,14 @@ PRESET="${SUFFIX}-release-sccache"
 # Ensure preset exists (CMake will error with a clear message if not)
 cmake --preset "${PRESET}"
 echo "Building with preset: ${PRESET}"
-if [[ "${OSTYPE:-}" == "darwin"* ]]; then
-  NUM_JOBS=$(sysctl -n hw.ncpu 2>/dev/null || echo 4)
-else
-  NUM_JOBS=$(nproc 2>/dev/null || echo 4)
+if [[ -z "${CMAKE_BUILD_PARALLEL_LEVEL:-}" ]]; then
+  if [[ "${OSTYPE:-}" == "darwin"* ]]; then
+    export CMAKE_BUILD_PARALLEL_LEVEL=$(sysctl -n hw.ncpu 2>/dev/null || echo 4)
+  else
+    export CMAKE_BUILD_PARALLEL_LEVEL=$(nproc 2>/dev/null || echo 4)
+  fi
 fi
-cmake --build --preset "${PRESET}" --target ib_box_spread -j"${NUM_JOBS}"
+cmake --build --preset "${PRESET}" --target ib_box_spread
 
 # Show cache statistics
 echo ""

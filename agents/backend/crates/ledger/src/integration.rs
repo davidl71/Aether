@@ -28,8 +28,9 @@ pub async fn record_position_change(
     trade_id: Option<&str>,
 ) -> Result<()> {
     let notional = (quantity.abs() as f64) * price;
-    let notional_decimal = Decimal::try_from(notional)
-        .map_err(|_| crate::error::LedgerError::InvalidDecimal(format!("Invalid notional: {}", notional)))?;
+    let notional_decimal = Decimal::try_from(notional).map_err(|_| {
+        crate::error::LedgerError::InvalidDecimal(format!("Invalid notional: {}", notional))
+    })?;
     let amount = Money::new(notional_decimal, currency);
 
     let description = if quantity > 0 {
@@ -38,14 +39,13 @@ pub async fn record_position_change(
         format!("Sell {} {}", quantity.abs(), symbol)
     };
 
-    let mut builder = TransactionBuilder::new(description)
-        .with_date(Utc::now());
+    let mut builder = TransactionBuilder::new(description).with_date(Utc::now());
 
     if let Some(trade_id) = trade_id {
         builder = builder.with_metadata("trade_id", trade_id);
     }
     builder = builder.with_metadata("symbol", symbol);
-    builder = builder.with_metadata("quantity", &quantity.to_string());
+    builder = builder.with_metadata("quantity", quantity.to_string());
 
     let position_account = accounts::ibkr_position(symbol);
     let cash_account = accounts::ibkr_cash();
@@ -71,6 +71,7 @@ pub async fn record_position_change(
 /// Records a double-entry transaction for executing a box spread:
 /// - Debit: Box spread position account (asset)
 /// - Credit: Cash account (payment)
+#[allow(clippy::too_many_arguments)]
 pub async fn record_box_spread(
     ledger: Arc<LedgerEngine>,
     symbol: &str,
@@ -81,23 +82,21 @@ pub async fn record_box_spread(
     trade_id: Option<&str>,
     currency: Currency,
 ) -> Result<()> {
-    let net_debit_decimal = Decimal::try_from(net_debit)
-        .map_err(|_| crate::error::LedgerError::InvalidDecimal(format!("Invalid net_debit: {}", net_debit)))?;
+    let net_debit_decimal = Decimal::try_from(net_debit).map_err(|_| {
+        crate::error::LedgerError::InvalidDecimal(format!("Invalid net_debit: {}", net_debit))
+    })?;
     let amount = Money::new(net_debit_decimal, currency);
 
-    let description = format!(
-        "Box Spread: {} {}/{} {}",
-        symbol, strike1, strike2, expiry
-    );
+    let description = format!("Box Spread: {} {}/{} {}", symbol, strike1, strike2, expiry);
 
     let mut builder = TransactionBuilder::new(description)
         .with_date(Utc::now())
         .with_metadata("strategy", "box_spread")
         .with_metadata("symbol", symbol)
-        .with_metadata("strike1", &strike1.to_string())
-        .with_metadata("strike2", &strike2.to_string())
+        .with_metadata("strike1", strike1.to_string())
+        .with_metadata("strike2", strike2.to_string())
         .with_metadata("expiry", expiry)
-        .with_metadata("net_debit", &net_debit.to_string());
+        .with_metadata("net_debit", net_debit.to_string());
 
     if let Some(trade_id) = trade_id {
         builder = builder.with_metadata("trade_id", trade_id);
@@ -121,6 +120,7 @@ pub async fn record_box_spread(
 /// Records the expiration of a box spread, returning cash:
 /// - Debit: Cash account (receipt)
 /// - Credit: Box spread position account (removal)
+#[allow(clippy::too_many_arguments)]
 pub async fn record_box_spread_expiration(
     ledger: Arc<LedgerEngine>,
     symbol: &str,
@@ -131,8 +131,9 @@ pub async fn record_box_spread_expiration(
     trade_id: Option<&str>,
     currency: Currency,
 ) -> Result<()> {
-    let payout_decimal = Decimal::try_from(payout)
-        .map_err(|_| crate::error::LedgerError::InvalidDecimal(format!("Invalid payout: {}", payout)))?;
+    let payout_decimal = Decimal::try_from(payout).map_err(|_| {
+        crate::error::LedgerError::InvalidDecimal(format!("Invalid payout: {}", payout))
+    })?;
     let amount = Money::new(payout_decimal, currency);
 
     let description = format!(
@@ -145,10 +146,10 @@ pub async fn record_box_spread_expiration(
         .with_metadata("strategy", "box_spread")
         .with_metadata("event", "expiration")
         .with_metadata("symbol", symbol)
-        .with_metadata("strike1", &strike1.to_string())
-        .with_metadata("strike2", &strike2.to_string())
+        .with_metadata("strike1", strike1.to_string())
+        .with_metadata("strike2", strike2.to_string())
         .with_metadata("expiry", expiry)
-        .with_metadata("payout", &payout.to_string());
+        .with_metadata("payout", payout.to_string());
 
     if let Some(trade_id) = trade_id {
         builder = builder.with_metadata("trade_id", trade_id);
@@ -179,8 +180,9 @@ pub async fn record_cash_flow(
     description: &str,
     is_deposit: bool,
 ) -> Result<()> {
-    let amount_decimal = Decimal::try_from(amount)
-        .map_err(|_| crate::error::LedgerError::InvalidDecimal(format!("Invalid amount: {}", amount)))?;
+    let amount_decimal = Decimal::try_from(amount).map_err(|_| {
+        crate::error::LedgerError::InvalidDecimal(format!("Invalid amount: {}", amount))
+    })?;
     let money = Money::new(amount_decimal, currency);
 
     let cash_account = if currency == Currency::ILS {
@@ -229,10 +231,12 @@ pub async fn record_position_close(
     let cost = (quantity.abs() as f64) * cost_basis;
     let pnl = proceeds - cost;
 
-    let proceeds_decimal = Decimal::try_from(proceeds)
-        .map_err(|_| crate::error::LedgerError::InvalidDecimal(format!("Invalid proceeds: {}", proceeds)))?;
-    let cost_decimal = Decimal::try_from(cost)
-        .map_err(|_| crate::error::LedgerError::InvalidDecimal(format!("Invalid cost: {}", cost)))?;
+    let proceeds_decimal = Decimal::try_from(proceeds).map_err(|_| {
+        crate::error::LedgerError::InvalidDecimal(format!("Invalid proceeds: {}", proceeds))
+    })?;
+    let cost_decimal = Decimal::try_from(cost).map_err(|_| {
+        crate::error::LedgerError::InvalidDecimal(format!("Invalid cost: {}", cost))
+    })?;
     let pnl_decimal = Decimal::try_from(pnl)
         .map_err(|_| crate::error::LedgerError::InvalidDecimal(format!("Invalid pnl: {}", pnl)))?;
 
@@ -240,13 +244,18 @@ pub async fn record_position_close(
     let cost_money = Money::new(cost_decimal, currency);
     let pnl_money = Money::new(pnl_decimal.abs(), currency);
 
-    let description = format!("Close Position: {} {} @ {}", quantity.abs(), symbol, sale_price);
+    let description = format!(
+        "Close Position: {} {} @ {}",
+        quantity.abs(),
+        symbol,
+        sale_price
+    );
 
     let mut builder = TransactionBuilder::new(description)
         .with_date(Utc::now())
         .with_metadata("symbol", symbol)
-        .with_metadata("quantity", &quantity.abs().to_string())
-        .with_metadata("realized_pnl", &pnl.to_string());
+        .with_metadata("quantity", quantity.abs().to_string())
+        .with_metadata("realized_pnl", pnl.to_string());
 
     if let Some(trade_id) = trade_id {
         builder = builder.with_metadata("trade_id", trade_id);
@@ -312,6 +321,7 @@ pub async fn record_position_change_safe(
 }
 
 /// Record box spread with error logging (non-blocking)
+#[allow(clippy::too_many_arguments)]
 pub async fn record_box_spread_safe(
     ledger: Arc<LedgerEngine>,
     symbol: &str,
@@ -322,7 +332,11 @@ pub async fn record_box_spread_safe(
     trade_id: Option<&str>,
     currency: Currency,
 ) {
-    match record_box_spread(ledger, symbol, strike1, strike2, expiry, net_debit, trade_id, currency).await {
+    match record_box_spread(
+        ledger, symbol, strike1, strike2, expiry, net_debit, trade_id, currency,
+    )
+    .await
+    {
         Ok(()) => {}
         Err(err) => {
             warn!(error = %err, symbol, strike1, strike2, "Failed to record box spread in ledger (non-blocking)");
@@ -363,11 +377,7 @@ mod tests {
 
             // Apply filters
             if let Some(ref account) = filter.account {
-                result.retain(|t| {
-                    t.postings
-                        .iter()
-                        .any(|p| p.account == *account)
-                });
+                result.retain(|t| t.postings.iter().any(|p| p.account == *account));
             }
 
             if let Some(ref desc) = filter.description {

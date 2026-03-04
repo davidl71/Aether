@@ -6,7 +6,6 @@ and verifies that Python implementations produce matching results within toleran
 """
 
 import json
-import math
 import os
 import pytest
 

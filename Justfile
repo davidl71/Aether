@@ -38,6 +38,13 @@ build-universal:
 build-portable *args:
     ./scripts/build_portable.sh {{args}}
 
+# Build with keep-going: continue past failures to surface more errors (Ninja -k 0). Use for diagnostics.
+# Usage: just build-keep-going  |  just build-keep-going --json-only
+build-keep-going:
+    BUILD_KEEP_GOING=1 ./scripts/build_ai_friendly.sh
+build-keep-going-json:
+    BUILD_KEEP_GOING=1 ./scripts/build_ai_friendly.sh --json-only
+
 # Build TWS API shared library
 build-twsapi:
     cmake -S native/ibapi_cmake -B native/ibapi_cmake/build -DCMAKE_BUILD_TYPE=Release
@@ -53,6 +60,11 @@ clean:
     rm -rf build/* cmake-build-*
     find . -name 'CMakeCache.txt' -delete
     find . -name 'CMakeFiles' -type d -exec rm -rf {} + 2>/dev/null || true
+
+# Clean Rust build artifacts (agents/backend target/ or CARGO_TARGET_DIR). Global cache: ~/.cargo/registry, ~/.cargo/git.
+clean-rust:
+    cd agents/backend && cargo clean
+    @echo "Rust workspace cleaned. To free more: rm -rf ~/.cargo/registry/cache ~/.cargo/git (global cache)."
 
 # --- Test ---
 
@@ -95,6 +107,21 @@ lint-shell:
     @command -v shellcheck >/dev/null 2>&1 || (echo "shellcheck not found (brew install shellcheck / apt install shellcheck)" && exit 1)
     shellcheck -x scripts/*.sh ansible/run-dev-setup.sh
     @echo "lint-shell done"
+
+# Shell-only lint, single JSON line to stdout (for tools/AI). Log to logs/lint_shell_ai.log.
+lint-shell-ai:
+    ./scripts/lint_shell_ai.sh
+
+# Python-only lint (ruff + bandit). Full lint is `just lint`.
+lint-python:
+    uv run ruff check python/
+    @command -v bandit >/dev/null 2>&1 && bandit -r python/ agents/backend/python || echo "[skip] bandit not installed (optional)"
+    @echo "lint-python done"
+
+# Show lint log paths and tail main log (logs/lint_ai_friendly.log). Creates logs when you run lint --ai-friendly.
+# Usage: just lint-log [N]  (N = lines to tail, default 60);  just lint-log --list  |  just lint-log --all
+lint-log *args:
+    ./scripts/check_lint_logs.sh {{args}}
 
 # Format C++ code with clang-format
 format:
@@ -309,6 +336,11 @@ ansible-dev:
 ansible-check:
     cd ansible && ansible-playbook --syntax-check -i inventories/development playbooks/development.yml
     @echo "Ansible syntax OK"
+
+# Ansible-lint (playbooks and roles). Requires: pip install ansible-lint or uv tool install ansible-lint
+ansible-lint:
+    ansible-lint ansible/
+    @echo "ansible-lint done"
 
 # Build Intel Decimal math library
 build-intel-decimal:

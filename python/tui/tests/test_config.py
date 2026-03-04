@@ -10,7 +10,6 @@ import os
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
 
 from .. import config as config_module
 from ..config import TUIConfig, load_config, _apply_env_overrides

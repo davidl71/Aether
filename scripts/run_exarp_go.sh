@@ -1,39 +1,46 @@
 #!/usr/bin/env bash
-# Portable exarp-go runner: use working-dir build when inside exarp-go repo,
-# otherwise global install, with fallback to working-dir (EXARP_GO_ROOT or sibling).
+# Portable exarp-go runner for use by Cursor, OpenCode, and other MCP clients.
+# Optional when using native exarp-go: if MCP points at sibling/global, you can remove
+# this file; run_exarp_go_tool.sh and Just will use exarp-go from PATH/sibling.
+# Synced from exarp-go sibling (scripts/run_exarp_go.sh). This copy adds fallbacks
+# for PROJECT_ROOT/../mcp/exarp-go and PROJECT_ROOT/../../mcp/exarp-go.
 #
-# Usage: .cursor/mcp.json uses this script as the exarp-go command.
-# Ensures exarp-go sees the correct project via PROJECT_ROOT (e.g. .todo2 and task store).
+# Copy from exarp-go: cp /path/to/exarp-go/scripts/run_exarp_go.sh scripts/
+# Then add the two "mcp/exarp-go" fallback blocks below if your exarp-go lives under mcp/.
 #
 # Resolution order:
-#   1. If running within exarp-go working dir (CWD or EXARP_GO_ROOT is exarp-go repo):
-#      use that repo's bin/exarp-go (or "go run ." if bin not built).
-#   2. Else: use globally installed exarp-go (PATH).
-#   3. Fallback: EXARP_GO_ROOT/bin/exarp-go, then PROJECT_ROOT/../exarp-go/bin, then common paths.
+#   1. EXARP_GO_ROOT/bin/exarp-go (if set and executable)
+#   2. Walk up from CWD for exarp-go repo (go.mod + cmd/server or bin/exarp-go); use bin or "go run ./cmd/server"
+#   3. exarp-go on PATH
+#   4. PROJECT_ROOT/../exarp-go/bin/exarp-go, then PROJECT_ROOT/../mcp/exarp-go, PROJECT_ROOT/../../mcp/exarp-go
+#   5. ~/go/bin, ~/Projects/exarp-go, ~/Projects/mcp/exarp-go, /usr/local/bin
 #
-# Env: PROJECT_ROOT (project exarp-go serves); EXARP_GO_ROOT (exarp-go repo); EXARP_GO_VERBOSE=1 to log choice.
+# Env: PROJECT_ROOT (project exarp-go serves); EXARP_GO_ROOT (exarp-go repo);
+#      EXARP_GO_VERBOSE=1 to log which binary is used.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ -z "${PROJECT_ROOT:-}" ]]; then
+# Project root: prefer env; else derive from script path if script lives inside a project; else use CWD.
+if [[ -n "${PROJECT_ROOT:-}" ]] && [[ "${PROJECT_ROOT}" != "{{PROJECT_ROOT}}" ]]; then
+  : # use PROJECT_ROOT as set by Cursor/OpenCode or caller
+elif [[ -d "${SCRIPT_DIR}/../.todo2" ]] || ( [[ -f "${SCRIPT_DIR}/../go.mod" ]] && ! grep -q 'exarp-go' "${SCRIPT_DIR}/../go.mod" 2>/dev/null ); then
   PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+else
+  PROJECT_ROOT="$(pwd)"
 fi
 export PROJECT_ROOT
 
-# Run from project root so exarp-go detects project and finds .todo2 / task store
 cd "${PROJECT_ROOT}"
 
-# Returns 0 if dir looks like exarp-go repo (go.mod with exarp-go module + main or bin)
 is_exarp_go_repo() {
   local dir="${1:-.}"
   [[ -f "${dir}/go.mod" ]] || return 1
   grep -q 'exarp-go' "${dir}/go.mod" 2>/dev/null || return 1
-  [[ -f "${dir}/main.go" ]] || [[ -d "${dir}/cmd" ]] || [[ -x "${dir}/bin/exarp-go" ]] || return 1
+  [[ -f "${dir}/cmd/server/main.go" ]] || [[ -x "${dir}/bin/exarp-go" ]] || return 1
   return 0
 }
 
-# Print path to exarp-go repo root, or empty: walk up from start_dir looking for exarp-go repo
 find_exarp_go_root() {
   local start_dir="${1:-$(pwd)}"
   local d
@@ -48,12 +55,9 @@ find_exarp_go_root() {
   return 1
 }
 
-# Resolve which exarp-go binary to run; set EXARP_GO_BIN (path or "exarp-go" for PATH) and optionally EXARP_GO_ROOT
 resolve_exarp_go_bin() {
-  local cwd_root
-  local fallback_root
+  local cwd_root fallback_root
 
-  # 1) Within exarp-go working dir: prefer that repo's build
   if [[ -n "${EXARP_GO_ROOT:-}" ]] && is_exarp_go_repo "${EXARP_GO_ROOT}"; then
     if [[ -x "${EXARP_GO_ROOT}/bin/exarp-go" ]]; then
       EXARP_GO_BIN="${EXARP_GO_ROOT}/bin/exarp-go"
@@ -62,6 +66,7 @@ resolve_exarp_go_bin() {
     fi
     if command -v go &>/dev/null; then
       EXARP_GO_RUN_GO=1
+      export EXARP_GO_ROOT
       [[ -n "${EXARP_GO_VERBOSE:-}" ]] && echo "[exarp-go] using EXARP_GO_ROOT with go run: ${EXARP_GO_ROOT}" >&2
       return 0
     fi
@@ -76,38 +81,40 @@ resolve_exarp_go_bin() {
       return 0
     fi
     if command -v go &>/dev/null; then
-      EXARP_GO_ROOT="${cwd_root}"
+      export EXARP_GO_ROOT="${cwd_root}"
       EXARP_GO_RUN_GO=1
-      export EXARP_GO_ROOT
       [[ -n "${EXARP_GO_VERBOSE:-}" ]] && echo "[exarp-go] using CWD exarp-go repo with go run: ${EXARP_GO_ROOT}" >&2
       return 0
     fi
   fi
 
-  # 2) Global install
   if command -v exarp-go &>/dev/null; then
     EXARP_GO_BIN="exarp-go"
     [[ -n "${EXARP_GO_VERBOSE:-}" ]] && echo "[exarp-go] using PATH exarp-go" >&2
     return 0
   fi
 
-  # 3) Fallback: working dir (EXARP_GO_ROOT or sibling of PROJECT_ROOT)
   fallback_root=""
   if [[ -n "${EXARP_GO_ROOT:-}" ]] && [[ -x "${EXARP_GO_ROOT}/bin/exarp-go" ]]; then
     fallback_root="${EXARP_GO_ROOT}"
   elif [[ -x "${PROJECT_ROOT}/../exarp-go/bin/exarp-go" ]]; then
     fallback_root="$(cd "${PROJECT_ROOT}/../exarp-go" && pwd)"
+  elif [[ -x "${PROJECT_ROOT}/../mcp/exarp-go/bin/exarp-go" ]]; then
+    fallback_root="$(cd "${PROJECT_ROOT}/../mcp/exarp-go" && pwd)"
+  elif [[ -x "${PROJECT_ROOT}/../../mcp/exarp-go/bin/exarp-go" ]]; then
+    fallback_root="$(cd "${PROJECT_ROOT}/../../mcp/exarp-go" && pwd)"
   fi
   if [[ -n "${fallback_root}" ]]; then
     EXARP_GO_BIN="${fallback_root}/bin/exarp-go"
     export EXARP_GO_ROOT="${fallback_root}"
-    [[ -n "${EXARP_GO_VERBOSE:-}" ]] && echo "[exarp-go] using fallback working dir: ${EXARP_GO_BIN}" >&2
+    [[ -n "${EXARP_GO_VERBOSE:-}" ]] && echo "[exarp-go] using fallback: ${EXARP_GO_BIN}" >&2
     return 0
   fi
 
   for candidate in \
     "${HOME}/go/bin/exarp-go" \
     "${HOME}/Projects/exarp-go/bin/exarp-go" \
+    "${HOME}/Projects/mcp/exarp-go/bin/exarp-go" \
     "/usr/local/bin/exarp-go"; do
     if [[ -x "${candidate}" ]]; then
       EXARP_GO_BIN="${candidate}"
@@ -127,12 +134,12 @@ if ! resolve_exarp_go_bin; then
 fi
 
 if [[ -n "${EXARP_GO_ROOT:-}" ]]; then
-  export EXARP_MIGRATIONS_DIR="${EXARP_GO_ROOT}/migrations"
+  export EXARP_MIGRATIONS_DIR="${EXARP_MIGRATIONS_DIR:-${EXARP_GO_ROOT}/migrations}"
 fi
 
 if [[ -n "${EXARP_GO_RUN_GO:-}" ]]; then
   cd "${EXARP_GO_ROOT}"
-  exec go run . "$@"
+  exec go run ./cmd/server "$@"
 fi
 
 exec "${EXARP_GO_BIN}" "$@"

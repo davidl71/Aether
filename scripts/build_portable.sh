@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # build_portable.sh - Portable build wrapper for macOS (Intel, ARM) and Linux
 #
-# Usage: ./scripts/build_portable.sh [build|clean|test|install] [--debug|--release]
+# Usage: ./scripts/build_portable.sh [build|configure|clean|test|install] [--debug|--release]
 #
 # Detects OS and architecture and uses the matching CMake preset:
 #   macOS arm64/aarch64  -> macos-arm64-{debug|release}
@@ -11,6 +11,7 @@
 #
 # Set USE_NIX=1 to run inside the Nix dev shell (when flake.nix exists).
 # Override preset with CMAKE_PRESET.
+# Set BUILD_KEEP_GOING=1 to pass -k 0 to Ninja (continue past failures to surface more errors).
 
 set -euo pipefail
 
@@ -100,7 +101,7 @@ ensure_configured() {
 CMD="build"
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    build|clean|test|install|-h|--help) CMD="$1"; shift; break ;;
+    build|configure|clean|test|install|-h|--help) CMD="$1"; shift; break ;;
     --debug|--release) shift ;;
     *) shift ;;
   esac
@@ -109,7 +110,7 @@ done
 case "${CMD}" in
   -h|--help)
     cat <<EOF
-Usage: $0 [build|clean|test|install] [--debug|--release]
+Usage: $0 [build|configure|clean|test|install] [--debug|--release]
 
 Portable across macOS (Intel/ARM) and Linux. Picks CMake preset by OS and arch.
 
@@ -118,6 +119,9 @@ Environment:
   USE_NIX=1      Run inside Nix dev shell
   CMAKE_BUILD_TYPE   Debug or Release (default: Release)
 EOF
+    ;;
+  configure)
+    ensure_configured
     ;;
   clean)
     ensure_configured
@@ -133,6 +137,10 @@ EOF
     ;;
   build|*)
     ensure_configured
-    cmake --build --preset "${PRESET}" "$@"
+    if [[ -n "${BUILD_KEEP_GOING:-}" ]] && [[ "${BUILD_KEEP_GOING}" != "0" ]]; then
+      cmake --build --preset "${PRESET}" -- -k 0 "$@"
+    else
+      cmake --build --preset "${PRESET}" "$@"
+    fi
     ;;
 esac

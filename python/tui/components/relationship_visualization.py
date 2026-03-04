@@ -11,7 +11,7 @@ from textual.widgets import DataTable, Label
 from textual.containers import Container, Vertical
 from textual.app import ComposeResult
 
-from ..models import SnapshotPayload, PositionSnapshot
+from ..models import SnapshotPayload
 
 
 class RelationshipVisualizationTab(Container):

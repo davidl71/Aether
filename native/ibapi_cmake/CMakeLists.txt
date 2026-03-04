@@ -18,6 +18,29 @@ else()
   cmake_path(APPEND IBAPI_PROTO_DIR "native" "third_party" "tws-api" "IBJts" "source" "cppclient" "client")
 endif()
 
+# When we will generate .pb.h (GitHub layout), stage client sources without .pb.h so that
+# #include "*.pb.h" resolves to our generated headers (compiler searches current file dir first).
+set(IBAPI_CLIENT_SOURCES_DIR "${IBAPI_CLIENT_DIR}")
+if(DEFINED TWS_API_CLIENT_DIR AND TWS_API_CLIENT_DIR AND EXISTS "${IBAPI_PROTO_SOURCE}")
+  set(_client_staging "${CMAKE_CURRENT_BINARY_DIR}/client_staging")
+  file(MAKE_DIRECTORY "${_client_staging}")
+  file(GLOB _client_cpp "${IBAPI_CLIENT_DIR}/*.cpp")
+  file(GLOB _client_h "${IBAPI_CLIENT_DIR}/*.h")
+  foreach(_f ${_client_cpp} ${_client_h})
+    get_filename_component(_name "${_f}" NAME)
+    if(NOT _name MATCHES "\\.pb\\.h$")
+      configure_file("${_f}" "${_client_staging}/${_name}" COPYONLY)
+    endif()
+  endforeach()
+  set(IBAPI_CLIENT_SOURCES_DIR "${_client_staging}")
+  message(STATUS "TWS API: client staging (no .pb.h) ${_client_staging}")
+  unset(_client_staging)
+  unset(_client_cpp)
+  unset(_client_h)
+  unset(_f)
+  unset(_name)
+endif()
+
 # Platform-specific Protocol Buffers paths
 if(WIN32)
     # Windows: typically installed via vcpkg or custom path
@@ -50,7 +73,7 @@ endif()
 set(INTEL_BID_LIB "${PROJECT_ROOT}")
 cmake_path(APPEND INTEL_BID_LIB "native" "third_party" "IntelRDFPMathLib20U2" "LIBRARY" "libbid.a")
 
-file(GLOB IBAPI_CORE_SOURCES "${IBAPI_CLIENT_DIR}/*.cpp")
+file(GLOB IBAPI_CORE_SOURCES "${IBAPI_CLIENT_SOURCES_DIR}/*.cpp")
 
 # GitHub layout: generate .pb.cc from source/proto; zip layout: use existing .pb.cc in client
 set(IBAPI_PROTO_SOURCES "")
@@ -95,18 +118,54 @@ else()
   file(GLOB IBAPI_PROTO_SOURCES "${IBAPI_PROTO_DIR}/*.pb.cc")
 endif()
 
-set(IBAPI_STDAFX "${IBAPI_CLIENT_DIR}/StdAfx.cpp")
+set(IBAPI_STDAFX "${IBAPI_CLIENT_SOURCES_DIR}/StdAfx.cpp")
 list(REMOVE_ITEM IBAPI_CORE_SOURCES "${IBAPI_STDAFX}")
 
 add_library(twsapi SHARED ${IBAPI_CORE_SOURCES} ${IBAPI_PROTO_SOURCES})
 
-target_include_directories(twsapi
-  PUBLIC
-    "${IBAPI_CLIENT_DIR}"
-    "${IBAPI_PROTO_DIR}"
-)
+# When we regenerate .pb.h from .proto (GitHub/vendored layout), put generated dir first
+# so the build uses headers matching the system protobuf instead of vendored 6.33.4 headers.
+# Generated .pb.h include google/protobuf/runtime_version.h etc., so add Protobuf include dir.
+# We use IBAPI_CLIENT_SOURCES_DIR (staging without .pb.h when generating) so #include "*.pb.h" finds generated ones.
 if(IBAPI_PROTO_GENERATED_DIR)
-  target_include_directories(twsapi PUBLIC "${IBAPI_PROTO_GENERATED_DIR}")
+  target_include_directories(twsapi
+    PUBLIC
+      "${IBAPI_PROTO_GENERATED_DIR}"
+      "${IBAPI_CLIENT_SOURCES_DIR}"
+      "${IBAPI_PROTO_DIR}"
+  )
+else()
+  target_include_directories(twsapi
+    PUBLIC
+      "${IBAPI_CLIENT_SOURCES_DIR}"
+      "${IBAPI_PROTO_DIR}"
+  )
+endif()
+if(PROTOBUF_SRC_DIR AND EXISTS "${PROTOBUF_SRC_DIR}/google/protobuf")
+  target_include_directories(twsapi PUBLIC "${PROTOBUF_SRC_DIR}")
+  message(STATUS "TWS API: Protobuf include ${PROTOBUF_SRC_DIR}")
+endif()
+
+# macOS: add SDK C++ stdlib include so TWS API finds <string>, <mutex>, etc. (CLT headers)
+if(APPLE)
+  set(_sdk_root "${CMAKE_OSX_SYSROOT}")
+  if(NOT _sdk_root)
+    execute_process(
+      COMMAND xcrun --show-sdk-path
+      OUTPUT_VARIABLE _sdk_root
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      ERROR_QUIET
+    )
+  endif()
+  if(_sdk_root)
+    set(_sdk_cxx "${_sdk_root}/usr/include/c++/v1")
+    if(EXISTS "${_sdk_cxx}/string")
+      target_include_directories(twsapi PRIVATE "${_sdk_cxx}")
+      message(STATUS "TWS API: using SDK C++ include ${_sdk_cxx}")
+    endif()
+  endif()
+  unset(_sdk_root)
+  unset(_sdk_cxx)
 endif()
 
 target_compile_features(twsapi PUBLIC cxx_std_17)

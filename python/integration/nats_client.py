@@ -4,7 +4,6 @@ nats_client.py - NATS message queue client wrapper for Python strategy runner
 Provides async NATS connection, subscription, and publishing capabilities
 for market data and strategy signals/decisions.
 """
-import asyncio
 import json
 import logging
 import uuid

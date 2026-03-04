@@ -164,7 +164,8 @@ impl TransactionBuilder {
     pub fn credit(mut self, account: impl Into<AccountPath>, amount: crate::Money) -> Self {
         let mut credit_amount = amount;
         credit_amount.amount = -credit_amount.amount;
-        self.postings.push(Posting::new(account.into(), credit_amount));
+        self.postings
+            .push(Posting::new(account.into(), credit_amount));
         self
     }
 
@@ -251,7 +252,13 @@ mod tests {
             .build()
             .unwrap();
 
-        assert_eq!(transaction.metadata.get("trade_id"), Some(&"ORD-12345".to_string()));
-        assert_eq!(transaction.metadata.get("strategy"), Some(&"box_spread".to_string()));
+        assert_eq!(
+            transaction.metadata.get("trade_id"),
+            Some(&"ORD-12345".to_string())
+        );
+        assert_eq!(
+            transaction.metadata.get("strategy"),
+            Some(&"box_spread".to_string())
+        );
     }
 }

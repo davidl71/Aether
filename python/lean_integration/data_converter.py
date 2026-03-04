@@ -49,7 +49,7 @@ class DataConverter:
                     "market_data": DataConverter.lean_to_cpp_market_data(contract)
                 }
                 cpp_options.append(cpp_option)
-            except Exception as e:
+            except Exception:
                 # Skip invalid contracts
                 continue
 

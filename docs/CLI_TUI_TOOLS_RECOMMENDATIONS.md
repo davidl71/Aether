@@ -355,37 +355,120 @@ pacman -S ripgrep
 
 ---
 
-### **asciinema** - Terminal Session Recorder
+### **asciinema** - Terminal Session Recorder (Demos)
 
 **Why It's Useful:**
 
 - Record LEAN REST API wrapper demos
-- Share API testing workflows
-- Document integration procedures
-- Create tutorials for PWA/TUI integration
+- Share API testing workflows (human-friendly `.cast` format)
+- Document integration procedures and create tutorials for PWA/TUI
+- Replay in terminal or upload to asciinema.org for embedding
 
 **Use Cases:**
 
-- Record LEAN wrapper API testing
-- Create demo videos for documentation
-- Share integration workflows
-- Document troubleshooting procedures
+- Record LEAN wrapper API testing for documentation
+- Create demo recordings for README or docs
+- Share integration workflows and troubleshooting procedures
+
+**Quick usage:**
+
+```bash
+# Record (exit shell or Ctrl+D to stop)
+asciinema rec demo.cast
+
+# Replay in terminal
+asciinema play demo.cast
+```
 
 **Installation:**
 
 ```bash
-
 # macOS
-
 brew install asciinema
 
 # Debian
-
 sudo apt install asciinema
 
 # Arch Linux
-
 sudo pacman -S asciinema
+```
+
+---
+
+### **VHS** - Scripted Terminal Recordings & Integration Tests
+
+**Why It's Useful:**
+
+- **Scripted** `.tape` files: reproducible terminal flows (type, enter, sleep, require tools)
+- **Integration tests**: output to `.ascii` and diff in CI (golden-file testing)
+- **Demos**: same tapes can generate GIFs or video for docs
+- Fits CI (e.g. GitHub Actions) to catch CLI output regressions
+
+**Use Cases:**
+
+- Integration tests for CLI/TUI (e.g. `ib_box_spread --help`, build + run)
+- Golden-output tests: run tape, diff generated `.ascii`, fail if changed
+- Record once with `vhs record`, then edit `.tape` for reliability
+- Generate GIFs for README from the same tapes
+
+**Quick usage:**
+
+```bash
+# Record a session (perform actions, then exit); edit the generated .tape as needed
+vhs record > tests/cli-demo.tape
+
+# Run a tape (generates GIF or ASCII output)
+vhs tests/cli-demo.tape
+
+# For tests: in the .tape file set "Output golden.ascii", then in CI:
+vhs tests/*.tape
+git diff --exit-code tests/*.ascii || echo "Output changed - review"
+```
+
+**Example tape** (e.g. `tests/cli-help.tape`):
+
+```tape
+Output tests/cli-help.ascii
+Set FontSize 14
+Set Width 800
+Set Height 400
+
+Require ib_box_spread
+Type "ib_box_spread --help"
+Enter
+Sleep 1s
+```
+
+**CI (GitHub Actions):** use `charmbracelet/vhs-action` with `path: 'tests/*.tape'`, then diff `tests/*.ascii` to fail on unexpected output changes.
+
+**Installation:**
+
+```bash
+# macOS
+brew install vhs
+
+# Or install from source
+go install github.com/charmbracelet/vhs@latest
+```
+
+---
+
+### **ttyrec** - Lightweight Terminal Replay (optional)
+
+**Why It Might Be Useful:**
+
+- Binary `.ttyrec` format; replay with `ttyplay` (e.g. in xterm)
+- No scripting or CI assertions; use when you only need record + replay
+- Alternative: `script` + `scriptreplay` (built-in on many systems) for similar workflow
+
+**Installation:**
+
+```bash
+# macOS
+brew install ttyrec
+
+# Debian/Ubuntu
+sudo apt install ttyrec
 ```
 
 ---
@@ -440,8 +523,9 @@ choco install gping
 
 ### Nice to Have
 
-1. **asciinema** - Demo recording
-2. **gping** - Network monitoring
+1. **asciinema** - Demo recording (record/play `.cast`; share or embed)
+2. **VHS** - Scripted integration tests and terminal GIFs (`.tape` → CI golden output or demos)
+3. **gping** - Network monitoring
 
 ---
 
@@ -466,6 +550,7 @@ Pane 4: API testing (ATAC or httpie)
 4. Use **jq** to parse responses
 5. Use **k6** for load testing
 6. Use **btop** to monitor resources
+7. Use **VHS** for scripted CLI/TUI integration tests (run `tests/*.tape`, diff golden `.ascii` output)
 
 **Debugging Workflow:**
 
@@ -504,7 +589,8 @@ Pane 4: API testing (ATAC or httpie)
 - Use **ATAC** to test integration endpoints
 - Use **jq** to validate data format conversion
 - Use **tmux/zellij** to run all services simultaneously
-- Use **asciinema** to record integration demos
+- Use **asciinema** to record integration demos (`.cast` for docs or asciinema.org)
+- Use **VHS** for scripted integration tests (`.tape` → golden `.ascii` in CI)
 
 ---
 
@@ -542,6 +628,10 @@ brew install btop
 # Code Tools
 
 brew install bat ripgrep
+
+# Terminal recording: demos (asciinema) + scripted tests (VHS)
+
+brew install asciinema vhs
 ```
 
 ### Test LEAN REST API Wrapper (After T-50)
@@ -571,6 +661,8 @@ atac http://localhost:8000/api/v1/snapshot
 - [httpie Documentation](https://httpie.io/docs) - HTTP client
 - [k6 Documentation](https://k6.io/docs/) - Load testing
 - [jq Manual](https://stedolan.github.io/jq/manual/) - JSON processor
+- [asciinema](https://asciinema.org/) - Terminal recording and sharing (demos)
+- [VHS (Charmbracelet)](https://github.com/charmbracelet/vhs) - Scripted terminal recordings and integration tests
 
 ---
 

@@ -7,7 +7,7 @@ format and LEAN configuration format.
 
 import json
 import os
-from typing import Dict, Optional, List
+from typing import Dict
 
 
 class LeanConfigAdapter:

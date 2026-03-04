@@ -23,9 +23,7 @@ pub fn convert_to_transactions(
     account_path_prefix: Option<&str>,
 ) -> LedgerResult<Vec<Transaction>> {
     let prefix = account_path_prefix.unwrap_or("Assets:Bank:Discount");
-    let currency_code = parsed_file
-        .currency_code()
-        .unwrap_or("01"); // Default to ILS
+    let currency_code = parsed_file.currency_code().unwrap_or("01"); // Default to ILS
 
     // Parse currency code to Currency enum
     let currency = match currency_code {

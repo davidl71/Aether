@@ -49,43 +49,37 @@ impl DiscountBankParser {
             let record_code = &trimmed[0..2];
 
             match record_code {
-                "00" => {
-                    match HeaderRecord::from_line(trimmed, line_number) {
-                        Ok(header) => {
-                            debug!(line = line_number, "Parsed header record");
-                            headers.push(header);
-                        }
-                        Err(e) => {
-                            warn!(line = line_number, error = %e, "Failed to parse header record");
-                        }
+                "00" => match HeaderRecord::from_line(trimmed, line_number) {
+                    Ok(header) => {
+                        debug!(line = line_number, "Parsed header record");
+                        headers.push(header);
                     }
-                }
-                "01" => {
-                    match TransactionRecord::from_line(trimmed, line_number) {
-                        Ok(txn) => {
-                            debug!(
-                                line = line_number,
-                                amount_raw = %txn.amount,
-                                "Parsed transaction record"
-                            );
-                            transactions.push(txn);
-                        }
-                        Err(e) => {
-                            warn!(line = line_number, error = %e, "Failed to parse transaction record");
-                        }
+                    Err(e) => {
+                        warn!(line = line_number, error = %e, "Failed to parse header record");
                     }
-                }
-                "04" => {
-                    match SummaryRecord::from_line(trimmed, line_number) {
-                        Ok(summ) => {
-                            debug!(line = line_number, "Parsed summary record");
-                            summary = Some(summ);
-                        }
-                        Err(e) => {
-                            warn!(line = line_number, error = %e, "Failed to parse summary record");
-                        }
+                },
+                "01" => match TransactionRecord::from_line(trimmed, line_number) {
+                    Ok(txn) => {
+                        debug!(
+                            line = line_number,
+                            amount_raw = %txn.amount,
+                            "Parsed transaction record"
+                        );
+                        transactions.push(txn);
                     }
-                }
+                    Err(e) => {
+                        warn!(line = line_number, error = %e, "Failed to parse transaction record");
+                    }
+                },
+                "04" => match SummaryRecord::from_line(trimmed, line_number) {
+                    Ok(summ) => {
+                        debug!(line = line_number, "Parsed summary record");
+                        summary = Some(summ);
+                    }
+                    Err(e) => {
+                        warn!(line = line_number, error = %e, "Failed to parse summary record");
+                    }
+                },
                 _ => {
                     warn!(
                         line = line_number,

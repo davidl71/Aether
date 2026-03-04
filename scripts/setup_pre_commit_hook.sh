@@ -36,14 +36,9 @@ SCRIPTS_DIR="scripts"
 if git diff --cached --name-only | grep -q "$DOCS_DIR/API_DOCUMENTATION_INDEX.md"; then
   echo "🔍 Validating documentation..."
 
-  # Run format validation
-  if ! "$SCRIPTS_DIR/validate_docs_format.py"; then
-    echo "❌ Documentation format validation failed"
-    echo "   Please fix format issues before committing"
-    exit 1
-  fi
-
-  # Run link validation (non-blocking, just warn)
+  # Docs format validation: use exarp-go MCP (check_documentation_health_tool) or run locally:
+  #   exarp-go -tool check_documentation_health_tool (with workingDirectory = project root)
+  # Link validation (non-blocking, just warn):
   if ! "$SCRIPTS_DIR/validate_docs_links.sh" 2>/dev/null; then
     echo ""
     echo "⚠️  Warning: Some documentation links may be broken"

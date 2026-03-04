@@ -1,7 +1,7 @@
 # TODO2 Execution Context - Implementation Complete ✅
 
 **Date:** 2025-01-20
-**Status:** ✅ **Implemented - All MCP-EXT Tasks Updated**
+**Status:** ✅ **Implemented** (script `create_mcp_extensions_todos.py` was later removed; this repo does not perform direct Todo2 edits—use exarp-go for task updates.)
 
 ---
 
@@ -37,9 +37,9 @@ Execution context metadata has been added to all TODO2 tasks to support parallel
 
 ### 3. ✅ Enhanced Task Creation Script
 
-**Script:** `scripts/create_mcp_extensions_todos.py`
+**Script:** ~~`scripts/create_mcp_extensions_todos.py`~~ (removed – use exarp-go for task creation)
 
-**Update:** Added execution context template to task creation script
+**Update:** Had added execution context template to task creation script
 
 ---
 

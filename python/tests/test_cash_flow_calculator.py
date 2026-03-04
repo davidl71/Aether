@@ -10,7 +10,6 @@ from datetime import datetime, timedelta
 
 from python.integration.cash_flow_calculator import (
     CashFlowCalculator,
-    CashFlowEvent,
     CashFlowTimeline,
     CashFlowType,
     Loan,

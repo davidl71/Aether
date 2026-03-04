@@ -7,9 +7,7 @@ use tracing::{info, Level};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tracing_subscriber::fmt()
-        .with_max_level(Level::INFO)
-        .init();
+    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
@@ -29,8 +27,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Show all headers with balances
     for (i, header) in parsed.headers.iter().enumerate() {
-        println!("Header {} (Date: {}):", i + 1, header.transaction_date.format("%Y-%m-%d"));
-        println!("  Account: {}-{}-{}", header.branch_number, header.section_number, header.account_number);
+        println!(
+            "Header {} (Date: {}):",
+            i + 1,
+            header.transaction_date.format("%Y-%m-%d")
+        );
+        println!(
+            "  Account: {}-{}-{}",
+            header.branch_number, header.section_number, header.account_number
+        );
         println!("  Currency: {}", header.currency_code);
 
         let opening = if header.opening_sign == '-' {
@@ -45,11 +50,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             header.closing_balance
         };
 
-        println!("  Opening Balance: {} {}",
+        println!(
+            "  Opening Balance: {} {}",
             if opening.is_sign_negative() { "-" } else { "" },
             opening.abs()
         );
-        println!("  Closing Balance: {} {}",
+        println!(
+            "  Closing Balance: {} {}",
             if closing.is_sign_negative() { "-" } else { "" },
             closing.abs()
         );
@@ -65,14 +72,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
 
         println!("=== Final Account Balance ===");
-        println!("Account: {}-{}-{}",
-            last_header.branch_number,
-            last_header.section_number,
-            last_header.account_number
+        println!(
+            "Account: {}-{}-{}",
+            last_header.branch_number, last_header.section_number, last_header.account_number
         );
         println!("Date: {}", last_header.transaction_date.format("%Y-%m-%d"));
-        println!("Balance: {} {}",
-            if final_balance.is_sign_negative() { "-" } else { "" },
+        println!(
+            "Balance: {} {}",
+            if final_balance.is_sign_negative() {
+                "-"
+            } else {
+                ""
+            },
             final_balance.abs()
         );
         println!("Currency: {}", last_header.currency_code);

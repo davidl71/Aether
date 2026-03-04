@@ -13,13 +13,15 @@ pub mod rpc;
 pub mod serde;
 pub mod topics;
 
-pub use bridge::{ChannelBridge, Publisher, ProtoPublisher, ProtoSubscriber, Subscriber};
+pub use bridge::{ChannelBridge, ProtoPublisher, ProtoSubscriber, Publisher, Subscriber};
 pub use client::NatsClient;
-pub use dlq::{DlqConfig, DlqService, DeadLetterMessage, error_type_from_error};
+pub use dlq::{error_type_from_error, DeadLetterMessage, DlqConfig, DlqService};
 pub use error::{NatsAdapterError, Result};
-pub use serde::{encode_proto, decode_proto, encode_envelope, decode_envelope, extract_proto_payload};
 pub use rpc::{request_proto, request_proto_with_timeout, serve_proto};
-pub use topics::{validate_topic, topic_matches};
+pub use serde::{
+    decode_envelope, decode_proto, encode_envelope, encode_proto, extract_proto_payload,
+};
+pub use topics::{topic_matches, validate_topic};
 
 /// Re-export commonly used types
 pub use async_nats;

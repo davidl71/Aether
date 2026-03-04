@@ -6,7 +6,7 @@ Tests add_security_to_app() and add_security_headers_middleware() functions.
 
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -18,7 +18,6 @@ from services.security_integration_helper import (
     add_security_to_app,
     add_security_headers_middleware,
 )
-from services.environment_config import get_config
 
 
 class TestAddSecurityToApp(unittest.TestCase):

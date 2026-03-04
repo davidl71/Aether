@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run all project linters (C++, Python, JS/TS, shell, exarp-go, etc.).
+# Run all project linters (C++, Python, JS/TS, shell, Ansible, exarp-go, etc.).
 #
 # Usage:
 #   ./scripts/run_linters.sh                    # normal (verbose)
@@ -378,7 +378,18 @@ run_shellcheck() {
   [ "${failed}" -eq 0 ]
 }
 
-run_bandit() {
+run_ansible_lint() {
+  if ! command -v ansible-lint >/dev/null 2>&1; then
+    warn "Skipping ansible-lint (executable not found; install with: pip install ansible-lint or uv tool install ansible-lint)"
+    return 0
+  fi
+  info "Running ansible-lint (ansible/ playbooks and roles)"
+  if [[ "${LINT_MAX_LINES}" -gt 0 ]]; then
+    run_limited ansible-lint ansible/ || return 1
+  else
+    ansible-lint ansible/ || return 1
+  fi
+}
   info "Running bandit (Python)"
 
   local bandit_cmd=()
@@ -399,6 +410,26 @@ run_bandit() {
   fi
 }
 
+run_ruff() {
+  info "Running ruff (Python)"
+
+  local ruff_cmd=()
+  if command -v uv >/dev/null 2>&1 && [[ -f "${ROOT_DIR}/python/pyproject.toml" || -f "${ROOT_DIR}/pyproject.toml" ]]; then
+    ruff_cmd=(uv run ruff)
+  elif command -v ruff >/dev/null 2>&1; then
+    ruff_cmd=(ruff)
+  else
+    warn "Skipping ruff (uv/ruff not found; install with: uv pip install ruff or pip install ruff)"
+    return 0
+  fi
+
+  if [[ "${LINT_MAX_LINES}" -gt 0 ]]; then
+    run_limited "${ruff_cmd[@]}" check "${ROOT_DIR}/python"
+  else
+    "${ruff_cmd[@]}" check "${ROOT_DIR}/python"
+  fi
+}
+
 run_infer() {
   if ! command -v infer >/dev/null 2>&1; then
     warn "Skipping Infer (executable not found)"
@@ -414,6 +445,8 @@ run_infer() {
 
   # Check common build directory locations
   for possible_dir in \
+    "${ROOT_DIR}/build/macos-arm64-debug" \
+    "${ROOT_DIR}/build/macos-arm64-release" \
     "${ROOT_DIR}/build/macos-x86_64-debug" \
     "${ROOT_DIR}/build/macos-x86_64-release" \
     "${ROOT_DIR}/build/macos-universal-debug" \
@@ -497,7 +530,9 @@ main() {
   # run_golangci_lint  # Go TUI removed - using C++ TUI instead
   run_exarp_go_lint
   run_shellcheck
+  run_ansible_lint
   run_bandit
+  run_ruff
   run_eslint
   run_stylelint
   run_type_check
@@ -518,6 +553,8 @@ main_parallel() {
   ( run_infer; echo $? > "${tmpdir}/infer" ) &
   ( run_swiftlint; echo $? > "${tmpdir}/swiftlint" ) &
   ( run_bandit; echo $? > "${tmpdir}/bandit" ) &
+  ( run_ruff; echo $? > "${tmpdir}/ruff" ) &
+  ( run_ansible_lint; echo $? > "${tmpdir}/ansible_lint" ) &
   ( run_eslint; echo $? > "${tmpdir}/eslint" ) &
   ( run_stylelint; echo $? > "${tmpdir}/stylelint" ) &
   ( run_type_check; echo $? > "${tmpdir}/type_check" ) &

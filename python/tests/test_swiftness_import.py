@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from python.integration.swiftness_parser import SwiftnessParser
 from python.integration.swiftness_storage import SwiftnessStorage
 from python.integration.swiftness_updater import SwiftnessUpdater
 
@@ -68,7 +67,7 @@ def main():
         # Load and display positions
         positions = updater.get_positions()
         logger.info("=" * 80)
-        logger.info(f"STORED POSITIONS")
+        logger.info("STORED POSITIONS")
         logger.info("=" * 80)
         logger.info(f"Products: {len(positions.products)}")
         logger.info(f"Deposits: {len(positions.deposits)}")

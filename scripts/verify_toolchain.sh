@@ -18,9 +18,26 @@ run_with_nix_if_requested "$@"
 echo "Checking C++ toolchain..."
 
 # Test that clang++ can find standard library headers
+_cxx_ok=false
 if echo '#include <string>' | clang++ -x c++ -std=c++20 -fsyntax-only - 2>/dev/null; then
   echo "✓ C++ stdlib headers OK"
-else
+  _cxx_ok=true
+fi
+
+# On macOS, CLT sometimes has headers only in the SDK path; try with explicit -isysroot and -isystem
+if [[ "${_cxx_ok}" == "false" ]] && [[ "$(uname -s)" == "Darwin" ]]; then
+  _sdk="$(xcrun --show-sdk-path 2>/dev/null)"
+  _cxx_inc="${_sdk}/usr/include/c++/v1"
+  if [[ -n "${_sdk}" ]] && [[ -f "${_cxx_inc}/string" ]]; then
+    if echo '#include <string>' | clang++ -x c++ -std=c++20 -isysroot "${_sdk}" -isystem "${_cxx_inc}" -fsyntax-only - 2>/dev/null; then
+      echo "✓ C++ stdlib headers OK (via SDK: ${_sdk})"
+      echo "  (CMake will inject this path for the build.)"
+      _cxx_ok=true
+    fi
+  fi
+fi
+
+if [[ "${_cxx_ok}" == "false" ]]; then
   echo "✗ C++ stdlib headers not found. clang++ cannot find <string>, <vector>, etc."
   echo ""
   echo "Fix: Run one of the following:"

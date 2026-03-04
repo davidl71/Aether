@@ -54,13 +54,13 @@ impl MarketDataSource for MockMarketDataSource {
             self.symbols[idx].clone()
         };
 
-    let drift = state.rng.gen_range(-0.75..0.75);
-    let spread = state.rng.gen_range(0.02..0.08);
-    let entry = state.baselines.entry(symbol.clone()).or_insert(100.0);
-    *entry = (*entry + drift).max(1.0);
+        let drift = state.rng.gen_range(-0.75..0.75);
+        let spread = state.rng.gen_range(0.02..0.08);
+        let entry = state.baselines.entry(symbol.clone()).or_insert(100.0);
+        *entry = (*entry + drift).max(1.0);
 
-    let price = *entry;
-    let bid = (price - (spread / 2.0)).max(0.01);
+        let price = *entry;
+        let bid = (price - (spread / 2.0)).max(0.01);
         let ask = bid + spread;
 
         Ok(MarketDataEvent {

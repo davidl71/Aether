@@ -54,6 +54,11 @@ things (e.g. commands, MCP), not *what* the project rules are.
 
 - **Context:** Skills should rely on the same canonical context: AGENTS.md,
   CLAUDE.md, and (when relevant) .cursor/rules.
+- **Project skills:** This repo defines reusable workflows in
+  [.cursor/skills/](../.cursor/skills/). Use them by opening or @-mentioning the
+  skill file when asking the AI to perform the task (e.g. pull with WIP, add
+  native module, before-commit checklist, trading safety, build from clean). See
+  [.cursor/skills/README.md](../.cursor/skills/README.md) for the index.
 - **Discovery:** Project root = workspace root; key files are at repo root and
   under `.cursor/`, `.claude/`, `.opencode/`.
 - **Invocation:** Use the Skill tool with the skill path; skills can READ
@@ -71,6 +76,9 @@ things (e.g. commands, MCP), not *what* the project rules are.
     root."
   - Build/test: "Build: `ninja -C build` or use CMake presets; tests:
     `ctest --test-dir build --output-on-failure`."
+- **Reference:** Full list of subagents and when to use each:
+  [docs/SUBAGENTS_REFERENCE.md](SUBAGENTS_REFERENCE.md). Project skill:
+  [.cursor/skills/when-to-use-subagents.md](../.cursor/skills/when-to-use-subagents.md).
 - **exarp-go:** Uses PROJECT_ROOT; session prime and other tools can attach
   task context. Same AGENTS.md/CLAUDE.md apply.
 - **Claude custom agents:** Each agent in `.claude/agents/` can reference
@@ -116,6 +124,9 @@ See [.cursor/rules/hooks.mdc](../.cursor/rules/hooks.mdc) and [LINT_AND_AUTOMATI
    [.cursor/commands.json](../.cursor/commands.json).
 1. **New Claude agent:** Add a `.md` under
    [.claude/agents/](../.claude/agents/) and reference AGENTS.md/CLAUDE.md.
+1. **New project skill:** Add a `.md` under
+   [.cursor/skills/](../.cursor/skills/) and list it in
+   [.cursor/skills/README.md](../.cursor/skills/README.md).
 
 See also:
 [.cursor/rules/ai-context-standards.mdc](../.cursor/rules/ai-context-standards.mdc).

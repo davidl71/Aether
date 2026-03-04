@@ -281,7 +281,6 @@ class TestTUIAppInit:
         assert "q" in binding_keys
         assert "f1" in binding_keys
         assert "f5" in binding_keys
-        assert "tab" in binding_keys
 
     def test_app_has_css(self):
         from python.tui.app import TUIApp

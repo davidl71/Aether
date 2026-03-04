@@ -87,6 +87,20 @@ for loc in locations:
 
 ## Resolution Strategy
 
+### Deduplicate with the project script
+
+The script removes duplicates by **exact (command, args)** and by **server identity** (e.g. two keys for the same npm package, like `sequential_thinking` and `sequential-thinking`):
+
+```bash
+# Project config
+python3 scripts/deduplicate_mcp_servers.py .cursor/mcp.json
+
+# Global config (if you use ~/.cursor/mcp.json)
+python3 scripts/deduplicate_mcp_servers.py ~/.cursor/mcp.json
+```
+
+If the **same server appears twice** in Cursor (e.g. sequential_thinking), it is often because it is defined in **both** project `.cursor/mcp.json` and global `~/.cursor/mcp.json`. Remove it from one of them (e.g. keep only in project) so it is only loaded once.
+
 ### If Multiple Configs Found
 
 1. **Check each file for context7 duplicates:**

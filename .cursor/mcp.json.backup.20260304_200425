@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "exarp-go": {
+      "disabled": false,
+      "command": "{{PROJECT_ROOT}}/../../mcp/exarp-go/scripts/run_exarp_go.sh",
+      "args": [],
+      "env": {
+        "PROJECT_ROOT": "{{PROJECT_ROOT}}",
+        "EXARP_WATCH": "0"
+      },
+      "description": "exarp-go MCP: task_workflow, docs health, alignment, duplicates, security, automation (29 tools, 18 prompts, 21 resources). Set workingDirectory to project root."
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "{{PROJECT_ROOT}}"
+      ]
+    }
+  }
+}

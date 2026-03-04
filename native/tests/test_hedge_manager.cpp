@@ -295,7 +295,7 @@ TEST_CASE("HedgeManager hedge monitoring", "[hedge][monitoring]") {
 
     // Then: needs_rebalance should be boolean
     // (Exact value depends on drift threshold)
-    REQUIRE(effectiveness.needs_rebalance == true || effectiveness.needs_rebalance == false);
+    REQUIRE((effectiveness.needs_rebalance == true || effectiveness.needs_rebalance == false));
   }
 }
 

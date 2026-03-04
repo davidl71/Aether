@@ -116,7 +116,7 @@ class QuestDBClient:
             resp.raise_for_status()
             payload = resp.json()
             columns = [c["name"] for c in payload.get("columns", [])]
-            return [dict(zip(columns, row)) for row in payload.get("dataset", [])]
+            return [dict(zip(columns, row, strict=False)) for row in payload.get("dataset", [])]
         except Exception as exc:
             logger.warning("QuestDB query failed: %s", exc)
             return []

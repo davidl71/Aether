@@ -1,6 +1,12 @@
 # Task Clarification Resolution Automation
 
-**Purpose:** Automate resolution of task clarifications without using Python heredocs.
+**Status:** **Removed.** The script `scripts/resolve_task_clarifications.py` was removed. This repo does not perform direct Todo2 edits. Use **exarp-go** for task updates and clarifications. See `docs/MCP_REQUIRED_SERVERS.md`.
+
+---
+
+**Historical reference below.**
+
+**Purpose:** Automated resolution of task clarifications.
 
 ---
 

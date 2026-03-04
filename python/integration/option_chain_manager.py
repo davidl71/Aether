@@ -3,7 +3,7 @@ option_chain_manager.py - Manages option chains with caching
 Implements efficient option chain storage and retrieval.
 """
 import logging
-from typing import Dict, Optional, List, Set
+from typing import Dict, Optional, List
 from datetime import datetime, timezone
 from collections import defaultdict
 

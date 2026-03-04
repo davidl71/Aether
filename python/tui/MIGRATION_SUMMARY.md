@@ -14,17 +14,34 @@ The C++ TUI (`native/src/tui_app.cpp`) has been replaced with a Python TUI (`pyt
 
 ```
 python/tui/
-├── __init__.py          # Module initialization
+├── __init__.py
 ├── models.py            # Shared data models (matches PWA TypeScript types)
 ├── providers.py         # Data providers (mock, REST, file)
-├── app.py               # Main TUI application (Textual)
+├── app.py               # Main TUI application (Textual); composes components
 ├── config.py            # Configuration management
+├── box_spread_loader.py # Load box spread scenarios from REST or file
 ├── __main__.py          # Entry point
-├── README.md            # Usage documentation
-├── MIGRATION_SUMMARY.md  # This file
+├── components/          # Tab and widget components
+│   ├── __init__.py
+│   ├── base.py          # SnapshotTabBase for snapshot-driven tabs
+│   ├── snapshot_display.py
+│   ├── dashboard.py
+│   ├── positions.py
+│   ├── orders.py
+│   ├── alerts.py
+│   ├── scenarios.py
+│   ├── historic.py      # Historic positions (stub)
+│   ├── unified_positions.py
+│   ├── cash_flow.py
+│   ├── opportunity_simulation.py
+│   ├── relationship_visualization.py
+│   └── loan_entry.py
+├── README.md
+├── MIGRATION_SUMMARY.md
 └── tests/
     ├── __init__.py
-    └── test_models.py   # Model serialization tests
+    ├── test_models.py
+    └── test_config.py
 ```
 
 ## Quick Start
@@ -81,12 +98,11 @@ This ensures consistency across all frontends.
 
 ### UI Features
 
-- Dashboard tab with symbols and metrics
-- Positions tab with current positions
-- Orders tab with recent orders
-- Alerts tab with system alerts
-- Keyboard shortcuts (F1-F10, Tab, Q)
-- Real-time updates (500ms refresh rate)
+- Dashboard, Positions, Orders, Alerts tabs (snapshot-based; in `components/`).
+- Unified Positions, Cash Flow, Simulation, Relationships, Scenarios, Loans, Historic (stub) tabs.
+- Box spread data loaded via `box_spread_loader.get_box_spread_payload()` (REST or file).
+- Keyboard shortcuts (F1–F10, Q).
+- Real-time updates (500 ms snapshot refresh, 2 s box spread refresh).
 
 ## Migration Notes
 
@@ -102,7 +118,7 @@ All code includes migration notes for future C++ migration via pybind11:
 1. **Add IBKR REST provider** - Use `python/integration/ibkr_portal_client.py`
 2. **Add LiveVol provider** - Use `python/integration/orats_client.py`
 3. **Add setup screen** - Interactive configuration
-4. **Add historic positions tab** - Display historical data
+4. **Implement historic positions tab** - Replace stub in `components/historic.py` with real data
 5. **Performance testing** - Compare with C++ TUI
 6. **Documentation** - Update main README
 

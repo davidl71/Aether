@@ -264,7 +264,7 @@ class ArchitectureAnalyzer:
             'tsx': '**/*.tsx',
         }
         files = []
-        for lang, pattern in patterns.items():
+        for _lang, pattern in patterns.items():
             files.extend(self.project_root.glob(pattern))
         return files
 
@@ -384,7 +384,7 @@ def main():
         print("TODO2 TASK ANALYSIS")
         print("="*60)
         analyzer = Todo2Analyzer(args.todo2_path)
-        graph = analyzer.build_graph()
+        analyzer.build_graph()
         insights = analyzer.get_insights()
         print_insights("Todo2 Task Insights", insights)
 
@@ -393,7 +393,7 @@ def main():
         print("DOCUMENTATION ANALYSIS")
         print("="*60)
         analyzer = DocumentationAnalyzer(args.docs_dir)
-        graph = analyzer.build_graph()
+        analyzer.build_graph()
         insights = analyzer.get_insights()
         print_insights("Documentation Insights", insights)
 
@@ -402,7 +402,7 @@ def main():
         print("ARCHITECTURE ANALYSIS")
         print("="*60)
         analyzer = ArchitectureAnalyzer(PROJECT_ROOT)
-        graph = analyzer.build_graph()
+        analyzer.build_graph()
         insights = analyzer.get_insights()
         print_insights("Architecture Insights", insights)
 

@@ -36,7 +36,7 @@ class EnvironmentConfig:
             try:
                 with open(self.config_file, 'r') as f:
                     self._config = json.load(f)
-            except (json.JSONDecodeError, IOError) as e:
+            except (json.JSONDecodeError, IOError):
                 # If config file is invalid, use empty config
                 self._config = {}
         else:

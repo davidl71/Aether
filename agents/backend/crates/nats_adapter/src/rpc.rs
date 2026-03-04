@@ -21,11 +21,7 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(5);
 // JSON path (backward-compatible)
 // ---------------------------------------------------------------------------
 
-pub async fn request<Req, Res>(
-    client: &NatsClient,
-    subject: &str,
-    payload: &Req,
-) -> Result<Res>
+pub async fn request<Req, Res>(client: &NatsClient, subject: &str, payload: &Req) -> Result<Res>
 where
     Req: Serialize,
     Res: DeserializeOwned,

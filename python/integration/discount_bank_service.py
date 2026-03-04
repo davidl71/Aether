@@ -26,9 +26,7 @@ from typing import Dict, List, Any, Optional
 from collections import defaultdict
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from pathlib import Path
 import sys
 
 # Add project root to path for security module
@@ -420,14 +418,14 @@ def _record_position_in_ledger(
         conn.commit()
         conn.close()
         return True
-    except Exception as e:
+    except Exception:
         return False
 
 
 def _fetch_ibkr_positions(account_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """Fetch positions from IBKR Client Portal."""
     try:
-        from .ibkr_portal_client import IBKRPortalClient, IBKRPortalError
+        from .ibkr_portal_client import IBKRPortalClient
 
         client = IBKRPortalClient()
         positions = client.get_portfolio_positions(account_id)
@@ -449,7 +447,7 @@ def _fetch_ibkr_positions(account_id: Optional[str] = None) -> List[Dict[str, An
                     }
                 )
         return formatted
-    except Exception as e:
+    except Exception:
         return []
 
 
@@ -571,7 +569,7 @@ def _extract_bank_accounts_from_ledger() -> List[Dict[str, Any]]:
 
                     # Sum balances (positive = credit, negative = debit)
                     account_balances[account_path_str][currency] += amount
-            except (json.JSONDecodeError, KeyError, ValueError, TypeError) as e:
+            except (json.JSONDecodeError, KeyError, ValueError, TypeError):
                 # Skip invalid transactions/postings
                 continue
 
@@ -622,7 +620,7 @@ def _extract_bank_accounts_from_ledger() -> List[Dict[str, Any]]:
         bank_accounts.sort(key=lambda x: x["account_path"])
 
         return bank_accounts
-    except sqlite3.Error as e:
+    except sqlite3.Error:
         # Database error - return empty list
         return []
 

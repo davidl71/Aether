@@ -1,0 +1,7 @@
+# Ansible-lint configuration (https://ansible.readthedocs.io/projects/lint/)
+# Run: ansible-lint ansible/  or  just ansible-lint
+profile: basic
+# Lint playbooks and roles under ansible/
+exclude_paths:
+  - .git/
+  - .github/

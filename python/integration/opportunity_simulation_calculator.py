@@ -63,12 +63,12 @@ def find_available_scenarios(
     if len(loans) > 1 or len(bank_loans) > 0:
         all_loans = [
             {
-                "rate": l.get("rate") or 0,
+                "rate": item.get("rate") or 0,
                 "balance": (
-                    l.get("cash_flow") or l.get("candle", {}).get("close") or 0
+                    item.get("cash_flow") or item.get("candle", {}).get("close") or 0
                 ),
             }
-            for l in loans
+            for item in loans
         ] + [
             {"rate": a.get("debit_rate", 0), "balance": a.get("balance", 0)}
             for a in bank_loans

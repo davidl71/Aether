@@ -8,8 +8,7 @@ from typing import Optional, List
 from decimal import Decimal
 import logging
 from .types import (
-    Rate, StrikeWidth, Expiration, Money,
-    Direction, Benchmark, LiquidityConstraints
+    Rate, StrikeWidth, Expiration, Direction, Benchmark, LiquidityConstraints
 )
 
 logger = logging.getLogger(__name__)

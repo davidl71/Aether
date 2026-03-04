@@ -1,19 +1,14 @@
 """Tests for order_manager.py - Python port of C++ order manager."""
 
 import pytest
-from datetime import datetime
 
 from python.integration.order_manager import (
     BoxSpreadLegSimple,
-    ExecutionResult,
     MultiLegOrder,
     Order,
     OrderAction,
     OrderContract,
     OrderManager,
-    OrderStats,
-    OrderStatus,
-    TimeInForce,
 )
 
 
