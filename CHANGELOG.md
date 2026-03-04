@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - RAM optimization script and non-C++ cache/target optimization
+- **`scripts/setup_ram_optimization.sh`**: New script to enable RAM-based caches and project dirs (macOS).
+  - **enable**: Creates cache RAM disk (default 12GB at `/Volumes/IBBoxSpreadDev`), links ccache, sccache, pip, Cargo registry/git to ramdisk; sets `CARGO_TARGET_DIR` so Rust build output uses ramdisk; optionally symlinks project `.venv`, `node_modules`, and `web/node_modules` when absent.
+  - **disable**: Removes symlinks and restores local cache dirs; leaves RAM disk mounted.
+  - **status**: Shows RAM disk mount and cache/project link status.
+  - **redis**: Configures sccache Redis backend in `.ram-optimization-env`.
+- **Non-C++ optimizations**: When enabled and `.ram-optimization-env` is sourced, Rust `target/` and (if linked) project Python venv and Node `node_modules` use the ramdisk for faster I/O.
+- **Docs**: `docs/RAM_OPTIMIZATION_GUIDE.md` updated with Rust `CARGO_TARGET_DIR`, new section 5a for optional project `.venv` and `node_modules` symlinks, and manual-setup notes.
+
 ### Changed - TWS API Version Update
 - Updated TWS API from version 10.33.01 to 10.40.01
 - **Key improvements in 10.40.01** (from [release notes](https://ibkrguides.com/releasenotes/prod-2025.htm)):

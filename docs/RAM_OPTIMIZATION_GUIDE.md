@@ -130,6 +130,41 @@ cmake --build build-ramdisk
 
 ---
 
+### 3. Third-Party Trees on Read-Only Compressed DMG (macOS)
+
+**Impact**: Fewer disk reads for vendor trees (TWS API, Intel decimal); compressed storage; no writes to third-party during builds.
+
+**Setup** (one-time after fetch):
+
+```bash
+# Fetch third-party first (if not already done)
+./scripts/fetch_third_party.sh
+
+# Create read-only compressed DMG from native/third_party (tws-api, Intel*)
+./scripts/third_party_dmg.sh create
+
+# Optional: use DMG in builds (mount and symlink native/third_party -> mount)
+export USE_THIRD_PARTY_DMG=1
+./scripts/build_fast.sh   # or ensure_third_party will mount when needed
+```
+
+**Commands**:
+
+- `./scripts/third_party_dmg.sh create` – Pack current tws-api and IntelRDFPMathLib* into `.dmg/ThirdParty.dmg` (run after fetch).
+- `./scripts/third_party_dmg.sh mount` – Attach DMG and symlink `native/third_party/tws-api` and Intel* to the mounted volume (moves originals to `native/third_party/.orig`).
+- `./scripts/third_party_dmg.sh unmount` – Restore `.orig`, remove symlinks, detach DMG.
+- `./scripts/third_party_dmg.sh status` – Show whether DMG exists, is mounted, and symlinks active.
+
+With `USE_THIRD_PARTY_DMG=1`, `ensure_third_party` (used by build scripts) will run `third_party_dmg.sh mount` when the DMG exists so builds read from the compressed image.
+
+**Benefits**:
+
+- Fewer bytes read from disk (compressed image).
+- No writes to vendor trees during build.
+- Same `native/third_party` paths for CMake; no config changes.
+
+---
+
 ### 3. Python Cache Optimization
 
 **Impact**: Faster Python operations, reduced disk I/O
@@ -176,11 +211,12 @@ source .ram-optimization-env
 
 - Links `~/.cargo/registry` → RAM disk (crate registry cache)
 - Links `~/.cargo/git` → RAM disk (git dependencies cache)
+- Sets `CARGO_TARGET_DIR` to RAM disk (build output: `target/` for all Cargo workspaces)
 
 **Benefits**:
 
 - Faster crate downloads (from RAM cache)
-- Faster Rust compilation
+- Faster Rust compilation (registry, git, and build output on RAM)
 - Reduced disk usage
 
 **Manual setup**:
@@ -197,6 +233,32 @@ ln -sf /Volumes/IBBoxSpreadDev/caches/cargo-registry ~/.cargo/registry
 mv ~/.cargo/git /Volumes/IBBoxSpreadDev/caches/cargo-git
 ln -sf /Volumes/IBBoxSpreadDev/caches/cargo-git ~/.cargo/git
 ```
+
+---
+
+### 5a. Non-C++ project dirs (venv, node_modules)
+
+**Impact**: Faster Python/Node installs and runs when project dirs are on RAM
+
+**Setup**:
+
+```bash
+./scripts/setup_ram_optimization.sh enable
+source .ram-optimization-env
+```
+
+**What it does** (only when the path does not already exist):
+
+- Symlinks project `.venv` → RAM disk (run `uv sync` or `python -m venv .venv` to populate)
+- Symlinks project `node_modules` → RAM disk (run `npm install` to populate)
+- Symlinks `web/node_modules` → RAM disk (run `npm install` in web to populate)
+
+**Benefits**:
+
+- Faster `uv sync` / `pip install` and Python imports (venv on RAM)
+- Faster `npm install` and bundler I/O (node_modules on RAM)
+
+**Note**: If `.venv` or `node_modules` already exist, they are not replaced. Remove them and run `enable` again to put them on the ramdisk.
 
 ---
 
