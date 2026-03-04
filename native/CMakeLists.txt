@@ -704,6 +704,7 @@ if(_build_native_cli)
         src/convexity_calculator.cpp
         src/loan_position.cpp
         src/loan_manager.cpp
+        src/margin_calculator.cpp
     )
 
     set(HEADERS
@@ -718,6 +719,7 @@ if(_build_native_cli)
         include/types.h
         include/loan_position.h
         include/loan_manager.h
+        include/margin_calculator.h
     )
 
     # Conditionally include local source files only if NOT using extracted library
