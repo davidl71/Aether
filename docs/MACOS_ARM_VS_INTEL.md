@@ -53,7 +53,55 @@ Override any time with `CMAKE_PRESET=macos-x86_64-debug` (or the preset you want
 
 ---
 
-## Integration tests and CI
+## Path differences between architectures
+
+Paths that **differ by architecture** vs **shared**:
+
+### Build and binary paths (differ by arch)
+
+| What | ARM64 | Intel (x86_64) |
+|------|--------|-----------------|
+| Debug build dir | `build/macos-arm64-debug` | `build/macos-x86_64-debug` |
+| Release build dir | `build/macos-arm64-release` | `build/macos-x86_64-release` |
+| CLI binary (debug) | `build/macos-arm64-debug/bin/ib_box_spread` | `build/macos-x86_64-debug/bin/ib_box_spread` |
+| TUI binary (debug) | `build/macos-arm64-debug/bin/ib_box_spread_tui` | `build/macos-x86_64-debug/bin/ib_box_spread_tui` |
+| Tests | `build/macos-arm64-debug/` (ctest) | `build/macos-x86_64-debug/` (ctest) |
+
+Same pattern for **-ai**, **-sccache**, **-ccache**, **-distcc** presets: path always includes the preset name, e.g. `build/macos-arm64-release-sccache`, `build/macos-x86_64-release-sccache`.
+
+### Ramdisk build (shared path, one arch at a time)
+
+When using a **-ramdisk** preset, both arm64 and x86_64 use the **same** build directory:
+
+| What | Path (both arches) |
+|------|---------------------|
+| Build dir | `build-ramdisk` (symlink to `/Volumes/IBBoxSpreadBuild/build`) |
+| CLI binary | `build-ramdisk/bin/ib_box_spread` |
+
+So `build-ramdisk` holds only one architecture at a time (whichever preset you last configured: `macos-arm64-debug-ramdisk` or `macos-x86_64-debug-ramdisk`). Switch arch by reconfiguring with the other preset.
+
+### Paths that do not differ by arch
+
+- **Cache RAM disk** (`setup_ram_optimization.sh`): `/Volumes/IBBoxSpreadDev/caches/` — same for both; no arch in path.
+- **Rust `CARGO_TARGET_DIR`** (when using ramdisk env): e.g. `/Volumes/IBBoxSpreadDev/caches/cargo-target` — same for both.
+- **Project dirs** (config, scripts, proto, native source): no arch-specific paths.
+- **Cursor/Just commands**: Some commands hardcode `build/macos-arm64-debug`; on Intel use `CMAKE_PRESET=macos-x86_64-debug` and run the binary from `build/macos-x86_64-debug/bin/...`, or change the command to your preset’s path.
+
+### Scripts that derive build dir from preset
+
+- **integration_test.sh**: `BUILD_DIR=build/${PRESET}` except for `-ramdisk` presets, where `BUILD_DIR=build-ramdisk`. So `CLI_BIN=${BUILD_DIR}/bin/ib_box_spread` is correct for any preset.
+- **build_fast.sh**, **build_distributed.sh**: Set `BUILD_DIR` from the chosen preset (e.g. `build/macos-arm64-release-sccache`), so binary path follows arch.
+
+### Quick reference: binary path by preset
+
+```text
+build/<preset-name>/bin/ib_box_spread
+build/<preset-name>/bin/ib_box_spread_tui
+```
+
+Examples: `build/macos-arm64-debug/bin/ib_box_spread`, `build/macos-x86_64-release/bin/ib_box_spread`, `build-ramdisk/bin/ib_box_spread` (when using a -ramdisk preset).
+
+---
 
 - **integration_test.sh** defaults to `macos-x86_64-release`; override with `CMAKE_PRESET`.
 - CI / release: use the preset that matches the runner (e.g. macOS Intel runner → `macos-x86_64-*`). Release scripts like `release_x86.sh` target Intel explicitly.
