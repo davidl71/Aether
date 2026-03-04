@@ -7,7 +7,7 @@ This document describes the portable build wrapper and the exarp-go runner used 
 **Script**: `scripts/build_portable.sh`  
 **Just**: `just build-portable [build|clean|test|install] [--debug|--release]`
 
-Detects OS and architecture and uses the matching CMake preset:
+Detects OS and architecture via `uname -m` and uses the matching CMake preset. See [MACOS_ARM_VS_INTEL.md](MACOS_ARM_VS_INTEL.md) for ARM vs Intel macOS details.
 
 | Platform        | Preset              |
 |-----------------|---------------------|
@@ -45,6 +45,8 @@ Presets are defined in `CMakePresets.json`. The script does not create the build
 **Script**: `scripts/run_exarp_go.sh`
 
 Used as the exarp-go MCP server command in `.cursor/mcp.json`. Ensures the correct project is used via `PROJECT_ROOT` (e.g. `.todo2` and task store).
+
+**MCP config (exarp-go v0.3.5+):** Use `{{PROJECT_ROOT}}` in `.cursor/mcp.json` for command and env; Cursor substitutes it with the workspace root. Set `EXARP_WATCH=0` when using a wrapper. If the server fails to start, replace `{{PROJECT_ROOT}}` with the absolute path to this repo. Optional: `.exarp/config.pb` (create with `exarp-go config init` in project root); `EXARP_MIGRATIONS_DIR` only if you use a local exarp-go clone and need migrations (otherwise the script sets it from `EXARP_GO_ROOT`).
 
 ### Resolution order
 
@@ -86,6 +88,7 @@ Used as the exarp-go MCP server command in `.cursor/mcp.json`. Ensures the corre
 
 ## References
 
+- [MACOS_ARM_VS_INTEL.md](MACOS_ARM_VS_INTEL.md) — ARM (Apple Silicon) vs Intel macOS presets and usage
 - [CURSOR_PROJECT_COMMANDS.md](CURSOR_PROJECT_COMMANDS.md) — `build:portable`, `build:universal`
 - [EXARP_TODO2_DB_INIT.md](EXARP_TODO2_DB_INIT.md) — Todo2 DB setup and init script
 - [NIX_MIGRATION_PLAN.md](planning/NIX_MIGRATION_PLAN.md) — Nix dev shell and `USE_NIX`
