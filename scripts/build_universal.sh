@@ -34,6 +34,10 @@ cd "${PROJECT_ROOT}"
 . "${SCRIPT_DIR}/include/ensure_third_party.sh"
 ensure_third_party
 
+# Use all cores for Ninja when not set (see docs/BUILD_PARALLELIZATION_AND_MODULARITY.md)
+# shellcheck source=./include/set_parallel_level.sh
+. "${SCRIPT_DIR}/include/set_parallel_level.sh"
+
 log_note "Using CMake preset '${PRESET}'. Override with CMAKE_PRESET env var."
 
 ensure_configured() {

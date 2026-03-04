@@ -82,13 +82,9 @@ PRESET="${SUFFIX}-release-sccache"
 # Ensure preset exists (CMake will error with a clear message if not)
 cmake --preset "${PRESET}"
 echo "Building with preset: ${PRESET}"
-if [[ -z "${CMAKE_BUILD_PARALLEL_LEVEL:-}" ]]; then
-  if [[ "${OSTYPE:-}" == "darwin"* ]]; then
-    export CMAKE_BUILD_PARALLEL_LEVEL=$(sysctl -n hw.ncpu 2>/dev/null || echo 4)
-  else
-    export CMAKE_BUILD_PARALLEL_LEVEL=$(nproc 2>/dev/null || echo 4)
-  fi
-fi
+# Use all cores when not set (see docs/BUILD_PARALLELIZATION_AND_MODULARITY.md)
+# shellcheck source=./include/set_parallel_level.sh
+. "${SCRIPT_DIR}/include/set_parallel_level.sh"
 cmake --build --preset "${PRESET}" --target ib_box_spread
 
 # Show cache statistics

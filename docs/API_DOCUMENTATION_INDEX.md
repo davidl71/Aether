@@ -435,6 +435,8 @@ for large multi-leg positions.
   - `macos-universal-debug`: Development build
   - `macos-universal-release`: Production build
 
+- **Build parallelization and modularity**: `docs/BUILD_PARALLELIZATION_AND_MODULARITY.md` — How C++ (Ninja/CMAKE_BUILD_PARALLEL_LEVEL), Rust (Cargo workspace), and lint (--parallel) are parallelized; module layout for incremental builds.
+
 ### Abseil (Google C++ Libraries)
 
 - **Official Docs**: <https://abseil.io/docs/cpp/>

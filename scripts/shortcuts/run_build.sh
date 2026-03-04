@@ -43,13 +43,8 @@ PRESET="${2:-${CMAKE_PRESET:-$(detect_default_preset)}}"
 
 cd "${PROJECT_ROOT}"
 # Use all cores for build when not set (so -j not needed)
-if [[ -z "${CMAKE_BUILD_PARALLEL_LEVEL:-}" ]]; then
-  if [[ "$(uname -s)" == "Darwin" ]]; then
-    export CMAKE_BUILD_PARALLEL_LEVEL=$(sysctl -n hw.ncpu 2>/dev/null || echo 4)
-  else
-    export CMAKE_BUILD_PARALLEL_LEVEL=$(nproc 2>/dev/null || echo 4)
-  fi
-fi
+# shellcheck source=../include/set_parallel_level.sh
+. "${SCRIPT_DIR}/../include/set_parallel_level.sh"
 {
   echo "=== Build Runner ==="
   echo "Timestamp: $(date -Iseconds)"

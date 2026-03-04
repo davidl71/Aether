@@ -83,11 +83,13 @@ if ! command -v cmake >/dev/null 2>&1; then
 fi
 
 cd "${PROJECT_ROOT}"
-
 # Ensure third-party deps exist before configure/build
 # shellcheck source=./include/ensure_third_party.sh
 . "${SCRIPT_DIR}/include/ensure_third_party.sh"
 ensure_third_party
+# Use all cores for Ninja when not set (see docs/BUILD_PARALLELIZATION_AND_MODULARITY.md)
+# shellcheck source=./include/set_parallel_level.sh
+. "${SCRIPT_DIR}/include/set_parallel_level.sh"
 
 log_note "Platform: ${OS} ${ARCH} -> preset ${PRESET}"
 log_note "Override with CMAKE_PRESET= or --debug/--release."

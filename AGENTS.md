@@ -78,7 +78,7 @@ ctest --preset macos-arm64-debug --output-on-failure
 ./scripts/run_linters.sh
 ```
 
-If configure fails with missing **TWS API** or **Intel decimal** dependencies, run from repo root: `./scripts/fetch_third_party.sh`, then reconfigure. Or run `cmake --build <build-dir> --target fetch_third_party` then reconfigure. Set `CMAKE_BUILD_PARALLEL_LEVEL` (e.g. `$(nproc)` or `$(sysctl -n hw.ncpu)`) for parallel builds when not using the wrapper scripts.
+If configure fails with missing **TWS API** or **Intel decimal** dependencies, run from repo root: `./scripts/fetch_third_party.sh`, then reconfigure. Or run `cmake --build <build-dir> --target fetch_third_party` then reconfigure. Set `CMAKE_BUILD_PARALLEL_LEVEL` (e.g. `$(nproc)` or `sysctl -n hw.ncpu`) for parallel builds when not using the wrapper scripts. See `docs/BUILD_PARALLELIZATION_AND_MODULARITY.md` for parallelization and modularity across C++, Rust, and lint.
 
 **Optional (macOS):** To reduce disk reads for third-party trees, create a read-only compressed DMG and use it in builds: run `./scripts/third_party_dmg.sh create` after fetch, then set `USE_THIRD_PARTY_DMG=1` so build scripts mount the DMG automatically. See `docs/RAM_OPTIMIZATION_GUIDE.md` (§ Third-party on read-only compressed DMG).
 
