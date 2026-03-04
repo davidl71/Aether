@@ -187,6 +187,27 @@
     msg: "pip-audit: {{ pip_audit_version.stdout | default('(install with: uv tool install pip-audit)') }}"
   when: pip_audit_version.rc == 0
 
+- name: Install cmakelang via uv (cmake-lint for CMakeLists.txt linting)
+  become: false
+  ansible.builtin.command: uv tool install cmakelang
+  register: cmakelang_install
+  changed_when: "'Installed' in cmakelang_install.stdout"
+  failed_when: false
+
+- name: Verify cmake-lint installation
+  become: false
+  ansible.builtin.command: cmake-lint --version
+  register: cmake_lint_version
+  changed_when: false
+  failed_when: false
+  environment:
+    PATH: "{{ ansible_facts.env.HOME }}/.local/bin:{{ ansible_facts.env.PATH }}"
+
+- name: Display cmake-lint version
+  ansible.builtin.debug:
+    msg: "cmake-lint: {{ cmake_lint_version.stdout | default('(install with: uv tool install cmakelang)') }}"
+  when: cmake_lint_version.rc == 0
+
 - name: Verify uv installation
   become: false
   ansible.builtin.command: uv --version

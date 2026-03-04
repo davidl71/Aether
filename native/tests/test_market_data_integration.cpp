@@ -1,16 +1,16 @@
 // test_market_data_integration.cpp - Integration tests for market data pipeline
+#include "config_manager.h"
+#include "tws_client.h"
+#include "types.h"
+#include <atomic>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
-#include "tws_client.h"
-#include "config_manager.h"
-#include "types.h"
-#include <thread>
 #include <chrono>
-#include <atomic>
-#include <vector>
+#include <condition_variable>
 #include <memory>
 #include <mutex>
-#include <condition_variable>
+#include <thread>
+#include <vector>
 
 using namespace tws;
 using namespace types;
@@ -24,7 +24,7 @@ config::TWSConfig create_mock_config() {
   config.host = "127.0.0.1";
   config.port = 7497;
   config.client_id = 999;
-  config.use_mock = true;  // Use mock mode for testing
+  config.use_mock = true; // Use mock mode for testing
   config.auto_reconnect = true;
   config.connection_timeout_ms = 5000;
   config.connect_options = "+PACEAPI";
@@ -35,7 +35,7 @@ config::TWSConfig create_mock_config() {
 OptionContract create_test_contract() {
   OptionContract contract;
   contract.symbol = "SPY";
-  contract.expiry = "20250117";  // Jan 17, 2025
+  contract.expiry = "20250117"; // Jan 17, 2025
   contract.strike = 500.0;
   contract.type = OptionType::Call;
   contract.exchange = "SMART";
@@ -52,7 +52,7 @@ struct MarketDataWaiter {
 
   MarketDataWaiter(int timeout = 2000) : timeout_ms(timeout) {}
 
-  void callback(const MarketData& data) {
+  void callback(const MarketData &data) {
     std::lock_guard<std::mutex> lock(mutex);
     received_data = data;
     received = true;
@@ -62,7 +62,7 @@ struct MarketDataWaiter {
   bool wait() {
     std::unique_lock<std::mutex> lock(mutex);
     return cv.wait_for(lock, std::chrono::milliseconds(timeout_ms),
-                      [this] { return received.load(); });
+                       [this] { return received.load(); });
   }
 };
 
@@ -72,7 +72,8 @@ struct MarketDataWaiter {
 // Test: Market Data Subscription
 // ============================================================================
 
-TEST_CASE("Market Data Integration - Subscription (mock)", "[market-data][integration][mock]") {
+TEST_CASE("Market Data Integration - Subscription (mock)",
+          "[market-data][integration][mock]") {
   config::TWSConfig config = create_mock_config();
   TWSClient client(config);
   client.connect();
@@ -84,9 +85,8 @@ TEST_CASE("Market Data Integration - Subscription (mock)", "[market-data][integr
     MarketDataWaiter waiter;
 
     // When: We subscribe to market data
-    int request_id = client.request_market_data(contract, [&waiter](const MarketData& data) {
-      waiter.callback(data);
-    });
+    int request_id = client.request_market_data(
+        contract, [&waiter](const MarketData &data) { waiter.callback(data); });
 
     // Then: Should return valid request ID
     REQUIRE(request_id > 0);
@@ -107,17 +107,17 @@ TEST_CASE("Market Data Integration - Subscription (mock)", "[market-data][integr
     MarketDataWaiter waiter1, waiter2;
 
     // When: We subscribe to multiple contracts
-    int id1 = client.request_market_data(contract1, [&waiter1](const MarketData& data) {
-      waiter1.callback(data);
-    });
-    int id2 = client.request_market_data(contract2, [&waiter2](const MarketData& data) {
-      waiter2.callback(data);
-    });
+    int id1 = client.request_market_data(
+        contract1,
+        [&waiter1](const MarketData &data) { waiter1.callback(data); });
+    int id2 = client.request_market_data(
+        contract2,
+        [&waiter2](const MarketData &data) { waiter2.callback(data); });
 
     // Then: Both should receive data
     REQUIRE(id1 > 0);
     REQUIRE(id2 > 0);
-    REQUIRE(id1 != id2);  // Different request IDs
+    REQUIRE(id1 != id2); // Different request IDs
 
     REQUIRE(waiter1.wait());
     REQUIRE(waiter2.wait());
@@ -128,7 +128,8 @@ TEST_CASE("Market Data Integration - Subscription (mock)", "[market-data][integr
   SECTION("Subscription cancellation") {
     // Given: An active subscription
     OptionContract contract = create_test_contract();
-    int request_id = client.request_market_data(contract, [](const MarketData&) {});
+    int request_id =
+        client.request_market_data(contract, [](const MarketData &) {});
 
     // When: We cancel the subscription
     client.cancel_market_data(request_id);
@@ -142,7 +143,8 @@ TEST_CASE("Market Data Integration - Subscription (mock)", "[market-data][integr
 // Test: Market Data Updates
 // ============================================================================
 
-TEST_CASE("Market Data Integration - Updates (mock)", "[market-data][integration][mock]") {
+TEST_CASE("Market Data Integration - Updates (mock)",
+          "[market-data][integration][mock]") {
   config::TWSConfig config = create_mock_config();
   TWSClient client(config);
   client.connect();
@@ -154,10 +156,11 @@ TEST_CASE("Market Data Integration - Updates (mock)", "[market-data][integration
     std::vector<MarketData> updates;
     std::mutex updates_mutex;
 
-    int request_id = client.request_market_data(contract, [&updates, &updates_mutex](const MarketData& data) {
-      std::lock_guard<std::mutex> lock(updates_mutex);
-      updates.push_back(data);
-    });
+    int request_id = client.request_market_data(
+        contract, [&updates, &updates_mutex](const MarketData &data) {
+          std::lock_guard<std::mutex> lock(updates_mutex);
+          updates.push_back(data);
+        });
 
     // When: We wait for updates
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -176,9 +179,8 @@ TEST_CASE("Market Data Integration - Updates (mock)", "[market-data][integration
     OptionContract contract = create_test_contract();
     MarketDataWaiter waiter;
 
-    int request_id = client.request_market_data(contract, [&waiter](const MarketData& data) {
-      waiter.callback(data);
-    });
+    int request_id = client.request_market_data(
+        contract, [&waiter](const MarketData &data) { waiter.callback(data); });
 
     // When: We wait for updates
     REQUIRE(waiter.wait());
@@ -193,9 +195,8 @@ TEST_CASE("Market Data Integration - Updates (mock)", "[market-data][integration
     OptionContract contract = create_test_contract();
     MarketDataWaiter waiter;
 
-    int request_id = client.request_market_data(contract, [&waiter](const MarketData& data) {
-      waiter.callback(data);
-    });
+    int request_id = client.request_market_data(
+        contract, [&waiter](const MarketData &data) { waiter.callback(data); });
 
     // When: We wait for updates
     REQUIRE(waiter.wait());
@@ -210,7 +211,8 @@ TEST_CASE("Market Data Integration - Updates (mock)", "[market-data][integration
 // Test: Stale Data Detection
 // ============================================================================
 
-TEST_CASE("Market Data Integration - Stale data detection (mock)", "[market-data][integration][mock]") {
+TEST_CASE("Market Data Integration - Stale data detection (mock)",
+          "[market-data][integration][mock]") {
   config::TWSConfig config = create_mock_config();
   TWSClient client(config);
   client.connect();
@@ -221,9 +223,8 @@ TEST_CASE("Market Data Integration - Stale data detection (mock)", "[market-data
     OptionContract contract = create_test_contract();
     MarketDataWaiter waiter;
 
-    int request_id = client.request_market_data(contract, [&waiter](const MarketData& data) {
-      waiter.callback(data);
-    });
+    int request_id = client.request_market_data(
+        contract, [&waiter](const MarketData &data) { waiter.callback(data); });
 
     // When: We receive data
     REQUIRE(waiter.wait());
@@ -238,9 +239,8 @@ TEST_CASE("Market Data Integration - Stale data detection (mock)", "[market-data
     OptionContract contract = create_test_contract();
     MarketDataWaiter waiter;
 
-    int request_id = client.request_market_data(contract, [&waiter](const MarketData& data) {
-      waiter.callback(data);
-    });
+    int request_id = client.request_market_data(
+        contract, [&waiter](const MarketData &data) { waiter.callback(data); });
 
     REQUIRE(waiter.wait());
 
@@ -255,7 +255,8 @@ TEST_CASE("Market Data Integration - Stale data detection (mock)", "[market-data
 // Test: Liquidity Filtering
 // ============================================================================
 
-TEST_CASE("Market Data Integration - Liquidity filtering (mock)", "[market-data][integration][mock]") {
+TEST_CASE("Market Data Integration - Liquidity filtering (mock)",
+          "[market-data][integration][mock]") {
   config::TWSConfig config = create_mock_config();
   TWSClient client(config);
   client.connect();
@@ -266,9 +267,8 @@ TEST_CASE("Market Data Integration - Liquidity filtering (mock)", "[market-data]
     OptionContract contract = create_test_contract();
     MarketDataWaiter waiter;
 
-    int request_id = client.request_market_data(contract, [&waiter](const MarketData& data) {
-      waiter.callback(data);
-    });
+    int request_id = client.request_market_data(
+        contract, [&waiter](const MarketData &data) { waiter.callback(data); });
 
     REQUIRE(waiter.wait());
 
@@ -278,7 +278,7 @@ TEST_CASE("Market Data Integration - Liquidity filtering (mock)", "[market-data]
     // Then: Spread should be non-negative
     REQUIRE(spread >= 0.0);
     // And: Should be reasonable (not extremely wide)
-    REQUIRE(spread < 1000.0);  // Sanity check
+    REQUIRE(spread < 1000.0); // Sanity check
   }
 
   SECTION("Volume validation") {
@@ -286,9 +286,8 @@ TEST_CASE("Market Data Integration - Liquidity filtering (mock)", "[market-data]
     OptionContract contract = create_test_contract();
     MarketDataWaiter waiter;
 
-    int request_id = client.request_market_data(contract, [&waiter](const MarketData& data) {
-      waiter.callback(data);
-    });
+    int request_id = client.request_market_data(
+        contract, [&waiter](const MarketData &data) { waiter.callback(data); });
 
     REQUIRE(waiter.wait());
 
@@ -302,9 +301,8 @@ TEST_CASE("Market Data Integration - Liquidity filtering (mock)", "[market-data]
     OptionContract contract = create_test_contract();
     MarketDataWaiter waiter;
 
-    int request_id = client.request_market_data(contract, [&waiter](const MarketData& data) {
-      waiter.callback(data);
-    });
+    int request_id = client.request_market_data(
+        contract, [&waiter](const MarketData &data) { waiter.callback(data); });
 
     REQUIRE(waiter.wait());
 
@@ -319,7 +317,8 @@ TEST_CASE("Market Data Integration - Liquidity filtering (mock)", "[market-data]
 // Test: Synchronous Market Data Requests
 // ============================================================================
 
-TEST_CASE("Market Data Integration - Synchronous requests (mock)", "[market-data][integration][mock]") {
+TEST_CASE("Market Data Integration - Synchronous requests (mock)",
+          "[market-data][integration][mock]") {
   config::TWSConfig config = create_mock_config();
   TWSClient client(config);
   client.connect();
@@ -355,7 +354,8 @@ TEST_CASE("Market Data Integration - Synchronous requests (mock)", "[market-data
 // Test: Data Structure Integrity
 // ============================================================================
 
-TEST_CASE("Market Data Integration - Data structure integrity (mock)", "[market-data][integration][mock]") {
+TEST_CASE("Market Data Integration - Data structure integrity (mock)",
+          "[market-data][integration][mock]") {
   config::TWSConfig config = create_mock_config();
   TWSClient client(config);
   client.connect();
@@ -366,19 +366,18 @@ TEST_CASE("Market Data Integration - Data structure integrity (mock)", "[market-
     OptionContract contract = create_test_contract();
     MarketDataWaiter waiter;
 
-    int request_id = client.request_market_data(contract, [&waiter](const MarketData& data) {
-      waiter.callback(data);
-    });
+    int request_id = client.request_market_data(
+        contract, [&waiter](const MarketData &data) { waiter.callback(data); });
 
     REQUIRE(waiter.wait());
 
     // When: We examine the data structure
-    const MarketData& data = waiter.received_data;
+    const MarketData &data = waiter.received_data;
 
     // Then: All fields should be valid
     REQUIRE(data.bid >= 0.0);
     REQUIRE(data.ask >= 0.0);
-    REQUIRE(data.ask >= data.bid);  // Ask should be >= bid
+    REQUIRE(data.ask >= data.bid); // Ask should be >= bid
     REQUIRE(data.bid_size >= 0);
     REQUIRE(data.ask_size >= 0);
     REQUIRE(data.volume >= 0.0);
@@ -390,15 +389,15 @@ TEST_CASE("Market Data Integration - Data structure integrity (mock)", "[market-
     OptionContract contract = create_test_contract();
     MarketDataWaiter waiter;
 
-    int request_id = client.request_market_data(contract, [&waiter](const MarketData& data) {
-      waiter.callback(data);
-    });
+    int request_id = client.request_market_data(
+        contract, [&waiter](const MarketData &data) { waiter.callback(data); });
 
     REQUIRE(waiter.wait());
 
     // When: We check for invalid values
     // Then: Should handle DBL_MAX and negative values appropriately
-    // Note: Mock mode generates valid data, but structure should handle edge cases
+    // Note: Mock mode generates valid data, but structure should handle edge
+    // cases
     REQUIRE(waiter.received_data.bid > 0.0);
   }
 }
@@ -407,15 +406,16 @@ TEST_CASE("Market Data Integration - Data structure integrity (mock)", "[market-
 // Test: Real TWS Integration (Optional - Requires TWS Running)
 // ============================================================================
 
-TEST_CASE("Market Data Integration - Real TWS subscription (integration)", "[market-data][integration][!mayfail]") {
+TEST_CASE("Market Data Integration - Real TWS subscription (integration)",
+          "[market-data][integration][!mayfail]") {
   // This test requires TWS or IB Gateway to be running
   // Skip gracefully if not available
 
   config::TWSConfig config;
   config.host = "127.0.0.1";
-  config.port = 7497;  // Paper trading
+  config.port = 7497; // Paper trading
   config.client_id = 999;
-  config.use_mock = false;  // Use real TWS
+  config.use_mock = false; // Use real TWS
   config.connection_timeout_ms = 5000;
 
   TWSClient client(config);
@@ -424,7 +424,8 @@ TEST_CASE("Market Data Integration - Real TWS subscription (integration)", "[mar
   bool connected = client.connect();
   if (!connected) {
     WARN("TWS/Gateway not available - skipping real market data test");
-    WARN("To run this test, start TWS or IB Gateway with API enabled on port 7497");
+    WARN("To run this test, start TWS or IB Gateway with API enabled on port "
+         "7497");
     return;
   }
 
@@ -434,18 +435,18 @@ TEST_CASE("Market Data Integration - Real TWS subscription (integration)", "[mar
 
     // When: We subscribe to market data
     OptionContract contract = create_test_contract();
-    MarketDataWaiter waiter(5000);  // 5 second timeout for real TWS
+    MarketDataWaiter waiter(5000); // 5 second timeout for real TWS
 
-    int request_id = client.request_market_data(contract, [&waiter](const MarketData& data) {
-      waiter.callback(data);
-    });
+    int request_id = client.request_market_data(
+        contract, [&waiter](const MarketData &data) { waiter.callback(data); });
 
     // Then: Should receive real market data
     if (waiter.wait()) {
       REQUIRE(waiter.received_data.bid > 0.0);
       REQUIRE(waiter.received_data.ask > 0.0);
     } else {
-      WARN("Market data not received within timeout - may require market data permissions");
+      WARN("Market data not received within timeout - may require market data "
+           "permissions");
     }
 
     // Clean up

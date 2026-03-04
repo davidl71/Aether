@@ -1,44 +1,44 @@
 // test_box_spread_bag.cpp - Box spread bag tests
+#include "strategies/box_spread/box_spread_bag.h"
+#include "strategies/box_spread/box_spread_strategy.h"
+#include "types.h"
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
-#include "strategies/box_spread/box_spread_bag.h"
-#include "types.h"
-#include "strategies/box_spread/box_spread_strategy.h"
 
 using namespace types;
 using namespace strategy;
-using Catch::Matchers::WithinRel;
 using Catch::Matchers::WithinAbs;
+using Catch::Matchers::WithinRel;
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
 
 namespace {
-  types::BoxSpreadLeg create_test_spread() {
-    types::BoxSpreadLeg spread;
-    spread.long_call.symbol = "SPX";
-    spread.long_call.strike = 4500.0;
-    spread.long_call.expiry = "20250125";
-    spread.long_call.type = OptionType::Call;
-    spread.short_call.symbol = "SPX";
-    spread.short_call.strike = 4600.0;
-    spread.short_call.expiry = "20250125";
-    spread.short_call.type = OptionType::Call;
-    spread.long_put.symbol = "SPX";
-    spread.long_put.strike = 4600.0;
-    spread.long_put.expiry = "20250125";
-    spread.long_put.type = OptionType::Put;
-    spread.short_put.symbol = "SPX";
-    spread.short_put.strike = 4500.0;
-    spread.short_put.expiry = "20250125";
-    spread.short_put.type = OptionType::Put;
-    spread.net_debit = 99.50;
-    spread.theoretical_value = 100.0;
-    spread.arbitrage_profit = 0.50;
-    spread.roi_percent = 0.5;
-    return spread;
-  }
+types::BoxSpreadLeg create_test_spread() {
+  types::BoxSpreadLeg spread;
+  spread.long_call.symbol = "SPX";
+  spread.long_call.strike = 4500.0;
+  spread.long_call.expiry = "20250125";
+  spread.long_call.type = OptionType::Call;
+  spread.short_call.symbol = "SPX";
+  spread.short_call.strike = 4600.0;
+  spread.short_call.expiry = "20250125";
+  spread.short_call.type = OptionType::Call;
+  spread.long_put.symbol = "SPX";
+  spread.long_put.strike = 4600.0;
+  spread.long_put.expiry = "20250125";
+  spread.long_put.type = OptionType::Put;
+  spread.short_put.symbol = "SPX";
+  spread.short_put.strike = 4500.0;
+  spread.short_put.expiry = "20250125";
+  spread.short_put.type = OptionType::Put;
+  spread.net_debit = 99.50;
+  spread.theoretical_value = 100.0;
+  spread.arbitrage_profit = 0.50;
+  spread.roi_percent = 0.5;
+  return spread;
+}
 } // namespace
 
 // ============================================================================
@@ -95,8 +95,8 @@ TEST_CASE("BoxSpreadBag Cboe symbol generation", "[bag][cboe]") {
 
   SECTION("Generate Cboe symbol for different strikes") {
     // Given: Different strike pair
-    std::string symbol = BoxSpreadBag::generate_cboe_symbol(
-        "SPY", "20250620", 500.0, 510.0);
+    std::string symbol =
+        BoxSpreadBag::generate_cboe_symbol("SPY", "20250620", 500.0, 510.0);
 
     // Then: Should generate valid symbol
     REQUIRE_FALSE(symbol.empty());
@@ -132,7 +132,8 @@ TEST_CASE("BoxSpreadBagManager creates bag from spread", "[bag][manager]") {
     // When: We check pricing metrics
     // Then: Should match spread values
     REQUIRE_THAT(bag.net_debit, WithinRel(spread.net_debit, 0.01));
-    REQUIRE_THAT(bag.theoretical_value, WithinRel(spread.theoretical_value, 0.01));
+    REQUIRE_THAT(bag.theoretical_value,
+                 WithinRel(spread.theoretical_value, 0.01));
     REQUIRE(bag.implied_rate >= 0.0);
   }
 }
@@ -155,8 +156,8 @@ TEST_CASE("BoxSpreadBagManager updates market data", "[bag][market_data]") {
     int ask_size = 10;
 
     // When: We update market data
-    BoxSpreadBagManager::update_bag_market_data(
-        bag, bid, ask, last, bid_size, ask_size);
+    BoxSpreadBagManager::update_bag_market_data(bag, bid, ask, last, bid_size,
+                                                ask_size);
 
     // Then: Market data should be updated
     REQUIRE(bag.market_data.bid == bid);
@@ -196,7 +197,7 @@ TEST_CASE("BoxSpreadBagManager calculates Greeks", "[bag][greeks]") {
   SECTION("Calculate bag Greeks") {
     // Given: Market parameters
     double underlying_price = 4550.0;
-    double time_to_expiry = 30.0 / 365.0;  // 30 days
+    double time_to_expiry = 30.0 / 365.0; // 30 days
     double volatility = 0.20;
     double risk_free_rate = 0.05;
 
@@ -216,8 +217,8 @@ TEST_CASE("BoxSpreadBagManager calculates Greeks", "[bag][greeks]") {
   SECTION("Greeks are neutral for perfect box spread") {
     // Given: A perfect box spread (delta-neutral by construction)
     auto spread = create_test_spread();
-    auto greeks = BoxSpreadBagManager::calculate_bag_greeks(
-        spread, 4550.0, 30.0 / 365.0);
+    auto greeks =
+        BoxSpreadBagManager::calculate_bag_greeks(spread, 4550.0, 30.0 / 365.0);
 
     // When: We check if Greeks are neutral
     bool is_neutral = greeks.is_neutral();
@@ -275,7 +276,7 @@ TEST_CASE("BoxSpreadBag candle operations", "[bag][candle]") {
 
     // Then: Should return correct values
     REQUIRE_THAT(range, WithinRel(0.15, 0.01));  // high - low
-    REQUIRE_THAT(change, WithinRel(0.05, 0.01));  // close - open
+    REQUIRE_THAT(change, WithinRel(0.05, 0.01)); // close - open
     REQUIRE(change_pct > 0.0);
   }
 
@@ -351,7 +352,8 @@ TEST_CASE("BoxSpreadBag edge cases", "[bag][edge]") {
     // Missing other legs
 
     // When: We create bag
-    auto bag = BoxSpreadBagManager::create_bag_from_spread(invalid_spread, "SPX");
+    auto bag =
+        BoxSpreadBagManager::create_bag_from_spread(invalid_spread, "SPX");
 
     // Then: Bag should be created (validation happens elsewhere)
     REQUIRE(bag.spread.long_call.symbol == "SPX");

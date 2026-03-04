@@ -1,6 +1,6 @@
-#include <catch2/catch_test_macros.hpp>
 #include "proto_adapter.h"
 #include "types.h"
+#include <catch2/catch_test_macros.hpp>
 #include <cmath>
 
 TEST_CASE("Proto adapter round-trip BoxSpreadLeg", "[proto_adapter]") {

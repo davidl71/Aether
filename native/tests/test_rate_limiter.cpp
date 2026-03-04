@@ -1,8 +1,8 @@
 // test_rate_limiter.cpp - Rate limiter tests
-#include <catch2/catch_test_macros.hpp>
 #include "rate_limiter.h"
-#include <thread>
+#include <catch2/catch_test_macros.hpp>
 #include <chrono>
+#include <thread>
 
 using namespace tws;
 
@@ -148,7 +148,8 @@ TEST_CASE("RateLimiter enforces message rate", "[rate_limiter][message]") {
 // Historical Request Limiting Tests
 // ============================================================================
 
-TEST_CASE("RateLimiter tracks historical requests", "[rate_limiter][historical]") {
+TEST_CASE("RateLimiter tracks historical requests",
+          "[rate_limiter][historical]") {
   // Given: Rate limiter with 5 request limit (for testing)
   RateLimiterConfig config;
   config.enabled = true;
@@ -243,7 +244,8 @@ TEST_CASE("RateLimiter tracks historical requests", "[rate_limiter][historical]"
 // Market Data Line Limiting Tests
 // ============================================================================
 
-TEST_CASE("RateLimiter tracks market data lines", "[rate_limiter][market_data]") {
+TEST_CASE("RateLimiter tracks market data lines",
+          "[rate_limiter][market_data]") {
   // Given: Rate limiter with 10 line limit (for testing)
   RateLimiterConfig config;
   config.enabled = true;

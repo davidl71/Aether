@@ -6,13 +6,13 @@
 
 // Optional: Global test setup/teardown
 struct GlobalTestSetup {
-    GlobalTestSetup() {
-        // Setup code that runs once before all tests
-    }
+  GlobalTestSetup() {
+    // Setup code that runs once before all tests
+  }
 
-    ~GlobalTestSetup() {
-        // Cleanup code that runs once after all tests
-    }
+  ~GlobalTestSetup() {
+    // Cleanup code that runs once after all tests
+  }
 };
 
 static GlobalTestSetup global_setup;

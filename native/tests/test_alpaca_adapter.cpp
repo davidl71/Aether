@@ -1,14 +1,14 @@
 // test_alpaca_adapter.cpp - Unit tests for Alpaca adapter
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/matchers/catch_matchers_string.hpp>
 #include "brokers/alpaca_adapter.h"
 #include "brokers/broker_interface.h"
 #include "types.h"
-#include <thread>
-#include <chrono>
 #include <atomic>
-#include <vector>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
+#include <chrono>
 #include <memory>
+#include <thread>
+#include <vector>
 
 using namespace brokers;
 using namespace box_spread::types;
@@ -32,7 +32,7 @@ AlpacaAdapter::Config create_mock_config() {
 OptionContract create_test_contract() {
   OptionContract contract;
   contract.symbol = "SPY";
-  contract.expiry = "20250117";  // Jan 17, 2025
+  contract.expiry = "20250117"; // Jan 17, 2025
   contract.strike = 500.0;
   contract.type = OptionType::Call;
   contract.style = OptionStyle::American;
@@ -41,9 +41,11 @@ OptionContract create_test_contract() {
 }
 
 // Helper to wait for connection state change
-bool wait_for_state(AlpacaAdapter& adapter, ConnectionState expected_state, int timeout_ms = 5000) {
+bool wait_for_state(AlpacaAdapter &adapter, ConnectionState expected_state,
+                    int timeout_ms = 5000) {
   auto start = std::chrono::steady_clock::now();
-  while ((std::chrono::steady_clock::now() - start) < std::chrono::milliseconds(timeout_ms)) {
+  while ((std::chrono::steady_clock::now() - start) <
+         std::chrono::milliseconds(timeout_ms)) {
     if (adapter.get_connection_state() == expected_state) {
       return true;
     }
@@ -62,7 +64,7 @@ struct MarketDataWaiter {
 
   MarketDataWaiter(int timeout = 5000) : timeout_ms(timeout) {}
 
-  void callback(const MarketData& data) {
+  void callback(const MarketData &data) {
     std::lock_guard<std::mutex> lock(mutex);
     received_data = data;
     received = true;
@@ -72,7 +74,7 @@ struct MarketDataWaiter {
   bool wait() {
     std::unique_lock<std::mutex> lock(mutex);
     return cv.wait_for(lock, std::chrono::milliseconds(timeout_ms),
-                      [this] { return received.load(); });
+                       [this] { return received.load(); });
   }
 };
 
@@ -109,7 +111,8 @@ TEST_CASE("Alpaca Adapter - Construction", "[alpaca][adapter]") {
 // Test: Connection Management
 // ============================================================================
 
-TEST_CASE("Alpaca Adapter - Connection management", "[alpaca][adapter][connection]") {
+TEST_CASE("Alpaca Adapter - Connection management",
+          "[alpaca][adapter][connection]") {
   AlpacaAdapter::Config config = create_mock_config();
   AlpacaAdapter adapter(config);
 
@@ -122,14 +125,16 @@ TEST_CASE("Alpaca Adapter - Connection management", "[alpaca][adapter][connectio
     // Start disconnected
     REQUIRE(adapter.get_connection_state() == ConnectionState::Disconnected);
 
-    // Attempt connection (will fail without real API keys, but should handle gracefully)
+    // Attempt connection (will fail without real API keys, but should handle
+    // gracefully)
     bool connected = adapter.connect();
 
     // Should either connect (if API keys valid) or fail gracefully
     if (!connected) {
       // Connection failed - should be in Error or Disconnected state
       auto state = adapter.get_connection_state();
-      REQUIRE((state == ConnectionState::Disconnected || state == ConnectionState::Error));
+      REQUIRE((state == ConnectionState::Disconnected ||
+               state == ConnectionState::Error));
     } else {
       // Connection succeeded - should be Connected
       REQUIRE(adapter.get_connection_state() == ConnectionState::Connected);
@@ -160,7 +165,7 @@ TEST_CASE("Alpaca Adapter - Symbol conversion", "[alpaca][adapter][symbol]") {
 
     // Test via contract details request (uses symbol conversion internally)
     long contract_id = adapter.request_contract_details_sync(contract, 1000);
-    REQUIRE(contract_id > 0);  // Should generate a contract ID (hash of symbol)
+    REQUIRE(contract_id > 0); // Should generate a contract ID (hash of symbol)
   }
 
   SECTION("Multiple contracts generate different IDs") {
@@ -171,7 +176,7 @@ TEST_CASE("Alpaca Adapter - Symbol conversion", "[alpaca][adapter][symbol]") {
     long call_id = adapter.request_contract_details_sync(call, 1000);
     long put_id = adapter.request_contract_details_sync(put, 1000);
 
-    REQUIRE(call_id != put_id);  // Different contracts should have different IDs
+    REQUIRE(call_id != put_id); // Different contracts should have different IDs
   }
 }
 
@@ -187,12 +192,10 @@ TEST_CASE("Alpaca Adapter - Market data", "[alpaca][adapter][market-data]") {
     OptionContract contract = create_test_contract();
 
     // Should return error code when not connected
-    int request_id = adapter.request_market_data(
-      contract,
-      [](const MarketData&) {}
-    );
+    int request_id =
+        adapter.request_market_data(contract, [](const MarketData &) {});
 
-    REQUIRE(request_id < 0);  // Error code
+    REQUIRE(request_id < 0); // Error code
   }
 
   SECTION("Cancel market data") {
@@ -213,7 +216,8 @@ TEST_CASE("Alpaca Adapter - Market data", "[alpaca][adapter][market-data]") {
 // Test: Options Chain
 // ============================================================================
 
-TEST_CASE("Alpaca Adapter - Options chain", "[alpaca][adapter][options-chain]") {
+TEST_CASE("Alpaca Adapter - Options chain",
+          "[alpaca][adapter][options-chain]") {
   AlpacaAdapter::Config config = create_mock_config();
   AlpacaAdapter adapter(config);
 
@@ -227,7 +231,8 @@ TEST_CASE("Alpaca Adapter - Options chain", "[alpaca][adapter][options-chain]") 
   }
 
   SECTION("Request options chain with expiry filter") {
-    std::vector<OptionContract> chain = adapter.request_option_chain("SPY", "20250117");
+    std::vector<OptionContract> chain =
+        adapter.request_option_chain("SPY", "20250117");
 
     REQUIRE_NOTHROW(chain);
   }
@@ -244,15 +249,10 @@ TEST_CASE("Alpaca Adapter - Order management", "[alpaca][adapter][orders]") {
   SECTION("Place order when not connected") {
     OptionContract contract = create_test_contract();
 
-    int order_id = adapter.place_order(
-      contract,
-      OrderAction::Buy,
-      1,
-      100.0,
-      TimeInForce::Day
-    );
+    int order_id = adapter.place_order(contract, OrderAction::Buy, 1, 100.0,
+                                       TimeInForce::Day);
 
-    REQUIRE(order_id < 0);  // Error code when not connected
+    REQUIRE(order_id < 0); // Error code when not connected
   }
 
   SECTION("Cancel order when not connected") {
@@ -270,7 +270,8 @@ TEST_CASE("Alpaca Adapter - Order management", "[alpaca][adapter][orders]") {
 // Test: Multi-Leg Orders
 // ============================================================================
 
-TEST_CASE("Alpaca Adapter - Multi-leg orders", "[alpaca][adapter][combo-orders]") {
+TEST_CASE("Alpaca Adapter - Multi-leg orders",
+          "[alpaca][adapter][combo-orders]") {
   AlpacaAdapter::Config config = create_mock_config();
   AlpacaAdapter adapter(config);
 
@@ -281,33 +282,24 @@ TEST_CASE("Alpaca Adapter - Multi-leg orders", "[alpaca][adapter][combo-orders]"
     std::vector<long> contract_ids = {123};
     std::vector<double> limit_prices = {100.0};
 
-    int order_id = adapter.place_combo_order(
-      contracts,
-      actions,
-      quantities,
-      contract_ids,
-      limit_prices
-    );
+    int order_id = adapter.place_combo_order(contracts, actions, quantities,
+                                             contract_ids, limit_prices);
 
-    REQUIRE(order_id < 0);  // Error code when not connected
+    REQUIRE(order_id < 0); // Error code when not connected
   }
 
   SECTION("Place combo order with mismatched parameters") {
     std::vector<OptionContract> contracts = {create_test_contract()};
-    std::vector<OrderAction> actions = {OrderAction::Buy, OrderAction::Sell};  // Mismatch
+    std::vector<OrderAction> actions = {OrderAction::Buy,
+                                        OrderAction::Sell}; // Mismatch
     std::vector<int> quantities = {1};
     std::vector<long> contract_ids = {123};
     std::vector<double> limit_prices = {100.0};
 
-    int order_id = adapter.place_combo_order(
-      contracts,
-      actions,
-      quantities,
-      contract_ids,
-      limit_prices
-    );
+    int order_id = adapter.place_combo_order(contracts, actions, quantities,
+                                             contract_ids, limit_prices);
 
-    REQUIRE(order_id < 0);  // Error code for mismatch
+    REQUIRE(order_id < 0); // Error code for mismatch
   }
 }
 
@@ -338,7 +330,8 @@ TEST_CASE("Alpaca Adapter - Positions", "[alpaca][adapter][positions]") {
 // Test: Account Information
 // ============================================================================
 
-TEST_CASE("Alpaca Adapter - Account information", "[alpaca][adapter][account]") {
+TEST_CASE("Alpaca Adapter - Account information",
+          "[alpaca][adapter][account]") {
   AlpacaAdapter::Config config = create_mock_config();
   AlpacaAdapter adapter(config);
 
@@ -362,7 +355,8 @@ TEST_CASE("Alpaca Adapter - Account information", "[alpaca][adapter][account]") 
 // Test: Error Handling
 // ============================================================================
 
-TEST_CASE("Alpaca Adapter - Error handling", "[alpaca][adapter][error-handling]") {
+TEST_CASE("Alpaca Adapter - Error handling",
+          "[alpaca][adapter][error-handling]") {
   AlpacaAdapter::Config config = create_mock_config();
   AlpacaAdapter adapter(config);
 
@@ -371,7 +365,7 @@ TEST_CASE("Alpaca Adapter - Error handling", "[alpaca][adapter][error-handling]"
     std::string error_message;
     int error_code = 0;
 
-    adapter.set_error_callback([&](int code, const std::string& msg) {
+    adapter.set_error_callback([&](int code, const std::string &msg) {
       callback_called = true;
       error_code = code;
       error_message = msg;
@@ -385,15 +379,17 @@ TEST_CASE("Alpaca Adapter - Error handling", "[alpaca][adapter][error-handling]"
 // Test: Integration with Paper Trading (Optional)
 // ============================================================================
 
-TEST_CASE("Alpaca Adapter - Paper trading integration", "[alpaca][adapter][integration][!mayfail]") {
+TEST_CASE("Alpaca Adapter - Paper trading integration",
+          "[alpaca][adapter][integration][!mayfail]") {
   // This test requires valid Alpaca API keys and paper trading account
   // Skip gracefully if not available
 
-  const char* api_key = std::getenv("ALPACA_API_KEY_ID");
-  const char* api_secret = std::getenv("ALPACA_API_SECRET_KEY");
+  const char *api_key = std::getenv("ALPACA_API_KEY_ID");
+  const char *api_secret = std::getenv("ALPACA_API_SECRET_KEY");
 
   if (!api_key || !api_secret) {
-    WARN("Alpaca API keys not found in environment - skipping integration test");
+    WARN(
+        "Alpaca API keys not found in environment - skipping integration test");
     WARN("Set ALPACA_API_KEY_ID and ALPACA_API_SECRET_KEY to run this test");
     return;
   }

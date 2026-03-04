@@ -1,9 +1,8 @@
-#include <catch2/catch_test_macros.hpp>
 #include <Eigen/Dense>
+#include <catch2/catch_test_macros.hpp>
 #include <cmath>
 
-TEST_CASE("Eigen Integration - Basic Matrix Operations", "[eigen]")
-{
+TEST_CASE("Eigen Integration - Basic Matrix Operations", "[eigen]") {
   // Test basic matrix creation and operations
   Eigen::MatrixXd m(2, 2);
   m(0, 0) = 3.0;
@@ -17,8 +16,7 @@ TEST_CASE("Eigen Integration - Basic Matrix Operations", "[eigen]")
   REQUIRE(m(1, 1) == 1.5);
 }
 
-TEST_CASE("Eigen Integration - Matrix Multiplication", "[eigen]")
-{
+TEST_CASE("Eigen Integration - Matrix Multiplication", "[eigen]") {
   // Test matrix multiplication (useful for portfolio optimization)
   Eigen::MatrixXd A(2, 2);
   A << 1, 2, 3, 4;
@@ -28,14 +26,13 @@ TEST_CASE("Eigen Integration - Matrix Multiplication", "[eigen]")
 
   Eigen::MatrixXd C = A * B;
 
-  REQUIRE(C(0, 0) == 19.0);  // 1*5 + 2*7
-  REQUIRE(C(0, 1) == 22.0);  // 1*6 + 2*8
-  REQUIRE(C(1, 0) == 43.0);  // 3*5 + 4*7
-  REQUIRE(C(1, 1) == 50.0);  // 3*6 + 4*8
+  REQUIRE(C(0, 0) == 19.0); // 1*5 + 2*7
+  REQUIRE(C(0, 1) == 22.0); // 1*6 + 2*8
+  REQUIRE(C(1, 0) == 43.0); // 3*5 + 4*7
+  REQUIRE(C(1, 1) == 50.0); // 3*6 + 4*8
 }
 
-TEST_CASE("Eigen Integration - Vector Operations", "[eigen]")
-{
+TEST_CASE("Eigen Integration - Vector Operations", "[eigen]") {
   // Test vector operations (useful for portfolio weights)
   Eigen::VectorXd v(3);
   v << 0.4, 0.3, 0.3;
@@ -49,8 +46,7 @@ TEST_CASE("Eigen Integration - Vector Operations", "[eigen]")
   REQUIRE(norm > 0.0);
 }
 
-TEST_CASE("Eigen Integration - Linear System Solver", "[eigen]")
-{
+TEST_CASE("Eigen Integration - Linear System Solver", "[eigen]") {
   // Test solving linear systems (useful for portfolio optimization)
   Eigen::MatrixXd A(2, 2);
   A << 2, 1, 1, 2;
@@ -64,8 +60,7 @@ TEST_CASE("Eigen Integration - Linear System Solver", "[eigen]")
   REQUIRE(std::abs(x(1) - 1.0) < 1e-10);
 }
 
-TEST_CASE("Eigen Integration - C++20 Compatibility", "[eigen]")
-{
+TEST_CASE("Eigen Integration - C++20 Compatibility", "[eigen]") {
   // Verify Eigen works with C++20 features
   auto create_matrix = []() -> Eigen::MatrixXd {
     Eigen::MatrixXd m(2, 2);

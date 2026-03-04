@@ -10,10 +10,11 @@ namespace brokers {
 // CURL Write Callback
 // ============================================================================
 
-static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
+static size_t WriteCallback(void *contents, size_t size, size_t nmemb,
+                            void *userp) {
   size_t realsize = size * nmemb;
-  std::string* data = static_cast<std::string*>(userp);
-  data->append(static_cast<char*>(contents), realsize);
+  std::string *data = static_cast<std::string *>(userp);
+  data->append(static_cast<char *>(contents), realsize);
   return realsize;
 }
 
@@ -35,12 +36,10 @@ HttpClient::~HttpClient() {
   }
 }
 
-std::string HttpClient::request(
-    const std::string& method,
-    const std::string& url,
-    const std::map<std::string, std::string>& headers,
-    const std::string& body
-) {
+std::string
+HttpClient::request(const std::string &method, const std::string &url,
+                    const std::map<std::string, std::string> &headers,
+                    const std::string &body) {
   if (!curl_handle_) {
     last_error_ = "CURL not initialized";
     return "";
@@ -58,8 +57,8 @@ std::string HttpClient::request(
   curl_easy_setopt(curl_handle_, CURLOPT_WRITEDATA, &response_data);
 
   // Build header list
-  struct curl_slist* header_list = nullptr;
-  for (const auto& [key, value] : headers) {
+  struct curl_slist *header_list = nullptr;
+  for (const auto &[key, value] : headers) {
     std::string header = key + ": " + value;
     header_list = curl_slist_append(header_list, header.c_str());
   }
@@ -106,19 +105,24 @@ std::string HttpClient::request(
   return response_data;
 }
 
-std::string HttpClient::get(const std::string& url, const std::map<std::string, std::string>& headers) {
+std::string HttpClient::get(const std::string &url,
+                            const std::map<std::string, std::string> &headers) {
   return request("GET", url, headers);
 }
 
-std::string HttpClient::post(const std::string& url, const std::string& body, const std::map<std::string, std::string>& headers) {
+std::string
+HttpClient::post(const std::string &url, const std::string &body,
+                 const std::map<std::string, std::string> &headers) {
   return request("POST", url, headers, body);
 }
 
-std::string HttpClient::put(const std::string& url, const std::string& body, const std::map<std::string, std::string>& headers) {
+std::string HttpClient::put(const std::string &url, const std::string &body,
+                            const std::map<std::string, std::string> &headers) {
   return request("PUT", url, headers, body);
 }
 
-std::string HttpClient::del(const std::string& url, const std::map<std::string, std::string>& headers) {
+std::string HttpClient::del(const std::string &url,
+                            const std::map<std::string, std::string> &headers) {
   return request("DELETE", url, headers);
 }
 

@@ -390,6 +390,20 @@ run_ansible_lint() {
     ansible-lint ansible/ || return 1
   fi
 }
+
+run_cmake_lint() {
+  if ! command -v cmake-lint >/dev/null 2>&1; then
+    warn "Skipping cmake-lint (executable not found; install with: pip install cmakelang or uv tool install cmakelang)"
+    return 0
+  fi
+  info "Running cmake-lint (CMakeLists.txt and cmake files)"
+  local files=(CMakeLists.txt native/CMakeLists.txt native/tests/CMakeLists.txt native/ibapi_cmake/CMakeLists.txt)
+  if [[ "${LINT_MAX_LINES}" -gt 0 ]]; then
+    run_limited cmake-lint "${files[@]}" || return 1
+  else
+    cmake-lint "${files[@]}" || return 1
+  fi
+}
   info "Running bandit (Python)"
 
   local bandit_cmd=()
@@ -531,6 +545,7 @@ main() {
   run_exarp_go_lint
   run_shellcheck
   run_ansible_lint
+  run_cmake_lint
   run_bandit
   run_ruff
   run_eslint
@@ -555,6 +570,7 @@ main_parallel() {
   ( run_bandit; echo $? > "${tmpdir}/bandit" ) &
   ( run_ruff; echo $? > "${tmpdir}/ruff" ) &
   ( run_ansible_lint; echo $? > "${tmpdir}/ansible_lint" ) &
+  ( run_cmake_lint; echo $? > "${tmpdir}/cmake_lint" ) &
   ( run_eslint; echo $? > "${tmpdir}/eslint" ) &
   ( run_stylelint; echo $? > "${tmpdir}/stylelint" ) &
   ( run_type_check; echo $? > "${tmpdir}/type_check" ) &

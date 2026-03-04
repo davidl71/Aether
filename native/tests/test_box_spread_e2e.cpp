@@ -1,14 +1,15 @@
-// test_box_spread_e2e.cpp - End-to-end integration tests for box spread workflow
+// test_box_spread_e2e.cpp - End-to-end integration tests for box spread
+// workflow
+#include "config_manager.h"
+#include "order_manager.h"
+#include "strategies/box_spread/box_spread_strategy.h"
+#include "tws_client.h"
+#include "types.h"
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
-#include "tws_client.h"
-#include "strategies/box_spread/box_spread_strategy.h"
-#include "order_manager.h"
-#include "config_manager.h"
-#include "types.h"
-#include <thread>
 #include <chrono>
 #include <memory>
+#include <thread>
 
 using namespace tws;
 using namespace strategy;
@@ -24,7 +25,7 @@ config::TWSConfig create_mock_tws_config() {
   config.host = "127.0.0.1";
   config.port = 7497;
   config.client_id = 999;
-  config.use_mock = true;  // Use mock mode for testing
+  config.use_mock = true; // Use mock mode for testing
   config.auto_reconnect = true;
   config.connection_timeout_ms = 5000;
   config.connect_options = "+PACEAPI";
@@ -85,10 +86,11 @@ BoxSpreadLeg create_test_box_spread() {
   spread.short_put_price = 1.0;
 
   // Calculate derived values
-  spread.net_debit = 5.0 + 3.0 - 3.0 - 1.0;  // 4.0
-  spread.theoretical_value = 10.0;  // Strike width (510 - 500)
-  spread.arbitrage_profit = spread.theoretical_value - spread.net_debit;  // 6.0
-  spread.roi_percent = (spread.arbitrage_profit / spread.net_debit) * 100.0;  // 150%
+  spread.net_debit = 5.0 + 3.0 - 3.0 - 1.0; // 4.0
+  spread.theoretical_value = 10.0;          // Strike width (510 - 500)
+  spread.arbitrage_profit = spread.theoretical_value - spread.net_debit; // 6.0
+  spread.roi_percent =
+      (spread.arbitrage_profit / spread.net_debit) * 100.0; // 150%
 
   return spread;
 }
@@ -99,7 +101,8 @@ BoxSpreadLeg create_test_box_spread() {
 // Test: Box Spread Opportunity Detection
 // ============================================================================
 
-TEST_CASE("Box Spread E2E - Opportunity detection (mock)", "[box-spread][e2e][mock]") {
+TEST_CASE("Box Spread E2E - Opportunity detection (mock)",
+          "[box-spread][e2e][mock]") {
   config::TWSConfig tws_config = create_mock_tws_config();
   auto client = std::make_shared<TWSClient>(tws_config);
   client->connect();
@@ -115,7 +118,8 @@ TEST_CASE("Box Spread E2E - Opportunity detection (mock)", "[box-spread][e2e][mo
     auto opportunities = strategy.find_box_spreads("SPY");
 
     // Then: Should return opportunities (may be empty in mock mode)
-    // Note: Mock mode may not generate full option chain, but structure is tested
+    // Note: Mock mode may not generate full option chain, but structure is
+    // tested
     REQUIRE(opportunities.size() >= 0);
   }
 
@@ -148,30 +152,33 @@ TEST_CASE("Box Spread E2E - Opportunity detection (mock)", "[box-spread][e2e][mo
 // Test: Box Spread Execution (Dry-Run)
 // ============================================================================
 
-TEST_CASE("Box Spread E2E - Execution in dry-run (mock)", "[box-spread][e2e][mock]") {
+TEST_CASE("Box Spread E2E - Execution in dry-run (mock)",
+          "[box-spread][e2e][mock]") {
   config::TWSConfig tws_config = create_mock_tws_config();
   auto client = std::make_shared<TWSClient>(tws_config);
   client->connect();
   REQUIRE(client->is_connected());
 
-  OrderManager order_manager(client.get(), true);  // dry_run = true
+  OrderManager order_manager(client.get(), true); // dry_run = true
 
   SECTION("Place box spread in dry-run") {
     // Given: A valid box spread and order manager in dry-run mode
     BoxSpreadLeg spread = create_test_box_spread();
 
     // When: We place the box spread
-    ExecutionResult result = order_manager.place_box_spread(spread, "test-strategy");
+    ExecutionResult result =
+        order_manager.place_box_spread(spread, "test-strategy");
 
     // Then: Should succeed in dry-run
     REQUIRE(result.success);
-    REQUIRE(result.order_ids.size() == 4);  // 4 legs
+    REQUIRE(result.order_ids.size() == 4); // 4 legs
   }
 
   SECTION("Dry-run order tracking") {
     // Given: A placed box spread order
     BoxSpreadLeg spread = create_test_box_spread();
-    ExecutionResult result = order_manager.place_box_spread(spread, "test-strategy");
+    ExecutionResult result =
+        order_manager.place_box_spread(spread, "test-strategy");
 
     REQUIRE(result.success);
 
@@ -206,7 +213,7 @@ TEST_CASE("Box Spread E2E - Validation (mock)", "[box-spread][e2e][mock]") {
     // Given: An invalid box spread (wrong strike relationships)
     BoxSpreadLeg spread = create_test_box_spread();
     spread.long_call.strike = 510.0;  // Wrong: should be lower
-    spread.short_call.strike = 500.0;  // Wrong: should be higher
+    spread.short_call.strike = 500.0; // Wrong: should be higher
 
     // When: We validate
     // Then: Should be invalid
@@ -230,23 +237,25 @@ TEST_CASE("Box Spread E2E - Validation (mock)", "[box-spread][e2e][mock]") {
 // Test: Error Scenarios
 // ============================================================================
 
-TEST_CASE("Box Spread E2E - Error scenarios (mock)", "[box-spread][e2e][mock]") {
+TEST_CASE("Box Spread E2E - Error scenarios (mock)",
+          "[box-spread][e2e][mock]") {
   config::TWSConfig tws_config = create_mock_tws_config();
   auto client = std::make_shared<TWSClient>(tws_config);
   client->connect();
   REQUIRE(client->is_connected());
 
-  OrderManager order_manager(client.get(), true);  // dry_run = true
+  OrderManager order_manager(client.get(), true); // dry_run = true
 
   SECTION("Invalid box spread execution") {
     // Given: An invalid box spread
     BoxSpreadLeg spread = create_test_box_spread();
-    spread.long_call.strike = 510.0;  // Invalid structure
+    spread.long_call.strike = 510.0; // Invalid structure
     spread.short_call.strike = 500.0;
 
     // When: We attempt to place order
     // Then: Should handle gracefully (may reject or handle in validation)
-    ExecutionResult result = order_manager.place_box_spread(spread, "test-strategy");
+    ExecutionResult result =
+        order_manager.place_box_spread(spread, "test-strategy");
     // In dry-run, may still succeed, but real execution should validate
     REQUIRE_NOTHROW(result);
   }
@@ -258,7 +267,8 @@ TEST_CASE("Box Spread E2E - Error scenarios (mock)", "[box-spread][e2e][mock]") 
     // When: Contract details lookup fails (simulated by invalid contract)
     // Then: Should fall back to individual orders
     // Note: In mock mode, contract details may always succeed
-    ExecutionResult result = order_manager.place_box_spread(spread, "test-strategy");
+    ExecutionResult result =
+        order_manager.place_box_spread(spread, "test-strategy");
     REQUIRE(result.success);
   }
 }
@@ -267,14 +277,15 @@ TEST_CASE("Box Spread E2E - Error scenarios (mock)", "[box-spread][e2e][mock]") 
 // Test: Complete Workflow
 // ============================================================================
 
-TEST_CASE("Box Spread E2E - Complete workflow (mock)", "[box-spread][e2e][mock]") {
+TEST_CASE("Box Spread E2E - Complete workflow (mock)",
+          "[box-spread][e2e][mock]") {
   config::TWSConfig tws_config = create_mock_tws_config();
   auto client = std::make_shared<TWSClient>(tws_config);
   client->connect();
   REQUIRE(client->is_connected());
 
   config::StrategyParams strategy_params = create_test_strategy_params();
-  OrderManager order_manager(client.get(), true);  // dry_run = true
+  OrderManager order_manager(client.get(), true); // dry_run = true
   BoxSpreadStrategy strategy(client.get(), &order_manager, strategy_params);
 
   SECTION("End-to-end workflow") {
@@ -285,13 +296,13 @@ TEST_CASE("Box Spread E2E - Complete workflow (mock)", "[box-spread][e2e][mock]"
 
     // 2. Select best opportunity (if any)
     if (!opportunities.empty()) {
-      const auto& best_opp = opportunities[0];
+      const auto &best_opp = opportunities[0];
 
       // 3. Validate opportunity
       if (best_opp.is_actionable()) {
         // 4. Execute box spread
-        ExecutionResult result = order_manager.place_box_spread(
-          best_opp.spread, "test-strategy");
+        ExecutionResult result =
+            order_manager.place_box_spread(best_opp.spread, "test-strategy");
 
         // Then: Should complete successfully
         REQUIRE(result.success);
@@ -299,7 +310,8 @@ TEST_CASE("Box Spread E2E - Complete workflow (mock)", "[box-spread][e2e][mock]"
       }
     } else {
       // No opportunities found (acceptable in mock mode)
-      WARN("No opportunities found - may require full option chain in mock mode");
+      WARN("No opportunities found - may require full option chain in mock "
+           "mode");
     }
   }
 
@@ -312,7 +324,8 @@ TEST_CASE("Box Spread E2E - Complete workflow (mock)", "[box-spread][e2e][mock]"
     REQUIRE(spread.arbitrage_profit > 0.0);
     REQUIRE(spread.roi_percent > strategy_params.min_roi_percent);
 
-    ExecutionResult result = order_manager.place_box_spread(spread, "test-strategy");
+    ExecutionResult result =
+        order_manager.place_box_spread(spread, "test-strategy");
 
     // Then: Should succeed
     REQUIRE(result.success);
@@ -323,15 +336,16 @@ TEST_CASE("Box Spread E2E - Complete workflow (mock)", "[box-spread][e2e][mock]"
 // Test: Real TWS Integration (Optional - Requires TWS Running)
 // ============================================================================
 
-TEST_CASE("Box Spread E2E - Real TWS execution (integration)", "[box-spread][e2e][integration][!mayfail]") {
+TEST_CASE("Box Spread E2E - Real TWS execution (integration)",
+          "[box-spread][e2e][integration][!mayfail]") {
   // This test requires TWS or IB Gateway to be running
   // Skip gracefully if not available
 
   config::TWSConfig tws_config;
   tws_config.host = "127.0.0.1";
-  tws_config.port = 7497;  // Paper trading
+  tws_config.port = 7497; // Paper trading
   tws_config.client_id = 999;
-  tws_config.use_mock = false;  // Use real TWS
+  tws_config.use_mock = false; // Use real TWS
   tws_config.connection_timeout_ms = 5000;
 
   auto client = std::make_shared<TWSClient>(tws_config);
@@ -340,7 +354,8 @@ TEST_CASE("Box Spread E2E - Real TWS execution (integration)", "[box-spread][e2e
   bool connected = client->connect();
   if (!connected) {
     WARN("TWS/Gateway not available - skipping real box spread E2E test");
-    WARN("To run this test, start TWS or IB Gateway with API enabled on port 7497");
+    WARN("To run this test, start TWS or IB Gateway with API enabled on port "
+         "7497");
     return;
   }
 
@@ -349,10 +364,11 @@ TEST_CASE("Box Spread E2E - Real TWS execution (integration)", "[box-spread][e2e
     REQUIRE(client->is_connected());
 
     // When: We execute box spread in dry-run mode
-    OrderManager order_manager(client.get(), true);  // dry_run = true
+    OrderManager order_manager(client.get(), true); // dry_run = true
     BoxSpreadLeg spread = create_test_box_spread();
 
-    ExecutionResult result = order_manager.place_box_spread(spread, "test-strategy");
+    ExecutionResult result =
+        order_manager.place_box_spread(spread, "test-strategy");
 
     // Then: Should handle gracefully (dry-run doesn't place real orders)
     REQUIRE_NOTHROW(result);

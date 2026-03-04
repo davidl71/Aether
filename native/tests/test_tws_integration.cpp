@@ -1,13 +1,14 @@
-// test_tws_integration.cpp - Integration tests for TWS connection and reconnection
+// test_tws_integration.cpp - Integration tests for TWS connection and
+// reconnection
+#include "config_manager.h"
+#include "tws_client.h"
+#include <atomic>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
-#include "tws_client.h"
-#include "config_manager.h"
-#include <thread>
 #include <chrono>
-#include <atomic>
-#include <vector>
 #include <memory>
+#include <thread>
+#include <vector>
 
 using namespace tws;
 using Catch::Matchers::ContainsSubstring;
@@ -20,7 +21,7 @@ config::TWSConfig create_mock_config() {
   config.host = "127.0.0.1";
   config.port = 7497;
   config.client_id = 999;
-  config.use_mock = true;  // Use mock mode for testing
+  config.use_mock = true; // Use mock mode for testing
   config.auto_reconnect = true;
   config.max_reconnect_attempts = 5;
   config.connection_timeout_ms = 5000;
@@ -29,9 +30,11 @@ config::TWSConfig create_mock_config() {
 }
 
 // Helper to wait for connection state change
-bool wait_for_state(TWSClient& client, ConnectionState expected_state, int timeout_ms = 2000) {
+bool wait_for_state(TWSClient &client, ConnectionState expected_state,
+                    int timeout_ms = 2000) {
   auto start = std::chrono::steady_clock::now();
-  while ((std::chrono::steady_clock::now() - start) < std::chrono::milliseconds(timeout_ms)) {
+  while ((std::chrono::steady_clock::now() - start) <
+         std::chrono::milliseconds(timeout_ms)) {
     if (client.get_connection_state() == expected_state) {
       return true;
     }
@@ -46,7 +49,8 @@ bool wait_for_state(TWSClient& client, ConnectionState expected_state, int timeo
 // Test: Initial Connection (Mock Mode)
 // ============================================================================
 
-TEST_CASE("TWS Integration - Initial connection (mock)", "[tws][integration][mock]") {
+TEST_CASE("TWS Integration - Initial connection (mock)",
+          "[tws][integration][mock]") {
   config::TWSConfig config = create_mock_config();
   TWSClient client(config);
 
@@ -84,7 +88,8 @@ TEST_CASE("TWS Integration - Initial connection (mock)", "[tws][integration][moc
     // When: We attempt to connect again
     bool second_connect = client.connect();
 
-    // Then: Should handle gracefully (may return true or false, but shouldn't crash)
+    // Then: Should handle gracefully (may return true or false, but shouldn't
+    // crash)
     REQUIRE(client.is_connected());
     // State should remain Connected
     REQUIRE(client.get_connection_state() == ConnectionState::Connected);
@@ -95,7 +100,8 @@ TEST_CASE("TWS Integration - Initial connection (mock)", "[tws][integration][moc
 // Test: Disconnection Handling
 // ============================================================================
 
-TEST_CASE("TWS Integration - Disconnection handling (mock)", "[tws][integration][mock]") {
+TEST_CASE("TWS Integration - Disconnection handling (mock)",
+          "[tws][integration][mock]") {
   config::TWSConfig config = create_mock_config();
   TWSClient client(config);
 
@@ -143,7 +149,8 @@ TEST_CASE("TWS Integration - Disconnection handling (mock)", "[tws][integration]
 // Test: Reconnection with State Synchronization
 // ============================================================================
 
-TEST_CASE("TWS Integration - Reconnection with state sync (mock)", "[tws][integration][mock]") {
+TEST_CASE("TWS Integration - Reconnection with state sync (mock)",
+          "[tws][integration][mock]") {
   config::TWSConfig config = create_mock_config();
   config.auto_reconnect = true;
   config.max_reconnect_attempts = 3;
@@ -187,7 +194,8 @@ TEST_CASE("TWS Integration - Reconnection with state sync (mock)", "[tws][integr
 
     // When: Connection fails and reconnection is attempted
     // Then: Should respect max_reconnect_attempts
-    // Note: In mock mode, this may not fully test backoff, but structure is verified
+    // Note: In mock mode, this may not fully test backoff, but structure is
+    // verified
     client_with_limits.connect();
     REQUIRE(client_with_limits.is_connected());
   }
@@ -197,7 +205,8 @@ TEST_CASE("TWS Integration - Reconnection with state sync (mock)", "[tws][integr
 // Test: Rate Limiting During Reconnection
 // ============================================================================
 
-TEST_CASE("TWS Integration - Rate limiting during reconnection (mock)", "[tws][integration][mock]") {
+TEST_CASE("TWS Integration - Rate limiting during reconnection (mock)",
+          "[tws][integration][mock]") {
   config::TWSConfig config = create_mock_config();
   TWSClient client(config);
 
@@ -229,15 +238,16 @@ TEST_CASE("TWS Integration - Rate limiting during reconnection (mock)", "[tws][i
 // Test: Real TWS Integration (Optional - Requires TWS Running)
 // ============================================================================
 
-TEST_CASE("TWS Integration - Real TWS connection (integration)", "[tws][integration][!mayfail]") {
+TEST_CASE("TWS Integration - Real TWS connection (integration)",
+          "[tws][integration][!mayfail]") {
   // This test requires TWS or IB Gateway to be running
   // Skip gracefully if not available
 
   config::TWSConfig config;
   config.host = "127.0.0.1";
-  config.port = 7497;  // Paper trading
+  config.port = 7497; // Paper trading
   config.client_id = 999;
-  config.use_mock = false;  // Use real TWS
+  config.use_mock = false; // Use real TWS
   config.auto_reconnect = true;
   config.connection_timeout_ms = 5000;
 
@@ -254,7 +264,8 @@ TEST_CASE("TWS Integration - Real TWS connection (integration)", "[tws][integrat
 
   // Wait with timeout
   auto start = std::chrono::steady_clock::now();
-  while (!test_done && (std::chrono::steady_clock::now() - start) < std::chrono::seconds(3)) {
+  while (!test_done &&
+         (std::chrono::steady_clock::now() - start) < std::chrono::seconds(3)) {
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
 
@@ -264,7 +275,8 @@ TEST_CASE("TWS Integration - Real TWS connection (integration)", "[tws][integrat
 
   if (!connected) {
     WARN("TWS/Gateway not available - skipping real connection test");
-    WARN("To run this test, start TWS or IB Gateway with API enabled on port 7497");
+    WARN("To run this test, start TWS or IB Gateway with API enabled on port "
+         "7497");
     return;
   }
 
@@ -289,7 +301,8 @@ TEST_CASE("TWS Integration - Real TWS connection (integration)", "[tws][integrat
 // Test: Connection Error Handling
 // ============================================================================
 
-TEST_CASE("TWS Integration - Connection error handling (mock)", "[tws][integration][mock]") {
+TEST_CASE("TWS Integration - Connection error handling (mock)",
+          "[tws][integration][mock]") {
   config::TWSConfig config = create_mock_config();
   TWSClient client(config);
 
@@ -309,14 +322,14 @@ TEST_CASE("TWS Integration - Connection error handling (mock)", "[tws][integrati
 
   SECTION("Connection timeout handling") {
     // Given: A config with short timeout
-    config.connection_timeout_ms = 100;  // Very short timeout
-    config.use_mock = true;  // Mock mode should still work
+    config.connection_timeout_ms = 100; // Very short timeout
+    config.use_mock = true;             // Mock mode should still work
     TWSClient timeout_client(config);
 
     // When: We attempt to connect
     // Then: In mock mode, should still connect (mock is instant)
     bool connected = timeout_client.connect();
-    REQUIRE(connected);  // Mock mode connects instantly
+    REQUIRE(connected); // Mock mode connects instantly
   }
 }
 
@@ -324,7 +337,8 @@ TEST_CASE("TWS Integration - Connection error handling (mock)", "[tws][integrati
 // Test: Connection State Machine
 // ============================================================================
 
-TEST_CASE("TWS Integration - Connection state machine (mock)", "[tws][integration][mock]") {
+TEST_CASE("TWS Integration - Connection state machine (mock)",
+          "[tws][integration][mock]") {
   config::TWSConfig config = create_mock_config();
   TWSClient client(config);
 
@@ -333,9 +347,7 @@ TEST_CASE("TWS Integration - Connection state machine (mock)", "[tws][integratio
     REQUIRE(client.get_connection_state() == ConnectionState::Disconnected);
 
     // When: We initiate connection
-    std::thread connect_thread([&]() {
-      client.connect();
-    });
+    std::thread connect_thread([&]() { client.connect(); });
 
     // Then: State should transition appropriately
     // In mock mode, transition is instant, so we check final state
@@ -361,8 +373,10 @@ TEST_CASE("TWS Integration - Connection state machine (mock)", "[tws][integratio
     // Given: A client
     // When: Error occurs (simulated by invalid operation)
     // Then: Should handle error state appropriately
-    // Note: Mock mode may not trigger all error states, but structure is verified
+    // Note: Mock mode may not trigger all error states, but structure is
+    // verified
     auto state = client.get_connection_state();
-    REQUIRE((state != ConnectionState::Error || state == ConnectionState::Disconnected));
+    REQUIRE((state != ConnectionState::Error ||
+             state == ConnectionState::Disconnected));
   }
 }

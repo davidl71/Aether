@@ -7,19 +7,19 @@ namespace proto_adapter {
 
 namespace {
 ::ib::platform::v1::OptionTypeEnum option_type_to_proto(types::OptionType t) {
-  return t == types::OptionType::Call
-             ? ::ib::platform::v1::OPTION_TYPE_CALL
-             : ::ib::platform::v1::OPTION_TYPE_PUT;
+  return t == types::OptionType::Call ? ::ib::platform::v1::OPTION_TYPE_CALL
+                                      : ::ib::platform::v1::OPTION_TYPE_PUT;
 }
 types::OptionType option_type_from_proto(::ib::platform::v1::OptionTypeEnum t) {
   return t == ::ib::platform::v1::OPTION_TYPE_PUT ? types::OptionType::Put
-                                                   : types::OptionType::Call;
+                                                  : types::OptionType::Call;
 }
-}  // namespace
+} // namespace
 
-void to_proto(const types::OptionContract& from,
-              ::ib::platform::v1::OptionContract* out) {
-  if (!out) return;
+void to_proto(const types::OptionContract &from,
+              ::ib::platform::v1::OptionContract *out) {
+  if (!out)
+    return;
   out->set_symbol(from.symbol);
   out->set_expiry(from.expiry);
   out->set_strike(from.strike);
@@ -28,9 +28,10 @@ void to_proto(const types::OptionContract& from,
   out->set_local_symbol(from.local_symbol);
 }
 
-void from_proto(const ::ib::platform::v1::OptionContract& from,
-               types::OptionContract* out) {
-  if (!out) return;
+void from_proto(const ::ib::platform::v1::OptionContract &from,
+                types::OptionContract *out) {
+  if (!out)
+    return;
   out->symbol = from.symbol();
   out->expiry = from.expiry();
   out->strike = from.strike();
@@ -39,9 +40,10 @@ void from_proto(const ::ib::platform::v1::OptionContract& from,
   out->local_symbol = from.local_symbol();
 }
 
-void to_proto(const types::BoxSpreadLeg& from,
-              ::ib::platform::v1::BoxSpreadLeg* out) {
-  if (!out) return;
+void to_proto(const types::BoxSpreadLeg &from,
+              ::ib::platform::v1::BoxSpreadLeg *out) {
+  if (!out)
+    return;
   to_proto(from.long_call, out->mutable_long_call());
   to_proto(from.short_call, out->mutable_short_call());
   to_proto(from.long_put, out->mutable_long_put());
@@ -68,9 +70,10 @@ void to_proto(const types::BoxSpreadLeg& from,
   out->set_put_call_parity_violation(from.put_call_parity_violation);
 }
 
-void from_proto(const ::ib::platform::v1::BoxSpreadLeg& from,
-               types::BoxSpreadLeg* out) {
-  if (!out) return;
+void from_proto(const ::ib::platform::v1::BoxSpreadLeg &from,
+                types::BoxSpreadLeg *out) {
+  if (!out)
+    return;
   from_proto(from.long_call(), &out->long_call);
   from_proto(from.short_call(), &out->short_call);
   from_proto(from.long_put(), &out->long_put);
@@ -97,21 +100,24 @@ void from_proto(const ::ib::platform::v1::BoxSpreadLeg& from,
   out->put_call_parity_violation = from.put_call_parity_violation();
 }
 
-std::string box_spread_leg_to_proto_bytes(const types::BoxSpreadLeg& leg) {
+std::string box_spread_leg_to_proto_bytes(const types::BoxSpreadLeg &leg) {
   ::ib::platform::v1::BoxSpreadLeg msg;
   to_proto(leg, &msg);
   std::string bytes;
-  if (!msg.SerializeToString(&bytes)) return {};
+  if (!msg.SerializeToString(&bytes))
+    return {};
   return bytes;
 }
 
-bool proto_bytes_to_box_spread_leg(const std::string& bytes,
-                                   types::BoxSpreadLeg* out) {
-  if (!out) return false;
+bool proto_bytes_to_box_spread_leg(const std::string &bytes,
+                                   types::BoxSpreadLeg *out) {
+  if (!out)
+    return false;
   ::ib::platform::v1::BoxSpreadLeg msg;
-  if (!msg.ParseFromString(bytes)) return false;
+  if (!msg.ParseFromString(bytes))
+    return false;
   from_proto(msg, out);
   return true;
 }
 
-}  // namespace proto_adapter
+} // namespace proto_adapter

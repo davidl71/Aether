@@ -108,6 +108,12 @@ lint-shell:
     shellcheck -x scripts/*.sh ansible/run-dev-setup.sh
     @echo "lint-shell done"
 
+# CMake lint (cmake-lint from cmakelang). Requires: pip install cmakelang or uv tool install cmakelang
+lint-cmake:
+    @command -v cmake-lint >/dev/null 2>&1 || (echo "cmake-lint not found (pip install cmakelang or uv tool install cmakelang)" && exit 1)
+    cmake-lint CMakeLists.txt native/CMakeLists.txt native/tests/CMakeLists.txt native/ibapi_cmake/CMakeLists.txt
+    @echo "lint-cmake done"
+
 # Shell-only lint, single JSON line to stdout (for tools/AI). Log to logs/lint_shell_ai.log.
 lint-shell-ai:
     ./scripts/lint_shell_ai.sh

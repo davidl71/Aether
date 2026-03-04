@@ -35,6 +35,8 @@ Use these when suggesting shell commands so the user can run less typing and sta
 | `./scripts/verify_toolchain.sh` | `just verify-toolchain` | Verify C++ toolchain |
 | `./ansible/run-dev-setup.sh` | `just ansible-dev` | Ansible dev setup (SSL fix on macOS) |
 | (syntax-check playbook only) | `just ansible-check` | Ansible playbook syntax-check |
+| (ansible-lint on ansible/) | `just ansible-lint` | When ansible-lint installed |
+| (cmake-lint on CMake files) | `just lint-cmake` | When cmakelang installed (pip/uv) |
 
 **Repo root:** From a subdir, use **`r`** (if you have `alias r='cd $(git rev-parse --show-toplevel)'` in ~/.zshrc) or **`cd $(git rev-parse --show-toplevel)`** before running just/scripts.
 
