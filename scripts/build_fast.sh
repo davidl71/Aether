@@ -11,6 +11,11 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 cd "${PROJECT_ROOT}"
 
+# Ensure third-party deps (TWS API, Intel decimal) exist; run fetch script if missing
+# shellcheck source=./include/ensure_third_party.sh
+. "${SCRIPT_DIR}/include/ensure_third_party.sh"
+ensure_third_party
+
 # Detect platform for preset selection
 detect_preset_suffix() {
   local arch os

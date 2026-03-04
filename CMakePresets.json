@@ -180,6 +180,8 @@
         "rhs": "Linux"
       }
     },
+    {
+      "name": "ubuntu-x64-debug",
       "displayName": "Ubuntu x64 Debug",
       "generator": "Ninja",
       "binaryDir": "build/ubuntu-x64-debug",

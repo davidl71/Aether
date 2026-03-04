@@ -83,6 +83,11 @@ fi
 
 cd "${PROJECT_ROOT}"
 
+# Ensure third-party deps exist before configure/build
+# shellcheck source=./include/ensure_third_party.sh
+. "${SCRIPT_DIR}/include/ensure_third_party.sh"
+ensure_third_party
+
 log_note "Platform: ${OS} ${ARCH} -> preset ${PRESET}"
 log_note "Override with CMAKE_PRESET= or --debug/--release."
 

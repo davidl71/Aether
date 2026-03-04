@@ -13,6 +13,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
+cd "${PROJECT_ROOT}"
+
+# Ensure third-party deps exist before configure/build
+# shellcheck source=./include/ensure_third_party.sh
+. "${SCRIPT_DIR}/include/ensure_third_party.sh"
+ensure_third_party
+
 # RAM disk configuration
 RAMDISK_NAME="IBBoxSpreadBuild"
 RAMDISK_PATH="/Volumes/${RAMDISK_NAME}"
@@ -20,7 +27,7 @@ RAMDISK_BUILD="${RAMDISK_PATH}/build"
 
 # Use RAM disk build if available, otherwise fall back to regular build
 if [ -d "${RAMDISK_PATH}" ] && [ -d "${RAMDISK_BUILD}" ]; then
-  BUILD_DIR="${PROJECT_ROOT}/build-ramdisk"
+  BUILD_DIR="${RAMDISK_BUILD}"
   log_info() { echo "ℹ️  [RAM] $*"; }
 else
   BUILD_DIR="${PROJECT_ROOT}/build"
@@ -35,6 +42,7 @@ if [ -f "${SCRIPT_DIR}/include/logging.sh" ]; then
   # shellcheck source=./include/logging.sh
   . "${SCRIPT_DIR}/include/logging.sh"
 fi
+type log_success &>/dev/null || log_success() { ( type log_info &>/dev/null && log_info "✓ $*" ) || echo "✓ $*"; }
 
 function check_ramdisk() {
   if [ -d "${RAMDISK_PATH}" ] && [ -d "${RAMDISK_BUILD}" ]; then
@@ -58,7 +66,7 @@ function setup_ramdisk() {
   }
 
   # Update BUILD_DIR to use RAM disk
-  BUILD_DIR="${PROJECT_ROOT}/build-ramdisk"
+  BUILD_DIR="${RAMDISK_BUILD}"
 }
 
 function configure_cmake() {

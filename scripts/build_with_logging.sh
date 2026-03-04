@@ -8,6 +8,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${PROJECT_ROOT}"
 
+# Ensure third-party deps exist before configure/build
+# shellcheck source=./include/ensure_third_party.sh
+. "${SCRIPT_DIR}/include/ensure_third_party.sh"
+ensure_third_party
+
 # Log file in project directory
 LOG_FILE="${PROJECT_ROOT}/logs/build_$(date +%Y%m%d_%H%M%S).log"
 mkdir -p "${PROJECT_ROOT}/logs"
