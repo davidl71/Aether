@@ -226,6 +226,9 @@ fetchcontent_declare(
 )
 
 set(SPDLOG_REPOSITORY "https://github.com/gabime/spdlog.git")
+# Configure spdlog as header-only to avoid LTO linking issues
+set(SPDLOG_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+set(SPDLOG_FMT_EXTERNAL OFF CACHE BOOL "" FORCE)
 fetchcontent_declare(
     spdlog
     GIT_REPOSITORY ${SPDLOG_REPOSITORY}

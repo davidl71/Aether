@@ -905,7 +905,7 @@ public:
         }
     }
 
-    void nextValidId(int orderId) override {
+    void nextValidId(OrderId orderId) override {
         try {
             if (config_.log_raw_messages) {
                 spdlog::trace("[RAW API] ← nextValidId(orderId={}) callback received", orderId);
@@ -973,7 +973,7 @@ public:
     // EWrapper Callbacks - Market Data
     // ========================================================================
 
-    void tickPrice(int tickerId, TickType field,
+    void tickPrice(TickerId tickerId, TickType field,
                    double price, const TickAttrib& attribs) override {
         try {
             if (config_.log_raw_messages) {
@@ -1054,7 +1054,7 @@ public:
         }
     }
 
-    void tickSize(int tickerId, TickType field, Decimal size) override {
+    void tickSize(TickerId tickerId, TickType field, Decimal size) override {
         try {
             if (config_.log_raw_messages) {
                 spdlog::trace("[RAW API] ← tickSize(tickerId={}, field={}, size={})",
@@ -1092,7 +1092,7 @@ public:
         }
     }
 
-    void tickOptionComputation(int tickerId, TickType tickType,
+    void tickOptionComputation(TickerId tickerId, TickType tickType,
                                int tickAttrib, double impliedVol,
                                double delta, double optPrice,
                                double pvDividend, double gamma,
@@ -1131,7 +1131,7 @@ public:
     // EWrapper Callbacks - Orders
     // ========================================================================
 
-    void orderStatus(int orderId, const std::string& status,
+    void orderStatus(OrderId orderId, const std::string& status,
                     Decimal filled, Decimal remaining,
                     double avgFillPrice, long long permId, int parentId,
                     double lastFillPrice, int clientId,
@@ -1174,7 +1174,7 @@ public:
         }
     }
 
-    void openOrder(int orderId, const Contract& contract,
+    void openOrder(OrderId orderId, const Contract& contract,
                    const Order& order, const OrderState& orderState) override {
         try {
             spdlog::debug("Open order: #{}, {}, {}, status={}",
@@ -3322,19 +3322,19 @@ private:
     // Note: Most callbacks have default implementations from DefaultEWrapper
     // ========================================================================
 
-    void tickString(int tickerId, TickType tickType,
+    void tickString(TickerId tickerId, TickType tickType,
                    const std::string& value) override {}
-    void tickEFP(int tickerId, TickType tickType, double basisPoints,
+    void tickEFP(TickerId tickerId, TickType tickType, double basisPoints,
                 const std::string& formattedBasisPoints, double totalDividends,
                 int holdDays, const std::string& futureLastTradeDate,
                 double dividendImpact, double dividendsToLastTradeDate) override {}
-    void tickGeneric(int tickerId, TickType tickType, double value) override {}
+    void tickGeneric(TickerId tickerId, TickType tickType, double value) override {}
     void tickSnapshotEnd(int reqId) override {}
-    void marketDataType(int reqId, int marketDataType) override {}
-    void realtimeBar(int reqId, long time, double open, double high,
+    void marketDataType(TickerId reqId, int marketDataType) override {}
+    void realtimeBar(TickerId reqId, long time, double open, double high,
                     double low, double close, Decimal volume, Decimal wap,
                     int count) override {}
-    void historicalData(int reqId, const Bar& bar) override {}
+    void historicalData(TickerId reqId, const Bar& bar) override {}
     void historicalDataEnd(int reqId, const std::string& startDateStr,
                           const std::string& endDateStr) override {}
     void scannerParameters(const std::string& xml) override {}
@@ -3546,7 +3546,7 @@ private:
     void historicalNewsEnd(int requestId, bool hasMore) override {}
     void headTimestamp(int reqId, const std::string& headTimestamp) override {}
     void histogramData(int reqId, const HistogramDataVector& data) override {}
-    void historicalDataUpdate(int reqId, const Bar& bar) override {}
+    void historicalDataUpdate(TickerId reqId, const Bar& bar) override {}
     void rerouteMktDataReq(int reqId, int conid, const std::string& exchange) override {}
     void rerouteMktDepthReq(int reqId, int conid, const std::string& exchange) override {}
     void marketRule(int marketRuleId, const std::vector<PriceIncrement>& priceIncrements) override {}
