@@ -22,6 +22,8 @@ cpp_apt_packages:
   - libboost-date-time-dev
   - libboost-filesystem-dev
   - libboost-system-dev
+  - libcurl4-openssl-dev
   - libblas-dev
   - liblapack-dev
   - pkg-config
+  - python3-dev

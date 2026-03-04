@@ -5,6 +5,7 @@
       - python3
       - python3-pip
       - python3-venv
+      - python3-dev
       - jq
       - build-essential
       - cmake
@@ -32,6 +33,9 @@
       # SQLite CLI and dev headers (exarp-go, MCP, local DBs)
       - sqlite3
       - libsqlite3-dev
+      # Optional: docs (BUILD_DOCS=ON) and NATS (ENABLE_NATS=ON)
+      - doxygen
+      - nats-server
       # Rust toolchain (agents/, Rust backends)
       - cargo
       - rustc
@@ -74,8 +78,23 @@
       - markdownlint-cli
       # SQLite CLI and libs (exarp-go, MCP, local DBs)
       - sqlite
+      # Optional: docs (BUILD_DOCS=ON) and NATS (ENABLE_NATS=ON)
+      - doxygen
+      - nats-server
       # Rust toolchain (agents/, Rust backends)
       - rust
+    state: present
+  when: ansible_facts['os_family'] == 'Darwin'
+
+- name: Add NATS Homebrew tap (macOS) for nats CLI
+  community.general.homebrew_tap:
+    name: nats-io/nats-tools
+    state: present
+  when: ansible_facts['os_family'] == 'Darwin'
+
+- name: Install NATS CLI from tap (macOS)
+  community.general.homebrew:
+    name: nats-io/nats-tools/nats
     state: present
   when: ansible_facts['os_family'] == 'Darwin'
 
