@@ -208,6 +208,18 @@
     msg: "cmake-lint: {{ cmake_lint_version.stdout | default('(install with: uv tool install cmakelang)') }}"
   when: cmake_lint_version.rc == 0
 
+- name: Ensure shell config has uv tool path (run uv tool update-shell)
+  become: false
+  ansible.builtin.command: uv tool update-shell
+  register: uv_update_shell
+  changed_when: "'Created' in uv_update_shell.stdout or 'Updated' in uv_update_shell.stdout or 'Modified' in uv_update_shell.stdout"
+  failed_when: false
+
+- name: Notify to restart shell for uv tools on PATH
+  ansible.builtin.debug:
+    msg: "Restart your shell or run 'source ~/.zshenv' so uv tools (cmake-lint, pip-audit, etc.) are on PATH"
+  when: uv_update_shell.rc == 0
+
 - name: Verify uv installation
   become: false
   ansible.builtin.command: uv --version

@@ -225,6 +225,10 @@ worktree:
 exarp-list:
     ./scripts/run_exarp_go_tool.sh --list
 
+# Show project backlog: task counts, next actions, and overview (runs exarp report, writes docs/PROJECT_OVERVIEW.md)
+exarp-backlog:
+    ./scripts/run_exarp_go_tool.sh report
+
 # Run exarp-go tool (default: lint). Usage: just exarp lint | just exarp testing | just exarp security
 exarp tool="lint":
     ./scripts/run_exarp_go_tool.sh {{tool}}
