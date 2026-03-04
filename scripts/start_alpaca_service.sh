@@ -1,53 +1,9 @@
 #!/usr/bin/env bash
-# Start Alpaca service in background (daemonized)
-set -euo pipefail
+# DEPRECATED: This script is a wrapper for service_manager.sh
+# Please use: ./scripts/service_manager.sh <action> <service>
 
-ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$ROOT_DIR"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SERVICE="alpaca"
+ACTION="start"
 
-# Load shared utilities
-SCRIPTS_DIR="${ROOT_DIR}/scripts"
-if [ -f "${SCRIPTS_DIR}/include/config.sh" ]; then
-  source "${SCRIPTS_DIR}/include/config.sh"
-fi
-
-# Get port from config (default: 8000)
-ALPACA_PORT=$(config_get_port "alpaca" 8000)
-
-# Check if already running
-if lsof -ti :${ALPACA_PORT} >/dev/null 2>&1; then
-  PID=$(lsof -ti :${ALPACA_PORT})
-  echo "[info] Alpaca service already running on port ${ALPACA_PORT} (PID: $PID)"
-  echo "[info] URL: http://localhost:${ALPACA_PORT}/api/snapshot"
-  exit 0
-fi
-
-# Create logs directory
-mkdir -p logs
-LOG_FILE="${ROOT_DIR}/logs/alpaca-service.log"
-
-echo "[info] Starting Alpaca service on port ${ALPACA_PORT}..."
-
-# Start in background and redirect output to log
-./web/scripts/run-alpaca-service.sh > "$LOG_FILE" 2>&1 &
-SERVICE_PID=$!
-
-# Disown the process
-disown $SERVICE_PID 2>/dev/null || true
-
-# Wait for service to start
-sleep 4
-
-# Check if service started successfully
-if kill -0 "$SERVICE_PID" 2>/dev/null && curl -s http://localhost:${ALPACA_PORT}/api/health >/dev/null 2>&1; then
-  echo "[info] Alpaca service started (PID: $SERVICE_PID)"
-  echo "[info] URL: http://localhost:${ALPACA_PORT}/api/snapshot"
-  echo "[info] Log file: $LOG_FILE"
-  echo "[info] To stop: ./scripts/stop_alpaca_service.sh"
-  echo "[info] To view logs: tail -f $LOG_FILE"
-else
-  echo "[error] Failed to start Alpaca service"
-  echo "[error] Check log: $LOG_FILE"
-  tail -20 "$LOG_FILE" 2>/dev/null || true
-  exit 1
-fi
+exec "${SCRIPT_DIR}/service_manager.sh" "$ACTION" "$SERVICE"
