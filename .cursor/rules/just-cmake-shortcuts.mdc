@@ -12,6 +12,7 @@ Use these when suggesting shell commands so the user can run less typing and sta
 | Instead of | Use | When suggesting |
 |------------|-----|------------------|
 | `just build` | `just build` or `just b` (if alias) | Build in debug |
+| (none) | **`build`** (Cursor) | **Default build: AI-friendly JSON** (`build_ai_friendly.sh --json-only`) |
 | (none) | `just pre-push` | Before git push (format + lint + test + build) |
 | (none) | `just tag-ok` | Tag current commit as last known-good build |
 | (none) | `just pull-safe` | Pull with uncommitted changes (stash → pull → pop) |
@@ -23,7 +24,12 @@ Use these when suggesting shell commands so the user can run less typing and sta
 | `./proto/generate.sh` (C++ only) | Not needed for C++ | C++ proto is generated at build by CMake; run `./proto/generate.sh` for Python/Go/TS |
 | `ctest --test-dir build --output-on-failure` | `just test` | Run C++ tests |
 | `./scripts/run_linters.sh` | `just lint` | Lint |
+| Lint with parallelization (faster) | `just lint-parallel` or `./scripts/run_linters.sh --parallel` | Speed |
+| Lint with JSON (quiet, log to logs/) | `just lint-ai-friendly` | AI/tools |
+| Lint, JSON only to stdout | `just lint-ai-friendly-json` | Piping to jq/tools |
 | `./scripts/run_linters.sh` + shellcheck on scripts | `just lint-shell` | Lint shell scripts + ansible/run-dev-setup.sh |
+| exarp-go lint (default: Go only) | `just exarp-lint` | Exarp Go linter |
+| exarp-go lint with shellcheck on scripts | `just exarp-lint-shell` | Exarp shell linter (scripts/) |
 | `find ... clang-format -i` | `just format` | Format C++ |
 | `./scripts/build_universal.sh` | `just build-universal` | Universal binary |
 | `./scripts/verify_toolchain.sh` | `just verify-toolchain` | Verify C++ toolchain |
@@ -37,6 +43,7 @@ Use these when suggesting shell commands so the user can run less typing and sta
 | Need | Command (Cursor command palette) |
 |------|-----------------------------------|
 | Pull with WIP | `git:pull-safe` |
+| **Build (default)** | **`build`** (AI-friendly JSON) |
 | Build debug | `build:debug` |
 | Build quiet + JSON result | `build:ai-friendly` |
 | Build, JSON only to stdout | `build:ai-friendly-json` |
@@ -46,7 +53,7 @@ Use these when suggesting shell commands so the user can run less typing and sta
 
 ## Checklist when suggesting commands
 
-- [ ] Build → suggest `just build` (or `build:debug` in Cursor). For tools/AI: `build:ai-friendly` or `build:ai-friendly-json`.
+- [ ] Build → suggest **`build`** (Cursor default, AI-friendly JSON) or `just build` / `build:debug`. For piping: `build:ai-friendly-json`.
 - [ ] Proto C++ → no manual step; CMake generates at build. Python/Go/TS: `./proto/generate.sh`.
 - [ ] Test → suggest `just test` or `test:run`.
 - [ ] Lint → suggest `just lint` or `lint:run`.

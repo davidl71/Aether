@@ -78,6 +78,24 @@ test-python-cov:
 lint:
     ./scripts/run_linters.sh
 
+# Run linters in parallel (independent linters concurrently; exarp + shellcheck after)
+lint-parallel:
+    ./scripts/run_linters.sh --parallel
+
+# Run linters in AI-friendly mode (quiet, log to logs/, emit JSON)
+lint-ai-friendly:
+    ./scripts/run_linters.sh --ai-friendly
+
+# Run linters, print only JSON to stdout (for tools/AI)
+lint-ai-friendly-json:
+    ./scripts/run_linters.sh --json-only
+
+# Run shellcheck on scripts and Ansible run script (exarp-go pattern)
+lint-shell:
+    @command -v shellcheck >/dev/null 2>&1 || (echo "shellcheck not found (brew install shellcheck / apt install shellcheck)" && exit 1)
+    shellcheck -x scripts/*.sh ansible/run-dev-setup.sh
+    @echo "lint-shell done"
+
 # Format C++ code with clang-format
 format:
     find native/src native/include -name '*.cpp' -o -name '*.h' | xargs clang-format -i
@@ -100,6 +118,14 @@ fix:
 # Pre-push checks (format, lint, test, build)
 pre-push: format lint test build
     @echo "All pre-push checks passed — safe to push"
+
+# Lighter pre-commit checks (format + lint only; no test/build)
+pre-commit: format lint
+    @echo "Pre-commit checks passed — format and lint OK"
+
+# Pull with uncommitted changes (stash → pull → pop)
+pull-safe:
+    ./scripts/git_pull_safe.sh
 
 # Tag current commit as last known-good build
 tag-ok: build test
@@ -161,6 +187,22 @@ worktree:
     ./scripts/setup_worktree.sh
 
 # --- Quality ---
+
+# List exarp-go tools (requires exarp-go on PATH or EXARP_GO_ROOT)
+exarp-list:
+    ./scripts/run_exarp_go_tool.sh --list
+
+# Run exarp-go tool (default: lint). Usage: just exarp lint | just exarp testing | just exarp security
+exarp tool="lint":
+    ./scripts/run_exarp_go_tool.sh {{tool}}
+
+# Run exarp-go lint only (default: Go linter only; no args)
+exarp-lint:
+    ./scripts/run_exarp_go_tool.sh lint
+
+# Run exarp-go lint with shellcheck on scripts/ (Go + shell when used with exarp-lint)
+exarp-lint-shell:
+    ./scripts/run_exarp_go_tool.sh lint '{"linter":"shellcheck","path":"scripts"}'
 
 # Generate project scorecard
 scorecard:
@@ -258,6 +300,15 @@ build-cached:
 # Verify C++ toolchain (Xcode CLT headers, cmake, ninja)
 verify-toolchain:
     ./scripts/verify_toolchain.sh
+
+# Ansible development setup (install deps, syntax-check, run playbook; uses SSL fix on macOS)
+ansible-dev:
+    ./ansible/run-dev-setup.sh
+
+# Ansible playbook syntax-check only (quick validation)
+ansible-check:
+    cd ansible && ansible-playbook --syntax-check -i inventories/development playbooks/development.yml
+    @echo "Ansible syntax OK"
 
 # Build Intel Decimal math library
 build-intel-decimal:

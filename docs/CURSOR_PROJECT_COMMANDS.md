@@ -11,7 +11,33 @@ This document describes the project-specific commands available in Cursor IDE. T
 
 ---
 
+## Cursor Agent CLI
+
+If you use **Cursor Agent CLI** (e.g. `cursor agent -p` from the terminal), the Command Palette is not available. Use the same actions via shell or Justfile:
+
+| Action | From CLI |
+|--------|----------|
+| Build | `just build` or `./scripts/build_ai_friendly.sh --json-only` |
+| Test | `just test` |
+| Lint | `just lint` |
+| **Exarp** | `just exarp-list`, `just exarp <tool>`, `just exarp-lint`, `just exarp-lint-shell` |
+| Exarp (script) | `./scripts/run_exarp_go_tool.sh --list`, `./scripts/run_exarp_go_tool.sh lint` |
+
+**MCP (exarp-go):** The CLI agent uses the **same** `.cursor/mcp.json` as the IDE. Ensure **exarp-go** is in `mcpServers` with `PROJECT_ROOT` set to `{{PROJECT_ROOT}}` so session, report, task_workflow, etc. run against this repo. Then both IDE and `cursor agent -p` get exarp MCP tools automatically.
+
+---
+
 ## Build Commands
+
+### `build` (default)
+
+Build with AI-friendly JSON output (quiet, parseable). This is the default build command for tools and AI.
+
+**Command**: `./scripts/build_ai_friendly.sh --json-only`
+
+**Use When**: Default build from command palette, scripts, or when you want a single JSON result line
+
+---
 
 ### `build:debug`
 
@@ -147,15 +173,25 @@ Run all linters (cppcheck, clang-tidy, bandit, ESLint, etc.). Includes exarp-go 
 
 **Also**: `cmake --build build --target lint` (from configured build dir), or `make lint` (root Makefile).
 
+### `lint:ai-friendly` / `lint:ai-friendly-json`
+
+Run linters in AI-friendly mode: quiet (output to `logs/lint_ai_friendly.log`) and emit a single JSON object (`success`, `exit_code`, `duration_sec`, `log_path`, `errors`). Use **`lint:ai-friendly-json`** to print only the JSON line to stdout (for piping to tools).
+
+**Commands**: `./scripts/run_linters.sh --ai-friendly` | `./scripts/run_linters.sh --json-only`  
+**Just**: `just lint-ai-friendly` | `just lint-ai-friendly-json`
+
 ---
 
 ### `lint:exarp`
 
-Run exarp-go lint only (Go/shell/etc.). Requires exarp-go in PATH (e.g. `~/go/bin`).
+Run exarp-go lint. **Default (no args): Go linter only.** Requires exarp-go in PATH (e.g. `~/go/bin`).
 
 **Command**: `./scripts/run_exarp_go_tool.sh lint`
 
-**Use When**: Running exarp-go linters separately
+**Shell/shellcheck**: `just exarp-lint-shell` or  
+`./scripts/run_exarp_go_tool.sh lint '{"linter":"shellcheck","path":"scripts"}'`
+
+**Use When**: Running exarp-go linters separately. For shell-only without exarp-go use `just lint-shell`.
 
 ---
 

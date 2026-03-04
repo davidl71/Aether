@@ -3,6 +3,11 @@ build/
 build-*/
 cmake-build-*/
 build-ramdisk
+.dmg/
+.cppcheck-cache/
+.eslintcache
+.stylelintcache
+desktop/.swiftlint-cache
 
 # CMake generated files
 CMakeCache.txt
@@ -94,6 +99,7 @@ native/third_party/IntelRDFPMathLib20U2/**
 !native/third_party/IntelRDFPMathLib20U2/**/
 !native/third_party/IntelRDFPMathLib20U2/**/CMakeLists.txt
 native/third_party/IntelRDFPMathLib20U2/**/*.a
+native/third_party/.orig/
 /agents/backend/target/
 /agents/backend-mock/target/
 /agents/backend-data/target/

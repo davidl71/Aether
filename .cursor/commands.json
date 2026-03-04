@@ -75,6 +75,12 @@
       "category": "setup"
     },
     {
+      "name": "build",
+      "description": "Build with AI-friendly JSON output (default; quiet, parseable)",
+      "command": "./scripts/build_ai_friendly.sh --json-only",
+      "category": "build"
+    },
+    {
       "name": "build:debug",
       "description": "Build project in debug mode (ARM64)",
       "command": "cmake --build --preset macos-arm64-debug",
@@ -135,8 +141,20 @@
       "category": "quality"
     },
     {
+      "name": "lint:ai-friendly",
+      "description": "Run linters in AI-friendly mode (quiet, log to logs/, emit JSON)",
+      "command": "./scripts/run_linters.sh --ai-friendly",
+      "category": "quality"
+    },
+    {
+      "name": "lint:ai-friendly-json",
+      "description": "Run linters and print only JSON to stdout (for tools/AI)",
+      "command": "./scripts/run_linters.sh --json-only",
+      "category": "quality"
+    },
+    {
       "name": "lint:exarp",
-      "description": "Run exarp-go lint (Go/shell/etc.; requires exarp-go in PATH)",
+      "description": "Run exarp-go lint (default: Go only; for shell use just exarp-lint-shell or pass JSON args)",
       "command": "./scripts/run_exarp_go_tool.sh lint",
       "category": "quality"
     },
