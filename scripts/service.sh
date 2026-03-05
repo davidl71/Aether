@@ -32,6 +32,7 @@ _svc_display() {
     riskfree) echo "Risk-Free Rate" ;;
     analytics) echo "Analytics API" ;;
     discount) echo "Discount Bank" ;;
+    healthdashboard) echo "Health Dashboard" ;;
     web) echo "Web Dev" ;;
     rust) echo "Rust Backend" ;;
     questdb_nats) echo "QuestDB NATS" ;;
@@ -51,6 +52,7 @@ _svc_port() {
     riskfree) _config_port risk_free_rate 8004 ;;
     analytics) _config_port analytics 8007 ;;
     discount) _config_port discount_bank 8003 ;;
+    healthdashboard) _config_port health_dashboard 8011 ;;
     web) echo "5173" ;;
     rust) _config_port rust_backend 8010 ;;
     questdb_nats) echo "" ;;
@@ -70,6 +72,7 @@ _svc_cmd() {
     riskfree) echo "./web/scripts/run-risk-free-rate-service.sh" ;;
     analytics) echo "./web/scripts/run-analytics-api.sh" ;;
     discount) echo "./web/scripts/run-discount-bank-service.sh" ;;
+    healthdashboard) echo "./scripts/run_health_dashboard.sh" ;;
     web) echo "npm run dev" ;;
     rust) echo "./agents/start_rust_backend.sh" ;;
     questdb_nats) echo "./scripts/run_questdb_nats_writer.sh" ;;
@@ -89,6 +92,7 @@ _svc_log() {
     riskfree) echo "risk-free-rate-service.log" ;;
     analytics) echo "analytics-api.log" ;;
     discount) echo "discount-bank-service.log" ;;
+    healthdashboard) echo "health-dashboard.log" ;;
     web) echo "web-dev-server.log" ;;
     rust) echo "rust-backend.log" ;;
     questdb_nats) echo "questdb-nats-writer.log" ;;
@@ -104,6 +108,7 @@ _svc_health() {
     ib|alpaca|tastytrade|tradestation|riskfree|analytics|discount)
       echo "http://localhost:\${PORT}/api/health"
       ;;
+    healthdashboard) echo "http://localhost:\${PORT}/api/health" ;;
     rust) echo "http://localhost:\${PORT}/health" ;;
     questdb_nats) echo "" ;;
     web) echo "http://localhost:5173" ;;
@@ -118,6 +123,7 @@ _svc_wait() {
     web) echo "6" ;;
     tradestation) echo "10" ;;
     ib|alpaca|tastytrade|riskfree|discount) echo "8" ;;
+    analytics|healthdashboard) echo "6" ;;
     questdb_nats) echo "3" ;;
     *) echo "4" ;;
   esac
@@ -125,7 +131,7 @@ _svc_wait() {
 
 _svc_known() {
   case "$1" in
-    nats|memcached|gateway|ib|alpaca|tastytrade|tradestation|riskfree|discount|web|rust|questdb_nats)
+    nats|memcached|gateway|ib|alpaca|tastytrade|tradestation|riskfree|discount|web|rust|questdb_nats|healthdashboard)
       return 0
       ;;
     *) return 1 ;;
@@ -368,14 +374,15 @@ do_restart() {
 do_list() {
   echo "Available services:"
   local svc port
-  for svc in nats memcached gateway ib alpaca tastytrade tradestation riskfree discount web rust; do
+  for svc in nats memcached gateway ib alpaca tastytrade tradestation riskfree discount healthdashboard web rust; do
     port=$(_svc_port "$svc")
     printf "  %-14s  %-20s  %s\n" "$svc" "$(_svc_display "$svc")" "${port:+port $port}"
   done
 }
 
 # Service order for start-all (dependency order); stop-all uses reverse
-ALL_SERVICES_START=(nats memcached gateway ib riskfree discount alpaca tastytrade tradestation web)
+# healthdashboard after backends so NATS has time to be ready
+ALL_SERVICES_START=(nats memcached gateway ib riskfree discount alpaca tastytrade tradestation healthdashboard web)
 
 do_start_all() {
   local svc

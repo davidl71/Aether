@@ -16,6 +16,7 @@ Environment:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import sqlite3
@@ -37,6 +38,7 @@ from python.services.security_integration_helper import (
     add_security_to_app,
     add_security_headers_middleware
 )
+from . import nats_client
 
 
 class BalanceResponse(BaseModel):
@@ -761,23 +763,27 @@ add_security_headers_middleware(app)
 
 
 @app.get("/api/health")
-def health() -> Dict[str, Any]:
-    """Health check endpoint."""
-    file_path = os.getenv("DISCOUNT_BANK_FILE_PATH", "~/Downloads/DISCOUNT.dat")
-    latest_file = _find_latest_file(file_path)
-    ledger_db = _get_ledger_database_path()
-
-    return {
-        "status": "ok",
-        "service": "discount_bank",
-        "file_path": str(file_path),
-        "file_found": latest_file is not None,
-        "file_path_resolved": str(latest_file) if latest_file else None,
-        "ledger_database_path": str(ledger_db) if ledger_db else None,
-        "ledger_database_found": (
-            ledger_db is not None and ledger_db.exists() if ledger_db else False
-        ),
-    }
+async def health() -> Dict[str, Any]:
+    """Health check endpoint. When NATS_URL is set, publishes to system.health for unified dashboard."""
+    def _do() -> Dict[str, Any]:
+        file_path = os.getenv("DISCOUNT_BANK_FILE_PATH", "~/Downloads/DISCOUNT.dat")
+        latest_file = _find_latest_file(file_path)
+        ledger_db = _get_ledger_database_path()
+        return {
+            "status": "ok",
+            "service": "discount_bank",
+            "file_path": str(file_path),
+            "file_found": latest_file is not None,
+            "file_path_resolved": str(latest_file) if latest_file else None,
+            "ledger_database_path": str(ledger_db) if ledger_db else None,
+            "ledger_database_found": (
+                ledger_db is not None and ledger_db.exists() if ledger_db else False
+            ),
+        }
+    result = await asyncio.to_thread(_do)
+    if os.environ.get("NATS_URL", "").strip():
+        asyncio.create_task(nats_client.publish_health("discount_bank", result))
+    return result
 
 
 @app.get("/api/balance", response_model=BalanceResponse)

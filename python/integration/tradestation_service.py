@@ -11,6 +11,7 @@ Environment:
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from datetime import datetime, timezone
@@ -30,6 +31,7 @@ from python.services.security_integration_helper import (
 )
 
 from .tradestation_client import TradeStationClient
+from . import nats_client
 
 
 def _now_iso() -> str:
@@ -134,15 +136,18 @@ def create_app() -> FastAPI:
         client_disabled_reason = str(e).split("\n")[0].strip() or "Missing credentials"
 
     @app.get("/api/health")
-    def health() -> Dict[str, Any]:
-        """Health check. Returns status 'disabled' when credentials are missing."""
-        if client is None:
-            return {
-                "status": "disabled",
-                "ts": _now_iso(),
-                "error": client_disabled_reason or "Missing credentials",
-            }
-        return {"status": "ok", "ts": _now_iso()}
+    async def health() -> Dict[str, Any]:
+        """Health check. Returns status 'disabled' when credentials are missing.
+        When NATS_URL is set, publishes to system.health for unified health dashboard.
+        """
+        def _do() -> Dict[str, Any]:
+            if client is None:
+                return {"status": "disabled", "ts": _now_iso(), "error": client_disabled_reason or "Missing credentials"}
+            return {"status": "ok", "ts": _now_iso()}
+        result = await asyncio.to_thread(_do)
+        if os.environ.get("NATS_URL", "").strip():
+            asyncio.create_task(nats_client.publish_health("tradestation", result))
+        return result
 
     @app.get("/api/snapshot")
     def snapshot() -> Dict[str, Any]:

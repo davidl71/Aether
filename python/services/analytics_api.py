@@ -18,6 +18,7 @@ Environment:
 
 from __future__ import annotations
 
+import asyncio
 import os
 import sys
 from datetime import datetime, timezone
@@ -37,6 +38,11 @@ from python.services.security_integration_helper import (
 from python.services.calculations_api import router_calculations
 from python.integration.risk_free_rate_service import router_risk_free_rate
 
+try:
+    from python.integration import nats_client
+except ImportError:
+    nats_client = None  # type: ignore[assignment]
+
 app = FastAPI(
     title="Analytics API",
     description="Unified API: cash flow, opportunity simulation, risk-free rate (SOFR/Treasury)",
@@ -55,14 +61,17 @@ app.add_middleware(
 
 
 @app.get("/api/health")
-def unified_health() -> Dict[str, Any]:
-    """Unified health: both components available in-process."""
-    return {
+async def unified_health() -> Dict[str, Any]:
+    """Unified health: both components available in-process. When NATS_URL is set, publishes to system.health."""
+    result = {
         "status": "ok",
         "service": "analytics-api",
         "components": ["calculations", "risk_free_rate"],
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+    if nats_client and os.environ.get("NATS_URL", "").strip():
+        asyncio.create_task(nats_client.publish_health("analytics", result))
+    return result
 
 
 app.include_router(router_calculations)

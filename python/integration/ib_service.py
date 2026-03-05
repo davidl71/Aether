@@ -48,6 +48,7 @@ from python.services.security_integration_helper import (
 )
 
 from .ibkr_portal_client import IBKRPortalClient, IBKRPortalError
+from . import nats_client
 
 
 class ModeRequest(BaseModel):
@@ -395,7 +396,10 @@ def create_app() -> FastAPI:
                     accounts=[],
                 )
 
-        return await asyncio.to_thread(_fetch)
+        result = await asyncio.to_thread(_fetch)
+        if os.environ.get("NATS_URL", "").strip():
+            asyncio.create_task(nats_client.publish_health("ib", result))
+        return result
 
     @app.get("/api/snapshot")
     @app.get("/api/v1/snapshot")  # Alias for API contract compatibility
@@ -443,6 +447,9 @@ def create_app() -> FastAPI:
                         json.dump(payload, f, indent=2)
                 except Exception as e:
                     logger.warning("Failed to write snapshot file: %s", e)
+
+            if os.environ.get("NATS_URL", "").strip():
+                asyncio.create_task(nats_client.publish_snapshot("ib", payload))
 
             return payload
         except Exception as e:

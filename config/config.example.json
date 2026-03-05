@@ -150,7 +150,7 @@
     "rest_endpoint": "http://localhost:8002/api/v1/snapshot", // IB service endpoint
     "update_interval_ms": 1000,
     "refresh_rate_ms": 500,
-    "rest_timeout_ms": 5000,
+    "rest_timeout_ms": 15000,
     "rest_verify_ssl": false,
     "ibkr_rest": {
       "base_url": "https://localhost:5000/v1/portal",
@@ -225,6 +225,12 @@
     "rust_backend": {
       "rest_port": 8080, // Rust backend REST API port
       "grpc_port": 50051 // Rust backend gRPC API port
+    },
+    "israeli_bank_scrapers": {
+      "port": 8010 // Israeli bank scrapers service (on-demand scrape → ledger)
+    },
+    "health_dashboard": {
+      "port": 8011 // Unified health JSON (NATS-driven); TUI/PWA can use for status
     },
     "ib_gateway": {
       "port": 5000 // IB Client Portal Gateway HTTPS port

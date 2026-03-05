@@ -46,3 +46,26 @@ export function getServiceUrl(service: keyof typeof SERVICE_PORTS, path = ''): s
 export function getRustBackendUrl(path = ''): string {
   return getServiceUrl('rustBackend', path);
 }
+
+/** Base URL for API when using nginx/shared server (e.g. http://localhost:8080) */
+function getApiBaseUrl(): string {
+  const env = (import.meta as unknown as { env?: Record<string, unknown> }).env;
+  const apiUrl = env?.VITE_API_URL;
+  if (typeof apiUrl === 'string' && apiUrl) {
+    const u = apiUrl.trim().replace(/\/api\/?$/, '');
+    return u || 'http://localhost:8080';
+  }
+  return 'http://localhost:8080';
+}
+
+/**
+ * URL for unified health JSON (dashboard). When set, PWA uses one request instead of per-service.
+ * Set VITE_HEALTH_AGGREGATED_URL or use nginx at 8080 with /api/health-aggregated.
+ */
+export function getHealthAggregatedUrl(): string | null {
+  const env = (import.meta as unknown as { env?: Record<string, unknown> }).env;
+  const explicit = env?.VITE_HEALTH_AGGREGATED_URL;
+  if (typeof explicit === 'string' && explicit.trim()) return explicit.trim();
+  const base = getApiBaseUrl();
+  return `${base}/api/health-aggregated`;
+}

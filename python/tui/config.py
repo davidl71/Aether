@@ -20,13 +20,39 @@ from typing import Optional, Dict
 
 from ..integration.shared_config_loader import SharedConfigLoader
 
+try:
+    from ..integration.onepassword_sdk_helper import getenv_or_resolve
+except ImportError:
+    def getenv_or_resolve(env_var: str, op_ref_env_var: str, default: str = "") -> str:
+        return os.getenv(env_var, default)
+
 logger = logging.getLogger(__name__)
 
 # Default ports when no shared config (so we still poll and show status for common backends)
+# Keys match service names; display names (TWS/IBKR, TradeStation, etc.) applied in snapshot_display.
 DEFAULT_BACKEND_PORTS: Dict[str, int] = {
     "ib": 8002,
     "alpaca": 8000,
-    "tastytrade": 8003,
+    "tastytrade": 8005,
+    "tradestation": 8001,
+    "discount_bank": 8003,
+    "risk_free_rate": 8004,
+    "rust": 8080,  # Rust backend REST (matches config.services.rust_backend.rest_port)
+}
+
+# TWS/Gateway (socket, not HTTP). Port 7497 = paper, 7496 = live. Health is TCP connect only.
+DEFAULT_TCP_BACKEND_PORTS: Dict[str, int] = {
+    "tws": 7497,
+}
+
+# Preset REST provider types -> snapshot URL (for Setup "Switch backend" one-click choices)
+# rest_ib and rest_tws_gateway both use 8002 (IB REST service); 7497 is TWS/Gateway socket, no HTTP.
+PRESET_REST_ENDPOINTS: Dict[str, str] = {
+    "rest_ib": "http://localhost:8002/api/v1/snapshot",
+    "rest_tws_gateway": "http://localhost:8002/api/v1/snapshot",  # same as rest_ib; label emphasizes Gateway on 7497
+    "rest_alpaca": "http://localhost:8000/api/snapshot",
+    "rest_tradestation": "http://localhost:8001/api/snapshot",
+    "rest_tastytrade": "http://localhost:8005/api/v1/snapshot",
 }
 
 
@@ -40,7 +66,7 @@ class TUIConfig:
     """
 
     provider_type: str = (
-        "rest"  # "mock", "rest", "file", "ibkr_rest", "livevol", "nautilus"
+        "mock"  # "mock", "rest", "file", "rest_ib", "rest_alpaca", "rest_tradestation", "rest_tastytrade", ...
     )
     rest_endpoint: str = "http://localhost:8002/api/v1/snapshot"  # IB service port (changed from 8080 Rust backend to 8002 IB)
     update_interval_ms: int = 1000
@@ -61,9 +87,14 @@ class TUIConfig:
 
     # Backend service ports for health checks (name -> port), e.g. {"ib": 8002, "alpaca": 8000}
     backend_ports: Dict[str, int] = field(default_factory=dict)
+    # TCP-only backends (e.g. TWS/Gateway on 7497); no /api/health, just socket connect
+    tcp_backend_ports: Dict[str, int] = field(default_factory=dict)
 
     # Backends disabled due to missing/placeholder credentials (name -> reason)
     disabled_backends: Dict[str, str] = field(default_factory=dict)
+
+    # Optional: unified health dashboard URL (GET returns { backends: { name: health } }). When set, TUI uses it instead of polling each backend.
+    health_dashboard_url: Optional[str] = None
 
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization"""
@@ -172,7 +203,12 @@ def load_config() -> TUIConfig:
             )
             from_services = _backend_ports_from_services(shared_config.services)
             config.backend_ports = {**DEFAULT_BACKEND_PORTS, **from_services}
+            config.tcp_backend_ports = {**DEFAULT_TCP_BACKEND_PORTS, **(config.tcp_backend_ports or {})}
             config.disabled_backends = _disabled_backends_from_env(shared_config.services)
+            # Unified health dashboard: one URL to get all backends (optional)
+            hd = (shared_config.services or {}).get("health_dashboard")
+            if isinstance(hd, dict) and isinstance(hd.get("port"), int):
+                config.health_dashboard_url = f"http://127.0.0.1:{hd['port']}/api/health"
             logger.info("Loaded TUI configuration from shared config file")
             # Apply environment variable overrides
             _apply_env_overrides(config)
@@ -188,8 +224,9 @@ def load_config() -> TUIConfig:
         # Auto-initialize: write default TUI config so it exists for future runs
         default_config = TUIConfig()
         default_config.backend_ports = dict(DEFAULT_BACKEND_PORTS)
+        default_config.tcp_backend_ports = dict(DEFAULT_TCP_BACKEND_PORTS)
         default_config.disabled_backends = _disabled_backends_from_env(
-            {"alpaca": {}, "tastytrade": {}}
+            {"alpaca": {}, "tastytrade": {}, "tradestation": {}}
         )
         default_config.save_to_file(config_path)
         logger.info(f"Initialized TUI config at {config_path}")
@@ -198,8 +235,9 @@ def load_config() -> TUIConfig:
         config = TUIConfig.load_from_file(config_path)
         # Ensure we poll common backends so status line can show them (or "disabled")
         config.backend_ports = {**DEFAULT_BACKEND_PORTS, **(config.backend_ports or {})}
+        config.tcp_backend_ports = {**DEFAULT_TCP_BACKEND_PORTS, **(config.tcp_backend_ports or {})}
         config.disabled_backends = _disabled_backends_from_env(
-            {"alpaca": {}, "tastytrade": {}}
+            {"alpaca": {}, "tastytrade": {}, "tradestation": {}}
         )
 
     # Override with environment variables
@@ -212,8 +250,17 @@ def _backend_ports_from_services(services: dict) -> Dict[str, int]:
     """Extract backend name -> port from config services for health checks."""
     out: Dict[str, int] = {}
     # Services that expose /api/health on a single port
-    for name in ("ib", "alpaca", "tradestation", "discount_bank", "risk_free_rate", "tastytrade"):
-        svc = services.get(name)
+    # Map config keys to TUI backend names (e.g. rust_backend -> rust)
+    for name, backend_key in (
+        ("ib", "ib"),
+        ("alpaca", "alpaca"),
+        ("tradestation", "tradestation"),
+        ("discount_bank", "discount_bank"),
+        ("risk_free_rate", "risk_free_rate"),
+        ("tastytrade", "tastytrade"),
+        ("rust", "rust_backend"),
+    ):
+        svc = services.get(backend_key)
         if isinstance(svc, dict):
             port = svc.get("port")
             if isinstance(port, int) and 0 < port < 65536:
@@ -237,32 +284,51 @@ def _disabled_backends_from_env(services: dict) -> Dict[str, str]:
     """
     For backends present in services, detect missing/placeholder credentials
     and return backend name -> reason (e.g. "Missing API key").
+    Uses getenv_or_resolve so 1Password op:// refs (OP_*_SECRET) count as configured when SDK available.
     """
     out: Dict[str, str] = {}
     if not isinstance(services, dict):
         return out
 
-    # Alpaca: API keys or OAuth
+    # Alpaca: API keys or OAuth (env or optional 1Password OP_*_SECRET refs)
     if services.get("alpaca") is not None:
-        has_oauth = not _is_placeholder_or_empty(os.getenv("ALPACA_CLIENT_ID")) and not _is_placeholder_or_empty(
-            os.getenv("ALPACA_CLIENT_SECRET")
+        has_oauth = not _is_placeholder_or_empty(
+            getenv_or_resolve("ALPACA_CLIENT_ID", "OP_ALPACA_CLIENT_ID_SECRET", "")
+        ) and not _is_placeholder_or_empty(
+            getenv_or_resolve("ALPACA_CLIENT_SECRET", "OP_ALPACA_CLIENT_SECRET_SECRET", "")
         )
-        has_api_key = not _is_placeholder_or_empty(os.getenv("ALPACA_API_KEY_ID")) and not _is_placeholder_or_empty(
-            os.getenv("ALPACA_API_SECRET_KEY")
+        has_api_key = not _is_placeholder_or_empty(
+            getenv_or_resolve("ALPACA_API_KEY_ID", "OP_ALPACA_API_KEY_ID_SECRET", "")
+        ) and not _is_placeholder_or_empty(
+            getenv_or_resolve("ALPACA_API_SECRET_KEY", "OP_ALPACA_API_SECRET_KEY_SECRET", "")
         )
         if not has_oauth and not has_api_key:
             out["alpaca"] = "Missing API key or OAuth credentials"
 
-    # Tastytrade: session or OAuth
+    # Tastytrade: session or OAuth (env or optional 1Password OP_*_SECRET refs)
     if services.get("tastytrade") is not None:
-        has_oauth = not _is_placeholder_or_empty(os.getenv("TASTYTRADE_CLIENT_SECRET")) and not _is_placeholder_or_empty(
-            os.getenv("TASTYTRADE_REFRESH_TOKEN")
+        has_oauth = not _is_placeholder_or_empty(
+            getenv_or_resolve("TASTYTRADE_CLIENT_SECRET", "OP_TASTYTRADE_CLIENT_SECRET_SECRET", "")
+        ) and not _is_placeholder_or_empty(
+            getenv_or_resolve("TASTYTRADE_REFRESH_TOKEN", "OP_TASTYTRADE_REFRESH_TOKEN_SECRET", "")
         )
-        has_session = not _is_placeholder_or_empty(os.getenv("TASTYTRADE_USERNAME")) and not _is_placeholder_or_empty(
-            os.getenv("TASTYTRADE_PASSWORD")
+        has_session = not _is_placeholder_or_empty(
+            getenv_or_resolve("TASTYTRADE_USERNAME", "OP_TASTYTRADE_USERNAME_SECRET", "")
+        ) and not _is_placeholder_or_empty(
+            getenv_or_resolve("TASTYTRADE_PASSWORD", "OP_TASTYTRADE_PASSWORD_SECRET", "")
         )
         if not has_oauth and not has_session:
             out["tastytrade"] = "Missing credentials"
+
+    # TradeStation: OAuth client credentials (env or optional 1Password OP_*_SECRET refs)
+    if services.get("tradestation") is not None:
+        has_creds = not _is_placeholder_or_empty(
+            getenv_or_resolve("TRADESTATION_CLIENT_ID", "OP_TRADESTATION_CLIENT_ID_SECRET", "")
+        ) and not _is_placeholder_or_empty(
+            getenv_or_resolve("TRADESTATION_CLIENT_SECRET", "OP_TRADESTATION_CLIENT_SECRET_SECRET", "")
+        )
+        if not has_creds:
+            out["tradestation"] = "Missing client ID or secret"
 
     return out
 
@@ -279,3 +345,7 @@ def _apply_env_overrides(config: TUIConfig) -> None:
     env_file = os.getenv("TUI_SNAPSHOT_FILE")
     if env_file:
         config.file_path = env_file
+
+    env_health_url = os.getenv("TUI_HEALTH_DASHBOARD_URL")
+    if env_health_url:
+        config.health_dashboard_url = env_health_url

@@ -8,9 +8,11 @@ Endpoints:
 Environment:
 - SYMBOLS: comma-separated underlyings (default: SPY,QQQ)
 - SNAPSHOT_FILE_PATH: optional path to also write snapshot JSON (for TUI file polling)
+- NATS_URL: when set, health (and optional snapshot) are published to NATS for unified dashboard
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from datetime import datetime, timedelta, timezone
@@ -31,6 +33,7 @@ from python.services.security_integration_helper import (
 )
 
 from .alpaca_client import AlpacaClient
+from . import nats_client
 
 
 class ModeRequest(BaseModel):
@@ -175,49 +178,80 @@ def create_app() -> FastAPI:
     add_security_to_app(app, project_root=project_root)
     add_security_headers_middleware(app)
 
-    # Support both OAuth and API key authentication
-    # AlpacaClient will automatically detect which method to use based on available env vars
-    client = AlpacaClient()
+    # Support both OAuth and API key authentication; allow start without credentials
+    client: Optional[AlpacaClient] = None
+    client_disabled_reason: Optional[str] = None
+    try:
+        client = AlpacaClient()
+    except Exception as e:
+        client_disabled_reason = str(e).split("\n")[0].strip() or "Missing API key or OAuth credentials"
+        if "credentials" not in client_disabled_reason.lower() and "api key" not in client_disabled_reason.lower():
+            client_disabled_reason = "Missing API key or OAuth credentials"
+
     # Store current mode and account in memory (in production, use Redis or database)
     current_mode: str = os.getenv("ALPACA_PAPER", "1").lower() in {"1", "true", "yes", "on"} and "PAPER" or "LIVE"
     current_account_id: Optional[str] = None
 
     @app.get("/api/health")
-    def health() -> Dict[str, Any]:
-        """Health check endpoint."""
-        try:
-            # Try to get account to verify credentials
-            account = client.get_account()
-            # Get OAuth status if using OAuth
-            oauth_status = None
-            if hasattr(client, "_use_oauth") and client._use_oauth:
-                oauth_status = {
-                    "enabled": True,
-                    "has_token": client._access_token is not None,
-                    "expires_at": client._token_expires_at.isoformat() if client._token_expires_at else None,
-                    "expires_soon": client._token_expires_at and datetime.now() >= (client._token_expires_at - timedelta(minutes=1)) if client._token_expires_at else False,
+    async def health() -> Dict[str, Any]:
+        """Health check endpoint. Returns status 'disabled' when credentials are missing.
+        When NATS_URL is set, publishes to system.health for unified health dashboard.
+        """
+        def _do_health() -> Dict[str, Any]:
+            if client is None:
+                return {
+                    "status": "disabled",
+                    "ts": _now_iso(),
+                    "alpaca_connected": False,
+                    "error": client_disabled_reason or "Missing credentials",
                 }
-            else:
-                oauth_status = {"enabled": False}
+            try:
+                account = client.get_account()
+                oauth_status = None
+                if hasattr(client, "_use_oauth") and client._use_oauth:
+                    oauth_status = {
+                        "enabled": True,
+                        "has_token": client._access_token is not None,
+                        "expires_at": client._token_expires_at.isoformat() if client._token_expires_at else None,
+                        "expires_soon": client._token_expires_at and datetime.now() >= (client._token_expires_at - timedelta(minutes=1)) if client._token_expires_at else False,
+                    }
+                else:
+                    oauth_status = {"enabled": False}
+                return {
+                    "status": "ok",
+                    "ts": _now_iso(),
+                    "alpaca_connected": account is not None,
+                    "account_id": account.get("account_number") if account else None,
+                    "oauth": oauth_status,
+                }
+            except Exception as e:
+                return {
+                    "status": "error",
+                    "ts": _now_iso(),
+                    "alpaca_connected": False,
+                    "error": str(e),
+                }
 
-            return {
-                "status": "ok",
-                "ts": _now_iso(),
-                "alpaca_connected": account is not None,
-                "account_id": account.get("account_number") if account else None,
-                "oauth": oauth_status,
-            }
-        except Exception as e:
-            return {
-                "status": "error",
-                "ts": _now_iso(),
-                "alpaca_connected": False,
-                "error": str(e),
-            }
+        result = await asyncio.to_thread(_do_health)
+        if os.environ.get("NATS_URL", "").strip():
+            asyncio.create_task(nats_client.publish_health("alpaca", result))
+        return result
 
     @app.get("/api/snapshot")
     def snapshot(mode: Optional[str] = None, account_id: Optional[str] = None) -> Dict[str, Any]:
         """Get complete snapshot with market data, positions, and orders."""
+        if client is None:
+            return {
+                "generated_at": _now_iso(),
+                "mode": current_mode,
+                "strategy": "DISABLED",
+                "account_id": "",
+                "symbols": [],
+                "positions": [],
+                "orders": [],
+                "alerts": [],
+                "error": client_disabled_reason or "Missing credentials",
+            }
         try:
             # Use query parameter if provided, otherwise use stored mode/account
             effective_mode = mode.upper() if mode else current_mode
@@ -250,6 +284,8 @@ def create_app() -> FastAPI:
     @app.get("/api/positions")
     def get_positions() -> List[Dict[str, Any]]:
         """Get all open positions."""
+        if client is None:
+            return []
         try:
             return client.get_positions()
         except Exception as e:
@@ -258,6 +294,8 @@ def create_app() -> FastAPI:
     @app.get("/api/orders")
     def get_orders(status: str = "all", limit: int = 50) -> List[Dict[str, Any]]:
         """Get orders (default: all, can filter by status: open, closed, all)."""
+        if client is None:
+            return []
         try:
             return client.get_orders(status=status, limit=limit)
         except Exception as e:
@@ -281,6 +319,8 @@ def create_app() -> FastAPI:
     @app.get("/api/accounts")
     def list_accounts() -> Dict[str, Any]:
         """List all available Alpaca accounts"""
+        if client is None:
+            return {"accounts": [], "error": client_disabled_reason or "Missing credentials", "ts": _now_iso()}
         try:
             accounts = client.get_accounts()
             # Format accounts for frontend
@@ -312,6 +352,8 @@ def create_app() -> FastAPI:
     def set_account(request: AccountRequest) -> Dict[str, Any]:
         """Set active account ID"""
         nonlocal current_account_id
+        if client is None:
+            return {"status": "error", "message": client_disabled_reason or "Missing credentials", "ts": _now_iso()}
         new_account_id = request.account_id
 
         if new_account_id:
@@ -341,6 +383,8 @@ def create_app() -> FastAPI:
     @app.get("/api/account")
     def get_account() -> Dict[str, Any]:
         """Get current active account"""
+        if client is None:
+            return {"account_id": None, "error": client_disabled_reason or "Missing credentials", "ts": _now_iso()}
         account_info = None
         if current_account_id:
             account_info = client.get_account(current_account_id)

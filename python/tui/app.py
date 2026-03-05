@@ -31,7 +31,7 @@ from textual.binding import Binding
 
 from .models import SnapshotPayload, BoxSpreadPayload
 from .providers import Provider, MockProvider, RestProvider, FileProvider, BackendHealthAggregator
-from .config import TUIConfig, load_config
+from .config import TUIConfig, load_config, PRESET_REST_ENDPOINTS
 from .box_spread_loader import get_box_spread_payload
 from .log_handler import install_tui_log_handler, remove_tui_log_handler, drain_log_queue, get_buffered_log_lines
 from .components.snapshot_display import StatusBar
@@ -51,6 +51,23 @@ from .components.logs_tab import LogsTab
 
 logger = logging.getLogger(__name__)
 
+# Codified tab IDs for programmatic switching (e.g. QA screenshot per screen).
+# Order matches TabbedContent panes; use switch_to_tab(tab_id) to display without user interaction.
+TUI_TAB_IDS: List[str] = [
+    "dashboard-tab",
+    "unified-positions-tab",
+    "cash-flow-tab",
+    "simulation-tab",
+    "relationships-tab",
+    "positions-tab",
+    "historic-tab",
+    "orders-tab",
+    "alerts-tab",
+    "scenarios-tab",
+    "loans-tab",
+    "logs-tab",
+]
+
 
 class TUIApp(App):
     """
@@ -68,6 +85,36 @@ class TUIApp(App):
         background: $surface;
     }
 
+    /* Use full terminal: main content area fills between header and status/footer */
+    #main-container {
+        width: 100%;
+        height: 1fr;
+        overflow: hidden;
+    }
+
+    TabbedContent {
+        width: 100%;
+        height: 1fr;
+    }
+
+    TabbedContent > Vertical {
+        width: 100%;
+        height: 1fr;
+    }
+
+    /* Tab content panes fill available space */
+    .tab-content-fill {
+        width: 100%;
+        height: 1fr;
+        overflow: auto;
+    }
+
+    /* Inner scroll/fill container so table/log takes remaining space */
+    .tab-content-fill .fill {
+        width: 100%;
+        height: 1fr;
+    }
+
     #status-bar {
         dock: bottom;
         height: 1;
@@ -82,8 +129,26 @@ class TUIApp(App):
         margin: 1;
     }
 
-    #symbols-table, #positions-table {
+    /* Tables and main content expand to use space */
+    #symbols-table, #positions-table, #scenarios-table,
+    #cash-flow-table, #opportunity-scenarios-table, #relationships-table,
+    #loans-table {
+        width: 100%;
         height: 1fr;
+        min-height: 5;
+    }
+
+    #positions-container {
+        width: 100%;
+        height: 1fr;
+        overflow: auto;
+        min-height: 5;
+    }
+
+    #orders-log, #alerts-log, #tui-log, .logs-container {
+        width: 100%;
+        height: 1fr;
+        min-height: 5;
     }
 
     #metrics-label {
@@ -160,51 +225,51 @@ class TUIApp(App):
         with Container(id="main-container"):
             with TabbedContent(id="tabs"):
                 with TabPane("Dashboard", id="dashboard-tab"):
-                    self._dashboard_tab = DashboardTab()
+                    self._dashboard_tab = DashboardTab(classes="tab-content-fill")
                     yield self._dashboard_tab
 
                 with TabPane("Unified Positions", id="unified-positions-tab"):
-                    self._unified_positions_tab = UnifiedPositionsTab()
+                    self._unified_positions_tab = UnifiedPositionsTab(classes="tab-content-fill")
                     yield self._unified_positions_tab
 
                 with TabPane("Cash Flow", id="cash-flow-tab"):
-                    self._cash_flow_tab = CashFlowTab()
+                    self._cash_flow_tab = CashFlowTab(classes="tab-content-fill")
                     yield self._cash_flow_tab
 
                 with TabPane("Simulation", id="simulation-tab"):
-                    self._opportunity_simulation_tab = OpportunitySimulationTab()
+                    self._opportunity_simulation_tab = OpportunitySimulationTab(classes="tab-content-fill")
                     yield self._opportunity_simulation_tab
 
                 with TabPane("Relationships", id="relationships-tab"):
-                    self._relationship_visualization_tab = RelationshipVisualizationTab()
+                    self._relationship_visualization_tab = RelationshipVisualizationTab(classes="tab-content-fill")
                     yield self._relationship_visualization_tab
 
                 with TabPane("Positions", id="positions-tab"):
-                    self._positions_tab = PositionsTab()
+                    self._positions_tab = PositionsTab(classes="tab-content-fill")
                     yield self._positions_tab
 
                 with TabPane("Historic", id="historic-tab"):
-                    self._historic_tab = HistoricTab()
+                    self._historic_tab = HistoricTab(classes="tab-content-fill")
                     yield self._historic_tab
 
                 with TabPane("Orders", id="orders-tab"):
-                    self._orders_tab = OrdersTab()
+                    self._orders_tab = OrdersTab(classes="tab-content-fill")
                     yield self._orders_tab
 
                 with TabPane("Alerts", id="alerts-tab"):
-                    self._alerts_tab = AlertsTab()
+                    self._alerts_tab = AlertsTab(classes="tab-content-fill")
                     yield self._alerts_tab
 
                 with TabPane("Scenarios", id="scenarios-tab"):
-                    self._scenarios_tab = ScenariosTab()
+                    self._scenarios_tab = ScenariosTab(classes="tab-content-fill")
                     yield self._scenarios_tab
 
                 with TabPane("Loans", id="loans-tab"):
-                    self._loan_tab = LoanListTab(self._loan_manager)
+                    self._loan_tab = LoanListTab(self._loan_manager, classes="tab-content-fill")
                     yield self._loan_tab
 
                 with TabPane("Logs", id="logs-tab"):
-                    self._logs_tab = LogsTab(max_lines=500)
+                    self._logs_tab = LogsTab(max_lines=500, classes="tab-content-fill")
                     yield self._logs_tab
 
         yield StatusBar(id="status-bar")
@@ -215,9 +280,23 @@ class TUIApp(App):
         if self._tui_log_handler is None:
             self._tui_log_handler = install_tui_log_handler(level=logging.DEBUG)
             self._tui_log_handler_on_root = False
+        # Ensure we always have backend ports so status line shows backend status (merge defaults if empty)
+        from .config import DEFAULT_BACKEND_PORTS, DEFAULT_TCP_BACKEND_PORTS
+        if not self.config.backend_ports:
+            self.config.backend_ports = dict(DEFAULT_BACKEND_PORTS)
+        else:
+            self.config.backend_ports = {**DEFAULT_BACKEND_PORTS, **self.config.backend_ports}
+        if not self.config.tcp_backend_ports:
+            self.config.tcp_backend_ports = dict(DEFAULT_TCP_BACKEND_PORTS)
+        else:
+            self.config.tcp_backend_ports = {**DEFAULT_TCP_BACKEND_PORTS, **self.config.tcp_backend_ports}
         self.provider.start()
-        if self.config.backend_ports:
-            self._backend_health_aggregator = BackendHealthAggregator(self.config.backend_ports)
+        if self.config.backend_ports or self.config.tcp_backend_ports:
+            self._backend_health_aggregator = BackendHealthAggregator(
+                self.config.backend_ports,
+                tcp_backend_ports=self.config.tcp_backend_ports,
+                unified_health_url=getattr(self.config, "health_dashboard_url", None),
+            )
             self._backend_health_aggregator.start()
         self.set_interval(0.5, self._update_snapshot)  # Update every 500ms
         self.set_interval(0.25, self._drain_tui_logs)  # Drain log queue for Logs tab
@@ -252,6 +331,18 @@ class TUIApp(App):
             name = path.name if path else "file"
             return f"file ({name})"
         return "mock"
+
+    def switch_to_tab(self, tab_id: str) -> None:
+        """Switch to a tab by id without user interaction. Use TUI_TAB_IDS for valid ids."""
+        if tab_id not in TUI_TAB_IDS:
+            raise ValueError(f"Unknown tab_id: {tab_id}. Known: {TUI_TAB_IDS}")
+        tabs = self.query_one("#tabs", TabbedContent)
+        tabs.active = tab_id
+
+    def get_active_tab_id(self) -> str:
+        """Return the id of the currently visible tab."""
+        tabs = self.query_one("#tabs", TabbedContent)
+        return tabs.active or TUI_TAB_IDS[0]
 
     def _update_snapshot(self) -> None:
         """Update snapshot from provider"""
@@ -405,13 +496,17 @@ def create_provider_from_config(config: TUIConfig) -> Provider:
     MIGRATION NOTE: This factory function can call C++ provider constructors
     via pybind11 in the future
     """
-    provider_type = config.provider_type.lower()
+    provider_type = (config.provider_type or "mock").lower()
 
     if provider_type == "mock" or not provider_type:
         return MockProvider(update_interval_ms=config.update_interval_ms)
 
-    elif provider_type == "rest":
-        endpoint = config.rest_endpoint or "http://localhost:8002/api/v1/snapshot"
+    elif provider_type == "rest" or provider_type in PRESET_REST_ENDPOINTS:
+        endpoint = (
+            config.rest_endpoint
+            or PRESET_REST_ENDPOINTS.get(provider_type)
+            or "http://localhost:8002/api/v1/snapshot"
+        )
         return RestProvider(
             endpoint=endpoint,
             update_interval_ms=config.update_interval_ms,

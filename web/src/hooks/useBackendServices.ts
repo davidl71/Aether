@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { SERVICE_PORTS, getRustBackendUrl } from '../config/ports';
+import { SERVICE_PORTS, getRustBackendUrl, getHealthAggregatedUrl } from '../config/ports';
 
 export type ServiceAttentionType = 'none' | 'authentication' | 'credentials' | 'configuration' | 'error';
 
@@ -40,6 +40,16 @@ const SERVICE_CONFIG = {
   tradier: { name: 'Tradier', port: SERVICE_PORTS.tradier, healthPath: '/api/health' },
   rustBackend: { name: 'Rust Backend', port: SERVICE_PORTS.rustBackend, healthPath: '/health' },
 } as const;
+
+// Map unified health dashboard backend id -> PWA SERVICE_CONFIG key
+const DASHBOARD_KEY_MAP: Record<string, keyof typeof SERVICE_CONFIG> = {
+  ib: 'ib',
+  alpaca: 'alpaca',
+  tradestation: 'tradestation',
+  tastytrade: 'tastytrade',
+  discount_bank: 'discountBank',
+  analytics: 'riskFreeRate', // analytics includes risk_free_rate; show under Risk-Free Rate for simplicity
+};
 
 // Authentication URLs for services that require web-based login
 const AUTH_URLS: Record<string, string> = {
@@ -230,6 +240,68 @@ async function checkServiceHealth(
   }
 }
 
+/** Fetch unified health from dashboard and return status entries for mapped keys */
+async function fetchAggregatedHealth(): Promise<Partial<Record<keyof typeof SERVICE_CONFIG, {
+  healthy: boolean;
+  error?: string;
+  authenticated?: boolean;
+  authUrl?: string;
+  attentionRequired?: ServiceAttentionType;
+  attentionMessage?: string;
+  enabled?: boolean;
+  running?: boolean;
+  pid?: number;
+}>>> {
+  const url = getHealthAggregatedUrl();
+  if (!url) return {};
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 4000);
+  try {
+    const response = await fetch(url, { method: 'GET', signal: controller.signal, headers: { 'Cache-Control': 'no-cache' } });
+    clearTimeout(timeoutId);
+    if (!response.ok) return {};
+    const data = await response.json().catch(() => ({}));
+    const backends = data?.backends;
+    if (!backends || typeof backends !== 'object') return {};
+    const result: Partial<Record<keyof typeof SERVICE_CONFIG, {
+      healthy: boolean;
+      error?: string;
+      authenticated?: boolean;
+      authUrl?: string;
+      attentionRequired?: ServiceAttentionType;
+      attentionMessage?: string;
+      enabled?: boolean;
+      running?: boolean;
+      pid?: number;
+    }>> = {};
+    for (const [backendId, payload] of Object.entries(backends)) {
+      const pwaKey = DASHBOARD_KEY_MAP[backendId];
+      if (!pwaKey || result[pwaKey] !== undefined) continue;
+      const p = payload as Record<string, unknown>;
+      const status = (p?.status as string) ?? 'unknown';
+      const healthy = status === 'ok';
+      const config = SERVICE_CONFIG[pwaKey];
+      let authenticated: boolean | undefined;
+      if (pwaKey === 'ib' && typeof p?.ib_connected === 'boolean') authenticated = p.ib_connected;
+      else if (pwaKey === 'alpaca' && typeof p?.alpaca_connected === 'boolean') authenticated = p.alpaca_connected;
+      const attention = determineAttentionType(pwaKey, healthy, authenticated, healthy ? undefined : (p?.error as string), p);
+      result[pwaKey] = {
+        healthy,
+        error: healthy ? undefined : ((p?.error as string) ?? `status: ${status}`),
+        authenticated,
+        authUrl: AUTH_URLS[config.name],
+        enabled: true,
+        running: true,
+        ...attention,
+      };
+    }
+    return result;
+  } catch {
+    clearTimeout(timeoutId);
+    return {};
+  }
+}
+
 export function useBackendServices(options: { intervalMs?: number; enabled?: boolean } = {}) {
   const { intervalMs = 10000, enabled = true } = options;
 
@@ -258,11 +330,25 @@ export function useBackendServices(options: { intervalMs?: number; enabled?: boo
       return updated as BackendServicesStatus;
     });
 
-    // Check all services in parallel
+    const aggregatedUrl = getHealthAggregatedUrl();
+    const keysToCheck = Object.keys(SERVICE_CONFIG) as Array<keyof typeof SERVICE_CONFIG>;
+    let aggregatedPart: Partial<Record<keyof typeof SERVICE_CONFIG, Awaited<ReturnType<typeof checkServiceHealth>>>> = {};
+
+    if (aggregatedUrl) {
+      try {
+        const partial = await fetchAggregatedHealth();
+        for (const k of keysToCheck) {
+          if (partial[k] !== undefined) aggregatedPart[k] = partial[k] as Awaited<ReturnType<typeof checkServiceHealth>>;
+        }
+      } catch {
+        // ignore; will fall back to per-service checks for all
+      }
+    }
+
     const checks = Promise.allSettled(
-      (Object.keys(SERVICE_CONFIG) as Array<keyof typeof SERVICE_CONFIG>).map(async (key) => {
-        const result = await checkServiceHealth(key);
-        return { key, ...result };
+      keysToCheck.map(async (key) => {
+        if (aggregatedPart[key] !== undefined) return { key, ...aggregatedPart[key]! };
+        return { key, ...(await checkServiceHealth(key)) };
       })
     );
 

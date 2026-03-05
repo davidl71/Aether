@@ -2,6 +2,10 @@
 # Unified Service Manager - Start/stop/restart/status for all services
 # Consolidates all individual start_*.sh and stop_*.sh scripts
 #
+# Alternative: Go supervisor (single process, restarts on crash):
+#   ./scripts/run_supervisor.sh
+#   Uses config/services.supervisor.json; requires Go.
+#
 # Usage:
 #   ./scripts/service_manager.sh start <service>
 #   ./scripts/service_manager.sh stop <service>
@@ -10,7 +14,7 @@
 #   ./scripts/service_manager.sh start-all
 #   ./scripts/service_manager.sh stop-all
 #
-# Services: ib, alpaca, tastytrade, tradestation, discount_bank, risk_free_rate, rust_backend, nats, web
+# Services: ib, alpaca, tastytrade, tradestation, discount_bank, risk_free_rate, health_dashboard, rust_backend, nats, web, israeli_bank_scrapers
 
 set -euo pipefail
 
@@ -56,9 +60,11 @@ declare -A SERVICES=(
   ["tradestation"]="8001|cd ${PROJECT_ROOT}/python/services && python -m uvicorn tradestation_service:app --host 0.0.0.0 --port"
   ["discount_bank"]="8003|cd ${PROJECT_ROOT}/python/services && python -m uvicorn discount_bank_service:app --host 0.0.0.0 --port"
   ["risk_free_rate"]="8004|cd ${PROJECT_ROOT}/python/services && python -m uvicorn risk_free_rate_service:app --host 0.0.0.0 --port"
+  ["health_dashboard"]="8011|cd ${PROJECT_ROOT} && HEALTH_DASHBOARD_PORT=8011 ./scripts/run_health_dashboard.sh"
   ["rust_backend"]="8080|cd ${PROJECT_ROOT}/agents && cargo run --release -- --rest-port 8080 --grpc-port 50051"
   ["nats"]="4222|nats-server -js -DV"
   ["web"]="5173|cd ${PROJECT_ROOT}/web && npm run dev -- --host 0.0.0.0 --port"
+  ["israeli_bank_scrapers"]="8010|cd ${PROJECT_ROOT} && ./scripts/run_israeli_bank_scrapers_service.sh"
 )
 
 # Check if service is running
@@ -107,6 +113,9 @@ start_service() {
   # Append port to command if needed
   if echo "$start_cmd" | grep -q "-- --port$\|--port$"; then
     start_cmd="$start_cmd $port"
+  fi
+  if [ "$service" = "israeli_bank_scrapers" ]; then
+    start_cmd="PORT=$port $start_cmd"
   fi
 
   # Run in background, redirect output to log

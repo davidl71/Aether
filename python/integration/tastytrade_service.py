@@ -38,6 +38,7 @@ from python.services.security_integration_helper import (
 )
 
 from .tastytrade_client import TastytradeClient, TastytradeError
+from . import nats_client
 
 # Optional DXLink import
 try:
@@ -274,7 +275,7 @@ def create_app() -> FastAPI:
     add_security_to_app(app, project_root=project_root)
     add_security_headers_middleware(app)
 
-    # Initialize Tastytrade client with OAuth or session-based auth
+    # Initialize Tastytrade client with OAuth or session-based auth; allow start without credentials
     base_url = os.getenv("TASTYTRADE_BASE_URL", "https://api.tastytrade.com")
     sandbox_base_url = os.getenv("TASTYTRADE_SANDBOX_BASE_URL", "https://api.cert.tastyworks.com")
     client_secret = os.getenv("TASTYTRADE_CLIENT_SECRET", "")
@@ -286,25 +287,31 @@ def create_app() -> FastAPI:
     sandbox_env = os.getenv("TASTYTRADE_SANDBOX", "").lower()
     sandbox = sandbox_env in ("true", "1", "yes", "on")
 
-    client = TastytradeClient(
-        client_secret=client_secret if client_secret else None,
-        refresh_token=refresh_token if refresh_token else None,
-        username=username if username else None,
-        password=password if password else None,
-        base_url=base_url,
-        sandbox=sandbox,
-        sandbox_base_url=sandbox_base_url,
-    )
+    client: Optional[TastytradeClient] = None
+    client_disabled_reason: Optional[str] = None
+    try:
+        client = TastytradeClient(
+            client_secret=client_secret if client_secret else None,
+            refresh_token=refresh_token if refresh_token else None,
+            username=username if username else None,
+            password=password if password else None,
+            base_url=base_url,
+            sandbox=sandbox,
+            sandbox_base_url=sandbox_base_url,
+        )
+    except Exception as e:
+        client_disabled_reason = str(e).split("\n")[0].strip() or "Missing credentials"
+        if "credentials" not in client_disabled_reason.lower():
+            client_disabled_reason = "Missing credentials"
 
     # Store current account in memory (in production, use Redis or database)
     current_account_id: Optional[str] = None
 
-    # DXLink client for real-time streaming (optional)
+    # DXLink client for real-time streaming (optional); only when Tastytrade client is configured
     dxlink_client: Optional[DXLinkClient] = None
     connected_websockets: List[WebSocket] = []
 
-    # Initialize DXLink if available (will connect on first use)
-    if DXLINK_AVAILABLE:
+    if client is not None and DXLINK_AVAILABLE:
         try:
             dxlink_client = DXLinkClient(client, sandbox=sandbox)
         except Exception as e:
@@ -332,55 +339,70 @@ def create_app() -> FastAPI:
                 logger.warning(f"Error disconnecting DXLink: {e}")
 
     @app.get("/api/health")
-    def health() -> Dict[str, Any]:
-        """Health check endpoint."""
-        try:
-            # Try to get accounts to verify connection
-            accounts = client.get_accounts()
-
-            # Get OAuth token status if using OAuth
-            oauth_status = None
-            if client._use_oauth:
-                oauth_status = {
-                    "enabled": True,
-                    "has_token": client._access_token is not None,
-                    "expires_at": client._token_expires_at.isoformat() if client._token_expires_at else None,
-                    "expires_soon": client._token_expires_at and datetime.now() >= (client._token_expires_at - timedelta(minutes=1)) if client._token_expires_at else False,
+    async def health() -> Dict[str, Any]:
+        """Health check endpoint. Returns status 'disabled' when credentials are missing.
+        When NATS_URL is set, publishes to system.health for unified health dashboard.
+        """
+        def _do() -> Dict[str, Any]:
+            if client is None:
+                return {
+                    "status": "disabled",
+                    "ts": _now_iso(),
+                    "tastytrade_connected": False,
+                    "error": client_disabled_reason or "Missing credentials",
+                    "dxlink": {"available": DXLINK_AVAILABLE, "connected": False} if DXLINK_AVAILABLE else {"available": False},
                 }
-            else:
-                oauth_status = {"enabled": False}
-
-            return {
-                "status": "ok",
-                "ts": _now_iso(),
-                "tastytrade_connected": len(accounts) > 0,
-                "accounts": [acc.get("account-number") or acc.get("id") for acc in accounts] if accounts else [],
-                "oauth": oauth_status,
-                "sandbox": {
-                    "enabled": client.sandbox,
-                    "base_url": client.base_url,
-                    "note": "Sandbox resets every 24h, quotes are 15-min delayed" if client.sandbox else None,
-                },
-            }
-        except TastytradeError as e:
-            return {
-                "status": "error",
-                "ts": _now_iso(),
-                "tastytrade_connected": False,
-                "error": str(e),
-                "oauth": {"enabled": client._use_oauth} if hasattr(client, "_use_oauth") else None,
-                "sandbox": {"enabled": client.sandbox} if hasattr(client, "sandbox") else None,
-                "dxlink": {
-                    "available": DXLINK_AVAILABLE,
-                    "connected": dxlink_client.connected if dxlink_client else False,
-                    "subscribed_symbols": list(dxlink_client.subscribed_symbols) if dxlink_client and dxlink_client.connected else [],
-                } if DXLINK_AVAILABLE else {"available": False},
-            }
+            try:
+                accounts = client.get_accounts()
+                oauth_status = None
+                if client._use_oauth:
+                    oauth_status = {
+                        "enabled": True,
+                        "has_token": client._access_token is not None,
+                        "expires_at": client._token_expires_at.isoformat() if client._token_expires_at else None,
+                        "expires_soon": client._token_expires_at and datetime.now() >= (client._token_expires_at - timedelta(minutes=1)) if client._token_expires_at else False,
+                    }
+                else:
+                    oauth_status = {"enabled": False}
+                return {
+                    "status": "ok",
+                    "ts": _now_iso(),
+                    "tastytrade_connected": len(accounts) > 0,
+                    "accounts": [acc.get("account-number") or acc.get("id") for acc in accounts] if accounts else [],
+                    "oauth": oauth_status,
+                    "sandbox": {"enabled": client.sandbox, "base_url": client.base_url, "note": "Sandbox resets every 24h, quotes are 15-min delayed" if client.sandbox else None},
+                }
+            except TastytradeError as e:
+                return {
+                    "status": "error",
+                    "ts": _now_iso(),
+                    "tastytrade_connected": False,
+                    "error": str(e),
+                    "oauth": {"enabled": client._use_oauth} if hasattr(client, "_use_oauth") else None,
+                    "sandbox": {"enabled": client.sandbox} if hasattr(client, "sandbox") else None,
+                    "dxlink": {"available": DXLINK_AVAILABLE, "connected": dxlink_client.connected if dxlink_client else False, "subscribed_symbols": list(dxlink_client.subscribed_symbols) if dxlink_client and dxlink_client.connected else []} if DXLINK_AVAILABLE else {"available": False},
+                }
+        result = await asyncio.to_thread(_do)
+        if os.environ.get("NATS_URL", "").strip():
+            asyncio.create_task(nats_client.publish_health("tastytrade", result))
+        return result
 
     @app.get("/api/snapshot")
     @app.get("/api/v1/snapshot")  # Alias for API contract compatibility
     def snapshot(account_id: Optional[str] = None) -> Dict[str, Any]:
         """Get complete snapshot with market data, positions, and orders."""
+        if client is None:
+            return {
+                "generated_at": _now_iso(),
+                "mode": "PAPER",
+                "strategy": "DISABLED",
+                "account_id": "",
+                "symbols": [],
+                "positions": [],
+                "orders": [],
+                "alerts": [],
+                "error": client_disabled_reason or "Missing credentials",
+            }
         try:
             # Use query parameter if provided, otherwise use stored account
             effective_account_id = account_id if account_id else current_account_id
@@ -414,6 +436,8 @@ def create_app() -> FastAPI:
     @app.get("/api/positions")
     def get_positions(account_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get all open positions."""
+        if client is None:
+            return []
         try:
             effective_account_id = account_id if account_id else current_account_id
             if not effective_account_id:
@@ -447,6 +471,8 @@ def create_app() -> FastAPI:
     @app.get("/api/accounts")
     def list_accounts() -> Dict[str, Any]:
         """List all available Tastytrade accounts"""
+        if client is None:
+            return {"accounts": [], "error": client_disabled_reason or "Missing credentials", "ts": _now_iso()}
         try:
             accounts = client.get_accounts()
             # Format accounts for frontend
@@ -475,6 +501,8 @@ def create_app() -> FastAPI:
     def set_account(request: AccountRequest) -> Dict[str, Any]:
         """Set active account ID"""
         nonlocal current_account_id
+        if client is None:
+            return {"status": "error", "message": client_disabled_reason or "Missing credentials", "ts": _now_iso()}
         new_account_id = request.account_id
 
         if new_account_id:
@@ -493,6 +521,8 @@ def create_app() -> FastAPI:
     @app.get("/api/account")
     def get_account() -> Dict[str, Any]:
         """Get current active account"""
+        if client is None:
+            return {"account_id": None, "error": client_disabled_reason or "Missing credentials", "ts": _now_iso()}
         try:
             accounts = client.get_accounts()
             account_id = current_account_id or (accounts[0].get("account-number") or accounts[0].get("id") if accounts else None)
@@ -570,6 +600,12 @@ def create_app() -> FastAPI:
     @app.post("/api/auth/refresh")
     def refresh_token() -> Dict[str, Any]:
         """Manually refresh OAuth access token."""
+        if client is None:
+            return {
+                "status": "error",
+                "message": client_disabled_reason or "Missing credentials",
+                "ts": _now_iso(),
+            }
         try:
             if not client._use_oauth:
                 return {
