@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Any
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, APIRouter
 from pydantic import BaseModel
 from pathlib import Path
 import sys
@@ -38,13 +38,10 @@ from .sofr_treasury_client import (
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Risk-Free Rate Service", version="1.0.0")
+# Router for mounting in analytics_api or running standalone
+router_risk_free_rate = APIRouter()
 
-# Add security components
-security_components = add_security_to_app(app, project_root=project_root)
-add_security_headers_middleware(app)
-
-# Initialize clients
+# Initialize clients (used by route handlers)
 extractor = RiskFreeRateExtractor(min_liquidity_score=50.0)
 benchmark_client = SOFRTreasuryClient()
 
@@ -118,7 +115,7 @@ def _rate_point_to_dict(point: RiskFreeRatePoint) -> Dict[str, Any]:
     }
 
 
-@app.get("/api/health")
+@router_risk_free_rate.get("/api/health")
 def health_check() -> Dict[str, Any]:
     """Health check endpoint."""
     return {
@@ -128,7 +125,7 @@ def health_check() -> Dict[str, Any]:
     }
 
 
-@app.post("/api/extract-rate", response_model=RatePointResponse)
+@router_risk_free_rate.post("/api/extract-rate", response_model=RatePointResponse)
 def extract_rate(box_spread: BoxSpreadInput) -> RatePointResponse:
     """
     Extract a risk-free rate point from a single box spread.
@@ -164,7 +161,7 @@ def extract_rate(box_spread: BoxSpreadInput) -> RatePointResponse:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/build-curve", response_model=CurveResponse)
+@router_risk_free_rate.post("/api/build-curve", response_model=CurveResponse)
 def build_curve(opportunities: List[Dict[str, Any]], symbol: str) -> CurveResponse:
     """
     Build a risk-free rate curve from multiple box spread opportunities.
@@ -189,7 +186,7 @@ def build_curve(opportunities: List[Dict[str, Any]], symbol: str) -> CurveRespon
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/benchmarks/sofr")
+@router_risk_free_rate.get("/api/benchmarks/sofr")
 def get_sofr_rates() -> Dict[str, Any]:
     """Get current SOFR rates."""
     try:
@@ -220,7 +217,7 @@ def get_sofr_rates() -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/benchmarks/treasury")
+@router_risk_free_rate.get("/api/benchmarks/treasury")
 def get_treasury_rates() -> Dict[str, Any]:
     """Get current Treasury rates."""
     try:
@@ -244,7 +241,7 @@ def get_treasury_rates() -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/compare", response_model=List[ComparisonResponse])
+@router_risk_free_rate.post("/api/compare", response_model=List[ComparisonResponse])
 def compare_rates(
     opportunities: List[Dict[str, Any]],
     symbol: str
@@ -294,7 +291,7 @@ def compare_rates(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/yield-curve/comparison")
+@router_risk_free_rate.post("/api/yield-curve/comparison")
 def yield_curve_comparison(
     box_spread_rates: Dict[str, Dict[str, float]],
     treasury_rates: Optional[Dict[str, float]] = None,
@@ -339,6 +336,13 @@ def yield_curve_comparison(
     except Exception as e:
         logger.error(f"Error comparing yield curves: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Standalone app
+app = FastAPI(title="Risk-Free Rate Service", version="1.0.0")
+security_components = add_security_to_app(app, project_root=project_root)
+add_security_headers_middleware(app)
+app.include_router(router_risk_free_rate)
 
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 from typing import List, Dict, Optional, Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -35,21 +35,8 @@ from python.integration.opportunity_simulation_calculator import (
     SimulationScenario
 )
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="Calculations API",
-    description="REST API for shared calculation endpoints (cash flow, opportunity simulation)",
-    version="1.0.0"
-)
-
-# CORS middleware for web frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict to specific origins
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Router for mounting in analytics_api or running standalone
+router_calculations = APIRouter()
 
 
 # Request/Response Models
@@ -106,7 +93,7 @@ class ScenarioResponse(BaseModel):
 
 class ScenarioCalculationRequest(BaseModel):
     """Request for scenario calculation"""
-    scenario: Dict[str, any]
+    scenario: Dict[str, Any]
 
 
 class ScenarioCalculationResponse(BaseModel):
@@ -117,7 +104,7 @@ class ScenarioCalculationResponse(BaseModel):
     capital_efficiency: Optional[float] = None
 
 
-@app.post("/api/v1/cash-flow/timeline", response_model=CashFlowTimelineResponse)
+@router_calculations.post("/api/v1/cash-flow/timeline", response_model=CashFlowTimelineResponse)
 async def calculate_cash_flow_timeline_endpoint(
     request: CashFlowTimelineRequest
 ) -> CashFlowTimelineResponse:
@@ -199,7 +186,7 @@ async def calculate_cash_flow_timeline_endpoint(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/v1/opportunity-simulation/scenarios", response_model=List[ScenarioResponse])
+@router_calculations.post("/api/v1/opportunity-simulation/scenarios", response_model=List[ScenarioResponse])
 async def find_scenarios_endpoint(
     request: OpportunitySimulationRequest
 ) -> List[ScenarioResponse]:
@@ -251,7 +238,7 @@ async def find_scenarios_endpoint(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/v1/opportunity-simulation/calculate", response_model=ScenarioCalculationResponse)
+@router_calculations.post("/api/v1/opportunity-simulation/calculate", response_model=ScenarioCalculationResponse)
 async def calculate_scenario_endpoint(
     request: ScenarioCalculationRequest
 ) -> ScenarioCalculationResponse:
@@ -289,7 +276,7 @@ class CashManagementRequest(BaseModel):
     projection_months: int = 12
 
 
-@app.post("/api/v1/cash-flow/management")
+@router_calculations.post("/api/v1/cash-flow/management")
 async def cash_management_endpoint(request: CashManagementRequest) -> Dict[str, Any]:
     """
     Analyze portfolio cash position against upcoming obligations.
@@ -335,10 +322,26 @@ async def cash_management_endpoint(request: CashManagementRequest) -> Dict[str, 
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/health")
+@router_calculations.get("/health")
 async def health():
     """Health check endpoint"""
     return {"status": "ok", "service": "calculations-api"}
+
+
+# Standalone app (same as before)
+app = FastAPI(
+    title="Calculations API",
+    description="REST API for shared calculation endpoints (cash flow, opportunity simulation)",
+    version="1.0.0"
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.include_router(router_calculations)
 
 
 if __name__ == "__main__":

@@ -25,14 +25,16 @@ _svc_display() {
     nats) echo "NATS" ;;
     memcached) echo "Memcached" ;;
     gateway) echo "IB Gateway" ;;
-    ib) echo "IB" ;;
+    ib) echo "IBKR" ;;
     alpaca) echo "Alpaca" ;;
     tastytrade) echo "Tastytrade" ;;
     tradestation) echo "TradeStation" ;;
     riskfree) echo "Risk-Free Rate" ;;
+    analytics) echo "Analytics API" ;;
     discount) echo "Discount Bank" ;;
     web) echo "Web Dev" ;;
     rust) echo "Rust Backend" ;;
+    questdb_nats) echo "QuestDB NATS" ;;
     *) echo "" ;;
   esac
 }
@@ -47,9 +49,11 @@ _svc_port() {
     tastytrade) _config_port tastytrade 8005 ;;
     tradestation) _config_port tradestation 8001 ;;
     riskfree) _config_port risk_free_rate 8004 ;;
+    analytics) _config_port analytics 8007 ;;
     discount) _config_port discount_bank 8003 ;;
     web) echo "5173" ;;
     rust) _config_port rust_backend 8010 ;;
+    questdb_nats) echo "" ;;
     *) echo "" ;;
   esac
 }
@@ -64,9 +68,11 @@ _svc_cmd() {
     tastytrade) echo "./web/scripts/run-tastytrade-service.sh" ;;
     tradestation) echo "./web/scripts/run-tradestation-service.sh" ;;
     riskfree) echo "./web/scripts/run-risk-free-rate-service.sh" ;;
+    analytics) echo "./web/scripts/run-analytics-api.sh" ;;
     discount) echo "./web/scripts/run-discount-bank-service.sh" ;;
     web) echo "npm run dev" ;;
     rust) echo "./agents/start_rust_backend.sh" ;;
+    questdb_nats) echo "./scripts/run_questdb_nats_writer.sh" ;;
     *) echo "" ;;
   esac
 }
@@ -81,9 +87,11 @@ _svc_log() {
     tastytrade) echo "tastytrade-service.log" ;;
     tradestation) echo "tradestation-service.log" ;;
     riskfree) echo "risk-free-rate-service.log" ;;
+    analytics) echo "analytics-api.log" ;;
     discount) echo "discount-bank-service.log" ;;
     web) echo "web-dev-server.log" ;;
     rust) echo "rust-backend.log" ;;
+    questdb_nats) echo "questdb-nats-writer.log" ;;
     *) echo "" ;;
   esac
 }
@@ -93,10 +101,11 @@ _svc_health() {
     nats) echo "http://localhost:8222/healthz" ;;
     memcached) echo "" ;;
     gateway) echo "https://localhost:\${PORT}" ;;
-    ib|alpaca|tastytrade|tradestation|riskfree|discount)
+    ib|alpaca|tastytrade|tradestation|riskfree|analytics|discount)
       echo "http://localhost:\${PORT}/api/health"
       ;;
     rust) echo "http://localhost:\${PORT}/health" ;;
+    questdb_nats) echo "" ;;
     web) echo "http://localhost:5173" ;;
     *) echo "" ;;
   esac
@@ -109,13 +118,14 @@ _svc_wait() {
     web) echo "6" ;;
     tradestation) echo "10" ;;
     ib|alpaca|tastytrade|riskfree|discount) echo "8" ;;
+    questdb_nats) echo "3" ;;
     *) echo "4" ;;
   esac
 }
 
 _svc_known() {
   case "$1" in
-    nats|memcached|gateway|ib|alpaca|tastytrade|tradestation|riskfree|discount|web|rust)
+    nats|memcached|gateway|ib|alpaca|tastytrade|tradestation|riskfree|discount|web|rust|questdb_nats)
       return 0
       ;;
     *) return 1 ;;
@@ -124,6 +134,7 @@ _svc_known() {
 
 _is_nats() { [[ "$1" == "nats" ]]; }
 _is_memcached() { [[ "$1" == "memcached" ]]; }
+_is_questdb_nats() { [[ "$1" == "questdb_nats" ]]; }
 
 _find_pid() {
   local svc="$1"
@@ -132,6 +143,8 @@ _find_pid() {
     pgrep -f "nats-server" 2>/dev/null || true
   elif _is_memcached "$svc"; then
     pgrep -f "memcached" 2>/dev/null || true
+  elif _is_questdb_nats "$svc"; then
+    pgrep -f "questdb_nats_writer|nats-questdb-bridge|run_questdb_nats_writer" 2>/dev/null || true
   else
     port=$(_svc_port "$svc")
     if [[ -n "$port" ]]; then
@@ -361,12 +374,95 @@ do_list() {
   done
 }
 
+# Service order for start-all (dependency order); stop-all uses reverse
+ALL_SERVICES_START=(nats memcached gateway ib riskfree discount alpaca tastytrade tradestation web)
+
+do_start_all() {
+  local svc
+  for svc in "${ALL_SERVICES_START[@]}"; do
+    echo "==> Starting $svc..."
+    do_start "$svc" || true
+  done
+  echo ""
+  echo "==> All services started. Logs: ${LOGS_DIR}"
+  echo "    Stop all: $0 stop-all"
+  echo "    Status:   $0 status-all"
+}
+
+do_stop_all() {
+  local i svc
+  for ((i = ${#ALL_SERVICES_START[@]} - 1; i >= 0; i--)); do
+    svc="${ALL_SERVICES_START[$i]}"
+    echo "==> Stopping $svc..."
+    do_stop "$svc" || true
+  done
+  echo ""
+  echo "==> All services stopped."
+}
+
+do_restart_all() {
+  do_stop_all
+  sleep 2
+  do_start_all
+}
+
+do_status_all() {
+  local svc port pid health_url health code timeout
+  echo ""
+  echo "Service status (all):"
+  echo "====================="
+  for svc in "${ALL_SERVICES_START[@]}"; do
+    port=$(_svc_port "$svc")
+    pid=$(_find_pid "$svc")
+    if [[ -n "$pid" ]]; then
+      health_url=$(_health_url "$svc")
+      health="unknown"
+      timeout=2
+      [[ "$svc" == "ib" ]] && timeout=5
+      if [[ -n "$health_url" ]]; then
+        if [[ "$health_url" == https* ]]; then
+          code=$(curl -sk --connect-timeout "$timeout" -o /dev/null -w "%{http_code}" "$health_url" 2>/dev/null || echo "000")
+          [[ "$code" != "000" ]] && health="healthy" || health="unhealthy"
+        else
+          curl -sf --connect-timeout "$timeout" "$health_url" >/dev/null 2>&1 && health="healthy" || health="unhealthy"
+        fi
+      else
+        health="no-check"
+      fi
+      printf "  %-14s  %-20s  running  (PID: %s, port: %s, health: %s)\n" "$svc" "$(_svc_display "$svc")" "${pid//$'\n'/, }" "${port:-—}" "$health"
+    else
+      printf "  %-14s  %-20s  stopped  (port: %s)\n" "$svc" "$(_svc_display "$svc")" "${port:-—}"
+    fi
+  done
+  echo ""
+}
+
 ACTION="${1:-}"
 SERVICE="${2:-}"
+
+# Normalize action: start_all -> start-all
+case "$ACTION" in
+  start_all) ACTION="start-all" ;;
+  stop_all)   ACTION="stop-all" ;;
+  restart_all) ACTION="restart-all" ;;
+  status_all) ACTION="status-all" ;;
+esac
 
 case "$ACTION" in
   list)
     do_list
+    ;;
+  start-all)
+    do_start_all
+    ;;
+  stop-all)
+    do_stop_all
+    ;;
+  restart-all)
+    do_restart_all
+    ;;
+  status-all)
+    do_status_all
     ;;
   start|stop|restart|status|logs)
     if [[ -z "$SERVICE" ]]; then
@@ -382,7 +478,12 @@ case "$ACTION" in
     "do_${ACTION}" "$SERVICE"
     ;;
   *)
-    echo "Usage: $0 {start|stop|restart|status|logs|list} [service-name]"
+    echo "Usage: $0 {start|stop|restart|status|logs|list|start-all|stop-all|restart-all|status-all} [service-name]"
+    echo ""
+    echo "Single service: $0 {start|stop|restart|status|logs} <service>"
+    echo "All services:   $0 {start-all|stop-all|restart-all|status-all}"
+    echo "                (also accepted: start_all, stop_all, restart_all, status_all)"
+    echo "List:           $0 list"
     exit 1
     ;;
 esac
