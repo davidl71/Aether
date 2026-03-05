@@ -14,13 +14,20 @@ from __future__ import annotations
 import json
 import logging
 import os
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 
 from ..integration.shared_config_loader import SharedConfigLoader
 
 logger = logging.getLogger(__name__)
+
+# Default ports when no shared config (so we still poll and show status for common backends)
+DEFAULT_BACKEND_PORTS: Dict[str, int] = {
+    "ib": 8002,
+    "alpaca": 8000,
+    "tastytrade": 8003,
+}
 
 
 @dataclass
@@ -38,7 +45,7 @@ class TUIConfig:
     rest_endpoint: str = "http://localhost:8002/api/v1/snapshot"  # IB service port (changed from 8080 Rust backend to 8002 IB)
     update_interval_ms: int = 1000
     refresh_rate_ms: int = 500
-    rest_timeout_ms: int = 5000
+    rest_timeout_ms: int = 15000
     rest_verify_ssl: bool = False
     file_path: Optional[str] = None
 
@@ -52,14 +59,21 @@ class TUIConfig:
     show_colors: bool = True
     show_footer: bool = True
 
+    # Backend service ports for health checks (name -> port), e.g. {"ib": 8002, "alpaca": 8000}
+    backend_ports: Dict[str, int] = field(default_factory=dict)
+
+    # Backends disabled due to missing/placeholder credentials (name -> reason)
+    disabled_backends: Dict[str, str] = field(default_factory=dict)
+
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization"""
         return asdict(self)
 
     @classmethod
     def from_dict(cls, data: dict) -> TUIConfig:
-        """Create from dictionary"""
-        return cls(**data)
+        """Create from dictionary (ignores unknown keys for backward compatibility)."""
+        allowed = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in allowed})
 
     def save_to_file(self, file_path: str) -> None:
         """Save configuration to JSON file"""
@@ -116,7 +130,7 @@ def load_config() -> TUIConfig:
     """
     # Try shared config first
     try:
-        shared_config = SharedConfigLoader.load_config()
+        shared_config = SharedConfigLoader.load_config(quiet_placeholder_warnings=True)
         if shared_config.tui:
             # Convert shared config TUI section (dataclass) to TUI TUIConfig
             shared_tui = (
@@ -136,6 +150,8 @@ def load_config() -> TUIConfig:
                 and isinstance(shared_tui.display, dict)
                 else {}
             )
+            show_colors = display_dict.get("showColors", display_dict.get("show_colors", True))
+            show_footer = display_dict.get("showFooter", display_dict.get("show_footer", True))
 
             config = TUIConfig(
                 provider_type=shared_tui.provider_type,
@@ -146,14 +162,17 @@ def load_config() -> TUIConfig:
                 rest_verify_ssl=shared_tui.rest_verify_ssl,
                 file_path=shared_tui.file_path,
                 ibkr_rest_base_url=ibkr_rest_dict.get(
-                    "baseUrl", "https://localhost:5000/v1/portal"
+                    "baseUrl", ibkr_rest_dict.get("base_url", "https://localhost:5000/v1/portal")
                 ),
-                ibkr_rest_account_id=ibkr_rest_dict.get("accountId", ""),
-                ibkr_rest_verify_ssl=ibkr_rest_dict.get("verifySsl", False),
-                ibkr_rest_timeout_ms=ibkr_rest_dict.get("timeoutMs", 5000),
-                show_colors=display_dict.get("showColors", True),
-                show_footer=display_dict.get("showFooter", True),
+                ibkr_rest_account_id=ibkr_rest_dict.get("accountId", ibkr_rest_dict.get("account_id", "")),
+                ibkr_rest_verify_ssl=ibkr_rest_dict.get("verifySsl", ibkr_rest_dict.get("verify_ssl", False)),
+                ibkr_rest_timeout_ms=ibkr_rest_dict.get("timeoutMs", ibkr_rest_dict.get("timeout_ms", 5000)),
+                show_colors=show_colors,
+                show_footer=show_footer,
             )
+            from_services = _backend_ports_from_services(shared_config.services)
+            config.backend_ports = {**DEFAULT_BACKEND_PORTS, **from_services}
+            config.disabled_backends = _disabled_backends_from_env(shared_config.services)
             logger.info("Loaded TUI configuration from shared config file")
             # Apply environment variable overrides
             _apply_env_overrides(config)
@@ -163,14 +182,89 @@ def load_config() -> TUIConfig:
             f"Shared config not available ({e}), falling back to legacy config"
         )
 
-    # Fallback to legacy config file
+    # Fallback: no shared config — use default backend ports and env-based disabled backends
     config_path = TUIConfig.get_config_path()
-    config = TUIConfig.load_from_file(config_path)
+    if not Path(config_path).exists():
+        # Auto-initialize: write default TUI config so it exists for future runs
+        default_config = TUIConfig()
+        default_config.backend_ports = dict(DEFAULT_BACKEND_PORTS)
+        default_config.disabled_backends = _disabled_backends_from_env(
+            {"alpaca": {}, "tastytrade": {}}
+        )
+        default_config.save_to_file(config_path)
+        logger.info(f"Initialized TUI config at {config_path}")
+        config = default_config
+    else:
+        config = TUIConfig.load_from_file(config_path)
+        # Ensure we poll common backends so status line can show them (or "disabled")
+        config.backend_ports = {**DEFAULT_BACKEND_PORTS, **(config.backend_ports or {})}
+        config.disabled_backends = _disabled_backends_from_env(
+            {"alpaca": {}, "tastytrade": {}}
+        )
 
     # Override with environment variables
     _apply_env_overrides(config)
 
     return config
+
+
+def _backend_ports_from_services(services: dict) -> Dict[str, int]:
+    """Extract backend name -> port from config services for health checks."""
+    out: Dict[str, int] = {}
+    # Services that expose /api/health on a single port
+    for name in ("ib", "alpaca", "tradestation", "discount_bank", "risk_free_rate", "tastytrade"):
+        svc = services.get(name)
+        if isinstance(svc, dict):
+            port = svc.get("port")
+            if isinstance(port, int) and 0 < port < 65536:
+                out[name] = port
+    return out
+
+
+def _is_placeholder_or_empty(value: Optional[str]) -> bool:
+    """True if value is missing, empty, or a placeholder (e.g. ${VAR} or 'placeholder')."""
+    if value is None or not value.strip():
+        return True
+    v = value.strip().lower()
+    if v in ("placeholder", "missing", "optional"):
+        return True
+    if v.startswith("${") and v.endswith("}"):
+        return True
+    return False
+
+
+def _disabled_backends_from_env(services: dict) -> Dict[str, str]:
+    """
+    For backends present in services, detect missing/placeholder credentials
+    and return backend name -> reason (e.g. "Missing API key").
+    """
+    out: Dict[str, str] = {}
+    if not isinstance(services, dict):
+        return out
+
+    # Alpaca: API keys or OAuth
+    if services.get("alpaca") is not None:
+        has_oauth = not _is_placeholder_or_empty(os.getenv("ALPACA_CLIENT_ID")) and not _is_placeholder_or_empty(
+            os.getenv("ALPACA_CLIENT_SECRET")
+        )
+        has_api_key = not _is_placeholder_or_empty(os.getenv("ALPACA_API_KEY_ID")) and not _is_placeholder_or_empty(
+            os.getenv("ALPACA_API_SECRET_KEY")
+        )
+        if not has_oauth and not has_api_key:
+            out["alpaca"] = "Missing API key or OAuth credentials"
+
+    # Tastytrade: session or OAuth
+    if services.get("tastytrade") is not None:
+        has_oauth = not _is_placeholder_or_empty(os.getenv("TASTYTRADE_CLIENT_SECRET")) and not _is_placeholder_or_empty(
+            os.getenv("TASTYTRADE_REFRESH_TOKEN")
+        )
+        has_session = not _is_placeholder_or_empty(os.getenv("TASTYTRADE_USERNAME")) and not _is_placeholder_or_empty(
+            os.getenv("TASTYTRADE_PASSWORD")
+        )
+        if not has_oauth and not has_session:
+            out["tastytrade"] = "Missing credentials"
+
+    return out
 
 
 def _apply_env_overrides(config: TUIConfig) -> None:

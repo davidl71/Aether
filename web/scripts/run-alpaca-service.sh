@@ -76,32 +76,20 @@ if [ -z "${ALPACA_CLIENT_ID}" ] || [ -z "${ALPACA_CLIENT_SECRET}" ]; then
   ALPACA_API_SECRET_KEY=$(read_credential "${OP_API_SECRET_SECRET}" "${ALPACA_API_SECRET_KEY:-}" || echo "")
 fi
 
-# Check for required credentials (either OAuth or API keys)
+# Check for required credentials (either OAuth or API keys).
+# If none set, we still start the service; it will run in "disabled" mode and return status: disabled from /api/health.
 if [ -z "${ALPACA_CLIENT_ID}" ] || [ -z "${ALPACA_CLIENT_SECRET}" ]; then
   if [ -z "${ALPACA_API_KEY_ID}" ] || [ -z "${ALPACA_API_SECRET_KEY}" ]; then
-    echo "Error: Alpaca credentials not set" >&2
-    echo "" >&2
-    echo "Option 1: Use OAuth (preferred):" >&2
-    echo "  export ALPACA_CLIENT_ID=your_client_id" >&2
-    echo "  export ALPACA_CLIENT_SECRET=your_client_secret" >&2
-    echo "" >&2
-    echo "Option 2: Use API Keys (fallback):" >&2
-    echo "  export ALPACA_API_KEY_ID=your_key_id" >&2
-    echo "  export ALPACA_API_SECRET_KEY=your_secret_key" >&2
-    echo "" >&2
-    echo "Option 3: Use 1Password (recommended):" >&2
-    echo "  op signin" >&2
-    echo "  export OP_ALPACA_ITEM_UUID='your-item-uuid'" >&2
-    echo "  # Script will auto-detect field names" >&2
-    echo "" >&2
-    echo "Optional:" >&2
-    echo "  export ALPACA_PAPER=1  # Use paper trading (default)" >&2
-    echo "  export SYMBOLS=SPY,QQQ,IWM  # Comma-separated symbols (default: SPY,QQQ)" >&2
-    exit 1
+    echo "Alpaca credentials not set; service will start in disabled mode (TUI will show 'Alpaca: disabled')." >&2
+    echo "To enable: set ALPACA_CLIENT_ID/ALPACA_CLIENT_SECRET (OAuth) or ALPACA_API_KEY_ID/ALPACA_API_SECRET_KEY" >&2
+    export ALPACA_CLIENT_ID="${ALPACA_CLIENT_ID:-}"
+    export ALPACA_CLIENT_SECRET="${ALPACA_CLIENT_SECRET:-}"
+    export ALPACA_API_KEY_ID="${ALPACA_API_KEY_ID:-}"
+    export ALPACA_API_SECRET_KEY="${ALPACA_API_SECRET_KEY:-}"
   fi
 fi
 
-# Export credentials for the Python service
+# Export credentials for the Python service (may be empty)
 export ALPACA_CLIENT_ID
 export ALPACA_CLIENT_SECRET
 export ALPACA_API_KEY_ID

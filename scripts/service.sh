@@ -12,61 +12,197 @@ if [ -f "${SCRIPTS_DIR}/include/config.sh" ]; then
   source "${SCRIPTS_DIR}/include/config.sh"
 fi
 
-declare -A SVC_PORT SVC_CMD SVC_LOG SVC_HEALTH SVC_DISPLAY SVC_WAIT
-
-_register() {
-  local name="$1" display="$2" port="$3" cmd="$4" log="$5" health="${6:-}" wait="${7:-4}"
-  SVC_DISPLAY[$name]="$display"
-  SVC_PORT[$name]="$port"
-  SVC_CMD[$name]="$cmd"
-  SVC_LOG[$name]="$log"
-  SVC_HEALTH[$name]="$health"
-  SVC_WAIT[$name]="$wait"
+_config_port() {
+  if type config_get_port &>/dev/null; then
+    config_get_port "$1" "$2" 2>/dev/null || echo "$2"
+  else
+    echo "$2"
+  fi
 }
 
-_register nats       "NATS"              "" "nats-server"                                        "nats-server.log"            "http://localhost:8222/healthz" 2
-_register ib         "IB"                "$(config_get_port ib 8002 2>/dev/null || echo 8002)"         "./web/scripts/run-ib-service.sh"        "ib-service.log"             "http://localhost:\${PORT}/api/health"
-_register alpaca     "Alpaca"            "$(config_get_port alpaca 8000 2>/dev/null || echo 8000)"     "./web/scripts/run-alpaca-service.sh"    "alpaca-service.log"         "http://localhost:\${PORT}/api/health"
-_register tastytrade "Tastytrade"        "$(config_get_port tastytrade 8005 2>/dev/null || echo 8005)" "./web/scripts/run-tastytrade-service.sh" "tastytrade-service.log"    "http://localhost:\${PORT}/api/health"
-_register tradestation "TradeStation"    "$(config_get_port tradestation 8006 2>/dev/null || echo 8006)" "./web/scripts/run-tradestation-service.sh" "tradestation-service.log" "http://localhost:\${PORT}/api/health"
-_register riskfree   "Risk-Free Rate"    "$(config_get_port risk_free_rate 8004 2>/dev/null || echo 8004)" "./web/scripts/run-risk-free-rate-service.sh" "risk-free-rate-service.log" "http://localhost:\${PORT}/api/health"
-_register discount   "Discount Bank"     "$(config_get_port discount_bank 8003 2>/dev/null || echo 8003)" "./web/scripts/run-discount-bank-service.sh" "discount-bank-service.log" "http://localhost:\${PORT}/api/health"
-_register web        "Web Dev"           "5173"                                                  "npm run dev"                            "web-dev-server.log"         "http://localhost:5173" 3
-_register rust       "Rust Backend"      "$(config_get_port rust_backend 8010 2>/dev/null || echo 8010)" "./agents/start_rust_backend.sh"  "rust-backend.log"           "http://localhost:\${PORT}/health"
-_register memcached  "Memcached"         "11211" "memcached -l 127.0.0.1"                             "memcached.log"              "" 2
+_svc_display() {
+  case "$1" in
+    nats) echo "NATS" ;;
+    memcached) echo "Memcached" ;;
+    gateway) echo "IB Gateway" ;;
+    ib) echo "IB" ;;
+    alpaca) echo "Alpaca" ;;
+    tastytrade) echo "Tastytrade" ;;
+    tradestation) echo "TradeStation" ;;
+    riskfree) echo "Risk-Free Rate" ;;
+    discount) echo "Discount Bank" ;;
+    web) echo "Web Dev" ;;
+    rust) echo "Rust Backend" ;;
+    *) echo "" ;;
+  esac
+}
+
+_svc_port() {
+  case "$1" in
+    nats) echo "" ;;
+    memcached) echo "11211" ;;
+    gateway) echo "${IB_GATEWAY_PORT:-5000}" ;;
+    ib) _config_port ib 8002 ;;
+    alpaca) _config_port alpaca 8000 ;;
+    tastytrade) _config_port tastytrade 8005 ;;
+    tradestation) _config_port tradestation 8006 ;;
+    riskfree) _config_port risk_free_rate 8004 ;;
+    discount) _config_port discount_bank 8003 ;;
+    web) echo "5173" ;;
+    rust) _config_port rust_backend 8010 ;;
+    *) echo "" ;;
+  esac
+}
+
+_svc_cmd() {
+  case "$1" in
+    nats) echo "nats-server" ;;
+    memcached) echo "memcached -l 127.0.0.1" ;;
+    gateway) echo "./ib-gateway/run-gateway.sh" ;;
+    ib) echo "./web/scripts/run-ib-service.sh" ;;
+    alpaca) echo "./web/scripts/run-alpaca-service.sh" ;;
+    tastytrade) echo "./web/scripts/run-tastytrade-service.sh" ;;
+    tradestation) echo "./web/scripts/run-tradestation-service.sh" ;;
+    riskfree) echo "./web/scripts/run-risk-free-rate-service.sh" ;;
+    discount) echo "./web/scripts/run-discount-bank-service.sh" ;;
+    web) echo "npm run dev" ;;
+    rust) echo "./agents/start_rust_backend.sh" ;;
+    *) echo "" ;;
+  esac
+}
+
+_svc_log() {
+  case "$1" in
+    nats) echo "nats-server.log" ;;
+    memcached) echo "memcached.log" ;;
+    gateway) echo "ib-gateway.log" ;;
+    ib) echo "ib-service.log" ;;
+    alpaca) echo "alpaca-service.log" ;;
+    tastytrade) echo "tastytrade-service.log" ;;
+    tradestation) echo "tradestation-service.log" ;;
+    riskfree) echo "risk-free-rate-service.log" ;;
+    discount) echo "discount-bank-service.log" ;;
+    web) echo "web-dev-server.log" ;;
+    rust) echo "rust-backend.log" ;;
+    *) echo "" ;;
+  esac
+}
+
+_svc_health() {
+  case "$1" in
+    nats) echo "http://localhost:8222/healthz" ;;
+    memcached) echo "" ;;
+    gateway) echo "https://localhost:\${PORT}" ;;
+    ib|alpaca|tastytrade|tradestation|riskfree|discount)
+      echo "http://localhost:\${PORT}/api/health"
+      ;;
+    rust) echo "http://localhost:\${PORT}/health" ;;
+    web) echo "http://localhost:5173" ;;
+    *) echo "" ;;
+  esac
+}
+
+_svc_wait() {
+  case "$1" in
+    nats|memcached) echo "2" ;;
+    gateway) echo "5" ;;
+    web) echo "6" ;;
+    tradestation) echo "10" ;;
+    ib|alpaca|tastytrade|riskfree|discount) echo "8" ;;
+    *) echo "4" ;;
+  esac
+}
+
+_svc_known() {
+  case "$1" in
+    nats|memcached|gateway|ib|alpaca|tastytrade|tradestation|riskfree|discount|web|rust)
+      return 0
+      ;;
+    *) return 1 ;;
+  esac
+}
 
 _is_nats() { [[ "$1" == "nats" ]]; }
 _is_memcached() { [[ "$1" == "memcached" ]]; }
 
 _find_pid() {
   local svc="$1"
+  local port
   if _is_nats "$svc"; then
     pgrep -f "nats-server" 2>/dev/null || true
   elif _is_memcached "$svc"; then
     pgrep -f "memcached" 2>/dev/null || true
   else
-    lsof -ti :"${SVC_PORT[$svc]}" 2>/dev/null || true
+    port=$(_svc_port "$svc")
+    if [[ -n "$port" ]]; then
+      lsof -ti :"$port" 2>/dev/null || true
+    fi
   fi
 }
 
 _health_url() {
   local svc="$1"
-  local url="${SVC_HEALTH[$svc]}"
-  local port="${SVC_PORT[$svc]}"
+  local url port
+  url=$(_svc_health "$svc")
+  port=$(_svc_port "$svc")
+  if [[ -z "$url" ]]; then
+    echo ""
+    return
+  fi
   echo "${url//\$\{PORT\}/$port}"
+}
+
+# Returns 0 if the service is really running (PID present and health check passes when available).
+_service_really_running() {
+  local svc="$1"
+  local pid url code
+  pid=$(_find_pid "$svc")
+  if [[ -z "$pid" ]]; then
+    return 1
+  fi
+  url=$(_health_url "$svc")
+  if [[ -z "$url" ]]; then
+    # No health URL (e.g. memcached): PID present is enough
+    return 0
+  fi
+  if [[ "$url" == https* ]]; then
+    code=$(curl -sk --connect-timeout 2 -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")
+    # Gateway returns 401 when not logged in but is running; any response means process is up
+    [[ "$code" != "000" ]]
+    return $?
+  fi
+  curl -sf --connect-timeout 2 "$url" >/dev/null 2>&1
+  return $?
 }
 
 do_start() {
   local svc="$1"
-  local display="${SVC_DISPLAY[$svc]}"
-  local port="${SVC_PORT[$svc]}"
-  local log="${LOGS_DIR}/${SVC_LOG[$svc]}"
-  local wait="${SVC_WAIT[$svc]}"
+  local display port log wait_sec cmd
+  display=$(_svc_display "$svc")
+  port=$(_svc_port "$svc")
+  log="${LOGS_DIR}/$(_svc_log "$svc")"
+  wait_sec=$(_svc_wait "$svc")
+  cmd=$(_svc_cmd "$svc")
 
-  local pid; pid=$(_find_pid "$svc")
+  local pid
+  pid=$(_find_pid "$svc")
   if [[ -n "$pid" ]]; then
-    echo "[info] ${display} already running (PID: $pid)"
-    return 0
+    if _service_really_running "$svc"; then
+      echo "[info] ${display} already running (PID: ${pid//$'\n'/, }, healthy)"
+      return 0
+    fi
+    # Port/process present but not responding – assume stale or wrong process; kill and restart
+    if [[ -n "$port" ]]; then
+      echo "[warn] ${display}: process on port ${port} not responding to health check; killing and restarting..."
+    else
+      echo "[warn] ${display}: process in use but not responding; killing and restarting..."
+    fi
+    if [[ -n "$port" ]] && command -v lsof >/dev/null 2>&1; then
+      lsof -ti :"$port" 2>/dev/null | xargs kill -9 2>/dev/null || true
+    else
+      echo "$pid" | xargs kill -9 2>/dev/null || true
+    fi
+    sleep 2
   fi
 
   mkdir -p "$LOGS_DIR"
@@ -81,19 +217,25 @@ do_start() {
     fi
   elif _is_memcached "$svc"; then
     memcached -l 127.0.0.1 > "$log" 2>&1 &
+  elif [[ "$svc" == "gateway" ]]; then
+    (cd "${ROOT_DIR}" && ./ib-gateway/run-gateway.sh >> "$log" 2>&1) &
   elif [[ "$svc" == "web" ]]; then
     (cd "${ROOT_DIR}/web" && npm run dev > "$log" 2>&1) &
   else
-    ${SVC_CMD[$svc]} > "$log" 2>&1 &
+    (cd "${ROOT_DIR}" && eval "$cmd" > "$log" 2>&1) &
   fi
 
   local svc_pid=$!
   disown "$svc_pid" 2>/dev/null || true
-  sleep "$wait"
+  sleep "$wait_sec"
 
   pid=$(_find_pid "$svc")
   if [[ -n "$pid" ]]; then
-    echo "[info] ${display} started (PID: $pid)"
+    if _service_really_running "$svc"; then
+      echo "[info] ${display} started (PID: ${pid//$'\n'/, }, healthy)"
+    else
+      echo "[info] ${display} started (PID: ${pid//$'\n'/, }; health check not yet passing)"
+    fi
     [[ -n "$port" ]] && echo "[info] Port: $port"
     echo "[info] Log: $log"
   else
@@ -105,48 +247,65 @@ do_start() {
 
 do_stop() {
   local svc="$1"
-  local display="${SVC_DISPLAY[$svc]}"
+  local display port
+  display=$(_svc_display "$svc")
+  port=$(_svc_port "$svc")
 
-  local pid; pid=$(_find_pid "$svc")
+  local pid
+  pid=$(_find_pid "$svc")
   if [[ -z "$pid" ]]; then
     echo "[info] ${display} is not running"
     return 0
   fi
 
-  echo "[info] Stopping ${display} (PID: $pid)..."
-  kill $pid 2>/dev/null || true
+  echo "[info] Stopping ${display} (PID: ${pid//$'\n'/, })..."
+  # Kill all PIDs (may be newline-separated)
+  echo "$pid" | xargs kill 2>/dev/null || true
 
-  for _ in {1..10}; do
+  local i
+  for i in 1 2 3 4 5 6 7 8 9 10; do
     pid=$(_find_pid "$svc")
     [[ -z "$pid" ]] && { echo "[info] ${display} stopped"; return 0; }
     sleep 0.5
   done
 
+  echo "[warn] Force killing ${display}..."
+  echo "$pid" | xargs kill -9 2>/dev/null || true
+  sleep 1
+
+  # Fallback: kill by port so nothing is left listening
+  if [[ -n "$port" ]] && command -v lsof >/dev/null 2>&1; then
+    lsof -ti :"$port" 2>/dev/null | xargs kill -9 2>/dev/null || true
+    sleep 0.5
+  fi
+
   pid=$(_find_pid "$svc")
   if [[ -n "$pid" ]]; then
-    echo "[warn] Force killing ${display}..."
-    kill -9 $pid 2>/dev/null || true
-    sleep 1
-    pid=$(_find_pid "$svc")
-    if [[ -n "$pid" ]]; then
-      echo "[error] Failed to stop ${display}"
-      return 1
-    fi
+    echo "[error] Failed to stop ${display}"
+    return 1
   fi
   echo "[info] ${display} stopped"
 }
 
 do_status() {
   local svc="$1"
-  local display="${SVC_DISPLAY[$svc]}"
-  local pid; pid=$(_find_pid "$svc")
+  local display pid health_url health code
+  display=$(_svc_display "$svc")
+  pid=$(_find_pid "$svc")
   if [[ -n "$pid" ]]; then
-    local health_url; health_url=$(_health_url "$svc")
-    local health="unknown"
+    health_url=$(_health_url "$svc")
+    health="unknown"
     if [[ -n "$health_url" ]]; then
-      curl -sf "$health_url" >/dev/null 2>&1 && health="healthy" || health="unhealthy"
+      if [[ "$health_url" == https* ]]; then
+        code=$(curl -sk --connect-timeout 2 -o /dev/null -w "%{http_code}" "$health_url" 2>/dev/null || echo "000")
+        [[ "$code" != "000" ]] && health="healthy" || health="unhealthy"
+      else
+        curl -sf --connect-timeout 2 "$health_url" >/dev/null 2>&1 && health="healthy" || health="unhealthy"
+      fi
+    else
+      health="no-check"
     fi
-    echo "[info] ${display}: running (PID: $pid, health: $health)"
+    echo "[info] ${display}: running (PID: ${pid//$'\n'/, }, health: $health)"
   else
     echo "[info] ${display}: stopped"
   fi
@@ -154,7 +313,8 @@ do_status() {
 
 do_logs() {
   local svc="$1"
-  local log="${LOGS_DIR}/${SVC_LOG[$svc]}"
+  local log
+  log="${LOGS_DIR}/$(_svc_log "$svc")"
   if [[ -f "$log" ]]; then
     tail -50 "$log"
   else
@@ -162,11 +322,18 @@ do_logs() {
   fi
 }
 
+do_restart() {
+  local svc="$1"
+  do_stop "$svc"
+  do_start "$svc"
+}
+
 do_list() {
   echo "Available services:"
-  for svc in nats memcached ib alpaca tastytrade tradestation riskfree discount web rust; do
-    local port="${SVC_PORT[$svc]}"
-    printf "  %-14s  %-20s  %s\n" "$svc" "${SVC_DISPLAY[$svc]}" "${port:+port $port}"
+  local svc port
+  for svc in nats memcached gateway ib alpaca tastytrade tradestation riskfree discount web rust; do
+    port=$(_svc_port "$svc")
+    printf "  %-14s  %-20s  %s\n" "$svc" "$(_svc_display "$svc")" "${port:+port $port}"
   done
 }
 
@@ -177,13 +344,13 @@ case "$ACTION" in
   list)
     do_list
     ;;
-  start|stop|status|logs)
+  start|stop|restart|status|logs)
     if [[ -z "$SERVICE" ]]; then
       echo "Usage: $0 $ACTION <service-name>"
       echo "Run '$0 list' to see available services."
       exit 1
     fi
-    if [[ -z "${SVC_DISPLAY[$SERVICE]+x}" ]]; then
+    if ! _svc_known "$SERVICE"; then
       echo "[error] Unknown service: $SERVICE"
       do_list
       exit 1
@@ -191,7 +358,7 @@ case "$ACTION" in
     "do_${ACTION}" "$SERVICE"
     ;;
   *)
-    echo "Usage: $0 {start|stop|status|logs|list} [service-name]"
+    echo "Usage: $0 {start|stop|restart|status|logs|list} [service-name]"
     exit 1
     ;;
 esac

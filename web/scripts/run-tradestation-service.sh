@@ -38,26 +38,16 @@ OP_CLIENT_SECRET_SECRET="${OP_TRADESTATION_CLIENT_SECRET_SECRET:-}"
 TRADESTATION_CLIENT_ID=$(read_credential "${OP_CLIENT_ID_SECRET}" "${TRADESTATION_CLIENT_ID:-}" "Client ID" || echo "")
 TRADESTATION_CLIENT_SECRET=$(read_credential "${OP_CLIENT_SECRET_SECRET}" "${TRADESTATION_CLIENT_SECRET:-}" "Client Secret" || echo "")
 
-# Check for required credentials
+# Check for required credentials.
+# If none set, we still start the service; it will run in "disabled" mode and return status: disabled from /api/health.
 if [ -z "${TRADESTATION_CLIENT_ID}" ] || [ -z "${TRADESTATION_CLIENT_SECRET}" ]; then
-  echo "Error: TradeStation credentials not set" >&2
-  echo "" >&2
-  echo "Option 1: Use 1Password (recommended):" >&2
-  echo "  export OP_TRADESTATION_CLIENT_ID_SECRET='op://Vault/Item/Client ID'" >&2
-  echo "  export OP_TRADESTATION_CLIENT_SECRET_SECRET='op://Vault/Item/Client Secret'" >&2
-  echo "" >&2
-  echo "Option 2: Use environment variables:" >&2
-  echo "  export TRADESTATION_CLIENT_ID=your_client_id" >&2
-  echo "  export TRADESTATION_CLIENT_SECRET=your_client_secret" >&2
-  echo "" >&2
-  echo "Optional:" >&2
-  echo "  export TRADESTATION_SIM=1  # Use SIM environment (default)" >&2
-  echo "  export TRADESTATION_ACCOUNT_ID=your_account_id  # Optional account ID" >&2
-  echo "  export SYMBOLS=SPY,QQQ,IWM  # Comma-separated symbols (default: SPY,QQQ)" >&2
-  exit 1
+  echo "TradeStation credentials not set; service will start in disabled mode (TUI will show 'TradeStation: disabled')." >&2
+  echo "To enable: set TRADESTATION_CLIENT_ID/TRADESTATION_CLIENT_SECRET or use 1Password (OP_TRADESTATION_*)" >&2
+  export TRADESTATION_CLIENT_ID="${TRADESTATION_CLIENT_ID:-}"
+  export TRADESTATION_CLIENT_SECRET="${TRADESTATION_CLIENT_SECRET:-}"
 fi
 
-# Export credentials for the Python service
+# Export credentials for the Python service (may be empty)
 export TRADESTATION_CLIENT_ID
 export TRADESTATION_CLIENT_SECRET
 

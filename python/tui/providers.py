@@ -19,8 +19,8 @@ import time
 import threading
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional
-from datetime import datetime
+from typing import Optional, Dict, Any
+from datetime import datetime, timezone
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -29,6 +29,91 @@ from urllib3.util.retry import Retry
 from .models import SnapshotPayload
 
 logger = logging.getLogger(__name__)
+
+
+# Backend services that expose GET /api/health (same shape: status, ib_connected?, error?)
+BACKEND_HEALTH_TIMEOUT_SEC = 2.0
+BACKEND_HEALTH_INTERVAL_SEC = 2.5
+
+
+class BackendHealthAggregator:
+    """
+    Polls /api/health for multiple backend services and exposes aggregated health.
+    Used by the TUI to display all backend provider status in the status line.
+    """
+
+    def __init__(self, backend_ports: Dict[str, int], interval_sec: float = BACKEND_HEALTH_INTERVAL_SEC):
+        self._backend_ports = dict(backend_ports)
+        self._interval_sec = interval_sec
+        self._healths: Dict[str, Dict[str, Any]] = {}
+        self._lock = threading.Lock()
+        self._thread: Optional[threading.Thread] = None
+        self._running = False
+        self._session = requests.Session()
+
+    def start(self) -> None:
+        if self._running or not self._backend_ports:
+            return
+        self._running = True
+        self._thread = threading.Thread(target=self._poll_loop, daemon=True)
+        self._thread.start()
+        logger.info(f"BackendHealthAggregator started for backends: {list(self._backend_ports.keys())}")
+
+    def stop(self) -> None:
+        self._running = False
+        if self._thread:
+            self._thread.join(timeout=self._interval_sec + 1.0)
+        logger.info("BackendHealthAggregator stopped")
+
+    def get_all_health(self) -> Dict[str, Dict[str, Any]]:
+        """Return current health dict for all backends (name -> health payload)."""
+        with self._lock:
+            return dict(self._healths)
+
+    def _poll_loop(self) -> None:
+        while self._running:
+            for name, port in list(self._backend_ports.items()):
+                if not self._running:
+                    break
+                url = f"http://127.0.0.1:{port}/api/health"
+                try:
+                    r = self._session.get(url, timeout=BACKEND_HEALTH_TIMEOUT_SEC)
+                    if r.ok:
+                        data = r.json()
+                    else:
+                        try:
+                            data = r.json()
+                        except Exception:
+                            data = {}
+                        data["status"] = "error"
+                        data["ib_connected"] = False
+                        data["error"] = data.get("error") or f"HTTP {r.status_code}"
+                        logger.debug("Backend %s unreachable: %s", name, data["error"])
+                    with self._lock:
+                        self._healths[name] = data
+                except Exception as e:
+                    logger.debug("Backend %s unreachable: %s", name, e)
+                    with self._lock:
+                        self._healths[name] = {
+                            "status": "error",
+                            "ib_connected": False,
+                            "error": str(e),
+                        }
+            time.sleep(self._interval_sec)
+
+
+def normalize_rest_endpoint(url: str) -> str:
+    """Ensure REST URL points at a snapshot endpoint (e.g. .../api/snapshot or .../api/v1/snapshot)."""
+    if not url or not url.strip():
+        return "http://127.0.0.1:8002/api/snapshot"
+    url = url.strip().rstrip("/")
+    if "/api/" in url and ("/snapshot" in url or "/v1/snapshot" in url):
+        return url
+    if url.endswith("/api") or url.endswith("/api/v1"):
+        return f"{url}/snapshot"
+    if "/api" not in url:
+        return f"{url}/api/snapshot"
+    return f"{url}/snapshot"
 
 
 class Provider(ABC):
@@ -127,7 +212,7 @@ class MockProvider(Provider):
 
     def _generate_snapshot(self) -> SnapshotPayload:
         """Generate a synthetic snapshot"""
-        now = datetime.utcnow().isoformat() + "Z"
+        now = datetime.now(timezone.utc).isoformat()
 
         # Generate mock symbols
         symbols = []
@@ -181,18 +266,27 @@ class MockProvider(Provider):
 
 class RestProvider(Provider):
     """
-    REST API provider that polls an HTTP endpoint for snapshots
-
-    MIGRATION NOTE: Can use C++ HTTP libraries (curl, httplib, etc.) via pybind11
-    or keep Python implementation for simplicity
+    REST API provider that polls an HTTP endpoint for snapshots.
+    When the endpoint is an IB service (e.g. .../api/snapshot), also polls
+    .../api/health and exposes get_health() for UI status (e.g. IB connected).
     """
 
-    def __init__(self, endpoint: str, update_interval_ms: int = 1000, timeout_ms: int = 5000):
+    def __init__(
+        self,
+        endpoint: str,
+        update_interval_ms: int = 1000,
+        timeout_ms: int = 15000,
+        verify_ssl: bool = True,
+    ):
         super().__init__()
-        self.endpoint = endpoint
+        self.endpoint = normalize_rest_endpoint(endpoint)
         self.update_interval_ms = update_interval_ms
         self.timeout_sec = timeout_ms / 1000.0
+        self._verify_ssl = verify_ssl
         self._worker_thread: Optional[threading.Thread] = None
+        self._health_url = self._derive_health_url(endpoint)
+        self._last_health: Optional[dict] = None
+        self._health_lock = threading.Lock()
 
         # Configure requests session with retry strategy
         self._session = requests.Session()
@@ -229,8 +323,53 @@ class RestProvider(Provider):
     def is_running(self) -> bool:
         return self._running
 
+    @staticmethod
+    def _derive_health_url(snapshot_endpoint: str) -> Optional[str]:
+        """Derive /api/health URL from snapshot endpoint (e.g. .../api/snapshot -> origin/api/health)."""
+        if not snapshot_endpoint or not snapshot_endpoint.strip():
+            return None
+        from urllib.parse import urlparse
+        parsed = urlparse(snapshot_endpoint.strip().rstrip("/"))
+        if not parsed.scheme or not parsed.netloc:
+            return None
+        origin = f"{parsed.scheme}://{parsed.netloc}"
+        return f"{origin}/api/health"
+
+    def get_health(self) -> Optional[dict]:
+        """Return last health response from backend, if available (RestProvider only)."""
+        with self._health_lock:
+            return dict(self._last_health) if self._last_health else None
+
+    def _fetch_health(self) -> None:
+        """Fetch health from backend and store in _last_health."""
+        if not self._health_url:
+            return
+        try:
+            response = self._session.get(
+                self._health_url,
+                timeout=self.timeout_sec,
+                headers={"Accept": "application/json"},
+                verify=self._verify_ssl,
+            )
+            if response.ok:
+                data = response.json()
+            else:
+                try:
+                    data = response.json()
+                except Exception:
+                    data = {}
+                data["status"] = "error"
+                data["ib_connected"] = False
+                data["error"] = data.get("error") or f"HTTP {response.status_code}"
+            with self._health_lock:
+                self._last_health = data
+        except Exception as e:
+            logger.debug(f"Health check failed: {e}")
+            with self._health_lock:
+                self._last_health = {"status": "error", "ib_connected": False, "error": str(e)}
+
     def _poll_loop(self) -> None:
-        """Background thread that polls the REST endpoint"""
+        """Background thread that polls the REST endpoint and health."""
         while self._running:
             try:
                 snapshot = self._fetch()
@@ -238,6 +377,7 @@ class RestProvider(Provider):
                     self._latest_snapshot = snapshot
             except Exception as e:
                 logger.error(f"Failed to fetch snapshot: {e}")
+            self._fetch_health()
             time.sleep(self.update_interval_ms / 1000.0)
 
     def _fetch(self) -> SnapshotPayload:
@@ -246,7 +386,8 @@ class RestProvider(Provider):
             response = self._session.get(
                 self.endpoint,
                 timeout=self.timeout_sec,
-                headers={"Accept": "application/json"}
+                headers={"Accept": "application/json"},
+                verify=self._verify_ssl,
             )
             response.raise_for_status()
             data = response.json()

@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime, timezone
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 from fastapi import FastAPI
 from pathlib import Path
@@ -41,8 +41,31 @@ def _symbols_from_env() -> List[str]:
     return [s.strip().upper() for s in raw.split(",") if s.strip()]
 
 
-def build_snapshot_payload(symbols: List[str], client: TradeStationClient) -> Dict[str, Any]:
+def build_snapshot_payload(symbols: List[str], client: Optional[TradeStationClient]) -> Dict[str, Any]:
     # Map to the web/src/types/snapshot.ts SnapshotPayload shape
+    if client is None:
+        return {
+            "generated_at": _now_iso(),
+            "mode": "SIM",
+            "strategy": "box_spread",
+            "account_id": "TRADESTATION",
+            "metrics": {
+                "net_liq": 0.0,
+                "buying_power": 0.0,
+                "excess_liquidity": 0.0,
+                "margin_requirement": 0.0,
+                "commissions": 0.0,
+                "portal_ok": False,
+                "tws_ok": False,
+                "orats_ok": False,
+                "questdb_ok": False,
+            },
+            "symbols": [],
+            "positions": [],
+            "historic": [],
+            "orders": [],
+            "alerts": [],
+        }
     symbol_snapshots: List[Dict[str, Any]] = []
     for sym in symbols:
         s = client.get_snapshot(sym)
@@ -102,10 +125,23 @@ def create_app() -> FastAPI:
     add_security_to_app(app, project_root=project_root)
     add_security_headers_middleware(app)
 
-    client = TradeStationClient()
+    # Support start without credentials; allow disabled mode for TUI
+    client: Optional[TradeStationClient] = None
+    client_disabled_reason: Optional[str] = None
+    try:
+        client = TradeStationClient()
+    except Exception as e:
+        client_disabled_reason = str(e).split("\n")[0].strip() or "Missing credentials"
 
     @app.get("/api/health")
-    def health() -> Dict[str, str]:
+    def health() -> Dict[str, Any]:
+        """Health check. Returns status 'disabled' when credentials are missing."""
+        if client is None:
+            return {
+                "status": "disabled",
+                "ts": _now_iso(),
+                "error": client_disabled_reason or "Missing credentials",
+            }
         return {"status": "ok", "ts": _now_iso()}
 
     @app.get("/api/snapshot")
@@ -123,6 +159,17 @@ def create_app() -> FastAPI:
                 # Non-fatal
                 pass
         return payload
+
+    @app.get("/api/accounts")
+    def list_accounts() -> Dict[str, Any]:
+        """Account list for PWA/TUI compatibility. TradeStation SIM often has one account."""
+        if client is None:
+            return {"accounts": [], "error": client_disabled_reason or "Missing credentials", "ts": _now_iso()}
+        try:
+            # TradeStation API may expose account list; return stub until integrated
+            return {"accounts": [], "ts": _now_iso()}
+        except Exception as e:
+            return {"accounts": [], "error": str(e), "ts": _now_iso()}
 
     return app
 
