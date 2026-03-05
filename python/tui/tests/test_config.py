@@ -12,11 +12,35 @@ from unittest.mock import patch
 
 
 from .. import config as config_module
-from ..config import TUIConfig, load_config, _apply_env_overrides
+from ..config import TUIConfig, load_config, _apply_env_overrides, DEFAULT_BACKEND_PORTS, DEFAULT_TCP_BACKEND_PORTS, PRESET_REST_ENDPOINTS
 
 
-# Default rest_endpoint in config.py
-DEFAULT_REST_ENDPOINT = "http://localhost:8080/api/v1/snapshot"
+# Rest endpoint default in TUIConfig (IB service port)
+DEFAULT_REST_ENDPOINT = "http://localhost:8002/api/v1/snapshot"
+
+
+def test_default_backend_ports_includes_all_services():
+    """DEFAULT_BACKEND_PORTS should include ib, alpaca, tastytrade, tradestation, discount_bank, risk_free_rate, rust."""
+    assert DEFAULT_BACKEND_PORTS.get("ib") == 8002
+    assert DEFAULT_BACKEND_PORTS.get("alpaca") == 8000
+    assert DEFAULT_BACKEND_PORTS.get("tastytrade") == 8005
+    assert DEFAULT_BACKEND_PORTS.get("tradestation") == 8001
+    assert DEFAULT_BACKEND_PORTS.get("discount_bank") == 8003
+    assert DEFAULT_BACKEND_PORTS.get("risk_free_rate") == 8004
+    assert DEFAULT_BACKEND_PORTS.get("rust") == 8080
+
+
+def test_preset_rest_endpoints():
+    """PRESET_REST_ENDPOINTS should map preset keys to snapshot URLs."""
+    assert "rest_ib" in PRESET_REST_ENDPOINTS
+    assert "8002" in PRESET_REST_ENDPOINTS["rest_ib"]
+    assert "rest_alpaca" in PRESET_REST_ENDPOINTS
+    assert "8000" in PRESET_REST_ENDPOINTS["rest_alpaca"]
+
+
+def test_default_tcp_backend_ports_includes_tws():
+    """DEFAULT_TCP_BACKEND_PORTS should include TWS/Gateway paper port."""
+    assert DEFAULT_TCP_BACKEND_PORTS.get("tws") == 7497
 
 
 # ---------------------------------------------------------------------------
@@ -43,7 +67,7 @@ class TestTUIConfigDefaults:
 
     def test_default_ibkr_rest(self):
         cfg = TUIConfig()
-        assert "5000" in cfg.ibkr_rest_base_url
+        assert "5001" in cfg.ibkr_rest_base_url
 
     def test_custom_values(self):
         config = TUIConfig(
@@ -267,7 +291,9 @@ class TestLoadConfig:
 
         assert config.file_path == "/env/path.json"
 
-    def test_load_config_no_file_uses_defaults(self):
+    def test_load_config_no_file_uses_defaults(self, tmp_path):
+        """When no config exists, load_config returns defaults and persists to get_config_path()."""
+        config_path = str(tmp_path / "config.json")
         with patch.object(
             config_module.SharedConfigLoader,
             "load_config",
@@ -276,7 +302,7 @@ class TestLoadConfig:
             with patch.object(
                 config_module.TUIConfig,
                 "get_config_path",
-                return_value="/nonexistent/config.json",
+                return_value=config_path,
             ):
                 config = load_config()
 

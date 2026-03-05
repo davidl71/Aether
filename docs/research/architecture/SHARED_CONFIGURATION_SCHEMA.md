@@ -102,7 +102,7 @@ This document designs a unified JSON configuration file format that supports TUI
       "autoReconnect": true
     },
     "clientPortal": {
-      "gatewayUrl": "https://localhost:5000",
+      "gatewayUrl": "https://localhost:5001",
       "oauthConsumerKey": "${IB_OAUTH_CONSUMER_KEY}",
       "oauthConsumerSecret": "${IB_OAUTH_CONSUMER_SECRET}",
       "oauthToken": "${IB_OAUTH_TOKEN}",
@@ -221,7 +221,7 @@ For applications that support multiple simultaneous sources (like PWA), use prio
     "restVerifySsl": false,
     "filePath": "web/public/data/snapshot.json",
     "ibkrRest": {
-      "baseUrl": "https://localhost:5000/v1/portal",
+      "baseUrl": "https://localhost:5001/v1/portal",
       "accountId": "",
       "verifySsl": false,
       "timeoutMs": 10000

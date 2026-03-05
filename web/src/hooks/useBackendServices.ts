@@ -53,7 +53,7 @@ const DASHBOARD_KEY_MAP: Record<string, keyof typeof SERVICE_CONFIG> = {
 
 // Authentication URLs for services that require web-based login
 const AUTH_URLS: Record<string, string> = {
-  'IB': 'https://localhost:5000', // IB Client Portal Gateway login page
+  'IB': 'https://localhost:5001', // IB Client Portal Gateway login page
   'Alpaca': 'https://app.alpaca.markets', // Alpaca dashboard (for API key management)
 };
 

@@ -16,7 +16,7 @@ import logging
 import os
 from dataclasses import dataclass, asdict, field
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 from ..integration.shared_config_loader import SharedConfigLoader
 
@@ -76,7 +76,7 @@ class TUIConfig:
     file_path: Optional[str] = None
 
     # IBKR REST API settings
-    ibkr_rest_base_url: str = "https://localhost:5000/v1/portal"
+    ibkr_rest_base_url: str = "https://localhost:5001/v1/portal"
     ibkr_rest_account_id: str = ""
     ibkr_rest_verify_ssl: bool = False
     ibkr_rest_timeout_ms: int = 5000
@@ -95,6 +95,11 @@ class TUIConfig:
 
     # Optional: unified health dashboard URL (GET returns { backends: { name: health } }). When set, TUI uses it instead of polling each backend.
     health_dashboard_url: Optional[str] = None
+
+    # Symbol watchlist for dashboard; mock provider generates data for these symbols when provider is mock.
+    watchlist: List[str] = field(
+        default_factory=lambda: ["SPX", "XSP", "NANOS", "TLT", "DSP"]
+    )
 
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization"""
@@ -193,7 +198,7 @@ def load_config() -> TUIConfig:
                 rest_verify_ssl=shared_tui.rest_verify_ssl,
                 file_path=shared_tui.file_path,
                 ibkr_rest_base_url=ibkr_rest_dict.get(
-                    "baseUrl", ibkr_rest_dict.get("base_url", "https://localhost:5000/v1/portal")
+                    "baseUrl", ibkr_rest_dict.get("base_url", "https://localhost:5001/v1/portal")
                 ),
                 ibkr_rest_account_id=ibkr_rest_dict.get("accountId", ibkr_rest_dict.get("account_id", "")),
                 ibkr_rest_verify_ssl=ibkr_rest_dict.get("verifySsl", ibkr_rest_dict.get("verify_ssl", False)),

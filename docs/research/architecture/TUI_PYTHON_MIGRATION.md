@@ -185,7 +185,7 @@ The Python TUI can use official Python APIs directly:
 ```python
 from python.integration.ibkr_portal_client import IBKRPortalClient
 
-client = IBKRPortalClient(base_url="https://localhost:5000/v1/portal")
+client = IBKRPortalClient(base_url="https://localhost:5001/v1/portal")
 account_data = client.get_account_summary()
 ```
 

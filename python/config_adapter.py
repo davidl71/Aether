@@ -282,7 +282,7 @@ class ConfigAdapter:
         portal = config.get("ibkr_portal", {})
         return {
             "enabled": portal.get("enabled", False),
-            "base_url": portal.get("base_url", "https://localhost:5000/v1/portal"),
+            "base_url": portal.get("base_url", "https://localhost:5001/v1/portal"),
             "verify_ssl": portal.get("verify_ssl", False),
             "timeout_seconds": portal.get("timeout_seconds", 5),
             "preferred_accounts": portal.get("preferred_accounts", []),

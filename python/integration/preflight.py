@@ -124,7 +124,7 @@ class PreflightChecklist:
         if self.portal_cfg.get("enabled", False):
             logger.info(
                 "IBKR Client Portal API enabled (%s)",
-                self.portal_cfg.get("base_url", "https://localhost:5000/v1/portal"),
+                self.portal_cfg.get("base_url", "https://localhost:5001/v1/portal"),
             )
         else:
             warnings.append("IBKR Client Portal integration disabled; account snapshots require TWS")

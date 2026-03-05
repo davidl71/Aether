@@ -24,7 +24,7 @@ public:
      * Configuration for IB Client Portal stub adapter
      */
     struct Config {
-        std::string base_url = "https://localhost:5000/v1/api";
+        std::string base_url = "https://localhost:5001/v1/api";
         std::string account_id = "STUB_ACCOUNT";
         bool use_oauth = false;
         std::string client_id = "STUB_CLIENT_ID";

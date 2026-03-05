@@ -677,7 +677,7 @@ if [ "${SERVICE_MANAGER}" = "systemctl" ]; then
       echo "${BLUE}Waiting for Gateway to be ready before starting IB service...${NC}"
       for i in {1..20}; do
         sleep 1
-        if curl -k -s --connect-timeout 1 "https://localhost:5000/sso/validate" >/dev/null 2>&1; then
+        if curl -k -s --connect-timeout 1 "https://localhost:${IB_GATEWAY_PORT:-5001}/sso/validate" >/dev/null 2>&1; then
           echo "${GREEN}✓ Gateway is ready${NC}"
           GATEWAY_RUNNING=true
           break
@@ -762,7 +762,7 @@ if [[ " ${SERVICES_TO_START[*]} " =~ " gateway " ]]; then
       GATEWAY_RUNNING=true
     fi
   elif [ -f "${GATEWAY_DIR}/run-gateway-with-reload.sh" ] || [ -f "${GATEWAY_DIR}/run-gateway.sh" ] || [ -f "${GATEWAY_DIR}/bin/run.sh" ]; then
-    if ! curl -k -s --connect-timeout 1 "https://localhost:5000/sso/validate" >/dev/null 2>&1; then
+    if ! curl -k -s --connect-timeout 1 "https://localhost:${IB_GATEWAY_PORT:-5001}/sso/validate" >/dev/null 2>&1; then
       echo "${BLUE}Starting IB Gateway in background...${NC}"
       (
         cd "$GATEWAY_DIR"
@@ -902,7 +902,7 @@ if [[ " ${SERVICES_TO_START[*]} " =~ " ib " ]]; then
     echo "${BLUE}Waiting for Gateway to be ready before starting IB service...${NC}"
     for i in {1..20}; do
       sleep 1
-      if curl -k -s --connect-timeout 1 "https://localhost:5000/sso/validate" >/dev/null 2>&1; then
+      if curl -k -s --connect-timeout 1 "https://localhost:${IB_GATEWAY_PORT:-5001}/sso/validate" >/dev/null 2>&1; then
         echo "${GREEN}✓ Gateway is ready${NC}"
         GATEWAY_RUNNING=true
         break

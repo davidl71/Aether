@@ -336,7 +336,7 @@ Edit `config/config.json`:
   },
   "ibkr_portal": {
     "enabled": false,
-    "base_url": "https://localhost:5000/v1/portal",
+    "base_url": "https://localhost:5001/v1/portal",
     "verify_ssl": false,
     "preferred_accounts": []
   }
@@ -373,7 +373,7 @@ Configure a primary provider and optional fallbacks. The router will attempt eac
 ### IBKR Client Portal API
 
 - `ibkr_portal.enabled`: Toggle the REST integration (requires the Client Portal Gateway running locally).
-- `ibkr_portal.base_url`: Base URL to the Gateway (defaults to `https://localhost:5000/v1/portal`).
+- `ibkr_portal.base_url`: Base URL to the Gateway (defaults to `https://localhost:5001/v1/portal`).
 - `ibkr_portal.verify_ssl`: Set to `false` when using the self-signed certificate shipped with the Gateway.
 - `ibkr_portal.preferred_accounts`: Optional list of account IDs to prioritise when multiple accounts are returned.
 

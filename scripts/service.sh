@@ -44,7 +44,7 @@ _svc_port() {
   case "$1" in
     nats) echo "" ;;
     memcached) echo "11211" ;;
-    gateway) echo "${IB_GATEWAY_PORT:-5000}" ;;
+    gateway) echo "${IB_GATEWAY_PORT:-5001}" ;;
     ib) _config_port ib 8002 ;;
     alpaca) _config_port alpaca 8000 ;;
     tastytrade) _config_port tastytrade 8005 ;;

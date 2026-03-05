@@ -20,7 +20,7 @@ import time
 import threading
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
 
 import requests
@@ -30,6 +30,15 @@ from urllib3.util.retry import Retry
 from .models import SnapshotPayload
 
 logger = logging.getLogger(__name__)
+
+
+def _connection_error_hint(exc: Exception, url: str) -> Optional[str]:
+    """Return a short hint when the error is a connection failure (e.g. service not running)."""
+    if "8002" in url or ":8002" in url:
+        return "Start IB service: ./scripts/service.sh start ib"
+    if "8000" in url or ":8000" in url:
+        return "Start Alpaca service: ./scripts/service.sh start alpaca"
+    return None
 
 
 # Backend services that expose GET /api/health (same shape: status, ib_connected?, error?)
@@ -97,10 +106,50 @@ class BackendHealthAggregator:
                         data = r.json()
                         backends = data.get("backends")
                         if isinstance(backends, dict):
+                            now_iso = datetime.now(timezone.utc).isoformat()
                             with self._lock:
                                 for name, payload in backends.items():
                                     if isinstance(payload, dict):
-                                        self._healths[name] = dict(payload)
+                                        self._healths[name] = {**dict(payload), "updated_at": payload.get("updated_at") or now_iso}
+                            # Supplement: poll any HTTP backends that are not in the dashboard
+                            # (e.g. IB when dashboard gets updates only via NATS and IB hasn't published yet)
+                            for name, port in list(self._backend_ports.items()):
+                                if name in self._healths:
+                                    continue
+                                if not self._running:
+                                    break
+                                url = f"http://127.0.0.1:{port}/api/health"
+                                timeout = BACKEND_HEALTH_TIMEOUT_IB_SEC if name == "ib" else BACKEND_HEALTH_TIMEOUT_SEC
+                                try:
+                                    r2 = self._session.get(url, timeout=timeout)
+                                    if r2.ok:
+                                        try:
+                                            data2 = r2.json()
+                                        except Exception:
+                                            data2 = {}
+                                        if not isinstance(data2, dict):
+                                            data2 = {}
+                                    else:
+                                        try:
+                                            data2 = r2.json()
+                                        except Exception:
+                                            data2 = {}
+                                        data2 = data2 if isinstance(data2, dict) else {}
+                                        data2["status"] = "error"
+                                        data2["ib_connected"] = False
+                                        data2["error"] = data2.get("error") or f"HTTP {r2.status_code}"
+                                    data2.setdefault("updated_at", datetime.now(timezone.utc).isoformat())
+                                    with self._lock:
+                                        self._healths[name] = data2
+                                except Exception as e:
+                                    logger.debug("Backend %s (supplement) unreachable: %s", name, e)
+                                    with self._lock:
+                                        self._healths[name] = {
+                                            "status": "error",
+                                            "ib_connected": False,
+                                            "error": str(e),
+                                            "updated_at": datetime.now(timezone.utc).isoformat(),
+                                        }
                             # Still run TCP backends (not in dashboard)
                             for name, port in list(self._tcp_backend_ports.items()):
                                 if not self._running:
@@ -109,11 +158,11 @@ class BackendHealthAggregator:
                                     with socket.create_connection(("127.0.0.1", port), timeout=2.0):
                                         pass
                                     with self._lock:
-                                        self._healths[name] = {"status": "ok"}
+                                        self._healths[name] = {"status": "ok", "updated_at": datetime.now(timezone.utc).isoformat()}
                                 except Exception as e:
                                     logger.debug("TCP backend %s unreachable: %s", name, e)
                                     with self._lock:
-                                        self._healths[name] = {"status": "error", "error": str(e)}
+                                        self._healths[name] = {"status": "error", "error": str(e), "updated_at": datetime.now(timezone.utc).isoformat()}
                             time.sleep(self._interval_sec)
                             continue
                 except Exception as e:
@@ -136,7 +185,7 @@ class BackendHealthAggregator:
                         data["status"] = "error"
                         data["ib_connected"] = False
                         data["error"] = data.get("error") or f"HTTP {r.status_code}"
-                        logger.debug("Backend %s unreachable: %s", name, data["error"])
+                    data["updated_at"] = data.get("updated_at") or datetime.now(timezone.utc).isoformat()
                     with self._lock:
                         self._healths[name] = data
                 except Exception as e:
@@ -146,6 +195,7 @@ class BackendHealthAggregator:
                             "status": "error",
                             "ib_connected": False,
                             "error": str(e),
+                            "updated_at": datetime.now(timezone.utc).isoformat(),
                         }
             # TCP-only backends (e.g. TWS/Gateway on 7497): socket connect
             for name, port in list(self._tcp_backend_ports.items()):
@@ -155,11 +205,11 @@ class BackendHealthAggregator:
                     with socket.create_connection(("127.0.0.1", port), timeout=2.0):
                         pass
                     with self._lock:
-                        self._healths[name] = {"status": "ok"}
+                        self._healths[name] = {"status": "ok", "updated_at": datetime.now(timezone.utc).isoformat()}
                 except Exception as e:
                     logger.debug("TCP backend %s unreachable: %s", name, e)
                     with self._lock:
-                        self._healths[name] = {"status": "error", "error": str(e)}
+                        self._healths[name] = {"status": "error", "error": str(e), "updated_at": datetime.now(timezone.utc).isoformat()}
             time.sleep(self._interval_sec)
 
 
@@ -224,16 +274,25 @@ class Provider(ABC):
 
 class MockProvider(Provider):
     """
-    Mock provider that generates synthetic snapshots for testing
+    Mock provider that generates synthetic snapshots for testing.
 
-    MIGRATION NOTE: Can be replaced with C++ MockProvider class via pybind11
+    When symbols is provided (e.g. from config.watchlist), generates data for those
+    symbols so the dashboard watchlist and snapshot stay in sync.
     """
 
-    def __init__(self, update_interval_ms: int = 1000):
+    def __init__(
+        self,
+        update_interval_ms: int = 1000,
+        symbols: Optional[List[str]] = None,
+    ):
         super().__init__()
         self.update_interval_ms = update_interval_ms
         self._worker_thread: Optional[threading.Thread] = None
-        self._symbols = ["SPX", "XSP", "NDX"]
+        self._symbols = (
+            list(symbols)
+            if symbols
+            else ["SPX", "XSP", "NDX"]
+        )
 
     def start(self) -> None:
         if self._running:
@@ -376,10 +435,10 @@ class RestProvider(Provider):
 
     def get_snapshot(self) -> SnapshotPayload:
         with self._lock:
-            if self._latest_snapshot is None:
-                # Try to fetch immediately if no snapshot available
-                return self._fetch()
-            return self._latest_snapshot
+            # Prefer cached: return immediately so UI stays responsive (never block on network)
+            if self._latest_snapshot is not None:
+                return self._latest_snapshot
+            return SnapshotPayload()
 
     def is_running(self) -> bool:
         return self._running
@@ -426,8 +485,14 @@ class RestProvider(Provider):
                 self._last_health = data
         except Exception as e:
             logger.debug(f"Health check failed: {e}")
+            hint = _connection_error_hint(e, self._health_url or "")
             with self._health_lock:
-                self._last_health = {"status": "error", "ib_connected": False, "error": str(e)}
+                self._last_health = {
+                    "status": "error",
+                    "ib_connected": False,
+                    "error": str(e),
+                    **({"hint": hint} if hint else {}),
+                }
 
     def _poll_loop(self) -> None:
         """Background thread that polls the REST endpoint and health."""

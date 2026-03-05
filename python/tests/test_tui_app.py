@@ -6,6 +6,7 @@ a real Textual application.
 """
 
 import json
+import os
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -120,7 +121,7 @@ def empty_snapshot():
 
 class TestSnapshotDisplay:
     def test_format_snapshot_normal(self, sample_snapshot):
-        from python.tui.app import SnapshotDisplay
+        from python.tui.components.snapshot_display import SnapshotDisplay
         widget = SnapshotDisplay.__new__(SnapshotDisplay)
         result = widget._format_snapshot(sample_snapshot)
         assert "14:30:45" in result
@@ -129,7 +130,7 @@ class TestSnapshotDisplay:
         assert "DU123456" in result
 
     def test_format_snapshot_no_timestamp(self):
-        from python.tui.app import SnapshotDisplay
+        from python.tui.components.snapshot_display import SnapshotDisplay
         widget = SnapshotDisplay.__new__(SnapshotDisplay)
         snapshot = SnapshotPayload(generated_at="", mode="DRY-RUN")
         result = widget._format_snapshot(snapshot)
@@ -137,7 +138,7 @@ class TestSnapshotDisplay:
         assert "DRY-RUN" in result
 
     def test_format_snapshot_date_only(self):
-        from python.tui.app import SnapshotDisplay
+        from python.tui.components.snapshot_display import SnapshotDisplay
         widget = SnapshotDisplay.__new__(SnapshotDisplay)
         snapshot = SnapshotPayload(generated_at="2025-06-15T09:05:01Z")
         result = widget._format_snapshot(snapshot)
@@ -174,6 +175,121 @@ class TestAlertsSeverityStyle:
 
     def test_unknown_severity_returns_white(self):
         assert self._get_style("unknown") == "white"
+
+
+# ---------------------------------------------------------------------------
+# Disabled backends (missing API keys) indication
+# ---------------------------------------------------------------------------
+
+class TestDisabledBackendsConfig:
+    """TUIConfig.disabled_backends and snapshot status line formatting."""
+
+    def test_tuiconfig_has_disabled_backends_default_empty(self):
+        config = TUIConfig()
+        assert config.disabled_backends == {}
+
+    def test_tuiconfig_disabled_backends_roundtrip(self):
+        config = TUIConfig(disabled_backends={"alpaca": "Missing API key", "tastytrade": "Missing credentials"})
+        assert config.disabled_backends["alpaca"] == "Missing API key"
+        assert config.disabled_backends["tastytrade"] == "Missing credentials"
+        restored = TUIConfig.from_dict(config.to_dict())
+        assert restored.disabled_backends == config.disabled_backends
+
+    def test_format_backend_health_disabled(self):
+        from python.tui.components.snapshot_display import _format_one_backend_health
+
+        out = _format_one_backend_health("alpaca", {"status": "disabled", "error": "Missing API key"})
+        assert "Alpaca" in out
+        assert "disabled" in out
+        assert "Missing API key" in out
+
+    def test_format_backend_health_disabled_long_error_truncated(self):
+        from python.tui.components.snapshot_display import _format_one_backend_health
+
+        long_err = "Missing API key or OAuth credentials (set ALPACA_API_KEY_ID and ALPACA_API_SECRET_KEY)"
+        out = _format_one_backend_health("alpaca", {"status": "disabled", "error": long_err})
+        assert "disabled" in out
+        assert "..." in out
+
+    def test_format_ib_backend_health_grouped(self):
+        from python.tui.components.snapshot_display import _format_one_backend_health
+
+        out = _format_one_backend_health(
+            "ib",
+            {"status": "ok", "gateway_logged_in": True, "gateway_port": 5001},
+        )
+        assert out == "TWS/IBKR: ok (Gateway 5001: logged in)"
+        out2 = _format_one_backend_health(
+            "ib",
+            {"status": "ok", "gateway_logged_in": False, "gateway_port": 5001},
+        )
+        assert out2 == "TWS/IBKR: ok (Gateway 5001: not logged in)"
+
+    def test_format_status_line_with_snapshot(self):
+        from python.tui.components.snapshot_display import format_status_line
+
+        snapshot = SnapshotPayload(
+            generated_at="2025-06-15T14:30:45.123Z",
+            mode="LIVE",
+            strategy="RUNNING",
+            account_id="DU123456",
+        )
+        line = format_status_line("rest (localhost:8002)", snapshot, None)
+        assert "Provider: rest" in line
+        assert "14:30:45" in line
+        assert "LIVE" in line
+        assert "RUNNING" in line
+        assert "DU123456" in line
+
+    def test_format_status_line_no_snapshot(self):
+        from python.tui.components.snapshot_display import format_status_line
+
+        line = format_status_line("mock", None, None)
+        assert "Provider: mock" in line
+        assert "Time: --:--:--" in line
+        assert "Mode: --" in line
+        assert "Strategy: --" in line
+        assert "Account: --" in line
+
+    def test_format_status_line_includes_backend_when_backend_health_present(self):
+        """Bottom status bar must show Backend: when backend_health is set."""
+        from python.tui.components.snapshot_display import format_status_line
+
+        backend_health = {
+            "ib": {"status": "ok"},
+            "alpaca": {"status": "error", "error": "Connection refused"},
+        }
+        line = format_status_line("rest (localhost:8002)", None, backend_health)
+        assert "Backend:" in line
+        assert "TWS/IBKR" in line or "ib" in line.lower()
+        assert "Alpaca" in line or "alpaca" in line.lower()
+
+    def test_format_status_line_backend_checking_placeholder(self):
+        """When aggregator is polling, status line shows Backend: Connection: checking..."""
+        from python.tui.components.snapshot_display import format_status_line
+
+        backend_health = {"connection": {"status": "checking", "error": "polling..."}}
+        line = format_status_line("mock", None, backend_health)
+        assert "Backend:" in line
+        assert "checking" in line
+
+    @patch.dict("os.environ", {}, clear=False)
+    def test_disabled_backends_from_env_alpaca_missing(self):
+        from python.tui.config import _disabled_backends_from_env
+
+        # Clear Alpaca env so alpaca is detected as disabled when in services
+        for key in ("ALPACA_API_KEY_ID", "ALPACA_API_SECRET_KEY", "ALPACA_CLIENT_ID", "ALPACA_CLIENT_SECRET"):
+            os.environ.pop(key, None)
+        out = _disabled_backends_from_env({"alpaca": {"port": 8000}})
+        assert "alpaca" in out
+        assert "API key" in out["alpaca"] or "credentials" in out["alpaca"].lower()
+
+    @patch.dict("os.environ", {"ALPACA_API_KEY_ID": "key", "ALPACA_API_SECRET_KEY": "secret"}, clear=False)
+    def test_disabled_backends_from_env_alpaca_has_keys_not_disabled(self):
+        from python.tui.config import _disabled_backends_from_env
+
+        out = _disabled_backends_from_env({"alpaca": {"port": 8000}})
+        assert "alpaca" not in out
 
 
 # ---------------------------------------------------------------------------
@@ -286,6 +402,16 @@ class TestTUIAppInit:
         from python.tui.app import TUIApp
         assert ".tab-title" in TUIApp.CSS
         assert "#symbols-table" in TUIApp.CSS
+
+    def test_app_compose_includes_bottom_status_bar(self):
+        """Bottom status bar (id=status-bar) must be present in the composed layout."""
+        import inspect
+        from python.tui.app import TUIApp
+
+        source = inspect.getsource(TUIApp.compose)
+        assert "status-bar" in source
+        assert "StatusBar" in source
+        assert "#status-bar" in TUIApp.CSS
 
 
 # ---------------------------------------------------------------------------
@@ -606,6 +732,7 @@ class TestTUIAppUpdateSnapshot:
         app = TUIApp(mock_provider)
         app.snapshot = sample_snapshot
         app._dashboard_tab = Mock()
+        app.query_one = Mock(return_value=Mock())  # status bar
 
         app._update_snapshot()
         app._dashboard_tab.update_snapshot.assert_not_called()

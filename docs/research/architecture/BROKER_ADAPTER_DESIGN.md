@@ -83,7 +83,7 @@ public:
 class IBClientPortalAdapter : public IBroker {
 private:
   struct Config {
-    std::string gateway_url = "https://localhost:5000";
+    std::string gateway_url = "https://localhost:5001";
     std::string oauth_consumer_key;
     std::string oauth_consumer_secret;
     std::string oauth_token;
@@ -488,7 +488,7 @@ public:
       "client_id": 1
     },
     "ibkr_portal": {
-      "gateway_url": "https://localhost:5000",
+      "gateway_url": "https://localhost:5001",
       "oauth_consumer_key": "${IBKR_OAUTH_KEY}",
       "oauth_consumer_secret": "${IBKR_OAUTH_SECRET}",
       "paper_trading": true

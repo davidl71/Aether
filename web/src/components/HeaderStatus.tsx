@@ -1,4 +1,5 @@
 import type { SnapshotPayload } from '../types/snapshot';
+import type { BackendServicesStatus } from '../hooks/useBackendServices';
 import { formatCurrency } from '../utils/formatters';
 import { ModeSwitcher, type TradingMode } from './ModeSwitcher';
 import { AccountSelector } from './AccountSelector';
@@ -6,12 +7,26 @@ import { useWebSocketStatus } from '../hooks/useWebSocket';
 
 interface HeaderStatusProps {
   snapshot: SnapshotPayload | null;
+  backendStatuses?: BackendServicesStatus | null;
   onModeChange?: (mode: TradingMode) => void;
   onAccountChange?: (accountId: string | null) => void;
   onStrategyStart?: () => void;
   onStrategyStop?: () => void;
   onDryRunToggle?: (enabled: boolean) => void;
   apiBaseUrl?: string;
+}
+
+const STALE_MS = 60_000;
+function snapshotTimeAndStale(snapshot: SnapshotPayload): { timeStr: string; isStale: boolean; ageLabel: string } {
+  if (!snapshot?.generated_at) return { timeStr: '--:--:--', isStale: false, ageLabel: '' };
+  const date = new Date(snapshot.generated_at);
+  const ageMs = Date.now() - date.getTime();
+  const ageSec = Math.floor(ageMs / 1000);
+  return {
+    timeStr: date.toLocaleTimeString(),
+    isStale: ageMs > STALE_MS,
+    ageLabel: ageSec >= 3600 ? `${Math.floor(ageSec / 3600)}h ago` : ageSec >= 60 ? `${ageSec}s ago` : 'stale'
+  };
 }
 
 function statusBadge(ok: boolean, label: string) {
@@ -24,6 +39,7 @@ function statusBadge(ok: boolean, label: string) {
 
 export function HeaderStatus({
   snapshot,
+  backendStatuses,
   onModeChange,
   onAccountChange,
   onStrategyStart,
@@ -41,11 +57,25 @@ export function HeaderStatus({
       <header className="header">
         <div className="header__title">IB Box Spread Terminal</div>
         <div className="header__meta">Awaiting snapshot…</div>
+        {backendStatuses && (
+          <div className="header__status-line" aria-label="Backend services">
+            {Object.entries(backendStatuses).map(([key, s]) => (
+              <span
+                key={key}
+                className={`status-badge ${s.healthy ? 'status-badge--ok' : 'status-badge--warn'}`}
+                title={s.error ? `${s.name}: ${s.error}` : s.checking ? `${s.name}: checking…` : `${s.name}: ${s.healthy ? 'up' : 'down'}`}
+              >
+                {s.name}
+              </span>
+            ))}
+          </div>
+        )}
       </header>
     );
   }
 
   const { metrics } = snapshot;
+  const timeStale = snapshotTimeAndStale(snapshot);
 
   const handleModeChange = (mode: TradingMode) => {
     if (onModeChange) {
@@ -98,7 +128,14 @@ export function HeaderStatus({
               <span className="header__account-value">{snapshot.account_id}</span>
             </span>
           )}
-          <span className="header__timestamp">Time: {new Date(snapshot.generated_at).toLocaleTimeString()}</span>
+          <span className="header__timestamp">
+            Time: {timeStale.timeStr}
+            {timeStale.isStale && (
+              <span className="header__stale" title={`Data ${timeStale.ageLabel}`}>
+                {' '}(stale)
+              </span>
+            )}
+          </span>
         </div>
       </div>
       <div className="header__meta">
@@ -155,9 +192,37 @@ export function HeaderStatus({
         )}
       </div>
       <div className="header__status-line">
+        {backendStatuses && (
+          <>
+            {Object.entries(backendStatuses).map(([key, s]) => (
+              <span
+                key={key}
+                className={`status-badge ${s.healthy ? 'status-badge--ok' : 'status-badge--warn'}`}
+                title={s.error ? `${s.name}: ${s.error}` : s.checking ? `${s.name}: checking…` : `${s.name}: ${s.healthy ? 'up' : 'down'}`}
+              >
+                {s.name}
+              </span>
+            ))}
+            <span className="header__status-sep" aria-hidden>|</span>
+          </>
+        )}
         {statusBadge(metrics.tws_ok, 'TWS')}
         {statusBadge(metrics.orats_ok, 'ORATS')}
         {statusBadge(metrics.portal_ok, 'Portal')}
+        {(() => {
+          const gatewayUrl = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_IB_GATEWAY_URL ?? 'https://localhost:5001';
+          return (
+            <a
+              href={gatewayUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="header__gateway-link"
+              title="Open IB Gateway or TWS (Client Portal) to log in"
+            >
+              Open IB Gateway
+            </a>
+          );
+        })()}
         {statusBadge(metrics.questdb_ok, 'QuestDB')}
         <span
           className={`status-badge ${

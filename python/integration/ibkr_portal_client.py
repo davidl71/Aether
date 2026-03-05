@@ -44,7 +44,7 @@ class IBKRPortalClient:
 
     def __init__(
         self,
-        base_url: str = "https://localhost:5000/v1/portal",
+        base_url: str = "https://localhost:5001/v1/portal",
         verify_ssl: bool = False,
         timeout_seconds: int = 5,
         preferred_accounts: Optional[List[str]] = None,
@@ -129,7 +129,7 @@ class IBKRPortalClient:
                 logger.debug(f"Gateway connectivity check failed: {e}")
                 raise IBKRPortalError(
                     f"Unable to connect to IB Client Portal Gateway: {e}. "
-                    "Ensure the gateway is running at https://localhost:5000"
+                    "Ensure the gateway is running at https://localhost:5001"
                 ) from e
 
         raise IBKRPortalError(

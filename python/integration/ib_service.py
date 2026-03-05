@@ -7,7 +7,7 @@ Endpoints:
 
 Environment:
 - SYMBOLS: comma-separated underlyings (default: SPY,QQQ)
-- IB_PORTAL_URL: IB Client Portal base URL (default: https://localhost:5000/v1/portal)
+- IB_PORTAL_URL: IB Client Portal base URL (default: https://localhost:5001/v1/portal)
 - SNAPSHOT_FILE_PATH: optional path to also write snapshot JSON (for TUI file polling)
 - SNAPSHOT_CACHE_SECONDS: seconds to cache snapshot response (default: 3; 0 = disable). Increase to 5
   to reduce Gateway load when freshness is less critical.
@@ -320,13 +320,13 @@ def create_app() -> FastAPI:
     add_security_headers_middleware(app)
 
     # Initialize IB Client Portal client (shorter timeout for faster failure)
-    portal_url = os.getenv("IB_PORTAL_URL", "https://localhost:5000/v1/portal")
+    portal_url = os.getenv("IB_PORTAL_URL", "https://localhost:5001/v1/portal")
     client = IBKRPortalClient(base_url=portal_url, verify_ssl=False, timeout_seconds=5)
     try:
         from urllib.parse import urlparse
-        gateway_port = urlparse(portal_url).port or 5000
+        gateway_port = urlparse(portal_url).port or 5001
     except Exception:
-        gateway_port = 5000
+        gateway_port = 5001
 
     # Store current account in memory (in production, use Redis or database)
     current_account_id: Optional[str] = None
@@ -346,9 +346,9 @@ def create_app() -> FastAPI:
             accounts: Optional[List[str]] = None,
         ) -> Dict[str, Any]:
             try:
-                port = int(gateway_port) if gateway_port is not None else 5000
+                port = int(gateway_port) if gateway_port is not None else 5001
             except (TypeError, ValueError):
-                port = 5000
+                port = 5001
             try:
                 ts = _now_iso()
             except Exception:

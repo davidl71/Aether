@@ -40,7 +40,7 @@ Then start the gateway:
 2. **Extract**: Unzip the downloaded file
 3. **Run**: Start the gateway application (usually `bin/run.sh` from the Gateway package)
 4. **Login**: Browser will open automatically for authentication
-5. **Verify**: Gateway should be running on `https://localhost:5000` by default
+5. **Verify**: Gateway should be running on `https://localhost:5001` by default
 
 **📚 Official Documentation:**
 
@@ -102,7 +102,7 @@ When connected to IB, the header will show:
 
 # Optional:
 SYMBOLS=SPY,QQQ,IWM  # Comma-separated symbols (default: SPY,QQQ)
-IB_PORTAL_URL=https://localhost:5000/v1/portal  # IB Client Portal URL (default)
+IB_PORTAL_URL=https://localhost:5001/v1/portal  # IB Client Portal URL (default)
 SNAPSHOT_FILE_PATH=/path/to/snapshot.json  # Optional file output for TUI
 SNAPSHOT_CACHE_SECONDS=3  # Seconds to cache snapshot response (0=disable). Use 5 to reduce Gateway load further.
 REAUTH_SLEEP_SECONDS=0.5  # Seconds to sleep after Gateway reauth (portal client; default 0.5, clamp 0.1–2.0).
@@ -195,7 +195,7 @@ npm run dev
 ### IB Gateway Not Detected
 
 - **Gateway not running**: Start IB Client Portal Gateway application
-- **Wrong port**: Default is `https://localhost:5000`, check gateway settings
+- **Wrong port**: Default is `https://localhost:5001`, check gateway settings
 - **SSL errors**: Gateway uses self-signed certificates (normal, ignore SSL warnings)
 
 ### PWA Not Connecting

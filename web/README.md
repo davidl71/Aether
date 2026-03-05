@@ -60,6 +60,70 @@ The script requires ImageMagick:
 
 Icons will be generated in `public/icons/` with all required sizes (72x72 through 512x512).
 
+## Real data in the PWA
+
+By default the PWA uses static JSON under `public/data/` (e.g. `snapshot.json`, `box_spread_sample.json`) so it works offline. To use **live data**:
+
+### Connect PWA to IB Gateway (live snapshot)
+
+The PWA does **not** talk to the gateway directly. It talks to the project’s **IB service** (Python), which uses the Client Portal API. Do all three:
+
+1. **IB Gateway** – running and logged in (e.g. `./ib-gateway/run-gateway.sh`, then open https://localhost:5001).
+2. **IB service** – run from repo root: `./web/scripts/run-ib-service.sh` (serves `http://127.0.0.1:8002/api/snapshot`).
+3. **PWA env** – in `web/.env` set `VITE_API_URL=http://127.0.0.1:8002/api/snapshot`, then **restart** the dev server (`npm run dev` in `web/`) so Vite picks up the change.
+
+If the PWA still shows static/zeros, check: gateway logged in, IB service running on 8002, `.env` has `VITE_API_URL`, and dev server was restarted after editing `.env`.
+
+**"Fetch error" or "Cannot connect to localhost:8002" (or 127.0.0.1:8002)?** The app is trying to reach the IB REST service on port 8002 and the connection failed (service not running or not reachable). Fix:
+
+1. **Start the IB service** from repo root: `./scripts/service.sh start ib` or `./web/scripts/run-ib-service.sh`.
+2. **Confirm it's up**: `curl -s http://127.0.0.1:8002/api/health` — you should get JSON with `ib_connected` (may be `false` until the gateway is logged in).
+3. If using the TUI with REST provider, use the same URL: `./scripts/run_python_tui.sh rest http://127.0.0.1:8002/api/v1/snapshot`.
+
+**Gateway on 5001 but “not used”?** The gateway is only used by the **IB service** (port 8002). Nothing else talks to it. So:
+
+1. **IB service must be running** – e.g. `./scripts/service.sh start ib` or it’s started by `./scripts/start_all_services.sh`.
+2. **Check that the service sees the gateway** – `curl -s http://127.0.0.1:8002/api/health`. If `ib_connected` is `false`, the service is getting 401 from the gateway. Browser login does **not** give the API its own session; the service may need to complete re-authentication (it calls `/iserver/reauthenticate`). Restart the IB service **after** you’re logged in at https://localhost:5000 and watch `logs/ib-service.log` for “Re-authentication” or errors. If the gateway shows a re-auth or approval prompt, complete it so the service gets a session.
+3. **Then** use the PWA or TUI with `VITE_API_URL=http://127.0.0.1:8002/api/snapshot` or `./scripts/run_python_tui.sh rest http://127.0.0.1:8002/api/snapshot`.
+
+### 1. Snapshot / market data
+
+Point the app at a backend that serves the snapshot API:
+
+- **Copy the example env file** (if you don’t have one):
+  ```bash
+  cp web/env.example web/.env
+  ```
+- **Set the snapshot URL** in `web/.env` to the service you’re running:
+  - IB: `VITE_API_URL=http://127.0.0.1:8002/api/snapshot`
+  - Alpaca: `VITE_API_URL=http://127.0.0.1:8000/api/snapshot`
+  - Tastytrade: `VITE_API_URL=http://127.0.0.1:8005/api/snapshot`
+  - Rust backend (if it exposes snapshot): `VITE_API_URL=http://127.0.0.1:8080/api/v1/snapshot`
+- **Start that backend** (e.g. `./scripts/start_all_services.sh` or the individual run-*-service.sh scripts).
+- **Restart the dev server** so Vite picks up the new env: `npm run dev` (or restart the web service).
+
+If `VITE_API_URL` is unset, the app uses `/data/snapshot.json` (static/offline).
+
+### 2. Box spread scenarios
+
+Box spread data comes from the **Rust backend** at `http://localhost:8080/api/v1/scenarios`. If that fails, the app falls back to `public/data/box_spread_sample.json`.
+
+- **Rust backend**: start the agents backend so port 8080 serves `/api/v1/scenarios` (and optionally snapshot).
+- **Port override**: set `VITE_RUST_BACKEND_REST_PORT` in `web/.env` if your Rust API runs on a different port.
+
+### 3. Other services (accounts, bank, charts)
+
+Charts, cash flow, and opportunity simulation use the Rust backend URL. Account/bank panels use service URLs derived from `VITE_*_PORT` (see `web/.env.example`). Start the corresponding services (IB, Alpaca, Discount Bank, etc.) and set the ports in `.env` if they differ from the defaults.
+
+### Quick checklist for real data
+
+| What you want      | Set in `web/.env`                          | Service to run                    |
+|--------------------|--------------------------------------------|-----------------------------------|
+| Live snapshot      | `VITE_API_URL=http://127.0.0.1:8002/api/snapshot` (IB) or 8000 (Alpaca) or 8005 (Tastytrade) | IB / Alpaca / Tastytrade service |
+| Box spread grid    | `VITE_RUST_BACKEND_REST_PORT=8080` (default) | Rust backend (agents)             |
+| Charts / cash flow | Same Rust backend port                     | Rust backend                      |
+| Account selectors  | `VITE_IB_PORT`, `VITE_ALPACA_PORT`, etc.   | Corresponding backend services     |
+
 ## Extending Toward Production
 
 1. Swap `/data/snapshot.json` for a REST/WS gateway (see `SnapshotClient`), emitting the same JSON produced for the TUI.
@@ -96,7 +160,7 @@ This script will:
 
 **Services launched:**
 - Web service (Vite) - Port 5173
-- IB Gateway - Port 5000 (requires Java)
+- IB Gateway - Port 5001 (requires Java)
 - Alpaca service - Port 8000
 - IB service - Port 8002
 - TradeStation service - Port 8001

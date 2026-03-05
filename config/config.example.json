@@ -92,6 +92,13 @@
   },
 
   // ============================================================================
+  // Portfolio / reporting currency (for P&L, exposure, hedging suggestions)
+  // ============================================================================
+  "portfolio": {
+    "primary_currency": "USD" // Reporting currency: "USD", "ILS", etc. Used for conversion and TASE/hedge suggestions. Optional; default USD.
+  },
+
+  // ============================================================================
   // Alpaca Integration (Primary)
   // ============================================================================
   "alpaca": {
@@ -153,7 +160,7 @@
     "rest_timeout_ms": 15000,
     "rest_verify_ssl": false,
     "ibkr_rest": {
-      "base_url": "https://localhost:5000/v1/portal",
+      "base_url": "https://localhost:5001/v1/portal",
       "account_id": "",
       "verify_ssl": false,
       "timeout_ms": 5000
@@ -233,7 +240,7 @@
       "port": 8011 // Unified health JSON (NATS-driven); TUI/PWA can use for status
     },
     "ib_gateway": {
-      "port": 5000 // IB Client Portal Gateway HTTPS port
+      "port": 5001 // IB Client Portal Gateway HTTPS port
     }
   },
 

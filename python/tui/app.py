@@ -15,6 +15,7 @@ MIGRATION NOTES FOR FUTURE C++ MIGRATION (pybind11):
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import Optional, List, Dict, Any
@@ -34,7 +35,7 @@ from .providers import Provider, MockProvider, RestProvider, FileProvider, Backe
 from .config import TUIConfig, load_config, PRESET_REST_ENDPOINTS
 from .box_spread_loader import get_box_spread_payload
 from .log_handler import install_tui_log_handler, remove_tui_log_handler, drain_log_queue, get_buffered_log_lines
-from .components.snapshot_display import StatusBar
+from .components.snapshot_display import StatusBar, get_environment
 from .components.dashboard import DashboardTab
 from .components.positions import PositionsTab
 from .components.orders import OrdersTab
@@ -47,6 +48,7 @@ from .components.opportunity_simulation import OpportunitySimulationTab
 from .components.relationship_visualization import RelationshipVisualizationTab
 from .components.loan_entry import LoanListTab, LoanManager
 from .components.setup_screen import SetupScreen
+from .components.onepassword_screen import OnePasswordScreen
 from .components.logs_tab import LogsTab
 
 logger = logging.getLogger(__name__)
@@ -85,6 +87,75 @@ class TUIApp(App):
         background: $surface;
     }
 
+    /* Theme when using mock (synthetic) data source: slate/cyan tint to distinguish from live */
+    Screen.theme-mock {
+        background: #1a2332;
+    }
+    Screen.theme-mock #main-container {
+        background: #1a2332;
+    }
+    Screen.theme-mock #status-bar {
+        background: #252d3d;
+        border-top: tall #3d5a6c;
+    }
+    Screen.theme-mock .tab-title {
+        color: #6b9fb5;
+    }
+    Screen.theme-mock Header {
+        background: #252d3d;
+        color: #8fadc0;
+    }
+    Screen.theme-mock Footer {
+        background: #252d3d;
+        color: #8fadc0;
+    }
+
+    /* Theme for PAPER (dry-run / paper trading): amber/gold tint */
+    Screen.theme-paper {
+        background: #2a2a1e;
+    }
+    Screen.theme-paper #main-container {
+        background: #2a2a1e;
+    }
+    Screen.theme-paper #status-bar {
+        background: #353520;
+        border-top: tall #6c6c3d;
+    }
+    Screen.theme-paper .tab-title {
+        color: #b8a84a;
+    }
+    Screen.theme-paper Header {
+        background: #353520;
+        color: #c4b86a;
+    }
+    Screen.theme-paper Footer {
+        background: #353520;
+        color: #c4b86a;
+    }
+
+    /* Theme for LIVE (real money): red/danger tint */
+    Screen.theme-live {
+        background: #2a1e1e;
+    }
+    Screen.theme-live #main-container {
+        background: #2a1e1e;
+    }
+    Screen.theme-live #status-bar {
+        background: #352020;
+        border-top: tall #8b4040;
+    }
+    Screen.theme-live .tab-title {
+        color: #c48484;
+    }
+    Screen.theme-live Header {
+        background: #352020;
+        color: #d4a0a0;
+    }
+    Screen.theme-live Footer {
+        background: #352020;
+        color: #d4a0a0;
+    }
+
     /* Use full terminal: main content area fills between header and status/footer */
     #main-container {
         width: 100%;
@@ -121,6 +192,20 @@ class TUIApp(App):
         padding: 0 1;
         background: $surface-darken-2;
         color: $text;
+    }
+
+    /* Environment colour strip: mock = cyan tint, paper = amber, live = red */
+    #status-bar.mode-mock {
+        background: $primary-darken-3;
+        border-top: tall $primary;
+    }
+    #status-bar.mode-paper {
+        background: #3d3d20;
+        border-top: tall $warning;
+    }
+    #status-bar.mode-live {
+        background: #3d2020;
+        border-top: tall $error;
     }
 
     .tab-title {
@@ -162,7 +247,7 @@ class TUIApp(App):
         margin: 1 0;
     }
 
-    #missing-symbols-label.warning {
+    #action-items-label.warning {
         color: $warning;
         text-style: bold;
         margin: 1;
@@ -181,6 +266,7 @@ class TUIApp(App):
         Binding("q", "quit", "Quit"),
         Binding("f1", "help", "Help"),
         Binding("f2", "setup", "Setup"),
+        Binding("f3", "op_secrets", "1Password"),
         Binding("f5", "refresh", "Refresh"),
         Binding("f10", "quit", "Quit"),
     ]
@@ -220,12 +306,16 @@ class TUIApp(App):
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the app"""
+        self._apply_theme_for_provider()
         yield Header(show_clock=True)
 
         with Container(id="main-container"):
             with TabbedContent(id="tabs"):
                 with TabPane("Dashboard", id="dashboard-tab"):
-                    self._dashboard_tab = DashboardTab(classes="tab-content-fill")
+                    self._dashboard_tab = DashboardTab(
+                        classes="tab-content-fill",
+                        watchlist=getattr(self.config, "watchlist", None),
+                    )
                     yield self._dashboard_tab
 
                 with TabPane("Unified Positions", id="unified-positions-tab"):
@@ -275,8 +365,26 @@ class TUIApp(App):
         yield StatusBar(id="status-bar")
         yield Footer()
 
+    def _apply_theme_for_provider(self) -> None:
+        """Apply theme class and title badge from current provider and snapshot (mock | paper | live)."""
+        env = get_environment(self.provider, self.snapshot)
+        self._apply_theme_for_environment(env)
+
+    def _apply_theme_for_environment(self, environment: str) -> None:
+        """Apply theme class and title badge for environment (mock | paper | live)."""
+        for cls in ("theme-mock", "theme-paper", "theme-live"):
+            self.screen.remove_class(cls)
+        if environment in ("mock", "paper", "live"):
+            self.screen.add_class(f"theme-{environment}")
+        if environment:
+            self.title = f"{self.TITLE}  [{environment.upper()}]"
+        else:
+            self.title = self.TITLE
+
     def on_mount(self) -> None:
         """Called when app starts"""
+        if getattr(self, "_config_last_mtimes", None) is None:
+            self._config_last_mtimes: Dict[str, float] = {}
         if self._tui_log_handler is None:
             self._tui_log_handler = install_tui_log_handler(level=logging.DEBUG)
             self._tui_log_handler_on_root = False
@@ -290,6 +398,7 @@ class TUIApp(App):
             self.config.tcp_backend_ports = dict(DEFAULT_TCP_BACKEND_PORTS)
         else:
             self.config.tcp_backend_ports = {**DEFAULT_TCP_BACKEND_PORTS, **self.config.tcp_backend_ports}
+        self._apply_theme_for_provider()
         self.provider.start()
         if self.config.backend_ports or self.config.tcp_backend_ports:
             self._backend_health_aggregator = BackendHealthAggregator(
@@ -302,6 +411,7 @@ class TUIApp(App):
         self.set_interval(0.25, self._drain_tui_logs)  # Drain log queue for Logs tab
         self.set_interval(2.0, self._update_box_spread_data)  # Update every 2 seconds
         self.set_interval(30.0, self._fetch_bank_accounts)  # Update bank accounts every 30 seconds
+        self.set_interval(3.0, self._check_config_reload)  # T-114: config file watch (hot-reload)
         self._fetch_bank_accounts()  # Initial fetch
         logger.info("TUI application mounted")
 
@@ -349,6 +459,8 @@ class TUIApp(App):
         new_snapshot = self.provider.get_snapshot()
         status_bar = self.query_one("#status-bar", StatusBar)
         status_bar.provider_label = self._get_provider_label()
+        status_bar.environment = get_environment(self.provider, new_snapshot)
+        self._apply_theme_for_environment(status_bar.environment)
         # All backend health: from aggregator if present, else single backend from current provider
         all_health: Dict[str, Dict[str, Any]] = {}
         if self._backend_health_aggregator:
@@ -370,7 +482,7 @@ class TUIApp(App):
 
             # Update tabs
             if self._dashboard_tab:
-                self._dashboard_tab.update_snapshot(new_snapshot)
+                self._dashboard_tab.update_snapshot(new_snapshot, backend_health=all_health or None)
             if self._unified_positions_tab:
                 self._unified_positions_tab.update_snapshot(new_snapshot, self._bank_accounts)
             if self._cash_flow_tab:
@@ -436,6 +548,66 @@ class TUIApp(App):
             if self._scenarios_tab:
                 self._scenarios_tab.update_data(payload)
 
+    def _get_config_watch_paths(self) -> List[Path]:
+        """Paths to watch for config reload (T-114)."""
+        root = Path(__file__).resolve().parent.parent.parent
+        paths: List[Path] = []
+        p = Path(TUIConfig.get_config_path())
+        paths.append(p if p.is_absolute() else root / p)
+        paths.append(root / "config" / "config.json")
+        env_path = os.environ.get("IB_BOX_SPREAD_CONFIG")
+        if env_path:
+            paths.append(Path(env_path))
+        return [x for x in paths if x.exists()]
+
+    def _check_config_reload(self) -> None:
+        """If any watched config file changed, reload config and apply (backend ports, health dashboard URL)."""
+        paths = self._get_config_watch_paths()
+        if not paths:
+            return
+        changed = False
+        for p in paths:
+            try:
+                mtime = p.stat().st_mtime
+            except OSError:
+                continue
+            key = str(p)
+            if key in self._config_last_mtimes and self._config_last_mtimes[key] != mtime:
+                changed = True
+            self._config_last_mtimes[key] = mtime
+        if not changed:
+            return
+        try:
+            new_config = load_config()
+        except Exception as e:
+            logger.debug("Config reload failed: %s", e)
+            return
+        self._apply_config_reload(new_config)
+        logger.info("Config reloaded (backend ports / health dashboard)")
+
+    def _apply_config_reload(self, new_config: TUIConfig) -> None:
+        """Apply reloaded config: update self.config and restart BackendHealthAggregator."""
+        from .config import DEFAULT_BACKEND_PORTS, DEFAULT_TCP_BACKEND_PORTS
+        self.config = new_config
+        if not self.config.backend_ports:
+            self.config.backend_ports = dict(DEFAULT_BACKEND_PORTS)
+        else:
+            self.config.backend_ports = {**DEFAULT_BACKEND_PORTS, **self.config.backend_ports}
+        if not self.config.tcp_backend_ports:
+            self.config.tcp_backend_ports = dict(DEFAULT_TCP_BACKEND_PORTS)
+        else:
+            self.config.tcp_backend_ports = {**DEFAULT_TCP_BACKEND_PORTS, **self.config.tcp_backend_ports}
+        if self._backend_health_aggregator:
+            self._backend_health_aggregator.stop()
+            self._backend_health_aggregator = None
+        if self.config.backend_ports or self.config.tcp_backend_ports:
+            self._backend_health_aggregator = BackendHealthAggregator(
+                self.config.backend_ports,
+                tcp_backend_ports=self.config.tcp_backend_ports,
+                unified_health_url=getattr(self.config, "health_dashboard_url", None),
+            )
+            self._backend_health_aggregator.start()
+
     def action_quit(self) -> None:
         """Quit the application"""
         self.exit()
@@ -454,6 +626,10 @@ class TUIApp(App):
             ),
             self._on_setup_closed,
         )
+
+    def action_op_secrets(self) -> None:
+        """Show 1Password / Secrets status screen"""
+        self.push_screen(OnePasswordScreen())
 
     def _on_setup_closed(self, result: Optional[dict]) -> None:
         """Handle setup screen dismiss: apply backend switch if user clicked Apply."""
@@ -481,6 +657,7 @@ class TUIApp(App):
             self.config.file_path = file_path
         self.provider.start()
         label = self._get_provider_label()
+        self._apply_theme_for_provider()
         self.notify(f"Backend switched to {label}", title="Switch backend")
 
     def action_refresh(self) -> None:
@@ -499,7 +676,10 @@ def create_provider_from_config(config: TUIConfig) -> Provider:
     provider_type = (config.provider_type or "mock").lower()
 
     if provider_type == "mock" or not provider_type:
-        return MockProvider(update_interval_ms=config.update_interval_ms)
+        return MockProvider(
+            update_interval_ms=config.update_interval_ms,
+            symbols=getattr(config, "watchlist", None),
+        )
 
     elif provider_type == "rest" or provider_type in PRESET_REST_ENDPOINTS:
         endpoint = (
@@ -528,7 +708,7 @@ def create_provider_from_config(config: TUIConfig) -> Provider:
 def main():
     """Main entry point for Python TUI"""
 
-    # Logging to stderr (stdout reserved for GUI/normal output); logs also go to TUI Logs tab
+    # Logging: captured to TUI Logs tab only (stderr handler removed so terminal isn't overwritten)
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",

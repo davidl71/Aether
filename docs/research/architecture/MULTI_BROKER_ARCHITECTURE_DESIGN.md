@@ -359,7 +359,7 @@ Normalize order statuses to common `types::OrderStatus` enum:
     },
     "ib_client_portal": {
       "enabled": true,
-      "base_url": "https://localhost:5000",
+      "base_url": "https://localhost:5001",
       "oauth": {
         "client_id": "...",
         "redirect_uri": "..."

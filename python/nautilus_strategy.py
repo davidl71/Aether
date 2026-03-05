@@ -142,7 +142,7 @@ def main():
         if ibkr_portal_config.get("enabled", False):
             try:
                 portal_client = IBKRPortalClient(
-                    base_url=ibkr_portal_config.get("base_url", "https://localhost:5000/v1/portal"),
+                    base_url=ibkr_portal_config.get("base_url", "https://localhost:5001/v1/portal"),
                     verify_ssl=ibkr_portal_config.get("verify_ssl", False),
                     timeout_seconds=int(ibkr_portal_config.get("timeout_seconds", 5)),
                     preferred_accounts=ibkr_portal_config.get("preferred_accounts", []),

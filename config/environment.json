@@ -34,7 +34,7 @@
     "nats_websocket_port": 8081,
     "rust_backend_rest_port": 8080,
     "rust_backend_grpc_port": 50051,
-    "ib_gateway_port": 5000
+    "ib_gateway_port": 5001
   },
   
   "logging": {

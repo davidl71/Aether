@@ -32,7 +32,7 @@ This document designs the IB Client Portal API integration architecture followin
 
 **Base URL:**
 
-- `https://localhost:5000/v1/api` (local Client Portal)
+- `https://localhost:5001/v1/api` (local Client Portal)
 - Or cloud-hosted Client Portal instance
 
 **Key Differences from TWS API:**
@@ -88,8 +88,8 @@ class IBClientPortalAuth {
 public:
     // Step 1: Initiate OAuth flow
     std::string get_authorization_url() {
-        // Redirect user to: https://localhost:5000/v1/api/oauth/authorize
-        return "https://localhost:5000/v1/api/oauth/authorize?response_type=code&client_id=" + client_id_;
+        // Redirect user to: https://localhost:5001/v1/api/oauth/authorize
+        return "https://localhost:5001/v1/api/oauth/authorize?response_type=code&client_id=" + client_id_;
     }
 
     // Step 2: Exchange code for tokens (after user authorizes)
@@ -121,7 +121,7 @@ bool IBClientPortalAdapter::connect() {
 
 ```cpp
 struct IBClientPortalConfig {
-    std::string base_url;  // https://localhost:5000/v1/api
+    std::string base_url;  // https://localhost:5001/v1/api
     std::string client_id;  // OAuth client ID
     std::string client_secret;  // OAuth client secret
     std::string username;  // Alternative: username/password
@@ -460,7 +460,7 @@ void IBClientPortalAdapter::handle_error(int status_code, const json& error) {
   "brokers": {
     "ib_client_portal": {
       "enabled": true,
-      "base_url": "https://localhost:5000/v1/api",
+      "base_url": "https://localhost:5001/v1/api",
       "use_oauth": true,
       "client_id": "YOUR_CLIENT_ID",
       "client_secret": "YOUR_CLIENT_SECRET",

@@ -48,7 +48,7 @@ fi
 
 # Optional: Check if IB Client Portal Gateway is running
 check_ib_gateway() {
-  local portal_url="${1:-https://localhost:5000}"
+  local portal_url="${1:-https://localhost:5001}"
   if command -v curl >/dev/null 2>&1; then
     # Check if gateway is accessible (ignore SSL errors)
     if curl -k -s --connect-timeout 2 "${portal_url}/sso/validate" >/dev/null 2>&1; then
@@ -72,7 +72,7 @@ except Exception:
   return 1
 }
 
-IB_PORTAL_URL="${IB_PORTAL_URL:-https://localhost:5000/v1/portal}"
+IB_PORTAL_URL="${IB_PORTAL_URL:-https://localhost:5001/v1/portal}"
 IB_GATEWAY_BASE="${IB_PORTAL_URL%/v1/portal}"
 
 if ! check_ib_gateway "${IB_GATEWAY_BASE}"; then
@@ -104,12 +104,13 @@ if ! config_check_port_available "${IB_PORT}"; then
   echo "Port ${IB_PORT} is already in use. Checking if it's the IB service..." >&2
 
   # Custom health check for IB service (checks for 'ib_connected' in response)
+  # IB can be slow (gateway round-trip); use 5s timeout
   IB_HEALTH_CHECK=$("${PYTHON_CMD}" -c "
 import urllib.request
 import json
 import sys
 try:
-    with urllib.request.urlopen('http://127.0.0.1:${IB_PORT}/api/health', timeout=2) as response:
+    with urllib.request.urlopen('http://127.0.0.1:${IB_PORT}/api/health', timeout=5) as response:
         data = json.loads(response.read().decode())
         if data.get('status') == 'ok' and 'ib_connected' in data:
             print('IB_SERVICE')

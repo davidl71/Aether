@@ -20,7 +20,7 @@ TUI/PWA (poll every 500ms–1s)
     ▼ build_snapshot_payload()
     │
     ├─ 1. client.get_accounts()  ← SEQUENTIAL, before parallel block
-    │       → GET https://localhost:5000/v1/portal/iserver/accounts
+    │       → GET https://localhost:5001/v1/portal/iserver/accounts
     │       → On 401: ensure_session() (see §3)
     │
     └─ 2. ThreadPoolExecutor(max_workers=3)  ← PARALLEL
@@ -34,7 +34,7 @@ TUI/PWA (poll every 500ms–1s)
     └─ 4. Optional: _build_cash_flow_timeline(positions_data)  ← CPU, can be heavy
 ```
 
-**Critical point:** The “IB snapshot” path uses the **IB Client Portal Web API** (REST over HTTPS to the Gateway on port 5000), **not** the native TWS socket API. Every piece of data is one or more HTTP round-trips to the Gateway.
+**Critical point:** The “IB snapshot” path uses the **IB Client Portal Web API** (REST over HTTPS to the Gateway on port 5001), **not** the native TWS socket API. Every piece of data is one or more HTTP round-trips to the Gateway.
 
 ---
 
