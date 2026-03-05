@@ -28,6 +28,12 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 try:
+    from .onepassword_sdk_helper import getenv_or_resolve
+except ImportError:
+    def getenv_or_resolve(env_var: str, op_ref: str, default: str = "") -> str:
+        return os.getenv(env_var, default)
+
+try:
     from alpaca.trading.client import TradingClient
     from alpaca.data.historical import StockHistoricalDataClient
     from alpaca.data.requests import StockLatestQuoteRequest, StockLatestTradeRequest
@@ -59,14 +65,14 @@ class AlpacaClient:
         data_base_url: Optional[str] = None,
         session: Optional[requests.Session] = None,
     ) -> None:
-        # OAuth credentials (preferred if available)
-        self.client_id = client_id or os.getenv("ALPACA_CLIENT_ID", "")
-        self.client_secret = client_secret or os.getenv("ALPACA_CLIENT_SECRET", "")
+        # OAuth credentials (preferred if available); optional 1Password op:// refs via SDK
+        self.client_id = client_id or getenv_or_resolve("ALPACA_CLIENT_ID", "OP_ALPACA_CLIENT_ID_SECRET", "")
+        self.client_secret = client_secret or getenv_or_resolve("ALPACA_CLIENT_SECRET", "OP_ALPACA_CLIENT_SECRET_SECRET", "")
         self._use_oauth = bool(self.client_id and self.client_secret)
 
-        # API key credentials (fallback)
-        self.api_key_id = api_key_id or os.getenv("ALPACA_API_KEY_ID", "")
-        self.api_secret_key = api_secret_key or os.getenv("ALPACA_API_SECRET_KEY", "")
+        # API key credentials (fallback); optional 1Password op:// refs via SDK
+        self.api_key_id = api_key_id or getenv_or_resolve("ALPACA_API_KEY_ID", "OP_ALPACA_API_KEY_ID_SECRET", "")
+        self.api_secret_key = api_secret_key or getenv_or_resolve("ALPACA_API_SECRET_KEY", "OP_ALPACA_API_SECRET_KEY_SECRET", "")
 
         # Require at least one authentication method
         if not self._use_oauth and (not self.api_key_id or not self.api_secret_key):
@@ -76,9 +82,9 @@ class AlpacaClient:
                 "  API Keys: ALPACA_API_KEY_ID and ALPACA_API_SECRET_KEY"
             )
 
-        # OAuth token management
-        self._access_token: Optional[str] = access_token or os.getenv("ALPACA_ACCESS_TOKEN", "")
-        self._refresh_token: Optional[str] = refresh_token or os.getenv("ALPACA_REFRESH_TOKEN", "")
+        # OAuth token management; optional 1Password op:// refs via SDK
+        self._access_token = access_token or getenv_or_resolve("ALPACA_ACCESS_TOKEN", "OP_ALPACA_ACCESS_TOKEN_SECRET", "")
+        self._refresh_token = refresh_token or getenv_or_resolve("ALPACA_REFRESH_TOKEN", "OP_ALPACA_REFRESH_TOKEN_SECRET", "")
         self._token_expires_at: Optional[datetime] = None
 
         paper = os.getenv("ALPACA_PAPER", "1").lower() in {"1", "true", "yes", "on"}

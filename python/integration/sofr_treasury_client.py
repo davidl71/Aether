@@ -20,6 +20,12 @@ from datetime import datetime
 from typing import Dict, List, Optional, TYPE_CHECKING
 from dataclasses import dataclass
 
+try:
+    from .onepassword_sdk_helper import getenv_or_resolve
+except ImportError:
+    def getenv_or_resolve(env_var: str, op_ref: str, default: str = "") -> str:
+        return os.getenv(env_var, default)
+
 if TYPE_CHECKING:
     from .risk_free_rate_extractor import RiskFreeRateCurve
 
@@ -63,7 +69,8 @@ class SOFRTreasuryClient:
         """
         self.frb_base_url = frb_base_url.rstrip("/")
         self.treasury_base_url = treasury_base_url
-        self.fred_api_key = fred_api_key or os.getenv("FRED_API_KEY")
+        # Optional 1Password op:// ref via OP_FRED_API_KEY_SECRET when SDK available
+        self.fred_api_key = fred_api_key or getenv_or_resolve("FRED_API_KEY", "OP_FRED_API_KEY_SECRET", "")
         self.fred_base_url = "https://api.stlouisfed.org/fred"
 
         self.session = requests.Session()

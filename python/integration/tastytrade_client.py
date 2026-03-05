@@ -21,6 +21,12 @@ import logging
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 
+try:
+    from .onepassword_sdk_helper import getenv_or_resolve
+except ImportError:
+    def getenv_or_resolve(env_var: str, op_ref: str, default: str = "") -> str:
+        return os.getenv(env_var, default)
+
 import requests
 
 logger = logging.getLogger(__name__)
@@ -44,14 +50,14 @@ class TastytradeClient:
         sandbox_base_url: Optional[str] = None,
         session: Optional[requests.Session] = None,
     ) -> None:
-        # OAuth credentials (preferred)
-        self.client_secret = client_secret or os.getenv("TASTYTRADE_CLIENT_SECRET", "")
-        self.refresh_token = refresh_token or os.getenv("TASTYTRADE_REFRESH_TOKEN", "")
+        # OAuth credentials (preferred); optional 1Password op:// refs via SDK
+        self.client_secret = client_secret or getenv_or_resolve("TASTYTRADE_CLIENT_SECRET", "OP_TASTYTRADE_CLIENT_SECRET_SECRET", "")
+        self.refresh_token = refresh_token or getenv_or_resolve("TASTYTRADE_REFRESH_TOKEN", "OP_TASTYTRADE_REFRESH_TOKEN_SECRET", "")
         self._use_oauth = bool(self.client_secret and self.refresh_token)
 
-        # Session-based credentials (fallback)
-        self.username = username or os.getenv("TASTYTRADE_USERNAME", "")
-        self.password = password or os.getenv("TASTYTRADE_PASSWORD", "")
+        # Session-based credentials (fallback); optional 1Password op:// refs via SDK
+        self.username = username or getenv_or_resolve("TASTYTRADE_USERNAME", "OP_TASTYTRADE_USERNAME_SECRET", "")
+        self.password = password or getenv_or_resolve("TASTYTRADE_PASSWORD", "OP_TASTYTRADE_PASSWORD_SECRET", "")
 
         # Require at least one authentication method
         if not self._use_oauth and (not self.username or not self.password):

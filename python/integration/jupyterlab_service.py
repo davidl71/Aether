@@ -33,6 +33,12 @@ except ImportError:
     # Fallback if config_loader not available
     ConfigLoader = None
 
+try:
+    from integration.onepassword_sdk_helper import getenv_or_resolve
+except ImportError:
+    def getenv_or_resolve(env_var: str, op_ref: str, default: str = "") -> str:
+        return os.getenv(env_var, default)
+
 
 def get_jupyterlab_port() -> int:
     """Get JupyterLab port from config or environment."""
@@ -89,13 +95,13 @@ def main() -> int:
         "--allow-root",  # Allow running as root (for Docker)
     ]
 
-    # Add token if provided
-    token = os.getenv("JUPYTERLAB_TOKEN")
+    # Add token if provided; optional 1Password op:// ref via OP_JUPYTERLAB_TOKEN_SECRET
+    token = getenv_or_resolve("JUPYTERLAB_TOKEN", "OP_JUPYTERLAB_TOKEN_SECRET", "")
     if token:
         cmd.extend(["--NotebookApp.token", token])
 
-    # Add password if provided
-    password = os.getenv("JUPYTERLAB_PASSWORD")
+    # Add password if provided; optional 1Password op:// ref via OP_JUPYTERLAB_PASSWORD_SECRET
+    password = getenv_or_resolve("JUPYTERLAB_PASSWORD", "OP_JUPYTERLAB_PASSWORD_SECRET", "")
     if password:
         cmd.extend(["--NotebookApp.password", password])
 
