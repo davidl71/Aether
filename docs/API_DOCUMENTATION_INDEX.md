@@ -22,6 +22,16 @@ server by appending `use context7` to your prompts. For example:
 
 ## Project Documentation
 
+### TWS, ORATS, Client Portal & QuestDB (Quick Reference)
+
+- **`docs/TWS_ORATS_PORTAL_QUESTDB.md`** – How **TWS API**, **ORATS**, **IB Client Portal**, and **QuestDB** fit in the platform: roles, ports, code locations, and data flow (Gateway → IB service → PWA; optional ORATS enrichment and QuestDB archiving).
+
+### Planning & lifecycle
+
+- **`docs/planning/BACKGROUND_TASK_LIFECYCLE.md`** – Current state and suggested improvements for background tasks (TUI threads, FastAPI lifespan, standalone scripts). Covers provider/aggregator lifecycle, health dashboard lifespan, Tastytrade DXLink, strategy runner, and questdb_nats_writer; suggests task registry, lifespan migration, and signal handlers.
+- **`docs/planning/NATS_KV_REDIS_LIFECYCLE_TIMESCALE.md`** – Prioritized plan: NATS KV first, Redis later, background-task lifecycle, TimescaleDB optional.
+- **`docs/planning/PRIMARY_CURRENCY_AND_TASE_HEDGING.md`** – Primary currency per account/portfolio (config, reporting, hedging). Hedging suggestions combining IB box spread (USD) with TASE put/call (TA-35, TA-125, ILS/USD options); data needs, logic, and implementation order.
+
 ### Box Spread Trading Guide
 
 - **Comprehensive Box Spread Guide**: `docs/strategies/box-spread/BOX_SPREAD_COMPREHENSIVE_GUIDE.md`
@@ -30,6 +40,14 @@ server by appending `use context7` to your prompts. For example:
   - Includes practical examples and implementation recommendations
   - Synthesizes information from multiple educational resources
   - **Note**: Box spreads are one strategy component of the Synthetic Financing Platform (7-10% spare cash allocation)
+
+### 1Password (Secrets & credentials)
+
+- **1Password Integration**: `docs/ONEPASSWORD_INTEGRATION.md`
+- **Backend secrets providers (generate & configure)**: `docs/BACKEND_SECRETS_PROVIDERS.md`
+  - CLI (`op`) and **formal API (SDKs)** for loading secrets
+  - [1Password SDKs](https://developer.1password.com/docs/sdks/) – Go, JavaScript, Python; [Load secrets](https://developer.1password.com/docs/sdks/load-secrets)
+  - This project: shell scripts use CLI (`scripts/include/onepassword.sh`); Israeli bank scrapers service optionally uses **JavaScript SDK** (`@1password/sdk`); optional Python helper uses **Python SDK** (`onepassword-sdk`)
 
 ### Device Task Delegation & Apple Intelligence
 
@@ -156,6 +174,8 @@ server by appending `use context7` to your prompts. For example:
   - **News Providers**: Configure in Global Configuration → Pre-Configured API News Providers
 
 - **IBKR Campus Resources**:
+  - **TWS API Documentation (main)**: <https://www.interactivebrokers.com/campus/ibkr-api-page/twsapi-doc/>
+  - **Sync API**: <https://www.interactivebrokers.com/campus/ibkr-api-page/twsapi-doc/#sync-api> – synchronous request/response patterns (aligns with our `request_*_sync` wrappers)
   - **EClient and EWrapper Architecture**:
     <https://www.interactivebrokers.com/campus/ibkr-quant-news/the-eclient-and-ewrapper-api-classes/> - Official explanation of EClient/EWrapper pattern
   - See also: `docs/ECLIENT_EWRAPPER_ARCHITECTURE.md` - Detailed architecture documentation based on IBKR Campus
@@ -165,6 +185,7 @@ server by appending `use context7` to your prompts. For example:
 - **Official Website**: <https://alpaca.markets/>
 - **Trading API Docs**: <https://docs.alpaca.markets/>
 - **Broker API Docs**: <https://alpaca.markets/broker-api-docs/>
+- **This project – Alpaca OAuth**: `docs/ALPACA_OAUTH.md` (client credentials flow, env and 1Password)
 - **GitHub**: <https://github.com/alpacahq>
 - **Founded**: 2015 (Yoshi Yokokawa, Hitoshi Harada)
 - **Backing**: Y Combinator, Spark Capital, Tribe Capital, Horizon Ventures, Portage Ventures, Eldridge, Unbound
@@ -904,6 +925,18 @@ This section covers market data providers for real-time and historical financial
   allowing third-party financial service providers to access banking data and services with proper authorization and customer consent.
   Useful for Israeli traders requiring automated account access and ILS-denominated operations.
 
+### Israeli Bank Scrapers (Node) - israeli-bank-scrapers
+
+- **GitHub**: <https://github.com/eshaham/israeli-bank-scrapers>
+- **NPM**: `israeli-bank-scrapers`
+- **Description**: Node/TypeScript library using Puppeteer to scrape Israeli bank and credit-card websites (when Open Banking is not available). Supports Bank Hapoalim, Leumi, Discount, Mercantile, Mizrahi, Otsar Hahayal, Union, Beinleumi, Massad, Yahav, Visa Cal, Max, Isracard, Amex, and others.
+- **Integration in This Project**:
+  - **Service**: `services/israeli-bank-scrapers-service` — runs scrapers on-demand (HTTP POST /scrape or CLI), maps results to the shared ledger (`Assets:Bank:{BankName}:{accountNumber}`), so existing Discount Bank service and TUI/Web continue to show accounts via GET /api/bank-accounts.
+  - **Port**: 8010 (config: `services.israeli_bank_scrapers.port`).
+  - **Endpoints**: GET /api/health, POST /scrape (credentials via env only).
+- **Use Cases**: Alternative to Open Banking when corporate auth is not in place; multi-bank and credit-card aggregation; cron-based sync into ledger.
+- **License**: MIT.
+
 ### First International Bank of Israel (FIBI) - Open Banking API
 
 - **Developer Portal (Sandbox)**: <https://devapi.test.fibi.co.il/fibi/sb/api>
@@ -1289,6 +1322,30 @@ integrated with ERP systems or treasury management.
   TNS is a notable vendor providing low-latency global distribution of TASE market data.
 Useful for Israeli traders requiring real-time and historical market data for Israeli securities, options trading on Israeli underlyings, and
 portfolio management of ILS-denominated positions.
+
+### TASE Data Hub API (direct)
+
+- **Base URL**: <https://datahubapi.tase.co.il/>
+- **API documentation**: <https://datahubapi.tase.co.il/docs/1626b30a-9369-4f6e-b0ec-b0340d8515bf/1748180086472>
+- **API guide (PDF, English)**: <https://content.tase.co.il/media/l5xjhjmz/2000_api_guide_eng.pdf>
+- **Data file distribution**: <https://www.tase.co.il/en/content/data/file_distribution> – TASE data files / bulk distribution (alternative or complement to API).
+- **Market data (Hebrew)**: <https://market.tase.co.il/he/market_data> – TASE market site, market data section (Hebrew).
+- **Derivatives major data (Hebrew)**: <https://market.tase.co.il/he/market_data/derivatives/major_data/details> – TASE derivatives “major data” details (index options, options on USD, etc.).
+- **Derivatives EoD history (10 years)**: <https://datahubapi.tase.co.il/spec/f5196aac-357f-49e1-8984-2a93d0160758/c77e97c5-120d-4bf8-b54d-e6e8c6d359da#/APIs/getDerivativesEoDHistory10YearsData> – API spec for derivatives end-of-day historical data (10 years); use for index options, options on USD, and other TASE derivatives when building hedge suggestions or backtests.
+- **Third-party (scraper)**: [algonell/tase](https://github.com/algonell/tase) – Tel Aviv Stock Exchange data scraper (Python, Jupyter notebook, TA35). Alternative to official API for scraping TASE data; use with appropriate licensing and respect for TASE terms of use.
+- **Description**: TASE Data Hub API – official developer/data portal for programmatic access to TASE market data. Use for securities, derivatives (including index options and options on USD / currency options), and related reference data when building hedge suggestions (IB box spread + TASE options) or position aggregation.
+- **Relevance**: Primary candidate for Phase 2 TASE option chain integration in `docs/planning/PRIMARY_CURRENCY_AND_TASE_HEDGING.md` (option chain for TA-35, TA-125, options on USD / ILS/USD). Use the docs link or PDF guide above for current endpoints, parameters, authentication, and rate limits. Use the file distribution page for bulk or file-based data if needed.
+- **Note**: Portal may require registration or API key; verify terms of use and data scope (e.g. delayed vs real-time) before integration.
+
+### IBKR (TWS API) – Israeli product data
+
+- **What IBKR provides (confirmed in this project)**:
+  - **FX / currency pairs**: USD/ILS and other pairs via TWS API with `secType="CASH"`, `exchange="IDEALPRO"`. Used for exchange rate in currency hedging (see `docs/research/analysis/CURRENCY_EXCHANGE_RISK.md`). Request with `Contract`: symbol `"USD"`, currency `"ILS"`, exchange `"IDEALPRO"`.
+- **Israeli equities and TASE (to verify)**:
+  - IBKR may offer **Israeli stocks** (TASE-listed) and possibly **TASE index/currency options**; product and data availability can depend on account region and market data subscriptions.
+  - **How to check**: Use [IBKR Symbol and Exchange Search](https://www.interactivebrokers.com/en/trading/products-exchanges.php) (Products → Symbol and Exchange Search) and search for exchange **TASE** or **Tel Aviv**; or use TWS/API contract search (`reqContractDetails`, `reqMktData`) with a TASE contract (e.g. symbol for a TASE stock or index).
+  - **Typical use**: If available, use TWS for USD/ILS FX and optionally for TASE securities/options data alongside TASE Data Hub API, so hedge suggestions can combine IB box spread (USD) with Israeli product data from one broker feed where possible.
+- **References**: `docs/research/analysis/CURRENCY_EXCHANGE_RISK.md` (TWS CASH/IDEALPRO), `docs/planning/PRIMARY_CURRENCY_AND_TASE_HEDGING.md` (hedge suggestions IB + TASE).
 
 ### Options-IT - Trading Infrastructure & Connectivity
 

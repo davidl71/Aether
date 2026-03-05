@@ -5,7 +5,7 @@ This guide shows how to connect the PWA to Alpaca Markets for live market data.
 ## Prerequisites
 
 1. **Alpaca Account**: Sign up at [alpaca.markets](https://alpaca.markets) (free paper trading available)
-2. **API Credentials**: Get your API key ID and secret key from the Alpaca dashboard
+2. **API Credentials**: Get your API key ID and secret key from the Alpaca dashboard, **or** use OAuth (client_id + client_secret from an OAuth app) — see [docs/ALPACA_OAUTH.md](../docs/ALPACA_OAUTH.md)
 3. **Python Dependencies**: The Alpaca service requires `uvicorn` and `fastapi`
 4. **Optional - 1Password CLI**: For secure credential management (recommended)
 
