@@ -35,21 +35,34 @@ fi
 OP_CLIENT_ID_SECRET="${OP_TRADESTATION_CLIENT_ID_SECRET:-}"
 OP_CLIENT_SECRET_SECRET="${OP_TRADESTATION_CLIENT_SECRET_SECRET:-}"
 
-TRADESTATION_CLIENT_ID=$(read_credential "${OP_CLIENT_ID_SECRET}" "${TRADESTATION_CLIENT_ID:-}" "Client ID" || echo "")
-TRADESTATION_CLIENT_SECRET=$(read_credential "${OP_CLIENT_SECRET_SECRET}" "${TRADESTATION_CLIENT_SECRET:-}" "Client Secret" || echo "")
+# Check for secret early: if 1Password refs are set but we can't read, exit before venv/pip/port work
+if [ -n "${OP_CLIENT_ID_SECRET}" ] || [ -n "${OP_CLIENT_SECRET_SECRET}" ]; then
+  TRADESTATION_CLIENT_ID=$(read_credential "${OP_CLIENT_ID_SECRET}" "${TRADESTATION_CLIENT_ID:-}" "Client ID" 2>/dev/null || echo "")
+  TRADESTATION_CLIENT_SECRET=$(read_credential "${OP_CLIENT_SECRET_SECRET}" "${TRADESTATION_CLIENT_SECRET:-}" "Client Secret" 2>/dev/null || echo "")
+  if [ -z "${TRADESTATION_CLIENT_ID}" ] || [ -z "${TRADESTATION_CLIENT_SECRET}" ]; then
+    echo "Error: TradeStation 1Password refs set but could not read secrets." >&2
+    echo "  Run 'op signin' or set TRADESTATION_CLIENT_ID and TRADESTATION_CLIENT_SECRET in the environment." >&2
+    exit 1
+  fi
+  export TRADESTATION_CLIENT_ID
+  export TRADESTATION_CLIENT_SECRET
+  # Skip disabled-mode path; proceed to start service
+else
+  TRADESTATION_CLIENT_ID=$(read_credential "${OP_CLIENT_ID_SECRET}" "${TRADESTATION_CLIENT_ID:-}" "Client ID" || echo "")
+  TRADESTATION_CLIENT_SECRET=$(read_credential "${OP_CLIENT_SECRET_SECRET}" "${TRADESTATION_CLIENT_SECRET:-}" "Client Secret" || echo "")
+fi
 
-# Check for required credentials.
-# If none set, we still start the service; it will run in "disabled" mode and return status: disabled from /api/health.
+# If no credentials (and we didn't exit above), allow disabled mode: start service, health only.
+# Same as IB/Alpaca: service starts; /api/health returns status "disabled"; other endpoints return empty/error.
 if [ -z "${TRADESTATION_CLIENT_ID}" ] || [ -z "${TRADESTATION_CLIENT_SECRET}" ]; then
-  echo "TradeStation credentials not set; service will start in disabled mode (TUI will show 'TradeStation: disabled')." >&2
+  echo "TradeStation credentials not set; service will start in disabled mode (health only; TUI will show 'TradeStation: disabled')." >&2
   echo "To enable: set TRADESTATION_CLIENT_ID/TRADESTATION_CLIENT_SECRET or use 1Password (OP_TRADESTATION_*)" >&2
   export TRADESTATION_CLIENT_ID="${TRADESTATION_CLIENT_ID:-}"
   export TRADESTATION_CLIENT_SECRET="${TRADESTATION_CLIENT_SECRET:-}"
+else
+  export TRADESTATION_CLIENT_ID
+  export TRADESTATION_CLIENT_SECRET
 fi
-
-# Export credentials for the Python service (may be empty)
-export TRADESTATION_CLIENT_ID
-export TRADESTATION_CLIENT_SECRET
 
 cd "$PYTHON_DIR"
 
@@ -77,6 +90,9 @@ TRADESTATION_PORT=$(config_get_port "tradestation" 8001)
 # Check if port is available and verify service identity
 if ! check_port_with_service "${PYTHON_CMD}" "127.0.0.1" "${TRADESTATION_PORT}" "TRADESTATION_SERVICE" "TradeStation"; then
   exit 1
+fi
+if [ -n "${SERVICE_ALREADY_RUNNING:-}" ]; then
+  exit 0
 fi
 
 echo "Starting TradeStation service on http://127.0.0.1:${TRADESTATION_PORT}" >&2

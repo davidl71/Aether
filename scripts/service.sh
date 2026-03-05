@@ -45,7 +45,7 @@ _svc_port() {
     ib) _config_port ib 8002 ;;
     alpaca) _config_port alpaca 8000 ;;
     tastytrade) _config_port tastytrade 8005 ;;
-    tradestation) _config_port tradestation 8006 ;;
+    tradestation) _config_port tradestation 8001 ;;
     riskfree) _config_port risk_free_rate 8004 ;;
     discount) _config_port discount_bank 8003 ;;
     web) echo "5173" ;;
@@ -155,7 +155,7 @@ _health_url() {
 # Returns 0 if the service is really running (PID present and health check passes when available).
 _service_really_running() {
   local svc="$1"
-  local pid url code
+  local pid url code timeout
   pid=$(_find_pid "$svc")
   if [[ -z "$pid" ]]; then
     return 1
@@ -165,13 +165,16 @@ _service_really_running() {
     # No health URL (e.g. memcached): PID present is enough
     return 0
   fi
+  # IB service can be slow (gateway round-trip); use longer timeout
+  timeout=2
+  [[ "$svc" == "ib" ]] && timeout=5
   if [[ "$url" == https* ]]; then
-    code=$(curl -sk --connect-timeout 2 -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")
+    code=$(curl -sk --connect-timeout "$timeout" -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")
     # Gateway returns 401 when not logged in but is running; any response means process is up
     [[ "$code" != "000" ]]
     return $?
   fi
-  curl -sf --connect-timeout 2 "$url" >/dev/null 2>&1
+  curl -sf --connect-timeout "$timeout" "$url" >/dev/null 2>&1
   return $?
 }
 
@@ -227,7 +230,26 @@ do_start() {
 
   local svc_pid=$!
   disown "$svc_pid" 2>/dev/null || true
-  sleep "$wait_sec"
+
+  # Short initial wait; if the run script exits 0 quickly (e.g. "already running"), check port now
+  local early_sec=3
+  sleep "$early_sec"
+  if ! kill -0 "$svc_pid" 2>/dev/null; then
+    wait "$svc_pid" 2>/dev/null
+    local exitcode=$?
+    if [[ "$exitcode" -eq 0 ]]; then
+      pid=$(_find_pid "$svc")
+      if [[ -n "$pid" ]] && _service_really_running "$svc"; then
+        echo "[info] ${display} started (existing service, PID: ${pid//$'\n'/, }, healthy)"
+        [[ -n "$port" ]] && echo "[info] Port: $port"
+        echo "[info] Log: $log"
+        return 0
+      fi
+    fi
+  fi
+
+  local remainder=$((wait_sec - early_sec))
+  [[ "$remainder" -gt 0 ]] && sleep "$remainder"
 
   pid=$(_find_pid "$svc")
   if [[ -n "$pid" ]]; then
@@ -289,18 +311,20 @@ do_stop() {
 
 do_status() {
   local svc="$1"
-  local display pid health_url health code
+  local display pid health_url health code timeout
   display=$(_svc_display "$svc")
   pid=$(_find_pid "$svc")
   if [[ -n "$pid" ]]; then
     health_url=$(_health_url "$svc")
     health="unknown"
+    timeout=2
+    [[ "$svc" == "ib" ]] && timeout=5
     if [[ -n "$health_url" ]]; then
       if [[ "$health_url" == https* ]]; then
-        code=$(curl -sk --connect-timeout 2 -o /dev/null -w "%{http_code}" "$health_url" 2>/dev/null || echo "000")
+        code=$(curl -sk --connect-timeout "$timeout" -o /dev/null -w "%{http_code}" "$health_url" 2>/dev/null || echo "000")
         [[ "$code" != "000" ]] && health="healthy" || health="unhealthy"
       else
-        curl -sf --connect-timeout 2 "$health_url" >/dev/null 2>&1 && health="healthy" || health="unhealthy"
+        curl -sf --connect-timeout "$timeout" "$health_url" >/dev/null 2>&1 && health="healthy" || health="unhealthy"
       fi
     else
       health="no-check"
