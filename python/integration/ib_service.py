@@ -9,14 +9,21 @@ Environment:
 - SYMBOLS: comma-separated underlyings (default: SPY,QQQ)
 - IB_PORTAL_URL: IB Client Portal base URL (default: https://localhost:5000/v1/portal)
 - SNAPSHOT_FILE_PATH: optional path to also write snapshot JSON (for TUI file polling)
-- SNAPSHOT_CACHE_SECONDS: seconds to cache snapshot response (default: 2; 0 = disable)
+- SNAPSHOT_CACHE_SECONDS: seconds to cache snapshot response (default: 3; 0 = disable). Increase to 5
+  to reduce Gateway load when freshness is less critical.
+- REAUTH_SLEEP_SECONDS: seconds to sleep after triggering Gateway reauth (default 0.5; see ibkr_portal_client).
 
 Snapshot latency: Market data, account summary, and positions are fetched in parallel.
-Each Gateway request can take hundreds of ms; caching (SNAPSHOT_CACHE_SECONDS) reduces
-repeated load when the TUI polls every 500ms.
+Session is ensured once per snapshot; conids are prewarmed on first use to avoid repeated search round-trips.
+
+Web responsiveness: All endpoints that perform Gateway I/O run the blocking work in a thread pool
+(asyncio.to_thread) so the FastAPI event loop is not blocked; other requests can be served while
+one snapshot or account call is in progress. A future improvement is to use an async HTTP client
+(e.g. httpx.AsyncClient) in the portal layer so many concurrent Gateway calls do not consume threads.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -60,12 +67,25 @@ def _symbols_from_env() -> List[str]:
     return [s.strip().upper() for s in raw.split(",") if s.strip()]
 
 
+# Symbol sets we have already prewarmed (conid cache) once per process.
+_prewarmed_symbol_keys: set = set()
+
+
+def _ensure_conids_prewarmed(client: IBKRPortalClient, symbols: List[str]) -> None:
+    """Call prewarm_conids once per distinct symbol set so get_snapshots_batch has warm conids."""
+    key = tuple(sorted(symbols))
+    if key in _prewarmed_symbol_keys:
+        return
+    client.prewarm_conids(symbols)
+    _prewarmed_symbol_keys.add(key)
+
+
 def _snapshot_cache_ttl_seconds() -> float:
     """Seconds to cache snapshot (0 = disabled)."""
     try:
-        return max(0.0, float(os.getenv("SNAPSHOT_CACHE_SECONDS", "2")))
+        return max(0.0, float(os.getenv("SNAPSHOT_CACHE_SECONDS", "3")))
     except (ValueError, TypeError):
-        return 2.0
+        return 3.0
 
 
 def _extract_account_value(summary: Dict, key: str, default: float = 0.0) -> float:
@@ -128,6 +148,7 @@ def build_snapshot_payload(
 ) -> Dict[str, Any]:
     """Build snapshot payload matching API_CONTRACT.md format.
     Fetches market data, account summary, and positions in parallel to reduce latency.
+    Ensures session once before the parallel block and skips per-worker ensure_session.
     """
     try:
         accounts = client.get_accounts()
@@ -136,33 +157,42 @@ def build_snapshot_payload(
         effective_account_id = account_id
     display_account_id = effective_account_id if effective_account_id is not None else "IBKR"
 
-    def fetch_market_data() -> List[Dict]:
-        try:
-            return client.get_snapshots_batch(symbols)
-        except IBKRPortalError:
-            return [{}] * len(symbols)
+    # Ensure session once so parallel workers do not each call ensure_session().
+    client.ensure_session()
+    client.set_session_ensured_for_request(True)
+    try:
+        # Lazy prewarm: populate conid cache so get_snapshots_batch does not do N search_contracts.
+        _ensure_conids_prewarmed(client, symbols)
 
-    def fetch_summary() -> Optional[Dict]:
-        try:
-            return client.get_account_summary(effective_account_id)
-        except IBKRPortalError as e:
-            logger.warning("Failed to get account summary: %s", e)
-            return None
+        def fetch_market_data() -> List[Dict]:
+            try:
+                return client.get_snapshots_batch(symbols)
+            except IBKRPortalError:
+                return [{}] * len(symbols)
 
-    def fetch_positions() -> List[Dict]:
-        try:
-            return client.get_portfolio_positions(effective_account_id)
-        except IBKRPortalError as e:
-            logger.warning("Failed to get positions: %s", e)
-            return []
+        def fetch_summary() -> Optional[Dict]:
+            try:
+                return client.get_account_summary(effective_account_id)
+            except IBKRPortalError as e:
+                logger.warning("Failed to get account summary: %s", e)
+                return None
 
-    with ThreadPoolExecutor(max_workers=3) as pool:
-        fut_snap = pool.submit(fetch_market_data)
-        fut_summary = pool.submit(fetch_summary)
-        fut_pos = pool.submit(fetch_positions)
-        snapshots_list = fut_snap.result()
-        account_summary = fut_summary.result()
-        positions_raw = fut_pos.result()
+        def fetch_positions() -> List[Dict]:
+            try:
+                return client.get_portfolio_positions(effective_account_id)
+            except IBKRPortalError as e:
+                logger.warning("Failed to get positions: %s", e)
+                return []
+
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            fut_snap = pool.submit(fetch_market_data)
+            fut_summary = pool.submit(fetch_summary)
+            fut_pos = pool.submit(fetch_positions)
+            snapshots_list = fut_snap.result()
+            account_summary = fut_summary.result()
+            positions_raw = fut_pos.result()
+    finally:
+        client.set_session_ensured_for_request(False)
 
     symbol_snapshots = []
 
@@ -303,8 +333,10 @@ def create_app() -> FastAPI:
     _snapshot_cache: Dict[Tuple[Tuple[str, ...], str], Dict[str, Any]] = {}
 
     @app.get("/api/health")
-    def health() -> Dict[str, Any]:
-        """Health check endpoint. Never returns 500; always 200 with JSON."""
+    async def health() -> Dict[str, Any]:
+        """Health check endpoint. Never returns 500; always 200 with JSON.
+        Blocking Gateway call runs in thread pool so the event loop stays responsive.
+        """
         def safe_health_response(
             status: str,
             ib_connected: bool,
@@ -336,41 +368,45 @@ def create_app() -> FastAPI:
                     out["accounts"] = []
             return out
 
-        try:
-            accounts = client.get_accounts(timeout=2)
-            return safe_health_response(
-                status="ok",
-                ib_connected=len(accounts) > 0,
-                gateway_logged_in=len(accounts) > 0,
-                accounts=accounts,
-            )
-        except IBKRPortalError as e:
-            return safe_health_response(
-                status="error",
-                ib_connected=False,
-                gateway_logged_in=False,
-                error=str(e),
-                accounts=[],
-            )
-        except Exception as e:
-            logger.debug("Health check failed: %s", e)
-            return safe_health_response(
-                status="error",
-                ib_connected=False,
-                gateway_logged_in=False,
-                error=str(e),
-                accounts=[],
-            )
+        def _fetch() -> Dict[str, Any]:
+            try:
+                accounts = client.get_accounts(timeout=1)
+                return safe_health_response(
+                    status="ok",
+                    ib_connected=len(accounts) > 0,
+                    gateway_logged_in=len(accounts) > 0,
+                    accounts=accounts,
+                )
+            except IBKRPortalError as e:
+                return safe_health_response(
+                    status="error",
+                    ib_connected=False,
+                    gateway_logged_in=False,
+                    error=str(e),
+                    accounts=[],
+                )
+            except Exception as e:
+                logger.debug("Health check failed: %s", e)
+                return safe_health_response(
+                    status="error",
+                    ib_connected=False,
+                    gateway_logged_in=False,
+                    error=str(e),
+                    accounts=[],
+                )
+
+        return await asyncio.to_thread(_fetch)
 
     @app.get("/api/snapshot")
     @app.get("/api/v1/snapshot")  # Alias for API contract compatibility
-    def snapshot(
+    async def snapshot(
         account_id: Optional[str] = None,
         symbols: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Get complete snapshot with market data, positions, and orders.
         Optional query param: symbols=SYM1,SYM2 (e.g. symbols=MNQ,NQ for micro/nano futures).
-        Responses are cached for SNAPSHOT_CACHE_SECONDS (default 2) to reduce IB API load.
+        Responses are cached for SNAPSHOT_CACHE_SECONDS (default 3) to reduce IB API load.
+        Blocking Gateway I/O runs in a thread pool so the event loop stays responsive.
         """
         try:
             effective_account_id = account_id if account_id else current_account_id
@@ -388,7 +424,9 @@ def create_app() -> FastAPI:
                 age = (datetime.now(timezone.utc) - entry["cached_at"]).total_seconds()
                 if age < ttl:
                     return entry["payload"]
-            payload = build_snapshot_payload(symbol_list, client, effective_account_id)
+            payload = await asyncio.to_thread(
+                build_snapshot_payload, symbol_list, client, effective_account_id
+            )
             if ttl > 0:
                 _snapshot_cache[cache_key] = {
                     "payload": payload,
@@ -437,12 +475,13 @@ def create_app() -> FastAPI:
             }
 
     @app.get("/api/positions")
-    def get_positions(account_id: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Get all open positions."""
+    async def get_positions(account_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Get all open positions. Blocking Gateway call runs in thread pool."""
         try:
             effective_account_id = account_id if account_id else current_account_id
-            positions = client.get_portfolio_positions(effective_account_id)
-            # Format positions for frontend
+            positions = await asyncio.to_thread(
+                client.get_portfolio_positions, effective_account_id
+            )
             formatted = []
             for pos in positions:
                 if isinstance(pos, dict):
@@ -461,11 +500,10 @@ def create_app() -> FastAPI:
             return [{"error": str(e)}]
 
     @app.get("/api/accounts")
-    def list_accounts() -> Dict[str, Any]:
-        """List all available IB accounts"""
-        try:
+    async def list_accounts() -> Dict[str, Any]:
+        """List all available IB accounts. Blocking Gateway calls run in thread pool."""
+        def _fetch() -> Dict[str, Any]:
             accounts = client.get_accounts()
-            # Format accounts for frontend
             formatted = []
             for acc_id in accounts:
                 try:
@@ -478,38 +516,41 @@ def create_app() -> FastAPI:
                         "excess_liquidity": _extract_account_value(summary, "ExcessLiquidity"),
                     })
                 except IBKRPortalError:
-                    # If summary fails, just add the account ID
                     formatted.append({"id": acc_id, "account_id": acc_id})
-
             return {"accounts": formatted, "ts": _now_iso()}
+
+        try:
+            return await asyncio.to_thread(_fetch)
         except IBKRPortalError as e:
             return {"accounts": [], "error": str(e), "ts": _now_iso()}
 
     @app.post("/api/account")
-    def set_account(request: AccountRequest) -> Dict[str, Any]:
-        """Set active account ID"""
+    async def set_account(request: AccountRequest) -> Dict[str, Any]:
+        """Set active account ID. Blocking Gateway call runs in thread pool."""
         nonlocal current_account_id
         new_account_id = request.account_id
 
         if new_account_id:
-            # Verify account exists
-            accounts = client.get_accounts()
-            if new_account_id in accounts:
-                current_account_id = new_account_id
-                return {"status": "ok", "account_id": new_account_id, "ts": _now_iso()}
-            return {"status": "error", "message": f"Account {new_account_id} not found", "ts": _now_iso()}
+            def _check() -> Dict[str, Any]:
+                accounts = client.get_accounts()
+                if new_account_id in accounts:
+                    return {"ok": True, "account_id": new_account_id}
+                return {"ok": False, "message": f"Account {new_account_id} not found"}
+            result = await asyncio.to_thread(_check)
+            if result["ok"]:
+                current_account_id = result["account_id"]
+                return {"status": "ok", "account_id": current_account_id, "ts": _now_iso()}
+            return {"status": "error", "message": result["message"], "ts": _now_iso()}
         else:
-            # Clear account (use default)
             current_account_id = None
             return {"status": "ok", "account_id": None, "ts": _now_iso()}
 
     @app.get("/api/account")
-    def get_account() -> Dict[str, Any]:
-        """Get current active account"""
-        try:
+    async def get_account() -> Dict[str, Any]:
+        """Get current active account. Blocking Gateway calls run in thread pool."""
+        def _fetch() -> Dict[str, Any]:
             accounts = client.get_accounts()
             account_id = current_account_id or (accounts[0] if accounts else None)
-
             if account_id:
                 summary = client.get_account_summary(account_id)
                 return {
@@ -521,6 +562,9 @@ def create_app() -> FastAPI:
                     "ts": _now_iso(),
                 }
             return {"account_id": None, "ts": _now_iso()}
+
+        try:
+            return await asyncio.to_thread(_fetch)
         except IBKRPortalError as e:
             return {"account_id": None, "error": str(e), "ts": _now_iso()}
 

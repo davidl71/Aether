@@ -111,14 +111,10 @@ class TestBuildSnapshotPayload(unittest.TestCase):
 
     def test_build_snapshot_payload_success(self):
         """Test build_snapshot_payload() with successful client calls."""
-        # Mock client methods
-        self.mock_client.get_snapshot.return_value = {
-            "last": 450.0,
-            "bid": 449.5,
-            "ask": 450.5,
-            "close": 449.0,
-            "volume": 1000000,
-        }
+        self.mock_client.get_snapshots_batch.return_value = [
+            {"last": 450.0, "bid": 449.5, "ask": 450.5, "close": 449.0, "volume": 1000000},
+            {"last": 380.0, "bid": 379.5, "ask": 380.5, "close": 379.0, "volume": 500000},
+        ]
         self.mock_client.get_account_summary.return_value = {
             "NetLiquidation": [{"value": "100000.00"}],
             "BuyingPower": [{"value": "50000.00"}],
@@ -148,10 +144,17 @@ class TestBuildSnapshotPayload(unittest.TestCase):
         assert result["metrics"]["net_liq"] == 100000.0
         assert len(result["positions"]) == 1
         assert result["positions"][0]["symbol"] == "SPY"
+        self.mock_client.get_snapshots_batch.assert_called_once_with(["SPY", "QQQ"])
+        # Session ensured once before parallel block; flag set/cleared.
+        self.mock_client.ensure_session.assert_called_once()
+        self.mock_client.set_session_ensured_for_request.assert_any_call(True)
+        self.mock_client.set_session_ensured_for_request.assert_any_call(False)
+        # When account_id is passed, get_accounts is only called once (at start), not from summary/positions.
+        self.mock_client.get_accounts.assert_called_once()
 
     def test_build_snapshot_payload_client_error(self):
         """Test build_snapshot_payload() handles IBKRPortalError."""
-        self.mock_client.get_snapshot.side_effect = IBKRPortalError("Connection failed")
+        self.mock_client.get_snapshots_batch.side_effect = IBKRPortalError("Connection failed")
         self.mock_client.get_account_summary.side_effect = IBKRPortalError("Auth failed")
         self.mock_client.get_accounts.return_value = []
         self.mock_client.get_portfolio_positions.side_effect = IBKRPortalError("Positions failed")
@@ -168,10 +171,9 @@ class TestBuildSnapshotPayload(unittest.TestCase):
 
     def test_build_snapshot_payload_missing_data(self):
         """Test build_snapshot_payload() with missing market data fields."""
-        self.mock_client.get_snapshot.return_value = {
-            "last": 450.0,
-            # Missing bid/ask
-        }
+        self.mock_client.get_snapshots_batch.return_value = [
+            {"last": 450.0},
+        ]
         self.mock_client.get_account_summary.return_value = {}
         self.mock_client.get_accounts.return_value = []
         self.mock_client.get_portfolio_positions.return_value = []
@@ -182,6 +184,31 @@ class TestBuildSnapshotPayload(unittest.TestCase):
         assert result["symbols"][0]["bid"] == 0.0
         assert result["symbols"][0]["ask"] == 0.0
         assert result["symbols"][0]["spread"] == 0.0
+
+    def test_build_snapshot_payload_ensure_session_once(self):
+        """ensure_session() is called at most once per build_snapshot_payload when using session flag."""
+        self.mock_client.get_snapshots_batch.return_value = [{"last": 100.0}]
+        self.mock_client.get_account_summary.return_value = {}
+        self.mock_client.get_accounts.return_value = ["DU123"]
+        self.mock_client.get_portfolio_positions.return_value = []
+
+        build_snapshot_payload(["SPY"], self.mock_client, "DU123")
+
+        self.mock_client.ensure_session.assert_called_once()
+        self.mock_client.set_session_ensured_for_request.assert_any_call(True)
+        self.mock_client.set_session_ensured_for_request.assert_any_call(False)
+
+    def test_build_snapshot_payload_no_redundant_get_accounts_when_account_id_passed(self):
+        """When account_id is passed, get_accounts() is not called from summary/positions paths."""
+        self.mock_client.get_snapshots_batch.return_value = [{"last": 100.0}]
+        self.mock_client.get_account_summary.return_value = {}
+        self.mock_client.get_accounts.return_value = ["DU123"]
+        self.mock_client.get_portfolio_positions.return_value = []
+
+        build_snapshot_payload(["SPY"], self.mock_client, "DU999")
+
+        # get_accounts only once (initial resolution in build_snapshot_payload); summary/positions use fast path.
+        self.assertEqual(self.mock_client.get_accounts.call_count, 1)
 
 
 class TestFastAPIEndpoints(unittest.TestCase):
@@ -206,6 +233,7 @@ class TestFastAPIEndpoints(unittest.TestCase):
         assert data["status"] == "ok"
         assert data["ib_connected"] is True
         assert "DU123456" in data["accounts"]
+        self.mock_client.get_accounts.assert_called_once()
 
     def test_health_endpoint_error(self):
         """Test /api/health endpoint with connection error."""
@@ -221,13 +249,9 @@ class TestFastAPIEndpoints(unittest.TestCase):
     def test_snapshot_endpoint_success(self):
         """Test /api/snapshot endpoint with successful data."""
         with patch('integration.ib_service._symbols_from_env', return_value=["SPY"]):
-            self.mock_client.get_snapshot.return_value = {
-                "last": 450.0,
-                "bid": 449.5,
-                "ask": 450.5,
-                "close": 449.0,
-                "volume": 1000000,
-            }
+            self.mock_client.get_snapshots_batch.return_value = [
+                {"last": 450.0, "bid": 449.5, "ask": 450.5, "close": 449.0, "volume": 1000000},
+            ]
             self.mock_client.get_account_summary.return_value = {
                 "NetLiquidation": [{"value": "100000.00"}],
             }
@@ -245,33 +269,42 @@ class TestFastAPIEndpoints(unittest.TestCase):
     def test_snapshot_endpoint_with_account_id(self):
         """Test /api/snapshot endpoint with account_id parameter."""
         with patch('integration.ib_service._symbols_from_env', return_value=["SPY"]):
-            self.mock_client.get_snapshot.return_value = {
-                "last": 450.0,
-                "bid": 449.5,
-                "ask": 450.5,
-                "close": 449.0,
-                "volume": 1000000,
-            }
+            self.mock_client.get_snapshots_batch.return_value = [
+                {"last": 450.0, "bid": 449.5, "ask": 450.5, "close": 449.0, "volume": 1000000},
+            ]
             self.mock_client.get_account_summary.return_value = {}
             self.mock_client.get_accounts.return_value = ["DU123456"]
             self.mock_client.get_portfolio_positions.return_value = []
 
             response = self.client.get("/api/snapshot?account_id=DU123456")
             assert response.status_code == 200
-            # Verify account_id was passed to client
             self.mock_client.get_account_summary.assert_called_with("DU123456")
+
+    def test_snapshot_endpoint_with_symbols_query_param(self):
+        """Test /api/snapshot?symbols=MNQ uses requested symbols (e.g. for nano/micro futures)."""
+        self.mock_client.get_snapshots_batch.return_value = [
+            {"last": 21500.0, "bid": 21498.0, "ask": 21502.0, "close": 21499.0, "volume": 50000},
+        ]
+        self.mock_client.get_account_summary.return_value = {}
+        self.mock_client.get_accounts.return_value = ["DU123"]
+        self.mock_client.get_portfolio_positions.return_value = []
+
+        response = self.client.get("/api/snapshot?symbols=MNQ")
+        assert response.status_code == 200
+        data = response.json()
+        assert "symbols" in data
+        assert len(data["symbols"]) == 1
+        assert data["symbols"][0]["symbol"] == "MNQ"
+        assert data["symbols"][0]["last"] == 21500.0
+        self.mock_client.get_snapshots_batch.assert_called_once_with(["MNQ"])
 
     def test_snapshot_endpoint_writes_file(self):
         """Test /api/snapshot endpoint writes file when SNAPSHOT_FILE_PATH is set."""
         with patch('integration.ib_service._symbols_from_env', return_value=["SPY"]):
             with patch.dict(os.environ, {"SNAPSHOT_FILE_PATH": "/tmp/test_snapshot.json"}):
-                self.mock_client.get_snapshot.return_value = {
-                    "last": 450.0,
-                    "bid": 449.5,
-                    "ask": 450.5,
-                    "close": 449.0,
-                    "volume": 1000000,
-                }
+                self.mock_client.get_snapshots_batch.return_value = [
+                    {"last": 450.0, "bid": 449.5, "ask": 450.5, "close": 449.0, "volume": 1000000},
+                ]
                 self.mock_client.get_account_summary.return_value = {}
                 self.mock_client.get_accounts.return_value = []
                 self.mock_client.get_portfolio_positions.return_value = []
@@ -303,7 +336,7 @@ class TestFastAPIEndpoints(unittest.TestCase):
     def test_snapshot_endpoint_error_handling(self):
         """Test /api/snapshot endpoint handles exceptions."""
         with patch('integration.ib_service._symbols_from_env', return_value=["SPY"]):
-            self.mock_client.get_snapshot.side_effect = Exception("Unexpected error")
+            self.mock_client.get_snapshots_batch.side_effect = Exception("Unexpected error")
 
             response = self.client.get("/api/snapshot")
             assert response.status_code == 200  # Endpoint doesn't fail, returns error in payload

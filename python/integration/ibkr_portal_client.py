@@ -5,16 +5,34 @@ The Client Portal Gateway must be running locally. Authentication typically
 requires establishing a browser session once; this client focuses on
 maintaining the session (validate / reauthenticate) and exposes helpers for
 account and portfolio data retrieval.
+
+Environment:
+- REAUTH_SLEEP_SECONDS: seconds to sleep after triggering reauth (default 0.5; clamp 0.1-2.0).
 """
 from __future__ import annotations
 
 import logging
+import os
+import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Optional
 
 import requests
 
 
 logger = logging.getLogger(__name__)
+
+# Short TTL for in-memory accounts list to avoid repeated gateway round-trips during snapshot build
+ACCOUNTS_CACHE_TTL_SECONDS = 2.0
+
+
+def _reauth_sleep_seconds() -> float:
+    """Seconds to sleep after triggering reauth (configurable via REAUTH_SLEEP_SECONDS)."""
+    try:
+        val = float(os.getenv("REAUTH_SLEEP_SECONDS", "0.5"))
+        return max(0.1, min(2.0, val))
+    except (ValueError, TypeError):
+        return 0.5
 
 
 class IBKRPortalError(RuntimeError):
@@ -40,13 +58,20 @@ class IBKRPortalClient:
         self.session.headers.update({"Content-Type": "application/json"})
 
         self._cached_accounts: List[str] = []
+        self._accounts_cached_at: float = 0.0
         self._conid_cache: Dict[str, int] = {}  # symbol -> conid cache
+        # Request-scoped: when True, ensure_session() is a no-op (caller ensured once).
+        self._session_ensured_for_request: bool = False
+
+    def set_session_ensured_for_request(self, value: bool) -> None:
+        """Set whether session has already been ensured for this request (skip ensure_session in workers)."""
+        self._session_ensured_for_request = value
 
     # ------------------------------------------------------------------
     # Session Helpers
     # ------------------------------------------------------------------
 
-    def ensure_session(self) -> None:
+    def ensure_session(self, timeout: Optional[int] = None) -> None:
         """
         Validate the current session, requesting re-auth only if necessary.
 
@@ -56,68 +81,57 @@ class IBKRPortalClient:
 
         This method tries to use the gateway first. Only if that fails do we trigger
         re-authentication, and only if we're confident the gateway is running.
+
+        When _session_ensured_for_request is True (set by caller after ensuring once),
+        returns immediately without making requests.
         """
+        if self._session_ensured_for_request:
+            return
+
         # First, try to access a protected endpoint to see if we can use the gateway
         # If gateway is authenticated via browser, this should work
-        accounts_resp = self._call("GET", "/iserver/accounts", raise_for_status=False)
+        accounts_resp = self._call(
+            "GET", "/iserver/accounts", raise_for_status=False, timeout=timeout
+        )
         if accounts_resp.status_code == 200:
             logger.debug("IBKR gateway is authenticated and accessible")
             return
 
         # If accounts endpoint returns 401, we need authentication
-        # However, if the gateway is already authenticated via browser, calling
-        # /iserver/reauthenticate will prompt the user unnecessarily.
-        #
-        # The IB Client Portal Gateway should allow API clients to use an authenticated
-        # gateway session. If accounts returns 401 even when gateway is authenticated,
-        # it might be a timing issue or the gateway needs the API client to establish
-        # its own session token.
-        #
-        # We'll only trigger re-authentication if:
-        # 1. The accounts endpoint returns 401 (needs auth)
-        # 2. AND we can verify the gateway is running (not a connection error)
-
         if accounts_resp.status_code == 401:
-            # Gateway is running but needs authentication
-            # Check if gateway is at least responding (not a connection error)
             try:
-                # Try auth status endpoint to verify gateway is running
-                auth_status_resp = self._call("GET", "/iserver/auth/status", raise_for_status=False)
-                # If we get any response (even 401), gateway is running
+                auth_status_resp = self._call(
+                    "GET", "/iserver/auth/status", raise_for_status=False, timeout=timeout
+                )
                 if auth_status_resp.status_code in (200, 401):
                     logger.info("IBKR gateway requires API client authentication")
                     logger.info("Triggering re-authentication - if already logged in via browser, you may need to approve")
-                    reauth_resp = self._call("POST", "/iserver/reauthenticate", raise_for_status=False)
+                    reauth_resp = self._call(
+                        "POST", "/iserver/reauthenticate", raise_for_status=False, timeout=timeout
+                    )
                     if reauth_resp.status_code in (200, 202):
                         logger.info("Re-authentication triggered successfully")
-                        # Wait a moment for re-auth to complete, then verify
-                        import time
-                        time.sleep(1)
-                        # Try accounts again to verify re-auth worked
-                        verify_resp = self._call("GET", "/iserver/accounts", raise_for_status=False)
+                        time.sleep(_reauth_sleep_seconds())
+                        verify_resp = self._call(
+                            "GET", "/iserver/accounts", raise_for_status=False, timeout=timeout
+                        )
                         if verify_resp.status_code == 200:
                             logger.info("Re-authentication successful, gateway accessible")
                             return
-                        else:
-                            logger.warning("Re-authentication triggered but accounts endpoint still returns %d", verify_resp.status_code)
-                            # Don't raise error - let the calling code handle it
-                            return
-                    else:
-                        raise IBKRPortalError(
-                            f"Reauthentication failed (status={reauth_resp.status_code}): {reauth_resp.text[:200]}"
-                        )
+                        logger.warning("Re-authentication triggered but accounts endpoint still returns %d", verify_resp.status_code)
+                        return
+                    raise IBKRPortalError(
+                        f"Reauthentication failed (status={reauth_resp.status_code}): {reauth_resp.text[:200]}"
+                    )
             except IBKRPortalError:
-                # Re-raise IBKRPortalError as-is
                 raise
             except Exception as e:
-                # Connection error or other issue
                 logger.debug(f"Gateway connectivity check failed: {e}")
                 raise IBKRPortalError(
                     f"Unable to connect to IB Client Portal Gateway: {e}. "
                     "Ensure the gateway is running at https://localhost:5000"
                 ) from e
 
-        # If we get here with a non-401 status, it's an unexpected error
         raise IBKRPortalError(
             f"Unexpected response from IB Client Portal Gateway "
             f"(status={accounts_resp.status_code}): {accounts_resp.text[:200]}"
@@ -127,22 +141,34 @@ class IBKRPortalClient:
     # Public API
     # ------------------------------------------------------------------
 
-    def get_accounts(self) -> List[str]:
-        """Return list of tradeable account IDs."""
-        if self._cached_accounts:
+    def get_accounts(self, timeout: Optional[int] = None) -> List[str]:
+        """Return list of tradeable account IDs. Uses short TTL cache to avoid repeated gateway round-trips."""
+        now = time.monotonic()
+        if self._cached_accounts and (now - self._accounts_cached_at) < ACCOUNTS_CACHE_TTL_SECONDS:
             return self._cached_accounts
 
-        self.ensure_session()
-        data = self._call("GET", "/iserver/accounts").json()
-        accounts = data.get("accounts", []) if isinstance(data, dict) else []
+        # Single request: if 200 we're done; if 401 run ensure_session and retry once
+        resp = self._call("GET", "/iserver/accounts", raise_for_status=False, timeout=timeout)
+        if resp.status_code == 200:
+            data = resp.json()
+            accounts = data.get("accounts", []) if isinstance(data, dict) else []
+            if accounts:
+                self._cached_accounts = accounts
+                self._accounts_cached_at = time.monotonic()
+            return accounts
 
-        if not accounts:
-            logger.warning("Client Portal returned no accounts; ensure gateway session is active")
-        else:
-            logger.info("Client Portal accounts discovered: %s", ", ".join(accounts))
+        if resp.status_code == 401:
+            self.ensure_session(timeout=timeout)
+            resp = self._call("GET", "/iserver/accounts", timeout=timeout)
+            data = resp.json()
+            accounts = data.get("accounts", []) if isinstance(data, dict) else []
+            self._cached_accounts = accounts
+            self._accounts_cached_at = time.monotonic()
+            return accounts
 
-        self._cached_accounts = accounts
-        return accounts
+        raise IBKRPortalError(
+            f"Client Portal responded with status {resp.status_code}: {resp.text[:200]}"
+        )
 
     def get_account_summary(self, account_id: Optional[str] = None) -> Dict:
         """Fetch account summary for the provided account (or preferred/default)."""
@@ -255,26 +281,20 @@ class IBKRPortalClient:
         Args:
             conid: Contract ID from search_contracts()
             fields: List of field IDs to request (default: bid, ask, last, close, volume)
-                   Common fields: 31=bid, 55=ask, 84=last, 86=close, 7309=volume
+                     Common fields: 31=bid, 55=ask, 84=last, 86=close, 7309=volume
 
         Returns:
             Dictionary with field values keyed by field ID
         """
         if fields is None:
-            # Default fields: bid (31), ask (55), last (84), close (86), volume (7309)
             fields = [31, 55, 84, 86, 7309]
 
         self.ensure_session()
-        # Convert conid to string and fields to comma-separated string
         fields_str = ",".join(str(f) for f in fields)
         endpoint = "/iserver/marketdata/snapshot"
-        params = {
-            "conids": str(conid),
-            "fields": fields_str,
-        }
+        params = {"conids": str(conid), "fields": fields_str}
 
         try:
-            # GET with query params
             url = f"{self.base_url}{endpoint}"
             response = self.session.get(url, params=params, timeout=self.timeout)
             if not response.ok:
@@ -283,7 +303,6 @@ class IBKRPortalClient:
                 )
             data = response.json()
 
-            # IB returns a list, take first result
             if isinstance(data, list) and len(data) > 0:
                 return data[0]
 
@@ -291,6 +310,51 @@ class IBKRPortalClient:
         except IBKRPortalError:
             logger.warning(f"Market data snapshot failed for conid {conid}")
             return {}
+
+    def get_market_data_snapshots_batch(
+        self, conids: List[int], fields: Optional[List[int]] = None
+    ) -> List[Dict]:
+        """
+        Get market data snapshots for multiple conids in one request.
+
+        Returns:
+            List of snapshot dicts in the same order as conids.
+        """
+        if not conids:
+            return []
+
+        if fields is None:
+            fields = [31, 55, 84, 86, 7309]
+
+        self.ensure_session()
+        conids_str = ",".join(str(c) for c in conids)
+        fields_str = ",".join(str(f) for f in fields)
+        endpoint = "/iserver/marketdata/snapshot"
+        params = {"conids": conids_str, "fields": fields_str}
+
+        try:
+            url = f"{self.base_url}{endpoint}"
+            response = self.session.get(url, params=params, timeout=self.timeout)
+            if not response.ok:
+                raise IBKRPortalError(
+                    f"Client Portal responded with status {response.status_code}: {response.text[:200]}"
+                )
+            data = response.json()
+
+            if isinstance(data, list):
+                # IB returns one object per conid in order; pad if shorter
+                result: List[Dict] = []
+                for i, conid in enumerate(conids):
+                    if i < len(data) and isinstance(data[i], dict):
+                        result.append(data[i])
+                    else:
+                        result.append({})
+                return result
+
+            return [{}] * len(conids)
+        except IBKRPortalError:
+            logger.warning("Market data snapshot batch failed for %s conids", len(conids))
+            return [{}] * len(conids)
 
     def get_snapshot(self, symbol: str) -> Dict[str, float]:
         """
@@ -341,23 +405,103 @@ class IBKRPortalClient:
 
         return result
 
+    def get_snapshots_batch(self, symbols: List[str]) -> List[Dict[str, float]]:
+        """
+        Get market data snapshots for multiple symbols with one batched request when possible.
+        Resolves conids in parallel for uncached symbols, then one batch snapshot call.
+
+        Returns:
+            List of dicts with keys bid, ask, last, close, volume, in same order as symbols.
+        """
+        if not symbols:
+            return []
+
+        def conid_for(sym: str) -> tuple:
+            conid = self.get_conid(sym)
+            return (sym, conid)
+
+        with ThreadPoolExecutor(max_workers=min(8, len(symbols))) as pool:
+            conids_by_symbol = list(pool.map(conid_for, symbols))
+
+        conids_ordered = [c for _, c in conids_by_symbol]
+        valid_conids = [c for c in conids_ordered if c is not None]
+        if not valid_conids:
+            return [
+                {"bid": 0.0, "ask": 0.0, "last": 0.0, "close": 0.0, "volume": 0.0}
+                for _ in symbols
+            ]
+
+        batch = self.get_market_data_snapshots_batch(valid_conids)
+        conid_to_snapshot = {valid_conids[i]: batch[i] for i in range(len(valid_conids))}
+
+        empty = {"bid": 0.0, "ask": 0.0, "last": 0.0, "close": 0.0, "volume": 0.0}
+
+        def to_result(snap: Dict) -> Dict[str, float]:
+            if not isinstance(snap, dict):
+                return dict(empty)
+
+            def f(k: str) -> float:
+                v = snap.get(k, 0)
+                try:
+                    return float(v) if v else 0.0
+                except (ValueError, TypeError):
+                    return 0.0
+
+            return {
+                "bid": f("31"),
+                "ask": f("55"),
+                "last": f("84"),
+                "close": f("86"),
+                "volume": f("7309"),
+            }
+
+        results: List[Dict[str, float]] = []
+        for sym, conid in conids_by_symbol:
+            if conid is not None and conid in conid_to_snapshot:
+                results.append(to_result(conid_to_snapshot[conid]))
+            else:
+                results.append(dict(empty))
+
+        return results
+
+    def prewarm_conids(self, symbols: List[str]) -> None:
+        """
+        Resolve conids for the given symbols so subsequent get_snapshots_batch calls
+        avoid per-symbol search_contracts round-trips. Populates in-memory _conid_cache.
+        """
+        if not symbols:
+            return
+        for sym in symbols:
+            try:
+                self.get_conid(sym)
+            except IBKRPortalError:
+                logger.debug("Prewarm conid failed for %s", sym)
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
 
     def _choose_account(self, explicit: Optional[str]) -> List[str]:
+        # Fast path: caller already resolved account (e.g. from get_accounts() in same request).
+        if explicit is not None and str(explicit).strip():
+            return [str(explicit).strip()]
         accounts = self.get_accounts()
-        if explicit:
-            return [explicit]
         for preferred in self.preferred_accounts:
             if preferred in accounts:
                 return [preferred]
-        return accounts[:1]
+        return accounts[:1] if accounts else []
 
-    def _call(self, method: str, endpoint: str, raise_for_status: bool = True) -> requests.Response:
+    def _call(
+        self,
+        method: str,
+        endpoint: str,
+        raise_for_status: bool = True,
+        timeout: Optional[int] = None,
+    ) -> requests.Response:
         url = f"{self.base_url}{endpoint}"
+        to = timeout if timeout is not None else self.timeout
         try:
-            response = self.session.request(method, url, timeout=self.timeout)
+            response = self.session.request(method, url, timeout=to)
         except requests.RequestException as exc:  # pragma: no cover - network error
             raise IBKRPortalError(f"Client Portal request to {endpoint} failed: {exc}") from exc
 
