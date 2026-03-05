@@ -16,20 +16,33 @@ export DYLD_LIBRARY_PATH=native/ibapi_cmake/build/lib:native/third_party/tws-api
 
 cd "$(dirname "$0")/.."
 
+# Find test_diagnostic_connect in common build locations
+DIAG_BIN=""
+for candidate in \
+  "build/bin/test_diagnostic_connect" \
+  "build/macos-arm64-debug/bin/test_diagnostic_connect" \
+  "build/macos-x86_64-debug/bin/test_diagnostic_connect" \
+  "native/build_native/bin/test_diagnostic_connect"; do
+  if [ -f "$candidate" ]; then
+    DIAG_BIN="$candidate"
+    break
+  fi
+done
+
 echo -e "${CYAN}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${CYAN}║        IBKR Connection Diagnostic Tool                        ║${NC}"
 echo -e "${CYAN}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-# Check prerequisites
+# Check prerequisites (optional: script can still do port checks without binary)
 echo -e "${BLUE}[1/5] Checking prerequisites...${NC}"
-
-if [ ! -f "native/build_native/bin/test_diagnostic_connect" ]; then
-  echo -e "${RED}✗ Diagnostic test not built${NC}"
-  echo "  Run: ninja -C native/build_native test_diagnostic_connect"
-  exit 1
+if [ -n "$DIAG_BIN" ]; then
+  echo -e "${GREEN}✓ Diagnostic test binary found: $DIAG_BIN${NC}"
+else
+  echo -e "${YELLOW}⚠ Diagnostic test binary not built (optional)${NC}"
+  echo "  Port check will run; for full connection test build first:"
+  echo "  just build  # or: cmake --build build --target test_diagnostic_connect"
 fi
-echo -e "${GREEN}✓ Diagnostic test binary found${NC}"
 
 # Check if Gateway is running
 echo ""
@@ -88,9 +101,16 @@ else
 fi
 echo "  Client ID: $TEST_CLIENT_ID"
 
-# Run diagnostic
+# Run diagnostic (only if binary exists)
 echo ""
 echo -e "${BLUE}[5/5] Running connection diagnostic...${NC}"
+if [ -z "$DIAG_BIN" ]; then
+  echo -e "${YELLOW}Skipped (build test_diagnostic_connect for full handshake test).${NC}"
+  echo ""
+  echo -e "${GREEN}Port check passed. Use: ./scripts/test_tws_connection.sh <port> to test TCP.${NC}"
+  exit 0
+fi
+
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo -e "${YELLOW}👀 Watch for these key messages:${NC}"
@@ -108,7 +128,7 @@ sleep 2
 
 # Run the test and capture output
 OUTPUT_FILE=$(mktemp)
-if ./native/build_native/bin/test_diagnostic_connect $TEST_CLIENT_ID 2>&1 | tee $OUTPUT_FILE; then
+if ./"$DIAG_BIN" $TEST_CLIENT_ID 2>&1 | tee $OUTPUT_FILE; then
   SUCCESS=true
 else
   SUCCESS=false

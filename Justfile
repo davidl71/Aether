@@ -45,6 +45,10 @@ build-keep-going:
 build-keep-going-json:
     BUILD_KEEP_GOING=1 ./scripts/build_ai_friendly.sh --json-only
 
+# Build with progress stream: NDJSON progress events to stderr, final JSON to stdout (AI/tools friendly)
+build-ai-friendly-progress:
+    ./scripts/build_ai_friendly.sh --progress
+
 # Build TWS API shared library
 build-twsapi:
     cmake -S native/ibapi_cmake -B native/ibapi_cmake/build -DCMAKE_BUILD_TYPE=Release
@@ -181,6 +185,11 @@ run-config:
 run-tui:
     ./scripts/run_python_tui.sh
 
+# TUI with live data from IB service (requires IB Gateway logged in + IB service on 8002 or IB_PORT)
+run-tui-live:
+    # Use IB_PORT if you started the IB service on another port (e.g. 8007)
+    sh -c './scripts/run_python_tui.sh rest "http://127.0.0.1:${IB_PORT:-8002}/api/snapshot"'
+
 # --- Python ---
 
 # Install Python dependencies
@@ -204,6 +213,14 @@ services-start:
 # Stop all backend services
 services-stop:
     ./scripts/stop_all_services.sh
+
+# Restart all backend services
+services-restart:
+    ./scripts/restart_all_services.sh
+
+# Status of all backend services
+services-status:
+    ./scripts/status_all_services.sh
 
 # Start memcached (cache backend)
 start-memcached:

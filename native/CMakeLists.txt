@@ -1021,16 +1021,18 @@ if(_build_native_cli)
     endif()
 
     # Include the generated version header in the build
+    # When TWS_API_BUILD_VENDOR: put proto_generated FIRST so regenerated .pb.h (matching system
+    # protobuf) are used instead of vendored 6.33.4 .pb.h in TWS_API_INCLUDE_DIR (see
+    # docs/BUILD_FAILURES_AND_DEPENDENCIES.md § Protobuf / TWS API version alignment).
     target_include_directories(ib_box_spread
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/include
             ${CMAKE_CURRENT_BINARY_DIR}/include  # For generated version.h
-            ${TWS_API_INCLUDE_DIR}
     )
-    # When building TWS API from GitHub layout, generated proto headers live in the vendor build dir
     if(TWS_API_BUILD_VENDOR)
         target_include_directories(ib_box_spread PRIVATE "${TWS_API_EXTERNAL_BINARY_DIR}/proto_generated")
     endif()
+    target_include_directories(ib_box_spread PRIVATE ${TWS_API_INCLUDE_DIR})
     if(USE_BOX_SPREAD_CPP_LIB AND DEFINED BOX_SPREAD_CPP_INCLUDE_DIR)
         target_include_directories(ib_box_spread
             PRIVATE
