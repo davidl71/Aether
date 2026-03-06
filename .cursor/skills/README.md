@@ -6,6 +6,7 @@ Reusable workflows and checklists for this repo. Use by opening or @-mentioning 
 
 | Skill | File | When to use |
 |-------|------|--------------|
+| **UI/UX Pro Max** | [ui-ux-pro-max/SKILL.md](ui-ux-pro-max/SKILL.md) | Web/PWA design systems, landing pages, dashboards (design-system generator, styles, palettes) |
 | **When to use subagents** | [when-to-use-subagents.md](when-to-use-subagents.md) | Code review, refactor, tests, trading audit, tasks/reports — which subagent or exarp-go to use |
 | Pull with uncommitted changes | [git-pull-with-wip.md](git-pull-with-wip.md) | Before pulling; you have local WIP |
 | Add native C++ module | [add-native-module.md](add-native-module.md) | Adding a new .cpp/.h and test |

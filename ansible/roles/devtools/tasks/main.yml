@@ -233,6 +233,52 @@
   when: uv_version.rc == 0
 
 # ---------------------------------------------------------------------------
+# UI/UX Pro Max skill (Cursor / AI assistants) — uipro-cli, uipro init
+# ---------------------------------------------------------------------------
+- name: Install uipro-cli globally (Node/npm)
+  become: false
+  ansible.builtin.shell: |
+    export NVM_DIR="{{ ansible_facts.env.HOME }}/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+    npm install -g uipro-cli
+  args:
+    executable: /bin/bash
+  register: uipro_install
+  changed_when: "'added' in uipro_install.stdout or 'changed' in uipro_install.stdout or uipro_install.rc == 0"
+  failed_when: false
+  when: ansible_facts['os_family'] in ['Debian', 'Darwin']
+
+- name: Ensure UI/UX Pro Max skill in project (Cursor)
+  become: false
+  ansible.builtin.shell: |
+    export NVM_DIR="{{ ansible_facts.env.HOME }}/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+    if command -v uipro >/dev/null 2>&1; then
+      uipro init --ai cursor
+    else
+      npx --yes uipro-cli init --ai cursor
+    fi
+  args:
+    executable: /bin/bash
+    chdir: "{{ project_path }}"
+  register: uipro_init
+  changed_when: "'Installed' in uipro_init.stdout or 'installed' in uipro_init.stdout or 'Generated' in uipro_init.stdout"
+  failed_when: false
+  when:
+    - project_path is defined
+    - project_path != ''
+    - ansible_facts['os_family'] in ['Debian', 'Darwin']
+
+- name: Display UI/UX Pro Max install status
+  ansible.builtin.debug:
+    msg: "UI/UX Pro Max: {{ 'installed in project' if (uipro_init.stdout is defined and ('Installed' in (uipro_init.stdout | default('')) or 'installed' in (uipro_init.stdout | default('')))) else 'run manually: npx uipro-cli init --ai cursor' }}"
+  when:
+    - project_path is defined
+    - project_path != ''
+    - ansible_facts['os_family'] in ['Debian', 'Darwin']
+    - uipro_init is defined
+
+# ---------------------------------------------------------------------------
 # MLX / MLX-LM (Apple Silicon only) -- installed via uv
 # ---------------------------------------------------------------------------
 - name: Install MLX and MLX-LM (Apple Silicon/macOS) via uv

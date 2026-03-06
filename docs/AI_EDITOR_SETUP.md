@@ -59,6 +59,8 @@ things (e.g. commands, MCP), not *what* the project rules are.
   skill file when asking the AI to perform the task (e.g. pull with WIP, add
   native module, before-commit checklist, trading safety, build from clean). See
   [.cursor/skills/README.md](../.cursor/skills/README.md) for the index.
+  **UI/UX Pro Max** (design systems for web/PWA) is installed under
+  `.cursor/skills/ui-ux-pro-max/`; see [UI_UX_PRO_MAX_SKILL.md](UI_UX_PRO_MAX_SKILL.md) for install and usage.
 - **Discovery:** Project root = workspace root; key files are at repo root and
   under `.cursor/`, `.claude/`, `.opencode/`.
 - **Invocation:** Use the Skill tool with the skill path; skills can READ
