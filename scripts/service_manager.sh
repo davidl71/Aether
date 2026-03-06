@@ -45,7 +45,8 @@ get_port() {
 
   if command -v jq &>/dev/null && [ -f "$CONFIG_FILE" ]; then
     # Try to extract port from config
-    local port=$(jq -r ".services.${service}.port // ${default_port}" "$CONFIG_FILE" 2>/dev/null || echo "$default_port")
+    local port
+    port=$(jq -r ".services.${service}.port // ${default_port}" "$CONFIG_FILE" 2>/dev/null || echo "$default_port")
     echo "$port"
   else
     echo "$default_port"
@@ -90,15 +91,19 @@ start_service() {
   fi
 
   local config="${SERVICES[$service]}"
-  local default_port=$(echo "$config" | cut -d'|' -f1)
-  local start_cmd=$(echo "$config" | cut -d'|' -f2-)
+  local default_port
+  default_port=$(echo "$config" | cut -d'|' -f1)
+  local start_cmd
+  start_cmd=$(echo "$config" | cut -d'|' -f2-)
 
   # Get actual port (from config or default)
-  local port=$(get_port "$service" "$default_port")
+  local port
+  port=$(get_port "$service" "$default_port")
 
   # Check if already running
   if is_running "$port"; then
-    local pid=$(get_pid "$port")
+    local pid
+    pid=$(get_pid "$port")
     log_info "$service already running on port $port (PID: $pid)"
     return 0
   fi
@@ -120,13 +125,14 @@ start_service() {
 
   # Run in background, redirect output to log
   nohup bash -c "$start_cmd" >"$log_file" 2>&1 &
-  local bg_pid=$!
+  _=$!
 
   # Wait a moment and check if it started
   sleep 2
 
   if is_running "$port"; then
-    local pid=$(get_pid "$port")
+    local pid
+    pid=$(get_pid "$port")
     log_info "✓ $service started successfully on port $port (PID: $pid)"
     log_info "  Logs: $log_file"
     return 0
@@ -146,22 +152,25 @@ stop_service() {
   fi
 
   local config="${SERVICES[$service]}"
-  local default_port=$(echo "$config" | cut -d'|' -f1)
-  local port=$(get_port "$service" "$default_port")
+  local default_port
+  default_port=$(echo "$config" | cut -d'|' -f1)
+  local port
+  port=$(get_port "$service" "$default_port")
 
   if ! is_running "$port"; then
     log_warn "$service not running on port $port"
     return 0
   fi
 
-  local pid=$(get_pid "$port")
+  local pid
+  pid=$(get_pid "$port")
   log_info "Stopping $service (PID: $pid, port: $port)..."
 
   # Try graceful shutdown first
   kill "$pid" 2>/dev/null || true
 
   # Wait up to 5 seconds for graceful shutdown
-  for i in {1..10}; do
+  for _ in {1..10}; do
     if ! is_running "$port"; then
       log_info "✓ $service stopped successfully"
       return 0
@@ -214,12 +223,15 @@ show_status() {
     fi
 
     local config="${SERVICES[$svc]}"
-    local default_port=$(echo "$config" | cut -d'|' -f1)
-    local port=$(get_port "$svc" "$default_port")
+    local default_port
+    default_port=$(echo "$config" | cut -d'|' -f1)
+    local port
+    port=$(get_port "$svc" "$default_port")
 
     printf "  %-20s " "$svc:"
     if is_running "$port"; then
-      local pid=$(get_pid "$port")
+      local pid
+      pid=$(get_pid "$port")
       echo -e "${GREEN}RUNNING${NC} (PID: $pid, port: $port)"
     else
       echo -e "${RED}STOPPED${NC} (port: $port)"

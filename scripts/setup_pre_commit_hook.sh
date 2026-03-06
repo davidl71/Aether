@@ -9,7 +9,6 @@ HOOK_FILE="$PROJECT_ROOT/.git/hooks/pre-commit"
 
 # Colors
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 NC='\033[0m'
 
 echo "🔧 Setting up pre-commit hook for documentation validation..."

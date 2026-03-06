@@ -16,10 +16,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=./include/logging.sh
+# shellcheck source=scripts/include/logging.sh
 . "${SCRIPT_DIR}/include/logging.sh"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-# shellcheck source=./with_nix.sh
+# shellcheck source=scripts/with_nix.sh
 . "${SCRIPT_DIR}/with_nix.sh"
 run_with_nix_if_requested "$@"
 
@@ -31,7 +31,7 @@ OS="${OS:-$(uname -s 2>/dev/null || echo unknown)}"
 case "${ARCH}" in
   x86_64|amd64) ARCH="x86_64" ;;
   arm64|aarch64) ARCH="aarch64" ;;
-  *) ARCH="${ARCH}" ;;
+  *) ;;
 esac
 
 # Build type: --debug or default release (portable lowercase for preset names)
@@ -84,11 +84,11 @@ fi
 
 cd "${PROJECT_ROOT}"
 # Ensure third-party deps exist before configure/build
-# shellcheck source=./include/ensure_third_party.sh
+# shellcheck source=scripts/include/ensure_third_party.sh
 . "${SCRIPT_DIR}/include/ensure_third_party.sh"
 ensure_third_party
 # Use all cores for Ninja when not set (see docs/BUILD_PARALLELIZATION_AND_MODULARITY.md)
-# shellcheck source=./include/set_parallel_level.sh
+# shellcheck source=scripts/include/set_parallel_level.sh
 . "${SCRIPT_DIR}/include/set_parallel_level.sh"
 
 log_note "Platform: ${OS} ${ARCH} -> preset ${PRESET}"

@@ -18,9 +18,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=./include/logging.sh
+# shellcheck source=scripts/include/logging.sh
 source "${SCRIPT_DIR}/include/logging.sh"
-# shellcheck source=./include/build_logging.sh
+# shellcheck source=scripts/include/build_logging.sh
 source "${SCRIPT_DIR}/include/build_logging.sh"
 
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"

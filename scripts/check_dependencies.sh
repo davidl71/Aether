@@ -31,7 +31,8 @@ check_dep() {
 
   printf "%-20s " "$name:"
   if command -v "$name" &>/dev/null; then
-    local version=$($name --version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' || echo "installed")
+    local version
+    version=$($name --version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' || echo "installed")
     echo -e "${GREEN}✓${NC} $version"
     return 0
   else

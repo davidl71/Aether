@@ -6,10 +6,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=./include/logging.sh
+# shellcheck source=scripts/include/logging.sh
 . "${SCRIPT_DIR}/include/logging.sh"
 
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TEST_TYPE="${1:-all}"
 
 # Colors
@@ -50,14 +49,16 @@ test_basic() {
   log_info "  Basic Publish/Subscribe Test"
   log_info "════════════════════════════════════════════════════════════"
 
-  local test_subject="test.basic.$(date +%s)"
+  local test_subject
+  test_subject="test.basic.$(date +%s)"
   local test_message='{"symbol":"SPY","bid":100.5,"ask":100.6,"timestamp":"2025-01-01T00:00:00Z"}'
 
   log_info "Test subject: ${test_subject}"
   log_info "Publishing test message..."
 
   # Start subscriber in background
-  local output_file=$(mktemp)
+  local output_file
+  output_file=$(mktemp)
   nats sub "${test_subject}" > "${output_file}" 2>&1 &
   local sub_pid=$!
   sleep 1
@@ -76,7 +77,7 @@ test_basic() {
     return 0
   else
     log_error "${RED}❌ Basic test failed - message not received${NC}"
-    log_info "Output: $(cat ${output_file})"
+    log_info "Output: $(cat "${output_file}")"
     kill $sub_pid 2>/dev/null || true
     rm -f "${output_file}"
     return 1
@@ -96,12 +97,14 @@ test_market_data() {
 
   for symbol in "${symbols[@]}"; do
     local test_subject="market-data.tick.${symbol}"
-    local test_message="{\"symbol\":\"${symbol}\",\"bid\":100.0,\"ask\":100.1,\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+    local test_message
+    test_message="{\"symbol\":\"${symbol}\",\"bid\":100.0,\"ask\":100.1,\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
 
     log_info "Testing ${symbol} on ${test_subject}..."
 
     # Start subscriber
-    local output_file=$(mktemp)
+    local output_file
+    output_file=$(mktemp)
     timeout 2 nats sub "${test_subject}" > "${output_file}" 2>&1 &
     local sub_pid=$!
     sleep 0.5
@@ -144,7 +147,8 @@ test_strategy_topics() {
   local signal_message='{"symbol":"SPY","price":100.5,"timestamp":"2025-01-01T00:00:00Z"}'
 
   log_info "Testing strategy.signal..."
-  local output_file=$(mktemp)
+  local output_file
+  output_file=$(mktemp)
   timeout 2 nats sub "strategy.signal.>" > "${output_file}" 2>&1 &
   local sub_pid=$!
   sleep 0.5
@@ -203,17 +207,20 @@ test_performance() {
   log_info "  Performance Test (Latency)"
   log_info "════════════════════════════════════════════════════════════"
 
-  local test_subject="test.performance.$(date +%s)"
+  local test_subject
+  test_subject="test.performance.$(date +%s)"
   local iterations=100
   local total_time=0
 
   log_info "Running ${iterations} publish/subscribe cycles..."
 
   for i in $(seq 1 $iterations); do
-    local start_time=$(date +%s%N)
+    local start_time
+    start_time=$(date +%s%N)
 
     # Start subscriber
-    local output_file=$(mktemp)
+    local output_file
+    output_file=$(mktemp)
     timeout 1 nats sub "${test_subject}" > "${output_file}" 2>&1 &
     local sub_pid=$!
     sleep 0.01
@@ -224,7 +231,8 @@ test_performance() {
     # Wait for message
     sleep 0.01
 
-    local end_time=$(date +%s%N)
+    local end_time
+    end_time=$(date +%s%N)
     local duration=$((end_time - start_time))
     total_time=$((total_time + duration))
 

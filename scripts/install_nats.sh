@@ -52,7 +52,7 @@ install_nats_binary() {
 
   # Create temp directory
   TEMP_DIR=$(mktemp -d)
-  trap "rm -rf $TEMP_DIR" EXIT
+  trap 'rm -rf "$TEMP_DIR"' EXIT
 
   # Download and extract
   echo "[info] Downloading NATS server v${NATS_VERSION}..."

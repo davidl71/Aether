@@ -7,10 +7,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=./include/logging.sh
+# shellcheck source=scripts/include/logging.sh
 . "${SCRIPT_DIR}/include/logging.sh"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-# shellcheck source=./with_nix.sh
+# shellcheck source=scripts/with_nix.sh
 . "${SCRIPT_DIR}/with_nix.sh"
 run_with_nix_if_requested "$@"
 # Auto-detect architecture
@@ -30,12 +30,12 @@ fi
 cd "${PROJECT_ROOT}"
 
 # Ensure third-party deps exist before configure/build
-# shellcheck source=./include/ensure_third_party.sh
+# shellcheck source=scripts/include/ensure_third_party.sh
 . "${SCRIPT_DIR}/include/ensure_third_party.sh"
 ensure_third_party
 
 # Use all cores for Ninja when not set (see docs/BUILD_PARALLELIZATION_AND_MODULARITY.md)
-# shellcheck source=./include/set_parallel_level.sh
+# shellcheck source=scripts/include/set_parallel_level.sh
 . "${SCRIPT_DIR}/include/set_parallel_level.sh"
 
 log_note "Using CMake preset '${PRESET}'. Override with CMAKE_PRESET env var."

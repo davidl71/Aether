@@ -94,7 +94,7 @@ move_orig() {
   mkdir -p "${ORIG_DIR}"
   for name in tws-api IntelRDFPMathLib20U4 IntelRDFPMathLib20U2; do
     if [[ -d "${NATIVE_TP}/${name}" ]] && [[ ! -L "${NATIVE_TP}/${name}" ]]; then
-      rm -rf "${ORIG_DIR}/${name}"
+      rm -rf "${ORIG_DIR:?}/${name}"
       mv "${NATIVE_TP}/${name}" "${ORIG_DIR}/"
     fi
   done

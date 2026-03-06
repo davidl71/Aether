@@ -26,7 +26,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=./with_nix.sh
+# shellcheck source=scripts/with_nix.sh
 . "${SCRIPT_DIR}/with_nix.sh"
 PROJECT_ROOT="${ROOT_DIR}"
 

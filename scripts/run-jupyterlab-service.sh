@@ -8,12 +8,12 @@ PYTHON_DIR="$ROOT_DIR/python"
 SCRIPTS_DIR="${ROOT_DIR}/scripts"
 
 # Load shared utility functions
-# shellcheck source=../../scripts/include/config.sh
+# shellcheck source=scripts/include/config.sh
 if [ -f "${SCRIPTS_DIR}/include/config.sh" ]; then
   source "${SCRIPTS_DIR}/include/config.sh"
 fi
 
-# shellcheck source=../../scripts/include/python_utils.sh
+# shellcheck source=scripts/include/python_utils.sh
 if [ -f "${SCRIPTS_DIR}/include/python_utils.sh" ]; then
   source "${SCRIPTS_DIR}/include/python_utils.sh"
 else
@@ -21,7 +21,7 @@ else
   exit 1
 fi
 
-# shellcheck source=../../scripts/include/service_utils.sh
+# shellcheck source=scripts/include/service_utils.sh
 if [ -f "${SCRIPTS_DIR}/include/service_utils.sh" ]; then
   source "${SCRIPTS_DIR}/include/service_utils.sh"
 fi

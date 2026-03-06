@@ -27,6 +27,7 @@ QUICK="${QUICK:-false}"
 PARALLEL="${PARALLEL:-4}"
 VERBOSE="${VERBOSE:-false}"
 COVERAGE="${COVERAGE:-false}"
+TIMEOUT="${TIMEOUT:-300}"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -117,6 +118,9 @@ fi
 
 # Build ShellSpec command
 SHELLSPEC_ARGS=()
+
+# Timeout
+SHELLSPEC_ARGS+=(--timeout "${TIMEOUT}")
 
 # Format
 SHELLSPEC_ARGS+=(--format "${FORMAT}")

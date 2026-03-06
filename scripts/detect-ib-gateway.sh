@@ -8,12 +8,10 @@ set -euo pipefail
 if [ -t 1 ] && command -v tput >/dev/null 2>&1; then
   GREEN=$(tput setaf 2)
   RED=$(tput setaf 1)
-  YELLOW=$(tput setaf 3)
   NC=$(tput sgr0)
 else
   GREEN=''
   RED=''
-  YELLOW=''
   NC=''
 fi
 
@@ -39,9 +37,9 @@ if [ "$GATEWAY_RUNNING" = true ]; then
   if [ "${1:-}" = "--verbose" ]; then
     echo "  Port ${GATEWAY_PORT}: In use"
     echo "  API endpoint: Responding"
-    lsof -ti ":${GATEWAY_PORT}" 2>/dev/null | while read pid; do
+    lsof -ti ":${GATEWAY_PORT}" 2>/dev/null | while read -r pid; do
       echo "  Process PID: $pid"
-      ps -p $pid -o comm= 2>/dev/null | head -1 | xargs echo "  Process:"
+      ps -p "$pid" -o comm= 2>/dev/null | head -1 | xargs echo "  Process:"
     done
   fi
   exit 0

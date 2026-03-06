@@ -112,7 +112,7 @@ if [ "${LOCAL_ONLY}" = false ]; then
   echo ""
   echo "To create the GitHub repository, run:"
   echo ""
-  echo "  gh repo create ${TAP_REPO} --public --source=${TAP_DIR} --remote=origin"
+  echo "  gh repo create ${GITHUB_USER}/${TAP_REPO} --public --source=${TAP_DIR} --remote=origin"
   echo "  cd ${TAP_DIR}"
   echo "  git push -u origin main"
   echo ""

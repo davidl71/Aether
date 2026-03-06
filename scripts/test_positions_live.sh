@@ -47,7 +47,7 @@ echo "  5. (Optional) Trusted IPs: 127.0.0.1"
 echo "  6. (Optional) Read-Only API (safer for testing)"
 echo ""
 echo -e "${YELLOW}Press Enter to continue or Ctrl+C to cancel...${NC}"
-read
+read -r
 
 echo -e "${GREEN}Running test with client ID ${CLIENT_ID}...${NC}"
 echo ""

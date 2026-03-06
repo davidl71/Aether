@@ -12,7 +12,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${PROJECT_ROOT}"
 
 # Ensure third-party deps (TWS API, Intel decimal) exist; run fetch script if missing
-# shellcheck source=./include/ensure_third_party.sh
+# shellcheck source=scripts/include/ensure_third_party.sh
 . "${SCRIPT_DIR}/include/ensure_third_party.sh"
 ensure_third_party
 
@@ -83,7 +83,7 @@ PRESET="${SUFFIX}-release-sccache"
 cmake --preset "${PRESET}"
 echo "Building with preset: ${PRESET}"
 # Use all cores when not set (see docs/BUILD_PARALLELIZATION_AND_MODULARITY.md)
-# shellcheck source=./include/set_parallel_level.sh
+# shellcheck source=scripts/include/set_parallel_level.sh
 . "${SCRIPT_DIR}/include/set_parallel_level.sh"
 cmake --build --preset "${PRESET}" --target ib_box_spread
 

@@ -109,8 +109,6 @@ echo ""
 echo "📝 Updating formula file..."
 
 # Update URL line with new tag (GitDownloadStrategy format)
-NEW_URL_LINE="  url \"${GIT_URL}\", tag: \"${VERSION}\", using: :git"
-
 if [[ "$OSTYPE" == "darwin"* ]]; then
   # macOS sed - match the url line (may span multiple lines with comments)
   sed -i '' "s|url \".*\"|url \"${GIT_URL}\", tag: \"${VERSION}\", using: :git|" "${FORMULA_FILE}"

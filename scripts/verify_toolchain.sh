@@ -10,8 +10,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-# shellcheck source=./with_nix.sh
+# shellcheck source=scripts/with_nix.sh
 . "${SCRIPT_DIR}/with_nix.sh"
 run_with_nix_if_requested "$@"
 
@@ -47,6 +46,7 @@ if [[ "${_cxx_ok}" == "false" ]]; then
   echo "  sudo rm -rf /Library/Developer/CommandLineTools"
   echo "  xcode-select --install"
   echo ""
+  echo "See docs/BUILD_FAILURES_AND_DEPENDENCIES.md for full details."
   echo "Then re-run this script to verify."
   exit 1
 fi

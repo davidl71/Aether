@@ -109,7 +109,7 @@ else
     gh repo rename "$NEW_NAME"
 fi
 
-if [[ $? -eq 0 ]]; then
+if gh repo view "$REPO_OWNER/$NEW_NAME" --json name &>/dev/null; then
     echo "✅ Repository renamed successfully on GitHub"
 else
     echo "❌ Failed to rename repository"
@@ -119,9 +119,7 @@ fi
 # Step 2: Update local git remote
 echo ""
 echo "🔄 Step 2: Updating local git remote URL..."
-git remote set-url origin "git@github.com:$REPO_OWNER/$NEW_NAME.git"
-
-if [[ $? -eq 0 ]]; then
+if git remote set-url origin "git@github.com:$REPO_OWNER/$NEW_NAME.git"; then
     echo "✅ Local git remote updated"
 else
     echo "❌ Failed to update git remote"

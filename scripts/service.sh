@@ -9,6 +9,7 @@ SCRIPTS_DIR="${ROOT_DIR}/scripts"
 LOGS_DIR="${ROOT_DIR}/logs"
 
 if [ -f "${SCRIPTS_DIR}/include/config.sh" ]; then
+  # shellcheck source=scripts/include/config.sh
   source "${SCRIPTS_DIR}/include/config.sh"
 fi
 

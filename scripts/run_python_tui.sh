@@ -92,6 +92,7 @@ if config_missing && is_interactive; then
   echo "No shared config found (checked: config/config.json, config.example.json, ~/.config/ib_box_spread/config.json, IB_BOX_SPREAD_CONFIG). Starting interactive 1Password setup..."
   if "${SCRIPT_DIR}/setup_op_service_account.sh" setup-full; then
     # Export token into this shell so TUI can use op refs
+    # shellcheck source=/dev/null
     source "${SCRIPT_DIR}/setup_op_service_account.sh" 2>/dev/null || true
     if [[ -f "${PROJECT_ROOT}/config/config.example.json" ]] && ! [[ -f "${PROJECT_ROOT}/config/config.json" ]]; then
       echo "Tip: copy config/config.example.json to config/config.json and add op:// refs for secrets."
@@ -101,6 +102,7 @@ fi
 
 # Export 1Password token into this shell if available (so TUI shows Auth: ready when token file exists)
 if [[ -z "${OP_SERVICE_ACCOUNT_TOKEN:-}" ]]; then
+  # shellcheck source=/dev/null
   source "${SCRIPT_DIR}/setup_op_service_account.sh" 2>/dev/null || true
   load_token 2>/dev/null && export OP_SERVICE_ACCOUNT_TOKEN || true
 fi

@@ -47,7 +47,7 @@ fi
 # Check if Gateway is running
 echo ""
 echo -e "${BLUE}[2/5] Checking IB Gateway process...${NC}"
-if ps aux | grep -i "ibgateway\|java.*tws" | grep -v grep >/dev/null; then
+if pgrep -fi "ibgateway|java.*tws" >/dev/null; then
   echo -e "${GREEN}✓ IB Gateway/TWS is running${NC}"
 else
   echo -e "${YELLOW}⚠  Cannot find IB Gateway process${NC}"
@@ -128,10 +128,10 @@ sleep 2
 
 # Run the test and capture output
 OUTPUT_FILE=$(mktemp)
-if ./"$DIAG_BIN" $TEST_CLIENT_ID 2>&1 | tee $OUTPUT_FILE; then
-  SUCCESS=true
+if ./"$DIAG_BIN" "$TEST_CLIENT_ID" 2>&1 | tee "$OUTPUT_FILE"; then
+  :
 else
-  SUCCESS=false
+  :
 fi
 
 echo ""
@@ -141,10 +141,10 @@ echo -e "${CYAN}╚════════════════════�
 echo ""
 
 # Analyze output
-CONNECT_ACK=$(grep -c "connectAck received" $OUTPUT_FILE || echo "0")
-MANAGED_ACCOUNTS=$(grep -c "managedAccounts received" $OUTPUT_FILE || echo "0")
-NEXT_VALID_ID=$(grep -c "nextValidId received" $OUTPUT_FILE || echo "0")
-CONNECTION_CLOSED=$(grep -c "Connection closed by TWS" $OUTPUT_FILE || echo "0")
+CONNECT_ACK=$(grep -c "connectAck received" "$OUTPUT_FILE" || echo "0")
+MANAGED_ACCOUNTS=$(grep -c "managedAccounts received" "$OUTPUT_FILE" || echo "0")
+NEXT_VALID_ID=$(grep -c "nextValidId received" "$OUTPUT_FILE" || echo "0")
+CONNECTION_CLOSED=$(grep -c "Connection closed by TWS" "$OUTPUT_FILE" || echo "0")
 
 echo "Callbacks received:"
 if [ "$CONNECT_ACK" -gt 0 ]; then
@@ -226,6 +226,6 @@ else
   echo "Review the diagnostic output above for details."
 fi
 
-rm -f $OUTPUT_FILE
+rm -f "$OUTPUT_FILE"
 
 echo ""

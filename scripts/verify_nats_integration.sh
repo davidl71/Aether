@@ -5,7 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=./include/logging.sh
+# shellcheck source=scripts/include/logging.sh
 . "${SCRIPT_DIR}/include/logging.sh"
 
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -31,7 +31,8 @@ log_info "2. Checking backend service compilation..."
 cd "${PROJECT_ROOT}/agents/backend"
 if [ -f .venv/bin/activate ]; then
   source .venv/bin/activate
-  export PYO3_PYTHON="$(which python)"
+  export PYO3_PYTHON
+  PYO3_PYTHON="$(which python)"
 fi
 
 if cargo check -p backend_service > /dev/null 2>&1; then

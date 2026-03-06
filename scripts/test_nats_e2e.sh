@@ -7,7 +7,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=./include/logging.sh
+# shellcheck source=scripts/include/logging.sh
 . "${SCRIPT_DIR}/include/logging.sh"
 
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -179,7 +179,8 @@ test_message_flow() {
 
   # Test Python message publishing
   log_info "1. Testing Python message publishing..."
-  local python_test_output=$(mktemp)
+  local python_test_output
+  python_test_output=$(mktemp)
   if python3 python/integration/test_nats_client.py > "${python_test_output}" 2>&1; then
     log_info "   ${GREEN}✅ Python messages published successfully${NC}"
   else
@@ -192,7 +193,8 @@ test_message_flow() {
 
   # Test message format with nats CLI
   log_info "2. Testing message format validation..."
-  local format_test_output=$(mktemp)
+  local format_test_output
+  format_test_output=$(mktemp)
   timeout 3 nats sub "strategy.signal.>" > "${format_test_output}" 2>&1 &
   local sub_pid=$!
   sleep 0.5
@@ -291,13 +293,17 @@ test_performance() {
 
   # Test basic throughput
   log_info "1. Testing message throughput..."
-  local start_time=$(date +%s.%N)
+  local start_time
+  start_time=$(date +%s.%N)
   for i in {1..100}; do
     echo "{\"test\":$i}" | nats pub "test.performance" --force-stdin 2>/dev/null
   done
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc)
-  local throughput=$(echo "scale=2; 100 / $duration" | bc)
+  local end_time
+  end_time=$(date +%s.%N)
+  local duration
+  duration=$(echo "$end_time - $start_time" | bc)
+  local throughput
+  throughput=$(echo "scale=2; 100 / $duration" | bc)
 
   log_info "   Published 100 messages in ${duration}s"
   log_info "   Throughput: ${throughput} messages/second"

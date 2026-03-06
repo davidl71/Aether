@@ -12,13 +12,12 @@ HOST="127.0.0.1"
 # Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # Standard IB/TWS API ports: Gateway 4001/4002, TWS 7496/7497
 check_port() {
   local port=$1
-  if lsof -iTCP:${port} -sTCP:LISTEN >/dev/null 2>&1; then
+  if lsof -iTCP:"${port}" -sTCP:LISTEN >/dev/null 2>&1; then
     echo -e "${GREEN}✓ Port ${port} is listening${NC}"
     return 0
   else
@@ -79,7 +78,7 @@ if ! check_port "$TEST_PORT"; then
 fi
 
 echo "Test 2: Testing TCP connection..."
-if nc -zv ${HOST} ${TEST_PORT} 2>&1 | grep -q succeeded; then
+if nc -zv "${HOST}" "${TEST_PORT}" 2>&1 | grep -q succeeded; then
   echo -e "${GREEN}✓ TCP connection successful${NC}"
 else
   echo -e "${RED}✗ TCP connection failed${NC}"

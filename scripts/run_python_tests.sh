@@ -7,7 +7,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-# shellcheck source=./with_nix.sh
+# shellcheck source=scripts/with_nix.sh
 . "${SCRIPT_DIR}/with_nix.sh"
 run_with_nix_if_requested "$@"
 

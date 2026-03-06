@@ -1,0 +1,4 @@
+# Shellcheck config for project scripts (see just lint-shell).
+# Disable info-level checks that require large refactors or are acceptable.
+# SC2012: ls vs find; SC2029: ssh client-side expansion; SC2094: read/write same file; SC2162: read -r; SC2086: quote vars; SC1091: optional source.
+disable=SC2012,SC2029,SC2094,SC2162,SC2086,SC1091

@@ -43,7 +43,7 @@ PRESET="${2:-${CMAKE_PRESET:-$(detect_default_preset)}}"
 
 cd "${PROJECT_ROOT}"
 # Use all cores for build when not set (so -j not needed)
-# shellcheck source=../include/set_parallel_level.sh
+# shellcheck source=scripts/include/set_parallel_level.sh
 . "${SCRIPT_DIR}/../include/set_parallel_level.sh"
 {
   echo "=== Build Runner ==="

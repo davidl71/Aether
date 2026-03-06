@@ -19,7 +19,7 @@ echo "[info] Stopping NATS server (PID: $PID)..."
 kill "$PID" 2>/dev/null || true
 
 # Wait for process to stop
-for i in {1..10}; do
+for _ in {1..10}; do
   if ! pgrep -f "nats-server" >/dev/null; then
     echo "[info] NATS server stopped successfully"
     exit 0

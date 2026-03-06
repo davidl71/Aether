@@ -43,7 +43,7 @@ create() {
   fi
 
   local size_sectors
-  size_sectors=$((${RAMDISK_SIZE_GB} * 1024 * 2048))
+  size_sectors=$((RAMDISK_SIZE_GB * 1024 * 2048))
   echo "Creating ${RAMDISK_SIZE_GB}GB RAM disk: ${RAMDISK_PATH}"
   local dev
   dev=$(hdiutil attach -nomount "ram://${size_sectors}" | head -1 | awk '{print $1}')

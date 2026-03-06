@@ -3,6 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/include/logging.sh
 source "${SCRIPT_DIR}/include/logging.sh"
 
 usage() {

@@ -35,7 +35,6 @@ for agent_name in "${!AGENTS[@]}"; do
         fi
 
         branch=$(git branch --show-current 2>/dev/null || echo "unknown")
-        remote_status=$(git status -sb 2>/dev/null | head -1)
 
         # Check for uncommitted changes
         if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
@@ -87,6 +86,7 @@ for agent_name in "${!AGENTS[@]}"; do
 
         if [[ -n "$status_output" ]]; then
             echo "  ⚠️  Has uncommitted changes:"
+            # shellcheck disable=SC2001
             echo "$status_output" | sed 's/^/    /'
         else
             echo "  ✅ Working copy clean"

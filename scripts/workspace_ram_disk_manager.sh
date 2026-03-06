@@ -12,7 +12,6 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 RAMDISK_NAME="IBBoxSpreadBuild"
 RAMDISK_PATH="/Volumes/${RAMDISK_NAME}"
 RAMDISK_BUILD="${RAMDISK_PATH}/build"
-BUILD_RAMDISK_LINK="${PROJECT_ROOT}/build-ramdisk"
 
 # Cache RAM disk configuration
 CACHE_RAMDISK_NAME="IBBoxSpreadDev"
@@ -112,6 +111,7 @@ function prewarm_cache_ramdisk() {
 
   # Source environment if available
   if [ -f "${PROJECT_ROOT}/.ram-optimization-env" ]; then
+    # shellcheck source=/dev/null
     source "${PROJECT_ROOT}/.ram-optimization-env"
     log_success "Cache RAM disk environment loaded"
   fi

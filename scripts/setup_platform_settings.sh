@@ -95,7 +95,8 @@ detect_compiler() {
       elif [ -f "/c/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC" ]; then
         # Find latest MSVC version
         local msvc_base="/c/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC"
-        local latest_version=$(ls -1 "$msvc_base" 2>/dev/null | sort -V | tail -1)
+        local latest_version
+        latest_version=$(ls -1 "$msvc_base" 2>/dev/null | sort -V | tail -1)
         if [ -n "$latest_version" ]; then
           compiler_path="$msvc_base/$latest_version/bin/Hostx64/x64/cl.exe"
         fi
@@ -160,7 +161,8 @@ detect_include_paths() {
       [ -d "/usr/local/include" ] && paths+=("\"/usr/local/include\"")
       # Try to find GCC C++ headers
       if [ -d "/usr/include/c++" ]; then
-        local gcc_version=$(ls -1 /usr/include/c++ 2>/dev/null | sort -V | tail -1)
+        local gcc_version
+        gcc_version=$(ls -1 /usr/include/c++ 2>/dev/null | sort -V | tail -1)
         if [ -n "$gcc_version" ]; then
           paths+=("\"/usr/include/c++/$gcc_version\"")
         fi
@@ -261,7 +263,7 @@ EOF
   // ==========================================
   // Personal Preferences (Add your own below)
   // ==========================================
-  // See .vscode/settings.json.user.example for examples
+  // See ${SETTINGS_EXAMPLE} for examples
 }
 EOF
 
@@ -356,12 +358,14 @@ EOF
 
   # Detect platform
   log_info "Detecting platform..."
-  local platform=$(detect_platform)
+  local platform
+  platform=$(detect_platform)
   log_success "Detected platform: $platform"
 
   # Detect compiler
   log_info "Detecting C++ compiler..."
-  local compiler_path=$(detect_compiler "$platform")
+  local compiler_path
+  compiler_path=$(detect_compiler "$platform")
   if [ -z "$compiler_path" ]; then
     log_error "No C++ compiler detected!"
     log_info "Please install:"
@@ -381,17 +385,20 @@ EOF
   log_success "Found compiler: $compiler_path"
 
   # Detect IntelliSense mode
-  local intellisense_mode=$(detect_intellisense_mode "$platform" "$compiler_path")
+  local intellisense_mode
+  intellisense_mode=$(detect_intellisense_mode "$platform" "$compiler_path")
   log_info "IntelliSense mode: $intellisense_mode"
 
   # Detect include paths
   log_info "Detecting include paths..."
-  local include_paths=$(detect_include_paths "$platform")
+  local include_paths
+  include_paths=$(detect_include_paths "$platform")
   log_success "Found include paths"
 
   # Detect Python
   log_info "Detecting Python interpreter..."
-  local python_path=$(detect_python "$platform")
+  local python_path
+  python_path=$(detect_python "$platform")
   if [ -n "$python_path" ]; then
     log_success "Found Python: $python_path"
   else

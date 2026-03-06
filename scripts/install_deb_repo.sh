@@ -70,6 +70,7 @@ detect_ubuntu_version() {
     exit 1
   fi
 
+  # shellcheck source=/dev/null
   source /etc/os-release
 
   if [ "$ID" != "ubuntu" ]; then
@@ -84,7 +85,7 @@ detect_ubuntu_version() {
   log_info "Detected Ubuntu version: $UBUNTU_VERSION"
 
   # Check if version is >= 25.04
-  if [ "$UBUNTU_MAJOR" -lt 25 ] || ([ "$UBUNTU_MAJOR" -eq 25 ] && [ "${UBUNTU_MINOR:-0}" -lt 4 ]); then
+  if [ "$UBUNTU_MAJOR" -lt 25 ] || { [ "$UBUNTU_MAJOR" -eq 25 ] && [ "${UBUNTU_MINOR:-0}" -lt 4 ]; }; then
     log_warn "Ubuntu version $UBUNTU_VERSION is less than 25.04"
     log_warn "Using .sources format anyway (recommended for all modern Ubuntu versions)"
   fi
@@ -167,14 +168,11 @@ create_sources_file() {
   log_info "Creating .sources file for Ubuntu 25.04+..."
 
   # Determine if repo URL is file:// or http(s)://
-  local repo_type=""
   local repo_uri=""
 
   if [[ "$REPO_URL" == file://* ]]; then
-    repo_type="file"
     repo_uri="$REPO_URL"
   elif [[ "$REPO_URL" == http* ]]; then
-    repo_type="http"
     repo_uri="$REPO_URL"
   else
     log_error "Invalid REPO_URL format: $REPO_URL"

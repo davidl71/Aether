@@ -112,7 +112,7 @@ PRESET="$(prefer_ramdisk_if_setup "${PRESET}")"
 
 cd "${PROJECT_ROOT}"
 # Use all cores for Ninja when not set (see docs/BUILD_PARALLELIZATION_AND_MODULARITY.md)
-# shellcheck source=./include/set_parallel_level.sh
+# shellcheck source=scripts/include/set_parallel_level.sh
 . "${SCRIPT_DIR}/include/set_parallel_level.sh"
 
 # On macOS, force TWS API and optionally Catch2 to reconfigure so SDK/staging and Catch2 version are current
