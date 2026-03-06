@@ -25,14 +25,16 @@ class CashFlowTab(Container):
         snapshot: Optional[SnapshotPayload] = None,
         bank_accounts: Optional[List[Dict]] = None,
         projection_months: int = 12,
+        *args,
+        **kwargs,
     ):
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.snapshot = snapshot
         self.bank_accounts = bank_accounts or []
         self.projection_months = projection_months
 
     def compose(self) -> ComposeResult:
-        with Vertical():
+        with Vertical(classes="fill"):
             yield Label("Cash Flow Projection", classes="tab-title")
 
             with Horizontal():

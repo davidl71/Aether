@@ -17,7 +17,12 @@ export interface BackendServiceStatus {
   enabled?: boolean;
   running?: boolean;
   pid?: number;
+  /** Backend role for grouping: trading, market data, banking, rates, platform */
+  role?: BackendRole;
 }
+
+/** Backend role by application (trading, market data, banking, rates, platform). */
+export type BackendRole = 'trading' | 'market_data' | 'banking' | 'rates' | 'platform';
 
 export interface BackendServicesStatus {
   alpaca: BackendServiceStatus;
@@ -31,15 +36,41 @@ export interface BackendServicesStatus {
 }
 
 const SERVICE_CONFIG = {
-  alpaca: { name: 'Alpaca', port: SERVICE_PORTS.alpaca, healthPath: '/api/health' },
-  tradestation: { name: 'TradeStation', port: SERVICE_PORTS.tradestation, healthPath: '/api/health' },
-  ib: { name: 'IB', port: SERVICE_PORTS.ib, healthPath: '/api/health' },
-  discountBank: { name: 'Discount Bank', port: SERVICE_PORTS.discountBank, healthPath: '/api/health' },
-  riskFreeRate: { name: 'Risk-Free Rate', port: SERVICE_PORTS.riskFreeRate, healthPath: '/api/health' },
-  tastytrade: { name: 'Tastytrade', port: SERVICE_PORTS.tastytrade, healthPath: '/api/health' },
-  tradier: { name: 'Tradier', port: SERVICE_PORTS.tradier, healthPath: '/api/health' },
-  rustBackend: { name: 'Rust Backend', port: SERVICE_PORTS.rustBackend, healthPath: '/health' },
+  alpaca: { name: 'Alpaca', port: SERVICE_PORTS.alpaca, healthPath: '/api/health', role: 'trading' as const },
+  tradestation: { name: 'TradeStation', port: SERVICE_PORTS.tradestation, healthPath: '/api/health', role: 'trading' as const },
+  ib: { name: 'IB', port: SERVICE_PORTS.ib, healthPath: '/api/health', role: 'trading' as const },
+  tastytrade: { name: 'Tastytrade', port: SERVICE_PORTS.tastytrade, healthPath: '/api/health', role: 'trading' as const },
+  tradier: { name: 'Tradier', port: SERVICE_PORTS.tradier, healthPath: '/api/health', role: 'trading' as const },
+  discountBank: { name: 'Discount Bank', port: SERVICE_PORTS.discountBank, healthPath: '/api/health', role: 'banking' as const },
+  riskFreeRate: { name: 'Risk-Free Rate', port: SERVICE_PORTS.riskFreeRate, healthPath: '/api/health', role: 'rates' as const },
+  rustBackend: { name: 'Rust Backend', port: SERVICE_PORTS.rustBackend, healthPath: '/health', role: 'platform' as const },
 } as const;
+
+/** Human-readable labels for backend roles (for UI grouping). */
+export const BACKEND_ROLE_LABELS: Record<BackendRole, string> = {
+  trading: 'Trading',
+  market_data: 'Market data',
+  banking: 'Banking',
+  rates: 'Rates',
+  platform: 'Platform',
+};
+
+/** Order of roles for display (left to right). */
+export const BACKEND_ROLE_ORDER: BackendRole[] = ['trading', 'market_data', 'banking', 'rates', 'platform'];
+
+/** Group backend status keys by role for display. */
+export function getBackendsByRole(statuses: BackendServicesStatus): Partial<Record<BackendRole, Array<keyof BackendServicesStatus>>> {
+  const byRole: Partial<Record<BackendRole, Array<keyof BackendServicesStatus>>> = {};
+  const keys = Object.keys(statuses) as Array<keyof BackendServicesStatus>;
+  for (const key of keys) {
+    const config = SERVICE_CONFIG[key];
+    if (!config) continue;
+    const role = config.role ?? 'platform';
+    if (!byRole[role]) byRole[role] = [];
+    byRole[role]!.push(key);
+  }
+  return byRole;
+}
 
 // Map unified health dashboard backend id -> PWA SERVICE_CONFIG key
 const DASHBOARD_KEY_MAP: Record<string, keyof typeof SERVICE_CONFIG> = {
@@ -308,11 +339,13 @@ export function useBackendServices(options: { intervalMs?: number; enabled?: boo
   const [statuses, setStatuses] = useState<BackendServicesStatus>(() => {
     const initial: Partial<BackendServicesStatus> = {};
     for (const key of Object.keys(SERVICE_CONFIG) as Array<keyof typeof SERVICE_CONFIG>) {
+      const config = SERVICE_CONFIG[key];
       initial[key] = {
-        name: SERVICE_CONFIG[key].name,
-        port: SERVICE_CONFIG[key].port,
+        name: config.name,
+        port: config.port,
         healthy: false,
         checking: false,
+        role: config.role,
       };
     }
     return initial as BackendServicesStatus;
@@ -362,6 +395,7 @@ export function useBackendServices(options: { intervalMs?: number; enabled?: boo
       for (const result of results) {
         if (result.status === 'fulfilled') {
           const { key, healthy, error, authenticated, authUrl, attentionRequired, attentionMessage, enabled, running, pid } = result.value;
+          const config = SERVICE_CONFIG[key];
           updated[key] = {
             ...prev[key],
             healthy,
@@ -374,6 +408,7 @@ export function useBackendServices(options: { intervalMs?: number; enabled?: boo
             enabled,
             running,
             pid,
+            role: config.role,
             lastChecked: new Date(),
           };
         }

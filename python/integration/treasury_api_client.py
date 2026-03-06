@@ -1,11 +1,12 @@
 """
 treasury_api_client.py - U.S. Treasury Fiscal Data API client for risk-free rate benchmarks
 
-This module provides access to U.S. Treasury interest rate data from the Fiscal Data API:
-https://fiscaldata.treasury.gov/api-documentation/
+API documentation: https://fiscaldata.treasury.gov/api-documentation/
 
+This module provides access to U.S. Treasury interest rate data from the Fiscal Data API.
 The API provides average interest rates on Treasury securities, which can be used as
 risk-free rate benchmarks for comparison with box spread implied rates.
+No API key required.
 """
 
 from __future__ import annotations

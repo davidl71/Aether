@@ -70,6 +70,10 @@ if [ ! -f "${CONFIG_REL}" ]; then
 fi
 
 # Port: default 5001, override with IB_GATEWAY_PORT (e.g. if 5001 is in use or to match legacy 5000).
+# Why 5000? Gateway can end up on 5000 if: (1) IB_GATEWAY_PORT=5000 is set in your env/shell,
+# (2) the gateway was started by IB's native launcher (often defaults to 5000), or (3) root/conf.yaml
+# or root/conf.tws.yaml was overwritten by an installer with listenPort: 5000. This script forces
+# the port from IB_GATEWAY_PORT (default 5001) by writing root/conf.port.<port>.yaml when needed.
 GATEWAY_PORT="${IB_GATEWAY_PORT:-5001}"
 
 # If config has a different listenPort, write a variant under root/ so relative paths in config still work.

@@ -115,6 +115,36 @@ curl http://localhost:8222/subsz
 
 ## Monitoring
 
+### Performance check
+
+Run a quick performance and config check (server must be running):
+
+```bash
+./scripts/check_nats_performance.sh
+```
+
+This reports server reachability, `/varz` metrics (messages, bytes), `/connz` (connection count), config summary, and an optional pub round-trip if the `nats` CLI is installed.
+
+### Performance tuning (config/nats-server.conf)
+
+| Setting | Current (dev) | Notes |
+|--------|----------------|-------|
+| `ping_interval` | 20s | Keep-alive; lower (e.g. 10s) can detect dead connections sooner at slightly more traffic. |
+| `ping_max` | 2 | Missed pings before disconnect. |
+| `write_deadline` | 10s | Max time for a write; increase if you see slow clients. |
+| `max_connections` | 1000 | Cap concurrent clients. |
+| `max_payload` | 1MB | Max message size. |
+| JetStream `max_mem` | 256MB | In-memory stream limit. |
+| WebSocket | port 8081 | Browser clients; same tuning as server. |
+
+**Clients:**
+- **Rust** (`nats_adapter`): Reconnect exponential backoff 1s→30s; ping 20s; DLQ retry 100ms→5s (max 3 retries). Health check uses 500ms flush timeout.
+- **Python** (`nats_client.py`): `reconnect_time_wait=2` s; no flush after publish (rely on server buffering).
+- **Web** (`nats.ws`): `reconnectTimeWait: 2000` ms.
+- **C++**: Uses nats.c defaults; synchronous publish (no batching). Consider `natsConnection_FlushTimeout` if you need delivery confirmation.
+
+For high-throughput market data, consider batching ticks in the publisher (e.g. Rust backend) if you see backpressure or high message count.
+
 ### HTTP Endpoints
 
 - **Health**: `http://localhost:8222/healthz`
@@ -145,6 +175,41 @@ nats req "rpc.snapshot" ""
 
 nats server check
 ```
+
+## QuestDB NATS writer
+
+A Python service subscribes to Core NATS `market-data.tick.>` and writes each tick to QuestDB via ILP (table `market_data`). Use it when market data is published to NATS (e.g. Rust backend, or test with `nats pub`).
+
+**Prerequisites:** NATS server running, QuestDB running with ILP on port 9009.
+
+**Run:**
+
+```bash
+# From repo root (NATS and QuestDB must be running)
+./scripts/run_questdb_nats_writer.sh
+```
+
+Or via the unified service manager:
+
+```bash
+./scripts/service.sh start questdb_nats
+./scripts/service.sh status questdb_nats
+./scripts/service.sh stop questdb_nats
+```
+
+**Options / env:**
+
+| Env / flag | Default | Description |
+|------------|---------|-------------|
+| `NATS_URL` / `--nats-url` | `nats://localhost:4222` | NATS server URL |
+| `QUESTDB_ILP_HOST` / `--questdb-host` | `127.0.0.1` | QuestDB ILP host |
+| `QUESTDB_ILP_PORT` / `--questdb-port` | `9009` | QuestDB ILP port |
+| `NATS_QUESTDB_SUBJECT` / `--subject` | `market-data.tick.>` | NATS subject to subscribe to |
+| `QUESTDB_MARKET_DATA_TABLE` / `--table` | `market_data` | QuestDB table name |
+
+**Payload format:** JSON. Envelope `{"payload": {symbol, bid, ask, last, volume?, timestamp?}}` or flat `{symbol, bid, ask, last, volume?, timestamp?}`. Symbol can be inferred from subject (e.g. `market-data.tick.SPY` → SPY). The Rust backend currently publishes **protobuf** on this subject; to ingest that, add Python proto decode (see `proto/messages.proto` `NatsEnvelope` + `MarketDataEvent`) or use the Go bridge (JetStream path) with an adapter that republishes proto→JSON to JetStream.
+
+**Code:** `python/integration/questdb_nats_writer.py`. See also `docs/NATS_USE_OPPORTUNITIES.md` (QuestDB section) and the Go bridge `agents/go/cmd/nats-questdb-bridge/`.
 
 ## Integration with Launch Scripts
 

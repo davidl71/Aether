@@ -9,16 +9,19 @@ Environment:
 - SYMBOLS: comma-separated underlyings (default: SPY,QQQ)
 - SNAPSHOT_FILE_PATH: optional path to also write snapshot JSON (for TUI file polling)
 - NATS_URL: when set, health (and optional snapshot) are published to NATS for unified dashboard
+- ALPACA_HEALTH_REFRESH_SECONDS: seconds between background health refreshes (default 5; 1–60).
+  Health returns cached state immediately so the server is up before Alpaca is connected.
 """
 from __future__ import annotations
 
 import asyncio
 import json
 import os
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from pathlib import Path
 import sys
@@ -34,6 +37,7 @@ from python.services.security_integration_helper import (
 
 from .alpaca_client import AlpacaClient
 from . import nats_client
+from .shared_config_loader import load_shared_config
 
 
 class ModeRequest(BaseModel):
@@ -50,6 +54,26 @@ def _now_iso() -> str:
 def _symbols_from_env() -> List[str]:
     raw = os.getenv("SYMBOLS", "SPY,QQQ")
     return [s.strip().upper() for s in raw.split(",") if s.strip()]
+
+
+def _alpaca_client_kwargs_from_config() -> Dict[str, Any]:
+    """Build AlpacaClient kwargs from shared config if present (e.g. base_url for live https://api.alpaca.markets)."""
+    kwargs: Dict[str, Any] = {}
+    try:
+        config = load_shared_config()
+        alpaca = (config.extra or {}).get("alpaca") or {}
+        data_cfg = alpaca.get("data_client_config") or alpaca.get("dataClientConfig") or {}
+        base_url = (data_cfg.get("base_url") or data_cfg.get("baseUrl") or "").strip()
+        if base_url:
+            kwargs["base_url"] = base_url
+        data_base_url = (data_cfg.get("data_base_url") or data_cfg.get("dataBaseUrl") or "").strip()
+        if data_base_url:
+            kwargs["data_base_url"] = data_base_url
+        paper = data_cfg.get("paper", True)
+        os.environ["ALPACA_PAPER"] = "1" if paper else "0"
+    except Exception:
+        pass
+    return kwargs
 
 
 def build_snapshot_payload(symbols: List[str], client: AlpacaClient, mode: str = "PAPER", account_id: Optional[str] = None) -> Dict[str, Any]:
@@ -172,74 +196,99 @@ def build_snapshot_payload(symbols: List[str], client: AlpacaClient, mode: str =
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="IB Box Spread Alpaca Service", version="0.1.0")
-    
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        """Start server immediately; create client and refresh health in background."""
+        state = app.state.connection_state
+        refresh_interval = max(1.0, min(60.0, float(os.getenv("ALPACA_HEALTH_REFRESH_SECONDS", "5"))))
+
+        def _try_create_client() -> Tuple[Optional[AlpacaClient], Optional[str]]:
+            try:
+                kwargs = _alpaca_client_kwargs_from_config()
+                return AlpacaClient(**kwargs), None
+            except Exception as e:
+                msg = str(e).split("\n")[0].strip() or "Missing API key or OAuth credentials"
+                if "credentials" not in msg.lower() and "api key" not in msg.lower():
+                    msg = "Missing API key or OAuth credentials"
+                return None, msg
+
+        async def refresh_connection() -> None:
+            while True:
+                client = app.state.alpaca_client
+                if client is None:
+                    client, err = await asyncio.to_thread(_try_create_client)
+                    app.state.alpaca_client = client
+                    if client is None:
+                        state["status"] = "disabled"
+                        state["alpaca_connected"] = False
+                        state["ts"] = _now_iso()
+                        state["error"] = err or "Missing API key or OAuth credentials"
+                else:
+                    try:
+                        account = await asyncio.to_thread(client.get_account)
+                        oauth_status = None
+                        if hasattr(client, "_use_oauth") and client._use_oauth:
+                            oauth_status = {
+                                "enabled": True,
+                                "has_token": client._access_token is not None,
+                                "expires_at": client._token_expires_at.isoformat() if client._token_expires_at else None,
+                                "expires_soon": bool(client._token_expires_at and datetime.now() >= (client._token_expires_at - timedelta(minutes=1))),
+                            }
+                        else:
+                            oauth_status = {"enabled": False}
+                        state["status"] = "ok"
+                        state["alpaca_connected"] = account is not None
+                        state["ts"] = _now_iso()
+                        state["account_id"] = account.get("account_number") if account else None
+                        state["oauth"] = oauth_status
+                        state["error"] = None
+                    except Exception as e:
+                        state["status"] = "error"
+                        state["alpaca_connected"] = False
+                        state["ts"] = _now_iso()
+                        state["error"] = str(e)
+                if os.environ.get("NATS_URL", "").strip():
+                    asyncio.create_task(nats_client.publish_health("alpaca", dict(state)))
+                await asyncio.sleep(refresh_interval)
+
+        task = asyncio.create_task(refresh_connection())
+        try:
+            yield
+        finally:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
+    app = FastAPI(title="IB Box Spread Alpaca Service", version="0.1.0", lifespan=lifespan)
+
     # Add security components
     add_security_to_app(app, project_root=project_root)
     add_security_headers_middleware(app)
 
-    # Support both OAuth and API key authentication; allow start without credentials
-    client: Optional[AlpacaClient] = None
-    client_disabled_reason: Optional[str] = None
-    try:
-        client = AlpacaClient()
-    except Exception as e:
-        client_disabled_reason = str(e).split("\n")[0].strip() or "Missing API key or OAuth credentials"
-        if "credentials" not in client_disabled_reason.lower() and "api key" not in client_disabled_reason.lower():
-            client_disabled_reason = "Missing API key or OAuth credentials"
+    # Server starts immediately; client created in background
+    app.state.alpaca_client = None
+    app.state.connection_state = {
+        "status": "starting",
+        "ts": _now_iso(),
+        "alpaca_connected": False,
+        "error": None,
+    }
 
     # Store current mode and account in memory (in production, use Redis or database)
     current_mode: str = os.getenv("ALPACA_PAPER", "1").lower() in {"1", "true", "yes", "on"} and "PAPER" or "LIVE"
     current_account_id: Optional[str] = None
 
     @app.get("/api/health")
-    async def health() -> Dict[str, Any]:
-        """Health check endpoint. Returns status 'disabled' when credentials are missing.
-        When NATS_URL is set, publishes to system.health for unified health dashboard.
-        """
-        def _do_health() -> Dict[str, Any]:
-            if client is None:
-                return {
-                    "status": "disabled",
-                    "ts": _now_iso(),
-                    "alpaca_connected": False,
-                    "error": client_disabled_reason or "Missing credentials",
-                }
-            try:
-                account = client.get_account()
-                oauth_status = None
-                if hasattr(client, "_use_oauth") and client._use_oauth:
-                    oauth_status = {
-                        "enabled": True,
-                        "has_token": client._access_token is not None,
-                        "expires_at": client._token_expires_at.isoformat() if client._token_expires_at else None,
-                        "expires_soon": client._token_expires_at and datetime.now() >= (client._token_expires_at - timedelta(minutes=1)) if client._token_expires_at else False,
-                    }
-                else:
-                    oauth_status = {"enabled": False}
-                return {
-                    "status": "ok",
-                    "ts": _now_iso(),
-                    "alpaca_connected": account is not None,
-                    "account_id": account.get("account_number") if account else None,
-                    "oauth": oauth_status,
-                }
-            except Exception as e:
-                return {
-                    "status": "error",
-                    "ts": _now_iso(),
-                    "alpaca_connected": False,
-                    "error": str(e),
-                }
-
-        result = await asyncio.to_thread(_do_health)
-        if os.environ.get("NATS_URL", "").strip():
-            asyncio.create_task(nats_client.publish_health("alpaca", result))
-        return result
+    async def health(request: Request) -> Dict[str, Any]:
+        """Health check endpoint. Returns 200 immediately from cached state; backend connection runs in background."""
+        return dict(request.app.state.connection_state)
 
     @app.get("/api/snapshot")
-    def snapshot(mode: Optional[str] = None, account_id: Optional[str] = None) -> Dict[str, Any]:
+    def snapshot(request: Request, mode: Optional[str] = None, account_id: Optional[str] = None) -> Dict[str, Any]:
         """Get complete snapshot with market data, positions, and orders."""
+        client = request.app.state.alpaca_client
         if client is None:
             return {
                 "generated_at": _now_iso(),
@@ -250,10 +299,9 @@ def create_app() -> FastAPI:
                 "positions": [],
                 "orders": [],
                 "alerts": [],
-                "error": client_disabled_reason or "Missing credentials",
+                "error": request.app.state.connection_state.get("error") or "Missing credentials",
             }
         try:
-            # Use query parameter if provided, otherwise use stored mode/account
             effective_mode = mode.upper() if mode else current_mode
             effective_account_id = account_id if account_id else current_account_id
             symbols = _symbols_from_env()
@@ -282,8 +330,9 @@ def create_app() -> FastAPI:
             }
 
     @app.get("/api/positions")
-    def get_positions() -> List[Dict[str, Any]]:
+    def get_positions(request: Request) -> List[Dict[str, Any]]:
         """Get all open positions."""
+        client = request.app.state.alpaca_client
         if client is None:
             return []
         try:
@@ -292,8 +341,9 @@ def create_app() -> FastAPI:
             return [{"error": str(e)}]
 
     @app.get("/api/orders")
-    def get_orders(status: str = "all", limit: int = 50) -> List[Dict[str, Any]]:
+    def get_orders(request: Request, status: str = "all", limit: int = 50) -> List[Dict[str, Any]]:
         """Get orders (default: all, can filter by status: open, closed, all)."""
+        client = request.app.state.alpaca_client
         if client is None:
             return []
         try:
@@ -317,10 +367,11 @@ def create_app() -> FastAPI:
         return {"mode": current_mode, "ts": _now_iso()}
 
     @app.get("/api/accounts")
-    def list_accounts() -> Dict[str, Any]:
+    def list_accounts(request: Request) -> Dict[str, Any]:
         """List all available Alpaca accounts"""
+        client = request.app.state.alpaca_client
         if client is None:
-            return {"accounts": [], "error": client_disabled_reason or "Missing credentials", "ts": _now_iso()}
+            return {"accounts": [], "error": request.app.state.connection_state.get("error") or "Missing credentials", "ts": _now_iso()}
         try:
             accounts = client.get_accounts()
             # Format accounts for frontend
@@ -349,12 +400,13 @@ def create_app() -> FastAPI:
             return {"accounts": [], "error": str(e), "traceback": error_details, "ts": _now_iso()}
 
     @app.post("/api/account")
-    def set_account(request: AccountRequest) -> Dict[str, Any]:
+    def set_account(request: Request, body: AccountRequest) -> Dict[str, Any]:
         """Set active account ID"""
         nonlocal current_account_id
+        client = request.app.state.alpaca_client
         if client is None:
-            return {"status": "error", "message": client_disabled_reason or "Missing credentials", "ts": _now_iso()}
-        new_account_id = request.account_id
+            return {"status": "error", "message": request.app.state.connection_state.get("error") or "Missing credentials", "ts": _now_iso()}
+        new_account_id = body.account_id
 
         if new_account_id:
             # For Trading API, we typically only have one account, so we can match by account_number
@@ -381,10 +433,11 @@ def create_app() -> FastAPI:
             return {"status": "ok", "account_id": None, "ts": _now_iso()}
 
     @app.get("/api/account")
-    def get_account() -> Dict[str, Any]:
+    def get_account(request: Request) -> Dict[str, Any]:
         """Get current active account"""
+        client = request.app.state.alpaca_client
         if client is None:
-            return {"account_id": None, "error": client_disabled_reason or "Missing credentials", "ts": _now_iso()}
+            return {"account_id": None, "error": request.app.state.connection_state.get("error") or "Missing credentials", "ts": _now_iso()}
         account_info = None
         if current_account_id:
             account_info = client.get_account(current_account_id)

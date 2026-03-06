@@ -7,11 +7,19 @@
 # Usage:
 #   ./scripts/build_ai_friendly.sh [build|configure] [<preset>]
 #   ./scripts/build_ai_friendly.sh --json-only [<preset>]   # build and print only JSON to stdout
+#   ./scripts/build_ai_friendly.sh --progress [<preset>]   # stream progress as JSON lines to stderr
 #   BUILD_KEEP_GOING=1 ./scripts/build_ai_friendly.sh       # continue past failures to surface more errors (-k 0)
 #
 # Output (stdout): one JSON object
 #   {"success": true, "exit_code": 0, "duration_sec": 12.3, "log_path": "...", "errors": []}
 #   {"success": false, "exit_code": 1, "duration_sec": 5.2, "log_path": "...", "errors": ["..."]}
+#
+# With --progress: progress events stream to stderr as one JSON object per line (NDJSON), e.g.:
+#   {"event":"progress","current":154,"total":1233,"pct":12.5,"elapsed_sec":45}
+#   {"event":"progress","current":500,"total":1233,"pct":40.6,"elapsed_sec":120}
+# Final result still on stdout; tools/AI can tail stderr for progress or ignore it.
+# Combine with --json-only for machine-only stdout: ./scripts/build_ai_friendly.sh --json-only --progress
+# (Progress still streams to stderr.)
 #
 # Env: CMAKE_PRESET overrides default preset.
 # Env: CLEAN_TWS_API=1 (or unset) — on macOS, remove TWS API sub-build before building so it
@@ -25,6 +33,7 @@ LOG_DIR="${PROJECT_ROOT}/logs"
 mkdir -p "${LOG_DIR}"
 BUILD_LOG="${LOG_DIR}/build_ai_friendly.log"
 JSON_ONLY=false
+PROGRESS=false
 
 detect_default_preset() {
   local arch os
@@ -87,13 +96,17 @@ prefer_ramdisk_if_setup() {
   echo "${p}"
 }
 
-ACTION="${1:-build}"
-PRESET="${2:-${CMAKE_PRESET:-$(detect_default_preset)}}"
-if [[ "${ACTION}" == "--json-only" ]]; then
-  JSON_ONLY=true
-  ACTION="${2:-build}"
-  PRESET="${3:-${CMAKE_PRESET:-$(detect_default_preset)}}"
-fi
+ACTION="build"
+PRESET=""
+while [[ $# -ge 1 ]]; do
+  case "${1}" in
+    --json-only) JSON_ONLY=true; shift ;;
+    --progress)  PROGRESS=true; shift ;;
+    build|configure) ACTION="${1}"; shift; [[ $# -ge 1 ]] && { PRESET="${1}"; shift; }; break ;;
+    *) PRESET="${1}"; shift; break ;;
+  esac
+done
+PRESET="${PRESET:-${CMAKE_PRESET:-$(detect_default_preset)}}"
 PRESET="$(resolve_preset "${PRESET}")"
 PRESET="$(prefer_ramdisk_if_setup "${PRESET}")"
 
@@ -124,6 +137,25 @@ if [[ "${ACTION}" == "build" ]] && [[ "$(uname -s)" == "Darwin" ]] && [[ -d "${B
   fi
 fi
 START="$(date +%s.%N)"
+if ${PROGRESS}; then
+  export BUILD_PROGRESS_START="${START}"
+  BUILD_EXIT_FILE="${LOG_DIR}/.build_exit_$$"
+fi
+
+# Emit one NDJSON progress line to stderr for each ninja [N/M] line (when BUILD_PROGRESS_START is set)
+progress_parser() {
+  local start_s
+  start_s="${BUILD_PROGRESS_START:-0}"
+  while IFS= read -r line; do
+    if [[ "${line}" =~ \[([0-9]+)/([0-9]+)\] ]]; then
+      local n="${BASH_REMATCH[1]}" m="${BASH_REMATCH[2]}"
+      local pct elapsed
+      pct="$(awk "BEGIN { printf \"%.1f\", (${n}/${m})*100 }" 2>/dev/null || echo "0")"
+      elapsed="$(awk "BEGIN { printf \"%.0f\", $(date +%s) - ${start_s} }" 2>/dev/null || echo "0")"
+      echo "{\"event\":\"progress\",\"current\":${n},\"total\":${m},\"pct\":${pct},\"elapsed_sec\":${elapsed}}" 1>&2
+    fi
+  done
+}
 
 run_build() {
   if [[ "${ACTION}" == "configure" ]]; then
@@ -131,9 +163,20 @@ run_build() {
   else
     cmake --preset "${PRESET}" >> "${BUILD_LOG}" 2>&1 || true
     if [[ -n "${BUILD_KEEP_GOING:-}" ]] && [[ "${BUILD_KEEP_GOING}" != "0" ]]; then
-      # Pass -k 0 to Ninja: continue building after failures to detect more issues
+      if ${PROGRESS}; then
+        ( ( cmake --build --preset "${PRESET}" -- -k 0 ; echo $? > "${BUILD_EXIT_FILE}" ) 2>&1 | tee -a "${BUILD_LOG}" | progress_parser )
+        exit_code="$(cat "${BUILD_EXIT_FILE}" 2>/dev/null || echo 1)"
+        rm -f "${BUILD_EXIT_FILE}"
+        return "$((exit_code))"
+      fi
       cmake --build --preset "${PRESET}" -- -k 0 >> "${BUILD_LOG}" 2>&1
     else
+      if ${PROGRESS}; then
+        ( ( cmake --build --preset "${PRESET}" ; echo $? > "${BUILD_EXIT_FILE}" ) 2>&1 | tee -a "${BUILD_LOG}" | progress_parser )
+        exit_code="$(cat "${BUILD_EXIT_FILE}" 2>/dev/null || echo 1)"
+        rm -f "${BUILD_EXIT_FILE}"
+        return "$((exit_code))"
+      fi
       cmake --build --preset "${PRESET}" >> "${BUILD_LOG}" 2>&1
     fi
   fi
@@ -184,4 +227,4 @@ else
     tail -15 "${BUILD_LOG}" 1>&2
   fi
 fi
-exit ${exit_code}
+exit "${exit_code}"

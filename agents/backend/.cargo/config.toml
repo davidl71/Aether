@@ -1,0 +1,4 @@
+# Allow building with Python 3.14+ when PyO3 supports up to 3.12 (uses stable ABI).
+# Remove when upgrading to a PyO3 version that supports the system Python.
+[env]
+PYO3_USE_ABI3_FORWARD_COMPATIBILITY = "1"

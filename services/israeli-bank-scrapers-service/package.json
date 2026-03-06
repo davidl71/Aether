@@ -1,0 +1,21 @@
+{
+  "name": "israeli-bank-scrapers-service",
+  "version": "1.0.0",
+  "description": "On-demand Israeli bank scrapers; writes to ledger for TUI/Web bank-accounts API",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "scrape": "node src/cli-scrape.js",
+    "health": "node -e \"require('http').get('http://localhost:8010/api/health', r=>{ let d=''; r.on('data',c=>d+=c); r.on('end',()=>console.log(d)); }).on('error',e=>console.error(e));\""
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "dependencies": {
+    "@1password/sdk": "^0.1.0",
+    "israeli-bank-scrapers": "^1.0.0",
+    "better-sqlite3": "^11.6.0",
+    "express": "^4.21.0"
+  }
+}

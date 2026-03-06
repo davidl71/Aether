@@ -510,6 +510,7 @@ Application callbacks (notifies application)
 ## References
 
 - [IBKR Campus: EClient and EWrapper](https://www.interactivebrokers.com/campus/ibkr-quant-news/the-eclient-and-ewrapper-api-classes/)
+- [TWS API Documentation – Sync API](https://www.interactivebrokers.com/campus/ibkr-api-page/twsapi-doc/#sync-api) – synchronous request/response patterns (relevant for `request_*_sync` wrappers)
 - [TWS API Quick Reference](https://www.interactivebrokers.com/download/C++APIQuickReference.pdf)
 - [TWS API Documentation](https://interactivebrokers.github.io/tws-api/)
 - [Essential Components of TWS API Programs (Video)](https://www.youtube.com/watch?v=n-9bdREECTQ)

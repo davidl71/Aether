@@ -14,7 +14,7 @@ OAuth 2.0 Authentication:
 - ALPACA_REFRESH_TOKEN (optional, for token refresh)
 
 Other environment variables:
-- ALPACA_BASE_URL (optional, defaults to https://paper-api.alpaca.markets)
+- ALPACA_BASE_URL (optional, defaults to https://paper-api.alpaca.markets or https://api.alpaca.markets when ALPACA_PAPER=0)
 - ALPACA_DATA_BASE_URL (optional, defaults to https://data.alpaca.markets)
 - ALPACA_PAPER (optional, "1"/"true" uses paper endpoints)
 """
@@ -28,10 +28,13 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 try:
-    from .onepassword_sdk_helper import getenv_or_resolve
+    from .onepassword_sdk_helper import getenv_or_resolve, get_alpaca_credentials_from_1password
 except ImportError:
     def getenv_or_resolve(env_var: str, op_ref: str, default: str = "") -> str:
         return os.getenv(env_var, default)
+
+    def get_alpaca_credentials_from_1password():
+        return None
 
 try:
     from alpaca.trading.client import TradingClient
@@ -70,9 +73,17 @@ class AlpacaClient:
         self.client_secret = client_secret or getenv_or_resolve("ALPACA_CLIENT_SECRET", "OP_ALPACA_CLIENT_SECRET_SECRET", "")
         self._use_oauth = bool(self.client_id and self.client_secret)
 
-        # API key credentials (fallback); optional 1Password op:// refs via SDK
+        # API key credentials (fallback); optional 1Password op:// refs via SDK, or SDK discovery
         self.api_key_id = api_key_id or getenv_or_resolve("ALPACA_API_KEY_ID", "OP_ALPACA_API_KEY_ID_SECRET", "")
         self.api_secret_key = api_secret_key or getenv_or_resolve("ALPACA_API_SECRET_KEY", "OP_ALPACA_API_SECRET_KEY_SECRET", "")
+        if not self.api_key_id or not self.api_secret_key:
+            discovered = get_alpaca_credentials_from_1password()
+            if discovered:
+                key_val, secret_val = discovered
+                if not self.api_key_id:
+                    self.api_key_id = key_val
+                if not self.api_secret_key:
+                    self.api_secret_key = secret_val
 
         # Require at least one authentication method
         if not self._use_oauth and (not self.api_key_id or not self.api_secret_key):

@@ -106,6 +106,18 @@ message RiskLimit {
   double max_notional = 3;
 }
 
+// Portfolio and position risk configuration (aligns with native RiskConfig).
+message RiskConfig {
+  double max_total_exposure = 1;
+  int32 max_positions = 2;
+  double max_loss_per_position = 3;
+  double max_daily_loss = 4;
+  double position_size_percent = 5;
+  bool enable_stop_loss = 6;
+  double stop_loss_percent = 7;
+  double risk_free_rate_override = 8;  // 0 = auto-detect from market data
+}
+
 // ---------------------------------------------------------------------------
 // System
 // ---------------------------------------------------------------------------
@@ -258,12 +270,71 @@ message BoxSpreadOpportunity {
 }
 
 // Strategy filter and limit parameters (box spread / opportunity screening).
+// Aligns with native/include/config_manager.h StrategyParams.
 message StrategyParams {
-  int32 min_days_to_expiry = 1;
-  int32 max_days_to_expiry = 2;
-  double min_arbitrage_profit = 3;
-  double min_roi_percent = 4;
-  int32 max_positions = 5;
-  double max_total_exposure = 6;
-  double max_bid_ask_spread = 7;
+  repeated string symbols = 1;
+  int32 min_days_to_expiry = 2;
+  int32 max_days_to_expiry = 3;
+  double min_arbitrage_profit = 4;
+  double min_roi_percent = 5;
+  int32 max_positions = 6;
+  double max_total_exposure = 7;
+  double max_bid_ask_spread = 8;
+  // Liquidity and sizing
+  int32 min_volume = 9;
+  int32 min_open_interest = 10;
+  double max_position_size = 11;
+  // Benchmark for rate comparison
+  double benchmark_rate_percent = 12;
+  string benchmark_source = 13;  // "static", "treasury_api", "sofr"
+  string treasury_api_url = 14;
+  double min_spread_over_benchmark_bps = 15;
+}
+
+// ---------------------------------------------------------------------------
+// Discount Bank / Bank Account (ledger and services)
+// ---------------------------------------------------------------------------
+
+message BankAccount {
+  string id = 1;
+  string institution = 2;   // e.g. "discount_bank"
+  string account_number = 3;
+  string branch_number = 4;
+  string section_number = 5;
+  string currency = 6;
+}
+
+message DiscountBankBalance {
+  BankAccount account = 1;
+  double balance = 2;
+  string currency = 3;
+  google.protobuf.Timestamp balance_date = 4;
+  double credit_rate = 5;    // e.g. 0.03 for 3%
+  double debit_rate = 6;     // e.g. 0.103 for 10.3%
+}
+
+message DiscountBankTransaction {
+  google.protobuf.Timestamp value_date = 1;
+  double amount = 2;
+  bool is_debit = 3;
+  string reference = 4;
+  string account_id = 5;
+}
+
+// ---------------------------------------------------------------------------
+// Risk-Free Rate (extraction service / benchmark)
+// ---------------------------------------------------------------------------
+
+message RiskFreeRatePoint {
+  int32 days_to_expiry = 1;
+  double implied_rate_percent = 2;
+  double liquidity_score = 3;
+  google.protobuf.Timestamp as_of = 4;
+  string symbol = 5;
+}
+
+message RiskFreeRateCurve {
+  string symbol = 1;
+  repeated RiskFreeRatePoint points = 2;
+  google.protobuf.Timestamp timestamp = 3;
 }

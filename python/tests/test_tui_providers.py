@@ -14,7 +14,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from tui.providers import Provider, MockProvider, RestProvider, FileProvider
+from tui.providers import Provider, MockProvider, RestProvider, FileProvider, NatsProvider
 from tui.models import SnapshotPayload
 
 
@@ -191,9 +191,8 @@ class TestRestProvider(unittest.TestCase):
         provider = RestProvider(endpoint="http://test.com/api")
         snapshot = provider._fetch()
 
-        # Should return empty snapshot on error
-        assert isinstance(snapshot, SnapshotPayload)
-        assert snapshot.mode == "DRY-RUN"  # Default
+        # On error we return None so caller keeps last snapshot (no crash, retry)
+        assert snapshot is None
 
     @patch('tui.providers.requests.Session')
     def test_rest_provider_fetch_http_error(self, mock_session_class):
@@ -207,16 +206,14 @@ class TestRestProvider(unittest.TestCase):
         provider = RestProvider(endpoint="http://test.com/api")
         snapshot = provider._fetch()
 
-        # Should return empty snapshot on error
-        assert isinstance(snapshot, SnapshotPayload)
+        # On HTTP error we return None so caller keeps last snapshot
+        assert snapshot is None
 
     def test_rest_provider_get_snapshot_not_running(self):
-        """Test RestProvider.get_snapshot() when not running."""
-        with patch.object(self.provider, '_fetch') as mock_fetch:
-            mock_fetch.return_value = SnapshotPayload(mode="LIVE")
-            snapshot = self.provider.get_snapshot()
-            assert snapshot.mode == "LIVE"
-            mock_fetch.assert_called_once()
+        """Test RestProvider.get_snapshot() when not running (returns empty payload)."""
+        snapshot = self.provider.get_snapshot()
+        assert isinstance(snapshot, SnapshotPayload)
+        assert snapshot.mode == "DRY-RUN"
 
     def test_rest_provider_get_snapshot_running(self):
         """Test RestProvider.get_snapshot() when running."""
@@ -366,6 +363,37 @@ class TestFileProvider(unittest.TestCase):
         snapshot = self.provider.get_snapshot()
         assert snapshot.mode == "LIVE"
         self.provider.stop()
+
+
+class TestNatsProvider(unittest.TestCase):
+    """Tests for NatsProvider (NATS pub/sub)."""
+
+    def test_nats_provider_init(self):
+        """NatsProvider init sets nats_url and snapshot_backend."""
+        p = NatsProvider(nats_url="nats://127.0.0.1:4222", snapshot_backend="ib")
+        assert p.nats_url == "nats://127.0.0.1:4222"
+        assert p.snapshot_backend == "ib"
+        assert not p.is_running()
+
+    def test_nats_provider_get_snapshot_before_start(self):
+        """get_snapshot() returns empty SnapshotPayload when no data received."""
+        p = NatsProvider(snapshot_backend="ib")
+        snap = p.get_snapshot()
+        assert isinstance(snap, SnapshotPayload)
+        assert snap.generated_at in (None, "")
+
+    def test_nats_provider_get_health_before_start(self):
+        """get_health() returns None when no health received."""
+        p = NatsProvider(snapshot_backend="ib")
+        assert p.get_health() is None
+
+    @patch("tui.providers.NATS_PY_AVAILABLE", False)
+    def test_nats_provider_start_without_nats_py(self):
+        """start() when nats-py not installed does not raise and does not set running."""
+        p = NatsProvider(snapshot_backend="ib")
+        p.start()
+        # When NATS_PY_AVAILABLE is False, start() returns early and _running stays False
+        assert not p.is_running()
 
 
 if __name__ == "__main__":

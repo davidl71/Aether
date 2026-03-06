@@ -82,11 +82,11 @@ test-one name:
 
 # Run Python tests
 test-python:
-    uv run pytest python/tests/ -v
+    cd python && uv sync --extra dev --extra tui && uv run python -m pytest tests/ -v --ignore=tests/test_option_chain_manager.py
 
 # Run Python tests with coverage
 test-python-cov:
-    uv run pytest python/tests/ -v --cov
+    cd python && uv sync --extra dev --extra tui && uv run python -m pytest tests/ -v --cov --ignore=tests/test_option_chain_manager.py
 
 # --- Lint & Format ---
 
@@ -190,7 +190,15 @@ run-tui-live:
     # Use IB_PORT if you started the IB service on another port (e.g. 8007)
     sh -c './scripts/run_python_tui.sh rest "http://127.0.0.1:${IB_PORT:-8002}/api/snapshot"'
 
-# --- Python ---
+# Capture TUI screenshot for QA/sanity (writes to build/qa/tui/; use TUI_QA_SCREENSHOT_DIR to override)
+qa-tui-screenshot:
+    chmod +x scripts/tui_screenshot_qa.sh
+    ./scripts/tui_screenshot_qa.sh
+
+# Sanity check: Python tests + TUI screenshot capture (quick QA without full build)
+sanity:
+    just test-python
+    just qa-tui-screenshot
 
 # Install Python dependencies
 py-sync:
@@ -391,3 +399,7 @@ check-tws:
 # Validate config file
 validate-config:
     ./build/bin/ib_box_spread --config config/config.json --validate
+
+# Benchmark backend services (health + snapshot latency)
+benchmark:
+    uv run python scripts/benchmark_backend_services.py

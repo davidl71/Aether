@@ -15,6 +15,7 @@ This document outlines the architecture for integrating multiple broker APIs (TW
 - **Broker Switching**: Select broker at runtime or configuration
 - **Unified Data**: Common data structures across all brokers
 - **Error Handling**: Consistent error handling across brokers
+- **Independent providers**: Discount (bank), Alpaca, Tastytrade, TradeStation, and IB are independent—accounts and positions can exist in parallel. So are the Israeli providers in `broker.priorities`: **Fibi**, **Meitav**, **IBI**, and **Discount**; the Israeli bank scrapers service supports multiple company IDs (**fibi**, **max**, **visaCal**, discount, leumi, hapoalim, etc.), each independent. See [Multi-Account Aggregation Design](../../platform/MULTI_ACCOUNT_AGGREGATION_DESIGN.md#independent-providers-parallel-accounts-and-positions).
 
 ---
 

@@ -4,6 +4,25 @@ Patterns and scripts in exarp-go (`../mcp/exarp-go` or `EXARP_GO_ROOT`) that we 
 
 ---
 
+## Run exarp-go tool
+
+From this project's root you can run a specific exarp-go tool (default: lint):
+
+```bash
+# Default: lint
+./scripts/run_exarp_go_tool.sh
+
+# Specific tool (e.g. testing, security, task_workflow)
+./scripts/run_exarp_go_tool.sh testing
+./scripts/run_exarp_go_tool.sh security
+```
+
+Or with Just: `just exarp lint`, `just exarp testing`, `just exarp-lint`.
+
+In Cursor chat use the exarp-go MCP tools (e.g. task_workflow, report, session, lint). See `.cursor/commands/exarp-tool.md` for the command reference.
+
+---
+
 ## 1. Ansible run script + SSL fix (ported)
 
 **exarp-go:** `ansible/run-dev-setup.sh`:

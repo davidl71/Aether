@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { TreasuryYieldData, TreasuryBenchmark } from '../types';
+import { getServiceUrl } from '../config/ports';
 
 interface HookState {
   data: TreasuryYieldData | null;
@@ -58,6 +59,16 @@ const FRED_API_BASE = 'https://api.stlouisfed.org/fred/series/observations';
 // Cache key for localStorage
 const CACHE_KEY = 'treasury_yields_cache';
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+const RISK_FREE_RATE_TREASURY_URL = getServiceUrl('riskFreeRate', '/api/benchmarks/treasury');
+
+function maturityLabel(tenor: string): string {
+  const m: Record<string, string> = {
+    '1M': '1MO', '3M': '3MO', '6M': '6MO', '1Y': '1Y', '2Y': '2Y', '3Y': '3Y',
+    '5Y': '5Y', '7Y': '7Y', '10Y': '10Y', '20Y': '20Y', '30Y': '30Y',
+  };
+  return m[tenor] ?? tenor;
+}
 
 interface CachedData {
   data: TreasuryYieldData;
@@ -129,12 +140,28 @@ async function fetchTreasuryYield(seriesId: string): Promise<number | null> {
 }
 
 // Alternative: Use Treasury.gov API or a backend proxy
-// For now, we'll provide a fallback that uses mock data or cached values
+// Prefer risk-free-rate service (backend with FRED key) to avoid CORS and use single source
 async function fetchAllTreasuryYields(): Promise<TreasuryBenchmark[]> {
-  const benchmarks: TreasuryBenchmark[] = [];
+  try {
+    const response = await fetch(RISK_FREE_RATE_TREASURY_URL, { credentials: 'omit' });
+    if (response.ok) {
+      const json = await response.json();
+      const rates = json.rates ?? [];
+      const benchmarks: TreasuryBenchmark[] = rates.map((r: { tenor: string; rate: number; days_to_expiry?: number; timestamp: string }) => ({
+        maturity: maturityLabel(r.tenor),
+        maturityDays: r.days_to_expiry ?? MATURITY_DAYS[maturityLabel(r.tenor)] ?? 365,
+        yield: r.rate,
+        date: (r.timestamp || json.timestamp || '').split('T')[0],
+        type: MATURITY_TYPES[maturityLabel(r.tenor)] ?? 'T-Note',
+      }));
+      if (benchmarks.length > 0) return benchmarks;
+    }
+  } catch (e) {
+    console.debug('Risk-Free Rate service Treasury fetch failed, falling back to FRED:', e);
+  }
 
-  // Try to fetch from FRED API (may fail due to CORS)
-  // In production, this should be done via backend proxy
+  // Fallback: FRED API (may fail due to CORS)
+  const benchmarks: TreasuryBenchmark[] = [];
   const fetchPromises = Object.entries(FRED_SERIES).map(async ([maturity, seriesId]) => {
     const yieldValue = await fetchTreasuryYield(seriesId);
 

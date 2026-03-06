@@ -7,6 +7,7 @@ _devtools_packages:
   - go
   - python
   - curl
+  - bash
   - act
   - uv
   - fswatch
@@ -29,5 +30,7 @@ _devtools_packages:
   # Optional: docs (BUILD_DOCS=ON) and NATS (ENABLE_NATS=ON)
   - doxygen
   - nats-server
+  # Java (IB Client Portal Gateway on port 5000)
+  - openjdk@11
   # Rust toolchain (agents/, Rust backends)
   - rust

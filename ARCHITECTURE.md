@@ -83,15 +83,23 @@ This document provides a high-level overview of the IBKR Box Spread Generator sy
 | Build | CMake, Cargo, npm |
 | Testing | Catch2, pytest, Jest |
 
+## Languages and components
+
+A **language–component table** and rationale are maintained in **`docs/design/DIRECTORY_STRUCTURE_BY_LANGUAGE.md`**. Summary:
+
+- **No broad language change is recommended.** C++ stays for the core engine and TWS (API is C++-only); Rust for the backend service; Python for integration and TUI; TypeScript for the web app; Node for the Israeli bank scrapers service.
+- **Go** is used in `agents/go/` for agents/tools. Good candidates to **rewrite in Go** are small, standalone CLI/ops pieces that would benefit from a single binary and no runtime (e.g. config validator, small NATS bridge). The main Python broker services, the Rust backend, and the Node scrapers service are **not** recommended rewrites. See the same doc for details.
+
 ## Key Design Decisions
 
 1. **Multi-language Architecture**: C++ for performance-critical calculations, Rust for safety-critical backend, Python for scripting/integration
 2. **Message-driven**: NATS for decoupled, async communication
 3. **Cross-platform**: Universal binaries for macOS, Linux support
+4. **Independent providers**: Discount (bank), Alpaca, Tastytrade, TradeStation, and IB are independent—accounts and positions can exist in parallel. So are the Israeli providers in config (`broker.priorities`): Fibi, Meitav, IBI, and Discount; the Israeli bank scrapers service supports multiple company IDs (**fibi**, **max**, **visaCal**, discount, leumi, hapoalim, etc.), each independent. See `docs/platform/MULTI_ACCOUNT_AGGREGATION_DESIGN.md`.
 
 ## Directory Structure
 
-See **`docs/design/DIRECTORY_STRUCTURE_BY_LANGUAGE.md`** for a language-to-directory mapping and discussion of by-component vs by-language layout.
+See **`docs/design/DIRECTORY_STRUCTURE_BY_LANGUAGE.md`** for the language–component table, rationale (no broad language changes), where Go fits, and rewrite-in-Go guidance.
 
 ```
 ib_box_spread_full_universal/

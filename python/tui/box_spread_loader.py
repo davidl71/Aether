@@ -32,8 +32,14 @@ def get_box_spread_payload(
     data: Optional[dict[str, Any]] = None
     new_mtime: Optional[float] = None
 
-    # Try REST first: /scenarios from same base as snapshot endpoint
-    base = (config.rest_endpoint or "").rsplit("/", 1)[0]
+    # Prefer API router base when set; otherwise derive base from snapshot endpoint
+    base: Optional[str] = None
+    if getattr(config, "api_base_url", None):
+        base = config.api_base_url.strip().rstrip("/")
+    if not base:
+        base = (config.rest_endpoint or "").rsplit("/", 1)[0]
+
+    # Try REST first: /scenarios from base
     if base:
         api_url = f"{base}/scenarios"
         try:

@@ -223,24 +223,44 @@ class TestFastAPIEndpoints(unittest.TestCase):
             self.app = create_app()
             self.client = TestClient(self.app)
 
-    def test_health_endpoint_success(self):
-        """Test /api/health endpoint with successful connection."""
-        self.mock_client.get_accounts.return_value = ["DU123456"]
+    def test_health_endpoint_returns_immediately(self):
+        """Health returns 200 immediately from cached state (no blocking gateway call in request path)."""
+        response = self.client.get("/api/health")
+        assert response.status_code == 200
+        data = response.json()
+        assert "status" in data
+        assert data["status"] in ("starting", "ok", "error")
+        assert "ib_connected" in data
+        assert "ts" in data
 
+    def test_health_endpoint_success(self):
+        """When connection_state is updated (e.g. by background task), health returns it."""
+        self.app.state.connection_state.update({
+            "status": "ok",
+            "ib_connected": True,
+            "gateway_logged_in": True,
+            "accounts": ["DU123456"],
+            "ts": _now_iso(),
+        })
         response = self.client.get("/api/health")
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "ok"
         assert data["ib_connected"] is True
         assert "DU123456" in data["accounts"]
-        self.mock_client.get_accounts.assert_called_once()
 
     def test_health_endpoint_error(self):
-        """Test /api/health endpoint with connection error."""
-        self.mock_client.get_accounts.side_effect = IBKRPortalError("Connection failed")
-
+        """When connection_state has error, health returns it."""
+        self.app.state.connection_state.update({
+            "status": "error",
+            "ib_connected": False,
+            "gateway_logged_in": False,
+            "error": "Connection failed",
+            "accounts": [],
+            "ts": _now_iso(),
+        })
         response = self.client.get("/api/health")
-        assert response.status_code == 200  # Health endpoint doesn't fail
+        assert response.status_code == 200
         data = response.json()
         assert data["status"] == "error"
         assert data["ib_connected"] is False

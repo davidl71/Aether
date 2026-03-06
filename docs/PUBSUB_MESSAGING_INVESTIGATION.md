@@ -52,7 +52,7 @@ See `docs/NATS_TOPICS_REGISTRY.md`. Added for this implementation:
 ### 5. Optional next steps
 
 - **Alpaca / TradeStation / Tastytrade:** Same pattern: after building snapshot, `publish_snapshot("alpaca", payload)` if NATS enabled.
-- **TUI NATS provider:** New provider that subscribes to `snapshot.{backend}` (or `snapshot.aggregated`) and updates UI on message instead of polling REST.
+- **TUI NATS provider:** ✅ Implemented. `python/tui/providers.py` **NatsProvider** subscribes to `snapshot.{backend}` and `system.health`; updates UI on each message (no polling). In Setup choose "NATS (subscribe)" and set `nats_url` / `nats_snapshot_backend` in config (defaults: `nats://localhost:4222`, `ib`). Requires `nats-py`.
 - **Aggregator service:** Subscribes to `snapshot.ib`, `snapshot.alpaca`, …; merges; publishes `snapshot.aggregated` or serves single REST `/api/snapshot`.
 
 ---

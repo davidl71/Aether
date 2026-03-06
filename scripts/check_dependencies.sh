@@ -114,6 +114,7 @@ echo ""
 
 # TWS/IB Gateway
 echo -e "${BLUE}Trading Platforms:${NC}"
+check_dep "java" "brew install openjdk@11  # then: brew link openjdk@11 --force" true
 printf "%-20s " "TWS/IB Gateway:"
 if [ -d "/Applications/Trader Workstation.app" ] || [ -d "/Applications/IB Gateway.app" ]; then
   echo -e "${GREEN}✓${NC} Installed"

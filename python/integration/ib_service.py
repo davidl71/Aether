@@ -12,6 +12,8 @@ Environment:
 - SNAPSHOT_CACHE_SECONDS: seconds to cache snapshot response (default: 3; 0 = disable). Increase to 5
   to reduce Gateway load when freshness is less critical.
 - REAUTH_SLEEP_SECONDS: seconds to sleep after triggering Gateway reauth (default 0.5; see ibkr_portal_client).
+- IB_HEALTH_REFRESH_SECONDS: seconds between background gateway health refreshes (default 3; 1–30).
+  Health endpoint returns cached state immediately so the server can be marked up before the gateway is connected.
 
 Snapshot latency: Market data, account summary, and positions are fetched in parallel.
 Session is ensured once per snapshot; conids are prewarmed on first use to avoid repeated search round-trips.
@@ -28,6 +30,7 @@ import json
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional, Tuple
 
@@ -313,13 +316,7 @@ def build_snapshot_payload(
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="IB Box Spread IB Service", version="0.1.0")
-    
-    # Add security components
-    add_security_to_app(app, project_root=project_root)
-    add_security_headers_middleware(app)
-
-    # Initialize IB Client Portal client (shorter timeout for faster failure)
+    # Initialize IB Client Portal client (no network in __init__)
     portal_url = os.getenv("IB_PORTAL_URL", "https://localhost:5001/v1/portal")
     client = IBKRPortalClient(base_url=portal_url, verify_ssl=False, timeout_seconds=5)
     try:
@@ -328,6 +325,92 @@ def create_app() -> FastAPI:
     except Exception:
         gateway_port = 5001
 
+    def safe_health_payload(
+        status: str,
+        ib_connected: bool,
+        gateway_logged_in: bool,
+        error: Optional[str] = None,
+        accounts: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        try:
+            port = int(gateway_port) if gateway_port is not None else 5001
+        except (TypeError, ValueError):
+            port = 5001
+        out: Dict[str, Any] = {
+            "status": status,
+            "ts": _now_iso(),
+            "ib_connected": bool(ib_connected),
+            "gateway_logged_in": bool(gateway_logged_in),
+            "gateway_port": port,
+        }
+        if error is not None:
+            out["error"] = str(error)
+        if accounts is not None:
+            out["accounts"] = list(accounts) if accounts else []
+        return out
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        """Start server immediately; refresh backend connection in background."""
+        state = app.state.connection_state
+        ib_client = app.state.ib_client
+        refresh_interval = max(1.0, min(30.0, float(os.getenv("IB_HEALTH_REFRESH_SECONDS", "3"))))
+
+        async def refresh_connection() -> None:
+            while True:
+                try:
+                    accounts = await asyncio.to_thread(ib_client.get_accounts, 1)
+                    state["status"] = "ok"
+                    state["ib_connected"] = len(accounts) > 0
+                    state["gateway_logged_in"] = len(accounts) > 0
+                    state["ts"] = _now_iso()
+                    state["error"] = None
+                    state["accounts"] = list(accounts) if accounts else []
+                except IBKRPortalError as e:
+                    state["status"] = "error"
+                    state["ib_connected"] = False
+                    state["gateway_logged_in"] = False
+                    state["ts"] = _now_iso()
+                    state["error"] = str(e)
+                    state["accounts"] = []
+                except Exception as e:
+                    logger.debug("Background health refresh failed: %s", e)
+                    state["status"] = "error"
+                    state["ib_connected"] = False
+                    state["gateway_logged_in"] = False
+                    state["ts"] = _now_iso()
+                    state["error"] = str(e)
+                    state["accounts"] = []
+                if os.environ.get("NATS_URL", "").strip():
+                    asyncio.create_task(nats_client.publish_health("ib", dict(state)))
+                await asyncio.sleep(refresh_interval)
+
+        task = asyncio.create_task(refresh_connection())
+        try:
+            yield
+        finally:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
+    app = FastAPI(title="IB Box Spread IB Service", version="0.1.0", lifespan=lifespan)
+
+    # Add security components
+    add_security_to_app(app, project_root=project_root)
+    add_security_headers_middleware(app)
+
+    # In-memory state: health returns this immediately (no gateway call in request path)
+    app.state.ib_client = client
+    app.state.connection_state = dict(safe_health_payload(
+        status="starting",
+        ib_connected=False,
+        gateway_logged_in=False,
+        error=None,
+        accounts=[],
+    ))
+
     # Store current account in memory (in production, use Redis or database)
     current_account_id: Optional[str] = None
     # Snapshot cache: key (symbols_tuple, account_id) -> {"payload": dict, "cached_at": datetime}
@@ -335,71 +418,9 @@ def create_app() -> FastAPI:
 
     @app.get("/api/health")
     async def health() -> Dict[str, Any]:
-        """Health check endpoint. Never returns 500; always 200 with JSON.
-        Blocking Gateway call runs in thread pool so the event loop stays responsive.
-        """
-        def safe_health_response(
-            status: str,
-            ib_connected: bool,
-            gateway_logged_in: bool,
-            error: Optional[str] = None,
-            accounts: Optional[List[str]] = None,
-        ) -> Dict[str, Any]:
-            try:
-                port = int(gateway_port) if gateway_port is not None else 5001
-            except (TypeError, ValueError):
-                port = 5001
-            try:
-                ts = _now_iso()
-            except Exception:
-                ts = ""
-            out = {
-                "status": status,
-                "ts": ts,
-                "ib_connected": bool(ib_connected),
-                "gateway_logged_in": bool(gateway_logged_in),
-                "gateway_port": port,
-            }
-            if error is not None:
-                out["error"] = str(error)
-            if accounts is not None:
-                try:
-                    out["accounts"] = list(accounts) if accounts else []
-                except Exception:
-                    out["accounts"] = []
-            return out
-
-        def _fetch() -> Dict[str, Any]:
-            try:
-                accounts = client.get_accounts(timeout=1)
-                return safe_health_response(
-                    status="ok",
-                    ib_connected=len(accounts) > 0,
-                    gateway_logged_in=len(accounts) > 0,
-                    accounts=accounts,
-                )
-            except IBKRPortalError as e:
-                return safe_health_response(
-                    status="error",
-                    ib_connected=False,
-                    gateway_logged_in=False,
-                    error=str(e),
-                    accounts=[],
-                )
-            except Exception as e:
-                logger.debug("Health check failed: %s", e)
-                return safe_health_response(
-                    status="error",
-                    ib_connected=False,
-                    gateway_logged_in=False,
-                    error=str(e),
-                    accounts=[],
-                )
-
-        result = await asyncio.to_thread(_fetch)
-        if os.environ.get("NATS_URL", "").strip():
-            asyncio.create_task(nats_client.publish_health("ib", result))
-        return result
+        """Health check endpoint. Returns 200 immediately from cached state; backend connection runs in background."""
+        state = app.state.connection_state
+        return dict(state)
 
     @app.get("/api/snapshot")
     @app.get("/api/v1/snapshot")  # Alias for API contract compatibility

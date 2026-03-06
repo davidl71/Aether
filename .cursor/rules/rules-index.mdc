@@ -13,7 +13,8 @@ Use this to pick the right rule for the current task.
 | **Project skills** | Reusable workflows: `.cursor/skills/` (git pull with WIP, add native module, before-commit, trading safety, build from clean). See `.cursor/skills/README.md`. |
 | **Subagents** | When to use which: docs/SUBAGENTS_REFERENCE.md, .cursor/skills/when-to-use-subagents.md (mcp_task: code-reviewer, trading-reviewer, refactor, test-writer, generalPurpose; exarp-go; Claude agents) |
 | `ai-context-standards.mdc` | Map of context files, which rule when, OpenCode/Claude/Cursor commands; see docs/EXARP_GO_OPENCORE_AI_CONTEXT_PATTERNS.md |
-| `just-cmake-shortcuts.mdc` | Prefer Just/CMake commands when suggesting (just build, build:ai-friendly, just pre-push, just tag-ok, git:pull-safe, r for repo root; proto C++ at build) |
+| `just-cmake-shortcuts.mdc` | Prefer Just/CMake commands when suggesting (just build, build:ai-friendly, just pre-push, just sanity, just tag-ok, git:pull-safe, r for repo root; proto C++ at build) |
+| `regression-sanity.mdc` | Regression/sanity checks: when to suggest `just pre-push`, `just sanity`, or before-commit checklist |
 | `documentation.mdc` | @docs usage, global docs, API/architecture references (auto when editing `docs/**/*.md`) |
 | `hooks.mdc` | Git hooks (pre-commit, docs validation), exarp-go setup_hooks |
 | `project-automation.mdc` | exarp-go MCP tools, docs health, Todo2 alignment, security scanning |

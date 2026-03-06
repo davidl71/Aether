@@ -14,7 +14,7 @@ class AlertsTab(SnapshotTabBase):
     """Alerts tab showing system alerts."""
 
     def compose(self) -> ComposeResult:
-        with Vertical():
+        with Vertical(classes="fill"):
             yield Label("Alerts", classes="tab-title")
             yield Log(id="alerts-log")
 

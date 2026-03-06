@@ -13,7 +13,7 @@ class OrdersTab(SnapshotTabBase):
     """Orders tab showing recent orders."""
 
     def compose(self) -> ComposeResult:
-        with Vertical():
+        with Vertical(classes="fill"):
             yield Label("Recent Orders", classes="tab-title")
             yield Log(id="orders-log")
 

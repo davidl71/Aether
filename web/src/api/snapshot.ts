@@ -34,6 +34,7 @@ export class SnapshotClient {
   private isWebSocketConnected = false;
   private connectionStatus: ConnectionStatus = 'disconnected';
   private statusListeners: Set<(status: ConnectionStatus) => void> = new Set();
+  private _lastPayload: SnapshotPayload | null = null;
 
   constructor(options: SnapshotClientOptions = {}) {
     const env = (import.meta as unknown as { env?: Record<string, unknown> }).env;
@@ -74,6 +75,13 @@ export class SnapshotClient {
   subscribe(listener: SnapshotListener, onError?: SnapshotErrorListener) {
     this.listeners.set(listener, onError);
     if (this.listeners.size === 1) {
+      if (this._lastPayload !== null) {
+        try {
+          listener(this._lastPayload);
+        } catch (e) {
+          console.error('Error in snapshot listener (cached):', e);
+        }
+      }
       // Fetch initial snapshot
       void this.fetchOnce();
 
@@ -154,6 +162,7 @@ export class SnapshotClient {
           if (message.type === 'snapshot' && message.data) {
             // Full snapshot update
             const payload = message.data as SnapshotPayload;
+            this._lastPayload = payload;
             this.notifyListeners(payload);
           } else if (message.type === 'connected') {
             // Connection confirmation - fetch initial snapshot
@@ -288,6 +297,7 @@ export class SnapshotClient {
         throw new Error(errorMessage);
       }
       const payload = (await response.json()) as SnapshotPayload;
+      this._lastPayload = payload;
       this.listeners.forEach((onError, listener) => {
         listener(payload);
       });

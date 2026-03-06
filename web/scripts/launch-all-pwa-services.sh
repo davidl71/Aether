@@ -142,7 +142,7 @@ check_service_health() {
   fi
 
   # Special handling for IB Gateway (HTTPS, different endpoint)
-  if [ "${port}" = "5000" ]; then
+  if [ "${port}" = "5001" ]; then
     if command -v curl >/dev/null 2>&1; then
       curl -k -s --connect-timeout 2 "https://localhost:${port}/sso/validate" >/dev/null 2>&1
       return $?
@@ -315,7 +315,7 @@ stop_services() {
   fi
 
   # Kill processes on service ports (including NATS and Rust backend)
-  for port in 5173 5000 8000 8001 8002 8003 8004 8080 50051 4222 8222; do
+  for port in 5173 5001 8000 8001 8002 8003 8004 8080 50051 4222 8222; do
     if check_port "$port"; then
       echo "${BLUE}Stopping service on port ${port}...${NC}"
       if command -v lsof >/dev/null 2>&1; then
@@ -390,7 +390,7 @@ case "${1:-start}" in
     fi
 
     echo "Port Status:"
-    for port in 5173 5000 8000 8001 8002 8003 8004 8080 50051 4222 8222; do
+    for port in 5173 5001 8000 8001 8002 8003 8004 8080 50051 4222 8222; do
       if check_port "$port"; then
         echo "  ${GREEN}✓ Port ${port}: In use${NC}"
       else
@@ -427,7 +427,7 @@ esac
 
 # Get service ports from config or defaults
 WEB_PORT=$(get_service_port "web" 5173)
-GATEWAY_PORT=$(get_service_port "ib_gateway" 5000)
+GATEWAY_PORT=$(get_service_port "ib_gateway" 5001)
 ALPACA_PORT=$(get_service_port "alpaca" 8000)
 TRADESTATION_PORT=$(get_service_port "tradestation" 8001)
 IB_PORT=$(get_service_port "ib" 8002)
@@ -677,7 +677,7 @@ if [ "${SERVICE_MANAGER}" = "systemctl" ]; then
       echo "${BLUE}Waiting for Gateway to be ready before starting IB service...${NC}"
       for i in {1..20}; do
         sleep 1
-        if curl -k -s --connect-timeout 1 "https://localhost:${IB_GATEWAY_PORT:-5001}/sso/validate" >/dev/null 2>&1; then
+        if curl -k -s --connect-timeout 1 "https://localhost:${GATEWAY_PORT}/sso/validate" >/dev/null 2>&1; then
           echo "${GREEN}✓ Gateway is ready${NC}"
           GATEWAY_RUNNING=true
           break
@@ -762,10 +762,12 @@ if [[ " ${SERVICES_TO_START[*]} " =~ " gateway " ]]; then
       GATEWAY_RUNNING=true
     fi
   elif [ -f "${GATEWAY_DIR}/run-gateway-with-reload.sh" ] || [ -f "${GATEWAY_DIR}/run-gateway.sh" ] || [ -f "${GATEWAY_DIR}/bin/run.sh" ]; then
-    if ! curl -k -s --connect-timeout 1 "https://localhost:${IB_GATEWAY_PORT:-5001}/sso/validate" >/dev/null 2>&1; then
+    if ! curl -k -s --connect-timeout 1 "https://localhost:${GATEWAY_PORT}/sso/validate" >/dev/null 2>&1; then
       echo "${BLUE}Starting IB Gateway in background...${NC}"
       (
         cd "$GATEWAY_DIR"
+        # Force port so gateway starts on the port we expect (avoids env IB_GATEWAY_PORT=5000 from shell)
+        export IB_GATEWAY_PORT="${GATEWAY_PORT}"
         # Prefer auto-reload wrapper if available
         if [ -f "run-gateway-with-reload.sh" ]; then
           bash run-gateway-with-reload.sh > /tmp/pwa-ib-gateway.log 2>&1 &
@@ -902,7 +904,7 @@ if [[ " ${SERVICES_TO_START[*]} " =~ " ib " ]]; then
     echo "${BLUE}Waiting for Gateway to be ready before starting IB service...${NC}"
     for i in {1..20}; do
       sleep 1
-      if curl -k -s --connect-timeout 1 "https://localhost:${IB_GATEWAY_PORT:-5001}/sso/validate" >/dev/null 2>&1; then
+      if curl -k -s --connect-timeout 1 "https://localhost:${GATEWAY_PORT}/sso/validate" >/dev/null 2>&1; then
         echo "${GREEN}✓ Gateway is ready${NC}"
         GATEWAY_RUNNING=true
         break

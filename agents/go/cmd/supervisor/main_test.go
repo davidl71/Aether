@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -64,5 +65,19 @@ func TestMin(t *testing.T) {
 		if got != tc.want {
 			t.Errorf("min(%v, %v) = %v, want %v", tc.a, tc.b, got, tc.want)
 		}
+	}
+}
+
+func TestResolveWorkDir(t *testing.T) {
+	absDir := t.TempDir() // always absolute
+	got := resolveWorkDir("/project", absDir)
+	if got != absDir {
+		t.Errorf("absolute dir should be unchanged: got %q", got)
+	}
+
+	got = resolveWorkDir("/project", "agents/backend")
+	want := filepath.Join("/project", "agents/backend")
+	if got != want {
+		t.Errorf("relative: got %q want %q", got, want)
 	}
 }

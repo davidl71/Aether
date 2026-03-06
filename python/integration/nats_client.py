@@ -2,10 +2,11 @@
 nats_client.py - NATS message queue client wrapper for Python strategy runner
 
 Provides async NATS connection, subscription, and publishing capabilities
-for market data and strategy signals/decisions.
+for market data, strategy signals/decisions, and backend snapshot/health.
 """
 import json
 import logging
+import os
 import uuid
 from datetime import datetime, timezone
 from typing import Optional, Callable, Dict, Any
@@ -21,6 +22,9 @@ except ImportError:
     NATS = None
     NATS_AVAILABLE = False
     logger.warning("nats-py not available - NATS integration disabled")
+
+# Lazy singleton for snapshot/health publish (used by backend services)
+_global_client: Optional["NATSClient"] = None
 
 
 class NATSClient:
@@ -235,3 +239,73 @@ class NATSClient:
         """Unsubscribe from all topics."""
         for topic in list(self._subscriptions.keys()):
             await self.unsubscribe(topic)
+
+
+# ---------------------------------------------------------------------------
+# Module-level publish helpers for backend snapshot/health (fire-and-forget)
+# ---------------------------------------------------------------------------
+
+def _nats_publish_enabled() -> bool:
+    """True if NATS_URL is set (enables snapshot/health publish when URL present)."""
+    return bool(os.environ.get("NATS_URL", "").strip())
+
+
+async def _get_global_client() -> Optional["NATSClient"]:
+    """Get or create the global NATS client (lazy connect)."""
+    global _global_client
+    if not NATS_AVAILABLE:
+        return None
+    if _global_client is not None and _global_client.is_connected():
+        return _global_client
+    if _global_client is None:
+        url = os.environ.get("NATS_URL", "nats://localhost:4222")
+        _global_client = NATSClient(url=url)
+    if await _global_client.connect():
+        return _global_client
+    return None
+
+
+async def publish_snapshot(backend_id: str, payload: Dict[str, Any]) -> bool:
+    """
+    Publish a backend snapshot to NATS (subject snapshot.{backend_id}).
+    No-op if NATS not available or NATS_URL not set. Used by IB/Alpaca/etc. after building snapshot.
+    """
+    if not _nats_publish_enabled() or not backend_id:
+        return False
+    client = await _get_global_client()
+    if not client or not client.is_connected():
+        return False
+    subject = f"snapshot.{backend_id}"
+    try:
+        body = json.dumps(payload).encode("utf-8")
+        await client.nc.publish(subject, body)
+        logger.debug("Published snapshot to %s", subject)
+        return True
+    except Exception as e:
+        logger.warning("NATS publish_snapshot %s: %s", subject, e)
+        return False
+
+
+async def publish_health(backend_id: str, status: Dict[str, Any]) -> bool:
+    """
+    Publish backend health to NATS (subject system.health). Payload should include "backend" key.
+    No-op if NATS not available. Used by backend services on health check.
+    """
+    if not NATS_AVAILABLE:
+        return False
+    if not _nats_publish_enabled():
+        return False
+    client = await _get_global_client()
+    if not client or not client.is_connected():
+        return False
+    subject = "system.health"
+    payload = dict(status)
+    payload["backend"] = backend_id
+    try:
+        body = json.dumps(payload).encode("utf-8")
+        await client.nc.publish(subject, body)
+        logger.debug("Published health to %s for %s", subject, backend_id)
+        return True
+    except Exception as e:
+        logger.warning("NATS publish_health %s: %s", subject, e)
+        return False

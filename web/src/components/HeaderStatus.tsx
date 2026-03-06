@@ -1,5 +1,7 @@
 import type { SnapshotPayload } from '../types/snapshot';
+import type { ReactNode } from 'react';
 import type { BackendServicesStatus } from '../hooks/useBackendServices';
+import { BACKEND_ROLE_ORDER, BACKEND_ROLE_LABELS, getBackendsByRole } from '../hooks/useBackendServices';
 import { formatCurrency } from '../utils/formatters';
 import { ModeSwitcher, type TradingMode } from './ModeSwitcher';
 import { AccountSelector } from './AccountSelector';
@@ -59,15 +61,31 @@ export function HeaderStatus({
         <div className="header__meta">Awaiting snapshot…</div>
         {backendStatuses && (
           <div className="header__status-line" aria-label="Backend services">
-            {Object.entries(backendStatuses).map(([key, s]) => (
-              <span
-                key={key}
-                className={`status-badge ${s.healthy ? 'status-badge--ok' : 'status-badge--warn'}`}
-                title={s.error ? `${s.name}: ${s.error}` : s.checking ? `${s.name}: checking…` : `${s.name}: ${s.healthy ? 'up' : 'down'}`}
-              >
-                {s.name}
-              </span>
-            ))}
+            {BACKEND_ROLE_ORDER.map((role) => {
+              const keys = getBackendsByRole(backendStatuses)[role];
+              if (!keys?.length) return null;
+              return (
+                <span key={role} className="header__status-group">
+                  <span className="header__status-group-label">{BACKEND_ROLE_LABELS[role]}:</span>
+                  {keys.map((key) => {
+                    const s = backendStatuses[key];
+                    return (
+                      <span
+                        key={key}
+                        className={`status-badge ${s.healthy ? 'status-badge--ok' : 'status-badge--warn'}`}
+                        title={s.error ? `${s.name}: ${s.error}` : s.checking ? `${s.name}: checking…` : `${s.name}: ${s.healthy ? 'up' : 'down'}`}
+                      >
+                        {s.name}
+                      </span>
+                    );
+                  })}
+                </span>
+              );
+            }).filter(Boolean).reduce<ReactNode[]>((acc, node, i) => {
+              if (i > 0) acc.push(<span key={`sep-${i}`} className="header__status-sep" aria-hidden>|</span>);
+              acc.push(node);
+              return acc;
+            }, [])}
           </div>
         )}
       </header>
@@ -190,19 +208,38 @@ export function HeaderStatus({
         {snapshot.account_id === 'TRADESTATION' && (
           <span className="header__data-source">Data: <strong>TradeStation</strong></span>
         )}
+        {(snapshot.account_id?.startsWith('TASTY') || snapshot.account_id === 'TASTYTRADE') && (
+          <span className="header__data-source">Data: <strong>Tastytrade</strong></span>
+        )}
       </div>
       <div className="header__status-line">
         {backendStatuses && (
           <>
-            {Object.entries(backendStatuses).map(([key, s]) => (
-              <span
-                key={key}
-                className={`status-badge ${s.healthy ? 'status-badge--ok' : 'status-badge--warn'}`}
-                title={s.error ? `${s.name}: ${s.error}` : s.checking ? `${s.name}: checking…` : `${s.name}: ${s.healthy ? 'up' : 'down'}`}
-              >
-                {s.name}
-              </span>
-            ))}
+            {BACKEND_ROLE_ORDER.map((role) => {
+              const keys = getBackendsByRole(backendStatuses)[role];
+              if (!keys?.length) return null;
+              return (
+                <span key={role} className="header__status-group">
+                  <span className="header__status-group-label">{BACKEND_ROLE_LABELS[role]}:</span>
+                  {keys.map((key) => {
+                    const s = backendStatuses[key];
+                    return (
+                      <span
+                        key={key}
+                        className={`status-badge ${s.healthy ? 'status-badge--ok' : 'status-badge--warn'}`}
+                        title={s.error ? `${s.name}: ${s.error}` : s.checking ? `${s.name}: checking…` : `${s.name}: ${s.healthy ? 'up' : 'down'}`}
+                      >
+                        {s.name}
+                      </span>
+                    );
+                  })}
+                </span>
+              );
+            }).filter(Boolean).reduce<ReactNode[]>((acc, node, i) => {
+              if (i > 0) acc.push(<span key={`sep-${i}`} className="header__status-sep" aria-hidden>|</span>);
+              acc.push(node);
+              return acc;
+            }, [])}
             <span className="header__status-sep" aria-hidden>|</span>
           </>
         )}

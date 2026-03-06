@@ -695,6 +695,11 @@ This section covers market data providers for real-time and historical financial
 
 - **URL**: <https://finnhub.io/>
 - **Official API Docs**: <https://finnhub.io/docs/api>
+- **API reference (quick)**:
+  - Base: `https://finnhub.io/api/v1`
+  - Auth: query param `token=<API_KEY>` (e.g. `?symbol=AAPL&token=xxx`)
+  - Common: `/quote`, `/stock/candle`, `/stock/profile2`, `/company/news`, `/stock/recommendation`
+  - WebSocket: `wss://ws.finnhub.io?token=<API_KEY>`
 - **Description**: Comprehensive financial data API with real-time stock prices, fundamental data, news sentiment, and alternative data
 - **Key Features**:
   - Real-time stock prices and quotes
@@ -738,6 +743,32 @@ This section covers market data providers for real-time and historical financial
   - Free tier: 60 calls/minute (generous for free tier)
   - Paid plans: Higher limits and premium features
   - Enterprise: Custom pricing
+
+### Massive (Market Data)
+
+- **URL**: <https://massive.com/>
+- **Official API Docs**: <https://massive.com/docs/>
+- **REST Quickstart**: <https://massive.com/docs/rest/quickstart>
+- **Full index (LLM-friendly)**: <https://massive.com/docs/llms.txt>
+- **Official Python client**: <https://github.com/massive-com/client-python> — REST + WebSocket; install: `pip install -U massive`. Formerly Polygon.io; rebranded Oct 2025; API base defaults to `api.massive.com`; `api.polygon.io` still supported.
+  - REST: `from massive import RESTClient` → `client = RESTClient(api_key="<API_KEY>")`; methods e.g. `list_aggs`, `get_last_trade`, `list_trades`, `get_last_quote`, `list_quotes`, `list_snapshot_options_chain` (with filter params `.gte`, `.lte`, etc.). Pagination on by default; use `pagination=False` for a fixed result count.
+  - WebSocket: `from massive import WebSocketClient` → `WebSocketClient(api_key=..., subscriptions=["T.AAPL"])`; `ws.run(handle_msg=...)`. [Examples](https://github.com/massive-com/client-python/tree/master/examples/websocket).
+  - API keys: <https://massive.com/dashboard/api-keys>
+- **Description**: Market data API with REST and flat-file (S3) delivery for stocks, options, forex, crypto, indices, futures, and economy data.
+- **Key Features**:
+  - REST: snapshots (single ticker, full market, unified multi-asset), OHLC aggregates (custom bars, daily, previous day), trades/quotes, technical indicators (EMA, SMA, MACD, RSI), fundamentals (income, balance sheet, cash flow, ratios), corporate actions (dividends, splits, IPOs), SEC filings (10-K sections, 8-K, risk factors), news with sentiment
+  - Economy: Treasury yields, inflation, inflation expectations, labor market
+  - Partners: Benzinga (analyst ratings, news, earnings), ETF Global (analytics, constituents, fund flows), TMX (corporate events)
+  - Flat files: daily/minute aggregates, trades, quotes as S3-downloadable files for crypto, forex, indices, options, stocks
+- **Data Coverage**:
+  - U.S. equities, options, indices; forex (1,750+ pairs); crypto; futures
+  - Nanosecond timestamps for trades/quotes; ET/CT/UTC timezone options per asset class
+- **Auth**: API key (typical for REST); check docs for headers/query params
+- **Relevance**:
+  - Single-ticker and full-market snapshots for cross-validation with TWS/Alpha Vantage/Finnhub
+  - Treasury yields endpoint for risk-free rate / discount curve use cases
+  - Options aggregates and option chain snapshot for box spread research
+  - Flat files for backtesting and bulk historical analysis
 
 ### OpenBB - Financial Data Platform
 
@@ -925,11 +956,19 @@ This section covers market data providers for real-time and historical financial
   allowing third-party financial service providers to access banking data and services with proper authorization and customer consent.
   Useful for Israeli traders requiring automated account access and ILS-denominated operations.
 
+### Bank Jerusalem (בנק ירושלים) - API Portal
+
+- **API portal**: <https://apiportal.bankjerusalem.co.il/>
+- **API catalog**: <https://apiportal.bankjerusalem.co.il/api_catalog> (catalog path may require login or vary)
+- **Official Website**: <https://www.bankjerusalem.co.il/>
+- **Description**: Bank Jerusalem (בנק ירושלים) API portal for developer access to banking APIs. Part of the Israeli banking landscape; portal may require registration or login.
+- **Relevance**: Additional Israeli bank for multi-account aggregation or open-banking integration if supported; independent provider in the same sense as Discount, FIBI, and Israeli bank scrapers companies.
+
 ### Israeli Bank Scrapers (Node) - israeli-bank-scrapers
 
 - **GitHub**: <https://github.com/eshaham/israeli-bank-scrapers>
 - **NPM**: `israeli-bank-scrapers`
-- **Description**: Node/TypeScript library using Puppeteer to scrape Israeli bank and credit-card websites (when Open Banking is not available). Supports Bank Hapoalim, Leumi, Discount, Mercantile, Mizrahi, Otsar Hahayal, Union, Beinleumi, Massad, Yahav, Visa Cal, Max, Isracard, Amex, and others.
+- **Description**: Node/TypeScript library using Puppeteer to scrape Israeli bank and credit-card websites (when Open Banking is not available). Supports **Fibi**, **Max**, **Visa Cal**, Bank Hapoalim, Leumi, Discount, Mercantile, Mizrahi, Otsar Hahayal, Union, Beinleumi, Massad, Yahav, Isracard, Amex, and others. Use `companyId` (e.g. `fibi`, `max`, `visaCal`, `discount`) when calling the scrapers service.
 - **Integration in This Project**:
   - **Service**: `services/israeli-bank-scrapers-service` — runs scrapers on-demand (HTTP POST /scrape or CLI), maps results to the shared ledger (`Assets:Bank:{BankName}:{accountNumber}`), so existing Discount Bank service and TUI/Web continue to show accounts via GET /api/bank-accounts.
   - **Port**: 8010 (config: `services.israeli_bank_scrapers.port`).
@@ -1175,6 +1214,29 @@ published by the Bank of Israel.
 - **Note**: Meitav Dash is an investment management company providing open banking APIs through their OpenHub portal.
   Part of the Israeli open banking ecosystem, providing access to investment account information and portfolio data.
   Useful for Israeli traders requiring integration with investment management services alongside trading operations.
+
+### Ordernet Spark API (Nesua, Meitav, Psagot) - ordernet-api
+
+- **GitHub**: <https://github.com/assafmo/OrdernetAPI>
+- **NPM**: `ordernet-api` ([npm](https://www.npmjs.com/package/ordernet-api))
+- **API base**: `https://spark{nesua,meitav,psagot}.ordernet.co.il/api` — Spark system used by Israeli brokers Nesua, Meitav, and Psagot.
+- **Description**: CLI and Node library for querying the Ordernet Spark API. Authenticate and fetch account list and total balance per account. Alternative to scraping for Meitav (and Nesua, Psagot) when Spark API is available.
+- **Brokers supported**: `nesua`, `meitav`, `psagot` (choice via `--broker` or `authenticate(..., broker)`).
+- **Endpoints used**: `/api/Auth/Authenticate`, `/api/DataProvider/GetStaticData`, `/api/Account/GetAccountSecurities`.
+- **Library API**: `authenticate(username, password, broker)` → then `getAccounts()`, `getAccountBalance(account)`, `accountKeyToNumber(key)`. Account keys format `ACC_XXX-YYYYYY`.
+- **CLI**: `ordernet-api -u USER -p PASS -b meitav`; optional `-a ACC_XXX-YYYYYY` to limit to specific account(s); `-v` verbose.
+- **Relevance**: Meitav is in this project's `broker.priorities`; OrdernetAPI offers a programmatic way to get Meitav (and Nesua, Psagot) balances/accounts via Spark instead of or in addition to scrapers/OpenHub. Independent provider pattern; can run in parallel with other brokers.
+- **Ref**: [ordernet-scraper](https://github.com/danielbraun/ordernet-scraper) (related scraper approach).
+
+### Spark-Ordernet client (TypeScript) - spark-ordernet-client
+
+- **GitHub**: <https://github.com/itamarco/spark-ordernet-client>
+- **NPM**: `spark-ordernet-client` ([npm](https://www.npmjs.com/package/spark-ordernet-client))
+- **Description**: TypeScript/JavaScript REST client for the same Spark-Ordernet API. Authenticate once, then fetch **transactions** (from a start date) and **holdings** (positions with symbol, quantity, price, cost, margin, etc.). Richer data than OrdernetAPI (which focuses on account list + total balance).
+- **Tested with**: `sparknesua.ordernet.co.il`, `sparkpsagot.ordernet.co.il` (same host pattern as Meitav: `sparkmeitav.ordernet.co.il`).
+- **Usage**: `new SparkClient({ sparkHost: 'https://sparkpsagot.ordernet.co.il', userId, password, accountKey?, logger? })` → `await client.auth()` → optional `getAccountKey()` / `setSparkAccountKey()` → `getTransactions(fromDate)`, `getHoldings()`.
+- **Returns**: Transactions (Account, Date, Bno_Number, Ref, Action, Balance, Price, NetCredit, NetDebit, etc.); holdings (ID, BNO, SYMBOL_NAM, BNO_NAME, PRC, NV, COST, VL, EXT_MARGIN, REQ_MARGIN, etc.).
+- **Relevance**: Alternative or complement to [OrdernetAPI](#ordernet-spark-api-nesua-meitav-psagot---ordernet-api) when you need transaction history and holdings detail from Nesua/Psagot (and likely Meitav via same API). Same independent-provider pattern.
 
 ### StoreNext Meteor - Financial Data Import & Open Banking Platform
 
@@ -2290,6 +2352,23 @@ integration.
   - **Business**: Company and business data
   - **Weather**: Economic indicator correlations
 
+### FRED (Federal Reserve Economic Data) – St. Louis Fed
+
+- **FRED** = Federal Reserve Economic Data (the service name).
+- **API reference**: <https://fred.stlouisfed.org/docs/api/fred/>
+- **API key (free)**: <https://fred.stlouisfed.org/docs/api/api_key.html>
+- **Description**: Time series for SOFR, Treasury rates, and other economic indicators.
+- **This project**: `python/integration/sofr_treasury_client.py` uses the FRED API for SOFR overnight/term and Treasury rates; credentials via `FRED_API_KEY`, `OP_FRED_API_KEY_SECRET`, or 1Password vault item titled "FRED API".
+- **Use case**: Benchmark risk-free rates for box spread yield comparison and option pricing.
+
+### Treasury Fiscal Data API (U.S. Treasury)
+
+- **API documentation**: <https://fiscaldata.treasury.gov/api-documentation/>
+- **Base URL**: <https://api.fiscaldata.treasury.gov/services/api/fiscal_service>
+- **Description**: U.S. Treasury fiscal and interest-rate data (average interest rates on Treasury securities, no API key required).
+- **This project**: `python/integration/treasury_api_client.py` uses the Fiscal Data API for Treasury benchmarks; `risk_free_rate_extractor` and `yield_curve_comparison` can use it alongside or instead of FRED for Treasury rates.
+- **Use case**: Risk-free rate benchmarks (Treasury bills/notes) for comparison with box spread implied rates.
+
 ### Notable Open Data APIs (from public-apis repository)
 
 #### Data.gov
@@ -2438,6 +2517,7 @@ multiple sources.
   - Global market data
 
 - **Auth**: apiKey required (free tier available)
+- **This project**: `python/integration/alpha_vantage_client.py` uses the Alpha Vantage API for quotes, daily series, SMA, and symbol search; credentials via `ALPHA_VANTAGE_API_KEY`, `OP_ALPHA_VANTAGE_API_KEY_SECRET`, or 1Password item titled "Alpha Vantage API".
 - **HTTPS**: Yes
 - **API Limits**:
   - Free tier: 5 API calls per minute, 500 calls per day
@@ -2467,6 +2547,11 @@ multiple sources.
 
 - **URL**: <https://finnhub.io/>
 - **Official API Docs**: <https://finnhub.io/docs/api>
+- **API reference (quick)**:
+  - Base: `https://finnhub.io/api/v1`
+  - Auth: query param `token=<API_KEY>` (e.g. `?symbol=AAPL&token=xxx`)
+  - Common: `/quote`, `/stock/candle`, `/stock/profile2`, `/company/news`, `/stock/recommendation`
+  - WebSocket: `wss://ws.finnhub.io?token=<API_KEY>`
 - **Description**: Comprehensive financial data API with real-time stock prices, fundamental data, news sentiment, and alternative data
 - **Key Features**:
   - Real-time stock prices and quotes

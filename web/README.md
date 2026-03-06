@@ -77,7 +77,7 @@ If the PWA still shows static/zeros, check: gateway logged in, IB service runnin
 **"Fetch error" or "Cannot connect to localhost:8002" (or 127.0.0.1:8002)?** The app is trying to reach the IB REST service on port 8002 and the connection failed (service not running or not reachable). Fix:
 
 1. **Start the IB service** from repo root: `./scripts/service.sh start ib` or `./web/scripts/run-ib-service.sh`.
-2. **Confirm it's up**: `curl -s http://127.0.0.1:8002/api/health` — you should get JSON with `ib_connected` (may be `false` until the gateway is logged in).
+2. **Confirm it's up**: `curl -s http://127.0.0.1:8002/api/health` — you should get JSON with `ib_connected` (may be `false` until the gateway is logged in). The service serves the health endpoint **immediately** on startup and connects to the gateway in the background, so the process is marked up before the gateway is ready.
 3. If using the TUI with REST provider, use the same URL: `./scripts/run_python_tui.sh rest http://127.0.0.1:8002/api/v1/snapshot`.
 
 **Gateway on 5001 but “not used”?** The gateway is only used by the **IB service** (port 8002). Nothing else talks to it. So:

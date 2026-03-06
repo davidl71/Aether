@@ -154,6 +154,8 @@ echo "  IB_PORTAL_URL=${IB_PORTAL_URL}  # IB Client Portal URL" >&2
 echo "  IB_PORT=${IB_PORT}  # Service port (override config)" >&2
 echo "  SNAPSHOT_FILE_PATH=/path/to/snapshot.json  # Optional file output" >&2
 echo "" >&2
+echo "If this service exits immediately, check: port ${IB_PORT} free (lsof -i :${IB_PORT}), and see logs/ib-service.log when run via scripts/service.sh" >&2
+echo "" >&2
 
 # Temporarily disable __init__.py to avoid dependency issues
 disable_init_py "${PYTHON_DIR}" || exit 1
@@ -164,7 +166,11 @@ export PYTHONPATH="${PYTHON_DIR}:${PYTHONPATH:-}"
 if ! "${PYTHON_CMD}" -m uvicorn integration.ib_service:app --host 127.0.0.1 --port "${IB_PORT}" --reload; then
   EXIT_CODE=$?
   echo "" >&2
-  echo "⚠ IB service exited with error code ${EXIT_CODE}" >&2
+  echo "IB service exited with code ${EXIT_CODE}. Common causes:" >&2
+  echo "  - Port ${IB_PORT} already in use (stop other service or set IB_PORT=8003)" >&2
+  echo "  - Import/runtime error in ib_service (see traceback above)" >&2
+  echo "When started via scripts/service.sh, full output is in logs/ib-service.log" >&2
+  echo "" >&2
   echo "Press any key to continue..." >&2
   read -n 1 -s || true
   exit "${EXIT_CODE}"

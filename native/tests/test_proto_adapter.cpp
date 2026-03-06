@@ -1,5 +1,7 @@
 #include "proto_adapter.h"
+#include "config_manager.h"
 #include "types.h"
+#include "messages.pb.h"
 #include <catch2/catch_test_macros.hpp>
 #include <cmath>
 
@@ -59,4 +61,66 @@ TEST_CASE("Proto adapter round-trip BoxSpreadLeg", "[proto_adapter]") {
   REQUIRE(std::abs(decoded.roi_percent - leg.roi_percent) < 1e-9);
   REQUIRE(std::abs(decoded.buy_net_debit - leg.buy_net_debit) < 1e-9);
   REQUIRE(std::abs(decoded.sell_implied_rate - leg.sell_implied_rate) < 1e-9);
+}
+
+TEST_CASE("Proto adapter round-trip StrategyParams", "[proto_adapter]") {
+  config::StrategyParams from;
+  from.symbols = {"SPX", "XSP", "NDX"};
+  from.min_days_to_expiry = 30;
+  from.max_days_to_expiry = 90;
+  from.min_arbitrage_profit = 0.15;
+  from.min_roi_percent = 0.6;
+  from.max_position_size = 15000.0;
+  from.max_bid_ask_spread = 0.12;
+  from.min_volume = 150;
+  from.min_open_interest = 600;
+  from.benchmark_rate_percent = 5.25;
+  from.benchmark_source = "sofr";
+  from.treasury_api_url = "https://api.example.com";
+  from.min_spread_over_benchmark_bps = 55.0;
+
+  ::ib::platform::v1::StrategyParams pb;
+  proto_adapter::to_proto(from, &pb);
+  config::StrategyParams to;
+  proto_adapter::from_proto(pb, &to);
+
+  REQUIRE(to.symbols == from.symbols);
+  REQUIRE(to.min_days_to_expiry == from.min_days_to_expiry);
+  REQUIRE(to.max_days_to_expiry == from.max_days_to_expiry);
+  REQUIRE(std::abs(to.min_arbitrage_profit - from.min_arbitrage_profit) < 1e-9);
+  REQUIRE(std::abs(to.min_roi_percent - from.min_roi_percent) < 1e-9);
+  REQUIRE(std::abs(to.max_position_size - from.max_position_size) < 1e-9);
+  REQUIRE(std::abs(to.max_bid_ask_spread - from.max_bid_ask_spread) < 1e-9);
+  REQUIRE(to.min_volume == from.min_volume);
+  REQUIRE(to.min_open_interest == from.min_open_interest);
+  REQUIRE(std::abs(to.benchmark_rate_percent - from.benchmark_rate_percent) < 1e-9);
+  REQUIRE(to.benchmark_source == from.benchmark_source);
+  REQUIRE(to.treasury_api_url == from.treasury_api_url);
+  REQUIRE(std::abs(to.min_spread_over_benchmark_bps - from.min_spread_over_benchmark_bps) < 1e-9);
+}
+
+TEST_CASE("Proto adapter round-trip RiskConfig", "[proto_adapter]") {
+  config::RiskConfig from;
+  from.max_total_exposure = 60000.0;
+  from.max_positions = 12;
+  from.max_loss_per_position = 1200.0;
+  from.max_daily_loss = 2500.0;
+  from.position_size_percent = 0.12;
+  from.enable_stop_loss = false;
+  from.stop_loss_percent = 0.25;
+  from.risk_free_rate_override = 4.5;
+
+  ::ib::platform::v1::RiskConfig pb;
+  proto_adapter::to_proto(from, &pb);
+  config::RiskConfig to;
+  proto_adapter::from_proto(pb, &to);
+
+  REQUIRE(std::abs(to.max_total_exposure - from.max_total_exposure) < 1e-9);
+  REQUIRE(to.max_positions == from.max_positions);
+  REQUIRE(std::abs(to.max_loss_per_position - from.max_loss_per_position) < 1e-9);
+  REQUIRE(std::abs(to.max_daily_loss - from.max_daily_loss) < 1e-9);
+  REQUIRE(std::abs(to.position_size_percent - from.position_size_percent) < 1e-9);
+  REQUIRE(to.enable_stop_loss == from.enable_stop_loss);
+  REQUIRE(std::abs(to.stop_loss_percent - from.stop_loss_percent) < 1e-9);
+  REQUIRE(std::abs(to.risk_free_rate_override - from.risk_free_rate_override) < 1e-9);
 }

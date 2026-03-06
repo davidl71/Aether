@@ -8,6 +8,7 @@ _devtools_packages:
   - python3-venv
   - python3-dev
   - jq
+  - bash
   - build-essential
   - cmake
   - ninja-build
@@ -37,6 +38,8 @@ _devtools_packages:
   # Optional: docs (BUILD_DOCS=ON) and NATS (ENABLE_NATS=ON)
   - doxygen
   - nats-server
+  # Java (IB Client Portal Gateway on port 5000)
+  - openjdk-11-jdk
   # Rust toolchain (agents/, Rust backends)
   - cargo
   - rustc

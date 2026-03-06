@@ -12,6 +12,7 @@ from .cash_flow import CashFlowTab
 from .opportunity_simulation import OpportunitySimulationTab
 from .relationship_visualization import RelationshipVisualizationTab
 from .loan_entry import LoanListTab, LoanManager
+from .benchmarks_tab import BenchmarksTab
 from .base import SnapshotTabBase
 
 __all__ = [
@@ -28,5 +29,6 @@ __all__ = [
     "RelationshipVisualizationTab",
     "LoanListTab",
     "LoanManager",
+    "BenchmarksTab",
     "SnapshotTabBase",
 ]

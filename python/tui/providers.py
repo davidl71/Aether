@@ -1,18 +1,12 @@
 """
 Data providers for TUI
 
-These providers fetch snapshot data from various sources (REST API, file, mock, etc.)
+These providers fetch snapshot data from various sources (REST API, file, mock, NATS, etc.)
 and can be shared between Python TUI and PWA (via REST API).
-
-MIGRATION NOTES FOR FUTURE C++ MIGRATION (pybind11):
-- Provider interface can be exposed as abstract C++ class via pybind11
-- Python providers can call C++ implementations through pybind11 bindings
-- Consider keeping Python providers as thin wrappers around C++ core logic
-- REST/file providers can remain in Python (or use C++ HTTP libraries)
 """
-
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import socket
@@ -30,6 +24,13 @@ from urllib3.util.retry import Retry
 from .models import SnapshotPayload
 
 logger = logging.getLogger(__name__)
+
+try:
+    import nats
+    NATS_PY_AVAILABLE = True
+except ImportError:
+    nats = None  # type: ignore
+    NATS_PY_AVAILABLE = False
 
 
 def _connection_error_hint(exc: Exception, url: str) -> Optional[str]:
@@ -148,6 +149,7 @@ class BackendHealthAggregator:
                                             "status": "error",
                                             "ib_connected": False,
                                             "error": str(e),
+                                            "hint": "Retrying…",
                                             "updated_at": datetime.now(timezone.utc).isoformat(),
                                         }
                             # Still run TCP backends (not in dashboard)
@@ -162,7 +164,7 @@ class BackendHealthAggregator:
                                 except Exception as e:
                                     logger.debug("TCP backend %s unreachable: %s", name, e)
                                     with self._lock:
-                                        self._healths[name] = {"status": "error", "error": str(e), "updated_at": datetime.now(timezone.utc).isoformat()}
+                                        self._healths[name] = {"status": "error", "error": str(e), "hint": "Retrying…", "updated_at": datetime.now(timezone.utc).isoformat()}
                             time.sleep(self._interval_sec)
                             continue
                 except Exception as e:
@@ -195,6 +197,7 @@ class BackendHealthAggregator:
                             "status": "error",
                             "ib_connected": False,
                             "error": str(e),
+                            "hint": "Retrying…",
                             "updated_at": datetime.now(timezone.utc).isoformat(),
                         }
             # TCP-only backends (e.g. TWS/Gateway on 7497): socket connect
@@ -209,7 +212,7 @@ class BackendHealthAggregator:
                 except Exception as e:
                     logger.debug("TCP backend %s unreachable: %s", name, e)
                     with self._lock:
-                        self._healths[name] = {"status": "error", "error": str(e), "updated_at": datetime.now(timezone.utc).isoformat()}
+                        self._healths[name] = {"status": "error", "error": str(e), "hint": "Retrying…", "updated_at": datetime.now(timezone.utc).isoformat()}
             time.sleep(self._interval_sec)
 
 
@@ -484,30 +487,36 @@ class RestProvider(Provider):
             with self._health_lock:
                 self._last_health = data
         except Exception as e:
-            logger.debug(f"Health check failed: {e}")
+            logger.debug("Health check failed (backend may be restarting): %s", e)
             hint = _connection_error_hint(e, self._health_url or "")
+            if not hint:
+                hint = "Retrying…"
             with self._health_lock:
                 self._last_health = {
                     "status": "error",
                     "ib_connected": False,
                     "error": str(e),
-                    **({"hint": hint} if hint else {}),
+                    "hint": hint,
                 }
 
     def _poll_loop(self) -> None:
-        """Background thread that polls the REST endpoint and health."""
+        """Background thread that polls the REST endpoint and health. Never raises; retries on connection loss."""
         while self._running:
             try:
                 snapshot = self._fetch()
-                with self._lock:
-                    self._latest_snapshot = snapshot
+                if snapshot is not None:
+                    with self._lock:
+                        self._latest_snapshot = snapshot
             except Exception as e:
-                logger.error(f"Failed to fetch snapshot: {e}")
-            self._fetch_health()
+                logger.debug("RestProvider fetch error (will retry): %s", e)
+            try:
+                self._fetch_health()
+            except Exception as e:
+                logger.debug("RestProvider health check error: %s", e)
             time.sleep(self.update_interval_ms / 1000.0)
 
-    def _fetch(self) -> SnapshotPayload:
-        """Fetch snapshot from REST endpoint"""
+    def _fetch(self) -> Optional[SnapshotPayload]:
+        """Fetch snapshot from REST endpoint. Returns None on connection/error so caller keeps last snapshot."""
         try:
             response = self._session.get(
                 self.endpoint,
@@ -519,9 +528,8 @@ class RestProvider(Provider):
             data = response.json()
             return SnapshotPayload.from_dict(data)
         except Exception as e:
-            logger.error(f"REST fetch error: {e}")
-            # Return empty snapshot on error
-            return SnapshotPayload()
+            logger.debug("REST fetch error (backend may be restarting): %s", e)
+            return None
 
 
 class FileProvider(Provider):
@@ -589,3 +597,118 @@ class FileProvider(Provider):
         except Exception as e:
             logger.error(f"File load error: {e}")
             return SnapshotPayload()
+
+
+class NatsProvider(Provider):
+    """
+    NATS pub/sub provider: subscribes to snapshot.{backend_id} and optionally system.health.
+    Updates UI on each message (no polling). Requires NATS_URL and a backend (e.g. IB) publishing snapshots.
+    """
+
+    def __init__(
+        self,
+        nats_url: str = "nats://localhost:4222",
+        snapshot_backend: str = "ib",
+    ):
+        super().__init__()
+        self.nats_url = nats_url.strip() or "nats://localhost:4222"
+        self.snapshot_backend = (snapshot_backend or "ib").strip().lower()
+        self._worker_thread: Optional[threading.Thread] = None
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._stop_event: Optional[asyncio.Event] = None
+        self._last_health: Optional[dict] = None
+        self._health_lock = threading.Lock()
+
+    def start(self) -> None:
+        if self._running:
+            return
+        if not NATS_PY_AVAILABLE:
+            logger.warning("nats-py not installed - NatsProvider disabled. pip install nats-py")
+            return
+        self._running = True
+        self._worker_thread = threading.Thread(target=self._run_loop, daemon=True)
+        self._worker_thread.start()
+        logger.info(f"NatsProvider started: {self.nats_url} snapshot.{self.snapshot_backend}")
+
+    def stop(self) -> None:
+        self._running = False
+        if self._loop and self._stop_event:
+            self._loop.call_soon_threadsafe(self._stop_event.set)
+        if self._worker_thread:
+            self._worker_thread.join(timeout=3.0)
+        self._loop = None
+        self._stop_event = None
+        logger.info("NatsProvider stopped")
+
+    def get_snapshot(self) -> SnapshotPayload:
+        with self._lock:
+            if self._latest_snapshot is not None:
+                return self._latest_snapshot
+            return SnapshotPayload()
+
+    def get_health(self) -> Optional[dict]:
+        with self._health_lock:
+            return dict(self._last_health) if self._last_health else None
+
+    def is_running(self) -> bool:
+        return self._running
+
+    def _run_loop(self) -> None:
+        """Background thread: run asyncio loop, connect to NATS, subscribe until stop."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        self._loop = loop
+        stop_ev = asyncio.Event()
+        self._stop_event = stop_ev
+        try:
+            loop.run_until_complete(self._subscribe_until_stop(stop_ev))
+        except Exception as e:
+            logger.error("NatsProvider loop error: %s", e)
+        finally:
+            self._loop = None
+            self._stop_event = None
+            loop.close()
+
+    async def _subscribe_until_stop(self, stop_ev: asyncio.Event) -> None:
+        nc = None
+        try:
+            nc = await nats.connect(
+                servers=[self.nats_url],
+                reconnect_time_wait=2,
+                max_reconnect_attempts=-1,
+            )
+        except Exception as e:
+            logger.error("NatsProvider connect failed: %s", e)
+            with self._health_lock:
+                self._last_health = {"status": "error", "error": str(e)}
+            await stop_ev.wait()
+            return
+
+        with self._health_lock:
+            self._last_health = {"status": "ok", "backend": self.snapshot_backend}
+
+        snapshot_subject = f"snapshot.{self.snapshot_backend}"
+
+        async def on_snapshot(msg):
+            try:
+                data = json.loads(msg.data.decode("utf-8"))
+                payload = SnapshotPayload.from_dict(data)
+                with self._lock:
+                    self._latest_snapshot = payload
+            except Exception as e:
+                logger.debug("NatsProvider snapshot decode: %s", e)
+
+        async def on_health(msg):
+            try:
+                data = json.loads(msg.data.decode("utf-8"))
+                if data.get("backend") == self.snapshot_backend:
+                    with self._health_lock:
+                        self._last_health = data
+            except Exception as e:
+                logger.debug("NatsProvider health decode: %s", e)
+
+        await nc.subscribe(snapshot_subject, cb=on_snapshot)
+        await nc.subscribe("system.health", cb=on_health)
+        logger.info("Subscribed to %s and system.health", snapshot_subject)
+        await stop_ev.wait()
+        await nc.drain()

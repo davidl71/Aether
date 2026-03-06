@@ -14,12 +14,14 @@ Use these when suggesting shell commands so the user can run less typing and sta
 | `just build` | `just build` or `just b` (if alias) | Build in debug |
 | (none) | **`build`** (Cursor) | **Default build: AI-friendly JSON** (`build_ai_friendly.sh --json-only`) |
 | (none) | `just pre-push` | Before git push (format + lint + test + build) |
+| (none) | `just sanity` | Quick regression: Python tests + TUI QA screenshot (no C++ build) |
 | (none) | `just tag-ok` | Tag current commit as last known-good build |
 | (none) | `just pull-safe` | Pull with uncommitted changes (stash → pull → pop) |
 | long path | `r` or `cd $(git rev-parse --show-toplevel)` | Commands that must run from repo root |
 | `ninja -C build` | `just build` | Build |
 | (none) | `build:ai-friendly` or `./scripts/build_ai_friendly.sh` | Quiet build + JSON result (for tools/AI) |
 | (none) | `build:ai-friendly-json` or `./scripts/build_ai_friendly.sh --json-only` | Build, print only JSON to stdout |
+| (none) | `just build-ai-friendly-progress` or `./scripts/build_ai_friendly.sh --progress` | Build with NDJSON progress to stderr (AI/tools) |
 | (none) | Presets `*-debug-ai` (e.g. `macos-arm64-debug-ai`) | Configure with BUILD_AI_FRIENDLY=ON (JSON compiler diagnostics) |
 | `./proto/generate.sh` (C++ only) | Not needed for C++ | C++ proto is generated at build by CMake; run `./proto/generate.sh` for Python/Go/TS |
 | `ctest --test-dir build --output-on-failure` | `just test` | Run C++ tests |
@@ -49,6 +51,7 @@ Use these when suggesting shell commands so the user can run less typing and sta
 | Build debug | `build:debug` |
 | Build quiet + JSON result | `build:ai-friendly` |
 | Build, JSON only to stdout | `build:ai-friendly-json` |
+| Build with progress (NDJSON to stderr) | `build:ai-friendly-progress` |
 | Test | `test:run` |
 | Lint | `lint:run` |
 | Exarp tools | `exarp:tool` / `exarp:list-tools` |
@@ -63,3 +66,4 @@ Use these when suggesting shell commands so the user can run less typing and sta
 - [ ] Tag last good build → suggest `just tag-ok`.
 - [ ] Pull but have uncommitted changes → suggest `git:pull-safe` or `just pull-safe`.
 - [ ] Must run from repo root → suggest `r` (interactive) or `cd $(git rev-parse --show-toplevel)` (scripts).
+- [ ] **Regression / sanity** → Full gate: `just pre-push`. Quick check (Python + TUI only): `just sanity`. See `.cursor/rules/regression-sanity.mdc`.

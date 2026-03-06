@@ -26,21 +26,23 @@ class OpportunitySimulationTab(Container):
         self,
         snapshot: Optional[SnapshotPayload] = None,
         bank_accounts: Optional[List[Dict]] = None,
+        *args,
+        **kwargs,
     ):
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.snapshot = snapshot
         self.bank_accounts = bank_accounts or []
         self.selected_scenario: Optional[str] = None
 
     def compose(self) -> ComposeResult:
-        with Vertical():
+        with Vertical(classes="fill"):
             yield Label("Opportunity Simulation", classes="tab-title")
             yield Label(id="scenarios-label")
-            yield DataTable(id="scenarios-table")
+            yield DataTable(id="opportunity-scenarios-table")
             yield Label(id="results-label")
 
     def on_mount(self) -> None:
-        table = self.query_one("#scenarios-table", DataTable)
+        table = self.query_one("#opportunity-scenarios-table", DataTable)
         table.add_columns("Scenario", "Type", "Description", "Net Benefit")
         self._update_data()
 
@@ -80,7 +82,7 @@ class OpportunitySimulationTab(Container):
         scenarios_label.update(f"Available Scenarios: {len(scenarios)}")
 
         # Update table
-        table = self.query_one("#scenarios-table", DataTable)
+        table = self.query_one("#opportunity-scenarios-table", DataTable)
         table.clear()
 
         for scenario in scenarios:

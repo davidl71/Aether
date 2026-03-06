@@ -13,7 +13,7 @@ class PositionsTab(SnapshotTabBase):
     """Positions tab showing current positions."""
 
     def compose(self) -> ComposeResult:
-        with Vertical():
+        with Vertical(classes="fill"):
             yield Label("Current Positions", classes="tab-title")
             yield DataTable(id="positions-table")
 

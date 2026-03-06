@@ -105,6 +105,12 @@
       "category": "build"
     },
     {
+      "name": "build:ai-friendly-progress",
+      "description": "Build with progress stream (NDJSON progress events to stderr, final JSON to stdout)",
+      "command": "./scripts/build_ai_friendly.sh --progress",
+      "category": "build"
+    },
+    {
       "name": "build:release",
       "description": "Build in release mode (Apple Silicon). On Intel use build:release-intel.",
       "command": "cmake --build --preset macos-arm64-release",

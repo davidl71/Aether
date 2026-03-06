@@ -143,6 +143,8 @@ hedging box spread positions.
 
 ### BOXX ETF (Alpha Architect 1-3 Month Box ETF)
 
+**Quick reference:** See [BOX_SPREAD_ETF_ALTERNATIVES.md](BOX_SPREAD_ETF_ALTERNATIVES.md) for a short comparison of BOXX vs. T-bill ETFs (SGOV, BIL, SHV).
+
 **Overview**: BOXX uses box spreads to replicate T-bill returns, providing a unique alternative to direct T-bill investment.
 
 **Key Characteristics**:

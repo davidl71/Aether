@@ -348,6 +348,8 @@ This helps identify:
 
 ### FRED API (Federal Reserve Economic Data)
 
+- **API docs**: <https://fred.stlouisfed.org/docs/api/fred/>
+
 The SOFR/Treasury client supports FRED API for real-time benchmark rates:
 
 **Setup:**
@@ -361,6 +363,9 @@ The SOFR/Treasury client supports FRED API for real-time benchmark rates:
 - **SOFR**: `SOFR` - Secured Overnight Financing Rate
 - **SOFR Term**: `SOFR30DAYAVG`, `SOFR90DAYAVG`, `SOFR180DAYAVG`
 - **Treasury**: `DGS1MO`, `DGS3MO`, `DGS6MO`, `DGS1`, `DGS2`, `DGS5`, `DGS10`, `DGS30`
+
+**Alternative – Treasury Fiscal Data API (no key):**  
+For Treasury-only benchmarks, `treasury_api_client.py` uses <https://fiscaldata.treasury.gov/api-documentation/> (no API key). Use FRED when you need SOFR and Treasury in one client.
 
 **Example:**
 

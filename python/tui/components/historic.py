@@ -14,7 +14,7 @@ class HistoricTab(SnapshotTabBase):
     """Historic positions tab. Placeholder until historic data is available."""
 
     def compose(self) -> ComposeResult:
-        with Vertical():
+        with Vertical(classes="fill"):
             yield Label("Historic Positions", classes="tab-title")
             yield Label("No historic data available yet.", id="historic-message")
 

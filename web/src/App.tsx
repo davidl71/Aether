@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSnapshot } from './hooks/useSnapshot';
+import { useBackendServices } from './hooks/useBackendServices';
 import { useBoxSpreadData } from './hooks/useBoxSpreadData';
 import { useSymbolWatchlist } from './hooks/useSymbolWatchlist';
 import { HeaderStatus } from './components/HeaderStatus';
@@ -15,6 +16,7 @@ import ScenarioSummary from './components/ScenarioSummary';
 import BoxSpreadTable from './components/BoxSpreadTable';
 import { YieldCurveTable } from './components/YieldCurveTable';
 import { FinancingComparisonTable } from './components/FinancingComparisonTable';
+import { BenchmarksPanel } from './components/BenchmarksPanel';
 import { OptionsChainTable } from './components/OptionsChainTable';
 import { BoxSpreadCombinations } from './components/BoxSpreadCombinations';
 import { CandlestickChart } from './components/CandlestickChart';
@@ -31,7 +33,8 @@ const TABS = [
   { id: 'current', title: 'Current Positions' },
   { id: 'historic', title: 'Historic Positions' },
   { id: 'orders', title: 'Orders' },
-  { id: 'alerts', title: 'Alerts' }
+  { id: 'alerts', title: 'Alerts' },
+  { id: 'rates', title: 'Rates' },
 ] as const;
 
 type TabId = typeof TABS[number]['id'];
@@ -54,6 +57,11 @@ function renderTabContent(
   onCancelOrder: (orderId: string) => Promise<void>,
   apiBaseUrl: string
 ) {
+  // Rates tab does not depend on snapshot
+  if (tab === 'rates') {
+    return <BenchmarksPanel />;
+  }
+
   if (!snapshot) {
     return <div className="panel panel--fill">Awaiting live data…</div>;
   }
@@ -98,6 +106,8 @@ function renderTabContent(
         return <OrdersPanel orders={snapshot.orders} onCancelOrder={onCancelOrder} apiBaseUrl={apiBaseUrl} />;
     case 'alerts':
       return <AlertsPanel alerts={snapshot.alerts} />;
+    case 'rates':
+      return <BenchmarksPanel />;
     default:
       return null;
   }
@@ -114,6 +124,7 @@ function App() {
     isLoading: snapshotLoading,
     error: snapshotError
   } = useSnapshot();
+  const { statuses: backendStatuses } = useBackendServices({ intervalMs: 10000, enabled: true });
   const { data: scenarioData, isLoading: scenarioLoading, error: scenarioError } = useBoxSpreadData();
   const { watchlist, addSymbol, removeSymbol, isDefault } = useSymbolWatchlist();
   const {
@@ -340,6 +351,7 @@ function App() {
     <div className={`app-shell ${snapshot?.mode === 'LIVE' || snapshot?.mode === 'LIVE_TRADING' ? 'app-shell--live' : ''}`}>
       <HeaderStatus
         snapshot={snapshot}
+        backendStatuses={backendStatuses}
         onModeChange={handleModeChange}
         onAccountChange={handleAccountChange}
         onStrategyStart={handleStrategyStart}

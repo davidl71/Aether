@@ -1,7 +1,8 @@
 """
 redis_cache.py - Optional Redis state cache for shared service state.
 
-Uses NATS KV as fallback if Redis is unavailable.
+Prefer NATS KV first (see nats_kv_state.py) when NATS_URL is set; use Redis when
+you need lower latency or richer structures (hashes, lists) or when NATS KV is unavailable.
 """
 from __future__ import annotations
 

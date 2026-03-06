@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -59,5 +60,90 @@ func TestTickStruct_Defaults(t *testing.T) {
 	}
 	if tk.Volume != 0 {
 		t.Fatal("zero value volume should be 0")
+	}
+}
+
+func TestEnvBool_True(t *testing.T) {
+	for _, v := range []string{"1", "true", "yes", "TRUE", " 1 "} {
+		t.Run(v, func(t *testing.T) {
+			_ = os.Setenv("TEST_ENV_BOOL", v)
+			defer func() { _ = os.Unsetenv("TEST_ENV_BOOL") }()
+			if !envBool("TEST_ENV_BOOL") {
+				t.Errorf("envBool(%q) should be true", v)
+			}
+		})
+	}
+}
+
+func TestEnvBool_False(t *testing.T) {
+	_ = os.Unsetenv("TEST_ENV_BOOL_FALSE")
+	if envBool("TEST_ENV_BOOL_FALSE") {
+		t.Error("unset should be false")
+	}
+	for _, v := range []string{"0", "false", "no", ""} {
+		t.Run(v, func(t *testing.T) {
+			_ = os.Setenv("TEST_ENV_BOOL", v)
+			defer func() { _ = os.Unsetenv("TEST_ENV_BOOL") }()
+			if envBool("TEST_ENV_BOOL") {
+				t.Errorf("envBool(%q) should be false", v)
+			}
+		})
+	}
+}
+
+func TestParseTickPayload_Flat(t *testing.T) {
+	data := []byte(`{"symbol":"SPY","bid":450.1,"ask":450.2,"last":450.15,"volume":100}`)
+	tick, ts, err := parseTickPayload(data, "market.data.tick.SPY")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if tick.Symbol != "SPY" {
+		t.Errorf("symbol: got %q", tick.Symbol)
+	}
+	if tick.Bid != 450.1 || tick.Ask != 450.2 || tick.Volume != 100 {
+		t.Errorf("fields: bid=%.2f ask=%.2f vol=%d", tick.Bid, tick.Ask, tick.Volume)
+	}
+	if ts.IsZero() {
+		t.Error("time should be set")
+	}
+}
+
+func TestParseTickPayload_Envelope(t *testing.T) {
+	data := []byte(`{"payload":{"symbol":"QQQ","bid":380,"ask":380.05,"last":380.02,"volume":200}}`)
+	tick, _, err := parseTickPayload(data, "market.data.tick.QQQ")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if tick.Symbol != "QQQ" {
+		t.Errorf("symbol: got %q", tick.Symbol)
+	}
+	if tick.Bid != 380 || tick.Volume != 200 {
+		t.Errorf("bid=%.2f vol=%d", tick.Bid, tick.Volume)
+	}
+}
+
+func TestParseTickPayload_SymbolFromSubject(t *testing.T) {
+	data := []byte(`{"bid":1,"ask":2,"last":1.5,"volume":0}`)
+	tick, _, err := parseTickPayload(data, "market.data.tick.IWM")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if tick.Symbol != "IWM" {
+		t.Errorf("symbol from subject: got %q", tick.Symbol)
+	}
+}
+
+func TestParseTickPayload_NoSymbol(t *testing.T) {
+	data := []byte(`{"bid":1,"ask":2,"last":1.5,"volume":0}`)
+	_, _, err := parseTickPayload(data, "short.subject")
+	if err == nil {
+		t.Fatal("expected error when no symbol in payload or subject")
+	}
+}
+
+func TestParseTickPayload_InvalidJSON(t *testing.T) {
+	_, _, err := parseTickPayload([]byte(`{not json}`), "market.data.tick.SPY")
+	if err == nil {
+		t.Fatal("expected error for invalid JSON")
 	}
 }

@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any, Tuple
 
 from textual.widgets import Static
+from textual.containers import Horizontal, Container
 from textual.reactive import reactive
 
 from ..models import SnapshotPayload
@@ -69,6 +70,29 @@ BACKEND_SHORT_LABELS: Dict[str, str] = {
     "connection": "Conn",
 }
 
+# Backend key -> application role for grouping (trading, market_data, banking, rates, platform)
+BACKEND_ROLES: Dict[str, str] = {
+    "ib": "trading",
+    "tws": "trading",
+    "alpaca": "trading",
+    "tastytrade": "trading",
+    "tradestation": "trading",
+    "tradier": "trading",
+    "discount_bank": "banking",
+    "risk_free_rate": "rates",
+    "rust": "platform",
+}
+
+# Display order and labels for roles
+ROLE_ORDER: tuple[str, ...] = ("trading", "market_data", "banking", "rates", "platform")
+ROLE_LABELS: Dict[str, str] = {
+    "trading": "Trading",
+    "market_data": "Market data",
+    "banking": "Banking",
+    "rates": "Rates",
+    "platform": "Platform",
+}
+
 # Environment badge: mock = synthetic data, paper = DRY-RUN, live = real money
 ENVIRONMENT_LABELS: Dict[str, str] = {
     "mock": "MOCK",
@@ -80,6 +104,14 @@ ENVIRONMENT_MARKUP: Dict[str, str] = {
     "paper": "[bold yellow on #4d4d2d] PAPER [/]",
     "live": "[bold white on #8b2020] LIVE [/]",
 }
+
+# Pill colors: hex so they are visible on dark status bar regardless of terminal palette.
+# The app uses Textual default theme (no custom Design); CSS uses $success, $warning, $error.
+# Rich markup cannot reference those; we use theme-aligned hex for ok/warning/error.
+PILL_OK_MARKUP = "[bold #5fdf5f]"      # green, matches $success intent
+PILL_WARN_MARKUP = "[bold #ebcb8b]"   # amber, matches $warning intent
+PILL_ERR_MARKUP = "[bold #ff6b6b]"     # red, matches $error intent
+PILL_END = "[/]"
 
 
 def _snapshot_time_and_stale(snapshot: Optional[SnapshotPayload]) -> Tuple[str, str]:
@@ -120,8 +152,10 @@ def _snapshot_time_and_stale(snapshot: Optional[SnapshotPayload]) -> Tuple[str, 
         )
 
 
-def _format_one_backend_health(name: str, health: dict) -> str:
+def _format_one_backend_health(name: str, health: Any) -> str:
     """Format a single backend's health for status line. IB status and gateway are grouped."""
+    if not isinstance(health, dict):
+        return f"{name}: unknown"
     status = health.get("status", "unknown")
     ib_connected = health.get("ib_connected", False)
     gateway_logged_in = health.get("gateway_logged_in", ib_connected)
@@ -207,6 +241,82 @@ def _backend_pills_rich(health: Optional[Dict[str, Any]]):
     return out
 
 
+def _backend_pills_markup(health: Optional[Dict[str, Any]]) -> str:
+    """
+    Build status bar pills as a single Textual/Rich markup string so the bar always shows them.
+    Uses hex colors (PILL_*_MARKUP) so pills are visible on dark status bar regardless of
+    terminal palette; theme is default (no custom Design), ^p palette = command palette.
+    """
+    if not health or not isinstance(health, dict):
+        return ""
+    if health.get("status") is not None:
+        status = health.get("status", "unknown")
+        label = BACKEND_SHORT_LABELS.get("current", "Service")
+        if status == "ok":
+            return f"{PILL_OK_MARKUP} {label} {PILL_END}"
+        if status in ("disabled", "checking"):
+            return f"{PILL_WARN_MARKUP} {label} {PILL_END}"
+        return f"{PILL_ERR_MARKUP} {label} {PILL_END}"
+    parts: list[str] = []
+    for name, payload in sorted(health.items()):
+        if not isinstance(payload, dict):
+            continue
+        status = payload.get("status", "unknown")
+        label = BACKEND_SHORT_LABELS.get(name.lower(), name)
+        if status == "ok":
+            parts.append(f"{PILL_OK_MARKUP} {label} {PILL_END}")
+        elif status in ("disabled", "checking"):
+            parts.append(f"{PILL_WARN_MARKUP} {label} {PILL_END}")
+        else:
+            parts.append(f"{PILL_ERR_MARKUP} {label} {PILL_END}")
+    return " ".join(parts)
+
+
+def _backend_pills_list(
+    health: Optional[Dict[str, Any]],
+) -> list[tuple[str, str]]:
+    """
+    Return list of (label, css_class) for status bar pill widgets, grouped by role.
+    css_class is status-pill-ok | status-pill-warn | status-pill-err | status-pill-group (for role labels).
+    Used when rendering pills as separate widgets so colors come from CSS (no Rich markup).
+    """
+    if not health or not isinstance(health, dict):
+        return []
+    if health.get("status") is not None:
+        status = health.get("status", "unknown")
+        label = BACKEND_SHORT_LABELS.get("current", "Service")
+        if status == "ok":
+            return [(label, "status-pill-ok")]
+        if status in ("disabled", "checking"):
+            return [(label, "status-pill-warn")]
+        return [(label, "status-pill-err")]
+    # Group backends by role
+    by_role: Dict[str, list[tuple[str, str]]] = {}
+    for name, payload in health.items():
+        if not isinstance(payload, dict):
+            continue
+        status = payload.get("status", "unknown")
+        label = BACKEND_SHORT_LABELS.get(name.lower(), name)
+        if status == "ok":
+            css = "status-pill-ok"
+        elif status in ("disabled", "checking"):
+            css = "status-pill-warn"
+        else:
+            css = "status-pill-err"
+        role = BACKEND_ROLES.get(name.lower(), "platform")
+        if role not in by_role:
+            by_role[role] = []
+        by_role[role].append((label, css))
+    out: list[tuple[str, str]] = []
+    for role in ROLE_ORDER:
+        if role not in by_role:
+            continue
+        role_label = ROLE_LABELS.get(role, role)
+        out.append((f" {role_label}: ", "status-pill-group"))
+        out.extend(by_role[role])
+    return out
+
+
 def _format_provider_label(provider_label: str) -> str:
     """Format provider segment for status line."""
     if not provider_label:
@@ -269,13 +379,19 @@ def get_environment(provider: Any, snapshot: Optional[SnapshotPayload]) -> str:
     return "live" if mode == "LIVE" else "paper"
 
 
-class StatusBar(Static):
-    """Bottom status line: [MOCK|PAPER|LIVE] badge, colored one-word backend pills (PWA-style), Provider | Updated | Mode | Strategy | Account."""
+class StatusBar(Container):
+    """Bottom status line: [MOCK|PAPER|LIVE] badge, colored backend pills (CSS), Provider | Updated | ... . Pills are separate widgets so colors come from theme (no Rich markup)."""
 
     provider_label: reactive[str] = reactive("")
     snapshot: reactive[Optional[SnapshotPayload]] = reactive(None)
     backend_health: reactive[Optional[Dict[str, Any]]] = reactive(None)
-    environment: reactive[str] = reactive("")  # mock | paper | live for badge and bar colour
+    environment: reactive[str] = reactive("")
+
+    def compose(self):
+        with Horizontal():
+            yield Static("", id="status-badge")
+            yield Horizontal(id="status-pills")
+            yield Static("", id="status-rest")
 
     def watch_provider_label(self) -> None:
         self._refresh()
@@ -297,22 +413,33 @@ class StatusBar(Static):
             self.add_class(f"mode-{self.environment}")
 
     def _refresh(self) -> None:
-        from rich.text import Text
         rest_str = format_status_line_rest(
             self.provider_label, self.snapshot
         )
-        pills = _backend_pills_rich(self.backend_health)
-        if self.environment and self.environment in ENVIRONMENT_MARKUP:
-            badge = Text.from_markup(ENVIRONMENT_MARKUP[self.environment])
-            if pills:
-                content = badge + Text(" ") + pills + Text(" | " + rest_str)
-            else:
-                content = badge + Text(" ") + rest_str
-        elif pills:
-            content = pills + Text(" | " + rest_str)
-        else:
-            content = rest_str
-        self.update(content)
+        # Badge: plain text so it always shows
+        badge_text = f" [{self.environment.upper()}] " if self.environment else ""
+        try:
+            badge = self.query_one("#status-badge", Static)
+            badge.update(badge_text)
+        except Exception:
+            pass
+        # Pills: rebuild as separate widgets with CSS classes (theme colors, no markup)
+        try:
+            pills_container = self.query_one("#status-pills", Horizontal)
+            pills_container.remove_children()
+            for label, css_class in _backend_pills_list(self.backend_health):
+                pill = Static(f" {label} ", classes=f"status-pill {css_class}")
+                pills_container.mount(pill)
+        except Exception:
+            pass
+        # Rest of line
+        try:
+            rest = self.query_one("#status-rest", Static)
+            rest.update(f" | {rest_str}" if rest_str else "")
+            if hasattr(rest, "tooltip"):
+                rest.tooltip = "Backends are independent (one snapshot at a time; bank accounts in parallel)."
+        except Exception:
+            pass
 
 
 class SnapshotDisplay(Static):

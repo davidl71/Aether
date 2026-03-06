@@ -79,9 +79,11 @@ Need historical data?
 
 ### Massive.com
 
-- **Best For**: Historical data, backtesting
-- **Key Features**: Historical and real-time data, S3-compatible interface
-- **Documentation**: `../API_DOCUMENTATION_INDEX.md#massive`
+- **Best For**: Multi-asset REST + flat files; Treasury yields; options/stocks snapshots; backtesting
+- **Key Features**: REST (snapshots, OHLC, trades/quotes, technical indicators, fundamentals, SEC filings, news); economy (Treasury yields, inflation, labor); S3 flat files (day/minute aggregates)
+- **Official Python client**: <https://github.com/massive-com/client-python> — `pip install -U massive`; `RESTClient`, `WebSocketClient`
+- **Docs**: <https://massive.com/docs/rest/quickstart> · Full index: <https://massive.com/docs/llms.txt>
+- **Documentation**: `../API_DOCUMENTATION_INDEX.md#massive-market-data`
 
 ### Alpha Vantage
 

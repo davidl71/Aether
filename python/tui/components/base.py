@@ -16,8 +16,8 @@ from ..models import SnapshotPayload
 class SnapshotTabBase(Container):
     """Base for tabs that show snapshot data. Subclasses implement compose() and _update_data()."""
 
-    def __init__(self, snapshot: Optional[SnapshotPayload] = None):
-        super().__init__()
+    def __init__(self, snapshot: Optional[SnapshotPayload] = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.snapshot = snapshot
 
     def update_snapshot(self, snapshot: SnapshotPayload, **kwargs: object) -> None:

@@ -291,6 +291,23 @@ class TestDisabledBackendsConfig:
         out = _disabled_backends_from_env({"alpaca": {"port": 8000}})
         assert "alpaca" not in out
 
+    @patch.dict(
+        "os.environ",
+        {
+            "OP_ALPACA_API_KEY_ID_SECRET": "op://Vault/Alpaca/credential",
+            "OP_ALPACA_API_SECRET_KEY_SECRET": "op://Vault/Alpaca/secret",
+        },
+        clear=False,
+    )
+    def test_disabled_backends_from_env_alpaca_op_refs_not_disabled(self):
+        """When only 1Password op:// refs are set (no resolved keys), Alpaca is still considered configured."""
+        from python.tui.config import _disabled_backends_from_env
+
+        for key in ("ALPACA_API_KEY_ID", "ALPACA_API_SECRET_KEY", "ALPACA_CLIENT_ID", "ALPACA_CLIENT_SECRET"):
+            os.environ.pop(key, None)
+        out = _disabled_backends_from_env({"alpaca": {"port": 8000}})
+        assert "alpaca" not in out
+
 
 # ---------------------------------------------------------------------------
 # create_provider_from_config

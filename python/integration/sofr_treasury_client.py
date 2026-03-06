@@ -1,12 +1,15 @@
 """
 sofr_treasury_client.py - Fetch SOFR and Treasury rates for comparison with box spread rates
 
+Uses FRED (Federal Reserve Economic Data); API reference: https://fred.stlouisfed.org/docs/api/fred/
+
 This module fetches benchmark risk-free rates from:
 - SOFR (Secured Overnight Financing Rate) from Federal Reserve
 - Treasury rates from various sources
 - SOFR futures from CME Group
 
 References:
+- FRED API (St. Louis Fed): https://fred.stlouisfed.org/docs/api/fred/
 - New York Fed: https://libertystreeteconomics.newyorkfed.org/2023/10/options-for-calculating-risk-free-rates/
 - CME Group: https://www.cmegroup.com/articles/2025/price-and-hedging-usd-sofr-interest-swaps-with-sofr-futures.html
 """
@@ -21,10 +24,13 @@ from typing import Dict, List, Optional, TYPE_CHECKING
 from dataclasses import dataclass
 
 try:
-    from .onepassword_sdk_helper import getenv_or_resolve
+    from .onepassword_sdk_helper import getenv_or_resolve, get_fred_api_key_from_1password
 except ImportError:
     def getenv_or_resolve(env_var: str, op_ref: str, default: str = "") -> str:
         return os.getenv(env_var, default)
+
+    def get_fred_api_key_from_1password():
+        return None
 
 if TYPE_CHECKING:
     from .risk_free_rate_extractor import RiskFreeRateCurve
@@ -69,8 +75,17 @@ class SOFRTreasuryClient:
         """
         self.frb_base_url = frb_base_url.rstrip("/")
         self.treasury_base_url = treasury_base_url
-        # Optional 1Password op:// ref via OP_FRED_API_KEY_SECRET when SDK available
+        # Optional 1Password op:// ref via OP_FRED_API_KEY_SECRET, or SDK discovery of FRED API item
         self.fred_api_key = fred_api_key or getenv_or_resolve("FRED_API_KEY", "OP_FRED_API_KEY_SECRET", "")
+        if not self.fred_api_key:
+            discovered = get_fred_api_key_from_1password()
+            if discovered:
+                self.fred_api_key = discovered
+        if not self.fred_api_key and os.getenv("FRED_DEBUG", "").strip().lower() in ("1", "true", "yes"):
+            logger.debug(
+                "FRED API key not set. Set FRED_API_KEY, export OP_FRED_API_KEY_SECRET='op://vault/FRED API/credential', "
+                "or run this process from a shell where you ran: eval $(op signin)"
+            )
         self.fred_base_url = "https://api.stlouisfed.org/fred"
 
         self.session = requests.Session()

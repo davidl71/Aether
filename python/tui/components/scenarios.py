@@ -17,12 +17,12 @@ logger = logging.getLogger(__name__)
 class ScenariosTab(Container):
     """Scenarios tab showing box spread scenarios."""
 
-    def __init__(self, box_spread_data: Optional[BoxSpreadPayload] = None):
-        super().__init__()
+    def __init__(self, box_spread_data: Optional[BoxSpreadPayload] = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.box_spread_data = box_spread_data
 
     def compose(self) -> ComposeResult:
-        with Vertical():
+        with Vertical(classes="fill"):
             yield Label("Box Spread Scenarios", classes="tab-title")
             yield Static(id="scenario-summary")
             yield DataTable(id="scenarios-table")

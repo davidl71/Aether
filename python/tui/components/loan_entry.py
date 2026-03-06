@@ -433,12 +433,12 @@ class LoanEntryForm(Container):
 class LoanListTab(Container):
     """Tab showing loan list and management"""
 
-    def __init__(self, loan_manager: LoanManager):
-        super().__init__()
+    def __init__(self, loan_manager: LoanManager, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.loan_manager = loan_manager
 
     def compose(self) -> ComposeResult:
-        with Vertical():
+        with Vertical(classes="fill"):
             yield Label("Loan Positions", classes="tab-title")
 
             with Horizontal():

@@ -180,6 +180,7 @@ dist/ib_box_spread-*.sha256
 !native/third_party/**/*.jar  # Exception: vendor JARs in third_party (TWS API)
 !libs/**/*.jar  # Exception: vendor JARs in libs/ if needed
 ib-gateway/dist/  # IB Gateway build output directory
+ib-gateway/root/conf.port.*.yaml  # Generated port-override configs (IB_GATEWAY_PORT)
 
 # Todo2 - AI-powered task management directories
 # Note: .todo2/state.todo2.json is tracked for multi-machine/AI agent synchronization

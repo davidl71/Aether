@@ -20,14 +20,16 @@ class RelationshipVisualizationTab(Container):
     def __init__(
         self,
         snapshot: Optional[SnapshotPayload] = None,
-        bank_accounts: Optional[List[Dict]] = None
+        bank_accounts: Optional[List[Dict]] = None,
+        *args,
+        **kwargs,
     ):
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.snapshot = snapshot
         self.bank_accounts = bank_accounts or []
 
     def compose(self) -> ComposeResult:
-        with Vertical():
+        with Vertical(classes="fill"):
             yield Label("Multi-Instrument Relationships", classes="tab-title")
             yield Label(id="summary-label")
             yield DataTable(id="relationships-table")

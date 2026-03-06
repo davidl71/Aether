@@ -8,6 +8,16 @@
 
 This document designs a unified JSON configuration file format that supports TUI, PWA, and standalone applications with data source selection. The design is based on research findings from T-110 (data source handling patterns) and T-157 (configuration schema design patterns).
 
+## Config file location (home vs project)
+
+- **The app always uses the home config** when no explicit path is set:
+  - **Linux/macOS:** `~/.config/ib_box_spread/config.json`
+  - **macOS (alternate):** `~/Library/Application Support/ib_box_spread/config.json`
+- **Project config** (`config/config.json`, `config/config.example.json`) is for **reference** and is the **source of defaults** to generate the home config:
+  - On first run, if the home config does not exist, it is created by copying from the project’s `config.example.json` (or `config.json`), then the app loads from the home path.
+  - After that, only the home config is used; project config is not read for normal runs.
+- To force a specific file, set **`IB_BOX_SPREAD_CONFIG`** to the path of your JSON config file.
+
 ## Design Goals
 
 1. **Unified Format:** Single JSON schema supporting all applications (TUI, PWA, standalone)

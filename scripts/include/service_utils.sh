@@ -52,7 +52,9 @@ import sys
 try:
     with urllib.request.urlopen('http://${host}:${port}/api/health', timeout=2) as response:
         data = json.loads(response.read().decode())
-        if data.get('${expected_key}') == 'ok' or '${expected_key}' in data:
+        val = data.get('${expected_key}')
+        # Same service if status is ok or disabled (broker running without credentials)
+        if val in ('ok', 'disabled') or (val is None and '${expected_key}' in data):
             print('${service_name}')
         else:
             print('OTHER_SERVICE')
@@ -70,12 +72,15 @@ except Exception:
 # Check if port is in use and verify service identity
 # Usage: check_port_with_service <python_cmd> <host> <port> <service_name> <service_display_name>
 # Returns 0 if port available or service already running, 1 if conflict
+# Sets SERVICE_ALREADY_RUNNING=1 when same service is already running (caller should exit 0)
 check_port_with_service() {
   local python_cmd="${1:-}"
   local host="${2:-127.0.0.1}"
   local port="${3:-}"
   local service_name="${4:-}"
   local service_display_name="${5:-${service_name}}"
+
+  SERVICE_ALREADY_RUNNING=
 
   if [ -z "${python_cmd}" ] || [ -z "${port}" ] || [ -z "${service_name}" ]; then
     echo "Error: python_cmd, port, and service_name required" >&2
@@ -96,6 +101,7 @@ check_port_with_service() {
       echo "  Using existing service. No need to start a new one." >&2
       echo "  Set VITE_API_URL=http://${host}:${port}/api/snapshot in your web app" >&2
       echo "" >&2
+      SERVICE_ALREADY_RUNNING=1
       return 0
     else
       echo "Error: Port ${port} is in use by another service (not ${service_display_name} service)" >&2

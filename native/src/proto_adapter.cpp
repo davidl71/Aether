@@ -120,4 +120,74 @@ bool proto_bytes_to_box_spread_leg(const std::string &bytes,
   return true;
 }
 
+// config::StrategyParams <-> proto (commissions not in proto; max_positions/max_total_exposure in proto but not in C++ StrategyParams)
+void to_proto(const config::StrategyParams &from,
+              ::ib::platform::v1::StrategyParams *out) {
+  if (!out)
+    return;
+  for (const auto &s : from.symbols)
+    out->add_symbols(s);
+  out->set_min_days_to_expiry(from.min_days_to_expiry);
+  out->set_max_days_to_expiry(from.max_days_to_expiry);
+  out->set_min_arbitrage_profit(from.min_arbitrage_profit);
+  out->set_min_roi_percent(from.min_roi_percent);
+  out->set_max_bid_ask_spread(from.max_bid_ask_spread);
+  out->set_min_volume(from.min_volume);
+  out->set_min_open_interest(from.min_open_interest);
+  out->set_max_position_size(from.max_position_size);
+  out->set_benchmark_rate_percent(from.benchmark_rate_percent);
+  out->set_benchmark_source(from.benchmark_source);
+  out->set_treasury_api_url(from.treasury_api_url);
+  out->set_min_spread_over_benchmark_bps(from.min_spread_over_benchmark_bps);
+}
+
+void from_proto(const ::ib::platform::v1::StrategyParams &from,
+                config::StrategyParams *out) {
+  if (!out)
+    return;
+  out->symbols.clear();
+  for (int i = 0; i < from.symbols_size(); ++i)
+    out->symbols.push_back(from.symbols(i));
+  out->min_days_to_expiry = from.min_days_to_expiry();
+  out->max_days_to_expiry = from.max_days_to_expiry();
+  out->min_arbitrage_profit = from.min_arbitrage_profit();
+  out->min_roi_percent = from.min_roi_percent();
+  out->max_bid_ask_spread = from.max_bid_ask_spread();
+  out->min_volume = from.min_volume();
+  out->min_open_interest = from.min_open_interest();
+  out->max_position_size = from.max_position_size();
+  out->benchmark_rate_percent = from.benchmark_rate_percent();
+  out->benchmark_source = from.benchmark_source();
+  out->treasury_api_url = from.treasury_api_url();
+  out->min_spread_over_benchmark_bps = from.min_spread_over_benchmark_bps();
+}
+
+void to_proto(const config::RiskConfig &from,
+              ::ib::platform::v1::RiskConfig *out) {
+  if (!out)
+    return;
+  out->set_max_total_exposure(from.max_total_exposure);
+  out->set_max_positions(from.max_positions);
+  out->set_max_loss_per_position(from.max_loss_per_position);
+  out->set_max_daily_loss(from.max_daily_loss);
+  out->set_position_size_percent(from.position_size_percent);
+  out->set_enable_stop_loss(from.enable_stop_loss);
+  out->set_stop_loss_percent(from.stop_loss_percent);
+  out->set_risk_free_rate_override(from.risk_free_rate_override);
+}
+
+void from_proto(const ::ib::platform::v1::RiskConfig &from,
+                config::RiskConfig *out) {
+  if (!out)
+    return;
+  out->max_total_exposure = from.max_total_exposure();
+  out->max_positions = from.max_positions();
+  out->max_loss_per_position = from.max_loss_per_position();
+  out->max_daily_loss = from.max_daily_loss();
+  out->position_size_percent = from.position_size_percent();
+  out->enable_stop_loss = from.enable_stop_loss();
+  out->stop_loss_percent = from.stop_loss_percent();
+  out->risk_free_rate_override = from.risk_free_rate_override();
+}
+
 } // namespace proto_adapter

@@ -20,11 +20,16 @@ from typing import Optional, Dict, List
 
 from ..integration.shared_config_loader import SharedConfigLoader
 
+# Prefer in-package helper; fallback for different run contexts (e.g. python -m tui.app from python/)
 try:
     from ..integration.onepassword_sdk_helper import getenv_or_resolve
 except ImportError:
-    def getenv_or_resolve(env_var: str, op_ref_env_var: str, default: str = "") -> str:
-        return os.getenv(env_var, default)
+    try:
+        from integration.onepassword_sdk_helper import getenv_or_resolve
+    except ImportError:
+        def getenv_or_resolve(env_var: str, op_ref_env_var: str, default: str = "") -> str:
+            # Stub when 1Password helper unavailable: only use env_var (never resolve op://)
+            return os.getenv(env_var, default)
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +71,7 @@ class TUIConfig:
     """
 
     provider_type: str = (
-        "mock"  # "mock", "rest", "file", "rest_ib", "rest_alpaca", "rest_tradestation", "rest_tastytrade", ...
+        "mock"  # "mock", "rest", "file", "nats", "rest_ib", "rest_alpaca", ...
     )
     rest_endpoint: str = "http://localhost:8002/api/v1/snapshot"  # IB service port (changed from 8080 Rust backend to 8002 IB)
     update_interval_ms: int = 1000
@@ -74,6 +79,10 @@ class TUIConfig:
     rest_timeout_ms: int = 15000
     rest_verify_ssl: bool = False
     file_path: Optional[str] = None
+
+    # NATS pub/sub (for provider_type "nats")
+    nats_url: str = "nats://localhost:4222"
+    nats_snapshot_backend: str = "ib"  # subscribe to snapshot.{backend}
 
     # IBKR REST API settings
     ibkr_rest_base_url: str = "https://localhost:5001/v1/portal"
@@ -93,8 +102,19 @@ class TUIConfig:
     # Backends disabled due to missing/placeholder credentials (name -> reason)
     disabled_backends: Dict[str, str] = field(default_factory=dict)
 
+    # User-disabled backends (toggle in setup screen); merged with disabled_backends for display
+    user_disabled_backends: List[str] = field(default_factory=list)
+
     # Optional: unified health dashboard URL (GET returns { backends: { name: health } }). When set, TUI uses it instead of polling each backend.
     health_dashboard_url: Optional[str] = None
+
+    # Optional: API router base URL. When set, TUI uses this base for snapshot, scenarios, bank-accounts, and health
+    # (e.g. http://localhost:9xxx with routes /api/v1/snapshot, /scenarios, /api/bank-accounts, /api/health).
+    api_base_url: Optional[str] = None
+
+    # Live/paper per provider (from shared config tws.port / alpaca.data_client_config.paper)
+    tws_port_override: Optional[int] = None  # 7497 = paper, 7496 = live; when set, overrides tcp_backend_ports["tws"]
+    alpaca_paper: Optional[bool] = None  # True = paper, False = live
 
     # Symbol watchlist for dashboard; mock provider generates data for these symbols when provider is mock.
     watchlist: List[str] = field(
@@ -197,6 +217,9 @@ def load_config() -> TUIConfig:
                 rest_timeout_ms=shared_tui.rest_timeout_ms,
                 rest_verify_ssl=shared_tui.rest_verify_ssl,
                 file_path=shared_tui.file_path,
+                nats_url=getattr(shared_tui, "nats_url", "nats://localhost:4222"),
+                nats_snapshot_backend=getattr(shared_tui, "nats_snapshot_backend", "ib"),
+                api_base_url=getattr(shared_tui, "api_base_url", None),
                 ibkr_rest_base_url=ibkr_rest_dict.get(
                     "baseUrl", ibkr_rest_dict.get("base_url", "https://localhost:5001/v1/portal")
                 ),
@@ -209,13 +232,25 @@ def load_config() -> TUIConfig:
             from_services = _backend_ports_from_services(shared_config.services)
             config.backend_ports = {**DEFAULT_BACKEND_PORTS, **from_services}
             config.tcp_backend_ports = {**DEFAULT_TCP_BACKEND_PORTS, **(config.tcp_backend_ports or {})}
+            if getattr(shared_config, "tws_port", None) is not None:
+                config.tcp_backend_ports["tws"] = shared_config.tws_port
+            if getattr(shared_config, "alpaca_paper", None) is not None:
+                config.alpaca_paper = shared_config.alpaca_paper
             config.disabled_backends = _disabled_backends_from_env(shared_config.services)
             # Unified health dashboard: one URL to get all backends (optional)
             hd = (shared_config.services or {}).get("health_dashboard")
             if isinstance(hd, dict) and isinstance(hd.get("port"), int):
                 config.health_dashboard_url = f"http://127.0.0.1:{hd['port']}/api/health"
             logger.info("Loaded TUI configuration from shared config file")
-            # Apply environment variable overrides
+            # Overlay user_disabled_backends from TUI config file if present
+            tui_path = TUIConfig.get_config_path()
+            if Path(tui_path).exists():
+                try:
+                    tui_only = TUIConfig.load_from_file(tui_path)
+                    if getattr(tui_only, "user_disabled_backends", None):
+                        config.user_disabled_backends = list(tui_only.user_disabled_backends)
+                except Exception:
+                    pass
             _apply_env_overrides(config)
             return config
     except Exception as e:
@@ -285,6 +320,11 @@ def _is_placeholder_or_empty(value: Optional[str]) -> bool:
     return False
 
 
+def _is_op_ref(value: Optional[str]) -> bool:
+    """True if value looks like a 1Password op:// secret reference (configured, resolve at runtime)."""
+    return bool(value and str(value).strip().startswith("op://"))
+
+
 def _disabled_backends_from_env(services: dict) -> Dict[str, str]:
     """
     For backends present in services, detect missing/placeholder credentials
@@ -295,7 +335,7 @@ def _disabled_backends_from_env(services: dict) -> Dict[str, str]:
     if not isinstance(services, dict):
         return out
 
-    # Alpaca: API keys or OAuth (env or optional 1Password OP_*_SECRET refs)
+    # Alpaca: API keys or OAuth (env or optional 1Password OP_*_SECRET refs, or SDK discovery)
     if services.get("alpaca") is not None:
         has_oauth = not _is_placeholder_or_empty(
             getenv_or_resolve("ALPACA_CLIENT_ID", "OP_ALPACA_CLIENT_ID_SECRET", "")
@@ -307,6 +347,20 @@ def _disabled_backends_from_env(services: dict) -> Dict[str, str]:
         ) and not _is_placeholder_or_empty(
             getenv_or_resolve("ALPACA_API_SECRET_KEY", "OP_ALPACA_API_SECRET_KEY_SECRET", "")
         )
+        # Treat exported 1Password op:// refs as configured (resolution happens when client runs)
+        if not has_api_key:
+            op_key = (os.getenv("OP_ALPACA_API_KEY_ID_SECRET") or "").strip()
+            op_secret = (os.getenv("OP_ALPACA_API_SECRET_KEY_SECRET") or "").strip()
+            if _is_op_ref(op_key) and _is_op_ref(op_secret):
+                has_api_key = True
+        if not has_oauth and not has_api_key:
+            # SDK/CLI discovery: find Alpaca item in 1Password and resolve (no env vars required)
+            try:
+                from ..integration.onepassword_sdk_helper import get_alpaca_credentials_from_1password
+                if get_alpaca_credentials_from_1password():
+                    has_api_key = True
+            except Exception:
+                pass
         if not has_oauth and not has_api_key:
             out["alpaca"] = "Missing API key or OAuth credentials"
 
@@ -354,3 +408,7 @@ def _apply_env_overrides(config: TUIConfig) -> None:
     env_health_url = os.getenv("TUI_HEALTH_DASHBOARD_URL")
     if env_health_url:
         config.health_dashboard_url = env_health_url
+
+    env_api_base = os.getenv("TUI_API_BASE_URL")
+    if env_api_base:
+        config.api_base_url = env_api_base.strip().rstrip("/") or None

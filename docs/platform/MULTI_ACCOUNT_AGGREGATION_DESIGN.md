@@ -9,6 +9,47 @@
 
 This document designs a comprehensive system for aggregating positions and account data from multiple sources into a unified portfolio view. The system supports 21+ accounts across multiple broker types, with account-level tracking and optional portfolio-level aggregation.
 
+### Independent providers (parallel accounts and positions)
+
+The following providers are **independent**: you can have accounts and positions in parallel across them. They are not mutually exclusive; the platform supports multiple brokers and bank connections simultaneously.
+
+| Provider | Type | Notes |
+|----------|------|--------|
+| **Discount** (Discount Bank) | Israeli bank | Market securities, cash, loans; via Python service (port 8003) and/or Israeli bank scrapers (`companyId: discount`); positions in parallel |
+| **Alpaca** | US broker | Live/paper; positions in parallel |
+| **Tastytrade** | US broker | Live/paper; positions in parallel |
+| **TradeStation** | US broker | Live/paper; positions in parallel |
+| **IB** (Interactive Brokers) | US broker | TWS API / Client Portal; live/paper; positions in parallel |
+| **Fibi** | Israeli bank | In `broker.priorities`; market securities, cash, loans; also via Israeli bank scrapers (`companyId: fibi`); independent of other providers |
+| **Meitav** | Israeli broker | In `broker.priorities`; cache, margin, TASE + US instruments; independent |
+| **IBI** | Israeli broker | In `broker.priorities`; cache, margin, TASE + US instruments; independent |
+
+**Israeli bank scrapers** (service port 8010): The scrapers support multiple companies per [israeli-bank-scrapers](https://github.com/eshaham/israeli-bank-scrapers); each company is an independent source. Select via `SCRAPER_COMPANY_ID` or POST `/scrape` body `companyId`. Available companies include **fibi**, **max**, **visaCal**, **discount**, **leumi**, **hapoalim**, **isracard**, **beinleumi**, **mizrahi**, etc. You can run scrapes for different companies in parallel (e.g. different processes or sequential runs); each writes to the shared ledger under `Assets:Bank:{BankName}:{accountNumber}`. Config `broker.priorities` lists which providers are used for ordering/display: `["ib", "alpaca", "fibi", "meitav", "ibi", "discount", "mock"]` — all of these are independent.
+
+Other sources (e.g. Tradier, pension funds) follow the same pattern: account-level data with optional aggregation. Primary model is **account-level tracking**; portfolio-level aggregation is optional.
+
+### TUI and PWA behavior (independent backends)
+
+- **PWA (Web)**: Account selector fetches from all configured backends in parallel (IB/Alpaca, TradeStation, Tastytrade, Discount Bank) and shows one combined list with source labels; backend status shows each service independently. The UI includes the note: "Independent backends — accounts and positions can exist in parallel."
+- **TUI (Python Textual)**: One snapshot provider at a time (rest/mock/file/nats); bank accounts are fetched separately from Discount Bank/ledger and merged into Unified positions. Status bar shows multiple backend health pills; optional tooltip explains that backends are independent (one snapshot at a time; bank accounts in parallel).
+
+### Backends by application
+
+Backends serve different applications (trading, market data, banking, rates, platform). The PWA and TUI group backend status by role so it is clear which service supports which application.
+
+| Backend | Application | Purpose |
+|---------|-------------|---------|
+| IB (TWS/IBKR) | Trading | Order execution, positions, account data |
+| Alpaca | Trading | Order execution, positions, market data |
+| TradeStation | Trading | Order execution, positions |
+| Tastytrade | Trading | Order execution, positions |
+| Tradier | Trading | Order execution, positions |
+| Discount Bank | Banking | Israeli bank accounts, cash, loans, securities |
+| Risk-Free Rate | Rates | Treasury/SOFR yields, benchmark curves |
+| Rust Backend | Platform | Health aggregation, orchestration, future services |
+
+*Market data* may be supplied by trading backends (e.g. Alpaca, IB) or dedicated market-data services; the platform treats them as independent. Status badges in the PWA header and pills in the TUI status bar are grouped by these roles (Trading, Banking, Rates, Platform).
+
 ## Requirements
 
 ### User Specifications

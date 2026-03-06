@@ -208,6 +208,28 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Subscribers**: All components
 - **Schema**: `ConfigUpdate.json`
 
+## Backend snapshot and health (Python backends)
+
+### `snapshot.{backend_id}`
+
+- **Purpose**: Backend snapshot payload (same shape as REST `/api/snapshot` or `/api/v1/snapshot`)
+- **Publisher**: Backend service (IB, Alpaca, TradeStation, Tastytrade) when NATS publish enabled
+- **Subscribers**: TUI/PWA NATS provider, snapshot aggregator
+- **Examples**: `snapshot.ib`, `snapshot.alpaca`, `snapshot.tradestation`
+- **Payload**: JSON snapshot object (generated_at, mode, account_id, metrics, symbols, positions, orders, alerts, risk, etc.)
+
+### Subscription patterns (snapshot)
+
+- `snapshot.>` — All backend snapshots
+- `snapshot.ib` — IB snapshot only
+
+### `system.health`
+
+- **Purpose**: Health status from any backend (single topic; payload includes `backend` id)
+- **Publisher**: Backend service on each health check when NATS publish enabled
+- **Subscribers**: Monitoring, TUI health aggregator, frontends
+- **Payload**: `{"backend": "ib", "status": "ok", "ts": "...", "ib_connected": true, ...}` (backend-specific fields)
+
 ## RPC (Request/Reply) Topics
 
 ### `rpc.strategy.status`

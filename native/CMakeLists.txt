@@ -607,7 +607,7 @@ if(TARGET platform_proto)
             ${CMAKE_CURRENT_SOURCE_DIR}/include
             ${PROTO_GENERATED_DIR}
     )
-    target_link_libraries(proto_adapter PUBLIC platform_proto)
+    target_link_libraries(proto_adapter PUBLIC platform_proto nlohmann_json::nlohmann_json)
     message(STATUS "Proto adapter library: proto_adapter")
 
     # Standalone test for proto adapter (no TWS/Intel deps)

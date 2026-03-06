@@ -27,11 +27,12 @@ from textual.widgets import (
     Footer,
     TabbedContent,
     TabPane,
+    Log,
 )
 from textual.binding import Binding
 
 from .models import SnapshotPayload, BoxSpreadPayload
-from .providers import Provider, MockProvider, RestProvider, FileProvider, BackendHealthAggregator
+from .providers import Provider, MockProvider, RestProvider, FileProvider, NatsProvider, BackendHealthAggregator
 from .config import TUIConfig, load_config, PRESET_REST_ENDPOINTS
 from .box_spread_loader import get_box_spread_payload
 from .log_handler import install_tui_log_handler, remove_tui_log_handler, drain_log_queue, get_buffered_log_lines
@@ -50,6 +51,7 @@ from .components.loan_entry import LoanListTab, LoanManager
 from .components.setup_screen import SetupScreen
 from .components.onepassword_screen import OnePasswordScreen
 from .components.logs_tab import LogsTab
+from .components.benchmarks_tab import BenchmarksTab
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +69,7 @@ TUI_TAB_IDS: List[str] = [
     "alerts-tab",
     "scenarios-tab",
     "loans-tab",
+    "benchmarks-tab",
     "logs-tab",
 ]
 
@@ -168,6 +171,12 @@ class TUIApp(App):
         height: 1fr;
     }
 
+    /* Compact tab bar: show more tabs when terminal is wide */
+    #tabs #tabs-list > * {
+        padding: 0 1;
+        min-width: 0;
+    }
+
     TabbedContent > Vertical {
         width: 100%;
         height: 1fr;
@@ -193,8 +202,44 @@ class TUIApp(App):
         background: $surface-darken-2;
         color: $text;
     }
-
-    /* Environment colour strip: mock = cyan tint, paper = amber, live = red */
+    #status-bar > Horizontal {
+        width: 100%;
+        height: auto;
+    }
+    #status-badge {
+        width: auto;
+        text-style: bold;
+        color: $primary;
+    }
+    #status-pills {
+        width: auto;
+        height: auto;
+    }
+    #status-rest {
+        width: 1fr;
+        min-width: 20;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .status-pill {
+        width: auto;
+        text-style: bold;
+        padding: 0 0;
+        margin: 0 0;
+    }
+    .status-pill-ok {
+        color: $text-success;
+    }
+    .status-pill-warn {
+        color: $text-warning;
+    }
+    .status-pill-err {
+        color: $text-error;
+    }
+    .status-pill-group {
+        color: $text-muted;
+        text-style: italic;
+    }
     #status-bar.mode-mock {
         background: $primary-darken-3;
         border-top: tall $primary;
@@ -264,11 +309,11 @@ class TUIApp(App):
     TITLE = "IB Box Spread Terminal"
     BINDINGS = [
         Binding("q", "quit", "Quit"),
-        Binding("f1", "help", "Help"),
-        Binding("f2", "setup", "Setup"),
-        Binding("f3", "op_secrets", "1Password"),
-        Binding("f5", "refresh", "Refresh"),
-        Binding("f10", "quit", "Quit"),
+        Binding("f1", "help", "Help", key_display="F1"),
+        Binding("f2", "setup", "Setup", key_display="F2"),
+        Binding("f3", "op_secrets", "1Password", key_display="F3"),
+        Binding("f5", "refresh", "Refresh", key_display="F5"),
+        Binding("f10", "quit", "Quit", key_display="F10"),
     ]
 
     def __init__(
@@ -311,34 +356,34 @@ class TUIApp(App):
 
         with Container(id="main-container"):
             with TabbedContent(id="tabs"):
-                with TabPane("Dashboard", id="dashboard-tab"):
+                with TabPane("Dash", id="dashboard-tab"):
                     self._dashboard_tab = DashboardTab(
                         classes="tab-content-fill",
                         watchlist=getattr(self.config, "watchlist", None),
                     )
                     yield self._dashboard_tab
 
-                with TabPane("Unified Positions", id="unified-positions-tab"):
+                with TabPane("Unified", id="unified-positions-tab"):
                     self._unified_positions_tab = UnifiedPositionsTab(classes="tab-content-fill")
                     yield self._unified_positions_tab
 
-                with TabPane("Cash Flow", id="cash-flow-tab"):
+                with TabPane("Cash", id="cash-flow-tab"):
                     self._cash_flow_tab = CashFlowTab(classes="tab-content-fill")
                     yield self._cash_flow_tab
 
-                with TabPane("Simulation", id="simulation-tab"):
+                with TabPane("Sim", id="simulation-tab"):
                     self._opportunity_simulation_tab = OpportunitySimulationTab(classes="tab-content-fill")
                     yield self._opportunity_simulation_tab
 
-                with TabPane("Relationships", id="relationships-tab"):
+                with TabPane("Rels", id="relationships-tab"):
                     self._relationship_visualization_tab = RelationshipVisualizationTab(classes="tab-content-fill")
                     yield self._relationship_visualization_tab
 
-                with TabPane("Positions", id="positions-tab"):
+                with TabPane("Pos", id="positions-tab"):
                     self._positions_tab = PositionsTab(classes="tab-content-fill")
                     yield self._positions_tab
 
-                with TabPane("Historic", id="historic-tab"):
+                with TabPane("Hist", id="historic-tab"):
                     self._historic_tab = HistoricTab(classes="tab-content-fill")
                     yield self._historic_tab
 
@@ -350,13 +395,17 @@ class TUIApp(App):
                     self._alerts_tab = AlertsTab(classes="tab-content-fill")
                     yield self._alerts_tab
 
-                with TabPane("Scenarios", id="scenarios-tab"):
+                with TabPane("Scen", id="scenarios-tab"):
                     self._scenarios_tab = ScenariosTab(classes="tab-content-fill")
                     yield self._scenarios_tab
 
                 with TabPane("Loans", id="loans-tab"):
                     self._loan_tab = LoanListTab(self._loan_manager, classes="tab-content-fill")
                     yield self._loan_tab
+
+                with TabPane("Rates", id="benchmarks-tab"):
+                    self._benchmarks_tab = BenchmarksTab(classes="tab-content-fill")
+                    yield self._benchmarks_tab
 
                 with TabPane("Logs", id="logs-tab"):
                     self._logs_tab = LogsTab(max_lines=500, classes="tab-content-fill")
@@ -404,7 +453,7 @@ class TUIApp(App):
             self._backend_health_aggregator = BackendHealthAggregator(
                 self.config.backend_ports,
                 tcp_backend_ports=self.config.tcp_backend_ports,
-                unified_health_url=getattr(self.config, "health_dashboard_url", None),
+                unified_health_url=_effective_health_url(self.config),
             )
             self._backend_health_aggregator.start()
         self.set_interval(0.5, self._update_snapshot)  # Update every 500ms
@@ -413,7 +462,27 @@ class TUIApp(App):
         self.set_interval(30.0, self._fetch_bank_accounts)  # Update bank accounts every 30 seconds
         self.set_interval(3.0, self._check_config_reload)  # T-114: config file watch (hot-reload)
         self._fetch_bank_accounts()  # Initial fetch
+        # Seed taskbar status bar with placeholder pills so indicators show immediately
+        self.call_next(self._seed_status_bar_pills)
         logger.info("TUI application mounted")
+
+    def _seed_status_bar_pills(self) -> None:
+        """Set placeholder backend_health on the status bar so pills show in the taskbar before first aggregator result."""
+        try:
+            status_bar = self.query_one("#status-bar", StatusBar)
+            if getattr(status_bar, "backend_health", None) is not None:
+                return  # Already set by _update_snapshot
+            placeholder: Dict[str, Dict[str, Any]] = {}
+            for name in list(self.config.backend_ports.keys()) + list(getattr(self.config, "tcp_backend_ports", {}).keys()):
+                placeholder[name] = {"status": "checking", "error": "..."}
+            for name, reason in getattr(self.config, "disabled_backends", {}).items():
+                placeholder[name] = {"status": "disabled", "error": reason}
+            if not placeholder:
+                placeholder["connection"] = {"status": "checking", "error": "..."}
+            status_bar.backend_health = placeholder
+            status_bar._refresh()
+        except Exception as e:
+            logger.debug("Seed status bar pills: %s", e)
 
     def on_unmount(self) -> None:
         """Called when app exits"""
@@ -440,6 +509,8 @@ class TUIApp(App):
             path = getattr(self.provider, "file_path", None)
             name = path.name if path else "file"
             return f"file ({name})"
+        if isinstance(self.provider, NatsProvider):
+            return f"nats (snapshot.{self.provider.snapshot_backend})"
         return "mock"
 
     def switch_to_tab(self, tab_id: str) -> None:
@@ -454,71 +525,125 @@ class TUIApp(App):
         tabs = self.query_one("#tabs", TabbedContent)
         return tabs.active or TUI_TAB_IDS[0]
 
-    def _update_snapshot(self) -> None:
-        """Update snapshot from provider"""
-        new_snapshot = self.provider.get_snapshot()
-        status_bar = self.query_one("#status-bar", StatusBar)
-        status_bar.provider_label = self._get_provider_label()
-        status_bar.environment = get_environment(self.provider, new_snapshot)
-        self._apply_theme_for_environment(status_bar.environment)
-        # All backend health: from aggregator if present, else single backend from current provider
-        all_health: Dict[str, Dict[str, Any]] = {}
-        if self._backend_health_aggregator:
-            all_health = self._backend_health_aggregator.get_all_health()
-        # Overlay disabled backends (e.g. missing API keys) so TUI shows "disabled" instead of unreachable
-        for name, reason in getattr(self.config, "disabled_backends", {}).items():
-            all_health[name] = {"status": "disabled", "error": reason}
-        if not all_health and hasattr(self.provider, "get_health"):
-            h = self.provider.get_health()
-            if h is not None:
-                all_health["current"] = h
-        # Show "checking..." when aggregator is running but no health data yet
-        if not all_health and self._backend_health_aggregator:
-            all_health = {"connection": {"status": "checking", "error": "polling..."}}
-        status_bar.backend_health = all_health if all_health else None
-        if new_snapshot != self.snapshot:
-            self.snapshot = new_snapshot
-            status_bar.snapshot = new_snapshot
+    def on_tabbed_content_tab_activated(self, event: TabbedContent.TabActivated) -> None:
+        """When user switches to Logs tab, refresh with current buffer and queue so logs display."""
+        if getattr(event.control, "active", None) == "logs-tab":
+            self.call_next(self._refresh_logs_tab)
 
-            # Update tabs
-            if self._dashboard_tab:
-                self._dashboard_tab.update_snapshot(new_snapshot, backend_health=all_health or None)
-            if self._unified_positions_tab:
-                self._unified_positions_tab.update_snapshot(new_snapshot, self._bank_accounts)
-            if self._cash_flow_tab:
-                self._cash_flow_tab.update_snapshot(new_snapshot, self._bank_accounts)
-            if self._opportunity_simulation_tab:
-                self._opportunity_simulation_tab.update_snapshot(new_snapshot, self._bank_accounts)
-            if self._relationship_visualization_tab:
-                self._relationship_visualization_tab.update_snapshot(new_snapshot, self._bank_accounts)
-            if self._positions_tab:
-                self._positions_tab.update_snapshot(new_snapshot)
-            if self._orders_tab:
-                self._orders_tab.update_snapshot(new_snapshot)
-            if self._alerts_tab:
-                self._alerts_tab.update_snapshot(new_snapshot)
-            if self._historic_tab:
-                self._historic_tab.update_snapshot(new_snapshot)
+    def _update_snapshot(self) -> None:
+        """Update snapshot from provider. Never raises: on backend loss we show unhealthy and retry."""
+        try:
+            new_snapshot = self.provider.get_snapshot()
+            status_bar = self.query_one("#status-bar", StatusBar)
+            status_bar.provider_label = self._get_provider_label()
+            status_bar.environment = get_environment(self.provider, new_snapshot)
+            self._apply_theme_for_environment(status_bar.environment)
+            # All backend health: from aggregator if present, else single backend from current provider
+            all_health: Dict[str, Dict[str, Any]] = {}
+            if self._backend_health_aggregator:
+                all_health = self._backend_health_aggregator.get_all_health()
+            # Overlay disabled backends (e.g. missing API keys) so TUI shows "disabled" instead of unreachable
+            for name, reason in getattr(self.config, "disabled_backends", {}).items():
+                all_health[name] = {"status": "disabled", "error": reason}
+            if not all_health and hasattr(self.provider, "get_health"):
+                h = self.provider.get_health()
+                if h is not None:
+                    all_health["current"] = h
+            # When aggregator is running but no data yet, show "checking" for each configured backend so taskbar pills appear
+            if not all_health and self._backend_health_aggregator:
+                for name in list(self.config.backend_ports.keys()) + list(getattr(self.config, "tcp_backend_ports", {}).keys()):
+                    all_health[name] = {"status": "checking", "error": "..."}
+            status_bar.backend_health = all_health if all_health else None
+            status_bar._refresh()
+            if new_snapshot != self.snapshot:
+                self.snapshot = new_snapshot
+                status_bar.snapshot = new_snapshot
+
+                # Update tabs
+                if self._dashboard_tab:
+                    self._dashboard_tab.update_snapshot(new_snapshot, backend_health=all_health or None)
+                if self._unified_positions_tab:
+                    self._unified_positions_tab.update_snapshot(new_snapshot, self._bank_accounts)
+                if self._cash_flow_tab:
+                    self._cash_flow_tab.update_snapshot(new_snapshot, self._bank_accounts)
+                if self._opportunity_simulation_tab:
+                    self._opportunity_simulation_tab.update_snapshot(new_snapshot, self._bank_accounts)
+                if self._relationship_visualization_tab:
+                    self._relationship_visualization_tab.update_snapshot(new_snapshot, self._bank_accounts)
+                if self._positions_tab:
+                    self._positions_tab.update_snapshot(new_snapshot)
+                if self._orders_tab:
+                    self._orders_tab.update_snapshot(new_snapshot)
+                if self._alerts_tab:
+                    self._alerts_tab.update_snapshot(new_snapshot)
+                if self._historic_tab:
+                    self._historic_tab.update_snapshot(new_snapshot)
+        except Exception as e:
+            logger.debug("Snapshot update error (backends may be restarting): %s", e)
+            try:
+                status_bar = self.query_one("#status-bar", StatusBar)
+                # Keep last snapshot; mark connection as unhealthy so UI shows retrying
+                all_health = {}
+                if self._backend_health_aggregator:
+                    all_health = self._backend_health_aggregator.get_all_health()
+                for name, reason in getattr(self.config, "disabled_backends", {}).items():
+                    all_health[name] = {"status": "disabled", "error": reason}
+                if not all_health:
+                    for name in list(self.config.backend_ports.keys()) + list(getattr(self.config, "tcp_backend_ports", {}).keys()):
+                        all_health[name] = {"status": "error", "error": "retrying…", "hint": "Backend may be restarting"}
+                status_bar.backend_health = all_health or None
+                status_bar._refresh()
+            except Exception:
+                pass
 
     def _drain_tui_logs(self) -> None:
-        """Drain TUI log queue and append to Logs tab."""
+        """Drain TUI log queue and append to Logs tab. Uses app-level query so the Log widget is found when the tab is in the DOM."""
         if not self._logs_tab:
             return
         if not self._logs_buffer_loaded:
             self._logs_buffer_loaded = True
             buf = get_buffered_log_lines()
             if buf:
-                self._logs_tab.load_buffer(buf)
+                try:
+                    log = self.query_one("#tui-log", Log)
+                    log.clear()
+                    for line in buf:
+                        log.write(line)
+                except Exception:
+                    pass
         lines = drain_log_queue()
         if lines:
-            self._logs_tab.write_lines(lines)
+            try:
+                log = self.query_one("#tui-log", Log)
+                for line in lines:
+                    log.write(line)
+            except Exception:
+                pass
+
+    def _refresh_logs_tab(self) -> None:
+        """Load current buffer and drain queue into Logs tab (call when user switches to Logs tab)."""
+        if not self._logs_tab:
+            return
+        try:
+            log = self.query_one("#tui-log", Log)
+            log.clear()
+            for line in get_buffered_log_lines():
+                log.write(line)
+            for line in drain_log_queue():
+                log.write(line)
+        except Exception:
+            pass
 
     def _fetch_bank_accounts(self) -> None:
-        """Fetch bank accounts from Discount Bank service"""
+        """Fetch bank accounts from Discount Bank service or API router."""
+        url = "http://localhost:8003/api/bank-accounts"
+        if getattr(self.config, "api_base_url", None):
+            base = self.config.api_base_url.strip().rstrip("/")
+            url = f"{base}/api/bank-accounts"
         try:
             import requests
             response = requests.get(
-                "http://localhost:8003/api/bank-accounts",
+                url,
                 timeout=2.0,
                 headers={"cache-control": "no-cache"}
             )
@@ -604,7 +729,7 @@ class TUIApp(App):
             self._backend_health_aggregator = BackendHealthAggregator(
                 self.config.backend_ports,
                 tcp_backend_ports=self.config.tcp_backend_ports,
-                unified_health_url=getattr(self.config, "health_dashboard_url", None),
+                unified_health_url=_effective_health_url(self.config),
             )
             self._backend_health_aggregator.start()
 
@@ -618,11 +743,17 @@ class TUIApp(App):
 
     def action_setup(self) -> None:
         """Show setup screen"""
+        try:
+            status_bar = self.query_one("#status-bar", StatusBar)
+            backend_health = getattr(status_bar, "backend_health", None)
+        except Exception:
+            backend_health = None
         self.push_screen(
             SetupScreen(
                 self.config,
                 self._get_provider_label(),
                 str(self._loan_manager.loans_file_path),
+                backend_health=backend_health,
             ),
             self._on_setup_closed,
         )
@@ -641,11 +772,15 @@ class TUIApp(App):
         ptype = (params.get("provider_type") or "mock").lower()
         rest_endpoint = params.get("rest_endpoint")
         file_path = params.get("file_path")
+        nats_url = params.get("nats_url") or self.config.nats_url
+        nats_snapshot_backend = params.get("nats_snapshot_backend") or self.config.nats_snapshot_backend
         self.provider.stop()
         temp_config = TUIConfig(
             provider_type=ptype,
             rest_endpoint=rest_endpoint or self.config.rest_endpoint,
             file_path=file_path or self.config.file_path,
+            nats_url=nats_url,
+            nats_snapshot_backend=nats_snapshot_backend,
             update_interval_ms=self.config.update_interval_ms,
             rest_timeout_ms=self.config.rest_timeout_ms,
         )
@@ -655,6 +790,9 @@ class TUIApp(App):
             self.config.rest_endpoint = rest_endpoint
         if file_path is not None:
             self.config.file_path = file_path
+        if ptype == "nats":
+            self.config.nats_url = nats_url
+            self.config.nats_snapshot_backend = nats_snapshot_backend
         self.provider.start()
         label = self._get_provider_label()
         self._apply_theme_for_provider()
@@ -664,6 +802,17 @@ class TUIApp(App):
         """Force refresh snapshot"""
         self._update_snapshot()
         self.notify("Refreshed", title="Refresh")
+
+
+def _effective_health_url(config: TUIConfig) -> Optional[str]:
+    """Unified health URL: health_dashboard_url, or api_base_url + /api/health when using router."""
+    url = getattr(config, "health_dashboard_url", None)
+    if url:
+        return url
+    base = getattr(config, "api_base_url", None)
+    if base:
+        return base.strip().rstrip("/") + "/api/health"
+    return None
 
 
 def create_provider_from_config(config: TUIConfig) -> Provider:
@@ -682,11 +831,15 @@ def create_provider_from_config(config: TUIConfig) -> Provider:
         )
 
     elif provider_type == "rest" or provider_type in PRESET_REST_ENDPOINTS:
-        endpoint = (
-            config.rest_endpoint
-            or PRESET_REST_ENDPOINTS.get(provider_type)
-            or "http://localhost:8002/api/v1/snapshot"
-        )
+        if getattr(config, "api_base_url", None):
+            base = config.api_base_url.strip().rstrip("/")
+            endpoint = f"{base}/api/v1/snapshot"
+        else:
+            endpoint = (
+                config.rest_endpoint
+                or PRESET_REST_ENDPOINTS.get(provider_type)
+                or "http://localhost:8002/api/v1/snapshot"
+            )
         return RestProvider(
             endpoint=endpoint,
             update_interval_ms=config.update_interval_ms,
@@ -698,6 +851,12 @@ def create_provider_from_config(config: TUIConfig) -> Provider:
         file_path = config.file_path or "web/public/data/snapshot.json"
         return FileProvider(
             file_path=file_path, update_interval_ms=config.update_interval_ms
+        )
+
+    elif provider_type == "nats":
+        return NatsProvider(
+            nats_url=getattr(config, "nats_url", "nats://localhost:4222"),
+            snapshot_backend=getattr(config, "nats_snapshot_backend", "ib"),
         )
 
     else:

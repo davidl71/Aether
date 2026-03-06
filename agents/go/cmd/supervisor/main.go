@@ -3,6 +3,7 @@
 // individual start_*.sh / stop_*.sh scripts with a single binary.
 //
 // Config: SUPERVISOR_CONFIG (default "config/services.json")
+// Root for relative "dir": SUPERVISOR_ROOT (default "."). Set to project root when run from agents/go.
 //
 //	[
 //	  {"name": "backend",  "cmd": ["cargo", "run", ...], "dir": "agents/backend"},
@@ -19,6 +20,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -35,6 +37,14 @@ type serviceSpec struct {
 	Name string   `json:"name"`
 	Cmd  []string `json:"cmd"`
 	Dir  string   `json:"dir"`
+}
+
+// resolveWorkDir returns dir if absolute, otherwise filepath.Join(root, dir).
+func resolveWorkDir(root, dir string) string {
+	if filepath.IsAbs(dir) {
+		return dir
+	}
+	return filepath.Join(root, dir)
 }
 
 func main() {
@@ -70,6 +80,7 @@ func main() {
 }
 
 func supervise(ctx context.Context, s serviceSpec) {
+	workDir := resolveWorkDir(env("SUPERVISOR_ROOT", "."), s.Dir)
 	backoff := 1 * time.Second
 	for {
 		select {
@@ -78,10 +89,10 @@ func supervise(ctx context.Context, s serviceSpec) {
 		default:
 		}
 
-		log.Printf("[%s] starting: %v", s.Name, s.Cmd)
+		log.Printf("[%s] starting: %v (dir=%s)", s.Name, s.Cmd, workDir)
 
 		cmd := exec.CommandContext(ctx, s.Cmd[0], s.Cmd[1:]...)
-		cmd.Dir = s.Dir
+		cmd.Dir = workDir
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 

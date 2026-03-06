@@ -55,6 +55,11 @@ body {
   color: #94a3b8;
 }
 
+.header__stale {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
 .header__account-badge {
   display: inline-flex;
   align-items: center;
@@ -387,8 +392,9 @@ body {
 
 .account-selector__header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
   padding: 16px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
 }
@@ -397,6 +403,20 @@ body {
   margin: 0;
   font-size: 1.1rem;
   color: #e2e8f0;
+}
+
+.account-selector__header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.account-selector__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: normal;
 }
 
 .account-selector__close {
@@ -519,6 +539,39 @@ body {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.header__status-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header__status-group-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.header__status-sep {
+  color: var(--color-text-muted, #6b7280);
+  margin: 0 4px;
+  user-select: none;
+}
+
+.header__gateway-link {
+  font-size: 0.8rem;
+  color: var(--color-link, #93c5fd);
+  text-decoration: none;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: background 0.2s, color 0.2s;
+}
+.header__gateway-link:hover {
+  text-decoration: underline;
+  background: rgba(147, 197, 253, 0.15);
 }
 
 .status-badge {

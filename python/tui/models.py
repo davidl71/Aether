@@ -277,6 +277,8 @@ class SnapshotPayload:
     orders: List[TimelineEvent] = field(default_factory=list)
     alerts: List[TimelineEvent] = field(default_factory=list)
     cash_flow_timeline: Optional[Dict[str, Any]] = None
+    decisions: List[Any] = field(default_factory=list)
+    risk: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization (shared with PWA)"""
@@ -294,6 +296,10 @@ class SnapshotPayload:
         }
         if self.cash_flow_timeline is not None:
             result["cash_flow_timeline"] = self.cash_flow_timeline
+        if self.decisions:
+            result["decisions"] = self.decisions
+        if self.risk is not None:
+            result["risk"] = self.risk
         return result
 
     def to_json(self) -> str:
@@ -315,6 +321,8 @@ class SnapshotPayload:
             orders=[TimelineEvent.from_dict(o) for o in data.get("orders", [])],
             alerts=[TimelineEvent.from_dict(a) for a in data.get("alerts", [])],
             cash_flow_timeline=data.get("cash_flow_timeline"),
+            decisions=data.get("decisions", []),
+            risk=data.get("risk"),
         )
 
     @classmethod

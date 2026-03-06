@@ -37,7 +37,13 @@ elif [[ -x "${SCRIPT_DIR}/run_exarp_go.sh" ]]; then
   if [[ "${TOOL}" == "--list" ]]; then
     exec "${SCRIPT_DIR}/run_exarp_go.sh" -list -quiet
   fi
-  exec "${SCRIPT_DIR}/run_exarp_go.sh" -tool "${TOOL}" -args "${ARGS}" -quiet
+  # Pass JSON args as single token to avoid any shell/flag splitting
+  TMP_ARGS="$(mktemp -t exarp_args.XXXXXXXXXX)"
+  printf '%s' "${ARGS}" > "${TMP_ARGS}"
+  trap 'rm -f "${TMP_ARGS}"' EXIT
+  EXARP_ARGS="$(cat "${TMP_ARGS}")"
+  rm -f "${TMP_ARGS}"
+  exec "${SCRIPT_DIR}/run_exarp_go.sh" -tool "${TOOL}" -args="${EXARP_ARGS}" -quiet
 fi
 
 if [[ -z "${EXARP_GO_CMD}" ]]; then
@@ -48,4 +54,10 @@ fi
 if [[ "${TOOL}" == "--list" ]]; then
   exec "${EXARP_GO_CMD}" -list -quiet
 fi
-exec "${EXARP_GO_CMD}" -tool "${TOOL}" -args "${ARGS}" -quiet
+# Pass JSON args as single token to avoid any shell/flag splitting
+TMP_ARGS="$(mktemp -t exarp_args.XXXXXXXXXX)"
+printf '%s' "${ARGS}" > "${TMP_ARGS}"
+trap 'rm -f "${TMP_ARGS}"' EXIT
+EXARP_ARGS="$(cat "${TMP_ARGS}")"
+rm -f "${TMP_ARGS}"
+exec "${EXARP_GO_CMD}" -tool "${TOOL}" -args="${EXARP_ARGS}" -quiet

@@ -1,0 +1,38 @@
+---
+description: Regression and sanity checks before push or after edits
+alwaysApply: false
+---
+
+# Regression and sanity checks
+
+Use these to catch regressions before pushing or after TUI/PWA/native edits.
+
+## Commands
+
+| Command | What it runs | When to use |
+|---------|----------------|-------------|
+| **`just pre-push`** | format → lint → test → build | Full regression gate before `git push`. Runs C++ and project linters/tests and build. |
+| **`just sanity`** | Python tests + TUI QA screenshot | Quick sanity without C++ build. Use after Python/TUI-only changes. |
+| **`just tag-ok`** | build + test, then `git tag -f build-ok` | Tag current commit as last known-good; later compare with `git diff build-ok` to spot regressions. |
+
+## Before committing (checklist)
+
+From `.cursor/skills/before-commit.md` and `.cursorrules`:
+
+1. **Lint:** `lint:run` or `just lint`
+2. **Tests:** `test:run` or `just test` (C++); for Python-only: `just test-python` or `uv run pytest python/tests/ -v`
+3. **Build:** `build:debug` or `build:ai-friendly` (ensures build still works)
+4. **Secrets:** Manual check — no credentials/API keys in the commit
+5. **Docs:** If behavior/APIs changed, update docs (optional: exarp-go docs health with workingDirectory = project root)
+
+## When to suggest
+
+- **User asks about regressions or sanity checks** → Suggest `just pre-push` for full gate, or `just sanity` for quick Python/TUI check.
+- **After editing TUI (python/tui/) or run_python_tui.sh** → Suggest `just sanity` or at least `just test-python` and optionally run TUI once (`just run-tui` or `./scripts/run_python_tui.sh mock`).
+- **Before pushing** → Suggest `just pre-push` (or the before-commit checklist if they prefer step-by-step).
+
+## References
+
+- Justfile: `pre-push`, `sanity`, `tag-ok`, `test-python`, `qa-tui-screenshot`
+- Skill: `.cursor/skills/before-commit.md`
+- Main rules: `.cursorrules` "Before Committing", `just-cmake-shortcuts.mdc`

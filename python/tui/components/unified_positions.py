@@ -39,14 +39,15 @@ INSTRUMENT_TYPE_ORDER: List[str] = [
 class UnifiedPositionsTab(Container):
     """Unified positions tab showing all positions grouped by instrument type"""
 
-    def __init__(self, snapshot: Optional[SnapshotPayload] = None, bank_accounts: Optional[List[Dict]] = None):
-        super().__init__()
+    def __init__(self, snapshot: Optional[SnapshotPayload] = None, bank_accounts: Optional[List[Dict]] = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.snapshot = snapshot
         self.bank_accounts = bank_accounts or []
         self._expanded_groups: set = set(INSTRUMENT_TYPE_ORDER)  # All groups expanded by default
+        self._expanded_groups: set = set(INSTRUMENT_TYPE_ORDER)  # All groups expanded by default
 
     def compose(self) -> ComposeResult:
-        with Vertical():
+        with Vertical(classes="fill"):
             yield Label("Unified Positions", classes="tab-title")
             yield Label(id="summary-label")
             yield Container(id="positions-container")
