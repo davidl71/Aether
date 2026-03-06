@@ -8,7 +8,7 @@ import webbrowser
 from typing import Optional, List, Tuple
 
 from textual.screen import Screen
-from textual.containers import Container
+from textual.containers import Container, Horizontal
 from textual.widgets import Header, Footer, Static, Button, DataTable
 from textual.binding import Binding
 
@@ -54,6 +54,21 @@ def _is_op_ref(value: Optional[str]) -> bool:
     return bool(value and str(value).strip().startswith("op://"))
 
 
+# Resolved values that we treat as placeholder (replace in 1Password)
+PLACEHOLDER_RESOLVED_VALUES = frozenset({
+    "replace-me", "placeholder", "optional", "missing", "...", "x", "xx", "xxx",
+    "replace me", "replace_me", "todo", "tbd", "na", "n/a", "none", "null", "",
+})
+
+
+def _is_placeholder_value(resolved: Optional[str]) -> bool:
+    """True if resolved secret value is a known placeholder (should be replaced in 1Password)."""
+    if resolved is None:
+        return False
+    v = str(resolved).strip().lower()
+    return v in PLACEHOLDER_RESOLVED_VALUES
+
+
 def _open_url(url: str) -> bool:
     """Open a URL (e.g. op://) with the system default handler. Returns True if launched."""
     try:
@@ -73,12 +88,19 @@ def _open_url(url: str) -> bool:
         return False
 
 
-def _secret_status(env_var: str, try_fred_discovery: bool = False, try_alpha_vantage_discovery: bool = False, try_finnhub_discovery: bool = False) -> Tuple[str, bool]:
+def _secret_status(
+    env_var: str,
+    try_fred_discovery: bool = False,
+    try_alpha_vantage_discovery: bool = False,
+    try_finnhub_discovery: bool = False,
+    try_alpaca_discovery: bool = False,
+) -> Tuple[str, bool]:
     """Return (status_text, is_placeholder) for one OP_*_SECRET.
     Status: 'Set (op://)', 'Set (vault)', 'Not set', or 'Set (plain)'.
     When try_fred_discovery is True and env var is unset, tries get_fred_api_key_from_1password() to show vault detection.
     When try_alpha_vantage_discovery is True and env var is unset, tries get_alpha_vantage_api_key_from_1password().
     When try_finnhub_discovery is True and env var is unset, tries get_finnhub_api_key_from_1password().
+    When try_alpaca_discovery is True and env var is unset, tries get_alpaca_credentials_from_1password() (API Key ID / API Secret Key).
     """
     val = os.getenv(env_var, "").strip()
     if not val:
@@ -103,13 +125,20 @@ def _secret_status(env_var: str, try_fred_discovery: bool = False, try_alpha_van
                     return "Set (vault)", False
             except Exception:
                 pass
+        if try_alpaca_discovery:
+            try:
+                from ...integration.onepassword_sdk_helper import get_alpaca_credentials_from_1password
+                if get_alpaca_credentials_from_1password():
+                    return "Set (vault)", False
+            except Exception:
+                pass
         return "Not set", False
     if _is_op_ref(val):
-        # Optionally resolve to detect placeholder (never show real secret values)
+        # Resolve to detect placeholder (never show real secret values)
         try:
             from ...integration.onepassword_sdk_helper import resolve_secret
             resolved = resolve_secret(val)
-            if resolved == "replace-me":
+            if _is_placeholder_value(resolved):
                 return "Set (op://)", True
         except Exception:
             pass
@@ -136,6 +165,52 @@ def _op_vault_list_ok() -> bool:
         return r.returncode == 0
     except Exception:
         return False
+
+
+def _list_vault_items() -> List[Tuple[str, str]]:
+    """Return list of (title, vault_name) for items in the default vault(s). Empty if op unavailable or unauthenticated."""
+    out: List[Tuple[str, str]] = []
+    try:
+        r = subprocess.run(
+            ["op", "item", "list", "--format=json"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if r.returncode != 0 or not r.stdout:
+            return out
+        import json
+        items = json.loads(r.stdout)
+        for it in items:
+            title = (it.get("title") or "").strip()
+            vault = it.get("vault") or {}
+            vault_name = (vault.get("name") or "").strip() or "—"
+            if title:
+                out.append((title, vault_name))
+    except Exception:
+        pass
+    return out
+
+
+# Backend display name -> substring to match in vault item title (lowercase)
+VAULT_TITLE_MATCH: List[Tuple[str, str]] = [
+    ("Alpaca", "alpaca"),
+    ("Tastytrade", "tasty"),
+    ("TradeStation", "tradestation"),
+    ("FRED (SOFR/Treasury)", "fred"),
+    ("Alpha Vantage", "alpha"),
+    ("Finnhub", "finnhub"),
+    ("JupyterLab", "jupyter"),
+]
+
+
+def _vault_items_by_backend(vault_items: List[Tuple[str, str]]) -> dict:
+    """Return backend_name -> True if at least one vault item title matches that backend."""
+    found: dict = {}
+    title_lower = [(t.lower(), v) for t, v in vault_items]
+    for backend_name, substring in VAULT_TITLE_MATCH:
+        found[backend_name] = any(substring in t for t, _ in title_lower)
+    return found
 
 
 def _suggested_alpaca_exports() -> Optional[str]:
@@ -295,29 +370,73 @@ def _build_status_text() -> Tuple[str, str, Optional[str]]:
     return sdk_auth, table_text, suggested
 
 
-def _build_table_rows() -> Tuple[List[Tuple[str, str, str, str, str]], List[Optional[str]]]:
-    """Build (Backend, Secret, Status, Env var, Open) rows and a list of op ref per row (for open link)."""
-    rows: List[Tuple[str, str, str, str, str]] = []
+def _format_found_in_vault(vault_items: List[Tuple[str, str]], vault_by_backend: dict) -> str:
+    """Return a one-line summary of vault item titles that match known backends, e.g. 'Found in vault: Alpaca, FRED API'."""
+    if not vault_items or not vault_by_backend:
+        return ""
+    matched_titles: List[str] = []
+    seen: set = set()
+    title_lower = [(t.lower(), t) for t, _ in vault_items]
+    for backend_name, substring in VAULT_TITLE_MATCH:
+        if not vault_by_backend.get(backend_name):
+            continue
+        for tl, orig in title_lower:
+            if substring in tl and orig not in seen:
+                seen.add(orig)
+                matched_titles.append(orig)
+                break
+    if not matched_titles:
+        return ""
+    return "Found in vault: " + ", ".join(matched_titles)
+
+
+def _build_table_rows(
+    vault_by_backend: Optional[dict] = None,
+) -> Tuple[List[Tuple[str, str, str, str, str, str, str]], List[Optional[str]]]:
+    """Build (Backend, Secret, Status, Placeholder, Env var, In vault, Open) rows and op refs per row."""
+    rows: List[Tuple[str, str, str, str, str, str, str]] = []
     op_refs: List[Optional[str]] = []
+    vault_ok = vault_by_backend if isinstance(vault_by_backend, dict) else {}
     for backend_name, vars_list in BACKEND_SECRET_VARS:
+        in_vault = "✓" if vault_ok.get(backend_name) else "—"
         for env_var, label in vars_list:
             try_fred = backend_name.startswith("FRED") and "OP_FRED" in env_var
             try_alpha_vantage = backend_name == "Alpha Vantage" and "OP_ALPHA_VANTAGE" in env_var
             try_finnhub = backend_name == "Finnhub" and "OP_FINNHUB" in env_var
+            # Alpaca: discovery only for API Key ID and API Secret Key (what get_alpaca_credentials_from_1password returns)
+            try_alpaca = (
+                backend_name == "Alpaca"
+                and env_var in ("OP_ALPACA_API_KEY_ID_SECRET", "OP_ALPACA_API_SECRET_KEY_SECRET")
+            )
             status, is_placeholder = _secret_status(
                 env_var,
                 try_fred_discovery=try_fred,
                 try_alpha_vantage_discovery=try_alpha_vantage,
                 try_finnhub_discovery=try_finnhub,
+                try_alpaca_discovery=try_alpaca,
             )
             if status == "Set (op://)" and is_placeholder:
                 status = "Set (op://) — replace in 1Password"
+            placeholder_cell = "✓" if is_placeholder else "—"
             val = os.getenv(env_var, "").strip()
             op_ref = val if _is_op_ref(val) else None
             open_label = "↗ Open" if op_ref else "—"
-            rows.append((backend_name, label, status, env_var, open_label))
+            rows.append((backend_name, label, status, placeholder_cell, env_var, in_vault, open_label))
             op_refs.append(op_ref if op_ref else None)
     return rows, op_refs
+
+
+def _format_placeholder_summary(rows: List[Tuple[str, ...]], op_refs: List[Optional[str]]) -> str:
+    """Return a line listing backend (secret) for rows that have placeholder op:// values."""
+    # rows are (Backend, Secret, Status, Placeholder, Env var, In vault, Open)
+    parts: List[str] = []
+    for _i, row in enumerate(rows):
+        if len(row) >= 4 and row[3] == "✓":
+            backend, label = row[0], row[1]
+            parts.append(f"{backend} ({label})")
+    if not parts:
+        return ""
+    return "Placeholder values (replace in 1Password): " + ", ".join(parts)
 
 
 class OnePasswordScreen(Screen[None]):
@@ -341,7 +460,6 @@ class OnePasswordScreen(Screen[None]):
     #op-table-section {
         height: 1fr;
         min-height: 8;
-        max-height: 14;
     }
     #op-secrets-table {
         height: 1fr;
@@ -359,6 +477,12 @@ class OnePasswordScreen(Screen[None]):
         margin: 0 0;
         overflow: hidden;
     }
+    #op-buttons {
+        height: auto;
+    }
+    #op-buttons > Button {
+        margin-right: 1;
+    }
     """
 
     def compose(self):
@@ -372,8 +496,11 @@ class OnePasswordScreen(Screen[None]):
             yield Static("", id="op-sdk-auth", classes="op-line")
             with Container(id="op-table-section"):
                 yield DataTable(id="op-secrets-table")
+            yield Static("", id="op-vault-found", classes="op-hint op-line")
+            yield Static("", id="op-vault-status-hint", classes="op-hint op-line")
+            yield Static("", id="op-placeholder-line", classes="op-hint op-line")
             yield Static("", id="op-suggested", classes="op-hint op-line")
-            with Container():
+            with Horizontal(id="op-buttons"):
                 yield Button("Refresh", id="refresh", variant="primary")
                 yield Button("Open in 1Password", id="open-in-1password")
                 yield Button("Close", id="close")
@@ -385,21 +512,45 @@ class OnePasswordScreen(Screen[None]):
 
     def on_mount(self) -> None:
         table = self.query_one("#op-secrets-table", DataTable)
-        table.add_columns("Backend", "Secret", "Status", "Env var", "Open")
+        table.add_columns("Backend", "Secret", "Status", "Placeholder", "Env var", "In vault", "Open")
         table.cursor_type = "row"
-        self._op_refs: List[Optional[str]] = []
+        self._op_refs = []
         self._refresh_content()
 
     def _refresh_content(self) -> None:
+        vault_items = _list_vault_items()
+        vault_by_backend = _vault_items_by_backend(vault_items) if vault_items else {}
+        found_line = _format_found_in_vault(vault_items, vault_by_backend)
+
         sdk_auth, _table_text, suggested = _build_status_text()
         self.query_one("#op-sdk-auth", Static).update(sdk_auth)
+        if found_line:
+            self.query_one("#op-vault-found", Static).update(found_line)
+        else:
+            self.query_one("#op-vault-found", Static).update("")
+
         table = self.query_one("#op-secrets-table", DataTable)
         table.clear()
-        table.add_columns("Backend", "Secret", "Status", "Env var", "Open")
-        rows, op_refs = _build_table_rows()
+        table.add_columns("Backend", "Secret", "Status", "Placeholder", "Env var", "In vault", "Open")
+        rows, op_refs = _build_table_rows(vault_by_backend=vault_by_backend)
         self._op_refs = op_refs
         for row in rows:
             table.add_row(*row)
+
+        has_set_vault = any(len(r) > 2 and r[2] == "Set (vault)" for r in rows)
+        if has_set_vault:
+            self.query_one("#op-vault-status-hint", Static).update(
+                "[dim]Set (vault) = found in 1Password. Export the suggested op:// refs in your shell and restart TUI to show Set (op://).[/dim]"
+            )
+        else:
+            self.query_one("#op-vault-status-hint", Static).update("")
+
+        placeholder_line = _format_placeholder_summary(rows, op_refs)
+        if placeholder_line:
+            self.query_one("#op-placeholder-line", Static).update(f"[bold yellow]{placeholder_line}[/bold yellow]")
+        else:
+            self.query_one("#op-placeholder-line", Static).update("")
+
         if suggested:
             self.query_one("#op-suggested", Static).update(
                 "[bold]Suggested exports[/] (copy into the shell where you start the TUI):\n\n" + suggested

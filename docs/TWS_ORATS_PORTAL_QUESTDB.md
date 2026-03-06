@@ -15,6 +15,8 @@ How these four pieces fit in the platform: **TWS** and **Client Portal** for IBK
 
 **Note:** TWS API is the **classic** C++/Java socket API. The project also uses the **Client Portal** (REST) for the PWA/IB service.
 
+**Important:** Client Portal and TWS are **exclusive** — only one can be logged in at a time. Use either the Client Portal Gateway (port 5001) or TWS/Gateway socket (7496/7497), not both simultaneously.
+
 ---
 
 ## 2. Client Portal (IB Gateway REST)
@@ -27,6 +29,8 @@ How these four pieces fit in the platform: **TWS** and **Client Portal** for IBK
 | **Docs** | [CP Web API](https://interactivebrokers.github.io/cpwebapi/), `web/README.md` (Connect PWA to IB Gateway) |
 
 **Flow:** IB Gateway (logged in) → Client Portal API (5001) ← IB service (8002) ← PWA (`VITE_API_URL`).
+
+**Important:** Client Portal and TWS are **exclusive** — only one can be logged in at a time. If you need TWS socket (7496/7497), log out of the Client Portal Gateway (or vice versa).
 
 ---
 

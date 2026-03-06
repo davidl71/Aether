@@ -62,8 +62,9 @@ class BackendHealthAggregator:
         interval_sec: float = BACKEND_HEALTH_INTERVAL_SEC,
         unified_health_url: Optional[str] = None,
     ):
-        self._backend_ports = dict(backend_ports)
-        self._tcp_backend_ports = dict(tcp_backend_ports or {})
+        # Keep references so in-place updates (e.g. TWS port 7497 -> 7496 from Setup) are seen on next poll
+        self._backend_ports = backend_ports if backend_ports is not None else {}
+        self._tcp_backend_ports = tcp_backend_ports if tcp_backend_ports is not None else {}
         self._interval_sec = interval_sec
         self._unified_health_url = (unified_health_url or "").strip() or None
         self._healths: Dict[str, Dict[str, Any]] = {}

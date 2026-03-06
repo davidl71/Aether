@@ -189,8 +189,14 @@ class PositionSnapshot:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> PositionSnapshot:
+        # Backends (e.g. IB) often send "symbol"; TUI displays "name"
+        name = data.get("name") or data.get("symbol", "")
+        if isinstance(name, str):
+            name = name.strip()
+        else:
+            name = str(name) if name else ""
         return cls(
-            name=data.get("name", ""),
+            name=name,
             quantity=data.get("quantity", 0),
             roi=data.get("roi", 0.0),
             maker_count=data.get("maker_count", 0),

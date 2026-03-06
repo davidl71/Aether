@@ -15,6 +15,7 @@ from textual.widgets import Header, Footer, Static, Button, DataTable
 from textual.binding import Binding
 
 from ..config import TUIConfig, PRESET_REST_ENDPOINTS, DEFAULT_TCP_BACKEND_PORTS, DEFAULT_BACKEND_PORTS
+from ..display_utils import format_endpoint_display
 from ...integration.shared_config_loader import SharedConfigLoader
 from .onepassword_screen import OnePasswordScreen
 from .snapshot_display import BACKEND_DISPLAY_NAMES, BACKEND_ROLES
@@ -166,14 +167,23 @@ def _build_provider_table_rows(
     health_map = backend_health if isinstance(backend_health, dict) and backend_health.get("status") is None else {}
     preferred_key = PROVIDER_TYPE_TO_BACKEND_KEY.get(current_provider_type or "", "")
 
-    def _health_status(key: str) -> str:
+    def _health_status(key: str, health_map: Dict[str, Any], disabled: Dict[str, str]) -> str:
+        """Return Running column label: Running, Disabled, Stopped, Checking, or No API key when enabled but service reports disabled."""
         payload = health_map.get(key)
         if not isinstance(payload, dict):
             return "—"
         s = (payload.get("status") or "").lower()
+        err = (payload.get("error") or "").strip()
         if s == "ok":
             return "Running"
         if s == "disabled":
+            # Backend is enabled in config but service reports disabled (e.g. no API key at service)
+            if key not in disabled:
+                if err and "api key" in err.lower():
+                    return "No API key"
+                if err and "credential" in err.lower():
+                    return "No credentials"
+                return "Not connected"
             return "Disabled"
         if s == "error":
             return "Stopped"
@@ -183,7 +193,7 @@ def _build_provider_table_rows(
 
     for key, port in sorted(all_http.items()):
         display = BACKEND_DISPLAY_NAMES.get(key, key.replace("_", " ").title())
-        endpoint = f"http://127.0.0.1:{port}"
+        endpoint = format_endpoint_display(f"http://127.0.0.1:{port}")
         if key in disabled:
             enabled = "☐"  # Disabled (credentials)
             other = disabled[key]
@@ -195,7 +205,7 @@ def _build_provider_table_rows(
             other = f"port {port}, /api/health"
         role = BACKEND_ROLES.get(key, "platform")
         provide_cells = _provides_cells(role)
-        health = _health_status(key)
+        health = _health_status(key, health_map, disabled)
         pid = _pid_for_port(port)
         preferred = "☑" if key == preferred_key else "☐"
         mode = _mode_label(config, key, port)
@@ -204,7 +214,7 @@ def _build_provider_table_rows(
 
     for key, port in sorted(all_tcp.items()):
         display = BACKEND_DISPLAY_NAMES.get(key, key.replace("_", " ").title())
-        endpoint = f"127.0.0.1:{port} (TCP)"
+        endpoint = format_endpoint_display(f"127.0.0.1:{port} (TCP)")
         if key in disabled:
             enabled = "☐"
             other = disabled.get(key, "")
@@ -216,21 +226,21 @@ def _build_provider_table_rows(
             other = f"port {port}, socket connect"
         role = BACKEND_ROLES.get(key, "platform")
         provide_cells = _provides_cells(role)
-        health = _health_status(key)
+        health = _health_status(key, health_map, disabled)
         pid = _pid_for_port(port)
         preferred = "☑" if key == preferred_key else "☐"
         mode = _mode_label(config, key, port)
         rows.append((display, endpoint, enabled, health, pid, other, *provide_cells, preferred, mode))
         row_keys.append(key)
 
-    for key, label, endpoint in (
-        ("mock", "Mock (synthetic)", "—"),
-        ("nats", "NATS", getattr(config, "nats_url", "nats://localhost:4222")),
-        ("file", "File (JSON)", (config.file_path or "—")[:40] + ("..." if (config.file_path or "") and len(config.file_path or "") > 40 else "")),
+    for key, label, endpoint_raw, mode_val in (
+        ("mock", "Mock (synthetic)", "—", "Mock"),
+        ("nats", "NATS", format_endpoint_display(getattr(config, "nats_url", "nats://localhost:4222")), "—"),
+        ("file", "File (JSON)", (config.file_path or "—")[:40] + ("..." if (config.file_path or "") and len(config.file_path or "") > 40 else ""), "—"),
     ):
         preferred = "☑" if key == preferred_key else "☐"
         provide_cells = _provides_cells(BACKEND_ROLES.get(key, "platform"))
-        rows.append((label, endpoint, "—", "—", "—", "—", *provide_cells, preferred, "—"))
+        rows.append((label, endpoint_raw, "—", "—", "—", "—", *provide_cells, preferred, mode_val))
         row_keys.append(key)
 
     return rows, row_keys
@@ -267,7 +277,6 @@ class SetupScreen(Screen[Optional[Dict[str, Any]]]):
     #setup-table-section {
         height: 1fr;
         min-height: 6;
-        max-height: 10;
     }
     #setup-providers-table {
         height: 1fr;
@@ -339,6 +348,11 @@ class SetupScreen(Screen[Optional[Dict[str, Any]]]):
                 yield Button("Close", id="close")
             yield Static("", id="setup-current-line", classes="setup-line")
             yield Static("", id="setup-gateway-line", classes="setup-line")
+            yield Static(
+                "[dim]IB: Client Portal and TWS are exclusive — only one can be logged in at a time.[/dim]",
+                id="setup-ib-exclusive-hint",
+                classes="setup-hint setup-line",
+            )
             yield Static("", id="setup-config-line", classes="setup-line")
         yield Footer()
 
@@ -347,11 +361,12 @@ class SetupScreen(Screen[Optional[Dict[str, Any]]]):
         current_parts = [f"Current: {self._provider_label}"]
         if self._config.provider_type in ("rest", *PRESET_REST_ENDPOINTS):
             endpoint = self._config.rest_endpoint or PRESET_REST_ENDPOINTS.get(self._config.provider_type, "")
-            current_parts.append(f"REST: {endpoint}")
+            current_parts.append(f"REST: {format_endpoint_display(endpoint)}")
         elif self._config.provider_type == "file" and self._config.file_path:
             current_parts.append(f"File: {self._config.file_path}")
         elif self._config.provider_type == "nats":
-            current_parts.append(f"NATS: {getattr(self._config, 'nats_url', 'nats://localhost:4222')} snapshot.{getattr(self._config, 'nats_snapshot_backend', 'ib')}")
+            nats_url = getattr(self._config, "nats_url", "nats://localhost:4222")
+            current_parts.append(f"NATS: {format_endpoint_display(nats_url)} snapshot.{getattr(self._config, 'nats_snapshot_backend', 'ib')}")
         current_text = " | ".join(current_parts)
         try:
             self.query_one("#setup-current-line", Static).update(
@@ -364,9 +379,11 @@ class SetupScreen(Screen[Optional[Dict[str, Any]]]):
         portal_base = (self._config.ibkr_rest_base_url or "https://localhost:5001/v1/portal").strip().rstrip("/")
         parsed = urlparse(portal_base)
         gateway_url = f"{parsed.scheme}://{parsed.netloc}" if parsed.netloc else "https://localhost:5001"
+        tws_display = format_endpoint_display(f"127.0.0.1:{tws_port} (TCP)")
+        gateway_display = format_endpoint_display(gateway_url)
         running_summary = _running_summary(self._backend_health, BACKEND_DISPLAY_NAMES)
         try:
-            gw = f"TWS 127.0.0.1:{tws_port} — {tws_status} | IB Gateway: {gateway_url}"
+            gw = f"TWS {tws_display} — {tws_status} | IB Gateway: {gateway_display}"
             if running_summary:
                 gw += " | " + running_summary
             self.query_one("#setup-gateway-line", Static).update(gw[:130] + "…" if len(gw) > 130 else gw)
@@ -594,8 +611,9 @@ class SetupScreen(Screen[Optional[Dict[str, Any]]]):
             )
         except Exception as e:
             self.app.call_from_thread(self._refresh_table)
+            err_msg = str(e)
             self.app.call_from_thread(
-                lambda: self.notify(f"Restart failed: {e}", title="Restart", severity="warning")
+                lambda msg=err_msg: self.notify(f"Restart failed: {msg}", title="Restart", severity="warning")
             )
 
     def _start_backend_and_notify(self, svc_name: str, backend_key: str) -> None:
@@ -638,8 +656,9 @@ class SetupScreen(Screen[Optional[Dict[str, Any]]]):
             )
         except Exception as e:
             self.app.call_from_thread(self._refresh_table)
+            err_msg = str(e)
             self.app.call_from_thread(
-                lambda: self.notify(f"{backend_key} start failed: {e}", title="Start backend", severity="warning")
+                lambda msg=err_msg: self.notify(f"{backend_key} start failed: {msg}", title="Start backend", severity="warning")
             )
 
     def _refresh_table(self) -> None:

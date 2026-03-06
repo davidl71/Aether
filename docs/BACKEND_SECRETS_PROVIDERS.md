@@ -20,7 +20,7 @@ Some providers use **different keys or config** for paper vs live (or sandbox vs
 | Provider | Paper / sandbox | Live / production | How to switch |
 |----------|-----------------|-------------------|---------------|
 | **Alpaca** | Separate API keys from Alpaca **Paper** → API Keys | Separate keys from **Live** → API Keys | `ALPACA_PAPER=1` (default) uses paper keys + `paper-api.alpaca.markets`; `ALPACA_PAPER=0` uses live keys + `api.alpaca.markets`. Use two 1Password items (e.g. "Alpaca Paper", "Alpaca Live") and set the corresponding `OP_ALPACA_*_SECRET` for the mode you want. |
-| **IBKR / TWS** | Gateway port **7497** (paper) | Gateway port **7496** (live) | One Gateway login; config or `tcp_backend_ports.tws` / gateway port selects 7497 vs 7496. No separate API keys; same TWS/Client Portal credentials. |
+| **IBKR / TWS** | Gateway port **7497** (paper) | Gateway port **7496** (live) | One Gateway login; config or `tcp_backend_ports.tws` / gateway port selects 7497 vs 7496. No separate API keys; same TWS/Client Portal credentials. **Client Portal and TWS are exclusive — only one can be logged in at a time.** |
 | **Tastytrade** | **Sandbox**: `TASTYTRADE_SANDBOX_BASE_URL`, cert.tastyworks.com | **Production**: `TASTYTRADE_BASE_URL`, api.tastytrade.com | Env or config `base_url` / sandbox flag. Credentials may differ (sandbox account vs live). Use separate 1Password items if you have both. |
 | **TradeStation** | **SIM** (paper) base URL | **Live** base URL | `TRADESTATION_BASE_URL` or config; OAuth client may be per environment. |
 
