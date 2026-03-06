@@ -42,7 +42,7 @@ _svc_display() {
 
 _svc_port() {
   case "$1" in
-    nats) echo "" ;;
+    nats) echo "4222, 8222, 8081" ;;
     memcached) echo "11211" ;;
     gateway) echo "${IB_GATEWAY_PORT:-5001}" ;;
     ib) _config_port ib 8002 ;;
@@ -154,7 +154,8 @@ _find_pid() {
   else
     port=$(_svc_port "$svc")
     if [[ -n "$port" ]]; then
-      lsof -ti :"$port" 2>/dev/null || true
+      # Only the process listening on the port (server), not clients (e.g. TUI) connected to it
+      lsof -i :"$port" 2>/dev/null | awk '/LISTEN/ {print $2}' | sort -u || true
     fi
   fi
 }
@@ -220,7 +221,7 @@ do_start() {
       echo "[warn] ${display}: process in use but not responding; killing and restarting..."
     fi
     if [[ -n "$port" ]] && command -v lsof >/dev/null 2>&1; then
-      lsof -ti :"$port" 2>/dev/null | xargs kill -9 2>/dev/null || true
+      lsof -i :"$port" 2>/dev/null | awk '/LISTEN/ {print $2}' | sort -u | xargs kill -9 2>/dev/null || true
     else
       echo "$pid" | xargs kill -9 2>/dev/null || true
     fi
@@ -314,9 +315,9 @@ do_stop() {
   echo "$pid" | xargs kill -9 2>/dev/null || true
   sleep 1
 
-  # Fallback: kill by port so nothing is left listening
+  # Fallback: kill by port (listener only) so nothing is left listening
   if [[ -n "$port" ]] && command -v lsof >/dev/null 2>&1; then
-    lsof -ti :"$port" 2>/dev/null | xargs kill -9 2>/dev/null || true
+    lsof -i :"$port" 2>/dev/null | awk '/LISTEN/ {print $2}' | sort -u | xargs kill -9 2>/dev/null || true
     sleep 0.5
   fi
 

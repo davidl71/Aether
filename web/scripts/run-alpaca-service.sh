@@ -31,6 +31,23 @@ if [ -f "${SCRIPTS_DIR}/include/onepassword.sh" ]; then
   source "${SCRIPTS_DIR}/include/onepassword.sh"
 fi
 
+# Load 1Password token and set default Alpaca op:// refs when none are set (so service.sh/systemd can resolve credentials)
+if [ -f "${SCRIPTS_DIR}/setup_op_service_account.sh" ]; then
+  # shellcheck source=../../scripts/setup_op_service_account.sh
+  source "${SCRIPTS_DIR}/setup_op_service_account.sh" 2>/dev/null || true
+  load_token 2>/dev/null && export OP_SERVICE_ACCOUNT_TOKEN || true
+  # Default Alpaca API key refs from vault if no OP_ALPACA_* or OP_ALPACA_ITEM_UUID are set
+  if [[ -z "${OP_ALPACA_CLIENT_ID_SECRET:-}" && -z "${OP_ALPACA_CLIENT_SECRET_SECRET:-}" && \
+        -z "${OP_ALPACA_API_KEY_ID_SECRET:-}" && -z "${OP_ALPACA_API_SECRET_KEY_SECRET:-}" && \
+        -z "${OP_ALPACA_ITEM_UUID:-}" ]]; then
+    ALPACA_VAULT="${OP_SETUP_VAULT:-$(read_vault_default 2>/dev/null)}"
+    if [[ -n "${ALPACA_VAULT}" ]]; then
+      export OP_ALPACA_API_KEY_ID_SECRET="op://${ALPACA_VAULT}/Alpaca API/username"
+      export OP_ALPACA_API_SECRET_KEY_SECRET="op://${ALPACA_VAULT}/Alpaca API/credential"
+    fi
+  fi
+fi
+
 # Read credentials from 1Password or environment variables
 # Supports both OAuth (preferred) and API key authentication
 # Supports both path format (op://Vault/Item/field) and UUID format
@@ -81,7 +98,8 @@ fi
 if [ -z "${ALPACA_CLIENT_ID}" ] || [ -z "${ALPACA_CLIENT_SECRET}" ]; then
   if [ -z "${ALPACA_API_KEY_ID}" ] || [ -z "${ALPACA_API_SECRET_KEY}" ]; then
     echo "Alpaca credentials not set; service will start in disabled mode (TUI will show 'Alpaca: disabled')." >&2
-    echo "To enable: set ALPACA_CLIENT_ID/ALPACA_CLIENT_SECRET (OAuth) or ALPACA_API_KEY_ID/ALPACA_API_SECRET_KEY" >&2
+    echo "To enable: set ALPACA_CLIENT_ID/ALPACA_CLIENT_SECRET (OAuth) or ALPACA_API_KEY_ID/ALPACA_API_SECRET_KEY," >&2
+    echo "or use 1Password (OP_SERVICE_ACCOUNT_TOKEN + vault with 'Alpaca API' item, or OP_ALPACA_* refs). See docs/ALPACA_SECRETS_SETUP.md" >&2
     export ALPACA_CLIENT_ID="${ALPACA_CLIENT_ID:-}"
     export ALPACA_CLIENT_SECRET="${ALPACA_CLIENT_SECRET:-}"
     export ALPACA_API_KEY_ID="${ALPACA_API_KEY_ID:-}"
@@ -121,6 +139,9 @@ ALPACA_PORT=$(config_get_port "alpaca" 8000)
 # Check if port is available and verify service identity
 if ! check_port_with_service "${PYTHON_CMD}" "127.0.0.1" "${ALPACA_PORT}" "ALPACA_SERVICE" "Alpaca"; then
   exit 1
+fi
+if [ -n "${SERVICE_ALREADY_RUNNING:-}" ]; then
+  exit 0
 fi
 
 # Test import before starting service
