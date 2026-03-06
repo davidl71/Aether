@@ -158,6 +158,16 @@ class PositionSnapshot:
     cash_flow: Optional[float] = None  # Expected cash flow amount
     collateral_value: Optional[float] = None  # Collateral value if applicable
     currency: Optional[str] = None  # Currency code (defaults to USD)
+    market_value: Optional[float] = None  # Market value (e.g. for cash positions)
+    # Price metrics (when available from broker)
+    bid: Optional[float] = None
+    ask: Optional[float] = None
+    last: Optional[float] = None
+    spread: Optional[float] = None
+    price: Optional[float] = None  # Last or mid price for display
+    side: Optional[str] = None  # "long" or "short"
+    expected_cash_at_expiry: Optional[float] = None  # Option/bond/bill cash if held to expiry
+    dividend: Optional[float] = None  # Next/expected dividend for position (total amount)
 
     def to_dict(self) -> Dict[str, Any]:
         result = {
@@ -185,6 +195,24 @@ class PositionSnapshot:
             result["collateral_value"] = self.collateral_value
         if self.currency is not None:
             result["currency"] = self.currency
+        if self.market_value is not None:
+            result["market_value"] = self.market_value
+        if self.bid is not None:
+            result["bid"] = self.bid
+        if self.ask is not None:
+            result["ask"] = self.ask
+        if self.last is not None:
+            result["last"] = self.last
+        if self.spread is not None:
+            result["spread"] = self.spread
+        if self.price is not None:
+            result["price"] = self.price
+        if self.side is not None:
+            result["side"] = self.side
+        if self.expected_cash_at_expiry is not None:
+            result["expected_cash_at_expiry"] = self.expected_cash_at_expiry
+        if self.dividend is not None:
+            result["dividend"] = self.dividend
         return result
 
     @classmethod
@@ -211,7 +239,49 @@ class PositionSnapshot:
             maturity_date=data.get("maturity_date"),
             cash_flow=data.get("cash_flow"),
             collateral_value=data.get("collateral_value"),
-            currency=data.get("currency")
+            currency=data.get("currency"),
+            market_value=data.get("market_value"),
+            bid=data.get("bid"),
+            ask=data.get("ask"),
+            last=data.get("last"),
+            spread=data.get("spread"),
+            price=data.get("price"),
+            side=data.get("side"),
+            expected_cash_at_expiry=data.get("expected_cash_at_expiry"),
+            dividend=data.get("dividend"),
+        )
+
+
+@dataclass
+class FutureEvent:
+    """Reported future cash flow event (dividend, principal, interest coupon, expiry).
+    Used for broker-reported and derived events; included in snapshot and cash flow timeline."""
+    event_type: str  # 'dividend' | 'principal_repayment' | 'interest_coupon' | 'expiry'
+    date: str = ""  # ISO date YYYY-MM-DD; empty if unknown (e.g. next dividend)
+    amount: float = 0.0  # Positive = inflow, negative = outflow
+    currency: str = "USD"
+    position_name: str = ""
+    description: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "event_type": self.event_type,
+            "date": self.date,
+            "amount": self.amount,
+            "currency": self.currency,
+            "position_name": self.position_name,
+            "description": self.description or self.event_type.replace("_", " ").title(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> FutureEvent:
+        return cls(
+            event_type=data.get("event_type", "other"),
+            date=data.get("date", ""),
+            amount=float(data.get("amount", 0.0)),
+            currency=(data.get("currency") or "USD").strip() or "USD",
+            position_name=data.get("position_name", ""),
+            description=data.get("description", ""),
         )
 
 
@@ -282,6 +352,7 @@ class SnapshotPayload:
     historic: List[PositionSnapshot] = field(default_factory=list)
     orders: List[TimelineEvent] = field(default_factory=list)
     alerts: List[TimelineEvent] = field(default_factory=list)
+    future_events: List[FutureEvent] = field(default_factory=list)  # Reported dividends, coupons, expiry, etc.
     cash_flow_timeline: Optional[Dict[str, Any]] = None
     decisions: List[Any] = field(default_factory=list)
     risk: Optional[Dict[str, Any]] = None
@@ -300,6 +371,8 @@ class SnapshotPayload:
             "orders": [o.to_dict() for o in self.orders],
             "alerts": [a.to_dict() for a in self.alerts],
         }
+        if self.future_events:
+            result["future_events"] = [e.to_dict() for e in self.future_events]
         if self.cash_flow_timeline is not None:
             result["cash_flow_timeline"] = self.cash_flow_timeline
         if self.decisions:
@@ -326,6 +399,7 @@ class SnapshotPayload:
             historic=[PositionSnapshot.from_dict(p) for p in data.get("historic", [])],
             orders=[TimelineEvent.from_dict(o) for o in data.get("orders", [])],
             alerts=[TimelineEvent.from_dict(a) for a in data.get("alerts", [])],
+            future_events=[FutureEvent.from_dict(e) for e in data.get("future_events", [])],
             cash_flow_timeline=data.get("cash_flow_timeline"),
             decisions=data.get("decisions", []),
             risk=data.get("risk"),

@@ -88,6 +88,10 @@ test-python:
 test-python-cov:
     cd python && uv sync --extra dev --extra tui && uv run python -m pytest tests/ -v --cov --ignore=tests/test_option_chain_manager.py
 
+# Run TUI E2E tests (@microsoft/tui-test; requires Node 18+)
+test-tui-e2e:
+    cd tui-e2e && npm ci && npm test
+
 # --- Lint & Format ---
 
 # Run all linters

@@ -22,10 +22,12 @@ INSTRUMENT_TYPE_LABELS: Dict[str, str] = {
     'bond': 'Bonds',
     't_bill': 'T-Bills',
     'futures': 'Futures',
+    'cash': 'Cash',
     'other': 'Other',
 }
 
 INSTRUMENT_TYPE_ORDER: List[str] = [
+    'cash',
     'box_spread',
     'bank_loan',
     'pension_loan',

@@ -32,6 +32,7 @@ if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
 from python.integration.ibkr_portal_client import IBKRPortalClient, IBKRPortalError
+from python.integration.combo_detector import detect_box_spreads
 
 
 def main() -> int:
@@ -95,18 +96,32 @@ def main() -> int:
         print("=== Positions ===")
         try:
             positions = client.get_portfolio_positions(account_id)
-            print(f"Total positions: {len(positions)}")
+            print(f"Total positions (raw): {len(positions)}")
             if not positions:
                 print("No positions. This is normal for an empty or paper account.")
             else:
-                for i, pos in enumerate(positions[:20]):  # cap at 20
-                    conid = pos.get("conid") or pos.get("contractId")
-                    symbol = pos.get("ticker") or pos.get("symbol") or pos.get("assetClass", "")
-                    position = pos.get("position", pos.get("quantity", 0))
-                    avg_cost = pos.get("avgCost") or pos.get("avgPrice") or ""
-                    print(f"  [{i+1}] conid={conid} symbol={symbol} position={position} avgCost={avg_cost}")
-                if len(positions) > 20:
-                    print(f"  ... and {len(positions) - 20} more")
+                combos, remaining = detect_box_spreads(positions)
+                if combos:
+                    print()
+                    print("--- Combo / box spreads (detected) ---")
+                    for c in combos:
+                        desc = c.get("contractDesc") or f"{c.get('underlying')} {c.get('expiry')} {c.get('k1')}/{c.get('k2')} box"
+                        qty = c.get("quantity", 1)
+                        mkt = c.get("mktValue", 0)
+                        pnl = c.get("unrealizedPnl", 0)
+                        print(f"  Box: {desc}  qty={qty}  mktValue={mkt:,.2f}  PnL={pnl:,.2f}")
+                    print()
+                if remaining:
+                    print("--- Other positions ---")
+                    for i, pos in enumerate(remaining[:25]):
+                        desc = pos.get("contractDesc") or pos.get("ticker") or pos.get("symbol") or pos.get("assetClass", "")
+                        position = pos.get("position", pos.get("quantity", 0))
+                        mkt = pos.get("mktValue", 0)
+                        pnl = pos.get("unrealizedPnl", 0)
+                        asset = pos.get("assetClass", "")
+                        print(f"  [{i+1}] {desc[:50]:<50} pos={position:>8.1f}  mktValue={mkt:>12,.2f}  PnL={pnl:>10,.2f}  ({asset})")
+                    if len(remaining) > 25:
+                        print(f"  ... and {len(remaining) - 25} more")
         except IBKRPortalError as e:
             print(f"Positions error: {e}")
             return 1

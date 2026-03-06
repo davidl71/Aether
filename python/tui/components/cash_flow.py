@@ -86,11 +86,13 @@ class CashFlowTab(Container):
             for p in self.snapshot.positions
         ]
 
-        # Calculate cash flows using shared module
+        # Calculate cash flows using shared module (includes reported future_events from snapshot)
+        reported = [e.to_dict() for e in self.snapshot.future_events] if self.snapshot.future_events else []
         result = calculate_cash_flow_timeline(
             positions=positions_dict,
             bank_accounts=self.bank_accounts,
             projection_months=self.projection_months,
+            reported_future_events=reported,
         )
 
         # Update summary

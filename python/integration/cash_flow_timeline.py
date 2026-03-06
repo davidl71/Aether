@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import List, Dict
+from typing import List, Dict, Optional
 from collections import defaultdict
 
 
@@ -50,7 +50,8 @@ class CashFlowTimelineResult:
 
 
 def calculate_cash_flow_timeline(
-    positions: List[Dict], bank_accounts: List[Dict], projection_months: int = 12
+    positions: List[Dict], bank_accounts: List[Dict], projection_months: int = 12,
+    reported_future_events: Optional[List[Dict]] = None,
 ) -> CashFlowTimelineResult:
     """
     Calculate cash flow timeline from positions and bank accounts.
@@ -68,12 +69,48 @@ def calculate_cash_flow_timeline(
             - balance: float
             - account_name: str
         projection_months: Number of months to project (default: 12)
+        reported_future_events: Optional list of broker-reported events (dividend, expiry,
+            principal_repayment, interest_coupon). Each dict: event_type, date (YYYY-MM-DD), amount,
+            currency, position_name, description. Cached with snapshot; merged into timeline.
 
     Returns:
         CashFlowTimelineResult with events, monthly flows, and totals
     """
     events: List[CashFlowEvent] = []
     now = datetime.now()
+
+    # Reported future events (dividend, expiry, principal_repayment, interest_coupon) — cached with snapshot
+    for r in reported_future_events or []:
+        if not isinstance(r, dict):
+            continue
+        date_str = (r.get("date") or "").strip()[:10]
+        amount = float(r.get("amount", 0))
+        if amount == 0:
+            continue
+        event_type = (r.get("event_type") or "other").strip().lower()
+        if event_type == "interest_coupon":
+            tl_type = "loan_payment"
+        elif event_type in ("expiry", "principal_repayment"):
+            tl_type = "maturity"
+        else:
+            tl_type = "other"
+        if date_str:
+            try:
+                dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+                months_ahead = (dt.year - now.year) * 12 + (dt.month - now.month)
+                if months_ahead < 0 or months_ahead > projection_months:
+                    continue
+            except (ValueError, TypeError):
+                pass
+        events.append(
+            CashFlowEvent(
+                date=date_str or now.strftime("%Y-%m-%d"),
+                amount=amount,
+                description=r.get("description") or event_type.replace("_", " ").title(),
+                position_name=r.get("position_name", ""),
+                type=tl_type,
+            )
+        )
 
     # Process positions
     for position in positions:

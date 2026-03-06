@@ -282,3 +282,45 @@ class TestEdgeCases:
         result = calculate_cash_flow_timeline(positions, [], projection_months=12)
         maturity_events = [e for e in result.events if e.type == "maturity"]
         assert len(maturity_events) == 0
+
+
+class TestReportedFutureEvents:
+    """Reported future events (dividend, expiry, principal_repayment) merged into timeline."""
+
+    def test_reported_expiry_in_timeline(self, now):
+        future = now + timedelta(days=60)
+        reported = [
+            {
+                "event_type": "expiry",
+                "date": future.strftime("%Y-%m-%d"),
+                "amount": 5000.0,
+                "currency": "USD",
+                "position_name": "Box: SPX MAR2027 6825/6925 box",
+                "description": "Box spread expiry",
+            }
+        ]
+        result = calculate_cash_flow_timeline(
+            [], [], projection_months=12, reported_future_events=reported
+        )
+        maturity_events = [e for e in result.events if e.type == "maturity"]
+        assert len(maturity_events) == 1
+        assert maturity_events[0].amount == 5000.0
+        assert "Box" in maturity_events[0].position_name
+
+    def test_reported_dividend_no_date_in_current_month(self, now):
+        reported = [
+            {
+                "event_type": "dividend",
+                "date": "",
+                "amount": 100.0,
+                "currency": "USD",
+                "position_name": "SPY",
+                "description": "Dividend",
+            }
+        ]
+        result = calculate_cash_flow_timeline(
+            [], [], projection_months=12, reported_future_events=reported
+        )
+        other_events = [e for e in result.events if e.type == "other"]
+        assert len(other_events) == 1
+        assert other_events[0].amount == 100.0

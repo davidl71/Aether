@@ -1,0 +1,18 @@
+{
+  "name": "tui-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "E2E tests for the Python Textual TUI using @microsoft/tui-test",
+  "engines": {
+    "node": ">=16.6.0 <21.0.0"
+  },
+  "scripts": {
+    "test": "npx @microsoft/tui-test",
+    "test:trace": "npx @microsoft/tui-test --trace",
+    "tui": "cd .. && TUI_BACKEND=mock uv run python -m textual run python/tui/app.py"
+  },
+  "devDependencies": {
+    "@microsoft/tui-test": "0.0.1-rc.5",
+    "typescript": "^5.0.0"
+  }
+}

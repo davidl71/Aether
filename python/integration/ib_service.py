@@ -53,6 +53,22 @@ from python.services.security_integration_helper import (
 from .ibkr_portal_client import IBKRPortalClient, IBKRPortalError
 from . import nats_client
 
+try:
+    from .combo_detector import detect_box_spreads
+except ImportError:
+    detect_box_spreads = None  # type: ignore[misc, assignment]
+
+
+def _infer_ib_session_mode(account_id: Optional[str]) -> str:
+    """Infer Live vs Paper from IB account ID. Selection is made at Gateway login (5001).
+    Paper accounts typically use 'DU' prefix; live use 'U' or numeric. Returns 'PAPER' or 'LIVE'."""
+    if not account_id or not str(account_id).strip():
+        return "LIVE"
+    aid = str(account_id).strip().upper()
+    if aid.startswith("DU"):
+        return "PAPER"
+    return "LIVE"
+
 
 class ModeRequest(BaseModel):
     mode: str
@@ -110,18 +126,65 @@ def _extract_account_value(summary: Dict, key: str, default: float = 0.0) -> flo
     return default
 
 
-def _build_cash_flow_timeline(positions: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    """Generate cash flow timeline from positions for inclusion in snapshot."""
+def _float_or_none(val: Any) -> Optional[float]:
+    """Return float(val) or None if missing/invalid."""
+    if val is None:
+        return None
+    try:
+        f = float(val)
+        return f
+    except (ValueError, TypeError):
+        return None
+
+
+def _expiry_str_to_date(expiry: str) -> str:
+    """Convert IB-style expiry (e.g. MAR2027) to YYYY-MM-DD (third Friday of month)."""
+    if not expiry or not isinstance(expiry, str):
+        return ""
+    import calendar
+    s = expiry.strip().upper()
+    months = {"JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
+              "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12}
+    for mon_name, mon_num in months.items():
+        if s.startswith(mon_name):
+            try:
+                year = int(s[len(mon_name):])
+                if year < 100:
+                    year += 2000
+                # Third Friday
+                cal = calendar.Calendar(calendar.FRIDAY)
+                fridays = [d for d in cal.itermonthdates(year, mon_num) if d.month == mon_num]
+                if len(fridays) >= 3:
+                    d = fridays[2]
+                    return f"{d.year:04d}-{d.month:02d}-{d.day:02d}"
+                # Fallback: last day of month
+                _, last = calendar.monthrange(year, mon_num)
+                return f"{year:04d}-{mon_num:02d}-{last:02d}"
+            except (ValueError, TypeError):
+                pass
+            break
+    return ""
+
+def _build_cash_flow_timeline(
+    positions: List[Dict[str, Any]],
+    reported_future_events: Optional[List[Dict[str, Any]]] = None,
+) -> Optional[Dict[str, Any]]:
+    """Generate cash flow timeline from positions and reported future events (dividend, expiry, etc.)."""
     try:
         from .cash_flow_timeline import calculate_cash_flow_timeline
     except ImportError:
         return None
 
-    if not positions:
+    if not positions and not (reported_future_events and len(reported_future_events) > 0):
         return None
 
     try:
-        result = calculate_cash_flow_timeline(positions=positions, bank_accounts=[], projection_months=12)
+        result = calculate_cash_flow_timeline(
+            positions=positions,
+            bank_accounts=[],
+            projection_months=12,
+            reported_future_events=reported_future_events or [],
+        )
         return {
             "events": [
                 {"date": e.date, "amount": e.amount, "description": e.description,
@@ -167,6 +230,7 @@ def build_snapshot_payload(
     try:
         # Lazy prewarm: populate conid cache so get_snapshots_batch does not do N search_contracts.
         _ensure_conids_prewarmed(client, symbols)
+        ledger_rows: List[Dict] = []
 
         def fetch_market_data() -> List[Dict]:
             try:
@@ -188,13 +252,22 @@ def build_snapshot_payload(
                 logger.warning("Failed to get positions: %s", e)
                 return []
 
-        with ThreadPoolExecutor(max_workers=3) as pool:
+        def fetch_ledger() -> List[Dict]:
+            try:
+                return client.get_account_ledger(effective_account_id)
+            except IBKRPortalError as e:
+                logger.debug("Ledger not available: %s", e)
+                return []
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
             fut_snap = pool.submit(fetch_market_data)
             fut_summary = pool.submit(fetch_summary)
             fut_pos = pool.submit(fetch_positions)
+            fut_ledger = pool.submit(fetch_ledger)
             snapshots_list = fut_snap.result()
             account_summary = fut_summary.result()
             positions_raw = fut_pos.result()
+            ledger_rows = fut_ledger.result()
     finally:
         client.set_session_ensured_for_request(False)
 
@@ -270,33 +343,185 @@ def build_snapshot_payload(
         "questdb_ok": False,
     }
 
-    # Build positions from parallel fetch result
+    # Build positions from parallel fetch result. Client Portal returns contractDesc, position,
+    # mktValue, unrealizedPnl, avgCost, assetClass (and sometimes ticker/symbol).
     positions_data = []
+    future_events: List[Dict[str, Any]] = []
+    if detect_box_spreads:
+        try:
+            combos, remaining = detect_box_spreads(positions_raw)
+            for c in combos:
+                if c.get("type") == "box_spread":
+                    name = f"Box: {c.get('underlying', '')} {c.get('expiry', '')} {c.get('k1')}/{c.get('k2')} box"
+                    qty = int(c.get("quantity", 0))
+                    mkt = float(c.get("mktValue", 0) or 0)
+                    pnl = float(c.get("unrealizedPnl", 0) or 0)
+                    side = c.get("side", "long" if qty > 0 else "short")
+                    exp_cash = c.get("expected_cash_at_expiry")
+                    positions_data.append({
+                        "name": name,
+                        "symbol": name,
+                        "quantity": qty,
+                        "avg_price": 0.0,
+                        "current_price": mkt / qty if qty else 0.0,
+                        "market_value": mkt,
+                        "unrealized_pl": pnl,
+                        "roi": (pnl / mkt * 100.0) if mkt else 0.0,
+                        "instrument_type": "box_spread",
+                        "side": side,
+                        "expected_cash_at_expiry": float(exp_cash) if exp_cash is not None else None,
+                        "currency": "USD",
+                        "dividend": None,
+                    })
+                    # Reported future event: option/box expiry
+                    if exp_cash is not None and qty != 0:
+                        exp_date = _expiry_str_to_date(c.get("expiry") or "")
+                        future_events.append({
+                            "event_type": "expiry",
+                            "date": exp_date,
+                            "amount": float(exp_cash),
+                            "currency": "USD",
+                            "position_name": name,
+                            "description": "Box spread expiry",
+                        })
+            positions_raw = remaining
+        except Exception as e:
+            logger.debug("Combo detection skipped: %s", e)
     for pos in positions_raw:
         if isinstance(pos, dict):
-            sym = pos.get("ticker", "")
-            positions_data.append(
-                {
-                    "name": sym,
-                    "symbol": sym,
-                    "quantity": int(float(pos.get("position", 0.0))),
-                    "avg_price": float(pos.get("averageCost", 0.0)),
-                    "current_price": float(pos.get("markPrice", 0.0) or pos.get("lastPrice", 0.0)),
-                    "market_value": float(pos.get("markValue", 0.0) or 0.0),
-                    "unrealized_pl": float(pos.get("unrealizedPnl", 0.0)),
-                }
-            )
+            name = (pos.get("ticker") or pos.get("symbol") or pos.get("contractDesc") or "").strip()
+            if not name:
+                name = str(pos.get("conid", ""))
+            qty = int(float(pos.get("position", 0.0)))
+            avg_cost = float(pos.get("avgCost", 0.0) or pos.get("averageCost", 0.0))
+            mkt_val = float(pos.get("mktValue", 0.0) or pos.get("markValue", 0.0))
+            cur = float(pos.get("markPrice", 0.0) or pos.get("lastPrice", 0.0))
+            if not cur and qty:
+                cur = mkt_val / qty
+            pnl = float(pos.get("unrealizedPnl", 0.0))
+            roi = (pnl / mkt_val * 100.0) if mkt_val else 0.0
+            # Optional bid/ask/last from Client Portal (some Gateways include them)
+            bid = _float_or_none(pos.get("bidPrice") or pos.get("bid"))
+            ask = _float_or_none(pos.get("askPrice") or pos.get("ask"))
+            last = _float_or_none(pos.get("lastPrice") or pos.get("last") or pos.get("markPrice"))
+            spread = (ask - bid) if (bid is not None and ask is not None) else None
+            price = last or cur
+            side = "long" if qty > 0 else "short" if qty < 0 else None
+            curr = (pos.get("currency") or "USD").strip() or "USD"
+            # Expected cash at expiry: optional for bonds/bills (could be set when we have face/maturity)
+            exp_cash = pos.get("expected_cash_at_expiry")
+            # Dividend: next/expected total for position (Client Portal or enrichment may provide)
+            div = _float_or_none(pos.get("dividend") or pos.get("dividendAmount") or pos.get("nextDividendAmount"))
+            if div is None and pos.get("dividendPerShare") is not None and qty:
+                try:
+                    dps = float(pos.get("dividendPerShare", 0) or 0)
+                    if dps:
+                        div = dps * abs(qty)
+                except (ValueError, TypeError):
+                    pass
+            # Maturity / principal (bonds, bills, loans)
+            maturity_date_str = (pos.get("maturityDate") or pos.get("maturity_date") or "").strip()
+            if isinstance(maturity_date_str, (int, float)):
+                maturity_date_str = str(int(maturity_date_str))
+            asset_class = (pos.get("assetClass") or "").strip().upper()
+            inst_type = "bond" if asset_class == "BOND" else "t_bill" if asset_class in ("BILL", "TBILL") else None
+            positions_data.append({
+                "name": name,
+                "symbol": name,
+                "quantity": qty,
+                "avg_price": avg_cost,
+                "current_price": cur,
+                "market_value": mkt_val,
+                "unrealized_pl": pnl,
+                "roi": roi,
+                "bid": bid,
+                "ask": ask,
+                "last": last,
+                "spread": spread,
+                "price": price,
+                "side": side,
+                "currency": curr,
+                "expected_cash_at_expiry": float(exp_cash) if exp_cash is not None else None,
+                "dividend": div,
+                "instrument_type": inst_type,
+                "maturity_date": maturity_date_str[:10] if maturity_date_str else None,
+            })
+            # Reported future events: dividend, principal/expiry at maturity
+            if div is not None and div != 0:
+                future_events.append({
+                    "event_type": "dividend",
+                    "date": (pos.get("exDate") or pos.get("nextDividendDate") or "").strip()[:10] or "",
+                    "amount": float(div),
+                    "currency": curr,
+                    "position_name": name,
+                    "description": "Dividend",
+                })
+            if maturity_date_str and (exp_cash is not None or mkt_val):
+                amt = float(exp_cash) if exp_cash is not None else mkt_val
+                if amt != 0:
+                    future_events.append({
+                        "event_type": "principal_repayment",
+                        "date": maturity_date_str[:10] if len(maturity_date_str) >= 10 else maturity_date_str,
+                        "amount": amt,
+                        "currency": curr,
+                        "position_name": name,
+                        "description": "Principal at maturity",
+                    })
+
+    # Cash positions: from ledger (all currencies) when available, else single USD from TotalCashValue
+    if ledger_rows and isinstance(ledger_rows, list):
+        for row in ledger_rows:
+            if not isinstance(row, dict):
+                continue
+            curr = (row.get("currency") or "").strip().upper()
+            bal = row.get("balance")
+            if curr is None:
+                continue
+            if curr == "":
+                curr = "USD"
+            try:
+                balance = float(bal) if bal is not None else 0.0
+            except (ValueError, TypeError):
+                balance = 0.0
+            positions_data.append({
+                "name": f"Cash ({curr})",
+                "symbol": "Cash",
+                "quantity": 0,
+                "avg_price": 0.0,
+                "current_price": balance,
+                "market_value": balance,
+                "unrealized_pl": 0.0,
+                "roi": 0.0,
+                "instrument_type": "cash",
+                "currency": curr,
+                "dividend": None,
+            })
+    else:
+        total_cash = _extract_account_value(account_summary, "TotalCashValue") if account_summary else 0.0
+        positions_data.append({
+            "name": "Cash (USD)",
+            "symbol": "Cash",
+            "quantity": 0,
+            "avg_price": 0.0,
+            "current_price": total_cash,
+            "market_value": total_cash,
+            "unrealized_pl": 0.0,
+            "roi": 0.0,
+            "instrument_type": "cash",
+            "currency": "USD",
+            "dividend": None,
+        })
 
     # IB doesn't have a simple orders endpoint via Client Portal, so we'll leave it empty
     # Orders would require TWS API or more complex Client Portal integration
     orders_data: List[Dict[str, Any]] = []
 
-    # Generate cash flow timeline from positions
-    cash_flow_timeline = _build_cash_flow_timeline(positions_data)
+    # Generate cash flow timeline from positions (includes reported future_events)
+    cash_flow_timeline = _build_cash_flow_timeline(positions_data, future_events)
 
     payload: Dict[str, Any] = {
         "generated_at": _now_iso(),
-        "mode": "LIVE",  # IB Client Portal is always live trading
+        "mode": _infer_ib_session_mode(display_account_id),
         "strategy": "box_spread",
         "account_id": display_account_id,
         "metrics": metrics,
@@ -306,6 +531,7 @@ def build_snapshot_payload(
         "orders": orders_data,
         "decisions": [],
         "alerts": [],
+        "future_events": future_events,
         "risk": {
             "allowed": True,
             "reason": None,
@@ -345,10 +571,13 @@ def create_app() -> FastAPI:
             "gateway_logged_in": bool(gateway_logged_in),
             "gateway_port": port,
         }
+        if accounts:
+            out["accounts"] = list(accounts)
+            out["session_mode"] = _infer_ib_session_mode(accounts[0])
+        elif accounts is not None:
+            out["accounts"] = []
         if error is not None:
             out["error"] = str(error)
-        if accounts is not None:
-            out["accounts"] = list(accounts) if accounts else []
         return out
 
     @asynccontextmanager
@@ -368,6 +597,7 @@ def create_app() -> FastAPI:
                     state["ts"] = _now_iso()
                     state["error"] = None
                     state["accounts"] = list(accounts) if accounts else []
+                    state["session_mode"] = _infer_ib_session_mode(accounts[0]) if accounts else "LIVE"
                 except IBKRPortalError as e:
                     state["status"] = "error"
                     state["ib_connected"] = False
@@ -375,6 +605,7 @@ def create_app() -> FastAPI:
                     state["ts"] = _now_iso()
                     state["error"] = str(e)
                     state["accounts"] = []
+                    state["session_mode"] = "LIVE"
                 except Exception as e:
                     logger.debug("Background health refresh failed: %s", e)
                     state["status"] = "error"
@@ -383,6 +614,7 @@ def create_app() -> FastAPI:
                     state["ts"] = _now_iso()
                     state["error"] = str(e)
                     state["accounts"] = []
+                    state["session_mode"] = "LIVE"
                 if os.environ.get("NATS_URL", "").strip():
                     asyncio.create_task(nats_client.publish_health("ib", dict(state)))
                 await asyncio.sleep(refresh_interval)
@@ -412,6 +644,8 @@ def create_app() -> FastAPI:
         error=None,
         accounts=[],
     ))
+    if "session_mode" not in app.state.connection_state:
+        app.state.connection_state["session_mode"] = "LIVE"
 
     # Store current account in memory (in production, use Redis or database)
     current_account_id: Optional[str] = None
@@ -515,13 +749,15 @@ def create_app() -> FastAPI:
             formatted = []
             for pos in positions:
                 if isinstance(pos, dict):
+                    name = (pos.get("ticker") or pos.get("symbol") or pos.get("contractDesc") or "").strip() or str(pos.get("conid", ""))
                     formatted.append(
                         {
-                            "symbol": pos.get("ticker", ""),
+                            "symbol": name,
+                            "name": name,
                             "quantity": float(pos.get("position", 0.0)),
-                            "avg_price": float(pos.get("averageCost", 0.0)),
+                            "avg_price": float(pos.get("avgCost", 0.0) or pos.get("averageCost", 0.0)),
                             "current_price": float(pos.get("markPrice", 0.0) or pos.get("lastPrice", 0.0)),
-                            "market_value": float(pos.get("markValue", 0.0)),
+                            "market_value": float(pos.get("mktValue", 0.0) or pos.get("markValue", 0.0)),
                             "unrealized_pl": float(pos.get("unrealizedPnl", 0.0)),
                         }
                     )

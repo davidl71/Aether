@@ -184,18 +184,104 @@ class IBKRPortalClient:
         return data
 
     def get_portfolio_positions(self, account_id: Optional[str] = None) -> List[Dict]:
-        """Return positions for a given account."""
+        """Return positions for a given account.
+        Tries /iserver/account/{id}/positions first; on 404 uses /v1/api/portfolio/{id}/positions
+        (some Gateway versions expose portfolio under /v1/api).
+        """
         accounts = self._choose_account(account_id)
         if not accounts:
             return []
 
         self.ensure_session()
-        endpoint = f"/iserver/account/{accounts[0]}/positions"
-        response = self._call("GET", endpoint)
-        positions = response.json()
-        if isinstance(positions, list):
-            return positions
-        return []
+        acct = accounts[0]
+        endpoint = f"/iserver/account/{acct}/positions"
+        try:
+            response = self._call("GET", endpoint)
+            positions = response.json()
+            if isinstance(positions, list):
+                return positions
+            return []
+        except IBKRPortalError as e:
+            if "404" not in str(e):
+                raise
+            # Fallback: Gateway may expose portfolio under /v1/api
+            api_base = self.base_url.replace("/v1/portal", "/v1/api").rstrip("/")
+            url = f"{api_base}/portfolio/{acct}/positions"
+            try:
+                response = self.session.get(url, timeout=self.timeout)
+                if not response.ok:
+                    raise IBKRPortalError(
+                        f"Client Portal responded with status {response.status_code}: {response.text[:200]}"
+                    )
+                positions = response.json()
+                if isinstance(positions, list):
+                    return positions
+            except requests.RequestException as req_err:
+                raise IBKRPortalError(f"Client Portal request failed: {req_err}") from req_err
+            return []
+
+    def get_account_ledger(self, account_id: Optional[str] = None) -> List[Dict]:
+        """Return cash balances by currency from portfolio ledger.
+        Uses GET /v1/api/portfolio/{accountId}/ledger when available.
+        Returns list of dicts with 'currency' and 'balance' (float). Empty on 404 or unsupported.
+        """
+        accounts = self._choose_account(account_id)
+        if not accounts:
+            return []
+
+        self.ensure_session()
+        acct = accounts[0]
+        api_base = self.base_url.replace("/v1/portal", "/v1/api").rstrip("/")
+        url = f"{api_base}/portfolio/{acct}/ledger"
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            if not response.ok:
+                if response.status_code == 404:
+                    return []
+                raise IBKRPortalError(
+                    f"Client Portal responded with status {response.status_code}: {response.text[:200]}"
+                )
+            data = response.json()
+        except requests.RequestException as req_err:
+            logger.debug("Ledger request failed: %s", req_err)
+            return []
+
+        # Normalize to list of {currency, balance}. Handle common shapes.
+        out: List[Dict] = []
+        if isinstance(data, list):
+            for row in data:
+                if not isinstance(row, dict):
+                    continue
+                curr = (row.get("currency") or row.get("currencyCode") or "").strip()
+                bal = row.get("cashbalance") or row.get("balance") or row.get("cashBalance") or row.get("amount")
+                if curr and bal is not None:
+                    try:
+                        out.append({"currency": curr, "balance": float(bal)})
+                    except (ValueError, TypeError):
+                        pass
+        elif isinstance(data, dict):
+            # e.g. {"USD": 1000, "EUR": 500} or {"ledger": [{"currency": "USD", ...}]}
+            ledger = data.get("ledger") or data.get("cash")
+            if isinstance(ledger, list):
+                for row in ledger:
+                    if isinstance(row, dict):
+                        curr = (row.get("currency") or row.get("currencyCode") or "").strip()
+                        bal = row.get("cashbalance") or row.get("balance") or row.get("cashBalance") or row.get("amount")
+                        if curr and bal is not None:
+                            try:
+                                out.append({"currency": curr, "balance": float(bal)})
+                            except (ValueError, TypeError):
+                                pass
+            else:
+                for k, v in data.items():
+                    if k in ("ledger", "cash", "timestamp", "accountId"):
+                        continue
+                    if isinstance(v, (int, float)) or (isinstance(v, str) and v.replace(".", "").replace("-", "").isdigit()):
+                        try:
+                            out.append({"currency": str(k).upper(), "balance": float(v)})
+                        except (ValueError, TypeError):
+                            pass
+        return out
 
     def search_contracts(
         self, symbol: str, sec_type: str = "STK", exchange: str = "SMART", currency: str = "USD"

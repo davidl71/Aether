@@ -52,6 +52,7 @@ from .components.setup_screen import SetupScreen
 from .components.onepassword_screen import OnePasswordScreen
 from .components.logs_tab import LogsTab
 from .components.benchmarks_tab import BenchmarksTab
+from .components.brokers_tab import BrokersTab
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,7 @@ logger = logging.getLogger(__name__)
 # Order matches TabbedContent panes; use switch_to_tab(tab_id) to display without user interaction.
 TUI_TAB_IDS: List[str] = [
     "dashboard-tab",
+    "brokers-tab",
     "unified-positions-tab",
     "cash-flow-tab",
     "simulation-tab",
@@ -259,8 +261,15 @@ class TUIApp(App):
         margin: 1;
     }
 
+    /* Cash flow tab: projection period dropdown box size */
+    #projection-select {
+        width: 8;
+        min-width: 8;
+    }
+
     /* Tables and main content expand to use space */
     #symbols-table, #positions-table, #scenarios-table,
+    #brokers-table,
     #cash-flow-table, #opportunity-scenarios-table, #relationships-table,
     #loans-table {
         width: 100%;
@@ -342,6 +351,7 @@ class TUIApp(App):
         self._historic_tab: Optional[HistoricTab] = None
         self._loan_tab: Optional[LoanListTab] = None
         self._logs_tab: Optional[LogsTab] = None
+        self._brokers_tab: Optional[BrokersTab] = None
         self._logs_buffer_loaded = False
         self._box_spread_file_path = Path("web/public/data/box_spread_sample.json")
         self._last_box_spread_mtime: Optional[float] = None
@@ -362,6 +372,10 @@ class TUIApp(App):
                         watchlist=getattr(self.config, "watchlist", None),
                     )
                     yield self._dashboard_tab
+
+                with TabPane("Brokers", id="brokers-tab"):
+                    self._brokers_tab = BrokersTab(classes="tab-content-fill")
+                    yield self._brokers_tab
 
                 with TabPane("Unified", id="unified-positions-tab"):
                     self._unified_positions_tab = UnifiedPositionsTab(classes="tab-content-fill")
@@ -563,6 +577,12 @@ class TUIApp(App):
                 # Update tabs
                 if self._dashboard_tab:
                     self._dashboard_tab.update_snapshot(new_snapshot, backend_health=all_health or None)
+                if self._brokers_tab:
+                    self._brokers_tab.update_snapshot(
+                        new_snapshot,
+                        backend_health=all_health or None,
+                        current_provider_type=getattr(self.config, "provider_type", None),
+                    )
                 if self._unified_positions_tab:
                     self._unified_positions_tab.update_snapshot(new_snapshot, self._bank_accounts)
                 if self._cash_flow_tab:
@@ -594,6 +614,12 @@ class TUIApp(App):
                         all_health[name] = {"status": "error", "error": "retrying…", "hint": "Backend may be restarting"}
                 status_bar.backend_health = all_health or None
                 status_bar._refresh()
+                if self._brokers_tab:
+                    self._brokers_tab.update_snapshot(
+                        self.snapshot,
+                        backend_health=all_health or None,
+                        current_provider_type=getattr(self.config, "provider_type", None),
+                    )
             except Exception:
                 pass
 
