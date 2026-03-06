@@ -8,10 +8,13 @@ This module fetches benchmark risk-free rates from:
 - Treasury rates from various sources
 - SOFR futures from CME Group
 
+Falls back to yfinance when FRED is unavailable.
+
 References:
 - FRED API (St. Louis Fed): https://fred.stlouisfed.org/docs/api/fred/
 - New York Fed: https://libertystreeteconomics.newyorkfed.org/2023/10/options-for-calculating-risk-free-rates/
 - CME Group: https://www.cmegroup.com/articles/2025/price-and-hedging-usd-sofr-interest-swaps-with-sofr-futures.html
+- Yahoo Finance Treasury Tickers: ^IRX (13W), ^FVX (5Y), ^TNX (10Y), ^TYX (30Y)
 """
 
 from __future__ import annotations
@@ -24,13 +27,25 @@ from typing import Dict, List, Optional, TYPE_CHECKING
 from dataclasses import dataclass
 
 try:
-    from .onepassword_sdk_helper import getenv_or_resolve, get_fred_api_key_from_1password
+    import yfinance as yf
+
+    YFINANCE_AVAILABLE = True
 except ImportError:
+    YFINANCE_AVAILABLE = False
+
+try:
+    from .onepassword_sdk_helper import (
+        getenv_or_resolve,
+        get_fred_api_key_from_1password,
+    )
+except ImportError:
+
     def getenv_or_resolve(env_var: str, op_ref: str, default: str = "") -> str:
         return os.getenv(env_var, default)
 
     def get_fred_api_key_from_1password():
         return None
+
 
 if TYPE_CHECKING:
     from .risk_free_rate_extractor import RiskFreeRateCurve
@@ -41,6 +56,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class BenchmarkRate:
     """A benchmark risk-free rate (SOFR, Treasury, etc.)."""
+
     rate_type: str  # "SOFR", "Treasury", "SOFR_Futures"
     tenor: str  # "Overnight", "1M", "3M", "6M", "1Y", etc.
     days_to_expiry: Optional[int]  # Days to expiration (for term rates)
@@ -48,6 +64,118 @@ class BenchmarkRate:
     timestamp: datetime
     source: str  # Data source/provider
     metadata: Optional[Dict] = None
+
+
+YFINANCE_RATE_TICKERS = {
+    "US": {
+        "1M": "^IRX",  # 13-week T-bill as proxy for 1M
+        "3M": "^IRX",  # 13-week T-bill
+        "6M": "^FVX",  # 5-year Treasury (closest to 6M)
+        "1Y": "^FVX",  # 5-year Treasury
+        "10Y": "^TNX",  # 10-year Treasury
+        "30Y": "^TYX",  # 30-year Treasury
+    },
+    "UK": {
+        "1M": "^IRX",  # Fallback to US T-bill
+        "3M": "^IRX",
+    },
+    "EUR": {
+        "1M": "^IRX",
+        "3M": "^IRX",
+    },
+}
+
+
+class YFinanceRateClient:
+    """
+    Fallback client for fetching interest rates via yfinance.
+
+    Used when FRED API is unavailable (no API key, rate limits, etc.).
+    Yahoo Finance provides Treasury yields via CBOE ticker symbols.
+
+    Note: yfinance does not provide true risk-free rates (SOFR, SONIA, €STR),
+    only Treasury yields. These are suitable as proxies but not exact equivalents.
+    """
+
+    def __init__(self):
+        if not YFINANCE_AVAILABLE:
+            raise ImportError(
+                "yfinance is required for fallback rate fetching. "
+                "Install with: pip install yfinance"
+            )
+
+    def get_treasury_rates(self) -> List[BenchmarkRate]:
+        """
+        Fetch US Treasury rates via yfinance.
+
+        Returns:
+            List of BenchmarkRate for available maturities
+        """
+        rates: List[BenchmarkRate] = []
+
+        tickers = {
+            "13W": ("^IRX", 91),
+            "5Y": ("^FVX", 1825),
+            "10Y": ("^TNX", 3650),
+            "30Y": ("^TYX", 10950),
+        }
+
+        for tenor, (ticker_str, dte) in tickers.items():
+            try:
+                ticker = yf.Ticker(ticker_str)
+                info = ticker.info
+
+                if info and "currentPrice" in info:
+                    rate_value = info.get("currentPrice")
+                    if rate_value and rate_value > 0:
+                        rates.append(
+                            BenchmarkRate(
+                                rate_type="Treasury",
+                                tenor=tenor,
+                                days_to_expiry=dte,
+                                rate=float(rate_value),
+                                timestamp=datetime.now(),
+                                source=f"Yahoo Finance ({ticker_str})",
+                                metadata={"ticker": ticker_str, "tenor": tenor},
+                            )
+                        )
+            except Exception as e:
+                logger.debug(f"Failed to fetch {tenor} from yfinance: {e}")
+                continue
+
+        return rates
+
+    def get_international_rates(self, currency: str = "US") -> List[BenchmarkRate]:
+        """
+        Fetch international rates via yfinance.
+
+        Yahoo Finance has limited international rates. This provides Treasury
+        proxies where direct rates are unavailable.
+
+        Args:
+            currency: Currency code (US, UK, EUR, etc.)
+
+        Returns:
+            List of BenchmarkRate for available maturities
+        """
+        rates: List[BenchmarkRate] = []
+
+        currency_upper = currency.upper()
+
+        if currency_upper == "US":
+            return self.get_treasury_rates()
+
+        # For other currencies, yfinance has limited data
+        # Fall back to US Treasury as proxy with warning
+        treasury_rates = self.get_treasury_rates()
+        for rate in treasury_rates:
+            rate.metadata = rate.metadata or {}
+            rate.metadata["proxy_for"] = currency_upper
+            rate.metadata["warning"] = (
+                f"US Treasury as {currency_upper} proxy - limited yfinance data for {currency_upper}"
+            )
+
+        return treasury_rates
 
 
 class SOFRTreasuryClient:
@@ -63,7 +191,7 @@ class SOFRTreasuryClient:
         self,
         frb_base_url: str = "https://markets.newyorkfed.org/api",
         fred_api_key: Optional[str] = None,
-        treasury_base_url: str = "https://www.treasurydirect.gov/GA-FI/FedInvest/selectSecurityPriceDate.htm"
+        treasury_base_url: str = "https://www.treasurydirect.gov/GA-FI/FedInvest/selectSecurityPriceDate.htm",
     ):
         """
         Initialize SOFR/Treasury client.
@@ -76,12 +204,18 @@ class SOFRTreasuryClient:
         self.frb_base_url = frb_base_url.rstrip("/")
         self.treasury_base_url = treasury_base_url
         # Optional 1Password op:// ref via OP_FRED_API_KEY_SECRET, or SDK discovery of FRED API item
-        self.fred_api_key = fred_api_key or getenv_or_resolve("FRED_API_KEY", "OP_FRED_API_KEY_SECRET", "")
+        self.fred_api_key = fred_api_key or getenv_or_resolve(
+            "FRED_API_KEY", "OP_FRED_API_KEY_SECRET", ""
+        )
         if not self.fred_api_key:
             discovered = get_fred_api_key_from_1password()
             if discovered:
                 self.fred_api_key = discovered
-        if not self.fred_api_key and os.getenv("FRED_DEBUG", "").strip().lower() in ("1", "true", "yes"):
+        if not self.fred_api_key and os.getenv("FRED_DEBUG", "").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+        ):
             logger.debug(
                 "FRED API key not set. Set FRED_API_KEY, export OP_FRED_API_KEY_SECRET='op://vault/FRED API/credential', "
                 "or run this process from a shell where you ran: eval $(op signin)"
@@ -89,10 +223,9 @@ class SOFRTreasuryClient:
         self.fred_base_url = "https://api.stlouisfed.org/fred"
 
         self.session = requests.Session()
-        self.session.headers.update({
-            "User-Agent": "IBBoxSpreadGenerator/1.0",
-            "Accept": "application/json"
-        })
+        self.session.headers.update(
+            {"User-Agent": "IBBoxSpreadGenerator/1.0", "Accept": "application/json"}
+        )
 
     def get_sofr_overnight(self) -> Optional[BenchmarkRate]:
         """
@@ -113,7 +246,7 @@ class SOFRTreasuryClient:
                     "api_key": self.fred_api_key,
                     "file_type": "json",
                     "limit": 1,
-                    "sort_order": "desc"
+                    "sort_order": "desc",
                 }
                 response = self.session.get(endpoint, params=params, timeout=10)
 
@@ -131,7 +264,10 @@ class SOFRTreasuryClient:
                                 rate=rate_value,
                                 timestamp=datetime.now(),
                                 source="FRED (St. Louis Fed)",
-                                metadata={"date": latest.get("date"), "series_id": "SOFR"}
+                                metadata={
+                                    "date": latest.get("date"),
+                                    "series_id": "SOFR",
+                                },
                             )
             except Exception as e:
                 logger.debug(f"FRED API failed, trying alternative: {e}")
@@ -156,7 +292,7 @@ class SOFRTreasuryClient:
                         rate=float(rate_value),
                         timestamp=datetime.now(),
                         source="New York Fed",
-                        metadata=data
+                        metadata=data,
                     )
         except Exception as e:
             logger.warning(f"Failed to fetch SOFR overnight rate: {e}")
@@ -183,7 +319,7 @@ class SOFRTreasuryClient:
                     "1M": ("SOFR30DAYAVG", 30),
                     "3M": ("SOFR90DAYAVG", 90),
                     "6M": ("SOFR180DAYAVG", 180),
-                    "1Y": ("SOFRINDEX", 365)  # Approximate
+                    "1Y": ("SOFRINDEX", 365),  # Approximate
                 }
 
                 for tenor, (series_id, dte) in term_series.items():
@@ -194,7 +330,7 @@ class SOFRTreasuryClient:
                             "api_key": self.fred_api_key,
                             "file_type": "json",
                             "limit": 1,
-                            "sort_order": "desc"
+                            "sort_order": "desc",
                         }
                         response = self.session.get(endpoint, params=params, timeout=10)
 
@@ -205,15 +341,20 @@ class SOFRTreasuryClient:
                                 latest = observations[0]
                                 rate_value = float(latest.get("value", 0))
                                 if rate_value > 0:
-                                    rates.append(BenchmarkRate(
-                                        rate_type="SOFR",
-                                        tenor=tenor,
-                                        days_to_expiry=dte,
-                                        rate=rate_value,
-                                        timestamp=datetime.now(),
-                                        source="FRED (St. Louis Fed)",
-                                        metadata={"date": latest.get("date"), "series_id": series_id}
-                                    ))
+                                    rates.append(
+                                        BenchmarkRate(
+                                            rate_type="SOFR",
+                                            tenor=tenor,
+                                            days_to_expiry=dte,
+                                            rate=rate_value,
+                                            timestamp=datetime.now(),
+                                            source="FRED (St. Louis Fed)",
+                                            metadata={
+                                                "date": latest.get("date"),
+                                                "series_id": series_id,
+                                            },
+                                        )
+                                    )
                     except Exception as e:
                         logger.debug(f"Failed to fetch {tenor} SOFR term rate: {e}")
                         continue
@@ -256,7 +397,7 @@ class SOFRTreasuryClient:
                 "2Y": ("DGS2", 730),
                 "5Y": ("DGS5", 1825),
                 "10Y": ("DGS10", 3650),
-                "30Y": ("DGS30", 10950)
+                "30Y": ("DGS30", 10950),
             }
 
             for tenor, (series_id, dte) in treasury_series.items():
@@ -267,7 +408,7 @@ class SOFRTreasuryClient:
                         "api_key": self.fred_api_key,
                         "file_type": "json",
                         "limit": 1,
-                        "sort_order": "desc"
+                        "sort_order": "desc",
                     }
                     response = self.session.get(endpoint, params=params, timeout=10)
 
@@ -281,15 +422,20 @@ class SOFRTreasuryClient:
                             if rate_value and rate_value != ".":
                                 rate_float = float(rate_value)
                                 if rate_float > 0:
-                                    rates.append(BenchmarkRate(
-                                        rate_type="Treasury",
-                                        tenor=tenor,
-                                        days_to_expiry=dte,
-                                        rate=rate_float,
-                                        timestamp=datetime.now(),
-                                        source="FRED (St. Louis Fed)",
-                                        metadata={"date": latest.get("date"), "series_id": series_id}
-                                    ))
+                                    rates.append(
+                                        BenchmarkRate(
+                                            rate_type="Treasury",
+                                            tenor=tenor,
+                                            days_to_expiry=dte,
+                                            rate=rate_float,
+                                            timestamp=datetime.now(),
+                                            source="FRED (St. Louis Fed)",
+                                            metadata={
+                                                "date": latest.get("date"),
+                                                "series_id": series_id,
+                                            },
+                                        )
+                                    )
                 except (ValueError, KeyError, TypeError) as e:
                     logger.debug(f"Failed to fetch {tenor} Treasury rate: {e}")
                     continue
@@ -300,12 +446,22 @@ class SOFRTreasuryClient:
         except Exception as e:
             logger.warning(f"Failed to fetch Treasury rates: {e}")
 
+        # Fallback to yfinance if FRED failed
+        if not rates and YFINANCE_AVAILABLE:
+            logger.info("FRED Treasury rates unavailable, falling back to yfinance")
+            try:
+                yf_client = YFinanceRateClient()
+                rates = yf_client.get_treasury_rates()
+                for rate in rates:
+                    rate.metadata = rate.metadata or {}
+                    rate.metadata["fallback"] = "yfinance"
+            except Exception as e:
+                logger.warning(f"yfinance fallback failed: {e}")
+
         return rates
 
     def get_benchmark_at_dte(
-        self,
-        days_to_expiry: int,
-        tolerance: int = 5
+        self, days_to_expiry: int, tolerance: int = 5
     ) -> Optional[BenchmarkRate]:
         """
         Get benchmark rate closest to specified days to expiry.
@@ -329,7 +485,7 @@ class SOFRTreasuryClient:
 
         # Find closest match
         best_match: Optional[BenchmarkRate] = None
-        best_diff = float('inf')
+        best_diff = float("inf")
 
         for rate in all_rates:
             if rate.days_to_expiry is not None:
@@ -345,10 +501,7 @@ class RateComparison:
     """Compare box spread rates with benchmark rates."""
 
     @staticmethod
-    def calculate_spread(
-        box_spread_rate: float,
-        benchmark_rate: float
-    ) -> float:
+    def calculate_spread(box_spread_rate: float, benchmark_rate: float) -> float:
         """
         Calculate spread between box spread rate and benchmark.
 
@@ -363,8 +516,7 @@ class RateComparison:
 
     @staticmethod
     def compare_curves(
-        box_spread_curve: RiskFreeRateCurve,
-        benchmark_rates: List[BenchmarkRate]
+        box_spread_curve: RiskFreeRateCurve, benchmark_rates: List[BenchmarkRate]
     ) -> Dict[int, Dict]:
         """
         Compare box spread curve with benchmark rates.
@@ -384,7 +536,7 @@ class RateComparison:
 
             # Find closest benchmark
             closest_benchmark: Optional[BenchmarkRate] = None
-            min_diff = float('inf')
+            min_diff = float("inf")
 
             for benchmark in benchmark_rates:
                 if benchmark.days_to_expiry is not None:
@@ -395,8 +547,7 @@ class RateComparison:
 
             if closest_benchmark and min_diff <= 10:  # Within 10 days
                 spread_bps = RateComparison.calculate_spread(
-                    point.mid_rate,
-                    closest_benchmark.rate
+                    point.mid_rate, closest_benchmark.rate
                 )
 
                 comparison[point.days_to_expiry] = {
@@ -406,7 +557,7 @@ class RateComparison:
                     "benchmark_type": closest_benchmark.rate_type,
                     "spread_bps": spread_bps,
                     "liquidity_score": point.liquidity_score,
-                    "timestamp": point.timestamp.isoformat()
+                    "timestamp": point.timestamp.isoformat(),
                 }
 
         return comparison

@@ -58,10 +58,22 @@ fi
 if ! "${PYTHON_CMD}" -c "import uvicorn" 2>/dev/null; then
   MISSING_PACKAGES+=("uvicorn[standard]")
 fi
+if ! "${PYTHON_CMD}" -c "import yfinance" 2>/dev/null; then
+  MISSING_PACKAGES+=("yfinance")
+fi
 
 if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
-  echo "Installing missing packages: ${MISSING_PACKAGES[*]}..." >&2
-  "${PYTHON_CMD}" -m pip install --quiet "${MISSING_PACKAGES[@]}" >&2
+  # Try uv sync with rates extra first (includes yfinance fallback)
+  if [ -f "${PYTHON_DIR}/pyproject.toml" ]; then
+    echo "Running uv sync --extra rates to install dependencies..." >&2
+    cd "${PYTHON_DIR}" && uv sync --extra rates 2>&1 || true
+    cd - >/dev/null
+  fi
+  # Fallback to pip install if uv sync didn't work
+  if ! "${PYTHON_CMD}" -c "import yfinance" 2>/dev/null; then
+    echo "Installing missing packages: ${MISSING_PACKAGES[*]}..." >&2
+    "${PYTHON_CMD}" -m pip install --quiet "${MISSING_PACKAGES[@]}" >&2
+  fi
 fi
 
 # Check if integration module is available (show traceback on failure)
