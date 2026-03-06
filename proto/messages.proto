@@ -164,6 +164,23 @@ message SystemSnapshot {
   RiskStatus risk = 13;
 }
 
+// Backend health payload for system.health NATS and REST /api/health.
+// One message per backend; aggregators merge by backend id.
+message BackendHealth {
+  string backend = 1;           // e.g. "ib", "alpaca", "tradestation"
+  string status = 2;          // "ok", "degraded", "error", "checking"
+  google.protobuf.Timestamp updated_at = 3;
+  string error = 4;           // optional error message when status != ok
+  string hint = 5;            // optional hint for user
+  map<string, string> extra = 6;  // backend-specific flags (e.g. ib_connected, session_mode)
+}
+
+// Aggregate health for dashboard GET /api/health (all backends).
+message HealthAggregate {
+  map<string, BackendHealth> backends = 1;
+  google.protobuf.Timestamp generated_at = 2;
+}
+
 // ---------------------------------------------------------------------------
 // NATS Envelope
 // ---------------------------------------------------------------------------

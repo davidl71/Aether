@@ -216,7 +216,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Publisher**: Backend service (IB, Alpaca, TradeStation, Tastytrade) when NATS publish enabled
 - **Subscribers**: TUI/PWA NATS provider, snapshot aggregator
 - **Examples**: `snapshot.ib`, `snapshot.alpaca`, `snapshot.tradestation`
-- **Payload**: JSON snapshot object (generated_at, mode, account_id, metrics, symbols, positions, orders, alerts, risk, etc.)
+- **Payload (canonical)**: Proto `SystemSnapshot` (see `proto/messages.proto`). REST and NATS should use the same shape; TUI and PWA consume generated types (Python `python/generated/`, TypeScript when ts-proto wired per project tasks).
 
 ### Subscription patterns (snapshot)
 
@@ -228,7 +228,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Purpose**: Health status from any backend (single topic; payload includes `backend` id)
 - **Publisher**: Backend service on each health check when NATS publish enabled
 - **Subscribers**: Monitoring, TUI health aggregator, frontends
-- **Payload**: `{"backend": "ib", "status": "ok", "ts": "...", "ib_connected": true, ...}` (backend-specific fields)
+- **Payload (canonical)**: Proto `BackendHealth` (see `proto/messages.proto`). JSON equivalent: `{"backend": "ib", "status": "ok", "updated_at": "...", "error": "", "hint": "", "extra": {...}}`. Legacy: ad-hoc JSON with `backend`, `status`, `ts`, and backend-specific fields until all publishers use proto.
 
 ## RPC (Request/Reply) Topics
 

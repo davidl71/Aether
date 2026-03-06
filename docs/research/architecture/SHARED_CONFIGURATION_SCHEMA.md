@@ -276,7 +276,7 @@ For applications that support multiple simultaneous sources (like PWA), use prio
 }
 ```
 
-**Note:** PWA uses build-time environment variables (`VITE_*_PORT`) which override config file values.
+**Note:** PWA uses build-time environment variables (`VITE_*_PORT`) which override config file values. To use the **same config file** as TUI, set **`VITE_CONFIG_URL`** to the health dashboard config endpoint (e.g. `http://localhost:8011/api/config`). The health dashboard serves `GET /api/config` from the shared home config; PWA can call `loadSharedConfig(VITE_CONFIG_URL)` and use `services` and `broker.priorities` so both UIs see the same backends and ordering.
 
 ### Standalone/Backend Configuration
 
@@ -329,7 +329,19 @@ Configuration files are searched in this order:
 
 ## JSON Schema Validation
 
-### Schema Definition
+**Canonical schema:** `config/schema.json` (project root). All loaders (TUI/PWA shared config, and any CLI using the unified format) should validate config against this schema before or after parsing. Parsing remains language-specific (Python `SharedConfigLoader`, TypeScript/PWA env, C++ `ConfigManager` when reading shared-format files).
+
+### Schema location and usage
+
+- **File:** `config/schema.json`
+- **$id:** `https://schemas.ib_box_spread.dev/config/v1.0.0`
+- **Draft:** JSON Schema Draft 2020-12
+
+To validate in code: **Python** use `jsonschema.validate(config_dict, schema)` (optional in `SharedConfigLoader.load_config()` when `jsonschema` is available); **TypeScript** use `ajv` with the schema file; **C++** optional json-schema-validator or document schema as single source of truth.
+
+### Schema Definition (reference)
+
+The canonical definition lives in `config/schema.json`. Condensed reference:
 
 ```json
 {
@@ -337,50 +349,26 @@ Configuration files are searched in this order:
   "$id": "https://schemas.ib_box_spread.dev/config/v1.0.0",
   "type": "object",
   "properties": {
-    "version": {
-      "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+$"
-    },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
     "dataSources": {
       "type": "object",
       "properties": {
-        "primary": {
-          "type": "string",
-          "enum": ["alpaca", "ib", "tradestation", "mock", "static"]
-        },
-        "fallback": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": ["alpaca", "ib", "tradestation", "mock", "static"]
-          }
-        },
-        "sources": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/dataSource"
-          }
-        }
+        "primary": { "type": "string", "enum": ["alpaca", "ib", "tradestation", "mock", "static"] },
+        "fallback": { "type": "array", "items": { "type": "string" } },
+        "sources": { "type": "object", "additionalProperties": { "$ref": "#/$defs/dataSource" } }
       },
       "required": ["primary"]
     },
-    "services": {
-      "type": "object",
-      "additionalProperties": {
-        "type": "object",
-        "properties": {
-          "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
-          "url": { "type": "string", "format": "uri" }
-        }
-      }
-    },
-    "tui": { "$ref": "#/definitions/tuiConfig" },
-    "pwa": { "$ref": "#/definitions/pwaConfig" },
-    "broker": { "$ref": "#/definitions/brokerConfig" }
+    "services": { "type": "object" },
+    "tui": { "$ref": "#/$defs/tuiConfig" },
+    "pwa": { "$ref": "#/$defs/pwaConfig" },
+    "broker": { "$ref": "#/$defs/brokerConfig" }
   },
   "required": ["version", "dataSources"]
 }
 ```
+
+See `config/schema.json` for full `$defs` (dataSource, tuiConfig, pwaConfig, brokerConfig).
 
 ## Migration from Existing Configs
 

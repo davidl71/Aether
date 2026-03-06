@@ -80,6 +80,16 @@ Prioritized plan for shared state, caching, task management, and analytics stora
 
 ---
 
+## Logic Unify (single message bus + cache order)
+
+**Message bus:** NATS (Core + JetStream) is the single message bus for the platform. Use one topic registry (`docs/NATS_TOPICS_REGISTRY.md`) and one wire format (protobuf for NATS payloads). Do not introduce a second bus (e.g. RabbitMQ, Kafka) for the same use cases unless there is a clear reason.
+
+**Cache/state order:** Use a unified client (e.g. `CacheClient` protocol / state factory in `python/integration/cache_client.py`) so callers do not branch on "NATS vs Redis vs memcached" in business logic. Canonical order: (1) **NATS KV** when NATS is available – one URL for pub/sub and state. (2) **Redis** when richer structures (hashes, lists, TTL, sorted sets) or a dedicated cache server are needed. (3) **Memcached** only where already mandated or for pure key-value cache; implement behind the same abstraction so switching is config-driven. C++ engine: when `ENABLE_NATS` is on, any future market-data or strategy cache should go through a small adapter that can be swapped (NATS KV, Redis, or memcached).
+
+**See:** `docs/design/LOGIC_WE_COULD_UNIFY.md` §9.
+
+---
+
 ## See also
 
 - `docs/NATS_USE_OPPORTUNITIES.md` – NATS usage and QuestDB

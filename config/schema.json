@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ib_box_spread.dev/config/v1.0.0",
+  "title": "IB Box Spread shared configuration",
+  "description": "Unified JSON config for TUI, PWA, and CLI. All loaders (Python SharedConfigLoader, PWA env, native CLI when using shared paths) should validate against this schema. Parsing remains language-specific.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "default": "1.0.0",
+      "description": "Config format version (semver)."
+    },
+    "dataSources": {
+      "type": "object",
+      "description": "Data source selection: primary, fallback chain, and per-source settings.",
+      "properties": {
+        "primary": {
+          "type": "string",
+          "enum": ["alpaca", "ib", "tradestation", "mock", "static"],
+          "description": "Active primary data source."
+        },
+        "fallback": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["alpaca", "ib", "tradestation", "mock", "static"]
+          },
+          "default": [],
+          "description": "Fallback sources in order."
+        },
+        "sources": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/dataSource" },
+          "description": "Per-source configuration (key = source name)."
+        }
+      },
+      "required": ["primary"]
+    },
+    "services": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+          "url": { "type": "string" },
+          "http_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+          "websocket_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+          "rest_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+          "grpc_port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+        },
+        "additionalProperties": true
+      },
+      "description": "Service port/URL assignments (alpaca, ib, tradestation, discountBank, etc.)."
+    },
+    "tui": {
+      "$ref": "#/$defs/tuiConfig",
+      "description": "TUI (Python Textual) section: providerType, restEndpoint, updateIntervalMs, etc."
+    },
+    "pwa": {
+      "$ref": "#/$defs/pwaConfig",
+      "description": "PWA (React) section: servicePorts, defaultService, serviceUrls."
+    },
+    "broker": {
+      "$ref": "#/$defs/brokerConfig",
+      "description": "Broker/standalone: primary and priorities list."
+    }
+  },
+  "required": ["version", "dataSources"],
+  "$defs": {
+    "dataSource": {
+      "type": "object",
+      "description": "Single data source config (alpaca, ib, tradestation, mock, static).",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["alpaca", "ib", "tradestation", "mock", "static"]
+        },
+        "enabled": { "type": "boolean", "default": true },
+        "apiKeyId": { "type": "string" },
+        "apiSecretKey": { "type": "string" },
+        "baseUrl": { "type": "string" },
+        "dataBaseUrl": { "type": "string" },
+        "paper": { "type": "boolean" },
+        "timeoutMs": { "type": "integer" },
+        "rateLimitPerMinute": { "type": "integer" },
+        "connectionType": { "type": "string", "enum": ["tws", "clientPortal"] },
+        "tws": {
+          "type": "object",
+          "properties": {
+            "host": { "type": "string" },
+            "port": { "type": "integer" },
+            "clientId": { "type": "integer" },
+            "paperTrading": { "type": "boolean" },
+            "connectionTimeoutMs": { "type": "integer" },
+            "autoReconnect": { "type": "boolean" }
+          }
+        },
+        "clientPortal": {
+          "type": "object",
+          "properties": {
+            "gatewayUrl": { "type": "string" },
+            "verifySsl": { "type": "boolean" },
+            "timeoutMs": { "type": "integer" }
+          }
+        },
+        "symbols": { "type": "array", "items": { "type": "string" } },
+        "filePath": { "type": "string" },
+        "watchFile": { "type": "boolean" },
+        "updateIntervalMs": { "type": "integer" }
+      },
+      "additionalProperties": true
+    },
+    "tuiConfig": {
+      "type": "object",
+      "properties": {
+        "providerType": {
+          "type": "string",
+          "enum": ["mock", "rest", "file", "ibkr_rest", "livevol", "nats"],
+          "default": "rest"
+        },
+        "updateIntervalMs": { "type": "integer", "default": 1000 },
+        "refreshRateMs": { "type": "integer", "default": 500 },
+        "restEndpoint": { "type": "string" },
+        "restTimeoutMs": { "type": "integer" },
+        "restVerifySsl": { "type": "boolean" },
+        "filePath": { "type": "string" },
+        "ibkrRest": {
+          "type": "object",
+          "properties": {
+            "baseUrl": { "type": "string" },
+            "accountId": { "type": "string" },
+            "verifySsl": { "type": "boolean" },
+            "timeoutMs": { "type": "integer" }
+          }
+        },
+        "display": {
+          "type": "object",
+          "properties": {
+            "showColors": { "type": "boolean" },
+            "showFooter": { "type": "boolean" }
+          }
+        },
+        "apiBaseUrl": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "pwaConfig": {
+      "type": "object",
+      "properties": {
+        "servicePorts": {
+          "type": "object",
+          "additionalProperties": { "type": "integer" },
+          "description": "Service name -> port (e.g. alpaca: 8000, ib: 8002)."
+        },
+        "defaultService": { "type": "string", "default": "alpaca" },
+        "serviceUrls": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "brokerConfig": {
+      "type": "object",
+      "properties": {
+        "primary": { "type": "string", "description": "Primary broker (e.g. ALPACA, IB)." },
+        "priorities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Ordered list of broker keys (alpaca, ib, mock, etc.)."
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

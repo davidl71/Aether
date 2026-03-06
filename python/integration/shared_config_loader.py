@@ -31,6 +31,11 @@ from dataclasses import dataclass, field
 logger = logging.getLogger(__name__)
 
 try:
+    import jsonschema
+except ImportError:
+    jsonschema = None  # type: ignore[misc, assignment]
+
+try:
     from .onepassword_sdk_helper import resolve_secret
 except ImportError:
     resolve_secret = None  # type: ignore[misc, assignment]
@@ -299,6 +304,30 @@ class SharedConfigLoader:
         return value
 
     @staticmethod
+    def _validate_schema(config_dict: Dict[str, Any], config_path: Path) -> None:
+        """If jsonschema is available and config has unified shape (dataSources.primary), validate against config/schema.json."""
+        if jsonschema is None:
+            return
+        ds = config_dict.get("dataSources") or {}
+        if not isinstance(ds, dict) or "primary" not in ds:
+            logger.debug("Config missing dataSources.primary, skipping schema validation")
+            return
+        project_root = Path(__file__).parent.parent.parent
+        schema_path = project_root / "config" / "schema.json"
+        if not schema_path.exists() or not schema_path.is_file():
+            logger.debug("Config schema not found at %s, skipping validation", schema_path)
+            return
+        try:
+            with schema_path.open("r", encoding="utf-8") as f:
+                schema = json.load(f)
+            jsonschema.validate(config_dict, schema)
+            logger.debug("Config validated against %s", schema_path)
+        except jsonschema.ValidationError as e:
+            logger.warning("Config at %s failed schema validation: %s", config_path, str(e))
+        except Exception as e:
+            logger.debug("Schema validation skipped: %s", e)
+
+    @staticmethod
     def _apply_env_overrides(config: Dict[str, Any]) -> Dict[str, Any]:
         """Apply environment variable overrides to configuration."""
         # Data source primary
@@ -376,6 +405,9 @@ class SharedConfigLoader:
 
                 # Apply environment variable overrides
                 config_dict = SharedConfigLoader._apply_env_overrides(config_dict)
+
+                # Optional: validate against config/schema.json when jsonschema available
+                SharedConfigLoader._validate_schema(config_dict, candidate)
 
                 # Parse into SharedConfig dataclass
                 return SharedConfigLoader._parse_config(config_dict)
