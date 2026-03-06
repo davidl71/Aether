@@ -22,7 +22,7 @@
 - **User:** `david`
 - **SSH Command:** `ssh david@192.168.192.57`
 - **SSH Alias:** `cursor-ubuntu` (if configured in `~/.ssh/config`)
-- **Project Path:** `/home/david/ib_box_spread_full_universal`
+- **Project Path:** `/home/david/Projects/trading/ib_box_spread_full_universal`
 - **Project Path (Short):** `~/ib_box_spread_full_universal`
 
 **Full SSH Connection:**

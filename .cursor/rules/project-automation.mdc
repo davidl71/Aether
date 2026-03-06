@@ -28,7 +28,7 @@ Use Project Automation tools when you need:
 
 - **In Cursor:** Use the workspace root path (the repo root where you opened the project).
 - **Path varies by machine**, e.g.:
-  - Linux: `/home/david/ib_box_spread_full_universal`
+  - Linux: `/home/david/Projects/trading/ib_box_spread_full_universal`
   - macOS: `/Users/davidl/Projects/Trading/ib_box_spread_full_universal`
 - exarp-go uses this to find `.todo2`, `CMakeLists.txt`, `.git`, etc.
 

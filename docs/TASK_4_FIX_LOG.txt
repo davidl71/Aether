@@ -1,6 +1,6 @@
 Task 4 (PCAP_CAPTURE.md): ✅ Success
   Fixes: 2
   Line 278: similar_file_found
-    Found: /home/david/ib_box_spread_full_universal/docs/ENVIRONMENT_CONFIGURATION.md
+    Found: /home/david/Projects/trading/ib_box_spread_full_universal/docs/ENVIRONMENT_CONFIGURATION.md
   Line 279: similar_file_found
-    Found: /home/david/ib_box_spread_full_universal/docs/TROUBLESHOOTING_BLANK_PAGE.md
+    Found: /home/david/Projects/trading/ib_box_spread_full_universal/docs/TROUBLESHOOTING_BLANK_PAGE.md

@@ -33,7 +33,7 @@ This guide shows how to set up your Ubuntu and macOS M4 remote Cursor agents as 
 - **SSH Alias:** `cursor-ubuntu`
 - **Host:** `192.168.192.57`
 - **User:** `david`
-- **Project Path:** `/home/david/ib_box_spread_full_universal`
+- **Project Path:** `/home/david/Projects/trading/ib_box_spread_full_universal`
 - **SSH Command:** `ssh david@192.168.192.57`
 - **Role:** GitHub Actions runner for Ubuntu/Linux tests
 

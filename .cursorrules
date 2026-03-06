@@ -147,7 +147,7 @@ This project uses multiple MCP (Model Context Protocol) servers to enhance AI ca
 
 **Project Management:**
 - **exarp-go** (MCP server "exarp") - Use for project-specific analysis (documentation health, task alignment, duplicate detection, security scanning) - see `.cursor/rules/project-automation.mdc`
-  - **🚨 CRITICAL**: Pass `workingDirectory` set to **this project's root** (Cursor workspace root; path varies by machine, e.g. `/home/david/ib_box_spread_full_universal` or `/Users/davidl/Projects/Trading/ib_box_spread_full_universal`)
+  - **🚨 CRITICAL**: Pass `workingDirectory` set to **this project's root** (Cursor workspace root; path varies by machine, e.g. `/home/david/Projects/trading/ib_box_spread_full_universal` or `/Users/davidl/Projects/Trading/ib_box_spread_full_universal`)
 - **Agentic Tools** - Advanced task management with unlimited hierarchy and agent memories (see `docs/research/integration/MCP_SERVERS.md`)
 
 **Problem-Solving Workflows:**
