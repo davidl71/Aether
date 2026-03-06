@@ -33,7 +33,7 @@ class DashboardTab(SnapshotTabBase):
     def __init__(self, snapshot: Optional[object] = None, *args: object, **kwargs: object) -> None:
         self.watchlist: List[str] = list(kwargs.pop("watchlist", None) or DEFAULT_WATCHLIST)
         self._backend_health: Optional[Dict[str, Any]] = None
-        super().__init__(snapshot=snapshot, *args, **kwargs)
+        super().__init__(*args, snapshot=snapshot, **kwargs)
 
     def update_snapshot(self, snapshot: Any, **kwargs: object) -> None:
         """Accept backend_health for action items (e.g. services awaiting authentication)."""

@@ -496,13 +496,14 @@ class TUIApp(App):
         logger.info("TUI application unmounted")
 
     def _get_provider_label(self) -> str:
-        """Return short label for current data provider and endpoint (e.g. 'rest (127.0.0.1:8002)', 'mock')."""
+        """Return short label for current data provider and endpoint (e.g. 'rest (8002 HTTP)', 'mock')."""
         from urllib.parse import urlparse
+        from .display_utils import format_endpoint_display
         if isinstance(self.provider, RestProvider):
             try:
-                parsed = urlparse(self.provider.endpoint)
-                netloc = parsed.netloc or parsed.path.split("/")[0]
-                return f"rest ({netloc})"
+                endpoint = self.provider.endpoint
+                short = format_endpoint_display(endpoint)
+                return f"rest ({short})"
             except Exception:
                 return "rest"
         if isinstance(self.provider, FileProvider):
@@ -683,6 +684,15 @@ class TUIApp(App):
         env_path = os.environ.get("IB_BOX_SPREAD_CONFIG")
         if env_path:
             paths.append(Path(env_path))
+        # Watch home config so TWS port / shared config changes (e.g. from Setup) trigger reload
+        try:
+            from ..integration.shared_config_loader import SharedConfigLoader
+            for home_p in SharedConfigLoader._home_config_paths():
+                if home_p.exists():
+                    paths.append(home_p)
+                    break
+        except Exception:
+            pass
         return [x for x in paths if x.exists()]
 
     def _check_config_reload(self) -> None:

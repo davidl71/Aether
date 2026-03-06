@@ -344,7 +344,7 @@ class IBKRPortalClient:
             if isinstance(data, list):
                 # IB returns one object per conid in order; pad if shorter
                 result: List[Dict] = []
-                for i, conid in enumerate(conids):
+                for i, _conid in enumerate(conids):
                     if i < len(data) and isinstance(data[i], dict):
                         result.append(data[i])
                     else:
@@ -456,7 +456,7 @@ class IBKRPortalClient:
             }
 
         results: List[Dict[str, float]] = []
-        for sym, conid in conids_by_symbol:
+        for _sym, conid in conids_by_symbol:
             if conid is not None and conid in conid_to_snapshot:
                 results.append(to_result(conid_to_snapshot[conid]))
             else:

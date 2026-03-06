@@ -175,15 +175,14 @@ class SOFRTreasuryClient:
         """
         rates: List[BenchmarkRate] = []
 
-        # FRED has SOFR term rates series
+        # FRED has SOFR term rates (30/90/180 day averages). Do NOT use SOFRINDEX for 1Y:
+        # SOFRINDEX is a cumulative index (starts at 1.0), not a rate—using it produced ~1.23% (the index level).
         if self.fred_api_key:
             try:
-                # SOFR term rate series IDs in FRED
                 term_series = {
                     "1M": ("SOFR30DAYAVG", 30),
                     "3M": ("SOFR90DAYAVG", 90),
                     "6M": ("SOFR180DAYAVG", 180),
-                    "1Y": ("SOFRINDEX", 365)  # Approximate
                 }
 
                 for tenor, (series_id, dte) in term_series.items():
@@ -217,6 +216,47 @@ class SOFRTreasuryClient:
                     except Exception as e:
                         logger.debug(f"Failed to fetch {tenor} SOFR term rate: {e}")
                         continue
+
+                # 1Y: derive from SOFR Index year-over-year (index is cumulative, Apr 2 2018 = 1)
+                # Fetch ~400 observations (desc); use [0]=latest and [252]~1 year ago (business days)
+                try:
+                    endpoint = f"{self.fred_base_url}/series/observations"
+                    params = {
+                        "series_id": "SOFRINDEX",
+                        "api_key": self.fred_api_key,
+                        "file_type": "json",
+                        "limit": 400,
+                        "sort_order": "desc"
+                    }
+                    response = self.session.get(endpoint, params=params, timeout=10)
+                    if response.status_code == 200:
+                        data = response.json()
+                        observations = data.get("observations", [])
+                        # ~252 business days ≈ 1 year
+                        idx_1y = min(252, len(observations) - 1) if len(observations) > 1 else 0
+                        if len(observations) > idx_1y and idx_1y > 0:
+                            latest = observations[0]
+                            year_ago = observations[idx_1y]
+                            val_now = float(latest.get("value", 0))
+                            val_1y_ago = float(year_ago.get("value", 0))
+                            if val_1y_ago > 0 and val_now > 0:
+                                rate_1y = (val_now / val_1y_ago - 1.0) * 100.0
+                                if 0.1 < rate_1y < 25.0:  # sanity: plausible annual rate
+                                    rates.append(BenchmarkRate(
+                                        rate_type="SOFR",
+                                        tenor="1Y",
+                                        days_to_expiry=365,
+                                        rate=rate_1y,
+                                        timestamp=datetime.now(),
+                                        source="FRED (St. Louis Fed)",
+                                        metadata={
+                                            "date": latest.get("date"),
+                                            "series_id": "SOFRINDEX",
+                                            "note": "Approx from index YoY"
+                                        }
+                                    ))
+                except Exception as e:
+                    logger.debug("Failed to derive 1Y SOFR from SOFRINDEX: %s", e)
 
             except Exception as e:
                 logger.warning(f"Failed to fetch SOFR term rates from FRED: {e}")

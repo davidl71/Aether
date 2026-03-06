@@ -274,9 +274,11 @@ def build_snapshot_payload(
     positions_data = []
     for pos in positions_raw:
         if isinstance(pos, dict):
+            sym = pos.get("ticker", "")
             positions_data.append(
                 {
-                    "symbol": pos.get("ticker", ""),
+                    "name": sym,
+                    "symbol": sym,
                     "quantity": int(float(pos.get("position", 0.0))),
                     "avg_price": float(pos.get("averageCost", 0.0)),
                     "current_price": float(pos.get("markPrice", 0.0) or pos.get("lastPrice", 0.0)),
