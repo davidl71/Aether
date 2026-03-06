@@ -101,6 +101,17 @@ class TestHelperFunctions(unittest.TestCase):
         result = _extract_account_value("not a dict", "NetLiquidation", default=0.0)
         assert result == 0.0
 
+    def test_extract_account_value_total_cash_aliases(self):
+        """Test _extract_account_value() with TotalCashValue and camelCase/flat aliases."""
+        # PascalCase nested (existing Client Portal format)
+        assert _extract_account_value({"TotalCashValue": [{"value": "12345.67"}]}, "TotalCashValue") == 12345.67
+        # camelCase nested
+        assert _extract_account_value({"totalCashValue": [{"value": "20000.00"}]}, "TotalCashValue") == 20000.00
+        # Flat scalar string
+        assert _extract_account_value({"TotalCashValue": "5000.50"}, "TotalCashValue") == 5000.50
+        # Flat scalar number
+        assert _extract_account_value({"CashBalance": 999.99}, "TotalCashValue") == 999.99
+
 
 class TestBuildSnapshotPayload(unittest.TestCase):
     """Tests for build_snapshot_payload() function."""
@@ -118,6 +129,7 @@ class TestBuildSnapshotPayload(unittest.TestCase):
         self.mock_client.get_account_summary.return_value = {
             "NetLiquidation": [{"value": "100000.00"}],
             "BuyingPower": [{"value": "50000.00"}],
+            "TotalCashValue": [{"value": "25000.00"}],
         }
         self.mock_client.get_accounts.return_value = ["DU123456"]
         self.mock_client.get_portfolio_positions.return_value = [
@@ -142,8 +154,11 @@ class TestBuildSnapshotPayload(unittest.TestCase):
         assert result["symbols"][0]["ask"] == 450.5
         assert result["symbols"][0]["spread"] == 1.0
         assert result["metrics"]["net_liq"] == 100000.0
-        assert len(result["positions"]) == 1
+        # Positions: SPY + Cash (USD) when ledger is not used
+        assert len(result["positions"]) == 2
         assert result["positions"][0]["symbol"] == "SPY"
+        cash_pos = next(p for p in result["positions"] if p.get("instrument_type") == "cash")
+        assert cash_pos["name"] == "Cash (USD)" and cash_pos["market_value"] == 25000.0
         self.mock_client.get_snapshots_batch.assert_called_once_with(["SPY", "QQQ"])
         # Session ensured once before parallel block; flag set/cleared.
         self.mock_client.ensure_session.assert_called_once()
@@ -162,12 +177,13 @@ class TestBuildSnapshotPayload(unittest.TestCase):
         symbols = ["SPY"]
         result = build_snapshot_payload(symbols, self.mock_client)
 
-        # Should still return payload with empty/zero values
+        # Should still return payload with empty/zero values; one Cash (USD) position at 0 when summary fails
         assert len(result["symbols"]) == 1
         assert result["symbols"][0]["symbol"] == "SPY"
         assert result["symbols"][0]["last"] == 0.0
         assert result["metrics"]["net_liq"] == 0.0
-        assert len(result["positions"]) == 0
+        assert len(result["positions"]) == 1
+        assert result["positions"][0]["instrument_type"] == "cash" and result["positions"][0]["market_value"] == 0.0
 
     def test_build_snapshot_payload_missing_data(self):
         """Test build_snapshot_payload() with missing market data fields."""

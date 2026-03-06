@@ -109,20 +109,49 @@ def _snapshot_cache_ttl_seconds() -> float:
 
 
 def _extract_account_value(summary: Dict, key: str, default: float = 0.0) -> float:
-    """Extract numeric value from IB account summary."""
+    """Extract numeric value from IB account summary.
+    Handles both IB-style nested list format and flat/scalar format from Client Portal.
+    """
     if not isinstance(summary, dict):
         return default
 
-    # IB account summary has a nested structure: {"key": [{"value": "123.45", ...}]}
-    items = summary.get(key, [])
-    if isinstance(items, list) and len(items) > 0:
-        value_str = items[0].get("value") if isinstance(items[0], dict) else None
-        if value_str:
+    # Try primary key and common aliases (Client Portal may use camelCase or different names)
+    keys_to_try = [key]
+    if key == "TotalCashValue":
+        keys_to_try = ["TotalCashValue", "totalCashValue", "CashBalance", "cashBalance", "AvailableFunds"]
+    elif key == "NetLiquidation":
+        keys_to_try = ["NetLiquidation", "netLiquidation", "NetLiquidationValue"]
+    elif key == "BuyingPower":
+        keys_to_try = ["BuyingPower", "buyingPower"]
+    elif key == "ExcessLiquidity":
+        keys_to_try = ["ExcessLiquidity", "excessLiquidity"]
+    elif key == "MaintMarginReq":
+        keys_to_try = ["MaintMarginReq", "maintMarginReq", "MaintMarginRequirement"]
+
+    for k in keys_to_try:
+        raw = summary.get(k)
+        if raw is None:
+            continue
+        # Nested format: {"TotalCashValue": [{"value": "123.45", ...}]}
+        if isinstance(raw, list) and len(raw) > 0:
+            first = raw[0]
+            if isinstance(first, dict):
+                value_str = first.get("value") or first.get("amount")
+                if value_str is not None:
+                    try:
+                        return float(value_str)
+                    except (ValueError, TypeError):
+                        pass
+            elif isinstance(first, (int, float)):
+                return float(first)
+        # Flat scalar
+        if isinstance(raw, (int, float)):
+            return float(raw)
+        if isinstance(raw, str) and raw.strip():
             try:
-                return float(value_str)
+                return float(raw)
             except (ValueError, TypeError):
                 pass
-
     return default
 
 
@@ -498,6 +527,12 @@ def build_snapshot_payload(
             })
     else:
         total_cash = _extract_account_value(account_summary, "TotalCashValue") if account_summary else 0.0
+        if account_summary and total_cash == 0.0:
+            logger.debug(
+                "Account summary present but TotalCashValue is 0; summary keys: %s. "
+                "Ledger was empty (use /v1/api/portfolio/{id}/ledger if available).",
+                list(account_summary.keys()) if isinstance(account_summary, dict) else type(account_summary),
+            )
         positions_data.append({
             "name": "Cash (USD)",
             "symbol": "Cash",
