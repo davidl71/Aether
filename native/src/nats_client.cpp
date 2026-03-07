@@ -14,6 +14,15 @@
 #define NATS_AVAILABLE 0
 #endif
 
+// Protobuf support for binary NATS messages (when both NATS and proto are enabled)
+#if defined(ENABLE_NATS) && defined(ENABLE_PROTO)
+#include "messages.pb.h"
+#include <google/protobuf/timestamp.pb.h>
+#define PROTO_NATS 1
+#else
+#define PROTO_NATS 0
+#endif
+
 namespace nats {
 
 // ============================================================================
@@ -100,6 +109,32 @@ struct NatsClientImpl {
     return false;
 #endif
   }
+
+  // Binary publish for protobuf messages
+  bool publish_bytes_impl(const std::string &topic, const std::string &data) {
+#if NATS_AVAILABLE
+    if (!connected || !conn) {
+      return false;
+    }
+
+    natsStatus status = natsConnection_Publish(
+        conn, topic.c_str(),
+        reinterpret_cast<const void *>(data.data()),
+        static_cast<int>(data.size()));
+    if (status == NATS_OK) {
+      spdlog::trace("Published {} bytes to NATS topic {}", data.size(), topic);
+      return true;
+    } else {
+      spdlog::warn("Failed to publish bytes to NATS topic {}: {}", topic,
+                   natsStatus_GetText(status));
+      return false;
+    }
+#else
+    (void)topic;
+    (void)data;
+    return false;
+#endif
+  }
 };
 
 // ============================================================================
@@ -129,37 +164,49 @@ static std::string generate_uuid() {
   return std::string(uuid_str);
 }
 
-// Helper: Get current timestamp in ISO 8601 format
-static std::string get_iso_timestamp() {
+// Helper: Get current time as protobuf Timestamp seconds + nanos
+static std::pair<int64_t, int32_t> get_proto_timestamp() {
   auto now = std::chrono::system_clock::now();
-  auto time_t = std::chrono::system_clock::to_time_t(now);
-  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                now.time_since_epoch()) %
-            1000;
-
-  std::tm tm_buf;
-  gmtime_r(&time_t, &tm_buf);
-
-  std::ostringstream oss;
-  oss << std::put_time(&tm_buf, "%Y-%m-%dT%H:%M:%S");
-  oss << '.' << std::setfill('0') << std::setw(3) << ms.count();
-  oss << "Z";
-  return oss.str();
+  auto epoch = now.time_since_epoch();
+  auto secs = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+  auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(epoch) -
+               std::chrono::duration_cast<std::chrono::nanoseconds>(secs);
+  return {static_cast<int64_t>(secs.count()),
+          static_cast<int32_t>(nanos.count())};
 }
 
-// Helper: Create JSON message
-static std::string create_json_message(const std::string &type,
-                                       const std::string &source,
-                                       const std::string &payload_json) {
-  std::ostringstream oss;
-  oss << "{"
-      << "\"id\":\"" << generate_uuid() << "\","
-      << "\"timestamp\":\"" << get_iso_timestamp() << "\","
-      << "\"source\":\"" << source << "\","
-      << "\"type\":\"" << type << "\","
-      << "\"payload\":" << payload_json << "}";
-  return oss.str();
+#if PROTO_NATS
+// Helper: Build and serialize a NatsEnvelope wrapping an inner proto message.
+// Returns the serialized bytes, or empty string on failure.
+template <typename InnerMsg>
+static std::string build_envelope(const std::string &message_type,
+                                  const InnerMsg &inner) {
+  std::string payload;
+  if (!inner.SerializeToString(&payload)) {
+    spdlog::warn("Failed to serialize inner protobuf message for type {}",
+                 message_type);
+    return {};
+  }
+
+  ::ib::platform::v1::NatsEnvelope envelope;
+  envelope.set_id(generate_uuid());
+  envelope.set_source("cpp-tws-client");
+  envelope.set_message_type(message_type);
+  envelope.set_payload(payload);
+
+  auto [secs, nanos] = get_proto_timestamp();
+  auto *ts = envelope.mutable_timestamp();
+  ts->set_seconds(secs);
+  ts->set_nanos(nanos);
+
+  std::string out;
+  if (!envelope.SerializeToString(&out)) {
+    spdlog::warn("Failed to serialize NatsEnvelope for type {}", message_type);
+    return {};
+  }
+  return out;
 }
+#endif  // PROTO_NATS
 
 bool NatsClient::publish_market_data(const std::string &symbol, double bid,
                                      double ask, const std::string &timestamp) {
@@ -167,6 +214,26 @@ bool NatsClient::publish_market_data(const std::string &symbol, double bid,
     return false;
   }
 
+  std::string topic = "market-data.tick." + symbol;
+
+#if PROTO_NATS
+  ::ib::platform::v1::MarketDataEvent event;
+  event.set_symbol(symbol);
+  event.set_bid(bid);
+  event.set_ask(ask);
+
+  auto [secs, nanos] = get_proto_timestamp();
+  auto *ts = event.mutable_timestamp();
+  ts->set_seconds(secs);
+  ts->set_nanos(nanos);
+
+  std::string data = build_envelope("MarketDataTick", event);
+  if (data.empty()) {
+    return false;
+  }
+  return pimpl_->publish_bytes_impl(topic, data);
+#else
+  // JSON fallback when protobuf not available
   std::ostringstream payload;
   payload << "{"
           << "\"symbol\":\"" << symbol << "\","
@@ -175,11 +242,11 @@ bool NatsClient::publish_market_data(const std::string &symbol, double bid,
           << "\"timestamp\":\"" << timestamp << "\""
           << "}";
 
-  std::string message =
-      create_json_message("MarketDataTick", "cpp-tws-client", payload.str());
-
-  std::string topic = "market-data.tick." + symbol;
-  return pimpl_->publish_impl(topic, message);
+  std::ostringstream msg;
+  msg << "{\"source\":\"cpp-tws-client\",\"type\":\"MarketDataTick\","
+      << "\"payload\":" << payload.str() << "}";
+  return pimpl_->publish_impl(topic, msg.str());
+#endif
 }
 
 bool NatsClient::publish_strategy_signal(const std::string &symbol,
@@ -189,19 +256,36 @@ bool NatsClient::publish_strategy_signal(const std::string &symbol,
     return false;
   }
 
+  std::string topic = "strategy.signal." + symbol;
+
+#if PROTO_NATS
+  ::ib::platform::v1::StrategySignal signal;
+  signal.set_symbol(symbol);
+  signal.set_price(price);
+
+  auto [secs, nanos] = get_proto_timestamp();
+  auto *ts = signal.mutable_timestamp();
+  ts->set_seconds(secs);
+  ts->set_nanos(nanos);
+
+  std::string data = build_envelope("StrategySignal", signal);
+  if (data.empty()) {
+    return false;
+  }
+  return pimpl_->publish_bytes_impl(topic, data);
+#else
   std::ostringstream payload;
   payload << "{"
           << "\"symbol\":\"" << symbol << "\","
           << "\"price\":" << price << ","
-          << "\"signal_type\":\"" << signal_type << "\","
-          << "\"timestamp\":\"" << get_iso_timestamp() << "\""
+          << "\"signal_type\":\"" << signal_type << "\""
           << "}";
 
-  std::string message =
-      create_json_message("StrategySignal", "cpp-tws-client", payload.str());
-
-  std::string topic = "strategy.signal." + symbol;
-  return pimpl_->publish_impl(topic, message);
+  std::ostringstream msg;
+  msg << "{\"source\":\"cpp-tws-client\",\"type\":\"StrategySignal\","
+      << "\"payload\":" << payload.str() << "}";
+  return pimpl_->publish_impl(topic, msg.str());
+#endif
 }
 
 bool NatsClient::publish_strategy_decision(const std::string &symbol,
@@ -212,21 +296,40 @@ bool NatsClient::publish_strategy_decision(const std::string &symbol,
     return false;
   }
 
+  std::string topic = "strategy.decision." + symbol;
+
+#if PROTO_NATS
+  ::ib::platform::v1::StrategyDecision decision;
+  decision.set_symbol(symbol);
+  decision.set_quantity(static_cast<int32_t>(quantity));
+  decision.set_side(side);
+  decision.set_mark(mark);
+
+  auto [secs, nanos] = get_proto_timestamp();
+  auto *ts = decision.mutable_created_at();
+  ts->set_seconds(secs);
+  ts->set_nanos(nanos);
+
+  std::string data = build_envelope("StrategyDecision", decision);
+  if (data.empty()) {
+    return false;
+  }
+  return pimpl_->publish_bytes_impl(topic, data);
+#else
   std::ostringstream payload;
   payload << "{"
           << "\"symbol\":\"" << symbol << "\","
           << "\"quantity\":" << quantity << ","
           << "\"side\":\"" << side << "\","
           << "\"mark\":" << mark << ","
-          << "\"decision_type\":\"" << decision_type << "\","
-          << "\"timestamp\":\"" << get_iso_timestamp() << "\""
+          << "\"decision_type\":\"" << decision_type << "\""
           << "}";
 
-  std::string message =
-      create_json_message("StrategyDecision", "cpp-tws-client", payload.str());
-
-  std::string topic = "strategy.decision." + symbol;
-  return pimpl_->publish_impl(topic, message);
+  std::ostringstream msg;
+  msg << "{\"source\":\"cpp-tws-client\",\"type\":\"StrategyDecision\","
+      << "\"payload\":" << payload.str() << "}";
+  return pimpl_->publish_impl(topic, msg.str());
+#endif
 }
 
 } // namespace nats

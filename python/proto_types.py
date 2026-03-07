@@ -1,12 +1,13 @@
-"""Canonical Python types mirroring proto/messages.proto.
+"""Deprecated: manual Python types mirroring proto/messages.proto.
 
-These dataclasses are the single source of truth for cross-language
-message shapes until betterproto codegen is wired into the Python
-build.  When codegen is enabled, replace imports of this module with
-imports from ``python/generated/``.
+.. deprecated::
+    This module is superseded by ``python/generated/`` (betterproto codegen).
+    Prefer ``from python.generated import <Type>`` for all new code.
+    This file is kept for backward compatibility only and will be removed
+    once all callers are migrated.
 
-All field names, types, and ordering match ``ib.platform.v1`` in
-``proto/messages.proto``.
+These dataclasses mirror ``ib.platform.v1`` in ``proto/messages.proto``.
+When betterproto codegen is enabled, generated types are in ``python/generated/``.
 """
 
 from __future__ import annotations

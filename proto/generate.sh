@@ -26,11 +26,20 @@ PYTHON_OUT="$ROOT_DIR/python/generated"
 mkdir -p "$PYTHON_OUT"
 if command -v protoc >/dev/null 2>&1; then
   echo "[py] generating with betterproto..."
-  python3 -m grpc_tools.protoc \
-    -I "$PROTO_DIR" \
-    --python_betterproto_out="$PYTHON_OUT" \
-    "$PROTO_DIR/messages.proto" 2>/dev/null || \
-  echo "[py] betterproto not installed, skipping (pip install betterproto[compiler])"
+  # Try uv run first (project venv), then system python3
+  if command -v uv >/dev/null 2>&1 && uv run python3 -m grpc_tools.protoc --version >/dev/null 2>&1; then
+    uv run python3 -m grpc_tools.protoc \
+      -I "$PROTO_DIR" \
+      --python_betterproto_out="$PYTHON_OUT" \
+      "$PROTO_DIR/messages.proto" 2>/dev/null || \
+    echo "[py] betterproto generation failed"
+  else
+    python3 -m grpc_tools.protoc \
+      -I "$PROTO_DIR" \
+      --python_betterproto_out="$PYTHON_OUT" \
+      "$PROTO_DIR/messages.proto" 2>/dev/null || \
+    echo "[py] betterproto not installed, skipping (uv pip install betterproto[compiler])"
+  fi
 else
   echo "[py] protoc not found, skipping"
 fi

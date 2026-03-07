@@ -1083,6 +1083,25 @@ if(_build_native_cli)
             ${INTEL_DECIMAL_LIB}
     )
 
+    # Verify protobuf linkage for proto EWrapper callbacks (tws_client.cpp).
+    # libprotobuf is transitively linked via ${TWS_API_LIB}; explicit linkage
+    # is a safety net for linkers that do not resolve transitive shared-lib deps.
+    find_package(Protobuf QUIET)
+    if(Protobuf_FOUND AND TARGET protobuf::libprotobuf)
+        target_link_libraries(ib_box_spread PRIVATE protobuf::libprotobuf)
+        message(STATUS "Explicitly linked protobuf::libprotobuf to ib_box_spread")
+    else()
+        message(STATUS "protobuf::libprotobuf target not found; relying on transitive linkage via TWS_API_LIB")
+    endif()
+
+    # Expose platform proto generated headers to ib_box_spread (for nats_client.cpp protobuf publishing)
+    if(TARGET platform_proto)
+        target_include_directories(ib_box_spread PRIVATE "${PROTO_GENERATED_DIR}")
+        target_link_libraries(ib_box_spread PRIVATE platform_proto)
+        target_compile_definitions(ib_box_spread PRIVATE ENABLE_PROTO)
+        message(STATUS "Linked platform_proto to ib_box_spread (ENABLE_PROTO defined)")
+    endif()
+
     # Link to extracted box-spread-cpp library if enabled
     if(USE_BOX_SPREAD_CPP_LIB AND TARGET box_spread_cpp)
         target_link_libraries(ib_box_spread PRIVATE box_spread_cpp)
