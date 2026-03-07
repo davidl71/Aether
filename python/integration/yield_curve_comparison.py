@@ -42,6 +42,13 @@ try:
 except ImportError:
     TAX_CONFIG_AVAILABLE = False
 
+try:
+    import numpy as np
+    from scipy.optimize import curve_fit
+    _NS_AVAILABLE = True
+except ImportError:
+    _NS_AVAILABLE = False
+
 
 @dataclass
 class CurvePoint:
@@ -96,6 +103,12 @@ class YieldCurveComparison:
     @property
     def symbols(self) -> List[str]:
         return sorted(self.box_curves.keys())
+
+    def fit_nelson_siegel(self, source: str = "treasury") -> "Optional[NelsonSiegelFitter]":
+        """Fit NS model to treasury or sofr curve. Returns fitted fitter or None."""
+        pts = self.treasury_curve if source == "treasury" else self.sofr_curve
+        fitter = NelsonSiegelFitter()
+        return fitter if fitter.fit(pts) else None
 
     def get_benchmark_at_dte(self, dte: int, tolerance: int = 15) -> Optional[CurvePoint]:
         """Find closest Treasury or SOFR point to a given DTE."""
@@ -154,6 +167,54 @@ class YieldCurveComparison:
             for s in self.spreads
         ]
         return result
+
+
+class NelsonSiegelFitter:
+    """Fits a Nelson-Siegel yield curve to discrete rate observations.
+
+    Usage:
+        fitter = NelsonSiegelFitter()
+        fitter.fit(curve_points)     # list[CurvePoint]
+        rate = fitter.rate_at(90)    # rate at 90 DTE in percent
+    """
+
+    def __init__(self) -> None:
+        self._params: Optional[tuple] = None  # (β0, β1, β2, τ)
+
+    @staticmethod
+    def _ns_formula(t: "np.ndarray", b0: float, b1: float, b2: float, tau: float) -> "np.ndarray":
+        # t in years
+        tau = max(tau, 0.01)
+        factor = (1.0 - np.exp(-t / tau)) / (t / tau + 1e-12)
+        return b0 + b1 * factor + b2 * (factor - np.exp(-t / tau))
+
+    def fit(self, points: List[CurvePoint]) -> bool:
+        """Fit NS model to curve points. Returns True on success."""
+        if not _NS_AVAILABLE or len(points) < 4:
+            return False
+        t = np.array([p.days_to_expiry / 365.25 for p in points])
+        r = np.array([p.rate_pct for p in points])
+        try:
+            p0 = [r[-1], r[0] - r[-1], 0.0, 1.5]  # initial guess
+            popt, _ = curve_fit(self._ns_formula, t, r, p0=p0,
+                                bounds=([0, -20, -20, 0.1], [20, 20, 20, 30]),
+                                maxfev=5000)
+            self._params = tuple(popt)
+            return True
+        except Exception:
+            return False
+
+    def rate_at(self, dte: int) -> Optional[float]:
+        """Return fitted rate (%) at given DTE, or None if not fitted."""
+        if self._params is None or not _NS_AVAILABLE:
+            return None
+        t = np.array([dte / 365.25])
+        return float(self._ns_formula(t, *self._params)[0])
+
+    @property
+    def params(self) -> Optional[tuple]:
+        """(β0, β1, β2, τ) or None if not fitted."""
+        return self._params
 
 
 # Standard tenor labels

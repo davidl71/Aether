@@ -7,6 +7,7 @@ from datetime import datetime
 
 from python.integration.yield_curve_comparison import (
     CurvePoint,
+    NelsonSiegelFitter,
     SpreadPoint,
     YieldCurveComparison,
     YieldCurveComparer,
@@ -344,3 +345,39 @@ class TestCompareFromExtractorCurves:
         assert len(comp.box_curves["SPX"]) == 2
         assert comp.box_curves["SPX"][0].liquidity_score == 80.0
         assert len(comp.spreads) > 0
+
+
+class TestNelsonSiegelFitter:
+    def _make_points(self):
+        # Synthetic normal upward-sloping curve
+        tenors = [(30, 5.3), (90, 5.25), (180, 5.1), (365, 4.9),
+                  (730, 4.6), (1095, 4.4), (1825, 4.3), (3650, 4.2)]
+        return [CurvePoint(dte, rate, "test", f"{dte}d") for dte, rate in tenors]
+
+    def test_fit_returns_true_with_enough_points(self):
+        fitter = NelsonSiegelFitter()
+        assert fitter.fit(self._make_points()) is True
+
+    def test_rate_at_interpolates_within_range(self):
+        fitter = NelsonSiegelFitter()
+        fitter.fit(self._make_points())
+        r = fitter.rate_at(180)
+        assert r is not None
+        assert 4.0 <= r <= 6.0
+
+    def test_rate_at_extrapolates_beyond_tenors(self):
+        fitter = NelsonSiegelFitter()
+        fitter.fit(self._make_points())
+        r = fitter.rate_at(7300)  # 20yr, beyond the curve
+        assert r is not None
+        assert 3.5 <= r <= 6.0
+
+    def test_fit_returns_false_with_too_few_points(self):
+        fitter = NelsonSiegelFitter()
+        assert fitter.fit([CurvePoint(90, 5.0, "test", "3m")]) is False
+
+    def test_params_are_set_after_fit(self):
+        fitter = NelsonSiegelFitter()
+        fitter.fit(self._make_points())
+        assert fitter.params is not None
+        assert len(fitter.params) == 4
