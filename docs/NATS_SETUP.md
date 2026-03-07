@@ -180,12 +180,12 @@ nats server check
 
 A Python service subscribes to Core NATS `market-data.tick.>` and writes each tick to QuestDB via ILP (table `market_data`). Use it when market data is published to NATS (e.g. Rust backend, or test with `nats pub`).
 
-**Prerequisites:** NATS server running, QuestDB running with ILP on port 9009.
+**Prerequisites:** NATS server running, QuestDB running with ILP on port 9009, Go installed.
 
-**Run:**
+**Run:** The NATS→QuestDB writer is the Go nats-questdb-bridge (no Python fallback). From repo root:
 
 ```bash
-# From repo root (NATS and QuestDB must be running)
+# From repo root (NATS and QuestDB must be running; requires Go)
 ./scripts/run_questdb_nats_writer.sh
 ```
 
@@ -207,9 +207,9 @@ Or via the unified service manager:
 | `NATS_QUESTDB_SUBJECT` / `--subject` | `market-data.tick.>` | NATS subject to subscribe to |
 | `QUESTDB_MARKET_DATA_TABLE` / `--table` | `market_data` | QuestDB table name |
 
-**Payload format:** JSON. Envelope `{"payload": {symbol, bid, ask, last, volume?, timestamp?}}` or flat `{symbol, bid, ask, last, volume?, timestamp?}`. Symbol can be inferred from subject (e.g. `market-data.tick.SPY` → SPY). The Rust backend currently publishes **protobuf** on this subject; to ingest that, add Python proto decode (see `proto/messages.proto` `NatsEnvelope` + `MarketDataEvent`) or use the Go bridge (JetStream path) with an adapter that republishes proto→JSON to JetStream.
+**Payload format:** JSON. Envelope `{"payload": {symbol, bid, ask, last, volume?, timestamp?}}` or flat `{symbol, bid, ask, last, volume?, timestamp?}`. Symbol can be inferred from subject (e.g. `market-data.tick.SPY` → SPY). The Rust backend currently publishes **protobuf** on this subject; to ingest that, use the Go bridge (JetStream path) with an adapter that republishes proto→JSON to JetStream, or see `proto/messages.proto` `NatsEnvelope` + `MarketDataEvent`.
 
-**Code:** `python/integration/questdb_nats_writer.py`. See also `docs/NATS_USE_OPPORTUNITIES.md` (QuestDB section) and the Go bridge `agents/go/cmd/nats-questdb-bridge/`.
+**Code:** `agents/go/cmd/nats-questdb-bridge`. See also `docs/NATS_USE_OPPORTUNITIES.md` (QuestDB section).
 
 ## Integration with Launch Scripts
 

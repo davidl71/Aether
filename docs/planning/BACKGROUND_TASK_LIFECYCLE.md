@@ -48,12 +48,12 @@ This document describes how background work (threads, asyncio tasks, timers) is 
 
 | Process | Background work | Start | Stop | Notes |
 |---------|------------------|--------|------|--------|
-| **questdb_nats_writer.py** | Single asyncio loop: `run_writer()` (NATS subscribe + QuestDB write loop) | `asyncio.run(run_writer(...))` or `loop.run_until_complete(run_writer(...))` | `KeyboardInterrupt` → loop closes | No explicit shutdown hook; SIGINT closes the loop. |
+| **nats-questdb-bridge (Go)** | Single process: `go run ./cmd/nats-questdb-bridge` (NATS subscribe + QuestDB ILP write) | Started by `./scripts/run_questdb_nats_writer.sh` | Process exit or SIGINT | Go-only; no Python fallback. |
 | **Strategy runner** (e.g. nautilus_strategy.py) | Sync `on_start()` / `on_stop()`; NATS connect via `asyncio.create_task(_connect_nats())` or `asyncio.run(_connect_nats())` depending on whether a loop is running | `runner.start()` → `on_start()` | `runner.stop()` → `on_stop()` | If run inside an event loop, create_task is used; otherwise asyncio.run. Multiple create_task calls for connect/reconnect are not tracked as a set. |
 | **LEAN event_bridge** | Dedicated thread running a new asyncio loop: `Thread(target=_run_event_loop, daemon=True)`; loop runs forever | `event_bridge.start()` | `event_bridge.stop()`: set flag, `loop.call_soon_threadsafe(loop.stop)`, `thread.join(5.0)` | Clean shutdown with timeout; daemon=True so process exit kills thread if join times out. |
 
 **Gaps:**
-- questdb_nats_writer: no signal handler or atexit; relies on default SIGINT → KeyboardInterrupt.
+- nats-questdb-bridge: run via script; no signal handler documented in this doc (process managers can SIGTERM).
 - Strategy runner: background asyncio tasks are not registered; on_stop() does not cancel them explicitly.
 
 ---
@@ -67,7 +67,7 @@ This document describes how background work (threads, asyncio tasks, timers) is 
 | Health dashboard | lifespan + create_task + cancel | task.cancel(); await task | Good |
 | Tastytrade DXLink | on_event startup/shutdown | disconnect() on shutdown | OK; prefer lifespan |
 | Other backends | create_task(publish_health) fire-and-forget | None | Low (single shot) |
-| questdb_nats_writer | run_until_complete(main_loop) | KeyboardInterrupt | OK for script |
+| nats-questdb-bridge (Go) | run via script (go run) | Process exit / SIGINT | OK for script |
 | LEAN event_bridge | Thread + own event loop | stop() stops loop and joins thread | Good |
 | Strategy runner | create_task for NATS | on_stop does not cancel tasks | Medium |
 
@@ -103,7 +103,7 @@ This document describes how background work (threads, asyncio tasks, timers) is 
 
 ### 2.6 Standalone scripts: explicit SIGTERM/SIGINT handler
 
-- For questdb_nats_writer and similar: register a signal handler that sets a “shutdown” flag and stops the main loop (or closes the NATS connection so the loop exits). Ensures clean exit when run under process managers (e.g. systemd, supervisord).
+- For nats-questdb-bridge and similar: register a signal handler that sets a “shutdown” flag and stops the main loop (or closes the NATS connection so the loop exits). Ensures clean exit when run under process managers (e.g. systemd, supervisord).
 
 ### 2.7 Document lifecycle in one place
 
@@ -120,7 +120,7 @@ This document describes how background work (threads, asyncio tasks, timers) is 
 | 3 | Add a simple task registry in health_dashboard lifespan (e.g. list of tasks; cancel all on exit) as reference for other services | Small |
 | 4 | Strategy runner: store and cancel NATS connect task(s) in on_stop | Small |
 | 5 | TUI: optional BackgroundManager that registers provider + aggregator + optional interval handles; stop in reverse order in on_unmount | Medium |
-| 6 | questdb_nats_writer (and similar scripts): SIGTERM/SIGINT handler that triggers clean exit | Small |
+| 6 | nats-questdb-bridge (and similar scripts): SIGTERM/SIGINT handler that triggers clean exit | Small |
 | 7 | (Optional) Fire-and-forget: document or add a short drain in lifespan for in-flight publish tasks | Low |
 
 ---
@@ -131,6 +131,6 @@ This document describes how background work (threads, asyncio tasks, timers) is 
 - **Health dashboard:** `python/services/health_dashboard.py` (lifespan, _nats_subscriber).
 - **Tastytrade:** `python/integration/tastytrade_service.py` (on_event startup/shutdown, DXLink), `python/integration/dxlink_client.py` (_receive_task, disconnect).
 - **Strategy runner:** `python/integration/strategy_runner.py` (on_start, on_stop, _connect_nats).
-- **QuestDB writer:** `python/integration/questdb_nats_writer.py` (run_writer, main).
+- **QuestDB writer:** `agents/go/cmd/nats-questdb-bridge` (run via `scripts/run_questdb_nats_writer.sh`).
 - **LEAN event bridge:** `python/lean_integration/event_bridge.py` (start, stop, _run_event_loop).
 - **FastAPI lifespan:** [FastAPI Lifespan](https://fastapi.tiangolo.com/advanced/events/) (recommended over on_event).

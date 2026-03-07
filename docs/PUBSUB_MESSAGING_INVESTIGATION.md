@@ -6,8 +6,8 @@
 |-----------|------|---------|
 | **NATS server** | Core/JetStream | `config/nats-server.conf`; started via `scripts/service.sh` or supervisord. Default `nats://localhost:4222`. |
 | **Publishers** | Rust backend, C++ (when `ENABLE_NATS`), Python strategy | Market data (`market-data.tick.{symbol}`), strategy signals/decisions (`strategy.signal.*`, `strategy.decision.*`). |
-| **Subscribers** | PWA (nats.ws), Go nats-questdb-bridge, Python questdb_nats_writer, Health Dashboard | Market data → QuestDB; strategy topics for UI; Health Dashboard subscribes to `system.health` and serves unified `/api/health` JSON. |
-| **Python NATS** | `python/integration/nats_client.py`, `questdb_nats_writer.py` | `nats-py` (async); connect, subscribe, publish strategy signals/decisions. No backend snapshot/health publish yet. |
+| **Subscribers** | PWA (nats.ws), Go nats-questdb-bridge, Health Dashboard | Market data → QuestDB; strategy topics for UI; Health Dashboard subscribes to `system.health` and serves unified `/api/health` JSON. |
+| **Python NATS** | `python/integration/nats_client.py` | `nats-py` (async); connect, subscribe, publish strategy signals/decisions. No backend snapshot/health publish yet. |
 
 **Gap:** Backend services (IB, Alpaca, TradeStation, etc.) do **not** publish snapshots or health to NATS. TUI and PWA poll REST. Adding publish gives a path to subscribe instead of poll and to build an aggregator.
 

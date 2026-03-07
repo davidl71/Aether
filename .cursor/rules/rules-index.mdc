@@ -19,6 +19,7 @@ Use this to pick the right rule for the current task.
 | `hooks.mdc` | Git hooks (pre-commit, docs validation), exarp-go setup_hooks |
 | `project-automation.mdc` | exarp-go MCP tools, docs health, Todo2 alignment, security scanning |
 | `automation-tool-suggestions.mdc` | When to suggest automation tools (context-aware) |
+| `exarp-followup-tasks.mdc` | When to create Todo2 follow-up tasks (verify, E2E) after implementation Done |
 | `todo2.mdc` | Todo2 workflow (create_todos, research, review, refinement) |
 | `cpp-source.mdc` | Editing C++ source/headers (`native/src/**`, `native/include/**`) |
 | `cpp-tests.mdc` | Editing C++ tests (`native/tests/**`) |

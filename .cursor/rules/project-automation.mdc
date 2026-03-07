@@ -91,6 +91,16 @@ Use the actual workspace path; do not assume a fixed path across machines.
 
 ---
 
+#### Create follow-up tasks after implementation Done
+
+When an implementation task (e.g. from IMPROVEMENT_PLAN or a plan) is marked **Done**, create 1–2 Todo2 follow-up tasks: a **Verify** task (manual QA) and optionally an **Optional: E2E test** task. Use **task_workflow** with `action=create`; set `dependencies` to the completed task ID; add a result comment and set the completed task to Done.
+
+**When to use:** After completing implementation work; or when the user asks for "followup exarp tasks".
+
+**Rule:** See `.cursor/rules/exarp-followup-tasks.mdc` for triggers, what to create, and rate limiting.
+
+---
+
 #### `detect_duplicate_tasks_tool`
 ⚠️ **PREFERRED TOOL** - Find and consolidate duplicate Todo2 tasks.
 

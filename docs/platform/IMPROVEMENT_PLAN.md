@@ -9,6 +9,7 @@
 | Remove dead gRPC and backend proto | No gRPC (tonic/grpc) ever existed in agents/backend; prost-only protobuf via nats_adapter. Dead code removed in cleanup commits (lean_integration, ml, nautilus, dsl, wrapper). | T-1772609703288099000 ✅ |
 | Add box spread and yield curve messages to proto | BoxSpreadLeg, BoxSpreadScenario, BoxSpreadExecution, YieldCurvePoint, YieldCurve, BoxSpreadOpportunity, StrategyParams all present in `proto/messages.proto`. | T-1772609676030467000 ✅ |
 | Structured logging in Go agents (slog) | All five Go agents use `log/slog` with JSON handler. No `log.Printf` calls remain. | T-1772887222034956306 ✅ |
+| WebSocket delta compression (P2-A) | Server sends full snapshot once on connect then only changed sections every 2s; client merges deltas. WS mounted on same server at `/ws`. | T-1772887222103963807 ✅ |
 **Priority lens**: System responsiveness + data persistence + thin collection daemons.
 Trading volume is low; the focus is on correctness, fast reads, durable writes, and
 lean background processes — not throughput optimization.
@@ -53,13 +54,10 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for the full issue analysis.
 
 ## Priority 2 — Responsiveness (thin, event-driven)
 
-### P2-A: WebSocket delta compression <!-- exarp: T-1772887222103963807 -->
-**Issue**: Rust WS sends full `SystemSnapshot` every 2s regardless of changes.
-**Fix**: Track a hash of each sub-section (positions, rates, health). Only send changed
-sections. Clients merge deltas into local state.
-**Files**: `agents/backend/src/ws.rs`.
-**Benefit**: ~90% bandwidth reduction when state is stable (which is most of the time
-between trades).
+### P2-A: WebSocket delta compression <!-- exarp: T-1772887222103963807 --> ✅
+**Done**: Server sends full snapshot once on connect, then only changed sections every 2s;
+client merges deltas; WebSocket mounted on same server at `/ws`. ~90% bandwidth reduction when state is stable.
+**Files**: `agents/backend/crates/api/src/websocket.rs`, `agents/backend/crates/api/src/rest.rs`.
 
 ### P2-B: Decode NatsEnvelope in Go agents <!-- exarp: T-1772887221969976131 -->
 **Issue**: `nats-questdb-bridge` and `heartbeat-aggregator` parse raw bytes as strings.

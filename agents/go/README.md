@@ -7,7 +7,7 @@ Single-binary tools for config validation, NATS→QuestDB bridge, and process su
 | Command | Purpose |
 |--------|--------|
 | **config-validator** | Validate shared config JSON (and optional API contract). Used by `scripts/validate_api_contract.sh` when Go is available. |
-| **nats-questdb-bridge** | Subscribe to NATS (Core or JetStream) market data, write ticks to QuestDB ILP. Preferred by `scripts/run_questdb_nats_writer.sh`. |
+| **nats-questdb-bridge** | Subscribe to NATS (Core or JetStream) market data, write ticks to QuestDB ILP. Run via `scripts/run_questdb_nats_writer.sh` (Go-only; requires Go). |
 | **supervisor** | Run multiple services from a JSON config; restart on crash. Use `scripts/run_supervisor.sh` with `config/services.supervisor.json`. |
 | **api-gateway** | (See cmd/api-gateway.) |
 | **heartbeat-aggregator** | (See cmd/heartbeat-aggregator.) |
@@ -25,7 +25,7 @@ go build ./cmd/supervisor
 From project root, use the scripts so env and paths are correct:
 
 - Config validation: `./scripts/validate_api_contract.sh` (calls Go config-validator when available).
-- NATS→QuestDB: `./scripts/run_questdb_nats_writer.sh` (prefers Go bridge, fallback to Python).
+- NATS→QuestDB: `./scripts/run_questdb_nats_writer.sh` (Go-only; requires Go).
 - Supervisor: `./scripts/run_supervisor.sh` (sets `SUPERVISOR_CONFIG` and `SUPERVISOR_ROOT`).
 
 ## Supervisor config

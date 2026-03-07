@@ -189,6 +189,27 @@ This rule provides context-aware suggestions for project automation tools. **Not
 
 ---
 
+### 11. Task completion → Exarp follow-up tasks
+
+**Trigger**: An implementation task is marked **Done** (especially one from IMPROVEMENT_PLAN or with an exarp task ID), or the user says **"followup exarp tasks"** or **"create follow-up tasks"**.
+**Suggest**: Create 1–2 Todo2 follow-up tasks via exarp-go **task_workflow** (`action=create`):
+- **Verify** task (medium): e.g. "Verify &lt;feature&gt; in browser" with acceptance criteria for manual QA; dependency = completed task.
+- **Optional E2E** task (low): e.g. "Optional: E2E test for &lt;feature&gt;" when regression tests would help; dependency = completed task.
+
+Also add a **result** comment to the completed task and set its status to **Done** if not already.
+
+**Reason**: Ensures verification and optional automation are tracked instead of forgotten.
+**Rule**: See `.cursor/rules/exarp-followup-tasks.mdc` for when/what to create and rate limiting.
+**Usage**:
+```
+"Create follow-up exarp tasks for the work we just completed"
+"Followup exarp tasks"
+```
+
+**Rate Limit**: Once per completed implementation (do not create duplicate follow-ups for the same task in the same session)
+
+---
+
 ## Suggestion Format
 
 When suggesting tools, use this format:
