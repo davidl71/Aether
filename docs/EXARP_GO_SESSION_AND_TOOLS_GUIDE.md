@@ -103,8 +103,14 @@ Exarp-go exposes resources (e.g. via MCP `read_resource` or `list_resources`):
 - `stdio://cursor/skills` — Workflow guide (when to use which tool).
 - `stdio://session/status` — Current session context (handoff, current task).
 - `stdio://suggested-tasks` — Dependency-ordered tasks ready to start.
+- `stdio://tasks` — All tasks (paginated, limit 50).
 - `stdio://tasks/summary` — Task counts by status/priority.
+- `stdio://tasks/{task_id}` — Single task by ID (e.g. `stdio://tasks/T-1772609676030467000`).
+- `stdio://tasks/status/{status}` — Filter by status (`Todo`, `In Progress`, `Done`).
+- `stdio://tasks/priority/{priority}` — Filter by priority (`low`, `medium`, `high`, `critical`).
+- `stdio://tasks/tag/{tag}` — Filter by tag.
 - `stdio://scorecard` — Project scorecard.
+- `stdio://memories/task/{task_id}` — Memories linked to a task.
 
 ---
 
