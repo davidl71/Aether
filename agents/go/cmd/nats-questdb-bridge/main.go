@@ -14,7 +14,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"os"
 	"os/signal"
@@ -37,6 +37,15 @@ func envBool(key string) bool {
 	return v == "1" || v == "true" || v == "yes"
 }
 
+// TODO(exarp): T-1772887221969976131 — Decode NatsEnvelope protobuf instead of JSON tick struct
+// MIGRATION PLAN: Replace JSON tick struct with NatsEnvelope protobuf decode.
+// C++ publishes NatsEnvelope{message_type, payload bytes} where payload is MarketDataEvent.
+// Use agents/go/proto/v1/messages.pb.go (already generated) to decode:
+//   env := &proto.NatsEnvelope{}; proto.Unmarshal(msg.Data, env)
+//   if env.MessageType == "MarketDataEvent" { mde := &proto.MarketDataEvent{}; ... }
+// This makes the bridge type-safe and resilient to wire format changes.
+// Task P2-B: exarp T-1772887221969976131 — docs/platform/IMPROVEMENT_PLAN.md
+// DONE(exarp): T-1772887222034956306 — slog already used throughout (log/slog, slog.SetDefault)
 type tick struct {
 	Symbol    string  `json:"symbol"`
 	Bid       float64 `json:"bid"`
@@ -82,6 +91,7 @@ func parseTickPayload(data []byte, subj string) (*tick, time.Time, error) {
 }
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	natsURL := env("NATS_URL", nats.DefaultURL)
 	questAddr := env("QUESTDB_ILP_ADDR", "localhost:9009")
 	useCore := envBool("NATS_USE_CORE")
@@ -94,8 +104,7 @@ func main() {
 	if useCore {
 		mode = "Core NATS"
 	}
-	log.Printf("nats-questdb-bridge starting  mode=%s  nats=%s  questdb=%s  subject=%s",
-		mode, natsURL, questAddr, subject)
+	slog.Info("nats-questdb-bridge starting", "mode", mode, "nats", natsURL, "questdb", questAddr, "subject", subject)
 
 	nc, err := nats.Connect(natsURL,
 		nats.RetryOnFailedConnect(true),
@@ -103,13 +112,15 @@ func main() {
 		nats.ReconnectWait(2*time.Second),
 	)
 	if err != nil {
-		log.Fatalf("nats connect: %v", err)
+		slog.Error("nats connect", "error", err)
+		os.Exit(1)
 	}
 	defer nc.Close()
 
 	conn, err := net.DialTimeout("tcp", questAddr, 5*time.Second)
 	if err != nil {
-		log.Fatalf("questdb connect: %v", err)
+		slog.Error("questdb connect", "error", err)
+		os.Exit(1)
 	}
 	defer func() { _ = conn.Close() }()
 
@@ -121,14 +132,14 @@ func main() {
 		line := fmt.Sprintf("market_data,symbol=%s bid=%.6f,ask=%.6f,last=%.6f,volume=%di %d\n",
 			sym, t.Bid, t.Ask, t.Last, t.Volume, ts.UnixNano())
 		if _, err := conn.Write([]byte(line)); err != nil {
-			log.Printf("questdb write: %v", err)
+			slog.Error("questdb write", "error", err)
 		}
 	}
 
 	parseAndWrite := func(data []byte, subj string) bool {
 		tick, ts, err := parseTickPayload(data, subj)
 		if err != nil {
-			log.Printf("parse: %v", err)
+			slog.Error("parse tick payload", "error", err)
 			return false
 		}
 		writeTick(tick, ts)
@@ -140,14 +151,16 @@ func main() {
 			parseAndWrite(msg.Data, msg.Subject)
 		})
 		if err != nil {
-			log.Fatalf("subscribe: %v", err)
+			slog.Error("subscribe", "error", err)
+			os.Exit(1)
 		}
 		defer func() { _ = sub.Unsubscribe() }()
 	} else {
 		streamName := env("NATS_STREAM", "MARKET_DATA")
 		js, err := nc.JetStream()
 		if err != nil {
-			log.Fatalf("jetstream: %v", err)
+			slog.Error("jetstream", "error", err)
+			os.Exit(1)
 		}
 		_, err = js.AddStream(&nats.StreamConfig{
 			Name:     streamName,
@@ -156,7 +169,8 @@ func main() {
 			MaxAge:   7 * 24 * time.Hour,
 		})
 		if err != nil {
-			log.Fatalf("add stream: %v", err)
+			slog.Error("add stream", "error", err)
+			os.Exit(1)
 		}
 		sub, err := js.Subscribe(subject, func(msg *nats.Msg) {
 			if parseAndWrite(msg.Data, msg.Subject) {
@@ -166,12 +180,13 @@ func main() {
 			}
 		}, nats.Durable("questdb-bridge"), nats.ManualAck())
 		if err != nil {
-			log.Fatalf("subscribe: %v", err)
+			slog.Error("subscribe", "error", err)
+			os.Exit(1)
 		}
 		defer func() { _ = sub.Unsubscribe() }()
 	}
 
-	log.Println("bridge running, ctrl-c to stop")
+	slog.Info("bridge running, ctrl-c to stop")
 	<-ctx.Done()
-	log.Println("shutting down")
+	slog.Info("shutting down")
 }

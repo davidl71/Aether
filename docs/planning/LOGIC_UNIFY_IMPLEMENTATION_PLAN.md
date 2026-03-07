@@ -1,6 +1,6 @@
 # Logic Unify Implementation Plan
 
-**Source:** `docs/design/LOGIC_WE_COULD_UNIFY.md`  
+**Source:** `docs/design/LOGIC_WE_COULD_UNIFY.md`
 **Purpose:** Phased implementation of unification work, driven by exarp-go task_workflow. Each phase has a clear deliverable and dependency for Todo2 task creation.
 
 ---
@@ -41,7 +41,7 @@ No dependencies. Tasks A1, A2, A3 can be created and executed in any order (or i
 
 **Done:** (1) `proto/messages.proto`: added `BackendHealth` and `HealthAggregate` for health payloads; `SystemSnapshot` already defines snapshot shape. (2) `docs/NATS_TOPICS_REGISTRY.md`: snapshot and system.health document canonical payload = proto. (3) Consumption: Python has `python/generated/messages_pb2.py`; TUI/PWA can adopt generated types incrementally (adapters from proto to existing SnapshotPayload/TypeScript interfaces or migrate to generated types). TS codegen wired per task T-1772609719082616000.
 
-**Dependencies:** Proto migration (e.g. box spread and yield curve messages in `proto/messages.proto`; task T-1772609676030467000 or equivalent). Python and TS codegen must produce types for snapshot/health.
+**Dependencies:** Proto migration — box spread and yield curve messages already present in `proto/messages.proto` (T-1772609676030467000 ✅ DONE: BoxSpreadLeg, BoxSpreadScenario, BoxSpreadExecution, YieldCurvePoint, YieldCurve, BoxSpreadOpportunity, StrategyParams). Python and TS codegen must produce types for snapshot/health.
 
 **References:** LOGIC_WE_COULD_UNIFY §8 (enums at boundaries), §10 (TUI/PWA snapshot contract).
 
@@ -100,7 +100,7 @@ Create one Todo2 task per phase item (A1, A2, A3, B1, B2, C1, C2, C3) with:
 | A1 | Expose C++ stats helpers via pybind11; Python calls C++ | high | unify, bindings, pybind11 | — |
 | A2 | Expose calculate_dte via pybind11; Python callers use binding | high | unify, bindings, pybind11 | — |
 | A3 | Single JSON Schema for shared config (TUI, PWA, CLI) | medium | unify, config, schema | — |
-| B1 | Align snapshot/health payload to one proto shape; TUI and PWA use generated types | medium | unify, tui, pwa, proto | T-1772609676030467000 (or proto task ID) |
+| B1 | Align snapshot/health payload to one proto shape; TUI and PWA use generated types | medium | unify, tui, pwa, proto | T-1772609676030467000 ✅ (proto messages done; codegen adoption remaining) |
 | B2 | Single config file/schema usage – TUI and PWA read same services and broker.priorities | medium | unify, tui, pwa, config | A3 task ID |
 | C1 | Message bus and cache – document NATS-only + CacheClient factory | low | unify, docs, nats | — |
 | C2 | Enums/constants – migrate remaining manual mirrors to proto-generated types | low | unify, proto, codegen | — |
