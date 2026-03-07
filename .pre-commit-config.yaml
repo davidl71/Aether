@@ -3,7 +3,8 @@ exclude: |
     native/third_party/.*|
     native/generated/.*|
     agents/go/proto/.*|
-    web/src/proto/.*
+    web/src/proto/.*|
+    \.todo2/.*
   )$
 
 repos:
