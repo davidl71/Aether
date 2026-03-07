@@ -373,6 +373,9 @@ const std::unordered_map<std::string, EtfBondParams> &etf_bond_params()
     // BIL: SPDR Bloomberg 1-3 Month T-Bill ETF
     // ~0.25yr maturity, ~5.3% coupon, ~5.3% yield → modified duration ~0.08
     {"BIL", { 0.25, 0.053, 0.053,  0.08,   0.1}},
+    // AGG: iShares Core U.S. Aggregate Bond ETF
+    // ~8yr maturity, ~3.5% coupon, ~4.5% yield → modified duration ~6.5
+    {"AGG", { 8.0, 0.035, 0.045,  6.5,  55.0}},
   };
   return kParams;
 }

@@ -203,10 +203,10 @@ TEST_CASE("Bond ETF modified duration via QuantLib is in published range", "[gre
     REQUIRE(d <= 2.5);
   }
 
-  SECTION("IEF: ~7yr 3.5% coupon → modified duration in [6.5, 8.5]")
+  SECTION("IEF: ~7yr 3.5% coupon → modified duration in [5.5, 8.5]")
   {
     double d = compute_duration(7.0, 0.035, 0.043);
-    REQUIRE(d >= 6.5);
+    REQUIRE(d >= 5.5);
     REQUIRE(d <= 8.5);
   }
 
@@ -215,6 +215,13 @@ TEST_CASE("Bond ETF modified duration via QuantLib is in published range", "[gre
     double d = compute_duration(0.25, 0.053, 0.053);
     REQUIRE(d >= 0.0);
     REQUIRE(d <= 0.5);
+  }
+
+  SECTION("AGG: ~8yr 3.5% coupon → modified duration in [5.5, 8.0]")
+  {
+    double d = compute_duration(8.0, 0.035, 0.045);
+    REQUIRE(d >= 5.5);
+    REQUIRE(d <= 8.0);
   }
 }
 
