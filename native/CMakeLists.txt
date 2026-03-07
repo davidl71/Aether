@@ -930,10 +930,13 @@ if(_build_native_cli)
         src/nats_client.cpp
         src/pcap_capture.cpp
         src/convexity_calculator.cpp
+        src/financing_optimizer.cpp
         src/loan_position.cpp
-        src/loan_manager.cpp
         src/margin_calculator.cpp
         src/cache_client.cpp
+        src/asset_relationship.cpp
+        src/collateral_valuator.cpp
+        src/financing_instrument_registry.cpp
     )
 
     set(HEADERS
@@ -953,11 +956,15 @@ if(_build_native_cli)
         include/config_manager.h
         include/pcap_capture.h
         include/convexity_calculator.h
+        include/financing_optimizer.h
         include/types.h
         include/loan_position.h
         include/loan_manager.h
         include/margin_calculator.h
         include/cache_client.h
+        include/asset_relationship.h
+        include/collateral_valuator.h
+        include/financing_instrument.h
     )
 
     # Memcached backend for market data cache (optional)
@@ -1069,6 +1076,11 @@ if(_build_native_cli)
             target_include_directories(ib_box_spread PRIVATE "${CMAKE_BINARY_DIR}/_deps/nats_c-src/src")
             target_compile_definitions(ib_box_spread PRIVATE ENABLE_NATS)
             message(STATUS "Linked NATS library to ib_box_spread")
+            # C++ NATS client publishes protobuf (NatsEnvelope); require platform_proto
+            if(NOT TARGET platform_proto)
+                message(FATAL_ERROR "ENABLE_NATS requires Protobuf for C++ NATS client (protobuf publishing). "
+                    "Install protobuf (e.g. brew install protobuf) and reconfigure.")
+            endif()
         else()
             message(WARNING "NATS enabled but nats target not found")
         endif()

@@ -1,14 +1,14 @@
 """
-Health Dashboard - Unified health JSON from NATS system.health.
+Health Dashboard - Unified health from NATS system.health (protobuf).
 
-Subscribes to NATS subject `system.health`; backends publish their health there.
+Subscribes to NATS subject `system.health`; backends publish BackendHealth (protobuf) there.
 Serves aggregated JSON for services/dashboards to consume.
 
 Endpoints:
-- GET /api/health - Aggregated health: { "backends": { "ib": {...}, "alpaca": {...} }, "generated_at": "...", "source": "nats" }
-- GET /api/health/dashboard - Same with optional summary (all_ok, any_error, backends_list)
+- GET /api/health - Aggregated health: { "backends": { "ib": {...}, ... }, "source": "nats" }
+- GET /api/health/dashboard - Same with optional summary
 - GET /api/health/{backend_id} - Single backend health or 404
-- GET /api/config - Shared config slice (services, broker) so PWA can use same config as TUI (single config file/schema usage)
+- GET /api/config - Shared config slice
 
 Environment:
 - NATS_URL - NATS server (default nats://localhost:4222). Required for updates.
@@ -18,7 +18,6 @@ Environment:
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import os
 import sys
@@ -52,6 +51,34 @@ except ImportError:
     NATS = None
     NATS_AVAILABLE = False
 
+try:
+    from python.generated.ib.platform import v1 as pb_v1
+    from python.tui.providers.proto_snapshot import backend_health_to_dict
+    PROTO_AVAILABLE = True
+except ImportError:
+    pb_v1 = None
+    backend_health_to_dict = None
+    PROTO_AVAILABLE = False
+
+
+def _parse_health_proto(data: bytes) -> Dict[str, Any] | None:
+    """Deserialize system.health message as BackendHealth protobuf (or NatsEnvelope)."""
+    if not PROTO_AVAILABLE or pb_v1 is None or backend_health_to_dict is None:
+        return None
+    try:
+        envelope = pb_v1.NatsEnvelope().parse(data)
+        payload_bytes = getattr(envelope, "payload", None)
+        if payload_bytes:
+            health = pb_v1.BackendHealth().parse(payload_bytes)
+            return backend_health_to_dict(health)
+        return None
+    except Exception:
+        try:
+            health = pb_v1.BackendHealth().parse(data)
+            return backend_health_to_dict(health)
+        except Exception:
+            return None
+
 
 async def _nats_subscriber() -> None:
     """Background task: connect to NATS, subscribe to system.health, update _backends."""
@@ -75,10 +102,16 @@ async def _nats_subscriber() -> None:
 
     async def on_health(msg):
         try:
-            data = json.loads(msg.data.decode("utf-8"))
-            backend = data.get("backend", "unknown")
-            _backends[backend] = {**data, "updated_at": datetime.now(timezone.utc).isoformat()}
-            logger.debug("Health update: %s -> %s", backend, data.get("status", ""))
+            data = msg.data
+            if isinstance(data, str):
+                data = data.encode("utf-8")
+            parsed = _parse_health_proto(data)
+            if parsed is not None:
+                backend = parsed.get("backend", "unknown")
+                _backends[backend] = {**parsed, "updated_at": datetime.now(timezone.utc).isoformat()}
+                logger.debug("Health update: %s -> %s", backend, parsed.get("status", ""))
+            else:
+                logger.debug("Health message: protobuf parse failed or proto unavailable")
         except Exception as e:
             logger.warning("Health message decode: %s", e)
 

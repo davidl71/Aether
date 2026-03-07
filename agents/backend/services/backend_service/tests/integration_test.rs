@@ -1,25 +1,18 @@
 //! Integration tests for backend service NATS integration
 //!
-//! These tests require:
-//! - Running NATS server: `./scripts/start_nats.sh`
-//! - Backend service compiled: `cargo build -p backend_service`
+//! Platform topics (market-data, strategy.signal, strategy.decision) use protobuf
+//! (NatsEnvelope + payload). These tests use ProtoPublisher/ProtoSubscriber for
+//! end-to-end verification with C++ or Rust publishers.
+//!
+//! Requires: running NATS server (`./scripts/start_nats.sh`), `cargo build -p backend_service`
 
 use std::time::Duration;
 
-use futures::StreamExt;
-use nats_adapter::{topics, ChannelBridge, NatsClient};
-use serde::{Deserialize, Serialize};
-use strategy::{Decision as StrategyDecisionModel, StrategySignal, TradeSide};
+use nats_adapter::proto::v1 as pb;
+use nats_adapter::{topics, NatsClient, ProtoPublisher, ProtoSubscriber};
 use tokio::time::sleep;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-struct MarketDataTick {
-    symbol: String,
-    bid: f64,
-    ask: f64,
-    timestamp: chrono::DateTime<chrono::Utc>,
-}
-
+/// Platform topic: market-data.tick.* — deserialize protobuf (NatsEnvelope + MarketDataEvent).
 #[tokio::test]
 #[ignore] // Requires running NATS server
 async fn test_market_data_publishing() {
@@ -27,45 +20,45 @@ async fn test_market_data_publishing() {
         .await
         .expect("Failed to connect to NATS");
 
-    let bridge = ChannelBridge::new(client.clone());
     let subject = topics::market_data::tick("TEST");
 
-    // Subscribe to verify
-    let mut subscriber = client
-        .client()
-        .subscribe(&subject)
+    // Subscribe with proto deserialization (matches C++ publisher format)
+    let proto_sub = ProtoSubscriber::<pb::MarketDataEvent>::new(client.clone(), &subject);
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    let _handle = proto_sub
+        .spawn_bridge(tx)
         .await
-        .expect("Failed to subscribe");
+        .expect("Failed to spawn proto subscriber");
 
-    // Create publisher
-    let publisher = bridge.create_publisher(&subject, "test", "MarketDataTick");
-
-    // Publish test message
-    let tick = MarketDataTick {
+    // Publish using proto (same format as C++ nats_client.cpp)
+    let publisher = ProtoPublisher::new(
+        client.clone(),
+        subject.clone(),
+        "test",
+        "MarketDataEvent",
+    );
+    let event = pb::MarketDataEvent {
         symbol: "TEST".to_string(),
         bid: 100.0,
         ask: 100.1,
-        timestamp: chrono::Utc::now(),
+        last: 100.05,
+        volume: 0,
+        timestamp: Some(prost_types::Timestamp::from(std::time::SystemTime::now())),
     };
+    publisher.publish(&event).await.expect("Failed to publish");
 
-    publisher
-        .publish(tick.clone())
-        .await
-        .expect("Failed to publish");
-
-    // Wait for message
     sleep(Duration::from_millis(100)).await;
 
-    // Receive and verify
-    if let Some(msg) = subscriber.next().await {
-        let payload: serde_json::Value =
-            serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-        assert_eq!(payload["payload"]["symbol"], "TEST");
+    if let Some(received) = rx.recv().await {
+        assert_eq!(received.symbol, "TEST");
+        assert!((received.bid - 100.0).abs() < 1e-9);
+        assert!((received.ask - 100.1).abs() < 1e-9);
     } else {
         panic!("No message received");
     }
 }
 
+/// Platform topic: strategy.signal.* — deserialize protobuf (NatsEnvelope + StrategySignal).
 #[tokio::test]
 #[ignore]
 async fn test_strategy_signal_publishing() {
@@ -73,44 +66,39 @@ async fn test_strategy_signal_publishing() {
         .await
         .expect("Failed to connect to NATS");
 
-    let bridge = ChannelBridge::new(client.clone());
     let subject = topics::strategy::signal("TEST");
 
-    // Subscribe to wildcard
-    let mut subscriber = client
-        .client()
-        .subscribe(topics::strategy::all_signals())
+    let proto_sub = ProtoSubscriber::<pb::StrategySignal>::new(client.clone(), topics::strategy::all_signals());
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    let _handle = proto_sub
+        .spawn_bridge(tx)
         .await
-        .expect("Failed to subscribe");
+        .expect("Failed to spawn proto subscriber");
 
-    // Create publisher
-    let publisher = bridge.create_publisher(&subject, "test", "StrategySignal");
-
-    // Publish test signal
-    let signal = StrategySignal {
+    let publisher = ProtoPublisher::new(
+        client.clone(),
+        subject.clone(),
+        "test",
+        "StrategySignal",
+    );
+    let signal = pb::StrategySignal {
         symbol: "TEST".to_string(),
         price: 100.5,
-        timestamp: chrono::Utc::now(),
+        timestamp: Some(prost_types::Timestamp::from(std::time::SystemTime::now())),
     };
+    publisher.publish(&signal).await.expect("Failed to publish");
 
-    publisher
-        .publish(signal.clone())
-        .await
-        .expect("Failed to publish");
-
-    // Wait for message
     sleep(Duration::from_millis(100)).await;
 
-    // Receive and verify
-    if let Some(msg) = subscriber.next().await {
-        let payload: serde_json::Value =
-            serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-        assert_eq!(payload["payload"]["symbol"], "TEST");
+    if let Some(received) = rx.recv().await {
+        assert_eq!(received.symbol, "TEST");
+        assert!((received.price - 100.5).abs() < 1e-9);
     } else {
         panic!("No message received");
     }
 }
 
+/// Platform topic: strategy.decision.* — deserialize protobuf (NatsEnvelope + StrategyDecision).
 #[tokio::test]
 #[ignore]
 async fn test_strategy_decision_publishing() {
@@ -118,39 +106,36 @@ async fn test_strategy_decision_publishing() {
         .await
         .expect("Failed to connect to NATS");
 
-    let bridge = ChannelBridge::new(client.clone());
     let subject = topics::strategy::decision("TEST");
 
-    // Subscribe to wildcard
-    let mut subscriber = client
-        .client()
-        .subscribe(topics::strategy::all_decisions())
+    let proto_sub = ProtoSubscriber::<pb::StrategyDecision>::new(client.clone(), topics::strategy::all_decisions());
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    let _handle = proto_sub
+        .spawn_bridge(tx)
         .await
-        .expect("Failed to subscribe");
+        .expect("Failed to spawn proto subscriber");
 
-    // Create publisher
-    let publisher = bridge.create_publisher(&subject, "test", "StrategyDecision");
-
-    // Publish test decision
-    let decision = StrategyDecisionModel {
+    let publisher = ProtoPublisher::new(
+        client.clone(),
+        subject.clone(),
+        "test",
+        "StrategyDecision",
+    );
+    let decision = pb::StrategyDecision {
         symbol: "TEST".to_string(),
         quantity: 1,
-        side: TradeSide::Buy,
+        side: "BUY".to_string(),
+        mark: 100.0,
+        created_at: Some(prost_types::Timestamp::from(std::time::SystemTime::now())),
     };
+    publisher.publish(&decision).await.expect("Failed to publish");
 
-    publisher
-        .publish(decision.clone())
-        .await
-        .expect("Failed to publish");
-
-    // Wait for message
     sleep(Duration::from_millis(100)).await;
 
-    // Receive and verify
-    if let Some(msg) = subscriber.next().await {
-        let payload: serde_json::Value =
-            serde_json::from_slice(&msg.payload).expect("Failed to deserialize");
-        assert_eq!(payload["payload"]["symbol"], "TEST");
+    if let Some(received) = rx.recv().await {
+        assert_eq!(received.symbol, "TEST");
+        assert_eq!(received.quantity, 1);
+        assert_eq!(received.side, "BUY");
     } else {
         panic!("No message received");
     }
@@ -179,50 +164,55 @@ async fn test_wildcard_subscriptions() {
         .await
         .expect("Failed to connect to NATS");
 
-    let bridge = ChannelBridge::new(client.clone());
-
-    // Subscribe to all market data
-    let mut subscriber = client
-        .client()
-        .subscribe(topics::market_data::all())
+    // Subscribe to all market data with proto deserialization
+    let proto_sub = ProtoSubscriber::<pb::MarketDataEvent>::new(client.clone(), topics::market_data::all());
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    let _handle = proto_sub
+        .spawn_bridge(tx)
         .await
-        .expect("Failed to subscribe");
+        .expect("Failed to spawn proto subscriber");
 
-    // Publish to specific symbol
-    let publisher_spy =
-        bridge.create_publisher(topics::market_data::tick("SPY"), "test", "MarketDataTick");
-    let publisher_xsp =
-        bridge.create_publisher(topics::market_data::tick("XSP"), "test", "MarketDataTick");
+    let publisher_spy = ProtoPublisher::new(
+        client.clone(),
+        topics::market_data::tick("SPY"),
+        "test",
+        "MarketDataEvent",
+    );
+    let publisher_xsp = ProtoPublisher::new(
+        client.clone(),
+        topics::market_data::tick("XSP"),
+        "test",
+        "MarketDataEvent",
+    );
 
-    let tick_spy = MarketDataTick {
+    let event_spy = pb::MarketDataEvent {
         symbol: "SPY".to_string(),
         bid: 100.0,
         ask: 100.1,
-        timestamp: chrono::Utc::now(),
+        last: 100.05,
+        volume: 0,
+        timestamp: None,
     };
-
-    let tick_xsp = MarketDataTick {
+    let event_xsp = pb::MarketDataEvent {
         symbol: "XSP".to_string(),
         bid: 50.0,
         ask: 50.1,
-        timestamp: chrono::Utc::now(),
+        last: 50.05,
+        volume: 0,
+        timestamp: None,
     };
 
-    publisher_spy
-        .publish(tick_spy)
-        .await
-        .expect("Failed to publish");
-    publisher_xsp
-        .publish(tick_xsp)
-        .await
-        .expect("Failed to publish");
+    publisher_spy.publish(&event_spy).await.expect("Failed to publish");
+    publisher_xsp.publish(&event_xsp).await.expect("Failed to publish");
 
-    // Wait for messages
     sleep(Duration::from_millis(200)).await;
 
-    // Should receive both messages
     let mut received = 0;
-    while let Some(_msg) = subscriber.next().await {
+    while tokio::time::timeout(Duration::from_millis(500), rx.recv())
+        .await
+        .unwrap_or(None)
+        .is_some()
+    {
         received += 1;
         if received >= 2 {
             break;

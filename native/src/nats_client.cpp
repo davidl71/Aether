@@ -178,6 +178,7 @@ static std::pair<int64_t, int32_t> get_proto_timestamp() {
 #if PROTO_NATS
 // Helper: Build and serialize a NatsEnvelope wrapping an inner proto message.
 // Returns the serialized bytes, or empty string on failure.
+// Canonical pattern: inner.SerializeToString(&payload) -> envelope.set_payload(payload) -> envelope.SerializeToString(&out) -> publish_raw(out).
 template <typename InnerMsg>
 static std::string build_envelope(const std::string &message_type,
                                   const InnerMsg &inner) {
@@ -208,6 +209,8 @@ static std::string build_envelope(const std::string &message_type,
 }
 #endif  // PROTO_NATS
 
+// Canonical NATS publish path (example): build MarketDataEvent, wrap in NatsEnvelope,
+// SerializeToString, publish via publish_bytes_impl (binary; equivalent to publish_raw).
 bool NatsClient::publish_market_data(const std::string &symbol, double bid,
                                      double ask, const std::string &timestamp) {
   if (!is_connected()) {
@@ -227,7 +230,7 @@ bool NatsClient::publish_market_data(const std::string &symbol, double bid,
   ts->set_seconds(secs);
   ts->set_nanos(nanos);
 
-  std::string data = build_envelope("MarketDataTick", event);
+  std::string data = build_envelope("MarketDataEvent", event);
   if (data.empty()) {
     return false;
   }

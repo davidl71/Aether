@@ -71,11 +71,24 @@ export class SnapshotClient {
         envEndpoint = env.VITE_API_URL;
       }
       this.endpoint = options.endpoint ?? envEndpoint ?? DEFAULT_ENDPOINT;
-      // Rust backend WebSocket (if available) - construct from REST endpoint
+      // Rust backend WebSocket at /ws — derive origin from endpoint so full snapshot URL works
       const baseUrl = envEndpoint ?? 'http://127.0.0.1:8080';
-      this.wsUrl = options.wsUrl ?? (baseUrl.startsWith('https://')
-        ? baseUrl.replace('https://', 'wss://')
-        : baseUrl.replace('http://', 'ws://')) + '/ws';
+      const wsBase =
+        baseUrl.startsWith('http') && baseUrl.length > 0
+          ? (() => {
+              try {
+                return new URL(baseUrl).origin;
+              } catch {
+                return baseUrl.replace(/\/api\/v1\/snapshot\/?$/, '') || baseUrl;
+              }
+            })()
+          : baseUrl;
+      this.wsUrl =
+        options.wsUrl ??
+        (wsBase.startsWith('https://')
+          ? wsBase.replace('https://', 'wss://')
+          : wsBase.replace('http://', 'ws://')) +
+          '/ws';
     }
 
     this.pollInterval = options.pollIntervalMs ?? POLL_INTERVAL;

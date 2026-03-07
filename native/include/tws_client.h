@@ -12,6 +12,7 @@
 #include <chrono>
 #include <optional>
 
+namespace platform { class CacheClient; }
 namespace tws {
 
 // ============================================================================
@@ -238,6 +239,13 @@ public:
 
     // Get last error message and hourly error count
     std::pair<std::string, int> get_last_error() const;
+
+    // ========================================================================
+    // Market data cache (optional: in-memory or memcached when ENABLE_MEMCACHED)
+    // ========================================================================
+    // Set cache for TickPrice/TickSize/TickOptionComputation per reqId.
+    // Key format: ib:tick:<reqId>. TTL from config.cache_duration_seconds if ttl_seconds <= 0.
+    void set_market_data_cache(platform::CacheClient* cache, int ttl_seconds = 0);
 
 private:
     class Impl;

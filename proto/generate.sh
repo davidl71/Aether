@@ -14,7 +14,7 @@ if command -v buf >/dev/null 2>&1; then
   (cd "$PROTO_DIR" && buf generate)
   echo "[buf] done"
 else
-  echo "[buf] buf not found — falling back to raw protoc"
+  echo "[buf] buf not found — using protoc (optional: install buf for single-command codegen — see docs/message_schemas/README.md)"
 
   # C++ fallback
   if command -v protoc >/dev/null 2>&1; then
@@ -32,7 +32,7 @@ else
   fi
 
   # TypeScript fallback
-  TS_OUT="$ROOT_DIR/web/src/proto"
+  TS_OUT="$ROOT_DIR/web/src/generated/proto"
   PLUGIN="${ROOT_DIR}/web/node_modules/.bin/protoc-gen-ts_proto"
   if [ -x "$PLUGIN" ] || command -v protoc-gen-ts_proto >/dev/null 2>&1; then
     mkdir -p "$TS_OUT"

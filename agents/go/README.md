@@ -6,6 +6,7 @@ Single-binary tools for config validation, NATS→QuestDB bridge, and process su
 
 | Command | Purpose |
 |--------|--------|
+| **collection-daemon** | Unified collector (Epic E5): NATS subscribe + stub writer + /metrics. See `docs/platform/COLLECTION_DAEMON_PLAN.md`. |
 | **config-validator** | Validate shared config JSON (and optional API contract). Used by `scripts/validate_api_contract.sh` when Go is available. |
 | **nats-questdb-bridge** | Subscribe to NATS (Core or JetStream) market data, write ticks to QuestDB ILP. Run via `scripts/run_questdb_nats_writer.sh` (Go-only; requires Go). |
 | **supervisor** | Run multiple services from a JSON config; restart on crash. Use `scripts/run_supervisor.sh` with `config/services.supervisor.json`. |
@@ -19,6 +20,7 @@ From this directory (`agents/go`):
 ```bash
 go build ./cmd/config-validator
 go build ./cmd/nats-questdb-bridge
+go build ./cmd/collection-daemon
 go build ./cmd/supervisor
 ```
 

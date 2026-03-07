@@ -30,7 +30,7 @@ from ._health import BackendHealthAggregator
 from ._mock import MockProvider
 from ._rest import RestProvider
 from ._file import FileProvider
-from ._nats import NatsProvider
+from ._nats import NatsProvider, NATS_PY_AVAILABLE
 
 __all__ = [
     "Provider",
@@ -43,4 +43,5 @@ __all__ = [
     "RestProvider",
     "FileProvider",
     "NatsProvider",
+    "NATS_PY_AVAILABLE",
 ]

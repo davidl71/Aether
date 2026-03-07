@@ -5,6 +5,7 @@
 #include "nats_client.h"
 #include "pcap_capture.h"
 #include "rate_limiter.h"
+#include "cache_client.h"
 #include <spdlog/spdlog.h>
 
 // TWS API headers
@@ -2111,6 +2112,11 @@ public:
     error_callback_ = callback;
   }
 
+  void set_market_data_cache(platform::CacheClient* cache, int ttl_seconds) {
+    market_data_cache_ = cache;
+    market_data_cache_ttl_ = (ttl_seconds > 0) ? ttl_seconds : 300;
+  }
+
   // ========================================================================
   // Helper Methods
   // ========================================================================
@@ -2943,6 +2949,9 @@ private:
   // Map request_id (tickerId) to contract symbol for NATS publishing
   std::map<int, std::string> ticker_to_symbol_;
 
+  platform::CacheClient* market_data_cache_{nullptr};
+  int market_data_cache_ttl_{60};
+
   // Contract details
   mutable std::mutex contract_details_mutex_;
   std::map<int, ContractDetailsCallback> contract_details_callbacks_;
@@ -3146,6 +3155,11 @@ void TWSClient::set_order_status_callback(OrderStatusCallback callback) {
 
 void TWSClient::set_error_callback(ErrorCallback callback) {
   pimpl_->set_error_callback(callback);
+}
+
+void TWSClient::set_market_data_cache(platform::CacheClient* cache,
+                                       int ttl_seconds) {
+  pimpl_->set_market_data_cache(cache, ttl_seconds);
 }
 
 // ============================================================================

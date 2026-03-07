@@ -2,9 +2,61 @@
 // T-1772887500608268454
 #include "tws_client_impl.h"
 #include "tws_client_error_guidance.h"
+#include "cache_client.h"
 #include <spdlog/spdlog.h>
 
+#include <sstream>
+
 namespace tws {
+
+namespace {
+// Serialize MarketData for cache (same format as tws_market_data.cpp for compatibility).
+std::string market_data_to_string(const types::MarketData& md) {
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                md.timestamp.time_since_epoch())
+                .count();
+  std::ostringstream os;
+  os << md.symbol << "\t" << ms << "\t" << md.bid << "\t" << md.ask << "\t"
+     << md.last << "\t" << md.bid_size << "\t" << md.ask_size << "\t"
+     << md.last_size << "\t" << md.volume << "\t" << md.high << "\t" << md.low
+     << "\t" << md.close << "\t" << md.open << "\t";
+  if (md.implied_volatility.has_value())
+    os << *md.implied_volatility;
+  else
+    os << "n";
+  os << "\t";
+  if (md.delta.has_value())
+    os << *md.delta;
+  else
+    os << "n";
+  os << "\t";
+  if (md.gamma.has_value())
+    os << *md.gamma;
+  else
+    os << "n";
+  os << "\t";
+  if (md.theta.has_value())
+    os << *md.theta;
+  else
+    os << "n";
+  os << "\t";
+  if (md.vega.has_value())
+    os << *md.vega;
+  else
+    os << "n";
+  return os.str();
+}
+
+void maybe_update_tick_cache(TWSClient::Impl* impl, int ticker_id,
+                              const types::MarketData& market_data) {
+  if (!impl) return;
+  platform::CacheClient* cache = impl->market_data_cache();
+  if (!cache || !cache->is_healthy()) return;
+  std::string key = "ib:tick:" + std::to_string(ticker_id);
+  cache->set(key, market_data_to_string(market_data),
+             impl->market_data_cache_ttl());
+}
+}  // namespace
 
 void TWSClient::Impl::connectAck() {
     try {
@@ -300,6 +352,8 @@ void TWSClient::Impl::tickPrice(TickerId tickerId, TickType field, double price,
         market_data_promises_[tickerId]->set_value(market_data);
         market_data_promises_.erase(tickerId);
       }
+
+      maybe_update_tick_cache(this, tickerId, market_data);
     } catch (const std::exception &e) {
       spdlog::warn("Exception in tickPrice(tickerId={}, field={}): {}",
                     tickerId, static_cast<int>(field), e.what());
@@ -341,6 +395,8 @@ void TWSClient::Impl::tickSize(TickerId tickerId, TickType field, Decimal size) 
       default:
         break;
       }
+
+      maybe_update_tick_cache(this, tickerId, market_data_[tickerId]);
     } catch (const std::exception &e) {
       spdlog::warn("Exception in tickSize(tickerId={}, field={}): {}",
                     tickerId, static_cast<int>(field), e.what());
@@ -377,6 +433,8 @@ void TWSClient::Impl::tickOptionComputation(TickerId tickerId, TickType tickType
       if (theta != DBL_MAX) {
         market_data.theta = theta;
       }
+
+      maybe_update_tick_cache(this, tickerId, market_data_[tickerId]);
     } catch (const std::exception &e) {
       spdlog::warn(
           "Exception in tickOptionComputation(tickerId={}, type={}): {}",

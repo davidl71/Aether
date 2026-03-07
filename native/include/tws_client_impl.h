@@ -8,6 +8,7 @@
 #include "margin_calculator.h"
 #include "pcap_capture.h"
 #include "types.h"
+#include "cache_client.h"
 #include "Contract.h"
 #include "DefaultEWrapper.h"
 #include "EClientSocket.h"
@@ -268,6 +269,11 @@ class TWSClient::Impl : public DefaultEWrapper {
   double get_remaining_margin_capacity() const;
   void set_order_status_callback(OrderStatusCallback callback);
   void set_error_callback(ErrorCallback callback);
+  void set_market_data_cache(platform::CacheClient* cache, int ttl_seconds);
+  platform::CacheClient* market_data_cache() const {
+    return market_data_cache_;
+  }
+  int market_data_cache_ttl() const { return market_data_cache_ttl_; }
   int get_next_order_id() const;
   bool is_market_open() const;
   std::chrono::system_clock::time_point get_server_time() const;
@@ -342,6 +348,10 @@ class TWSClient::Impl : public DefaultEWrapper {
       market_data_promises_;
   // Map request_id (tickerId) to contract symbol for NATS publishing
   std::map<int, std::string> ticker_to_symbol_;
+
+  // Optional cache for TickPrice/TickSize/TickOptionComputation per reqId (ib:tick:<reqId>)
+  platform::CacheClient* market_data_cache_{nullptr};
+  int market_data_cache_ttl_{60};
 
   // Contract details
   mutable std::mutex contract_details_mutex_;

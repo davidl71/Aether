@@ -102,8 +102,47 @@ class QuestDBClient:
         self._send_line(line)
 
     # ------------------------------------------------------------------
-    # Query layer (QuestDB REST/HTTP)
+    # Query layer (QuestDB REST/HTTP + optional Arrow Flight SQL)
     # ------------------------------------------------------------------
+
+    def query_flight_sql(
+        self,
+        sql: str,
+        flight_port: int = 8812,
+    ) -> List[Dict[str, Any]]:
+        """Execute a SQL query via Arrow Flight SQL when available; fallback to HTTP.
+
+        When adbc_driver_flightsql is installed and QuestDB Arrow Flight SQL is
+        enabled (e.g. on flight_port 8812), returns columnar results over Flight.
+        Otherwise falls back to query() (HTTP /exec). See docs/platform/ARROW_FLIGHT_QUESTDB.md.
+        """
+        try:
+            import adbc_driver_flightsql.dbapi as flight_sql_dbapi
+        except ImportError:
+            logger.debug("adbc_driver_flightsql not installed, using HTTP fallback")
+            return self.query(sql)
+
+        uri = f"grpc://{self.host}:{flight_port}"
+        try:
+            with flight_sql_dbapi.connect(uri) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(sql)
+                    if hasattr(cur, "fetch_arrow_table"):
+                        table = cur.fetch_arrow_table()
+                        if table is None:
+                            return []
+                        columns = table.column_names
+                        # Convert columnar to list of dicts
+                        d = table.to_pydict()
+                        return [dict(zip(columns, row_vals, strict=False)) for row_vals in zip(*d.values(), strict=False)]
+                    rows = cur.fetchall()
+                    if not rows:
+                        return []
+                    columns = [d[0] for d in cur.description] if cur.description else []
+                    return [dict(zip(columns, row, strict=False)) for row in rows]
+        except Exception as exc:
+            logger.debug("QuestDB Flight SQL failed (%s), using HTTP fallback", exc)
+            return self.query(sql)
 
     def query(self, sql: str) -> List[Dict[str, Any]]:
         """Execute a SQL query against QuestDB and return rows as dicts."""
@@ -126,8 +165,12 @@ class QuestDBClient:
         symbol: str,
         interval: str = "1h",
         limit: int = 100,
+        use_flight: bool = True,
     ) -> List[Dict[str, Any]]:
-        """Return OHLCV bars for a symbol using SAMPLE BY."""
+        """Return OHLCV bars for a symbol using SAMPLE BY.
+
+        When use_flight is True (default), tries Arrow Flight SQL first, then HTTP.
+        """
         sql = (
             f"SELECT timestamp, first(last) AS open, max(last) AS high, "
             f"min(last) AS low, last(last) AS close, sum(volume) AS volume "
@@ -136,6 +179,8 @@ class QuestDBClient:
             f"SAMPLE BY {interval} "
             f"ORDER BY timestamp DESC LIMIT {limit}"
         )
+        if use_flight:
+            return self.query_flight_sql(sql)
         return self.query(sql)
 
     def get_latest_quotes(self, symbols: Optional[List[str]] = None) -> List[Dict[str, Any]]:

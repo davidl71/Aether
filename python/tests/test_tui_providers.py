@@ -134,7 +134,8 @@ class TestRestProvider(unittest.TestCase):
             update_interval_ms=2000,
             timeout_ms=5000
         )
-        assert provider.endpoint == "http://test.com/api"
+        # normalize_rest_endpoint appends /snapshot when URL ends with /api
+        assert provider.endpoint == "http://test.com/api/snapshot"
         assert provider.update_interval_ms == 2000
         assert provider.timeout_sec == 5.0
         assert not provider.is_running()

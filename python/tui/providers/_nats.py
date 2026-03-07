@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import threading
 from typing import Optional
 
 from ..models import SnapshotPayload
 from ._base import Provider
+from .proto_snapshot import backend_health_to_dict, system_snapshot_to_payload
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,14 @@ try:
 except ImportError:
     nats = None  # type: ignore
     NATS_PY_AVAILABLE = False
+
+# Optional: generated protobuf types for platform topics (snapshot.*, system.health)
+try:
+    from python.generated.ib.platform import v1 as pb_v1
+    PROTO_AVAILABLE = True
+except ImportError:
+    pb_v1 = None  # type: ignore
+    PROTO_AVAILABLE = False
 
 # NOTE: Tests that patch NATS availability should use:
 #   @patch("tui.providers._nats.NATS_PY_AVAILABLE", False)
@@ -113,21 +121,67 @@ class NatsProvider(Provider):
 
         snapshot_subject = f"snapshot.{self.snapshot_backend}"
 
+        def _parse_snapshot_proto(data: bytes) -> Optional[SnapshotPayload]:
+            if not PROTO_AVAILABLE or pb_v1 is None:
+                return None
+            try:
+                envelope = pb_v1.NatsEnvelope().parse(data)
+                payload_bytes = getattr(envelope, "payload", None)
+                if not payload_bytes:
+                    return None
+                msg_type = getattr(envelope, "message_type", "") or "SystemSnapshot"
+                if msg_type == "SystemSnapshot":
+                    snap = pb_v1.SystemSnapshot().parse(payload_bytes)
+                    return system_snapshot_to_payload(snap)
+                return None
+            except Exception:
+                return None
+
         async def on_snapshot(msg):
             try:
-                data = json.loads(msg.data.decode("utf-8"))
-                payload = SnapshotPayload.from_dict(data)
-                with self._lock:
-                    self._latest_snapshot = payload
+                data = msg.data
+                if isinstance(data, str):
+                    data = data.encode("utf-8")
+                payload = _parse_snapshot_proto(data)
+                if payload is not None:
+                    with self._lock:
+                        self._latest_snapshot = payload
+                else:
+                    logger.debug("NatsProvider snapshot: protobuf parse failed or proto unavailable")
             except Exception as e:
                 logger.debug("NatsProvider snapshot decode: %s", e)
 
+        def _parse_health_proto(data: bytes) -> Optional[dict]:
+            if not PROTO_AVAILABLE or pb_v1 is None:
+                return None
+            try:
+                envelope = pb_v1.NatsEnvelope().parse(data)
+                payload_bytes = getattr(envelope, "payload", None)
+                if payload_bytes:
+                    health = pb_v1.BackendHealth().parse(payload_bytes)
+                    return backend_health_to_dict(health)
+                health = pb_v1.BackendHealth().parse(data)
+                return backend_health_to_dict(health)
+            except Exception:
+                try:
+                    health = pb_v1.BackendHealth().parse(data)
+                    return backend_health_to_dict(health)
+                except Exception:
+                    return None
+
         async def on_health(msg):
             try:
-                data = json.loads(msg.data.decode("utf-8"))
-                if data.get("backend") == self.snapshot_backend:
+                data = msg.data
+                if isinstance(data, str):
+                    data = data.encode("utf-8")
+                parsed = _parse_health_proto(data)
+                if parsed is not None and parsed.get("backend") == self.snapshot_backend:
                     with self._health_lock:
-                        self._last_health = data
+                        self._last_health = parsed
+                elif parsed is not None and parsed.get("backend") != self.snapshot_backend:
+                    pass
+                else:
+                    logger.debug("NatsProvider health: protobuf parse failed or proto unavailable")
             except Exception as e:
                 logger.debug("NatsProvider health decode: %s", e)
 

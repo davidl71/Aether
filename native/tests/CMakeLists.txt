@@ -25,6 +25,7 @@ set(TEST_SOURCES
     test_path_validator.cpp
     test_loan_position.cpp
     test_greeks_calculator.cpp
+    test_asset_relationship.cpp
 )
 
 add_executable(box_spread_tests ${TEST_SOURCES})
@@ -239,6 +240,9 @@ target_sources(box_spread_tests PRIVATE
     ${_native_src_dir}/convexity_calculator.cpp
     ${_native_src_dir}/loan_position.cpp
     ${_native_src_dir}/loan_manager.cpp
+    ${_native_src_dir}/asset_relationship.cpp
+    ${_native_src_dir}/collateral_valuator.cpp
+    ${_native_src_dir}/financing_instrument_registry.cpp
 )
 
 # Conditionally include local source files only if NOT using extracted library
