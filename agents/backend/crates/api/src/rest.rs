@@ -13,6 +13,7 @@ use tokio::{sync::watch, task::JoinHandle, time::timeout};
 use tracing::{info, warn};
 
 use crate::state::{Alert, OrderSnapshot, SharedSnapshot, SystemSnapshot};
+use crate::websocket::WebSocketServer;
 
 const SWIFTNESS_API_URL: &str = "http://127.0.0.1:8081";
 
@@ -92,7 +93,7 @@ impl RestServer {
     }
 
     pub async fn serve(addr: SocketAddr, state: RestState) -> anyhow::Result<JoinHandle<()>> {
-        let app = Self::router(state);
+        let app = Self::router(state.clone()).merge(WebSocketServer::route(state));
         info!(%addr, "starting REST server");
         let handle = tokio::spawn(async move {
             let listener = tokio::net::TcpListener::bind(&addr)

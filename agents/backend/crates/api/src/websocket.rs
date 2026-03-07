@@ -24,6 +24,7 @@ impl WebSocketServer {
     pub fn route(state: RestState) -> axum::Router<()> {
         use axum::routing::get;
         axum::Router::new()
+            .route("/ws", get(websocket_handler))
             .route("/ws/snapshot", get(websocket_handler))
             .layer(axum::Extension(state))
     }
@@ -182,59 +183,10 @@ async fn get_snapshot_json(
     state: &RestState,
 ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
     let snapshot = state.snapshot.read().await;
-
-    // Convert SystemSnapshot to JSON format matching REST API response
-    let json_value = json!({
-      "generated_at": snapshot.generated_at.to_rfc3339(),
-      "mode": snapshot.mode,
-      "strategy": snapshot.strategy,
-      "account_id": snapshot.account_id,
-      "metrics": {
-        "net_liq": snapshot.metrics.net_liq,
-        "buying_power": snapshot.metrics.buying_power,
-        "excess_liquidity": snapshot.metrics.excess_liquidity,
-        "margin_requirement": snapshot.metrics.margin_requirement,
-        "commissions": snapshot.metrics.commissions,
-        "portal_ok": snapshot.metrics.portal_ok,
-        "tws_ok": snapshot.metrics.tws_ok,
-        "orats_ok": snapshot.metrics.orats_ok,
-        "questdb_ok": snapshot.metrics.questdb_ok,
-        "nats_ok": snapshot.metrics.nats_ok,
-      },
-      "symbols": snapshot.symbols.iter().map(|s| json!({
-        "symbol": s.symbol,
-        "last": s.last,
-        "bid": s.bid,
-        "ask": s.ask,
-        "spread": s.spread,
-        "roi": s.roi,
-        "volume": s.volume,
-      })).collect::<Vec<_>>(),
-      "positions": snapshot.positions.iter().map(|p| json!({
-        "id": p.id,
-        "symbol": p.symbol,
-        "quantity": p.quantity,
-        "cost_basis": p.cost_basis,
-        "mark": p.mark,
-        "unrealized_pnl": p.unrealized_pnl,
-      })).collect::<Vec<_>>(),
-      "orders": snapshot.orders.iter().map(|o| json!({
-        "id": o.id,
-        "symbol": o.symbol,
-        "status": o.status,
-        "quantity": o.quantity,
-        "side": o.side,
-      })).collect::<Vec<_>>(),
-      "alerts": snapshot.alerts.iter().map(|a| json!({
-        "timestamp": a.timestamp.to_rfc3339(),
-        "level": a.level,
-        "message": a.message,
-      })).collect::<Vec<_>>(),
-    });
-
+    let data = serde_json::to_value(&*snapshot)?;
     Ok(serde_json::to_string(&json!({
       "type": "snapshot",
-      "data": json_value
+      "data": data
     }))?)
 }
 
