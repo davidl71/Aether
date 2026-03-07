@@ -1,0 +1,50 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "exarp-go": {
+      "type": "local",
+      "command": ["__PROJECT_ROOT__/scripts/run_exarp_go.sh"],
+      "enabled": true,
+      "environment": {
+        "PROJECT_ROOT": "__PROJECT_ROOT__",
+        "EXARP_MIGRATIONS_DIR": "__EXARP_MIGRATIONS_DIR__",
+        "EXARP_WATCH": "0"
+      }
+    },
+    "context7": {
+      "type": "local",
+      "command": ["npx", "-y", "@upstash/context7-mcp"],
+      "enabled": true
+    },
+    "filesystem": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "__PROJECT_ROOT__"],
+      "enabled": true
+    },
+    "sequential_thinking": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "enabled": true
+    },
+    "tractatus_thinking": {
+      "type": "local",
+      "command": ["npx", "-y", "tractatus_thinking"],
+      "enabled": true
+    },
+    "fetch": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-fetch"],
+      "enabled": true
+    },
+    "memory": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-memory"],
+      "enabled": true
+    },
+    "git": {
+      "type": "local",
+      "command": ["uvx", "mcp-server-git", "--repository", "__PROJECT_ROOT__"],
+      "enabled": true
+    }
+  }
+}
