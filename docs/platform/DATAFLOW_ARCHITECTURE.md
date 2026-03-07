@@ -85,7 +85,7 @@ QuestDB
 | QuestDB | Go (ILP) | nats-questdb-bridge | Python analytics | Tick time-series | Configurable |
 | MongoDB | Rust | Rust blotter | Python :8004 | Trade blotter | Permanent |
 
-**NATS KV key schema (bucket LIVE_STATE):** Keys are `messageType.symbol` (e.g. `MarketDataEvent.SPY`, `StrategyDecision.AAPL`). Values are the raw NatsEnvelope payload (protobuf). Written by collection-daemon when it receives NATS messages. Read by api-gateway: `GET /api/live/state` (list keys), `GET /api/live/state?key=MarketDataEvent.SPY` (one key, value base64-encoded), or `GET /api/live/state/watch` (SSE stream of all KV updates for zero-latency live state).
+**NATS KV key schema (bucket LIVE_STATE):** Keys are `messageType.symbol` (e.g. `MarketDataEvent.SPY`, `StrategyDecision.AAPL`). Values are the raw NatsEnvelope payload (protobuf). Written by collection-daemon when it receives NATS messages. Read by api-gateway: `GET /api/live/state` (list keys), `GET /api/live/state?key=MarketDataEvent.SPY` (one key, value base64-encoded), or `GET /api/live/state/watch` (SSE stream of all KV updates for zero-latency live state). **Requires NATS server 2.6.2+** (JetStream Key-Value).
 
 ---
 

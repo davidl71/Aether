@@ -27,6 +27,7 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for the full issue analysis.
 3. **Responsive reads**: clients should receive delta updates, not full snapshots. Store once,
    serve many via NATS KV or Arrow Flight.
 4. **Single source of truth**: one writer per data store. Eliminate dual-write patterns.
+5. **Persistence rule**: write once (to durable storage or JetStream), then publish to NATS or update in-memory state; only then serve to clients. Ensures UI never shows uncommitted state.
 
 ---
 
@@ -66,12 +67,13 @@ generated). Dispatch on `message_type` field. Write QuestDB columns from proto f
 **Files**: `agents/go/cmd/nats-questdb-bridge/main.go`.
 **Benefit**: Type-safe; field names match proto schema; survives format changes.
 
-### P2-C: NATS KV as primary live-state store
+### P2-C: NATS KV as primary live-state store <!-- exarp: T-1772925042919416172 -->
 **Issue**: Clients poll REST every 1-2s to get current state.
 **Fix**: C++ engine and Python services write current state to NATS KV buckets
 (`kv.positions`, `kv.rates`, `kv.risk`). Clients subscribe to KV watch — zero-latency
 updates with no polling overhead. NATS KV is persistent (backed by JetStream).
 **Files**: `native/src/nats_client.cpp`, `python/tui/providers.py` (NatsProvider).
+**Depends on**: P2-B (NatsEnvelope decode in Go agents).
 
 ---
 
@@ -188,7 +190,7 @@ Python services become read-only analytics — they query NATS KV or QuestDB.
 | P4-A: buf schema management | S | Medium | Next sprint | T-1772887222270264987 |
 | P3-C: Nelson-Siegel | M | Medium | Financial math sprint | T-1772887222348905245 |
 | P3-D: Amortization schedule | S | Medium | Financial math sprint | T-1772887222449509427 |
-| P2-C: NATS KV live state | L | High | Architecture sprint | (not yet created) |
+| P2-C: NATS KV live state | L | High | Architecture sprint | T-1772925042919416172 |
 | P4-C: Rust serde on prost | S | Medium | Cleanup | (not yet created) |
 | E1: ConnectRPC | XL | High | Epic | T-1772887222509770969 |
 | E2: Arrow Flight | XL | High | Epic | T-1772887222569465548 |
