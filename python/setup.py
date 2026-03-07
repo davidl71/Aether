@@ -17,14 +17,14 @@ if readme_file.exists():
 setup(
     name="ib-box-spread-generator",
     version=VERSION,
-    description="IB Box Spread Generator - Python integration with NautilusTrader",
+    description="IB Box Spread Generator - Python integration layer",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="IB Box Spread Generator Team",
     author_email="",
     url="https://github.com/yourusername/ib-box-spread-generator",
     packages=find_packages(where=".", exclude=["tests", "tests.*", "bindings"]),
-    py_modules=["nautilus_strategy", "config_adapter"],
+    py_modules=[],
     python_requires=">=3.11",
     install_requires=[
         "numpy>=1.24.0",
@@ -36,11 +36,7 @@ setup(
             "cython>=3.0.0",
         ],
     },
-    entry_points={
-        "console_scripts": [
-            "ib-box-spread-nautilus=nautilus_strategy:main",
-        ],
-    },
+    entry_points={},
     package_dir={"": "."},
     package_data={
         "": ["*.pxd", "*.pyx"],
@@ -58,4 +54,3 @@ setup(
     ],
     zip_safe=False,
 )
-
