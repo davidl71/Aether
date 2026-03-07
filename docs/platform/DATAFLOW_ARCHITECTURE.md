@@ -80,10 +80,12 @@ QuestDB
 |-------|-----------|-----------|---------|------|-----------------|
 | InMemoryCache | C++ (custom) | tws_client | C++ engine only | Hot tick prices | In-process |
 | Redis | Python (redis-py) | Python services | Python services | Position/rate cache | Per-key TTL |
-| NATS KV | NATS JetStream | All services | All services | Live key-value state | Configurable |
+| NATS KV | NATS JetStream | Go collection-daemon | api-gateway, TUI/Web (future) | Live state (key = messageType.symbol, value = protobuf) | Configurable |
 | SQLite (ledger) | Rust (sqlx) + Python | Rust + Python | Rust + Python | Ledger, positions | Permanent |
 | QuestDB | Go (ILP) | nats-questdb-bridge | Python analytics | Tick time-series | Configurable |
 | MongoDB | Rust | Rust blotter | Python :8004 | Trade blotter | Permanent |
+
+**NATS KV key schema (bucket LIVE_STATE):** Keys are `messageType.symbol` (e.g. `MarketDataEvent.SPY`, `StrategyDecision.AAPL`). Values are the raw NatsEnvelope payload (protobuf). Written by collection-daemon when it receives NATS messages; read via api-gateway `GET /api/live/state` (list keys) or `GET /api/live/state?key=MarketDataEvent.SPY` (one key, value base64-encoded).
 
 ---
 
@@ -221,6 +223,79 @@ useBackendServices hook (web/src/hooks/useBackendServices.ts)
 └── 8 concurrent health checks every 10s
       Fast path: GET /api/health-aggregated (Go api-gateway)
 ```
+
+---
+
+## 10. Dataflow and Persistence Improvements
+
+### Single writer per store (target state)
+
+One writer per store; all readers use that store or a gateway. Eliminates dual-write corruption and clarifies ownership.
+
+| Store | Single writer | Readers |
+|-------|----------------|---------|
+| SQLite (ledger) | Rust ledger crate only | Rust API; Python via REST `GET /api/ledger/...` (no direct DB) |
+| QuestDB | Go nats-questdb-bridge only | Python analytics, notebooks |
+| MongoDB (blotter) | Rust blotter service | Python :8004 |
+| NATS KV (live state) | C++ engine + Python services (per bucket) | TUI NatsProvider, Web (future), api-gateway |
+| Redis | Python services (cache) | Python services |
+| InMemoryCache | C++ tws_client | C++ engine only |
+
+### Persistence rule
+
+**Write once, then publish.** For orders and critical state: persist to durable storage (or append to a JetStream stream) first; only then publish to NATS or update in-memory state and serve to clients. Ensures UI never shows uncommitted state.
+
+### Target dataflow (deduplicated)
+
+```mermaid
+flowchart LR
+  subgraph sources [Sources]
+    TWS[TWS/IBKR]
+    Python[Python services]
+  end
+  subgraph ingest [Ingest]
+    Cpp[C++ engine]
+    Nats[NATS]
+  end
+  subgraph stores [Stores]
+    Ledger[(SQLite ledger)]
+    QDB[(QuestDB)]
+    KV[NATS KV]
+  end
+  subgraph clients [Clients]
+    Gateway[api-gateway :8090]
+    Web[Web]
+    TUI[TUI]
+  end
+  TWS --> Cpp
+  Cpp --> Nats
+  Nats --> Bridge[Go nats-questdb-bridge]
+  Nats --> Rust[Rust nats_adapter]
+  Bridge --> QDB
+  Rust --> Ledger
+  Cpp --> KV
+  Python --> KV
+  Gateway --> Web
+  Gateway --> TUI
+  Ledger --> Rust
+  KV --> Gateway
+```
+
+- **Single read path**: All clients go through api-gateway (or subscribe to NATS KV). TUI and Web use the same data.
+- **Single writer per store**: Ledger = Rust; QuestDB = Go bridge; NATS KV = C++/Python per bucket.
+- **Persistence**: Rust writes ledger then publishes; bridge writes QuestDB from NATS; no dual SQLite writers.
+
+### Implementation order (task dependencies)
+
+| Step | Task | Depends on |
+|------|------|------------|
+| 1 | P1-A: Fix dual SQLite writers | — |
+| 2 | P1-B: Unify TUI/Web via api-gateway | — (can parallel with P1-A) |
+| 3 | P2-B: Decode NatsEnvelope in Go agents | — |
+| 4 | P2-C: NATS KV as primary live-state store | P2-B |
+| 5 | Document single-writer and persistence rule | — (done in this section) |
+
+See `docs/platform/IMPROVEMENT_PLAN.md` for full task IDs (P1-A: T-1772887221775761020, P1-B: T-1772887221914991889, P2-B: T-1772887221969976131, P2-C: T-1772925042919416172).
 
 ---
 

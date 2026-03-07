@@ -17,10 +17,12 @@
 //	ALPACA_URL         (default "http://localhost:8000")
 //	TRADESTATION_URL   (default "http://localhost:8001")
 //	TASTYTRADE_URL     (default "http://localhost:8005")
+//	NATS_URL           optional; if set, gateway reads live state from NATS KV (bucket LIVE_STATE) at /api/live/state
 package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -31,6 +33,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/nats-io/nats.go"
 )
 
 func env(key, fallback string) string {
@@ -114,6 +118,60 @@ func main() {
 			"as_of":  time.Now().Format(time.RFC3339),
 		})
 	})
+
+	var kv nats.KeyValue
+	if natsURL := strings.TrimSpace(env("NATS_URL", "")); natsURL != "" {
+		nc, err := nats.Connect(natsURL, nats.RetryOnFailedConnect(true), nats.MaxReconnects(3))
+		if err != nil {
+			slog.Warn("nats connect failed, /api/live/state disabled", "error", err)
+		} else {
+			js, err := nc.JetStream()
+			if err != nil {
+				slog.Warn("jetstream failed, /api/live/state disabled", "error", err)
+			} else {
+				kv, err = js.KeyValue("LIVE_STATE")
+				if err != nil {
+					slog.Warn("kv bucket LIVE_STATE not found, /api/live/state disabled", "error", err)
+				} else {
+					mux.HandleFunc("/api/live/state", func(w http.ResponseWriter, r *http.Request) {
+						if r.Method != http.MethodGet {
+							http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+							return
+						}
+						w.Header().Set("Content-Type", "application/json")
+						keyQ := r.URL.Query().Get("key")
+						if keyQ != "" {
+							entry, err := kv.Get(keyQ)
+							if err != nil {
+								http.Error(w, `{"error":"key not found"}`, http.StatusNotFound)
+								return
+							}
+							_ = json.NewEncoder(w).Encode(map[string]any{
+								"key":      entry.Key(),
+								"revision": entry.Revision(),
+								"value":    base64.StdEncoding.EncodeToString(entry.Value()),
+							})
+							return
+						}
+						keys, err := kv.Keys()
+						if err != nil {
+							http.Error(w, `{"error":"list keys failed"}`, http.StatusInternalServerError)
+							return
+						}
+						_ = json.NewEncoder(w).Encode(map[string]any{"keys": keys})
+					})
+					slog.Info("nats kv ready", "bucket", "LIVE_STATE")
+				}
+			}
+		}
+	}
+	if kv == nil {
+		mux.HandleFunc("/api/live/state", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "NATS KV not configured (set NATS_URL)"})
+		})
+	}
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		for _, rt := range routes {

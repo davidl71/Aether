@@ -2,7 +2,8 @@
 // exposes a /health endpoint that returns aggregate service status.
 //
 // Services publish JSON heartbeats to "heartbeat.<service>" every few
-// seconds.  This aggregator tracks the last-seen time for each and
+// seconds (or NatsEnvelope protobuf with source set).  This aggregator
+// tracks the last-seen time for each and
 // marks services as "down" after a configurable timeout.
 //
 // Environment:
@@ -20,10 +21,14 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/nats-io/nats.go"
+	"google.golang.org/protobuf/proto"
+
+	pbv1 "github.com/dlowes/ib-platform/agents/go/proto/v1"
 )
 
 func env(key, fallback string) string {
@@ -70,6 +75,23 @@ func (s *serviceState) snapshot() []serviceStatus {
 	return out
 }
 
+// serviceNameFromMessage returns the service name from msg: if data is a
+// NatsEnvelope protobuf with source set, use it; otherwise use subject
+// "heartbeat.<name>". (P2-B / T-1772887221969976131: decode NatsEnvelope in Go agents.)
+func serviceNameFromMessage(data []byte, subject string) string {
+	env := &pbv1.NatsEnvelope{}
+	if err := proto.Unmarshal(data, env); err == nil {
+		if src := strings.TrimSpace(env.GetSource()); src != "" {
+			return src
+		}
+	}
+	const prefix = "heartbeat."
+	if len(subject) > len(prefix) {
+		return subject[len(prefix):]
+	}
+	return ""
+}
+
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	natsURL := env("NATS_URL", nats.DefaultURL)
@@ -98,10 +120,8 @@ func main() {
 	defer nc.Close()
 
 	sub, err := nc.Subscribe("heartbeat.>", func(msg *nats.Msg) {
-		parts := msg.Subject
-		// Extract service name from subject: heartbeat.<service>
-		if len(parts) > len("heartbeat.") {
-			svc := parts[len("heartbeat."):]
+		svc := serviceNameFromMessage(msg.Data, msg.Subject)
+		if svc != "" {
 			state.update(svc)
 		}
 	})

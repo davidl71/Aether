@@ -1,12 +1,13 @@
 // collection-daemon is the unified thin Go collection daemon (Epic E5).
 // It subscribes to NATS for C++ events (market data, signals, decisions),
-// and will eventually poll broker REST APIs and write to NATS KV / QuestDB.
-// This slice implements: NATS subscribe + NatsEnvelope decode + stub writer + /metrics.
+// writes live state to NATS KV (P2-C), and will eventually write to QuestDB.
+// This slice implements: NATS subscribe + NatsEnvelope decode + NATS KV write + stub/QuestDB later + /metrics.
 //
 // Environment:
 //
 //	NATS_URL        (default "nats://localhost:4222")
 //	NATS_SUBJECTS   comma-separated subjects (default "market-data.tick.>,strategy.signal.>,strategy.decision.>")
+//	NATS_KV_BUCKET  JetStream KV bucket for live state (default "LIVE_STATE"); empty disables KV write
 //	METRICS_LISTEN  (default ":9090")
 package main
 
@@ -66,9 +67,22 @@ func (m *metrics) incReceived(messageType string) {
 func (m *metrics) incDecodeError() { m.decodeErrors.Add(1) }
 func (m *metrics) incWriteError()  { m.writeErrors.Add(1) }
 
-// stubWriter logs the event (Phase 0). Later: write to QuestDB ILP / NATS KV.
+// stubWriter logs the event (Phase 0). Later: write to QuestDB ILP. KV write is done in handleMsg when kv is set.
 func stubWriter(logger *slog.Logger, subject, messageType string, payload []byte) {
 	logger.Debug("stub write", "subject", subject, "message_type", messageType, "payload_len", len(payload))
+}
+
+// kvKey returns a stable key for NATS KV from subject and message type (e.g. "market_data.SPY", "strategy_decision.AAPL").
+func kvKey(subject, messageType string) string {
+	parts := strings.Split(subject, ".")
+	sym := ""
+	if len(parts) > 0 {
+		sym = parts[len(parts)-1]
+	}
+	if sym == "" {
+		sym = "default"
+	}
+	return messageType + "." + sym
 }
 
 func main() {
@@ -91,6 +105,21 @@ func main() {
 	}
 	defer nc.Close()
 
+	var kv nats.KeyValue
+	if bucket := strings.TrimSpace(env("NATS_KV_BUCKET", "LIVE_STATE")); bucket != "" {
+		js, err := nc.JetStream()
+		if err != nil {
+			slog.Error("jetstream", "error", err)
+			os.Exit(1)
+		}
+		kv, err = js.CreateKeyValue(&nats.KeyValueConfig{Bucket: bucket})
+		if err != nil {
+			slog.Error("create kv bucket", "bucket", bucket, "error", err)
+			os.Exit(1)
+		}
+		slog.Info("kv bucket ready", "bucket", bucket)
+	}
+
 	handleMsg := func(data []byte, subj string) {
 		env := &pbv1.NatsEnvelope{}
 		if err := proto.Unmarshal(data, env); err != nil {
@@ -105,6 +134,13 @@ func main() {
 		m.incReceived(msgType)
 
 		stubWriter(slog.Default(), subj, msgType, env.GetPayload())
+		if kv != nil {
+			key := kvKey(subj, msgType)
+			if _, err := kv.Put(key, env.GetPayload()); err != nil {
+				m.incWriteError()
+				slog.Debug("kv put", "key", key, "error", err)
+			}
+		}
 
 		switch msgType {
 		case "MarketDataEvent":
