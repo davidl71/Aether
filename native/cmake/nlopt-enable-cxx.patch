@@ -1,7 +1,6 @@
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -16,7 +16,7 @@
- 
+@@ -18,8 +18,8 @@
  set (CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
  
 -project (nlopt)
