@@ -318,6 +318,14 @@ const std::pair<const char *, const char *> kErrorPhraseGuidance[] = {
 // ============================================================================
 // TWSClient::Impl - Full TWS API Implementation with DefaultEWrapper
 // ============================================================================
+// TODO(exarp): T-1772887500608268454 — Split this file: definition-file split of Impl EWrapper callbacks
+// This file is ~4300 lines. TWSClient::Impl (below) holds all EWrapper virtual callbacks
+// and cannot be moved to a different class, but method *definitions* can be split:
+//   tws_client_callbacks.cpp — tickPrice, orderStatus, execDetails, position, accountValue
+//   tws_client_requests.cpp  — reqMktData, reqContractDetails, placeOrder, reqPositions
+//   tws_client_account.cpp   — account/position sync helpers, mock data generation
+// Do this split before adding Memcached cache integration or any new TWS callbacks.
+// Exarp task: T-1772887500608268454
 
 class TWSClient::Impl : public DefaultEWrapper {
 public:
