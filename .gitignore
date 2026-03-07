@@ -102,6 +102,7 @@ native/third_party/IntelRDFPMathLib20U2/**
 !native/third_party/IntelRDFPMathLib20U2/**/
 !native/third_party/IntelRDFPMathLib20U2/**/CMakeLists.txt
 native/third_party/IntelRDFPMathLib20U2/**/*.a
+native/third_party/LIBRARY/libbid.a
 native/third_party/.orig/
 /agents/backend/target/
 /agents/backend-mock/target/
@@ -114,6 +115,7 @@ worktrees/
 # Test results
 Testing/
 tui-e2e/tui-traces/
+web/test-results/
 *.gcda
 *.gcno
 *.gcov
@@ -136,6 +138,8 @@ vcpkg/
 *.bak
 *.backup
 *.tmp
+*.new
+*.new2
 
 # Documentation build
 docs/_build/
@@ -145,6 +149,7 @@ docs/latex/
 docs/TODO_SYNC_REPORT.md
 docs/*_REPORT.md
 docs/task_discovery_report.json
+docs/TASK_ANALYSIS_*.json
 !docs/*_COMPLETE.md
 
 # Generated code (reproducible at build; see docs/planning/TRACKING_AND_GITIGNORE.md)
