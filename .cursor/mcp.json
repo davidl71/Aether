@@ -1,1 +1,46 @@
-{"mcpServers":{"context7":{"command":"npx","args":["-y","@upstash/context7-mcp"]},"exarp-go":{"disabled":false,"command":"/home/david/Projects/trading/ib_box_spread_full_universal/scripts/run_exarp_go.sh","args":[],"env":{"PROJECT_ROOT":"/home/david/Projects/trading/ib_box_spread_full_universal","EXARP_MIGRATIONS_DIR":"/home/david/exarp-go/migrations"}},"filesystem":{"command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/home/david/Projects/trading/ib_box_spread_full_universal"]},"sequential_thinking":{"command":"npx","args":["-y","@modelcontextprotocol/server-sequential-thinking"]},"tractatus_thinking":{"command":"npx","args":["-y","tractatus_thinking"]}}}
+{
+  "mcpServers": {
+    "context7": {
+      "command": "/home/david/.npm-global/bin/context7-mcp",
+      "args": []
+    },
+    "exarp-go": {
+      "disabled": false,
+      "command": "/home/david/Projects/trading/ib_box_spread_full_universal/scripts/run_exarp_go.sh",
+      "args": [],
+      "env": {
+        "PROJECT_ROOT": "/home/david/Projects/trading/ib_box_spread_full_universal",
+        "EXARP_MIGRATIONS_DIR": "/home/david/Projects/mcp/exarp-go/migrations"
+      }
+    },
+    "filesystem": {
+      "command": "/home/david/.npm-global/bin/mcp-server-filesystem",
+      "args": [
+        "/home/david/Projects/trading/ib_box_spread_full_universal"
+      ]
+    },
+    "sequential_thinking": {
+      "command": "/home/david/.npm-global/bin/mcp-server-sequential-thinking",
+      "args": []
+    },
+    "tractatus_thinking": {
+      "command": "/home/david/.npm-global/bin/tractatus_thinking",
+      "args": []
+    },
+    "fetch": {
+      "command": "/home/david/.local/bin/mcp-server-fetch",
+      "args": []
+    },
+    "memory": {
+      "command": "/home/david/.npm-global/bin/mcp-server-memory",
+      "args": []
+    },
+    "git": {
+      "command": "/home/david/.local/bin/mcp-server-git",
+      "args": [
+        "--repository",
+        "/home/david/Projects/trading/ib_box_spread_full_universal"
+      ]
+    }
+  }
+}

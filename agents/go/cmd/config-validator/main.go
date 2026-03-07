@@ -13,7 +13,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,6 +27,7 @@ func env(key, fallback string) string {
 }
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	configPath := flag.String("config", env("IB_BOX_SPREAD_CONFIG", "config/config.json"), "Path to config JSON")
 	apiContractPath := flag.String("api-contract", "", "Path to API contract markdown (optional)")
 	flag.Parse()
@@ -36,20 +37,20 @@ func main() {
 	// Validate config JSON
 	if *configPath != "" {
 		if err := validateConfig(*configPath); err != nil {
-			log.Printf("config: %v", err)
+			slog.Error("config validation failed", "path", *configPath, "error", err)
 			ok = false
 		} else {
-			log.Printf("config: %s OK", *configPath)
+			slog.Info("config OK", "path", *configPath)
 		}
 	}
 
 	// Validate API contract if path given
 	if *apiContractPath != "" {
 		if err := validateAPIContract(*apiContractPath); err != nil {
-			log.Printf("api-contract: %v", err)
+			slog.Error("api-contract validation failed", "path", *apiContractPath, "error", err)
 			ok = false
 		} else {
-			log.Printf("api-contract: %s OK", *apiContractPath)
+			slog.Info("api-contract OK", "path", *apiContractPath)
 		}
 	}
 

@@ -48,6 +48,21 @@
   when: ansible_facts['os_family'] == 'Darwin'
   tags: [devtools, packages]
 
+- name: Add buf Homebrew tap (macOS) for proto codegen
+  become: false
+  community.general.homebrew_tap:
+    name: bufbuild/buf
+    state: present
+  when: ansible_facts['os_family'] == 'Darwin'
+
+- name: Install buf via Homebrew (macOS)
+  become: false
+  community.general.homebrew:
+    name: bufbuild/buf/buf
+    state: present
+  when: ansible_facts['os_family'] == 'Darwin'
+  tags: [devtools, packages]
+
 # ---------------------------------------------------------------------------
 # Nix (dev shell: flake.nix, USE_NIX=1, just nix <recipe>)
 # ---------------------------------------------------------------------------
@@ -157,6 +172,28 @@
     - ansible_facts['os_family'] == 'Debian'
     - ansible_architecture == 'x86_64'
     - ansible_env.SUDO_USER is defined
+
+- name: Set buf binary architecture suffix (Debian)
+  set_fact:
+    _buf_arch: "{{ 'arm64' if ansible_architecture in ['arm64', 'aarch64'] else 'x86_64' }}"
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Install buf on Debian/Ubuntu (proto codegen)
+  become: true
+  block:
+    - name: Download buf binary
+      get_url:
+        url: "https://github.com/bufbuild/buf/releases/download/v{{ _buf_version }}/buf-Linux-{{ _buf_arch }}"
+        dest: /usr/local/bin/buf
+        mode: "0755"
+        force: true
+    - name: Ensure buf binary executable
+      file:
+        path: /usr/local/bin/buf
+        mode: "0755"
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+    - ansible_architecture in ['x86_64', 'arm64', 'aarch64']
 
 - name: Install Poetry via uv
   become: false
@@ -413,3 +450,127 @@
   when:
     - ansible_facts['os_family'] in ['Debian', 'Darwin']
     - git_lfs_version.rc == 0
+
+# ---------------------------------------------------------------------------
+# just (command runner — Justfile recipes for build/test/lint/fix/pre-push)
+# ---------------------------------------------------------------------------
+- name: Check if just is installed
+  become: false
+  ansible.builtin.command: just --version
+  register: just_check
+  changed_when: false
+  failed_when: false
+
+- name: Install just via cargo (Debian/Ubuntu)
+  become: false
+  ansible.builtin.command: cargo install just
+  register: just_install_debian
+  changed_when: "'Compiling just' in just_install_debian.stdout or 'Installed' in just_install_debian.stdout"
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+    - just_check.rc != 0
+
+- name: Install just via Homebrew (macOS)
+  become: false
+  community.general.homebrew:
+    name: just
+    state: present
+  when:
+    - ansible_facts['os_family'] == 'Darwin'
+    - just_check.rc != 0
+
+- name: Display just version
+  become: false
+  ansible.builtin.command: just --version
+  register: just_version
+  changed_when: false
+  failed_when: false
+  when: just_check.rc != 0 or just_check.rc == 0
+
+# ---------------------------------------------------------------------------
+# npm global prefix (user-local, no sudo needed)
+# ---------------------------------------------------------------------------
+- name: Ensure ~/.npm-global directory exists
+  become: false
+  ansible.builtin.file:
+    path: "{{ ansible_facts.env.HOME }}/.npm-global"
+    state: directory
+    mode: "0755"
+
+- name: Set npm prefix to ~/.npm-global
+  become: false
+  ansible.builtin.shell: |
+    export NVM_DIR="{{ ansible_facts.env.HOME }}/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+    npm config set prefix "{{ ansible_facts.env.HOME }}/.npm-global"
+  args:
+    executable: /bin/bash
+  changed_when: false
+
+- name: Ensure ~/.npm-global/bin is in PATH (zsh)
+  become: false
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_facts.env.HOME }}/.zshrc"
+    line: 'export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:$PATH"'
+    create: true
+    mode: "0644"
+
+- name: Ensure ~/.npm-global/bin is in PATH (bash)
+  become: false
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_facts.env.HOME }}/.bashrc"
+    line: 'export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:$PATH"'
+    create: true
+    mode: "0644"
+
+# ---------------------------------------------------------------------------
+# MCP servers — npm-based
+# ---------------------------------------------------------------------------
+- name: Install npm MCP servers globally
+  become: false
+  ansible.builtin.shell: |
+    export NVM_DIR="{{ ansible_facts.env.HOME }}/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+    export PATH="{{ ansible_facts.env.HOME }}/.npm-global/bin:$PATH"
+    npm install -g \
+      @upstash/context7-mcp \
+      @modelcontextprotocol/server-filesystem \
+      @modelcontextprotocol/server-sequential-thinking \
+      @modelcontextprotocol/server-memory \
+      tractatus_thinking
+  args:
+    executable: /bin/bash
+  register: npm_mcp_install
+  changed_when: "'added' in npm_mcp_install.stdout"
+  failed_when: false
+
+# ---------------------------------------------------------------------------
+# MCP servers — Python-based (via uv tool install)
+# ---------------------------------------------------------------------------
+- name: Install Python MCP servers via uv tool
+  become: false
+  ansible.builtin.command: "uv tool install {{ item }}"
+  loop:
+    - mcp-server-fetch
+    - mcp-server-git
+  register: uv_mcp_install
+  changed_when: "'Installed' in uv_mcp_install.stdout"
+  failed_when: false
+
+# ---------------------------------------------------------------------------
+# Generate machine-local MCP configs (.cursor/mcp.json + opencode.json)
+# ---------------------------------------------------------------------------
+- name: Check if setup_mcp.sh exists
+  become: false
+  ansible.builtin.stat:
+    path: "{{ playbook_dir }}/../../scripts/setup_mcp.sh"
+  register: setup_mcp_stat
+
+- name: Run setup_mcp.sh to generate local MCP configs
+  become: false
+  ansible.builtin.command:
+    cmd: "{{ playbook_dir }}/../../scripts/setup_mcp.sh"
+    chdir: "{{ playbook_dir }}/../.."
+  register: setup_mcp_result
+  changed_when: true
+  when: setup_mcp_stat.stat.exists

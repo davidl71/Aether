@@ -2,28 +2,27 @@
   "action": "dependencies",
   "circular_dependencies": [],
   "critical_path": [
-    "T-1772609720556934000",
-    "T-1772609727587961000"
+    "T-1772609719082616000",
+    "T-1772609725545817000"
   ],
   "critical_path_details": [
     {
-      "content": "C++ NATS publish protobuf instead of JSON",
+      "content": "Wire ts-proto for proto/messages.proto into web",
       "dependencies": [
-        "T-1772609676030467000",
-        "T-1772609681056059000"
+        "T-1772609676030467000"
       ],
-      "dependencies_count": 2,
-      "id": "T-1772609720556934000",
+      "dependencies_count": 1,
+      "id": "T-1772609719082616000",
       "priority": "medium",
       "status": "Todo"
     },
     {
-      "content": "Python and Rust NATS subscribers deserialize protobuf",
+      "content": "Replace web/src/types/proto.ts with generated imports",
       "dependencies": [
-        "T-1772609720556934000"
+        "T-1772609719082616000"
       ],
       "dependencies_count": 1,
-      "id": "T-1772609727587961000",
+      "id": "T-1772609725545817000",
       "priority": "medium",
       "status": "Todo"
     }
@@ -54,12 +53,12 @@
       "T-156"
     ],
     "T-111": [
-      "T-110",
-      "T-157"
+      "T-157",
+      "T-110"
     ],
     "T-112": [
-      "T-158",
-      "T-111"
+      "T-111",
+      "T-158"
     ],
     "T-113": [
       "T-112",
@@ -243,12 +242,11 @@
     "T-1772108492618571000": [],
     "T-1772108492673853000": [],
     "T-1772108492702479000": [],
-    "T-1772111114876005000": [],
     "T-1772135684080505000": [],
     "T-1772135684174386000": [],
     "T-1772135684231376000": [
-      "T-1772135684402673000",
-      "T-1772135684309806000"
+      "T-1772135684309806000",
+      "T-1772135684402673000"
     ],
     "T-1772135684309806000": [
       "T-1772135684080505000",
@@ -424,8 +422,8 @@
     "T-221": [],
     "T-222": [],
     "T-223": [
-      "T-144",
-      "T-143"
+      "T-143",
+      "T-144"
     ],
     "T-224": [],
     "T-225": [],
@@ -433,13 +431,13 @@
       "T-112"
     ],
     "T-227": [
-      "T-226",
-      "T-112"
+      "T-112",
+      "T-226"
     ],
     "T-228": [
+      "T-112",
       "T-226",
-      "T-227",
-      "T-112"
+      "T-227"
     ],
     "T-229": [
       "T-144",
@@ -463,15 +461,15 @@
       "T-67"
     ],
     "T-233": [
-      "T-149",
-      "T-232",
       "T-66",
-      "T-67"
+      "T-67",
+      "T-149",
+      "T-232"
     ],
     "T-234": [
+      "T-151",
       "T-69",
-      "T-70",
-      "T-151"
+      "T-70"
     ],
     "T-237": [
       "T-34"
@@ -541,8 +539,8 @@
     "T-61": [],
     "T-62": [],
     "T-63": [
-      "T-145",
-      "T-62"
+      "T-62",
+      "T-145"
     ],
     "T-64": [
       "T-146",
@@ -559,9 +557,9 @@
       "T-66"
     ],
     "T-68": [
+      "T-149",
       "T-66",
-      "T-67",
-      "T-149"
+      "T-67"
     ],
     "T-69": [],
     "T-7": [],
@@ -579,12 +577,12 @@
     "T-74": [],
     "T-75": [],
     "T-76": [
-      "T-74",
-      "T-152"
+      "T-152",
+      "T-74"
     ],
     "T-77": [
-      "T-76",
-      "T-153"
+      "T-153",
+      "T-76"
     ],
     "T-78": [
       "T-154",
@@ -621,7 +619,7 @@
   "missing_dependencies": [],
   "output_path": "/home/david/Projects/trading/ib_box_spread_full_universal/docs/TASK_ANALYSIS_DEPENDENCIES.md",
   "recommendations": [],
-  "report": "Dependency Analysis\n==================\n\nTotal Tasks: 356\nMax Dependency Level: 1\n\nCritical Path (Longest Dependency Chain):\n  Length: 2 tasks\n\n  1. T-1772609720556934000: C++ NATS publish protobuf instead of JSON\n     ↓\n  2. T-1772609727587961000: Python and Rust NATS subscribers deserialize protobuf\n\n",
+  "report": "Dependency Analysis\n==================\n\nTotal Tasks: 355\nMax Dependency Level: 1\n\nCritical Path (Longest Dependency Chain):\n  Length: 2 tasks\n\n  1. T-1772609719082616000: Wire ts-proto for proto/messages.proto into web\n     ↓\n  2. T-1772609725545817000: Replace web/src/types/proto.ts with generated imports\n\n",
   "success": true,
-  "total_tasks": 356
+  "total_tasks": 355
 }

@@ -16,7 +16,7 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -48,16 +48,19 @@ func resolveWorkDir(root, dir string) string {
 }
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	cfgPath := env("SUPERVISOR_CONFIG", "config/services.json")
 
 	data, err := os.ReadFile(cfgPath)
 	if err != nil {
-		log.Fatalf("read config %s: %v", cfgPath, err)
+		slog.Error("read config", "path", cfgPath, "error", err)
+		os.Exit(1)
 	}
 
 	var specs []serviceSpec
 	if err := json.Unmarshal(data, &specs); err != nil {
-		log.Fatalf("parse config: %v", err)
+		slog.Error("parse config", "error", err)
+		os.Exit(1)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -74,9 +77,9 @@ func main() {
 	}
 
 	<-ctx.Done()
-	log.Println("shutting down all services...")
+	slog.Info("shutting down all services")
 	wg.Wait()
-	log.Println("all services stopped")
+	slog.Info("all services stopped")
 }
 
 func supervise(ctx context.Context, s serviceSpec) {
@@ -89,7 +92,7 @@ func supervise(ctx context.Context, s serviceSpec) {
 		default:
 		}
 
-		log.Printf("[%s] starting: %v (dir=%s)", s.Name, s.Cmd, workDir)
+		slog.Info("starting service", "name", s.Name, "cmd", s.Cmd, "dir", workDir)
 
 		cmd := exec.CommandContext(ctx, s.Cmd[0], s.Cmd[1:]...)
 		cmd.Dir = workDir
@@ -100,7 +103,7 @@ func supervise(ctx context.Context, s serviceSpec) {
 			if ctx.Err() != nil {
 				return
 			}
-			log.Printf("[%s] exited: %v  (restart in %s)", s.Name, err, backoff)
+			slog.Info("service exited with error, restarting", "name", s.Name, "error", err, "backoff", backoff)
 			select {
 			case <-time.After(backoff):
 			case <-ctx.Done():
@@ -108,7 +111,7 @@ func supervise(ctx context.Context, s serviceSpec) {
 			}
 			backoff = min(backoff*2, 30*time.Second)
 		} else {
-			log.Printf("[%s] exited cleanly", s.Name)
+			slog.Info("service exited cleanly", "name", s.Name)
 			return
 		}
 	}

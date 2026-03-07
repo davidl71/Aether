@@ -21,6 +21,8 @@ TWS API vendor protos under `native/third_party/tws-api/` are Interactive Broker
 | Python     | `./proto/generate.sh` (betterproto)              | `python/generated/` | Active |
 | TypeScript | `./proto/generate.sh` (ts-proto; `cd web && npm i -D ts-proto` first) | `web/src/proto/` | Active |
 
+From the `web/` directory run **`npm run generate:proto`** to regenerate TypeScript from `proto/messages.proto`.
+
 > **Note on TWS API protos:** Proto files under `native/third_party/tws-api/` are
 > vendor-only (Interactive Brokers upstream). They are built separately and are not
 > part of the platform message contract. Do not import them from `proto/messages.proto`.
@@ -30,6 +32,7 @@ TWS API vendor protos under `native/third_party/tws-api/` are Interactive Broker
 Run `./proto/generate.sh` from the repo root to regenerate all languages.
 
 **Prerequisites:**
+- **buf** (optional): single command for C++/Go/TS codegen; if missing, the script falls back to `protoc`. Installed automatically by **Ansible** (devtools role). Manual install: `brew install bufbuild/buf/buf` (macOS) or see [buf install](https://buf.build/docs/cli/installation).
 - C++: `protoc` (system package)
 - Python: `pip install betterproto[compiler]` (or `uv pip install betterproto[compiler]`)
 - TypeScript: `cd web && npm i -D ts-proto`

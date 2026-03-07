@@ -221,3 +221,10 @@ ibapi_build/
 
 .trunk/cache/
 .trunk/logs/
+
+# ============================================================================
+# Todo2 (task state - machine-local, exclude from AI context)
+# ============================================================================
+
+.todo2/
+.todo2/state.todo2.json

@@ -10,6 +10,7 @@ _devtools_packages:
   - bash
   - act
   - uv
+  - just
   - fswatch
   - git-lfs
   # C++ build and native CLI

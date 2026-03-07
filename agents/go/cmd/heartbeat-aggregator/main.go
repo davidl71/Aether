@@ -15,7 +15,7 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -71,13 +71,15 @@ func (s *serviceState) snapshot() []serviceStatus {
 }
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	natsURL := env("NATS_URL", nats.DefaultURL)
 	listenAddr := env("LISTEN_ADDR", ":8090")
 	staleStr := env("STALE_TIMEOUT", "15s")
 
 	staleDur, err := time.ParseDuration(staleStr)
 	if err != nil {
-		log.Fatalf("bad STALE_TIMEOUT: %v", err)
+		slog.Error("bad STALE_TIMEOUT", "error", err)
+		os.Exit(1)
 	}
 
 	state := &serviceState{
@@ -90,7 +92,8 @@ func main() {
 		nats.MaxReconnects(-1),
 	)
 	if err != nil {
-		log.Fatalf("nats connect: %v", err)
+		slog.Error("nats connect", "error", err)
+		os.Exit(1)
 	}
 	defer nc.Close()
 
@@ -103,7 +106,8 @@ func main() {
 		}
 	})
 	if err != nil {
-		log.Fatalf("subscribe: %v", err)
+		slog.Error("subscribe", "error", err)
+		os.Exit(1)
 	}
 	defer func() { _ = sub.Unsubscribe() }()
 
@@ -122,9 +126,10 @@ func main() {
 	defer stop()
 
 	go func() {
-		log.Printf("heartbeat-aggregator listening on %s", listenAddr)
+		slog.Info("heartbeat-aggregator listening", "addr", listenAddr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal(err)
+			slog.Error("server error", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -132,5 +137,5 @@ func main() {
 	shutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutCtx)
-	log.Println("heartbeat-aggregator stopped")
+	slog.Info("heartbeat-aggregator stopped")
 }

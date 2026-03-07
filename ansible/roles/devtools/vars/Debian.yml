@@ -1,6 +1,8 @@
 ---
 # Debian/Ubuntu (apt) package list for devtools role
 _ca_bundle_path: /etc/ssl/certs/ca-certificates.crt
+# buf: version for GitHub release binary (proto codegen)
+_buf_version: "1.66.0"
 _devtools_packages:
   - ca-certificates
   - python3
@@ -40,6 +42,9 @@ _devtools_packages:
   - nats-server
   # Java (IB Client Portal Gateway on port 5000)
   - openjdk-11-jdk
-  # Rust toolchain (agents/, Rust backends)
+  # Rust toolchain (agents/, Rust backends) + just (command runner via cargo)
   - cargo
   - rustc
+  # Node.js ecosystem (nvm installed separately in tasks; this ensures build tools)
+  - nodejs
+  - npm

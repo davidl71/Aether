@@ -3,12 +3,48 @@
   "mcp": {
     "exarp-go": {
       "type": "local",
-      "command": ["/Users/dlowes/Projects/mcp/exarp-go/run-exarp-go.sh"],
+      "command": ["/home/david/Projects/trading/ib_box_spread_full_universal/scripts/run_exarp_go.sh"],
       "enabled": true,
       "environment": {
-        "EXARP_MIGRATIONS_DIR": "/Users/dlowes/Projects/mcp/exarp-go/migrations",
+        "PROJECT_ROOT": "/home/david/Projects/trading/ib_box_spread_full_universal",
+        "EXARP_MIGRATIONS_DIR": "/home/david/Projects/mcp/exarp-go/migrations",
         "EXARP_WATCH": "0"
       }
+    },
+    "context7": {
+      "type": "local",
+      "command": ["npx", "-y", "@upstash/context7-mcp"],
+      "enabled": true
+    },
+    "filesystem": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/home/david/Projects/trading/ib_box_spread_full_universal"],
+      "enabled": true
+    },
+    "sequential_thinking": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "enabled": true
+    },
+    "tractatus_thinking": {
+      "type": "local",
+      "command": ["npx", "-y", "tractatus_thinking"],
+      "enabled": true
+    },
+    "fetch": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-fetch"],
+      "enabled": true
+    },
+    "memory": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-memory"],
+      "enabled": true
+    },
+    "git": {
+      "type": "local",
+      "command": ["uvx", "mcp-server-git", "--repository", "/home/david/Projects/trading/ib_box_spread_full_universal"],
+      "enabled": true
     }
   }
 }
