@@ -8,6 +8,8 @@ Project Information:
   Type:        MCP Server
   Status:      Active Development
 
+Architecture:  See ARCHITECTURE.md and docs/platform/DATAFLOW_ARCHITECTURE.md for system overview and data flow.
+
 Task Status:
   Total:           355
   Pending:        12

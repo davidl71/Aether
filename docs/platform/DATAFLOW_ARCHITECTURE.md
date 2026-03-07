@@ -1,6 +1,6 @@
 # Dataflow Architecture
 
-**Last updated**: 2026-03-07
+**Last updated**: 2026-03-07 (architecture and dataflow review)
 **Purpose**: Comprehensive analysis of data flow, storage, and inter-component contracts.
 Used as the ground-truth reference for AI-assisted development.
 
@@ -35,7 +35,7 @@ TUI (Python/Textual)
 Web (React)
   └─► SnapshotClient
         ├─► WebSocket: ws://localhost:8080/ws/snapshot
-        │     └─► Rust backend: full SystemSnapshot JSON every 2s (no delta)
+        │     └─► Rust backend: full SystemSnapshot on connect, then only changed sections (delta) every 2s
         └─► REST fallback: GET /api/snapshot every 2s
 
 Desktop / iPad (Swift)
@@ -132,11 +132,12 @@ Schema management: `proto/generate.sh` (shell script).
 
 ## 5. Go Agents Inventory
 
-All in `agents/go/cmd/`. Pure stdlib + `nats.go`. No structured logging (`log.Printf` only).
+All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/slog`.
 
 | Agent | Purpose | Listens | Exposes |
 |-------|---------|---------|---------|
 | `api-gateway` | Reverse proxy with CORS | HTTP :8090 | Routes to Python services + Rust :8080 |
+| `collection-daemon` | Unified NATS collector (Epic E5): subscribe, decode NatsEnvelope, stub writer, metrics | NATS `market-data.>`, etc. | HTTP /metrics (Prometheus) |
 | `heartbeat-aggregator` | Tracks service liveness | NATS `heartbeat.*` | HTTP GET /health |
 | `nats-questdb-bridge` | Streams NATS → QuestDB | NATS `market.data.>` or `market-data.tick.>` (env) | QuestDB ILP |
 | `supervisor` | Process supervisor (restart on crash) | JSON config | Process PIDs |
@@ -175,8 +176,8 @@ All in `agents/go/cmd/`. Pure stdlib + `nats.go`. No structured logging (`log.Pr
 
 | # | Issue | Location | Impact | Exarp Task |
 |---|-------|---------|--------|------------|
-| 3 | **WebSocket full snapshot**: Rust WS sends complete `SystemSnapshot` every 2s regardless of changes | `agents/backend/src/ws.rs` | Unnecessary bandwidth; will not scale | T-1772887222103963807 |
-| 4 | **Go agents not decoding NatsEnvelope**: raw byte parsing instead of protobuf | `agents/go/cmd/nats-questdb-bridge/`, `heartbeat-aggregator/` | Type-unsafe, brittle, will break if format changes | T-1772887221969976131 |
+| 3 | ~~**WebSocket full snapshot**: Rust WS sends complete `SystemSnapshot` every 2s regardless of changes~~ **DONE (P2-A)**: full snapshot on connect, then delta every 2s | `agents/backend/src/ws.rs` | — resolved | T-1772887222103963807 ✅ |
+| 4 | **Go agents not decoding NatsEnvelope**: raw byte parsing instead of protobuf (nats-questdb-bridge, heartbeat-aggregator); collection-daemon uses proto | `agents/go/cmd/nats-questdb-bridge/`, `heartbeat-aggregator/` | Type-unsafe, brittle, will break if format changes | T-1772887221969976131 |
 | 5 | **Hardcoded ETF duration table**: static lookup in greeks_calculator | `native/src/greeks_calculator.cpp` | Wrong values for newly listed ETFs; maintenance burden | T-1772887222158664215 |
 | 6 | **No IV solver**: BlackCalculator used correctly, but IV must come from market data | `native/src/greeks_calculator.cpp` | Cannot calculate IV from price; blocks model-based workflows | T-1772887222213114929 |
 
@@ -212,7 +213,7 @@ Provider selection: set via `--provider` CLI flag or config; `RestProvider` is d
 ```
 SnapshotClient (web/src/api/snapshot.ts)
 ├── Primary: WebSocket ws://localhost:8080/ws/snapshot
-│     - Receives full SystemSnapshot JSON every ~2s
+│     - Full SystemSnapshot on connect; then only changed sections (delta) every ~2s
 │     - Reconnect with exponential backoff (max 10 attempts)
 └── Fallback: REST GET /api/snapshot every 2s
 
