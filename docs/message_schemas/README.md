@@ -68,3 +68,8 @@ Payload bytes are a serialized inner message (`MarketDataEvent`, `StrategySignal
 - [`proto/messages.proto`](../../proto/messages.proto) — canonical message definitions
 - [`proto/generate.sh`](../../proto/generate.sh) — regenerate all language outputs
 - [`agents/backend/crates/nats_adapter/`](../../agents/backend/crates/nats_adapter/) — Rust prost codegen (build.rs)
+
+**Planning (single proto story, dedup, execution order):**
+- [PROTOBUF_DEDUP_OPPORTUNITIES.md](../planning/PROTOBUF_DEDUP_OPPORTUNITIES.md) — consolidation opportunities and TWS vendor protos
+- [PROTOBUF_DEDUP_CONCRETE_PLAN.md](../planning/PROTOBUF_DEDUP_CONCRETE_PLAN.md) — concrete plan for proto cleanup
+- Backlog and wave execution order: regenerate with `exarp-go -tool report -args '{"action":"plan"}'` (see `.cursor/plans/` when present)
