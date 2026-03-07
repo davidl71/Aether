@@ -95,6 +95,7 @@ Use these so behavior is consistent across OpenCode, Claude, and Cursor:
 | Action | OpenCode | Cursor command | Shell |
 |--------|----------|----------------|-------|
 | Prime context | `ai-context` or `prime-context` | — | — |
+| **exarp-go: prime / handoff / tasks / scorecard** | **See [docs/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md](EXARP_GO_CURSOR_CLAUDE_OPENCODE.md)** — same MCP tools in all three; OpenCode: handoff, tasks, scorecard; Claude: prime, handoff, tasks, scorecard; Cursor: session-prime hook + commands. |
 | Build | `build` | `build:debug` | `ninja -C build` |
 | Test | `test` | `test:run` | `ctest --test-dir build --output-on-failure` |
 | Lint | `lint` | `lint:run` | `./scripts/run_linters.sh` |

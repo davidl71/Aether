@@ -2,6 +2,7 @@
 
 See [AGENTS.md](AGENTS.md) for complete project guidelines. For multi-editor setup
 (OpenCode, Cursor, skills, subagents), see [docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md).
+For exarp-go (session prime, handoff, tasks, scorecard) in Cursor, Claude Code, and OpenCode, see [docs/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md](docs/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md).
 
 ## Project at a Glance
 

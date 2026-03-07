@@ -4,3 +4,5 @@ assistant follows project guidelines.
 READ AGENTS.md
 READ CLAUDE.md
 READ ARCHITECTURE.md
+
+If the user wants suggested next tasks or handoff alert from exarp-go, call the exarp-go session MCP tool with action=prime, include_tasks=true, include_hints=true (or run scripts/run_exarp_go.sh -tool session -args '{"action":"prime","include_tasks":true}' -json -quiet). See docs/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md.
