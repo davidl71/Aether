@@ -1,3 +1,11 @@
+exclude: |
+  (?x)^(
+    native/third_party/.*|
+    native/generated/.*|
+    agents/go/proto/.*|
+    web/src/proto/.*
+  )$
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
