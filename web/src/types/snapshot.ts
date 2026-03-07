@@ -121,3 +121,10 @@ export interface SnapshotPayload {
 }
 
 export type Severity = TimelineEvent['severity'];
+
+export interface DeltaMessage {
+  type: 'delta';
+  sections: Partial<SnapshotPayload> & {
+    meta?: { mode: string; strategy: string; account_id: string };
+  };
+}

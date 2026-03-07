@@ -1,5 +1,15 @@
-import type { SnapshotPayload } from '../types/snapshot';
+import type { DeltaMessage, SnapshotPayload } from '../types/snapshot';
 
+// TODO(exarp): T-1772887222103963807 — WebSocket delta compression (P2-A)
+// TODO(exarp): T-1772887222509770969 — EPIC: ConnectRPC streaming (E1)
+// MIGRATION PLAN: Replace full-snapshot polling with delta updates.
+// Current: Rust WS backend sends complete SystemSnapshot every 2s regardless of changes.
+// Target: Server sends only changed sections (positions, rates, health) as JSON patches.
+//   - Server tracks a hash per section; only sends changed sections in WS message.
+//   - Client merges deltas into local state using structuredClone + patch.
+//   - Reduces bandwidth ~90% when state is stable (between trades).
+// Task P2-A: exarp T-1772887222103963807 — docs/platform/IMPROVEMENT_PLAN.md
+// Epic E1:   exarp T-1772887222509770969 — ConnectRPC streaming (replaces polling entirely)
 const DEFAULT_ENDPOINT = '/data/snapshot.json';
 const POLL_INTERVAL = 2000;
 const DEFAULT_WS_RECONNECT_INTERVAL = 3000;
@@ -156,19 +166,23 @@ export class SnapshotClient {
 
       this.ws.onmessage = (event) => {
         try {
-          const message = JSON.parse(event.data);
+          const message = JSON.parse(event.data) as
+            | { type: 'snapshot'; data: SnapshotPayload }
+            | DeltaMessage
+            | { type: 'connected' };
 
-          // Handle different message types
-          if (message.type === 'snapshot' && message.data) {
-            // Full snapshot update
-            const payload = message.data as SnapshotPayload;
-            this._lastPayload = payload;
-            this.notifyListeners(payload);
+          if (message.type === 'snapshot' && 'data' in message && message.data) {
+            this._lastPayload = message.data;
+            this.notifyListeners(this._lastPayload);
+          } else if (message.type === 'delta' && this._lastPayload) {
+            const { meta, ...sectionRest } = (message as DeltaMessage).sections;
+            let updated = { ...this._lastPayload, ...sectionRest };
+            if (meta) {
+              updated = { ...updated, ...meta };
+            }
+            this._lastPayload = updated;
+            this.notifyListeners(this._lastPayload);
           } else if (message.type === 'connected') {
-            // Connection confirmation - fetch initial snapshot
-            void this.fetchOnce();
-          } else if (message.type === 'order_filled' || message.type === 'position_updated' || message.type === 'symbol_updated') {
-            // Partial update - refetch full snapshot
             void this.fetchOnce();
           }
         } catch (error) {
