@@ -12,12 +12,16 @@ Environment:
 - DISCOUNT_BANK_CREDIT_RATE: Credit interest rate (default: 0.03 = 3%)
 - DISCOUNT_BANK_DEBIT_RATE: Debit interest rate (default: 0.103 = 10.30%)
 - LEDGER_DATABASE_PATH: Path to ledger SQLite database (default: ledger.db in project root)
+
+Ledger DB is read-only from this service. Rust backend is the single writer (WAL mode).
+Position recording must go through the Rust backend API; direct writes are disabled.
 """
 
 from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import sqlite3
 import subprocess
@@ -215,18 +219,32 @@ def _get_ledger_database_path() -> Optional[Path]:
     return None
 
 
+def _open_ledger_readonly():
+    """Open ledger SQLite database in read-only mode (no writes; Rust is single writer)."""
+    db_path = _get_ledger_database_path()
+    if not db_path or not db_path.exists():
+        return None
+    try:
+        # mode=ro ensures we never write; safe with Rust backend WAL writer
+        uri = f"file:{db_path.as_posix()}?mode=ro"
+        conn = sqlite3.connect(uri, uri=True)
+        conn.row_factory = sqlite3.Row
+        return conn
+    except sqlite3.Error:
+        return None
+
+
 def _get_ledger_positions() -> Dict[str, Dict[str, Any]]:
     """Get existing positions from ledger database.
 
     Returns dict mapping symbol to position info with balance.
+    Uses read-only connection; Rust backend is the single writer.
     """
-    db_path = _get_ledger_database_path()
-    if not db_path or not db_path.exists():
+    conn = _open_ledger_readonly()
+    if not conn:
         return {}
 
     try:
-        conn = sqlite3.connect(str(db_path))
-        conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
         cursor.execute(
@@ -315,113 +333,18 @@ def _get_ledger_positions() -> Dict[str, Dict[str, Any]]:
 def _record_position_in_ledger(
     symbol: str, quantity: float, price: float, currency: str, broker: str
 ) -> bool:
-    """Record a position in the ledger database.
+    """Record a position in the ledger (disabled — Rust backend is the single writer).
 
-    Creates a transaction similar to Rust record_position_change().
-    Returns True if successful, False otherwise.
+    To record positions, use the Rust backend API. Direct SQLite writes from Python
+    would corrupt the WAL when the Rust ledger also runs. Returns False so callers
+    do not assume the write succeeded.
     """
-    db_path = _get_ledger_database_path()
-    if not db_path or not db_path.exists():
-        return False
-
-    try:
-        import uuid
-        from datetime import datetime, timezone
-
-        conn = sqlite3.connect(str(db_path))
-        cursor = conn.cursor()
-
-        # Calculate notional
-        notional = abs(quantity) * price
-
-        # Create transaction similar to Rust format
-        transaction_id = str(uuid.uuid4())
-        transaction_date = datetime.now(timezone.utc).isoformat()
-        description = (
-            f"Buy {int(abs(quantity))} {symbol}"
-            if quantity > 0
-            else f"Sell {int(abs(quantity))} {symbol}"
-        )
-
-        # Create postings
-        position_account_path = f"Assets:IBKR:{symbol}"
-        cash_account_path = "Assets:IBKR:Cash"
-
-        # Format amount with currency
-        amount_obj = {"amount": str(notional), "currency": currency}
-
-        postings = []
-        if quantity > 0:
-            # Buying: Debit position, Credit cash
-            postings.append(
-                {
-                    "account": position_account_path,
-                    "amount": amount_obj,
-                }
-            )
-            postings.append(
-                {
-                    "account": cash_account_path,
-                    "amount": {"amount": f"-{notional}", "currency": currency},
-                }
-            )
-        else:
-            # Selling: Debit cash, Credit position
-            postings.append(
-                {
-                    "account": cash_account_path,
-                    "amount": amount_obj,
-                }
-            )
-            postings.append(
-                {
-                    "account": position_account_path,
-                    "amount": {"amount": f"-{notional}", "currency": currency},
-                }
-            )
-
-        # Create transaction JSON
-        transaction_json = json.dumps(
-            {
-                "id": transaction_id,
-                "date": transaction_date,
-                "description": description,
-                "cleared": True,
-                "postings": postings,
-                "metadata": {
-                    "source": "position_import",
-                    "broker": broker,
-                    "symbol": symbol,
-                    "quantity": str(int(quantity)),
-                },
-            }
-        )
-
-        # Extract account paths for indexing
-        account_paths = f"{position_account_path}|{cash_account_path}"
-
-        # Insert transaction
-        cursor.execute(
-            """
-            INSERT INTO transactions (
-                id, date, description, cleared, transaction_json, account_paths
-            ) VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (
-                transaction_id,
-                transaction_date,
-                description,
-                1,  # cleared
-                transaction_json,
-                account_paths,
-            ),
-        )
-
-        conn.commit()
-        conn.close()
-        return True
-    except Exception:
-        return False
+    logging.warning(
+        "Ledger position write disabled: use Rust backend API for recording. "
+        "Attempted: %s qty=%s price=%s %s broker=%s",
+        symbol, quantity, price, currency, broker,
+    )
+    return False
 
 
 def _fetch_ibkr_positions(account_id: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -494,14 +417,15 @@ def _fetch_tradestation_positions(
 
 
 def _extract_bank_accounts_from_ledger() -> List[Dict[str, Any]]:
-    """Extract all bank accounts from ledger database."""
-    db_path = _get_ledger_database_path()
-    if not db_path or not db_path.exists():
+    """Extract all bank accounts from ledger database.
+
+    Uses read-only connection; Rust backend is the single writer.
+    """
+    conn = _open_ledger_readonly()
+    if not conn:
         return []
 
     try:
-        conn = sqlite3.connect(str(db_path))
-        conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
         # Query all transactions and extract account paths from postings

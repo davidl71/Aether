@@ -48,6 +48,9 @@ Used in **Claude Code** (not Cursor). Same roles as the Cursor `mcp_task` specia
 | test-writer | `.claude/agents/test-writer.md` | Catch2 tests for C++ |
 | trading-reviewer | `.claude/agents/trading-reviewer.md` | Financial correctness, safety, order/risk logic |
 | refactor | `.claude/agents/refactor.md` | Incremental refactoring with test verification |
+| build-investigator | `.claude/agents/build-investigator.md` | Diagnose and fix build/compile/linker/test failures |
+| docs-writer | `.claude/agents/docs-writer.md` | Write or update module docs, API docs, architecture notes |
+| exploration | `.claude/agents/exploration.md` | Map call graphs, trace data flow, answer architectural questions |
 
 ---
 
@@ -62,7 +65,9 @@ Used in **Claude Code** (not Cursor). Same roles as the Cursor `mcp_task` specia
 - **“Review this C++/trading code”** → `mcp_task` **code-reviewer** or **trading-reviewer** (or Claude agent in Claude Code).
 - **“Refactor X with tests passing each step”** → `mcp_task` **refactor** (or Claude refactor agent).
 - **“Write Catch2 tests for X”** → `mcp_task` **test-writer** (or Claude test-writer agent).
-- **“Search/explore the codebase”** → `mcp_task` **generalPurpose**.
-- **“List/update Todo2 tasks, docs health, scorecard”** → **exarp-go** MCP tools (with workingDirectory = project root).
+- **”Search/explore the codebase or trace data flow”** → Claude **exploration** agent or `mcp_task` **generalPurpose**.
+- **”Build or tests are broken”** → Claude **build-investigator** agent.
+- **”Write or update docs for a module”** → Claude **docs-writer** agent.
+- **”List/update Todo2 tasks, docs health, scorecard”** → **exarp-go** MCP tools (with workingDirectory = project root).
 
 See also: `docs/AI_EDITOR_SETUP.md`, `.cursor/rules/ai-editors-skills-subagents.mdc`, `.cursor/rules/ai-context-standards.mdc`.

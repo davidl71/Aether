@@ -5,14 +5,12 @@ Each provider is in its own module:
   _base.py          — abstract Provider + factory utilities
   _health.py        — BackendHealthAggregator
   _mock.py          — MockProvider
-  _rest.py          — RestProvider  (modify for api-gateway routing, task P1-B)
+  _rest.py          — RestProvider  (P1-B: routes via api-gateway :9000)
   _file.py          — FileProvider
   _nats.py          — NatsProvider
 
 MIGRATION PLAN:
-- RestProvider currently polls Python microservices directly on :8000-:8006 (1s interval).
-- Web frontend reads from Rust backend :8080 — two different data pipelines, potential divergence.
-- Target: Route RestProvider through the Go api-gateway (:8090).
+- RestProvider presets and default endpoint go through Go api-gateway (:9000); gateway proxies to Rust or Python backends.
   Task P1-B: exarp T-1772887221914991889 — docs/platform/IMPROVEMENT_PLAN.md
 - Longer term: Replace RestProvider with NatsProvider using NATS KV watch.
   Epic E1: exarp T-1772887222509770969 — ConnectRPC streaming

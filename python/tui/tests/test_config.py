@@ -15,8 +15,8 @@ from .. import config as config_module
 from ..config import TUIConfig, load_config, _apply_env_overrides, DEFAULT_BACKEND_PORTS, DEFAULT_TCP_BACKEND_PORTS, PRESET_REST_ENDPOINTS
 
 
-# Rest endpoint default in TUIConfig (IB service port)
-DEFAULT_REST_ENDPOINT = "http://localhost:8002/api/v1/snapshot"
+# Rest endpoint default in TUIConfig (P1-B: via api-gateway to Rust)
+DEFAULT_REST_ENDPOINT = "http://localhost:9000/api/v1/snapshot"
 
 
 def test_default_backend_ports_includes_all_services():
@@ -31,11 +31,13 @@ def test_default_backend_ports_includes_all_services():
 
 
 def test_preset_rest_endpoints():
-    """PRESET_REST_ENDPOINTS should map preset keys to snapshot URLs."""
+    """PRESET_REST_ENDPOINTS route through api-gateway (P1-B)."""
     assert "rest_ib" in PRESET_REST_ENDPOINTS
-    assert "8002" in PRESET_REST_ENDPOINTS["rest_ib"]
+    assert "rest_rust" in PRESET_REST_ENDPOINTS
+    assert "9000" in PRESET_REST_ENDPOINTS["rest_ib"]
+    assert "/api/v1/ib/" in PRESET_REST_ENDPOINTS["rest_ib"]
     assert "rest_alpaca" in PRESET_REST_ENDPOINTS
-    assert "8000" in PRESET_REST_ENDPOINTS["rest_alpaca"]
+    assert "/api/v1/alpaca/" in PRESET_REST_ENDPOINTS["rest_alpaca"]
 
 
 def test_default_tcp_backend_ports_includes_tws():

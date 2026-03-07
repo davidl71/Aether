@@ -6,18 +6,24 @@ contract.
 
 ## Single proto story
 
-Platform messages live in **`proto/messages.proto`**. TWS API vendor protos (when using GitHub layout) are built separately via `native/ibapi_cmake`. There is no gRPC server or backend proto in this repo; REST and NATS use the platform proto only.
+Platform messages live in **`proto/messages.proto`**. This is the single canonical cross-language contract — REST and NATS both use it. There is no gRPC server in this repo; do not add tonic/grpc dependencies.
+
+TWS API vendor protos under `native/third_party/tws-api/` are Interactive Brokers upstream files built separately. They are not part of the platform contract.
 
 ## Where to find schemas
 
-| Language   | Source                                           | Status |
-|------------|--------------------------------------------------|--------|
-| Protobuf   | `proto/messages.proto`                           | Canonical |
-| C++        | Generated at build by CMake (`native/generated/`); or run `./proto/generate.sh` | Active |
-| Rust       | `nats_adapter::proto::v1` (prost via `nats_adapter/build.rs`) | Active |
-| Go         | `agents/go/proto/v1/messages.pb.go` (run `proto/generate.sh`) | Active |
-| Python     | `python/generated/` (betterproto codegen, run `proto/generate.sh`) | Active |
-| TypeScript | `web/src/proto/messages.ts` (ts-proto codegen, run `proto/generate.sh` after `npm i -D ts-proto`) | Active |
+| Language   | Source                                           | Generated output | Status |
+|------------|--------------------------------------------------|------------------|--------|
+| Protobuf   | `proto/messages.proto`                           | (canonical source) | Canonical |
+| C++        | CMake at build; or `./proto/generate.sh`         | `native/generated/` | Active |
+| Rust       | `nats_adapter/build.rs` (prost, auto on `cargo build`) | `nats_adapter::proto::v1` (in-crate) | Active |
+| Go         | `./proto/generate.sh`                            | `agents/go/proto/v1/` | Active |
+| Python     | `./proto/generate.sh` (betterproto)              | `python/generated/` | Active |
+| TypeScript | `./proto/generate.sh` (ts-proto; `cd web && npm i -D ts-proto` first) | `web/src/proto/` | Active |
+
+> **Note on TWS API protos:** Proto files under `native/third_party/tws-api/` are
+> vendor-only (Interactive Brokers upstream). They are built separately and are not
+> part of the platform message contract. Do not import them from `proto/messages.proto`.
 
 ## Codegen
 
@@ -59,4 +65,6 @@ Payload bytes are a serialized inner message (`MarketDataEvent`, `StrategySignal
 
 ## Further reading
 
-- [awesome-grpc](https://github.com/grpc-ecosystem/awesome-grpc) — Curated gRPC/protobuf ecosystem
+- [`proto/messages.proto`](../../proto/messages.proto) — canonical message definitions
+- [`proto/generate.sh`](../../proto/generate.sh) — regenerate all language outputs
+- [`agents/backend/crates/nats_adapter/`](../../agents/backend/crates/nats_adapter/) — Rust prost codegen (build.rs)

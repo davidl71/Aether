@@ -23,9 +23,7 @@ class RestProvider(Provider):
     When the endpoint is an IB service (e.g. .../api/snapshot), also polls
     .../api/health and exposes get_health() for UI status (e.g. IB connected).
 
-    MIGRATION TARGET: Route through the Go api-gateway (:8090) instead of
-    polling Python microservices directly. Update DEFAULT_BASE_URL and route
-    paths per task P1-B (exarp T-1772887221914991889).
+    P1-B: Presets and default endpoint use api-gateway (config.py); gateway proxies to Rust or Python backends.
     """
 
     def __init__(

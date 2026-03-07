@@ -25,6 +25,10 @@ impl SqlitePersistence {
     /// # Arguments
     /// * `database_url` - SQLite database URL (e.g., "sqlite:ledger.db" or "sqlite::memory:")
     ///
+    /// WAL mode is enabled so multiple readers can coexist with one writer. This process
+    /// must be the only writer to the database; Python/integration layers should read via
+    /// REST API (GET /api/ledger/...) and never write directly to the same file.
+    ///
     /// # Example
     /// ```no_run
     /// use ledger::SqlitePersistence;

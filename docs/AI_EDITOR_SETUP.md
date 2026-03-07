@@ -1,5 +1,17 @@
 # AI Editors, Skills & Subagents Setup
 
+## First-time setup (required after cloning or switching machines)
+
+MCP configs are machine-local (paths differ between macOS and Linux). Generate them once:
+
+```bash
+./scripts/setup_mcp.sh
+```
+
+This writes `.cursor/mcp.json` and `opencode.json` for your machine. Both files are gitignored; `opencode.json.example` is the committed template.
+
+---
+
 This project is structured so **OpenCode**, **Claude Code**, **Cursor**,
 **Cursor/plugin skills**, and **subagents** (e.g. Cursor `mcp_task`, exarp-go,
 Claude custom agents) all use the same canonical context and commands.

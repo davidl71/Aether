@@ -9,16 +9,15 @@ Project Information:
   Status:      Active Development
 
 Task Status:
-  Total:           354
-  Pending:        16
-  Completed:      338
-  Completion:     95.5%
+  Total:           375
+  Pending:        35
+  Completed:      340
+  Completion:     90.7%
   Remaining Hours: 0.0
 
 Next Actions:
   1. Fix C++ toolchain - Xcode Command Line Tools headers (Priority: high)
-  2. Add box spread and yield curve messages to proto/messages.proto (Priority: medium)
-  3. Remove dead gRPC and backend proto (Priority: medium)
-  4. Review 191 Todo2 tasks that are not in shared TODO table (Priority: low)
-  5. Add memcached market data cache to C++ engine (Priority: low)
-
+  2. P1-A: Fix dual SQLite writers — enable WAL + single writer (Priority: high)
+  3. P1-B: Unify TUI and Web data backends via api-gateway (Priority: high)
+  4. P2-B: Decode NatsEnvelope protobuf in Go nats-questdb-bridge (Priority: high)
+  5. P2-A: WebSocket delta compression — only send changed sections (Priority: high)

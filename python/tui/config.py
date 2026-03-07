@@ -50,14 +50,17 @@ DEFAULT_TCP_BACKEND_PORTS: Dict[str, int] = {
     "tws": 7497,
 }
 
-# Preset REST provider types -> snapshot URL (for Setup "Switch backend" one-click choices)
-# rest_ib and rest_tws_gateway both use 8002 (IB REST service); 7497 is TWS/Gateway socket, no HTTP.
+# Api-gateway single entry point (P1-B). When gateway runs (default :9000), TUI and Web use same pipeline.
+DEFAULT_GATEWAY_BASE_URL: str = "http://localhost:9000"
+
+# Preset REST provider types -> snapshot URL. All presets route through api-gateway when gateway is running.
 PRESET_REST_ENDPOINTS: Dict[str, str] = {
-    "rest_ib": "http://localhost:8002/api/v1/snapshot",
-    "rest_tws_gateway": "http://localhost:8002/api/v1/snapshot",  # same as rest_ib; label emphasizes Gateway on 7497
-    "rest_alpaca": "http://localhost:8000/api/snapshot",
-    "rest_tradestation": "http://localhost:8001/api/snapshot",
-    "rest_tastytrade": "http://localhost:8005/api/v1/snapshot",
+    "rest_rust": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/snapshot",
+    "rest_ib": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/ib/snapshot",
+    "rest_tws_gateway": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/ib/snapshot",
+    "rest_alpaca": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/alpaca/snapshot",
+    "rest_tradestation": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/tradestation/snapshot",
+    "rest_tastytrade": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/tastytrade/snapshot",
 }
 
 
@@ -73,7 +76,7 @@ class TUIConfig:
     provider_type: str = (
         "mock"  # "mock", "rest", "file", "nats", "rest_ib", "rest_alpaca", ...
     )
-    rest_endpoint: str = "http://localhost:8002/api/v1/snapshot"  # IB service port (changed from 8080 Rust backend to 8002 IB)
+    rest_endpoint: str = "http://localhost:9000/api/v1/snapshot"  # P1-B: default via api-gateway (Rust)
     update_interval_ms: int = 1000
     refresh_rate_ms: int = 500
     rest_timeout_ms: int = 15000
