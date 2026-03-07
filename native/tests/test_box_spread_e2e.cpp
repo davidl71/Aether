@@ -353,10 +353,7 @@ TEST_CASE("Box Spread E2E - Real TWS execution (integration)",
   // Check if TWS is available
   bool connected = client->connect();
   if (!connected) {
-    WARN("TWS/Gateway not available - skipping real box spread E2E test");
-    WARN("To run this test, start TWS or IB Gateway with API enabled on port "
-         "7497");
-    return;
+    SKIP("TWS/Gateway not available. Start TWS or IB Gateway with API enabled on port 7497 to run this test.");
   }
 
   SECTION("Real box spread execution in dry-run") {

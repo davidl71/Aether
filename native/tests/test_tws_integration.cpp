@@ -274,10 +274,7 @@ TEST_CASE("TWS Integration - Real TWS connection (integration)",
   }
 
   if (!connected) {
-    WARN("TWS/Gateway not available - skipping real connection test");
-    WARN("To run this test, start TWS or IB Gateway with API enabled on port "
-         "7497");
-    return;
+    SKIP("TWS/Gateway not available. Start TWS or IB Gateway with API enabled on port 7497 to run this test.");
   }
 
   SECTION("Real connection establishment") {

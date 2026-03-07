@@ -45,14 +45,12 @@ void BoxSpreadBag::update_candle(double price, double volume) {
 }
 
 void BoxSpreadBag::add_candle_to_history() {
-  if (candle.period_start.time_since_epoch().count() > 0) {
-    candle_history.push_back(candle);
+  candle_history.push_back(candle);
 
-    // Keep only recent history (e.g., last 100 candles)
-    const size_t max_history = 100;
-    if (candle_history.size() > max_history) {
-      candle_history.erase(candle_history.begin());
-    }
+  // Keep only recent history (e.g., last 100 candles)
+  const size_t max_history = 100;
+  if (candle_history.size() > max_history) {
+    candle_history.erase(candle_history.begin());
   }
 }
 
@@ -73,9 +71,7 @@ double BoxSpreadBag::get_current_pnl() const {
   if (position.quantity == 0)
     return 0.0;
 
-  double current_value = market_data.get_mid_price() * position.quantity;
-  double cost_basis = position.cost_basis;
-  return current_value - cost_basis;
+  return (position.current_price - position.entry_price) * position.quantity;
 }
 
 double BoxSpreadBag::get_pnl_per_contract() const {
@@ -266,6 +262,7 @@ void BoxSpreadBagManager::update_bag_market_data(BoxSpreadBag &bag, double bid,
   bag.market_data.last = last > 0 ? last : bag.market_data.get_mid_price();
   bag.market_data.bid_size = bid_size;
   bag.market_data.ask_size = ask_size;
+  bag.market_data.spread = ask - bid;
   bag.market_data.timestamp = std::chrono::system_clock::now();
 
   // Update candle with mid price

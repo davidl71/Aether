@@ -22,7 +22,6 @@ set(TEST_SOURCES
     test_box_spread_bag.cpp
     eigen_integration_test.cpp
     test_convexity_calculator.cpp
-    test_alpaca_adapter.cpp
     test_path_validator.cpp
     test_loan_position.cpp
 )
@@ -78,8 +77,13 @@ endif()
 
 target_include_directories(box_spread_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/native/include
-    ${TWS_API_INCLUDE_DIR}
 )
+# When TWS_API_BUILD_VENDOR: prepend proto_generated so system-protobuf .pb.h
+# files shadow the vendored ones (same pattern as ib_box_spread target).
+if(TWS_API_BUILD_VENDOR AND DEFINED TWS_API_EXTERNAL_BINARY_DIR)
+    target_include_directories(box_spread_tests PRIVATE "${TWS_API_EXTERNAL_BINARY_DIR}/proto_generated")
+endif()
+target_include_directories(box_spread_tests PRIVATE ${TWS_API_INCLUDE_DIR})
 
 # Platform-specific protobuf for tests (TWS API dependency)
 if(APPLE)
@@ -194,6 +198,12 @@ elseif(UNIX)
     target_link_libraries(box_spread_tests PRIVATE pthread)
 endif()
 
+# libuuid needed by nats_client.cpp
+find_library(UUID_LIBRARY uuid)
+if(UUID_LIBRARY)
+    target_link_libraries(box_spread_tests PRIVATE ${UUID_LIBRARY})
+endif()
+
 # Link with the same object files as the main executable
 # (This avoids code duplication)
 # Note: When building from repo root, use native/ prefix
@@ -206,10 +216,24 @@ endif()
 target_sources(box_spread_tests PRIVATE
     ${_native_src_dir}/config_manager.cpp
     ${_native_src_dir}/path_validator.cpp
+    ${_native_src_dir}/types.cpp
+    ${_native_src_dir}/tws_conversions.cpp
+    ${_native_src_dir}/tws_connection.cpp
+    ${_native_src_dir}/tws_market_data.cpp
+    ${_native_src_dir}/tws_orders.cpp
+    ${_native_src_dir}/tws_positions.cpp
+    ${_native_src_dir}/tws_contracts.cpp
+    ${_native_src_dir}/tws_error_codes.cpp
+    ${_native_src_dir}/connection_utils.cpp
+    ${_native_src_dir}/pcap_capture.cpp
     ${_native_src_dir}/tws_client.cpp
     ${_native_src_dir}/market_hours.cpp
     ${_native_src_dir}/rate_limiter.cpp
     ${_native_src_dir}/hedge_manager.cpp
+    ${_native_src_dir}/greeks_calculator.cpp
+    ${_native_src_dir}/margin_calculator.cpp
+    ${_native_src_dir}/nats_client.cpp
+    ${_native_src_dir}/cache_client.cpp
     ${_native_src_dir}/strategies/box_spread/box_spread_bag.cpp
     ${_native_src_dir}/convexity_calculator.cpp
     ${_native_src_dir}/loan_position.cpp
@@ -224,6 +248,11 @@ if(NOT USE_BOX_SPREAD_CPP_LIB)
         ${_native_src_dir}/order_manager.cpp
         ${_native_src_dir}/risk_calculator.cpp
     )
+endif()
+
+# Alpaca adapter test requires box_spread_cpp library (box_spread:: namespace)
+if(USE_BOX_SPREAD_CPP_LIB)
+    target_sources(box_spread_tests PRIVATE test_alpaca_adapter.cpp)
 endif()
 
 # Link to extracted box-spread-cpp library if enabled

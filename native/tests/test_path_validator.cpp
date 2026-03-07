@@ -14,18 +14,18 @@ TEST_CASE("PathValidator - Basic validation", "[security][path_validator]") {
   PathValidator validator(allowed_paths);
 
   SECTION("Valid path within allowed directory") {
-    auto result = validator.validate_path("allowed_dir/test.txt");
+    auto result = validator.validate_path(std::string{"allowed_dir/test.txt"});
     REQUIRE(result.has_value());
     REQUIRE(result->filename() == "test.txt");
   }
 
   SECTION("Invalid path with directory traversal") {
-    auto result = validator.validate_path("../outside.txt");
+    auto result = validator.validate_path(std::string{"../outside.txt"});
     REQUIRE_FALSE(result.has_value());
   }
 
   SECTION("Invalid path with encoded traversal") {
-    auto result = validator.validate_path("test%2e%2e%2foutside.txt");
+    auto result = validator.validate_path(std::string{"test%2e%2e%2foutside.txt"});
     REQUIRE_FALSE(result.has_value());
   }
 }
@@ -58,7 +58,7 @@ TEST_CASE("PathValidator - Default validator", "[security][path_validator]") {
   auto validator = create_default_path_validator();
 
   SECTION("Allows current directory") {
-    auto result = validator.validate_path("test.txt");
+    auto result = validator.validate_path(std::string{"test.txt"});
     // Should allow if within current directory
     // Result depends on current working directory
     // Just verify it doesn't crash

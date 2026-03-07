@@ -19,6 +19,10 @@
 #include "OrderCancel.h"
 #include "OrderState.h"
 
+// TWS API v9.79+ dropped TickerId/OrderId typedefs; provide them for source compatibility.
+using TickerId = int;
+using OrderId  = int;
+
 #include <algorithm>
 #include <arpa/inet.h>
 #include <atomic>
@@ -171,7 +175,7 @@ types::OptionContract make_mock_contract(const std::string &symbol,
                                          types::OptionType type) {
   types::OptionContract contract;
   contract.symbol = symbol.empty() ? "SPY" : symbol;
-  contract.expiry = expiry.empty() ? "20251219" : expiry;
+  contract.expiry = expiry.empty() ? "20271219" : expiry;
   contract.strike = strike;
   contract.type = type;
   contract.exchange = "SMART";
@@ -562,9 +566,9 @@ public:
           ports_str += ", ";
         ports_str += std::to_string(port_candidates[i]);
       }
-      spdlog::error("No open ports found on {}. Checked ports: {}",
+      spdlog::warn("No open ports found on {}. Checked ports: {}",
                     config_.host, ports_str);
-      spdlog::error(
+      spdlog::warn(
           "Please ensure TWS or IB Gateway is running and API is enabled");
       state_ = ConnectionState::Error;
       return false;
@@ -673,41 +677,41 @@ public:
           if (last_error_code_ == 502) {
             spdlog::error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
                           "━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            spdlog::error(
+            spdlog::warn(
                 "Connection rejected by TWS/Gateway (error 502) for {}:{}",
                 config_.host, port);
-            spdlog::error("Error message: {}", last_error_message_);
-            spdlog::error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            spdlog::warn("Error message: {}", last_error_message_);
+            spdlog::warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
                           "━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            spdlog::error("Possible causes:");
-            spdlog::error("  1. API not enabled in TWS/Gateway");
-            spdlog::error(
+            spdlog::warn("Possible causes:");
+            spdlog::warn("  1. API not enabled in TWS/Gateway");
+            spdlog::warn(
                 "     → Go to: File → Global Configuration → API → Settings");
-            spdlog::error("     → Enable: 'Enable ActiveX and Socket Clients'");
-            spdlog::error("  2. IP address not trusted (127.0.0.1 should be "
+            spdlog::warn("     → Enable: 'Enable ActiveX and Socket Clients'");
+            spdlog::warn("  2. IP address not trusted (127.0.0.1 should be "
                           "trusted by default)");
-            spdlog::error("     → Check 'Trusted IPs' in API settings");
-            spdlog::error("  3. TWS/Gateway not fully started");
-            spdlog::error(
+            spdlog::warn("     → Check 'Trusted IPs' in API settings");
+            spdlog::warn("  3. TWS/Gateway not fully started");
+            spdlog::warn(
                 "     → Wait for TWS/Gateway to fully load before connecting");
-            spdlog::error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            spdlog::warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
                           "━━━━━━━━━━━━━━━━━━━━━━━━━━");
             client_.eDisconnect();
             continue;
           } else if (last_error_code_ == 162 || last_error_code_ == 200) {
-            spdlog::error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            spdlog::warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
                           "━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            spdlog::error("Authentication required (error {})",
+            spdlog::warn("Authentication required (error {})",
                           last_error_code_);
-            spdlog::error("Error message: {}", last_error_message_);
-            spdlog::error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            spdlog::warn("Error message: {}", last_error_message_);
+            spdlog::warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
                           "━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            spdlog::error(
+            spdlog::warn(
                 "TWS/Gateway is waiting for you to accept the connection:");
-            spdlog::error(
+            spdlog::warn(
                 "  → Check TWS/Gateway window for a connection prompt");
-            spdlog::error("  → Click 'Accept' or 'OK' to allow the connection");
-            spdlog::error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            spdlog::warn("  → Click 'Accept' or 'OK' to allow the connection");
+            spdlog::warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
                           "━━━━━━━━━━━━━━━━━━━━━━━━━━");
             client_.eDisconnect();
             continue;
@@ -803,7 +807,7 @@ public:
     }
 
     if (!connected) {
-      spdlog::error("Failed to connect to any open port on {}", config_.host);
+      spdlog::warn("Failed to connect to any open port on {}", config_.host);
       if (!open_ports.empty()) {
         std::string tried_ports;
         for (size_t i = 0; i < open_ports.size(); ++i) {
@@ -811,16 +815,16 @@ public:
             tried_ports += ", ";
           tried_ports += std::to_string(open_ports[i]);
         }
-        spdlog::error("Attempted connection to open port(s): {}", tried_ports);
-        spdlog::error("Possible causes:");
-        spdlog::error("  - API not enabled in TWS/Gateway settings");
-        spdlog::error(
+        spdlog::warn("Attempted connection to open port(s): {}", tried_ports);
+        spdlog::warn("Possible causes:");
+        spdlog::warn("  - API not enabled in TWS/Gateway settings");
+        spdlog::warn(
             "  - Authentication required (check TWS/Gateway for prompts)");
-        spdlog::error("  - Client ID conflict (try a different client_id)");
-        spdlog::error("  - Firewall blocking connection");
-        spdlog::error("  - Wrong port type (paper vs live trading mismatch)");
+        spdlog::warn("  - Client ID conflict (try a different client_id)");
+        spdlog::warn("  - Firewall blocking connection");
+        spdlog::warn("  - Wrong port type (paper vs live trading mismatch)");
       }
-      spdlog::error("Port reference: TWS Paper=7497, TWS Live=7496, IB Gateway "
+      spdlog::warn("Port reference: TWS Paper=7497, TWS Live=7496, IB Gateway "
                     "Paper=4002, IB Gateway Live=4001");
       state_ = ConnectionState::Error;
       return false;
@@ -928,9 +932,9 @@ public:
       spdlog::debug("Requested next valid order ID via reqIds(-1), waiting for "
                     "nextValidId callback...");
     } catch (const std::exception &e) {
-      spdlog::error("Exception in connectAck: {}", e.what());
+      spdlog::warn("Exception in connectAck: {}", e.what());
     } catch (...) {
-      spdlog::error("Unknown exception in connectAck");
+      spdlog::warn("Unknown exception in connectAck");
     }
   }
 
@@ -960,9 +964,9 @@ public:
         attempt_reconnect_with_backoff();
       }
     } catch (const std::exception &e) {
-      spdlog::error("Exception in connectionClosed: {}", e.what());
+      spdlog::warn("Exception in connectionClosed: {}", e.what());
     } catch (...) {
-      spdlog::error("Unknown exception in connectionClosed");
+      spdlog::warn("Unknown exception in connectionClosed");
     }
   }
 
@@ -1012,10 +1016,10 @@ public:
         spdlog::warn("⚠️  managedAccounts received but account list is empty");
       }
     } catch (const std::exception &e) {
-      spdlog::error("Exception in managedAccounts: {} (accountsList: {})",
+      spdlog::warn("Exception in managedAccounts: {} (accountsList: {})",
                     e.what(), accountsList);
     } catch (...) {
-      spdlog::error("Unknown exception in managedAccounts");
+      spdlog::warn("Unknown exception in managedAccounts");
     }
   }
 
@@ -1089,10 +1093,10 @@ public:
       connection_cv_.notify_all();
       spdlog::info("✓ Connection fully established and ready");
     } catch (const std::exception &e) {
-      spdlog::error("Exception in nextValidId: {} (orderId: {})", e.what(),
+      spdlog::warn("Exception in nextValidId: {} (orderId: {})", e.what(),
                     orderId);
     } catch (...) {
-      spdlog::error("Unknown exception in nextValidId (orderId: {})", orderId);
+      spdlog::warn("Unknown exception in nextValidId (orderId: {})", orderId);
     }
   }
 
@@ -1181,10 +1185,10 @@ public:
         market_data_promises_.erase(tickerId);
       }
     } catch (const std::exception &e) {
-      spdlog::error("Exception in tickPrice(tickerId={}, field={}): {}",
+      spdlog::warn("Exception in tickPrice(tickerId={}, field={}): {}",
                     tickerId, static_cast<int>(field), e.what());
     } catch (...) {
-      spdlog::error("Unknown exception in tickPrice(tickerId={}, field={})",
+      spdlog::warn("Unknown exception in tickPrice(tickerId={}, field={})",
                     tickerId, static_cast<int>(field));
     }
   }
@@ -1222,10 +1226,10 @@ public:
         break;
       }
     } catch (const std::exception &e) {
-      spdlog::error("Exception in tickSize(tickerId={}, field={}): {}",
+      spdlog::warn("Exception in tickSize(tickerId={}, field={}): {}",
                     tickerId, static_cast<int>(field), e.what());
     } catch (...) {
-      spdlog::error("Unknown exception in tickSize(tickerId={}, field={})",
+      spdlog::warn("Unknown exception in tickSize(tickerId={}, field={})",
                     tickerId, static_cast<int>(field));
     }
   }
@@ -1258,11 +1262,11 @@ public:
         market_data.theta = theta;
       }
     } catch (const std::exception &e) {
-      spdlog::error(
+      spdlog::warn(
           "Exception in tickOptionComputation(tickerId={}, type={}): {}",
           tickerId, static_cast<int>(tickType), e.what());
     } catch (...) {
-      spdlog::error(
+      spdlog::warn(
           "Unknown exception in tickOptionComputation(tickerId={}, type={})",
           tickerId, static_cast<int>(tickType));
     }
@@ -1308,10 +1312,10 @@ public:
         }
       }
     } catch (const std::exception &e) {
-      spdlog::error("Exception in orderStatus(orderId={}, status={}): {}",
+      spdlog::warn("Exception in orderStatus(orderId={}, status={}): {}",
                     orderId, status, e.what());
     } catch (...) {
-      spdlog::error("Unknown exception in orderStatus(orderId={}, status={})",
+      spdlog::warn("Unknown exception in orderStatus(orderId={}, status={})",
                     orderId, status);
     }
   }
@@ -1361,10 +1365,10 @@ public:
                       orderId);
       }
     } catch (const std::exception &e) {
-      spdlog::error("Exception in openOrder(orderId={}, symbol={}): {}",
+      spdlog::warn("Exception in openOrder(orderId={}, symbol={}): {}",
                     orderId, contract.symbol, e.what());
     } catch (...) {
-      spdlog::error("Unknown exception in openOrder(orderId={}, symbol={})",
+      spdlog::warn("Unknown exception in openOrder(orderId={}, symbol={})",
                     orderId, contract.symbol);
     }
   }
@@ -1375,9 +1379,9 @@ public:
       // All open orders have been sent via openOrder() callbacks
       // This is useful for order recovery after reconnection
     } catch (const std::exception &e) {
-      spdlog::error("Exception in openOrderEnd: {}", e.what());
+      spdlog::warn("Exception in openOrderEnd: {}", e.what());
     } catch (...) {
-      spdlog::error("Unknown exception in openOrderEnd");
+      spdlog::warn("Unknown exception in openOrderEnd");
     }
   }
 
@@ -1397,10 +1401,10 @@ public:
         order.last_update = std::chrono::system_clock::now();
       }
     } catch (const std::exception &e) {
-      spdlog::error("Exception in execDetails: {} (reqId: {}, orderId: {})",
+      spdlog::warn("Exception in execDetails: {} (reqId: {}, orderId: {})",
                     e.what(), reqId, execution.orderId);
     } catch (...) {
-      spdlog::error("Unknown exception in execDetails (reqId: {}, orderId: {})",
+      spdlog::warn("Unknown exception in execDetails (reqId: {}, orderId: {})",
                     reqId, execution.orderId);
     }
   }
@@ -1409,10 +1413,10 @@ public:
     try {
       spdlog::debug("Execution details end for reqId={}", reqId);
     } catch (const std::exception &e) {
-      spdlog::error("Exception in execDetailsEnd: {} (reqId: {})", e.what(),
+      spdlog::warn("Exception in execDetailsEnd: {} (reqId: {})", e.what(),
                     reqId);
     } catch (...) {
-      spdlog::error("Unknown exception in execDetailsEnd (reqId: {})", reqId);
+      spdlog::warn("Unknown exception in execDetailsEnd (reqId: {})", reqId);
     }
   }
 
@@ -1450,10 +1454,10 @@ public:
         positions_.push_back(pos);
       }
     } catch (const std::exception &e) {
-      spdlog::error("Exception in position: {} (account: {}, symbol: {})",
+      spdlog::warn("Exception in position: {} (account: {}, symbol: {})",
                     e.what(), account, contract.symbol);
     } catch (...) {
-      spdlog::error("Unknown exception in position (account: {}, symbol: {})",
+      spdlog::warn("Unknown exception in position (account: {}, symbol: {})",
                     account, contract.symbol);
     }
   }
@@ -1472,9 +1476,9 @@ public:
         }
       }
     } catch (const std::exception &e) {
-      spdlog::error("Exception in positionEnd: {}", e.what());
+      spdlog::warn("Exception in positionEnd: {}", e.what());
     } catch (...) {
-      spdlog::error("Unknown exception in positionEnd");
+      spdlog::warn("Unknown exception in positionEnd");
     }
   }
 
@@ -1509,11 +1513,11 @@ public:
       account_info_.account_id = accountName;
       account_info_.timestamp = std::chrono::system_clock::now();
     } catch (const std::exception &e) {
-      spdlog::error(
+      spdlog::warn(
           "Exception in updateAccountValue: {} (key: {}, account: {})",
           e.what(), key, accountName);
     } catch (...) {
-      spdlog::error(
+      spdlog::warn(
           "Unknown exception in updateAccountValue (key: {}, account: {})", key,
           accountName);
     }
@@ -1580,11 +1584,11 @@ public:
                       contract.symbol);
       }
     } catch (const std::exception &e) {
-      spdlog::error(
+      spdlog::warn(
           "Exception in updatePortfolio: {} (symbol: {}, account: {})",
           e.what(), contract.symbol, accountName);
     } catch (...) {
-      spdlog::error(
+      spdlog::warn(
           "Unknown exception in updatePortfolio (symbol: {}, account: {})",
           contract.symbol, accountName);
     }
@@ -1627,7 +1631,7 @@ public:
 
       // Check for connection failure errors (502 and other connection errors)
       if (errorCode == 502 || (errorCode >= 500 && errorCode < 600)) {
-        spdlog::error("TWS connection error {}: {}", errorCode, errorString);
+        spdlog::warn("TWS connection error {}: {}", errorCode, errorString);
         connected_ = false;
         state_ = ConnectionState::Error;
         connection_cv_.notify_all(); // Wake up waiting connection attempt
@@ -1635,13 +1639,13 @@ public:
 
       // Check for authentication/authorization errors
       if (errorCode == 162 || errorCode == 200) {
-        spdlog::error("TWS authentication/authorization error {}: {}",
+        spdlog::warn("TWS authentication/authorization error {}: {}",
                       errorCode, errorString);
-        spdlog::error("This usually means:");
-        spdlog::error(
+        spdlog::warn("This usually means:");
+        spdlog::warn(
             "  - TWS/Gateway is waiting for you to accept the connection");
-        spdlog::error("  - Check TWS/Gateway window for a connection prompt");
-        spdlog::error("  - Ensure 'Enable ActiveX and Socket Clients' is "
+        spdlog::warn("  - Check TWS/Gateway window for a connection prompt");
+        spdlog::warn("  - Ensure 'Enable ActiveX and Socket Clients' is "
                       "enabled in API settings");
         connected_ = false;
         state_ = ConnectionState::Error;
@@ -1733,14 +1737,14 @@ public:
       } else {
         // Errors (< 1100)
         if (!context.empty()) {
-          spdlog::error("[IB Error {}] ID: {} | {} | Context: {}", errorCode,
+          spdlog::warn("[IB Error {}] ID: {} | {} | Context: {}", errorCode,
                         id, errorString, context);
         } else {
-          spdlog::error("[IB Error {}] ID: {} | {}", errorCode, id,
+          spdlog::warn("[IB Error {}] ID: {} | {}", errorCode, id,
                         errorString);
         }
         if (!guidance.empty()) {
-          spdlog::error("  → {}", guidance);
+          spdlog::warn("  → {}", guidance);
         }
       }
 
@@ -1771,10 +1775,10 @@ public:
         }
       }
     } catch (const std::exception &e) {
-      spdlog::error("Exception in error callback: {} (errorCode: {}, id: {})",
+      spdlog::warn("Exception in error callback: {} (errorCode: {}, id: {})",
                     e.what(), errorCode, id);
     } catch (...) {
-      spdlog::error(
+      spdlog::warn(
           "Unknown exception in error callback (errorCode: {}, id: {})",
           errorCode, id);
     }
@@ -1815,7 +1819,7 @@ public:
     }
     // Check rate limits
     if (!rate_limiter_.check_message_rate()) {
-      spdlog::error("Rate limit exceeded: Cannot request market data for {}",
+      spdlog::warn("Rate limit exceeded: Cannot request market data for {}",
                     contract.to_string());
       return -1; // Invalid request ID
     }
@@ -1824,7 +1828,7 @@ public:
 
     // Check market data line limit
     if (!rate_limiter_.can_start_market_data(request_id)) {
-      spdlog::error("Market data line limit exceeded: Cannot subscribe to {}",
+      spdlog::warn("Market data line limit exceeded: Cannot subscribe to {}",
                     contract.to_string());
       return -1; // Invalid request ID
     }
@@ -1911,6 +1915,19 @@ public:
   std::optional<types::MarketData>
   request_market_data_sync(const types::OptionContract &contract,
                            int timeout_ms) {
+    // In mock mode, return simulated data immediately
+    if (mock_mode_) {
+      types::MarketData mock_data;
+      mock_data.bid = 9.85;
+      mock_data.ask = 9.90;
+      mock_data.last = 9.875;
+      mock_data.bid_size = 10;
+      mock_data.ask_size = 10;
+      mock_data.volume = 100.0;
+      mock_data.timestamp = std::chrono::system_clock::now();
+      return mock_data;
+    }
+
     int request_id = next_request_id_++;
 
     // Create promise for synchronous wait
@@ -1928,7 +1945,7 @@ public:
 
     // Check rate limits
     if (!rate_limiter_.check_message_rate()) {
-      spdlog::error("Rate limit exceeded: Cannot request market data "
+      spdlog::warn("Rate limit exceeded: Cannot request market data "
                     "synchronously for {}",
                     contract.to_string());
       return std::nullopt;
@@ -1936,7 +1953,7 @@ public:
 
     // Check market data line limit
     if (!rate_limiter_.can_start_market_data(request_id)) {
-      spdlog::error("Market data line limit exceeded: Cannot subscribe to {}",
+      spdlog::warn("Market data line limit exceeded: Cannot subscribe to {}",
                     contract.to_string());
       return std::nullopt;
     }
@@ -1990,8 +2007,8 @@ public:
 
     if (mock_mode_) {
       std::vector<types::OptionContract> contracts;
-      std::vector<std::string> expiries = {expiry.empty() ? "20251219" : expiry,
-                                           "20260116"};
+      std::vector<std::string> expiries = {expiry.empty() ? "20271219" : expiry,
+                                           "20271226"};
       std::vector<double> strikes = {100.0, 105.0, 110.0};
       for (const auto &exp : expiries) {
         for (double strike : strikes) {
@@ -2005,13 +2022,13 @@ public:
     }
 
     if (!is_connected()) {
-      spdlog::error("Cannot request option chain: Not connected to TWS");
+      spdlog::warn("Cannot request option chain: Not connected to TWS");
       return {};
     }
 
     // Check rate limits
     if (!rate_limiter_.check_message_rate()) {
-      spdlog::error("Rate limit exceeded: Cannot request option chain for {}",
+      spdlog::warn("Rate limit exceeded: Cannot request option chain for {}",
                     symbol);
       return {};
     }
@@ -2185,13 +2202,13 @@ public:
     }
 
     if (!is_connected()) {
-      spdlog::error("Cannot request contract details: Not connected to TWS");
+      spdlog::warn("Cannot request contract details: Not connected to TWS");
       return -1;
     }
 
     // Check rate limits
     if (!rate_limiter_.check_message_rate()) {
-      spdlog::error(
+      spdlog::warn(
           "Rate limit exceeded: Cannot request contract details for {}",
           contract.to_string());
       return -1;
@@ -2233,13 +2250,13 @@ public:
     }
 
     if (!is_connected()) {
-      spdlog::error("Cannot request contract details: Not connected to TWS");
+      spdlog::warn("Cannot request contract details: Not connected to TWS");
       return -1;
     }
 
     // Check rate limits
     if (!rate_limiter_.check_message_rate()) {
-      spdlog::error("Rate limit exceeded: Cannot request contract details "
+      spdlog::warn("Rate limit exceeded: Cannot request contract details "
                     "synchronously for {}",
                     contract.to_string());
       return -1;
@@ -2335,7 +2352,7 @@ public:
     }
     // Check rate limits
     if (!rate_limiter_.check_message_rate()) {
-      spdlog::error("Rate limit exceeded: Cannot place order for {}",
+      spdlog::warn("Rate limit exceeded: Cannot place order for {}",
                     contract.to_string());
       return -1; // Invalid order ID
     }
@@ -2392,7 +2409,7 @@ public:
 
     if (mock_mode_) {
       if (contracts.empty()) {
-        spdlog::error("Combo order: Cannot place empty combo");
+        spdlog::warn("Combo order: Cannot place empty combo");
         return -1;
       }
       int order_id = next_order_id_++;
@@ -2439,7 +2456,7 @@ public:
         contracts.size() != quantities.size() ||
         contracts.size() != contract_ids.size() ||
         contracts.size() != limit_prices.size()) {
-      spdlog::error(
+      spdlog::warn(
           "Combo order: Mismatched vector sizes (contracts: {}, actions: {}, "
           "quantities: {}, contract_ids: {}, prices: {})",
           contracts.size(), actions.size(), quantities.size(),
@@ -2448,13 +2465,13 @@ public:
     }
 
     if (contracts.empty()) {
-      spdlog::error("Combo order: Cannot place empty combo");
+      spdlog::warn("Combo order: Cannot place empty combo");
       return -1;
     }
 
     // Check rate limits
     if (!rate_limiter_.check_message_rate()) {
-      spdlog::error("Rate limit exceeded: Cannot place combo order");
+      spdlog::warn("Rate limit exceeded: Cannot place combo order");
       return -1;
     }
 
@@ -2659,7 +2676,7 @@ public:
     }
     // Check rate limits
     if (!rate_limiter_.check_message_rate()) {
-      spdlog::error("Rate limit exceeded: Cannot request positions");
+      spdlog::warn("Rate limit exceeded: Cannot request positions");
       return;
     }
 
@@ -2690,7 +2707,7 @@ public:
 
     // Check rate limits
     if (!rate_limiter_.check_message_rate()) {
-      spdlog::error(
+      spdlog::warn(
           "Rate limit exceeded: Cannot request positions synchronously");
       return {};
     }
@@ -2775,7 +2792,7 @@ public:
     }
     // Check rate limits
     if (!rate_limiter_.check_message_rate()) {
-      spdlog::error("Rate limit exceeded: Cannot request account updates");
+      spdlog::warn("Rate limit exceeded: Cannot request account updates");
       return;
     }
 
@@ -2805,7 +2822,7 @@ public:
 
     // Check rate limits
     if (!rate_limiter_.check_message_rate()) {
-      spdlog::error(
+      spdlog::warn(
           "Rate limit exceeded: Cannot request account info synchronously");
       return std::nullopt;
     }
@@ -3044,7 +3061,7 @@ private:
       positions_.clear();
       types::Position pos;
       pos.contract =
-          make_mock_contract("SPY", "20251219", 500.0, types::OptionType::Call);
+          make_mock_contract("SPY", "20271219", 500.0, types::OptionType::Call);
       pos.quantity = 1;
       pos.avg_price = 2.50;
       pos.current_price = 2.60;
@@ -3201,11 +3218,11 @@ private:
           }
         } catch (const std::exception &e) {
           error_count++;
-          spdlog::error("Error processing messages in EReader thread: {}",
+          spdlog::warn("Error processing messages in EReader thread: {}",
                         e.what());
-          spdlog::error("  → Message count: {}, Error count: {}", message_count,
+          spdlog::warn("  → Message count: {}, Error count: {}", message_count,
                         error_count);
-          spdlog::error("  → Socket connected: {}",
+          spdlog::warn("  → Socket connected: {}",
                         client_.isConnected() ? "yes" : "no");
 
           // If socket disconnects due to error, exit thread
@@ -3215,10 +3232,10 @@ private:
           }
         } catch (...) {
           error_count++;
-          spdlog::error("Unknown exception in EReader thread (message count: "
+          spdlog::warn("Unknown exception in EReader thread (message count: "
                         "{}, error count: {})",
                         message_count, error_count);
-          spdlog::error("  → Socket connected: {}",
+          spdlog::warn("  → Socket connected: {}",
                         client_.isConnected() ? "yes" : "no");
 
           if (!client_.isConnected()) {
@@ -3252,7 +3269,7 @@ private:
                                 : 10; // Default max retries
 
     if (attempts >= max_retries) {
-      spdlog::error(
+      spdlog::warn(
           "Max reconnection attempts ({}) reached. Stopping auto-reconnect.",
           max_retries);
       state_ = ConnectionState::Error;
@@ -3321,7 +3338,7 @@ private:
 
           // Verify socket is still connected
           if (!client_.isConnected()) {
-            spdlog::error("Socket disconnected. Triggering reconnection...");
+            spdlog::warn("Socket disconnected. Triggering reconnection...");
             connected_ = false;
             state_ = ConnectionState::Error;
             connectionClosed(); // This will trigger reconnection if enabled
@@ -3410,9 +3427,9 @@ private:
         }
         // Check for authentication/authorization errors (162, 200)
         if (last_error_code_ == 162 || last_error_code_ == 200) {
-          spdlog::error("TWS authentication error {} detected: {}",
+          spdlog::warn("TWS authentication error {} detected: {}",
                         last_error_code_, last_error_message_);
-          spdlog::error("TWS is likely waiting for you to accept the "
+          spdlog::warn("TWS is likely waiting for you to accept the "
                         "connection in the TWS/Gateway window");
           return false;
         }
@@ -3662,10 +3679,10 @@ private:
         promise->set_value(conId);
       }
     } catch (const std::exception &e) {
-      spdlog::error("Exception in contractDetails(reqId={}): {}", reqId,
+      spdlog::warn("Exception in contractDetails(reqId={}): {}", reqId,
                     e.what());
     } catch (...) {
-      spdlog::error("Unknown exception in contractDetails(reqId={})", reqId);
+      spdlog::warn("Unknown exception in contractDetails(reqId={})", reqId);
     }
   }
 
@@ -3696,10 +3713,10 @@ private:
       // Clean up result
       contract_details_results_.erase(reqId);
     } catch (const std::exception &e) {
-      spdlog::error("Exception in contractDetailsEnd(reqId={}): {}", reqId,
+      spdlog::warn("Exception in contractDetailsEnd(reqId={}): {}", reqId,
                     e.what());
     } catch (...) {
-      spdlog::error("Unknown exception in contractDetailsEnd(reqId={})", reqId);
+      spdlog::warn("Unknown exception in contractDetailsEnd(reqId={})", reqId);
     }
   }
   void accountSummary(int reqId, const std::string &account,
@@ -3754,11 +3771,11 @@ private:
                     option_chain_expirations_[reqId].size(),
                     option_chain_strikes_[reqId].size(), reqId);
     } catch (const std::exception &e) {
-      spdlog::error(
+      spdlog::warn(
           "Exception in securityDefinitionOptionalParameter(reqId={}): {}",
           reqId, e.what());
     } catch (...) {
-      spdlog::error(
+      spdlog::warn(
           "Unknown exception in securityDefinitionOptionalParameter(reqId={})",
           reqId);
     }
@@ -3816,7 +3833,7 @@ private:
         option_chain_promises_[reqId]->set_value(contracts);
       }
     } catch (const std::exception &e) {
-      spdlog::error(
+      spdlog::warn(
           "Exception in securityDefinitionOptionalParameterEnd(reqId={}): {}",
           reqId, e.what());
       // Fulfill promise with empty vector on error
@@ -3826,7 +3843,7 @@ private:
             std::vector<types::OptionContract>());
       }
     } catch (...) {
-      spdlog::error("Unknown exception in "
+      spdlog::warn("Unknown exception in "
                     "securityDefinitionOptionalParameterEnd(reqId={})",
                     reqId);
       std::lock_guard<std::mutex> lock(option_chain_mutex_);
@@ -3903,6 +3920,109 @@ private:
                      const std::string &timeZone,
                      const std::vector<HistoricalSession> &sessions) override {}
   void userInfo(int reqId, const std::string &whiteBrandingId) override {}
+
+  // ========================================================================
+  // Proto EWrapper Callbacks — structured telemetry (Category A: logging only)
+  // EDecoder fires proto callbacks BEFORE the matching legacy callback; never
+  // store state here. Guard with log_raw_messages to avoid trace spam in prod.
+  // ========================================================================
+
+#if !defined(USE_WIN_DLL)
+  void tickPriceProtoBuf(const protobuf::TickPrice &proto) override
+  {
+    if (!config_.log_raw_messages) { return; }
+    spdlog::trace("[PROTO] ← TickPrice reqId={} type={} price={} size={}",
+                  proto.reqid(), proto.ticktype(), proto.price(), proto.size());
+    // Legacy tickPrice() fires immediately after — no data processing here.
+    // proto.size() carries bid/ask size bundled with the price tick; extract
+    // via DecimalFunctions::stringToDecimal(proto.size()) if needed before
+    // the synthetic tickSize fires.
+  }
+
+  void tickOptionComputationProtoBuf(
+      const protobuf::TickOptionComputation &proto) override
+  {
+    if (!config_.log_raw_messages) { return; }
+    spdlog::trace(
+        "[PROTO] ← TickOptionComputation reqId={} type={} iv={:.6f} delta={:.6f}",
+        proto.reqid(), proto.ticktype(), proto.impliedvol(), proto.delta());
+  }
+
+  void orderStatusProtoBuf(const protobuf::OrderStatus &proto) override
+  {
+    if (!config_.log_raw_messages) { return; }
+    spdlog::trace(
+        "[PROTO] ← OrderStatus orderId={} status={} filled={} remaining={}",
+        proto.orderid(), proto.status(), proto.filled(), proto.remaining());
+  }
+
+  void openOrderProtoBuf(const protobuf::OpenOrder &proto) override
+  {
+    if (!config_.log_raw_messages) { return; }
+    spdlog::trace("[PROTO] ← OpenOrder orderId={} symbol={}",
+                  proto.orderid(),
+                  proto.has_contract() ? proto.contract().symbol() : "");
+  }
+
+  void execDetailsProtoBuf(const protobuf::ExecutionDetails &proto) override
+  {
+    if (!config_.log_raw_messages) { return; }
+    spdlog::trace("[PROTO] ← ExecutionDetails reqId={} symbol={} execId={}",
+                  proto.reqid(),
+                  proto.has_contract() ? proto.contract().symbol() : "",
+                  proto.has_execution() ? proto.execution().execid() : "");
+  }
+
+  void positionProtoBuf(const protobuf::Position &proto) override
+  {
+    if (!config_.log_raw_messages) { return; }
+    spdlog::trace("[PROTO] ← Position account={} symbol={} qty={} avgCost={}",
+                  proto.account(),
+                  proto.has_contract() ? proto.contract().symbol() : "",
+                  proto.position(), proto.avgcost());
+  }
+
+  void updateAccountValueProtoBuf(const protobuf::AccountValue &proto) override
+  {
+    if (!config_.log_raw_messages) { return; }
+    spdlog::trace(
+        "[PROTO] ← AccountValue account={} key={} value={} currency={}",
+        proto.accountname(), proto.key(), proto.value(), proto.currency());
+  }
+
+  void updatePortfolioProtoBuf(const protobuf::PortfolioValue &proto) override
+  {
+    if (!config_.log_raw_messages) { return; }
+    spdlog::trace("[PROTO] ← PortfolioValue account={} symbol={} qty={}",
+                  proto.accountname(),
+                  proto.has_contract() ? proto.contract().symbol() : "",
+                  proto.position());
+  }
+
+  void contractDataProtoBuf(const protobuf::ContractData &proto) override
+  {
+    if (!config_.log_raw_messages) { return; }
+    spdlog::trace("[PROTO] ← ContractData reqId={} symbol={}",
+                  proto.reqid(),
+                  proto.has_contract() ? proto.contract().symbol() : "");
+  }
+
+  void errorProtoBuf(const protobuf::ErrorMessage &proto) override
+  {
+    if (!config_.log_raw_messages) { return; }
+    spdlog::trace("[PROTO] ← ErrorMessage id={} code={} msg={}",
+                  proto.id(), proto.errorcode(), proto.errormsg());
+  }
+
+  // Category B: all bars arrive atomically — future batch processing goes here
+  // instead of the legacy per-bar historicalData() path.
+  void historicalDataProtoBuf(const protobuf::HistoricalData &proto) override
+  {
+    if (!config_.log_raw_messages) { return; }
+    spdlog::trace("[PROTO] ← HistoricalData reqId={} bars={}",
+                  proto.reqid(), proto.historicaldatabars_size());
+  }
+#endif
 
   // ========================================================================
   // Member Variables
@@ -4203,138 +4323,4 @@ std::pair<std::string, int> TWSClient::get_last_error() const {
   return pimpl_->get_last_error();
 }
 
-// Calculate DTE (days to expiry) using trading days
-int calculate_dte(const std::string &expiry) {
-  if (expiry.empty() || expiry.length() != 8) {
-    spdlog::warn("Invalid expiry format: {} (expected YYYYMMDD)", expiry);
-    return 0;
-  }
-
-  try {
-    int year = std::stoi(expiry.substr(0, 4));
-    int month = std::stoi(expiry.substr(4, 2));
-    int day = std::stoi(expiry.substr(6, 2));
-
-    // Create expiry date (market close: 4:00 PM ET)
-    std::tm tm_expiry = {};
-    tm_expiry.tm_year = year - 1900;
-    tm_expiry.tm_mon = month - 1;
-    tm_expiry.tm_mday = day;
-    tm_expiry.tm_hour = 16; // 4:00 PM ET
-    tm_expiry.tm_min = 0;
-    tm_expiry.tm_sec = 0;
-
-    auto expiry_time =
-        std::chrono::system_clock::from_time_t(std::mktime(&tm_expiry));
-    auto now = std::chrono::system_clock::now();
-
-    // If expiry is in the past, return 0
-    if (expiry_time <= now) {
-      return 0;
-    }
-
-    // Count trading days using MarketHours
-    market_hours::MarketHours market_hours;
-    int trading_days = 0;
-    auto current = now;
-
-    // Count trading days (weekdays excluding holidays)
-    while (current < expiry_time) {
-      auto status = market_hours.get_market_status_at(current);
-      // Trading day = not closed OR (closed but not holiday/weekend)
-      // Actually, we want: weekday AND not holiday
-      if (status.current_session != market_hours::MarketSession::Closed) {
-        trading_days++;
-      } else if (!status.is_holiday && status.reason != "weekend") {
-        // Edge case: early close day (still a trading day)
-        trading_days++;
-      }
-      current += std::chrono::hours(24);
-
-      // Safety limit
-      if (trading_days > 365) {
-        spdlog::warn("DTE calculation exceeded 365 days for expiry: {}",
-                     expiry);
-        break;
-      }
-    }
-
-    return trading_days;
-  } catch (const std::exception &e) {
-    spdlog::warn("Failed to calculate DTE for expiry {}: {}", expiry, e.what());
-    return 0;
-  }
-}
-
 } // namespace tws
-
-// ============================================================================
-// types.h implementations
-// ============================================================================
-
-namespace types {
-
-std::string OptionContract::to_string() const {
-  return symbol + " " + expiry + " " + std::to_string(strike) + " " +
-         option_type_to_string(type);
-}
-
-bool OptionContract::is_valid() const {
-  return !symbol.empty() && !expiry.empty() && strike > 0 && !exchange.empty();
-}
-
-bool BoxSpreadLeg::is_valid() const {
-  return long_call.is_valid() && short_call.is_valid() && long_put.is_valid() &&
-         short_put.is_valid();
-}
-
-double BoxSpreadLeg::get_strike_width() const {
-  return short_call.strike - long_call.strike;
-}
-
-int BoxSpreadLeg::get_days_to_expiry() const {
-  // Use the expiry from any leg (all legs have same expiry)
-  if (!long_call.expiry.empty()) {
-    return tws::calculate_dte(long_call.expiry);
-  }
-  return 0;
-}
-
-double BoxSpreadLeg::get_effective_margin() const {
-  // Return portfolio margin if available and enabled, otherwise initial margin
-  if (uses_portfolio_margin && span_margin > 0.0) {
-    return span_margin;
-  }
-  if (initial_margin > 0.0) {
-    return initial_margin;
-  }
-  // Fallback to net_debit if margin not calculated yet
-  return net_debit * 100.0;
-}
-
-double Position::get_market_value() const {
-  return static_cast<double>(quantity) * current_price * 100.0;
-}
-
-double Position::get_cost_basis() const {
-  return static_cast<double>(quantity) * avg_price * 100.0;
-}
-
-bool Order::is_active() const {
-  return status == OrderStatus::Pending || status == OrderStatus::Submitted ||
-         status == OrderStatus::PartiallyFilled;
-}
-
-bool Order::is_complete() const {
-  return status == OrderStatus::Filled || status == OrderStatus::Cancelled ||
-         status == OrderStatus::Rejected;
-}
-
-double Order::get_total_cost() const {
-  if (filled_quantity > 0) {
-    return static_cast<double>(filled_quantity) * avg_fill_price * 100.0;
-  }
-  return static_cast<double>(quantity) * limit_price * 100.0;
-}
-
-} // namespace types

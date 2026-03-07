@@ -15,8 +15,13 @@ bool OptionContract::is_valid() const {
 }
 
 bool BoxSpreadLeg::is_valid() const {
-  return long_call.is_valid() && short_call.is_valid() && long_put.is_valid() &&
-         short_put.is_valid();
+  if (!long_call.is_valid() || !short_call.is_valid() || !long_put.is_valid() ||
+      !short_put.is_valid()) {
+    return false;
+  }
+  // Strike relationship: long_call.strike < short_call.strike
+  // and short_put.strike == long_call.strike, long_put.strike == short_call.strike
+  return long_call.strike < short_call.strike;
 }
 
 double BoxSpreadLeg::get_strike_width() const {

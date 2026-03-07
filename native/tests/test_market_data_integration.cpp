@@ -423,10 +423,7 @@ TEST_CASE("Market Data Integration - Real TWS subscription (integration)",
   // Check if TWS is available
   bool connected = client.connect();
   if (!connected) {
-    WARN("TWS/Gateway not available - skipping real market data test");
-    WARN("To run this test, start TWS or IB Gateway with API enabled on port "
-         "7497");
-    return;
+    SKIP("TWS/Gateway not available. Start TWS or IB Gateway with API enabled on port 7497 to run this test.");
   }
 
   SECTION("Real market data subscription") {

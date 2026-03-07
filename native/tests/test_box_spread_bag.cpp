@@ -19,19 +19,19 @@ types::BoxSpreadLeg create_test_spread() {
   types::BoxSpreadLeg spread;
   spread.long_call.symbol = "SPX";
   spread.long_call.strike = 4500.0;
-  spread.long_call.expiry = "20250125";
+  spread.long_call.expiry = "20271219";
   spread.long_call.type = OptionType::Call;
   spread.short_call.symbol = "SPX";
   spread.short_call.strike = 4600.0;
-  spread.short_call.expiry = "20250125";
+  spread.short_call.expiry = "20271219";
   spread.short_call.type = OptionType::Call;
   spread.long_put.symbol = "SPX";
   spread.long_put.strike = 4600.0;
-  spread.long_put.expiry = "20250125";
+  spread.long_put.expiry = "20271219";
   spread.long_put.type = OptionType::Put;
   spread.short_put.symbol = "SPX";
   spread.short_put.strike = 4500.0;
-  spread.short_put.expiry = "20250125";
+  spread.short_put.expiry = "20271219";
   spread.short_put.type = OptionType::Put;
   spread.net_debit = 99.50;
   spread.theoretical_value = 100.0;
@@ -79,7 +79,7 @@ TEST_CASE("BoxSpreadBag Cboe symbol generation", "[bag][cboe]") {
   SECTION("Generate Cboe symbol for SPX") {
     // Given: SPX box spread parameters
     std::string underlying = "SPX";
-    std::string expiry = "20250125";
+    std::string expiry = "20271219";
     double strike_low = 4500.0;
     double strike_high = 4600.0;
 
@@ -96,7 +96,7 @@ TEST_CASE("BoxSpreadBag Cboe symbol generation", "[bag][cboe]") {
   SECTION("Generate Cboe symbol for different strikes") {
     // Given: Different strike pair
     std::string symbol =
-        BoxSpreadBag::generate_cboe_symbol("SPY", "20250620", 500.0, 510.0);
+        BoxSpreadBag::generate_cboe_symbol("SPY", "20271219", 500.0, 510.0);
 
     // Then: Should generate valid symbol
     REQUIRE_FALSE(symbol.empty());

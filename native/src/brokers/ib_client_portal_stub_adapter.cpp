@@ -152,7 +152,7 @@ IBClientPortalStubAdapter::request_option_chain(const std::string &symbol,
                                  510.0, 520.0, 530.0, 540.0, 550.0};
 
   // Use provided expiry or generate a default
-  std::string expiry_date = expiry.empty() ? "20250117" : expiry;
+  std::string expiry_date = expiry.empty() ? "20271219" : expiry;
 
   for (double strike : strikes) {
     // Call option

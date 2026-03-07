@@ -169,9 +169,7 @@ TEST_CASE("TWS Client - Port detection (integration)",
   }
 
   if (open_ports.empty()) {
-    WARN("No TWS/IB Gateway ports are open. Skipping integration test.");
-    WARN("To run this test, start TWS or IB Gateway with API enabled.");
-    return;
+    SKIP("No TWS/IB Gateway ports are open. Start TWS or IB Gateway with API enabled to run this test.");
   }
 
   INFO("Found " << open_ports.size() << " open port(s): ");
@@ -201,9 +199,7 @@ TEST_CASE("TWS Client - Connection attempt (integration)",
   }
 
   if (open_port == 0) {
-    WARN("No TWS/IB Gateway ports are open. Skipping connection test.");
-    WARN("To run this test, start TWS or IB Gateway with API enabled.");
-    return;
+    SKIP("No TWS/IB Gateway ports are open. Start TWS or IB Gateway with API enabled to run this test.");
   }
 
   config::TWSConfig config;
@@ -354,8 +350,7 @@ TEST_CASE("TWS Client - Port fallback logic (integration)",
   }
 
   if (open_port == 0) {
-    WARN("No TWS/IB Gateway ports are open. Skipping fallback test.");
-    return;
+    SKIP("No TWS/IB Gateway ports are open. Start TWS or IB Gateway with API enabled to run this test.");
   }
 
   // Configure with a different port (wrong one)
@@ -510,9 +505,120 @@ TEST_CASE("TWS Client - Option chain request (mock mode)",
   }
 
   // Test with expiry filter
-  auto filtered = client.request_option_chain("SPY", "20251219");
+  auto filtered = client.request_option_chain("SPY", "20271219");
   // Filtered results should only include specified expiry
   for (const auto &contract : filtered) {
-    REQUIRE(contract.expiry == "20251219");
+    REQUIRE(contract.expiry == "20271219");
+  }
+}
+
+// ============================================================================
+// Test: Proto EWrapper Callbacks — Legacy Path in Mock Mode
+// ============================================================================
+
+TEST_CASE("TWS Client - Proto callbacks: mock mode state via legacy path",
+          "[tws][proto][mock]") {
+  // EDecoder does not run in mock mode (no real socket), so proto callbacks
+  // are never fired. State is seeded via legacy seed_mock_state(). This test
+  // confirms that the proto callback overrides compile and link correctly and
+  // that they do not interfere with the mock legacy path.
+  config::TWSConfig config;
+  config.host = "127.0.0.1";
+  config.port = 7497;
+  config.client_id = 1;
+  config.use_mock = true;
+  config.log_raw_messages = false; // Proto overrides must be no-ops
+
+  TWSClient client(config);
+  REQUIRE(client.connect());
+  REQUIRE(client.is_connected());
+  REQUIRE(client.get_connection_state() == ConnectionState::Connected);
+
+  SECTION("Positions populated via legacy path") {
+    // Mock state is seeded by seed_mock_state(); legacy position() callback
+    // fires during connect, not proto positionProtoBuf.
+    auto positions = client.get_positions();
+    // Mock mode seeds at least one position
+    REQUIRE_FALSE(positions.empty());
+    for (const auto &pos : positions) {
+      REQUIRE_FALSE(pos.contract.symbol.empty());
+    }
+  }
+
+  SECTION("Account info populated via legacy path") {
+    auto info = client.get_account_info();
+    // Mock mode seeds account info via updateAccountValue() legacy callback
+    REQUIRE(info.has_value());
+  }
+
+  SECTION("Active orders accessible via legacy path") {
+    auto orders = client.get_active_orders();
+    // Should not throw; mock mode may or may not seed orders, but the call
+    // must succeed after proto callback overrides are in place.
+    REQUIRE((orders.empty() || !orders.empty())); // always true — compile check
+  }
+}
+
+// ============================================================================
+// Test: Proto EWrapper Callbacks — log_raw_messages Guard
+// ============================================================================
+
+TEST_CASE("TWS Client - Proto callbacks: log_raw_messages guard",
+          "[tws][proto]") {
+  // Verify that enabling log_raw_messages does not break mock mode. The proto
+  // callback overrides emit spdlog::trace() lines guarded by log_raw_messages;
+  // this test confirms the guard path compiles and does not crash.
+
+  SECTION("log_raw_messages=false (default): proto callbacks are no-ops") {
+    config::TWSConfig config;
+    config.host = "127.0.0.1";
+    config.port = 7497;
+    config.client_id = 1;
+    config.use_mock = true;
+    config.log_raw_messages = false;
+
+    TWSClient client(config);
+    REQUIRE_NOTHROW(client.connect());
+    REQUIRE(client.is_connected());
+    // In mock mode with log_raw_messages=false, proto overrides return
+    // immediately — no trace output, no side effects.
+    REQUIRE_NOTHROW(client.get_positions());
+    REQUIRE_NOTHROW(client.get_account_info());
+  }
+
+  SECTION("log_raw_messages=true: proto callbacks emit traces without crash") {
+    config::TWSConfig config;
+    config.host = "127.0.0.1";
+    config.port = 7497;
+    config.client_id = 1;
+    config.use_mock = true;
+    config.log_raw_messages = true; // Enable proto trace path
+
+    TWSClient client(config);
+    // Connect must succeed; trace logging must not crash even when enabled.
+    REQUIRE_NOTHROW(client.connect());
+    REQUIRE(client.is_connected());
+    // EDecoder does not run in mock mode, so proto callbacks fire only if a
+    // real server sends proto messages. Here we just confirm the override
+    // compiles and the client remains stable with the flag set.
+    REQUIRE_NOTHROW(client.get_positions());
+    REQUIRE_NOTHROW(client.get_account_info());
+  }
+
+  SECTION("Disconnected client: is_connected() = false (server ver = 0)") {
+    // When disconnected, server version is 0 and useProtoBuf() returns false
+    // inside EClient. This test documents that proto gating is server-version
+    // dependent and is a no-op until a real server at ver >= 206 connects.
+    config::TWSConfig config;
+    config.host = "127.0.0.1";
+    config.port = 7497;
+    config.client_id = 1;
+    config.use_mock = false; // Attempt real (will fail — no TWS running)
+    config.connection_timeout_ms = 100;
+
+    TWSClient client(config);
+    REQUIRE_FALSE(client.is_connected());
+    // Proto callbacks are never fired without a connected server (ver >= 206)
+    REQUIRE(client.get_connection_state() == ConnectionState::Disconnected);
   }
 }

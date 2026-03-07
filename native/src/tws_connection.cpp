@@ -193,9 +193,9 @@ bool ConnectionHandler::connect() {
   }
 
   if (!found_open_port) {
-    spdlog::error("No open ports found on {}. Checked ports: {}", config_.host,
+    spdlog::warn("No open ports found on {}. Checked ports: {}", config_.host,
                   port_list_str);
-    spdlog::error(
+    spdlog::warn(
         "Please ensure TWS or IB Gateway is running and API is enabled");
     state_ = ConnectionState::Error;
     return false;

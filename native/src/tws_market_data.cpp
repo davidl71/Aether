@@ -281,8 +281,8 @@ MarketDataHandler::request_option_chain(const std::string &symbol,
 
   if (conn.is_mock_mode()) {
     std::vector<types::OptionContract> contracts;
-    std::vector<std::string> expiries = {expiry.empty() ? "20251219" : expiry,
-                                         "20260116"};
+    std::vector<std::string> expiries = {expiry.empty() ? "20271219" : expiry,
+                                         "20271226"};
     std::vector<double> strikes = {100.0, 105.0, 110.0};
     for (const auto &exp : expiries) {
       for (double strike : strikes) {

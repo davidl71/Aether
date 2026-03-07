@@ -12,25 +12,25 @@ TEST_CASE("BoxSpreadValidator validates structure", "[strategy]") {
 
   spread.long_call.symbol = "SPY";
   spread.long_call.strike = 500.0;
-  spread.long_call.expiry = "20250620";
+  spread.long_call.expiry = "20271219";
   spread.long_call.type = OptionType::Call;
   spread.long_call.exchange = "SMART";
 
   spread.short_call.symbol = "SPY";
   spread.short_call.strike = 510.0;
-  spread.short_call.expiry = "20250620";
+  spread.short_call.expiry = "20271219";
   spread.short_call.type = OptionType::Call;
   spread.short_call.exchange = "SMART";
 
   spread.long_put.symbol = "SPY";
   spread.long_put.strike = 510.0;
-  spread.long_put.expiry = "20250620";
+  spread.long_put.expiry = "20271219";
   spread.long_put.type = OptionType::Put;
   spread.long_put.exchange = "SMART";
 
   spread.short_put.symbol = "SPY";
   spread.short_put.strike = 500.0;
-  spread.short_put.expiry = "20250620";
+  spread.short_put.expiry = "20271219";
   spread.short_put.type = OptionType::Put;
   spread.short_put.exchange = "SMART";
 
@@ -56,30 +56,30 @@ TEST_CASE("BoxSpreadValidator detects invalid configurations", "[strategy]") {
 
   spread.long_call.symbol = "SPY";
   spread.long_call.strike = 500.0;
-  spread.long_call.expiry = "20250620";
+  spread.long_call.expiry = "20271219";
   spread.long_call.type = OptionType::Call;
   spread.long_call.exchange = "SMART";
 
   spread.short_call.symbol = "SPY";
   spread.short_call.strike = 510.0;
-  spread.short_call.expiry = "20250620";
+  spread.short_call.expiry = "20271219";
   spread.short_call.type = OptionType::Call;
   spread.short_call.exchange = "SMART";
 
   spread.long_put.symbol = "SPY";
   spread.long_put.strike = 510.0;
-  spread.long_put.expiry = "20250620";
+  spread.long_put.expiry = "20271219";
   spread.long_put.type = OptionType::Put;
   spread.long_put.exchange = "SMART";
 
   spread.short_put.symbol = "SPY";
   spread.short_put.strike = 500.0;
-  spread.short_put.expiry = "20250620";
+  spread.short_put.expiry = "20271219";
   spread.short_put.type = OptionType::Put;
   spread.short_put.exchange = "SMART";
 
   SECTION("Mismatched expiries fail validation") {
-    spread.short_call.expiry = "20250627";
+    spread.short_call.expiry = "20271226";
     REQUIRE_FALSE(BoxSpreadValidator::validate_expiries(spread));
   }
 

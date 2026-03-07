@@ -20,19 +20,19 @@ types::BoxSpreadLeg create_test_box_spread() {
   types::BoxSpreadLeg spread;
   spread.long_call.symbol = "SPY";
   spread.long_call.strike = 500.0;
-  spread.long_call.expiry = "20250620";
+  spread.long_call.expiry = "20271219";
   spread.long_call.type = OptionType::Call;
   spread.short_call.symbol = "SPY";
   spread.short_call.strike = 510.0;
-  spread.short_call.expiry = "20250620";
+  spread.short_call.expiry = "20271219";
   spread.short_call.type = OptionType::Call;
   spread.long_put.symbol = "SPY";
   spread.long_put.strike = 510.0;
-  spread.long_put.expiry = "20250620";
+  spread.long_put.expiry = "20271219";
   spread.long_put.type = OptionType::Put;
   spread.short_put.symbol = "SPY";
   spread.short_put.strike = 500.0;
-  spread.short_put.expiry = "20250620";
+  spread.short_put.expiry = "20271219";
   spread.short_put.type = OptionType::Put;
   spread.net_debit = 9.85;
   spread.theoretical_value = 10.0;
@@ -43,7 +43,7 @@ InterestRateFuture create_test_future() {
   InterestRateFuture future;
   future.type = InterestRateFutureType::SOFR_3M;
   future.symbol = "SR3";
-  future.expiry = "20250620";
+  future.expiry = "20271219";
   future.current_price = 95.50;     // Implies ~4.5% rate
   future.contract_size = 1000000.0; // $1M
   future.tick_size = 0.0025;

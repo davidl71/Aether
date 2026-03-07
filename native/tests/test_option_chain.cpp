@@ -25,6 +25,7 @@ OptionChainEntry create_test_entry(const std::string &symbol,
   entry.contract.expiry = expiry;
   entry.contract.strike = strike;
   entry.contract.type = type;
+  entry.contract.exchange = "SMART";
   entry.market_data.bid = bid;
   entry.market_data.ask = ask;
   entry.market_data.last = (bid + ask) / 2.0;
@@ -41,7 +42,7 @@ OptionChainEntry create_test_entry(const std::string &symbol,
 
 TEST_CASE("OptionChainEntry validation", "[option_chain][entry]") {
   // Given: A valid option chain entry
-  auto entry = create_test_entry("SPY", "20250620", 500.0, OptionType::Call);
+  auto entry = create_test_entry("SPY", "20271219", 500.0, OptionType::Call);
 
   SECTION("Valid entry passes validation") {
     // When: We validate the entry
@@ -96,8 +97,8 @@ TEST_CASE("StrikeChain operations", "[option_chain][strike]") {
   // Given: A strike chain with call and put
   StrikeChain chain;
   chain.strike = 500.0;
-  chain.call = create_test_entry("SPY", "20250620", 500.0, OptionType::Call);
-  chain.put = create_test_entry("SPY", "20250620", 500.0, OptionType::Put);
+  chain.call = create_test_entry("SPY", "20271219", 500.0, OptionType::Call);
+  chain.put = create_test_entry("SPY", "20271219", 500.0, OptionType::Put);
 
   SECTION("StrikeChain has both call and put") {
     // When: We check if both exist
@@ -137,16 +138,16 @@ TEST_CASE("StrikeChain operations", "[option_chain][strike]") {
 
 TEST_CASE("ExpiryChain strike management", "[option_chain][expiry]") {
   // Given: An expiry chain for SPY
-  ExpiryChain chain("SPY", "20250620");
+  ExpiryChain chain("SPY", "20271219");
 
   SECTION("Add options to chain") {
     // Given: Multiple option entries
     auto call_500 =
-        create_test_entry("SPY", "20250620", 500.0, OptionType::Call);
-    auto put_500 = create_test_entry("SPY", "20250620", 500.0, OptionType::Put);
+        create_test_entry("SPY", "20271219", 500.0, OptionType::Call);
+    auto put_500 = create_test_entry("SPY", "20271219", 500.0, OptionType::Put);
     auto call_510 =
-        create_test_entry("SPY", "20250620", 510.0, OptionType::Call);
-    auto put_510 = create_test_entry("SPY", "20250620", 510.0, OptionType::Put);
+        create_test_entry("SPY", "20271219", 510.0, OptionType::Call);
+    auto put_510 = create_test_entry("SPY", "20271219", 510.0, OptionType::Put);
 
     // When: We add options to the chain
     chain.add_option(call_500);
@@ -164,8 +165,8 @@ TEST_CASE("ExpiryChain strike management", "[option_chain][expiry]") {
   SECTION("Get strike chain") {
     // Given: Chain with options at strike 500
     auto call_500 =
-        create_test_entry("SPY", "20250620", 500.0, OptionType::Call);
-    auto put_500 = create_test_entry("SPY", "20250620", 500.0, OptionType::Put);
+        create_test_entry("SPY", "20271219", 500.0, OptionType::Call);
+    auto put_500 = create_test_entry("SPY", "20271219", 500.0, OptionType::Put);
     chain.add_option(call_500);
     chain.add_option(put_500);
 
@@ -181,7 +182,7 @@ TEST_CASE("ExpiryChain strike management", "[option_chain][expiry]") {
   SECTION("Get option by strike and type") {
     // Given: Chain with call at strike 500
     auto call_500 =
-        create_test_entry("SPY", "20250620", 500.0, OptionType::Call);
+        create_test_entry("SPY", "20271219", 500.0, OptionType::Call);
     chain.add_option(call_500);
 
     // When: We get call option at strike 500
@@ -197,7 +198,7 @@ TEST_CASE("ExpiryChain strike management", "[option_chain][expiry]") {
     // Given: Chain with strikes at 500, 510, 520, 530
     for (double strike = 500.0; strike <= 530.0; strike += 10.0) {
       chain.add_option(
-          create_test_entry("SPY", "20250620", strike, OptionType::Call));
+          create_test_entry("SPY", "20271219", strike, OptionType::Call));
     }
 
     // When: We find strikes in range 505-525
@@ -213,7 +214,7 @@ TEST_CASE("ExpiryChain strike management", "[option_chain][expiry]") {
     // Given: Chain with strikes at 490, 500, 510, 520
     for (double strike = 490.0; strike <= 520.0; strike += 10.0) {
       chain.add_option(
-          create_test_entry("SPY", "20250620", strike, OptionType::Call));
+          create_test_entry("SPY", "20271219", strike, OptionType::Call));
     }
 
     // When: We find ATM strike for underlying price 505
@@ -226,9 +227,9 @@ TEST_CASE("ExpiryChain strike management", "[option_chain][expiry]") {
 
   SECTION("Filter by liquidity") {
     // Given: Chain with options of varying liquidity
-    auto liquid = create_test_entry("SPY", "20250620", 500.0, OptionType::Call,
+    auto liquid = create_test_entry("SPY", "20271219", 500.0, OptionType::Call,
                                     1.0, 1.1, 200, 1000);
-    auto illiquid = create_test_entry("SPY", "20250620", 510.0,
+    auto illiquid = create_test_entry("SPY", "20271219", 510.0,
                                       OptionType::Call, 1.0, 1.1, 50, 200);
     chain.add_option(liquid);
     chain.add_option(illiquid);
@@ -244,11 +245,11 @@ TEST_CASE("ExpiryChain strike management", "[option_chain][expiry]") {
   SECTION("Get calls and puts separately") {
     // Given: Chain with both calls and puts
     chain.add_option(
-        create_test_entry("SPY", "20250620", 500.0, OptionType::Call));
+        create_test_entry("SPY", "20271219", 500.0, OptionType::Call));
     chain.add_option(
-        create_test_entry("SPY", "20250620", 500.0, OptionType::Put));
+        create_test_entry("SPY", "20271219", 500.0, OptionType::Put));
     chain.add_option(
-        create_test_entry("SPY", "20250620", 510.0, OptionType::Call));
+        create_test_entry("SPY", "20271219", 510.0, OptionType::Call));
 
     // When: We get calls only
     auto calls = chain.get_calls();
@@ -274,8 +275,8 @@ TEST_CASE("OptionChain expiry management", "[option_chain][chain]") {
 
   SECTION("Add options across multiple expiries") {
     // Given: Options with different expiries
-    auto entry1 = create_test_entry("SPY", "20250620", 500.0, OptionType::Call);
-    auto entry2 = create_test_entry("SPY", "20250627", 500.0, OptionType::Call);
+    auto entry1 = create_test_entry("SPY", "20271219", 500.0, OptionType::Call);
+    auto entry2 = create_test_entry("SPY", "20271226", 500.0, OptionType::Call);
 
     // When: We add options to the chain
     chain.add_option(entry1);
@@ -289,26 +290,26 @@ TEST_CASE("OptionChain expiry management", "[option_chain][chain]") {
 
   SECTION("Get expiry chain") {
     // Given: Chain with options at expiry 20250620
-    auto entry = create_test_entry("SPY", "20250620", 500.0, OptionType::Call);
+    auto entry = create_test_entry("SPY", "20271219", 500.0, OptionType::Call);
     chain.add_option(entry);
 
     // When: We get expiry chain for 20250620
-    auto expiry_chain = chain.get_expiry_chain("20250620");
+    auto expiry_chain = chain.get_expiry_chain("20271219");
 
     // Then: Should return valid expiry chain
     REQUIRE(expiry_chain.has_value());
-    REQUIRE(expiry_chain->get_expiry() == "20250620");
+    REQUIRE(expiry_chain->get_expiry() == "20271219");
     REQUIRE(expiry_chain->get_symbol() == "SPY");
   }
 
   SECTION("Get all options across expiries") {
     // Given: Options at multiple expiries
     chain.add_option(
-        create_test_entry("SPY", "20250620", 500.0, OptionType::Call));
+        create_test_entry("SPY", "20271219", 500.0, OptionType::Call));
     chain.add_option(
-        create_test_entry("SPY", "20250627", 500.0, OptionType::Call));
+        create_test_entry("SPY", "20271226", 500.0, OptionType::Call));
     chain.add_option(
-        create_test_entry("SPY", "20250620", 510.0, OptionType::Call));
+        create_test_entry("SPY", "20271219", 510.0, OptionType::Call));
 
     // When: We get all options
     auto all_options = chain.get_all_options();
@@ -331,11 +332,11 @@ TEST_CASE("OptionChain expiry management", "[option_chain][chain]") {
   SECTION("Get total option count") {
     // Given: Chain with multiple options
     chain.add_option(
-        create_test_entry("SPY", "20250620", 500.0, OptionType::Call));
+        create_test_entry("SPY", "20271219", 500.0, OptionType::Call));
     chain.add_option(
-        create_test_entry("SPY", "20250620", 510.0, OptionType::Call));
+        create_test_entry("SPY", "20271219", 510.0, OptionType::Call));
     chain.add_option(
-        create_test_entry("SPY", "20250627", 500.0, OptionType::Call));
+        create_test_entry("SPY", "20271226", 500.0, OptionType::Call));
 
     // When: We get total option count
     int count = chain.get_total_option_count();
@@ -357,7 +358,7 @@ TEST_CASE("OptionChainBuilder builds chain from market data",
 
   OptionContract contract1;
   contract1.symbol = "SPY";
-  contract1.expiry = "20250620";
+  contract1.expiry = "20271219";
   contract1.strike = 500.0;
   contract1.type = OptionType::Call;
   contracts.push_back(contract1);
@@ -365,7 +366,7 @@ TEST_CASE("OptionChainBuilder builds chain from market data",
   MarketData data1;
   data1.bid = 1.0;
   data1.ask = 1.1;
-  market_data["SPY_20250620_500_C"] = data1;
+  market_data[contract1.to_string()] = data1;
 
   SECTION("Build chain from contracts and market data") {
     // When: We build chain from market data
@@ -403,7 +404,7 @@ TEST_CASE("OptionChainBuilder builds chain from market data",
 TEST_CASE("OptionChain edge cases", "[option_chain][edge]") {
   SECTION("Empty expiry chain") {
     // Given: An empty expiry chain
-    ExpiryChain chain("SPY", "20250620");
+    ExpiryChain chain("SPY", "20271219");
 
     // When: We get strikes
     auto strikes = chain.get_strikes();
@@ -414,9 +415,9 @@ TEST_CASE("OptionChain edge cases", "[option_chain][edge]") {
 
   SECTION("Get non-existent strike chain") {
     // Given: Chain without strike 500
-    ExpiryChain chain("SPY", "20250620");
+    ExpiryChain chain("SPY", "20271219");
     chain.add_option(
-        create_test_entry("SPY", "20250620", 510.0, OptionType::Call));
+        create_test_entry("SPY", "20271219", 510.0, OptionType::Call));
 
     // When: We get strike chain for 500
     auto strike_chain = chain.get_strike_chain(500.0);
@@ -427,9 +428,9 @@ TEST_CASE("OptionChain edge cases", "[option_chain][edge]") {
 
   SECTION("Get non-existent option") {
     // Given: Chain without call at strike 500
-    ExpiryChain chain("SPY", "20250620");
+    ExpiryChain chain("SPY", "20271219");
     chain.add_option(
-        create_test_entry("SPY", "20250620", 500.0, OptionType::Put));
+        create_test_entry("SPY", "20271219", 500.0, OptionType::Put));
 
     // When: We get call option at strike 500
     auto option = chain.get_option(500.0, OptionType::Call);

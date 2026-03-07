@@ -256,7 +256,7 @@ void PositionHandler::seed_mock_state() {
     positions_.clear();
     types::Position pos;
     pos.contract =
-        make_mock_contract("SPY", "20251219", 500.0, types::OptionType::Call);
+        make_mock_contract("SPY", "20271219", 500.0, types::OptionType::Call);
     pos.quantity = 1;
     pos.avg_price = 2.50;
     pos.current_price = 2.60;

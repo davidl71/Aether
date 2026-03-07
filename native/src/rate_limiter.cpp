@@ -81,7 +81,7 @@ bool RateLimiter::can_start_historical_request(int request_id) {
 
   // Check if already active
   if (active_historical_requests_.count(request_id) > 0) {
-    return true; // Already tracking, allow
+    return false; // Already active, reject duplicate
   }
 
   // Check limit
@@ -134,7 +134,7 @@ bool RateLimiter::can_start_market_data(int request_id) {
 
   // Check if already active
   if (active_market_data_lines_.count(request_id) > 0) {
-    return true; // Already tracking, allow
+    return false; // Already active, reject duplicate
   }
 
   // Check limit

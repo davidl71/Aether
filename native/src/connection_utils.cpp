@@ -104,7 +104,7 @@ types::OptionContract make_mock_contract(const std::string &symbol,
                                          types::OptionType type) {
   types::OptionContract contract;
   contract.symbol = symbol.empty() ? "SPY" : symbol;
-  contract.expiry = expiry.empty() ? "20251219" : expiry;
+  contract.expiry = expiry.empty() ? "20271219" : expiry;
   contract.strike = strike;
   contract.type = type;
   contract.exchange = "SMART";

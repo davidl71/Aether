@@ -1452,17 +1452,14 @@ double BoxSpreadCalculator::calculate_implied_interest_rate(
   double implied_rate = 0.0;
 
   if (net_cost > 0) {
-    // Net debit (borrowing scenario): paying upfront, receiving strike width at
-    // expiry Rate = ((net_debit - strike_width) / strike_width) * (365 /
-    // days_to_expiry) * 100
-    implied_rate = ((net_cost - strike_width) / strike_width) *
+    // Net debit (lending scenario): pay net_debit now, receive strike_width at expiry.
+    // Rate = (profit / cost) * (365 / days_to_expiry) = ((strike_width - net_debit) / net_debit) * annualisation
+    implied_rate = ((strike_width - net_cost) / net_cost) *
                    (365.0 / days_to_expiry) * 100.0;
   } else if (net_cost < 0) {
-    // Net credit (lending scenario): receiving upfront, paying strike width at
-    // expiry Rate = ((strike_width - net_credit) / net_credit) * (365 /
-    // days_to_expiry) * 100
+    // Net credit (borrowing scenario): receive |net_credit| now, pay strike_width at expiry.
     double net_credit = -net_cost;
-    implied_rate = ((strike_width - net_credit) / net_credit) *
+    implied_rate = ((net_credit - strike_width) / strike_width) *
                    (365.0 / days_to_expiry) * 100.0;
   }
   // If net_cost == 0, implied_rate remains 0.0

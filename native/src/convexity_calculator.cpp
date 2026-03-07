@@ -56,7 +56,7 @@ bool ConvexityCalculator::should_rebalance(double current_convexity,
   double deviation_percent =
       std::abs((current_convexity - target_convexity) / target_convexity) *
       100.0;
-  return deviation_percent > threshold_percent;
+  return deviation_percent >= threshold_percent;
 }
 
 // ============================================================================
