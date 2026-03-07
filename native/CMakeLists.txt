@@ -974,6 +974,8 @@ if(_build_native_cli)
             src/strategies/box_spread/box_spread_bag.cpp
             src/order_manager.cpp
             src/risk_calculator.cpp
+            src/risk_calculator_var.cpp
+            src/risk_calculator_stats.cpp
             src/greeks_calculator.cpp
         )
         list(APPEND HEADERS

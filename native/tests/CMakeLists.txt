@@ -247,6 +247,8 @@ if(NOT USE_BOX_SPREAD_CPP_LIB)
         ${_native_src_dir}/strategies/box_spread/box_spread_strategy.cpp
         ${_native_src_dir}/order_manager.cpp
         ${_native_src_dir}/risk_calculator.cpp
+        ${_native_src_dir}/risk_calculator_var.cpp
+        ${_native_src_dir}/risk_calculator_stats.cpp
     )
 endif()
 
