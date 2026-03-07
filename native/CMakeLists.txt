@@ -912,6 +912,7 @@ if(_build_native_cli)
     set(SOURCES
         src/ib_box_spread.cpp
         src/tws_client.cpp
+        src/tws_client_impl_ewrapper.cpp
         src/tws_conversions.cpp
         src/tws_connection.cpp
         src/tws_market_data.cpp
@@ -1190,6 +1191,7 @@ if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tws_conn
     # Link with TWS client source files
     target_sources(test_tws_connection PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client_impl_ewrapper.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_conversions.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/types.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/connection_utils.cpp
@@ -1241,6 +1243,7 @@ if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_position
     # Link with TWS client source files
     target_sources(test_positions_live PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client_impl_ewrapper.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/config_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/rate_limiter.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/market_hours.cpp
@@ -1285,6 +1288,7 @@ if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_simple_c
 
     target_sources(test_simple_connect PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client_impl_ewrapper.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/config_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/rate_limiter.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/market_hours.cpp
@@ -1329,6 +1333,7 @@ if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_diagnost
 
     target_sources(test_diagnostic_connect PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client_impl_ewrapper.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/config_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/rate_limiter.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/market_hours.cpp
@@ -1373,6 +1378,7 @@ if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_packet_t
 
     target_sources(test_packet_trace PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tws_client_impl_ewrapper.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/config_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/rate_limiter.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/market_hours.cpp
