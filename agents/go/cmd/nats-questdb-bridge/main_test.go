@@ -6,6 +6,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	pbv1 "github.com/dlowes/ib-platform/agents/go/proto/v1"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestEnv_Fallback(t *testing.T) {
@@ -145,5 +148,67 @@ func TestParseTickPayload_InvalidJSON(t *testing.T) {
 	_, _, err := parseTickPayload([]byte(`{not json}`), "market.data.tick.SPY")
 	if err == nil {
 		t.Fatal("expected error for invalid JSON")
+	}
+}
+
+func TestDecodeEnvelope_Proto(t *testing.T) {
+	mde := &pbv1.MarketDataEvent{
+		Symbol: "SPY",
+		Bid:    450.10,
+		Ask:    450.20,
+		Last:   450.15,
+		Volume: 9999,
+	}
+	mdeBytes, err := proto.Marshal(mde)
+	if err != nil {
+		t.Fatalf("marshal MarketDataEvent: %v", err)
+	}
+	env := &pbv1.NatsEnvelope{
+		MessageType: "MarketDataEvent",
+		Payload:     mdeBytes,
+	}
+	envBytes, err := proto.Marshal(env)
+	if err != nil {
+		t.Fatalf("marshal NatsEnvelope: %v", err)
+	}
+
+	tk, ts, err := decodeEnvelope(envBytes, "market.data.SPY")
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if tk.Symbol != "SPY" {
+		t.Errorf("symbol: got %q", tk.Symbol)
+	}
+	if tk.Bid != 450.10 || tk.Ask != 450.20 || tk.Volume != 9999 {
+		t.Errorf("fields: bid=%.2f ask=%.2f vol=%d", tk.Bid, tk.Ask, tk.Volume)
+	}
+	if ts.IsZero() {
+		t.Error("timestamp should not be zero")
+	}
+}
+
+func TestDecodeEnvelope_ProtoSymbolFromSubject(t *testing.T) {
+	mde := &pbv1.MarketDataEvent{Bid: 1, Ask: 2, Last: 1.5} // no symbol
+	mdeBytes, _ := proto.Marshal(mde)
+	env := &pbv1.NatsEnvelope{MessageType: "MarketDataEvent", Payload: mdeBytes}
+	envBytes, _ := proto.Marshal(env)
+
+	tk, _, err := decodeEnvelope(envBytes, "market.data.tick.IWM")
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if tk.Symbol != "IWM" {
+		t.Errorf("symbol from subject: got %q", tk.Symbol)
+	}
+}
+
+func TestDecodeEnvelope_JSONFallback(t *testing.T) {
+	data := []byte(`{"symbol":"QQQ","bid":380,"ask":380.05,"last":380.02,"volume":200}`)
+	tk, _, err := decodeEnvelope(data, "market.data.QQQ")
+	if err != nil {
+		t.Fatalf("json fallback: %v", err)
+	}
+	if tk.Symbol != "QQQ" || tk.Bid != 380 || tk.Volume != 200 {
+		t.Errorf("fields: sym=%s bid=%.2f vol=%d", tk.Symbol, tk.Bid, tk.Volume)
 	}
 }

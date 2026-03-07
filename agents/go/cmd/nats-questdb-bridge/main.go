@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go"
+	pbv1 "github.com/dlowes/ib-platform/agents/go/proto/v1"
+	"google.golang.org/protobuf/proto"
 )
 
 func env(key, fallback string) string {
@@ -37,15 +39,8 @@ func envBool(key string) bool {
 	return v == "1" || v == "true" || v == "yes"
 }
 
-// TODO(exarp): T-1772887221969976131 — Decode NatsEnvelope protobuf instead of JSON tick struct
-// MIGRATION PLAN: Replace JSON tick struct with NatsEnvelope protobuf decode.
-// C++ publishes NatsEnvelope{message_type, payload bytes} where payload is MarketDataEvent.
-// Use agents/go/proto/v1/messages.pb.go (already generated) to decode:
-//   env := &proto.NatsEnvelope{}; proto.Unmarshal(msg.Data, env)
-//   if env.MessageType == "MarketDataEvent" { mde := &proto.MarketDataEvent{}; ... }
-// This makes the bridge type-safe and resilient to wire format changes.
-// Task P2-B: exarp T-1772887221969976131 — docs/platform/IMPROVEMENT_PLAN.md
-// DONE(exarp): T-1772887222034956306 — slog already used throughout (log/slog, slog.SetDefault)
+// DONE(exarp): T-1772887221969976131 — NatsEnvelope protobuf decode implemented in decodeEnvelope.
+// DONE(exarp): T-1772887222034956306 — slog used throughout.
 type tick struct {
 	Symbol    string  `json:"symbol"`
 	Bid       float64 `json:"bid"`
@@ -88,6 +83,39 @@ func parseTickPayload(data []byte, subj string) (*tick, time.Time, error) {
 		}
 	}
 	return &t, ts, nil
+}
+
+// decodeEnvelope decodes a NATS message as NatsEnvelope protobuf (primary path) and falls back
+// to JSON for legacy or test publishers.  C++ always publishes NatsEnvelope{message_type,payload}.
+func decodeEnvelope(data []byte, subj string) (*tick, time.Time, error) {
+	env := &pbv1.NatsEnvelope{}
+	if err := proto.Unmarshal(data, env); err == nil && env.GetMessageType() == "MarketDataEvent" {
+		mde := &pbv1.MarketDataEvent{}
+		if err := proto.Unmarshal(env.GetPayload(), mde); err != nil {
+			return nil, time.Time{}, fmt.Errorf("decode MarketDataEvent: %w", err)
+		}
+		sym := mde.GetSymbol()
+		if sym == "" {
+			parts := strings.Split(subj, ".")
+			sym = parts[len(parts)-1]
+		}
+		if sym == "" {
+			return nil, time.Time{}, fmt.Errorf("no symbol in proto or subject %s", subj)
+		}
+		ts := time.Now()
+		if t := env.GetTimestamp(); t != nil {
+			ts = t.AsTime()
+		}
+		return &tick{
+			Symbol: sym,
+			Bid:    mde.GetBid(),
+			Ask:    mde.GetAsk(),
+			Last:   mde.GetLast(),
+			Volume: mde.GetVolume(),
+		}, ts, nil
+	}
+	// Fallback: JSON (legacy publishers, integration tests).
+	return parseTickPayload(data, subj)
 }
 
 func main() {
@@ -137,9 +165,9 @@ func main() {
 	}
 
 	parseAndWrite := func(data []byte, subj string) bool {
-		tick, ts, err := parseTickPayload(data, subj)
+		tick, ts, err := decodeEnvelope(data, subj)
 		if err != nil {
-			slog.Error("parse tick payload", "error", err)
+			slog.Error("decode message", "error", err)
 			return false
 		}
 		writeTick(tick, ts)
