@@ -17,7 +17,7 @@
 //	ALPACA_URL         (default "http://localhost:8000")
 //	TRADESTATION_URL   (default "http://localhost:8001")
 //	TASTYTRADE_URL     (default "http://localhost:8005")
-//	NATS_URL           optional; if set, gateway reads live state from NATS KV (bucket LIVE_STATE) at /api/live/state
+//	NATS_URL           optional; if set, gateway reads live state from NATS KV (bucket LIVE_STATE) at /api/live/state and /api/live/state/watch (SSE)
 package main
 
 import (
@@ -160,6 +160,55 @@ func main() {
 						}
 						_ = json.NewEncoder(w).Encode(map[string]any{"keys": keys})
 					})
+					mux.HandleFunc("/api/live/state/watch", func(w http.ResponseWriter, r *http.Request) {
+						if r.Method != http.MethodGet {
+							http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+							return
+						}
+						watcher, err := kv.Watch(">")
+						if err != nil {
+							http.Error(w, `{"error":"watch failed"}`, http.StatusInternalServerError)
+							return
+						}
+						defer func() { _ = watcher.Stop() }()
+						w.Header().Set("Content-Type", "text/event-stream")
+						w.Header().Set("Cache-Control", "no-cache")
+						w.Header().Set("Connection", "keep-alive")
+						w.Header().Set("X-Accel-Buffering", "no")
+						if flusher, ok := w.(http.Flusher); ok {
+							flusher.Flush()
+						}
+						updates := watcher.Updates()
+						for {
+							select {
+							case <-r.Context().Done():
+								return
+							case entry, ok := <-updates:
+								if !ok {
+									return
+								}
+								if entry == nil {
+									// Initial values done (nil sentinel)
+									if _, err := w.Write([]byte("event: synced\ndata: {}\n\n")); err != nil {
+										return
+									}
+								} else {
+									payload := map[string]any{
+										"key":      entry.Key(),
+										"revision": entry.Revision(),
+										"value":    base64.StdEncoding.EncodeToString(entry.Value()),
+									}
+									body, _ := json.Marshal(payload)
+									if _, err := w.Write([]byte("data: " + string(body) + "\n\n")); err != nil {
+										return
+									}
+								}
+								if flusher, ok := w.(http.Flusher); ok {
+									flusher.Flush()
+								}
+							}
+						}
+					})
 					slog.Info("nats kv ready", "bucket", "LIVE_STATE")
 				}
 			}
@@ -167,6 +216,11 @@ func main() {
 	}
 	if kv == nil {
 		mux.HandleFunc("/api/live/state", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "NATS KV not configured (set NATS_URL)"})
+		})
+		mux.HandleFunc("/api/live/state/watch", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusServiceUnavailable)
 			_ = json.NewEncoder(w).Encode(map[string]string{"error": "NATS KV not configured (set NATS_URL)"})
