@@ -2,8 +2,11 @@
 #include "greeks_calculator.h"
 #include "market_hours.h"
 #include <cmath>
+#include <unordered_map>
 #include <ql/instruments/payoffs.hpp>
+#include <ql/instruments/bonds/fixedratebond.hpp>
 #include <ql/pricingengines/blackcalculator.hpp>
+#include <ql/pricingengines/bond/bondfunctions.hpp>
 #include <ql/quantlib.hpp>
 #include <spdlog/spdlog.h>
 
@@ -13,6 +16,65 @@ namespace risk {
 
 GreeksCalculator::GreeksCalculator() {
   spdlog::debug("GreeksCalculator initialized");
+}
+
+std::optional<double> GreeksCalculator::calculate_implied_vol(
+    double market_price,
+    double underlying_price,
+    double strike,
+    double risk_free_rate,
+    double time_to_expiry,
+    types::OptionType option_type) const
+{
+  if (market_price <= 0.0 || underlying_price <= 0.0 || strike <= 0.0 ||
+      time_to_expiry <= 0.0) {
+    spdlog::warn("calculate_implied_vol: invalid params price={} S={} K={} T={}",
+                 market_price, underlying_price, strike, time_to_expiry);
+    return std::nullopt;
+  }
+
+  constexpr double kMinVol  = 1e-7;
+  constexpr double kMaxVol  = 10.0;
+  constexpr double kTol     = 1e-8;
+  constexpr int    kMaxIter = 100;
+
+  Option::Type ql_type =
+      (option_type == types::OptionType::Call) ? Option::Call : Option::Put;
+  ext::shared_ptr<StrikedTypePayoff> payoff(
+      new PlainVanillaPayoff(ql_type, strike));
+
+  const double forward  = underlying_price * std::exp(risk_free_rate * time_to_expiry);
+  const double discount = std::exp(-risk_free_rate * time_to_expiry);
+
+  double sigma = 0.30; // initial guess: 30% annualised vol
+
+  try {
+    for (int i = 0; i < kMaxIter; ++i) {
+      const double std_dev = sigma * std::sqrt(time_to_expiry);
+      BlackCalculator calc(payoff, forward, std_dev, discount);
+
+      const double diff = calc.value() - market_price;
+      if (std::abs(diff) < kTol) {
+        return sigma;
+      }
+
+      const double vega = calc.vega(time_to_expiry);
+      if (std::abs(vega) < 1e-10) {
+        spdlog::debug("calculate_implied_vol: vega near-zero at iter {}, price={} S={} K={}",
+                      i, market_price, underlying_price, strike);
+        break;
+      }
+
+      sigma = std::clamp(sigma - diff / vega, kMinVol, kMaxVol);
+    }
+  } catch (const std::exception& e) {
+    spdlog::warn("calculate_implied_vol: QuantLib error: {}", e.what());
+    return std::nullopt;
+  }
+
+  spdlog::debug("calculate_implied_vol: did not converge price={} S={} K={} T={}",
+                market_price, underlying_price, strike, time_to_expiry);
+  return std::nullopt;
 }
 
 std::optional<Greeks> GreeksCalculator::calculate_option_greeks(
@@ -232,44 +294,119 @@ double GreeksCalculator::days_to_years(int days) const {
   return static_cast<double>(days) / 365.0;
 }
 
-// Helper: Get bond duration from ETF symbol (lookup table)
 namespace {
-double get_etf_duration(const std::string &symbol) {
-  // Common bond ETF durations (approximate modified duration)
-  if (symbol == "TLT") {
-    // iShares 20+ Year Treasury Bond ETF
-    return 18.5;
-  } else if (symbol == "SHY") {
-    // iShares 1-3 Year Treasury Bond ETF
-    return 1.9;
-  } else if (symbol == "BIL") {
-    // SPDR Bloomberg 1-3 Month T-Bill ETF
-    return 0.15;
-  } else if (symbol == "IEF") {
-    // iShares 7-10 Year Treasury Bond ETF
-    return 7.5;
+
+// ETF bond parameters: weighted-average representative bond used to derive
+// modified duration and convexity via QuantLib::BondFunctions.
+// Each entry encodes the ETF's published weighted-average maturity (years),
+// coupon rate, and approximate yield used for the calculation.
+struct EtfBondParams
+{
+  double years_to_maturity; // weighted-average years to final maturity
+  double coupon_rate;       // weighted-average annual coupon (decimal)
+  double yield;             // approximate current yield used as discount rate
+  // Fallback values used when QuantLib construction fails.
+  double fallback_duration;
+  double fallback_convexity;
+};
+
+// Build a QuantLib FixedRateBond proxy and compute modified duration and
+// convexity from first principles.  Returns false and leaves duration/convexity
+// unchanged if construction or calculation throws.
+bool compute_ql_duration_convexity(const EtfBondParams &p,
+                                   double &duration_out,
+                                   double &convexity_out)
+{
+  try
+  {
+    Date today = Date::todaysDate();
+    // Settlement is T+1 for Treasuries; keep it simple at T+0.
+    Date issue = today;
+    // Round maturity to whole months from today.
+    auto months = static_cast<Integer>(std::round(p.years_to_maturity * 12.0));
+    if (months < 1)
+      months = 1;
+    Date maturity = today + months * Months;
+
+    Schedule schedule(issue, maturity,
+                      Period(Semiannual),
+                      UnitedStates(UnitedStates::GovernmentBond),
+                      Unadjusted, Unadjusted,
+                      DateGeneration::Backward, false);
+
+    FixedRateBond bond(0,                   // settlement days
+                       100.0,               // face amount
+                       schedule,
+                       {p.coupon_rate},
+                       ActualActual(ActualActual::ISMA));
+
+    InterestRate yield(p.yield,
+                       ActualActual(ActualActual::ISMA),
+                       Compounded, Semiannual);
+
+    duration_out  = BondFunctions::duration(bond, yield, Duration::Modified);
+    convexity_out = BondFunctions::convexity(bond, yield);
+    return true;
   }
-  // Default: Unknown ETF, return 0 (will need external data)
-  return 0.0;
+  catch (const std::exception &e)
+  {
+    spdlog::warn("QuantLib ETF duration/convexity calculation failed: {}", e.what());
+    return false;
+  }
 }
 
-double get_etf_convexity(const std::string &symbol) {
-  // Common bond ETF convexity values (approximate)
-  if (symbol == "TLT") {
-    // iShares 20+ Year Treasury Bond ETF
-    return 350.0;
-  } else if (symbol == "SHY") {
-    // iShares 1-3 Year Treasury Bond ETF
-    return 5.0;
-  } else if (symbol == "BIL") {
-    // SPDR Bloomberg 1-3 Month T-Bill ETF
-    return 0.1;
-  } else if (symbol == "IEF") {
-    // iShares 7-10 Year Treasury Bond ETF
-    return 70.0;
-  }
-  // Default: Unknown ETF, return 0 (will need external data)
-  return 0.0;
+// Hardcoded fallback table — values kept in sync with EtfBondParams below.
+// These are only used when the QuantLib path throws (e.g., bad date arithmetic
+// near holidays).
+const std::unordered_map<std::string, EtfBondParams> &etf_bond_params()
+{
+  static const std::unordered_map<std::string, EtfBondParams> kParams = {
+    // TLT: iShares 20+ Year Treasury Bond ETF
+    // ~25yr maturity, ~3% coupon, ~4.5% yield → modified duration ~18.5
+    {"TLT", {25.0, 0.030, 0.045, 18.5, 350.0}},
+    // SHY: iShares 1-3 Year Treasury Bond ETF
+    // ~2yr maturity, ~5% coupon, ~4.8% yield → modified duration ~1.9
+    {"SHY", { 2.0, 0.050, 0.048,  1.9,   5.0}},
+    // IEF: iShares 7-10 Year Treasury Bond ETF
+    // ~7yr maturity, ~3.5% coupon, ~4.3% yield → modified duration ~7.5
+    {"IEF", { 7.0, 0.035, 0.043,  7.5,  70.0}},
+    // BIL: SPDR Bloomberg 1-3 Month T-Bill ETF
+    // ~0.25yr maturity, ~5.3% coupon, ~5.3% yield → modified duration ~0.08
+    {"BIL", { 0.25, 0.053, 0.053,  0.08,   0.1}},
+  };
+  return kParams;
+}
+
+// Compute both duration and convexity in one QuantLib call; returns false for
+// unknown symbols.
+bool get_etf_duration_convexity(const std::string &symbol,
+                                double &duration_out,
+                                double &convexity_out)
+{
+  const auto &params = etf_bond_params();
+  auto it = params.find(symbol);
+  if (it == params.end())
+    return false;
+
+  const EtfBondParams &p = it->second;
+  duration_out  = p.fallback_duration;
+  convexity_out = p.fallback_convexity;
+  compute_ql_duration_convexity(p, duration_out, convexity_out);
+  return true;
+}
+
+double get_etf_duration(const std::string &symbol)
+{
+  double duration = 0.0, convexity = 0.0;
+  get_etf_duration_convexity(symbol, duration, convexity);
+  return duration;
+}
+
+double get_etf_convexity(const std::string &symbol)
+{
+  double duration = 0.0, convexity = 0.0;
+  get_etf_duration_convexity(symbol, duration, convexity);
+  return convexity;
 }
 
 } // anonymous namespace

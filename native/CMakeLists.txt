@@ -867,8 +867,15 @@ if(NOT TWS_API_LIB OR NOT EXISTS "${TWS_API_LIB}")
     endforeach()
 endif()
 
-set(INTEL_DECIMAL_LIB "${CMAKE_CURRENT_SOURCE_DIR}")
-cmake_path(APPEND INTEL_DECIMAL_LIB "third_party" "IntelRDFPMathLib20U2" "LIBRARY" "libbid.a")
+set(_intel_u2 "${CMAKE_CURRENT_SOURCE_DIR}/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a")
+set(_intel_u4 "${CMAKE_CURRENT_SOURCE_DIR}/third_party/IntelRDFPMathLib20U4/LIBRARY/libbid.a")
+if(EXISTS "${_intel_u4}")
+    set(INTEL_DECIMAL_LIB "${_intel_u4}")
+else()
+    set(INTEL_DECIMAL_LIB "${_intel_u2}")
+endif()
+unset(_intel_u2)
+unset(_intel_u4)
 
 set(_missing_native_deps "")
 set(_native_prereqs_met TRUE)
@@ -975,6 +982,7 @@ if(_build_native_cli)
             src/order_manager.cpp
             src/risk_calculator.cpp
             src/risk_calculator_var.cpp
+            src/risk_calculator_sizing.cpp
             src/risk_calculator_stats.cpp
             src/greeks_calculator.cpp
         )

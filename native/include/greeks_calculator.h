@@ -61,6 +61,18 @@ public:
         const std::string& currency
     ) const;
 
+    // Solve for implied volatility using Newton-Raphson on BlackCalculator::value().
+    // Returns nullopt if the solver fails to converge or inputs are invalid.
+    // time_to_expiry is in years (use days_to_years() to convert from DTE).
+    std::optional<double> calculate_implied_vol(
+        double market_price,
+        double underlying_price,
+        double strike,
+        double risk_free_rate,
+        double time_to_expiry,
+        types::OptionType option_type
+    ) const;
+
     // Aggregate Greeks across multiple positions
     // Multiplies by quantity and sums
     Greeks aggregate_greeks(

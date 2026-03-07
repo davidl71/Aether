@@ -24,6 +24,7 @@ set(TEST_SOURCES
     test_convexity_calculator.cpp
     test_path_validator.cpp
     test_loan_position.cpp
+    test_greeks_calculator.cpp
 )
 
 add_executable(box_spread_tests ${TEST_SOURCES})
@@ -248,6 +249,7 @@ if(NOT USE_BOX_SPREAD_CPP_LIB)
         ${_native_src_dir}/order_manager.cpp
         ${_native_src_dir}/risk_calculator.cpp
         ${_native_src_dir}/risk_calculator_var.cpp
+        ${_native_src_dir}/risk_calculator_sizing.cpp
         ${_native_src_dir}/risk_calculator_stats.cpp
     )
 endif()
