@@ -38,6 +38,17 @@ import sys
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+# Generated proto types for boundary DTOs (single source: proto/messages.proto)
+try:
+    from python.generated import BankAccount as ProtoBankAccount
+    from python.generated import DiscountBankBalance, DiscountBankTransaction
+    GENERATED_PROTO_AVAILABLE = True
+except ImportError:
+    ProtoBankAccount = None  # type: ignore
+    DiscountBankBalance = None  # type: ignore
+    DiscountBankTransaction = None  # type: ignore
+    GENERATED_PROTO_AVAILABLE = False
+
 from python.services.security_integration_helper import (
     add_security_to_app,
     add_security_headers_middleware

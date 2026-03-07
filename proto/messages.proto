@@ -118,6 +118,52 @@ message RiskConfig {
   double risk_free_rate_override = 8;  // 0 = auto-detect from market data
 }
 
+// Risk decision (allow/deny) for reporting; aligns with RiskStatus semantics.
+message RiskDecision {
+  bool allowed = 1;
+  string reason = 2;
+  google.protobuf.Timestamp updated_at = 3;
+}
+
+// Position-level risk metrics (aligns with native risk::PositionRisk).
+message PositionRisk {
+  double position_size = 1;
+  double max_loss = 2;
+  double max_gain = 3;
+  double expected_value = 4;
+  double probability_of_profit = 5;
+  double delta = 6;
+  double gamma = 7;
+  double theta = 8;
+  double vega = 9;
+  double rho = 10;
+  double leverage = 11;
+  double risk_reward_ratio = 12;
+  double kelly_criterion = 13;
+  double initial_margin = 14;
+  double maintenance_margin = 15;
+  double margin_utilization = 16;
+  bool margin_call_risk = 17;
+  google.protobuf.Timestamp margin_timestamp = 18;
+}
+
+// Portfolio-level risk metrics (aligns with native risk::PortfolioRisk).
+message PortfolioRisk {
+  double total_exposure = 1;
+  double total_delta = 2;
+  double total_gamma = 3;
+  double total_theta = 4;
+  double total_vega = 5;
+  double var_95 = 6;
+  double var_99 = 7;
+  double expected_shortfall = 8;
+  double concentration_risk = 9;
+  double liquidity_risk = 10;
+  double sharpe_ratio = 11;
+  double sortino_ratio = 12;
+  double max_drawdown = 13;
+}
+
 // ---------------------------------------------------------------------------
 // System
 // ---------------------------------------------------------------------------

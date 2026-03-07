@@ -1016,6 +1016,389 @@ func (x *RiskConfig) GetRiskFreeRateOverride() float64 {
 	return 0
 }
 
+// Risk decision (allow/deny) for reporting; aligns with RiskStatus semantics.
+type RiskDecision struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Allowed       bool                   `protobuf:"varint,1,opt,name=allowed,proto3" json:"allowed,omitempty"`
+	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RiskDecision) Reset() {
+	*x = RiskDecision{}
+	mi := &file_messages_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RiskDecision) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RiskDecision) ProtoMessage() {}
+
+func (x *RiskDecision) ProtoReflect() protoreflect.Message {
+	mi := &file_messages_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RiskDecision.ProtoReflect.Descriptor instead.
+func (*RiskDecision) Descriptor() ([]byte, []int) {
+	return file_messages_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *RiskDecision) GetAllowed() bool {
+	if x != nil {
+		return x.Allowed
+	}
+	return false
+}
+
+func (x *RiskDecision) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *RiskDecision) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
+// Position-level risk metrics (aligns with native risk::PositionRisk).
+type PositionRisk struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	PositionSize        float64                `protobuf:"fixed64,1,opt,name=position_size,json=positionSize,proto3" json:"position_size,omitempty"`
+	MaxLoss             float64                `protobuf:"fixed64,2,opt,name=max_loss,json=maxLoss,proto3" json:"max_loss,omitempty"`
+	MaxGain             float64                `protobuf:"fixed64,3,opt,name=max_gain,json=maxGain,proto3" json:"max_gain,omitempty"`
+	ExpectedValue       float64                `protobuf:"fixed64,4,opt,name=expected_value,json=expectedValue,proto3" json:"expected_value,omitempty"`
+	ProbabilityOfProfit float64                `protobuf:"fixed64,5,opt,name=probability_of_profit,json=probabilityOfProfit,proto3" json:"probability_of_profit,omitempty"`
+	Delta               float64                `protobuf:"fixed64,6,opt,name=delta,proto3" json:"delta,omitempty"`
+	Gamma               float64                `protobuf:"fixed64,7,opt,name=gamma,proto3" json:"gamma,omitempty"`
+	Theta               float64                `protobuf:"fixed64,8,opt,name=theta,proto3" json:"theta,omitempty"`
+	Vega                float64                `protobuf:"fixed64,9,opt,name=vega,proto3" json:"vega,omitempty"`
+	Rho                 float64                `protobuf:"fixed64,10,opt,name=rho,proto3" json:"rho,omitempty"`
+	Leverage            float64                `protobuf:"fixed64,11,opt,name=leverage,proto3" json:"leverage,omitempty"`
+	RiskRewardRatio     float64                `protobuf:"fixed64,12,opt,name=risk_reward_ratio,json=riskRewardRatio,proto3" json:"risk_reward_ratio,omitempty"`
+	KellyCriterion      float64                `protobuf:"fixed64,13,opt,name=kelly_criterion,json=kellyCriterion,proto3" json:"kelly_criterion,omitempty"`
+	InitialMargin       float64                `protobuf:"fixed64,14,opt,name=initial_margin,json=initialMargin,proto3" json:"initial_margin,omitempty"`
+	MaintenanceMargin   float64                `protobuf:"fixed64,15,opt,name=maintenance_margin,json=maintenanceMargin,proto3" json:"maintenance_margin,omitempty"`
+	MarginUtilization   float64                `protobuf:"fixed64,16,opt,name=margin_utilization,json=marginUtilization,proto3" json:"margin_utilization,omitempty"`
+	MarginCallRisk      bool                   `protobuf:"varint,17,opt,name=margin_call_risk,json=marginCallRisk,proto3" json:"margin_call_risk,omitempty"`
+	MarginTimestamp     *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=margin_timestamp,json=marginTimestamp,proto3" json:"margin_timestamp,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *PositionRisk) Reset() {
+	*x = PositionRisk{}
+	mi := &file_messages_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PositionRisk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PositionRisk) ProtoMessage() {}
+
+func (x *PositionRisk) ProtoReflect() protoreflect.Message {
+	mi := &file_messages_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PositionRisk.ProtoReflect.Descriptor instead.
+func (*PositionRisk) Descriptor() ([]byte, []int) {
+	return file_messages_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *PositionRisk) GetPositionSize() float64 {
+	if x != nil {
+		return x.PositionSize
+	}
+	return 0
+}
+
+func (x *PositionRisk) GetMaxLoss() float64 {
+	if x != nil {
+		return x.MaxLoss
+	}
+	return 0
+}
+
+func (x *PositionRisk) GetMaxGain() float64 {
+	if x != nil {
+		return x.MaxGain
+	}
+	return 0
+}
+
+func (x *PositionRisk) GetExpectedValue() float64 {
+	if x != nil {
+		return x.ExpectedValue
+	}
+	return 0
+}
+
+func (x *PositionRisk) GetProbabilityOfProfit() float64 {
+	if x != nil {
+		return x.ProbabilityOfProfit
+	}
+	return 0
+}
+
+func (x *PositionRisk) GetDelta() float64 {
+	if x != nil {
+		return x.Delta
+	}
+	return 0
+}
+
+func (x *PositionRisk) GetGamma() float64 {
+	if x != nil {
+		return x.Gamma
+	}
+	return 0
+}
+
+func (x *PositionRisk) GetTheta() float64 {
+	if x != nil {
+		return x.Theta
+	}
+	return 0
+}
+
+func (x *PositionRisk) GetVega() float64 {
+	if x != nil {
+		return x.Vega
+	}
+	return 0
+}
+
+func (x *PositionRisk) GetRho() float64 {
+	if x != nil {
+		return x.Rho
+	}
+	return 0
+}
+
+func (x *PositionRisk) GetLeverage() float64 {
+	if x != nil {
+		return x.Leverage
+	}
+	return 0
+}
+
+func (x *PositionRisk) GetRiskRewardRatio() float64 {
+	if x != nil {
+		return x.RiskRewardRatio
+	}
+	return 0
+}
+
+func (x *PositionRisk) GetKellyCriterion() float64 {
+	if x != nil {
+		return x.KellyCriterion
+	}
+	return 0
+}
+
+func (x *PositionRisk) GetInitialMargin() float64 {
+	if x != nil {
+		return x.InitialMargin
+	}
+	return 0
+}
+
+func (x *PositionRisk) GetMaintenanceMargin() float64 {
+	if x != nil {
+		return x.MaintenanceMargin
+	}
+	return 0
+}
+
+func (x *PositionRisk) GetMarginUtilization() float64 {
+	if x != nil {
+		return x.MarginUtilization
+	}
+	return 0
+}
+
+func (x *PositionRisk) GetMarginCallRisk() bool {
+	if x != nil {
+		return x.MarginCallRisk
+	}
+	return false
+}
+
+func (x *PositionRisk) GetMarginTimestamp() *timestamppb.Timestamp {
+	if x != nil {
+		return x.MarginTimestamp
+	}
+	return nil
+}
+
+// Portfolio-level risk metrics (aligns with native risk::PortfolioRisk).
+type PortfolioRisk struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	TotalExposure     float64                `protobuf:"fixed64,1,opt,name=total_exposure,json=totalExposure,proto3" json:"total_exposure,omitempty"`
+	TotalDelta        float64                `protobuf:"fixed64,2,opt,name=total_delta,json=totalDelta,proto3" json:"total_delta,omitempty"`
+	TotalGamma        float64                `protobuf:"fixed64,3,opt,name=total_gamma,json=totalGamma,proto3" json:"total_gamma,omitempty"`
+	TotalTheta        float64                `protobuf:"fixed64,4,opt,name=total_theta,json=totalTheta,proto3" json:"total_theta,omitempty"`
+	TotalVega         float64                `protobuf:"fixed64,5,opt,name=total_vega,json=totalVega,proto3" json:"total_vega,omitempty"`
+	Var_95            float64                `protobuf:"fixed64,6,opt,name=var_95,json=var95,proto3" json:"var_95,omitempty"`
+	Var_99            float64                `protobuf:"fixed64,7,opt,name=var_99,json=var99,proto3" json:"var_99,omitempty"`
+	ExpectedShortfall float64                `protobuf:"fixed64,8,opt,name=expected_shortfall,json=expectedShortfall,proto3" json:"expected_shortfall,omitempty"`
+	ConcentrationRisk float64                `protobuf:"fixed64,9,opt,name=concentration_risk,json=concentrationRisk,proto3" json:"concentration_risk,omitempty"`
+	LiquidityRisk     float64                `protobuf:"fixed64,10,opt,name=liquidity_risk,json=liquidityRisk,proto3" json:"liquidity_risk,omitempty"`
+	SharpeRatio       float64                `protobuf:"fixed64,11,opt,name=sharpe_ratio,json=sharpeRatio,proto3" json:"sharpe_ratio,omitempty"`
+	SortinoRatio      float64                `protobuf:"fixed64,12,opt,name=sortino_ratio,json=sortinoRatio,proto3" json:"sortino_ratio,omitempty"`
+	MaxDrawdown       float64                `protobuf:"fixed64,13,opt,name=max_drawdown,json=maxDrawdown,proto3" json:"max_drawdown,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *PortfolioRisk) Reset() {
+	*x = PortfolioRisk{}
+	mi := &file_messages_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PortfolioRisk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PortfolioRisk) ProtoMessage() {}
+
+func (x *PortfolioRisk) ProtoReflect() protoreflect.Message {
+	mi := &file_messages_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PortfolioRisk.ProtoReflect.Descriptor instead.
+func (*PortfolioRisk) Descriptor() ([]byte, []int) {
+	return file_messages_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *PortfolioRisk) GetTotalExposure() float64 {
+	if x != nil {
+		return x.TotalExposure
+	}
+	return 0
+}
+
+func (x *PortfolioRisk) GetTotalDelta() float64 {
+	if x != nil {
+		return x.TotalDelta
+	}
+	return 0
+}
+
+func (x *PortfolioRisk) GetTotalGamma() float64 {
+	if x != nil {
+		return x.TotalGamma
+	}
+	return 0
+}
+
+func (x *PortfolioRisk) GetTotalTheta() float64 {
+	if x != nil {
+		return x.TotalTheta
+	}
+	return 0
+}
+
+func (x *PortfolioRisk) GetTotalVega() float64 {
+	if x != nil {
+		return x.TotalVega
+	}
+	return 0
+}
+
+func (x *PortfolioRisk) GetVar_95() float64 {
+	if x != nil {
+		return x.Var_95
+	}
+	return 0
+}
+
+func (x *PortfolioRisk) GetVar_99() float64 {
+	if x != nil {
+		return x.Var_99
+	}
+	return 0
+}
+
+func (x *PortfolioRisk) GetExpectedShortfall() float64 {
+	if x != nil {
+		return x.ExpectedShortfall
+	}
+	return 0
+}
+
+func (x *PortfolioRisk) GetConcentrationRisk() float64 {
+	if x != nil {
+		return x.ConcentrationRisk
+	}
+	return 0
+}
+
+func (x *PortfolioRisk) GetLiquidityRisk() float64 {
+	if x != nil {
+		return x.LiquidityRisk
+	}
+	return 0
+}
+
+func (x *PortfolioRisk) GetSharpeRatio() float64 {
+	if x != nil {
+		return x.SharpeRatio
+	}
+	return 0
+}
+
+func (x *PortfolioRisk) GetSortinoRatio() float64 {
+	if x != nil {
+		return x.SortinoRatio
+	}
+	return 0
+}
+
+func (x *PortfolioRisk) GetMaxDrawdown() float64 {
+	if x != nil {
+		return x.MaxDrawdown
+	}
+	return 0
+}
+
 type Alert struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Level         AlertLevel             `protobuf:"varint,1,opt,name=level,proto3,enum=ib.platform.v1.AlertLevel" json:"level,omitempty"`
@@ -1027,7 +1410,7 @@ type Alert struct {
 
 func (x *Alert) Reset() {
 	*x = Alert{}
-	mi := &file_messages_proto_msgTypes[11]
+	mi := &file_messages_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1039,7 +1422,7 @@ func (x *Alert) String() string {
 func (*Alert) ProtoMessage() {}
 
 func (x *Alert) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[11]
+	mi := &file_messages_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1052,7 +1435,7 @@ func (x *Alert) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Alert.ProtoReflect.Descriptor instead.
 func (*Alert) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{11}
+	return file_messages_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *Alert) GetLevel() AlertLevel {
@@ -1094,7 +1477,7 @@ type Metrics struct {
 
 func (x *Metrics) Reset() {
 	*x = Metrics{}
-	mi := &file_messages_proto_msgTypes[12]
+	mi := &file_messages_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1106,7 +1489,7 @@ func (x *Metrics) String() string {
 func (*Metrics) ProtoMessage() {}
 
 func (x *Metrics) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[12]
+	mi := &file_messages_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1119,7 +1502,7 @@ func (x *Metrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Metrics.ProtoReflect.Descriptor instead.
 func (*Metrics) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{12}
+	return file_messages_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *Metrics) GetNetLiq() float64 {
@@ -1213,7 +1596,7 @@ type SystemSnapshot struct {
 
 func (x *SystemSnapshot) Reset() {
 	*x = SystemSnapshot{}
-	mi := &file_messages_proto_msgTypes[13]
+	mi := &file_messages_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1225,7 +1608,7 @@ func (x *SystemSnapshot) String() string {
 func (*SystemSnapshot) ProtoMessage() {}
 
 func (x *SystemSnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[13]
+	mi := &file_messages_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1238,7 +1621,7 @@ func (x *SystemSnapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SystemSnapshot.ProtoReflect.Descriptor instead.
 func (*SystemSnapshot) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{13}
+	return file_messages_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SystemSnapshot) GetGeneratedAt() *timestamppb.Timestamp {
@@ -1348,7 +1731,7 @@ type BackendHealth struct {
 
 func (x *BackendHealth) Reset() {
 	*x = BackendHealth{}
-	mi := &file_messages_proto_msgTypes[14]
+	mi := &file_messages_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1360,7 +1743,7 @@ func (x *BackendHealth) String() string {
 func (*BackendHealth) ProtoMessage() {}
 
 func (x *BackendHealth) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[14]
+	mi := &file_messages_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1373,7 +1756,7 @@ func (x *BackendHealth) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BackendHealth.ProtoReflect.Descriptor instead.
 func (*BackendHealth) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{14}
+	return file_messages_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *BackendHealth) GetBackend() string {
@@ -1429,7 +1812,7 @@ type HealthAggregate struct {
 
 func (x *HealthAggregate) Reset() {
 	*x = HealthAggregate{}
-	mi := &file_messages_proto_msgTypes[15]
+	mi := &file_messages_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1441,7 +1824,7 @@ func (x *HealthAggregate) String() string {
 func (*HealthAggregate) ProtoMessage() {}
 
 func (x *HealthAggregate) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[15]
+	mi := &file_messages_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1454,7 +1837,7 @@ func (x *HealthAggregate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HealthAggregate.ProtoReflect.Descriptor instead.
 func (*HealthAggregate) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{15}
+	return file_messages_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *HealthAggregate) GetBackends() map[string]*BackendHealth {
@@ -1484,7 +1867,7 @@ type NatsEnvelope struct {
 
 func (x *NatsEnvelope) Reset() {
 	*x = NatsEnvelope{}
-	mi := &file_messages_proto_msgTypes[16]
+	mi := &file_messages_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1496,7 +1879,7 @@ func (x *NatsEnvelope) String() string {
 func (*NatsEnvelope) ProtoMessage() {}
 
 func (x *NatsEnvelope) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[16]
+	mi := &file_messages_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1509,7 +1892,7 @@ func (x *NatsEnvelope) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NatsEnvelope.ProtoReflect.Descriptor instead.
 func (*NatsEnvelope) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{16}
+	return file_messages_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *NatsEnvelope) GetId() string {
@@ -1561,7 +1944,7 @@ type OptionContract struct {
 
 func (x *OptionContract) Reset() {
 	*x = OptionContract{}
-	mi := &file_messages_proto_msgTypes[17]
+	mi := &file_messages_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1573,7 +1956,7 @@ func (x *OptionContract) String() string {
 func (*OptionContract) ProtoMessage() {}
 
 func (x *OptionContract) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[17]
+	mi := &file_messages_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1586,7 +1969,7 @@ func (x *OptionContract) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OptionContract.ProtoReflect.Descriptor instead.
 func (*OptionContract) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{17}
+	return file_messages_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *OptionContract) GetSymbol() string {
@@ -1663,7 +2046,7 @@ type BoxSpreadLeg struct {
 
 func (x *BoxSpreadLeg) Reset() {
 	*x = BoxSpreadLeg{}
-	mi := &file_messages_proto_msgTypes[18]
+	mi := &file_messages_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1675,7 +2058,7 @@ func (x *BoxSpreadLeg) String() string {
 func (*BoxSpreadLeg) ProtoMessage() {}
 
 func (x *BoxSpreadLeg) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[18]
+	mi := &file_messages_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1688,7 +2071,7 @@ func (x *BoxSpreadLeg) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BoxSpreadLeg.ProtoReflect.Descriptor instead.
 func (*BoxSpreadLeg) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{18}
+	return file_messages_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *BoxSpreadLeg) GetLongCall() *OptionContract {
@@ -1873,7 +2256,7 @@ type BoxSpreadScenario struct {
 
 func (x *BoxSpreadScenario) Reset() {
 	*x = BoxSpreadScenario{}
-	mi := &file_messages_proto_msgTypes[19]
+	mi := &file_messages_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1885,7 +2268,7 @@ func (x *BoxSpreadScenario) String() string {
 func (*BoxSpreadScenario) ProtoMessage() {}
 
 func (x *BoxSpreadScenario) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[19]
+	mi := &file_messages_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1898,7 +2281,7 @@ func (x *BoxSpreadScenario) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BoxSpreadScenario.ProtoReflect.Descriptor instead.
 func (*BoxSpreadScenario) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{19}
+	return file_messages_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *BoxSpreadScenario) GetSymbol() string {
@@ -1958,7 +2341,7 @@ type BoxSpreadExecution struct {
 
 func (x *BoxSpreadExecution) Reset() {
 	*x = BoxSpreadExecution{}
-	mi := &file_messages_proto_msgTypes[20]
+	mi := &file_messages_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1970,7 +2353,7 @@ func (x *BoxSpreadExecution) String() string {
 func (*BoxSpreadExecution) ProtoMessage() {}
 
 func (x *BoxSpreadExecution) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[20]
+	mi := &file_messages_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1983,7 +2366,7 @@ func (x *BoxSpreadExecution) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BoxSpreadExecution.ProtoReflect.Descriptor instead.
 func (*BoxSpreadExecution) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{20}
+	return file_messages_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *BoxSpreadExecution) GetSymbol() string {
@@ -2050,7 +2433,7 @@ type YieldCurvePoint struct {
 
 func (x *YieldCurvePoint) Reset() {
 	*x = YieldCurvePoint{}
-	mi := &file_messages_proto_msgTypes[21]
+	mi := &file_messages_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2062,7 +2445,7 @@ func (x *YieldCurvePoint) String() string {
 func (*YieldCurvePoint) ProtoMessage() {}
 
 func (x *YieldCurvePoint) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[21]
+	mi := &file_messages_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2075,7 +2458,7 @@ func (x *YieldCurvePoint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use YieldCurvePoint.ProtoReflect.Descriptor instead.
 func (*YieldCurvePoint) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{21}
+	return file_messages_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *YieldCurvePoint) GetDaysToExpiry() int32 {
@@ -2132,7 +2515,7 @@ type YieldCurve struct {
 
 func (x *YieldCurve) Reset() {
 	*x = YieldCurve{}
-	mi := &file_messages_proto_msgTypes[22]
+	mi := &file_messages_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2144,7 +2527,7 @@ func (x *YieldCurve) String() string {
 func (*YieldCurve) ProtoMessage() {}
 
 func (x *YieldCurve) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[22]
+	mi := &file_messages_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2157,7 +2540,7 @@ func (x *YieldCurve) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use YieldCurve.ProtoReflect.Descriptor instead.
 func (*YieldCurve) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{22}
+	return file_messages_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *YieldCurve) GetSymbol() string {
@@ -2204,7 +2587,7 @@ type BoxSpreadOpportunity struct {
 
 func (x *BoxSpreadOpportunity) Reset() {
 	*x = BoxSpreadOpportunity{}
-	mi := &file_messages_proto_msgTypes[23]
+	mi := &file_messages_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2216,7 +2599,7 @@ func (x *BoxSpreadOpportunity) String() string {
 func (*BoxSpreadOpportunity) ProtoMessage() {}
 
 func (x *BoxSpreadOpportunity) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[23]
+	mi := &file_messages_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2229,7 +2612,7 @@ func (x *BoxSpreadOpportunity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BoxSpreadOpportunity.ProtoReflect.Descriptor instead.
 func (*BoxSpreadOpportunity) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{23}
+	return file_messages_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *BoxSpreadOpportunity) GetSpread() float64 {
@@ -2308,7 +2691,7 @@ type StrategyParams struct {
 
 func (x *StrategyParams) Reset() {
 	*x = StrategyParams{}
-	mi := &file_messages_proto_msgTypes[24]
+	mi := &file_messages_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2320,7 +2703,7 @@ func (x *StrategyParams) String() string {
 func (*StrategyParams) ProtoMessage() {}
 
 func (x *StrategyParams) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[24]
+	mi := &file_messages_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2333,7 +2716,7 @@ func (x *StrategyParams) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StrategyParams.ProtoReflect.Descriptor instead.
 func (*StrategyParams) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{24}
+	return file_messages_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *StrategyParams) GetSymbols() []string {
@@ -2455,7 +2838,7 @@ type BankAccount struct {
 
 func (x *BankAccount) Reset() {
 	*x = BankAccount{}
-	mi := &file_messages_proto_msgTypes[25]
+	mi := &file_messages_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2467,7 +2850,7 @@ func (x *BankAccount) String() string {
 func (*BankAccount) ProtoMessage() {}
 
 func (x *BankAccount) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[25]
+	mi := &file_messages_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2480,7 +2863,7 @@ func (x *BankAccount) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BankAccount.ProtoReflect.Descriptor instead.
 func (*BankAccount) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{25}
+	return file_messages_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *BankAccount) GetId() string {
@@ -2539,7 +2922,7 @@ type DiscountBankBalance struct {
 
 func (x *DiscountBankBalance) Reset() {
 	*x = DiscountBankBalance{}
-	mi := &file_messages_proto_msgTypes[26]
+	mi := &file_messages_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2551,7 +2934,7 @@ func (x *DiscountBankBalance) String() string {
 func (*DiscountBankBalance) ProtoMessage() {}
 
 func (x *DiscountBankBalance) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[26]
+	mi := &file_messages_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2564,7 +2947,7 @@ func (x *DiscountBankBalance) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DiscountBankBalance.ProtoReflect.Descriptor instead.
 func (*DiscountBankBalance) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{26}
+	return file_messages_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *DiscountBankBalance) GetAccount() *BankAccount {
@@ -2622,7 +3005,7 @@ type DiscountBankTransaction struct {
 
 func (x *DiscountBankTransaction) Reset() {
 	*x = DiscountBankTransaction{}
-	mi := &file_messages_proto_msgTypes[27]
+	mi := &file_messages_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2634,7 +3017,7 @@ func (x *DiscountBankTransaction) String() string {
 func (*DiscountBankTransaction) ProtoMessage() {}
 
 func (x *DiscountBankTransaction) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[27]
+	mi := &file_messages_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2647,7 +3030,7 @@ func (x *DiscountBankTransaction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DiscountBankTransaction.ProtoReflect.Descriptor instead.
 func (*DiscountBankTransaction) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{27}
+	return file_messages_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *DiscountBankTransaction) GetValueDate() *timestamppb.Timestamp {
@@ -2698,7 +3081,7 @@ type RiskFreeRatePoint struct {
 
 func (x *RiskFreeRatePoint) Reset() {
 	*x = RiskFreeRatePoint{}
-	mi := &file_messages_proto_msgTypes[28]
+	mi := &file_messages_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2710,7 +3093,7 @@ func (x *RiskFreeRatePoint) String() string {
 func (*RiskFreeRatePoint) ProtoMessage() {}
 
 func (x *RiskFreeRatePoint) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[28]
+	mi := &file_messages_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2723,7 +3106,7 @@ func (x *RiskFreeRatePoint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RiskFreeRatePoint.ProtoReflect.Descriptor instead.
 func (*RiskFreeRatePoint) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{28}
+	return file_messages_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *RiskFreeRatePoint) GetDaysToExpiry() int32 {
@@ -2772,7 +3155,7 @@ type RiskFreeRateCurve struct {
 
 func (x *RiskFreeRateCurve) Reset() {
 	*x = RiskFreeRateCurve{}
-	mi := &file_messages_proto_msgTypes[29]
+	mi := &file_messages_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2784,7 +3167,7 @@ func (x *RiskFreeRateCurve) String() string {
 func (*RiskFreeRateCurve) ProtoMessage() {}
 
 func (x *RiskFreeRateCurve) ProtoReflect() protoreflect.Message {
-	mi := &file_messages_proto_msgTypes[29]
+	mi := &file_messages_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2797,7 +3180,7 @@ func (x *RiskFreeRateCurve) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RiskFreeRateCurve.ProtoReflect.Descriptor instead.
 func (*RiskFreeRateCurve) Descriptor() ([]byte, []int) {
-	return file_messages_proto_rawDescGZIP(), []int{29}
+	return file_messages_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *RiskFreeRateCurve) GetSymbol() string {
@@ -2906,7 +3289,51 @@ const file_messages_proto_rawDesc = "" +
 	"\x15position_size_percent\x18\x05 \x01(\x01R\x13positionSizePercent\x12(\n" +
 	"\x10enable_stop_loss\x18\x06 \x01(\bR\x0eenableStopLoss\x12*\n" +
 	"\x11stop_loss_percent\x18\a \x01(\x01R\x0fstopLossPercent\x125\n" +
-	"\x17risk_free_rate_override\x18\b \x01(\x01R\x14riskFreeRateOverride\"\x8d\x01\n" +
+	"\x17risk_free_rate_override\x18\b \x01(\x01R\x14riskFreeRateOverride\"{\n" +
+	"\fRiskDecision\x12\x18\n" +
+	"\aallowed\x18\x01 \x01(\bR\aallowed\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\x129\n" +
+	"\n" +
+	"updated_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\x93\x05\n" +
+	"\fPositionRisk\x12#\n" +
+	"\rposition_size\x18\x01 \x01(\x01R\fpositionSize\x12\x19\n" +
+	"\bmax_loss\x18\x02 \x01(\x01R\amaxLoss\x12\x19\n" +
+	"\bmax_gain\x18\x03 \x01(\x01R\amaxGain\x12%\n" +
+	"\x0eexpected_value\x18\x04 \x01(\x01R\rexpectedValue\x122\n" +
+	"\x15probability_of_profit\x18\x05 \x01(\x01R\x13probabilityOfProfit\x12\x14\n" +
+	"\x05delta\x18\x06 \x01(\x01R\x05delta\x12\x14\n" +
+	"\x05gamma\x18\a \x01(\x01R\x05gamma\x12\x14\n" +
+	"\x05theta\x18\b \x01(\x01R\x05theta\x12\x12\n" +
+	"\x04vega\x18\t \x01(\x01R\x04vega\x12\x10\n" +
+	"\x03rho\x18\n" +
+	" \x01(\x01R\x03rho\x12\x1a\n" +
+	"\bleverage\x18\v \x01(\x01R\bleverage\x12*\n" +
+	"\x11risk_reward_ratio\x18\f \x01(\x01R\x0friskRewardRatio\x12'\n" +
+	"\x0fkelly_criterion\x18\r \x01(\x01R\x0ekellyCriterion\x12%\n" +
+	"\x0einitial_margin\x18\x0e \x01(\x01R\rinitialMargin\x12-\n" +
+	"\x12maintenance_margin\x18\x0f \x01(\x01R\x11maintenanceMargin\x12-\n" +
+	"\x12margin_utilization\x18\x10 \x01(\x01R\x11marginUtilization\x12(\n" +
+	"\x10margin_call_risk\x18\x11 \x01(\bR\x0emarginCallRisk\x12E\n" +
+	"\x10margin_timestamp\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\x0fmarginTimestamp\"\xd6\x03\n" +
+	"\rPortfolioRisk\x12%\n" +
+	"\x0etotal_exposure\x18\x01 \x01(\x01R\rtotalExposure\x12\x1f\n" +
+	"\vtotal_delta\x18\x02 \x01(\x01R\n" +
+	"totalDelta\x12\x1f\n" +
+	"\vtotal_gamma\x18\x03 \x01(\x01R\n" +
+	"totalGamma\x12\x1f\n" +
+	"\vtotal_theta\x18\x04 \x01(\x01R\n" +
+	"totalTheta\x12\x1d\n" +
+	"\n" +
+	"total_vega\x18\x05 \x01(\x01R\ttotalVega\x12\x15\n" +
+	"\x06var_95\x18\x06 \x01(\x01R\x05var95\x12\x15\n" +
+	"\x06var_99\x18\a \x01(\x01R\x05var99\x12-\n" +
+	"\x12expected_shortfall\x18\b \x01(\x01R\x11expectedShortfall\x12-\n" +
+	"\x12concentration_risk\x18\t \x01(\x01R\x11concentrationRisk\x12%\n" +
+	"\x0eliquidity_risk\x18\n" +
+	" \x01(\x01R\rliquidityRisk\x12!\n" +
+	"\fsharpe_ratio\x18\v \x01(\x01R\vsharpeRatio\x12#\n" +
+	"\rsortino_ratio\x18\f \x01(\x01R\fsortinoRatio\x12!\n" +
+	"\fmax_drawdown\x18\r \x01(\x01R\vmaxDrawdown\"\x8d\x01\n" +
 	"\x05Alert\x120\n" +
 	"\x05level\x18\x01 \x01(\x0e2\x1a.ib.platform.v1.AlertLevelR\x05level\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x128\n" +
@@ -3118,7 +3545,7 @@ func file_messages_proto_rawDescGZIP() []byte {
 }
 
 var file_messages_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
+var file_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_messages_proto_goTypes = []any{
 	(AlertLevel)(0),                 // 0: ib.platform.v1.AlertLevel
 	(OptionTypeEnum)(0),             // 1: ib.platform.v1.OptionTypeEnum
@@ -3133,76 +3560,81 @@ var file_messages_proto_goTypes = []any{
 	(*RiskStatus)(nil),              // 10: ib.platform.v1.RiskStatus
 	(*RiskLimit)(nil),               // 11: ib.platform.v1.RiskLimit
 	(*RiskConfig)(nil),              // 12: ib.platform.v1.RiskConfig
-	(*Alert)(nil),                   // 13: ib.platform.v1.Alert
-	(*Metrics)(nil),                 // 14: ib.platform.v1.Metrics
-	(*SystemSnapshot)(nil),          // 15: ib.platform.v1.SystemSnapshot
-	(*BackendHealth)(nil),           // 16: ib.platform.v1.BackendHealth
-	(*HealthAggregate)(nil),         // 17: ib.platform.v1.HealthAggregate
-	(*NatsEnvelope)(nil),            // 18: ib.platform.v1.NatsEnvelope
-	(*OptionContract)(nil),          // 19: ib.platform.v1.OptionContract
-	(*BoxSpreadLeg)(nil),            // 20: ib.platform.v1.BoxSpreadLeg
-	(*BoxSpreadScenario)(nil),       // 21: ib.platform.v1.BoxSpreadScenario
-	(*BoxSpreadExecution)(nil),      // 22: ib.platform.v1.BoxSpreadExecution
-	(*YieldCurvePoint)(nil),         // 23: ib.platform.v1.YieldCurvePoint
-	(*YieldCurve)(nil),              // 24: ib.platform.v1.YieldCurve
-	(*BoxSpreadOpportunity)(nil),    // 25: ib.platform.v1.BoxSpreadOpportunity
-	(*StrategyParams)(nil),          // 26: ib.platform.v1.StrategyParams
-	(*BankAccount)(nil),             // 27: ib.platform.v1.BankAccount
-	(*DiscountBankBalance)(nil),     // 28: ib.platform.v1.DiscountBankBalance
-	(*DiscountBankTransaction)(nil), // 29: ib.platform.v1.DiscountBankTransaction
-	(*RiskFreeRatePoint)(nil),       // 30: ib.platform.v1.RiskFreeRatePoint
-	(*RiskFreeRateCurve)(nil),       // 31: ib.platform.v1.RiskFreeRateCurve
-	nil,                             // 32: ib.platform.v1.BackendHealth.ExtraEntry
-	nil,                             // 33: ib.platform.v1.HealthAggregate.BackendsEntry
-	(*timestamppb.Timestamp)(nil),   // 34: google.protobuf.Timestamp
+	(*RiskDecision)(nil),            // 13: ib.platform.v1.RiskDecision
+	(*PositionRisk)(nil),            // 14: ib.platform.v1.PositionRisk
+	(*PortfolioRisk)(nil),           // 15: ib.platform.v1.PortfolioRisk
+	(*Alert)(nil),                   // 16: ib.platform.v1.Alert
+	(*Metrics)(nil),                 // 17: ib.platform.v1.Metrics
+	(*SystemSnapshot)(nil),          // 18: ib.platform.v1.SystemSnapshot
+	(*BackendHealth)(nil),           // 19: ib.platform.v1.BackendHealth
+	(*HealthAggregate)(nil),         // 20: ib.platform.v1.HealthAggregate
+	(*NatsEnvelope)(nil),            // 21: ib.platform.v1.NatsEnvelope
+	(*OptionContract)(nil),          // 22: ib.platform.v1.OptionContract
+	(*BoxSpreadLeg)(nil),            // 23: ib.platform.v1.BoxSpreadLeg
+	(*BoxSpreadScenario)(nil),       // 24: ib.platform.v1.BoxSpreadScenario
+	(*BoxSpreadExecution)(nil),      // 25: ib.platform.v1.BoxSpreadExecution
+	(*YieldCurvePoint)(nil),         // 26: ib.platform.v1.YieldCurvePoint
+	(*YieldCurve)(nil),              // 27: ib.platform.v1.YieldCurve
+	(*BoxSpreadOpportunity)(nil),    // 28: ib.platform.v1.BoxSpreadOpportunity
+	(*StrategyParams)(nil),          // 29: ib.platform.v1.StrategyParams
+	(*BankAccount)(nil),             // 30: ib.platform.v1.BankAccount
+	(*DiscountBankBalance)(nil),     // 31: ib.platform.v1.DiscountBankBalance
+	(*DiscountBankTransaction)(nil), // 32: ib.platform.v1.DiscountBankTransaction
+	(*RiskFreeRatePoint)(nil),       // 33: ib.platform.v1.RiskFreeRatePoint
+	(*RiskFreeRateCurve)(nil),       // 34: ib.platform.v1.RiskFreeRateCurve
+	nil,                             // 35: ib.platform.v1.BackendHealth.ExtraEntry
+	nil,                             // 36: ib.platform.v1.HealthAggregate.BackendsEntry
+	(*timestamppb.Timestamp)(nil),   // 37: google.protobuf.Timestamp
 }
 var file_messages_proto_depIdxs = []int32{
-	34, // 0: ib.platform.v1.MarketDataEvent.timestamp:type_name -> google.protobuf.Timestamp
-	34, // 1: ib.platform.v1.CandleSnapshot.updated:type_name -> google.protobuf.Timestamp
+	37, // 0: ib.platform.v1.MarketDataEvent.timestamp:type_name -> google.protobuf.Timestamp
+	37, // 1: ib.platform.v1.CandleSnapshot.updated:type_name -> google.protobuf.Timestamp
 	3,  // 2: ib.platform.v1.SymbolSnapshot.candle:type_name -> ib.platform.v1.CandleSnapshot
-	34, // 3: ib.platform.v1.HistoricPosition.closed_at:type_name -> google.protobuf.Timestamp
-	34, // 4: ib.platform.v1.Order.submitted_at:type_name -> google.protobuf.Timestamp
-	34, // 5: ib.platform.v1.StrategyDecision.created_at:type_name -> google.protobuf.Timestamp
-	34, // 6: ib.platform.v1.StrategySignal.timestamp:type_name -> google.protobuf.Timestamp
-	34, // 7: ib.platform.v1.RiskStatus.updated_at:type_name -> google.protobuf.Timestamp
-	0,  // 8: ib.platform.v1.Alert.level:type_name -> ib.platform.v1.AlertLevel
-	34, // 9: ib.platform.v1.Alert.timestamp:type_name -> google.protobuf.Timestamp
-	34, // 10: ib.platform.v1.SystemSnapshot.generated_at:type_name -> google.protobuf.Timestamp
-	34, // 11: ib.platform.v1.SystemSnapshot.started_at:type_name -> google.protobuf.Timestamp
-	14, // 12: ib.platform.v1.SystemSnapshot.metrics:type_name -> ib.platform.v1.Metrics
-	4,  // 13: ib.platform.v1.SystemSnapshot.symbols:type_name -> ib.platform.v1.SymbolSnapshot
-	5,  // 14: ib.platform.v1.SystemSnapshot.positions:type_name -> ib.platform.v1.Position
-	6,  // 15: ib.platform.v1.SystemSnapshot.historic:type_name -> ib.platform.v1.HistoricPosition
-	7,  // 16: ib.platform.v1.SystemSnapshot.orders:type_name -> ib.platform.v1.Order
-	8,  // 17: ib.platform.v1.SystemSnapshot.decisions:type_name -> ib.platform.v1.StrategyDecision
-	13, // 18: ib.platform.v1.SystemSnapshot.alerts:type_name -> ib.platform.v1.Alert
-	10, // 19: ib.platform.v1.SystemSnapshot.risk:type_name -> ib.platform.v1.RiskStatus
-	34, // 20: ib.platform.v1.BackendHealth.updated_at:type_name -> google.protobuf.Timestamp
-	32, // 21: ib.platform.v1.BackendHealth.extra:type_name -> ib.platform.v1.BackendHealth.ExtraEntry
-	33, // 22: ib.platform.v1.HealthAggregate.backends:type_name -> ib.platform.v1.HealthAggregate.BackendsEntry
-	34, // 23: ib.platform.v1.HealthAggregate.generated_at:type_name -> google.protobuf.Timestamp
-	34, // 24: ib.platform.v1.NatsEnvelope.timestamp:type_name -> google.protobuf.Timestamp
-	1,  // 25: ib.platform.v1.OptionContract.option_type:type_name -> ib.platform.v1.OptionTypeEnum
-	19, // 26: ib.platform.v1.BoxSpreadLeg.long_call:type_name -> ib.platform.v1.OptionContract
-	19, // 27: ib.platform.v1.BoxSpreadLeg.short_call:type_name -> ib.platform.v1.OptionContract
-	19, // 28: ib.platform.v1.BoxSpreadLeg.long_put:type_name -> ib.platform.v1.OptionContract
-	19, // 29: ib.platform.v1.BoxSpreadLeg.short_put:type_name -> ib.platform.v1.OptionContract
-	34, // 30: ib.platform.v1.BoxSpreadExecution.executed_at:type_name -> google.protobuf.Timestamp
-	34, // 31: ib.platform.v1.YieldCurvePoint.as_of:type_name -> google.protobuf.Timestamp
-	23, // 32: ib.platform.v1.YieldCurve.points:type_name -> ib.platform.v1.YieldCurvePoint
-	34, // 33: ib.platform.v1.BoxSpreadOpportunity.discovered_time:type_name -> google.protobuf.Timestamp
-	27, // 34: ib.platform.v1.DiscountBankBalance.account:type_name -> ib.platform.v1.BankAccount
-	34, // 35: ib.platform.v1.DiscountBankBalance.balance_date:type_name -> google.protobuf.Timestamp
-	34, // 36: ib.platform.v1.DiscountBankTransaction.value_date:type_name -> google.protobuf.Timestamp
-	34, // 37: ib.platform.v1.RiskFreeRatePoint.as_of:type_name -> google.protobuf.Timestamp
-	30, // 38: ib.platform.v1.RiskFreeRateCurve.points:type_name -> ib.platform.v1.RiskFreeRatePoint
-	34, // 39: ib.platform.v1.RiskFreeRateCurve.timestamp:type_name -> google.protobuf.Timestamp
-	16, // 40: ib.platform.v1.HealthAggregate.BackendsEntry.value:type_name -> ib.platform.v1.BackendHealth
-	41, // [41:41] is the sub-list for method output_type
-	41, // [41:41] is the sub-list for method input_type
-	41, // [41:41] is the sub-list for extension type_name
-	41, // [41:41] is the sub-list for extension extendee
-	0,  // [0:41] is the sub-list for field type_name
+	37, // 3: ib.platform.v1.HistoricPosition.closed_at:type_name -> google.protobuf.Timestamp
+	37, // 4: ib.platform.v1.Order.submitted_at:type_name -> google.protobuf.Timestamp
+	37, // 5: ib.platform.v1.StrategyDecision.created_at:type_name -> google.protobuf.Timestamp
+	37, // 6: ib.platform.v1.StrategySignal.timestamp:type_name -> google.protobuf.Timestamp
+	37, // 7: ib.platform.v1.RiskStatus.updated_at:type_name -> google.protobuf.Timestamp
+	37, // 8: ib.platform.v1.RiskDecision.updated_at:type_name -> google.protobuf.Timestamp
+	37, // 9: ib.platform.v1.PositionRisk.margin_timestamp:type_name -> google.protobuf.Timestamp
+	0,  // 10: ib.platform.v1.Alert.level:type_name -> ib.platform.v1.AlertLevel
+	37, // 11: ib.platform.v1.Alert.timestamp:type_name -> google.protobuf.Timestamp
+	37, // 12: ib.platform.v1.SystemSnapshot.generated_at:type_name -> google.protobuf.Timestamp
+	37, // 13: ib.platform.v1.SystemSnapshot.started_at:type_name -> google.protobuf.Timestamp
+	17, // 14: ib.platform.v1.SystemSnapshot.metrics:type_name -> ib.platform.v1.Metrics
+	4,  // 15: ib.platform.v1.SystemSnapshot.symbols:type_name -> ib.platform.v1.SymbolSnapshot
+	5,  // 16: ib.platform.v1.SystemSnapshot.positions:type_name -> ib.platform.v1.Position
+	6,  // 17: ib.platform.v1.SystemSnapshot.historic:type_name -> ib.platform.v1.HistoricPosition
+	7,  // 18: ib.platform.v1.SystemSnapshot.orders:type_name -> ib.platform.v1.Order
+	8,  // 19: ib.platform.v1.SystemSnapshot.decisions:type_name -> ib.platform.v1.StrategyDecision
+	16, // 20: ib.platform.v1.SystemSnapshot.alerts:type_name -> ib.platform.v1.Alert
+	10, // 21: ib.platform.v1.SystemSnapshot.risk:type_name -> ib.platform.v1.RiskStatus
+	37, // 22: ib.platform.v1.BackendHealth.updated_at:type_name -> google.protobuf.Timestamp
+	35, // 23: ib.platform.v1.BackendHealth.extra:type_name -> ib.platform.v1.BackendHealth.ExtraEntry
+	36, // 24: ib.platform.v1.HealthAggregate.backends:type_name -> ib.platform.v1.HealthAggregate.BackendsEntry
+	37, // 25: ib.platform.v1.HealthAggregate.generated_at:type_name -> google.protobuf.Timestamp
+	37, // 26: ib.platform.v1.NatsEnvelope.timestamp:type_name -> google.protobuf.Timestamp
+	1,  // 27: ib.platform.v1.OptionContract.option_type:type_name -> ib.platform.v1.OptionTypeEnum
+	22, // 28: ib.platform.v1.BoxSpreadLeg.long_call:type_name -> ib.platform.v1.OptionContract
+	22, // 29: ib.platform.v1.BoxSpreadLeg.short_call:type_name -> ib.platform.v1.OptionContract
+	22, // 30: ib.platform.v1.BoxSpreadLeg.long_put:type_name -> ib.platform.v1.OptionContract
+	22, // 31: ib.platform.v1.BoxSpreadLeg.short_put:type_name -> ib.platform.v1.OptionContract
+	37, // 32: ib.platform.v1.BoxSpreadExecution.executed_at:type_name -> google.protobuf.Timestamp
+	37, // 33: ib.platform.v1.YieldCurvePoint.as_of:type_name -> google.protobuf.Timestamp
+	26, // 34: ib.platform.v1.YieldCurve.points:type_name -> ib.platform.v1.YieldCurvePoint
+	37, // 35: ib.platform.v1.BoxSpreadOpportunity.discovered_time:type_name -> google.protobuf.Timestamp
+	30, // 36: ib.platform.v1.DiscountBankBalance.account:type_name -> ib.platform.v1.BankAccount
+	37, // 37: ib.platform.v1.DiscountBankBalance.balance_date:type_name -> google.protobuf.Timestamp
+	37, // 38: ib.platform.v1.DiscountBankTransaction.value_date:type_name -> google.protobuf.Timestamp
+	37, // 39: ib.platform.v1.RiskFreeRatePoint.as_of:type_name -> google.protobuf.Timestamp
+	33, // 40: ib.platform.v1.RiskFreeRateCurve.points:type_name -> ib.platform.v1.RiskFreeRatePoint
+	37, // 41: ib.platform.v1.RiskFreeRateCurve.timestamp:type_name -> google.protobuf.Timestamp
+	19, // 42: ib.platform.v1.HealthAggregate.BackendsEntry.value:type_name -> ib.platform.v1.BackendHealth
+	43, // [43:43] is the sub-list for method output_type
+	43, // [43:43] is the sub-list for method input_type
+	43, // [43:43] is the sub-list for extension type_name
+	43, // [43:43] is the sub-list for extension extendee
+	0,  // [0:43] is the sub-list for field type_name
 }
 
 func init() { file_messages_proto_init() }
@@ -3216,7 +3648,7 @@ func file_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_messages_proto_rawDesc), len(file_messages_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   32,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

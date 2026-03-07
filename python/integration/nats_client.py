@@ -7,9 +7,16 @@ for market data, strategy signals/decisions, and backend snapshot/health.
 import json
 import logging
 import os
+import sys
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional, Callable, Dict, Any
+
+# Project root for python.generated
+_project_root = Path(__file__).resolve().parent.parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +29,15 @@ except ImportError:
     NATS = None
     NATS_AVAILABLE = False
     logger.warning("nats-py not available - NATS integration disabled")
+
+# Generated proto types for boundary DTOs (single source: proto/messages.proto)
+try:
+    from python.generated import StrategySignal, StrategyDecision
+    GENERATED_PROTO_AVAILABLE = True
+except ImportError:
+    StrategySignal = None  # type: ignore
+    StrategyDecision = None  # type: ignore
+    GENERATED_PROTO_AVAILABLE = False
 
 # Lazy singleton for snapshot/health publish (used by backend services)
 _global_client: Optional["NATSClient"] = None
@@ -153,17 +169,34 @@ class NATSClient:
 
         topic = f"strategy.signal.{symbol}"
 
+        if GENERATED_PROTO_AVAILABLE and StrategySignal is not None:
+            msg = StrategySignal(
+                symbol=symbol,
+                price=price,
+                timestamp=datetime.now(timezone.utc),
+            )
+            payload_dict = {"symbol": msg.symbol, "price": msg.price}
+            if msg.timestamp is not None:
+                payload_dict["timestamp"] = (
+                    msg.timestamp.isoformat()
+                    if hasattr(msg.timestamp, "isoformat")
+                    else str(msg.timestamp)
+                )
+            payload_dict["signal_type"] = signal_type
+        else:
+            payload_dict = {
+                "symbol": symbol,
+                "price": price,
+                "signal_type": signal_type,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+
         message = {
             "id": str(uuid.uuid4()),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "source": "python-strategy",
             "type": "StrategySignal",
-            "payload": {
-                "symbol": symbol,
-                "price": price,
-                "signal_type": signal_type,
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
+            "payload": payload_dict,
         }
 
         try:
@@ -201,19 +234,43 @@ class NATSClient:
 
         topic = f"strategy.decision.{symbol}"
 
-        message = {
-            "id": str(uuid.uuid4()),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "source": "python-strategy",
-            "type": "StrategyDecision",
-            "payload": {
+        if GENERATED_PROTO_AVAILABLE and StrategyDecision is not None:
+            msg = StrategyDecision(
+                symbol=symbol,
+                quantity=quantity,
+                side=side,
+                mark=mark,
+                created_at=datetime.now(timezone.utc),
+            )
+            payload_dict = {
+                "symbol": msg.symbol,
+                "quantity": msg.quantity,
+                "side": msg.side,
+                "mark": msg.mark,
+                "decision_type": decision_type,
+            }
+            if msg.created_at is not None:
+                payload_dict["timestamp"] = (
+                    msg.created_at.isoformat()
+                    if hasattr(msg.created_at, "isoformat")
+                    else str(msg.created_at)
+                )
+        else:
+            payload_dict = {
                 "symbol": symbol,
                 "quantity": quantity,
                 "side": side,
                 "mark": mark,
                 "decision_type": decision_type,
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
+
+        message = {
+            "id": str(uuid.uuid4()),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": "python-strategy",
+            "type": "StrategyDecision",
+            "payload": payload_dict,
         }
 
         try:

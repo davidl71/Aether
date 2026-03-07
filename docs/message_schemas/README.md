@@ -63,6 +63,8 @@ Payload bytes are a serialized inner message (`MarketDataEvent`, `StrategySignal
 | Python NATS | Pending | Use generated types from `python/generated/` |
 | TypeScript | Pending | Use generated types from `web/src/proto/` |
 
+**Python boundary types:** All Python code at NATS/REST boundaries should use types from **`python/generated`** (generated from `proto/messages.proto` via `./proto/generate.sh`). The former `python/proto_types.py` is deprecated and has been removed; no callers remain. Import from `python.generated` (e.g. `from python.generated import StrategySignal, DiscountBankBalance`).
+
 ## Further reading
 
 - [`proto/messages.proto`](../../proto/messages.proto) — canonical message definitions
