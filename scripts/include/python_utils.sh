@@ -11,6 +11,10 @@
 # PURPOSE: Eliminate code duplication across service scripts (~95% reduction)
 # PATTERN: Functions are sourced by service scripts, not executed directly
 # DEPENDENCIES: Requires bash, Python 3, venv module (or uv for faster operation)
+# UV VENVS: Venvs created with `uv venv` do not include pip. When uv is available,
+#   install_python_packages uses `uv pip install --python <venv_python>` so packages
+#   install without needing pip inside the venv. run-risk-free-rate-service.sh and
+#   run-tastytrade-service.sh also use uv for installs when available.
 # TESTING: See spec/scripts/include/python_utils_spec.sh
 #
 # USAGE PATTERN IN SERVICE SCRIPTS:
@@ -144,9 +148,11 @@ setup_venv() {
   # shellcheck disable=SC1090
   source "${ACTIVATE_PATH}"
 
-  # Update pip in virtual environment (only if not using uv)
+  # Update pip in virtual environment only when venv has pip (e.g. standard venv); skip for uv-created venvs
   if [ -z "${USE_UV}" ]; then
-    "${PYTHON_CMD}" -m pip install --quiet --upgrade pip wheel >/dev/null 2>&1 || true
+    if "${VENV_DIR}/bin/python" -m pip --version >/dev/null 2>&1; then
+      "${VENV_DIR}/bin/python" -m pip install --quiet --upgrade pip wheel >/dev/null 2>&1 || true
+    fi
   fi
 
   # Set venv Python path
@@ -215,9 +221,9 @@ install_python_packages() {
 
   if [ ${#missing_packages[@]} -gt 0 ]; then
     echo "Installing missing packages in virtual environment: ${missing_packages[*]}..." >&2
-    # Prefer uv pip install if uv is available (faster)
+    # Prefer uv so venvs created with `uv venv` (no pip) still work
     if command -v uv >/dev/null 2>&1; then
-      uv pip install --quiet "${missing_packages[@]}" >&2 || return 1
+      uv pip install --python "${venv_python}" --quiet "${missing_packages[@]}" >&2 || return 1
     else
       "${venv_python}" -m pip install --quiet "${missing_packages[@]}" >&2 || return 1
     fi

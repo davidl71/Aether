@@ -77,8 +77,10 @@ fi
 # shellcheck disable=SC1090
 source "${ACTIVATE_PATH}"
 
-# Update pip in virtual environment
-"${PYTHON_CMD}" -m pip install --quiet --upgrade pip wheel >/dev/null 2>&1 || true
+# Update pip in virtual environment only when venv has pip (skip for uv-created venvs)
+if "${VENV_DIR}/bin/python" -m pip --version >/dev/null 2>&1; then
+  "${VENV_DIR}/bin/python" -m pip install --quiet --upgrade pip wheel >/dev/null 2>&1 || true
+fi
 
 # Check if required packages are installed (using venv Python)
 VENV_PYTHON="${VENV_DIR}/bin/python"
@@ -99,7 +101,11 @@ fi
 
 if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
   echo "Installing missing packages in virtual environment: ${MISSING_PACKAGES[*]}..." >&2
-  "${VENV_PYTHON}" -m pip install --quiet "${MISSING_PACKAGES[@]}" >&2
+  if command -v uv >/dev/null 2>&1; then
+    uv pip install --python "${VENV_PYTHON}" --quiet "${MISSING_PACKAGES[@]}" >&2
+  else
+    "${VENV_PYTHON}" -m pip install --quiet "${MISSING_PACKAGES[@]}" >&2
+  fi
 fi
 
 # Use venv Python for all subsequent operations
@@ -136,6 +142,7 @@ if ! config_check_port_available "${TASTYTRADE_PORT}"; then
   echo "Port ${TASTYTRADE_PORT} is already in use. Checking if it's the Tastytrade service..." >&2
 
   # Try to verify it's the Tastytrade service by checking the health endpoint
+  # Accept status 'ok' or 'disabled' (e.g. missing credentials) as same service
   HEALTH_CHECK=$("${PYTHON_CMD}" -c "
 import urllib.request
 import json
@@ -143,7 +150,7 @@ import sys
 try:
     with urllib.request.urlopen('http://127.0.0.1:${TASTYTRADE_PORT}/api/health', timeout=2) as response:
         data = json.loads(response.read().decode())
-        if data.get('status') == 'ok' and 'tastytrade_connected' in data:
+        if 'tastytrade_connected' in data:
             print('TASTYTRADE_SERVICE')
         else:
             print('OTHER_SERVICE')

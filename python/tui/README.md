@@ -5,7 +5,10 @@ This is the Python replacement for the C++ TUI (`native/src/tui_app.cpp`). It pr
 ## Features
 
 - **Shared Data Models**: Uses the same data structures as the PWA (`web/src/types/snapshot.ts`)
-- **Multiple Providers**: Supports mock, REST API, and file-based data sources
+- **Multiple Providers**: Supports mock, REST API, file, and NATS data sources
+- **Mock as fallback**: When your preferred provider is REST/file/NATS, the TUI starts with **mock data** for a quick first paint, then switches to **real data** as soon as the backend responds. If the backend is unavailable, you keep seeing mock until it comes up.
+- **Snapshot cache**: When using a REST provider, the latest snapshot is stored in a SQLite database (`~/.config/ib_box_spread/snapshot_cache.db` by default, or `SNAPSHOT_CACHE_DB`). On startup the TUI loads the last snapshot so there is something to display immediately; when the backend is down, the last cached snapshot is shown. Set `snapshot_cache_path` to `""` in TUI config or `SNAPSHOT_CACHE_DB=disable` to turn off.
+- **Settings persistence**: Provider choice (mock/rest/file/nats) and endpoint settings are saved to `~/.config/ib_box_spread/tui_config.json` when you switch in Setup (F2).
 - **Watchlist sync**: Symbol watchlist is shared between the dashboard and the mock provider (via `config.watchlist`), so mock data is generated for the same symbols shown in the dashboard and the "missing symbols" warning goes away when using mock.
 - **Modern UI**: Built with [Textual](https://textual.textualize.io/) for a responsive terminal interface
 - **Migration Ready**: Well-documented for future C++ migration via pybind11
@@ -50,6 +53,12 @@ The status bar shows an **environment badge** and **colour strip** so you can se
 - **[PAPER]** (amber bar/tint) – real backend with `mode: DRY-RUN`
 - **[LIVE]** (red bar/tint) – real backend with `mode: LIVE`
 After the badge, the bar shows backend health (e.g. Alpaca: disabled, TWS/IBKR: ok), then Provider, Time, Mode, Strategy, Account.
+
+**Switch mode with function keys:** **F7** = MOCK, **F8** = PAPER (TWS 7497 / Alpaca paper), **F9** = LIVE (TWS 7496 / Alpaca live). PAPER/LIVE update the shared config (e.g. `~/.config/ib_box_spread/config.json`) and switch the data source to REST; restart the IB or Alpaca service for the new mode to take effect on the backend.
+
+**Why does the badge show [PAPER]?** The **[PAPER]** / **[LIVE]** badge is **not** a TUI setting you switch – it reflects the **mode the backend reports** in the snapshot. For IB, the Python IB service infers it from your account ID: accounts starting with **DU** are treated as paper, others as live. So if you are logged into a paper TWS/Gateway session (DU… account), the badge correctly shows PAPER. F7/F8/F9 change which backend/port the TUI uses and the shared config; the badge still comes from the snapshot. To see LIVE, use a live Gateway session (port 7496) and an account ID that does not start with DU.
+
+**TWS data not loading?** Check: (1) **IB service** is running (e.g. `./scripts/service.sh start ib` or process on port 8002). (2) **TWS or IB Gateway** is running and logged in (port 7497 for paper or 7496 for live). (3) **Preferred provider** is rest_ib or rest_tws_gateway (Setup → Set preferred → IB/TWS). (4) If the TUI stays on [MOCK], the REST provider never got a successful snapshot from 8002 – check status bar pills for "ib" / "tws" and any error hint. (5) Snapshot cache: with cache enabled, the TUI may show the last cached snapshot when the backend is down; disable cache to avoid stale data.
 
 **SVG vs PNG for AI/tooling:**  
 Textual exports SVG only. SVG is text-based, so any AI or script can read and parse it (including the debug comment). For consumers that need a raster image (e.g. a vision model that only accepts PNG/JPEG), you can convert the SVG after capture (e.g. `cairosvg` or a headless browser). The project does not currently add a PNG export step; add one if your pipeline requires it.
@@ -114,9 +123,21 @@ export TUI_SNAPSHOT_FILE=web/public/data/snapshot.json
 python -m python.tui
 ```
 
+### Export to Google Sheets / Excel
+
+Press **F6** in the TUI to export the current snapshot (positions, future events) and box spread scenarios to **CSV** and **Excel** (.xlsx) files. Files are written with timestamped names to `build/export/` (or `TUI_EXPORT_DIR` if set).
+
+- **CSV** opens in Excel and Google Sheets (File → Import, or drag-and-drop). Use for one-off analysis or importing into a Sheet.
+- **Excel** (.xlsx) uses openpyxl; multiple sheets (e.g. Positions, Future events) in one file.
+
+**Live / recurring:** To keep a Google Sheet in sync, you can (1) re-export on demand with F6 and re-import the CSV in Sheets, or (2) point Sheets at a file path if you use Google Drive desktop sync and export to a synced folder, or (3) use the Google Sheets API to push data (not included; implement via `gspread` or Sheets API and call `export_all()` on a timer).
+
 ### Configuration File
 
 Configuration is stored in `~/.config/ib_box_spread/tui_config.json`:
+
+- **Provider (Mock/REST/File/NATS)** and endpoint settings are **persisted** when you change them in Setup (F2). Next launch uses the saved provider.
+- When a shared config is used, provider and endpoint from `tui_config.json` overlay the shared config so your last TUI choice is restored.
 
 ```json
 {
@@ -136,22 +157,35 @@ Configuration is stored in `~/.config/ib_box_spread/tui_config.json`:
 
 - `Q` or `F10`: Quit
 - `F1`: Help
-- `F2`: Setup (coming soon)
+- `F2`: Setup
 - `F5`: Refresh
+- `F6`: Export snapshot and box spread to CSV/Excel (Google Sheets / Excel)
 
 Use Tab / Shift+Tab in the terminal to switch focus; tab content is switched via the tab bar.
 
 ## Architecture
 
+### Async, non-blocking data flow
+
+The TUI is designed so the **UI thread never blocks on I/O**. All data fetching and message handling run in background threads or async loops; the UI only reads from in-memory state (and optional SQLite cache on startup).
+
+- **Display source**: The screen always shows the **latest in-memory snapshot** (and optional **snapshot cache** SQLite DB for instant first paint or when the backend is down). No network or disk I/O on the UI thread.
+- **REST provider**: A **background thread** runs the poll loop; it fetches from the REST API, writes into in-memory snapshot, and optionally persists to the snapshot cache. `get_snapshot()` only copies from memory under a lock.
+- **NATS provider**: An **asyncio loop in a background thread** subscribes to snapshot and health subjects; each message updates the in-memory snapshot and health state. The UI is driven by events (no polling of the network from the main thread).
+- **File provider**: Same pattern: a background thread polls the file and updates the in-memory snapshot.
+- **Heavy work** (e.g. bank-accounts fetch, box-spread load) runs via Textual **workers** with `thread=True`; results are applied in `on_worker_state_changed` so the UI stays responsive.
+
+**Message-queue–driven updates**: With **NATS** enabled, backends (e.g. IB service) publish snapshots and health to NATS; the TUI **NatsProvider** subscribes and updates the displayed data on each message. For a fully event-driven setup, run the IB (or other) service with NATS publishing and point the TUI at NATS; the GUI then reflects backend state updated by the message queue without blocking.
+
 ### Data Flow
 
 ```
-Provider (Mock/REST/File)
-    ↓
+Provider (Mock / REST poll thread / NATS subscriber thread / File poll thread)
+    -> writes to in-memory snapshot; optional SQLite cache
 SnapshotPayload (shared model)
-    ↓
-TUI App (Textual)
-    ↓
+    -> get_snapshot() reads from memory only
+TUI App (Textual, UI thread)
+    ->
 Terminal Display
 ```
 
@@ -179,10 +213,12 @@ This ensures consistency across all frontends.
 
 ### Providers
 
-Providers fetch data from various sources:
-- **MockProvider**: Generates synthetic data for testing
-- **RestProvider**: Polls REST API endpoints
-- **FileProvider**: Reads from JSON files on disk
+Providers fetch data from various sources (all **non-blocking**: work runs in background threads or async loops; the UI only reads from in-memory state):
+
+- **MockProvider**: Generates synthetic data (sync on access; fast).
+- **RestProvider**: Polls REST API in a background thread; optional SQLite snapshot cache for first paint and when backend is down.
+- **NatsProvider**: Subscribes to NATS `snapshot.{backend}` and `system.health` in an asyncio loop (event-driven, no polling from UI).
+- **FileProvider**: Polls a JSON file in a background thread.
 
 ## Migration to C++ (Future)
 

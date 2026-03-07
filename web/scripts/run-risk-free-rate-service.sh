@@ -69,10 +69,14 @@ if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
     cd "${PYTHON_DIR}" && uv sync --extra rates 2>&1 || true
     cd - >/dev/null
   fi
-  # Fallback to pip install if uv sync didn't work
+  # Fallback to pip/uv install if uv sync didn't satisfy deps
   if ! "${PYTHON_CMD}" -c "import yfinance" 2>/dev/null; then
     echo "Installing missing packages: ${MISSING_PACKAGES[*]}..." >&2
-    "${PYTHON_CMD}" -m pip install --quiet "${MISSING_PACKAGES[@]}" >&2
+    if command -v uv >/dev/null 2>&1; then
+      uv pip install --python "${PYTHON_CMD}" --quiet "${MISSING_PACKAGES[@]}" >&2
+    else
+      "${PYTHON_CMD}" -m pip install --quiet "${MISSING_PACKAGES[@]}" >&2
+    fi
   fi
 fi
 
