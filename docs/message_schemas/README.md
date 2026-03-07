@@ -36,6 +36,14 @@ Run `./proto/generate.sh` from the repo root to regenerate all languages.
 - Go: `go install google.golang.org/protobuf/cmd/protoc-gen-go@latest`
 - Rust: automatic via `nats_adapter/build.rs` during `cargo build`
 
+**Python re-export:** `./proto/generate.sh` writes betterproto output into `python/generated/ib/platform/v1.py`. The directory `python/generated/` is gitignored. For a single import surface (`from python.generated import StrategySignal, DiscountBankBalance`, etc.), create or recreate `python/generated/__init__.py` that re-exports from `python.generated.ib.platform.v1`. After codegen, run from repo root:
+
+```bash
+uv run python scripts/recreate_python_generated_init.py
+```
+
+That script introspects the generated `v1` module and writes `python/generated/__init__.py` with all message/enum re-exports. If you add new messages to `proto/messages.proto`, run `./proto/generate.sh` then run the script again to refresh the re-exports.
+
 ## NATS message format
 
 C++ publishes protobuf binary messages wrapped in `NatsEnvelope`:
@@ -69,6 +77,7 @@ Payload bytes are a serialized inner message (`MarketDataEvent`, `StrategySignal
 
 - [`proto/messages.proto`](../../proto/messages.proto) — canonical message definitions
 - [`proto/generate.sh`](../../proto/generate.sh) — regenerate all language outputs
+- [`scripts/recreate_python_generated_init.py`](../../scripts/recreate_python_generated_init.py) — recreate Python `python/generated/__init__.py` after codegen
 - [`agents/backend/crates/nats_adapter/`](../../agents/backend/crates/nats_adapter/) — Rust prost codegen (build.rs)
 
 **Planning (single proto story, dedup, execution order):**
