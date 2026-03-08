@@ -145,6 +145,9 @@ Private Repos (Depend on public)
 #### 3. MCP Servers (`trading-mcp-servers`) ✅ **EXTRACTED**
 
 **Location**: `mcp/trading_server/` → **Moved to**: https://github.com/davidl71/trading-mcp-servers
+**Deprecation Note**: `mcp/trading_server/` is deprecated in this monorepo and
+has been removed locally. References below are historical notes about the
+extraction boundary, not active source paths.
 
 **Components**:
 
@@ -354,7 +357,8 @@ Private Repos (Depend on public)
    - ✅ No violations (only depends on C++ headers)
 
 4. **`mcp/trading_server/`**
-   - ⚠️ **AUDIT REQUIRED**: Check for broker-specific code
+   - Historical path only; deprecated and removed from this repo
+   - Audit work was completed as part of extraction to `trading-mcp-servers`
 
 #### Private → Public Dependencies (ALLOWED)
 

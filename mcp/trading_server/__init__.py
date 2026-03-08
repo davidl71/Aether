@@ -1,1 +1,0 @@
-# Trading MCP Server Package

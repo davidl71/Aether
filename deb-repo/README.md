@@ -39,7 +39,6 @@ sudo apt-get install ib-box-spread-backend
 
 # MCP servers
 sudo apt-get install project-management-automation-mcp
-sudo apt-get install trading-mcp-server
 
 # Development tools
 sudo apt-get install ib-box-spread-build-tools
@@ -112,13 +111,6 @@ deb-repo/
 - **Dependencies**: python3 (>= 3.9), python3-mcp, python3-pydantic
 - **Features**: Documentation health checks, Todo2 analysis, duplicate detection, security scanning
 - **CLI**: `project-management-automation`
-
-#### trading-mcp-server
-- **Version**: 0.1.0
-- **Architecture**: all
-- **Description**: MCP server for trading operations
-- **Dependencies**: python3 (>= 3.9), python3-mcp, python3-requests
-- **Features**: Broker-agnostic REST API bridge for trading operations
 
 ### Development Tools
 

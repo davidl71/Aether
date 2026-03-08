@@ -37,7 +37,8 @@ OpenAlgo includes native MCP server capabilities, enabling AI assistants to exec
 
 ### Implementation in This Project
 
-**Location**: `mcp/trading_server/server.py`
+**Location**: extracted to the `trading-mcp-servers` sibling repository
+(`mcp/trading_server/server.py` was the former monorepo path)
 
 **Features Implemented**:
 
@@ -57,14 +58,14 @@ OpenAlgo includes native MCP server capabilities, enabling AI assistants to exec
 - Backend REST API for position tracking
 
 **Configuration**:
-Add to `.cursor/mcp.json`:
+Add to the MCP config for the extracted `trading-mcp-servers` repo:
 
 ```json
 {
   "mcpServers": {
     "trading": {
       "command": "python",
-      "args": ["-m", "mcp.trading_server.server"],
+      "args": ["-m", "trading_server.server"],
       "env": {
         "TRADING_API_KEY": "your-api-key",
         "TWS_HOST": "127.0.0.1",

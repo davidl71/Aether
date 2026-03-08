@@ -73,7 +73,6 @@ sudo apt-get install synthetic-financing-platform
 sudo apt-get install ib-box-spread-web
 sudo apt-get install ib-box-spread-backend
 sudo apt-get install project-management-automation-mcp
-sudo apt-get install trading-mcp-server
 sudo apt-get install ib-box-spread-build-tools
 sudo apt-get install ib-box-spread-automation-tools
 ```

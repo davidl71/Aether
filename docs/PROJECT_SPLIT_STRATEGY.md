@@ -114,7 +114,7 @@ The current monorepo contains **16+ distinct components** that would benefit fro
 
 **Components**:
 
-- `mcp/trading_server/`
+- `mcp/trading_server/` (already extracted to `trading-mcp-servers`; no local copy remains)
 - Any other MCP server implementations
 
 **Benefits**:

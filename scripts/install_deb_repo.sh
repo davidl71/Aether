@@ -242,7 +242,6 @@ main() {
   log_info "  sudo apt-get install synthetic-financing-platform"
   log_info "  sudo apt-get install ib-box-spread-web"
   log_info "  sudo apt-get install ib-box-spread-backend"
-  log_info "  sudo apt-get install trading-mcp-server"
   log_info "  sudo apt-get install ib-box-spread-build-tools"
   log_info "  sudo apt-get install ib-box-spread-automation-tools"
   log_info ""

@@ -503,47 +503,6 @@ EOF
   log_success "Repository metadata generated with apt-ftparchive"
 }
 
-# Create Debian package for Trading MCP Server
-create_trading_mcp_deb() {
-  log_info "Creating Debian package for Trading MCP Server"
-
-  local pkg_name="trading-mcp-server"
-  local pkg_version="0.1.0"
-  local pkg_dir="$PROJECT_ROOT/deb-packages/$pkg_name"
-
-  mkdir -p "$pkg_dir"/{DEBIAN,usr/{lib/python3/dist-packages,share/doc/$pkg_name}}
-
-  # Build Python package
-  log_info "Building Trading MCP Server..."
-  cd "$PROJECT_ROOT/mcp/trading_server"
-
-  # Install to staging directory
-  python3 -m pip install . --target "$pkg_dir/usr/lib/python3/dist-packages" --no-deps || {
-    log_warn "pip install failed, using setup.py"
-    python3 setup.py install --prefix="$pkg_dir/usr" --single-version-externally-managed --record="$pkg_dir/install.log"
-  }
-
-  # Create control file
-  cat > "$pkg_dir/DEBIAN/control" <<EOF
-Package: $pkg_name
-Version: $pkg_version
-Section: python
-Priority: optional
-Architecture: all
-Depends: python3 (>= 3.9), python3-mcp (>= 0.1.0), python3-requests (>= 2.31.0)
-Maintainer: IB Box Spread Platform Team <platform@example.com>
-Description: Trading MCP Server
- MCP server for trading operations and broker integration.
- Provides broker-agnostic REST API bridge for trading operations.
-EOF
-
-  # Build .deb package
-  log_info "Building .deb package..."
-  dpkg-deb --build "$pkg_dir" "$REPO_DIR/pool/${pkg_name}_${pkg_version}_all.deb"
-
-  log_success "Created $pkg_name package"
-}
-
 # Create Debian package for build tools and scripts
 create_build_tools_deb() {
   log_info "Creating Debian package for build tools and scripts"
@@ -684,7 +643,6 @@ main() {
   create_python_deb || log_warn "Failed to create Python package"
   create_web_deb || log_warn "Failed to create web package"
   create_rust_deb || log_warn "Failed to create Rust backend package"
-  create_trading_mcp_deb || log_warn "Failed to create Trading MCP package"
   create_build_tools_deb || log_warn "Failed to create build tools package"
   create_automation_tools_deb || log_warn "Failed to create automation tools package"
 
@@ -701,7 +659,6 @@ main() {
   log_info "  - synthetic-financing-platform (Python integration)"
   log_info "  - ib-box-spread-web (PWA dashboard)"
   log_info "  - ib-box-spread-backend (Rust services)"
-  log_info "  - trading-mcp-server (Trading MCP server)"
   log_info "  - ib-box-spread-build-tools (Build scripts)"
   log_info "  - ib-box-spread-automation-tools (Automation scripts; exarp-go preferred)"
 }

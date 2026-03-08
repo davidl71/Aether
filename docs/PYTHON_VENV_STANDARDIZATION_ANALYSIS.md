@@ -42,8 +42,8 @@
 - **Primary**: `requirements.txt` (compiled from `requirements.in` via `pip-compile`)
 - **Secondary**: Some `pyproject.toml` files exist:
   - `python/pyproject.toml`
-  - `mcp/trading_server/pyproject.toml`
   - `agents/backend/python/pyproject.toml`
+  - `trading-mcp-servers` now owns the former `mcp/trading_server/pyproject.toml`
 
 - **Tool**: `pip` for installation
 

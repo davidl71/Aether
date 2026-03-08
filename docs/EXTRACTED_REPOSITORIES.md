@@ -11,9 +11,12 @@ This document tracks repositories that have been extracted from the main `ib_box
 
 - **Repository**: https://github.com/davidl71/trading-mcp-servers
 - **Status**: Private, code pushed
+- **Deprecation Note**: The old in-repo path `mcp/trading_server/` is deprecated
+  and has been removed from this monorepo. Treat all mentions here as
+  historical provenance only.
 - **Description**: MCP servers for trading operations - broker-agnostic
 - **Components Extracted**:
-  - `mcp/trading_server/` - Trading MCP server implementation
+  - `mcp/trading_server/` - Historical source path before extraction
   - Broker-agnostic REST API bridge
   - PyPI package configuration
 

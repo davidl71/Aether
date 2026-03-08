@@ -98,7 +98,7 @@ Convert the structural understanding from Tractatus analysis into actionable imp
    - Set up MIT license
    - Add GitHub templates (issues, PRs)
 2. Copy MCP server code
-   - Copy `mcp/trading_server/`
+   - Copy `mcp/trading_server/` (historical step; code now lives in `trading-mcp-servers`)
    - Copy related documentation
    - Copy configuration examples
 3. Remove broker-specific code
