@@ -1,9 +1,15 @@
 # Third-Party Assets
 
-This tree aggregates all external vendor dependencies. Nothing under `native/third_party/`
-should be committed unless the upstream license requires us to ship source code.
-Populate the directories via `./scripts/fetch_third_party.sh` (which delegates to
-`ansible/playbooks/fetch_third_party.yml`) to download or unwrap the following:
+**Only this README and `eula.txt` are tracked in git.** All other contents are populated by
+`./scripts/fetch_third_party.sh` (Ansible playbook) and must not be committed.
+
+Populate the directories via:
+
+```bash
+./scripts/fetch_third_party.sh
+```
+
+to download or unwrap the following:
 
 - **Protobuf v3.20.3** → unpacked into `native/third_party/protobuf-3.20.3/` from the official GitHub release (override with `PROTOBUF_URL`).
 - **Intel Decimal Math Library** → extracted to `native/third_party/IntelRDFPMathLib20U4/` when `INTEL_DECIMAL_URL` is set, the archive exists at `native/third_party/cache/IntelRDFPMathLib20U4.tar.gz`, or found in Downloads folder. Falls back to downloading from [Netlib](https://www.netlib.org/misc/intel/) if not found locally.

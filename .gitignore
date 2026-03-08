@@ -82,7 +82,7 @@ __pycache__/
 *.egg-info/
 agents/*/python/*.egg-info/
 
-# Dependency directories
+# Dependency directories (root-level legacy)
 third_party/tws-api/
 _deps/
 protobuf-3.20.3/
@@ -91,19 +91,13 @@ third_party/cache/
 third_party/IntelRDFPMathLib20U2/
 third_party/ib/
 ibapi_build/
-native/third_party/tws-api/
-native/third_party/nautilus/
-native/third_party/cache/
-native/third_party/IntelRDFPMathLib20U4/
-native/third_party/tws-api/IBJts/source/cppclient/client/build/
-native/third_party/tws-api/IBJts/source/cppclient/client/lib/
-native/third_party/IntelRDFPMathLib20U2/**
-!native/third_party/IntelRDFPMathLib20U2/
-!native/third_party/IntelRDFPMathLib20U2/**/
-!native/third_party/IntelRDFPMathLib20U2/**/CMakeLists.txt
-native/third_party/IntelRDFPMathLib20U2/**/*.a
-native/third_party/LIBRARY/libbid.a
-native/third_party/.orig/
+
+# native/third_party: all contents are fetched; do not track (see native/third_party/README.md)
+# Only README.md and eula.txt are tracked. Run ./scripts/fetch_third_party.sh to populate.
+native/third_party/*
+!native/third_party/README.md
+!native/third_party/eula.txt
+!native/third_party/**/*.jar
 /agents/backend/target/
 /agents/backend-mock/target/
 /agents/backend-data/target/
