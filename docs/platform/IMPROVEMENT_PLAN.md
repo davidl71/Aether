@@ -36,6 +36,7 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for the full issue analysis.
 ## Priority 1 — Fix Data Integrity (do first, blocks everything)
 
 ### P1-A: Fix dual SQLite writers (CRITICAL) <!-- exarp: T-1772887221775761020 -->
+**Status:** Mitigation implemented. Rust ledger uses WAL mode (ConnectOptions + runtime PRAGMA); Python discount_bank_service opens ledger read-only and does not write. Single writer = Rust; Python reads via local SQLite read-only or future REST.
 **Issue**: Rust ledger and Python both write to `ledger.db` — concurrent writes corrupt WAL.
 **Fix**:
 - Enable WAL mode (`PRAGMA journal_mode=WAL`) as immediate mitigation.
@@ -44,6 +45,7 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for the full issue analysis.
 **Files**: `agents/backend/crates/ledger/src/lib.rs`, `python/integration/` ledger write paths.
 
 ### P1-B: Unify TUI and Web data backends <!-- exarp: T-1772887221914991889 -->
+**Status:** Implemented. TUI default `rest_endpoint` and presets use api-gateway (`http://localhost:9000`); gateway proxies to Rust or Python. One entry point for TUI and Web when gateway is running.
 **Issue**: TUI reads Python :8000-8006; Web reads Rust :8080. Two pipelines, potential divergence.
 **Fix**:
 - Route TUI's `RestProvider` through the Go `api-gateway` (:8090), which already proxies

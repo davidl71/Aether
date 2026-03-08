@@ -1,0 +1,48 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "error": "Error",
+    "unknownError": "Unknown error",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "selectAccount": "Select account",
+    "selectBroker": "Select broker"
+  },
+  "app": {
+    "tabs": {
+      "dashboard": "Dashboard",
+      "current": "Current Positions",
+      "historic": "Historic Positions",
+      "orders": "Orders",
+      "alerts": "Alerts",
+      "rates": "Rates"
+    },
+    "status": {
+      "awaitingData": "Awaiting live data…",
+      "loadingSnapshot": "Loading live snapshot…",
+      "loadingScenarios": "Loading box spread scenarios…",
+      "loadingChart": "Loading chart data..."
+    },
+    "errors": {
+      "connectionError": "Connection Error",
+      "troubleshooting": "Troubleshooting",
+      "checkBackend": "Check if the backend service is running",
+      "verifyEndpoint": "Verify the API endpoint URL is correct",
+      "checkCors": "Check browser console for CORS errors",
+      "ensureListening": "If using a local backend, ensure it's listening on the expected port"
+    },
+    "strategy": {
+      "start": "Start strategy",
+      "stop": "Stop strategy",
+      "connectionError": "Connection error"
+    },
+    "modal": {
+      "buyCombo": "Buy Combo",
+      "sellCombo": "Sell Combo",
+      "buyComboMessage": "Submitting maker-priced combo order (mock). Integrate REST/WS call to order manager here.",
+      "sellComboMessage": "Submitting offsetting combo to flatten position (mock). Wire to strategy endpoint once ready."
+    },
+    "noOptionsChain": "No options chain data available for {{symbol}}"
+  }
+}

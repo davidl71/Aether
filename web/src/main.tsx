@@ -6,6 +6,7 @@ console.log('main.tsx: React imported:', typeof React);
 import ReactDOM from 'react-dom/client';
 console.log('main.tsx: ReactDOM imported:', typeof ReactDOM);
 
+import './i18n';
 import App from './App';
 console.log('main.tsx: App imported:', typeof App);
 

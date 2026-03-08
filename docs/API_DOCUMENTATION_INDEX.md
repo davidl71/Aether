@@ -22,6 +22,10 @@ server by appending `use context7` to your prompts. For example:
 
 ## Project Documentation
 
+### Multi-programming-language codebase
+
+- **`docs/MULTI_LANGUAGE_CODEBASE.md`** – Map of programming languages (C++, Python, Rust, Go, TypeScript, Swift) to directories, build/test/lint commands, and cross-language boundaries (proto, NATS, REST, ledger).
+
 ### TWS, ORATS, Client Portal & QuestDB (Quick Reference)
 
 - **`docs/TWS_ORATS_PORTAL_QUESTDB.md`** – How **TWS API**, **ORATS**, **IB Client Portal**, and **QuestDB** fit in the platform: roles, ports, code locations, and data flow (Gateway → IB service → PWA; optional ORATS enrichment and QuestDB archiving).

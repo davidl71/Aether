@@ -55,6 +55,12 @@ impl SqlitePersistence {
         // Initialize database schema
         Self::init_schema(&pool).await?;
 
+        // Ensure WAL mode is active (P1-A: allows concurrent readers with single writer)
+        sqlx::query("PRAGMA journal_mode=WAL")
+            .execute(&pool)
+            .await
+            .map_err(|e| LedgerError::Persistence(anyhow::anyhow!("PRAGMA journal_mode=WAL: {}", e)))?;
+
         Ok(Self { pool })
     }
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSnapshot } from './hooks/useSnapshot';
 import { useBackendServices } from './hooks/useBackendServices';
 import { useBoxSpreadData } from './hooks/useBoxSpreadData';
@@ -28,16 +29,20 @@ import type { SnapshotPayload, SymbolSnapshot, PositionSnapshot } from './types/
 import type { BoxSpreadSummary } from './types';
 import type { Timeframe } from './types/chart';
 
-const TABS = [
-  { id: 'dashboard', title: 'Dashboard' },
-  { id: 'current', title: 'Current Positions' },
-  { id: 'historic', title: 'Historic Positions' },
-  { id: 'orders', title: 'Orders' },
-  { id: 'alerts', title: 'Alerts' },
-  { id: 'rates', title: 'Rates' },
-] as const;
+const TAB_IDS = ['dashboard', 'current', 'historic', 'orders', 'alerts', 'rates'] as const;
+function useTabs() {
+  const { t } = useTranslation();
+  return useMemo(
+    () =>
+      TAB_IDS.map((id) => ({
+        id,
+        title: t(`app.tabs.${id}`)
+      })),
+    [t]
+  );
+}
 
-type TabId = typeof TABS[number]['id'];
+type TabId = typeof TAB_IDS[number];
 
 type ModalState =
   | { type: 'symbol'; payload: SymbolSnapshot }
@@ -46,6 +51,7 @@ type ModalState =
   | null;
 
 function renderTabContent(
+  t: (key: string) => string,
   tab: TabId,
   snapshot: SnapshotPayload | null,
   onSelectSymbol: (symbol: SymbolSnapshot) => void,
@@ -63,7 +69,7 @@ function renderTabContent(
   }
 
   if (!snapshot) {
-    return <div className="panel panel--fill">Awaiting live data…</div>;
+    return <div className="panel panel--fill">{t('app.status.awaitingData')}</div>;
   }
 
   // Filter symbols to only show those in watchlist
@@ -89,7 +95,7 @@ function renderTabContent(
     case 'current':
       return (
         <PositionsTable
-          title="Current Positions"
+          title={t('app.tabs.current')}
           positions={snapshot.positions}
           onSelectPosition={onSelectPosition}
         />
@@ -97,7 +103,7 @@ function renderTabContent(
     case 'historic':
       return (
         <PositionsTable
-          title="Historic Positions"
+          title={t('app.tabs.historic')}
           positions={snapshot.historic}
           onSelectPosition={onSelectPosition}
         />
@@ -114,6 +120,8 @@ function renderTabContent(
 }
 
 function App() {
+  const { t } = useTranslation();
+  const TABS = useTabs();
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const [modal, setModal] = useState<ModalState>(null);
   const [selectedStrike, setSelectedStrike] = useState<number | null>(null);
@@ -209,23 +217,21 @@ function App() {
     setModal({
       type: 'action',
       payload: {
-        title: 'Buy Combo',
-        message:
-          'Submitting maker-priced combo order (mock). Integrate REST/WS call to order manager here.'
+        title: t('app.modal.buyCombo'),
+        message: t('app.modal.buyComboMessage')
       }
     });
-  }, []);
+  }, [t]);
 
   const handleSellCombo = useCallback(() => {
     setModal({
       type: 'action',
       payload: {
-        title: 'Sell Combo',
-        message:
-          'Submitting offsetting combo to flatten position (mock). Wire to strategy endpoint once ready.'
+        title: t('app.modal.sellCombo'),
+        message: t('app.modal.sellComboMessage')
       }
     });
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -361,7 +367,7 @@ function App() {
       />
 
       <div className="scenario-section">
-        {scenarioLoading && <div className="app-status">Loading box spread scenarios…</div>}
+        {scenarioLoading && <div className="app-status">{t('app.status.loadingScenarios')}</div>}
         {scenarioError && <div className="app-status app-status--error">{scenarioError}</div>}
         {!scenarioLoading && !scenarioError && scenarioData && scenarioSummary && (
           <>
@@ -378,19 +384,19 @@ function App() {
       <TabNavigation tabs={TABS} activeTab={activeTab} onSelect={setActiveTab} />
 
       <main className="app-main">
-        {snapshotLoading && <div className="panel panel--fill">Loading live snapshot…</div>}
+        {snapshotLoading && <div className="panel panel--fill">{t('app.status.loadingSnapshot')}</div>}
         {!snapshotLoading && snapshotError && (
           <div className="panel panel--fill app-status app-status--error">
             <div style={{ padding: '20px' }}>
-              <h3 style={{ marginTop: 0, color: '#ef4444' }}>Connection Error</h3>
+              <h3 style={{ marginTop: 0, color: '#ef4444' }}>{t('app.errors.connectionError')}</h3>
               <p>{snapshotError}</p>
               <details style={{ marginTop: '16px', fontSize: '14px', color: '#9ca3af' }}>
-                <summary style={{ cursor: 'pointer', marginBottom: '8px' }}>Troubleshooting</summary>
+                <summary style={{ cursor: 'pointer', marginBottom: '8px' }}>{t('app.errors.troubleshooting')}</summary>
                 <ul style={{ marginLeft: '20px', marginTop: '8px' }}>
-                  <li>Check if the backend service is running</li>
-                  <li>Verify the API endpoint URL is correct</li>
-                  <li>Check browser console for CORS errors</li>
-                  <li>If using a local backend, ensure it's listening on the expected port</li>
+                  <li>{t('app.errors.checkBackend')}</li>
+                  <li>{t('app.errors.verifyEndpoint')}</li>
+                  <li>{t('app.errors.checkCors')}</li>
+                  <li>{t('app.errors.ensureListening')}</li>
                 </ul>
               </details>
             </div>
@@ -398,6 +404,7 @@ function App() {
         )}
         {!snapshotLoading && !snapshotError &&
           renderTabContent(
+            t,
             activeTab,
             snapshot,
             handleSelectSymbol,
@@ -463,7 +470,7 @@ function App() {
               <div style={{ marginBottom: '24px' }}>
                 {chartLoading ? (
                   <div style={{ padding: '40px', textAlign: 'center', color: '#9ca3af' }}>
-                    Loading chart data...
+                    {t('app.status.loadingChart')}
                   </div>
                 ) : (
                   <CandlestickChart
@@ -502,7 +509,7 @@ function App() {
                 </>
               ) : (
                 <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-                  <p>No options chain data available for {modal.payload.symbol}</p>
+                  <p>{t('app.noOptionsChain', { symbol: modal.payload.symbol })}</p>
                 </div>
               )}
 

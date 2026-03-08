@@ -1,5 +1,6 @@
 import type { SnapshotPayload } from '../types/snapshot';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { BackendServicesStatus } from '../hooks/useBackendServices';
 import { BACKEND_ROLE_ORDER, BACKEND_ROLE_LABELS, getBackendsByRole } from '../hooks/useBackendServices';
 import { formatCurrency } from '../utils/formatters';
@@ -49,6 +50,7 @@ export function HeaderStatus({
   onDryRunToggle,
   apiBaseUrl
 }: HeaderStatusProps) {
+  const { t, i18n } = useTranslation();
   const isLive = snapshot?.mode === 'LIVE' || snapshot?.mode === 'LIVE_TRADING';
   const modeClass = isLive ? 'mode-indicator--live' : 'mode-indicator--paper';
   const isStrategyRunning = snapshot?.strategy === 'RUNNING';
@@ -58,7 +60,7 @@ export function HeaderStatus({
     return (
       <header className="header">
         <div className="header__title">IB Box Spread Terminal</div>
-        <div className="header__meta">Awaiting snapshot…</div>
+        <div className="header__meta">{t('app.status.awaitingData')}</div>
         {backendStatuses && (
           <div className="header__status-line" aria-label="Backend services">
             {BACKEND_ROLE_ORDER.map((role) => {
@@ -133,6 +135,26 @@ export function HeaderStatus({
       <div className="header__title">
         <span>IB Box Spread Terminal</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <span className="header__lang" style={{ marginRight: '8px' }}>
+            <button
+              type="button"
+              className={`btn btn--small ${i18n.language === 'en' ? 'btn--primary' : 'btn--secondary'}`}
+              onClick={() => i18n.changeLanguage('en')}
+              title="English"
+              aria-pressed={i18n.language === 'en'}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              className={`btn btn--small ${i18n.language === 'he' ? 'btn--primary' : 'btn--secondary'}`}
+              onClick={() => i18n.changeLanguage('he')}
+              title="עברית"
+              aria-pressed={i18n.language === 'he'}
+            >
+              עברית
+            </button>
+          </span>
           <span className={`mode-indicator ${modeClass}`}>
             <span className="mode-indicator__dot"></span>
             <span>{snapshot.mode}</span>
@@ -165,18 +187,18 @@ export function HeaderStatus({
                 type="button"
                 className="btn btn--primary btn--small"
                 onClick={handleStrategyStart}
-                title="Start strategy"
+                title={t('app.strategy.start')}
               >
-                ▶ Start
+                ▶ {t('app.strategy.start')}
               </button>
             ) : (
               <button
                 type="button"
                 className="btn btn--secondary btn--small"
                 onClick={handleStrategyStop}
-                title="Stop strategy"
+                title={t('app.strategy.stop')}
               >
-                ⏹ Stop
+                ⏹ {t('app.strategy.stop')}
               </button>
             )}
           </div>
@@ -276,7 +298,7 @@ export function HeaderStatus({
                 ? 'Using polling - Updates every 2 seconds (WebSocket server not available)'
                 : connectionStatus === 'connecting'
                   ? 'Connecting to WebSocket...'
-                  : 'Connection error'
+                  : t('app.strategy.connectionError')
           }
         >
           {connectionStatus === 'connected' ? 'WS' : connectionStatus === 'polling' ? 'Poll' : 'Conn'}
