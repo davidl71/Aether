@@ -1,0 +1,39 @@
+---
+description: Lint generated or edited files only after thinking/generation is complete
+alwaysApply: false
+---
+
+# Lint generated files (after generation complete)
+
+**When:** You have **finished** generating or editing code. Do **not** run lint during or in the middle of generation or thinking—only after the full response or edit is complete.
+
+## Rule
+
+1. **After** you complete a code generation or edit, run the appropriate linter on the **files you created or modified**.
+2. **Do not** run lint while the user is still receiving streamed output or while you are still applying edits.
+3. Prefer **scoped lint** on changed paths so feedback is fast and relevant.
+
+## Commands by file type
+
+| Files changed | Lint command (from repo root) |
+|---------------|-------------------------------|
+| Python (`python/**/*.py`) | `uv run ruff check <paths>` then `uv run ruff format --check <paths>` (or `ruff format <paths>` to fix) |
+| C++ (`native/**/*.cpp`, `native/**/*.h`) | `just lint` (full) or run cppcheck/clang-tidy on listed files if script supports it |
+| Shell (`scripts/*.sh`) | `shellcheck <paths>` or `just lint-shell` |
+| Ansible (`ansible/**/*.yml`) | `ansible-lint` on changed playbooks/roles |
+| TypeScript/JS (`web/**`, `tui-e2e/**`) | `just lint` (includes ESLint) or run from `web/` / `tui-e2e/` |
+
+**Example (Python only):**
+```bash
+# After editing python/tui/app.py and python/integration/combo_detector.py
+uv run ruff check python/tui/app.py python/integration/combo_detector.py
+uv run ruff format python/tui/app.py python/integration/combo_detector.py
+```
+
+**Full project lint (when many files or unclear scope):**
+- `just lint` or `lint:run` — runs all linters (slower).
+- `just lint-parallel` — same, in parallel.
+
+## Hook (pre-commit)
+
+A pre-commit hook runs **only on staged files** at commit time, so “generation complete” is when the user stages and commits. See `scripts/lint_staged.sh` and `.pre-commit-config.yaml` (local hook `lint-staged`). Install with `pre-commit install`.

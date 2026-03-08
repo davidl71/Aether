@@ -10,13 +10,22 @@ from textual.app import ComposeResult
 
 from .base import SnapshotTabBase
 
+try:
+    from ...integration.dte_utils import days_to_maturity_from_date
+except ImportError:
+    days_to_maturity_from_date = None  # type: ignore[misc, assignment]
+
 
 def _fmt(v: Optional[float], decimals: int = 2, prefix: str = "") -> str:
-    """Format number or return '—' if None."""
+    """Format number or return '—' if None. Negative values get the sign before the prefix (e.g. -$50,000.00)."""
     if v is None:
         return "—"
     if decimals == 0:
+        if v < 0 and prefix:
+            return f"-{prefix}{int(-v):,}"
         return f"{prefix}{int(v):,}"
+    if v < 0 and prefix:
+        return f"-{prefix}{-v:,.{decimals}f}"
     return f"{prefix}{v:,.{decimals}f}"
 
 
@@ -33,7 +42,9 @@ class PositionsTab(SnapshotTabBase):
         table.add_columns(
             "Side",
             "Name",
+            "Conid",
             "Qty",
+            "DTE",
             "Bid",
             "Ask",
             "Last",
@@ -60,10 +71,16 @@ class PositionsTab(SnapshotTabBase):
             div_str = _fmt(pos.dividend, 2, "$") if pos.dividend is not None else "—"
             exp_cash_str = _fmt(pos.expected_cash_at_expiry, 2, "$") if pos.expected_cash_at_expiry is not None else "—"
             price_str = _fmt(pos.price or pos.last, 2) if (pos.price is not None or pos.last is not None) else "—"
+            # DTE from maturity_date (T-bills, bonds) or None
+            dte_val = days_to_maturity_from_date(pos.maturity_date) if (days_to_maturity_from_date and pos.maturity_date) else None
+            dte_str = str(dte_val) if dte_val is not None else "—"
+            conid_str = str(pos.conid) if pos.conid is not None else "—"
             table.add_row(
                 side_str,
                 pos.name,
+                conid_str,
                 str(pos.quantity),
+                dte_str,
                 _fmt(pos.bid),
                 _fmt(pos.ask),
                 _fmt(pos.last),

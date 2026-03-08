@@ -100,6 +100,33 @@ def _ensure_conids_prewarmed(client: IBKRPortalClient, symbols: List[str]) -> No
     _prewarmed_symbol_keys.add(key)
 
 
+def _format_ibcid_display_name(
+    raw_name: str,
+    asset_class: str,
+    conid: Optional[int],
+    maturity_date_str: Optional[str],
+) -> str:
+    """Turn IB IBCID-style contract names into readable labels (e.g. T-Bill (conid) or T-Bill YYYY-MM-DD (conid))."""
+    if not raw_name or conid is None:
+        return raw_name or ""
+    is_ibcid = raw_name.strip().upper().startswith("IBCID") or (
+        raw_name.strip().isdigit() and str(conid) == raw_name.strip()
+    )
+    if not is_ibcid:
+        return raw_name
+    ac = (asset_class or "").strip().upper()
+    if ac in ("BILL", "TBILL"):
+        label = "T-Bill"
+    elif ac == "BOND":
+        label = "Bond"
+    else:
+        return raw_name
+    maturity_part = ""
+    if maturity_date_str and len(maturity_date_str) >= 10:
+        maturity_part = maturity_date_str[:10] + " "
+    return f"{label} {maturity_part}({conid})".strip()
+
+
 def _snapshot_cache_ttl_seconds() -> float:
     """Seconds to cache snapshot (0 = disabled)."""
     try:
@@ -153,6 +180,93 @@ def _extract_account_value(summary: Dict, key: str, default: float = 0.0) -> flo
             except (ValueError, TypeError):
                 pass
     return default
+
+
+def _extract_cash_by_currency_from_summary(summary: Optional[Dict]) -> List[Dict[str, Any]]:
+    """Extract cash balances by currency from account summary when ledger is unavailable.
+    Handles formats: nested cash dict, keys like TotalCashValue|CHF, or single TotalCashValue (USD).
+    Returns list of {"currency": str, "balance": float}; empty if nothing found.
+    """
+    if not isinstance(summary, dict):
+        return []
+
+    out: List[Dict[str, Any]] = []
+    seen_currencies: set = set()
+
+    # 1. Nested dict or list: summary["cash"] = {"USD": 1000, "CHF": 500} or summary["balanceByCurrency"] = [{"currency":"USD","value":1000}, ...]
+    for key in ("cash", "balanceByCurrency", "cashBalanceByCurrency", "ledger"):
+        raw = summary.get(key)
+        if isinstance(raw, dict):
+            for curr, val in raw.items():
+                if not isinstance(curr, str) or curr.upper() in ("TIMESTAMP", "ACCOUNTID", "LEDGER"):
+                    continue
+                curr = curr.strip().upper()
+                if not curr or len(curr) != 3:
+                    continue
+                try:
+                    bal = float(val) if val is not None else 0.0
+                except (ValueError, TypeError):
+                    continue
+                if curr not in seen_currencies:
+                    out.append({"currency": curr, "balance": bal})
+                    seen_currencies.add(curr)
+            if out:
+                return out
+        elif isinstance(raw, list):
+            for item in raw:
+                if not isinstance(item, dict):
+                    continue
+                curr = (item.get("currency") or item.get("currencyCode") or "").strip().upper()
+                if not curr or len(curr) != 3:
+                    continue
+                val = item.get("value") or item.get("balance") or item.get("amount") or item.get("cashbalance")
+                try:
+                    bal = float(val) if val is not None else 0.0
+                except (ValueError, TypeError):
+                    continue
+                if curr not in seen_currencies:
+                    out.append({"currency": curr, "balance": bal})
+                    seen_currencies.add(curr)
+            if out:
+                return out
+
+    # 2. Keys with currency suffix: "TotalCashValue|CHF", "totalCashValue-CHF", "CashBalance.CHF"
+    common_prefixes = ("TotalCashValue", "totalCashValue", "CashBalance", "cashBalance", "AvailableFunds")
+    for k, v in summary.items():
+        if not isinstance(k, str) or v is None:
+            continue
+        for prefix in common_prefixes:
+            if k == prefix:
+                # Unqualified = USD
+                try:
+                    val = float(v) if isinstance(v, (int, float)) else float(v[0].get("value", 0)) if isinstance(v, list) and v and isinstance(v[0], dict) else 0.0
+                except (ValueError, TypeError, KeyError):
+                    continue
+                if "USD" not in seen_currencies and val != 0:
+                    out.append({"currency": "USD", "balance": val})
+                    seen_currencies.add("USD")
+                break
+            if k.startswith(prefix):
+                rest = k[len(prefix):].lstrip("|.-_")
+                if len(rest) >= 3 and rest.isalpha():
+                    curr = rest[:3].upper()
+                    try:
+                        val = float(v) if isinstance(v, (int, float)) else float(v[0].get("value", 0)) if isinstance(v, list) and v and isinstance(v[0], dict) else 0.0
+                    except (ValueError, TypeError, KeyError):
+                        continue
+                    if curr not in seen_currencies:
+                        out.append({"currency": curr, "balance": val})
+                        seen_currencies.add(curr)
+                break
+
+    # 3. If we only have USD from step 2, or nothing, add USD from TotalCashValue if missing
+    if "USD" not in seen_currencies:
+        usd = _extract_account_value(summary, "TotalCashValue")
+        if usd != 0.0:
+            out.append({"currency": "USD", "balance": usd})
+            seen_currencies.add("USD")
+
+    return out
 
 
 def _float_or_none(val: Any) -> Optional[float]:
@@ -421,6 +535,17 @@ def build_snapshot_payload(
             name = (pos.get("ticker") or pos.get("symbol") or pos.get("contractDesc") or "").strip()
             if not name:
                 name = str(pos.get("conid", ""))
+            conid_val = pos.get("conid")
+            if conid_val is not None:
+                try:
+                    conid_val = int(conid_val)
+                except (ValueError, TypeError):
+                    conid_val = None
+            asset_class = (pos.get("assetClass") or "").strip().upper()
+            maturity_date_str = (pos.get("maturityDate") or pos.get("maturity_date") or "").strip()
+            if isinstance(maturity_date_str, (int, float)):
+                maturity_date_str = str(int(maturity_date_str))
+            name = _format_ibcid_display_name(name, asset_class, conid_val, maturity_date_str or None)
             qty = int(float(pos.get("position", 0.0)))
             avg_cost = float(pos.get("avgCost", 0.0) or pos.get("averageCost", 0.0))
             mkt_val = float(pos.get("mktValue", 0.0) or pos.get("markValue", 0.0))
@@ -448,15 +573,12 @@ def build_snapshot_payload(
                         div = dps * abs(qty)
                 except (ValueError, TypeError):
                     pass
-            # Maturity / principal (bonds, bills, loans)
-            maturity_date_str = (pos.get("maturityDate") or pos.get("maturity_date") or "").strip()
-            if isinstance(maturity_date_str, (int, float)):
-                maturity_date_str = str(int(maturity_date_str))
-            asset_class = (pos.get("assetClass") or "").strip().upper()
+            # inst_type from asset_class (maturity_date_str and asset_class already set above)
             inst_type = "bond" if asset_class == "BOND" else "t_bill" if asset_class in ("BILL", "TBILL") else None
             positions_data.append({
                 "name": name,
                 "symbol": name,
+                "conid": conid_val,
                 "quantity": qty,
                 "avg_price": avg_cost,
                 "current_price": cur,
@@ -497,7 +619,7 @@ def build_snapshot_payload(
                         "description": "Principal at maturity",
                     })
 
-    # Cash positions: from ledger (all currencies) when available, else single USD from TotalCashValue
+    # Cash positions: from ledger (all currencies) when available; else from summary by currency; else single USD
     if ledger_rows and isinstance(ledger_rows, list):
         for row in ledger_rows:
             if not isinstance(row, dict):
@@ -526,26 +648,45 @@ def build_snapshot_payload(
                 "dividend": None,
             })
     else:
-        total_cash = _extract_account_value(account_summary, "TotalCashValue") if account_summary else 0.0
-        if account_summary and total_cash == 0.0:
-            logger.debug(
-                "Account summary present but TotalCashValue is 0; summary keys: %s. "
-                "Ledger was empty (use /v1/api/portfolio/{id}/ledger if available).",
-                list(account_summary.keys()) if isinstance(account_summary, dict) else type(account_summary),
-            )
-        positions_data.append({
-            "name": "Cash (USD)",
-            "symbol": "Cash",
-            "quantity": 0,
-            "avg_price": 0.0,
-            "current_price": total_cash,
-            "market_value": total_cash,
-            "unrealized_pl": 0.0,
-            "roi": 0.0,
-            "instrument_type": "cash",
-            "currency": "USD",
-            "dividend": None,
-        })
+        summary_cash = _extract_cash_by_currency_from_summary(account_summary) if account_summary else []
+        if summary_cash:
+            for row in summary_cash:
+                curr = (row.get("currency") or "USD").strip().upper() or "USD"
+                balance = float(row.get("balance", 0.0))
+                positions_data.append({
+                    "name": f"Cash ({curr})",
+                    "symbol": "Cash",
+                    "quantity": 0,
+                    "avg_price": 0.0,
+                    "current_price": balance,
+                    "market_value": balance,
+                    "unrealized_pl": 0.0,
+                    "roi": 0.0,
+                    "instrument_type": "cash",
+                    "currency": curr,
+                    "dividend": None,
+                })
+        else:
+            total_cash = _extract_account_value(account_summary, "TotalCashValue") if account_summary else 0.0
+            if account_summary and total_cash == 0.0:
+                logger.debug(
+                    "Account summary present but TotalCashValue is 0; summary keys: %s. "
+                    "Ledger was empty (use /v1/api/portfolio/{id}/ledger if available).",
+                    list(account_summary.keys()) if isinstance(account_summary, dict) else type(account_summary),
+                )
+            positions_data.append({
+                "name": "Cash (USD)",
+                "symbol": "Cash",
+                "quantity": 0,
+                "avg_price": 0.0,
+                "current_price": total_cash,
+                "market_value": total_cash,
+                "unrealized_pl": 0.0,
+                "roi": 0.0,
+                "instrument_type": "cash",
+                "currency": "USD",
+                "dividend": None,
+            })
 
     # IB doesn't have a simple orders endpoint via Client Portal, so we'll leave it empty
     # Orders would require TWS API or more complex Client Portal integration
@@ -785,10 +926,23 @@ def create_app() -> FastAPI:
             for pos in positions:
                 if isinstance(pos, dict):
                     name = (pos.get("ticker") or pos.get("symbol") or pos.get("contractDesc") or "").strip() or str(pos.get("conid", ""))
+                    conid_val = pos.get("conid")
+                    try:
+                        conid_val = int(conid_val) if conid_val is not None else None
+                    except (ValueError, TypeError):
+                        conid_val = None
+                    asset_class = (pos.get("assetClass") or "").strip().upper()
+                    maturity_date_str = (pos.get("maturityDate") or pos.get("maturity_date") or "").strip() or None
+                    if maturity_date_str and isinstance(maturity_date_str, (int, float)):
+                        maturity_date_str = str(int(maturity_date_str))
+                    name = _format_ibcid_display_name(
+                        name if name else str(conid_val or ""), asset_class, conid_val, maturity_date_str
+                    )
                     formatted.append(
                         {
                             "symbol": name,
                             "name": name,
+                            "conid": conid_val,
                             "quantity": float(pos.get("position", 0.0)),
                             "avg_price": float(pos.get("avgCost", 0.0) or pos.get("averageCost", 0.0)),
                             "current_price": float(pos.get("markPrice", 0.0) or pos.get("lastPrice", 0.0)),

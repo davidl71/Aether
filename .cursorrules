@@ -132,8 +132,7 @@ When helping with this codebase:
 5. Point to relevant documentation in `docs/` when available (see `.cursor/rules/documentation.mdc`)
 6. Consider multi-language aspects (C++, Python, Rust, Go, TypeScript)
 7. For API questions, reference `@docs API_DOCUMENTATION_INDEX.md`
-
-### MCP Server Usage
+8. **Lint generated/edited files only after thinking/generation is complete** — run lint on the files you changed, not during generation (see `.cursor/rules/lint-generated-files.mdc`). Pre-commit hook `lint-staged` lints only staged .py files at commit time.
 
 This project uses multiple MCP (Model Context Protocol) servers to enhance AI capabilities. Use them appropriately:
 

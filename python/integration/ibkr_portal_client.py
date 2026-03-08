@@ -222,7 +222,7 @@ class IBKRPortalClient:
 
     def get_account_ledger(self, account_id: Optional[str] = None) -> List[Dict]:
         """Return cash balances by currency from portfolio ledger.
-        Uses GET /v1/api/portfolio/{accountId}/ledger when available.
+        Tries GET /v1/api/portfolio/{accountId}/ledger; on 404 tries .../portfolio/accounts/{accountId}/ledger.
         Returns list of dicts with 'currency' and 'balance' (float). Empty on 404 or unsupported.
         """
         accounts = self._choose_account(account_id)
@@ -232,18 +232,22 @@ class IBKRPortalClient:
         self.ensure_session()
         acct = accounts[0]
         api_base = self.base_url.replace("/v1/portal", "/v1/api").rstrip("/")
-        url = f"{api_base}/portfolio/{acct}/ledger"
-        try:
-            response = self.session.get(url, timeout=self.timeout)
-            if not response.ok:
-                if response.status_code == 404:
-                    return []
-                raise IBKRPortalError(
-                    f"Client Portal responded with status {response.status_code}: {response.text[:200]}"
-                )
-            data = response.json()
-        except requests.RequestException as req_err:
-            logger.debug("Ledger request failed: %s", req_err)
+
+        for path in (f"{api_base}/portfolio/{acct}/ledger", f"{api_base}/portfolio/accounts/{acct}/ledger"):
+            try:
+                response = self.session.get(path, timeout=self.timeout)
+                if not response.ok:
+                    if response.status_code == 404:
+                        continue
+                    raise IBKRPortalError(
+                        f"Client Portal responded with status {response.status_code}: {response.text[:200]}"
+                    )
+                data = response.json()
+                break
+            except requests.RequestException as req_err:
+                logger.debug("Ledger request to %s failed: %s", path, req_err)
+                continue
+        else:
             return []
 
         # Normalize to list of {currency, balance}. Handle common shapes.

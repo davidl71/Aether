@@ -83,6 +83,10 @@ class TUIConfig:
     rest_verify_ssl: bool = False
     file_path: Optional[str] = None
 
+    # When set, REST provider uses this interval (ms) outside US regular market hours (9:30–16:00 ET).
+    # 0 or unset = use update_interval_ms always (no slowdown when market closed).
+    out_of_market_interval_ms: int = 60_000  # 1 minute when closed
+
     # NATS pub/sub (for provider_type "nats")
     nats_url: str = "nats://localhost:4222"
     nats_snapshot_backend: str = "ib"  # subscribe to snapshot.{backend}
@@ -114,6 +118,10 @@ class TUIConfig:
     # Optional: API router base URL. When set, TUI uses this base for snapshot, scenarios, bank-accounts, and health
     # (e.g. http://localhost:9xxx with routes /api/v1/snapshot, /scenarios, /api/bank-accounts, /api/health).
     api_base_url: Optional[str] = None
+
+    # Optional: SQLite path for persisting latest snapshot per backend (fallback when backend is down or on startup).
+    # Default when unset: SNAPSHOT_CACHE_DB env or ~/.config/ib_box_spread/snapshot_cache.db. Set to "" to disable.
+    snapshot_cache_path: Optional[str] = None
 
     # Live/paper per provider (from shared config tws.port / alpaca.data_client_config.paper)
     tws_port_override: Optional[int] = None  # 7497 = paper, 7496 = live; when set, overrides tcp_backend_ports["tws"]
@@ -220,6 +228,7 @@ def load_config() -> TUIConfig:
                 rest_timeout_ms=shared_tui.rest_timeout_ms,
                 rest_verify_ssl=shared_tui.rest_verify_ssl,
                 file_path=shared_tui.file_path,
+                out_of_market_interval_ms=getattr(shared_tui, "out_of_market_interval_ms", 60_000),
                 nats_url=getattr(shared_tui, "nats_url", "nats://localhost:4222"),
                 nats_snapshot_backend=getattr(shared_tui, "nats_snapshot_backend", "ib"),
                 api_base_url=getattr(shared_tui, "api_base_url", None),
@@ -252,6 +261,16 @@ def load_config() -> TUIConfig:
                     tui_only = TUIConfig.load_from_file(tui_path)
                     if getattr(tui_only, "user_disabled_backends", None):
                         config.user_disabled_backends = list(tui_only.user_disabled_backends)
+                    # Persist TUI provider choice across restarts (mock/rest/file/nats and endpoint)
+                    config.provider_type = tui_only.provider_type or config.provider_type
+                    config.rest_endpoint = tui_only.rest_endpoint or config.rest_endpoint
+                    config.file_path = tui_only.file_path if tui_only.file_path else config.file_path
+                    config.nats_url = getattr(tui_only, "nats_url", None) or config.nats_url
+                    config.nats_snapshot_backend = getattr(tui_only, "nats_snapshot_backend", None) or config.nats_snapshot_backend
+                    if hasattr(tui_only, "snapshot_cache_path"):
+                        config.snapshot_cache_path = tui_only.snapshot_cache_path
+                    if getattr(tui_only, "out_of_market_interval_ms", None) is not None:
+                        config.out_of_market_interval_ms = tui_only.out_of_market_interval_ms
                 except Exception:
                     pass
             _apply_env_overrides(config)

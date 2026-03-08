@@ -94,19 +94,21 @@ class TestCalculationFunctions:
     """Tests for calculation functions"""
     
     def test_calculate_implied_interest_rate(self):
-        """Test implied interest rate basis calculation"""
+        """Test implied interest rate (annualized %). For profit use calculate_arbitrage_profit."""
         long_call = PyOptionContract("SPY", "20241220", 500.0, OptionType.Call)
         short_call = PyOptionContract("SPY", "20241220", 510.0, OptionType.Call)
         long_put = PyOptionContract("SPY", "20241220", 510.0, OptionType.Put)
         short_put = PyOptionContract("SPY", "20241220", 500.0, OptionType.Put)
-        
+
         spread = PyBoxSpreadLeg(long_call, short_call, long_put, short_put)
         spread.net_debit = 2.75
         spread.theoretical_value = 10.0
         spread.arbitrage_profit = 7.25
-        
-        profit = calculate_implied_interest_rate(spread)
+
+        profit = calculate_arbitrage_profit(spread)
         assert profit == 7.25
+        rate = calculate_implied_interest_rate(spread)
+        assert isinstance(rate, (int, float))
     
     def test_calculate_roi(self):
         """Test ROI calculation"""

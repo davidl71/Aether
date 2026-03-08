@@ -40,3 +40,11 @@ repos:
     hooks:
       - id: shellcheck
         args: ["-x"]
+  # Lint only staged files (after generation/edits, at commit time)
+  - repo: local
+    hooks:
+      - id: lint-staged
+        name: Lint staged Python (ruff)
+        entry: scripts/lint_staged.sh
+        language: system
+        files: \.py$

@@ -20,6 +20,7 @@ from integration.ib_service import (
     _now_iso,
     _symbols_from_env,
     _extract_account_value,
+    _format_ibcid_display_name,
     build_snapshot_payload,
     ModeRequest,
     AccountRequest,
@@ -62,6 +63,21 @@ class TestHelperFunctions(unittest.TestCase):
         with patch.dict(os.environ, {"SYMBOLS": ""}):
             result = _symbols_from_env()
             assert result == []
+
+    def test_format_ibcid_display_name_t_bill(self):
+        """IBCID T-bill becomes readable T-Bill (conid) with optional maturity."""
+        assert _format_ibcid_display_name("IBCID123", "BILL", 2, None) == "T-Bill (2)"
+        assert _format_ibcid_display_name("IBCID123", "BILL", 2, "2025-06-15") == "T-Bill 2025-06-15 (2)"
+
+    def test_format_ibcid_display_name_bond(self):
+        """IBCID bond becomes Bond (conid)."""
+        assert _format_ibcid_display_name("IBCID456", "BOND", 99, None) == "Bond (99)"
+
+    def test_format_ibcid_display_name_passthrough(self):
+        """Non-IBCID names and unknown asset class are unchanged."""
+        assert _format_ibcid_display_name("SPY", "STK", 100, None) == "SPY"
+        assert _format_ibcid_display_name("BND", "STK", 99, None) == "BND"
+        assert _format_ibcid_display_name("IBCID1", "OPT", 1, None) == "IBCID1"
 
     def test_extract_account_value_valid(self):
         """Test _extract_account_value() with valid data."""
@@ -111,6 +127,31 @@ class TestHelperFunctions(unittest.TestCase):
         assert _extract_account_value({"TotalCashValue": "5000.50"}, "TotalCashValue") == 5000.50
         # Flat scalar number
         assert _extract_account_value({"CashBalance": 999.99}, "TotalCashValue") == 999.99
+
+    def test_extract_cash_by_currency_from_summary_nested(self):
+        """Test _extract_cash_by_currency_from_summary with nested cash dict (USD + CHF)."""
+        from integration.ib_service import _extract_cash_by_currency_from_summary
+        summary = {"cash": {"USD": 10000.0, "CHF": 2500.50}}
+        result = _extract_cash_by_currency_from_summary(summary)
+        assert len(result) == 2
+        by_curr = {r["currency"]: r["balance"] for r in result}
+        assert by_curr["USD"] == 10000.0
+        assert by_curr["CHF"] == 2500.50
+
+    def test_extract_cash_by_currency_from_summary_list(self):
+        """Test _extract_cash_by_currency_from_summary with balanceByCurrency list."""
+        from integration.ib_service import _extract_cash_by_currency_from_summary
+        summary = {
+            "balanceByCurrency": [
+                {"currency": "USD", "value": "5000.00"},
+                {"currency": "CHF", "balance": 1000.0},
+            ]
+        }
+        result = _extract_cash_by_currency_from_summary(summary)
+        assert len(result) == 2
+        by_curr = {r["currency"]: r["balance"] for r in result}
+        assert by_curr["USD"] == 5000.0
+        assert by_curr["CHF"] == 1000.0
 
 
 class TestBuildSnapshotPayload(unittest.TestCase):

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import socket
 import subprocess
@@ -19,6 +20,8 @@ from ..display_utils import format_endpoint_display
 from ...integration.shared_config_loader import SharedConfigLoader
 from .onepassword_screen import OnePasswordScreen
 from .snapshot_display import BACKEND_DISPLAY_NAMES, BACKEND_ROLES
+
+logger = logging.getLogger(__name__)
 
 # Backend key -> provider_type for "Set preferred" (snapshot source)
 BACKEND_KEY_TO_PROVIDER_TYPE: Dict[str, str] = {
@@ -138,10 +141,17 @@ def _provides_cells(role: str) -> Tuple[str, str, str, str, str]:
     return ("—", "—", "—", "—", "✓")  # platform, other, snapshot source
 
 
-def _mode_label(config: TUIConfig, key: str, port: int) -> str:
-    """Return mode label for Setup table: Paper (7497) / Live (7496) for tws, Paper/Live for alpaca, else '—'."""
+def _mode_label(config: TUIConfig, key: str, port: int, health_payload: Optional[Dict[str, Any]] = None) -> str:
+    """Return mode label for Setup table. Prefer inferred session_mode from health; else Paper/Live from config/port."""
+    if isinstance(health_payload, dict):
+        mode = (health_payload.get("session_mode") or "").strip().upper()
+        if mode in ("LIVE", "PAPER"):
+            return mode
     if key == "tws":
         return "Live (7496)" if port == 7496 else "Paper (7497)"
+    if key == "ib":
+        # IB: session_mode from health (account ID) when available; else show config hint
+        return "—"
     if key == "alpaca":
         paper = getattr(config, "alpaca_paper", None)
         if paper is False:
@@ -208,7 +218,7 @@ def _build_provider_table_rows(
         health = _health_status(key, health_map, disabled)
         pid = _pid_for_port(port)
         preferred = "☑" if key == preferred_key else "☐"
-        mode = _mode_label(config, key, port)
+        mode = _mode_label(config, key, port, health_map.get(key))
         rows.append((display, endpoint, enabled, health, pid, other, *provide_cells, preferred, mode))
         row_keys.append(key)
 
@@ -229,7 +239,7 @@ def _build_provider_table_rows(
         health = _health_status(key, health_map, disabled)
         pid = _pid_for_port(port)
         preferred = "☑" if key == preferred_key else "☐"
-        mode = _mode_label(config, key, port)
+        mode = _mode_label(config, key, port, health_map.get(key))
         rows.append((display, endpoint, enabled, health, pid, other, *provide_cells, preferred, mode))
         row_keys.append(key)
 
@@ -359,6 +369,21 @@ class SetupScreen(Screen[Optional[Dict[str, Any]]]):
     def _update_status_lines(self) -> None:
         """Populate compact status lines so the screen fits without scrolling."""
         current_parts = [f"Current: {self._provider_label}"]
+        # Show inferred mode (PAPER/LIVE) from current backend health when available
+        preferred_key = PROVIDER_TYPE_TO_BACKEND_KEY.get(self._config.provider_type or "", "")
+        health_map = (
+            self._backend_health
+            if isinstance(self._backend_health, dict) and self._backend_health.get("status") is None
+            else {}
+        )
+        if health_map:
+            payload = health_map.get(preferred_key) if preferred_key else None
+            if payload is None:
+                payload = health_map.get("current")
+            if isinstance(payload, dict):
+                mode = (payload.get("session_mode") or "").strip().upper()
+                if mode in ("LIVE", "PAPER"):
+                    current_parts.append(f"Inferred: {mode}")
         if self._config.provider_type in ("rest", *PRESET_REST_ENDPOINTS):
             endpoint = self._config.rest_endpoint or PRESET_REST_ENDPOINTS.get(self._config.provider_type, "")
             current_parts.append(f"REST: {format_endpoint_display(endpoint)}")
@@ -527,6 +552,10 @@ class SetupScreen(Screen[Optional[Dict[str, Any]]]):
             if not self._config.tcp_backend_ports:
                 self._config.tcp_backend_ports = dict(DEFAULT_TCP_BACKEND_PORTS)
             self._config.tcp_backend_ports["tws"] = new_port
+            try:
+                self._config.save_to_file(TUIConfig.get_config_path())
+            except Exception as e:
+                logger.debug("Could not persist TUI config after switch mode: %s", e)
             self._refresh_table()
             self._update_status_lines()
             self.notify(
@@ -552,6 +581,10 @@ class SetupScreen(Screen[Optional[Dict[str, Any]]]):
                 self.notify(f"Failed to update config: {e}", title="Switch mode", severity="error")
                 return
             self._config.alpaca_paper = new_paper
+            try:
+                self._config.save_to_file(TUIConfig.get_config_path())
+            except Exception as e:
+                logger.debug("Could not persist TUI config after switch mode: %s", e)
             self._refresh_table()
             self._update_status_lines()
             self.notify(

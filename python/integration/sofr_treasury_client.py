@@ -158,8 +158,6 @@ class YFinanceRateClient:
         Returns:
             List of BenchmarkRate for available maturities
         """
-        rates: List[BenchmarkRate] = []
-
         currency_upper = currency.upper()
 
         if currency_upper == "US":

@@ -97,6 +97,56 @@ class LoanPosition:
         return len(errors) == 0, errors
 
 
+def _mock_loans() -> List[LoanPosition]:
+    """Return sample loan positions for display when no real loans file exists."""
+    from datetime import timedelta
+    now = datetime.utcnow()
+    base = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    orig = base - timedelta(days=365 * 2)
+    mat = base + timedelta(days=365 * 8)
+    next_pay = base + timedelta(days=30)
+    return [
+        LoanPosition(
+            loan_id="mock-fibi-001",
+            bank_name="Fibi",
+            account_number="****1234",
+            loan_type="SHIR_BASED",
+            principal=450_000.0,
+            original_principal=500_000.0,
+            interest_rate=4.25,
+            spread=1.2,
+            base_cpi=105.0,
+            current_cpi=112.0,
+            origination_date=orig.isoformat() + "Z",
+            maturity_date=mat.isoformat() + "Z",
+            next_payment_date=next_pay.isoformat() + "Z",
+            monthly_payment=4_200.0,
+            payment_frequency_months=1,
+            status="ACTIVE",
+            last_update=now.isoformat() + "Z",
+        ),
+        LoanPosition(
+            loan_id="mock-discount-001",
+            bank_name="Discount",
+            account_number="****5678",
+            loan_type="CPI_LINKED",
+            principal=300_000.0,
+            original_principal=300_000.0,
+            interest_rate=3.0,
+            spread=0.0,
+            base_cpi=108.0,
+            current_cpi=115.0,
+            origination_date=(base - timedelta(days=365)).isoformat() + "Z",
+            maturity_date=(base + timedelta(days=365 * 9)).isoformat() + "Z",
+            next_payment_date=next_pay.isoformat() + "Z",
+            monthly_payment=2_800.0,
+            payment_frequency_months=1,
+            status="ACTIVE",
+            last_update=now.isoformat() + "Z",
+        ),
+    ]
+
+
 class LoanManager:
     """Python loan manager (reads/writes JSON compatible with C++ LoanManager)"""
 
@@ -188,12 +238,18 @@ class LoanManager:
         return self.loans.get(loan_id)
 
     def get_all_loans(self) -> List[LoanPosition]:
-        """Get all loans"""
-        return list(self.loans.values())
+        """Get all loans (real from file). When none loaded, returns mock/sample loans for display."""
+        if self.loans:
+            return list(self.loans.values())
+        return _mock_loans()
 
     def get_active_loans(self) -> List[LoanPosition]:
-        """Get active loans only"""
-        return [loan for loan in self.loans.values() if loan.status == "ACTIVE"]
+        """Get active loans only (real or mock)."""
+        return [loan for loan in self.get_all_loans() if loan.status == "ACTIVE"]
+
+    def is_using_mock_loans(self) -> bool:
+        """True when no real loans are loaded and tab is showing mock data."""
+        return len(self.loans) == 0
 
 
 class LoanEntryForm(Container):
@@ -479,7 +535,12 @@ class LoanListTab(Container):
             )
 
         status = self.query_one("#loan-status", Static)
-        status.update(f"Total Loans: {len(loans)} | Active: {len([ln for ln in loans if ln.status == 'ACTIVE'])}")
+        total = len(loans)
+        active = len([ln for ln in loans if ln.status == "ACTIVE"])
+        if self.loan_manager.is_using_mock_loans():
+            status.update(f"Total Loans: {total} | Active: {active}  [dim](sample data — no loans file)[/]")
+        else:
+            status.update(f"Total Loans: {total} | Active: {active}")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses"""

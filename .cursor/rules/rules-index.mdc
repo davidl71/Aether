@@ -17,6 +17,7 @@ Use this to pick the right rule for the current task.
 | `regression-sanity.mdc` | Regression/sanity checks: when to suggest `just pre-push`, `just sanity`, or before-commit checklist |
 | `documentation.mdc` | @docs usage, global docs, API/architecture references (auto when editing `docs/**/*.md`) |
 | `hooks.mdc` | Git hooks (pre-commit, docs validation), exarp-go setup_hooks |
+| `lint-generated-files.mdc` | Lint generated/edited files **after** thinking/generation complete; pre-commit lint-staged |
 | `project-automation.mdc` | exarp-go MCP tools, docs health, Todo2 alignment, security scanning |
 | `automation-tool-suggestions.mdc` | When to suggest automation tools (context-aware) |
 | `exarp-followup-tasks.mdc` | When to create Todo2 follow-up tasks (verify, E2E) after implementation Done |

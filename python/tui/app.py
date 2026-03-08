@@ -30,10 +30,11 @@ from textual.widgets import (
     Log,
 )
 from textual.binding import Binding
+from textual.worker import Worker, WorkerState
 
 from .models import SnapshotPayload, BoxSpreadPayload
 from .providers import Provider, MockProvider, RestProvider, FileProvider, NatsProvider, BackendHealthAggregator
-from .config import TUIConfig, load_config, PRESET_REST_ENDPOINTS
+from .config import TUIConfig, load_config, PRESET_REST_ENDPOINTS, DEFAULT_TCP_BACKEND_PORTS
 from .box_spread_loader import get_box_spread_payload
 from .log_handler import install_tui_log_handler, remove_tui_log_handler, drain_log_queue, get_buffered_log_lines
 from .components.snapshot_display import StatusBar, get_environment
@@ -53,6 +54,7 @@ from .components.onepassword_screen import OnePasswordScreen
 from .components.logs_tab import LogsTab
 from .components.benchmarks_tab import BenchmarksTab
 from .components.brokers_tab import BrokersTab
+from .export import export_all, _export_dir
 
 logger = logging.getLogger(__name__)
 
@@ -284,6 +286,11 @@ class TUIApp(App):
         min-height: 5;
     }
 
+    .unified-data-source {
+        margin-bottom: 1;
+        color: $text-muted;
+    }
+
     #orders-log, #alerts-log, #tui-log, .logs-container {
         width: 100%;
         height: 1fr;
@@ -322,6 +329,10 @@ class TUIApp(App):
         Binding("f2", "setup", "Setup", key_display="F2"),
         Binding("f3", "op_secrets", "1Password", key_display="F3"),
         Binding("f5", "refresh", "Refresh", key_display="F5"),
+        Binding("f6", "export", "Export CSV/Excel", key_display="F6"),
+        Binding("f7", "mode_mock", "MOCK", key_display="F7"),
+        Binding("f8", "mode_paper", "PAPER", key_display="F8"),
+        Binding("f9", "mode_live", "LIVE", key_display="F9"),
         Binding("f10", "quit", "Quit", key_display="F10"),
     ]
 
@@ -331,6 +342,7 @@ class TUIApp(App):
         config: Optional[TUIConfig] = None,
         tui_log_handler: Optional[logging.Handler] = None,
         tui_log_handler_on_root: bool = False,
+        preferred_provider: Optional[Provider] = None,
     ):
         super().__init__()
         self.provider = provider
@@ -358,6 +370,8 @@ class TUIApp(App):
         self._bank_accounts: List[Dict] = []
         self._loan_manager = LoanManager("config/loans.json")
         self._backend_health_aggregator: Optional[BackendHealthAggregator] = None
+        # When non-mock preferred: start with mock for quick paint, then switch to this when it has data
+        self._pending_real_provider: Optional[Provider] = preferred_provider
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the app"""
@@ -475,7 +489,11 @@ class TUIApp(App):
         self.set_interval(2.0, self._update_box_spread_data)  # Update every 2 seconds
         self.set_interval(30.0, self._fetch_bank_accounts)  # Update bank accounts every 30 seconds
         self.set_interval(3.0, self._check_config_reload)  # T-114: config file watch (hot-reload)
-        self._fetch_bank_accounts()  # Initial fetch
+        # Defer initial bank-accounts fetch so first paint is not blocked (service can be slow or down)
+        self.call_next(self._fetch_bank_accounts)
+        # If we started with mock but preferred is real, start the real provider in background; we'll switch when it has data
+        if self._pending_real_provider is not None:
+            self._pending_real_provider.start()
         # Seed taskbar status bar with placeholder pills so indicators show immediately
         self.call_next(self._seed_status_bar_pills)
         logger.info("TUI application mounted")
@@ -500,6 +518,9 @@ class TUIApp(App):
 
     def on_unmount(self) -> None:
         """Called when app exits"""
+        if self._pending_real_provider is not None:
+            self._pending_real_provider.stop()
+            self._pending_real_provider = None
         if self._backend_health_aggregator:
             self._backend_health_aggregator.stop()
             self._backend_health_aggregator = None
@@ -547,6 +568,28 @@ class TUIApp(App):
 
     def _update_snapshot(self) -> None:
         """Update snapshot from provider. Never raises: on backend loss we show unhealthy and retry."""
+        # If we're on mock but have a pending real provider, check if it has data and switch
+        if self._pending_real_provider is not None:
+            try:
+                pending_snap = self._pending_real_provider.get_snapshot()
+                has_data = (
+                    bool(getattr(pending_snap, "generated_at", "") or getattr(pending_snap, "timestamp", ""))
+                    or bool(getattr(pending_snap, "positions", None))
+                )
+                if has_data:
+                    old = self.provider
+                    self.provider = self._pending_real_provider
+                    self._pending_real_provider = None
+                    old.stop()
+                    try:
+                        self.config.save_to_file(TUIConfig.get_config_path())
+                    except Exception as e:
+                        logger.debug("Could not persist after switch to real: %s", e)
+                    self._apply_theme_for_provider()
+                    self.notify("Switched to real data", title="Backend")
+            except Exception as e:
+                logger.debug("Pending real provider check: %s", e)
+
         try:
             new_snapshot = self.provider.get_snapshot()
             status_bar = self.query_one("#status-bar", StatusBar)
@@ -584,7 +627,12 @@ class TUIApp(App):
                         current_provider_type=getattr(self.config, "provider_type", None),
                     )
                 if self._unified_positions_tab:
-                    self._unified_positions_tab.update_snapshot(new_snapshot, self._bank_accounts)
+                    self._unified_positions_tab.update_snapshot(
+                        new_snapshot,
+                        self._bank_accounts,
+                        environment=status_bar.environment,
+                        provider_label=self._get_provider_label(),
+                    )
                 if self._cash_flow_tab:
                     self._cash_flow_tab.update_snapshot(new_snapshot, self._bank_accounts)
                 if self._opportunity_simulation_tab:
@@ -662,7 +710,16 @@ class TUIApp(App):
             pass
 
     def _fetch_bank_accounts(self) -> None:
-        """Fetch bank accounts from Discount Bank service or API router."""
+        """Kick off bank-accounts fetch in a worker so startup and 30s refresh never block the UI."""
+        self.run_worker(
+            self._do_fetch_bank_accounts,
+            name="fetch_bank_accounts",
+            thread=True,
+            exclusive=False,
+        )
+
+    def _do_fetch_bank_accounts(self) -> List[Any]:
+        """Run in worker: fetch bank accounts from Discount Bank service or API router. Returns list of accounts."""
         url = "http://localhost:8003/api/bank-accounts"
         if getattr(self.config, "api_base_url", None):
             base = self.config.api_base_url.strip().rstrip("/")
@@ -671,18 +728,34 @@ class TUIApp(App):
             import requests
             response = requests.get(
                 url,
-                timeout=2.0,
-                headers={"cache-control": "no-cache"}
+                timeout=1.5,
+                headers={"cache-control": "no-cache"},
             )
             if response.ok:
                 data = response.json()
-                self._bank_accounts = data.get("accounts", [])
-                # Update unified positions tab if it exists
-                if self._unified_positions_tab and self.snapshot:
-                    self._unified_positions_tab.update_snapshot(self.snapshot, self._bank_accounts)
+                return data.get("accounts", [])
         except Exception as e:
-            logger.debug(f"Failed to fetch bank accounts: {e}")
-            # Silently fail - bank accounts are optional
+            logger.debug("Failed to fetch bank accounts: %s", e)
+        return []
+
+    def _on_bank_accounts_loaded(self, accounts: List[Any]) -> None:
+        """Called when bank-accounts worker completes; update state and unified positions tab."""
+        self._bank_accounts = accounts if isinstance(accounts, list) else []
+        if self._unified_positions_tab and self.snapshot:
+            from .components.snapshot_display import get_environment
+            self._unified_positions_tab.update_snapshot(
+                self.snapshot,
+                self._bank_accounts,
+                environment=get_environment(self.provider, self.snapshot),
+                provider_label=self._get_provider_label(),
+            )
+
+    def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
+        """Handle worker completion; dispatch bank-accounts result to UI update."""
+        if event.worker.name != "fetch_bank_accounts":
+            return
+        if event.state == WorkerState.SUCCESS and event.worker.result is not None:
+            self._on_bank_accounts_loaded(event.worker.result)
 
     def _update_box_spread_data(self) -> None:
         """Update box spread data from REST or file via loader."""
@@ -803,7 +876,101 @@ class TUIApp(App):
         if result and isinstance(result, dict) and result.get("provider_type"):
             self._switch_provider(result)
 
-    def _switch_provider(self, params: Dict[str, Optional[str]]) -> None:
+    def action_mode_mock(self) -> None:
+        """Switch to MOCK (synthetic data). F7."""
+        self._switch_mode_to("mock")
+
+    def action_mode_paper(self) -> None:
+        """Switch to PAPER (dry-run; TWS 7497 / Alpaca paper). F8."""
+        self._switch_mode_to("paper")
+
+    def action_mode_live(self) -> None:
+        """Switch to LIVE (real money; TWS 7496 / Alpaca live). F9."""
+        self._switch_mode_to("live")
+
+    def _switch_mode_to(self, mode: str) -> None:
+        """Switch MOCK / PAPER / LIVE via F7/F8/F9. Updates provider and (for PAPER/LIVE) shared config."""
+        if mode == "mock":
+            params: Dict[str, Optional[str]] = {
+                "provider_type": "mock",
+                "rest_endpoint": None,
+                "file_path": None,
+                "nats_url": None,
+                "nats_snapshot_backend": None,
+            }
+            self._switch_provider(params, skip_notify=True)
+            self._apply_theme_for_environment("mock")
+            self.notify("Switched to MOCK (synthetic data)", title="Mode")
+            try:
+                self.query_one("#status-bar", StatusBar).environment = "mock"
+            except Exception:
+                pass
+            return
+        if mode in ("paper", "live"):
+            try:
+                from ..integration.shared_config_loader import SharedConfigLoader
+                if mode == "paper":
+                    SharedConfigLoader.patch_home_config({
+                        "tws": {"port": 7497},
+                        "alpaca": {
+                            "data_client_config": {"paper": True, "base_url": "https://paper-api.alpaca.markets"},
+                            "dataClientConfig": {"paper": True, "baseUrl": "https://paper-api.alpaca.markets"},
+                        },
+                    })
+                    if not self.config.tcp_backend_ports:
+                        self.config.tcp_backend_ports = dict(DEFAULT_TCP_BACKEND_PORTS)
+                    self.config.tcp_backend_ports["tws"] = 7497
+                    self.config.alpaca_paper = True
+                else:
+                    SharedConfigLoader.patch_home_config({
+                        "tws": {"port": 7496},
+                        "alpaca": {
+                            "data_client_config": {"paper": False, "base_url": "https://api.alpaca.markets"},
+                            "dataClientConfig": {"paper": False, "baseUrl": "https://api.alpaca.markets"},
+                        },
+                    })
+                    if not self.config.tcp_backend_ports:
+                        self.config.tcp_backend_ports = dict(DEFAULT_TCP_BACKEND_PORTS)
+                    self.config.tcp_backend_ports["tws"] = 7496
+                    self.config.alpaca_paper = False
+            except FileNotFoundError as e:
+                self.notify(f"Config not found: {e}. Restart backends manually for PAPER/LIVE.", title="Mode", severity="warning")
+            except Exception as e:
+                logger.debug("Shared config patch failed: %s", e)
+                self.notify(f"Could not update shared config: {e}", title="Mode", severity="warning")
+            ptype = (self.config.provider_type or "").lower()
+            if ptype == "mock" or (ptype not in PRESET_REST_ENDPOINTS and ptype != "rest"):
+                ptype = "rest_ib"
+            endpoint = (
+                self.config.rest_endpoint
+                or PRESET_REST_ENDPOINTS.get(ptype)
+                or "http://localhost:8002/api/v1/snapshot"
+            )
+            if getattr(self.config, "api_base_url", None):
+                base = self.config.api_base_url.strip().rstrip("/")
+                endpoint = f"{base}/api/v1/snapshot"
+            params = {
+                "provider_type": ptype,
+                "rest_endpoint": endpoint,
+                "file_path": None,
+                "nats_url": None,
+                "nats_snapshot_backend": None,
+            }
+            self._switch_provider(params, skip_notify=True)
+            self._apply_theme_for_environment(mode)
+            label = "PAPER (TWS 7497 / Alpaca paper)" if mode == "paper" else "LIVE (TWS 7496 / Alpaca live)"
+            self.notify(
+                f"Switched to {label}. Restart IB/Alpaca service to apply if needed.",
+                title="Mode",
+            )
+            try:
+                self.query_one("#status-bar", StatusBar).environment = mode
+            except Exception:
+                pass
+            return
+        logger.debug("Unknown mode for _switch_mode_to: %s", mode)
+
+    def _switch_provider(self, params: Dict[str, Optional[str]], skip_notify: bool = False) -> None:
         """Replace current provider with a new one from params."""
         ptype = (params.get("provider_type") or "mock").lower()
         rest_endpoint = params.get("rest_endpoint")
@@ -819,6 +986,10 @@ class TUIApp(App):
             nats_snapshot_backend=nats_snapshot_backend,
             update_interval_ms=self.config.update_interval_ms,
             rest_timeout_ms=self.config.rest_timeout_ms,
+            api_base_url=getattr(self.config, "api_base_url", None),
+            snapshot_cache_path=getattr(self.config, "snapshot_cache_path", None),
+            out_of_market_interval_ms=getattr(self.config, "out_of_market_interval_ms", 0),
+            rest_verify_ssl=getattr(self.config, "rest_verify_ssl", False),
         )
         self.provider = create_provider_from_config(temp_config)
         self.config.provider_type = ptype
@@ -832,12 +1003,36 @@ class TUIApp(App):
         self.provider.start()
         label = self._get_provider_label()
         self._apply_theme_for_provider()
-        self.notify(f"Backend switched to {label}", title="Switch backend")
+        if not skip_notify:
+            self.notify(f"Backend switched to {label}", title="Switch backend")
+        # Persist so next launch uses this provider
+        try:
+            self.config.save_to_file(TUIConfig.get_config_path())
+        except Exception as e:
+            logger.debug("Could not persist TUI config: %s", e)
 
     def action_refresh(self) -> None:
         """Force refresh snapshot"""
         self._update_snapshot()
         self.notify("Refreshed", title="Refresh")
+
+    def action_export(self) -> None:
+        """Export snapshot and box spread to CSV/Excel (Google Sheets / Excel)."""
+        try:
+            paths = export_all(self.snapshot, self.box_spread_data)
+            if not paths:
+                self.notify(
+                    "No data to export (positions, events, or box spread scenarios).",
+                    title="Export",
+                    severity="warning",
+                )
+                return
+            export_dir = _export_dir()
+            msg = f"Exported {len(paths)} file(s) to {export_dir}"
+            self.notify(msg, title="Export")
+        except Exception as e:
+            logger.exception("Export failed")
+            self.notify(str(e), title="Export failed", severity="error")
 
 
 def _effective_health_url(config: TUIConfig) -> Optional[str]:
@@ -876,11 +1071,16 @@ def create_provider_from_config(config: TUIConfig) -> Provider:
                 or PRESET_REST_ENDPOINTS.get(provider_type)
                 or "http://localhost:8002/api/v1/snapshot"
             )
+        use_cache = getattr(config, "snapshot_cache_path", None) != ""  # Disable only when explicitly ""
+        cache_path = (config.snapshot_cache_path or "").strip() or None
         return RestProvider(
             endpoint=endpoint,
             update_interval_ms=config.update_interval_ms,
             timeout_ms=config.rest_timeout_ms,
             verify_ssl=config.rest_verify_ssl,
+            backend_id=provider_type if use_cache else None,
+            snapshot_cache_path=cache_path if cache_path else None,
+            out_of_market_interval_ms=getattr(config, "out_of_market_interval_ms", 0),
         )
 
     elif provider_type == "file":
@@ -914,11 +1114,27 @@ def main():
     # Load configuration
     config = load_config()
 
-    # Create provider
+    # Start with mock for quick first paint; app will switch to real data when available (see _pending_real_provider)
     provider = create_provider_from_config(config)
+    preferred = (config.provider_type or "mock").lower()
+    if preferred != "mock":
+        initial_provider = MockProvider(
+            update_interval_ms=config.update_interval_ms,
+            symbols=getattr(config, "watchlist", None),
+        )
+        preferred_provider = provider
+    else:
+        initial_provider = provider
+        preferred_provider = None
 
     # Create and run app (pass handler so it can be removed from root on unmount)
-    app = TUIApp(provider, config, tui_log_handler=tui_handler, tui_log_handler_on_root=True)
+    app = TUIApp(
+        initial_provider,
+        config,
+        tui_log_handler=tui_handler,
+        tui_log_handler_on_root=True,
+        preferred_provider=preferred_provider,
+    )
     app.run()
 
 

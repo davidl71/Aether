@@ -168,6 +168,7 @@ class PositionSnapshot:
     side: Optional[str] = None  # "long" or "short"
     expected_cash_at_expiry: Optional[float] = None  # Option/bond/bill cash if held to expiry
     dividend: Optional[float] = None  # Next/expected dividend for position (total amount)
+    conid: Optional[int] = None  # IB contract ID (for IBCID symbol lookup)
 
     def to_dict(self) -> Dict[str, Any]:
         result = {
@@ -213,6 +214,8 @@ class PositionSnapshot:
             result["expected_cash_at_expiry"] = self.expected_cash_at_expiry
         if self.dividend is not None:
             result["dividend"] = self.dividend
+        if self.conid is not None:
+            result["conid"] = self.conid
         return result
 
     @classmethod
@@ -249,6 +252,7 @@ class PositionSnapshot:
             side=data.get("side"),
             expected_cash_at_expiry=data.get("expected_cash_at_expiry"),
             dividend=data.get("dividend"),
+            conid=data.get("conid"),
         )
 
 

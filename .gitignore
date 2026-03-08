@@ -188,6 +188,7 @@ dist/ib_box_spread-*.sha256
 ib-gateway/dist/  # IB Gateway build output directory
 ib-gateway/root/conf.port.*.yaml  # Generated port-override configs (IB_GATEWAY_PORT)
 ib-gateway/.vertx/  # Vert.x file cache and keystore (local)
+**/.vertx/  # Editor/plugin Vert.x caches
 
 # Todo2 - AI-powered task management directories
 # Note: .todo2/state.todo2.json is tracked for multi-machine/AI agent synchronization

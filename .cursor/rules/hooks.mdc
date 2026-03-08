@@ -16,7 +16,7 @@ globs: ".pre-commit-config.yaml,scripts/setup_pre_commit_hook.sh,.cursor/hooks/*
 - **Config:** `.pre-commit-config.yaml`
 - **Install:** `pre-commit install` (in repo root)
 - **Runs on:** `git commit` (on staged files)
-- **Hooks:** trailing-whitespace, end-of-file-fixer, check-yaml, check-toml, mixed-line-ending, shfmt, shellcheck. Markdownlint is **not** in pre-commit (doc edits don’t block commits; use CI or `npm run lint:docs`).
+- **Hooks:** trailing-whitespace, end-of-file-fixer, check-yaml, check-toml, mixed-line-ending, shfmt, shellcheck. **lint-staged** (local): runs `scripts/lint_staged.sh` to ruff-check and ruff-format **only staged .py files** (lint generated/edited files at commit time). Markdownlint is **not** in pre-commit (doc edits don’t block commits; use CI or `npm run lint:docs`).
 
 See `docs/LINT_AND_AUTOMATION_MATRIX.md` for how pre-commit relates to `run_linters.sh` and CI.
 
@@ -37,7 +37,7 @@ See `docs/LINT_AND_AUTOMATION_MATRIX.md` for how pre-commit relates to `run_lint
 | Hook type | Config / script | Install / trigger |
 |-----------|-----------------|-------------------|
 | Cursor sessionStart | `.cursor/hooks/session-prime.sh` | Automatic when Composer starts (if Cursor hooks enabled) |
-| Pre-commit (format, shell) | `.pre-commit-config.yaml` | `pre-commit install` |
+| Pre-commit (format, shell, **lint-staged**) | `.pre-commit-config.yaml` | `pre-commit install` |
 | Versioned hooks (Co-authored-by, etc.) | `scripts/git-hooks/` | `git config core.hooksPath scripts/git-hooks` |
 | Docs validation (optional) | `scripts/setup_pre_commit_hook.sh` | Run script once |
 | exarp-go (git/patterns) | exarp-go MCP | Use `setup_hooks` tool in Cursor |

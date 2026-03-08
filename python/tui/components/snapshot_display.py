@@ -371,7 +371,8 @@ def format_status_line_rest(provider_label: str, snapshot: Optional[SnapshotPayl
 
 
 def get_environment(provider: Any, snapshot: Optional[SnapshotPayload]) -> str:
-    """Return 'mock' | 'paper' | 'live' for status bar styling and badge."""
+    """Return 'mock' | 'paper' | 'live' for status bar styling and badge.
+    The badge reflects backend-reported mode (e.g. IB: PAPER for DU* accounts, LIVE otherwise), not a TUI config switch."""
     from ..providers import MockProvider
     if isinstance(provider, MockProvider):
         return "mock"
