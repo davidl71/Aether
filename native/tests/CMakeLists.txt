@@ -55,9 +55,17 @@ if(NOT TWS_API_LIB)
 endif()
 
 if(NOT INTEL_DECIMAL_LIB)
-    set(INTEL_DECIMAL_LIB
-        "${CMAKE_SOURCE_DIR}/native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a"
-    )
+    set(_test_u4 "${CMAKE_SOURCE_DIR}/native/third_party/IntelRDFPMathLib20U4/LIBRARY/libbid.a")
+    set(_test_u2 "${CMAKE_SOURCE_DIR}/native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a")
+    if(EXISTS "${_test_u4}")
+        set(INTEL_DECIMAL_LIB "${_test_u4}")
+    elseif(EXISTS "${_test_u2}")
+        set(INTEL_DECIMAL_LIB "${_test_u2}")
+    else()
+        set(INTEL_DECIMAL_LIB "${_test_u4}")
+    endif()
+    unset(_test_u4)
+    unset(_test_u2)
 endif()
 
 if(NOT ABSEIL_LIBS)

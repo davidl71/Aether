@@ -869,6 +869,7 @@ endif()
 
 set(_intel_u2 "${CMAKE_CURRENT_SOURCE_DIR}/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a")
 set(_intel_u4 "${CMAKE_CURRENT_SOURCE_DIR}/third_party/IntelRDFPMathLib20U4/LIBRARY/libbid.a")
+# U4 is populated by ./scripts/fetch_third_party.sh; prefer it over legacy U2.
 if(EXISTS "${_intel_u4}")
     set(INTEL_DECIMAL_LIB "${_intel_u4}")
 else()
