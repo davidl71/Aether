@@ -1,41 +1,101 @@
 # Codex Instructions
 
-See [AGENTS.md](AGENTS.md) for complete project guidelines.
+See [AGENTS.md](AGENTS.md) for complete project guidelines. For multi-editor
+setup and command parity across Codex, Cursor, Claude Code, OpenCode, skills,
+and subagents, see [docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md). For
+exarp-go session/task workflows used by the other editors, see
+[docs/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md](docs/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md).
 
-## Overview
+## Project at a Glance
 
-Comprehensive multi-asset synthetic financing platform. Manages financing across options, futures, bonds, loans, and pension funds with unified portfolio management across 21+ accounts and multiple brokers (IBKR, Alpaca, Tradier, Tastytrade). Box spreads are one active strategy (spare cash, T-bill-equivalent yields). Multi-language: C++ core, Python integration, Rust backend.
+Comprehensive multi-asset synthetic financing optimization platform. Manages
+financing across options, futures, bonds, bank loans, and pension funds with
+unified portfolio management, cash flow modeling, opportunity simulation, and
+multi-instrument relationship optimization across 21+ accounts and multiple
+brokers. Box spreads are one active strategy component rather than the whole
+system.
 
-## Structure
+Primary implementation areas:
 
-- `native/src/` — C++ source files
-- `native/include/` — C++ headers
-- `native/tests/` — Catch2 tests (mirror source names with `test_` prefix)
-- `native/CMakeLists.txt` — main build definition
-- `python/` — Python integration layer
-- `agents/` — Rust backend services
-- `config/` — configuration templates
-- `docs/` — documentation
+- `native/` — C++20 core engine, broker adapters, pricing/risk logic, Catch2 tests
+- `python/` — Python integration layer, TUI, bindings, tests
+- `agents/` — Rust backend agents
+- `web/`, `ios/`, `desktop/` — UI clients
+- `docs/` — architecture, build, API, AI-editor setup
 
-## Build & Test
+## Build, Test, Lint
+
+Prefer CMake presets so build paths match `CMakePresets.json`:
 
 ```bash
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
-ninja -C build
-ctest --test-dir build --output-on-failure
+cmake --preset macos-arm64-debug
+cmake --build --preset macos-arm64-debug
+ctest --preset macos-arm64-debug --output-on-failure
 ./scripts/run_linters.sh
 ```
 
-## Style
+Useful alternatives:
 
-- C++20, 2-space indent, Allman braces, 100-char lines
-- Types: `PascalCase` — Functions/variables: `snake_case` — Constants: `kPrefixed`
-- Python: use `uv` for deps when available
+```bash
+./scripts/shortcuts/run_build.sh build
+./scripts/build_fast.sh
+./scripts/build_universal.sh
+```
 
-## Rules
+If configure fails because vendored dependencies are missing, run:
 
-- Never commit credentials or secrets
-- Use paper trading port 7497
-- Never modify `native/third_party/` directly
-- All trading/risk calculations must have tests
-- Imperative commit messages, 72-char subject lines
+```bash
+./scripts/fetch_third_party.sh
+```
+
+## Key Files
+
+| What | Where |
+|------|-------|
+| CLI entry point | `native/src/ib_box_spread.cpp` |
+| TWS API wrapper | `native/src/tws_client.cpp` |
+| Order lifecycle | `native/src/order_manager.cpp` |
+| Risk calculations | `native/src/risk_calculator.cpp` |
+| Greeks | `native/src/greeks_calculator.cpp` |
+| Convexity | `native/src/convexity_calculator.cpp` |
+| Config loading | `native/src/config_manager.cpp` |
+| Market hours | `native/src/market_hours.cpp` |
+| Architecture | `ARCHITECTURE.md` |
+| AI/editor setup | `docs/AI_EDITOR_SETUP.md` |
+
+## Code Style
+
+- C++20, 2-space indentation, Allman braces, 100-char soft wrap
+- Types: `PascalCase`
+- Functions and variables: `snake_case`
+- Constants: `k` prefix
+- Add short comments only when trading math or scaling is not obvious
+
+## Working Rules
+
+- Never commit credentials, API keys, or broker secrets
+- Always use paper trading port `7497` for testing
+- Never modify `native/third_party/` directly; wrap vendor code in `native/src/`
+- All trading, pricing, and risk logic changes need matching tests in `native/tests/`
+- Prefer existing scripts, presets, and repository conventions over ad hoc commands
+- Use imperative commit messages with 72-character subject lines
+
+## Python
+
+Prefer `uv` when available:
+
+```bash
+uv sync
+uv run pytest python/tests/ -v
+```
+
+Fall back to `pip` only if `uv` is unavailable.
+
+## Codex-Specific Notes
+
+- Codex should treat `AGENTS.md` as the canonical rule source and `CODEX.md`
+  as the quick reference for this environment.
+- When aligning AI/editor configs, prefer fixing shared docs over creating a
+  separate Codex-only workflow.
+- For task/session/report workflows, mirror the same exarp-go usage documented
+  for Cursor, Claude Code, and OpenCode.

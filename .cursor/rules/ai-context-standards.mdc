@@ -29,7 +29,7 @@ This project provides standard context files that AI coding assistants automatic
 | `.claude/settings.json` | Claude Code | Permissions and safety |
 | `.claude/agents/*.md` | Claude Code | Custom sub-agents |
 | `.aider.conf.yml` | Aider | Configuration, lint/test commands |
-| `.opencode.json` | OpenCode | Config, LSP servers |
+| `opencode.json` | OpenCode | Config, MCP server settings |
 | `.opencode/commands/*.md` | OpenCode | Custom slash commands |
 
 ### Custom Claude Agents
@@ -58,10 +58,10 @@ This project provides standard context files that AI coding assistants automatic
 
 | Consumer | Context source | Notes |
 |----------|----------------|-------|
-| Cursor / plugin skills | AGENTS.md, CLAUDE.md, `.cursor/rules/` | Use Skill tool; project root = workspace root |
-| Subagents (mcp_task, exarp-go, Claude agents) | Pass in prompt: project root + “Canonical guidelines: AGENTS.md, CLAUDE.md” | They do not auto-load workspace context |
+| Cursor / plugin skills | AGENTS.md, relevant quick reference, `.cursor/rules/` | Use Skill tool; project root = workspace root |
+| Subagents (mcp_task, exarp-go, Claude agents) | Pass in prompt: project root + “Canonical guidelines: AGENTS.md plus the relevant quick reference” | They do not auto-load workspace context |
 
-Full setup and command parity: [docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md). See also [docs/EXARP_GO_OPENCORE_AI_CONTEXT_PATTERNS.md](docs/EXARP_GO_OPENCORE_AI_CONTEXT_PATTERNS.md) for OpenCode and exarp-go AI context patterns.
+Full setup and command parity: [docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md). See also [docs/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md](docs/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md) for exarp-go usage patterns shared across editors.
 
 ### Which rule when
 
@@ -71,7 +71,7 @@ Full setup and command parity: [docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md
 | C++ tests | `cpp-tests.mdc` | Catch2 conventions |
 | Python | `python-code.mdc` | Style, uv, pytest |
 | Automation / Todo2 / docs health | `project-automation.mdc`, `automation-tool-suggestions.mdc` | exarp-go, task alignment |
-| Canonical context, skills, subagents | `ai-editors-skills-subagents.mdc`, docs/AI_EDITOR_SETUP.md | AGENTS.md/CLAUDE.md, multi-editor setup |
+| Canonical context, skills, subagents | `ai-editors-skills-subagents.mdc`, docs/AI_EDITOR_SETUP.md | AGENTS.md plus tool quick refs, multi-editor setup |
 | Documentation references | `documentation.mdc` | @docs, global docs |
 | Git / pre-commit / exarp-go hooks | `hooks.mdc` | pre-commit, setup_pre_commit_hook.sh, setup_hooks |
 | Security before code gen | `semgrep.mdc` | security_check |
@@ -88,9 +88,10 @@ Full setup and command parity: [docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md
 ## Context Hierarchy
 
 1. **`AGENTS.md`** — Authoritative source of project guidelines
-2. **Tool-specific files** — Reference AGENTS.md, add tool-specific hints
-3. **`.cursor/rules/`** — Context-specific rules with glob patterns
-4. **`.claude/agents/`** — Specialized sub-agents for repeated workflows
+2. **`CLAUDE.md` / `CODEX.md`** — Tool-specific quick references
+3. **Tool-specific files** — Add invocation hints, not duplicate policy
+4. **`.cursor/rules/`** — Context-specific rules with glob patterns
+5. **`.claude/agents/`** — Specialized sub-agents for repeated workflows
 
 ## When Adding New Context
 
@@ -103,6 +104,7 @@ Full setup and command parity: [docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md
 
 For AI agents working on this project:
 - Start with `AGENTS.md` for complete guidelines
+- Use `CODEX.md` or `CLAUDE.md` only as the quick reference for that tool
 - Check `.cursor/rules/` for context-specific rules
 - Use MCP tools via `.cursor/mcp.json` configuration
 - Use Claude agents for specialized workflows (test writing, trading review, refactoring)

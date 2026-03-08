@@ -12,9 +12,10 @@ This writes `.cursor/mcp.json` and `opencode.json` for your machine. Both files 
 
 ---
 
-This project is structured so **OpenCode**, **Claude Code**, **Cursor**,
-**Cursor/plugin skills**, and **subagents** (e.g. Cursor `mcp_task`, exarp-go,
-Claude custom agents) all use the same canonical context and commands.
+This project is structured so **Codex**, **OpenCode**, **Claude Code**,
+**Cursor**, **Cursor/plugin skills**, and **subagents** (e.g. Cursor
+`mcp_task`, exarp-go, Claude custom agents) all use the same canonical context
+and commands.
 
 ## Canonical context (single source of truth)
 
@@ -22,10 +23,12 @@ Claude custom agents) all use the same canonical context and commands.
 |----------|------|---------|
 | 1 | [AGENTS.md](../AGENTS.md) | Full project guidelines (all AI tools) |
 | 2 | [CLAUDE.md](../CLAUDE.md) | Claude quick reference; references AGENTS.md |
-| 3 | [ARCHITECTURE.md](../ARCHITECTURE.md) | System architecture |
-| 4 | [.cursor/rules/](../.cursor/rules/) | Cursor glob-based rules (in Cursor) |
+| 3 | [CODEX.md](../CODEX.md) | Codex quick reference; references AGENTS.md |
+| 4 | [ARCHITECTURE.md](../ARCHITECTURE.md) | System architecture |
+| 5 | [.cursor/rules/](../.cursor/rules/) | Cursor glob-based rules (in Cursor) |
 
-**Rule:** Prefer updating AGENTS.md and CLAUDE.md over duplicating instructions in
+**Rule:** Prefer updating AGENTS.md for shared rules, plus `CLAUDE.md` or
+`CODEX.md` for tool-specific quick references, over duplicating instructions in
 tool-specific configs. Tool-specific files should only add *how* to invoke
 things (e.g. commands, MCP), not *what* the project rules are.
 
@@ -35,13 +38,21 @@ things (e.g. commands, MCP), not *what* the project rules are.
 
 ### OpenCode
 
-- **Config:** [.opencode.json](../.opencode.json) — LSP (clangd, pyright),
-  command directory.
+- **Config:** [opencode.json](../opencode.json) — MCP configuration.
 - **Commands:** [.opencode/commands/](../.opencode/commands/) — `prime-context`,
   `build`, `test`, `test-one`, `lint`, `review-file`, `write-tests`,
   `ai-context`.
 - **Usage:** Run commands via OpenCode UI; start with `ai-context` or
-  `prime-context` to load AGENTS.md and CLAUDE.md.
+  `prime-context` to load the canonical context files.
+
+### Codex
+
+- **Instructions:** [CODEX.md](../CODEX.md) for Codex-specific quick reference;
+  [AGENTS.md](../AGENTS.md) remains the canonical source.
+- **Workflow:** Codex should use the same shell commands, docs, and exarp-go
+  patterns as the other editors instead of maintaining a separate workflow.
+- **Best practice:** If shared AI guidance is wrong or incomplete, fix
+  `AGENTS.md`, `CODEX.md`, or these docs rather than inventing a Codex-only rule.
 
 ### Claude Code
 
@@ -65,7 +76,7 @@ things (e.g. commands, MCP), not *what* the project rules are.
 ### Cursor / plugin skills
 
 - **Context:** Skills should rely on the same canonical context: AGENTS.md,
-  CLAUDE.md, and (when relevant) .cursor/rules.
+  the relevant tool quick reference, and (when relevant) `.cursor/rules/`.
 - **Project skills:** This repo defines reusable workflows in
   [.cursor/skills/](../.cursor/skills/). Use them by opening or @-mentioning the
   skill file when asking the AI to perform the task (e.g. pull with WIP, add
@@ -75,8 +86,8 @@ things (e.g. commands, MCP), not *what* the project rules are.
   `.cursor/skills/ui-ux-pro-max/`; see [UI_UX_PRO_MAX_SKILL.md](UI_UX_PRO_MAX_SKILL.md) for install and usage.
 - **Discovery:** Project root = workspace root; key files are at repo root and
   under `.cursor/`, `.claude/`, `.opencode/`.
-- **Invocation:** Use the Skill tool with the skill path; skills can READ
-  AGENTS.md and CLAUDE.md for project rules.
+- **Invocation:** Use the Skill tool with the skill path; skills can read
+  AGENTS.md plus the relevant quick reference for project rules.
 
 ### Subagents (mcp_task, exarp-go, Claude agents)
 
@@ -86,15 +97,15 @@ things (e.g. commands, MCP), not *what* the project rules are.
   explore/shell/code-reviewer), include in the prompt:
 
   - Project root path.
-  - Pointer: "Canonical project guidelines: AGENTS.md and CLAUDE.md in repo
-    root."
+  - Pointer: "Canonical project guidelines: AGENTS.md in repo root; use
+    CLAUDE.md or CODEX.md as the relevant quick reference."
   - Build/test: "Build: `ninja -C build` or use CMake presets; tests:
     `ctest --test-dir build --output-on-failure`."
 - **Reference:** Full list of subagents and when to use each:
   [docs/SUBAGENTS_REFERENCE.md](SUBAGENTS_REFERENCE.md). Project skill:
   [.cursor/skills/when-to-use-subagents.md](../.cursor/skills/when-to-use-subagents.md).
 - **exarp-go:** Uses PROJECT_ROOT; session prime and other tools can attach
-  task context. Same AGENTS.md/CLAUDE.md apply.
+  task context. Same canonical context applies.
 - **Claude custom agents:** Each agent in `.claude/agents/` can reference
   AGENTS.md and CLAUDE.md in its instructions.
 
@@ -102,18 +113,19 @@ things (e.g. commands, MCP), not *what* the project rules are.
 
 ## Command parity (build / test / lint)
 
-Use these so behavior is consistent across OpenCode, Claude, and Cursor:
+Use these so behavior is consistent across Codex, OpenCode, Claude, and Cursor:
 
-| Action | OpenCode | Cursor command | Shell |
-|--------|----------|----------------|-------|
-| Prime context | `ai-context` or `prime-context` | — | — |
+| Action | Codex | OpenCode | Cursor command | Shell |
+|--------|-------|----------|----------------|-------|
+| Prime context | Read `AGENTS.md`, `CODEX.md`, key docs | `ai-context` or `prime-context` | — | — |
 | **exarp-go: prime / handoff / tasks / scorecard** | **See [docs/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md](EXARP_GO_CURSOR_CLAUDE_OPENCODE.md)** — same MCP tools in all three; OpenCode: handoff, tasks, scorecard; Claude: prime, handoff, tasks, scorecard; Cursor: session-prime hook + commands. |
-| Build | `build` | `build:debug` | `ninja -C build` |
-| Test | `test` | `test:run` | `ctest --test-dir build --output-on-failure` |
-| Lint | `lint` | `lint:run` | `./scripts/run_linters.sh` |
+| Build | `cmake --build --preset <preset>` | `build` | `build:debug` | `ninja -C build` |
+| Test | `ctest --preset <preset> --output-on-failure` | `test` | `test:run` | `ctest --test-dir build --output-on-failure` |
+| Lint | `./scripts/run_linters.sh` | `lint` | `lint:run` | `./scripts/run_linters.sh` |
 
-Cursor also has presets (e.g. `macos-arm64-debug`); see
-[.cursor/commands.json](../.cursor/commands.json) and [CLAUDE.md](../CLAUDE.md).
+Codex and Cursor should prefer CMake presets (e.g. `macos-arm64-debug`) when
+available; see [.cursor/commands.json](../.cursor/commands.json),
+[CLAUDE.md](../CLAUDE.md), and [CODEX.md](../CODEX.md).
 
 ---
 
@@ -130,7 +142,7 @@ See [.cursor/rules/hooks.mdc](../.cursor/rules/hooks.mdc) and [LINT_AND_AUTOMATI
 ## Adding or changing AI context
 
 1. **Project-wide rules:** Update [AGENTS.md](../AGENTS.md) (and
-   [CLAUDE.md](../CLAUDE.md) if Claude-specific).
+   [CLAUDE.md](../CLAUDE.md) or [CODEX.md](../CODEX.md) if tool-specific).
 1. **Cursor-only, file-type rules:** Add or edit `.cursor/rules/*.mdc` with
    the right `globs`.
 1. **New OpenCode command:** Add a `.md` file under

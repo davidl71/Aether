@@ -148,7 +148,7 @@ Follow imperative, 72-character subject lines ("Add TSV formatter for CLI"). In 
 | `AGENTS.md` | All AI agents (canonical source) |
 | `CLAUDE.md` | Claude Code |
 | `CODEX.md` | OpenAI Codex |
-| `.opencode.json` | OpenCode (config, LSP) |
+| `opencode.json` | OpenCode (config, MCP) |
 | `.opencode/commands/` | OpenCode (custom commands) |
 | `.cursorrules` | Cursor IDE |
 | `.cursor/rules/*.mdc` | Cursor IDE (glob-based rules) |
@@ -160,4 +160,8 @@ Follow imperative, 72-character subject lines ("Add TSV formatter for CLI"). In 
 | `.claude/settings.json` | Claude Code permissions |
 | `.claude/agents/` | Custom Claude agents |
 
-**Skills & subagents:** Cursor/plugin skills and subagents (e.g. mcp_task, exarp-go, Claude agents) should use AGENTS.md and CLAUDE.md as canonical context. See [docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md) for setup and command parity across OpenCode, Claude, Cursor, skills, and subagents.
+**Skills & subagents:** Cursor/plugin skills and subagents (e.g. mcp_task,
+exarp-go, Claude agents) should use AGENTS.md as canonical context. `CLAUDE.md`
+and `CODEX.md` are tool-specific quick references. See
+[docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md) for setup and command parity
+across Codex, OpenCode, Claude, Cursor, skills, and subagents.
