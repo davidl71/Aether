@@ -191,11 +191,9 @@ ib-gateway/.vertx/  # Vert.x file cache and keystore (local)
 **/.vertx/  # Editor/plugin Vert.x caches
 
 # Todo2 - AI-powered task management directories
-# Note: .todo2/state.todo2.json is tracked for multi-machine/AI agent synchronization
 .cursor/rules/todo2-overview.mdc
 .cursor/rules/todo2.mdc
 .cursor/mcp.json
-# .todo2/state.todo2.json is now tracked for multi-machine sync
 # Build artifacts
 web/dist/
 web/dev-dist/
@@ -211,9 +209,7 @@ AGENTS.md
 
 #Ignore cursor AI rules
 .cursor/rules/codacy.mdc
-# .todo2/ directory - ignore everything except state.todo2.json (tracked via Git LFS)
-.todo2/*
-!.todo2/state.todo2.json
+# .todo2/ directory is local runtime/task state and should not be tracked
 .exarp/
 mcp-servers/project-management-automation/
 .todo2/
