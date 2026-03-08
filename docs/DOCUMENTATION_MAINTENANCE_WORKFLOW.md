@@ -196,7 +196,6 @@ jobs:
 
       - name: Validate Links
         run: ./scripts/validate_docs_links.sh
-        continue-on-error: true  # Non-blocking
 ```
 
 ---

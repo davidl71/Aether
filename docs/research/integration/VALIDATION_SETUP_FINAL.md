@@ -68,7 +68,7 @@ $ ./scripts/validate_docs_links.sh
 **Actions**:
 
 - Format validation (blocking)
-- Link validation (warnings)
+- Link validation (blocking)
 
 **Note**: Will run automatically on next PR
 

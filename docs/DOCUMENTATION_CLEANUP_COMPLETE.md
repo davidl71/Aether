@@ -19,7 +19,7 @@ Successfully cleaned up documentation by archiving obsolete files and updating r
 |----------|-------|----------|
 | **Status/Summary Reports** | 138 | `docs/archive/status-reports/` |
 | **JSON Reports** | 19 | `docs/archive/json-reports/` |
-| **Deprecated References** | 20 | `docs/archive/deprecated-refs/` |
+| **Deprecated References** | 20 | Removed on 2026-03-08 (formerly `docs/archive/deprecated-refs/`) |
 
 ### Impact
 
@@ -41,7 +41,7 @@ Updated files to note NotebookLM MCP server is disabled:
 - ✅ `docs/NOTEBOOKLM_CLEANUP_GUIDE.md`
 - ✅ `docs/research/integration/NOTEBOOKLM_USAGE.md`
 
-**Note**: Most other NotebookLM files were archived to `docs/archive/deprecated-refs/`
+**Note**: Most other NotebookLM files were archived to `docs/archive/deprecated-refs/`, which was later deleted on 2026-03-08 after the references were fully deprecated.
 
 ### MCP Analysis Files (Removal Status Added)
 
@@ -85,7 +85,7 @@ python3 python/tools/archive_obsolete_docs.py
 docs/archive/
 ├── status-reports/        # 138 completion/summary reports
 ├── json-reports/          # 19 JSON task reports
-├── deprecated-refs/        # 20 files referencing removed functionality
+├── deprecated-refs/        # removed on 2026-03-08 after cleanup completion
 └── [existing files]       # Previously archived files
 ```
 

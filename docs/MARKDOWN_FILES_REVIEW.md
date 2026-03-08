@@ -330,7 +330,7 @@ docs/archive/
 
 - **Status/Summary Reports**: 138 files → `docs/archive/status-reports/`
 - **JSON Reports**: 19 files → `docs/archive/json-reports/`
-- **Deprecated References**: 20 files → `docs/archive/deprecated-refs/`
+- **Deprecated References**: 20 files were archived there originally; `docs/archive/deprecated-refs/` was removed on 2026-03-08 after cleanup.
 
 ### Files Updated
 
