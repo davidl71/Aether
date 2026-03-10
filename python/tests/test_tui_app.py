@@ -8,6 +8,7 @@ a real Textual application.
 import json
 import os
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import pytest
@@ -121,27 +122,24 @@ def empty_snapshot():
 
 class TestSnapshotDisplay:
     def test_format_snapshot_normal(self, sample_snapshot):
-        from python.tui.components.snapshot_display import SnapshotDisplay
-        widget = SnapshotDisplay.__new__(SnapshotDisplay)
-        result = widget._format_snapshot(sample_snapshot)
+        from python.tui.components.snapshot_display import format_status_line
+        result = format_status_line("", sample_snapshot, None)
         assert "14:30:45" in result
         assert "LIVE" in result
         assert "RUNNING" in result
         assert "DU123456" in result
 
     def test_format_snapshot_no_timestamp(self):
-        from python.tui.components.snapshot_display import SnapshotDisplay
-        widget = SnapshotDisplay.__new__(SnapshotDisplay)
+        from python.tui.components.snapshot_display import format_status_line
         snapshot = SnapshotPayload(generated_at="", mode="DRY-RUN")
-        result = widget._format_snapshot(snapshot)
+        result = format_status_line("", snapshot, None)
         assert "--:--:--" in result
         assert "DRY-RUN" in result
 
     def test_format_snapshot_date_only(self):
-        from python.tui.components.snapshot_display import SnapshotDisplay
-        widget = SnapshotDisplay.__new__(SnapshotDisplay)
+        from python.tui.components.snapshot_display import format_status_line
         snapshot = SnapshotPayload(generated_at="2025-06-15T09:05:01Z")
-        result = widget._format_snapshot(snapshot)
+        result = format_status_line("", snapshot, None)
         assert "09:05:01" in result
 
 
@@ -246,7 +244,7 @@ class TestDisabledBackendsConfig:
 
         line = format_status_line("mock", None, None)
         assert "Provider: mock" in line
-        assert "Time: --:--:--" in line
+        assert "Updated: --:--:--" in line
         assert "Mode: --" in line
         assert "Strategy: --" in line
         assert "Account: --" in line
@@ -334,7 +332,7 @@ class TestCreateProviderFromConfig:
         config = TUIConfig(provider_type="rest", rest_endpoint="http://test:8080/api")
         provider = create_provider_from_config(config)
         assert isinstance(provider, RestProvider)
-        assert provider.endpoint == "http://test:8080/api"
+        assert provider.endpoint == "http://test:8080/api/snapshot"
 
     def test_rest_provider_default_endpoint(self):
         from python.tui.app import create_provider_from_config
@@ -463,6 +461,52 @@ class TestDashboardTab:
         tab = DashboardTab.__new__(DashboardTab)
         tab.snapshot = None
         tab._update_data()  # Should return early without error
+
+
+# ---------------------------------------------------------------------------
+# UnifiedPositionsTab - bank account conversion
+# ---------------------------------------------------------------------------
+
+class TestUnifiedPositionsTab:
+    def test_convert_single_currency_bank_account(self, sample_snapshot):
+        from python.tui.components.unified_positions import UnifiedPositionsTab
+
+        tab = UnifiedPositionsTab(
+            snapshot=sample_snapshot,
+            bank_accounts=[{"account_name": "Savings", "currency": "ILS", "balance": 100.5, "credit_rate": 0.03}],
+        )
+
+        positions = tab._convert_bank_accounts_to_positions()
+
+        assert len(positions) == 1
+        assert positions[0].name == "Savings"
+        assert positions[0].currency == "ILS"
+        assert positions[0].cash_flow == 100.5
+
+    def test_convert_mixed_currency_bank_account_creates_one_row_per_currency(self, sample_snapshot):
+        from python.tui.components.unified_positions import UnifiedPositionsTab
+
+        tab = UnifiedPositionsTab(
+            snapshot=sample_snapshot,
+            bank_accounts=[
+                {
+                    "account_name": "Discount Account",
+                    "currency": "MULTI",
+                    "balance": 0.0,
+                    "is_mixed_currency": True,
+                    "balances_by_currency": {"ILS": 100.5, "USD": 25.25},
+                    "credit_rate": 0.03,
+                }
+            ],
+        )
+
+        positions = tab._convert_bank_accounts_to_positions()
+
+        assert len(positions) == 2
+        assert {(p.name, p.currency, p.cash_flow) for p in positions} == {
+            ("Discount Account (ILS)", "ILS", 100.5),
+            ("Discount Account (USD)", "USD", 25.25),
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -661,7 +705,7 @@ class TestTUIAppBoxSpreadFileLoad:
 
 class TestTUIAppFetchBankAccounts:
     @patch("requests.get")
-    def test_successful_fetch(self, mock_get):
+    def test_do_fetch_bank_accounts_successful_fetch(self, mock_get):
         from python.tui.app import TUIApp
         from python.tui.providers import MockProvider
 
@@ -673,25 +717,22 @@ class TestTUIAppFetchBankAccounts:
         mock_get.return_value = mock_response
 
         app = TUIApp(MockProvider())
-        app._unified_positions_tab = None
-        app._fetch_bank_accounts()
-        assert len(app._bank_accounts) == 1
-        assert app._bank_accounts[0]["name"] == "Savings"
+        result = app._do_fetch_bank_accounts()
+        assert len(result) == 1
+        assert result[0]["name"] == "Savings"
 
     @patch("requests.get")
-    def test_failed_fetch_silently_ignored(self, mock_get):
+    def test_do_fetch_bank_accounts_failed_fetch_returns_none(self, mock_get):
         from python.tui.app import TUIApp
         from python.tui.providers import MockProvider
 
         mock_get.side_effect = Exception("Connection refused")
 
         app = TUIApp(MockProvider())
-        app._bank_accounts = []
-        app._fetch_bank_accounts()
-        assert app._bank_accounts == []
+        assert app._do_fetch_bank_accounts() is None
 
     @patch("requests.get")
-    def test_non_ok_response(self, mock_get):
+    def test_do_fetch_bank_accounts_non_ok_response_returns_none(self, mock_get):
         from python.tui.app import TUIApp
         from python.tui.providers import MockProvider
 
@@ -700,9 +741,43 @@ class TestTUIAppFetchBankAccounts:
         mock_get.return_value = mock_response
 
         app = TUIApp(MockProvider())
+        assert app._do_fetch_bank_accounts() is None
+
+    def test_on_bank_accounts_loaded_refreshes_all_dependent_tabs(self, sample_snapshot):
+        from python.tui.app import TUIApp
+        from python.tui.providers import MockProvider
+
+        app = TUIApp(MockProvider())
+        app.snapshot = sample_snapshot
+        app._unified_positions_tab = Mock()
+        app._cash_flow_tab = Mock()
+        app._opportunity_simulation_tab = Mock()
+        app._relationship_visualization_tab = Mock()
+        app._on_bank_accounts_loaded([{"account_name": "Savings"}])
+
+        assert app._bank_accounts == [{"account_name": "Savings"}]
+        app._unified_positions_tab.update_snapshot.assert_called_once()
+        app._cash_flow_tab.update_snapshot.assert_called_once_with(sample_snapshot, app._bank_accounts)
+        app._opportunity_simulation_tab.update_snapshot.assert_called_once_with(sample_snapshot, app._bank_accounts)
+        app._relationship_visualization_tab.update_snapshot.assert_called_once_with(sample_snapshot, app._bank_accounts)
+
+    def test_on_worker_state_changed_ignores_failed_fetch_results(self):
+        from python.tui.app import TUIApp
+        from python.tui.providers import MockProvider
+        from textual.worker import WorkerState
+
+        app = TUIApp(MockProvider())
         app._bank_accounts = [{"old": True}]
-        app._fetch_bank_accounts()
+        app._on_bank_accounts_loaded = Mock()
+        event = SimpleNamespace(
+            worker=SimpleNamespace(name="fetch_bank_accounts", result=None),
+            state=WorkerState.SUCCESS,
+        )
+
+        app.on_worker_state_changed(event)
+
         assert app._bank_accounts == [{"old": True}]
+        app._on_bank_accounts_loaded.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
@@ -728,13 +803,14 @@ class TestTUIAppUpdateSnapshot:
         app._relationship_visualization_tab = Mock()
         app._scenarios_tab = None
 
-        mock_display = Mock()
-        app.query_one = Mock(return_value=mock_display)
+        status_bar = Mock()
+        status_bar.environment = "live"
+        app.query_one = Mock(return_value=status_bar)
 
         app._update_snapshot()
 
         assert app.snapshot is sample_snapshot
-        app._dashboard_tab.update_snapshot.assert_called_once_with(sample_snapshot)
+        app._dashboard_tab.update_snapshot.assert_called_once_with(sample_snapshot, backend_health=None)
         app._positions_tab.update_snapshot.assert_called_once_with(sample_snapshot)
         app._orders_tab.update_snapshot.assert_called_once_with(sample_snapshot)
         app._alerts_tab.update_snapshot.assert_called_once_with(sample_snapshot)
@@ -749,10 +825,49 @@ class TestTUIAppUpdateSnapshot:
         app = TUIApp(mock_provider)
         app.snapshot = sample_snapshot
         app._dashboard_tab = Mock()
-        app.query_one = Mock(return_value=Mock())  # status bar
+        status_bar = Mock()
+        status_bar.environment = "live"
+        app.query_one = Mock(return_value=status_bar)  # status bar
 
         app._update_snapshot()
         app._dashboard_tab.update_snapshot.assert_not_called()
+
+    def test_manual_switch_clears_pending_real_provider(self):
+        from python.tui.app import TUIApp
+        from python.tui.providers import MockProvider
+
+        current_provider = MockProvider()
+        pending_provider = MockProvider()
+        app = TUIApp(current_provider)
+        app._pending_real_provider = pending_provider
+        current_provider.stop = Mock()
+        pending_provider.stop = Mock()
+
+        with patch("python.tui.app.create_provider_from_config", return_value=MockProvider()) as create_provider:
+            replacement = create_provider.return_value
+            replacement.start = Mock()
+            app._switch_provider({"provider_type": "mock"}, skip_notify=True)
+
+        pending_provider.stop.assert_called_once()
+        assert app._pending_real_provider is None
+
+    def test_update_snapshot_does_not_auto_switch_after_manual_switch(self, sample_snapshot):
+        from python.tui.app import TUIApp
+        from python.tui.providers import MockProvider
+
+        provider = MockProvider()
+        provider.get_snapshot = Mock(return_value=sample_snapshot)
+        app = TUIApp(provider)
+        app._pending_real_provider = None
+        status_bar = Mock()
+        status_bar.environment = "live"
+        app.query_one = Mock(return_value=status_bar)
+        app._dashboard_tab = Mock()
+
+        app._update_snapshot()
+
+        assert app.provider is provider
+        app._dashboard_tab.update_snapshot.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
@@ -786,8 +901,9 @@ class TestTUIAppActions:
 
         app = TUIApp(MockProvider())
         app.notify = Mock()
+        app.push_screen = Mock()
         app.action_setup()
-        app.notify.assert_called_once()
+        app.push_screen.assert_called_once()
 
     def test_action_refresh(self, sample_snapshot):
         from python.tui.app import TUIApp
@@ -807,6 +923,9 @@ class TestTUIAppActions:
         app._positions_tab = None
         app._orders_tab = None
         app._alerts_tab = None
+        status_bar = Mock()
+        status_bar.environment = "live"
+        app.query_one = Mock(return_value=status_bar)
 
         app.action_refresh()
         app.notify.assert_called_once()
@@ -835,7 +954,10 @@ class TestMain:
 
         mock_load_config.assert_called_once()
         mock_create_provider.assert_called_once_with(mock_config)
-        mock_app_class.assert_called_once_with(mock_provider, mock_config)
+        _, kwargs = mock_app_class.call_args
+        assert mock_app_class.call_args.args[:2] == (mock_provider, mock_config)
+        assert kwargs["tui_log_handler_on_root"] is True
+        assert kwargs["preferred_provider"] is None
         mock_app.run.assert_called_once()
 
 

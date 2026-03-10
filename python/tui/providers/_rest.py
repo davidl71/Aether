@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
 
@@ -32,12 +33,18 @@ class RestProvider(Provider):
         update_interval_ms: int = 1000,
         timeout_ms: int = 15000,
         verify_ssl: bool = True,
+        backend_id: Optional[str] = None,
+        snapshot_cache_path: Optional[str] = None,
+        out_of_market_interval_ms: int = 0,
     ):
         super().__init__()
         self.endpoint = normalize_rest_endpoint(endpoint)
         self.update_interval_ms = update_interval_ms
+        self._out_of_market_interval_ms = max(0, out_of_market_interval_ms)
         self.timeout_sec = timeout_ms / 1000.0
         self._verify_ssl = verify_ssl
+        self._backend_id = backend_id
+        self._snapshot_cache_path = Path(snapshot_cache_path) if snapshot_cache_path else None
         self._worker_thread: Optional[threading.Thread] = None
         self._health_url = self._derive_health_url(endpoint)
         self._last_health: Optional[dict] = None
@@ -57,6 +64,17 @@ class RestProvider(Provider):
         if self._running:
             return
         self._running = True
+        if self._backend_id:
+            try:
+                from ...integration.snapshot_store import get_latest
+                db_path = self._snapshot_cache_path if self._snapshot_cache_path else None
+                data = get_latest(self._backend_id, db_path=db_path)
+                if data:
+                    with self._lock:
+                        self._latest_snapshot = SnapshotPayload.from_dict(data)
+                    logger.debug("RestProvider loaded cached snapshot for %s", self._backend_id)
+            except Exception as e:
+                logger.debug("RestProvider cache load skipped: %s", e)
         self._worker_thread = threading.Thread(target=self._poll_loop, daemon=True)
         self._worker_thread.start()
         logger.info(f"RestProvider started: {self.endpoint}")
@@ -134,13 +152,31 @@ class RestProvider(Provider):
                 if snapshot is not None:
                     with self._lock:
                         self._latest_snapshot = snapshot
+                    if self._backend_id:
+                        try:
+                            from ...integration.snapshot_store import save_latest
+                            db_path = self._snapshot_cache_path if self._snapshot_cache_path else None
+                            save_latest(self._backend_id, snapshot.to_dict(), db_path=db_path)
+                        except Exception as e:
+                            logger.debug("RestProvider cache save skipped: %s", e)
             except Exception as e:
                 logger.debug("RestProvider fetch error (will retry): %s", e)
             try:
                 self._fetch_health()
             except Exception as e:
                 logger.debug("RestProvider health check error: %s", e)
-            time.sleep(self.update_interval_ms / 1000.0)
+            if self._out_of_market_interval_ms > 0:
+                try:
+                    from ...integration.market_hours import effective_refresh_interval_ms
+                    interval_ms = effective_refresh_interval_ms(
+                        self.update_interval_ms,
+                        self._out_of_market_interval_ms,
+                    )
+                except Exception:
+                    interval_ms = self.update_interval_ms
+            else:
+                interval_ms = self.update_interval_ms
+            time.sleep(interval_ms / 1000.0)
 
     def _fetch(self) -> Optional[SnapshotPayload]:
         try:

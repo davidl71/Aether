@@ -449,10 +449,13 @@ class TUIApp(App):
 
     def _apply_theme_for_environment(self, environment: str) -> None:
         """Apply theme class and title badge for environment (mock | paper | live)."""
-        for cls in ("theme-mock", "theme-paper", "theme-live"):
-            self.screen.remove_class(cls)
-        if environment in ("mock", "paper", "live"):
-            self.screen.add_class(f"theme-{environment}")
+        try:
+            for cls in ("theme-mock", "theme-paper", "theme-live"):
+                self.screen.remove_class(cls)
+            if environment in ("mock", "paper", "live"):
+                self.screen.add_class(f"theme-{environment}")
+        except Exception:
+            pass
         if environment:
             self.title = f"{self.TITLE}  [{environment.upper()}]"
         else:
@@ -626,19 +629,7 @@ class TUIApp(App):
                         backend_health=all_health or None,
                         current_provider_type=getattr(self.config, "provider_type", None),
                     )
-                if self._unified_positions_tab:
-                    self._unified_positions_tab.update_snapshot(
-                        new_snapshot,
-                        self._bank_accounts,
-                        environment=status_bar.environment,
-                        provider_label=self._get_provider_label(),
-                    )
-                if self._cash_flow_tab:
-                    self._cash_flow_tab.update_snapshot(new_snapshot, self._bank_accounts)
-                if self._opportunity_simulation_tab:
-                    self._opportunity_simulation_tab.update_snapshot(new_snapshot, self._bank_accounts)
-                if self._relationship_visualization_tab:
-                    self._relationship_visualization_tab.update_snapshot(new_snapshot, self._bank_accounts)
+                self._refresh_bank_account_dependent_tabs()
                 if self._positions_tab:
                     self._positions_tab.update_snapshot(new_snapshot)
                 if self._orders_tab:
@@ -718,8 +709,8 @@ class TUIApp(App):
             exclusive=False,
         )
 
-    def _do_fetch_bank_accounts(self) -> List[Any]:
-        """Run in worker: fetch bank accounts from Discount Bank service or API router. Returns list of accounts."""
+    def _do_fetch_bank_accounts(self) -> Optional[List[Any]]:
+        """Run in worker: fetch bank accounts from Discount Bank service or API router."""
         url = "http://localhost:8003/api/bank-accounts"
         if getattr(self.config, "api_base_url", None):
             base = self.config.api_base_url.strip().rstrip("/")
@@ -733,28 +724,42 @@ class TUIApp(App):
             )
             if response.ok:
                 data = response.json()
-                return data.get("accounts", [])
+                accounts = data.get("accounts", [])
+                return accounts if isinstance(accounts, list) else []
         except Exception as e:
             logger.debug("Failed to fetch bank accounts: %s", e)
-        return []
+        return None
 
     def _on_bank_accounts_loaded(self, accounts: List[Any]) -> None:
         """Called when bank-accounts worker completes; update state and unified positions tab."""
         self._bank_accounts = accounts if isinstance(accounts, list) else []
-        if self._unified_positions_tab and self.snapshot:
-            from .components.snapshot_display import get_environment
+        self._refresh_bank_account_dependent_tabs()
+
+    def _refresh_bank_account_dependent_tabs(self) -> None:
+        """Refresh tabs that depend on bank-account state, even when the main snapshot is unchanged."""
+        if not self.snapshot:
+            return
+        environment = get_environment(self.provider, self.snapshot)
+        provider_label = self._get_provider_label()
+        if self._unified_positions_tab:
             self._unified_positions_tab.update_snapshot(
                 self.snapshot,
                 self._bank_accounts,
-                environment=get_environment(self.provider, self.snapshot),
-                provider_label=self._get_provider_label(),
+                environment=environment,
+                provider_label=provider_label,
             )
+        if self._cash_flow_tab:
+            self._cash_flow_tab.update_snapshot(self.snapshot, self._bank_accounts)
+        if self._opportunity_simulation_tab:
+            self._opportunity_simulation_tab.update_snapshot(self.snapshot, self._bank_accounts)
+        if self._relationship_visualization_tab:
+            self._relationship_visualization_tab.update_snapshot(self.snapshot, self._bank_accounts)
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         """Handle worker completion; dispatch bank-accounts result to UI update."""
         if event.worker.name != "fetch_bank_accounts":
             return
-        if event.state == WorkerState.SUCCESS and event.worker.result is not None:
+        if event.state == WorkerState.SUCCESS and isinstance(event.worker.result, list):
             self._on_bank_accounts_loaded(event.worker.result)
 
     def _update_box_spread_data(self) -> None:
@@ -977,6 +982,9 @@ class TUIApp(App):
         file_path = params.get("file_path")
         nats_url = params.get("nats_url") or self.config.nats_url
         nats_snapshot_backend = params.get("nats_snapshot_backend") or self.config.nats_snapshot_backend
+        if self._pending_real_provider is not None:
+            self._pending_real_provider.stop()
+            self._pending_real_provider = None
         self.provider.stop()
         temp_config = TUIConfig(
             provider_type=ptype,
