@@ -6,8 +6,6 @@
 ## Scope
 
 Reviewed:
-- `python/services/analytics_api.py`
-- `python/services/calculations_api.py`
 - `python/services/health_dashboard.py`
 - `python/integration/*_service.py` integration APIs
 
@@ -38,33 +36,28 @@ These are still Python-specific or integration-heavy enough that they should rem
 
 These endpoints are mostly frontend read-model shaping and should move to Rust-owned API contracts.
 
-### `python/services/calculations_api.py`
+### Retired Python frontend HTTP surface
 
-Migrated to Rust:
-- `POST /api/v1/frontend/unified-positions`
-- `POST /api/v1/frontend/relationships`
-- `POST /api/v1/cash-flow/timeline`
-- `POST /api/v1/opportunity-simulation/scenarios`
-- `POST /api/v1/opportunity-simulation/calculate`
-
-Still Python-owned:
-- `POST /api/v1/cash-flow/management`
+Retired:
+- `python/services/calculations_api.py`
+- `python/services/analytics_api.py`
 
 Reason:
-- the migrated routes were shared frontend read models or frontend-facing calculations
-- Rust should become the shared frontend API owner for both web and TUI
+- shared frontend read-model routes were migrated to the Rust API
+- the remaining `cash-flow/management` HTTP route had no active web/TUI consumer
+- keeping separate Python service ports for dead frontend endpoints only increased operational surface area
 
-### `python/services/analytics_api.py`
+Remaining Python cash-management logic:
+- `python/integration/cash_flow_portfolio_manager.py`
+- `python/tests/test_cash_flow_portfolio_manager.py`
 
-Shrink further after the remaining Python-only route is reviewed:
-- this file is now mostly a router-composition shell over `cash-flow/management` and risk-free-rate
-- once `cash-flow/management` is either migrated or confirmed as Python-specific, this can shrink again or disappear
+This logic is retained as an in-process module and can be re-exposed later only if a real consumer appears.
 
 ## Recommended migration order
 
-1. Review whether `cash-flow/management` is genuinely Python-specific or just another read model.
-2. If it is a shared frontend contract, move it to Rust.
-3. Collapse or delete `analytics_api.py` once only risk-free-rate remains Python-fronted.
+1. Keep Python integration modules only where they have active consumers.
+2. Re-expose cash-management analysis only if a real UI or automation caller appears.
+3. Continue shrinking Python service wrappers in favor of Rust-owned frontend APIs and direct in-process Python modules.
 
 ## Non-goals for this pass
 

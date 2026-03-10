@@ -26,14 +26,14 @@ So the TUI calls **one snapshot backend** + **Discount Bank** + **scenarios on s
 | Snapshot client | `VITE_API_URL` (one snapshot origin) | Snapshot + health. |
 | `AccountSelector` | Alpaca 8000, TradeStation 8001, Discount Bank 8003 | Accounts from each (currently **sequential**). |
 | `useBankAccounts` | Discount Bank 8003 | Bank accounts. |
-| `calculations.ts` | `VITE_CALCULATIONS_API_URL` (default 8004) | Cash flow timeline, opportunity simulation. |
+| `calculations.ts` | `VITE_API_URL` (default 9000) | Rust-owned frontend read models for cash flow timeline and opportunity simulation. |
 | `useBackendServices` | All service ports (health) | Health checks (**parallel** via `Promise.allSettled`). |
 | `useTastytrade` | Tastytrade 8005 | Health + snapshot. |
 | ServiceConfigModal | `localhost:${port}/api/health` | Per-service health. |
 
 So the PWA is the main **multi-service client**. It does not call one backend from another; it’s the browser calling several backends.
 
-**Port note:** `risk_free_rate_service` and `calculations_api` both default to port 8004. They are different apps; run one on 8004 and the other on a different port (e.g. `CALCULATIONS_API_PORT=8007`) or document which service is “8004” in your setup.
+**Port note:** the active web path no longer uses a separate Python calculations service. The remaining Python rate/benchmark service stays on port 8004 when needed.
 
 ---
 
@@ -83,13 +83,9 @@ So the PWA is the main **multi-service client**. It does not call one backend fr
 
 ---
 
-### 3.5 Calculations API vs Risk-free rate port
+### 3.5 Retired calculations-service split
 
-**Issue:** `calculations_api` (cash flow, opportunity simulation) and `risk_free_rate_service` (yield curve, SOFR) both default to 8004.
-
-**Options:**  
-- Run calculations API on another port (e.g. `CALCULATIONS_API_PORT=8007`) and set `VITE_CALCULATIONS_API_URL=http://localhost:8007` in the web app.  
-- Or document that only one of them uses 8004 and the other is disabled or port-overridden.
+**Resolved:** cash flow and opportunity simulation moved to the Rust frontend API, so the old Python calculations/analytics service split is no longer part of the active web architecture.
 
 ---
 
@@ -109,4 +105,4 @@ So the PWA is the main **multi-service client**. It does not call one backend fr
 | Main multi-service client | PWA (AccountSelector, useBankAccounts, calculations, health, snapshot). |
 | Quick win | **AccountSelector:** load accounts from Alpaca, TradeStation, Discount Bank in **parallel** (implemented). |
 | Larger wins | BFF/aggregator (single origin), NATS as shared data source, TUI async/cache for bank accounts. |
-| Config | Resolve calculations vs risk-free rate port 8004; optional single base URL when behind proxy. |
+| Config | Keep frontend read models on `VITE_API_URL`; optional single base URL when behind proxy. |

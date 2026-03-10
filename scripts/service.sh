@@ -31,7 +31,6 @@ _svc_display() {
     tastytrade) echo "Tastytrade" ;;
     tradestation) echo "TradeStation" ;;
     riskfree) echo "Risk-Free Rate" ;;
-    analytics) echo "Analytics API" ;;
     discount) echo "Discount Bank" ;;
     healthdashboard) echo "Health Dashboard" ;;
     web) echo "Web Dev" ;;
@@ -51,7 +50,6 @@ _svc_port() {
     tastytrade) _config_port tastytrade 8005 ;;
     tradestation) _config_port tradestation 8001 ;;
     riskfree) _config_port risk_free_rate 8004 ;;
-    analytics) _config_port analytics 8007 ;;
     discount) _config_port discount_bank 8003 ;;
     healthdashboard) _config_port health_dashboard 8011 ;;
     web) echo "5173" ;;
@@ -71,7 +69,6 @@ _svc_cmd() {
     tastytrade) echo "./web/scripts/run-tastytrade-service.sh" ;;
     tradestation) echo "./web/scripts/run-tradestation-service.sh" ;;
     riskfree) echo "./web/scripts/run-risk-free-rate-service.sh" ;;
-    analytics) echo "./web/scripts/run-analytics-api.sh" ;;
     discount) echo "./web/scripts/run-discount-bank-service.sh" ;;
     healthdashboard) echo "./scripts/run_health_dashboard.sh" ;;
     web) echo "npm run dev" ;;
@@ -91,7 +88,6 @@ _svc_log() {
     tastytrade) echo "tastytrade-service.log" ;;
     tradestation) echo "tradestation-service.log" ;;
     riskfree) echo "risk-free-rate-service.log" ;;
-    analytics) echo "analytics-api.log" ;;
     discount) echo "discount-bank-service.log" ;;
     healthdashboard) echo "health-dashboard.log" ;;
     web) echo "web-dev-server.log" ;;
@@ -106,7 +102,7 @@ _svc_health() {
     nats) echo "http://localhost:8222/healthz" ;;
     memcached) echo "" ;;
     gateway) echo "https://localhost:\${PORT}" ;;
-    ib|alpaca|tastytrade|tradestation|riskfree|analytics|discount)
+    ib|alpaca|tastytrade|tradestation|riskfree|discount)
       echo "http://localhost:\${PORT}/api/health"
       ;;
     healthdashboard) echo "http://localhost:\${PORT}/api/health" ;;
@@ -124,7 +120,7 @@ _svc_wait() {
     web) echo "6" ;;
     tradestation) echo "10" ;;
     ib|alpaca|tastytrade|riskfree|discount) echo "8" ;;
-    analytics|healthdashboard) echo "6" ;;
+    healthdashboard) echo "6" ;;
     questdb_nats) echo "3" ;;
     *) echo "4" ;;
   esac

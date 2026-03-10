@@ -44,7 +44,6 @@ DEFAULT_SERVICES: List[Dict[str, Any]] = [
     {"name": "tastytrade", "port": 8005, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5), ("/api/v1/snapshot", "snapshot", 20)]},
     {"name": "discount_bank", "port": 8003, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5)]},
     {"name": "risk_free_rate", "port": 8004, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5)]},
-    {"name": "analytics", "port": 8007, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5)]},
 ]
 
 
@@ -74,7 +73,6 @@ def load_services_from_config(config_path: Path) -> List[Dict[str, Any]]:
         "tastytrade": ("tastytrade", 8005),
         "discount_bank": ("discount_bank", 8003),
         "risk_free_rate": ("risk_free_rate", 8004),
-        "analytics": ("analytics", 8007),
     }
     result = []
     for key, (name, default_port) in port_map.items():
