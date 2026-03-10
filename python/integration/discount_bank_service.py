@@ -88,6 +88,8 @@ class BankAccount(BaseModel):
     account_number: Optional[str] = None
     balance: float
     currency: str
+    balances_by_currency: Optional[Dict[str, float]] = None
+    is_mixed_currency: bool = False
     balance_date: Optional[str] = None
     credit_rate: Optional[float] = None
     debit_rate: Optional[float] = None
@@ -519,15 +521,18 @@ def _extract_bank_accounts_from_ledger() -> List[Dict[str, Any]]:
             bank_name = segments[2] if len(segments) > 2 else "Unknown"
             account_number = segments[3] if len(segments) > 3 else None
 
-            # Get primary currency balance (use first currency found, or sum all if multiple)
-            currency = account_currencies.get(account_path, "USD")
-            balance = balances.get(currency, 0.0)
+            currency_balances = {
+                currency_code: amount
+                for currency_code, amount in sorted(balances.items())
+            }
+            is_mixed_currency = len(currency_balances) > 1
 
-            # If multiple currencies, sum them (convert to primary currency)
-            # For now, just use primary currency balance
-            if len(balances) > 1:
-                # Multiple currencies - use primary, but note this in metadata
-                balance = balances.get(currency, 0.0)
+            if is_mixed_currency:
+                currency = "MULTI"
+                balance = 0.0
+            else:
+                currency = account_currencies.get(account_path, "USD")
+                balance = currency_balances.get(currency, 0.0)
 
             # Determine interest rates based on bank
             credit_rate = None
@@ -548,6 +553,10 @@ def _extract_bank_accounts_from_ledger() -> List[Dict[str, Any]]:
                     "account_number": account_number,
                     "balance": balance,
                     "currency": currency,
+                    "balances_by_currency": (
+                        currency_balances if is_mixed_currency else None
+                    ),
+                    "is_mixed_currency": is_mixed_currency,
                     "credit_rate": credit_rate,
                     "debit_rate": debit_rate,
                 }
@@ -653,14 +662,9 @@ def _parse_transactions_from_file(
                 continue
 
             date_raw = line_str[2:10].strip()
-            if len(date_raw) == 8:
-                # Try YYYYMMDD first, then DDMMYYYY
-                if int(date_raw[:4]) > 1900:
-                    value_date = f"{date_raw[:4]}-{date_raw[4:6]}-{date_raw[6:8]}"
-                else:
-                    value_date = f"20{date_raw[4:6]}-{date_raw[2:4]}-{date_raw[0:2]}"
-            else:
-                value_date = date_raw
+            value_date = _parse_transaction_date(date_raw)
+            if value_date is None:
+                continue
 
             amount_str = line_str[10:25].strip()
             try:
@@ -688,6 +692,23 @@ def _parse_transactions_from_file(
         return transactions[:limit]
     except Exception:
         return []
+
+
+def _parse_transaction_date(date_raw: str) -> Optional[str]:
+    """Parse an 8-digit Discount Bank transaction date to ISO format."""
+    if len(date_raw) != 8 or not date_raw.isdigit():
+        return None
+
+    try:
+        year_prefix = int(date_raw[:4])
+        if year_prefix >= 1900:
+            parsed = datetime.strptime(date_raw, "%Y%m%d")
+        else:
+            parsed = datetime.strptime(date_raw, "%d%m%Y")
+    except ValueError:
+        return None
+
+    return parsed.strftime("%Y-%m-%d")
 
 
 app = FastAPI(title="Discount Bank Service")

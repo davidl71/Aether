@@ -1,9 +1,12 @@
 """Tests for discount bank transaction parsing and Rust parser integration."""
 
+import json
+import sqlite3
 import tempfile
 from pathlib import Path
 
 from python.integration.discount_bank_service import (
+    _extract_bank_accounts_from_ledger,
     _parse_transactions_from_file,
     _parse_file_via_rust,
 )
@@ -32,6 +35,25 @@ class TestParseTransactions:
         assert txns[0].is_debit is False
         assert txns[1].amount == 500.00
         assert txns[1].is_debit is True
+
+    def test_parses_ddmmyyyy_detail_record(self):
+        lines = [
+            "0115022026" + "000000000025000+" + "Refund for overcharge            ",
+        ]
+        path = self._make_file(lines)
+        txns = _parse_transactions_from_file(path, limit=10)
+
+        assert len(txns) == 1
+        assert txns[0].value_date == "2026-02-15"
+
+    def test_skips_invalid_detail_record_date(self):
+        lines = [
+            "0131022026" + "000000000025000+" + "Impossible date                  ",
+        ]
+        path = self._make_file(lines)
+        txns = _parse_transactions_from_file(path, limit=10)
+
+        assert txns == []
 
     def test_skips_header_records(self):
         lines = [
@@ -82,3 +104,98 @@ class TestRustParserFallback:
 
         result = _parse_file_via_rust(dat_file)
         assert "balance" in result or "account" in result
+
+
+class TestExtractBankAccounts:
+    def _make_db(self) -> Path:
+        tf = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        tf.close()
+        db_path = Path(tf.name)
+
+        conn = sqlite3.connect(str(db_path))
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            CREATE TABLE transactions (
+                id TEXT PRIMARY KEY,
+                transaction_json TEXT
+            )
+            """
+        )
+        conn.commit()
+        conn.close()
+        return db_path
+
+    def _insert_transaction(self, db_path: Path, txn_id: str, postings: list[dict]):
+        conn = sqlite3.connect(str(db_path))
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO transactions (id, transaction_json) VALUES (?, ?)",
+            (
+                txn_id,
+                json.dumps(
+                    {
+                        "id": txn_id,
+                        "date": "2026-03-10T00:00:00Z",
+                        "description": "test",
+                        "postings": postings,
+                    }
+                ),
+            ),
+        )
+        conn.commit()
+        conn.close()
+
+    def test_returns_single_currency_bank_account(self, monkeypatch):
+        db_path = self._make_db()
+        self._insert_transaction(
+            db_path,
+            "txn-1",
+            [
+                {
+                    "account": "Assets:Bank:Discount:123456",
+                    "amount": {"amount": "100.50", "currency": "ILS"},
+                }
+            ],
+        )
+
+        monkeypatch.setenv("LEDGER_DATABASE_PATH", str(db_path))
+        accounts = _extract_bank_accounts_from_ledger()
+
+        assert len(accounts) == 1
+        account = accounts[0]
+        assert account["currency"] == "ILS"
+        assert account["balance"] == 100.50
+        assert account["balances_by_currency"] is None
+        assert account["is_mixed_currency"] is False
+        assert account["credit_rate"] == 0.03
+        assert account["debit_rate"] == 0.103
+
+    def test_returns_mixed_currency_bank_account_breakdown(self, monkeypatch):
+        db_path = self._make_db()
+        self._insert_transaction(
+            db_path,
+            "txn-1",
+            [
+                {
+                    "account": "Assets:Bank:Discount:123456",
+                    "amount": {"amount": "100.50", "currency": "ILS"},
+                },
+                {
+                    "account": "Assets:Bank:Discount:123456",
+                    "amount": {"amount": "25.25", "currency": "USD"},
+                },
+            ],
+        )
+
+        monkeypatch.setenv("LEDGER_DATABASE_PATH", str(db_path))
+        accounts = _extract_bank_accounts_from_ledger()
+
+        assert len(accounts) == 1
+        account = accounts[0]
+        assert account["currency"] == "MULTI"
+        assert account["balance"] == 0.0
+        assert account["is_mixed_currency"] is True
+        assert account["balances_by_currency"] == {"ILS": 100.50, "USD": 25.25}
+        assert account["credit_rate"] == 0.03
+        assert account["debit_rate"] == 0.103
