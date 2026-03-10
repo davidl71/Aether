@@ -10,6 +10,8 @@
 
 This document provides comprehensive information about the development environment, including system specifications, software versions, and configuration details for both remote Cursor agents (Ubuntu and macOS M4).
 
+For repo-local cache and temp overrides used by scripts and agent runs, see [SANDBOX_FRIENDLY_OVERRIDES.md](/Users/davidl/Projects/Trading/ib_box_spread_full_universal/docs/SANDBOX_FRIENDLY_OVERRIDES.md).
+
 **Purpose:**
 
 - Enable informed task delegation based on hardware capabilities
