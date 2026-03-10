@@ -28,7 +28,6 @@ So pre-commit does not duplicate run_linters.sh; it runs a separate set of quick
 - **lint.yml**: Black, Ruff, MyPy (Python), optional exarp-go lint. Does not run `run_linters.sh` or cppcheck.
 - **docs-validation.yml**: markdownlint (`npm run lint:docs:ci`).
 - **security-scan.yml**: Bandit and other security checks (overlaps with run_linters.sh’s bandit step by design: CI can focus on security reporting).
-- **go-tui.yml**: golangci-lint (Go only).
 
 So CI jobs are not duplicates of Make/CMake; they run in different environments and can focus on Python, docs, or security. The only shared “action” is exarp-go lint (run_linters.sh and lint.yml both can run it).
 
