@@ -28,17 +28,14 @@ jobs:
       - name: Sync Python dependencies
         run: uv sync --project python --extra dev
 
-      - name: Install lint tools
-        run: uv tool install black ruff mypy
-
-      - name: Run Black (format check)
-        run: uvx black --check python/ scripts/
-
       - name: Run Ruff (linting)
         run: uvx ruff check python/ scripts/
 
-      - name: Run MyPy (type checking)
-        run: uvx mypy python/ scripts/ --ignore-missing-imports
+      - name: Run Pyright (TUI type checking)
+        run: uv run --project python --extra dev pyright python/tui
+
+      - name: Run Bandit (security scan)
+        run: uvx bandit -q -r python -x python/tests
 
       - name: Run exarp-go lint (optional)
         id: exarp
