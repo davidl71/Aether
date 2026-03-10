@@ -35,7 +35,7 @@
 | Config validator / schema checker | Shell or Python script | Becomes one binary; easy to ship in CI or containers | **Yes** — if the script grows (e.g. `scripts/validate_api_contract.sh` or a shared-config validator). |
 | Small NATS bridge or fan-out daemon | New or currently shell | Goroutines + official NATS client; single binary | **Yes** — for *new* small services that are mostly NATS + light logic. |
 | Service manager / process supervisor | Shell (`scripts/service_manager.sh`, etc.) | Could be one binary with better control and logging | **Optional** — only if shell becomes hard to maintain; otherwise keep shell. |
-| QuestDB/NATS writer | Go (nats-questdb-bridge) | Single binary; run via scripts/run_questdb_nats_writer.sh. Requires Go. | **Optional** — if deployment favours “drop a binary” over Python. |
+| QuestDB/NATS writer | Go (`collection-daemon` QuestDB sink) | Single binary; run via `scripts/run_questdb_nats_writer.sh`. Requires Go. | **Optional** — enable `QUESTDB_ILP_ADDR` when QuestDB fanout is needed. |
 | Exarp / MCP / automation CLI | External (exarp-go) | Already Go elsewhere | **No** — leave as external tool. |
 
 **Do *not* rewrite in Go:**

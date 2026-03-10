@@ -151,7 +151,7 @@ _find_pid() {
   elif _is_memcached "$svc"; then
     pgrep -f "memcached" 2>/dev/null || true
   elif _is_questdb_nats "$svc"; then
-    pgrep -f "nats-questdb-bridge|run_questdb_nats_writer" 2>/dev/null || true
+    pgrep -f "collection-daemon|run_questdb_nats_writer" 2>/dev/null || true
   else
     port=$(_svc_port "$svc")
     if [[ -n "$port" ]]; then

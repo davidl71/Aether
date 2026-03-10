@@ -58,7 +58,7 @@ Snapshot metrics include `orats_ok` (PWA/HeaderStatus); strategy can use ORATS f
 | **Config** | `config/config.json` → `questdb.enabled`, `questdb.ilp_host`, `questdb.ilp_port`, etc. |
 | **Docs** | `README.md` (QuestDB Archiving), `docs/research/external/FINANCIAL_DATA_SOURCES_RESEARCH.md`, [QuestDB docs](https://questdb.com/docs/) |
 
-Snapshot metrics include `questdb_ok`. **NATS → QuestDB:** The Go **nats-questdb-bridge** (`agents/go/cmd/nats-questdb-bridge/`) subscribes to Core NATS `market-data.tick.>` (or JetStream `market.data.>`) and writes ILP to QuestDB (table `market_data`). Run via `./scripts/run_questdb_nats_writer.sh` or `./scripts/service.sh start questdb_nats`. Requires Go. For the current bridge subject/payload expectations, see **`docs/NATS_SETUP.md`** and **`docs/NATS_TOPICS_REGISTRY.md`**.
+Snapshot metrics include `questdb_ok`. **NATS → QuestDB:** `collection-daemon` can now write QuestDB ILP directly when `QUESTDB_ILP_ADDR` is set, using decoded `MarketDataEvent` envelopes from NATS. Run via `./scripts/run_questdb_nats_writer.sh` or `./scripts/service.sh start questdb_nats`. Requires Go. For current subject/payload expectations, see **`docs/NATS_SETUP.md`** and **`docs/NATS_TOPICS_REGISTRY.md`**.
 
 ---
 

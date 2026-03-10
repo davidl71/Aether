@@ -178,11 +178,11 @@ nats server check
 
 ## QuestDB NATS writer
 
-A Python service subscribes to Core NATS `market-data.tick.>` and writes each tick to QuestDB via ILP (table `market_data`). Use it when market data is published to NATS (e.g. Rust backend, or test with `nats pub`).
+A Go collector path subscribes to NATS `market-data.tick.>` and can write each tick to QuestDB via ILP (table `market_data`) when `QUESTDB_ILP_ADDR` is set. Use it when market data is published to NATS.
 
 **Prerequisites:** NATS server running, QuestDB running with ILP on port 9009, Go installed.
 
-**Run:** The NATS→QuestDB writer is the Go nats-questdb-bridge (no Python fallback). From repo root:
+**Run:** The NATS→QuestDB writer now uses `collection-daemon` with the QuestDB sink enabled. From repo root:
 
 ```bash
 # From repo root (NATS and QuestDB must be running; requires Go)
@@ -204,12 +204,11 @@ Or via the unified service manager:
 | `NATS_URL` / `--nats-url` | `nats://localhost:4222` | NATS server URL |
 | `QUESTDB_ILP_HOST` / `--questdb-host` | `127.0.0.1` | QuestDB ILP host |
 | `QUESTDB_ILP_PORT` / `--questdb-port` | `9009` | QuestDB ILP port |
-| `NATS_QUESTDB_SUBJECT` / `--subject` | `market-data.tick.>` | NATS subject to subscribe to |
-| `QUESTDB_MARKET_DATA_TABLE` / `--table` | `market_data` | QuestDB table name |
+| `NATS_SUBJECTS` | `market-data.tick.>` | NATS subjects to subscribe to |
 
-**Payload format:** JSON. Envelope `{"payload": {symbol, bid, ask, last, volume?, timestamp?}}` or flat `{symbol, bid, ask, last, volume?, timestamp?}`. Symbol can be inferred from subject (e.g. `market-data.tick.SPY` → SPY). The Rust backend currently publishes **protobuf** on this subject; to ingest that, use the Go bridge (JetStream path) with an adapter that republishes proto→JSON to JetStream, or see `proto/messages.proto` `NatsEnvelope` + `MarketDataEvent`.
+**Payload format:** `NatsEnvelope` protobuf carrying `MarketDataEvent` payloads. Symbol can be inferred from subject if needed (e.g. `market-data.tick.SPY` → `SPY`). See `proto/messages.proto` and `docs/message_schemas/README.md`.
 
-**Code:** `agents/go/cmd/nats-questdb-bridge`. See also `docs/NATS_TOPICS_REGISTRY.md` and `docs/message_schemas/README.md`.
+**Code:** `agents/go/cmd/collection-daemon`. The old `agents/go/cmd/nats-questdb-bridge` remains only as a compatibility fallback. See also `docs/NATS_TOPICS_REGISTRY.md` and `docs/message_schemas/README.md`.
 
 ## Integration with Launch Scripts
 
