@@ -30,7 +30,7 @@ jobs:
           enable-cache: true
 
       - name: Sync Python dependencies
-        run: uv sync --project python --extra dev
+        run: uv sync --project python --extra dev --extra tui
 
       - name: Run tests with coverage
         run: |
