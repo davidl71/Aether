@@ -34,7 +34,9 @@ import (
 	"syscall"
 	"time"
 
+	pbv1 "github.com/dlowes/ib-platform/agents/go/proto/v1"
 	"github.com/nats-io/nats.go"
+	"google.golang.org/protobuf/proto"
 )
 
 func env(key, fallback string) string {
@@ -42,6 +44,24 @@ func env(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func decodeEnvelopeMetadata(data []byte) map[string]any {
+	env := &pbv1.NatsEnvelope{}
+	if err := proto.Unmarshal(data, env); err != nil {
+		return map[string]any{"decode_error": err.Error()}
+	}
+	timestamp := ""
+	if ts := env.GetTimestamp(); ts != nil {
+		timestamp = ts.AsTime().UTC().Format(time.RFC3339Nano)
+	}
+	return map[string]any{
+		"id":           env.GetId(),
+		"source":       env.GetSource(),
+		"message_type": env.GetMessageType(),
+		"timestamp":    timestamp,
+		"payload_b64":  base64.StdEncoding.EncodeToString(env.GetPayload()),
+	}
 }
 
 type route struct {
@@ -150,6 +170,7 @@ func main() {
 								"key":      entry.Key(),
 								"revision": entry.Revision(),
 								"value":    base64.StdEncoding.EncodeToString(entry.Value()),
+								"envelope": decodeEnvelopeMetadata(entry.Value()),
 							})
 							return
 						}
@@ -197,6 +218,7 @@ func main() {
 										"key":      entry.Key(),
 										"revision": entry.Revision(),
 										"value":    base64.StdEncoding.EncodeToString(entry.Value()),
+										"envelope": decodeEnvelopeMetadata(entry.Value()),
 									}
 									body, _ := json.Marshal(payload)
 									if _, err := w.Write([]byte("data: " + string(body) + "\n\n")); err != nil {

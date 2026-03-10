@@ -42,7 +42,7 @@ across 21+ accounts and multiple brokers.
 Storage layers:
   InMemoryCache (C++)  →  hot tick data
   Redis (Python)       →  inter-service cache
-  NATS KV              →  live key-value state
+  NATS KV              →  live key-value state (written by collection-daemon as full envelopes)
   SQLite               →  Rust ledger + Python (SHARED — see known issues)
   QuestDB              →  time-series archive
   MongoDB              →  trade blotter
@@ -94,7 +94,7 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for full analysis. Key issues:
 1. **Dual SQLite writers**: Rust ledger and Python both write to the same SQLite DB — risk of contention/corruption under load.
 2. **Split data backends**: TUI reads from Python :8000-:8006; Web reads from Rust :8080 — different data, potential inconsistency.
 3. **WebSocket sends full snapshot**: Rust WS sends full snapshot once on connect, then only changed sections (delta) every 2s — see IMPROVEMENT_PLAN P2-A (done). Remaining gap: scale if many clients.
-4. **NATS Go agents**: `nats-questdb-bridge` and `heartbeat-aggregator` parse raw NATS bytes as strings rather than deserializing `NatsEnvelope` protobuf.
+4. **Collector durability gap**: `collection-daemon` now decodes `NatsEnvelope` and owns `LIVE_STATE`, but durable JetStream replay remains opt-in instead of the default collection mode.
 5. **Hardcoded ETF duration table**: `greeks_calculator.cpp` uses a static lookup table for ETF duration/convexity instead of `QuantLib::BondFunctions`.
 6. **No IV solver**: `greeks_calculator.cpp` takes implied volatility as external input; no Newton-Raphson solver over `BlackCalculator`.
 
