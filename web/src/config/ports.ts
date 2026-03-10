@@ -17,8 +17,8 @@ const getEnvVar = (name: string, defaultValue: number): number => {
 
 /**
  * Service port configuration
- * Ports are read from Vite environment variables (set by run-web-service.sh)
- * or fall back to default values
+ * These are optional development overrides when not using the shared
+ * Rust/nginx origin as the browser-facing default.
  */
 export const SERVICE_PORTS = {
   alpaca: getEnvVar('VITE_ALPACA_PORT', 8000),
@@ -45,7 +45,7 @@ export function getRustBackendUrl(path = ''): string {
   return getServiceUrl('rustBackend', path);
 }
 
-/** Base URL for API when using nginx/shared server (e.g. http://localhost:8080) */
+/** Base URL for API when using the shared browser-facing origin (e.g. http://localhost:8080). */
 function getApiBaseUrl(): string {
   const env = (import.meta as unknown as { env?: Record<string, unknown> }).env;
   const apiUrl = env?.VITE_API_URL;

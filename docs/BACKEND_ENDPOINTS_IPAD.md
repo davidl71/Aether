@@ -1,8 +1,10 @@
 # Backend Endpoints for iPad App
 
+> Historical reference only. Apple-client work was removed from the active platform scope on 2026-03-10. This document is preserved only as deferred API-design material and is not part of the current backend roadmap.
+
 **Date**: 2025-11-22
-**Status**: Design Complete
-**Task**: T-216 (Backend endpoints for iPad app)
+**Status**: Deferred / Historical
+**Task**: T-216 (historical backend endpoints for iPad app)
 
 ## Overview
 

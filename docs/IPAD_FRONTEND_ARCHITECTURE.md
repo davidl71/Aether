@@ -1,8 +1,10 @@
 # iPad Frontend Architecture
 
+> Historical reference only. Apple-client work was removed from the active platform scope on 2026-03-10. This document is preserved only as deferred design material and is not part of the current frontend plan.
+
 **Date**: 2025-11-22
-**Status**: Design Complete
-**Task**: T-215 (iPad frontend architecture design)
+**Status**: Deferred / Historical
+**Task**: T-215 (historical iPad frontend architecture design)
 
 ## Overview
 

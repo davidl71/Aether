@@ -184,8 +184,7 @@ Synthetic Financing Platform
 │
 └── Frontend Applications
     ├── Web PWA (TypeScript/React)
-    ├── TUI (Python/Textual)
-    └── iPad App (SwiftUI)
+    └── TUI (Python/Textual)
 ```
 
 ---

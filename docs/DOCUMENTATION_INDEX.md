@@ -1,6 +1,6 @@
 # Synthetic Financing Platform - Complete Documentation Index
 
-This document serves as a comprehensive index of all documentation in the Synthetic Financing Platform project for NotebookLM integration.
+This document serves as a comprehensive index of current project documentation plus selected historical references.
 
 ## Repository Information
 
@@ -24,6 +24,9 @@ This document serves as a comprehensive index of all documentation in the Synthe
 - `docs/platform/PRIMARY_GOALS_AND_REQUIREMENTS.md` - System goals and requirements
 - `docs/platform/SYNTHETIC_FINANCING_ARCHITECTURE.md` - Multi-asset relationship system
 - `docs/platform/MULTI_ACCOUNT_AGGREGATION_DESIGN.md` - Account aggregation system
+- `docs/platform/LEDGER_OWNERSHIP_AUDIT.md` - Current durable-state ownership and loan migration path
+- `docs/platform/TUI_RUST_READ_PATH_AUDIT.md` - Remaining TUI read paths and Rust migration targets
+- `docs/platform/API_GATEWAY_AND_ROUTING_REVIEW.md` - Gateway scope and single-origin web routing defaults
 
 ### Strategy Modules
 
@@ -302,7 +305,12 @@ This repository contains **213+ documentation files** covering:
 - External integrations (ORATS, 1Password, etc.)
 - Agent services and coordination
 - Python bindings and integration
-- Web, TUI, and desktop interfaces
+- Web and TUI interfaces
 - Project management and planning
 
 All documentation is maintained in Markdown format and organized in the `docs/` directory and various subdirectories throughout the project.
+
+## Historical / Deferred References
+
+- `docs/IPAD_FRONTEND_ARCHITECTURE.md` - historical iPad design reference only
+- `docs/BACKEND_ENDPOINTS_IPAD.md` - historical iPad backend-design reference only

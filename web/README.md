@@ -62,11 +62,12 @@ Point the app at a backend that serves the snapshot API:
   ```bash
   cp web/env.example web/.env
   ```
-- **Set the snapshot URL** in `web/.env` to the service you’re running:
+- **Preferred default**: use the shared Rust/nginx origin:
+  - `VITE_API_URL=http://127.0.0.1:8080/api/v1/snapshot`
+- **Direct service wiring** is still supported for dev/debug:
   - IB: `VITE_API_URL=http://127.0.0.1:8002/api/snapshot`
   - Alpaca: `VITE_API_URL=http://127.0.0.1:8000/api/snapshot`
   - Tastytrade: `VITE_API_URL=http://127.0.0.1:8005/api/snapshot`
-  - Rust backend (if it exposes snapshot): `VITE_API_URL=http://127.0.0.1:8080/api/v1/snapshot`
 - **Start that backend** (e.g. `./scripts/start_all_services.sh` or the individual run-*-service.sh scripts).
 - **Restart the dev server** so Vite picks up the new env: `npm run dev` (or restart the web service).
 
@@ -81,16 +82,16 @@ Box spread data comes from the **Rust backend** at `http://localhost:8080/api/v1
 
 ### 3. Other services (accounts, bank, charts)
 
-Charts, cash flow, and opportunity simulation use the Rust backend URL. Account/bank panels use service URLs derived from `VITE_*_PORT` (see `web/.env.example`). Start the corresponding services (IB, Alpaca, Discount Bank, etc.) and set the ports in `.env` if they differ from the defaults.
+Charts, cash flow, and opportunity simulation use the Rust backend URL. Account/bank panels can still use `VITE_*_PORT` overrides for local development, but the long-term default is path-based shared-origin routing rather than browser-to-service port coupling.
 
 ### Quick checklist for real data
 
-| What you want      | Set in `web/.env`                          | Service to run                    |
+| What you want      | Preferred `web/.env` setting               | Service to run                    |
 |--------------------|--------------------------------------------|-----------------------------------|
-| Live snapshot      | `VITE_API_URL=http://127.0.0.1:8002/api/snapshot` (IB) or 8000 (Alpaca) or 8005 (Tastytrade) | IB / Alpaca / Tastytrade service |
+| Live snapshot      | `VITE_API_URL=http://127.0.0.1:8080/api/v1/snapshot` | Rust backend / shared origin |
 | Box spread grid    | `VITE_RUST_BACKEND_REST_PORT=8080` (default) | Rust backend (agents)             |
 | Charts / cash flow | Same Rust backend port                     | Rust backend                      |
-| Account selectors  | `VITE_IB_PORT`, `VITE_ALPACA_PORT`, etc.   | Corresponding backend services     |
+| Direct backend debugging | `VITE_IB_PORT`, `VITE_ALPACA_PORT`, etc. | Corresponding backend services |
 
 ## Extending Toward Production
 
