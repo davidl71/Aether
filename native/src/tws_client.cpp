@@ -166,6 +166,13 @@ bool env_flag_enabled(const char *name) {
   return flag == "1" || flag == "true" || flag == "yes" || flag == "on";
 }
 
+std::string resolve_nats_url(const config::TWSConfig &config) {
+  if (const char *env_url = std::getenv("NATS_URL"); env_url && *env_url) {
+    return std::string(env_url);
+  }
+  return config.nats_url.empty() ? "nats://127.0.0.1:4222" : config.nats_url;
+}
+
 bool should_use_mock_client(const config::TWSConfig &config) {
   return config.use_mock || env_flag_enabled("TWS_MOCK");
 }
@@ -376,9 +383,10 @@ public:
 
     // Initialize NATS client if enabled
 #ifdef ENABLE_NATS
-    nats_client_ = std::make_unique<nats::NatsClient>("nats://localhost:4222");
+    const std::string nats_url = resolve_nats_url(config_);
+    nats_client_ = std::make_unique<nats::NatsClient>(nats_url);
     if (nats_client_->connect()) {
-      spdlog::info("NATS client connected for market data publishing");
+      spdlog::info("NATS client connected for market data publishing at {}", nats_url);
     } else {
       spdlog::warn(
           "NATS client connection failed - market data publishing disabled");

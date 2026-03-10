@@ -10,7 +10,8 @@
     "auto_reconnect": true, // Automatically reconnect on disconnection
     "reconnect_delay_ms": 3000, // Delay before reconnection attempt (milliseconds)
     "log_raw_messages": false, // Log raw API messages/data for debugging (verbose - use with "trace" log_level)
-    "use_mock": false // Use mock TWS client (no live IB connection, set to true for simulated data)
+    "use_mock": false, // Use mock TWS client (no live IB connection, set to true for simulated data)
+    "nats_url": "nats://127.0.0.1:4222" // Optional NATS publish URL when the native client is built with NATS
   },
 
   // ============================================================================

@@ -33,6 +33,7 @@ struct TWSConfig {
     bool enable_pcap_capture = false;  // Enable PCAP packet capture for TWS API traffic
     std::string pcap_output_file = ""; // Output file path (empty = auto-generate with timestamp)
     bool pcap_nanosecond_precision = false;  // Use nanosecond precision timestamps (default: microsecond)
+    std::string nats_url = "nats://127.0.0.1:4222"; // NATS publish URL when ENABLE_NATS is compiled in
 };
 
 // ============================================================================
@@ -245,7 +246,8 @@ inline void to_json(nlohmann::json& j, const TWSConfig& config) {
         {"use_mock", config.use_mock},
         {"enable_pcap_capture", config.enable_pcap_capture},
         {"pcap_output_file", config.pcap_output_file},
-        {"pcap_nanosecond_precision", config.pcap_nanosecond_precision}
+        {"pcap_nanosecond_precision", config.pcap_nanosecond_precision},
+        {"nats_url", config.nats_url}
     };
     if (!config.connect_options.empty())
         j["connect_options"] = config.connect_options;
@@ -287,6 +289,8 @@ inline void from_json(const nlohmann::json& j, TWSConfig& config) {
         j.at("pcap_output_file").get_to(config.pcap_output_file);
     if (j.contains("pcap_nanosecond_precision"))
         j.at("pcap_nanosecond_precision").get_to(config.pcap_nanosecond_precision);
+    if (j.contains("nats_url"))
+        j.at("nats_url").get_to(config.nats_url);
     if (j.contains("connect_options"))
         j.at("connect_options").get_to(config.connect_options);
     if (j.contains("optional_capabilities"))

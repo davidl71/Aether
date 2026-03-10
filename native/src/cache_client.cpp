@@ -1,9 +1,5 @@
 #include "cache_client.h"
 
-#ifdef ENABLE_MEMCACHED
-#include "cache_client_memcached.h"
-#endif
-
 #include <chrono>
 #include <mutex>
 #include <unordered_map>
@@ -61,33 +57,5 @@ void InMemoryCache::del(const std::string &key) {
 }
 
 bool InMemoryCache::is_healthy() { return true; }
-
-// ---------------------------------------------------------------------------
-// Factory
-// ---------------------------------------------------------------------------
-
-std::unique_ptr<CacheClient>
-create_cache(CacheBackend backend, [[maybe_unused]] const std::string &host,
-             [[maybe_unused]] int port,
-             [[maybe_unused]] const std::string &prefix,
-             [[maybe_unused]] int default_ttl) {
-  switch (backend) {
-  case CacheBackend::kInMemory:
-    return std::make_unique<InMemoryCache>();
-
-  case CacheBackend::kMemcached:
-#if defined(ENABLE_MEMCACHED) && ENABLE_MEMCACHED
-    try {
-      return create_memcached_cache(host, port, prefix, default_ttl);
-    } catch (...) {
-      return std::make_unique<InMemoryCache>();
-    }
-#else
-    return std::make_unique<InMemoryCache>();
-#endif
-
-  }
-  return std::make_unique<InMemoryCache>();
-}
 
 } // namespace platform

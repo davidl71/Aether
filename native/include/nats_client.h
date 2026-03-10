@@ -22,9 +22,9 @@ class NatsClient {
 public:
     /**
      * Constructor
-     * @param url NATS server URL (e.g., "nats://localhost:4222")
+     * @param url NATS server URL (e.g., "nats://127.0.0.1:4222")
      */
-    explicit NatsClient(const std::string& url = "nats://localhost:4222");
+    explicit NatsClient(const std::string& url = "nats://127.0.0.1:4222");
 
     /**
      * Destructor - automatically disconnects

@@ -118,15 +118,6 @@ The TWS API ships pre-generated `.pb.h`/`.pb.cc` built with **Protobuf C++ 6.33.
 
 ---
 
-## Market data cache (memcached)
+## Market data cache
 
-The C++ engine can use **memcached** as the backend for the market data cache (instead of in-memory only). This is optional.
-
-**To enable:**
-
-1. Install libmemcached: `brew install libmemcached` (macOS) or `apt install libmemcached-dev` (Linux).
-2. Run memcached, e.g. `memcached -l 127.0.0.1 -p 11211`.
-3. Configure the build with `-DENABLE_MEMCACHED=ON` (e.g. `cmake -S . -B build -G Ninja -DENABLE_MEMCACHED=ON`).
-4. Configure the app to use the memcached backend (host/port) if your config supports it; otherwise the cache layer may need to be wired to memcached at runtime (see `native/include/cache_client.h` and `MarketDataHandler::set_market_data_cache()`).
-
-If `ENABLE_MEMCACHED` is ON but libmemcached is not found, CMake prints a warning and the build continues using the in-memory cache only.
+The legacy memcached backend has been removed from the active native build. The remaining cache support is the optional injected cache interface used by market-data handlers.

@@ -103,7 +103,6 @@ option(ENABLE_SCCACHE "Enable sccache compilation caching" OFF)
 option(ENABLE_NATIVE_CLI "Build the native ib_box_spread CLI" ON)
 option(TWS_API_BUILD_VENDOR "Build TWS API library from source (ibapi_cmake)" OFF)
 option(BUILD_AI_FRIENDLY "Quieter build + JSON compiler diagnostics for tools/AI" OFF)
-option(ENABLE_MEMCACHED "Enable memcached backend for market data cache (requires libmemcached)" OFF)
 
 # ============================================================================
 # Early dependency check (fail fast before FetchContent / heavy configure)
@@ -969,20 +968,6 @@ if(_build_native_cli)
         include/financing_instrument.h
     )
 
-    # Memcached backend for market data cache (optional)
-    if(ENABLE_MEMCACHED)
-      find_library(MEMCACHED_LIBRARY memcached)
-      find_path(MEMCACHED_INCLUDE_DIR NAMES libmemcached/memcached.h)
-      if(MEMCACHED_LIBRARY AND MEMCACHED_INCLUDE_DIR)
-        list(APPEND SOURCES src/cache_client_memcached.cpp)
-        list(APPEND HEADERS include/cache_client_memcached.h)
-        message(STATUS "Memcached enabled: ${MEMCACHED_LIBRARY}")
-      else()
-        message(WARNING "ENABLE_MEMCACHED=ON but libmemcached not found (brew install libmemcached). Using in-memory cache.")
-        set(ENABLE_MEMCACHED OFF CACHE BOOL "" FORCE)
-      endif()
-    endif()
-
     # Conditionally include local source files only if NOT using extracted library
     if(NOT USE_BOX_SPREAD_CPP_LIB)
         list(APPEND SOURCES
@@ -1086,12 +1071,6 @@ if(_build_native_cli)
         else()
             message(WARNING "NATS enabled but nats target not found")
         endif()
-    endif()
-
-    if(ENABLE_MEMCACHED AND MEMCACHED_LIBRARY)
-      target_compile_definitions(ib_box_spread PRIVATE ENABLE_MEMCACHED=1)
-      target_include_directories(ib_box_spread PRIVATE ${MEMCACHED_INCLUDE_DIR})
-      target_link_libraries(ib_box_spread PRIVATE ${MEMCACHED_LIBRARY})
     endif()
 
     target_link_libraries(ib_box_spread

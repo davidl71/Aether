@@ -241,7 +241,7 @@ public:
     std::pair<std::string, int> get_last_error() const;
 
     // ========================================================================
-    // Market data cache (optional: in-memory or memcached when ENABLE_MEMCACHED)
+    // Market data cache (optional injected cache)
     // ========================================================================
     // Set cache for TickPrice/TickSize/TickOptionComputation per reqId.
     // Key format: ib:tick:<reqId>. TTL from config.cache_duration_seconds if ttl_seconds <= 0.
