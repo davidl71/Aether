@@ -1,6 +1,6 @@
 # Python TUI for IB Box Spread Trading
 
-This is the Python replacement for the C++ TUI (`native/src/tui_app.cpp`). It provides the same functionality with better performance, easier maintenance, and shared code with the PWA frontend.
+This is the active terminal client for the platform. It is the canonical TUI alongside the React web app and shares core data contracts with the web frontend.
 
 ## Features
 
@@ -74,7 +74,7 @@ pip install textual requests
 Or add to `requirements.txt`:
 
 ```
-textual>=0.40.0
+textual>=8.1.1
 requests>=2.31.0
 ```
 

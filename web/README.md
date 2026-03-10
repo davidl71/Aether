@@ -220,10 +220,4 @@ Set `VITE_API_URL=http://127.0.0.1:8000/api/snapshot` (or your backend URL) to h
 
 ## Feature Parity with TUI
 
-This web app is designed to mirror the Terminal User Interface (TUI) functionality. See [Feature Tracking](../docs/FEATURE_TRACKING.md) for:
-- Complete feature comparison between TUI and Web App
-- Feature status (implemented, partial, missing)
-- Implementation locations
-- Feature gaps and priorities
-
-Run `./scripts/check_feature_parity.sh` from the repo root to verify feature parity.
+This web app is one of the two active frontends for the platform, alongside the Python/Textual TUI. See [Feature Tracking](../docs/FEATURE_TRACKING.md) for the current capability matrix between the web app and the active terminal client.
