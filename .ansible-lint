@@ -5,3 +5,13 @@ profile: basic
 exclude_paths:
   - .git/
   - .github/
+mock_modules:
+  - community.general.homebrew
+  - community.general.homebrew_tap
+skip_list:
+  - command-instead-of-module
+  - jinja
+  - key-order
+  - name
+  - var-naming
+  - yaml

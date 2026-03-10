@@ -72,7 +72,8 @@ fi
 # Configure cache tool
 if [ "$USE_SCCACHE" = true ]; then
   export SCCACHE_CACHE_SIZE="${SCCACHE_CACHE_SIZE:-10G}"
-  mkdir -p "$SCCACHE_DIR"
+  : "${SCCACHE_DIR:?SCCACHE_DIR must be set by workspace_paths.sh}"
+  mkdir -p "${SCCACHE_DIR}"
 elif [ "$USE_CCACHE" = true ]; then
   export CCACHE_DIR="${CCACHE_DIR}"
   ccache --max-size=10G

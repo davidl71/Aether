@@ -238,6 +238,16 @@
     UV_CACHE_DIR: "{{ devtools_cache_root }}/uv"
     XDG_CACHE_HOME: "{{ devtools_cache_root }}"
 
+- name: Install bandit via uv (Python security linter)
+  become: false
+  ansible.builtin.command: uv tool install bandit
+  register: bandit_install
+  changed_when: "'Installed' in bandit_install.stdout"
+  failed_when: false
+  environment:
+    UV_CACHE_DIR: "{{ devtools_cache_root }}/uv"
+    XDG_CACHE_HOME: "{{ devtools_cache_root }}"
+
 - name: Verify pip-audit installation
   become: false
   ansible.builtin.command: pip-audit --version

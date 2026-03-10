@@ -28,7 +28,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/with_nix.sh
 . "${SCRIPT_DIR}/with_nix.sh"
-PROJECT_ROOT="${ROOT_DIR}"
+# shellcheck source=scripts/include/workspace_paths.sh
+. "${SCRIPT_DIR}/include/workspace_paths.sh"
+
+setup_workspace_paths
 
 # Parse --ai-friendly and --json-only before Nix re-exec so they work with USE_NIX=1
 LINT_AI_FRIENDLY=0
@@ -163,11 +166,27 @@ run_clang_analyze() {
 
   info "Running clang --analyze (C++ core)"
 
-  local build_dir="${ROOT_DIR}/build"
-  local compile_db="${build_dir}/compile_commands.json"
+  local compile_db=""
+  local compile_db_candidate=""
+  local candidate_dir=""
+  local candidate_cli11=""
+  local candidate_json=""
 
-  if [ ! -f "${compile_db}" ]; then
-    warn "Skipping clang --analyze (compile_commands.json not found). Configure with: cmake -S . -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+  for compile_db_candidate in "${ROOT_DIR}/build"/*/compile_commands.json "${ROOT_DIR}/build/compile_commands.json"; do
+    [[ -f "${compile_db_candidate}" ]] || continue
+    candidate_dir="$(dirname "${compile_db_candidate}")"
+    candidate_cli11="${candidate_dir}/_deps/cli11-src/include/CLI/TypeTools.hpp"
+    candidate_json="${candidate_dir}/_deps/nlohmann_json-src/include/nlohmann/json.hpp"
+
+    if [[ -f "${candidate_cli11}" ]] && [[ -f "${candidate_json}" ]]; then
+      compile_db="${compile_db_candidate}"
+      break
+    fi
+  done
+
+  if [[ -z "${compile_db}" ]]; then
+    warn "Skipping clang --analyze (no viable compile_commands.json with complete fetched deps under build/)"
+    warn "Reconfigure a build dir so _deps contains CLI11 and nlohmann/json headers, then rerun lint"
     return 0
   fi
 
@@ -389,7 +408,12 @@ run_ansible_lint() {
     return 0
   fi
   info "Running ansible-lint (ansible/ playbooks and roles)"
+  local ansible_cfg="${ROOT_DIR}/ansible/ansible.cfg"
+  local ansible_home="${ROOT_DIR}/.cache/ansible/home"
+  local ansible_local_tmp="${ROOT_DIR}/.cache/ansible/tmp/local"
+  local ansible_remote_tmp="${ROOT_DIR}/.cache/ansible/tmp/remote"
   local timeout_cmd=()
+  mkdir -p "${ansible_home}" "${ansible_local_tmp}" "${ansible_remote_tmp}"
   if [[ "${ANSIBLE_LINT_TIMEOUT}" -gt 0 ]]; then
     if command -v timeout >/dev/null 2>&1; then
       timeout_cmd=(timeout "${ANSIBLE_LINT_TIMEOUT}")
@@ -398,9 +422,9 @@ run_ansible_lint() {
     fi
   fi
   if [[ "${LINT_MAX_LINES}" -gt 0 ]]; then
-    run_limited "${timeout_cmd[@]}" ansible-lint ansible/ || return 1
+    run_limited env ANSIBLE_CONFIG="${ansible_cfg}" ANSIBLE_HOME="${ansible_home}" ANSIBLE_LOCAL_TEMP="${ansible_local_tmp}" ANSIBLE_REMOTE_TMP="${ansible_remote_tmp}" "${timeout_cmd[@]}" ansible-lint --offline ansible/ || return 1
   else
-    "${timeout_cmd[@]}" ansible-lint ansible/ || return 1
+    env ANSIBLE_CONFIG="${ansible_cfg}" ANSIBLE_HOME="${ansible_home}" ANSIBLE_LOCAL_TEMP="${ansible_local_tmp}" ANSIBLE_REMOTE_TMP="${ansible_remote_tmp}" "${timeout_cmd[@]}" ansible-lint --offline ansible/ || return 1
   fi
 }
 
@@ -428,8 +452,8 @@ run_bandit() {
   elif command -v bandit >/dev/null 2>&1; then
     bandit_cmd=(bandit)
   else
-    err "Bandit not available. Create .bandit-env (Python 3.10) or install bandit globally."
-    return 1
+    warn "Skipping bandit (executable not found; create .bandit-env or install bandit globally)"
+    return 0
   fi
 
   if [[ "${LINT_MAX_LINES}" -gt 0 ]]; then
@@ -528,6 +552,10 @@ run_infer() {
 
 run_exarp_go_lint() {
   local exarp_script="${ROOT_DIR}/scripts/run_exarp_go_tool.sh"
+  if [[ ! -f "${ROOT_DIR}/go.mod" ]] && [[ "${EXARP_GO_LINT:-0}" != "1" ]]; then
+    warn "Skipping exarp-go lint at repo root (multi-language repo root is not a Go module; set EXARP_GO_LINT=1 to force)"
+    return 0
+  fi
   if [[ ! -x "${exarp_script}" ]]; then
     warn "Skipping exarp-go lint (run_exarp_go_tool.sh not executable)"
     return 0
@@ -536,14 +564,12 @@ run_exarp_go_lint() {
     warn "Skipping exarp-go lint (exarp-go not found or not in PATH)"
     return 0
   fi
-  info "Running exarp-go lint (Go + shell)"
+  info "Running exarp-go lint (Go + markdown)"
   local status=0
   "${exarp_script}" lint || status=0
-  "${exarp_script}" lint '{"linter":"shellcheck","path":"scripts"}' || status=0
   if [[ ${status} -ne 0 ]]; then
     warn "exarp-go lint reported issues (optional; install exarp-go for full coverage)"
   fi
-  export EXARP_RAN_SHELLCHECK=1
   return 0
 }
 
