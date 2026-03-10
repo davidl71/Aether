@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import csv
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, asdict
@@ -36,6 +36,16 @@ def _select_value(value: object, default: str) -> str:
     if isinstance(value, NoSelection):
         return default
     return default
+
+
+def _utc_now() -> datetime:
+    """Return a timezone-aware UTC timestamp."""
+    return datetime.now(timezone.utc)
+
+
+def _utc_now_iso_z() -> str:
+    """Return current UTC timestamp in ISO 8601 with trailing Z."""
+    return _utc_now().isoformat().replace("+00:00", "Z")
 
 
 @dataclass
@@ -122,7 +132,7 @@ class LoanPosition:
 def _mock_loans() -> List[LoanPosition]:
     """Return sample loan positions for display when no real loans file exists."""
     from datetime import timedelta
-    now = datetime.utcnow()
+    now = _utc_now()
     base = now.replace(hour=0, minute=0, second=0, microsecond=0)
     orig = base - timedelta(days=365 * 2)
     mat = base + timedelta(days=365 * 8)
@@ -211,7 +221,7 @@ class LoanManager:
 
             data = {
                 "version": "1.0",
-                "last_updated": datetime.utcnow().isoformat() + "Z",
+                "last_updated": _utc_now_iso_z(),
                 "loans": [loan.to_dict() for loan in self.loans.values()]
             }
 
@@ -456,10 +466,11 @@ class LoanEntryForm(Container):
             status = _select_value(self.query_one("#status", Select).value, "ACTIVE")
 
             # Convert dates to ISO 8601 format
-            now = datetime.utcnow()
-            origination_date = f"{origination_date_str}T00:00:00Z" if origination_date_str else now.isoformat() + "Z"
-            maturity_date = f"{maturity_date_str}T00:00:00Z" if maturity_date_str else now.isoformat() + "Z"
-            next_payment_date = f"{next_payment_date_str}T00:00:00Z" if next_payment_date_str else now.isoformat() + "Z"
+            now = _utc_now()
+            now_iso = now.isoformat().replace("+00:00", "Z")
+            origination_date = f"{origination_date_str}T00:00:00Z" if origination_date_str else now_iso
+            maturity_date = f"{maturity_date_str}T00:00:00Z" if maturity_date_str else now_iso
+            next_payment_date = f"{next_payment_date_str}T00:00:00Z" if next_payment_date_str else now_iso
 
             loan = LoanPosition(
                 loan_id=loan_id,
@@ -478,7 +489,7 @@ class LoanEntryForm(Container):
                 monthly_payment=monthly_payment,
                 payment_frequency_months=payment_frequency,
                 status=status,
-                last_update=now.isoformat() + "Z"
+                last_update=now.isoformat().replace("+00:00", "Z")
             )
 
             return loan, None
@@ -668,7 +679,7 @@ class LoanImporter:
 
     def _parse_csv_row(self, row: Dict[str, str]) -> LoanPosition:
         """Parse a CSV row into LoanPosition"""
-        now = datetime.utcnow().isoformat() + "Z"
+        now = _utc_now_iso_z()
 
         # Helper to parse dates
         def parse_date(field_name: str, date_str: str) -> str:
