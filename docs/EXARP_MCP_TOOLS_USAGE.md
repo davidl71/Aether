@@ -3,11 +3,14 @@
 **Date**: 2025-11-29
 **Status**: Active
 
+> Exarp in this repo is now provided by `exarp-go`. The old `uvx exarp` workflow is legacy.
+> Use MCP chat tools or `./scripts/run_exarp_go_tool.sh <tool> <json_args>`.
+
 ---
 
 ## Overview
 
-This guide documents how to use Exarp MCP tools as a workaround for the Exarp script discovery issue. While Exarp's aggregate daily automation tool cannot find scripts, individual MCP tools work perfectly.
+This guide documents the current `exarp-go` tool flow for this repo. Prefer MCP chat tools in Cursor or the local `scripts/run_exarp_go_tool.sh` wrapper for CLI usage.
 
 ---
 
@@ -15,21 +18,15 @@ This guide documents how to use Exarp MCP tools as a workaround for the Exarp sc
 
 ### 1. Documentation Health Check
 
-**Tool**: `mcp_exarp_check_documentation_health`
+**Tool**: `health`
 
 **Purpose**: Checks documentation health, finds broken links, and validates documentation structure.
 
 **Usage**:
 
-```python
-
-# Via MCP tool (in Cursor chat)
-
-mcp_exarp_check_documentation_health()
-
-# Via CLI
-
-uvx exarp check-documentation-health /path/to/project [--dry-run]
+```text
+MCP chat: run the exarp-go `health` tool with `{"action":"docs"}`
+CLI: ./scripts/run_exarp_go_tool.sh health '{"action":"docs"}'
 ```
 
 **Output**: Documentation health report with broken links, format errors, and recommendations.
@@ -37,32 +34,22 @@ uvx exarp check-documentation-health /path/to/project [--dry-run]
 **Example**:
 
 ```bash
-$ uvx exarp check-documentation-health . --dry-run
-📚 Documentation Health Check
-✅ Found 200+ documentation files
-⚠️  26 broken links detected
-📋 5 format errors found
+./scripts/run_exarp_go_tool.sh health '{"action":"docs"}'
 ```
 
 ---
 
 ### 2. Todo2 Alignment Analysis
 
-**Tool**: `mcp_exarp_analyze_todo2_alignment`
+**Tool**: `analyze_alignment`
 
 **Purpose**: Analyzes Todo2 tasks for alignment with project goals and investment strategy framework.
 
 **Usage**:
 
-```python
-
-# Via MCP tool (in Cursor chat)
-
-mcp_exarp_analyze_todo2_alignment(create_followup_tasks=True)
-
-# Via CLI
-
-uvx exarp analyze-todo2-alignment /path/to/project [--dry-run]
+```text
+MCP chat: run the exarp-go `analyze_alignment` tool
+CLI: ./scripts/run_exarp_go_tool.sh analyze_alignment '{}'
 ```
 
 **Output**: Alignment analysis report with misaligned tasks and recommendations.
@@ -70,32 +57,22 @@ uvx exarp analyze-todo2-alignment /path/to/project [--dry-run]
 **Example**:
 
 ```bash
-$ uvx exarp analyze-todo2-alignment .
-🎯 Todo2 Alignment Analysis
-✅ Analyzed 307 tasks
-⚠️  5 tasks misaligned with project goals
-📋 Recommendations provided
+./scripts/run_exarp_go_tool.sh analyze_alignment '{}'
 ```
 
 ---
 
 ### 3. Duplicate Task Detection
 
-**Tool**: `mcp_exarp_detect_duplicate_tasks`
+**Tool**: `task_analysis`
 
 **Purpose**: Detects duplicate tasks in Todo2 system.
 
 **Usage**:
 
-```python
-
-# Via MCP tool (in Cursor chat)
-
-mcp_exarp_detect_duplicate_tasks(auto_fix=True, similarity_threshold=0.85)
-
-# Via CLI
-
-uvx exarp detect-duplicate-tasks /path/to/project [--auto-fix] [--dry-run]
+```text
+MCP chat: run the exarp-go `task_analysis` tool with `{"action":"duplicates"}`
+CLI: ./scripts/run_exarp_go_tool.sh task_analysis '{"action":"duplicates"}'
 ```
 
 **Output**: Duplicate detection report with duplicate groups and auto-fix results.
@@ -103,75 +80,20 @@ uvx exarp detect-duplicate-tasks /path/to/project [--auto-fix] [--dry-run]
 **Example**:
 
 ```bash
-$ uvx exarp detect-duplicate-tasks . --auto-fix
-🔍 Duplicate Task Detection
-✅ Found 95 duplicate issues
-🔄 Auto-fixed 12 duplicate tasks
-📋 83 duplicates require manual review
+./scripts/run_exarp_go_tool.sh task_analysis '{"action":"duplicates"}'
 ```
 
 ---
 
-## Wrapper Script
+## Current CLI Flow
 
-### Exarp Daily Automation Wrapper
-
-**Script**: `scripts/exarp_daily_automation_wrapper.py`
-
-**Purpose**: Orchestrates all three Exarp MCP tools in a single script.
-
-**Usage**:
+Use the local wrapper directly:
 
 ```bash
-
-# Run all Exarp checks
-
-python3 scripts/exarp_daily_automation_wrapper.py /path/to/project
-
-# Dry-run mode
-
-python3 scripts/exarp_daily_automation_wrapper.py /path/to/project --dry-run
-
-# JSON output
-
-python3 scripts/exarp_daily_automation_wrapper.py /path/to/project --json
-
-# Auto-fix duplicates
-
-python3 scripts/exarp_daily_automation_wrapper.py /path/to/project --auto-fix
-```
-
-**Features**:
-
-- ✅ Calls all three Exarp tools
-- ✅ Generates combined report
-- ✅ Handles errors gracefully
-- ✅ Supports dry-run mode
-- ✅ JSON output option
-- ✅ Proper exit codes
-
-**Example Output**:
-
-```
-🚀 Starting Exarp daily automation...
-Project directory: /home/david/Projects/trading/ib_box_spread_full_universal
-
-📚 Task 1: Checking documentation health...
-✅ Documentation Health: Success
-
-🎯 Task 2: Analyzing Todo2 alignment...
-✅ Todo2 Alignment: Success
-
-🔍 Task 3: Detecting duplicate tasks...
-✅ Duplicate Detection: Success
-
-======================================================================
-📊 Summary:
-   Tasks completed: 3
-   Tasks succeeded: 3
-   Tasks failed: 0
-   ✅ All tasks completed successfully
-======================================================================
+./scripts/run_exarp_go_tool.sh health '{"action":"docs"}'
+./scripts/run_exarp_go_tool.sh analyze_alignment '{}'
+./scripts/run_exarp_go_tool.sh task_analysis '{"action":"duplicates"}'
+./scripts/run_exarp_go_tool.sh scan_dependency_security '{}'
 ```
 
 ---
@@ -218,7 +140,7 @@ Project directory: /home/david/Projects/trading/ib_box_spread_full_universal
 
 ```
 🚀 Starting daily automation tasks...
-Project directory: /home/david/Projects/trading/ib_box_spread_full_universal
+Project directory: /home/david/ib_box_spread_full_universal
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📦 Phase 1: Exarp Daily Automation Checks
@@ -247,11 +169,7 @@ Project directory: /home/david/Projects/trading/ib_box_spread_full_universal
 
 ✅ All tasks completed successfully!
 
-Reports saved to:
-  - /tmp/exarp_automation.log (Exarp checks)
-  - /tmp/link_fix.log (Link fixing)
-  - /tmp/format_validation.log (Format validation)
-  - /tmp/todo_sync.log (TODO synchronization)
+Reports should be written under repo-local artifact paths such as `build/` or `out/`, not `/tmp`.
 ```
 
 ---
@@ -270,7 +188,7 @@ crontab -e
 
 # Add daily automation (runs at 2 AM)
 
-0 2 * * * /home/david/Projects/trading/ib_box_spread_full_universal/scripts/daily_automation_with_link_fixing.sh /home/david/Projects/trading/ib_box_spread_full_universal >> /tmp/daily_automation.log 2>&1
+0 2 * * * /home/david/ib_box_spread_full_universal/scripts/daily_automation_with_link_fixing.sh /home/david/ib_box_spread_full_universal >> /tmp/daily_automation.log 2>&1
 ```
 
 ### Systemd Timer (Alternative)
@@ -298,7 +216,7 @@ Description=Daily Automation Service
 
 [Service]
 Type=oneshot
-ExecStart=/home/david/Projects/trading/ib_box_spread_full_universal/scripts/daily_automation_with_link_fixing.sh /home/david/Projects/trading/ib_box_spread_full_universal
+ExecStart=/home/david/ib_box_spread_full_universal/scripts/daily_automation_with_link_fixing.sh /home/david/ib_box_spread_full_universal
 ```
 
 ---
@@ -355,18 +273,17 @@ timeout=600  # Increase from 300 to 600 seconds
 
 ## Best Practices
 
-1. **Use Wrapper Script**: Prefer `exarp_daily_automation_wrapper.py` over calling tools individually
-2. **Dry-Run First**: Always test with `--dry-run` before applying changes
-3. **Monitor Logs**: Check `/tmp/exarp_automation.log` for detailed output
-4. **Schedule Regularly**: Set up cron or systemd timer for daily execution
-5. **Review Reports**: Check summary reports after each run
+1. **Use the repo wrapper**: Prefer `scripts/run_exarp_go_tool.sh` over legacy wrappers
+2. **Dry-run or read-only first**: Start with non-mutating tool actions before applying changes
+3. **Keep outputs repo-local**: Write reports under `out/` or `build/`, not `/tmp`
+4. **Schedule regularly**: Set up cron or systemd timer for recurring checks if needed
+5. **Review reports**: Check generated summaries after each run
 
 ---
 
 ## Related Documentation
 
-- `docs/EXARP_SCRIPT_PATH_ISSUE_RESOLVED.md` - Issue resolution and workarounds
-- `docs/EXARP_SCRIPT_PATH_TODO2_PLAN.md` - Todo2 execution plan
+- `docs/EXARP_GO_MIGRATION_LEFTOVERS.md` - Remaining migration cleanup notes
 - `docs/DAILY_AUTOMATION_SETUP_COMPLETE.md` - Daily automation setup guide
 
 ---

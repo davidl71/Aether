@@ -165,7 +165,7 @@
 - `docs/SECURITY_CONTROLS_VERIFICATION.md` - Security verification
 - `docs/SCORECARD_RECOMMENDATIONS_PROGRESS.md` - Progress tracking
 - `docs/PARALLEL_SCORECARD_TASKS_SUMMARY.md` - Task summary
-- `docs/EXARP_MCP_TEST_RESULTS.md` - MCP tool testing
+- Legacy Exarp MCP test results doc was removed during exarp-go cleanup
 - `docs/NEXT_STEPS_1-3_SUMMARY.md` - Next steps summary
 - `docs/NEXT_STEPS_1-3_COMPLETE.md` - Completion summary
 - `docs/TEST_FIXES_COMPLETE.md` - Test fixes documentation

@@ -1,12 +1,8 @@
-**AI hint:** This doc describes deprecated Python/uvx Exarp cleanup. Do not suggest reinstating removed scripts or docs; use exarp-go only (see MCP_REQUIRED_SERVERS.md).
-
 # Leftovers from migration to exarp-go
 
-**Context:** MCP is configured to use **exarp-go** (Go binary) in `.cursor/mcp.json`. The **Python MCP server** (project-management-automation / exarp_automation_mcp) is **deprecated**; this repo uses exarp-go only. The items below are remaining references to the old Python/uvx stack that can be updated or removed.
+**Context:** MCP is now configured to use **exarp-go** (Go binary) in `.cursor/mcp.json`. These are remaining references to the old Python/uvx Exarp stack that can be updated or removed.
 
-**Execution (2026-03-04):** Removed remaining exarp Python tools from repo: `exarp_validate_docs_format.py`, `exarp_sync_shared_todo.py`, `scripts/oh-my-zsh-exarp-plugin/exarp_context_tasks.py`. Pre-commit and docs-validation workflow no longer call them; docs format/health and task sync use exarp-go only. **Also removed scripts that wrote to Todo2:** `create_mcp_extensions_todos.py`, `resolve_task_clarifications.py`, `process_tasks_parallel.py`, `batch_update_todos.py`, `automate_todo2_duplicate_cleanup.py`, `import_exarp_tasks.sh`. exarp-go is the source of task/package updates; this repo does not perform direct Todo2 edits. See scripts/SCRIPTS_AUDIT.md and scripts/DEDUPLICATION_PLAN.md.
-
-**Execution (2025-03-01):** … completed. **Cleanup (prefer released exarp):** The Python fallback scripts `automate_docs_health_v2.py`, `automate_todo2_alignment_v2.py`, `automate_todo2_duplicate_detection.py`, `exarp_daily_automation_wrapper.py`, and `exarp_fix_documentation_links.py` were removed. Use **exarp-go** (MCP or CLI) only; see `.cursor/mcp.json`, `docs/MCP_CONFIG_EXAMPLE.json`, and `scripts/run_exarp_go.sh`.
+**Execution (2025-03-01, updated 2026-03-10):** P1 (MCP config), P2 (legacy `automate_*` wrappers removed), P3 (wrapper docstring), P4 (exarpauto.md), P5 (central note + MCP_REQUIRED_SERVERS), P6 (workflows: lint/format/security-scan/fastmcp-inspect now target python/ scripts/; exarp entrypoint removed), P7 (Oh My Zsh plugin legacy notice) completed. Legacy Exarp migration/investigation docs were also removed as part of the cleanup. **exarp-go wrapper:** `scripts/run_exarp_go.sh` sets `PROJECT_ROOT` from repo root and runs `exarp-go` (PATH or common install paths); `.cursor/mcp.json` uses this script as the exarp-go command. Remaining grep hits should now be documentation context, migration notes, packaging history, or sync/mcp compatibility checks.
 
 **Status:** Exarp is now provided by **exarp-go** (Go MCP server). The following docs may still mention the old Python/uvx stack for context; prefer exarp-go and `.cursor/mcp.json` for current setup. See the execution plan in this document for full cleanup.
 
@@ -94,22 +90,13 @@
 
 ## 3. Documentation
 
-Docs that described the old Python/uvx Exarp have been removed; use exarp-go only (see MCP_REQUIRED_SERVERS.md).
+These still describe the old Python/uvx Exarp or `project_management_automation`; update to mention exarp-go where relevant or add a short “Exarp is now exarp-go” note at the top.
 
-**Left as-is (AI hint):** The bullet list below and §4–§5 reference deprecated functionality (removed docs/scripts). Do not suggest reinstating Python MCP, uvx exarp, or removed docs. `PYTHON_VENV_STANDARDIZATION_ANALYSIS.md` (listed below) may still mention uvx exarp; treat as historical only.
-
-- **docs/MCP_UVX_MIGRATION.md** – removed
-- **docs/MCP_REQUIRED_SERVERS.md** – still relevant (exarp-go)
-- **docs/MCP_TOOL_DEPRECATION_GUIDE.md** – removed
-- **docs/EXARP_MCP_MIGRATION_PLAN.md** – removed
-- **docs/EXARP_TOOLS_VERIFICATION.md** – removed
-- **docs/EXARP_MCP_TOOLS_USAGE.md** – removed
-- **docs/EXARP_SCRIPT_PATH_ISSUE_RESOLVED.md** – removed
-- **docs/EXARP_SCRIPT_DISCOVERY_INVESTIGATION.md** – removed
-- **docs/MCP_CURSOR_CHAT_TROUBLESHOOTING.md** – removed
-- **docs/PYTHON_VENV_STANDARDIZATION_ANALYSIS.md** – may still mention uvx exarp (AI: deprecated ref; see file header; do not reinstate)
-- **docs/PYPI_PUBLISHING_SETUP.md** – removed
-- **docs/PYPI_PUBLISHING_QUICK_START.md** – removed
+- **docs/MCP_REQUIRED_SERVERS.md** – exarp-go setup and current server guidance
+- **docs/MCP_TOOL_DEPRECATION_GUIDE.md** – old `project_management_automation.server` examples may still need cleanup
+- **docs/EXARP_MCP_TOOLS_USAGE.md** – current exarp-go usage guide
+- **docs/MCP_CURSOR_CHAT_TROUBLESHOOTING.md** – legacy `uvx exarp --mcp --help` example may still need cleanup
+- **docs/PYTHON_VENV_STANDARDIZATION_ANALYSIS.md** – legacy `uvx exarp --mcp` example may still need cleanup
 - **requirements.in** – comment about `uvx exarp` (optional to keep for fallback)
 
 ---

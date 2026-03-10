@@ -88,7 +88,7 @@ Coverage: 75% on python/services/security.py
 - `docs/SCORECARD_2025-11-29.md` - Project scorecard summary
 - `docs/NEXT_STEPS_1-3_COMPLETE.md` - Next steps completion summary
 - `docs/NEXT_STEPS_1-3_SUMMARY.md` - Next steps progress summary
-- `docs/EXARP_MCP_TEST_RESULTS.md` - MCP tool testing results
+- Legacy Exarp MCP test results doc was removed during exarp-go cleanup
 - `docs/PARALLEL_SCORECARD_TASKS_SUMMARY.md` - Parallel tasks summary
 - `docs/SCORECARD_RECOMMENDATIONS_PROGRESS.md` - Recommendations progress
 - `docs/SECURITY_CONTROLS_VERIFICATION.md` - Security verification
@@ -207,7 +207,7 @@ Coverage: 75% on python/services/security.py
 - `docs/SCORECARD_2025-11-29.md`
 - `docs/NEXT_STEPS_1-3_COMPLETE.md`
 - `docs/NEXT_STEPS_1-3_SUMMARY.md`
-- `docs/EXARP_MCP_TEST_RESULTS.md`
+- Legacy Exarp MCP test results doc removed during exarp-go cleanup
 - `docs/PARALLEL_SCORECARD_TASKS_SUMMARY.md`
 - `docs/SCORECARD_RECOMMENDATIONS_PROGRESS.md`
 - `docs/SECURITY_CONTROLS_VERIFICATION.md`
@@ -317,7 +317,7 @@ Coverage: 75% on python/services/security.py
 - Scorecard: `docs/SCORECARD_2025-11-29.md`
 - Security verification: `docs/SECURITY_CONTROLS_VERIFICATION.md`
 - Next steps: `docs/NEXT_STEPS_1-3_COMPLETE.md`
-- MCP testing: `docs/EXARP_MCP_TEST_RESULTS.md`
+- MCP testing notes were consolidated during exarp-go cleanup
 
 ---
 

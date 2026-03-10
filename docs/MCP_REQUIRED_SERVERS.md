@@ -2,9 +2,7 @@
 
 This document lists all **required** MCP servers for the project and provides installation/configuration guidance.
 
-**Status:** Use **exarp-go** only. The Python MCP server (project-management-automation / exarp_automation_mcp) is **deprecated** and no longer used in this repo. See `docs/EXARP_GO_MIGRATION_LEFTOVERS.md` for context.
-
-**Cursor IDE and CLI agent:** Both use the same `.cursor/mcp.json`. Configure exarp-go (and other servers) once; they are available in the IDE and when running `cursor agent -p` from the project root.
+**Status:** Exarp is now typically provided by **exarp-go** (Go MCP server). The Python/uvx options below are legacy; see `docs/EXARP_GO_MIGRATION_LEFTOVERS.md` for migration details.
 
 ## Required Servers (8 total)
 
@@ -12,35 +10,24 @@ All of these servers must be configured in `.cursor/mcp.json` for full project f
 
 ### 1. exarp-go (Project Management Automation)
 
-**Type**: exarp-go (Go binary, installed or on PATH)
-**Purpose**: Project management automation (docs health, task alignment, duplicate detection, security scanning).
+**Type**: exarp-go (Go binary)
+**Purpose**: Project management automation tools (docs health, task alignment, duplicate detection, security scanning).
 
-**Setup:** This project uses the **portable runner** (recommended by exarp-go): copy `scripts/run_exarp_go.sh` from the exarp-go repo into this project's `scripts/`. Our `.cursor/mcp.json` points at `{{PROJECT_ROOT}}/scripts/run_exarp_go.sh`. The script in this repo is synced from the exarp-go sibling and adds fallbacks for `PROJECT_ROOT/../mcp/exarp-go` and `PROJECT_ROOT/../../mcp/exarp-go` so the sibling at `.../mcp/exarp-go` is found.
-
-**Using native exarp-go (sibling or global):** To rely only on the exarp-go sibling repo or a global install (no copy in this repo):
-
-1. **MCP:** Point `command` at the sibling runner or global runner (see alternative below). You can then **remove** `scripts/run_exarp_go.sh` from this repo if you want no duplicate.
-2. **CLI / Just:** `scripts/run_exarp_go_tool.sh` and `just exarp-list` / `just exarp` already prefer native exarp-go: they use `exarp-go` from PATH, then `EXARP_GO_ROOT/bin/exarp-go`, then sibling `../mcp/exarp-go` or `../../mcp/exarp-go`, and only fall back to in-repo `run_exarp_go.sh` if none of those are found. So with exarp-go on PATH or EXARP_GO_ROOT set (or sibling built), you don't need the in-repo copy for CLI/Just.
-
-**Duplicate script:** The only exarp-related duplicate in this repo is `scripts/run_exarp_go.sh` (a copy of exarp-go's portable runner with extra mcp fallbacks). It is **optional** when using native exarp-go: point MCP at sibling/global and optionally delete `scripts/run_exarp_go.sh`; `run_exarp_go_tool.sh` will still work via PATH/sibling.
-
-Alternative: point `command` at the exarp-go repo's script (e.g. `{{PROJECT_ROOT}}/../../mcp/exarp-go/scripts/run_exarp_go.sh` if exarp-go is at `.../mcp/exarp-go`). Example (see `docs/MCP_CONFIG_EXAMPLE.json`):
+**Current setup:** Configure in `.cursor/mcp.json` with the path to your exarp-go binary or this repo's wrapper script. Example:
 
 ```json
 {
   "exarp-go": {
-    "command": "{{PROJECT_ROOT}}/../../mcp/exarp-go/scripts/run_exarp_go.sh",
+    "command": "/absolute/path/to/ib_box_spread_full_universal/scripts/run_exarp_go.sh",
     "args": [],
-    "env": { "PROJECT_ROOT": "{{PROJECT_ROOT}}", "EXARP_WATCH": "0" }
+    "env": {
+      "PROJECT_ROOT": "/absolute/path/to/this/repo"
+    }
   }
 }
 ```
 
-- **Assumed layout:** exarp-go repo at `PROJECT_ROOT/../../mcp/exarp-go` (e.g. sibling of `Projects` or under a shared `mcp` folder).
-- **If exarp-go is elsewhere:** Replace `command` with the **absolute** path to that repo's script, e.g. `/Users/you/Projects/mcp/exarp-go/scripts/run_exarp_go.sh`.
-- **Env:** Keep `PROJECT_ROOT` as `{{PROJECT_ROOT}}` so the script receives this workspace as the project to serve.
-
-Ensure **exarp-go** is installed (on PATH or set `EXARP_GO_ROOT`). See `docs/PORTABLE_BUILD_AND_RUNNER.md`.
+**Legacy note:** Older Python-based Exarp docs remain in the repo for migration history only. They are not the recommended setup for this project.
 
 ---
 
@@ -212,18 +199,14 @@ npx -y tractatus_thinking --version
 
 ## Installation Verification
 
-Test exarp-go:
+Test all servers manually:
 
 ```bash
-# exarp-go (required)
-exarp-go --help
-# or via project script:
-./scripts/run_exarp_go.sh --help
-```
+# exarp-go
+./scripts/run_exarp_go.sh -list
 
-**npm packages:**
+# npm packages
 
-```bash
 npx -y @modelcontextprotocol/server-filesystem --version
 npx -y @pimzino/agentic-tools-mcp --version
 npx -y @upstash/context7-mcp --version
@@ -265,14 +248,15 @@ npx -y @modelcontextprotocol/server-sequential-thinking --version
 }
 ```
 
-### Issue 3: exarp-go not found or not starting
+### Issue 3: exarp server import errors
 
-**Cause**: exarp-go not on PATH or wrapper script not used.
+**Cause**: Package not installed or wrong Python environment.
 
 **Fix**:
 
-1. Install exarp-go (e.g. `go install` or build from source) and ensure it is on PATH, or set `EXARP_GO_ROOT` to the exarp-go repo.
-2. In `.cursor/mcp.json` use `"exarp-go"` with command `{{PROJECT_ROOT}}/../../mcp/exarp-go/scripts/run_exarp_go.sh` (or the absolute path to the exarp-go repo's script) and env `PROJECT_ROOT`. See `docs/MCP_CONFIG_EXAMPLE.json` and `docs/PORTABLE_BUILD_AND_RUNNER.md`.
+1. Install package: `pip install -e /path/to/project-management-automation`
+2. Verify installation: `python3 -m project_management_automation.server --help`
+3. Check Python path: Ensure correct Python environment is used in `.cursor/mcp.json`
 
 ## Workflow Integration
 
@@ -282,7 +266,7 @@ These servers work together in a recommended workflow:
 2. **exarp-go** → Analyze and automate (project management)
 3. **sequential_thinking** → Plan HOW (implementation)
 
-See `docs/PORTABLE_BUILD_AND_RUNNER.md` and `docs/MCP_CONFIG_EXAMPLE.json` for exarp-go setup.
+See [project-management-automation repository](https://github.com/davidl71/project-management-automation) for detailed workflow examples.
 
 ## See Also
 
