@@ -168,7 +168,6 @@ This document serves as a comprehensive index of all documentation in the Synthe
 - `agents/backend-market-data/README.md` - Market data agent
 - `agents/backend-data/README.md` - Data agent
 - `agents/web/README.md` - Web agent
-- `agents/tui/README.md` - TUI agent
 - `agents/ipad/README.md` - iPad agent
 - `agents/desktop/README.md` - Desktop agent
 - `agents/shared/API_CONTRACT.md` - API contract

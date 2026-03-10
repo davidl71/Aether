@@ -45,7 +45,6 @@ fi
 # Function to install bash completion
 install_bash_completion() {
   local completion_file="$COMPLETIONS_DIR/ib_box_spread.bash"
-  local tui_completion_file="$COMPLETIONS_DIR/ib_box_spread_tui.bash"
 
   if [ ! -f "$completion_file" ]; then
     echo -e "${RED}Error: Bash completion not found${NC}"
@@ -64,9 +63,6 @@ install_bash_completion() {
 
   echo -e "${GREEN}Installing bash completions to $COMPLETION_DIR...${NC}"
   sudo cp "$completion_file" "$COMPLETION_DIR/" 2>/dev/null || cp "$completion_file" "$COMPLETION_DIR/"
-  [ -f "$tui_completion_file" ] && {
-    sudo cp "$tui_completion_file" "$COMPLETION_DIR/" 2>/dev/null || cp "$tui_completion_file" "$COMPLETION_DIR/"
-  }
 
   echo -e "${GREEN}✓ Bash completions installed${NC}"
   echo "  Run: source $COMPLETION_DIR/ib_box_spread.bash"
@@ -75,7 +71,6 @@ install_bash_completion() {
 # Function to install zsh completion
 install_zsh_completion() {
   local completion_file="$COMPLETIONS_DIR/_ib_box_spread"
-  local tui_completion_file="$COMPLETIONS_DIR/_ib_box_spread_tui"
 
   if [ ! -f "$completion_file" ]; then
     echo -e "${RED}Error: Zsh completion not found${NC}"
@@ -94,9 +89,6 @@ install_zsh_completion() {
 
   echo -e "${GREEN}Installing zsh completions to $COMPLETION_DIR...${NC}"
   sudo cp "$completion_file" "$COMPLETION_DIR/" 2>/dev/null || cp "$completion_file" "$COMPLETION_DIR/"
-  [ -f "$tui_completion_file" ] && {
-    sudo cp "$tui_completion_file" "$COMPLETION_DIR/" 2>/dev/null || cp "$tui_completion_file" "$COMPLETION_DIR/"
-  }
 
   echo -e "${GREEN}✓ Zsh completions installed${NC}"
   echo "  Run: rm -f ~/.zcompdump* && compinit"
@@ -105,7 +97,6 @@ install_zsh_completion() {
 # Function to install fish completion
 install_fish_completion() {
   local completion_file="$COMPLETIONS_DIR/ib_box_spread.fish"
-  local tui_completion_file="$COMPLETIONS_DIR/ib_box_spread_tui.fish"
 
   if [ ! -f "$completion_file" ]; then
     echo -e "${RED}Error: Fish completion not found${NC}"
@@ -123,7 +114,6 @@ install_fish_completion() {
 
   echo -e "${GREEN}Installing fish completions to $COMPLETION_DIR...${NC}"
   cp "$completion_file" "$COMPLETION_DIR/"
-  [ -f "$tui_completion_file" ] && cp "$tui_completion_file" "$COMPLETION_DIR/"
 
   echo -e "${GREEN}✓ Fish completions installed${NC}"
   echo "  Completions will be available in new fish sessions"

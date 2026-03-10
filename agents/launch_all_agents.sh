@@ -21,8 +21,7 @@ else
   echo "[warn] Poetry missing; backend agents skipped." >&2
 fi
 
-# C++ TUI is built as part of main CMake build - no separate setup needed
-(cd "$ROOT_DIR" && bash agents/tui/scripts/setup.sh) &
+# No separate TUI agent setup: the active TUI is the Python/Textual app under python/tui.
 
 if command -v npm >/dev/null 2>&1; then
   (cd "$ROOT_DIR" && bash agents/web/scripts/setup.sh) &

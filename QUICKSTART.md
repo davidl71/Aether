@@ -23,12 +23,8 @@ brew tap davidl71/ib-box-spread git@github.com:davidl71/homebrew-ib-box-spread.g
 # Install main binary
 brew install davidl71/ib-box-spread/ib-box-spread
 
-# Install TUI (Terminal User Interface)
-brew install davidl71/ib-box-spread/ib-box-spread-tui
-
 # Verify installation
 ib_box_spread --help
-ib-box-spread-tui --help
 ```
 
 ### Method 2: From Source
@@ -119,8 +115,8 @@ ib_box_spread --config config/config.json --validate
 # Safe test run (no real trades)
 ib_box_spread --config config/config.json --dry-run
 
-# Or use TUI for visual monitoring
-ib-box-spread-tui --mock  # Test with mock data
+# Or use the Python/Textual TUI for visual monitoring
+python -m python.tui
 ```
 
 ### Step 3: Check Logs
@@ -138,14 +134,8 @@ tail -n 50 logs/ib_box_spread.log
 ### Start TUI
 
 ```bash
-# With mock data (offline testing)
-ib-box-spread-tui --mock
-
-# Connect to backend (requires running backend)
-ib-box-spread-tui
-
-# Custom endpoint
-ib-box-spread-tui --endpoint http://localhost:8080/api/snapshot
+# Python/Textual TUI
+python -m python.tui
 ```
 
 ### TUI Keyboard Shortcuts
@@ -159,7 +149,7 @@ ib-box-spread-tui --endpoint http://localhost:8080/api/snapshot
 | `?` | Show help |
 | `Q` | Quit |
 
-**Full shortcuts**: Press `?` in TUI or see `tui/docs/KEYBOARD_SHORTCUTS.md`
+**Full shortcuts**: Press `?` in the TUI.
 
 ## Testing
 
@@ -171,7 +161,7 @@ cd build
 ctest --output-on-failure
 
 # Or from project root
-./scripts/test_tui.sh --short  # Fast tests
+uv run --project python pytest python/tui/tests/ -q
 ```
 
 ### Expected Output
@@ -202,7 +192,7 @@ ib_box_spread --config config/config.json --dry-run
 ```bash
 # Terminal 1: Start backend (if you have one)
 # Terminal 2: Start TUI
-ib-box-spread-tui --mock
+python -m python.tui
 ```
 
 ### 4. Check System Status
@@ -340,7 +330,7 @@ ib_box_spread --config config/config.json --dry-run
 ib_box_spread --config config/config.json --validate
 
 # TUI
-ib-box-spread-tui --mock
+python -m python.tui
 ```
 
 ### Important Files
@@ -373,7 +363,6 @@ Before running:
 ## Getting Help
 
 - **Documentation**: See `docs/` directory
-- **Man Pages**: `man ib-box-spread-tui`
 - **TUI Help**: Press `?` in TUI
 - **Issues**: Check logs in `logs/`
 

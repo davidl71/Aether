@@ -52,12 +52,6 @@ brew tap davidl71/ib-box-spread git@github.com:davidl71/homebrew-ib-box-spread.g
 ```bash
 # Install main trading binary
 brew install davidl71/ib-box-spread/ib-box-spread
-
-# Install TUI (Terminal User Interface)
-brew install davidl71/ib-box-spread/ib-box-spread-tui
-
-# Or install both
-brew install davidl71/ib-box-spread/ib-box-spread davidl71/ib-box-spread/ib-box-spread-tui
 ```
 
 **Note**: For public projects like Exarp Oh My Zsh plugin, use the public tap:
@@ -87,24 +81,6 @@ brew install synthetic-financing-platform
 **Usage**:
 ```bash
 synthetic-financing-platform --config ~/.config/synthetic-financing-platform/config.json --dry-run
-```
-
-### synthetic-financing-platform-tui
-
-Terminal User Interface for monitoring and managing the trading system.
-
-**Dependencies**:
-- Go
-
-**Installation**:
-```bash
-brew install synthetic-financing-platform-tui
-```
-
-**Usage**:
-```bash
-synthetic-financing-platform-tui --mock  # Test with mock data
-synthetic-financing-platform-tui          # Connect to backend
 ```
 
 ## Development

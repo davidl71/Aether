@@ -21,7 +21,6 @@ brew tap davidl71/ib-box-spread git@github.com:davidl71/homebrew-ib-box-spread.g
 # Install packages
 
 brew install davidl71/ib-box-spread/ib-box-spread        # Main trading binary
-brew install davidl71/ib-box-spread/ib-box-spread-tui    # Terminal UI
 ```
 
 ### For Developers
@@ -172,20 +171,6 @@ class IbBoxSpread < Formula
 
   test do
     # Test steps
-  end
-end
-```
-
-### TUI Formula (`ib-box-spread-tui.rb`)
-
-```ruby
-class IbBoxSpreadTui < Formula
-  desc "Terminal User Interface for IBKR Box Spread"
-  # ... similar structure
-  depends_on "go" => :build
-
-  def install
-    # Build Go binary
   end
 end
 ```

@@ -145,66 +145,6 @@ EOF
   echo -e "${GREEN}✓ Fish completion generated: $COMPLETIONS_DIR/ib_box_spread.fish${NC}"
 }
 
-# Function to generate TUI completion (Python TUI)
-generate_tui_completions() {
-  echo -e "${GREEN}Generating TUI completions...${NC}"
-
-  # Note: Python TUI uses environment variables and config files
-  # Run with: python -m python.tui
-
-  # Bash completion for TUI
-  cat > "$COMPLETIONS_DIR/ib_box_spread_tui.bash" << 'EOF'
-# Bash completion for Python TUI
-# Run with: python -m python.tui
-# Uses environment variables: TUI_BACKEND, TUI_API_URL, TUI_SNAPSHOT_FILE
-_ib_box_spread_tui() {
-  local cur prev words cword
-  _init_completion || return
-
-  # Python TUI module completion
-  if [[ "$prev" == "-m" ]]; then
-    COMPREPLY=($(compgen -W "python.tui" -- "$cur"))
-  fi
-}
-
-complete -F _ib_box_spread_tui python
-EOF
-
-  # Zsh completion for TUI
-  cat > "$COMPLETIONS_DIR/_ib_box_spread_tui" << 'EOF'
-#compdef python
-
-# Python TUI uses module execution: python -m python.tui
-# Config: ~/.config/ib_box_spread/tui_config.json
-# Env vars: TUI_BACKEND, TUI_API_URL
-
-_ib_box_spread_tui() {
-  local context state line
-  local -a options
-
-  options=(
-    '(-h --help)'{-h,--help}'[Show help message]'
-  )
-
-  _arguments -s -S $options
-}
-
-_ib_box_spread_tui "$@"
-EOF
-
-  # Fish completion for TUI
-  cat > "$COMPLETIONS_DIR/ib_box_spread_tui.fish" << 'EOF'
-# Fish completion for Python TUI
-# Run with: python -m python.tui
-# Uses environment variables: TUI_BACKEND, TUI_API_URL, TUI_SNAPSHOT_FILE
-
-complete -c python -n '__fish_seen_subcommand_from -m' -a "python.tui" -d "Run TUI application"
-EOF
-
-  chmod +x "$COMPLETIONS_DIR"/*tui* 2>/dev/null || true
-  echo -e "${GREEN}✓ TUI completions generated${NC}"
-}
-
 # Main execution
 cd "$PROJECT_ROOT"
 
@@ -222,7 +162,6 @@ case "$SHELLS" in
     generate_bash_completion
     generate_zsh_completion
     generate_fish_completion
-    generate_tui_completions
     ;;
 esac
 

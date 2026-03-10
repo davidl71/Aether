@@ -125,11 +125,6 @@ ib_box_spread --config <TAB>
 
 # Shows: config/config.json config/config.example.json
 
-# TUI completions
-
-ib-box-spread-tui --<TAB>
-
-# Shows: --mock --endpoint --help
 ```
 
 ## Completion Features
@@ -150,22 +145,6 @@ ib-box-spread-tui --<TAB>
 - `--log-level` - Override log level (trace|debug|info|warn|error)
 - `-v, --version` - Show version information
 - `-h, --help` - Show help message
-
-### ib-box-spread-tui
-
-- **Options**: Command-line flags
-- **Endpoints**: API endpoint URL completion
-
-**Available Options:**
-
-- `--mock` - Use mock data provider
-- `--endpoint` - API endpoint URL
-- `-h, --help` - Show help message
-
-**Environment Variables** (for TUI):
-
-- `TUI_BACKEND` - Backend type (mock|rest|nautilus)
-- `TUI_API_URL` - API endpoint URL (when using rest backend)
 
 ## Troubleshooting
 
@@ -297,9 +276,6 @@ When adding new CLI options, update completions:
   - `ib_box_spread.bash` - Bash completion
   - `_ib_box_spread` - Zsh completion
   - `ib_box_spread.fish` - Fish completion
-  - `ib-box-spread-tui.bash` - TUI Bash completion
-  - `_ib-box-spread-tui` - TUI Zsh completion
-  - `ib-box-spread-tui.fish` - TUI Fish completion
 
 ## See Also
 

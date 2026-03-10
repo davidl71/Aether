@@ -102,14 +102,6 @@ if [ -d "${TAP_DIR}" ]; then
       --tap-dir "${TAP_DIR}"
   fi
 
-  # Update TUI formula if it exists
-  if [ -f "${TAP_DIR}/Formula/ib-box-spread-tui.rb" ]; then
-    "${ROOT_DIR}/scripts/update_homebrew_formula.sh" \
-      --version "${VERSION}" \
-      --formula ib-box-spread-tui \
-      --tap-dir "${TAP_DIR}"
-  fi
-
   echo ""
   echo "✅ Homebrew formulas updated"
   echo ""
