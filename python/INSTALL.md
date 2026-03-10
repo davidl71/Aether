@@ -1,8 +1,8 @@
-# Python Bindings and NautilusTrader Installation Guide
+# Python Bindings Installation Guide
 
 ## Prerequisites
 
-1. **Python 3.11 or higher** (required if you plan to use Nautilus Trader)
+1. **Python 3.11 or higher**
 2. **Cython 3.0+**
 3. **CMake** (for building C++ dependencies)
 4. **C++ Compiler** (Clang/GCC with C++20 support)
@@ -36,14 +36,9 @@ ib_box_spread --init-config                # writes ~/.config/ib_box_spread/conf
 ib_box_spread --init-config ./custom.json  # writes to a custom path
 ```
 
-### 2. Install Nautilus Trader (Optional)
+### 2. Nautilus Trader Status
 
-If you require Nautilus Trader integration, install a prebuilt wheel manually (building from source can take ~30 minutes and requires Rust toolchains).
-
-```bash
-# Download a prebuilt wheel (see scripts/fetch_third_party.sh) and install it
-uv pip install --python python/.venv/bin/python /abs/path/to/nautilus_trader-<version>-py3-none-any.whl
-```
+Nautilus Trader is deprecated in this repo and is no longer part of the active supported Python workflow. Any remaining Nautilus scaffolding is kept only for future evaluation work.
 
 ### 3. Build Cython Bindings
 
@@ -77,13 +72,6 @@ uv run --project python python -c "from python.bindings.box_spread_bindings impo
 uv run --project python pytest python/tests/
 ```
 
-### 5. Run with NautilusTrader
-
-```bash
-# Make sure TWS/IB Gateway is running in paper trading mode (port 7497)
-uv run --project python python/nautilus_strategy.py --config config/config.json --dry-run
-```
-
 ## Troubleshooting
 
 ### Cython Not Found
@@ -105,17 +93,6 @@ uv sync --project python --extra dev --extra tui
 export PYTHONPATH="${PYTHONPATH}:$(pwd)/python"
 ```
 
-### NautilusTrader Installation Issues
-
-NautilusTrader requires Python 3.11+. If you maintain multiple Python versions:
-
-```bash
-# Use specific Python version for the optional Nautilus install
-uv venv --python 3.11 python/.venv
-uv pip install --python python/.venv/bin/python /abs/path/to/nautilus_trader-<version>-py3-none-any.whl
-uv run --project python python/nautilus_strategy.py --config config/config.json
-```
-
 ## Development
 
 For development with automatic recompilation:
@@ -135,13 +112,8 @@ python/
 │   ├── box_spread_bindings.pxd  # Cython declarations
 │   ├── box_spread_bindings.pyx  # Cython implementation
 │   └── setup.py        # Build configuration
-├── integration/        # NautilusTrader integration
-│   ├── nautilus_client.py
-│   ├── market_data_handler.py
-│   ├── execution_handler.py
-│   └── strategy_runner.py
-├── wrapper/            # Bridge between Python and C++
-│   └── nautilus_bridge.py
-├── config_adapter.py   # Config conversion
-└── nautilus_strategy.py # Main entry point
+├── integration/        # Broker/bank/rates integrations
+├── tui/                # Active Textual TUI
+├── bindings/           # Cython bindings
+└── tests/
 ```

@@ -2,14 +2,14 @@
 
 ## Responsibilities
 - Ingest market data and normalise events for downstream consumers.
-- Execute Nautilus Trader strategies through a Rust/Python bridge.
 - Perform pre-trade risk checks and expose REST (and NATS) for clients.
+- Preserve an optional deprecated Nautilus scaffold for future experiments, not active production use.
 
 ## Layout
 - `Cargo.toml`: Rust workspace aggregating core crates.
 - `crates/`: library crates for market data, strategy bridge, risk, and API layers.
 - `services/backend_service/`: Tokio binary wiring crates together.
-- `python/`: Nautilus Trader strategy scaffold packaged for reuse.
+- `python/`: deprecated Nautilus strategy scaffold kept only for future experiments.
 - `config/`: runtime configuration templates (`default.toml`).
 - `scripts/`: setup and CI entrypoints.
 
@@ -38,17 +38,17 @@ You can either:
 4. Execute checks via `bash agents/backend/scripts/run-tests.sh`.
 
 ### Nautilus Trader Wheel
-The backend setup no longer installs the Nautilus Trader wheel automatically. Download a prebuilt wheel via `./scripts/fetch_third_party.sh` (or set `NAUTILUS_TRADER_RELEASE=<tag>`) to place it under `native/third_party/nautilus/`, then install it manually (for example, `pip install <path-to-wheel>`) before enabling Nautilus integration. The backend Python package does not declare Nautilus Trader as a dependency; install it separately when you are ready to wire in the integration.
+Nautilus Trader is no longer part of the active backend path. The remaining backend Python package is a deprecated scaffold only. Do not treat it as a supported execution mode without explicit reactivation work.
 
 ## Current Behaviour
 - Periodic mock market data updates drive the shared snapshot returned to TUI/mobile/web clients.
-- Strategy signals flow through a mock Nautilus loop, risk checks vet each decision, and the REST surface streams the approved trades plus risk status.
+- Strategy signals flow through a mock internal loop, risk checks vet each decision, and the REST surface streams the approved trades plus risk status.
 - REST now exposes `POST /api/v1/strategy/{start,stop}` to toggle the mock engine, updating risk status and alert stream in lockstep.
 - Alerts, positions, historic fills, and orders are seeded with example data for UI prototyping.
 - Polygon.io integration is available via the market data configuration; set `market_data.provider = "polygon"` and provide an API key (see below).
 
 ## Next Steps
-- Swap mock data with the real ingestion pipeline and Nautilus-driven strategy execution.
+- Swap mock data with the real ingestion pipeline.
 - Flesh out POST command endpoints (`/strategy/start`, `/combos/*`) to match `agents/shared/API_CONTRACT.md`.
 - Expand risk checks beyond scaffolding and persist state to QuestDB/ Livevol feeds.
 

@@ -449,7 +449,7 @@ int main(int argc, char **argv) {
 
   app.add_flag(
       "--use-nautilus", use_nautilus,
-      "Use nautilus_trader for market data and execution (requires Python)");
+      "Deprecated experimental Nautilus scaffold flag; not part of the active supported runtime");
 
   app.add_flag(
       "--mock-tws", mock_tws,
@@ -556,10 +556,9 @@ int main(int argc, char **argv) {
 
     // Check for nautilus_trader usage
     if (use_nautilus) {
-      spdlog::info("NautilusTrader mode requested via --use-nautilus flag");
-      spdlog::info("Note: Use python/nautilus_strategy.py for full "
-                   "nautilus_trader integration");
-      spdlog::info("C++ application will continue with TWS client");
+      spdlog::warn("Deprecated --use-nautilus flag requested");
+      spdlog::warn("Nautilus integration is not part of the active supported runtime");
+      spdlog::warn("The native application will continue with the standard TWS path");
     }
 
     if (config.tws.use_mock) {

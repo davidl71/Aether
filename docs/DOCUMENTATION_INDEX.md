@@ -74,9 +74,12 @@ This document serves as a comprehensive index of current project documentation p
 - `docs/IBC_LEARNINGS.md` - IBC (Interactive Brokers Controller) automation tool
 - `docs/ICLI_LEARNINGS.md` - ICLI patterns and learnings
 - `docs/LEAN_LEARNINGS.md` - Lean patterns and learnings
-- `docs/NAUTILUS_LEARNINGS.md` - NautilusTrader patterns
-- `docs/NAUTILUS_IMPLEMENTATION_SUMMARY.md` - NautilusTrader implementation
 - `docs/TRADE_FRAME_LEARNINGS.md` - Trade-frame repository patterns and learnings
+
+### Historical / Deprecated References
+
+- `docs/NAUTILUS_LEARNINGS.md` - Historical NautilusTrader notes
+- `docs/NAUTILUS_IMPLEMENTATION_SUMMARY.md` - Historical NautilusTrader implementation notes
 
 ## Build & Development
 

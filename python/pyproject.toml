@@ -58,9 +58,6 @@ rates = [
     "yfinance>=0.2.0",
 ]
 
-[project.scripts]
-synthetic-financing-platform-nautilus = "python.nautilus_strategy:main"
-
 [tool.setuptools]
 package-dir = {"" = "."}
 

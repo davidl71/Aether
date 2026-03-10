@@ -23,9 +23,9 @@ The package is organized as follows:
 
 ### Main Package (`python/`)
 
-- **Integration modules** (`integration/`): NautilusTrader integration
-- **Wrapper modules** (`wrapper/`): Bridge between Python and C++
-- **Standalone modules**: `nautilus_strategy.py`, `config_adapter.py`
+- **Integration modules** (`integration/`): broker/bank/rates integrations
+- **TUI modules** (`tui/`): active Textual terminal client
+- **Legacy Nautilus scaffolding**: deprecated; not part of the active supported runtime
 
 ### Bindings Package (`python/bindings/`)
 
@@ -67,37 +67,15 @@ pip install .
 
 ## Usage After Installation
 
-### Command-Line
-
-```bash
-# Use the installed entry point
-ib-box-spread-nautilus --config ../config/config.json --dry-run
-```
-
 ### Python Import
 
-```python
-# Import integration modules
-from integration.nautilus_client import NautilusClient
-from integration.strategy_runner import StrategyRunner
-from integration.config_adapter import ConfigAdapter
-
-# Import wrapper
-from wrapper.nautilus_bridge import NautilusBridge
-
-# Import bindings (if installed)
-try:
-    from bindings.box_spread_bindings import PyOptionContract, PyBoxSpreadLeg
-except ImportError:
-    print("Bindings not installed - run: cd bindings && pip install -e .")
-```
+Import the active integration, TUI, or bindings modules from the current package layout.
 
 ## Dependencies
 
 ### Runtime Dependencies
 
 - `numpy>=1.24.0`
-- `nautilus_trader` (optional; install manually when enabling integration)
 
 ### Build Dependencies (for bindings)
 
@@ -129,14 +107,6 @@ cd bindings
 pip install -e .
 ```
 
-### Entry Point Not Found
-
-Reinstall the package:
-
-```bash
-pip install -e .
-```
-
 ## Building Distribution Packages
 
 ```bash
@@ -151,5 +121,4 @@ python setup.py sdist bdist_wheel
 ```
 
 The built packages will be in `dist/` directory.
-
 

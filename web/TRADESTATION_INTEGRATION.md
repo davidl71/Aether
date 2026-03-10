@@ -1,83 +1,20 @@
-# TradeStation Integration for PWA
+# TradeStation Integration for Web
 
-This guide shows how to connect the PWA to TradeStation API for live market data.
+TradeStation is no longer part of the active supported runtime in this repo.
 
-## Prerequisites
+This file is kept only as a historical note so old references do not imply current support.
 
-1. **TradeStation Account**: Sign up at [tradestation.com](https://www.tradestation.com) (SIM environment available for testing)
-2. **API Credentials**: Request API access by emailing ClientExperience@tradestation.com with your funded account
-3. **Python Dependencies**: The TradeStation service requires `uvicorn` and `fastapi`
+## Current Status
 
-## Quick Start
+- the TradeStation proxy/service path was removed
+- the web app no longer expects a TradeStation backend
+- Alpaca, IBKR, Tastytrade, Discount Bank, and manual imports are the current active paths
 
-### 1. Set Environment Variables
+## If Revisited Later
 
-```bash
-export TRADESTATION_CLIENT_ID=your_client_id_here
-export TRADESTATION_CLIENT_SECRET=your_client_secret_here
-export TRADESTATION_SIM=1  # Use SIM environment (default)
-export SYMBOLS=SPY,QQQ,IWM  # Optional: comma-separated symbols (default: SPY,QQQ)
-```
-
-### 2. Start the TradeStation Service
-
-```bash
-./web/scripts/run-tradestation-service.sh
-```
-
-The service will start on `http://127.0.0.1:8001` and provide:
-- `GET /api/health` - Health check endpoint
-- `GET /api/snapshot` - Market data snapshot (compatible with PWA)
-
-### 3. Configure the PWA
-
-Create a `.env` file in the `web/` directory (or set environment variable):
-
-```bash
-cd web
-echo "VITE_API_URL=http://127.0.0.1:8001/api/snapshot" > .env
-```
-
-### 4. Start the PWA
-
-```bash
-cd web
-npm run dev
-```
-
-The PWA will now connect to the TradeStation service instead of the static JSON files.
-
-## Features
-
-- **Live Market Data**: Real-time quotes from TradeStation's market data API v3
-- **SIM Environment**: Safe testing environment (default)
-- **PWA Compatible**: Works with service worker caching and offline support
-- **Multi-Symbol Support**: Configure multiple symbols via `SYMBOLS` environment variable
-- **OAuth 2.0**: Secure authentication using client credentials flow
-
-## Data Source Indicator
-
-When connected to TradeStation, the header will show:
-- **Account**: `TRADESTATION`
-- **Mode**: `SIM` (for paper trading) or `LIVE` (for production)
-- **Data Source Badge**: "Data: TradeStation"
-
-## Switching Between Data Sources
-
-### Use TradeStation (Live Data)
-```bash
-export VITE_API_URL=http://127.0.0.1:8001/api/snapshot
-npm run dev
-```
-
-### Use Alpaca
-```bash
-export VITE_API_URL=http://127.0.0.1:8000/api/snapshot
-npm run dev
-```
-
-### Use Static JSON (Offline/Development)
-```bash
+- treat TradeStation as a new integration effort
+- re-evaluate gateway, web, and service-manager wiring from scratch
+- use exarp task `T-1773177438759864000` as the backlog placeholder
 unset VITE_API_URL
 # or remove from .env file
 npm run dev

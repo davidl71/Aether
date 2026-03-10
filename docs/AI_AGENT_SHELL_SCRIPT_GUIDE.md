@@ -19,7 +19,6 @@ All service startup scripts use these shared functions:
 
 - `web/scripts/run-alpaca-service.sh`
 - `web/scripts/run-ib-service.sh`
-- `web/scripts/run-tradestation-service.sh`
 - `web/scripts/run-discount-bank-service.sh`
 - `scripts/start_alpaca_service.sh`
 

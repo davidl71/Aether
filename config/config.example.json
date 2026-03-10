@@ -174,12 +174,12 @@
   },
 
   // ============================================================================
-  // Nautilus Trader Integration (Optional)
+  // Deprecated Nautilus Trader Scaffold (Disabled by Default)
   // ============================================================================
   "nautilus_trader": {
-    "enabled": true, // Enable Nautilus Trader integration
-    "use_nautilus_for_market_data": true, // Use Nautilus for market data
-    "use_nautilus_for_execution": true, // Use Nautilus for order execution
+    "enabled": false, // Deprecated scaffold only; not part of the active runtime
+    "use_nautilus_for_market_data": false, // Deprecated experimental flag
+    "use_nautilus_for_execution": false, // Deprecated experimental flag
 
     // Data client configuration
     "data_client_config": {

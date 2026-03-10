@@ -97,7 +97,7 @@ _ib_box_spread() {
     '(-c --config)'{-c,--config}'[Configuration file path]:config file:_files -g "*.json"'
     '(--dry-run)'--dry-run'[Simulate trading without executing orders]'
     '(--validate)'--validate'[Validate configuration and exit]'
-    '(--use-nautilus)'--use-nautilus'[Use nautilus_trader for market data and execution]'
+    '(--use-nautilus)'--use-nautilus'[Deprecated experimental Nautilus scaffold flag]'
     '(--log-level)'--log-level'[Override log level]:log level:(trace debug info warn error)'
     '(-v --version)'{-v,--version}'[Show version information]'
     '(-h --help)'{-h,--help}'[Show help message]'
@@ -134,7 +134,7 @@ generate_fish_completion() {
 complete -c ib_box_spread -s c -l config -r -d "Configuration file path"
 complete -c ib_box_spread -l dry-run -d "Simulate trading without executing orders"
 complete -c ib_box_spread -l validate -d "Validate configuration and exit"
-complete -c ib_box_spread -l use-nautilus -d "Use nautilus_trader for market data and execution"
+complete -c ib_box_spread -l use-nautilus -d "Deprecated experimental Nautilus scaffold flag"
 complete -c ib_box_spread -l log-level -x -a "trace debug info warn error" -d "Override log level"
 complete -c ib_box_spread -s v -l version -d "Show version information"
 complete -c ib_box_spread -s h -l help -d "Show help message"

@@ -7,7 +7,6 @@ All backend services now have daemonized start/stop scripts for easy management.
 | Service | Port | Start Script | Stop Script | Status |
 |---------|------|--------------|-------------|--------|
 | **Alpaca** | 8000 | `./scripts/start_alpaca_service.sh` | `./scripts/stop_alpaca_service.sh` | ❌ Not running |
-| **TradeStation** | 8001 | `./scripts/start_tradestation_service.sh` | `./scripts/stop_tradestation_service.sh` | ❌ Not running |
 | **IB (Interactive Brokers)** | 8002 | `./scripts/start_ib_service.sh` | `./scripts/stop_ib_service.sh` | ❌ Not running |
 | **Discount Bank** | 8003 | `./scripts/start_discount_bank_service.sh` | `./scripts/stop_discount_bank_service.sh` | ✅ Running |
 | **Risk-Free Rate** | 8004 | `./scripts/start_risk_free_rate_service.sh` | `./scripts/stop_risk_free_rate_service.sh` | ❌ Not running |
@@ -82,13 +81,6 @@ All daemonized scripts include:
 - **Requirements**: Alpaca API credentials (1Password or env vars)
 - **Log**: `logs/alpaca-service.log`
 
-### TradeStation Service (Port 8001)
-
-- **Endpoint**: `http://localhost:8001/api/snapshot`
-- **Health**: `http://localhost:8001/api/health`
-- **Requirements**: TradeStation API credentials
-- **Log**: `logs/tradestation-service.log`
-
 ### IB Service (Port 8002)
 
 - **Endpoint**: `http://localhost:8002/api/snapshot`
@@ -127,11 +119,14 @@ Ports can be configured in:
 - Environment variables (override):
   - `ALPACA_PORT`
   - `IB_PORT`
-  - `TRADESTATION_PORT`
-
   - `DISCOUNT_BANK_PORT`
   - `RISK_FREE_RATE_PORT`
   - `TASTYTRADE_PORT`
+
+## Historical Notes
+
+- TradeStation is no longer part of the active supported backend surface.
+- The old TradeStation daemon scripts and proxy path were removed. Keep any remaining TradeStation docs as historical reference only.
 
 ## Troubleshooting
 

@@ -141,7 +141,7 @@ ib_box_spread --config <TAB>
 - `-c, --config` - Configuration file path
 - `--dry-run` - Simulate trading without executing orders
 - `--validate` - Validate configuration and exit
-- `--use-nautilus` - Use nautilus_trader integration
+- `--use-nautilus` - Deprecated experimental Nautilus scaffold flag
 - `--log-level` - Override log level (trace|debug|info|warn|error)
 - `-v, --version` - Show version information
 - `-h, --help` - Show help message
