@@ -38,7 +38,7 @@ from .sofr_treasury_client import (
 
 logger = logging.getLogger(__name__)
 
-# Router for mounting in analytics_api or running standalone
+# Router for running standalone or mounting in another Python service if needed
 router_risk_free_rate = APIRouter()
 
 # Initialize clients (used by route handlers)

@@ -27,7 +27,7 @@ This document describes how background work (threads, asyncio tasks, timers) is 
 
 ### 1.2 FastAPI backend services
 
-**Locations:** `python/integration/ib_service.py`, `alpaca_service.py`, `tastytrade_service.py`, `tradestation_service.py`, `discount_bank_service.py`, `python/services/health_dashboard.py`, `analytics_api.py`.
+**Locations:** `python/integration/ib_service.py`, `alpaca_service.py`, `tastytrade_service.py`, `tradestation_service.py`, `discount_bank_service.py`, `python/services/health_dashboard.py`.
 
 | Service | Background work | Start | Stop | Notes |
 |---------|------------------|--------|------|--------|
