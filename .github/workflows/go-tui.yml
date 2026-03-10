@@ -13,6 +13,9 @@ on:
 jobs:
   lint:
     runs-on: macos-latest
+    env:
+      GOCACHE: ${{ github.workspace }}/.cache/go-build
+      GOMODCACHE: ${{ github.workspace }}/.cache/go-mod
     steps:
       - uses: actions/checkout@v4
 
@@ -25,8 +28,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/Library/Caches/go-build
-            ~/go/pkg/mod
+            ${{ env.GOCACHE }}
+            ${{ env.GOMODCACHE }}
           key: go-${{ runner.os }}-${{ hashFiles('tui/go.sum') }}-${{ steps.setup-go.outputs.go-version }}
           restore-keys: |
             go-${{ runner.os }}-${{ hashFiles('tui/go.sum') }}-
@@ -47,6 +50,9 @@ jobs:
   build-tui:
     runs-on: macos-latest
     needs: lint
+    env:
+      GOCACHE: ${{ github.workspace }}/.cache/go-build
+      GOMODCACHE: ${{ github.workspace }}/.cache/go-mod
     steps:
       - uses: actions/checkout@v4
 
@@ -59,8 +65,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/Library/Caches/go-build
-            ~/go/pkg/mod
+            ${{ env.GOCACHE }}
+            ${{ env.GOMODCACHE }}
           key: go-${{ runner.os }}-${{ hashFiles('tui/go.sum') }}-${{ steps.setup-go.outputs.go-version }}
           restore-keys: |
             go-${{ runner.os }}-${{ hashFiles('tui/go.sum') }}-

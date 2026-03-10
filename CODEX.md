@@ -82,14 +82,14 @@ If configure fails because vendored dependencies are missing, run:
 
 ## Python
 
-Prefer `uv` when available:
+Always use `uv` for dependency management and command execution in this repo:
 
 ```bash
-uv sync
-uv run pytest python/tests/ -v
+uv sync --project python --extra dev
+uv run --project python pytest python/tests/ -v
 ```
 
-Fall back to `pip` only if `uv` is unavailable.
+Avoid direct `pip` / bare `pytest` unless `uv` is unavailable and you are fixing bootstrap issues.
 
 ## Codex-Specific Notes
 

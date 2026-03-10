@@ -9,8 +9,12 @@ if [[ -n "${__IB_BOX_BUILD_LOGGING_INCLUDED:-}" ]]; then
   return 0 2>/dev/null || :
 fi
 __IB_BOX_BUILD_LOGGING_INCLUDED=1
+# shellcheck source=./workspace_paths.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/workspace_paths.sh"
 
-__IB_BOX_BUILD_LOG_ROOT_DEFAULT="${PWD}/build/logs"
+setup_workspace_paths
+
+__IB_BOX_BUILD_LOG_ROOT_DEFAULT="${PROJECT_ROOT}/build/logs"
 BUILD_LOG_ROOT="${BUILD_LOG_ROOT:-${__IB_BOX_BUILD_LOG_ROOT_DEFAULT}}"
 
 set_build_log_root() {
@@ -50,5 +54,4 @@ run_logged() {
 
   log_note "${label} completed (log: ${log_file})"
 }
-
 

@@ -19,24 +19,26 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync Python dependencies
+        run: uv sync --project python --extra dev
 
       - name: Install lint tools
-        run: |
-          python -m pip install --upgrade pip
-          pip install black ruff mypy
+        run: uv tool install black ruff mypy
 
       - name: Run Black (format check)
-        run: |
-          black --check python/ scripts/ || true
+        run: uvx black --check python/ scripts/
 
       - name: Run Ruff (linting)
-        run: |
-          ruff check python/ scripts/ || true
+        run: uvx ruff check python/ scripts/
 
       - name: Run MyPy (type checking)
-        run: |
-          mypy python/ scripts/ --ignore-missing-imports || true
+        run: uvx mypy python/ scripts/ --ignore-missing-imports
 
       - name: Run exarp-go lint (optional)
         id: exarp

@@ -20,6 +20,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# shellcheck source=./include/workspace_paths.sh
+. "${SCRIPT_DIR}/include/workspace_paths.sh"
+
+setup_workspace_paths
 
 # Default options
 FORMAT="${FORMAT:-documentation}"
@@ -92,7 +96,9 @@ done
 SHELLSPEC_CMD=""
 if command -v shellspec >/dev/null 2>&1; then
   SHELLSPEC_CMD="shellspec"
-elif [ -f "${HOME}/.local/bin/shellspec" ]; then
+elif [ -f "${PROJECT_ROOT}/.local/bin/shellspec" ]; then
+  SHELLSPEC_CMD="${PROJECT_ROOT}/.local/bin/shellspec"
+elif [ -f "${HOME:-}/.local/bin/shellspec" ]; then
   SHELLSPEC_CMD="${HOME}/.local/bin/shellspec"
 elif [ -f "${PROJECT_ROOT}/bin/shellspec" ]; then
   SHELLSPEC_CMD="${PROJECT_ROOT}/bin/shellspec"
@@ -108,8 +114,8 @@ else
   echo "Option 2: Install locally in project:" >&2
   echo "  curl -fsSL https://git.io/shellspec | sh -s -- --yes" >&2
   echo "" >&2
-  echo "After installation, add to PATH if needed:" >&2
-  echo "  export PATH=\"\${HOME}/.local/bin:\${PATH}\"" >&2
+  echo "After installation, add a local bin dir to PATH if needed:" >&2
+  echo "  export PATH=\"${PROJECT_ROOT}/.local/bin:\${PATH}\"" >&2
   echo "" >&2
   echo "Then run tests again:" >&2
   echo "  ./scripts/run_tests.sh" >&2

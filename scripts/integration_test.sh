@@ -9,8 +9,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/include/logging.sh
 . "${SCRIPT_DIR}/include/logging.sh"
+# shellcheck source=./include/workspace_paths.sh
+. "${SCRIPT_DIR}/include/workspace_paths.sh"
 
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+setup_workspace_paths
 DEFAULT_PRESET="macos-x86_64-release"
 PRESET="${CMAKE_PRESET:-${DEFAULT_PRESET}}"
 # Ramdisk presets use binaryDir "build-ramdisk"; others use "build/${PRESET}"
@@ -19,7 +22,7 @@ if [[ "${PRESET}" == *-ramdisk ]]; then
 else
   BUILD_DIR="${PROJECT_ROOT}/build/${PRESET}"
 fi
-LOG_DIR="${PROJECT_ROOT}/build/integration_logs"
+LOG_DIR="${BUILD_ARTIFACT_ROOT}/integration"
 mkdir -p "${LOG_DIR}"
 timestamp="$(date +%Y%m%d-%H%M%S)"
 CTEST_LOG="${LOG_DIR}/ctest_${PRESET}_${timestamp}.log"

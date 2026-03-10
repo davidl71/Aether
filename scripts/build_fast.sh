@@ -8,6 +8,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# shellcheck source=./include/workspace_paths.sh
+. "${SCRIPT_DIR}/include/workspace_paths.sh"
+
+setup_workspace_paths
 
 cd "${PROJECT_ROOT}"
 
@@ -67,10 +71,10 @@ fi
 
 # Configure cache tool
 if [ "$USE_SCCACHE" = true ]; then
-  export SCCACHE_DIR="${SCCACHE_DIR:-$HOME/.sccache}"
   export SCCACHE_CACHE_SIZE="${SCCACHE_CACHE_SIZE:-10G}"
   mkdir -p "$SCCACHE_DIR"
 elif [ "$USE_CCACHE" = true ]; then
+  export CCACHE_DIR="${CCACHE_DIR}"
   ccache --max-size=10G
   ccache --set-config=compression=true
   ccache --set-config=compression_level=6

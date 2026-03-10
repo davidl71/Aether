@@ -3,6 +3,22 @@
   ansible.builtin.set_fact:
     backend_dir: "{{ repo_root }}/agents/backend"
 
+- name: Define backend workspace-local cache paths
+  ansible.builtin.set_fact:
+    backend_uv_cache_dir: "{{ repo_root }}/.cache/uv"
+    backend_pip_cache_dir: "{{ repo_root }}/.cache/pip"
+    backend_cargo_home: "{{ repo_root }}/.cache/cargo"
+
+- name: Ensure backend workspace-local cache directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ backend_uv_cache_dir }}"
+    - "{{ backend_pip_cache_dir }}"
+    - "{{ backend_cargo_home }}"
+
 - name: Check if uv is available
   ansible.builtin.command: uv --version
   register: uv_check
@@ -16,13 +32,24 @@
       ansible.builtin.command: uv venv "{{ backend_dir }}/.venv" --python "{{ python_bin }}"
       args:
         creates: "{{ backend_dir }}/.venv/bin/python"
+      environment:
+        UV_CACHE_DIR: "{{ backend_uv_cache_dir }}"
+        XDG_CACHE_HOME: "{{ repo_root }}/.cache"
 
     - name: Install backend Python package in editable mode with uv
       ansible.builtin.command: uv pip install --python "{{ backend_dir }}/.venv/bin/python" -e "{{ backend_dir }}/python"
+      environment:
+        UV_CACHE_DIR: "{{ backend_uv_cache_dir }}"
+        PIP_CACHE_DIR: "{{ backend_pip_cache_dir }}"
+        XDG_CACHE_HOME: "{{ repo_root }}/.cache"
 
     - name: Install Nautilus Trader wheel with uv when provided
       ansible.builtin.command: uv pip install --python "{{ backend_dir }}/.venv/bin/python" "{{ nautilus_trader_wheel }}"
       when: nautilus_trader_wheel | length > 0
+      environment:
+        UV_CACHE_DIR: "{{ backend_uv_cache_dir }}"
+        PIP_CACHE_DIR: "{{ backend_pip_cache_dir }}"
+        XDG_CACHE_HOME: "{{ repo_root }}/.cache"
 
 - name: Fallback to pip if uv not available
   when: uv_check.rc != 0
@@ -50,3 +77,5 @@
   ansible.builtin.command: cargo fetch --manifest-path "{{ backend_dir }}/Cargo.toml"
   args:
     chdir: "{{ backend_dir }}"
+  environment:
+    CARGO_HOME: "{{ backend_cargo_home }}"

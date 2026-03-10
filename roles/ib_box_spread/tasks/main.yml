@@ -98,10 +98,29 @@
   failed_when: false
   tags: ["project", "cmake"]
 
+- name: Define workspace-local cache paths
+  ansible.builtin.set_fact:
+    uv_cache_dir: "{{ repo_root }}/.cache/uv"
+    pip_cache_dir: "{{ repo_root }}/.cache/pip"
+  tags: ["project", "cmake"]
+
+- name: Ensure workspace-local cache directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ uv_cache_dir }}"
+    - "{{ pip_cache_dir }}"
+  tags: ["project", "cmake"]
+
 - name: Create Python virtualenv with uv
   ansible.builtin.command: uv venv "{{ repo_root }}/.venv" --python "{{ python_bin }}"
   args:
     creates: "{{ repo_root }}/.venv/bin/python"
+  environment:
+    UV_CACHE_DIR: "{{ uv_cache_dir }}"
+    XDG_CACHE_HOME: "{{ repo_root }}/.cache"
   when: uv_check.rc == 0
   tags: ["project", "cmake"]
 
@@ -110,6 +129,10 @@
   register: uv_pip_result
   failed_when: false
   changed_when: "'Installed' in uv_pip_result.stdout or 'installed' in uv_pip_result.stdout"
+  environment:
+    UV_CACHE_DIR: "{{ uv_cache_dir }}"
+    PIP_CACHE_DIR: "{{ pip_cache_dir }}"
+    XDG_CACHE_HOME: "{{ repo_root }}/.cache"
   when: uv_check.rc == 0
   tags: ["project", "cmake"]
 
@@ -123,6 +146,10 @@
 
 - name: Install project Python package in editable mode with uv
   ansible.builtin.command: uv pip install --python "{{ repo_root }}/.venv/bin/python" -e "{{ repo_root }}/python"
+  environment:
+    UV_CACHE_DIR: "{{ uv_cache_dir }}"
+    PIP_CACHE_DIR: "{{ pip_cache_dir }}"
+    XDG_CACHE_HOME: "{{ repo_root }}/.cache"
   when: uv_check.rc == 0
   tags: ["project", "cmake"]
 

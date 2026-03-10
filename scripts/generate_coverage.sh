@@ -5,6 +5,11 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+PROJECT_ROOT="$(pwd)"
+# shellcheck source=./include/workspace_paths.sh
+. "${PROJECT_ROOT}/scripts/include/workspace_paths.sh"
+
+setup_workspace_paths
 
 RUN_CPP=true
 RUN_PYTHON=true
@@ -79,7 +84,7 @@ echo ""
 
 if [[ "$RUN_PYTHON" == "true" ]]; then
     if [[ "$HTML" == "true" ]]; then
-        echo "🐍 Python: htmlcov/index.html"
+        echo "🐍 Python: build/test-artifacts/python/htmlcov/index.html"
     fi
     echo "🐍 Python: Terminal report above"
 fi

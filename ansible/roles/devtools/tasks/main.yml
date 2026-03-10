@@ -2,6 +2,28 @@
   ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
   tags: [devtools, packages]
 
+- name: Define workspace-local devtools paths when repo_root is available
+  ansible.builtin.set_fact:
+    devtools_cache_root: "{{ repo_root | default(ansible_env.HOME, true) }}/.cache"
+    devtools_tmp_root: "{{ (repo_root | default(ansible_env.HOME, true)) + '/.cache/tmp' }}"
+  when: repo_root is defined
+
+- name: Define fallback devtools cache path
+  ansible.builtin.set_fact:
+    devtools_cache_root: "{{ ansible_env.HOME }}/.cache"
+  when: devtools_cache_root is not defined
+
+- name: Define fallback devtools temp path
+  ansible.builtin.set_fact:
+    devtools_tmp_root: "{{ ansible_env.TMPDIR | default('/tmp', true) }}"
+  when: devtools_tmp_root is not defined
+
+- name: Ensure devtools temp directory exists
+  ansible.builtin.file:
+    path: "{{ devtools_tmp_root }}"
+    state: directory
+    mode: "0755"
+
 - name: Ensure required packages on Debian/Ubuntu
   become: true
   ansible.builtin.apt:
@@ -152,11 +174,11 @@
     - name: Download act binary
       get_url:
         url: https://github.com/nektos/act/releases/download/v0.2.82/act_Linux_x86_64.tar.gz
-        dest: /tmp/act.tar.gz
+        dest: "{{ devtools_tmp_root }}/act.tar.gz"
         mode: "0644"
     - name: Extract act binary
       unarchive:
-        src: /tmp/act.tar.gz
+        src: "{{ devtools_tmp_root }}/act.tar.gz"
         dest: /usr/local/bin
         remote_src: true
         creates: /usr/local/bin/act
@@ -166,7 +188,7 @@
         mode: "0755"
     - name: Clean act archive
       file:
-        path: /tmp/act.tar.gz
+        path: "{{ devtools_tmp_root }}/act.tar.gz"
         state: absent
   when:
     - ansible_facts['os_family'] == 'Debian'
@@ -202,6 +224,9 @@
   changed_when: "'Installed' in poetry_install.stdout"
   failed_when: false
   when: ansible_facts['os_family'] == 'Debian'
+  environment:
+    UV_CACHE_DIR: "{{ devtools_cache_root }}/uv"
+    XDG_CACHE_HOME: "{{ devtools_cache_root }}"
 
 - name: Install pip-audit via uv (Python dependency vulnerability scanner)
   become: false
@@ -209,6 +234,9 @@
   register: pip_audit_install
   changed_when: "'Installed' in pip_audit_install.stdout"
   failed_when: false
+  environment:
+    UV_CACHE_DIR: "{{ devtools_cache_root }}/uv"
+    XDG_CACHE_HOME: "{{ devtools_cache_root }}"
 
 - name: Verify pip-audit installation
   become: false
@@ -328,6 +356,9 @@
     - ansible_facts['os_family'] == 'Darwin'
     - ansible_facts['architecture'] is defined
     - ansible_facts['architecture'] in ['arm64', 'aarch64']
+  environment:
+    UV_CACHE_DIR: "{{ devtools_cache_root }}/uv"
+    XDG_CACHE_HOME: "{{ devtools_cache_root }}"
 
 - name: Verify MLX install (Apple Silicon/macOS)
   become: false
@@ -395,7 +426,7 @@
   become: true
   get_url:
     url: https://go.dev/dl/go1.21.6.linux-amd64.tar.gz
-    dest: /tmp/go.tar.gz
+    dest: "{{ devtools_tmp_root }}/go.tar.gz"
   when:
     - ansible_facts['os_family'] == 'Debian'
     - ansible_architecture == 'x86_64'
@@ -403,7 +434,7 @@
 - name: Extract Go tarball
   become: true
   unarchive:
-    src: /tmp/go.tar.gz
+    src: "{{ devtools_tmp_root }}/go.tar.gz"
     dest: /usr/local
     remote_src: true
     creates: /usr/local/go/bin/go
@@ -413,7 +444,7 @@
 
 - name: Clean Go tarball
   file:
-    path: /tmp/go.tar.gz
+    path: "{{ devtools_tmp_root }}/go.tar.gz"
     state: absent
   when:
     - ansible_facts['os_family'] == 'Debian'

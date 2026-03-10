@@ -70,6 +70,22 @@ find_python() {
   return 0
 }
 
+setup_python_cache_env() {
+  local python_dir="${1:-}"
+  if [ -z "${python_dir}" ]; then
+    echo "Error: python_dir required" >&2
+    return 1
+  fi
+
+  local cache_root="${PYTHON_CACHE_ROOT:-$(cd "${python_dir}/.." && pwd)/.cache}"
+  export XDG_CACHE_HOME="${XDG_CACHE_HOME:-${cache_root}}"
+  export UV_CACHE_DIR="${UV_CACHE_DIR:-${cache_root}/uv}"
+  export PIP_CACHE_DIR="${PIP_CACHE_DIR:-${cache_root}/pip}"
+
+  mkdir -p "${XDG_CACHE_HOME}" "${UV_CACHE_DIR}" "${PIP_CACHE_DIR}" 2>/dev/null || true
+  return 0
+}
+
 # Set up virtual environment
 # Usage: setup_venv <python_dir> [venv_dir]
 # Sets VENV_DIR, ACTIVATE_PATH, and VENV_PYTHON variables
@@ -115,6 +131,8 @@ setup_venv() {
   VENV_DIR="${venv_dir}"
   ACTIVATE_PATH="${VENV_DIR}/bin/activate"
   USE_UV=""
+
+  setup_python_cache_env "${python_dir}" || return 1
 
   # Create virtual environment if it doesn't exist
   if [ ! -f "${ACTIVATE_PATH}" ]; then
