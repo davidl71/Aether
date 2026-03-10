@@ -1,6 +1,6 @@
 # Dataflow Architecture
 
-**Last updated**: 2026-03-10 (frontend and language usage cleanup)
+**Last updated**: 2026-03-10 (backend storage cleanup)
 **Purpose**: Comprehensive analysis of data flow, storage, and inter-component contracts.
 Used as the ground-truth reference for AI-assisted development.
 
@@ -30,7 +30,7 @@ IBKR TWS (port 7497)
 TUI (Python/Textual)
   └─► RestProvider: polls Python microservices every 1s
         :8000 positions   :8001 rates     :8002 risk
-        :8003 lending     :8004 blotter   :8005 alerts  :8006 health
+        :8003 lending     :8004 calculations/benchmarks   :8005 alerts  :8006 health
 
 Web (React)
   └─► SnapshotClient
@@ -61,10 +61,6 @@ Rust ledger crate (sqlx + SQLite)
 Python cash_flow_calculator / loan_manager
   └─► writes to: same SQLite DB ← CONTENTION RISK
 
-MongoDB (blotter)
-  └─► written by: Rust blotter service
-  └─► read by: Python blotter microservice (:8004)
-
 QuestDB
   └─► written by: Go nats-questdb-bridge (ILP protocol)
   └─► read by: Python analytics / notebooks
@@ -81,7 +77,6 @@ QuestDB
 | NATS KV | NATS JetStream | Go collection-daemon | api-gateway, TUI/Web (future) | Live state (key = messageType.symbol, value = full `NatsEnvelope` protobuf) | Configurable |
 | SQLite (ledger) | Rust (sqlx) + Python | Rust + Python | Rust + Python | Ledger, positions | Permanent |
 | QuestDB | Go (ILP) | nats-questdb-bridge | Python analytics | Tick time-series | Configurable |
-| MongoDB | Rust | Rust blotter | Python :8004 | Trade blotter | Permanent |
 
 **NATS KV key schema (bucket LIVE_STATE):** Keys are `messageType.symbol` (e.g. `MarketDataEvent.SPY`, `StrategyDecision.AAPL`). Values are full serialized `NatsEnvelope` records, not just inner payload bytes. Written by collection-daemon when it receives NATS messages. Read by api-gateway: `GET /api/live/state` (list keys), `GET /api/live/state?key=MarketDataEvent.SPY` (one key, raw value base64 plus decoded envelope metadata), or `GET /api/live/state/watch` (SSE stream of KV updates with the same metadata). **Requires NATS server 2.6.2+** (JetStream Key-Value).
 
@@ -235,7 +230,6 @@ One writer per store; all readers use that store or a gateway. Eliminates dual-w
 |-------|----------------|---------|
 | SQLite (ledger) | Rust ledger crate only | Rust API; Python via REST `GET /api/ledger/...` (no direct DB) |
 | QuestDB | Go nats-questdb-bridge only | Python analytics, notebooks |
-| MongoDB (blotter) | Rust blotter service | Python :8004 |
 | NATS KV (live state) | Go collection-daemon | TUI NatsProvider, Web (future), api-gateway |
 | Redis | Python services (cache) | Python services |
 | InMemoryCache | C++ tws_client | C++ engine only |

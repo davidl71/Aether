@@ -3079,8 +3079,8 @@ multiple sources.
   Built with React (MERN stack) and deployed on AWS.
 - **Technology Stack**:
   - **Frontend**: React, TypeScript, Chakra UI, Axios, Highcharts
-  - **Backend**: Node.js, Express, MongoDB, Mongoose, JWT
-  - **Deployment**: AWS Amplify (frontend), AWS EC2 (backend), MongoDB Atlas
+  - **Backend**: Node.js, Express, document database, JWT
+  - **Deployment**: AWS Amplify (frontend), AWS EC2 (backend), hosted document database
   - **Authentication**: JWT-based authentication with Cloudflare Turnstile
 
 - **Key Features**:

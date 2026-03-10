@@ -4,7 +4,7 @@ Multi-asset synthetic financing platform. Box spreads are one strategy (7-10% al
 the platform manages financing across options, futures, bonds, bank loans, and pension funds
 across 21+ accounts and multiple brokers.
 
-**Last updated**: 2026-03-10 (frontend and language usage cleanup)
+**Last updated**: 2026-03-10 (MongoDB and backend storage cleanup)
 
 ## System Overview
 
@@ -20,7 +20,7 @@ across 21+ accounts and multiple brokers.
       │ Rust REST+WS backend   │       │ Python microservices │
       │ Axum :8080             │       │ :8000-:8006          │
       │ /api/snapshot          │       │ positions/rates/risk │
-      │ /ws/snapshot           │       │ lending/blotter/etc. │
+      │ /ws/snapshot           │       │ lending/benchmarks/etc. │
       └──────────┬─────────────┘       └──────────┬──────────┘
                  │                                 │
      ┌───────────┴─────────────────────────────────┴──────────────┐
@@ -45,7 +45,6 @@ Storage layers:
   NATS KV              →  live key-value state (written by collection-daemon as full envelopes)
   SQLite               →  Rust ledger + Python (SHARED — see known issues)
   QuestDB              →  time-series archive
-  MongoDB              →  trade blotter
 ```
 
 ## Components
@@ -63,7 +62,7 @@ Storage layers:
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | Rust REST+WS backend | Rust (Axum) :8080 | HTTP API + snapshot/delta WebSocket for the web client |
-| Python microservices | Python (FastAPI) :8000-:8006 | Positions, rates, risk, lending, blotter, alerts, health for the Textual TUI |
+| Python microservices | Python (FastAPI) :8000-:8006 | Positions, rates, risk, lending, benchmarks, alerts, health for the Textual TUI |
 | C++ engine | C++20 | TWS connectivity, strategy execution, risk/Greeks/pricing |
 | NATS | NATS JetStream | Async messaging, market data events, heartbeats |
 | Go agents | Go (stdlib+nats.go) | Collection, health aggregation, QuestDB bridge, supervisor, config validation |
@@ -107,7 +106,7 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for full analysis. Key issues:
 | Integration layer | Python 3.12 (FastAPI, Textual, betterproto, redis) |
 | Frontends | React 18, TypeScript, Textual |
 | Messaging | NATS JetStream, Protocol Buffers |
-| Storage | SQLite, Redis, QuestDB, MongoDB, NATS KV |
+| Storage | SQLite, Redis, QuestDB, NATS KV |
 | Build | CMake/Ninja, Cargo, uv, npm |
 | Testing | Catch2, pytest, cargo test, Vitest |
 

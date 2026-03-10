@@ -129,10 +129,10 @@ The project has converged on REST + NATS + WebSocket; gRPC adds build complexity
 - **Alternative:** NATS KV achieves the same without new dependency
 - **Priority:** Low
 
-#### C. MongoDB Trade Blotter
+#### C. Trade Blotter Read Model
 - **Current:** SQLite ledger for double-entry journal
-- **Solution:** MongoDB for flexible trade documents with aggregation pipeline
-- **Impact:** Better compliance/audit, schema-free order types
+- **Solution:** derive blotter/read-model views from the existing ledger and event stream
+- **Impact:** better compliance/audit without adding another primary store
 - **Priority:** Low
 
 ### 2.3 Go Opportunities

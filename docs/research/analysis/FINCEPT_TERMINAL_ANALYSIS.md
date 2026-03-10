@@ -49,7 +49,7 @@ FinceptTerminal is an open-source financial intelligence platform offering CFA-l
 
 3. **Unlimited Data Access**
    - 100+ data connectors
-   - **Databases**: PostgreSQL, MySQL, MongoDB, Redis, Snowflake
+   - **Databases**: PostgreSQL, MySQL, Redis, Snowflake, other document stores
    - **Market Data**: Kraken, Polygon.io, Alpha Vantage, Yahoo Finance
    - **Economics**: DBnomics (100M+ series), World Bank, IMF, OECD
    - **Streaming**: Kafka, WebSocket, MQTT
@@ -162,7 +162,7 @@ FinceptTerminal is an open-source financial intelligence platform offering CFA-l
 | Feature | FinceptTerminal | Current Project |
 |---------|----------------|-----------------|
 | **Data Sources** | ✅ 100+ connectors | ⚠️ 3-4 sources (IBKR, ORATS, QuestDB) |
-| **Databases** | ✅ PostgreSQL, MySQL, MongoDB, Redis, Snowflake | ⚠️ QuestDB only |
+| **Databases** | ✅ PostgreSQL, MySQL, Redis, Snowflake, document stores | ⚠️ QuestDB only |
 | **Market Data** | ✅ Kraken, Polygon, Alpha Vantage, Yahoo | ⚠️ IBKR, ORATS only |
 | **Economics** | ✅ DBnomics, World Bank, IMF, OECD | ❌ Not implemented |
 | **Streaming** | ✅ Kafka, WebSocket, MQTT | ⚠️ WebSocket (basic) |
