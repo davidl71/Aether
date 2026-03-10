@@ -2,7 +2,7 @@
 Data providers for TUI
 
 These providers fetch snapshot data from various sources (REST API, file, mock, NATS, etc.)
-and can be shared between Python TUI and PWA (via REST API).
+for the Python/Textual TUI.
 """
 from __future__ import annotations
 

@@ -20,7 +20,7 @@ This repository uses **multiple programming languages**. This doc maps each lang
 ## Cross-language boundaries
 
 - **NATS**: C++ publishes market and strategy events; Rust backend and Go agents consume them; Python services and the Textual TUI optionally use NATS for live updates. See `docs/platform/DATAFLOW_ARCHITECTURE.md`.
-- **REST / WebSocket**: the web client consumes the Rust backend directly at `:8080`; the Textual TUI primarily polls Python microservices on `:8000-:8006`.
+- **REST / WebSocket**: the web client consumes the Rust backend directly at `:8080`; the Textual TUI uses Rust-owned read models plus selected Python integration services.
 - **Ledger**: Rust `agents/backend/crates/ledger` is the durable ledger owner; Python direct SQLite access is legacy and should move behind service/API boundaries. See P1-A in `docs/platform/IMPROVEMENT_PLAN.md`.
 
 ## Quick reference

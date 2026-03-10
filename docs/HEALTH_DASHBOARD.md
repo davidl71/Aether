@@ -28,7 +28,7 @@ Backends must have **`NATS_URL`** set and publish to **`system.health`** on each
 | TradeStation   | `NATS_URL` set           |
 | Tastytrade     | `NATS_URL` set           |
 | Discount Bank  | `NATS_URL` set           |
-| Analytics API  | `NATS_URL` set           |
+| Risk-Free Rate | `NATS_URL` set           |
 
 ## Running
 

@@ -29,15 +29,22 @@ IBKR TWS (port 7497)
 
 ```
 TUI (Python/Textual)
-  └─► RestProvider: polls Python microservices every 1s
-        :8000 positions   :8001 rates     :8002 risk
-        :8003 lending     :8004 calculations/benchmarks   :8005 alerts  :8006 health
+  ├─► Rust frontend API: shared read models (snapshot, unified positions,
+  │                      relationships, cash flow, opportunity simulation)
+  ├─► Python integration services: broker snapshots, discount-bank accounts,
+  │                                risk-free-rate / benchmark endpoints
+  └─► NATS provider: event-driven fallback / live updates
 
 Web (React)
   └─► SnapshotClient
         ├─► WebSocket: ws://localhost:8080/ws/snapshot
         │     └─► Rust backend: full SystemSnapshot on connect, then only changed sections (delta) every 2s
         └─► REST fallback: GET /api/snapshot every 2s
+
+  Other web read models:
+    ├─► Rust frontend endpoints (`/api/v1/frontend/*`)
+    ├─► Discount Bank service for bank-account extraction
+    └─► Risk-free-rate service for benchmark / curve endpoints
 
 ```
 
@@ -192,11 +199,11 @@ All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/sl
 ```
 Provider (abstract)
 ├── MockProvider          — synthetic data, no external deps
-├── RestProvider          — polls Python microservices every 1s
+├── RestProvider          — polls the configured REST origin (Rust API or selected Python integration service)
 ├── FileProvider          — reads JSON files, polls on mtime
 └── NatsProvider          — event-driven, subscribes to NATS subjects
 
-BackendHealthAggregator   — daemon thread, polls :8000-:8006 health endpoints
+BackendHealthAggregator   — daemon thread, polls configured backend health endpoints
 ```
 
 Provider selection: set via `--provider` CLI flag or config; `RestProvider` is the default in production for the Textual TUI.
@@ -271,7 +278,7 @@ flowchart LR
   KV --> Gateway
 ```
 
-- **Current read paths**: the web client reads from the Rust backend; the Textual TUI reads from Python services or NATS. This split is still an active architecture gap rather than the target state.
+- **Current read paths**: the web client reads primarily from the Rust backend; the Textual TUI reads a mix of Rust-owned read models, selected Python integration services, and NATS. The remaining split is now narrower and mostly tied to integration-specific Python services.
 - **Single writer per store**: Ledger = Rust; QuestDB = Go collection-daemon; NATS KV = Go collection-daemon.
 - **Persistence**: Rust writes ledger then publishes; collection-daemon writes QuestDB and live state from NATS; no dual SQLite writers.
 

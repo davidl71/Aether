@@ -31,7 +31,7 @@ So the TUI calls **one snapshot backend** + **Discount Bank** + **scenarios on s
 | `useTastytrade` | Tastytrade 8005 | Health + snapshot. |
 | ServiceConfigModal | `localhost:${port}/api/health` | Per-service health. |
 
-So the PWA is the main **multi-service client**. It does not call one backend from another; it’s the browser calling several backends.
+So the PWA still calls a few backend services directly, but its core snapshot and shared frontend read models now come from the Rust API rather than a separate Python calculations layer.
 
 **Port note:** the active web path no longer uses a separate Python calculations service. The remaining Python rate/benchmark service stays on port 8004 when needed.
 
@@ -53,7 +53,7 @@ So the PWA is the main **multi-service client**. It does not call one backend fr
 
 ### 3.2 Single origin / BFF (backend-for-frontend)
 
-**Idea:** Have the PWA call **one** origin (e.g. the nginx proxy at 8080, or a dedicated BFF). That single backend then calls IB, Alpaca, Discount Bank, calculations API, etc. **server-side** (async, in parallel), and returns one aggregated response.
+**Idea:** Have the PWA call **one** origin (e.g. the nginx proxy at 8080, or a dedicated BFF). That single backend then calls IB, Alpaca, Discount Bank, and other remaining integration services **server-side** (async, in parallel), and returns one aggregated response.
 
 **Benefits:** Fewer browser round-trips, one CORS/TLS story, optional auth in one place.
 
@@ -102,7 +102,7 @@ So the PWA is the main **multi-service client**. It does not call one backend fr
 | Topic | Finding |
 |-------|--------|
 | Backend → backend | None; only clients call services. |
-| Main multi-service client | PWA (AccountSelector, useBankAccounts, calculations, health, snapshot). |
+| Main multi-service client | PWA (AccountSelector, useBankAccounts, health, snapshot). |
 | Quick win | **AccountSelector:** load accounts from Alpaca, TradeStation, Discount Bank in **parallel** (implemented). |
 | Larger wins | BFF/aggregator (single origin), NATS as shared data source, TUI async/cache for bank accounts. |
 | Config | Keep frontend read models on `VITE_API_URL`; optional single base URL when behind proxy. |

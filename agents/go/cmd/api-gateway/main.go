@@ -3,9 +3,9 @@
 // service based on URL prefix and provides CORS, logging, and a
 // combined /health endpoint.
 //
-// TUI and Web use this as single entry point (P1-B): TUI RestProvider
-// presets point at gateway; gateway proxies to Rust (:8080) or Python
-// backends (:8000, :8002, etc.) with path rewrite.
+// TUI can use this as a single entry point (P1-B): RestProvider presets
+// point at gateway, which proxies to Rust (:8080) or selected Python
+// integration backends (:8000, :8002, etc.) with path rewrite.
 //
 // Environment:
 //

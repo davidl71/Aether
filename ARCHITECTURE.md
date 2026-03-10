@@ -4,7 +4,7 @@ Multi-asset synthetic financing platform. Box spreads are one strategy (7-10% al
 the platform manages financing across options, futures, bonds, bank loans, and pension funds
 across 21+ accounts and multiple brokers.
 
-**Last updated**: 2026-03-10 (backend storage and cache cleanup)
+**Last updated**: 2026-03-10 (backend topology simplification)
 
 ## System Overview
 
@@ -13,23 +13,24 @@ across 21+ accounts and multiple brokers.
 │                        Client Applications                          │
 ├──────────────────────────────┬──────────────────────────────────────┤
 │ Web (React)                  │ TUI (Python/Textual)                │
-│ WebSocket + REST from :8080  │ Polling from :8000-:8006 or NATS    │
+│ WebSocket + REST from :8080  │ Rust read models + Python integrations |
 └───────────────┬──────────────┴──────────────────┬───────────────────┘
                 │                                 │
       ┌─────────┴──────────────┐       ┌──────────┴──────────┐
-      │ Rust REST+WS backend   │       │ Python microservices │
-      │ Axum :8080             │       │ :8000-:8006          │
-      │ /api/snapshot          │       │ positions/rates/risk │
-      │ /ws/snapshot           │       │ lending/benchmarks/etc. │
-      └──────────┬─────────────┘       └──────────┬──────────┘
-                 │                                 │
-     ┌───────────┴─────────────────────────────────┴──────────────┐
+      │ Rust REST+WS backend   │       │ Python integration   │
+      │ Axum :8080             │       │ services             │
+      │ /api/v1/snapshot       │       │ broker/bank/rate     │
+      │ /api/v1/frontend/*     │       │ health dashboard     │
+      │ /ws/snapshot           │       └──────────┬──────────┘
+      └──────────┬─────────────┘                  │
+                 │                                │
+     ┌───────────┴────────────────────────────────┴──────────────┐
      │                           NATS                              │
      │   ┌─────────────────────┐  ┌─────────────────────────────┐  │
      │   │ Go agents           │  │ C++ engine                  │  │
      │   │ collection-daemon   │  │ tws_client / nats_client    │  │
      │   │ heartbeat-agg       │  │ pricing / risk / orders     │  │
-     │   │ nats-qdb-bridge     │  │ protobuf event publisher    │  │
+     │   │ api-gateway         │  │ protobuf event publisher    │  │
      │   │ supervisor/config   │  └──────────────┬──────────────┘  │
      │   └─────────────────────┘                 │                 │
      └───────────────────────────────────────────┼─────────────────┘
@@ -53,18 +54,18 @@ Storage layers:
 | Component | Technology | Data Source | Update Mechanism |
 |-----------|------------|-------------|------------------|
 | Web app | React/TypeScript | Rust `:8080` WebSocket → REST fallback | Full snapshot on connect, then changed sections every ~2s |
-| Terminal UI | Python/Textual | Python microservices `:8000-:8006` or NATS | 1s polling (`RestProvider`) or event-driven (`NatsProvider`) |
+| Terminal UI | Python/Textual | Rust read-model endpoints, selected Python integration services, or NATS | Worker-driven fetches and event-driven updates |
 | CLI | C++ | Direct TWS | Synchronous |
 
 ### Backend Services
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| Rust REST+WS backend | Rust (Axum) :8080 | HTTP API + snapshot/delta WebSocket for the web client |
-| Python microservices | Python (FastAPI) :8000-:8006 | Positions, rates, risk, lending, benchmarks, alerts, health for the Textual TUI |
+| Rust REST+WS backend | Rust (Axum) :8080 | Shared frontend API owner for snapshot and frontend read models consumed by web and TUI |
+| Python integration services | Python (FastAPI) | Broker/bank integrations, risk-free-rate service, and health dashboard |
 | C++ engine | C++20 | TWS connectivity, strategy execution, risk/Greeks/pricing |
 | NATS | NATS JetStream | Async messaging, market data events, heartbeats |
-| Go agents | Go (stdlib+nats.go) | Collection, health aggregation, QuestDB bridge, supervisor, config validation |
+| Go agents | Go (stdlib+nats.go) | Collection, live-state KV, QuestDB fanout, api-gateway, health aggregation, supervisor, config validation |
 
 ### Messaging Contract
 
@@ -90,7 +91,7 @@ Generated from `proto/messages.proto` via `./proto/generate.sh`:
 See `docs/platform/DATAFLOW_ARCHITECTURE.md` for full analysis. Key issues:
 
 1. **Dual SQLite writers**: Rust ledger and Python both write to the same SQLite DB — risk of contention/corruption under load.
-2. **Split data backends**: TUI reads from Python :8000-:8006; Web reads from Rust :8080 — different data, potential inconsistency.
+2. **Split read paths remain**: TUI still mixes Rust read models, Python integration endpoints, and NATS, while the web is primarily Rust-backed.
 3. **WebSocket sends full snapshot**: Rust WS sends full snapshot once on connect, then only changed sections (delta) every 2s — see IMPROVEMENT_PLAN P2-A (done). Remaining gap: scale if many clients.
 4. **Collector durability gap**: `collection-daemon` now decodes `NatsEnvelope` and owns `LIVE_STATE`, but durable JetStream replay remains opt-in instead of the default collection mode.
 5. **Hardcoded ETF duration table**: `greeks_calculator.cpp` uses a static lookup table for ETF duration/convexity instead of `QuantLib::BondFunctions`.
@@ -113,7 +114,7 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for full analysis. Key issues:
 
 - **C++**: stays for core engine and TWS (API is C++-only)
 - **Rust**: stays for safety-critical backend and ledger
-- **Python**: integration layer, Textual TUI, bindings — not a rewrite candidate
+- **Python**: Textual TUI, broker/bank integrations, benchmarks/rates, and health service
 - **Go**: ops agents — good for single-binary CLI/bridge tools
 - **TypeScript**: web app — not a rewrite candidate
 
@@ -128,8 +129,8 @@ ib_box_spread_full_universal/
 │   └── third_party/     # TWS API, Intel Decimal, QuantLib (via FetchContent)
 ├── agents/
 │   ├── backend/         # Rust backend (Axum REST, ledger, nats_adapter)
-│   └── go/              # Go agents (api-gateway, collection-daemon, heartbeat-agg, nats-qdb-bridge...)
-├── python/              # FastAPI microservices, Textual TUI, integration
+│   └── go/              # Go agents (api-gateway, collection-daemon, heartbeat-agg, supervisor...)
+├── python/              # Textual TUI and Python integration services
 ├── web/                 # React web client
 ├── proto/               # Canonical protobuf schema (messages.proto)
 ├── scripts/             # Build, lint, deploy helpers
