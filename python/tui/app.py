@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import sys
@@ -349,6 +350,9 @@ class TUIApp(App):
         self._box_spread_file_path = Path("web/public/data/box_spread_sample.json")
         self._last_box_spread_mtime: Optional[float] = None
         self._bank_accounts: List[Dict] = []
+        self._frontend_unified_positions: Optional[List[Dict[str, Any]]] = None
+        self._frontend_relationships: Optional[List[Dict[str, Any]]] = None
+        self._frontend_relationship_nodes: Optional[List[str]] = None
         self._loan_manager = LoanManager("config/loans.json")
         self._backend_health_aggregator: Optional[BackendHealthAggregator] = None
         # When non-mock preferred: start with mock for quick paint, then switch to this when it has data
@@ -475,6 +479,7 @@ class TUIApp(App):
         self.set_interval(3.0, self._check_config_reload)  # T-114: config file watch (hot-reload)
         # Defer initial bank-accounts fetch so first paint is not blocked (service can be slow or down)
         self.call_next(self._fetch_bank_accounts)
+        self.call_next(self._fetch_frontend_views)
         # If we started with mock but preferred is real, start the real provider in background; we'll switch when it has data
         if self._pending_real_provider is not None:
             self._pending_real_provider.start()
@@ -609,6 +614,7 @@ class TUIApp(App):
                         backend_health=all_health or None,
                         current_provider_type=getattr(self.config, "provider_type", None),
                     )
+                self._fetch_frontend_views()
                 self._refresh_bank_account_dependent_tabs()
                 if self._positions_tab:
                     self._positions_tab.update_snapshot(new_snapshot)
@@ -689,6 +695,21 @@ class TUIApp(App):
             exclusive=False,
         )
 
+    def _fetch_frontend_views(self) -> None:
+        """Fetch shared frontend view models from the API router when available."""
+        if not self.snapshot:
+            return
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        self.run_worker(
+            self._do_fetch_frontend_views,
+            name="fetch_frontend_views",
+            thread=True,
+            exclusive=True,
+        )
+
     def _do_fetch_bank_accounts(self) -> Optional[List[Any]]:
         """Run in worker: fetch bank accounts from Discount Bank service or API router."""
         url = "http://localhost:8003/api/bank-accounts"
@@ -711,9 +732,58 @@ class TUIApp(App):
             logger.debug("Failed to fetch bank accounts: %s", e)
         return None
 
+    def _do_fetch_frontend_views(self) -> Optional[Dict[str, Any]]:
+        """Run in worker: fetch shared unified positions and relationships from the API router."""
+        if not self.snapshot:
+            return None
+        api_base_url = getattr(self.config, "api_base_url", None)
+        if api_base_url:
+            base = api_base_url.strip().rstrip("/")
+        else:
+            from .config import DEFAULT_GATEWAY_BASE_URL
+            base = DEFAULT_GATEWAY_BASE_URL
+
+        payload = {
+            "positions": [position.to_dict() for position in self.snapshot.positions],
+            "bank_accounts": list(self._bank_accounts),
+        }
+        try:
+            import requests
+
+            unified_response = requests.post(
+                f"{base}/api/v1/frontend/unified-positions",
+                timeout=2.0,
+                headers={"cache-control": "no-cache"},
+                json=payload,
+            )
+            relationships_response = requests.post(
+                f"{base}/api/v1/frontend/relationships",
+                timeout=2.0,
+                headers={"cache-control": "no-cache"},
+                json=payload,
+            )
+            if not unified_response.ok or not relationships_response.ok:
+                return None
+            unified_data = unified_response.json()
+            relationships_data = relationships_response.json()
+            positions = unified_data.get("positions", [])
+            relationships = relationships_data.get("relationships", [])
+            nodes = relationships_data.get("nodes", [])
+            if not isinstance(positions, list) or not isinstance(relationships, list) or not isinstance(nodes, list):
+                return None
+            return {
+                "positions": positions,
+                "relationships": relationships,
+                "nodes": nodes,
+            }
+        except Exception as e:
+            logger.debug("Failed to fetch shared frontend views: %s", e)
+            return None
+
     def _on_bank_accounts_loaded(self, accounts: List[Any]) -> None:
         """Called when bank-accounts worker completes; update state and unified positions tab."""
         self._bank_accounts = accounts if isinstance(accounts, list) else []
+        self._fetch_frontend_views()
         self._refresh_bank_account_dependent_tabs()
 
     def _refresh_bank_account_dependent_tabs(self) -> None:
@@ -728,20 +798,40 @@ class TUIApp(App):
                 self._bank_accounts,
                 environment=environment,
                 provider_label=provider_label,
+                precomputed_positions=self._frontend_unified_positions,
             )
         if self._cash_flow_tab:
             self._cash_flow_tab.update_snapshot(self.snapshot, self._bank_accounts)
         if self._opportunity_simulation_tab:
             self._opportunity_simulation_tab.update_snapshot(self.snapshot, self._bank_accounts)
         if self._relationship_visualization_tab:
-            self._relationship_visualization_tab.update_snapshot(self.snapshot, self._bank_accounts)
+            if self._frontend_relationships is None and self._frontend_relationship_nodes is None:
+                self._relationship_visualization_tab.update_snapshot(self.snapshot, self._bank_accounts)
+            else:
+                self._relationship_visualization_tab.update_snapshot(
+                    self.snapshot,
+                    self._bank_accounts,
+                    relationships=self._frontend_relationships,
+                    nodes=self._frontend_relationship_nodes,
+                )
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         """Handle worker completion; dispatch bank-accounts result to UI update."""
-        if event.worker.name != "fetch_bank_accounts":
+        if event.worker.name == "fetch_bank_accounts":
+            if event.state == WorkerState.SUCCESS and isinstance(event.worker.result, list):
+                self._on_bank_accounts_loaded(event.worker.result)
             return
-        if event.state == WorkerState.SUCCESS and isinstance(event.worker.result, list):
-            self._on_bank_accounts_loaded(event.worker.result)
+        if event.worker.name == "fetch_frontend_views":
+            if event.state == WorkerState.SUCCESS and isinstance(event.worker.result, dict):
+                result = event.worker.result
+                positions = result.get("positions")
+                relationships = result.get("relationships")
+                nodes = result.get("nodes")
+                self._frontend_unified_positions = positions if isinstance(positions, list) else None
+                self._frontend_relationships = relationships if isinstance(relationships, list) else None
+                self._frontend_relationship_nodes = nodes if isinstance(nodes, list) else None
+                self._refresh_bank_account_dependent_tabs()
+            return
 
     def _update_box_spread_data(self) -> None:
         """Update box spread data from REST or file via loader."""

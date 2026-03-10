@@ -28,6 +28,8 @@ class RelationshipVisualizationTab(Container):
         super().__init__(*args, **kwargs)
         self.snapshot = snapshot
         self.bank_accounts = bank_accounts or []
+        self._precomputed_relationships: Optional[List[Dict]] = None
+        self._precomputed_nodes: Optional[List[str]] = None
 
     def compose(self) -> ComposeResult:
         with Vertical(classes="fill"):
@@ -43,12 +45,16 @@ class RelationshipVisualizationTab(Container):
     def update_snapshot(
         self,
         snapshot: SnapshotPayload,
-        bank_accounts: Optional[List[Dict]] = None
+        bank_accounts: Optional[List[Dict]] = None,
+        relationships: Optional[List[Dict]] = None,
+        nodes: Optional[List[str]] = None,
     ) -> None:
         """Update with new snapshot data"""
         self.snapshot = snapshot
         if bank_accounts is not None:
             self.bank_accounts = bank_accounts
+        self._precomputed_relationships = relationships
+        self._precomputed_nodes = nodes
         self._update_data()
 
     def _update_data(self) -> None:
@@ -83,6 +89,8 @@ class RelationshipVisualizationTab(Container):
         """Find relationships between instruments"""
         if not self.snapshot:
             return []
+        if self._precomputed_relationships is not None:
+            return self._precomputed_relationships
         return infer_relationships(
             [position.to_dict() for position in self.snapshot.positions],
             self.bank_accounts,
@@ -90,6 +98,8 @@ class RelationshipVisualizationTab(Container):
 
     def _get_unique_nodes(self, relationships: List[Dict]) -> List[str]:
         """Get unique node names from relationships"""
+        if self._precomputed_nodes is not None:
+            return self._precomputed_nodes
         return relationship_nodes(
             relationships,
             [position.to_dict() for position in self.snapshot.positions] if self.snapshot else [],

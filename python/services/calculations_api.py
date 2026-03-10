@@ -28,11 +28,6 @@ sys.path.insert(0, str(project_root))
 from python.integration.cash_flow_timeline import (
     calculate_cash_flow_timeline
 )
-from python.integration.frontend_views import (
-    infer_relationships,
-    normalize_bank_accounts_to_positions,
-    relationship_nodes,
-)
 from python.integration.opportunity_simulation_calculator import (
     find_available_scenarios,
     calculate_net_benefit,
@@ -132,17 +127,6 @@ class ScenarioCalculationResponse(BaseModel):
     cash_flow_impact: float
     risk_reduction: float
     capital_efficiency: Optional[float] = None
-
-
-class UnifiedPositionsResponse(BaseModel):
-    """Unified frontend position list after bank-account normalization."""
-    positions: List[Dict[str, Any]]
-
-
-class RelationshipResponse(BaseModel):
-    """Relationship graph data for frontend visualization."""
-    relationships: List[Dict[str, Any]]
-    nodes: List[str]
 
 
 @router_calculations.post("/api/v1/cash-flow/timeline", response_model=CashFlowTimelineResponse)
@@ -414,104 +398,6 @@ async def cash_management_endpoint(request: CashManagementRequest) -> Dict[str, 
         )
 
         return snapshot.to_dict()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router_calculations.post("/api/v1/frontend/unified-positions", response_model=UnifiedPositionsResponse)
-async def unified_positions_endpoint(
-    request: OpportunitySimulationRequest,
-) -> UnifiedPositionsResponse:
-    """Return frontend-ready unified positions including normalized bank accounts."""
-    try:
-        positions_dict = [
-            {
-                'name': p.name,
-                'quantity': p.quantity or 0,
-                'roi': p.roi or 0.0,
-                'maker_count': p.maker_count or 0,
-                'taker_count': p.taker_count or 0,
-                'rebate_estimate': p.rebate_estimate or 0.0,
-                'vega': p.vega or 0.0,
-                'theta': p.theta or 0.0,
-                'fair_diff': p.fair_diff or 0.0,
-                'candle': p.candle or {},
-                'instrument_type': p.instrument_type,
-                'rate': p.rate,
-                'maturity_date': p.maturity_date,
-                'cash_flow': p.cash_flow,
-                'collateral_value': p.collateral_value,
-                'currency': p.currency,
-                'market_value': p.market_value,
-                'bid': p.bid,
-                'ask': p.ask,
-                'last': p.last,
-                'spread': p.spread,
-                'price': p.price,
-                'side': p.side,
-                'expected_cash_at_expiry': p.expected_cash_at_expiry,
-                'dividend': p.dividend,
-                'conid': p.conid,
-            }
-            for p in request.positions
-        ]
-        bank_accounts_dict = [
-            {
-                'account_name': a.account_name,
-                'balance': a.balance,
-                'account_path': a.account_path,
-                'bank_name': a.bank_name,
-                'account_number': a.account_number,
-                'debit_rate': a.debit_rate,
-                'credit_rate': a.credit_rate,
-                'currency': a.currency,
-                'balances_by_currency': a.balances_by_currency,
-                'is_mixed_currency': a.is_mixed_currency,
-            }
-            for a in request.bank_accounts
-        ]
-        reference_candle = (positions_dict[0].get("candle") if positions_dict else {}) or {}
-        bank_positions = normalize_bank_accounts_to_positions(
-            bank_accounts_dict,
-            reference_candle=reference_candle,
-        )
-        return UnifiedPositionsResponse(positions=[*positions_dict, *bank_positions])
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router_calculations.post("/api/v1/frontend/relationships", response_model=RelationshipResponse)
-async def relationships_endpoint(
-    request: OpportunitySimulationRequest,
-) -> RelationshipResponse:
-    """Return a shared relationship graph for frontend visualization."""
-    try:
-        positions_dict = [
-            {
-                'name': p.name,
-                'candle': p.candle or {},
-                'instrument_type': p.instrument_type,
-                'rate': p.rate,
-                'cash_flow': p.cash_flow,
-                'collateral_value': p.collateral_value,
-            }
-            for p in request.positions
-        ]
-        bank_accounts_dict = [
-            {
-                'account_name': a.account_name,
-                'balance': a.balance,
-                'debit_rate': a.debit_rate,
-                'credit_rate': a.credit_rate,
-                'currency': a.currency,
-                'balances_by_currency': a.balances_by_currency,
-                'is_mixed_currency': a.is_mixed_currency,
-            }
-            for a in request.bank_accounts
-        ]
-        relationships = infer_relationships(positions_dict, bank_accounts_dict)
-        nodes = relationship_nodes(relationships, positions_dict, bank_accounts_dict)
-        return RelationshipResponse(relationships=relationships, nodes=nodes)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

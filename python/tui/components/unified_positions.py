@@ -52,6 +52,7 @@ class UnifiedPositionsTab(Container):
         super().__init__(*args, **kwargs)
         self.snapshot = snapshot
         self.bank_accounts = bank_accounts or []
+        self._precomputed_positions: Optional[List[Dict]] = None
         self._expanded_groups: set = set(INSTRUMENT_TYPE_ORDER)
         self._environment = "mock"
         self._provider_label = ""
@@ -72,11 +73,13 @@ class UnifiedPositionsTab(Container):
         bank_accounts: Optional[List[Dict]] = None,
         environment: Optional[str] = None,
         provider_label: Optional[str] = None,
+        precomputed_positions: Optional[List[Dict]] = None,
     ) -> None:
         """Update with new snapshot data. environment: 'mock'|'paper'|'live'; provider_label for display."""
         self.snapshot = snapshot
         if bank_accounts is not None:
             self.bank_accounts = bank_accounts
+        self._precomputed_positions = precomputed_positions
         self._environment = environment or "mock"
         self._provider_label = provider_label or ""
         self._update_data()
@@ -86,11 +89,14 @@ class UnifiedPositionsTab(Container):
         if not self.snapshot:
             return
 
-        # Convert bank accounts to positions
-        bank_account_positions = self._convert_bank_accounts_to_positions()
-
-        # Combine all positions
-        all_positions = list(self.snapshot.positions) + bank_account_positions
+        if self._precomputed_positions is not None:
+            all_positions = [
+                PositionSnapshot.from_dict(position)
+                for position in self._precomputed_positions
+            ]
+        else:
+            bank_account_positions = self._convert_bank_accounts_to_positions()
+            all_positions = list(self.snapshot.positions) + bank_account_positions
 
         # Group positions by instrument type
         grouped = self._group_positions(all_positions)

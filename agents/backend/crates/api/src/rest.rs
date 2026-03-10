@@ -63,6 +63,14 @@ impl RestServer {
         Router::new()
             .route("/health", get(health))
             .route("/api/v1/snapshot", get(snapshot))
+            .route(
+                "/api/v1/frontend/unified-positions",
+                post(frontend_unified_positions),
+            )
+            .route(
+                "/api/v1/frontend/relationships",
+                post(frontend_relationships),
+            )
             .route("/api/v1/strategy/start", post(strategy_start))
             .route("/api/v1/strategy/stop", post(strategy_stop))
             .route("/api/v1/strategy/status", get(strategy_status))
@@ -289,6 +297,131 @@ struct ConfigUpdateRequest {
 struct ScenariosQuery {
     symbol: Option<String>,
     min_apr: Option<f64>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct FrontendCandleInput {
+    #[serde(default)]
+    open: Option<f64>,
+    #[serde(default)]
+    high: Option<f64>,
+    #[serde(default)]
+    low: Option<f64>,
+    #[serde(default)]
+    close: Option<f64>,
+    #[serde(default)]
+    volume: Option<f64>,
+    #[serde(default)]
+    entry: Option<f64>,
+    #[serde(default)]
+    updated: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct FrontendPositionInput {
+    name: String,
+    #[serde(default)]
+    quantity: Option<i64>,
+    #[serde(default)]
+    roi: Option<f64>,
+    #[serde(default)]
+    maker_count: Option<i64>,
+    #[serde(default)]
+    taker_count: Option<i64>,
+    #[serde(default)]
+    rebate_estimate: Option<f64>,
+    #[serde(default)]
+    vega: Option<f64>,
+    #[serde(default)]
+    theta: Option<f64>,
+    #[serde(default)]
+    fair_diff: Option<f64>,
+    #[serde(default)]
+    maturity_date: Option<String>,
+    #[serde(default)]
+    cash_flow: Option<f64>,
+    #[serde(default)]
+    candle: Option<FrontendCandleInput>,
+    #[serde(default)]
+    instrument_type: Option<String>,
+    #[serde(default)]
+    rate: Option<f64>,
+    #[serde(default)]
+    collateral_value: Option<f64>,
+    #[serde(default)]
+    currency: Option<String>,
+    #[serde(default)]
+    market_value: Option<f64>,
+    #[serde(default)]
+    bid: Option<f64>,
+    #[serde(default)]
+    ask: Option<f64>,
+    #[serde(default)]
+    last: Option<f64>,
+    #[serde(default)]
+    spread: Option<f64>,
+    #[serde(default)]
+    price: Option<f64>,
+    #[serde(default)]
+    side: Option<String>,
+    #[serde(default)]
+    expected_cash_at_expiry: Option<f64>,
+    #[serde(default)]
+    dividend: Option<f64>,
+    #[serde(default)]
+    conid: Option<i64>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
+struct FrontendBankAccountInput {
+    account_name: String,
+    balance: f64,
+    #[serde(default)]
+    account_path: Option<String>,
+    #[serde(default)]
+    bank_name: Option<String>,
+    #[serde(default)]
+    account_number: Option<String>,
+    #[serde(default)]
+    debit_rate: Option<f64>,
+    #[serde(default)]
+    credit_rate: Option<f64>,
+    #[serde(default)]
+    currency: Option<String>,
+    #[serde(default)]
+    balances_by_currency: Option<std::collections::BTreeMap<String, f64>>,
+    #[serde(default)]
+    is_mixed_currency: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct FrontendViewRequest {
+    #[serde(default)]
+    positions: Vec<FrontendPositionInput>,
+    #[serde(default)]
+    bank_accounts: Vec<FrontendBankAccountInput>,
+}
+
+#[derive(Debug, Serialize)]
+struct FrontendUnifiedPositionsResponse {
+    positions: Vec<serde_json::Value>,
+}
+
+#[derive(Debug, Serialize)]
+struct FrontendRelationship {
+    from: String,
+    to: String,
+    #[serde(rename = "type")]
+    relationship_type: String,
+    description: String,
+    value: f64,
+}
+
+#[derive(Debug, Serialize)]
+struct FrontendRelationshipResponse {
+    relationships: Vec<FrontendRelationship>,
+    nodes: Vec<String>,
 }
 
 // Endpoint implementations
@@ -619,6 +752,373 @@ async fn get_scenarios(
     }))
 }
 
+fn default_candle_json() -> serde_json::Value {
+    serde_json::json!({
+        "open": 0.0,
+        "high": 0.0,
+        "low": 0.0,
+        "close": 0.0,
+        "volume": 0.0,
+        "entry": 0.0,
+        "updated": "",
+    })
+}
+
+fn candle_to_json(candle: &Option<FrontendCandleInput>) -> serde_json::Value {
+    match candle {
+        Some(c) => serde_json::json!({
+            "open": c.open.unwrap_or(0.0),
+            "high": c.high.unwrap_or(0.0),
+            "low": c.low.unwrap_or(0.0),
+            "close": c.close.unwrap_or(0.0),
+            "volume": c.volume.unwrap_or(0.0),
+            "entry": c.entry.unwrap_or(0.0),
+            "updated": c.updated.clone().unwrap_or_default(),
+        }),
+        None => default_candle_json(),
+    }
+}
+
+fn bank_rate(account: &FrontendBankAccountInput) -> Option<f64> {
+    match account.credit_rate {
+        Some(rate) if rate != 0.0 => Some(rate),
+        _ => account.debit_rate,
+    }
+}
+
+fn make_bank_position(
+    account_name: &str,
+    amount: f64,
+    currency: &str,
+    rate: Option<f64>,
+    candle: &serde_json::Value,
+    name_suffix: Option<&str>,
+) -> serde_json::Value {
+    let suffix = name_suffix.unwrap_or("");
+    serde_json::json!({
+        "name": format!("{account_name}{suffix}"),
+        "quantity": 1,
+        "roi": rate.unwrap_or(0.0) * 100.0,
+        "maker_count": 0,
+        "taker_count": 0,
+        "rebate_estimate": 0.0,
+        "vega": 0.0,
+        "theta": 0.0,
+        "fair_diff": 0.0,
+        "candle": candle.clone(),
+        "instrument_type": "bank_loan",
+        "rate": rate,
+        "currency": currency,
+        "cash_flow": amount,
+    })
+}
+
+fn normalize_bank_accounts_to_positions(
+    bank_accounts: &[FrontendBankAccountInput],
+    reference_candle: &serde_json::Value,
+) -> Vec<serde_json::Value> {
+    let mut positions = Vec::new();
+    for account in bank_accounts {
+        let rate = bank_rate(account);
+        let account_name = account.account_name.as_str();
+        if account.is_mixed_currency {
+            if let Some(balances) = &account.balances_by_currency {
+                for (currency, amount) in balances {
+                    positions.push(make_bank_position(
+                        account_name,
+                        *amount,
+                        if currency.is_empty() {
+                            "USD"
+                        } else {
+                            currency.as_str()
+                        },
+                        rate,
+                        reference_candle,
+                        Some(&format!(" ({currency})")),
+                    ));
+                }
+                continue;
+            }
+        }
+        positions.push(make_bank_position(
+            account_name,
+            account.balance,
+            account.currency.as_deref().unwrap_or("USD"),
+            rate,
+            reference_candle,
+            None,
+        ));
+    }
+    positions
+}
+
+fn position_value(position: &serde_json::Value) -> f64 {
+    position
+        .get("cash_flow")
+        .and_then(|value| value.as_f64())
+        .or_else(|| {
+            position
+                .get("candle")
+                .and_then(|value| value.get("close"))
+                .and_then(|value| value.as_f64())
+        })
+        .unwrap_or(0.0)
+}
+
+fn bank_accounts_as_loans(bank_accounts: &[FrontendBankAccountInput]) -> Vec<serde_json::Value> {
+    let mut loans = Vec::new();
+    for account in bank_accounts {
+        let Some(debit_rate) = account.debit_rate else {
+            continue;
+        };
+        if debit_rate <= 0.0 {
+            continue;
+        }
+        loans.push(serde_json::json!({
+            "name": account.account_name,
+            "instrument_type": "bank_loan",
+            "cash_flow": account.balance,
+            "rate": debit_rate,
+            "candle": { "close": account.balance },
+        }));
+    }
+    loans
+}
+
+fn build_unified_positions_response(
+    request: &FrontendViewRequest,
+) -> FrontendUnifiedPositionsResponse {
+    let positions_json: Vec<serde_json::Value> = request
+        .positions
+        .iter()
+        .map(|position| {
+            serde_json::json!({
+                "name": position.name,
+                "quantity": position.quantity.unwrap_or(0),
+                "roi": position.roi.unwrap_or(0.0),
+                "maker_count": position.maker_count.unwrap_or(0),
+                "taker_count": position.taker_count.unwrap_or(0),
+                "rebate_estimate": position.rebate_estimate.unwrap_or(0.0),
+                "vega": position.vega.unwrap_or(0.0),
+                "theta": position.theta.unwrap_or(0.0),
+                "fair_diff": position.fair_diff.unwrap_or(0.0),
+                "maturity_date": position.maturity_date,
+                "cash_flow": position.cash_flow,
+                "candle": candle_to_json(&position.candle),
+                "instrument_type": position.instrument_type,
+                "rate": position.rate,
+                "collateral_value": position.collateral_value,
+                "currency": position.currency,
+                "market_value": position.market_value,
+                "bid": position.bid,
+                "ask": position.ask,
+                "last": position.last,
+                "spread": position.spread,
+                "price": position.price,
+                "side": position.side,
+                "expected_cash_at_expiry": position.expected_cash_at_expiry,
+                "dividend": position.dividend,
+                "conid": position.conid,
+            })
+        })
+        .collect();
+
+    let reference_candle = positions_json
+        .first()
+        .and_then(|position| position.get("candle").cloned())
+        .unwrap_or_else(default_candle_json);
+    let bank_positions =
+        normalize_bank_accounts_to_positions(&request.bank_accounts, &reference_candle);
+
+    FrontendUnifiedPositionsResponse {
+        positions: positions_json
+            .into_iter()
+            .chain(bank_positions.into_iter())
+            .collect(),
+    }
+}
+
+async fn frontend_unified_positions(
+    Json(request): Json<FrontendViewRequest>,
+) -> Json<FrontendUnifiedPositionsResponse> {
+    Json(build_unified_positions_response(&request))
+}
+
+fn build_relationship_response(request: &FrontendViewRequest) -> FrontendRelationshipResponse {
+    let positions_json: Vec<serde_json::Value> = request
+        .positions
+        .iter()
+        .map(|position| {
+            serde_json::json!({
+                "name": position.name,
+                "instrument_type": position.instrument_type,
+                "cash_flow": position.cash_flow,
+                "rate": position.rate,
+                "collateral_value": position.collateral_value,
+                "candle": candle_to_json(&position.candle),
+            })
+        })
+        .collect();
+    let synthetic_loans = bank_accounts_as_loans(&request.bank_accounts);
+
+    let loans: Vec<&serde_json::Value> = positions_json
+        .iter()
+        .chain(synthetic_loans.iter())
+        .filter(|position| {
+            matches!(
+                position
+                    .get("instrument_type")
+                    .and_then(|value| value.as_str()),
+                Some("bank_loan" | "pension_loan")
+            )
+        })
+        .collect();
+    let box_spreads: Vec<&serde_json::Value> = positions_json
+        .iter()
+        .filter(|position| {
+            position
+                .get("instrument_type")
+                .and_then(|value| value.as_str())
+                == Some("box_spread")
+        })
+        .collect();
+    let bonds: Vec<&serde_json::Value> = positions_json
+        .iter()
+        .filter(|position| {
+            matches!(
+                position
+                    .get("instrument_type")
+                    .and_then(|value| value.as_str()),
+                Some("bond" | "t_bill")
+            )
+        })
+        .collect();
+
+    let mut relationships = Vec::new();
+
+    for loan in &loans {
+        let loan_value = position_value(loan);
+        for box_spread in &box_spreads {
+            relationships.push(FrontendRelationship {
+                from: loan
+                    .get("name")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("Unknown")
+                    .to_string(),
+                to: box_spread
+                    .get("name")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("Unknown")
+                    .to_string(),
+                relationship_type: "margin".into(),
+                description: "Loan used as margin for box spread".into(),
+                value: loan_value,
+            });
+        }
+    }
+
+    for loan in &loans {
+        let loan_value = position_value(loan);
+        for bond in &bonds {
+            relationships.push(FrontendRelationship {
+                from: loan
+                    .get("name")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("Unknown")
+                    .to_string(),
+                to: bond
+                    .get("name")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("Unknown")
+                    .to_string(),
+                relationship_type: "investment".into(),
+                description: "Loan proceeds invested in bond".into(),
+                value: loan_value,
+            });
+        }
+    }
+
+    for bond in &bonds {
+        let bond_value = bond
+            .get("collateral_value")
+            .and_then(|value| value.as_f64())
+            .filter(|value| *value != 0.0)
+            .unwrap_or_else(|| position_value(bond));
+        let bond_rate = bond
+            .get("rate")
+            .and_then(|value| value.as_f64())
+            .unwrap_or(0.0);
+        for loan in &loans {
+            let loan_rate = loan
+                .get("rate")
+                .and_then(|value| value.as_f64())
+                .unwrap_or(0.0);
+            if bond_rate > loan_rate {
+                relationships.push(FrontendRelationship {
+                    from: bond
+                        .get("name")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("Unknown")
+                        .to_string(),
+                    to: loan
+                        .get("name")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("Unknown")
+                        .to_string(),
+                    relationship_type: "collateral".into(),
+                    description: "Bond used as collateral for loan".into(),
+                    value: bond_value,
+                });
+            }
+        }
+    }
+
+    for box_spread in &box_spreads {
+        relationships.push(FrontendRelationship {
+            from: box_spread
+                .get("name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Unknown")
+                .to_string(),
+            to: "Synthetic Financing".into(),
+            relationship_type: "financing".into(),
+            description: "Box spread provides synthetic financing".into(),
+            value: position_value(box_spread),
+        });
+    }
+
+    let mut nodes = std::collections::BTreeSet::new();
+    for relationship in &relationships {
+        if !relationship.from.is_empty() {
+            nodes.insert(relationship.from.clone());
+        }
+        if !relationship.to.is_empty() {
+            nodes.insert(relationship.to.clone());
+        }
+    }
+    for position in &request.positions {
+        if !position.name.is_empty() {
+            nodes.insert(position.name.clone());
+        }
+    }
+    for account in &request.bank_accounts {
+        if !account.account_name.is_empty() {
+            nodes.insert(account.account_name.clone());
+        }
+    }
+
+    FrontendRelationshipResponse {
+        relationships,
+        nodes: nodes.into_iter().collect(),
+    }
+}
+
+async fn frontend_relationships(
+    Json(request): Json<FrontendViewRequest>,
+) -> Json<FrontendRelationshipResponse> {
+    Json(build_relationship_response(&request))
+}
+
 // Chart endpoint
 
 #[derive(Debug, Deserialize)]
@@ -838,5 +1338,143 @@ async fn swiftness_update_exchange_rate(
                 format!("Swiftness API unavailable: {e}"),
             ))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_request() -> FrontendViewRequest {
+        FrontendViewRequest {
+            positions: vec![
+                FrontendPositionInput {
+                    name: "Box A".into(),
+                    quantity: Some(1),
+                    roi: Some(5.0),
+                    maker_count: Some(0),
+                    taker_count: Some(0),
+                    rebate_estimate: Some(0.0),
+                    vega: Some(0.0),
+                    theta: Some(0.0),
+                    fair_diff: Some(0.0),
+                    maturity_date: None,
+                    cash_flow: Some(1000.0),
+                    candle: Some(FrontendCandleInput {
+                        open: Some(10.0),
+                        high: Some(11.0),
+                        low: Some(9.0),
+                        close: Some(10.5),
+                        volume: Some(100.0),
+                        entry: Some(10.0),
+                        updated: Some("2026-03-10T00:00:00Z".into()),
+                    }),
+                    instrument_type: Some("box_spread".into()),
+                    rate: Some(0.08),
+                    collateral_value: None,
+                    currency: Some("USD".into()),
+                    market_value: None,
+                    bid: None,
+                    ask: None,
+                    last: None,
+                    spread: None,
+                    price: None,
+                    side: None,
+                    expected_cash_at_expiry: None,
+                    dividend: None,
+                    conid: None,
+                },
+                FrontendPositionInput {
+                    name: "Bond A".into(),
+                    quantity: Some(1),
+                    roi: Some(3.0),
+                    maker_count: Some(0),
+                    taker_count: Some(0),
+                    rebate_estimate: Some(0.0),
+                    vega: Some(0.0),
+                    theta: Some(0.0),
+                    fair_diff: Some(0.0),
+                    maturity_date: None,
+                    cash_flow: Some(800.0),
+                    candle: Some(FrontendCandleInput {
+                        open: Some(8.0),
+                        high: Some(8.5),
+                        low: Some(7.5),
+                        close: Some(8.2),
+                        volume: Some(50.0),
+                        entry: Some(8.0),
+                        updated: Some("2026-03-10T00:00:00Z".into()),
+                    }),
+                    instrument_type: Some("bond".into()),
+                    rate: Some(0.06),
+                    collateral_value: Some(850.0),
+                    currency: Some("USD".into()),
+                    market_value: None,
+                    bid: None,
+                    ask: None,
+                    last: None,
+                    spread: None,
+                    price: None,
+                    side: None,
+                    expected_cash_at_expiry: None,
+                    dividend: None,
+                    conid: None,
+                },
+            ],
+            bank_accounts: vec![FrontendBankAccountInput {
+                account_name: "Discount".into(),
+                balance: 1200.0,
+                account_path: None,
+                bank_name: None,
+                account_number: None,
+                debit_rate: Some(0.04),
+                credit_rate: Some(0.02),
+                currency: Some("USD".into()),
+                balances_by_currency: Some(std::collections::BTreeMap::from([
+                    ("EUR".into(), 50.0),
+                    ("USD".into(), 1200.0),
+                ])),
+                is_mixed_currency: true,
+            }],
+        }
+    }
+
+    #[test]
+    fn unified_positions_expand_mixed_currency_accounts() {
+        let response = build_unified_positions_response(&sample_request());
+        assert_eq!(response.positions.len(), 4);
+        let names: Vec<String> = response
+            .positions
+            .iter()
+            .filter_map(|value| {
+                value
+                    .get("name")
+                    .and_then(|value| value.as_str())
+                    .map(str::to_string)
+            })
+            .collect();
+        assert!(names.contains(&"Discount (EUR)".to_string()));
+        assert!(names.contains(&"Discount (USD)".to_string()));
+    }
+
+    #[test]
+    fn relationships_match_python_shape() {
+        let response = build_relationship_response(&sample_request());
+        assert_eq!(
+            response.nodes,
+            vec!["Bond A", "Box A", "Discount", "Synthetic Financing"]
+        );
+        assert!(response.relationships.iter().any(|rel| {
+            rel.from == "Discount"
+                && rel.to == "Box A"
+                && rel.relationship_type == "margin"
+                && (rel.value - 1200.0).abs() < f64::EPSILON
+        }));
+        assert!(response.relationships.iter().any(|rel| {
+            rel.from == "Bond A"
+                && rel.to == "Discount"
+                && rel.relationship_type == "collateral"
+                && (rel.value - 850.0).abs() < f64::EPSILON
+        }));
     }
 }

@@ -9,6 +9,7 @@ import type { PositionSnapshot } from '../types/snapshot';
 import type { BankAccount } from '../types/banking';
 
 const DEFAULT_CALCULATIONS_API_URL = 'http://localhost:8004';
+const DEFAULT_FRONTEND_API_URL = 'http://localhost:9000';
 
 function getCalculationsApiUrl(): string {
   const env = (import.meta as unknown as { env?: Record<string, unknown> }).env;
@@ -16,6 +17,14 @@ function getCalculationsApiUrl(): string {
     return env.VITE_CALCULATIONS_API_URL;
   }
   return DEFAULT_CALCULATIONS_API_URL;
+}
+
+function getFrontendApiUrl(): string {
+  const env = (import.meta as unknown as { env?: Record<string, unknown> }).env;
+  if (typeof env?.VITE_API_URL === 'string' && env.VITE_API_URL.length > 0) {
+    return env.VITE_API_URL;
+  }
+  return DEFAULT_FRONTEND_API_URL;
 }
 
 export interface PositionInput {
@@ -254,7 +263,7 @@ export async function fetchUnifiedPositions(
   positions: PositionSnapshot[],
   bankAccounts: BankAccount[]
 ): Promise<UnifiedPositionsResponse> {
-  const apiUrl = getCalculationsApiUrl();
+  const apiUrl = getFrontendApiUrl();
   const response = await fetch(`${apiUrl}/api/v1/frontend/unified-positions`, {
     method: 'POST',
     headers: {
@@ -278,7 +287,7 @@ export async function fetchRelationships(
   positions: PositionSnapshot[],
   bankAccounts: BankAccount[]
 ): Promise<RelationshipResponse> {
-  const apiUrl = getCalculationsApiUrl();
+  const apiUrl = getFrontendApiUrl();
   const response = await fetch(`${apiUrl}/api/v1/frontend/relationships`, {
     method: 'POST',
     headers: {
