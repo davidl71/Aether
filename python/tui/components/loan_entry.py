@@ -24,6 +24,9 @@ from textual.message import Message
 
 logger = logging.getLogger(__name__)
 
+VALID_LOAN_TYPES = {"SHIR_BASED", "CPI_LINKED"}
+VALID_LOAN_STATUSES = {"ACTIVE", "PAID_OFF", "DEFAULTED"}
+
 
 @dataclass
 class LoanPosition:
@@ -77,11 +80,20 @@ class LoanPosition:
             errors.append("Monthly payment must be > 0")
         if self.payment_frequency_months <= 0:
             errors.append("Payment frequency must be > 0")
+        if self.loan_type not in VALID_LOAN_TYPES:
+            errors.append(
+                f"Loan type must be one of: {', '.join(sorted(VALID_LOAN_TYPES))}"
+            )
+        if self.status not in VALID_LOAN_STATUSES:
+            errors.append(
+                f"Status must be one of: {', '.join(sorted(VALID_LOAN_STATUSES))}"
+            )
 
         # Validate dates
         try:
             orig = datetime.fromisoformat(self.origination_date.replace('Z', '+00:00'))
             mat = datetime.fromisoformat(self.maturity_date.replace('Z', '+00:00'))
+            datetime.fromisoformat(self.next_payment_date.replace('Z', '+00:00'))
             if orig >= mat:
                 errors.append("Origination date must be before maturity date")
         except ValueError as e:
@@ -641,20 +653,19 @@ class LoanImporter:
         now = datetime.utcnow().isoformat() + "Z"
 
         # Helper to parse dates
-        def parse_date(date_str: str) -> str:
+        def parse_date(field_name: str, date_str: str) -> str:
             if not date_str:
-                return now
-            try:
-                # Try various date formats
-                for fmt in ["%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y"]:
-                    try:
-                        dt = datetime.strptime(date_str.strip(), fmt)
-                        return dt.isoformat() + "Z"
-                    except ValueError:
-                        continue
-                return now
-            except Exception:
-                return now
+                raise ValueError(f"{field_name} is required")
+            # Try various date formats
+            for fmt in ["%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y"]:
+                try:
+                    dt = datetime.strptime(date_str.strip(), fmt)
+                    return dt.isoformat() + "Z"
+                except ValueError:
+                    continue
+            raise ValueError(
+                f"{field_name} must be a valid date in YYYY-MM-DD, MM/DD/YYYY, or DD/MM/YYYY format"
+            )
 
         return LoanPosition(
             loan_id=row.get('loan_id', '').strip(),
@@ -667,9 +678,9 @@ class LoanImporter:
             spread=float(row.get('spread', '0') or '0'),
             base_cpi=float(row.get('base_cpi', '0') or '0'),
             current_cpi=float(row.get('current_cpi', '0') or '0'),
-            origination_date=parse_date(row.get('origination_date', '')),
-            maturity_date=parse_date(row.get('maturity_date', '')),
-            next_payment_date=parse_date(row.get('next_payment_date', '')),
+            origination_date=parse_date('origination_date', row.get('origination_date', '')),
+            maturity_date=parse_date('maturity_date', row.get('maturity_date', '')),
+            next_payment_date=parse_date('next_payment_date', row.get('next_payment_date', '')),
             monthly_payment=float(row.get('monthly_payment', '0') or '0'),
             payment_frequency_months=int(row.get('payment_frequency_months', '1') or '1'),
             status=row.get('status', 'ACTIVE').strip(),

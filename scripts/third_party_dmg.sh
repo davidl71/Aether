@@ -7,6 +7,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# shellcheck source=scripts/include/workspace_paths.sh
+. "${SCRIPT_DIR}/include/workspace_paths.sh"
+setup_workspace_paths
 NATIVE_TP="${PROJECT_ROOT}/native/third_party"
 ORIG_DIR="${NATIVE_TP}/.orig"
 DMG_PATH="${PROJECT_ROOT}/.dmg/ThirdParty.dmg"
@@ -77,7 +80,7 @@ cmd_create() {
     return 1
   fi
   local staging
-  staging="$(mktemp -d "${TMPDIR:-/tmp}/ib_third_party_dmg.XXXXXX")"
+  staging="$(mktemp -d "${TMPDIR%/}/ib_third_party_dmg.XXXXXX")"
   if ! prepare_staging "${staging}"; then
     rm -rf "${staging}"
     return 1

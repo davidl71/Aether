@@ -7,6 +7,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# shellcheck source=scripts/include/workspace_paths.sh
+. "${SCRIPT_DIR}/include/workspace_paths.sh"
+setup_workspace_paths
 
 # Default values
 REPO_URL="${REPO_URL:-file://$PROJECT_ROOT/deb-repo}"
@@ -95,8 +98,9 @@ detect_ubuntu_version() {
 import_gpg_key() {
   log_info "Importing GPG key for repository..."
 
-  local key_file="/tmp/${REPO_NAME}-gpg.key"
+  local key_file
   local key_fingerprint=""
+  key_file="$(mktemp "${TMPDIR%/}/${REPO_NAME}-gpg.XXXXXX.key")"
 
   # Determine key URL
   if [ -z "$KEY_URL" ]; then

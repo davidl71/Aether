@@ -12,6 +12,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# shellcheck source=scripts/include/workspace_paths.sh
+. "${SCRIPT_DIR}/include/workspace_paths.sh"
+setup_workspace_paths
 # shellcheck source=scripts/with_nix.sh
 . "${SCRIPT_DIR}/with_nix.sh"
   run_with_nix_if_requested "$@"
@@ -101,7 +104,7 @@ case "$variant" in
       echo "=== Fast Build (no cache) ==="
     fi
 
-    [[ "$USE_SCCACHE" = true ]] && export SCCACHE_DIR="${SCCACHE_DIR:-$HOME/.sccache}" && mkdir -p "$SCCACHE_DIR"
+    [[ "$USE_SCCACHE" = true ]] && mkdir -p "$SCCACHE_DIR"
     [[ "$USE_CCACHE" = true ]] && ccache --max-size=10G 2>/dev/null || true
 
     CMAKE_EXTRA=()
@@ -130,7 +133,6 @@ case "$variant" in
     [[ -n "$IBAPI_LIB_OVERRIDE" ]] && CMAKE_EXTRA+=(-DIBAPI_LIB="$IBAPI_LIB_OVERRIDE")
     if command -v sccache &>/dev/null; then
       echo "=== Distributed Build (sccache) ==="
-      export SCCACHE_DIR="${SCCACHE_DIR:-$HOME/.sccache}"
       mkdir -p "$SCCACHE_DIR"
       cmake -S . -B "$BUILD_DIR" -G Ninja -DCMAKE_BUILD_TYPE=Release \
         -DENABLE_SCCACHE=ON -DENABLE_LTO=ON -DENABLE_NATIVE_CLI=ON -DTWS_API_BUILD_VENDOR="$TWS_API_BUILD_VENDOR" "${CMAKE_EXTRA[@]}"
