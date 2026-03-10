@@ -17,7 +17,7 @@
 | Pattern | Description | Affected items | Cleanup approach |
 |--------|-------------|---------------|------------------|
 | **P1. MCP config writer/validator** | Scripts or rules that write or validate `.cursor/mcp.json` and assume the exarp server is Python. | `update_mcp_config.sh`, `sync_mcp_config_agents.py`, `.cursor/rules/project-automation.mdc` | Treat `exarp-go` as valid; stop emitting or requiring `exarp_automation_mcp.server` / `project_management_automation.server`. |
-| **P2. Python import + uvx fallback** | Scripts that try `from exarp_project_management.scripts.*` then fall back to `subprocess.run(['uvx', 'exarp', ...])`. Same structure in all three. | `automate_docs_health_v2.py`, `automate_todo2_alignment_v2.py`, `automate_todo2_duplicate_detection.py` | Refactor once: either (a) single helper that calls exarp-go CLI by tool name, or (b) remove dependency and document "use exarp-go MCP in Cursor"; then apply to all three. |
+| **P2. Python import + uvx fallback** | Scripts that used to try `from exarp_project_management.scripts.*` then fall back to `subprocess.run(['uvx', 'exarp', ...])`. | Removed on 2026-03-10 | Completed by deleting the legacy wrappers and standardizing on exarp-go MCP / `run_exarp_go.sh`. |
 | **P3. Subprocess uvx exarp only** | Scripts that only run `uvx exarp <subcommand> <project_dir>` (no import). | `exarp_daily_automation_wrapper.py` | Option A: switch to exarp-go CLI if available. Option B: keep as optional fallback and add a short doc note. |
 | **P4. Cursor UI config** | Cursor rules/commands that show the old server or command in examples. | `.cursor/rules/project-automation.mdc`, `.cursor/commands/exarpauto.md` | Replace example config and command with exarp-go / MCP usage; link to `.cursor/mcp.json` if needed. |
 | **P5. Doc prose** | Docs that describe installing/running the old Python/uvx Exarp or show `uvx exarp` / `project_management_automation` in examples. | All listed in §3 below | Add a short "Exarp is now exarp-go" note at top (or in a central MCP doc) and replace or qualify old commands; use a single search pattern for consistency. |
@@ -43,10 +43,8 @@
    - **.cursor/commands/exarpauto.md:** Change the described command from `project_management_automation.scripts.automate_daily` to exarp-go or "use Exarp MCP tools in chat."
 
 3. **P2 – automate_* scripts (shared pattern)**
-   - Decide: (a) exarp-go CLI wrapper (one script or three thin wrappers), or (b) deprecate and document "use exarp-go MCP."
-   - If (a): implement one small helper (e.g. `run_exarp_go_tool(project_dir, tool_name)`) and refactor all three `automate_*` scripts to use it (or replace with three one-liners).
-   - If (b): add a short deprecation note at top of each script and point to this doc or the MCP doc; optionally remove the import path and keep only a clear "not available" message.
-   - Re-run the Shared patterns search patterns above to ensure no stray references remain in scripts.
+   - Completed by removing the three legacy wrappers and relying on exarp-go MCP / `scripts/run_exarp_go_tool.sh`.
+   - Cleanup work now focuses on documentation and packaging references only.
 
 4. **P3 – exarp_daily_automation_wrapper.py**
    - If exarp-go has a CLI: refactor to call it (same pattern as P2 if you built a helper).
@@ -77,9 +75,9 @@
 |------|----------------|------------------|
 | **scripts/update_mcp_config.sh** | Overwrites `.cursor/mcp.json` with config using `python3 -m exarp_automation_mcp.server` | Stop writing an `exarp` server block, or add an `exarp-go` block (and use `PROJECT_ROOT` / paths appropriate to this repo). |
 | **scripts/exarp_daily_automation_wrapper.py** | Runs `uvx exarp check-documentation-health`, `analyze-todo2-alignment`, `detect-duplicate-tasks` | Option A: Call exarp-go CLI if it has one. Option B: Document as “use MCP tools (exarp-go) in Cursor” and keep script as optional fallback when uvx exarp is installed. |
-| **scripts/automate_docs_health_v2.py** | Imports `exarp_project_management.scripts.automate_docs_health_v2` (package not in this repo), fallback `uvx exarp` | Rely on exarp-go MCP or local logic; remove/refactor dependency on `exarp_project_management`. **Shared pattern with the two below.** |
-| **scripts/automate_todo2_alignment_v2.py** | Imports `exarp_project_management.scripts.todo2_alignment` | Same as above. **Same try/import → except ImportError → uvx exarp fallback.** |
-| **scripts/automate_todo2_duplicate_detection.py** | Imports `exarp_project_management.scripts.duplicate_detection` | Same as above. **Refactor once and apply to all three.** |
+| **scripts/automate_docs_health_v2.py** | Removed on 2026-03-10 | Use exarp-go MCP or `scripts/run_exarp_go_tool.sh` instead. |
+| **scripts/automate_todo2_alignment_v2.py** | Removed on 2026-03-10 | Use exarp-go MCP or `scripts/run_exarp_go_tool.sh` instead. |
+| **scripts/automate_todo2_duplicate_detection.py** | Removed on 2026-03-10 | Use exarp-go MCP or `scripts/run_exarp_go_tool.sh` instead. |
 | **scripts/oh-my-zsh-exarp-plugin/exarp.plugin.zsh** | All commands use `python3 -m exarp_project_management.server` and `exarp_project_management.scripts.*` | Update to call exarp-go binary (e.g. `exarp-go` in PATH) or mark plugin as legacy and point to exarp-go. |
 | **scripts/sync_mcp_config_agents.py** | Checks for `project_management_automation.server` and suggests Python package | Treat `exarp-go` config as valid; don’t require or suggest the old Python server. |
 

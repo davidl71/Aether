@@ -1,8 +1,10 @@
 # Todo2 Duplicate Task Detection Automation
 
 **Date**: 2025-11-22
-**Status**: ✅ Complete
-**Script**: `scripts/automate_todo2_duplicate_detection.py`
+**Status**: Archived legacy workflow
+**Replacement**: exarp-go task analysis (`task_analysis` with `action=duplicates`) or `scripts/run_exarp_go_tool.sh`
+
+> The old `scripts/automate_todo2_duplicate_detection.py` wrapper was removed on 2026-03-10. Use exarp-go directly.
 
 ---
 
@@ -23,18 +25,11 @@ Automated script to detect duplicate tasks in Todo2 by analyzing:
 ### Run Once
 
 ```bash
-
 # Basic run with default settings
+./scripts/run_exarp_go_tool.sh task_analysis '{"action":"duplicates"}'
 
-python3 scripts/automate_todo2_duplicate_detection.py
-
-# Custom similarity threshold (0.0-1.0)
-
-python3 scripts/automate_todo2_duplicate_detection.py --threshold 0.90
-
-# Custom output path
-
-python3 scripts/automate_todo2_duplicate_detection.py --output docs/my_report.md
+# With explicit args
+./scripts/run_exarp_go_tool.sh task_analysis '{"action":"duplicates","output_path":"docs/my_report.md"}'
 ```
 
 ### Setup Automated Daily Run

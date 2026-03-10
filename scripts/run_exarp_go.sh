@@ -21,15 +21,33 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Project root: prefer env; else derive from script path if script lives inside a project; else use CWD.
-if [[ -n "${PROJECT_ROOT:-}" ]] && [[ "${PROJECT_ROOT}" != "{{PROJECT_ROOT}}" ]]; then
-  : # use PROJECT_ROOT as set by Cursor/OpenCode or caller
-elif [[ -d "${SCRIPT_DIR}/../.todo2" ]] || ( [[ -f "${SCRIPT_DIR}/../go.mod" ]] && ! grep -q 'exarp-go' "${SCRIPT_DIR}/../go.mod" 2>/dev/null ); then
+PROJECT_HELPERS="${SCRIPT_DIR}/include/workspace_paths.sh"
+# Prefer env from mcp.json; otherwise use repo root relative to this script
+if [[ -z "${PROJECT_ROOT:-}" ]]; then
   PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-else
-  PROJECT_ROOT="$(pwd)"
 fi
 export PROJECT_ROOT
+
+if [[ -f "${PROJECT_HELPERS}" ]]; then
+  # Keep exarp-go temp/cache activity inside the repo by default.
+  # shellcheck source=/dev/null
+  source "${PROJECT_HELPERS}"
+fi
+
+mkdir -p "${PROJECT_ROOT}/.cursor" "${PROJECT_ROOT}/.exarp" "${PROJECT_ROOT}/out"
+
+# exarp-go migrations live with the exarp-go repo, not the caller project.
+if [[ -z "${EXARP_MIGRATIONS_DIR:-}" ]]; then
+  for candidate in \
+    "${EXARP_GO_ROOT:-}/migrations" \
+    "${HOME}/Projects/mcp/exarp-go/migrations" \
+    "${HOME}/Projects/exarp-go/migrations"; do
+    if [[ -n "${candidate}" ]] && [[ -d "${candidate}" ]]; then
+      export EXARP_MIGRATIONS_DIR="${candidate}"
+      break
+    fi
+  done
+fi
 
 cd "${PROJECT_ROOT}"
 

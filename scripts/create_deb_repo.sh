@@ -592,21 +592,6 @@ create_automation_tools_deb() {
     fi
   done
 
-  # Create wrapper scripts (exarp-go preferred; call exarp-go -tool when available)
-  cat > "$pkg_dir/usr/bin/ib-box-spread-docs-health" <<'EOF'
-#!/bin/bash
-# Prefer exarp-go: run exarp-go -tool docs_health (or use MCP in Cursor)
-exec exarp-go -tool docs_health "$@" 2>/dev/null || { echo "exarp-go required (install and ensure on PATH)" >&2; exit 1; }
-EOF
-  chmod +x "$pkg_dir/usr/bin/ib-box-spread-docs-health"
-
-  cat > "$pkg_dir/usr/bin/ib-box-spread-todo-align" <<'EOF'
-#!/bin/bash
-# Prefer exarp-go: run exarp-go -tool todo2_alignment (or use MCP in Cursor)
-exec exarp-go -tool todo2_alignment "$@" 2>/dev/null || { echo "exarp-go required (install and ensure on PATH)" >&2; exit 1; }
-EOF
-  chmod +x "$pkg_dir/usr/bin/ib-box-spread-todo-align"
-
   # Create control file
   cat > "$pkg_dir/DEBIAN/control" <<EOF
 Package: $pkg_name
@@ -618,8 +603,8 @@ Depends: python3 (>= 3.9), python3-networkx, python3-requests
 Recommends: python3-openai | python3-anthropic
 Maintainer: IB Box Spread Platform Team <platform@example.com>
 Description: IB Box Spread Automation Tools
- Project management automation tools for documentation health,
- task alignment, duplicate detection, security scanning, and more.
+ Project automation helpers for security scanning, TODO sync,
+ PWA review, and related maintenance tasks.
  Built on IntelligentAutomationBase framework with Todo2 integration.
 EOF
 
