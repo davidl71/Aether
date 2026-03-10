@@ -4,7 +4,7 @@ This repository follows the comprehensive guidelines in [AGENTS.md](../AGENTS.md
 
 ## Project
 
-Comprehensive multi-asset synthetic financing platform. Manages financing across options, futures, bonds, loans, and pension funds with unified portfolio management across 21+ accounts and multiple brokers (IBKR, Alpaca, Tradier, Tastytrade). Box spreads are one active strategy (spare cash, T-bill-equivalent yields). Multi-language: C++ core, Python integration, Rust backend. Multi-platform: CLI, TUI, Web, iOS/iPad, Desktop.
+Comprehensive multi-asset synthetic financing platform. Manages financing across options, futures, bonds, loans, and pension funds with unified portfolio management across 21+ accounts and multiple brokers (IBKR, Alpaca, Tradier, Tastytrade). Box spreads are one active strategy (spare cash, T-bill-equivalent yields). Multi-language: C++ core, Python integration, Rust backend. Multi-platform: CLI, TUI, Web.
 
 ## Structure
 

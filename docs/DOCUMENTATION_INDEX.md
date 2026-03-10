@@ -38,7 +38,6 @@ This document serves as a comprehensive index of all documentation in the Synthe
 - `docs/CODEBASE_ARCHITECTURE.md` - System design and component interactions
 - `docs/ECLIENT_EWRAPPER_ARCHITECTURE.md` - TWS API client architecture
 - `docs/TUI_DESIGN.md` - Terminal UI design
-- `docs/IPAD_APP_DESIGN.md` - iPad app design
 - `docs/AI_FRIENDLY_CODE.md` - Best practices for AI-friendly code
 
 ### Implementation Guides
@@ -133,7 +132,6 @@ This document serves as a comprehensive index of all documentation in the Synthe
 ### Services
 
 - `docs/ONEPASSWORD_INTEGRATION.md` - 1Password integration
-- `docs/ios_certificate_pinning.md` - iOS certificate pinning
 
 ### Trading Infrastructure
 
@@ -168,8 +166,6 @@ This document serves as a comprehensive index of all documentation in the Synthe
 - `agents/backend-market-data/README.md` - Market data agent
 - `agents/backend-data/README.md` - Data agent
 - `agents/web/README.md` - Web agent
-- `agents/ipad/README.md` - iPad agent
-- `agents/desktop/README.md` - Desktop agent
 - `agents/shared/API_CONTRACT.md` - API contract
 - `agents/shared/COORDINATION.md` - Agent coordination
 - `agents/shared/CI.md` - Continuous integration
@@ -197,10 +193,6 @@ This document serves as a comprehensive index of all documentation in the Synthe
 - `tui/INSTALL.md` - Terminal UI installation
 - `tui/docs/USAGE_GUIDE.md` - Terminal UI usage guide
 - `tui/docs/KEYBOARD_SHORTCUTS.md` - Keyboard shortcuts
-
-### Desktop
-
-- `desktop/README.md` - Desktop application documentation
 
 ## YouTube Videos & External Resources
 

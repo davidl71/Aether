@@ -13,7 +13,7 @@
 # ansible-lint: ANSIBLE_LINT_TIMEOUT (default 300s); use timeout(1)/gtimeout(1) when available.
 #
 # Caches (faster re-runs): cppcheck (.cppcheck-cache/), ESLint (web/.eslintcache),
-# Stylelint (web/.stylelintcache), SwiftLint (desktop/.swiftlint-cache), Infer (build/*/infer-out).
+# Stylelint (web/.stylelintcache), Infer (build/*/infer-out).
 # Set LINT_INFER_FULL=1 to force a full Infer run (delete infer-out first).
 #
 # When run from a non-interactive context (no TTY, CI, or CURSOR), AI-friendly
@@ -268,22 +268,6 @@ PY
   done < <(jq -c '.[]' "${compile_db}")
 
   return "${status}"
-}
-
-run_swiftlint() {
-  if ! command -v swiftlint >/dev/null 2>&1; then
-    warn "Skipping swiftlint (executable not found)"
-    return 0
-  fi
-
-  if [[ ! -d "${ROOT_DIR}/desktop" ]]; then
-    warn "Skipping swiftlint (desktop/ not found)"
-    return 0
-  fi
-
-  info "Running swiftlint (macOS app)"
-  local cache_path="${ROOT_DIR}/desktop/.swiftlint-cache"
-  (cd "${ROOT_DIR}/desktop" && swiftlint --cache-path "${cache_path}")
 }
 
 # Legacy Go TUI removed; active terminal UI is the Python/Textual TUI.
@@ -581,7 +565,6 @@ main() {
   run_cppcheck
   run_clang_analyze
   run_infer
-  run_swiftlint
   # run_golangci_lint  # Legacy Go TUI removed; active terminal UI is the Python/Textual TUI.
   run_exarp_go_lint
   run_shellcheck
@@ -607,7 +590,6 @@ main_parallel() {
   ( run_cppcheck; echo $? > "${tmpdir}/cppcheck" ) &
   ( run_clang_analyze; echo $? > "${tmpdir}/clang_analyze" ) &
   ( run_infer; echo $? > "${tmpdir}/infer" ) &
-  ( run_swiftlint; echo $? > "${tmpdir}/swiftlint" ) &
   ( run_bandit; echo $? > "${tmpdir}/bandit" ) &
   ( run_ruff; echo $? > "${tmpdir}/ruff" ) &
   ( run_ansible_lint; echo $? > "${tmpdir}/ansible_lint" ) &

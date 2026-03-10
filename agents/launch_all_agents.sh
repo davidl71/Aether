@@ -29,12 +29,5 @@ else
   echo "[warn] npm missing; web setup skipped." >&2
 fi
 
-if command -v xcodebuild >/dev/null 2>&1; then
-  (cd "$ROOT_DIR" && bash agents/ipad/scripts/setup.sh) &
-  (cd "$ROOT_DIR" && bash agents/desktop/scripts/setup.sh) &
-else
-  echo "[warn] Xcode not found; iPad/desktop setups skipped." >&2
-fi
-
 wait || true
 echo "[info] Agent setup scripts completed."

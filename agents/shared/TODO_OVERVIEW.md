@@ -7,11 +7,6 @@
 |---------|-------------|-------------|--------|
 | 4 | Add ANSI colorized output to C++ CLI | backend | pending |
 | 5 | Integrate IBKR Client Portal Web API | backend | completed |
-| 6 | Design iPad frontend architecture | ipad | in_progress |
-| 7 | Implement backend endpoints for iPad app | backend | pending |
-| 8 | Create SwiftUI iPad skeleton | ipad | pending |
-| 9 | Build iPad dashboards | ipad | pending |
-| 10 | Add iPad order controls/testing | ipad | pending |
 | 11 | Design web SPA architecture/wireframes | web | pending |
 | 12 | Implement REST API layer for web SPA | backend/web | in_progress |
 | 13 | Scaffold React/TypeScript web app | web | pending |
@@ -28,14 +23,11 @@
 | 24 | Implement TUI front end with live data | tui | in_progress |
 | 25 | Expose OHLCV candle data via API | backend-data | pending |
 | 26 | Render candlestick charts in web SPA | web | pending |
-| 27 | Render candlestick charts in iPad app | ipad | pending |
-| 28 | Render candlestick charts in desktop client | desktop | pending |
 | 29 | Design TWS TCP proxy for capture/replay | backend | pending |
 | 30 | Implement proxy record/replay | backend | pending |
 | 31 | Provide tooling to analyze PCAP sessions | backend | pending |
 | 32 | Adopt Poetry for Python dependency management | backend | pending |
 | 33 | Detect and integrate Livevol data when credentials available | backend | pending |
-| 34 | Ensure Apple clients remain compatible with AnyLanguageModel; document low-priority integration hooks | ipad/desktop | pending |
 | 35 | Fix day count convention in implied rate calculation (ACT/365, ACT/360, continuous compounding) | backend | pending |
 | 36 | Add annualized ROI calculation to BoxSpreadCalculator | backend | pending |
 | 37 | Implement portfolio VaR calculation for multiple box spread positions | backend | pending |

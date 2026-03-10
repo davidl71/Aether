@@ -11,7 +11,6 @@ This repository uses **multiple programming languages**. This doc maps each lang
 | **Rust** | `agents/backend/` (crates: api, ledger, market_data, nats_adapter, risk, strategy, discount_bank_parser) | `cargo build` in `agents/backend/` | `cargo test` in `agents/backend/` | `cargo clippy` |
 | **Go** | `agents/go/` (api-gateway, collection-daemon, config-validator, heartbeat-aggregator, nats-questdb-bridge, supervisor) | `go build ./...` in `agents/go/` | `go test ./...` | `golangci-lint`; `just exarp-lint` |
 | **TypeScript / React** | `web/` (Vite, React, PWA) | `npm run build` in `web/` | `npm run test` (Vitest), `npm run e2e` (Playwright) | `npm run lint`, `npm run type-check` |
-| **Swift** | `ios/`, `desktop/` (SwiftUI, AppKit) | Xcode / `xcodebuild` or `swift build` per project | Project-specific | Xcode / SwiftLint if configured |
 
 ## Shared and generated code
 

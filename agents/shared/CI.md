@@ -18,11 +18,7 @@
    - `npm install`
    - `npm test -- --watch=false`
 
-4. **iPad/Desktop**
-   - If Swift projects exist, run `xcodebuild test`.
-   - For Electron-based desktop, run `npm install && npm test`.
-
-5. **Shared artifacts**
+4. **Shared artifacts**
    - Validate `agents/shared/API_CONTRACT.md` (lint or schema check) if automated.
    - Ensure `agents/shared/TODO_OVERVIEW.md` stays in sync with tracked issues.
 
@@ -69,21 +65,6 @@ jobs:
       - name: Web tests
         run: bash agents/web/scripts/run-tests.sh
 
-  ios:
-    runs-on: macos-latest
-    if: ${{ hashFiles('ios/**') != '' }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: iPad tests
-        run: bash agents/ipad/scripts/run-tests.sh
-
-  desktop:
-    runs-on: macos-latest
-    if: ${{ hashFiles('desktop/**') != '' }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Desktop tests
-        run: bash agents/desktop/scripts/run-tests.sh
 ```
 
 ## Coordination

@@ -9,7 +9,6 @@
 | **Python** | `python/` | TUI (Textual), integration services (IB, Alpaca, Tastytrade, TradeStation, discount_bank, risk_free_rate), clients (alpaca/tastytrade/tradestation/sofr_treasury/onepassword_sdk_helper), shared_config_loader, Nautilus/LEAN/Swiftness integration, bindings, tests. |
 | **TypeScript/React** | `web/` | PWA: React app, snapshot/API/config/hooks, service ports, charts. Build: Vite/npm. |
 | **JavaScript (Node)** | `services/israeli-bank-scrapers-service/` | Israeli bank scrapers HTTP service and CLI; ledger writer; optional 1Password SDK. Build: npm. |
-| **Swift** | `ios/`, `desktop/` | iOS/iPad (SwiftUI), macOS desktop (AppKit). |
 | **Go** | `agents/go/` | Go-based agents/tools (see `go.mod`). |
 | **Shell** | `scripts/`, `web/scripts/`, `ib-gateway/` | Build, lint, service start/stop, 1Password CLI wrapper, gateway runner. |
 | **Proto/JSON/YAML** | `proto/`, `config/` | Shared message definitions; example configs. |
@@ -66,14 +65,12 @@ Top-level directories are **component- or product-oriented**. Language is implic
 | `agents/go/` | Go | Go-based agents/tools |
 | `agents/web/` | (varies) | Web-related agent code |
 | `web/` | TypeScript (React) | Web frontend |
-| `ios/` | Swift (SwiftUI) | iOS/iPad app |
-| `desktop/` | Swift (AppKit) | macOS desktop app |
 | `proto/` | Protocol Buffers | Shared message definitions (language-agnostic) |
 | `config/` | JSON/YAML | Example configs (language-agnostic) |
 | `scripts/` | Shell, Python | Build, lint, deploy, git hooks |
 | `docs/` | Markdown | Documentation |
 
-So: **one main "home" per product** (native core, python layer, agents, web, ios, desktop), with shared `proto/`, `config/`, `scripts/`, `docs/`.
+So: **one main "home" per product** (native core, python layer, agents, web), with shared `proto/`, `config/`, `scripts/`, `docs/`.
 
 ---
 
@@ -88,7 +85,6 @@ langs/
 ├── rust/          # agents/backend (+ any other Rust)
 ├── go/             # agents/go
 ├── ts/             # web/ + agents/web (and any other TS)
-├── swift/          # ios/ + desktop/
 └── proto/         # shared (or under shared/)
 ```
 
@@ -100,7 +96,6 @@ python/
 rust/      ← agents/backend
 go/        ← agents/go
 ts/        ← web (+ agents/web)
-swift/     ← ios, desktop
 proto/
 config/
 scripts/
@@ -114,7 +109,7 @@ docs/
 - **Discoverability**: "Where is the backend?" → `agents/backend/`. "Where is the web app?" → `web/`. By-language top level answers "where is Rust?" but not "where is the backend?" without extra convention.
 - **Shared and cross-cutting**: `proto/`, `config/`, `scripts/`, `docs/` are shared across languages; they sit naturally at top level. A `langs/` tree would either duplicate them or add a separate `shared/` and more indirection.
 - **Tooling and CI**: Builds are per product (e.g. `native/` CMake, `agents/backend/` Cargo, `web/` npm). Keeping one directory per "thing to build" keeps scripts and CI simple.
-- **Convention**: Many multi-language repos use component-first layout (e.g. `services/`, `apps/web/`, `apps/ios/`) with language obvious from files inside; our layout matches that.
+- **Convention**: Many multi-language repos use component-first layout (e.g. `services/`, `apps/web/`, `apps/api/`) with language obvious from files inside; our layout matches that.
 
 If you want **visibility by language** without moving code:
 
