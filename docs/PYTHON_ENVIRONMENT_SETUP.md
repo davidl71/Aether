@@ -241,7 +241,7 @@ cargo check -p backend_service
 If you only need to build the Rust backend (e.g. `cargo build`, `cargo test`) and do not need to run the PyO3/Python bridge, the project sets **`PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1`** in `agents/backend/.cargo/config.toml`. That lets PyO3 build against Python 3.14+ using the stable ABI, so you can run `cargo build` without activating a Python 3.12 venv.
 
 - **When to use**: Local Rust-only builds, CI that doesn't run the Python bridge.
-- **When to use a 3.12 venv**: Running the full backend with Nautilus/Python integration, or if you see ABI/runtime issues.
+- **When to use a 3.12 venv**: Running the active Python integration/TUI stack, or if you see ABI/runtime issues.
 - **Removing it**: When upgrading to a PyO3 version that supports your system Python, you can delete the `[env]` block from `agents/backend/.cargo/config.toml`.
 
 ## Modern Tooling: `uv` Support

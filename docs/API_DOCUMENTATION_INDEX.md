@@ -485,9 +485,9 @@ for large multi-leg positions.
 - **Official Docs**: <https://docs.nautilustrader.io/>
 - **GitHub**: <https://github.com/nautechsystems/nautilus_trader>
 - **Version**: 1.221.0+
-- **Purpose**: High-performance Python trading framework
-- **Location**: `native/third_party/nautilus/`
-- **Note**: Optional integration, Python wheel file
+- **Purpose**: Historical/deprecated framework reference only
+- **Location**: Historical vendor/scaffold references only
+- **Note**: Not part of the active supported runtime
 
 ## Market Data Providers
 
@@ -4649,7 +4649,7 @@ trading.
   - **Interactive Brokers (IBKR)**: ✅ Currently integrated, comprehensive API, excellent options access, portfolio margining, currency hedging
   - **Alpaca Markets**: ✅ Documented, account available, commission-free options (API), modern REST API, Elite features (DMA, VWAP/TWAP)
   - **OANDA**: Forex-focused, useful for currency hedging, not suitable for options
-  - **TradeStation Global**: Powerful API, platform support, options trading
+  - **TradeStation Global**: historical comparison reference only; not currently supported in this repo
   - **MEXEM**: Global markets, competitive fees, API infrastructure
 
 - **Broker Comparison**:
@@ -4719,7 +4719,7 @@ trading.
 ### Swift Package Manager
 
 - **Official Docs**: <https://www.swift.org/package-manager/>
-- **Location**: `desktop/`, `ios/`
+- **Location**: historical references only; Apple clients were removed from the active repo surface
 - **Config**: `Package.swift`
 
 ## How to Use This Index in Cursor
@@ -4997,7 +4997,7 @@ general assistance.
 - **Catch2**: <https://github.com/catchorg/Catch2>
 - **CLI11**: <https://cliutils.github.io/CLI11/book/>
 - **nlohmann/json**: <https://json.nlohmann.me/>
-- **Nautilus Trader**: <https://docs.nautilustrader.io/>
+- **Nautilus Trader**: historical/deprecated reference only
 - **Public APIs Repository**: <https://github.com/public-apis/public-apis> (Curated list of free public APIs)
 - **CppTrader**: <https://github.com/chronoxor/CppTrader> (High-performance trading components)
 - **Alpha Vantage**: <https://www.alphavantage.co/> (Stock market data API with MCP support)

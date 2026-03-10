@@ -1,6 +1,6 @@
 # Shared API Contract
 
-This document captures the REST/WebSocket schema shared by backend, TUI, web, desktop, and iPad clients.
+This document captures the REST/WebSocket schema shared by the backend, Python/Textual TUI, and web client.
 
 ## Snapshot Endpoint
 
@@ -82,4 +82,3 @@ This document captures the REST/WebSocket schema shared by backend, TUI, web, de
 - `POST /api/v1/combos/sell`
 
 Define request/response schemas as the backend endpoints solidify.
-

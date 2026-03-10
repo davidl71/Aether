@@ -83,7 +83,7 @@ fi
 
 ### 4. **Port Checking with Health Check** (95% duplicate)
 
-**Found in:** 4 service scripts (Alpaca, IB, TradeStation, Discount Bank)
+**Found in:** 3 service scripts (Alpaca, IB, Discount Bank)
 **Lines duplicated:** ~25 lines per script = **100 lines total**
 
 **Current pattern:**
@@ -116,7 +116,7 @@ fi
 
 ### 5. **1Password Credential Reading** (100% duplicate)
 
-**Found in:** 3 service scripts (Alpaca x2, TradeStation)
+**Found in:** 2 service scripts (Alpaca x2)
 **Lines duplicated:** ~30 lines per script = **90 lines total**
 
 **Current pattern:**

@@ -27,13 +27,13 @@ This document describes how background work (threads, asyncio tasks, timers) is 
 
 ### 1.2 FastAPI backend services
 
-**Locations:** `python/integration/ib_service.py`, `alpaca_service.py`, `tastytrade_service.py`, `tradestation_service.py`, `discount_bank_service.py`, `python/services/health_dashboard.py`.
+**Locations:** `python/integration/ib_service.py`, `alpaca_service.py`, `tastytrade_service.py`, `discount_bank_service.py`, `python/services/health_dashboard.py`.
 
 | Service | Background work | Start | Stop | Notes |
 |---------|------------------|--------|------|--------|
 | **Health dashboard** | Long-lived asyncio task: `_nats_subscriber()` (connect, subscribe to `system.health`, `while True: sleep(60)`) | **Lifespan** `asynccontextmanager`: `task = asyncio.create_task(_nats_subscriber()); yield` | On yield exit: `task.cancel(); await task` | Correct pattern: one task, cancelled on shutdown. |
 | **Tastytrade** | DXLink WebSocket: `_receive_task = asyncio.create_task(_receive_loop())`; reconnects via `asyncio.create_task(_reconnect())` | `@app.on_event("startup")`: `await _init_dxlink(...)` | `@app.on_event("shutdown")`: `await dxlink_client.disconnect()` | Startup/shutdown are async; DXLink owns its receive task. |
-| **IB, Alpaca, TradeStation, Discount Bank, Analytics** | No long-lived background loops. | — | — | Health/snapshot publish: `asyncio.create_task(nats_client.publish_health(...))` (fire-and-forget). |
+| **IB, Alpaca, Discount Bank** | No long-lived background loops. | — | — | Health/snapshot publish: `asyncio.create_task(nats_client.publish_health(...))` (fire-and-forget). |
 
 **Lifecycle:** Health dashboard uses **lifespan** for one background task and cancels it on exit. Tastytrade uses **on_event("startup")** and **on_event("shutdown")** for DXLink init/cleanup. Other services do not start background tasks; they only fire one-off tasks for NATS publish.
 
@@ -49,7 +49,7 @@ This document describes how background work (threads, asyncio tasks, timers) is 
 | Process | Background work | Start | Stop | Notes |
 |---------|------------------|--------|------|--------|
 | **collection-daemon QuestDB sink (Go)** | Single process: `go run ./cmd/collection-daemon` with `QUESTDB_ILP_ADDR` set (NATS subscribe + QuestDB ILP write) | Started by `./scripts/run_questdb_nats_writer.sh` | Process exit or SIGINT | Go-only; QuestDB fanout now lives in the collector sink pipeline. |
-| **Strategy runner** (e.g. nautilus_strategy.py) | Sync `on_start()` / `on_stop()`; NATS connect via `asyncio.create_task(_connect_nats())` or `asyncio.run(_connect_nats())` depending on whether a loop is running | `runner.start()` → `on_start()` | `runner.stop()` → `on_stop()` | If run inside an event loop, create_task is used; otherwise asyncio.run. Multiple create_task calls for connect/reconnect are not tracked as a set. |
+| **Strategy runner** (historical/deprecated scaffold) | Sync `on_start()` / `on_stop()`; NATS connect via `asyncio.create_task(_connect_nats())` or `asyncio.run(_connect_nats())` depending on whether a loop is running | `runner.start()` → `on_start()` | `runner.stop()` → `on_stop()` | Historical Nautilus-oriented note only; not an active supported runtime path. |
 | **LEAN event_bridge** | Dedicated thread running a new asyncio loop: `Thread(target=_run_event_loop, daemon=True)`; loop runs forever | `event_bridge.start()` | `event_bridge.stop()`: set flag, `loop.call_soon_threadsafe(loop.stop)`, `thread.join(5.0)` | Clean shutdown with timeout; daemon=True so process exit kills thread if join times out. |
 
 **Gaps:**

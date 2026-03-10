@@ -19,7 +19,7 @@ Rough cutoffs:
 | **7–15 services** | Same as above; consider **one config file** (e.g. one nginx include or one Traefik labels file) so adding a service is one block. |
 | **15+ services** | **API gateway** (Kong, Traefik with more features, or cloud LB) can pay off: central auth, rate limits, routing. Optionally **consolidate** some backends (e.g. one FastAPI app with routers per “service”) to reduce ports and processes. |
 
-You’re in the **“3–6+”** range (IB, Alpaca, TradeStation, Tastytrade, Discount Bank, Risk-free rate, Rust backend, Web, etc.), so **reverse proxy + process manager** is already justified; gateway/consolidation is optional.
+You’re in the **“3–6+”** range (IB, Alpaca, Tastytrade, Discount Bank, Risk-free rate, Rust backend, Web, etc.), so **reverse proxy + process manager** is already justified; gateway/consolidation is optional.
 
 ---
 
@@ -115,7 +115,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 | File | Purpose |
 |------|--------|
-| `config/supervisord.conf` | All backends (ib, alpaca, tradestation, tastytrade, discount_bank, risk_free_rate, web, nats, rust_backend) with autorestart and logs. |
+| `config/supervisord.conf` | Historical example only; active backend surface no longer includes TradeStation or the removed analytics stack. |
 | `scripts/run_supervisord.sh` | Wrapper that sets `PROJECT_ROOT` and runs supervisord. |
 
 **Run:**
@@ -132,7 +132,7 @@ supervisorctl -c config/supervisord.conf status
 | File | Purpose |
 |------|--------|
 | `config/systemd/user/ib-box-spread.env` | Env file with `PROJECT_ROOT` (replaced on install). |
-| `config/systemd/user/ib-box-spread-*.service` | One unit per service (ib, alpaca, tradestation, tastytrade, discount_bank, risk_free_rate, web, nats). |
+| `config/systemd/user/ib-box-spread-*.service` | Historical unit pattern reference; update for the current reduced service set before reuse. |
 | `scripts/install_systemd_user_units.sh` | Copies units to `~/.config/systemd/user/` and sets `PROJECT_ROOT`. |
 
 **Install and run:**

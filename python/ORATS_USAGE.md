@@ -53,7 +53,7 @@ uv sync --project python --extra dev
 ### 4. Run
 
 ```bash
-uv run --project python python/nautilus_strategy.py --config config/config.json --dry-run
+uv run --project python -m python.integration.strategy_runner --config config/config.json --dry-run
 ```
 
 ---
@@ -301,7 +301,7 @@ ORATS integration fails gracefully:
 
 ```bash
 # Use delayed data API (no live subscription needed)
-python python/nautilus_strategy.py --config config/config.json --dry-run
+uv run --project python -m python.integration.strategy_runner --config config/config.json --dry-run
 ```
 
 ### Verify Integration
