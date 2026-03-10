@@ -163,7 +163,6 @@ This document serves as a comprehensive index of all documentation in the Synthe
 
 - `AGENTS.md` - Agent services overview
 - `agents/backend/README.md` - Backend agent
-- `agents/backend-market-data/README.md` - Market data agent
 - `agents/backend-data/README.md` - Data agent
 - `agents/web/README.md` - Web agent
 - `agents/shared/API_CONTRACT.md` - API contract

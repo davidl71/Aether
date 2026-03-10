@@ -20,7 +20,7 @@ Primary implementation areas:
 - `native/` — C++20 core engine, broker adapters, pricing/risk logic, Catch2 tests
 - `python/` — Python integration layer, TUI, bindings, tests
 - `agents/` — Rust backend agents
-- `web/`, `ios/`, `desktop/` — UI clients
+- `web/` — browser client
 - `docs/` — architecture, build, API, AI-editor setup
 
 ## Build, Test, Lint

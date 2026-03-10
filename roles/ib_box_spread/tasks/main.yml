@@ -124,11 +124,11 @@
   when: uv_check.rc == 0
   tags: ["project", "cmake"]
 
-- name: Install Python dependencies with uv (from requirements.in)
-  ansible.builtin.command: uv pip install --python "{{ repo_root }}/.venv/bin/python" -r "{{ repo_root }}/requirements.in"
+- name: Sync Python project dependencies with uv
+  ansible.builtin.command: uv sync --project "{{ repo_root }}/python" --extra dev --extra tui
   register: uv_pip_result
   failed_when: false
-  changed_when: "'Installed' in uv_pip_result.stdout or 'installed' in uv_pip_result.stdout"
+  changed_when: "'Resolved' in uv_pip_result.stdout or 'Installed' in uv_pip_result.stdout or 'Uninstalled' in uv_pip_result.stdout"
   environment:
     UV_CACHE_DIR: "{{ uv_cache_dir }}"
     PIP_CACHE_DIR: "{{ pip_cache_dir }}"
