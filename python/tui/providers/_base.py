@@ -82,3 +82,7 @@ class Provider(ABC):
     def is_running(self) -> bool:
         """Check if provider is running"""
         pass
+
+    def get_health(self) -> Optional[dict]:
+        """Optional provider health payload for providers that expose it."""
+        return None

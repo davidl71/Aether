@@ -34,8 +34,9 @@ def get_box_spread_payload(
 
     # Prefer API router base when set; otherwise derive base from snapshot endpoint
     base: Optional[str] = None
-    if getattr(config, "api_base_url", None):
-        base = config.api_base_url.strip().rstrip("/")
+    api_base_url = getattr(config, "api_base_url", None)
+    if api_base_url:
+        base = api_base_url.strip().rstrip("/")
     if not base:
         base = (config.rest_endpoint or "").rsplit("/", 1)[0]
 

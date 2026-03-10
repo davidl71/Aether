@@ -20,9 +20,6 @@
   // Python version
   "pythonVersion": "3.11",
 
-  // Python path - helps resolve imports
-  "pythonPath": "",
-
   // Extra paths for import resolution (relative to workspace root)
   "extraPaths": [
     "python",

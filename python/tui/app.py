@@ -18,6 +18,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+from typing import cast
 from typing import Optional, List, Dict, Any
 
 from textual.app import App, ComposeResult
@@ -459,7 +460,7 @@ class TUIApp(App):
         if environment:
             self.title = f"{self.TITLE}  [{environment.upper()}]"
         else:
-            self.title = self.TITLE
+            self.title = cast(str, self.TITLE)
 
     def on_mount(self) -> None:
         """Called when app starts"""
@@ -535,7 +536,6 @@ class TUIApp(App):
 
     def _get_provider_label(self) -> str:
         """Return short label for current data provider and endpoint (e.g. 'rest (8002 HTTP)', 'mock')."""
-        from urllib.parse import urlparse
         from .display_utils import format_endpoint_display
         if isinstance(self.provider, RestProvider):
             try:
@@ -606,7 +606,7 @@ class TUIApp(App):
             # Overlay disabled backends (e.g. missing API keys) so TUI shows "disabled" instead of unreachable
             for name, reason in getattr(self.config, "disabled_backends", {}).items():
                 all_health[name] = {"status": "disabled", "error": reason}
-            if not all_health and hasattr(self.provider, "get_health"):
+            if not all_health:
                 h = self.provider.get_health()
                 if h is not None:
                     all_health["current"] = h
@@ -712,8 +712,9 @@ class TUIApp(App):
     def _do_fetch_bank_accounts(self) -> Optional[List[Any]]:
         """Run in worker: fetch bank accounts from Discount Bank service or API router."""
         url = "http://localhost:8003/api/bank-accounts"
-        if getattr(self.config, "api_base_url", None):
-            base = self.config.api_base_url.strip().rstrip("/")
+        api_base_url = getattr(self.config, "api_base_url", None)
+        if api_base_url:
+            base = api_base_url.strip().rstrip("/")
             url = f"{base}/api/bank-accounts"
         try:
             import requests
@@ -951,8 +952,9 @@ class TUIApp(App):
                 or PRESET_REST_ENDPOINTS.get(ptype)
                 or "http://localhost:8002/api/v1/snapshot"
             )
-            if getattr(self.config, "api_base_url", None):
-                base = self.config.api_base_url.strip().rstrip("/")
+            api_base_url = getattr(self.config, "api_base_url", None)
+            if api_base_url:
+                base = api_base_url.strip().rstrip("/")
                 endpoint = f"{base}/api/v1/snapshot"
             params = {
                 "provider_type": ptype,
@@ -1070,8 +1072,9 @@ def create_provider_from_config(config: TUIConfig) -> Provider:
         )
 
     elif provider_type == "rest" or provider_type in PRESET_REST_ENDPOINTS:
-        if getattr(config, "api_base_url", None):
-            base = config.api_base_url.strip().rstrip("/")
+        api_base_url = getattr(config, "api_base_url", None)
+        if api_base_url:
+            base = api_base_url.strip().rstrip("/")
             endpoint = f"{base}/api/v1/snapshot"
         else:
             endpoint = (

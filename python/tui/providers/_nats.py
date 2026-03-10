@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import threading
-from typing import Optional
+from typing import Any, Optional
 
 from ..models import SnapshotPayload
 from ._base import Provider
@@ -16,7 +16,7 @@ try:
     import nats
     NATS_PY_AVAILABLE = True
 except ImportError:
-    nats = None  # type: ignore
+    nats = None  # type: ignore[assignment]
     NATS_PY_AVAILABLE = False
 
 # Optional: generated protobuf types for platform topics (snapshot.*, system.health)
@@ -24,8 +24,11 @@ try:
     from python.generated.ib.platform import v1 as pb_v1
     PROTO_AVAILABLE = True
 except ImportError:
-    pb_v1 = None  # type: ignore
+    pb_v1 = None  # type: ignore[assignment]
     PROTO_AVAILABLE = False
+
+nats_client: Any = nats
+pb_v1_module: Any = pb_v1
 
 # NOTE: Tests that patch NATS availability should use:
 #   @patch("tui.providers._nats.NATS_PY_AVAILABLE", False)
@@ -104,7 +107,10 @@ class NatsProvider(Provider):
     async def _subscribe_until_stop(self, stop_ev: asyncio.Event) -> None:
         nc = None
         try:
-            nc = await nats.connect(
+            if nats_client is None:
+                await stop_ev.wait()
+                return
+            nc = await nats_client.connect(
                 servers=[self.nats_url],
                 reconnect_time_wait=2,
                 max_reconnect_attempts=-1,
@@ -125,13 +131,13 @@ class NatsProvider(Provider):
             if not PROTO_AVAILABLE or pb_v1 is None:
                 return None
             try:
-                envelope = pb_v1.NatsEnvelope().parse(data)
+                envelope = pb_v1_module.NatsEnvelope().parse(data)
                 payload_bytes = getattr(envelope, "payload", None)
                 if not payload_bytes:
                     return None
                 msg_type = getattr(envelope, "message_type", "") or "SystemSnapshot"
                 if msg_type == "SystemSnapshot":
-                    snap = pb_v1.SystemSnapshot().parse(payload_bytes)
+                    snap = pb_v1_module.SystemSnapshot().parse(payload_bytes)
                     return system_snapshot_to_payload(snap)
                 return None
             except Exception:
@@ -155,16 +161,16 @@ class NatsProvider(Provider):
             if not PROTO_AVAILABLE or pb_v1 is None:
                 return None
             try:
-                envelope = pb_v1.NatsEnvelope().parse(data)
+                envelope = pb_v1_module.NatsEnvelope().parse(data)
                 payload_bytes = getattr(envelope, "payload", None)
                 if payload_bytes:
-                    health = pb_v1.BackendHealth().parse(payload_bytes)
+                    health = pb_v1_module.BackendHealth().parse(payload_bytes)
                     return backend_health_to_dict(health)
-                health = pb_v1.BackendHealth().parse(data)
+                health = pb_v1_module.BackendHealth().parse(data)
                 return backend_health_to_dict(health)
             except Exception:
                 try:
-                    health = pb_v1.BackendHealth().parse(data)
+                    health = pb_v1_module.BackendHealth().parse(data)
                     return backend_health_to_dict(health)
                 except Exception:
                     return None
