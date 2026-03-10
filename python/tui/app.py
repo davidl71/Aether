@@ -1,16 +1,4 @@
-"""
-Main TUI application using Textual
-
-This is the Python replacement for the C++ TUI (native/src/tui_app.cpp).
-It provides the same functionality with better performance and easier maintenance.
-
-MIGRATION NOTES FOR FUTURE C++ MIGRATION (pybind11):
-- UI rendering logic can stay in Python (Textual is Python-only)
-- Data processing can be moved to C++ and exposed via pybind11
-- Consider keeping Python TUI as reference implementation
-- Provider classes can be C++ implementations wrapped in Python
-- Keyboard shortcuts and event handling can remain in Python
-"""
+"""Main Textual TUI application."""
 
 from __future__ import annotations
 
@@ -80,15 +68,7 @@ TUI_TAB_IDS: List[str] = [
 
 
 class TUIApp(App):
-    """
-    Main TUI application
-
-    MIGRATION NOTES FOR FUTURE C++ MIGRATION (pybind11):
-    - This class structure can be mirrored in C++ using FTXUI
-    - Provider can be C++ class exposed via pybind11
-    - Consider keeping Python version as reference during migration
-    - Event handling and UI updates can remain in Python
-    """
+    """Main Textual TUI application."""
 
     CSS = """
     Screen {

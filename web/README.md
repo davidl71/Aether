@@ -1,8 +1,6 @@
 # IB Box Spread Web Interface
 
-React + Vite SPA that mirrors the terminal UI: live status banner, multi-tab dashboard (symbols, current/historic positions, orders, alerts), box-spread scenario explorer, and quick-action controls.
-
-**Now includes Progressive Web App (PWA) support** - install on mobile and desktop devices for offline access and native app-like experience.
+React + Vite web app that mirrors the terminal UI: live status banner, multi-tab dashboard (symbols, current/historic positions, orders, alerts), box-spread scenario explorer, and quick-action controls.
 
 ## Architecture
 
@@ -11,40 +9,9 @@ React + Vite SPA that mirrors the terminal UI: live status banner, multi-tab das
 - **UI composition**: Header status banner, scenario summary/table, pill-based tabs, reusable data grids with sparkline overlays, timeline + alert feeds, and modal detail sheets.
 - **Styling**: Dark trading desk palette via `src/styles/app.css`, responsive down to tablet width. SVG-based sparklines emulate TUI candle strips.
 - **Testing**: Vitest + Testing Library cover the dashboard render path with mocked snapshot/scenario responses.
-- **PWA**: Service worker caching, offline support, installable on mobile/desktop, automatic updates.
-
-## Progressive Web App (PWA)
-
-The app is fully configured as a PWA with:
-
-- **Offline Support**: Service worker caches assets and data for offline access
-- **Installable**: Can be installed on iOS, Android, and desktop browsers
-- **Auto Updates**: Service worker automatically updates when new versions are available
-- **Smart Caching**:
-  - Images: Cache-first (30 days)
-  - API calls: Network-first with 5-minute cache
-  - Data files: Stale-while-revalidate (1 day)
-
-### Installing the PWA
-
-**Desktop (Chrome/Edge):**
-1. Visit the app in your browser
-2. Click the install icon in the address bar
-3. Or use the browser menu: "Install IB Box Spread Dashboard"
-
-**Mobile (iOS Safari):**
-1. Open the app in Safari
-2. Tap the Share button
-3. Select "Add to Home Screen"
-
-**Mobile (Android Chrome):**
-1. Open the app in Chrome
-2. Tap the menu (three dots)
-3. Select "Install app" or "Add to Home screen"
-
 ### Generating Icons
 
-Icons are required for PWA installation. Generate them from a source image:
+Static web assets may still use app icons. Generate them from a source image:
 
 ```bash
 # Generate icons from a 512x512 PNG source image
@@ -60,19 +27,19 @@ The script requires ImageMagick:
 
 Icons will be generated in `public/icons/` with all required sizes (72x72 through 512x512).
 
-## Real data in the PWA
+## Real data in the web app
 
-By default the PWA uses static JSON under `public/data/` (e.g. `snapshot.json`, `box_spread_sample.json`) so it works offline. To use **live data**:
+By default the web app uses static JSON under `public/data/` (e.g. `snapshot.json`, `box_spread_sample.json`). To use **live data**:
 
-### Connect PWA to IB Gateway (live snapshot)
+### Connect web app to IB Gateway (live snapshot)
 
-The PWA does **not** talk to the gateway directly. It talks to the project’s **IB service** (Python), which uses the Client Portal API. Do all three:
+The web app does **not** talk to the gateway directly. It talks to the project’s **IB service** (Python), which uses the Client Portal API. Do all three:
 
 1. **IB Gateway** – running and logged in (e.g. `./ib-gateway/run-gateway.sh`, then open https://localhost:5001).
 2. **IB service** – run from repo root: `./web/scripts/run-ib-service.sh` (serves `http://127.0.0.1:8002/api/snapshot`).
-3. **PWA env** – in `web/.env` set `VITE_API_URL=http://127.0.0.1:8002/api/snapshot`, then **restart** the dev server (`npm run dev` in `web/`) so Vite picks up the change.
+3. **Web env** – in `web/.env` set `VITE_API_URL=http://127.0.0.1:8002/api/snapshot`, then **restart** the dev server (`npm run dev` in `web/`) so Vite picks up the change.
 
-If the PWA still shows static/zeros, check: gateway logged in, IB service running on 8002, `.env` has `VITE_API_URL`, and dev server was restarted after editing `.env`.
+If the web app still shows static/zeros, check: gateway logged in, IB service running on 8002, `.env` has `VITE_API_URL`, and the dev server was restarted after editing `.env`.
 
 **"Fetch error" or "Cannot connect to localhost:8002" (or 127.0.0.1:8002)?** The app is trying to reach the IB REST service on port 8002 and the connection failed (service not running or not reachable). Fix:
 
@@ -84,7 +51,7 @@ If the PWA still shows static/zeros, check: gateway logged in, IB service runnin
 
 1. **IB service must be running** – e.g. `./scripts/service.sh start ib` or it’s started by `./scripts/start_all_services.sh`.
 2. **Check that the service sees the gateway** – `curl -s http://127.0.0.1:8002/api/health`. If `ib_connected` is `false`, the service is getting 401 from the gateway. Browser login does **not** give the API its own session; the service may need to complete re-authentication (it calls `/iserver/reauthenticate`). Restart the IB service **after** you’re logged in at https://localhost:5000 and watch `logs/ib-service.log` for “Re-authentication” or errors. If the gateway shows a re-auth or approval prompt, complete it so the service gets a session.
-3. **Then** use the PWA or TUI with `VITE_API_URL=http://127.0.0.1:8002/api/snapshot` or `./scripts/run_python_tui.sh rest http://127.0.0.1:8002/api/snapshot`.
+3. **Then** use the web app or TUI with `VITE_API_URL=http://127.0.0.1:8002/api/snapshot` or `./scripts/run_python_tui.sh rest http://127.0.0.1:8002/api/snapshot`.
 
 ### 1. Snapshot / market data
 
@@ -130,13 +97,13 @@ Charts, cash flow, and opportunity simulation use the Rust backend URL. Account/
 2. Replace the combo action placeholders (`handleBuyCombo`, `handleSellCombo`) with REST/Socket calls into the order manager.
 3. Expand alert/order feeds with infinite scroll or server-sent events.
 4. Integrate charting (candles, heatmaps) once QuestDB / ORATS payloads are exposed.
-5. Add push notifications for alerts and order updates (PWA supports this).
+5. Add push notifications for alerts and order updates if the web client grows a browser-notification surface.
 
 ## Scripts
 
 ### Quick Start
 
-**Launch all PWA services (recommended):**
+**Launch all web services (recommended):**
 ```bash
 ./web/scripts/launch-all-pwa-services.sh
 ```
@@ -198,8 +165,8 @@ This script will:
 
 ### Manual Commands
 
-- `npm run dev` – start Vite dev server (PWA enabled in dev mode).
-- `npm run build` – produce optimized bundle in `dist/` with service worker.
+- `npm run dev` – start the Vite dev server.
+- `npm run build` – produce the optimized bundle in `dist/`.
 - `npm run preview` – preview the build locally.
 - `npm run lint` – ESLint flat config (React, TypeScript).
 - `npm run test` – Vitest run mode with jsdom.
@@ -208,12 +175,12 @@ Bootstrap with:
 
 ```bash
 bash agents/web/scripts/setup.sh   # npm install
-./scripts/generate-icons.sh         # Generate PWA icons
+./scripts/generate-icons.sh         # Generate app icons
 bash agents/web/scripts/run-tests.sh
 npm run dev
 ```
 
-Set `VITE_API_URL=http://127.0.0.1:8000/api/snapshot` (or your backend URL) to hit the live backend service (Alpaca or IB). The default static JSON under `public/data/` keeps the SPA functional offline, and the service worker caches it for offline access.
+Set `VITE_API_URL=http://127.0.0.1:8000/api/snapshot` (or your backend URL) to hit the live backend service (Alpaca or IB). The default static JSON under `public/data/` keeps the SPA functional even without a live backend.
 
 **See [ALPACA_INTEGRATION.md](./ALPACA_INTEGRATION.md) for Alpaca setup instructions.**
 **See [IB_INTEGRATION.md](./IB_INTEGRATION.md) for Interactive Brokers setup instructions.**

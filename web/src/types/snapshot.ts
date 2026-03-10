@@ -62,6 +62,16 @@ export interface PositionSnapshot {
   cash_flow?: number; // Expected cash flow amount
   collateral_value?: number; // Collateral value if applicable
   currency?: string; // Currency code (defaults to USD)
+  market_value?: number;
+  bid?: number;
+  ask?: number;
+  last?: number;
+  spread?: number;
+  price?: number;
+  side?: string;
+  expected_cash_at_expiry?: number;
+  dividend?: number;
+  conid?: number;
 }
 
 export interface TimelineEvent {
@@ -118,6 +128,7 @@ export interface SnapshotPayload {
   orders: TimelineEvent[];
   alerts: TimelineEvent[];
   cash_flow_timeline?: CashFlowTimeline;
+  future_events?: Array<Record<string, unknown>>;
 }
 
 export type Severity = TimelineEvent['severity'];

@@ -6,6 +6,7 @@
  */
 
 import type { PositionSnapshot } from '../types/snapshot';
+import type { BankAccount } from '../types/banking';
 
 const DEFAULT_CALCULATIONS_API_URL = 'http://localhost:8004';
 
@@ -19,19 +20,44 @@ function getCalculationsApiUrl(): string {
 
 export interface PositionInput {
   name: string;
+  quantity?: number | null;
+  roi?: number | null;
+  maker_count?: number | null;
+  taker_count?: number | null;
+  rebate_estimate?: number | null;
+  vega?: number | null;
+  theta?: number | null;
+  fair_diff?: number | null;
   maturity_date?: string | null;
   cash_flow?: number | null;
   candle?: { close?: number | null } | null;
   instrument_type?: string | null;
   rate?: number | null;
+  collateral_value?: number | null;
+  currency?: string | null;
+  market_value?: number | null;
+  bid?: number | null;
+  ask?: number | null;
+  last?: number | null;
+  spread?: number | null;
+  price?: number | null;
+  side?: string | null;
+  expected_cash_at_expiry?: number | null;
+  dividend?: number | null;
+  conid?: number | null;
 }
 
 export interface BankAccountInput {
   account_name: string;
   balance: number;
+  account_path?: string | null;
+  bank_name?: string | null;
+  account_number?: string | null;
   debit_rate?: number | null;
   credit_rate?: number | null;
   currency?: string | null;
+  balances_by_currency?: Record<string, number> | null;
+  is_mixed_currency?: boolean;
 }
 
 export interface CashFlowEvent {
@@ -95,36 +121,72 @@ export interface ScenarioCalculationResponse {
   capital_efficiency?: number | null;
 }
 
+export interface FrontendRelationship {
+  from: string;
+  to: string;
+  type: 'collateral' | 'margin' | 'financing' | 'investment';
+  description: string;
+  value: number;
+}
+
+export interface UnifiedPositionsResponse {
+  positions: PositionSnapshot[];
+}
+
+export interface RelationshipResponse {
+  relationships: FrontendRelationship[];
+  nodes: string[];
+}
+
 /**
  * Convert PositionSnapshot to PositionInput format
  */
 function positionToInput(position: PositionSnapshot): PositionInput {
   return {
     name: position.name,
+    quantity: position.quantity,
+    roi: position.roi,
+    maker_count: position.maker_count,
+    taker_count: position.taker_count,
+    rebate_estimate: position.rebate_estimate,
+    vega: position.vega,
+    theta: position.theta,
+    fair_diff: position.fair_diff,
     maturity_date: position.maturity_date || null,
     cash_flow: position.cash_flow ?? null,
     candle: position.candle ? { close: position.candle.close ?? null } : null,
     instrument_type: position.instrument_type || null,
     rate: position.rate ?? null,
+    collateral_value: position.collateral_value ?? null,
+    currency: position.currency ?? null,
+    market_value: position.market_value ?? null,
+    bid: position.bid ?? null,
+    ask: position.ask ?? null,
+    last: position.last ?? null,
+    spread: position.spread ?? null,
+    price: position.price ?? null,
+    side: position.side ?? null,
+    expected_cash_at_expiry: position.expected_cash_at_expiry ?? null,
+    dividend: position.dividend ?? null,
+    conid: position.conid ?? null,
   };
 }
 
 /**
  * Convert bank account to BankAccountInput format
  */
-function bankAccountToInput(account: {
-  account_name: string;
-  balance: number;
-  debit_rate?: number | null;
-  credit_rate?: number | null;
-  currency?: string | null;
-}): BankAccountInput {
+function bankAccountToInput(account: BankAccount): BankAccountInput {
   return {
     account_name: account.account_name,
     balance: account.balance,
+    account_path: account.account_path,
+    bank_name: account.bank_name,
+    account_number: account.account_number,
     debit_rate: account.debit_rate ?? null,
     credit_rate: account.credit_rate ?? null,
     currency: account.currency || null,
+    balances_by_currency: account.balances_by_currency ?? null,
+    is_mixed_currency: account.is_mixed_currency ?? false,
   };
 }
 
@@ -133,13 +195,7 @@ function bankAccountToInput(account: {
  */
 export async function calculateCashFlowTimeline(
   positions: PositionSnapshot[],
-  bankAccounts: Array<{
-    account_name: string;
-    balance: number;
-    debit_rate?: number | null;
-    credit_rate?: number | null;
-    currency?: string | null;
-  }>,
+  bankAccounts: BankAccount[],
   projectionMonths: number = 12
 ): Promise<CashFlowTimelineResponse> {
   const apiUrl = getCalculationsApiUrl();
@@ -170,12 +226,7 @@ export async function calculateCashFlowTimeline(
  */
 export async function findSimulationScenarios(
   positions: PositionSnapshot[],
-  bankAccounts: Array<{
-    account_name: string;
-    balance: number;
-    debit_rate?: number | null;
-    credit_rate?: number | null;
-  }>
+  bankAccounts: BankAccount[]
 ): Promise<SimulationScenario[]> {
   const apiUrl = getCalculationsApiUrl();
   const request: OpportunitySimulationRequest = {
@@ -194,6 +245,54 @@ export async function findSimulationScenarios(
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Scenario discovery failed: ${response.status} ${errorText}`);
+  }
+
+  return response.json();
+}
+
+export async function fetchUnifiedPositions(
+  positions: PositionSnapshot[],
+  bankAccounts: BankAccount[]
+): Promise<UnifiedPositionsResponse> {
+  const apiUrl = getCalculationsApiUrl();
+  const response = await fetch(`${apiUrl}/api/v1/frontend/unified-positions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      positions: positions.map(positionToInput),
+      bank_accounts: bankAccounts.map(bankAccountToInput),
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Unified positions fetch failed: ${response.status} ${errorText}`);
+  }
+
+  return response.json();
+}
+
+export async function fetchRelationships(
+  positions: PositionSnapshot[],
+  bankAccounts: BankAccount[]
+): Promise<RelationshipResponse> {
+  const apiUrl = getCalculationsApiUrl();
+  const response = await fetch(`${apiUrl}/api/v1/frontend/relationships`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      positions: positions.map(positionToInput),
+      bank_accounts: bankAccounts.map(bankAccountToInput),
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Relationship fetch failed: ${response.status} ${errorText}`);
   }
 
   return response.json();

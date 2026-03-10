@@ -15,6 +15,7 @@ from textual.app import ComposeResult
 
 from ..models import SnapshotPayload, PositionSnapshot, Candle
 from .snapshot_display import ENVIRONMENT_LABELS, ENVIRONMENT_MARKUP
+from ...integration.frontend_views import normalize_bank_accounts_to_positions
 
 try:
     from ...integration.dte_utils import days_to_maturity_from_date
@@ -139,57 +140,17 @@ class UnifiedPositionsTab(Container):
 
     def _convert_bank_accounts_to_positions(self) -> List[PositionSnapshot]:
         """Convert bank accounts to PositionSnapshot objects"""
-        positions = []
-        for account in self.bank_accounts:
-            rate = account.get('credit_rate') or account.get('debit_rate')
-            balances_by_currency = account.get('balances_by_currency')
-            if account.get('is_mixed_currency') and isinstance(balances_by_currency, dict):
-                for currency, amount in balances_by_currency.items():
-                    positions.append(
-                        self._make_bank_account_position(
-                            account,
-                            rate,
-                            currency=currency or 'USD',
-                            amount=amount,
-                            name_suffix=f" ({currency})" if currency else "",
-                        )
-                    )
-                continue
-            positions.append(
-                self._make_bank_account_position(
-                    account,
-                    rate,
-                    currency=account.get('currency', 'USD'),
-                    amount=account.get('balance', 0.0),
-                )
-            )
-        return positions
-
-    def _make_bank_account_position(
-        self,
-        account: Dict,
-        rate: Optional[float],
-        currency: str,
-        amount: float,
-        name_suffix: str = "",
-    ) -> PositionSnapshot:
-        """Build a display position for a bank-account balance."""
-        return PositionSnapshot(
-            name=f"{account.get('account_name', '')}{name_suffix}",
-            quantity=1,
-            roi=rate * 100 if rate else 0.0,
-            maker_count=0,
-            taker_count=0,
-            rebate_estimate=0.0,
-            vega=0.0,
-            theta=0.0,
-            fair_diff=0.0,
-            candle=self.snapshot.positions[0].candle if self.snapshot and self.snapshot.positions else Candle(),
-            instrument_type='bank_loan',
-            rate=rate,
-            currency=currency,
-            cash_flow=amount,
+        reference_candle = (
+            self.snapshot.positions[0].candle.to_dict()
+            if self.snapshot and self.snapshot.positions
+            else Candle().to_dict()
         )
+        return [
+            PositionSnapshot.from_dict(position)
+            for position in normalize_bank_accounts_to_positions(
+                self.bank_accounts, reference_candle=reference_candle
+            )
+        ]
 
     def _group_positions(self, positions: List[PositionSnapshot]) -> Dict[str, List[PositionSnapshot]]:
         """Group positions by instrument type"""

@@ -1,121 +1,50 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { PositionSnapshot } from '../types/snapshot';
 import { formatCurrency } from '../utils/formatters';
 import '../styles/relationship-visualization.css';
+import type { BankAccount } from '../types/banking';
+import { fetchRelationships, type FrontendRelationship } from '../api/calculations';
 
 interface RelationshipVisualizationPanelProps {
   positions: PositionSnapshot[];
-  bankAccounts?: {
-    account_path: string;
-    account_name: string;
-    bank_name: string | null;
-    balance: number;
-    currency: string;
-    credit_rate: number | null;
-    debit_rate: number | null;
-  }[];
-}
-
-interface Relationship {
-  from: string;
-  to: string;
-  type: 'collateral' | 'margin' | 'financing' | 'investment';
-  description: string;
-  value: number;
+  bankAccounts?: BankAccount[];
 }
 
 export function RelationshipVisualizationPanel({
   positions,
   bankAccounts = [],
 }: RelationshipVisualizationPanelProps) {
-  // Build relationship graph from positions
-  const relationships = useMemo(() => {
-    const rels: Relationship[] = [];
+  const [relationships, setRelationships] = useState<FrontendRelationship[]>([]);
+  const [nodes, setNodes] = useState<string[]>([]);
 
-    // Find loans
-    const loans = positions.filter(
-      p => p.instrument_type === 'bank_loan' || p.instrument_type === 'pension_loan'
-    );
-    const bankLoans = bankAccounts.filter(a => a.debit_rate && a.debit_rate > 0);
+  useEffect(() => {
+    let cancelled = false;
 
-    // Find box spreads
-    const boxSpreads = positions.filter(p => p.instrument_type === 'box_spread');
-
-    // Find bonds/funds
-    const bonds = positions.filter(
-      p => p.instrument_type === 'bond' || p.instrument_type === 't_bill'
-    );
-
-    // Relationship 1: Loan → Box Spread (margin)
-    for (const loan of loans) {
-      for (const boxSpread of boxSpreads) {
-        rels.push({
-          from: loan.name,
-          to: boxSpread.name,
-          type: 'margin',
-          description: 'Loan used as margin for box spread',
-          value: loan.cash_flow || loan.candle.close || 0,
-        });
-      }
-    }
-
-    // Relationship 2: Loan → Investment (fund/bond)
-    for (const loan of loans) {
-      for (const bond of bonds) {
-        rels.push({
-          from: loan.name,
-          to: bond.name,
-          type: 'investment',
-          description: 'Loan proceeds invested in bond',
-          value: loan.cash_flow || loan.candle.close || 0,
-        });
-      }
-    }
-
-    // Relationship 3: Investment → Collateral (for cheaper loan)
-    for (const bond of bonds) {
-      for (const loan of loans) {
-        if ((bond.rate || 0) > (loan.rate || 0)) {
-          rels.push({
-            from: bond.name,
-            to: loan.name,
-            type: 'collateral',
-            description: 'Bond used as collateral for loan',
-            value: bond.collateral_value || bond.cash_flow || bond.candle.close || 0,
-          });
+    async function loadRelationships() {
+      try {
+        const result = await fetchRelationships(positions, bankAccounts);
+        if (!cancelled) {
+          setRelationships(result.relationships);
+          setNodes(result.nodes);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to fetch relationships:', error);
+          setRelationships([]);
+          setNodes([]);
         }
       }
     }
 
-    // Relationship 4: Box Spread → Financing (synthetic financing)
-    for (const boxSpread of boxSpreads) {
-      rels.push({
-        from: boxSpread.name,
-        to: 'Synthetic Financing',
-        type: 'financing',
-        description: 'Box spread provides synthetic financing',
-        value: boxSpread.cash_flow || boxSpread.candle.close || 0,
-      });
-    }
-
-    return rels;
+    void loadRelationships();
+    return () => {
+      cancelled = true;
+    };
   }, [positions, bankAccounts]);
-
-  // Get unique nodes
-  const nodes = useMemo(() => {
-    const nodeSet = new Set<string>();
-    relationships.forEach(rel => {
-      nodeSet.add(rel.from);
-      nodeSet.add(rel.to);
-    });
-    positions.forEach(pos => nodeSet.add(pos.name));
-    bankAccounts.forEach(acc => nodeSet.add(acc.account_name));
-    return Array.from(nodeSet);
-  }, [relationships, positions, bankAccounts]);
 
   // Group relationships by type
   const relationshipsByType = useMemo(() => {
-    const grouped: Record<string, Relationship[]> = {
+    const grouped: Record<string, FrontendRelationship[]> = {
       collateral: [],
       margin: [],
       financing: [],

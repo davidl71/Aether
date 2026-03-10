@@ -1,19 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { PositionSnapshot, InstrumentType } from '../types/snapshot';
 import { formatCurrency, formatPercent } from '../utils/formatters';
 import { Sparkline } from './Sparkline';
+import type { BankAccount } from '../types/banking';
+import { fetchUnifiedPositions } from '../api/calculations';
 
 interface UnifiedPositionsPanelProps {
   positions: PositionSnapshot[];
-  bankAccounts?: Array<{
-    account_path: string;
-    account_name: string;
-    bank_name: string | null;
-    balance: number;
-    currency: string;
-    credit_rate: number | null;
-    debit_rate: number | null;
-  }>;
+  bankAccounts?: BankAccount[];
   onSelectPosition: (position: PositionSnapshot) => void;
 }
 
@@ -51,38 +45,36 @@ export function UnifiedPositionsPanel({
   );
   const [filterType, setFilterType] = useState<InstrumentType | 'all'>('all');
 
-  // Convert bank accounts to positions
-  const bankAccountPositions: PositionSnapshot[] = useMemo(() => {
-    return bankAccounts.map((account) => ({
-      name: account.account_name,
-      quantity: 1,
-      roi: account.credit_rate ? account.credit_rate * 100 : 0,
-      maker_count: 0,
-      taker_count: 0,
-      rebate_estimate: 0,
-      vega: 0,
-      theta: 0,
-      fair_diff: 0,
-      candle: {
-        open: account.balance,
-        high: account.balance,
-        low: account.balance,
-        close: account.balance,
-        volume: 0,
-        entry: account.balance,
-        updated: new Date().toISOString(),
-      },
-      instrument_type: 'bank_loan' as InstrumentType,
-      rate: account.credit_rate || account.debit_rate || undefined,
-      currency: account.currency,
-      cash_flow: account.balance,
-    }));
-  }, [bankAccounts]);
+  const [allPositions, setAllPositions] = useState<PositionSnapshot[]>(positions);
+  const [loadingUnifiedPositions, setLoadingUnifiedPositions] = useState(false);
 
-  // Combine all positions
-  const allPositions = useMemo(() => {
-    return [...positions, ...bankAccountPositions];
-  }, [positions, bankAccountPositions]);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadUnifiedPositions() {
+      setLoadingUnifiedPositions(true);
+      try {
+        const result = await fetchUnifiedPositions(positions, bankAccounts);
+        if (!cancelled) {
+          setAllPositions(result.positions);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to fetch unified positions:', error);
+          setAllPositions(positions);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingUnifiedPositions(false);
+        }
+      }
+    }
+
+    void loadUnifiedPositions();
+    return () => {
+      cancelled = true;
+    };
+  }, [positions, bankAccounts]);
 
   // Group positions by instrument type
   const groupedPositions = useMemo(() => {
@@ -203,6 +195,7 @@ export function UnifiedPositionsPanel({
         <div>
           <h2>Unified Positions</h2>
           <p>All positions across all instrument types ({totalPositions} total)</p>
+          {loadingUnifiedPositions && <p className="text-muted">Refreshing unified positions…</p>}
         </div>
         <div className="panel__filters">
           <select

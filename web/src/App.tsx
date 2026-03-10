@@ -89,7 +89,7 @@ function renderTabContent(
             onRemoveSymbol={onRemoveSymbol}
             isDefaultSymbol={isDefaultSymbol}
           />
-          <BankAccountsPanel serviceUrl="http://localhost:8003" />
+          <BankAccountsPanel />
         </>
       );
     case 'current':

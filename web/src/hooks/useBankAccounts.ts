@@ -1,4 +1,4 @@
-import type { BankAccount } from '../components/BankAccountsPanel';
+import type { BankAccount } from '../types/banking';
 import { getServiceUrl } from '../config/ports';
 import { useFetchJSON } from './useFetchJSON';
 

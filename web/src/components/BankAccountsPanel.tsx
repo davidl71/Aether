@@ -1,61 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
+import { useBankAccounts } from '../hooks/useBankAccounts';
+import type { BankAccount } from '../types/banking';
 
-export interface BankAccount {
-  account_path: string;
-  account_name: string;
-  bank_name: string | null;
-  account_number: string | null;
-  balance: number;
-  currency: string;
-  balance_date: string | null;
-  credit_rate: number | null;
-  debit_rate: number | null;
-}
-
-interface BankAccountsResponse {
-  accounts: BankAccount[];
-  total_count: number;
-}
+export type { BankAccount } from '../types/banking';
 
 interface BankAccountsPanelProps {
   serviceUrl?: string;
 }
 
-export function BankAccountsPanel({ serviceUrl = 'http://localhost:8003' }: BankAccountsPanelProps) {
-  const [accounts, setAccounts] = useState<BankAccount[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchAccounts = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`${serviceUrl}/api/bank-accounts`, {
-          headers: { 'cache-control': 'no-cache' }
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch bank accounts: ${response.status}`);
-        }
-
-        const data = (await response.json()) as BankAccountsResponse;
-        setAccounts(data.accounts);
-        setError(null);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        setError(errorMessage);
-        setAccounts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAccounts();
-
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchAccounts, 30000);
-    return () => clearInterval(interval);
-  }, [serviceUrl]);
+export function BankAccountsPanel({ serviceUrl }: BankAccountsPanelProps) {
+  const { accounts, loading, error } = useBankAccounts(serviceUrl);
 
   const formatBalance = (balance: number, currency: string): string => {
     const sign = balance >= 0 ? '' : '-';
@@ -67,6 +21,33 @@ export function BankAccountsPanel({ serviceUrl = 'http://localhost:8003' }: Bank
     if (rate === null) return '—';
     return `${(rate * 100).toFixed(2)}%`;
   };
+
+  const totalBalanceLabel = useMemo(() => {
+    const totalsByCurrency = new Map<string, number>();
+    accounts.forEach((account) => {
+      if (account.is_mixed_currency && account.balances_by_currency) {
+        Object.entries(account.balances_by_currency).forEach(([currency, amount]) => {
+          totalsByCurrency.set(currency, (totalsByCurrency.get(currency) || 0) + amount);
+        });
+        return;
+      }
+      totalsByCurrency.set(
+        account.currency,
+        (totalsByCurrency.get(account.currency) || 0) + account.balance
+      );
+    });
+
+    if (totalsByCurrency.size === 0) {
+      return formatBalance(0, 'USD');
+    }
+    if (totalsByCurrency.size === 1) {
+      const [currency, amount] = Array.from(totalsByCurrency.entries())[0];
+      return formatBalance(amount, currency);
+    }
+    return Array.from(totalsByCurrency.entries())
+      .map(([currency, amount]) => formatBalance(amount, currency))
+      .join(' | ');
+  }, [accounts]);
 
   if (loading) {
     return (
@@ -82,7 +63,7 @@ export function BankAccountsPanel({ serviceUrl = 'http://localhost:8003' }: Bank
       <div className="panel">
         <h2>Bank Accounts</h2>
         <p className="error">Error loading bank accounts: {error}</p>
-        <p className="text-muted">Make sure the Discount Bank service is running on port 8003</p>
+        <p className="text-muted">Make sure the bank-account service is running and reachable.</p>
       </div>
     );
   }
@@ -96,9 +77,6 @@ export function BankAccountsPanel({ serviceUrl = 'http://localhost:8003' }: Bank
     );
   }
 
-  const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
-  const primaryCurrency = accounts[0]?.currency || 'USD';
-
   return (
     <div className="panel">
       <h2>Bank Accounts</h2>
@@ -109,7 +87,7 @@ export function BankAccountsPanel({ serviceUrl = 'http://localhost:8003' }: Bank
         </div>
         <div className="summary-item">
           <span className="label">Total Balance:</span>
-          <span className="value">{formatBalance(totalBalance, primaryCurrency)}</span>
+          <span className="value">{totalBalanceLabel}</span>
         </div>
       </div>
 
@@ -137,9 +115,13 @@ export function BankAccountsPanel({ serviceUrl = 'http://localhost:8003' }: Bank
               </td>
               <td>{account.bank_name || '—'}</td>
               <td className={account.balance >= 0 ? 'positive' : 'negative'}>
-                {formatBalance(account.balance, account.currency)}
+                {account.is_mixed_currency && account.balances_by_currency
+                  ? Object.entries(account.balances_by_currency)
+                      .map(([currency, amount]) => formatBalance(amount, currency))
+                      .join(' | ')
+                  : formatBalance(account.balance, account.currency)}
               </td>
-              <td>{account.currency}</td>
+              <td>{account.is_mixed_currency ? 'MULTI' : account.currency}</td>
               <td>{formatRate(account.credit_rate)}</td>
               <td>{formatRate(account.debit_rate)}</td>
             </tr>
