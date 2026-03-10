@@ -147,7 +147,6 @@ This starts all PWA services including:
 - Web frontend (port 5173)
 - Alpaca service (port 8000)
 - IB service (port 8000, optional)
-- TradeStation service (port 8001)
 - **Discount Bank service (port 8003)** ✨
 
 ## Troubleshooting

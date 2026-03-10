@@ -183,6 +183,8 @@ Selecting the right broker for algorithmic trading in Israel requires careful co
 
 ### 4. TradeStation Global
 
+> Historical comparison only. TradeStation is not part of the active supported runtime in this repo.
+
 **Key Features**:
 
 - **Powerful API**: Comprehensive trading API

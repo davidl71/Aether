@@ -1,6 +1,8 @@
 # Research Documents Master Index
 
-**Purpose**: Central navigation hub for all research, learnings, analysis, and integration documents in this project.
+**Purpose**: Central navigation hub for research, learnings, analysis, and integration documents in this project.
+
+> Historical note: this index intentionally includes older evaluation material about deferred Apple clients, deprecated Nautilus work, and removed broker/service paths. Treat it as research/archive context, not as the source of truth for the active runtime. For the current system shape, start with `docs/platform/CURRENT_TOPOLOGY.md`.
 
 **Last Updated**: 2025-11-20
 **Total Documents**: 300+ research documents indexed

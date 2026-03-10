@@ -75,7 +75,7 @@ Ticker is a Go-based terminal UI application for tracking stocks, cryptocurrenci
    - Alert system
 
 2. **Data Sources**
-   - REST endpoints (shared with web/iPad)
+   - REST endpoints (shared with web)
    - WebSocket for real-time updates
    - Mock TWS service for testing
    - QuestDB for historical data

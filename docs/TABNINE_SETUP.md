@@ -74,7 +74,7 @@ The following Tabnine settings have been configured for this project:
 Enabled for all project languages:
 
 - **C++20** (`cpp`, `c`) - Core trading logic
-- **Python** - Cython bindings, NautilusTrader integration
+- **Python** - TUI, integration services, bindings
 - **TypeScript/React** - Web dashboard
 - **Rust** - Backend services
 - **Go** - Multi-language agents
