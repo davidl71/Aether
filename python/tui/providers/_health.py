@@ -14,7 +14,6 @@ from ._base import (
     BACKEND_HEALTH_TIMEOUT_SEC,
     BACKEND_HEALTH_TIMEOUT_IB_SEC,
     BACKEND_HEALTH_INTERVAL_SEC,
-    _connection_error_hint,
 )
 
 logger = logging.getLogger(__name__)

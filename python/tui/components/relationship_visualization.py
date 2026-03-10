@@ -157,8 +157,9 @@ class RelationshipVisualizationTab(Container):
         for rel in relationships:
             nodes.add(rel['from'])
             nodes.add(rel['to'])
-        for pos in self.snapshot.positions:
-            nodes.add(pos.name)
+        if self.snapshot:
+            for pos in self.snapshot.positions:
+                nodes.add(pos.name)
         for acc in self.bank_accounts:
             nodes.add(acc.get('account_name', ''))
         return list(nodes)

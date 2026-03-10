@@ -37,7 +37,7 @@ class AlertsTab(SnapshotTabBase):
                 )
                 severity_style = self._get_severity_style(alert.severity)
                 log.write(
-                    f"[{time_str}] [{severity_style}]{alert.text}[/]", markup=True
+                    f"[{time_str}] [{severity_style}]{alert.text}[/]"
                 )
         except Exception:
             pass

@@ -10,6 +10,7 @@ from textual.app import ComposeResult
 
 from .base import SnapshotTabBase
 from .snapshot_display import format_updated_display
+from ..models import SnapshotPayload
 
 # Default watchlist when none provided (must match config default for mock sync)
 DEFAULT_WATCHLIST: List[str] = ["SPX", "XSP", "NANOS", "TLT", "DSP"]
@@ -30,14 +31,30 @@ BACKEND_DISPLAY_NAMES: Dict[str, str] = {
 class DashboardTab(SnapshotTabBase):
     """Dashboard tab showing symbols and metrics."""
 
-    def __init__(self, snapshot: Optional[object] = None, *args: object, **kwargs: object) -> None:
-        self.watchlist: List[str] = list(kwargs.pop("watchlist", None) or DEFAULT_WATCHLIST)
+    def __init__(
+        self,
+        snapshot: Optional[SnapshotPayload] = None,
+        watchlist: Optional[List[str]] = None,
+        *,
+        name: Optional[str] = None,
+        id: Optional[str] = None,
+        classes: Optional[str] = None,
+        disabled: bool = False,
+    ) -> None:
+        self.watchlist: List[str] = list(watchlist or DEFAULT_WATCHLIST)
         self._backend_health: Optional[Dict[str, Any]] = None
-        super().__init__(*args, snapshot=snapshot, **kwargs)
+        super().__init__(
+            snapshot=snapshot,
+            name=name,
+            id=id,
+            classes=classes,
+            disabled=disabled,
+        )
 
-    def update_snapshot(self, snapshot: Any, **kwargs: object) -> None:
+    def update_snapshot(self, snapshot: SnapshotPayload, **kwargs: object) -> None:
         """Accept backend_health for action items (e.g. services awaiting authentication)."""
-        self._backend_health = kwargs.pop("backend_health", None)
+        backend_health = kwargs.pop("backend_health", None)
+        self._backend_health = backend_health if isinstance(backend_health, dict) else None
         super().update_snapshot(snapshot, **kwargs)
 
     def compose(self) -> ComposeResult:

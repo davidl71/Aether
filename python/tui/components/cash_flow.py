@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Optional, Dict, List
 from datetime import datetime
 from textual.widgets import DataTable, Label, Select
+from textual.widgets.select import NoSelection
 from textual.containers import Container, Vertical, Horizontal
 from textual.app import ComposeResult
 
@@ -65,7 +66,9 @@ class CashFlowTab(Container):
     def on_select_changed(self, event: Select.Changed) -> None:
         """Handle projection period change"""
         if event.control.id == "projection-select":
-            self.projection_months = int(event.value)
+            if isinstance(event.value, NoSelection):
+                return
+            self.projection_months = int(str(event.value))
             self._update_data()
 
     def _update_data(self) -> None:

@@ -33,6 +33,7 @@ from ._file import FileProvider
 from ._nats import NatsProvider, NATS_PY_AVAILABLE
 
 __all__ = [
+    "requests",
     "Provider",
     "normalize_rest_endpoint",
     "BACKEND_HEALTH_TIMEOUT_SEC",

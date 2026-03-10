@@ -10,6 +10,7 @@ from textual.app import ComposeResult
 
 from .base import SnapshotTabBase
 from .snapshot_display import BACKEND_DISPLAY_NAMES
+from ..models import SnapshotPayload
 
 # provider_type (snapshot source) -> backend key for health map (same as setup_screen)
 PROVIDER_TYPE_TO_BACKEND_KEY: Dict[str, str] = {
@@ -86,14 +87,32 @@ def _build_brokers_table_rows(
 class BrokersTab(SnapshotTabBase):
     """Tab showing brokers/accounts: data source, live/paper mode, health, total positions."""
 
-    def __init__(self, snapshot: Optional[object] = None, *args: object, **kwargs: object) -> None:
+    def __init__(
+        self,
+        snapshot: Optional[SnapshotPayload] = None,
+        *,
+        name: Optional[str] = None,
+        id: Optional[str] = None,
+        classes: Optional[str] = None,
+        disabled: bool = False,
+    ) -> None:
         self._backend_health: Optional[Dict[str, Any]] = None
         self._current_provider_type: Optional[str] = None
-        super().__init__(*args, snapshot=snapshot, **kwargs)
+        super().__init__(
+            snapshot=snapshot,
+            name=name,
+            id=id,
+            classes=classes,
+            disabled=disabled,
+        )
 
-    def update_snapshot(self, snapshot: Any, **kwargs: object) -> None:
-        self._backend_health = kwargs.pop("backend_health", None)
-        self._current_provider_type = kwargs.pop("current_provider_type", None)
+    def update_snapshot(self, snapshot: SnapshotPayload, **kwargs: object) -> None:
+        backend_health = kwargs.pop("backend_health", None)
+        current_provider_type = kwargs.pop("current_provider_type", None)
+        self._backend_health = backend_health if isinstance(backend_health, dict) else None
+        self._current_provider_type = (
+            current_provider_type if isinstance(current_provider_type, str) else None
+        )
         super().update_snapshot(snapshot, **kwargs)
 
     def compose(self) -> ComposeResult:

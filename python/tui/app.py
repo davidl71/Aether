@@ -653,7 +653,7 @@ class TUIApp(App):
                         all_health[name] = {"status": "error", "error": "retrying…", "hint": "Backend may be restarting"}
                 status_bar.backend_health = all_health or None
                 status_bar._refresh()
-                if self._brokers_tab:
+                if self._brokers_tab and self.snapshot is not None:
                     self._brokers_tab.update_snapshot(
                         self.snapshot,
                         backend_health=all_health or None,

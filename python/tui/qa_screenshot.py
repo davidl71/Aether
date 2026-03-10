@@ -276,6 +276,12 @@ class QAScreenshotApp:
         saved_path: list[str] = []  # single-element list so closure can set it
 
         class QAApp(TUIApp):
+            output_path: Path
+            output_dir: Path
+            tab_id: str | None
+            all_tabs: bool
+            delay: float
+
             def on_mount(self) -> None:
                 super().on_mount()
 

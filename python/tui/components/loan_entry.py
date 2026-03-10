@@ -21,11 +21,21 @@ from textual.widgets import (
     Input, Select, Button, Label, DataTable, Static, Log
 )
 from textual.message import Message
+from textual.widgets.select import NoSelection
 
 logger = logging.getLogger(__name__)
 
 VALID_LOAN_TYPES = {"SHIR_BASED", "CPI_LINKED"}
 VALID_LOAN_STATUSES = {"ACTIVE", "PAID_OFF", "DEFAULTED"}
+
+
+def _select_value(value: object, default: str) -> str:
+    """Normalize Textual Select values for strongly typed form parsing."""
+    if isinstance(value, str) and value:
+        return value
+    if isinstance(value, NoSelection):
+        return default
+    return default
 
 
 @dataclass
@@ -426,9 +436,12 @@ class LoanEntryForm(Container):
         """Parse form data and create LoanPosition"""
         try:
             loan_id = self.query_one("#loan-id", Input).value.strip()
-            bank_name = self.query_one("#bank-name", Select).value or ""
+            bank_name = _select_value(self.query_one("#bank-name", Select).value, "")
             account_number = self.query_one("#account-number", Input).value.strip()
-            loan_type = self.query_one("#loan-type", Select).value or "SHIR_BASED"
+            loan_type = _select_value(
+                self.query_one("#loan-type", Select).value,
+                "SHIR_BASED",
+            )
             principal = float(self.query_one("#principal", Input).value or "0")
             original_principal = float(self.query_one("#original-principal", Input).value or "0")
             interest_rate = float(self.query_one("#interest-rate", Input).value or "0")
@@ -440,7 +453,7 @@ class LoanEntryForm(Container):
             next_payment_date_str = self.query_one("#next-payment-date", Input).value.strip()
             monthly_payment = float(self.query_one("#monthly-payment", Input).value or "0")
             payment_frequency = int(self.query_one("#payment-frequency", Input).value or "1")
-            status = self.query_one("#status", Select).value or "ACTIVE"
+            status = _select_value(self.query_one("#status", Select).value, "ACTIVE")
 
             # Convert dates to ISO 8601 format
             now = datetime.utcnow()
@@ -484,6 +497,11 @@ class LoanEntryForm(Container):
 
             if loan:
                 if self.is_editing:
+                    if self.existing_loan is None:
+                        self.query_one("#error-message", Static).update(
+                            "Error: missing existing loan state for edit"
+                        )
+                        return
                     success, error = self.loan_manager.update_loan(self.existing_loan.loan_id, loan)
                 else:
                     success, error = self.loan_manager.add_loan(loan)

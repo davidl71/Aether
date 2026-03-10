@@ -21,7 +21,7 @@ except ImportError:
 
 # Optional: generated protobuf types for platform topics (snapshot.*, system.health)
 try:
-    from python.generated.ib.platform import v1 as pb_v1
+    from python.generated.ib.platform import v1 as pb_v1  # pyright: ignore[reportMissingImports]
     PROTO_AVAILABLE = True
 except ImportError:
     pb_v1 = None  # type: ignore[assignment]

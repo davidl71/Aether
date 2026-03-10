@@ -713,6 +713,11 @@ class NatsProvider(Provider):
 
     async def _subscribe_until_stop(self, stop_ev: asyncio.Event) -> None:
         nc = None
+        if nats is None:
+            with self._health_lock:
+                self._last_health = {"status": "error", "error": "nats-py not installed"}
+            await stop_ev.wait()
+            return
         try:
             nc = await nats.connect(
                 servers=[self.nats_url],

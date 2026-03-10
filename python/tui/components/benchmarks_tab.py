@@ -109,8 +109,15 @@ def _fetch_benchmarks_direct() -> Tuple[Optional[Dict[str, Any]], Optional[Dict[
 class BenchmarksTab(Container):
     """Tab showing SOFR and Treasury benchmark rates from the risk-free-rate service."""
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        *,
+        name: Optional[str] = None,
+        id: Optional[str] = None,
+        classes: Optional[str] = None,
+        disabled: bool = False,
+    ) -> None:
+        super().__init__(name=name, id=id, classes=classes, disabled=disabled)
         self._sofr: Optional[Dict[str, Any]] = None
         self._treasury: Optional[Dict[str, Any]] = None
         self._error: Optional[str] = None

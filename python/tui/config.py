@@ -244,8 +244,9 @@ def load_config() -> TUIConfig:
             from_services = _backend_ports_from_services(shared_config.services)
             config.backend_ports = {**DEFAULT_BACKEND_PORTS, **from_services}
             config.tcp_backend_ports = {**DEFAULT_TCP_BACKEND_PORTS, **(config.tcp_backend_ports or {})}
-            if getattr(shared_config, "tws_port", None) is not None:
-                config.tcp_backend_ports["tws"] = shared_config.tws_port
+            tws_port = getattr(shared_config, "tws_port", None)
+            if isinstance(tws_port, int):
+                config.tcp_backend_ports["tws"] = tws_port
             if getattr(shared_config, "alpaca_paper", None) is not None:
                 config.alpaca_paper = shared_config.alpaca_paper
             config.disabled_backends = _disabled_backends_from_env(shared_config.services)

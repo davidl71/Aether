@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Optional, Any, Dict, List, Tuple
 from urllib.parse import urlparse
 from textual.screen import Screen
-from textual.containers import Container, Horizontal, Vertical
+from textual.containers import Container, Horizontal
 from textual.widgets import Header, Footer, Static, Button, DataTable
 from textual.binding import Binding
 

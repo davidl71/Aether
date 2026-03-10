@@ -167,6 +167,8 @@ def export_snapshot_to_xlsx(
 
     if snapshot.positions:
         ws = wb.active
+        if ws is None:
+            return None
         ws.title = "Positions"
         rows = [_position_row(p) for p in snapshot.positions]
         keys = list(rows[0].keys()) if rows else []
@@ -209,6 +211,8 @@ def export_box_spread_to_xlsx(
     path = export_path / f"{pre}_box_spread.xlsx"
     wb = openpyxl.Workbook()
     ws = wb.active
+    if ws is None:
+        return None
     ws.title = "Scenarios"
     rows = [_scenario_row(s) for s in payload.scenarios]
     keys = list(rows[0].keys())
