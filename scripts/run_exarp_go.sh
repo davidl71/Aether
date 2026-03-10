@@ -34,6 +34,15 @@ if [[ -f "${PROJECT_HELPERS}" ]]; then
   source "${PROJECT_HELPERS}"
 fi
 
+sanitize_go_env() {
+  # Some local shells export a stale GOROOT (/usr/local/go) which breaks exarp-go lint.
+  if [[ -n "${GOROOT:-}" ]] && [[ ! -d "${GOROOT}" ]]; then
+    unset GOROOT
+  fi
+}
+
+sanitize_go_env
+
 mkdir -p "${PROJECT_ROOT}/.cursor" "${PROJECT_ROOT}/.exarp" "${PROJECT_ROOT}/out"
 
 # exarp-go migrations live with the exarp-go repo, not the caller project.

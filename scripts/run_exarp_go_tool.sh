@@ -11,6 +11,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 export PROJECT_ROOT
+PROJECT_HELPERS="${SCRIPT_DIR}/include/workspace_paths.sh"
+
+if [[ -f "${PROJECT_HELPERS}" ]]; then
+  # shellcheck source=/dev/null
+  source "${PROJECT_HELPERS}"
+fi
 
 TOOL="${1:-}"
 ARGS="${2:-{}}"
@@ -21,6 +27,13 @@ if [[ -z "${TOOL}" ]]; then
   echo "List tools: $0 --list" >&2
   exit 1
 fi
+
+sanitize_go_env() {
+  # Local shells may export a stale GOROOT that breaks Go linters.
+  if [[ -n "${GOROOT:-}" ]] && [[ ! -d "${GOROOT}" ]]; then
+    unset GOROOT
+  fi
+}
 
 # Resolve exarp-go: PATH -> EXARP_GO_ROOT -> sibling mcp/exarp-go -> in-repo run_exarp_go.sh
 EXARP_GO_CMD=""
@@ -51,13 +64,10 @@ if [[ -z "${EXARP_GO_CMD}" ]]; then
   exit 1
 fi
 
+sanitize_go_env
+
 if [[ "${TOOL}" == "--list" ]]; then
   exec "${EXARP_GO_CMD}" -list -quiet
 fi
-# Pass JSON args as single token to avoid any shell/flag splitting
-TMP_ARGS="$(mktemp -t exarp_args.XXXXXXXXXX)"
-printf '%s' "${ARGS}" > "${TMP_ARGS}"
-trap 'rm -f "${TMP_ARGS}"' EXIT
-EXARP_ARGS="$(cat "${TMP_ARGS}")"
-rm -f "${TMP_ARGS}"
-exec "${EXARP_GO_CMD}" -tool "${TOOL}" -args="${EXARP_ARGS}" -quiet
+
+exec "${EXARP_GO_CMD}" -tool "${TOOL}" -args "${ARGS}" -quiet

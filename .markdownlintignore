@@ -1,7 +1,17 @@
 # Ignore generated files
+**/.cache/**
+**/.exarp/**
+**/build/**
+**/dist/**
+**/node_modules/**
+**/out/**
+**/target/**
 docs/**/node_modules/**
 docs/**/build/**
 docs/**/dist/**
+native/build_native/**
+native/third_party/cache/**
+native/third_party/IntelRDFPMathLib20U4/**
 
 # Ignore third-party documentation
 docs/third_party/**
