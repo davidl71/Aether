@@ -1,5 +1,5 @@
 """
-Analytics API - Unified service for calculations and risk-free rate.
+Analytics API - Unified service for Python-specific calculations and risk-free rate.
 
 Serves both in one process so callers can use one origin and the server can call
 calculation and risk-free-rate logic in-process (no HTTP between them).
@@ -7,8 +7,6 @@ calculation and risk-free-rate logic in-process (no HTTP between them).
 Endpoints:
 - GET /api/health - Unified health (calculations + risk_free_rate)
 - GET /health - Legacy calculations health
-- POST /api/v1/cash-flow/timeline - Cash flow timeline (from calculations_api)
-- POST /api/v1/opportunity-simulation/* - Opportunity simulation (from calculations_api)
 - POST /api/v1/cash-flow/management - Cash management (from calculations_api)
 - POST /api/extract-rate, /api/build-curve, /api/benchmarks/*, /api/compare, /api/yield-curve/comparison (from risk_free_rate_service)
 
@@ -45,7 +43,7 @@ except ImportError:
 
 app = FastAPI(
     title="Analytics API",
-    description="Unified API: cash flow, opportunity simulation, risk-free rate (SOFR/Treasury)",
+    description="Unified API: Python-specific cash management and risk-free rate (SOFR/Treasury)",
     version="1.0.0",
 )
 

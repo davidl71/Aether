@@ -9,6 +9,7 @@ React + Vite web app that mirrors the terminal UI: live status banner, multi-tab
 - **UI composition**: Header status banner, scenario summary/table, pill-based tabs, reusable data grids with sparkline overlays, timeline + alert feeds, and modal detail sheets.
 - **Styling**: Dark trading desk palette via `src/styles/app.css`, responsive down to tablet width. SVG-based sparklines emulate TUI candle strips.
 - **Testing**: Vitest + Testing Library cover the dashboard render path with mocked snapshot/scenario responses.
+- **Tooling watch**: stay on stable Vite `7.x` for now. Vite `8.0.0-beta.0` is worth tracking for Rolldown-based builds, but it is not the default upgrade target until the stable `8.x` line lands and plugin compatibility is rechecked.
 ### Generating Icons
 
 Static web assets may still use app icons. Generate them from a source image:

@@ -6,7 +6,7 @@ use axum::{
     routing::{get, post, put},
     Json, Router,
 };
-use chrono::Utc;
+use chrono::{Datelike, Utc};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tokio::{sync::watch, task::JoinHandle, time::timeout};
@@ -63,6 +63,15 @@ impl RestServer {
         Router::new()
             .route("/health", get(health))
             .route("/api/v1/snapshot", get(snapshot))
+            .route("/api/v1/cash-flow/timeline", post(frontend_cash_flow_timeline))
+            .route(
+                "/api/v1/opportunity-simulation/scenarios",
+                post(frontend_opportunity_scenarios),
+            )
+            .route(
+                "/api/v1/opportunity-simulation/calculate",
+                post(frontend_opportunity_calculate),
+            )
             .route(
                 "/api/v1/frontend/unified-positions",
                 post(frontend_unified_positions),
@@ -422,6 +431,83 @@ struct FrontendRelationship {
 struct FrontendRelationshipResponse {
     relationships: Vec<FrontendRelationship>,
     nodes: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct FrontendCashFlowRequest {
+    #[serde(default)]
+    positions: Vec<FrontendPositionInput>,
+    #[serde(default)]
+    bank_accounts: Vec<FrontendBankAccountInput>,
+    #[serde(default = "default_projection_months")]
+    projection_months: i64,
+}
+
+#[derive(Debug, Serialize, Clone)]
+struct FrontendCashFlowEvent {
+    date: String,
+    amount: f64,
+    description: String,
+    position_name: String,
+    #[serde(rename = "type")]
+    event_type: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+struct FrontendMonthlyCashFlow {
+    month: String,
+    inflows: f64,
+    outflows: f64,
+    net: f64,
+    events: Vec<FrontendCashFlowEvent>,
+}
+
+#[derive(Debug, Serialize)]
+struct FrontendCashFlowResponse {
+    events: Vec<FrontendCashFlowEvent>,
+    monthly_flows: std::collections::BTreeMap<String, FrontendMonthlyCashFlow>,
+    total_inflows: f64,
+    total_outflows: f64,
+    net_cash_flow: f64,
+}
+
+#[derive(Debug, Serialize)]
+struct FrontendScenario {
+    id: String,
+    name: String,
+    #[serde(rename = "type")]
+    scenario_type: String,
+    description: String,
+    parameters: std::collections::BTreeMap<String, f64>,
+    net_benefit: f64,
+}
+
+#[derive(Debug, Deserialize)]
+struct FrontendScenarioCalculateRequest {
+    scenario: FrontendScenarioInput,
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+struct FrontendScenarioInput {
+    id: String,
+    name: String,
+    #[serde(rename = "type")]
+    scenario_type: String,
+    description: String,
+    parameters: std::collections::BTreeMap<String, f64>,
+}
+
+#[derive(Debug, Serialize)]
+struct FrontendScenarioCalculationResponse {
+    net_benefit: f64,
+    cash_flow_impact: f64,
+    risk_reduction: f64,
+    capital_efficiency: Option<f64>,
+}
+
+fn default_projection_months() -> i64 {
+    12
 }
 
 // Endpoint implementations
@@ -885,6 +971,278 @@ fn bank_accounts_as_loans(bank_accounts: &[FrontendBankAccountInput]) -> Vec<ser
     loans
 }
 
+fn position_cash_value(position: &FrontendPositionInput) -> f64 {
+    position
+        .cash_flow
+        .or_else(|| position.candle.as_ref().and_then(|candle| candle.close))
+        .unwrap_or(0.0)
+}
+
+fn parse_frontend_date(date: &str) -> Option<chrono::DateTime<chrono::Utc>> {
+    chrono::DateTime::parse_from_rfc3339(date)
+        .map(|dt| dt.with_timezone(&chrono::Utc))
+        .ok()
+        .or_else(|| {
+            chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d")
+                .ok()
+                .and_then(|d| d.and_hms_opt(0, 0, 0))
+                .map(|dt| chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(dt, chrono::Utc))
+        })
+}
+
+fn date_only(date: &chrono::DateTime<chrono::Utc>) -> String {
+    date.format("%Y-%m-%d").to_string()
+}
+
+fn build_cash_flow_response(request: &FrontendCashFlowRequest) -> FrontendCashFlowResponse {
+    let now = chrono::Utc::now();
+    let projection_months = request.projection_months.max(0);
+    let mut events = Vec::new();
+
+    for position in &request.positions {
+        if let Some(maturity_date_str) = &position.maturity_date {
+            if let Some(maturity_date) = parse_frontend_date(maturity_date_str) {
+                let months_ahead =
+                    i64::from(maturity_date.year() - now.year()) * 12
+                        + i64::from(maturity_date.month() as i32 - now.month() as i32);
+
+                if (0..=projection_months).contains(&months_ahead) {
+                    events.push(FrontendCashFlowEvent {
+                        date: date_only(&maturity_date),
+                        amount: position_cash_value(position),
+                        description: format!(
+                            "{} maturity",
+                            position.instrument_type.as_deref().unwrap_or("Position")
+                        ),
+                        position_name: position.name.clone(),
+                        event_type: "maturity".into(),
+                    });
+
+                    if matches!(
+                        position.instrument_type.as_deref(),
+                        Some("bank_loan" | "pension_loan")
+                    ) {
+                        let monthly_payment =
+                            (position_cash_value(position) * position.rate.unwrap_or(0.0)) / 12.0;
+                        for month in 1..=std::cmp::min(months_ahead, projection_months) {
+                            let payment_date = now + chrono::Duration::days(30 * month);
+                            events.push(FrontendCashFlowEvent {
+                                date: date_only(&payment_date),
+                                amount: -monthly_payment,
+                                description: "Monthly interest payment".into(),
+                                position_name: position.name.clone(),
+                                event_type: "loan_payment".into(),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        if let Some(cash_flow) = position.cash_flow.filter(|value| *value != 0.0) {
+            events.push(FrontendCashFlowEvent {
+                date: date_only(&now),
+                amount: cash_flow,
+                description: format!(
+                    "Current {} cash flow",
+                    position.instrument_type.as_deref().unwrap_or("position")
+                ),
+                position_name: position.name.clone(),
+                event_type: "other".into(),
+            });
+        }
+    }
+
+    for account in &request.bank_accounts {
+        if let Some(debit_rate) = account.debit_rate.filter(|rate| *rate > 0.0) {
+            let monthly_payment = (account.balance * debit_rate) / 12.0;
+            for month in 1..=projection_months {
+                let payment_date = now + chrono::Duration::days(30 * month);
+                events.push(FrontendCashFlowEvent {
+                    date: date_only(&payment_date),
+                    amount: -monthly_payment,
+                    description: "Monthly interest payment".into(),
+                    position_name: account.account_name.clone(),
+                    event_type: "loan_payment".into(),
+                });
+            }
+        }
+    }
+
+    let mut monthly_flows = std::collections::BTreeMap::<String, FrontendMonthlyCashFlow>::new();
+    for event in &events {
+        let month = event.date.chars().take(7).collect::<String>();
+        let entry = monthly_flows
+            .entry(month.clone())
+            .or_insert_with(|| FrontendMonthlyCashFlow {
+                month,
+                inflows: 0.0,
+                outflows: 0.0,
+                net: 0.0,
+                events: Vec::new(),
+            });
+        entry.events.push(event.clone());
+        if event.amount > 0.0 {
+            entry.inflows += event.amount;
+        } else {
+            entry.outflows += event.amount.abs();
+        }
+        entry.net = entry.inflows - entry.outflows;
+    }
+
+    let total_inflows = monthly_flows.values().map(|m| m.inflows).sum::<f64>();
+    let total_outflows = monthly_flows.values().map(|m| m.outflows).sum::<f64>();
+
+    FrontendCashFlowResponse {
+        events,
+        monthly_flows,
+        total_inflows,
+        total_outflows,
+        net_cash_flow: total_inflows - total_outflows,
+    }
+}
+
+fn scenario_net_benefit(
+    scenario_type: &str,
+    parameters: &std::collections::BTreeMap<String, f64>,
+) -> f64 {
+    match scenario_type {
+        "loan_consolidation" => {
+            let loan_amount = parameters.get("loan_amount").copied().unwrap_or(0.0);
+            let loan_rate = parameters.get("loan_rate").copied().unwrap_or(0.0);
+            let target_rate = parameters.get("target_rate").copied().unwrap_or(0.0);
+            (loan_amount * loan_rate) - (loan_amount * target_rate)
+        }
+        "margin_for_box_spread" => {
+            let loan_amount = parameters.get("loan_amount").copied().unwrap_or(0.0);
+            let loan_rate = parameters.get("loan_rate").copied().unwrap_or(0.0);
+            let box_spread_rate = parameters.get("box_spread_rate").copied().unwrap_or(0.0);
+            (loan_amount * box_spread_rate) - (loan_amount * loan_rate)
+        }
+        "investment_fund" => {
+            let loan_amount = parameters.get("loan_amount").copied().unwrap_or(0.0);
+            let loan_rate = parameters.get("loan_rate").copied().unwrap_or(0.0);
+            let fund_return = parameters.get("fund_return").copied().unwrap_or(0.0);
+            (loan_amount * fund_return) - (loan_amount * loan_rate)
+        }
+        _ => 0.0,
+    }
+}
+
+fn build_opportunity_scenarios_response(request: &FrontendViewRequest) -> Vec<FrontendScenario> {
+    let loans: Vec<&FrontendPositionInput> = request
+        .positions
+        .iter()
+        .filter(|position| {
+            matches!(
+                position.instrument_type.as_deref(),
+                Some("bank_loan" | "pension_loan")
+            )
+        })
+        .collect();
+    let bank_loans: Vec<&FrontendBankAccountInput> = request
+        .bank_accounts
+        .iter()
+        .filter(|account| account.debit_rate.unwrap_or(0.0) > 0.0)
+        .collect();
+    let box_spreads: Vec<&FrontendPositionInput> = request
+        .positions
+        .iter()
+        .filter(|position| position.instrument_type.as_deref() == Some("box_spread"))
+        .collect();
+
+    let mut scenarios = Vec::new();
+
+    if loans.len() > 1 || !bank_loans.is_empty() {
+        let highest_rate_loan = loans
+            .iter()
+            .map(|loan| (loan.rate.unwrap_or(0.0), position_cash_value(loan)))
+            .chain(
+                bank_loans
+                    .iter()
+                    .map(|account| (account.debit_rate.unwrap_or(0.0), account.balance)),
+            )
+            .max_by(|a, b| a.0.total_cmp(&b.0));
+
+        if let Some((loan_rate, loan_amount)) = highest_rate_loan.filter(|(rate, _)| *rate > 0.03)
+        {
+            let parameters = std::collections::BTreeMap::from([
+                ("loan_amount".into(), loan_amount),
+                ("loan_rate".into(), loan_rate),
+                ("target_rate".into(), 0.04),
+            ]);
+            scenarios.push(FrontendScenario {
+                id: "loan_consolidation".into(),
+                name: "Loan Consolidation".into(),
+                scenario_type: "loan_consolidation".into(),
+                description: "Consolidate high-rate loans using lower-rate financing".into(),
+                net_benefit: scenario_net_benefit("loan_consolidation", &parameters),
+                parameters,
+            });
+        }
+    }
+
+    if let (Some(loan), Some(box_spread)) = (loans.first(), box_spreads.first()) {
+        let parameters = std::collections::BTreeMap::from([
+            ("loan_amount".into(), position_cash_value(loan)),
+            ("loan_rate".into(), loan.rate.unwrap_or(0.0)),
+            ("box_spread_rate".into(), box_spread.rate.unwrap_or(0.05)),
+        ]);
+        scenarios.push(FrontendScenario {
+            id: "margin_for_box_spread".into(),
+            name: "Use Loan as Margin for Box Spreads".into(),
+            scenario_type: "margin_for_box_spread".into(),
+            description: "Use loan proceeds as margin collateral for box spread positions".into(),
+            net_benefit: scenario_net_benefit("margin_for_box_spread", &parameters),
+            parameters,
+        });
+    }
+
+    if let Some(loan) = loans.first() {
+        let parameters = std::collections::BTreeMap::from([
+            ("loan_amount".into(), position_cash_value(loan)),
+            ("loan_rate".into(), loan.rate.unwrap_or(0.0)),
+            ("fund_return".into(), 0.06),
+        ]);
+        scenarios.push(FrontendScenario {
+            id: "investment_fund".into(),
+            name: "Investment Fund Strategy".into(),
+            scenario_type: "investment_fund".into(),
+            description: "Use loan to invest in fund, use fund as collateral for cheaper loan".into(),
+            net_benefit: scenario_net_benefit("investment_fund", &parameters),
+            parameters,
+        });
+    }
+
+    scenarios
+}
+
+fn build_scenario_calculation_response(
+    request: &FrontendScenarioCalculateRequest,
+) -> FrontendScenarioCalculationResponse {
+    let net_benefit = scenario_net_benefit(
+        &request.scenario.scenario_type,
+        &request.scenario.parameters,
+    );
+    let capital_efficiency = match request.scenario.scenario_type.as_str() {
+        "margin_for_box_spread" => Some(1.2),
+        "investment_fund" => Some(1.5),
+        "loan_consolidation" => Some(1.0),
+        _ => None,
+    };
+
+    FrontendScenarioCalculationResponse {
+        net_benefit,
+        cash_flow_impact: net_benefit / 12.0,
+        risk_reduction: if request.scenario.scenario_type == "loan_consolidation" {
+            0.15
+        } else {
+            0.05
+        },
+        capital_efficiency,
+    }
+}
+
 fn build_unified_positions_response(
     request: &FrontendViewRequest,
 ) -> FrontendUnifiedPositionsResponse {
@@ -936,6 +1294,24 @@ fn build_unified_positions_response(
             .chain(bank_positions.into_iter())
             .collect(),
     }
+}
+
+async fn frontend_cash_flow_timeline(
+    Json(request): Json<FrontendCashFlowRequest>,
+) -> Json<FrontendCashFlowResponse> {
+    Json(build_cash_flow_response(&request))
+}
+
+async fn frontend_opportunity_scenarios(
+    Json(request): Json<FrontendViewRequest>,
+) -> Json<Vec<FrontendScenario>> {
+    Json(build_opportunity_scenarios_response(&request))
+}
+
+async fn frontend_opportunity_calculate(
+    Json(request): Json<FrontendScenarioCalculateRequest>,
+) -> Json<FrontendScenarioCalculationResponse> {
+    Json(build_scenario_calculation_response(&request))
 }
 
 async fn frontend_unified_positions(
@@ -1476,5 +1852,78 @@ mod tests {
                 && rel.relationship_type == "collateral"
                 && (rel.value - 850.0).abs() < f64::EPSILON
         }));
+    }
+
+    #[test]
+    fn cash_flow_matches_expected_shape() {
+        let request = FrontendCashFlowRequest {
+            positions: sample_request().positions,
+            bank_accounts: sample_request().bank_accounts,
+            projection_months: 2,
+        };
+        let response = build_cash_flow_response(&request);
+        assert!(response.total_outflows > 0.0);
+        assert!(response.total_inflows > 0.0);
+        assert!(!response.monthly_flows.is_empty());
+        assert!(response
+            .events
+            .iter()
+            .any(|event| event.event_type == "loan_payment"));
+    }
+
+    #[test]
+    fn opportunity_scenarios_match_expected_shape() {
+        let mut request = sample_request();
+        request.positions.push(FrontendPositionInput {
+            name: "Loan A".into(),
+            quantity: Some(1),
+            roi: None,
+            maker_count: None,
+            taker_count: None,
+            rebate_estimate: None,
+            vega: None,
+            theta: None,
+            fair_diff: None,
+            maturity_date: Some("2026-09-10".into()),
+            cash_flow: Some(1000.0),
+            candle: None,
+            instrument_type: Some("bank_loan".into()),
+            rate: Some(0.07),
+            collateral_value: None,
+            currency: Some("USD".into()),
+            market_value: None,
+            bid: None,
+            ask: None,
+            last: None,
+            spread: None,
+            price: None,
+            side: None,
+            expected_cash_at_expiry: None,
+            dividend: None,
+            conid: None,
+        });
+        let scenarios = build_opportunity_scenarios_response(&request);
+        assert!(scenarios.iter().any(|scenario| scenario.id == "margin_for_box_spread"));
+        assert!(scenarios.iter().any(|scenario| scenario.id == "investment_fund"));
+    }
+
+    #[test]
+    fn opportunity_calculation_matches_python_shape() {
+        let request = FrontendScenarioCalculateRequest {
+            scenario: FrontendScenarioInput {
+                id: "investment_fund".into(),
+                name: "Investment Fund Strategy".into(),
+                scenario_type: "investment_fund".into(),
+                description: "Use loan to invest in fund".into(),
+                parameters: std::collections::BTreeMap::from([
+                    ("loan_amount".into(), 1000.0),
+                    ("loan_rate".into(), 0.04),
+                    ("fund_return".into(), 0.06),
+                ]),
+            },
+        };
+        let response = build_scenario_calculation_response(&request);
+        assert!((response.net_benefit - 20.0).abs() < f64::EPSILON);
+        assert_eq!(response.capital_efficiency, Some(1.5));
     }
 }

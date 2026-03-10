@@ -1,23 +1,13 @@
 /**
- * Calculations API Client
+ * Frontend calculations client
  *
- * Client for shared calculation endpoints (cash flow timeline, opportunity simulation).
- * Uses the calculations API service (python/services/calculations_api.py).
+ * Client for shared frontend read-model endpoints owned by the Rust API.
  */
 
 import type { PositionSnapshot } from '../types/snapshot';
 import type { BankAccount } from '../types/banking';
 
-const DEFAULT_CALCULATIONS_API_URL = 'http://localhost:8004';
 const DEFAULT_FRONTEND_API_URL = 'http://localhost:9000';
-
-function getCalculationsApiUrl(): string {
-  const env = (import.meta as unknown as { env?: Record<string, unknown> }).env;
-  if (typeof env?.VITE_CALCULATIONS_API_URL === 'string' && env.VITE_CALCULATIONS_API_URL.length > 0) {
-    return env.VITE_CALCULATIONS_API_URL;
-  }
-  return DEFAULT_CALCULATIONS_API_URL;
-}
 
 function getFrontendApiUrl(): string {
   const env = (import.meta as unknown as { env?: Record<string, unknown> }).env;
@@ -207,7 +197,7 @@ export async function calculateCashFlowTimeline(
   bankAccounts: BankAccount[],
   projectionMonths: number = 12
 ): Promise<CashFlowTimelineResponse> {
-  const apiUrl = getCalculationsApiUrl();
+  const apiUrl = getFrontendApiUrl();
   const request: CashFlowTimelineRequest = {
     positions: positions.map(positionToInput),
     bank_accounts: bankAccounts.map(bankAccountToInput),
@@ -237,7 +227,7 @@ export async function findSimulationScenarios(
   positions: PositionSnapshot[],
   bankAccounts: BankAccount[]
 ): Promise<SimulationScenario[]> {
-  const apiUrl = getCalculationsApiUrl();
+  const apiUrl = getFrontendApiUrl();
   const request: OpportunitySimulationRequest = {
     positions: positions.map(positionToInput),
     bank_accounts: bankAccounts.map(bankAccountToInput),
@@ -319,7 +309,7 @@ export async function calculateScenarioResults(
     parameters: Record<string, number>;
   }
 ): Promise<ScenarioCalculationResponse> {
-  const apiUrl = getCalculationsApiUrl();
+  const apiUrl = getFrontendApiUrl();
   const request: ScenarioCalculationRequest = { scenario };
 
   const response = await fetch(`${apiUrl}/api/v1/opportunity-simulation/calculate`, {

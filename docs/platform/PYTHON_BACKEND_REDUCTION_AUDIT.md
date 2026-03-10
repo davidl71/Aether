@@ -40,35 +40,31 @@ These endpoints are mostly frontend read-model shaping and should move to Rust-o
 
 ### `python/services/calculations_api.py`
 
-Migrate first:
+Migrated to Rust:
 - `POST /api/v1/frontend/unified-positions`
-  - thin wrapper around `frontend_views.normalize_bank_accounts_to_positions`
 - `POST /api/v1/frontend/relationships`
-  - thin wrapper around `frontend_views.infer_relationships`
-
-Migrate after frontend parity:
 - `POST /api/v1/cash-flow/timeline`
-- `POST /api/v1/cash-flow/management`
 - `POST /api/v1/opportunity-simulation/scenarios`
 - `POST /api/v1/opportunity-simulation/calculate`
 
+Still Python-owned:
+- `POST /api/v1/cash-flow/management`
+
 Reason:
-- these are shared frontend read models or calculations already consumed as UI-facing API contracts
+- the migrated routes were shared frontend read models or frontend-facing calculations
 - Rust should become the shared frontend API owner for both web and TUI
 
 ### `python/services/analytics_api.py`
 
-Retire after the underlying calculation and benchmark routes move:
-- this file is primarily a router-composition shell over calculations + risk-free-rate
-- once Rust owns the frontend-facing read models, this should shrink or disappear
+Shrink further after the remaining Python-only route is reviewed:
+- this file is now mostly a router-composition shell over `cash-flow/management` and risk-free-rate
+- once `cash-flow/management` is either migrated or confirmed as Python-specific, this can shrink again or disappear
 
 ## Recommended migration order
 
-1. Move `frontend/unified-positions` to Rust.
-2. Move `frontend/relationships` to Rust.
-3. Move cash-flow read models to Rust.
-4. Move opportunity simulation read-model API ownership to Rust.
-5. Collapse or delete `analytics_api.py` once those routes are no longer Python-fronted.
+1. Review whether `cash-flow/management` is genuinely Python-specific or just another read model.
+2. If it is a shared frontend contract, move it to Rust.
+3. Collapse or delete `analytics_api.py` once only risk-free-rate remains Python-fronted.
 
 ## Non-goals for this pass
 
