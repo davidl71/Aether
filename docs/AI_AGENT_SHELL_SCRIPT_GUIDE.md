@@ -15,12 +15,14 @@ All shared functions are in `scripts/include/`:
 
 ### Service Scripts Using Shared Functions
 
-All service startup scripts use these shared functions:
+Current active service startup scripts use these shared functions:
 
 - `web/scripts/run-alpaca-service.sh`
 - `web/scripts/run-ib-service.sh`
 - `web/scripts/run-discount-bank-service.sh`
 - `scripts/start_alpaca_service.sh`
+
+Historical scripts for removed services such as TradeStation should not be reintroduced from this guide.
 
 ## Common Patterns
 

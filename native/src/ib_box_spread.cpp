@@ -428,7 +428,6 @@ int main(int argc, char **argv) {
   std::string config_file = "config/config.json";
   bool dry_run = false;
   bool validate_only = false;
-  bool use_nautilus = false;
   bool mock_tws = false;
   std::string log_level_override;
   std::string init_config_override;
@@ -446,10 +445,6 @@ int main(int argc, char **argv) {
                "Simulate trading without executing orders");
 
   app.add_flag("--validate", validate_only, "Validate configuration and exit");
-
-  app.add_flag(
-      "--use-nautilus", use_nautilus,
-      "Deprecated experimental Nautilus scaffold flag; not part of the active supported runtime");
 
   app.add_flag(
       "--mock-tws", mock_tws,
@@ -552,13 +547,6 @@ int main(int argc, char **argv) {
     }
     if (env_truthy(std::getenv("TWS_MOCK"))) {
       config.tws.use_mock = true;
-    }
-
-    // Check for nautilus_trader usage
-    if (use_nautilus) {
-      spdlog::warn("Deprecated --use-nautilus flag requested");
-      spdlog::warn("Nautilus integration is not part of the active supported runtime");
-      spdlog::warn("The native application will continue with the standard TWS path");
     }
 
     if (config.tws.use_mock) {

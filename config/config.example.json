@@ -174,29 +174,6 @@
   },
 
   // ============================================================================
-  // Deprecated Nautilus Trader Scaffold (Disabled by Default)
-  // ============================================================================
-  "nautilus_trader": {
-    "enabled": false, // Deprecated scaffold only; not part of the active runtime
-    "use_nautilus_for_market_data": false, // Deprecated experimental flag
-    "use_nautilus_for_execution": false, // Deprecated experimental flag
-
-    // Data client configuration
-    "data_client_config": {
-      "host": "127.0.0.1",
-      "port": 7497,
-      "client_id": 1
-    },
-
-    // Execution client configuration
-    "exec_client_config": {
-      "host": "127.0.0.1",
-      "port": 7497,
-      "client_id": 2 // Different client_id for execution
-    }
-  },
-
-  // ============================================================================
   // Service Port Configuration
   // ============================================================================
   // Port assignments for PWA services to prevent conflicts

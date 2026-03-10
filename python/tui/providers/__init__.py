@@ -9,11 +9,11 @@ Each provider is in its own module:
   _file.py          — FileProvider
   _nats.py          — NatsProvider
 
-MIGRATION PLAN:
-- RestProvider presets and default endpoint go through Go api-gateway (:9000); gateway proxies to Rust or Python backends.
-  Task P1-B: exarp T-1772887221914991889 — docs/platform/IMPROVEMENT_PLAN.md
-- Longer term: Replace RestProvider with NatsProvider using NATS KV watch.
-  Epic E1: exarp T-1772887222509770969 — ConnectRPC streaming
+CURRENT SHAPE:
+- RestProvider defaults to the shared gateway/base URL so the TUI can use one operational entrypoint.
+- Rust owns frontend read models.
+- Go gateway remains only for operational aggregation and selected specialist-service routing.
+- Longer term, some rest-backed reads may move to NATS KV watch or direct Rust ownership.
 """
 # Keep `import requests` at package level so existing test patches still work:
 #   @patch('tui.providers.requests.Session')

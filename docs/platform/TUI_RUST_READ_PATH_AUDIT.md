@@ -32,10 +32,20 @@
   - loans tab reads local `config/loans.json`
   - this is the main remaining TUI durable-state path outside Rust
 
+### TUI Python-backed paths that still justify gateway convenience
+
+- `rest_ib`
+- `rest_alpaca`
+- `rest_tastytrade`
+
+These remain valid because they expose specialist Python-backed broker snapshots.
+They should not expand into a general business-API proxy surface.
+
 ## Decision
 
 - Do **not** migrate risk-free-rate or health-dashboard in the next slice.
 - The **next Rust migration candidate for the TUI is loans**, not benchmarks or health.
+- Keep the Go gateway only as a convenience entrypoint for these still-separate specialist services.
 
 ## Recommended next migration
 

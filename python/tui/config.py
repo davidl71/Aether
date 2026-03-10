@@ -49,10 +49,11 @@ DEFAULT_TCP_BACKEND_PORTS: Dict[str, int] = {
     "tws": 7497,
 }
 
-# Api-gateway single entry point (P1-B). When gateway runs (default :9000), TUI and Web use same pipeline.
+# Shared operational gateway entry point. TUI can use it as one URL for Rust plus
+# a few still-separate specialist services, but Rust remains the owner of frontend read models.
 DEFAULT_GATEWAY_BASE_URL: str = "http://localhost:9000"
 
-# Preset REST provider types -> snapshot URL. All presets route through api-gateway when gateway is running.
+# Preset REST provider types -> snapshot URL. These remain convenience routes only.
 PRESET_REST_ENDPOINTS: Dict[str, str] = {
     "rest_rust": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/snapshot",
     "rest_ib": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/ib/snapshot",
@@ -113,8 +114,8 @@ class TUIConfig:
     # Optional: unified health dashboard URL (GET returns { backends: { name: health } }). When set, TUI uses it instead of polling each backend.
     health_dashboard_url: Optional[str] = None
 
-    # Optional: API router base URL. When set, TUI uses this base for snapshot, scenarios, bank-accounts, and health
-    # (e.g. http://localhost:9xxx with routes /api/v1/snapshot, /scenarios, /api/bank-accounts, /api/health).
+    # Optional: API router base URL. When set, TUI uses this base for snapshot and selected
+    # specialist-service routes through the shared gateway or origin.
     api_base_url: Optional[str] = None
 
     # Optional: SQLite path for persisting latest snapshot per backend (fallback when backend is down or on startup).

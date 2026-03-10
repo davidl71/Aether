@@ -24,7 +24,9 @@ class RestProvider(Provider):
     When the endpoint is an IB service (e.g. .../api/snapshot), also polls
     .../api/health and exposes get_health() for UI status (e.g. IB connected).
 
-    P1-B: Presets and default endpoint use api-gateway (config.py); gateway proxies to Rust or Python backends.
+    Presets and the default endpoint use the shared gateway/base URL from config.py.
+    Rust owns frontend read models; the gateway is only an operational entrypoint and
+    convenience router for selected specialist Python-backed services.
     """
 
     def __init__(
