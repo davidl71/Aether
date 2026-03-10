@@ -13,6 +13,14 @@ The **Synthetic Financing Platform** provides comprehensive multi-asset financin
 
 ## Core Platform Capabilities
 
+## Runtime Topology
+
+- [Current Topology](CURRENT_TOPOLOGY.md) - short-form active runtime topology
+- [Dataflow Architecture](DATAFLOW_ARCHITECTURE.md) - detailed ownership, storage, and message flow
+- [API Gateway and Routing Review](API_GATEWAY_AND_ROUTING_REVIEW.md) - gateway scope and shared-origin routing
+
+---
+
 ### 1. Multi-Account Aggregation
 
 **Purpose**: Unified view across all accounts and brokers

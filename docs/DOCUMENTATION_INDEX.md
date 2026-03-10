@@ -20,6 +20,7 @@ This document serves as a comprehensive index of current project documentation p
 ### Platform Core Documentation
 
 - `docs/platform/README.md` - Platform architecture overview
+- `docs/platform/CURRENT_TOPOLOGY.md` - Short-form active runtime topology
 - `docs/platform/INVESTMENT_STRATEGY_FRAMEWORK.md` - Portfolio allocation framework
 - `docs/platform/PRIMARY_GOALS_AND_REQUIREMENTS.md` - System goals and requirements
 - `docs/platform/SYNTHETIC_FINANCING_ARCHITECTURE.md` - Multi-asset relationship system
