@@ -17,7 +17,9 @@
 
 ### Python Environment (Required for PyO3)
 
-The backend uses PyO3 0.21 which officially supports Python up to 3.12. You can either:
+The backend uses PyO3 0.24.x. For local Rust checks, point `PYO3_PYTHON` at the interpreter you want the bridge to use, or source the helper script below.
+
+You can either:
 
 - **Option A (recommended for full backend/Python bridge):** Use a Python 3.12 virtual environment:
   ```bash
@@ -26,7 +28,7 @@ The backend uses PyO3 0.21 which officially supports Python up to 3.12. You can 
   ```
   See [Python Environment Setup](../../docs/PYTHON_ENVIRONMENT_SETUP.md) for details.
 
-- **Option B (Rust-only builds):** The workspace sets `PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1` in `.cargo/config.toml`, so `cargo build` and `cargo test` work with system Python 3.14+ without a venv. Use a 3.12 venv when running the Python/Nautilus integration.
+- **Option B (Rust-only builds):** The workspace sets `PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1` in `.cargo/config.toml`, and `scripts/run-tests.sh` auto-exports `PYO3_PYTHON` from `python3` when unset. Use a dedicated venv when you need deterministic backend/Python bridge behavior.
 
 ### Backend Setup
 

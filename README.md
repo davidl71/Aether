@@ -165,11 +165,11 @@ For advanced trading capabilities, the project supports integration with [Nautil
 
 ```bash
 # Install Python dependencies
-pip install -r requirements.txt
+uv sync --project python --extra dev --extra tui
 
 # Build Cython bindings
 cd python/bindings
-pip install -e .
+uv pip install --python ../../python/.venv/bin/python -e .
 
 # Or use CMake
 cmake --build build --target python_bindings

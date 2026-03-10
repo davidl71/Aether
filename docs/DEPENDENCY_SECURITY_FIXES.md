@@ -13,14 +13,14 @@ Quick reference for addressing dependency vulnerabilities (e.g. GitHub Dependabo
 - **Check**: `cd web && npm audit`.
 - **Fix**: Prefer `npm audit fix`; use `npm audit fix --force` only if you accept possible breaking changes and re-test the app.
 
-## 3. Python (`requirements.txt` / `requirements.in`)
+## 3. Python (`python/pyproject.toml` / `python/uv.lock`)
 
 - **Install**: `pip-audit` is installed by Ansible (devtools role, playbook `ansible/playbooks/setup_devtools.yml`). After running `./setup_global_tools.sh` or the playbook, use `pip-audit` (or `uv tool run pip-audit` if not on PATH).
-- **Check**: `pip-audit -r requirements.txt` from repo root.
-- **Fix**: Bump affected packages in `requirements.in`, then regenerate:
+- **Check**: `cd python && pip-audit -r <(uv export --frozen --no-dev --format requirements-txt)` if you want a rootless audit of the locked runtime set.
+- **Fix**: Bump affected packages in `python/pyproject.toml`, then regenerate:
   ```bash
-  uv pip compile requirements.in -o requirements.txt
-  uv sync
+  uv lock --project python
+  uv sync --project python --extra dev --extra tui
   ```
 
 ## 4. Rust (`agents/backend/`)
@@ -33,10 +33,9 @@ Quick reference for addressing dependency vulnerabilities (e.g. GitHub Dependabo
 - **Alerts**: <https://github.com/davidl71/ib_box_spread_full_universal/security/dependabot> (requires repo access).
 - **Action**: Review open alerts; merge or recreate Dependabot PRs; prefer non-breaking upgrades and re-run tests/CI.
 
-## 6. Cursor extension (`cursor-extension/`)
+## 6. Cursor extension
 
-- **Check**: `cd cursor-extension && npm audit` if that package is in use.
-- **Fix**: Same as web – `npm audit fix` or targeted version bumps.
+- Removed. This legacy package should not be reintroduced as an active dependency surface.
 
 ## One-time verification (after fixes)
 
@@ -48,7 +47,7 @@ npm audit
 cd web && npm audit && cd ..
 
 # Python (if pip-audit installed)
-pip-audit -r requirements.txt
+cd python && pip-audit -r <(uv export --frozen --no-dev --format requirements-txt) && cd ..
 
 # Rust (if cargo installed)
 cd agents/backend && cargo audit && cd ../..

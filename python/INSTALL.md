@@ -13,18 +13,18 @@
 
 ```bash
 # From project root
-pip install -r requirements.txt
+uv sync --project python --extra dev --extra tui
 ```
 
-This installs the pinned dependencies captured in `requirements.txt`, which is generated from `requirements.in` via `pip-compile`. Core packages include NumPy, Cython, pytest/pytest-cov, requests, and urllib3; consult the lockfile for exact versions.
+This installs the pinned dependencies captured in `python/pyproject.toml` and `python/uv.lock`. Core packages include NumPy, Cython, pytest/pytest-cov, requests, urllib3, and Textual.
 
 To refresh the lockfile after updating direct dependencies, run:
 
 ```bash
-pip-compile requirements.in --allow-unsafe --output-file=requirements.txt
+uv lock --project python
 ```
 
-Ensure `pip-tools` is available in your environment (for example, `python3 -m pip install --user pip-tools` or activate a virtualenv before running the command).
+The repo standard is `uv`; avoid maintaining a separate root `requirements.txt`.
 
 For Homebrew installations, the native CLI and Python entrypoints also look for user configuration
 at `$HOME/.config/ib_box_spread/config.json` (or `~/Library/Application Support/ib_box_spread/config.json`
@@ -42,7 +42,7 @@ If you require Nautilus Trader integration, install a prebuilt wheel manually (b
 
 ```bash
 # Download a prebuilt wheel (see scripts/fetch_third_party.sh) and install it
-pip install /abs/path/to/nautilus_trader-<version>-py3-none-any.whl
+uv pip install --python python/.venv/bin/python /abs/path/to/nautilus_trader-<version>-py3-none-any.whl
 ```
 
 ### 3. Build Cython Bindings
@@ -51,7 +51,7 @@ pip install /abs/path/to/nautilus_trader-<version>-py3-none-any.whl
 
 ```bash
 cd python/bindings
-pip install -e .
+uv pip install --python ../.venv/bin/python -e .
 ```
 
 This will:
@@ -71,17 +71,17 @@ cmake --build build --target python_bindings
 
 ```bash
 # Test Python imports
-python -c "from python.bindings.box_spread_bindings import PyOptionContract; print('Bindings OK')"
+uv run --project python python -c "from python.bindings.box_spread_bindings import PyOptionContract; print('Bindings OK')"
 
 # Run Python tests
-pytest tests/python/
+uv run --project python pytest python/tests/
 ```
 
 ### 5. Run with NautilusTrader
 
 ```bash
 # Make sure TWS/IB Gateway is running in paper trading mode (port 7497)
-python python/nautilus_strategy.py --config config/config.json --dry-run
+uv run --project python python/nautilus_strategy.py --config config/config.json --dry-run
 ```
 
 ## Troubleshooting
@@ -89,7 +89,7 @@ python python/nautilus_strategy.py --config config/config.json --dry-run
 ### Cython Not Found
 
 ```bash
-pip install --upgrade cython
+uv sync --project python --extra dev --extra tui
 ```
 
 ### Compilation Errors
@@ -111,8 +111,9 @@ NautilusTrader requires Python 3.11+. If you maintain multiple Python versions:
 
 ```bash
 # Use specific Python version for the optional Nautilus install
-python3.11 -m pip install /abs/path/to/nautilus_trader-<version>-py3-none-any.whl
-python3.11 python/nautilus_strategy.py --config config/config.json
+uv venv --python 3.11 python/.venv
+uv pip install --python python/.venv/bin/python /abs/path/to/nautilus_trader-<version>-py3-none-any.whl
+uv run --project python python/nautilus_strategy.py --config config/config.json
 ```
 
 ## Development
@@ -121,7 +122,7 @@ For development with automatic recompilation:
 
 ```bash
 cd python/bindings
-pip install -e . --no-build-isolation
+uv pip install --python ../.venv/bin/python -e . --no-build-isolation
 ```
 
 Then edit `.pyx` files and restart Python to see changes.

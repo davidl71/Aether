@@ -59,7 +59,9 @@ impl SqlitePersistence {
         sqlx::query("PRAGMA journal_mode=WAL")
             .execute(&pool)
             .await
-            .map_err(|e| LedgerError::Persistence(anyhow::anyhow!("PRAGMA journal_mode=WAL: {}", e)))?;
+            .map_err(|e| {
+                LedgerError::Persistence(anyhow::anyhow!("PRAGMA journal_mode=WAL: {}", e))
+            })?;
 
         Ok(Self { pool })
     }
@@ -184,7 +186,7 @@ impl PersistenceLayer for SqlitePersistence {
         // Apply account filter
         if let Some(ref account) = filter.account {
             query.push_str(" AND account_paths LIKE ?");
-            bind_values.push(format!("%{}%", account.to_string()));
+            bind_values.push(format!("%{}%", account));
         }
 
         // Apply date range filter
@@ -329,7 +331,7 @@ mod tests {
             ..Default::default()
         };
         let transactions = persistence.load_transactions(&filter).await.unwrap();
-        assert!(transactions.len() > 0);
+        assert!(!transactions.is_empty());
     }
 
     #[tokio::test]

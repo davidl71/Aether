@@ -68,14 +68,13 @@ Textual exports SVG only. SVG is text-based, so any AI or script can read and pa
 Install dependencies:
 
 ```bash
-pip install textual requests
+uv sync --project python --extra dev --extra tui
 ```
 
-Or add to `requirements.txt`:
+Or install just the minimal runtime into the project venv:
 
-```
-textual>=8.1.1
-requests>=2.31.0
+```bash
+uv pip install --python python/.venv/bin/python textual requests
 ```
 
 ## Usage

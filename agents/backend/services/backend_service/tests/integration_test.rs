@@ -31,12 +31,7 @@ async fn test_market_data_publishing() {
         .expect("Failed to spawn proto subscriber");
 
     // Publish using proto (same format as C++ nats_client.cpp)
-    let publisher = ProtoPublisher::new(
-        client.clone(),
-        subject.clone(),
-        "test",
-        "MarketDataEvent",
-    );
+    let publisher = ProtoPublisher::new(client.clone(), subject.clone(), "test", "MarketDataEvent");
     let event = pb::MarketDataEvent {
         symbol: "TEST".to_string(),
         bid: 100.0,
@@ -68,19 +63,15 @@ async fn test_strategy_signal_publishing() {
 
     let subject = topics::strategy::signal("TEST");
 
-    let proto_sub = ProtoSubscriber::<pb::StrategySignal>::new(client.clone(), topics::strategy::all_signals());
+    let proto_sub =
+        ProtoSubscriber::<pb::StrategySignal>::new(client.clone(), topics::strategy::all_signals());
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
     let _handle = proto_sub
         .spawn_bridge(tx)
         .await
         .expect("Failed to spawn proto subscriber");
 
-    let publisher = ProtoPublisher::new(
-        client.clone(),
-        subject.clone(),
-        "test",
-        "StrategySignal",
-    );
+    let publisher = ProtoPublisher::new(client.clone(), subject.clone(), "test", "StrategySignal");
     let signal = pb::StrategySignal {
         symbol: "TEST".to_string(),
         price: 100.5,
@@ -108,19 +99,18 @@ async fn test_strategy_decision_publishing() {
 
     let subject = topics::strategy::decision("TEST");
 
-    let proto_sub = ProtoSubscriber::<pb::StrategyDecision>::new(client.clone(), topics::strategy::all_decisions());
+    let proto_sub = ProtoSubscriber::<pb::StrategyDecision>::new(
+        client.clone(),
+        topics::strategy::all_decisions(),
+    );
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
     let _handle = proto_sub
         .spawn_bridge(tx)
         .await
         .expect("Failed to spawn proto subscriber");
 
-    let publisher = ProtoPublisher::new(
-        client.clone(),
-        subject.clone(),
-        "test",
-        "StrategyDecision",
-    );
+    let publisher =
+        ProtoPublisher::new(client.clone(), subject.clone(), "test", "StrategyDecision");
     let decision = pb::StrategyDecision {
         symbol: "TEST".to_string(),
         quantity: 1,
@@ -128,7 +118,10 @@ async fn test_strategy_decision_publishing() {
         mark: 100.0,
         created_at: Some(prost_types::Timestamp::from(std::time::SystemTime::now())),
     };
-    publisher.publish(&decision).await.expect("Failed to publish");
+    publisher
+        .publish(&decision)
+        .await
+        .expect("Failed to publish");
 
     sleep(Duration::from_millis(100)).await;
 
@@ -165,7 +158,8 @@ async fn test_wildcard_subscriptions() {
         .expect("Failed to connect to NATS");
 
     // Subscribe to all market data with proto deserialization
-    let proto_sub = ProtoSubscriber::<pb::MarketDataEvent>::new(client.clone(), topics::market_data::all());
+    let proto_sub =
+        ProtoSubscriber::<pb::MarketDataEvent>::new(client.clone(), topics::market_data::all());
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
     let _handle = proto_sub
         .spawn_bridge(tx)
@@ -202,8 +196,14 @@ async fn test_wildcard_subscriptions() {
         timestamp: None,
     };
 
-    publisher_spy.publish(&event_spy).await.expect("Failed to publish");
-    publisher_xsp.publish(&event_xsp).await.expect("Failed to publish");
+    publisher_spy
+        .publish(&event_spy)
+        .await
+        .expect("Failed to publish");
+    publisher_xsp
+        .publish(&event_xsp)
+        .await
+        .expect("Failed to publish");
 
     sleep(Duration::from_millis(200)).await;
 

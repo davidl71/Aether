@@ -438,8 +438,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
+    #[allow(dead_code)]
     #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
     struct TestMessage {
         value: i32,

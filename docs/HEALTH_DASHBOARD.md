@@ -73,5 +73,5 @@ Use **`GET /api/health`** (direct on port 8011) or **`GET /api/health-aggregated
 
 ## References
 
-- `docs/PUBSUB_MESSAGING_INVESTIGATION.md` — Snapshot/health publish and NATS client
+- `docs/NATS_SETUP.md` — NATS health publishing and bridge setup
 - `docs/NATS_TOPICS_REGISTRY.md` — `system.health` payload shape

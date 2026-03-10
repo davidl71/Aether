@@ -21,11 +21,7 @@
 
 ### Risk Level: **HIGH**
 
-**Per PHASE_CONFLICT_ANALYSIS.md:**
-
-- Repository rename affects ALL external references
-- NATS documentation may reference repository name
-- **Recommendation**: DO NOT START until NATS work complete OR coordinate explicitly with NATS agent
+Legacy coordination concerns about the initial NATS rollout have been retired; use current workflow and CI docs rather than old phase-conflict notes.
 
 ---
 
@@ -240,7 +236,6 @@ git remote -v
 
 ## 📚 References
 
-- **Conflict Analysis**: `docs/PHASE_CONFLICT_ANALYSIS.md`
 - **Rename Analysis**: `docs/PROJECT_RENAME_AND_SPLIT_ANALYSIS.md`
 - **Next Steps**: `docs/NEXT_STEPS_RENAME_AND_SPLIT.md`
 

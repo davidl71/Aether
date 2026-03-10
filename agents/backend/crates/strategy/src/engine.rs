@@ -23,7 +23,7 @@ impl StrategyEngine {
         let strategy_name = strategy_name.to_owned();
 
         let py_strategy = Python::with_gil(|py| -> anyhow::Result<Py<PyAny>> {
-            let module = PyModule::import_bound(py, module_path.as_str())
+            let module = PyModule::import(py, module_path.as_str())
                 .with_context(|| format!("failed to import Python module {module_path}"))?;
             let strategy_cls = module
                 .getattr(strategy_name.as_str())
@@ -58,14 +58,14 @@ impl StrategyEngine {
             debug!(symbol = %signal.symbol, price = %signal.price, "forwarding signal to Python strategy");
 
             let decision_opt = Python::with_gil(|py| -> anyhow::Result<Option<Decision>> {
-                let kwargs = pyo3::types::PyDict::new_bound(py);
+                let kwargs = pyo3::types::PyDict::new(py);
                 kwargs.set_item("symbol", &signal.symbol)?;
                 kwargs.set_item("price", signal.price)?;
                 kwargs.set_item("timestamp", signal.timestamp.to_rfc3339())?;
 
                 let result = self
                     .py_strategy
-                    .call_method_bound(py, "on_signal", (), Some(&kwargs));
+                    .call_method(py, "on_signal", (), Some(&kwargs));
 
                 match result {
                     Ok(py_result) => {

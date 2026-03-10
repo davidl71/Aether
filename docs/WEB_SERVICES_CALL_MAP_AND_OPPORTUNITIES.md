@@ -69,7 +69,7 @@ So the PWA is the main **multi-service client**. It does not call one backend fr
 
 **Benefits:** Less polling, lower latency for updates, one place to add caching or replay.
 
-**Existing:** `docs/NATS_USE_OPPORTUNITIES.md` and related planning; NATS already in the stack.
+**Existing:** `docs/NATS_SETUP.md` and `docs/NATS_TOPICS_REGISTRY.md`; NATS is already in the stack.
 
 **Where:** Each backend adds a “publish snapshot/accounts on change” step; TUI/PWA use a NATS-backed provider or a small aggregator service that subscribes and exposes REST/WS.
 

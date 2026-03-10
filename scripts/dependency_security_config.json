@@ -6,7 +6,6 @@
     "python": {
       "enabled": true,
       "files": [
-        "requirements.txt",
         "python/pyproject.toml",
         "agents/backend/python/pyproject.toml"
       ],

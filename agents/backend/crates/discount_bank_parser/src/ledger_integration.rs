@@ -172,7 +172,6 @@ pub fn convert_single_transaction(
 mod tests {
     use super::*;
     use crate::parser::DiscountBankParser;
-    use ledger::account::accounts;
 
     #[tokio::test]
     async fn test_convert_to_transactions() {

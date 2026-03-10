@@ -108,10 +108,16 @@ pub fn default_connect_options() -> async_nats::ConnectOptions {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tokio::time::{timeout, Duration};
 
     #[tokio::test]
     async fn test_connect_fails_without_server() {
-        let result = NatsClient::connect("nats://localhost:9999").await;
+        let result = timeout(
+            Duration::from_secs(2),
+            NatsClient::connect("nats://127.0.0.1:9"),
+        )
+        .await
+        .expect("connection attempt should fail quickly");
         assert!(result.is_err());
     }
 }

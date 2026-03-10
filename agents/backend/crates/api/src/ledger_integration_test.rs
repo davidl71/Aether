@@ -6,10 +6,10 @@
 #[cfg(test)]
 mod tests {
     use super::super::state::*;
-    use crate::ledger;
-    use crate::ledger::engine::{LedgerEngine, PersistenceLayer, TransactionFilter};
-    use crate::ledger::transaction::Transaction;
     use async_trait::async_trait;
+    use ledger::engine::{LedgerEngine, PersistenceLayer, TransactionFilter};
+    use ledger::error::Result as LedgerResult;
+    use ledger::transaction::Transaction;
     use std::sync::Arc;
     use tokio::sync::RwLock;
     use uuid::Uuid;
@@ -21,12 +21,12 @@ mod tests {
 
     #[async_trait]
     impl PersistenceLayer for MockPersistence {
-        async fn save_transaction(&self, transaction: &Transaction) -> ledger::Result<()> {
+        async fn save_transaction(&self, transaction: &Transaction) -> LedgerResult<()> {
             self.transactions.write().await.push(transaction.clone());
             Ok(())
         }
 
-        async fn load_transaction(&self, id: &Uuid) -> ledger::Result<Option<Transaction>> {
+        async fn load_transaction(&self, id: &Uuid) -> LedgerResult<Option<Transaction>> {
             let transactions = self.transactions.read().await;
             Ok(transactions.iter().find(|t| t.id == *id).cloned())
         }
@@ -34,7 +34,7 @@ mod tests {
         async fn load_transactions(
             &self,
             filter: &TransactionFilter,
-        ) -> ledger::Result<Vec<Transaction>> {
+        ) -> LedgerResult<Vec<Transaction>> {
             let transactions = self.transactions.read().await;
             let mut result = transactions.clone();
 

@@ -20,7 +20,7 @@ This automation scans all project dependencies for known security vulnerabilitie
 
 ### Multi-Language Support
 
-- **Python**: Scans `requirements.txt` and `pyproject.toml` files
+- **Python**: Scans `python/pyproject.toml` and other active Python project manifests
 - **Rust**: Scans `Cargo.toml` files
 - **npm**: Scans `package.json` files
 
@@ -128,7 +128,7 @@ Edit `scripts/dependency_security_config.json`:
   "scan_configs": {
     "python": {
       "enabled": true,
-      "files": ["requirements.txt", "python/pyproject.toml"],
+      "files": ["python/pyproject.toml"],
       "tools": {
         "osv_scanner": {"enabled": true},
         "pip_audit": {"enabled": true}

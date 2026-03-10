@@ -273,13 +273,13 @@ fn parse_date(date_str: &str, line_number: usize) -> Result<DateTime<Utc>> {
     let year = 2000 + year_2digit as i32;
 
     // Validate month and day
-    if month < 1 || month > 12 {
+    if !(1..=12).contains(&month) {
         return Err(ParseError::InvalidDate(
             format!("Invalid month: {}", month),
             line_number,
         ));
     }
-    if day < 1 || day > 31 {
+    if !(1..=31).contains(&day) {
         return Err(ParseError::InvalidDate(
             format!("Invalid day: {}", day),
             line_number,
@@ -299,15 +299,16 @@ fn parse_date(date_str: &str, line_number: usize) -> Result<DateTime<Utc>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Datelike;
+    use std::str::FromStr;
 
     #[test]
     fn test_parse_header_record() {
-        // Example header record (56 chars)
-        let line = "0001234567890123456789012345678901234567890123456789012345";
+        let line = "00123456701234567000000000123456 00000000789012 251118";
         let record = HeaderRecord::from_line(line, 1).unwrap();
-        assert_eq!(record.bank_number, 0);
-        assert_eq!(record.branch_number, "123");
-        assert_eq!(record.account_number, "456789");
+        assert_eq!(record.bank_number, 1);
+        assert_eq!(record.branch_number, "234");
+        assert_eq!(record.account_number, "345670");
     }
 
     #[test]

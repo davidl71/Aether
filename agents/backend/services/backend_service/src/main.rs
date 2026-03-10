@@ -115,7 +115,7 @@ async fn main() -> anyhow::Result<()> {
     if nats_integration
         .as_ref()
         .as_ref()
-        .map_or(false, |n| n.is_active())
+        .is_some_and(|n| n.is_active())
     {
         info!("NATS integration active");
     } else {

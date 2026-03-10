@@ -92,7 +92,7 @@ Prioritized plan for shared state, caching, task management, and analytics stora
 
 ## See also
 
-- `docs/NATS_USE_OPPORTUNITIES.md` – NATS usage and QuestDB
+- `docs/NATS_SETUP.md` – Current NATS setup and QuestDB bridge wiring
 - `docs/NATS_SETUP.md` – JetStream and KV bucket creation
 - `python/integration/nats_client.py` – NATS connection and publish
 - `python/integration/redis_cache.py` – Redis state cache (NATS KV fallback)

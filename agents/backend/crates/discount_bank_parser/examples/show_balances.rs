@@ -3,7 +3,7 @@
 use discount_bank_parser::DiscountBankParser;
 use std::env;
 use std::path::Path;
-use tracing::{info, Level};
+use tracing::Level;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

@@ -1,0 +1,64 @@
+name: Agents Backend Rust
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "agents/backend/**"
+      - ".github/workflows/agents-backend-rust.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "agents/backend/**"
+      - ".github/workflows/agents-backend-rust.yml"
+  workflow_dispatch:
+
+jobs:
+  rust-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agents/backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            agents/backend/target
+          key: ${{ runner.os }}-agents-backend-cargo-${{ hashFiles('agents/backend/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-agents-backend-cargo-
+
+      - name: Resolve Python for PyO3
+        run: echo "PYO3_PYTHON=$(python -c 'import sys; print(sys.executable)')" >> "$GITHUB_ENV"
+
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+      - name: Run clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+      - name: Run tests
+        run: cargo test --workspace
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: Run cargo audit
+        run: cargo audit

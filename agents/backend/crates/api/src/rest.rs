@@ -356,7 +356,7 @@ async fn cancel_order(
     {
         order.status = "CANCELLED".into();
         snapshot.touch();
-        snapshot.alerts.push(Alert::info(&format!(
+        snapshot.alerts.push(Alert::info(format!(
             "Order {} cancelled via REST",
             request.order_id
         )));
@@ -401,7 +401,7 @@ async fn toggle_mode(
     let mut snapshot = state.snapshot.write().await;
     snapshot.mode = request.mode.clone();
     snapshot.touch();
-    snapshot.alerts.push(Alert::info(&format!(
+    snapshot.alerts.push(Alert::info(format!(
         "Mode changed to {} via REST",
         request.mode
     )));
@@ -421,7 +421,7 @@ async fn change_account(
     let mut snapshot = state.snapshot.write().await;
     snapshot.account_id = request.account_id.clone();
     snapshot.touch();
-    snapshot.alerts.push(Alert::info(&format!(
+    snapshot.alerts.push(Alert::info(format!(
         "Account changed to {} via REST",
         request.account_id
     )));

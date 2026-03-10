@@ -56,15 +56,6 @@ jobs:
           mv ${FORMULA}--*.json bottles/
           brew uninstall --force local/ib-box-spread/$FORMULA
 
-      - name: Build ib-box-spread-tui bottle
-        run: |
-          FORMULA=ib-box-spread-tui
-          brew install --build-bottle local/ib-box-spread/$FORMULA
-          brew bottle --json local/ib-box-spread/$FORMULA
-          mv ${FORMULA}--*.tar.gz bottles/
-          mv ${FORMULA}--*.json bottles/
-          brew uninstall --force local/ib-box-spread/$FORMULA
-
       - name: Upload bottles
         uses: actions/upload-artifact@v4
         with:

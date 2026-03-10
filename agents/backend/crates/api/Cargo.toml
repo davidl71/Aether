@@ -20,3 +20,6 @@ risk = { path = "../risk" }
 strategy = { path = "../strategy" }
 ledger = { path = "../ledger" }
 
+[dev-dependencies]
+async-trait = { workspace = true }
+uuid = { workspace = true }

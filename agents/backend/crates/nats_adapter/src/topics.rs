@@ -307,8 +307,7 @@ pub fn topic_matches(pattern: &str, topic: &str) -> bool {
     }
 
     // Handle wildcards
-    if pattern.ends_with(".>") {
-        let prefix = &pattern[..pattern.len() - 2];
+    if let Some(prefix) = pattern.strip_suffix(".>") {
         return topic.starts_with(prefix);
     }
 

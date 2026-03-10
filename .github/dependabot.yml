@@ -90,19 +90,6 @@ updates:
       - "web"
 
   - package-ecosystem: "npm"
-    directory: "/cursor-extension"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    open-pull-requests-limit: 3
-    commit-message:
-      prefix: "deps(cursor-extension)"
-    labels:
-      - "dependencies"
-      - "node"
-      - "tooling"
-
-  - package-ecosystem: "npm"
     directory: "/tui-e2e"
     schedule:
       interval: "weekly"

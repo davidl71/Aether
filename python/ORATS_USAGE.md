@@ -46,14 +46,14 @@ Edit `config/config.json`:
 ### 3. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
-# Installs: requests>=2.31.0, urllib3>=2.0.0
+uv sync --project python --extra dev
+# Installs the locked requests/urllib3 set from python/pyproject.toml and python/uv.lock
 ```
 
 ### 4. Run
 
 ```bash
-python python/nautilus_strategy.py --config config/config.json --dry-run
+uv run --project python python/nautilus_strategy.py --config config/config.json --dry-run
 ```
 
 ---
@@ -407,4 +407,3 @@ dividend_data = orats_client.get_dividend_schedule("SPY")
 - ORATS Data API: https://orats.com/data-api
 - Implementation: `python/integration/orats_client.py`
 - Examples: `docs/ORATS_INTEGRATION.md`
-

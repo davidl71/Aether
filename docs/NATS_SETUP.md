@@ -209,7 +209,7 @@ Or via the unified service manager:
 
 **Payload format:** JSON. Envelope `{"payload": {symbol, bid, ask, last, volume?, timestamp?}}` or flat `{symbol, bid, ask, last, volume?, timestamp?}`. Symbol can be inferred from subject (e.g. `market-data.tick.SPY` → SPY). The Rust backend currently publishes **protobuf** on this subject; to ingest that, use the Go bridge (JetStream path) with an adapter that republishes proto→JSON to JetStream, or see `proto/messages.proto` `NatsEnvelope` + `MarketDataEvent`.
 
-**Code:** `agents/go/cmd/nats-questdb-bridge`. See also `docs/NATS_USE_OPPORTUNITIES.md` (QuestDB section).
+**Code:** `agents/go/cmd/nats-questdb-bridge`. See also `docs/NATS_TOPICS_REGISTRY.md` and `docs/message_schemas/README.md`.
 
 ## Integration with Launch Scripts
 

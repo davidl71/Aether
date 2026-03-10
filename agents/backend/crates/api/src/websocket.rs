@@ -211,8 +211,14 @@ mod tests {
             .map(|(k, _)| k)
             .collect();
 
-        assert!(changed.contains(&&"metrics"), "metrics should be in changed set");
-        assert!(!changed.contains(&&"positions"), "positions should not change");
+        assert!(
+            changed.contains(&&"metrics"),
+            "metrics should be in changed set"
+        );
+        assert!(
+            !changed.contains(&&"positions"),
+            "positions should not change"
+        );
         assert!(!changed.contains(&&"meta"), "meta should not change");
     }
 }

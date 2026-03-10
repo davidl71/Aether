@@ -166,8 +166,8 @@
 - `docs/design/DSL_AND_PROTO_OPPORTUNITIES.md` — Where proto vs DSL fits; config and expressions.
 - `docs/planning/NATS_KV_REDIS_LIFECYCLE_TIMESCALE.md` — NATS KV first, Redis later, unified state factory, background-task lifecycle.
 - `docs/NATS_TOPICS_REGISTRY.md` — NATS subject names and payload semantics.
-- `docs/NATS_USE_OPPORTUNITIES.md` — Where NATS is used and further opportunities (snapshot, health, aggregator).
-- `docs/PUBSUB_MESSAGING_INVESTIGATION.md` — NATS client, snapshot/health publish, TUI NATS provider.
+- `docs/NATS_SETUP.md` — Current NATS setup, bridge integration, and runtime paths.
+- `docs/message_schemas/README.md` — Canonical protobuf/NATS message contracts.
 - `docs/research/architecture/SHARED_CONFIGURATION_SCHEMA.md` — Unified config format for TUI, PWA, and standalone; `tui` and `pwa` sections.
 - `docs/platform/MULTI_ACCOUNT_AGGREGATION_DESIGN.md` — TUI vs PWA behaviour (one provider vs parallel backends), backend roles.
 - `python/integration/cache_client.py` — CacheClient protocol (Redis / memcached / NATS KV behind one interface).
