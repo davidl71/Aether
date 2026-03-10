@@ -25,7 +25,6 @@ Backends must have **`NATS_URL`** set and publish to **`system.health`** on each
 |----------------|--------------------------|
 | IB             | `NATS_URL` set           |
 | Alpaca         | `NATS_URL` set           |
-| TradeStation   | `NATS_URL` set           |
 | Tastytrade     | `NATS_URL` set           |
 | Discount Bank  | `NATS_URL` set           |
 | Risk-Free Rate | `NATS_URL` set           |

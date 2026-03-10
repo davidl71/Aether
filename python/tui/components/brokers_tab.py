@@ -17,7 +17,6 @@ PROVIDER_TYPE_TO_BACKEND_KEY: Dict[str, str] = {
     "rest_ib": "ib",
     "rest_tws_gateway": "tws",
     "rest_alpaca": "alpaca",
-    "rest_tradestation": "tradestation",
     "rest_tastytrade": "tastytrade",
     "mock": "mock",
     "nats": "nats",

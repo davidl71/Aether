@@ -5,7 +5,7 @@
 # AI CONTEXT FOR AGENTS:
 # =====================
 # This file contains shared functions used by ALL service startup scripts:
-#   - web/scripts/run-*.sh (Alpaca, IB, TradeStation, Discount Bank)
+#   - web/scripts/run-*.sh (Alpaca, IB, Discount Bank)
 #   - scripts/start_alpaca_service.sh
 #
 # PURPOSE: Eliminate code duplication across service scripts (~95% reduction)

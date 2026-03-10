@@ -6,7 +6,7 @@
 # AI CONTEXT FOR AGENTS:
 # =====================
 # This file contains shared configuration functions used by ALL service scripts:
-#   - web/scripts/run-*.sh (Alpaca, IB, TradeStation, Discount Bank)
+#   - web/scripts/run-*.sh (Alpaca, IB, Discount Bank)
 #   - scripts/start_alpaca_service.sh
 #
 # PURPOSE: Centralized configuration management with env var overrides
@@ -36,7 +36,6 @@
 #   Service ports can be overridden via environment variables:
 #   - ALPACA_PORT (overrides services.alpaca.port)
 #   - IB_PORT (overrides services.ib.port)
-#   - TRADESTATION_PORT (overrides services.tradestation.port)
 #   - DISCOUNT_BANK_PORT (overrides services.discount_bank.port)
 #
 # ERROR HANDLING: Functions return 0 on success, 1 on failure
@@ -132,6 +131,47 @@ config_get_port() {
 
   # No value found
   return 1
+}
+
+# Check whether a service is enabled in config with environment override support.
+# Usage: config_is_enabled <service_name> [default_value]
+# Returns 0 if enabled, 1 if disabled.
+config_is_enabled() {
+  local service_name="${1:-}"
+  local default_value="${2:-true}"
+
+  if [ -z "${service_name}" ]; then
+    echo "Error: service_name required" >&2
+    return 1
+  fi
+
+  local env_var_name
+  env_var_name=$(echo "${service_name}" | tr '[:lower:]' '[:upper:]' | tr '_' ' ')
+  env_var_name="${env_var_name}_ENABLED"
+  env_var_name=$(echo "${env_var_name}" | tr ' ' '_')
+
+  if [ -n "${!env_var_name:-}" ]; then
+    case "${!env_var_name}" in
+      1|true|TRUE|yes|YES|on|ON) return 0 ;;
+      0|false|FALSE|no|NO|off|OFF) return 1 ;;
+    esac
+  fi
+
+  local config_file
+  config_file=$(_find_config_file)
+  if [ -n "${config_file}" ] && command -v jq >/dev/null 2>&1; then
+    local enabled
+    enabled=$(jq -r ".services.${service_name}.enabled // empty" "${config_file}" 2>/dev/null)
+    case "${enabled}" in
+      true) return 0 ;;
+      false) return 1 ;;
+    esac
+  fi
+
+  case "${default_value}" in
+    1|true|TRUE|yes|YES|on|ON) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
 # Check if a port is available (not in use)

@@ -224,12 +224,9 @@ export function HeaderStatus({
           <span>Account: <strong>{snapshot.account_id}</strong></span>
         )}
         {(snapshot.account_id?.startsWith('ALPACA') || snapshot.account_id === 'ALPACA' ||
-          (snapshot.account_id && snapshot.account_id !== 'DU123456' && snapshot.account_id !== 'TRADESTATION')) ? (
+          (snapshot.account_id && snapshot.account_id !== 'DU123456')) ? (
           <span className="header__data-source">Data: <strong>Alpaca</strong></span>
         ) : null}
-        {snapshot.account_id === 'TRADESTATION' && (
-          <span className="header__data-source">Data: <strong>TradeStation</strong></span>
-        )}
         {(snapshot.account_id?.startsWith('TASTY') || snapshot.account_id === 'TASTYTRADE') && (
           <span className="header__data-source">Data: <strong>Tastytrade</strong></span>
         )}

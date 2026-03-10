@@ -16,9 +16,8 @@ The following providers are **independent**: you can have accounts and positions
 | Provider | Type | Notes |
 |----------|------|--------|
 | **Discount** (Discount Bank) | Israeli bank | Market securities, cash, loans; via Python service (port 8003) and/or Israeli bank scrapers (`companyId: discount`); positions in parallel |
-| **Alpaca** | US broker | Live/paper; positions in parallel |
+| **Alpaca** | US broker | Optional live/paper integration; disabled by default in example config |
 | **Tastytrade** | US broker | Live/paper; positions in parallel |
-| **TradeStation** | US broker | Live/paper; positions in parallel |
 | **IB** (Interactive Brokers) | US broker | TWS API / Client Portal; live/paper; positions in parallel |
 | **Fibi** | Israeli bank | In `broker.priorities`; market securities, cash, loans; also via Israeli bank scrapers (`companyId: fibi`); independent of other providers |
 | **Meitav** | Israeli broker | In `broker.priorities`; cache, margin, TASE + US instruments; independent |
@@ -30,7 +29,7 @@ Other sources (e.g. pension funds) follow the same pattern: account-level data w
 
 ### TUI and PWA behavior (independent backends)
 
-- **PWA (Web)**: Account selector fetches from all configured backends in parallel (IB/Alpaca, TradeStation, Tastytrade, Discount Bank) and shows one combined list with source labels; backend status shows each service independently. The UI includes the note: "Independent backends — accounts and positions can exist in parallel."
+- **PWA (Web)**: Account selector fetches from configured backends in parallel (currently IB/Alpaca and Discount Bank where enabled) and shows one combined list with source labels; backend status shows each service independently. The UI includes the note: "Independent backends — accounts and positions can exist in parallel."
 - **TUI (Python Textual)**: One snapshot provider at a time (rest/mock/file/nats); bank accounts are fetched separately from Discount Bank/ledger and merged into Unified positions. Status bar shows multiple backend health pills; optional tooltip explains that backends are independent (one snapshot at a time; bank accounts in parallel).
 
 ### Backends by application
@@ -40,8 +39,7 @@ Backends serve different applications (trading, market data, banking, rates, pla
 | Backend | Application | Purpose |
 |---------|-------------|---------|
 | IB (TWS/IBKR) | Trading | Order execution, positions, account data |
-| Alpaca | Trading | Order execution, positions, market data |
-| TradeStation | Trading | Order execution, positions |
+| Alpaca | Trading | Optional order execution, positions, market data |
 | Tastytrade | Trading | Order execution, positions |
 | Discount Bank | Banking | Israeli bank accounts, cash, loans, securities |
 | Risk-Free Rate | Rates | Treasury/SOFR yields, benchmark curves |

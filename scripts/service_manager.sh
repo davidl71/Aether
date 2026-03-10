@@ -14,7 +14,7 @@
 #   ./scripts/service_manager.sh start-all
 #   ./scripts/service_manager.sh stop-all
 #
-# Services: ib, alpaca, tastytrade, tradestation, discount_bank, risk_free_rate, health_dashboard, rust_backend, nats, web, israeli_bank_scrapers
+# Services: ib, alpaca, tastytrade, discount_bank, risk_free_rate, health_dashboard, rust_backend, nats, web, israeli_bank_scrapers
 
 set -euo pipefail
 
@@ -53,12 +53,24 @@ get_port() {
   fi
 }
 
+is_enabled() {
+  local service=$1
+
+  if command -v jq &>/dev/null && [ -f "$CONFIG_FILE" ]; then
+    local enabled
+    enabled=$(jq -r ".services.${service}.enabled // empty" "$CONFIG_FILE" 2>/dev/null || true)
+    if [ "$enabled" = "false" ]; then
+      return 1
+    fi
+  fi
+  return 0
+}
+
 # Service definitions: name, port, start_command
 declare -A SERVICES=(
   ["ib"]="8002|cd ${PROJECT_ROOT}/python/services && python -m uvicorn ib_service:app --host 0.0.0.0 --port"
   ["alpaca"]="8000|cd ${PROJECT_ROOT}/python/services && python -m uvicorn alpaca_service:app --host 0.0.0.0 --port"
   ["tastytrade"]="8005|cd ${PROJECT_ROOT}/python/services && python -m uvicorn tastytrade_service:app --host 0.0.0.0 --port"
-  ["tradestation"]="8001|cd ${PROJECT_ROOT}/python/services && python -m uvicorn tradestation_service:app --host 0.0.0.0 --port"
   ["discount_bank"]="8003|cd ${PROJECT_ROOT}/python/services && python -m uvicorn discount_bank_service:app --host 0.0.0.0 --port"
   ["risk_free_rate"]="8004|cd ${PROJECT_ROOT}/python/services && python -m uvicorn risk_free_rate_service:app --host 0.0.0.0 --port"
   ["health_dashboard"]="8011|cd ${PROJECT_ROOT} && HEALTH_DASHBOARD_PORT=8011 ./scripts/run_health_dashboard.sh"
@@ -88,6 +100,11 @@ start_service() {
     log_error "Unknown service: $service"
     log_info "Available services: ${!SERVICES[*]}"
     return 1
+  fi
+
+  if ! is_enabled "$service"; then
+    log_warn "$service is disabled in config; skipping start"
+    return 0
   fi
 
   local config="${SERVICES[$service]}"
@@ -229,7 +246,9 @@ show_status() {
     port=$(get_port "$svc" "$default_port")
 
     printf "  %-20s " "$svc:"
-    if is_running "$port"; then
+    if ! is_enabled "$svc"; then
+      echo -e "${YELLOW}DISABLED${NC} (port: $port)"
+    elif is_running "$port"; then
       local pid
       pid=$(get_pid "$port")
       echo -e "${GREEN}RUNNING${NC} (PID: $pid, port: $port)"
@@ -244,6 +263,10 @@ show_status() {
 start_all() {
   log_info "Starting all services..."
   for service in "${!SERVICES[@]}"; do
+    if ! is_enabled "$service"; then
+      log_info "Skipping disabled service: $service"
+      continue
+    fi
     start_service "$service" || true
   done
   show_status

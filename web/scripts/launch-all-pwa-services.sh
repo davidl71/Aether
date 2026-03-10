@@ -28,6 +28,18 @@ if [ -f "${SCRIPTS_DIR_ROOT}/include/config.sh" ]; then
   source "${SCRIPTS_DIR_ROOT}/include/config.sh"
 fi
 
+service_enabled() {
+  local service_name="${1:-}"
+  if [ -z "${service_name}" ]; then
+    return 1
+  fi
+  if command -v config_is_enabled >/dev/null 2>&1; then
+    config_is_enabled "${service_name}" true
+    return $?
+  fi
+  return 0
+}
+
 # Detect OS and service management method
 detect_service_manager() {
   # Check for systemctl (Linux with systemd)
@@ -284,7 +296,6 @@ stop_services() {
     SERVICES_TO_STOP=(
       "pwa-web"
       "pwa-alpaca"
-      "pwa-tradestation"
       "pwa-ib"
       "pwa-discount-bank"
       "pwa-risk-free-rate"
@@ -364,7 +375,6 @@ case "${1:-start}" in
       SYSTEMCTL_SERVICES=(
         "pwa-web:Web"
         "pwa-alpaca:Alpaca"
-        "pwa-tradestation:TradeStation"
         "pwa-ib-gateway:IB Gateway"
         "pwa-ib:IB"
         "pwa-discount-bank:Discount Bank"
@@ -429,7 +439,6 @@ esac
 WEB_PORT=$(get_service_port "web" 5173)
 GATEWAY_PORT=$(get_service_port "ib_gateway" 5001)
 ALPACA_PORT=$(get_service_port "alpaca" 8000)
-TRADESTATION_PORT=$(get_service_port "tradestation" 8001)
 IB_PORT=$(get_service_port "ib" 8002)
 DISCOUNT_BANK_PORT=$(get_service_port "discount_bank" 8003)
 RISK_FREE_RATE_PORT=$(get_service_port "risk_free_rate" 8004)
@@ -514,7 +523,10 @@ else
   echo "${YELLOW}⚠ IB Gateway (port ${GATEWAY_PORT}) is not running${NC}"
 fi
 
-if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-alpaca"; then
+if ! service_enabled "alpaca"; then
+  SERVICE_STATUS["alpaca"]="disabled"
+  echo "${BLUE}○ Alpaca service is disabled in config${NC}"
+elif [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-alpaca"; then
   SERVICE_STATUS["alpaca"]="running"
   echo "${GREEN}✓ Alpaca service (port ${ALPACA_PORT}) is running via systemctl${NC}"
 elif check_service_health "${ALPACA_PORT}"; then
@@ -524,18 +536,6 @@ else
   SERVICE_STATUS["alpaca"]="stopped"
   SERVICES_TO_START+=("alpaca")
   echo "${YELLOW}⚠ Alpaca service (port ${ALPACA_PORT}) is not running${NC}"
-fi
-
-if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-tradestation"; then
-  SERVICE_STATUS["tradestation"]="running"
-  echo "${GREEN}✓ TradeStation service (port ${TRADESTATION_PORT}) is running via systemctl${NC}"
-elif check_service_health "${TRADESTATION_PORT}"; then
-  SERVICE_STATUS["tradestation"]="running"
-  echo "${GREEN}✓ TradeStation service (port ${TRADESTATION_PORT}) is running${NC}"
-else
-  SERVICE_STATUS["tradestation"]="stopped"
-  SERVICES_TO_START+=("tradestation")
-  echo "${YELLOW}⚠ TradeStation service (port ${TRADESTATION_PORT}) is not running${NC}"
 fi
 
 if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-ib"; then
@@ -636,7 +636,6 @@ if [ "${SERVICE_MANAGER}" = "systemctl" ]; then
   declare -A SYSTEMCTL_SERVICE_MAP
   SYSTEMCTL_SERVICE_MAP["web"]="pwa-web"
   SYSTEMCTL_SERVICE_MAP["alpaca"]="pwa-alpaca"
-  SYSTEMCTL_SERVICE_MAP["tradestation"]="pwa-tradestation"
   SYSTEMCTL_SERVICE_MAP["gateway"]="pwa-ib-gateway"
   SYSTEMCTL_SERVICE_MAP["ib"]="pwa-ib"
   SYSTEMCTL_SERVICE_MAP["discount_bank"]="pwa-discount-bank"
@@ -661,7 +660,10 @@ if [ "${SERVICE_MANAGER}" = "systemctl" ]; then
   fi
 
   # 3. Independent services (can start in parallel)
-  for service in web alpaca tradestation discount_bank risk_free_rate jupyterlab rust_backend; do
+  for service in web alpaca discount_bank risk_free_rate jupyterlab rust_backend; do
+    if [ "${service}" = "alpaca" ] && ! service_enabled "alpaca"; then
+      continue
+    fi
     if [[ " ${SERVICES_TO_START[*]} " =~ " ${service} " ]]; then
       start_systemctl_service "${SYSTEMCTL_SERVICE_MAP[$service]}" || {
         echo "${YELLOW}  Falling back to manual start for ${service}...${NC}"
@@ -707,7 +709,7 @@ if [[ " ${SERVICES_TO_START[*]} " =~ " nats " ]]; then
 fi
 
 # Launch services in background (parallel groups for faster startup)
-# Group 1 (parallel): Web, Gateway, Alpaca, TradeStation, Discount Bank, Risk-Free Rate
+# Group 1 (parallel): Web, Gateway, optional Alpaca, Discount Bank, Risk-Free Rate
 # Group 2 (after Gateway ready): IB service
 
 echo "${BLUE}Starting independent services in parallel...${NC}"
@@ -837,20 +839,11 @@ if [[ " ${SERVICES_TO_START[*]} " =~ " gateway " ]]; then
 fi
 
 # Alpaca service (independent, port 8000)
-if [[ " ${SERVICES_TO_START[*]} " =~ " alpaca " ]]; then
+if service_enabled "alpaca" && [[ " ${SERVICES_TO_START[*]} " =~ " alpaca " ]]; then
   (
     cd "$ROOT_DIR"
     bash "${SCRIPTS_DIR}/run-alpaca-service.sh" > /tmp/pwa-alpaca.log 2>&1 &
     echo $! > /tmp/pwa-alpaca.pid
-  ) &
-fi
-
-# TradeStation service (independent, port 8001)
-if [[ " ${SERVICES_TO_START[*]} " =~ " tradestation " ]]; then
-  (
-    cd "$ROOT_DIR"
-    bash "${SCRIPTS_DIR}/run-tradestation-service.sh" > /tmp/pwa-tradestation.log 2>&1 &
-    echo $! > /tmp/pwa-tradestation.pid
   ) &
 fi
 
@@ -935,17 +928,13 @@ if [[ " ${SERVICES_TO_START[*]} " =~ " gateway " ]] || [ "${SERVICE_STATUS[gatew
     echo "    ${BLUE}URL: https://localhost:${GATEWAY_PORT}${NC}"
   fi
 fi
-if [[ " ${SERVICES_TO_START[*]} " =~ " alpaca " ]] || [ "${SERVICE_STATUS[alpaca]}" = "running" ]; then
+if service_enabled "alpaca" && { [[ " ${SERVICES_TO_START[*]} " =~ " alpaca " ]] || [ "${SERVICE_STATUS[alpaca]}" = "running" ]; }; then
   echo "  ${GREEN}✓${NC} Alpaca service (port ${ALPACA_PORT}) - Log: /tmp/pwa-alpaca.log"
   echo "    ${BLUE}URL: http://127.0.0.1:${ALPACA_PORT}${NC}"
 fi
 if [[ " ${SERVICES_TO_START[*]} " =~ " ib " ]] || [ "${SERVICE_STATUS[ib]}" = "running" ]; then
   echo "  ${GREEN}✓${NC} IB service (port ${IB_PORT}) - Log: /tmp/pwa-ib.log"
   echo "    ${BLUE}URL: http://127.0.0.1:${IB_PORT}${NC}"
-fi
-if [[ " ${SERVICES_TO_START[*]} " =~ " tradestation " ]] || [ "${SERVICE_STATUS[tradestation]}" = "running" ]; then
-  echo "  ${GREEN}✓${NC} TradeStation service (port ${TRADESTATION_PORT}) - Log: /tmp/pwa-tradestation.log"
-  echo "    ${BLUE}URL: http://127.0.0.1:${TRADESTATION_PORT}${NC}"
 fi
 if [[ " ${SERVICES_TO_START[*]} " =~ " discount_bank " ]] || [ "${SERVICE_STATUS[discount_bank]}" = "running" ]; then
   echo "  ${GREEN}✓${NC} Discount Bank service (port ${DISCOUNT_BANK_PORT}) - Log: /tmp/pwa-discount-bank.log"

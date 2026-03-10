@@ -111,9 +111,8 @@ Charts, cash flow, and opportunity simulation use the Rust backend URL. Account/
 
 This script will:
 - Launch web service (Vite dev server) on port 5173
-- Launch Alpaca backend service on port 8000
-- Launch IB backend service on port 8000
-- Launch TradeStation backend service on port 8001
+- Launch IB backend service on port 8002
+- Launch optional Alpaca backend service on port 8000 when enabled
 - Use tmux for session management (if available)
 - Fall back to background processes if tmux is not installed
 
@@ -129,9 +128,8 @@ This script will:
 **Services launched:**
 - Web service (Vite) - Port 5173
 - IB Gateway - Port 5001 (requires Java)
-- Alpaca service - Port 8000
+- Alpaca service - Port 8000 (optional; disabled by default in example config)
 - IB service - Port 8002
-- TradeStation service - Port 8001
 - Discount Bank service - Port 8003
 - Risk-Free Rate service - Port 8004 (new)
 
@@ -157,11 +155,6 @@ This script will:
 **Start the IB backend service:**
 ```bash
 ./web/scripts/run-ib-service.sh
-```
-
-**Start the TradeStation backend service:**
-```bash
-./web/scripts/run-tradestation-service.sh
 ```
 
 ### Manual Commands

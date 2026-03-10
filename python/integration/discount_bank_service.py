@@ -416,19 +416,6 @@ def _fetch_alpaca_positions() -> List[Dict[str, Any]]:
         return []
 
 
-def _fetch_tradestation_positions(
-    account_id: Optional[str] = None,
-) -> List[Dict[str, Any]]:
-    """Fetch positions from TradeStation API."""
-    try:
-        from .tradestation_client import TradeStationClient
-
-        client = TradeStationClient()
-        return client.get_positions(account_id)
-    except Exception:
-        return []
-
-
 def _extract_bank_accounts_from_ledger() -> List[Dict[str, Any]]:
     """Extract all bank accounts from ledger database.
 
@@ -810,7 +797,7 @@ def get_bank_accounts() -> BankAccountsResponse:
 
 @app.get("/api/import-positions", response_model=ImportPositionsResponse)
 def import_positions(
-    broker: str = Query(..., description="Broker type: ibkr, alpaca, or tradestation"),
+    broker: str = Query(..., description="Broker type: ibkr or alpaca"),
     account_id: Optional[str] = Query(None, description="Account ID (for IBKR)"),
     dry_run: bool = Query(False, description="If true, don't record in ledger"),
 ) -> ImportPositionsResponse:
@@ -825,11 +812,9 @@ def import_positions(
         broker_positions = _fetch_ibkr_positions(account_id)
     elif broker.lower() == "alpaca":
         broker_positions = _fetch_alpaca_positions()
-    elif broker.lower() == "tradestation":
-        broker_positions = _fetch_tradestation_positions(account_id)
     else:
         raise HTTPException(
-            status_code=400, detail=f"Unknown broker: {broker}. Use: ibkr, alpaca, tradestation"
+            status_code=400, detail=f"Unknown broker: {broker}. Use: ibkr, alpaca"
         )
 
     # Get existing positions from ledger

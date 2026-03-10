@@ -2,25 +2,22 @@
 
 ## Overview
 
-The `service_manager.sh` script replaces **18 individual start/stop scripts** with a single unified interface for managing all platform services.
+The `service_manager.sh` script replaces individual start/stop scripts with a single unified interface for managing active platform services.
 
 ## Replaced Scripts
 
-**Before** (18 scripts, 849 lines total):
+**Before**:
 - `start_ib_service.sh`, `stop_ib_service.sh`
 - `start_alpaca_service.sh`, `stop_alpaca_service.sh`
 - `start_tastytrade_service.sh`, `stop_tastytrade_service.sh`
-- `start_tradestation_service.sh`, `stop_tradestation_service.sh`
 - `start_discount_bank_service.sh`, `stop_discount_bank_service.sh`
 - `start_risk_free_rate_service.sh`, `stop_risk_free_rate_service.sh`
 - `start_rust_backend.sh`, `stop_rust_backend.sh`
 - `start_nats.sh`, `stop_nats.sh`
 - `start_web_dev.sh`, `stop_web_dev.sh`
 
-**After** (1 script, 341 lines):
+**After**:
 - `service_manager.sh` ✅
-
-**Reduction**: -17 scripts, -508 lines (60% reduction)
 
 ---
 
@@ -80,9 +77,8 @@ The `service_manager.sh` script replaces **18 individual start/stop scripts** wi
 | Service | Port | Description |
 |---------|------|-------------|
 | `ib` | 8002 | Interactive Brokers service |
-| `alpaca` | 8000 | Alpaca trading service |
+| `alpaca` | 8000 | Alpaca trading service (optional, disabled by default in example config) |
 | `tastytrade` | 8005 | Tastytrade service |
-| `tradestation` | 8001 | TradeStation service |
 | `discount_bank` | 8003 | Discount Bank service |
 | `risk_free_rate` | 8004 | Risk-free rate extraction |
 | `rust_backend` | 8080 | Rust backend (REST + gRPC) |
@@ -182,14 +178,13 @@ Expected output:
 Service Status:
 ===============
   ib:                  RUNNING (PID: 12345, port: 8002)
-  alpaca:              RUNNING (PID: 12346, port: 8000)
+  alpaca:              STOPPED (port: 8000)
   tastytrade:          RUNNING (PID: 12347, port: 8005)
-  tradestation:        RUNNING (PID: 12348, port: 8001)
-  discount_bank:       RUNNING (PID: 12349, port: 8003)
-  risk_free_rate:      RUNNING (PID: 12350, port: 8004)
-  rust_backend:        RUNNING (PID: 12351, port: 8080)
-  nats:                RUNNING (PID: 12352, port: 4222)
-  web:                 RUNNING (PID: 12353, port: 5173)
+  discount_bank:       RUNNING (PID: 12348, port: 8003)
+  risk_free_rate:      RUNNING (PID: 12349, port: 8004)
+  rust_backend:        RUNNING (PID: 12350, port: 8080)
+  nats:                RUNNING (PID: 12351, port: 4222)
+  web:                 RUNNING (PID: 12352, port: 5173)
 ```
 
 ---

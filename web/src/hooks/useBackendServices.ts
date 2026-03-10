@@ -26,7 +26,6 @@ export type BackendRole = 'trading' | 'market_data' | 'banking' | 'rates' | 'pla
 
 export interface BackendServicesStatus {
   alpaca: BackendServiceStatus;
-  tradestation: BackendServiceStatus;
   ib: BackendServiceStatus;
   discountBank: BackendServiceStatus;
   riskFreeRate: BackendServiceStatus;
@@ -36,7 +35,6 @@ export interface BackendServicesStatus {
 
 const SERVICE_CONFIG = {
   alpaca: { name: 'Alpaca', port: SERVICE_PORTS.alpaca, healthPath: '/api/health', role: 'trading' as const },
-  tradestation: { name: 'TradeStation', port: SERVICE_PORTS.tradestation, healthPath: '/api/health', role: 'trading' as const },
   ib: { name: 'IB', port: SERVICE_PORTS.ib, healthPath: '/api/health', role: 'trading' as const },
   tastytrade: { name: 'Tastytrade', port: SERVICE_PORTS.tastytrade, healthPath: '/api/health', role: 'trading' as const },
   discountBank: { name: 'Discount Bank', port: SERVICE_PORTS.discountBank, healthPath: '/api/health', role: 'banking' as const },
@@ -74,7 +72,6 @@ export function getBackendsByRole(statuses: BackendServicesStatus): Partial<Reco
 const DASHBOARD_KEY_MAP: Record<string, keyof typeof SERVICE_CONFIG> = {
   ib: 'ib',
   alpaca: 'alpaca',
-  tradestation: 'tradestation',
   tastytrade: 'tastytrade',
   discount_bank: 'discountBank',
   analytics: 'riskFreeRate', // analytics includes risk_free_rate; show under Risk-Free Rate for simplicity

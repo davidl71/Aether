@@ -5,7 +5,7 @@
 # AI CONTEXT FOR AGENTS:
 # =====================
 # This file contains shared service utility functions used by service scripts:
-#   - web/scripts/run-*.sh (Alpaca, IB, TradeStation, Discount Bank)
+#   - web/scripts/run-*.sh (Alpaca, IB, Discount Bank)
 #   - scripts/start_alpaca_service.sh
 #
 # PURPOSE: Service health checking and port conflict detection

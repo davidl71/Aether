@@ -72,7 +72,6 @@ mkdir -p "${USER_SYSTEMD_DIR}"
 SERVICES=(
   "pwa-web"
   "pwa-alpaca"
-  "pwa-tradestation"
   "pwa-ib-gateway"
   "pwa-ib"
   "pwa-discount-bank"

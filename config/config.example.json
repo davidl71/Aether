@@ -87,7 +87,7 @@
   // Broker Selection (Primary integration defaults to IB for real data)
   // ============================================================================
   "broker": {
-    "primary": "IB", // Options: "IB", "ALPACA" (changed to IB for real IBKR data)
+    "primary": "IB", // Options: "IB", "ALPACA" (IB is the active default)
     "priorities": ["ib", "alpaca", "fibi", "meitav", "ibi", "discount", "mock"]
   },
 
@@ -99,7 +99,7 @@
   },
 
   // ============================================================================
-  // Alpaca Integration (Primary)
+  // Alpaca Integration (Optional)
   // ============================================================================
   "alpaca": {
     // See https://docs.alpaca.markets/
@@ -205,13 +205,11 @@
       "port": 5173 // Vite dev server (frontend)
     },
     "alpaca": {
-      "port": 8000 // Alpaca service (primary backend)
+      "port": 8000,
+      "enabled": false // Optional backend; disabled by default unless you actively use Alpaca
     },
     "ib": {
       "port": 8002 // IB service (separate from Alpaca to avoid conflicts)
-    },
-    "tradestation": {
-      "port": 8001 // TradeStation service
     },
     "discount_bank": {
       "port": 8003 // Discount Bank service

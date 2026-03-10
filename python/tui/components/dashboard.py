@@ -21,7 +21,6 @@ BACKEND_DISPLAY_NAMES: Dict[str, str] = {
     "tws": "TWS",
     "alpaca": "Alpaca",
     "tastytrade": "Tastytrade",
-    "tradestation": "TradeStation",
     "discount_bank": "Discount Bank",
     "risk_free_rate": "Risk-Free Rate",
     "rust": "Rust",

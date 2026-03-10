@@ -9,7 +9,7 @@
  */
 
 export interface DataSourceConfig {
-  type: 'alpaca' | 'ib' | 'tradestation' | 'mock' | 'static';
+  type: 'alpaca' | 'ib' | 'mock' | 'static';
   enabled?: boolean;
   apiKeyId?: string;
   apiSecretKey?: string;
@@ -150,7 +150,7 @@ function applyEnvOverrides(config: SharedConfig): SharedConfig {
     overrides.services = config.services || {};
   }
 
-  const serviceNames = ['alpaca', 'ib', 'tradestation', 'discountBank'];
+  const serviceNames = ['alpaca', 'ib', 'discountBank'];
   for (const serviceName of serviceNames) {
     const envVarName = `VITE_${serviceName.toUpperCase().replace('_', '')}_PORT`;
     const envPort = import.meta.env[envVarName] ||

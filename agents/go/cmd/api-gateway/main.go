@@ -14,7 +14,6 @@
 //	HEARTBEAT_URL      (default "http://localhost:8090")
 //	IB_URL             (default "http://localhost:8002") — IB REST snapshot
 //	ALPACA_URL         (default "http://localhost:8000")
-//	TRADESTATION_URL   (default "http://localhost:8001")
 //	TASTYTRADE_URL     (default "http://localhost:8005")
 //	NATS_URL           optional; if set, gateway reads live state from NATS KV (bucket LIVE_STATE) at /api/live/state and /api/live/state/watch (SSE)
 package main
@@ -112,7 +111,6 @@ func main() {
 	heartbeatURL := env("HEARTBEAT_URL", "http://localhost:8090")
 	ibURL := env("IB_URL", "http://localhost:8002")
 	alpacaURL := env("ALPACA_URL", "http://localhost:8000")
-	tradestationURL := env("TRADESTATION_URL", "http://localhost:8001")
 	tastytradeURL := env("TASTYTRADE_URL", "http://localhost:8005")
 
 	// Order matters: more specific prefixes first. TUI presets use /api/v1/{ib,alpaca,...}/snapshot.
@@ -120,7 +118,6 @@ func main() {
 		newRoute("/api/heartbeat/", heartbeatURL),
 		newRouteWithStrip("/api/v1/ib/", "/api/v1/ib", "/api/v1", ibURL),
 		newRouteWithStrip("/api/v1/alpaca/", "/api/v1/alpaca", "/api", alpacaURL),
-		newRouteWithStrip("/api/v1/tradestation/", "/api/v1/tradestation", "/api", tradestationURL),
 		newRouteWithStrip("/api/v1/tastytrade/", "/api/v1/tastytrade", "/api/v1", tastytradeURL),
 		newRoute("/api/", backendURL),
 		newRoute("/health", backendURL),

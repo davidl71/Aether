@@ -110,7 +110,7 @@ def _strip_json_comments(text: str) -> str:
 @dataclass
 class DataSourceConfig:
     """Configuration for a single data source."""
-    type: str  # "alpaca", "ib", "tradestation", "mock", "static"
+    type: str  # "alpaca", "ib", "mock", "static"
     enabled: bool = True
     api_key_id: Optional[str] = None
     api_secret_key: Optional[str] = None
@@ -146,14 +146,14 @@ class TUIConfig:
 class PWAConfig:
     """PWA-specific configuration section."""
     service_ports: Dict[str, int] = field(default_factory=dict)
-    default_service: str = "alpaca"
+    default_service: str = "ib"
     service_urls: Dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
 class BrokerConfig:
     """Broker/standalone configuration section."""
-    primary: str = "ALPACA"
+    primary: str = "IB"
     priorities: List[str] = field(default_factory=lambda: ["alpaca", "ib", "mock"])
 
 
@@ -162,7 +162,7 @@ class SharedConfig:
     """Unified configuration structure."""
     version: str = "1.0.0"
     data_sources: Dict[str, Any] = field(default_factory=lambda: {
-        "primary": "alpaca",
+        "primary": "ib",
         "fallback": [],
         "sources": {}
     })
@@ -343,7 +343,7 @@ class SharedConfigLoader:
             config["tui"]["providerType"] = env_tui_backend
 
         # Service ports
-        for service_name in ["alpaca", "ib", "tradestation", "discountBank"]:
+        for service_name in ["alpaca", "ib", "discountBank"]:
             env_port = os.getenv(f"{service_name.upper().replace('_', '')}_PORT")
             if env_port:
                 if "services" not in config:
@@ -430,7 +430,7 @@ class SharedConfigLoader:
         """Parse configuration dictionary into SharedConfig dataclass."""
         # Extract data sources
         data_sources = config_dict.get("dataSources", {
-            "primary": "alpaca",
+            "primary": "ib",
             "fallback": [],
             "sources": {}
         })
@@ -464,7 +464,7 @@ class SharedConfigLoader:
         if pwa_dict:
             pwa_config = PWAConfig(
                 service_ports=pwa_dict.get("servicePorts", {}),
-                default_service=pwa_dict.get("defaultService", "alpaca"),
+                default_service=pwa_dict.get("defaultService", "ib"),
                 service_urls=pwa_dict.get("serviceUrls", {})
             )
 
@@ -473,7 +473,7 @@ class SharedConfigLoader:
         broker_config = None
         if broker_dict:
             broker_config = BrokerConfig(
-                primary=broker_dict.get("primary", "ALPACA"),
+                primary=broker_dict.get("primary", "IB"),
                 priorities=broker_dict.get("priorities", ["alpaca", "ib", "mock"])
             )
 
@@ -514,7 +514,7 @@ class SharedConfigLoader:
     @staticmethod
     def get_primary_data_source(config: SharedConfig) -> str:
         """Get primary data source name."""
-        return config.data_sources.get("primary", "alpaca")
+        return config.data_sources.get("primary", "ib")
 
     @staticmethod
     def get_fallback_data_sources(config: SharedConfig) -> List[str]:

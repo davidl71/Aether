@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Benchmark backend services (IB, Alpaca, TradeStation, Tastytrade, etc.).
+Benchmark backend services (IB, Alpaca, Tastytrade, etc.).
 
 Measures latency for GET /api/health and GET /api/snapshot (or /api/v1/snapshot)
 per service. Optional concurrent requests for throughput.
@@ -40,7 +40,6 @@ except ImportError:
 DEFAULT_SERVICES: List[Dict[str, Any]] = [
     {"name": "ib", "port": 8002, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5), ("/api/v1/snapshot", "snapshot", 20)]},
     {"name": "alpaca", "port": 8000, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5), ("/api/snapshot", "snapshot", 20)]},
-    {"name": "tradestation", "port": 8001, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5), ("/api/snapshot", "snapshot", 20)]},
     {"name": "tastytrade", "port": 8005, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5), ("/api/v1/snapshot", "snapshot", 20)]},
     {"name": "discount_bank", "port": 8003, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5)]},
     {"name": "risk_free_rate", "port": 8004, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5)]},
@@ -69,7 +68,6 @@ def load_services_from_config(config_path: Path) -> List[Dict[str, Any]]:
     port_map = {
         "ib": ("ib", 8002),
         "alpaca": ("alpaca", 8000),
-        "tradestation": ("tradestation", 8001),
         "tastytrade": ("tastytrade", 8005),
         "discount_bank": ("discount_bank", 8003),
         "risk_free_rate": ("risk_free_rate", 8004),
@@ -86,7 +84,7 @@ def load_services_from_config(config_path: Path) -> List[Dict[str, Any]]:
             result.append({**svc, "port": port})
         else:
             endpoints = [("/api/health", "health", 5)]
-            if key in ("ib", "alpaca", "tradestation", "tastytrade"):
+            if key in ("ib", "alpaca", "tastytrade"):
                 path = "/api/v1/snapshot" if key in ("ib", "tastytrade") else "/api/snapshot"
                 endpoints.append((path, "snapshot", 20))
             result.append({"name": name, "port": port, "host": "127.0.0.1", "endpoints": endpoints})

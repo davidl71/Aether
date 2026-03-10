@@ -21,6 +21,14 @@ _config_port() {
   fi
 }
 
+_config_enabled() {
+  if type config_is_enabled &>/dev/null; then
+    config_is_enabled "$1" "${2:-true}"
+  else
+    return 0
+  fi
+}
+
 _svc_display() {
   case "$1" in
     nats) echo "NATS" ;;
@@ -29,7 +37,6 @@ _svc_display() {
     ib) echo "IBKR" ;;
     alpaca) echo "Alpaca" ;;
     tastytrade) echo "Tastytrade" ;;
-    tradestation) echo "TradeStation" ;;
     riskfree) echo "Risk-Free Rate" ;;
     discount) echo "Discount Bank" ;;
     healthdashboard) echo "Health Dashboard" ;;
@@ -48,7 +55,6 @@ _svc_port() {
     ib) _config_port ib 8002 ;;
     alpaca) _config_port alpaca 8000 ;;
     tastytrade) _config_port tastytrade 8005 ;;
-    tradestation) _config_port tradestation 8001 ;;
     riskfree) _config_port risk_free_rate 8004 ;;
     discount) _config_port discount_bank 8003 ;;
     healthdashboard) _config_port health_dashboard 8011 ;;
@@ -67,7 +73,6 @@ _svc_cmd() {
     ib) echo "./web/scripts/run-ib-service.sh" ;;
     alpaca) echo "./web/scripts/run-alpaca-service.sh" ;;
     tastytrade) echo "./web/scripts/run-tastytrade-service.sh" ;;
-    tradestation) echo "./web/scripts/run-tradestation-service.sh" ;;
     riskfree) echo "./web/scripts/run-risk-free-rate-service.sh" ;;
     discount) echo "./web/scripts/run-discount-bank-service.sh" ;;
     healthdashboard) echo "./scripts/run_health_dashboard.sh" ;;
@@ -86,7 +91,6 @@ _svc_log() {
     ib) echo "ib-service.log" ;;
     alpaca) echo "alpaca-service.log" ;;
     tastytrade) echo "tastytrade-service.log" ;;
-    tradestation) echo "tradestation-service.log" ;;
     riskfree) echo "risk-free-rate-service.log" ;;
     discount) echo "discount-bank-service.log" ;;
     healthdashboard) echo "health-dashboard.log" ;;
@@ -102,7 +106,7 @@ _svc_health() {
     nats) echo "http://localhost:8222/healthz" ;;
     memcached) echo "" ;;
     gateway) echo "https://localhost:\${PORT}" ;;
-    ib|alpaca|tastytrade|tradestation|riskfree|discount)
+    ib|alpaca|tastytrade|riskfree|discount)
       echo "http://localhost:\${PORT}/api/health"
       ;;
     healthdashboard) echo "http://localhost:\${PORT}/api/health" ;;
@@ -118,7 +122,6 @@ _svc_wait() {
     nats|memcached) echo "2" ;;
     gateway) echo "5" ;;
     web) echo "6" ;;
-    tradestation) echo "10" ;;
     ib|alpaca|tastytrade|riskfree|discount) echo "8" ;;
     healthdashboard) echo "6" ;;
     questdb_nats) echo "3" ;;
@@ -128,7 +131,7 @@ _svc_wait() {
 
 _svc_known() {
   case "$1" in
-    nats|memcached|gateway|ib|alpaca|tastytrade|tradestation|riskfree|discount|web|rust|questdb_nats|healthdashboard)
+    nats|memcached|gateway|ib|alpaca|tastytrade|riskfree|discount|web|rust|questdb_nats|healthdashboard)
       return 0
       ;;
     *) return 1 ;;
@@ -199,6 +202,10 @@ do_start() {
   local svc="$1"
   local display port log wait_sec cmd
   display=$(_svc_display "$svc")
+  if ! _config_enabled "$svc" "true"; then
+    echo "[info] ${display} is disabled in config; skipping start"
+    return 0
+  fi
   port=$(_svc_port "$svc")
   log="${LOGS_DIR}/$(_svc_log "$svc")"
   wait_sec=$(_svc_wait "$svc")
@@ -371,20 +378,26 @@ do_restart() {
 
 do_list() {
   echo "Available services:"
-  local svc port
-  for svc in nats memcached gateway ib alpaca tastytrade tradestation riskfree discount healthdashboard web rust; do
+  local svc port enabled
+  for svc in nats memcached gateway ib alpaca tastytrade riskfree discount healthdashboard web rust; do
     port=$(_svc_port "$svc")
-    printf "  %-14s  %-20s  %s\n" "$svc" "$(_svc_display "$svc")" "${port:+port $port}"
+    enabled="enabled"
+    _config_enabled "$svc" "true" || enabled="disabled"
+    printf "  %-14s  %-20s  %s  [%s]\n" "$svc" "$(_svc_display "$svc")" "${port:+port $port}" "$enabled"
   done
 }
 
 # Service order for start-all (dependency order); stop-all uses reverse
 # healthdashboard after backends so NATS has time to be ready
-ALL_SERVICES_START=(nats memcached gateway ib riskfree discount alpaca tastytrade tradestation healthdashboard web)
+ALL_SERVICES_START=(nats memcached gateway ib riskfree discount alpaca tastytrade healthdashboard web)
 
 do_start_all() {
   local svc
   for svc in "${ALL_SERVICES_START[@]}"; do
+    if ! _config_enabled "$svc" "true"; then
+      echo "==> Skipping disabled $svc..."
+      continue
+    fi
     echo "==> Starting $svc..."
     do_start "$svc" || true
   done
@@ -419,7 +432,9 @@ do_status_all() {
   for svc in "${ALL_SERVICES_START[@]}"; do
     port=$(_svc_port "$svc")
     pid=$(_find_pid "$svc")
-    if [[ -n "$pid" ]]; then
+    if ! _config_enabled "$svc" "true"; then
+      printf "  %-14s  %-20s  disabled (port: %s)\n" "$svc" "$(_svc_display "$svc")" "${port:-—}"
+    elif [[ -n "$pid" ]]; then
       health_url=$(_health_url "$svc")
       health="unknown"
       timeout=2

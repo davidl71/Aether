@@ -2,7 +2,7 @@
 
 ## 1. Do backends call each other?
 
-**No.** The Python backend services (IB, Alpaca, TradeStation, Tastytrade, Discount Bank, Risk-free rate) do **not** make HTTP calls to one another. Each talks only to its own external API (IB Gateway, Alpaca API, etc.). The only “cross-service” usage is clients (TUI and PWA) calling multiple backends.
+**No.** The Python backend services (IB, Alpaca, Tastytrade, Discount Bank, Risk-free rate) do **not** make HTTP calls to one another. Each talks only to its own external API (IB Gateway, Alpaca API, etc.). The only “cross-service” usage is clients (TUI and PWA) calling multiple backends.
 
 ---
 
@@ -24,7 +24,7 @@ So the TUI calls **one snapshot backend** + **Discount Bank** + **scenarios on s
 | Caller | Target | Purpose |
 |--------|--------|---------|
 | Snapshot client | `VITE_API_URL` (one snapshot origin) | Snapshot + health. |
-| `AccountSelector` | Alpaca 8000, TradeStation 8001, Discount Bank 8003 | Accounts from each (currently **sequential**). |
+| `AccountSelector` | Alpaca 8000, Discount Bank 8003 | Accounts from each configured backend. |
 | `useBankAccounts` | Discount Bank 8003 | Bank accounts. |
 | `calculations.ts` | `VITE_API_URL` (default 9000) | Rust-owned frontend read models for cash flow timeline and opportunity simulation. |
 | `useBackendServices` | All service ports (health) | Health checks (**parallel** via `Promise.allSettled`). |
@@ -43,11 +43,11 @@ So the PWA still calls a few backend services directly, but its core snapshot an
 
 **Where:** `web/src/components/AccountSelector.tsx` – `loadAccounts()`.
 
-**Before:** Fetches IB/Alpaca, then TradeStation, then Discount Bank **sequentially** (three round-trips in series).
+**Before:** Fetches Alpaca and Discount Bank accounts separately.
 
-**After:** Fetch all three in **parallel** with `Promise.allSettled` so the dropdown fills faster and one slow service doesn’t block the others.
+**After:** Fetch the configured account sources in **parallel** with `Promise.allSettled` so the dropdown fills faster and one slow service doesn’t block the others.
 
-**Change:** Replace the three sequential `try { await fetch(...) }` blocks with a single batch of `Promise.allSettled([ fetch(alpaca), fetch(tradestation), fetch(discountBank) ])` and merge results.
+**Change:** Keep the account-source fetches batched and merged rather than serialized.
 
 ---
 
@@ -103,6 +103,6 @@ So the PWA still calls a few backend services directly, but its core snapshot an
 |-------|--------|
 | Backend → backend | None; only clients call services. |
 | Main multi-service client | PWA (AccountSelector, useBankAccounts, health, snapshot). |
-| Quick win | **AccountSelector:** load accounts from Alpaca, TradeStation, Discount Bank in **parallel** (implemented). |
+| Quick win | **AccountSelector:** load accounts from Alpaca and Discount Bank in **parallel** (implemented). |
 | Larger wins | BFF/aggregator (single origin), NATS as shared data source, TUI async/cache for bank accounts. |
 | Config | Keep frontend read models on `VITE_API_URL`; optional single base URL when behind proxy. |

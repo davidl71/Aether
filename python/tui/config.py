@@ -34,12 +34,11 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 # Default ports when no shared config (so we still poll and show status for common backends)
-# Keys match service names; display names (TWS/IBKR, TradeStation, etc.) applied in snapshot_display.
+# Keys match service names; display names (TWS/IBKR, etc.) applied in snapshot_display.
 DEFAULT_BACKEND_PORTS: Dict[str, int] = {
     "ib": 8002,
     "alpaca": 8000,
     "tastytrade": 8005,
-    "tradestation": 8001,
     "discount_bank": 8003,
     "risk_free_rate": 8004,
     "rust": 8080,  # Rust backend REST (matches config.services.rust_backend.rest_port)
@@ -59,7 +58,6 @@ PRESET_REST_ENDPOINTS: Dict[str, str] = {
     "rest_ib": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/ib/snapshot",
     "rest_tws_gateway": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/ib/snapshot",
     "rest_alpaca": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/alpaca/snapshot",
-    "rest_tradestation": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/tradestation/snapshot",
     "rest_tastytrade": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/tastytrade/snapshot",
 }
 
@@ -289,7 +287,7 @@ def load_config() -> TUIConfig:
         default_config.backend_ports = dict(DEFAULT_BACKEND_PORTS)
         default_config.tcp_backend_ports = dict(DEFAULT_TCP_BACKEND_PORTS)
         default_config.disabled_backends = _disabled_backends_from_env(
-            {"alpaca": {}, "tastytrade": {}, "tradestation": {}}
+            {"alpaca": {}, "tastytrade": {}}
         )
         default_config.save_to_file(config_path)
         logger.info(f"Initialized TUI config at {config_path}")
@@ -300,7 +298,7 @@ def load_config() -> TUIConfig:
         config.backend_ports = {**DEFAULT_BACKEND_PORTS, **(config.backend_ports or {})}
         config.tcp_backend_ports = {**DEFAULT_TCP_BACKEND_PORTS, **(config.tcp_backend_ports or {})}
         config.disabled_backends = _disabled_backends_from_env(
-            {"alpaca": {}, "tastytrade": {}, "tradestation": {}}
+            {"alpaca": {}, "tastytrade": {}}
         )
 
     # Override with environment variables
@@ -317,7 +315,6 @@ def _backend_ports_from_services(services: dict) -> Dict[str, int]:
     for name, backend_key in (
         ("ib", "ib"),
         ("alpaca", "alpaca"),
-        ("tradestation", "tradestation"),
         ("discount_bank", "discount_bank"),
         ("risk_free_rate", "risk_free_rate"),
         ("tastytrade", "tastytrade"),
@@ -401,16 +398,6 @@ def _disabled_backends_from_env(services: dict) -> Dict[str, str]:
         )
         if not has_oauth and not has_session:
             out["tastytrade"] = "Missing credentials"
-
-    # TradeStation: OAuth client credentials (env or optional 1Password OP_*_SECRET refs)
-    if services.get("tradestation") is not None:
-        has_creds = not _is_placeholder_or_empty(
-            getenv_or_resolve("TRADESTATION_CLIENT_ID", "OP_TRADESTATION_CLIENT_ID_SECRET", "")
-        ) and not _is_placeholder_or_empty(
-            getenv_or_resolve("TRADESTATION_CLIENT_SECRET", "OP_TRADESTATION_CLIENT_SECRET_SECRET", "")
-        )
-        if not has_creds:
-            out["tradestation"] = "Missing client ID or secret"
 
     return out
 

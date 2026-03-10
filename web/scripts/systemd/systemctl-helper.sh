@@ -8,7 +8,6 @@ set -euo pipefail
 ALLOWED_SERVICES=(
   "pwa-web"
   "pwa-alpaca"
-  "pwa-tradestation"
   "pwa-ib-gateway"
   "pwa-ib"
   "pwa-discount-bank"
@@ -22,7 +21,6 @@ ALLOWED_SERVICES=(
 declare -A SERVICE_MAP
 SERVICE_MAP["web"]="pwa-web"
 SERVICE_MAP["alpaca"]="pwa-alpaca"
-SERVICE_MAP["tradestation"]="pwa-tradestation"
 SERVICE_MAP["ib-gateway"]="pwa-ib-gateway"
 SERVICE_MAP["ib_gateway"]="pwa-ib-gateway"
 SERVICE_MAP["gateway"]="pwa-ib-gateway"

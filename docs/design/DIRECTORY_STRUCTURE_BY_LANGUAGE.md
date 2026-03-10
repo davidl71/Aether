@@ -6,7 +6,7 @@
 |----------|----------|------------|
 | **C++** | `native/` | Core engine: CLI (`ib_box_spread`), TWS client/connection/contracts/orders/positions/market_data, box-spread strategy, risk/greeks/convexity/margin calculators, order_manager, hedge_manager, loan_manager, option_chain, config_manager, rate_limiter, NATS client, proto adapter, cache clients, broker adapters (TWS, Alpaca, IB Client Portal). Build: CMake. |
 | **Rust** | `agents/backend/` | Backend service: REST/WebSocket API (Axum), ledger (accounts, transactions, posting), NATS adapter, market_data pipeline, strategy/risk crates, discount_bank_parser. Build: Cargo. |
-| **Python** | `python/` | TUI (Textual), integration services (IB, Alpaca, Tastytrade, TradeStation, discount_bank, risk_free_rate), clients (alpaca/tastytrade/tradestation/sofr_treasury/onepassword_sdk_helper), shared_config_loader, Nautilus/LEAN/Swiftness integration, bindings, tests. |
+| **Python** | `python/` | TUI (Textual), integration services (IB, Alpaca, Tastytrade, discount_bank, risk_free_rate), clients (alpaca/tastytrade/sofr_treasury/onepassword_sdk_helper), shared_config_loader, Nautilus/LEAN/Swiftness integration, bindings, tests. |
 | **TypeScript/React** | `web/` | React web app, snapshot/API/config/hooks, service ports, charts. Build: Vite/npm. |
 | **JavaScript (Node)** | `services/israeli-bank-scrapers-service/` | Israeli bank scrapers HTTP service and CLI; ledger writer; optional 1Password SDK. Build: npm. |
 | **Go** | `agents/go/` | Go-based agents/tools (see `go.mod`). |
@@ -42,7 +42,7 @@
 
 | Component | Reason |
 |-----------|--------|
-| Python broker services (IB, Alpaca, Tastytrade, TradeStation, discount_bank, risk_free_rate) | Broker SDKs and ecosystem are in Python; rewrite would be large and lose libraries. |
+| Python broker services (IB, Alpaca, Tastytrade, discount_bank, risk_free_rate) | Broker SDKs and ecosystem are in Python; rewrite would be large and lose libraries. |
 | Rust backend (`agents/backend/`) | Already correct fit; no gain from porting. |
 | Israeli bank scrapers service (Node) | Depends on `israeli-bank-scrapers` (Node); reimplementing in Go would mean new scraping logic or subprocess to Node. |
 | C++ core (`native/`) | TWS and pricing/risk stay in C++. |

@@ -25,8 +25,6 @@ These are still Python-specific or integration-heavy enough that they should rem
   - Broker-specific integration API and session state.
 - `python/integration/tastytrade_service.py`
   - Broker-specific integration API and session state.
-- `python/integration/tradestation_service.py`
-  - Broker-specific integration API and session state.
 - `python/integration/risk_free_rate_service.py`
   - FRED / benchmark and curve logic.
 - `python/services/health_dashboard.py`
@@ -50,6 +48,11 @@ Reason:
 Removed as dead internal-only logic:
 - `python/integration/cash_flow_portfolio_manager.py`
 - `python/tests/test_cash_flow_portfolio_manager.py`
+
+Removed as inactive broker integration:
+- `python/integration/tradestation_service.py`
+- `python/integration/tradestation_client.py`
+- `python/tests/test_tradestation_client.py`
 
 Reason:
 - no active web, TUI, automation, or service consumer remained

@@ -88,7 +88,6 @@ Total scripts: 116 (after deduplication)
 - `start_ib_service.sh` - Start IB service ✅ ACTIVE
 - `start_alpaca_service.sh` - Start Alpaca service
 - `start_tastytrade_service.sh` - Start Tastytrade service
-- `start_tradestation_service.sh` - Start TradeStation service
 - `start_discount_bank_service.sh` - Start Discount Bank service
 - `start_risk_free_rate_service.sh` - Start risk-free rate service
 - `start_rust_backend.sh` - Start Rust backend

@@ -18,14 +18,14 @@
       "properties": {
         "primary": {
           "type": "string",
-          "enum": ["alpaca", "ib", "tradestation", "mock", "static"],
+          "enum": ["alpaca", "ib", "mock", "static"],
           "description": "Active primary data source."
         },
         "fallback": {
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["alpaca", "ib", "tradestation", "mock", "static"]
+            "enum": ["alpaca", "ib", "mock", "static"]
           },
           "default": [],
           "description": "Fallback sources in order."
@@ -52,7 +52,7 @@
         },
         "additionalProperties": true
       },
-      "description": "Service port/URL assignments (alpaca, ib, tradestation, discountBank, etc.)."
+      "description": "Service port/URL assignments (alpaca, ib, discountBank, etc.)."
     },
     "tui": {
       "$ref": "#/$defs/tuiConfig",
@@ -71,11 +71,11 @@
   "$defs": {
     "dataSource": {
       "type": "object",
-      "description": "Single data source config (alpaca, ib, tradestation, mock, static).",
+      "description": "Single data source config (alpaca, ib, mock, static).",
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["alpaca", "ib", "tradestation", "mock", "static"]
+          "enum": ["alpaca", "ib", "mock", "static"]
         },
         "enabled": { "type": "boolean", "default": true },
         "apiKeyId": { "type": "string" },
@@ -154,7 +154,7 @@
           "additionalProperties": { "type": "integer" },
           "description": "Service name -> port (e.g. alpaca: 8000, ib: 8002)."
         },
-        "defaultService": { "type": "string", "default": "alpaca" },
+        "defaultService": { "type": "string", "default": "ib" },
         "serviceUrls": {
           "type": "object",
           "additionalProperties": { "type": "string" }

@@ -281,7 +281,7 @@ do_setup_secrets() {
   ensure_vault_exists "${VAULT_NAME}" || return 1
   save_vault_default "${VAULT_NAME}"
   echo "Creating placeholder items in vault \"${VAULT_NAME}\" (fill real values in 1Password app)..."
-  for title in "Alpaca API" "Tastytrade" "TradeStation API" "FRED API" "Alpha Vantage API" "Finnhub API"; do
+  for title in "Alpaca API" "Tastytrade" "FRED API" "Alpha Vantage API" "Finnhub API"; do
     if op item get "${title}" --vault "${VAULT_NAME}" &>/dev/null; then
       echo "Item already exists: ${title}"
     else
@@ -298,8 +298,6 @@ do_setup_secrets() {
   echo "  export OP_ALPACA_API_SECRET_KEY_SECRET=\"op://${VAULT_NAME}/Alpaca API/credential\""
   echo "  export OP_TASTYTRADE_USERNAME_SECRET=\"op://${VAULT_NAME}/Tastytrade/username\""
   echo "  export OP_TASTYTRADE_PASSWORD_SECRET=\"op://${VAULT_NAME}/Tastytrade/credential\""
-  echo "  export OP_TRADESTATION_CLIENT_ID_SECRET=\"op://${VAULT_NAME}/TradeStation API/username\""
-  echo "  export OP_TRADESTATION_CLIENT_SECRET_SECRET=\"op://${VAULT_NAME}/TradeStation API/credential\""
   echo "  export OP_FRED_API_KEY_SECRET=\"op://${VAULT_NAME}/FRED API/credential\""
   echo "  export OP_ALPHA_VANTAGE_API_KEY_SECRET=\"op://${VAULT_NAME}/Alpha Vantage API/credential\""
   echo "  export OP_FINNHUB_API_KEY_SECRET=\"op://${VAULT_NAME}/Finnhub API/credential\""
@@ -352,7 +350,7 @@ do_generate_and_configure() {
   ensure_vault_exists "${VAULT_NAME}" || return 1
   save_vault_default "${VAULT_NAME}"
   echo "Creating or reusing backend secret items in vault \"${VAULT_NAME}\"..."
-  for title in "Alpaca API" "Tastytrade" "TradeStation API" "FRED API" "Alpha Vantage API" "Finnhub API"; do
+  for title in "Alpaca API" "Tastytrade" "FRED API" "Alpha Vantage API" "Finnhub API"; do
     if op item get "${title}" --vault "${VAULT_NAME}" &>/dev/null; then
       echo "Item exists: ${title}"
     else
@@ -376,8 +374,6 @@ do_generate_and_configure() {
     "export OP_ALPACA_API_SECRET_KEY_SECRET=\"op://${VAULT_NAME}/Alpaca API/credential\""
     "export OP_TASTYTRADE_USERNAME_SECRET=\"op://${VAULT_NAME}/Tastytrade/username\""
     "export OP_TASTYTRADE_PASSWORD_SECRET=\"op://${VAULT_NAME}/Tastytrade/credential\""
-    "export OP_TRADESTATION_CLIENT_ID_SECRET=\"op://${VAULT_NAME}/TradeStation API/username\""
-    "export OP_TRADESTATION_CLIENT_SECRET_SECRET=\"op://${VAULT_NAME}/TradeStation API/credential\""
     "export OP_FRED_API_KEY_SECRET=\"op://${VAULT_NAME}/FRED API/credential\""
     "export OP_ALPHA_VANTAGE_API_KEY_SECRET=\"op://${VAULT_NAME}/Alpha Vantage API/credential\""
     "export OP_FINNHUB_API_KEY_SECRET=\"op://${VAULT_NAME}/Finnhub API/credential\""
@@ -398,7 +394,7 @@ do_generate_and_configure() {
     echo "Exports appended to ${OUTPUT_ENV_FILE}"
   fi
   echo ""
-  echo "Fill real broker API keys in the 1Password app (Alpaca, Tastytrade, TradeStation). See docs/BACKEND_SECRETS_PROVIDERS.md"
+  echo "Fill real broker API keys in the 1Password app (Alpaca, Tastytrade). See docs/BACKEND_SECRETS_PROVIDERS.md"
 }
 
 # When script is run (not sourced)

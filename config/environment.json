@@ -24,7 +24,6 @@
     "web_port": 5173,
     "alpaca_port": 8000,
     "ib_port": 8002,
-    "tradestation_port": 8001,
     "discount_bank_port": 8003,
     "risk_free_rate_port": 8004,
     "tastytrade_port": 8005,

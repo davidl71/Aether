@@ -4,7 +4,7 @@ import { getServiceUrl, SERVICE_PORTS } from '../config/ports';
 export interface UnifiedAccount {
   id: string;
   account_number?: string;
-  source: 'IB' | 'Alpaca' | 'TradeStation' | 'Tastytrade' | 'Discount Bank';
+  source: 'IB' | 'Alpaca' | 'Tastytrade' | 'Discount Bank';
   status?: string;
   currency?: string;
   buying_power?: number;
@@ -41,9 +41,8 @@ export function AccountSelector({ currentAccountId, onAccountChange, apiBaseUrl 
 
     try {
       // Fetch from all services in parallel so one slow backend doesn't block the rest
-      const [ibAlpacaResult, tsResult, ttResult, dbResult] = await Promise.allSettled([
+      const [ibAlpacaResult, ttResult, dbResult] = await Promise.allSettled([
         fetch(`${getServiceUrl('alpaca')}/api/accounts`, { signal: AbortSignal.timeout(2000) }),
-        fetch(`${getServiceUrl('tradestation')}/api/accounts`, { signal: AbortSignal.timeout(2000) }),
         fetch(`${getServiceUrl('tastytrade')}/api/accounts`, { signal: AbortSignal.timeout(2000) }),
         fetch(`${getServiceUrl('discountBank')}/api/bank-accounts`, { signal: AbortSignal.timeout(2000) }),
       ]);
@@ -75,21 +74,6 @@ export function AccountSelector({ currentAccountId, onAccountChange, apiBaseUrl 
                 trading_blocked: acc.trading_blocked,
               });
             }
-          });
-        }
-      }
-
-      // Process TradeStation response
-      if (tsResult.status === 'fulfilled' && tsResult.value.ok) {
-        const tsData = await tsResult.value.json();
-        if (tsData.accounts && Array.isArray(tsData.accounts)) {
-          tsData.accounts.forEach((acc: any) => {
-            allAccounts.push({
-              id: acc.id || acc.account_id || 'TRADESTATION',
-              source: 'TradeStation',
-              buying_power: acc.buying_power,
-              portfolio_value: acc.portfolio_value,
-            });
           });
         }
       }
@@ -152,9 +136,7 @@ export function AccountSelector({ currentAccountId, onAccountChange, apiBaseUrl 
       if (selectedAccount) {
         // Determine service URL based on account source
         let serviceUrl = baseUrl;
-        if (selectedAccount.source === 'TradeStation') {
-          serviceUrl = getServiceUrl('tradestation');
-        } else if (selectedAccount.source === 'Tastytrade') {
+        if (selectedAccount.source === 'Tastytrade') {
           serviceUrl = getServiceUrl('tastytrade');
         } else if (selectedAccount.source === 'Discount Bank') {
           serviceUrl = getServiceUrl('discountBank');

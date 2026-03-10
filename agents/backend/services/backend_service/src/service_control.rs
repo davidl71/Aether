@@ -98,7 +98,6 @@ impl ServiceController {
 
     let services = vec![
       ("alpaca", 8000, "start_alpaca_service.sh", "stop_alpaca_service.sh"),
-      ("tradestation", 8001, "start_tradestation_service.sh", "stop_tradestation_service.sh"),
       ("ib", 8002, "start_ib_service.sh", "stop_ib_service.sh"),
       ("discount_bank", 8003, "start_discount_bank_service.sh", "stop_discount_bank_service.sh"),
       ("risk_free_rate", 8004, "start_risk_free_rate_service.sh", "stop_risk_free_rate_service.sh"),

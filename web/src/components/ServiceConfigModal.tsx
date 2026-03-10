@@ -24,7 +24,6 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
   const getLogFileName = (serviceName: string): string => {
     const logMap: Record<string, string> = {
       'Alpaca': 'alpaca-service.log',
-      'TradeStation': 'tradestation-service.log',
       'IB': 'ib-service.log',
       'Discount Bank': 'discount-bank-service.log',
       'Risk-Free Rate': 'risk-free-rate-service.log',
@@ -88,7 +87,6 @@ export function ServiceConfigModal({ service, onClose, onRefresh }: ServiceConfi
   const getApiServiceName = (displayName: string): string | null => {
     const nameMap: Record<string, string> = {
       'Alpaca': 'alpaca',
-      'TradeStation': 'tradestation',
       'IB': 'ib',
       'Discount Bank': 'discount_bank',
       'Risk-Free Rate': 'risk_free_rate',

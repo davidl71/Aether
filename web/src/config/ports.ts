@@ -23,7 +23,6 @@ const getEnvVar = (name: string, defaultValue: number): number => {
 export const SERVICE_PORTS = {
   alpaca: getEnvVar('VITE_ALPACA_PORT', 8000),
   ib: getEnvVar('VITE_IB_PORT', 8002),
-  tradestation: getEnvVar('VITE_TRADESTATION_PORT', 8001),
   discountBank: getEnvVar('VITE_DISCOUNT_BANK_PORT', 8003),
   riskFreeRate: getEnvVar('VITE_RISK_FREE_RATE_PORT', 8004),
   tastytrade: getEnvVar('VITE_TASTYTRADE_PORT', 8005),

@@ -91,7 +91,6 @@ check_port() {
 # Get service ports from config
 ALPACA_PORT=$(get_service_port "alpaca" 8000)
 IB_PORT=$(get_service_port "ib" 8002)
-TRADESTATION_PORT=$(get_service_port "tradestation" 8001)
 DISCOUNT_BANK_PORT=$(get_service_port "discount_bank" 8003)
 RISK_FREE_RATE_PORT=$(get_service_port "risk_free_rate" 8004)
 TASTYTRADE_PORT=$(get_service_port "tastytrade" 8005)
@@ -184,7 +183,6 @@ fi
 # Set port configuration as environment variables for frontend
 update_env_var "VITE_ALPACA_PORT" "${ALPACA_PORT}"
 update_env_var "VITE_IB_PORT" "${IB_PORT}"
-update_env_var "VITE_TRADESTATION_PORT" "${TRADESTATION_PORT}"
 update_env_var "VITE_DISCOUNT_BANK_PORT" "${DISCOUNT_BANK_PORT}"
 update_env_var "VITE_RISK_FREE_RATE_PORT" "${RISK_FREE_RATE_PORT}"
 update_env_var "VITE_TASTYTRADE_PORT" "${TASTYTRADE_PORT}"

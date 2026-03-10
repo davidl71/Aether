@@ -28,11 +28,6 @@ BACKEND_SECRET_VARS: List[Tuple[str, List[Tuple[str, str]]]] = [
         ("OP_TASTYTRADE_USERNAME_SECRET", "Username"),
         ("OP_TASTYTRADE_PASSWORD_SECRET", "Password"),
     ]),
-    ("TradeStation", [
-        ("OP_TRADESTATION_CLIENT_ID_SECRET", "Client ID"),
-        ("OP_TRADESTATION_CLIENT_SECRET_SECRET", "Client Secret"),
-        ("OP_TRADESTATION_ACCOUNT_ID_SECRET", "Account ID"),
-    ]),
     ("FRED (SOFR/Treasury)", [
         ("OP_FRED_API_KEY_SECRET", "API Key"),
     ]),
@@ -196,7 +191,6 @@ def _list_vault_items() -> List[Tuple[str, str]]:
 VAULT_TITLE_MATCH: List[Tuple[str, str]] = [
     ("Alpaca", "alpaca"),
     ("Tastytrade", "tasty"),
-    ("TradeStation", "tradestation"),
     ("FRED (SOFR/Treasury)", "fred"),
     ("Alpha Vantage", "alpha"),
     ("Finnhub", "finnhub"),
