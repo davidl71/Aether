@@ -1,6 +1,6 @@
 # Dataflow Architecture
 
-**Last updated**: 2026-03-10 (backend storage cleanup)
+**Last updated**: 2026-03-10 (backend storage and cache cleanup)
 **Purpose**: Comprehensive analysis of data flow, storage, and inter-component contracts.
 Used as the ground-truth reference for AI-assisted development.
 
@@ -21,7 +21,7 @@ IBKR TWS (port 7497)
         │           └─► Rust nats_adapter
         │                 └─► Rust backend (in-memory state)
         └─► Python integration layer
-              └─► Redis (inter-service cache, TTL)
+              └─► Local in-process caches only
 ```
 
 ### Client Data Read Paths
@@ -73,7 +73,6 @@ QuestDB
 | Store | Technology | Written By | Read By | Data | TTL / Retention |
 |-------|-----------|-----------|---------|------|-----------------|
 | InMemoryCache | C++ (custom) | tws_client | C++ engine only | Hot tick prices | In-process |
-| Redis | Python (redis-py) | Python services | Python services | Position/rate cache | Per-key TTL |
 | NATS KV | NATS JetStream | Go collection-daemon | api-gateway, TUI/Web (future) | Live state (key = messageType.symbol, value = full `NatsEnvelope` protobuf) | Configurable |
 | SQLite (ledger) | Rust (sqlx) + Python | Rust + Python | Rust + Python | Ledger, positions | Permanent |
 | QuestDB | Go (ILP) | nats-questdb-bridge | Python analytics | Tick time-series | Configurable |
@@ -231,7 +230,6 @@ One writer per store; all readers use that store or a gateway. Eliminates dual-w
 | SQLite (ledger) | Rust ledger crate only | Rust API; Python via REST `GET /api/ledger/...` (no direct DB) |
 | QuestDB | Go nats-questdb-bridge only | Python analytics, notebooks |
 | NATS KV (live state) | Go collection-daemon | TUI NatsProvider, Web (future), api-gateway |
-| Redis | Python services (cache) | Python services |
 | InMemoryCache | C++ tws_client | C++ engine only |
 
 ### Persistence rule

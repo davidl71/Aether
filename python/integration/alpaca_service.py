@@ -276,7 +276,7 @@ def create_app() -> FastAPI:
         "error": None,
     }
 
-    # Store current mode and account in memory (in production, use Redis or database)
+    # Store current mode and account in memory for now.
     current_mode: str = os.getenv("ALPACA_PAPER", "1").lower() in {"1", "true", "yes", "on"} and "PAPER" or "LIVE"
     current_account_id: Optional[str] = None
 

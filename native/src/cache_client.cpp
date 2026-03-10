@@ -86,9 +86,6 @@ create_cache(CacheBackend backend, [[maybe_unused]] const std::string &host,
     return std::make_unique<InMemoryCache>();
 #endif
 
-  case CacheBackend::kRedis:
-    // TODO: Implement with hiredis once installed.
-    return std::make_unique<InMemoryCache>();
   }
   return std::make_unique<InMemoryCache>();
 }

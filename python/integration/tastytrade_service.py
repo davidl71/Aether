@@ -304,7 +304,7 @@ def create_app() -> FastAPI:
         if "credentials" not in client_disabled_reason.lower():
             client_disabled_reason = "Missing credentials"
 
-    # Store current account in memory (in production, use Redis or database)
+    # Store current account in memory for now.
     current_account_id: Optional[str] = None
 
     # DXLink client for real-time streaming (optional); only when Tastytrade client is configured

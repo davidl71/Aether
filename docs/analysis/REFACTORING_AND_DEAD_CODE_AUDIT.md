@@ -123,10 +123,10 @@ The project has converged on REST + NATS + WebSocket; gRPC adds build complexity
 - **Impact:** Chart endpoint serves real OHLCV instead of synthetic data
 - **Priority:** Medium
 
-#### B. Redis State Cache
-- **Current:** `Arc<RwLock<SystemSnapshot>>` in single Rust process
-- **Solution:** Redis `SET snapshot:{account_id}` with TTL for multi-instance support
-- **Alternative:** NATS KV achieves the same without new dependency
+#### B. Shared Live-State Cache
+- **Current:** in-process state and NATS-backed live state
+- **Solution:** keep NATS KV / process-local caching rather than adding Redis
+- **Alternative:** Rust-owned read-model materialization if multi-instance support is needed
 - **Priority:** Low
 
 #### C. Trade Blotter Read Model

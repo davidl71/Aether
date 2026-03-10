@@ -107,20 +107,20 @@
 
 ---
 
-## 9. Message buses, caching, and state (NATS, memcached, Redis)
+## 9. Message buses, caching, and state (NATS, memcached)
 
 | Where | What |
 |-------|------|
 | **Messaging** | **NATS** (Core + JetStream) is the primary message bus: pub/sub (`snapshot.{backend}`, `system.health`, `market-data.tick.>`, `strategy.signal.*`), request-reply, JetStream persistence. Python (`nats_client.py`, `questdb_nats_writer.py`), Rust (NATS adapter), C++ (when `ENABLE_NATS`), Go (nats-questdb-bridge) all use it. |
-| **State / cache** | **NATS KV** (JetStream Key-Value) is the preferred shared state store (`nats_kv_state.py`; bucket `ib_box_spread_state` for current account, mode). **Redis** exists as an alternative (`redis_cache.py`; NATS KV as fallback today – plan flips to NATS KV primary). **Memcached** appears in backlog (CacheClient abstraction with memcached backend, Ansible provisioning, Python integration cache). |
+| **State / cache** | **NATS KV** (JetStream Key-Value) is the preferred shared state store for cross-process live state. **Memcached** remains only an optional cache backend behind the C++ cache abstraction for cases where local cache acceleration is still useful. |
 
 **Unify:**
 
 - **One message bus for app messaging:** Standardise on **NATS** (Core for fire-and-forget, JetStream for persistence/replay). Keep a single **topic registry** (`docs/NATS_TOPICS_REGISTRY.md`) and **one wire format** (protobuf for NATS payloads; see CROSS_LANGUAGE_DEDUP_PLAN and proto migration tasks). Don’t introduce a second bus (e.g. RabbitMQ, Kafka) for the same use cases unless there is a clear reason (e.g. Kafka for heavy event-sourcing).
-- **One abstraction for cache/state:** Use a **unified client** (e.g. `CacheClient` protocol / state factory) so callers don’t branch on “NATS vs Redis vs memcached” in business logic. **Canonical order:** (1) **NATS KV** when NATS is available – one URL for pub/sub and state, no extra process. (2) **Redis** when you need richer structures (hashes, lists, TTL, sorted sets) or a dedicated cache server. (3) **Memcached** only where it’s already mandated (e.g. existing infra) or for pure key-value cache with no KV/store semantics; implement behind the same abstraction so switching is config-driven.
-- **C++ engine:** When `ENABLE_NATS` is on, C++ publishes to NATS; any future **market-data or strategy cache** in C++ (e.g. memcached market data cache in backlog) should go through a small adapter that can be swapped (NATS KV, Redis, or memcached) so “where we put cached quotes” is one decision, not duplicated per consumer.
+- **One abstraction for cache/state:** Use a **unified client** so callers don’t branch on “NATS vs in-memory vs memcached” in business logic. **Canonical order:** (1) **NATS KV** when NATS is available – one URL for pub/sub and state, no extra process. (2) **In-process cache** when only local acceleration is needed. (3) **Memcached** only where it’s already mandated or for pure key-value cache with no shared-state semantics.
+- **C++ engine:** When `ENABLE_NATS` is on, C++ publishes to NATS; any future **market-data or strategy cache** in C++ should go through a small adapter that can be swapped (NATS KV, in-memory, or memcached) so “where we put cached quotes” is one decision, not duplicated per consumer.
 
-**Effort:** Low for “NATS only + single topic/wire spec”; low–medium for unified state factory (NATS KV primary, Redis/memcached behind same interface); medium if you add C++ cache abstraction and wire it to NATS KV or memcached.
+**Effort:** Low for “NATS only + single topic/wire spec”; low–medium for unified state handling (NATS KV primary, in-memory/memcached behind the same interface); medium if you add C++ cache abstraction and wire it to NATS KV or memcached.
 
 ---
 
@@ -154,7 +154,7 @@
 | Discount bank parser | Rust | Keep; finish Python deprecation | Done / low |
 | Market hours (holidays, status) | C++ | Optional: expose MarketHours via pybind11 | Medium |
 | Enums / constants at boundaries | Proto + generated code | Use generated types; remove manual mirrors | Low |
-| Message bus (NATS) + cache/state (NATS KV, Redis, memcached) | NATS primary; NATS KV then Redis | One topic registry + proto wire format; unified CacheClient/state factory; C++ cache behind adapter | Low–Medium |
+| Message bus (NATS) + cache/state (NATS KV, in-memory, memcached) | NATS primary; NATS KV then in-memory | One topic registry + proto wire format; unified CacheClient/state factory; C++ cache behind adapter | Low–Medium |
 
 | TUI and PWA | Split config and payloads | Single config schema + shared snapshot/health shape (proto); same backend list; optional feature-parity checklist | Low–Medium |
 
@@ -164,13 +164,12 @@
 
 - `docs/planning/CROSS_LANGUAGE_DEDUP_PLAN.md` — Protobuf + single-source strategy; Phases 1–6 and §4.5 (statistical helpers).
 - `docs/design/DSL_AND_PROTO_OPPORTUNITIES.md` — Where proto vs DSL fits; config and expressions.
-- `docs/planning/NATS_KV_REDIS_LIFECYCLE_TIMESCALE.md` — NATS KV first, Redis later, unified state factory, background-task lifecycle.
+- `docs/planning/NATS_KV_REDIS_LIFECYCLE_TIMESCALE.md` — historical planning note; current runtime direction is NATS KV plus local cache.
 - `docs/NATS_TOPICS_REGISTRY.md` — NATS subject names and payload semantics.
 - `docs/NATS_SETUP.md` — Current NATS setup, bridge integration, and runtime paths.
 - `docs/message_schemas/README.md` — Canonical protobuf/NATS message contracts.
 - `docs/research/architecture/SHARED_CONFIGURATION_SCHEMA.md` — Unified config format for TUI, PWA, and standalone; `tui` and `pwa` sections.
 - `docs/platform/MULTI_ACCOUNT_AGGREGATION_DESIGN.md` — TUI vs PWA behaviour (one provider vs parallel backends), backend roles.
-- `python/integration/cache_client.py` — CacheClient protocol (Redis / memcached / NATS KV behind one interface).
 - `python/integration/nats_kv_state.py` — NATS KV state (bucket, get/set helpers).
 - `native/include/risk_calculator.h` — C++ `calculate_mean`, `calculate_percentile`, `calculate_correlation`.
 - `python/integration/risk_calculator.py` — Python port and statistical helpers.

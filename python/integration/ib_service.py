@@ -823,7 +823,7 @@ def create_app() -> FastAPI:
     if "session_mode" not in app.state.connection_state:
         app.state.connection_state["session_mode"] = "LIVE"
 
-    # Store current account in memory (in production, use Redis or database)
+    # Store current account in memory for now.
     current_account_id: Optional[str] = None
     # Snapshot cache: key (symbols_tuple, account_id) -> {"payload": dict, "cached_at": datetime}
     _snapshot_cache: Dict[Tuple[Tuple[str, ...], str], Dict[str, Any]] = {}

@@ -4,7 +4,7 @@ Multi-asset synthetic financing platform. Box spreads are one strategy (7-10% al
 the platform manages financing across options, futures, bonds, bank loans, and pension funds
 across 21+ accounts and multiple brokers.
 
-**Last updated**: 2026-03-10 (MongoDB and backend storage cleanup)
+**Last updated**: 2026-03-10 (backend storage and cache cleanup)
 
 ## System Overview
 
@@ -41,7 +41,6 @@ across 21+ accounts and multiple brokers.
 
 Storage layers:
   InMemoryCache (C++)  →  hot tick data
-  Redis (Python)       →  inter-service cache
   NATS KV              →  live key-value state (written by collection-daemon as full envelopes)
   SQLite               →  Rust ledger + Python (SHARED — see known issues)
   QuestDB              →  time-series archive
@@ -103,10 +102,10 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for full analysis. Key issues:
 |-------|--------------|
 | Core engine | C++20, QuantLib, Intel Decimal Library, NLopt, Eigen |
 | Backend services | Rust (Axum, prost, sqlx), Go (stdlib, nats.go) |
-| Integration layer | Python 3.12 (FastAPI, Textual, betterproto, redis) |
+| Integration layer | Python 3.12 (FastAPI, Textual, betterproto) |
 | Frontends | React 18, TypeScript, Textual |
 | Messaging | NATS JetStream, Protocol Buffers |
-| Storage | SQLite, Redis, QuestDB, NATS KV |
+| Storage | SQLite, QuestDB, NATS KV |
 | Build | CMake/Ninja, Cargo, uv, npm |
 | Testing | Catch2, pytest, cargo test, Vitest |
 

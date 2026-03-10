@@ -1,7 +1,6 @@
 // cache_client.h - Abstract cache interface for market data and other cached values.
 //
-// Design: Protocol-matching abstraction for C++ (mirrors python/integration/cache_client.py).
-// Backend implementations: Redis (existing), Memcached (when ENABLE_MEMCACHED + libmemcached).
+// Design: Small C++ cache abstraction with in-memory and optional memcached backends.
 //
 // Usage: Use get/set/del for JSON-serialized values. TTL in seconds.
 // To add Memcached implementation: link libmemcached, implement CacheClient interface.
@@ -17,7 +16,6 @@ namespace platform {
 enum class CacheBackend {
   kInMemory,
   kMemcached,
-  kRedis,
 };
 
 class CacheClient {

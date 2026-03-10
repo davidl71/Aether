@@ -12,6 +12,7 @@
 //	NATS_STREAM     JetStream stream name (default "PLATFORM_EVENTS")
 //	NATS_DURABLE_PREFIX  durable consumer prefix in JetStream mode (default "collection-daemon")
 //	NATS_KV_BUCKET  JetStream KV bucket for live state (default "LIVE_STATE"); empty disables KV write
+//	QUESTDB_ILP_ADDR optional QuestDB ILP address (for example "localhost:9009"); enables QuestDB sink
 //	METRICS_LISTEN  (default ":9090")
 package main
 
@@ -21,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -124,6 +126,24 @@ func (s kvSink) Write(msg *collectedMessage) error {
 	return err
 }
 
+type questDBSink struct {
+	conn net.Conn
+}
+
+func (s questDBSink) Name() string { return "questdb" }
+
+func (s questDBSink) Write(msg *collectedMessage) error {
+	if msg.MessageType != "MarketDataEvent" {
+		return nil
+	}
+	line, err := marketDataILPLine(msg)
+	if err != nil {
+		return err
+	}
+	_, err = s.conn.Write([]byte(line))
+	return err
+}
+
 func writeToSinks(msg *collectedMessage, sinks []messageSink, m *metrics) error {
 	var firstErr error
 	for _, sink := range sinks {
@@ -176,6 +196,40 @@ func envelopeSummary(data []byte) map[string]any {
 		"payload_len":   len(env.GetPayload()),
 		"payload_hex16": payloadHex,
 	}
+}
+
+func marketDataILPLine(msg *collectedMessage) (string, error) {
+	if msg.MessageType != "MarketDataEvent" {
+		return "", fmt.Errorf("unsupported message type for questdb: %s", msg.MessageType)
+	}
+	mde := &pbv1.MarketDataEvent{}
+	if err := proto.Unmarshal(msg.Envelope.GetPayload(), mde); err != nil {
+		return "", fmt.Errorf("decode MarketDataEvent: %w", err)
+	}
+	symbol := mde.GetSymbol()
+	if symbol == "" {
+		parts := strings.Split(msg.Subject, ".")
+		if len(parts) > 0 {
+			symbol = parts[len(parts)-1]
+		}
+	}
+	if symbol == "" {
+		return "", fmt.Errorf("missing market data symbol")
+	}
+	ts := time.Now()
+	if t := msg.Envelope.GetTimestamp(); t != nil {
+		ts = t.AsTime()
+	}
+	symbol = strings.ReplaceAll(symbol, " ", "\\ ")
+	return fmt.Sprintf(
+		"market_data,symbol=%s bid=%.6f,ask=%.6f,last=%.6f,volume=%di %d\n",
+		symbol,
+		mde.GetBid(),
+		mde.GetAsk(),
+		mde.GetLast(),
+		mde.GetVolume(),
+		ts.UnixNano(),
+	), nil
 }
 
 func min(a, b int) int {
@@ -260,6 +314,16 @@ func main() {
 		}
 		slog.Info("kv bucket ready", "bucket", bucket)
 		sinks = append(sinks, kvSink{kv: kv})
+	}
+	if questAddr := strings.TrimSpace(env("QUESTDB_ILP_ADDR", "")); questAddr != "" {
+		conn, err := net.DialTimeout("tcp", questAddr, 5*time.Second)
+		if err != nil {
+			slog.Error("questdb connect", "addr", questAddr, "error", err)
+			os.Exit(1)
+		}
+		defer func() { _ = conn.Close() }()
+		slog.Info("questdb sink ready", "addr", questAddr)
+		sinks = append(sinks, questDBSink{conn: conn})
 	}
 
 	handleMsg := func(data []byte, subj string) error {

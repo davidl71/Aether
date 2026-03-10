@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	pbv1 "github.com/dlowes/ib-platform/agents/go/proto/v1"
@@ -84,5 +85,39 @@ func TestDurableNameSanitizesSubject(t *testing.T) {
 	got := durableName("collector", "market-data.tick.>")
 	if got != "collector-market-data_tick" {
 		t.Fatalf("unexpected durable name: %s", got)
+	}
+}
+
+func TestMarketDataILPLineUsesEnvelopePayload(t *testing.T) {
+	ts := timestamppb.Now()
+	payload, err := proto.Marshal(&pbv1.MarketDataEvent{
+		Symbol: "SPY",
+		Bid:    100.25,
+		Ask:    100.75,
+		Last:   100.50,
+		Volume: 42,
+	})
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+	msg := &collectedMessage{
+		Subject: "market-data.tick.SPY",
+		Envelope: &pbv1.NatsEnvelope{
+			MessageType: "MarketDataEvent",
+			Payload:     payload,
+			Timestamp:   ts,
+		},
+		MessageType: "MarketDataEvent",
+	}
+
+	line, err := marketDataILPLine(msg)
+	if err != nil {
+		t.Fatalf("marketDataILPLine: %v", err)
+	}
+	if !strings.Contains(line, "market_data,symbol=SPY") {
+		t.Fatalf("unexpected line: %s", line)
+	}
+	if !strings.Contains(line, "bid=100.250000,ask=100.750000,last=100.500000,volume=42i") {
+		t.Fatalf("unexpected metric fields: %s", line)
 	}
 }
