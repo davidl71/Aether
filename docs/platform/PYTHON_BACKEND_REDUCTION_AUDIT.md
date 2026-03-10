@@ -47,16 +47,19 @@ Reason:
 - the remaining `cash-flow/management` HTTP route had no active web/TUI consumer
 - keeping separate Python service ports for dead frontend endpoints only increased operational surface area
 
-Remaining Python cash-management logic:
+Removed as dead internal-only logic:
 - `python/integration/cash_flow_portfolio_manager.py`
 - `python/tests/test_cash_flow_portfolio_manager.py`
 
-This logic is retained as an in-process module and can be re-exposed later only if a real consumer appears.
+Reason:
+- no active web, TUI, automation, or service consumer remained
+- keeping an unconsumed analysis module and tests only increased maintenance surface area
+- if cash-management analysis becomes a real product feature later, it should be reintroduced behind an explicit consumer and ownership decision
 
 ## Recommended migration order
 
 1. Keep Python integration modules only where they have active consumers.
-2. Re-expose cash-management analysis only if a real UI or automation caller appears.
+2. Reintroduce cash-management analysis only if a real UI or automation caller appears.
 3. Continue shrinking Python service wrappers in favor of Rust-owned frontend APIs and direct in-process Python modules.
 
 ## Non-goals for this pass
