@@ -286,7 +286,7 @@ Ask AI: "Store: Web UI runs on Vite dev server at localhost:5173, uses React wit
 **Technical Decisions:**
 
 ```
-Ask AI: "Remember: We chose FTXUI for TUI because it's header-only and supports C++20. Go TUI was removed in favor of C++"
+Ask AI: "Remember: The active terminal UI is the Python/Textual TUI under python/tui"
 Ask AI: "Store: We use NautilusTrader for advanced market data, but TWS API for execution"
 ```
 

@@ -49,7 +49,7 @@ A comprehensive trading system for box spread arbitrage on Interactive Brokers. 
 
 **Goals**:
 - Backend agent (Rust) for order execution
-- TUI agent for terminal interface
+- Textual TUI for terminal interface
 - Web agent for browser access
 - Desktop agent (Swift) for macOS
 - iPad/iOS agents for mobile

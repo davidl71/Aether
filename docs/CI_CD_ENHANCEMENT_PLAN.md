@@ -136,8 +136,6 @@ jobs:
               - 'native/src/**'
             nats:
               - 'agents/backend/src/nats/**'
-            tui:
-              - 'agents/tui/**'
             web:
               - 'web/**'
 
@@ -169,10 +167,6 @@ jobs:
             nats)
               cd agents/backend
               cargo test --package nats_adapter
-              ;;
-            tui)
-              cd agents/tui
-              bash scripts/run-tests.sh
               ;;
             web)
               cd web

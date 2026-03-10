@@ -95,7 +95,6 @@
 **Files to Update:**
 
 - `homebrew-tap/Formula/ib-box-spread.rb` - Repository URL
-- `homebrew-tap/Formula/ib-box-spread-tui.rb` - Repository URL
 - `homebrew-tap/README.md` - Repository references (already updated in T-209)
 
 ---

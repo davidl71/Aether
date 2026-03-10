@@ -65,7 +65,6 @@ Top-level directories are **component- or product-oriented**. Language is implic
 | `agents/backend/` | Rust | Backend services (API, ledger, market data) |
 | `agents/go/` | Go | Go-based agents/tools |
 | `agents/web/` | (varies) | Web-related agent code |
-| `agents/tui/` | (varies) | TUI-related agent code |
 | `web/` | TypeScript (React) | Web frontend |
 | `ios/` | Swift (SwiftUI) | iOS/iPad app |
 | `desktop/` | Swift (AppKit) | macOS desktop app |

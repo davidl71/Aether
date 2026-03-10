@@ -267,7 +267,7 @@ run_swiftlint() {
   (cd "${ROOT_DIR}/desktop" && swiftlint --cache-path "${cache_path}")
 }
 
-# Go TUI removed - using C++ TUI instead
+# Legacy Go TUI removed; active terminal UI is the Python/Textual TUI.
 # run_golangci_lint() {
 #   if ! command -v golangci-lint >/dev/null 2>&1; then
 #     warn "Skipping golangci-lint (executable not found)"
@@ -556,7 +556,7 @@ main() {
   run_clang_analyze
   run_infer
   run_swiftlint
-  # run_golangci_lint  # Go TUI removed - using C++ TUI instead
+  # run_golangci_lint  # Legacy Go TUI removed; active terminal UI is the Python/Textual TUI.
   run_exarp_go_lint
   run_shellcheck
   run_ansible_lint
