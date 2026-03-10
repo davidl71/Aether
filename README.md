@@ -28,7 +28,9 @@ Comprehensive multi-asset financing optimization system for managing synthetic f
 - ✅ Multi-instrument relationship optimization
 - ✅ Investment strategy framework (portfolio allocation, convexity, volatility skew)
 - ✅ Unified position view across all asset types
-- ✅ Multi-broker architecture (IBKR, Alpaca, Tradier, Tastytrade, Israeli brokers)
+- ✅ Multi-broker architecture (IBKR, Alpaca, Tastytrade, Israeli brokers)
+
+Tradier support is currently removed from the active platform surface. Reintroduction can be revisited later if it becomes a real integration priority.
 
 ### Additional Platform Features
 - ✅ Comprehensive logging with spdlog

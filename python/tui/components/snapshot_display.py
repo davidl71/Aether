@@ -77,7 +77,6 @@ BACKEND_ROLES: Dict[str, str] = {
     "alpaca": "trading",
     "tastytrade": "trading",
     "tradestation": "trading",
-    "tradier": "trading",
     "discount_bank": "banking",
     "risk_free_rate": "rates",
     "rust": "platform",

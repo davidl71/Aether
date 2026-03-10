@@ -11,7 +11,6 @@
 //
 //	LISTEN_ADDR        (default ":9000")
 //	BACKEND_URL        (default "http://localhost:8080") — Rust
-//	TRADIER_URL        (default "http://localhost:8006")
 //	HEARTBEAT_URL      (default "http://localhost:8090")
 //	IB_URL             (default "http://localhost:8002") — IB REST snapshot
 //	ALPACA_URL         (default "http://localhost:8000")
@@ -110,7 +109,6 @@ func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	listenAddr := env("LISTEN_ADDR", ":9000")
 	backendURL := env("BACKEND_URL", "http://localhost:8080")
-	tradierURL := env("TRADIER_URL", "http://localhost:8006")
 	heartbeatURL := env("HEARTBEAT_URL", "http://localhost:8090")
 	ibURL := env("IB_URL", "http://localhost:8002")
 	alpacaURL := env("ALPACA_URL", "http://localhost:8000")
@@ -119,7 +117,6 @@ func main() {
 
 	// Order matters: more specific prefixes first. TUI presets use /api/v1/{ib,alpaca,...}/snapshot.
 	routes := []route{
-		newRoute("/api/v1/tradier/", tradierURL),
 		newRoute("/api/heartbeat/", heartbeatURL),
 		newRouteWithStrip("/api/v1/ib/", "/api/v1/ib", "/api/v1", ibURL),
 		newRouteWithStrip("/api/v1/alpaca/", "/api/v1/alpaca", "/api", alpacaURL),

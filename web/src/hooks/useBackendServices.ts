@@ -31,7 +31,6 @@ export interface BackendServicesStatus {
   discountBank: BackendServiceStatus;
   riskFreeRate: BackendServiceStatus;
   tastytrade: BackendServiceStatus;
-  tradier: BackendServiceStatus;
   rustBackend: BackendServiceStatus;
 }
 
@@ -40,7 +39,6 @@ const SERVICE_CONFIG = {
   tradestation: { name: 'TradeStation', port: SERVICE_PORTS.tradestation, healthPath: '/api/health', role: 'trading' as const },
   ib: { name: 'IB', port: SERVICE_PORTS.ib, healthPath: '/api/health', role: 'trading' as const },
   tastytrade: { name: 'Tastytrade', port: SERVICE_PORTS.tastytrade, healthPath: '/api/health', role: 'trading' as const },
-  tradier: { name: 'Tradier', port: SERVICE_PORTS.tradier, healthPath: '/api/health', role: 'trading' as const },
   discountBank: { name: 'Discount Bank', port: SERVICE_PORTS.discountBank, healthPath: '/api/health', role: 'banking' as const },
   riskFreeRate: { name: 'Risk-Free Rate', port: SERVICE_PORTS.riskFreeRate, healthPath: '/api/health', role: 'rates' as const },
   rustBackend: { name: 'Rust Backend', port: SERVICE_PORTS.rustBackend, healthPath: '/health', role: 'platform' as const },

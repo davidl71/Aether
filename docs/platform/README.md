@@ -20,7 +20,7 @@ The **Synthetic Financing Platform** provides comprehensive multi-asset financin
 **Features**:
 
 - Aggregates positions from 21+ accounts
-- Supports US brokers (IBKR, Alpaca, Tradier, Tastytrade)
+- Supports US brokers (IBKR, Alpaca, Tastytrade)
 - Supports Israeli banks (Fibi, Discount)
 - Supports Israeli brokers (Meitav, IBI)
 - Supports pension funds (9 accounts)
@@ -174,7 +174,6 @@ Synthetic Financing Platform
 ├── Broker Integration
 │   ├── IBKR (TWS API, Client Portal API)
 │   ├── Alpaca API
-│   ├── Tradier API
 │   ├── Tastytrade API
 │   └── Israeli Brokers (Excel/RTD/DDE/Web scraping)
 │
@@ -233,8 +232,9 @@ Synthetic Financing Platform
 
 - **IBKR**: TWS API (C++), Client Portal API (REST)
 - **Alpaca**: REST API (Python)
-- **Tradier**: REST API (Python)
 - **Tastytrade**: REST API (Python)
+
+**Future improvement note:** Tradier is not part of the active platform surface. Reintroduction is a future integration candidate only if there is a clear operational need.
 - **Israeli Brokers**: Excel/RTD/DDE integration, web scraping
 - **Israeli Banks**: Reconciliation file import
 

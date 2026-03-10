@@ -26,7 +26,7 @@ The following providers are **independent**: you can have accounts and positions
 
 **Israeli bank scrapers** (service port 8010): The scrapers support multiple companies per [israeli-bank-scrapers](https://github.com/eshaham/israeli-bank-scrapers); each company is an independent source. Select via `SCRAPER_COMPANY_ID` or POST `/scrape` body `companyId`. Available companies include **fibi**, **max**, **visaCal**, **discount**, **leumi**, **hapoalim**, **isracard**, **beinleumi**, **mizrahi**, etc. You can run scrapes for different companies in parallel (e.g. different processes or sequential runs); each writes to the shared ledger under `Assets:Bank:{BankName}:{accountNumber}`. Config `broker.priorities` lists which providers are used for ordering/display: `["ib", "alpaca", "fibi", "meitav", "ibi", "discount", "mock"]` — all of these are independent.
 
-Other sources (e.g. Tradier, pension funds) follow the same pattern: account-level data with optional aggregation. Primary model is **account-level tracking**; portfolio-level aggregation is optional.
+Other sources (e.g. pension funds) follow the same pattern: account-level data with optional aggregation. Primary model is **account-level tracking**; portfolio-level aggregation is optional. Tradier is not currently supported and should be treated as a future integration only.
 
 ### TUI and PWA behavior (independent backends)
 
@@ -43,7 +43,6 @@ Backends serve different applications (trading, market data, banking, rates, pla
 | Alpaca | Trading | Order execution, positions, market data |
 | TradeStation | Trading | Order execution, positions |
 | Tastytrade | Trading | Order execution, positions |
-| Tradier | Trading | Order execution, positions |
 | Discount Bank | Banking | Israeli bank accounts, cash, loans, securities |
 | Risk-Free Rate | Rates | Treasury/SOFR yields, benchmark curves |
 | Rust Backend | Platform | Health aggregation, orchestration, future services |
@@ -59,7 +58,6 @@ Backends serve different applications (trading, market data, banking, rates, pla
 - **US Brokers:** 8 accounts
   - IBKR: 1 live + 1 paper
   - Alpaca: 1 live + 1 paper
-  - Tradier: 1 live + 1 paper
   - Tastytrade: 1 live + 1 paper
 
 - **Israeli Banks:** 2 accounts
@@ -107,7 +105,7 @@ Backends serve different applications (trading, market data, banking, rates, pla
         ┌──────────────┼──────────────┬──────────────┐
         │              │              │              │
 ┌───────▼──────┐ ┌────▼──────┐ ┌────▼──────┐ ┌────▼──────┐
-│ IBKR        │ │ Alpaca    │ │ Tradier   │ │ Tastytrade│
+│ IBKR        │ │ Alpaca    │ │ Tastytrade│
 │ Connector   │ │ Connector │ │ Connector │ │ Connector │
 └───────┬──────┘ └────┬──────┘ └────┬──────┘ └────┬──────┘
         │              │              │              │
@@ -136,8 +134,6 @@ enum class AccountType {
     IBKR_PAPER,
     ALPACA_LIVE,
     ALPACA_PAPER,
-    TRADIER_LIVE,
-    TRADIER_PAPER,
     TASTYTRADE_LIVE,
     TASTYTRADE_PAPER,
     ISRAELI_BANK_FIBI,
@@ -149,7 +145,7 @@ enum class AccountType {
 
 enum class ConnectionType {
     TWS_API,              // IBKR TWS API (socket)
-    REST_API,             // Alpaca, Tradier, Tastytrade
+    REST_API,             // Alpaca, Tastytrade
     EXCEL_RTD,            // Israeli broker Excel RTD
     EXCEL_DDE,            // Israeli broker Excel DDE
     WEB_SCRAPING,         // Israeli broker web scraping
@@ -364,11 +360,6 @@ class AlpacaConnector : public AccountConnector {
     // Supports paper and live accounts
 };
 
-// Tradier REST Connector
-class TradierConnector : public AccountConnector {
-    // Uses Tradier REST API
-};
-
 // Tastytrade REST Connector
 class TastytradeConnector : public AccountConnector {
     // Uses Tastytrade REST API
@@ -579,7 +570,7 @@ public:
 
 - IBKR TWS connector (extend existing)
 - Alpaca REST connector
-- Tradier REST connector (future)
+- Tradier REST connector (future improvement only; not currently supported)
 - Tastytrade REST connector (future)
 - Israeli broker connectors (extend existing import system)
 
