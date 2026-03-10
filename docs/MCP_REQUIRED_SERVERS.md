@@ -254,9 +254,9 @@ npx -y @modelcontextprotocol/server-sequential-thinking --version
 
 **Fix**:
 
-1. Install package: `pip install -e /path/to/project-management-automation`
-2. Verify installation: `python3 -m project_management_automation.server --help`
-3. Check Python path: Ensure correct Python environment is used in `.cursor/mcp.json`
+1. Install `exarp-go` or use the sibling `../mcp/exarp-go` checkout
+2. Verify installation: `./scripts/run_exarp_go.sh -list -quiet`
+3. Check `.cursor/mcp.json` or local editor config points at `scripts/run_exarp_go.sh` or a native `exarp-go` binary
 
 ## Workflow Integration
 
@@ -266,7 +266,7 @@ These servers work together in a recommended workflow:
 2. **exarp-go** → Analyze and automate (project management)
 3. **sequential_thinking** → Plan HOW (implementation)
 
-See [project-management-automation repository](https://github.com/davidl71/project-management-automation) for detailed workflow examples.
+See [EXARP_MCP_TOOLS_USAGE.md](EXARP_MCP_TOOLS_USAGE.md) for current workflow examples.
 
 ## See Also
 

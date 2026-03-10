@@ -38,7 +38,7 @@ sudo apt-get install ib-box-spread-web
 sudo apt-get install ib-box-spread-backend
 
 # MCP servers
-sudo apt-get install project-management-automation-mcp
+sudo apt-get install exarp-go
 
 # Development tools
 sudo apt-get install ib-box-spread-build-tools
@@ -76,9 +76,9 @@ deb-repo/
 #### ib-box-spread-native
 - **Version**: 1.3.3
 - **Architecture**: amd64
-- **Description**: Native C++ trading engine with CLI and TUI
+- **Description**: Native C++ trading engine with CLI
 - **Dependencies**: libc6, libstdc++6, libprotobuf
-- **Binaries**: `ib_box_spread`, `ib_box_spread_tui`
+- **Binaries**: `ib_box_spread`
 
 #### synthetic-financing-platform
 - **Version**: 1.0.0
@@ -104,13 +104,13 @@ deb-repo/
 
 ### MCP Servers
 
-#### project-management-automation-mcp
+#### exarp-go
 - **Version**: 0.1.0
 - **Architecture**: all
 - **Description**: MCP server for project management automation
-- **Dependencies**: python3 (>= 3.9), python3-mcp, python3-pydantic
+- **Dependencies**: bundled binary or Go toolchain
 - **Features**: Documentation health checks, Todo2 analysis, duplicate detection, security scanning
-- **CLI**: `project-management-automation`
+- **CLI**: `exarp-go`
 
 ### Development Tools
 

@@ -39,7 +39,7 @@ How the project parallelizes builds and how its components are split into module
 
 - **Layout:** `native/CMakeLists.txt` defines the main app and tests; `native/include/` and `native/src/` hold headers and sources. Optional components (Python bindings, TWS API, etc.) are gated by options.
 - **Libraries/targets:** Build is split into:
-  - Main executable(s), e.g. `ib_box_spread`, `ib_box_spread_tui`, and test executables.
+  - Main executable(s), e.g. `ib_box_spread`, plus the Python/Textual TUI launcher and test executables.
   - Optional TWS API (ExternalProject or prebuilt), platform proto library, and other targets.
 - **Incremental builds:** Ninja only rebuilds changed objects and links affected executables. Changing one `.cpp` typically rebuilds that file and relinks dependents.
 - **Third-party:** TWS API and Intel decimal are either vendored or built via ExternalProject; see [BUILD_SCRIPTS_VS_CMAKE.md](planning/BUILD_SCRIPTS_VS_CMAKE.md) and root CMake/native CMakeLists.

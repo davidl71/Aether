@@ -66,9 +66,7 @@ The TUI needs to be rebuilt to include the new buy/sell calculations.
 **Quick Build (if CMake is already configured):**
 
 ```bash
-cd build
-cmake --build . --target ib_box_spread_tui
-./bin/ib_box_spread_tui --mock
+./scripts/run_python_tui.sh mock
 ```
 
 **Full Build (if needed):**
@@ -85,13 +83,13 @@ cmake --build . --target ib_box_spread_tui
 
 # Then run TUI
 
-./build/bin/ib_box_spread_tui --mock
+./scripts/run_python_tui.sh mock
 ```
 
 **Run with Mock Data:**
 
 ```bash
-./build/bin/ib_box_spread_tui --mock
+./scripts/run_python_tui.sh mock
 ```
 
 **Run with Live Backend:**
@@ -101,7 +99,7 @@ cmake --build . --target ib_box_spread_tui
 # Terminal 1: Start backend (if you have one running)
 # Terminal 2: Run TUI
 
-./build/bin/ib_box_spread_tui
+./scripts/run_python_tui.sh
 ```
 
 ### 3. Verify Features Work
@@ -186,13 +184,9 @@ cd web && npm run dev
 
 cd web && npm run build && npm run preview
 
-# Build TUI
-
-cd build && cmake --build . --target ib_box_spread_tui
-
 # Run TUI with Mock Data
 
-./build/bin/ib_box_spread_tui --mock
+./scripts/run_python_tui.sh mock
 
 # Full Rebuild (if needed)
 

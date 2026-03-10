@@ -10,9 +10,9 @@
    - `poetry run pytest`
    - Optional: run mock TWS integration tests and schema validation.
 
-2. **C++ TUI**
-   - Build: `cmake --build build --target ib_box_spread_tui`
-   - Tests: C++ TUI tests run as part of main C++ test suite
+2. **Python/Textual TUI**
+   - Run: `./scripts/run_python_tui.sh`
+   - Tests: Python TUI tests run as part of the main Python test suite
 
 3. **Web SPA**
    - `npm install`
@@ -53,11 +53,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-cmake@v3
-      - name: Build C++ TUI
-        run: cmake --build build --target ib_box_spread_tui
-      - name: TUI tests (part of C++ test suite)
-        run: ctest --test-dir build --output-on-failure
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: TUI tests
+        run: bash scripts/run_python_tests.sh
 
   web:
     runs-on: ubuntu-latest

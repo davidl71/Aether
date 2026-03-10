@@ -252,13 +252,12 @@ Exarp uses GitHub Actions for continuous integration, testing, linting, security
 
 ## Workflow Status Badges
 
-Add to README.md:
+The old `project-management-automation` badge examples below are obsolete. Use this repo's local workflow files under `.github/workflows/` instead.
+
+Historical example:
 
 ```markdown
-![Test](https://github.com/davidl71/project-management-automation/workflows/Test/badge.svg)
-![Lint](https://github.com/davidl71/project-management-automation/workflows/Lint/badge.svg)
-![Build](https://github.com/davidl71/project-management-automation/workflows/Build/badge.svg)
-![Security Scan](https://github.com/davidl71/project-management-automation/workflows/Security%20Scan/badge.svg)
+<!-- obsolete project-management-automation badge examples removed -->
 ```
 
 ---
@@ -267,9 +266,9 @@ Add to README.md:
 
 ### Required for All Workflows
 
-- **Python 3.9+** - Runtime requirement
-- **FastMCP 2.0+** - MCP framework
-- **Pydantic 2.0+** - Data validation
+- **Python 3.11+** - Python workflow runtime
+- **uv** - Python dependency/runtime manager
+- **exarp-go** - MCP/task tooling used by this repo
 
 ### Development Dependencies
 

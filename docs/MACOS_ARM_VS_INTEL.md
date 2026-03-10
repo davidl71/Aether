@@ -64,7 +64,7 @@ Paths that **differ by architecture** vs **shared**:
 | Debug build dir | `build/macos-arm64-debug` | `build/macos-x86_64-debug` |
 | Release build dir | `build/macos-arm64-release` | `build/macos-x86_64-release` |
 | CLI binary (debug) | `build/macos-arm64-debug/bin/ib_box_spread` | `build/macos-x86_64-debug/bin/ib_box_spread` |
-| TUI binary (debug) | `build/macos-arm64-debug/bin/ib_box_spread_tui` | `build/macos-x86_64-debug/bin/ib_box_spread_tui` |
+| TUI launcher | `./scripts/run_python_tui.sh` | `./scripts/run_python_tui.sh` |
 | Tests | `build/macos-arm64-debug/` (ctest) | `build/macos-x86_64-debug/` (ctest) |
 
 Same pattern for **-ai**, **-sccache**, **-ccache**, **-distcc** presets: path always includes the preset name, e.g. `build/macos-arm64-release-sccache`, `build/macos-x86_64-release-sccache`.
@@ -96,7 +96,7 @@ So `build-ramdisk` holds only one architecture at a time (whichever preset you l
 
 ```text
 build/<preset-name>/bin/ib_box_spread
-build/<preset-name>/bin/ib_box_spread_tui
+./scripts/run_python_tui.sh
 ```
 
 Examples: `build/macos-arm64-debug/bin/ib_box_spread`, `build/macos-x86_64-release/bin/ib_box_spread`, `build-ramdisk/bin/ib_box_spread` (when using a -ramdisk preset).
