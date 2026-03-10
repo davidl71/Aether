@@ -4,43 +4,40 @@ Multi-asset synthetic financing platform. Box spreads are one strategy (7-10% al
 the platform manages financing across options, futures, bonds, bank loans, and pension funds
 across 21+ accounts and multiple brokers.
 
-**Last updated**: 2026-03-07 (architecture and dataflow review)
+**Last updated**: 2026-03-10 (frontend and language usage cleanup)
 
 ## System Overview
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                         Client Applications                           │
-├──────────────┬──────────────┬──────────────┬──────────────────────────┤
-│  iPad/iOS    │  Web (React) │  Desktop     │  TUI (Python/Textual)    │
-│  SwiftUI     │  :5173       │  Swift/AppKit│  polls :8000-:8006       │
-└──────┬───────┴──────┬───────┴──────┬───────┴──────────┬───────────────┘
-       │              │              │                   │
-       │    ┌─────────┴──────────────┴──┐               │
-       │    │  Rust REST+WS backend     │               │
-       │    │  Axum :8080               │               │
-       │    │  WebSocket /ws/snapshot   │               │
-       └────┤  (full snapshot on connect, then delta every 2s) │               │
-            └──────────┬────────────────┘               │
-                       │                                 │
-     ┌─────────────────┼─────────────────────────────────┼─────────────┐
-     │                 │              NATS               │             │
-     │   ┌─────────────┴──────┐  ┌────────────────┐  ┌──┴──────────┐  │
-     │   │ Python microservices│  │ Go agents      │  │ C++ engine  │  │
-     │   │ :8000-:8006         │  │ api-gateway    │  │ tws_client  │  │
-     │   │ (positions,rates,   │  │ collection-    │  │ nats_client │  │
-     │   │  risk,lending,etc.) │  │ daemon,        │  │ ENABLE_PROTO│  │
-     │   │ Redis cache         │  │ heartbeat-agg, │  └──────┬──────┘  │
-     │   └─────────────────────┘  │ nats-qdb-bridge│         │         │
-     │                            │ supervisor,    │         │         │
-     │                            │ config-validator│         │         │
-     │                            └────────────────┘         │         │
-     └──────────────────────────────────────────────────────┼─────────┘
-                                                             │
-                                                      ┌──────┴──────┐
-                                                      │  TWS/IBKR   │
-                                                      │  port 7497  │
-                                                      └─────────────┘
+│                        Client Applications                          │
+├──────────────────────────────┬──────────────────────────────────────┤
+│ Web (React)                  │ TUI (Python/Textual)                │
+│ WebSocket + REST from :8080  │ Polling from :8000-:8006 or NATS    │
+└───────────────┬──────────────┴──────────────────┬───────────────────┘
+                │                                 │
+      ┌─────────┴──────────────┐       ┌──────────┴──────────┐
+      │ Rust REST+WS backend   │       │ Python microservices │
+      │ Axum :8080             │       │ :8000-:8006          │
+      │ /api/snapshot          │       │ positions/rates/risk │
+      │ /ws/snapshot           │       │ lending/blotter/etc. │
+      └──────────┬─────────────┘       └──────────┬──────────┘
+                 │                                 │
+     ┌───────────┴─────────────────────────────────┴──────────────┐
+     │                           NATS                              │
+     │   ┌─────────────────────┐  ┌─────────────────────────────┐  │
+     │   │ Go agents           │  │ C++ engine                  │  │
+     │   │ collection-daemon   │  │ tws_client / nats_client    │  │
+     │   │ heartbeat-agg       │  │ pricing / risk / orders     │  │
+     │   │ nats-qdb-bridge     │  │ protobuf event publisher    │  │
+     │   │ supervisor/config   │  └──────────────┬──────────────┘  │
+     │   └─────────────────────┘                 │                 │
+     └───────────────────────────────────────────┼─────────────────┘
+                                                 │
+                                          ┌──────┴──────┐
+                                          │  TWS/IBKR   │
+                                          │  port 7497  │
+                                          └─────────────┘
 
 Storage layers:
   InMemoryCache (C++)  →  hot tick data
@@ -57,21 +54,19 @@ Storage layers:
 
 | Component | Technology | Data Source | Update Mechanism |
 |-----------|------------|-------------|------------------|
-| iPad App | SwiftUI | Rust :8080 REST | Polling |
-| Web SPA | React/TypeScript | Rust :8080 WebSocket → REST fallback | Full snapshot on connect, then delta every 2s |
-| Desktop | Swift/AppKit | Rust :8080 REST | Polling |
-| TUI | Python/Textual | Python microservices :8000-:8006 | 1s polling (RestProvider) or NATS (NatsProvider) |
+| Web app | React/TypeScript | Rust `:8080` WebSocket → REST fallback | Full snapshot on connect, then changed sections every ~2s |
+| Terminal UI | Python/Textual | Python microservices `:8000-:8006` or NATS | 1s polling (`RestProvider`) or event-driven (`NatsProvider`) |
 | CLI | C++ | Direct TWS | Synchronous |
 
 ### Backend Services
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| Rust REST+WS | Rust (Axum) :8080 | HTTP API + WebSocket snapshot for web/desktop/iOS |
-| Python microservices | Python (FastAPI) :8000-:8006 | Position, risk, rate, lending data for TUI |
+| Rust REST+WS backend | Rust (Axum) :8080 | HTTP API + snapshot/delta WebSocket for the web client |
+| Python microservices | Python (FastAPI) :8000-:8006 | Positions, rates, risk, lending, blotter, alerts, health for the Textual TUI |
 | C++ engine | C++20 | TWS connectivity, strategy execution, risk/Greeks/pricing |
 | NATS | NATS JetStream | Async messaging, market data events, heartbeats |
-| Go agents | Go (stdlib+nats.go) | api-gateway, collection-daemon, heartbeat-aggregator, nats-questdb-bridge, supervisor, config-validator |
+| Go agents | Go (stdlib+nats.go) | Collection, health aggregation, QuestDB bridge, supervisor, config validation |
 
 ### Messaging Contract
 
@@ -108,20 +103,19 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for full analysis. Key issues:
 | Layer | Technologies |
 |-------|--------------|
 | Core engine | C++20, QuantLib, Intel Decimal Library, NLopt, Eigen |
-| Backend agents | Rust (Axum, prost, sqlx), Go (stdlib, nats.go) |
+| Backend services | Rust (Axum, prost, sqlx), Go (stdlib, nats.go) |
 | Integration layer | Python 3.12 (FastAPI, Textual, betterproto, redis) |
-| Frontend | React 18, TypeScript, ts-proto |
-| Mobile/Desktop | SwiftUI (iOS), Swift/AppKit (macOS) |
+| Frontends | React 18, TypeScript, Textual |
 | Messaging | NATS JetStream, Protocol Buffers |
 | Storage | SQLite, Redis, QuestDB, MongoDB, NATS KV |
-| Build | CMake/Ninja, Cargo, uv/pip, npm |
-| Testing | Catch2, pytest, Jest, cargo test |
+| Build | CMake/Ninja, Cargo, uv, npm |
+| Testing | Catch2, pytest, cargo test, Vitest |
 
 ## Language Rationale
 
 - **C++**: stays for core engine and TWS (API is C++-only)
 - **Rust**: stays for safety-critical backend and ledger
-- **Python**: integration layer, TUI, bindings — not a rewrite candidate
+- **Python**: integration layer, Textual TUI, bindings — not a rewrite candidate
 - **Go**: ops agents — good for single-binary CLI/bridge tools
 - **TypeScript**: web app — not a rewrite candidate
 
@@ -138,10 +132,8 @@ ib_box_spread_full_universal/
 │   ├── backend/         # Rust backend (Axum REST, ledger, nats_adapter)
 │   └── go/              # Go agents (api-gateway, collection-daemon, heartbeat-agg, nats-qdb-bridge...)
 ├── python/              # FastAPI microservices, Textual TUI, integration
-├── web/                 # React SPA
+├── web/                 # React web client
 ├── proto/               # Canonical protobuf schema (messages.proto)
-├── ios/                 # SwiftUI iPad app
-├── desktop/             # Swift/AppKit macOS app
 ├── scripts/             # Build, lint, deploy helpers
 └── docs/                # Documentation
     └── platform/        # Architecture, dataflow, improvement plan

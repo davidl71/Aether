@@ -1,6 +1,6 @@
 # Dataflow Architecture
 
-**Last updated**: 2026-03-07 (architecture and dataflow review)
+**Last updated**: 2026-03-10 (frontend and language usage cleanup)
 **Purpose**: Comprehensive analysis of data flow, storage, and inter-component contracts.
 Used as the ground-truth reference for AI-assisted development.
 
@@ -38,8 +38,6 @@ Web (React)
         │     └─► Rust backend: full SystemSnapshot on connect, then only changed sections (delta) every 2s
         └─► REST fallback: GET /api/snapshot every 2s
 
-Desktop / iPad (Swift)
-  └─► REST polling: Rust backend :8080
 ```
 
 ### Order Execution Flow
@@ -206,7 +204,7 @@ Provider (abstract)
 BackendHealthAggregator   — daemon thread, polls :8000-:8006 health endpoints
 ```
 
-Provider selection: set via `--provider` CLI flag or config; `RestProvider` is default in production.
+Provider selection: set via `--provider` CLI flag or config; `RestProvider` is the default in production for the Textual TUI.
 
 ---
 
@@ -281,7 +279,7 @@ flowchart LR
   KV --> Gateway
 ```
 
-- **Single read path**: All clients go through api-gateway (or subscribe to NATS KV). TUI and Web use the same data.
+- **Current read paths**: the web client reads from the Rust backend; the Textual TUI reads from Python services or NATS. This split is still an active architecture gap rather than the target state.
 - **Single writer per store**: Ledger = Rust; QuestDB = Go bridge; NATS KV = C++/Python per bucket.
 - **Persistence**: Rust writes ledger then publishes; bridge writes QuestDB from NATS; no dual SQLite writers.
 

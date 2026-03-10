@@ -7,7 +7,7 @@
 | **C++** | `native/` | Core engine: CLI (`ib_box_spread`), TWS client/connection/contracts/orders/positions/market_data, box-spread strategy, risk/greeks/convexity/margin calculators, order_manager, hedge_manager, loan_manager, option_chain, config_manager, rate_limiter, NATS client, proto adapter, cache clients, broker adapters (TWS, Alpaca, IB Client Portal). Build: CMake. |
 | **Rust** | `agents/backend/` | Backend service: REST/WebSocket API (Axum), ledger (accounts, transactions, posting), NATS adapter, market_data pipeline, strategy/risk crates, discount_bank_parser. Build: Cargo. |
 | **Python** | `python/` | TUI (Textual), integration services (IB, Alpaca, Tastytrade, TradeStation, discount_bank, risk_free_rate), clients (alpaca/tastytrade/tradestation/sofr_treasury/onepassword_sdk_helper), shared_config_loader, Nautilus/LEAN/Swiftness integration, bindings, tests. |
-| **TypeScript/React** | `web/` | PWA: React app, snapshot/API/config/hooks, service ports, charts. Build: Vite/npm. |
+| **TypeScript/React** | `web/` | React web app, snapshot/API/config/hooks, service ports, charts. Build: Vite/npm. |
 | **JavaScript (Node)** | `services/israeli-bank-scrapers-service/` | Israeli bank scrapers HTTP service and CLI; ledger writer; optional 1Password SDK. Build: npm. |
 | **Go** | `agents/go/` | Go-based agents/tools (see `go.mod`). |
 | **Shell** | `scripts/`, `web/scripts/`, `ib-gateway/` | Build, lint, service start/stop, 1Password CLI wrapper, gateway runner. |
@@ -20,7 +20,7 @@
 - **C++**: TWS API is C++-only; core pricing/risk use QuantLib and decimal math. Rewriting the core in Rust would require redoing all IB integration and duplicating pricing/risk work — not recommended.
 - **Rust**: Fits the long-lived backend (REST, ledger, NATS). No benefit to rewriting in C++.
 - **Python**: Fits integration and TUI; broker SDKs and iteration speed are an advantage. Rewriting in Rust/Go would be a large effort and lose ecosystem.
-- **TypeScript / Node**: Standard for React PWA; Node is confined to the Israeli bank scrapers service. No need to change.
+- **TypeScript / Node**: Standard for the React web app; Node is also used for the Israeli bank scrapers service. No need to change.
 
 ---
 
@@ -46,7 +46,7 @@
 | Rust backend (`agents/backend/`) | Already correct fit; no gain from porting. |
 | Israeli bank scrapers service (Node) | Depends on `israeli-bank-scrapers` (Node); reimplementing in Go would mean new scraping logic or subprocess to Node. |
 | C++ core (`native/`) | TWS and pricing/risk stay in C++. |
-| Web PWA / TUI | Keep React and Python/Textual. |
+| Web app / TUI | Keep React and Python/Textual. |
 
 **Summary:** Use Go for **new or growing CLI/ops tools** and **small NATS-oriented services** where a single binary helps. Do not rewrite existing Python broker services, the Rust backend, or the Node scrapers service into Go.
 
@@ -63,8 +63,7 @@ Top-level directories are **component- or product-oriented**. Language is implic
 | `agents/` | Mixed | Services and apps: Rust backend, Go tools, shared |
 | `agents/backend/` | Rust | Backend services (API, ledger, market data) |
 | `agents/go/` | Go | Go-based agents/tools |
-| `agents/web/` | (varies) | Web-related agent code |
-| `web/` | TypeScript (React) | Web frontend |
+| `web/` | TypeScript (React) | Active browser frontend |
 | `proto/` | Protocol Buffers | Shared message definitions (language-agnostic) |
 | `config/` | JSON/YAML | Example configs (language-agnostic) |
 | `scripts/` | Shell, Python | Build, lint, deploy, git hooks |
@@ -84,7 +83,7 @@ langs/
 ├── python/        # current python/
 ├── rust/          # agents/backend (+ any other Rust)
 ├── go/             # agents/go
-├── ts/             # web/ + agents/web (and any other TS)
+├── ts/             # web/ (and any other TS)
 └── proto/         # shared (or under shared/)
 ```
 
@@ -95,7 +94,7 @@ cpp/       ← native
 python/
 rust/      ← agents/backend
 go/        ← agents/go
-ts/        ← web (+ agents/web)
+ts/        ← web
 proto/
 config/
 scripts/
@@ -121,7 +120,7 @@ If you want **visibility by language** without moving code:
 ## If you do refactor by language
 
 - Move `native/` → `cpp/` (or `langs/cpp/`) and update all references: CMake, scripts, docs, `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, CI.
-- Consolidate Rust under one tree (e.g. `rust/backend/`, `rust/other/` if more appear); same for Go, TypeScript, Swift.
+- Consolidate Rust under one tree (e.g. `rust/backend/`, `rust/other/` if more appear); same for Go and TypeScript.
 - Keep `proto/`, `config/`, `scripts/`, `docs/` at repo root.
 - Run full build/test/lint and update `README.md`, `ARCHITECTURE.md`, and any "project layout" or "directory structure" sections in docs.
 
