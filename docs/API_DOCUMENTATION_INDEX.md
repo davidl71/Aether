@@ -32,7 +32,7 @@ server by appending `use context7` to your prompts. For example:
 
 ### Planning & lifecycle
 
-- **`docs/planning/BACKGROUND_TASK_LIFECYCLE.md`** – Current state and suggested improvements for background tasks (TUI threads, FastAPI lifespan, standalone scripts). Covers provider/aggregator lifecycle, health dashboard lifespan, Tastytrade DXLink, strategy runner, and Go nats-questdb-bridge; suggests task registry, lifespan migration, and signal handlers.
+- **`docs/planning/BACKGROUND_TASK_LIFECYCLE.md`** – Current state and suggested improvements for background tasks (TUI threads, FastAPI lifespan, standalone scripts). Covers provider/aggregator lifecycle, health dashboard lifespan, Tastytrade DXLink, strategy runner, and Go collection-daemon fanout; suggests task registry, lifespan migration, and signal handlers.
 - **`docs/planning/NATS_KV_REDIS_LIFECYCLE_TIMESCALE.md`** – Prioritized plan: NATS KV first, Redis later, background-task lifecycle, TimescaleDB optional.
 - **`docs/planning/PRIMARY_CURRENCY_AND_TASE_HEDGING.md`** – Primary currency per account/portfolio (config, reporting, hedging). Hedging suggestions combining IB box spread (USD) with TASE put/call (TA-35, TA-125, ILS/USD options); data needs, logic, and implementation order.
 

@@ -61,7 +61,7 @@ Default subjects (aligned with DATAFLOW_ARCHITECTURE.md):
 | Phase   | Scope                                              | Status  |
 |--------|----------------------------------------------------|--------|
 | **0**  | Design doc + one slice: NATS subscribe + stub writer + /metrics | Done (this slice) |
-| **1**  | Wire real QuestDB ILP writer (reuse nats-questdb-bridge pattern) | Done |
+| **1**  | Wire real QuestDB ILP writer as a `collection-daemon` sink | Done |
 | **2**  | Add broker REST poller (configurable URL + interval) | Backlog |
 | **3**  | NATS KV writer for live state (after P2-C)         | Backlog |
 | **4**  | Decommission Python polling (TUI/Web read from NATS KV / QuestDB) | Backlog |
@@ -86,4 +86,4 @@ Default subjects (aligned with DATAFLOW_ARCHITECTURE.md):
 - **Epic E5**: `docs/platform/IMPROVEMENT_PLAN.md` § Priority 5 — E5  
 - **NATS contract**: `docs/platform/DATAFLOW_ARCHITECTURE.md` §3  
 - **Go agents**: `agents/go/README.md`  
-- **Legacy bridge**: `agents/go/cmd/nats-questdb-bridge` (compatibility fallback while collector migration completes)
+- **QuestDB fanout**: handled directly by `collection-daemon` via the optional QuestDB sink (`QUESTDB_ILP_ADDR`)

@@ -8,7 +8,7 @@
 
 ## 1. Current state
 
-- **QuestDB write path**: Go `nats-questdb-bridge` (`agents/go/cmd/nats-questdb-bridge`) subscribes to NATS (Core or JetStream), decodes `NatsEnvelope`/MarketDataEvent or JSON ticks, and writes to QuestDB via **ILP** (Influx Line Protocol) on port **9009**.
+- **QuestDB write path**: Go `collection-daemon` (`agents/go/cmd/collection-daemon`) subscribes to NATS (Core or JetStream), decodes `NatsEnvelope`/`MarketDataEvent`, and writes to QuestDB via **ILP** (Influx Line Protocol) on port **9009** when `QUESTDB_ILP_ADDR` is set.
 - **QuestDB read path**: Python `questdb_client.py` uses **HTTP** `GET /exec?query=...` (port 9000) and returns JSON rows. Used for `query()`, `get_ohlcv()`, `get_latest_quotes()`.
 
 **Gap**: Bulk/historical reads are row-wise over HTTP; no columnar zero-copy path.
@@ -27,11 +27,11 @@ Clients can use the **Flight SQL** protocol: execute a SQL query, receive one or
 
 ---
 
-## 3. Go nats-questdb-bridge as Arrow Flight writer (research)
+## 3. Go collection-daemon QuestDB sink as Arrow Flight writer (research)
 
 **Scope of E2**: The Go bridge should become an **Arrow Flight writer** *alongside* existing ILP.
 
-### 3.1 Current bridge behavior
+### 3.1 Current writer behavior
 
 - Single TCP connection to QuestDB ILP (`QUESTDB_ILP_ADDR`, default `localhost:9009`).
 - Each NATS message → one ILP line (`market_data,symbol=... bid=...,ask=...,...`).
@@ -115,12 +115,12 @@ Epic E2 also mentions: *“Web: optional Arrow IPC for bulk option chain / posit
 
 | Component | Current | After E2 (this scope) |
 |----------|---------|------------------------|
-| Go nats-questdb-bridge | ILP writer only | **Researched**: add Arrow Flight writer for bulk/backfill (Option A); ILP unchanged for live ticks. |
+| Go collection-daemon QuestDB sink | ILP writer only | **Researched**: add Arrow Flight writer for bulk/backfill (Option A); ILP unchanged for live ticks. |
 | Python QuestDB reads | HTTP `/exec` only | **Implemented**: one read path via Arrow Flight SQL (`query_flight_sql` + optional `get_ohlcv` over Flight). Fallback to HTTP. |
 | Web bulk reads | — | Documented as optional follow-up. |
 
 **Next steps** (for later tasks):
 
 - Confirm QuestDB Arrow Flight SQL port and ingest API (DoPut / CommandStatementIngest).
-- Add ADBC Flight SQL or Arrow Flight Go deps to `agents/go` and implement bulk writer path in nats-questdb-bridge.
+- Add ADBC Flight SQL or Arrow Flight Go deps to `agents/go` and implement a bulk writer path in `collection-daemon`.
 - Add integration test: Python `query_flight_sql` against local QuestDB with Flight enabled.

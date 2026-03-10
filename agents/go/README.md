@@ -8,7 +8,6 @@ Single-binary tools for config validation, NATS collection, QuestDB fanout, and 
 |--------|--------|
 | **collection-daemon** | Unified collector (Epic E5): NATS subscribe + sink pipeline (`NATS KV`, QuestDB ILP, logging) + /metrics. See `docs/platform/COLLECTION_DAEMON_PLAN.md`. |
 | **config-validator** | Validate shared config JSON (and optional API contract). Used by `scripts/validate_api_contract.sh` when Go is available. |
-| **nats-questdb-bridge** | Legacy standalone NATS→QuestDB writer. Kept temporarily for compatibility while QuestDB fanout moves into `collection-daemon`. |
 | **supervisor** | Run multiple services from a JSON config; restart on crash. Use `scripts/run_supervisor.sh` with `config/services.supervisor.json`. |
 | **api-gateway** | (See cmd/api-gateway.) |
 | **heartbeat-aggregator** | (See cmd/heartbeat-aggregator.) |

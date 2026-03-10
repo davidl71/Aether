@@ -16,8 +16,9 @@ IBKR TWS (port 7497)
         ├─► InMemoryCache (hot tick data, C++ only)
         ├─► nats_client.cpp
         │     └─► NATS: market-data.tick.<symbol>  [NatsEnvelope protobuf]
-        │           ├─► Go nats-questdb-bridge
-        │           │     └─► QuestDB via ILP (time-series archive)
+        │           ├─► Go collection-daemon
+        │           │     ├─► QuestDB via ILP (time-series archive)
+        │           │     └─► NATS KV LIVE_STATE
         │           └─► Rust nats_adapter
         │                 └─► Rust backend (in-memory state)
         └─► Python integration layer
@@ -62,7 +63,7 @@ Python cash_flow_calculator / loan_manager
   └─► writes to: same SQLite DB ← CONTENTION RISK
 
 QuestDB
-  └─► written by: Go nats-questdb-bridge (ILP protocol)
+  └─► written by: Go collection-daemon QuestDB sink (ILP protocol)
   └─► read by: Python analytics / notebooks
 ```
 
@@ -75,7 +76,7 @@ QuestDB
 | InMemoryCache | C++ (custom) | tws_client | C++ engine only | Hot tick prices | In-process |
 | NATS KV | NATS JetStream | Go collection-daemon | api-gateway, TUI/Web (future) | Live state (key = messageType.symbol, value = full `NatsEnvelope` protobuf) | Configurable |
 | SQLite (ledger) | Rust (sqlx) + Python | Rust + Python | Rust + Python | Ledger, positions | Permanent |
-| QuestDB | Go (ILP) | nats-questdb-bridge | Python analytics | Tick time-series | Configurable |
+| QuestDB | Go (ILP) | collection-daemon | Python analytics | Tick time-series | Configurable |
 
 **NATS KV key schema (bucket LIVE_STATE):** Keys are `messageType.symbol` (e.g. `MarketDataEvent.SPY`, `StrategyDecision.AAPL`). Values are full serialized `NatsEnvelope` records, not just inner payload bytes. Written by collection-daemon when it receives NATS messages. Read by api-gateway: `GET /api/live/state` (list keys), `GET /api/live/state?key=MarketDataEvent.SPY` (one key, raw value base64 plus decoded envelope metadata), or `GET /api/live/state/watch` (SSE stream of KV updates with the same metadata). **Requires NATS server 2.6.2+** (JetStream Key-Value).
 
@@ -97,14 +98,14 @@ message NatsEnvelope {
 
 | Topic | Inner Message | Publisher | Subscribers |
 |-------|--------------|-----------|-------------|
-| `market-data.tick.<symbol>` | `MarketDataEvent` | C++ nats_client | Go bridge, Rust nats_adapter |
+| `market-data.tick.<symbol>` | `MarketDataEvent` | C++ nats_client | Go collection-daemon, Rust nats_adapter |
 | `strategy.signal.<symbol>` | `StrategySignal` | C++ nats_client | Rust nats_adapter |
 | `strategy.decision.<symbol>` | `StrategyDecision` | C++ nats_client | Rust nats_adapter |
 | `heartbeat.<service>` | string (plain) | Python services | Go heartbeat-aggregator |
 
-**Note**: Active Go collectors now decode `NatsEnvelope` directly. `collection-daemon`,
-`nats-questdb-bridge`, and `heartbeat-aggregator` all understand envelope records; older
-doc references to raw-string parsing are stale.
+**Note**: Active Go collectors now decode `NatsEnvelope` directly. `collection-daemon`
+and `heartbeat-aggregator` understand envelope records; older doc references to the removed
+standalone QuestDB bridge or raw-string parsing are stale.
 
 ---
 
@@ -134,7 +135,6 @@ All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/sl
 | `api-gateway` | Reverse proxy with CORS | HTTP :8090 | Routes to Python services + Rust :8080 |
 | `collection-daemon` | Unified NATS collector (Epic E5): decode `NatsEnvelope` once, write through sinks (KV/log today), optional JetStream durable mode | NATS `market-data.>`, etc. | HTTP /metrics (Prometheus) |
 | `heartbeat-aggregator` | Tracks service liveness | NATS `heartbeat.*` | HTTP GET /health |
-| `nats-questdb-bridge` | Streams NATS → QuestDB | NATS `market.data.>` or `market-data.tick.>` (env) | QuestDB ILP |
 | `supervisor` | Process supervisor (restart on crash) | JSON config | Process PIDs |
 | `config-validator` | Validates platform config at startup | Config file | Exit code |
 
@@ -172,7 +172,7 @@ All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/sl
 | # | Issue | Location | Impact | Exarp Task |
 |---|-------|---------|--------|------------|
 | 3 | ~~**WebSocket full snapshot**: Rust WS sends complete `SystemSnapshot` every 2s regardless of changes~~ **DONE (P2-A)**: full snapshot on connect, then delta every 2s | `agents/backend/src/ws.rs` | — resolved | T-1772887222103963807 ✅ |
-| 4 | ~~**Go agents not decoding NatsEnvelope**: raw byte parsing instead of protobuf (nats-questdb-bridge, heartbeat-aggregator); collection-daemon uses proto~~ **DONE**: active Go collectors decode envelopes | `agents/go/cmd/*` | — resolved | T-1772887221969976131 ✅ |
+| 4 | ~~**Go agents not decoding NatsEnvelope**: raw byte parsing instead of protobuf in the old bridge / heartbeat path~~ **DONE**: active Go collectors decode envelopes | `agents/go/cmd/*` | — resolved | T-1772887221969976131 ✅ |
 | 5 | **Hardcoded ETF duration table**: static lookup in greeks_calculator | `native/src/greeks_calculator.cpp` | Wrong values for newly listed ETFs; maintenance burden | T-1772887222158664215 |
 | 6 | **No IV solver**: BlackCalculator used correctly, but IV must come from market data | `native/src/greeks_calculator.cpp` | Cannot calculate IV from price; blocks model-based workflows | T-1772887222213114929 |
 
@@ -228,7 +228,7 @@ One writer per store; all readers use that store or a gateway. Eliminates dual-w
 | Store | Single writer | Readers |
 |-------|----------------|---------|
 | SQLite (ledger) | Rust ledger crate only | Rust API; Python via REST `GET /api/ledger/...` (no direct DB) |
-| QuestDB | Go nats-questdb-bridge only | Python analytics, notebooks |
+| QuestDB | Go collection-daemon only | Python analytics, notebooks |
 | NATS KV (live state) | Go collection-daemon | TUI NatsProvider, Web (future), api-gateway |
 | InMemoryCache | C++ tws_client | C++ engine only |
 
@@ -260,12 +260,11 @@ flowchart LR
   end
   TWS --> Cpp
   Cpp --> Nats
-  Nats --> Bridge[Go nats-questdb-bridge]
+  Nats --> Collector[Go collection-daemon]
   Nats --> Rust[Rust nats_adapter]
-  Bridge --> QDB
+  Collector --> QDB
+  Collector --> KV
   Rust --> Ledger
-  Cpp --> KV
-  Python --> KV
   Gateway --> Web
   Gateway --> TUI
   Ledger --> Rust
@@ -273,8 +272,8 @@ flowchart LR
 ```
 
 - **Current read paths**: the web client reads from the Rust backend; the Textual TUI reads from Python services or NATS. This split is still an active architecture gap rather than the target state.
-- **Single writer per store**: Ledger = Rust; QuestDB = Go bridge; NATS KV = Go collection-daemon.
-- **Persistence**: Rust writes ledger then publishes; bridge writes QuestDB from NATS; no dual SQLite writers.
+- **Single writer per store**: Ledger = Rust; QuestDB = Go collection-daemon; NATS KV = Go collection-daemon.
+- **Persistence**: Rust writes ledger then publishes; collection-daemon writes QuestDB and live state from NATS; no dual SQLite writers.
 
 ### Implementation order (task dependencies)
 

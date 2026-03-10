@@ -111,7 +111,7 @@
 
 | Where | What |
 |-------|------|
-| **Messaging** | **NATS** (Core + JetStream) is the primary message bus: pub/sub (`snapshot.{backend}`, `system.health`, `market-data.tick.>`, `strategy.signal.*`), request-reply, JetStream persistence. Python (`nats_client.py`, `questdb_nats_writer.py`), Rust (NATS adapter), C++ (when `ENABLE_NATS`), Go (nats-questdb-bridge) all use it. |
+| **Messaging** | **NATS** (Core + JetStream) is the primary message bus: pub/sub (`snapshot.{backend}`, `system.health`, `market-data.tick.>`, `strategy.signal.*`), request-reply, JetStream persistence. Python (`nats_client.py`, `questdb_nats_writer.py`), Rust (NATS adapter), C++ (when `ENABLE_NATS`), and Go (`collection-daemon`, `heartbeat-aggregator`) all use it. |
 | **State / cache** | **NATS KV** (JetStream Key-Value) is the preferred shared state store for cross-process live state. **Memcached** remains only an optional cache backend behind the C++ cache abstraction for cases where local cache acceleration is still useful. |
 
 **Unify:**

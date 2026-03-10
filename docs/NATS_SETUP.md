@@ -208,7 +208,7 @@ Or via the unified service manager:
 
 **Payload format:** `NatsEnvelope` protobuf carrying `MarketDataEvent` payloads. Symbol can be inferred from subject if needed (e.g. `market-data.tick.SPY` → `SPY`). See `proto/messages.proto` and `docs/message_schemas/README.md`.
 
-**Code:** `agents/go/cmd/collection-daemon`. The old `agents/go/cmd/nats-questdb-bridge` remains only as a compatibility fallback. See also `docs/NATS_TOPICS_REGISTRY.md` and `docs/message_schemas/README.md`.
+**Code:** `agents/go/cmd/collection-daemon`. See also `docs/NATS_TOPICS_REGISTRY.md` and `docs/message_schemas/README.md`.
 
 ## Integration with Launch Scripts
 

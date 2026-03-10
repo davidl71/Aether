@@ -9,7 +9,7 @@ This repository uses **multiple programming languages**. This doc maps each lang
 | **C++** | `native/` (core engine, CLI, tests in `native/tests/`) | `cmake --build build` or presets; `./scripts/build_universal.sh` for macOS universal | `ctest --test-dir build --output-on-failure` | `./scripts/run_linters.sh` (cppcheck, clang-tidy, etc.) |
 | **Python** | `python/` (TUI, integration, services, tests) | — (interpreted); Cython bindings built via CMake | `uv run --project python pytest python/tests/` | `uv run --project python ruff check python`, `uv run --project python --extra dev pyright python/tui`, `uv run --project python --extra dev bandit -r python`; `just lint-shell` for scripts |
 | **Rust** | `agents/backend/` (crates: api, ledger, market_data, nats_adapter, risk, strategy, discount_bank_parser) | `cargo build` in `agents/backend/` | `cargo test` in `agents/backend/` | `cargo clippy` |
-| **Go** | `agents/go/` (api-gateway, collection-daemon, config-validator, heartbeat-aggregator, supervisor; legacy `nats-questdb-bridge`) | `go build ./...` in `agents/go/` | `go test ./...` | `golangci-lint`; `just exarp-lint` |
+| **Go** | `agents/go/` (api-gateway, collection-daemon, config-validator, heartbeat-aggregator, supervisor) | `go build ./...` in `agents/go/` | `go test ./...` | `golangci-lint`; `just exarp-lint` |
 | **TypeScript / React** | `web/` (Vite, React) | `npm run build` in `web/` | `npm run test` (Vitest), `npm run e2e` (Playwright) | `npm run lint`, `npm run type-check` |
 
 ## Shared and generated code

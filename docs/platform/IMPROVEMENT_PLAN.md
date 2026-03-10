@@ -63,10 +63,8 @@ client merges deltas; WebSocket mounted on same server at `/ws`. ~90% bandwidth 
 **Files**: `agents/backend/crates/api/src/websocket.rs`, `agents/backend/crates/api/src/rest.rs`.
 
 ### P2-B: Decode NatsEnvelope in Go agents <!-- exarp: T-1772887221969976131 -->
-**Issue**: `nats-questdb-bridge` and `heartbeat-aggregator` parse raw bytes as strings.
-**Fix**: Deserialize `NatsEnvelope` using `agents/go/proto/v1/messages.pb.go` (already
-generated). Dispatch on `message_type` field. Write QuestDB columns from proto field names.
-**Files**: `agents/go/cmd/nats-questdb-bridge/main.go`.
+**Status:** Implemented. `collection-daemon` and `heartbeat-aggregator` decode `NatsEnvelope`
+using `agents/go/proto/v1/messages.pb.go`. QuestDB fanout now runs through the collector sink.
 **Benefit**: Type-safe; field names match proto schema; survives format changes.
 
 ### P2-C: NATS KV as primary live-state store <!-- exarp: T-1772925042919416172 -->
@@ -153,7 +151,7 @@ ConnectRPC serves gRPC, gRPC-Web, and plain JSON HTTP/1.1 from the same handler.
 ### E2: Apache Arrow Flight for bulk/historical data
 Replace QuestDB HTTP polling with Arrow Flight SQL for columnar bulk reads.
 QuestDB natively supports Arrow Flight SQL. Python analytics get zero-copy columnar data.
-The Go `nats-questdb-bridge` becomes an Arrow Flight writer.
+The Go QuestDB writer path inside `collection-daemon` becomes an Arrow Flight writer.
 **Impact**: 10-100x faster for bulk position/tick queries. Enables notebook-level analysis.
 
 ### E3: Asset Relationship Graph (Phase 2 of SYNTHETIC_FINANCING_ARCHITECTURE)
