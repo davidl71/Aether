@@ -32,13 +32,9 @@ This migration plan outlines the gradual adoption of `uv` (the fast Python packa
 
 ### Scripts Using `setup_venv()`
 
-1. `web/scripts/run-alpaca-service.sh`
-2. `web/scripts/run-ib-service.sh`
-3. `web/scripts/run-tastytrade-service.sh`
-4. `web/scripts/run-tradestation-service.sh`
-5. `web/scripts/run-discount-bank-service.sh`
-6. `web/scripts/run-risk-free-rate-service.sh`
-7. `scripts/start_rust_backend.sh`
+1. `web/scripts/run-ib-service.sh`
+2. retired broker-specific launchers (historical reference only)
+3. `scripts/start_rust_backend.sh`
 9. And more...
 
 ---

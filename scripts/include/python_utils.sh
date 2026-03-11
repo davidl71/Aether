@@ -252,7 +252,7 @@ install_python_packages() {
 
 # Test Python module import
 # Usage: test_python_import <venv_python> <module_path> [module_name]
-# Example: test_python_import "${VENV_PYTHON}" "integration.alpaca_service" "app"
+# Example: test_python_import "${VENV_PYTHON}" "integration.ibkr_portal_client" "IBKRPortalClient"
 # Returns 0 if import succeeds, 1 if it fails
 #
 # AI CONTEXT:
@@ -263,7 +263,7 @@ install_python_packages() {
 #
 # PARAMETERS:
 #   venv_python: Path to venv Python executable (required)
-#   module_path: Python module path (e.g., "integration.alpaca_service") (required)
+#   module_path: Python module path (e.g., "integration.ibkr_portal_client") (required)
 #   module_name: Name of object to import (defaults to "app")
 #
 # SIDE EFFECTS:
@@ -271,8 +271,8 @@ install_python_packages() {
 #   - Restores original file after test (even on failure)
 #
 # EXAMPLE:
-#   if ! test_python_import "${VENV_PYTHON}" "integration.alpaca_service" "app"; then
-#     echo "Error: Cannot import alpaca_service" >&2
+#   if ! test_python_import "${VENV_PYTHON}" "integration.ibkr_portal_client" "IBKRPortalClient"; then
+#     echo "Error: Cannot import IBKRPortalClient" >&2
 #     exit 1
 #   fi
 #

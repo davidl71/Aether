@@ -45,20 +45,14 @@ Store the OAuth app credentials in 1Password and reference them:
 export OP_ALPACA_CLIENT_ID_SECRET="op://Vault/Alpaca OAuth App/Client ID"
 export OP_ALPACA_CLIENT_SECRET_SECRET="op://Vault/Alpaca OAuth App/Client Secret"
 source ./scripts/setup_op_service_account.sh
-./web/scripts/run-alpaca-service.sh
 ```
 
 Use the same vault/item in `generate-and-configure` if you create an “Alpaca OAuth” item (e.g. fields `Client ID`, `Client Secret`).
 
-### 4. Run the Alpaca service
+### 4. Runtime status
 
-Same as with API keys:
-
-```bash
-./web/scripts/run-alpaca-service.sh
-```
-
-The service will use OAuth when `ALPACA_CLIENT_ID` and `ALPACA_CLIENT_SECRET` (or their 1Password refs) are present and valid.
+The old standalone Alpaca Python service is retired. OAuth details remain useful for the retained
+Alpaca client/helper code, but there is no supported `run-alpaca-service.sh` runtime path now.
 
 ---
 
@@ -69,7 +63,8 @@ The service will use OAuth when `ALPACA_CLIENT_ID` and `ALPACA_CLIENT_SECRET` (o
   - Token endpoint: `https://paper-api.alpaca.markets/oauth/token` (paper) or `https://api.alpaca.markets/oauth/token` (live).
   - Grant type: `client_credentials`.
   - Access token is cached and refreshed when near expiry (or on 401).
-- **Service:** `python/integration/alpaca_service.py` exposes OAuth status in `/api/health` (`oauth.enabled`, `has_token`, `expires_at`) when using OAuth.
+- **Retained helper:** `python/integration/alpaca_client.py`
+  still supports OAuth-capable client logic for future reuse.
 - **Official SDK:** `alpaca-py` is used only when **not** using OAuth (API key mode). With OAuth we use our own REST client and Bearer token.
 
 ---
@@ -88,4 +83,6 @@ For **end-user** OAuth (Connect API), Alpaca can issue a refresh token. This pro
 | Let end users connect their Alpaca accounts to your app | Alpaca **Connect API** (authorization code flow); not implemented in this repo. |
 | Simple per-account keys from dashboard | **API keys**: `ALPACA_API_KEY_ID` + `ALPACA_API_SECRET_KEY`. |
 
-See also: [ALPACA_SECRETS_SETUP.md](ALPACA_SECRETS_SETUP.md), [ALPACA_INTEGRATION.md](../web/ALPACA_INTEGRATION.md), [ONEPASSWORD_INTEGRATION.md](ONEPASSWORD_INTEGRATION.md).
+See also: [ALPACA_SECRETS_SETUP.md](ALPACA_SECRETS_SETUP.md),
+[ALPACA_TASTYTRADE_RUNTIME_RETIREMENT.md](/Users/davidl/Projects/Trading/ib_box_spread_full_universal/docs/archive/ALPACA_TASTYTRADE_RUNTIME_RETIREMENT.md),
+[ONEPASSWORD_INTEGRATION.md](ONEPASSWORD_INTEGRATION.md).

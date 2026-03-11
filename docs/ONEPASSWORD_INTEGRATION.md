@@ -12,7 +12,7 @@ The project can pull credentials directly from 1Password so secrets never land i
 
 | Method | Use case | Where used in this project |
 |--------|----------|----------------------------|
-| **1Password CLI (`op`)** | Shell scripts, any language via subprocess | `scripts/include/onepassword.sh`, run-alpaca-service.sh, run_israeli_bank_scrapers_service.sh, op_sync_*.sh |
+| **1Password CLI (`op`)** | Shell scripts, any language via subprocess | `scripts/include/onepassword.sh`, `run-ib-service.sh`, op_sync_*.sh |
 | **1Password SDKs (formal API)** | In-process code (Node, Python, Go) | Israeli bank scrapers service (optional), Python helper (optional) |
 
 ### Why does 1Password keep asking me to authorize?
@@ -120,7 +120,7 @@ export OP_SERVICE_ACCOUNT_TOKEN="ops_..."
 export OP_ALPACA_API_KEY_ID_SECRET="op://Vault/Alpaca/API Key ID"
 export OP_ALPACA_API_SECRET_KEY_SECRET="op://Vault/Alpaca/API Secret Key"
 
-./web/scripts/run-alpaca-service.sh
+Alpaca runtime launchers are retired.
 ```
 
 The Python SDK (`onepassword_sdk_helper.py`) also uses `OP_SERVICE_ACCOUNT_TOKEN` when set, so the TUI and backend services can resolve `op://` refs without the CLI.
@@ -185,13 +185,13 @@ The Python SDK (`onepassword_sdk_helper.py`) also uses `OP_SERVICE_ACCOUNT_TOKEN
 - Use **CLI** when: running from shell scripts, or you already have `op signin` and want minimal setup.
 - Use **SDK** when: building a long-running service (e.g. Node/Python) and you prefer not to spawn `op` or want a single dependency (SDK) without requiring the CLI to be installed.
 
-**Scripts vs in-process resolution:** Service start scripts (e.g. `run-alpaca-service.sh`, `run_israeli_bank_scrapers_service.sh`) resolve refs via the CLI and export env vars; the process then uses those env vars and does not resolve again. So use either the script (CLI) or run the process directly with `OP_*_SECRET` set (SDK), not both in the same flow. The Israeli bank scrapers Node service skips SDK resolution when the corresponding env var is already set, avoiding redundant 1Password calls when started via the script.
+**Scripts vs in-process resolution:** Service start scripts resolve refs via the CLI and export env vars; the process then uses those env vars and does not resolve again. So use either the script (CLI) or run the process directly with `OP_*_SECRET` set (SDK), not both in the same flow.
 
 ### TUI and PWA (web app)
 
 - **TUI (Python Textual)**: The TUI uses the same credential sources as the backend services. When determining whether a backend (Alpaca, Tastytrade) is "disabled" due to missing credentials, it checks both plain env vars and optional 1Password refs (`OP_*_SECRET`). If you set only `OP_ALPACA_API_KEY_ID_SECRET` and `OP_ALPACA_API_SECRET_KEY_SECRET` (and the Python SDK is available), the TUI will show Alpaca as configured rather than disabled. Start the TUI with the same env or `op://` refs you use for the services (e.g. `./scripts/run_python_tui.sh` after exporting `OP_*_SECRET` or running under a shell that sources 1Password).
 - **Shared config file**: The shared config loader (`SharedConfigLoader`) resolves **op://** references in config values when the 1Password Python SDK is installed. You can put `op://Vault/Item/field` in `config/config.json` (or the file pointed to by `IB_BOX_SPREAD_CONFIG`) for any secret field (e.g. under `alpaca.data_client_config.api_key_id`, `tastytrade.oauth.client_secret`). At load time those values are resolved in-process; if the SDK is missing or auth fails, the value is left as-is (and may cause validation errors).
-- **PWA / web app**: The PWA does not load backend credentials; it talks to backend services via `VITE_API_URL` and `VITE_*_PORT`. To use 1Password with the PWA, start the backend services (Alpaca, IB, Tastytrade, etc.) with credentials from 1Password (e.g. `./web/scripts/run-alpaca-service.sh` with `OP_*_SECRET` set, or run the Python services with the SDK resolving refs). Then set `VITE_API_URL` and optional port overrides in `web/.env` (see `web/env.example`). No secrets are stored in the PWA build; all credentials stay in 1Password and the backend processes.
+- **PWA / web app**: The web runtime is retired. If web returns later, credentials should still stay in backend processes rather than the frontend build.
 
 ## Israeli Bank Scrapers (israeli-bank-scrapers-service)
 
@@ -330,9 +330,9 @@ For **paper vs live**: use separate 1Password items (e.g. "Alpaca Paper", "Alpac
 export OP_ALPACA_API_KEY_ID_SECRET="op://Vault/Item Name/API Key ID"
 export OP_ALPACA_API_SECRET_KEY_SECRET="op://Vault/Item Name/API Secret Key"
 
-./web/scripts/run-alpaca-service.sh
+Alpaca runtime launchers are retired.
 ```
 
 The script will: (1) read from 1Password if `OP_ALPACA_*_SECRET` are set, (2) fall back to `ALPACA_API_KEY_ID` and `ALPACA_API_SECRET_KEY` if 1Password is not available.
 
-**Authentication:** Personal account — run `op signin` first; Service account — set `OP_SERVICE_ACCOUNT_TOKEN`. See [Service Accounts](https://developer.1password.com/docs/service-accounts). Full setup: `web/ALPACA_INTEGRATION.md`.
+**Authentication:** Personal account — run `op signin` first; Service account — set `OP_SERVICE_ACCOUNT_TOKEN`. See [Service Accounts](https://developer.1password.com/docs/service-accounts).

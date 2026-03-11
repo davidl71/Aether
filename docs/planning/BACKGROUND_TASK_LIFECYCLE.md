@@ -27,15 +27,17 @@ This document describes how background work (threads, asyncio tasks, timers) is 
 
 ### 1.2 FastAPI backend services
 
-**Locations:** `python/integration/ib_service.py`, `alpaca_service.py`, `tastytrade_service.py`, `discount_bank_service.py`, `python/services/health_dashboard.py`.
+**Locations:** Historical service locations included `python/integration/ib_service.py`,
+`alpaca_service.py`, `tastytrade_service.py`, `discount_bank_service.py`, and
+`python/services/health_dashboard.py`. Those daemon surfaces are retired.
 
 | Service | Background work | Start | Stop | Notes |
 |---------|------------------|--------|------|--------|
-| **Health dashboard** | Long-lived asyncio task: `_nats_subscriber()` (connect, subscribe to `system.health`, `while True: sleep(60)`) | **Lifespan** `asynccontextmanager`: `task = asyncio.create_task(_nats_subscriber()); yield` | On yield exit: `task.cancel(); await task` | Correct pattern: one task, cancelled on shutdown. |
-| **Tastytrade** | DXLink WebSocket: `_receive_task = asyncio.create_task(_receive_loop())`; reconnects via `asyncio.create_task(_reconnect())` | `@app.on_event("startup")`: `await _init_dxlink(...)` | `@app.on_event("shutdown")`: `await dxlink_client.disconnect()` | Startup/shutdown are async; DXLink owns its receive task. |
-| **IB, Alpaca, Discount Bank** | No long-lived background loops. | — | — | Health/snapshot publish: `asyncio.create_task(nats_client.publish_health(...))` (fire-and-forget). |
+| **Historical health dashboard** | Long-lived asyncio task: `_nats_subscriber()` (connect, subscribe to `system.health`, `while True: sleep(60)`) | **Lifespan** `asynccontextmanager`: `task = asyncio.create_task(_nats_subscriber()); yield` | On yield exit: `task.cancel(); await task` | Retired after Rust health aggregation takeover. |
+| **Historical Tastytrade** | DXLink WebSocket: `_receive_task = asyncio.create_task(_receive_loop())`; reconnects via `asyncio.create_task(_reconnect())` | `@app.on_event("startup")`: `await _init_dxlink(...)` | `@app.on_event("shutdown")`: `await dxlink_client.disconnect()` | Historical note; service retired from active runtime. |
+| **Historical IB, Alpaca, Discount Bank** | No long-lived background loops. | — | — | Historical note; public routes moved or services retired. |
 
-**Lifecycle:** Health dashboard uses **lifespan** for one background task and cancels it on exit. Tastytrade uses **on_event("startup")** and **on_event("shutdown")** for DXLink init/cleanup. Other services do not start background tasks; they only fire one-off tasks for NATS publish.
+**Lifecycle:** These notes describe retired Python daemon patterns kept for architectural history.
 
 **Gaps:**
 - Fire-and-forget `asyncio.create_task(publish_health(...))`: no await, no cancellation if the app is shutting down. Usually fine for a single publish, but if the task outlives the process it can log or fail after the app is gone.
@@ -128,9 +130,10 @@ This document describes how background work (threads, asyncio tasks, timers) is 
 ## 4. References
 
 - **TUI:** `python/tui/app.py` (on_mount, on_unmount, set_interval), `python/tui/providers/` (BackendHealthAggregator, RestProvider, FileProvider, MockProvider).
-- **Health dashboard:** `python/services/health_dashboard.py` (lifespan, _nats_subscriber).
-- **Tastytrade:** `python/integration/tastytrade_service.py` (on_event startup/shutdown, DXLink), `python/integration/dxlink_client.py` (_receive_task, disconnect).
+- **Historical health dashboard:** `python/services/health_dashboard.py` (retired).
+- **Historical Tastytrade:** `python/integration/tastytrade_service.py` (retired),
+  `python/integration/dxlink_client.py` (_receive_task, disconnect).
 - **Strategy runner:** `python/integration/strategy_runner.py` (on_start, on_stop, _connect_nats).
-- **QuestDB writer:** `agents/go/cmd/collection-daemon` with `QUESTDB_ILP_ADDR` set (run via `scripts/run_questdb_nats_writer.sh`).
+- **Historical QuestDB writer:** old Go `collection-daemon` path (retired; now Rust-owned).
 - **LEAN event bridge:** `python/lean_integration/event_bridge.py` (start, stop, _run_event_loop).
 - **FastAPI lifespan:** [FastAPI Lifespan](https://fastapi.tiangolo.com/advanced/events/) (recommended over on_event).

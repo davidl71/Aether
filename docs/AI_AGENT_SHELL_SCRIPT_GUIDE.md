@@ -17,10 +17,9 @@ All shared functions are in `scripts/include/`:
 
 Current active service startup scripts use these shared functions:
 
-- `web/scripts/run-alpaca-service.sh`
 - `web/scripts/run-ib-service.sh`
-- `web/scripts/run-discount-bank-service.sh`
-- `scripts/start_alpaca_service.sh`
+- `scripts/service.sh`
+- `scripts/service_manager.sh`
 
 Historical scripts for removed services such as TradeStation should not be reintroduced from this guide.
 
@@ -67,11 +66,11 @@ PYTHON_CMD="${VENV_PYTHON}"
 
 # Get port from config (with env var override)
 
-PORT=$(config_get_port "alpaca" 8000)
+PORT=$(config_get_port "ib" 8002)
 
 # Check port availability
 
-if ! check_port_with_service "${PYTHON_CMD}" "127.0.0.1" "${PORT}" "ALPACA_SERVICE" "Alpaca"; then
+if ! check_port_with_service "${PYTHON_CMD}" "127.0.0.1" "${PORT}" "IB_SERVICE" "IB"; then
   exit 1
 fi
 ```

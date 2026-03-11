@@ -20,7 +20,9 @@ Prioritized plan for shared state, caching, task management, and analytics stora
 - **Bucket:** `ib_box_spread_state` (or `NATS_KV_STATE_BUCKET`). Keys: `current_account:ib`, `current_account:alpaca`, `current_account:tastytrade`, etc.
 - **Module:** `python/integration/nats_kv_state.py` – async get/set/delete with JSON values; bucket created on first connect if missing.
 - **Helpers:** `get_nats_kv_state()`, `get_current_account(backend)`, `set_current_account(backend, account_id)`.
-- **Wiring:** In backend services (ib_service, alpaca_service, tastytrade_service), when setting or reading current account, call `get_nats_kv_state()` and use `state.get("current_account:ib")` / `state.set(...)` (or the helpers) so all processes see the same value. Fallback remains in-memory until wired.
+- **Wiring:** Historical note: earlier broker services (`ib_service`, `alpaca_service`,
+  `tastytrade_service`) read and wrote current-account state through NATS KV.
+  Those daemon surfaces are retired from the active runtime.
 - **JetStream:** Must be enabled in NATS server (see `config/nats-server.conf` and `docs/NATS_SETUP.md`).
 
 **References:** `python/integration/redis_cache.py` (NATS KV as fallback – flip to NATS KV primary), `python/integration/cache_client.py` (CacheClient protocol).

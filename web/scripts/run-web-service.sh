@@ -168,7 +168,6 @@ if [ ! -f "${ENV_FILE}" ] || ! grep -q "VITE_API_URL" "${ENV_FILE}" 2>/dev/null;
   else
     echo "⚠ Backend service not detected. Using static JSON data." >&2
     echo "  To use live data, start a backend service:" >&2
-    echo "  ./web/scripts/run-alpaca-service.sh  # For Alpaca" >&2
     echo "  ./web/scripts/run-ib-service.sh      # For Interactive Brokers" >&2
   fi
 else

@@ -169,12 +169,8 @@ npm run dev
 
 ### Use Alpaca (Live Data)
 
-```bash
-export VITE_API_URL=http://127.0.0.1:8000/api/snapshot
-# Start Alpaca service instead
-./web/scripts/run-alpaca-service.sh
-npm run dev
-```
+This path is retired. See
+[ALPACA_TASTYTRADE_RUNTIME_RETIREMENT.md](/Users/davidl/Projects/Trading/ib_box_spread_full_universal/docs/archive/ALPACA_TASTYTRADE_RUNTIME_RETIREMENT.md).
 
 ### Use Static JSON (Offline/Development)
 

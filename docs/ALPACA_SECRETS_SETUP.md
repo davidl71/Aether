@@ -50,7 +50,7 @@ source .env.alpaca
 
 ```bash
 source ./scripts/setup_op_service_account.sh   # load OP token
-./web/scripts/run-alpaca-service.sh
+The old `run-alpaca-service.sh` runtime path is retired.
 ```
 
 Or with the env file:
@@ -58,7 +58,7 @@ Or with the env file:
 ```bash
 source .env.alpaca
 source ./scripts/setup_op_service_account.sh
-./web/scripts/run-alpaca-service.sh
+The old `run-alpaca-service.sh` runtime path is retired.
 ```
 
 Use **paper** by default: `ALPACA_PAPER=1` (default). For live: `export ALPACA_PAPER=0`.
@@ -86,7 +86,7 @@ Add these to `~/.zshrc` or `~/.bashrc` if you want them in every session (never 
 ### 3. Run the Alpaca service
 
 ```bash
-./web/scripts/run-alpaca-service.sh
+The old `run-alpaca-service.sh` runtime path is retired.
 ```
 
 ---
@@ -96,4 +96,7 @@ Add these to `~/.zshrc` or `~/.bashrc` if you want them in every session (never 
 - **Health:** `curl -s http://127.0.0.1:8000/api/health` should show `"status": "ok"` and `"alpaca_connected": true` once the service is running and credentials are valid.
 - **TUI:** Start the TUI with the same env (or 1Password exports); Alpaca should appear as configured in the status bar.
 
-See also: [ONEPASSWORD_INTEGRATION.md](ONEPASSWORD_INTEGRATION.md), [BACKEND_SECRETS_PROVIDERS.md](BACKEND_SECRETS_PROVIDERS.md), [ALPACA_OAUTH.md](ALPACA_OAUTH.md) (OAuth client credentials), [web/ALPACA_INTEGRATION.md](../web/ALPACA_INTEGRATION.md).
+See also: [ONEPASSWORD_INTEGRATION.md](ONEPASSWORD_INTEGRATION.md),
+[BACKEND_SECRETS_PROVIDERS.md](BACKEND_SECRETS_PROVIDERS.md),
+[ALPACA_OAUTH.md](ALPACA_OAUTH.md),
+[ALPACA_TASTYTRADE_RUNTIME_RETIREMENT.md](/Users/davidl/Projects/Trading/ib_box_spread_full_universal/docs/archive/ALPACA_TASTYTRADE_RUNTIME_RETIREMENT.md).
