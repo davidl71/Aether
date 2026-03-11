@@ -1976,9 +1976,9 @@ mod tests {
     use tokio::sync::{watch, RwLock};
     use uuid::Uuid;
 
-    fn test_rest_state() -> RestState {
-        let path: PathBuf = env::temp_dir().join(format!("loan-test-{}.json", Uuid::new_v4()));
-        let repo = LoanRepository::load(path).expect("temp loan repo");
+    async fn test_rest_state() -> RestState {
+        let path: PathBuf = env::temp_dir().join(format!("loan-test-{}.db", Uuid::new_v4()));
+        let repo = LoanRepository::load(path).await.expect("temp loan repo");
         let (tx, _rx) = watch::channel(false);
         RestState::new(
             Arc::new(RwLock::new(SystemSnapshot::default())),
@@ -2217,7 +2217,7 @@ mod tests {
 
     #[tokio::test]
     async fn loans_crud_handlers_work() {
-        let state = test_rest_state();
+        let state = test_rest_state().await;
         let loan = sample_loan("loan-1");
 
         let (status, Json(created)) = loans_create(Extension(state.clone()), Json(loan.clone()))
@@ -2259,7 +2259,7 @@ mod tests {
 
     #[tokio::test]
     async fn loans_create_rejects_invalid_record() {
-        let state = test_rest_state();
+        let state = test_rest_state().await;
         let mut loan = sample_loan("bad-loan");
         loan.principal = 0.0;
 

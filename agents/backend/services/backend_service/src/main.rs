@@ -122,7 +122,9 @@ async fn main() -> anyhow::Result<()> {
         warn!("NATS integration unavailable, continuing without NATS");
     }
 
-    let loan_repository = LoanRepository::load_default().context("failed to initialize loan repository")?;
+    let loan_repository = LoanRepository::load_default()
+        .await
+        .context("failed to initialize loan repository")?;
     let rest_state = RestState::new(state.clone(), controller.clone(), loan_repository);
 
     {

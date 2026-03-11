@@ -58,6 +58,7 @@ dependencies = [
  "risk",
  "serde",
  "serde_json",
+ "sqlx",
  "strategy",
  "tokio",
  "tokio-stream",
