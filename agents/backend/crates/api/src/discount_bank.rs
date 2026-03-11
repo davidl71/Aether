@@ -8,6 +8,8 @@ use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
+use crate::IbPositionDto;
+
 const DEFAULT_DISCOUNT_BANK_FILE_PATH: &str = "~/Downloads/DISCOUNT.dat";
 const DEFAULT_DISCOUNT_BANK_CREDIT_RATE: f64 = 0.03;
 const DEFAULT_DISCOUNT_BANK_DEBIT_RATE: f64 = 0.103;
@@ -92,16 +94,6 @@ pub struct ImportPositionsQuery {
     pub broker: String,
     pub account_id: Option<String>,
     pub dry_run: Option<bool>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-struct IbPosition {
-    symbol: String,
-    quantity: f64,
-    avg_price: f64,
-    current_price: Option<f64>,
-    market_value: Option<f64>,
-    unrealized_pl: Option<f64>,
 }
 
 pub async fn get_balance() -> Result<DiscountBankBalanceResponse, String> {
@@ -507,7 +499,10 @@ async fn load_ledger_positions() -> Result<HashMap<String, String>, String> {
     Ok(positions)
 }
 
-async fn fetch_ib_positions(client: &Client, account_id: Option<&str>) -> Result<Vec<IbPosition>, String> {
+async fn fetch_ib_positions(
+    client: &Client,
+    account_id: Option<&str>,
+) -> Result<Vec<IbPositionDto>, String> {
     let base = std::env::var("RUST_API_URL").unwrap_or_else(|_| DEFAULT_RUST_API_URL.to_string());
     let url = if let Some(account_id) = account_id {
         format!("{base}/api/v1/ib/positions?account_id={account_id}")
@@ -520,7 +515,7 @@ async fn fetch_ib_positions(client: &Client, account_id: Option<&str>) -> Result
         .await
         .map_err(|error| format!("Failed to fetch IB positions: {error}"))?;
     response
-        .json::<Vec<IbPosition>>()
+        .json::<Vec<IbPositionDto>>()
         .await
         .map_err(|error| format!("Failed to decode IB positions: {error}"))
 }
