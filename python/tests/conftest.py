@@ -3,8 +3,10 @@ Shared pytest configuration for python/tests.
 
 - Adds project root to sys.path so that "from python.integration.X" works when
   running pytest from repo root (e.g. pytest python/tests/ or uv run pytest python/tests/).
+  Note: Most integration modules are retired; only discount_bank_helpers remains.
 - Provides mock_http_response() helper for broker/client tests.
 """
+
 from pathlib import Path
 import sys
 
@@ -17,6 +19,7 @@ if str(_root) not in sys.path:
 def mock_http_response(json_data, status_code=200):
     """Create a MagicMock response with .json(), .status_code, .raise_for_status."""
     from unittest.mock import MagicMock
+
     resp = MagicMock()
     resp.status_code = status_code
     resp.ok = status_code < 400
