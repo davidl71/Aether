@@ -14,8 +14,8 @@ use tokio::time::{interval, Duration};
 use tracing::{error, info, warn};
 
 use crate::rest::RestState;
+use crate::runtime_state::RuntimeExecutionState;
 use crate::{
-    RuntimeDecisionDto, RuntimeHistoricPositionDto, RuntimeOrderDto, RuntimePositionDto,
     RuntimeSnapshotDto,
 };
 use crate::state::SystemSnapshot;
@@ -65,6 +65,8 @@ async fn websocket_handler(
 fn serialise_sections(
     snap: &SystemSnapshot,
 ) -> Result<Vec<(&'static str, String)>, serde_json::Error> {
+    let runtime_state = RuntimeExecutionState::from_snapshot(snap);
+
     Ok(vec![
         (
             "meta",
@@ -78,41 +80,15 @@ fn serialise_sections(
         ("symbols", serde_json::to_string(&snap.symbols)?),
         (
             "positions",
-            serde_json::to_string(
-                &snap.positions
-                    .iter()
-                    .map(RuntimePositionDto::from)
-                    .collect::<Vec<_>>(),
-            )?,
+            serde_json::to_string(&runtime_state.position_dtos())?,
         ),
-        (
-            "historic",
-            serde_json::to_string(
-                &snap.historic
-                    .iter()
-                    .map(RuntimeHistoricPositionDto::from)
-                    .collect::<Vec<_>>(),
-            )?,
-        ),
+        ("historic", serde_json::to_string(&runtime_state.historic_dtos())?),
         (
             "orders",
-            serde_json::to_string(
-                &snap.orders
-                    .iter()
-                    .map(RuntimeOrderDto::from)
-                    .collect::<Vec<_>>(),
-            )?,
+            serde_json::to_string(&runtime_state.order_dtos())?,
         ),
         ("alerts", serde_json::to_string(&snap.alerts)?),
-        (
-            "decisions",
-            serde_json::to_string(
-                &snap.decisions
-                    .iter()
-                    .map(RuntimeDecisionDto::from)
-                    .collect::<Vec<_>>(),
-            )?,
-        ),
+        ("decisions", serde_json::to_string(&runtime_state.decision_dtos())?),
         ("risk", serde_json::to_string(&snap.risk)?),
     ])
 }

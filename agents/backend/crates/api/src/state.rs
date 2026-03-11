@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use tracing::{debug, warn};
 
-use crate::runtime_state::{RuntimeExecutionState, RuntimeExecutionUpdate};
+use crate::runtime_state::{
+    RuntimeExecutionState, RuntimeExecutionUpdate, RuntimeMarketState, RuntimeRiskState,
+};
 
 pub type SharedSnapshot = Arc<RwLock<SystemSnapshot>>;
 
@@ -87,27 +89,9 @@ impl SystemSnapshot {
 
     pub fn apply_market_event(&mut self, event: &MarketDataEvent) {
         self.touch();
-
-        if let Some(entry) = self
-            .symbols
-            .iter_mut()
-            .find(|sym| sym.symbol == event.symbol)
-        {
-            entry.update_from_event(event);
-        } else {
-            self.symbols.push(SymbolSnapshot::from_event(event));
-        }
-
-        let mark_sum = self.symbols.iter().map(|symbol| symbol.last).sum::<f64>();
-        self.metrics.net_liq = 100_000.0 + mark_sum;
-        self.metrics.buying_power = self.metrics.net_liq * 0.8;
-        self.metrics.excess_liquidity = self.metrics.net_liq * 0.25;
-        self.metrics.margin_requirement = self.metrics.net_liq * 0.15;
-        self.metrics.commissions = (self.metrics.commissions * 0.98) + 0.02;
-
-        self.metrics.portal_ok = true;
-        self.metrics.tws_ok = true;
-        self.metrics.questdb_ok = true;
+        let mut runtime_market = RuntimeMarketState::from_snapshot(self);
+        runtime_market.apply_market_event(event);
+        runtime_market.project_into_snapshot(self);
     }
 
     pub fn apply_strategy_execution(&mut self, decision: StrategyDecisionSnapshot) {
@@ -257,9 +241,9 @@ impl SystemSnapshot {
 
     pub fn update_risk_status(&mut self, outcome: &RiskDecision) {
         self.touch();
-        self.risk.allowed = outcome.allowed;
-        self.risk.reason = outcome.reason.clone();
-        self.risk.updated_at = Utc::now();
+        let mut runtime_risk = RuntimeRiskState::from_snapshot(self);
+        runtime_risk.apply_risk_decision(outcome);
+        runtime_risk.project_into_snapshot(self);
     }
 }
 
@@ -306,35 +290,6 @@ pub struct SymbolSnapshot {
     pub candle: CandleSnapshot,
 }
 
-impl SymbolSnapshot {
-    fn from_event(event: &MarketDataEvent) -> Self {
-        let mid = (event.bid + event.ask) * 0.5;
-        Self {
-            symbol: event.symbol.clone(),
-            last: mid,
-            bid: event.bid,
-            ask: event.ask,
-            spread: (event.ask - event.bid).max(0.0),
-            roi: 0.0,
-            maker_count: 1,
-            taker_count: 0,
-            volume: 1,
-            candle: CandleSnapshot::new(mid, event.timestamp),
-        }
-    }
-
-    fn update_from_event(&mut self, event: &MarketDataEvent) {
-        let mid = (event.bid + event.ask) * 0.5;
-        self.last = mid;
-        self.bid = event.bid;
-        self.ask = event.ask;
-        self.spread = (event.ask - event.bid).max(0.0);
-        self.volume = self.volume.saturating_add(1);
-        self.roi = (self.roi * 0.9) + 0.1 * ((mid / self.candle.entry) - 1.0) * 100.0;
-        self.candle.update(mid, event.timestamp);
-    }
-}
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CandleSnapshot {
     pub open: f64,
@@ -344,28 +299,6 @@ pub struct CandleSnapshot {
     pub volume: u64,
     pub entry: f64,
     pub updated: DateTime<Utc>,
-}
-
-impl CandleSnapshot {
-    fn new(price: f64, timestamp: DateTime<Utc>) -> Self {
-        Self {
-            open: price,
-            high: price,
-            low: price,
-            close: price,
-            volume: 1,
-            entry: price,
-            updated: timestamp,
-        }
-    }
-
-    fn update(&mut self, price: f64, timestamp: DateTime<Utc>) {
-        self.high = self.high.max(price);
-        self.low = self.low.min(price);
-        self.close = price;
-        self.volume = self.volume.saturating_add(1);
-        self.updated = timestamp;
-    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -485,6 +418,39 @@ pub enum AlertLevel {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn apply_market_event_delegates_to_runtime_market_state() {
+        let mut snapshot = SystemSnapshot::default();
+        let event = MarketDataEvent {
+            symbol: "SPY".into(),
+            bid: 500.0,
+            ask: 502.0,
+            timestamp: Utc::now(),
+        };
+
+        snapshot.apply_market_event(&event);
+
+        assert_eq!(snapshot.symbols.len(), 1);
+        assert_eq!(snapshot.symbols[0].symbol, "SPY");
+        assert_eq!(snapshot.symbols[0].last, 501.0);
+        assert!(snapshot.metrics.portal_ok);
+        assert!(snapshot.metrics.tws_ok);
+        assert!(snapshot.metrics.questdb_ok);
+    }
+
+    #[test]
+    fn update_risk_status_delegates_to_runtime_risk_state() {
+        let mut snapshot = SystemSnapshot::default();
+
+        snapshot.update_risk_status(&RiskDecision {
+            allowed: false,
+            reason: Some("limit".into()),
+        });
+
+        assert!(!snapshot.risk.allowed);
+        assert_eq!(snapshot.risk.reason.as_deref(), Some("limit"));
+    }
 
     #[test]
     fn apply_strategy_execution_creates_runtime_position_and_order() {

@@ -7,8 +7,9 @@ use std::{
 use anyhow::Context;
 use api::{
     Alert, HealthAggregateState, HistoricPosition, LoanRepository, OrderSnapshot,
-    PositionSnapshot, RestServer, RestState, SharedSnapshot, StrategyController,
-    StrategyDecisionSnapshot, SystemSnapshot,
+    PositionSnapshot, RestServer, RestState, RuntimeExecutionState, RuntimeMarketState,
+    RuntimeProducerDecision, SharedSnapshot, StrategyController, StrategyDecisionSnapshot,
+    SystemSnapshot,
 };
 use async_trait::async_trait;
 use chrono::{Duration as ChronoDuration, Utc};
@@ -431,29 +432,21 @@ fn spawn_strategy_fanout(
                 side,
             } = decision;
 
-            let (mark_price, current_position) = {
+            let (producer_decision, request) = {
                 let snapshot = state.read().await;
-                let mark = snapshot
-                    .symbols
-                    .iter()
-                    .find(|s| s.symbol == symbol)
-                    .map(|s| s.last)
-                    .unwrap_or(0.0);
-                let qty = snapshot
-                    .positions
-                    .iter()
-                    .find(|p| p.symbol == symbol)
-                    .map(|p| p.quantity)
-                    .unwrap_or(0);
-                (mark, qty)
-            };
-
-            let mark = if mark_price <= 0.0 { 1.0 } else { mark_price };
-            let target_qty = current_position + quantity;
-            let request = RiskLimit {
-                symbol: symbol.clone(),
-                max_position: target_qty.abs(),
-                max_notional: mark * target_qty.abs() as f64,
+                let market_state = RuntimeMarketState::from_snapshot(&snapshot);
+                let execution_state = RuntimeExecutionState::from_snapshot(&snapshot);
+                let mark = market_state.mark_for_symbol(&symbol).unwrap_or(0.0);
+                let mark = if mark <= 0.0 { 1.0 } else { mark };
+                let strategy_decision = StrategyDecisionModel {
+                    symbol: symbol.clone(),
+                    quantity,
+                    side: side.clone(),
+                };
+                let producer_decision =
+                    RuntimeProducerDecision::from_strategy_decision(&strategy_decision, mark, Utc::now());
+                let request = execution_state.risk_limit_for_decision(&producer_decision);
+                (producer_decision, request)
             };
 
             let outcome = risk_engine.verify(&request).await;
@@ -467,13 +460,7 @@ fn spawn_strategy_fanout(
                 });
             }
 
-            let side_str = match side {
-                TradeSide::Buy => "BUY",
-                TradeSide::Sell => "SELL",
-            };
-
-            let decision_snapshot =
-                StrategyDecisionSnapshot::new(symbol.clone(), quantity, side_str, mark, Utc::now());
+            let decision_snapshot: StrategyDecisionSnapshot = producer_decision.to_snapshot();
 
             {
                 let mut snapshot = state.write().await;

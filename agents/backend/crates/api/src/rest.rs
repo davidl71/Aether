@@ -32,7 +32,7 @@ use crate::discount_bank::{
 use crate::health::SharedHealthAggregate;
 use crate::ib_positions::fetch_ib_positions;
 use crate::loans::{LoanAggregationInput, LoanRecord, LoanRepository};
-use crate::runtime_state::{RuntimeOrderDto, RuntimePositionDto, RuntimeSnapshotDto};
+use crate::runtime_state::{RuntimeExecutionState, RuntimeOrderDto, RuntimePositionDto, RuntimeSnapshotDto};
 use crate::state::{Alert, SharedSnapshot};
 use crate::websocket::WebSocketServer;
 
@@ -1234,8 +1234,8 @@ async fn orders_list(
     Query(params): Query<OrdersListQuery>,
 ) -> Json<OrdersListResponse> {
     let snapshot = state.snapshot.read().await;
-    let mut orders: Vec<RuntimeOrderDto> =
-        snapshot.orders.iter().map(RuntimeOrderDto::from).collect();
+    let runtime_state = RuntimeExecutionState::from_snapshot(&snapshot);
+    let mut orders: Vec<RuntimeOrderDto> = runtime_state.order_dtos();
 
     // Filter by status if provided
     if let Some(status_filter) = &params.status {
@@ -1252,11 +1252,8 @@ async fn orders_list(
 
 async fn positions_list(Extension(state): Extension<RestState>) -> Json<PositionsListResponse> {
     let snapshot = state.snapshot.read().await;
-    let positions = snapshot
-        .positions
-        .iter()
-        .map(RuntimePositionDto::from)
-        .collect();
+    let runtime_state = RuntimeExecutionState::from_snapshot(&snapshot);
+    let positions = runtime_state.position_dtos();
     Json(PositionsListResponse { positions })
 }
 
@@ -1265,11 +1262,8 @@ async fn position_details(
     Path(position_id): Path<String>,
 ) -> Result<Json<RuntimePositionDto>, (StatusCode, Json<ApiResponse>)> {
     let snapshot = state.snapshot.read().await;
-    let position = snapshot
-        .positions
-        .iter()
-        .find(|p| p.id == position_id)
-        .map(RuntimePositionDto::from);
+    let runtime_state = RuntimeExecutionState::from_snapshot(&snapshot);
+    let position = runtime_state.find_position_dto(&position_id);
 
     match position {
         Some(position) => Ok(Json(position)),
@@ -1289,11 +1283,8 @@ async fn order_details(
     Path(order_id): Path<String>,
 ) -> Result<Json<RuntimeOrderDto>, (StatusCode, Json<ApiResponse>)> {
     let snapshot = state.snapshot.read().await;
-    let order = snapshot
-        .orders
-        .iter()
-        .find(|o| o.id == order_id)
-        .map(RuntimeOrderDto::from);
+    let runtime_state = RuntimeExecutionState::from_snapshot(&snapshot);
+    let order = runtime_state.find_order_dto(&order_id);
 
     match order {
         Some(order) => Ok(Json(order)),
@@ -1554,13 +1545,14 @@ async fn get_scenarios(
     let snapshot = state.snapshot.read().await;
     let underlying = params.symbol.unwrap_or_else(|| "SPX".to_string());
     let min_apr = params.min_apr.unwrap_or(0.0);
+    let runtime_state = RuntimeExecutionState::from_snapshot(&snapshot);
 
     // Build scenario list from current positions and symbol snapshots.
     // Each position that is an options spread contributes a scenario
     // showing its implied APR vs the risk-free benchmark.
     let mut scenarios = Vec::<serde_json::Value>::new();
 
-    for position in &snapshot.positions {
+    for position in &runtime_state.positions {
         if position.symbol.contains(&underlying) || underlying == "SPX" {
             let cost = position.cost_basis.abs();
             if cost < 1e-6 {
