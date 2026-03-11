@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
 import requests
 
@@ -28,9 +27,7 @@ def _get_benchmarks_base_url(app: Any) -> str:
     api_base_url = getattr(config, "api_base_url", None)
     if api_base_url:
         return api_base_url.strip().rstrip("/")
-    ports = getattr(config, "backend_ports", None) or {}
-    port = ports.get("risk_free_rate", 8004)
-    return f"http://127.0.0.1:{port}"
+    return "http://127.0.0.1:8080"
 
 
 def _fetch_sofr(base: str) -> Optional[Dict[str, Any]]:
@@ -53,64 +50,8 @@ def _fetch_treasury(base: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def _fetch_benchmarks_direct() -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
-    """Fetch SOFR and Treasury in-process via FRED when the risk-free-rate service is unreachable."""
-    try:
-        from ...integration.sofr_treasury_client import SOFRTreasuryClient
-    except Exception as e:
-        logger.debug("Cannot import SOFRTreasuryClient for direct FRED fallback: %s", e)
-        return None, None
-    client = SOFRTreasuryClient()
-    if not getattr(client, "fred_api_key", None) or not client.fred_api_key.strip():
-        logger.debug("FRED API key not available in this process; direct fallback skipped")
-        return None, None
-    sofr_dict: Optional[Dict[str, Any]] = None
-    treasury_dict: Optional[Dict[str, Any]] = None
-    try:
-        overnight = client.get_sofr_overnight()
-        term_rates = client.get_sofr_term_rates()
-        sofr_dict = {
-            "overnight": {
-                "rate": overnight.rate if overnight else None,
-                "timestamp": overnight.timestamp.isoformat() if overnight and overnight.timestamp else None,
-            },
-            "term_rates": [
-                {
-                    "tenor": r.tenor,
-                    "rate": r.rate,
-                    "days_to_expiry": r.days_to_expiry,
-                    "timestamp": r.timestamp.isoformat(),
-                }
-                for r in term_rates
-            ],
-            "timestamp": (overnight.timestamp if overnight else datetime.now()).isoformat(),
-        }
-        if not overnight and not term_rates:
-            sofr_dict = None
-    except Exception as e:
-        logger.debug("Direct SOFR fetch failed: %s", e)
-    try:
-        rates = client.get_treasury_rates()
-        if rates:
-            treasury_dict = {
-                "rates": [
-                    {
-                        "tenor": r.tenor,
-                        "rate": r.rate,
-                        "days_to_expiry": r.days_to_expiry,
-                        "timestamp": r.timestamp.isoformat(),
-                    }
-                    for r in rates
-                ],
-                "timestamp": rates[0].timestamp.isoformat() if rates else None,
-            }
-    except Exception as e:
-        logger.debug("Direct Treasury fetch failed: %s", e)
-    return sofr_dict, treasury_dict
-
-
 class BenchmarksTab(Container):
-    """Tab showing SOFR and Treasury benchmark rates from the risk-free-rate service."""
+    """Tab showing SOFR and Treasury benchmark rates from the shared Rust API."""
 
     def __init__(
         self,
@@ -148,15 +89,9 @@ class BenchmarksTab(Container):
         if worker and worker.is_cancelled:
             return
         treasury = _fetch_treasury(base)
-        source_direct = False
-        if not sofr and not treasury:
-            if worker and worker.is_cancelled:
-                return
-            sofr, treasury = _fetch_benchmarks_direct()
-            source_direct = sofr is not None or treasury is not None
         app = getattr(self, "app", None)
         if app is not None:
-            app.call_from_thread(self._apply_benchmarks, sofr, treasury, source_direct)
+            app.call_from_thread(self._apply_benchmarks, sofr, treasury, False)
 
     def _apply_benchmarks(
         self,
@@ -169,10 +104,7 @@ class BenchmarksTab(Container):
         self._source_direct = source_direct
         self._error = None
         if not sofr and not treasury:
-            self._error = (
-                "Risk-Free Rate service unavailable and no FRED key in this process. "
-                "Start the service (port 8004) with FRED_API_KEY set, or set FRED_API_KEY / OP_FRED_API_KEY_SECRET for direct FRED access."
-            )
+            self._error = "Shared Rust benchmark endpoints unavailable."
         self._update_data()
 
     def _update_data(self) -> None:

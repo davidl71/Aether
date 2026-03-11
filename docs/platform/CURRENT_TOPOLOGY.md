@@ -69,7 +69,7 @@ TUI
   - active terminal UI
 - `python/integration/`
   - broker and bank integrations
-  - risk-free-rate service
+  - benchmark/rate routes and active logic are now Rust-owned
 - `python/services/health_dashboard.py`
   - internal `system.health` aggregation service behind Rust-owned routes
 

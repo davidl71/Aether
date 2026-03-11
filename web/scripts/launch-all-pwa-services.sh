@@ -298,7 +298,6 @@ stop_services() {
       "pwa-alpaca"
       "pwa-ib"
       "pwa-discount-bank"
-      "pwa-risk-free-rate"
       "pwa-nats"
       "pwa-rust-backend"
       "pwa-ib-gateway"
@@ -377,7 +376,6 @@ case "${1:-start}" in
         "pwa-ib-gateway:IB Gateway"
         "pwa-ib:IB"
         "pwa-discount-bank:Discount Bank"
-        "pwa-risk-free-rate:Risk-Free Rate"
         "pwa-nats:NATS"
         "pwa-rust-backend:Rust Backend"
       )
@@ -439,7 +437,6 @@ GATEWAY_PORT=$(get_service_port "ib_gateway" 5001)
 ALPACA_PORT=$(get_service_port "alpaca" 8000)
 IB_PORT=$(get_service_port "ib" 8002)
 DISCOUNT_BANK_PORT=$(get_service_port "discount_bank" 8003)
-RISK_FREE_RATE_PORT=$(get_service_port "risk_free_rate" 8004)
 # NATS ports - use config_get_port for main port, config_get for nested ports
 NATS_PORT=$(get_service_port "nats" 4222)
 if command -v config_get >/dev/null 2>&1; then
@@ -559,18 +556,6 @@ else
   echo "${YELLOW}⚠ Discount Bank service (port ${DISCOUNT_BANK_PORT}) is not running${NC}"
 fi
 
-if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-risk-free-rate"; then
-  SERVICE_STATUS["risk_free_rate"]="running"
-  echo "${GREEN}✓ Risk-Free Rate service (port ${RISK_FREE_RATE_PORT}) is running via systemctl${NC}"
-elif check_service_health "${RISK_FREE_RATE_PORT}"; then
-  SERVICE_STATUS["risk_free_rate"]="running"
-  echo "${GREEN}✓ Risk-Free Rate service (port ${RISK_FREE_RATE_PORT}) is running${NC}"
-else
-  SERVICE_STATUS["risk_free_rate"]="stopped"
-  SERVICES_TO_START+=("risk_free_rate")
-  echo "${YELLOW}⚠ Risk-Free Rate service (port ${RISK_FREE_RATE_PORT}) is not running${NC}"
-fi
-
 # Check NATS server (check monitoring port 8222)
 if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-nats"; then
   SERVICE_STATUS["nats"]="running"
@@ -624,7 +609,6 @@ if [ "${SERVICE_MANAGER}" = "systemctl" ]; then
   SYSTEMCTL_SERVICE_MAP["gateway"]="pwa-ib-gateway"
   SYSTEMCTL_SERVICE_MAP["ib"]="pwa-ib"
   SYSTEMCTL_SERVICE_MAP["discount_bank"]="pwa-discount-bank"
-  SYSTEMCTL_SERVICE_MAP["risk_free_rate"]="pwa-risk-free-rate"
   SYSTEMCTL_SERVICE_MAP["nats"]="pwa-nats"
   SYSTEMCTL_SERVICE_MAP["rust_backend"]="pwa-rust-backend"
 
@@ -644,7 +628,7 @@ if [ "${SERVICE_MANAGER}" = "systemctl" ]; then
   fi
 
   # 3. Independent services (can start in parallel)
-  for service in web alpaca discount_bank risk_free_rate rust_backend; do
+  for service in web alpaca discount_bank rust_backend; do
     if [ "${service}" = "alpaca" ] && ! service_enabled "alpaca"; then
       continue
     fi
@@ -693,7 +677,7 @@ if [[ " ${SERVICES_TO_START[*]} " =~ " nats " ]]; then
 fi
 
 # Launch services in background (parallel groups for faster startup)
-# Group 1 (parallel): Web, Gateway, optional Alpaca, Discount Bank, Risk-Free Rate
+# Group 1 (parallel): Web, Gateway, optional Alpaca, Discount Bank
 # Group 2 (after Gateway ready): IB service
 
 echo "${BLUE}Starting independent services in parallel...${NC}"
@@ -840,15 +824,6 @@ if [[ " ${SERVICES_TO_START[*]} " =~ " discount_bank " ]]; then
   ) &
 fi
 
-# Risk-Free Rate service (port 8004)
-if [[ " ${SERVICES_TO_START[*]} " =~ " risk_free_rate " ]]; then
-  (
-    cd "$ROOT_DIR"
-    bash "${SCRIPTS_DIR}/run-risk-free-rate-service.sh" > /tmp/pwa-risk-free-rate.log 2>&1 &
-    echo $! > /tmp/pwa-risk-free-rate.pid
-  ) &
-fi
-
 # Rust backend service (port 8080 for REST, 50051 for gRPC)
 if [[ " ${SERVICES_TO_START[*]} " =~ " rust_backend " ]]; then
   RUST_BACKEND_SCRIPT="${ROOT_DIR}/scripts/start_rust_backend.sh"
@@ -911,10 +886,6 @@ fi
 if [[ " ${SERVICES_TO_START[*]} " =~ " discount_bank " ]] || [ "${SERVICE_STATUS[discount_bank]}" = "running" ]; then
   echo "  ${GREEN}✓${NC} Discount Bank service (port ${DISCOUNT_BANK_PORT}) - Log: /tmp/pwa-discount-bank.log"
   echo "    ${BLUE}URL: http://127.0.0.1:${DISCOUNT_BANK_PORT}${NC}"
-fi
-if [[ " ${SERVICES_TO_START[*]} " =~ " risk_free_rate " ]] || [ "${SERVICE_STATUS[risk_free_rate]}" = "running" ]; then
-  echo "  ${GREEN}✓${NC} Risk-Free Rate service (port ${RISK_FREE_RATE_PORT}) - Log: /tmp/pwa-risk-free-rate.log"
-  echo "    ${BLUE}URL: http://127.0.0.1:${RISK_FREE_RATE_PORT}${NC}"
 fi
 if [[ " ${SERVICES_TO_START[*]} " =~ " nats " ]] || [ "${SERVICE_STATUS[nats]}" = "running" ]; then
   echo "  ${GREEN}✓${NC} NATS server (port ${NATS_PORT}) - Log: ${ROOT_DIR}/logs/nats-server.log"

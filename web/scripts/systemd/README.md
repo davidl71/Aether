@@ -38,7 +38,6 @@ The following services are available:
 - `pwa-ib-gateway.service` - IB Gateway service
 - `pwa-ib.service` - IB (Interactive Brokers) service
 - `pwa-discount-bank.service` - Discount Bank service
-- `pwa-risk-free-rate.service` - Risk-Free Rate service
 - `pwa-nats.service` - NATS messaging server
 - `pwa-rust-backend.service` - Rust backend service
 

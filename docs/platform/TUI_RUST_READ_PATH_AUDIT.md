@@ -16,8 +16,8 @@
 
 ### Should remain Python-backed for now
 
-- `python/integration/risk_free_rate_service.py`
-  - benchmark and treasury-rate logic remains Python-specific
+- Benchmark and treasury-rate routes are now Rust-owned end to end.
+  - The TUI should use the shared Rust origin; there is no separate benchmark service fallback path anymore.
 - `python/services/health_dashboard.py`
   - still the active aggregated health source for the TUI
 - broker and bank integration services
@@ -43,8 +43,8 @@ They should not expand into a general business-API proxy surface, a collection l
 
 ## Decision
 
-- Do **not** migrate risk-free-rate or health-dashboard in the next slice.
-- The **next Rust migration candidate for the TUI is loans**, not benchmarks or health.
+- Public benchmark/risk-free-rate ownership and implementation have already moved to Rust.
+- The **next Rust migration candidate for the TUI is Discount Bank or deeper Python read-model reduction**.
 - Keep the Go gateway only as a convenience entrypoint for these still-separate specialist services.
 - Keep Python read paths limited to explicit specialist services; do not regrow Python into a general frontend backend.
 

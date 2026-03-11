@@ -92,7 +92,6 @@ check_port() {
 ALPACA_PORT=$(get_service_port "alpaca" 8000)
 IB_PORT=$(get_service_port "ib" 8002)
 DISCOUNT_BANK_PORT=$(get_service_port "discount_bank" 8003)
-RISK_FREE_RATE_PORT=$(get_service_port "risk_free_rate" 8004)
 TASTYTRADE_PORT=$(get_service_port "tastytrade" 8005)
 # Rust backend uses nested config path, so use config_get directly
 if command -v config_get >/dev/null 2>&1; then

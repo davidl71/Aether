@@ -192,9 +192,6 @@
     "discount_bank": {
       "port": 8003 // Discount Bank service
     },
-    "risk_free_rate": {
-      "port": 8004 // Risk-Free Rate service (extracts rates from box spreads)
-    },
     "tastytrade": {
       "port": 8005 // Tastytrade service (alternative broker integration)
     },

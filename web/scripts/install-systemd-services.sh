@@ -75,7 +75,6 @@ SERVICES=(
   "pwa-ib-gateway"
   "pwa-ib"
   "pwa-discount-bank"
-  "pwa-risk-free-rate"
   "pwa-nats"
   "pwa-rust-backend"
 )

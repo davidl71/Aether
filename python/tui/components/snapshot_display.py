@@ -49,7 +49,6 @@ BACKEND_DISPLAY_NAMES: Dict[str, str] = {
     "ib": "TWS/IBKR",
     "tws": "TWS",
     "discount_bank": "Discount Bank",
-    "risk_free_rate": "Risk-Free Rate",
     "rust": "Rust",
 }
 
@@ -58,7 +57,6 @@ BACKEND_SHORT_LABELS: Dict[str, str] = {
     "ib": "IB",
     "tws": "TWS",
     "discount_bank": "Discount",
-    "risk_free_rate": "RFR",
     "rust": "Rust",
     "current": "Service",
     "connection": "Conn",
@@ -69,7 +67,6 @@ BACKEND_ROLES: Dict[str, str] = {
     "ib": "trading",
     "tws": "trading",
     "discount_bank": "banking",
-    "risk_free_rate": "rates",
     "rust": "platform",
 }
 

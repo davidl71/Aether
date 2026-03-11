@@ -38,7 +38,6 @@ logger = logging.getLogger(__name__)
 DEFAULT_BACKEND_PORTS: Dict[str, int] = {
     "ib": 8002,
     "discount_bank": 8003,
-    "risk_free_rate": 8004,
     "rust": 8080,  # Rust backend REST (matches config.services.rust_backend.rest_port)
 }
 
@@ -341,7 +340,6 @@ def _backend_ports_from_services(services: dict) -> Dict[str, int]:
     for name, backend_key in (
         ("ib", "ib"),
         ("discount_bank", "discount_bank"),
-        ("risk_free_rate", "risk_free_rate"),
         ("rust", "rust_backend"),
     ):
         svc = services.get(backend_key)

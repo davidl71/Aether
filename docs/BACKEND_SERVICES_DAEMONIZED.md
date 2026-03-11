@@ -9,7 +9,6 @@ All backend services now have daemonized start/stop scripts for easy management.
 | **Alpaca** | 8000 | `./scripts/start_alpaca_service.sh` | `./scripts/stop_alpaca_service.sh` | ❌ Not running |
 | **IB (Interactive Brokers)** | 8002 | `./scripts/start_ib_service.sh` | `./scripts/stop_ib_service.sh` | ❌ Not running |
 | **Discount Bank** | 8003 | `./scripts/start_discount_bank_service.sh` | `./scripts/stop_discount_bank_service.sh` | ✅ Running |
-| **Risk-Free Rate** | 8004 | `./scripts/start_risk_free_rate_service.sh` | `./scripts/stop_risk_free_rate_service.sh` | ❌ Not running |
 | **Tastytrade** | 8005 | `./scripts/start_tastytrade_service.sh` | `./scripts/stop_tastytrade_service.sh` | ❌ Not running |
 | **Rust Backend** | 8080 | (Manual/Cargo) | (Manual) | ✅ Running |
 
@@ -95,13 +94,6 @@ All daemonized scripts include:
 - **Requirements**: DISCOUNT.dat file (default: `~/Downloads/DISCOUNT.dat`)
 - **Log**: `logs/discount-bank-service.log`
 
-### Risk-Free Rate Service (Port 8004)
-
-- **Endpoint**: `http://localhost:8004/api/health`
-- **Health**: `http://localhost:8004/api/health`
-- **Purpose**: Extracts risk-free rates from box spreads
-- **Log**: `logs/risk-free-rate-service.log`
-
 ### Tastytrade Service (Port 8005)
 
 - **Endpoint**: `http://localhost:8005/api/health`
@@ -120,13 +112,13 @@ Ports can be configured in:
   - `ALPACA_PORT`
   - `IB_PORT`
   - `DISCOUNT_BANK_PORT`
-  - `RISK_FREE_RATE_PORT`
   - `TASTYTRADE_PORT`
 
 ## Historical Notes
 
 - TradeStation is no longer part of the active supported backend surface.
 - The old TradeStation daemon scripts and proxy path were removed. Keep any remaining TradeStation docs as historical reference only.
+- The standalone Risk-Free Rate daemon is retired. Rust now owns the public benchmark/rate routes and active implementation.
 
 ## Troubleshooting
 

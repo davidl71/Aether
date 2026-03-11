@@ -26,8 +26,8 @@ They are explicit specialist services, not the shared frontend read-model backen
   - Broker-specific integration API and session state.
 - `python/integration/tastytrade_service.py`
   - Broker-specific integration API and session state.
-- `python/integration/risk_free_rate_service.py`
-  - FRED / benchmark and curve logic.
+- Standalone benchmark/rate service wrapper retired.
+  - Public route ownership and active implementation now live in the Rust API.
 - `python/services/health_dashboard.py`
   - NATS-fed health aggregation is still Python-owned today, though it could move later.
 
@@ -70,5 +70,6 @@ Reason:
 ## Non-goals for this pass
 
 - Broker integration APIs are not being removed yet.
-- Discount Bank and risk-free-rate logic remain Python-owned for now.
+- Discount Bank remains a Python-owned public service for now.
+- Risk-free-rate finance logic has moved into the Rust API; the old standalone Python service wrapper is retired.
 - Health aggregation can be revisited later, but it is not the first reduction target.

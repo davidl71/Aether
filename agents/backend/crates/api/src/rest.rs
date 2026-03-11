@@ -19,6 +19,12 @@ use serde::{Deserialize, Serialize};
 use tokio::{sync::watch, task::JoinHandle, time::timeout};
 use tracing::{info, warn};
 
+use crate::finance_rates::{
+    build_curve as build_risk_free_curve, compare_rates as compare_risk_free_rates,
+    extract_rate as extract_risk_free_rate, get_sofr_rates as fetch_sofr_benchmarks,
+    get_treasury_rates as fetch_treasury_benchmarks, yield_curve_comparison as compare_yield_curves,
+    BoxSpreadInput, CompareRequest, CurveQuery, CurveRequest, YieldCurveComparisonRequest,
+};
 use crate::loans::{LoanAggregationInput, LoanRecord, LoanRepository};
 use crate::state::{Alert, OrderSnapshot, SharedSnapshot, SystemSnapshot};
 use crate::websocket::WebSocketServer;
@@ -26,7 +32,6 @@ use crate::websocket::WebSocketServer;
 const SWIFTNESS_API_URL: &str = "http://127.0.0.1:8081";
 const DEFAULT_IB_SERVICE_URL: &str = "http://127.0.0.1:8002";
 const DEFAULT_HEALTH_DASHBOARD_URL: &str = "http://127.0.0.1:8011";
-const DEFAULT_RISK_FREE_RATE_URL: &str = "http://127.0.0.1:8004";
 
 #[derive(Clone)]
 pub struct StrategyController {
@@ -84,17 +89,17 @@ impl RestServer {
             .route("/api/heartbeat", any(proxy_heartbeat_root))
             .route("/api/heartbeat/*path", any(proxy_heartbeat))
             .route("/api/config", get(shared_config))
-            .route("/api/extract-rate", any(proxy_risk_free_rate_extract))
-            .route("/api/build-curve", any(proxy_risk_free_rate_build_curve))
-            .route("/api/compare", any(proxy_risk_free_rate_compare))
+            .route("/api/extract-rate", post(extract_rate))
+            .route("/api/build-curve", post(build_curve))
+            .route("/api/compare", post(compare_rates))
             .route(
                 "/api/yield-curve/comparison",
-                any(proxy_risk_free_rate_yield_curve_comparison),
+                post(yield_curve_comparison),
             )
-            .route("/api/benchmarks/sofr", any(proxy_risk_free_rate_sofr))
+            .route("/api/benchmarks/sofr", get(benchmarks_sofr))
             .route(
                 "/api/benchmarks/treasury",
-                any(proxy_risk_free_rate_treasury),
+                get(benchmarks_treasury),
             )
             .route("/api/live/state", get(live_state))
             .route("/api/live/state/watch", get(live_state_watch))
@@ -409,98 +414,66 @@ async fn proxy_ib(
     .await
 }
 
-async fn proxy_risk_free_rate_extract(
-    method: Method,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
-    proxy_service_request(
-        "risk-free-rate service",
-        risk_free_rate_proxy_target_url("extract-rate", None),
-        method,
-        headers,
-        body,
-    )
-    .await
+async fn extract_rate(
+    Json(payload): Json<BoxSpreadInput>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let response = extract_risk_free_rate(payload).map_err(|error| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse { error }),
+        )
+    })?;
+    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
 }
 
-async fn proxy_risk_free_rate_build_curve(
-    method: Method,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
-    proxy_service_request(
-        "risk-free-rate service",
-        risk_free_rate_proxy_target_url("build-curve", None),
-        method,
-        headers,
-        body,
-    )
-    .await
+async fn build_curve(
+    query: Option<Query<CurveQuery>>,
+    Json(payload): Json<CurveRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let response = build_risk_free_curve(payload, query.map(|item| item.0)).map_err(|error| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse { error }),
+        )
+    })?;
+    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
 }
 
-async fn proxy_risk_free_rate_compare(
-    method: Method,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
-    proxy_service_request(
-        "risk-free-rate service",
-        risk_free_rate_proxy_target_url("compare", None),
-        method,
-        headers,
-        body,
-    )
-    .await
+async fn compare_rates(
+    query: Option<Query<CurveQuery>>,
+    Json(payload): Json<CompareRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let client = Client::new();
+    let response = compare_risk_free_rates(payload, query.map(|item| item.0), &client)
+        .await
+        .map_err(|error| {
+            (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse { error }),
+            )
+        })?;
+    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
 }
 
-async fn proxy_risk_free_rate_yield_curve_comparison(
-    method: Method,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
-    proxy_service_request(
-        "risk-free-rate service",
-        risk_free_rate_proxy_target_url("yield-curve/comparison", None),
-        method,
-        headers,
-        body,
-    )
-    .await
+async fn yield_curve_comparison(
+    Json(payload): Json<YieldCurveComparisonRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let client = Client::new();
+    let response = compare_yield_curves(payload, &client).await;
+    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
 }
 
-async fn proxy_risk_free_rate_sofr(
-    Query(query): Query<std::collections::HashMap<String, String>>,
-    method: Method,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
-    let query = if query.is_empty() { None } else { Some(query) };
-    proxy_service_request(
-        "risk-free-rate service",
-        risk_free_rate_proxy_target_url("benchmarks/sofr", query.as_ref()),
-        method,
-        headers,
-        body,
-    )
-    .await
+async fn benchmarks_sofr() -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let client = Client::new();
+    let response = fetch_sofr_benchmarks(&client).await;
+    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
 }
 
-async fn proxy_risk_free_rate_treasury(
-    Query(query): Query<std::collections::HashMap<String, String>>,
-    method: Method,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
-    let query = if query.is_empty() { None } else { Some(query) };
-    proxy_service_request(
-        "risk-free-rate service",
-        risk_free_rate_proxy_target_url("benchmarks/treasury", query.as_ref()),
-        method,
-        headers,
-        body,
-    )
-    .await
+async fn benchmarks_treasury(
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let client = Client::new();
+    let response = fetch_treasury_benchmarks(&client).await;
+    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
 }
 
 async fn check_nats_health() -> String {
@@ -897,15 +870,6 @@ fn shared_config_response(config: &serde_json::Value) -> serde_json::Value {
 async fn shared_config() -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
     let config = load_shared_config_json().map_err(live_state_internal_error)?;
     Ok(Json(shared_config_response(&config)))
-}
-
-fn risk_free_rate_proxy_target_url(
-    path: &str,
-    query: Option<&std::collections::HashMap<String, String>>,
-) -> Result<String, String> {
-    let base = std::env::var("RISK_FREE_RATE_URL")
-        .unwrap_or_else(|_| DEFAULT_RISK_FREE_RATE_URL.to_string());
-    proxy_target_url(&base, Some("/api"), path, query)
 }
 
 fn ib_proxy_target_url(
@@ -3146,26 +3110,6 @@ mod tests {
         assert!(url.starts_with("http://127.0.0.1:8002/api/v1/orders?"));
         assert!(url.contains("account=DU123"));
         assert!(url.contains("symbols=SPX%2CXSP"));
-    }
-
-    #[test]
-    fn risk_free_rate_proxy_target_url_defaults_to_internal_service() {
-        env::remove_var("RISK_FREE_RATE_URL");
-
-        let url = risk_free_rate_proxy_target_url("benchmarks/sofr", None).expect("proxy url");
-
-        assert_eq!(url, "http://127.0.0.1:8004/api/benchmarks/sofr");
-    }
-
-    #[test]
-    fn risk_free_rate_proxy_target_url_preserves_query_string() {
-        let query = std::collections::HashMap::from([("symbol".to_string(), "XSP".to_string())]);
-
-        let url = risk_free_rate_proxy_target_url("benchmarks/treasury", Some(&query))
-            .expect("proxy url");
-
-        assert!(url.starts_with("http://127.0.0.1:8004/api/benchmarks/treasury?"));
-        assert!(url.contains("symbol=XSP"));
     }
 
     #[test]

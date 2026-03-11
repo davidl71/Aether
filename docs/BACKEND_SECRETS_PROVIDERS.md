@@ -4,14 +4,14 @@ This project supports **generating and configuring backend secrets** (API keys, 
 
 ## If you have FRED or Alpaca API keys
 
-Set them so the Risk-Free Rate service and Alpaca service can run:
+Set them so the Rust benchmark routes and Alpaca service can run:
 
 | Keys | Env vars (plain) | 1Password (op://) |
 |------|------------------|-------------------|
 | **FRED** | `FRED_API_KEY=your_fred_key` | `OP_FRED_API_KEY_SECRET=op://Vault/FRED API/credential` |
 | **Alpaca** | `ALPACA_API_KEY_ID=...` and `ALPACA_API_SECRET_KEY=...` | `OP_ALPACA_API_KEY_ID_SECRET=op://Vault/Alpaca/API Key ID` and `OP_ALPACA_API_SECRET_KEY_SECRET=op://Vault/Alpaca/API Secret Key` |
 
-Then start the services (e.g. `./scripts/service.sh start riskfree`, `./scripts/service.sh start alpaca`) or run the TUI; the setup screen and status bar will show Health/Enabled when keys are present.
+Then start the services (e.g. `./scripts/service.sh start alpaca`) or run the TUI; the setup screen and status bar will show Health/Enabled when keys are present. `FRED_API_KEY` now feeds the Rust-owned benchmark routes.
 
 ## Multiple keys per provider (paper / live / sandbox)
 

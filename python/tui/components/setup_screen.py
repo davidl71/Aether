@@ -37,7 +37,6 @@ logger = logging.getLogger(__name__)
 # Backend key -> scripts/service.sh service name (for start on enable)
 BACKEND_KEY_TO_SERVICE_NAME: Dict[str, str] = {
     "ib": "ib",
-    "risk_free_rate": "riskfree",
     "discount_bank": "discount",
 }
 

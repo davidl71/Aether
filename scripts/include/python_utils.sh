@@ -13,8 +13,8 @@
 # DEPENDENCIES: Requires bash, Python 3, venv module (or uv for faster operation)
 # UV VENVS: Venvs created with `uv venv` do not include pip. When uv is available,
 #   install_python_packages uses `uv pip install --python <venv_python>` so packages
-#   install without needing pip inside the venv. run-risk-free-rate-service.sh and
-#   run-tastytrade-service.sh also use uv for installs when available.
+#   install without needing pip inside the venv. Archived web service wrappers also
+#   used uv for installs when available.
 # TESTING: See spec/scripts/include/python_utils_spec.sh
 #
 # USAGE PATTERN IN SERVICE SCRIPTS:

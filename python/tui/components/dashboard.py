@@ -20,7 +20,6 @@ BACKEND_DISPLAY_NAMES: Dict[str, str] = {
     "ib": "TWS/IBKR",
     "tws": "TWS",
     "discount_bank": "Discount Bank",
-    "risk_free_rate": "Risk-Free Rate",
     "rust": "Rust",
 }
 
