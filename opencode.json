@@ -3,11 +3,11 @@
   "mcp": {
     "exarp-go": {
       "type": "local",
-      "command": ["/home/david/Projects/trading/ib_box_spread_full_universal/scripts/run_exarp_go.sh"],
+      "command": ["/Users/davidl/Projects/mcp/exarp-go/bin/exarp-go"],
       "enabled": true,
       "environment": {
-        "PROJECT_ROOT": "/home/david/Projects/trading/ib_box_spread_full_universal",
-        "EXARP_MIGRATIONS_DIR": "/home/david/Projects/mcp/exarp-go/migrations",
+        "PROJECT_ROOT": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal",
+        "EXARP_MIGRATIONS_DIR": "/Users/davidl/Projects/mcp/exarp-go/migrations",
         "EXARP_WATCH": "0"
       }
     },
@@ -18,7 +18,7 @@
     },
     "filesystem": {
       "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/home/david/Projects/trading/ib_box_spread_full_universal"],
+      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"],
       "enabled": true
     },
     "sequential_thinking": {
@@ -33,7 +33,7 @@
     },
     "fetch": {
       "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-fetch"],
+      "command": ["uvx", "mcp-server-fetch"],
       "enabled": true
     },
     "memory": {
@@ -43,7 +43,7 @@
     },
     "git": {
       "type": "local",
-      "command": ["uvx", "mcp-server-git", "--repository", "/home/david/Projects/trading/ib_box_spread_full_universal"],
+      "command": ["uvx", "mcp-server-git", "--repository", "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"],
       "enabled": true
     }
   }
