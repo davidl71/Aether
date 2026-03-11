@@ -37,11 +37,11 @@ def test_default_backend_ports_includes_all_services():
 
 
 def test_preset_rest_endpoints():
-    """Rust uses the shared origin; only IB specialist routing remains in the gateway presets."""
+    """Rust owns both the shared snapshot path and the IB specialist proxy path."""
     assert "rest_ib" in PRESET_REST_ENDPOINTS
     assert "rest_rust" in PRESET_REST_ENDPOINTS
     assert PRESET_REST_ENDPOINTS["rest_rust"] == DEFAULT_REST_ENDPOINT
-    assert "9000" in PRESET_REST_ENDPOINTS["rest_ib"]
+    assert "8080" in PRESET_REST_ENDPOINTS["rest_ib"]
     assert "/api/v1/ib/" in PRESET_REST_ENDPOINTS["rest_ib"]
 
 

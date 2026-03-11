@@ -2,20 +2,18 @@ use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use async_stream::stream;
 use axum::{
+    body::Bytes,
     extract::{Extension, Path, Query},
-    http::StatusCode,
+    http::{HeaderMap, Method, StatusCode},
     response::sse::{Event, KeepAlive, Sse},
-    routing::{get, post, put},
+    response::Response,
+    routing::{any, get, post, put},
     Json, Router,
 };
 use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine as _};
 use chrono::{Datelike, Utc};
 use futures::{Stream, StreamExt, TryStreamExt};
-use nats_adapter::{
-    async_nats,
-    decode_proto,
-    proto::v1::NatsEnvelope,
-};
+use nats_adapter::{async_nats, decode_proto, proto::v1::NatsEnvelope};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tokio::{sync::watch, task::JoinHandle, time::timeout};
@@ -26,6 +24,7 @@ use crate::state::{Alert, OrderSnapshot, SharedSnapshot, SystemSnapshot};
 use crate::websocket::WebSocketServer;
 
 const SWIFTNESS_API_URL: &str = "http://127.0.0.1:8081";
+const DEFAULT_IB_SERVICE_URL: &str = "http://127.0.0.1:8002";
 
 #[derive(Clone)]
 pub struct StrategyController {
@@ -59,7 +58,11 @@ pub struct RestState {
 // So RestState is automatically Send + Sync
 
 impl RestState {
-    pub fn new(snapshot: SharedSnapshot, controller: StrategyController, loans: LoanRepository) -> Self {
+    pub fn new(
+        snapshot: SharedSnapshot,
+        controller: StrategyController,
+        loans: LoanRepository,
+    ) -> Self {
         Self {
             snapshot,
             controller,
@@ -76,8 +79,13 @@ impl RestServer {
             .route("/health", get(health))
             .route("/api/live/state", get(live_state))
             .route("/api/live/state/watch", get(live_state_watch))
+            .route("/api/v1/ib", any(proxy_ib_root))
+            .route("/api/v1/ib/*path", any(proxy_ib))
             .route("/api/v1/snapshot", get(snapshot))
-            .route("/api/v1/cash-flow/timeline", post(frontend_cash_flow_timeline))
+            .route(
+                "/api/v1/cash-flow/timeline",
+                post(frontend_cash_flow_timeline),
+            )
             .route(
                 "/api/v1/opportunity-simulation/scenarios",
                 post(frontend_opportunity_scenarios),
@@ -240,8 +248,10 @@ async fn live_state(
     Ok(Json(serde_json::json!(LiveStateKeyListResponse { keys })))
 }
 
-async fn live_state_watch(
-) -> Result<Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>>, (StatusCode, Json<ErrorResponse>)> {
+async fn live_state_watch() -> Result<
+    Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>>,
+    (StatusCode, Json<ErrorResponse>),
+> {
     let client = live_state_client().await?;
     let stream = stream! {
         let jetstream = async_nats::jetstream::new(client);
@@ -297,6 +307,27 @@ async fn live_state_watch(
     Ok(Sse::new(stream).keep_alive(KeepAlive::default()))
 }
 
+async fn proxy_ib_root(
+    Query(query): Query<std::collections::HashMap<String, String>>,
+    method: Method,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
+    let query = if query.is_empty() { None } else { Some(query) };
+    proxy_ib_request(method, headers, body, String::new(), query).await
+}
+
+async fn proxy_ib(
+    Path(path): Path<String>,
+    Query(query): Query<std::collections::HashMap<String, String>>,
+    method: Method,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
+    let query = if query.is_empty() { None } else { Some(query) };
+    proxy_ib_request(method, headers, body, path, query).await
+}
+
 async fn check_nats_health() -> String {
     const NATS_HEALTH_URL: &str = "http://localhost:8222/healthz";
     const TIMEOUT_SECS: u64 = 1;
@@ -329,19 +360,70 @@ async fn check_nats_health() -> String {
     }
 }
 
-async fn live_state_client(
-) -> Result<async_nats::Client, (StatusCode, Json<ErrorResponse>)> {
-    let nats_url = std::env::var("NATS_URL").unwrap_or_else(|_| "nats://localhost:4222".to_string());
-    async_nats::connect(&nats_url)
-        .await
-        .map_err(|err| {
-            (
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse {
-                    error: format!("LIVE_STATE unavailable: {err}"),
-                }),
-            )
-        })
+async fn proxy_ib_request(
+    method: Method,
+    headers: HeaderMap,
+    body: Bytes,
+    path: String,
+    query: Option<std::collections::HashMap<String, String>>,
+) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
+    let client = Client::new();
+    let target = ib_proxy_target_url(&path, query.as_ref()).map_err(live_state_internal_error)?;
+
+    let request_method = reqwest::Method::from_bytes(method.as_str().as_bytes())
+        .map_err(live_state_internal_error)?;
+    let mut request = client.request(request_method, target);
+    for (name, value) in headers.iter() {
+        if name.as_str().eq_ignore_ascii_case("host")
+            || name.as_str().eq_ignore_ascii_case("content-length")
+        {
+            continue;
+        }
+        if let Ok(value) = value.to_str() {
+            request = request.header(name.as_str(), value);
+        }
+    }
+
+    let response = request.body(body).send().await.map_err(|err| {
+        (
+            StatusCode::BAD_GATEWAY,
+            Json(ErrorResponse {
+                error: format!("IB service unavailable: {err}"),
+            }),
+        )
+    })?;
+
+    let status =
+        StatusCode::from_u16(response.status().as_u16()).map_err(live_state_internal_error)?;
+    let response_headers = response.headers().clone();
+    let response_body = response.bytes().await.map_err(live_state_internal_error)?;
+
+    let mut builder = Response::builder().status(status);
+    for (name, value) in response_headers.iter() {
+        if name.as_str().eq_ignore_ascii_case("content-length") {
+            continue;
+        }
+        if let Ok(value) = value.to_str() {
+            builder = builder.header(name.as_str(), value);
+        }
+    }
+
+    builder
+        .body(axum::body::Body::from(response_body))
+        .map_err(live_state_internal_error)
+}
+
+async fn live_state_client() -> Result<async_nats::Client, (StatusCode, Json<ErrorResponse>)> {
+    let nats_url =
+        std::env::var("NATS_URL").unwrap_or_else(|_| "nats://localhost:4222".to_string());
+    async_nats::connect(&nats_url).await.map_err(|err| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse {
+                error: format!("LIVE_STATE unavailable: {err}"),
+            }),
+        )
+    })
 }
 
 async fn live_state_store(
@@ -358,9 +440,7 @@ async fn live_state_store(
     })
 }
 
-fn live_state_internal_error<E: std::fmt::Display>(
-    err: E,
-) -> (StatusCode, Json<ErrorResponse>) {
+fn live_state_internal_error<E: std::fmt::Display>(err: E) -> (StatusCode, Json<ErrorResponse>) {
     (
         StatusCode::INTERNAL_SERVER_ERROR,
         Json(ErrorResponse {
@@ -389,6 +469,26 @@ fn decode_live_state_envelope_metadata(bytes: &[u8]) -> serde_json::Value {
             "decode_error": err.to_string(),
         }),
     }
+}
+
+fn ib_proxy_target_url(
+    path: &str,
+    query: Option<&std::collections::HashMap<String, String>>,
+) -> Result<String, String> {
+    let base = std::env::var("IB_URL").unwrap_or_else(|_| DEFAULT_IB_SERVICE_URL.to_string());
+    let mut url = format!("{}/api/v1", base.trim_end_matches('/'));
+    if !path.is_empty() {
+        url.push('/');
+        url.push_str(path.trim_start_matches('/'));
+    }
+    if let Some(query) = query {
+        let query_string = serde_urlencoded::to_string(query).map_err(|err| err.to_string())?;
+        if !query_string.is_empty() {
+            url.push('?');
+            url.push_str(&query_string);
+        }
+    }
+    Ok(url)
 }
 
 async fn snapshot(Extension(state): Extension<RestState>) -> Json<SystemSnapshot> {
@@ -882,12 +982,10 @@ async fn loans_get(
     Path(loan_id): Path<String>,
     Extension(state): Extension<RestState>,
 ) -> Result<Json<LoanRecord>, (StatusCode, String)> {
-    state
-        .loans
-        .get(&loan_id)
-        .await
-        .map(Json)
-        .ok_or((StatusCode::NOT_FOUND, format!("Loan with ID {loan_id} not found")))
+    state.loans.get(&loan_id).await.map(Json).ok_or((
+        StatusCode::NOT_FOUND,
+        format!("Loan with ID {loan_id} not found"),
+    ))
 }
 
 async fn loans_create(
@@ -928,7 +1026,10 @@ async fn loans_delete(
 ) -> Result<StatusCode, (StatusCode, String)> {
     match state.loans.delete(&loan_id).await {
         Ok(true) => Ok(StatusCode::NO_CONTENT),
-        Ok(false) => Err((StatusCode::NOT_FOUND, format!("Loan with ID {loan_id} not found"))),
+        Ok(false) => Err((
+            StatusCode::NOT_FOUND,
+            format!("Loan with ID {loan_id} not found"),
+        )),
         Err(err) => Err((StatusCode::INTERNAL_SERVER_ERROR, err)),
     }
 }
@@ -1274,7 +1375,8 @@ fn effective_frontend_positions<'a>(
     positions
         .iter()
         .filter(|position| {
-            !(!repository_loans.is_empty() && is_loan_instrument(position.instrument_type.as_deref()))
+            !(!repository_loans.is_empty()
+                && is_loan_instrument(position.instrument_type.as_deref()))
         })
         .collect()
 }
@@ -1308,7 +1410,9 @@ fn parse_frontend_date(date: &str) -> Option<chrono::DateTime<chrono::Utc>> {
             chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d")
                 .ok()
                 .and_then(|d| d.and_hms_opt(0, 0, 0))
-                .map(|dt| chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(dt, chrono::Utc))
+                .map(|dt| {
+                    chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(dt, chrono::Utc)
+                })
         })
 }
 
@@ -1328,15 +1432,15 @@ fn build_cash_flow_response_with_loans(
     let now = chrono::Utc::now();
     let projection_months = request.projection_months.max(0);
     let mut events = Vec::new();
-    let loan_inputs = aggregated_loan_inputs(&request.positions, &request.bank_accounts, repository_loans);
+    let loan_inputs =
+        aggregated_loan_inputs(&request.positions, &request.bank_accounts, repository_loans);
     let positions = effective_frontend_positions(&request.positions, repository_loans);
 
     for position in positions {
         if let Some(maturity_date_str) = &position.maturity_date {
             if let Some(maturity_date) = parse_frontend_date(maturity_date_str) {
-                let months_ahead =
-                    i64::from(maturity_date.year() - now.year()) * 12
-                        + i64::from(maturity_date.month() as i32 - now.month() as i32);
+                let months_ahead = i64::from(maturity_date.year() - now.year()) * 12
+                    + i64::from(maturity_date.month() as i32 - now.month() as i32);
 
                 if (0..=projection_months).contains(&months_ahead) {
                     events.push(FrontendCashFlowEvent {
@@ -1370,9 +1474,8 @@ fn build_cash_flow_response_with_loans(
     for loan in &loan_inputs {
         if let Some(maturity_date_str) = &loan.maturity_date {
             if let Some(maturity_date) = parse_frontend_date(maturity_date_str) {
-                let months_ahead =
-                    i64::from(maturity_date.year() - now.year()) * 12
-                        + i64::from(maturity_date.month() as i32 - now.month() as i32);
+                let months_ahead = i64::from(maturity_date.year() - now.year()) * 12
+                    + i64::from(maturity_date.month() as i32 - now.month() as i32);
                 if (0..=projection_months).contains(&months_ahead) {
                     events.push(FrontendCashFlowEvent {
                         date: date_only(&maturity_date),
@@ -1465,7 +1568,8 @@ fn build_opportunity_scenarios_response_with_loans(
     request: &FrontendViewRequest,
     repository_loans: &[LoanRecord],
 ) -> Vec<FrontendScenario> {
-    let loans = aggregated_loan_inputs(&request.positions, &request.bank_accounts, repository_loans);
+    let loans =
+        aggregated_loan_inputs(&request.positions, &request.bank_accounts, repository_loans);
     let positions = effective_frontend_positions(&request.positions, repository_loans);
     let box_spreads: Vec<&FrontendPositionInput> = request
         .positions
@@ -1489,8 +1593,7 @@ fn build_opportunity_scenarios_response_with_loans(
             .map(|loan| (loan.annual_rate, loan.principal))
             .max_by(|a, b| a.0.total_cmp(&b.0));
 
-        if let Some((loan_rate, loan_amount)) = highest_rate_loan.filter(|(rate, _)| *rate > 0.03)
-        {
+        if let Some((loan_rate, loan_amount)) = highest_rate_loan.filter(|(rate, _)| *rate > 0.03) {
             let parameters = std::collections::BTreeMap::from([
                 ("loan_amount".into(), loan_amount),
                 ("loan_rate".into(), loan_rate),
@@ -1533,7 +1636,8 @@ fn build_opportunity_scenarios_response_with_loans(
             id: "investment_fund".into(),
             name: "Investment Fund Strategy".into(),
             scenario_type: "investment_fund".into(),
-            description: "Use loan to invest in fund, use fund as collateral for cheaper loan".into(),
+            description: "Use loan to invest in fund, use fund as collateral for cheaper loan"
+                .into(),
             net_benefit: scenario_net_benefit("investment_fund", &parameters),
             parameters,
         });
@@ -1711,7 +1815,9 @@ async fn frontend_opportunity_scenarios(
     Json(request): Json<FrontendViewRequest>,
 ) -> Json<Vec<FrontendScenario>> {
     let loans = state.loans.list().await;
-    Json(build_opportunity_scenarios_response_with_loans(&request, &loans))
+    Json(build_opportunity_scenarios_response_with_loans(
+        &request, &loans,
+    ))
 }
 
 async fn frontend_opportunity_calculate(
@@ -1725,7 +1831,9 @@ async fn frontend_unified_positions(
     Json(request): Json<FrontendViewRequest>,
 ) -> Json<FrontendUnifiedPositionsResponse> {
     let loans = state.loans.list().await;
-    Json(build_unified_positions_response_with_loans(&request, &loans))
+    Json(build_unified_positions_response_with_loans(
+        &request, &loans,
+    ))
 }
 
 #[cfg(test)]
@@ -1769,7 +1877,8 @@ fn build_relationship_response_with_loans(
             })
             .collect()
     };
-    let loans = aggregated_loan_inputs(&request.positions, &request.bank_accounts, repository_loans);
+    let loans =
+        aggregated_loan_inputs(&request.positions, &request.bank_accounts, repository_loans);
     let box_spreads: Vec<&serde_json::Value> = positions_json
         .iter()
         .filter(|position| {
@@ -1846,9 +1955,7 @@ fn build_relationship_response_with_loans(
                         .and_then(|v| v.as_str())
                         .unwrap_or("Unknown")
                         .to_string(),
-                    to: loan
-                        .name
-                        .clone(),
+                    to: loan.name.clone(),
                     relationship_type: "collateral".into(),
                     description: "Bond used as collateral for loan".into(),
                     value: bond_value,
@@ -1881,7 +1988,10 @@ fn build_relationship_response_with_loans(
         }
     }
     for position in &request.positions {
-        if !position.name.is_empty() && !(!repository_loans.is_empty() && is_loan_instrument(position.instrument_type.as_deref())) {
+        if !position.name.is_empty()
+            && !(!repository_loans.is_empty()
+                && is_loan_instrument(position.instrument_type.as_deref()))
+        {
             nodes.insert(position.name.clone());
         }
     }
@@ -2162,8 +2272,8 @@ mod tests {
     use super::*;
     use crate::loans::{LoanRepository, LoanStatus, LoanType};
     use axum::Json;
-    use nats_adapter::proto::v1::NatsEnvelope;
     use nats_adapter::encode_proto;
+    use nats_adapter::proto::v1::NatsEnvelope;
     use std::{env, path::PathBuf, sync::Arc};
     use tokio::sync::{watch, RwLock};
     use uuid::Uuid;
@@ -2383,8 +2493,12 @@ mod tests {
             conid: None,
         });
         let scenarios = build_opportunity_scenarios_response(&request);
-        assert!(scenarios.iter().any(|scenario| scenario.id == "margin_for_box_spread"));
-        assert!(scenarios.iter().any(|scenario| scenario.id == "investment_fund"));
+        assert!(scenarios
+            .iter()
+            .any(|scenario| scenario.id == "margin_for_box_spread"));
+        assert!(scenarios
+            .iter()
+            .any(|scenario| scenario.id == "investment_fund"));
     }
 
     #[test]
@@ -2478,12 +2592,38 @@ mod tests {
         assert_eq!(metadata["id"], "msg-1");
         assert_eq!(metadata["source"], "collector");
         assert_eq!(metadata["message_type"], "MarketDataEvent");
-        assert_eq!(metadata["payload_b64"], BASE64_STANDARD.encode([1_u8, 2, 3]));
+        assert_eq!(
+            metadata["payload_b64"],
+            BASE64_STANDARD.encode([1_u8, 2, 3])
+        );
     }
 
     #[test]
     fn live_state_envelope_metadata_reports_decode_error_for_invalid_bytes() {
         let metadata = decode_live_state_envelope_metadata(br#"{"legacy":"json"}"#);
         assert!(metadata.get("decode_error").is_some());
+    }
+
+    #[test]
+    fn ib_proxy_target_url_rewrites_into_ib_service_namespace() {
+        env::remove_var("IB_URL");
+
+        let url = ib_proxy_target_url("snapshot", None).expect("proxy url");
+
+        assert_eq!(url, "http://127.0.0.1:8002/api/v1/snapshot");
+    }
+
+    #[test]
+    fn ib_proxy_target_url_preserves_query_string() {
+        let query = std::collections::HashMap::from([
+            ("account".to_string(), "DU123".to_string()),
+            ("symbols".to_string(), "SPX,XSP".to_string()),
+        ]);
+
+        let url = ib_proxy_target_url("orders", Some(&query)).expect("proxy url");
+
+        assert!(url.starts_with("http://127.0.0.1:8002/api/v1/orders?"));
+        assert!(url.contains("account=DU123"));
+        assert!(url.contains("symbols=SPX%2CXSP"));
     }
 }

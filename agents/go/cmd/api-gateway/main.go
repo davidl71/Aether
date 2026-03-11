@@ -12,7 +12,6 @@
 //	LISTEN_ADDR        (default ":9000")
 //	BACKEND_URL        (default "http://localhost:8080") — Rust
 //	HEARTBEAT_URL      (default "http://localhost:8090")
-//	IB_URL             (default "http://localhost:8002") — IB REST snapshot
 package main
 
 import (
@@ -55,40 +54,15 @@ func newRoute(prefix, rawURL string) route {
 	}
 }
 
-// newRouteWithStrip proxies prefix to target but rewrites path: strip stripPrefix
-// and replace with replacePrefix. E.g. prefix=/api/v1/ib/, stripPrefix=/api/v1/ib, replacePrefix=/api/v1
-// so GET /api/v1/ib/snapshot -> GET http://target/api/v1/snapshot
-func newRouteWithStrip(prefix, stripPrefix, replacePrefix, rawURL string) route {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		slog.Error("bad url for route", "prefix", prefix, "error", err)
-		os.Exit(1)
-	}
-	proxy := httputil.NewSingleHostReverseProxy(u)
-	proxy.Director = func(r *http.Request) {
-		r.URL.Scheme = u.Scheme
-		r.URL.Host = u.Host
-		if strings.HasPrefix(r.URL.Path, stripPrefix) {
-			r.URL.Path = replacePrefix + r.URL.Path[len(stripPrefix):]
-		}
-		if r.URL.RawPath != "" && strings.HasPrefix(r.URL.RawPath, stripPrefix) {
-			r.URL.RawPath = replacePrefix + r.URL.RawPath[len(stripPrefix):]
-		}
-	}
-	return route{prefix: prefix, target: u, proxy: proxy}
-}
-
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	listenAddr := env("LISTEN_ADDR", ":9000")
 	backendURL := env("BACKEND_URL", "http://localhost:8080")
 	heartbeatURL := env("HEARTBEAT_URL", "http://localhost:8090")
-	ibURL := env("IB_URL", "http://localhost:8002")
 
-	// Order matters: more specific prefixes first. Only explicit specialist routes remain here.
+	// Order matters: more specific prefixes first. Only heartbeat and Rust remain here.
 	routes := []route{
 		newRoute("/api/heartbeat/", heartbeatURL),
-		newRouteWithStrip("/api/v1/ib/", "/api/v1/ib", "/api/v1", ibURL),
 		newRoute("/api/", backendURL),
 		newRoute("/health", backendURL),
 	}
