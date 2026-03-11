@@ -114,10 +114,10 @@ message NatsEnvelope {
 | `market-data.tick.<symbol>` | `MarketDataEvent` | C++ nats_client | Go collection-daemon, Rust nats_adapter |
 | `strategy.signal.<symbol>` | `StrategySignal` | C++ nats_client | Rust nats_adapter |
 | `strategy.decision.<symbol>` | `StrategyDecision` | C++ nats_client | Rust nats_adapter |
-| `heartbeat.<service>` | string (plain) | Python services | Go heartbeat-aggregator |
+| `system.health` | protobuf (`BackendHealth` or `NatsEnvelope`) | Python services and other backends | Python health_dashboard / Rust-facing health routes |
 
 **Note**: `NatsEnvelope` protobuf is now the only supported active wire format in the
-Rust adapter and Go collectors. `collection-daemon` and `heartbeat-aggregator`
+Rust adapter and Go collectors. `collection-daemon`
 understand envelope records directly; older doc references to JSON transport, the removed
 standalone QuestDB bridge, or raw-string parsing are stale.
 
@@ -147,7 +147,6 @@ All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/sl
 | Agent | Purpose | Listens | Exposes |
 |-------|---------|---------|---------|
 | `collection-daemon` | Unified NATS collector (Epic E5): decode `NatsEnvelope` once, write through sinks (KV/log today), optional JetStream durable mode | NATS `market-data.>`, etc. | HTTP /metrics (Prometheus) |
-| `heartbeat-aggregator` | Tracks service liveness | NATS `heartbeat.*` | HTTP GET /health |
 | `supervisor` | Process supervisor (restart on crash) | JSON config | Process PIDs |
 | `config-validator` | Validates platform config at startup | Config file | Exit code |
 
@@ -271,7 +270,7 @@ flowchart LR
   end
   subgraph clients [Clients]
     RustApi[Rust API :8080]
-    Heartbeat[heartbeat-aggregator :8090]
+    HealthDash[health_dashboard :8011]
     Web[Web]
     TUI[TUI]
   end
@@ -286,7 +285,7 @@ flowchart LR
   RustApi --> TUI
   Ledger --> Rust
   KV --> RustApi
-  RustApi --> Heartbeat
+  RustApi --> HealthDash
 ```
 
 - **Current read paths**: the web client reads primarily from the Rust backend; the Textual TUI reads a mix of Rust-owned read models, selected Python specialist services, and optional NATS/event-driven paths. The remaining split is now narrower and mostly tied to integration-specific Python services.

@@ -63,7 +63,7 @@ client merges deltas; WebSocket mounted on same server at `/ws`. ~90% bandwidth 
 **Files**: `agents/backend/crates/api/src/websocket.rs`, `agents/backend/crates/api/src/rest.rs`.
 
 ### P2-B: Decode NatsEnvelope in Go agents <!-- exarp: T-1772887221969976131 -->
-**Status:** Implemented. `collection-daemon` and `heartbeat-aggregator` decode `NatsEnvelope`
+**Status:** Implemented. `collection-daemon` decodes `NatsEnvelope`
 using `agents/go/proto/v1/messages.pb.go`. QuestDB fanout now runs through the collector sink.
 **Benefit**: Type-safe; field names match proto schema; survives format changes.
 

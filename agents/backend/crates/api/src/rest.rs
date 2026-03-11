@@ -25,7 +25,7 @@ use crate::websocket::WebSocketServer;
 
 const SWIFTNESS_API_URL: &str = "http://127.0.0.1:8081";
 const DEFAULT_IB_SERVICE_URL: &str = "http://127.0.0.1:8002";
-const DEFAULT_HEARTBEAT_AGGREGATOR_URL: &str = "http://127.0.0.1:8090";
+const DEFAULT_HEALTH_DASHBOARD_URL: &str = "http://127.0.0.1:8011";
 
 #[derive(Clone)]
 pub struct StrategyController {
@@ -79,6 +79,7 @@ impl RestServer {
         Router::new()
             .route("/health", get(health))
             .route("/gateway/health", get(gateway_health))
+            .route("/api/health-aggregated", any(proxy_heartbeat_root))
             .route("/api/heartbeat", any(proxy_heartbeat_root))
             .route("/api/heartbeat/*path", any(proxy_heartbeat))
             .route("/api/live/state", get(live_state))
@@ -332,7 +333,7 @@ async fn proxy_heartbeat_root(
 ) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
     let query = if query.is_empty() { None } else { Some(query) };
     proxy_service_request(
-        "heartbeat aggregator",
+        "health dashboard",
         heartbeat_proxy_target_url("", query.as_ref()),
         method,
         headers,
@@ -350,7 +351,7 @@ async fn proxy_heartbeat(
 ) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
     let query = if query.is_empty() { None } else { Some(query) };
     proxy_service_request(
-        "heartbeat aggregator",
+        "health dashboard",
         heartbeat_proxy_target_url(&path, query.as_ref()),
         method,
         headers,
@@ -549,10 +550,10 @@ fn heartbeat_proxy_target_url(
     path: &str,
     query: Option<&std::collections::HashMap<String, String>>,
 ) -> Result<String, String> {
-    let base = std::env::var("HEARTBEAT_URL")
-        .unwrap_or_else(|_| DEFAULT_HEARTBEAT_AGGREGATOR_URL.to_string());
+    let base = std::env::var("HEALTH_DASHBOARD_URL")
+        .unwrap_or_else(|_| DEFAULT_HEALTH_DASHBOARD_URL.to_string());
     let path = if path.is_empty() { "health" } else { path };
-    proxy_target_url(&base, None, path, query)
+    proxy_target_url(&base, Some("/api"), path, query)
 }
 
 fn proxy_target_url(
@@ -2717,11 +2718,11 @@ mod tests {
 
     #[test]
     fn heartbeat_proxy_target_url_defaults_to_health_endpoint() {
-        env::remove_var("HEARTBEAT_URL");
+        env::remove_var("HEALTH_DASHBOARD_URL");
 
         let url = heartbeat_proxy_target_url("", None).expect("proxy url");
 
-        assert_eq!(url, "http://127.0.0.1:8090/health");
+        assert_eq!(url, "http://127.0.0.1:8011/api/health");
     }
 
     #[test]
@@ -2730,7 +2731,7 @@ mod tests {
 
         let url = heartbeat_proxy_target_url("health", Some(&query)).expect("proxy url");
 
-        assert!(url.starts_with("http://127.0.0.1:8090/health?"));
+        assert!(url.starts_with("http://127.0.0.1:8011/api/health?"));
         assert!(url.contains("service=ib"));
     }
 }
