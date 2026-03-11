@@ -62,6 +62,8 @@ PRESET_REST_ENDPOINTS: Dict[str, str] = {
     "rest_tastytrade": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/tastytrade/snapshot",
 }
 
+DEFAULT_REST_SNAPSHOT_PATH = "/api/v1/snapshot"
+
 
 @dataclass
 class TUIConfig:
@@ -75,7 +77,9 @@ class TUIConfig:
     provider_type: str = (
         "mock"  # "mock", "rest", "file", "nats", "rest_ib", "rest_alpaca", ...
     )
-    rest_endpoint: str = "http://localhost:9000/api/v1/snapshot"  # P1-B: default via api-gateway (Rust)
+    # Legacy snapshot endpoint override. For provider_type="rest", api_base_url is canonical.
+    # Keep this field for backward-compatible config/env imports and specialist preset routes.
+    rest_endpoint: str = ""
     update_interval_ms: int = 1000
     refresh_rate_ms: int = 500
     rest_timeout_ms: int = 15000
@@ -240,6 +244,7 @@ def load_config() -> TUIConfig:
                 show_colors=show_colors,
                 show_footer=show_footer,
             )
+            config.api_base_url = canonical_api_base_url(config)
             from_services = _backend_ports_from_services(shared_config.services)
             config.backend_ports = {**DEFAULT_BACKEND_PORTS, **from_services}
             config.tcp_backend_ports = {**DEFAULT_TCP_BACKEND_PORTS, **(config.tcp_backend_ports or {})}
@@ -264,6 +269,7 @@ def load_config() -> TUIConfig:
                     # Persist TUI provider choice across restarts (mock/rest/file/nats and endpoint)
                     config.provider_type = tui_only.provider_type or config.provider_type
                     config.rest_endpoint = tui_only.rest_endpoint or config.rest_endpoint
+                    config.api_base_url = getattr(tui_only, "api_base_url", None) or config.api_base_url
                     config.file_path = tui_only.file_path if tui_only.file_path else config.file_path
                     config.nats_url = getattr(tui_only, "nats_url", None) or config.nats_url
                     config.nats_snapshot_backend = getattr(tui_only, "nats_snapshot_backend", None) or config.nats_snapshot_backend
@@ -274,6 +280,7 @@ def load_config() -> TUIConfig:
                 except Exception:
                     pass
             _apply_env_overrides(config)
+            config.api_base_url = canonical_api_base_url(config)
             return config
     except Exception as e:
         logger.debug(
@@ -285,6 +292,7 @@ def load_config() -> TUIConfig:
     if not Path(config_path).exists():
         # Auto-initialize: write default TUI config so it exists for future runs
         default_config = TUIConfig()
+        default_config.api_base_url = canonical_api_base_url(default_config)
         default_config.backend_ports = dict(DEFAULT_BACKEND_PORTS)
         default_config.tcp_backend_ports = dict(DEFAULT_TCP_BACKEND_PORTS)
         default_config.disabled_backends = _disabled_backends_from_env(
@@ -295,6 +303,7 @@ def load_config() -> TUIConfig:
         config = default_config
     else:
         config = TUIConfig.load_from_file(config_path)
+        config.api_base_url = canonical_api_base_url(config)
         # Ensure we poll common backends so status line can show them (or "disabled")
         config.backend_ports = {**DEFAULT_BACKEND_PORTS, **(config.backend_ports or {})}
         config.tcp_backend_ports = {**DEFAULT_TCP_BACKEND_PORTS, **(config.tcp_backend_ports or {})}
@@ -304,8 +313,42 @@ def load_config() -> TUIConfig:
 
     # Override with environment variables
     _apply_env_overrides(config)
+    config.api_base_url = canonical_api_base_url(config)
 
     return config
+
+
+def snapshot_endpoint_from_base(api_base_url: Optional[str]) -> str:
+    """Build the canonical shared snapshot endpoint from a base URL."""
+    base = (api_base_url or DEFAULT_GATEWAY_BASE_URL).strip().rstrip("/")
+    return f"{base}{DEFAULT_REST_SNAPSHOT_PATH}"
+
+
+def _derive_api_base_url(rest_endpoint: Optional[str]) -> Optional[str]:
+    """Best-effort derive base URL from a snapshot endpoint for compatibility imports."""
+    if not rest_endpoint:
+        return None
+    endpoint = rest_endpoint.strip().rstrip("/")
+    if not endpoint:
+        return None
+    if endpoint.endswith(DEFAULT_REST_SNAPSHOT_PATH):
+        return endpoint[: -len(DEFAULT_REST_SNAPSHOT_PATH)]
+    if endpoint.endswith("/api/snapshot"):
+        return endpoint[: -len("/api/snapshot")]
+    if endpoint.endswith("/snapshot"):
+        return endpoint[: -len("/snapshot")]
+    return endpoint
+
+
+def canonical_api_base_url(config: TUIConfig) -> str:
+    """Return the canonical base URL for shared HTTP reads."""
+    explicit = (getattr(config, "api_base_url", None) or "").strip().rstrip("/")
+    if explicit:
+        return explicit
+    derived = _derive_api_base_url(getattr(config, "rest_endpoint", None))
+    if derived:
+        return derived
+    return DEFAULT_GATEWAY_BASE_URL
 
 
 def _backend_ports_from_services(services: dict) -> Dict[str, int]:
@@ -411,6 +454,10 @@ def _apply_env_overrides(config: TUIConfig) -> None:
     env_api_url = os.getenv("TUI_API_URL")
     if env_api_url:
         config.rest_endpoint = env_api_url
+        if not os.getenv("TUI_API_BASE_URL"):
+            derived = _derive_api_base_url(env_api_url)
+            if derived:
+                config.api_base_url = derived
 
     env_file = os.getenv("TUI_SNAPSHOT_FILE")
     if env_file:

@@ -334,6 +334,18 @@ class TestCreateProviderFromConfig:
         assert isinstance(provider, RestProvider)
         assert provider.endpoint == "http://test:8080/api/snapshot"
 
+    def test_rest_provider_prefers_api_base_url(self):
+        from python.tui.app import create_provider_from_config
+        from python.tui.providers import RestProvider
+        config = TUIConfig(
+            provider_type="rest",
+            rest_endpoint="http://legacy:8080/api/snapshot",
+            api_base_url="http://shared:9000",
+        )
+        provider = create_provider_from_config(config)
+        assert isinstance(provider, RestProvider)
+        assert provider.endpoint == "http://shared:9000/api/v1/snapshot"
+
     def test_rest_provider_default_endpoint(self):
         from python.tui.app import create_provider_from_config
         from python.tui.providers import RestProvider

@@ -24,7 +24,14 @@ from textual.worker import Worker, WorkerState
 
 from .models import SnapshotPayload, BoxSpreadPayload
 from .providers import Provider, MockProvider, RestProvider, FileProvider, NatsProvider, BackendHealthAggregator
-from .config import TUIConfig, load_config, PRESET_REST_ENDPOINTS, DEFAULT_TCP_BACKEND_PORTS
+from .config import (
+    TUIConfig,
+    load_config,
+    PRESET_REST_ENDPOINTS,
+    DEFAULT_TCP_BACKEND_PORTS,
+    canonical_api_base_url,
+    snapshot_endpoint_from_base,
+)
 from .box_spread_loader import get_box_spread_payload
 from .log_handler import install_tui_log_handler, remove_tui_log_handler, drain_log_queue, get_buffered_log_lines
 from .components.snapshot_display import StatusBar, get_environment
@@ -353,7 +360,9 @@ class TUIApp(App):
         self._frontend_unified_positions: Optional[List[Dict[str, Any]]] = None
         self._frontend_relationships: Optional[List[Dict[str, Any]]] = None
         self._frontend_relationship_nodes: Optional[List[str]] = None
-        self._loan_manager = LoanManager("config/loans.json")
+        self._loan_manager = LoanManager(
+            api_base_url=os.getenv("LOAN_API_BASE_URL", "http://127.0.0.1:8080/api/v1")
+        )
         self._backend_health_aggregator: Optional[BackendHealthAggregator] = None
         # When non-mock preferred: start with mock for quick paint, then switch to this when it has data
         self._pending_real_provider: Optional[Provider] = preferred_provider
@@ -1017,15 +1026,9 @@ class TUIApp(App):
             ptype = (self.config.provider_type or "").lower()
             if ptype == "mock" or (ptype not in PRESET_REST_ENDPOINTS and ptype != "rest"):
                 ptype = "rest_ib"
-            endpoint = (
-                self.config.rest_endpoint
-                or PRESET_REST_ENDPOINTS.get(ptype)
-                or "http://localhost:8002/api/v1/snapshot"
-            )
-            api_base_url = getattr(self.config, "api_base_url", None)
-            if api_base_url:
-                base = api_base_url.strip().rstrip("/")
-                endpoint = f"{base}/api/v1/snapshot"
+            endpoint = PRESET_REST_ENDPOINTS.get(ptype)
+            if not endpoint:
+                endpoint = snapshot_endpoint_from_base(canonical_api_base_url(self.config))
             params = {
                 "provider_type": ptype,
                 "rest_endpoint": endpoint,
@@ -1058,6 +1061,9 @@ class TUIApp(App):
             self._pending_real_provider.stop()
             self._pending_real_provider = None
         self.provider.stop()
+        next_api_base_url = getattr(self.config, "api_base_url", None)
+        if ptype == "rest":
+            next_api_base_url = canonical_api_base_url(self.config)
         temp_config = TUIConfig(
             provider_type=ptype,
             rest_endpoint=rest_endpoint or self.config.rest_endpoint,
@@ -1066,7 +1072,7 @@ class TUIApp(App):
             nats_snapshot_backend=nats_snapshot_backend,
             update_interval_ms=self.config.update_interval_ms,
             rest_timeout_ms=self.config.rest_timeout_ms,
-            api_base_url=getattr(self.config, "api_base_url", None),
+            api_base_url=next_api_base_url,
             snapshot_cache_path=getattr(self.config, "snapshot_cache_path", None),
             out_of_market_interval_ms=getattr(self.config, "out_of_market_interval_ms", 0),
             rest_verify_ssl=getattr(self.config, "rest_verify_ssl", False),
@@ -1075,6 +1081,8 @@ class TUIApp(App):
         self.config.provider_type = ptype
         if rest_endpoint is not None:
             self.config.rest_endpoint = rest_endpoint
+        if ptype == "rest":
+            self.config.api_base_url = canonical_api_base_url(temp_config)
         if file_path is not None:
             self.config.file_path = file_path
         if ptype == "nats":
@@ -1142,15 +1150,17 @@ def create_provider_from_config(config: TUIConfig) -> Provider:
         )
 
     elif provider_type == "rest" or provider_type in PRESET_REST_ENDPOINTS:
-        api_base_url = getattr(config, "api_base_url", None)
-        if api_base_url:
-            base = api_base_url.strip().rstrip("/")
-            endpoint = f"{base}/api/v1/snapshot"
+        if provider_type == "rest":
+            api_base_url = getattr(config, "api_base_url", None)
+            if api_base_url:
+                endpoint = snapshot_endpoint_from_base(api_base_url)
+            else:
+                endpoint = config.rest_endpoint or snapshot_endpoint_from_base(canonical_api_base_url(config))
         else:
             endpoint = (
                 config.rest_endpoint
                 or PRESET_REST_ENDPOINTS.get(provider_type)
-                or "http://localhost:8002/api/v1/snapshot"
+                or snapshot_endpoint_from_base(canonical_api_base_url(config))
             )
         use_cache = getattr(config, "snapshot_cache_path", None) != ""  # Disable only when explicitly ""
         cache_path = (config.snapshot_cache_path or "").strip() or None

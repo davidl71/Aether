@@ -19,7 +19,14 @@ from ..backend_mapping import (
     BACKEND_KEY_TO_PROVIDER_TYPE,
     PROVIDER_TYPE_TO_BACKEND_KEY,
 )
-from ..config import TUIConfig, PRESET_REST_ENDPOINTS, DEFAULT_TCP_BACKEND_PORTS, DEFAULT_BACKEND_PORTS
+from ..config import (
+    TUIConfig,
+    PRESET_REST_ENDPOINTS,
+    DEFAULT_TCP_BACKEND_PORTS,
+    DEFAULT_BACKEND_PORTS,
+    canonical_api_base_url,
+    snapshot_endpoint_from_base,
+)
 from ..display_utils import format_endpoint_display
 from ...integration.shared_config_loader import SharedConfigLoader
 from .onepassword_screen import OnePasswordScreen
@@ -375,7 +382,10 @@ class SetupScreen(Screen[Optional[Dict[str, Any]]]):
                 if mode in ("LIVE", "PAPER"):
                     current_parts.append(f"Inferred: {mode}")
         if self._config.provider_type in ("rest", *PRESET_REST_ENDPOINTS):
-            endpoint = self._config.rest_endpoint or PRESET_REST_ENDPOINTS.get(self._config.provider_type, "")
+            if self._config.provider_type == "rest":
+                endpoint = snapshot_endpoint_from_base(canonical_api_base_url(self._config))
+            else:
+                endpoint = self._config.rest_endpoint or PRESET_REST_ENDPOINTS.get(self._config.provider_type, "")
             current_parts.append(f"REST: {format_endpoint_display(endpoint)}")
         elif self._config.provider_type == "file" and self._config.file_path:
             current_parts.append(f"File: {self._config.file_path}")
@@ -406,7 +416,10 @@ class SetupScreen(Screen[Optional[Dict[str, Any]]]):
             pass
         tui_path = TUIConfig.get_config_path()
         loans_exists = "exists" if self._loans_path.exists() else "not found"
-        envs = [f"{k}={os.getenv(k) or '(not set)'}" for k in ("TUI_BACKEND", "TUI_API_URL", "TUI_SNAPSHOT_FILE", "IB_BOX_SPREAD_CONFIG")]
+        envs = [
+            f"{k}={os.getenv(k) or '(not set)'}"
+            for k in ("TUI_BACKEND", "TUI_API_BASE_URL", "TUI_API_URL", "TUI_SNAPSHOT_FILE", "IB_BOX_SPREAD_CONFIG")
+        ]
         health_source = _effective_health_source(self._config)
         raw = f"{health_source} | TUI: {tui_path} | Loans: {self._loans_path} ({loans_exists}) | " + " ".join(envs)
         try:

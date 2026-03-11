@@ -91,9 +91,12 @@ python -m python.tui
 
 ```bash
 export TUI_BACKEND=rest
-export TUI_API_URL=http://localhost:8080/api/snapshot
+export TUI_API_BASE_URL=http://localhost:8080
 python -m python.tui
 ```
+
+`TUI_API_BASE_URL` is the preferred shared HTTP knob.
+`TUI_API_URL` remains supported as a legacy compatibility override for snapshot-only setups.
 
 ### Using an API router (single base URL)
 
@@ -112,7 +115,8 @@ export TUI_BACKEND=rest
 python -m python.tui
 ```
 
-Or in shared config `config.json` under `tui`: `"apiBaseUrl": "http://localhost:9999"`. When `api_base_url` is set, `rest_endpoint` is ignored for the snapshot URL (the router base is used).
+Or in shared config `config.json` under `tui`: `"apiBaseUrl": "http://localhost:9999"`.
+For `provider_type: "rest"`, `api_base_url` is canonical and `rest_endpoint` is legacy compatibility only.
 
 ### With File Provider
 
@@ -141,7 +145,7 @@ Configuration is stored in `~/.config/ib_box_spread/tui_config.json`:
 ```json
 {
   "provider_type": "rest",
-  "rest_endpoint": "http://localhost:8080/api/snapshot",
+  "api_base_url": "http://localhost:8080",
   "update_interval_ms": 1000,
   "refresh_rate_ms": 500,
   "rest_timeout_ms": 5000,
@@ -229,7 +233,7 @@ This Python TUI is designed to be migrated back to C++ using pybind11. Key migra
 - Use `nlohmann/json` for JSON serialization on C++ side
 - Keep Python models as source of truth for API contracts
 
-### Providers (`tui/providers.py`)
+### Providers (`tui/providers/`)
 
 - Provider interface can be abstract C++ class
 - Python providers can call C++ implementations via pybind11

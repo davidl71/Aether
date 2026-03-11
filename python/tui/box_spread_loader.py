@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Optional, Tuple, Any
 
 from .models import BoxSpreadPayload
-from .config import TUIConfig
+from .config import TUIConfig, canonical_api_base_url
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ def get_box_spread_payload(
     last_file_mtime: Optional[float] = None,
 ) -> Tuple[Optional[BoxSpreadPayload], Optional[float]]:
     """
-    Load box spread payload from REST (derived from config.rest_endpoint) or from file.
+    Load box spread payload from REST (derived from the canonical API base) or from file.
 
     Returns:
         (payload, new_file_mtime): payload is None if no data could be loaded;
@@ -32,13 +32,9 @@ def get_box_spread_payload(
     data: Optional[dict[str, Any]] = None
     new_mtime: Optional[float] = None
 
-    # Prefer API router base when set; otherwise derive base from snapshot endpoint
-    base: Optional[str] = None
-    api_base_url = getattr(config, "api_base_url", None)
-    if api_base_url:
-        base = api_base_url.strip().rstrip("/")
-    if not base:
-        base = (config.rest_endpoint or "").rsplit("/", 1)[0]
+    # Prefer the canonical shared HTTP base. Legacy rest_endpoint is only used
+    # indirectly when canonical_api_base_url derives a base from it.
+    base: Optional[str] = canonical_api_base_url(config)
 
     # Try REST first: /scenarios from base
     if base:

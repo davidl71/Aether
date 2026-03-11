@@ -16,7 +16,7 @@ The C++ TUI (`native/src/tui_app.cpp`) has been replaced with a Python TUI (`pyt
 python/tui/
 ├── __init__.py
 ├── models.py            # Shared data models (matches PWA TypeScript types)
-├── providers.py         # Data providers (mock, REST, file)
+├── providers/           # Data providers package (mock, REST, file, NATS, health)
 ├── app.py               # Main TUI application (Textual); composes components
 ├── config.py            # Configuration management
 ├── box_spread_loader.py # Load box spread scenarios from REST or file
@@ -67,7 +67,7 @@ python -m python.tui
 
 # REST provider
 export TUI_BACKEND=rest
-export TUI_API_URL=http://localhost:8080/api/snapshot
+export TUI_API_BASE_URL=http://localhost:8080
 python -m python.tui
 
 # File provider
@@ -77,7 +77,7 @@ python -m python.tui
 
 # Or use the script
 ./scripts/run_python_tui.sh mock
-./scripts/run_python_tui.sh rest http://localhost:8080/api/snapshot
+./scripts/run_python_tui.sh rest http://localhost:8080/api/v1/snapshot
 ```
 
 ## Key Features

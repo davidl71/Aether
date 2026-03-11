@@ -12,7 +12,16 @@ from unittest.mock import patch
 
 
 from .. import config as config_module
-from ..config import TUIConfig, load_config, _apply_env_overrides, DEFAULT_BACKEND_PORTS, DEFAULT_TCP_BACKEND_PORTS, PRESET_REST_ENDPOINTS
+from ..config import (
+    TUIConfig,
+    load_config,
+    _apply_env_overrides,
+    DEFAULT_BACKEND_PORTS,
+    DEFAULT_TCP_BACKEND_PORTS,
+    PRESET_REST_ENDPOINTS,
+    DEFAULT_GATEWAY_BASE_URL,
+    snapshot_endpoint_from_base,
+)
 
 
 # Rest endpoint default in TUIConfig (P1-B: via api-gateway to Rust)
@@ -56,7 +65,8 @@ class TestTUIConfigDefaults:
 
     def test_default_endpoint(self):
         cfg = TUIConfig()
-        assert cfg.rest_endpoint == DEFAULT_REST_ENDPOINT
+        assert cfg.api_base_url is None
+        assert cfg.rest_endpoint == ""
 
     def test_default_interval(self):
         cfg = TUIConfig()
@@ -81,6 +91,10 @@ class TestTUIConfigDefaults:
         assert config.rest_endpoint == "https://api.example.com"
         assert config.update_interval_ms == 2000
         assert config.show_colors is False
+
+    def test_default_api_base_roundtrips_to_snapshot(self):
+        cfg = TUIConfig()
+        assert snapshot_endpoint_from_base(cfg.api_base_url) == DEFAULT_REST_ENDPOINT
 
 
 # ---------------------------------------------------------------------------
@@ -191,6 +205,13 @@ class TestEnvOverrides:
         cfg = TUIConfig()
         _apply_env_overrides(cfg)
         assert cfg.rest_endpoint == "http://custom:9090"
+        assert cfg.api_base_url == "http://custom:9090"
+
+    def test_api_base_override(self, monkeypatch):
+        monkeypatch.setenv("TUI_API_BASE_URL", "http://custom:9999")
+        cfg = TUIConfig()
+        _apply_env_overrides(cfg)
+        assert cfg.api_base_url == "http://custom:9999"
 
     def test_snapshot_file_override(self, monkeypatch):
         monkeypatch.setenv("TUI_SNAPSHOT_FILE", "/data/snap.json")
@@ -234,6 +255,7 @@ class TestLoadConfig:
         assert config.provider_type == "rest"
         assert config.rest_endpoint == "https://api.example.com"
         assert config.update_interval_ms == 2000
+        assert config.api_base_url == "https://api.example.com"
 
     def test_load_config_env_override_provider_type(self, tmp_path):
         config_path = tmp_path / "config.json"
@@ -272,6 +294,7 @@ class TestLoadConfig:
                     config = load_config()
 
         assert config.rest_endpoint == "https://env.example.com"
+        assert config.api_base_url == "https://env.example.com"
 
     def test_load_config_env_override_file_path(self, tmp_path):
         config_path = tmp_path / "config.json"
@@ -308,4 +331,4 @@ class TestLoadConfig:
                 config = load_config()
 
         assert config.provider_type == "mock"
-        assert config.rest_endpoint == DEFAULT_REST_ENDPOINT
+        assert config.api_base_url == DEFAULT_GATEWAY_BASE_URL

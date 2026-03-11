@@ -46,13 +46,13 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for the full issue analysis.
 **Files**: `agents/backend/crates/ledger/src/lib.rs`, `python/integration/` ledger write paths.
 
 ### P1-B: Unify TUI and Web data backends <!-- exarp: T-1772887221914991889 -->
-**Status:** Implemented. TUI default `rest_endpoint` and presets use api-gateway (`http://localhost:9000`); gateway proxies to Rust or Python. One entry point for TUI and Web when gateway is running.
+**Status:** Implemented. TUI shared HTTP reads now use canonical `api_base_url` (defaulting to api-gateway at `http://localhost:9000`), while specialist presets still use explicit routed snapshot endpoints. One entry point for TUI and Web when gateway is running.
 **Issue**: TUI reads Python :8000-8006; Web reads Rust :8080. Two pipelines, potential divergence.
 **Fix**:
 - Route TUI's `RestProvider` through the Go `api-gateway` (:8090), which already proxies
   both Python services and Rust backend. One entry point, same data.
 - Or: expose a unified `/api/snapshot` from the Go gateway that aggregates Python + Rust.
-**Files**: `python/tui/providers.py`, `agents/go/cmd/api-gateway/main.go`.
+**Files**: `python/tui/providers/`, `agents/go/cmd/api-gateway/main.go`.
 
 ---
 
@@ -75,7 +75,7 @@ single writer to NATS KV buckets / live-state views consumed by clients. Clients
 to KV watch — zero-latency updates with no polling overhead. NATS KV is persistent
 (backed by JetStream). Python consumes those specialist/analytics views; it does not own
 collection or live-state writes.
-**Files**: `native/src/nats_client.cpp`, `agents/go/cmd/collection-daemon`, `python/tui/providers.py` (NatsProvider consumer path).
+**Files**: `native/src/nats_client.cpp`, `agents/go/cmd/collection-daemon`, `python/tui/providers/` (NatsProvider consumer path).
 **Depends on**: P2-B (NatsEnvelope decode in Go agents).
 
 ---
