@@ -8,8 +8,6 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 from datetime import datetime
 import os
-import json
-import tempfile
 from fastapi.testclient import TestClient
 
 import sys
@@ -17,13 +15,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from integration.ib_service import (
     create_app,
-    _now_iso,
     _symbols_from_env,
-    _extract_account_value,
-    _format_ibcid_display_name,
-    build_snapshot_payload,
     ModeRequest,
-    AccountRequest,
+)
+from integration.ib_snapshot_builder import (
+    _extract_account_value,
+    _extract_cash_by_currency_from_summary,
+    _format_ibcid_display_name,
+    _now_iso,
+    build_snapshot_payload,
 )
 from integration.ibkr_portal_client import IBKRPortalClient, IBKRPortalError
 
@@ -130,7 +130,6 @@ class TestHelperFunctions(unittest.TestCase):
 
     def test_extract_cash_by_currency_from_summary_nested(self):
         """Test _extract_cash_by_currency_from_summary with nested cash dict (USD + CHF)."""
-        from integration.ib_service import _extract_cash_by_currency_from_summary
         summary = {"cash": {"USD": 10000.0, "CHF": 2500.50}}
         result = _extract_cash_by_currency_from_summary(summary)
         assert len(result) == 2
@@ -140,7 +139,6 @@ class TestHelperFunctions(unittest.TestCase):
 
     def test_extract_cash_by_currency_from_summary_list(self):
         """Test _extract_cash_by_currency_from_summary with balanceByCurrency list."""
-        from integration.ib_service import _extract_cash_by_currency_from_summary
         summary = {
             "balanceByCurrency": [
                 {"currency": "USD", "value": "5000.00"},
@@ -280,145 +278,13 @@ class TestFastAPIEndpoints(unittest.TestCase):
             self.app = create_app()
             self.client = TestClient(self.app)
 
-    def test_health_endpoint_returns_immediately(self):
-        """Health returns 200 immediately from cached state (no blocking gateway call in request path)."""
+    def test_health_endpoint_removed(self):
         response = self.client.get("/api/health")
-        assert response.status_code == 200
-        data = response.json()
-        assert "status" in data
-        assert data["status"] in ("starting", "ok", "error")
-        assert "ib_connected" in data
-        assert "ts" in data
+        assert response.status_code == 404
 
-    def test_health_endpoint_success(self):
-        """When connection_state is updated (e.g. by background task), health returns it."""
-        self.app.state.connection_state.update({
-            "status": "ok",
-            "ib_connected": True,
-            "gateway_logged_in": True,
-            "accounts": ["DU123456"],
-            "ts": _now_iso(),
-        })
-        response = self.client.get("/api/health")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "ok"
-        assert data["ib_connected"] is True
-        assert "DU123456" in data["accounts"]
-
-    def test_health_endpoint_error(self):
-        """When connection_state has error, health returns it."""
-        self.app.state.connection_state.update({
-            "status": "error",
-            "ib_connected": False,
-            "gateway_logged_in": False,
-            "error": "Connection failed",
-            "accounts": [],
-            "ts": _now_iso(),
-        })
-        response = self.client.get("/api/health")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "error"
-        assert data["ib_connected"] is False
-        assert "error" in data
-
-    def test_snapshot_endpoint_success(self):
-        """Test /api/v1/snapshot endpoint with successful data."""
-        with patch('integration.ib_service._symbols_from_env', return_value=["SPY"]):
-            self.mock_client.get_snapshots_batch.return_value = [
-                {"last": 450.0, "bid": 449.5, "ask": 450.5, "close": 449.0, "volume": 1000000},
-            ]
-            self.mock_client.get_account_summary.return_value = {
-                "NetLiquidation": [{"value": "100000.00"}],
-            }
-            self.mock_client.get_accounts.return_value = ["DU123456"]
-            self.mock_client.get_portfolio_positions.return_value = []
-
-            response = self.client.get("/api/v1/snapshot")
-            assert response.status_code == 200
-            data = response.json()
-            assert "symbols" in data
-            assert "positions" in data
-            assert "metrics" in data
-            assert len(data["symbols"]) == 1
-
-    def test_snapshot_endpoint_with_account_id(self):
-        """Test /api/v1/snapshot endpoint with account_id parameter."""
-        with patch('integration.ib_service._symbols_from_env', return_value=["SPY"]):
-            self.mock_client.get_snapshots_batch.return_value = [
-                {"last": 450.0, "bid": 449.5, "ask": 450.5, "close": 449.0, "volume": 1000000},
-            ]
-            self.mock_client.get_account_summary.return_value = {}
-            self.mock_client.get_accounts.return_value = ["DU123456"]
-            self.mock_client.get_portfolio_positions.return_value = []
-
-            response = self.client.get("/api/v1/snapshot?account_id=DU123456")
-            assert response.status_code == 200
-            self.mock_client.get_account_summary.assert_called_with("DU123456")
-
-    def test_snapshot_endpoint_with_symbols_query_param(self):
-        """Test /api/v1/snapshot?symbols=MNQ uses requested symbols (e.g. for nano/micro futures)."""
-        self.mock_client.get_snapshots_batch.return_value = [
-            {"last": 21500.0, "bid": 21498.0, "ask": 21502.0, "close": 21499.0, "volume": 50000},
-        ]
-        self.mock_client.get_account_summary.return_value = {}
-        self.mock_client.get_accounts.return_value = ["DU123"]
-        self.mock_client.get_portfolio_positions.return_value = []
-
-        response = self.client.get("/api/v1/snapshot?symbols=MNQ")
-        assert response.status_code == 200
-        data = response.json()
-        assert "symbols" in data
-        assert len(data["symbols"]) == 1
-        assert data["symbols"][0]["symbol"] == "MNQ"
-        assert data["symbols"][0]["last"] == 21500.0
-        self.mock_client.get_snapshots_batch.assert_called_once_with(["MNQ"])
-
-    def test_snapshot_endpoint_writes_file(self):
-        """Test /api/v1/snapshot endpoint writes file when SNAPSHOT_FILE_PATH is set."""
-        with patch('integration.ib_service._symbols_from_env', return_value=["SPY"]):
-            with patch.dict(os.environ, {"SNAPSHOT_FILE_PATH": "/tmp/test_snapshot.json"}):
-                self.mock_client.get_snapshots_batch.return_value = [
-                    {"last": 450.0, "bid": 449.5, "ask": 450.5, "close": 449.0, "volume": 1000000},
-                ]
-                self.mock_client.get_account_summary.return_value = {}
-                self.mock_client.get_accounts.return_value = []
-                self.mock_client.get_portfolio_positions.return_value = []
-
-                # Recreate app to pick up env var
-                with patch('integration.ib_service.IBKRPortalClient') as mock_client_class:
-                    mock_client_class.return_value = self.mock_client
-                    app = create_app()
-                    TestClient(app)
-
-                    with tempfile.TemporaryDirectory() as tmpdir:
-                        snapshot_path = os.path.join(tmpdir, "snapshot.json")
-                        with patch.dict(os.environ, {"SNAPSHOT_FILE_PATH": snapshot_path}):
-                            # Recreate app again with new path
-                            with patch('integration.ib_service.IBKRPortalClient') as mock_client_class2:
-                                mock_client_class2.return_value = self.mock_client
-                                app2 = create_app()
-                                client2 = TestClient(app2)
-
-                                response = client2.get("/api/v1/snapshot")
-                                assert response.status_code == 200
-
-                                # Check if file was created
-                                if os.path.exists(snapshot_path):
-                                    with open(snapshot_path, 'r') as f:
-                                        file_data = json.load(f)
-                                        assert "symbols" in file_data
-
-    def test_snapshot_endpoint_error_handling(self):
-        """Test /api/v1/snapshot endpoint handles exceptions."""
-        with patch('integration.ib_service._symbols_from_env', return_value=["SPY"]):
-            self.mock_client.get_snapshots_batch.side_effect = Exception("Unexpected error")
-
-            response = self.client.get("/api/v1/snapshot")
-            assert response.status_code == 200  # Endpoint doesn't fail, returns error in payload
-            data = response.json()
-            assert "error" in data
+    def test_snapshot_endpoint_removed(self):
+        response = self.client.get("/api/v1/snapshot")
+        assert response.status_code == 404
 
     def test_positions_endpoint_success(self):
         """Test /api/positions endpoint with successful data."""
@@ -458,106 +324,17 @@ class TestFastAPIEndpoints(unittest.TestCase):
         assert len(data) == 1
         assert "error" in data[0]
 
-    def test_list_accounts_endpoint_success(self):
-        """Test /api/accounts endpoint with successful data."""
-        self.mock_client.get_accounts.return_value = ["DU123456", "DU789012"]
-        self.mock_client.get_account_summary.return_value = {
-            "NetLiquidation": [{"value": "100000.00"}],
-            "BuyingPower": [{"value": "50000.00"}],
-        }
-
+    def test_list_accounts_endpoint_removed(self):
         response = self.client.get("/api/accounts")
-        assert response.status_code == 200
-        data = response.json()
-        assert "accounts" in data
-        assert len(data["accounts"]) == 2
-        assert data["accounts"][0]["id"] == "DU123456"
+        assert response.status_code == 404
 
-    def test_list_accounts_endpoint_summary_error(self):
-        """Test /api/accounts endpoint handles account summary errors."""
-        self.mock_client.get_accounts.return_value = ["DU123456"]
-        self.mock_client.get_account_summary.side_effect = IBKRPortalError("Summary failed")
-
-        response = self.client.get("/api/accounts")
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data["accounts"]) == 1
-        # Account should still be listed even if summary fails
-        assert data["accounts"][0]["id"] == "DU123456"
-
-    def test_list_accounts_endpoint_error(self):
-        """Test /api/accounts endpoint handles IBKRPortalError."""
-        self.mock_client.get_accounts.side_effect = IBKRPortalError("Connection failed")
-
-        response = self.client.get("/api/accounts")
-        assert response.status_code == 200
-        data = response.json()
-        assert "accounts" in data
-        assert len(data["accounts"]) == 0
-        assert "error" in data
-
-    def test_set_account_endpoint_success(self):
-        """Test POST /api/account endpoint with valid account."""
-        self.mock_client.get_accounts.return_value = ["DU123456", "DU789012"]
-
+    def test_set_account_endpoint_removed(self):
         response = self.client.post("/api/account", json={"account_id": "DU123456"})
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "ok"
-        assert data["account_id"] == "DU123456"
+        assert response.status_code == 404
 
-    def test_set_account_endpoint_invalid(self):
-        """Test POST /api/account endpoint with invalid account."""
-        self.mock_client.get_accounts.return_value = ["DU123456"]
-
-        response = self.client.post("/api/account", json={"account_id": "INVALID"})
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "error"
-        assert "not found" in data["message"]
-
-    def test_set_account_endpoint_clear(self):
-        """Test POST /api/account endpoint clears account when account_id is None."""
-        response = self.client.post("/api/account", json={"account_id": None})
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "ok"
-        assert data["account_id"] is None
-
-    def test_get_account_endpoint_success(self):
-        """Test GET /api/account endpoint with active account."""
-        self.mock_client.get_accounts.return_value = ["DU123456"]
-        self.mock_client.get_account_summary.return_value = {
-            "NetLiquidation": [{"value": "100000.00"}],
-            "BuyingPower": [{"value": "50000.00"}],
-            "ExcessLiquidity": [{"value": "30000.00"}],
-            "MaintMarginReq": [{"value": "20000.00"}],
-        }
-
+    def test_get_account_endpoint_removed(self):
         response = self.client.get("/api/account")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["account_id"] == "DU123456"
-        assert data["net_liquidation"] == 100000.0
-
-    def test_get_account_endpoint_no_accounts(self):
-        """Test GET /api/account endpoint with no accounts."""
-        self.mock_client.get_accounts.return_value = []
-
-        response = self.client.get("/api/account")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["account_id"] is None
-
-    def test_get_account_endpoint_error(self):
-        """Test GET /api/account endpoint handles IBKRPortalError."""
-        self.mock_client.get_accounts.side_effect = IBKRPortalError("Connection failed")
-
-        response = self.client.get("/api/account")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["account_id"] is None
-        assert "error" in data
+        assert response.status_code == 404
 
 
 class TestPydanticModels(unittest.TestCase):
@@ -567,16 +344,6 @@ class TestPydanticModels(unittest.TestCase):
         """Test ModeRequest model."""
         request = ModeRequest(mode="LIVE")
         assert request.mode == "LIVE"
-
-    def test_account_request_with_id(self):
-        """Test AccountRequest model with account_id."""
-        request = AccountRequest(account_id="DU123456")
-        assert request.account_id == "DU123456"
-
-    def test_account_request_without_id(self):
-        """Test AccountRequest model without account_id."""
-        request = AccountRequest(account_id=None)
-        assert request.account_id is None
 
 
 if __name__ == "__main__":

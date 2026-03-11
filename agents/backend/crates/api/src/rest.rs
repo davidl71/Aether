@@ -966,6 +966,9 @@ fn ib_proxy_target_url(
     query: Option<&std::collections::HashMap<String, String>>,
 ) -> Result<String, String> {
     let base = std::env::var("IB_URL").unwrap_or_else(|_| DEFAULT_IB_SERVICE_URL.to_string());
+    if path.trim_matches('/') == "positions" {
+        return proxy_target_url(&base, Some("/api"), "positions", query);
+    }
     proxy_target_url(&base, Some("/api/v1"), path, query)
 }
 
@@ -3191,6 +3194,19 @@ mod tests {
         assert!(url.starts_with("http://127.0.0.1:8002/api/v1/orders?"));
         assert!(url.contains("account=DU123"));
         assert!(url.contains("symbols=SPX%2CXSP"));
+    }
+
+    #[test]
+    fn ib_proxy_target_url_rewrites_positions_to_legacy_python_endpoint() {
+        env::remove_var("IB_URL");
+
+        let query = std::collections::HashMap::from([(
+            "account_id".to_string(),
+            "DU123".to_string(),
+        )]);
+        let url = ib_proxy_target_url("positions", Some(&query)).expect("proxy url");
+
+        assert_eq!(url, "http://127.0.0.1:8002/api/positions?account_id=DU123");
     }
 
 }

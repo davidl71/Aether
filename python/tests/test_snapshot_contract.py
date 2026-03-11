@@ -164,34 +164,27 @@ class TestSnapshotContract:
         assert data["strategy"] == "STOPPED"
         assert data["symbols"] == []
 
-    def test_ib_service_snapshot_response_shape(self):
-        """GET /api/v1/snapshot returns JSON with snapshot contract shape."""
-        from unittest.mock import Mock, patch
-        from fastapi.testclient import TestClient
-        from integration.ib_service import create_app
+    def test_ib_snapshot_builder_response_shape(self):
+        """IB snapshot builder returns JSON with snapshot contract shape."""
+        from unittest.mock import Mock
+        from integration.ib_snapshot_builder import build_snapshot_payload
         from integration.ibkr_portal_client import IBKRPortalClient
 
-        with patch("integration.ib_service.IBKRPortalClient") as mock_cls:
-            mock_client = Mock(spec=IBKRPortalClient)
-            mock_client.get_snapshot.return_value = {
+        mock_client = Mock(spec=IBKRPortalClient)
+        mock_client.get_snapshots_batch.return_value = [
+            {
                 "last": 450.0,
                 "bid": 449.5,
                 "ask": 450.5,
                 "close": 449.0,
                 "volume": 1000000,
             }
-            mock_client.get_account_summary.return_value = {}
-            mock_client.get_accounts.return_value = ["DU123"]
-            mock_client.get_portfolio_positions.return_value = []
-            mock_cls.return_value = mock_client
+        ]
+        mock_client.get_account_summary.return_value = {}
+        mock_client.get_accounts.return_value = ["DU123"]
+        mock_client.get_portfolio_positions.return_value = []
 
-            app = create_app()
-            client = TestClient(app)
-
-        with patch("integration.ib_service._symbols_from_env", return_value=["SPY"]):
-            response = client.get("/api/v1/snapshot")
-        assert response.status_code == 200
-        data = response.json()
+        data = build_snapshot_payload(["SPY"], mock_client)
         _assert_snapshot_shape(data)
         assert "symbols" in data
         assert len(data["symbols"]) >= 1
@@ -233,7 +226,7 @@ class TestSnapshotGolden:
     def test_ib_build_snapshot_matches_golden_shape(self, golden_path):
         """build_snapshot_payload output has at least the same top-level keys as golden."""
         from unittest.mock import Mock, patch
-        from integration.ib_service import build_snapshot_payload
+        from integration.ib_snapshot_builder import build_snapshot_payload
         from integration.ibkr_portal_client import IBKRPortalClient
 
         if not golden_path.exists():
@@ -261,7 +254,7 @@ class TestSnapshotGolden:
 
 # Default symbols for live test (SPY is widely available; use MNQ, NQ, etc. for futures)
 LIVE_SNAPSHOT_SYMBOLS = os.getenv("LIVE_SNAPSHOT_SYMBOLS", "SPY")
-LIVE_SNAPSHOT_URL = os.getenv("LIVE_SNAPSHOT_URL", "http://127.0.0.1:8002/api/v1/snapshot")
+LIVE_SNAPSHOT_URL = os.getenv("LIVE_SNAPSHOT_URL", "http://127.0.0.1:8080/api/v1/ib/snapshot")
 
 
 @pytest.mark.skipif(

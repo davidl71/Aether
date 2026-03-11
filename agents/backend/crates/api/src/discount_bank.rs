@@ -11,7 +11,7 @@ use std::str::FromStr;
 const DEFAULT_DISCOUNT_BANK_FILE_PATH: &str = "~/Downloads/DISCOUNT.dat";
 const DEFAULT_DISCOUNT_BANK_CREDIT_RATE: f64 = 0.03;
 const DEFAULT_DISCOUNT_BANK_DEBIT_RATE: f64 = 0.103;
-const DEFAULT_IB_SERVICE_URL: &str = "http://127.0.0.1:8002";
+const DEFAULT_RUST_API_URL: &str = "http://127.0.0.1:8080";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct DiscountBankBalanceResponse {
@@ -508,11 +508,11 @@ async fn load_ledger_positions() -> Result<HashMap<String, String>, String> {
 }
 
 async fn fetch_ib_positions(client: &Client, account_id: Option<&str>) -> Result<Vec<IbPosition>, String> {
-    let base = std::env::var("IB_URL").unwrap_or_else(|_| DEFAULT_IB_SERVICE_URL.to_string());
+    let base = std::env::var("RUST_API_URL").unwrap_or_else(|_| DEFAULT_RUST_API_URL.to_string());
     let url = if let Some(account_id) = account_id {
-        format!("{base}/api/positions?account_id={account_id}")
+        format!("{base}/api/v1/ib/positions?account_id={account_id}")
     } else {
-        format!("{base}/api/positions")
+        format!("{base}/api/v1/ib/positions")
     };
     let response = client
         .get(url)
