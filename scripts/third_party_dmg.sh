@@ -49,7 +49,7 @@ is_active() {
   [[ -L "${NATIVE_TP}/tws-api" ]] && [[ "$(readlink "${NATIVE_TP}/tws-api")" == "${MOUNT_POINT}/tws-api" ]]
 }
 
-# Copy only the trees needed for the native build (no cache, no nautilus).
+# Copy only the trees needed for the native build (no cache).
 prepare_staging() {
   local staging="$1"
   rm -rf "${staging}"

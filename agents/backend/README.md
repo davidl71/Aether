@@ -3,13 +3,12 @@
 ## Responsibilities
 - Ingest market data and normalise events for downstream consumers.
 - Perform pre-trade risk checks and expose REST (and NATS) for clients.
-- Preserve an optional deprecated Nautilus scaffold for future experiments, not active production use.
 
 ## Layout
 - `Cargo.toml`: Rust workspace aggregating core crates.
 - `crates/`: library crates for market data, strategy bridge, risk, and API layers.
 - `services/backend_service/`: Tokio binary wiring crates together.
-- `python/`: deprecated Nautilus strategy scaffold kept only for future experiments.
+- `python/`: deprecated backend Python scaffold; not part of the active runtime.
 - `config/`: runtime configuration templates (`default.toml`).
 - `scripts/`: setup and CI entrypoints.
 
@@ -37,8 +36,8 @@ You can either:
 3. Hit the REST surface via `curl http://127.0.0.1:8080/api/v1/snapshot`.
 4. Execute checks via `bash agents/backend/scripts/run-tests.sh`.
 
-### Nautilus Trader Wheel
-Nautilus Trader is no longer part of the active backend path. The remaining backend Python package is a deprecated scaffold only. Do not treat it as a supported execution mode without explicit reactivation work.
+### Deprecated Python Scaffold
+The backend Python package is not part of the active backend path. Treat it as deprecated packaging surface only, not a supported execution mode.
 
 ## Current Behaviour
 - Periodic mock market data updates drive the shared snapshot returned to TUI/mobile/web clients.

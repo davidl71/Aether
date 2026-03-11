@@ -91,7 +91,6 @@ native/third_party/IntelRDFPMathLib20U2/**
 !native/third_party/IntelRDFPMathLib20U2/**/
 !native/third_party/IntelRDFPMathLib20U2/**/CMakeLists.txt
 native/third_party/IntelRDFPMathLib20U4/
-native/third_party/nautilus/*.whl
 native/third_party/IntelRDFPMathLib20U2/**/*.a
 /agents/backend/target/
 /agents/backend-mock/target/

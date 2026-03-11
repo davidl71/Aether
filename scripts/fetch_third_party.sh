@@ -5,7 +5,6 @@
 #   PROTOBUF_URL           override download URL
 #   INTEL_DECIMAL_URL      path/URL for Intel decimal math tarball
 #   IB_API_ARCHIVE         local path or URL to TWS API archive
-#   NAUTILUS_TRADER_RELEASE or NAUTILUS_TRADER_WHEEL_URL to locate Nautilus wheel
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -70,14 +69,6 @@ fi
 
 if [ -n "${IB_API_ARCHIVE:-}" ]; then
   ANSIBLE_OPTS+=("--extra-vars" "ib_api_archive=${IB_API_ARCHIVE}")
-fi
-
-if [ -n "${NAUTILUS_TRADER_RELEASE:-}" ]; then
-  ANSIBLE_OPTS+=("--extra-vars" "nautilus_trader_release=${NAUTILUS_TRADER_RELEASE}")
-fi
-
-if [ -n "${NAUTILUS_TRADER_WHEEL_URL:-}" ]; then
-  ANSIBLE_OPTS+=("--extra-vars" "nautilus_trader_wheel_url=${NAUTILUS_TRADER_WHEEL_URL}")
 fi
 
 ansible-playbook "$PLAYBOOK" "${ANSIBLE_OPTS[@]}" "$@"

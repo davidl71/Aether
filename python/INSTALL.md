@@ -36,11 +36,7 @@ ib_box_spread --init-config                # writes ~/.config/ib_box_spread/conf
 ib_box_spread --init-config ./custom.json  # writes to a custom path
 ```
 
-### 2. Nautilus Trader Status
-
-Nautilus Trader is deprecated in this repo and is no longer part of the active supported Python workflow. Any remaining Nautilus scaffolding is kept only for future evaluation work.
-
-### 3. Build Cython Bindings
+### 2. Build Cython Bindings
 
 #### Option A: Using setuptools (Recommended)
 
@@ -62,7 +58,7 @@ cmake -B build -DENABLE_PYTHON_BINDINGS=ON
 cmake --build build --target python_bindings
 ```
 
-### 4. Verify Installation
+### 3. Verify Installation
 
 ```bash
 # Test Python imports

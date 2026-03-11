@@ -1,7 +1,7 @@
 [project]
-name = "nautilus-backend"
+name = "backend-python-scaffold"
 version = "0.1.0"
-description = "Strategy scaffolding for the IB backend"
+description = "Deprecated backend Python scaffold kept only for packaging compatibility"
 authors = [{ name = "IB Box Spread Team" }]
 requires-python = ">=3.10"
 dependencies = [

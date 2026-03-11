@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Backend bootstrap: creates venv via uv, installs Python deps, and fetches Cargo crates.
-# Env hints: PYTHON_BIN (preferred interpreter), NAUTILUS_TRADER_WHEEL (optional prebuilt wheel path).
+# Env hints: PYTHON_BIN (preferred interpreter).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -14,10 +14,6 @@ if command -v uv >/dev/null 2>&1 && ! command -v ansible-playbook >/dev/null 2>&
 
   uv venv "$BACKEND_DIR/.venv" --python "$PYTHON" 2>/dev/null || true
   uv pip install --python "$BACKEND_DIR/.venv/bin/python" -e "$BACKEND_DIR/python"
-
-  if [ -n "${NAUTILUS_TRADER_WHEEL:-}" ]; then
-    uv pip install --python "$BACKEND_DIR/.venv/bin/python" "$NAUTILUS_TRADER_WHEEL"
-  fi
 
   if command -v cargo >/dev/null 2>&1; then
     cargo fetch --manifest-path "$BACKEND_DIR/Cargo.toml"
@@ -39,10 +35,6 @@ ANSIBLE_OPTS=("--extra-vars" "repo_root=${REPO_ROOT}")
 
 if [ -n "${PYTHON_BIN:-}" ]; then
   ANSIBLE_OPTS+=("--extra-vars" "python_bin=${PYTHON_BIN}")
-fi
-
-if [ -n "${NAUTILUS_TRADER_WHEEL:-}" ]; then
-  ANSIBLE_OPTS+=("--extra-vars" "nautilus_trader_wheel=${NAUTILUS_TRADER_WHEEL}")
 fi
 
 ansible-playbook -i localhost, --connection=local "$PLAYBOOK" "${ANSIBLE_OPTS[@]}" "$@"

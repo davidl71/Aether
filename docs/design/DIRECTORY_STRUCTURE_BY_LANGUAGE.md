@@ -6,7 +6,7 @@
 |----------|----------|------------|
 | **C++** | `native/` | Core engine: CLI (`ib_box_spread`), TWS client/connection/contracts/orders/positions/market_data, box-spread strategy, risk/greeks/convexity/margin calculators, order_manager, hedge_manager, loan_manager, option_chain, config_manager, rate_limiter, NATS client, proto adapter, cache clients, broker adapters (TWS, Alpaca, IB Client Portal). Build: CMake. |
 | **Rust** | `agents/backend/` | Backend service: REST/WebSocket API (Axum), ledger (accounts, transactions, posting), NATS adapter, market_data pipeline, strategy/risk crates, discount_bank_parser. Build: Cargo. |
-| **Python** | `python/` | TUI (Textual), integration services (IB, Alpaca, Tastytrade, discount_bank, risk_free_rate), clients (alpaca/tastytrade/sofr_treasury/onepassword_sdk_helper), shared_config_loader, bindings, tests. Deprecated Nautilus scaffold remains only for future evaluation. |
+| **Python** | `python/` | TUI (Textual), integration services (IB, Alpaca, Tastytrade, discount_bank, risk_free_rate), clients (alpaca/tastytrade/sofr_treasury/onepassword_sdk_helper), shared_config_loader, bindings, tests. |
 | **TypeScript/React** | `web/` | React web app, snapshot/API/config/hooks, service ports, charts. Build: Vite/npm. |
 | **JavaScript (Node)** | `services/israeli-bank-scrapers-service/` | Israeli bank scrapers HTTP service and CLI; ledger writer; optional 1Password SDK. Build: npm. |
 | **Go** | `agents/go/` | Go-based agents/tools (see `go.mod`). |
@@ -59,7 +59,7 @@ Top-level directories are **component- or product-oriented**. Language is implic
 | Directory | Primary language | Purpose |
 |-----------|------------------|---------|
 | `native/` | C++ | Core engine: pricing, risk, order management, TWS client |
-| `python/` | Python | Integration: TUI, bindings, tests; deprecated Nautilus scaffold |
+| `python/` | Python | Integration: TUI, bindings, tests |
 | `agents/` | Mixed | Services and apps: Rust backend, Go tools, shared |
 | `agents/backend/` | Rust | Backend services (API, ledger, market data) |
 | `agents/go/` | Go | Go-based agents/tools |

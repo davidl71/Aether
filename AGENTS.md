@@ -6,7 +6,7 @@ Comprehensive multi-asset synthetic financing optimization platform. Manages fin
 
 Box spreads are one active strategy component (7-10% of portfolio, spare cash allocation for T-bill-equivalent yields). The platform supports multiple strategy types including futures-implied financing, bond ETFs, and secured lending.
 
-Multi-language codebase: C++ core engine, Python integration layer (TUI, bindings, NautilusTrader), Rust backend agents, Go agents (api-gateway, collectors), TypeScript/React web. See **`docs/MULTI_LANGUAGE_CODEBASE.md`** for a map of languages to directories and build/test/lint commands.
+Multi-language codebase: C++ core engine, Python integration layer (TUI, bindings), Rust backend agents, Go agents (api-gateway, collectors), TypeScript/React web. See **`docs/MULTI_LANGUAGE_CODEBASE.md`** for a map of languages to directories and build/test/lint commands.
 
 ## Project Structure & Module Organization
 

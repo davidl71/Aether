@@ -43,14 +43,6 @@
         PIP_CACHE_DIR: "{{ backend_pip_cache_dir }}"
         XDG_CACHE_HOME: "{{ repo_root }}/.cache"
 
-    - name: Install Nautilus Trader wheel with uv when provided
-      ansible.builtin.command: uv pip install --python "{{ backend_dir }}/.venv/bin/python" "{{ nautilus_trader_wheel }}"
-      when: nautilus_trader_wheel | length > 0
-      environment:
-        UV_CACHE_DIR: "{{ backend_uv_cache_dir }}"
-        PIP_CACHE_DIR: "{{ backend_pip_cache_dir }}"
-        XDG_CACHE_HOME: "{{ repo_root }}/.cache"
-
 - name: Fallback to pip if uv not available
   when: uv_check.rc != 0
   block:
@@ -66,12 +58,6 @@
         name: "{{ backend_dir }}/python"
         editable: true
         virtualenv: "{{ backend_dir }}/.venv"
-
-    - name: Install Nautilus Trader wheel when provided (fallback)
-      ansible.builtin.pip:
-        name: "{{ nautilus_trader_wheel }}"
-        virtualenv: "{{ backend_dir }}/.venv"
-      when: nautilus_trader_wheel | length > 0
 
 - name: Fetch Rust dependencies
   ansible.builtin.command: cargo fetch --manifest-path "{{ backend_dir }}/Cargo.toml"

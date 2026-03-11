@@ -1,6 +1,6 @@
 # IB Box Spread Generator - Python Package
 
-Python integration package for the active Textual TUI, service integrations, and bindings. Old NautilusTrader references are deprecated scaffold/history, not an active supported runtime.
+Python integration package for the active Textual TUI, service integrations, and bindings.
 
 ## Installation
 
@@ -61,4 +61,3 @@ cd bindings && pip install -e .
 ## License
 
 MIT License - see parent project LICENSE file.
-

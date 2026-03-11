@@ -25,7 +25,6 @@ The package is organized as follows:
 
 - **Integration modules** (`integration/`): broker/bank/rates integrations
 - **TUI modules** (`tui/`): active Textual terminal client
-- **Legacy Nautilus scaffolding**: deprecated; not part of the active supported runtime
 
 ### Bindings Package (`python/bindings/`)
 
@@ -121,4 +120,3 @@ python setup.py sdist bdist_wheel
 ```
 
 The built packages will be in `dist/` directory.
-

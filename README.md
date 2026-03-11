@@ -39,7 +39,6 @@ Tradier support is currently removed from the active platform surface. Reintrodu
 - ✅ Modern C++20 codebase with extensive error handling
 - ✅ JSON-based configuration
 - ✅ Comprehensive test suite with Catch2
-- ✅ NautilusTrader integration (Python) for advanced market data and execution
 - ✅ QuantConnect-inspired deployment guard rails (pre-flight checklist, weekly re-auth, rich error catalog)
 - ✅ Event notifications via email/webhook/SMS/Telegram
 - ✅ Market data provider failover with ORATS fallback support
@@ -152,41 +151,6 @@ The Interactive Brokers TWS C++ API can be used in two ways:
 2. **IBKR zip:** Download from https://interactivebrokers.github.io/, extract to `native/third_party/tws-api/` (zip layout: `IBJts/source/cppclient/client/`).
 
 **Note**: The current implementation uses stub functions. Full TWS API integration requires implementing the actual IBKR client callbacks.
-
-### NautilusTrader Integration (Optional)
-
-For advanced trading capabilities, the project supports integration with [NautilusTrader](https://github.com/nautechsystems/nautilus_trader), a high-performance Python trading framework.
-
-**Requirements:**
-
-- Python 3.11 or higher
-- Cython 3.0+
-- NautilusTrader 2.0+
-
-**Installation:**
-
-```bash
-# Install Python dependencies
-uv sync --project python --extra dev --extra tui
-
-# Build Cython bindings
-cd python/bindings
-uv pip install --python ../../python/.venv/bin/python -e .
-
-# Or use CMake
-cmake --build build --target python_bindings
-```
-
-**Usage:**
-
-```bash
-# Run with nautilus_trader
-# (Requires a separate Nautilus Trader installation; not bundled with this repo.)
-python python/nautilus_strategy.py --config config/config.json --dry-run
-
-# Or use C++ binary with --use-nautilus flag (for compatibility check)
-./build/bin/ib_box_spread --use-nautilus --config config/config.json
-```
 
 ## Installation
 
@@ -332,9 +296,6 @@ Edit `config/config.json`:
   "orats": {
     "enabled": false,
     "api_token": ""
-  },
-  "nautilus_trader": {
-    "enabled": true
   },
   "ibkr_portal": {
     "enabled": false,
@@ -826,14 +787,7 @@ Solutions:
 - [ ] Alert/notification system
 - [ ] Machine learning for opportunity scoring
 
-### NautilusTrader Integration ✅
-
 - [x] Cython bindings for C++ calculations
-- [x] NautilusTrader client wrapper
-- [x] Market data handler
-- [x] Execution handler
-- [x] Strategy runner integration
-- [x] Configuration adapter
 
 ## Contributing
 
