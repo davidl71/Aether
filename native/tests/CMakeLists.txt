@@ -342,11 +342,6 @@ if(NOT USE_BOX_SPREAD_CPP_LIB)
     )
 endif()
 
-# Alpaca adapter test requires box_spread_cpp library (box_spread:: namespace)
-if(USE_BOX_SPREAD_CPP_LIB)
-    target_sources(box_spread_tests PRIVATE test_alpaca_adapter.cpp)
-endif()
-
 # Link to extracted box-spread-cpp library if enabled
 if(USE_BOX_SPREAD_CPP_LIB AND TARGET box_spread_cpp)
     target_link_libraries(box_spread_tests PRIVATE box_spread_cpp)

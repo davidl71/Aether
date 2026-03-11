@@ -1020,12 +1020,10 @@ if(_build_native_cli)
         list(APPEND SOURCES
             src/brokers/tws_adapter.cpp
             src/brokers/http_client.cpp
-            src/brokers/alpaca_adapter.cpp
         )
         list(APPEND HEADERS
             include/brokers/tws_adapter.h
             include/brokers/http_client.h
-            include/brokers/alpaca_adapter.h
         )
         message(STATUS "Excluding local box spread files (using extracted library with broker adapters)")
     endif()
