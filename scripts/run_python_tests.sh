@@ -30,22 +30,22 @@ HTML=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
-    case $1 in
-        --coverage)
-            COVERAGE=true
-            shift
-            ;;
-        --html)
-            COVERAGE=true
-            HTML=true
-            shift
-            ;;
-        *)
-            echo "Unknown option: $1"
-            echo "Usage: $0 [--coverage] [--html]"
-            exit 1
-            ;;
-    esac
+  case $1 in
+  --coverage)
+    COVERAGE=true
+    shift
+    ;;
+  --html)
+    COVERAGE=true
+    HTML=true
+    shift
+    ;;
+  *)
+    echo "Unknown option: $1"
+    echo "Usage: $0 [--coverage] [--html]"
+    exit 1
+    ;;
+  esac
 done
 
 USE_UV=false
@@ -77,17 +77,13 @@ if [[ "$COVERAGE" == "true" ]]; then
   if [[ "$HTML" == "true" ]]; then
     echo "📊 Running tests with coverage (HTML report)..."
     if [[ "$USE_UV" == "true" ]]; then
-      uv run --project python pytest python/tests/ python/integration/ \
-        --cov=python/services \
-        --cov=python/tui \
+      uv run --project python pytest python/tests/ \
         --cov=python/integration \
         --cov-report="html:${PYTHON_ARTIFACT_DIR}/htmlcov" \
         --cov-report=term \
         -v
     else
-      pytest python/tests/ python/integration/ \
-        --cov=python/services \
-        --cov=python/tui \
+      pytest python/tests/ \
         --cov=python/integration \
         --cov-report="html:${PYTHON_ARTIFACT_DIR}/htmlcov" \
         --cov-report=term \
@@ -98,16 +94,12 @@ if [[ "$COVERAGE" == "true" ]]; then
   else
     echo "📊 Running tests with coverage..."
     if [[ "$USE_UV" == "true" ]]; then
-      uv run --project python pytest python/tests/ python/integration/ \
-        --cov=python/services \
-        --cov=python/tui \
+      uv run --project python pytest python/tests/ \
         --cov=python/integration \
         --cov-report=term \
         -v
     else
-      pytest python/tests/ python/integration/ \
-        --cov=python/services \
-        --cov=python/tui \
+      pytest python/tests/ \
         --cov=python/integration \
         --cov-report=term \
         -v
@@ -116,9 +108,9 @@ if [[ "$COVERAGE" == "true" ]]; then
 else
   echo "Running tests without coverage..."
   if [[ "$USE_UV" == "true" ]]; then
-    uv run --project python pytest python/tests/ python/integration/ -v
+    uv run --project python pytest python/tests/ -v
   else
-    pytest python/tests/ python/integration/ -v
+    pytest python/tests/ -v
   fi
 fi
 
