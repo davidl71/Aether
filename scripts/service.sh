@@ -36,7 +36,6 @@ _svc_display() {
     gateway) echo "IB Gateway" ;;
     discount) echo "Discount Bank" ;;
     rust) echo "Rust Backend" ;;
-    questdb_nats) echo "QuestDB NATS" ;;
     *) echo "" ;;
   esac
 }
@@ -47,7 +46,6 @@ _svc_port() {
     memcached) echo "11211" ;;
     gateway) echo "${IB_GATEWAY_PORT:-5001}" ;;
     rust) _config_port rust_backend 8080 ;;
-    questdb_nats) echo "" ;;
     *) echo "" ;;
   esac
 }
@@ -58,7 +56,6 @@ _svc_cmd() {
     memcached) echo "memcached -l 127.0.0.1" ;;
     gateway) echo "./ib-gateway/run-gateway.sh" ;;
     rust) echo "./agents/start_rust_backend.sh" ;;
-    questdb_nats) echo "./scripts/run_questdb_nats_writer.sh" ;;
     *) echo "" ;;
   esac
 }
@@ -69,7 +66,6 @@ _svc_log() {
     memcached) echo "memcached.log" ;;
     gateway) echo "ib-gateway.log" ;;
     rust) echo "rust-backend.log" ;;
-    questdb_nats) echo "questdb-nats-writer.log" ;;
     *) echo "" ;;
   esac
 }
@@ -80,7 +76,6 @@ _svc_health() {
     memcached) echo "" ;;
     gateway) echo "https://localhost:\${PORT}" ;;
     rust) echo "http://localhost:\${PORT}/health" ;;
-    questdb_nats) echo "" ;;
     *) echo "" ;;
   esac
 }
@@ -89,14 +84,13 @@ _svc_wait() {
   case "$1" in
     nats|memcached) echo "2" ;;
     gateway) echo "5" ;;
-    questdb_nats) echo "3" ;;
     *) echo "4" ;;
   esac
 }
 
 _svc_known() {
   case "$1" in
-    nats|memcached|gateway|rust|questdb_nats)
+    nats|memcached|gateway|rust)
       return 0
       ;;
     *) return 1 ;;
@@ -105,8 +99,6 @@ _svc_known() {
 
 _is_nats() { [[ "$1" == "nats" ]]; }
 _is_memcached() { [[ "$1" == "memcached" ]]; }
-_is_questdb_nats() { [[ "$1" == "questdb_nats" ]]; }
-
 _find_pid() {
   local svc="$1"
   local port
@@ -114,8 +106,6 @@ _find_pid() {
     pgrep -f "nats-server" 2>/dev/null || true
   elif _is_memcached "$svc"; then
     pgrep -f "memcached" 2>/dev/null || true
-  elif _is_questdb_nats "$svc"; then
-    pgrep -f "collection-daemon|run_questdb_nats_writer" 2>/dev/null || true
   else
     port=$(_svc_port "$svc")
     if [[ -n "$port" ]]; then

@@ -178,23 +178,23 @@ nats server check
 
 ## QuestDB NATS writer
 
-A Go collector path subscribes to NATS `market-data.tick.>` and can write each tick to QuestDB via ILP (table `market_data`) when `QUESTDB_ILP_ADDR` is set. Use it when market data is published to NATS.
+A Rust backend collector path subscribes to NATS `market-data.tick.>` and can write each tick to QuestDB via ILP (table `market_data`) when `QUESTDB_ILP_ADDR` is set. Use it when market data is published to NATS.
 
 **Prerequisites:** NATS server running, QuestDB running with ILP on port 9009, Go installed.
 
-**Run:** The NATS→QuestDB writer now uses `collection-daemon` with the QuestDB sink enabled. From repo root:
+**Run:** The NATS→QuestDB writer now uses the Rust backend with the QuestDB sink enabled. From repo root:
 
 ```bash
 # From repo root (NATS and QuestDB must be running; requires Go)
-./scripts/run_questdb_nats_writer.sh
+QUESTDB_ILP_ADDR=127.0.0.1:9009 cargo run --release --manifest-path agents/backend/Cargo.toml -p backend_service -- --rest-port 8080 --grpc-port 50051
 ```
 
 Or via the unified service manager:
 
 ```bash
-./scripts/service.sh start questdb_nats
-./scripts/service.sh status questdb_nats
-./scripts/service.sh stop questdb_nats
+./scripts/service_manager.sh start rust_backend
+./scripts/service_manager.sh status rust_backend
+./scripts/service_manager.sh stop rust_backend
 ```
 
 **Options / env:**
@@ -208,7 +208,7 @@ Or via the unified service manager:
 
 **Payload format:** `NatsEnvelope` protobuf carrying `MarketDataEvent` payloads. Symbol can be inferred from subject if needed (e.g. `market-data.tick.SPY` → `SPY`). See `proto/messages.proto` and `docs/message_schemas/README.md`.
 
-**Code:** `agents/go/cmd/collection-daemon`. See also `docs/NATS_TOPICS_REGISTRY.md` and `docs/message_schemas/README.md`.
+**Code:** `agents/backend/services/backend_service/src/collection_aggregation.rs`. See also `docs/NATS_TOPICS_REGISTRY.md` and `docs/message_schemas/README.md`.
 
 ## Integration with Launch Scripts
 

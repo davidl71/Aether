@@ -82,18 +82,18 @@ client merges deltas; WebSocket mounted on same server at `/ws`. ~90% bandwidth 
 **Files**: `agents/backend/crates/api/src/websocket.rs`, `agents/backend/crates/api/src/rest.rs`.
 
 ### P2-B: Decode NatsEnvelope in Go agents <!-- exarp: T-1772887221969976131 -->
-**Status:** Implemented. `collection-daemon` decodes `NatsEnvelope`
-using `agents/go/proto/v1/messages.pb.go`. QuestDB fanout now runs through the collector sink.
+**Status:** Implemented. The active collector path decodes `NatsEnvelope`
+in Rust. QuestDB fanout now runs through the backend collector sink.
 **Benefit**: Type-safe; field names match proto schema; survives format changes.
 
 ### P2-C: NATS KV as primary live-state store <!-- exarp: T-1772925042919416172 -->
 **Issue**: Clients poll REST every 1-2s to get current state.
-**Fix**: C++ engine publishes events to NATS, and Go `collection-daemon` becomes the
+**Fix**: C++ engine publishes events to NATS, and the Rust backend collector becomes the
 single writer to NATS KV buckets / live-state views. Rust exposes the client-facing
 read/watch endpoints for that state, so clients do not depend on Go `api-gateway` for
 live-state reads. NATS KV is persistent (backed by JetStream). Python consumes those
 specialist/analytics views; it does not own collection or live-state writes.
-**Files**: `native/src/nats_client.cpp`, `agents/go/cmd/collection-daemon`, `python/tui/providers/` (NatsProvider consumer path).
+**Files**: `native/src/nats_client.cpp`, `agents/backend/services/backend_service/src/collection_aggregation.rs`, `python/tui/providers/` (NatsProvider consumer path).
 **Depends on**: P2-B (NatsEnvelope decode in Go agents).
 
 ---
@@ -172,7 +172,7 @@ ConnectRPC serves gRPC, gRPC-Web, and plain JSON HTTP/1.1 from the same handler.
 ### E2: Apache Arrow Flight for bulk/historical data
 Replace QuestDB HTTP polling with Arrow Flight SQL for columnar bulk reads.
 QuestDB natively supports Arrow Flight SQL. Python analytics get zero-copy columnar data.
-The Go QuestDB writer path inside `collection-daemon` becomes an Arrow Flight writer.
+The Rust QuestDB writer path inside the backend collector becomes an Arrow Flight writer.
 **Impact**: 10-100x faster for bulk position/tick queries. Enables notebook-level analysis.
 
 ### E3: Asset Relationship Graph (Phase 2 of SYNTHETIC_FINANCING_ARCHITECTURE)

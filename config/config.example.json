@@ -185,9 +185,6 @@
     "discount_bank": {
       "port": 8003 // Discount Bank service
     },
-    "tastytrade": {
-      "port": 8005 // Tastytrade service (alternative broker integration)
-    },
     "nats": {
       "port": 4222, // NATS client connection port
       "http_port": 8222, // NATS HTTP monitoring port

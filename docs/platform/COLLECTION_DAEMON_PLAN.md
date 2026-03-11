@@ -1,12 +1,12 @@
-# Unified Collection Daemon — Design Plan
+# Unified Collection Path — Design Plan
 
-**Epic**: E5 (IMPROVEMENT_PLAN.md) — Replace Python data-collection polling with a single Go daemon.  
+**Epic**: E5 (IMPROVEMENT_PLAN.md) — Replace Python data-collection polling with a single thin collector.  
 **Task**: T-1772887222970694620  
 **Last updated**: 2026-03-08
 
 ## 1. Objective
 
-Replace Python polling loops (TUI RestProvider, file pollers, health pollers) with one **thin Go daemon** that:
+Replace Python polling loops (TUI RestProvider, file pollers, health pollers) with one **thin collector** that:
 
 - **Subscribes to NATS** for C++ events (market data, signals, decisions)
 - **Polls broker REST APIs** on configurable intervals (positions, rates)
@@ -61,16 +61,16 @@ Default subjects (aligned with DATAFLOW_ARCHITECTURE.md):
 | Phase   | Scope                                              | Status  |
 |--------|----------------------------------------------------|--------|
 | **0**  | Design doc + one slice: NATS subscribe + stub writer + /metrics | Done (this slice) |
-| **1**  | Wire real QuestDB ILP writer as a `collection-daemon` sink | Done |
+| **1**  | Wire real QuestDB ILP writer in the Rust backend collector | Done |
 | **2**  | Add broker REST poller (configurable URL + interval) | Backlog |
-| **3**  | NATS KV writer for live state (after P2-C)         | Backlog |
+| **3**  | NATS KV writer for live state (after P2-C)         | Done |
 | **4**  | Decommission Python polling (TUI/Web read from NATS KV / QuestDB) | Backlog |
 
 ## 7. Files
 
 | Path | Purpose |
 |------|--------|
-| `agents/go/cmd/collection-daemon/main.go` | Entrypoint: NATS subscribe, decode NatsEnvelope, sink pipeline, /metrics server |
+| `agents/backend/services/backend_service/src/collection_aggregation.rs` | Rust collector: NATS subscribe, decode NatsEnvelope, sink pipeline |
 | `docs/platform/COLLECTION_DAEMON_PLAN.md` | This plan |
 | `docs/platform/DATAFLOW_ARCHITECTURE.md` | NATS contract and data flow (reference) |
 | `docs/platform/IMPROVEMENT_PLAN.md` | Epic E5 and priority matrix |
@@ -86,4 +86,4 @@ Default subjects (aligned with DATAFLOW_ARCHITECTURE.md):
 - **Epic E5**: `docs/platform/IMPROVEMENT_PLAN.md` § Priority 5 — E5  
 - **NATS contract**: `docs/platform/DATAFLOW_ARCHITECTURE.md` §3  
 - **Go agents**: `agents/go/README.md`  
-- **QuestDB fanout**: handled directly by `collection-daemon` via the optional QuestDB sink (`QUESTDB_ILP_ADDR`)
+- **QuestDB fanout**: handled directly by the Rust backend collector via the optional QuestDB sink (`QUESTDB_ILP_ADDR`)

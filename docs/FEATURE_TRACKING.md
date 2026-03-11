@@ -1,21 +1,20 @@
 # Feature Tracking: Python/Textual TUI vs Web
 
-This document tracks feature alignment between the two active frontends:
+> Historical note
+>
+> As of March 11, 2026, the React web frontend is retired from the active runtime
+> surface. The current supported frontends are the Python/Textual TUI and the
+> native CLI. This document is kept only as historical parity context.
 
-- `python/tui/` — the canonical terminal client
-- `web/` — the canonical browser client
+## Historical Status Labels
 
-It is intentionally limited to current repo reality. Removed Apple clients and the old native C++ TUI are not parity targets.
-
-## Status Labels
-
-- `Shared` — implemented on both active frontends
+- `Shared` — implemented on both frontends when web was still active
 - `TUI-only` — intentionally terminal-only or only implemented in the Textual TUI
 - `Web-only` — intentionally browser-only or only implemented in the web app
 - `Partial` — exists on both sides but differs materially
 - `Missing` — expected for parity but absent on one side
 
-## Canonical Scope
+## Historical Scope
 
 The Python/Textual TUI and the React web app consume the same platform concepts:
 
@@ -80,16 +79,16 @@ Parity does not mean identical interaction design. The TUI is keyboard-first and
 | Installable PWA behavior | No | Yes | Web-only | This is specific to the browser client. |
 | Terminal operator footer/help | Yes | No | TUI-only | TUI-specific affordance. |
 
-## Active Gaps Worth Tracking
+## Historical Gaps Worth Tracking
 
-### Web gaps relative to TUI
+### Former web gaps relative to TUI
 
 - loan management and import workflows
 - richer operator setup/provider controls
 - dedicated logs/operator diagnostics surface
 - some export/operator workflows
 
-### TUI gaps relative to web
+### Former TUI gaps relative to web
 
 - richer scenario summary presentation
 - browser/PWA-specific install/offline UX
@@ -98,16 +97,13 @@ Parity does not mean identical interaction design. The TUI is keyboard-first and
 ### Intentional differences
 
 - TUI remains the operator-focused terminal surface.
-- Web remains the browser/PWA surface and can keep browser-native capabilities that do not need TUI equivalents.
+- The retired web client was the browser/PWA surface and could keep browser-native capabilities
+  that did not need TUI equivalents.
 
-## Maintenance Rules
+## Historical Maintenance Rules
 
-When adding or changing a frontend feature:
-
-1. Update this matrix only for the active frontends: `python/tui/` and `web/`.
-2. Mark capabilities as `Shared`, `Partial`, `TUI-only`, `Web-only`, or `Missing`.
-3. Do not reintroduce removed clients or the old native TUI as parity targets.
-4. Prefer capability-level descriptions over file-by-file implementation notes.
+This matrix is no longer an active maintenance target while the web frontend is retired.
+Keep it only as reference if the browser client is revived later.
 
 ## Related Docs
 

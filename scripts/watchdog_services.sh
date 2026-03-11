@@ -30,12 +30,10 @@ fi
 # Service configuration
 declare -A SERVICE_PORTS=(
   ["discount_bank"]=8003
-  ["tastytrade"]=8005
 )
 
 declare -A SERVICE_SCRIPTS=(
   ["discount_bank"]="start_discount_bank_service.sh"
-  ["tastytrade"]="start_tastytrade_service.sh"
 )
 
 declare -A RESTART_COUNTS=()

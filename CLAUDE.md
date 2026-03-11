@@ -6,7 +6,7 @@ For exarp-go (session prime, handoff, tasks, scorecard) in Cursor, Claude Code, 
 
 ## Project at a Glance
 
-Comprehensive multi-asset synthetic financing platform. Manages financing across options, futures, bonds, loans, and pension funds with unified portfolio management across 21+ accounts and multiple brokers. Box spreads are one active strategy (spare cash, T-bill-equivalent yields). C++ core in `native/src/` and `native/include/`, tests in `native/tests/` (Catch2), Python layer in `python/`.
+Comprehensive multi-asset synthetic financing platform. Manages financing across options, futures, bonds, loans, and pension funds with unified portfolio management across 21+ accounts and multiple brokers. Box spreads are one active strategy (spare cash, T-bill-equivalent yields). C++ core in `native/src/` and `native/include/`, tests in `native/tests/` (Catch2), Python layer in `python/`. The active frontend focus is TUI/CLI; the React web client is archived for now.
 
 ## Build & Test
 

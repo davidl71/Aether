@@ -12,7 +12,7 @@ This file tracks the active local daemon set for the current TUI/CLI-era runtime
 ## Notes
 
 - Rust now aggregates `system.health` directly; there is no separate health dashboard daemon.
-- `collection-daemon` remains an active Go daemon by architecture, but it is not managed by these legacy Python-oriented daemon wrappers.
+- Rust backend now performs the active NATS collection, `LIVE_STATE`, and optional QuestDB fanout work directly.
 - Interactive Brokers public routes are now Rust-owned; there is no standalone Python IB daemon in the active runtime.
 - Israeli bank scrapers are retired from the active runtime surface for now.
 - Alpaca, Tastytrade, Discount Bank, risk-free-rate, and web-specific daemons are retired from the active runtime.

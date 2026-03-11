@@ -28,13 +28,17 @@ Comprehensive multi-asset financing optimization system for managing synthetic f
 - ✅ Multi-instrument relationship optimization
 - ✅ Investment strategy framework (portfolio allocation, convexity, volatility skew)
 - ✅ Unified position view across all asset types
-- ✅ Multi-broker architecture (IBKR, Alpaca, Tastytrade, Israeli brokers)
+- ✅ Multi-broker architecture (IBKR, Israeli brokers, future specialist integrations)
 
 Tradier support is currently removed from the active platform surface. Reintroduction can be revisited later if it becomes a real integration priority.
 
 Jupyter notebooks remain available as manual research artifacts under `notebooks/`, but the
 old project-managed JupyterLab service path is retired for now and should be treated as a
 future improvement rather than an active runtime feature.
+
+The React web app under `web/` is also retired as an active runtime surface for now. The
+current supported frontends are the Python/Textual TUI and the native CLI. The web tree is
+kept only as archived implementation/reference material while the project focuses on TUI/CLI.
 
 ### Additional Platform Features
 - ✅ Comprehensive logging with spdlog
@@ -49,7 +53,7 @@ future improvement rather than an active runtime feature.
 - ✅ QuestDB time-series archiving for quotes and trades
 - ✅ IBKR Client Portal API integration for account and portfolio snapshots
 - ✅ Cython bindings exposing C++ calculations to Python
-- ✅ WebAssembly (WASM) module for code reuse between backend, TUI, and web app
+- ✅ WebAssembly (WASM) module for code reuse between backend and future UI surfaces
 
 ## Strategies
 

@@ -101,7 +101,8 @@ impl LoanRecord {
             errors.push("Payment frequency must be > 0".into());
         }
 
-        let origination = parse_loan_datetime(&self.origination_date, "origination_date", &mut errors);
+        let origination =
+            parse_loan_datetime(&self.origination_date, "origination_date", &mut errors);
         let maturity = parse_loan_datetime(&self.maturity_date, "maturity_date", &mut errors);
         parse_loan_datetime(&self.next_payment_date, "next_payment_date", &mut errors);
         parse_loan_datetime(&self.last_update, "last_update", &mut errors);
@@ -182,7 +183,8 @@ impl LoanRepository {
         let database_url = detect_default_database_url()?;
         let legacy_import_path = legacy_import_path();
         let repo = Self::connect(&database_url).await?;
-        repo.seed_from_legacy_if_empty(legacy_import_path.as_deref()).await?;
+        repo.seed_from_legacy_if_empty(legacy_import_path.as_deref())
+            .await?;
         Ok(repo)
     }
 
@@ -195,7 +197,8 @@ impl LoanRepository {
         };
 
         let repo = Self::connect(&database_url).await?;
-        repo.seed_from_legacy_if_empty(legacy_import_path.as_deref()).await?;
+        repo.seed_from_legacy_if_empty(legacy_import_path.as_deref())
+            .await?;
         Ok(repo)
     }
 
@@ -272,7 +275,8 @@ impl LoanRepository {
             .with_context(|| format!("failed to parse legacy loan store {}", path.display()))?;
 
         for loan in file.loans {
-            loan.validate().map_err(|errors| anyhow!(errors.join("; ")))?;
+            loan.validate()
+                .map_err(|errors| anyhow!(errors.join("; ")))?;
             self.upsert(&loan).await?;
         }
 
@@ -419,7 +423,10 @@ fn detect_default_database_url() -> anyhow::Result<String> {
         }
     }
 
-    let candidates = [PathBuf::from("agents/backend/data/ledger.db"), PathBuf::from("data/ledger.db")];
+    let candidates = [
+        PathBuf::from("agents/backend/data/ledger.db"),
+        PathBuf::from("data/ledger.db"),
+    ];
 
     if let Some(existing) = candidates.iter().find(|path| path.exists()) {
         return Ok(sqlite_database_url(existing));

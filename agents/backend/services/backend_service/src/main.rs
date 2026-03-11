@@ -32,6 +32,7 @@ use tracing::{info, warn};
 
 mod nats_integration;
 mod health_aggregation;
+mod collection_aggregation;
 mod swiftness;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -112,8 +113,8 @@ async fn main() -> anyhow::Result<()> {
     let health_state = HealthAggregateState::new_shared();
 
     // Initialize NATS integration (graceful degradation if unavailable)
-    let nats_integration =
-        Arc::new(nats_integration::NatsIntegration::new(std::env::var("NATS_URL").ok()).await);
+    let nats_url = std::env::var("NATS_URL").ok();
+    let nats_integration = Arc::new(nats_integration::NatsIntegration::new(nats_url.clone()).await);
 
     if nats_integration
         .as_ref()
@@ -173,7 +174,8 @@ async fn main() -> anyhow::Result<()> {
         nats_integration,
     )?;
 
-    health_aggregation::spawn_health_aggregator(health_state, std::env::var("NATS_URL").ok());
+    health_aggregation::spawn_health_aggregator(health_state, nats_url.clone());
+    collection_aggregation::spawn_collection_aggregator(state.clone(), nats_url);
 
     // Swiftness is temporarily disabled by default; enable explicitly for manual use.
     if swiftness::swiftness_enabled() {

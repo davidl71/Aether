@@ -13,8 +13,8 @@ For deeper detail, see:
 ## Summary
 
 - `C++` produces market and strategy events.
-- `Go` collects, fans out, and exposes operational aggregation.
-- `Rust` owns shared frontend read APIs.
+- `Rust` owns shared frontend read APIs and active collection fanout.
+- `Go` is narrowed to operational tooling that remains separate by role.
 - `Python` owns the Textual TUI and selected specialist integration services.
 
 ## Runtime Shape
@@ -23,7 +23,7 @@ For deeper detail, see:
 IBKR/TWS
   -> C++ engine / tws_client
     -> NATS (NatsEnvelope protobuf)
-      -> Go collection-daemon
+      -> Rust backend collector
            -> QuestDB
            -> NATS KV LIVE_STATE
       -> Rust nats_adapter
@@ -49,7 +49,7 @@ TUI
 
 ### Collection and operational services
 
-- `agents/go/cmd/collection-daemon`
+- `agents/backend/services/backend_service`
   - decodes `NatsEnvelope`
   - writes `LIVE_STATE` KV
   - writes QuestDB when configured
@@ -78,8 +78,8 @@ Python is no longer the general frontend read-model backend or a collection/live
 
 | Store | Writer | Purpose |
 |-------|--------|---------|
-| `NATS KV LIVE_STATE` | Go `collection-daemon` | live key-value state, full `NatsEnvelope` values |
-| `QuestDB` | Go `collection-daemon` | time-series archive |
+| `NATS KV LIVE_STATE` | Rust backend collector | live key-value state, full `NatsEnvelope` values |
+| `QuestDB` | Rust backend collector | time-series archive |
 | `SQLite ledger` | Rust ledger target owner | durable ledger state |
 | C++ in-memory cache | C++ only | hot tick data |
 

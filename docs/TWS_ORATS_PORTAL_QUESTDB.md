@@ -54,7 +54,7 @@ ORATS is **not** part of the active supported runtime.
 | **Config** | `config/config.json` → `questdb.enabled`, `questdb.ilp_host`, `questdb.ilp_port`, etc. |
 | **Docs** | `README.md` (QuestDB Archiving), `docs/research/external/FINANCIAL_DATA_SOURCES_RESEARCH.md`, [QuestDB docs](https://questdb.com/docs/) |
 
-Snapshot metrics include `questdb_ok`. **NATS → QuestDB:** `collection-daemon` can now write QuestDB ILP directly when `QUESTDB_ILP_ADDR` is set, using decoded `MarketDataEvent` envelopes from NATS. Run via `./scripts/run_questdb_nats_writer.sh` or `./scripts/service.sh start questdb_nats`. Requires Go. For current subject/payload expectations, see **`docs/NATS_SETUP.md`** and **`docs/NATS_TOPICS_REGISTRY.md`**.
+Snapshot metrics include `questdb_ok`. **NATS → QuestDB:** the Rust backend can now write QuestDB ILP directly when `QUESTDB_ILP_ADDR` is set, using decoded `MarketDataEvent` envelopes from NATS. Use the normal Rust backend runtime with `NATS_URL` and `QUESTDB_ILP_ADDR` configured. For current subject/payload expectations, see **`docs/NATS_SETUP.md`** and **`docs/NATS_TOPICS_REGISTRY.md`**.
 
 ---
 

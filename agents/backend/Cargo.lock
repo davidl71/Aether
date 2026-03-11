@@ -258,6 +258,7 @@ dependencies = [
  "futures",
  "market_data",
  "nats_adapter",
+ "prost",
  "prost-types",
  "rand 0.8.5",
  "reqwest",

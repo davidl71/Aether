@@ -12,6 +12,7 @@ risk = { path = "../../crates/risk" }
 api = { path = "../../crates/api" }
 nats_adapter = { path = "../../crates/nats_adapter" }
 prost-types = "0.13"
+prost = "0.13"
 serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }

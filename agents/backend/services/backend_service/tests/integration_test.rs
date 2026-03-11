@@ -31,7 +31,7 @@ async fn test_market_data_publishing() {
         .expect("Failed to spawn proto subscriber");
 
     // Publish using proto (same format as C++ nats_client.cpp)
-    let publisher = Publisher::new(client.clone(), subject.clone(), "test".into(), "MarketDataEvent".into());
+    let publisher = Publisher::new(client.clone(), subject.clone(), "test", "MarketDataEvent");
     let event = pb::MarketDataEvent {
         symbol: "TEST".to_string(),
         bid: 100.0,
@@ -71,7 +71,7 @@ async fn test_strategy_signal_publishing() {
         .await
         .expect("Failed to spawn proto subscriber");
 
-    let publisher = Publisher::new(client.clone(), subject.clone(), "test".into(), "StrategySignal".into());
+    let publisher = Publisher::new(client.clone(), subject.clone(), "test", "StrategySignal");
     let signal = pb::StrategySignal {
         symbol: "TEST".to_string(),
         price: 100.5,
@@ -110,7 +110,7 @@ async fn test_strategy_decision_publishing() {
         .expect("Failed to spawn proto subscriber");
 
     let publisher =
-        Publisher::new(client.clone(), subject.clone(), "test".into(), "StrategyDecision".into());
+        Publisher::new(client.clone(), subject.clone(), "test", "StrategyDecision");
     let decision = pb::StrategyDecision {
         symbol: "TEST".to_string(),
         quantity: 1,
@@ -169,14 +169,14 @@ async fn test_wildcard_subscriptions() {
     let publisher_spy = Publisher::new(
         client.clone(),
         topics::market_data::tick("SPY"),
-        "test".into(),
-        "MarketDataEvent".into(),
+        "test",
+        "MarketDataEvent",
     );
     let publisher_xsp = Publisher::new(
         client.clone(),
         topics::market_data::tick("XSP"),
-        "test".into(),
-        "MarketDataEvent".into(),
+        "test",
+        "MarketDataEvent",
     );
 
     let event_spy = pb::MarketDataEvent {

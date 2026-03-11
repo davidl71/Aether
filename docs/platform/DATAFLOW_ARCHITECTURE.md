@@ -16,7 +16,7 @@ IBKR TWS (port 7497)
         ├─► InMemoryCache (hot tick data, C++ only)
         ├─► nats_client.cpp
         │     └─► NATS: market-data.tick.<symbol>  [NatsEnvelope protobuf]
-        │           ├─► Go collection-daemon
+        │           ├─► Rust backend collector
         │           │     ├─► QuestDB via ILP (time-series archive)
         │           │     └─► NATS KV LIVE_STATE
         │           └─► Rust nats_adapter
@@ -75,7 +75,7 @@ Python integration / TUI
         └─► no active durable write ownership
 
 QuestDB
-  └─► written by: Go collection-daemon QuestDB sink (ILP protocol)
+  └─► written by: Rust backend collector QuestDB sink (ILP protocol)
   └─► read by: Python analytics / notebooks
 ```
 
@@ -86,12 +86,12 @@ QuestDB
 | Store | Technology | Written By | Read By | Data | TTL / Retention |
 |-------|-----------|-----------|---------|------|-----------------|
 | InMemoryCache | C++ (custom) | tws_client | C++ engine only | Hot tick prices | In-process |
-| NATS KV | NATS JetStream | Go collection-daemon | Rust API, TUI NatsProvider, Web (future) | Live state (key = messageType.symbol, value = full `NatsEnvelope` protobuf) | Configurable |
+| NATS KV | NATS JetStream | Rust backend collector | Rust API, TUI NatsProvider, Web (future) | Live state (key = messageType.symbol, value = full `NatsEnvelope` protobuf) | Configurable |
 | SQLite (ledger) | Rust (sqlx) | Rust + selected Python read paths | Ledger, positions | Permanent |
 | Loan store | Rust backend (transitional JSON-backed) | Rust backend | Rust API, Python TUI via `/api/v1/loans` | Loan records / loan-derived views | Permanent |
-| QuestDB | Go (ILP) | collection-daemon | Python analytics | Tick time-series | Configurable |
+| QuestDB | Rust (ILP) | backend collector | Python analytics | Tick time-series | Configurable |
 
-**NATS KV key schema (bucket LIVE_STATE):** Keys are `messageType.symbol` (e.g. `MarketDataEvent.SPY`, `StrategyDecision.AAPL`). Values are full serialized `NatsEnvelope` records, not just inner payload bytes. Written by collection-daemon when it receives NATS messages. Read from the Rust backend via `GET /api/live/state` (list keys), `GET /api/live/state?key=MarketDataEvent.SPY` (one key, raw value base64 plus decoded envelope metadata), or `GET /api/live/state/watch` (SSE stream of KV updates with the same metadata). **Requires NATS server 2.6.2+** (JetStream Key-Value).
+**NATS KV key schema (bucket LIVE_STATE):** Keys are `messageType.symbol` (e.g. `MarketDataEvent.SPY`, `StrategyDecision.AAPL`). Values are full serialized `NatsEnvelope` records, not just inner payload bytes. Written by the Rust backend collector when it receives NATS messages. Read from the Rust backend via `GET /api/live/state` (list keys), `GET /api/live/state?key=MarketDataEvent.SPY` (one key, raw value base64 plus decoded envelope metadata), or `GET /api/live/state/watch` (SSE stream of KV updates with the same metadata). **Requires NATS server 2.6.2+** (JetStream Key-Value).
 
 ---
 
@@ -111,14 +111,14 @@ message NatsEnvelope {
 
 | Topic | Inner Message | Publisher | Subscribers |
 |-------|--------------|-----------|-------------|
-| `market-data.tick.<symbol>` | `MarketDataEvent` | C++ nats_client | Go collection-daemon, Rust nats_adapter |
+| `market-data.tick.<symbol>` | `MarketDataEvent` | C++ nats_client | Rust backend collector, Rust nats_adapter |
 | `strategy.signal.<symbol>` | `StrategySignal` | C++ nats_client | Rust nats_adapter |
 | `strategy.decision.<symbol>` | `StrategyDecision` | C++ nats_client | Rust nats_adapter |
 | `system.health` | protobuf (`BackendHealth` or `NatsEnvelope`) | Python services and other backends | Rust health aggregation and Rust-facing health routes |
 
 **Note**: `NatsEnvelope` protobuf is now the only supported active wire format in the
-Rust adapter and Go collectors. `collection-daemon`
-understand envelope records directly; older doc references to JSON transport, the removed
+Rust adapter and Rust backend collector. The active collector
+understands envelope records directly; older doc references to JSON transport, the removed
 standalone QuestDB bridge, or raw-string parsing are stale.
 
 ---
@@ -146,7 +146,7 @@ All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/sl
 
 | Agent | Purpose | Listens | Exposes |
 |-------|---------|---------|---------|
-| `collection-daemon` | Unified NATS collector (Epic E5): decode `NatsEnvelope` once, write through sinks (KV/log today), optional JetStream durable mode | NATS `market-data.>`, etc. | HTTP /metrics (Prometheus) |
+| `backend collector` | Unified NATS collector (Epic E5): decode `NatsEnvelope` once, write through sinks (KV/log/QuestDB today) | NATS `market-data.>`, etc. | Rust backend health/metrics surface |
 | `supervisor` | Process supervisor (restart on crash) | JSON config | Process PIDs |
 | `config-validator` | Validates platform config at startup | Config file | Exit code |
 
@@ -242,8 +242,8 @@ Python remains outside collection and shared read-model ownership in this target
 | Store | Single writer | Readers |
 |-------|----------------|---------|
 | SQLite (ledger) | Rust ledger crate only | Rust API; Python should migrate to Rust-owned reads |
-| QuestDB | Go collection-daemon only | Python analytics, notebooks |
-| NATS KV (live state) | Go collection-daemon | Rust API, TUI NatsProvider, archived Web (future if revived) |
+| QuestDB | Rust backend collector only | Python analytics, notebooks |
+| NATS KV (live state) | Rust backend collector | Rust API, TUI NatsProvider, archived Web (future if revived) |
 | Loan store | Rust backend only | Rust API, Python TUI via `/api/v1/loans` |
 | InMemoryCache | C++ tws_client | C++ engine only |
 
@@ -275,7 +275,7 @@ flowchart LR
   end
   TWS --> Cpp
   Cpp --> Nats
-  Nats --> Collector[Go collection-daemon]
+  Nats --> Collector[Rust backend collector]
   Nats --> Rust[Rust nats_adapter + health aggregation]
   Collector --> QDB
   Collector --> KV
@@ -287,8 +287,8 @@ flowchart LR
 ```
 
 - **Current read paths**: the web client reads primarily from the Rust backend; the Textual TUI reads a mix of Rust-owned read models, selected Python specialist services, and optional NATS/event-driven paths. The remaining split is now narrower and mostly tied to integration-specific Python services.
-- **Single writer per store**: Ledger = Rust; loans = Rust backend; QuestDB = Go collection-daemon; NATS KV = Go collection-daemon.
-- **Persistence**: Rust writes durable backend state and serves shared read models; collection-daemon writes QuestDB and live state from NATS; Python does not own collection or shared durable writes.
+- **Single writer per store**: Ledger = Rust; loans = Rust backend; QuestDB = Rust backend collector; NATS KV = Rust backend collector.
+- **Persistence**: Rust writes durable backend state, serves shared read models, and writes QuestDB/live state from NATS; Python does not own collection or shared durable writes.
 
 ### Implementation order (task dependencies)
 
