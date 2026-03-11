@@ -197,7 +197,7 @@ Terminal Display
   - **`snapshot_display.py`** – Header line (time, mode, strategy, account).
   - **`dashboard.py`**, **`positions.py`**, **`orders.py`**, **`alerts.py`** – Snapshot-based tabs.
   - **`scenarios.py`** – Box spread scenarios (uses `update_data(box_spread_data)`).
-  - **`historic.py`** – Historic positions (stub; “No historic data” until implemented).
+  - **`historic.py`** – Historic positions table backed by `snapshot.historic`.
   - **`unified_positions.py`**, **`cash_flow.py`**, **`opportunity_simulation.py`**, **`relationship_visualization.py`**, **`loan_entry.py`** – Extended tabs.
 
 See `docs/TUI_REFACTORING_PLAN.md` for the refactoring plan.

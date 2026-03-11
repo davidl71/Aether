@@ -30,7 +30,7 @@ python/tui/
 │   ├── orders.py
 │   ├── alerts.py
 │   ├── scenarios.py
-│   ├── historic.py      # Historic positions (stub)
+│   ├── historic.py      # Historic positions table
 │   ├── unified_positions.py
 │   ├── cash_flow.py
 │   ├── opportunity_simulation.py
@@ -118,7 +118,7 @@ All code includes migration notes for future C++ migration via pybind11:
 1. **Add IBKR REST provider** - Use `python/integration/ibkr_portal_client.py`
 2. **Add LiveVol provider** - Use `python/integration/orats_client.py`
 3. **Add setup screen** - Interactive configuration
-4. **Implement historic positions tab** - Replace stub in `components/historic.py` with real data
+4. **Expand historic positions tab** - Add richer metrics or filtering if backend starts publishing more history
 5. **Performance testing** - Compare with C++ TUI
 6. **Documentation** - Update main README
 
