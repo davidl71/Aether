@@ -116,6 +116,8 @@ impl RestServer {
             )
             .route("/api/live/state", get(live_state))
             .route("/api/live/state/watch", get(live_state_watch))
+            .route("/api/v1/ib/health", get(ib_health))
+            .route("/api/v1/ib/snapshot", get(ib_snapshot))
             .route("/api/v1/ib", any(proxy_ib_root))
             .route("/api/v1/ib/*path", any(proxy_ib))
             .route("/api/v1/snapshot", get(snapshot))
@@ -436,6 +438,16 @@ async fn proxy_ib(
         body,
     )
     .await
+}
+
+async fn ib_health(
+    Extension(state): Extension<RestState>,
+) -> Result<Json<HealthResponse>, StatusCode> {
+    health(Extension(state)).await
+}
+
+async fn ib_snapshot(Extension(state): Extension<RestState>) -> Json<SystemSnapshot> {
+    snapshot(Extension(state)).await
 }
 
 async fn extract_rate(
