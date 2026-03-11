@@ -32,7 +32,7 @@ TUI (Python/Textual)
   ├─► Rust frontend API: shared read models (snapshot, unified positions,
   │                      relationships, cash flow, opportunity simulation)
   ├─► Python integration services: broker snapshots, discount-bank accounts,
-  │                                risk-free-rate / benchmark endpoints
+  │                                internal finance helpers where Rust still proxies to Python
   └─► NATS provider: event-driven fallback / live updates
 
 Web (React)
@@ -43,8 +43,8 @@ Web (React)
 
   Other web read models:
     ├─► Rust frontend endpoints (`/api/v1/frontend/*`)
-    ├─► Discount Bank service for bank-account extraction
-    └─► Risk-free-rate service for benchmark / curve endpoints
+    ├─► Rust `/api/bank-accounts`, `/api/balance`, `/api/transactions`
+    └─► Rust-owned benchmark / curve endpoints
 
 ```
 

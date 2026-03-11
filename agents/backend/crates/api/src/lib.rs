@@ -1,4 +1,5 @@
 mod finance_rates;
+mod discount_bank;
 mod loans;
 pub mod rest;
 pub mod state;

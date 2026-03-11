@@ -15,7 +15,7 @@ The following providers are **independent**: you can have accounts and positions
 
 | Provider | Type | Notes |
 |----------|------|--------|
-| **Discount** (Discount Bank) | Israeli bank | Market securities, cash, loans; via Python service (port 8003) and/or Israeli bank scrapers (`companyId: discount`); positions in parallel |
+| **Discount** (Discount Bank) | Israeli bank | Market securities, cash, loans; via Rust-owned bank-account routes and/or Israeli bank scrapers (`companyId: discount`); positions in parallel |
 | **Alpaca** | US broker | Optional live/paper integration; disabled by default in example config |
 | **Tastytrade** | US broker | Live/paper; positions in parallel |
 | **IB** (Interactive Brokers) | US broker | TWS API / Client Portal; live/paper; positions in parallel |

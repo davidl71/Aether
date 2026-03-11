@@ -720,8 +720,8 @@ class TUIApp(App):
         )
 
     def _do_fetch_bank_accounts(self) -> Optional[List[Any]]:
-        """Run in worker: fetch bank accounts from Discount Bank service or API router."""
-        url = "http://localhost:8003/api/bank-accounts"
+        """Run in worker: fetch bank accounts from the shared Rust API."""
+        url = "http://localhost:8080/api/bank-accounts"
         api_base_url = getattr(self.config, "api_base_url", None)
         if api_base_url:
             base = api_base_url.strip().rstrip("/")

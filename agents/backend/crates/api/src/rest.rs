@@ -25,6 +25,12 @@ use crate::finance_rates::{
     get_treasury_rates as fetch_treasury_benchmarks, yield_curve_comparison as compare_yield_curves,
     BoxSpreadInput, CompareRequest, CurveQuery, CurveRequest, YieldCurveComparisonRequest,
 };
+use crate::discount_bank::{
+    get_balance as get_discount_bank_balance,
+    get_bank_accounts as get_discount_bank_accounts,
+    get_transactions as get_discount_bank_transactions,
+    import_positions as import_discount_bank_positions, ImportPositionsQuery,
+};
 use crate::loans::{LoanAggregationInput, LoanRecord, LoanRepository};
 use crate::state::{Alert, OrderSnapshot, SharedSnapshot, SystemSnapshot};
 use crate::websocket::WebSocketServer;
@@ -89,6 +95,10 @@ impl RestServer {
             .route("/api/heartbeat", any(proxy_heartbeat_root))
             .route("/api/heartbeat/*path", any(proxy_heartbeat))
             .route("/api/config", get(shared_config))
+            .route("/api/balance", get(discount_bank_balance))
+            .route("/api/transactions", get(discount_bank_transactions))
+            .route("/api/bank-accounts", get(discount_bank_bank_accounts))
+            .route("/api/import-positions", get(discount_bank_import_positions))
             .route("/api/extract-rate", post(extract_rate))
             .route("/api/build-curve", post(build_curve))
             .route("/api/compare", post(compare_rates))
@@ -870,6 +880,59 @@ fn shared_config_response(config: &serde_json::Value) -> serde_json::Value {
 async fn shared_config() -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
     let config = load_shared_config_json().map_err(live_state_internal_error)?;
     Ok(Json(shared_config_response(&config)))
+}
+
+#[derive(Deserialize)]
+struct DiscountBankTransactionsQuery {
+    limit: Option<usize>,
+}
+
+async fn discount_bank_balance(
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let response = get_discount_bank_balance().await.map_err(|error| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse { error }),
+        )
+    })?;
+    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+}
+
+async fn discount_bank_transactions(
+    Query(query): Query<DiscountBankTransactionsQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let response = get_discount_bank_transactions(query.limit.unwrap_or(20))
+        .await
+        .map_err(|error| {
+            (
+                StatusCode::NOT_FOUND,
+                Json(ErrorResponse { error }),
+            )
+        })?;
+    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+}
+
+async fn discount_bank_bank_accounts(
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let response = get_discount_bank_accounts()
+        .await
+        .map_err(live_state_internal_error)?;
+    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+}
+
+async fn discount_bank_import_positions(
+    Query(query): Query<ImportPositionsQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let client = Client::new();
+    let response = import_discount_bank_positions(query, &client)
+        .await
+        .map_err(|error| {
+            (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse { error }),
+            )
+        })?;
+    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
 }
 
 fn ib_proxy_target_url(

@@ -70,6 +70,6 @@ Reason:
 ## Non-goals for this pass
 
 - Broker integration APIs are not being removed yet.
-- Discount Bank remains a Python-owned public service for now.
+- Discount Bank public route ownership has moved to Rust; remaining Python parsing helpers are legacy cleanup work.
 - Risk-free-rate finance logic has moved into the Rust API; the old standalone Python service wrapper is retired.
 - Health aggregation can be revisited later, but it is not the first reduction target.
