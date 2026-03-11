@@ -6,8 +6,9 @@ use std::{
 
 use anyhow::Context;
 use api::{
-    Alert, HistoricPosition, LoanRepository, OrderSnapshot, PositionSnapshot, RestServer, RestState,
-    SharedSnapshot, StrategyController, StrategyDecisionSnapshot, SystemSnapshot,
+    Alert, HealthAggregateState, HistoricPosition, LoanRepository, OrderSnapshot,
+    PositionSnapshot, RestServer, RestState, SharedSnapshot, StrategyController,
+    StrategyDecisionSnapshot, SystemSnapshot,
 };
 use async_trait::async_trait;
 use chrono::{Duration as ChronoDuration, Utc};
@@ -30,6 +31,7 @@ use tokio::{
 use tracing::{info, warn};
 
 mod nats_integration;
+mod health_aggregation;
 mod swiftness;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -107,6 +109,7 @@ async fn main() -> anyhow::Result<()> {
     let state: SharedSnapshot = Arc::new(RwLock::new(SystemSnapshot::default()));
     let (strategy_ctrl_tx, strategy_ctrl_rx) = watch::channel(false);
     let controller = StrategyController::new(strategy_ctrl_tx);
+    let health_state = HealthAggregateState::new_shared();
 
     // Initialize NATS integration (graceful degradation if unavailable)
     let nats_integration =
@@ -125,7 +128,12 @@ async fn main() -> anyhow::Result<()> {
     let loan_repository = LoanRepository::load_default()
         .await
         .context("failed to initialize loan repository")?;
-    let rest_state = RestState::new(state.clone(), controller.clone(), loan_repository);
+    let rest_state = RestState::new(
+        state.clone(),
+        controller.clone(),
+        loan_repository,
+        health_state.clone(),
+    );
 
     {
         let mut snapshot = state.write().await;
@@ -164,6 +172,8 @@ async fn main() -> anyhow::Result<()> {
         market_ctrl_rx,
         nats_integration,
     )?;
+
+    health_aggregation::spawn_health_aggregator(health_state, std::env::var("NATS_URL").ok());
 
     // Swiftness is temporarily disabled by default; enable explicitly for manual use.
     if swiftness::swiftness_enabled() {

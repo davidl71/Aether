@@ -114,7 +114,7 @@ message NatsEnvelope {
 | `market-data.tick.<symbol>` | `MarketDataEvent` | C++ nats_client | Go collection-daemon, Rust nats_adapter |
 | `strategy.signal.<symbol>` | `StrategySignal` | C++ nats_client | Rust nats_adapter |
 | `strategy.decision.<symbol>` | `StrategyDecision` | C++ nats_client | Rust nats_adapter |
-| `system.health` | protobuf (`BackendHealth` or `NatsEnvelope`) | Python services and other backends | Python health_dashboard / Rust-facing health routes |
+| `system.health` | protobuf (`BackendHealth` or `NatsEnvelope`) | Python services and other backends | Rust health aggregation and Rust-facing health routes |
 
 **Note**: `NatsEnvelope` protobuf is now the only supported active wire format in the
 Rust adapter and Go collectors. `collection-daemon`
@@ -270,14 +270,13 @@ flowchart LR
   end
   subgraph clients [Clients]
     RustApi[Rust API :8080]
-    HealthDash[health_dashboard :8011]
     Web[Web]
     TUI[TUI]
   end
   TWS --> Cpp
   Cpp --> Nats
   Nats --> Collector[Go collection-daemon]
-  Nats --> Rust[Rust nats_adapter]
+  Nats --> Rust[Rust nats_adapter + health aggregation]
   Collector --> QDB
   Collector --> KV
   Rust --> Ledger
@@ -285,7 +284,6 @@ flowchart LR
   RustApi --> TUI
   Ledger --> Rust
   KV --> RustApi
-  RustApi --> HealthDash
 ```
 
 - **Current read paths**: the web client reads primarily from the Rust backend; the Textual TUI reads a mix of Rust-owned read models, selected Python specialist services, and optional NATS/event-driven paths. The remaining split is now narrower and mostly tied to integration-specific Python services.

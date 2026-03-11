@@ -34,9 +34,6 @@ if str(PROJECT_ROOT) not in sys.path:
 
 def _effective_health_url(config) -> str | None:
     """Unified health URL from config (same logic as TUI app)."""
-    url = getattr(config, "health_dashboard_url", None)
-    if url:
-        return url
     base = getattr(config, "api_base_url", None)
     if base:
         return base.strip().rstrip("/") + "/api/health"
@@ -111,7 +108,7 @@ def main() -> int:
         if do_health and health_url:
             lines.append(f"curl -sS '{health_url}'")
         if not lines:
-            print("Nothing to curl (no health URL in config?). Snapshot:", snapshot_url, file=sys.stderr)
+        print("Nothing to curl (no shared health URL in config?). Snapshot:", snapshot_url, file=sys.stderr)
             return 1
         print("\n".join(lines))
         return 0

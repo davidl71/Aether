@@ -18,7 +18,6 @@
 
 - Benchmark and treasury-rate routes are now Rust-owned end to end.
   - The TUI should use the shared Rust origin; there is no separate benchmark service fallback path anymore.
-- `python/services/health_dashboard.py`
   - still the active aggregated health source for the TUI
 - broker and bank integration services
   - IB

@@ -37,10 +37,7 @@ _svc_display() {
     ib) echo "IBKR" ;;
     alpaca) echo "Alpaca" ;;
     tastytrade) echo "Tastytrade" ;;
-    riskfree) echo "Risk-Free Rate" ;;
     discount) echo "Discount Bank" ;;
-    healthdashboard) echo "Health Dashboard" ;;
-    web) echo "Web Dev" ;;
     rust) echo "Rust Backend" ;;
     questdb_nats) echo "QuestDB NATS" ;;
     *) echo "" ;;
@@ -55,10 +52,6 @@ _svc_port() {
     ib) _config_port ib 8002 ;;
     alpaca) _config_port alpaca 8000 ;;
     tastytrade) _config_port tastytrade 8005 ;;
-    riskfree) _config_port risk_free_rate 8004 ;;
-    discount) _config_port discount_bank 8003 ;;
-    healthdashboard) _config_port health_dashboard 8011 ;;
-    web) echo "5173" ;;
     rust) _config_port rust_backend 8010 ;;
     questdb_nats) echo "" ;;
     *) echo "" ;;
@@ -73,10 +66,6 @@ _svc_cmd() {
     ib) echo "./web/scripts/run-ib-service.sh" ;;
     alpaca) echo "./web/scripts/run-alpaca-service.sh" ;;
     tastytrade) echo "./web/scripts/run-tastytrade-service.sh" ;;
-    riskfree) echo "./web/scripts/run-risk-free-rate-service.sh" ;;
-    discount) echo "./web/scripts/run-discount-bank-service.sh" ;;
-    healthdashboard) echo "./scripts/run_health_dashboard.sh" ;;
-    web) echo "npm run dev" ;;
     rust) echo "./agents/start_rust_backend.sh" ;;
     questdb_nats) echo "./scripts/run_questdb_nats_writer.sh" ;;
     *) echo "" ;;
@@ -91,10 +80,6 @@ _svc_log() {
     ib) echo "ib-service.log" ;;
     alpaca) echo "alpaca-service.log" ;;
     tastytrade) echo "tastytrade-service.log" ;;
-    riskfree) echo "risk-free-rate-service.log" ;;
-    discount) echo "discount-bank-service.log" ;;
-    healthdashboard) echo "health-dashboard.log" ;;
-    web) echo "web-dev-server.log" ;;
     rust) echo "rust-backend.log" ;;
     questdb_nats) echo "questdb-nats-writer.log" ;;
     *) echo "" ;;
@@ -106,13 +91,11 @@ _svc_health() {
     nats) echo "http://localhost:8222/healthz" ;;
     memcached) echo "" ;;
     gateway) echo "https://localhost:\${PORT}" ;;
-    ib|alpaca|tastytrade|riskfree|discount)
+    ib|alpaca|tastytrade)
       echo "http://localhost:\${PORT}/api/health"
       ;;
-    healthdashboard) echo "http://localhost:\${PORT}/api/health" ;;
     rust) echo "http://localhost:\${PORT}/health" ;;
     questdb_nats) echo "" ;;
-    web) echo "http://localhost:5173" ;;
     *) echo "" ;;
   esac
 }
@@ -121,9 +104,7 @@ _svc_wait() {
   case "$1" in
     nats|memcached) echo "2" ;;
     gateway) echo "5" ;;
-    web) echo "6" ;;
-    ib|alpaca|tastytrade|riskfree|discount) echo "8" ;;
-    healthdashboard) echo "6" ;;
+    ib|alpaca|tastytrade) echo "8" ;;
     questdb_nats) echo "3" ;;
     *) echo "4" ;;
   esac
@@ -131,7 +112,7 @@ _svc_wait() {
 
 _svc_known() {
   case "$1" in
-    nats|memcached|gateway|ib|alpaca|tastytrade|riskfree|discount|web|rust|questdb_nats|healthdashboard)
+    nats|memcached|gateway|ib|alpaca|tastytrade|rust|questdb_nats)
       return 0
       ;;
     *) return 1 ;;
@@ -379,7 +360,7 @@ do_restart() {
 do_list() {
   echo "Available services:"
   local svc port enabled
-  for svc in nats memcached gateway ib alpaca tastytrade riskfree discount healthdashboard web rust; do
+  for svc in nats memcached gateway ib alpaca tastytrade web rust; do
     port=$(_svc_port "$svc")
     enabled="enabled"
     _config_enabled "$svc" "true" || enabled="disabled"
@@ -389,7 +370,7 @@ do_list() {
 
 # Service order for start-all (dependency order); stop-all uses reverse
 # healthdashboard after backends so NATS has time to be ready
-ALL_SERVICES_START=(nats memcached gateway ib riskfree discount alpaca tastytrade healthdashboard web)
+ALL_SERVICES_START=(nats memcached gateway ib alpaca tastytrade web)
 
 do_start_all() {
   local svc

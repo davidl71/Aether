@@ -61,6 +61,7 @@ TUI
   - owns shared frontend read models
   - owns `LIVE_STATE` read/watch endpoints
   - owns `/api/heartbeat/*`, `/api/health-aggregated`, and `/gateway/health`
+  - consumes `system.health` directly for aggregated health
   - is the primary browser-facing backend
 
 ### Python scope
@@ -70,9 +71,6 @@ TUI
 - `python/integration/`
   - broker and bank integrations
   - benchmark/rate routes and active logic are now Rust-owned
-- `python/services/health_dashboard.py`
-  - internal `system.health` aggregation service behind Rust-owned routes
-
 Python is no longer the general frontend read-model backend or a collection/live-state ownership layer.
 
 ## Storage
@@ -88,7 +86,7 @@ Python is no longer the general frontend read-model backend or a collection/live
 
 - Rust and Python still overlap around some durable/local finance state, especially loans.
 - TUI still mixes Rust read models with selected Python service calls.
-- Go `api-gateway` and Go `heartbeat-aggregator` are retired. Rust now owns the client-facing health and heartbeat routes, backed by the existing Python health dashboard where needed.
+- Go `api-gateway` and Go `heartbeat-aggregator` are retired. Rust now owns the client-facing health and heartbeat routes and consumes `system.health` directly.
 
 ## Default Deployment Direction
 

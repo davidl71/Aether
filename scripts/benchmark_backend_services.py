@@ -42,7 +42,6 @@ DEFAULT_SERVICES: List[Dict[str, Any]] = [
     {"name": "alpaca", "port": 8000, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5), ("/api/snapshot", "snapshot", 20)]},
     {"name": "tastytrade", "port": 8005, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5), ("/api/v1/snapshot", "snapshot", 20)]},
     {"name": "discount_bank", "port": 8003, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5)]},
-    {"name": "risk_free_rate", "port": 8004, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5)]},
 ]
 
 
@@ -70,7 +69,6 @@ def load_services_from_config(config_path: Path) -> List[Dict[str, Any]]:
         "alpaca": ("alpaca", 8000),
         "tastytrade": ("tastytrade", 8005),
         "discount_bank": ("discount_bank", 8003),
-        "risk_free_rate": ("risk_free_rate", 8004),
     }
     result = []
     for key, (name, default_port) in port_map.items():
@@ -91,23 +89,21 @@ def load_services_from_config(config_path: Path) -> List[Dict[str, Any]]:
     return result
 
 
-def get_health_dashboard_port(config_path: Path) -> Optional[int]:
-    """Read health_dashboard.port from config; default 8011 if section present."""
+def get_shared_health_port(config_path: Path) -> Optional[int]:
+    """Read rust_backend.rest_port from config; default 8080 if section present."""
     if not config_path.exists():
-        return 8011
+        return 8080
     try:
         raw = config_path.read_text(encoding="utf-8")
         lines = [line for line in raw.splitlines() if not line.strip().startswith("//")]
         data = json.loads("\n".join(lines))
     except Exception:
-        return 8011
+        return 8080
     services = data.get("services") or {}
-    hd = services.get("health_dashboard")
-    if isinstance(hd, dict) and isinstance(hd.get("port"), (int, float)):
-        return int(hd["port"])
-    if isinstance(hd, (int, float)):
-        return int(hd)
-    return 8011
+    rust = services.get("rust_backend")
+    if isinstance(rust, dict) and isinstance(rust.get("rest_port"), (int, float)):
+        return int(rust["rest_port"])
+    return 8080
 
 
 def run_status_table_benchmark(
@@ -129,9 +125,9 @@ def run_status_table_benchmark(
     if not health_only:
         return results
 
-    # 1) Unified: one GET to dashboard (if available)
+    # 1) Unified: one GET to shared Rust health (if available)
     if dashboard_port is not None:
-        url = f"http://127.0.0.1:{dashboard_port}/api/health"
+        url = f"http://127.0.0.1:{dashboard_port}/api/health-aggregated"
         latencies: List[float] = []
         errors = 0
         for _ in range(n_rounds):
@@ -147,7 +143,7 @@ def run_status_table_benchmark(
             srt = sorted(latencies)
             p95 = srt[min(int(len(srt) * 0.95), len(srt) - 1)] if srt else 0
             results.append({
-                "mode": "unified (dashboard)",
+                "mode": "unified (rust health)",
                 "n": n_rounds,
                 "min_ms": round(min(latencies), 2),
                 "avg_ms": round(statistics.mean(latencies), 2),
@@ -362,7 +358,7 @@ def main() -> int:
         return 1
 
     if args.mode == "status-table":
-        dashboard_port = get_health_dashboard_port(config_path)
+        dashboard_port = get_shared_health_port(config_path)
         st_results = run_status_table_benchmark(
             services,
             dashboard_port,

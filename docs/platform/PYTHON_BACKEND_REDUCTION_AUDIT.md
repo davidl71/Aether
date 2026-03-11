@@ -6,7 +6,6 @@
 ## Scope
 
 Reviewed:
-- `python/services/health_dashboard.py`
 - `python/integration/*_service.py` integration APIs
 
 ## Keep in Python
@@ -28,9 +27,6 @@ They are explicit specialist services, not the shared frontend read-model backen
   - Broker-specific integration API and session state.
 - Standalone benchmark/rate service wrapper retired.
   - Public route ownership and active implementation now live in the Rust API.
-- `python/services/health_dashboard.py`
-  - NATS-fed health aggregation is still Python-owned today, though it could move later.
-
 ## Retire or migrate behind Rust
 
 These endpoints are mostly frontend read-model shaping and should move to Rust-owned API contracts.
@@ -73,3 +69,4 @@ Reason:
 - Discount Bank public route ownership has moved to Rust; remaining Python parsing helpers are legacy cleanup work.
 - Risk-free-rate finance logic has moved into the Rust API; the old standalone Python service wrapper is retired.
 - Health aggregation can be revisited later, but it is not the first reduction target.
+- Health aggregation is now Rust-owned; the former Python health dashboard daemon is retired.

@@ -31,13 +31,13 @@ use crate::discount_bank::{
     get_transactions as get_discount_bank_transactions,
     import_positions as import_discount_bank_positions, ImportPositionsQuery,
 };
+use crate::health::SharedHealthAggregate;
 use crate::loans::{LoanAggregationInput, LoanRecord, LoanRepository};
 use crate::state::{Alert, OrderSnapshot, SharedSnapshot, SystemSnapshot};
 use crate::websocket::WebSocketServer;
 
 const SWIFTNESS_API_URL: &str = "http://127.0.0.1:8081";
 const DEFAULT_IB_SERVICE_URL: &str = "http://127.0.0.1:8002";
-const DEFAULT_HEALTH_DASHBOARD_URL: &str = "http://127.0.0.1:8011";
 
 #[derive(Clone)]
 pub struct StrategyController {
@@ -63,6 +63,7 @@ pub struct RestState {
     pub snapshot: SharedSnapshot,
     pub controller: StrategyController,
     pub loans: LoanRepository,
+    pub health: SharedHealthAggregate,
 }
 
 // Ensure RestState is Send + Sync for axum Router requirements
@@ -75,11 +76,13 @@ impl RestState {
         snapshot: SharedSnapshot,
         controller: StrategyController,
         loans: LoanRepository,
+        health: SharedHealthAggregate,
     ) -> Self {
         Self {
             snapshot,
             controller,
             loans,
+            health,
         }
     }
 }
@@ -91,9 +94,9 @@ impl RestServer {
         Router::new()
             .route("/health", get(health))
             .route("/gateway/health", get(gateway_health))
-            .route("/api/health-aggregated", any(proxy_heartbeat_root))
-            .route("/api/heartbeat", any(proxy_heartbeat_root))
-            .route("/api/heartbeat/*path", any(proxy_heartbeat))
+            .route("/api/health-aggregated", get(health_aggregated))
+            .route("/api/heartbeat", get(health_aggregated))
+            .route("/api/heartbeat/*path", get(health_heartbeat_path))
             .route("/api/config", get(shared_config))
             .route("/api/balance", get(discount_bank_balance))
             .route("/api/transactions", get(discount_bank_transactions))
@@ -354,39 +357,50 @@ async fn gateway_health() -> Json<GatewayHealthResponse> {
     })
 }
 
-async fn proxy_heartbeat_root(
-    Query(query): Query<std::collections::HashMap<String, String>>,
-    method: Method,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
-    let query = if query.is_empty() { None } else { Some(query) };
-    proxy_service_request(
-        "health dashboard",
-        heartbeat_proxy_target_url("", query.as_ref()),
-        method,
-        headers,
-        body,
-    )
-    .await
+async fn health_aggregated(
+    Extension(state): Extension<RestState>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let health = state.health.read().await;
+    let response = health.response();
+    Ok(Json(
+        serde_json::to_value(response).map_err(live_state_internal_error)?,
+    ))
 }
 
-async fn proxy_heartbeat(
+async fn health_heartbeat_path(
     Path(path): Path<String>,
-    Query(query): Query<std::collections::HashMap<String, String>>,
-    method: Method,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
-    let query = if query.is_empty() { None } else { Some(query) };
-    proxy_service_request(
-        "health dashboard",
-        heartbeat_proxy_target_url(&path, query.as_ref()),
-        method,
-        headers,
-        body,
-    )
-    .await
+    Extension(state): Extension<RestState>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let normalized = path.trim_matches('/');
+    let health = state.health.read().await;
+
+    if normalized.is_empty()
+        || normalized == "health"
+        || normalized == "dashboard"
+        || normalized == "health/dashboard"
+    {
+        let response = health.response();
+        return Ok(Json(
+            serde_json::to_value(response).map_err(live_state_internal_error)?,
+        ));
+    }
+
+    let backend_key = normalized
+        .strip_prefix("health/")
+        .unwrap_or(normalized);
+
+    if let Some(backend) = health.backends.get(backend_key) {
+        return Ok(Json(
+            serde_json::to_value(backend).map_err(live_state_internal_error)?,
+        ));
+    }
+
+    Err((
+        StatusCode::NOT_FOUND,
+        Json(ErrorResponse {
+            error: format!("Backend {backend_key} not in health map"),
+        }),
+    ))
 }
 
 async fn proxy_ib_root(
@@ -941,16 +955,6 @@ fn ib_proxy_target_url(
 ) -> Result<String, String> {
     let base = std::env::var("IB_URL").unwrap_or_else(|_| DEFAULT_IB_SERVICE_URL.to_string());
     proxy_target_url(&base, Some("/api/v1"), path, query)
-}
-
-fn heartbeat_proxy_target_url(
-    path: &str,
-    query: Option<&std::collections::HashMap<String, String>>,
-) -> Result<String, String> {
-    let base = std::env::var("HEALTH_DASHBOARD_URL")
-        .unwrap_or_else(|_| DEFAULT_HEALTH_DASHBOARD_URL.to_string());
-    let path = if path.is_empty() { "health" } else { path };
-    proxy_target_url(&base, Some("/api"), path, query)
 }
 
 fn proxy_target_url(
@@ -2756,6 +2760,7 @@ async fn swiftness_update_exchange_rate(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::HealthAggregateState;
     use crate::loans::{LoanRepository, LoanStatus, LoanType};
     use axum::Json;
     use nats_adapter::encode_proto;
@@ -2772,6 +2777,7 @@ mod tests {
             Arc::new(RwLock::new(SystemSnapshot::default())),
             StrategyController::new(tx),
             repo,
+            HealthAggregateState::new_shared(),
         )
     }
 
@@ -3175,22 +3181,4 @@ mod tests {
         assert!(url.contains("symbols=SPX%2CXSP"));
     }
 
-    #[test]
-    fn heartbeat_proxy_target_url_defaults_to_health_endpoint() {
-        env::remove_var("HEALTH_DASHBOARD_URL");
-
-        let url = heartbeat_proxy_target_url("", None).expect("proxy url");
-
-        assert_eq!(url, "http://127.0.0.1:8011/api/health");
-    }
-
-    #[test]
-    fn heartbeat_proxy_target_url_preserves_path_and_query_string() {
-        let query = std::collections::HashMap::from([("service".to_string(), "ib".to_string())]);
-
-        let url = heartbeat_proxy_target_url("health", Some(&query)).expect("proxy url");
-
-        assert!(url.starts_with("http://127.0.0.1:8011/api/health?"));
-        assert!(url.contains("service=ib"));
-    }
 }

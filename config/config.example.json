@@ -208,9 +208,6 @@
       "port": 8010,
       "enabled": false // Disabled by default; prefer manual file-based position import for now
     },
-    "health_dashboard": {
-      "port": 8011 // Unified health JSON (NATS-driven); TUI/PWA can use for status
-    },
     "ib_gateway": {
       "port": 5001 // IB Client Portal Gateway HTTPS port
     }
