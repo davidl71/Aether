@@ -12,7 +12,7 @@ if [[ -z "${SPEC// /}" ]]; then
   exit 1
 fi
 
-PLAN="$(printf "%s" "${SPEC}" | python3 "${PROJECT_ROOT}/python/tools/draft_plan_mlx.py" 2>/dev/null || true)"
+PLAN="(MLX tool not available - python/tools deleted)"
 if [[ -z "${PLAN}" ]]; then
   PLAN="(No plan generated)"
 fi

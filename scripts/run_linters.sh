@@ -39,10 +39,13 @@ LINT_JSON_ONLY=0
 LINT_FILTERED_ARGS=()
 for a in "$@"; do
   case "${a}" in
-    --ai-friendly) LINT_AI_FRIENDLY=1 ;;
-    --json-only)  LINT_JSON_ONLY=1; LINT_AI_FRIENDLY=1 ;;
-    --parallel)   LINT_PARALLEL=1 ;;
-    *)            LINT_FILTERED_ARGS+=("${a}") ;;
+  --ai-friendly) LINT_AI_FRIENDLY=1 ;;
+  --json-only)
+    LINT_JSON_ONLY=1
+    LINT_AI_FRIENDLY=1
+    ;;
+  --parallel) LINT_PARALLEL=1 ;;
+  *) LINT_FILTERED_ARGS+=("${a}") ;;
   esac
 done
 # LINT_PARALLEL can also be set by env (e.g. LINT_PARALLEL=1)
@@ -97,7 +100,7 @@ err() {
 run_limited() {
   local tmp
   tmp=$(mktemp)
-  if "${@}" > "${tmp}" 2>&1; then
+  if "${@}" >"${tmp}" 2>&1; then
     local ret=0
   else
     local ret=$?
@@ -105,7 +108,7 @@ run_limited() {
   if [[ "${LINT_MAX_LINES}" -gt 0 ]]; then
     head -n "${LINT_MAX_LINES}" "${tmp}"
     local lines
-    lines=$(wc -l < "${tmp}" | tr -d ' ')
+    lines=$(wc -l <"${tmp}" | tr -d ' ')
     if [[ "${lines}" -gt "${LINT_MAX_LINES}" ]]; then
       echo "[truncated; ${lines} lines total. Unset LINT_MAX_LINES for full output.]"
     fi
@@ -449,22 +452,8 @@ run_bandit() {
 
 run_ruff() {
   info "Running ruff (Python)"
-
-  local ruff_cmd=()
-  if command -v uv >/dev/null 2>&1 && [[ -f "${ROOT_DIR}/python/pyproject.toml" || -f "${ROOT_DIR}/pyproject.toml" ]]; then
-    ruff_cmd=(uv run ruff)
-  elif command -v ruff >/dev/null 2>&1; then
-    ruff_cmd=(ruff)
-  else
-    warn "Skipping ruff (uv/ruff not found; install with: uv pip install ruff or pip install ruff)"
-    return 0
-  fi
-
-  if [[ "${LINT_MAX_LINES}" -gt 0 ]]; then
-    run_limited "${ruff_cmd[@]}" check "${ROOT_DIR}/python"
-  else
-    "${ruff_cmd[@]}" check "${ROOT_DIR}/python"
-  fi
+  warn "Python directory deleted - skipping ruff"
+  return 0
 }
 
 run_infer() {
@@ -587,17 +576,50 @@ main_parallel() {
   trap 'rm -rf "${tmpdir}"' EXIT
   local status=0
 
-  ( run_cppcheck; echo $? > "${tmpdir}/cppcheck" ) &
-  ( run_clang_analyze; echo $? > "${tmpdir}/clang_analyze" ) &
-  ( run_infer; echo $? > "${tmpdir}/infer" ) &
-  ( run_bandit; echo $? > "${tmpdir}/bandit" ) &
-  ( run_ruff; echo $? > "${tmpdir}/ruff" ) &
-  ( run_ansible_lint; echo $? > "${tmpdir}/ansible_lint" ) &
-  ( run_cmake_lint; echo $? > "${tmpdir}/cmake_lint" ) &
-  ( run_eslint; echo $? > "${tmpdir}/eslint" ) &
-  ( run_stylelint; echo $? > "${tmpdir}/stylelint" ) &
-  ( run_type_check; echo $? > "${tmpdir}/type_check" ) &
-  ( run_js_syntax_check; echo $? > "${tmpdir}/js_syntax_check" ) &
+  (
+    run_cppcheck
+    echo $? >"${tmpdir}/cppcheck"
+  ) &
+  (
+    run_clang_analyze
+    echo $? >"${tmpdir}/clang_analyze"
+  ) &
+  (
+    run_infer
+    echo $? >"${tmpdir}/infer"
+  ) &
+  (
+    run_bandit
+    echo $? >"${tmpdir}/bandit"
+  ) &
+  (
+    run_ruff
+    echo $? >"${tmpdir}/ruff"
+  ) &
+  (
+    run_ansible_lint
+    echo $? >"${tmpdir}/ansible_lint"
+  ) &
+  (
+    run_cmake_lint
+    echo $? >"${tmpdir}/cmake_lint"
+  ) &
+  (
+    run_eslint
+    echo $? >"${tmpdir}/eslint"
+  ) &
+  (
+    run_stylelint
+    echo $? >"${tmpdir}/stylelint"
+  ) &
+  (
+    run_type_check
+    echo $? >"${tmpdir}/type_check"
+  ) &
+  (
+    run_js_syntax_check
+    echo $? >"${tmpdir}/js_syntax_check"
+  ) &
 
   wait
 
@@ -645,7 +667,7 @@ if [[ "${LINT_AI_FRIENDLY}" -eq 1 ]]; then
   mkdir -p "${LOG_DIR}"
   LINT_LOG="${LOG_DIR}/lint_ai_friendly.log"
   START="$(date +%s.%N 2>/dev/null || echo 0)"
-  ( main ) >> "${LINT_LOG}" 2>&1
+  (main) >>"${LINT_LOG}" 2>&1
   lint_exit=$?
   END="$(date +%s.%N 2>/dev/null || echo 0)"
   DURATION="$(awk "BEGIN { printf \"%.2f\", ${END} - ${START} }" 2>/dev/null || echo "0")"

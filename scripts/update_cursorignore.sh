@@ -12,13 +12,12 @@ CURSORIGNORE="${PROJECT_ROOT}/.cursorignore"
 MARKER="# Generated code (reproducible at build; reduces AI context)"
 BLOCK_FILE="$(mktemp)"
 trap 'rm -f "${BLOCK_FILE}"' EXIT
-cat << 'BLOCK_END' > "${BLOCK_FILE}"
+cat <<'BLOCK_END' >"${BLOCK_FILE}"
 # DMG images (third-party read-only disk images; binary)
 .dmg/
 
 # Generated code (reproducible at build; reduces AI context)
 native/generated/
-python/generated/
 web/src/generated/
 web/src/proto/
 
@@ -50,7 +49,7 @@ awk -v blockfile="${BLOCK_FILE}" '
     next
   }
   { print }
-' "${CURSORIGNORE}" > "${tmp}"
+' "${CURSORIGNORE}" >"${tmp}"
 mv "${tmp}" "${CURSORIGNORE}"
 echo "Updated .cursorignore: added .dmg/, generated/, web/dist entries."
 exit 0

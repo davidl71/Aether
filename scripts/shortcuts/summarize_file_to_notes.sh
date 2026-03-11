@@ -13,7 +13,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-SUMMARY="$(python3 "${PROJECT_ROOT}/python/tools/summarize_file_mlx.py" --path "${FILE_PATH}" 2>/dev/null || true)"
+SUMMARY="(MLX tool not available - python/tools deleted)"
 if [[ -z "${SUMMARY}" ]]; then
   SUMMARY="(No summary generated)"
 fi
