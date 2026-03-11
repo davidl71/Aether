@@ -10,6 +10,18 @@ use tracing::{debug, info, warn};
 const SWIFTNESS_API_URL: &str = "http://127.0.0.1:8081";
 const UPDATE_INTERVAL_SECS: u64 = 60; // Update every minute
 
+pub fn swiftness_enabled() -> bool {
+    matches!(
+        std::env::var("ENABLE_SWIFTNESS")
+            .ok()
+            .as_deref()
+            .map(str::trim)
+            .map(str::to_ascii_lowercase)
+            .as_deref(),
+        Some("1" | "true" | "yes" | "on")
+    )
+}
+
 #[derive(Debug, Clone, Deserialize)]
 struct SwiftnessPosition {
     id: String,

@@ -162,8 +162,12 @@ async fn main() -> anyhow::Result<()> {
         nats_integration,
     )?;
 
-    // Spawn Swiftness position fetcher
-    swiftness::spawn_swiftness_position_fetcher(state.clone());
+    // Swiftness is temporarily disabled by default; enable explicitly for manual use.
+    if swiftness::swiftness_enabled() {
+        swiftness::spawn_swiftness_position_fetcher(state.clone());
+    } else {
+        info!("Swiftness integration disabled (set ENABLE_SWIFTNESS=1 to enable)");
+    }
 
     info!(%rest_addr, "backend service online");
 

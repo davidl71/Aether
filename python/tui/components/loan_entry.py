@@ -3,6 +3,9 @@ Loan entry and management component for TUI
 
 Provides manual loan entry form, file import, and loan list management.
 Uses JSON storage compatible with C++ LoanManager.
+
+This is a transitional local/manual workflow. It is not the target shared
+backend ownership path; Rust should eventually own durable loan CRUD.
 """
 
 from __future__ import annotations
@@ -180,7 +183,11 @@ def _mock_loans() -> List[LoanPosition]:
 
 
 class LoanManager:
-    """Python loan manager (reads/writes JSON compatible with C++ LoanManager)"""
+    """Python loan manager for transitional local `config/loans.json` workflow.
+
+    This class exists for TUI/manual editing compatibility. It is not the
+    intended long-term durable owner for loan state.
+    """
 
     def __init__(self, loans_file_path: str = "config/loans.json"):
         self.loans_file_path = Path(loans_file_path)

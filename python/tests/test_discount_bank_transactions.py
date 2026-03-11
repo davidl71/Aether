@@ -5,10 +5,13 @@ import sqlite3
 import tempfile
 from pathlib import Path
 
+from fastapi.testclient import TestClient
+
 from python.integration.discount_bank_service import (
     _extract_bank_accounts_from_ledger,
     _parse_transactions_from_file,
     _parse_file_via_rust,
+    app,
 )
 
 
@@ -199,3 +202,51 @@ class TestExtractBankAccounts:
         assert account["balances_by_currency"] == {"ILS": 100.50, "USD": 25.25}
         assert account["credit_rate"] == 0.03
         assert account["debit_rate"] == 0.103
+
+
+class TestImportPositionsEndpoint:
+    def test_reconciliation_is_read_only(self, monkeypatch):
+        client = TestClient(app)
+
+        monkeypatch.setattr(
+            "python.integration.discount_bank_service._fetch_ibkr_positions",
+            lambda account_id=None: [
+                {
+                    "symbol": "SPY",
+                    "quantity": 10.0,
+                    "avg_price": 500.0,
+                    "currency": "USD",
+                },
+                {
+                    "symbol": "QQQ",
+                    "quantity": 5.0,
+                    "avg_price": 400.0,
+                    "currency": "USD",
+                },
+            ],
+        )
+        monkeypatch.setattr(
+            "python.integration.discount_bank_service._get_ledger_positions",
+            lambda: {
+                "SPY": {
+                    "quantity": 10.0,
+                    "currency": "USD",
+                    "account_path": "Assets:IBKR:SPY",
+                }
+            },
+        )
+
+        response = client.get("/api/import-positions?broker=ibkr")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["status"] == "read_only_reconciliation"
+        assert payload["write_disabled"] is True
+        assert payload["imported_count"] == 0
+        assert payload["existing_count"] == 1
+        assert payload["missing_count"] == 1
+        assert payload["total_count"] == 2
+        assert payload["positions"][0]["symbol"] == "SPY"
+        assert payload["positions"][0]["in_ledger"] is True
+        assert payload["positions"][1]["symbol"] == "QQQ"
+        assert payload["positions"][1]["in_ledger"] is False

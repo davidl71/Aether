@@ -14,7 +14,8 @@ Environment:
 - LEDGER_DATABASE_PATH: Path to ledger SQLite database (default: ledger.db in project root)
 
 Ledger DB is read-only from this service. Rust backend is the single writer (WAL mode).
-Position recording must go through the Rust backend API; direct writes are disabled.
+Broker position reconciliation is read-only here; position recording must go through
+the Rust backend API.
 """
 
 from __future__ import annotations
@@ -117,7 +118,10 @@ class ImportPositionsResponse(BaseModel):
     positions: List[Position]
     imported_count: int
     existing_count: int
+    missing_count: int
     total_count: int
+    write_disabled: bool = True
+    status: str = "read_only_reconciliation"
 
 
 def _now_iso() -> str:
@@ -341,23 +345,6 @@ def _get_ledger_positions() -> Dict[str, Dict[str, Any]]:
         return positions
     except sqlite3.Error:
         return {}
-
-
-def _record_position_in_ledger(
-    symbol: str, quantity: float, price: float, currency: str, broker: str
-) -> bool:
-    """Record a position in the ledger (disabled — Rust backend is the single writer).
-
-    To record positions, use the Rust backend API. Direct SQLite writes from Python
-    would corrupt the WAL when the Rust ledger also runs. Returns False so callers
-    do not assume the write succeeded.
-    """
-    logging.warning(
-        "Ledger position write disabled: use Rust backend API for recording. "
-        "Attempted: %s qty=%s price=%s %s broker=%s",
-        symbol, quantity, price, currency, broker,
-    )
-    return False
 
 
 def _fetch_ibkr_positions(account_id: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -799,13 +786,20 @@ def get_bank_accounts() -> BankAccountsResponse:
 def import_positions(
     broker: str = Query(..., description="Broker type: ibkr or alpaca"),
     account_id: Optional[str] = Query(None, description="Account ID (for IBKR)"),
-    dry_run: bool = Query(False, description="If true, don't record in ledger"),
+    dry_run: bool = Query(
+        False,
+        description="Deprecated. This endpoint is always read-only and never records in ledger.",
+    ),
 ) -> ImportPositionsResponse:
-    """Import positions from broker API into ledger.
+    """Reconcile broker positions against the ledger.
 
-    Fetches positions from the specified broker, checks if they exist in ledger,
-    and optionally records new positions.
+    Fetches positions from the specified broker and checks whether they already
+    exist in the ledger. This service never writes to the ledger; Rust backend
+    APIs own position recording.
     """
+    if dry_run:
+        logging.info("discount_bank_service /api/import-positions called with deprecated dry_run=true")
+
     # Fetch positions from broker
     broker_positions = []
     if broker.lower() == "ibkr":
@@ -821,8 +815,8 @@ def import_positions(
     ledger_positions = _get_ledger_positions()
 
     # Process positions
-    imported_count = 0
     existing_count = 0
+    missing_count = 0
     result_positions = []
 
     for pos in broker_positions:
@@ -841,17 +835,10 @@ def import_positions(
         in_ledger = symbol in ledger_positions
         ledger_account_path = f"Assets:IBKR:{symbol}" if in_ledger else None
 
-        # Record in ledger if not dry run and not already in ledger
-        if not dry_run and not in_ledger:
-            if _record_position_in_ledger(symbol, quantity, avg_price, currency, broker):
-                imported_count += 1
-                in_ledger = True
-                ledger_account_path = f"Assets:IBKR:{symbol}"
-            else:
-                # Failed to record, but still return position
-                pass
-        elif in_ledger:
+        if in_ledger:
             existing_count += 1
+        else:
+            missing_count += 1
 
         result_positions.append(
             Position(
@@ -870,8 +857,9 @@ def import_positions(
 
     return ImportPositionsResponse(
         positions=result_positions,
-        imported_count=imported_count,
+        imported_count=0,
         existing_count=existing_count,
+        missing_count=missing_count,
         total_count=len(result_positions),
     )
 

@@ -1,4 +1,8 @@
 // loan_manager.cpp - Bank loan position management implementation
+//
+// This JSON persistence path is compatibility legacy for config/loans.json.
+// It should not expand; long term durable loan ownership is expected to move
+// behind a Rust-owned API/store.
 #include "loan_manager.h"
 #include <fstream>
 #include <nlohmann/json.hpp>

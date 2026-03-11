@@ -1612,6 +1612,29 @@ fn swiftness_error(code: StatusCode, msg: String) -> (StatusCode, Json<ApiRespon
     )
 }
 
+fn swiftness_enabled() -> bool {
+    matches!(
+        std::env::var("ENABLE_SWIFTNESS")
+            .ok()
+            .as_deref()
+            .map(str::trim)
+            .map(str::to_ascii_lowercase)
+            .as_deref(),
+        Some("1" | "true" | "yes" | "on")
+    )
+}
+
+fn ensure_swiftness_enabled() -> SwiftnessResult<()> {
+    if swiftness_enabled() {
+        Ok(())
+    } else {
+        Err(swiftness_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "Swiftness integration is temporarily disabled".into(),
+        ))
+    }
+}
+
 fn swiftness_client() -> SwiftnessResult<Client> {
     Client::builder()
         .timeout(Duration::from_secs(5))
@@ -1625,6 +1648,7 @@ fn swiftness_client() -> SwiftnessResult<Client> {
 }
 
 async fn swiftness_proxy_get(path: &str) -> SwiftnessResult<Json<serde_json::Value>> {
+    ensure_swiftness_enabled()?;
     let client = swiftness_client()?;
     let url = format!("{}{}", SWIFTNESS_API_URL, path);
     match client.get(&url).send().await {
@@ -1689,6 +1713,7 @@ struct ExchangeRateUpdate {
 async fn swiftness_update_exchange_rate(
     Json(update): Json<ExchangeRateUpdate>,
 ) -> SwiftnessResult<Json<ApiResponse>> {
+    ensure_swiftness_enabled()?;
     if update.rate <= 0.0 {
         return Err(swiftness_error(
             StatusCode::BAD_REQUEST,
