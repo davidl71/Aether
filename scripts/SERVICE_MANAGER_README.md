@@ -53,4 +53,4 @@ logs/<service>_service.log
 - Risk-free-rate/benchmark routes are now Rust-owned; the remaining Python implementation is internal and is not managed as a standalone public service here.
 - Discount Bank public routes are now Rust-owned and are not managed as a standalone Python service here.
 - Historical browser/PWA scripts remain under `web/` as archive/reference material.
-- Old one-off `start_*` / `stop_*` wrappers are convenience shims and should not be expanded with new runtime surfaces.
+- Old one-off wrappers for retired daemons have been removed; keep service management centralized here for active runtime services only.

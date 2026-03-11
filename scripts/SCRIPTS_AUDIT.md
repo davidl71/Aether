@@ -84,16 +84,16 @@ Total scripts: 116 (after deduplication)
 - `setup_homebrew_tap.sh` - Homebrew tap setup
 
 ### Service Management (14)
-- `start_ib_service.sh` - Start IB service ✅ ACTIVE
-- `start_alpaca_service.sh` - Retired active Alpaca service wrapper
-- `start_tastytrade_service.sh` - Start Tastytrade service
-- `start_discount_bank_service.sh` - Start Discount Bank service
+- `start_ib_service.sh` - Removed; IB daemon retired from active service management
+- `start_alpaca_service.sh` - Removed; Alpaca daemon retired from active service management
+- `start_tastytrade_service.sh` - Removed; Tastytrade daemon retired from active service management
+- `start_discount_bank_service.sh` - Removed; Discount Bank daemon retired from active service management
 - `start_risk_free_rate_service.sh` - Removed; standalone risk-free-rate daemon retired from active service management
 - `start_rust_backend.sh` - Start Rust backend
 - `start_nats.sh` - Start NATS server
-- `start_web_dev.sh` - Start web dev server
-- `stop_ib_service.sh` - Stop IB service
-- `stop_alpaca_service.sh` - Retired active Alpaca service wrapper
+- `start_web_dev.sh` - Archived web helper; web is not an active runtime
+- `stop_ib_service.sh` - Removed; IB daemon retired from active service management
+- `stop_alpaca_service.sh` - Removed; Alpaca daemon retired from active service management
 - (... other stop scripts ...)
 - `watchdog_services.sh` - Service watchdog
 

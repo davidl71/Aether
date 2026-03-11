@@ -295,9 +295,7 @@ stop_services() {
     echo "${BLUE}Stopping services via systemctl...${NC}"
     SERVICES_TO_STOP=(
       "pwa-web"
-      "pwa-alpaca"
       "pwa-ib"
-      "pwa-discount-bank"
       "pwa-nats"
       "pwa-rust-backend"
       "pwa-ib-gateway"
@@ -372,10 +370,8 @@ case "${1:-start}" in
       echo "Systemd Service Status:"
       SYSTEMCTL_SERVICES=(
         "pwa-web:Web"
-        "pwa-alpaca:Alpaca"
         "pwa-ib-gateway:IB Gateway"
         "pwa-ib:IB"
-        "pwa-discount-bank:Discount Bank"
         "pwa-nats:NATS"
         "pwa-rust-backend:Rust Backend"
       )
@@ -434,9 +430,7 @@ esac
 # Get service ports from config or defaults
 WEB_PORT=$(get_service_port "web" 5173)
 GATEWAY_PORT=$(get_service_port "ib_gateway" 5001)
-ALPACA_PORT=$(get_service_port "alpaca" 8000)
 IB_PORT=$(get_service_port "ib" 8002)
-DISCOUNT_BANK_PORT=$(get_service_port "discount_bank" 8003)
 # NATS ports - use config_get_port for main port, config_get for nested ports
 NATS_PORT=$(get_service_port "nats" 4222)
 if command -v config_get >/dev/null 2>&1; then
@@ -517,21 +511,6 @@ else
   echo "${YELLOW}⚠ IB Gateway (port ${GATEWAY_PORT}) is not running${NC}"
 fi
 
-if ! service_enabled "alpaca"; then
-  SERVICE_STATUS["alpaca"]="disabled"
-  echo "${BLUE}○ Alpaca service is disabled in config${NC}"
-elif [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-alpaca"; then
-  SERVICE_STATUS["alpaca"]="running"
-  echo "${GREEN}✓ Alpaca service (port ${ALPACA_PORT}) is running via systemctl${NC}"
-elif check_service_health "${ALPACA_PORT}"; then
-  SERVICE_STATUS["alpaca"]="running"
-  echo "${GREEN}✓ Alpaca service (port ${ALPACA_PORT}) is running${NC}"
-else
-  SERVICE_STATUS["alpaca"]="stopped"
-  SERVICES_TO_START+=("alpaca")
-  echo "${YELLOW}⚠ Alpaca service (port ${ALPACA_PORT}) is not running${NC}"
-fi
-
 if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-ib"; then
   SERVICE_STATUS["ib"]="running"
   echo "${GREEN}✓ IB service (port ${IB_PORT}) is running via systemctl${NC}"
@@ -542,18 +521,6 @@ else
   SERVICE_STATUS["ib"]="stopped"
   SERVICES_TO_START+=("ib")
   echo "${YELLOW}⚠ IB service (port ${IB_PORT}) is not running${NC}"
-fi
-
-if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-discount-bank"; then
-  SERVICE_STATUS["discount_bank"]="running"
-  echo "${GREEN}✓ Discount Bank service (port ${DISCOUNT_BANK_PORT}) is running via systemctl${NC}"
-elif check_service_health "${DISCOUNT_BANK_PORT}"; then
-  SERVICE_STATUS["discount_bank"]="running"
-  echo "${GREEN}✓ Discount Bank service (port ${DISCOUNT_BANK_PORT}) is running${NC}"
-else
-  SERVICE_STATUS["discount_bank"]="stopped"
-  SERVICES_TO_START+=("discount_bank")
-  echo "${YELLOW}⚠ Discount Bank service (port ${DISCOUNT_BANK_PORT}) is not running${NC}"
 fi
 
 # Check NATS server (check monitoring port 8222)
@@ -605,10 +572,8 @@ if [ "${SERVICE_MANAGER}" = "systemctl" ]; then
   # Map service names to systemctl service names
   declare -A SYSTEMCTL_SERVICE_MAP
   SYSTEMCTL_SERVICE_MAP["web"]="pwa-web"
-  SYSTEMCTL_SERVICE_MAP["alpaca"]="pwa-alpaca"
   SYSTEMCTL_SERVICE_MAP["gateway"]="pwa-ib-gateway"
   SYSTEMCTL_SERVICE_MAP["ib"]="pwa-ib"
-  SYSTEMCTL_SERVICE_MAP["discount_bank"]="pwa-discount-bank"
   SYSTEMCTL_SERVICE_MAP["nats"]="pwa-nats"
   SYSTEMCTL_SERVICE_MAP["rust_backend"]="pwa-rust-backend"
 
@@ -628,10 +593,7 @@ if [ "${SERVICE_MANAGER}" = "systemctl" ]; then
   fi
 
   # 3. Independent services (can start in parallel)
-  for service in web alpaca discount_bank rust_backend; do
-    if [ "${service}" = "alpaca" ] && ! service_enabled "alpaca"; then
-      continue
-    fi
+  for service in web rust_backend; do
     if [[ " ${SERVICES_TO_START[*]} " =~ " ${service} " ]]; then
       start_systemctl_service "${SYSTEMCTL_SERVICE_MAP[$service]}" || {
         echo "${YELLOW}  Falling back to manual start for ${service}...${NC}"
@@ -677,7 +639,7 @@ if [[ " ${SERVICES_TO_START[*]} " =~ " nats " ]]; then
 fi
 
 # Launch services in background (parallel groups for faster startup)
-# Group 1 (parallel): Web, Gateway, optional Alpaca, Discount Bank
+# Group 1 (parallel): Web, Gateway
 # Group 2 (after Gateway ready): IB service
 
 echo "${BLUE}Starting independent services in parallel...${NC}"
@@ -806,24 +768,6 @@ if [[ " ${SERVICES_TO_START[*]} " =~ " gateway " ]]; then
   fi
 fi
 
-# Alpaca service (independent, port 8000)
-if service_enabled "alpaca" && [[ " ${SERVICES_TO_START[*]} " =~ " alpaca " ]]; then
-  (
-    cd "$ROOT_DIR"
-    bash "${SCRIPTS_DIR}/run-alpaca-service.sh" > /tmp/pwa-alpaca.log 2>&1 &
-    echo $! > /tmp/pwa-alpaca.pid
-  ) &
-fi
-
-# Discount Bank service (independent, port 8003)
-if [[ " ${SERVICES_TO_START[*]} " =~ " discount_bank " ]]; then
-  (
-    cd "$ROOT_DIR"
-    bash "${SCRIPTS_DIR}/run-discount-bank-service.sh" > /tmp/pwa-discount-bank.log 2>&1 &
-    echo $! > /tmp/pwa-discount-bank.pid
-  ) &
-fi
-
 # Rust backend service (port 8080 for REST, 50051 for gRPC)
 if [[ " ${SERVICES_TO_START[*]} " =~ " rust_backend " ]]; then
   RUST_BACKEND_SCRIPT="${ROOT_DIR}/scripts/start_rust_backend.sh"
@@ -875,17 +819,9 @@ if [[ " ${SERVICES_TO_START[*]} " =~ " gateway " ]] || [ "${SERVICE_STATUS[gatew
     echo "    ${BLUE}URL: https://localhost:${GATEWAY_PORT}${NC}"
   fi
 fi
-if service_enabled "alpaca" && { [[ " ${SERVICES_TO_START[*]} " =~ " alpaca " ]] || [ "${SERVICE_STATUS[alpaca]}" = "running" ]; }; then
-  echo "  ${GREEN}✓${NC} Alpaca service (port ${ALPACA_PORT}) - Log: /tmp/pwa-alpaca.log"
-  echo "    ${BLUE}URL: http://127.0.0.1:${ALPACA_PORT}${NC}"
-fi
 if [[ " ${SERVICES_TO_START[*]} " =~ " ib " ]] || [ "${SERVICE_STATUS[ib]}" = "running" ]; then
   echo "  ${GREEN}✓${NC} IB service (port ${IB_PORT}) - Log: /tmp/pwa-ib.log"
   echo "    ${BLUE}URL: http://127.0.0.1:${IB_PORT}${NC}"
-fi
-if [[ " ${SERVICES_TO_START[*]} " =~ " discount_bank " ]] || [ "${SERVICE_STATUS[discount_bank]}" = "running" ]; then
-  echo "  ${GREEN}✓${NC} Discount Bank service (port ${DISCOUNT_BANK_PORT}) - Log: /tmp/pwa-discount-bank.log"
-  echo "    ${BLUE}URL: http://127.0.0.1:${DISCOUNT_BANK_PORT}${NC}"
 fi
 if [[ " ${SERVICES_TO_START[*]} " =~ " nats " ]] || [ "${SERVICE_STATUS[nats]}" = "running" ]; then
   echo "  ${GREEN}✓${NC} NATS server (port ${NATS_PORT}) - Log: ${ROOT_DIR}/logs/nats-server.log"

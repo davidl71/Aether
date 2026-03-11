@@ -20,8 +20,6 @@
   - The TUI should use the shared Rust origin; there is no separate benchmark service fallback path anymore.
   - still the active aggregated health source for the TUI
 - broker and bank integration services
-  - Alpaca
-  - Tastytrade
   - Discount Bank
 
 ### Remaining local/non-Rust read path
@@ -33,11 +31,11 @@
 ### TUI specialist presets that remain valid
 
 - `rest_ib`
-- `rest_alpaca`
-- `rest_tastytrade`
 
-`rest_ib` now points at Rust-owned IB routes, while the others still map to specialist services.
-They should not expand into a general business-API proxy surface, a collection layer, or shared frontend read-model ownership.
+`rest_ib` now points at Rust-owned IB routes.
+It should not expand into a general business-API proxy surface, a collection layer, or shared frontend read-model ownership.
+
+Alpaca and Tastytrade are retired from the active runtime surface for now and are not active TUI specialist paths.
 
 ## Decision
 

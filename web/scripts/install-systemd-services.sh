@@ -71,10 +71,8 @@ mkdir -p "${USER_SYSTEMD_DIR}"
 # List of services to install
 SERVICES=(
   "pwa-web"
-  "pwa-alpaca"
   "pwa-ib-gateway"
   "pwa-ib"
-  "pwa-discount-bank"
   "pwa-nats"
   "pwa-rust-backend"
 )

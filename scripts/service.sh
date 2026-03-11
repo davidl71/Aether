@@ -34,7 +34,6 @@ _svc_display() {
     nats) echo "NATS" ;;
     memcached) echo "Memcached" ;;
     gateway) echo "IB Gateway" ;;
-    tastytrade) echo "Tastytrade" ;;
     discount) echo "Discount Bank" ;;
     rust) echo "Rust Backend" ;;
     questdb_nats) echo "QuestDB NATS" ;;
@@ -47,8 +46,7 @@ _svc_port() {
     nats) echo "4222, 8222, 8081" ;;
     memcached) echo "11211" ;;
     gateway) echo "${IB_GATEWAY_PORT:-5001}" ;;
-    tastytrade) _config_port tastytrade 8005 ;;
-    rust) _config_port rust_backend 8010 ;;
+    rust) _config_port rust_backend 8080 ;;
     questdb_nats) echo "" ;;
     *) echo "" ;;
   esac
@@ -59,7 +57,6 @@ _svc_cmd() {
     nats) echo "nats-server" ;;
     memcached) echo "memcached -l 127.0.0.1" ;;
     gateway) echo "./ib-gateway/run-gateway.sh" ;;
-    tastytrade) echo "./web/scripts/run-tastytrade-service.sh" ;;
     rust) echo "./agents/start_rust_backend.sh" ;;
     questdb_nats) echo "./scripts/run_questdb_nats_writer.sh" ;;
     *) echo "" ;;
@@ -71,9 +68,6 @@ _svc_log() {
     nats) echo "nats-server.log" ;;
     memcached) echo "memcached.log" ;;
     gateway) echo "ib-gateway.log" ;;
-    ib) echo "ib-service.log" ;;
-    alpaca) echo "alpaca-service.log" ;;
-    tastytrade) echo "tastytrade-service.log" ;;
     rust) echo "rust-backend.log" ;;
     questdb_nats) echo "questdb-nats-writer.log" ;;
     *) echo "" ;;
@@ -85,9 +79,6 @@ _svc_health() {
     nats) echo "http://localhost:8222/healthz" ;;
     memcached) echo "" ;;
     gateway) echo "https://localhost:\${PORT}" ;;
-    tastytrade)
-      echo "http://localhost:\${PORT}/api/health"
-      ;;
     rust) echo "http://localhost:\${PORT}/health" ;;
     questdb_nats) echo "" ;;
     *) echo "" ;;
@@ -98,7 +89,6 @@ _svc_wait() {
   case "$1" in
     nats|memcached) echo "2" ;;
     gateway) echo "5" ;;
-    tastytrade) echo "8" ;;
     questdb_nats) echo "3" ;;
     *) echo "4" ;;
   esac
@@ -106,7 +96,7 @@ _svc_wait() {
 
 _svc_known() {
   case "$1" in
-    nats|memcached|gateway|tastytrade|rust|questdb_nats)
+    nats|memcached|gateway|rust|questdb_nats)
       return 0
       ;;
     *) return 1 ;;
@@ -354,7 +344,7 @@ do_restart() {
 do_list() {
   echo "Available services:"
   local svc port enabled
-  for svc in nats memcached gateway ib alpaca tastytrade web rust; do
+  for svc in nats memcached gateway web rust; do
     port=$(_svc_port "$svc")
     enabled="enabled"
     _config_enabled "$svc" "true" || enabled="disabled"
@@ -364,7 +354,7 @@ do_list() {
 
 # Service order for start-all (dependency order); stop-all uses reverse
 # healthdashboard after backends so NATS has time to be ready
-ALL_SERVICES_START=(nats memcached gateway ib alpaca tastytrade web)
+ALL_SERVICES_START=(nats memcached gateway web)
 
 do_start_all() {
   local svc

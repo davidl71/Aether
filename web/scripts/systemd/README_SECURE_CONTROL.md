@@ -16,10 +16,8 @@ The web application can control PWA services (start, stop, restart, enable, disa
 
 The `systemctl-helper.sh` script only allows operations on predefined PWA services:
 - pwa-web
-- pwa-alpaca
 - pwa-ib-gateway
 - pwa-ib
-- pwa-discount-bank
 - pwa-nats
 - pwa-rust-backend
 
@@ -106,10 +104,8 @@ The API accepts these service names (mapped to systemd service names):
 | API Name | Systemd Service |
 |----------|----------------|
 | web | pwa-web |
-| alpaca | pwa-alpaca |
 | ib, ib-gateway, gateway | pwa-ib-gateway |
 | ib | pwa-ib |
-| discount-bank, discount_bank | pwa-discount-bank |
 | nats | pwa-nats |
 | rust-backend, rust_backend | pwa-rust-backend |
 

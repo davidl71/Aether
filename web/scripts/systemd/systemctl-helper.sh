@@ -7,10 +7,8 @@ set -euo pipefail
 # Allowed PWA service names (whitelist for security)
 ALLOWED_SERVICES=(
   "pwa-web"
-  "pwa-alpaca"
   "pwa-ib-gateway"
   "pwa-ib"
-  "pwa-discount-bank"
   "pwa-nats"
   "pwa-rust-backend"
 )
@@ -18,13 +16,10 @@ ALLOWED_SERVICES=(
 # Map service names from API to systemd service names
 declare -A SERVICE_MAP
 SERVICE_MAP["web"]="pwa-web"
-SERVICE_MAP["alpaca"]="pwa-alpaca"
 SERVICE_MAP["ib-gateway"]="pwa-ib-gateway"
 SERVICE_MAP["ib_gateway"]="pwa-ib-gateway"
 SERVICE_MAP["gateway"]="pwa-ib-gateway"
 SERVICE_MAP["ib"]="pwa-ib"
-SERVICE_MAP["discount-bank"]="pwa-discount-bank"
-SERVICE_MAP["discount_bank"]="pwa-discount-bank"
 SERVICE_MAP["nats"]="pwa-nats"
 SERVICE_MAP["rust-backend"]="pwa-rust-backend"
 SERVICE_MAP["rust_backend"]="pwa-rust-backend"

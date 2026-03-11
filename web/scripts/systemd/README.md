@@ -34,10 +34,8 @@ The PWA services can be managed via:
 The following services are available:
 
 - `pwa-web.service` - Web frontend (Vite dev server)
-- `pwa-alpaca.service` - Alpaca trading service
 - `pwa-ib-gateway.service` - IB Gateway service
 - `pwa-ib.service` - IB (Interactive Brokers) service
-- `pwa-discount-bank.service` - Discount Bank service
 - `pwa-nats.service` - NATS messaging server
 - `pwa-rust-backend.service` - Rust backend service
 
