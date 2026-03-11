@@ -641,9 +641,13 @@ endif()
 # vendored zip layout (third_party/tws-api/IBJts/source/cppclient).
 # ============================================================================
 get_filename_component(_tws_api_default_source_dir "${CMAKE_CURRENT_SOURCE_DIR}/../tws-api" REALPATH)
+get_filename_component(_tws_api_repo_sibling_source_dir "${CMAKE_SOURCE_DIR}/../tws-api" REALPATH)
 set(TWS_API_SOURCE_DIR "" CACHE PATH "Root of tws-api repo (GitHub layout: source/cppclient/client). Example: ../tws-api")
 if(NOT TWS_API_SOURCE_DIR AND EXISTS "${_tws_api_default_source_dir}/source/cppclient/client")
   set(TWS_API_SOURCE_DIR "${_tws_api_default_source_dir}" CACHE PATH "Root of tws-api repo (GitHub layout). Auto-detected ../tws-api." FORCE)
+endif()
+if(NOT TWS_API_SOURCE_DIR AND EXISTS "${_tws_api_repo_sibling_source_dir}/source/cppclient/client")
+  set(TWS_API_SOURCE_DIR "${_tws_api_repo_sibling_source_dir}" CACHE PATH "Root of tws-api repo (GitHub layout). Auto-detected repo-sibling ../tws-api." FORCE)
 endif()
 
 set(_tws_api_use_github_dir OFF)
@@ -674,7 +678,7 @@ set(
 )
 # Vendored GitHub layout: third_party/tws-api/source/cppclient/client exists; enable build from source
 set(_tws_vendor_client "${TWS_API_VENDOR_ROOT}/client")
-if(EXISTS "${_tws_vendor_client}")
+if(EXISTS "${_tws_vendor_client}/Contract.h")
   set(_tws_api_use_github_dir ON)
   message(STATUS "Using TWS API from vendored GitHub layout: ${TWS_API_VENDOR_ROOT}")
 endif()
@@ -695,7 +699,29 @@ if(DEFINED IBAPI_INCLUDE_DIR AND NOT IBAPI_INCLUDE_DIR STREQUAL "")
     endif()
 endif()
 
-if(EXISTS "${TWS_API_INCLUDE_DIR}")
+# Repair stale cached include paths by preferring a valid adjacent tws-api checkout
+# when the cached vendor path no longer contains real TWS headers.
+set(_tws_api_recovery_source_dir "")
+if(EXISTS "${_tws_api_default_source_dir}/source/cppclient/client/Contract.h")
+    set(_tws_api_recovery_source_dir "${_tws_api_default_source_dir}")
+elseif(EXISTS "${_tws_api_repo_sibling_source_dir}/source/cppclient/client/Contract.h")
+    set(_tws_api_recovery_source_dir "${_tws_api_repo_sibling_source_dir}")
+endif()
+
+if((NOT EXISTS "${TWS_API_INCLUDE_DIR}/Contract.h") AND _tws_api_recovery_source_dir)
+    set(TWS_API_SOURCE_DIR "${_tws_api_recovery_source_dir}" CACHE PATH "Root of tws-api repo (GitHub layout)." FORCE)
+    set(TWS_API_VENDOR_ROOT "${_tws_api_recovery_source_dir}/source/cppclient")
+    set(
+        TWS_API_INCLUDE_DIR
+        "${TWS_API_VENDOR_ROOT}/client"
+        CACHE PATH "Path to TWS API include directory"
+        FORCE
+    )
+    set(_tws_api_use_github_dir ON)
+    message(STATUS "Recovered stale TWS API include cache via adjacent tws-api checkout: ${TWS_API_INCLUDE_DIR}")
+endif()
+
+if(EXISTS "${TWS_API_INCLUDE_DIR}/Contract.h")
     message(STATUS "Using TWS API include dir: ${TWS_API_INCLUDE_DIR}")
 else()
     message(WARNING "TWS API headers not found at ${TWS_API_INCLUDE_DIR}")

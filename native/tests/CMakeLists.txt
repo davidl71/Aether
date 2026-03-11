@@ -5,30 +5,40 @@ cmake_minimum_required(VERSION 3.21)
 # Test Executable
 # ============================================================================
 
-set(TEST_SOURCES
+set(CORE_TEST_SOURCES
     test_main.cpp
     test_config_manager.cpp
+    test_market_hours.cpp
+    test_rate_limiter.cpp
+    test_convexity_calculator.cpp
+    test_path_validator.cpp
+    test_loan_position.cpp
+    test_asset_relationship.cpp
+)
+
+set(BOX_SPREAD_TEST_SOURCES
+    test_main.cpp
     test_box_spread_strategy.cpp
     test_risk_calculator.cpp
+    test_box_spread_e2e.cpp
+    test_option_chain.cpp
+    test_hedge_manager.cpp
+    test_box_spread_bag.cpp
+    eigen_integration_test.cpp
+    test_greeks_calculator.cpp
+)
+
+set(TWS_TEST_SOURCES
+    test_main.cpp
     test_order_manager.cpp
     test_tws_client.cpp
     test_tws_integration.cpp
     test_market_data_integration.cpp
-    test_box_spread_e2e.cpp
-    test_option_chain.cpp
-    test_market_hours.cpp
-    test_rate_limiter.cpp
-    test_hedge_manager.cpp
-    test_box_spread_bag.cpp
-    eigen_integration_test.cpp
-    test_convexity_calculator.cpp
-    test_path_validator.cpp
-    test_loan_position.cpp
-    test_greeks_calculator.cpp
-    test_asset_relationship.cpp
 )
 
-add_executable(box_spread_tests ${TEST_SOURCES})
+add_executable(box_spread_core_tests ${CORE_TEST_SOURCES})
+add_executable(box_spread_tests ${BOX_SPREAD_TEST_SOURCES})
+add_executable(box_spread_tws_tests ${TWS_TEST_SOURCES})
 
 # ============================================================================
 # Include Directories
@@ -38,9 +48,15 @@ add_executable(box_spread_tests ${TEST_SOURCES})
 # defined in the parent build; fall back to the vendored paths if they were not
 # provided via cache entries.
 if(NOT TWS_API_INCLUDE_DIR)
-    set(TWS_API_INCLUDE_DIR
-        "${CMAKE_SOURCE_DIR}/native/third_party/tws-api/IBJts/source/cppclient/client"
-    )
+    if(EXISTS "${CMAKE_SOURCE_DIR}/../tws-api/source/cppclient/client")
+        set(TWS_API_INCLUDE_DIR
+            "${CMAKE_SOURCE_DIR}/../tws-api/source/cppclient/client"
+        )
+    else()
+        set(TWS_API_INCLUDE_DIR
+            "${CMAKE_SOURCE_DIR}/native/third_party/tws-api/source/cppclient/client"
+        )
+    endif()
 endif()
 
 if(NOT TWS_API_LIB)
@@ -85,15 +101,31 @@ if(NOT ABSEIL_LIBS)
     endif()
 endif()
 
-target_include_directories(box_spread_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/native/include
-)
+function(configure_native_test_target target_name)
+    target_include_directories(${target_name} PRIVATE
+        ${CMAKE_SOURCE_DIR}/native/include
+    )
+    target_link_libraries(${target_name}
+        PRIVATE
+            Catch2::Catch2WithMain
+            nlohmann_json::nlohmann_json
+            spdlog::spdlog
+            Eigen3::Eigen
+    )
+endfunction()
+
+configure_native_test_target(box_spread_core_tests)
+configure_native_test_target(box_spread_tests)
+configure_native_test_target(box_spread_tws_tests)
+
 # When TWS_API_BUILD_VENDOR: prepend proto_generated so system-protobuf .pb.h
 # files shadow the vendored ones (same pattern as ib_box_spread target).
 if(TWS_API_BUILD_VENDOR AND DEFINED TWS_API_EXTERNAL_BINARY_DIR)
     target_include_directories(box_spread_tests PRIVATE "${TWS_API_EXTERNAL_BINARY_DIR}/proto_generated")
+    target_include_directories(box_spread_tws_tests PRIVATE "${TWS_API_EXTERNAL_BINARY_DIR}/proto_generated")
 endif()
 target_include_directories(box_spread_tests PRIVATE ${TWS_API_INCLUDE_DIR})
+target_include_directories(box_spread_tws_tests PRIVATE ${TWS_API_INCLUDE_DIR})
 
 # Platform-specific protobuf for tests (TWS API dependency)
 if(APPLE)
@@ -119,11 +151,23 @@ else()
     set(_test_protobuf_lib "protobuf")
 endif()
 
+target_link_libraries(box_spread_core_tests
+    PRIVATE
+        NLopt::nlopt
+)
+
 target_link_libraries(box_spread_tests
     PRIVATE
-        Catch2::Catch2WithMain
-        nlohmann_json::nlohmann_json
-        spdlog::spdlog
+        CLI11::CLI11
+        Eigen3::Eigen
+        ${TWS_API_LIB}
+        ${INTEL_DECIMAL_LIB}
+        ${_test_protobuf_lib}
+        ${ABSEIL_LIBS}
+)
+
+target_link_libraries(box_spread_tws_tests
+    PRIVATE
         CLI11::CLI11
         Eigen3::Eigen
         ${TWS_API_LIB}
@@ -136,6 +180,7 @@ target_link_libraries(box_spread_tests
 # The parent CMakeLists.txt uses find_library and sets Boost_LIBRARIES
 if(Boost_LIBRARIES)
     target_link_libraries(box_spread_tests PRIVATE ${Boost_LIBRARIES})
+    target_link_libraries(box_spread_tws_tests PRIVATE ${Boost_LIBRARIES})
 else()
     # Fallback: try to find Boost libraries directly in tests subdirectory
     # Check both Intel (/usr/local) and Apple Silicon (/opt/homebrew) Homebrew paths
@@ -175,6 +220,7 @@ else()
                 list(APPEND BOOST_TEST_LIBS "${BOOST_SYSTEM_LIB}")
             endif()
             target_link_libraries(box_spread_tests PRIVATE ${BOOST_TEST_LIBS})
+            target_link_libraries(box_spread_tws_tests PRIVATE ${BOOST_TEST_LIBS})
         else()
             message(WARNING "Boost libraries not found - tests may fail")
         endif()
@@ -183,35 +229,35 @@ else()
     endif()
 endif()
 
-# Link NLopt if available (fetched via FetchContent)
-if(TARGET NLopt::nlopt)
-    target_link_libraries(box_spread_tests PRIVATE NLopt::nlopt)
-else()
-    message(WARNING "NLopt::nlopt target not found - tests may fail")
+if(NOT TARGET NLopt::nlopt)
+    message(WARNING "NLopt::nlopt target not found - core convexity tests may fail")
 endif()
 
-# Link QuantLib if available (fetched via FetchContent)
 if(TARGET QuantLib::QuantLib)
     target_link_libraries(box_spread_tests PRIVATE QuantLib::QuantLib)
 else()
-    message(WARNING "QuantLib::QuantLib target not found - tests may fail")
+    message(WARNING "QuantLib::QuantLib target not found - option/greeks tests may fail")
 endif()
 
 # Platform-specific libraries (needed for TWS API)
 if(APPLE)
     target_link_libraries(box_spread_tests PRIVATE "-framework CoreFoundation")
+    target_link_libraries(box_spread_tws_tests PRIVATE "-framework CoreFoundation")
     find_library(PTHREAD_LIBRARY pthread)
     if(PTHREAD_LIBRARY)
         target_link_libraries(box_spread_tests PRIVATE ${PTHREAD_LIBRARY})
+        target_link_libraries(box_spread_tws_tests PRIVATE ${PTHREAD_LIBRARY})
     endif()
 elseif(UNIX)
     target_link_libraries(box_spread_tests PRIVATE pthread)
+    target_link_libraries(box_spread_tws_tests PRIVATE pthread)
 endif()
 
 # libuuid needed by nats_client.cpp
 find_library(UUID_LIBRARY uuid)
 if(UUID_LIBRARY)
     target_link_libraries(box_spread_tests PRIVATE ${UUID_LIBRARY})
+    target_link_libraries(box_spread_tws_tests PRIVATE ${UUID_LIBRARY})
 endif()
 
 # Link with the same object files as the main executable
@@ -222,6 +268,36 @@ if(NOT EXISTS "${_native_src_dir}")
     # Building from native/ directory directly
     set(_native_src_dir "${CMAKE_SOURCE_DIR}/src")
 endif()
+
+target_sources(box_spread_core_tests PRIVATE
+    ${_native_src_dir}/config_manager.cpp
+    ${_native_src_dir}/path_validator.cpp
+    ${_native_src_dir}/market_hours.cpp
+    ${_native_src_dir}/rate_limiter.cpp
+    ${_native_src_dir}/convexity_calculator.cpp
+    ${_native_src_dir}/loan_position.cpp
+    ${_native_src_dir}/loan_manager.cpp
+    ${_native_src_dir}/asset_relationship.cpp
+    ${_native_src_dir}/collateral_valuator.cpp
+    ${_native_src_dir}/financing_instrument_registry.cpp
+)
+
+target_sources(box_spread_tws_tests PRIVATE
+    ${_native_src_dir}/config_manager.cpp
+    ${_native_src_dir}/path_validator.cpp
+    ${_native_src_dir}/types.cpp
+    ${_native_src_dir}/tws_conversions.cpp
+    ${_native_src_dir}/tws_connection.cpp
+    ${_native_src_dir}/tws_market_data.cpp
+    ${_native_src_dir}/tws_orders.cpp
+    ${_native_src_dir}/tws_positions.cpp
+    ${_native_src_dir}/tws_contracts.cpp
+    ${_native_src_dir}/tws_error_codes.cpp
+    ${_native_src_dir}/connection_utils.cpp
+    ${_native_src_dir}/pcap_capture.cpp
+    ${_native_src_dir}/tws_client.cpp
+    ${_native_src_dir}/order_manager.cpp
+)
 
 target_sources(box_spread_tests PRIVATE
     ${_native_src_dir}/config_manager.cpp
@@ -282,15 +358,33 @@ endif()
 # ============================================================================
 
 include(Catch)
+catch_discover_tests(box_spread_core_tests)
 catch_discover_tests(box_spread_tests)
+catch_discover_tests(box_spread_tws_tests)
 
 # ============================================================================
 # Test Target
 # ============================================================================
 
+add_custom_target(run_core_tests
+    COMMAND box_spread_core_tests
+    DEPENDS box_spread_core_tests
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMENT "Running core tests..."
+)
+
+add_custom_target(run_tws_tests
+    COMMAND box_spread_tws_tests
+    DEPENDS box_spread_tws_tests
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMENT "Running TWS tests..."
+)
+
 add_custom_target(run_tests
+    COMMAND box_spread_core_tests
+    COMMAND box_spread_tws_tests
     COMMAND box_spread_tests
-    DEPENDS box_spread_tests
+    DEPENDS box_spread_core_tests box_spread_tws_tests box_spread_tests
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Running tests..."
 )
