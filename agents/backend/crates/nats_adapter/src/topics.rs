@@ -232,6 +232,22 @@ pub mod dlq {
     }
 }
 
+/// Snapshot topics (periodic full-state publish from backend to subscribers)
+pub mod snapshot {
+    /// Periodic system snapshot for a backend: `snapshot.{backend_id}`
+    ///
+    /// Published by the backend_service every N ms.
+    /// Subscribers (e.g. tui_service) receive full `SystemSnapshot` protobuf.
+    pub fn backend(backend_id: &str) -> String {
+        format!("snapshot.{}", backend_id)
+    }
+
+    /// Subscribe to all backend snapshots: `snapshot.>`
+    pub fn all() -> &'static str {
+        "snapshot.>"
+    }
+}
+
 /// RPC (Request/Reply) topics
 pub mod rpc {
 

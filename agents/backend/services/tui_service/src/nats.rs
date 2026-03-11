@@ -1,0 +1,205 @@
+//! NATS subscriber task.
+//!
+//! Subscribes to `snapshot.{backend_id}`, decodes protobuf envelopes,
+//! converts to `RuntimeSnapshotDto`, and sends updates on a
+//! `tokio::sync::watch` channel for the main event loop to consume.
+
+use std::time::Duration;
+
+use api::{
+    Alert, AlertLevel, CandleSnapshot, HistoricPosition, Metrics, OrderSnapshot, PositionSnapshot,
+    RiskStatus, RuntimeDecisionDto, RuntimeHistoricPositionDto, RuntimeOrderDto,
+    RuntimePositionDto, RuntimeSnapshotDto, StrategyDecisionSnapshot, SymbolSnapshot,
+};
+use chrono::{DateTime, TimeZone, Utc};
+use futures::StreamExt;
+use nats_adapter::{extract_proto_payload, proto::v1 as pb, topics, NatsClient};
+use prost_types::Timestamp;
+use tokio::sync::watch;
+use tracing::{debug, info, warn};
+
+use crate::config::TuiConfig;
+use crate::models::{SnapshotSource, TuiSnapshot};
+
+fn ts_to_dt(ts: Option<Timestamp>) -> DateTime<Utc> {
+    ts.map(|t| {
+        Utc.timestamp_opt(t.seconds, t.nanos as u32)
+            .single()
+            .unwrap_or_else(Utc::now)
+    })
+    .unwrap_or_else(Utc::now)
+}
+
+fn proto_to_snapshot(p: pb::SystemSnapshot) -> RuntimeSnapshotDto {
+    let positions: Vec<PositionSnapshot> = p
+        .positions
+        .into_iter()
+        .map(|pos| PositionSnapshot {
+            id: pos.id,
+            symbol: pos.symbol,
+            quantity: pos.quantity,
+            cost_basis: pos.cost_basis,
+            mark: pos.mark,
+            unrealized_pnl: pos.unrealized_pnl,
+        })
+        .collect();
+
+    let historic: Vec<HistoricPosition> = p
+        .historic
+        .into_iter()
+        .map(|h| HistoricPosition {
+            id: h.id,
+            symbol: h.symbol,
+            quantity: h.quantity,
+            realized_pnl: h.realized_pnl,
+            closed_at: ts_to_dt(h.closed_at),
+        })
+        .collect();
+
+    let orders: Vec<OrderSnapshot> = p
+        .orders
+        .into_iter()
+        .map(|o| OrderSnapshot {
+            id: o.id,
+            symbol: o.symbol,
+            side: o.side,
+            quantity: o.quantity,
+            status: o.status,
+            submitted_at: ts_to_dt(o.submitted_at),
+        })
+        .collect();
+
+    let decisions: Vec<StrategyDecisionSnapshot> = p
+        .decisions
+        .into_iter()
+        .map(|d| {
+            StrategyDecisionSnapshot::new(d.symbol, d.quantity, d.side, d.mark, ts_to_dt(d.created_at))
+        })
+        .collect();
+
+    RuntimeSnapshotDto {
+        generated_at: ts_to_dt(p.generated_at),
+        started_at: ts_to_dt(p.started_at),
+        mode: p.mode,
+        strategy: p.strategy,
+        account_id: p.account_id,
+        metrics: p.metrics.map(proto_metrics).unwrap_or_default(),
+        symbols: p.symbols.into_iter().map(proto_symbol).collect(),
+        positions: positions.iter().map(RuntimePositionDto::from).collect(),
+        historic: historic.iter().map(RuntimeHistoricPositionDto::from).collect(),
+        orders: orders.iter().map(RuntimeOrderDto::from).collect(),
+        decisions: decisions.iter().map(RuntimeDecisionDto::from).collect(),
+        alerts: p.alerts.into_iter().map(proto_alert).collect(),
+        risk: p.risk.map(proto_risk).unwrap_or_default(),
+    }
+}
+
+fn proto_metrics(m: pb::Metrics) -> Metrics {
+    Metrics {
+        net_liq: m.net_liq,
+        buying_power: m.buying_power,
+        excess_liquidity: m.excess_liquidity,
+        margin_requirement: m.margin_requirement,
+        commissions: m.commissions,
+        portal_ok: m.portal_ok,
+        tws_ok: m.tws_ok,
+        questdb_ok: m.questdb_ok,
+        nats_ok: m.nats_ok,
+    }
+}
+
+fn proto_symbol(s: pb::SymbolSnapshot) -> SymbolSnapshot {
+    let candle = s.candle.map(|c| CandleSnapshot {
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close,
+        volume: c.volume,
+        entry: c.entry,
+        updated: ts_to_dt(c.updated),
+    });
+    SymbolSnapshot {
+        symbol: s.symbol.clone(),
+        last: s.last,
+        bid: s.bid,
+        ask: s.ask,
+        spread: s.spread,
+        roi: s.roi,
+        maker_count: s.maker_count,
+        taker_count: s.taker_count,
+        volume: s.volume,
+        candle: candle.unwrap_or_else(|| CandleSnapshot {
+            open: s.last,
+            high: s.last,
+            low: s.last,
+            close: s.last,
+            volume: 0,
+            entry: s.last,
+            updated: Utc::now(),
+        }),
+    }
+}
+
+fn proto_alert(a: pb::Alert) -> Alert {
+    let level = match pb::AlertLevel::try_from(a.level).unwrap_or(pb::AlertLevel::Unspecified) {
+        pb::AlertLevel::Warning => AlertLevel::Warning,
+        pb::AlertLevel::Error => AlertLevel::Error,
+        _ => AlertLevel::Info,
+    };
+    Alert { level, message: a.message, timestamp: ts_to_dt(a.timestamp) }
+}
+
+fn proto_risk(r: pb::RiskStatus) -> RiskStatus {
+    RiskStatus {
+        allowed: r.allowed,
+        reason: if r.reason.is_empty() { None } else { Some(r.reason) },
+        updated_at: ts_to_dt(r.updated_at),
+    }
+}
+
+/// Run the NATS subscriber loop. Sends `TuiSnapshot` updates on `tx`.
+/// Reconnects automatically on disconnect with 2-second backoff.
+pub async fn run(config: TuiConfig, tx: watch::Sender<Option<TuiSnapshot>>) {
+    let subject = topics::snapshot::backend(&config.backend_id);
+    info!(subject = %subject, nats_url = %config.nats_url, "NATS subscriber starting");
+
+    loop {
+        match NatsClient::connect(&config.nats_url).await {
+            Ok(client) => {
+                info!("NATS connected");
+                if let Err(e) = subscribe_loop(&client, &subject, &tx).await {
+                    warn!(error = %e, "NATS subscriber loop exited, reconnecting in 2s");
+                }
+            }
+            Err(e) => {
+                warn!(error = %e, "NATS connect failed, retrying in 2s");
+            }
+        }
+        tokio::time::sleep(Duration::from_secs(2)).await;
+    }
+}
+
+async fn subscribe_loop(
+    client: &NatsClient,
+    subject: &str,
+    tx: &watch::Sender<Option<TuiSnapshot>>,
+) -> anyhow::Result<()> {
+    let mut sub = client.client().subscribe(subject.to_string()).await?;
+    info!(subject = %subject, "Subscribed to snapshot subject");
+
+    while let Some(msg) = sub.next().await {
+        match extract_proto_payload::<pb::SystemSnapshot>(&msg.payload) {
+            Ok(proto) => {
+                let dto = proto_to_snapshot(proto);
+                let snap = TuiSnapshot::new(dto, SnapshotSource::Nats);
+                debug!(subject = %subject, "Snapshot received");
+                let _ = tx.send(Some(snap));
+            }
+            Err(e) => {
+                warn!(error = %e, "Failed to decode snapshot payload");
+            }
+        }
+    }
+
+    anyhow::bail!("NATS subscription ended");
+}

@@ -153,6 +153,11 @@ impl NatsIntegration {
         }
     }
 
+    /// Return the underlying NATS client, if connected.
+    pub fn client(&self) -> Option<Arc<NatsClient>> {
+        self.client.clone()
+    }
+
     /// Check if NATS integration is active
     pub fn is_active(&self) -> bool {
         self.client.is_some()
