@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, sync::Arc, time::Duration};
+use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 use async_stream::stream;
 use axum::{
@@ -82,6 +82,7 @@ impl RestServer {
             .route("/api/health-aggregated", any(proxy_heartbeat_root))
             .route("/api/heartbeat", any(proxy_heartbeat_root))
             .route("/api/heartbeat/*path", any(proxy_heartbeat))
+            .route("/api/config", get(shared_config))
             .route("/api/live/state", get(live_state))
             .route("/api/live/state/watch", get(live_state_watch))
             .route("/api/v1/ib", any(proxy_ib_root))
@@ -536,6 +537,259 @@ fn decode_live_state_envelope_metadata(bytes: &[u8]) -> serde_json::Value {
             "decode_error": err.to_string(),
         }),
     }
+}
+
+fn shared_config_candidate_paths() -> Vec<PathBuf> {
+    let mut candidates = Vec::new();
+
+    let mut add = |path: PathBuf| {
+        if !candidates.iter().any(|existing| existing == &path) {
+            candidates.push(path);
+        }
+    };
+
+    if let Ok(explicit) = std::env::var("IB_BOX_SPREAD_CONFIG") {
+        let explicit = PathBuf::from(explicit).expand_home();
+        if explicit.is_absolute() {
+            add(explicit);
+        } else if let Ok(cwd) = std::env::current_dir() {
+            add(cwd.join(&explicit));
+            add(explicit);
+        } else {
+            add(explicit);
+        }
+    }
+
+    if let Some(home) = std::env::var_os("HOME") {
+        let home = PathBuf::from(home);
+        add(home.join(".config/ib_box_spread/config.json"));
+        if cfg!(target_os = "macos") {
+            add(home.join("Library/Application Support/ib_box_spread/config.json"));
+        }
+    }
+
+    add(PathBuf::from("/usr/local/etc/ib_box_spread/config.json"));
+    add(PathBuf::from("/etc/ib_box_spread/config.json"));
+    add(PathBuf::from("config/config.json"));
+    add(PathBuf::from("config/config.example.json"));
+
+    candidates
+}
+
+trait ExpandHome {
+    fn expand_home(self) -> PathBuf;
+}
+
+impl ExpandHome for PathBuf {
+    fn expand_home(self) -> PathBuf {
+        let text = self.to_string_lossy();
+        if text == "~" {
+            return std::env::var_os("HOME").map(PathBuf::from).unwrap_or(self);
+        }
+        if let Some(stripped) = text.strip_prefix("~/") {
+            if let Some(home) = std::env::var_os("HOME") {
+                return PathBuf::from(home).join(stripped);
+            }
+        }
+        self
+    }
+}
+
+fn strip_json_comments(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let chars: Vec<char> = text.chars().collect();
+    let mut i = 0;
+    let mut in_double = false;
+    let mut in_line = false;
+    let mut in_block = false;
+    let mut block_depth = 0_i32;
+
+    while i < chars.len() {
+        let c = chars[i];
+        if in_line {
+            if c == '\n' {
+                in_line = false;
+                out.push(c);
+            }
+            i += 1;
+            continue;
+        }
+        if in_block {
+            if c == '*' && i + 1 < chars.len() && chars[i + 1] == '/' {
+                block_depth -= 1;
+                if block_depth == 0 {
+                    in_block = false;
+                }
+                i += 2;
+            } else if c == '/' && i + 1 < chars.len() && chars[i + 1] == '*' {
+                block_depth += 1;
+                i += 2;
+            } else {
+                i += 1;
+            }
+            continue;
+        }
+        if in_double {
+            if c == '\\' && i + 1 < chars.len() {
+                out.push(c);
+                out.push(chars[i + 1]);
+                i += 2;
+            } else if c == '"' {
+                in_double = false;
+                out.push(c);
+                i += 1;
+            } else {
+                out.push(c);
+                i += 1;
+            }
+            continue;
+        }
+        if c == '"' {
+            in_double = true;
+            out.push(c);
+            i += 1;
+        } else if c == '/' && i + 1 < chars.len() {
+            match chars[i + 1] {
+                '/' => {
+                    in_line = true;
+                    i += 2;
+                }
+                '*' => {
+                    in_block = true;
+                    block_depth = 1;
+                    i += 2;
+                }
+                _ => {
+                    out.push(c);
+                    i += 1;
+                }
+            }
+        } else {
+            out.push(c);
+            i += 1;
+        }
+    }
+
+    out
+}
+
+fn resolve_env_placeholders(value: serde_json::Value) -> serde_json::Value {
+    match value {
+        serde_json::Value::String(text) => {
+            if text.starts_with("${") && text.ends_with('}') {
+                let key = &text[2..text.len() - 1];
+                if let Ok(resolved) = std::env::var(key) {
+                    return serde_json::Value::String(resolved);
+                }
+            }
+            serde_json::Value::String(text)
+        }
+        serde_json::Value::Array(items) => serde_json::Value::Array(
+            items
+                .into_iter()
+                .map(resolve_env_placeholders)
+                .collect::<Vec<_>>(),
+        ),
+        serde_json::Value::Object(map) => serde_json::Value::Object(
+            map.into_iter()
+                .map(|(k, v)| (k, resolve_env_placeholders(v)))
+                .collect(),
+        ),
+        other => other,
+    }
+}
+
+fn load_shared_config_json() -> Result<serde_json::Value, String> {
+    let candidates = shared_config_candidate_paths();
+    let mut last_error = None;
+
+    for candidate in &candidates {
+        if !candidate.exists() || !candidate.is_file() {
+            continue;
+        }
+
+        match std::fs::read_to_string(candidate) {
+            Ok(raw) => {
+                let stripped = strip_json_comments(&raw);
+                match serde_json::from_str::<serde_json::Value>(&stripped) {
+                    Ok(parsed) => return Ok(resolve_env_placeholders(parsed)),
+                    Err(err) => {
+                        return Err(format!(
+                            "Failed to parse shared config at {}: {err}",
+                            candidate.display()
+                        ));
+                    }
+                }
+            }
+            Err(err) => {
+                last_error = Some(format!("{}: {err}", candidate.display()));
+            }
+        }
+    }
+
+    let searched = candidates
+        .iter()
+        .map(|path| path.display().to_string())
+        .collect::<Vec<_>>()
+        .join(", ");
+    Err(last_error.unwrap_or_else(|| format!("Shared config not found. Searched: {searched}")))
+}
+
+fn shared_config_response(config: &serde_json::Value) -> serde_json::Value {
+    let version = config
+        .get("version")
+        .cloned()
+        .unwrap_or_else(|| serde_json::Value::String("1.0.0".into()));
+    let services = config
+        .get("services")
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!({}));
+
+    let broker = config.get("broker");
+    let primary = broker
+        .and_then(|value| value.get("primary"))
+        .cloned()
+        .unwrap_or_else(|| serde_json::Value::String("ALPACA".into()));
+    let priorities = broker
+        .and_then(|value| value.get("priorities"))
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!(["alpaca", "ib", "mock"]));
+
+    let pwa = config
+        .get("pwa")
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!({}));
+    let pwa_service_ports = pwa
+        .get("servicePorts")
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!({}));
+    let pwa_default_service = pwa
+        .get("defaultService")
+        .cloned()
+        .unwrap_or_else(|| serde_json::Value::String("ib".into()));
+    let pwa_service_urls = pwa
+        .get("serviceUrls")
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!({}));
+
+    serde_json::json!({
+        "version": version,
+        "services": services,
+        "broker": {
+            "primary": primary,
+            "priorities": priorities,
+        },
+        "pwa": {
+            "servicePorts": pwa_service_ports,
+            "defaultService": pwa_default_service,
+            "serviceUrls": pwa_service_urls,
+        },
+    })
+}
+
+async fn shared_config() -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let config = load_shared_config_json().map_err(live_state_internal_error)?;
+    Ok(Json(shared_config_response(&config)))
 }
 
 fn ib_proxy_target_url(
@@ -2663,6 +2917,68 @@ mod tests {
             .expect_err("invalid loan should fail");
         assert_eq!(err.0, StatusCode::BAD_REQUEST);
         assert!(err.1.contains("Principal must be > 0"));
+    }
+
+    #[test]
+    fn strip_json_comments_preserves_strings() {
+        let raw = r#"
+        {
+          // top-level comment
+          "name": "http://example.com//keep",
+          "nested": /* block */ { "value": "/* keep */" }
+        }
+        "#;
+
+        let parsed: serde_json::Value =
+            serde_json::from_str(&strip_json_comments(raw)).expect("valid json");
+
+        assert_eq!(parsed["name"], "http://example.com//keep");
+        assert_eq!(parsed["nested"]["value"], "/* keep */");
+    }
+
+    #[test]
+    fn load_shared_config_json_prefers_env_override_and_resolves_placeholders() {
+        let config_path = env::temp_dir().join(format!("shared-config-{}.json", Uuid::new_v4()));
+        let config_text = r#"
+        {
+          // comment should be ignored
+          "version": "2.0.0",
+          "services": { "health_dashboard": { "port": 8011 } },
+          "broker": {
+            "primary": "${TEST_SHARED_PRIMARY}",
+            "priorities": ["ib", "mock"]
+          },
+          "pwa": {
+            "servicePorts": { "ib": 8002 },
+            "defaultService": "ib",
+            "serviceUrls": { "ib": "${TEST_SHARED_URL}" }
+          }
+        }
+        "#;
+
+        std::fs::write(&config_path, config_text).expect("write shared config");
+        env::set_var("IB_BOX_SPREAD_CONFIG", &config_path);
+        env::set_var("TEST_SHARED_PRIMARY", "IB");
+        env::set_var("TEST_SHARED_URL", "http://127.0.0.1:8002");
+
+        let parsed = load_shared_config_json().expect("load shared config");
+        let response = shared_config_response(&parsed);
+
+        assert_eq!(response["version"], "2.0.0");
+        assert_eq!(response["broker"]["primary"], "IB");
+        assert_eq!(
+            response["broker"]["priorities"],
+            serde_json::json!(["ib", "mock"])
+        );
+        assert_eq!(
+            response["pwa"]["serviceUrls"]["ib"],
+            "http://127.0.0.1:8002"
+        );
+
+        env::remove_var("IB_BOX_SPREAD_CONFIG");
+        env::remove_var("TEST_SHARED_PRIMARY");
+        env::remove_var("TEST_SHARED_URL");
+        let _ = std::fs::remove_file(config_path);
     }
 
     #[test]

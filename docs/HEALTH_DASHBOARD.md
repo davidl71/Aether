@@ -17,6 +17,7 @@ With `config/nginx/backend-services.conf` loaded, or through the Rust backend:
 
 - **`GET http://localhost:8080/api/health-aggregated`** — Proxies to the health dashboard `/api/health` (machine-readable aggregated health for services/dashboards).
 - **`GET http://localhost:8080/api/heartbeat`** — Rust-owned compatibility/proxy path to the same aggregated health payload.
+- **`GET http://localhost:8080/api/config`** — Rust-owned shared config slice (`services`, `broker`, `pwa`) for clients that need the home/project config view.
 
 ## How backends appear
 
@@ -66,10 +67,10 @@ Use **`GET /api/health`** (direct on port 8011) or **`GET /api/health-aggregated
 - **all_ok** / **any_error** — Booleans
 - **nats_connected** — Whether the dashboard is connected to NATS
 
-## TUI and PWA
+## TUI and Archived Web
 
 - **TUI:** The TUI uses the shared API origin at `{api_base_url}/api/health` for unified health.
-- **PWA:** When `VITE_API_URL` points at the shared server (e.g. `http://localhost:8080/api`), the PWA fetches `GET /api/health-aggregated` once per interval and maps `backends` to header status badges. Set `VITE_HEALTH_AGGREGATED_URL` to point at the dashboard directly (e.g. `http://localhost:8011/api/health`) when not using nginx.
+- **Archived web app:** Historical clients should fetch shared config from `GET /api/config` on the Rust origin, not from the health dashboard service.
 
 ## References
 

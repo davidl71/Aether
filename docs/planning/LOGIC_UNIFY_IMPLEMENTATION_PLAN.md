@@ -51,7 +51,7 @@ No dependencies. Tasks A1, A2, A3 can be created and executed in any order (or i
 
 **Deliverable:** TUI and PWA both read the same home config (`~/.config/ib_box_spread/config.json` or `IB_BOX_SPREAD_CONFIG`) and use the same `services` and `broker.priorities` so both UIs see the same backends and ordering. TUI uses `tui.providerType` / `tui.restEndpoint`; PWA uses `pwa.servicePorts` and env `VITE_*_PORT`.
 
-**Done:** TUI already uses SharedConfigLoader (home config). Health dashboard now exposes `GET /api/config` returning `services`, `broker`, and `pwa` from SharedConfigLoader so PWA can fetch the same source. Docs: SHARED_CONFIGURATION_SCHEMA.md notes PWA can set `VITE_CONFIG_URL` to e.g. `http://localhost:8011/api/config` and use `loadSharedConfig(url)` for same backend list and ordering.
+**Done:** TUI already uses SharedConfigLoader (home config). Shared `GET /api/config` ownership has moved to the Rust API, which now returns the `services`, `broker`, and `pwa` slice from the same shared config search path. Historical web clients can point `VITE_CONFIG_URL` at `http://localhost:8080/api/config` to consume the same source and ordering.
 
 **Dependencies:** A3 (single JSON Schema).
 

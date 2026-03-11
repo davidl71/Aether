@@ -8,7 +8,6 @@ Endpoints:
 - GET /api/health - Aggregated health: { "backends": { "ib": {...}, ... }, "source": "nats" }
 - GET /api/health/dashboard - Same with optional summary
 - GET /api/health/{backend_id} - Single backend health or 404
-- GET /api/config - Shared config slice
 
 Environment:
 - NATS_URL - NATS server (default nats://localhost:4222). Required for updates.
@@ -187,33 +186,6 @@ def get_health_backend(backend_id: str) -> Dict[str, Any]:
     if backend_id not in _backends:
         raise HTTPException(status_code=404, detail=f"Backend {backend_id} not in health map (no NATS update yet)")
     return _backends[backend_id]
-
-
-@app.get("/api/config")
-def get_config() -> Dict[str, Any]:
-    """Shared config slice (services, broker, pwa) from same home config as TUI. PWA can fetch this to use same services and broker.priorities."""
-    try:
-        from python.integration.shared_config_loader import SharedConfigLoader
-        config = SharedConfigLoader.load_config(quiet_placeholder_warnings=True)
-        out = {
-            "version": config.version,
-            "services": config.services or {},
-            "broker": {
-                "primary": config.broker.primary if config.broker else "ALPACA",
-                "priorities": list(config.broker.priorities) if config.broker else ["alpaca", "ib", "mock"],
-            },
-            "pwa": {},
-        }
-        if config.pwa:
-            out["pwa"] = {
-                "servicePorts": config.pwa.service_ports,
-                "defaultService": config.pwa.default_service,
-                "serviceUrls": config.pwa.service_urls,
-            }
-        return out
-    except Exception as e:
-        logger.warning("Failed to load shared config for /api/config: %s", e)
-        raise HTTPException(status_code=503, detail="Config not available") from e
 
 
 def _port() -> int:

@@ -276,7 +276,7 @@ For applications that support multiple simultaneous sources (like PWA), use prio
 }
 ```
 
-**Note:** PWA uses build-time environment variables (`VITE_*_PORT`) which override config file values. To use the **same config file** as TUI, set **`VITE_CONFIG_URL`** to the health dashboard config endpoint (e.g. `http://localhost:8011/api/config`). The health dashboard serves `GET /api/config` from the shared home config; PWA can call `loadSharedConfig(VITE_CONFIG_URL)` and use `services` and `broker.priorities` so both UIs see the same backends and ordering.
+**Note:** Historical web clients can use **`VITE_CONFIG_URL`** to fetch the same shared config view as the TUI. The active runtime now serves **`GET /api/config`** from the Rust API origin (for example `http://localhost:8080/api/config`), not from the Python health dashboard. That endpoint exposes the shared `services`, `broker`, and `pwa` slice so clients can keep backend ordering and service discovery aligned with the home config.
 
 ### Standalone/Backend Configuration
 
