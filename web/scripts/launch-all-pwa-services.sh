@@ -299,7 +299,6 @@ stop_services() {
       "pwa-ib"
       "pwa-discount-bank"
       "pwa-risk-free-rate"
-      "pwa-jupyterlab"
       "pwa-nats"
       "pwa-rust-backend"
       "pwa-ib-gateway"
@@ -379,7 +378,6 @@ case "${1:-start}" in
         "pwa-ib:IB"
         "pwa-discount-bank:Discount Bank"
         "pwa-risk-free-rate:Risk-Free Rate"
-        "pwa-jupyterlab:JupyterLab"
         "pwa-nats:NATS"
         "pwa-rust-backend:Rust Backend"
       )
@@ -442,7 +440,6 @@ ALPACA_PORT=$(get_service_port "alpaca" 8000)
 IB_PORT=$(get_service_port "ib" 8002)
 DISCOUNT_BANK_PORT=$(get_service_port "discount_bank" 8003)
 RISK_FREE_RATE_PORT=$(get_service_port "risk_free_rate" 8004)
-JUPYTERLAB_PORT=$(get_service_port "jupyterlab" 8888)
 # NATS ports - use config_get_port for main port, config_get for nested ports
 NATS_PORT=$(get_service_port "nats" 4222)
 if command -v config_get >/dev/null 2>&1; then
@@ -562,18 +559,6 @@ else
   echo "${YELLOW}⚠ Discount Bank service (port ${DISCOUNT_BANK_PORT}) is not running${NC}"
 fi
 
-if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-jupyterlab"; then
-  SERVICE_STATUS["jupyterlab"]="running"
-  echo "${GREEN}✓ JupyterLab service (port ${JUPYTERLAB_PORT}) is running via systemctl${NC}"
-elif check_service_health "${JUPYTERLAB_PORT}"; then
-  SERVICE_STATUS["jupyterlab"]="running"
-  echo "${GREEN}✓ JupyterLab service (port ${JUPYTERLAB_PORT}) is running${NC}"
-else
-  SERVICE_STATUS["jupyterlab"]="stopped"
-  SERVICES_TO_START+=("jupyterlab")
-  echo "${YELLOW}⚠ JupyterLab service (port ${JUPYTERLAB_PORT}) is not running${NC}"
-fi
-
 if [ "${SERVICE_MANAGER}" = "systemctl" ] && check_systemctl_service "pwa-risk-free-rate"; then
   SERVICE_STATUS["risk_free_rate"]="running"
   echo "${GREEN}✓ Risk-Free Rate service (port ${RISK_FREE_RATE_PORT}) is running via systemctl${NC}"
@@ -640,7 +625,6 @@ if [ "${SERVICE_MANAGER}" = "systemctl" ]; then
   SYSTEMCTL_SERVICE_MAP["ib"]="pwa-ib"
   SYSTEMCTL_SERVICE_MAP["discount_bank"]="pwa-discount-bank"
   SYSTEMCTL_SERVICE_MAP["risk_free_rate"]="pwa-risk-free-rate"
-  SYSTEMCTL_SERVICE_MAP["jupyterlab"]="pwa-jupyterlab"
   SYSTEMCTL_SERVICE_MAP["nats"]="pwa-nats"
   SYSTEMCTL_SERVICE_MAP["rust_backend"]="pwa-rust-backend"
 
@@ -660,7 +644,7 @@ if [ "${SERVICE_MANAGER}" = "systemctl" ]; then
   fi
 
   # 3. Independent services (can start in parallel)
-  for service in web alpaca discount_bank risk_free_rate jupyterlab rust_backend; do
+  for service in web alpaca discount_bank risk_free_rate rust_backend; do
     if [ "${service}" = "alpaca" ] && ! service_enabled "alpaca"; then
       continue
     fi
@@ -865,18 +849,6 @@ if [[ " ${SERVICES_TO_START[*]} " =~ " risk_free_rate " ]]; then
   ) &
 fi
 
-# JupyterLab service (port 8888)
-if [[ " ${SERVICES_TO_START[*]} " =~ " jupyterlab " ]]; then
-  JUPYTERLAB_SCRIPT="${ROOT_DIR}/scripts/run-jupyterlab-service.sh"
-  if [ -f "${JUPYTERLAB_SCRIPT}" ]; then
-    (
-      cd "$ROOT_DIR"
-      bash "${JUPYTERLAB_SCRIPT}" > /tmp/pwa-jupyterlab.log 2>&1 &
-      echo $! > /tmp/pwa-jupyterlab.pid
-    ) &
-  fi
-fi
-
 # Rust backend service (port 8080 for REST, 50051 for gRPC)
 if [[ " ${SERVICES_TO_START[*]} " =~ " rust_backend " ]]; then
   RUST_BACKEND_SCRIPT="${ROOT_DIR}/scripts/start_rust_backend.sh"
@@ -943,12 +915,6 @@ fi
 if [[ " ${SERVICES_TO_START[*]} " =~ " risk_free_rate " ]] || [ "${SERVICE_STATUS[risk_free_rate]}" = "running" ]; then
   echo "  ${GREEN}✓${NC} Risk-Free Rate service (port ${RISK_FREE_RATE_PORT}) - Log: /tmp/pwa-risk-free-rate.log"
   echo "    ${BLUE}URL: http://127.0.0.1:${RISK_FREE_RATE_PORT}${NC}"
-fi
-if [[ " ${SERVICES_TO_START[*]} " =~ " jupyterlab " ]] || [ "${SERVICE_STATUS[jupyterlab]}" = "running" ]; then
-  if [ -f "${ROOT_DIR}/scripts/run-jupyterlab-service.sh" ]; then
-    echo "  ${GREEN}✓${NC} JupyterLab service (port ${JUPYTERLAB_PORT}) - Log: /tmp/pwa-jupyterlab.log"
-    echo "    ${BLUE}URL: http://127.0.0.1:${JUPYTERLAB_PORT}${NC}"
-  fi
 fi
 if [[ " ${SERVICES_TO_START[*]} " =~ " nats " ]] || [ "${SERVICE_STATUS[nats]}" = "running" ]; then
   echo "  ${GREEN}✓${NC} NATS server (port ${NATS_PORT}) - Log: ${ROOT_DIR}/logs/nats-server.log"

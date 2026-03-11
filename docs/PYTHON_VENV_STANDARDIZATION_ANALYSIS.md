@@ -18,7 +18,6 @@
    - Examples:
      - `web/scripts/run-*.sh` (alpaca, ib, tastytrade, tradestation services)
      - `scripts/start_rust_backend.sh`
-     - `scripts/run-jupyterlab-service.sh`
 
 2. **`uvx`** (Already in Use)
    - Used for MCP servers in `.cursor/mcp.json`:

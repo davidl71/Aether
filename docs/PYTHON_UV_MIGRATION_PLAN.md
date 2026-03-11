@@ -38,8 +38,7 @@ This migration plan outlines the gradual adoption of `uv` (the fast Python packa
 4. `web/scripts/run-tradestation-service.sh`
 5. `web/scripts/run-discount-bank-service.sh`
 6. `web/scripts/run-risk-free-rate-service.sh`
-7. `scripts/run-jupyterlab-service.sh`
-8. `scripts/start_rust_backend.sh`
+7. `scripts/start_rust_backend.sh`
 9. And more...
 
 ---
@@ -85,7 +84,6 @@ This migration plan outlines the gradual adoption of `uv` (the fast Python packa
 **Scripts to Update**:
 
 - `web/scripts/run-*.sh` (all service scripts)
-- `scripts/run-jupyterlab-service.sh`
 - `scripts/start_rust_backend.sh`
 
 **Example Update**:

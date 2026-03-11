@@ -1,6 +1,10 @@
-# JupyterLab Notebooks
+# Notebooks
 
-This directory contains sample Jupyter notebooks for interactive analysis, backtesting, and visualization of box spread trading strategies.
+This directory contains analysis notebooks and templates kept as research artifacts.
+
+JupyterLab is not part of the active runtime surface right now. Treat these notebooks as
+manual/offline analysis assets. A hosted or managed notebook workflow can be revisited later
+as a future platform improvement.
 
 ## Available Notebooks
 
@@ -32,23 +36,11 @@ Strategy backtesting framework:
 - Performance analysis
 - Risk metrics calculation
 
-## Getting Started
+## Current Status
 
-1. **Start JupyterLab**:
-   ```bash
-   ./scripts/run-jupyterlab-service.sh
-   # Or use the unified launcher:
-   ./web/scripts/launch-all-pwa-services.sh
-   ```
-
-2. **Access JupyterLab**:
-   - Open browser to `http://127.0.0.1:8888`
-   - Access token will be displayed in the terminal output
-
-3. **Open a Notebook**:
-   - Navigate to the `notebooks/` directory
-   - Click on any `.ipynb` file to open it
-   - Run cells with `Shift+Enter`
+- No project-managed JupyterLab service is started by the repo anymore.
+- Open notebooks with your local notebook tool of choice if you need ad hoc analysis.
+- Do not treat notebooks as a required runtime component for the platform.
 
 ## Project Integration
 
@@ -95,11 +87,6 @@ Install required packages:
 pip install jupyterlab plotly pandas numpy matplotlib
 ```
 
-For full extension support:
-```bash
-pip install -r requirements-jupyterlab.txt
-```
-
 For all notebook dependencies (recommended):
 ```bash
 pip install -r requirements-notebooks.txt
@@ -134,4 +121,4 @@ If you see import warnings in notebooks:
 - **Save frequently**: Notebooks auto-save, but commit important work to git
 - **Use markdown cells**: Document your analysis and findings
 - **Clear outputs**: Before committing, clear outputs to reduce file size
-- **Version control**: Use `jupyterlab-git` extension for notebook versioning
+- **Future improvement**: If notebook workflows return as an active platform feature, reintroduce a managed Jupyter environment deliberately rather than restoring the old ad hoc service path

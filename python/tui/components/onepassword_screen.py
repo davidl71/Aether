@@ -37,10 +37,6 @@ BACKEND_SECRET_VARS: List[Tuple[str, List[Tuple[str, str]]]] = [
     ("Finnhub", [
         ("OP_FINNHUB_API_KEY_SECRET", "API Key"),
     ]),
-    ("JupyterLab", [
-        ("OP_JUPYTERLAB_TOKEN_SECRET", "Token"),
-        ("OP_JUPYTERLAB_PASSWORD_SECRET", "Password"),
-    ]),
 ]
 
 
@@ -194,7 +190,6 @@ VAULT_TITLE_MATCH: List[Tuple[str, str]] = [
     ("FRED (SOFR/Treasury)", "fred"),
     ("Alpha Vantage", "alpha"),
     ("Finnhub", "finnhub"),
-    ("JupyterLab", "jupyter"),
 ]
 
 

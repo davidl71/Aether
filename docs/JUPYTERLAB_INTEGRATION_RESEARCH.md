@@ -2,11 +2,18 @@
 
 **Date**: 2025-11-19
 **Task**: T-122 - Research JupyterLab integration patterns
-**Status**: Research Complete
+**Status**: Historical research only
+
+> Note: The old project-managed JupyterLab service path has been retired. This document is
+> preserved as background research and future-direction material only. Do not treat the
+> service-wrapper, launch-script, or PWA-integration recommendations here as current setup
+> instructions.
 
 ---
 
 ## Executive Summary
+
+Historical context only.
 
 JupyterLab can significantly enhance this IBKR box spread trading project by providing an interactive environment for strategy development, backtesting, data analysis, and visualization. The project's existing Python infrastructure (FastAPI services, Cython bindings, QuestDB integration) makes JupyterLab integration highly feasible.
 
@@ -215,14 +222,14 @@ questdb = QuestDBClient()
 
 ## Technical Integration Approaches
 
-### Approach 1: Standalone JupyterLab Service (Recommended)
+### Historical Approach 1: Standalone JupyterLab Service (Retired)
 
 **Architecture**:
 
-- New service: `python/integration/jupyterlab_service.py`
+- Historical service wrapper: `python/integration/jupyterlab_service.py`
 - Port: 8888 (configurable via `config.json`)
-- Launch script: `scripts/run-jupyterlab-service.sh`
-- Integration with `launch-all-pwa-services.sh`
+- Historical launch script: `scripts/run-jupyterlab-service.sh`
+- Historical integration with `launch-all-pwa-services.sh`
 
 **Benefits**:
 
@@ -230,6 +237,10 @@ questdb = QuestDBClient()
 - Easy to add to current infrastructure
 - Independent scaling and management
 - Can share Python virtual environment
+
+This approach is no longer active in the repo and should not be restored implicitly. If
+managed notebooks return, they should come back under a new architecture decision rather
+than by reviving this retired service pattern.
 
 **Configuration Addition**:
 

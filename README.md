@@ -32,6 +32,10 @@ Comprehensive multi-asset financing optimization system for managing synthetic f
 
 Tradier support is currently removed from the active platform surface. Reintroduction can be revisited later if it becomes a real integration priority.
 
+Jupyter notebooks remain available as manual research artifacts under `notebooks/`, but the
+old project-managed JupyterLab service path is retired for now and should be treated as a
+future improvement rather than an active runtime feature.
+
 ### Additional Platform Features
 - ✅ Comprehensive logging with spdlog
 - ✅ Dry-run mode for safe testing

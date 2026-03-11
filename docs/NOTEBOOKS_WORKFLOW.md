@@ -1,5 +1,10 @@
 # Jupyter Notebooks Development Workflow
 
+> Status: historical/manual workflow reference. Notebooks remain available as offline analysis
+> artifacts, but the repo no longer manages a JupyterLab runtime service. Treat this document as
+> guidance for ad hoc local notebook work and future improvement discussion, not active platform
+> setup.
+
 ## Overview
 
 Jupyter notebooks enhance our development workflow by providing:
@@ -9,7 +14,7 @@ Jupyter notebooks enhance our development workflow by providing:
 - **Knowledge sharing**: Share analysis with team members
 - **Reproducible research**: Combine code, data, and documentation
 
-## Quick Start
+## Quick Start (Manual / Local Only)
 
 ```bash
 
@@ -17,11 +22,11 @@ Jupyter notebooks enhance our development workflow by providing:
 
 pip install -r requirements-notebooks.txt
 
-# Start JupyterLab
+# Start a local notebook tool if you need one
 
 jupyter lab
 
-# Or use VS Code
+# Or use VS Code / Cursor
 
 code notebooks/
 ```

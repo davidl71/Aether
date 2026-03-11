@@ -76,7 +76,6 @@ SERVICES=(
   "pwa-ib"
   "pwa-discount-bank"
   "pwa-risk-free-rate"
-  "pwa-jupyterlab"
   "pwa-nats"
   "pwa-rust-backend"
 )

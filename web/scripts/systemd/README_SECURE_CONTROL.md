@@ -21,7 +21,6 @@ The `systemctl-helper.sh` script only allows operations on predefined PWA servic
 - pwa-ib
 - pwa-discount-bank
 - pwa-risk-free-rate
-- pwa-jupyterlab
 - pwa-nats
 - pwa-rust-backend
 
@@ -113,7 +112,6 @@ The API accepts these service names (mapped to systemd service names):
 | ib | pwa-ib |
 | discount-bank, discount_bank | pwa-discount-bank |
 | risk-free-rate, risk_free_rate | pwa-risk-free-rate |
-| jupyterlab | pwa-jupyterlab |
 | nats | pwa-nats |
 | rust-backend, rust_backend | pwa-rust-backend |
 
