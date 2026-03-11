@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export type BrokerType = 'TWS' | 'IB_CLIENT_PORTAL' | 'ALPACA' | 'AUTO';
+export type BrokerType = 'TWS' | 'IB_CLIENT_PORTAL' | 'AUTO';
 
 export interface BrokerOption {
   id: BrokerType;
@@ -26,12 +26,6 @@ const BROKER_OPTIONS: BrokerOption[] = [
     id: 'IB_CLIENT_PORTAL',
     name: 'IB Client Portal',
     description: 'IB Client Portal REST API (no TWS required)',
-    available: true,
-  },
-  {
-    id: 'ALPACA',
-    name: 'Alpaca Markets',
-    description: 'Alpaca REST API (paper and live trading)',
     available: true,
   },
   {
@@ -64,19 +58,6 @@ export function BrokerSelector({ currentBroker, onBrokerChange, apiBaseUrl }: Br
       }
     } catch {
       // TWS not available
-    }
-
-    // Check Alpaca (check if Alpaca service is running)
-    try {
-      const response = await fetch(`${baseUrl}/api/account`, { signal: AbortSignal.timeout(2000) });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.account_id?.startsWith('ALPACA') || data.account_id === 'ALPACA') {
-          available.push('ALPACA');
-        }
-      }
-    } catch {
-      // Alpaca not available
     }
 
     // Check IB Client Portal (assume available if TWS is available)

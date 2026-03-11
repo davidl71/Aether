@@ -8,8 +8,6 @@ from typing import Dict
 BACKEND_KEY_TO_PROVIDER_TYPE: Dict[str, str] = {
     "ib": "rest_ib",
     "tws": "rest_tws_gateway",
-    "alpaca": "rest_alpaca",
-    "tastytrade": "rest_tastytrade",
     "mock": "mock",
     "nats": "nats",
     "file": "file",

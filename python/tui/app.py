@@ -880,7 +880,7 @@ class TUIApp(App):
         return [x for x in paths if x.exists()]
 
     def _check_config_reload(self) -> None:
-        """If any watched config file changed, reload config and apply (backend ports, health dashboard URL)."""
+        """If any watched config file changed, reload config and apply (backend ports, shared API base)."""
         paths = self._get_config_watch_paths()
         if not paths:
             return
@@ -902,7 +902,7 @@ class TUIApp(App):
             logger.debug("Config reload failed: %s", e)
             return
         self._apply_config_reload(new_config)
-        logger.info("Config reloaded (backend ports / health dashboard)")
+        logger.info("Config reloaded (backend ports / shared API base)")
 
     def _apply_config_reload(self, new_config: TUIConfig) -> None:
         """Apply reloaded config: update self.config and restart BackendHealthAggregator."""
@@ -997,27 +997,17 @@ class TUIApp(App):
                 if mode == "paper":
                     SharedConfigLoader.patch_home_config({
                         "tws": {"port": 7497},
-                        "alpaca": {
-                            "data_client_config": {"paper": True, "base_url": "https://paper-api.alpaca.markets"},
-                            "dataClientConfig": {"paper": True, "baseUrl": "https://paper-api.alpaca.markets"},
-                        },
                     })
                     if not self.config.tcp_backend_ports:
                         self.config.tcp_backend_ports = dict(DEFAULT_TCP_BACKEND_PORTS)
                     self.config.tcp_backend_ports["tws"] = 7497
-                    self.config.alpaca_paper = True
                 else:
                     SharedConfigLoader.patch_home_config({
                         "tws": {"port": 7496},
-                        "alpaca": {
-                            "data_client_config": {"paper": False, "base_url": "https://api.alpaca.markets"},
-                            "dataClientConfig": {"paper": False, "baseUrl": "https://api.alpaca.markets"},
-                        },
                     })
                     if not self.config.tcp_backend_ports:
                         self.config.tcp_backend_ports = dict(DEFAULT_TCP_BACKEND_PORTS)
                     self.config.tcp_backend_ports["tws"] = 7496
-                    self.config.alpaca_paper = False
             except FileNotFoundError as e:
                 self.notify(f"Config not found: {e}. Restart backends manually for PAPER/LIVE.", title="Mode", severity="warning")
             except Exception as e:
@@ -1124,10 +1114,7 @@ class TUIApp(App):
 
 
 def _effective_health_url(config: TUIConfig) -> Optional[str]:
-    """Unified health URL: health_dashboard_url, or api_base_url + /api/health when using router."""
-    url = getattr(config, "health_dashboard_url", None)
-    if url:
-        return url
+    """Unified health URL from the shared API base when configured."""
     base = getattr(config, "api_base_url", None)
     if base:
         return base.strip().rstrip("/") + "/api/health"

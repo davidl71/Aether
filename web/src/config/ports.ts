@@ -21,11 +21,9 @@ const getEnvVar = (name: string, defaultValue: number): number => {
  * Rust/nginx origin as the browser-facing default.
  */
 export const SERVICE_PORTS = {
-  alpaca: getEnvVar('VITE_ALPACA_PORT', 8000),
   ib: getEnvVar('VITE_IB_PORT', 8002),
   discountBank: getEnvVar('VITE_DISCOUNT_BANK_PORT', 8003),
   riskFreeRate: getEnvVar('VITE_RISK_FREE_RATE_PORT', 8004),
-  tastytrade: getEnvVar('VITE_TASTYTRADE_PORT', 8005),
   rustBackend: getEnvVar('VITE_RUST_BACKEND_REST_PORT', 8080),
 } as const;
 

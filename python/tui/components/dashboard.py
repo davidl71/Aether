@@ -19,8 +19,6 @@ DEFAULT_WATCHLIST: List[str] = ["SPX", "XSP", "NANOS", "TLT", "DSP"]
 BACKEND_DISPLAY_NAMES: Dict[str, str] = {
     "ib": "TWS/IBKR",
     "tws": "TWS",
-    "alpaca": "Alpaca",
-    "tastytrade": "Tastytrade",
     "discount_bank": "Discount Bank",
     "risk_free_rate": "Risk-Free Rate",
     "rust": "Rust",

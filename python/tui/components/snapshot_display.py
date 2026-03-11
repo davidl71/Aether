@@ -48,8 +48,6 @@ def format_updated_display(iso_timestamp: str) -> str:
 BACKEND_DISPLAY_NAMES: Dict[str, str] = {
     "ib": "TWS/IBKR",
     "tws": "TWS",
-    "alpaca": "Alpaca",
-    "tastytrade": "Tastytrade",
     "discount_bank": "Discount Bank",
     "risk_free_rate": "Risk-Free Rate",
     "rust": "Rust",
@@ -59,8 +57,6 @@ BACKEND_DISPLAY_NAMES: Dict[str, str] = {
 BACKEND_SHORT_LABELS: Dict[str, str] = {
     "ib": "IB",
     "tws": "TWS",
-    "alpaca": "Alpaca",
-    "tastytrade": "Tasty",
     "discount_bank": "Discount",
     "risk_free_rate": "RFR",
     "rust": "Rust",
@@ -72,8 +68,6 @@ BACKEND_SHORT_LABELS: Dict[str, str] = {
 BACKEND_ROLES: Dict[str, str] = {
     "ib": "trading",
     "tws": "trading",
-    "alpaca": "trading",
-    "tastytrade": "trading",
     "discount_bank": "banking",
     "risk_free_rate": "rates",
     "rust": "platform",

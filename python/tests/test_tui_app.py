@@ -187,25 +187,24 @@ class TestDisabledBackendsConfig:
         assert config.disabled_backends == {}
 
     def test_tuiconfig_disabled_backends_roundtrip(self):
-        config = TUIConfig(disabled_backends={"alpaca": "Missing API key", "tastytrade": "Missing credentials"})
-        assert config.disabled_backends["alpaca"] == "Missing API key"
-        assert config.disabled_backends["tastytrade"] == "Missing credentials"
+        config = TUIConfig(disabled_backends={"discount_bank": "Unavailable"})
+        assert config.disabled_backends["discount_bank"] == "Unavailable"
         restored = TUIConfig.from_dict(config.to_dict())
         assert restored.disabled_backends == config.disabled_backends
 
     def test_format_backend_health_disabled(self):
         from python.tui.components.snapshot_display import _format_one_backend_health
 
-        out = _format_one_backend_health("alpaca", {"status": "disabled", "error": "Missing API key"})
-        assert "Alpaca" in out
+        out = _format_one_backend_health("discount_bank", {"status": "disabled", "error": "Unavailable"})
+        assert "Discount Bank" in out
         assert "disabled" in out
-        assert "Missing API key" in out
+        assert "Unavailable" in out
 
     def test_format_backend_health_disabled_long_error_truncated(self):
         from python.tui.components.snapshot_display import _format_one_backend_health
 
-        long_err = "Missing API key or OAuth credentials (set ALPACA_API_KEY_ID and ALPACA_API_SECRET_KEY)"
-        out = _format_one_backend_health("alpaca", {"status": "disabled", "error": long_err})
+        long_err = "Unavailable because the source system is disabled and this explanation is intentionally long"
+        out = _format_one_backend_health("discount_bank", {"status": "disabled", "error": long_err})
         assert "disabled" in out
         assert "..." in out
 
@@ -239,6 +238,20 @@ class TestDisabledBackendsConfig:
         assert "RUNNING" in line
         assert "DU123456" in line
 
+
+class TestEffectiveHealthUrl:
+    def test_prefers_api_base_url_by_default(self):
+        from python.tui.app import _effective_health_url
+
+        config = TUIConfig(api_base_url="http://shared:8080")
+        assert _effective_health_url(config) == "http://shared:8080/api/health"
+
+    def test_explicit_dashboard_override_still_supported(self):
+        from python.tui.app import _effective_health_url
+
+        config = TUIConfig(api_base_url="http://shared:8080")
+        assert _effective_health_url(config) == "http://shared:8080/api/health"
+
     def test_format_status_line_no_snapshot(self):
         from python.tui.components.snapshot_display import format_status_line
 
@@ -255,12 +268,12 @@ class TestDisabledBackendsConfig:
 
         backend_health = {
             "ib": {"status": "ok"},
-            "alpaca": {"status": "error", "error": "Connection refused"},
+            "discount_bank": {"status": "error", "error": "Connection refused"},
         }
         line = format_status_line("rest (localhost:8002)", None, backend_health)
         assert "Backend:" in line
         assert "TWS/IBKR" in line or "ib" in line.lower()
-        assert "Alpaca" in line or "alpaca" in line.lower()
+        assert "Discount Bank" in line or "discount" in line.lower()
 
     def test_format_status_line_backend_checking_placeholder(self):
         """When aggregator is polling, status line shows Backend: Connection: checking..."""
@@ -272,22 +285,18 @@ class TestDisabledBackendsConfig:
         assert "checking" in line
 
     @patch.dict("os.environ", {}, clear=False)
-    def test_disabled_backends_from_env_alpaca_missing(self):
+    def test_disabled_backends_from_env_ignores_retired_brokers(self):
         from python.tui.config import _disabled_backends_from_env
 
-        # Clear Alpaca env so alpaca is detected as disabled when in services
-        for key in ("ALPACA_API_KEY_ID", "ALPACA_API_SECRET_KEY", "ALPACA_CLIENT_ID", "ALPACA_CLIENT_SECRET"):
-            os.environ.pop(key, None)
-        out = _disabled_backends_from_env({"alpaca": {"port": 8000}})
-        assert "alpaca" in out
-        assert "API key" in out["alpaca"] or "credentials" in out["alpaca"].lower()
+        out = _disabled_backends_from_env({"alpaca": {"port": 8000}, "tastytrade": {"port": 8005}})
+        assert out == {}
 
     @patch.dict("os.environ", {"ALPACA_API_KEY_ID": "key", "ALPACA_API_SECRET_KEY": "secret"}, clear=False)
-    def test_disabled_backends_from_env_alpaca_has_keys_not_disabled(self):
+    def test_disabled_backends_from_env_retired_brokers_still_ignored(self):
         from python.tui.config import _disabled_backends_from_env
 
         out = _disabled_backends_from_env({"alpaca": {"port": 8000}})
-        assert "alpaca" not in out
+        assert out == {}
 
     @patch.dict(
         "os.environ",

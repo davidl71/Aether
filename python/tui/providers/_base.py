@@ -20,8 +20,6 @@ def _connection_error_hint(exc: Exception, url: str) -> Optional[str]:
     """Return a short hint when the error is a connection failure (e.g. service not running)."""
     if "8002" in url or ":8002" in url:
         return "Start IB service: ./scripts/service.sh start ib"
-    if "8000" in url or ":8000" in url:
-        return "Start Alpaca service: ./scripts/service.sh start alpaca"
     return None
 
 

@@ -4,7 +4,7 @@ import { getServiceUrl, SERVICE_PORTS } from '../config/ports';
 export interface UnifiedAccount {
   id: string;
   account_number?: string;
-  source: 'IB' | 'Alpaca' | 'Tastytrade' | 'Discount Bank';
+  source: 'IB' | 'Discount Bank';
   status?: string;
   currency?: string;
   buying_power?: number;
@@ -28,7 +28,7 @@ export function AccountSelector({ currentAccountId, onAccountChange, apiBaseUrl 
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  const baseUrl = apiBaseUrl || getServiceUrl('alpaca');
+  const baseUrl = apiBaseUrl || getServiceUrl('ib');
 
   useEffect(() => {
     loadAccounts();
@@ -41,18 +41,17 @@ export function AccountSelector({ currentAccountId, onAccountChange, apiBaseUrl 
 
     try {
       // Fetch from all services in parallel so one slow backend doesn't block the rest
-      const [ibAlpacaResult, ttResult, dbResult] = await Promise.allSettled([
-        fetch(`${getServiceUrl('alpaca')}/api/accounts`, { signal: AbortSignal.timeout(2000) }),
-        fetch(`${getServiceUrl('tastytrade')}/api/accounts`, { signal: AbortSignal.timeout(2000) }),
+      const [ibResult, dbResult] = await Promise.allSettled([
+        fetch(`${getServiceUrl('ib')}/api/accounts`, { signal: AbortSignal.timeout(2000) }),
         fetch(`${getServiceUrl('discountBank')}/api/bank-accounts`, { signal: AbortSignal.timeout(2000) }),
       ]);
 
-      // Process IB/Alpaca response (same endpoint can return IB or Alpaca format)
-      if (ibAlpacaResult.status === 'fulfilled' && ibAlpacaResult.value.ok) {
-        const ibData = await ibAlpacaResult.value.json();
+      // Process IB response
+      if (ibResult.status === 'fulfilled' && ibResult.value.ok) {
+        const ibData = await ibResult.value.json();
         if (ibData.accounts && Array.isArray(ibData.accounts)) {
           ibData.accounts.forEach((acc: any) => {
-            if (acc.account_id || (acc.id && !acc.account_number)) {
+            if (acc.account_id || acc.id) {
               allAccounts.push({
                 id: acc.account_id || acc.id,
                 source: 'IB',
@@ -60,38 +59,7 @@ export function AccountSelector({ currentAccountId, onAccountChange, apiBaseUrl 
                 buying_power: acc.buying_power,
                 excess_liquidity: acc.excess_liquidity,
               });
-            } else if (acc.account_number) {
-              allAccounts.push({
-                id: acc.id || acc.account_number,
-                account_number: acc.account_number,
-                source: 'Alpaca',
-                status: acc.status,
-                currency: acc.currency,
-                buying_power: acc.buying_power,
-                cash: acc.cash,
-                portfolio_value: acc.portfolio_value,
-                pattern_day_trader: acc.pattern_day_trader,
-                trading_blocked: acc.trading_blocked,
-              });
             }
-          });
-        }
-      }
-
-      // Process Tastytrade response
-      if (ttResult.status === 'fulfilled' && ttResult.value.ok) {
-        const ttData = await ttResult.value.json();
-        if (ttData.accounts && Array.isArray(ttData.accounts)) {
-          ttData.accounts.forEach((acc: any) => {
-            allAccounts.push({
-              id: acc.id || acc.account_id || 'TASTYTRADE',
-              account_number: acc.account_number || acc.account_id,
-              source: 'Tastytrade',
-              buying_power: acc.buying_power,
-              portfolio_value: acc.net_liquidation,
-              net_liquidation: acc.net_liquidation,
-              excess_liquidity: acc.excess_liquidity,
-            });
           });
         }
       }
@@ -136,12 +104,10 @@ export function AccountSelector({ currentAccountId, onAccountChange, apiBaseUrl 
       if (selectedAccount) {
         // Determine service URL based on account source
         let serviceUrl = baseUrl;
-        if (selectedAccount.source === 'Tastytrade') {
-          serviceUrl = getServiceUrl('tastytrade');
-        } else if (selectedAccount.source === 'Discount Bank') {
+        if (selectedAccount.source === 'Discount Bank') {
           serviceUrl = getServiceUrl('discountBank');
         } else {
-          serviceUrl = getServiceUrl('alpaca'); // IB or Alpaca
+          serviceUrl = getServiceUrl('ib');
         }
 
         const response = await fetch(`${serviceUrl}/api/account`, {

@@ -9,9 +9,7 @@
     "require_auth": false,
     "allowed_origins": [
       "http://localhost:3000",
-      "http://localhost:5173",
-      "http://127.0.0.1:3000",
-      "http://127.0.0.1:5173"
+      "http://127.0.0.1:3000"
     ]
   },
   
@@ -21,12 +19,9 @@
   },
   
   "services": {
-    "web_port": 5173,
-    "alpaca_port": 8000,
     "ib_port": 8002,
     "discount_bank_port": 8003,
     "risk_free_rate_port": 8004,
-    "tastytrade_port": 8005,
     "nats_port": 4222,
     "nats_http_port": 8222,
     "nats_websocket_port": 8081,

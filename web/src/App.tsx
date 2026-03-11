@@ -22,8 +22,6 @@ import { OptionsChainTable } from './components/OptionsChainTable';
 import { BoxSpreadCombinations } from './components/BoxSpreadCombinations';
 import { CandlestickChart } from './components/CandlestickChart';
 import { useChartData } from './hooks/useChartData';
-import { useTastytrade } from './hooks/useTastytrade';
-import { TastytradeDashboard } from './components/TastytradeDashboard';
 import { getRustBackendUrl } from './config/ports';
 import type { SnapshotPayload, SymbolSnapshot, PositionSnapshot } from './types/snapshot';
 import type { BoxSpreadSummary } from './types';
@@ -135,14 +133,6 @@ function App() {
   const { statuses: backendStatuses } = useBackendServices({ intervalMs: 10000, enabled: true });
   const { data: scenarioData, isLoading: scenarioLoading, error: scenarioError } = useBoxSpreadData();
   const { watchlist, addSymbol, removeSymbol, isDefault } = useSymbolWatchlist();
-  const {
-    snapshot: tastySnapshot,
-    isLoading: tastyLoading,
-    error: tastyError,
-    isAvailable: tastyAvailable,
-    refresh: tastyRefresh,
-  } = useTastytrade();
-
   const scenarioSummary = useMemo<BoxSpreadSummary | null>(() => {
     if (!scenarioData || scenarioData.scenarios.length === 0) {
       return null;
@@ -416,15 +406,6 @@ function App() {
             handleCancelOrder,
             apiBaseUrl
           )}
-        {activeTab === 'dashboard' && (
-          <TastytradeDashboard
-            snapshot={tastySnapshot}
-            isLoading={tastyLoading}
-            error={tastyError}
-            isAvailable={tastyAvailable}
-            onRefresh={tastyRefresh}
-          />
-        )}
       </main>
 
       <ActionBar onBuyCombo={handleBuyCombo} onSellCombo={handleSellCombo} />

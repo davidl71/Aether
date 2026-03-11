@@ -25,18 +25,14 @@ export interface BackendServiceStatus {
 export type BackendRole = 'trading' | 'market_data' | 'banking' | 'rates' | 'platform';
 
 export interface BackendServicesStatus {
-  alpaca: BackendServiceStatus;
   ib: BackendServiceStatus;
   discountBank: BackendServiceStatus;
   riskFreeRate: BackendServiceStatus;
-  tastytrade: BackendServiceStatus;
   rustBackend: BackendServiceStatus;
 }
 
 const SERVICE_CONFIG = {
-  alpaca: { name: 'Alpaca', port: SERVICE_PORTS.alpaca, healthPath: '/api/health', role: 'trading' as const },
   ib: { name: 'IB', port: SERVICE_PORTS.ib, healthPath: '/api/health', role: 'trading' as const },
-  tastytrade: { name: 'Tastytrade', port: SERVICE_PORTS.tastytrade, healthPath: '/api/health', role: 'trading' as const },
   discountBank: { name: 'Discount Bank', port: SERVICE_PORTS.discountBank, healthPath: '/api/health', role: 'banking' as const },
   riskFreeRate: { name: 'Risk-Free Rate', port: SERVICE_PORTS.riskFreeRate, healthPath: '/api/health', role: 'rates' as const },
   rustBackend: { name: 'Rust Backend', port: SERVICE_PORTS.rustBackend, healthPath: '/health', role: 'platform' as const },
@@ -71,8 +67,6 @@ export function getBackendsByRole(statuses: BackendServicesStatus): Partial<Reco
 // Map unified health dashboard backend id -> PWA SERVICE_CONFIG key
 const DASHBOARD_KEY_MAP: Record<string, keyof typeof SERVICE_CONFIG> = {
   ib: 'ib',
-  alpaca: 'alpaca',
-  tastytrade: 'tastytrade',
   discount_bank: 'discountBank',
   analytics: 'riskFreeRate', // analytics includes risk_free_rate; show under Risk-Free Rate for simplicity
 };
@@ -80,7 +74,6 @@ const DASHBOARD_KEY_MAP: Record<string, keyof typeof SERVICE_CONFIG> = {
 // Authentication URLs for services that require web-based login
 const AUTH_URLS: Record<string, string> = {
   'IB': 'https://localhost:5001', // IB Client Portal Gateway login page
-  'Alpaca': 'https://app.alpaca.markets', // Alpaca dashboard (for API key management)
 };
 
 function determineAttentionType(
@@ -216,8 +209,6 @@ async function checkServiceHealth(
       let authenticated: boolean | undefined;
       if (serviceName === 'ib' && typeof data.ib_connected === 'boolean') {
         authenticated = data.ib_connected;
-      } else if (serviceName === 'alpaca' && typeof data.alpaca_connected === 'boolean') {
-        authenticated = data.alpaca_connected;
       }
 
       const attention = determineAttentionType(serviceName, true, authenticated, undefined, data);
@@ -309,7 +300,6 @@ async function fetchAggregatedHealth(): Promise<Partial<Record<keyof typeof SERV
       const config = SERVICE_CONFIG[pwaKey];
       let authenticated: boolean | undefined;
       if (pwaKey === 'ib' && typeof p?.ib_connected === 'boolean') authenticated = p.ib_connected;
-      else if (pwaKey === 'alpaca' && typeof p?.alpaca_connected === 'boolean') authenticated = p.alpaca_connected;
       const attention = determineAttentionType(pwaKey, healthy, authenticated, healthy ? undefined : (p?.error as string), p);
       result[pwaKey] = {
         healthy,

@@ -31,22 +31,18 @@ DEFAULT_REST_ENDPOINT = "http://localhost:8080/api/v1/snapshot"
 def test_default_backend_ports_includes_all_services():
     """DEFAULT_BACKEND_PORTS should include the active backend services."""
     assert DEFAULT_BACKEND_PORTS.get("ib") == 8002
-    assert DEFAULT_BACKEND_PORTS.get("alpaca") == 8000
-    assert DEFAULT_BACKEND_PORTS.get("tastytrade") == 8005
     assert DEFAULT_BACKEND_PORTS.get("discount_bank") == 8003
     assert DEFAULT_BACKEND_PORTS.get("risk_free_rate") == 8004
     assert DEFAULT_BACKEND_PORTS.get("rust") == 8080
 
 
 def test_preset_rest_endpoints():
-    """Rust uses the shared origin; specialist presets remain routed through the gateway."""
+    """Rust uses the shared origin; only IB specialist routing remains in the gateway presets."""
     assert "rest_ib" in PRESET_REST_ENDPOINTS
     assert "rest_rust" in PRESET_REST_ENDPOINTS
     assert PRESET_REST_ENDPOINTS["rest_rust"] == DEFAULT_REST_ENDPOINT
     assert "9000" in PRESET_REST_ENDPOINTS["rest_ib"]
     assert "/api/v1/ib/" in PRESET_REST_ENDPOINTS["rest_ib"]
-    assert "rest_alpaca" in PRESET_REST_ENDPOINTS
-    assert "/api/v1/alpaca/" in PRESET_REST_ENDPOINTS["rest_alpaca"]
 
 
 def test_default_tcp_backend_ports_includes_tws():

@@ -37,8 +37,6 @@ logger = logging.getLogger(__name__)
 # Backend key -> scripts/service.sh service name (for start on enable)
 BACKEND_KEY_TO_SERVICE_NAME: Dict[str, str] = {
     "ib": "ib",
-    "alpaca": "alpaca",
-    "tastytrade": "tastytrade",
     "risk_free_rate": "riskfree",
     "discount_bank": "discount",
 }
@@ -95,14 +93,11 @@ def _running_summary(backend_health: Optional[Dict[str, Any]], display_names: Di
 
 
 def _effective_health_source(config: TUIConfig) -> str:
-    """Return short label for where backend health is sourced: dashboard URL or per-backend polling."""
-    url = getattr(config, "health_dashboard_url", None)
-    if url and (url or "").strip():
-        return f"Health: dashboard ({url.strip()})"
+    """Return short label for where backend health is sourced."""
     base = getattr(config, "api_base_url", None)
     if base and (base or "").strip():
         health_path = base.strip().rstrip("/") + "/api/health"
-        return f"Health: dashboard ({health_path})"
+        return f"Health: shared API ({health_path})"
     return "Health: per-backend polling"
 
 
@@ -149,11 +144,6 @@ def _mode_label(config: TUIConfig, key: str, port: int, health_payload: Optional
     if key == "ib":
         # IB: session_mode from health (account ID) when available; else show config hint
         return "—"
-    if key == "alpaca":
-        paper = getattr(config, "alpaca_paper", None)
-        if paper is False:
-            return "Live"
-        return "Paper"
     return "—"
 
 
@@ -535,7 +525,7 @@ class SetupScreen(Screen[Optional[Dict[str, Any]]]):
         self.notify(f"{key}: {'enabled' if key not in user_disabled else 'disabled'}", title="Toggle enabled")
 
     def _switch_mode(self) -> None:
-        """Toggle Live/Paper for selected provider (tws or alpaca); update home config and notify to restart."""
+        """Toggle Live/Paper for TWS and persist the selected gateway port."""
         key = self._get_selected_key()
         if not key:
             self.notify("Select a row first", title="Switch mode", severity="warning")
@@ -565,36 +555,8 @@ class SetupScreen(Screen[Optional[Dict[str, Any]]]):
                 f"TWS set to {mode_name}. Restart IB service (and ensure Gateway/TWS is on port {new_port}) to apply.",
                 title="Switch mode",
             )
-        elif key == "alpaca":
-            current = getattr(self._config, "alpaca_paper", True)
-            new_paper = not current
-            base_url = "https://paper-api.alpaca.markets" if new_paper else "https://api.alpaca.markets"
-            mode_name = "Paper" if new_paper else "Live"
-            try:
-                SharedConfigLoader.patch_home_config({
-                    "alpaca": {
-                        "data_client_config": {"paper": new_paper, "base_url": base_url},
-                        "dataClientConfig": {"paper": new_paper, "baseUrl": base_url},
-                    }
-                })
-            except FileNotFoundError as e:
-                self.notify(f"Config not found: {e}", title="Switch mode", severity="error")
-                return
-            except Exception as e:
-                self.notify(f"Failed to update config: {e}", title="Switch mode", severity="error")
-                return
-            self._config.alpaca_paper = new_paper
-            try:
-                self._config.save_to_file(TUIConfig.get_config_path())
-            except Exception as e:
-                logger.debug("Could not persist TUI config after switch mode: %s", e)
-            self._refresh_table()
-            self._update_status_lines()
-            self.notify(
-                f"Alpaca set to {mode_name}. Restart Alpaca service to apply.",
-                title="Switch mode",
-            )
         else:
+            self.notify("Mode switching is only available for TWS", title="Switch mode", severity="warning")
             self.notify("Switch mode applies only to TWS/IB (7496/7497) or Alpaca (paper/live)", title="Switch mode", severity="information")
 
     def _restart_backend(self) -> None:

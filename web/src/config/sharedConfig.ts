@@ -9,7 +9,7 @@
  */
 
 export interface DataSourceConfig {
-  type: 'alpaca' | 'ib' | 'mock' | 'static';
+  type: 'ib' | 'mock' | 'static';
   enabled?: boolean;
   apiKeyId?: string;
   apiSecretKey?: string;
@@ -150,7 +150,7 @@ function applyEnvOverrides(config: SharedConfig): SharedConfig {
     overrides.services = config.services || {};
   }
 
-  const serviceNames = ['alpaca', 'ib', 'discountBank'];
+  const serviceNames = ['ib', 'discountBank'];
   for (const serviceName of serviceNames) {
     const envVarName = `VITE_${serviceName.toUpperCase().replace('_', '')}_PORT`;
     const envPort = import.meta.env[envVarName] ||
@@ -205,8 +205,8 @@ export async function loadSharedConfig(
     config = {
       version: '1.0.0',
       dataSources: {
-        primary: 'ib',  // Changed from 'alpaca' to 'ib' for real IBKR data
-        fallback: ['alpaca'],
+        primary: 'ib',
+        fallback: ['mock'],
         sources: {},
       },
       services: {},
@@ -237,7 +237,7 @@ export function loadSharedConfigSync(configJson: SharedConfig): SharedConfig {
  * Get primary data source name from configuration
  */
 export function getPrimaryDataSource(config: SharedConfig): string {
-  return config.dataSources?.primary || 'alpaca';
+  return config.dataSources?.primary || 'ib';
 }
 
 /**
