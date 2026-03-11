@@ -8,21 +8,10 @@ from textual.containers import Vertical
 from textual.widgets import Label, DataTable
 from textual.app import ComposeResult
 
+from ..backend_mapping import PROVIDER_TYPE_TO_BACKEND_KEY
 from .base import SnapshotTabBase
 from .snapshot_display import BACKEND_DISPLAY_NAMES
 from ..models import SnapshotPayload
-
-# provider_type (snapshot source) -> backend key for health map (same as setup_screen)
-PROVIDER_TYPE_TO_BACKEND_KEY: Dict[str, str] = {
-    "rest_ib": "ib",
-    "rest_tws_gateway": "tws",
-    "rest_alpaca": "alpaca",
-    "rest_tastytrade": "tastytrade",
-    "mock": "mock",
-    "nats": "nats",
-    "file": "file",
-}
-
 
 def _health_status_label(payload: Dict[str, Any]) -> str:
     """Return Health column: Running, Stopped, Checking, Disabled, or No API key."""

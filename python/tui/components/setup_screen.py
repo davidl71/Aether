@@ -15,6 +15,10 @@ from textual.containers import Container, Horizontal
 from textual.widgets import Header, Footer, Static, Button, DataTable
 from textual.binding import Binding
 
+from ..backend_mapping import (
+    BACKEND_KEY_TO_PROVIDER_TYPE,
+    PROVIDER_TYPE_TO_BACKEND_KEY,
+)
 from ..config import TUIConfig, PRESET_REST_ENDPOINTS, DEFAULT_TCP_BACKEND_PORTS, DEFAULT_BACKEND_PORTS
 from ..display_utils import format_endpoint_display
 from ...integration.shared_config_loader import SharedConfigLoader
@@ -22,18 +26,6 @@ from .onepassword_screen import OnePasswordScreen
 from .snapshot_display import BACKEND_DISPLAY_NAMES, BACKEND_ROLES
 
 logger = logging.getLogger(__name__)
-
-# Backend key -> provider_type for "Set preferred" (snapshot source)
-BACKEND_KEY_TO_PROVIDER_TYPE: Dict[str, str] = {
-    "ib": "rest_ib",
-    "tws": "rest_tws_gateway",
-    "alpaca": "rest_alpaca",
-    "tastytrade": "rest_tastytrade",
-    "mock": "mock",
-    "nats": "nats",
-    "file": "file",
-}
-PROVIDER_TYPE_TO_BACKEND_KEY: Dict[str, str] = {v: k for k, v in BACKEND_KEY_TO_PROVIDER_TYPE.items()}
 
 # Backend key -> scripts/service.sh service name (for start on enable)
 BACKEND_KEY_TO_SERVICE_NAME: Dict[str, str] = {
