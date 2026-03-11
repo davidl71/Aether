@@ -1,6 +1,6 @@
 # Dataflow Architecture
 
-**Last updated**: 2026-03-11 (backend storage and cache cleanup)
+**Last updated**: 2026-03-11 (runtime ownership and datapath alignment)
 **Purpose**: Comprehensive analysis of data flow, storage, and inter-component contracts.
 Used as the ground-truth reference for AI-assisted development.
 
@@ -39,7 +39,7 @@ Web (React)
   └─► SnapshotClient
         ├─► WebSocket: ws://localhost:8080/ws/snapshot
         │     └─► Rust backend: full SystemSnapshot on connect, then only changed sections (delta) every 2s
-        └─► REST fallback: GET /api/snapshot every 2s
+        └─► REST fallback: GET /api/v1/snapshot every 2s
 
   Other web read models:
     ├─► Rust frontend endpoints (`/api/v1/frontend/*`)
@@ -66,8 +66,13 @@ User action (TUI / Web / CLI)
 Rust ledger crate (sqlx + SQLite)
   └─► writes to: agents/backend/data/ledger.db
 
-Python cash_flow_calculator / loan_manager
-  └─► writes to: same SQLite DB ← CONTENTION RISK
+Rust backend loan store
+  └─► owns active loan CRUD and the transitional backend loan JSON store
+        └─► legacy seed/import only: config/loans.json
+
+Python integration / TUI
+  └─► reads snapshot, ledger-adjacent, and loan data
+        └─► no active durable write ownership
 
 QuestDB
   └─► written by: Go collection-daemon QuestDB sink (ILP protocol)
@@ -81,11 +86,12 @@ QuestDB
 | Store | Technology | Written By | Read By | Data | TTL / Retention |
 |-------|-----------|-----------|---------|------|-----------------|
 | InMemoryCache | C++ (custom) | tws_client | C++ engine only | Hot tick prices | In-process |
-| NATS KV | NATS JetStream | Go collection-daemon | api-gateway, TUI/Web (future) | Live state (key = messageType.symbol, value = full `NatsEnvelope` protobuf) | Configurable |
-| SQLite (ledger) | Rust (sqlx) + Python | Rust + Python | Rust + Python | Ledger, positions | Permanent |
+| NATS KV | NATS JetStream | Go collection-daemon | Rust API, TUI NatsProvider, Web (future) | Live state (key = messageType.symbol, value = full `NatsEnvelope` protobuf) | Configurable |
+| SQLite (ledger) | Rust (sqlx) | Rust + selected Python read paths | Ledger, positions | Permanent |
+| Loan store | Rust backend (transitional JSON-backed) | Rust backend | Rust API, Python TUI via `/api/v1/loans` | Loan records / loan-derived views | Permanent |
 | QuestDB | Go (ILP) | collection-daemon | Python analytics | Tick time-series | Configurable |
 
-**NATS KV key schema (bucket LIVE_STATE):** Keys are `messageType.symbol` (e.g. `MarketDataEvent.SPY`, `StrategyDecision.AAPL`). Values are full serialized `NatsEnvelope` records, not just inner payload bytes. Written by collection-daemon when it receives NATS messages. Read by api-gateway: `GET /api/live/state` (list keys), `GET /api/live/state?key=MarketDataEvent.SPY` (one key, raw value base64 plus decoded envelope metadata), or `GET /api/live/state/watch` (SSE stream of KV updates with the same metadata). **Requires NATS server 2.6.2+** (JetStream Key-Value).
+**NATS KV key schema (bucket LIVE_STATE):** Keys are `messageType.symbol` (e.g. `MarketDataEvent.SPY`, `StrategyDecision.AAPL`). Values are full serialized `NatsEnvelope` records, not just inner payload bytes. Written by collection-daemon when it receives NATS messages. Read from the Rust backend via `GET /api/live/state` (list keys), `GET /api/live/state?key=MarketDataEvent.SPY` (one key, raw value base64 plus decoded envelope metadata), or `GET /api/live/state/watch` (SSE stream of KV updates with the same metadata). **Requires NATS server 2.6.2+** (JetStream Key-Value).
 
 ---
 
@@ -110,9 +116,10 @@ message NatsEnvelope {
 | `strategy.decision.<symbol>` | `StrategyDecision` | C++ nats_client | Rust nats_adapter |
 | `heartbeat.<service>` | string (plain) | Python services | Go heartbeat-aggregator |
 
-**Note**: Active Go collectors now decode `NatsEnvelope` directly. `collection-daemon`
-and `heartbeat-aggregator` understand envelope records; older doc references to the removed
-standalone QuestDB bridge or raw-string parsing are stale.
+**Note**: `NatsEnvelope` protobuf is now the only supported active wire format in the
+Rust adapter and Go collectors. `collection-daemon` and `heartbeat-aggregator`
+understand envelope records directly; older doc references to JSON transport, the removed
+standalone QuestDB bridge, or raw-string parsing are stale.
 
 ---
 
@@ -124,8 +131,8 @@ Canonical schema: `proto/messages.proto`. Codegen via `./proto/generate.sh`.
 |----------|------------|--------|--------|
 | C++ | `native/generated/messages.pb.{h,cc}` | protobuf binary | Active |
 | Rust | `agents/backend/crates/nats_adapter/` (prost) | protobuf binary | Active |
-| Go | `agents/go/proto/v1/messages.pb.go` | protobuf binary | Active, not used by agents yet |
-| Python | `python/generated/` (betterproto) | protobuf binary / JSON | Generated; NATS migration pending |
+| Go | `agents/go/proto/v1/messages.pb.go` | protobuf binary | Active |
+| Python | `python/generated/` (betterproto) | protobuf binary / JSON | Generated; used by selected NATS/health consumers |
 | TypeScript | `web/src/proto/messages.ts` (ts-proto) | JSON / binary | Generated; API migration pending |
 
 Schema management: `proto/generate.sh` (shell script).
@@ -139,7 +146,7 @@ All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/sl
 
 | Agent | Purpose | Listens | Exposes |
 |-------|---------|---------|---------|
-| `api-gateway` | Reverse proxy with CORS | HTTP :8090 | Routes to Python services + Rust :8080 |
+| `api-gateway` | Reverse proxy with CORS | HTTP :9000 | Routes to explicit specialist services + operational endpoints |
 | `collection-daemon` | Unified NATS collector (Epic E5): decode `NatsEnvelope` once, write through sinks (KV/log today), optional JetStream durable mode | NATS `market-data.>`, etc. | HTTP /metrics (Prometheus) |
 | `heartbeat-aggregator` | Tracks service liveness | NATS `heartbeat.*` | HTTP GET /health |
 | `supervisor` | Process supervisor (restart on crash) | JSON config | Process PIDs |
@@ -157,7 +164,7 @@ All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/sl
 | Bond convexity optimization | `convexity_calculator.cpp` | Active (barbell NLopt) | Relies on hardcoded ETF values |
 | Yield curve construction | `yield_curve_comparison.py` | Simple linear interpolation | No Nelson-Siegel / Svensson fitting |
 | Amortization schedules | `cash_flow_calculator.py` | SHIR + CPI-linked (Israeli) | No standard PMT / schedule generation |
-| Loan management | `loan_manager.cpp` | Record-keeping only | No schedule calculation in C++ |
+| Loan management | Rust backend loan API/store | Active owner for CRUD / aggregation | Final durable backing store still pending |
 | Put-call parity check | `box_spread_strategy.h` | Active | — |
 | VaR / risk limits | `risk_calculator.cpp` | Active | Parametric only; no historical/Monte Carlo |
 
@@ -171,8 +178,8 @@ All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/sl
 
 | # | Issue | Location | Impact | Exarp Task |
 |---|-------|---------|--------|------------|
-| 1 | **Dual SQLite writers**: Rust + Python both write to the same `ledger.db` | `agents/backend/crates/ledger`, `python/` | Data corruption under concurrent write load | T-1772887221775761020 |
-| 2 | **Split data backends**: TUI reads Python :8000-8006; Web reads Rust :8080 — different data pipelines, potential inconsistency | `python/tui/providers.py`, `web/src/api/snapshot.ts` | Users on TUI and Web may see different data | T-1772887221914991889 |
+| 1 | **Ledger read-path overlap**: Rust owns writes, but some Python services still read SQLite directly instead of going through Rust-owned APIs | `agents/backend/crates/ledger`, `python/integration/` | Ownership is clearer than before, but read-path drift and schema coupling remain | T-1772887221775761020 |
+| 2 | **Split data backends**: TUI reads Python :8000-8006; Web reads Rust :8080 — different data pipelines, potential inconsistency | `python/tui/providers/`, `web/src/api/snapshot.ts` | Users on TUI and Web may see different data | T-1772887221914991889 |
 
 ### High
 
@@ -191,6 +198,7 @@ All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/sl
 | 8 | **No standard amortization**: only Israeli loan types | `python/integration/cash_flow_calculator.py` | Cannot produce standard PMT schedule or XIRR | T-1772887222449509427 |
 | 9 | **proto/generate.sh**: shell script, no lint/breaking detection | `proto/generate.sh` | Schema drift undetected until runtime; multi-step setup | T-1772887222270264987 |
 | 10 | ~~**No structured logging in Go agents**: `log.Printf` only~~ **DONE**: all agents use `slog` | `agents/go/cmd/*/main.go` | — resolved | T-1772887222034956306 ✅ |
+| 11 | **Loan persistence still transitional**: Rust owns active loan CRUD, but the backend store is still JSON-backed before the final durable-store move | `agents/backend/crates/api/src/loans.rs` | Ownership is fixed, but final durability story is not complete | T-1773188906786378000 |
 
 ---
 
@@ -217,11 +225,11 @@ SnapshotClient (web/src/api/snapshot.ts)
 ├── Primary: WebSocket ws://localhost:8080/ws/snapshot
 │     - Full SystemSnapshot on connect; then only changed sections (delta) every ~2s
 │     - Reconnect with exponential backoff (max 10 attempts)
-└── Fallback: REST GET /api/snapshot every 2s
+└── Fallback: REST GET /api/v1/snapshot every 2s
 
 useBackendServices hook (web/src/hooks/useBackendServices.ts)
 └── 8 concurrent health checks every 10s
-      Fast path: GET /api/health-aggregated (Go api-gateway)
+      Fast path: GET /api/health-aggregated (Go api-gateway / routed operational path)
 ```
 
 ---
@@ -235,9 +243,10 @@ Python remains outside collection and shared read-model ownership in this target
 
 | Store | Single writer | Readers |
 |-------|----------------|---------|
-| SQLite (ledger) | Rust ledger crate only | Rust API; Python via REST `GET /api/ledger/...` (no direct DB) |
+| SQLite (ledger) | Rust ledger crate only | Rust API; Python should migrate to Rust-owned reads |
 | QuestDB | Go collection-daemon only | Python analytics, notebooks |
-| NATS KV (live state) | Go collection-daemon | TUI NatsProvider, Web (future), api-gateway |
+| NATS KV (live state) | Go collection-daemon | Rust API, TUI NatsProvider, Web (future) |
+| Loan store | Rust backend only | Rust API, Python TUI via `/api/v1/loans` |
 | InMemoryCache | C++ tws_client | C++ engine only |
 
 ### Persistence rule
@@ -262,7 +271,8 @@ flowchart LR
     KV[NATS KV]
   end
   subgraph clients [Clients]
-    Gateway[api-gateway :8090]
+    Gateway[api-gateway :9000]
+    RustApi[Rust API :8080]
     Web[Web]
     TUI[TUI]
   end
@@ -273,22 +283,22 @@ flowchart LR
   Collector --> QDB
   Collector --> KV
   Rust --> Ledger
-  Gateway --> Web
-  Gateway --> TUI
+  RustApi --> Web
+  RustApi --> TUI
   Ledger --> Rust
-  KV --> Gateway
+  KV --> RustApi
 ```
 
-- **Current read paths**: the web client reads primarily from the Rust backend; the Textual TUI reads a mix of Rust-owned read models, selected Python integration services, and NATS. The remaining split is now narrower and mostly tied to integration-specific Python services.
-- **Single writer per store**: Ledger = Rust; QuestDB = Go collection-daemon; NATS KV = Go collection-daemon.
-- **Persistence**: Rust writes ledger then publishes; collection-daemon writes QuestDB and live state from NATS; no dual SQLite writers.
+- **Current read paths**: the web client reads primarily from the Rust backend; the Textual TUI reads a mix of Rust-owned read models, selected Python specialist services, and optional NATS/event-driven paths. The remaining split is now narrower and mostly tied to integration-specific Python services.
+- **Single writer per store**: Ledger = Rust; loans = Rust backend; QuestDB = Go collection-daemon; NATS KV = Go collection-daemon.
+- **Persistence**: Rust writes durable backend state and serves shared read models; collection-daemon writes QuestDB and live state from NATS; Python does not own collection or shared durable writes.
 
 ### Implementation order (task dependencies)
 
 | Step | Task | Depends on |
 |------|------|------------|
 | 1 | P1-A: Fix dual SQLite writers | — |
-| 2 | P1-B: Unify TUI/Web via api-gateway | — (can parallel with P1-A) |
+| 2 | P1-B: Unify TUI/Web via shared Rust origin | — (can parallel with P1-A) |
 | 3 | P2-B: Decode NatsEnvelope in Go agents | — |
 | 4 | P2-C: NATS KV as primary live-state store | P2-B |
 | 5 | Document single-writer and persistence rule | — (done in this section) |

@@ -28,7 +28,7 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for the full issue analysis.
    serve many via NATS KV or Arrow Flight.
 4. **Single source of truth**: one writer per data store. Eliminate dual-write patterns.
 5. **Persistence rule**: write once (to durable storage or JetStream), then publish to NATS or update in-memory state; only then serve to clients. Ensures UI never shows uncommitted state.
-6. **Ownership rule**: C++ publishes market and strategy events, Go owns collection and live-state fanout, Rust owns shared frontend APIs and durable backend ownership, and Python stays limited to the TUI plus explicit specialist/analytics services.
+6. **Ownership rule**: C++ publishes market and strategy events, Go owns collection and live-state fanout/writes, Rust owns shared frontend APIs plus client-facing live-state reads and durable backend ownership, and Python stays limited to the TUI plus explicit specialist/analytics services.
 
 ---
 
@@ -70,10 +70,10 @@ using `agents/go/proto/v1/messages.pb.go`. QuestDB fanout now runs through the c
 ### P2-C: NATS KV as primary live-state store <!-- exarp: T-1772925042919416172 -->
 **Issue**: Clients poll REST every 1-2s to get current state.
 **Fix**: C++ engine publishes events to NATS, and Go `collection-daemon` becomes the
-single writer to NATS KV buckets / live-state views consumed by clients. Clients subscribe
-to KV watch — zero-latency updates with no polling overhead. NATS KV is persistent
-(backed by JetStream). Python consumes those specialist/analytics views; it does not own
-collection or live-state writes.
+single writer to NATS KV buckets / live-state views. Rust exposes the client-facing
+read/watch endpoints for that state, so clients do not depend on Go `api-gateway` for
+live-state reads. NATS KV is persistent (backed by JetStream). Python consumes those
+specialist/analytics views; it does not own collection or live-state writes.
 **Files**: `native/src/nats_client.cpp`, `agents/go/cmd/collection-daemon`, `python/tui/providers/` (NatsProvider consumer path).
 **Depends on**: P2-B (NatsEnvelope decode in Go agents).
 

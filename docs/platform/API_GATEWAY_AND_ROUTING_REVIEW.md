@@ -8,7 +8,6 @@
 ### Keep
 
 - aggregated gateway health
-- `LIVE_STATE` KV read endpoints
 - operational routing for integration backends that are still legitimately separate services
 - compatibility entrypoint for the TUI when one gateway URL is preferable to multiple backend URLs
 
@@ -23,6 +22,7 @@
 `api-gateway` should stay **operationally focused**, not become the primary place where frontend business APIs live.
 
 - **Rust** owns frontend read models.
+- **Rust** owns `LIVE_STATE` read/watch endpoints for clients.
 - **Go gateway** owns operational aggregation and selected routing convenience.
 - **Python** remains behind explicit service boundaries only where Python-specific logic still exists.
 

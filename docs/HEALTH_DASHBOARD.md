@@ -67,7 +67,7 @@ Use **`GET /api/health`** (direct on port 8011) or **`GET /api/health-aggregated
 
 ## TUI and PWA
 
-- **TUI:** When shared config has `services.health_dashboard.port` (e.g. 8011), the TUI sets `health_dashboard_url` and the status line uses one GET to the dashboard instead of polling each backend. Override with `TUI_HEALTH_DASHBOARD_URL` if needed.
+- **TUI:** By default the TUI uses the shared API origin at `{api_base_url}/api/health` for unified health. Set `TUI_HEALTH_DASHBOARD_URL` only when you explicitly want the separate health dashboard endpoint instead of the Rust/shared path.
 - **PWA:** When `VITE_API_URL` points at the shared server (e.g. `http://localhost:8080/api`), the PWA fetches `GET /api/health-aggregated` once per interval and maps `backends` to header status badges. Set `VITE_HEALTH_AGGREGATED_URL` to point at the dashboard directly (e.g. `http://localhost:8011/api/health`) when not using nginx.
 
 ## References

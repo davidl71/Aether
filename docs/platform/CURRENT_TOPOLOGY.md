@@ -55,7 +55,6 @@ TUI
   - writes QuestDB when configured
 - `agents/go/cmd/api-gateway`
   - aggregated health
-  - `LIVE_STATE` reads
   - operational routing convenience
 - `agents/go/cmd/heartbeat-aggregator`
   - service liveness aggregation
@@ -65,6 +64,7 @@ TUI
 - `agents/backend/`
   - owns snapshot API
   - owns shared frontend read models
+  - owns `LIVE_STATE` read/watch endpoints
   - is the primary browser-facing backend
 
 ### Python scope
@@ -92,7 +92,7 @@ Python is no longer the general frontend read-model backend or a collection/live
 
 - Rust and Python still overlap around some durable/local finance state, especially loans.
 - TUI still mixes Rust read models with selected Python service calls.
-- `api-gateway` still exists for operational aggregation; not all routing is single-origin by default in every dev path.
+- `api-gateway` still exists for operational aggregation and explicit specialist routing; it is no longer the `LIVE_STATE` read surface.
 
 ## Default Deployment Direction
 

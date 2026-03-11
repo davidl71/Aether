@@ -1,12 +1,21 @@
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
+use async_stream::stream;
 use axum::{
     extract::{Extension, Path, Query},
     http::StatusCode,
+    response::sse::{Event, KeepAlive, Sse},
     routing::{get, post, put},
     Json, Router,
 };
+use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine as _};
 use chrono::{Datelike, Utc};
+use futures::{Stream, StreamExt, TryStreamExt};
+use nats_adapter::{
+    async_nats,
+    decode_proto,
+    proto::v1::NatsEnvelope,
+};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tokio::{sync::watch, task::JoinHandle, time::timeout};
@@ -65,6 +74,8 @@ impl RestServer {
     pub fn router(state: RestState) -> Router<()> {
         Router::new()
             .route("/health", get(health))
+            .route("/api/live/state", get(live_state))
+            .route("/api/live/state/watch", get(live_state_watch))
             .route("/api/v1/snapshot", get(snapshot))
             .route("/api/v1/cash-flow/timeline", post(frontend_cash_flow_timeline))
             .route(
@@ -146,6 +157,29 @@ struct ComponentHealth {
     nats: String,
 }
 
+#[derive(Deserialize)]
+struct LiveStateQuery {
+    key: Option<String>,
+}
+
+#[derive(Serialize)]
+struct ErrorResponse {
+    error: String,
+}
+
+#[derive(Serialize)]
+struct LiveStateKeyListResponse {
+    keys: Vec<String>,
+}
+
+#[derive(Serialize)]
+struct LiveStateEntryResponse {
+    key: String,
+    revision: u64,
+    value: String,
+    envelope: serde_json::Value,
+}
+
 async fn health(
     Extension(state): Extension<RestState>,
 ) -> Result<Json<HealthResponse>, StatusCode> {
@@ -167,6 +201,100 @@ async fn health(
     };
 
     Ok(Json(response))
+}
+
+async fn live_state(
+    Query(query): Query<LiveStateQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let store = live_state_store().await?;
+
+    if let Some(key) = query.key {
+        let entry = store
+            .entry(key.clone())
+            .await
+            .map_err(live_state_internal_error)?;
+
+        if let Some(entry) = entry {
+            return Ok(Json(serde_json::json!(LiveStateEntryResponse {
+                key: entry.key,
+                revision: entry.revision,
+                value: BASE64_STANDARD.encode(entry.value.as_ref()),
+                envelope: decode_live_state_envelope_metadata(entry.value.as_ref()),
+            })));
+        }
+
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse {
+                error: "key not found".into(),
+            }),
+        ));
+    }
+
+    let keys = store.keys().await.map_err(live_state_internal_error)?;
+    let keys = keys
+        .try_collect::<Vec<String>>()
+        .await
+        .map_err(live_state_internal_error)?;
+
+    Ok(Json(serde_json::json!(LiveStateKeyListResponse { keys })))
+}
+
+async fn live_state_watch(
+) -> Result<Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>>, (StatusCode, Json<ErrorResponse>)> {
+    let client = live_state_client().await?;
+    let stream = stream! {
+        let jetstream = async_nats::jetstream::new(client);
+        let store = match jetstream.get_key_value("LIVE_STATE").await {
+            Ok(store) => store,
+            Err(err) => {
+                yield Ok(Event::default()
+                    .event("error")
+                    .data(serde_json::json!({
+                        "error": format!("LIVE_STATE unavailable: {err}")
+                    }).to_string()));
+                return;
+            }
+        };
+
+        yield Ok(Event::default().event("synced").data("{}"));
+
+        let mut watch = match store.watch_all().await {
+            Ok(watch) => watch,
+            Err(err) => {
+                yield Ok(Event::default()
+                    .event("error")
+                    .data(serde_json::json!({
+                        "error": format!("watch failed: {err}")
+                    }).to_string()));
+                return;
+            }
+        };
+
+        while let Some(update) = watch.next().await {
+            match update {
+                Ok(entry) => {
+                    let payload = serde_json::json!({
+                        "key": entry.key,
+                        "revision": entry.revision,
+                        "value": BASE64_STANDARD.encode(entry.value.as_ref()),
+                        "envelope": decode_live_state_envelope_metadata(entry.value.as_ref()),
+                    });
+                    yield Ok(Event::default().data(payload.to_string()));
+                }
+                Err(err) => {
+                    yield Ok(Event::default()
+                        .event("error")
+                        .data(serde_json::json!({
+                            "error": format!("watch failed: {err}")
+                        }).to_string()));
+                    return;
+                }
+            }
+        }
+    };
+
+    Ok(Sse::new(stream).keep_alive(KeepAlive::default()))
 }
 
 async fn check_nats_health() -> String {
@@ -198,6 +326,68 @@ async fn check_nats_health() -> String {
             warn!("NATS health check timed out after {} seconds", TIMEOUT_SECS);
             "timeout".to_string()
         }
+    }
+}
+
+async fn live_state_client(
+) -> Result<async_nats::Client, (StatusCode, Json<ErrorResponse>)> {
+    let nats_url = std::env::var("NATS_URL").unwrap_or_else(|_| "nats://localhost:4222".to_string());
+    async_nats::connect(&nats_url)
+        .await
+        .map_err(|err| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse {
+                    error: format!("LIVE_STATE unavailable: {err}"),
+                }),
+            )
+        })
+}
+
+async fn live_state_store(
+) -> Result<async_nats::jetstream::kv::Store, (StatusCode, Json<ErrorResponse>)> {
+    let client = live_state_client().await?;
+    let jetstream = async_nats::jetstream::new(client);
+    jetstream.get_key_value("LIVE_STATE").await.map_err(|err| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(ErrorResponse {
+                error: format!("LIVE_STATE unavailable: {err}"),
+            }),
+        )
+    })
+}
+
+fn live_state_internal_error<E: std::fmt::Display>(
+    err: E,
+) -> (StatusCode, Json<ErrorResponse>) {
+    (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(ErrorResponse {
+            error: err.to_string(),
+        }),
+    )
+}
+
+fn decode_live_state_envelope_metadata(bytes: &[u8]) -> serde_json::Value {
+    match decode_proto::<NatsEnvelope>(bytes) {
+        Ok(envelope) => {
+            let timestamp = envelope.timestamp.and_then(|ts| {
+                chrono::DateTime::<Utc>::from_timestamp(ts.seconds, ts.nanos as u32)
+                    .map(|dt| dt.to_rfc3339_opts(chrono::SecondsFormat::Nanos, true))
+            });
+
+            serde_json::json!({
+                "id": envelope.id,
+                "source": envelope.source,
+                "message_type": envelope.message_type,
+                "timestamp": timestamp.unwrap_or_default(),
+                "payload_b64": BASE64_STANDARD.encode(envelope.payload),
+            })
+        }
+        Err(err) => serde_json::json!({
+            "decode_error": err.to_string(),
+        }),
     }
 }
 
@@ -1972,6 +2162,8 @@ mod tests {
     use super::*;
     use crate::loans::{LoanRepository, LoanStatus, LoanType};
     use axum::Json;
+    use nats_adapter::proto::v1::NatsEnvelope;
+    use nats_adapter::encode_proto;
     use std::{env, path::PathBuf, sync::Arc};
     use tokio::sync::{watch, RwLock};
     use uuid::Uuid;
@@ -2268,5 +2460,30 @@ mod tests {
             .expect_err("invalid loan should fail");
         assert_eq!(err.0, StatusCode::BAD_REQUEST);
         assert!(err.1.contains("Principal must be > 0"));
+    }
+
+    #[test]
+    fn live_state_envelope_metadata_decodes_protobuf_envelope() {
+        let envelope = NatsEnvelope {
+            id: "msg-1".into(),
+            timestamp: None,
+            source: "collector".into(),
+            message_type: "MarketDataEvent".into(),
+            payload: vec![1, 2, 3],
+        };
+        let bytes = encode_proto(&envelope).expect("encode envelope");
+
+        let metadata = decode_live_state_envelope_metadata(bytes.as_ref());
+
+        assert_eq!(metadata["id"], "msg-1");
+        assert_eq!(metadata["source"], "collector");
+        assert_eq!(metadata["message_type"], "MarketDataEvent");
+        assert_eq!(metadata["payload_b64"], BASE64_STANDARD.encode([1_u8, 2, 3]));
+    }
+
+    #[test]
+    fn live_state_envelope_metadata_reports_decode_error_for_invalid_bytes() {
+        let metadata = decode_live_state_envelope_metadata(br#"{"legacy":"json"}"#);
+        assert!(metadata.get("decode_error").is_some());
     }
 }

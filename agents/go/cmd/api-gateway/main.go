@@ -3,9 +3,9 @@
 // service based on URL prefix and provides CORS, logging, and a
 // combined /health endpoint.
 //
-// TUI can use this as a single entry point (P1-B): RestProvider presets
-// point at gateway, which proxies to Rust (:8080) or selected Python
-// integration backends (:8000, :8002, etc.) with path rewrite.
+// TUI can use this as an optional specialist-routing entry point. The
+// default shared frontend origin is Rust (:8080); gateway now keeps only
+// the remaining explicit specialist and operational routes.
 //
 // Environment:
 //
@@ -13,14 +13,10 @@
 //	BACKEND_URL        (default "http://localhost:8080") — Rust
 //	HEARTBEAT_URL      (default "http://localhost:8090")
 //	IB_URL             (default "http://localhost:8002") — IB REST snapshot
-//	ALPACA_URL         (default "http://localhost:8000")
-//	TASTYTRADE_URL     (default "http://localhost:8005")
-//	NATS_URL           optional; if set, gateway reads live state from NATS KV (bucket LIVE_STATE) at /api/live/state and /api/live/state/watch (SSE)
 package main
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -31,10 +27,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	pbv1 "github.com/dlowes/ib-platform/agents/go/proto/v1"
-	"github.com/nats-io/nats.go"
-	"google.golang.org/protobuf/proto"
 )
 
 func env(key, fallback string) string {
@@ -42,24 +34,6 @@ func env(key, fallback string) string {
 		return v
 	}
 	return fallback
-}
-
-func decodeEnvelopeMetadata(data []byte) map[string]any {
-	env := &pbv1.NatsEnvelope{}
-	if err := proto.Unmarshal(data, env); err != nil {
-		return map[string]any{"decode_error": err.Error()}
-	}
-	timestamp := ""
-	if ts := env.GetTimestamp(); ts != nil {
-		timestamp = ts.AsTime().UTC().Format(time.RFC3339Nano)
-	}
-	return map[string]any{
-		"id":           env.GetId(),
-		"source":       env.GetSource(),
-		"message_type": env.GetMessageType(),
-		"timestamp":    timestamp,
-		"payload_b64":  base64.StdEncoding.EncodeToString(env.GetPayload()),
-	}
 }
 
 type route struct {
@@ -110,15 +84,11 @@ func main() {
 	backendURL := env("BACKEND_URL", "http://localhost:8080")
 	heartbeatURL := env("HEARTBEAT_URL", "http://localhost:8090")
 	ibURL := env("IB_URL", "http://localhost:8002")
-	alpacaURL := env("ALPACA_URL", "http://localhost:8000")
-	tastytradeURL := env("TASTYTRADE_URL", "http://localhost:8005")
 
-	// Order matters: more specific prefixes first. TUI presets use /api/v1/{ib,alpaca,...}/snapshot.
+	// Order matters: more specific prefixes first. Only explicit specialist routes remain here.
 	routes := []route{
 		newRoute("/api/heartbeat/", heartbeatURL),
 		newRouteWithStrip("/api/v1/ib/", "/api/v1/ib", "/api/v1", ibURL),
-		newRouteWithStrip("/api/v1/alpaca/", "/api/v1/alpaca", "/api", alpacaURL),
-		newRouteWithStrip("/api/v1/tastytrade/", "/api/v1/tastytrade", "/api/v1", tastytradeURL),
 		newRoute("/api/", backendURL),
 		newRoute("/health", backendURL),
 	}
@@ -132,116 +102,6 @@ func main() {
 			"as_of":  time.Now().Format(time.RFC3339),
 		})
 	})
-
-	var kv nats.KeyValue
-	if natsURL := strings.TrimSpace(env("NATS_URL", "")); natsURL != "" {
-		nc, err := nats.Connect(natsURL, nats.RetryOnFailedConnect(true), nats.MaxReconnects(3))
-		if err != nil {
-			slog.Warn("nats connect failed, /api/live/state disabled", "error", err)
-		} else {
-			js, err := nc.JetStream()
-			if err != nil {
-				slog.Warn("jetstream failed, /api/live/state disabled", "error", err)
-			} else {
-				kv, err = js.KeyValue("LIVE_STATE")
-				if err != nil {
-					slog.Warn("kv bucket LIVE_STATE not found, /api/live/state disabled", "error", err)
-				} else {
-					mux.HandleFunc("/api/live/state", func(w http.ResponseWriter, r *http.Request) {
-						if r.Method != http.MethodGet {
-							http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-							return
-						}
-						w.Header().Set("Content-Type", "application/json")
-						keyQ := r.URL.Query().Get("key")
-						if keyQ != "" {
-							entry, err := kv.Get(keyQ)
-							if err != nil {
-								http.Error(w, `{"error":"key not found"}`, http.StatusNotFound)
-								return
-							}
-							_ = json.NewEncoder(w).Encode(map[string]any{
-								"key":      entry.Key(),
-								"revision": entry.Revision(),
-								"value":    base64.StdEncoding.EncodeToString(entry.Value()),
-								"envelope": decodeEnvelopeMetadata(entry.Value()),
-							})
-							return
-						}
-						keys, err := kv.Keys()
-						if err != nil {
-							http.Error(w, `{"error":"list keys failed"}`, http.StatusInternalServerError)
-							return
-						}
-						_ = json.NewEncoder(w).Encode(map[string]any{"keys": keys})
-					})
-					mux.HandleFunc("/api/live/state/watch", func(w http.ResponseWriter, r *http.Request) {
-						if r.Method != http.MethodGet {
-							http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-							return
-						}
-						watcher, err := kv.Watch(">")
-						if err != nil {
-							http.Error(w, `{"error":"watch failed"}`, http.StatusInternalServerError)
-							return
-						}
-						defer func() { _ = watcher.Stop() }()
-						w.Header().Set("Content-Type", "text/event-stream")
-						w.Header().Set("Cache-Control", "no-cache")
-						w.Header().Set("Connection", "keep-alive")
-						w.Header().Set("X-Accel-Buffering", "no")
-						if flusher, ok := w.(http.Flusher); ok {
-							flusher.Flush()
-						}
-						updates := watcher.Updates()
-						for {
-							select {
-							case <-r.Context().Done():
-								return
-							case entry, ok := <-updates:
-								if !ok {
-									return
-								}
-								if entry == nil {
-									// Initial values done (nil sentinel)
-									if _, err := w.Write([]byte("event: synced\ndata: {}\n\n")); err != nil {
-										return
-									}
-								} else {
-									payload := map[string]any{
-										"key":      entry.Key(),
-										"revision": entry.Revision(),
-										"value":    base64.StdEncoding.EncodeToString(entry.Value()),
-										"envelope": decodeEnvelopeMetadata(entry.Value()),
-									}
-									body, _ := json.Marshal(payload)
-									if _, err := w.Write([]byte("data: " + string(body) + "\n\n")); err != nil {
-										return
-									}
-								}
-								if flusher, ok := w.(http.Flusher); ok {
-									flusher.Flush()
-								}
-							}
-						}
-					})
-					slog.Info("nats kv ready", "bucket", "LIVE_STATE")
-				}
-			}
-		}
-	}
-	if kv == nil {
-		mux.HandleFunc("/api/live/state", func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusServiceUnavailable)
-			_ = json.NewEncoder(w).Encode(map[string]string{"error": "NATS KV not configured (set NATS_URL)"})
-		})
-		mux.HandleFunc("/api/live/state/watch", func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusServiceUnavailable)
-			_ = json.NewEncoder(w).Encode(map[string]string{"error": "NATS KV not configured (set NATS_URL)"})
-		})
-	}
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		for _, rt := range routes {

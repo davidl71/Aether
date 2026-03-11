@@ -1,16 +1,10 @@
 package main
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
-
-	pbv1 "github.com/dlowes/ib-platform/agents/go/proto/v1"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestEnv_Fallback(t *testing.T) {
@@ -98,34 +92,5 @@ func TestNewRoute(t *testing.T) {
 	}
 	if r.proxy == nil {
 		t.Fatal("proxy should not be nil")
-	}
-}
-
-func TestDecodeEnvelopeMetadata(t *testing.T) {
-	now := time.Now().UTC()
-	env := &pbv1.NatsEnvelope{
-		Id:          "msg-1",
-		Source:      "collector",
-		MessageType: "StrategyDecision",
-		Payload:     []byte("abc"),
-		Timestamp:   timestamppb.New(now),
-	}
-	data, err := proto.Marshal(env)
-	if err != nil {
-		t.Fatalf("marshal envelope: %v", err)
-	}
-
-	meta := decodeEnvelopeMetadata(data)
-	if meta["id"] != "msg-1" {
-		t.Fatalf("unexpected id: %#v", meta["id"])
-	}
-	if meta["message_type"] != "StrategyDecision" {
-		t.Fatalf("unexpected message type: %#v", meta["message_type"])
-	}
-	if meta["payload_b64"] != base64.StdEncoding.EncodeToString([]byte("abc")) {
-		t.Fatalf("unexpected payload_b64: %#v", meta["payload_b64"])
-	}
-	if meta["timestamp"] != now.Format(time.RFC3339Nano) {
-		t.Fatalf("unexpected timestamp: %#v", meta["timestamp"])
 	}
 }
