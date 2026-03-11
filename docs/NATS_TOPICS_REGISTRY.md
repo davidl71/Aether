@@ -2,6 +2,8 @@
 
 Complete registry of all NATS topics used in the system. All topics follow the hierarchical naming convention: `{domain}.{entity}.{action}.{identifier}`
 
+**Note**: All topics use protobuf (`NatsEnvelope` with inner message). JSON schemas below are deprecated — see [`proto/messages.proto`](../../proto/messages.proto) for canonical definitions.
+
 ## Topic Naming Convention
 
 - **Hierarchical**: `domain.entity.action.identifier`
@@ -19,7 +21,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Publisher**: Market data provider
 - **Subscribers**: Strategy engine, frontends
 - **Example**: `market-data.tick.SPY`
-- **Schema**: `MarketDataTick.json`
+- **Proto**: `MarketDataTick` (from `proto/messages.proto`)
 
 ### `market-data.candle.{symbol}`
 
@@ -27,7 +29,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Publisher**: Market data provider
 - **Subscribers**: Strategy engine, analytics
 - **Example**: `market-data.candle.XSP`
-- **Schema**: `MarketDataCandle.json`
+- **Proto**: `MarketDataCandle`
 
 ### `market-data.quote.{symbol}`
 
@@ -35,7 +37,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Publisher**: Market data provider
 - **Subscribers**: Strategy engine
 - **Example**: `market-data.quote.NDX`
-- **Schema**: `MarketDataQuote.json`
+- **Proto**: `MarketDataQuote`
 
 ### `market-data.volume.{symbol}`
 
@@ -43,7 +45,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Publisher**: Market data provider
 - **Subscribers**: Analytics
 - **Example**: `market-data.volume.SPY`
-- **Schema**: `MarketDataVolume.json`
+- **Proto**: `MarketDataVolume`
 
 ### Subscription Patterns
 
@@ -59,7 +61,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Publisher**: Market data provider → Strategy engine
 - **Subscribers**: Strategy engine
 - **Example**: `strategy.signal.XSP`
-- **Schema**: `StrategySignal.json`
+- **Proto**: `StrategySignal`
 
 ### `strategy.decision.{symbol}`
 
@@ -67,21 +69,21 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Publisher**: Strategy engine
 - **Subscribers**: Risk engine, Order manager, Frontends
 - **Example**: `strategy.decision.SPY`
-- **Schema**: `StrategyDecision.json`
+- **Proto**: `StrategyDecision`
 
 ### `strategy.status`
 
 - **Purpose**: Strategy state changes (start/stop/pause)
 - **Publisher**: Strategy controller
 - **Subscribers**: Frontends, monitoring
-- **Schema**: `StrategyStatus.json`
+- **Proto**: `StrategyStatus`
 
 ### `strategy.control`
 
 - **Purpose**: Control commands (start/stop/pause)
 - **Publisher**: Frontends, REST API
 - **Subscribers**: Strategy controller
-- **Schema**: `StrategyControl.json`
+- **Proto**: `StrategyControl`
 
 ### Subscription Patterns
 
@@ -95,7 +97,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Purpose**: New order requests
 - **Publisher**: Strategy engine (via risk engine)
 - **Subscribers**: Order manager, TWS client
-- **Schema**: `OrderRequest.json`
+- **Proto**: `OrderRequest`
 
 ### `orders.status.{order_id}`
 
@@ -103,7 +105,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Publisher**: Order manager, TWS client
 - **Subscribers**: Strategy engine, Frontends
 - **Example**: `orders.status.ORD-123`
-- **Schema**: `OrderStatus.json`
+- **Proto**: `OrderStatus`
 
 ### `orders.fill.{order_id}`
 
@@ -111,7 +113,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Publisher**: TWS client
 - **Subscribers**: Strategy engine, Position manager
 - **Example**: `orders.fill.ORD-123`
-- **Schema**: `OrderFill.json`
+- **Proto**: `OrderFill`
 
 ### `orders.cancel.{order_id}`
 
@@ -119,7 +121,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Publisher**: Order manager, Frontends
 - **Subscribers**: TWS client, Strategy engine
 - **Example**: `orders.cancel.ORD-123`
-- **Schema**: `OrderCancel.json`
+- **Proto**: `OrderCancel`
 
 ### Subscription Patterns
 
@@ -134,14 +136,14 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Publisher**: Position manager
 - **Subscribers**: Frontends, Risk engine
 - **Example**: `positions.update.SPY`
-- **Schema**: `PositionUpdate.json`
+- **Proto**: `PositionUpdate`
 
 ### `positions.snapshot`
 
 - **Purpose**: Full position snapshot
 - **Publisher**: Position manager
 - **Subscribers**: Frontends (on request)
-- **Schema**: `PositionSnapshot.json`
+- **Proto**: `PositionSnapshot`
 
 ### Subscription Patterns
 
@@ -154,14 +156,14 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Purpose**: Risk validation requests
 - **Publisher**: Strategy engine
 - **Subscribers**: Risk engine
-- **Schema**: `RiskCheck.json`
+- **Proto**: `RiskCheck`
 
 ### `risk.decision`
 
 - **Purpose**: Risk check results
 - **Publisher**: Risk engine
 - **Subscribers**: Strategy engine, Order manager
-- **Schema**: `RiskDecision.json`
+- **Proto**: `RiskDecision`
 
 ### `risk.limit.{type}`
 
@@ -169,14 +171,14 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Publisher**: Risk engine
 - **Subscribers**: Frontends, Alerts
 - **Example**: `risk.limit.position`
-- **Schema**: `RiskLimitEvent.json`
+- **Proto**: `RiskLimitEvent`
 
 ### `risk.violation`
 
 - **Purpose**: Risk limit violations
 - **Publisher**: Risk engine
 - **Subscribers**: Alerts, Frontends
-- **Schema**: `RiskViolation.json`
+- **Proto**: `RiskViolation`
 
 ## System Topics
 
@@ -185,28 +187,28 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Purpose**: System health status
 - **Publisher**: Backend service
 - **Subscribers**: Monitoring, Frontends
-- **Schema**: `HealthStatus.json`
+- **Proto**: `HealthStatus`
 
 ### `system.events`
 
 - **Purpose**: System-wide events
 - **Publisher**: All components
 - **Subscribers**: Monitoring, Logging
-- **Schema**: `SystemEvent.json`
+- **Proto**: `SystemEvent`
 
 ### `system.alerts`
 
 - **Purpose**: Alert notifications
 - **Publisher**: All components
 - **Subscribers**: Frontends, Monitoring
-- **Schema**: `Alert.json`
+- **Proto**: `Alert`
 
 ### `system.config`
 
 - **Purpose**: Configuration updates
 - **Publisher**: Config manager
 - **Subscribers**: All components
-- **Schema**: `ConfigUpdate.json`
+- **Proto**: `ConfigUpdate`
 
 ## Backend snapshot and health (Python backends)
 
@@ -228,7 +230,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Purpose**: Health status from any backend (single topic; payload includes `backend` id)
 - **Publisher**: Backend service on each health check when NATS publish enabled
 - **Subscribers**: Monitoring, TUI health aggregator, frontends
-- **Payload (canonical)**: Proto `BackendHealth` (see `proto/messages.proto`). JSON equivalent: `{"backend": "ib", "status": "ok", "updated_at": "...", "error": "", "hint": "", "extra": {...}}`. Legacy: ad-hoc JSON with `backend`, `status`, `ts`, and backend-specific fields until all publishers use proto.
+- **Payload (canonical)**: Proto `BackendHealth` (see `proto/messages.proto`). All publishers must use protobuf; the legacy JSON format is deprecated.
 
 ## RPC (Request/Reply) Topics
 
@@ -237,14 +239,14 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Purpose**: Request strategy status
 - **Request**: Frontend, Monitoring
 - **Reply**: Strategy controller
-- **Schema**: `StrategyStatus.json`
+- **Proto**: `StrategyStatus`
 
 ### `rpc.system.snapshot`
 
 - **Purpose**: Request system snapshot
 - **Request**: Frontend
 - **Reply**: Backend service
-- **Schema**: `SystemSnapshot.json`
+- **Proto**: `SystemSnapshot`
 
 ## Dead Letter Queue Topics
 
@@ -254,7 +256,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 - **Publisher**: Message processors (on failure)
 - **Subscribers**: Monitoring, Debugging
 - **Example**: `system.dlq.strategy.deserialization_error`
-- **Schema**: `DeadLetterMessage.json`
+- **Proto**: `DeadLetterMessage`
 
 ## Usage in Code
 
