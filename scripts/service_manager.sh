@@ -14,7 +14,7 @@
 #   ./scripts/service_manager.sh start-all
 #   ./scripts/service_manager.sh stop-all
 #
-# Services: rust_backend, nats, israeli_bank_scrapers
+# Services: rust_backend, nats
 
 set -euo pipefail
 
@@ -70,7 +70,6 @@ is_enabled() {
 declare -A SERVICES=(
   ["rust_backend"]="8080|cd ${PROJECT_ROOT}/agents && cargo run --release -- --rest-port 8080 --grpc-port 50051"
   ["nats"]="4222|nats-server -js -DV"
-  ["israeli_bank_scrapers"]="8010|cd ${PROJECT_ROOT} && ./scripts/run_israeli_bank_scrapers_service.sh"
 )
 
 # Check if service is running
@@ -129,10 +128,6 @@ start_service() {
   if echo "$start_cmd" | grep -q "-- --port$\|--port$"; then
     start_cmd="$start_cmd $port"
   fi
-  if [ "$service" = "israeli_bank_scrapers" ]; then
-    start_cmd="PORT=$port $start_cmd"
-  fi
-
   # Run in background, redirect output to log
   nohup bash -c "$start_cmd" >"$log_file" 2>&1 &
   _=$!

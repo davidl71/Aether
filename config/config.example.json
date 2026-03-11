@@ -197,10 +197,6 @@
       "rest_port": 8080, // Rust backend REST API port
       "grpc_port": 50051 // Rust backend gRPC API port
     },
-    "israeli_bank_scrapers": {
-      "port": 8010,
-      "enabled": false // Disabled by default; prefer manual file-based position import for now
-    },
     "ib_gateway": {
       "port": 5001 // IB Client Portal Gateway HTTPS port
     }

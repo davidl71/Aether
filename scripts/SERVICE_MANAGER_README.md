@@ -5,7 +5,6 @@
 Supported runtime services:
 - `rust_backend`
 - `nats`
-- `israeli_bank_scrapers`
 
 The React/Vite web app is retired as an active runtime surface and is not managed here.
 
@@ -35,7 +34,6 @@ Examples:
 |---------|------|---------|
 | `rust_backend` | 8080 | Shared Rust API/backend |
 | `nats` | 4222 | NATS broker |
-| `israeli_bank_scrapers` | 8010 | Israeli bank scraping service |
 
 Ports come from `config/config.json` when present and fall back to the defaults above.
 
@@ -51,6 +49,7 @@ logs/<service>_service.log
 
 - Use this manager for active TUI/CLI-era services only.
 - Interactive Brokers public routes are now served by the Rust backend; there is no separate `ib` runtime service here.
+- Israeli bank scrapers are retired from the active runtime surface for now and are not managed here.
 - Risk-free-rate/benchmark routes are now Rust-owned; the remaining Python implementation is internal and is not managed as a standalone public service here.
 - Discount Bank public routes are now Rust-owned and are not managed as a standalone Python service here.
 - Historical browser/PWA scripts remain under `web/` as archive/reference material.
