@@ -99,3 +99,8 @@ Avoid direct `pip` / bare `pytest` unless `uv` is unavailable and you are fixing
   separate Codex-only workflow.
 - For task/session/report workflows, mirror the same exarp-go usage documented
   for Cursor, Claude Code, and OpenCode.
+- For non-trivial implementation work, use this workflow by default:
+  - create or update an exarp task before coding
+  - compact the active context before starting long-running work
+  - create 1-2 exarp follow-up tasks when finishing
+  - add a result comment and update task status after verification

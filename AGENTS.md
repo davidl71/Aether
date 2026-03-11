@@ -163,3 +163,27 @@ exarp-go, Claude agents) should use AGENTS.md as canonical context. `CLAUDE.md`
 and `CODEX.md` are tool-specific quick references. See
 [docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md) for setup and command parity
 across Codex, OpenCode, Claude, Cursor, skills, and subagents.
+
+## exarp Workflow Rule
+
+For any non-trivial implementation or refactor expected to span multiple steps,
+files, or commits:
+
+1. **Track in exarp before coding**
+   - If there is an existing task, update or comment on it before starting.
+   - If there is no suitable task, create one first.
+2. **Compact context before starting long work**
+   - Summarize the active goal, constraints, current worktree state, and prior
+     decisions so the next execution step starts from a clean context.
+3. **Create follow-up tasks when finishing**
+   - Add 1-2 follow-up exarp tasks for verification, cleanup, migration, docs,
+     or deferred risk uncovered by the implementation.
+4. **Update task status at completion**
+   - Add a result comment with verification commands and move the completed task
+     to the correct status.
+
+Default scope for this rule:
+- Apply it to architecture work, data-path changes, refactors, migrations,
+  compatibility cuts, or any task likely to create follow-up work.
+- Do not require it for trivial one-shot answers, status checks, or tiny
+  isolated edits with no realistic follow-up.

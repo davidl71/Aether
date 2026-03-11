@@ -78,3 +78,11 @@ Use `uv` for package management when available. Fall back to `pip` if not.
 uv sync                          # install deps
 uv run pytest python/tests/ -v   # run tests
 ```
+
+## exarp Workflow
+
+For non-trivial implementation work by default:
+- create or update an exarp task before coding
+- compact the active context before starting long-running work
+- create 1-2 exarp follow-up tasks when finishing
+- add a result comment and update the task status after verification
