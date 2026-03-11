@@ -50,7 +50,7 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for the full issue analysis.
 **Issue**: TUI reads Python :8000-8006; Web reads Rust :8080. Two pipelines, potential divergence.
 **Fix**:
 - Prefer the Rust/shared origin as the default frontend read path.
-- Keep the Go `api-gateway` as an optional operational router for still-separate specialist services.
+- Retire the Go `api-gateway`; expose any remaining operational heartbeat routes through Rust instead.
 **Files**: `python/tui/providers/`, `agents/go/cmd/api-gateway/main.go`.
 
 ---

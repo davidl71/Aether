@@ -1,37 +1,24 @@
-# API Gateway and Web Routing Review
+# API Gateway Retirement Review
 
 **Last updated**: 2026-03-11
-**Purpose**: capture the post-simplification scope of `api-gateway` and define the default web routing model.
+**Purpose**: capture the retirement state of `api-gateway` and the resulting default routing model.
 
-## api-gateway scope
+## Decision
 
-### Keep
-
-- aggregated gateway health
-- operational routing for integration backends that are still legitimately separate services
-- compatibility entrypoint for the TUI when one gateway URL is preferable to multiple backend URLs
-
-### Do not regrow
-
-- removed Python analytics/calculations proxy paths
-- generic pass-through proxying for frontend read models already owned by Rust
-- duplicate API surfaces that add no ownership or operational value
-
-## Current decision
-
-`api-gateway` should stay **operationally focused**, not become the primary place where frontend business APIs live.
+`api-gateway` is retired.
 
 - **Rust** owns frontend read models.
 - **Rust** owns `LIVE_STATE` read/watch endpoints for clients.
-- **Go gateway** owns operational aggregation and selected routing convenience.
+- **Rust** owns the client-facing heartbeat proxy path and `/gateway/health`.
+- **Go** keeps `heartbeat-aggregator` only as an internal operational service for now.
 - **Python** remains behind explicit service boundaries only where Python-specific logic still exists.
 
-## Default web routing model
+## Default frontend routing model
 
 ### Preferred default
 
-- browser -> shared origin (nginx / common base URL)
-- shared origin -> Rust API, Go gateway, and selected Python services by path
+- client -> shared Rust origin for application APIs
+- Rust -> heartbeat-aggregator only for heartbeat-specific operational proxying when needed
 
 ### Dev override mode
 
@@ -41,11 +28,11 @@
 ## Practical default path model
 
 - snapshot and frontend read models: Rust origin
-- unified health: shared-origin `/api/health-aggregated` when available
-- specialist services such as risk-free-rate: path-routed behind the shared origin when deployed together
+- unified health: Rust/shared path by default
+- heartbeat aggregation: Rust-exposed path backed by the separate heartbeat-aggregator service
 
 ## Follow-up implementation direction
 
-1. Keep `VITE_API_URL` as the main default knob.
-2. Keep per-service ports as optional overrides.
-3. Prefer shared-origin examples in docs, env examples, and setup guidance.
+1. Keep Rust as the default client-facing origin.
+2. Do not reintroduce a separate Go gateway process.
+3. Decide later whether heartbeat aggregation itself should move into Rust or remain a separate Go service behind Rust-owned routes.

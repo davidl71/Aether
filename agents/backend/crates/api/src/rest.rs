@@ -25,6 +25,7 @@ use crate::websocket::WebSocketServer;
 
 const SWIFTNESS_API_URL: &str = "http://127.0.0.1:8081";
 const DEFAULT_IB_SERVICE_URL: &str = "http://127.0.0.1:8002";
+const DEFAULT_HEARTBEAT_AGGREGATOR_URL: &str = "http://127.0.0.1:8090";
 
 #[derive(Clone)]
 pub struct StrategyController {
@@ -77,6 +78,9 @@ impl RestServer {
     pub fn router(state: RestState) -> Router<()> {
         Router::new()
             .route("/health", get(health))
+            .route("/gateway/health", get(gateway_health))
+            .route("/api/heartbeat", any(proxy_heartbeat_root))
+            .route("/api/heartbeat/*path", any(proxy_heartbeat))
             .route("/api/live/state", get(live_state))
             .route("/api/live/state/watch", get(live_state_watch))
             .route("/api/v1/ib", any(proxy_ib_root))
@@ -211,6 +215,12 @@ async fn health(
     Ok(Json(response))
 }
 
+#[derive(Serialize)]
+struct GatewayHealthResponse {
+    status: String,
+    as_of: String,
+}
+
 async fn live_state(
     Query(query): Query<LiveStateQuery>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
@@ -307,6 +317,48 @@ async fn live_state_watch() -> Result<
     Ok(Sse::new(stream).keep_alive(KeepAlive::default()))
 }
 
+async fn gateway_health() -> Json<GatewayHealthResponse> {
+    Json(GatewayHealthResponse {
+        status: "ok".into(),
+        as_of: Utc::now().to_rfc3339(),
+    })
+}
+
+async fn proxy_heartbeat_root(
+    Query(query): Query<std::collections::HashMap<String, String>>,
+    method: Method,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
+    let query = if query.is_empty() { None } else { Some(query) };
+    proxy_service_request(
+        "heartbeat aggregator",
+        heartbeat_proxy_target_url("", query.as_ref()),
+        method,
+        headers,
+        body,
+    )
+    .await
+}
+
+async fn proxy_heartbeat(
+    Path(path): Path<String>,
+    Query(query): Query<std::collections::HashMap<String, String>>,
+    method: Method,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
+    let query = if query.is_empty() { None } else { Some(query) };
+    proxy_service_request(
+        "heartbeat aggregator",
+        heartbeat_proxy_target_url(&path, query.as_ref()),
+        method,
+        headers,
+        body,
+    )
+    .await
+}
+
 async fn proxy_ib_root(
     Query(query): Query<std::collections::HashMap<String, String>>,
     method: Method,
@@ -314,7 +366,14 @@ async fn proxy_ib_root(
     body: Bytes,
 ) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
     let query = if query.is_empty() { None } else { Some(query) };
-    proxy_ib_request(method, headers, body, String::new(), query).await
+    proxy_service_request(
+        "IB service",
+        ib_proxy_target_url("", query.as_ref()),
+        method,
+        headers,
+        body,
+    )
+    .await
 }
 
 async fn proxy_ib(
@@ -325,7 +384,14 @@ async fn proxy_ib(
     body: Bytes,
 ) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
     let query = if query.is_empty() { None } else { Some(query) };
-    proxy_ib_request(method, headers, body, path, query).await
+    proxy_service_request(
+        "IB service",
+        ib_proxy_target_url(&path, query.as_ref()),
+        method,
+        headers,
+        body,
+    )
+    .await
 }
 
 async fn check_nats_health() -> String {
@@ -360,15 +426,15 @@ async fn check_nats_health() -> String {
     }
 }
 
-async fn proxy_ib_request(
+async fn proxy_service_request(
+    service_name: &str,
+    target: Result<String, String>,
     method: Method,
     headers: HeaderMap,
     body: Bytes,
-    path: String,
-    query: Option<std::collections::HashMap<String, String>>,
 ) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
     let client = Client::new();
-    let target = ib_proxy_target_url(&path, query.as_ref()).map_err(live_state_internal_error)?;
+    let target = target.map_err(live_state_internal_error)?;
 
     let request_method = reqwest::Method::from_bytes(method.as_str().as_bytes())
         .map_err(live_state_internal_error)?;
@@ -388,7 +454,7 @@ async fn proxy_ib_request(
         (
             StatusCode::BAD_GATEWAY,
             Json(ErrorResponse {
-                error: format!("IB service unavailable: {err}"),
+                error: format!("{service_name} unavailable: {err}"),
             }),
         )
     })?;
@@ -476,7 +542,29 @@ fn ib_proxy_target_url(
     query: Option<&std::collections::HashMap<String, String>>,
 ) -> Result<String, String> {
     let base = std::env::var("IB_URL").unwrap_or_else(|_| DEFAULT_IB_SERVICE_URL.to_string());
-    let mut url = format!("{}/api/v1", base.trim_end_matches('/'));
+    proxy_target_url(&base, Some("/api/v1"), path, query)
+}
+
+fn heartbeat_proxy_target_url(
+    path: &str,
+    query: Option<&std::collections::HashMap<String, String>>,
+) -> Result<String, String> {
+    let base = std::env::var("HEARTBEAT_URL")
+        .unwrap_or_else(|_| DEFAULT_HEARTBEAT_AGGREGATOR_URL.to_string());
+    let path = if path.is_empty() { "health" } else { path };
+    proxy_target_url(&base, None, path, query)
+}
+
+fn proxy_target_url(
+    base: &str,
+    prefix: Option<&str>,
+    path: &str,
+    query: Option<&std::collections::HashMap<String, String>>,
+) -> Result<String, String> {
+    let mut url = base.trim_end_matches('/').to_string();
+    if let Some(prefix) = prefix {
+        url.push_str(prefix);
+    }
     if !path.is_empty() {
         url.push('/');
         url.push_str(path.trim_start_matches('/'));
@@ -2625,5 +2713,24 @@ mod tests {
         assert!(url.starts_with("http://127.0.0.1:8002/api/v1/orders?"));
         assert!(url.contains("account=DU123"));
         assert!(url.contains("symbols=SPX%2CXSP"));
+    }
+
+    #[test]
+    fn heartbeat_proxy_target_url_defaults_to_health_endpoint() {
+        env::remove_var("HEARTBEAT_URL");
+
+        let url = heartbeat_proxy_target_url("", None).expect("proxy url");
+
+        assert_eq!(url, "http://127.0.0.1:8090/health");
+    }
+
+    #[test]
+    fn heartbeat_proxy_target_url_preserves_path_and_query_string() {
+        let query = std::collections::HashMap::from([("service".to_string(), "ib".to_string())]);
+
+        let url = heartbeat_proxy_target_url("health", Some(&query)).expect("proxy url");
+
+        assert!(url.starts_with("http://127.0.0.1:8090/health?"));
+        assert!(url.contains("service=ib"));
     }
 }

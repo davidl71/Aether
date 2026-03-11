@@ -146,7 +146,6 @@ All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/sl
 
 | Agent | Purpose | Listens | Exposes |
 |-------|---------|---------|---------|
-| `api-gateway` | Reverse proxy with CORS | HTTP :9000 | Routes to explicit specialist services + operational endpoints |
 | `collection-daemon` | Unified NATS collector (Epic E5): decode `NatsEnvelope` once, write through sinks (KV/log today), optional JetStream durable mode | NATS `market-data.>`, etc. | HTTP /metrics (Prometheus) |
 | `heartbeat-aggregator` | Tracks service liveness | NATS `heartbeat.*` | HTTP GET /health |
 | `supervisor` | Process supervisor (restart on crash) | JSON config | Process PIDs |
@@ -179,7 +178,7 @@ All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/sl
 | # | Issue | Location | Impact | Exarp Task |
 |---|-------|---------|--------|------------|
 | 1 | **Ledger read-path overlap**: Rust owns writes, but some Python services still read SQLite directly instead of going through Rust-owned APIs | `agents/backend/crates/ledger`, `python/integration/` | Ownership is clearer than before, but read-path drift and schema coupling remain | T-1772887221775761020 |
-| 2 | **Split data backends**: TUI reads Python :8000-8006; Web reads Rust :8080 — different data pipelines, potential inconsistency | `python/tui/providers/`, `web/src/api/snapshot.ts` | Users on TUI and Web may see different data | T-1772887221914991889 |
+| 2 | **Split data backends**: TUI still mixes selected Python specialist calls with Rust-owned shared reads | `python/tui/providers/`, `python/integration/` | Some TUI workflows can still diverge from shared Rust views | T-1772887221914991889 |
 
 ### High
 
@@ -229,7 +228,7 @@ SnapshotClient (web/src/api/snapshot.ts)
 
 useBackendServices hook (web/src/hooks/useBackendServices.ts)
 └── 8 concurrent health checks every 10s
-      Fast path: GET /api/health-aggregated (Go api-gateway / routed operational path)
+      Fast path: shared Rust health path; heartbeat-specific operational reads also come through Rust-owned routes
 ```
 
 ---
@@ -245,7 +244,7 @@ Python remains outside collection and shared read-model ownership in this target
 |-------|----------------|---------|
 | SQLite (ledger) | Rust ledger crate only | Rust API; Python should migrate to Rust-owned reads |
 | QuestDB | Go collection-daemon only | Python analytics, notebooks |
-| NATS KV (live state) | Go collection-daemon | Rust API, TUI NatsProvider, Web (future) |
+| NATS KV (live state) | Go collection-daemon | Rust API, TUI NatsProvider, archived Web (future if revived) |
 | Loan store | Rust backend only | Rust API, Python TUI via `/api/v1/loans` |
 | InMemoryCache | C++ tws_client | C++ engine only |
 
@@ -271,8 +270,8 @@ flowchart LR
     KV[NATS KV]
   end
   subgraph clients [Clients]
-    Gateway[api-gateway :9000]
     RustApi[Rust API :8080]
+    Heartbeat[heartbeat-aggregator :8090]
     Web[Web]
     TUI[TUI]
   end
@@ -287,6 +286,7 @@ flowchart LR
   RustApi --> TUI
   Ledger --> Rust
   KV --> RustApi
+  RustApi --> Heartbeat
 ```
 
 - **Current read paths**: the web client reads primarily from the Rust backend; the Textual TUI reads a mix of Rust-owned read models, selected Python specialist services, and optional NATS/event-driven paths. The remaining split is now narrower and mostly tied to integration-specific Python services.
