@@ -51,6 +51,7 @@ TUI
 
 - `agents/backend/services/backend_service`
   - decodes `NatsEnvelope`
+  - expects concrete symbol-scoped producer subjects for market and strategy events
   - writes `LIVE_STATE` KV
   - writes QuestDB when configured
 

@@ -32,7 +32,8 @@ use crate::discount_bank::{
 use crate::health::SharedHealthAggregate;
 use crate::ib_positions::fetch_ib_positions;
 use crate::loans::{LoanAggregationInput, LoanRecord, LoanRepository};
-use crate::state::{Alert, OrderSnapshot, SharedSnapshot, SystemSnapshot};
+use crate::runtime_state::{RuntimeOrderDto, RuntimePositionDto, RuntimeSnapshotDto};
+use crate::state::{Alert, SharedSnapshot};
 use crate::websocket::WebSocketServer;
 
 const SWIFTNESS_API_URL: &str = "http://127.0.0.1:8081";
@@ -116,6 +117,8 @@ impl RestServer {
             .route("/api/v1/ib/health", get(ib_health))
             .route("/api/v1/ib/snapshot", get(ib_snapshot))
             .route("/api/v1/ib/positions", get(ib_positions))
+            .route("/api/v1/positions", get(positions_list))
+            .route("/api/v1/positions/:position_id", get(position_details))
             .route("/api/v1/snapshot", get(snapshot))
             .route(
                 "/api/v1/cash-flow/timeline",
@@ -412,7 +415,7 @@ async fn ib_health(
     health(Extension(state)).await
 }
 
-async fn ib_snapshot(Extension(state): Extension<RestState>) -> Json<SystemSnapshot> {
+async fn ib_snapshot(Extension(state): Extension<RestState>) -> Json<RuntimeSnapshotDto> {
     snapshot(Extension(state)).await
 }
 
@@ -888,9 +891,9 @@ async fn discount_bank_import_positions(
     Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
 }
 
-async fn snapshot(Extension(state): Extension<RestState>) -> Json<SystemSnapshot> {
+async fn snapshot(Extension(state): Extension<RestState>) -> Json<RuntimeSnapshotDto> {
     let snapshot = state.snapshot.read().await.clone();
-    Json(snapshot)
+    Json(RuntimeSnapshotDto::from(&snapshot))
 }
 
 async fn strategy_start(
@@ -983,7 +986,12 @@ struct StrategyStatusResponse {
 
 #[derive(Debug, Serialize)]
 struct OrdersListResponse {
-    orders: Vec<OrderSnapshot>,
+    orders: Vec<RuntimeOrderDto>,
+}
+
+#[derive(Debug, Serialize)]
+struct PositionsListResponse {
+    positions: Vec<RuntimePositionDto>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1226,7 +1234,8 @@ async fn orders_list(
     Query(params): Query<OrdersListQuery>,
 ) -> Json<OrdersListResponse> {
     let snapshot = state.snapshot.read().await;
-    let mut orders = snapshot.orders.clone();
+    let mut orders: Vec<RuntimeOrderDto> =
+        snapshot.orders.iter().map(RuntimeOrderDto::from).collect();
 
     // Filter by status if provided
     if let Some(status_filter) = &params.status {
@@ -1241,12 +1250,50 @@ async fn orders_list(
     Json(OrdersListResponse { orders })
 }
 
+async fn positions_list(Extension(state): Extension<RestState>) -> Json<PositionsListResponse> {
+    let snapshot = state.snapshot.read().await;
+    let positions = snapshot
+        .positions
+        .iter()
+        .map(RuntimePositionDto::from)
+        .collect();
+    Json(PositionsListResponse { positions })
+}
+
+async fn position_details(
+    Extension(state): Extension<RestState>,
+    Path(position_id): Path<String>,
+) -> Result<Json<RuntimePositionDto>, (StatusCode, Json<ApiResponse>)> {
+    let snapshot = state.snapshot.read().await;
+    let position = snapshot
+        .positions
+        .iter()
+        .find(|p| p.id == position_id)
+        .map(RuntimePositionDto::from);
+
+    match position {
+        Some(position) => Ok(Json(position)),
+        None => Err((
+            StatusCode::NOT_FOUND,
+            Json(ApiResponse {
+                status: "error".into(),
+                message: format!("Position {} not found", position_id),
+                data: None,
+            }),
+        )),
+    }
+}
+
 async fn order_details(
     Extension(state): Extension<RestState>,
     Path(order_id): Path<String>,
-) -> Result<Json<OrderSnapshot>, (StatusCode, Json<ApiResponse>)> {
+) -> Result<Json<RuntimeOrderDto>, (StatusCode, Json<ApiResponse>)> {
     let snapshot = state.snapshot.read().await;
-    let order = snapshot.orders.iter().find(|o| o.id == order_id).cloned();
+    let order = snapshot
+        .orders
+        .iter()
+        .find(|o| o.id == order_id)
+        .map(RuntimeOrderDto::from);
 
     match order {
         Some(order) => Ok(Json(order)),
@@ -2669,6 +2716,7 @@ mod tests {
     use super::*;
     use crate::HealthAggregateState;
     use crate::loans::{LoanRepository, LoanStatus, LoanType};
+    use crate::state::{OrderSnapshot, PositionSnapshot, SystemSnapshot};
     use axum::Json;
     use nats_adapter::encode_proto;
     use nats_adapter::proto::v1::NatsEnvelope;
@@ -2686,6 +2734,30 @@ mod tests {
             repo,
             HealthAggregateState::new_shared(),
         )
+    }
+
+    async fn seeded_rest_state() -> RestState {
+        let state = test_rest_state().await;
+        {
+            let mut snapshot = state.snapshot.write().await;
+            snapshot.positions.push(PositionSnapshot {
+                id: "POS-1".into(),
+                symbol: "SPY".into(),
+                quantity: 2,
+                cost_basis: 100.0,
+                mark: 101.5,
+                unrealized_pnl: 3.0,
+            });
+            snapshot.orders.push(OrderSnapshot {
+                id: "ORD-1".into(),
+                symbol: "SPY".into(),
+                side: "BUY".into(),
+                quantity: 2,
+                status: "FILLED".into(),
+                submitted_at: Utc::now(),
+            });
+        }
+        state
     }
 
     fn sample_loan(loan_id: &str) -> LoanRecord {
@@ -3063,6 +3135,55 @@ mod tests {
     fn live_state_envelope_metadata_reports_decode_error_for_invalid_bytes() {
         let metadata = decode_live_state_envelope_metadata(br#"{"legacy":"json"}"#);
         assert!(metadata.get("decode_error").is_some());
+    }
+
+    #[tokio::test]
+    async fn runtime_positions_endpoint_uses_runtime_contract() {
+        let state = seeded_rest_state().await;
+        let Json(response) = positions_list(Extension(state.clone())).await;
+        assert_eq!(response.positions.len(), 1);
+        assert_eq!(response.positions[0].id, "POS-1");
+        assert_eq!(response.positions[0].symbol, "SPY");
+        assert!((response.positions[0].market_value - 203.0).abs() < f64::EPSILON);
+
+        let Json(position) = position_details(Extension(state), Path("POS-1".into()))
+            .await
+            .expect("position should exist");
+        assert_eq!(position.quantity, 2);
+        assert_eq!(position.symbol, "SPY");
+    }
+
+    #[tokio::test]
+    async fn runtime_orders_endpoint_uses_runtime_contract() {
+        let state = seeded_rest_state().await;
+        let Json(response) = orders_list(
+            Extension(state.clone()),
+            Query(OrdersListQuery {
+                status: None,
+                limit: None,
+            }),
+        )
+        .await;
+        assert_eq!(response.orders.len(), 1);
+        assert_eq!(response.orders[0].id, "ORD-1");
+        assert_eq!(response.orders[0].symbol, "SPY");
+
+        let Json(order) = order_details(Extension(state), Path("ORD-1".into()))
+            .await
+            .expect("order should exist");
+        assert_eq!(order.side, "BUY");
+        assert_eq!(order.status, "FILLED");
+    }
+
+    #[tokio::test]
+    async fn snapshot_endpoint_uses_runtime_snapshot_contract() {
+        let state = seeded_rest_state().await;
+        let Json(snapshot) = snapshot(Extension(state)).await;
+        assert_eq!(snapshot.positions.len(), 1);
+        assert_eq!(snapshot.orders.len(), 1);
+        assert_eq!(snapshot.positions[0].id, "POS-1");
+        assert_eq!(snapshot.orders[0].id, "ORD-1");
+        assert!((snapshot.positions[0].market_value - 203.0).abs() < f64::EPSILON);
     }
 
 }

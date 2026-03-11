@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use tracing::{debug, warn};
 
+use crate::runtime_state::{RuntimeExecutionState, RuntimeExecutionUpdate};
+
 pub type SharedSnapshot = Arc<RwLock<SystemSnapshot>>;
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -111,63 +113,28 @@ impl SystemSnapshot {
     pub fn apply_strategy_execution(&mut self, decision: StrategyDecisionSnapshot) {
         self.touch();
         self.strategy = "RUNNING".into();
-        self.decisions.push(decision.clone());
-        if self.decisions.len() > 50 {
-            self.decisions.remove(0);
-        }
-
         let order_id = format!("ORD-{}", Utc::now().timestamp_millis());
-        self.orders.push(OrderSnapshot {
-            id: order_id.clone(),
-            symbol: decision.symbol.clone(),
-            side: decision.side.clone(),
-            quantity: decision.quantity,
-            status: "FILLED".into(),
-            submitted_at: decision.created_at,
-        });
-        if self.orders.len() > 32 {
-            self.orders.remove(0);
-        }
+        let mut runtime_state = RuntimeExecutionState::from_snapshot(self);
+        let update = runtime_state.apply_strategy_decision(&decision, order_id.clone());
+        runtime_state.project_into_snapshot(self);
 
-        // Track previous position state for ledger recording
-        let _prev_position = self
-            .positions
-            .iter()
-            .find(|p| p.symbol == decision.symbol)
-            .map(|p| (p.quantity, p.cost_basis));
-
-        if let Some(idx) = self
-            .positions
-            .iter()
-            .position(|p| p.symbol == decision.symbol)
-        {
-            let prev_qty = self.positions[idx].quantity;
-            let cost_basis = self.positions[idx].cost_basis;
-            let new_qty = prev_qty + decision.quantity;
-
-            if new_qty == 0 {
-                // Position closed - record realized PnL
-                let position = self.positions.remove(idx);
-                let realized = (decision.mark - cost_basis) * prev_qty as f64;
-                self.historic.push(HistoricPosition {
-                    id: format!("HIST-{}", self.historic.len() + 1),
-                    symbol: position.symbol.clone(),
-                    quantity: prev_qty,
-                    realized_pnl: realized,
-                    closed_at: decision.created_at,
-                });
-
-                // Record position close in ledger (non-blocking)
+        match update {
+            RuntimeExecutionUpdate::ClosedPosition {
+                symbol,
+                quantity,
+                cost_basis,
+                mark,
+                order_id,
+            } => {
                 if let Some(ref ledger) = self.ledger {
                     let ledger_clone = ledger.clone();
-                    let symbol = position.symbol.clone();
                     tokio::spawn(async move {
                         if let Err(err) = ledger::record_position_close(
                             ledger_clone,
                             &symbol,
-                            prev_qty,
+                            quantity,
                             cost_basis,
-                            decision.mark,
+                            mark,
                             ledger::Currency::USD,
                             Some(&order_id),
                         )
@@ -177,60 +144,27 @@ impl SystemSnapshot {
                         }
                     });
                 }
-            } else {
-                let position = &mut self.positions[idx];
-                position.quantity = new_qty;
-                position.mark = decision.mark;
-                position.unrealized_pnl =
-                    (position.mark - position.cost_basis) * position.quantity as f64;
-
-                // Record position change in ledger (non-blocking)
+            }
+            RuntimeExecutionUpdate::ChangedPosition {
+                symbol,
+                quantity,
+                mark,
+                order_id,
+            } => {
                 if let Some(ref ledger) = self.ledger {
                     let ledger_clone = ledger.clone();
-                    let symbol = decision.symbol.clone();
-                    let quantity = decision.quantity;
-                    let price = decision.mark;
                     tokio::spawn(async move {
                         ledger::record_position_change_safe(
                             ledger_clone,
                             &symbol,
                             quantity,
-                            price,
+                            mark,
                             ledger::Currency::USD,
                             Some(&order_id),
                         )
                         .await;
                     });
                 }
-            }
-        } else {
-            // New position
-            self.positions.push(PositionSnapshot {
-                id: format!("POS-{}", self.positions.len() + self.historic.len() + 1),
-                symbol: decision.symbol.clone(),
-                quantity: decision.quantity,
-                cost_basis: decision.mark,
-                mark: decision.mark,
-                unrealized_pnl: 0.0,
-            });
-
-            // Record position change in ledger (non-blocking)
-            if let Some(ref ledger) = self.ledger {
-                let ledger_clone = ledger.clone();
-                let symbol = decision.symbol.clone();
-                let quantity = decision.quantity;
-                let price = decision.mark;
-                tokio::spawn(async move {
-                    ledger::record_position_change_safe(
-                        ledger_clone,
-                        &symbol,
-                        quantity,
-                        price,
-                        ledger::Currency::USD,
-                        Some(&order_id),
-                    )
-                    .await;
-                });
             }
         }
     }
@@ -546,4 +480,62 @@ pub enum AlertLevel {
     Info,
     Warning,
     Error,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn apply_strategy_execution_creates_runtime_position_and_order() {
+        let mut snapshot = SystemSnapshot::default();
+        let created_at = Utc::now();
+
+        snapshot.apply_strategy_execution(StrategyDecisionSnapshot::new(
+            "AAPL".into(),
+            10,
+            "BUY",
+            150.0,
+            created_at,
+        ));
+
+        assert_eq!(snapshot.positions.len(), 1);
+        assert_eq!(snapshot.orders.len(), 1);
+        assert_eq!(snapshot.decisions.len(), 1);
+        assert_eq!(snapshot.historic.len(), 0);
+        assert_eq!(snapshot.positions[0].symbol, "AAPL");
+        assert_eq!(snapshot.positions[0].quantity, 10);
+        assert_eq!(snapshot.positions[0].cost_basis, 150.0);
+    }
+
+    #[test]
+    fn apply_strategy_execution_closing_position_moves_to_history() {
+        let mut snapshot = SystemSnapshot::default();
+        let opened_at = Utc::now();
+        let closed_at = opened_at + chrono::TimeDelta::seconds(1);
+
+        snapshot.apply_strategy_execution(StrategyDecisionSnapshot::new(
+            "AAPL".into(),
+            10,
+            "BUY",
+            150.0,
+            opened_at,
+        ));
+        snapshot.apply_strategy_execution(StrategyDecisionSnapshot::new(
+            "AAPL".into(),
+            -10,
+            "SELL",
+            155.0,
+            closed_at,
+        ));
+
+        assert!(snapshot.positions.is_empty());
+        assert_eq!(snapshot.orders.len(), 2);
+        assert_eq!(snapshot.decisions.len(), 2);
+        assert_eq!(snapshot.historic.len(), 1);
+        assert_eq!(snapshot.historic[0].symbol, "AAPL");
+        assert_eq!(snapshot.historic[0].quantity, 10);
+        assert_eq!(snapshot.historic[0].realized_pnl, 50.0);
+        assert_eq!(snapshot.historic[0].closed_at, closed_at);
+    }
 }

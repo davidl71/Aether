@@ -48,6 +48,8 @@ Default subjects (aligned with DATAFLOW_ARCHITECTURE.md):
 - `strategy.signal.>`
 - `strategy.decision.>`
 
+Publishers must publish to concrete symbol-scoped subjects. Wildcards are subscriber-only.
+
 ## 5. Message handling
 
 - All C++ messages use **NatsEnvelope** (protobuf): `message_type` + `payload`.

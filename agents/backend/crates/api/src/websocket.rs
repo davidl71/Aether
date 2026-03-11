@@ -14,6 +14,10 @@ use tokio::time::{interval, Duration};
 use tracing::{error, info, warn};
 
 use crate::rest::RestState;
+use crate::{
+    RuntimeDecisionDto, RuntimeHistoricPositionDto, RuntimeOrderDto, RuntimePositionDto,
+    RuntimeSnapshotDto,
+};
 use crate::state::SystemSnapshot;
 
 /// WebSocket server for real-time snapshot updates
@@ -72,11 +76,43 @@ fn serialise_sections(
         ),
         ("metrics", serde_json::to_string(&snap.metrics)?),
         ("symbols", serde_json::to_string(&snap.symbols)?),
-        ("positions", serde_json::to_string(&snap.positions)?),
-        ("historic", serde_json::to_string(&snap.historic)?),
-        ("orders", serde_json::to_string(&snap.orders)?),
+        (
+            "positions",
+            serde_json::to_string(
+                &snap.positions
+                    .iter()
+                    .map(RuntimePositionDto::from)
+                    .collect::<Vec<_>>(),
+            )?,
+        ),
+        (
+            "historic",
+            serde_json::to_string(
+                &snap.historic
+                    .iter()
+                    .map(RuntimeHistoricPositionDto::from)
+                    .collect::<Vec<_>>(),
+            )?,
+        ),
+        (
+            "orders",
+            serde_json::to_string(
+                &snap.orders
+                    .iter()
+                    .map(RuntimeOrderDto::from)
+                    .collect::<Vec<_>>(),
+            )?,
+        ),
         ("alerts", serde_json::to_string(&snap.alerts)?),
-        ("decisions", serde_json::to_string(&snap.decisions)?),
+        (
+            "decisions",
+            serde_json::to_string(
+                &snap.decisions
+                    .iter()
+                    .map(RuntimeDecisionDto::from)
+                    .collect::<Vec<_>>(),
+            )?,
+        ),
         ("risk", serde_json::to_string(&snap.risk)?),
     ])
 }
@@ -183,7 +219,7 @@ async fn get_snapshot_json(
     state: &RestState,
 ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
     let snapshot = state.snapshot.read().await;
-    let data = serde_json::to_value(&*snapshot)?;
+    let data = serde_json::to_value(RuntimeSnapshotDto::from(&*snapshot))?;
     Ok(serde_json::to_string(&json!({
       "type": "snapshot",
       "data": data

@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use nats_adapter::proto::v1 as pb;
-use nats_adapter::{topics, ChannelBridge, DlqService, NatsClient, Publisher};
+use nats_adapter::{topics, DlqService, NatsClient, Publisher};
 use strategy::{model::TradeSide, Decision as StrategyDecisionModel, StrategySignal};
 use tokio::sync::RwLock;
 use tracing::{error, info, warn};
@@ -15,9 +15,10 @@ use tracing::{error, info, warn};
 /// NATS integration state
 pub struct NatsIntegration {
     client: Option<Arc<NatsClient>>,
-    strategy_signal_publisher: Option<Arc<Publisher<pb::StrategySignal>>>,
-    strategy_decision_publisher: Option<Arc<Publisher<pb::StrategyDecision>>>,
     market_data_publishers: Arc<RwLock<HashMap<String, Arc<Publisher<pb::MarketDataEvent>>>>>,
+    strategy_signal_publishers: Arc<RwLock<HashMap<String, Arc<Publisher<pb::StrategySignal>>>>>,
+    strategy_decision_publishers:
+        Arc<RwLock<HashMap<String, Arc<Publisher<pb::StrategyDecision>>>>>,
 }
 
 impl NatsIntegration {
@@ -39,35 +40,11 @@ impl NatsIntegration {
         };
 
         let client = Arc::new(client);
-        let client_clone = client.as_ref().clone();
-
-        // Create DLQ service for failed messages
-        let dlq_service = DlqService::new(client_clone.clone(), "backend");
-
-        // Create publishers for strategy signals and decisions
-        // We need separate bridges because ChannelBridge is generic over the message type
-        let signal_bridge: ChannelBridge<pb::StrategySignal> = ChannelBridge::new(client_clone.clone());
-        let decision_bridge: ChannelBridge<pb::StrategyDecision> =
-            ChannelBridge::new(client_clone.clone());
-
-        let strategy_signal_pub = signal_bridge.create_publisher_with_dlq(
-            topics::strategy::all_signals(),
-            "backend",
-            "StrategySignal",
-            dlq_service.clone(),
-        );
-        let strategy_decision_pub = decision_bridge.create_publisher_with_dlq(
-            topics::strategy::all_decisions(),
-            "backend",
-            "StrategyDecision",
-            dlq_service.clone(),
-        );
-
         Some(Self {
             client: Some(client),
-            strategy_signal_publisher: Some(Arc::new(strategy_signal_pub)),
-            strategy_decision_publisher: Some(Arc::new(strategy_decision_pub)),
             market_data_publishers: Arc::new(RwLock::new(HashMap::new())),
+            strategy_signal_publishers: Arc::new(RwLock::new(HashMap::new())),
+            strategy_decision_publishers: Arc::new(RwLock::new(HashMap::new())),
         })
     }
 
@@ -106,7 +83,23 @@ impl NatsIntegration {
 
     /// Publish strategy signal (non-blocking, logs errors)
     pub async fn publish_strategy_signal(&self, signal: &StrategySignal) {
-        if let Some(ref publisher) = self.strategy_signal_publisher {
+        if let Some(ref client) = self.client {
+            let publisher = {
+                let mut publishers = self.strategy_signal_publishers.write().await;
+                publishers
+                    .entry(signal.symbol.clone())
+                    .or_insert_with(|| {
+                        Arc::new(Publisher::with_dlq(
+                            client.as_ref().clone(),
+                            topics::strategy::signal(&signal.symbol),
+                            "backend",
+                            "StrategySignal",
+                            DlqService::new(client.as_ref().clone(), "backend"),
+                        ))
+                    })
+                    .clone()
+            };
+
             let proto_signal = pb::StrategySignal {
                 symbol: signal.symbol.clone(),
                 price: signal.price,
@@ -123,7 +116,23 @@ impl NatsIntegration {
 
     /// Publish strategy decision (non-blocking, logs errors)
     pub async fn publish_strategy_decision(&self, decision: &StrategyDecisionModel) {
-        if let Some(ref publisher) = self.strategy_decision_publisher {
+        if let Some(ref client) = self.client {
+            let publisher = {
+                let mut publishers = self.strategy_decision_publishers.write().await;
+                publishers
+                    .entry(decision.symbol.clone())
+                    .or_insert_with(|| {
+                        Arc::new(Publisher::with_dlq(
+                            client.as_ref().clone(),
+                            topics::strategy::decision(&decision.symbol),
+                            "backend",
+                            "StrategyDecision",
+                            DlqService::new(client.as_ref().clone(), "backend"),
+                        ))
+                    })
+                    .clone()
+            };
+
             let proto_decision = pb::StrategyDecision {
                 symbol: decision.symbol.clone(),
                 quantity: decision.quantity,
@@ -184,9 +193,9 @@ impl Default for NatsIntegration {
     fn default() -> Self {
         Self {
             client: None,
-            strategy_signal_publisher: None,
-            strategy_decision_publisher: None,
             market_data_publishers: Arc::new(RwLock::new(HashMap::new())),
+            strategy_signal_publishers: Arc::new(RwLock::new(HashMap::new())),
+            strategy_decision_publishers: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 }
