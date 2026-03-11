@@ -200,23 +200,21 @@
   },
 
   // ============================================================================
-  // Tastytrade Integration
+  // Tastytrade Integration (RETIRED from active runtime - kept for future reintroduction)
   // ============================================================================
-  "tastytrade": {
-    // See https://tastytrade.com/api/
-    // OAuth authentication (preferred - more secure)
-    "oauth": {
-      "client_secret": "${TASTYTRADE_CLIENT_SECRET}",
-      "refresh_token": "${TASTYTRADE_REFRESH_TOKEN}"
-    },
-    // Session-based authentication (fallback if OAuth not configured)
-    "username": "${TASTYTRADE_USERNAME}",
-    "password": "${TASTYTRADE_PASSWORD}",
-    // API Base URLs
-    "base_url": "https://api.tastytrade.com", // Production API URL
-    "sandbox_base_url": "https://api.cert.tastyworks.com", // Sandbox API URL
-    "sandbox_websocket_url": "wss://streamer.cert.tastyworks.com", // Sandbox WebSocket URL (for future use)
-    // Environment mode
-    "sandbox": false // Enable sandbox mode (uses sandbox_base_url, resets every 24 hours, 15-min delayed quotes)
-  }
+  // "tastytrade": {
+  //   // See https://tastytrade.com/api/
+  //   // NOTE: Tastytrade is retired from active runtime surface as of March 2026.
+  //   // Uncomment and configure if you want to re-enable in the future.
+  //   "oauth": {
+  //     "client_secret": "${TASTYTRADE_CLIENT_SECRET}",
+  //     "refresh_token": "${TASTYTRADE_REFRESH_TOKEN}"
+  //   },
+  //   "username": "${TASTYTRADE_USERNAME}",
+  //   "password": "${TASTYTRADE_PASSWORD}",
+  //   "base_url": "https://api.tastytrade.com",
+  //   "sandbox_base_url": "https://api.cert.tastyworks.com",
+  //   "sandbox_websocket_url": "wss://streamer.cert.tastyworks.com",
+  //   "sandbox": false
+  // }
 }

@@ -28,7 +28,7 @@ The **Synthetic Financing Platform** provides comprehensive multi-asset financin
 **Features**:
 
 - Aggregates positions from 21+ accounts
-- Supports US brokers (IBKR, Alpaca, Tastytrade)
+- Supports US brokers (IBKR; Alpaca/Tastytrade retired from active runtime)
 - Supports Israeli banks (Fibi, Discount)
 - Supports Israeli brokers (Meitav, IBI)
 - Supports pension funds (9 accounts)

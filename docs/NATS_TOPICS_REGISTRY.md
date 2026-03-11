@@ -215,7 +215,7 @@ Complete registry of all NATS topics used in the system. All topics follow the h
 ### `snapshot.{backend_id}`
 
 - **Purpose**: Backend snapshot payload (same shape as REST `/api/snapshot` or `/api/v1/snapshot`)
-- **Publisher**: Backend service (IB, Alpaca, Tastytrade) when NATS publish enabled
+- **Publisher**: Backend service (IB; Alpaca/Tastytrade retired)
 - **Subscribers**: TUI/PWA NATS provider, snapshot aggregator
 - **Examples**: `snapshot.ib`, `snapshot.alpaca`
 - **Payload (canonical)**: Proto `SystemSnapshot` (see `proto/messages.proto`). REST and NATS should use the same shape; TUI and PWA consume generated types (Python `python/generated/`, TypeScript when ts-proto wired per project tasks).
