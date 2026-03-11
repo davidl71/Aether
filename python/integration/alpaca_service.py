@@ -3,7 +3,7 @@ alpaca_service.py - FastAPI service exposing broker-agnostic snapshot for TUI an
 
 Endpoints:
 - GET /api/health
-- GET /api/snapshot
+- GET /api/v1/snapshot
 
 Environment:
 - SYMBOLS: comma-separated underlyings (default: SPY,QQQ)
@@ -284,7 +284,7 @@ def create_app() -> FastAPI:
         """Health check endpoint. Returns 200 immediately from cached state; backend connection runs in background."""
         return dict(request.app.state.connection_state)
 
-    @app.get("/api/snapshot")
+    @app.get("/api/v1/snapshot")
     def snapshot(request: Request, mode: Optional[str] = None, account_id: Optional[str] = None) -> Dict[str, Any]:
         """Get complete snapshot with market data, positions, and orders."""
         client = request.app.state.alpaca_client

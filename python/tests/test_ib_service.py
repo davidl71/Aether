@@ -324,7 +324,7 @@ class TestFastAPIEndpoints(unittest.TestCase):
         assert "error" in data
 
     def test_snapshot_endpoint_success(self):
-        """Test /api/snapshot endpoint with successful data."""
+        """Test /api/v1/snapshot endpoint with successful data."""
         with patch('integration.ib_service._symbols_from_env', return_value=["SPY"]):
             self.mock_client.get_snapshots_batch.return_value = [
                 {"last": 450.0, "bid": 449.5, "ask": 450.5, "close": 449.0, "volume": 1000000},
@@ -335,7 +335,7 @@ class TestFastAPIEndpoints(unittest.TestCase):
             self.mock_client.get_accounts.return_value = ["DU123456"]
             self.mock_client.get_portfolio_positions.return_value = []
 
-            response = self.client.get("/api/snapshot")
+            response = self.client.get("/api/v1/snapshot")
             assert response.status_code == 200
             data = response.json()
             assert "symbols" in data
@@ -344,7 +344,7 @@ class TestFastAPIEndpoints(unittest.TestCase):
             assert len(data["symbols"]) == 1
 
     def test_snapshot_endpoint_with_account_id(self):
-        """Test /api/snapshot endpoint with account_id parameter."""
+        """Test /api/v1/snapshot endpoint with account_id parameter."""
         with patch('integration.ib_service._symbols_from_env', return_value=["SPY"]):
             self.mock_client.get_snapshots_batch.return_value = [
                 {"last": 450.0, "bid": 449.5, "ask": 450.5, "close": 449.0, "volume": 1000000},
@@ -353,12 +353,12 @@ class TestFastAPIEndpoints(unittest.TestCase):
             self.mock_client.get_accounts.return_value = ["DU123456"]
             self.mock_client.get_portfolio_positions.return_value = []
 
-            response = self.client.get("/api/snapshot?account_id=DU123456")
+            response = self.client.get("/api/v1/snapshot?account_id=DU123456")
             assert response.status_code == 200
             self.mock_client.get_account_summary.assert_called_with("DU123456")
 
     def test_snapshot_endpoint_with_symbols_query_param(self):
-        """Test /api/snapshot?symbols=MNQ uses requested symbols (e.g. for nano/micro futures)."""
+        """Test /api/v1/snapshot?symbols=MNQ uses requested symbols (e.g. for nano/micro futures)."""
         self.mock_client.get_snapshots_batch.return_value = [
             {"last": 21500.0, "bid": 21498.0, "ask": 21502.0, "close": 21499.0, "volume": 50000},
         ]
@@ -366,7 +366,7 @@ class TestFastAPIEndpoints(unittest.TestCase):
         self.mock_client.get_accounts.return_value = ["DU123"]
         self.mock_client.get_portfolio_positions.return_value = []
 
-        response = self.client.get("/api/snapshot?symbols=MNQ")
+        response = self.client.get("/api/v1/snapshot?symbols=MNQ")
         assert response.status_code == 200
         data = response.json()
         assert "symbols" in data
@@ -376,7 +376,7 @@ class TestFastAPIEndpoints(unittest.TestCase):
         self.mock_client.get_snapshots_batch.assert_called_once_with(["MNQ"])
 
     def test_snapshot_endpoint_writes_file(self):
-        """Test /api/snapshot endpoint writes file when SNAPSHOT_FILE_PATH is set."""
+        """Test /api/v1/snapshot endpoint writes file when SNAPSHOT_FILE_PATH is set."""
         with patch('integration.ib_service._symbols_from_env', return_value=["SPY"]):
             with patch.dict(os.environ, {"SNAPSHOT_FILE_PATH": "/tmp/test_snapshot.json"}):
                 self.mock_client.get_snapshots_batch.return_value = [
@@ -401,7 +401,7 @@ class TestFastAPIEndpoints(unittest.TestCase):
                                 app2 = create_app()
                                 client2 = TestClient(app2)
 
-                                response = client2.get("/api/snapshot")
+                                response = client2.get("/api/v1/snapshot")
                                 assert response.status_code == 200
 
                                 # Check if file was created
@@ -411,11 +411,11 @@ class TestFastAPIEndpoints(unittest.TestCase):
                                         assert "symbols" in file_data
 
     def test_snapshot_endpoint_error_handling(self):
-        """Test /api/snapshot endpoint handles exceptions."""
+        """Test /api/v1/snapshot endpoint handles exceptions."""
         with patch('integration.ib_service._symbols_from_env', return_value=["SPY"]):
             self.mock_client.get_snapshots_batch.side_effect = Exception("Unexpected error")
 
-            response = self.client.get("/api/snapshot")
+            response = self.client.get("/api/v1/snapshot")
             assert response.status_code == 200  # Endpoint doesn't fail, returns error in payload
             data = response.json()
             assert "error" in data

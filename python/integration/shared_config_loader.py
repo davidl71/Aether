@@ -133,7 +133,7 @@ class TUIConfig:
     provider_type: str = "rest"  # "mock", "rest", "file", "ibkr_rest", "livevol"
     update_interval_ms: int = 1000
     refresh_rate_ms: int = 500
-    rest_endpoint: str = "http://localhost:8080/api/snapshot"
+    rest_endpoint: str = "http://localhost:8080/api/v1/snapshot"
     rest_timeout_ms: int = 15000
     rest_verify_ssl: bool = False
     file_path: Optional[str] = None
@@ -449,7 +449,7 @@ class SharedConfigLoader:
                 provider_type=_tui("providerType", "provider_type", "rest"),
                 update_interval_ms=_tui("updateIntervalMs", "update_interval_ms", 1000),
                 refresh_rate_ms=_tui("refreshRateMs", "refresh_rate_ms", 500),
-                rest_endpoint=_tui("restEndpoint", "rest_endpoint", "http://localhost:8080/api/snapshot"),
+                rest_endpoint=_tui("restEndpoint", "rest_endpoint", "http://localhost:8080/api/v1/snapshot"),
                 rest_timeout_ms=_tui("restTimeoutMs", "rest_timeout_ms", 15000),
                 rest_verify_ssl=_tui("restVerifySsl", "rest_verify_ssl", False),
                 file_path=_tui("filePath", "file_path", None),

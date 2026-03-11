@@ -833,8 +833,7 @@ def create_app() -> FastAPI:
         state = app.state.connection_state
         return dict(state)
 
-    @app.get("/api/snapshot")
-    @app.get("/api/v1/snapshot")  # Alias for API contract compatibility
+    @app.get("/api/v1/snapshot")
     async def snapshot(
         account_id: Optional[str] = None,
         symbols: Optional[str] = None,

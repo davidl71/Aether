@@ -3,7 +3,6 @@ tastytrade_service.py - FastAPI service exposing Tastytrade broker-agnostic snap
 
 Endpoints:
 - GET /api/health
-- GET /api/snapshot
 - GET /api/v1/snapshot
 - GET /api/positions
 - GET /api/accounts
@@ -386,8 +385,7 @@ def create_app() -> FastAPI:
             asyncio.create_task(nats_client.publish_health("tastytrade", result))
         return result
 
-    @app.get("/api/snapshot")
-    @app.get("/api/v1/snapshot")  # Alias for API contract compatibility
+    @app.get("/api/v1/snapshot")
     def snapshot(account_id: Optional[str] = None) -> Dict[str, Any]:
         """Get complete snapshot with market data, positions, and orders."""
         if client is None:

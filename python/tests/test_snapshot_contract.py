@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from tui.models import SnapshotPayload
 
 
-# Required top-level keys in snapshot API response (GET /api/snapshot)
+# Required top-level keys in snapshot API response (GET /api/v1/snapshot)
 SNAPSHOT_REQUIRED_KEYS = {
     "generated_at",
     "mode",
@@ -165,7 +165,7 @@ class TestSnapshotContract:
         assert data["symbols"] == []
 
     def test_ib_service_snapshot_response_shape(self):
-        """GET /api/snapshot returns JSON with snapshot contract shape."""
+        """GET /api/v1/snapshot returns JSON with snapshot contract shape."""
         from unittest.mock import Mock, patch
         from fastapi.testclient import TestClient
         from integration.ib_service import create_app
@@ -189,7 +189,7 @@ class TestSnapshotContract:
             client = TestClient(app)
 
         with patch("integration.ib_service._symbols_from_env", return_value=["SPY"]):
-            response = client.get("/api/snapshot")
+            response = client.get("/api/v1/snapshot")
         assert response.status_code == 200
         data = response.json()
         _assert_snapshot_shape(data)
@@ -261,7 +261,7 @@ class TestSnapshotGolden:
 
 # Default symbols for live test (SPY is widely available; use MNQ, NQ, etc. for futures)
 LIVE_SNAPSHOT_SYMBOLS = os.getenv("LIVE_SNAPSHOT_SYMBOLS", "SPY")
-LIVE_SNAPSHOT_URL = os.getenv("LIVE_SNAPSHOT_URL", "http://127.0.0.1:8002/api/snapshot")
+LIVE_SNAPSHOT_URL = os.getenv("LIVE_SNAPSHOT_URL", "http://127.0.0.1:8002/api/v1/snapshot")
 
 
 @pytest.mark.skipif(
