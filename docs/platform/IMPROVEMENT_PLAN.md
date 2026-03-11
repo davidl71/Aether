@@ -30,6 +30,25 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for the full issue analysis.
 5. **Persistence rule**: write once (to durable storage or JetStream), then publish to NATS or update in-memory state; only then serve to clients. Ensures UI never shows uncommitted state.
 6. **Ownership rule**: C++ publishes market and strategy events, Go owns collection and live-state fanout/writes, Rust owns shared frontend APIs plus client-facing live-state reads and durable backend ownership, and Python stays limited to the TUI plus explicit specialist/analytics services.
 
+### Existing Rust/Python bridge
+
+The repo already uses **PyO3**, but only for **Rust embedding Python**, not for exporting Rust into Python packages:
+
+- `agents/backend/crates/strategy/src/engine.rs` uses `pyo3::prepare_freethreaded_python()`,
+  `Python::with_gil`, `PyModule::import`, and `PyDict` to load and call Python strategy code
+  from the Rust strategy engine.
+- `agents/backend/crates/strategy/Cargo.toml` depends on workspace `pyo3`.
+- `agents/backend/Cargo.toml` defines workspace `pyo3 = 0.24.1` with `auto-initialize`.
+
+That means the future **PyO3 + maturin** idea is not introducing PyO3 from scratch. It is a
+different direction for the same bridge technology:
+
+- **Current**: Rust process embeds and calls Python strategy logic.
+- **Future option**: Rust exports shared finance logic into Python-callable extension modules for
+  the TUI/CLI, likely packaged with `maturin`.
+
+Treat those as related but distinct migration paths.
+
 ---
 
 <!-- task-discovery: scan this file for [ ] items and exarp task IDs -->

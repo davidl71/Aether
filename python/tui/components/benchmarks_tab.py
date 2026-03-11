@@ -1,4 +1,4 @@
-"""Benchmarks tab: SOFR and Treasury rates from the risk-free-rate service (FRED)."""
+"""Benchmarks tab: SOFR and Treasury rates via the shared Rust API origin."""
 
 from __future__ import annotations
 
@@ -16,15 +16,18 @@ from textual.worker import get_current_worker
 
 logger = logging.getLogger(__name__)
 
-SOURCE_LABEL = "Source: FRED (St. Louis Fed) via Risk-Free Rate service"
+SOURCE_LABEL = "Source: FRED (St. Louis Fed) via shared API"
 SOURCE_LABEL_DIRECT = "Source: FRED (St. Louis Fed) direct (service unreachable)"
 
 
 def _get_benchmarks_base_url(app: Any) -> str:
-    """Resolve risk-free-rate service base URL from app config."""
+    """Resolve benchmark API base URL from app config."""
     config = getattr(app, "config", None)
     if not config:
-        return "http://127.0.0.1:8004"
+        return "http://127.0.0.1:8080"
+    api_base_url = getattr(config, "api_base_url", None)
+    if api_base_url:
+        return api_base_url.strip().rstrip("/")
     ports = getattr(config, "backend_ports", None) or {}
     port = ports.get("risk_free_rate", 8004)
     return f"http://127.0.0.1:{port}"

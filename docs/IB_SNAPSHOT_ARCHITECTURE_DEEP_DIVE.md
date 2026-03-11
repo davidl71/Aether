@@ -178,7 +178,7 @@ So: **First request after startup or after cache expiry** always pays the full c
 | `python/integration/ib_service.py` | Snapshot endpoint, `build_snapshot_payload`, cache, parallel fetch |
 | `python/integration/ibkr_portal_client.py` | All Gateway REST calls, `ensure_session`, `get_accounts`, conid cache, `get_snapshots_batch` |
 | `python/integration/cash_flow_timeline.py` | Post-processing after positions are fetched |
-| `python/tui/providers.py` | REST provider poll loop (interval) |
+| `python/tui/providers/` | REST provider poll loop (interval) |
 | `python/tui/app.py` | `set_interval(0.5, _update_snapshot)` |
 | `docs/research/learnings/ECLIENT_EWRAPPER_ARCHITECTURE.md` | TWS socket API (different from Client Portal used here) |
 | `docs/IBKR_POSITION_RETRIEVAL.md` | Native TWS position retrieval (C++, not used by Python snapshot) |

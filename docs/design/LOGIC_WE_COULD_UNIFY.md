@@ -128,7 +128,7 @@
 
 | Where | What |
 |-------|------|
-| **TUI (Python Textual)** | `python/tui/`: one snapshot provider at a time (rest / mock / file / nats); `providers.py` (RestProvider, NatsProvider, MockProvider, FileProvider); config from `~/.config/ib_box_spread/tui_config.json` or shared config; bank accounts from Discount Bank/ledger merged into unified positions; status bar shows backend health pills. |
+| **TUI (Python Textual)** | `python/tui/`: one snapshot provider at a time (rest / mock / file / nats); `providers/` package (`RestProvider`, `NatsProvider`, `MockProvider`, `FileProvider`); config from `~/.config/ib_box_spread/tui_config.json` or shared config; bank accounts from Discount Bank/ledger merged into unified positions; status bar shows backend health pills. |
 | **PWA (React/TypeScript)** | `web/`: fetches snapshot from `VITE_API_URL` (REST or LEAN); `useBackendServices` and `config/ports` for service URLs and health; account selector fetches from all configured backends in parallel; header status for backends. |
 
 **Unify:**

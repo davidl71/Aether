@@ -152,7 +152,7 @@ This document identifies coverage gaps and prioritizes test additions to achieve
    - **Gaps**: Application initialization, routing
    - **Target Coverage**: 20%+
 
-2. **TUI Providers** (`python/tui/providers.py`)
+2. **TUI Providers** (`python/tui/providers/`)
    - **Current**: ⚠️ **No tests found**
    - **Gaps**: Data provider interfaces
    - **Target Coverage**: 20%+

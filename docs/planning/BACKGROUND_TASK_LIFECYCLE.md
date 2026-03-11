@@ -8,7 +8,7 @@ This document describes how background work (threads, asyncio tasks, timers) is 
 
 ### 1.1 TUI (Textual app)
 
-**Location:** `python/tui/app.py`, `python/tui/providers.py`
+**Location:** `python/tui/app.py`, `python/tui/providers/`
 
 | Component | How it runs | Start | Stop | Notes |
 |-----------|-------------|--------|------|--------|
@@ -127,7 +127,7 @@ This document describes how background work (threads, asyncio tasks, timers) is 
 
 ## 4. References
 
-- **TUI:** `python/tui/app.py` (on_mount, on_unmount, set_interval), `python/tui/providers.py` (BackendHealthAggregator, RestProvider, FileProvider, MockProvider).
+- **TUI:** `python/tui/app.py` (on_mount, on_unmount, set_interval), `python/tui/providers/` (BackendHealthAggregator, RestProvider, FileProvider, MockProvider).
 - **Health dashboard:** `python/services/health_dashboard.py` (lifespan, _nats_subscriber).
 - **Tastytrade:** `python/integration/tastytrade_service.py` (on_event startup/shutdown, DXLink), `python/integration/dxlink_client.py` (_receive_task, disconnect).
 - **Strategy runner:** `python/integration/strategy_runner.py` (on_start, on_stop, _connect_nats).
