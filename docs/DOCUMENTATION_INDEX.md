@@ -82,6 +82,7 @@ This document serves as a comprehensive index of current project documentation p
 - `docs/NAUTILUS_LEARNINGS.md` - Historical NautilusTrader notes
 - `docs/NAUTILUS_IMPLEMENTATION_SUMMARY.md` - Historical NautilusTrader implementation notes
 - `web/TRADESTATION_INTEGRATION.md` - Historical TradeStation integration note only
+- `python/ORATS_USAGE.md` - Historical ORATS integration note only
 
 ## Build & Development
 

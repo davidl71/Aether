@@ -67,7 +67,6 @@ def system_snapshot_to_payload(snap: Any) -> SnapshotPayload:
             commissions=getattr(metrics, "commissions", 0.0) or 0.0,
             portal_ok=getattr(metrics, "portal_ok", False),
             tws_ok=getattr(metrics, "tws_ok", False),
-            orats_ok=getattr(metrics, "orats_ok", False),
             questdb_ok=getattr(metrics, "questdb_ok", False),
         )
     else:

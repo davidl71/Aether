@@ -263,7 +263,6 @@ export function HeaderStatus({
           </>
         )}
         {statusBadge(metrics.tws_ok, 'TWS')}
-        {statusBadge(metrics.orats_ok, 'ORATS')}
         {statusBadge(metrics.portal_ok, 'Portal')}
         {(() => {
           const gatewayUrl = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_IB_GATEWAY_URL ?? 'https://localhost:5001';

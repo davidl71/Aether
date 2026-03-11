@@ -15,7 +15,6 @@ const snapshotResponse = {
     commissions: 127.89,
     portal_ok: true,
     tws_ok: true,
-    orats_ok: true,
     questdb_ok: true
   },
   symbols: [

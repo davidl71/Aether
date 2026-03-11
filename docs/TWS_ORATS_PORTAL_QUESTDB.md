@@ -1,6 +1,6 @@
-# TWS, ORATS, Client Portal & QuestDB – Quick Reference
+# TWS, Client Portal & QuestDB – Quick Reference
 
-How these four pieces fit in the platform: **TWS** and **Client Portal** for IBKR connectivity, **ORATS** for options analytics, **QuestDB** for time-series storage.
+How these pieces fit in the active platform: **TWS** and **Client Portal** for IBKR connectivity, **QuestDB** for time-series storage.
 
 ---
 
@@ -36,15 +36,11 @@ How these four pieces fit in the platform: **TWS** and **Client Portal** for IBK
 
 ## 3. ORATS
 
-| What | Options analytics API: Greeks, IV, liquidity, earnings/dividend calendars |
-|------|----------------------------------------------------------------------------|
-| **Role** | Enrich option chains, liquidity scoring, risk filters (earnings/dividend blackouts) |
-| **API** | REST, https://api.orats.io (token required) |
-| **Code** | `python/integration/orats_client.py`, `python/integration/strategy_runner.py` (optional enricher) |
-| **Config** | `config/config.json` → `orats.enabled`, `orats.api_token`, etc. |
-| **Docs** | `python/ORATS_USAGE.md`, `docs/research/external/ORATS_INTEGRATION.md`, [orats.com/docs](https://orats.com/docs) |
+ORATS is **not** part of the active supported runtime.
 
-Snapshot metrics include `orats_ok` (PWA/HeaderStatus); strategy can use ORATS for liquidity and risk checks.
+- keep it as a historical/future-integration reference only
+- do not treat historical ORATS references as proof of a live integration
+- if revived later, treat it as a new integration effort
 
 ---
 
@@ -74,21 +70,20 @@ Snapshot metrics include `questdb_ok`. **NATS → QuestDB:** `collection-daemon`
          │ (same login as TWS)     │ optional
          │                        ▼
 ┌────────┴────────┐     ┌──────────────────┐     ┌─────────────────┐
-│ TWS API         │     │ ORATS (optional) │     │ QuestDB         │
+│ TWS API         │                             │ QuestDB         │
 │ (C++ socket     │     │ options analytics│     │ (optional)      │
 │  7496/7497)     │     │ liquidity / IV   │     │ quotes/trades   │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
 ```
 
 - **Live snapshot for PWA:** Gateway running + logged in → IB service running → `VITE_API_URL=http://127.0.0.1:8002/api/snapshot` and dev server restarted.
-- **ORATS:** Set `orats.enabled` and `orats.api_token` in config; strategy and snapshot can expose `orats_ok`.
 - **QuestDB:** Set `questdb.enabled` and run QuestDB (e.g. Docker); strategy/market handler write quotes/trades; notebooks/backtests can query via `notebooks/utils/data_loaders.py` or `questdb_client`.
 
 ---
 
 ## See also
 
-- **API index:** `docs/API_DOCUMENTATION_INDEX.md` (TWS, ORATS, dxFeed, data stack)
+- **API index:** `docs/API_DOCUMENTATION_INDEX.md` (TWS, historical ORATS references, dxFeed, data stack)
 - **IB + PWA:** `web/README.md` – “Connect PWA to IB Gateway”
-- **ORATS usage:** `python/ORATS_USAGE.md`
+- **ORATS usage:** `python/ORATS_USAGE.md` (historical/future only)
 - **QuestDB / data stack:** `docs/research/external/FINANCIAL_DATA_SOURCES_RESEARCH.md`, `docs/MCP_INTERACTIVE_TOOLS.md` (QuestDB MCP)

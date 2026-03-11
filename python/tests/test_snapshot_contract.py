@@ -43,7 +43,6 @@ METRICS_REQUIRED_KEYS = {
     "commissions",
     "portal_ok",
     "tws_ok",
-    "orats_ok",
     "questdb_ok",
 }
 # Required keys per symbol in symbols[]
@@ -114,7 +113,6 @@ class TestSnapshotContract:
                 "commissions": 0.0,
                 "portal_ok": True,
                 "tws_ok": False,
-                "orats_ok": False,
                 "questdb_ok": False,
             },
             "symbols": [

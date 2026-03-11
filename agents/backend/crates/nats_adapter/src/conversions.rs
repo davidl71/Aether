@@ -276,7 +276,6 @@ pub struct MetricsSnapshot {
     pub commissions: f64,
     pub portal_ok: bool,
     pub tws_ok: bool,
-    pub orats_ok: bool,
     pub questdb_ok: bool,
     pub nats_ok: bool,
 }
@@ -291,7 +290,6 @@ impl From<MetricsSnapshot> for pb::Metrics {
             commissions: m.commissions,
             portal_ok: m.portal_ok,
             tws_ok: m.tws_ok,
-            orats_ok: m.orats_ok,
             questdb_ok: m.questdb_ok,
             nats_ok: m.nats_ok,
         }
@@ -308,7 +306,6 @@ impl From<pb::Metrics> for MetricsSnapshot {
             commissions: m.commissions,
             portal_ok: m.portal_ok,
             tws_ok: m.tws_ok,
-            orats_ok: m.orats_ok,
             questdb_ok: m.questdb_ok,
             nats_ok: m.nats_ok,
         }

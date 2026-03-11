@@ -482,7 +482,6 @@ def build_snapshot_payload(
         "commissions": 0.0,  # IB doesn't provide commission history in summary
         "portal_ok": account_summary is not None,
         "tws_ok": False,  # Client Portal is separate from TWS
-        "orats_ok": False,
         "questdb_ok": False,
     }
 
@@ -902,7 +901,6 @@ def create_app() -> FastAPI:
                     "commissions": 0.0,
                     "portal_ok": False,
                     "tws_ok": False,
-                    "orats_ok": False,
                     "questdb_ok": False,
                 },
                 "symbols": [],

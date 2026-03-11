@@ -327,7 +327,6 @@ class AccountMetrics:
     commissions: float = 0.0
     portal_ok: bool = False
     tws_ok: bool = False
-    orats_ok: bool = False
     questdb_ok: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
@@ -335,7 +334,12 @@ class AccountMetrics:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> AccountMetrics:
-        return cls(**data)
+        filtered = {
+            key: value
+            for key, value in data.items()
+            if key in cls.__dataclass_fields__
+        }
+        return cls(**filtered)
 
 
 @dataclass

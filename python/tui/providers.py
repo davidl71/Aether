@@ -377,7 +377,6 @@ class MockProvider(Provider):
                 "commissions": 0.0,
                 "portal_ok": True,
                 "tws_ok": True,
-                "orats_ok": True,
                 "questdb_ok": True
             },
             "symbols": symbols,

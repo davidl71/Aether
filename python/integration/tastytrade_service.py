@@ -182,7 +182,6 @@ def build_snapshot_payload(
         "commissions": 0.0,  # Tastytrade may provide this in transaction history
         "portal_ok": account_summary is not None,
         "tws_ok": False,
-        "orats_ok": False,
         "questdb_ok": False,
     }
 

@@ -105,7 +105,6 @@ impl SystemSnapshot {
 
         self.metrics.portal_ok = true;
         self.metrics.tws_ok = true;
-        self.metrics.orats_ok = true;
         self.metrics.questdb_ok = true;
     }
 
@@ -339,7 +338,6 @@ pub struct Metrics {
     pub commissions: f64,
     pub portal_ok: bool,
     pub tws_ok: bool,
-    pub orats_ok: bool,
     pub questdb_ok: bool,
     pub nats_ok: bool,
 }
@@ -354,7 +352,6 @@ impl Default for Metrics {
             commissions: 0.0,
             portal_ok: false,
             tws_ok: false,
-            orats_ok: false,
             questdb_ok: false,
             nats_ok: false,
         }

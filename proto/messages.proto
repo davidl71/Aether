@@ -189,7 +189,7 @@ message Metrics {
   double commissions = 5;
   bool portal_ok = 6;
   bool tws_ok = 7;
-  bool orats_ok = 8;
+  reserved 8;
   bool questdb_ok = 9;
   bool nats_ok = 10;
 }

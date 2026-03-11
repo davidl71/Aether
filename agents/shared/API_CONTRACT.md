@@ -21,7 +21,6 @@ This document captures the REST/WebSocket schema shared by the backend, Python/T
     "commissions": 123.45,
     "portal_ok": true,
     "tws_ok": true,
-    "orats_ok": true,
     "questdb_ok": true
   },
   "symbols": [

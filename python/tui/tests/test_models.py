@@ -247,7 +247,6 @@ def test_account_metrics_all_fields():
         commissions=100.0,
         portal_ok=True,
         tws_ok=True,
-        orats_ok=False,
         questdb_ok=True
     )
 
@@ -259,13 +258,12 @@ def test_account_metrics_all_fields():
     assert data["commissions"] == 100.0
     assert data["portal_ok"] is True
     assert data["tws_ok"] is True
-    assert data["orats_ok"] is False
     assert data["questdb_ok"] is True
 
     restored = AccountMetrics.from_dict(data)
     assert restored.net_liq == 100000.0
     assert restored.portal_ok is True
-    assert restored.orats_ok is False
+    assert restored.questdb_ok is True
 
 
 def test_timeline_event_all_severities():

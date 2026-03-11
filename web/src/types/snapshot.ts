@@ -88,7 +88,6 @@ export interface AccountMetrics {
   commissions: number;
   portal_ok: boolean;
   tws_ok: boolean;
-  orats_ok: boolean;
   questdb_ok: boolean;
 }
 

@@ -153,7 +153,6 @@ def build_snapshot_payload(symbols: List[str], client: AlpacaClient, mode: str =
         "commissions": 0.0,  # Alpaca doesn't provide commission history in account endpoint
         "portal_ok": True,
         "tws_ok": False,
-        "orats_ok": False,
         "questdb_ok": False,
     }
 
