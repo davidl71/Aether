@@ -36,7 +36,6 @@ This document lists **default and caching periods** for all components that affe
 | Setting | Current default | Where | Suggested default | Rationale |
 |--------|------------------|--------|-------------------|-----------|
 | **POLL_INTERVAL** (snapshot fallback) | 2000 ms | `web/src/api/snapshot.ts` | **2000** | Matches “Updates every 2 seconds” in UI; keeps load reasonable. |
-| **useLeanSnapshot pollInterval** | 2000 ms | `web/src/hooks/useLeanSnapshot.ts` | **2000** | Same as above. |
 | **useBankAccounts pollIntervalMs** | 30_000 ms | `web/src/hooks/useBankAccounts.ts` | **30_000** | Keep; bank list does not need sub-minute updates. |
 | **PWA update check** | 60 * 60 * 1000 (1 h) | `web/src/hooks/usePWAUpdate.ts` | **1 h** | Keep. |
 | **DEFAULT_WS_RECONNECT_INTERVAL** | 3000 ms | `web/src/api/snapshot.ts` | **3000** | Keep. |
@@ -82,7 +81,7 @@ This document lists **default and caching periods** for all components that affe
 | IB accounts cache TTL | `python/integration/ibkr_portal_client.py` (`ACCOUNTS_CACHE_TTL_SECONDS`) |
 | TUI provider interval / timeouts | `python/tui/config.py`, `python/integration/shared_config_loader.py`, `config/config.example.json` |
 | TUI app intervals | `python/tui/app.py` (`set_interval` calls) |
-| Web snapshot poll | `web/src/api/snapshot.ts` (`POLL_INTERVAL`), `web/src/hooks/useLeanSnapshot.ts` |
+| Web snapshot poll | `web/src/api/snapshot.ts` (`POLL_INTERVAL`) |
 | Web bank accounts poll | `web/src/hooks/useBankAccounts.ts` |
 | ORATS cache | `python/integration/orats_client.py`, config / strategy_runner |
 | Treasury cache | `python/integration/treasury_api_client.py` |
