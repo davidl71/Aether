@@ -1,6 +1,7 @@
 //! tui_service — Ratatui terminal UI for the ib-platform.
 //!
 //! Subscribes to NATS snapshot subject and renders live trading state.
+//! Falls back to REST polling when NATS is unavailable.
 //! Runs without Python; replaces python/tui/.
 //!
 //! # Usage
@@ -9,11 +10,13 @@
 //!
 //! # Environment variables
 //!
-//!   NATS_URL                    NATS server (default: nats://localhost:4222)
-//!   BACKEND_ID                  Snapshot subject suffix (default: ib)
-//!   REST_URL                    REST fallback base URL (default: http://localhost:8080)
-//!   WATCHLIST                   Comma-separated symbols to highlight (default: SPX,XSP,NDX)
-//!   TICK_MS                     UI redraw interval ms (default: 250)
+//!   NATS_URL         NATS server (default: nats://localhost:4222)
+//!   BACKEND_ID       Snapshot subject suffix (default: ib)
+//!   REST_URL         REST fallback base URL (default: http://localhost:9090)
+//!   WATCHLIST        Comma-separated symbols to highlight (default: SPX,XSP,NDX)
+//!   TICK_MS          UI redraw interval ms (default: 250)
+//!   REST_POLL_MS     REST polling interval ms (default: 2000)
+//!   REST_FALLBACK    Enable REST fallback (default: true)
 
 use std::time::Duration;
 
@@ -26,6 +29,7 @@ mod app;
 mod config;
 mod models;
 mod nats;
+mod rest;
 mod ui;
 
 use app::App;
@@ -42,6 +46,8 @@ async fn main() -> anyhow::Result<()> {
     info!(
         backend_id = %config.backend_id,
         nats_url = %config.nats_url,
+        rest_url = %config.rest_url,
+        rest_fallback = config.rest_fallback,
         "tui_service starting"
     );
 
@@ -49,9 +55,19 @@ async fn main() -> anyhow::Result<()> {
 
     // Spawn NATS subscriber in the background
     let nats_config = config.clone();
+    let nats_tx = snap_tx.clone();
     tokio::spawn(async move {
-        nats::run(nats_config, snap_tx).await;
+        nats::run(nats_config, nats_tx).await;
     });
+
+    // Spawn REST fallback if enabled
+    if config.rest_fallback {
+        let rest_config = config.clone();
+        let rest_tx = snap_tx.clone();
+        tokio::spawn(async move {
+            rest::run(rest_config, rest_tx).await;
+        });
+    }
 
     // Set up terminal
     let mut terminal = ratatui::init();

@@ -671,7 +671,7 @@ impl RuntimeRiskState {
     }
 }
 
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct RuntimePositionDto {
     pub id: String,
     pub symbol: String,
@@ -702,7 +702,7 @@ impl From<&RuntimePositionState> for RuntimePositionDto {
     }
 }
 
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct RuntimeHistoricPositionDto {
     pub id: String,
     pub symbol: String,
@@ -729,7 +729,7 @@ impl From<&RuntimeHistoricPositionState> for RuntimeHistoricPositionDto {
     }
 }
 
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct RuntimeOrderDto {
     pub id: String,
     pub symbol: String,
@@ -758,7 +758,7 @@ impl From<&RuntimeOrderState> for RuntimeOrderDto {
     }
 }
 
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct RuntimeDecisionDto {
     pub symbol: String,
     pub quantity: i32,
@@ -785,7 +785,7 @@ impl From<&RuntimeDecisionState> for RuntimeDecisionDto {
     }
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RuntimeSnapshotDto {
     pub generated_at: DateTime<Utc>,
     pub started_at: DateTime<Utc>,

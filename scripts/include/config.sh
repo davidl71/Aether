@@ -152,8 +152,8 @@ config_is_enabled() {
 
   if [ -n "${!env_var_name:-}" ]; then
     case "${!env_var_name}" in
-      1|true|TRUE|yes|YES|on|ON) return 0 ;;
-      0|false|FALSE|no|NO|off|OFF) return 1 ;;
+    1 | true | TRUE | yes | YES | on | ON) return 0 ;;
+    0 | false | FALSE | no | NO | off | OFF) return 1 ;;
     esac
   fi
 
@@ -163,14 +163,14 @@ config_is_enabled() {
     local enabled
     enabled=$(jq -r ".services.${service_name}.enabled // empty" "${config_file}" 2>/dev/null)
     case "${enabled}" in
-      true) return 0 ;;
-      false) return 1 ;;
+    true) return 0 ;;
+    false) return 1 ;;
     esac
   fi
 
   case "${default_value}" in
-    1|true|TRUE|yes|YES|on|ON) return 0 ;;
-    *) return 1 ;;
+  1 | true | TRUE | yes | YES | on | ON) return 0 ;;
+  *) return 1 ;;
   esac
 }
 
@@ -232,4 +232,59 @@ config_get() {
   fi
 
   return 1
+}
+
+# Find TOML config file for Rust backend
+_find_toml_config_file() {
+  local candidates=()
+  local root
+
+  # Get project root (scripts/include/config.sh -> scripts -> project root)
+  if [ -n "${PROJECT_ROOT:-}" ]; then
+    root="${PROJECT_ROOT}"
+  elif [ -d "$(dirname "${BASH_SOURCE[0]}")/../../../agents/backend" ]; then
+    root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+  else
+    root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+  fi
+
+  # Check BACKEND_CONFIG env var
+  if [ -n "${BACKEND_CONFIG:-}" ]; then
+    candidates+=("${BACKEND_CONFIG}")
+  fi
+
+  # Standard locations for backend TOML config
+  candidates+=("${root}/agents/backend/config/default.toml")
+  candidates+=("${root}/config/backend.toml")
+
+  for path in "${candidates[@]}"; do
+    if [ -f "${path}" ]; then
+      echo "${path}"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+# Get rust_backend port from TOML config
+# Usage: config_get_rust_backend_port [default_port]
+config_get_rust_backend_port() {
+  local default_port="${1:-9090}"
+  local toml_path
+
+  toml_path=$(_find_toml_config_file)
+
+  if [ -n "${toml_path}" ] && command -v sed >/dev/null 2>&1; then
+    local port
+    port=$(sed -n 's/^rest_addr.*:\s*"\([^:]*\):\([^"]*\)"/\2/p' "${toml_path}" 2>/dev/null | head -1)
+    if [ -n "${port}" ]; then
+      echo "${port}"
+      return 0
+    fi
+  fi
+
+  # Fall back to default
+  echo "${default_port}"
+  return 0
 }

@@ -31,69 +31,69 @@ _config_enabled() {
 
 _svc_display() {
   case "$1" in
-    nats) echo "NATS" ;;
-    memcached) echo "Memcached" ;;
-    gateway) echo "IB Gateway" ;;
-    discount) echo "Discount Bank" ;;
-    rust) echo "Rust Backend" ;;
-    *) echo "" ;;
+  nats) echo "NATS" ;;
+  memcached) echo "Memcached" ;;
+  gateway) echo "IB Gateway" ;;
+  discount) echo "Discount Bank" ;;
+  rust) echo "Rust Backend" ;;
+  *) echo "" ;;
   esac
 }
 
 _svc_port() {
   case "$1" in
-    nats) echo "4222, 8222, 8081" ;;
-    memcached) echo "11211" ;;
-    gateway) echo "${IB_GATEWAY_PORT:-5001}" ;;
-    rust) _config_port rust_backend 8080 ;;
-    *) echo "" ;;
+  nats) echo "4222, 8222, 8081" ;;
+  memcached) echo "11211" ;;
+  gateway) echo "${IB_GATEWAY_PORT:-5001}" ;;
+  rust) _config_port rust_backend "$(config_get_rust_backend_port 9090)" ;;
+  *) echo "" ;;
   esac
 }
 
 _svc_cmd() {
   case "$1" in
-    nats) echo "nats-server" ;;
-    memcached) echo "memcached -l 127.0.0.1" ;;
-    gateway) echo "./ib-gateway/run-gateway.sh" ;;
-    rust) echo "./agents/start_rust_backend.sh" ;;
-    *) echo "" ;;
+  nats) echo "nats-server" ;;
+  memcached) echo "memcached -l 127.0.0.1" ;;
+  gateway) echo "./ib-gateway/run-gateway.sh" ;;
+  rust) echo "./agents/start_rust_backend.sh" ;;
+  *) echo "" ;;
   esac
 }
 
 _svc_log() {
   case "$1" in
-    nats) echo "nats-server.log" ;;
-    memcached) echo "memcached.log" ;;
-    gateway) echo "ib-gateway.log" ;;
-    rust) echo "rust-backend.log" ;;
-    *) echo "" ;;
+  nats) echo "nats-server.log" ;;
+  memcached) echo "memcached.log" ;;
+  gateway) echo "ib-gateway.log" ;;
+  rust) echo "rust-backend.log" ;;
+  *) echo "" ;;
   esac
 }
 
 _svc_health() {
   case "$1" in
-    nats) echo "http://localhost:8222/healthz" ;;
-    memcached) echo "" ;;
-    gateway) echo "https://localhost:\${PORT}" ;;
-    rust) echo "http://localhost:\${PORT}/health" ;;
-    *) echo "" ;;
+  nats) echo "http://localhost:8222/healthz" ;;
+  memcached) echo "" ;;
+  gateway) echo "https://localhost:\${PORT}" ;;
+  rust) echo "http://localhost:\${PORT}/health" ;;
+  *) echo "" ;;
   esac
 }
 
 _svc_wait() {
   case "$1" in
-    nats|memcached) echo "2" ;;
-    gateway) echo "5" ;;
-    *) echo "4" ;;
+  nats | memcached) echo "2" ;;
+  gateway) echo "5" ;;
+  *) echo "4" ;;
   esac
 }
 
 _svc_known() {
   case "$1" in
-    nats|memcached|gateway|rust)
-      return 0
-      ;;
-    *) return 1 ;;
+  nats | memcached | gateway | rust)
+    return 0
+    ;;
+  *) return 1 ;;
   esac
 }
 
@@ -193,18 +193,18 @@ do_start() {
   if _is_nats "$svc"; then
     local cfg="${ROOT_DIR}/config/nats-server.conf"
     if [[ -f "$cfg" ]]; then
-      nats-server -c "$cfg" > "$log" 2>&1 &
+      nats-server -c "$cfg" >"$log" 2>&1 &
     else
-      nats-server > "$log" 2>&1 &
+      nats-server >"$log" 2>&1 &
     fi
   elif _is_memcached "$svc"; then
-    memcached -l 127.0.0.1 > "$log" 2>&1 &
+    memcached -l 127.0.0.1 >"$log" 2>&1 &
   elif [[ "$svc" == "gateway" ]]; then
-    (cd "${ROOT_DIR}" && ./ib-gateway/run-gateway.sh >> "$log" 2>&1) &
+    (cd "${ROOT_DIR}" && ./ib-gateway/run-gateway.sh >>"$log" 2>&1) &
   elif [[ "$svc" == "web" ]]; then
-    (cd "${ROOT_DIR}/web" && npm run dev > "$log" 2>&1) &
+    (cd "${ROOT_DIR}/web" && npm run dev >"$log" 2>&1) &
   else
-    (cd "${ROOT_DIR}" && eval "$cmd" > "$log" 2>&1) &
+    (cd "${ROOT_DIR}" && eval "$cmd" >"$log" 2>&1) &
   fi
 
   local svc_pid=$!
@@ -266,7 +266,10 @@ do_stop() {
   local i
   for i in 1 2 3 4 5 6 7 8 9 10; do
     pid=$(_find_pid "$svc")
-    [[ -z "$pid" ]] && { echo "[info] ${display} stopped"; return 0; }
+    [[ -z "$pid" ]] && {
+      echo "[info] ${display} stopped"
+      return 0
+    }
     sleep 0.5
   done
 
@@ -417,48 +420,48 @@ SERVICE="${2:-}"
 
 # Normalize action: start_all -> start-all
 case "$ACTION" in
-  start_all) ACTION="start-all" ;;
-  stop_all)   ACTION="stop-all" ;;
-  restart_all) ACTION="restart-all" ;;
-  status_all) ACTION="status-all" ;;
+start_all) ACTION="start-all" ;;
+stop_all) ACTION="stop-all" ;;
+restart_all) ACTION="restart-all" ;;
+status_all) ACTION="status-all" ;;
 esac
 
 case "$ACTION" in
-  list)
-    do_list
-    ;;
-  start-all)
-    do_start_all
-    ;;
-  stop-all)
-    do_stop_all
-    ;;
-  restart-all)
-    do_restart_all
-    ;;
-  status-all)
-    do_status_all
-    ;;
-  start|stop|restart|status|logs)
-    if [[ -z "$SERVICE" ]]; then
-      echo "Usage: $0 $ACTION <service-name>"
-      echo "Run '$0 list' to see available services."
-      exit 1
-    fi
-    if ! _svc_known "$SERVICE"; then
-      echo "[error] Unknown service: $SERVICE"
-      do_list
-      exit 1
-    fi
-    "do_${ACTION}" "$SERVICE"
-    ;;
-  *)
-    echo "Usage: $0 {start|stop|restart|status|logs|list|start-all|stop-all|restart-all|status-all} [service-name]"
-    echo ""
-    echo "Single service: $0 {start|stop|restart|status|logs} <service>"
-    echo "All services:   $0 {start-all|stop-all|restart-all|status-all}"
-    echo "                (also accepted: start_all, stop_all, restart_all, status_all)"
-    echo "List:           $0 list"
+list)
+  do_list
+  ;;
+start-all)
+  do_start_all
+  ;;
+stop-all)
+  do_stop_all
+  ;;
+restart-all)
+  do_restart_all
+  ;;
+status-all)
+  do_status_all
+  ;;
+start | stop | restart | status | logs)
+  if [[ -z "$SERVICE" ]]; then
+    echo "Usage: $0 $ACTION <service-name>"
+    echo "Run '$0 list' to see available services."
     exit 1
-    ;;
+  fi
+  if ! _svc_known "$SERVICE"; then
+    echo "[error] Unknown service: $SERVICE"
+    do_list
+    exit 1
+  fi
+  "do_${ACTION}" "$SERVICE"
+  ;;
+*)
+  echo "Usage: $0 {start|stop|restart|status|logs|list|start-all|stop-all|restart-all|status-all} [service-name]"
+  echo ""
+  echo "Single service: $0 {start|stop|restart|status|logs} <service>"
+  echo "All services:   $0 {start-all|stop-all|restart-all|status-all}"
+  echo "                (also accepted: start_all, stop_all, restart_all, status_all)"
+  echo "List:           $0 list"
+  exit 1
+  ;;
 esac

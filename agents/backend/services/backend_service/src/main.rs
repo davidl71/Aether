@@ -85,7 +85,7 @@ struct PolygonSettings {
 }
 
 fn default_rest_addr() -> SocketAddr {
-    SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8080)
+    SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9090)
 }
 
 fn default_market_provider() -> String {

@@ -10,7 +10,7 @@
 # Environment:
 #   NATS_URL      NATS server URL (default: nats://localhost:4222)
 #   BACKEND_ID    Snapshot subject suffix (default: ib)
-#   REST_URL      REST fallback URL (default: http://localhost:8080)
+#   REST_URL      REST fallback URL (default: read from config)
 #   WATCHLIST     Comma-separated symbols to highlight (default: SPX,XSP,NDX)
 #   TICK_MS       UI redraw interval ms (default: 250)
 #
@@ -24,12 +24,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 BACKEND_DIR="${PROJECT_ROOT}/agents/backend"
 
+# Source config for port detection
+# shellcheck source=scripts/include/config.sh
+source "${SCRIPT_DIR}/include/config.sh"
+
+# Get backend port from config (default 9090)
+BACKEND_PORT=$(config_get_rust_backend_port 9090)
+
 # Default values
 NATS_URL="${NATS_URL:-nats://localhost:4222}"
 BACKEND_ID="${BACKEND_ID:-ib}"
-REST_URL="${REST_URL:-http://localhost:8080}"
+REST_URL="${REST_URL:-http://localhost:${BACKEND_PORT}}"
 WATCHLIST="${WATCHLIST:-SPX,XSP,NDX}"
 TICK_MS="${TICK_MS:-250}"
+REST_POLL_MS="${REST_POLL_MS:-2000}"
+REST_FALLBACK="${REST_FALLBACK:-true}"
 
 # Check if NATS is running
 check_nats() {
@@ -64,13 +73,17 @@ run_tui() {
   export REST_URL
   export WATCHLIST
   export TICK_MS
+  export REST_POLL_MS
+  export REST_FALLBACK
 
   echo "Starting Rust TUI..."
-  echo "  NATS_URL:   ${NATS_URL}"
-  echo "  BACKEND_ID: ${BACKEND_ID}"
-  echo "  REST_URL:   ${REST_URL}"
-  echo "  WATCHLIST:  ${WATCHLIST}"
-  echo "  TICK_MS:    ${TICK_MS}"
+  echo "  NATS_URL:      ${NATS_URL}"
+  echo "  BACKEND_ID:    ${BACKEND_ID}"
+  echo "  REST_URL:      ${REST_URL}"
+  echo "  WATCHLIST:     ${WATCHLIST}"
+  echo "  TICK_MS:       ${TICK_MS}"
+  echo "  REST_POLL_MS:  ${REST_POLL_MS}"
+  echo "  REST_FALLBACK:  ${REST_FALLBACK}"
   echo ""
 
   cd "${BACKEND_DIR}"

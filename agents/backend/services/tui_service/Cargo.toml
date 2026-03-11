@@ -32,4 +32,4 @@ prost-types = "0.13"
 futures = { workspace = true }
 
 # REST fallback
-reqwest = { workspace = true }
+reqwest = { workspace = true, features = ["json"] }

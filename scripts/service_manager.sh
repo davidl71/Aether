@@ -66,9 +66,18 @@ is_enabled() {
   return 0
 }
 
+# Source config for port detection
+# shellcheck source=scripts/include/config.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/include/config.sh
+source "${SCRIPT_DIR}/include/config.sh"
+
+# Get backend port from config
+_BACKEND_PORT=$(config_get_rust_backend_port 9090)
+
 # Service definitions: name, port, start_command
 declare -A SERVICES=(
-  ["rust_backend"]="8080|cd ${PROJECT_ROOT}/agents && cargo run --release -- --rest-port 8080 --grpc-port 50051"
+  ["rust_backend"]="${_BACKEND_PORT}|cd ${PROJECT_ROOT}/agents/backend && cargo run --release -p backend_service"
   ["nats"]="4222|nats-server -js -DV"
 )
 

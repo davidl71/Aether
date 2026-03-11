@@ -38,10 +38,36 @@ except ImportError:
 
 # Default ports aligned with config/config.example.json "services"
 DEFAULT_SERVICES: List[Dict[str, Any]] = [
-    {"name": "ib", "port": 8002, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5), ("/api/v1/snapshot", "snapshot", 20)]},
-    {"name": "alpaca", "port": 8000, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5), ("/api/snapshot", "snapshot", 20)]},
-    {"name": "tastytrade", "port": 8005, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5), ("/api/v1/snapshot", "snapshot", 20)]},
-    {"name": "discount_bank", "port": 8003, "host": "127.0.0.1", "endpoints": [("/api/health", "health", 5)]},
+    {
+        "name": "ib",
+        "port": 8002,
+        "host": "127.0.0.1",
+        "endpoints": [
+            ("/api/health", "health", 5),
+            ("/api/v1/snapshot", "snapshot", 20),
+        ],
+    },
+    {
+        "name": "alpaca",
+        "port": 8000,
+        "host": "127.0.0.1",
+        "endpoints": [("/api/health", "health", 5), ("/api/snapshot", "snapshot", 20)],
+    },
+    {
+        "name": "tastytrade",
+        "port": 8005,
+        "host": "127.0.0.1",
+        "endpoints": [
+            ("/api/health", "health", 5),
+            ("/api/v1/snapshot", "snapshot", 20),
+        ],
+    },
+    {
+        "name": "discount_bank",
+        "port": 8003,
+        "host": "127.0.0.1",
+        "endpoints": [("/api/health", "health", 5)],
+    },
 ]
 
 
@@ -73,7 +99,10 @@ def load_services_from_config(config_path: Path) -> List[Dict[str, Any]]:
     result = []
     for key, (name, default_port) in port_map.items():
         port = default_port
-        if isinstance(services_config.get(key), dict) and "port" in services_config[key]:
+        if (
+            isinstance(services_config.get(key), dict)
+            and "port" in services_config[key]
+        ):
             port = int(services_config[key]["port"])
         elif isinstance(services_config.get(key), (int, float)):
             port = int(services_config[key])
@@ -83,27 +112,63 @@ def load_services_from_config(config_path: Path) -> List[Dict[str, Any]]:
         else:
             endpoints = [("/api/health", "health", 5)]
             if key in ("ib", "alpaca", "tastytrade"):
-                path = "/api/v1/snapshot" if key in ("ib", "tastytrade") else "/api/snapshot"
+                path = (
+                    "/api/v1/snapshot"
+                    if key in ("ib", "tastytrade")
+                    else "/api/snapshot"
+                )
                 endpoints.append((path, "snapshot", 20))
-            result.append({"name": name, "port": port, "host": "127.0.0.1", "endpoints": endpoints})
+            result.append(
+                {
+                    "name": name,
+                    "port": port,
+                    "host": "127.0.0.1",
+                    "endpoints": endpoints,
+                }
+            )
     return result
 
 
-def get_shared_health_port(config_path: Path) -> Optional[int]:
-    """Read rust_backend.rest_port from config; default 8080 if section present."""
+def get_rust_backend_port_from_toml(config_path: Path) -> int:
+    """Read rest_addr from backend TOML config; default 9090 if not found."""
     if not config_path.exists():
-        return 8080
+        return 9090
+    try:
+        import re
+
+        raw = config_path.read_text(encoding="utf-8")
+        # Match lines like: rest_addr = "0.0.0.0:9090"
+        match = re.search(r'rest_addr\s*=\s*"[^"]+:(\d+)"', raw)
+        if match:
+            return int(match.group(1))
+    except Exception:
+        pass
+    return 9090
+
+
+def get_shared_health_port(config_path: Path) -> Optional[int]:
+    """Read rust_backend port from TOML config; default 9090 if not found."""
+    # Check backend TOML config first
+    backend_toml = (
+        Path(__file__).parent.parent / "agents" / "backend" / "config" / "default.toml"
+    )
+    if backend_toml.exists():
+        return get_rust_backend_port_from_toml(backend_toml)
+
+    # Fallback to old JSON config format
+    if not config_path.exists():
+        return 9090
     try:
         raw = config_path.read_text(encoding="utf-8")
         lines = [line for line in raw.splitlines() if not line.strip().startswith("//")]
         data = json.loads("\n".join(lines))
     except Exception:
-        return 8080
+        return 9090
     services = data.get("services") or {}
     rust = services.get("rust_backend")
     if isinstance(rust, dict) and isinstance(rust.get("rest_port"), (int, float)):
         return int(rust["rest_port"])
-    return 8080
+    return 9090
 
 
 def run_status_table_benchmark(
@@ -142,18 +207,27 @@ def run_status_table_benchmark(
         if latencies:
             srt = sorted(latencies)
             p95 = srt[min(int(len(srt) * 0.95), len(srt) - 1)] if srt else 0
-            results.append({
-                "mode": "unified (rust health)",
-                "n": n_rounds,
-                "min_ms": round(min(latencies), 2),
-                "avg_ms": round(statistics.mean(latencies), 2),
-                "p95_ms": round(p95, 2),
-                "max_ms": round(max(latencies), 2),
-                "ok": errors == 0,
-                "errors": errors,
-            })
+            results.append(
+                {
+                    "mode": "unified (rust health)",
+                    "n": n_rounds,
+                    "min_ms": round(min(latencies), 2),
+                    "avg_ms": round(statistics.mean(latencies), 2),
+                    "p95_ms": round(p95, 2),
+                    "max_ms": round(max(latencies), 2),
+                    "ok": errors == 0,
+                    "errors": errors,
+                }
+            )
         else:
-            results.append({"mode": "unified (dashboard)", "n": n_rounds, "ok": False, "errors": n_rounds})
+            results.append(
+                {
+                    "mode": "unified (dashboard)",
+                    "n": n_rounds,
+                    "ok": False,
+                    "errors": n_rounds,
+                }
+            )
 
     # 2) Per-backend serial: one round = sum of sequential GETs (like TUI without dashboard)
     serial_latencies: List[float] = []
@@ -168,16 +242,18 @@ def run_status_table_benchmark(
     if serial_latencies:
         srt = sorted(serial_latencies)
         p95 = srt[min(int(len(srt) * 0.95), len(srt) - 1)]
-        results.append({
-            "mode": "per-backend (serial)",
-            "n": n_rounds,
-            "min_ms": round(min(serial_latencies), 2),
-            "avg_ms": round(statistics.mean(serial_latencies), 2),
-            "p95_ms": round(p95, 2),
-            "max_ms": round(max(serial_latencies), 2),
-            "ok": True,
-            "errors": 0,
-        })
+        results.append(
+            {
+                "mode": "per-backend (serial)",
+                "n": n_rounds,
+                "min_ms": round(min(serial_latencies), 2),
+                "avg_ms": round(statistics.mean(serial_latencies), 2),
+                "p95_ms": round(p95, 2),
+                "max_ms": round(max(serial_latencies), 2),
+                "ok": True,
+                "errors": 0,
+            }
+        )
 
     # 3) Per-backend parallel: one round = max over concurrent GETs (best-case per-backend)
     parallel_latencies: List[float] = []
@@ -185,7 +261,11 @@ def run_status_table_benchmark(
         start = time.perf_counter()
         with ThreadPoolExecutor(max_workers=len(health_only)) as ex:
             futures = [
-                ex.submit(requests.get, f"http://{host}:{port}/api/health", timeout=timeout_sec)
+                ex.submit(
+                    requests.get,
+                    f"http://{host}:{port}/api/health",
+                    timeout=timeout_sec,
+                )
                 for _, host, port in health_only
             ]
             for f in as_completed(futures):
@@ -197,21 +277,25 @@ def run_status_table_benchmark(
     if parallel_latencies:
         srt = sorted(parallel_latencies)
         p95 = srt[min(int(len(srt) * 0.95), len(srt) - 1)]
-        results.append({
-            "mode": "per-backend (parallel)",
-            "n": n_rounds,
-            "min_ms": round(min(parallel_latencies), 2),
-            "avg_ms": round(statistics.mean(parallel_latencies), 2),
-            "p95_ms": round(p95, 2),
-            "max_ms": round(max(parallel_latencies), 2),
-            "ok": True,
-            "errors": 0,
-        })
+        results.append(
+            {
+                "mode": "per-backend (parallel)",
+                "n": n_rounds,
+                "min_ms": round(min(parallel_latencies), 2),
+                "avg_ms": round(statistics.mean(parallel_latencies), 2),
+                "p95_ms": round(p95, 2),
+                "max_ms": round(max(parallel_latencies), 2),
+                "ok": True,
+                "errors": 0,
+            }
+        )
 
     return results
 
 
-def one_request(url: str, timeout_sec: int) -> Tuple[float, Optional[int], Optional[str]]:
+def one_request(
+    url: str, timeout_sec: int
+) -> Tuple[float, Optional[int], Optional[str]]:
     """Return (latency_sec, status_code, error_message)."""
     start = time.perf_counter()
     try:
@@ -249,8 +333,13 @@ def run_benchmark(
                     if err:
                         errors.append(err)
             else:
-                with ThreadPoolExecutor(max_workers=min(concurrent, requests_per_endpoint)) as ex:
-                    futures = [ex.submit(one_request, url, timeout_sec) for _ in range(requests_per_endpoint)]
+                with ThreadPoolExecutor(
+                    max_workers=min(concurrent, requests_per_endpoint)
+                ) as ex:
+                    futures = [
+                        ex.submit(one_request, url, timeout_sec)
+                        for _ in range(requests_per_endpoint)
+                    ]
                     for f in as_completed(futures):
                         elapsed, code, err = f.result()
                         latencies.append(elapsed * 1000)
@@ -260,19 +349,21 @@ def run_benchmark(
                             errors.append(err)
 
             if not latencies:
-                results.append({
-                    "service": name,
-                    "endpoint": label,
-                    "url": url,
-                    "ok": False,
-                    "n": 0,
-                    "min_ms": None,
-                    "max_ms": None,
-                    "avg_ms": None,
-                    "p95_ms": None,
-                    "errors": len(errors),
-                    "sample_error": errors[0] if errors else None,
-                })
+                results.append(
+                    {
+                        "service": name,
+                        "endpoint": label,
+                        "url": url,
+                        "ok": False,
+                        "n": 0,
+                        "min_ms": None,
+                        "max_ms": None,
+                        "avg_ms": None,
+                        "p95_ms": None,
+                        "errors": len(errors),
+                        "sample_error": errors[0] if errors else None,
+                    }
+                )
                 continue
 
             ok = len(errors) == 0 and all(c == 200 for c in status_codes)
@@ -280,25 +371,29 @@ def run_benchmark(
             p95_idx = max(0, int(len(latencies_sorted) * 0.95) - 1)
             p95_ms = latencies_sorted[p95_idx] if latencies_sorted else None
 
-            results.append({
-                "service": name,
-                "endpoint": label,
-                "url": url,
-                "ok": ok,
-                "n": len(latencies),
-                "min_ms": round(min(latencies), 2),
-                "max_ms": round(max(latencies), 2),
-                "avg_ms": round(statistics.mean(latencies), 2),
-                "p95_ms": round(p95_ms, 2) if p95_ms is not None else None,
-                "errors": len(errors),
-                "sample_error": errors[0] if errors else None,
-            })
+            results.append(
+                {
+                    "service": name,
+                    "endpoint": label,
+                    "url": url,
+                    "ok": ok,
+                    "n": len(latencies),
+                    "min_ms": round(min(latencies), 2),
+                    "max_ms": round(max(latencies), 2),
+                    "avg_ms": round(statistics.mean(latencies), 2),
+                    "p95_ms": round(p95_ms, 2) if p95_ms is not None else None,
+                    "errors": len(errors),
+                    "sample_error": errors[0] if errors else None,
+                }
+            )
     return results
 
 
 def print_results(results: List[Dict[str, Any]], verbose: bool = False) -> None:
     print("\nBackend service benchmark\n" + "=" * 72)
-    print(f"{'Service':<18} {'Endpoint':<10} {'Status':<6} {'N':>4} {'Min(ms)':>9} {'Avg(ms)':>9} {'P95(ms)':>9} {'Max(ms)':>9}")
+    print(
+        f"{'Service':<18} {'Endpoint':<10} {'Status':<6} {'N':>4} {'Min(ms)':>9} {'Avg(ms)':>9} {'P95(ms)':>9} {'Max(ms)':>9}"
+    )
     print("-" * 72)
     for r in results:
         status = "ok" if r["ok"] else "fail"
@@ -307,7 +402,9 @@ def print_results(results: List[Dict[str, Any]], verbose: bool = False) -> None:
         avg_ms = f"{r['avg_ms']:.2f}" if r["avg_ms"] is not None else "—"
         p95_ms = f"{r['p95_ms']:.2f}" if r["p95_ms"] is not None else "—"
         max_ms = f"{r['max_ms']:.2f}" if r["max_ms"] is not None else "—"
-        print(f"{r['service']:<18} {r['endpoint']:<10} {status:<6} {n:>4} {min_ms:>9} {avg_ms:>9} {p95_ms:>9} {max_ms:>9}")
+        print(
+            f"{r['service']:<18} {r['endpoint']:<10} {status:<6} {n:>4} {min_ms:>9} {avg_ms:>9} {p95_ms:>9} {max_ms:>9}"
+        )
         if verbose and r.get("sample_error"):
             print(f"  └─ {r['sample_error'][:80]}")
     print("=" * 72)
@@ -318,7 +415,9 @@ def print_status_table_results(results: List[Dict[str, Any]]) -> None:
     print("\nBacking services status table benchmark")
     print("(time to full backend status: 1 dashboard call vs N per-backend calls)")
     print("=" * 72)
-    print(f"{'Mode':<28} {'N':>4} {'Min(ms)':>9} {'Avg(ms)':>9} {'P95(ms)':>9} {'Max(ms)':>9} {'Status':<6}")
+    print(
+        f"{'Mode':<28} {'N':>4} {'Min(ms)':>9} {'Avg(ms)':>9} {'P95(ms)':>9} {'Max(ms)':>9} {'Status':<6}"
+    )
     print("-" * 72)
     for r in results:
         mode = r.get("mode", "?")
@@ -328,20 +427,54 @@ def print_status_table_results(results: List[Dict[str, Any]]) -> None:
         avg_ms = f"{r['avg_ms']:.2f}" if r.get("avg_ms") is not None else "—"
         p95_ms = f"{r['p95_ms']:.2f}" if r.get("p95_ms") is not None else "—"
         max_ms = f"{r['max_ms']:.2f}" if r.get("max_ms") is not None else "—"
-        print(f"{mode:<28} {n:>4} {min_ms:>9} {avg_ms:>9} {p95_ms:>9} {max_ms:>9} {status:<6}")
+        print(
+            f"{mode:<28} {n:>4} {min_ms:>9} {avg_ms:>9} {p95_ms:>9} {max_ms:>9} {status:<6}"
+        )
     print("=" * 72)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Benchmark backend services (health + snapshot latency)")
-    parser.add_argument("--config", type=Path, default=Path("config/config.json"), help="Config JSON (ports); falls back to config.example.json")
-    parser.add_argument("--requests", "-n", type=int, default=10, help="Requests per endpoint (default 10)")
-    parser.add_argument("--concurrent", "-c", type=int, default=1, help="Concurrent requests (default 1)")
-    parser.add_argument("--services", type=str, default=None, help="Comma-separated service names (default: all)")
-    parser.add_argument("--mode", choices=("endpoints", "status-table"), default="endpoints",
-                        help="endpoints: per-service health/snapshot; status-table: time to full status (dashboard vs per-backend)")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Show error samples")
-    parser.add_argument("--json", action="store_true", help="Output JSON instead of table")
+    parser = argparse.ArgumentParser(
+        description="Benchmark backend services (health + snapshot latency)"
+    )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=Path("config/config.json"),
+        help="Config JSON (ports); falls back to config.example.json",
+    )
+    parser.add_argument(
+        "--requests",
+        "-n",
+        type=int,
+        default=10,
+        help="Requests per endpoint (default 10)",
+    )
+    parser.add_argument(
+        "--concurrent",
+        "-c",
+        type=int,
+        default=1,
+        help="Concurrent requests (default 1)",
+    )
+    parser.add_argument(
+        "--services",
+        type=str,
+        default=None,
+        help="Comma-separated service names (default: all)",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=("endpoints", "status-table"),
+        default="endpoints",
+        help="endpoints: per-service health/snapshot; status-table: time to full status (dashboard vs per-backend)",
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Show error samples"
+    )
+    parser.add_argument(
+        "--json", action="store_true", help="Output JSON instead of table"
+    )
     args = parser.parse_args()
 
     root = Path(__file__).resolve().parent.parent
@@ -371,7 +504,9 @@ def main() -> int:
             print_status_table_results(st_results)
         return 0 if all(r.get("ok", False) for r in st_results) else 1
 
-    results = run_benchmark(services, requests_per_endpoint=args.requests, concurrent=args.concurrent)
+    results = run_benchmark(
+        services, requests_per_endpoint=args.requests, concurrent=args.concurrent
+    )
     if args.json:
         print(json.dumps(results, indent=2))
     else:
