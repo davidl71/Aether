@@ -1,7 +1,7 @@
 # Environment Variable Configuration
 
 **Date**: 2025-11-29
-**Status**: Implemented
+**Status**: Implemented for active TUI/CLI-era services
 
 ---
 
@@ -32,8 +32,8 @@ Centralized environment variable configuration system that provides:
     "allowed_origins": [...]
   },
   "services": {
-    "web_port": 5173,
-    "alpaca_port": 8000,
+    "ib_port": 8002,
+    "discount_bank_port": 8003,
     ...
   }
 }
@@ -79,8 +79,7 @@ config = get_config()
 
 # Get service port (checks env var first, then config file)
 
-web_port = config.get_service_port('web', default=5173)
-alpaca_port = config.get_service_port('alpaca', default=8000)
+ib_port = config.get_service_port('ib', default=8002)
 ```
 
 ---
@@ -100,10 +99,13 @@ alpaca_port = config.get_service_port('alpaca', default=8000)
 
 | Variable | Config Key | Default | Description |
 |----------|------------|---------|-------------|
-| `WEB_PORT` | `services.web_port` | 5173 | Web service port |
-| `ALPACA_PORT` | `services.alpaca_port` | 8000 | Alpaca service port |
 | `IB_PORT` | `services.ib_port` | 8002 | IB service port |
+| `DISCOUNT_BANK_PORT` | `services.discount_bank_port` | 8003 | Historical config value; public Discount Bank routes now live behind Rust |
+| `NATS_PORT` | `services.nats_port` | 4222 | NATS server port |
 | ... | ... | ... | ... |
+
+The React/Vite web runtime has been retired. `WEB_PORT` and `services.web_port` are no longer part
+of the active local platform setup.
 
 ---
 
