@@ -19,14 +19,14 @@ They are explicit specialist services, not the shared frontend read-model backen
   - Active Python/Textual terminal client.
 - `python/integration/discount_bank_service.py`
   - Bank import and ledger extraction logic.
-- `python/integration/ib_service.py`
-  - IB-specific integration API and session state.
-- `python/integration/alpaca_service.py`
-  - Broker-specific integration API and session state.
 - `python/integration/tastytrade_service.py`
   - Broker-specific integration API and session state.
 - Standalone benchmark/rate service wrapper retired.
   - Public route ownership and active implementation now live in the Rust API.
+- Standalone IB service wrapper retired.
+  - Public IB route ownership and active implementation now live in the Rust API.
+- Alpaca active runtime surface retired.
+  - Keep the integration code only as a future reintroduction candidate, not an active service.
 ## Retire or migrate behind Rust
 
 These endpoints are mostly frontend read-model shaping and should move to Rust-owned API contracts.

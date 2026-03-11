@@ -19,21 +19,21 @@ BACKEND_HEALTH_INTERVAL_SEC = 2.5
 def _connection_error_hint(exc: Exception, url: str) -> Optional[str]:
     """Return a short hint when the error is a connection failure (e.g. service not running)."""
     if "8002" in url or ":8002" in url:
-        return "Start IB service: ./scripts/service.sh start ib"
+        return "Use the Rust backend IB routes on :8080; the standalone IB service is retired"
     return None
 
 
 def normalize_rest_endpoint(url: str) -> str:
     """Ensure REST URL points at a snapshot endpoint (e.g. .../api/snapshot or .../api/v1/snapshot)."""
     if not url or not url.strip():
-        return "http://127.0.0.1:8002/api/snapshot"
+        return "http://127.0.0.1:8080/api/v1/snapshot"
     url = url.strip().rstrip("/")
     if "/api/" in url and ("/snapshot" in url or "/v1/snapshot" in url):
         return url
     if url.endswith("/api") or url.endswith("/api/v1"):
         return f"{url}/snapshot"
     if "/api" not in url:
-        return f"{url}/api/snapshot"
+        return f"{url}/api/v1/snapshot"
     return f"{url}/snapshot"
 
 

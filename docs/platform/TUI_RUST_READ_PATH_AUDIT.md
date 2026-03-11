@@ -20,7 +20,6 @@
   - The TUI should use the shared Rust origin; there is no separate benchmark service fallback path anymore.
   - still the active aggregated health source for the TUI
 - broker and bank integration services
-  - IB
   - Alpaca
   - Tastytrade
   - Discount Bank
@@ -31,13 +30,13 @@
   - UI remains in Python, but runtime loan CRUD now goes through the Rust backend API
   - local JSON is legacy/manual fallback only
 
-### TUI Python-backed paths that still justify gateway convenience
+### TUI specialist presets that remain valid
 
 - `rest_ib`
 - `rest_alpaca`
 - `rest_tastytrade`
 
-These remain valid because they expose specialist Python-backed broker snapshots.
+`rest_ib` now points at Rust-owned IB routes, while the others still map to specialist services.
 They should not expand into a general business-API proxy surface, a collection layer, or shared frontend read-model ownership.
 
 ## Decision

@@ -34,8 +34,6 @@ _svc_display() {
     nats) echo "NATS" ;;
     memcached) echo "Memcached" ;;
     gateway) echo "IB Gateway" ;;
-    ib) echo "IBKR" ;;
-    alpaca) echo "Alpaca" ;;
     tastytrade) echo "Tastytrade" ;;
     discount) echo "Discount Bank" ;;
     rust) echo "Rust Backend" ;;
@@ -49,8 +47,6 @@ _svc_port() {
     nats) echo "4222, 8222, 8081" ;;
     memcached) echo "11211" ;;
     gateway) echo "${IB_GATEWAY_PORT:-5001}" ;;
-    ib) _config_port ib 8002 ;;
-    alpaca) _config_port alpaca 8000 ;;
     tastytrade) _config_port tastytrade 8005 ;;
     rust) _config_port rust_backend 8010 ;;
     questdb_nats) echo "" ;;
@@ -63,8 +59,6 @@ _svc_cmd() {
     nats) echo "nats-server" ;;
     memcached) echo "memcached -l 127.0.0.1" ;;
     gateway) echo "./ib-gateway/run-gateway.sh" ;;
-    ib) echo "./web/scripts/run-ib-service.sh" ;;
-    alpaca) echo "./web/scripts/run-alpaca-service.sh" ;;
     tastytrade) echo "./web/scripts/run-tastytrade-service.sh" ;;
     rust) echo "./agents/start_rust_backend.sh" ;;
     questdb_nats) echo "./scripts/run_questdb_nats_writer.sh" ;;
@@ -91,7 +85,7 @@ _svc_health() {
     nats) echo "http://localhost:8222/healthz" ;;
     memcached) echo "" ;;
     gateway) echo "https://localhost:\${PORT}" ;;
-    ib|alpaca|tastytrade)
+    tastytrade)
       echo "http://localhost:\${PORT}/api/health"
       ;;
     rust) echo "http://localhost:\${PORT}/health" ;;
@@ -104,7 +98,7 @@ _svc_wait() {
   case "$1" in
     nats|memcached) echo "2" ;;
     gateway) echo "5" ;;
-    ib|alpaca|tastytrade) echo "8" ;;
+    tastytrade) echo "8" ;;
     questdb_nats) echo "3" ;;
     *) echo "4" ;;
   esac
@@ -112,7 +106,7 @@ _svc_wait() {
 
 _svc_known() {
   case "$1" in
-    nats|memcached|gateway|ib|alpaca|tastytrade|rust|questdb_nats)
+    nats|memcached|gateway|tastytrade|rust|questdb_nats)
       return 0
       ;;
     *) return 1 ;;

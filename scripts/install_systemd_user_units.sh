@@ -6,8 +6,8 @@
 #
 # Then:
 #   systemctl --user daemon-reload
-#   systemctl --user start ib-box-spread-ib ib-box-spread-alpaca
-#   systemctl --user enable ib-box-spread-ib   # optional: start at login
+#   systemctl --user start ib-box-spread-rust_backend
+#   systemctl --user enable ib-box-spread-rust_backend   # optional: start at login
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -21,4 +21,4 @@ sed "s|REPLACE_PROJECT_ROOT|${PROJECT_ROOT}|g" "${SYSTEMD_USER}/ib-box-spread.en
 mv "${SYSTEMD_USER}/ib-box-spread.env.tmp" "${SYSTEMD_USER}/ib-box-spread.env"
 echo "Installed to $SYSTEMD_USER"
 echo "Run: systemctl --user daemon-reload"
-echo "Then: systemctl --user start ib-box-spread-ib ib-box-spread-alpaca ..."
+echo "Then: systemctl --user start ib-box-spread-rust_backend ..."

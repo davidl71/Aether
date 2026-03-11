@@ -1,5 +1,4 @@
 [
   {"name": "nats", "cmd": ["nats-server", "-js", "-DV"], "dir": "."},
-  {"name": "ib", "cmd": ["python", "-m", "uvicorn", "ib_service:app", "--host", "0.0.0.0", "--port", "8002"], "dir": "python/services"},
   {"name": "rust_backend", "cmd": ["cargo", "run", "--release", "--", "--rest-port", "8080", "--grpc-port", "50051"], "dir": "agents/backend"}
 ]

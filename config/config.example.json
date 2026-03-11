@@ -156,7 +156,7 @@
   // ============================================================================
   "tui": {
     "provider_type": "rest", // "mock", "rest", "file", "ibkr_rest" (changed from mock to rest for real data)
-    "rest_endpoint": "http://localhost:8002/api/v1/snapshot", // IB service endpoint
+    "rest_endpoint": "http://localhost:8080/api/v1/snapshot", // Rust backend shared snapshot endpoint
     "update_interval_ms": 1000,
     "refresh_rate_ms": 500,
     "rest_timeout_ms": 15000,
@@ -181,13 +181,6 @@
   "services": {
     "web": {
       "port": 5173 // Vite dev server (frontend)
-    },
-    "alpaca": {
-      "port": 8000,
-      "enabled": false // Optional backend; disabled by default unless you actively use Alpaca
-    },
-    "ib": {
-      "port": 8002 // IB service (separate from Alpaca to avoid conflicts)
     },
     "discount_bank": {
       "port": 8003 // Discount Bank service

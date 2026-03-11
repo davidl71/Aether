@@ -69,8 +69,9 @@ TUI
 - `python/tui/`
   - active terminal UI
 - `python/integration/`
-  - broker and bank integrations
+  - selected broker and bank integrations
   - benchmark/rate routes and active logic are now Rust-owned
+  - IB public routes and active logic are now Rust-owned
 Python is no longer the general frontend read-model backend or a collection/live-state ownership layer.
 
 ## Storage

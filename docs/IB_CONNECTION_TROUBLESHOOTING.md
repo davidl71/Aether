@@ -4,9 +4,9 @@ This app talks to Interactive Brokers in **two different ways**. Only **one** ca
 
 ---
 
-## 1. Client Portal (REST) – used by TUI and IB service
+## 1. Client Portal (REST) – used by the Rust backend and TUI
 
-**Used for:** TUI snapshot, positions, account summary, PWA, IB service (port 8002).
+**Used for:** Rust-owned IB snapshot, positions, and account-facing routes used by the TUI.
 
 | Requirement | What to check |
 |-------------|----------------|
@@ -44,7 +44,7 @@ If you see "No accounts" or connection errors, the Gateway is not running, not l
 
 ## Checklist when "can't connect to IB"
 
-1. **Using TUI or IB service (REST)?**  
+1. **Using TUI or Rust IB routes (REST)?**  
    → Start **Client Portal Gateway**, open https://localhost:5001 and log in.  
    → Ensure nothing else is using the socket (7496/7497) with the same account.
 

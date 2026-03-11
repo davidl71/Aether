@@ -36,7 +36,6 @@ logger = logging.getLogger(__name__)
 # Default ports when no shared config (so we still poll and show status for common backends)
 # Keys match service names; display names (TWS/IBKR, etc.) applied in snapshot_display.
 DEFAULT_BACKEND_PORTS: Dict[str, int] = {
-    "ib": 8002,
     "discount_bank": 8003,
     "rust": 8080,  # Rust backend REST (matches config.services.rust_backend.rest_port)
 }
@@ -49,8 +48,8 @@ DEFAULT_TCP_BACKEND_PORTS: Dict[str, int] = {
 # Default shared origin for frontend read models owned by the Rust backend.
 DEFAULT_SHARED_API_BASE_URL: str = "http://localhost:8080"
 
-# Preset REST provider types -> snapshot URL. `rest_rust` uses the shared Rust origin;
-# IB specialist presets now route through Rust as well, with Rust proxying to the IB service.
+# Preset REST provider types -> snapshot URL. `rest_rust` uses the shared Rust origin.
+# IB/TWS specialist presets are now only naming conveniences over the same Rust IB routes.
 PRESET_REST_ENDPOINTS: Dict[str, str] = {
     "rest_rust": f"{DEFAULT_SHARED_API_BASE_URL}/api/v1/snapshot",
     "rest_ib": f"{DEFAULT_SHARED_API_BASE_URL}/api/v1/ib/snapshot",

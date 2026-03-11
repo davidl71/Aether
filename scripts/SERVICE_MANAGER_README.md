@@ -3,7 +3,6 @@
 `scripts/service_manager.sh` manages the active local platform services from one entrypoint.
 
 Supported runtime services:
-- `ib`
 - `rust_backend`
 - `nats`
 - `israeli_bank_scrapers`
@@ -26,7 +25,6 @@ Examples:
 
 ```bash
 ./scripts/service_manager.sh start rust_backend
-./scripts/service_manager.sh start ib
 ./scripts/service_manager.sh status
 ./scripts/service_manager.sh stop-all
 ```
@@ -35,7 +33,6 @@ Examples:
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| `ib` | 8002 | Interactive Brokers specialist service |
 | `rust_backend` | 8080 | Shared Rust API/backend |
 | `nats` | 4222 | NATS broker |
 | `israeli_bank_scrapers` | 8010 | Israeli bank scraping service |
@@ -53,6 +50,7 @@ logs/<service>_service.log
 ## Notes
 
 - Use this manager for active TUI/CLI-era services only.
+- Interactive Brokers public routes are now served by the Rust backend; there is no separate `ib` runtime service here.
 - Risk-free-rate/benchmark routes are now Rust-owned; the remaining Python implementation is internal and is not managed as a standalone public service here.
 - Discount Bank public routes are now Rust-owned and are not managed as a standalone Python service here.
 - Historical browser/PWA scripts remain under `web/` as archive/reference material.

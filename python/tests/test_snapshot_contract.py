@@ -4,8 +4,8 @@ Snapshot contract and golden-file tests.
 Ensures the snapshot API and SnapshotPayload stay compatible with the
 shared contract (web/src/types/snapshot.ts, TUI, PWA).
 
-Live contract data test: run with RUN_LIVE_SNAPSHOT_TESTS=1 and the IB
-service running (e.g. ./scripts/service.sh start ib). Default symbol is SPY;
+Live contract data test: run with RUN_LIVE_SNAPSHOT_TESTS=1 and the Rust backend
+running. Default symbol is SPY;
 set LIVE_SNAPSHOT_SYMBOLS=MNQ or NQ for nano/micro futures.
 """
 from pathlib import Path
@@ -259,10 +259,10 @@ LIVE_SNAPSHOT_URL = os.getenv("LIVE_SNAPSHOT_URL", "http://127.0.0.1:8080/api/v1
 
 @pytest.mark.skipif(
     not os.getenv("RUN_LIVE_SNAPSHOT_TESTS"),
-    reason="Set RUN_LIVE_SNAPSHOT_TESTS=1 and run IB service (e.g. ./scripts/service.sh start ib) to run",
+    reason="Set RUN_LIVE_SNAPSHOT_TESTS=1 and run the Rust backend to run",
 )
 class TestLiveSnapshotRealContractData:
-    """Live snapshot test: hit real IB service for real contract data (e.g. MNQ, NQ, SPY)."""
+    """Live snapshot test: hit real Rust IB snapshot routes for real contract data."""
 
     def test_live_snapshot_real_contract_data(self):
         """GET snapshot from IB service with real symbols (e.g. MNQ); assert shape and real data."""

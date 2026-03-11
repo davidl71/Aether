@@ -29,18 +29,12 @@ fi
 
 # Service configuration
 declare -A SERVICE_PORTS=(
-  ["alpaca"]=8000
-  ["ib"]=8002
   ["discount_bank"]=8003
-  ["risk_free_rate"]=8004
   ["tastytrade"]=8005
 )
 
 declare -A SERVICE_SCRIPTS=(
-  ["alpaca"]="start_alpaca_service.sh"
-  ["ib"]="start_ib_service.sh"
   ["discount_bank"]="start_discount_bank_service.sh"
-  ["risk_free_rate"]="start_risk_free_rate_service.sh"
   ["tastytrade"]="start_tastytrade_service.sh"
 )
 

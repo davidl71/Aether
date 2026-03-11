@@ -529,7 +529,7 @@ class TUIApp(App):
         logger.info("TUI application unmounted")
 
     def _get_provider_label(self) -> str:
-        """Return short label for current data provider and endpoint (e.g. 'rest (8002 HTTP)', 'mock')."""
+        """Return short label for current data provider and endpoint (e.g. 'rest (8080 HTTP)', 'mock')."""
         from .display_utils import format_endpoint_display
         if isinstance(self.provider, RestProvider):
             try:
@@ -966,11 +966,11 @@ class TUIApp(App):
         self._switch_mode_to("mock")
 
     def action_mode_paper(self) -> None:
-        """Switch to PAPER (dry-run; TWS 7497 / Alpaca paper). F8."""
+        """Switch to PAPER (dry-run; TWS 7497). F8."""
         self._switch_mode_to("paper")
 
     def action_mode_live(self) -> None:
-        """Switch to LIVE (real money; TWS 7496 / Alpaca live). F9."""
+        """Switch to LIVE (real money; TWS 7496). F9."""
         self._switch_mode_to("live")
 
     def _switch_mode_to(self, mode: str) -> None:
@@ -1028,9 +1028,9 @@ class TUIApp(App):
             }
             self._switch_provider(params, skip_notify=True)
             self._apply_theme_for_environment(mode)
-            label = "PAPER (TWS 7497 / Alpaca paper)" if mode == "paper" else "LIVE (TWS 7496 / Alpaca live)"
+            label = "PAPER (TWS 7497)" if mode == "paper" else "LIVE (TWS 7496)"
             self.notify(
-                f"Switched to {label}. Restart IB/Alpaca service to apply if needed.",
+                f"Switched to {label}. Restart the Rust backend if needed to apply.",
                 title="Mode",
             )
             try:

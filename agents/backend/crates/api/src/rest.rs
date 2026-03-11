@@ -2,12 +2,10 @@ use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 use async_stream::stream;
 use axum::{
-    body::Bytes,
     extract::{Extension, Path, Query},
-    http::{HeaderMap, Method, StatusCode},
+    http::StatusCode,
     response::sse::{Event, KeepAlive, Sse},
-    response::Response,
-    routing::{any, get, post, put},
+    routing::{get, post, put},
     Json, Router,
 };
 use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine as _};
@@ -32,13 +30,12 @@ use crate::discount_bank::{
     import_positions as import_discount_bank_positions, ImportPositionsQuery,
 };
 use crate::health::SharedHealthAggregate;
+use crate::ib_positions::fetch_ib_positions;
 use crate::loans::{LoanAggregationInput, LoanRecord, LoanRepository};
 use crate::state::{Alert, OrderSnapshot, SharedSnapshot, SystemSnapshot};
 use crate::websocket::WebSocketServer;
 
 const SWIFTNESS_API_URL: &str = "http://127.0.0.1:8081";
-const DEFAULT_IB_SERVICE_URL: &str = "http://127.0.0.1:8002";
-
 #[derive(Clone)]
 pub struct StrategyController {
     tx: Arc<watch::Sender<bool>>,
@@ -118,8 +115,7 @@ impl RestServer {
             .route("/api/live/state/watch", get(live_state_watch))
             .route("/api/v1/ib/health", get(ib_health))
             .route("/api/v1/ib/snapshot", get(ib_snapshot))
-            .route("/api/v1/ib", any(proxy_ib_root))
-            .route("/api/v1/ib/*path", any(proxy_ib))
+            .route("/api/v1/ib/positions", get(ib_positions))
             .route("/api/v1/snapshot", get(snapshot))
             .route(
                 "/api/v1/cash-flow/timeline",
@@ -207,6 +203,11 @@ struct ComponentHealth {
 #[derive(Deserialize)]
 struct LiveStateQuery {
     key: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct IbPositionsQuery {
+    account_id: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -405,41 +406,6 @@ async fn health_heartbeat_path(
     ))
 }
 
-async fn proxy_ib_root(
-    Query(query): Query<std::collections::HashMap<String, String>>,
-    method: Method,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
-    let query = if query.is_empty() { None } else { Some(query) };
-    proxy_service_request(
-        "IB service",
-        ib_proxy_target_url("", query.as_ref()),
-        method,
-        headers,
-        body,
-    )
-    .await
-}
-
-async fn proxy_ib(
-    Path(path): Path<String>,
-    Query(query): Query<std::collections::HashMap<String, String>>,
-    method: Method,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
-    let query = if query.is_empty() { None } else { Some(query) };
-    proxy_service_request(
-        "IB service",
-        ib_proxy_target_url(&path, query.as_ref()),
-        method,
-        headers,
-        body,
-    )
-    .await
-}
-
 async fn ib_health(
     Extension(state): Extension<RestState>,
 ) -> Result<Json<HealthResponse>, StatusCode> {
@@ -448,6 +414,20 @@ async fn ib_health(
 
 async fn ib_snapshot(Extension(state): Extension<RestState>) -> Json<SystemSnapshot> {
     snapshot(Extension(state)).await
+}
+
+async fn ib_positions(
+    Query(query): Query<IbPositionsQuery>,
+) -> Result<Json<Vec<crate::IbPositionDto>>, (StatusCode, Json<ErrorResponse>)> {
+    let positions = fetch_ib_positions(query.account_id.as_deref())
+        .await
+        .map_err(|error| {
+            (
+                StatusCode::BAD_GATEWAY,
+                Json(ErrorResponse { error }),
+            )
+        })?;
+    Ok(Json(positions))
 }
 
 async fn extract_rate(
@@ -542,59 +522,6 @@ async fn check_nats_health() -> String {
             "timeout".to_string()
         }
     }
-}
-
-async fn proxy_service_request(
-    service_name: &str,
-    target: Result<String, String>,
-    method: Method,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Result<Response, (StatusCode, Json<ErrorResponse>)> {
-    let client = Client::new();
-    let target = target.map_err(live_state_internal_error)?;
-
-    let request_method = reqwest::Method::from_bytes(method.as_str().as_bytes())
-        .map_err(live_state_internal_error)?;
-    let mut request = client.request(request_method, target);
-    for (name, value) in headers.iter() {
-        if name.as_str().eq_ignore_ascii_case("host")
-            || name.as_str().eq_ignore_ascii_case("content-length")
-        {
-            continue;
-        }
-        if let Ok(value) = value.to_str() {
-            request = request.header(name.as_str(), value);
-        }
-    }
-
-    let response = request.body(body).send().await.map_err(|err| {
-        (
-            StatusCode::BAD_GATEWAY,
-            Json(ErrorResponse {
-                error: format!("{service_name} unavailable: {err}"),
-            }),
-        )
-    })?;
-
-    let status =
-        StatusCode::from_u16(response.status().as_u16()).map_err(live_state_internal_error)?;
-    let response_headers = response.headers().clone();
-    let response_body = response.bytes().await.map_err(live_state_internal_error)?;
-
-    let mut builder = Response::builder().status(status);
-    for (name, value) in response_headers.iter() {
-        if name.as_str().eq_ignore_ascii_case("content-length") {
-            continue;
-        }
-        if let Ok(value) = value.to_str() {
-            builder = builder.header(name.as_str(), value);
-        }
-    }
-
-    builder
-        .body(axum::body::Body::from(response_body))
-        .map_err(live_state_internal_error)
 }
 
 async fn live_state_client() -> Result<async_nats::Client, (StatusCode, Json<ErrorResponse>)> {
@@ -959,41 +886,6 @@ async fn discount_bank_import_positions(
             )
         })?;
     Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
-}
-
-fn ib_proxy_target_url(
-    path: &str,
-    query: Option<&std::collections::HashMap<String, String>>,
-) -> Result<String, String> {
-    let base = std::env::var("IB_URL").unwrap_or_else(|_| DEFAULT_IB_SERVICE_URL.to_string());
-    if path.trim_matches('/') == "positions" {
-        return proxy_target_url(&base, Some("/api"), "positions", query);
-    }
-    proxy_target_url(&base, Some("/api/v1"), path, query)
-}
-
-fn proxy_target_url(
-    base: &str,
-    prefix: Option<&str>,
-    path: &str,
-    query: Option<&std::collections::HashMap<String, String>>,
-) -> Result<String, String> {
-    let mut url = base.trim_end_matches('/').to_string();
-    if let Some(prefix) = prefix {
-        url.push_str(prefix);
-    }
-    if !path.is_empty() {
-        url.push('/');
-        url.push_str(path.trim_start_matches('/'));
-    }
-    if let Some(query) = query {
-        let query_string = serde_urlencoded::to_string(query).map_err(|err| err.to_string())?;
-        if !query_string.is_empty() {
-            url.push('?');
-            url.push_str(&query_string);
-        }
-    }
-    Ok(url)
 }
 
 async fn snapshot(Extension(state): Extension<RestState>) -> Json<SystemSnapshot> {
@@ -3171,42 +3063,6 @@ mod tests {
     fn live_state_envelope_metadata_reports_decode_error_for_invalid_bytes() {
         let metadata = decode_live_state_envelope_metadata(br#"{"legacy":"json"}"#);
         assert!(metadata.get("decode_error").is_some());
-    }
-
-    #[test]
-    fn ib_proxy_target_url_rewrites_into_ib_service_namespace() {
-        env::remove_var("IB_URL");
-
-        let url = ib_proxy_target_url("snapshot", None).expect("proxy url");
-
-        assert_eq!(url, "http://127.0.0.1:8002/api/v1/snapshot");
-    }
-
-    #[test]
-    fn ib_proxy_target_url_preserves_query_string() {
-        let query = std::collections::HashMap::from([
-            ("account".to_string(), "DU123".to_string()),
-            ("symbols".to_string(), "SPX,XSP".to_string()),
-        ]);
-
-        let url = ib_proxy_target_url("orders", Some(&query)).expect("proxy url");
-
-        assert!(url.starts_with("http://127.0.0.1:8002/api/v1/orders?"));
-        assert!(url.contains("account=DU123"));
-        assert!(url.contains("symbols=SPX%2CXSP"));
-    }
-
-    #[test]
-    fn ib_proxy_target_url_rewrites_positions_to_legacy_python_endpoint() {
-        env::remove_var("IB_URL");
-
-        let query = std::collections::HashMap::from([(
-            "account_id".to_string(),
-            "DU123".to_string(),
-        )]);
-        let url = ib_proxy_target_url("positions", Some(&query)).expect("proxy url");
-
-        assert_eq!(url, "http://127.0.0.1:8002/api/positions?account_id=DU123");
     }
 
 }

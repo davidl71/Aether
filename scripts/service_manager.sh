@@ -14,7 +14,7 @@
 #   ./scripts/service_manager.sh start-all
 #   ./scripts/service_manager.sh stop-all
 #
-# Services: ib, rust_backend, nats, israeli_bank_scrapers
+# Services: rust_backend, nats, israeli_bank_scrapers
 
 set -euo pipefail
 
@@ -68,7 +68,6 @@ is_enabled() {
 
 # Service definitions: name, port, start_command
 declare -A SERVICES=(
-  ["ib"]="8002|cd ${PROJECT_ROOT}/python/services && python -m uvicorn ib_service:app --host 0.0.0.0 --port"
   ["rust_backend"]="8080|cd ${PROJECT_ROOT}/agents && cargo run --release -- --rest-port 8080 --grpc-port 50051"
   ["nats"]="4222|nats-server -js -DV"
   ["israeli_bank_scrapers"]="8010|cd ${PROJECT_ROOT} && ./scripts/run_israeli_bank_scrapers_service.sh"

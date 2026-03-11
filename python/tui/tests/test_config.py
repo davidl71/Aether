@@ -30,7 +30,6 @@ DEFAULT_REST_ENDPOINT = "http://localhost:8080/api/v1/snapshot"
 
 def test_default_backend_ports_includes_all_services():
     """DEFAULT_BACKEND_PORTS should include the active backend services."""
-    assert DEFAULT_BACKEND_PORTS.get("ib") == 8002
     assert DEFAULT_BACKEND_PORTS.get("discount_bank") == 8003
     assert DEFAULT_BACKEND_PORTS.get("rust") == 8080
 

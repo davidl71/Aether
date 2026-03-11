@@ -1,5 +1,10 @@
+use std::time::Duration;
+
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+const DEFAULT_IB_PORTAL_URL: &str = "https://localhost:5001/v1/portal";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IbPositionDto {
@@ -51,6 +56,168 @@ impl IbPositionDto {
             unrealized_pl: value_as_f64(map.get("unrealizedPnl")),
         })
     }
+}
+
+pub async fn fetch_ib_positions(account_id: Option<&str>) -> Result<Vec<IbPositionDto>, String> {
+    let portal_base = std::env::var("IB_PORTAL_URL")
+        .unwrap_or_else(|_| DEFAULT_IB_PORTAL_URL.to_string())
+        .trim_end_matches('/')
+        .to_string();
+    let client = Client::builder()
+        .danger_accept_invalid_certs(true)
+        .cookie_store(true)
+        .timeout(Duration::from_secs(5))
+        .build()
+        .map_err(|error| format!("Failed to build IB portal client: {error}"))?;
+
+    let account = choose_account(&client, &portal_base, account_id).await?;
+    let Some(account) = account else {
+        return Ok(Vec::new());
+    };
+
+    let primary_url = format!("{portal_base}/iserver/account/{account}/positions");
+    let fallback_url = format!(
+        "{}/portfolio/{account}/positions",
+        portal_base.replace("/v1/portal", "/v1/api")
+    );
+
+    let positions = match get_json(&client, &primary_url).await {
+        Ok(Value::Array(items)) => items,
+        Ok(_) => Vec::new(),
+        Err(error) if error.contains("404") => match get_json(&client, &fallback_url).await {
+            Ok(Value::Array(items)) => items,
+            Ok(_) => Vec::new(),
+            Err(error) => return Err(error),
+        },
+        Err(error) => return Err(error),
+    };
+
+    Ok(positions
+        .iter()
+        .filter_map(|item| IbPositionDto::from_portal_position(item, Some(&account)))
+        .collect())
+}
+
+async fn choose_account(
+    client: &Client,
+    portal_base: &str,
+    account_id: Option<&str>,
+) -> Result<Option<String>, String> {
+    if let Some(account_id) = account_id {
+        let trimmed = account_id.trim();
+        if !trimmed.is_empty() {
+            return Ok(Some(trimmed.to_string()));
+        }
+    }
+
+    let accounts = get_accounts(client, portal_base).await?;
+    Ok(accounts.into_iter().next())
+}
+
+async fn get_accounts(client: &Client, portal_base: &str) -> Result<Vec<String>, String> {
+    let accounts_url = format!("{portal_base}/iserver/accounts");
+    let response = client
+        .get(&accounts_url)
+        .send()
+        .await
+        .map_err(|error| format!("IB Client Portal request failed: {error}"))?;
+
+    if response.status() == reqwest::StatusCode::UNAUTHORIZED {
+        ensure_session(client, portal_base).await?;
+        let retry = client
+            .get(&accounts_url)
+            .send()
+            .await
+            .map_err(|error| format!("IB Client Portal request failed: {error}"))?;
+        return parse_accounts_response(retry).await;
+    }
+
+    parse_accounts_response(response).await
+}
+
+async fn parse_accounts_response(response: reqwest::Response) -> Result<Vec<String>, String> {
+    let status = response.status();
+    let body = response
+        .text()
+        .await
+        .map_err(|error| format!("IB Client Portal response read failed: {error}"))?;
+    if !status.is_success() {
+        return Err(format!(
+            "Client Portal responded with status {status}: {}",
+            truncate_body(&body)
+        ));
+    }
+
+    let payload: Value = serde_json::from_str(&body)
+        .map_err(|error| format!("Failed to decode IB accounts response: {error}"))?;
+    let accounts = payload
+        .get("accounts")
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| item.as_str().map(str::to_string))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    Ok(accounts)
+}
+
+async fn ensure_session(client: &Client, portal_base: &str) -> Result<(), String> {
+    let reauth_url = format!("{portal_base}/iserver/reauthenticate");
+    let response = client
+        .post(&reauth_url)
+        .send()
+        .await
+        .map_err(|error| format!("IB Client Portal request failed: {error}"))?;
+    let status = response.status();
+    let body = response
+        .text()
+        .await
+        .map_err(|error| format!("IB Client Portal response read failed: {error}"))?;
+    if !(status == reqwest::StatusCode::OK || status == reqwest::StatusCode::ACCEPTED) {
+        return Err(format!(
+            "Reauthentication failed (status={status}): {}",
+            truncate_body(&body)
+        ));
+    }
+
+    tokio::time::sleep(Duration::from_secs_f64(reauth_sleep_seconds())).await;
+    Ok(())
+}
+
+async fn get_json(client: &Client, url: &str) -> Result<Value, String> {
+    let response = client
+        .get(url)
+        .send()
+        .await
+        .map_err(|error| format!("IB Client Portal request failed: {error}"))?;
+    let status = response.status();
+    let body = response
+        .text()
+        .await
+        .map_err(|error| format!("IB Client Portal response read failed: {error}"))?;
+
+    if !status.is_success() {
+        return Err(format!(
+            "Client Portal responded with status {status}: {}",
+            truncate_body(&body)
+        ));
+    }
+
+    serde_json::from_str(&body).map_err(|error| format!("Failed to decode IB positions response: {error}"))
+}
+
+fn reauth_sleep_seconds() -> f64 {
+    std::env::var("REAUTH_SLEEP_SECONDS")
+        .ok()
+        .and_then(|value| value.parse::<f64>().ok())
+        .map(|value| value.clamp(0.1, 2.0))
+        .unwrap_or(0.5)
+}
+
+fn truncate_body(text: &str) -> String {
+    text.chars().take(200).collect()
 }
 
 fn value_as_str(value: Option<&Value>) -> Option<String> {

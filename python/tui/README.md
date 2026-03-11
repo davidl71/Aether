@@ -41,8 +41,8 @@ Every QA screenshot SVG includes a hidden comment right after the root `<svg>` t
 **Provider health bar debugging:**  
 The same metadata includes the **status bar state** at capture time so you can debug what the provider health dashbar showed:
 
-- **`provider_label`** – e.g. `"mock"` or `"rest (127.0.0.1:8002)"`
-- **`backend_health`** – full backend health dict (e.g. `{"ib": {"status": "ok", "ib_connected": true}, "alpaca": {"status": "disabled", "error": "..."}}`)
+- **`provider_label`** – e.g. `"mock"` or `"rest (127.0.0.1:8080)"`
+- **`backend_health`** – full backend health dict (e.g. `{"ib": {"status": "ok", "ib_connected": true}, "tws": {"status": "ok"}}`)
 - **`status_line`** – the exact formatted string shown in the status bar (Backend: … | Provider: … | Time: … | …)
 
 To inspect: `grep -o 'tui-qa: {.*}' file.svg | sed 's/ -->$//; s/^tui-qa: //' | python -m json.tool`
@@ -52,13 +52,13 @@ The status bar shows an **environment badge** and **colour strip** so you can se
 - **[MOCK]** (cyan bar/tint) – synthetic data from the mock provider
 - **[PAPER]** (amber bar/tint) – real backend with `mode: DRY-RUN`
 - **[LIVE]** (red bar/tint) – real backend with `mode: LIVE`
-After the badge, the bar shows backend health (e.g. Alpaca: disabled, TWS/IBKR: ok), then Provider, Time, Mode, Strategy, Account.
+After the badge, the bar shows backend health (e.g. TWS/IBKR: ok), then Provider, Time, Mode, Strategy, Account.
 
-**Switch mode with function keys:** **F7** = MOCK, **F8** = PAPER (TWS 7497 / Alpaca paper), **F9** = LIVE (TWS 7496 / Alpaca live). PAPER/LIVE update the shared config (e.g. `~/.config/ib_box_spread/config.json`) and switch the data source to REST; restart the IB or Alpaca service for the new mode to take effect on the backend.
+**Switch mode with function keys:** **F7** = MOCK, **F8** = PAPER (TWS 7497), **F9** = LIVE (TWS 7496). PAPER/LIVE update the shared config (e.g. `~/.config/ib_box_spread/config.json`) and switch the data source to REST; restart the Rust backend if needed for the new mode to take effect.
 
 **Why does the badge show [PAPER]?** The **[PAPER]** / **[LIVE]** badge is **not** a TUI setting you switch – it reflects the **mode the backend reports** in the snapshot. For IB, the Python IB service infers it from your account ID: accounts starting with **DU** are treated as paper, others as live. So if you are logged into a paper TWS/Gateway session (DU… account), the badge correctly shows PAPER. F7/F8/F9 change which backend/port the TUI uses and the shared config; the badge still comes from the snapshot. To see LIVE, use a live Gateway session (port 7496) and an account ID that does not start with DU.
 
-**TWS data not loading?** Check: (1) **IB service** is running (e.g. `./scripts/service.sh start ib` or process on port 8002). (2) **TWS or IB Gateway** is running and logged in (port 7497 for paper or 7496 for live). (3) **Preferred provider** is rest_ib or rest_tws_gateway (Setup → Set preferred → IB/TWS). (4) If the TUI stays on [MOCK], the REST provider never got a successful snapshot from 8002 – check status bar pills for "ib" / "tws" and any error hint. (5) Snapshot cache: with cache enabled, the TUI may show the last cached snapshot when the backend is down; disable cache to avoid stale data.
+**TWS data not loading?** Check: (1) the **Rust backend** is running on port 8080. (2) **TWS or IB Gateway** is running and logged in (port 7497 for paper or 7496 for live). (3) **Preferred provider** is rest_ib or rest_tws_gateway (Setup → Set preferred → IB/TWS). (4) If the TUI stays on [MOCK], the REST provider never got a successful snapshot from the Rust IB routes on 8080 – check status bar pills for "ib" / "tws" and any error hint. (5) Snapshot cache: with cache enabled, the TUI may show the last cached snapshot when the backend is down; disable cache to avoid stale data.
 
 **SVG vs PNG for AI/tooling:**  
 Textual exports SVG only. SVG is text-based, so any AI or script can read and parse it (including the debug comment). For consumers that need a raster image (e.g. a vision model that only accepts PNG/JPEG), you can convert the SVG after capture (e.g. `cairosvg` or a headless browser). The project does not currently add a PNG export step; add one if your pipeline requires it.
@@ -178,7 +178,7 @@ The TUI is designed so the **UI thread never blocks on I/O**. All data fetching 
 - **File provider**: Same pattern: a background thread polls the file and updates the in-memory snapshot.
 - **Heavy work** (e.g. bank-accounts fetch, box-spread load) runs via Textual **workers** with `thread=True`; results are applied in `on_worker_state_changed` so the UI stays responsive.
 
-**Message-queue–driven updates**: With **NATS** enabled, backends (e.g. IB service) publish snapshots and health to NATS; the TUI **NatsProvider** subscribes and updates the displayed data on each message. For a fully event-driven setup, run the IB (or other) service with NATS publishing and point the TUI at NATS; the GUI then reflects backend state updated by the message queue without blocking.
+**Message-queue–driven updates**: With **NATS** enabled, backends publish snapshots and health to NATS; the TUI **NatsProvider** subscribes and updates the displayed data on each message. For a fully event-driven setup, run the backend publishers and point the TUI at NATS; the GUI then reflects backend state updated by the message queue without blocking.
 
 ### Data Flow
 

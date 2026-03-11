@@ -32,7 +32,6 @@ Centralized environment variable configuration system that provides:
     "allowed_origins": [...]
   },
   "services": {
-    "ib_port": 8002,
     "discount_bank_port": 8003,
     ...
   }
@@ -79,7 +78,7 @@ config = get_config()
 
 # Get service port (checks env var first, then config file)
 
-ib_port = config.get_service_port('ib', default=8002)
+rust_port = config.get_service_port('rust_backend', default=8080)
 ```
 
 ---
@@ -99,7 +98,7 @@ ib_port = config.get_service_port('ib', default=8002)
 
 | Variable | Config Key | Default | Description |
 |----------|------------|---------|-------------|
-| `IB_PORT` | `services.ib_port` | 8002 | IB service port |
+| `RUST_BACKEND_REST_PORT` | `services.rust_backend_rest_port` | 8080 | Shared Rust backend REST port |
 | `DISCOUNT_BANK_PORT` | `services.discount_bank_port` | 8003 | Historical config value; public Discount Bank routes now live behind Rust |
 | `NATS_PORT` | `services.nats_port` | 4222 | NATS server port |
 | ... | ... | ... | ... |

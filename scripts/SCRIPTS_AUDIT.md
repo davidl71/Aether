@@ -85,15 +85,15 @@ Total scripts: 116 (after deduplication)
 
 ### Service Management (14)
 - `start_ib_service.sh` - Start IB service ✅ ACTIVE
-- `start_alpaca_service.sh` - Start Alpaca service
+- `start_alpaca_service.sh` - Retired active Alpaca service wrapper
 - `start_tastytrade_service.sh` - Start Tastytrade service
 - `start_discount_bank_service.sh` - Start Discount Bank service
-- `start_risk_free_rate_service.sh` - Start risk-free rate service
+- `start_risk_free_rate_service.sh` - Removed; standalone risk-free-rate daemon retired from active service management
 - `start_rust_backend.sh` - Start Rust backend
 - `start_nats.sh` - Start NATS server
 - `start_web_dev.sh` - Start web dev server
 - `stop_ib_service.sh` - Stop IB service
-- `stop_alpaca_service.sh` - Stop Alpaca service
+- `stop_alpaca_service.sh` - Retired active Alpaca service wrapper
 - (... other stop scripts ...)
 - `watchdog_services.sh` - Service watchdog
 

@@ -498,7 +498,7 @@ class SetupScreen(Screen[Optional[Dict[str, Any]]]):
             self.notify("Select a row first", title="Toggle enabled", severity="warning")
             return
         if key in ("mock", "nats", "file"):
-            self.notify("Enable/disable applies only to backends (IB, Alpaca, etc.)", title="Toggle enabled", severity="information")
+            self.notify("Enable/disable applies only to active backends (IB/TWS, etc.)", title="Toggle enabled", severity="information")
             return
         user_disabled = list(self._config.user_disabled_backends or [])
         was_disabled = key in user_disabled
@@ -551,12 +551,12 @@ class SetupScreen(Screen[Optional[Dict[str, Any]]]):
             self._refresh_table()
             self._update_status_lines()
             self.notify(
-                f"TWS set to {mode_name}. Restart IB service (and ensure Gateway/TWS is on port {new_port}) to apply.",
+                f"TWS set to {mode_name}. Restart the Rust backend (and ensure Gateway/TWS is on port {new_port}) to apply.",
                 title="Switch mode",
             )
         else:
             self.notify("Mode switching is only available for TWS", title="Switch mode", severity="warning")
-            self.notify("Switch mode applies only to TWS/IB (7496/7497) or Alpaca (paper/live)", title="Switch mode", severity="information")
+            self.notify("Switch mode applies only to TWS/IB (7496/7497)", title="Switch mode", severity="information")
 
     def _restart_backend(self) -> None:
         """Restart the selected backend's service via scripts/service.sh restart."""
@@ -566,7 +566,7 @@ class SetupScreen(Screen[Optional[Dict[str, Any]]]):
             return
         svc = BACKEND_KEY_TO_SERVICE_NAME.get(key)
         if not svc:
-            self.notify("Restart applies only to backends with a service (IB, Alpaca, etc.)", title="Restart", severity="information")
+            self.notify("Restart applies only to active backends with a service", title="Restart", severity="information")
             return
         self.run_worker(
             lambda: self._run_restart_and_notify(svc, key),

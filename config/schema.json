@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.ib_box_spread.dev/config/v1.0.0",
   "title": "IB Box Spread shared configuration",
-  "description": "Unified JSON config for TUI, PWA, and CLI. All loaders (Python SharedConfigLoader, PWA env, native CLI when using shared paths) should validate against this schema. Parsing remains language-specific.",
+  "description": "Unified JSON config for the active TUI, CLI, and backend runtime. Archived browser-client material may still reference this schema historically, but the web app is not an active supported runtime.",
   "type": "object",
   "additionalProperties": true,
   "properties": {
@@ -60,7 +60,7 @@
     },
     "pwa": {
       "$ref": "#/$defs/pwaConfig",
-      "description": "PWA (React) section: servicePorts, defaultService, serviceUrls."
+      "description": "Archived browser-client section retained for historical reference and possible future UI experiments."
     },
     "broker": {
       "$ref": "#/$defs/brokerConfig",
@@ -152,7 +152,7 @@
         "servicePorts": {
           "type": "object",
           "additionalProperties": { "type": "integer" },
-          "description": "Service name -> port (e.g. alpaca: 8000, ib: 8002)."
+          "description": "Service name -> port (e.g. rust_backend: 8080, discount_bank: 8003)."
         },
         "defaultService": { "type": "string", "default": "ib" },
         "serviceUrls": {
