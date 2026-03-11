@@ -33,6 +33,7 @@ use tracing::{info, warn};
 mod nats_integration;
 mod health_aggregation;
 mod collection_aggregation;
+mod snapshot_publisher;
 mod swiftness;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -171,11 +172,23 @@ async fn main() -> anyhow::Result<()> {
         state.clone(),
         strategy_signal_tx,
         market_ctrl_rx,
-        nats_integration,
+        nats_integration.clone(),
     )?;
 
     health_aggregation::spawn_health_aggregator(health_state, nats_url.clone());
-    collection_aggregation::spawn_collection_aggregator(state.clone(), nats_url);
+    collection_aggregation::spawn_collection_aggregator(state.clone(), nats_url.clone());
+
+    // Publish full snapshots to NATS for TUI and other subscribers
+    if let Some(ref nats) = *nats_integration {
+        if let Some(client) = nats.client() {
+            let backend_id = std::env::var("BACKEND_ID").unwrap_or_else(|_| "ib".into());
+            let interval_ms: u64 = std::env::var("SNAPSHOT_PUBLISH_INTERVAL_MS")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(1000);
+            snapshot_publisher::spawn(state.clone(), client, backend_id, interval_ms);
+        }
+    }
 
     // Swiftness is temporarily disabled by default; enable explicitly for manual use.
     if swiftness::swiftness_enabled() {
