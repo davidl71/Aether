@@ -1,6 +1,6 @@
 # Dataflow Architecture
 
-**Last updated**: 2026-03-10 (backend storage and cache cleanup)
+**Last updated**: 2026-03-11 (backend storage and cache cleanup)
 **Purpose**: Comprehensive analysis of data flow, storage, and inter-component contracts.
 Used as the ground-truth reference for AI-assisted development.
 
@@ -231,6 +231,7 @@ useBackendServices hook (web/src/hooks/useBackendServices.ts)
 ### Single writer per store (target state)
 
 One writer per store; all readers use that store or a gateway. Eliminates dual-write corruption and clarifies ownership.
+Python remains outside collection and shared read-model ownership in this target state; it consumes specialist or analytics paths only.
 
 | Store | Single writer | Readers |
 |-------|----------------|---------|

@@ -1,7 +1,7 @@
 # Python Backend Reduction Audit
 
-**Last updated**: 2026-03-10
-**Purpose**: classify the remaining Python backend surface into `keep` vs `retire/migrate`.
+**Last updated**: 2026-03-11
+**Purpose**: classify the remaining Python specialist-service surface into `keep` vs `retire/migrate`.
 
 ## Scope
 
@@ -12,6 +12,7 @@ Reviewed:
 ## Keep in Python
 
 These are still Python-specific or integration-heavy enough that they should remain Python-owned for now.
+They are explicit specialist services, not the shared frontend read-model backend and not collection ownership.
 
 ### TUI and integration services
 
@@ -64,6 +65,7 @@ Reason:
 1. Keep Python integration modules only where they have active consumers.
 2. Reintroduce cash-management analysis only if a real UI or automation caller appears.
 3. Continue shrinking Python service wrappers in favor of Rust-owned frontend APIs and direct in-process Python modules.
+4. Do not add new collection, live-state write, or shared read-model ownership to Python services.
 
 ## Non-goals for this pass
 

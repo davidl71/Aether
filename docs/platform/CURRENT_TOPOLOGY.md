@@ -15,7 +15,7 @@ For deeper detail, see:
 - `C++` produces market and strategy events.
 - `Go` collects, fans out, and exposes operational aggregation.
 - `Rust` owns shared frontend read APIs.
-- `Python` owns the Textual TUI and specialist integration services.
+- `Python` owns the Textual TUI and selected specialist integration services.
 
 ## Runtime Shape
 
@@ -77,7 +77,7 @@ TUI
 - `python/services/health_dashboard.py`
   - health dashboard service
 
-Python is no longer the general frontend read-model backend.
+Python is no longer the general frontend read-model backend or a collection/live-state ownership layer.
 
 ## Storage
 

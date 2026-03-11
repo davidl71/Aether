@@ -39,13 +39,14 @@
 - `rest_tastytrade`
 
 These remain valid because they expose specialist Python-backed broker snapshots.
-They should not expand into a general business-API proxy surface.
+They should not expand into a general business-API proxy surface, a collection layer, or shared frontend read-model ownership.
 
 ## Decision
 
 - Do **not** migrate risk-free-rate or health-dashboard in the next slice.
 - The **next Rust migration candidate for the TUI is loans**, not benchmarks or health.
 - Keep the Go gateway only as a convenience entrypoint for these still-separate specialist services.
+- Keep Python read paths limited to explicit specialist services; do not regrow Python into a general frontend backend.
 
 ## Recommended next migration
 

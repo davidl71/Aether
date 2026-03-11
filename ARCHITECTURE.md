@@ -4,7 +4,7 @@ Multi-asset synthetic financing platform. Box spreads are one strategy (7-10% al
 the platform manages financing across options, futures, bonds, bank loans, and pension funds
 across 21+ accounts and multiple brokers.
 
-**Last updated**: 2026-03-10 (backend topology simplification)
+**Last updated**: 2026-03-11 (backend topology simplification)
 
 ## System Overview
 
@@ -43,7 +43,7 @@ across 21+ accounts and multiple brokers.
 Storage layers:
   InMemoryCache (C++)  →  hot tick data
   NATS KV              →  live key-value state (written by collection-daemon as full envelopes)
-  SQLite               →  Rust ledger + Python (SHARED — see known issues)
+  SQLite               →  Rust ledger owner; Python overlap is legacy technical debt
   QuestDB              →  time-series archive
 ```
 
@@ -62,10 +62,10 @@ Storage layers:
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | Rust REST+WS backend | Rust (Axum) :8080 | Shared frontend API owner for snapshot and frontend read models consumed by web and TUI |
-| Python integration services | Python (FastAPI) | Broker/bank integrations, risk-free-rate service, and health dashboard |
+| Python integration services | Python (FastAPI) | Explicit specialist services only: broker/bank integrations, risk-free-rate service, and health dashboard |
 | C++ engine | C++20 | TWS connectivity, strategy execution, risk/Greeks/pricing |
 | NATS | NATS JetStream | Async messaging, market data events, heartbeats |
-| Go agents | Go (stdlib+nats.go) | Collection, live-state KV, QuestDB fanout, api-gateway, health aggregation, supervisor, config validation |
+| Go agents | Go (stdlib+nats.go) | Collection, live-state KV ownership, QuestDB fanout, api-gateway, health aggregation, supervisor, config validation |
 
 ### Messaging Contract
 
@@ -90,7 +90,7 @@ Generated from `proto/messages.proto` via `./proto/generate.sh`:
 
 See `docs/platform/DATAFLOW_ARCHITECTURE.md` for full analysis. Key issues:
 
-1. **Dual SQLite writers**: Rust ledger and Python both write to the same SQLite DB — risk of contention/corruption under load.
+1. **Dual SQLite writers**: Rust ledger owns SQLite, but some legacy Python overlap remains — risk of contention/corruption until fully removed.
 2. **Split read paths remain**: TUI still mixes Rust read models, Python integration endpoints, and NATS, while the web is primarily Rust-backed.
 3. **WebSocket sends full snapshot**: Rust WS sends full snapshot once on connect, then only changed sections (delta) every 2s — see IMPROVEMENT_PLAN P2-A (done). Remaining gap: scale if many clients.
 4. **Collector durability gap**: `collection-daemon` now decodes `NatsEnvelope` and owns `LIVE_STATE`, but durable JetStream replay remains opt-in instead of the default collection mode.
@@ -114,7 +114,7 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for full analysis. Key issues:
 
 - **C++**: stays for core engine and TWS (API is C++-only)
 - **Rust**: stays for safety-critical backend and ledger
-- **Python**: Textual TUI, broker/bank integrations, benchmarks/rates, and health service
+- **Python**: Textual TUI, specialist broker/bank integrations, benchmarks/rates, and health service
 - **Go**: ops agents — good for single-binary CLI/bridge tools
 - **TypeScript**: web app — not a rewrite candidate
 
