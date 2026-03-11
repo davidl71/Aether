@@ -6,22 +6,53 @@ For exarp-go (session prime, handoff, tasks, scorecard) in Cursor, Claude Code, 
 
 ## Project at a Glance
 
-Comprehensive multi-asset synthetic financing platform. Manages financing across options, futures, bonds, loans, and pension funds with unified portfolio management across 21+ accounts and multiple brokers. Box spreads are one active strategy (spare cash, T-bill-equivalent yields). C++ core in `native/src/` and `native/include/`, tests in `native/tests/` (Catch2), Python layer in `python/`. The active frontend focus is TUI/CLI; the React web client is archived for now.
+Comprehensive multi-asset synthetic financing platform. Manages financing across options, futures, bonds, loans, and pension funds with unified portfolio management, cash flow modeling, and multi-instrument optimization across 21+ accounts and multiple brokers (IBKR, Alpaca, Tradier, Tastytrade). Box spreads are one active strategy component (T-bill-equivalent yields on spare cash). Multi-language codebase: C++ core engine, Python layer (TUI, bindings), Rust/Go agents, archived TypeScript/React web client. Active frontend focus is TUI/CLI.
 
 ## Build & Test
 
+Prefer `just` commands (see `just --list`):
+
 ```bash
-ninja -C build                                    # build
-ctest --test-dir build --output-on-failure         # test
-./scripts/run_linters.sh                           # lint
-./scripts/build_universal.sh                       # universal binary
+just configure          # one-time CMake setup (debug)
+just build              # ninja -C build
+just test               # ctest --test-dir build --output-on-failure
+just lint               # run all linters
+just build-universal    # universal binary (arm64 + x86_64)
+just build-portable     # auto-detect platform and preset
 ```
 
-If the build directory doesn't exist yet:
+Direct CMake/Ninja (when `just` isn't available):
 
 ```bash
+# Configure (one-time)
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+# Or use a preset (matches CMakePresets.json)
+cmake --preset macos-arm64-debug   # linux-x64-debug, macos-x86_64-debug
+
+# Build
+ninja -C build
+
+# Test
+ctest --test-dir build --output-on-failure
+ctest --test-dir build -R test_name --output-on-failure   # single test
+
+# Lint
+./scripts/run_linters.sh
 ```
+
+If configure fails with missing TWS API or Intel Decimal deps, run `./scripts/fetch_third_party.sh` first.
+
+### CMake Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `BUILD_TESTING` | ON | Build Catch2 test suite |
+| `ENABLE_NATIVE_CLI` | ON | Build the CLI binary |
+| `ENABLE_PYTHON_BINDINGS` | ON | Build Cython Python bindings |
+| `ENABLE_ASAN` | OFF | AddressSanitizer |
+| `ENABLE_TSAN` | OFF | ThreadSanitizer |
+| `ENABLE_LTO` | ON | Link-Time Optimization |
+| `ENABLE_NATS` | OFF | NATS message queue |
 
 ## Code Style
 
@@ -35,12 +66,17 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 |------|-------|
 | CLI entry point | `native/src/ib_box_spread.cpp` |
 | Build config | `native/CMakeLists.txt` |
+| Type definitions | `native/include/types.h` |
+| TWS API wrapper | `native/src/tws_client.cpp` |
+| Order management | `native/src/order_manager.cpp` |
 | Risk calculations | `native/src/risk_calculator.cpp` |
 | Greeks | `native/src/greeks_calculator.cpp` |
-| Order management | `native/src/order_manager.cpp` |
-| TWS API wrapper | `native/src/tws_client.cpp` |
+| Margin calculator | `native/src/margin_calculator.cpp` |
+| Financing optimizer | `native/src/financing_optimizer.cpp` |
+| Hedge manager | `native/src/hedge_manager.cpp` |
 | Config loading | `native/src/config_manager.cpp` |
-| Type definitions | `native/include/types.h` |
+| Broker adapters | `native/src/brokers/` |
+| Strategy impls | `native/src/strategies/` |
 | Architecture | `ARCHITECTURE.md` |
 | API docs index | `docs/API_DOCUMENTATION_INDEX.md` |
 
@@ -56,19 +92,14 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
 
 Most deps use CMake FetchContent — see existing patterns in `native/CMakeLists.txt`.
 
-### Running a single test
-
-```bash
-ctest --test-dir build -R test_name --output-on-failure
-```
-
 ## Safety Rules
 
-- **Never** commit credentials or API keys
+- **Never** commit credentials, API keys, or secrets
 - **Always** use paper trading port `7497` for testing
 - **Never** modify code under `native/third_party/` — write wrappers instead
 - **Always** add tests for trading logic and risk calculations
 - All pricing/risk calculations must have Catch2 tests before merge
+- Gate live trading behind explicit configuration flags
 
 ## Python
 
@@ -77,12 +108,16 @@ Use `uv` for package management when available. Fall back to `pip` if not.
 ```bash
 uv sync                          # install deps
 uv run pytest python/tests/ -v   # run tests
+just test-python                 # via Justfile
 ```
 
 ## exarp Workflow
 
-For non-trivial implementation work by default:
-- create or update an exarp task before coding
-- compact the active context before starting long-running work
-- create 1-2 exarp follow-up tasks when finishing
-- add a result comment and update the task status after verification
+For any non-trivial implementation or refactor spanning multiple steps, files, or commits:
+
+1. **Track in exarp before coding** — update an existing task or create one first
+2. **Compact context before long work** — summarize goal, constraints, worktree state, prior decisions
+3. **Create follow-up tasks when finishing** — 1-2 tasks for verification, cleanup, docs, or deferred risk
+4. **Update task status at completion** — add a result comment with verification commands
+
+Skip for trivial one-shot edits, status checks, or isolated fixes with no realistic follow-up.
