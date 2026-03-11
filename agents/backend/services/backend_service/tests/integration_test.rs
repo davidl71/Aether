@@ -1,15 +1,15 @@
 //! Integration tests for backend service NATS integration
 //!
 //! Platform topics (market-data, strategy.signal, strategy.decision) use protobuf
-//! (NatsEnvelope + payload). These tests use ProtoPublisher/ProtoSubscriber for
-//! end-to-end verification with C++ or Rust publishers.
+//! (NatsEnvelope + payload). These tests use the canonical Publisher/Subscriber
+//! bridge types for end-to-end verification.
 //!
 //! Requires: running NATS server (`./scripts/start_nats.sh`), `cargo build -p backend_service`
 
 use std::time::Duration;
 
 use nats_adapter::proto::v1 as pb;
-use nats_adapter::{topics, NatsClient, ProtoPublisher, ProtoSubscriber};
+use nats_adapter::{topics, NatsClient, Publisher, Subscriber};
 use tokio::time::sleep;
 
 /// Platform topic: market-data.tick.* — deserialize protobuf (NatsEnvelope + MarketDataEvent).
@@ -23,7 +23,7 @@ async fn test_market_data_publishing() {
     let subject = topics::market_data::tick("TEST");
 
     // Subscribe with proto deserialization (matches C++ publisher format)
-    let proto_sub = ProtoSubscriber::<pb::MarketDataEvent>::new(client.clone(), &subject);
+    let proto_sub = Subscriber::<pb::MarketDataEvent>::new(client.clone(), subject.clone());
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
     let _handle = proto_sub
         .spawn_bridge(tx)
@@ -31,7 +31,7 @@ async fn test_market_data_publishing() {
         .expect("Failed to spawn proto subscriber");
 
     // Publish using proto (same format as C++ nats_client.cpp)
-    let publisher = ProtoPublisher::new(client.clone(), subject.clone(), "test", "MarketDataEvent");
+    let publisher = Publisher::new(client.clone(), subject.clone(), "test".into(), "MarketDataEvent".into());
     let event = pb::MarketDataEvent {
         symbol: "TEST".to_string(),
         bid: 100.0,
@@ -64,14 +64,14 @@ async fn test_strategy_signal_publishing() {
     let subject = topics::strategy::signal("TEST");
 
     let proto_sub =
-        ProtoSubscriber::<pb::StrategySignal>::new(client.clone(), topics::strategy::all_signals());
+        Subscriber::<pb::StrategySignal>::new(client.clone(), topics::strategy::all_signals());
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
     let _handle = proto_sub
         .spawn_bridge(tx)
         .await
         .expect("Failed to spawn proto subscriber");
 
-    let publisher = ProtoPublisher::new(client.clone(), subject.clone(), "test", "StrategySignal");
+    let publisher = Publisher::new(client.clone(), subject.clone(), "test".into(), "StrategySignal".into());
     let signal = pb::StrategySignal {
         symbol: "TEST".to_string(),
         price: 100.5,
@@ -99,7 +99,7 @@ async fn test_strategy_decision_publishing() {
 
     let subject = topics::strategy::decision("TEST");
 
-    let proto_sub = ProtoSubscriber::<pb::StrategyDecision>::new(
+    let proto_sub = Subscriber::<pb::StrategyDecision>::new(
         client.clone(),
         topics::strategy::all_decisions(),
     );
@@ -110,7 +110,7 @@ async fn test_strategy_decision_publishing() {
         .expect("Failed to spawn proto subscriber");
 
     let publisher =
-        ProtoPublisher::new(client.clone(), subject.clone(), "test", "StrategyDecision");
+        Publisher::new(client.clone(), subject.clone(), "test".into(), "StrategyDecision".into());
     let decision = pb::StrategyDecision {
         symbol: "TEST".to_string(),
         quantity: 1,
@@ -159,24 +159,24 @@ async fn test_wildcard_subscriptions() {
 
     // Subscribe to all market data with proto deserialization
     let proto_sub =
-        ProtoSubscriber::<pb::MarketDataEvent>::new(client.clone(), topics::market_data::all());
+        Subscriber::<pb::MarketDataEvent>::new(client.clone(), topics::market_data::all());
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
     let _handle = proto_sub
         .spawn_bridge(tx)
         .await
         .expect("Failed to spawn proto subscriber");
 
-    let publisher_spy = ProtoPublisher::new(
+    let publisher_spy = Publisher::new(
         client.clone(),
         topics::market_data::tick("SPY"),
-        "test",
-        "MarketDataEvent",
+        "test".into(),
+        "MarketDataEvent".into(),
     );
-    let publisher_xsp = ProtoPublisher::new(
+    let publisher_xsp = Publisher::new(
         client.clone(),
         topics::market_data::tick("XSP"),
-        "test",
-        "MarketDataEvent",
+        "test".into(),
+        "MarketDataEvent".into(),
     );
 
     let event_spy = pb::MarketDataEvent {

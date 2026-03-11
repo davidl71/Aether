@@ -7,17 +7,17 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use nats_adapter::proto::v1 as pb;
-use nats_adapter::{topics, ChannelBridge, DlqService, NatsClient, ProtoPublisher, Publisher};
-use strategy::{Decision as StrategyDecisionModel, StrategySignal};
+use nats_adapter::{topics, ChannelBridge, DlqService, NatsClient, Publisher};
+use strategy::{model::TradeSide, Decision as StrategyDecisionModel, StrategySignal};
 use tokio::sync::RwLock;
 use tracing::{error, info, warn};
 
 /// NATS integration state
 pub struct NatsIntegration {
     client: Option<Arc<NatsClient>>,
-    strategy_signal_publisher: Option<Arc<Publisher<StrategySignal>>>,
-    strategy_decision_publisher: Option<Arc<Publisher<StrategyDecisionModel>>>,
-    market_data_publishers: Arc<RwLock<HashMap<String, Arc<ProtoPublisher<pb::MarketDataEvent>>>>>,
+    strategy_signal_publisher: Option<Arc<Publisher<pb::StrategySignal>>>,
+    strategy_decision_publisher: Option<Arc<Publisher<pb::StrategyDecision>>>,
+    market_data_publishers: Arc<RwLock<HashMap<String, Arc<Publisher<pb::MarketDataEvent>>>>>,
 }
 
 impl NatsIntegration {
@@ -46,8 +46,8 @@ impl NatsIntegration {
 
         // Create publishers for strategy signals and decisions
         // We need separate bridges because ChannelBridge is generic over the message type
-        let signal_bridge: ChannelBridge<StrategySignal> = ChannelBridge::new(client_clone.clone());
-        let decision_bridge: ChannelBridge<StrategyDecisionModel> =
+        let signal_bridge: ChannelBridge<pb::StrategySignal> = ChannelBridge::new(client_clone.clone());
+        let decision_bridge: ChannelBridge<pb::StrategyDecision> =
             ChannelBridge::new(client_clone.clone());
 
         let strategy_signal_pub = signal_bridge.create_publisher_with_dlq(
@@ -79,7 +79,7 @@ impl NatsIntegration {
                 publishers
                     .entry(symbol.to_string())
                     .or_insert_with(|| {
-                        Arc::new(ProtoPublisher::new(
+                        Arc::new(Publisher::new(
                             client.as_ref().clone(),
                             topics::market_data::tick(symbol),
                             "backend",
@@ -107,7 +107,15 @@ impl NatsIntegration {
     /// Publish strategy signal (non-blocking, logs errors)
     pub async fn publish_strategy_signal(&self, signal: &StrategySignal) {
         if let Some(ref publisher) = self.strategy_signal_publisher {
-            if let Err(e) = publisher.publish(signal.clone()).await {
+            let proto_signal = pb::StrategySignal {
+                symbol: signal.symbol.clone(),
+                price: signal.price,
+                timestamp: Some(prost_types::Timestamp {
+                    seconds: signal.timestamp.timestamp(),
+                    nanos: signal.timestamp.timestamp_subsec_nanos() as i32,
+                }),
+            };
+            if let Err(e) = publisher.publish(&proto_signal).await {
                 error!(error = %e, symbol = %signal.symbol, "Failed to publish strategy signal to NATS");
             }
         }
@@ -116,7 +124,17 @@ impl NatsIntegration {
     /// Publish strategy decision (non-blocking, logs errors)
     pub async fn publish_strategy_decision(&self, decision: &StrategyDecisionModel) {
         if let Some(ref publisher) = self.strategy_decision_publisher {
-            if let Err(e) = publisher.publish(decision.clone()).await {
+            let proto_decision = pb::StrategyDecision {
+                symbol: decision.symbol.clone(),
+                quantity: decision.quantity,
+                side: match decision.side {
+                    TradeSide::Buy => "BUY".to_string(),
+                    TradeSide::Sell => "SELL".to_string(),
+                },
+                mark: 0.0,
+                created_at: Some(prost_types::Timestamp::from(std::time::SystemTime::now())),
+            };
+            if let Err(e) = publisher.publish(&proto_decision).await {
                 error!(
                   error = %e,
                   symbol = %decision.symbol,

@@ -1,85 +1,9 @@
 use bytes::Bytes;
 use prost::Message as ProstMessage;
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::{NatsAdapterError, Result};
 use crate::proto::v1::NatsEnvelope;
-
-/// Wrapper for NATS messages with metadata (JSON path, kept for backward compat)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NatsMessage<T> {
-    pub id: String,
-    pub timestamp: chrono::DateTime<chrono::Utc>,
-    pub source: String,
-    #[serde(rename = "type")]
-    pub message_type: String,
-    pub payload: T,
-}
-
-impl<T> NatsMessage<T>
-where
-    T: Serialize,
-{
-    pub fn new(source: impl Into<String>, message_type: impl Into<String>, payload: T) -> Self {
-        Self {
-            id: Uuid::new_v4().to_string(),
-            timestamp: chrono::Utc::now(),
-            source: source.into(),
-            message_type: message_type.into(),
-            payload,
-        }
-    }
-
-    pub fn to_bytes(&self) -> Result<Bytes> {
-        let json = serde_json::to_vec(self).map_err(NatsAdapterError::Serialization)?;
-        Ok(Bytes::from(json))
-    }
-}
-
-impl<T> NatsMessage<T>
-where
-    T: for<'de> Deserialize<'de>,
-{
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        serde_json::from_slice(bytes).map_err(NatsAdapterError::Serialization)
-    }
-}
-
-// ---------------------------------------------------------------------------
-// JSON helpers (legacy path)
-// ---------------------------------------------------------------------------
-
-pub fn serialize_message<T>(
-    source: impl Into<String>,
-    message_type: impl Into<String>,
-    payload: T,
-) -> Result<Bytes>
-where
-    T: Serialize,
-{
-    let message = NatsMessage::new(source, message_type, payload);
-    message.to_bytes()
-}
-
-pub fn deserialize_message<T>(bytes: &[u8]) -> Result<NatsMessage<T>>
-where
-    T: for<'de> Deserialize<'de>,
-{
-    NatsMessage::from_bytes(bytes)
-}
-
-pub fn extract_payload<T>(bytes: &[u8]) -> Result<T>
-where
-    T: for<'de> Deserialize<'de>,
-{
-    let message: NatsMessage<T> = deserialize_message(bytes)?;
-    Ok(message.payload)
-}
-
-// ---------------------------------------------------------------------------
-// Protobuf helpers (preferred path for wire encoding)
-// ---------------------------------------------------------------------------
 
 /// Encode a proto message directly (no envelope).
 pub fn encode_proto<T: ProstMessage>(msg: &T) -> Result<Bytes> {
@@ -124,40 +48,12 @@ pub fn extract_proto_payload<T: ProstMessage + Default>(bytes: &[u8]) -> Result<
 mod tests {
     use super::*;
 
-    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    #[derive(Clone, PartialEq, prost::Message)]
     struct TestPayload {
+        #[prost(int32, tag = "1")]
         value: i32,
+        #[prost(string, tag = "2")]
         text: String,
-    }
-
-    #[test]
-    fn test_serialize_deserialize() {
-        let payload = TestPayload {
-            value: 42,
-            text: "test".to_string(),
-        };
-
-        let message = NatsMessage::new("test-source", "TestMessage", payload.clone());
-        let bytes = message.to_bytes().unwrap();
-        let deserialized: NatsMessage<TestPayload> = NatsMessage::from_bytes(&bytes).unwrap();
-
-        assert_eq!(deserialized.payload, payload);
-        assert_eq!(deserialized.source, "test-source");
-        assert_eq!(deserialized.message_type, "TestMessage");
-    }
-
-    #[test]
-    fn test_extract_payload() {
-        let payload = TestPayload {
-            value: 100,
-            text: "extract".to_string(),
-        };
-
-        let message = NatsMessage::new("source", "Type", payload.clone());
-        let bytes = message.to_bytes().unwrap();
-        let extracted: TestPayload = extract_payload(&bytes).unwrap();
-
-        assert_eq!(extracted, payload);
     }
 
     #[test]
@@ -200,5 +96,26 @@ mod tests {
         assert_eq!(envelope.source, "backend");
         assert_eq!(envelope.message_type, "MarketDataEvent");
         assert_eq!(decoded.symbol, "NDX");
+    }
+
+    #[test]
+    fn test_extract_proto_payload() {
+        let payload = TestPayload {
+            value: 100,
+            text: "extract".to_string(),
+        };
+
+        let bytes = encode_envelope("source", "TestPayload", &payload).unwrap();
+        let extracted: TestPayload = extract_proto_payload(&bytes).unwrap();
+
+        assert_eq!(extracted.value, payload.value);
+        assert_eq!(extracted.text, payload.text);
+    }
+
+    #[test]
+    fn test_decode_envelope_rejects_json_payload() {
+        let bytes = br#"{"source":"legacy","type":"TestMessage","payload":{"value":1}}"#;
+        let result = decode_envelope::<TestPayload>(bytes);
+        assert!(matches!(result, Err(NatsAdapterError::ProtoDecode(_))));
     }
 }

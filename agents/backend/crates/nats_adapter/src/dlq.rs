@@ -5,8 +5,6 @@
 
 use std::time::Duration;
 
-use chrono::Utc;
-use serde::{Deserialize, Serialize};
 use tracing::{error, warn};
 use uuid::Uuid;
 
@@ -14,7 +12,7 @@ use std::sync::Arc;
 
 use crate::client::NatsClient;
 use crate::error::{NatsAdapterError, Result};
-use crate::serde::serialize_message;
+use crate::serde::encode_envelope;
 use crate::topics::dlq;
 
 /// Configuration for DLQ retry behavior
@@ -45,18 +43,26 @@ impl Default for DlqConfig {
 }
 
 /// Dead letter message structure
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, prost::Message)]
 pub struct DeadLetterMessage {
+    #[prost(string, tag = "1")]
     pub id: String,
-    pub timestamp: chrono::DateTime<chrono::Utc>,
+    #[prost(message, optional, tag = "2")]
+    pub timestamp: Option<prost_types::Timestamp>,
+    #[prost(string, tag = "3")]
     pub original_topic: String,
+    #[prost(string, tag = "4")]
     pub component: String,
+    #[prost(string, tag = "5")]
     pub error_type: String,
+    #[prost(string, tag = "6")]
     pub error_message: String,
+    #[prost(uint32, tag = "7")]
     pub retry_count: u32,
-    pub original_payload: serde_json::Value,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<serde_json::Value>,
+    #[prost(bytes = "vec", tag = "8")]
+    pub original_payload: Vec<u8>,
+    #[prost(string, optional, tag = "9")]
+    pub metadata_json: Option<String>,
 }
 
 /// DLQ Service for publishing failed messages
@@ -105,8 +111,8 @@ impl DlqService {
         error_type: &str,
         error_message: &str,
         retry_count: u32,
-        original_payload: serde_json::Value,
-        metadata: Option<serde_json::Value>,
+        original_payload: Vec<u8>,
+        metadata_json: Option<String>,
     ) -> Result<()> {
         if !self.config.enabled {
             warn!(
@@ -119,18 +125,18 @@ impl DlqService {
 
         let dlq_message = DeadLetterMessage {
             id: Uuid::new_v4().to_string(),
-            timestamp: Utc::now(),
+            timestamp: Some(prost_types::Timestamp::from(std::time::SystemTime::now())),
             original_topic: original_topic.to_string(),
             component: self.component.clone(),
             error_type: error_type.to_string(),
             error_message: error_message.to_string(),
             retry_count,
             original_payload,
-            metadata,
+            metadata_json,
         };
 
         let dlq_topic = dlq::dead_letter(&self.component, error_type);
-        let bytes = serialize_message(&self.component, "DeadLetterMessage", &dlq_message)?;
+        let bytes = encode_envelope(&self.component, "DeadLetterMessage", &dlq_message)?;
 
         self.client
             .client()

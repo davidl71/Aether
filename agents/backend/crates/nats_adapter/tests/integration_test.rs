@@ -5,15 +5,20 @@
 
 use bytes::Bytes;
 use futures::StreamExt;
-use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
 use tokio::time::{sleep, Duration};
 
-use nats_adapter::{bridge::ChannelBridge, client::NatsClient, serde::NatsMessage};
+use nats_adapter::{
+    bridge::ChannelBridge,
+    client::NatsClient,
+    serde::{decode_envelope, encode_envelope},
+};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, PartialEq, prost::Message)]
 struct TestPayload {
+    #[prost(int32, tag = "1")]
     value: i32,
+    #[prost(string, tag = "2")]
     text: String,
 }
 
@@ -70,14 +75,14 @@ async fn test_channel_bridge_publisher() {
         text: "bridge test".to_string(),
     };
     publisher
-        .publish(payload.clone())
+        .publish(&payload)
         .await
         .expect("Failed to publish");
 
     let message = subscriber.next().await.expect("No message received");
-    let nats_msg: NatsMessage<TestPayload> =
-        serde_json::from_slice(&message.payload).expect("Failed to deserialize");
-    assert_eq!(nats_msg.payload, payload);
+    let (_, decoded): (_, TestPayload) =
+        decode_envelope(&message.payload).expect("Failed to decode protobuf envelope");
+    assert_eq!(decoded, payload);
 }
 
 #[tokio::test]
@@ -100,8 +105,8 @@ async fn test_channel_bridge_subscriber() {
         value: 100,
         text: "subscriber test".to_string(),
     };
-    let message = NatsMessage::new("test-source", "TestMessage", payload.clone());
-    let bytes = message.to_bytes().expect("Failed to serialize");
+    let bytes = encode_envelope("test-source", "TestMessage", &payload)
+        .expect("Failed to encode protobuf envelope");
     client
         .client()
         .publish(subject.to_string(), bytes)
@@ -140,4 +145,31 @@ async fn test_channel_bridge_full_loop() {
 
     let received = sub_rx.recv().await.expect("No message received");
     assert_eq!(received, payload);
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_channel_bridge_rejects_json_payload() {
+    let client = NatsClient::connect("nats://localhost:4222").await.unwrap();
+    let bridge: ChannelBridge<TestPayload> = ChannelBridge::new(client.clone());
+    let subject = "test.bridge.reject_json";
+
+    let (tx, mut rx) = mpsc::unbounded_channel();
+    let subscriber = bridge.create_subscriber(subject);
+    let _handle = subscriber
+        .spawn_bridge(tx)
+        .await
+        .expect("Failed to spawn subscriber bridge");
+
+    sleep(Duration::from_millis(100)).await;
+
+    let legacy_json = br#"{"source":"legacy","type":"TestMessage","payload":{"value":1,"text":"legacy"}}"#;
+    client
+        .client()
+        .publish(subject.to_string(), Bytes::from_static(legacy_json))
+        .await
+        .expect("Failed to publish");
+
+    let result = tokio::time::timeout(Duration::from_millis(250), rx.recv()).await;
+    assert!(matches!(result, Err(_) | Ok(None)));
 }
