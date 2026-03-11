@@ -49,13 +49,16 @@ DEFAULT_TCP_BACKEND_PORTS: Dict[str, int] = {
     "tws": 7497,
 }
 
-# Shared operational gateway entry point. TUI can use it as one URL for Rust plus
-# a few still-separate specialist services, but Rust remains the owner of frontend read models.
+# Default shared origin for frontend read models owned by the Rust backend.
+DEFAULT_SHARED_API_BASE_URL: str = "http://localhost:8080"
+
+# Optional operational gateway entry point for specialist-service routing and LIVE_STATE.
 DEFAULT_GATEWAY_BASE_URL: str = "http://localhost:9000"
 
-# Preset REST provider types -> snapshot URL. These remain convenience routes only.
+# Preset REST provider types -> snapshot URL. `rest_rust` uses the shared Rust origin;
+# specialist presets remain routed through the optional gateway.
 PRESET_REST_ENDPOINTS: Dict[str, str] = {
-    "rest_rust": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/snapshot",
+    "rest_rust": f"{DEFAULT_SHARED_API_BASE_URL}/api/v1/snapshot",
     "rest_ib": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/ib/snapshot",
     "rest_tws_gateway": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/ib/snapshot",
     "rest_alpaca": f"{DEFAULT_GATEWAY_BASE_URL}/api/v1/alpaca/snapshot",
@@ -320,7 +323,7 @@ def load_config() -> TUIConfig:
 
 def snapshot_endpoint_from_base(api_base_url: Optional[str]) -> str:
     """Build the canonical shared snapshot endpoint from a base URL."""
-    base = (api_base_url or DEFAULT_GATEWAY_BASE_URL).strip().rstrip("/")
+    base = (api_base_url or DEFAULT_SHARED_API_BASE_URL).strip().rstrip("/")
     return f"{base}{DEFAULT_REST_SNAPSHOT_PATH}"
 
 
@@ -348,7 +351,7 @@ def canonical_api_base_url(config: TUIConfig) -> str:
     derived = _derive_api_base_url(getattr(config, "rest_endpoint", None))
     if derived:
         return derived
-    return DEFAULT_GATEWAY_BASE_URL
+    return DEFAULT_SHARED_API_BASE_URL
 
 
 def _backend_ports_from_services(services: dict) -> Dict[str, int]:

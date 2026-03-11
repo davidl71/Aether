@@ -749,8 +749,8 @@ class TUIApp(App):
         if api_base_url:
             base = api_base_url.strip().rstrip("/")
         else:
-            from .config import DEFAULT_GATEWAY_BASE_URL
-            base = DEFAULT_GATEWAY_BASE_URL
+            from .config import DEFAULT_SHARED_API_BASE_URL
+            base = DEFAULT_SHARED_API_BASE_URL
 
         payload = {
             "positions": [position.to_dict() for position in self.snapshot.positions],

@@ -19,13 +19,13 @@ from ..config import (
     DEFAULT_BACKEND_PORTS,
     DEFAULT_TCP_BACKEND_PORTS,
     PRESET_REST_ENDPOINTS,
-    DEFAULT_GATEWAY_BASE_URL,
+    DEFAULT_SHARED_API_BASE_URL,
     snapshot_endpoint_from_base,
 )
 
 
-# Rest endpoint default in TUIConfig (P1-B: via api-gateway to Rust)
-DEFAULT_REST_ENDPOINT = "http://localhost:9000/api/v1/snapshot"
+# Rest endpoint default in TUIConfig (shared Rust origin)
+DEFAULT_REST_ENDPOINT = "http://localhost:8080/api/v1/snapshot"
 
 
 def test_default_backend_ports_includes_all_services():
@@ -39,9 +39,10 @@ def test_default_backend_ports_includes_all_services():
 
 
 def test_preset_rest_endpoints():
-    """PRESET_REST_ENDPOINTS route through api-gateway (P1-B)."""
+    """Rust uses the shared origin; specialist presets remain routed through the gateway."""
     assert "rest_ib" in PRESET_REST_ENDPOINTS
     assert "rest_rust" in PRESET_REST_ENDPOINTS
+    assert PRESET_REST_ENDPOINTS["rest_rust"] == DEFAULT_REST_ENDPOINT
     assert "9000" in PRESET_REST_ENDPOINTS["rest_ib"]
     assert "/api/v1/ib/" in PRESET_REST_ENDPOINTS["rest_ib"]
     assert "rest_alpaca" in PRESET_REST_ENDPOINTS
@@ -331,4 +332,4 @@ class TestLoadConfig:
                 config = load_config()
 
         assert config.provider_type == "mock"
-        assert config.api_base_url == DEFAULT_GATEWAY_BASE_URL
+        assert config.api_base_url == DEFAULT_SHARED_API_BASE_URL

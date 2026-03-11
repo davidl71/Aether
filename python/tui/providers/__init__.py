@@ -5,12 +5,12 @@ Each provider is in its own module:
   _base.py          — abstract Provider + factory utilities
   _health.py        — BackendHealthAggregator
   _mock.py          — MockProvider
-  _rest.py          — RestProvider  (P1-B: routes via api-gateway :9000)
+  _rest.py          — RestProvider  (shared Rust origin by default; gateway for optional specialist routes)
   _file.py          — FileProvider
   _nats.py          — NatsProvider
 
 CURRENT SHAPE:
-- RestProvider defaults to the shared gateway/base URL so the TUI can use one operational entrypoint.
+- RestProvider defaults to the shared Rust origin for frontend read models.
 - Rust owns frontend read models.
 - Go gateway remains only for operational aggregation and selected specialist-service routing.
 - Longer term, some rest-backed reads may move to NATS KV watch or direct Rust ownership.

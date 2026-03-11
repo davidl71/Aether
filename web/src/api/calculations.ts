@@ -7,7 +7,7 @@
 import type { PositionSnapshot } from '../types/snapshot';
 import type { BankAccount } from '../types/banking';
 
-const DEFAULT_FRONTEND_API_URL = 'http://localhost:9000';
+const DEFAULT_FRONTEND_API_URL = 'http://localhost:8080';
 
 function getFrontendApiUrl(): string {
   const env = (import.meta as unknown as { env?: Record<string, unknown> }).env;

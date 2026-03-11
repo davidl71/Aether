@@ -34,25 +34,30 @@ By default the web app uses static JSON under `public/data/` (e.g. `snapshot.jso
 
 ### Connect web app to IB Gateway (live snapshot)
 
-The web app does **not** talk to the gateway directly. It talks to the project’s **IB service** (Python), which uses the Client Portal API. Do all three:
+The web app does **not** talk to the gateway directly. The preferred browser-facing path is the
+shared Rust origin on `:8080`. The IB Python service still talks to Client Portal / Gateway behind
+that boundary.
+
+For the shared-origin path:
 
 1. **IB Gateway** – running and logged in (e.g. `./ib-gateway/run-gateway.sh`, then open https://localhost:5001).
-2. **IB service** – run from repo root: `./web/scripts/run-ib-service.sh` (serves `http://127.0.0.1:8002/api/snapshot`).
-3. **Web env** – in `web/.env` set `VITE_API_URL=http://127.0.0.1:8002/api/snapshot`, then **restart** the dev server (`npm run dev` in `web/`) so Vite picks up the change.
+2. **IB service** – run from repo root: `./web/scripts/run-ib-service.sh`.
+3. **Rust/shared origin** – run the Rust backend on `:8080`.
+4. **Web env** – in `web/.env` set `VITE_API_URL=http://127.0.0.1:8080/api/v1/snapshot`, then **restart** the dev server (`npm run dev` in `web/`) so Vite picks up the change.
 
-If the web app still shows static/zeros, check: gateway logged in, IB service running on 8002, `.env` has `VITE_API_URL`, and the dev server was restarted after editing `.env`.
+If the web app still shows static/zeros, check: gateway logged in, IB service running, Rust backend running on 8080, `.env` has `VITE_API_URL`, and the dev server was restarted after editing `.env`.
 
 **"Fetch error" or "Cannot connect to localhost:8002" (or 127.0.0.1:8002)?** The app is trying to reach the IB REST service on port 8002 and the connection failed (service not running or not reachable). Fix:
 
 1. **Start the IB service** from repo root: `./scripts/service.sh start ib` or `./web/scripts/run-ib-service.sh`.
 2. **Confirm it's up**: `curl -s http://127.0.0.1:8002/api/health` — you should get JSON with `ib_connected` (may be `false` until the gateway is logged in). The service serves the health endpoint **immediately** on startup and connects to the gateway in the background, so the process is marked up before the gateway is ready.
-3. If using the TUI with REST provider, use the same URL: `./scripts/run_python_tui.sh rest http://127.0.0.1:8002/api/v1/snapshot`.
+3. If using the TUI with REST provider, prefer the shared Rust path: `./scripts/run_python_tui.sh rest http://127.0.0.1:8080/api/v1/snapshot`.
 
 **Gateway on 5001 but “not used”?** The gateway is only used by the **IB service** (port 8002). Nothing else talks to it. So:
 
 1. **IB service must be running** – e.g. `./scripts/service.sh start ib` or it’s started by `./scripts/start_all_services.sh`.
 2. **Check that the service sees the gateway** – `curl -s http://127.0.0.1:8002/api/health`. If `ib_connected` is `false`, the service is getting 401 from the gateway. Browser login does **not** give the API its own session; the service may need to complete re-authentication (it calls `/iserver/reauthenticate`). Restart the IB service **after** you’re logged in at https://localhost:5000 and watch `logs/ib-service.log` for “Re-authentication” or errors. If the gateway shows a re-auth or approval prompt, complete it so the service gets a session.
-3. **Then** use the web app or TUI with `VITE_API_URL=http://127.0.0.1:8002/api/snapshot` or `./scripts/run_python_tui.sh rest http://127.0.0.1:8002/api/snapshot`.
+3. **Then** use the web app or TUI with `VITE_API_URL=http://127.0.0.1:8080/api/v1/snapshot` or `./scripts/run_python_tui.sh rest http://127.0.0.1:8080/api/v1/snapshot`.
 
 ### 1. Snapshot / market data
 
@@ -114,6 +119,7 @@ This script will:
 - Launch web service (Vite dev server) on port 5173
 - Launch IB backend service on port 8002
 - Launch optional Alpaca backend service on port 8000 when enabled
+- Launch Rust backend service on port 8080
 - Use tmux for session management (if available)
 - Fall back to background processes if tmux is not installed
 
@@ -175,7 +181,7 @@ bash agents/web/scripts/run-tests.sh
 npm run dev
 ```
 
-Set `VITE_API_URL=http://127.0.0.1:8000/api/snapshot` (or your backend URL) to hit the live backend service (Alpaca or IB). The default static JSON under `public/data/` keeps the SPA functional even without a live backend.
+Set `VITE_API_URL=http://127.0.0.1:8080/api/v1/snapshot` for the preferred shared-origin path. Direct Python service URLs remain available for debugging only. The default static JSON under `public/data/` keeps the SPA functional even without a live backend.
 
 **See [ALPACA_INTEGRATION.md](./ALPACA_INTEGRATION.md) for Alpaca setup instructions.**
 **See [IB_INTEGRATION.md](./IB_INTEGRATION.md) for Interactive Brokers setup instructions.**

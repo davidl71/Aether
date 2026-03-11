@@ -46,12 +46,11 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for the full issue analysis.
 **Files**: `agents/backend/crates/ledger/src/lib.rs`, `python/integration/` ledger write paths.
 
 ### P1-B: Unify TUI and Web data backends <!-- exarp: T-1772887221914991889 -->
-**Status:** Implemented. TUI shared HTTP reads now use canonical `api_base_url` (defaulting to api-gateway at `http://localhost:9000`), while specialist presets still use explicit routed snapshot endpoints. One entry point for TUI and Web when gateway is running.
+**Status:** Implemented. TUI shared HTTP reads now use canonical `api_base_url` (defaulting to the Rust/shared origin at `http://localhost:8080`), while specialist presets still use explicit routed snapshot endpoints through the optional gateway when needed.
 **Issue**: TUI reads Python :8000-8006; Web reads Rust :8080. Two pipelines, potential divergence.
 **Fix**:
-- Route TUI's `RestProvider` through the Go `api-gateway` (:8090), which already proxies
-  both Python services and Rust backend. One entry point, same data.
-- Or: expose a unified `/api/snapshot` from the Go gateway that aggregates Python + Rust.
+- Prefer the Rust/shared origin as the default frontend read path.
+- Keep the Go `api-gateway` as an optional operational router for still-separate specialist services.
 **Files**: `python/tui/providers/`, `agents/go/cmd/api-gateway/main.go`.
 
 ---
