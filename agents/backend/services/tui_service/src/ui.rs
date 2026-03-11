@@ -9,6 +9,7 @@ use ratatui::{
 };
 
 use crate::app::{App, Tab};
+use crate::events::{ConnectionState, ConnectionStatus, LogLevel};
 use crate::models::SnapshotSource;
 
 pub fn render(f: &mut Frame, app: &App) {
@@ -33,7 +34,6 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         let color = match snap.source {
             SnapshotSource::Nats => Color::Green,
             SnapshotSource::Rest => Color::Yellow,
-            SnapshotSource::Stale => Color::Red,
         };
         (
             snap.inner.mode.as_str().to_owned(),
@@ -53,8 +53,14 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         Span::raw("  "),
         Span::styled(
             format!("[{}]", source_label),
-            Style::default().fg(source_color).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(source_color)
+                .add_modifier(Modifier::BOLD),
         ),
+        Span::raw("  "),
+        render_connection_badge("N", &app.nats_status),
+        Span::raw(" "),
+        render_connection_badge("R", &app.rest_status),
     ]);
 
     f.render_widget(Paragraph::new(line), area);
@@ -89,7 +95,7 @@ fn render_main(f: &mut Frame, app: &App, area: Rect) {
         Tab::Positions => render_positions(f, app, area),
         Tab::Orders => render_orders(f, app, area),
         Tab::Alerts => render_alerts(f, app, area),
-        Tab::Logs => render_logs(f, area),
+        Tab::Logs => render_logs(f, app, area),
     }
 }
 
@@ -279,17 +285,76 @@ fn render_alerts(f: &mut Frame, app: &App, area: Rect) {
         vec![Line::from("No alerts")]
     };
 
-    let widget = Paragraph::new(lines)
-        .block(Block::default().title("Alerts").borders(Borders::ALL));
+    let widget =
+        Paragraph::new(lines).block(Block::default().title("Alerts").borders(Borders::ALL));
 
     f.render_widget(widget, area);
 }
 
-fn render_logs(f: &mut Frame, area: Rect) {
-    let widget = Paragraph::new("Log output will appear here (future)")
-        .block(Block::default().title("Logs").borders(Borders::ALL))
-        .style(Style::default().fg(Color::DarkGray));
+fn render_logs(f: &mut Frame, app: &App, area: Rect) {
+    let mut lines = vec![
+        Line::from(format!(
+            "NATS {} - {}",
+            app.nats_status.state.label(),
+            app.nats_status.detail
+        )),
+        Line::from(format!(
+            "REST {} - {}",
+            app.rest_status.state.label(),
+            app.rest_status.detail
+        )),
+        Line::from(""),
+    ];
+
+    if app.logs.is_empty() {
+        lines.push(Line::from("No operational logs yet"));
+    } else {
+        lines.extend(app.logs.iter().map(|entry| {
+            let color = match entry.level {
+                LogLevel::Info => Color::Cyan,
+                LogLevel::Warn => Color::Yellow,
+            };
+            let target = entry
+                .target
+                .as_ref()
+                .map(|target| target.label())
+                .unwrap_or("APP");
+            Line::from(Span::styled(
+                format!(
+                    "[{}] {} {} {}{}",
+                    entry.timestamp.format("%H:%M:%S"),
+                    entry.level.label(),
+                    target,
+                    entry.message,
+                    if entry.repeat_count > 1 {
+                        format!(" (x{})", entry.repeat_count)
+                    } else {
+                        String::new()
+                    }
+                ),
+                Style::default().fg(color),
+            ))
+        }));
+    }
+
+    let widget = Paragraph::new(lines)
+        .scroll((app.log_scroll, 0))
+        .block(Block::default().title("Logs").borders(Borders::ALL));
     f.render_widget(widget, area);
+}
+
+fn render_connection_badge(prefix: &str, status: &ConnectionStatus) -> Span<'static> {
+    let color = match status.state {
+        ConnectionState::Connected => Color::Green,
+        ConnectionState::Disabled => Color::DarkGray,
+        ConnectionState::Starting => Color::Blue,
+        ConnectionState::Retrying => Color::Red,
+    };
+
+    Span::styled(
+        format!("{}:{}", prefix, status.state.label()),
+        Style::default().fg(color).add_modifier(Modifier::BOLD),
+    )
 }
 
 fn render_hint_bar(f: &mut Frame, area: Rect) {
@@ -297,10 +362,18 @@ fn render_hint_bar(f: &mut Frame, area: Rect) {
         Span::raw(" "),
         Span::styled("q", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(":quit  "),
-        Span::styled("←/→ Tab/BackTab", Style::default().add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "←/→ Tab/BackTab",
+            Style::default().add_modifier(Modifier::BOLD),
+        ),
         Span::raw(":switch tab  "),
         Span::styled("1-5", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(":jump to tab"),
+        Span::raw(":jump to tab  "),
+        Span::styled(
+            "↑/↓ PgUp/PgDn",
+            Style::default().add_modifier(Modifier::BOLD),
+        ),
+        Span::raw(":scroll logs"),
     ]);
     f.render_widget(Paragraph::new(line), area);
 }

@@ -1,3 +1,3 @@
-Run a single test by name pattern. Replace $TEST_NAME with the test to run (e.g., test_risk_calculator).
+Run a single test by name pattern. Pass the test name as $ARGUMENTS (for example `test_risk_calculator`).
 
-RUN ctest --test-dir build -R $TEST_NAME --output-on-failure -V
+RUN ctest --test-dir build -R $ARGUMENTS --output-on-failure -V

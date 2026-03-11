@@ -163,7 +163,8 @@ async fn test_channel_bridge_rejects_json_payload() {
 
     sleep(Duration::from_millis(100)).await;
 
-    let legacy_json = br#"{"source":"legacy","type":"TestMessage","payload":{"value":1,"text":"legacy"}}"#;
+    let legacy_json =
+        br#"{"source":"legacy","type":"TestMessage","payload":{"value":1,"text":"legacy"}}"#;
     client
         .client()
         .publish(subject.to_string(), Bytes::from_static(legacy_json))

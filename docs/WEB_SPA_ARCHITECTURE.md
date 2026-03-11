@@ -499,4 +499,4 @@ export async function fetchSnapshot(apiBaseUrl: string): Promise<SnapshotPayload
 - [REST API Layer Design](research/architecture/REST_API_LAYER_DESIGN.md)
 - [Shared API Contract](../agents/shared/API_CONTRACT.md)
 - [iPad Frontend Architecture](IPAD_FRONTEND_ARCHITECTURE.md)
-- [Feature Tracking](FEATURE_TRACKING.md)
+- [Feature Tracking](archive/FEATURE_TRACKING.md)

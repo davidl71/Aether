@@ -76,4 +76,4 @@ The C++ TUI (`native/src/tui_app.cpp`) has been removed. All TUI functionality i
 - `python/tui/providers.py` - Data providers
 - `python/tui/models.py` - Data models (shared with PWA)
 
-See `docs/research/architecture/TUI_PYTHON_MIGRATION.md` for migration details.
+See `docs/archive/TUI_PYTHON_MIGRATION.md` for migration details.

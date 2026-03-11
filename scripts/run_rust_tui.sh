@@ -7,12 +7,15 @@
 # Usage:
 #   ./scripts/run_rust_tui.sh
 #
-# Environment:
-#   NATS_URL      NATS server URL (default: nats://localhost:4222)
-#   BACKEND_ID    Snapshot subject suffix (default: ib)
-#   REST_URL      REST fallback URL (default: read from config)
-#   WATCHLIST     Comma-separated symbols to highlight (default: SPX,XSP,NDX)
-#   TICK_MS       UI redraw interval ms (default: 250)
+# Environment overrides:
+#   NATS_URL      Override NATS server URL
+#   BACKEND_ID    Override snapshot subject suffix
+#   REST_URL      Override REST fallback base URL
+#   WATCHLIST     Override highlighted symbols
+#   TICK_MS       Override UI redraw interval ms
+#   REST_POLL_MS  Override REST polling interval ms
+#   REST_FALLBACK Override REST fallback on/off
+#   IB_BOX_SPREAD_CONFIG  Override shared config path
 #
 # Examples:
 #   NATS_URL=nats://localhost:4222 BACKEND_ID=alpaca ./scripts/run_rust_tui.sh
@@ -24,24 +27,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 BACKEND_DIR="${PROJECT_ROOT}/agents/backend"
 
-# Source config for port detection
-# shellcheck source=scripts/include/config.sh
-source "${SCRIPT_DIR}/include/config.sh"
-
-# Get backend port from config (default 9090)
-BACKEND_PORT=$(config_get_rust_backend_port 9090)
-
-# Default values
-NATS_URL="${NATS_URL:-nats://localhost:4222}"
-BACKEND_ID="${BACKEND_ID:-ib}"
-REST_URL="${REST_URL:-http://localhost:${BACKEND_PORT}}"
-WATCHLIST="${WATCHLIST:-SPX,XSP,NDX}"
-TICK_MS="${TICK_MS:-250}"
-REST_POLL_MS="${REST_POLL_MS:-2000}"
-REST_FALLBACK="${REST_FALLBACK:-true}"
-
 # Check if NATS is running
 check_nats() {
+  if [[ -z "${NATS_URL:-}" ]]; then
+    return 0
+  fi
+
   if command -v nats &>/dev/null; then
     if ! nats -s "${NATS_URL}" server info &>/dev/null 2>&1; then
       echo "Warning: NATS server not reachable at ${NATS_URL}" >&2
@@ -68,26 +59,19 @@ build_tui() {
 
 # Run the Rust TUI
 run_tui() {
-  export NATS_URL
-  export BACKEND_ID
-  export REST_URL
-  export WATCHLIST
-  export TICK_MS
-  export REST_POLL_MS
-  export REST_FALLBACK
-
   echo "Starting Rust TUI..."
-  echo "  NATS_URL:      ${NATS_URL}"
-  echo "  BACKEND_ID:    ${BACKEND_ID}"
-  echo "  REST_URL:      ${REST_URL}"
-  echo "  WATCHLIST:     ${WATCHLIST}"
-  echo "  TICK_MS:       ${TICK_MS}"
-  echo "  REST_POLL_MS:  ${REST_POLL_MS}"
-  echo "  REST_FALLBACK:  ${REST_FALLBACK}"
+  echo "  Shared config: ${IB_BOX_SPREAD_CONFIG:-auto-discovery}"
+  echo "  NATS_URL:      ${NATS_URL:-<shared config / binary default>}"
+  echo "  BACKEND_ID:    ${BACKEND_ID:-<shared config / binary default>}"
+  echo "  REST_URL:      ${REST_URL:-<shared config / binary default>}"
+  echo "  WATCHLIST:     ${WATCHLIST:-<shared config / binary default>}"
+  echo "  TICK_MS:       ${TICK_MS:-<shared config / binary default>}"
+  echo "  REST_POLL_MS:  ${REST_POLL_MS:-<shared config / binary default>}"
+  echo "  REST_FALLBACK: ${REST_FALLBACK:-<shared config / binary default>}"
   echo ""
 
-  cd "${BACKEND_DIR}"
-  exec cargo run -p tui_service
+  cd "${PROJECT_ROOT}"
+  exec "${BACKEND_DIR}/target/debug/tui_service"
 }
 
 # Main

@@ -208,7 +208,8 @@ pub async fn compare_rates(
     client: &Client,
 ) -> Result<Vec<ComparisonResponse>, String> {
     let (opportunities, symbol) = split_compare_request(request, query)?;
-    let curve_points = aggregate_opportunities(&opportunities, &symbol, DEFAULT_MIN_LIQUIDITY_SCORE);
+    let curve_points =
+        aggregate_opportunities(&opportunities, &symbol, DEFAULT_MIN_LIQUIDITY_SCORE);
     let benchmarks = all_benchmarks(client).await;
 
     let mut comparisons = Vec::new();
@@ -238,7 +239,10 @@ pub async fn get_sofr_rates(client: &Client) -> SofrBenchmarksResponse {
             rate: overnight.as_ref().map(|rate| rate.rate),
             timestamp: overnight.as_ref().map(|rate| rate.timestamp.clone()),
         },
-        term_rates: term_rates.into_iter().map(BenchmarkRateResponse::from).collect(),
+        term_rates: term_rates
+            .into_iter()
+            .map(BenchmarkRateResponse::from)
+            .collect(),
         timestamp: Utc::now().to_rfc3339(),
     }
 }
@@ -372,7 +376,9 @@ pub async fn yield_curve_comparison(
     };
     let box_spread_wins = spreads.iter().filter(|item| item.spread_bps > 5.0).count();
     let benchmark_wins = spreads.iter().filter(|item| item.spread_bps < -5.0).count();
-    let ties = spreads.len().saturating_sub(box_spread_wins + benchmark_wins);
+    let ties = spreads
+        .len()
+        .saturating_sub(box_spread_wins + benchmark_wins);
 
     YieldCurveComparisonResponse {
         symbols,
@@ -519,8 +525,10 @@ fn aggregate_opportunities(
                 buy_implied_rate: weighted(|point| point.buy_implied_rate),
                 sell_implied_rate: weighted(|point| point.sell_implied_rate),
                 mid_rate: weighted(|point| point.mid_rate),
-                net_debit: points.iter().map(|point| point.net_debit).sum::<f64>() / points.len() as f64,
-                net_credit: points.iter().map(|point| point.net_credit).sum::<f64>() / points.len() as f64,
+                net_debit: points.iter().map(|point| point.net_debit).sum::<f64>()
+                    / points.len() as f64,
+                net_credit: points.iter().map(|point| point.net_credit).sum::<f64>()
+                    / points.len() as f64,
                 liquidity_score: points
                     .iter()
                     .map(|point| point.liquidity_score)
@@ -629,7 +637,8 @@ async fn fetch_sofr_term_rates(client: &Client) -> Vec<BenchmarkRate> {
         ("3M", "SOFR90DAYAVG", 90),
         ("6M", "SOFR180DAYAVG", 180),
     ] {
-        if let Some((rate, _date)) = fetch_fred_latest_series(client, series_id, Some(&api_key), 1).await
+        if let Some((rate, _date)) =
+            fetch_fred_latest_series(client, series_id, Some(&api_key), 1).await
         {
             rates.push(BenchmarkRate {
                 rate_type: "SOFR".to_string(),
@@ -691,7 +700,8 @@ async fn fetch_treasury_rates(client: &Client) -> Vec<BenchmarkRate> {
         ("10Y", "DGS10", 3650),
         ("30Y", "DGS30", 10950),
     ] {
-        if let Some((rate, _date)) = fetch_fred_latest_series(client, series_id, Some(&api_key), 1).await
+        if let Some((rate, _date)) =
+            fetch_fred_latest_series(client, series_id, Some(&api_key), 1).await
         {
             rates.push(BenchmarkRate {
                 rate_type: "Treasury".to_string(),
@@ -714,7 +724,9 @@ async fn fetch_fred_latest_series(
 ) -> Option<(f64, String)> {
     let api_key = api_key?;
     let observations = fetch_fred_series_observations(client, series_id, api_key, limit).await?;
-    observations.into_iter().find_map(|(date, value)| value.map(|rate| (rate, date)))
+    observations
+        .into_iter()
+        .find_map(|(date, value)| value.map(|rate| (rate, date)))
 }
 
 async fn fetch_fred_series_observations(
@@ -754,13 +766,23 @@ async fn fetch_fred_series_observations(
 }
 
 fn fred_api_key() -> Option<String> {
-    std::env::var("FRED_API_KEY").ok().filter(|value| !value.trim().is_empty())
+    std::env::var("FRED_API_KEY")
+        .ok()
+        .filter(|value| !value.trim().is_empty())
 }
 
-fn closest_benchmark(dte: i32, benchmarks: &[BenchmarkRate], tolerance: i32) -> Option<&BenchmarkRate> {
+fn closest_benchmark(
+    dte: i32,
+    benchmarks: &[BenchmarkRate],
+    tolerance: i32,
+) -> Option<&BenchmarkRate> {
     benchmarks
         .iter()
-        .filter_map(|benchmark| benchmark.days_to_expiry.map(|days| (benchmark, (days - dte).abs())))
+        .filter_map(|benchmark| {
+            benchmark
+                .days_to_expiry
+                .map(|days| (benchmark, (days - dte).abs()))
+        })
         .filter(|(_, diff)| *diff <= tolerance)
         .min_by_key(|(_, diff)| *diff)
         .map(|(benchmark, _)| benchmark)
@@ -882,7 +904,7 @@ mod tests {
                     "net_debit": 96.0,
                     "net_credit": 106.0,
                     "liquidity_score": 90.0
-                }})
+                }}),
             ],
         };
 

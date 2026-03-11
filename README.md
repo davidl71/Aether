@@ -37,8 +37,8 @@ old project-managed JupyterLab service path is retired for now and should be tre
 future improvement rather than an active runtime feature.
 
 The React web app under `web/` is also retired as an active runtime surface for now. The
-current supported frontends are the Python/Textual TUI and the native CLI. The web tree is
-kept only as archived implementation/reference material while the project focuses on TUI/CLI.
+current supported frontends are the Rust TUI and the native CLI. The web tree is kept only as
+archived implementation/reference material while the project focuses on TUI/CLI.
 
 ### Additional Platform Features
 - ✅ Comprehensive logging with spdlog

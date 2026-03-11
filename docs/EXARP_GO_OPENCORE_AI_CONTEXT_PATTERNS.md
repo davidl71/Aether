@@ -30,11 +30,11 @@ Commands are markdown files. Lines define what the assistant does:
 
 **Exarp integration:**
 
-- `handoff.md`: Call exarp-go session with `action=handoff`, optional summary/args
-- `tasks.md`: Call exarp-go task_workflow with `action=sync`, `sub_action=list`
-- `scorecard.md`: Call exarp-go report with `action=overview`; add local metrics
+- `handoff.md`: Run `./scripts/run_exarp_go.sh -tool session` with `action=handoff`, optional summary/args
+- `tasks.md`: Run `./scripts/run_exarp_go.sh -tool task_workflow` with `action=sync`, `sub_action=list`
+- `scorecard.md`: Run `./scripts/run_exarp_go.sh -tool report` with `action=overview`; add local metrics
 
-Pattern: OpenCode commands that need exarp-go **describe the MCP call** (tool name, args) so the assistant can invoke it; they don’t run the binary themselves.
+Pattern: OpenCode commands that need exarp-go should use the local CLI wrapper with `RUN` lines. This avoids OpenCode / Anthropic JSON Schema validation failures when exarp-go MCP tool schemas are rejected during startup.
 
 ### 1.3 Command parity
 
@@ -75,7 +75,7 @@ Pattern from exarp-go: **session-prime** returns structured context (tasks, sugg
 ### 2.3 Handoff
 
 - **Purpose:** Pass context to the next developer or session.
-- **OpenCode:** `.opencode/commands/handoff.md` — “Call exarp-go session with `action=handoff`, `summary=$ARGUMENTS`, `include_tasks=true`, `include_git_status=true`.”
+- **OpenCode:** `.opencode/commands/handoff.md` — run `./scripts/run_exarp_go.sh -tool session -args '{"action":"handoff",...}' -json -quiet`.
 - **exarp-go:** Saves handoff; session prime can set `handoff_alert` so the next session sees “Review handoff from previous developer.”
 
 ### 2.4 Invocation conventions

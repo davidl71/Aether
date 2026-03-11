@@ -109,7 +109,7 @@ python/
 │   ├── box_spread_bindings.pyx  # Cython implementation
 │   └── setup.py        # Build configuration
 ├── integration/        # Broker/bank/rates integrations
-├── tui/                # Active Textual TUI
+├── tui/                # Legacy Textual TUI retained for reference/migration
 ├── bindings/           # Cython bindings
 └── tests/
 ```

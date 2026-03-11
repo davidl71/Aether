@@ -1,10 +1,11 @@
-# Feature Tracking: Python/Textual TUI vs Web
+# Feature Tracking: Historical TUI vs Web
 
 > Historical note
 >
 > As of March 11, 2026, the React web frontend is retired from the active runtime
-> surface. The current supported frontends are the Python/Textual TUI and the
-> native CLI. This document is kept only as historical parity context.
+> surface. The current supported frontends are the Rust TUI and the native CLI.
+> This document compares the older Python/Textual TUI against the retired web app
+> for historical parity context only.
 
 ## Historical Status Labels
 

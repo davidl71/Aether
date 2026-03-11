@@ -15,10 +15,13 @@ use chrono::{DateTime, TimeZone, Utc};
 use futures::StreamExt;
 use nats_adapter::{extract_proto_payload, proto::v1 as pb, topics, NatsClient};
 use prost_types::Timestamp;
-use tokio::sync::watch;
+use tokio::sync::{mpsc, watch};
 use tracing::{debug, info, warn};
 
 use crate::config::TuiConfig;
+use crate::events::{
+    AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget, LogEntry, LogLevel,
+};
 use crate::models::{SnapshotSource, TuiSnapshot};
 
 fn ts_to_dt(ts: Option<Timestamp>) -> DateTime<Utc> {
@@ -73,7 +76,13 @@ fn proto_to_snapshot(p: pb::SystemSnapshot) -> RuntimeSnapshotDto {
         .decisions
         .into_iter()
         .map(|d| {
-            StrategyDecisionSnapshot::new(d.symbol, d.quantity, d.side, d.mark, ts_to_dt(d.created_at))
+            StrategyDecisionSnapshot::new(
+                d.symbol,
+                d.quantity,
+                d.side,
+                d.mark,
+                ts_to_dt(d.created_at),
+            )
         })
         .collect();
 
@@ -86,7 +95,10 @@ fn proto_to_snapshot(p: pb::SystemSnapshot) -> RuntimeSnapshotDto {
         metrics: p.metrics.map(proto_metrics).unwrap_or_default(),
         symbols: p.symbols.into_iter().map(proto_symbol).collect(),
         positions: positions.iter().map(RuntimePositionDto::from).collect(),
-        historic: historic.iter().map(RuntimeHistoricPositionDto::from).collect(),
+        historic: historic
+            .iter()
+            .map(RuntimeHistoricPositionDto::from)
+            .collect(),
         orders: orders.iter().map(RuntimeOrderDto::from).collect(),
         decisions: decisions.iter().map(RuntimeDecisionDto::from).collect(),
         alerts: p.alerts.into_iter().map(proto_alert).collect(),
@@ -146,33 +158,73 @@ fn proto_alert(a: pb::Alert) -> Alert {
         pb::AlertLevel::Error => AlertLevel::Error,
         _ => AlertLevel::Info,
     };
-    Alert { level, message: a.message, timestamp: ts_to_dt(a.timestamp) }
+    Alert {
+        level,
+        message: a.message,
+        timestamp: ts_to_dt(a.timestamp),
+    }
 }
 
 fn proto_risk(r: pb::RiskStatus) -> RiskStatus {
     RiskStatus {
         allowed: r.allowed,
-        reason: if r.reason.is_empty() { None } else { Some(r.reason) },
+        reason: if r.reason.is_empty() {
+            None
+        } else {
+            Some(r.reason)
+        },
         updated_at: ts_to_dt(r.updated_at),
     }
 }
 
 /// Run the NATS subscriber loop. Sends `TuiSnapshot` updates on `tx`.
 /// Reconnects automatically on disconnect with 2-second backoff.
-pub async fn run(config: TuiConfig, tx: watch::Sender<Option<TuiSnapshot>>) {
+pub async fn run(
+    config: TuiConfig,
+    tx: watch::Sender<Option<TuiSnapshot>>,
+    event_tx: mpsc::UnboundedSender<AppEvent>,
+) {
     let subject = topics::snapshot::backend(&config.backend_id);
     info!(subject = %subject, nats_url = %config.nats_url, "NATS subscriber starting");
+    emit_log(
+        &event_tx,
+        LogLevel::Info,
+        format!("NATS subscriber starting for {subject}"),
+    );
+    emit_status(
+        &event_tx,
+        ConnectionState::Starting,
+        format!("Connecting to {}", config.nats_url),
+    );
 
     loop {
         match NatsClient::connect(&config.nats_url).await {
             Ok(client) => {
                 info!("NATS connected");
-                if let Err(e) = subscribe_loop(&client, &subject, &tx).await {
+                emit_status(
+                    &event_tx,
+                    ConnectionState::Connected,
+                    format!("Connected to {}", config.nats_url),
+                );
+                emit_log(&event_tx, LogLevel::Info, "NATS connected");
+                if let Err(e) = subscribe_loop(&client, &subject, &tx, &event_tx).await {
                     warn!(error = %e, "NATS subscriber loop exited, reconnecting in 2s");
+                    emit_status(&event_tx, ConnectionState::Retrying, e.to_string());
+                    emit_log(
+                        &event_tx,
+                        LogLevel::Warn,
+                        format!("NATS subscription lost: {e}"),
+                    );
                 }
             }
             Err(e) => {
                 warn!(error = %e, "NATS connect failed, retrying in 2s");
+                emit_status(&event_tx, ConnectionState::Retrying, e.to_string());
+                emit_log(
+                    &event_tx,
+                    LogLevel::Warn,
+                    format!("NATS connect failed: {e}"),
+                );
             }
         }
         tokio::time::sleep(Duration::from_secs(2)).await;
@@ -183,9 +235,11 @@ async fn subscribe_loop(
     client: &NatsClient,
     subject: &str,
     tx: &watch::Sender<Option<TuiSnapshot>>,
+    event_tx: &mpsc::UnboundedSender<AppEvent>,
 ) -> anyhow::Result<()> {
     let mut sub = client.client().subscribe(subject.to_string()).await?;
     info!(subject = %subject, "Subscribed to snapshot subject");
+    emit_log(event_tx, LogLevel::Info, format!("Subscribed to {subject}"));
 
     while let Some(msg) = sub.next().await {
         match extract_proto_payload::<pb::SystemSnapshot>(&msg.payload) {
@@ -197,9 +251,37 @@ async fn subscribe_loop(
             }
             Err(e) => {
                 warn!(error = %e, "Failed to decode snapshot payload");
+                emit_log(
+                    event_tx,
+                    LogLevel::Warn,
+                    format!("Failed to decode NATS snapshot: {e}"),
+                );
             }
         }
     }
 
     anyhow::bail!("NATS subscription ended");
+}
+
+fn emit_status(
+    event_tx: &mpsc::UnboundedSender<AppEvent>,
+    state: ConnectionState,
+    detail: impl Into<String>,
+) {
+    let _ = event_tx.send(AppEvent::Connection {
+        target: ConnectionTarget::Nats,
+        status: ConnectionStatus::new(state, detail),
+    });
+}
+
+fn emit_log(
+    event_tx: &mpsc::UnboundedSender<AppEvent>,
+    level: LogLevel,
+    message: impl Into<String>,
+) {
+    let _ = event_tx.send(AppEvent::Log(LogEntry::new(
+        level,
+        Some(ConnectionTarget::Nats),
+        message,
+    )));
 }

@@ -1,8 +1,8 @@
-Create a session handoff note using the exarp-go session MCP tool.
-
-Call `exarp-go-session` with `action=handoff`, `summary=$ARGUMENTS`, `include_tasks=true`, `include_git_status=true`.
+Create a session handoff note using the local exarp-go CLI wrapper.
 
 If $ARGUMENTS is empty, ask: "What should I include in the handoff summary?"
+
+RUN ./scripts/run_exarp_go.sh -tool session -args '{"action":"handoff","summary":"$ARGUMENTS","include_tasks":true,"include_git_status":true}' -json -quiet
 
 Confirm the handoff was saved and show the key fields.
 

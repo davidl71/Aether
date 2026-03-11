@@ -1,7 +1,7 @@
 # TUI Read-Path Audit
 
 **Last updated**: 2026-03-11
-**Purpose**: classify which Python/Textual TUI read paths are already Rust-backed, which should remain Python-backed, and which are the next migration candidates.
+**Purpose**: classify which legacy Python/Textual TUI read paths were already Rust-backed, which specialist paths remain intentionally Python-backed, and which migration candidates still matter for the current Rust TUI era.
 
 ## Current classification
 
@@ -52,5 +52,5 @@ Alpaca and Tastytrade are retired from the active runtime surface for now and ar
 
 ## Non-goals
 
-- No change to the active Python/Textual TUI runtime.
+- No attempt to revive the legacy Python/Textual TUI runtime.
 - No change to broker/bank integration ownership in this slice.

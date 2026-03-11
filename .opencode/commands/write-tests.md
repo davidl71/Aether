@@ -1,6 +1,6 @@
 Generate Catch2 tests for the specified source file.
 
-READ $SOURCE_FILE
+READ $ARGUMENTS
 READ native/tests/test_risk_calculator.cpp
 
 Write Catch2 v3 unit tests for the source file above. Follow the conventions from the example test file:

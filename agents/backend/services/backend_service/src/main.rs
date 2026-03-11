@@ -6,10 +6,9 @@ use std::{
 
 use anyhow::Context;
 use api::{
-    Alert, HealthAggregateState, HistoricPosition, LoanRepository, OrderSnapshot,
-    PositionSnapshot, RestServer, RestState, RuntimeExecutionState, RuntimeMarketState,
-    RuntimeProducerDecision, SharedSnapshot, StrategyController, StrategyDecisionSnapshot,
-    SystemSnapshot,
+    Alert, HealthAggregateState, HistoricPosition, LoanRepository, OrderSnapshot, PositionSnapshot,
+    RestServer, RestState, RuntimeExecutionState, RuntimeMarketState, RuntimeProducerDecision,
+    SharedSnapshot, StrategyController, StrategyDecisionSnapshot, SystemSnapshot,
 };
 use async_trait::async_trait;
 use chrono::{Duration as ChronoDuration, Utc};
@@ -31,9 +30,9 @@ use tokio::{
 };
 use tracing::{info, warn};
 
-mod nats_integration;
-mod health_aggregation;
 mod collection_aggregation;
+mod health_aggregation;
+mod nats_integration;
 mod snapshot_publisher;
 mod swiftness;
 
@@ -443,8 +442,11 @@ fn spawn_strategy_fanout(
                     quantity,
                     side: side.clone(),
                 };
-                let producer_decision =
-                    RuntimeProducerDecision::from_strategy_decision(&strategy_decision, mark, Utc::now());
+                let producer_decision = RuntimeProducerDecision::from_strategy_decision(
+                    &strategy_decision,
+                    mark,
+                    Utc::now(),
+                );
                 let request = execution_state.risk_limit_for_decision(&producer_decision);
                 (producer_decision, request)
             };

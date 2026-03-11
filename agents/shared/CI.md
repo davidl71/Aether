@@ -10,15 +10,18 @@
    - `poetry run pytest`
    - Optional: run mock TWS integration tests and schema validation.
 
-2. **Python/Textual TUI**
-   - Run: `./scripts/run_python_tui.sh`
-   - Tests: Python TUI tests run as part of the main Python test suite
+2. **Rust TUI**
+   - Run: `./scripts/run_rust_tui.sh`
+   - Tests: `cargo test -p tui_service` in `agents/backend`
 
-3. **Web SPA**
+3. **Legacy Python/Textual TUI coverage**
+   - Tests only: legacy Textual TUI tests still run as part of the main Python test suite while migration cleanup continues
+
+4. **Web SPA**
    - `npm install`
    - `npm test -- --watch=false`
 
-4. **Shared artifacts**
+5. **Shared artifacts**
    - Validate `agents/shared/API_CONTRACT.md` (lint or schema check) if automated.
    - Ensure `agents/shared/TODO_OVERVIEW.md` stays in sync with tracked issues.
 
@@ -49,10 +52,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Rust TUI tests
+        run: cargo test -p tui_service --manifest-path agents/backend/Cargo.toml
+
+  legacy_python_tui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: TUI tests
+      - name: Legacy Python TUI tests
         run: bash scripts/run_python_tests.sh
 
   web:

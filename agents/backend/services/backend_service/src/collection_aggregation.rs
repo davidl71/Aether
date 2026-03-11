@@ -7,11 +7,7 @@ use nats_adapter::{
     proto::v1::{MarketDataEvent, NatsEnvelope},
 };
 use prost::Message;
-use tokio::{
-    io::AsyncWriteExt,
-    net::TcpStream,
-    sync::Mutex,
-};
+use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
 use tracing::{debug, info, warn};
 
 #[derive(Clone)]
@@ -284,14 +280,19 @@ mod tests {
 
     #[test]
     fn kv_key_uses_message_type_and_symbol() {
-        assert_eq!(kv_key("market-data.tick.SPY", "MarketDataEvent"), "MarketDataEvent.SPY");
+        assert_eq!(
+            kv_key("market-data.tick.SPY", "MarketDataEvent"),
+            "MarketDataEvent.SPY"
+        );
     }
 
     #[test]
     fn market_data_ilp_line_uses_envelope_payload() {
         let envelope = NatsEnvelope {
             id: "evt-1".into(),
-            timestamp: Some(prost_types::Timestamp::from(std::time::SystemTime::UNIX_EPOCH)),
+            timestamp: Some(prost_types::Timestamp::from(
+                std::time::SystemTime::UNIX_EPOCH,
+            )),
             source: "cpp-engine".into(),
             message_type: "MarketDataEvent".into(),
             payload: MarketDataEvent {

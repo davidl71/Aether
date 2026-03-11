@@ -3,7 +3,7 @@
 As of March 11, 2026, the React/Vite web app is retired as an active runtime surface.
 
 Current supported frontends:
-- Python/Textual TUI
+- Rust TUI
 - native CLI
 
 What changed:
@@ -18,4 +18,4 @@ Why:
 What remains:
 - `web/` stays in the repository as archived implementation/reference material
 - future reintroduction should happen only after a deliberate UI framework decision
-- see exarp follow-up `T-1773228838323899000` for future unified UI framework options
+- see `docs/platform/UI_FRAMEWORK_OPTIONS.md` for framework evaluation criteria and options

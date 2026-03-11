@@ -1,6 +1,6 @@
 Review the specified file for correctness, safety, and style.
 
-READ $FILE_PATH
+READ $ARGUMENTS
 
 Review this file for:
 1. Financial correctness (pricing, risk, decimal precision)

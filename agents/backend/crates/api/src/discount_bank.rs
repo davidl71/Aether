@@ -8,6 +8,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
+use crate::project_paths::discover_workspace_root;
 use crate::IbPositionDto;
 
 const DEFAULT_DISCOUNT_BANK_FILE_PATH: &str = "~/Downloads/DISCOUNT.dat";
@@ -97,8 +98,8 @@ pub struct ImportPositionsQuery {
 }
 
 pub async fn get_balance() -> Result<DiscountBankBalanceResponse, String> {
-    let latest_file = latest_discount_bank_file()
-        .ok_or_else(|| "Discount Bank file not found".to_string())?;
+    let latest_file =
+        latest_discount_bank_file().ok_or_else(|| "Discount Bank file not found".to_string())?;
     let parsed = DiscountBankParser::parse_file(&latest_file)
         .await
         .map_err(|error| format!("Failed to parse Discount Bank file: {error}"))?;
@@ -129,8 +130,8 @@ pub async fn get_balance() -> Result<DiscountBankBalanceResponse, String> {
 }
 
 pub async fn get_transactions(limit: usize) -> Result<DiscountBankTransactionsResponse, String> {
-    let latest_file = latest_discount_bank_file()
-        .ok_or_else(|| "Discount Bank file not found".to_string())?;
+    let latest_file =
+        latest_discount_bank_file().ok_or_else(|| "Discount Bank file not found".to_string())?;
     let parsed = DiscountBankParser::parse_file(&latest_file)
         .await
         .map_err(|error| format!("Failed to parse Discount Bank file: {error}"))?;
@@ -352,11 +353,13 @@ fn ledger_database_path() -> Option<PathBuf> {
         }
     }
 
-    let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(|path| path.parent())
-        .and_then(|path| path.parent())
-        .map(Path::to_path_buf)?;
+    let repo_root = discover_workspace_root().or_else(|| {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(|path| path.parent())
+            .and_then(|path| path.parent())
+            .map(Path::to_path_buf)
+    })?;
 
     let candidates = [
         repo_root.join("ledger.db"),
@@ -383,7 +386,9 @@ fn account_path_from_posting(posting: &Value) -> Option<String> {
                     return Some(joined);
                 }
             }
-            map.get("to_string").and_then(Value::as_str).map(str::to_string)
+            map.get("to_string")
+                .and_then(Value::as_str)
+                .map(str::to_string)
         }
         _ => None,
     }
@@ -423,9 +428,7 @@ fn bank_account_from_balances(
     let account_number = segments.get(3).map(|value| (*value).to_string());
     let account_name = segments.last().copied().unwrap_or(account_path).to_string();
 
-    let balances_by_currency = balances
-        .into_iter()
-        .collect::<BTreeMap<String, f64>>();
+    let balances_by_currency = balances.into_iter().collect::<BTreeMap<String, f64>>();
     let is_mixed_currency = balances_by_currency.len() > 1;
     let (currency, balance, breakdown) = if is_mixed_currency {
         ("MULTI".to_string(), 0.0, Some(balances_by_currency))
@@ -489,7 +492,11 @@ async fn load_ledger_positions() -> Result<HashMap<String, String>, String> {
                 continue;
             };
             if account_path.starts_with("Assets:IBKR:") {
-                let symbol = account_path.split(':').nth(2).unwrap_or_default().to_uppercase();
+                let symbol = account_path
+                    .split(':')
+                    .nth(2)
+                    .unwrap_or_default()
+                    .to_uppercase();
                 if !symbol.is_empty() {
                     positions.insert(symbol, account_path);
                 }
@@ -541,10 +548,7 @@ mod tests {
     fn bank_account_handles_mixed_currency() {
         let account = bank_account_from_balances(
             "Assets:Bank:Discount:123456",
-            HashMap::from([
-                ("ILS".to_string(), 100.5),
-                ("USD".to_string(), 25.25),
-            ]),
+            HashMap::from([("ILS".to_string(), 100.5), ("USD".to_string(), 25.25)]),
         );
 
         assert_eq!(account.currency, "MULTI");

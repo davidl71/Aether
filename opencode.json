@@ -4,7 +4,7 @@
     "exarp-go": {
       "type": "local",
       "command": ["/Users/davidl/Projects/mcp/exarp-go/bin/exarp-go"],
-      "enabled": true,
+      "enabled": false,
       "environment": {
         "PROJECT_ROOT": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal",
         "EXARP_MIGRATIONS_DIR": "/Users/davidl/Projects/mcp/exarp-go/migrations",

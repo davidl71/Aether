@@ -280,7 +280,7 @@ How-to guides, setup instructions, and implementation documentation.
 ### Testing & Validation
 
 - **[TESTING_STRATEGY.md](research/integration/TESTING_STRATEGY.md)** - Testing strategy
-- **[TUI_TESTING.md](research/integration/TUI_TESTING.md)** - TUI testing guide
+- **[TUI_TESTING.md](archive/TUI_TESTING.md)** - Historical Python/Textual TUI testing guide
 - **[LEAN_TESTING.md](research/integration/LEAN_TESTING.md)** - LEAN testing
 - **[INTEGRATION_TESTING.md](research/integration/INTEGRATION_TESTING.md)** - Integration testing
 - **[PAPER_TRADING_VALIDATION_PLAN.md](research/integration/PAPER_TRADING_VALIDATION_PLAN.md)** - Paper trading validation
@@ -292,7 +292,7 @@ How-to guides, setup instructions, and implementation documentation.
 - **[TUI_DESIGN.md](research/architecture/TUI_DESIGN.md)** - TUI design guide
 - **[TUI_SCENARIO_EXPLORER_DESIGN.md](research/architecture/TUI_SCENARIO_EXPLORER_DESIGN.md)** - Scenario explorer
 - **[TUI_MULTISCREEN_RESEARCH.md](research/architecture/TUI_MULTISCREEN_RESEARCH.md)** - Multi-screen research
-- **[TUI_PYTHON_MIGRATION.md](research/architecture/TUI_PYTHON_MIGRATION.md)** - Python migration
+- **[TUI_PYTHON_MIGRATION.md](archive/TUI_PYTHON_MIGRATION.md)** - Historical Python/Textual TUI migration
 - **[IPAD_APP_DESIGN.md](research/architecture/IPAD_APP_DESIGN.md)** - iPad app design
 - **[PWA_PATTERNS_APPLICABILITY.md](research/architecture/PWA_PATTERNS_APPLICABILITY.md)** - PWA patterns
 

@@ -103,8 +103,8 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for full analysis. Key issues:
 |-------|--------------|
 | Core engine | C++20, QuantLib, Intel Decimal Library, NLopt, Eigen |
 | Backend services | Rust (Axum, prost, sqlx), Go (stdlib, nats.go) |
-| Integration layer | Python 3.12 (FastAPI, Textual, betterproto) |
-| Frontends | React 18, TypeScript, Textual |
+| Integration layer | Python 3.12 (specialist services, bindings, betterproto) |
+| Frontends | Rust Ratatui TUI, native CLI, archived React 18/TypeScript |
 | Messaging | NATS JetStream, Protocol Buffers |
 | Storage | SQLite, QuestDB, NATS KV |
 | Build | CMake/Ninja, Cargo, uv, npm |
@@ -114,7 +114,7 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for full analysis. Key issues:
 
 - **C++**: stays for core engine and TWS (API is C++-only)
 - **Rust**: stays for safety-critical backend and ledger
-- **Python**: Textual TUI, specialist broker/bank integrations, benchmarks/rates, and health service
+- **Python**: specialist broker/bank integrations, bindings, and remaining finance helpers
 - **Go**: ops agents — good for single-binary CLI/bridge tools
 - **TypeScript**: web app — not a rewrite candidate
 
@@ -130,8 +130,8 @@ ib_box_spread_full_universal/
 ├── agents/
 │   ├── backend/         # Rust backend (Axum REST, ledger, nats_adapter)
 │   └── go/              # Go agents (api-gateway, collection-daemon, heartbeat-agg, supervisor...)
-├── python/              # Textual TUI and Python integration services
-├── web/                 # React web client
+├── python/              # Python integration services, bindings, and research helpers
+├── web/                 # Archived React web client
 ├── proto/               # Canonical protobuf schema (messages.proto)
 ├── scripts/             # Build, lint, deploy helpers
 └── docs/                # Documentation

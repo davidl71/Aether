@@ -216,7 +216,7 @@ Provider (abstract)
 BackendHealthAggregator   — daemon thread, polls configured backend health endpoints
 ```
 
-Provider selection: set via `--provider` CLI flag or config; `RestProvider` is the default in production for the Textual TUI.
+Provider selection historically came from the Python/Textual TUI provider flag/config. The active Rust TUI now prefers protobuf-over-NATS and uses REST only as an explicit fallback path.
 
 ---
 
@@ -290,7 +290,7 @@ flowchart LR
   KV --> RustApi
 ```
 
-- **Current read paths**: the web client reads primarily from the Rust backend; the Textual TUI reads a mix of Rust-owned read models, selected Python specialist services, and optional NATS/event-driven paths. The remaining split is now narrower and mostly tied to integration-specific Python services.
+- **Current read paths**: the web client reads primarily from the Rust backend; the active Rust TUI reads shared Rust snapshots plus optional NATS/REST transport paths, while some remaining specialist workflows still depend on selected Python integration services.
 - **Single writer per store**: Ledger = Rust; loans = Rust backend; QuestDB = Rust backend collector; NATS KV = Rust backend collector.
 - **Persistence**: Rust writes durable backend state, serves shared read models, and writes QuestDB/live state from NATS; Python does not own collection or shared durable writes.
 

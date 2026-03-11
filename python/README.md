@@ -1,6 +1,7 @@
 # IB Box Spread Generator - Python Package
 
-Python integration package for the active Textual TUI, service integrations, and bindings.
+Python integration package for specialist services, bindings, and legacy Textual TUI code that
+is no longer the active runtime.
 
 ## Installation
 
@@ -36,14 +37,16 @@ python/
 │   └── setup.py
 ├── bindings/              # Cython bindings package
 ├── integration/           # Broker/bank/rates integrations
-├── tui/                   # Active Textual TUI
+├── tui/                   # Legacy Textual TUI code retained for reference/migration
 ├── tests/
 └── pyproject.toml
 ```
 
 ## Usage
 
-After installation, use the TUI and integration modules from the active `python/` package layout.
+After installation, use the integration modules and bindings from the `python/` package layout.
+The active terminal runtime lives under `agents/backend/services/tui_service` and is launched
+with `./scripts/run_rust_tui.sh`.
 
 ## Development
 

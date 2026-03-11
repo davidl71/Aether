@@ -15,10 +15,8 @@ use tracing::{error, info, warn};
 
 use crate::rest::RestState;
 use crate::runtime_state::RuntimeExecutionState;
-use crate::{
-    RuntimeSnapshotDto,
-};
 use crate::state::SystemSnapshot;
+use crate::RuntimeSnapshotDto;
 
 /// WebSocket server for real-time snapshot updates
 pub struct WebSocketServer;
@@ -82,13 +80,19 @@ fn serialise_sections(
             "positions",
             serde_json::to_string(&runtime_state.position_dtos())?,
         ),
-        ("historic", serde_json::to_string(&runtime_state.historic_dtos())?),
+        (
+            "historic",
+            serde_json::to_string(&runtime_state.historic_dtos())?,
+        ),
         (
             "orders",
             serde_json::to_string(&runtime_state.order_dtos())?,
         ),
         ("alerts", serde_json::to_string(&snap.alerts)?),
-        ("decisions", serde_json::to_string(&runtime_state.decision_dtos())?),
+        (
+            "decisions",
+            serde_json::to_string(&runtime_state.decision_dtos())?,
+        ),
         ("risk", serde_json::to_string(&snap.risk)?),
     ])
 }

@@ -673,7 +673,7 @@ ticker print --format=json
 ## Related Documentation
 
 - [TUI Design](research/architecture/TUI_DESIGN.md) - Current TUI design document
-- [TUI Testing](research/integration/TUI_TESTING.md) - TUI testing guide
+- [TUI Testing](archive/TUI_TESTING.md) - Historical Python/Textual TUI testing guide
 - [API Documentation Index](API_DOCUMENTATION_INDEX.md) - Complete API reference
 
 ---

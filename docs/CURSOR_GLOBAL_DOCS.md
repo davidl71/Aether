@@ -83,7 +83,7 @@ These files are useful but less critical for global context:
 
 - `docs/STATIC_ANALYSIS.md` - Static analysis tools overview
 - `docs/INTEGRATION_TESTING.md` - Integration testing guide
-- `docs/TUI_TESTING.md` - Terminal UI testing
+- `docs/archive/TUI_TESTING.md` - Historical Python/Textual terminal UI testing
 
 ### External Integrations
 

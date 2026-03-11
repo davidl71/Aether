@@ -115,8 +115,8 @@ ib_box_spread --config config/config.json --validate
 # Safe test run (no real trades)
 ib_box_spread --config config/config.json --dry-run
 
-# Or use the Python/Textual TUI for visual monitoring
-python -m python.tui
+# Or use the Rust TUI for visual monitoring
+./scripts/run_rust_tui.sh
 ```
 
 ### Step 3: Check Logs
@@ -134,8 +134,8 @@ tail -n 50 logs/ib_box_spread.log
 ### Start TUI
 
 ```bash
-# Python/Textual TUI
-python -m python.tui
+# Rust TUI
+./scripts/run_rust_tui.sh
 ```
 
 ### TUI Keyboard Shortcuts
@@ -159,9 +159,6 @@ python -m python.tui
 # From build directory
 cd build
 ctest --output-on-failure
-
-# Or from project root
-uv run --project python pytest python/tui/tests/ -q
 ```
 
 ### Expected Output
@@ -192,7 +189,7 @@ ib_box_spread --config config/config.json --dry-run
 ```bash
 # Terminal 1: Start backend (if you have one)
 # Terminal 2: Start TUI
-python -m python.tui
+./scripts/run_rust_tui.sh
 ```
 
 ### 4. Check System Status
@@ -330,7 +327,7 @@ ib_box_spread --config config/config.json --dry-run
 ib_box_spread --config config/config.json --validate
 
 # TUI
-python -m python.tui
+./scripts/run_rust_tui.sh
 ```
 
 ### Important Files

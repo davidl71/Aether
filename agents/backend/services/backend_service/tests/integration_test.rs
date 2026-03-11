@@ -99,18 +99,15 @@ async fn test_strategy_decision_publishing() {
 
     let subject = topics::strategy::decision("TEST");
 
-    let proto_sub = Subscriber::<pb::StrategyDecision>::new(
-        client.clone(),
-        topics::strategy::all_decisions(),
-    );
+    let proto_sub =
+        Subscriber::<pb::StrategyDecision>::new(client.clone(), topics::strategy::all_decisions());
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
     let _handle = proto_sub
         .spawn_bridge(tx)
         .await
         .expect("Failed to spawn proto subscriber");
 
-    let publisher =
-        Publisher::new(client.clone(), subject.clone(), "test", "StrategyDecision");
+    let publisher = Publisher::new(client.clone(), subject.clone(), "test", "StrategyDecision");
     let decision = pb::StrategyDecision {
         symbol: "TEST".to_string(),
         quantity: 1,

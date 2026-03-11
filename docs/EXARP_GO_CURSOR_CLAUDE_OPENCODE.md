@@ -52,20 +52,20 @@ This doc describes how to use **exarp-go** (session prime, handoff, tasks, repor
 
 ### 2.3 OpenCode
 
-- **MCP:** Add exarp-go to OpenCode’s MCP config; set project root for the workspace.
-- **Commands:** `.opencode/commands/` — markdown files with READ/RUN instructions. The assistant is told to “Call exarp-go session with …” (it invokes the MCP tool).
+- **MCP:** OpenCode can load exarp-go, but keep it disabled for now in `opencode.json` if GPT-5 / Sonnet reports `custom.input_schema` JSON Schema errors from the exarp-go tool catalog.
+- **Commands:** `.opencode/commands/` — markdown files with READ/RUN instructions. In this repo, OpenCode commands now call the local `./scripts/run_exarp_go.sh` wrapper instead of invoking exarp-go MCP tools directly.
 
 **Commands available:**
 
 | Command | File | What it does |
 |---------|------|---------------|
-| `prime-context` | `.opencode/commands/prime-context.md` | Load AGENTS.md, ARCHITECTURE.md, etc. (no exarp in file today; can add “RUN exarp-go session prime” or ask AI to call session prime). |
+| `prime-context` | `.opencode/commands/prime-context.md` | Load AGENTS.md, ARCHITECTURE.md, etc. |
 | `ai-context` | `.opencode/commands/ai-context.md` | Load AGENTS.md, CLAUDE.md, ARCHITECTURE.md. |
-| `handoff` | `.opencode/commands/handoff.md` | Call session with `action=handoff`, `summary=$ARGUMENTS`, `include_tasks=true`, `include_git_status=true`. |
-| `tasks` | `.opencode/commands/tasks.md` | Call task_workflow with `action=sync`, `sub_action=list`; optional status filter. |
-| `scorecard` | `.opencode/commands/scorecard.md` | Call report with `action=overview`; add local metrics. |
+| `handoff` | `.opencode/commands/handoff.md` | Run `./scripts/run_exarp_go.sh -tool session` with `action=handoff`, `summary=$ARGUMENTS`, `include_tasks=true`, `include_git_status=true`. |
+| `tasks` | `.opencode/commands/tasks.md` | Run `./scripts/run_exarp_go.sh -tool task_workflow` with `action=sync`, `sub_action=list`; optional status filter. |
+| `scorecard` | `.opencode/commands/scorecard.md` | Run `./scripts/run_exarp_go.sh -tool report` with `action=overview`; add local metrics. |
 
-**To prime:** Run `prime-context` or `ai-context`; for exarp suggested-next, ask the AI to “call exarp-go session prime” or add a line in prime-context that runs the CLI / invokes the tool.
+**To prime:** Run `prime-context` or `ai-context`; for exarp suggested-next, ask the AI to run `./scripts/run_exarp_go.sh -tool session -args '{"action":"prime","include_tasks":true,"include_hints":true}' -json -quiet`.
 
 **To handoff:** Run the `handoff` command; provide summary as argument or when asked.
 

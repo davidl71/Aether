@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
+use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use async_stream::stream;
 use axum::{
@@ -17,22 +17,25 @@ use serde::{Deserialize, Serialize};
 use tokio::{sync::watch, task::JoinHandle, time::timeout};
 use tracing::{info, warn};
 
+use crate::discount_bank::{
+    get_balance as get_discount_bank_balance, get_bank_accounts as get_discount_bank_accounts,
+    get_transactions as get_discount_bank_transactions,
+    import_positions as import_discount_bank_positions, ImportPositionsQuery,
+};
 use crate::finance_rates::{
     build_curve as build_risk_free_curve, compare_rates as compare_risk_free_rates,
     extract_rate as extract_risk_free_rate, get_sofr_rates as fetch_sofr_benchmarks,
-    get_treasury_rates as fetch_treasury_benchmarks, yield_curve_comparison as compare_yield_curves,
-    BoxSpreadInput, CompareRequest, CurveQuery, CurveRequest, YieldCurveComparisonRequest,
-};
-use crate::discount_bank::{
-    get_balance as get_discount_bank_balance,
-    get_bank_accounts as get_discount_bank_accounts,
-    get_transactions as get_discount_bank_transactions,
-    import_positions as import_discount_bank_positions, ImportPositionsQuery,
+    get_treasury_rates as fetch_treasury_benchmarks,
+    yield_curve_comparison as compare_yield_curves, BoxSpreadInput, CompareRequest, CurveQuery,
+    CurveRequest, YieldCurveComparisonRequest,
 };
 use crate::health::SharedHealthAggregate;
 use crate::ib_positions::fetch_ib_positions;
 use crate::loans::{LoanAggregationInput, LoanRecord, LoanRepository};
-use crate::runtime_state::{RuntimeExecutionState, RuntimeOrderDto, RuntimePositionDto, RuntimeSnapshotDto};
+use crate::project_paths::shared_config_candidate_paths;
+use crate::runtime_state::{
+    RuntimeExecutionState, RuntimeOrderDto, RuntimePositionDto, RuntimeSnapshotDto,
+};
 use crate::state::{Alert, SharedSnapshot};
 use crate::websocket::WebSocketServer;
 
@@ -103,15 +106,9 @@ impl RestServer {
             .route("/api/extract-rate", post(extract_rate))
             .route("/api/build-curve", post(build_curve))
             .route("/api/compare", post(compare_rates))
-            .route(
-                "/api/yield-curve/comparison",
-                post(yield_curve_comparison),
-            )
+            .route("/api/yield-curve/comparison", post(yield_curve_comparison))
             .route("/api/benchmarks/sofr", get(benchmarks_sofr))
-            .route(
-                "/api/benchmarks/treasury",
-                get(benchmarks_treasury),
-            )
+            .route("/api/benchmarks/treasury", get(benchmarks_treasury))
             .route("/api/live/state", get(live_state))
             .route("/api/live/state/watch", get(live_state_watch))
             .route("/api/v1/ib/health", get(ib_health))
@@ -391,9 +388,7 @@ async fn health_heartbeat_path(
         ));
     }
 
-    let backend_key = normalized
-        .strip_prefix("health/")
-        .unwrap_or(normalized);
+    let backend_key = normalized.strip_prefix("health/").unwrap_or(normalized);
 
     if let Some(backend) = health.backends.get(backend_key) {
         return Ok(Json(
@@ -424,38 +419,29 @@ async fn ib_positions(
 ) -> Result<Json<Vec<crate::IbPositionDto>>, (StatusCode, Json<ErrorResponse>)> {
     let positions = fetch_ib_positions(query.account_id.as_deref())
         .await
-        .map_err(|error| {
-            (
-                StatusCode::BAD_GATEWAY,
-                Json(ErrorResponse { error }),
-            )
-        })?;
+        .map_err(|error| (StatusCode::BAD_GATEWAY, Json(ErrorResponse { error })))?;
     Ok(Json(positions))
 }
 
 async fn extract_rate(
     Json(payload): Json<BoxSpreadInput>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
-    let response = extract_risk_free_rate(payload).map_err(|error| {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse { error }),
-        )
-    })?;
-    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+    let response = extract_risk_free_rate(payload)
+        .map_err(|error| (StatusCode::BAD_REQUEST, Json(ErrorResponse { error })))?;
+    Ok(Json(
+        serde_json::to_value(response).map_err(live_state_internal_error)?,
+    ))
 }
 
 async fn build_curve(
     query: Option<Query<CurveQuery>>,
     Json(payload): Json<CurveRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
-    let response = build_risk_free_curve(payload, query.map(|item| item.0)).map_err(|error| {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse { error }),
-        )
-    })?;
-    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+    let response = build_risk_free_curve(payload, query.map(|item| item.0))
+        .map_err(|error| (StatusCode::BAD_REQUEST, Json(ErrorResponse { error })))?;
+    Ok(Json(
+        serde_json::to_value(response).map_err(live_state_internal_error)?,
+    ))
 }
 
 async fn compare_rates(
@@ -465,13 +451,10 @@ async fn compare_rates(
     let client = Client::new();
     let response = compare_risk_free_rates(payload, query.map(|item| item.0), &client)
         .await
-        .map_err(|error| {
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse { error }),
-            )
-        })?;
-    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+        .map_err(|error| (StatusCode::BAD_REQUEST, Json(ErrorResponse { error })))?;
+    Ok(Json(
+        serde_json::to_value(response).map_err(live_state_internal_error)?,
+    ))
 }
 
 async fn yield_curve_comparison(
@@ -479,20 +462,26 @@ async fn yield_curve_comparison(
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
     let client = Client::new();
     let response = compare_yield_curves(payload, &client).await;
-    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+    Ok(Json(
+        serde_json::to_value(response).map_err(live_state_internal_error)?,
+    ))
 }
 
 async fn benchmarks_sofr() -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
     let client = Client::new();
     let response = fetch_sofr_benchmarks(&client).await;
-    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+    Ok(Json(
+        serde_json::to_value(response).map_err(live_state_internal_error)?,
+    ))
 }
 
-async fn benchmarks_treasury(
-) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+async fn benchmarks_treasury() -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)>
+{
     let client = Client::new();
     let response = fetch_treasury_benchmarks(&client).await;
-    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+    Ok(Json(
+        serde_json::to_value(response).map_err(live_state_internal_error)?,
+    ))
 }
 
 async fn check_nats_health() -> String {
@@ -582,62 +571,6 @@ fn decode_live_state_envelope_metadata(bytes: &[u8]) -> serde_json::Value {
         Err(err) => serde_json::json!({
             "decode_error": err.to_string(),
         }),
-    }
-}
-
-fn shared_config_candidate_paths() -> Vec<PathBuf> {
-    let mut candidates = Vec::new();
-
-    let mut add = |path: PathBuf| {
-        if !candidates.iter().any(|existing| existing == &path) {
-            candidates.push(path);
-        }
-    };
-
-    if let Ok(explicit) = std::env::var("IB_BOX_SPREAD_CONFIG") {
-        let explicit = PathBuf::from(explicit).expand_home();
-        if explicit.is_absolute() {
-            add(explicit);
-        } else if let Ok(cwd) = std::env::current_dir() {
-            add(cwd.join(&explicit));
-            add(explicit);
-        } else {
-            add(explicit);
-        }
-    }
-
-    if let Some(home) = std::env::var_os("HOME") {
-        let home = PathBuf::from(home);
-        add(home.join(".config/ib_box_spread/config.json"));
-        if cfg!(target_os = "macos") {
-            add(home.join("Library/Application Support/ib_box_spread/config.json"));
-        }
-    }
-
-    add(PathBuf::from("/usr/local/etc/ib_box_spread/config.json"));
-    add(PathBuf::from("/etc/ib_box_spread/config.json"));
-    add(PathBuf::from("config/config.json"));
-    add(PathBuf::from("config/config.example.json"));
-
-    candidates
-}
-
-trait ExpandHome {
-    fn expand_home(self) -> PathBuf;
-}
-
-impl ExpandHome for PathBuf {
-    fn expand_home(self) -> PathBuf {
-        let text = self.to_string_lossy();
-        if text == "~" {
-            return std::env::var_os("HOME").map(PathBuf::from).unwrap_or(self);
-        }
-        if let Some(stripped) = text.strip_prefix("~/") {
-            if let Some(home) = std::env::var_os("HOME") {
-                return PathBuf::from(home).join(stripped);
-            }
-        }
-        self
     }
 }
 
@@ -845,13 +778,12 @@ struct DiscountBankTransactionsQuery {
 
 async fn discount_bank_balance(
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
-    let response = get_discount_bank_balance().await.map_err(|error| {
-        (
-            StatusCode::NOT_FOUND,
-            Json(ErrorResponse { error }),
-        )
-    })?;
-    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+    let response = get_discount_bank_balance()
+        .await
+        .map_err(|error| (StatusCode::NOT_FOUND, Json(ErrorResponse { error })))?;
+    Ok(Json(
+        serde_json::to_value(response).map_err(live_state_internal_error)?,
+    ))
 }
 
 async fn discount_bank_transactions(
@@ -859,13 +791,10 @@ async fn discount_bank_transactions(
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
     let response = get_discount_bank_transactions(query.limit.unwrap_or(20))
         .await
-        .map_err(|error| {
-            (
-                StatusCode::NOT_FOUND,
-                Json(ErrorResponse { error }),
-            )
-        })?;
-    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+        .map_err(|error| (StatusCode::NOT_FOUND, Json(ErrorResponse { error })))?;
+    Ok(Json(
+        serde_json::to_value(response).map_err(live_state_internal_error)?,
+    ))
 }
 
 async fn discount_bank_bank_accounts(
@@ -873,7 +802,9 @@ async fn discount_bank_bank_accounts(
     let response = get_discount_bank_accounts()
         .await
         .map_err(live_state_internal_error)?;
-    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+    Ok(Json(
+        serde_json::to_value(response).map_err(live_state_internal_error)?,
+    ))
 }
 
 async fn discount_bank_import_positions(
@@ -882,13 +813,10 @@ async fn discount_bank_import_positions(
     let client = Client::new();
     let response = import_discount_bank_positions(query, &client)
         .await
-        .map_err(|error| {
-            (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse { error }),
-            )
-        })?;
-    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+        .map_err(|error| (StatusCode::BAD_REQUEST, Json(ErrorResponse { error })))?;
+    Ok(Json(
+        serde_json::to_value(response).map_err(live_state_internal_error)?,
+    ))
 }
 
 async fn snapshot(Extension(state): Extension<RestState>) -> Json<RuntimeSnapshotDto> {
@@ -2706,9 +2634,9 @@ async fn swiftness_update_exchange_rate(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::HealthAggregateState;
     use crate::loans::{LoanRepository, LoanStatus, LoanType};
     use crate::state::{OrderSnapshot, PositionSnapshot, SystemSnapshot};
+    use crate::HealthAggregateState;
     use axum::Json;
     use nats_adapter::encode_proto;
     use nats_adapter::proto::v1::NatsEnvelope;
@@ -3177,5 +3105,4 @@ mod tests {
         assert_eq!(snapshot.orders[0].id, "ORD-1");
         assert!((snapshot.positions[0].market_value - 203.0).abs() < f64::EPSILON);
     }
-
 }

@@ -15,7 +15,7 @@ For deeper detail, see:
 - `C++` produces market and strategy events.
 - `Rust` owns shared frontend read APIs and active collection fanout.
 - `Go` is narrowed to operational tooling that remains separate by role.
-- `Python` owns the Textual TUI and selected specialist integration services.
+- `Python` owns selected specialist integration services; the active TUI runtime is Rust.
 
 ## Runtime Shape
 

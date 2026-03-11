@@ -538,7 +538,7 @@ choco install gping
 ```
 Pane 1: LEAN algorithm (python lean run)
 Pane 2: REST API wrapper (uvicorn api_wrapper:app)
-Pane 3: TUI client (./scripts/run_python_tui.sh --dev mock)
+Pane 3: TUI client (./scripts/run_rust_tui.sh)
 Pane 4: API testing (ATAC or httpie)
 ```
 

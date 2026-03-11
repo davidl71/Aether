@@ -19,12 +19,17 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                         let mut health = state.write().await;
                         health.nats_connected = true;
                     }
-                    info!("health aggregation subscribed to {}", topics::system::health());
+                    info!(
+                        "health aggregation subscribed to {}",
+                        topics::system::health()
+                    );
 
                     match client.subscribe(topics::system::health().to_string()).await {
                         Ok(mut subscriber) => {
                             while let Some(message) = subscriber.next().await {
-                                if let Some(health) = api::backend_health_from_message(message.payload.as_ref()) {
+                                if let Some(health) =
+                                    api::backend_health_from_message(message.payload.as_ref())
+                                {
                                     let backend = health.backend.clone();
                                     let mapped = BackendHealthState::from_proto(health);
                                     state.write().await.backends.insert(backend, mapped);

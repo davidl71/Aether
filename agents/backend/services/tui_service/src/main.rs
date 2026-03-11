@@ -8,7 +8,10 @@
 //!
 //!   NATS_URL=nats://localhost:4222 BACKEND_ID=ib cargo run -p tui_service
 //!
-//! # Environment variables
+//! # Configuration
+//!
+//! Reads the shared config file first (`IB_BOX_SPREAD_CONFIG`, home config,
+//! then project defaults) and applies these env vars as final overrides:
 //!
 //!   NATS_URL         NATS server (default: nats://localhost:4222)
 //!   BACKEND_ID       Snapshot subject suffix (default: ib)
@@ -21,12 +24,17 @@
 use std::time::Duration;
 
 use anyhow::Context;
-use crossterm::event::{self, Event};
-use tokio::sync::watch;
-use tracing::info;
+use crossterm::{
+    event::{self, Event},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
+use tokio::sync::{mpsc, watch};
+use tracing::{error, info};
 
 mod app;
 mod config;
+mod events;
 mod models;
 mod nats;
 mod rest;
@@ -42,7 +50,7 @@ async fn main() -> anyhow::Result<()> {
         .with_target(false)
         .init();
 
-    let config = TuiConfig::from_env();
+    let config = TuiConfig::load();
     info!(
         backend_id = %config.backend_id,
         nats_url = %config.nats_url,
@@ -52,39 +60,55 @@ async fn main() -> anyhow::Result<()> {
     );
 
     let (snap_tx, snap_rx) = watch::channel(None);
+    let (event_tx, event_rx) = mpsc::unbounded_channel();
 
     // Spawn NATS subscriber in the background
     let nats_config = config.clone();
     let nats_tx = snap_tx.clone();
+    let nats_event_tx = event_tx.clone();
     tokio::spawn(async move {
-        nats::run(nats_config, nats_tx).await;
+        nats::run(nats_config, nats_tx, nats_event_tx).await;
     });
 
     // Spawn REST fallback if enabled
     if config.rest_fallback {
         let rest_config = config.clone();
         let rest_tx = snap_tx.clone();
+        let rest_event_tx = event_tx.clone();
         tokio::spawn(async move {
-            rest::run(rest_config, rest_tx).await;
+            rest::run(rest_config, rest_tx, rest_event_tx).await;
         });
     }
 
     // Set up terminal
-    let mut terminal = ratatui::init();
-    let mut app = App::new(config, snap_rx);
+    let mut terminal = init_terminal().context("Failed to initialize TUI terminal")?;
+    let mut app = App::new(config, snap_rx, event_rx);
 
     let result = run_loop(&mut terminal, &mut app);
 
     // Always restore terminal on exit
-    ratatui::restore();
+    if let Err(err) = restore_terminal() {
+        error!(error = %err, "Failed to restore terminal state");
+    }
 
     result.context("TUI event loop error")
 }
 
-fn run_loop(
-    terminal: &mut ratatui::DefaultTerminal,
-    app: &mut App,
-) -> anyhow::Result<()> {
+fn init_terminal() -> anyhow::Result<ratatui::DefaultTerminal> {
+    enable_raw_mode().context("enable raw mode")?;
+    let mut stdout = std::io::stdout();
+    execute!(stdout, EnterAlternateScreen).context("enter alternate screen")?;
+    ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(stdout))
+        .context("create terminal backend")
+}
+
+fn restore_terminal() -> anyhow::Result<()> {
+    disable_raw_mode().context("disable raw mode")?;
+    execute!(std::io::stdout(), LeaveAlternateScreen).context("leave alternate screen")?;
+    Ok(())
+}
+
+fn run_loop(terminal: &mut ratatui::DefaultTerminal, app: &mut App) -> anyhow::Result<()> {
     loop {
         terminal.draw(|f| ui::render(f, app))?;
 

@@ -33,7 +33,8 @@ impl IbPositionDto {
             .or_else(|| value_as_str(map.get("symbol")))
             .or_else(|| value_as_str(map.get("contractDesc")))
             .unwrap_or_else(|| conid.map(|value| value.to_string()).unwrap_or_default());
-        let name = format_ibcid_display_name(&raw_name, &asset_class, conid, maturity_date.as_deref());
+        let name =
+            format_ibcid_display_name(&raw_name, &asset_class, conid, maturity_date.as_deref());
         let symbol = if name.trim().is_empty() {
             raw_name
         } else {
@@ -205,7 +206,8 @@ async fn get_json(client: &Client, url: &str) -> Result<Value, String> {
         ));
     }
 
-    serde_json::from_str(&body).map_err(|error| format!("Failed to decode IB positions response: {error}"))
+    serde_json::from_str(&body)
+        .map_err(|error| format!("Failed to decode IB positions response: {error}"))
 }
 
 fn reauth_sleep_seconds() -> f64 {
@@ -276,7 +278,9 @@ fn format_ibcid_display_name(
         .map(|date| format!("{date} "))
         .unwrap_or_default();
 
-    format!("{label} {maturity_prefix}({conid})").trim().to_string()
+    format!("{label} {maturity_prefix}({conid})")
+        .trim()
+        .to_string()
 }
 
 #[cfg(test)]

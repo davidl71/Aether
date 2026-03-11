@@ -8,7 +8,6 @@ use api::RuntimeSnapshotDto;
 pub enum SnapshotSource {
     Nats,
     Rest,
-    Stale,
 }
 
 impl SnapshotSource {
@@ -16,7 +15,6 @@ impl SnapshotSource {
         match self {
             Self::Nats => "NATS",
             Self::Rest => "REST",
-            Self::Stale => "STALE",
         }
     }
 }
