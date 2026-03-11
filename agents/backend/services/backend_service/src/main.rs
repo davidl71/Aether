@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::Context;
 use api::{
-    Alert, HistoricPosition, OrderSnapshot, PositionSnapshot, RestServer, RestState,
+    Alert, HistoricPosition, LoanRepository, OrderSnapshot, PositionSnapshot, RestServer, RestState,
     SharedSnapshot, StrategyController, StrategyDecisionSnapshot, SystemSnapshot,
 };
 use async_trait::async_trait;
@@ -122,7 +122,8 @@ async fn main() -> anyhow::Result<()> {
         warn!("NATS integration unavailable, continuing without NATS");
     }
 
-    let rest_state = RestState::new(state.clone(), controller.clone());
+    let loan_repository = LoanRepository::load_default().context("failed to initialize loan repository")?;
+    let rest_state = RestState::new(state.clone(), controller.clone(), loan_repository);
 
     {
         let mut snapshot = state.write().await;

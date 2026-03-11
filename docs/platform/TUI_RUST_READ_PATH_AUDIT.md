@@ -29,8 +29,8 @@
 ### Remaining local/non-Rust read path
 
 - `python/tui/components/loan_entry.py`
-  - loans tab reads local `config/loans.json`
-  - this is the main remaining TUI durable-state path outside Rust
+  - UI remains in Python, but runtime loan CRUD now goes through the Rust backend API
+  - local JSON is legacy/manual fallback only
 
 ### TUI Python-backed paths that still justify gateway convenience
 
@@ -50,8 +50,8 @@ They should not expand into a general business-API proxy surface, a collection l
 
 ## Recommended next migration
 
-1. Define a Rust-owned loan read/write contract.
-2. Make the TUI loans tab consume that contract.
+1. Finish hardening the Rust-owned loan read/write contract.
+2. Keep the TUI loans tab on that Rust contract.
 3. Preserve local JSON import/export only as a manual import path.
 
 ## Non-goals

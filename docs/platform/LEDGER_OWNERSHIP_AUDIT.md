@@ -1,36 +1,31 @@
 # Ledger Ownership Audit
 
 **Last updated**: 2026-03-11
-**Purpose**: document current durable-state ownership and the remaining dual-writer risk around loans and ledger-adjacent data.
+**Purpose**: document current durable-state ownership and the remaining migration work around loans and ledger-adjacent data.
 
 ## Current ownership
 
 - **Rust SQLite ledger** is the target durable system of record for backend transactional state.
 - **Go** does not write ledger state; it owns collection, `LIVE_STATE`, and QuestDB fanout.
-- **Python** no longer owns frontend read-model HTTP APIs, but it still owns one local durable workflow:
-  - `python/tui/components/loan_entry.py`
-  - this reads and writes `config/loans.json`
-- **Native C++** still has a matching local loan persistence path:
-  - `native/src/loan_manager.cpp`
-  - this also reads and writes the same `config/loans.json` contract
+- **Rust backend** now owns active loan CRUD through the backend API/store.
+- **Python** TUI loan UI is now a client of the Rust loan API by default.
+- **Native C++** retains loan calculation/data structures, but its JSON persistence path is retired.
 
-## What is actually dual-writer today
+## What changed
 
-The current dual-writer issue is not Rust and Python both writing the same SQLite database. It is:
+- The prior dual-writer issue around `config/loans.json` has been narrowed:
+  - Python TUI now prefers Rust `/api/v1/loans`
+  - Rust owns the active loan store path
+  - native C++ `LoanManager` no longer persists to JSON
 
-- **Python/Textual TUI loan editor** writing `config/loans.json`
-- **native C++ `LoanManager`** writing `config/loans.json`
-
-That file is a local/manual durable store that sits outside the Rust ledger path.
+`config/loans.json` remains only as a transitional legacy seed/import format.
 
 ## Current writer classification
 
 ### Active durable writers
 
-- `native/src/loan_manager.cpp`
-  - writes `config/loans.json`
-- `python/tui/components/loan_entry.py`
-  - writes `config/loans.json`
+- `agents/backend/crates/api/src/loans.rs`
+  - owns backend loan store and REST CRUD
 - Rust ledger crates
   - own SQLite-backed ledger/database state
 
@@ -43,19 +38,17 @@ That file is a local/manual durable store that sits outside the Rust ledger path
 ## Decision
 
 - **Rust remains the intended single durable backend owner.**
-- **Python loan CRUD is a temporary local/manual workflow, not the long-term ledger owner.**
-- **C++ loan JSON persistence is compatibility legacy and should not expand.**
+- **Python loan CRUD has been moved behind the Rust API.**
+- **C++ loan JSON persistence is retired.**
 
 ## Migration order
 
-1. Keep Python loan editing explicitly documented as a local file-based workflow.
-2. Define a Rust-owned loan API or import path for the same data model.
-3. Switch TUI loan CRUD from local JSON writes to the Rust-owned contract.
-4. Remove Python JSON writer behavior.
-5. Remove or archive native C++ JSON loan persistence once Rust is the only durable owner.
+1. Keep `config/loans.json` only as a legacy import/seed format.
+2. Move backend loan persistence from transitional JSON storage to final Rust-owned durable storage.
+3. Remove remaining legacy references that imply Python/C++ are active loan writers.
 
 ## Defaults for future work
 
-- Do not add new Python or C++ writers to `config/loans.json`.
+- Do not add new Python or C++ writers for loan state.
 - Do not introduce a second durable database for loans.
-- Treat `config/loans.json` as a transitional/manual-import format until Rust owns loan CRUD.
+- Treat `config/loans.json` as a transitional/manual-import format only.

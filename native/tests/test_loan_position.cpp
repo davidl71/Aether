@@ -355,52 +355,11 @@ TEST_CASE("LoanManager calculations", "[loan]") {
   std::filesystem::remove(test_file);
 }
 
-TEST_CASE("LoanManager persistence", "[loan]") {
-  std::string test_file = "/tmp/test_loans_persistence.json";
-  std::filesystem::remove(test_file);
-
-  {
-    LoanManager manager;
-    REQUIRE(manager.initialize(test_file));
-
-    LoanPosition loan;
-    loan.loan_id = "PERSIST-001";
-    loan.bank_name = "Fibi";
-    loan.account_number = "123456789";
-    loan.loan_type = LoanType::SHIR_BASED;
-    loan.principal = 500000.0;
-    loan.original_principal = 500000.0;
-    loan.interest_rate = 3.5;
-    loan.spread = 1.2;
-    loan.monthly_payment = 4500.0;
-    loan.payment_frequency_months = 1;
-    loan.origination_date = std::chrono::system_clock::now();
-    loan.maturity_date =
-        loan.origination_date + std::chrono::hours(24 * 365 * 10);
-    loan.next_payment_date =
-        loan.origination_date + std::chrono::hours(24 * 30);
-    loan.status = LoanStatus::ACTIVE;
-    loan.last_update = std::chrono::system_clock::now();
-
-    REQUIRE(manager.add_loan(loan));
-    REQUIRE(manager.save());
-  }
-
-  {
-    // Load in new manager instance
-    LoanManager manager;
-    REQUIRE(manager.initialize(test_file));
-    REQUIRE(manager.load());
-
-    auto retrieved = manager.get_loan("PERSIST-001");
-    REQUIRE(retrieved.has_value());
-    REQUIRE(retrieved->loan_id == "PERSIST-001");
-    REQUIRE(retrieved->bank_name == "Fibi");
-    REQUIRE_THAT(retrieved->principal, WithinRel(500000.0, 0.001));
-  }
-
-  // Clean up
-  std::filesystem::remove(test_file);
+TEST_CASE("LoanManager persistence is retired", "[loan]") {
+  LoanManager manager;
+  REQUIRE(manager.initialize("/tmp/test_loans_persistence.json"));
+  REQUIRE_FALSE(manager.save());
+  REQUIRE_FALSE(manager.load());
 }
 
 TEST_CASE("LoanManager CPI and SHIR updates", "[loan]") {

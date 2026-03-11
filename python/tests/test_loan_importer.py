@@ -1,6 +1,20 @@
 import json
 
-from python.tui.components.loan_entry import LoanImporter, LoanManager
+from python.tui.components.loan_entry import LoanImporter, LoanManager, LoanPosition
+
+
+class _FakeResponse:
+    def __init__(self, payload=None, status_code=200, text=""):
+        self._payload = payload or {}
+        self.status_code = status_code
+        self.text = text or json.dumps(self._payload)
+
+    def json(self):
+        return self._payload
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise RuntimeError(self.text)
 
 
 def _write_csv(path, rows):
@@ -229,3 +243,77 @@ def test_csv_import_accepts_valid_row(tmp_path):
     assert error_count == 0
     assert errors == []
     assert "loan-1" in manager.loans
+
+
+def test_api_backed_manager_loads_loans(monkeypatch):
+    monkeypatch.setattr(
+        "python.tui.components.loan_entry.requests.get",
+        lambda url, timeout=5: _FakeResponse(
+            {
+                "loans": [
+                    {
+                        "loan_id": "loan-1",
+                        "bank_name": "Discount",
+                        "account_number": "123",
+                        "loan_type": "SHIR_BASED",
+                        "principal": 1000.0,
+                        "original_principal": 1000.0,
+                        "interest_rate": 4.0,
+                        "spread": 0.5,
+                        "base_cpi": 100.0,
+                        "current_cpi": 100.0,
+                        "origination_date": "2025-01-01T00:00:00Z",
+                        "maturity_date": "2030-01-01T00:00:00Z",
+                        "next_payment_date": "2025-02-01T00:00:00Z",
+                        "monthly_payment": 100.0,
+                        "payment_frequency_months": 1,
+                        "status": "ACTIVE",
+                        "last_update": "2025-01-01T00:00:00Z",
+                    }
+                ]
+            }
+        ),
+    )
+
+    manager = LoanManager(api_base_url="http://127.0.0.1:8080/api/v1")
+
+    assert "loan-1" in manager.loans
+    assert manager.get_all_loans()[0].loan_id == "loan-1"
+
+
+def test_api_backed_manager_adds_loan(monkeypatch):
+    monkeypatch.setattr(
+        "python.tui.components.loan_entry.requests.get",
+        lambda url, timeout=5: _FakeResponse({"loans": []}),
+    )
+    monkeypatch.setattr(
+        "python.tui.components.loan_entry.requests.post",
+        lambda url, json=None, timeout=5: _FakeResponse(json, status_code=201),
+    )
+
+    manager = LoanManager(api_base_url="http://127.0.0.1:8080/api/v1")
+    success, error = manager.add_loan(
+        LoanPosition(
+            loan_id="loan-2",
+            bank_name="Discount",
+            account_number="123",
+            loan_type="SHIR_BASED",
+            principal=1000.0,
+            original_principal=1000.0,
+            interest_rate=4.0,
+            spread=0.5,
+            base_cpi=100.0,
+            current_cpi=100.0,
+            origination_date="2025-01-01T00:00:00Z",
+            maturity_date="2030-01-01T00:00:00Z",
+            next_payment_date="2025-02-01T00:00:00Z",
+            monthly_payment=100.0,
+            payment_frequency_months=1,
+            status="ACTIVE",
+            last_update="2025-01-01T00:00:00Z",
+        )
+    )
+
+    assert success is True
+    assert error is None
+    assert "loan-2" in manager.loans

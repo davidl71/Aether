@@ -2,10 +2,9 @@
 Loan entry and management component for TUI
 
 Provides manual loan entry form, file import, and loan list management.
-Uses JSON storage compatible with C++ LoanManager.
 
-This is a transitional local/manual workflow. It is not the target shared
-backend ownership path; Rust should eventually own durable loan CRUD.
+Primary mode is Rust backend loan CRUD via REST. Legacy local JSON remains only
+as an explicit fallback/test path during migration.
 """
 
 from __future__ import annotations
@@ -13,11 +12,13 @@ from __future__ import annotations
 import json
 import csv
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, asdict
 
+import requests
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical, ScrollableContainer
 from textual.widgets import (
@@ -133,7 +134,7 @@ class LoanPosition:
 
 
 def _mock_loans() -> List[LoanPosition]:
-    """Return sample loan positions for display when no real loans file exists."""
+    """Return sample loan positions for display when no backend or local loans exist."""
     from datetime import timedelta
     now = _utc_now()
     base = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -185,17 +186,109 @@ def _mock_loans() -> List[LoanPosition]:
 class LoanManager:
     """Python loan manager for transitional local `config/loans.json` workflow.
 
-    This class exists for TUI/manual editing compatibility. It is not the
-    intended long-term durable owner for loan state.
+    The TUI should prefer the Rust backend loan API. Local JSON remains available
+    only for explicit legacy/manual workflows and tests during migration.
     """
 
-    def __init__(self, loans_file_path: str = "config/loans.json"):
+    def __init__(
+        self,
+        loans_file_path: str = "config/loans.json",
+        *,
+        api_base_url: Optional[str] = None,
+    ):
         self.loans_file_path = Path(loans_file_path)
+        self.api_base_url = (
+            api_base_url
+            if api_base_url is not None
+            else os.getenv("LOAN_API_BASE_URL")
+        )
+        if self.api_base_url:
+            self.api_base_url = self.api_base_url.rstrip("/")
         self.loans: Dict[str, LoanPosition] = {}
         self.load()
 
+    def _use_api(self) -> bool:
+        return bool(self.api_base_url)
+
+    def storage_label(self) -> str:
+        if self._use_api():
+            return f"Rust backend ({self.api_base_url})"
+        return f"legacy file ({self.loans_file_path})"
+
+    def is_backend_managed(self) -> bool:
+        return self._use_api()
+
+    def _api_url(self, path: str = "/loans") -> str:
+        if not self.api_base_url:
+            raise RuntimeError("Loan API base URL is not configured")
+        return f"{self.api_base_url}{path}"
+
+    def _sync_from_api_payload(self, loans_data: List[Dict[str, Any]]) -> None:
+        self.loans.clear()
+        for loan_data in loans_data:
+            loan = LoanPosition.from_dict(loan_data)
+            is_valid, errors = loan.is_valid()
+            if is_valid:
+                self.loans[loan.loan_id] = loan
+            else:
+                logger.warning(f"Skipping invalid loan from API {loan.loan_id}: {errors}")
+
+    def _load_from_api(self) -> bool:
+        try:
+            response = requests.get(self._api_url(), timeout=5)
+            response.raise_for_status()
+            payload = response.json()
+            loans_data = payload.get("loans", []) if isinstance(payload, dict) else []
+            self._sync_from_api_payload(loans_data)
+            logger.info(f"Loaded {len(self.loans)} loans from Rust backend API")
+            return True
+        except Exception as e:
+            logger.error(f"Error loading loans from Rust backend API: {e}")
+            return False
+
+    def _create_via_api(self, loan: LoanPosition) -> tuple[bool, Optional[str]]:
+        try:
+            response = requests.post(
+                self._api_url(),
+                json=loan.to_dict(),
+                timeout=5,
+            )
+            if response.status_code >= 400:
+                return False, response.text
+            self.loans[loan.loan_id] = loan
+            return True, None
+        except Exception as e:
+            return False, str(e)
+
+    def _update_via_api(self, loan_id: str, loan: LoanPosition) -> tuple[bool, Optional[str]]:
+        try:
+            response = requests.put(
+                self._api_url(f"/loans/{loan_id}"),
+                json=loan.to_dict(),
+                timeout=5,
+            )
+            if response.status_code >= 400:
+                return False, response.text
+            self.loans[loan_id] = loan
+            return True, None
+        except Exception as e:
+            return False, str(e)
+
+    def _delete_via_api(self, loan_id: str) -> bool:
+        try:
+            response = requests.delete(self._api_url(f"/loans/{loan_id}"), timeout=5)
+            if response.status_code == 204:
+                self.loans.pop(loan_id, None)
+                return True
+            return False
+        except Exception:
+            return False
+
     def load(self) -> bool:
         """Load loans from JSON file"""
+        if self._use_api():
+            return self._load_from_api()
+
         if not self.loans_file_path.exists():
             logger.warning(f"Loans file not found: {self.loans_file_path}")
             return False
@@ -222,6 +315,9 @@ class LoanManager:
 
     def save(self) -> bool:
         """Save loans to JSON file"""
+        if self._use_api():
+            return True
+
         try:
             # Ensure directory exists
             self.loans_file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -247,6 +343,9 @@ class LoanManager:
         if not is_valid:
             return False, "; ".join(errors)
 
+        if self._use_api():
+            return self._create_via_api(loan)
+
         if loan.loan_id in self.loans:
             return False, f"Loan with ID {loan.loan_id} already exists"
 
@@ -259,6 +358,9 @@ class LoanManager:
         if not is_valid:
             return False, "; ".join(errors)
 
+        if self._use_api():
+            return self._update_via_api(loan_id, loan)
+
         if loan_id not in self.loans:
             return False, f"Loan with ID {loan_id} not found"
 
@@ -267,6 +369,9 @@ class LoanManager:
 
     def delete_loan(self, loan_id: str) -> bool:
         """Delete a loan"""
+        if self._use_api():
+            return self._delete_via_api(loan_id)
+
         if loan_id in self.loans:
             del self.loans[loan_id]
             return True
@@ -277,7 +382,7 @@ class LoanManager:
         return self.loans.get(loan_id)
 
     def get_all_loans(self) -> List[LoanPosition]:
-        """Get all loans (real from file). When none loaded, returns mock/sample loans for display."""
+        """Get all loans. When none are available, returns mock/sample loans for display."""
         if self.loans:
             return list(self.loans.values())
         return _mock_loans()
@@ -585,23 +690,30 @@ class LoanListTab(Container):
         status = self.query_one("#loan-status", Static)
         total = len(loans)
         active = len([ln for ln in loans if ln.status == "ACTIVE"])
+        storage = self.loan_manager.storage_label()
         if self.loan_manager.is_using_mock_loans():
-            status.update(f"Total Loans: {total} | Active: {active}  [dim](sample data — no loans file)[/]")
+            status.update(
+                f"Total Loans: {total} | Active: {active}  "
+                f"[dim](sample data — no backend loans available; source: {storage})[/]"
+            )
         else:
-            status.update(f"Total Loans: {total} | Active: {active}")
+            status.update(f"Total Loans: {total} | Active: {active}  [dim]({storage})[/]")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses"""
         if event.button.id == "add-loan-button":
             # Show loan entry form (would need modal/screen push)
             log = self.query_one("#loan-log", Log)
-            log.write("Add loan button pressed - form would open here")
+            log.write(
+                f"Add loan button pressed - form would open here "
+                f"({self.loan_manager.storage_label()})"
+            )
 
         elif event.button.id == "refresh-button":
             self.loan_manager.load()
             self._refresh_table()
             log = self.query_one("#loan-log", Log)
-            log.write("Loans refreshed")
+            log.write(f"Loans refreshed from {self.loan_manager.storage_label()}")
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         """Handle row selection"""

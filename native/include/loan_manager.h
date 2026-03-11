@@ -41,7 +41,7 @@ public:
     bool update_shir_for_all_loans(double current_shir);
     void refresh_loan_calculations();
 
-    // Persistence
+    // Persistence (retired: Rust backend owns durable loan storage)
     bool save();
     bool load();
 
@@ -53,9 +53,6 @@ private:
     std::unordered_map<std::string, LoanPosition> loans_;
     mutable std::shared_mutex loans_mutex_;
 
-    // Internal helper methods
-    bool save_to_json() const;
-    bool load_from_json();
 };
 
 } // namespace ib_box_spread

@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use tokio::{sync::watch, task::JoinHandle, time::timeout};
 use tracing::{info, warn};
 
+use crate::loans::{LoanAggregationInput, LoanRecord, LoanRepository};
 use crate::state::{Alert, OrderSnapshot, SharedSnapshot, SystemSnapshot};
 use crate::websocket::WebSocketServer;
 
@@ -40,6 +41,7 @@ impl StrategyController {
 pub struct RestState {
     pub snapshot: SharedSnapshot,
     pub controller: StrategyController,
+    pub loans: LoanRepository,
 }
 
 // Ensure RestState is Send + Sync for axum Router requirements
@@ -48,10 +50,11 @@ pub struct RestState {
 // So RestState is automatically Send + Sync
 
 impl RestState {
-    pub fn new(snapshot: SharedSnapshot, controller: StrategyController) -> Self {
+    pub fn new(snapshot: SharedSnapshot, controller: StrategyController, loans: LoanRepository) -> Self {
         Self {
             snapshot,
             controller,
+            loans,
         }
     }
 }
@@ -90,6 +93,11 @@ impl RestServer {
             .route("/api/account", post(change_account))
             .route("/api/v1/config", get(get_config))
             .route("/api/v1/config", put(update_config))
+            .route("/api/v1/loans", get(loans_list).post(loans_create))
+            .route(
+                "/api/v1/loans/:loan_id",
+                get(loans_get).put(loans_update).delete(loans_delete),
+            )
             .route("/api/v1/scenarios", get(get_scenarios))
             .route("/api/v1/chart/:symbol", get(get_chart))
             .route("/api/v1/swiftness/positions", get(swiftness_positions))
@@ -272,6 +280,11 @@ struct ApiResponse {
     message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     data: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Serialize)]
+struct LoansListResponse {
+    loans: Vec<LoanRecord>,
 }
 
 #[derive(Debug, Serialize)]
@@ -669,6 +682,67 @@ async fn get_config(Extension(state): Extension<RestState>) -> Json<serde_json::
     }))
 }
 
+async fn loans_list(Extension(state): Extension<RestState>) -> Json<LoansListResponse> {
+    Json(LoansListResponse {
+        loans: state.loans.list().await,
+    })
+}
+
+async fn loans_get(
+    Path(loan_id): Path<String>,
+    Extension(state): Extension<RestState>,
+) -> Result<Json<LoanRecord>, (StatusCode, String)> {
+    state
+        .loans
+        .get(&loan_id)
+        .await
+        .map(Json)
+        .ok_or((StatusCode::NOT_FOUND, format!("Loan with ID {loan_id} not found")))
+}
+
+async fn loans_create(
+    Extension(state): Extension<RestState>,
+    Json(loan): Json<LoanRecord>,
+) -> Result<(StatusCode, Json<LoanRecord>), (StatusCode, String)> {
+    state
+        .loans
+        .create(loan.clone())
+        .await
+        .map_err(|err| (StatusCode::BAD_REQUEST, err))?;
+    Ok((StatusCode::CREATED, Json(loan)))
+}
+
+async fn loans_update(
+    Path(loan_id): Path<String>,
+    Extension(state): Extension<RestState>,
+    Json(loan): Json<LoanRecord>,
+) -> Result<Json<LoanRecord>, (StatusCode, String)> {
+    state
+        .loans
+        .update(&loan_id, loan.clone())
+        .await
+        .map_err(|err| {
+            let status = if err.contains("not found") {
+                StatusCode::NOT_FOUND
+            } else {
+                StatusCode::BAD_REQUEST
+            };
+            (status, err)
+        })?;
+    Ok(Json(loan))
+}
+
+async fn loans_delete(
+    Path(loan_id): Path<String>,
+    Extension(state): Extension<RestState>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    match state.loans.delete(&loan_id).await {
+        Ok(true) => Ok(StatusCode::NO_CONTENT),
+        Ok(false) => Err((StatusCode::NOT_FOUND, format!("Loan with ID {loan_id} not found"))),
+        Err(err) => Err((StatusCode::INTERNAL_SERVER_ERROR, err)),
+    }
+}
+
 async fn update_config(
     Extension(state): Extension<RestState>,
     Json(request): Json<ConfigUpdateRequest>,
@@ -951,23 +1025,81 @@ fn position_value(position: &serde_json::Value) -> f64 {
         .unwrap_or(0.0)
 }
 
-fn bank_accounts_as_loans(bank_accounts: &[FrontendBankAccountInput]) -> Vec<serde_json::Value> {
-    let mut loans = Vec::new();
-    for account in bank_accounts {
-        let Some(debit_rate) = account.debit_rate else {
-            continue;
-        };
-        if debit_rate <= 0.0 {
-            continue;
-        }
-        loans.push(serde_json::json!({
-            "name": account.account_name,
-            "instrument_type": "bank_loan",
-            "cash_flow": account.balance,
-            "rate": debit_rate,
-            "candle": { "close": account.balance },
-        }));
-    }
+fn loan_inputs_from_positions(positions: &[FrontendPositionInput]) -> Vec<LoanAggregationInput> {
+    positions
+        .iter()
+        .filter_map(|position| {
+            let instrument_type = position.instrument_type.as_deref()?;
+            if !matches!(instrument_type, "bank_loan" | "pension_loan") {
+                return None;
+            }
+            Some(LoanAggregationInput {
+                loan_id: None,
+                name: position.name.clone(),
+                instrument_type: instrument_type.to_string(),
+                principal: position_cash_value(position),
+                annual_rate: position.rate.unwrap_or(0.0),
+                monthly_payment: None,
+                maturity_date: position.maturity_date.clone(),
+            })
+        })
+        .collect()
+}
+
+fn loan_inputs_from_bank_accounts(
+    bank_accounts: &[FrontendBankAccountInput],
+) -> Vec<LoanAggregationInput> {
+    bank_accounts
+        .iter()
+        .filter_map(|account| {
+            let annual_rate = account.debit_rate?;
+            if annual_rate <= 0.0 {
+                return None;
+            }
+            Some(LoanAggregationInput {
+                loan_id: None,
+                name: account.account_name.clone(),
+                instrument_type: "bank_loan".into(),
+                principal: account.balance,
+                annual_rate,
+                monthly_payment: None,
+                maturity_date: None,
+            })
+        })
+        .collect()
+}
+
+fn loan_inputs_from_repository(loans: &[LoanRecord]) -> Vec<LoanAggregationInput> {
+    loans.iter().map(LoanRecord::to_aggregation_input).collect()
+}
+
+fn is_loan_instrument(instrument_type: Option<&str>) -> bool {
+    matches!(instrument_type, Some("bank_loan" | "pension_loan"))
+}
+
+fn effective_frontend_positions<'a>(
+    positions: &'a [FrontendPositionInput],
+    repository_loans: &[LoanRecord],
+) -> Vec<&'a FrontendPositionInput> {
+    positions
+        .iter()
+        .filter(|position| {
+            !(!repository_loans.is_empty() && is_loan_instrument(position.instrument_type.as_deref()))
+        })
+        .collect()
+}
+
+fn aggregated_loan_inputs(
+    positions: &[FrontendPositionInput],
+    bank_accounts: &[FrontendBankAccountInput],
+    repository_loans: &[LoanRecord],
+) -> Vec<LoanAggregationInput> {
+    let mut loans = if repository_loans.is_empty() {
+        loan_inputs_from_positions(positions)
+    } else {
+        loan_inputs_from_repository(repository_loans)
+    };
+    loans.extend(loan_inputs_from_bank_accounts(bank_accounts));
     loans
 }
 
@@ -994,12 +1126,22 @@ fn date_only(date: &chrono::DateTime<chrono::Utc>) -> String {
     date.format("%Y-%m-%d").to_string()
 }
 
+#[cfg(test)]
 fn build_cash_flow_response(request: &FrontendCashFlowRequest) -> FrontendCashFlowResponse {
+    build_cash_flow_response_with_loans(request, &[])
+}
+
+fn build_cash_flow_response_with_loans(
+    request: &FrontendCashFlowRequest,
+    repository_loans: &[LoanRecord],
+) -> FrontendCashFlowResponse {
     let now = chrono::Utc::now();
     let projection_months = request.projection_months.max(0);
     let mut events = Vec::new();
+    let loan_inputs = aggregated_loan_inputs(&request.positions, &request.bank_accounts, repository_loans);
+    let positions = effective_frontend_positions(&request.positions, repository_loans);
 
-    for position in &request.positions {
+    for position in positions {
         if let Some(maturity_date_str) = &position.maturity_date {
             if let Some(maturity_date) = parse_frontend_date(maturity_date_str) {
                 let months_ahead =
@@ -1017,24 +1159,6 @@ fn build_cash_flow_response(request: &FrontendCashFlowRequest) -> FrontendCashFl
                         position_name: position.name.clone(),
                         event_type: "maturity".into(),
                     });
-
-                    if matches!(
-                        position.instrument_type.as_deref(),
-                        Some("bank_loan" | "pension_loan")
-                    ) {
-                        let monthly_payment =
-                            (position_cash_value(position) * position.rate.unwrap_or(0.0)) / 12.0;
-                        for month in 1..=std::cmp::min(months_ahead, projection_months) {
-                            let payment_date = now + chrono::Duration::days(30 * month);
-                            events.push(FrontendCashFlowEvent {
-                                date: date_only(&payment_date),
-                                amount: -monthly_payment,
-                                description: "Monthly interest payment".into(),
-                                position_name: position.name.clone(),
-                                event_type: "loan_payment".into(),
-                            });
-                        }
-                    }
                 }
             }
         }
@@ -1053,19 +1177,32 @@ fn build_cash_flow_response(request: &FrontendCashFlowRequest) -> FrontendCashFl
         }
     }
 
-    for account in &request.bank_accounts {
-        if let Some(debit_rate) = account.debit_rate.filter(|rate| *rate > 0.0) {
-            let monthly_payment = (account.balance * debit_rate) / 12.0;
-            for month in 1..=projection_months {
-                let payment_date = now + chrono::Duration::days(30 * month);
-                events.push(FrontendCashFlowEvent {
-                    date: date_only(&payment_date),
-                    amount: -monthly_payment,
-                    description: "Monthly interest payment".into(),
-                    position_name: account.account_name.clone(),
-                    event_type: "loan_payment".into(),
-                });
+    for loan in &loan_inputs {
+        if let Some(maturity_date_str) = &loan.maturity_date {
+            if let Some(maturity_date) = parse_frontend_date(maturity_date_str) {
+                let months_ahead =
+                    i64::from(maturity_date.year() - now.year()) * 12
+                        + i64::from(maturity_date.month() as i32 - now.month() as i32);
+                if (0..=projection_months).contains(&months_ahead) {
+                    events.push(FrontendCashFlowEvent {
+                        date: date_only(&maturity_date),
+                        amount: loan.principal,
+                        description: format!("{} maturity", loan.instrument_type),
+                        position_name: loan.name.clone(),
+                        event_type: "maturity".into(),
+                    });
+                }
             }
+        }
+        for month in 1..=projection_months {
+            let payment_date = now + chrono::Duration::days(30 * month);
+            events.push(FrontendCashFlowEvent {
+                date: date_only(&payment_date),
+                amount: -loan.monthly_interest_payment(),
+                description: "Monthly interest payment".into(),
+                position_name: loan.name.clone(),
+                event_type: "loan_payment".into(),
+            });
         }
     }
 
@@ -1129,39 +1266,37 @@ fn scenario_net_benefit(
     }
 }
 
+#[cfg(test)]
 fn build_opportunity_scenarios_response(request: &FrontendViewRequest) -> Vec<FrontendScenario> {
-    let loans: Vec<&FrontendPositionInput> = request
-        .positions
-        .iter()
-        .filter(|position| {
-            matches!(
-                position.instrument_type.as_deref(),
-                Some("bank_loan" | "pension_loan")
-            )
-        })
-        .collect();
-    let bank_loans: Vec<&FrontendBankAccountInput> = request
-        .bank_accounts
-        .iter()
-        .filter(|account| account.debit_rate.unwrap_or(0.0) > 0.0)
-        .collect();
+    build_opportunity_scenarios_response_with_loans(request, &[])
+}
+
+fn build_opportunity_scenarios_response_with_loans(
+    request: &FrontendViewRequest,
+    repository_loans: &[LoanRecord],
+) -> Vec<FrontendScenario> {
+    let loans = aggregated_loan_inputs(&request.positions, &request.bank_accounts, repository_loans);
+    let positions = effective_frontend_positions(&request.positions, repository_loans);
     let box_spreads: Vec<&FrontendPositionInput> = request
         .positions
         .iter()
         .filter(|position| position.instrument_type.as_deref() == Some("box_spread"))
         .collect();
+    let box_spreads: Vec<&FrontendPositionInput> = if repository_loans.is_empty() {
+        box_spreads
+    } else {
+        positions
+            .into_iter()
+            .filter(|position| position.instrument_type.as_deref() == Some("box_spread"))
+            .collect()
+    };
 
     let mut scenarios = Vec::new();
 
-    if loans.len() > 1 || !bank_loans.is_empty() {
+    if loans.len() > 1 {
         let highest_rate_loan = loans
             .iter()
-            .map(|loan| (loan.rate.unwrap_or(0.0), position_cash_value(loan)))
-            .chain(
-                bank_loans
-                    .iter()
-                    .map(|account| (account.debit_rate.unwrap_or(0.0), account.balance)),
-            )
+            .map(|loan| (loan.annual_rate, loan.principal))
             .max_by(|a, b| a.0.total_cmp(&b.0));
 
         if let Some((loan_rate, loan_amount)) = highest_rate_loan.filter(|(rate, _)| *rate > 0.03)
@@ -1184,8 +1319,8 @@ fn build_opportunity_scenarios_response(request: &FrontendViewRequest) -> Vec<Fr
 
     if let (Some(loan), Some(box_spread)) = (loans.first(), box_spreads.first()) {
         let parameters = std::collections::BTreeMap::from([
-            ("loan_amount".into(), position_cash_value(loan)),
-            ("loan_rate".into(), loan.rate.unwrap_or(0.0)),
+            ("loan_amount".into(), loan.principal),
+            ("loan_rate".into(), loan.annual_rate),
             ("box_spread_rate".into(), box_spread.rate.unwrap_or(0.05)),
         ]);
         scenarios.push(FrontendScenario {
@@ -1200,8 +1335,8 @@ fn build_opportunity_scenarios_response(request: &FrontendViewRequest) -> Vec<Fr
 
     if let Some(loan) = loans.first() {
         let parameters = std::collections::BTreeMap::from([
-            ("loan_amount".into(), position_cash_value(loan)),
-            ("loan_rate".into(), loan.rate.unwrap_or(0.0)),
+            ("loan_amount".into(), loan.principal),
+            ("loan_rate".into(), loan.annual_rate),
             ("fund_return".into(), 0.06),
         ]);
         scenarios.push(FrontendScenario {
@@ -1243,9 +1378,18 @@ fn build_scenario_calculation_response(
     }
 }
 
+#[cfg(test)]
 fn build_unified_positions_response(
     request: &FrontendViewRequest,
 ) -> FrontendUnifiedPositionsResponse {
+    build_unified_positions_response_with_loans(request, &[])
+}
+
+fn build_unified_positions_response_with_loans(
+    request: &FrontendViewRequest,
+    repository_loans: &[LoanRecord],
+) -> FrontendUnifiedPositionsResponse {
+    let positions = effective_frontend_positions(&request.positions, repository_loans);
     let positions_json: Vec<serde_json::Value> = request
         .positions
         .iter()
@@ -1280,6 +1424,43 @@ fn build_unified_positions_response(
             })
         })
         .collect();
+    let positions_json: Vec<serde_json::Value> = if repository_loans.is_empty() {
+        positions_json
+    } else {
+        positions
+            .into_iter()
+            .map(|position| {
+                serde_json::json!({
+                    "name": position.name,
+                    "quantity": position.quantity.unwrap_or(0),
+                    "roi": position.roi.unwrap_or(0.0),
+                    "maker_count": position.maker_count.unwrap_or(0),
+                    "taker_count": position.taker_count.unwrap_or(0),
+                    "rebate_estimate": position.rebate_estimate.unwrap_or(0.0),
+                    "vega": position.vega.unwrap_or(0.0),
+                    "theta": position.theta.unwrap_or(0.0),
+                    "fair_diff": position.fair_diff.unwrap_or(0.0),
+                    "maturity_date": position.maturity_date,
+                    "cash_flow": position.cash_flow,
+                    "candle": candle_to_json(&position.candle),
+                    "instrument_type": position.instrument_type,
+                    "rate": position.rate,
+                    "collateral_value": position.collateral_value,
+                    "currency": position.currency,
+                    "market_value": position.market_value,
+                    "bid": position.bid,
+                    "ask": position.ask,
+                    "last": position.last,
+                    "spread": position.spread,
+                    "price": position.price,
+                    "side": position.side,
+                    "expected_cash_at_expiry": position.expected_cash_at_expiry,
+                    "dividend": position.dividend,
+                    "conid": position.conid,
+                })
+            })
+            .collect()
+    };
 
     let reference_candle = positions_json
         .first()
@@ -1291,21 +1472,56 @@ fn build_unified_positions_response(
     FrontendUnifiedPositionsResponse {
         positions: positions_json
             .into_iter()
+            .chain(repository_loans.iter().map(|loan| {
+                serde_json::json!({
+                    "name": loan.bank_name,
+                    "quantity": 1,
+                    "roi": 0.0,
+                    "maker_count": 0,
+                    "taker_count": 0,
+                    "rebate_estimate": 0.0,
+                    "vega": 0.0,
+                    "theta": 0.0,
+                    "fair_diff": 0.0,
+                    "maturity_date": loan.maturity_date,
+                    "cash_flow": loan.principal,
+                    "candle": { "close": loan.principal },
+                    "instrument_type": "bank_loan",
+                    "rate": loan.interest_rate,
+                    "collateral_value": serde_json::Value::Null,
+                    "currency": "ILS",
+                    "market_value": loan.principal,
+                    "bid": serde_json::Value::Null,
+                    "ask": serde_json::Value::Null,
+                    "last": serde_json::Value::Null,
+                    "spread": serde_json::Value::Null,
+                    "price": serde_json::Value::Null,
+                    "side": serde_json::Value::Null,
+                    "expected_cash_at_expiry": serde_json::Value::Null,
+                    "dividend": serde_json::Value::Null,
+                    "conid": serde_json::Value::Null,
+                    "loan_id": loan.loan_id,
+                })
+            }))
             .chain(bank_positions.into_iter())
             .collect(),
     }
 }
 
 async fn frontend_cash_flow_timeline(
+    Extension(state): Extension<RestState>,
     Json(request): Json<FrontendCashFlowRequest>,
 ) -> Json<FrontendCashFlowResponse> {
-    Json(build_cash_flow_response(&request))
+    let loans = state.loans.list().await;
+    Json(build_cash_flow_response_with_loans(&request, &loans))
 }
 
 async fn frontend_opportunity_scenarios(
+    Extension(state): Extension<RestState>,
     Json(request): Json<FrontendViewRequest>,
 ) -> Json<Vec<FrontendScenario>> {
-    Json(build_opportunity_scenarios_response(&request))
+    let loans = state.loans.list().await;
+    Json(build_opportunity_scenarios_response_with_loans(&request, &loans))
 }
 
 async fn frontend_opportunity_calculate(
@@ -1315,12 +1531,23 @@ async fn frontend_opportunity_calculate(
 }
 
 async fn frontend_unified_positions(
+    Extension(state): Extension<RestState>,
     Json(request): Json<FrontendViewRequest>,
 ) -> Json<FrontendUnifiedPositionsResponse> {
-    Json(build_unified_positions_response(&request))
+    let loans = state.loans.list().await;
+    Json(build_unified_positions_response_with_loans(&request, &loans))
 }
 
+#[cfg(test)]
 fn build_relationship_response(request: &FrontendViewRequest) -> FrontendRelationshipResponse {
+    build_relationship_response_with_loans(request, &[])
+}
+
+fn build_relationship_response_with_loans(
+    request: &FrontendViewRequest,
+    repository_loans: &[LoanRecord],
+) -> FrontendRelationshipResponse {
+    let positions = effective_frontend_positions(&request.positions, repository_loans);
     let positions_json: Vec<serde_json::Value> = request
         .positions
         .iter()
@@ -1335,20 +1562,24 @@ fn build_relationship_response(request: &FrontendViewRequest) -> FrontendRelatio
             })
         })
         .collect();
-    let synthetic_loans = bank_accounts_as_loans(&request.bank_accounts);
-
-    let loans: Vec<&serde_json::Value> = positions_json
-        .iter()
-        .chain(synthetic_loans.iter())
-        .filter(|position| {
-            matches!(
-                position
-                    .get("instrument_type")
-                    .and_then(|value| value.as_str()),
-                Some("bank_loan" | "pension_loan")
-            )
-        })
-        .collect();
+    let positions_json: Vec<serde_json::Value> = if repository_loans.is_empty() {
+        positions_json
+    } else {
+        positions
+            .into_iter()
+            .map(|position| {
+                serde_json::json!({
+                    "name": position.name,
+                    "instrument_type": position.instrument_type,
+                    "cash_flow": position.cash_flow,
+                    "rate": position.rate,
+                    "collateral_value": position.collateral_value,
+                    "candle": candle_to_json(&position.candle),
+                })
+            })
+            .collect()
+    };
+    let loans = aggregated_loan_inputs(&request.positions, &request.bank_accounts, repository_loans);
     let box_spreads: Vec<&serde_json::Value> = positions_json
         .iter()
         .filter(|position| {
@@ -1373,14 +1604,10 @@ fn build_relationship_response(request: &FrontendViewRequest) -> FrontendRelatio
     let mut relationships = Vec::new();
 
     for loan in &loans {
-        let loan_value = position_value(loan);
+        let loan_value = loan.principal;
         for box_spread in &box_spreads {
             relationships.push(FrontendRelationship {
-                from: loan
-                    .get("name")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("Unknown")
-                    .to_string(),
+                from: loan.name.clone(),
                 to: box_spread
                     .get("name")
                     .and_then(|v| v.as_str())
@@ -1394,14 +1621,10 @@ fn build_relationship_response(request: &FrontendViewRequest) -> FrontendRelatio
     }
 
     for loan in &loans {
-        let loan_value = position_value(loan);
+        let loan_value = loan.principal;
         for bond in &bonds {
             relationships.push(FrontendRelationship {
-                from: loan
-                    .get("name")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("Unknown")
-                    .to_string(),
+                from: loan.name.clone(),
                 to: bond
                     .get("name")
                     .and_then(|v| v.as_str())
@@ -1425,10 +1648,7 @@ fn build_relationship_response(request: &FrontendViewRequest) -> FrontendRelatio
             .and_then(|value| value.as_f64())
             .unwrap_or(0.0);
         for loan in &loans {
-            let loan_rate = loan
-                .get("rate")
-                .and_then(|value| value.as_f64())
-                .unwrap_or(0.0);
+            let loan_rate = loan.annual_rate;
             if bond_rate > loan_rate {
                 relationships.push(FrontendRelationship {
                     from: bond
@@ -1437,10 +1657,8 @@ fn build_relationship_response(request: &FrontendViewRequest) -> FrontendRelatio
                         .unwrap_or("Unknown")
                         .to_string(),
                     to: loan
-                        .get("name")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("Unknown")
-                        .to_string(),
+                        .name
+                        .clone(),
                     relationship_type: "collateral".into(),
                     description: "Bond used as collateral for loan".into(),
                     value: bond_value,
@@ -1473,8 +1691,13 @@ fn build_relationship_response(request: &FrontendViewRequest) -> FrontendRelatio
         }
     }
     for position in &request.positions {
-        if !position.name.is_empty() {
+        if !position.name.is_empty() && !(!repository_loans.is_empty() && is_loan_instrument(position.instrument_type.as_deref())) {
             nodes.insert(position.name.clone());
+        }
+    }
+    for loan in repository_loans {
+        if !loan.bank_name.is_empty() {
+            nodes.insert(loan.bank_name.clone());
         }
     }
     for account in &request.bank_accounts {
@@ -1490,9 +1713,11 @@ fn build_relationship_response(request: &FrontendViewRequest) -> FrontendRelatio
 }
 
 async fn frontend_relationships(
+    Extension(state): Extension<RestState>,
     Json(request): Json<FrontendViewRequest>,
 ) -> Json<FrontendRelationshipResponse> {
-    Json(build_relationship_response(&request))
+    let loans = state.loans.list().await;
+    Json(build_relationship_response_with_loans(&request, &loans))
 }
 
 // Chart endpoint
@@ -1745,6 +1970,44 @@ async fn swiftness_update_exchange_rate(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::loans::{LoanRepository, LoanStatus, LoanType};
+    use axum::Json;
+    use std::{env, path::PathBuf, sync::Arc};
+    use tokio::sync::{watch, RwLock};
+    use uuid::Uuid;
+
+    fn test_rest_state() -> RestState {
+        let path: PathBuf = env::temp_dir().join(format!("loan-test-{}.json", Uuid::new_v4()));
+        let repo = LoanRepository::load(path).expect("temp loan repo");
+        let (tx, _rx) = watch::channel(false);
+        RestState::new(
+            Arc::new(RwLock::new(SystemSnapshot::default())),
+            StrategyController::new(tx),
+            repo,
+        )
+    }
+
+    fn sample_loan(loan_id: &str) -> LoanRecord {
+        LoanRecord {
+            loan_id: loan_id.into(),
+            bank_name: "Discount".into(),
+            account_number: "123".into(),
+            loan_type: LoanType::ShirBased,
+            principal: 1000.0,
+            original_principal: 1200.0,
+            interest_rate: 4.0,
+            spread: 0.5,
+            base_cpi: 100.0,
+            current_cpi: 100.0,
+            origination_date: "2025-01-01T00:00:00Z".into(),
+            maturity_date: "2030-01-01T00:00:00Z".into(),
+            next_payment_date: "2025-02-01T00:00:00Z".into(),
+            monthly_payment: 100.0,
+            payment_frequency_months: 1,
+            status: LoanStatus::Active,
+            last_update: "2025-01-01T00:00:00Z".into(),
+        }
+    }
 
     fn sample_request() -> FrontendViewRequest {
         FrontendViewRequest {
@@ -1950,5 +2213,60 @@ mod tests {
         let response = build_scenario_calculation_response(&request);
         assert!((response.net_benefit - 20.0).abs() < f64::EPSILON);
         assert_eq!(response.capital_efficiency, Some(1.5));
+    }
+
+    #[tokio::test]
+    async fn loans_crud_handlers_work() {
+        let state = test_rest_state();
+        let loan = sample_loan("loan-1");
+
+        let (status, Json(created)) = loans_create(Extension(state.clone()), Json(loan.clone()))
+            .await
+            .expect("create loan");
+        assert_eq!(status, StatusCode::CREATED);
+        assert_eq!(created.loan_id, "loan-1");
+
+        let Json(listed) = loans_list(Extension(state.clone())).await;
+        assert_eq!(listed.loans.len(), 1);
+        assert_eq!(listed.loans[0].loan_id, "loan-1");
+
+        let Json(fetched) = loans_get(Path("loan-1".into()), Extension(state.clone()))
+            .await
+            .expect("get loan");
+        assert_eq!(fetched.bank_name, "Discount");
+
+        let mut updated_loan = loan.clone();
+        updated_loan.monthly_payment = 150.0;
+        let Json(updated) = loans_update(
+            Path("loan-1".into()),
+            Extension(state.clone()),
+            Json(updated_loan),
+        )
+        .await
+        .expect("update loan");
+        assert_eq!(updated.monthly_payment, 150.0);
+
+        let status = loans_delete(Path("loan-1".into()), Extension(state.clone()))
+            .await
+            .expect("delete loan");
+        assert_eq!(status, StatusCode::NO_CONTENT);
+
+        let err = loans_get(Path("loan-1".into()), Extension(state))
+            .await
+            .expect_err("loan should be gone");
+        assert_eq!(err.0, StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn loans_create_rejects_invalid_record() {
+        let state = test_rest_state();
+        let mut loan = sample_loan("bad-loan");
+        loan.principal = 0.0;
+
+        let err = loans_create(Extension(state), Json(loan))
+            .await
+            .expect_err("invalid loan should fail");
+        assert_eq!(err.0, StatusCode::BAD_REQUEST);
+        assert!(err.1.contains("Principal must be > 0"));
     }
 }
