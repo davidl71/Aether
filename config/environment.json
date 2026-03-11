@@ -27,7 +27,6 @@
     "discount_bank_port": 8003,
     "risk_free_rate_port": 8004,
     "tastytrade_port": 8005,
-    "jupyterlab_port": 8888,
     "nats_port": 4222,
     "nats_http_port": 8222,
     "nats_websocket_port": 8081,

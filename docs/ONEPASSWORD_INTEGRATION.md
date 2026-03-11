@@ -175,7 +175,6 @@ The Python SDK (`onepassword_sdk_helper.py`) also uses `OP_SERVICE_ACCOUNT_TOKEN
 | **FRED (SOFR/Treasury)** | `OP_FRED_API_KEY_SECRET` | Vault / FRED API / credential or api_key |
 | **Alpha Vantage** | `OP_ALPHA_VANTAGE_API_KEY_SECRET` | Vault / Alpha Vantage API / credential |
 | **Finnhub** | `OP_FINNHUB_API_KEY_SECRET` | Vault / Finnhub API / credential |
-| **JupyterLab** | `OP_JUPYTERLAB_TOKEN_SECRET`, `OP_JUPYTERLAB_PASSWORD_SECRET` | Vault / JupyterLab / token, password |
 
 - **Node (Israeli bank scrapers service)**: Uses [1Password JavaScript SDK](https://github.com/1Password/onepassword-sdk-js) when `OP_SCRAPER_*_SECRET` env vars contain `op://` refs. See table below.
 - **Python**: Optional helper `python/integration/onepassword_sdk_helper.py` uses [1Password Python SDK](https://github.com/1Password/onepassword-sdk-python). Call `resolve_secret("op://vault/item/field")`, `resolve_secrets({"key": "op://..."})`, or `getenv_or_resolve(env_var, op_ref_env_var, default)`. Auth: `OP_SERVICE_ACCOUNT_TOKEN` or `OP_1PASSWORD_ACCOUNT_NAME` (desktop app).

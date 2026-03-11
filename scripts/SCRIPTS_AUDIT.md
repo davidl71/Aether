@@ -76,7 +76,6 @@ Total scripts: 116 (after deduplication)
 
 ### Setup (7)
 - `workspace_ram_disk_manager.sh` - RAM disk management ✅ CONSOLIDATED
-- `setup_notebooks.sh` - Setup Jupyter notebooks
 - `setup_platform_settings.sh` - Platform-specific settings
 - `setup_pre_commit_hook.sh` - Git pre-commit hooks
 - `setup_worktree.sh` - Git worktree setup ✅ ACTIVE
