@@ -143,6 +143,8 @@ htmlcov/
 .vscode/launch.json.user
 .cursor/cache/
 .cursor/settings.json
+.cppcheck-cache/
+.clangd/
 
 # ============================================================================
 # Logs & Temporary Files

@@ -48,6 +48,10 @@ secrets.txt
 .vscode/settings.json.user
 .vscode/launch.json.user
 .idea/
+
+# Lint and analysis caches
+.cppcheck-cache/
+.clangd/
 *.swp
 *.swo
 *~
