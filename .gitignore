@@ -179,6 +179,7 @@ ib-gateway/dist/  # IB Gateway build output directory
 # Build artifacts
 web/dist/
 web/dev-dist/
+web/package-lock.json
 .cache/
 emsdk/
 typescript/node_modules/
