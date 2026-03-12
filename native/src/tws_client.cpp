@@ -35,6 +35,7 @@ using OrderId  = int;
 #include <ctime>
 #include <errno.h>
 #include <fcntl.h>
+#include <filesystem>
 #include <mutex>
 #include <netinet/in.h>
 #include <string>
@@ -130,29 +131,23 @@ bool is_port_open(const std::string &host, int port, int timeout_ms = 1000) {
  * paper and live) This ensures we find the correct port even if user configured
  * wrong type (paper vs live)
  */
-std::vector<int> get_port_candidates(int configured_port) {
+// Returns the ordered list of ports to try when connecting.
+// The configured port is always first. The remainder comes from
+// TWSConfig::fallback_ports when set; otherwise the built-in defaults
+// {7497, 7496, 4002, 4001} are used. Duplicates are skipped.
+std::vector<int> get_port_candidates(const config::TWSConfig &cfg) {
   std::vector<int> candidates;
+  candidates.push_back(cfg.port);
 
-  // TODO: Make the fallback port priority list configurable (e.g., via config
-  // file) so paper-only environments can disable live ports entirely.
-  // Standard ports in priority order:
-  // 1. Configured port (if it's a standard port, it will be tried first anyway)
-  // 2. TWS Paper (7497) - most common for testing
-  // 3. TWS Live (7496)
-  // 4. IB Gateway Paper (4002)
-  // 5. IB Gateway Live (4001)
+  static const std::vector<int> kDefaults = {7497, 7496, 4002, 4001};
+  const std::vector<int> &fallback =
+      cfg.fallback_ports.empty() ? kDefaults : cfg.fallback_ports;
 
-  // Start with configured port
-  candidates.push_back(configured_port);
-
-  // Add all standard ports, avoiding duplicates
-  std::vector<int> standard_ports = {7497, 7496, 4002, 4001};
-  for (int port : standard_ports) {
-    if (port != configured_port) {
-      candidates.push_back(port);
+  for (int p : fallback) {
+    if (p != cfg.port) {
+      candidates.push_back(p);
     }
   }
-
   return candidates;
 }
 
@@ -343,13 +338,19 @@ public:
         next_request_id_(1000), state_(ConnectionState::Disconnected),
         reconnect_attempts_(0),
         last_heartbeat_(std::chrono::steady_clock::now()),
-        // TODO: Persist rate_limiter_ counters across restarts (e.g., via a
-        // shared-memory segment or a short-lived file) to avoid breaching IB's
-        // per-day request quotas after a crash/restart cycle.
         rate_limiter_(RateLimiterConfig{}),
         mock_mode_(should_use_mock_client(config)) {
     // Use synchronous connection mode (same as official Python sample)
     client_.asyncEConnect(false);
+
+    // Restore historical-request timestamps from the previous session so that
+    // IB's pace-API counter is not inadvertently reset on crash/restart.
+    {
+      auto state_path = (std::filesystem::temp_directory_path() /
+                         "ib_rate_limiter.json").string();
+      rate_limiter_.load_state(state_path);
+      rate_limiter_.set_state_path(state_path);
+    }
 
     // Initialize callback tracking
     connection_callbacks_received_.connectAck = false;
@@ -424,7 +425,7 @@ public:
     state_ = ConnectionState::Connecting;
 
     // Get port candidates (TWS first, then IB Gateway)
-    std::vector<int> port_candidates = get_port_candidates(config_.port);
+    std::vector<int> port_candidates = get_port_candidates(config_);
 
     // Check which ports are open in parallel
     std::vector<int> open_ports;

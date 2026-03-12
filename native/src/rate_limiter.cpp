@@ -2,6 +2,9 @@
 #include "rate_limiter.h"
 #include <algorithm>
 #include <chrono>
+#include <filesystem>
+#include <fstream>
+#include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 #include <unordered_map>
 
@@ -96,19 +99,31 @@ bool RateLimiter::can_start_historical_request(int request_id) {
   return true;
 }
 
+void RateLimiter::set_state_path(const std::string &path) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  state_path_ = path;
+}
+
 void RateLimiter::start_historical_request(int request_id) {
   if (!enabled_.load()) {
     return; // Not enabled, don't track
   }
 
-  std::lock_guard<std::mutex> lock(mutex_);
-  auto now = std::chrono::steady_clock::now();
-  active_historical_requests_.insert(request_id);
-  historical_request_times_[request_id] = now;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto now = std::chrono::steady_clock::now();
+    active_historical_requests_.insert(request_id);
+    historical_request_times_[request_id] = now;
 
-  spdlog::debug("Started historical request #{} (active: {}/{})", request_id,
-                active_historical_requests_.size(),
-                config_.max_historical_requests);
+    spdlog::debug("Started historical request #{} (active: {}/{})", request_id,
+                  active_historical_requests_.size(),
+                  config_.max_historical_requests);
+  }
+
+  // Persist after recording so a crash immediately after doesn't lose this entry.
+  if (!state_path_.empty()) {
+    save_state(state_path_);
+  }
 }
 
 void RateLimiter::end_historical_request(int request_id) {
@@ -235,6 +250,102 @@ void RateLimiter::cleanup_stale_requests(std::chrono::seconds max_age) {
     spdlog::info("Cleaned up {} stale historical requests and {} stale market "
                  "data lines",
                  stale_historical.size(), stale_market_data.size());
+  }
+}
+
+// ============================================================================
+// Persistence
+// ============================================================================
+
+void RateLimiter::save_state(const std::string &path) const {
+  static constexpr auto kWindow = std::chrono::minutes(10);
+
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  auto now_steady = std::chrono::steady_clock::now();
+  auto now_system = std::chrono::system_clock::now();
+
+  nlohmann::json j;
+  j["historical_request_timestamps_ms"] = nlohmann::json::array();
+
+  for (const auto &[id, tp] : historical_request_times_) {
+    if (now_steady - tp < kWindow) {
+      // Convert steady_clock time_point to a system_clock wall timestamp.
+      auto age = now_steady - tp;
+      auto wall_tp = now_system - std::chrono::duration_cast<std::chrono::system_clock::duration>(age);
+      auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    wall_tp.time_since_epoch())
+                    .count();
+      j["historical_request_timestamps_ms"].push_back(ms);
+    }
+  }
+
+  // Write atomically: tmp file then rename.
+  std::string tmp = path + ".tmp";
+  try {
+    {
+      std::ofstream ofs(tmp);
+      ofs << j.dump();
+    }
+    std::filesystem::rename(tmp, path);
+    spdlog::debug("RateLimiter: saved {} historical timestamps to {}",
+                  j["historical_request_timestamps_ms"].size(), path);
+  }
+  catch (const std::exception &e) {
+    spdlog::warn("RateLimiter: failed to save state to {}: {}", path, e.what());
+    std::filesystem::remove(tmp);
+  }
+}
+
+void RateLimiter::load_state(const std::string &path) {
+  static constexpr auto kWindow = std::chrono::minutes(10);
+
+  std::ifstream ifs(path);
+  if (!ifs.is_open()) {
+    return; // No prior state file — fresh start is fine.
+  }
+
+  try {
+    nlohmann::json j;
+    ifs >> j;
+
+    auto now_steady = std::chrono::steady_clock::now();
+    auto now_system = std::chrono::system_clock::now();
+
+    int restored = 0;
+    // Use negative IDs to avoid colliding with live request IDs (which start at 1000).
+    int synthetic_id = -1;
+
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (auto ms_val : j.at("historical_request_timestamps_ms")) {
+      auto ms = std::chrono::milliseconds(ms_val.get<long long>());
+      auto wall_tp = std::chrono::system_clock::time_point(
+          std::chrono::duration_cast<std::chrono::system_clock::duration>(ms));
+
+      if (wall_tp > now_system) {
+        continue; // Clock skew or corrupt entry — skip.
+      }
+
+      auto age = std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+          now_system - wall_tp);
+
+      if (age < kWindow) {
+        historical_request_times_[synthetic_id] = now_steady - age;
+        // Do NOT add to active_historical_requests_ — these are completed
+        // requests that only count toward the pace quota, not the concurrency limit.
+        --synthetic_id;
+        ++restored;
+      }
+    }
+
+    if (restored > 0) {
+      spdlog::info("RateLimiter: restored {} historical request timestamps "
+                   "from {} (within 10-min pace window)",
+                   restored, path);
+    }
+  }
+  catch (const std::exception &e) {
+    spdlog::warn("RateLimiter: ignoring corrupt state file {}: {}", path, e.what());
   }
 }
 

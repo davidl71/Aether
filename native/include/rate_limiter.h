@@ -4,6 +4,7 @@
 #include <chrono>
 #include <mutex>
 #include <deque>
+#include <string>
 #include <unordered_set>
 #include <unordered_map>
 #include <atomic>
@@ -76,6 +77,17 @@ public:
   // Cleanup
   void cleanup_stale_requests(std::chrono::seconds max_age);
 
+  // Persistence — save/restore historical request timestamps across restarts.
+  // Only entries within the last 10 minutes are persisted (IB pace-API window).
+  // save_state() writes atomically (tmp file + rename). load_state() silently
+  // ignores a missing or corrupt file.
+  void save_state(const std::string &path) const;
+  void load_state(const std::string &path);
+
+  // Configure a path for automatic state saves on each historical request.
+  // Call once after construction to enable auto-persistence.
+  void set_state_path(const std::string &path);
+
 private:
   mutable std::mutex mutex_;
   RateLimiterConfig config_;
@@ -91,6 +103,9 @@ private:
   // Market data line tracking
   std::unordered_set<int> active_market_data_lines_;
   std::unordered_map<int, std::chrono::steady_clock::time_point> market_data_times_;
+
+  // Auto-save path (empty = disabled)
+  std::string state_path_;
 
   // Helper methods
   void cleanup_old_message_timestamps();

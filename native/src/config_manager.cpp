@@ -117,6 +117,14 @@ void ConfigManager::validate_tws_config(const TWSConfig &tws) {
           "TWS optional_capabilities must be ASCII printable");
     }
   }
+
+  for (int p : tws.fallback_ports) {
+    if (p < 1024 || p > 65535) {
+      throw std::invalid_argument(
+          "fallback_ports entry " + std::to_string(p) +
+          " is out of range [1024, 65535]");
+    }
+  }
 }
 
 void ConfigManager::validate_strategy_params(const StrategyParams &strategy) {
