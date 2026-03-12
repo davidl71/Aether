@@ -371,17 +371,28 @@ ExecutionResult OrderManager::close_box_spread(const std::string &strategy_id) {
   std::vector<int> placed_ids;
 
   for (const auto &leg : mlo.legs) {
+    // Close only what was actually filled; skip legs that never got a fill.
+    int close_qty = (leg.filled_quantity > 0) ? leg.filled_quantity
+                                              : leg.quantity;
+    if (close_qty <= 0) {
+      spdlog::debug("close_box_spread: skipping unfilled leg order #{} for {}",
+                    leg.order_id, leg.contract.symbol);
+      continue;
+    }
+
     auto reverse_action = (leg.action == types::OrderAction::Buy)
                               ? types::OrderAction::Sell
                               : types::OrderAction::Buy;
+
+    // Preserve the original TIF so closing behaviour matches entry behaviour.
     int oid = pimpl_->client_->place_order(leg.contract, reverse_action,
-                                            leg.quantity, leg.limit_price,
-                                            types::TimeInForce::Day);
+                                            close_qty, leg.limit_price,
+                                            leg.tif);
     if (oid < 0) {
-      // Rollback: cancel already-submitted reversal legs.
-      spdlog::warn("close_box_spread: leg placement failed — rolling back "
-                   "{} already-placed reversal(s)",
-                   placed_ids.size());
+      // Placement call itself failed — roll back already-submitted reversals.
+      spdlog::warn("close_box_spread: placement failed on leg {} of {} — "
+                   "rolling back {} reversal(s)",
+                   placed_ids.size() + 1, mlo.legs.size(), placed_ids.size());
       for (int cancel_id : placed_ids) {
         pimpl_->client_->cancel_order(cancel_id);
         ++pimpl_->stats_.total_orders_cancelled;
@@ -396,10 +407,47 @@ ExecutionResult OrderManager::close_box_spread(const std::string &strategy_id) {
     ++pimpl_->stats_.total_orders_placed;
   }
 
+  if (placed_ids.empty()) {
+    result.error_message = "No filled legs found to close for strategy_id: " +
+                           strategy_id;
+    spdlog::warn("close_box_spread: {}", result.error_message);
+    return result;
+  }
+
+  // Check for immediate post-submission rejections (mirrors place_box_spread).
+  std::vector<int> live_ids;
+  bool has_rejection = false;
+  for (int oid : placed_ids) {
+    auto status = pimpl_->client_->get_order(oid);
+    if (status.has_value() &&
+        (status->status == types::OrderStatus::Rejected ||
+         status->status == types::OrderStatus::Error)) {
+      spdlog::warn("close_box_spread: reversal order #{} rejected: {}",
+                   oid, status->status_message);
+      has_rejection = true;
+    } else {
+      live_ids.push_back(oid);
+    }
+  }
+
+  if (has_rejection) {
+    spdlog::warn("close_box_spread: rejection detected — cancelling {} "
+                 "live reversal(s)",
+                 live_ids.size());
+    for (int cancel_id : live_ids) {
+      pimpl_->client_->cancel_order(cancel_id);
+      ++pimpl_->stats_.total_orders_cancelled;
+    }
+    result.error_message = "One or more reversal legs rejected; all cancelled";
+    return result;
+  }
+
   result.order_ids = placed_ids;
   result.success = true;
+  // Remove the original position now that all reversal orders are live.
+  // Full removal on confirmed fills requires callback integration.
   pimpl_->multi_leg_orders_.erase(it);
-  spdlog::info("close_box_spread: submitted {} reversal orders for strategy {}",
+  spdlog::info("close_box_spread: {} reversal order(s) live for strategy {}",
                placed_ids.size(), strategy_id);
   return result;
 }
