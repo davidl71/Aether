@@ -4,10 +4,13 @@
 #include <algorithm>
 #include <future>
 #include <map>
+#include <mutex>
 #include <set>
 #include <spdlog/fmt/bundled/core.h>
 #include <spdlog/spdlog.h>
 #include <thread>
+#include <unordered_map>
+#include <unordered_set>
 
 // NOTE FOR AUTOMATION AGENTS:
 // The order manager coordinates interaction with IB's TWS API. It validates
@@ -86,6 +89,74 @@ public:
   // change
   OrderUpdateCallback order_update_callback_;
   FillCallback fill_callback_;
+
+  // -----------------------------------------------------------------------
+  // Reversal tracking for close_box_spread() fill confirmation.
+  // Guarded by callback_mutex_ because on_order_status() is called from the
+  // TWSClient reader thread while close_box_spread() runs on the caller thread.
+  // -----------------------------------------------------------------------
+  mutable std::mutex callback_mutex_;
+  // reversal order_id → strategy_id that owns it
+  std::unordered_map<int, std::string> reversal_order_to_strategy_;
+  // strategy_id → number of reversal legs still awaiting a Filled status
+  std::unordered_map<std::string, int> reversal_legs_remaining_;
+  // strategy_ids currently in the "closing" state (guard double-close)
+  std::unordered_set<std::string> closing_strategies_;
+
+  // Called from the TWSClient order-status callback on the reader thread.
+  void on_order_status(const types::Order &order) {
+    // Forward to registered callbacks unconditionally.
+    if (order_update_callback_) {
+      order_update_callback_(order);
+    }
+
+    if (order.status == types::OrderStatus::Filled) {
+      if (fill_callback_) {
+        fill_callback_(order);
+      }
+
+      // Check whether this is one of our close_box_spread reversal legs.
+      std::string strategy_id;
+      bool is_reversal = false;
+      {
+        std::lock_guard<std::mutex> lk(callback_mutex_);
+        auto it = reversal_order_to_strategy_.find(order.order_id);
+        if (it != reversal_order_to_strategy_.end()) {
+          strategy_id = it->second;
+          reversal_order_to_strategy_.erase(it);
+          is_reversal = true;
+        }
+      }
+
+      if (is_reversal) {
+        bool all_filled = false;
+        {
+          std::lock_guard<std::mutex> lk(callback_mutex_);
+          auto cnt_it = reversal_legs_remaining_.find(strategy_id);
+          if (cnt_it != reversal_legs_remaining_.end()) {
+            --cnt_it->second;
+            if (cnt_it->second <= 0) {
+              reversal_legs_remaining_.erase(cnt_it);
+              closing_strategies_.erase(strategy_id);
+              all_filled = true;
+            }
+          }
+        }
+
+        if (all_filled) {
+          // All reversal legs confirmed filled — remove the original position.
+          multi_leg_orders_.erase(strategy_id);
+          spdlog::info("close_box_spread: all reversal legs filled for "
+                       "strategy {} — position removed",
+                       strategy_id);
+        } else {
+          spdlog::debug("close_box_spread: reversal leg #{} filled for {}; "
+                        "waiting for remaining legs",
+                        order.order_id, strategy_id);
+        }
+      }
+    }
+  }
 };
 
 // ============================================================================
@@ -96,6 +167,13 @@ OrderManager::OrderManager(tws::TWSClient *client, bool dry_run)
     : pimpl_(std::make_unique<Impl>(client, dry_run)) {
 
   spdlog::debug("OrderManager created (dry_run={})", dry_run);
+
+  // Register for order-status updates so close_box_spread() can remove
+  // positions only after all reversal legs are confirmed filled.
+  if (client) {
+    client->set_order_status_callback(
+        [this](const types::Order &order) { pimpl_->on_order_status(order); });
+  }
 }
 
 OrderManager::~OrderManager() { spdlog::debug("OrderManager destroyed"); }
@@ -360,6 +438,17 @@ ExecutionResult OrderManager::close_box_spread(const std::string &strategy_id) {
     return result;
   }
 
+  // Guard against double-close while a prior attempt is still awaiting fills.
+  {
+    std::lock_guard<std::mutex> lk(pimpl_->callback_mutex_);
+    if (pimpl_->closing_strategies_.count(strategy_id)) {
+      result.error_message =
+          "close_box_spread: already closing strategy " + strategy_id;
+      spdlog::warn("{}", result.error_message);
+      return result;
+    }
+  }
+
   auto it = pimpl_->multi_leg_orders_.find(strategy_id);
   if (it == pimpl_->multi_leg_orders_.end()) {
     result.error_message = "Unknown strategy_id: " + strategy_id;
@@ -442,12 +531,22 @@ ExecutionResult OrderManager::close_box_spread(const std::string &strategy_id) {
     return result;
   }
 
+  // Register reversal orders for fill-confirmation tracking.
+  // on_order_status() will erase the position when all legs report Filled.
+  {
+    std::lock_guard<std::mutex> lk(pimpl_->callback_mutex_);
+    for (int oid : placed_ids) {
+      pimpl_->reversal_order_to_strategy_[oid] = strategy_id;
+    }
+    pimpl_->reversal_legs_remaining_[strategy_id] =
+        static_cast<int>(placed_ids.size());
+    pimpl_->closing_strategies_.insert(strategy_id);
+  }
+
   result.order_ids = placed_ids;
   result.success = true;
-  // Remove the original position now that all reversal orders are live.
-  // Full removal on confirmed fills requires callback integration.
-  pimpl_->multi_leg_orders_.erase(it);
-  spdlog::info("close_box_spread: {} reversal order(s) live for strategy {}",
+  spdlog::info("close_box_spread: {} reversal order(s) live for strategy {}; "
+               "position will be removed on fill confirmation",
                placed_ids.size(), strategy_id);
   return result;
 }
