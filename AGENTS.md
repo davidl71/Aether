@@ -1,8 +1,10 @@
-# Repository Guidelines
+# Aether - Repository Guidelines
 
 ## Project Overview
 
-Comprehensive multi-asset synthetic financing optimization platform. Manages financing across options, futures, bonds, bank loans, and pension funds with unified portfolio management, cash flow modeling, opportunity simulation, and multi-instrument relationship optimization across 21+ accounts and multiple brokers (IBKR, Alpaca, Tradier, Tastytrade).
+Aether (formerly ib_box_spread_full_universal) - Comprehensive multi-asset synthetic financing optimization platform. Manages financing across options, futures, bonds, bank loans, and pension funds with unified portfolio management, cash flow modeling, opportunity simulation, and multi-instrument relationship optimization across 21+ accounts and multiple brokers (IBKR).
+
+Multi-language codebase: C++ core engine, Rust backend agents, Go agents. The current active frontend is TUI/CLI.
 
 Box spreads are one active strategy component (7-10% of portfolio, spare cash allocation for T-bill-equivalent yields). The platform supports multiple strategy types including futures-implied financing, bond ETFs, and secured lending.
 
@@ -11,7 +13,7 @@ Multi-language codebase: C++ core engine, Python integration layer (TUI, binding
 ## Project Structure & Module Organization
 
 ```
-ib_box_spread_full_universal/
+Aether/
 ├── native/                  # C++ core (the main codebase)
 │   ├── src/                 # Implementation files (.cpp)
 │   │   ├── brokers/         # Broker adapter implementations

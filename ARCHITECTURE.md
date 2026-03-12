@@ -1,4 +1,4 @@
-# Architecture Overview
+# Aether Architecture Overview
 
 Multi-asset synthetic financing platform. Box spreads are one strategy (7-10% allocation);
 the platform manages financing across options, futures, bonds, bank loans, and pension funds
