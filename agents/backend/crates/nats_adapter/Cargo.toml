@@ -5,7 +5,7 @@ version = "0.1.0"
 
 [dependencies]
 anyhow = { workspace = true }
-async-nats = "0.32"
+async-nats = "0.46"
 bytes = "1.5"
 chrono = { workspace = true }
 futures = { workspace = true }

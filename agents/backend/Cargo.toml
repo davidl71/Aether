@@ -1,5 +1,4 @@
 [workspace]
-name = "aether"
 members = [
   "crates/market_data",
   "crates/strategy",

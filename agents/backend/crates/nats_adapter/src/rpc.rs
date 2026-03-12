@@ -37,9 +37,10 @@ where
     Res: ProstMessage + Default,
 {
     let body = payload.encode_to_vec();
+    let subject_owned = subject.to_string();
     let msg = tokio::time::timeout(
         timeout,
-        client.client().request(subject.into(), Bytes::from(body)),
+        client.client().request(subject_owned.clone(), Bytes::from(body)),
     )
     .await
     .map_err(|_| NatsAdapterError::Publish(format!("proto request to {subject}: timeout")))?
@@ -59,9 +60,10 @@ where
     F: Fn(Req) -> Fut + Send + Sync + 'static,
     Fut: std::future::Future<Output = Res> + Send + 'static,
 {
+    let subject_owned = subject.to_string();
     let mut sub = client
         .client()
-        .subscribe(subject.into())
+        .subscribe(subject_owned.clone())
         .await
         .map_err(|e| NatsAdapterError::Subscribe(format!("{e}")))?;
 
