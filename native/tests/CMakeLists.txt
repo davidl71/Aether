@@ -14,6 +14,8 @@ set(CORE_TEST_SOURCES
     test_path_validator.cpp
     test_loan_position.cpp
     test_asset_relationship.cpp
+    test_amortization_schedule.cpp
+    test_yield_curve_fitting.cpp
 )
 
 set(BOX_SPREAD_TEST_SOURCES

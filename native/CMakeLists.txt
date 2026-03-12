@@ -961,6 +961,8 @@ if(_build_native_cli)
         src/asset_relationship.cpp
         src/collateral_valuator.cpp
         src/financing_instrument_registry.cpp
+        src/yield_curve_fitting.cpp
+        src/amortization_schedule.cpp
     )
 
     set(HEADERS
@@ -990,6 +992,8 @@ if(_build_native_cli)
         include/asset_relationship.h
         include/collateral_valuator.h
         include/financing_instrument.h
+        include/yield_curve_fitting.h
+        include/amortization_schedule.h
     )
 
     # Conditionally include local source files only if NOT using extracted library

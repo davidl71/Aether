@@ -267,3 +267,50 @@ TEST_CASE("RiskMonitor checks", "[risk]") {
     REQUIRE(alerts.size() > 0);
   }
 }
+
+// ============================================================================
+// Monte Carlo VaR
+// ============================================================================
+
+TEST_CASE("RiskCalculator::calculate_var_monte_carlo", "[risk][var][monte_carlo]") {
+  config::RiskConfig config;
+  RiskCalculator calculator(config);
+
+  types::Position pos;
+  pos.contract.symbol = "SPY";
+  pos.quantity = 100;
+  pos.current_price = 500.0;
+
+  SECTION("Result is positive (VaR is a loss measure)") {
+    double var = calculator.calculate_var_monte_carlo(pos, 500.0, 0.20, 10000, 0.95);
+    REQUIRE(var > 0.0);
+  }
+
+  SECTION("99% VaR is larger than 95% VaR (monotonicity)") {
+    double var95 = calculator.calculate_var_monte_carlo(pos, 500.0, 0.20, 10000, 0.95);
+    double var99 = calculator.calculate_var_monte_carlo(pos, 500.0, 0.20, 10000, 0.99);
+    REQUIRE(var99 > var95);
+  }
+
+  SECTION("MC VaR is within 50% of parametric VaR (coarse statistical bound)") {
+    double vol = 0.20;
+    double S   = 500.0;
+    // Parametric 1-day 95% VaR: position_value * z * vol * sqrt(1/252)
+    // position_value = 100 * 500 = 50000
+    double position_value = static_cast<double>(pos.quantity) * S;
+    double parametric = position_value * 1.645 * vol * std::sqrt(1.0 / 252.0);
+    double mc = calculator.calculate_var_monte_carlo(pos, S, vol, 50000, 0.95);
+    REQUIRE(mc > parametric * 0.5);
+    REQUIRE(mc < parametric * 1.5);
+  }
+
+  SECTION("Zero simulations returns 0") {
+    double var = calculator.calculate_var_monte_carlo(pos, 500.0, 0.20, 0, 0.95);
+    REQUIRE(var == 0.0);
+  }
+
+  SECTION("Zero volatility returns 0") {
+    double var = calculator.calculate_var_monte_carlo(pos, 500.0, 0.0, 10000, 0.95);
+    REQUIRE(var == 0.0);
+  }
+}

@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 #include <spdlog/spdlog.h>
+#include <ql/math/randomnumbers/mt19937uniformrng.hpp>
+#include <ql/math/randomnumbers/boxmullergaussianrng.hpp>
 
 namespace risk {
 
@@ -70,8 +72,36 @@ double RiskCalculator::calculate_var_monte_carlo(
     const types::Position &position, double underlying_price, double volatility,
     int simulations, double confidence_level) const {
 
-  // NOTE: Full Monte Carlo simulation would go here
-  return 0.0; // Stub
+  if (simulations <= 0 || volatility <= 0.0 || underlying_price <= 0.0) {
+    spdlog::warn("calculate_var_monte_carlo: invalid params simulations={} vol={} S={}",
+                 simulations, volatility, underlying_price);
+    return 0.0;
+  }
+
+  // 1-day GBM: S_T = S_0 * exp(-0.5*vol²*dt + vol*sqrt(dt)*Z), dt = 1/252.
+  // P&L per path = (S_T - S_0) * quantity.
+  // VaR = -(1 - confidence_level) percentile of the P&L distribution.
+  constexpr double kDt = 1.0 / 252.0;
+  const double drift_adj = -0.5 * volatility * volatility * kDt;
+  const double vol_sqrt_dt = volatility * std::sqrt(kDt);
+
+  QuantLib::MersenneTwisterUniformRng uniform_rng(/*seed=*/42);
+  QuantLib::BoxMullerGaussianRng<QuantLib::MersenneTwisterUniformRng> normal_rng(uniform_rng);
+
+  std::vector<double> pnl;
+  pnl.reserve(static_cast<size_t>(simulations));
+
+  const double qty = static_cast<double>(position.quantity);
+  for (int i = 0; i < simulations; ++i) {
+    const double z  = normal_rng.next().value;
+    const double st = underlying_price * std::exp(drift_adj + vol_sqrt_dt * z);
+    pnl.push_back((st - underlying_price) * qty);
+  }
+
+  std::sort(pnl.begin(), pnl.end());
+
+  const size_t idx = static_cast<size_t>((1.0 - confidence_level) * pnl.size());
+  return -pnl[std::min(idx, pnl.size() - 1)];
 }
 
 double

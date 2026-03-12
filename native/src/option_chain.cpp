@@ -394,10 +394,15 @@ void OptionChainBuilder::calculate_metrics(OptionChainEntry &entry,
                                            double underlying_price,
                                            double risk_free_rate) {
 
-  // NOTE: Full Black-Scholes calculations would go here
   entry.moneyness = entry.contract.strike / underlying_price;
-  entry.intrinsic_value = 0.0; // Stub
-  entry.extrinsic_value = entry.market_data.get_mid_price();
+
+  const double mid = entry.market_data.get_mid_price();
+  if (entry.contract.type == types::OptionType::Call) {
+    entry.intrinsic_value = std::max(underlying_price - entry.contract.strike, 0.0);
+  } else {
+    entry.intrinsic_value = std::max(entry.contract.strike - underlying_price, 0.0);
+  }
+  entry.extrinsic_value = std::max(mid - entry.intrinsic_value, 0.0);
 }
 
 std::optional<double> OptionChainBuilder::calculate_implied_volatility(
