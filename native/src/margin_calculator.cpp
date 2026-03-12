@@ -60,13 +60,15 @@ MarginCalculator::calculate_reg_t_margin(const types::BoxSpreadLeg &spread,
   double short_call_margin = calculate_short_option_margin(
       underlying_price, spread.short_call.strike, types::OptionType::Call,
       spread.short_call_price,
-      0.20, // Default IV if not available
+      // TODO: Source IV from live market data snapshot instead of 0.20 default.
+      0.20,
       spread.get_days_to_expiry());
 
   double short_put_margin = calculate_short_option_margin(
       underlying_price, spread.short_put.strike, types::OptionType::Put,
       spread.short_put_price,
-      0.20, // Default IV if not available
+      // TODO: Source IV from live market data snapshot instead of 0.20 default.
+      0.20,
       spread.get_days_to_expiry());
 
   // Long legs: margin is typically 0 (premium paid), but we subtract premium
@@ -114,7 +116,9 @@ MarginCalculator::calculate_portfolio_margin(const types::BoxSpreadLeg &spread,
 
   // Portfolio margin is typically 50-80% of Reg-T for box spreads
   // Box spreads are low risk, so portfolio margin is usually close to net debit
-  double portfolio_multiplier = 0.60; // Conservative estimate
+  // TODO: Make portfolio_multiplier configurable — 0.60 is a conservative
+  // placeholder; the real value depends on broker and account classification.
+  double portfolio_multiplier = 0.60;
   result.initial_margin = std::max(
       result.span_margin, reg_t_result.initial_margin * portfolio_multiplier);
 

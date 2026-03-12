@@ -71,6 +71,8 @@ FinancingOptimizerResult FinancingOptimizer::optimize(
 
     opt.add_equality_constraint(sum_weights_constraint, nullptr, 1e-8);
 
+    // TODO: Expose xtol_rel and ftol_rel as FinancingOptimizerInput fields so
+    // callers can tune convergence without recompiling.
     opt.set_xtol_rel(1e-4);
     opt.set_ftol_rel(1e-6);
 
@@ -80,6 +82,8 @@ FinancingOptimizerResult FinancingOptimizer::optimize(
     nlopt::result opt_result = opt.optimize(x, minf);
 
     if (opt_result < 0) {
+      // TODO: Add heuristic fallback (e.g., equal-weight or min-cost greedy)
+      // when NLopt fails so callers receive a usable solution rather than empty.
       result.error_message =
           "NLopt optimization failed with code: " + std::to_string(opt_result);
       spdlog::warn("FinancingOptimizer: {}", result.error_message);

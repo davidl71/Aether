@@ -124,10 +124,10 @@ HedgeManager::find_rate_future_hedge(const types::BoxSpreadLeg &box_spread,
     break;
   }
 
-  // NOTE: In full implementation, would fetch current price from TWS API
-  // For now, use stub price (would need market data integration)
-  future.current_price = 95.0; // Placeholder - 5% implied rate
-  future.expiry = "";          // Would be set from market data
+  // TODO: Fetch current futures price and front-month expiry via TWS API
+  // reqMktData; 95.0 is a non-functional placeholder implying ~5% rate.
+  future.current_price = 95.0;
+  future.expiry = "";
 
   spdlog::debug("Found rate future hedge: {} (DTE: {}, Price: {:.2f})",
                 future.symbol, future.days_to_expiry, future.current_price);
@@ -210,10 +210,10 @@ double
 HedgeManager::get_exchange_rate(const std::string &base_currency,
                                 const std::string &hedge_currency) const {
 
-  // NOTE: In full implementation, would fetch from TWS API
-  // For now, return stub rates
+  // TODO: Fetch FX spot rate from TWS API reqMktData using the FX pair
+  // contract; all rates below are hardcoded stubs.
   if (base_currency == "USD" && hedge_currency == "ILS") {
-    return 3.65; // Approximate USD/ILS rate (stub)
+    return 3.65; // stub
   }
 
   // Default to 1.0 for same currency or unknown pairs
@@ -286,9 +286,10 @@ HedgeManager::monitor_hedge(const RateHedgeCalculation &hedge,
 
   HedgeEffectiveness effectiveness;
   effectiveness.target_hedge_ratio = hedge.hedge_ratio;
-  effectiveness.current_hedge_ratio =
-      hedge.hedge_ratio;               // Would calculate from current positions
-  effectiveness.hedge_drift_bps = 0.0; // Would calculate from rate movements
+  // TODO: Derive current_hedge_ratio from live position quantities and
+  // hedge_drift_bps from realized rate moves since hedge inception.
+  effectiveness.current_hedge_ratio = hedge.hedge_ratio;
+  effectiveness.hedge_drift_bps = 0.0;
   effectiveness.needs_rebalance = false;
   effectiveness.rebalance_cost = 0.0;
 
@@ -304,8 +305,9 @@ HedgeManager::monitor_hedge(const RateHedgeCalculation &hedge,
 
   if (effectiveness.needs_rebalance) {
     // Estimate rebalancing cost
-    effectiveness.rebalance_cost =
-        50.0; // Placeholder - would calculate actual cost
+    // TODO: Calculate rebalance_cost from live bid-ask spread and round-trip
+    // commission for the required number of contracts; $50 is a placeholder.
+    effectiveness.rebalance_cost = 50.0;
   }
 
   return effectiveness;

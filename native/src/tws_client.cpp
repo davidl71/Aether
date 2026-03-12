@@ -133,6 +133,8 @@ bool is_port_open(const std::string &host, int port, int timeout_ms = 1000) {
 std::vector<int> get_port_candidates(int configured_port) {
   std::vector<int> candidates;
 
+  // TODO: Make the fallback port priority list configurable (e.g., via config
+  // file) so paper-only environments can disable live ports entirely.
   // Standard ports in priority order:
   // 1. Configured port (if it's a standard port, it will be tried first anyway)
   // 2. TWS Paper (7497) - most common for testing
@@ -341,6 +343,9 @@ public:
         next_request_id_(1000), state_(ConnectionState::Disconnected),
         reconnect_attempts_(0),
         last_heartbeat_(std::chrono::steady_clock::now()),
+        // TODO: Persist rate_limiter_ counters across restarts (e.g., via a
+        // shared-memory segment or a short-lived file) to avoid breaching IB's
+        // per-day request quotas after a crash/restart cycle.
         rate_limiter_(RateLimiterConfig{}),
         mock_mode_(should_use_mock_client(config)) {
     // Use synchronous connection mode (same as official Python sample)

@@ -345,7 +345,8 @@ ExecutionResult OrderManager::close_box_spread(const std::string &strategy_id) {
     return result;
   }
 
-  // NOTE: Full implementation would reverse all legs
+  // TODO: Implement full leg reversal — submit closing orders for all 4 legs
+  // with proper error handling and rollback if any leg fails to fill.
 
   result.success = true;
   return result;
@@ -444,7 +445,8 @@ OrderManager::execute_twap(const types::OptionContract &contract,
                            types::OrderAction action, int quantity,
                            int duration_seconds) {
 
-  // NOTE: TWAP implementation would split order over time
+  // TODO: Implement TWAP — slice order into equal-sized child orders over
+  // duration_seconds using a timer, tracking partial fills between slices.
   ExecutionResult result;
   result.success = false;
   result.error_message = "TWAP not implemented";
@@ -455,7 +457,8 @@ std::optional<double>
 OrderManager::get_best_price(const types::OptionContract &contract,
                              types::OrderAction action) const {
 
-  // NOTE: Would query current market data
+  // TODO: Query TWS API for current bid/ask and return mid-price for the given
+  // action (bid for sells, ask for buys).
   return std::nullopt;
 }
 
@@ -464,8 +467,9 @@ OrderManager::estimate_fill_probability(const types::OptionContract &contract,
                                         types::OrderAction action,
                                         double limit_price) const {
 
-  // NOTE: Would analyze order book and historical fills
-  return 0.5; // Stub
+  // TODO: Analyze order book depth and historical fill rates at limit_price to
+  // return a calibrated probability; stub returns 0.5 for all inputs.
+  return 0.5;
 }
 
 void OrderManager::set_max_order_size(int max_contracts) {
@@ -475,7 +479,8 @@ void OrderManager::set_max_order_size(int max_contracts) {
 
 void OrderManager::set_max_orders_per_second(int max_rate) {
   spdlog::info("Max orders/second set to {}", max_rate);
-  // NOTE: Would implement rate limiting
+  // TODO: Implement token-bucket rate limiter; currently a no-op — the
+  // max_rate parameter is logged but never enforced.
 }
 
 void OrderManager::set_dry_run(bool enabled) {
@@ -567,6 +572,7 @@ bool OrderValidator::validate_quantity(int quantity, std::string &error) {
     return false;
   }
 
+  // TODO: Make 1000-contract ceiling configurable per account/instrument type.
   if (quantity > 1000) {
     error = "Quantity exceeds maximum";
     return false;

@@ -158,8 +158,9 @@ std::optional<Greeks> GreeksCalculator::calculate_option_greeks(
     ext::shared_ptr<StrikedTypePayoff> payoff(
         new PlainVanillaPayoff(ql_type, contract.strike));
 
-    // Calculate forward price (assuming no dividends for simplicity)
-    // Forward = Spot * e^(r*T)
+    // TODO: Incorporate continuous dividend yield q into the forward price:
+    // Forward = Spot * e^((r - q) * T).  Zero-dividend assumption understates
+    // call prices and overstates put prices on dividend-paying underlyings.
     double forward =
         underlying_price * std::exp(risk_free_rate * time_to_expiry);
 
@@ -207,9 +208,10 @@ Greeks GreeksCalculator::calculate_bond_greeks(const std::string &symbol,
   Greeks greeks{};
 
   // Bond Greeks based on duration and convexity
-  // Delta ≈ 0 (bonds don't move 1:1 with stock index)
-  // Alternative: Can use -Duration × Price for price sensitivity
-  greeks.delta = 0.0; // Bonds don't have direct delta like stocks
+  // TODO: Use delta = -duration * price / 100 for DV01-style sensitivity
+  // instead of always returning 0; the current value breaks portfolio delta sums
+  // that include bond positions.
+  greeks.delta = 0.0;
 
   // Gamma: Convexity (second-order price sensitivity)
   // Formula: Gamma ≈ Convexity × Price × (Δyield)²
@@ -355,6 +357,8 @@ bool compute_ql_duration_convexity(const EtfBondParams &p,
   }
 }
 
+// TODO: Generate this fallback table from a data file or config rather than
+// hardcoding; values drift as ETF portfolios roll and yields change.
 // Hardcoded fallback table — values kept in sync with EtfBondParams below.
 // These are only used when the QuantLib path throws (e.g., bad date arithmetic
 // near holidays).

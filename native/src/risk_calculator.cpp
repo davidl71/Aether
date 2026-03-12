@@ -107,7 +107,9 @@ RiskCalculator::calculate_position_risk(const types::Position &position,
 
   PositionRisk risk{};
 
-  // NOTE: Full implementation would calculate Greeks and risk metrics
+  // TODO: Compute full per-position Greeks via GreeksCalculator and populate
+  // max_loss/max_gain properly; current values are placeholder multiples of
+  // market value and are not valid for short or multi-leg positions.
 
   risk.position_size = std::abs(position.get_market_value());
   risk.max_loss = risk.position_size;       // Simplified
@@ -159,7 +161,8 @@ PortfolioRisk RiskCalculator::calculate_portfolio_risk(
   portfolio_risk.total_theta = greeks.theta;
   portfolio_risk.total_vega = greeks.vega;
 
-  // Simple VaR calculation (stub)
+  // TODO: Replace linear-scaling stub with parametric or historical-simulation
+  // VaR using realized vol and cross-asset correlations.
   portfolio_risk.var_95 = portfolio_risk.total_exposure * 0.05;
   portfolio_risk.var_99 = portfolio_risk.total_exposure * 0.10;
 
@@ -283,9 +286,10 @@ double RiskCalculator::calculate_correlation_risk(
           double ret1 = (pos1.current_price - pos1.avg_price) / pos1.avg_price;
           double ret2 = (pos2.current_price - pos2.avg_price) / pos2.avg_price;
 
-          // Simple correlation estimate (would need more data points in
-          // production) For now, use sign correlation: if both moved same
-          // direction, positive correlation
+          // TODO: Replace sign-based correlation estimate with rolling Pearson
+        // correlation computed from TWS historical bar data.
+        // For now, use sign correlation: if both moved same direction,
+        // positive correlation
           if ((ret1 > 0 && ret2 > 0) || (ret1 < 0 && ret2 < 0)) {
             correlation_matrix(i, j) = 0.7; // Positive correlation
           } else {
