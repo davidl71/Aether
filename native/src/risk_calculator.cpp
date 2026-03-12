@@ -299,55 +299,37 @@ double RiskCalculator::calculate_correlation_risk(
     return 0.0; // Need at least 2 positions for correlation
   }
 
-  // Use Eigen MatrixXd for correlation matrix
-  // For now, we'll use a simplified approach based on underlying symbols
-  // In a full implementation, we'd use historical returns to calculate
-  // correlation
-
   size_t n = positions.size();
   Eigen::MatrixXd correlation_matrix = Eigen::MatrixXd::Identity(n, n);
 
-  // Calculate correlation based on underlying symbols
-  // Same underlying = 1.0, different = calculate from historical returns if
-  // available For now, use simplified approach with same-underlying detection
-
-  // Step 1: Same underlying detection (correlation = 1.0)
+  // For each pair: same underlying → 1.0; different underlying → either
+  // Pearson correlation from historical_returns (when both positions carry
+  // a matching-length return series) or a sign-based fallback estimator.
   for (size_t i = 0; i < n; ++i) {
     for (size_t j = i + 1; j < n; ++j) {
       const auto &pos1 = positions[i];
       const auto &pos2 = positions[j];
 
-      // Check if same underlying
       if (pos1.contract.symbol == pos2.contract.symbol) {
         correlation_matrix(i, j) = 1.0;
-        correlation_matrix(j, i) = 1.0;
+      } else if (pos1.historical_returns.size() >= 2 &&
+                 pos1.historical_returns.size() ==
+                     pos2.historical_returns.size()) {
+        // Pearson correlation via the existing returns-matrix implementation.
+        auto mat = calculate_correlation_from_returns(
+            {pos1.historical_returns, pos2.historical_returns});
+        correlation_matrix(i, j) = mat(0, 1);
+      } else if (pos1.current_price > 0.0 && pos2.current_price > 0.0 &&
+                 pos1.avg_price > 0.0 && pos2.avg_price > 0.0) {
+        // Sign-based fallback: single-period return sign agreement.
+        double ret1 = (pos1.current_price - pos1.avg_price) / pos1.avg_price;
+        double ret2 = (pos2.current_price - pos2.avg_price) / pos2.avg_price;
+        correlation_matrix(i, j) =
+            ((ret1 > 0 && ret2 > 0) || (ret1 < 0 && ret2 < 0)) ? 0.7 : 0.3;
       } else {
-        // Different underlyings - calculate from historical returns
-        // For now, use simplified correlation based on price movements
-        // In production, would fetch historical data from TWS API
-
-        // Simplified: Use price correlation if both have current prices
-        if (pos1.current_price > 0.0 && pos2.current_price > 0.0 &&
-            pos1.avg_price > 0.0 && pos2.avg_price > 0.0) {
-          // Calculate returns from entry to current
-          double ret1 = (pos1.current_price - pos1.avg_price) / pos1.avg_price;
-          double ret2 = (pos2.current_price - pos2.avg_price) / pos2.avg_price;
-
-          // TODO: Replace sign-based correlation estimate with rolling Pearson
-        // correlation computed from TWS historical bar data.
-        // For now, use sign correlation: if both moved same direction,
-        // positive correlation
-          if ((ret1 > 0 && ret2 > 0) || (ret1 < 0 && ret2 < 0)) {
-            correlation_matrix(i, j) = 0.7; // Positive correlation
-          } else {
-            correlation_matrix(i, j) = 0.3; // Lower correlation
-          }
-        } else {
-          // Fallback: Use default correlation for different underlyings
-          correlation_matrix(i, j) = 0.5;
-        }
-        correlation_matrix(j, i) = correlation_matrix(i, j); // Symmetric
+        correlation_matrix(i, j) = 0.5; // No data — neutral assumption
       }
+      correlation_matrix(j, i) = correlation_matrix(i, j); // Symmetric
     }
   }
 

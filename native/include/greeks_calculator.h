@@ -28,14 +28,16 @@ public:
     GreeksCalculator();
     ~GreeksCalculator() = default;
 
-    // Calculate Greeks for a single option
-    // Returns nullopt if calculation fails
+    // Calculate Greeks for a single option.
+    // dividend_yield: continuous dividend yield (0.0 for non-dividend stocks).
+    // Returns nullopt if calculation fails.
     std::optional<Greeks> calculate_option_greeks(
         const types::OptionContract& contract,
         double underlying_price,
         double option_price,
         double risk_free_rate,
-        double implied_volatility
+        double implied_volatility,
+        double dividend_yield = 0.0
     ) const;
 
     // Calculate Greeks for a stock position (non-option)
@@ -70,7 +72,8 @@ public:
         double strike,
         double risk_free_rate,
         double time_to_expiry,
-        types::OptionType option_type
+        types::OptionType option_type,
+        double dividend_yield = 0.0
     ) const;
 
     // Aggregate Greeks across multiple positions
@@ -81,6 +84,17 @@ public:
         double risk_free_rate,
         double implied_volatility
     ) const;
+
+    // Register or update ETF bond parameters used by calculate_bond_greeks.
+    // Call once at startup (e.g. after loading config) to override or extend
+    // the built-in table without recompiling.
+    static void register_etf_bond_params(
+        const std::string &symbol,
+        double years_to_maturity,
+        double coupon_rate,
+        double yield,
+        double fallback_duration,
+        double fallback_convexity);
 
 private:
     // Helper: Convert time to expiry from days to years

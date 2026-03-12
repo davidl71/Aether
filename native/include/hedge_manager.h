@@ -7,6 +7,9 @@
 #include <optional>
 #include <chrono>
 
+// Forward declaration — avoids pulling in the full TWSClient header.
+namespace tws { class TWSClient; }
+
 namespace hedge {
 
 // ============================================================================
@@ -88,7 +91,7 @@ struct HedgeStrategy {
 
 class HedgeManager {
 public:
-    HedgeManager();
+    explicit HedgeManager(tws::TWSClient *client = nullptr);
     ~HedgeManager();
 
     // ========================================================================
@@ -173,12 +176,17 @@ public:
         double rebalance_cost;
     };
 
+    // actual_contracts: number of futures contracts currently filled/open.
+    // Pass -1 (default) when live position data is unavailable; the function
+    // then uses the target contracts_needed as a proxy.
     HedgeEffectiveness monitor_hedge(
         const RateHedgeCalculation& hedge,
-        const types::BoxSpreadLeg& box_spread
+        const types::BoxSpreadLeg& box_spread,
+        int actual_contracts = -1
     ) const;
 
 private:
+    tws::TWSClient *client_;
     // Helper methods
     double calculate_basis_risk(
         double box_spread_rate,
