@@ -29,19 +29,22 @@ pub fn render(f: &mut Frame, app: &App) {
 }
 
 fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
-    let (mode, strategy, source_label, source_color) = if let Some(ref snap) = app.snapshot {
-        let color = Color::Green; // NATS is always green
-        (
-            snap.inner.mode.as_str().to_owned(),
-            snap.inner.strategy.as_str().to_owned(),
-            snap.source.label(),
-            color,
-        )
-    } else {
-        ("---".into(), "---".into(), "NO DATA", Color::DarkGray)
-    };
+    let (mode, strategy, source_label, source_color, is_stale) =
+        if let Some(ref snap) = app.snapshot {
+            let stale = snap.is_stale(app.config.snapshot_ttl_secs as i64);
+            let color = if stale { Color::Yellow } else { Color::Green };
+            (
+                snap.inner.mode.as_str().to_owned(),
+                snap.inner.strategy.as_str().to_owned(),
+                snap.source.label(),
+                color,
+                stale,
+            )
+        } else {
+            ("---".into(), "---".into(), "NO DATA", Color::DarkGray, false)
+        };
 
-    let line = Line::from(vec![
+    let mut spans = vec![
         Span::raw(format!(" {} | ", app.config.backend_id.to_uppercase())),
         Span::styled(mode, Style::default().fg(Color::Cyan)),
         Span::raw(" | "),
@@ -53,11 +56,21 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
                 .fg(source_color)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::raw("  "),
-        render_connection_badge("N", &app.nats_status),
-    ]);
+    ];
 
-    f.render_widget(Paragraph::new(line), area);
+    if is_stale {
+        spans.push(Span::styled(
+            " [STALE]",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+    }
+
+    spans.push(Span::raw("  "));
+    spans.push(render_connection_badge("N", &app.nats_status));
+
+    f.render_widget(Paragraph::new(Line::from(spans)), area);
 }
 
 fn render_tab_bar(f: &mut Frame, app: &App, area: Rect) {

@@ -7,7 +7,7 @@ use tokio::sync::{mpsc, watch};
 
 use crate::config::TuiConfig;
 use crate::events::{
-    push_log, AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget, LogEntry,
+    push_log, AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget, LogEntry, LogLevel,
 };
 use crate::models::{SnapshotSource, TuiSnapshot};
 
@@ -64,6 +64,7 @@ pub struct App {
     pub should_quit: bool,
     event_rx: mpsc::UnboundedReceiver<AppEvent>,
     snapshot_rx: watch::Receiver<Option<TuiSnapshot>>,
+    config_rx: watch::Receiver<TuiConfig>,
 }
 
 impl App {
@@ -71,6 +72,7 @@ impl App {
         config: TuiConfig,
         snapshot_rx: watch::Receiver<Option<TuiSnapshot>>,
         event_rx: mpsc::UnboundedReceiver<AppEvent>,
+        config_rx: watch::Receiver<TuiConfig>,
     ) -> Self {
         Self {
             config,
@@ -82,11 +84,22 @@ impl App {
             should_quit: false,
             event_rx,
             snapshot_rx,
+            config_rx,
         }
     }
 
-    /// Pull latest snapshot from the NATS channel.
+    /// Pull latest snapshot and config updates, process queued events.
     pub fn tick(&mut self) {
+        // Apply hot-reloaded config if it changed
+        if self.config_rx.has_changed().unwrap_or(false) {
+            let new_config = self.config_rx.borrow_and_update().clone();
+            self.config = new_config;
+            push_log(
+                &mut self.logs,
+                LogEntry::new(LogLevel::Info, None, "Config reloaded from disk"),
+            );
+        }
+
         while let Ok(event) = self.event_rx.try_recv() {
             self.apply_event(event);
         }
@@ -206,11 +219,17 @@ mod tests {
         }
     }
 
+    fn make_app() -> (App, watch::Sender<Option<TuiSnapshot>>, mpsc::UnboundedSender<AppEvent>) {
+        let (snap_tx, snap_rx) = watch::channel(None);
+        let (event_tx, event_rx) = mpsc::unbounded_channel();
+        let (_config_tx, config_rx) = watch::channel(TuiConfig::default());
+        let app = App::new(TuiConfig::default(), snap_rx, event_rx, config_rx);
+        (app, snap_tx, event_tx)
+    }
+
     #[test]
     fn rest_snapshot_does_not_replace_fresh_nats_snapshot() {
-        let (tx, rx) = watch::channel(None);
-        let (_event_tx, event_rx) = mpsc::unbounded_channel();
-        let mut app = App::new(TuiConfig::default(), rx, event_rx);
+        let (mut app, tx, _) = make_app();
 
         app.snapshot = Some(snapshot(SnapshotSource::Nats));
         tx.send(Some(snapshot(SnapshotSource::Rest)))
@@ -225,9 +244,7 @@ mod tests {
 
     #[test]
     fn rest_snapshot_replaces_stale_nats_snapshot() {
-        let (tx, rx) = watch::channel(None);
-        let (_event_tx, event_rx) = mpsc::unbounded_channel();
-        let mut app = App::new(TuiConfig::default(), rx, event_rx);
+        let (mut app, tx, _) = make_app();
 
         let mut stale_nats = snapshot(SnapshotSource::Nats);
         stale_nats.received_at = Utc::now() - Duration::seconds(5);
@@ -245,9 +262,7 @@ mod tests {
 
     #[test]
     fn app_collects_logs_and_connection_updates() {
-        let (_snap_tx, snap_rx) = watch::channel(None);
-        let (event_tx, event_rx) = mpsc::unbounded_channel();
-        let mut app = App::new(TuiConfig::default(), snap_rx, event_rx);
+        let (mut app, _, event_tx) = make_app();
 
         event_tx
             .send(AppEvent::Connection {
@@ -272,10 +287,27 @@ mod tests {
     }
 
     #[test]
+    fn config_hot_reload_updates_app_config() {
+        let (snap_tx, snap_rx) = watch::channel(None);
+        let (_event_tx, event_rx) = mpsc::unbounded_channel();
+        let (config_tx, config_rx) = watch::channel(TuiConfig::default());
+        let mut app = App::new(TuiConfig::default(), snap_rx, event_rx, config_rx);
+        drop(snap_tx);
+
+        let mut new_config = TuiConfig::default();
+        new_config.watchlist = vec!["TSLA".into()];
+        config_tx.send(new_config).expect("send new config");
+
+        app.tick();
+
+        assert_eq!(app.config.watchlist, vec!["TSLA"]);
+        assert_eq!(app.logs.len(), 1);
+        assert!(app.logs[0].message.contains("Config reloaded"));
+    }
+
+    #[test]
     fn logs_tab_scrolls_and_clamps() {
-        let (_snap_tx, snap_rx) = watch::channel(None);
-        let (event_tx, event_rx) = mpsc::unbounded_channel();
-        let mut app = App::new(TuiConfig::default(), snap_rx, event_rx);
+        let (mut app, _, event_tx) = make_app();
         app.active_tab = Tab::Logs;
 
         for idx in 0..20 {

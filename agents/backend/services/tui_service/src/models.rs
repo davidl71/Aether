@@ -7,12 +7,15 @@ use api::RuntimeSnapshotDto;
 #[derive(Debug, Clone, PartialEq)]
 pub enum SnapshotSource {
     Nats,
+    /// REST fallback source — only accepted when NATS snapshot is stale.
+    Rest,
 }
 
 impl SnapshotSource {
     pub fn label(&self) -> &'static str {
         match self {
             Self::Nats => "NATS",
+            Self::Rest => "REST",
         }
     }
 }

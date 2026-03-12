@@ -3,8 +3,10 @@
 //! Subscribes to `snapshot.{backend_id}`, decodes protobuf envelopes,
 //! converts to `RuntimeSnapshotDto`, and sends updates on a
 //! `tokio::sync::watch` channel for the main event loop to consume.
-
-use std::time::Duration;
+//!
+//! Uses a circuit breaker to avoid hammering a downed NATS server:
+//! - After 3 consecutive failures the circuit opens for 30s
+//! - Reconnect delays grow exponentially: 2s, 4s, 8s … 60s max
 
 use api::{
     Alert, AlertLevel, CandleSnapshot, HistoricPosition, Metrics, OrderSnapshot, PositionSnapshot,
@@ -18,6 +20,7 @@ use prost_types::Timestamp;
 use tokio::sync::{mpsc, watch};
 use tracing::{debug, info, warn};
 
+use crate::circuit_breaker::CircuitBreaker;
 use crate::config::TuiConfig;
 use crate::events::{
     AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget, LogEntry, LogLevel,
@@ -178,7 +181,10 @@ fn proto_risk(r: pb::RiskStatus) -> RiskStatus {
 }
 
 /// Run the NATS subscriber loop. Sends `TuiSnapshot` updates on `tx`.
-/// Reconnects automatically on disconnect with 2-second backoff.
+///
+/// Reconnects automatically with exponential backoff (2s → 60s max).
+/// A circuit breaker opens after 3 consecutive failures and pauses
+/// all attempts for 30s before entering half-open test mode.
 pub async fn run(
     config: TuiConfig,
     tx: watch::Sender<Option<TuiSnapshot>>,
@@ -197,9 +203,18 @@ pub async fn run(
         format!("Connecting to {}", config.nats_url),
     );
 
+    let mut cb = CircuitBreaker::new();
+
     loop {
+        if !cb.can_attempt() {
+            // Circuit is open — wait 1s and re-check (avoids busy-spinning)
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            continue;
+        }
+
         match NatsClient::connect(&config.nats_url).await {
             Ok(client) => {
+                cb.record_success();
                 info!("NATS connected");
                 emit_status(
                     &event_tx,
@@ -208,26 +223,42 @@ pub async fn run(
                 );
                 emit_log(&event_tx, LogLevel::Info, "NATS connected");
                 if let Err(e) = subscribe_loop(&client, &subject, &tx, &event_tx).await {
-                    warn!(error = %e, "NATS subscriber loop exited, reconnecting in 2s");
+                    cb.record_failure();
+                    let delay = cb.backoff();
+                    warn!(
+                        error = %e,
+                        delay_secs = delay.as_secs(),
+                        "NATS subscriber loop exited, reconnecting"
+                    );
                     emit_status(&event_tx, ConnectionState::Retrying, e.to_string());
                     emit_log(
                         &event_tx,
                         LogLevel::Warn,
                         format!("NATS subscription lost: {e}"),
                     );
+                    tokio::time::sleep(delay).await;
                 }
             }
             Err(e) => {
-                warn!(error = %e, "NATS connect failed, retrying in 2s");
+                cb.record_failure();
+                let delay = cb.backoff();
+                let open_msg = if cb.is_open() {
+                    " (circuit open, pausing 30s)".to_string()
+                } else {
+                    format!(", retrying in {}s", delay.as_secs())
+                };
+                warn!(error = %e, "NATS connect failed{}", open_msg);
                 emit_status(&event_tx, ConnectionState::Retrying, e.to_string());
                 emit_log(
                     &event_tx,
                     LogLevel::Warn,
-                    format!("NATS connect failed: {e}"),
+                    format!("NATS connect failed: {e}{open_msg}"),
                 );
+                if !cb.is_open() {
+                    tokio::time::sleep(delay).await;
+                }
             }
         }
-        tokio::time::sleep(Duration::from_secs(2)).await;
     }
 }
 
