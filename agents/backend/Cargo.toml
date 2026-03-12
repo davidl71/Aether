@@ -38,3 +38,4 @@ thiserror = "1"
 reqwest = { version = "0.13", default-features = false, features = ["cookies", "json", "rustls", "query"] }
 rust_decimal = { version = "1.36", features = ["serde-with-str"] }
 uuid = { version = "1.10", features = ["v4", "serde"] }
+openssl = "0.10"
