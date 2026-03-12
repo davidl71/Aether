@@ -101,7 +101,8 @@ Need historical data?
 
 - **Best For**: Financial statements, fundamental analysis, bulk data retrieval
 - **Key Features**: Comprehensive financial statements (income, balance sheet, cash flow), bulk APIs, DCF valuations, 100+ endpoints
-- **Documentation**: `../research/external/FINANCIAL_DATA_SOURCES_RESEARCH.md#fmp`
+- **Implementation**: `agents/backend/crates/market_data/src/fmp.rs` — `FmpClient` (Rust, `reqwest`)
+- **Documentation**: `../research/external/FINANCIAL_DATA_SOURCES_RESEARCH.md`
 - **Relevance**: Tier 2 data source for research, cross-validation, fundamental analysis
 
 ### OpenBB
