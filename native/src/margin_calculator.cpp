@@ -96,7 +96,8 @@ MarginCalculator::calculate_reg_t_margin(const types::BoxSpreadLeg &spread,
 MarginResult
 MarginCalculator::calculate_portfolio_margin(const types::BoxSpreadLeg &spread,
                                              double underlying_price,
-                                             double implied_volatility) const {
+                                             double implied_volatility,
+                                             double portfolio_multiplier) const {
 
   MarginResult result{};
   result.calculated_at = std::chrono::system_clock::now();
@@ -114,11 +115,7 @@ MarginCalculator::calculate_portfolio_margin(const types::BoxSpreadLeg &spread,
   MarginResult reg_t_result = calculate_reg_t_margin(spread, underlying_price);
   result.reg_t_margin = reg_t_result.reg_t_margin;
 
-  // Portfolio margin is typically 50-80% of Reg-T for box spreads
-  // Box spreads are low risk, so portfolio margin is usually close to net debit
-  // TODO: Make portfolio_multiplier configurable — 0.60 is a conservative
-  // placeholder; the real value depends on broker and account classification.
-  double portfolio_multiplier = 0.60;
+  // Portfolio margin: fraction of Reg-T (broker/account dependent).
   result.initial_margin = std::max(
       result.span_margin, reg_t_result.initial_margin * portfolio_multiplier);
 

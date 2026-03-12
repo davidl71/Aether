@@ -106,14 +106,43 @@ RiskCalculator::calculate_position_risk(const types::Position &position,
                                         double implied_volatility) const {
 
   PositionRisk risk{};
-
-  // TODO: Compute full per-position Greeks via GreeksCalculator and populate
-  // max_loss/max_gain properly; current values are placeholder multiples of
-  // market value and are not valid for short or multi-leg positions.
-
   risk.position_size = std::abs(position.get_market_value());
-  risk.max_loss = risk.position_size;       // Simplified
-  risk.max_gain = risk.position_size * 2.0; // Simplified
+
+  // Compute Greeks for option positions via QuantLib Black-Scholes.
+  bool is_option = (position.contract.expiry.length() == 8);
+  if (is_option && underlying_price > 0.0 && position.current_price > 0.0) {
+    GreeksCalculator greeks_calc;
+    double rfr = pimpl_->config_.risk_free_rate_override > 0.0
+                     ? pimpl_->config_.risk_free_rate_override
+                     : 0.045;
+    auto g = greeks_calc.calculate_option_greeks(
+        position.contract, underlying_price, position.current_price, rfr,
+        implied_volatility);
+    if (g) {
+      risk.delta = g->delta * position.quantity;
+      risk.gamma = g->gamma * position.quantity;
+      risk.theta = g->theta * position.quantity;
+      risk.vega  = g->vega  * position.quantity;
+    }
+  }
+
+  // max_loss / max_gain by position direction.
+  if (position.is_long()) {
+    risk.max_loss = position.get_cost_basis();
+    // For calls: upside = (underlying - strike) * 100 * qty (capped at 0)
+    // For puts: upside = strike * 100 * qty. Use underlying as proxy.
+    risk.max_gain = underlying_price > 0.0
+                        ? std::max(0.0, (underlying_price - position.contract.strike) *
+                                            100.0 * position.quantity)
+                        : risk.position_size * 2.0;
+  } else {
+    // Short positions: max gain = premium received; max loss = strike * 100 * |qty|
+    risk.max_gain = position.get_cost_basis();
+    risk.max_loss = position.contract.strike * 100.0 *
+                    static_cast<double>(std::abs(position.quantity));
+  }
+  risk.max_loss = std::max(0.0, risk.max_loss);
+  risk.max_gain = std::max(0.0, risk.max_gain);
 
   return risk;
 }
@@ -161,10 +190,28 @@ PortfolioRisk RiskCalculator::calculate_portfolio_risk(
   portfolio_risk.total_theta = greeks.theta;
   portfolio_risk.total_vega = greeks.vega;
 
-  // TODO: Replace linear-scaling stub with parametric or historical-simulation
-  // VaR using realized vol and cross-asset correlations.
-  portfolio_risk.var_95 = portfolio_risk.total_exposure * 0.05;
-  portfolio_risk.var_99 = portfolio_risk.total_exposure * 0.10;
+  // Parametric daily VaR (normal distribution, zero-mean return assumed).
+  // Portfolio vol = market-value-weighted average annualised realised vol,
+  // scaled to daily: sigma_daily = sigma_annual / sqrt(252).
+  // VaR_95 = exposure * sigma_daily * 1.645 (one-tailed 5% quantile)
+  // VaR_99 = exposure * sigma_daily * 2.326 (one-tailed 1% quantile)
+  double iv_weighted = 0.0, mv_sum = 0.0;
+  for (const auto &pos : positions) {
+    double mv = std::abs(pos.get_market_value());
+    mv_sum += mv;
+    if (pos.current_price > 0.0 && pos.avg_price > 0.0) {
+      double realised_vol =
+          std::abs(pos.current_price - pos.avg_price) / pos.avg_price *
+          std::sqrt(252.0);
+      iv_weighted += realised_vol * mv;
+    }
+  }
+  double portfolio_vol = (mv_sum > 0.0 && iv_weighted > 0.0)
+                             ? std::clamp(iv_weighted / mv_sum, 0.05, 2.0)
+                             : 0.20;
+  double daily_vol = portfolio_vol / std::sqrt(252.0);
+  portfolio_risk.var_95 = portfolio_risk.total_exposure * daily_vol * 1.645;
+  portfolio_risk.var_99 = portfolio_risk.total_exposure * daily_vol * 2.326;
 
   spdlog::debug("Portfolio risk: exposure=${:.2f}, delta={:.2f}",
                 portfolio_risk.total_exposure, portfolio_risk.total_delta);

@@ -48,10 +48,13 @@ public:
 
   // Calculate portfolio margin (simplified SPAN-like)
   // Portfolio margin considers offsetting positions and risk scenarios
+  // portfolio_multiplier: fraction of Reg-T applied as portfolio margin
+  // (0.60 is a conservative default; actual value depends on broker/account).
   MarginResult calculate_portfolio_margin(
       const types::BoxSpreadLeg& spread,
       double underlying_price,
-      double implied_volatility
+      double implied_volatility,
+      double portfolio_multiplier = 0.60
   ) const;
 
   // Calculate SPAN margin (Standard Portfolio Analysis of Risk)

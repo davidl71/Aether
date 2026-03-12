@@ -71,10 +71,8 @@ FinancingOptimizerResult FinancingOptimizer::optimize(
 
     opt.add_equality_constraint(sum_weights_constraint, nullptr, 1e-8);
 
-    // TODO: Expose xtol_rel and ftol_rel as FinancingOptimizerInput fields so
-    // callers can tune convergence without recompiling.
-    opt.set_xtol_rel(1e-4);
-    opt.set_ftol_rel(1e-6);
+    opt.set_xtol_rel(input.xtol_rel);
+    opt.set_ftol_rel(input.ftol_rel);
 
     std::vector<double> x(n, 1.0 / static_cast<double>(n));
 
@@ -82,11 +80,33 @@ FinancingOptimizerResult FinancingOptimizer::optimize(
     nlopt::result opt_result = opt.optimize(x, minf);
 
     if (opt_result < 0) {
-      // TODO: Add heuristic fallback (e.g., equal-weight or min-cost greedy)
-      // when NLopt fails so callers receive a usable solution rather than empty.
-      result.error_message =
-          "NLopt optimization failed with code: " + std::to_string(opt_result);
-      spdlog::warn("FinancingOptimizer: {}", result.error_message);
+      // Greedy fallback: satisfy min_weight constraints first, then allocate
+      // the remainder to the cheapest instrument.
+      spdlog::warn("FinancingOptimizer: NLopt failed (code {}); using greedy fallback",
+                   opt_result);
+      std::fill(result.weights.begin(), result.weights.end(), 0.0);
+      double min_sum = 0.0;
+      for (size_t i = 0; i < kNumInstruments; ++i) {
+        result.weights[i] = lb[i];
+        min_sum += lb[i];
+      }
+      double remaining = 1.0 - min_sum;
+      if (remaining > 0.0) {
+        size_t best = 0;
+        for (size_t i = 1; i < kNumInstruments; ++i) {
+          if (input.effective_rates[i] < input.effective_rates[best]) {
+            best = i;
+          }
+        }
+        result.weights[best] += remaining;
+      }
+      result.effective_cost = 0.0;
+      for (size_t i = 0; i < kNumInstruments; ++i) {
+        result.effective_cost += result.weights[i] * input.effective_rates[i];
+      }
+      result.success = true;
+      result.error_message = "NLopt failed (code " + std::to_string(opt_result) +
+                             "); greedy fallback applied";
       return result;
     }
 

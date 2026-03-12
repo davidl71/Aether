@@ -207,11 +207,9 @@ Greeks GreeksCalculator::calculate_bond_greeks(const std::string &symbol,
 
   Greeks greeks{};
 
-  // Bond Greeks based on duration and convexity
-  // TODO: Use delta = -duration * price / 100 for DV01-style sensitivity
-  // instead of always returning 0; the current value breaks portfolio delta sums
-  // that include bond positions.
-  greeks.delta = 0.0;
+  // Bond delta: DV01-style rate sensitivity.
+  // A 1-point rise in yield reduces price by duration * price / 100.
+  greeks.delta = -duration * price / 100.0;
 
   // Gamma: Convexity (second-order price sensitivity)
   // Formula: Gamma ≈ Convexity × Price × (Δyield)²
