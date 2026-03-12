@@ -115,3 +115,100 @@ These projects validate that Ratatui is production-ready for finance apps. Key p
 2. Price caching with TTL (F8)
 3. Circuit breaker pattern for external APIs
 4. `Arc<RwLock<T>>` for shared state in async context
+
+---
+
+# Research: Yahoo Finance as Data Source
+
+## Crate
+
+**yahoo-finance** (crates.io: 0.3.0, last updated 2020)
+- GitHub: github.com/fbriden/yahoo-finance-rs
+
+## Features
+
+- Historical OHLCV pricing
+- Real-time streaming quotes (via WebSocket)
+- Symbol profile info
+
+## Usage
+
+```rust
+use yahoo_finance::history;
+let data = history::retrieve("AAPL").unwrap();
+```
+
+## Pros
+
+- Free (public data)
+- No API key needed
+- Good for testing/demo
+
+## Cons
+
+- Rate limited by Yahoo
+- Delayed data (15 min)
+- Not reliable for production trading
+- Crate outdated (last update 2020)
+
+## Comparison with IBKR
+
+| Aspect | Yahoo Finance | IBKR API |
+|--------|--------------|----------|
+| Cost | Free | Free |
+| API Key | Not needed | Not needed |
+| Data | Delayed (15 min) | Real-time |
+| Reliability | Medium | High |
+
+## Recommendation
+
+**Use as fallback, not primary:**
+- Primary: IBKR API
+- Fallback: Yahoo Finance (demo, testing, when IBKR unavailable)
+
+Add price caching with TTL to handle rate limits.
+
+---
+
+# Research: Lessons from Rust Trading Platform Rebuild
+
+## Source
+
+Blog post: "I spent 2 years rebuilding my algorithmic trading platform in Rust. I have no regrets."
+- Author: Austin Starks (NexusTrade)
+- Original platform: NextTrade (TypeScript) → Rust
+
+## Why Rust (vs TypeScript/Go/C++)
+
+| Previous | Issue |
+|----------|-------|
+| TypeScript | Too slow, crashed during genetic optimizations (days to run) |
+| Go | Would always wonder "could it be faster?" |
+| C++ | Would crash constantly from segfaults |
+
+## Results
+
+- **Performance gain**: Genetic optimizations went from **days → seconds**
+- **Scalability**: Platform now handles complex strategies
+- **Maintenance**: Easier than expected after learning curve
+
+## Key Takeaways
+
+### Why Rust was worth it:
+- Enums + pattern matching: "descended from the heavens"
+- No NullPointerExceptions - type safety
+- Lightning fast performance
+- Easier maintenance than expected
+
+### Tips for Rust:
+1. **Use enums correctly** - Rust enums can hold data, unlike other languages
+2. **Don't over-abstract** - Helper functions are harder in Rust  
+3. **Use AI help** - LLMs help once you understand basics
+4. **Use clone()** - Performance impact minimal, makes code work
+
+## Validation
+
+This validates our C++ → Rust direction:
+- Trading logic performance gains are significant
+- Type safety prevents runtime crashes
+- Maintainability improves after learning curve
