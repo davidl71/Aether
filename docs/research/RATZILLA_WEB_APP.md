@@ -59,3 +59,59 @@ Evaluate using Ratzilla (Ratatui + WebAssembly) to replace the retired React web
 - [ ] Revisit if web UI needed again
 - [ ] Evaluate Ratatui v2 features (better browser support)
 - [ ] Consider minimal landing page instead of full TUI in browser
+
+---
+
+# Research: Finance TUI Apps Built with Ratatui
+
+## GitHub Projects Found
+
+| Project | Stars | Description |
+|---------|-------|-------------|
+| **budget_tracker_tui** | 174 | Budget tracker - income/expenses visualization |
+| **rust-tui-dashboard** | 0 | US + TW stocks with Yahoo Finance API |
+| **arbitrage-scouter** | 1 | Triangular arbitrage detector (async) |
+| **EnvelopeCLI** | 2 | Zero-based budgeting, bank import, encryption |
+
+## Lessons from rust-tui-dashboard
+
+**Features (F1-F8):**
+- F1: Dashboard View - Real-time tracking of holdings, daily P&L, best/worst performers
+- F2: Transaction Management - Create, view, delete buy/sell via TUI
+- F3: Multi-Portfolio Support - Switch between portfolios
+- F4: Rebalancing Engine - Compare current vs target allocations
+- F5: Watchlist Tracking - Track symbols alongside holdings
+- F6: Search & Filtering - Filter transaction history by ticker
+- F7: Config Hot-Reload - Auto-detect config.json changes
+- F8: Performance - Local price caching (30s TTL), Circuit Breaker pattern
+
+**Key takeways:**
+- Config hot-reload is valuable
+- Price caching with TTL prevents rate limit issues
+- Multi-portfolio support is a good pattern
+
+## Lessons from arbitrage-scouter
+
+**Architecture:**
+- Multi-task concurrency (WebSocket, arbitrage detection, TUI rendering)
+- Shared state with `Arc<RwLock<T>>` - read-optimized locking
+- tokio::select! for task coordination
+- Graceful shutdown propagation
+
+**Design Decisions:**
+- Use `RwLock` (not Mutex) for read-heavy workloads
+- Use `anyhow::Result` for application errors
+- tokio-tungstenite for WebSocket (native async/await)
+- Ratatui for flicker-free rendering
+
+**Key takeways:**
+- `Arc<RwLock>` pattern is battle-tested for async Rust
+- Circuit breaker pattern prevents cascade failures from API rate limits
+
+## Recommendation
+
+These projects validate that Ratatui is production-ready for finance apps. Key patterns to adopt:
+1. Config hot-reload (F7 from rust-tui-dashboard)
+2. Price caching with TTL (F8)
+3. Circuit breaker pattern for external APIs
+4. `Arc<RwLock<T>>` for shared state in async context
