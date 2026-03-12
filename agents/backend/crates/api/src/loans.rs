@@ -13,21 +13,25 @@ use sqlx::{
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum LoanType {
+    #[serde(rename = "SHIR_BASED", alias = "SHIR")]
     ShirBased,
+    #[serde(rename = "CPI_LINKED")]
     CpiLinked,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum LoanStatus {
+    #[serde(rename = "ACTIVE")]
     Active,
+    #[serde(rename = "PAID_OFF")]
     PaidOff,
+    #[serde(rename = "DEFAULTED")]
     Defaulted,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct LoanRecord {
     pub loan_id: String,
     pub bank_name: String,
@@ -167,6 +171,7 @@ fn parse_loan_datetime(
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct LoanFile {
     version: String,
     last_updated: String,
@@ -515,4 +520,141 @@ fn loan_from_row(row: &sqlx::sqlite::SqliteRow) -> anyhow::Result<LoanRecord> {
         status: loan_status_from_str(row.try_get::<&str, _>("status")?)?,
         last_update: row.try_get("last_update")?,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{LoanRecord, LoanStatus, LoanType};
+
+    fn sample_loan() -> LoanRecord {
+        LoanRecord {
+            loan_id: "loan-1".into(),
+            bank_name: "Discount".into(),
+            account_number: "123456789".into(),
+            loan_type: LoanType::ShirBased,
+            principal: 1000.0,
+            original_principal: 1200.0,
+            interest_rate: 4.0,
+            spread: 0.5,
+            base_cpi: 0.0,
+            current_cpi: 0.0,
+            origination_date: "2025-01-01T00:00:00Z".into(),
+            maturity_date: "2030-01-01T00:00:00Z".into(),
+            next_payment_date: "2025-02-01T00:00:00Z".into(),
+            monthly_payment: 100.0,
+            payment_frequency_months: 1,
+            status: LoanStatus::Active,
+            last_update: "2025-01-15T00:00:00Z".into(),
+        }
+    }
+
+    #[test]
+    fn loan_record_deserializes_canonical_contract_shape() {
+        let raw = r#"{
+            "loan_id":"loan-1",
+            "bank_name":"Discount",
+            "account_number":"123456789",
+            "loan_type":"SHIR_BASED",
+            "principal":1000.0,
+            "original_principal":1200.0,
+            "interest_rate":4.0,
+            "spread":0.5,
+            "base_cpi":0.0,
+            "current_cpi":0.0,
+            "origination_date":"2025-01-01T00:00:00Z",
+            "maturity_date":"2030-01-01T00:00:00Z",
+            "next_payment_date":"2025-02-01T00:00:00Z",
+            "monthly_payment":100.0,
+            "payment_frequency_months":1,
+            "status":"ACTIVE",
+            "last_update":"2025-01-15T00:00:00Z"
+        }"#;
+
+        let loan: LoanRecord = serde_json::from_str(raw).expect("deserialize canonical loan");
+
+        assert_eq!(loan.loan_type, LoanType::ShirBased);
+        assert_eq!(loan.status, LoanStatus::Active);
+        assert_eq!(loan.loan_id, "loan-1");
+    }
+
+    #[test]
+    fn loan_record_accepts_legacy_shir_alias() {
+        let raw = r#"{
+            "loan_id":"loan-legacy",
+            "bank_name":"Discount",
+            "account_number":"123456789",
+            "loan_type":"SHIR",
+            "principal":1000.0,
+            "original_principal":1000.0,
+            "interest_rate":4.0,
+            "spread":0.5,
+            "base_cpi":0.0,
+            "current_cpi":0.0,
+            "origination_date":"2025-01-01T00:00:00Z",
+            "maturity_date":"2030-01-01T00:00:00Z",
+            "next_payment_date":"2025-02-01T00:00:00Z",
+            "monthly_payment":100.0,
+            "payment_frequency_months":1,
+            "status":"ACTIVE",
+            "last_update":"2025-01-15T00:00:00Z"
+        }"#;
+
+        let loan: LoanRecord = serde_json::from_str(raw).expect("deserialize legacy SHIR loan");
+
+        assert_eq!(loan.loan_type, LoanType::ShirBased);
+    }
+
+    #[test]
+    fn loan_record_rejects_unknown_fields() {
+        let raw = r#"{
+            "loan_id":"loan-1",
+            "bank_name":"Discount",
+            "account_number":"123456789",
+            "loan_type":"SHIR_BASED",
+            "principal":1000.0,
+            "original_principal":1200.0,
+            "interest_rate":4.0,
+            "spread":0.5,
+            "base_cpi":0.0,
+            "current_cpi":0.0,
+            "origination_date":"2025-01-01T00:00:00Z",
+            "maturity_date":"2030-01-01T00:00:00Z",
+            "next_payment_date":"2025-02-01T00:00:00Z",
+            "monthly_payment":100.0,
+            "payment_frequency_months":1,
+            "status":"ACTIVE",
+            "last_update":"2025-01-15T00:00:00Z",
+            "unexpected":"value"
+        }"#;
+
+        let err = serde_json::from_str::<LoanRecord>(raw).expect_err("unknown field should fail");
+
+        assert!(err.to_string().contains("unexpected"));
+    }
+
+    #[test]
+    fn cpi_linked_loans_require_positive_cpi_values() {
+        let mut loan = sample_loan();
+        loan.loan_type = LoanType::CpiLinked;
+        loan.base_cpi = 0.0;
+        loan.current_cpi = 0.0;
+
+        let errors = loan.validate().expect_err("missing CPI values should fail");
+
+        assert!(errors.iter().any(|err| err.contains("Base CPI must be > 0")));
+        assert!(errors.iter().any(|err| err.contains("Current CPI must be > 0")));
+    }
+
+    #[test]
+    fn loan_validation_rejects_inverted_dates() {
+        let mut loan = sample_loan();
+        loan.origination_date = "2030-01-01T00:00:00Z".into();
+        loan.maturity_date = "2025-01-01T00:00:00Z".into();
+
+        let errors = loan.validate().expect_err("inverted dates should fail");
+
+        assert!(errors
+            .iter()
+            .any(|err| err.contains("Origination date must be before maturity date")));
+    }
 }

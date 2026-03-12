@@ -155,7 +155,7 @@
 | Testing | All files | `**/*test*.cpp`, `**/*test*.py`, `**/tests/**` | Only when test files change |
 | Documentation | All files | `docs/**/*.md`, `**/*.md` | Only when docs change |
 | Git Workflow | All files | `.git/**`, `**/.gitignore` | Only when git config changes |
-| MCP Servers | All files | `.cursor/mcp.json`, `mcp-servers/**` | Only when MCP config changes |
+| MCP Servers | All files | `.cursor/mcp.json` | Only when MCP config changes |
 | Security Scanning | All files | `**/*.cpp`, `**/*.py`, `**/*.rs`, `**/*.ts`, `**/*.js` | Only when code files change |
 
 ### 2.2 Task Type Scoping

@@ -511,7 +511,7 @@ This project has been split into multiple focused repositories for better organi
 - **[trading-setup-docs](https://github.com/davidl71/trading-setup-docs)** - Trading system setup, configuration, and deployment documentation
 - **[trading-automation-docs](https://github.com/davidl71/trading-automation-docs)** - Trading project automation and maintenance documentation
 - **[trading-tools-docs](https://github.com/davidl71/trading-tools-docs)** - Trading tools, frameworks, and best practices documentation
-- **[trading-mcp-servers](https://github.com/davidl71/trading-mcp-servers)** - MCP servers for trading operations (broker-agnostic, extracted from the deprecated former monorepo path `mcp/trading_server/`)
+- **[trading-mcp-servers](https://github.com/davidl71/trading-mcp-servers)** - External MCP server repository for trading operations (broker-agnostic), extracted from the former monorepo path `mcp/trading_server/`
 - **[trading-build-tools](https://github.com/davidl71/trading-build-tools)** - Reusable CMake build scripts and presets for C++ trading projects
 - **[trading-automation-tools](https://github.com/davidl71/trading-automation-tools)** - Project housekeeping and analysis automation tools
 - **[box-spread-notebooks](https://github.com/davidl71/box-spread-notebooks)** - Educational Jupyter notebooks for box spread trading strategies

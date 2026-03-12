@@ -125,6 +125,9 @@ vcpkg/
 *.bak
 *.backup
 *.tmp
+.ram-optimization-env
+build-ramdisk
+tmp/
 
 # Documentation build
 docs/_build/
