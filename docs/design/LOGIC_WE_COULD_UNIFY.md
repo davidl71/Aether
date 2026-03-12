@@ -13,11 +13,9 @@
 | Where | What |
 |-------|------|
 | **C++** | `calculate_mean`, `calculate_percentile`, `calculate_correlation` in `native/src/risk_calculator_stats.cpp`. |
-| **Python** | `python/integration/risk_calculator.py` imports from `box_spread_bindings` (C++ via pybind11); pure-Python fallback on `ImportError`. |
+| **Rust** | `agents/backend/crates/risk/src/stats.rs` — native Rust ports used by the Rust backend API. |
 
-All three functions are exposed in `native/src/box_spread_pybind.cpp` (lines 169–182).
-Python imports them as `_cxx_calculate_mean`, `_cxx_calculate_percentile`, `_cxx_calculate_correlation`
-from `box_spread_bindings`; the Python fallback is intentional for environments without the compiled extension.
+Python layer has been archived; the C++ implementation remains canonical for the C++ engine.
 
 ---
 
@@ -28,11 +26,9 @@ from `box_spread_bindings`; the Python fallback is intentional for environments 
 | Where | What |
 |-------|------|
 | **C++** | `tws::calculate_dte(expiry_str)` in `tws_conversions.cpp` (uses `market_hours::MarketHours` internally). |
-| **Python** | `calculate_dte` exposed via pybind11; Python code that previously used ad-hoc date math can call the binding. |
 
-`calculate_dte` is bound in `native/src/box_spread_pybind.cpp` (lines 187–190).
-`MarketHours` is used internally — Python callers get correct trading-day counts without
-needing direct `MarketHours` access. For the broader `MarketHours` class, see §7.
+Python layer has been archived. `calculate_dte` is the internal C++ boundary function; no
+cross-language binding is needed.
 
 ---
 
@@ -144,8 +140,6 @@ Numeric constants (default min_roi, max_dte) live in `config/schema.json` defaul
 | **Wire format** | protobuf (`NatsEnvelope` wrapping inner payloads from `proto/messages.proto`) for all platform events. |
 
 The topic registry (`docs/NATS_TOPICS_REGISTRY.md`) is comprehensive and current.
-TUI `NatsProvider` (`python/tui/providers/_nats.py`) subscribes to `snapshot.{backend_id}` and
-`system.health` using the correct subjects and proto types.
 C++ publishes via `ENABLE_NATS`; Rust owns collection and live-state fanout; Go agents
 use structured NATS. No second bus was introduced.
 

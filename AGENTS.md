@@ -23,7 +23,7 @@ ib_box_spread_full_universal/
 │   ├── third_party/         # Vendored dependencies (TWS API, Intel Decimal)
 │   ├── ibapi_cmake/         # CMake glue for TWS API build
 │   └── CMakeLists.txt       # Main build definition
-├── python/                  # Python integration layer (TUI, bindings, tests)
+├── python/                  # Archived Python layer (TUI, bindings) — not active runtime
 ├── agents/                  # Multi-language agents (Rust backend)
 ├── web/                     # Archived React web application (not active runtime)
 ├── proto/                   # Protocol Buffer definitions
@@ -86,7 +86,6 @@ If configure fails with missing **TWS API** or **Intel decimal** dependencies, r
 |--------|---------|-------------|
 | `BUILD_TESTING` | ON | Build Catch2 test suite |
 | `ENABLE_NATIVE_CLI` | ON | Build the CLI binary |
-| `ENABLE_PYTHON_BINDINGS` | ON | Build Cython Python bindings |
 | `ENABLE_ASAN` | OFF | AddressSanitizer |
 | `ENABLE_TSAN` | OFF | ThreadSanitizer |
 | `ENABLE_LTO` | ON | Link-Time Optimization |

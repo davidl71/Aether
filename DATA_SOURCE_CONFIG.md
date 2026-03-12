@@ -51,24 +51,13 @@ export TWS_MOCK=1
 
 ---
 
-### TUI (Python Textual)
+### TUI (Ratatui — active)
 
-**File**: `python/tui/config.py`
+The active TUI is the Rust Ratatui frontend at `agents/backend/crates/tui/`.
+It reads from the Rust backend API (`http://localhost:8080` by default) and
+subscribes to NATS for live snapshots.
 
-**Default**: `provider_type = "rest"` connects to IB service on port `8002`
-
-**To switch data sources**:
-```bash
-# Use mock data (no TWS needed)
-export TUI_BACKEND=mock
-
-# Use IBKR REST API directly
-export TUI_BACKEND=ibkr_rest
-
-# Use file-based snapshots
-export TUI_BACKEND=file
-export TUI_SNAPSHOT_FILE=/path/to/snapshot.json
-```
+> **Note:** The Python Textual TUI (`python/tui/`) has been archived and is no longer active.
 
 ---
 
