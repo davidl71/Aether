@@ -10,7 +10,6 @@ use ratatui::{
 
 use crate::app::{App, Tab};
 use crate::events::{ConnectionState, ConnectionStatus, LogLevel};
-use crate::models::SnapshotSource;
 
 pub fn render(f: &mut Frame, app: &App) {
     let chunks = Layout::default()
@@ -31,10 +30,7 @@ pub fn render(f: &mut Frame, app: &App) {
 
 fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
     let (mode, strategy, source_label, source_color) = if let Some(ref snap) = app.snapshot {
-        let color = match snap.source {
-            SnapshotSource::Nats => Color::Green,
-            SnapshotSource::Rest => Color::Yellow,
-        };
+        let color = Color::Green; // NATS is always green
         (
             snap.inner.mode.as_str().to_owned(),
             snap.inner.strategy.as_str().to_owned(),
@@ -59,8 +55,6 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         ),
         Span::raw("  "),
         render_connection_badge("N", &app.nats_status),
-        Span::raw(" "),
-        render_connection_badge("R", &app.rest_status),
     ]);
 
     f.render_widget(Paragraph::new(line), area);
@@ -292,17 +286,9 @@ fn render_alerts(f: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_logs(f: &mut Frame, app: &App, area: Rect) {
+    let nats_label = app.nats_status.state.label();
     let mut lines = vec![
-        Line::from(format!(
-            "NATS {} - {}",
-            app.nats_status.state.label(),
-            app.nats_status.detail
-        )),
-        Line::from(format!(
-            "REST {} - {}",
-            app.rest_status.state.label(),
-            app.rest_status.detail
-        )),
+        Line::from(format!("NATS {} - {}", nats_label, app.nats_status.detail)),
         Line::from(""),
     ];
 
@@ -346,7 +332,6 @@ fn render_logs(f: &mut Frame, app: &App, area: Rect) {
 fn render_connection_badge(prefix: &str, status: &ConnectionStatus) -> Span<'static> {
     let color = match status.state {
         ConnectionState::Connected => Color::Green,
-        ConnectionState::Disabled => Color::DarkGray,
         ConnectionState::Starting => Color::Blue,
         ConnectionState::Retrying => Color::Red,
     };

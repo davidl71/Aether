@@ -38,7 +38,7 @@ impl Default for TuiConfig {
             watchlist: parse_watchlist(DEFAULT_WATCHLIST),
             tick_ms: 250,
             rest_poll_ms: 2000,
-            rest_fallback: true,
+            rest_fallback: false,
         }
     }
 }

@@ -7,14 +7,12 @@ pub const MAX_LOG_ENTRIES: usize = 200;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConnectionTarget {
     Nats,
-    Rest,
 }
 
 impl ConnectionTarget {
     pub fn label(&self) -> &'static str {
         match self {
             Self::Nats => "NATS",
-            Self::Rest => "REST",
         }
     }
 }
@@ -24,7 +22,6 @@ pub enum ConnectionState {
     Starting,
     Connected,
     Retrying,
-    Disabled,
 }
 
 impl ConnectionState {
@@ -33,7 +30,6 @@ impl ConnectionState {
             Self::Starting => "START",
             Self::Connected => "UP",
             Self::Retrying => "DOWN",
-            Self::Disabled => "OFF",
         }
     }
 }
@@ -166,11 +162,7 @@ mod tests {
         );
         push_log(
             &mut logs,
-            LogEntry::new(
-                LogLevel::Warn,
-                Some(ConnectionTarget::Rest),
-                "connect failed",
-            ),
+            LogEntry::new(LogLevel::Info, Some(ConnectionTarget::Nats), "connected"),
         );
 
         assert_eq!(logs.len(), 2);

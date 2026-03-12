@@ -61,7 +61,6 @@ pub struct App {
     pub logs: VecDeque<LogEntry>,
     pub log_scroll: u16,
     pub nats_status: ConnectionStatus,
-    pub rest_status: ConnectionStatus,
     pub should_quit: bool,
     event_rx: mpsc::UnboundedReceiver<AppEvent>,
     snapshot_rx: watch::Receiver<Option<TuiSnapshot>>,
@@ -73,12 +72,6 @@ impl App {
         snapshot_rx: watch::Receiver<Option<TuiSnapshot>>,
         event_rx: mpsc::UnboundedReceiver<AppEvent>,
     ) -> Self {
-        let rest_status = if config.rest_fallback {
-            ConnectionStatus::new(ConnectionState::Starting, "Waiting for fallback polling")
-        } else {
-            ConnectionStatus::new(ConnectionState::Disabled, "REST fallback disabled")
-        };
-
         Self {
             config,
             active_tab: Tab::Dashboard,
@@ -86,7 +79,6 @@ impl App {
             logs: VecDeque::new(),
             log_scroll: 0,
             nats_status: ConnectionStatus::new(ConnectionState::Starting, "Connecting to NATS"),
-            rest_status,
             should_quit: false,
             event_rx,
             snapshot_rx,
@@ -117,7 +109,6 @@ impl App {
         match event {
             AppEvent::Connection { target, status } => match target {
                 ConnectionTarget::Nats => self.nats_status = status,
-                ConnectionTarget::Rest => self.rest_status = status,
             },
             AppEvent::Log(entry) => push_log(&mut self.logs, entry),
         }
