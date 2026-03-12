@@ -1,12 +1,6 @@
 // risk_calculator.cpp - Risk management implementation
-// TODO(exarp): T-1772887500742229784 — Split by domain before financial math sprint
-// This file is ~1020 lines mixing VaR, position sizing, performance stats, and core limits.
-// Split plan:
-//   risk_calculator_var.cpp    — VaR (historical/parametric/Monte Carlo), scenario analysis
-//   risk_calculator_sizing.cpp — Kelly criterion, fixed fractional, optimal sizing
-//   risk_calculator_stats.cpp  — Sharpe, Sortino, Calmar, drawdown metrics
-//   risk_calculator.cpp        — keep only: limits, is_within_limits, portfolio_risk core
-// Exarp task: T-1772887500742229784
+// Domain split complete: VaR → risk_calculator_var.cpp, sizing → risk_calculator_sizing.cpp,
+// stats → risk_calculator_stats.cpp. This file: limits, portfolio risk core.
 #include "risk_calculator.h"
 #include "greeks_calculator.h"
 #include "option_chain.h"
