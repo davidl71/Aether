@@ -964,6 +964,7 @@ if(_build_native_cli)
     )
 
     set(HEADERS
+        include/constants.h
         include/tws_client.h
         include/tws_conversions.h
         include/tws_connection.h

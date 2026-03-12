@@ -1,5 +1,6 @@
 // order_manager.cpp - Order management implementation (stub)
 #include "order_manager.h"
+#include "constants.h"
 #include <algorithm>
 #include <map>
 #include <set>
@@ -65,7 +66,7 @@ public:
     }
 
     // Warn if efficiency ratio is low and we have enough orders
-    if (stats_.total_orders_placed > 20 && stats_.efficiency_ratio < 0.05) {
+    if (stats_.total_orders_placed > 20 && stats_.efficiency_ratio < constants::kOrderEfficiencyFloor) {
       double efficiency_percent = stats_.efficiency_ratio * 100.0;
       spdlog::warn(
           "⚠️  Low order efficiency ratio: {:.2f}% ({} executed / {} placed)",

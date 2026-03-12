@@ -1,5 +1,6 @@
 // margin_calculator.cpp - Margin requirement calculations for box spreads
 #include "margin_calculator.h"
+#include "constants.h"
 #include <algorithm>
 #include <cmath>
 #include <spdlog/spdlog.h>
@@ -60,18 +61,18 @@ MarginCalculator::calculate_reg_t_margin(const types::BoxSpreadLeg &spread,
   double short_call_margin = calculate_short_option_margin(
       underlying_price, spread.short_call.strike, types::OptionType::Call,
       spread.short_call_price,
-      0.20, // Default IV if not available
+      constants::kDefaultImpliedVolatility,
       spread.get_days_to_expiry());
 
   double short_put_margin = calculate_short_option_margin(
       underlying_price, spread.short_put.strike, types::OptionType::Put,
       spread.short_put_price,
-      0.20, // Default IV if not available
+      constants::kDefaultImpliedVolatility,
       spread.get_days_to_expiry());
 
   // Long legs: margin is typically 0 (premium paid), but we subtract premium
-  double long_call_premium = spread.long_call_price * 100.0;
-  double long_put_premium = spread.long_put_price * 100.0;
+  double long_call_premium = spread.long_call_price * constants::kOptionsContractMultiplier;
+  double long_put_premium = spread.long_put_price * constants::kOptionsContractMultiplier;
 
   // Box spread offset: short margin minus long premiums
   // Minimum margin is typically the net debit
@@ -79,10 +80,9 @@ MarginCalculator::calculate_reg_t_margin(const types::BoxSpreadLeg &spread,
                       long_put_premium;
 
   // Reg-T minimum: typically net debit for box spreads
-  result.reg_t_margin = std::max(net_margin, spread.net_debit * 100.0);
+  result.reg_t_margin = std::max(net_margin, spread.net_debit * constants::kOptionsContractMultiplier);
   result.initial_margin = result.reg_t_margin;
-  result.maintenance_margin =
-      result.initial_margin * 0.75; // Typically 75% of initial
+  result.maintenance_margin = result.initial_margin * constants::kMaintenanceMarginRatio;
 
   spdlog::debug(
       "Reg-T margin for box spread: initial=${:.2f}, maintenance=${:.2f}",
@@ -114,15 +114,15 @@ MarginCalculator::calculate_portfolio_margin(const types::BoxSpreadLeg &spread,
 
   // Portfolio margin is typically 50-80% of Reg-T for box spreads
   // Box spreads are low risk, so portfolio margin is usually close to net debit
-  double portfolio_multiplier = 0.60; // Conservative estimate
   result.initial_margin = std::max(
-      result.span_margin, reg_t_result.initial_margin * portfolio_multiplier);
+      result.span_margin,
+      reg_t_result.initial_margin * constants::kPortfolioMarginMultiplier);
 
   // Ensure portfolio margin is at least net debit
   result.initial_margin =
-      std::max(result.initial_margin, spread.net_debit * 100.0);
+      std::max(result.initial_margin, spread.net_debit * constants::kOptionsContractMultiplier);
 
-  result.maintenance_margin = result.initial_margin * 0.75;
+  result.maintenance_margin = result.initial_margin * constants::kMaintenanceMarginRatio;
   result.portfolio_margin_benefit =
       reg_t_result.initial_margin - result.initial_margin;
 
@@ -161,9 +161,9 @@ MarginCalculator::calculate_span_margin(const types::BoxSpreadLeg &spread,
 
   // SPAN margin = max loss across all scenarios
   // For box spreads, this is typically the net debit
-  result.span_margin = std::max(max_loss, spread.net_debit * 100.0);
+  result.span_margin = std::max(max_loss, spread.net_debit * constants::kOptionsContractMultiplier);
   result.initial_margin = result.span_margin;
-  result.maintenance_margin = result.initial_margin * 0.75;
+  result.maintenance_margin = result.initial_margin * constants::kMaintenanceMarginRatio;
 
   spdlog::debug("SPAN margin for box spread: ${:.2f}", result.span_margin);
 
@@ -203,7 +203,7 @@ double MarginCalculator::calculate_portfolio_margin_benefit(
 
   // Calculate portfolio margin
   MarginResult portfolio = calculate_portfolio_margin(
-      spreads[0], underlying_price, 0.20); // Use first spread for IV estimate
+      spreads[0], underlying_price, constants::kDefaultImpliedVolatility);
   double total_portfolio = portfolio.initial_margin * spreads.size();
 
   // Benefit is the difference
@@ -234,7 +234,7 @@ MarginResult MarginCalculator::calculate_portfolio_margin(
   }
 
   result.initial_margin = total_margin;
-  result.maintenance_margin = total_margin * 0.75;
+  result.maintenance_margin = total_margin * constants::kMaintenanceMarginRatio;
   result.reg_t_margin = total_reg_t;
   result.portfolio_margin_benefit = total_reg_t - total_margin;
 
@@ -296,19 +296,22 @@ double MarginCalculator::calculate_short_option_margin(
   // Call: max(20% of underlying - OTM amount, 10% of underlying) + premium
   // Put: max(20% of underlying - OTM amount, 10% of strike) + premium
 
-  double premium = option_price * 100.0;
+  double premium = option_price * constants::kOptionsContractMultiplier;
   double otm_amount = 0.0;
 
   if (type == types::OptionType::Call) {
     otm_amount = std::max(0.0, strike - underlying_price);
-    double margin = std::max(0.20 * underlying_price - otm_amount,
-                             0.10 * underlying_price) *
-                    100.0;
+    double margin =
+        std::max(constants::kRegTMarginPct * underlying_price - otm_amount,
+                 constants::kRegTMarginFloorPct * underlying_price) *
+        constants::kOptionsContractMultiplier;
     return margin + premium;
   } else { // Put
     otm_amount = std::max(0.0, underlying_price - strike);
     double margin =
-        std::max(0.20 * underlying_price - otm_amount, 0.10 * strike) * 100.0;
+        std::max(constants::kRegTMarginPct * underlying_price - otm_amount,
+                 constants::kRegTMarginFloorPct * strike) *
+        constants::kOptionsContractMultiplier;
     return margin + premium;
   }
 }
@@ -318,7 +321,7 @@ MarginCalculator::calculate_long_option_margin(double option_price) const {
 
   // Long options: margin is typically 0 (premium paid)
   // But we return premium as the "margin" (capital required)
-  return option_price * 100.0;
+  return option_price * constants::kOptionsContractMultiplier;
 }
 
 double MarginCalculator::apply_box_spread_offsets(double short_call_margin,
@@ -328,11 +331,11 @@ double MarginCalculator::apply_box_spread_offsets(double short_call_margin,
                                                   double strike_width) const {
 
   // Box spread offsets: short margins minus long premiums
-  double long_premiums = (long_call_price + long_put_price) * 100.0;
+  double long_premiums = (long_call_price + long_put_price) * constants::kOptionsContractMultiplier;
   double short_margins = short_call_margin + short_put_margin;
 
   // Minimum margin is typically the strike width (theoretical value)
-  return std::max(short_margins - long_premiums, strike_width * 100.0);
+  return std::max(short_margins - long_premiums, strike_width * constants::kOptionsContractMultiplier);
 }
 
 std::vector<double>

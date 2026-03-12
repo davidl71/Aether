@@ -2,12 +2,11 @@
 // Domain split complete: VaR → risk_calculator_var.cpp, sizing → risk_calculator_sizing.cpp,
 // stats → risk_calculator_stats.cpp. This file: limits, portfolio risk core.
 #include "risk_calculator.h"
+#include "constants.h"
 #include "greeks_calculator.h"
-#include "option_chain.h"
 #include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
-#include <iterator>
 #include <numeric>
 #include <spdlog/spdlog.h>
 
@@ -63,9 +62,9 @@ RiskCalculator::calculate_box_spread_risk(const types::BoxSpreadLeg &spread,
   PositionRisk risk{};
 
   // Box spreads have defined risk
-  risk.position_size = spread.net_debit * 100.0; // Per contract
-  risk.max_loss = spread.net_debit * 100.0;
-  risk.max_gain = (spread.get_strike_width() - spread.net_debit) * 100.0;
+  risk.position_size = spread.net_debit * constants::kOptionsContractMultiplier; // Per contract
+  risk.max_loss = spread.net_debit * constants::kOptionsContractMultiplier;
+  risk.max_gain = (spread.get_strike_width() - spread.net_debit) * constants::kOptionsContractMultiplier;
   risk.expected_value = risk.max_gain; // Box spreads converge to max value
 
   // Box spreads are delta-neutral
@@ -119,7 +118,7 @@ RiskCalculator::calculate_max_loss(const types::Position &position) const {
     return position.get_cost_basis();
   } else {
     // Short positions - use a reasonable estimate
-    return position.contract.strike * 100.0 *
+    return position.contract.strike * constants::kOptionsContractMultiplier *
            static_cast<double>(std::abs(position.quantity));
   }
 }
@@ -128,7 +127,7 @@ double
 RiskCalculator::calculate_max_gain(const types::Position &position) const {
   // Simplified calculation
   if (position.is_long()) {
-    return position.contract.strike * 100.0 *
+    return position.contract.strike * constants::kOptionsContractMultiplier *
            static_cast<double>(position.quantity);
   } else {
     return position.get_cost_basis();
@@ -154,8 +153,8 @@ PortfolioRisk RiskCalculator::calculate_portfolio_risk(
   portfolio_risk.total_vega = greeks.vega;
 
   // Simple VaR calculation (stub)
-  portfolio_risk.var_95 = portfolio_risk.total_exposure * 0.05;
-  portfolio_risk.var_99 = portfolio_risk.total_exposure * 0.10;
+  portfolio_risk.var_95 = portfolio_risk.total_exposure * constants::kVar95ScalingFactor;
+  portfolio_risk.var_99 = portfolio_risk.total_exposure * constants::kVar99ScalingFactor;
 
   spdlog::debug("Portfolio risk: exposure=${:.2f}, delta={:.2f}",
                 portfolio_risk.total_exposure, portfolio_risk.total_delta);
@@ -179,7 +178,7 @@ types::RiskMetrics RiskCalculator::calculate_aggregate_greeks(
   // strike price is the best proxy for the underlying level; when
   // current_price is available on a position we also weight by market
   // value to select the most representative underlying.
-  double underlying_price = 100.0;
+  double underlying_price = constants::kOptionsContractMultiplier; // ATM proxy when no price data
   double best_mv = 0.0;
   for (const auto &pos : positions) {
     double mv = std::abs(pos.get_market_value());
@@ -188,7 +187,7 @@ types::RiskMetrics RiskCalculator::calculate_aggregate_greeks(
       if (pos.contract.strike > 0.0) {
         underlying_price = pos.contract.strike;
       } else if (pos.current_price > 0.0) {
-        underlying_price = pos.current_price * 100.0;
+        underlying_price = pos.current_price * constants::kOptionsContractMultiplier;
       }
     }
   }
@@ -198,11 +197,11 @@ types::RiskMetrics RiskCalculator::calculate_aggregate_greeks(
   // risk-free rate.  Default to Fed Funds effective ≈ 4.5% (2025).
   double risk_free_rate = pimpl_->config_.risk_free_rate_override > 0.0
                               ? pimpl_->config_.risk_free_rate_override
-                              : 0.045;
+                              : constants::kDefaultRiskFreeRate;
 
   // Implied volatility: aggregate from market data snapshots attached
   // to each position.  Weighted average by absolute market value.
-  double implied_volatility = 0.20;
+  double implied_volatility = constants::kDefaultImpliedVolatility;
   double iv_weight_sum = 0.0;
   double iv_weighted = 0.0;
   for (const auto &pos : positions) {
@@ -210,13 +209,14 @@ types::RiskMetrics RiskCalculator::calculate_aggregate_greeks(
       double mv = std::abs(pos.get_market_value());
       double price_vol =
           std::abs(pos.current_price - pos.avg_price) / pos.avg_price;
-      double annualized_vol = price_vol * std::sqrt(252.0);
+      double annualized_vol = price_vol * std::sqrt(constants::kTradingDaysPerYear);
       iv_weighted += annualized_vol * mv;
       iv_weight_sum += mv;
     }
   }
   if (iv_weight_sum > 0.0) {
-    implied_volatility = std::clamp(iv_weighted / iv_weight_sum, 0.05, 1.5);
+    implied_volatility = std::clamp(iv_weighted / iv_weight_sum,
+                                    constants::kIvClampLow, constants::kIvClampHigh);
   }
 
   auto aggregate = greeks_calc.aggregate_greeks(
@@ -281,13 +281,13 @@ double RiskCalculator::calculate_correlation_risk(
           // production) For now, use sign correlation: if both moved same
           // direction, positive correlation
           if ((ret1 > 0 && ret2 > 0) || (ret1 < 0 && ret2 < 0)) {
-            correlation_matrix(i, j) = 0.7; // Positive correlation
+            correlation_matrix(i, j) = constants::kCorrelationSameDirection;
           } else {
-            correlation_matrix(i, j) = 0.3; // Lower correlation
+            correlation_matrix(i, j) = constants::kCorrelationOppositeDir;
           }
         } else {
           // Fallback: Use default correlation for different underlyings
-          correlation_matrix(i, j) = 0.5;
+          correlation_matrix(i, j) = constants::kCorrelationFallback;
         }
         correlation_matrix(j, i) = correlation_matrix(i, j); // Symmetric
       }
@@ -379,7 +379,7 @@ Eigen::MatrixXd RiskCalculator::calculate_correlation_from_returns(
       }
       covar /= (n_obs - 1);
 
-      double corr = (stds[i] > 1e-12 && stds[j] > 1e-12)
+      double corr = (stds[i] > constants::kStdDevEpsilon && stds[j] > constants::kStdDevEpsilon)
                         ? covar / (stds[i] * stds[j])
                         : (i == j ? 1.0 : 0.0);
 
@@ -407,7 +407,7 @@ bool RiskCalculator::is_box_spread_within_limits(
     const types::BoxSpreadLeg &spread,
     const std::vector<types::Position> &existing_positions) const {
 
-  double position_cost = spread.net_debit * 100.0;
+  double position_cost = spread.net_debit * constants::kOptionsContractMultiplier;
 
   double total_exposure = total_abs_exposure(existing_positions);
 
@@ -469,7 +469,7 @@ RiskMonitor::check_risks(const std::vector<types::Position> &positions,
   // Check exposure
   double total_exposure = total_abs_exposure(positions);
 
-  if (total_exposure > config_.max_total_exposure * 0.9) {
+  if (total_exposure > config_.max_total_exposure * constants::kExposureWarningFraction) {
     RiskAlert alert;
     alert.level = RiskAlertLevel::Warning;
     alert.category = "EXPOSURE";

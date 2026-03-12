@@ -2,6 +2,7 @@
 // implementation
 #include "strategies/box_spread/box_spread_strategy.h"
 #include "config_manager.h"
+#include "constants.h"
 #include <algorithm>
 #include <cmath>
 #include <numeric>
@@ -26,7 +27,7 @@ namespace strategy {
 
 bool BoxSpreadOpportunity::is_actionable() const {
   return confidence_score >= 50.0 && expected_profit > 0 &&
-         execution_probability >= 0.7;
+         execution_probability >= constants::kMinExecutionProbability;
 }
 
 // ============================================================================
