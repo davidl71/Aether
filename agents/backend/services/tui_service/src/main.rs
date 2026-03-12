@@ -25,12 +25,13 @@
 
 use std::time::Duration;
 
-use anyhow::Context;
+use color_eyre::eyre::Context;
 use crossterm::{
-    event::{self, Event},
+    event::{EventStream, KeyEventKind},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use futures::StreamExt;
 use tokio::sync::{mpsc, watch};
 use tracing::{error, info};
 use tracing_subscriber::{fmt::writer::BoxMakeWriter, layer::SubscriberExt, util::SubscriberInitExt};
@@ -49,7 +50,11 @@ use app::App;
 use config::TuiConfig;
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> color_eyre::Result<()> {
+    // Install color-eyre: pretty-prints errors and — critically — restores the terminal
+    // before printing panic backtraces so the shell isn't left in raw mode.
+    color_eyre::install()?;
+
     // tui-logger: captures all tracing events into an in-memory ring buffer
     // that the Logs tab widget reads. Visible inside the TUI immediately.
     tui_logger::init_logger(log::LevelFilter::Trace).expect("tui-logger init");
@@ -106,9 +111,9 @@ async fn main() -> anyhow::Result<()> {
     let mut terminal = init_terminal().context("Failed to initialize TUI terminal")?;
     let mut app = App::new(config, snap_rx, event_rx, config_rx);
 
-    let result = run_loop(&mut terminal, &mut app);
+    let result = run_loop(&mut terminal, &mut app).await;
 
-    // Always restore terminal on exit
+    // Always restore terminal on exit (color-eyre panic hook also restores on panic)
     if let Err(err) = restore_terminal() {
         error!(error = %err, "Failed to restore terminal state");
     }
@@ -116,7 +121,7 @@ async fn main() -> anyhow::Result<()> {
     result.context("TUI event loop error")
 }
 
-fn init_terminal() -> anyhow::Result<ratatui::DefaultTerminal> {
+fn init_terminal() -> color_eyre::Result<ratatui::DefaultTerminal> {
     enable_raw_mode().context("enable raw mode")?;
     let mut stdout = std::io::stdout();
     execute!(stdout, EnterAlternateScreen).context("enter alternate screen")?;
@@ -124,28 +129,59 @@ fn init_terminal() -> anyhow::Result<ratatui::DefaultTerminal> {
         .context("create terminal backend")
 }
 
-fn restore_terminal() -> anyhow::Result<()> {
+fn restore_terminal() -> color_eyre::Result<()> {
     disable_raw_mode().context("disable raw mode")?;
     execute!(std::io::stdout(), LeaveAlternateScreen).context("leave alternate screen")?;
     Ok(())
 }
 
-fn run_loop(terminal: &mut ratatui::DefaultTerminal, app: &mut App) -> anyhow::Result<()> {
+/// Async event loop using tokio::select! to multiplex terminal key events and
+/// the redraw tick without blocking on either.
+///
+/// The old synchronous event::poll(tick) approach delayed key responses by up to
+/// tick_ms and couldn't react to NATS snapshots mid-tick without extra complexity.
+/// EventStream (crossterm "event-stream" feature) yields futures that compose
+/// naturally with tokio::select!, giving immediate key response at any tick rate.
+///
+/// TODO(async-template): if the app grows to need per-component event routing,
+/// consider adopting the full ratatui/async-template component model.
+async fn run_loop(terminal: &mut ratatui::DefaultTerminal, app: &mut App) -> color_eyre::Result<()> {
+    let mut event_stream = EventStream::new();
+    let mut tick_interval = tokio::time::interval(Duration::from_millis(app.config.tick_ms));
+    // Skip missed ticks rather than bursting to catch up after a slow render
+    tick_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
     loop {
         terminal.draw(|f| ui::render(f, app))?;
 
-        let tick = Duration::from_millis(app.config.tick_ms);
-        if event::poll(tick)? {
-            if let Event::Key(key) = event::read()? {
-                app.handle_key(key);
+        tokio::select! {
+            // Redraw timer — drives app.tick() for snapshot/config polling
+            _ = tick_interval.tick() => {
+                app.tick();
+            }
+
+            // Key events from the terminal — react immediately, no tick delay
+            maybe_event = event_stream.next() => {
+                match maybe_event {
+                    Some(Ok(crossterm::event::Event::Key(key))) => {
+                        // Only process Press; ignore Repeat/Release (crossterm 0.27+)
+                        if key.kind == KeyEventKind::Press {
+                            app.handle_key(key);
+                        }
+                    }
+                    Some(Err(e)) => {
+                        error!(error = %e, "Terminal event stream error");
+                    }
+                    None => break, // stream closed — terminal gone
+                    _ => {}        // resize, focus, mouse — not used yet
+                }
             }
         }
-
-        app.tick();
 
         if app.should_quit {
             break;
         }
     }
+
     Ok(())
 }

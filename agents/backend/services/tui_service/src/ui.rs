@@ -114,6 +114,11 @@ fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
         .split(area);
 
     // Symbols table
+    // TODO(sparklines): add a "Trend" column using ratatui's built-in Sparkline widget.
+    // Requires a per-symbol ring buffer of recent roi values in app state
+    // (e.g. HashMap<String, VecDeque<u64>> updated each tick; Sparkline takes &[u64]).
+    // TODO(tui-popup): on Enter/Space over a row, open a tui-popup (tui-widgets crate)
+    // showing full SymbolSnapshot details: candle OHLCV, maker/taker counts, volume.
     let header = Row::new(["Symbol", "Last", "Bid", "Ask", "Spread", "ROI%"])
         .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
@@ -227,6 +232,11 @@ fn render_positions(f: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_orders(f: &mut Frame, app: &App, area: Rect) {
+    // TODO(tui-popup): add a cancel-order confirmation modal using tui-popup (tui-widgets).
+    // On Enter over a selected row: render tui_popup::Popup over the table asking
+    // "Cancel order {id}? [y/n]". Requires TableState for row selection.
+    // TODO(ratatui-textarea): add an order filter input bar (ratatui-textarea crate,
+    // single-line mode) at the top of this view to filter orders by symbol or status.
     let header = Row::new(["ID", "Symbol", "Side", "Qty", "Status"])
         .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
