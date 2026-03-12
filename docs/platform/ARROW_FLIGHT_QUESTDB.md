@@ -9,7 +9,7 @@
 ## 1. Current state
 
 - **QuestDB write path**: Go `collection-daemon` (`agents/go/cmd/collection-daemon`) subscribes to NATS (Core or JetStream), decodes `NatsEnvelope`/`MarketDataEvent`, and writes to QuestDB via **ILP** (Influx Line Protocol) on port **9009** when `QUESTDB_ILP_ADDR` is set.
-- **QuestDB read path**: Python `questdb_client.py` uses **HTTP** `GET /exec?query=...` (port 9000) and returns JSON rows. Used for `query()`, `get_ohlcv()`, `get_latest_quotes()`.
+- **QuestDB read path**: historical Python helper code used `questdb_client.py` over **HTTP** `GET /exec?query=...` (port 9000) and returned JSON rows. That app tree is no longer the active frontend runtime, but the read-path tradeoffs in this note still apply.
 
 **Gap**: Bulk/historical reads are row-wise over HTTP; no columnar zero-copy path.
 
@@ -84,7 +84,7 @@ for reader.Next() {
 
 ### 4.1 Implementation
 
-- In **`python/integration/questdb_client.py`**:
+- In a Python helper client (historically `python/integration/questdb_client.py`, or any replacement under the current repo layout):
   - **`query_flight_sql(sql, flight_port=8812)`** (or equivalent) uses **pyarrow.flight** to connect to QuestDB’s Flight SQL endpoint, execute the given SQL, and return results as **PyArrow Table** (or list of record batches). If Flight is unavailable (e.g. connection error or pyarrow not installed), fall back to existing HTTP `query()`.
   - **`get_ohlcv()`** can be wired to use `query_flight_sql()` when available, so one concrete read path (OHLCV bars) uses Arrow.
   - Implemented: `get_ohlcv(..., use_flight=True)` (default) calls `query_flight_sql()`; set `use_flight=False` to force HTTP.
@@ -97,7 +97,7 @@ for reader.Next() {
 
 ### 4.3 Dependencies
 
-- **pyarrow** (with Flight support): already in `requirements-notebooks.txt` (pyarrow>=14.0.0). For `python/integration/` consider adding optional dependency or documenting that Flight path requires `pyarrow` with Flight (e.g. `pip install 'pyarrow[flight]'` or full pyarrow).
+- **pyarrow** (with Flight support): treat as an optional dependency for whichever Python helper/test environment owns the Flight client. The old `requirements-notebooks.txt` path is notebook-era history, not current setup guidance.
 - **adbc-driver-flightsql**: optional Python dependency for `query_flight_sql()` and for `get_ohlcv(..., use_flight=True)`. Install with `pip install adbc-driver-flightsql`. When not installed, the client falls back to HTTP `/exec`.
 
 ---

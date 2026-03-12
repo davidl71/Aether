@@ -136,7 +136,7 @@ Canonical schema: `proto/messages.proto`. Codegen via `./proto/generate.sh`.
 | C++ | `native/generated/messages.pb.{h,cc}` | protobuf binary | Active |
 | Rust | `agents/backend/crates/nats_adapter/` (prost) | protobuf binary | Active |
 | Go | `agents/go/proto/v1/messages.pb.go` | protobuf binary | Active |
-| Python | `python/generated/` (betterproto) | protobuf binary / JSON | Generated; used by selected NATS/health consumers |
+| Python | `native/generated/python/` (betterproto) | protobuf binary / JSON | Generated helper output |
 | TypeScript | `web/src/proto/messages.ts` (ts-proto) | JSON / binary | Generated; API migration pending |
 
 Schema management: `proto/generate.sh` (shell script).
@@ -180,8 +180,8 @@ All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/sl
 
 | # | Issue | Location | Impact | Exarp Task |
 |---|-------|---------|--------|------------|
-| 1 | **Ledger read-path overlap**: Rust owns writes, but some Python services still read SQLite directly instead of going through Rust-owned APIs | `agents/backend/crates/ledger`, `python/integration/` | Ownership is clearer than before, but read-path drift and schema coupling remain | T-1772887221775761020 |
-| 2 | **Split data backends**: TUI still mixes selected Python specialist calls with Rust-owned shared reads | `python/tui/providers/`, `python/integration/` | Some TUI workflows can still diverge from shared Rust views | T-1772887221914991889 |
+| 1 | **Legacy docs still describe Python ledger overlap**: active ownership is Rust, but some architecture notes still mention older Python read paths | `agents/backend/crates/ledger`, docs | Documentation drift can obscure current ownership boundaries | T-1772887221775761020 |
+| 2 | **Legacy docs still describe split TUI backends**: the active TUI path is Rust-first, but some notes still mention older Python specialist reads | docs, retired Python references | Documentation drift can obscure current runtime topology | T-1772887221914991889 |
 
 ### High
 
@@ -196,8 +196,8 @@ All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/sl
 
 | # | Issue | Location | Impact | Exarp Task |
 |---|-------|---------|--------|------------|
-| 7 | **No Nelson-Siegel curve fit**: only simple interpolation | `python/integration/yield_curve_comparison.py` | Yield curve quality limited; parametric fitting standard in fixed income | T-1772887222348905245 |
-| 8 | **No standard amortization**: only Israeli loan types | `python/integration/cash_flow_calculator.py` | Cannot produce standard PMT schedule or XIRR | T-1772887222449509427 |
+| 7 | **No Nelson-Siegel curve fit**: only simple interpolation | legacy Python research path / future implementation target | Yield curve quality limited; parametric fitting standard in fixed income | T-1772887222348905245 |
+| 8 | **No standard amortization**: only Israeli loan types | legacy Python research path / future implementation target | Cannot produce standard PMT schedule or XIRR | T-1772887222449509427 |
 | 9 | **proto/generate.sh**: shell script, no lint/breaking detection | `proto/generate.sh` | Schema drift undetected until runtime; multi-step setup | T-1772887222270264987 |
 | 10 | ~~**No structured logging in Go agents**: `log.Printf` only~~ **DONE**: all agents use `slog` | `agents/go/cmd/*/main.go` | — resolved | T-1772887222034956306 ✅ |
 | 11 | **Loan persistence still transitional**: Rust owns active loan CRUD, but the backend store is still JSON-backed before the final durable-store move | `agents/backend/crates/api/src/loans.rs` | Ownership is fixed, but final durability story is not complete | T-1773188906786378000 |
@@ -216,7 +216,7 @@ Provider (abstract)
 BackendHealthAggregator   — daemon thread, polls configured backend health endpoints
 ```
 
-Provider selection historically came from the Python/Textual TUI provider flag/config. The active Rust TUI now prefers protobuf-over-NATS and uses REST only as an explicit fallback path.
+Provider selection historically came from the retired Python/Textual TUI provider flag/config. The active Rust TUI now prefers protobuf-over-NATS and uses REST only as an explicit fallback path.
 
 ---
 

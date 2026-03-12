@@ -6,7 +6,7 @@
 |----------|----------|------------|
 | **C++** | `native/` | Core engine: CLI (`ib_box_spread`), TWS client/connection/contracts/orders/positions/market_data, box-spread strategy, risk/greeks/convexity/margin calculators, order_manager, hedge_manager, loan_manager, option_chain, config_manager, rate_limiter, NATS client, proto adapter, cache clients, broker adapters (TWS, Alpaca, IB Client Portal). Build: CMake. |
 | **Rust** | `agents/backend/` | Backend service: REST/WebSocket API (Axum), ledger (accounts, transactions, posting), NATS adapter, market_data pipeline, strategy/risk crates, discount_bank_parser. Build: Cargo. |
-| **Python** | `python/` | TUI (Textual), integration services (IB, discount_bank), finance/research helpers, clients (alpaca/tastytrade/sofr_treasury/onepassword_sdk_helper), shared_config_loader, bindings, tests. |
+| **Python** | `native/tests/python/`, `native/generated/python/`, `scripts/` | pybind11 binding tests, generated helper output, and selected helper scripts. |
 | **TypeScript/React** | `web/` | React web app, snapshot/API/config/hooks, service ports, charts. Build: Vite/npm. |
 | **JavaScript (Node)** | `services/israeli-bank-scrapers-service/` | Israeli bank scrapers HTTP service and CLI; ledger writer; optional 1Password SDK. Build: npm. |
 | **Go** | `agents/go/` | Go-based agents/tools (see `go.mod`). |
@@ -19,7 +19,7 @@
 
 - **C++**: TWS API is C++-only; core pricing/risk use QuantLib and decimal math. Rewriting the core in Rust would require redoing all IB integration and duplicating pricing/risk work — not recommended.
 - **Rust**: Fits the long-lived backend (REST, ledger, NATS). No benefit to rewriting in C++.
-- **Python**: Fits integration and TUI; broker SDKs and iteration speed are an advantage. Rewriting in Rust/Go would be a large effort and lose ecosystem.
+- **Python**: Now limited to helper/test surfaces and generated artifacts in this repo layout.
 - **TypeScript / Node**: Standard for the React web app; Node is also used for the Israeli bank scrapers service. No need to change.
 
 ---
@@ -59,7 +59,7 @@ Top-level directories are **component- or product-oriented**. Language is implic
 | Directory | Primary language | Purpose |
 |-----------|------------------|---------|
 | `native/` | C++ | Core engine: pricing, risk, order management, TWS client |
-| `python/` | Python | Integration: TUI, bindings, tests |
+| `native/tests/python/` | Python | Binding tests for the native pybind11 module |
 | `agents/` | Mixed | Services and apps: Rust backend, Go tools, shared |
 | `agents/backend/` | Rust | Backend services (API, ledger, market data) |
 | `agents/go/` | Go | Go-based agents/tools |
@@ -80,7 +80,7 @@ A **language-first** layout would group by language at the top level, then by pr
 ```
 langs/
 ├── cpp/           # current native/ (rename/move)
-├── python/        # current python/
+├── native/tests/python/  # Python binding tests
 ├── rust/          # agents/backend (+ any other Rust)
 ├── go/             # agents/go
 ├── ts/             # web/ (and any other TS)
@@ -91,7 +91,7 @@ Or flatter:
 
 ```
 cpp/       ← native
-python/
+native/tests/python/
 rust/      ← agents/backend
 go/        ← agents/go
 ts/        ← web

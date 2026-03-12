@@ -18,7 +18,7 @@ TWS API vendor protos under `native/third_party/tws-api/` are Interactive Broker
 | C++        | CMake at build; or `./proto/generate.sh`         | `native/generated/` | Active |
 | Rust       | `nats_adapter/build.rs` (prost, auto on `cargo build`) | `nats_adapter::proto::v1` (in-crate) | Active |
 | Go         | `./proto/generate.sh`                            | `agents/go/proto/v1/` | Active |
-| Python     | `./proto/generate.sh` (betterproto)              | `python/generated/` | Active |
+| Python     | `./proto/generate.sh` (betterproto)              | `native/generated/python/` | Helper output |
 | TypeScript | `./proto/generate.sh` (ts-proto; `cd web && npm i -D ts-proto` first) | `web/src/proto/` | Active |
 
 From the `web/` directory run **`npm run generate:proto`** to regenerate TypeScript from `proto/messages.proto`.
@@ -39,13 +39,13 @@ Run `./proto/generate.sh` from the repo root to regenerate all languages.
 - Go: `go install google.golang.org/protobuf/cmd/protoc-gen-go@latest`
 - Rust: automatic via `nats_adapter/build.rs` during `cargo build`
 
-**Python re-export:** `./proto/generate.sh` writes betterproto output into `python/generated/ib/platform/v1.py`. The directory `python/generated/` is gitignored. For a single import surface (`from python.generated import StrategySignal, DiscountBankBalance`, etc.), create or recreate `python/generated/__init__.py` that re-exports from `python.generated.ib.platform.v1`. After codegen, run from repo root:
+**Python re-export:** `./proto/generate.sh` writes betterproto output into `native/generated/python/ib/platform/v1.py`. The generated tree lives under `native/generated/python/`. After codegen, run from repo root:
 
 ```bash
 uv run python scripts/recreate_python_generated_init.py
 ```
 
-That script introspects the generated `v1` module and writes `python/generated/__init__.py` with all message/enum re-exports. If you add new messages to `proto/messages.proto`, run `./proto/generate.sh` then run the script again to refresh the re-exports.
+That script introspects the generated `v1` module and writes `native/generated/python/__init__.py` with all message/enum re-exports. If you add new messages to `proto/messages.proto`, run `./proto/generate.sh` then run the script again to refresh the re-exports.
 
 ## NATS message format
 
@@ -71,16 +71,16 @@ Payload bytes are a serialized inner message (`MarketDataEvent`, `StrategySignal
 |-----------|-----------|-------|
 | C++ NATS publish | Done | `nats_client.cpp` uses NatsEnvelope + protobuf |
 | Rust NATS subscribe | Active | `nats_adapter` uses prost |
-| Python NATS | Pending | Use generated types from `python/generated/` |
+| Python NATS | Pending | Use generated types from `native/generated/python/` when needed |
 | TypeScript | Pending | Use generated types from `web/src/proto/` |
 
-**Python boundary types:** All Python code at NATS/REST boundaries should use types from **`python/generated`** (generated from `proto/messages.proto` via `./proto/generate.sh`). The former `python/proto_types.py` is deprecated and has been removed; no callers remain. Import from `python.generated` (e.g. `from python.generated import StrategySignal, DiscountBankBalance`).
+**Python boundary types:** Any remaining Python helper code should use types from **`native/generated/python`** (generated from `proto/messages.proto` via `./proto/generate.sh`). The former `python/proto_types.py` is deprecated and has been removed; no callers remain.
 
 ## Further reading
 
 - [`proto/messages.proto`](../../proto/messages.proto) — canonical message definitions
 - [`proto/generate.sh`](../../proto/generate.sh) — regenerate all language outputs
-- [`scripts/recreate_python_generated_init.py`](../../scripts/recreate_python_generated_init.py) — recreate Python `python/generated/__init__.py` after codegen
+- [`scripts/recreate_python_generated_init.py`](../../scripts/recreate_python_generated_init.py) — recreate Python `native/generated/python/__init__.py` after codegen
 - [`agents/backend/crates/nats_adapter/`](../../agents/backend/crates/nats_adapter/) — Rust prost codegen (build.rs)
 
 **Planning (single proto story, dedup, execution order):**

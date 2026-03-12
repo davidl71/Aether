@@ -47,18 +47,12 @@ When evaluating a new UI framework (whether terminal or web), weigh these factor
 | Framework | Language | Protobuf | Async | Notes |
 |-----------|----------|----------|-------|-------|
 | **Ratatui** | Rust | ✅ Native | ✅ Native | Current choice; integrates with Rust backend |
-| Bubbletea | Go | Via grpcui or manual | ✅ Native | Good for Go-centric teams |
-| Textual | Python | ✅ Generated | ✅ Async | Best Python DX; requires Python runtime |
-| FTXUI | C++ | Manual | Manual | Best C++ perf; highest maintenance cost |
 
 ### Web Options (if revived)
 
 | Framework | Language | Protobuf | State Management | Notes |
 |-----------|----------|----------|------------------|-------|
 | **React + Vite** | TypeScript | Via ts-proto | React Query | Current archived choice |
-| Next.js | TypeScript | Via ts-proto | Server + Client | If SSR/sEO matters later |
-| Solid | TypeScript | Via protobuf-ts | Signals | Lighter React alternative |
-| Svelte | TypeScript | Via protobuf-ts | Stores | If simplicity outweighs ecosystem |
 
 ## When to Re-Evaluate
 

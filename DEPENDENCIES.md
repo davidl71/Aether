@@ -27,7 +27,6 @@
 | uuid | 1.22.0 | 1.11 | Minor upgrade |
 | rust_decimal | 1.36 | 1.37 | Minor upgrade |
 | prost | 0.13.5 | 0.13.5 | ✅ Current |
-| pyo3 | 0.24.1 | 0.24.1 | ✅ Current |
 | anyhow | 1.0.102 | 1.0.97 | Minor upgrade |
 
 ### Direct Workspace Dependencies
@@ -43,7 +42,6 @@ serde_json = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time"] }
 tokio-stream = "0.1"
 tower = "0.4"
-pyo3 = { version = "0.24.1", features = ["auto-initialize"] }
 rand = { version = "0.8", features = ["std"] }
 futures = "0.3"
 tracing = "0.1"
@@ -110,7 +108,7 @@ GIT_TAG v2.9.1
 | Package | Source | Purpose |
 |---------|--------|---------|
 | Protobuf | brew | Proto code generation |
-| Python3 | brew | PyO3 bindings |
+| Python3 | brew | Optional helper scripts and Python binding tests |
 | Doxygen | optional | Documentation |
 | CURL | system | HTTP client |
 

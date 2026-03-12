@@ -1,11 +1,11 @@
 # Python bindings for IB Box Spread C++ engine
 
-Python extension that wraps the native box spread calculator, types, and validators. Same API whether built with **pybind11** (default) or **Cython**.
+Python extension that wraps the native box spread calculator, types, and validators. The active backend is **pybind11**.
 
-## Backend: pybind11 (default) or Cython
+## Backend: pybind11
 
 - **pybind11** – Built by CMake with `pybind11_add_module`; single build system, better maintainability and performance. Default when `PYTHON_BINDINGS_BACKEND` is not set.
-- **Cython** – Legacy path via `setup.py`; requires a prior CMake build for deps. Set `-DPYTHON_BINDINGS_BACKEND=Cython` and run `cmake --build build --target python_bindings`.
+- **Cython** – Removed from the active repo layout. `PYTHON_BINDINGS_BACKEND=Cython` is no longer supported.
 
 ## Build (pybind11, recommended)
 
@@ -16,18 +16,7 @@ cmake --preset macos-arm64-debug -DPYTHON_BINDINGS_BACKEND=pybind11
 cmake --build build/macos-arm64-debug --target box_spread_bindings
 ```
 
-The `.so` is written to `python/bindings/` so that `from box_spread_bindings import ...` works when run from the repo with `python/bindings` on `PYTHONPATH` or when installed.
-
-## Build (Cython)
-
-Run a full CMake build first so FetchContent populates `build/_deps` and `build/lib`, then:
-
-```bash
-cd python/bindings
-uv run python setup.py build_ext --inplace
-```
-
-Or from repo root: `cmake --build build --target python_bindings` (when `PYTHON_BINDINGS_BACKEND=Cython` and Cython is installed).
+The extension is written to `build/<preset-or-build-dir>/python/bindings/`.
 
 ## Public API
 

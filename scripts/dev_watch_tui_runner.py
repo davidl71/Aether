@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Run the TUI in a subprocess and restart it when Python source or config changes.
-Used by dev_watch_tui.sh when watchfiles is available (e.g. uv sync / pip install).
+Run the Rust TUI in a subprocess and restart it when config or helper scripts change.
+Used by dev_watch_tui.sh when watchfiles is available.
 """
 from __future__ import annotations
 
@@ -15,9 +15,9 @@ from pathlib import Path
 def main() -> int:
     root = Path(__file__).resolve().parent.parent
     watch_dirs = [
-        root / "python" / "tui",
-        root / "python" / "integration",
+        root / "agents" / "backend" / "services" / "tui_service" / "src",
         root / "config",
+        root / "scripts",
     ]
     watch_dirs = [d for d in watch_dirs if d.exists()]
     if not watch_dirs:
@@ -26,8 +26,8 @@ def main() -> int:
 
     run_cmd = sys.argv[1:]
     if not run_cmd:
-        script = root / "scripts" / "run_python_tui.sh"
-        run_cmd = ["bash", str(script)] if script.exists() else [sys.executable, "-m", "python.tui"]
+        script = root / "scripts" / "run_rust_tui.sh"
+        run_cmd = ["bash", str(script)]
     elif run_cmd[0].endswith(".sh"):
         run_cmd = ["bash", run_cmd[0]] + list(run_cmd[1:])
     proc: subprocess.Popen | None = None
@@ -45,12 +45,7 @@ def main() -> int:
         proc = subprocess.Popen(
             run_cmd,
             cwd=root,
-            env={
-                **os.environ,
-                "PYTHONPATH": os.pathsep.join(
-                    [str(root / "python"), os.environ.get("PYTHONPATH", "")]
-                ),
-            },
+            env={**os.environ},
         )
         print(f"[{time.strftime('%H:%M:%S')}] TUI started (PID: {proc.pid})")
 
@@ -65,12 +60,12 @@ def main() -> int:
 
     start()
     for changes in watchfiles.watch(*watch_dirs, debounce=400):
-        # changes: set of (Change, path) or path-like; only restart on .py / .json
+        # changes: set of (Change, path) or path-like; only restart on relevant sources/config
         paths = []
         for item in changes:
             p = item[1] if isinstance(item, (tuple, list)) and len(item) >= 2 else item
             path_str = str(p)
-            if path_str.endswith((".py", ".json")):
+            if path_str.endswith((".rs", ".toml", ".json", ".sh")):
                 paths.append(path_str)
         if not paths:
             continue

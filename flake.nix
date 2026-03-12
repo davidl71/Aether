@@ -48,7 +48,7 @@
           echo "ib_box_spread dev shell — cmake, ninja, python, uv, cargo, node available."
           echo "Build: cmake -S . -B build -G Ninja && ninja -C build"
           echo "Tests: ctest --test-dir build --output-on-failure"
-          echo "Python: uv sync (in repo root), uv run pytest python/tests/"
+          echo "Python: uv run --with pytest pytest native/tests/python/"
         '';
       };
     });

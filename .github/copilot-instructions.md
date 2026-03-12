@@ -4,7 +4,7 @@ This repository follows the comprehensive guidelines in [AGENTS.md](../AGENTS.md
 
 ## Project
 
-Comprehensive multi-asset synthetic financing platform. Manages financing across options, futures, bonds, loans, and pension funds with unified portfolio management across 21+ accounts and multiple brokers (IBKR, Alpaca, Tradier, Tastytrade). Box spreads are one active strategy (spare cash, T-bill-equivalent yields). Multi-language: C++ core, Python integration, Rust backend. Multi-platform: CLI, TUI, Web.
+Comprehensive multi-asset synthetic financing platform. Manages financing across options, futures, bonds, loans, and pension funds with unified portfolio management across 21+ accounts and multiple brokers. Box spreads are one active strategy (spare cash, T-bill-equivalent yields). Multi-language: C++ core, pybind11-backed Python binding tests, Rust backend. Active runtime surfaces are the native CLI and Rust TUI; the web client is archived.
 
 ## Structure
 
@@ -14,8 +14,8 @@ Comprehensive multi-asset synthetic financing platform. Manages financing across
 | `native/include/` | C++ headers |
 | `native/tests/` | Catch2 tests (mirror source names with `test_` prefix) |
 | `native/CMakeLists.txt` | Build definition |
-| `python/` | Python integration (TUI, bindings, tests) |
-| `agents/` | Rust backend services |
+| `native/tests/python/` | Python binding tests for the native module |
+| `agents/` | Rust backend crates and services |
 | `config/` | Config templates |
 | `docs/` | Documentation |
 

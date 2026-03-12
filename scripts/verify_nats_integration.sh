@@ -29,11 +29,6 @@ fi
 log_info ""
 log_info "2. Checking backend service compilation..."
 cd "${PROJECT_ROOT}/agents/backend"
-if [ -f .venv/bin/activate ]; then
-  source .venv/bin/activate
-  export PYO3_PYTHON
-  PYO3_PYTHON="$(which python)"
-fi
 
 if cargo check -p backend_service > /dev/null 2>&1; then
   log_info "   ✅ Backend service compiles successfully"

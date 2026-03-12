@@ -4,11 +4,11 @@
 
 Aether (formerly ib_box_spread_full_universal) - Comprehensive multi-asset synthetic financing optimization platform. Manages financing across options, futures, bonds, bank loans, and pension funds with unified portfolio management, cash flow modeling, opportunity simulation, and multi-instrument relationship optimization across 21+ accounts and multiple brokers (IBKR).
 
-Multi-language codebase: C++ core engine, Rust backend agents, Go agents. The current active frontend is TUI/CLI.
+Multi-language codebase: C++ core engine, pybind11-backed Python binding tests under `native/tests/python/`, and Rust backend agents. The current active frontend is TUI/CLI.
 
 Box spreads are one active strategy component (7-10% of portfolio, spare cash allocation for T-bill-equivalent yields). The platform supports multiple strategy types including futures-implied financing, bond ETFs, and secured lending.
 
-Multi-language codebase: C++ core engine, Python integration layer (TUI, bindings), Rust backend agents, Go agents (api-gateway, collectors), and an archived TypeScript/React web client. The current active frontend focus is TUI/CLI. See **`docs/MULTI_LANGUAGE_CODEBASE.md`** for a map of languages to directories and build/test/lint commands.
+Multi-language codebase: C++ core engine, pybind11-backed Python binding tests under `native/tests/python/`, and Rust backend agents. The current active frontend is the Rust TUI plus the native CLI. See **`docs/MULTI_LANGUAGE_CODEBASE.md`** for a map of languages to directories and build/test/lint commands.
 
 ## Project Structure & Module Organization
 
@@ -21,18 +21,17 @@ Aether/
 │   ├── include/             # Public headers (.h)
 │   │   ├── brokers/         # Broker adapter interfaces
 │   │   └── strategies/      # Strategy interfaces
-│   ├── tests/               # Catch2 test suite
+│   ├── tests/               # Catch2 test suite and Python binding tests
+│   │   └── python/          # pybind11 binding tests
 │   ├── third_party/         # Vendored dependencies (TWS API, Intel Decimal)
 │   ├── ibapi_cmake/         # CMake glue for TWS API build
 │   └── CMakeLists.txt       # Main build definition
-├── python/                  # Python integration layer (TUI, bindings, tests)
-├── agents/                  # Multi-language agents (Rust backend)
+├── agents/                  # Rust backend agents
 ├── web/                     # Archived React web application (not active runtime)
 ├── proto/                   # Protocol Buffer definitions
 ├── config/                  # Configuration files (example configs only in repo)
 ├── scripts/                 # Helper scripts (build, lint, deploy)
 ├── docs/                    # Documentation
-├── notebooks/               # Jupyter notebooks for analysis
 └── build/                   # CMake build output (disposable, not committed)
 ```
 
@@ -88,7 +87,7 @@ If configure fails with missing **TWS API** or **Intel decimal** dependencies, r
 |--------|---------|-------------|
 | `BUILD_TESTING` | ON | Build Catch2 test suite |
 | `ENABLE_NATIVE_CLI` | ON | Build the CLI binary |
-| `ENABLE_PYTHON_BINDINGS` | ON | Build Cython Python bindings |
+| `ENABLE_PYTHON_BINDINGS` | ON | Build pybind11 Python bindings |
 | `ENABLE_ASAN` | OFF | AddressSanitizer |
 | `ENABLE_TSAN` | OFF | ThreadSanitizer |
 | `ENABLE_LTO` | ON | Link-Time Optimization |

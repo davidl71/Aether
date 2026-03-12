@@ -1,4 +1,4 @@
-# Contributing to IBKR Box Spread Generator
+# Contributing to Aether
 
 Thank you for your interest in contributing! This document provides guidelines for contributing to the project.
 
@@ -84,11 +84,13 @@ native/
 ├── src/           # C++ source files
 ├── include/       # Header files
 ├── tests/         # Test files
-python/            # Python integration
+│   └── python/    # Python binding tests
 docs/              # Documentation
 scripts/           # Build and utility scripts
 .cursor/           # Cursor IDE configuration
 ```
+The active Python surface in this repo is limited to native binding tests under `native/tests/python/`
+and selected helper scripts. There is no top-level `python/` application directory anymore.
 
 ## Getting Help
 

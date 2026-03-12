@@ -1,4 +1,4 @@
-# Ruff config at repo root so `uv run ruff check python/` picks it up.
+# Ruff config at repo root so `uv run ruff check scripts native/tests/python` picks it up.
 # Trunk uses .trunk/configs/ruff.toml; keep in sync there.
 [lint]
 select = ["B", "D3", "E", "F"]

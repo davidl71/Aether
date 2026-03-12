@@ -13,7 +13,7 @@
 | Where | What |
 |-------|------|
 | **C++** | `calculate_mean`, `calculate_percentile`, `calculate_correlation` in `native/src/risk_calculator_stats.cpp`. |
-| **Python** | `python/integration/risk_calculator.py` imports from `box_spread_bindings` (C++ via pybind11); pure-Python fallback on `ImportError`. |
+| **Python helper surface** | The active Python-facing path is the pybind11 module plus helper/test code under `native/tests/python/`; the former `python/integration/risk_calculator.py` path was part of the retired Python app tree. |
 
 All three functions are exposed in `native/src/box_spread_pybind.cpp` (lines 169–182).
 Python imports them as `_cxx_calculate_mean`, `_cxx_calculate_percentile`, `_cxx_calculate_correlation`
@@ -43,7 +43,7 @@ needing direct `MarketHours` access. For the broader `MarketHours` class, see §
 | Where | What |
 |-------|------|
 | **C++** | Full `RiskCalculator` (VaR, correlation risk, position sizing, aggregate Greeks, etc.) in `native/src/risk_calculator.cpp`. |
-| **Python** | `python/integration/risk_calculator.py` — 613-LOC Python port; stats helpers call C++ (§1); rest is a documented stub. |
+| **Historical Python port** | The former `python/integration/risk_calculator.py` implementation was a 613-LOC Python port; stats helpers called C++ (§1) and the rest was a documented stub. |
 
 Stats (`calculate_mean`, `calculate_percentile`, `calculate_correlation`) are exposed and used
 (§1 above). The full `RiskCalculator` class methods (VaR, Greeks, correlation risk, position sizing)
@@ -51,8 +51,9 @@ are not yet bound. The Python port is accepted technical debt and formally docum
 (Phase 5 of CROSS_LANGUAGE_DEDUP_PLAN).
 
 **Next step (open):** Expose more `RiskCalculator` methods via pybind11 (e.g. `calculate_correlation_risk`,
-`calculate_var`, position sizing) and thin `risk_calculator.py` to a wrapper. This is a medium-effort
-change that would give a single implementation for regulatory/audit purposes.
+`calculate_var`, position sizing) so any surviving Python helpers can stay thin wrappers around the
+native implementation. This is a medium-effort change that would give a single implementation for
+regulatory/audit purposes.
 
 **Effort:** Medium (design binding surface; add `m.def()` calls; migrate callers).
 
@@ -65,7 +66,7 @@ change that would give a single implementation for regulatory/audit purposes.
 | Where | What |
 |-------|------|
 | **C++** | `ConfigManager::load()`, `from_json` for `StrategyParams`, `RiskConfig`, etc. in `native/`. |
-| **Python** | `SharedConfigLoader.load_config()` in `python/tui/config.py`; reads `~/.config/ib_box_spread/config.json`. |
+| **Frontend config readers** | Historical Python TUI code and the current Rust TUI both read the shared config shape from `~/.config/ib_box_spread/config.json`; the active TUI runtime is now Rust. |
 
 `config/schema.json` (JSON Schema v2020-12) is the single schema covering TUI and C++ CLI config.
 TUI uses it as the primary load path; C++ config manager validates against the same structure.
@@ -80,7 +81,7 @@ PWA section is retained in the schema for historical reference but is inactive (
 | Where | What |
 |-------|------|
 | **C++** | `parse_option_symbol()` in `native/src/tws_client.cpp` — parses TWS OCC-style symbol strings. |
-| **Python** | `parse_opt_contract_desc()` in `python/integration/combo_detector.py` — parses IB Client Portal `contractDesc` strings (e.g. `"SPX MAR2027 6825 C [...]"`). |
+| **Historical Python helper** | `parse_opt_contract_desc()` previously lived in `python/integration/combo_detector.py` and parsed IB Client Portal `contractDesc` strings (e.g. `"SPX MAR2027 6825 C [...]"`). |
 
 These parsers serve different data sources (TWS vs Client Portal) and use different input formats.
 They are not duplicates of each other.
@@ -99,7 +100,7 @@ would help future contributors understand when each applies.
 | Where | What |
 |-------|------|
 | **Rust** | Canonical parser in `agents/backend/crates/discount_bank_parser`. |
-| **Python** | `python/integration/discount_bank_helpers.py` calls the Rust binary as the primary path; Python fallback is legacy/deprecated. |
+| **Historical Python helper** | `python/integration/discount_bank_helpers.py` called the Rust binary as the primary path; the Python fallback was already legacy/deprecated before that tree was retired. |
 
 Rust binary (`show_balances`) is the canonical path. `discount_bank_helpers.py` tries the compiled
 binary first, then `cargo run`; the Python fallback parser is kept only for environments where the
@@ -136,12 +137,11 @@ via pybind11. Otherwise defer.
 | Where | What |
 |-------|------|
 | **C++** | `types.h` (`OptionType`, `OrderStatus`, etc.); config defaults. |
-| **Python** | Generated types from `python/generated/` (betterproto output from `proto/messages.proto`); no manual `proto_types.py` mirror. |
+| **Python** | Generated types from `native/generated/python/` (betterproto output from `proto/messages.proto`); no manual `proto_types.py` mirror. |
 | **Proto** | Enums and message field semantics in `proto/messages.proto`. |
 
-`python/generated/` is the active generated output. The TUI NatsProvider imports directly:
-`from python.generated.ib.platform import v1 as pb_v1`. There is no manual `proto_types.py`
-mirror — the generated types are the source of truth for Python at boundaries.
+`native/generated/python/` is the active generated output for Python helpers and tests. There is no
+manual `proto_types.py` mirror — the generated types are the source of truth for Python at boundaries.
 Numeric constants (default min_roi, max_dte) live in `config/schema.json` defaults.
 
 ---
@@ -157,10 +157,10 @@ Numeric constants (default min_roi, max_dte) live in `config/schema.json` defaul
 | **Wire format** | protobuf (`NatsEnvelope` wrapping inner payloads from `proto/messages.proto`) for all platform events. |
 
 The topic registry (`docs/NATS_TOPICS_REGISTRY.md`) is comprehensive and current.
-TUI `NatsProvider` (`python/tui/providers/_nats.py`) subscribes to `snapshot.{backend_id}` and
-`system.health` using the correct subjects and proto types.
-C++ publishes via `ENABLE_NATS`; Rust owns collection and live-state fanout; Go agents
-use structured NATS. No second bus was introduced.
+The retired Python TUI used a `NatsProvider` that subscribed to `snapshot.{backend_id}` and
+`system.health` using the proto types. In the active runtime, Rust owns the TUI-side NATS reads.
+C++ publishes via `ENABLE_NATS`; Rust owns collection and live-state fanout; Go agents use
+structured NATS. No second bus was introduced.
 
 ---
 
@@ -170,11 +170,12 @@ use structured NATS. No second bus was introduced.
 
 | Where | What |
 |-------|------|
-| **TUI (Python Textual)** | `python/tui/` — uses shared config (`~/.config/ib_box_spread/config.json`), NatsProvider, and proto-generated types. Fully aligned with Rust backend read paths. |
+| **TUI (Rust/Ratatui)** | `agents/backend/services/tui_service/` — uses the shared config and Rust-owned NATS/read paths. |
+| **Historical Python TUI** | The deleted `python/tui/` tree previously used shared config, a Python NatsProvider, and proto-generated types. |
 | **PWA (React/TypeScript)** | `web/` — archived for now; not actively maintained. |
 
-TUI uses the shared JSON Schema config, the Rust API base (`http://localhost:8080`) as the default
-read path, NatsProvider for push updates, and proto-generated types for NATS messages.
+The active TUI uses the shared JSON Schema config, the Rust API base (`http://localhost:8080`) as the
+default read path, and Rust-owned NATS/proto integrations.
 PWA is archived; feature-parity tracking between TUI and PWA is no longer applicable.
 
 **Remaining TUI work:** See `docs/platform/TUI_RUST_READ_PATH_AUDIT.md` for next migration
@@ -193,7 +194,7 @@ candidates (Discount Bank read path, deeper Python read-model reduction).
 | Option/contract string parsing | Each parser canonical for its source | **Clarified** | Optional: format spec doc |
 | Discount bank parser | Rust | **Done** ✅ | — |
 | Market hours (holidays, status) | C++ | **Partial** | `calculate_dte` done; MarketHours class optional/open |
-| Enums / constants at boundaries | Proto + `python/generated/` | **Done** ✅ | — |
+| Enums / constants at boundaries | Proto + `native/generated/python/` | **Done** ✅ | — |
 | Message bus (NATS) + cache/state | NATS / NATS KV | **Done** ✅ | — |
 | TUI alignment | Rust backend + shared config | **Done** ✅ (PWA archived) | TUI Discount Bank path (see audit doc) |
 
@@ -211,7 +212,7 @@ candidates (Discount Bank read path, deeper Python read-model reduction).
 - `docs/platform/MULTI_ACCOUNT_AGGREGATION_DESIGN.md` — TUI backend roles and ownership.
 - `native/src/box_spread_pybind.cpp` — pybind11 bindings: stats helpers, `calculate_dte`, box spread math.
 - `native/include/risk_calculator.h` — C++ `calculate_mean`, `calculate_percentile`, `calculate_correlation`.
-- `python/integration/risk_calculator.py` — Python stub with C++ stats helpers; full class still Python.
+- historical `python/integration/risk_calculator.py` — Python stub with C++ stats helpers; full class was still Python.
 - `native/src/tws_conversions.cpp` — `tws::calculate_dte` and `MarketHours` usage.
-- `python/tui/providers/_nats.py` — TUI NatsProvider using proto-generated types.
+- `native/generated/python/` — active generated protobuf output for Python helper surfaces.
 - `config/schema.json` — Shared JSON Schema for all config loaders.

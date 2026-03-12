@@ -1,7 +1,7 @@
 //! tui_service — Ratatui terminal UI for the ib-platform.
 //!
 //! Subscribes to NATS snapshot subject and renders live trading state.
-//! Runs without Python; replaces python/tui/.
+//! Runs without Python; replaces the retired Python/Textual TUI.
 //!
 //! # Usage
 //!

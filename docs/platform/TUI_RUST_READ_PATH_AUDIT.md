@@ -7,7 +7,7 @@
 
 ### Already Rust-backed
 
-- shared frontend read models in `python/tui/app.py`
+- shared frontend read models now owned by the Rust TUI/backend path
   - unified positions
   - relationships
   - cash-flow timeline
@@ -24,9 +24,8 @@
 
 ### Remaining local/non-Rust read path
 
-- `python/tui/components/loan_entry.py`
-  - UI remains in Python, but runtime loan CRUD now goes through the Rust backend API
-  - local JSON is legacy/manual fallback only
+- local/manual loan JSON workflows are legacy fallback only
+  - runtime loan CRUD goes through the Rust backend API
 
 ### TUI specialist presets that remain valid
 
@@ -41,7 +40,6 @@ Alpaca and Tastytrade are retired from the active runtime surface for now and ar
 
 - Public benchmark/risk-free-rate ownership and implementation have already moved to Rust.
 - The **next Rust migration candidate for the TUI is Discount Bank or deeper Python read-model reduction**.
-- Keep the Go gateway only as a convenience entrypoint for these still-separate specialist services.
 - Keep Python read paths limited to explicit specialist services; do not regrow Python into a general frontend backend.
 
 ## Recommended next migration

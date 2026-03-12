@@ -82,11 +82,11 @@ test-one name:
 
 # Run Python tests
 test-python:
-    cd python && uv sync --extra dev --extra tui && uv run python -m pytest tests/ -v --ignore=tests/test_option_chain_manager.py
+    uv run --with pytest pytest native/tests/python -v
 
 # Run Python tests with coverage
 test-python-cov:
-    cd python && uv sync --extra dev --extra tui && uv run python -m pytest tests/ -v --cov --ignore=tests/test_option_chain_manager.py
+    uv run --with pytest --with pytest-cov pytest native/tests/python -v --cov=native/tests/python
 
 # Run TUI E2E tests (@microsoft/tui-test; requires Node 18+)
 test-tui-e2e:
@@ -128,8 +128,8 @@ lint-shell-ai:
 
 # Python-only lint (ruff + bandit). Full lint is `just lint`.
 lint-python:
-    uv run ruff check python/
-    @command -v bandit >/dev/null 2>&1 && bandit -r python/ agents/backend/python || echo "[skip] bandit not installed (optional)"
+    uv run --with ruff ruff check scripts native/tests/python
+    @command -v bandit >/dev/null 2>&1 && bandit -r scripts native/tests/python || echo "[skip] bandit not installed (optional)"
     @echo "lint-python done"
 
 # Show lint log paths and tail main log (logs/lint_ai_friendly.log). Creates logs when you run lint --ai-friendly.
@@ -185,28 +185,26 @@ run:
 run-config:
     ./build/bin/ib_box_spread --config config/config.json --dry-run
 
-# Run Python TUI
+# Run Rust TUI
 run-tui:
-    ./scripts/run_python_tui.sh
+    ./scripts/run_rust_tui.sh
 
-# TUI with live data from IB service (requires IB Gateway logged in + IB service on 8002 or IB_PORT)
+# TUI with REST fallback (requires backend snapshot endpoint on 8002 or IB_PORT)
 run-tui-live:
-    # Use IB_PORT if you started the IB service on another port (e.g. 8007)
-    sh -c './scripts/run_python_tui.sh rest "http://127.0.0.1:${IB_PORT:-8002}/api/snapshot"'
+    REST_URL="http://127.0.0.1:${IB_PORT:-8002}/api/snapshot" REST_FALLBACK=1 ./scripts/run_rust_tui.sh
 
-# Capture TUI screenshot for QA/sanity (writes to build/qa/tui/; use TUI_QA_SCREENSHOT_DIR to override)
+# Capture TUI screenshot for QA/sanity
 qa-tui-screenshot:
-    chmod +x scripts/tui_screenshot_qa.sh
-    ./scripts/tui_screenshot_qa.sh
+    @echo "qa-tui-screenshot is unavailable: the old Python TUI screenshot helper was removed." && exit 1
 
-# Sanity check: Python tests + TUI screenshot capture (quick QA without full build)
+# Sanity check: Python binding tests + Rust TUI buildability
 sanity:
     just test-python
-    just qa-tui-screenshot
+    cd agents/backend && cargo check -p tui_service
 
-# Install Python dependencies
+# Sync ad hoc Python tooling dependencies
 py-sync:
-    uv sync
+    @echo "No standalone python/ project remains. Use 'uv run --with <package> ...' for ad hoc tooling."
 
 # Install a Python package
 py-add package:
@@ -272,15 +270,15 @@ exarp-lint-shell:
 
 # Generate project scorecard
 scorecard:
-    python3 python/tools/generate_project_scorecard.py
+    ./scripts/run_exarp_go_tool.sh report
 
 # Review code with local Ollama model
 review-ollama *files:
-    python3 python/tools/ollama_code_review.py --files {{files}} --model codellama:7b
+    @echo "review-ollama is deprecated: python/tools/ollama_code_review.py was removed. Use exarp-go or local Ollama workflows documented in docs/OLLAMA_WORKFLOW_INTEGRATION.md." && exit 1
 
 # Review code with local MLX model
 review-mlx *files:
-    python3 python/tools/diffucode_review.py --files {{files}}
+    @echo "review-mlx is deprecated: python/tools/diffucode_review.py was removed. Use current MLX workflows documented in docs/MLX_TOOLS_USAGE_GUIDE.md." && exit 1
 
 # --- Protobuf ---
 
@@ -299,13 +297,13 @@ proto-gen:
            --cpp_out=native/generated/proto \
            proto/messages.proto
     echo "[proto] Generating Python..."
-    mkdir -p python/generated
+    mkdir -p native/generated/python
     protoc --proto_path=proto \
            --proto_path=native/third_party/tws-api/source/proto \
-           --python_out=python/generated \
+           --python_out=native/generated/python \
            proto/messages.proto 2>/dev/null || \
     (protoc --proto_path=proto --proto_path=native/third_party/tws-api/source/proto \
-            --python_betterproto_out=python/generated/proto \
+            --python_betterproto_out=native/generated/python/proto \
             proto/messages.proto 2>/dev/null || echo "[warn] Python codegen failed")
     echo "[proto] Generating Rust (prost)..."
     echo "  (handled by agents/build.rs via prost-build)"

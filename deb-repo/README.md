@@ -11,7 +11,7 @@ This directory contains a local Debian repository for all IB Box Spread Platform
 ```
 
 This will:
-- Build all projects (native C++, Python, Web PWA, Rust backend)
+- Build active projects (native C++, archived web assets when enabled, Rust backend)
 - Create Debian packages (.deb files)
 - Generate repository metadata
 - Set up the repository structure
@@ -63,7 +63,7 @@ deb-repo/
 │               └── Packages.gz
 ├── pool/              # Debian packages (.deb files)
 │   ├── ib-box-spread-native_1.3.3_amd64.deb
-│   ├── synthetic-financing-platform_1.0.0_all.deb
+│   ├── synthetic-financing-platform_1.0.0_all.deb   # historical package example
 │   ├── ib-box-spread-web_0.1.0_all.deb
 │   └── ib-box-spread-backend_0.1.0_amd64.deb
 └── db/                # Repository database (if using reprepro)
@@ -83,9 +83,8 @@ deb-repo/
 #### synthetic-financing-platform
 - **Version**: 1.0.0
 - **Architecture**: all
-- **Description**: Python integration layer with Cython bindings
-- **Dependencies**: python3 (>= 3.11), python3-numpy
-- **Location**: `/usr/lib/python3/dist-packages/`
+- **Description**: Historical Python integration package from the older repo layout
+- **Status**: Not part of the active repository surface anymore
 
 #### ib-box-spread-web
 - **Version**: 0.1.0
@@ -238,7 +237,6 @@ To share this repository with other systems:
 
 1. Update version numbers in:
    - `native/CMakeLists.txt` (for native package)
-   - `python/pyproject.toml` (for Python package)
    - `web/package.json` (for web package)
    - `agents/backend/Cargo.toml` (for Rust package)
 

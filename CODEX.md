@@ -18,8 +18,8 @@ system.
 Primary implementation areas:
 
 - `native/` — C++20 core engine, broker adapters, pricing/risk logic, Catch2 tests
-- `python/` — Python integration layer, TUI, bindings, tests
-- `agents/` — Rust backend agents
+- `native/tests/python/` — Python binding tests for the native pybind11 module
+- `agents/` — Rust backend crates and services, including the active TUI/backend path
 - `web/` — archived browser client, not active runtime
 - `docs/` — architecture, build, API, AI-editor setup
 
@@ -85,8 +85,8 @@ If configure fails because vendored dependencies are missing, run:
 Always use `uv` for dependency management and command execution in this repo:
 
 ```bash
-uv sync --project python --extra dev
-uv run --project python pytest python/tests/ -v
+cd native
+uv run --project . pytest tests/python/ -v
 ```
 
 Avoid direct `pip` / bare `pytest` unless `uv` is unavailable and you are fixing bootstrap issues.

@@ -2,8 +2,8 @@
 """Run pytest and capture output to file. Single entrypoint for test capture.
 
 Supports:
-  - uvx with fallback to python -m pytest
-  - --simple: run python/tests/ only (no integration)
+  - uv run with fallback to python -m pytest
+  - --simple: run native/tests/python/ only
   - Single output file: test_results.txt
   - Timeout and exit code propagation
 """
@@ -21,7 +21,7 @@ def main() -> int:
     parser.add_argument(
         "--simple",
         action="store_true",
-        help="Run python/tests/ only (no integration).",
+        help="Run native/tests/python/ only.",
     )
     parser.add_argument(
         "--timeout",
@@ -37,13 +37,13 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    paths = ["python/tests/"] if args.simple else ["python/tests/", "python/integration/"]
+    paths = ["native/tests/python/"]
     output_path = args.output or (PROJECT_ROOT / OUTPUT_FILE)
     if not output_path.is_absolute():
         output_path = PROJECT_ROOT / output_path
 
     commands = [
-        ["uvx", "pytest", *paths, "-v", "--tb=short"],
+        ["uv", "run", "--with", "pytest", "pytest", *paths, "-v", "--tb=short"],
         [sys.executable, "-m", "pytest", *paths, "-v", "--tb=short"],
     ]
 
@@ -80,7 +80,7 @@ def main() -> int:
             print(f"Error: {e}", file=sys.stderr)
             return 1
 
-    print("No pytest runner available (tried uvx and python -m pytest).", file=sys.stderr)
+    print("No pytest runner available (tried uv run and python -m pytest).", file=sys.stderr)
     return 1
 
 

@@ -94,8 +94,8 @@ option(BUILD_DOCS "Build documentation" OFF)
 option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
 option(ENABLE_TSAN "Enable ThreadSanitizer" OFF)
 option(ENABLE_LTO "Enable Link-Time Optimization" ON)
-option(ENABLE_PYTHON_BINDINGS "Enable Python bindings (Cython or pybind11)" ON)
-option(PYTHON_BINDINGS_BACKEND "Python bindings backend: pybind11 or Cython" "pybind11")
+option(ENABLE_PYTHON_BINDINGS "Enable Python bindings" ON)
+option(PYTHON_BINDINGS_BACKEND "Python bindings backend: pybind11 (legacy Cython removed)" "pybind11")
 option(ENABLE_DISTCC "Enable distcc distributed compilation" OFF)
 option(ENABLE_CCACHE "Enable ccache compilation caching" OFF)
 option(ENABLE_SCCACHE "Enable sccache compilation caching" OFF)
@@ -1165,16 +1165,9 @@ endif()
 # ====================================================================================
 # TUI Executable (C++) - REMOVED
 # ============================================================================
-# The C++ TUI has been replaced by the Python TUI (python/tui/).
-# See docs/research/architecture/TUI_PYTHON_MIGRATION.md for details.
-#
-# The Python TUI provides:
-# - Same functionality with better maintainability
-# - Shared data models with PWA frontend
-# - Direct access to Python APIs (IBKR, ORATS, etc.)
-# - Modern Textual framework for terminal UI
-#
-# To run the TUI: python -m python.tui
+# The legacy native TUI has been replaced by the Rust TUI service.
+# See agents/backend/services/tui_service/ for the active implementation.
+# To run the active TUI: ./scripts/run_rust_tui.sh
 
 # ============================================================================
 # TWS Connection Test Program
@@ -1336,8 +1329,8 @@ if(ENABLE_PYTHON_BINDINGS)
                 endif()
             endif()
             set_target_properties(box_spread_bindings PROPERTIES
-                LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/python/bindings
-                RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/python/bindings
+                LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/python/bindings
+                RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/python/bindings
             )
             message(STATUS "Python bindings: pybind11 (target box_spread_bindings)")
             message(STATUS "  Build: cmake --build . --target box_spread_bindings")
@@ -1347,24 +1340,7 @@ if(ENABLE_PYTHON_BINDINGS)
             endif()
         endif()
     else()
-        execute_process(
-            COMMAND ${Python3_EXECUTABLE} -c "import Cython; print(Cython.__version__)"
-            OUTPUT_VARIABLE CYTHON_VERSION
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            ERROR_QUIET
-        )
-        if(CYTHON_VERSION AND _build_native_cli)
-            add_custom_target(
-                python_bindings
-                COMMAND ${Python3_EXECUTABLE} setup.py build_ext --inplace
-                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/python/bindings
-                COMMENT "Building Python bindings with Cython"
-            )
-            message(STATUS "Python bindings: Cython (target python_bindings)")
-            message(STATUS "  Build: cmake --build . --target python_bindings")
-        elseif(NOT CYTHON_VERSION)
-            message(WARNING "Cython not found. Install: pip install cython")
-        endif()
+        message(FATAL_ERROR "PYTHON_BINDINGS_BACKEND=${PYTHON_BINDINGS_BACKEND} is not supported in this repo layout. Use pybind11.")
     endif()
 else()
     message(STATUS "Python bindings disabled.")

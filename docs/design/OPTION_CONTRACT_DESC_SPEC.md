@@ -45,12 +45,12 @@ This spec does not require parsing OCC format in the same code path; when contra
 
 ## Implementation notes
 
-- **Python:** `python/integration/combo_detector.parse_opt_contract_desc(contract_desc)` returns `(symbol, expiry, strike, right)` or `None`. Uses `_OPT_DESC_RE` matching the regex above.
-- **C++:** When implementing a canonical parser, expose `parse_option_contract_desc(str) -> OptionContract` (or tuple) and consider pybind11 so Python can call it; then combo_detector can delegate to C++ for single source of truth.
+- **Python:** Historical docs referenced `combo_detector.parse_opt_contract_desc(contract_desc)` returning `(symbol, expiry, strike, right)` or `None`.
+- **C++:** The preferred direction is a canonical native parser exposed via pybind11 where Python/helper consumers need it.
 - **Proto:** `proto/messages.proto` defines `OptionContract` with symbol, expiry, strike, option_type (C/P). Serialization of parsed result should align with that message.
 
 ## References
 
 - `docs/design/LOGIC_WE_COULD_UNIFY.md` §5 (option/contract string parsing)
-- `python/integration/combo_detector.py` – current Python parser
+- legacy Python parser notes in older docs
 - `proto/messages.proto` – `OptionContract`, `BoxSpreadLeg`

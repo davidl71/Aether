@@ -12,13 +12,13 @@ across 21+ accounts and multiple brokers.
 ┌──────────────────────────────────────────────────────────────────────┐
 │                        Client Applications                          │
 ├──────────────────────────────┬──────────────────────────────────────┤
-│ Web (React)                  │ TUI (Python/Textual)                │
-│ WebSocket + REST from :8080  │ Rust read models + Python integrations |
+│ Web (React, archived)        │ TUI (Rust/Ratatui)                 │
+│ Historical only              │ Rust read models + NATS/REST       |
 └───────────────┬──────────────┴──────────────────┬───────────────────┘
                 │                                 │
       ┌─────────┴──────────────┐       ┌──────────┴──────────┐
-      │ Rust REST+WS backend   │       │ Python integration   │
-      │ Axum :8080             │       │ services             │
+      │ Rust REST+WS backend   │       │ Specialist Python    │
+      │ Axum :8080             │       │ outputs / helpers    │
       │ /api/v1/snapshot       │       │ broker/bank/rate     │
       │ /api/v1/frontend/*     │       │ health dashboard     │
       │ /ws/snapshot           │       └──────────┬──────────┘
@@ -27,12 +27,11 @@ across 21+ accounts and multiple brokers.
      ┌───────────┴────────────────────────────────┴──────────────┐
      │                           NATS                              │
      │   ┌─────────────────────┐  ┌─────────────────────────────┐  │
-     │   │ Go agents           │  │ C++ engine                  │  │
-     │   │ collection-daemon   │  │ tws_client / nats_client    │  │
-     │   │ heartbeat-agg       │  │ pricing / risk / orders     │  │
-     │   │ api-gateway         │  │ protobuf event publisher    │  │
-     │   │ supervisor/config   │  └──────────────┬──────────────┘  │
-     │   └─────────────────────┘                 │                 │
+     │   │ Rust backend        │  │ C++ engine                  │  │
+     │   │ snapshot/read path  │  │ tws_client / nats_client    │  │
+     │   │ ledger owner        │  │ pricing / risk / orders     │  │
+     │   │ UI/API surface      │  │ protobuf event publisher    │  │
+     │   └─────────────────────┘  └──────────────┬──────────────┘  │
      └───────────────────────────────────────────┼─────────────────┘
                                                  │
                                           ┌──────┴──────┐
@@ -54,7 +53,7 @@ Storage layers:
 | Component | Technology | Data Source | Update Mechanism |
 |-----------|------------|-------------|------------------|
 | Web app | React/TypeScript | Rust `:8080` WebSocket → REST fallback | Full snapshot on connect, then changed sections every ~2s |
-| Terminal UI | Python/Textual | Rust read-model endpoints, selected Python integration services, or NATS | Worker-driven fetches and event-driven updates |
+| Terminal UI | Rust/Ratatui | Rust read-model endpoints and NATS | Event-driven updates with Rust-owned UI state |
 | CLI | C++ | Direct TWS | Synchronous |
 
 ### Backend Services
@@ -62,10 +61,9 @@ Storage layers:
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | Rust REST+WS backend | Rust (Axum) :8080 | Shared frontend API owner for snapshot and frontend read models consumed by web and TUI |
-| Python integration services | Python (FastAPI) | Explicit specialist services only: broker/bank integrations, risk-free-rate service, and health dashboard |
+| Python helper surface | Python (generated/test helpers only) | pybind11 binding tests and generated artifacts; not an active runtime tier |
 | C++ engine | C++20 | TWS connectivity, strategy execution, risk/Greeks/pricing |
 | NATS | NATS JetStream | Async messaging, market data events, heartbeats |
-| Go agents | Go (stdlib+nats.go) | Collection, live-state KV ownership, QuestDB fanout, api-gateway, health aggregation, supervisor, config validation |
 
 ### Messaging Contract
 
@@ -81,7 +79,7 @@ Generated from `proto/messages.proto` via `./proto/generate.sh`:
 | Language | Output | Status |
 |----------|--------|--------|
 | C++ | `native/generated/messages.pb.{h,cc}` | Active — `ENABLE_PROTO` flag |
-| Python | `python/generated/` (betterproto) | Generated, NATS migration pending |
+| Python | `native/generated/python/` (betterproto) | Generated helper output |
 | TypeScript | `web/src/proto/messages.ts` (ts-proto) | Generated, migration pending |
 | Go | `agents/go/proto/v1/messages.pb.go` | Active |
 | Rust | `nats_adapter` crate (prost via build.rs) | Active |
@@ -90,8 +88,8 @@ Generated from `proto/messages.proto` via `./proto/generate.sh`:
 
 See `docs/platform/DATAFLOW_ARCHITECTURE.md` for full analysis. Key issues:
 
-1. **Dual SQLite writers**: Rust ledger owns SQLite, but some legacy Python overlap remains — risk of contention/corruption until fully removed.
-2. **Split read paths remain**: TUI still mixes Rust read models, Python integration endpoints, and NATS, while the web is primarily Rust-backed.
+1. **Legacy Python references in docs/config**: parts of the repo still describe retired Python runtime surfaces and need ongoing cleanup.
+2. **Split read paths remain**: Rust owns the active TUI/backend path, but some docs and planning artifacts still describe older Python integration flows.
 3. **WebSocket sends full snapshot**: Rust WS sends full snapshot once on connect, then only changed sections (delta) every 2s — see IMPROVEMENT_PLAN P2-A (done). Remaining gap: scale if many clients.
 4. **Collector durability gap**: `collection-daemon` now decodes `NatsEnvelope` and owns `LIVE_STATE`, but durable JetStream replay remains opt-in instead of the default collection mode.
 5. **Hardcoded ETF duration table**: `greeks_calculator.cpp` uses a static lookup table for ETF duration/convexity instead of `QuantLib::BondFunctions`.
@@ -103,7 +101,7 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for full analysis. Key issues:
 |-------|--------------|
 | Core engine | C++20, QuantLib, Intel Decimal Library, NLopt, Eigen |
 | Backend services | Rust (Axum, prost, sqlx), Go (stdlib, nats.go) |
-| Integration layer | Python 3.12 (specialist services, bindings, betterproto) |
+| Integration layer | Python helpers (pybind11 binding tests, generated betterproto output) |
 | Frontends | Rust Ratatui TUI, native CLI, archived React 18/TypeScript |
 | Messaging | NATS JetStream, Protocol Buffers |
 | Storage | SQLite, QuestDB, NATS KV |
@@ -114,8 +112,7 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for full analysis. Key issues:
 
 - **C++**: stays for core engine and TWS (API is C++-only)
 - **Rust**: stays for safety-critical backend and ledger
-- **Python**: specialist broker/bank integrations, bindings, and remaining finance helpers
-- **Go**: ops agents — good for single-binary CLI/bridge tools
+- **Python**: binding tests and generated helper artifacts where needed
 - **TypeScript**: web app — not a rewrite candidate
 
 ## Directory Structure
@@ -128,9 +125,7 @@ ib_box_spread_full_universal/
 │   ├── tests/           # Catch2
 │   └── third_party/     # TWS API, Intel Decimal, QuantLib (via FetchContent)
 ├── agents/
-│   ├── backend/         # Rust backend (Axum REST, ledger, nats_adapter)
-│   └── go/              # Go agents (api-gateway, collection-daemon, heartbeat-agg, supervisor...)
-├── python/              # Python integration services, bindings, and research helpers
+│   └── backend/         # Rust backend (Axum REST, ledger, nats_adapter, TUI)
 ├── web/                 # Archived React web client
 ├── proto/               # Canonical protobuf schema (messages.proto)
 ├── scripts/             # Build, lint, deploy helpers

@@ -32,9 +32,9 @@ Comprehensive multi-asset financing optimization system for managing synthetic f
 
 Tradier support is currently removed from the active platform surface. Reintroduction can be revisited later if it becomes a real integration priority.
 
-Jupyter notebooks remain available as manual research artifacts under `notebooks/`, but the
-old project-managed JupyterLab service path is retired for now and should be treated as a
-future improvement rather than an active runtime feature.
+Notebook-era workflows are not part of the active repository surface anymore. Any future
+notebook or Jupyter reintroduction should be treated as a deliberate platform addition, not
+an assumed runtime component.
 
 The React web app under `web/` is also retired as an active runtime surface for now. The
 current supported frontends are the Rust TUI and the native CLI. The web tree is kept only as
@@ -52,7 +52,7 @@ archived implementation/reference material while the project focuses on TUI/CLI.
 - ✅ Market data provider failover with ORATS fallback support
 - ✅ QuestDB time-series archiving for quotes and trades
 - ✅ IBKR Client Portal API integration for account and portfolio snapshots
-- ✅ Cython bindings exposing C++ calculations to Python
+- ✅ pybind11 bindings exposing C++ calculations to Python
 - ✅ WebAssembly (WASM) module for code reuse between backend and future UI surfaces
 
 ## Strategies
@@ -429,13 +429,10 @@ When enabled, the strategy validates the session during startup and logs account
 **Python Tests:**
 ```bash
 # Run all Python tests
-./scripts/run_python_tests.sh
+cd native && uv run --project . pytest tests/python/
 
 # Run with coverage
-./scripts/run_python_tests.sh --coverage
-
-# Run with HTML coverage report
-./scripts/run_python_tests.sh --html
+cd native && uv run --project . pytest tests/python/ --cov
 ```
 
 **C++ Tests:**
@@ -453,10 +450,10 @@ ctest --output-on-failure
 **Python:**
 ```bash
 # Run specific test file
-pytest python/tests/test_security.py
+cd native && uv run --project . pytest tests/python/test_bindings.py
 
 # Run with coverage for specific module
-pytest python/tests/test_security.py --cov=python/services/security --cov-report=term
+cd native && uv run --project . pytest tests/python/test_bindings.py --cov=src
 ```
 
 **C++:**
@@ -537,47 +534,39 @@ This project has been split into multiple focused repositories for better organi
 ## Project Structure
 
 ```
-ib-box-spread-generator/
-├── CMakeLists.txt              # Main CMake configuration
-├── README.md                   # This file
-├── .gitignore                  # Git ignore rules
-│
-├── config/
-│   └── config.example.json     # Example configuration
-│
-├── include/                    # Header files
-│   ├── types.h                # Common types and enums
-│   ├── config_manager.h       # Configuration management
-│   ├── tws_client.h           # TWS API wrapper
-│   ├── option_chain.h         # Option chain structures
-│   ├── box_spread_strategy.h  # Strategy implementation
-│   ├── order_manager.h        # Order execution
-│   └── risk_calculator.h      # Risk management
-│
-├── src/                        # Source files
-│   ├── ib_box_spread.cpp      # Main entry point
-│   ├── config_manager.cpp
-│   ├── tws_client.cpp
-│   ├── option_chain.cpp
-│   ├── box_spread_strategy.cpp
-│   ├── order_manager.cpp
-│   └── risk_calculator.cpp
-│
-├── tests/                      # Test files
-│   ├── CMakeLists.txt
-│   ├── test_main.cpp
-│   ├── test_config_manager.cpp
-│   ├── test_box_spread_strategy.cpp
-│   ├── test_risk_calculator.cpp
-│   └── test_order_manager.cpp
-│
-├── scripts/
-│   └── build_universal.sh      # Build script
-│
-├── docs/                       # Documentation
-│   └── (additional docs)
-│
-└── logs/                       # Log files (created at runtime)
+Aether/
+├── native/                        # C++ core engine
+│   ├── CMakeLists.txt             # Main CMake configuration
+│   ├── include/                  # Header files
+│   │   ├── types.h               # Common types and enums
+│   │   ├── config_manager.h      # Configuration management
+│   │   ├── tws_client.h          # TWS API wrapper
+│   │   ├── option_chain.h        # Option chain structures
+│   │   ├── strategies/box_spread/box_spread_strategy.h # Strategy implementation
+│   │   ├── order_manager.h       # Order execution
+│   │   └── risk_calculator.h     # Risk management
+│   ├── src/                      # Source files
+│   │   ├── ib_box_spread.cpp     # Main entry point
+│   │   ├── config_manager.cpp
+│   │   ├── tws_client.cpp
+│   │   ├── option_chain.cpp
+│   │   ├── strategies/box_spread/box_spread_strategy.cpp
+│   │   ├── order_manager.cpp
+│   │   └── risk_calculator.cpp
+│   ├── tests/                    # C++ Catch2 tests
+│   │   ├── test_main.cpp
+│   │   ├── test_config_manager.cpp
+│   │   ├── test_box_spread_strategy.cpp
+│   │   ├── test_risk_calculator.cpp
+│   │   └── test_order_manager.cpp
+│   └── tests/python/             # Python binding tests
+├── agents/                       # Rust backend agents
+│   └── backend/
+│       ├── crates/               # Rust crates (api, ledger, nats_adapter, etc.)
+│       └── services/             # Backend services
+├── config/                       # Configuration files
+├── scripts/                      # Build and utility scripts
+├── docs/                         # Documentation
 ```
 
 ## Architecture
@@ -795,7 +784,7 @@ Solutions:
 - [ ] Alert/notification system
 - [ ] Machine learning for opportunity scoring
 
-- [x] Cython bindings for C++ calculations
+- [x] pybind11 bindings for C++ calculations
 
 ## Contributing
 

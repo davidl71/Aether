@@ -51,23 +51,19 @@ export TWS_MOCK=1
 
 ---
 
-### TUI (Python Textual)
+### TUI (Rust Ratatui)
 
-**File**: `python/tui/config.py`
+**Entry point**: `./scripts/run_rust_tui.sh`
 
-**Default**: `provider_type = "rest"` connects to IB service on port `8002`
+**Default**: reads shared config and connects through the Rust backend/NATS path
 
 **To switch data sources**:
 ```bash
-# Use mock data (no TWS needed)
-export TUI_BACKEND=mock
+# Override REST fallback endpoint
+export REST_URL=http://127.0.0.1:8002/api/snapshot
 
-# Use IBKR REST API directly
-export TUI_BACKEND=ibkr_rest
-
-# Use file-based snapshots
-export TUI_BACKEND=file
-export TUI_SNAPSHOT_FILE=/path/to/snapshot.json
+# Override NATS server
+export NATS_URL=nats://127.0.0.1:4222
 ```
 
 ---
@@ -125,8 +121,7 @@ export TWS_MOCK=1
 
 **TUI**:
 ```bash
-export TUI_BACKEND=mock
-python -m tui.app
+REST_FALLBACK=1 ./scripts/run_rust_tui.sh
 ```
 
 **PWA**:
@@ -152,16 +147,12 @@ primary: 'mock',  // Change from 'ib' to 'mock'
 
 ### "No data returned" errors
 
-**Cause**: IB service (port 8002) not running
+**Cause**: Rust backend snapshot service (port 8002/8080 depending on setup) not running
 
 **Solution**:
 ```bash
-# Start IB service
-./scripts/start_ib_service.sh
-
-# Or start manually
-cd python/services
-python ib_service.py
+# Start backend services
+./scripts/start_all_services.sh
 ```
 
 ### "Permission denied" errors
@@ -216,5 +207,5 @@ The system will try IB first, then Alpaca if IB fails, then mock as last resort.
 
 For more details, see:
 - `config/config.example.json` - Full configuration reference
-- `python/tui/config.py` - TUI configuration
+- `./scripts/run_rust_tui.sh` - TUI runner
 - `web/src/config/sharedConfig.ts` - PWA configuration

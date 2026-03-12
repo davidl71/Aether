@@ -6,7 +6,7 @@
 
 ## Layout
 - `Cargo.toml`: Rust workspace aggregating core crates.
-- `crates/`: library crates for market data, strategy bridge, risk, and API layers.
+- `crates/`: library crates for market data, strategy/risk models, ledger, NATS, and API layers.
 - `services/backend_service/`: Tokio binary wiring crates together.
 - `python/`: deprecated backend Python scaffold; not part of the active runtime.
 - `config/`: runtime configuration templates (`default.toml`).
@@ -14,24 +14,9 @@
 
 ## Getting Started
 
-### Python Environment (Required for PyO3)
-
-The backend uses PyO3 0.24.x. For local Rust checks, point `PYO3_PYTHON` at the interpreter you want the bridge to use, or source the helper script below.
-
-You can either:
-
-- **Option A (recommended for full backend/Python bridge):** Use a Python 3.12 virtual environment:
-  ```bash
-  cd agents/backend
-  source scripts/activate_python_env.sh
-  ```
-  See [Python Environment Setup](../../docs/PYTHON_ENVIRONMENT_SETUP.md) for details.
-
-- **Option B (Rust-only builds):** The workspace sets `PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1` in `.cargo/config.toml`, and `scripts/run-tests.sh` auto-exports `PYO3_PYTHON` from `python3` when unset. Use a dedicated venv when you need deterministic backend/Python bridge behavior.
-
 ### Backend Setup
 
-1. Run `bash agents/backend/scripts/setup.sh` to create the virtualenv, install Python deps, and fetch Rust crates.
+1. Run `bash agents/backend/scripts/setup.sh` to fetch Rust crates and any backend-local tooling.
 2. Start the live service with `cargo run -p backend_service` from `agents/backend`.
 3. Hit the REST surface via `curl http://127.0.0.1:8080/api/v1/snapshot`.
 4. Execute checks via `bash agents/backend/scripts/run-tests.sh`.

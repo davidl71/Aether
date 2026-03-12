@@ -1,10 +1,9 @@
 {
   // Pyright configuration for Python import resolution
-  // This helps Cursor/VS Code resolve imports in notebooks and Python files
+  // This helps Cursor/VS Code resolve imports in active Python test/helpers.
 
   "include": [
-    "python",
-    "notebooks",
+    "native/tests/python",
     "scripts"
   ],
 
@@ -22,10 +21,8 @@
 
   // Extra paths for import resolution (relative to workspace root)
   "extraPaths": [
-    "python",
-    "python/bindings",
-    "python/integration",
-    "notebooks/utils"
+    "native/tests/python",
+    "native/generated/python"
   ],
 
   // Type checking mode
@@ -47,5 +44,5 @@
 
   // Language server settings
   "venvPath": ".",
-  "venv": "python/.venv"
+  "venv": ".venv"
 }

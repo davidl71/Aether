@@ -15,7 +15,7 @@ For deeper detail, see:
 - `C++` produces market and strategy events.
 - `Rust` owns shared frontend read APIs and active collection fanout.
 - `Go` is narrowed to operational tooling that remains separate by role.
-- `Python` owns selected specialist integration services; the active TUI runtime is Rust.
+- `Python` is limited to selected legacy/helper surfaces; the active TUI runtime is Rust.
 
 ## Runtime Shape
 
@@ -37,7 +37,6 @@ Web
 
 TUI
   -> Rust read-model endpoints
-  -> selected Python integration services
   -> optional NATS/event-driven path
 ```
 
@@ -67,13 +66,11 @@ TUI
 
 ### Python scope
 
-- `python/tui/`
-  - active terminal UI
-- `python/integration/`
-  - selected broker and bank integrations
-  - benchmark/rate routes and active logic are now Rust-owned
-  - IB public routes and active logic are now Rust-owned
-Python is no longer the general frontend read-model backend or a collection/live-state ownership layer.
+- `native/tests/python/`
+  - pybind11 binding tests
+- `native/generated/python/`
+  - generated helper output from `proto/messages.proto`
+Python is no longer the terminal UI runtime, the general frontend read-model backend, or a collection/live-state ownership layer.
 
 ## Storage
 
@@ -86,12 +83,12 @@ Python is no longer the general frontend read-model backend or a collection/live
 
 ## Known Simplification Gaps
 
-- Rust and Python still overlap around some durable/local finance state, especially loans.
-- TUI still mixes Rust read models with selected Python service calls.
+- Some docs and plans still describe older Python overlap around finance state.
+- Some docs still describe TUI Python service calls even though the active runtime path is Rust-first.
 - Go `api-gateway` and Go `heartbeat-aggregator` are retired. Rust now owns the client-facing health and heartbeat routes and consumes `system.health` directly.
 
 ## Default Deployment Direction
 
 - browser -> shared origin
-- shared origin -> Rust API and selected Python specialist services by path
+- shared origin -> Rust API
 - direct per-port service wiring remains a dev/debug override, not the preferred default

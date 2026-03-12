@@ -23,31 +23,19 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for the full issue analysis.
 1. **Persistence first**: every market event, order, and position change must land in durable
    storage before the UI updates. Don't trade correctness for speed.
 2. **Thin daemons**: background collectors and bridges should be single-binary, low-memory
-   Go or C++ processes. No Python daemons doing collection — Python is for analysis/TUI only.
+   Go or C++ processes. No Python daemons doing collection — Python is limited to helper,
+   generated, and test surfaces, not active runtime ownership.
 3. **Responsive reads**: clients should receive delta updates, not full snapshots. Store once,
    serve many via NATS KV or Arrow Flight.
 4. **Single source of truth**: one writer per data store. Eliminate dual-write patterns.
 5. **Persistence rule**: write once (to durable storage or JetStream), then publish to NATS or update in-memory state; only then serve to clients. Ensures UI never shows uncommitted state.
 6. **Ownership rule**: C++ publishes market and strategy events, Go owns collection and live-state fanout/writes, Rust owns shared frontend APIs plus client-facing live-state reads and durable backend ownership, and Python stays limited to the TUI plus explicit specialist/analytics services.
 
-### Existing Rust/Python bridge
+### Rust/Python bridge status
 
-The repo already uses **PyO3**, but only for **Rust embedding Python**, not for exporting Rust into Python packages:
-
-- `agents/backend/crates/strategy/src/engine.rs` uses `pyo3::prepare_freethreaded_python()`,
-  `Python::with_gil`, `PyModule::import`, and `PyDict` to load and call Python strategy code
-  from the Rust strategy engine.
-- `agents/backend/crates/strategy/Cargo.toml` depends on workspace `pyo3`.
-- `agents/backend/Cargo.toml` defines workspace `pyo3 = 0.24.1` with `auto-initialize`.
-
-That means the future **PyO3 + maturin** idea is not introducing PyO3 from scratch. It is a
-different direction for the same bridge technology:
-
-- **Current**: Rust process embeds and calls Python strategy logic.
-- **Future option**: Rust exports shared finance logic into Python-callable extension modules for
-  the TUI/CLI, likely packaged with `maturin`.
-
-Treat those as related but distinct migration paths.
+The old PyO3-based Rust-to-Python strategy bridge has been removed. If the project ever needs a
+Rust-to-Python extension path again, that would be a fresh design choice rather than an already
+active backend bridge.
 
 ---
 
@@ -62,7 +50,7 @@ Treat those as related but distinct migration paths.
 - Enable WAL mode (`PRAGMA journal_mode=WAL`) as immediate mitigation.
 - Longer term: Python reads from Rust ledger via REST API (`GET /api/ledger/...`).
   Python never writes directly to SQLite — Rust ledger is the single writer.
-**Files**: `agents/backend/crates/ledger/src/lib.rs`, `python/integration/` ledger write paths.
+**Files**: `agents/backend/crates/ledger/src/lib.rs`, plus any surviving Python helper code that still touches ledger reads/writes.
 
 ### P1-B: Unify TUI and Web data backends <!-- exarp: T-1772887221914991889 -->
 **Status:** Implemented. TUI shared HTTP reads now use canonical `api_base_url` (defaulting to the Rust/shared origin at `http://localhost:8080`), while specialist presets still use explicit routed snapshot endpoints through the optional gateway when needed.
@@ -70,7 +58,7 @@ Treat those as related but distinct migration paths.
 **Fix**:
 - Prefer the Rust/shared origin as the default frontend read path.
 - Retire the Go `api-gateway`; expose any remaining operational heartbeat routes through Rust instead.
-**Files**: `python/tui/providers/`, `agents/go/cmd/api-gateway/main.go`.
+**Files**: historical `python/tui/providers/`, `agents/go/cmd/api-gateway/main.go`, and the active Rust TUI/read-model layers.
 
 ---
 
@@ -93,7 +81,7 @@ single writer to NATS KV buckets / live-state views. Rust exposes the client-fac
 read/watch endpoints for that state, so clients do not depend on Go `api-gateway` for
 live-state reads. NATS KV is persistent (backed by JetStream). Python consumes those
 specialist/analytics views; it does not own collection or live-state writes.
-**Files**: `native/src/nats_client.cpp`, `agents/backend/services/backend_service/src/collection_aggregation.rs`, `python/tui/providers/` (NatsProvider consumer path).
+**Files**: `native/src/nats_client.cpp`, `agents/backend/services/backend_service/src/collection_aggregation.rs`, historical `python/tui/providers/` notes, and the active Rust TUI consumer path.
 **Depends on**: P2-B (NatsEnvelope decode in Go agents).
 
 ---
@@ -123,7 +111,7 @@ structure. Enables:
 - Smooth par rate / discount factor curve at any maturity
 - Quantitative comparison of box spread implied rate vs model rate
 - QuantLib has `NelsonSiegelFitting` and `SvenssonFitting` in `ql/termstructures/yield/`.
-**Files**: `python/integration/yield_curve_comparison.py`, possibly a new C++ `yield_curve.cpp`.
+**Files**: historical `python/integration/yield_curve_comparison.py` notes, possibly a new C++ `yield_curve.cpp`, or a replacement helper under the current repo layout.
 
 ### P3-D: Standard amortization schedule generation <!-- exarp: T-1772887222449509427 -->
 **Issue**: `cash_flow_calculator.py` handles Israeli SHIR/CPI loans but not standard PMT.
@@ -133,7 +121,7 @@ a DataFrame of (period, payment, interest, principal, balance). Support:
 - SHIR-linked (existing, refactor into same interface)
 - CPI-linked (existing)
 - Balloon / interest-only
-**Files**: `python/integration/cash_flow_calculator.py`.
+**Files**: historical `python/integration/cash_flow_calculator.py` notes or a replacement helper under the current repo layout.
 
 ---
 

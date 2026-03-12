@@ -46,7 +46,7 @@ fi
 
 # Python/betterproto (non-standard plugin — kept here, not in buf.gen.yaml)
 echo ""
-PYTHON_OUT="$ROOT_DIR/python/generated"
+PYTHON_OUT="$ROOT_DIR/native/generated/python"
 mkdir -p "$PYTHON_OUT"
 if command -v uv >/dev/null 2>&1; then
   echo "[py] generating with betterproto..."

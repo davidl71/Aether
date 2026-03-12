@@ -9,7 +9,7 @@
 | Area | Today | Format |
 |------|--------|--------|
 | **Strategy parameters** | Numeric thresholds (min_roi, min_dte, max_spread, etc.) | JSON config → C++ `StrategyParams` / proto `StrategyParams` |
-| **Box spread / financing scenarios** | Python embedded DSL (builders, types, code gen) | `python/dsl/` — BoxSpread, FinancingStrategy, CashFlowModel |
+| **Box spread / financing scenarios** | Historical Python embedded DSL design | documented historical path; not part of the current repo layout |
 | **Multi-asset relationships** | Design only | `docs/research/architecture/MULTI_ASSET_RELATIONSHIP_DSL_DESIGN.md` |
 | **Wire format / cross-language** | Proto messages | `proto/messages.proto` — market data, positions, strategy, risk, box spread, yield curve |
 
@@ -57,9 +57,9 @@ Keep using proto for all “structured data + cross-language” needs; no need t
    - **Idea**: Rule DSL or expression, e.g. `net_liq < 100000 || margin_requirement > 0.8 * excess_liquidity`. Same pattern: optional expression in config or proto, evaluated at runtime.
    - **Place**: TUI/PWA alert config, or risk service config; proto can carry the rule (e.g. `AlertRule { expression = "..." }`).
 
-3. **Extend existing Python DSL**
-   - **Current**: Box spread scenarios, financing strategy, cash flow models in `python/dsl/`; design for multi-asset relationship DSL in docs.
-   - **Possible**: Implement relationship DSL; add “export to proto” or “export to JSON” for scenario/strategy so other services consume the same structure without Python.
+3. **Extend historical DSL ideas if revived**
+   - **Current**: only design notes remain in docs; no active `python/dsl/` tree exists in this repo layout.
+   - **Possible**: Reintroduce a relationship/strategy DSL deliberately, with export to proto or JSON if other services need the same structure.
 
 4. **External / code-gen DSL (later)**
    - Docs already describe external DSL → C++ generation. Only worth it if you need non-developers to edit strategy or relationship definitions in a dedicated editor; otherwise Python embedded DSL + optional expressions is enough.
@@ -83,7 +83,7 @@ Keep using proto for all “structured data + cross-language” needs; no need t
 ## References
 
 - `proto/messages.proto` — current messages
-- `python/dsl/README.md` — Box spread / financing / cash flow DSL
+- historical DSL notes in `docs/research/architecture/` — Box spread / financing / cash flow DSL
 - `docs/research/architecture/DSL_ARCHITECTURE_DESIGN.md` — three-tier DSL and code gen
 - `docs/research/architecture/MULTI_ASSET_RELATIONSHIP_DSL_DESIGN.md` — relationship DSL
 - `config/config.example.json` — `strategy` and `risk` sections (today all numeric/structured)
