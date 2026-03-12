@@ -65,6 +65,7 @@ pub struct RestState {
     pub controller: StrategyController,
     pub loans: LoanRepository,
     pub health: SharedHealthAggregate,
+    pub fmp: std::sync::Arc<market_data::FmpClient>,
 }
 
 // Ensure RestState is Send + Sync for axum Router requirements
@@ -79,11 +80,15 @@ impl RestState {
         loans: LoanRepository,
         health: SharedHealthAggregate,
     ) -> Self {
+        let fmp_api_key = std::env::var("FMP_API_KEY").unwrap_or_default();
+        let fmp = market_data::FmpClient::new(fmp_api_key, None)
+            .expect("FmpClient failed to construct");
         Self {
             snapshot,
             controller,
             loans,
             health,
+            fmp: std::sync::Arc::new(fmp),
         }
     }
 }
@@ -154,6 +159,10 @@ impl RestServer {
             )
             .route("/api/v1/scenarios", get(get_scenarios))
             .route("/api/v1/chart/:symbol", get(get_chart))
+            .route("/api/v1/fundamentals/:symbol/income", get(fundamentals_income))
+            .route("/api/v1/fundamentals/:symbol/balance-sheet", get(fundamentals_balance_sheet))
+            .route("/api/v1/fundamentals/:symbol/cash-flow", get(fundamentals_cash_flow))
+            .route("/api/v1/fundamentals/:symbol/quote", get(fundamentals_quote))
             .route("/api/v1/swiftness/positions", get(swiftness_positions))
             .route(
                 "/api/v1/swiftness/portfolio-value",
@@ -2629,6 +2638,89 @@ async fn swiftness_update_exchange_rate(
             ))
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Fundamentals (FMP Tier-2 data source)
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+struct FundamentalsQuery {
+    limit: Option<u32>,
+}
+
+async fn fundamentals_income(
+    Extension(state): Extension<RestState>,
+    Path(symbol): Path<String>,
+    Query(params): Query<FundamentalsQuery>,
+) -> Result<Json<Vec<market_data::IncomeStatement>>, (StatusCode, Json<ApiResponse>)> {
+    let limit = params.limit.unwrap_or(4);
+    state
+        .fmp
+        .income_statement(&symbol, limit)
+        .await
+        .map(Json)
+        .map_err(|e| {
+            (
+                StatusCode::BAD_GATEWAY,
+                Json(ApiResponse { status: "error".into(), message: e.to_string(), data: None }),
+            )
+        })
+}
+
+async fn fundamentals_balance_sheet(
+    Extension(state): Extension<RestState>,
+    Path(symbol): Path<String>,
+    Query(params): Query<FundamentalsQuery>,
+) -> Result<Json<Vec<market_data::BalanceSheet>>, (StatusCode, Json<ApiResponse>)> {
+    let limit = params.limit.unwrap_or(4);
+    state
+        .fmp
+        .balance_sheet(&symbol, limit)
+        .await
+        .map(Json)
+        .map_err(|e| {
+            (
+                StatusCode::BAD_GATEWAY,
+                Json(ApiResponse { status: "error".into(), message: e.to_string(), data: None }),
+            )
+        })
+}
+
+async fn fundamentals_cash_flow(
+    Extension(state): Extension<RestState>,
+    Path(symbol): Path<String>,
+    Query(params): Query<FundamentalsQuery>,
+) -> Result<Json<Vec<market_data::CashFlowStatement>>, (StatusCode, Json<ApiResponse>)> {
+    let limit = params.limit.unwrap_or(4);
+    state
+        .fmp
+        .cash_flow(&symbol, limit)
+        .await
+        .map(Json)
+        .map_err(|e| {
+            (
+                StatusCode::BAD_GATEWAY,
+                Json(ApiResponse { status: "error".into(), message: e.to_string(), data: None }),
+            )
+        })
+}
+
+async fn fundamentals_quote(
+    Extension(state): Extension<RestState>,
+    Path(symbol): Path<String>,
+) -> Result<Json<market_data::FmpQuote>, (StatusCode, Json<ApiResponse>)> {
+    state
+        .fmp
+        .quote(&symbol)
+        .await
+        .map(Json)
+        .map_err(|e| {
+            (
+                StatusCode::BAD_GATEWAY,
+                Json(ApiResponse { status: "error".into(), message: e.to_string(), data: None }),
+            )
+        })
 }
 
 #[cfg(test)]
