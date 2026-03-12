@@ -18,8 +18,9 @@
 //!   TICK_MS               UI redraw interval ms (default: 250)
 //!   SNAPSHOT_TTL_SECS     Seconds before data is shown as stale (default: 30)
 //!
-//! Tracing output is written to a log file (not stdout) to avoid clobbering
-//! the TUI. Default log path: /tmp/tui_service.log  (override: LOG_FILE env var).
+//! Tracing output goes to two sinks simultaneously:
+//!   1. In-TUI Logs tab (tui-logger widget — scrollable, level-filtered)
+//!   2. File: /tmp/tui_service.log  (override: LOG_FILE env var)
 //! Config file changes are detected every 5s and applied without restart.
 
 use std::time::Duration;
@@ -32,7 +33,7 @@ use crossterm::{
 };
 use tokio::sync::{mpsc, watch};
 use tracing::{error, info};
-use tracing_subscriber::fmt::writer::BoxMakeWriter;
+use tracing_subscriber::{fmt::writer::BoxMakeWriter, layer::SubscriberExt, util::SubscriberInitExt};
 
 mod app;
 mod circuit_breaker;
@@ -49,8 +50,14 @@ use config::TuiConfig;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Write tracing to a file so error messages don't clobber the TUI terminal.
-    // Use LOG_FILE env var to override (e.g. LOG_FILE=/dev/stderr for debugging).
+    // tui-logger: captures all tracing events into an in-memory ring buffer
+    // that the Logs tab widget reads. Visible inside the TUI immediately.
+    tui_logger::init_logger(log::LevelFilter::Trace).expect("tui-logger init");
+    tui_logger::set_default_level(log::LevelFilter::Debug);
+    tui_logger::set_env_filter_from_env(None); // respects RUST_LOG
+
+    // Also write to a file for persistence (no ANSI so it's grep-friendly).
+    // Override with LOG_FILE env var (e.g. LOG_FILE=/dev/stderr for debugging).
     let log_path = std::env::var("LOG_FILE")
         .unwrap_or_else(|_| "/tmp/tui_service.log".to_string());
     let log_file = std::fs::OpenOptions::new()
@@ -58,11 +65,16 @@ async fn main() -> anyhow::Result<()> {
         .append(true)
         .open(&log_path)
         .with_context(|| format!("Failed to open log file: {log_path}"))?;
-    tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-        .with_target(false)
-        .with_ansi(false)
-        .with_writer(BoxMakeWriter::new(log_file))
+
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::EnvFilter::from_default_env())
+        .with(tui_logger::TuiTracingSubscriberLayer)
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_ansi(false)
+                .with_target(false)
+                .with_writer(BoxMakeWriter::new(log_file)),
+        )
         .init();
 
     let config = TuiConfig::load();

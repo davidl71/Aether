@@ -22,9 +22,7 @@ use tracing::{debug, info, warn};
 
 use crate::circuit_breaker::CircuitBreaker;
 use crate::config::TuiConfig;
-use crate::events::{
-    AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget, LogEntry, LogLevel,
-};
+use crate::events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget};
 use crate::models::{SnapshotSource, TuiSnapshot};
 
 fn ts_to_dt(ts: Option<Timestamp>) -> DateTime<Utc> {
@@ -192,11 +190,6 @@ pub async fn run(
 ) {
     let subject = topics::snapshot::backend(&config.backend_id);
     info!(subject = %subject, nats_url = %config.nats_url, "NATS subscriber starting");
-    emit_log(
-        &event_tx,
-        LogLevel::Info,
-        format!("NATS subscriber starting for {subject}"),
-    );
     emit_status(
         &event_tx,
         ConnectionState::Starting,
@@ -221,21 +214,15 @@ pub async fn run(
                     ConnectionState::Connected,
                     format!("Connected to {}", config.nats_url),
                 );
-                emit_log(&event_tx, LogLevel::Info, "NATS connected");
                 if let Err(e) = subscribe_loop(&client, &subject, &tx, &event_tx).await {
                     cb.record_failure();
                     let delay = cb.backoff();
                     warn!(
                         error = %e,
                         delay_secs = delay.as_secs(),
-                        "NATS subscriber loop exited, reconnecting"
+                        "NATS subscription lost, reconnecting"
                     );
                     emit_status(&event_tx, ConnectionState::Retrying, e.to_string());
-                    emit_log(
-                        &event_tx,
-                        LogLevel::Warn,
-                        format!("NATS subscription lost: {e}"),
-                    );
                     tokio::time::sleep(delay).await;
                 }
             }
@@ -249,11 +236,6 @@ pub async fn run(
                 };
                 warn!(error = %e, "NATS connect failed{}", open_msg);
                 emit_status(&event_tx, ConnectionState::Retrying, e.to_string());
-                emit_log(
-                    &event_tx,
-                    LogLevel::Warn,
-                    format!("NATS connect failed: {e}{open_msg}"),
-                );
                 if !cb.is_open() {
                     tokio::time::sleep(delay).await;
                 }
@@ -270,7 +252,6 @@ async fn subscribe_loop(
 ) -> anyhow::Result<()> {
     let mut sub = client.client().subscribe(subject.to_string()).await?;
     info!(subject = %subject, "Subscribed to snapshot subject");
-    emit_log(event_tx, LogLevel::Info, format!("Subscribed to {subject}"));
 
     while let Some(msg) = sub.next().await {
         match extract_proto_payload::<pb::SystemSnapshot>(&msg.payload) {
@@ -281,12 +262,7 @@ async fn subscribe_loop(
                 let _ = tx.send(Some(snap));
             }
             Err(e) => {
-                warn!(error = %e, "Failed to decode snapshot payload");
-                emit_log(
-                    event_tx,
-                    LogLevel::Warn,
-                    format!("Failed to decode NATS snapshot: {e}"),
-                );
+                warn!(error = %e, "Failed to decode NATS snapshot payload");
             }
         }
     }
@@ -305,14 +281,3 @@ fn emit_status(
     });
 }
 
-fn emit_log(
-    event_tx: &mpsc::UnboundedSender<AppEvent>,
-    level: LogLevel,
-    message: impl Into<String>,
-) {
-    let _ = event_tx.send(AppEvent::Log(LogEntry::new(
-        level,
-        Some(ConnectionTarget::Nats),
-        message,
-    )));
-}

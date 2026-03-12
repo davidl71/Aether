@@ -7,9 +7,10 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Paragraph, Row, Table, Tabs},
     Frame,
 };
+use tui_logger::{TuiLoggerLevelOutput, TuiLoggerWidget};
 
 use crate::app::{App, Tab};
-use crate::events::{ConnectionState, ConnectionStatus, LogLevel};
+use crate::events::{ConnectionState, ConnectionStatus};
 
 pub fn render(f: &mut Frame, app: &App) {
     let chunks = Layout::default()
@@ -299,46 +300,20 @@ fn render_alerts(f: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_logs(f: &mut Frame, app: &App, area: Rect) {
-    let nats_label = app.nats_status.state.label();
-    let mut lines = vec![
-        Line::from(format!("NATS {} - {}", nats_label, app.nats_status.detail)),
-        Line::from(""),
-    ];
-
-    if app.logs.is_empty() {
-        lines.push(Line::from("No operational logs yet"));
-    } else {
-        lines.extend(app.logs.iter().map(|entry| {
-            let color = match entry.level {
-                LogLevel::Info => Color::Cyan,
-                LogLevel::Warn => Color::Yellow,
-            };
-            let target = entry
-                .target
-                .as_ref()
-                .map(|target| target.label())
-                .unwrap_or("APP");
-            Line::from(Span::styled(
-                format!(
-                    "[{}] {} {} {}{}",
-                    entry.timestamp.format("%H:%M:%S"),
-                    entry.level.label(),
-                    target,
-                    entry.message,
-                    if entry.repeat_count > 1 {
-                        format!(" (x{})", entry.repeat_count)
-                    } else {
-                        String::new()
-                    }
-                ),
-                Style::default().fg(color),
-            ))
-        }));
-    }
-
-    let widget = Paragraph::new(lines)
-        .scroll((app.log_scroll, 0))
-        .block(Block::default().title("Logs").borders(Borders::ALL));
+    let widget = TuiLoggerWidget::default()
+        .block(Block::default().title("Logs  [+/-]:level  [↑↓ PgUp/Dn]:scroll  [h]:hide  [Esc]:reset").borders(Borders::ALL))
+        .style_error(Style::default().fg(Color::Red))
+        .style_warn(Style::default().fg(Color::Yellow))
+        .style_info(Style::default().fg(Color::Cyan))
+        .style_debug(Style::default().fg(Color::White))
+        .style_trace(Style::default().fg(Color::DarkGray))
+        .output_separator(' ')
+        .output_timestamp(Some("%H:%M:%S".to_string()))
+        .output_level(Some(TuiLoggerLevelOutput::Abbreviated))
+        .output_target(false)
+        .output_file(false)
+        .output_line(false)
+        .state(&app.log_state);
     f.render_widget(widget, area);
 }
 

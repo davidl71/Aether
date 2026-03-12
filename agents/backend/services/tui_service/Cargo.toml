@@ -25,6 +25,10 @@ nats_adapter = { path = "../../crates/nats_adapter" }
 ratatui   = "0.30"
 crossterm = "0.28"
 
+# In-TUI log viewer (captures tracing events, renders them in a scrollable widget)
+tui-logger = { version = "0.18", features = ["tracing-support"] }
+log = "0.4"
+
 # Protobuf types (for timestamp conversion)
 prost-types = "0.13"
 
