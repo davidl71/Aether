@@ -26,13 +26,12 @@ across 21+ accounts and multiple brokers.
                  │                                │
      ┌───────────┴────────────────────────────────┴──────────────┐
      │                           NATS                              │
-     │   ┌─────────────────────┐  ┌─────────────────────────────┐  │
-     │   │ Go agents           │  │ C++ engine                  │  │
-     │   │ collection-daemon   │  │ tws_client / nats_client    │  │
-     │   │ heartbeat-agg       │  │ pricing / risk / orders     │  │
-     │   │ api-gateway         │  │ protobuf event publisher    │  │
-     │   │ supervisor/config   │  └──────────────┬──────────────┘  │
-     │   └─────────────────────┘                 │                 │
+     │                          ┌─────────────────────────────┐  │
+     │                          │ C++ engine                  │  │
+     │                          │ tws_client / nats_client    │  │
+     │                          │ pricing / risk / orders     │  │
+     │                          │ protobuf event publisher    │  │
+     │                          └──────────────┬──────────────┘  │
      └───────────────────────────────────────────┼─────────────────┘
                                                  │
                                           ┌──────┴──────┐
@@ -65,7 +64,6 @@ Storage layers:
 | Python integration services | Python (FastAPI) | Explicit specialist services only: broker/bank integrations, risk-free-rate service, and health dashboard |
 | C++ engine | C++20 | TWS connectivity, strategy execution, risk/Greeks/pricing |
 | NATS | NATS JetStream | Async messaging, market data events, heartbeats |
-| Go agents | Go (stdlib+nats.go) | Collection, live-state KV ownership, QuestDB fanout, api-gateway, health aggregation, supervisor, config validation |
 
 ### Messaging Contract
 
@@ -83,7 +81,6 @@ Generated from `proto/messages.proto` via `./proto/generate.sh`:
 | C++ | `native/generated/messages.pb.{h,cc}` | Active — `ENABLE_PROTO` flag |
 | Python | `python/generated/` (betterproto) | Generated, NATS migration pending |
 | TypeScript | `web/src/proto/messages.ts` (ts-proto) | Generated, migration pending |
-| Go | `agents/go/proto/v1/messages.pb.go` | Active |
 | Rust | `nats_adapter` crate (prost via build.rs) | Active |
 
 ## Known Issues / Technical Debt
@@ -102,7 +99,7 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for full analysis. Key issues:
 | Layer | Technologies |
 |-------|--------------|
 | Core engine | C++20, QuantLib, Intel Decimal Library, NLopt, Eigen |
-| Backend services | Rust (Axum, prost, sqlx), Go (stdlib, nats.go) |
+| Backend services | Rust (Axum, prost, sqlx) |
 | Integration layer | Python 3.12 (specialist services, bindings, betterproto) |
 | Frontends | Rust Ratatui TUI, native CLI, archived React 18/TypeScript |
 | Messaging | NATS JetStream, Protocol Buffers |
@@ -115,7 +112,6 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for full analysis. Key issues:
 - **C++**: stays for core engine and TWS (API is C++-only)
 - **Rust**: stays for safety-critical backend and ledger
 - **Python**: specialist broker/bank integrations, bindings, and remaining finance helpers
-- **Go**: ops agents — good for single-binary CLI/bridge tools
 - **TypeScript**: web app — not a rewrite candidate
 
 ## Directory Structure
@@ -128,8 +124,7 @@ ib_box_spread_full_universal/
 │   ├── tests/           # Catch2
 │   └── third_party/     # TWS API, Intel Decimal, QuantLib (via FetchContent)
 ├── agents/
-│   ├── backend/         # Rust backend (Axum REST, ledger, nats_adapter)
-│   └── go/              # Go agents (api-gateway, collection-daemon, heartbeat-agg, supervisor...)
+│   └── backend/         # Rust backend (Axum REST, ledger, nats_adapter)
 ├── python/              # Python integration services, bindings, and research helpers
 ├── web/                 # Archived React web client
 ├── proto/               # Canonical protobuf schema (messages.proto)

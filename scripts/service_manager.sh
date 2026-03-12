@@ -2,10 +2,6 @@
 # Unified Service Manager - Start/stop/restart/status for all services
 # Consolidates all individual start_*.sh and stop_*.sh scripts
 #
-# Alternative: Go supervisor (single process, restarts on crash):
-#   ./scripts/run_supervisor.sh
-#   Uses config/services.supervisor.json; requires Go.
-#
 # Usage:
 #   ./scripts/service_manager.sh start <service>
 #   ./scripts/service_manager.sh stop <service>

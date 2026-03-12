@@ -11,15 +11,6 @@ cd "$PROJECT_ROOT"
 
 echo "🔍 Validating API Contract..."
 
-# Optional: validate shared config with Go config-validator when available
-if command -v go >/dev/null 2>&1 && [ -f "${PROJECT_ROOT}/agents/go/cmd/config-validator/main.go" ]; then
-  if ! (cd "${PROJECT_ROOT}/agents/go" && go run ./cmd/config-validator -config "${PROJECT_ROOT}/config/config.example.json" 2>/dev/null); then
-    echo "❌ Config validation failed (Go config-validator)"
-    exit 1
-  fi
-  echo "✅ Config (Go) OK"
-fi
-
 # Check file exists
 if [ ! -f "$CONTRACT_FILE" ]; then
     echo "❌ API_CONTRACT.md not found at: $CONTRACT_FILE"

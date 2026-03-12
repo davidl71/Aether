@@ -9,17 +9,16 @@ This repository uses **multiple programming languages**. This doc maps each lang
 | **C++** | `native/` (core engine, CLI, tests in `native/tests/`) | `cmake --build build` or presets; `./scripts/build_universal.sh` for macOS universal | `ctest --test-dir build --output-on-failure` | `./scripts/run_linters.sh` (cppcheck, clang-tidy, etc.) |
 | **Python** | `python/` (integration, services, tests) | — (interpreted); Cython bindings built via CMake | `uv run --project python pytest python/tests/` | `uv run --project python ruff check python`; `just lint-shell` for scripts |
 | **Rust** | `agents/backend/` (crates: api, ledger, market_data, nats_adapter, risk, strategy, discount_bank_parser) | `cargo build` in `agents/backend/` | `cargo test` in `agents/backend/` | `cargo clippy` |
-| **Go** | `agents/go/` (collection-daemon, config-validator, supervisor) | `go build ./...` in `agents/go/` | `go test ./...` | `golangci-lint`; `just exarp-lint` |
 | **TypeScript / React** | `web/` (archived Vite/React client) | Historical only | Historical only | Historical only |
 
 ## Shared and generated code
 
-- **Protocol Buffers** (`proto/`): `proto/messages.proto` → C++ (generated at CMake build), Python/Go/TypeScript via `./proto/generate.sh`. See `docs/message_schemas/README.md`.
+- **Protocol Buffers** (`proto/`): `proto/messages.proto` → C++ (generated at CMake build), Python/TypeScript via `./proto/generate.sh`. See `docs/message_schemas/README.md`.
 - **Config**: JSON under `config/`; shared by the Rust TUI, CLI, and backend services.
 
 ## Cross-language boundaries
 
-- **NATS**: C++ publishes market and strategy events; Rust backend and Go agents consume them; Rust TUI uses REST polling as fallback when NATS unavailable. See `docs/platform/DATAFLOW_ARCHITECTURE.md`.
+- **NATS**: C++ publishes market and strategy events; Rust backend consumes them; Rust TUI uses REST polling as fallback when NATS unavailable. See `docs/platform/DATAFLOW_ARCHITECTURE.md`.
 - **REST / WebSocket**: the active client path is Rust TUI/CLI to the Rust backend, plus selected Python specialist services where still required.
 - **Ledger**: Rust `agents/backend/crates/ledger` is the durable ledger owner; Python direct SQLite access is legacy and should move behind service/API boundaries. See P1-A in `docs/platform/IMPROVEMENT_PLAN.md`.
 
