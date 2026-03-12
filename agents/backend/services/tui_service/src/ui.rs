@@ -7,9 +7,10 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Paragraph, Row, Table, Tabs},
     Frame,
 };
+use tui_logger::{TuiLoggerLevelOutput, TuiLoggerWidget};
 
 use crate::app::{App, Tab};
-use crate::events::{ConnectionState, ConnectionStatus, LogLevel};
+use crate::events::{ConnectionState, ConnectionStatus};
 
 pub fn render(f: &mut Frame, app: &App) {
     let chunks = Layout::default()
@@ -29,19 +30,22 @@ pub fn render(f: &mut Frame, app: &App) {
 }
 
 fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
-    let (mode, strategy, source_label, source_color) = if let Some(ref snap) = app.snapshot {
-        let color = Color::Green; // NATS is always green
-        (
-            snap.inner.mode.as_str().to_owned(),
-            snap.inner.strategy.as_str().to_owned(),
-            snap.source.label(),
-            color,
-        )
-    } else {
-        ("---".into(), "---".into(), "NO DATA", Color::DarkGray)
-    };
+    let (mode, strategy, source_label, source_color, is_stale) =
+        if let Some(ref snap) = app.snapshot {
+            let stale = snap.is_stale(app.config.snapshot_ttl_secs as i64);
+            let color = if stale { Color::Yellow } else { Color::Green };
+            (
+                snap.inner.mode.as_str().to_owned(),
+                snap.inner.strategy.as_str().to_owned(),
+                snap.source.label(),
+                color,
+                stale,
+            )
+        } else {
+            ("---".into(), "---".into(), "NO DATA", Color::DarkGray, false)
+        };
 
-    let line = Line::from(vec![
+    let mut spans = vec![
         Span::raw(format!(" {} | ", app.config.backend_id.to_uppercase())),
         Span::styled(mode, Style::default().fg(Color::Cyan)),
         Span::raw(" | "),
@@ -53,11 +57,21 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
                 .fg(source_color)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::raw("  "),
-        render_connection_badge("N", &app.nats_status),
-    ]);
+    ];
 
-    f.render_widget(Paragraph::new(line), area);
+    if is_stale {
+        spans.push(Span::styled(
+            " [STALE]",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+    }
+
+    spans.push(Span::raw("  "));
+    spans.push(render_connection_badge("N", &app.nats_status));
+
+    f.render_widget(Paragraph::new(Line::from(spans)), area);
 }
 
 fn render_tab_bar(f: &mut Frame, app: &App, area: Rect) {
@@ -100,6 +114,11 @@ fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
         .split(area);
 
     // Symbols table
+    // TODO(sparklines): add a "Trend" column using ratatui's built-in Sparkline widget.
+    // Requires a per-symbol ring buffer of recent roi values in app state
+    // (e.g. HashMap<String, VecDeque<u64>> updated each tick; Sparkline takes &[u64]).
+    // TODO(tui-popup): on Enter/Space over a row, open a tui-popup (tui-widgets crate)
+    // showing full SymbolSnapshot details: candle OHLCV, maker/taker counts, volume.
     let header = Row::new(["Symbol", "Last", "Bid", "Ask", "Spread", "ROI%"])
         .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
@@ -213,6 +232,11 @@ fn render_positions(f: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_orders(f: &mut Frame, app: &App, area: Rect) {
+    // TODO(tui-popup): add a cancel-order confirmation modal using tui-popup (tui-widgets).
+    // On Enter over a selected row: render tui_popup::Popup over the table asking
+    // "Cancel order {id}? [y/n]". Requires TableState for row selection.
+    // TODO(ratatui-textarea): add an order filter input bar (ratatui-textarea crate,
+    // single-line mode) at the top of this view to filter orders by symbol or status.
     let header = Row::new(["ID", "Symbol", "Side", "Qty", "Status"])
         .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
@@ -286,46 +310,20 @@ fn render_alerts(f: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_logs(f: &mut Frame, app: &App, area: Rect) {
-    let nats_label = app.nats_status.state.label();
-    let mut lines = vec![
-        Line::from(format!("NATS {} - {}", nats_label, app.nats_status.detail)),
-        Line::from(""),
-    ];
-
-    if app.logs.is_empty() {
-        lines.push(Line::from("No operational logs yet"));
-    } else {
-        lines.extend(app.logs.iter().map(|entry| {
-            let color = match entry.level {
-                LogLevel::Info => Color::Cyan,
-                LogLevel::Warn => Color::Yellow,
-            };
-            let target = entry
-                .target
-                .as_ref()
-                .map(|target| target.label())
-                .unwrap_or("APP");
-            Line::from(Span::styled(
-                format!(
-                    "[{}] {} {} {}{}",
-                    entry.timestamp.format("%H:%M:%S"),
-                    entry.level.label(),
-                    target,
-                    entry.message,
-                    if entry.repeat_count > 1 {
-                        format!(" (x{})", entry.repeat_count)
-                    } else {
-                        String::new()
-                    }
-                ),
-                Style::default().fg(color),
-            ))
-        }));
-    }
-
-    let widget = Paragraph::new(lines)
-        .scroll((app.log_scroll, 0))
-        .block(Block::default().title("Logs").borders(Borders::ALL));
+    let widget = TuiLoggerWidget::default()
+        .block(Block::default().title("Logs  [+/-]:level  [↑↓ PgUp/Dn]:scroll  [h]:hide  [Esc]:reset").borders(Borders::ALL))
+        .style_error(Style::default().fg(Color::Red))
+        .style_warn(Style::default().fg(Color::Yellow))
+        .style_info(Style::default().fg(Color::Cyan))
+        .style_debug(Style::default().fg(Color::White))
+        .style_trace(Style::default().fg(Color::DarkGray))
+        .output_separator(' ')
+        .output_timestamp(Some("%H:%M:%S".to_string()))
+        .output_level(Some(TuiLoggerLevelOutput::Abbreviated))
+        .output_target(false)
+        .output_file(false)
+        .output_line(false)
+        .state(&app.log_state);
     f.render_widget(widget, area);
 }
 

@@ -10,6 +10,7 @@ const DEFAULT_NATS_URL: &str = "nats://localhost:4222";
 const DEFAULT_BACKEND_ID: &str = "ib";
 const DEFAULT_REST_URL: &str = "http://localhost:9090";
 const DEFAULT_WATCHLIST: &str = "SPX,XSP,NDX";
+const DEFAULT_SNAPSHOT_TTL_SECS: u64 = 30;
 
 #[derive(Debug, Clone)]
 pub struct TuiConfig {
@@ -27,6 +28,8 @@ pub struct TuiConfig {
     pub rest_poll_ms: u64,
     /// Enable REST fallback when NATS is unavailable (env: REST_FALLBACK=1)
     pub rest_fallback: bool,
+    /// Seconds before a snapshot is considered stale for display purposes (env: SNAPSHOT_TTL_SECS)
+    pub snapshot_ttl_secs: u64,
 }
 
 impl Default for TuiConfig {
@@ -39,6 +42,7 @@ impl Default for TuiConfig {
             tick_ms: 250,
             rest_poll_ms: 2000,
             rest_fallback: false,
+            snapshot_ttl_secs: DEFAULT_SNAPSHOT_TTL_SECS,
         }
     }
 }
@@ -166,6 +170,12 @@ impl TuiConfig {
         if let Ok(value) = std::env::var("REST_FALLBACK") {
             if let Some(parsed) = parse_bool(&value) {
                 self.rest_fallback = parsed;
+            }
+        }
+
+        if let Ok(value) = std::env::var("SNAPSHOT_TTL_SECS") {
+            if let Ok(parsed) = value.parse::<u64>() {
+                self.snapshot_ttl_secs = parsed.max(1);
             }
         }
     }

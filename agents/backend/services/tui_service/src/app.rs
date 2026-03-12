@@ -1,14 +1,11 @@
 //! Application state and event dispatch.
 
-use std::collections::VecDeque;
-
 use crossterm::event::{KeyCode, KeyEvent};
 use tokio::sync::{mpsc, watch};
+use tui_logger::{TuiWidgetEvent, TuiWidgetState};
 
 use crate::config::TuiConfig;
-use crate::events::{
-    push_log, AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget, LogEntry,
-};
+use crate::events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget};
 use crate::models::{SnapshotSource, TuiSnapshot};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -58,12 +55,13 @@ pub struct App {
     pub config: TuiConfig,
     pub active_tab: Tab,
     pub snapshot: Option<TuiSnapshot>,
-    pub logs: VecDeque<LogEntry>,
-    pub log_scroll: u16,
+    /// State for the tui-logger widget (scroll position, level filter).
+    pub log_state: TuiWidgetState,
     pub nats_status: ConnectionStatus,
     pub should_quit: bool,
     event_rx: mpsc::UnboundedReceiver<AppEvent>,
     snapshot_rx: watch::Receiver<Option<TuiSnapshot>>,
+    config_rx: watch::Receiver<TuiConfig>,
 }
 
 impl App {
@@ -71,22 +69,30 @@ impl App {
         config: TuiConfig,
         snapshot_rx: watch::Receiver<Option<TuiSnapshot>>,
         event_rx: mpsc::UnboundedReceiver<AppEvent>,
+        config_rx: watch::Receiver<TuiConfig>,
     ) -> Self {
         Self {
             config,
             active_tab: Tab::Dashboard,
             snapshot: None,
-            logs: VecDeque::new(),
-            log_scroll: 0,
+            log_state: TuiWidgetState::default(),
             nats_status: ConnectionStatus::new(ConnectionState::Starting, "Connecting to NATS"),
             should_quit: false,
             event_rx,
             snapshot_rx,
+            config_rx,
         }
     }
 
-    /// Pull latest snapshot from the NATS channel.
+    /// Pull latest snapshot and config updates, process queued events.
     pub fn tick(&mut self) {
+        // Apply hot-reloaded config if it changed
+        if self.config_rx.has_changed().unwrap_or(false) {
+            let new_config = self.config_rx.borrow_and_update().clone();
+            self.config = new_config;
+            tracing::info!("Config reloaded from disk");
+        }
+
         while let Ok(event) = self.event_rx.try_recv() {
             self.apply_event(event);
         }
@@ -110,7 +116,6 @@ impl App {
             AppEvent::Connection { target, status } => match target {
                 ConnectionTarget::Nats => self.nats_status = status,
             },
-            AppEvent::Log(entry) => push_log(&mut self.logs, entry),
         }
     }
 
@@ -140,31 +145,34 @@ impl App {
             KeyCode::Char('3') => self.active_tab = Tab::Orders,
             KeyCode::Char('4') => self.active_tab = Tab::Alerts,
             KeyCode::Char('5') => self.active_tab = Tab::Logs,
-            KeyCode::Up if self.active_tab == Tab::Logs => self.scroll_logs_up(1),
-            KeyCode::Down if self.active_tab == Tab::Logs => self.scroll_logs_down(1),
-            KeyCode::PageUp if self.active_tab == Tab::Logs => self.scroll_logs_up(10),
-            KeyCode::PageDown if self.active_tab == Tab::Logs => self.scroll_logs_down(10),
-            KeyCode::Home if self.active_tab == Tab::Logs => self.log_scroll = 0,
-            KeyCode::End if self.active_tab == Tab::Logs => self.log_scroll = self.max_log_scroll(),
+            // Log tab navigation — forwarded to TuiWidgetState
+            KeyCode::Up if self.active_tab == Tab::Logs => {
+                self.log_state.transition(TuiWidgetEvent::UpKey);
+            }
+            KeyCode::Down if self.active_tab == Tab::Logs => {
+                self.log_state.transition(TuiWidgetEvent::DownKey);
+            }
+            KeyCode::PageUp if self.active_tab == Tab::Logs => {
+                self.log_state.transition(TuiWidgetEvent::PageUpKey);
+            }
+            KeyCode::PageDown if self.active_tab == Tab::Logs => {
+                self.log_state.transition(TuiWidgetEvent::PageDownKey);
+            }
+            // Log level filter (canonical tui-logger keys)
+            KeyCode::Char('+') if self.active_tab == Tab::Logs => {
+                self.log_state.transition(TuiWidgetEvent::PlusKey);
+            }
+            KeyCode::Char('-') if self.active_tab == Tab::Logs => {
+                self.log_state.transition(TuiWidgetEvent::MinusKey);
+            }
+            KeyCode::Char('h') if self.active_tab == Tab::Logs => {
+                self.log_state.transition(TuiWidgetEvent::HideKey);
+            }
+            KeyCode::Escape if self.active_tab == Tab::Logs => {
+                self.log_state.transition(TuiWidgetEvent::EscapeKey);
+            }
             _ => {}
         }
-    }
-
-    fn scroll_logs_up(&mut self, amount: u16) {
-        self.log_scroll = self.log_scroll.saturating_sub(amount);
-    }
-
-    fn scroll_logs_down(&mut self, amount: u16) {
-        self.log_scroll = self
-            .log_scroll
-            .saturating_add(amount)
-            .min(self.max_log_scroll());
-    }
-
-    fn max_log_scroll(&self) -> u16 {
-        let base_lines = 4_usize;
-        let content_lines = base_lines + self.logs.len();
-        content_lines.saturating_sub(1).min(u16::MAX as usize) as u16
     }
 }
 
@@ -178,9 +186,7 @@ mod tests {
     use super::{App, Tab};
     use crate::{
         config::TuiConfig,
-        events::{
-            AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget, LogEntry, LogLevel,
-        },
+        events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget},
         models::{SnapshotSource, TuiSnapshot},
     };
 
@@ -206,11 +212,17 @@ mod tests {
         }
     }
 
+    fn make_app() -> (App, watch::Sender<Option<TuiSnapshot>>, mpsc::UnboundedSender<AppEvent>) {
+        let (snap_tx, snap_rx) = watch::channel(None);
+        let (event_tx, event_rx) = mpsc::unbounded_channel();
+        let (_config_tx, config_rx) = watch::channel(TuiConfig::default());
+        let app = App::new(TuiConfig::default(), snap_rx, event_rx, config_rx);
+        (app, snap_tx, event_tx)
+    }
+
     #[test]
     fn rest_snapshot_does_not_replace_fresh_nats_snapshot() {
-        let (tx, rx) = watch::channel(None);
-        let (_event_tx, event_rx) = mpsc::unbounded_channel();
-        let mut app = App::new(TuiConfig::default(), rx, event_rx);
+        let (mut app, tx, _) = make_app();
 
         app.snapshot = Some(snapshot(SnapshotSource::Nats));
         tx.send(Some(snapshot(SnapshotSource::Rest)))
@@ -225,9 +237,7 @@ mod tests {
 
     #[test]
     fn rest_snapshot_replaces_stale_nats_snapshot() {
-        let (tx, rx) = watch::channel(None);
-        let (_event_tx, event_rx) = mpsc::unbounded_channel();
-        let mut app = App::new(TuiConfig::default(), rx, event_rx);
+        let (mut app, tx, _) = make_app();
 
         let mut stale_nats = snapshot(SnapshotSource::Nats);
         stale_nats.received_at = Utc::now() - Duration::seconds(5);
@@ -244,10 +254,8 @@ mod tests {
     }
 
     #[test]
-    fn app_collects_logs_and_connection_updates() {
-        let (_snap_tx, snap_rx) = watch::channel(None);
-        let (event_tx, event_rx) = mpsc::unbounded_channel();
-        let mut app = App::new(TuiConfig::default(), snap_rx, event_rx);
+    fn app_updates_connection_status() {
+        let (mut app, _, event_tx) = make_app();
 
         event_tx
             .send(AppEvent::Connection {
@@ -255,49 +263,46 @@ mod tests {
                 status: ConnectionStatus::new(ConnectionState::Retrying, "Connection refused"),
             })
             .expect("send connection status");
-        event_tx
-            .send(AppEvent::Log(LogEntry::new(
-                LogLevel::Warn,
-                Some(ConnectionTarget::Nats),
-                "NATS connect failed",
-            )))
-            .expect("send log event");
 
         app.tick();
 
         assert_eq!(app.nats_status.state, ConnectionState::Retrying);
         assert_eq!(app.nats_status.detail, "Connection refused");
-        assert_eq!(app.logs.len(), 1);
-        assert_eq!(app.logs[0].message, "NATS connect failed");
     }
 
     #[test]
-    fn logs_tab_scrolls_and_clamps() {
-        let (_snap_tx, snap_rx) = watch::channel(None);
-        let (event_tx, event_rx) = mpsc::unbounded_channel();
-        let mut app = App::new(TuiConfig::default(), snap_rx, event_rx);
-        app.active_tab = Tab::Logs;
+    fn config_hot_reload_updates_app_config() {
+        let (snap_tx, snap_rx) = watch::channel(None);
+        let (_event_tx, event_rx) = mpsc::unbounded_channel();
+        let (config_tx, config_rx) = watch::channel(TuiConfig::default());
+        let mut app = App::new(TuiConfig::default(), snap_rx, event_rx, config_rx);
+        drop(snap_tx);
 
-        for idx in 0..20 {
-            event_tx
-                .send(AppEvent::Log(LogEntry::new(
-                    LogLevel::Warn,
-                    Some(ConnectionTarget::Nats),
-                    format!("entry {idx}"),
-                )))
-                .expect("send log event");
-        }
+        let mut new_config = TuiConfig::default();
+        new_config.watchlist = vec!["TSLA".into()];
+        config_tx.send(new_config).expect("send new config");
+
         app.tick();
 
-        app.handle_key(KeyEvent::from(KeyCode::PageDown));
-        assert!(app.log_scroll > 0);
+        assert_eq!(app.config.watchlist, vec!["TSLA"]);
+    }
 
-        app.handle_key(KeyEvent::from(KeyCode::End));
-        let end_scroll = app.log_scroll;
-        app.handle_key(KeyEvent::from(KeyCode::PageDown));
-        assert_eq!(app.log_scroll, end_scroll);
+    #[test]
+    fn log_tab_keys_do_not_panic() {
+        let (mut app, _, _) = make_app();
+        app.active_tab = Tab::Logs;
 
-        app.handle_key(KeyEvent::from(KeyCode::Home));
-        assert_eq!(app.log_scroll, 0);
+        // Verify scroll/filter keys are handled without panicking
+        for key in [
+            KeyCode::Up,
+            KeyCode::Down,
+            KeyCode::PageUp,
+            KeyCode::PageDown,
+            KeyCode::Char('+'),
+            KeyCode::Char('-'),
+            KeyCode::Escape,
+        ] {
+            app.handle_key(KeyEvent::from(key));
+        }
     }
 }

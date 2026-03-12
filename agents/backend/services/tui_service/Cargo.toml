@@ -23,7 +23,22 @@ nats_adapter = { path = "../../crates/nats_adapter" }
 
 # TUI framework
 ratatui   = "0.30"
-crossterm = "0.28"
+# event-stream enables crossterm::EventStream for async tokio::select! event handling
+crossterm = { version = "0.28", features = ["event-stream"] }
+
+# Panic hooks that restore terminal before printing error reports
+# TODO(tui-popup): add tui-widgets = { version = "0.5", features = ["tui-popup"] } for
+#   order confirmation dialogs, risk-check overlays, and alert detail modals.
+# TODO(ratatui-textarea): add ratatui-textarea = "0.7" for interactive symbol/filter
+#   input boxes (e.g. "filter symbols", "enter order qty").
+# TODO(sparklines): Ratatui built-in Sparkline widget is sufficient — add per-symbol
+#   ROI sparkline column to the Dashboard table (needs a ring-buffer of recent roi values
+#   stored in SymbolSnapshot or a parallel VecDeque<f64> in app state).
+color-eyre = "0.6"
+
+# In-TUI log viewer (captures tracing events, renders them in a scrollable widget)
+tui-logger = { version = "0.18", features = ["tracing-support"] }
+log = "0.4"
 
 # Protobuf types (for timestamp conversion)
 prost-types = "0.13"
