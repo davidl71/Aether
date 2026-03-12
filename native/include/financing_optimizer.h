@@ -24,6 +24,10 @@ struct FinancingOptimizerInput {
   // Optional min/max weight per instrument (0 = no min; 0 or 1 = no max)
   std::array<double, kNumInstruments> min_weight{};
   std::array<double, kNumInstruments> max_weight{};  // 0 or 1 = no max (1.0)
+
+  // NLopt convergence tolerances (defaults match original hardcoded values)
+  double xtol_rel{1e-4};  // Stop when parameter change < xtol_rel * |x|
+  double ftol_rel{1e-6};  // Stop when objective change < ftol_rel * |f|
 };
 
 struct FinancingOptimizerResult {

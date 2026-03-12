@@ -1,10 +1,16 @@
 // order_manager.cpp - Order management implementation (stub)
 #include "order_manager.h"
+#include "rate_limiter.h"
 #include <algorithm>
+#include <future>
 #include <map>
+#include <mutex>
 #include <set>
 #include <spdlog/fmt/bundled/core.h>
 #include <spdlog/spdlog.h>
+#include <thread>
+#include <unordered_map>
+#include <unordered_set>
 
 // NOTE FOR AUTOMATION AGENTS:
 // The order manager coordinates interaction with IB's TWS API. It validates
@@ -54,6 +60,9 @@ public:
   int max_order_size_;
   OrderStats stats_;
   std::map<std::string, MultiLegOrder> multi_leg_orders_;
+  tws::RateLimiter order_rate_limiter_;
+  // Stored futures keep async TWAP tasks alive until completion.
+  std::vector<std::future<void>> twap_futures_;
 
   // Helper to update efficiency ratio and check for warnings
   void update_efficiency_ratio() {
@@ -80,6 +89,74 @@ public:
   // change
   OrderUpdateCallback order_update_callback_;
   FillCallback fill_callback_;
+
+  // -----------------------------------------------------------------------
+  // Reversal tracking for close_box_spread() fill confirmation.
+  // Guarded by callback_mutex_ because on_order_status() is called from the
+  // TWSClient reader thread while close_box_spread() runs on the caller thread.
+  // -----------------------------------------------------------------------
+  mutable std::mutex callback_mutex_;
+  // reversal order_id → strategy_id that owns it
+  std::unordered_map<int, std::string> reversal_order_to_strategy_;
+  // strategy_id → number of reversal legs still awaiting a Filled status
+  std::unordered_map<std::string, int> reversal_legs_remaining_;
+  // strategy_ids currently in the "closing" state (guard double-close)
+  std::unordered_set<std::string> closing_strategies_;
+
+  // Called from the TWSClient order-status callback on the reader thread.
+  void on_order_status(const types::Order &order) {
+    // Forward to registered callbacks unconditionally.
+    if (order_update_callback_) {
+      order_update_callback_(order);
+    }
+
+    if (order.status == types::OrderStatus::Filled) {
+      if (fill_callback_) {
+        fill_callback_(order);
+      }
+
+      // Check whether this is one of our close_box_spread reversal legs.
+      std::string strategy_id;
+      bool is_reversal = false;
+      {
+        std::lock_guard<std::mutex> lk(callback_mutex_);
+        auto it = reversal_order_to_strategy_.find(order.order_id);
+        if (it != reversal_order_to_strategy_.end()) {
+          strategy_id = it->second;
+          reversal_order_to_strategy_.erase(it);
+          is_reversal = true;
+        }
+      }
+
+      if (is_reversal) {
+        bool all_filled = false;
+        {
+          std::lock_guard<std::mutex> lk(callback_mutex_);
+          auto cnt_it = reversal_legs_remaining_.find(strategy_id);
+          if (cnt_it != reversal_legs_remaining_.end()) {
+            --cnt_it->second;
+            if (cnt_it->second <= 0) {
+              reversal_legs_remaining_.erase(cnt_it);
+              closing_strategies_.erase(strategy_id);
+              all_filled = true;
+            }
+          }
+        }
+
+        if (all_filled) {
+          // All reversal legs confirmed filled — remove the original position.
+          multi_leg_orders_.erase(strategy_id);
+          spdlog::info("close_box_spread: all reversal legs filled for "
+                       "strategy {} — position removed",
+                       strategy_id);
+        } else {
+          spdlog::debug("close_box_spread: reversal leg #{} filled for {}; "
+                        "waiting for remaining legs",
+                        order.order_id, strategy_id);
+        }
+      }
+    }
+  }
 };
 
 // ============================================================================
@@ -90,6 +167,13 @@ OrderManager::OrderManager(tws::TWSClient *client, bool dry_run)
     : pimpl_(std::make_unique<Impl>(client, dry_run)) {
 
   spdlog::debug("OrderManager created (dry_run={})", dry_run);
+
+  // Register for order-status updates so close_box_spread() can remove
+  // positions only after all reversal legs are confirmed filled.
+  if (client) {
+    client->set_order_status_callback(
+        [this](const types::Order &order) { pimpl_->on_order_status(order); });
+  }
 }
 
 OrderManager::~OrderManager() { spdlog::debug("OrderManager destroyed"); }
@@ -120,6 +204,15 @@ ExecutionResult OrderManager::place_order(const types::OptionContract &contract,
     result.order_ids.push_back(999);      // Dummy order ID
     pimpl_->stats_.total_orders_placed++; // Track stats in dry-run too
     return result;
+  }
+
+  // Enforce per-second order rate limit when configured.
+  if (pimpl_->order_rate_limiter_.is_enabled()) {
+    if (!pimpl_->order_rate_limiter_.check_message_rate()) {
+      spdlog::warn("Order rate limit reached — waiting 100ms before submitting");
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    pimpl_->order_rate_limiter_.record_message();
   }
 
   // Place order through TWS
@@ -345,9 +438,116 @@ ExecutionResult OrderManager::close_box_spread(const std::string &strategy_id) {
     return result;
   }
 
-  // NOTE: Full implementation would reverse all legs
+  // Guard against double-close while a prior attempt is still awaiting fills.
+  {
+    std::lock_guard<std::mutex> lk(pimpl_->callback_mutex_);
+    if (pimpl_->closing_strategies_.count(strategy_id)) {
+      result.error_message =
+          "close_box_spread: already closing strategy " + strategy_id;
+      spdlog::warn("{}", result.error_message);
+      return result;
+    }
+  }
 
+  auto it = pimpl_->multi_leg_orders_.find(strategy_id);
+  if (it == pimpl_->multi_leg_orders_.end()) {
+    result.error_message = "Unknown strategy_id: " + strategy_id;
+    spdlog::warn("close_box_spread: {}", result.error_message);
+    return result;
+  }
+
+  const MultiLegOrder &mlo = it->second;
+  std::vector<int> placed_ids;
+
+  for (const auto &leg : mlo.legs) {
+    // Close only what was actually filled; skip legs that never got a fill.
+    int close_qty = (leg.filled_quantity > 0) ? leg.filled_quantity
+                                              : leg.quantity;
+    if (close_qty <= 0) {
+      spdlog::debug("close_box_spread: skipping unfilled leg order #{} for {}",
+                    leg.order_id, leg.contract.symbol);
+      continue;
+    }
+
+    auto reverse_action = (leg.action == types::OrderAction::Buy)
+                              ? types::OrderAction::Sell
+                              : types::OrderAction::Buy;
+
+    // Preserve the original TIF so closing behaviour matches entry behaviour.
+    int oid = pimpl_->client_->place_order(leg.contract, reverse_action,
+                                            close_qty, leg.limit_price,
+                                            leg.tif);
+    if (oid < 0) {
+      // Placement call itself failed — roll back already-submitted reversals.
+      spdlog::warn("close_box_spread: placement failed on leg {} of {} — "
+                   "rolling back {} reversal(s)",
+                   placed_ids.size() + 1, mlo.legs.size(), placed_ids.size());
+      for (int cancel_id : placed_ids) {
+        pimpl_->client_->cancel_order(cancel_id);
+        ++pimpl_->stats_.total_orders_cancelled;
+      }
+      result.error_message = "Reversal failed on leg " +
+                             std::to_string(placed_ids.size() + 1) + " of " +
+                             std::to_string(mlo.legs.size()) +
+                             "; prior legs rolled back";
+      return result;
+    }
+    placed_ids.push_back(oid);
+    ++pimpl_->stats_.total_orders_placed;
+  }
+
+  if (placed_ids.empty()) {
+    result.error_message = "No filled legs found to close for strategy_id: " +
+                           strategy_id;
+    spdlog::warn("close_box_spread: {}", result.error_message);
+    return result;
+  }
+
+  // Check for immediate post-submission rejections (mirrors place_box_spread).
+  std::vector<int> live_ids;
+  bool has_rejection = false;
+  for (int oid : placed_ids) {
+    auto status = pimpl_->client_->get_order(oid);
+    if (status.has_value() &&
+        (status->status == types::OrderStatus::Rejected ||
+         status->status == types::OrderStatus::Error)) {
+      spdlog::warn("close_box_spread: reversal order #{} rejected: {}",
+                   oid, status->status_message);
+      has_rejection = true;
+    } else {
+      live_ids.push_back(oid);
+    }
+  }
+
+  if (has_rejection) {
+    spdlog::warn("close_box_spread: rejection detected — cancelling {} "
+                 "live reversal(s)",
+                 live_ids.size());
+    for (int cancel_id : live_ids) {
+      pimpl_->client_->cancel_order(cancel_id);
+      ++pimpl_->stats_.total_orders_cancelled;
+    }
+    result.error_message = "One or more reversal legs rejected; all cancelled";
+    return result;
+  }
+
+  // Register reversal orders for fill-confirmation tracking.
+  // on_order_status() will erase the position when all legs report Filled.
+  {
+    std::lock_guard<std::mutex> lk(pimpl_->callback_mutex_);
+    for (int oid : placed_ids) {
+      pimpl_->reversal_order_to_strategy_[oid] = strategy_id;
+    }
+    pimpl_->reversal_legs_remaining_[strategy_id] =
+        static_cast<int>(placed_ids.size());
+    pimpl_->closing_strategies_.insert(strategy_id);
+  }
+
+  result.order_ids = placed_ids;
   result.success = true;
+  spdlog::info("close_box_spread: {} reversal order(s) live for strategy {}; "
+               "position will be removed on fill confirmation",
+               placed_ids.size(), strategy_id);
   return result;
 }
 
@@ -444,10 +644,49 @@ OrderManager::execute_twap(const types::OptionContract &contract,
                            types::OrderAction action, int quantity,
                            int duration_seconds) {
 
-  // NOTE: TWAP implementation would split order over time
   ExecutionResult result;
-  result.success = false;
-  result.error_message = "TWAP not implemented";
+  result.execution_time = std::chrono::system_clock::now();
+
+  if (quantity <= 0 || duration_seconds <= 0) {
+    result.error_message = "TWAP: quantity and duration must be positive";
+    return result;
+  }
+
+  // One slice per 10 seconds; minimum 1 slice.
+  int n = std::max(1, duration_seconds / 10);
+  int slice_qty = quantity / n;
+  int remainder = quantity % n;
+  int interval_sec = duration_seconds / n;
+
+  spdlog::info("TWAP: {} {} {} over {}s ({} slices of {} contracts)",
+               types::order_action_to_string(action), quantity,
+               contract.symbol, duration_seconds, n, slice_qty);
+
+  // Capture by value so the lambda is safe after this function returns.
+  auto future = std::async(
+      std::launch::async,
+      [this, contract, action, n, slice_qty, remainder, interval_sec]() {
+        for (int i = 0; i < n; ++i) {
+          int qty = slice_qty + (i == 0 ? remainder : 0);
+          int oid = pimpl_->client_->place_order(contract, action, qty, 0.0,
+                                                  types::TimeInForce::Day);
+          spdlog::info("TWAP slice {}/{}: qty={} order_id={}", i + 1, n, qty,
+                       oid);
+          if (oid >= 0) {
+            ++pimpl_->stats_.total_orders_placed;
+          }
+          if (i < n - 1) {
+            std::this_thread::sleep_for(std::chrono::seconds(interval_sec));
+          }
+        }
+      });
+
+  pimpl_->twap_futures_.push_back(std::move(future));
+
+  result.success = true;
+  result.error_message = "TWAP executing asynchronously (" +
+                         std::to_string(n) + " slices over " +
+                         std::to_string(duration_seconds) + "s)";
   return result;
 }
 
@@ -455,8 +694,20 @@ std::optional<double>
 OrderManager::get_best_price(const types::OptionContract &contract,
                              types::OrderAction action) const {
 
-  // NOTE: Would query current market data
-  return std::nullopt;
+  auto md = pimpl_->client_->request_market_data_sync(contract, 5000);
+  if (!md) {
+    spdlog::warn("get_best_price: no market data for {}", contract.symbol);
+    return std::nullopt;
+  }
+
+  double price = (action == types::OrderAction::Buy) ? md->ask : md->bid;
+  if (price <= 0.0) {
+    spdlog::warn("get_best_price: {} price is zero for {}",
+                 (action == types::OrderAction::Buy ? "ask" : "bid"),
+                 contract.symbol);
+    return std::nullopt;
+  }
+  return price;
 }
 
 double
@@ -464,8 +715,25 @@ OrderManager::estimate_fill_probability(const types::OptionContract &contract,
                                         types::OrderAction action,
                                         double limit_price) const {
 
-  // NOTE: Would analyze order book and historical fills
-  return 0.5; // Stub
+  auto md = pimpl_->client_->request_market_data_sync(contract, 5000);
+  if (!md || md->ask <= 0.0 || md->bid <= 0.0) {
+    return 0.5; // No market data — neutral estimate.
+  }
+
+  double spread = md->ask - md->bid;
+
+  if (action == types::OrderAction::Buy) {
+    if (limit_price >= md->ask) return 0.95;  // Marketable — nearly certain fill.
+    if (limit_price <= md->bid) return 0.05;  // Deep inside bid — very unlikely.
+    if (spread <= 0.0) return 0.5;
+    // Linear interpolation: 5% at bid, 95% at ask.
+    return 0.05 + 0.90 * ((limit_price - md->bid) / spread);
+  } else {
+    if (limit_price <= md->bid) return 0.95;  // Marketable sell.
+    if (limit_price >= md->ask) return 0.05;  // Priced above the market.
+    if (spread <= 0.0) return 0.5;
+    return 0.05 + 0.90 * ((md->ask - limit_price) / spread);
+  }
 }
 
 void OrderManager::set_max_order_size(int max_contracts) {
@@ -474,8 +742,16 @@ void OrderManager::set_max_order_size(int max_contracts) {
 }
 
 void OrderManager::set_max_orders_per_second(int max_rate) {
-  spdlog::info("Max orders/second set to {}", max_rate);
-  // NOTE: Would implement rate limiting
+  tws::RateLimiterConfig cfg;
+  cfg.enabled = (max_rate > 0);
+  cfg.max_messages_per_second = max_rate;
+  pimpl_->order_rate_limiter_.configure(cfg);
+  if (cfg.enabled) {
+    pimpl_->order_rate_limiter_.enable();
+  } else {
+    pimpl_->order_rate_limiter_.disable();
+  }
+  spdlog::info("Order rate limiter: {} orders/sec", max_rate);
 }
 
 void OrderManager::set_dry_run(bool enabled) {
@@ -561,14 +837,16 @@ bool OrderValidator::validate_contract(const types::OptionContract &contract,
   return true;
 }
 
-bool OrderValidator::validate_quantity(int quantity, std::string &error) {
+bool OrderValidator::validate_quantity(int quantity, std::string &error,
+                                       int max_quantity) {
   if (quantity <= 0) {
     error = "Quantity must be positive";
     return false;
   }
 
-  if (quantity > 1000) {
-    error = "Quantity exceeds maximum";
+  if (quantity > max_quantity) {
+    error = "Quantity " + std::to_string(quantity) + " exceeds maximum " +
+            std::to_string(max_quantity);
     return false;
   }
 
@@ -594,7 +872,8 @@ bool OrderValidator::validate_action(types::OrderAction action,
 bool OrderValidator::validate(const types::OptionContract &contract,
                               types::OrderAction action, int quantity,
                               double limit_price,
-                              std::vector<std::string> &errors) {
+                              std::vector<std::string> &errors,
+                              int max_quantity) {
 
   bool valid = true;
   std::string error;
@@ -604,7 +883,7 @@ bool OrderValidator::validate(const types::OptionContract &contract,
     valid = false;
   }
 
-  if (!validate_quantity(quantity, error)) {
+  if (!validate_quantity(quantity, error, max_quantity)) {
     errors.push_back(error);
     valid = false;
   }

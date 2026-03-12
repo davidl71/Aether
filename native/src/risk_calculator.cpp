@@ -106,12 +106,43 @@ RiskCalculator::calculate_position_risk(const types::Position &position,
                                         double implied_volatility) const {
 
   PositionRisk risk{};
-
-  // NOTE: Full implementation would calculate Greeks and risk metrics
-
   risk.position_size = std::abs(position.get_market_value());
-  risk.max_loss = risk.position_size;       // Simplified
-  risk.max_gain = risk.position_size * 2.0; // Simplified
+
+  // Compute Greeks for option positions via QuantLib Black-Scholes.
+  bool is_option = (position.contract.expiry.length() == 8);
+  if (is_option && underlying_price > 0.0 && position.current_price > 0.0) {
+    GreeksCalculator greeks_calc;
+    double rfr = pimpl_->config_.risk_free_rate_override > 0.0
+                     ? pimpl_->config_.risk_free_rate_override
+                     : 0.045;
+    auto g = greeks_calc.calculate_option_greeks(
+        position.contract, underlying_price, position.current_price, rfr,
+        implied_volatility);
+    if (g) {
+      risk.delta = g->delta * position.quantity;
+      risk.gamma = g->gamma * position.quantity;
+      risk.theta = g->theta * position.quantity;
+      risk.vega  = g->vega  * position.quantity;
+    }
+  }
+
+  // max_loss / max_gain by position direction.
+  if (position.is_long()) {
+    risk.max_loss = position.get_cost_basis();
+    // For calls: upside = (underlying - strike) * 100 * qty (capped at 0)
+    // For puts: upside = strike * 100 * qty. Use underlying as proxy.
+    risk.max_gain = underlying_price > 0.0
+                        ? std::max(0.0, (underlying_price - position.contract.strike) *
+                                            100.0 * position.quantity)
+                        : risk.position_size * 2.0;
+  } else {
+    // Short positions: max gain = premium received; max loss = strike * 100 * |qty|
+    risk.max_gain = position.get_cost_basis();
+    risk.max_loss = position.contract.strike * 100.0 *
+                    static_cast<double>(std::abs(position.quantity));
+  }
+  risk.max_loss = std::max(0.0, risk.max_loss);
+  risk.max_gain = std::max(0.0, risk.max_gain);
 
   return risk;
 }
@@ -159,9 +190,28 @@ PortfolioRisk RiskCalculator::calculate_portfolio_risk(
   portfolio_risk.total_theta = greeks.theta;
   portfolio_risk.total_vega = greeks.vega;
 
-  // Simple VaR calculation (stub)
-  portfolio_risk.var_95 = portfolio_risk.total_exposure * 0.05;
-  portfolio_risk.var_99 = portfolio_risk.total_exposure * 0.10;
+  // Parametric daily VaR (normal distribution, zero-mean return assumed).
+  // Portfolio vol = market-value-weighted average annualised realised vol,
+  // scaled to daily: sigma_daily = sigma_annual / sqrt(252).
+  // VaR_95 = exposure * sigma_daily * 1.645 (one-tailed 5% quantile)
+  // VaR_99 = exposure * sigma_daily * 2.326 (one-tailed 1% quantile)
+  double iv_weighted = 0.0, mv_sum = 0.0;
+  for (const auto &pos : positions) {
+    double mv = std::abs(pos.get_market_value());
+    mv_sum += mv;
+    if (pos.current_price > 0.0 && pos.avg_price > 0.0) {
+      double realised_vol =
+          std::abs(pos.current_price - pos.avg_price) / pos.avg_price *
+          std::sqrt(252.0);
+      iv_weighted += realised_vol * mv;
+    }
+  }
+  double portfolio_vol = (mv_sum > 0.0 && iv_weighted > 0.0)
+                             ? std::clamp(iv_weighted / mv_sum, 0.05, 2.0)
+                             : 0.20;
+  double daily_vol = portfolio_vol / std::sqrt(252.0);
+  portfolio_risk.var_95 = portfolio_risk.total_exposure * daily_vol * 1.645;
+  portfolio_risk.var_99 = portfolio_risk.total_exposure * daily_vol * 2.326;
 
   spdlog::debug("Portfolio risk: exposure=${:.2f}, delta={:.2f}",
                 portfolio_risk.total_exposure, portfolio_risk.total_delta);
@@ -249,54 +299,37 @@ double RiskCalculator::calculate_correlation_risk(
     return 0.0; // Need at least 2 positions for correlation
   }
 
-  // Use Eigen MatrixXd for correlation matrix
-  // For now, we'll use a simplified approach based on underlying symbols
-  // In a full implementation, we'd use historical returns to calculate
-  // correlation
-
   size_t n = positions.size();
   Eigen::MatrixXd correlation_matrix = Eigen::MatrixXd::Identity(n, n);
 
-  // Calculate correlation based on underlying symbols
-  // Same underlying = 1.0, different = calculate from historical returns if
-  // available For now, use simplified approach with same-underlying detection
-
-  // Step 1: Same underlying detection (correlation = 1.0)
+  // For each pair: same underlying → 1.0; different underlying → either
+  // Pearson correlation from historical_returns (when both positions carry
+  // a matching-length return series) or a sign-based fallback estimator.
   for (size_t i = 0; i < n; ++i) {
     for (size_t j = i + 1; j < n; ++j) {
       const auto &pos1 = positions[i];
       const auto &pos2 = positions[j];
 
-      // Check if same underlying
       if (pos1.contract.symbol == pos2.contract.symbol) {
         correlation_matrix(i, j) = 1.0;
-        correlation_matrix(j, i) = 1.0;
+      } else if (pos1.historical_returns.size() >= 2 &&
+                 pos1.historical_returns.size() ==
+                     pos2.historical_returns.size()) {
+        // Pearson correlation via the existing returns-matrix implementation.
+        auto mat = calculate_correlation_from_returns(
+            {pos1.historical_returns, pos2.historical_returns});
+        correlation_matrix(i, j) = mat(0, 1);
+      } else if (pos1.current_price > 0.0 && pos2.current_price > 0.0 &&
+                 pos1.avg_price > 0.0 && pos2.avg_price > 0.0) {
+        // Sign-based fallback: single-period return sign agreement.
+        double ret1 = (pos1.current_price - pos1.avg_price) / pos1.avg_price;
+        double ret2 = (pos2.current_price - pos2.avg_price) / pos2.avg_price;
+        correlation_matrix(i, j) =
+            ((ret1 > 0 && ret2 > 0) || (ret1 < 0 && ret2 < 0)) ? 0.7 : 0.3;
       } else {
-        // Different underlyings - calculate from historical returns
-        // For now, use simplified correlation based on price movements
-        // In production, would fetch historical data from TWS API
-
-        // Simplified: Use price correlation if both have current prices
-        if (pos1.current_price > 0.0 && pos2.current_price > 0.0 &&
-            pos1.avg_price > 0.0 && pos2.avg_price > 0.0) {
-          // Calculate returns from entry to current
-          double ret1 = (pos1.current_price - pos1.avg_price) / pos1.avg_price;
-          double ret2 = (pos2.current_price - pos2.avg_price) / pos2.avg_price;
-
-          // Simple correlation estimate (would need more data points in
-          // production) For now, use sign correlation: if both moved same
-          // direction, positive correlation
-          if ((ret1 > 0 && ret2 > 0) || (ret1 < 0 && ret2 < 0)) {
-            correlation_matrix(i, j) = 0.7; // Positive correlation
-          } else {
-            correlation_matrix(i, j) = 0.3; // Lower correlation
-          }
-        } else {
-          // Fallback: Use default correlation for different underlyings
-          correlation_matrix(i, j) = 0.5;
-        }
-        correlation_matrix(j, i) = correlation_matrix(i, j); // Symmetric
+        correlation_matrix(i, j) = 0.5; // No data — neutral assumption
       }
+      correlation_matrix(j, i) = correlation_matrix(i, j); // Symmetric
     }
   }
 

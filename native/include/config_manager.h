@@ -34,6 +34,11 @@ struct TWSConfig {
     std::string pcap_output_file = ""; // Output file path (empty = auto-generate with timestamp)
     bool pcap_nanosecond_precision = false;  // Use nanosecond precision timestamps (default: microsecond)
     std::string nats_url = "nats://127.0.0.1:4222"; // NATS publish URL when ENABLE_NATS is compiled in
+
+    // Optional ordered fallback port list tried after `port` fails.
+    // Empty = built-in defaults {7497, 7496, 4002, 4001}.
+    // Set to e.g. [7497] for paper-only environments to avoid touching live ports.
+    std::vector<int> fallback_ports;
 };
 
 // ============================================================================
@@ -253,6 +258,8 @@ inline void to_json(nlohmann::json& j, const TWSConfig& config) {
         j["connect_options"] = config.connect_options;
     if (!config.optional_capabilities.empty())
         j["optional_capabilities"] = config.optional_capabilities;
+    if (!config.fallback_ports.empty())
+        j["fallback_ports"] = config.fallback_ports;
 }
 
 // Broker Config
@@ -295,6 +302,8 @@ inline void from_json(const nlohmann::json& j, TWSConfig& config) {
         j.at("connect_options").get_to(config.connect_options);
     if (j.contains("optional_capabilities"))
         j.at("optional_capabilities").get_to(config.optional_capabilities);
+    if (j.contains("fallback_ports"))
+        j.at("fallback_ports").get_to(config.fallback_ports);
 }
 
 // Strategy Params

@@ -245,8 +245,10 @@ public:
         std::string& error
     );
 
-    // Validate quantity
-    static bool validate_quantity(int quantity, std::string& error);
+    // Validate quantity. max_quantity defaults to 1000 when not supplied;
+    // callers that know the account limit should pass it explicitly.
+    static bool validate_quantity(int quantity, std::string& error,
+                                  int max_quantity = 1000);
 
     // Validate price
     static bool validate_price(double price, std::string& error);
@@ -263,7 +265,8 @@ public:
         types::OrderAction action,
         int quantity,
         double limit_price,
-        std::vector<std::string>& errors
+        std::vector<std::string>& errors,
+        int max_quantity = 1000
     );
 };
 

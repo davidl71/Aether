@@ -24,7 +24,8 @@ std::optional<double> GreeksCalculator::calculate_implied_vol(
     double strike,
     double risk_free_rate,
     double time_to_expiry,
-    types::OptionType option_type) const
+    types::OptionType option_type,
+    double dividend_yield) const
 {
   if (market_price <= 0.0 || underlying_price <= 0.0 || strike <= 0.0 ||
       time_to_expiry <= 0.0) {
@@ -43,7 +44,8 @@ std::optional<double> GreeksCalculator::calculate_implied_vol(
   ext::shared_ptr<StrikedTypePayoff> payoff(
       new PlainVanillaPayoff(ql_type, strike));
 
-  const double forward  = underlying_price * std::exp(risk_free_rate * time_to_expiry);
+  const double forward  = underlying_price *
+      std::exp((risk_free_rate - dividend_yield) * time_to_expiry);
   const double discount = std::exp(-risk_free_rate * time_to_expiry);
 
   double sigma = 0.30; // initial guess: 30% annualised vol
@@ -80,7 +82,7 @@ std::optional<double> GreeksCalculator::calculate_implied_vol(
 std::optional<Greeks> GreeksCalculator::calculate_option_greeks(
     const types::OptionContract &contract, double underlying_price,
     double option_price, double risk_free_rate,
-    double implied_volatility) const {
+    double implied_volatility, double dividend_yield) const {
 
   if (underlying_price <= 0.0 || option_price <= 0.0 ||
       implied_volatility < 0.0) {
@@ -158,10 +160,11 @@ std::optional<Greeks> GreeksCalculator::calculate_option_greeks(
     ext::shared_ptr<StrikedTypePayoff> payoff(
         new PlainVanillaPayoff(ql_type, contract.strike));
 
-    // Calculate forward price (assuming no dividends for simplicity)
-    // Forward = Spot * e^(r*T)
+    // Forward price incorporating continuous dividend yield q:
+    // F = S * e^((r - q) * T).  Zero q is the correct default for non-dividend
+    // paying underlyings; pass dividend_yield > 0 for dividend-paying stocks/ETFs.
     double forward =
-        underlying_price * std::exp(risk_free_rate * time_to_expiry);
+        underlying_price * std::exp((risk_free_rate - dividend_yield) * time_to_expiry);
 
     // Standard deviation = volatility * sqrt(time)
     double stdDev = implied_volatility * std::sqrt(time_to_expiry);
@@ -206,10 +209,9 @@ Greeks GreeksCalculator::calculate_bond_greeks(const std::string &symbol,
 
   Greeks greeks{};
 
-  // Bond Greeks based on duration and convexity
-  // Delta ≈ 0 (bonds don't move 1:1 with stock index)
-  // Alternative: Can use -Duration × Price for price sensitivity
-  greeks.delta = 0.0; // Bonds don't have direct delta like stocks
+  // Bond delta: DV01-style rate sensitivity.
+  // A 1-point rise in yield reduces price by duration * price / 100.
+  greeks.delta = -duration * price / 100.0;
 
   // Gamma: Convexity (second-order price sensitivity)
   // Formula: Gamma ≈ Convexity × Price × (Δyield)²
@@ -355,12 +357,12 @@ bool compute_ql_duration_convexity(const EtfBondParams &p,
   }
 }
 
-// Hardcoded fallback table — values kept in sync with EtfBondParams below.
-// These are only used when the QuantLib path throws (e.g., bad date arithmetic
-// near holidays).
-const std::unordered_map<std::string, EtfBondParams> &etf_bond_params()
+// Mutable ETF parameter table — seeded with conservative fallback values.
+// Call GreeksCalculator::register_etf_bond_params() at startup to override
+// or extend without recompiling (e.g., after loading from config/JSON).
+std::unordered_map<std::string, EtfBondParams> &etf_bond_params()
 {
-  static const std::unordered_map<std::string, EtfBondParams> kParams = {
+  static std::unordered_map<std::string, EtfBondParams> kParams = {
     // TLT: iShares 20+ Year Treasury Bond ETF
     // ~25yr maturity, ~3% coupon, ~4.5% yield → modified duration ~18.5
     {"TLT", {25.0, 0.030, 0.045, 18.5, 350.0}},
@@ -413,5 +415,17 @@ double get_etf_convexity(const std::string &symbol)
 }
 
 } // anonymous namespace
+
+void GreeksCalculator::register_etf_bond_params(
+    const std::string &symbol,
+    double years_to_maturity,
+    double coupon_rate,
+    double yield,
+    double fallback_duration,
+    double fallback_convexity) {
+  etf_bond_params()[symbol] = {years_to_maturity, coupon_rate, yield,
+                                fallback_duration, fallback_convexity};
+  spdlog::debug("GreeksCalculator: registered ETF bond params for {}", symbol);
+}
 
 } // namespace risk

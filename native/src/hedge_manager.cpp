@@ -1,11 +1,46 @@
 // hedge_manager.cpp - Hedging management implementation
 #include "hedge_manager.h"
+#include "tws_client.h"
 #include "strategies/box_spread/box_spread_strategy.h"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <ctime>
 #include <spdlog/spdlog.h>
 
 namespace hedge {
+
+namespace {
+
+// Returns the YYYYMMDD string for the nearest IMM quarterly date (15th of
+// Mar/Jun/Sep/Dec) that is at least `dte_days` calendar days from today.
+std::string next_imm_expiry(int dte_days) {
+  auto now = std::chrono::system_clock::now();
+  std::time_t t = std::chrono::system_clock::to_time_t(now);
+  std::tm tm_now = *std::gmtime(&t);
+
+  // Target date: today + dte_days
+  t += static_cast<std::time_t>(dte_days) * 86400;
+  std::tm tm_target = *std::gmtime(&t);
+  int year  = tm_target.tm_year + 1900;
+  int month = tm_target.tm_mon + 1; // 1-based
+
+  // Snap to the next IMM quarter month (3, 6, 9, 12)
+  static const int imm_months[] = {3, 6, 9, 12};
+  for (int m : imm_months) {
+    if (m >= month) {
+      char buf[9];
+      std::snprintf(buf, sizeof(buf), "%04d%02d15", year, m);
+      return buf;
+    }
+  }
+  // Rolled past December — use March of next year
+  char buf[9];
+  std::snprintf(buf, sizeof(buf), "%04d%02d15", year + 1, 3);
+  return buf;
+}
+
+} // anonymous namespace
 
 // ============================================================================
 // InterestRateFuture Implementation
@@ -71,7 +106,10 @@ double CurrencyHedge::calculate_hedge_cost() const {
 // HedgeManager Implementation
 // ============================================================================
 
-HedgeManager::HedgeManager() { spdlog::debug("HedgeManager created"); }
+HedgeManager::HedgeManager(tws::TWSClient *client)
+    : client_(client) {
+  spdlog::debug("HedgeManager created (client={})", client ? "set" : "null");
+}
 
 HedgeManager::~HedgeManager() { spdlog::debug("HedgeManager destroyed"); }
 
@@ -124,10 +162,27 @@ HedgeManager::find_rate_future_hedge(const types::BoxSpreadLeg &box_spread,
     break;
   }
 
-  // NOTE: In full implementation, would fetch current price from TWS API
-  // For now, use stub price (would need market data integration)
-  future.current_price = 95.0; // Placeholder - 5% implied rate
-  future.expiry = "";          // Would be set from market data
+  // Fetch current futures price and expiry via TWS API when available.
+  // Falls back to 95.0 (≈5% implied rate) when client is null or call fails.
+  future.current_price = 95.0;
+  future.expiry = next_imm_expiry(box_spread_dte);
+  if (client_) {
+    types::OptionContract proxy;
+    proxy.symbol   = future.symbol;
+    proxy.strike   = 100.0; // dummy non-zero so is_valid() passes
+    proxy.expiry   = future.expiry;
+    proxy.exchange = "GLOBEX";
+    proxy.type     = types::OptionType::Call;
+    auto md = client_->request_market_data_sync(proxy, 5000);
+    if (md) {
+      double price = (md->last > 0.0) ? md->last : md->get_mid_price();
+      if (price > 0.0) {
+        future.current_price = price;
+        spdlog::debug("Futures {} price from market data: {:.4f}",
+                      future.symbol, future.current_price);
+      }
+    }
+  }
 
   spdlog::debug("Found rate future hedge: {} (DTE: {}, Price: {:.2f})",
                 future.symbol, future.days_to_expiry, future.current_price);
@@ -210,13 +265,30 @@ double
 HedgeManager::get_exchange_rate(const std::string &base_currency,
                                 const std::string &hedge_currency) const {
 
-  // NOTE: In full implementation, would fetch from TWS API
-  // For now, return stub rates
-  if (base_currency == "USD" && hedge_currency == "ILS") {
-    return 3.65; // Approximate USD/ILS rate (stub)
+  // Fetch FX spot rate via TWS market data when client is available.
+  if (client_) {
+    types::OptionContract proxy;
+    proxy.symbol       = base_currency + hedge_currency;
+    proxy.strike       = 1.0; // dummy non-zero so is_valid() passes
+    proxy.exchange     = "IDEALPRO";
+    proxy.type         = types::OptionType::Call;
+    proxy.local_symbol = base_currency + "." + hedge_currency;
+    auto md = client_->request_market_data_sync(proxy, 5000);
+    if (md) {
+      double rate = md->get_mid_price();
+      if (rate > 0.0) {
+        spdlog::debug("FX {}/{} rate from market data: {:.4f}",
+                      base_currency, hedge_currency, rate);
+        return rate;
+      }
+    }
   }
 
-  // Default to 1.0 for same currency or unknown pairs
+  // Hardcoded fallback stubs when client unavailable or data absent.
+  if (base_currency == "USD" && hedge_currency == "ILS") {
+    return 3.65;
+  }
+
   if (base_currency == hedge_currency) {
     return 1.0;
   }
@@ -282,30 +354,42 @@ HedgeManager::calculate_complete_hedge(const types::BoxSpreadLeg &box_spread,
 
 HedgeManager::HedgeEffectiveness
 HedgeManager::monitor_hedge(const RateHedgeCalculation &hedge,
-                            const types::BoxSpreadLeg &box_spread) const {
+                            const types::BoxSpreadLeg &box_spread,
+                            int actual_contracts) const {
 
   HedgeEffectiveness effectiveness;
   effectiveness.target_hedge_ratio = hedge.hedge_ratio;
-  effectiveness.current_hedge_ratio =
-      hedge.hedge_ratio;               // Would calculate from current positions
-  effectiveness.hedge_drift_bps = 0.0; // Would calculate from rate movements
   effectiveness.needs_rebalance = false;
   effectiveness.rebalance_cost = 0.0;
 
-  // Calculate drift
-  effectiveness.hedge_drift_bps = std::abs(effectiveness.current_hedge_ratio -
-                                           effectiveness.target_hedge_ratio) *
-                                  10000.0;
+  // Derive current hedge ratio from actual filled contracts when known.
+  // When actual_contracts < 0 (unknown), assume target was fully achieved.
+  if (actual_contracts >= 0 && hedge.contracts_needed > 0) {
+    effectiveness.current_hedge_ratio =
+        static_cast<double>(actual_contracts) /
+        static_cast<double>(hedge.contracts_needed) * hedge.hedge_ratio;
+  } else {
+    effectiveness.current_hedge_ratio = hedge.hedge_ratio;
+  }
 
-  // Check if rebalancing needed (if enabled in strategy)
-  // For now, simple threshold check
+  // Drift = deviation from target in basis points.
+  effectiveness.hedge_drift_bps =
+      std::abs(effectiveness.current_hedge_ratio -
+               effectiveness.target_hedge_ratio) *
+      10000.0;
+
   effectiveness.needs_rebalance =
       effectiveness.hedge_drift_bps > 10.0; // 10 bps threshold
 
   if (effectiveness.needs_rebalance) {
-    // Estimate rebalancing cost
+    // Rebalance cost = (1-tick spread + $2/side commission) × contracts to trade.
+    // tick_value is set per contract type in find_rate_future_hedge.
+    int contracts_to_trade = (actual_contracts >= 0)
+                                 ? std::abs(actual_contracts -
+                                            hedge.contracts_needed)
+                                 : hedge.contracts_needed;
     effectiveness.rebalance_cost =
-        50.0; // Placeholder - would calculate actual cost
+        (hedge.future.tick_value + 4.0) * std::max(1, contracts_to_trade);
   }
 
   return effectiveness;

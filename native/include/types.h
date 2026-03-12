@@ -195,6 +195,10 @@ struct Position {
     std::chrono::system_clock::time_point entry_time;
     std::chrono::system_clock::time_point last_update;
 
+    // Optional daily return series for Pearson correlation in risk calculations.
+    // Populate from TWS historical bar data; empty = use sign-based fallback.
+    std::vector<double> historical_returns;
+
     // Helper methods
     double get_market_value() const;
     double get_cost_basis() const;
