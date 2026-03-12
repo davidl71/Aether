@@ -2,9 +2,10 @@
 # Run a single exarp-go tool (lint, testing, security, etc.). Prefers native exarp-go
 # from PATH, EXARP_GO_ROOT, or sibling repo (../mcp/exarp-go); falls back to in-repo
 # scripts/run_exarp_go.sh if present.
-# Usage: run_exarp_go_tool.sh <tool_name> [json_args]
+# Usage: run_exarp_go_tool.sh <tool_name> [json_args|-]
 # Example: run_exarp_go_tool.sh lint
 #          run_exarp_go_tool.sh lint '{"path":"native/src"}'
+#          cat args.json | run_exarp_go_tool.sh task_workflow -
 #          run_exarp_go_tool.sh --list
 set -euo pipefail
 
@@ -22,11 +23,49 @@ TOOL="${1:-}"
 ARGS="${2:-{}}"
 
 if [[ -z "${TOOL}" ]]; then
-  echo "Usage: $0 <tool_name> [json_args]" >&2
+  echo "Usage: $0 <tool_name> [json_args|-]" >&2
   echo "Example: $0 lint" >&2
+  echo "Example: $0 task_workflow '{\"action\":\"update\",\"task_id\":\"T-1\",\"dependencies\":[]}'" >&2
   echo "List tools: $0 --list" >&2
   exit 1
 fi
+
+if [[ "${ARGS}" == "-" ]]; then
+  ARGS="$(cat)"
+fi
+
+validate_json_args() {
+  local payload="$1"
+
+  if command -v python3 >/dev/null 2>&1; then
+    if ! python3 - <<'PY' "${payload}"
+import json
+import sys
+
+payload = sys.argv[1]
+try:
+    json.loads(payload)
+except json.JSONDecodeError:
+    raise SystemExit(1)
+PY
+    then
+      echo "Invalid JSON args passed to run_exarp_go_tool.sh." >&2
+      echo "Expected a JSON object/array, for example: '{\"action\":\"docs\"}' or '{\"dependencies\":[]}'." >&2
+      echo "Common mistake: use dependencies: [] not dependencies: \"[]\"." >&2
+      return 1
+    fi
+    return 0
+  fi
+
+  if command -v jq >/dev/null 2>&1; then
+    if ! printf '%s' "${payload}" | jq -e . >/dev/null 2>&1; then
+      echo "Invalid JSON args passed to run_exarp_go_tool.sh." >&2
+      echo "Expected a JSON object/array, for example: '{\"action\":\"docs\"}' or '{\"dependencies\":[]}'." >&2
+      echo "Common mistake: use dependencies: [] not dependencies: \"[]\"." >&2
+      return 1
+    fi
+  fi
+}
 
 sanitize_go_env() {
   # Local shells may export a stale GOROOT that breaks Go linters.
@@ -69,5 +108,7 @@ sanitize_go_env
 if [[ "${TOOL}" == "--list" ]]; then
   exec "${EXARP_GO_CMD}" -list -quiet
 fi
+
+validate_json_args "${ARGS}"
 
 exec "${EXARP_GO_CMD}" -tool "${TOOL}" -args "${ARGS}" -quiet

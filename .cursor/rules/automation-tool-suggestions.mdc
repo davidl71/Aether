@@ -25,7 +25,7 @@ This rule provides context-aware suggestions for project automation tools. **Not
 ### 1. Documentation Changes
 
 **Trigger**: Files in `docs/` directory are modified or created
-**Suggest**: `check_documentation_health_tool`
+**Suggest**: `health` with `action=docs`
 **Reason**: Documentation changes may introduce broken links, format issues, or stale content
 **Note**: Also runs automatically on git hooks (pre-commit) and file watchers (via Exarp)
 **Usage**:
@@ -44,8 +44,8 @@ This rule provides context-aware suggestions for project automation tools. **Not
 
 **Trigger**: Todo2 task moves from "Todo" to "In Progress" status
 **Suggest**:
-- If task is high priority: `analyze_todo2_alignment_tool` (verify alignment)
-- If task mentions documentation: `check_documentation_health_tool`
+- If task is high priority: `analyze_alignment` with `action=todo2` (verify alignment)
+- If task mentions documentation: `health` with `action=docs`
 - If task has 3+ dependencies: Check dependency readiness
 
 **Reason**: Starting work is a good time to verify alignment and dependencies
@@ -66,8 +66,8 @@ This rule provides context-aware suggestions for project automation tools. **Not
 
 **Trigger**: Todo2 task moves from "In Progress" to "Review" status
 **Suggest**:
-- `analyze_todo2_alignment_tool` (if high priority)
-- `detect_duplicate_tasks_tool` (check for similar completed tasks)
+- `analyze_alignment` with `action=todo2` (if high priority)
+- `task_analysis` with `action=duplicates` (check for similar completed tasks)
 
 **Reason**: Review is a checkpoint to verify quality and alignment
 **Usage**:
@@ -83,7 +83,7 @@ This rule provides context-aware suggestions for project automation tools. **Not
 ### 4. Multiple Tasks Created
 
 **Trigger**: 5+ tasks created in single session or conversation
-**Suggest**: `detect_duplicate_tasks_tool`
+**Suggest**: `task_analysis` with `action=duplicates`
 **Reason**: Multiple task creation increases risk of duplicates
 **Usage**:
 ```
@@ -98,7 +98,7 @@ This rule provides context-aware suggestions for project automation tools. **Not
 ### 5. Dependencies Changed
 
 **Trigger**: Dependency files modified (`requirements.txt`, `Cargo.toml`, `package.json`, etc.)
-**Suggest**: `scan_dependency_security_tool`
+**Suggest**: `scan_dependency_security`
 **Reason**: Dependency changes may introduce security vulnerabilities
 **Note**: Also runs automatically on file changes (configured via Exarp file watchers)
 **Usage**:
@@ -114,7 +114,7 @@ This rule provides context-aware suggestions for project automation tools. **Not
 ### 6. Daily Maintenance Reminder
 
 **Trigger**: First interaction of the day (time-based detection)
-**Suggest**: `run_daily_automation_tool`
+**Suggest**: `automation` with `action=daily`
 **Reason**: Daily maintenance keeps project healthy
 **Usage**:
 ```
@@ -129,7 +129,7 @@ This rule provides context-aware suggestions for project automation tools. **Not
 ### 7. Documentation Queries
 
 **Trigger**: User asks about documentation, docs health, or documentation issues
-**Suggest**: `check_documentation_health_tool`
+**Suggest**: `health` with `action=docs`
 **Reason**: Direct match to user query
 **Usage**:
 ```
@@ -145,8 +145,8 @@ This rule provides context-aware suggestions for project automation tools. **Not
 
 **Trigger**: User asks about tasks, task alignment, or task management
 **Suggest**:
-- `analyze_todo2_alignment_tool` (for alignment questions)
-- `detect_duplicate_tasks_tool` (for duplicate questions)
+- `analyze_alignment` with `action=todo2` (for alignment questions)
+- `task_analysis` with `action=duplicates` (for duplicate questions)
 
 **Reason**: Direct match to user query
 **Usage**:
@@ -162,7 +162,7 @@ This rule provides context-aware suggestions for project automation tools. **Not
 ### 9. Security Queries
 
 **Trigger**: User asks about security, vulnerabilities, or dependency security
-**Suggest**: `scan_dependency_security_tool`
+**Suggest**: `scan_dependency_security`
 **Reason**: Direct match to user query
 **Usage**:
 ```
@@ -177,7 +177,7 @@ This rule provides context-aware suggestions for project automation tools. **Not
 ### 10. Project Health Queries
 
 **Trigger**: User asks about project status, health, or overall project state
-**Suggest**: `run_daily_automation_tool`
+**Suggest**: `automation` with `action=daily`
 **Reason**: Comprehensive project health check
 **Usage**:
 ```
@@ -223,7 +223,7 @@ When suggesting tools, use this format:
 **Benefit**: [what value it provides]
 **Usage Example**: [example command or description]
 
-**Available via**: Project Automation MCP Server
+**Available via**: exarp-go MCP
 ```
 
 ---
@@ -273,14 +273,14 @@ Tool suggestions complement `.cursor/rules/project-automation.mdc` by:
 ```
 💡 **Automation Tool Available**
 
-**Tool**: `check_documentation_health_tool`
+**Tool**: `health`
 **Context**: Documentation file was modified
 **When to use**: After documentation changes to validate structure
 **Benefit**: Catches broken links, format issues, and stale content early
 **Usage Example**: "Check documentation health after recent changes (also runs automatically on git hooks)"
 **Required Parameter**: `workingDirectory` = this project's root (workspace root in Cursor)
 
-**Available via**: Project Automation MCP Server
+**Available via**: exarp-go MCP
 ```
 
 ### Example 2: Task Review Workflow
@@ -290,14 +290,14 @@ Tool suggestions complement `.cursor/rules/project-automation.mdc` by:
 ```
 💡 **Automation Tool Available**
 
-**Tool**: `analyze_todo2_alignment_tool`
+**Tool**: `analyze_alignment`
 **Context**: High-priority task is in review
 **When to use**: Before final approval to verify alignment with project goals
 **Benefit**: Ensures task aligns with investment strategy framework
 **Usage Example**: "Analyze task alignment before review approval"
 **Required Parameter**: `workingDirectory` = this project's root (workspace root in Cursor)
 
-**Available via**: Project Automation MCP Server
+**Available via**: exarp-go MCP
 ```
 
 ### Example 3: Daily Maintenance
@@ -307,14 +307,14 @@ Tool suggestions complement `.cursor/rules/project-automation.mdc` by:
 ```
 💡 **Automation Tool Available**
 
-**Tool**: `run_daily_automation_tool`
+**Tool**: `automation`
 **Context**: Daily maintenance reminder
 **When to use**: Run routine daily maintenance tasks
 **Benefit**: Comprehensive project health check (docs, tasks, duplicates, security)
 **Usage Example**: "Run daily automation for project health"
 **Required Parameter**: `workingDirectory` = this project's root (workspace root in Cursor)
 
-**Available via**: Project Automation MCP Server
+**Available via**: exarp-go MCP
 ```
 
 ---

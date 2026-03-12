@@ -31,8 +31,8 @@ exarp-go runs as an MCP server (see `.cursor/mcp.json`). It doesn’t run as a s
 | Docs health, git, CI status | `health` with appropriate `action` |
 | Session context at conversation start | `session` with `action=prime`, `include_hints=true`, `include_tasks=true` |
 | Security scan (multi-language) | `security` with `action=scan` |
-| Duplicate task detection | `detect_duplicate_tasks_tool` |
-| Task alignment | `analyze_todo2_alignment_tool` |
+| Duplicate task detection | `task_analysis` with `action=duplicates` |
+| Task alignment | `analyze_alignment` with `action=todo2` |
 
 **Required:** Set `workingDirectory` (or equivalent) to **this project’s root** for all exarp-go tool calls. See `.cursor/rules/project-automation.mdc` and `.cursor/commands/exarpauto.md`.
 

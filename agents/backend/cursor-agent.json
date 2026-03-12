@@ -2,7 +2,6 @@
   "name": "backend-agent",
   "workingDirectory": "./agents/backend",
   "env": {
-    "PYTHONPATH": "../../python",
     "TWS_MOCK": "true"
   },
   "startupCommands": [
@@ -12,4 +11,3 @@
     "bash scripts/run-tests.sh"
   ]
 }
-

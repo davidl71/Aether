@@ -1,6 +1,6 @@
 # exarp-go usage: Cursor, Claude Code, and OpenCode
 
-This doc describes how to use **exarp-go** (session prime, handoff, tasks, reports, export for sync) in a way that works across **Cursor**, **Claude Code**, and **OpenCode**. All three editors can call the same MCP tools or CLI; only the invocation method differs.
+This doc describes how to use **exarp-go** (session prime, handoff, tasks, reports, export for sync) in a way that works across **Cursor**, **Claude Code**, and **OpenCode**. Cursor and Claude should prefer direct MCP tool calls; OpenCode uses the local CLI wrapper commands in this repo.
 
 **Canonical context:** [AGENTS.md](../AGENTS.md), [CLAUDE.md](../CLAUDE.md). Exarp-go uses **PROJECT_ROOT** (workspace root) for `.todo2`, config, and plans.
 
@@ -23,7 +23,7 @@ This doc describes how to use **exarp-go** (session prime, handoff, tasks, repor
 
 ### 2.1 Cursor
 
-- **MCP:** exarp-go is configured in `.cursor/mcp.json`. The AI can call tools by name (e.g. `mcp_exarp-go_session`, `mcp_exarp-go_task_workflow`). Pass **workingDirectory** = workspace root when the tool supports it (Cursor often injects this).
+- **MCP:** exarp-go is configured in `.cursor/mcp.json`. The AI can call tools by name (e.g. `mcp_exarp-go_session`, `mcp_exarp-go_task_workflow`). Pass **workingDirectory** = workspace root when the tool supports it.
 - **Commands:** `.cursor/commands.json` defines build, test, lint, exarp. Use command palette or slash commands.
 - **Prime:** `.cursor/hooks/session-prime.sh` runs on session start and calls exarp-go session prime via `scripts/run_exarp_go.sh`.
 - **Skills:** `.cursor/skills/` — use or @-mention skill files; exarp-go workflow guide is in resource `stdio://cursor/skills`.
@@ -43,7 +43,7 @@ This doc describes how to use **exarp-go** (session prime, handoff, tasks, repor
 |---------|------|---------------|
 | `prime` | `.claude/commands/prime.md` | Call session with `action=prime`, `include_tasks=true`, `include_hints=true`; summarize suggested next and handoff alert. |
 | `handoff` | `.claude/commands/handoff.md` | Call session with `action=handoff`, `summary=$ARGUMENTS`, `include_tasks=true`, `include_git_status=true`. |
-| `tasks` | `.claude/commands/tasks.md` | Call task_workflow with `action=sync`, `sub_action=list`; optional status filter. |
+| `tasks` | `.claude/commands/tasks.md` | Call `task_workflow` with `action=sync`, `sub_action=list`; optional `status_filter`. |
 | `scorecard` | `.claude/commands/scorecard.md` | Call report with `action=overview` (or scorecard); add local metrics. |
 
 **To prime:** Run the `prime` command (e.g. from command palette or “Run command: prime”).
@@ -62,7 +62,7 @@ This doc describes how to use **exarp-go** (session prime, handoff, tasks, repor
 | `prime-context` | `.opencode/commands/prime-context.md` | Load AGENTS.md, ARCHITECTURE.md, etc. |
 | `ai-context` | `.opencode/commands/ai-context.md` | Load AGENTS.md, CLAUDE.md, ARCHITECTURE.md. |
 | `handoff` | `.opencode/commands/handoff.md` | Run `./scripts/run_exarp_go.sh -tool session` with `action=handoff`, `summary=$ARGUMENTS`, `include_tasks=true`, `include_git_status=true`. |
-| `tasks` | `.opencode/commands/tasks.md` | Run `./scripts/run_exarp_go.sh -tool task_workflow` with `action=sync`, `sub_action=list`; optional status filter. |
+| `tasks` | `.opencode/commands/tasks.md` | Run `./scripts/run_exarp_go.sh -tool task_workflow` with `action=sync`, `sub_action=list`; optional `status_filter`. |
 | `scorecard` | `.opencode/commands/scorecard.md` | Run `./scripts/run_exarp_go.sh -tool report` with `action=overview`; add local metrics. |
 
 **To prime:** Run `prime-context` or `ai-context`; for exarp suggested-next, ask the AI to run `./scripts/run_exarp_go.sh -tool session -args '{"action":"prime","include_tasks":true,"include_hints":true}' -json -quiet`.

@@ -2,7 +2,7 @@
 name = "backend_service"
 edition = "2021"
 version = "0.1.0"
-authors = ["IB Box Spread Team"]
+authors = ["Aether Team"]
 
 [dependencies]
 anyhow = { workspace = true }

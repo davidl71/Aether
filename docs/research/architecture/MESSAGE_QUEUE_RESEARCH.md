@@ -1,7 +1,7 @@
 # Message Queue Research for Multi-Language Component Coordination
 
 **Date**: 2025-11-20
-**Purpose**: Evaluate message queue solutions for coordinating C++, Python, Rust, Go, and TypeScript components in the IBKR Box Spread trading application.
+**Purpose**: Evaluate message queue solutions for coordinating C++, Python, Rust, Go, and TypeScript components in Aether.
 
 ## Executive Summary
 

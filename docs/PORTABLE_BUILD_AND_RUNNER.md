@@ -81,7 +81,6 @@ Used as the exarp-go MCP server command in `.cursor/mcp.json`. Ensures the corre
 
 ### Related scripts
 
-- **`scripts/init_exarp_todo2_db.sh`** — Runs `exarp-go task sync` with the same resolution (global, then working-dir fallback). See [EXARP_TODO2_DB_INIT.md](EXARP_TODO2_DB_INIT.md).
 - **`scripts/run_exarp_go_tool.sh`** — Invokes `run_exarp_go.sh` with `-tool <name>` for lint and other tools.
 
 ---
@@ -90,5 +89,5 @@ Used as the exarp-go MCP server command in `.cursor/mcp.json`. Ensures the corre
 
 - [MACOS_ARM_VS_INTEL.md](MACOS_ARM_VS_INTEL.md) — ARM (Apple Silicon) vs Intel macOS presets and usage
 - [CURSOR_PROJECT_COMMANDS.md](CURSOR_PROJECT_COMMANDS.md) — `build:portable`, `build:universal`
-- [EXARP_TODO2_DB_INIT.md](EXARP_TODO2_DB_INIT.md) — Todo2 DB setup and init script
+- [EXARP_TODO2_DB_INIT.md](EXARP_TODO2_DB_INIT.md) — Todo2 DB setup via exarp-go CLI
 - [NIX_MIGRATION_PLAN.md](planning/NIX_MIGRATION_PLAN.md) — Nix dev shell and `USE_NIX`

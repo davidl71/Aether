@@ -333,7 +333,7 @@ Allow workflows to continue on non-critical failures:
 
 - name: Run MyPy
   run: |
-    mypy exarp_project_management/ tools/ --ignore-missing-imports || true
+    mypy tools/ --ignore-missing-imports || true
 ```
 
 ---

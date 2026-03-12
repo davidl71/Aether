@@ -116,6 +116,7 @@ From exarp-go `.cursor/skills/session-handoff/SKILL.md`:
 - **Resume:** `sub_action=resume` (latest handoff).
 - **Export:** `sub_action=export`, optional `output_path`, `export_latest`.
 - **Storage:** `.todo2/handoffs.json` (last 20). Prime shows handoff alerts from other hosts.
+- **Detailed datapaths:** See [TASK_STORE_DATAPATHS.md](TASK_STORE_DATAPATHS.md) for the repo command map and exarp-go function map behind `.todo2/`.
 
 ### 3.3 Use-exarp-tools (skill summary)
 

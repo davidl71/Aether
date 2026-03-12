@@ -2,9 +2,9 @@
 
 Uses **exarp-go** CLI when available. Python MCP server is deprecated.
 
-Oh My Zsh plugin for Exarp project management automation (docs health, task alignment, security, etc.).
+Oh My Zsh plugin for exarp-go project automation commands (docs health, task alignment, security, etc.).
 
-**Deprecated:** The Python Exarp MCP server (`exarp_project_management`) is no longer used. This plugin now calls **exarp-go** only. Install exarp-go (e.g. `go install` or build from source) and ensure it is on PATH, or set `EXARP_GO_ROOT`. See `docs/MCP_REQUIRED_SERVERS.md` and `docs/EXARP_GO_MIGRATION_LEFTOVERS.md`.
+**Deprecated:** The legacy Python Exarp MCP server is no longer used. This plugin now calls **exarp-go** only. Install exarp-go (e.g. `go install` or build from source) and ensure it is on PATH, or set `EXARP_GO_ROOT`. See `docs/MCP_REQUIRED_SERVERS.md` and `docs/EXARP_GO_MIGRATION_LEFTOVERS.md`.
 
 ## Installation
 

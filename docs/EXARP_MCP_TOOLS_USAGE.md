@@ -223,48 +223,39 @@ ExecStart=/home/david/ib_box_spread_full_universal/scripts/daily_automation_with
 
 ## Troubleshooting
 
-### Issue: "uvx or exarp not found"
+### Issue: "exarp-go not found"
 
-**Solution**: Install `uvx`:
+**Solution**: build or install `exarp-go`, or use the repo wrapper:
 
 ```bash
-
-# Install uv (includes uvx)
-
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Verify installation
-
-uvx --version
+./scripts/run_exarp_go.sh -h
+./scripts/run_exarp_go_tool.sh health '{"action":"docs"}'
 ```
 
 ### Issue: "Script not found" errors
 
-**Solution**: Use individual MCP tools or wrapper script instead of aggregate daily automation:
+**Solution**: Use the local exarp-go wrappers or individual MCP tools instead of legacy Python/uvx automation:
 
 ```bash
 
-# ✅ Works: Use wrapper script
+# ✅ Works: Use wrapper scripts
 
-python3 scripts/exarp_daily_automation_wrapper.py .
+./scripts/run_exarp_go_tool.sh health '{"action":"docs"}'
+./scripts/run_exarp_go_tool.sh analyze_alignment '{}'
+./scripts/run_exarp_go_tool.sh task_analysis '{"action":"duplicates"}'
 
-# ✅ Works: Use individual tools
+# ✅ Works: Use MCP chat tools
 
-uvx exarp check-documentation-health .
-uvx exarp analyze-todo2-alignment .
-uvx exarp detect-duplicate-tasks .
-
-# ❌ Doesn't work: Aggregate daily automation
-# mcp_exarp_run_daily_automation()  # Still has script discovery issue
+# exarp-go health {"action":"docs"}
+# exarp-go analyze_alignment {}
+# exarp-go task_analysis {"action":"duplicates"}
 ```
 
 ### Issue: Tasks timing out
 
-**Solution**: Increase timeout in wrapper script or run tasks individually:
+**Solution**: Increase timeout in the tool caller or run tasks individually:
 
 ```python
-
-# In scripts/exarp_daily_automation_wrapper.py
 
 timeout=600  # Increase from 300 to 600 seconds
 ```

@@ -1,12 +1,10 @@
-# Exarp - Project Management Automation MCP Server Usage
+# Exarp-go MCP Usage
 
-**Note**: This MCP server is configured as **"exarp-go"** in `.cursor/mcp.json`, using the installed exarp-go binary (via `scripts/run_exarp_go.sh`). Use the "exarp-go" identifier in Cursor.
+**Note**: This MCP server is configured as **`exarp-go`** in `.cursor/mcp.json`, using `scripts/run_exarp_go.sh`. Use the `exarp-go` identifier in Cursor.
 
-**Name Origin**: Exarp is the Enochian name for the Spirit of Air, overseeing the Air Tablet. The Air element represents communication, clarity, and agility - perfect for an MCP server that facilitates communication between AI assistants and project management tools.
+## When to Use exarp-go MCP
 
-## When to Use Project Automation MCP Server
-
-**ALWAYS use Project Automation MCP Server for:**
+**ALWAYS use exarp-go for:**
 - Documentation health checks with Todo2 integration
 - Todo2 task alignment analysis with project goals
 - Duplicate task detection in Todo2
@@ -16,7 +14,7 @@
 - Task synchronization between systems
 
 **Usage Pattern:**
-Use Project Automation tools when you need:
+Use exarp-go tools when you need:
 - Project-specific analysis (not generic operations)
 - Todo2 integration and task creation
 - Historical tracking and reporting
@@ -45,7 +43,7 @@ Use the actual workspace path; do not assume a fixed path across machines.
 
 ### Documentation Tools
 
-#### `check_documentation_health_tool`
+#### `health` (`action=docs`)
 ⚠️ **PREFERRED TOOL** - Analyze documentation structure, find broken references, identify issues.
 
 **When to use:**
@@ -69,7 +67,7 @@ Use the actual workspace path; do not assume a fixed path across machines.
 
 ### Task Management Tools
 
-#### `analyze_todo2_alignment_tool`
+#### `analyze_alignment` (`action=todo2`)
 ⚠️ **PREFERRED TOOL** - Analyze task alignment with project goals, find misaligned tasks.
 
 **When to use:**
@@ -101,7 +99,7 @@ When an implementation task (e.g. from IMPROVEMENT_PLAN or a plan) is marked **D
 
 ---
 
-#### `detect_duplicate_tasks_tool`
+#### `task_analysis` (`action=duplicates`)
 ⚠️ **PREFERRED TOOL** - Find and consolidate duplicate Todo2 tasks.
 
 **When to use:**
@@ -124,8 +122,8 @@ When an implementation task (e.g. from IMPROVEMENT_PLAN or a plan) is marked **D
 
 ---
 
-#### `sync_todo_tasks_tool`
-Synchronize tasks between shared TODO table and Todo2.
+#### `task_workflow` (`action=sync`)
+Synchronize the exarp task store and list/update Todo2-backed tasks for this project.
 
 **When to use:**
 - When tasks exist in multiple systems
@@ -135,13 +133,13 @@ Synchronize tasks between shared TODO table and Todo2.
 
 **Usage:**
 ```
-"Sync todos between shared table and Todo2 (dry run)"
-"Synchronize Todo2 with shared TODO table"
+"Sync exarp tasks for this repo"
+"List current tasks with task_workflow sync"
 ```
 
 **Parameters:**
-- `dry_run` (bool): Simulate without changes (default: `false`)
-- `output_path` (Optional): Path for report
+- `sub_action`: use `list` to display tasks after sync
+- `status_filter` (Optional): filter list results
 
 ---
 
@@ -170,7 +168,7 @@ Discover tasks from code comments (TODO/FIXME), markdown checklists, and plannin
 
 ### Security Tools
 
-#### `scan_dependency_security_tool`
+#### `scan_dependency_security`
 ⚠️ **PREFERRED TOOL** - Scan project dependencies for security vulnerabilities.
 
 **When to use:**
@@ -194,8 +192,8 @@ Discover tasks from code comments (TODO/FIXME), markdown checklists, and plannin
 
 ### Automation Tools
 
-#### `find_automation_opportunities_tool`
-Discover new automation opportunities in the codebase.
+#### `automation` (`action=discover` or `action=daily`)
+Discover new automation opportunities or run routine maintenance.
 
 **When to use:**
 - During code reviews
@@ -205,20 +203,21 @@ Discover new automation opportunities in the codebase.
 
 **Usage:**
 ```
-"Find automation opportunities with value score >= 0.8"
-"Discover new automation opportunities"
+"Find automation opportunities"
+"Run daily automation"
 ```
 
 **Parameters:**
-- `min_value_score` (float): 0.0-1.0 (default: `0.7`)
+- `action`: `discover` for opportunities, `daily` for routine maintenance
 - `output_path` (Optional): Path for report
 
 ---
 
 ### Review Tools
 
-#### `review_pwa_config_tool`
-Review PWA configuration and generate improvement recommendations.
+#### PWA review note
+There is no dedicated exarp-go `review_pwa_config_tool` in the current toolset. Use `health`
+(`action=docs`) plus manual review for archived web/PWA surfaces.
 
 **When to use:**
 - Before PWA deployment
@@ -427,21 +426,21 @@ The server is configured in `.cursor/mcp.json` as **"exarp-go"**. Use the instal
 ### Example 1: Documentation Health Check
 ```
 User: "Check the health of our documentation and create Todo2 tasks for any issues found"
-AI: Calls `check_documentation_health_tool(output_path=None, create_tasks=True)`
+AI: Calls `health(action=docs, output_path=None, create_tasks=True)`
 Result: Health report generated, Todo2 tasks created for issues
 ```
 
 ### Example 2: Find Duplicate Tasks
 ```
 User: "Find duplicate Todo2 tasks with 85% similarity and show me the report"
-AI: Calls `detect_duplicate_tasks_tool(similarity_threshold=0.85, auto_fix=False, output_path=None)`
+AI: Calls `task_analysis(action=duplicates, similarity_threshold=0.85, auto_fix=False, output_path=None)`
 Result: Duplicate detection report with recommendations
 ```
 
 ### Example 3: Security Scan
 ```
 User: "Scan all dependencies for security vulnerabilities and prioritize critical issues"
-AI: Calls `scan_dependency_security_tool(languages=None, config_path=None)`
+AI: Calls `scan_dependency_security(quick=False)`
 Result: Multi-language security report with critical issues highlighted
 ```
 

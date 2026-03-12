@@ -225,7 +225,7 @@ python3 scripts/batch_update_todos.py update-status --task-ids T-156 --new-statu
 
 ## Integration with MCP Tools
 
-This script complements the MCP tools available in the Project Automation MCP Server:
+This script complements the MCP tools available in exarp-go:
 
 - **MCP Tools**: Use for interactive operations via Cursor chat
 - **This Script**: Use for batch operations and automation

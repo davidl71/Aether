@@ -8,7 +8,6 @@
 - `Cargo.toml`: Rust workspace aggregating core crates.
 - `crates/`: library crates for market data, strategy/risk models, ledger, NATS, and API layers.
 - `services/backend_service/`: Tokio binary wiring crates together.
-- `python/`: deprecated backend Python scaffold; not part of the active runtime.
 - `config/`: runtime configuration templates (`default.toml`).
 - `scripts/`: setup and CI entrypoints.
 
@@ -20,9 +19,6 @@
 2. Start the live service with `cargo run -p backend_service` from `agents/backend`.
 3. Hit the REST surface via `curl http://127.0.0.1:8080/api/v1/snapshot`.
 4. Execute checks via `bash agents/backend/scripts/run-tests.sh`.
-
-### Deprecated Python Scaffold
-The backend Python package is not part of the active backend path. Treat it as deprecated packaging surface only, not a supported execution mode.
 
 ## Current Behaviour
 - Periodic mock market data updates drive the shared snapshot returned to TUI/mobile/web clients.

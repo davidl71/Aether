@@ -6,7 +6,7 @@ Quick reference for using MCP servers in your Cursor prompts.
 
 ### ✅ Required MCP Servers (8 total)
 
-1. **automa** - Project management automation (self-hosted)
+1. **exarp-go** - Project management automation for this repo
 2. **Semgrep** - Security scanning
 3. **Filesystem** - File operations
 4. **Git** - Version control
@@ -116,7 +116,7 @@ Create a new file at docs/NEW_FEATURE.md with this content: [content]
 - ✅ Understanding project structure
 - ℹ️ Automatically used by AI - no explicit prompt needed
 
-### automa (Project Management Automation)
+### exarp-go
 
 - ✅ Documentation health checks with Todo2 integration
 - ✅ Todo2 task alignment analysis
@@ -126,22 +126,22 @@ Create a new file at docs/NEW_FEATURE.md with this content: [content]
 - ✅ PWA configuration review
 - ✅ Task synchronization
 - ⚠️ **PREFERRED TOOL** for project-specific analysis (see `.cursor/rules/project-automation.mdc`)
-- 💡 **Works with**: tractatus_thinking (structure) → automa (analysis) → sequential_thinking (implementation)
+- 💡 **Works with**: tractatus_thinking (structure) → exarp-go (analysis) → sequential_thinking (implementation)
 
 ### tractatus_thinking
 
 - ✅ Break down complex concepts into atomic components
 - ✅ Reveal multiplicative dependencies (A × B × C must ALL be true)
 - ✅ Find missing elements preventing success
-- ✅ Use BEFORE automa tools to understand problem structure
-- 💡 **Workflow**: tractatus → automa → sequential
+- ✅ Use BEFORE exarp-go tools to understand problem structure
+- 💡 **Workflow**: tractatus → exarp-go → sequential
 
 ### sequential_thinking
 
 - ✅ Convert structural analysis into implementation steps
 - ✅ Create step-by-step workflows
-- ✅ Use AFTER automa analysis to plan fixes
-- 💡 **Workflow**: tractatus → automa → sequential
+- ✅ Use AFTER exarp-go analysis to plan fixes
+- 💡 **Workflow**: tractatus → exarp-go → sequential
 
 ### Browser
 

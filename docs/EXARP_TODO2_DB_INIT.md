@@ -14,14 +14,14 @@ export EXARP_MIGRATIONS_DIR="/path/to/exarp-go/migrations"   # or e.g. ../exarp-
 exarp-go task sync
 ```
 
-If you use the wrapper script (see below), it sets these for you. After that, **restart Cursor** (or reload MCP) so the exarp-go server uses the new DB.
+After that, **restart Cursor** (or reload MCP) so the exarp-go server uses the new DB.
 
 **Note:** When exarp-go runs as an **MCP server** (e.g. from Cursor), it does *not* call `initializeDatabase()`, so the DB must already exist (created by a prior CLI run or migrate).
 
 ## What was done in this repo
 
 1. **`.cursor/mcp.json`** – `EXARP_MIGRATIONS_DIR` was set to your exarp-go repo’s `migrations` folder so that when the DB is created (via CLI or migrate), the correct schema is used.
-2. **`scripts/init_exarp_todo2_db.sh`** – Runs **`exarp-go task sync`** with `PROJECT_ROOT` and `EXARP_MIGRATIONS_DIR` set so one command creates the DB and populates it from JSON. Use this if you prefer a script over running the CLI directly.
+2. Use the exarp-go CLI directly from the project root; the helper script was removed.
 
 ## Initialize the DB (one-time)
 
@@ -34,16 +34,9 @@ export EXARP_MIGRATIONS_DIR="/home/david/exarp-go/migrations"   # adjust if your
 exarp-go task sync
 ```
 
-**Option B – Script**
-If exarp-go is on PATH or at `EXARP_GO_ROOT` / `../exarp-go`, the script uses the same resolution as the MCP runner (global install, then working-dir fallback):
-
-```bash
-./scripts/init_exarp_todo2_db.sh
-```
-
 Then **restart Cursor** (or reload MCP). After that, `task_workflow` (create/list/update) and other task tools should work.
 
-**Portable runner**: `scripts/run_exarp_go.sh` (used by MCP and by the init script) prefers the exarp-go working-dir build when run from inside the exarp-go repo, otherwise uses the global `exarp-go` and falls back to `EXARP_GO_ROOT` or `../exarp-go`. See [PORTABLE_BUILD_AND_RUNNER.md](PORTABLE_BUILD_AND_RUNNER.md).
+**Portable runner**: `scripts/run_exarp_go.sh` (used by MCP) prefers the exarp-go working-dir build when run from inside the exarp-go repo, otherwise uses the global `exarp-go` and falls back to `EXARP_GO_ROOT` or `../exarp-go`. See [PORTABLE_BUILD_AND_RUNNER.md](PORTABLE_BUILD_AND_RUNNER.md).
 
 ## Separate migrate command (optional)
 
@@ -51,6 +44,7 @@ The **`cmd/migrate`** binary in exarp-go does the same thing (init DB + load JSO
 
 ## References
 
+- [TASK_STORE_DATAPATHS.md](TASK_STORE_DATAPATHS.md) — Local task-store files, commands, and exarp-go function map
 - exarp-go: `internal/cli/cli.go` — `initializeDatabase()` is called before `task` / `-tool` / etc.
 - exarp-go: `internal/tools/todo2_utils.go` — `SyncTodo2Tasks` (SQLite ↔ JSON).
 - exarp-go: `docs/archive/migration-planning/SQLITE_MIGRATION_PLAN.md`

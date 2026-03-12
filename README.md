@@ -246,8 +246,8 @@ ib_box_spread --init-config
 ib_box_spread --init-config /tmp/my_ib_box_spread.json
 ```
 
-You can also set `IB_BOX_SPREAD_CONFIG=/path/to/config.json` to point both the C++ CLI and Python
-orchestration script at an alternate location.
+You can also set `IB_BOX_SPREAD_CONFIG=/path/to/config.json` to point the CLI at an alternate
+configuration file location.
 
 ## Configuration
 
@@ -470,8 +470,8 @@ cd native/build
 
 **Generate Coverage Reports:**
 ```bash
-# Generate Python coverage
-./scripts/generate_python_coverage.sh --html
+# Generate Python binding-test coverage
+cd native && uv run --project . pytest tests/python/ --cov --cov-report=html
 
 # Generate C++ coverage (when libraries available)
 ./scripts/generate_cpp_coverage.sh
@@ -481,7 +481,7 @@ cd native/build
 ```
 
 **Coverage Reports:**
-- **Python HTML**: `htmlcov/index.html`
+- **Python HTML**: `native/htmlcov/index.html` (when run from `native/`)
 - **C++ HTML**: `native/build-coverage/coverage_html/index.html`
 
 **Documentation:**

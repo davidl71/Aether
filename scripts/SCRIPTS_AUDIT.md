@@ -10,7 +10,7 @@ Total scripts: 116 (after deduplication)
 **Duplicates consolidated:**
 1. `generate_cpp_coverage.sh` → Use `generate_coverage.sh --cpp`
 2. `generate_python_coverage.sh` → Use `generate_coverage.sh --python`
-3. `validate_docs_format.py` → ~~Use `exarp_validate_docs_format.py`~~ **Removed.** Use exarp-go (check_documentation_health_tool) for docs format/health.
+3. `validate_docs_format.py` → ~~Use `exarp_validate_docs_format.py`~~ **Removed.** Use exarp-go (`health` with `action=docs`) for docs format/health.
 4. ~~`automate_documentation_link_fixing.py` → `exarp_fix_documentation_links.py`~~ **Removed.** Use exarp-go for docs health/link fixing.
 5. `update_global_docs.sh` → Use `sync_global_docs.py`
 6. `collect_system_info.sh` → Use `collect_system_info_python.py`
@@ -45,7 +45,7 @@ Total scripts: 116 (after deduplication)
 - `generate_coverage.sh` - Combined C++/Python coverage ✅ CONSOLIDATED
 
 ### Documentation (7)
-- ~~`exarp_validate_docs_format.py`~~ **Removed** – use exarp-go (check_documentation_health_tool)
+- ~~`exarp_validate_docs_format.py`~~ **Removed** – use exarp-go (`health` with `action=docs`)
 - ~~`exarp_fix_documentation_links.py`~~ **Removed** – use exarp-go
 - `sync_global_docs.py` - Sync documentation ✅ ACTIVE
 - `list_global_docs.sh` - List all docs
@@ -126,7 +126,7 @@ Total scripts: 116 (after deduplication)
 
 **Documentation:**
 ```bash
-# Docs format/health: use exarp-go MCP (check_documentation_health_tool) or CLI
+# Docs format/health: use exarp-go MCP (`health` with `action=docs`) or CLI
 ./scripts/sync_global_docs.py    # Sync documentation
 # See docs/MCP_REQUIRED_SERVERS.md for exarp-go setup
 ```
@@ -146,7 +146,7 @@ If you were using removed scripts:
 |------------|------------|---------|
 | `generate_cpp_coverage.sh` | `generate_coverage.sh` | `--cpp` flag |
 | `generate_python_coverage.sh` | `generate_coverage.sh` | `--python` flag |
-| `validate_docs_format.py` | **Removed** | Use exarp-go check_documentation_health_tool |
+| `validate_docs_format.py` | **Removed** | Use exarp-go `health` with `action=docs` |
 | `exarp_validate_docs_format.py` | **Removed** | Use exarp-go (exarp Python tools removed) |
 | ~~`automate_documentation_link_fixing.py` / `exarp_fix_documentation_links.py`~~ | **Removed** | Use exarp-go MCP/CLI |
 | `update_global_docs.sh` | `sync_global_docs.py` | Direct replacement |

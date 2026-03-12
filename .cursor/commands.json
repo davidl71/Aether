@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "description": "Project-specific commands for IB Box Spread trading application",
+  "description": "Project-specific commands for the Aether synthetic financing platform",
   "commands": [
     {
       "name": "shortcuts:build",
@@ -353,7 +353,7 @@
     {
       "name": "info:project",
       "description": "Show project information and status",
-      "command": "echo 'Project: IB Box Spread Universal' && echo 'Architecture: $(uname -m)' && echo 'Build Presets:' && cmake --list-presets 2>/dev/null | grep -E 'macos-(arm64|x86_64)|windows|linux' || echo 'Run: cmake --list-presets'",
+      "command": "echo 'Project: Aether synthetic financing platform' && echo 'Architecture: $(uname -m)' && echo 'Build Presets:' && cmake --list-presets 2>/dev/null | grep -E 'macos-(arm64|x86_64)|windows|linux' || echo 'Run: cmake --list-presets'",
       "category": "info"
     },
     {

@@ -35,8 +35,8 @@ SCRIPTS_DIR="scripts"
 if git diff --cached --name-only | grep -q "$DOCS_DIR/API_DOCUMENTATION_INDEX.md"; then
   echo "🔍 Validating documentation..."
 
-  # Docs format validation: use exarp-go MCP (check_documentation_health_tool) or run locally:
-  #   exarp-go -tool check_documentation_health_tool (with workingDirectory = project root)
+  # Docs format validation: use exarp-go MCP (`health` with `action=docs`) or run locally:
+  #   exarp-go -tool health -args '{"action":"docs"}' (with workingDirectory = project root)
   # Link validation (non-blocking, just warn):
   if ! "$SCRIPTS_DIR/validate_docs_links.sh" 2>/dev/null; then
     echo ""

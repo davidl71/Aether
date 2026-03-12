@@ -1,6 +1,6 @@
 # Trading Infrastructure Guide
 
-This guide covers infrastructure options for deploying and running the IB Box Spread trading application, including VPS providers, server operating
+This guide covers infrastructure options for deploying and running the Aether synthetic financing platform, including VPS providers, server operating
 systems, and deployment strategies.
 
 ## Table of Contents

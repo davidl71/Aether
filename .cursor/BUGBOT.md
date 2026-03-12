@@ -1,10 +1,10 @@
-# Bugbot Review Rules for IBKR Box Spread Generator
+# Bugbot Review Rules for Aether
 
 This file provides project-specific context for Cursor Bugbot when reviewing pull requests.
 
 ## Project Overview
 
-C++20 trading application for Interactive Brokers implementing box spread arbitrage. Uses CMake, Python bindings (Cython), and multi-language agents (Rust, Go, TypeScript).
+Multi-asset synthetic financing platform with a C++20 core, pybind11-backed Python bindings/tests, Rust backend agents, and archived web surfaces. Box spreads are one strategy component, not the whole product.
 
 ## Critical Security Requirements
 
@@ -139,7 +139,7 @@ Before approving a PR, verify:
 
 This project includes:
 - **C++**: Core trading logic (`native/src/`)
-- **Python**: Bindings via Cython (`native/python/`)
+- **Python**: pybind11 bindings and binding tests (`native/src/box_spread_pybind.cpp`, `native/tests/python/`)
 - **Rust**: Backend services (`agents/backend/`)
 - **Go**: Agents (`agents/go/`)
 - **TypeScript**: Web interface (`web/`)

@@ -1,5 +1,5 @@
 # Exarp Oh My Zsh Plugin
-# Uses exarp-go CLI when available. Python MCP server (exarp_project_management) is deprecated.
+# Uses exarp-go CLI when available. The legacy Python MCP server is deprecated.
 # See docs/MCP_REQUIRED_SERVERS.md and docs/EXARP_GO_MIGRATION_LEFTOVERS.md.
 
 export EXARP_PLUGIN_VERSION="2.0.0"
@@ -65,13 +65,13 @@ exarp_docs_health() {
 # Task alignment
 exarp_task_align() {
   local project_dir="${1:-.}"
-  _exarp_go_tool task_workflow -args '{"action":"alignment"}' "$project_dir" || true
+  _exarp_go_tool analyze_alignment -args '{"action":"todo2"}' "$project_dir" || true
 }
 
 # Duplicate detection
 exarp_duplicates() {
   local project_dir="${1:-.}"
-  _exarp_go_tool detect_duplicate_tasks -args '{}' "$project_dir" || true
+  _exarp_go_tool task_analysis -args '{"action":"duplicates"}' "$project_dir" || true
 }
 
 # Security scan
@@ -83,13 +83,13 @@ exarp_security() {
 # Daily automation
 exarp_daily() {
   local project_dir="${1:-.}"
-  _exarp_go_tool session -args '{"action":"daily"}' "$project_dir" || true
+  _exarp_go_tool automation -args '{"action":"daily"}' "$project_dir" || true
 }
 
 # Automation opportunities
 exarp_opportunities() {
   local project_dir="${1:-.}"
-  _exarp_go_tool report -args '{"action":"opportunities"}' "$project_dir" || true
+  _exarp_go_tool automation -args '{"action":"discover"}' "$project_dir" || true
 }
 
 # Show exarp status

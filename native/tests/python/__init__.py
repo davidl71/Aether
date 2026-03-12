@@ -1,4 +1,3 @@
-"""Python tests for IB Box Spread Generator"""
-
+"""Python binding tests for the Aether native module."""
 
 

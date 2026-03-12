@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Backend bootstrap: creates venv via uv, installs Python deps, and fetches Cargo crates.
+# Backend bootstrap: fetches Cargo crates and optionally prepares deprecated local packaging surfaces.
 # Env hints: PYTHON_BIN (preferred interpreter).
 set -euo pipefail
 
@@ -11,9 +11,14 @@ if command -v uv >/dev/null 2>&1 && ! command -v ansible-playbook >/dev/null 2>&
   echo "[info] Using uv directly (ansible-playbook not found)."
   BACKEND_DIR="$SCRIPT_DIR/.."
   PYTHON="${PYTHON_BIN:-python3}"
+  BACKEND_PYTHON_DIR="$BACKEND_DIR/python"
 
-  uv venv "$BACKEND_DIR/.venv" --python "$PYTHON" 2>/dev/null || true
-  uv pip install --python "$BACKEND_DIR/.venv/bin/python" -e "$BACKEND_DIR/python"
+  if [ -d "$BACKEND_PYTHON_DIR" ]; then
+    uv venv "$BACKEND_DIR/.venv" --python "$PYTHON" 2>/dev/null || true
+    uv pip install --python "$BACKEND_DIR/.venv/bin/python" -e "$BACKEND_PYTHON_DIR"
+  else
+    echo "[info] No backend-local Python package present; skipping venv/package setup."
+  fi
 
   if command -v cargo >/dev/null 2>&1; then
     cargo fetch --manifest-path "$BACKEND_DIR/Cargo.toml"

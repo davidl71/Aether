@@ -98,9 +98,9 @@
 
 **Issue**: MCP server usage mentioned in multiple places:
 
-- `.cursorrules`: NotebookLM and automa MCP servers
+- `.cursorrules`: NotebookLM and exarp-go MCP servers
 - `.cursor/rules/notebooklm.mdc`: Complete NotebookLM guide
-- `.cursor/rules/project-automation.mdc`: Complete automa guide
+- `.cursor/rules/project-automation.mdc`: Complete exarp-go guide
 
 **Recommendation**:
 

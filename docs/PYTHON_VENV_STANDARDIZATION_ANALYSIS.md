@@ -1,6 +1,6 @@
 # Python Virtual Environment Standardization Analysis
 
-**AI hint:** This doc may reference deprecated `uvx exarp` / Python MCP (exarp_project_management). The repo uses **exarp-go** only; do not suggest reinstating Python MCP or uvx exarp. See `docs/MCP_REQUIRED_SERVERS.md`.
+**AI hint:** This doc may reference a deprecated Python MCP workflow. The repo uses **exarp-go** only; do not suggest reinstating the old Python MCP path. See `docs/MCP_REQUIRED_SERVERS.md`.
 
 **Date**: 2025-11-29
 **Question**: Should we standardize on `uvx` for Python virtual environments?
@@ -21,7 +21,7 @@
 
 2. **`uvx`** (Already in Use)
    - Used for MCP servers in `.cursor/mcp.json`:
-     - `exarp` (project management automation)
+     - `exarp-go` (project management automation)
      - `notebooklm` (via mcpower-proxy)
    - Installed via Ansible playbooks (`ansible/roles/devtools/tasks/main.yml`)
    - Version: Available (installed at `/home/david/.local/bin/uvx`)
@@ -54,7 +54,7 @@
 
 - **Purpose**: Run Python tools in isolated environments (like `npx` for Node.js)
 - **Use Case**: Running tools without installing them globally
-- **Example**: `uvx exarp --mcp` (runs exarp in isolated environment)
+- **Example**: `uvx some-tool --help` (runs a tool in an isolated environment)
 - **Not for**: Creating project virtual environments
 
 ### `uv` (Package Manager)

@@ -27,7 +27,7 @@ Total scripts analyzed: **130+** files in `scripts/` directory
 - `validate_docs_format.py` (199 lines) – **deleted**
 - `exarp_validate_docs_format.py` (253 lines) – **removed** (exarp Python tools removed from repo)
 
-**Action**: Use **exarp-go** for docs format/health (check_documentation_health_tool). No local Python exarp scripts.
+**Action**: Use **exarp-go** for docs format/health (`health` with `action=docs`). No local Python exarp scripts.
 - **DELETE**: `validate_docs_format.py` (older version) – already gone
 - **REMOVED**: `exarp_validate_docs_format.py` – exarp Python tools removed; use exarp-go
 
@@ -155,7 +155,7 @@ Total scripts analyzed: **130+** files in `scripts/` directory
 ### High Confidence Deletions (12 scripts):
 1. ❌ `generate_cpp_coverage.sh` → Use `generate_coverage.sh --cpp`
 2. ❌ `generate_python_coverage.sh` → Use `generate_coverage.sh --python`
-3. ❌ `validate_docs_format.py` / `exarp_validate_docs_format.py` → Use exarp-go (check_documentation_health_tool)
+3. ❌ `validate_docs_format.py` / `exarp_validate_docs_format.py` → Use exarp-go (`health` with `action=docs`)
 4. ❌ `automate_documentation_link_fixing.py` → Use `exarp_fix_documentation_links.py`
 5. ❌ `update_global_docs.sh` → Use `sync_global_docs.py`
 6. ❌ `collect_system_info.sh` → Use `collect_system_info_python.py`
@@ -187,7 +187,7 @@ Estimated: **~2,500 lines** of redundant code removed
 2. **Documentation**:
    ```bash
    # Old: ./scripts/validate_docs_format.py or exarp_validate_docs_format.py
-   # New: exarp-go MCP check_documentation_health_tool (workingDirectory = project root)
+   # New: exarp-go MCP health {\"action\":\"docs\"} (workingDirectory = project root)
    
    # Old: ./scripts/automate_documentation_link_fixing.py
    # New: exarp-go MCP/CLI (exarp Python tools removed)
