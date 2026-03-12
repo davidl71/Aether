@@ -2,7 +2,7 @@
 
 **Purpose:** Concrete areas where logic is duplicated across C++, Python, or Rust and how to unify them (single canonical implementation + bindings or shared spec). Complements `docs/planning/CROSS_LANGUAGE_DEDUP_PLAN.md` and `docs/design/DSL_AND_PROTO_OPPORTUNITIES.md`.
 
-**Last updated:** 2026-03-11
+**Last updated:** 2026-03-12
 
 ---
 
@@ -38,23 +38,17 @@ needing direct `MarketHours` access. For the broader `MarketHours` class, see §
 
 ## 3. Risk calculator (beyond stats)
 
-**Status: Partial — stats done; class-level methods still open**
+**Status: Done ✅ — Python layer archived; Rust has native implementation**
 
 | Where | What |
 |-------|------|
-| **C++** | Full `RiskCalculator` (VaR, correlation risk, position sizing, aggregate Greeks, etc.) in `native/src/risk_calculator.cpp`. |
-| **Python** | `python/integration/risk_calculator.py` — 613-LOC Python port; stats helpers call C++ (§1); rest is a documented stub. |
+| **C++** | Full `RiskCalculator` (VaR, correlation risk, position sizing, aggregate Greeks) in `native/src/risk_calculator.cpp`. Canonical for C++ callers. |
+| **Rust** | `agents/backend/crates/risk/` — pure-Rust implementations of sizing, stats, VaR, ES, drawdown, Sharpe/Sortino/Calmar/IR (63 tests). |
+| **Python** | `python/` has been archived. No Python risk layer remains. |
 
-Stats (`calculate_mean`, `calculate_percentile`, `calculate_correlation`) are exposed and used
-(§1 above). The full `RiskCalculator` class methods (VaR, Greeks, correlation risk, position sizing)
-are not yet bound. The Python port is accepted technical debt and formally documented as a stub
-(Phase 5 of CROSS_LANGUAGE_DEDUP_PLAN).
-
-**Next step (open):** Expose more `RiskCalculator` methods via pybind11 (e.g. `calculate_correlation_risk`,
-`calculate_var`, position sizing) and thin `risk_calculator.py` to a wrapper. This is a medium-effort
-change that would give a single implementation for regulatory/audit purposes.
-
-**Effort:** Medium (design binding surface; add `m.def()` calls; migrate callers).
+The pybind11 binding surface described in earlier versions of this doc was never built — the source
+file was removed along with the Python layer. The Rust crate is now the cross-language risk
+implementation used by the Rust backend API.
 
 ---
 
@@ -110,22 +104,15 @@ Matches CROSS_LANGUAGE_DEDUP_PLAN Phase 6 Done status.
 
 ## 7. Market hours and calendar
 
-**Status: Partial — DTE done (§2); full MarketHours class not yet exposed**
+**Status: Done ✅ — Python layer archived; no open work**
 
 | Where | What |
 |-------|------|
 | **C++** | `market_hours::MarketHours` in `native/src/market_hours.cpp` — holidays, early closes, session status, DST. Used internally by `calculate_dte`. |
-| **Python** | No full port; `calculate_dte` via pybind11 covers the most common use case. |
 
-`calculate_dte` gives Python callers correct trading-day counts (§2 done).
-The full `MarketHours` API (`get_market_status_at(time)`, `is_holiday(date)`, `is_early_close(date)`)
-is not yet exposed. This is optional — no Python code currently needs it directly.
-
-**Next step (open / optional):** If Python TUI, benchmarks, or rate-curve logic needs "is this a
-trading day?" or "what is the market status right now?", expose a small `MarketHours` API surface
-via pybind11. Otherwise defer.
-
-**Effort:** Medium (bind API surface; document behaviour and holiday calendar coverage).
+The Python layer has been archived. `calculate_dte` remains the exported boundary function for
+C++ callers. The full `MarketHours` class is internal to the C++ engine; no cross-language
+exposure is needed.
 
 ---
 
@@ -164,21 +151,18 @@ use structured NATS. No second bus was introduced.
 
 ---
 
-## 10. TUI alignment (PWA archived)
+## 10. TUI alignment (Python TUI and PWA archived)
 
-**Status: TUI aligned ✅; PWA archived**
+**Status: Done ✅**
 
 | Where | What |
 |-------|------|
-| **TUI (Python Textual)** | `python/tui/` — uses shared config (`~/.config/ib_box_spread/config.json`), NatsProvider, and proto-generated types. Fully aligned with Rust backend read paths. |
-| **PWA (React/TypeScript)** | `web/` — archived for now; not actively maintained. |
+| **TUI (Ratatui)** | `agents/backend/crates/tui/` — active frontend; reads from Rust backend API and NATS. |
+| **TUI (Python Textual)** | `python/tui/` — archived. |
+| **PWA (React/TypeScript)** | `web/` — archived. |
 
-TUI uses the shared JSON Schema config, the Rust API base (`http://localhost:8080`) as the default
-read path, NatsProvider for push updates, and proto-generated types for NATS messages.
-PWA is archived; feature-parity tracking between TUI and PWA is no longer applicable.
-
-**Remaining TUI work:** See `docs/platform/TUI_RUST_READ_PATH_AUDIT.md` for next migration
-candidates (Discount Bank read path, deeper Python read-model reduction).
+All read paths are now Rust-backed. See `docs/platform/TUI_RUST_READ_PATH_AUDIT.md` for
+migration-complete status table.
 
 ---
 
@@ -188,14 +172,14 @@ candidates (Discount Bank read path, deeper Python read-model reduction).
 |-------|-----------|--------|-----------|
 | Mean / percentile / correlation | C++ | **Done** ✅ | — |
 | DTE (trading days to expiry) | C++ | **Done** ✅ | — |
-| Risk calculator (full class) | C++ | **Partial** | Expose VaR/Greeks via pybind11; thin Python stub |
+| Risk calculator (full class) | C++ + Rust | **Done** ✅ | Python archived; Rust crate has native impl |
 | Config validation | JSON Schema (`config/schema.json`) | **Done** ✅ | — |
 | Option/contract string parsing | Each parser canonical for its source | **Clarified** | Optional: format spec doc |
 | Discount bank parser | Rust | **Done** ✅ | — |
-| Market hours (holidays, status) | C++ | **Partial** | `calculate_dte` done; MarketHours class optional/open |
+| Market hours (holidays, status) | C++ | **Done** ✅ | Python archived; no cross-language exposure needed |
 | Enums / constants at boundaries | Proto + `python/generated/` | **Done** ✅ | — |
 | Message bus (NATS) + cache/state | NATS / NATS KV | **Done** ✅ | — |
-| TUI alignment | Rust backend + shared config | **Done** ✅ (PWA archived) | TUI Discount Bank path (see audit doc) |
+| TUI alignment | Rust backend + shared config | **Done** ✅ | Python TUI + PWA archived; Ratatui TUI active |
 
 ---
 
@@ -211,7 +195,6 @@ candidates (Discount Bank read path, deeper Python read-model reduction).
 - `docs/platform/MULTI_ACCOUNT_AGGREGATION_DESIGN.md` — TUI backend roles and ownership.
 - `native/src/box_spread_pybind.cpp` — pybind11 bindings: stats helpers, `calculate_dte`, box spread math.
 - `native/include/risk_calculator.h` — C++ `calculate_mean`, `calculate_percentile`, `calculate_correlation`.
-- `python/integration/risk_calculator.py` — Python stub with C++ stats helpers; full class still Python.
+- `agents/backend/crates/risk/src/` — Rust native risk implementations (sizing, stats, var).
 - `native/src/tws_conversions.cpp` — `tws::calculate_dte` and `MarketHours` usage.
-- `python/tui/providers/_nats.py` — TUI NatsProvider using proto-generated types.
 - `config/schema.json` — Shared JSON Schema for all config loaders.

@@ -6,7 +6,7 @@ For exarp-go (session prime, handoff, tasks, scorecard) in Cursor, Claude Code, 
 
 ## Project at a Glance
 
-Comprehensive multi-asset synthetic financing platform. Manages financing across options, futures, bonds, loans, and pension funds with unified portfolio management, cash flow modeling, and multi-instrument optimization across 21+ accounts and multiple brokers (IBKR, Alpaca, Tradier, Tastytrade). Box spreads are one active strategy component (T-bill-equivalent yields on spare cash). Multi-language codebase: C++ core engine, Python layer (TUI, bindings), Rust/Go agents, archived TypeScript/React web client. Active frontend focus is TUI/CLI.
+Comprehensive multi-asset synthetic financing platform. Manages financing across options, futures, bonds, loans, and pension funds with unified portfolio management, cash flow modeling, and multi-instrument optimization across 21+ accounts and multiple brokers (IBKR, Alpaca, Tradier, Tastytrade). Box spreads are one active strategy component (T-bill-equivalent yields on spare cash). Multi-language codebase: C++ core engine, Rust/Go agents, archived TypeScript/React web client and Python layer. Active frontend focus is TUI/CLI (Ratatui).
 
 ## Build & Test
 
@@ -48,7 +48,6 @@ If configure fails with missing TWS API or Intel Decimal deps, run `./scripts/fe
 |--------|---------|-------------|
 | `BUILD_TESTING` | ON | Build Catch2 test suite |
 | `ENABLE_NATIVE_CLI` | ON | Build the CLI binary |
-| `ENABLE_PYTHON_BINDINGS` | ON | Build Cython Python bindings |
 | `ENABLE_ASAN` | OFF | AddressSanitizer |
 | `ENABLE_TSAN` | OFF | ThreadSanitizer |
 | `ENABLE_LTO` | ON | Link-Time Optimization |
@@ -100,16 +99,6 @@ Most deps use CMake FetchContent — see existing patterns in `native/CMakeLists
 - **Always** add tests for trading logic and risk calculations
 - All pricing/risk calculations must have Catch2 tests before merge
 - Gate live trading behind explicit configuration flags
-
-## Python
-
-Use `uv` for package management when available. Fall back to `pip` if not.
-
-```bash
-uv sync                          # install deps
-uv run pytest python/tests/ -v   # run tests
-just test-python                 # via Justfile
-```
 
 ## exarp Workflow
 
