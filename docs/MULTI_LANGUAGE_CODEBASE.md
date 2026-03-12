@@ -7,7 +7,6 @@ This repository uses **multiple programming languages**. This doc maps each lang
 | Language | Directories | Build | Test | Lint |
 |----------|-------------|--------|------|------|
 | **C++** | `native/` (core engine, CLI, tests in `native/tests/`) | `cmake --build build` or presets; `./scripts/build_universal.sh` for macOS universal | `ctest --test-dir build --output-on-failure` | `./scripts/run_linters.sh` (cppcheck, clang-tidy, etc.) |
-| **Python** | `python/` (integration, services, tests) | — (interpreted); Cython bindings built via CMake | `uv run --project python pytest python/tests/` | `uv run --project python ruff check python`; `just lint-shell` for scripts |
 | **Rust** | `agents/backend/` (crates: api, ledger, market_data, nats_adapter, risk, strategy, discount_bank_parser) | `cargo build` in `agents/backend/` | `cargo test` in `agents/backend/` | `cargo clippy` |
 | **TypeScript / React** | `web/` (archived Vite/React client) | Historical only | Historical only | Historical only |
 
@@ -19,8 +18,8 @@ This repository uses **multiple programming languages**. This doc maps each lang
 ## Cross-language boundaries
 
 - **NATS**: C++ publishes market and strategy events; Rust backend consumes them; Rust TUI uses REST polling as fallback when NATS unavailable. See `docs/platform/DATAFLOW_ARCHITECTURE.md`.
-- **REST / WebSocket**: the active client path is Rust TUI/CLI to the Rust backend, plus selected Python specialist services where still required.
-- **Ledger**: Rust `agents/backend/crates/ledger` is the durable ledger owner; Python direct SQLite access is legacy and should move behind service/API boundaries. See P1-A in `docs/platform/IMPROVEMENT_PLAN.md`.
+- **REST / WebSocket**: the active client path is Rust TUI/CLI to the Rust backend.
+- **Ledger**: Rust `agents/backend/crates/ledger` is the sole durable ledger owner. See `docs/platform/IMPROVEMENT_PLAN.md`.
 
 ## Quick reference
 

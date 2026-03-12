@@ -94,8 +94,6 @@ option(BUILD_DOCS "Build documentation" OFF)
 option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
 option(ENABLE_TSAN "Enable ThreadSanitizer" OFF)
 option(ENABLE_LTO "Enable Link-Time Optimization" ON)
-option(ENABLE_PYTHON_BINDINGS "Enable Python bindings (Cython or pybind11)" ON)
-option(PYTHON_BINDINGS_BACKEND "Python bindings backend: pybind11 or Cython" "pybind11")
 option(ENABLE_DISTCC "Enable distcc distributed compilation" OFF)
 option(ENABLE_CCACHE "Enable ccache compilation caching" OFF)
 option(ENABLE_SCCACHE "Enable sccache compilation caching" OFF)
@@ -1280,100 +1278,6 @@ if(_build_native_cli AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_position
 endif()
 
 # ====================================================================================
-# Python Bindings (pybind11 or Cython)
-# ============================================================================
-if(ENABLE_PYTHON_BINDINGS)
-    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-
-    if(PYTHON_BINDINGS_BACKEND STREQUAL "pybind11")
-        set(PYBIND11_CPP_STANDARD ${CMAKE_CXX_STANDARD})
-        fetchcontent_declare(
-            pybind11
-            GIT_REPOSITORY https://github.com/pybind/pybind11.git
-            GIT_TAG v2.13.6
-            GIT_SHALLOW TRUE
-        )
-        fetchcontent_makeavailable(pybind11)
-
-        if(_build_native_cli AND TARGET pybind11::module)
-            pybind11_add_module(box_spread_bindings
-                src/box_spread_pybind.cpp
-                src/types.cpp
-                src/tws_conversions.cpp
-                src/greeks_calculator.cpp
-                src/strategies/box_spread/box_spread_strategy.cpp
-                src/risk_calculator.cpp
-                src/option_chain.cpp
-                src/config_manager.cpp
-                src/market_hours.cpp
-            )
-            target_include_directories(box_spread_bindings PRIVATE
-                ${CMAKE_CURRENT_SOURCE_DIR}/include
-                ${TWS_API_INCLUDE_DIR}
-            )
-            if(TWS_API_BUILD_VENDOR)
-                target_include_directories(box_spread_bindings PRIVATE "${TWS_API_EXTERNAL_BINARY_DIR}/proto_generated")
-                add_dependencies(box_spread_bindings twsapi_external)
-            endif()
-            target_link_libraries(box_spread_bindings PRIVATE
-                nlohmann_json::nlohmann_json
-                spdlog::spdlog
-                Eigen3::Eigen
-                QuantLib::QuantLib
-                NLopt::nlopt
-                ${Boost_LIBRARIES}
-                ${TWS_API_LIB}
-                ${INTEL_DECIMAL_LIB}
-            )
-            if(APPLE)
-                target_link_libraries(box_spread_bindings PRIVATE "-framework CoreFoundation")
-                find_library(PTHREAD_LIBRARY pthread)
-                if(PTHREAD_LIBRARY)
-                    target_link_libraries(box_spread_bindings PRIVATE ${PTHREAD_LIBRARY})
-                endif()
-            elseif(UNIX)
-                target_link_libraries(box_spread_bindings PRIVATE pthread)
-                find_library(UUID_LIBRARY uuid)
-                if(UUID_LIBRARY)
-                    target_link_libraries(box_spread_bindings PRIVATE ${UUID_LIBRARY})
-                endif()
-            endif()
-            set_target_properties(box_spread_bindings PROPERTIES
-                LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/python/bindings
-                RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/python/bindings
-            )
-            message(STATUS "Python bindings: pybind11 (target box_spread_bindings)")
-            message(STATUS "  Build: cmake --build . --target box_spread_bindings")
-        else()
-            if(NOT _build_native_cli)
-                message(STATUS "Python bindings (pybind11) skipped: native CLI not built")
-            endif()
-        endif()
-    else()
-        execute_process(
-            COMMAND ${Python3_EXECUTABLE} -c "import Cython; print(Cython.__version__)"
-            OUTPUT_VARIABLE CYTHON_VERSION
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            ERROR_QUIET
-        )
-        if(CYTHON_VERSION AND _build_native_cli)
-            add_custom_target(
-                python_bindings
-                COMMAND ${Python3_EXECUTABLE} setup.py build_ext --inplace
-                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/python/bindings
-                COMMENT "Building Python bindings with Cython"
-            )
-            message(STATUS "Python bindings: Cython (target python_bindings)")
-            message(STATUS "  Build: cmake --build . --target python_bindings")
-        elseif(NOT CYTHON_VERSION)
-            message(WARNING "Cython not found. Install: pip install cython")
-        endif()
-    endif()
-else()
-    message(STATUS "Python bindings disabled.")
-endif()
-
-# ====================================================================================
 # Testing
 # ============================================================================
 # Allow tests to be built even if native CLI is disabled, as tests may not require
@@ -1420,7 +1324,6 @@ message(STATUS "Compiler:          ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "Native CLI target: ${_build_native_cli}")
 message(STATUS "Build testing:     ${BUILD_TESTING}")
 message(STATUS "Enable LTO:        ${ENABLE_LTO}")
-message(STATUS "Python bindings:   ${ENABLE_PYTHON_BINDINGS}")
 message(STATUS "Install prefix:    ${CMAKE_INSTALL_PREFIX}")
 if(NOT _native_prereqs_met)
     string(REPLACE ";" ", " _missing_native_deps_str "${_missing_native_deps}")

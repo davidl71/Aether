@@ -8,7 +8,8 @@
 |------|-------|---------------|
 | Remove dead gRPC and backend proto | No gRPC (tonic/grpc) ever existed in agents/backend; prost-only protobuf via nats_adapter. Dead code removed in cleanup commits (lean_integration, ml, nautilus, dsl, wrapper). | T-1772609703288099000 ✅ |
 | Add box spread and yield curve messages to proto | BoxSpreadLeg, BoxSpreadScenario, BoxSpreadExecution, YieldCurvePoint, YieldCurve, BoxSpreadOpportunity, StrategyParams all present in `proto/messages.proto`. | T-1772609676030467000 ✅ |
-| Structured logging in Go agents (slog) | All five Go agents use `log/slog` with JSON handler. No `log.Printf` calls remain. | T-1772887222034956306 ✅ |
+| Remove Go agents | Both Go utilities (supervisor, config-validator) removed; service_manager.sh covers supervisor; bash handles config validation. | ✅ |
+| Remove Python layer | python/ directory deleted; Rust TUI is the sole frontend. | ✅ |
 | WebSocket delta compression (P2-A) | Server sends full snapshot once on connect then only changed sections every 2s; client merges deltas. WS mounted on same server at `/ws`. | T-1772887222103963807 ✅ |
 **Priority lens**: System responsiveness + data persistence + thin collection daemons.
 Trading volume is low; the focus is on correctness, fast reads, durable writes, and
@@ -23,31 +24,12 @@ See `docs/platform/DATAFLOW_ARCHITECTURE.md` for the full issue analysis.
 1. **Persistence first**: every market event, order, and position change must land in durable
    storage before the UI updates. Don't trade correctness for speed.
 2. **Thin daemons**: background collectors and bridges should be single-binary, low-memory
-   Go or C++ processes. No Python daemons doing collection — Python is for analysis/TUI only.
+   C++ or Rust processes.
 3. **Responsive reads**: clients should receive delta updates, not full snapshots. Store once,
    serve many via NATS KV or Arrow Flight.
 4. **Single source of truth**: one writer per data store. Eliminate dual-write patterns.
 5. **Persistence rule**: write once (to durable storage or JetStream), then publish to NATS or update in-memory state; only then serve to clients. Ensures UI never shows uncommitted state.
-6. **Ownership rule**: C++ publishes market and strategy events, Go owns collection and live-state fanout/writes, Rust owns shared frontend APIs plus client-facing live-state reads and durable backend ownership, and Python stays limited to the TUI plus explicit specialist/analytics services.
-
-### Existing Rust/Python bridge
-
-The repo already uses **PyO3**, but only for **Rust embedding Python**, not for exporting Rust into Python packages:
-
-- `agents/backend/crates/strategy/src/engine.rs` uses `pyo3::prepare_freethreaded_python()`,
-  `Python::with_gil`, `PyModule::import`, and `PyDict` to load and call Python strategy code
-  from the Rust strategy engine.
-- `agents/backend/crates/strategy/Cargo.toml` depends on workspace `pyo3`.
-- `agents/backend/Cargo.toml` defines workspace `pyo3 = 0.24.1` with `auto-initialize`.
-
-That means the future **PyO3 + maturin** idea is not introducing PyO3 from scratch. It is a
-different direction for the same bridge technology:
-
-- **Current**: Rust process embeds and calls Python strategy logic.
-- **Future option**: Rust exports shared finance logic into Python-callable extension modules for
-  the TUI/CLI, likely packaged with `maturin`.
-
-Treat those as related but distinct migration paths.
+6. **Ownership rule**: C++ publishes market and strategy events via NATS; Rust owns collection, `LIVE_STATE`, QuestDB fanout, shared frontend APIs, and durable backend ownership. Two languages only.
 
 ---
 
@@ -55,22 +37,13 @@ Treat those as related but distinct migration paths.
 
 ## Priority 1 — Fix Data Integrity (do first, blocks everything)
 
-### P1-A: Fix dual SQLite writers (CRITICAL) <!-- exarp: T-1772887221775761020 -->
-**Status:** Mitigation implemented. Rust ledger uses WAL mode (ConnectOptions + runtime PRAGMA); Python discount_bank_service opens ledger read-only and does not write. Single writer = Rust; Python reads via local SQLite read-only or future REST.
-**Issue**: Rust ledger and Python both write to `ledger.db` — concurrent writes corrupt WAL.
-**Fix**:
-- Enable WAL mode (`PRAGMA journal_mode=WAL`) as immediate mitigation.
-- Longer term: Python reads from Rust ledger via REST API (`GET /api/ledger/...`).
-  Python never writes directly to SQLite — Rust ledger is the single writer.
-**Files**: `agents/backend/crates/ledger/src/lib.rs`, `python/integration/` ledger write paths.
+### P1-A: Fix dual SQLite writers ✅ <!-- exarp: T-1772887221775761020 -->
+**Status:** Resolved. Python layer deleted; Rust ledger is the sole SQLite writer. WAL mode in place.
+**Files**: `agents/backend/crates/ledger/src/lib.rs`.
 
-### P1-B: Unify TUI and Web data backends <!-- exarp: T-1772887221914991889 -->
-**Status:** Implemented. TUI shared HTTP reads now use canonical `api_base_url` (defaulting to the Rust/shared origin at `http://localhost:8080`), while specialist presets still use explicit routed snapshot endpoints through the optional gateway when needed.
-**Issue**: TUI reads Python :8000-8006; Web reads Rust :8080. Two pipelines, potential divergence.
-**Fix**:
-- Prefer the Rust/shared origin as the default frontend read path.
-- Retire the Go `api-gateway`; expose any remaining operational heartbeat routes through Rust instead.
-**Files**: `python/tui/providers/`, `agents/go/cmd/api-gateway/main.go`.
+### P1-B: Unify TUI and Web data backends ✅ <!-- exarp: T-1772887221914991889 -->
+**Status:** Resolved. Python TUI deleted; Rust TUI is the sole frontend, reads from Rust backend at `http://localhost:8080`. Go api-gateway removed.
+**Files**: `agents/backend/crates/api/src/`.
 
 ---
 
@@ -81,20 +54,16 @@ Treat those as related but distinct migration paths.
 client merges deltas; WebSocket mounted on same server at `/ws`. ~90% bandwidth reduction when state is stable.
 **Files**: `agents/backend/crates/api/src/websocket.rs`, `agents/backend/crates/api/src/rest.rs`.
 
-### P2-B: Decode NatsEnvelope in Go agents <!-- exarp: T-1772887221969976131 -->
-**Status:** Implemented. The active collector path decodes `NatsEnvelope`
-in Rust. QuestDB fanout now runs through the backend collector sink.
+### P2-B: Decode NatsEnvelope in Rust collector ✅ <!-- exarp: T-1772887221969976131 -->
+**Status:** Implemented. The active collector path decodes `NatsEnvelope` in Rust.
+QuestDB fanout runs through the backend collector sink.
 **Benefit**: Type-safe; field names match proto schema; survives format changes.
 
 ### P2-C: NATS KV as primary live-state store <!-- exarp: T-1772925042919416172 -->
 **Issue**: Clients poll REST every 1-2s to get current state.
-**Fix**: C++ engine publishes events to NATS, and the Rust backend collector becomes the
-single writer to NATS KV buckets / live-state views. Rust exposes the client-facing
-read/watch endpoints for that state, so clients do not depend on Go `api-gateway` for
-live-state reads. NATS KV is persistent (backed by JetStream). Python consumes those
-specialist/analytics views; it does not own collection or live-state writes.
-**Files**: `native/src/nats_client.cpp`, `agents/backend/services/backend_service/src/collection_aggregation.rs`, `python/tui/providers/` (NatsProvider consumer path).
-**Depends on**: P2-B (NatsEnvelope decode in Go agents).
+**Fix**: C++ engine publishes events to NATS; Rust backend collector is the single writer
+to NATS KV `LIVE_STATE`. Rust exposes client-facing read/watch endpoints.
+**Files**: `native/src/nats_client.cpp`, `agents/backend/services/backend_service/src/collection_aggregation.rs`.
 
 ---
 
