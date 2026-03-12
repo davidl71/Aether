@@ -22,7 +22,7 @@ api          = { path = "../../crates/api" }
 nats_adapter = { path = "../../crates/nats_adapter" }
 
 # TUI framework
-ratatui   = "0.28"
+ratatui   = "0.30"
 crossterm = "0.28"
 
 # Protobuf types (for timestamp conversion)

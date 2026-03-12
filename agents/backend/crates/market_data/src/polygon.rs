@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use reqwest::{Client, StatusCode, Url};
+use reqwest::{Client, Response, StatusCode, Url};
 use tokio::sync::Mutex;
 use tracing::debug;
 
@@ -52,7 +52,7 @@ impl PolygonMarketDataSource {
         let base_url = Url::parse(base)
             .map_err(|err| anyhow::anyhow!("invalid polygon base url {base}: {err}"))?;
 
-        let client = Client::builder()
+        let client: Client = Client::builder()
             .user_agent("ib-box-spread-backend/0.1")
             .build()
             .map_err(|err| anyhow::anyhow!("failed to initialise http client: {err}"))?;
@@ -107,7 +107,7 @@ impl MarketDataSource for PolygonMarketDataSource {
         let symbol = self.next_symbol().await;
 
         let url = self.build_url(&symbol);
-        let response = self
+        let response: Response = self
             .client
             .get(url)
             .query(&[("apiKey", self.api_key.as_str())])
