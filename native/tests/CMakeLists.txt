@@ -275,8 +275,6 @@ target_sources(box_spread_core_tests PRIVATE
     ${_native_src_dir}/market_hours.cpp
     ${_native_src_dir}/rate_limiter.cpp
     ${_native_src_dir}/convexity_calculator.cpp
-    ${_native_src_dir}/loan_position.cpp
-    ${_native_src_dir}/loan_manager.cpp
     ${_native_src_dir}/asset_relationship.cpp
     ${_native_src_dir}/collateral_valuator.cpp
     ${_native_src_dir}/financing_instrument_registry.cpp
@@ -322,8 +320,6 @@ target_sources(box_spread_tests PRIVATE
     ${_native_src_dir}/cache_client.cpp
     ${_native_src_dir}/strategies/box_spread/box_spread_bag.cpp
     ${_native_src_dir}/convexity_calculator.cpp
-    ${_native_src_dir}/loan_position.cpp
-    ${_native_src_dir}/loan_manager.cpp
     ${_native_src_dir}/asset_relationship.cpp
     ${_native_src_dir}/collateral_valuator.cpp
     ${_native_src_dir}/financing_instrument_registry.cpp

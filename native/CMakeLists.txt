@@ -957,7 +957,6 @@ if(_build_native_cli)
         src/pcap_capture.cpp
         src/convexity_calculator.cpp
         src/financing_optimizer.cpp
-        src/loan_position.cpp
         src/margin_calculator.cpp
         src/cache_client.cpp
         src/asset_relationship.cpp
@@ -984,8 +983,6 @@ if(_build_native_cli)
         include/convexity_calculator.h
         include/financing_optimizer.h
         include/types.h
-        include/loan_position.h
-        include/loan_manager.h
         include/margin_calculator.h
         include/cache_client.h
         include/asset_relationship.h
