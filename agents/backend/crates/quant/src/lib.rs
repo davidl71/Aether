@@ -52,6 +52,45 @@ pub struct StrategyResult {
     pub cost: f64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoxSpreadResult {
+    pub synthetic_leg_cost: f64,
+    pub actual_leg_cost: f64,
+    pub net_cost: f64,
+    pub annualized_rate: f64,
+    pub is_arbitrage: bool,
+    pub legs: Vec<BoxSpreadLeg>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoxSpreadLeg {
+    pub instrument: String,
+    pub strike: f64,
+    pub expiry: f64,
+    pub side: String,
+    pub price: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ComboResult {
+    pub name: String,
+    pub net_debit: f64,
+    pub max_profit: f64,
+    pub max_loss: f64,
+    pub breakeven: Vec<f64>,
+    pub legs: Vec<ComboLeg>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ComboLeg {
+    pub instrument: String,
+    pub strike: f64,
+    pub option_type: String,
+    pub side: String,
+    pub quantity: f64,
+    pub price: f64,
+}
+
 #[derive(Debug, Error)]
 pub enum QuantError {
     #[error("Invalid parameter: {0}")]
@@ -404,6 +443,202 @@ impl QuantCalculator {
             cost,
         })
     }
+
+    pub fn calculate_box_spread(
+        &self,
+        s: f64,
+        k_low: f64,
+        k_high: f64,
+        t_years: f64,
+        r: f64,
+        sigma: f64,
+    ) -> Result<BoxSpreadResult, QuantError> {
+        if k_low >= k_high {
+            return Err(QuantError::InvalidParameter(
+                "k_low must be less than k_high".to_string(),
+            ));
+        }
+
+        let synthetic_long_call =
+            self.calculate_option_price(s, k_low, t_years, r, sigma, OptionKind::Call)?;
+        let synthetic_long_put =
+            self.calculate_option_price(s, k_low, t_years, r, sigma, OptionKind::Put)?;
+        let synthetic_short_call =
+            self.calculate_option_price(s, k_high, t_years, r, sigma, OptionKind::Call)?;
+        let synthetic_short_put =
+            self.calculate_option_price(s, k_high, t_years, r, sigma, OptionKind::Put)?;
+
+        let synthetic_leg_cost = (synthetic_long_call - synthetic_long_put).abs();
+        let actual_leg_cost = s - k_high;
+
+        let net_cost = synthetic_leg_cost - actual_leg_cost;
+
+        let days = (t_years * 365.0).round() as i64;
+        let annualized_rate = if net_cost > 0.0 {
+            (net_cost / actual_leg_cost) * (365.0 / days as f64)
+        } else {
+            0.0
+        };
+
+        let is_arbitrage = annualized_rate > r * 1.5;
+
+        let legs = vec![
+            BoxSpreadLeg {
+                instrument: "Synthetic Long".to_string(),
+                strike: k_low,
+                expiry: t_years,
+                side: "Long Call".to_string(),
+                price: synthetic_long_call,
+            },
+            BoxSpreadLeg {
+                instrument: "Synthetic Long".to_string(),
+                strike: k_low,
+                expiry: t_years,
+                side: "Short Put".to_string(),
+                price: synthetic_long_put,
+            },
+            BoxSpreadLeg {
+                instrument: "Synthetic Short".to_string(),
+                strike: k_high,
+                expiry: t_years,
+                side: "Short Call".to_string(),
+                price: synthetic_short_call,
+            },
+            BoxSpreadLeg {
+                instrument: "Synthetic Short".to_string(),
+                strike: k_high,
+                expiry: t_years,
+                side: "Long Put".to_string(),
+                price: synthetic_short_put,
+            },
+        ];
+
+        Ok(BoxSpreadResult {
+            synthetic_leg_cost,
+            actual_leg_cost,
+            net_cost,
+            annualized_rate,
+            is_arbitrage,
+            legs,
+        })
+    }
+
+    pub fn calculate_jelly_roll(
+        &self,
+        s: f64,
+        k: f64,
+        t_years_short: f64,
+        t_years_long: f64,
+        r: f64,
+        sigma: f64,
+    ) -> Result<ComboResult, QuantError> {
+        if t_years_short >= t_years_long {
+            return Err(QuantError::InvalidParameter(
+                "Short expiry must be less than long expiry".to_string(),
+            ));
+        }
+
+        let call_short =
+            self.calculate_option_price(s, k, t_years_short, r, sigma, OptionKind::Call)?;
+        let put_short =
+            self.calculate_option_price(s, k, t_years_short, r, sigma, OptionKind::Put)?;
+        let call_long =
+            self.calculate_option_price(s, k, t_years_long, r, sigma, OptionKind::Call)?;
+        let put_long =
+            self.calculate_option_price(s, k, t_years_long, r, sigma, OptionKind::Put)?;
+
+        let net_debit = (call_short + put_short) - (call_long + put_long);
+
+        let legs = vec![
+            ComboLeg {
+                instrument: "Call".to_string(),
+                strike: k,
+                option_type: "Call".to_string(),
+                side: "Long".to_string(),
+                quantity: 1.0,
+                price: call_short,
+            },
+            ComboLeg {
+                instrument: "Put".to_string(),
+                strike: k,
+                option_type: "Put".to_string(),
+                side: "Long".to_string(),
+                quantity: 1.0,
+                price: put_short,
+            },
+            ComboLeg {
+                instrument: "Call".to_string(),
+                strike: k,
+                option_type: "Call".to_string(),
+                side: "Short".to_string(),
+                quantity: 1.0,
+                price: call_long,
+            },
+            ComboLeg {
+                instrument: "Put".to_string(),
+                strike: k,
+                option_type: "Put".to_string(),
+                side: "Short".to_string(),
+                quantity: 1.0,
+                price: put_long,
+            },
+        ];
+
+        Ok(ComboResult {
+            name: "Jelly Roll".to_string(),
+            net_debit,
+            max_profit: f64::INFINITY,
+            max_loss: net_debit.abs(),
+            breakeven: vec![],
+            legs,
+        })
+    }
+
+    pub fn calculate_ratio_spread(
+        &self,
+        s: f64,
+        k_call: f64,
+        k_put: f64,
+        t_years: f64,
+        r: f64,
+        sigma: f64,
+        ratio: i32,
+    ) -> Result<ComboResult, QuantError> {
+        let call_price =
+            self.calculate_option_price(s, k_call, t_years, r, sigma, OptionKind::Call)?;
+        let put_price =
+            self.calculate_option_price(s, k_put, t_years, r, sigma, OptionKind::Put)?;
+
+        let net_debit = call_price * ratio as f64 - put_price;
+
+        let legs = vec![
+            ComboLeg {
+                instrument: "Call".to_string(),
+                strike: k_call,
+                option_type: "Call".to_string(),
+                side: "Long".to_string(),
+                quantity: ratio as f64,
+                price: call_price,
+            },
+            ComboLeg {
+                instrument: "Put".to_string(),
+                strike: k_put,
+                option_type: "Put".to_string(),
+                side: "Short".to_string(),
+                quantity: 1.0,
+                price: put_price,
+            },
+        ];
+
+        Ok(ComboResult {
+            name: "Ratio Spread".to_string(),
+            net_debit,
+            max_profit: f64::INFINITY,
+            max_loss: net_debit.abs(),
+            breakeven: vec![],
+            legs,
+        })
+    }
 }
 
 impl Default for QuantCalculator {
@@ -550,6 +785,41 @@ mod tests {
         let r = result.unwrap();
 
         assert_eq!(r.name, "Iron Condor");
+    }
+
+    #[test]
+    fn test_box_spread() {
+        let calc = QuantCalculator::new();
+
+        let result = calc.calculate_box_spread(100.0, 95.0, 105.0, 1.0, 0.05, 0.2);
+        assert!(result.is_ok());
+        let r = result.unwrap();
+
+        assert!(r.synthetic_leg_cost > 0.0);
+        assert!(r.legs.len() == 4);
+    }
+
+    #[test]
+    fn test_jelly_roll() {
+        let calc = QuantCalculator::new();
+
+        let result = calc.calculate_jelly_roll(100.0, 100.0, 0.25, 1.0, 0.05, 0.2);
+        assert!(result.is_ok());
+        let r = result.unwrap();
+
+        assert_eq!(r.name, "Jelly Roll");
+        assert!(r.legs.len() == 4);
+    }
+
+    #[test]
+    fn test_ratio_spread() {
+        let calc = QuantCalculator::new();
+
+        let result = calc.calculate_ratio_spread(100.0, 100.0, 100.0, 1.0, 0.05, 0.2, 2);
+        assert!(result.is_ok());
+        let r = result.unwrap();
+
+        assert_eq!(r.name, "Ratio Spread");
     }
 
     #[test]

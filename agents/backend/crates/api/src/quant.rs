@@ -1,6 +1,4 @@
-use quant::{
-    Greeks, HistoricalVolatilityResult, OptionKind, QuantCalculator, RiskMetrics, StrategyResult,
-};
+use quant::{BoxSpreadResult, ComboResult, Greeks, OptionKind, QuantCalculator, StrategyResult};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -75,6 +73,52 @@ pub struct StrategyRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StrategyResponse {
     pub strategy: StrategyResult,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoxSpreadRequest {
+    pub underlying_price: f64,
+    pub strike_low: f64,
+    pub strike_high: f64,
+    pub time_to_expiry: f64,
+    pub risk_free_rate: f64,
+    pub volatility: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoxSpreadResponse {
+    pub box_spread: BoxSpreadResult,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JellyRollRequest {
+    pub underlying_price: f64,
+    pub strike: f64,
+    pub expiry_short: f64,
+    pub expiry_long: f64,
+    pub risk_free_rate: f64,
+    pub volatility: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JellyRollResponse {
+    pub combo: ComboResult,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RatioSpreadRequest {
+    pub underlying_price: f64,
+    pub strike_call: f64,
+    pub strike_put: f64,
+    pub time_to_expiry: f64,
+    pub risk_free_rate: f64,
+    pub volatility: f64,
+    pub ratio: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RatioSpreadResponse {
+    pub combo: ComboResult,
 }
 
 pub fn calculate_greeks(request: &GreeksRequest) -> Result<GreeksResponse, String> {
@@ -221,4 +265,56 @@ pub fn calculate_strategy(request: &StrategyRequest) -> Result<StrategyResponse,
     .map_err(|e| e.to_string())?;
 
     Ok(StrategyResponse { strategy: result })
+}
+
+pub fn calculate_box_spread(request: &BoxSpreadRequest) -> Result<BoxSpreadResponse, String> {
+    let calc = QuantCalculator::new();
+
+    let result = calc
+        .calculate_box_spread(
+            request.underlying_price,
+            request.strike_low,
+            request.strike_high,
+            request.time_to_expiry,
+            request.risk_free_rate,
+            request.volatility,
+        )
+        .map_err(|e| e.to_string())?;
+
+    Ok(BoxSpreadResponse { box_spread: result })
+}
+
+pub fn calculate_jelly_roll(request: &JellyRollRequest) -> Result<JellyRollResponse, String> {
+    let calc = QuantCalculator::new();
+
+    let result = calc
+        .calculate_jelly_roll(
+            request.underlying_price,
+            request.strike,
+            request.expiry_short,
+            request.expiry_long,
+            request.risk_free_rate,
+            request.volatility,
+        )
+        .map_err(|e| e.to_string())?;
+
+    Ok(JellyRollResponse { combo: result })
+}
+
+pub fn calculate_ratio_spread(request: &RatioSpreadRequest) -> Result<RatioSpreadResponse, String> {
+    let calc = QuantCalculator::new();
+
+    let result = calc
+        .calculate_ratio_spread(
+            request.underlying_price,
+            request.strike_call,
+            request.strike_put,
+            request.time_to_expiry,
+            request.risk_free_rate,
+            request.volatility,
+            request.ratio,
+        )
+        .map_err(|e| e.to_string())?;
+
+    Ok(RatioSpreadResponse { combo: result })
 }

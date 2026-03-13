@@ -34,9 +34,11 @@ use crate::ib_positions::fetch_ib_positions;
 use crate::loans::{LoanAggregationInput, LoanRecord, LoanRepository};
 use crate::project_paths::shared_config_candidate_paths;
 use crate::quant::{
-    calculate_greeks as calc_greeks, calculate_historical_volatility as calc_hv,
-    calculate_iv as calc_iv, calculate_risk_metrics as calc_risk,
-    calculate_strategy as calc_strategy, GreeksRequest, HistoricalVolRequest, IvRequest,
+    calculate_box_spread as calc_box, calculate_greeks as calc_greeks,
+    calculate_historical_volatility as calc_hv, calculate_iv as calc_iv,
+    calculate_jelly_roll as calc_jelly, calculate_ratio_spread as calc_ratio,
+    calculate_risk_metrics as calc_risk, calculate_strategy as calc_strategy, BoxSpreadRequest,
+    GreeksRequest, HistoricalVolRequest, IvRequest, JellyRollRequest, RatioSpreadRequest,
     RiskMetricsRequest, StrategyRequest,
 };
 use crate::runtime_state::{
@@ -118,6 +120,9 @@ impl RestServer {
             .route("/api/calculate/hv", post(calculate_historical_volatility))
             .route("/api/calculate/risk", post(calculate_risk_metrics))
             .route("/api/calculate/strategy", post(calculate_strategy))
+            .route("/api/calculate/box-spread", post(calculate_box_spread))
+            .route("/api/calculate/jelly-roll", post(calculate_jelly_roll))
+            .route("/api/calculate/ratio-spread", post(calculate_ratio_spread))
             .route("/api/benchmarks/sofr", get(benchmarks_sofr))
             .route("/api/benchmarks/treasury", get(benchmarks_treasury))
             .route("/api/live/state", get(live_state))
@@ -510,6 +515,27 @@ async fn calculate_strategy(
     Json(payload): Json<StrategyRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
     let response = calc_strategy(&payload).map_err(|error| (StatusCode::BAD_REQUEST, Json(ErrorResponse { error })))?;
+    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+}
+
+async fn calculate_box_spread(
+    Json(payload): Json<BoxSpreadRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let response = calc_box(&payload).map_err(|error| (StatusCode::BAD_REQUEST, Json(ErrorResponse { error })))?;
+    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+}
+
+async fn calculate_jelly_roll(
+    Json(payload): Json<JellyRollRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let response = calc_jelly(&payload).map_err(|error| (StatusCode::BAD_REQUEST, Json(ErrorResponse { error })))?;
+    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+}
+
+async fn calculate_ratio_spread(
+    Json(payload): Json<RatioSpreadRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let response = calc_ratio(&payload).map_err(|error| (StatusCode::BAD_REQUEST, Json(ErrorResponse { error })))?;
     Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
 }
 
