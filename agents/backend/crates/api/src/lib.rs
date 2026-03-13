@@ -4,6 +4,7 @@ mod health;
 mod ib_positions;
 mod loans;
 pub mod project_paths;
+pub mod quant;
 pub mod rest;
 mod runtime_state;
 pub mod state;

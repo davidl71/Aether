@@ -33,6 +33,9 @@ use crate::health::SharedHealthAggregate;
 use crate::ib_positions::fetch_ib_positions;
 use crate::loans::{LoanAggregationInput, LoanRecord, LoanRepository};
 use crate::project_paths::shared_config_candidate_paths;
+use crate::quant::{
+    calculate_greeks as calc_greeks, calculate_iv as calc_iv, GreeksRequest, IvRequest,
+};
 use crate::runtime_state::{
     RuntimeExecutionState, RuntimeOrderDto, RuntimePositionDto, RuntimeSnapshotDto,
 };
@@ -107,6 +110,8 @@ impl RestServer {
             .route("/api/build-curve", post(build_curve))
             .route("/api/compare", post(compare_rates))
             .route("/api/yield-curve/comparison", post(yield_curve_comparison))
+            .route("/api/calculate/greeks", post(calculate_greeks))
+            .route("/api/calculate/iv", post(calculate_iv))
             .route("/api/benchmarks/sofr", get(benchmarks_sofr))
             .route("/api/benchmarks/treasury", get(benchmarks_treasury))
             .route("/api/live/state", get(live_state))
@@ -465,6 +470,20 @@ async fn yield_curve_comparison(
     Ok(Json(
         serde_json::to_value(response).map_err(live_state_internal_error)?,
     ))
+}
+
+async fn calculate_greeks(
+    Json(payload): Json<GreeksRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let response = calc_greeks(&payload).map_err(|error| (StatusCode::BAD_REQUEST, Json(ErrorResponse { error })))?;
+    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
+}
+
+async fn calculate_iv(
+    Json(payload): Json<IvRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let response = calc_iv(&payload).map_err(|error| (StatusCode::BAD_REQUEST, Json(ErrorResponse { error })))?;
+    Ok(Json(serde_json::to_value(response).map_err(live_state_internal_error)?))
 }
 
 async fn benchmarks_sofr() -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
