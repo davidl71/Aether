@@ -1,0 +1,34 @@
+# NautilusTrader IB Agent — default configuration
+# Paper trading (port 7497). Switch to 7496 for live.
+
+[ib]
+host = "127.0.0.1"
+port = 7497            # paper trading (TWS) | 4002 = Gateway paper | 7496 = live TWS
+# IMPORTANT: NT uses two clientIds internally.
+#   exec client  → client_id      (default 10)
+#   data client  → client_id + 1  (default 11)
+# These MUST NOT conflict with C++ TWSClient (default clientId = 1).
+# When ENABLE_NAUTILUS_BROKER=ON the C++ TWSClient is suppressed, removing the conflict.
+client_id = 10
+account_id = "DU1234567"          # replace with your paper account ID
+use_regular_trading_hours = true
+
+[nats]
+url = "nats://127.0.0.1:4222"
+source_id = "nautilus-ib"         # written into NatsEnvelope.source
+
+[strategy]
+symbols = ["SPX", "XSP", "NDX"]  # European-style index options only
+min_days_to_expiry = 30
+max_days_to_expiry = 90
+min_arbitrage_profit = 0.10       # USD profit floor per spread
+min_roi_percent = 0.5
+max_position_size = 10000.0       # USD notional cap per box spread
+max_bid_ask_spread = 0.10         # per-leg max spread as fraction of mid
+min_volume = 100
+min_open_interest = 500
+eval_debounce_seconds = 1.0       # minimum seconds between chain evaluations
+max_contracts_per_symbol = 200    # mirrors C++ guard in find_box_spreads()
+
+[logging]
+level = "INFO"

@@ -471,6 +471,10 @@ fetchcontent_declare(
 )
 set(NLOPT_LICENSE_MIT ON CACHE BOOL "Use MIT license instead of LGPL")
 
+# NautilusTrader Python agent owns the IB connection (replaces C++ TWSClient)
+option(ENABLE_NAUTILUS_BROKER
+    "Suppress C++ TWSClient; NautilusTrader Python agent in agents/nautilus/ owns the IBKR connection" OFF)
+
 # NATS C client library (optional, for message queue integration)
 option(ENABLE_NATS "Enable NATS message queue integration" OFF)
 if(ENABLE_NATS)
@@ -1080,6 +1084,13 @@ if(_build_native_cli)
 
     # Find libcurl for HTTP client support
     find_package(CURL REQUIRED)
+
+    # NautilusTrader broker mode: suppress C++ TWSClient at runtime via compile flag
+    if(ENABLE_NAUTILUS_BROKER)
+        target_compile_definitions(ib_box_spread PRIVATE NAUTILUS_BROKER_ENABLED)
+        message(STATUS "ENABLE_NAUTILUS_BROKER=ON: C++ TWSClient suppressed at runtime. "
+                       "Start agents/nautilus/ (just nautilus-paper) to connect to IBKR.")
+    endif()
 
     # Link NATS library if enabled
     if(ENABLE_NATS)

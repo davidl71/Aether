@@ -4,7 +4,7 @@ Multi-asset synthetic financing platform. Box spreads are one strategy (7-10% al
 the platform manages financing across options, futures, bonds, bank loans, and pension funds
 across 21+ accounts and multiple brokers.
 
-**Last updated**: 2026-03-11 (backend topology simplification)
+**Last updated**: 2026-03-13 (NautilusTrader IB adapter integration)
 
 ## System Overview
 
@@ -26,24 +26,32 @@ across 21+ accounts and multiple brokers.
                  │                                │
      ┌───────────┴────────────────────────────────┴──────────────┐
      │                           NATS                              │
-     │                          ┌─────────────────────────────┐  │
-     │                          │ C++ engine                  │  │
-     │                          │ tws_client / nats_client    │  │
-     │                          │ pricing / risk / orders     │  │
-     │                          │ protobuf event publisher    │  │
-     │                          └──────────────┬──────────────┘  │
-     └───────────────────────────────────────────┼─────────────────┘
-                                                 │
-                                          ┌──────┴──────┐
-                                          │  TWS/IBKR   │
-                                          │  port 7497  │
-                                          └─────────────┘
+     │   ┌──────────────────────────┐  ┌───────────────────────┐ │
+     │   │ NautilusTrader agent     │  │ C++ engine            │ │
+     │   │ agents/nautilus/         │  │ (calculations only    │ │
+     │   │ BoxSpreadStrategy        │  │  when NAUTILUS_BROKER │ │
+     │   │ NatsBridge               │  │  _ENABLED is set;     │ │
+     │   │ NatsEnvelope publisher   │  │  no TWS connection)   │ │
+     │   └────────────┬─────────────┘  └───────────────────────┘ │
+     └────────────────┼──────────────────────────────────────────┘
+                      │ owns IB connection
+                ┌─────┴──────┐
+                │  TWS/IBKR  │
+                │  port 7497 │  ← paper | 7496 live
+                └────────────┘
 
 Storage layers:
   InMemoryCache (C++)  →  hot tick data
   NATS KV              →  live key-value state (written by collection-daemon as full envelopes)
   SQLite               →  Rust ledger owner; Python overlap is legacy technical debt
   QuestDB              →  time-series archive
+
+NautilusTrader mode (ENABLE_NAUTILUS_BROKER=ON):
+  NT Python agent (agents/nautilus/) owns the IBKR TWS connection.
+  C++ TWSClient is suppressed at compile time; C++ engine runs in mock/calc-only mode.
+  NT NatsBridge publishes NatsEnvelope protos to the same NATS topics as before:
+    market-data.tick.{symbol}, strategy.decision.{symbol}, orders.fill.{id}, positions.update.{symbol}
+  Rust backend and TUI are unchanged — they continue consuming from NATS normally.
 ```
 
 ## Components
@@ -62,13 +70,16 @@ Storage layers:
 |-----------|------------|---------|
 | Rust REST+WS backend | Rust (Axum) :8080 | Shared frontend API owner for snapshot and frontend read models consumed by web and TUI |
 | Python integration services | Python (FastAPI) | Explicit specialist services only: broker/bank integrations, risk-free-rate service, and health dashboard |
-| C++ engine | C++20 | TWS connectivity, strategy execution, risk/Greeks/pricing |
+| **NautilusTrader agent** | **Python + NT 1.224.0** | **Primary IBKR connection (replaces C++ TWSClient when `ENABLE_NAUTILUS_BROKER=ON`). BoxSpreadStrategy, NatsBridge.** |
+| C++ engine | C++20 | Risk/Greeks/pricing/margin calculations. TWS connectivity disabled when `NAUTILUS_BROKER_ENABLED` is defined. |
 | NATS | NATS JetStream | Async messaging, market data events, heartbeats |
 
 ### Messaging Contract
 
-All C++ NATS messages use `NatsEnvelope` (protobuf) with serialized inner messages.
-Topics: `market-data.tick.<symbol>`, `strategy.signal.<symbol>`, `strategy.decision.<symbol>`
+All NATS messages use `NatsEnvelope` (protobuf) with serialized inner messages.
+Published by the C++ engine (default) or the NautilusTrader agent (`ENABLE_NAUTILUS_BROKER=ON`).
+Topics: `market-data.tick.<symbol>`, `strategy.signal.<symbol>`, `strategy.decision.<symbol>`,
+        `orders.fill.<order_id>`, `positions.update.<symbol>`
 
 See `docs/message_schemas/README.md` and `proto/messages.proto` for the canonical schema.
 
@@ -79,7 +90,8 @@ Generated from `proto/messages.proto` via `./proto/generate.sh`:
 | Language | Output | Status |
 |----------|--------|--------|
 | C++ | `native/generated/messages.pb.{h,cc}` | Active — `ENABLE_PROTO` flag |
-| Python | `python/generated/` (betterproto) | Generated, NATS migration pending |
+| Python (legacy) | `python/generated/` (betterproto) | Generated, NATS migration pending |
+| Python (NT agent) | `agents/nautilus/src/nautilus_agent/generated/` (google-protobuf) | Run `just proto-gen-nautilus` to generate |
 | TypeScript | `web/src/proto/messages.ts` (ts-proto) | Generated, migration pending |
 | Rust | `nats_adapter` crate (prost via build.rs) | Active |
 

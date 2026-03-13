@@ -645,6 +645,19 @@ int main(int argc, char **argv) {
           break;
         }
       } else if (broker == "ib") {
+#ifdef NAUTILUS_BROKER_ENABLED
+        spdlog::warn(
+            "NAUTILUS_BROKER_ENABLED: C++ TWSAdapter suppressed for IB broker. "
+            "NautilusTrader Python agent (agents/nautilus/) owns the IBKR connection. "
+            "Start it with: just nautilus-paper");
+        config.tws.use_mock = true;
+        broker_adapter = std::make_unique<brokers::TWSAdapter>(config.tws);
+        connected = broker_adapter->connect();
+        if (connected) {
+          spdlog::info("✓ Mock adapter active (NautilusTrader owns live IB connection)");
+          break;
+        }
+#else
         spdlog::info("Selecting broker: Interactive Brokers (TWS/Gateway)");
         config.tws.use_mock = false;
         spdlog::info("Connecting to TWS on {}:{}", config.tws.host,
@@ -660,6 +673,7 @@ int main(int argc, char **argv) {
         spdlog::error("Check TWS/Gateway is running and ports are correct "
                       "(7497 paper / 7496 live)");
         // Do not exit; move to next broker
+#endif
       } else if (broker == "fibi" || broker == "meitav" || broker == "ibi" ||
                  broker == "discount") {
         spdlog::warn("{} broker selected, but C++ adapter is not implemented. "
@@ -773,6 +787,19 @@ int main(int argc, char **argv) {
           break;
         }
       } else if (broker == "ib") {
+#ifdef NAUTILUS_BROKER_ENABLED
+        spdlog::warn(
+            "NAUTILUS_BROKER_ENABLED: C++ TWSClient suppressed for IB broker. "
+            "NautilusTrader Python agent (agents/nautilus/) owns the IBKR connection. "
+            "Start it with: just nautilus-paper");
+        config.tws.use_mock = true;
+        tws_client = std::make_unique<tws::TWSClient>(config.tws);
+        connected = tws_client->connect();
+        if (connected) {
+          spdlog::info("✓ Mock client active (NautilusTrader owns live IB connection)");
+          break;
+        }
+#else
         spdlog::info("Selecting broker: Interactive Brokers (TWS/Gateway)");
         config.tws.use_mock = false;
         spdlog::info("Connecting to TWS on {}:{}", config.tws.host,
@@ -788,6 +815,7 @@ int main(int argc, char **argv) {
         spdlog::error("Check TWS/Gateway is running and ports are correct "
                       "(7497 paper / 7496 live)");
         // Do not exit; move to next broker
+#endif
       } else if (broker == "fibi" || broker == "meitav" || broker == "ibi" ||
                  broker == "discount") {
         spdlog::warn("{} broker selected, but C++ adapter is not implemented. "
