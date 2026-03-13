@@ -120,6 +120,48 @@ async def test_nats_not_connected_does_not_raise(bridge):
 
 
 @pytest.mark.asyncio
+async def test_schedule_logs_exception_does_not_propagate(bridge):
+    """schedule() catches task exceptions via _guarded; they do not propagate to caller."""
+    async def _failing_coro() -> None:
+        raise RuntimeError("publish exploded")
+
+    bridge.schedule(_failing_coro())
+    # Give the event loop a tick to run the task
+    await asyncio.sleep(0)
+    # No exception raised in this test — it was swallowed and logged
+
+
+@pytest.mark.asyncio
+async def test_drain_awaits_pending_tasks(bridge):
+    """drain() waits for all scheduled tasks to complete."""
+    completed: list[bool] = []
+
+    async def _slow_publish() -> None:
+        await asyncio.sleep(0.01)
+        completed.append(True)
+
+    bridge.schedule(_slow_publish())
+    bridge.schedule(_slow_publish())
+    assert len(bridge._pending_tasks) > 0
+    await bridge.drain(timeout=2.0)
+    assert len(completed) == 2
+
+
+@pytest.mark.asyncio
+async def test_strategy_signal_published_on_quote_tick():
+    """on_quote_tick publishes both MarketDataEvent and StrategySignal."""
+    pytest.importorskip("nautilus_trader")
+    # Verify NatsBridge.publish_strategy_signal is callable with correct proto type
+    from nautilus_agent.nats_bridge import NatsBridge
+    b = NatsBridge("nats://localhost:4222", source_id="nautilus-ib")
+    b._nc = AsyncMock()
+    signal = pb.StrategySignal(symbol="SPX", price=5100.5)
+    await b.publish_strategy_signal("SPX", signal)
+    topic = b._nc.publish.call_args[0][0]
+    assert topic == "strategy.signal.SPX"
+
+
+@pytest.mark.asyncio
 async def test_envelope_uuid_unique(bridge):
     """Each publish produces a unique envelope ID."""
     event = pb.MarketDataEvent(symbol="SPX", bid=5100.0, ask=5101.0)

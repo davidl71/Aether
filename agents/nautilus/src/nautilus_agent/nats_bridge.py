@@ -24,6 +24,8 @@ from nautilus_agent.generated import messages_pb2 as pb
 
 log = structlog.get_logger(__name__)
 
+_DRAIN_TIMEOUT_SECONDS = 5.0
+
 
 class NatsBridge:
     """Async NATS publisher that wraps proto messages in NatsEnvelope."""
@@ -32,12 +34,28 @@ class NatsBridge:
         self._url = nats_url
         self._source_id = source_id
         self._nc: nats.aio.client.Client | None = None
+        self._pending_tasks: set[asyncio.Task[None]] = set()
 
     async def connect(self) -> None:
         self._nc = await nats.connect(self._url)
         log.info("nats_bridge.connected", url=self._url)
 
+    async def drain(self, timeout: float = _DRAIN_TIMEOUT_SECONDS) -> None:
+        """Wait for all in-flight publish tasks to complete before shutdown."""
+        if not self._pending_tasks:
+            return
+        pending = list(self._pending_tasks)
+        log.info("nats_bridge.draining", tasks=len(pending))
+        try:
+            await asyncio.wait_for(
+                asyncio.gather(*pending, return_exceptions=True),
+                timeout=timeout,
+            )
+        except asyncio.TimeoutError:
+            log.warning("nats_bridge.drain_timeout", timeout=timeout, remaining=len(self._pending_tasks))
+
     async def disconnect(self) -> None:
+        await self.drain()
         if self._nc:
             await self._nc.drain()
             log.info("nats_bridge.disconnected")
@@ -110,5 +128,15 @@ class NatsBridge:
     # ------------------------------------------------------------------
 
     def schedule(self, coro: Any) -> None:
-        """Schedule a coroutine on the running event loop without blocking."""
-        asyncio.create_task(coro)
+        """Schedule a coroutine on the running loop; track task and log exceptions."""
+        task: asyncio.Task[None] = asyncio.create_task(self._guarded(coro))
+        self._pending_tasks.add(task)
+        task.add_done_callback(self._pending_tasks.discard)
+
+    @staticmethod
+    async def _guarded(coro: Any) -> None:
+        """Awaits coro and logs any exception so it never silently disappears."""
+        try:
+            await coro
+        except Exception:
+            log.exception("nats_bridge.task_failed")

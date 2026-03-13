@@ -8,6 +8,7 @@ in native/src/strategies/box_spread/box_spread_strategy.cpp lines 213-248.
 
 NATS events published (via NatsBridge):
   market-data.tick.{symbol}     — on every QuoteTick
+  strategy.signal.{symbol}      — on every QuoteTick (mid-price signal, mirrors C++ NatsClient)
   strategy.decision.{symbol}    — when a box spread opportunity is found
   orders.fill.{order_id}        — on OrderFilled
   positions.update.{symbol}     — on PositionOpened/PositionChanged
@@ -20,6 +21,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import structlog
+from google.protobuf import timestamp_pb2
 from nautilus_trader.config import StrategyConfig
 from nautilus_trader.model.data import QuoteTick
 from nautilus_trader.model.enums import OrderSide, TimeInForce
@@ -141,6 +143,8 @@ class BoxSpreadStrategy(Strategy):
 
     def on_stop(self) -> None:
         log.info("strategy.stopping")
+        # Drain any in-flight NATS publishes before the event loop closes.
+        asyncio.create_task(self._nats.drain())
 
     def on_quote_tick(self, tick: QuoteTick) -> None:
         symbol = instrument_id_symbol(tick.instrument_id)
@@ -162,9 +166,21 @@ class BoxSpreadStrategy(Strategy):
                 parsed.ask = float(tick.ask_price)
                 self._chain_cache[symbol][key] = parsed
 
-        # Publish market data to NATS
+        # Publish market data to NATS — market-data.tick.{symbol}
         event = quote_tick_to_market_data_event(tick, symbol)
         self._nats.schedule(self._nats.publish_market_data(symbol, event))
+
+        # Publish strategy signal — strategy.signal.{symbol} (mirrors C++ NatsClient)
+        mid = (float(tick.bid_price) + float(tick.ask_price)) / 2.0
+        _now = time.time()
+        signal = pb.StrategySignal(
+            symbol=symbol,
+            price=mid,
+            timestamp=timestamp_pb2.Timestamp(
+                seconds=int(_now), nanos=int((_now % 1) * 1_000_000_000)
+            ),
+        )
+        self._nats.schedule(self._nats.publish_strategy_signal(symbol, signal))
 
         # Debounced evaluation
         now = time.time()
