@@ -451,3 +451,65 @@ TEST_CASE("OptionChain edge cases", "[option_chain][edge]") {
     REQUIRE(chain.get_total_option_count() == 0);
   }
 }
+
+// ============================================================================
+// calculate_metrics: intrinsic / extrinsic value
+// ============================================================================
+
+TEST_CASE("OptionChainBuilder::calculate_metrics intrinsic and extrinsic value",
+          "[option_chain][metrics]") {
+
+  // ITM call: S=105, K=100 → intrinsic=5, extrinsic=max(mid-5,0)
+  SECTION("ITM call: intrinsic = S - K") {
+    auto entry = create_test_entry("SPY", "20271219", 100.0, OptionType::Call,
+                                   /*bid=*/5.80, /*ask=*/6.20);
+    OptionChainBuilder::calculate_metrics(entry, 105.0, 0.05);
+    REQUIRE_THAT(entry.intrinsic_value, WithinAbs(5.0, 1e-9));
+    // mid = 6.0; extrinsic = max(6.0 - 5.0, 0) = 1.0
+    REQUIRE_THAT(entry.extrinsic_value, WithinAbs(1.0, 1e-9));
+  }
+
+  // OTM call: S=95, K=100 → intrinsic=0, extrinsic=mid
+  SECTION("OTM call: intrinsic = 0, extrinsic = mid") {
+    auto entry = create_test_entry("SPY", "20271219", 100.0, OptionType::Call,
+                                   /*bid=*/1.80, /*ask=*/2.20);
+    OptionChainBuilder::calculate_metrics(entry, 95.0, 0.05);
+    REQUIRE_THAT(entry.intrinsic_value, WithinAbs(0.0, 1e-9));
+    REQUIRE_THAT(entry.extrinsic_value, WithinAbs(2.0, 1e-9)); // mid = 2.0
+  }
+
+  // ITM put: S=95, K=100 → intrinsic=5
+  SECTION("ITM put: intrinsic = K - S") {
+    auto entry = create_test_entry("SPY", "20271219", 100.0, OptionType::Put,
+                                   /*bid=*/5.80, /*ask=*/6.20);
+    OptionChainBuilder::calculate_metrics(entry, 95.0, 0.05);
+    REQUIRE_THAT(entry.intrinsic_value, WithinAbs(5.0, 1e-9));
+    REQUIRE_THAT(entry.extrinsic_value, WithinAbs(1.0, 1e-9));
+  }
+
+  // OTM put: S=105, K=100 → intrinsic=0
+  SECTION("OTM put: intrinsic = 0") {
+    auto entry = create_test_entry("SPY", "20271219", 100.0, OptionType::Put,
+                                   /*bid=*/1.80, /*ask=*/2.20);
+    OptionChainBuilder::calculate_metrics(entry, 105.0, 0.05);
+    REQUIRE_THAT(entry.intrinsic_value, WithinAbs(0.0, 1e-9));
+    REQUIRE_THAT(entry.extrinsic_value, WithinAbs(2.0, 1e-9));
+  }
+
+  // ATM call: S=K=100 → intrinsic=0, extrinsic=mid
+  SECTION("ATM call: intrinsic = 0") {
+    auto entry = create_test_entry("SPY", "20271219", 100.0, OptionType::Call,
+                                   /*bid=*/3.80, /*ask=*/4.20);
+    OptionChainBuilder::calculate_metrics(entry, 100.0, 0.05);
+    REQUIRE_THAT(entry.intrinsic_value, WithinAbs(0.0, 1e-9));
+    REQUIRE_THAT(entry.extrinsic_value, WithinAbs(4.0, 1e-9)); // pure time value
+  }
+
+  // moneyness = strike / underlying_price
+  SECTION("moneyness is strike / underlying") {
+    auto entry = create_test_entry("SPY", "20271219", 110.0, OptionType::Call,
+                                   1.0, 1.2);
+    OptionChainBuilder::calculate_metrics(entry, 100.0, 0.05);
+    REQUIRE_THAT(entry.moneyness, WithinAbs(1.10, 1e-9));
+  }
+}

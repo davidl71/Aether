@@ -1,5 +1,6 @@
 // greeks_calculator.cpp - Greeks calculation using QuantLib
 #include "greeks_calculator.h"
+#include "constants.h"
 #include "market_hours.h"
 #include <cmath>
 #include <unordered_map>
@@ -48,7 +49,7 @@ std::optional<double> GreeksCalculator::calculate_implied_vol(
       std::exp((risk_free_rate - dividend_yield) * time_to_expiry);
   const double discount = std::exp(-risk_free_rate * time_to_expiry);
 
-  double sigma = 0.30; // initial guess: 30% annualised vol
+  double sigma = constants::kIvNewtonSeed; // initial guess: 30% annualised vol
 
   try {
     for (int i = 0; i < kMaxIter; ++i) {
@@ -61,8 +62,8 @@ std::optional<double> GreeksCalculator::calculate_implied_vol(
       }
 
       const double vega = calc.vega(time_to_expiry);
-      if (std::abs(vega) < 1e-10) {
-        spdlog::debug("calculate_implied_vol: vega near-zero at iter {}, price={} S={} K={}",
+      if (std::abs(vega) < constants::kVegaEpsilon) {
+        spdlog::debug("calculate_implied_vol: vega near-zero at iter {}, price={} S={} K={} — trying Brent",
                       i, market_price, underlying_price, strike);
         break;
       }
@@ -70,13 +71,29 @@ std::optional<double> GreeksCalculator::calculate_implied_vol(
       sigma = std::clamp(sigma - diff / vega, kMinVol, kMaxVol);
     }
   } catch (const std::exception& e) {
-    spdlog::warn("calculate_implied_vol: QuantLib error: {}", e.what());
+    spdlog::warn("calculate_implied_vol: QuantLib error in Newton phase: {}", e.what());
     return std::nullopt;
   }
 
-  spdlog::debug("calculate_implied_vol: did not converge price={} S={} K={} T={}",
-                market_price, underlying_price, strike, time_to_expiry);
-  return std::nullopt;
+  // Newton-Raphson did not converge (typically near-zero vega for deep ITM/OTM
+  // or very short expiry).  Brent is guaranteed to converge within [kMinVol,
+  // kMaxVol] as long as the pricing function changes sign across the interval.
+  try {
+    Brent solver;
+    sigma = solver.solve(
+        [&](double s) {
+          BlackCalculator c(payoff, forward, s * std::sqrt(time_to_expiry), discount);
+          return c.value() - market_price;
+        },
+        kTol,
+        kMinVol,
+        kMaxVol);
+    return sigma;
+  } catch (const std::exception& e) {
+    spdlog::debug("calculate_implied_vol: Brent fallback failed price={} S={} K={}: {}",
+                  market_price, underlying_price, strike, e.what());
+    return std::nullopt;
+  }
 }
 
 std::optional<Greeks> GreeksCalculator::calculate_option_greeks(
@@ -180,7 +197,7 @@ std::optional<Greeks> GreeksCalculator::calculate_option_greeks(
     greeks.delta = blackCalc.delta(underlying_price);
     greeks.gamma = blackCalc.gamma(underlying_price);
     greeks.theta =
-        blackCalc.theta(underlying_price, risk_free_rate) / 365.0; // Per day
+        blackCalc.theta(underlying_price, risk_free_rate) / constants::kCalendarDaysPerYear; // Per day
     greeks.vega = blackCalc.vega(0.01) / 100.0; // Per 1% vol change
     greeks.rho = blackCalc.rho(0.01) / 100.0;   // Per 1% rate change
 
@@ -293,7 +310,7 @@ Greeks GreeksCalculator::aggregate_greeks(
 }
 
 double GreeksCalculator::days_to_years(int days) const {
-  return static_cast<double>(days) / 365.0;
+  return static_cast<double>(days) / constants::kCalendarDaysPerYear;
 }
 
 namespace {

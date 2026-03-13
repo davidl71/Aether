@@ -44,8 +44,7 @@
 | Tool | Role | When to use | Where in this repo |
 |------|------|-------------|--------------------|
 | **Protobuf** | Single schema → C++ / Python / Rust / Go / TS. | All cross-language DTOs and wire format (already in use). | `proto/messages.proto`; `./proto/generate.sh`; CMake for C++. |
-| **pybind11** | C++ ↔ Python with one build system (CMake). | Python calling C++ box spread/risk logic (maintainability, performance). | `native/src/box_spread_pybind.cpp`; default Python bindings backend. |
-| **Litgen / automatic bindings** | Generate pybind11 (or nanobind) from C++ headers. | When you want to expose many C++ APIs to Python with less hand-written binding code. | Optional future: generate bindings for extra native modules. |
+| **pybind11 / Litgen** | C++ ↔ Python bindings. | Not currently in use — Python layer is archived. If a Python consumer is reintroduced, pybind11 via `pybind11_add_module` is the preferred approach. | N/A (source and CMake targets removed). |
 
 ---
 

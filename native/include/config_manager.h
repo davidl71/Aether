@@ -18,7 +18,6 @@ struct TWSConfig {
     int client_id = 1;
     int connection_timeout_ms = 60000;  // 60 seconds - timeout for waiting for nextValidId after socket connection
     bool auto_reconnect = true;
-    int reconnect_delay_ms = 3000;  // Deprecated: use exponential backoff instead
     int max_reconnect_attempts = 10; // Maximum reconnection attempts (0 = unlimited)
     bool log_raw_messages = false;   // Log raw API messages/data for debugging (verbose, use with trace log_level)
     bool use_mock = false;           // Use in-process mock TWS client (no network connection)
@@ -245,7 +244,6 @@ inline void to_json(nlohmann::json& j, const TWSConfig& config) {
         {"client_id", config.client_id},
         {"connection_timeout_ms", config.connection_timeout_ms},
         {"auto_reconnect", config.auto_reconnect},
-        {"reconnect_delay_ms", config.reconnect_delay_ms},
         {"max_reconnect_attempts", config.max_reconnect_attempts},
         {"log_raw_messages", config.log_raw_messages},
         {"use_mock", config.use_mock},
@@ -282,8 +280,6 @@ inline void from_json(const nlohmann::json& j, TWSConfig& config) {
         j.at("connection_timeout_ms").get_to(config.connection_timeout_ms);
     if (j.contains("auto_reconnect"))
         j.at("auto_reconnect").get_to(config.auto_reconnect);
-    if (j.contains("reconnect_delay_ms"))
-        j.at("reconnect_delay_ms").get_to(config.reconnect_delay_ms);
     if (j.contains("max_reconnect_attempts"))
         j.at("max_reconnect_attempts").get_to(config.max_reconnect_attempts);
     if (j.contains("log_raw_messages"))

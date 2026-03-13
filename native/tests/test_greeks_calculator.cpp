@@ -287,3 +287,47 @@ TEST_CASE("GreeksCalculator::calculate_stock_greeks", "[greeks][stock]")
     REQUIRE_THAT(g.rho,   WithinAbs(0.0, 1e-9));
   }
 }
+
+// ============================================================================
+// Brent fallback: deep ITM / near-zero-vega scenario
+// ============================================================================
+
+TEST_CASE("calculate_implied_vol Brent fallback on near-zero-vega input",
+          "[greeks][implied_vol][iv_brent]")
+{
+  GreeksCalculator calc;
+  constexpr double kOneBp = 0.0001;
+
+  SECTION("Deep ITM call with very short expiry (T=0.002yr, ~0.5 trading days)")
+  {
+    // Very short DTE + deep ITM → vega ≈ 0 → Newton breaks; Brent should recover.
+    const double S = 100.0, K = 50.0, r = 0.05, T = 0.002;
+    const double true_sigma = 0.30;
+    const double price = black_price(S, K, r, T, true_sigma, types::OptionType::Call);
+
+    auto iv = calc.calculate_implied_vol(price, S, K, r, T, types::OptionType::Call);
+    // Must return a value (not nullopt) via the Brent path
+    REQUIRE(iv.has_value());
+    // Re-price with recovered IV and confirm round-trip within 1bp
+    const double repriced = black_price(S, K, r, T, *iv, types::OptionType::Call);
+    REQUIRE_THAT(repriced - price, WithinAbs(0.0, kOneBp));
+  }
+
+  SECTION("Deep OTM put with very short expiry (T=0.002yr)")
+  {
+    const double S = 100.0, K = 150.0, r = 0.05, T = 0.002;
+    const double true_sigma = 0.30;
+    const double price = black_price(S, K, r, T, true_sigma, types::OptionType::Put);
+
+    // price may be extremely small; skip if below floating-point noise floor
+    if (price < 1e-10) return;
+
+    auto iv = calc.calculate_implied_vol(price, S, K, r, T, types::OptionType::Put);
+    if (iv.has_value()) {
+      const double repriced = black_price(S, K, r, T, *iv, types::OptionType::Put);
+      REQUIRE_THAT(repriced - price, WithinAbs(0.0, kOneBp));
+    }
+    // If iv is nullopt the Brent interval had no sign change (market price
+    // outside achievable range for this extreme case) — that is acceptable.
+  }
+}

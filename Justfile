@@ -405,3 +405,30 @@ validate-config:
 # Benchmark backend services (health + snapshot latency)
 benchmark:
     uv run python scripts/benchmark_backend_services.py
+
+# --- NautilusTrader Agent ---
+
+# Install/sync NautilusTrader agent dependencies
+nautilus-sync:
+    cd agents/nautilus && uv sync
+
+# Generate Python protobuf stubs for the nautilus agent (requires grpcio-tools in venv)
+proto-gen-nautilus:
+    cd agents/nautilus && uv run python scripts/generate_proto.py
+
+# Start NautilusTrader IB agent in paper trading mode (port 7497)
+nautilus-paper:
+    cd agents/nautilus && uv run python -m nautilus_agent.main config/default.toml
+
+# Start NautilusTrader IB agent with custom config path
+nautilus-start config="agents/nautilus/config/default.toml":
+    cd agents/nautilus && uv run python -m nautilus_agent.main {{config}}
+
+# Run NautilusTrader agent unit tests
+test-nautilus:
+    cd agents/nautilus && uv run pytest tests/ -v
+
+# Build C++ engine with ENABLE_NAUTILUS_BROKER=ON (suppresses C++ TWSClient)
+build-nautilus-mode:
+    cmake -S native -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_NAUTILUS_BROKER=ON
+    ninja -C build

@@ -389,6 +389,15 @@ run_shellcheck() {
   [ "${failed}" -eq 0 ]
 }
 
+run_shfmt() {
+  if ! command -v shfmt >/dev/null 2>&1; then
+    warn "Skipping shfmt (executable not found; install with: brew install shfmt)"
+    return 0
+  fi
+  info "Running shfmt (shell script formatting diff)"
+  shfmt -d -i 2 "${ROOT_DIR}/scripts/"
+}
+
 run_ansible_lint() {
   if ! command -v ansible-lint >/dev/null 2>&1; then
     warn "Skipping ansible-lint (executable not found; install with: pip install ansible-lint or uv tool install ansible-lint)"
@@ -557,6 +566,7 @@ main() {
   # run_golangci_lint  # Legacy Go TUI removed; active terminal UI is the Python/Textual TUI.
   run_exarp_go_lint
   run_shellcheck
+  run_shfmt
   run_ansible_lint
   run_cmake_lint
   run_bandit
@@ -629,6 +639,7 @@ main_parallel() {
 
   run_exarp_go_lint || status=1
   run_shellcheck || status=1
+  run_shfmt || status=1
 
   info "Lint checks completed"
   return "${status}"

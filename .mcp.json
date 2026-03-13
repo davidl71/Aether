@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "exarp-go": {
+      "command": "/home/user/go/bin/exarp-go",
+      "args": [],
+      "env": {
+        "PROJECT_ROOT": "/home/user/ib_box_spread_full_universal",
+        "EXARP_WATCH": "0",
+        "EXARP_DEBUG_LOG": "0"
+      }
+    }
+  }
+}

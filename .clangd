@@ -1,0 +1,9 @@
+CompileFlags:
+  CompilationDatabase: build/macos-arm64-debug
+  Add:
+    - "-std=c++20"
+    - "-stdlib=libc++"
+    - "-DUSE_TWS_CLIENT_IMPL_HEADER=1"
+    - "-I/Users/davidl/Projects/Trading/ib_box_spread_full_universal/native/include"
+  Remove:
+    - "-Wno-dangling-reference"
