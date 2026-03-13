@@ -1,6 +1,104 @@
-//! Connection status events for the NATS badge in the status bar.
+//! Structured event routing for the TUI.
 //!
-//! Log events are handled by tui-logger (via tracing macros) — see the Logs tab.
+//! Uses tokio::sync::broadcast for multi-listener event distribution.
+//! Events are categorized by priority and type for flexible handling.
+
+use std::sync::Arc;
+
+use chrono::{DateTime, Utc};
+use tokio::sync::broadcast;
+use uuid::Uuid;
+
+/// Event priority levels for routing decisions
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum EventPriority {
+    Low,
+    Normal,
+    High,
+    Critical,
+}
+
+impl EventPriority {
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::Low => "LOW",
+            Self::Normal => "NORM",
+            Self::High => "HIGH",
+            Self::Critical => "CRIT",
+        }
+    }
+}
+
+/// Event category for routing
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EventCategory {
+    Connection,
+    Snapshot,
+    UserAction,
+    Alert,
+    Order,
+}
+
+impl EventCategory {
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::Connection => "conn",
+            Self::Snapshot => "snap",
+            Self::UserAction => "user",
+            Self::Alert => "alert",
+            Self::Order => "order",
+        }
+    }
+}
+
+/// Base event envelope with metadata
+#[derive(Debug, Clone)]
+pub struct Event {
+    pub id: String,
+    pub priority: EventPriority,
+    pub category: EventCategory,
+    pub timestamp: DateTime<Utc>,
+    pub payload: EventPayload,
+}
+
+impl Event {
+    pub fn new(priority: EventPriority, category: EventCategory, payload: EventPayload) -> Self {
+        Self {
+            id: Uuid::new_v4().to_string(),
+            priority,
+            category,
+            timestamp: Utc::now(),
+            payload,
+        }
+    }
+}
+
+/// Event payloads by category
+#[derive(Debug, Clone)]
+pub enum EventPayload {
+    ConnectionChanged(ConnectionStatus),
+    SnapshotReceived {
+        source: SnapshotSource,
+        age_secs: i64,
+    },
+    KeyPressed {
+        key: String,
+        tab: String,
+    },
+    TabChanged(String),
+    AlertReceived {
+        level: String,
+        message: String,
+    },
+    OrderUpdated {
+        order_id: String,
+        status: String,
+    },
+}
+
+// ============================================================================
+// Connection events
+// ============================================================================
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConnectionTarget {
@@ -47,6 +145,90 @@ impl ConnectionStatus {
     }
 }
 
+// ============================================================================
+// Snapshot source
+// ============================================================================
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SnapshotSource {
+    Nats,
+    Rest,
+}
+
+impl SnapshotSource {
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::Nats => "NATS",
+            Self::Rest => "REST",
+        }
+    }
+}
+
+// ============================================================================
+// Event router using broadcast channel
+// ============================================================================
+
+pub struct EventRouter {
+    sender: broadcast::Sender<Event>,
+}
+
+impl EventRouter {
+    pub fn new() -> Self {
+        let (sender, _) = broadcast::channel(100);
+        Self { sender }
+    }
+
+    pub fn subscribe(&self) -> broadcast::Receiver<Event> {
+        self.sender.subscribe()
+    }
+
+    pub fn publish(&self, event: Event) {
+        let _ = self.sender.send(event);
+    }
+
+    pub fn publish_connection(&self, status: ConnectionStatus) {
+        let payload = EventPayload::ConnectionChanged(status);
+        let event = Event::new(EventPriority::High, EventCategory::Connection, payload);
+        self.publish(event);
+    }
+
+    pub fn publish_snapshot(&self, source: SnapshotSource, age_secs: i64) {
+        let payload = EventPayload::SnapshotReceived { source, age_secs };
+        let event = Event::new(EventPriority::Normal, EventCategory::Snapshot, payload);
+        self.publish(event);
+    }
+
+    pub fn publish_key(&self, key: String, tab: String) {
+        let payload = EventPayload::KeyPressed { key, tab };
+        let event = Event::new(EventPriority::Normal, EventCategory::UserAction, payload);
+        self.publish(event);
+    }
+
+    pub fn publish_tab_change(&self, tab: String) {
+        let payload = EventPayload::TabChanged(tab);
+        let event = Event::new(EventPriority::Normal, EventCategory::UserAction, payload);
+        self.publish(event);
+    }
+}
+
+impl Default for EventRouter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Thread-safe wrapper for EventRouter
+pub type SharedEventRouter = Arc<EventRouter>;
+
+pub fn create_event_router() -> SharedEventRouter {
+    Arc::new(EventRouter::new())
+}
+
+// ============================================================================
+// Legacy AppEvent for backward compatibility
+// ============================================================================
+
+/// Legacy event type for backward compatibility (use Event instead)
 #[derive(Debug, Clone)]
 pub enum AppEvent {
     Connection {

@@ -47,7 +47,8 @@ MarginCalculator::~MarginCalculator() {
 
 MarginResult
 MarginCalculator::calculate_reg_t_margin(const types::BoxSpreadLeg &spread,
-                                         double underlying_price) const {
+                                         double underlying_price,
+                                         double implied_volatility) const {
 
   MarginResult result{};
   result.calculated_at = std::chrono::system_clock::now();
@@ -60,15 +61,13 @@ MarginCalculator::calculate_reg_t_margin(const types::BoxSpreadLeg &spread,
   double short_call_margin = calculate_short_option_margin(
       underlying_price, spread.short_call.strike, types::OptionType::Call,
       spread.short_call_price,
-      // TODO: Source IV from live market data snapshot instead of 0.20 default.
-      0.20,
+      implied_volatility,
       spread.get_days_to_expiry());
 
   double short_put_margin = calculate_short_option_margin(
       underlying_price, spread.short_put.strike, types::OptionType::Put,
       spread.short_put_price,
-      // TODO: Source IV from live market data snapshot instead of 0.20 default.
-      0.20,
+      implied_volatility,
       spread.get_days_to_expiry());
 
   // Long legs: margin is typically 0 (premium paid), but we subtract premium
@@ -179,7 +178,7 @@ MarginResult MarginCalculator::calculate_margin(
     return calculate_portfolio_margin(spread, underlying_price,
                                       implied_volatility);
   } else {
-    return calculate_reg_t_margin(spread, underlying_price);
+    return calculate_reg_t_margin(spread, underlying_price, implied_volatility);
   }
 }
 

@@ -1,5 +1,7 @@
 //! Application state and event dispatch.
 
+use std::collections::{HashMap, VecDeque};
+
 use crossterm::event::{KeyCode, KeyEvent};
 use tokio::sync::{mpsc, watch};
 use tui_logger::{TuiWidgetEvent, TuiWidgetState};
@@ -7,6 +9,8 @@ use tui_logger::{TuiWidgetEvent, TuiWidgetState};
 use crate::config::TuiConfig;
 use crate::events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget};
 use crate::models::{SnapshotSource, TuiSnapshot};
+
+const SPARKLINE_HISTORY_SIZE: usize = 20;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Tab {
@@ -55,6 +59,10 @@ pub struct App {
     pub config: TuiConfig,
     pub active_tab: Tab,
     pub snapshot: Option<TuiSnapshot>,
+    /// Per-symbol ROI history for sparkline visualization (symbol -> deque of ROI values)
+    pub roi_history: HashMap<String, VecDeque<f64>>,
+    /// Order filter text (filters orders by symbol or status)
+    pub order_filter: String,
     /// State for the tui-logger widget (scroll position, level filter).
     pub log_state: TuiWidgetState,
     pub nats_status: ConnectionStatus,
@@ -75,6 +83,8 @@ impl App {
             config,
             active_tab: Tab::Dashboard,
             snapshot: None,
+            roi_history: HashMap::new(),
+            order_filter: String::new(),
             log_state: TuiWidgetState::default(),
             nats_status: ConnectionStatus::new(ConnectionState::Starting, "Connecting to NATS"),
             should_quit: false,
@@ -105,7 +115,8 @@ impl App {
 
             if let Some(snap) = next_snapshot {
                 if self.should_accept_snapshot(&snap) {
-                    self.snapshot = Some(snap);
+                    self.snapshot = Some(snap.clone());
+                    self.update_roi_history(&snap);
                 }
             }
         }
@@ -133,6 +144,27 @@ impl App {
         }
 
         current.is_stale(self.config.snapshot_stale_after_secs())
+    }
+
+    fn update_roi_history(&mut self, snap: &TuiSnapshot) {
+        for symbol_data in &snap.inner.symbols {
+            let roi = symbol_data.roi;
+            let entry = self
+                .roi_history
+                .entry(symbol_data.symbol.clone())
+                .or_default();
+            entry.push_back(roi);
+            while entry.len() > SPARKLINE_HISTORY_SIZE {
+                entry.pop_front();
+            }
+        }
+        let current_symbols: std::collections::HashSet<_> = snap
+            .inner
+            .symbols
+            .iter()
+            .map(|s| s.symbol.clone())
+            .collect();
+        self.roi_history.retain(|k, _| current_symbols.contains(k));
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) {
@@ -170,6 +202,21 @@ impl App {
             }
             KeyCode::Esc if self.active_tab == Tab::Logs => {
                 self.log_state.transition(TuiWidgetEvent::EscapeKey);
+            }
+            // Order filter: '/' to activate, chars to add, Backspace to delete, Esc to clear
+            KeyCode::Char('/') if self.active_tab == Tab::Orders => {
+                self.order_filter.clear();
+            }
+            KeyCode::Char(c) => {
+                if self.active_tab == Tab::Orders {
+                    self.order_filter.push(c);
+                }
+            }
+            KeyCode::Backspace if self.active_tab == Tab::Orders => {
+                self.order_filter.pop();
+            }
+            KeyCode::Esc if self.active_tab == Tab::Orders => {
+                self.order_filter.clear();
             }
             _ => {}
         }
@@ -212,7 +259,11 @@ mod tests {
         }
     }
 
-    fn make_app() -> (App, watch::Sender<Option<TuiSnapshot>>, mpsc::UnboundedSender<AppEvent>) {
+    fn make_app() -> (
+        App,
+        watch::Sender<Option<TuiSnapshot>>,
+        mpsc::UnboundedSender<AppEvent>,
+    ) {
         let (snap_tx, snap_rx) = watch::channel(None);
         let (event_tx, event_rx) = mpsc::unbounded_channel();
         let (_config_tx, config_rx) = watch::channel(TuiConfig::default());

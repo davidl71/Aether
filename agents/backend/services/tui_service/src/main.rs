@@ -48,6 +48,22 @@ mod ui;
 
 use app::App;
 use config::TuiConfig;
+use crossterm::tty::IsTty;
+
+fn is_interactive_terminal() -> bool {
+    std::io::stdout().is_tty()
+}
+
+fn run_noninteractive(config: TuiConfig) -> color_eyre::Result<()> {
+    println!("tui_service: Non-interactive terminal detected.");
+    println!("This service requires a TTY for the Ratatui interface.");
+    println!("");
+    println!("To run in background or scripts, use the API instead:");
+    println!("  curl http://localhost:8080/api/v1/snapshot");
+    println!("");
+    println!("Backend ID: {}", config.backend_id);
+    Ok(())
+}
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
@@ -89,6 +105,10 @@ async fn main() -> color_eyre::Result<()> {
         snapshot_ttl_secs = %config.snapshot_ttl_secs,
         "tui_service starting"
     );
+
+    if !is_interactive_terminal() {
+        return run_noninteractive(config);
+    }
 
     let (snap_tx, snap_rx) = watch::channel(None);
     let (event_tx, event_rx) = mpsc::unbounded_channel();
@@ -143,8 +163,9 @@ fn restore_terminal() -> color_eyre::Result<()> {
 /// EventStream (crossterm "event-stream" feature) yields futures that compose
 /// naturally with tokio::select!, giving immediate key response at any tick rate.
 ///
-/// TODO(async-template): if the app grows to need per-component event routing,
-/// consider adopting the full ratatui/async-template component model.
+/// TODO(exarp): T-1773357423959019000 — if the app grows to need per-component
+/// event routing, consider adopting the full ratatui/async-template component
+/// model.
 async fn run_loop(terminal: &mut ratatui::DefaultTerminal, app: &mut App) -> color_eyre::Result<()> {
     let mut event_stream = EventStream::new();
     let mut tick_interval = tokio::time::interval(Duration::from_millis(app.config.tick_ms));

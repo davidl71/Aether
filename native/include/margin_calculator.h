@@ -41,9 +41,11 @@ public:
 
   // Calculate Reg-T margin for box spread
   // Reg-T: Margin on short legs minus long legs (with offsets)
+  // implied_volatility: Used for option margin calculations (default 20%)
   MarginResult calculate_reg_t_margin(
       const types::BoxSpreadLeg& spread,
-      double underlying_price
+      double underlying_price,
+      double implied_volatility = 0.20
   ) const;
 
   // Calculate portfolio margin (simplified SPAN-like)

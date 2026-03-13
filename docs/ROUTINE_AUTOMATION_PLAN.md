@@ -272,7 +272,7 @@ This plan outlines routine automation tasks that should run regularly to maintai
 #### 5.1 Project Health Summary
 
 **Frequency**: Daily
-**Script**: New - `scripts/automate_project_health_dashboard.py`
+**Script**: ~~`scripts/automate_project_health_dashboard.py`~~ (historical - retired)
 **Purpose**: Generate comprehensive health dashboard
 **Actions**:
 

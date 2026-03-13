@@ -657,4 +657,330 @@ mod tests {
             .iter()
             .any(|err| err.contains("Origination date must be before maturity date")));
     }
+
+    #[tokio::test]
+    async fn loan_repository_insert_and_retrieve() {
+        use sqlx::sqlite::SqlitePoolOptions;
+        
+
+        let db_url = "sqlite::memory:";
+
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect(db_url)
+            .await
+            .expect("create test pool");
+
+        sqlx::query(
+            r#"
+            CREATE TABLE IF NOT EXISTS loans (
+                loan_id TEXT PRIMARY KEY,
+                bank_name TEXT NOT NULL,
+                account_number TEXT NOT NULL,
+                loan_type TEXT NOT NULL,
+                principal REAL NOT NULL,
+                original_principal REAL NOT NULL,
+                interest_rate REAL NOT NULL,
+                spread REAL NOT NULL,
+                base_cpi REAL NOT NULL,
+                current_cpi REAL NOT NULL,
+                origination_date TEXT NOT NULL,
+                maturity_date TEXT NOT NULL,
+                next_payment_date TEXT NOT NULL,
+                monthly_payment REAL NOT NULL,
+                payment_frequency_months INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                last_update TEXT NOT NULL
+            )
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .expect("create schema");
+
+        let repo = super::LoanRepository { pool };
+
+        let loan = LoanRecord {
+            loan_id: "test-loan-1".into(),
+            bank_name: "Test Bank".into(),
+            account_number: "111222333".into(),
+            loan_type: LoanType::ShirBased,
+            principal: 5000.0,
+            original_principal: 5000.0,
+            interest_rate: 4.5,
+            spread: 0.25,
+            base_cpi: 0.0,
+            current_cpi: 0.0,
+            origination_date: "2025-01-01T00:00:00Z".into(),
+            maturity_date: "2030-01-01T00:00:00Z".into(),
+            next_payment_date: "2025-02-01T00:00:00Z".into(),
+            monthly_payment: 150.0,
+            payment_frequency_months: 1,
+            status: LoanStatus::Active,
+            last_update: "2025-01-15T00:00:00Z".into(),
+        };
+
+        repo.create(loan.clone()).await.expect("insert loan");
+
+        let retrieved = repo.get("test-loan-1").await;
+        assert!(retrieved.is_some(), "loan should be retrievable");
+
+        let found = retrieved.unwrap();
+        assert_eq!(found.loan_id, loan.loan_id);
+        assert_eq!(found.bank_name, loan.bank_name);
+        assert_eq!(found.principal, loan.principal);
+        assert_eq!(found.loan_type, loan.loan_type);
+        assert_eq!(found.status, loan.status);
+    }
+
+    #[tokio::test]
+    async fn loan_repository_list_returns_all_loans() {
+        use sqlx::sqlite::SqlitePoolOptions;
+
+        let db_url = "sqlite::memory:";
+
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect(db_url)
+            .await
+            .expect("create test pool");
+
+        sqlx::query(
+            r#"
+            CREATE TABLE IF NOT EXISTS loans (
+                loan_id TEXT PRIMARY KEY,
+                bank_name TEXT NOT NULL,
+                account_number TEXT NOT NULL,
+                loan_type TEXT NOT NULL,
+                principal REAL NOT NULL,
+                original_principal REAL NOT NULL,
+                interest_rate REAL NOT NULL,
+                spread REAL NOT NULL,
+                base_cpi REAL NOT NULL,
+                current_cpi REAL NOT NULL,
+                origination_date TEXT NOT NULL,
+                maturity_date TEXT NOT NULL,
+                next_payment_date TEXT NOT NULL,
+                monthly_payment REAL NOT NULL,
+                payment_frequency_months INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                last_update TEXT NOT NULL
+            )
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .expect("create schema");
+
+        let repo = super::LoanRepository { pool };
+
+        for i in 1..=3 {
+            let loan = LoanRecord {
+                loan_id: format!("loan-{}", i),
+                bank_name: "Test Bank".into(),
+                account_number: format!("acc-{}", i),
+                loan_type: LoanType::ShirBased,
+                principal: 1000.0 * i as f64,
+                original_principal: 1000.0 * i as f64,
+                interest_rate: 4.0,
+                spread: 0.5,
+                base_cpi: 0.0,
+                current_cpi: 0.0,
+                origination_date: "2025-01-01T00:00:00Z".into(),
+                maturity_date: "2030-01-01T00:00:00Z".into(),
+                next_payment_date: "2025-02-01T00:00:00Z".into(),
+                monthly_payment: 100.0 * i as f64,
+                payment_frequency_months: 1,
+                status: LoanStatus::Active,
+                last_update: "2025-01-15T00:00:00Z".into(),
+            };
+            repo.create(loan).await.expect("insert loan");
+        }
+
+        let loans = repo.list().await;
+        assert_eq!(loans.len(), 3, "should have 3 loans");
+    }
+
+    #[tokio::test]
+    async fn loan_repository_update_existing_loan() {
+        use sqlx::sqlite::SqlitePoolOptions;
+
+        let db_url = "sqlite::memory:";
+
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect(db_url)
+            .await
+            .expect("create test pool");
+
+        sqlx::query(
+            r#"
+            CREATE TABLE IF NOT EXISTS loans (
+                loan_id TEXT PRIMARY KEY,
+                bank_name TEXT NOT NULL,
+                account_number TEXT NOT NULL,
+                loan_type TEXT NOT NULL,
+                principal REAL NOT NULL,
+                original_principal REAL NOT NULL,
+                interest_rate REAL NOT NULL,
+                spread REAL NOT NULL,
+                base_cpi REAL NOT NULL,
+                current_cpi REAL NOT NULL,
+                origination_date TEXT NOT NULL,
+                maturity_date TEXT NOT NULL,
+                next_payment_date TEXT NOT NULL,
+                monthly_payment REAL NOT NULL,
+                payment_frequency_months INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                last_update TEXT NOT NULL
+            )
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .expect("create schema");
+
+        let repo = super::LoanRepository { pool };
+
+        let loan = LoanRecord {
+            loan_id: "update-test".into(),
+            bank_name: "Original Bank".into(),
+            account_number: "123".into(),
+            loan_type: LoanType::ShirBased,
+            principal: 1000.0,
+            original_principal: 1000.0,
+            interest_rate: 4.0,
+            spread: 0.5,
+            base_cpi: 0.0,
+            current_cpi: 0.0,
+            origination_date: "2025-01-01T00:00:00Z".into(),
+            maturity_date: "2030-01-01T00:00:00Z".into(),
+            next_payment_date: "2025-02-01T00:00:00Z".into(),
+            monthly_payment: 100.0,
+            payment_frequency_months: 1,
+            status: LoanStatus::Active,
+            last_update: "2025-01-15T00:00:00Z".into(),
+        };
+
+        repo.create(loan.clone()).await.expect("insert loan");
+
+        let mut updated = loan.clone();
+        updated.bank_name = "New Bank".into();
+        updated.principal = 800.0;
+        updated.status = LoanStatus::PaidOff;
+
+        repo.update("update-test", updated.clone()).await.expect("update loan");
+
+        let retrieved = repo.get("update-test").await.unwrap();
+        assert_eq!(retrieved.bank_name, "New Bank");
+        assert_eq!(retrieved.principal, 800.0);
+        assert_eq!(retrieved.status, LoanStatus::PaidOff);
+    }
+
+    #[tokio::test]
+    async fn loan_repository_json_import_round_trip() {
+        use sqlx::sqlite::SqlitePoolOptions;
+
+        let db_url = "sqlite::memory:";
+
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect(db_url)
+            .await
+            .expect("create test pool");
+
+        sqlx::query(
+            r#"
+            CREATE TABLE IF NOT EXISTS loans (
+                loan_id TEXT PRIMARY KEY,
+                bank_name TEXT NOT NULL,
+                account_number TEXT NOT NULL,
+                loan_type TEXT NOT NULL,
+                principal REAL NOT NULL,
+                original_principal REAL NOT NULL,
+                interest_rate REAL NOT NULL,
+                spread REAL NOT NULL,
+                base_cpi REAL NOT NULL,
+                current_cpi REAL NOT NULL,
+                origination_date TEXT NOT NULL,
+                maturity_date TEXT NOT NULL,
+                next_payment_date TEXT NOT NULL,
+                monthly_payment REAL NOT NULL,
+                payment_frequency_months INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                last_update TEXT NOT NULL
+            )
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .expect("create schema");
+
+        let repo = super::LoanRepository { pool };
+
+        let json_content = r#"{
+            "version": "1.0",
+            "last_updated": "2025-02-15T00:00:00Z",
+            "loans": [
+                {
+                    "loan_id": "json-import-1",
+                    "bank_name": "JSON Bank",
+                    "account_number": "999888777",
+                    "loan_type": "SHIR_BASED",
+                    "principal": 2500.0,
+                    "original_principal": 3000.0,
+                    "interest_rate": 3.75,
+                    "spread": 0.3,
+                    "base_cpi": 0.0,
+                    "current_cpi": 0.0,
+                    "origination_date": "2025-02-01T00:00:00Z",
+                    "maturity_date": "2031-02-01T00:00:00Z",
+                    "next_payment_date": "2025-03-01T00:00:00Z",
+                    "monthly_payment": 75.0,
+                    "payment_frequency_months": 1,
+                    "status": "ACTIVE",
+                    "last_update": "2025-02-15T00:00:00Z"
+                },
+                {
+                    "loan_id": "json-import-2",
+                    "bank_name": "CPI Bank",
+                    "account_number": "111222333",
+                    "loan_type": "CPI_LINKED",
+                    "principal": 10000.0,
+                    "original_principal": 10000.0,
+                    "interest_rate": 2.5,
+                    "spread": 0.1,
+                    "base_cpi": 250.0,
+                    "current_cpi": 255.0,
+                    "origination_date": "2025-01-15T00:00:00Z",
+                    "maturity_date": "2035-01-15T00:00:00Z",
+                    "next_payment_date": "2025-02-15T00:00:00Z",
+                    "monthly_payment": 200.0,
+                    "payment_frequency_months": 1,
+                    "status": "ACTIVE",
+                    "last_update": "2025-01-15T00:00:00Z"
+                }
+            ]
+        }"#;
+
+        let file: super::LoanFile = serde_json::from_str(json_content).expect("parse JSON");
+
+        for loan in file.loans {
+            repo.upsert(&loan).await.expect("insert loan from JSON");
+        }
+
+        let loans = repo.list().await;
+        assert_eq!(loans.len(), 2, "should have 2 loans from JSON");
+
+        let first = repo.get("json-import-1").await.unwrap();
+        assert_eq!(first.bank_name, "JSON Bank");
+        assert_eq!(first.loan_type, LoanType::ShirBased);
+        assert_eq!(first.principal, 2500.0);
+
+        let second = repo.get("json-import-2").await.unwrap();
+        assert_eq!(second.bank_name, "CPI Bank");
+        assert_eq!(second.loan_type, LoanType::CpiLinked);
+        assert_eq!(second.base_cpi, 250.0);
+        assert_eq!(second.current_cpi, 255.0);
+    }
 }
