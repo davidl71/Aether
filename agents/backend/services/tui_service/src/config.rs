@@ -402,9 +402,19 @@ fn parse_bool(value: &str) -> Option<bool> {
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        env, fs,
+        sync::{Mutex, OnceLock},
+    };
+
     use api::project_paths::discover_workspace_root;
 
     use super::{shared_config_candidate_paths, TuiConfig};
+
+    fn env_lock() -> &'static Mutex<()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+    }
 
     #[test]
     fn shared_config_maps_nats_primary_and_rest_fallback() {
@@ -467,5 +477,63 @@ mod tests {
 
         assert!(expected.is_file());
         assert!(shared_config_candidate_paths().contains(&expected));
+    }
+
+    #[test]
+    fn load_prefers_shared_config_then_env_overrides() {
+        let _guard = env_lock().lock().expect("env lock");
+        let config_path = env::temp_dir().join(format!(
+            "tui-config-{}-{}.json",
+            std::process::id(),
+            std::thread::current().name().unwrap_or("unnamed")
+        ));
+        let raw = r#"
+        {
+          "dataSources": {
+            "primary": "portal"
+          },
+          "broker": {
+            "primary": "ib"
+          },
+          "tws": {
+            "natsUrl": "nats://shared-home:4333"
+          },
+          "strategy": {
+            "symbols": ["spy", "qqq", "iwm"]
+          },
+          "tui": {
+            "providerType": "rest",
+            "apiBaseUrl": "http://shared-home:9091/api/v1/snapshot",
+            "refreshRateMs": 175,
+            "updateIntervalMs": 3100
+          }
+        }
+        "#;
+        fs::write(&config_path, raw).expect("write config");
+
+        env::set_var("IB_BOX_SPREAD_CONFIG", &config_path);
+        env::set_var("NATS_URL", "nats://env-override:4223");
+        env::set_var("BACKEND_ID", "alpaca");
+        env::set_var("REST_URL", "http://env-override:8181/api");
+        env::set_var("WATCHLIST", "msft, nvda");
+        env::set_var("REST_FALLBACK", "0");
+
+        let loaded = TuiConfig::load();
+
+        assert_eq!(loaded.nats_url, "nats://env-override:4223");
+        assert_eq!(loaded.backend_id, "alpaca");
+        assert_eq!(loaded.rest_url, "http://env-override:8181");
+        assert_eq!(loaded.watchlist, vec!["MSFT", "NVDA"]);
+        assert_eq!(loaded.tick_ms, 175);
+        assert_eq!(loaded.rest_poll_ms, 3100);
+        assert!(!loaded.rest_fallback);
+
+        env::remove_var("IB_BOX_SPREAD_CONFIG");
+        env::remove_var("NATS_URL");
+        env::remove_var("BACKEND_ID");
+        env::remove_var("REST_URL");
+        env::remove_var("WATCHLIST");
+        env::remove_var("REST_FALLBACK");
+        let _ = fs::remove_file(config_path);
     }
 }

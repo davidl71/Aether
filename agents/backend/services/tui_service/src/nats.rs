@@ -214,7 +214,7 @@ pub async fn run(
                     ConnectionState::Connected,
                     format!("Connected to {}", config.nats_url),
                 );
-                if let Err(e) = subscribe_loop(&client, &subject, &tx, &event_tx).await {
+                if let Err(e) = subscribe_loop(&client, &subject, &tx).await {
                     cb.record_failure();
                     let delay = cb.backoff();
                     warn!(
@@ -248,7 +248,6 @@ async fn subscribe_loop(
     client: &NatsClient,
     subject: &str,
     tx: &watch::Sender<Option<TuiSnapshot>>,
-    event_tx: &mpsc::UnboundedSender<AppEvent>,
 ) -> anyhow::Result<()> {
     let mut sub = client.client().subscribe(subject.to_string()).await?;
     info!(subject = %subject, "Subscribed to snapshot subject");
@@ -280,4 +279,3 @@ fn emit_status(
         status: ConnectionStatus::new(state, detail),
     });
 }
-

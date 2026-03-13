@@ -153,10 +153,10 @@ impl App {
                 self.log_state.transition(TuiWidgetEvent::DownKey);
             }
             KeyCode::PageUp if self.active_tab == Tab::Logs => {
-                self.log_state.transition(TuiWidgetEvent::PageUpKey);
+                self.log_state.transition(TuiWidgetEvent::PrevPageKey);
             }
             KeyCode::PageDown if self.active_tab == Tab::Logs => {
-                self.log_state.transition(TuiWidgetEvent::PageDownKey);
+                self.log_state.transition(TuiWidgetEvent::NextPageKey);
             }
             // Log level filter (canonical tui-logger keys)
             KeyCode::Char('+') if self.active_tab == Tab::Logs => {
@@ -168,7 +168,7 @@ impl App {
             KeyCode::Char('h') if self.active_tab == Tab::Logs => {
                 self.log_state.transition(TuiWidgetEvent::HideKey);
             }
-            KeyCode::Escape if self.active_tab == Tab::Logs => {
+            KeyCode::Esc if self.active_tab == Tab::Logs => {
                 self.log_state.transition(TuiWidgetEvent::EscapeKey);
             }
             _ => {}
@@ -300,7 +300,7 @@ mod tests {
             KeyCode::PageDown,
             KeyCode::Char('+'),
             KeyCode::Char('-'),
-            KeyCode::Escape,
+            KeyCode::Esc,
         ] {
             app.handle_key(KeyEvent::from(key));
         }

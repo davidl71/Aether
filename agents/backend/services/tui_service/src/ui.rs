@@ -10,7 +10,7 @@ use ratatui::{
 use tui_logger::{TuiLoggerLevelOutput, TuiLoggerWidget};
 
 use crate::app::{App, Tab};
-use crate::events::{ConnectionState, ConnectionStatus};
+use crate::events::{ConnectionState, ConnectionStatus, ConnectionTarget};
 
 pub fn render(f: &mut Frame, app: &App) {
     let chunks = Layout::default()
@@ -69,7 +69,7 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
     }
 
     spans.push(Span::raw("  "));
-    spans.push(render_connection_badge("N", &app.nats_status));
+    spans.push(render_connection_badge(ConnectionTarget::Nats, &app.nats_status));
 
     f.render_widget(Paragraph::new(Line::from(spans)), area);
 }
@@ -114,11 +114,13 @@ fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
         .split(area);
 
     // Symbols table
-    // TODO(sparklines): add a "Trend" column using ratatui's built-in Sparkline widget.
+    // TODO(exarp): T-1773357423912362000 — add a "Trend" column using ratatui's
+    // built-in Sparkline widget.
     // Requires a per-symbol ring buffer of recent roi values in app state
     // (e.g. HashMap<String, VecDeque<u64>> updated each tick; Sparkline takes &[u64]).
-    // TODO(tui-popup): on Enter/Space over a row, open a tui-popup (tui-widgets crate)
-    // showing full SymbolSnapshot details: candle OHLCV, maker/taker counts, volume.
+    // TODO(exarp): T-1773357423930509000 — on Enter/Space over a row, open a
+    // tui-popup (tui-widgets crate) showing full SymbolSnapshot details: candle
+    // OHLCV, maker/taker counts, volume.
     let header = Row::new(["Symbol", "Last", "Bid", "Ask", "Spread", "ROI%"])
         .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
@@ -232,11 +234,13 @@ fn render_positions(f: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_orders(f: &mut Frame, app: &App, area: Rect) {
-    // TODO(tui-popup): add a cancel-order confirmation modal using tui-popup (tui-widgets).
+    // TODO(exarp): T-1773357423930509000 — add a cancel-order confirmation
+    // modal using tui-popup (tui-widgets).
     // On Enter over a selected row: render tui_popup::Popup over the table asking
     // "Cancel order {id}? [y/n]". Requires TableState for row selection.
-    // TODO(ratatui-textarea): add an order filter input bar (ratatui-textarea crate,
-    // single-line mode) at the top of this view to filter orders by symbol or status.
+    // TODO(exarp): T-1773357423945485000 — add an order filter input bar
+    // (ratatui-textarea crate, single-line mode) at the top of this view to
+    // filter orders by symbol or status.
     let header = Row::new(["ID", "Symbol", "Side", "Qty", "Status"])
         .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
@@ -327,7 +331,7 @@ fn render_logs(f: &mut Frame, app: &App, area: Rect) {
     f.render_widget(widget, area);
 }
 
-fn render_connection_badge(prefix: &str, status: &ConnectionStatus) -> Span<'static> {
+fn render_connection_badge(target: ConnectionTarget, status: &ConnectionStatus) -> Span<'static> {
     let color = match status.state {
         ConnectionState::Connected => Color::Green,
         ConnectionState::Starting => Color::Blue,
@@ -335,7 +339,7 @@ fn render_connection_badge(prefix: &str, status: &ConnectionStatus) -> Span<'sta
     };
 
     Span::styled(
-        format!("{}:{}", prefix, status.state.label()),
+        format!("{}:{}", target.label(), status.state.label()),
         Style::default().fg(color).add_modifier(Modifier::BOLD),
     )
 }
