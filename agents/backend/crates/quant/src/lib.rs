@@ -2,7 +2,8 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use time::Date;
 use RustQuant::instruments::options::{implied_volatility, BlackScholesMerton, TypeFlag};
-use RustQuant::time::today;
+use RustQuant_stochastics::geometric_brownian_motion::GeometricBrownianMotion;
+use RustQuant_stochastics::process::{StochasticProcess, StochasticProcessConfig};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum OptionKind {
@@ -101,6 +102,25 @@ pub enum QuantError {
     ImpliedVolatilityNotFound,
     #[error("Insufficient data: {0}")]
     InsufficientData(String),
+    #[error("ML error: {0}")]
+    MlError(String),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MonteCarloResult {
+    pub price: f64,
+    pub standard_error: f64,
+    pub confidence_lower: f64,
+    pub confidence_upper: f64,
+    pub simulations: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LinearRegressionResult {
+    pub coefficients: Vec<f64>,
+    pub intercept: f64,
+    pub r_squared: f64,
+    pub predictions: Vec<f64>,
 }
 
 pub struct QuantCalculator;
@@ -111,7 +131,8 @@ impl QuantCalculator {
     }
 
     fn days_to_expiry(&self, days: i64) -> Date {
-        today() + time::Duration::days(days)
+        let today = time::OffsetDateTime::now_utc().date();
+        today + time::Duration::days(days)
     }
 
     pub fn calculate_option_price(
@@ -637,6 +658,130 @@ impl QuantCalculator {
             max_loss: net_debit.abs(),
             breakeven: vec![],
             legs,
+        })
+    }
+
+    pub fn calculate_monte_carlo_option(
+        &self,
+        s: f64,
+        k: f64,
+        t_years: f64,
+        r: f64,
+        sigma: f64,
+        option_type: OptionKind,
+        simulations: usize,
+    ) -> Result<MonteCarloResult, QuantError> {
+        if s <= 0.0 || k <= 0.0 || t_years <= 0.0 || sigma < 0.0 || simulations < 1 {
+            return Err(QuantError::InvalidParameter(
+                "Invalid parameters for Monte Carlo pricing".to_string(),
+            ));
+        }
+
+        let gbm = GeometricBrownianMotion::new(r, sigma);
+
+        let config = StochasticProcessConfig::new(s, 0.0, t_years, 100, simulations, false);
+
+        let output = (&gbm).euler_maruyama(&config);
+
+        let final_prices: Vec<f64> = output
+            .paths
+            .iter()
+            .filter_map(|path| path.last().copied())
+            .collect();
+
+        if final_prices.len() != simulations {
+            return Err(QuantError::CalculationFailed(
+                "Monte Carlo simulation failed".to_string(),
+            ));
+        }
+
+        let payoffs: Vec<f64> = final_prices
+            .iter()
+            .map(|&spot| match option_type {
+                OptionKind::Call => (spot - k).max(0.0),
+                OptionKind::Put => (k - spot).max(0.0),
+            })
+            .collect();
+
+        let discount = (-r * t_years).exp();
+        let payoff_mean = payoffs.iter().sum::<f64>() / simulations as f64;
+        let price = payoff_mean * discount;
+
+        let variance: f64 = payoffs
+            .iter()
+            .map(|x| (x - payoff_mean).powi(2))
+            .sum::<f64>()
+            / simulations as f64;
+        let standard_error = variance.sqrt() / (simulations as f64).sqrt();
+
+        let confidence_lower = price - 1.96 * standard_error;
+        let confidence_upper = price + 1.96 * standard_error;
+
+        Ok(MonteCarloResult {
+            price,
+            standard_error,
+            confidence_lower,
+            confidence_upper,
+            simulations,
+        })
+    }
+
+    pub fn calculate_linear_regression(
+        &self,
+        x: &[f64],
+        y: &[f64],
+    ) -> Result<LinearRegressionResult, QuantError> {
+        if x.len() != y.len() {
+            return Err(QuantError::InvalidParameter(
+                "x and y must have same length".to_string(),
+            ));
+        }
+
+        if x.len() < 2 {
+            return Err(QuantError::InsufficientData(
+                "Need at least 2 data points".to_string(),
+            ));
+        }
+
+        let n = x.len() as f64;
+        let x_mean = x.iter().sum::<f64>() / n;
+        let y_mean = y.iter().sum::<f64>() / n;
+
+        let mut numerator = 0.0;
+        let mut denominator = 0.0;
+        for i in 0..x.len() {
+            numerator += (x[i] - x_mean) * (y[i] - y_mean);
+            denominator += (x[i] - x_mean).powi(2);
+        }
+
+        let slope = if denominator != 0.0 {
+            numerator / denominator
+        } else {
+            0.0
+        };
+        let intercept = y_mean - slope * x_mean;
+
+        let mut ss_res = 0.0;
+        let mut ss_tot = 0.0;
+        for i in 0..x.len() {
+            let predicted = slope * x[i] + intercept;
+            ss_res += (y[i] - predicted).powi(2);
+            ss_tot += (y[i] - y_mean).powi(2);
+        }
+
+        let r_squared = if ss_tot != 0.0 {
+            1.0 - ss_res / ss_tot
+        } else {
+            0.0
+        };
+
+        let predictions: Vec<f64> = x.iter().map(|&xi| slope * xi + intercept).collect();
+
+        Ok(LinearRegressionResult {
+            coefficients: vec![slope],
+            intercept,
+            r_squared,
+            predictions,
         })
     }
 }

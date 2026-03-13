@@ -6159,6 +6159,7 @@ name = "quant"
 version = "0.1.0"
 dependencies = [
  "RustQuant",
+ "RustQuant_stochastics",
  "anyhow",
  "approx",
  "serde",

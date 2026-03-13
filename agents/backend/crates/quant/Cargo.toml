@@ -9,6 +9,7 @@ anyhow = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 RustQuant = "0.3"
+RustQuant_stochastics = "0.3"
 time = "0.3"
 
 [dev-dependencies]
