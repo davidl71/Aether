@@ -1,0 +1,15 @@
+[package]
+name = "quant"
+edition = "2021"
+version = "0.1.0"
+description = "Quantitative finance calculations using RustQuant"
+
+[dependencies]
+anyhow = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+RustQuant = "0.3"
+time = "0.3"
+
+[dev-dependencies]
+approx = "0.5"

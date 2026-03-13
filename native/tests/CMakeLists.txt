@@ -12,7 +12,7 @@ set(CORE_TEST_SOURCES
     test_rate_limiter.cpp
     test_convexity_calculator.cpp
     test_path_validator.cpp
-    test_loan_position.cpp
+    # test_loan_position.cpp  # TODO: File missing
     test_asset_relationship.cpp
 )
 

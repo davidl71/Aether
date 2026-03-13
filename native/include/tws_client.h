@@ -247,7 +247,9 @@ public:
     // Key format: ib:tick:<reqId>. TTL from config.cache_duration_seconds if ttl_seconds <= 0.
     void set_market_data_cache(platform::CacheClient* cache, int ttl_seconds = 0);
 
-private:
+public:
+    // Forward-declared Impl class - full definition in tws_client_impl.h
+    // Made public to allow implementation in separate translation units (tws_client_impl_ewrapper.cpp)
     class Impl;
     std::unique_ptr<Impl> pimpl_;
 };

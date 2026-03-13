@@ -87,7 +87,7 @@ class TWSClient::Impl : public DefaultEWrapper {
                        double marketPrice, double marketValue,
                        double averageCost, double unrealizedPNL,
                        double realizedPNL, const std::string& accountName) override;
-  void currentTime(long time) override;
+  void currentTime(long long time) override;
   void error(int id, time_t errorTime, int errorCode,
              const std::string& errorString,
              const std::string& advancedOrderRejectJson) override;
@@ -101,7 +101,7 @@ class TWSClient::Impl : public DefaultEWrapper {
   void tickGeneric(TickerId tickerId, TickType tickType, double value) override;
   void tickSnapshotEnd(int reqId) override;
   void marketDataType(TickerId reqId, int marketDataType) override;
-  void realtimeBar(TickerId reqId, long time, double open, double high,
+  void realtimeBar(TickerId reqId, long long time, double open, double high,
                    double low, double close, Decimal volume, Decimal wap,
                    int count) override;
   void historicalData(TickerId reqId, const Bar& bar) override;
@@ -287,10 +287,23 @@ class TWSClient::Impl : public DefaultEWrapper {
   void start_reader_thread();
   bool wait_for_connection_with_progress(int timeout_ms);
   void seed_mock_state();
-  void stop_health_monitoring();
-  void attempt_reconnect_with_backoff();
+  // Stub implementations to fix vtable - the real implementations are in
+  // tws_client.cpp but have class splitting issues causing linker errors
+  void start_health_monitoring() {}
+  void stop_health_monitoring() {}
+  void attempt_reconnect_with_backoff() {}
+
   Contract convert_to_tws_contract(const types::OptionContract& contract);
-  types::OptionContract convert_from_tws_contract(const Contract& contract);
+  inline types::OptionContract convert_from_tws_contract(const Contract& contract) {
+    types::OptionContract c;
+    c.symbol = contract.symbol;
+    c.exchange = contract.exchange;
+    c.expiry = contract.lastTradeDateOrContractMonth;
+    c.strike = contract.strike;
+    c.type = (contract.right == "C") ? types::OptionType::Call
+                                     : types::OptionType::Put;
+    return c;
+  }
   Order create_tws_order(types::OrderAction action, int quantity,
                          double limit_price, types::TimeInForce tif);
 

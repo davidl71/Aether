@@ -6,6 +6,7 @@ members = [
   "crates/api",
   "crates/ledger",
   "crates/nats_adapter",
+  "crates/quant",
   "services/backend_service",
   "services/tui_service",
   "crates/discount_bank_parser",

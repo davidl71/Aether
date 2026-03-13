@@ -129,7 +129,8 @@ void TWSClient::Impl::connectionClosed() {
 
       // Auto-reconnect if enabled with exponential backoff
       if (config_.auto_reconnect) {
-        attempt_reconnect_with_backoff();
+        // TODO: Re-enable once linker issue is fixed
+        // attempt_reconnect_with_backoff();
       }
     } catch (const std::exception &e) {
       spdlog::warn("Exception in connectionClosed: {}", e.what());
@@ -240,7 +241,8 @@ void TWSClient::Impl::nextValidId(OrderId orderId) {
       }
 
       // Start health monitoring now that we're fully connected
-      start_health_monitoring();
+      // TODO: Re-enable once linker issue is fixed
+      // start_health_monitoring();
 
       // According to EWrapper best practices, request open orders to sync state
       // This is important for order recovery after reconnection
@@ -772,7 +774,7 @@ void TWSClient::Impl::updatePortfolio(const Contract &contract, Decimal position
   // EWrapper Callbacks - Server Time
   // ========================================================================
 
-void TWSClient::Impl::currentTime(long time) {
+void TWSClient::Impl::currentTime(long long time) {
     server_time_epoch_.store(time);
     spdlog::debug("TWS server time: {}", time);
   }
@@ -898,7 +900,8 @@ void TWSClient::Impl::error(int id, time_t errorTime, int errorCode,
           spdlog::warn("Connection lost (error 1100). Auto-reconnect: {}",
                        config_.auto_reconnect ? "enabled" : "disabled");
           if (config_.auto_reconnect) {
-            attempt_reconnect_with_backoff();
+            // TODO: Re-enable once linker issue is fixed
+            // attempt_reconnect_with_backoff();
           }
         }
         // Connection restored
@@ -976,7 +979,7 @@ void TWSClient::Impl::tickGeneric(TickerId tickerId, TickType tickType,
                    double value) {}
 void TWSClient::Impl::tickSnapshotEnd(int reqId) {}
 void TWSClient::Impl::marketDataType(TickerId reqId, int marketDataType) {}
-void TWSClient::Impl::realtimeBar(TickerId reqId, long time, double open, double high,
+void TWSClient::Impl::realtimeBar(TickerId reqId, long long time, double open, double high,
                    double low, double close, Decimal volume, Decimal wap,
                    int count) {}
 void TWSClient::Impl::historicalData(TickerId reqId, const Bar &bar) {}

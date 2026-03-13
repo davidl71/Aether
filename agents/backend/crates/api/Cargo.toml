@@ -27,6 +27,7 @@ strategy = { path = "../strategy" }
 ledger = { path = "../ledger" }
 nats_adapter = { path = "../nats_adapter" }
 discount_bank_parser = { path = "../discount_bank_parser" }
+quant = { path = "../quant" }
 
 [dev-dependencies]
 async-trait = { workspace = true }
