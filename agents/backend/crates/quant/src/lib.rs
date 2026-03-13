@@ -28,6 +28,30 @@ pub struct Greeks {
     pub rho: f64,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct HistoricalVolatilityResult {
+    pub hv: f64,
+    pub sample_std_dev: f64,
+    pub variance: f64,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct RiskMetrics {
+    pub var_95: f64,
+    pub cvar_95: f64,
+    pub max_loss: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StrategyResult {
+    pub name: String,
+    pub payoff_at_expiry: f64,
+    pub max_profit: f64,
+    pub max_loss: f64,
+    pub breakeven: Vec<f64>,
+    pub cost: f64,
+}
+
 #[derive(Debug, Error)]
 pub enum QuantError {
     #[error("Invalid parameter: {0}")]
@@ -36,6 +60,8 @@ pub enum QuantError {
     CalculationFailed(String),
     #[error("Implied volatility not found")]
     ImpliedVolatilityNotFound,
+    #[error("Insufficient data: {0}")]
+    InsufficientData(String),
 }
 
 pub struct QuantCalculator;
@@ -67,16 +93,7 @@ impl QuantCalculator {
         let days = (t_years * 365.0).round() as i64;
         let expiry = self.days_to_expiry(days);
 
-        let bsm = BlackScholesMerton::new(
-            r,      // cost_of_carry
-            s,      // underlying_price
-            k,      // strike_price
-            sigma,  // volatility
-            r,      // risk_free_rate
-            None,   // evaluation_date
-            expiry, // expiration_date
-            option_type.into(),
-        );
+        let bsm = BlackScholesMerton::new(r, s, k, sigma, r, None, expiry, option_type.into());
 
         Ok(bsm.price())
     }
@@ -99,16 +116,7 @@ impl QuantCalculator {
         let days = (t_years * 365.0).round() as i64;
         let expiry = self.days_to_expiry(days);
 
-        let bsm = BlackScholesMerton::new(
-            r,      // cost_of_carry
-            s,      // underlying_price
-            k,      // strike_price
-            sigma,  // volatility
-            r,      // risk_free_rate
-            None,   // evaluation_date
-            expiry, // expiration_date
-            option_type.into(),
-        );
+        let bsm = BlackScholesMerton::new(r, s, k, sigma, r, None, expiry, option_type.into());
 
         Ok(Greeks {
             delta: bsm.delta(),
@@ -141,6 +149,260 @@ impl QuantCalculator {
         } else {
             Err(QuantError::ImpliedVolatilityNotFound)
         }
+    }
+
+    pub fn calculate_historical_volatility(
+        &self,
+        prices: &[f64],
+        annualization_factor: f64,
+    ) -> Result<HistoricalVolatilityResult, QuantError> {
+        if prices.len() < 2 {
+            return Err(QuantError::InsufficientData(
+                "Need at least 2 prices".to_string(),
+            ));
+        }
+
+        let returns: Vec<f64> = prices.windows(2).map(|w| (w[1] - w[0]) / w[0]).collect();
+
+        if returns.is_empty() {
+            return Err(QuantError::InsufficientData(
+                "Could not compute returns".to_string(),
+            ));
+        }
+
+        let n = returns.len() as f64;
+        let mean = returns.iter().sum::<f64>() / n;
+        let variance = returns.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / (n - 1.0);
+        let std_dev = variance.sqrt();
+        let hv = std_dev * annualization_factor;
+
+        Ok(HistoricalVolatilityResult {
+            hv,
+            sample_std_dev: std_dev,
+            variance,
+        })
+    }
+
+    pub fn calculate_var_cvar(
+        &self,
+        returns: &[f64],
+        confidence: f64,
+    ) -> Result<RiskMetrics, QuantError> {
+        if returns.is_empty() {
+            return Err(QuantError::InsufficientData(
+                "Need at least 1 return".to_string(),
+            ));
+        }
+
+        if confidence <= 0.0 || confidence >= 1.0 {
+            return Err(QuantError::InvalidParameter(
+                "Confidence must be between 0 and 1".to_string(),
+            ));
+        }
+
+        let mut sorted_returns = returns.to_vec();
+        sorted_returns.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        let index = ((1.0 - confidence) * sorted_returns.len() as f64).floor() as usize;
+        let var = -sorted_returns.get(index).copied().unwrap_or(0.0);
+
+        let cvar = if index > 0 {
+            -sorted_returns[..index].iter().sum::<f64>() / index as f64
+        } else {
+            var
+        };
+
+        let max_loss = -sorted_returns.iter().copied().fold(f64::INFINITY, f64::min);
+
+        Ok(RiskMetrics {
+            var_95: var,
+            cvar_95: cvar,
+            max_loss,
+        })
+    }
+
+    pub fn calculate_binomial_option_price(
+        &self,
+        s: f64,
+        k: f64,
+        t_years: f64,
+        r: f64,
+        sigma: f64,
+        option_type: OptionKind,
+        steps: u32,
+    ) -> Result<f64, QuantError> {
+        if s <= 0.0 || k <= 0.0 || t_years <= 0.0 || sigma < 0.0 || steps < 1 {
+            return Err(QuantError::InvalidParameter(
+                "Invalid parameters for binomial pricing".to_string(),
+            ));
+        }
+
+        let dt = t_years / steps as f64;
+        let u = (sigma * dt.sqrt()).exp();
+        let d = 1.0 / u;
+        let p = ((r - 0.5 * sigma * sigma) * dt + 1.0 - d) / (u - d);
+        let df = (-r * dt).exp();
+
+        let mut prices: Vec<f64> = vec![0.0; (steps + 1) as usize];
+        for i in 0..=steps {
+            prices[i as usize] = s * u.powi(i as i32) * d.powi((steps - i) as i32);
+        }
+
+        let payoff = |price: f64| match option_type {
+            OptionKind::Call => (price - k).max(0.0),
+            OptionKind::Put => (k - price).max(0.0),
+        };
+
+        let mut option_values: Vec<f64> = (0..=steps).map(|i| payoff(prices[i as usize])).collect();
+
+        for j in (0..steps).rev() {
+            for i in 0..=j {
+                option_values[i as usize] = df
+                    * (p * option_values[(i + 1) as usize] + (1.0 - p) * option_values[i as usize]);
+            }
+        }
+
+        Ok(option_values[0])
+    }
+
+    pub fn calculate_straddle(
+        &self,
+        s: f64,
+        k: f64,
+        t_years: f64,
+        r: f64,
+        sigma: f64,
+    ) -> Result<StrategyResult, QuantError> {
+        let call_price = self.calculate_option_price(s, k, t_years, r, sigma, OptionKind::Call)?;
+        let put_price = self.calculate_option_price(s, k, t_years, r, sigma, OptionKind::Put)?;
+
+        let cost = call_price + put_price;
+        let max_profit = f64::INFINITY;
+        let max_loss = cost;
+        let breakeven = vec![k - cost, k + cost];
+
+        Ok(StrategyResult {
+            name: "Straddle".to_string(),
+            payoff_at_expiry: cost,
+            max_profit,
+            max_loss,
+            breakeven,
+            cost,
+        })
+    }
+
+    pub fn calculate_strangle(
+        &self,
+        s: f64,
+        k_call: f64,
+        k_put: f64,
+        t_years: f64,
+        r: f64,
+        sigma: f64,
+    ) -> Result<StrategyResult, QuantError> {
+        if k_put >= k_call {
+            return Err(QuantError::InvalidParameter(
+                "k_put must be less than k_call".to_string(),
+            ));
+        }
+
+        let call_price =
+            self.calculate_option_price(s, k_call, t_years, r, sigma, OptionKind::Call)?;
+        let put_price =
+            self.calculate_option_price(s, k_put, t_years, r, sigma, OptionKind::Put)?;
+
+        let cost = call_price + put_price;
+        let max_profit = f64::INFINITY;
+        let max_loss = cost;
+        let breakeven = vec![k_put - cost, k_call + cost];
+
+        Ok(StrategyResult {
+            name: "Strangle".to_string(),
+            payoff_at_expiry: cost,
+            max_profit,
+            max_loss,
+            breakeven,
+            cost,
+        })
+    }
+
+    pub fn calculate_butterfly_spread(
+        &self,
+        s: f64,
+        k_low: f64,
+        k_mid: f64,
+        k_high: f64,
+        t_years: f64,
+        r: f64,
+        sigma: f64,
+    ) -> Result<StrategyResult, QuantError> {
+        if k_mid != (k_low + k_high) / 2.0 {
+            return Err(QuantError::InvalidParameter(
+                "k_mid must be midpoint of k_low and k_high".to_string(),
+            ));
+        }
+
+        let long_call_low =
+            self.calculate_option_price(s, k_low, t_years, r, sigma, OptionKind::Call)?;
+        let short_calls_mid =
+            self.calculate_option_price(s, k_mid, t_years, r, sigma, OptionKind::Call)?;
+        let long_call_high =
+            self.calculate_option_price(s, k_high, t_years, r, sigma, OptionKind::Call)?;
+
+        let cost = long_call_low - 2.0 * short_calls_mid + long_call_high;
+        let max_profit = k_mid - k_low - cost;
+        let max_loss = cost;
+        let breakeven = vec![k_low + cost, k_high - cost];
+
+        Ok(StrategyResult {
+            name: "Butterfly Spread".to_string(),
+            payoff_at_expiry: cost,
+            max_profit,
+            max_loss,
+            breakeven,
+            cost,
+        })
+    }
+
+    pub fn calculate_iron_condor(
+        &self,
+        s: f64,
+        k_put_low: f64,
+        k_put_high: f64,
+        k_call_low: f64,
+        k_call_high: f64,
+        t_years: f64,
+        r: f64,
+        sigma: f64,
+    ) -> Result<StrategyResult, QuantError> {
+        if k_put_low >= k_put_high || k_call_low >= k_call_high || k_put_high >= k_call_low {
+            return Err(QuantError::InvalidParameter(
+                "Strike ordering invalid".to_string(),
+            ));
+        }
+
+        let put_long =
+            self.calculate_option_price(s, k_put_low, t_years, r, sigma, OptionKind::Put)?;
+        let put_short =
+            self.calculate_option_price(s, k_put_high, t_years, r, sigma, OptionKind::Put)?;
+        let call_short =
+            self.calculate_option_price(s, k_call_low, t_years, r, sigma, OptionKind::Call)?;
+        let call_long =
+            self.calculate_option_price(s, k_call_high, t_years, r, sigma, OptionKind::Call)?;
+
+        let cost = put_long - put_short + call_short - call_long;
+        let max_profit = cost;
+        let max_loss = (k_put_high - k_put_low).min(k_call_high - k_call_low) - cost;
+        let breakeven = vec![k_put_high - cost, k_call_low + cost];
+
+        Ok(StrategyResult {
+            name: "Iron Condor".to_string(),
+            payoff_at_expiry: cost,
+            max_profit,
+            max_loss,
+            breakeven,
+            cost,
+        })
     }
 }
 
@@ -224,6 +486,70 @@ mod tests {
         let iv = iv.unwrap();
 
         assert!((iv - sigma).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_historical_volatility() {
+        let calc = QuantCalculator::new();
+        let prices = [
+            100.0, 102.0, 101.0, 103.0, 105.0, 104.0, 106.0, 108.0, 107.0, 109.0,
+        ];
+
+        let hv = calc.calculate_historical_volatility(&prices, 252.0_f64.sqrt());
+        assert!(hv.is_ok());
+    }
+
+    #[test]
+    fn test_var_cvar() {
+        let calc = QuantCalculator::new();
+        let returns = [-0.05, -0.02, -0.01, 0.0, 0.01, 0.02, 0.03, 0.05];
+
+        let risk = calc.calculate_var_cvar(&returns, 0.95);
+        assert!(risk.is_ok());
+        let r = risk.unwrap();
+        assert!(r.var_95 >= 0.0);
+    }
+
+    #[test]
+    fn test_binomial() {
+        let calc = QuantCalculator::new();
+
+        let price = calc.calculate_binomial_option_price(
+            100.0,
+            100.0,
+            1.0,
+            0.05,
+            0.2,
+            OptionKind::Call,
+            100,
+        );
+        assert!(price.is_ok());
+        let price = price.unwrap();
+
+        assert!((price - 10.4506).abs() < 2.0);
+    }
+
+    #[test]
+    fn test_straddle() {
+        let calc = QuantCalculator::new();
+
+        let result = calc.calculate_straddle(100.0, 100.0, 1.0, 0.05, 0.2);
+        assert!(result.is_ok());
+        let r = result.unwrap();
+
+        assert_eq!(r.name, "Straddle");
+        assert!(r.cost > 0.0);
+    }
+
+    #[test]
+    fn test_iron_condor() {
+        let calc = QuantCalculator::new();
+
+        let result = calc.calculate_iron_condor(100.0, 85.0, 90.0, 110.0, 115.0, 1.0, 0.05, 0.2);
+        assert!(result.is_ok());
+        let r = result.unwrap();
+
+        assert_eq!(r.name, "Iron Condor");
     }
 
     #[test]
