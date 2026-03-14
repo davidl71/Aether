@@ -14,6 +14,10 @@ Makefile
 compile_commands.json
 # Note: cmake_install.cmake is already covered by *.cmake, but explicit for clarity
 
+# Code navigation
+tags
+*.tags
+
 # Compiled binaries
 bin/
 # But allow CLI source code (not build artifacts)
