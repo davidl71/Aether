@@ -48,3 +48,6 @@ futures = { workspace = true }
 
 # REST fallback
 reqwest = { workspace = true, features = ["json"] }
+
+# UUID for event IDs
+uuid = { workspace = true }

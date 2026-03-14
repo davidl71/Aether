@@ -329,23 +329,4 @@ inline std::string time_in_force_to_string(TimeInForce tif) {
     }
 }
 
-// Parse string to OptionType
-inline std::optional<OptionType> string_to_option_type(const std::string& str) {
-    if (str == "CALL" || str == "C") return OptionType::Call;
-    if (str == "PUT" || str == "P") return OptionType::Put;
-    return std::nullopt;
-}
-
-// Convert OptionStyle to string
-inline std::string option_style_to_string(OptionStyle style) {
-    return style == OptionStyle::European ? "European" : "American";
-}
-
-// Parse string to OptionStyle
-inline std::optional<OptionStyle> string_to_option_style(const std::string& str) {
-    if (str == "European" || str == "EU" || str == "E") return OptionStyle::European;
-    if (str == "American" || str == "US" || str == "A") return OptionStyle::American;
-    return std::nullopt;
-}
-
 } // namespace types

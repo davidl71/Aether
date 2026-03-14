@@ -99,7 +99,7 @@ option(PYTHON_BINDINGS_BACKEND "Python bindings backend: pybind11 (legacy Cython
 option(ENABLE_DISTCC "Enable distcc distributed compilation" OFF)
 option(ENABLE_CCACHE "Enable ccache compilation caching" OFF)
 option(ENABLE_SCCACHE "Enable sccache compilation caching" OFF)
-option(ENABLE_NATIVE_CLI "Build the native ib_box_spread CLI" ON)
+option(ENABLE_NATIVE_CLI "Build the native ib_box_spread CLI (DEPRECATED: use Rust tui_service instead)" OFF)
 option(TWS_API_BUILD_VENDOR "Build TWS API library from source (ibapi_cmake)" OFF)
 option(BUILD_AI_FRIENDLY "Quieter build + JSON compiler diagnostics for tools/AI" OFF)
 
@@ -122,9 +122,10 @@ if(ENABLE_NATIVE_CLI)
     set(_tws_found ON)
   endif()
 
+  # DEPRECATED: IntelRDFPMathLib20U2 support will be removed. Prefer U4.
   set(_intel_found OFF)
-  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a"
-      OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/IntelRDFPMathLib20U4/LIBRARY/libbid.a")
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/IntelRDFPMathLib20U4/LIBRARY/libbid.a"
+      OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a")
     set(_intel_found ON)
   endif()
 
@@ -895,10 +896,14 @@ endif()
 set(_intel_u2 "${CMAKE_CURRENT_SOURCE_DIR}/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a")
 set(_intel_u4 "${CMAKE_CURRENT_SOURCE_DIR}/third_party/IntelRDFPMathLib20U4/LIBRARY/libbid.a")
 # U4 is populated by ./scripts/fetch_third_party.sh; prefer it over legacy U2.
+# DEPRECATED: IntelRDFPMathLib20U2 support will be removed in a future version.
 if(EXISTS "${_intel_u4}")
     set(INTEL_DECIMAL_LIB "${_intel_u4}")
-else()
+elseif(EXISTS "${_intel_u2}")
+    message(WARNING "IntelRDFPMathLib20U2 is deprecated. Please run ./scripts/fetch_third_party.sh to get U4.")
     set(INTEL_DECIMAL_LIB "${_intel_u2}")
+else()
+    message(FATAL_ERROR "Intel decimal math library not found. Run ./scripts/fetch_third_party.sh")
 endif()
 unset(_intel_u2)
 unset(_intel_u4)

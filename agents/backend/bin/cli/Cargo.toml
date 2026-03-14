@@ -1,0 +1,28 @@
+[package]
+name = "cli"
+description = "Aether CLI - Command-line interface for the trading platform"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+# Workspace dependencies
+anyhow.workspace = true
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+# CLI argument parsing
+clap = { version = "4", features = ["derive", "env"] }
+
+# Configuration
+toml.workspace = true
+
+# Logging
+tracing-appender = "0.2"
+
+[features]
+default = []

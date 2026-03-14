@@ -10,6 +10,7 @@ members = [
   "services/backend_service",
   "services/tui_service",
   "crates/discount_bank_parser",
+  "bin/cli",
 ]
 
 resolver = "2"
@@ -39,3 +40,5 @@ reqwest = { version = "0.13", default-features = false, features = ["cookies", "
 rust_decimal = { version = "1.36", features = ["serde-with-str"] }
 uuid = { version = "1.10", features = ["v4", "serde"] }
 openssl = "0.10"
+ibapi = "2.10"
+# cxx = "1.0" # Available for C++ ↔ Rust interop exploration (see task T-1773475473747582000)

@@ -16,6 +16,10 @@ compile_commands.json
 
 # Compiled binaries
 bin/
+# But allow CLI source code (not build artifacts)
+/agents/backend/bin/
+!/agents/backend/bin/cli/src/
+!/agents/backend/bin/cli/Cargo.toml
 *.o
 *.so
 *.dylib
