@@ -588,4 +588,4 @@ See `native/src/tui_app.cpp` for complete integration examples with:
 - [Debug TUI Blog Post](https://www.dantleech.com/blog/2025/05/11/debug-tui/)
 - [GUI Testing Tools Guide](https://www.browserstack.com/guide/open-source-gui-testing-tool)
 - [TUI Design Documentation](research/architecture/TUI_DESIGN.md)
-- [TUI Testing Guide](archive/TUI_TESTING.md)
+- TUI testing: historical Python/Textual guide (archived; doc removed)

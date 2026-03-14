@@ -83,6 +83,4 @@ For **end-user** OAuth (Connect API), Alpaca can issue a refresh token. This pro
 | Let end users connect their Alpaca accounts to your app | Alpaca **Connect API** (authorization code flow); not implemented in this repo. |
 | Simple per-account keys from dashboard | **API keys**: `ALPACA_API_KEY_ID` + `ALPACA_API_SECRET_KEY`. |
 
-See also: [ALPACA_SECRETS_SETUP.md](ALPACA_SECRETS_SETUP.md),
-[ALPACA_TASTYTRADE_RUNTIME_RETIREMENT.md](/Users/davidl/Projects/Trading/ib_box_spread_full_universal/docs/archive/ALPACA_TASTYTRADE_RUNTIME_RETIREMENT.md),
-[ONEPASSWORD_INTEGRATION.md](ONEPASSWORD_INTEGRATION.md).
+See also: [ALPACA_SECRETS_SETUP.md](ALPACA_SECRETS_SETUP.md), [ONEPASSWORD_INTEGRATION.md](ONEPASSWORD_INTEGRATION.md). Alpaca/Tastytrade runtime is retired from the active daemon set; see [BACKEND_SERVICES_DAEMONIZED.md](BACKEND_SERVICES_DAEMONIZED.md).

@@ -491,5 +491,5 @@ for ILS, T-bills for USD) when pricing options and evaluating arbitrage opportun
 ## See Also
 
 - [Box Spread Comprehensive Guide](strategies/box-spread/BOX_SPREAD_COMPREHENSIVE_GUIDE.md) - Complete box spread mechanics and strategies
-- [TWS Integration Status](research/integration/TWS_INTEGRATION_STATUS.md) - Interactive Brokers API integration details
+- TWS/IBKR: see [API_DOCUMENTATION_INDEX.md](API_DOCUMENTATION_INDEX.md) (TWS_INTEGRATION_STATUS doc removed).
 - [API Documentation Index](API_DOCUMENTATION_INDEX.md) - External APIs and resources

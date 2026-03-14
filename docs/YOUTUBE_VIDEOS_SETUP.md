@@ -187,6 +187,5 @@ After adding to library, you can summarize videos:
 ## See Also
 
 - [YouTube Videos Documentation](YOUTUBE_VIDEOS.md) - Complete video tracking
-- [NotebookLM Usage Guide](research/integration/NOTEBOOKLM_USAGE.md) - Detailed NotebookLM usage
-- [NotebookLM Setup Guide](NOTEBOOKLM_SETUP_GUIDE.md) - General setup instructions
-- [Documentation Index](DOCUMENTATION_INDEX.md) - Complete documentation index
+- **NotebookLM:** See `.cursor/rules/notebooklm.mdc`; setup guide removed.
+- **Documentation:** [API_DOCUMENTATION_INDEX.md](API_DOCUMENTATION_INDEX.md), [RESEARCH_INDEX.md](RESEARCH_INDEX.md).

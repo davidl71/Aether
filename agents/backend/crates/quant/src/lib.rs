@@ -1,9 +1,19 @@
+pub mod amortization;
+pub mod convexity;
+pub mod ffi;
+pub mod margin;
+pub mod option_chain;
+pub mod yield_curve;
+
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use time::Date;
 use RustQuant::instruments::options::{implied_volatility, BlackScholesMerton, TypeFlag};
 use RustQuant_stochastics::geometric_brownian_motion::GeometricBrownianMotion;
 use RustQuant_stochastics::process::{StochasticProcess, StochasticProcessConfig};
+
+// FFI: Using cxx crate for C++ ↔ Rust interop
+// See task T-1773489745790117000
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum OptionKind {
@@ -27,6 +37,59 @@ pub struct Greeks {
     pub theta: f64,
     pub vega: f64,
     pub rho: f64,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+pub struct BondGreeks {
+    pub delta: f64,
+    pub gamma: f64,
+    pub theta: f64,
+    pub vega: f64,
+    pub rho: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct Position {
+    pub symbol: String,
+    pub quantity: f64,
+    pub current_price: f64,
+    pub is_option: bool,
+    pub strike: Option<f64>,
+    pub expiry: Option<String>,
+    pub option_type: Option<OptionKind>,
+}
+
+impl Position {
+    pub fn stock(symbol: &str, quantity: f64, price: f64) -> Self {
+        Self {
+            symbol: symbol.to_string(),
+            quantity,
+            current_price: price,
+            is_option: false,
+            strike: None,
+            expiry: None,
+            option_type: None,
+        }
+    }
+
+    pub fn option(
+        symbol: &str,
+        quantity: f64,
+        price: f64,
+        strike: f64,
+        expiry: &str,
+        opt_type: OptionKind,
+    ) -> Self {
+        Self {
+            symbol: symbol.to_string(),
+            quantity,
+            current_price: price,
+            is_option: true,
+            strike: Some(strike),
+            expiry: Some(expiry.to_string()),
+            option_type: Some(opt_type),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -128,6 +191,48 @@ pub struct QuantCalculator;
 impl QuantCalculator {
     pub fn new() -> Self {
         Self
+    }
+
+    fn parse_expiry_to_days(expiry: &str) -> Result<i64, QuantError> {
+        if expiry.len() != 8 {
+            return Err(QuantError::InvalidParameter(
+                "Expiry must be YYYYMMDD format".to_string(),
+            ));
+        }
+
+        let year: i32 = expiry[0..4]
+            .parse()
+            .map_err(|_| QuantError::InvalidParameter("Invalid year in expiry".to_string()))?;
+        let month: u32 = expiry[4..6]
+            .parse()
+            .map_err(|_| QuantError::InvalidParameter("Invalid month in expiry".to_string()))?;
+        let day: u32 = expiry[6..8]
+            .parse()
+            .map_err(|_| QuantError::InvalidParameter("Invalid day in expiry".to_string()))?;
+
+        let month: u8 = month
+            .try_into()
+            .map_err(|_| QuantError::InvalidParameter("Invalid month".to_string()))?;
+        let day: u8 = day
+            .try_into()
+            .map_err(|_| QuantError::InvalidParameter("Invalid day".to_string()))?;
+
+        let month = time::Month::try_from(month)
+            .map_err(|_| QuantError::InvalidParameter("Invalid month".to_string()))?;
+
+        let expiry_date = Date::from_calendar_date(year, month, day)
+            .map_err(|_| QuantError::InvalidParameter("Invalid date".to_string()))?;
+
+        let today = time::OffsetDateTime::now_utc().date();
+        let days = (expiry_date - today).whole_days();
+
+        if days < 0 {
+            return Err(QuantError::InvalidParameter(
+                "Expiry date is in the past".to_string(),
+            ));
+        }
+
+        Ok(days)
     }
 
     fn days_to_expiry(&self, days: i64) -> Date {
@@ -784,6 +889,84 @@ impl QuantCalculator {
             predictions,
         })
     }
+
+    pub fn calculate_stock_greeks(&self, quantity: f64) -> Greeks {
+        Greeks {
+            delta: quantity,
+            gamma: 0.0,
+            theta: 0.0,
+            vega: 0.0,
+            rho: 0.0,
+        }
+    }
+
+    pub fn calculate_bond_greeks(
+        &self,
+        price: f64,
+        quantity: f64,
+        duration: f64,
+        convexity: f64,
+    ) -> BondGreeks {
+        BondGreeks {
+            delta: -duration * price / 100.0 * quantity,
+            gamma: convexity * price * 0.0001 * quantity,
+            theta: 0.0,
+            vega: 0.0,
+            rho: -duration * price * quantity,
+        }
+    }
+
+    pub fn calculate_currency_greeks(&self, position_value_local: f64) -> Greeks {
+        Greeks {
+            delta: position_value_local,
+            gamma: 0.0,
+            vega: 0.0,
+            theta: 0.0,
+            rho: 0.0,
+        }
+    }
+
+    pub fn aggregate_greeks(
+        &self,
+        positions: &[Position],
+        underlying_price: f64,
+        risk_free_rate: f64,
+        implied_volatility: f64,
+        dividend_yield: f64,
+    ) -> Result<Greeks, QuantError> {
+        let mut aggregate = Greeks::default();
+
+        for pos in positions {
+            if pos.is_option {
+                if let (Some(strike), Some(expiry_str), Some(opt_type)) =
+                    (pos.strike, &pos.expiry, pos.option_type)
+                {
+                    let days = Self::parse_expiry_to_days(expiry_str)?;
+                    let t_years = days as f64 / 365.0;
+
+                    let greeks = self.calculate_greeks(
+                        underlying_price,
+                        strike,
+                        t_years,
+                        risk_free_rate,
+                        implied_volatility,
+                        opt_type,
+                    )?;
+
+                    aggregate.delta += greeks.delta * pos.quantity;
+                    aggregate.gamma += greeks.gamma * pos.quantity;
+                    aggregate.theta += greeks.theta * pos.quantity;
+                    aggregate.vega += greeks.vega * pos.quantity;
+                    aggregate.rho += greeks.rho * pos.quantity;
+                }
+            } else {
+                let stock_greeks = self.calculate_stock_greeks(pos.quantity);
+                aggregate.delta += stock_greeks.delta;
+            }
+        }
+
+        Ok(aggregate)
+    }
 }
 
 impl Default for QuantCalculator {
@@ -979,5 +1162,61 @@ mod tests {
 
         let result = calc.calculate_option_price(100.0, 100.0, 1.0, 0.05, -0.1, OptionKind::Call);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_stock_greeks() {
+        let calc = QuantCalculator::new();
+        let greeks = calc.calculate_stock_greeks(100.0);
+        assert_eq!(greeks.delta, 100.0);
+        assert_eq!(greeks.gamma, 0.0);
+        assert_eq!(greeks.theta, 0.0);
+    }
+
+    #[test]
+    fn test_bond_greeks() {
+        let calc = QuantCalculator::new();
+        let greeks = calc.calculate_bond_greeks(100.0, 10.0, 7.5, 70.0);
+        assert!(greeks.delta < 0.0);
+        assert!(greeks.gamma > 0.0);
+        assert_eq!(greeks.vega, 0.0);
+    }
+
+    #[test]
+    fn test_currency_greeks() {
+        let calc = QuantCalculator::new();
+        let greeks = calc.calculate_currency_greeks(10000.0);
+        assert_eq!(greeks.delta, 10000.0);
+    }
+
+    #[test]
+    fn test_aggregate_greeks() {
+        let calc = QuantCalculator::new();
+
+        let positions = vec![
+            Position {
+                symbol: "SPY".to_string(),
+                quantity: 100.0,
+                current_price: 500.0,
+                is_option: false,
+                strike: None,
+                expiry: None,
+                option_type: None,
+            },
+            Position {
+                symbol: "SPY".to_string(),
+                quantity: 1.0,
+                current_price: 5.0,
+                is_option: true,
+                strike: Some(500.0),
+                expiry: Some("20261218".to_string()),
+                option_type: Some(OptionKind::Call),
+            },
+        ];
+
+        let result = calc.aggregate_greeks(&positions, 500.0, 0.05, 0.2, 0.0);
+        assert!(result.is_ok());
+        let agg = result.unwrap();
+        assert!(agg.delta > 100.0);
     }
 }

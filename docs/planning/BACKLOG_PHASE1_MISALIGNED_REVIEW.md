@@ -2,7 +2,7 @@
 
 **Date:** 2026-02-27  
 **Task:** T-1772206054086289000 (Review misaligned tasks)  
-**Source:** [docs/TODO2_ALIGNMENT_REPORT.md](TODO2_ALIGNMENT_REPORT.md) (68 misaligned tasks)
+**Source:** TODO2 alignment (TODO2_ALIGNMENT_REPORT.md removed; 68 misaligned tasks at time of review)
 
 ## Summary of decisions
 
@@ -37,7 +37,7 @@
 - T-1772136087147162000 Add memcached cache to Python integration layer — *Python cache_client exists; pymemcache integration can be verified separately.*
 
 ### Still todo (backlog; no status change)
-Remaining 50+ tasks from the misaligned list are left as-is in Todo2. High-priority or agent-visible ones are added to [agents/shared/TODO_OVERVIEW.md](../agents/shared/TODO_OVERVIEW.md) in Phase 2.
+Remaining 50+ tasks from the misaligned list are left as-is in Todo2. High-priority or agent-visible ones are added to shared TODO in Phase 2 (agents/shared/TODO_OVERVIEW.md removed).
 
 ## Outcome
 

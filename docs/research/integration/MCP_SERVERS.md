@@ -30,7 +30,7 @@ enhance Cursor AI capabilities.
 - Especially important for trading software where security is critical
 
 **Usage**: The AI assistant will automatically use Semgrep when analyzing code for security
-issues, as mentioned in `.cursorrules`.
+issues, as mentioned in project rules (`.cursorrules` and `.cursor/rules/`).
 
 ### 2. Filesystem Server
 
@@ -250,7 +250,7 @@ MCP. Never execute live trading commands.
 
 ## Additional Interactive MCP Tools (Optional)
 
-For more interactive tools like GitHub integration and database queries, see [MCP_INTERACTIVE_TOOLS.md](MCP_INTERACTIVE_TOOLS.md).
+For more interactive tools like GitHub integration and database queries, see the MCP documentation in `.cursor/rules/` and [modelcontextprotocol.io](https://modelcontextprotocol.io/).
 
 ---
 
@@ -277,7 +277,7 @@ diagnostics, type information, and code navigation to AI assistants.
 
 **Troubleshooting**:
 
-- If you see permission errors, see [MCP_TROUBLESHOOTING.md](MCP_TROUBLESHOOTING.md) for permission fixes
+- If you see permission errors, check Cursor MCP logs and server documentation (MCP_TROUBLESHOOTING doc removed).
 - Extension must be installed and enabled
 - Restart Cursor after installation
 
@@ -554,7 +554,7 @@ pipx install sequential-thinking-mcp
 - Natural language Q&A that understands context across multiple documents
 
 **Usage**: The AI assistant can use NotebookLM to research topics, summarize videos, and create
-documentation. See [NotebookLM Usage Guide](NOTEBOOKLM_USAGE.md) for detailed instructions.
+documentation. See `.cursor/rules/notebooklm.mdc` for when to use NotebookLM.
 
 **Key Features**:
 
@@ -678,8 +678,8 @@ If you add database support:
 ## See Also
 
 - [Cursor Setup Guide](CURSOR_SETUP.md) - General Cursor IDE configuration
-- [NotebookLM Usage Guide](NOTEBOOKLM_USAGE.md) - How to use NotebookLM for summarizing videos and documentation
-- [.cursorrules](../.cursorrules) - AI assistant guidelines mentioning Semgrep
+- **NotebookLM:** `.cursor/rules/notebooklm.mdc` - when to use NotebookLM for summarizing videos and documentation
+- **Rules:** `.cursorrules` and `.cursor/rules/` - AI assistant guidelines mentioning Semgrep
 - [MCP Documentation](https://modelcontextprotocol.io/) - Official MCP documentation
 - [NotebookLM MCP Repository](https://github.com/PleasePrompto/notebooklm-mcp) - Source code
   and detailed documentation

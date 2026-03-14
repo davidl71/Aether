@@ -21,6 +21,16 @@ just build-universal    # universal binary (arm64 + x86_64)
 just build-portable     # auto-detect platform and preset
 ```
 
+**AI-friendly builds** (JSON output for easy parsing):
+
+```bash
+# C++ (AI-friendly: quiet, JSON result, error extraction)
+./scripts/build_ai_friendly.sh --json-only
+
+# Rust
+./scripts/build_rust_ai_friendly.sh --json-only
+```
+
 Direct CMake/Ninja (when `just` isn't available):
 
 ```bash

@@ -627,5 +627,5 @@ If NautilusTrader adapters are too complex:
 - [Backtrader Documentation](https://www.backtrader.com/)
 - [Lumibot Documentation](https://lumibot.trading/)
 - [Project NautilusTrader Integration](../../research/learnings/NAUTILUS_LEARNINGS.md)
-- [Project NautilusTrader Implementation](../../research/learnings/NAUTILUS_IMPLEMENTATION_SUMMARY.md)
+- Project NautilusTrader implementation (NAUTILUS_IMPLEMENTATION_SUMMARY doc removed)
 - [Project LEAN Learnings](../../research/learnings/LEAN_LEARNINGS.md)

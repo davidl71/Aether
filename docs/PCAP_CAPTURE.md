@@ -279,6 +279,6 @@ for header, packet in reader:
 
 ## Related Documentation
 
-- [TWS Integration Status](research/integration/TWS_INTEGRATION_STATUS.md)
+- TWS/IBKR integration: see [API_DOCUMENTATION_INDEX.md](API_DOCUMENTATION_INDEX.md) (TWS_INTEGRATION_STATUS doc removed).
 - [Configuration Guide](ENVIRONMENT_CONFIGURATION.md)
 - [Troubleshooting Guide](TROUBLESHOOTING_BLANK_PAGE.md)

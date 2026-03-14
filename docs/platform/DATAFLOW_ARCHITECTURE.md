@@ -123,7 +123,7 @@ standalone QuestDB bridge, or raw-string parsing are stale.
 
 **Publish rule**: publishers must use concrete symbol-scoped subjects. Wildcards like
 `strategy.signal.>` and `strategy.decision.>` are subscriber-only. See
-[CPP_RUST_DATAPATH_CONTRACT.md](/Users/davidl/Projects/Trading/ib_box_spread_full_universal/docs/platform/CPP_RUST_DATAPATH_CONTRACT.md).
+See [CURRENT_TOPOLOGY.md](CURRENT_TOPOLOGY.md) for current data paths (CPP_RUST_DATAPATH_CONTRACT.md removed).
 
 ---
 

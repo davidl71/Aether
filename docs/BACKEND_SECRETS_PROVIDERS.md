@@ -100,4 +100,4 @@ Real API keys are **issued by the broker**, not generated locally. Use:
 - Never commit secrets or `OP_SERVICE_ACCOUNT_TOKEN` to the repo.
 - Prefer `op://` references over plain env vars so secrets stay in 1Password.
 - Use a dedicated vault and service account with minimal scope (e.g. read_items only) for automation.
-- See [ONEPASSWORD_INTEGRATION.md](ONEPASSWORD_INTEGRATION.md) and [.cursorrules](/.cursorrules) for more.
+- See [ONEPASSWORD_INTEGRATION.md](ONEPASSWORD_INTEGRATION.md) and project rules (`.cursorrules` and `.cursor/rules/` in repo root) for more.

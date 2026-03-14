@@ -77,7 +77,7 @@ server by appending `use context7` to your prompts. For example:
   - Cost analysis and ROI considerations
   - Based on Elite Trader resources and infrastructure best practices
 
-- **Feature Tracking**: `docs/archive/FEATURE_TRACKING.md`
+- **Feature Tracking**: (archived; doc removed)
   - Comprehensive feature parity tracking between TUI and Web App
   - Feature status (implemented, partial, missing)
   - Implementation locations and notes

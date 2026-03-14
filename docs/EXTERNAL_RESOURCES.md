@@ -197,7 +197,7 @@ Link resource summaries to related documentation:
 
 After summarizing resources, update:
 
-- `docs/DOCUMENTATION_INDEX.md` - Add resource summaries
+- `docs/API_DOCUMENTATION_INDEX.md` and `docs/RESEARCH_INDEX.md` - Add resource summaries
 - `docs/EXTERNAL_RESOURCES.md` - Update resource status
 
 ## Requesting Resource Summaries
@@ -241,9 +241,8 @@ The AI will:
 ## See Also
 
 - [YouTube Videos Documentation](YOUTUBE_VIDEOS.md) - YouTube videos tracking
-- [NotebookLM Usage Guide](research/integration/NOTEBOOKLM_USAGE.md) - Detailed NotebookLM usage instructions
-- [NotebookLM Setup Guide](NOTEBOOKLM_SETUP_GUIDE.md) - Setting up NotebookLM with repository documentation
-- [Documentation Index](DOCUMENTATION_INDEX.md) - Complete documentation index
+- **NotebookLM:** See `.cursor/rules/notebooklm.mdc` for usage; setup guide removed.
+- **Documentation:** See [API_DOCUMENTATION_INDEX.md](API_DOCUMENTATION_INDEX.md) and [RESEARCH_INDEX.md](RESEARCH_INDEX.md).
 - [EClient EWrapper Architecture](research/learnings/ECLIENT_EWRAPPER_ARCHITECTURE.md) - TWS API architecture documentation
 
 ## Notes

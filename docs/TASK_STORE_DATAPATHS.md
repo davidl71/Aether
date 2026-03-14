@@ -43,8 +43,8 @@ These are the commands in this repo that route into the task store:
 | `exarp-go -tool task_workflow -args '{"action":"sync","sub_action":"list"}'` | Tool-mode list after sync | Reads store, may sync first |
 | `exarp-go -tool session -args '{"action":"prime",...}'` | Session prime | Reads tasks and handoff alert state |
 | `exarp-go -tool session -args '{"action":"handoff",...}'` | Create/list/resume/export handoff | Reads/writes `handoffs.json`; may read tasks for snapshot/journal |
-| [.claude/commands/tasks.md](/Users/davidl/Projects/Trading/ib_box_spread_full_universal/.claude/commands/tasks.md) | Claude command that calls `task_workflow action=sync sub_action=list` | Reads tasks |
-| [.opencode/commands/tasks.md](/Users/davidl/Projects/Trading/ib_box_spread_full_universal/.opencode/commands/tasks.md) | OpenCode wrapper over `run_exarp_go.sh -tool task_workflow ...` | Reads tasks |
+| (removed) `.claude/commands/tasks.md` | Previously Claude command for task_workflow | — |
+| (removed) `.opencode/commands/tasks.md` | Previously OpenCode wrapper for task_workflow | — |
 
 ## Repo-side shell functions
 
@@ -55,7 +55,7 @@ process gets the request and which repo root it operates on:
 |------|------|------|
 | [scripts/run_exarp_go.sh](/Users/davidl/Projects/Trading/ib_box_spread_full_universal/scripts/run_exarp_go.sh) | `sanitize_go_env()` | Clears stale `GOROOT`; no task-store IO |
 | [scripts/run_exarp_go.sh](/Users/davidl/Projects/Trading/ib_box_spread_full_universal/scripts/run_exarp_go.sh) | `resolve_exarp_go()` | Finds the exarp-go binary and sets migrations path |
-| [scripts/oh-my-zsh-exarp-plugin/exarp.plugin.zsh](/Users/davidl/Projects/Trading/ib_box_spread_full_universal/scripts/oh-my-zsh-exarp-plugin/exarp.plugin.zsh) | `_exarp_go_cmd()` / `_exarp_go_tool()` | Shell convenience dispatch into exarp-go |
+| (removed) `scripts/oh-my-zsh-exarp-plugin/` | Previously shell plugin for exarp-go | Use `scripts/run_exarp_go.sh` or Cursor MCP |
 
 ## exarp-go functions behind the task store
 

@@ -240,7 +240,7 @@ Link video summaries to related documentation:
 
 After summarizing videos, update:
 
-- `docs/DOCUMENTATION_INDEX.md` - Add video summaries
+- `docs/API_DOCUMENTATION_INDEX.md` and `docs/RESEARCH_INDEX.md` - Add video summaries
 - `docs/YOUTUBE_VIDEOS.md` - Update video status
 
 ## Requesting Video Summaries
@@ -283,9 +283,8 @@ The AI will:
 
 ## See Also
 
-- [NotebookLM Usage Guide](research/integration/NOTEBOOKLM_USAGE.md) - Detailed NotebookLM usage instructions
-- [NotebookLM Setup Guide](NOTEBOOKLM_SETUP_GUIDE.md) - Setting up NotebookLM with repository documentation
-- [Documentation Index](DOCUMENTATION_INDEX.md) - Complete documentation index
+- **NotebookLM:** See `.cursor/rules/notebooklm.mdc`; setup guide removed.
+- **Documentation:** [API_DOCUMENTATION_INDEX.md](API_DOCUMENTATION_INDEX.md), [RESEARCH_INDEX.md](RESEARCH_INDEX.md).
 - [EClient EWrapper Architecture](research/learnings/ECLIENT_EWRAPPER_ARCHITECTURE.md) - TWS API architecture documentation
 
 ## Notes

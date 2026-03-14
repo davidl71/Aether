@@ -4,11 +4,12 @@
     "exarp-go": {
       "type": "local",
       "command": ["/Users/davidl/Projects/mcp/exarp-go/bin/exarp-go"],
-      "enabled": false,
+      "enabled": true,
       "environment": {
         "PROJECT_ROOT": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal",
         "EXARP_MIGRATIONS_DIR": "/Users/davidl/Projects/mcp/exarp-go/migrations",
-        "EXARP_WATCH": "0"
+        "EXARP_WATCH": "0",
+        "NO_COLOR": "1"
       }
     },
     "context7": {
@@ -44,6 +45,16 @@
     "git": {
       "type": "local",
       "command": ["uvx", "mcp-server-git", "--repository", "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"],
+      "enabled": true
+    },
+    "ctags-lsp": {
+      "type": "local",
+      "command": ["ctags-lsp"],
+      "enabled": false
+    },
+    "lsp-mcp": {
+      "type": "local",
+      "command": ["lsp-mcp", "--project", "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"],
       "enabled": true
     }
   }

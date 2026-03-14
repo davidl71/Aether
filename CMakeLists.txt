@@ -24,4 +24,5 @@ add_custom_target(exarp-list
   COMMENT "List exarp-go tools"
 )
 
-add_subdirectory(native)
+# DEPRECATED: C++ native build removed - use Rust backend_service + tui_service
+# add_subdirectory(native)

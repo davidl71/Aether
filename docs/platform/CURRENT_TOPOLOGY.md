@@ -1,91 +1,69 @@
 # Current Topology
 
-**Last updated**: 2026-03-11
+**Last updated**: 2026-03-14
 
-Short-form reference for the active runtime topology.
+Short-form reference for the active runtime topology and component/broker/backend ownership.
 
 For deeper detail, see:
 
-- [ARCHITECTURE.md](/Users/davidl/Projects/Trading/ib_box_spread_full_universal/ARCHITECTURE.md)
-- [DATAFLOW_ARCHITECTURE.md](/Users/davidl/Projects/Trading/ib_box_spread_full_universal/docs/platform/DATAFLOW_ARCHITECTURE.md)
-- [API_GATEWAY_AND_ROUTING_REVIEW.md](/Users/davidl/Projects/Trading/ib_box_spread_full_universal/docs/platform/API_GATEWAY_AND_ROUTING_REVIEW.md)
+- [ARCHITECTURE.md](../../ARCHITECTURE.md)
+- [DATAFLOW_ARCHITECTURE.md](DATAFLOW_ARCHITECTURE.md)
+- [BACKEND_SERVICES_DAEMONIZED.md](../BACKEND_SERVICES_DAEMONIZED.md)
 
 ## Summary
 
-- `C++` produces market and strategy events.
-- `Rust` owns shared frontend read APIs and active collection fanout.
-- `Go` is narrowed to operational tooling that remains separate by role.
-- `Python` is limited to selected legacy/helper surfaces; the active TUI runtime is Rust.
+- **Rust** owns backend, TUI, CLI, broker adapter (IBKR), quant/risk, ledger, and NATS producer/consumer. C++ native build is **removed**.
+- **Daemons**: `nats` (4222) and `rust_backend` (8080) only.
 
-## Runtime Shape
+## Runtime shape
 
 ```text
-IBKR/TWS
-  -> C++ engine / tws_client
-    -> NATS (NatsEnvelope protobuf)
-      -> Rust backend collector
-           -> QuestDB
-           -> NATS KV LIVE_STATE
-      -> Rust nats_adapter
-           -> Rust backend in-memory state
+IBKR/TWS (port 7497)
+  -> Rust ib_adapter (agents/backend/crates/ib_adapter)
+    -> Rust backend_service
+         -> NATS (NatsEnvelope protobuf)
+         -> LIVE_STATE KV, QuestDB (when configured)
 
-Web
-  -> Rust API (:8080)
-     - /api/v1/snapshot
-     - /api/v1/frontend/*
-     - /ws/snapshot
+Rust API (:8080)
+  - /api/v1/snapshot, /api/v1/frontend/*, /ws/snapshot
+  - health, heartbeat
 
-TUI
-  -> Rust read-model endpoints
+TUI / CLI
+  -> Rust read-model endpoints (REST)
   -> optional NATS/event-driven path
 ```
 
-## Ownership
+## Component and backend ownership
 
-### Producers
+| Area | Owner | Location |
+|------|--------|----------|
+| **Shared frontend API** | Rust | `agents/backend/crates/api`, `services/backend_service` |
+| **Broker adapters (IBKR)** | Rust | `agents/backend/crates/ib_adapter` |
+| **Ledger** | Rust | `crates/ledger` |
+| **Quant / risk / pricing** | Rust | `crates/quant`, `crates/risk` |
+| **Market data, strategy** | Rust | `crates/market_data`, `crates/strategy` |
+| **NATS ingestion, LIVE_STATE** | Rust | `crates/nats_adapter`, backend_service |
+| **TUI, CLI** | Rust | `services/tui_service`, `bin/cli` |
 
-- `native/` C++ publishes market and strategy events to NATS.
-
-### Collection and operational services
+### Collection and backend service
 
 - `agents/backend/services/backend_service`
-  - decodes `NatsEnvelope`
-  - expects concrete symbol-scoped producer subjects for market and strategy events
-  - writes `LIVE_STATE` KV
-  - writes QuestDB when configured
-
-### Shared frontend API
-
-- `agents/backend/`
-  - owns snapshot API
-  - owns shared frontend read models
-  - owns `LIVE_STATE` read/watch endpoints
-  - owns `/api/heartbeat/*`, `/api/health-aggregated`, and `/gateway/health`
-  - consumes `system.health` directly for aggregated health
-  - is the primary browser-facing backend
-
-### Python scope
-
-- `native/tests/python/`
-  - pybind11 binding tests
-- `native/generated/python/`
-  - generated helper output from `proto/messages.proto`
-Python is no longer the terminal UI runtime, the general frontend read-model backend, or a collection/live-state ownership layer.
+  - decodes `NatsEnvelope`, writes `LIVE_STATE` KV and QuestDB when configured
+  - owns snapshot API, frontend read models, health/heartbeat
+  - primary producer/consumer for NATS (C++ engine removed)
 
 ## Storage
 
 | Store | Writer | Purpose |
 |-------|--------|---------|
-| `NATS KV LIVE_STATE` | Rust backend collector | live key-value state, full `NatsEnvelope` values |
-| `QuestDB` | Rust backend collector | time-series archive |
-| `SQLite ledger` | Rust ledger target owner | durable ledger state |
-| C++ in-memory cache | C++ only | hot tick data |
+| `NATS KV LIVE_STATE` | Rust backend | live key-value state, full `NatsEnvelope` values |
+| `QuestDB` | Rust backend | time-series archive (when configured) |
+| `SQLite ledger` | Rust `crates/ledger` | durable ledger state |
 
-## Known Simplification Gaps
+## Notes
 
-- Some docs and plans still describe older Python overlap around finance state.
-- Some docs still describe TUI Python service calls even though the active runtime path is Rust-first.
-- Go `api-gateway` and Go `heartbeat-aggregator` are retired. Rust now owns the client-facing health and heartbeat routes and consumes `system.health` directly.
+- Go `api-gateway` and Go `heartbeat-aggregator` are retired; Rust owns health and heartbeat routes.
+- Python is not an active runtime tier; Rust is the only active backend/TUI/CLI surface.
 
 ## Default Deployment Direction
 

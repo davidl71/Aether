@@ -6,7 +6,7 @@
 
 ## Counts
 
-- **Shared TODO** ([agents/shared/TODO_OVERVIEW.md](../agents/shared/TODO_OVERVIEW.md)): ~55 rows (numeric IDs 4–44, CI-1–CI-5, 6 parallel-exec IDs, plus new backlog section).
+- **Shared TODO** (agents/shared/TODO_OVERVIEW.md removed): ~55 rows at time of review (numeric IDs 4–44, CI-1–CI-5, 6 parallel-exec IDs, plus new backlog section).
 - **Todo2** (from `.todo2/state.todo2.json` in workspace): 344 tasks total (per alignment report). Many use long numeric IDs (e.g. T-1772135684202624000); shared table uses short IDs (4, 5, …) or T-20251129… style.
 - **Gap:** “191” = Todo2 tasks that have no matching row in the shared TODO table (by ID or description match). These remain Todo2-only; no need to add all 191 to the shared table.
 

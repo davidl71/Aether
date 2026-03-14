@@ -166,7 +166,7 @@ The coverage configuration file is located at the project root and includes:
 - `python/tests/run_security_tests.py` - Security test runner
 - `scripts/swiftness_integration_manual.py` – Manual Swiftness integration check (run from repo root: `python scripts/swiftness_integration_manual.py`)
 
-See also `docs/TEST_CLEANUP_FOLLOWUP.md` for follow-up tasks and deduplication notes.
+(Test cleanup and deduplication are complete; follow-up doc removed.)
 
 ## Running Tests
 

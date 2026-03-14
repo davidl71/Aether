@@ -144,6 +144,6 @@ When you have the exarp-go repo (e.g. sibling or `EXARP_GO_ROOT`), use it to lea
 - [AI_EDITOR_SETUP.md](AI_EDITOR_SETUP.md) — OpenCode, Claude, Cursor, skills, subagents
 - [EXARP_GO_GIT_HOOKS_LEARNINGS.md](EXARP_GO_GIT_HOOKS_LEARNINGS.md) — Git hook patterns from exarp-go
 - [EXARP_GO_SCRIPTS_AND_PATTERNS.md](EXARP_GO_SCRIPTS_AND_PATTERNS.md) — Scripts and patterns from exarp-go
-- [EXARP_GO_VS_THIS_REPO.md](EXARP_GO_VS_THIS_REPO.md) — What we use exarp-go for vs what we do locally
+- exarp-go vs this repo: see [EXARP_GO_CURSOR_CLAUDE_OPENCODE.md](EXARP_GO_CURSOR_CLAUDE_OPENCODE.md) and [project-automation.mdc](../.cursor/rules/project-automation.mdc) (EXARP_GO_VS_THIS_REPO.md removed).
 - [.cursor/rules/ai-context-standards.mdc](../.cursor/rules/ai-context-standards.mdc) — Context files and which rule when
 - [.cursor/rules/hooks.mdc](../.cursor/rules/hooks.mdc) — Session and git hooks

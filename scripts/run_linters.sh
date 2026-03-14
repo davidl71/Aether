@@ -7,8 +7,10 @@
 #   ./scripts/run_linters.sh --json-only        # same but print only JSON to stdout (for tools/AI)
 #   LINT_MAX_LINES=80 ./scripts/run_linters.sh # truncate each linter output to 80 lines
 #   LINT_QUIET=1 ./scripts/run_linters.sh      # same as LINT_MAX_LINES=80
+#   ./scripts/run_linters.sh --fix             # run fix-capable linters with auto-fix (ESLint, stylelint, exarp-go)
 #   ./scripts/run_linters.sh --parallel        # run independent linters in parallel (faster)
 #   LINT_PARALLEL=1 ./scripts/run_linters.sh   # same as --parallel
+#   ./scripts/run_linters.sh --no-ai-friendly  # verbose human-readable output (default is AI-friendly/quiet)
 #
 # ansible-lint: ANSIBLE_LINT_TIMEOUT (default 300s); use timeout(1)/gtimeout(1) when available.
 #
@@ -33,24 +35,28 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 setup_workspace_paths
 
-# Parse --ai-friendly and --json-only before Nix re-exec so they work with USE_NIX=1
-LINT_AI_FRIENDLY=0
+# Parse --ai-friendly, --json-only, --fix before Nix re-exec so they work with USE_NIX=1
+# Default LINT_AI_FRIENDLY=1 so automation/tools get quiet JSON output unless --no-ai-friendly is passed.
+LINT_AI_FRIENDLY=1
 LINT_JSON_ONLY=0
+LINT_FIX=0
 LINT_FILTERED_ARGS=()
 for a in "$@"; do
   case "${a}" in
   --ai-friendly) LINT_AI_FRIENDLY=1 ;;
+  --no-ai-friendly) LINT_AI_FRIENDLY=0 ;;
   --json-only)
     LINT_JSON_ONLY=1
     LINT_AI_FRIENDLY=1
     ;;
+  --fix) LINT_FIX=1 ;;
   --parallel) LINT_PARALLEL=1 ;;
   *) LINT_FILTERED_ARGS+=("${a}") ;;
   esac
 done
 # LINT_PARALLEL can also be set by env (e.g. LINT_PARALLEL=1)
 [[ -n "${LINT_PARALLEL:-}" ]] && [[ "${LINT_PARALLEL}" != "0" ]] && LINT_PARALLEL=1 || LINT_PARALLEL="${LINT_PARALLEL:-0}"
-export LINT_AI_FRIENDLY LINT_JSON_ONLY LINT_PARALLEL
+export LINT_AI_FRIENDLY LINT_JSON_ONLY LINT_PARALLEL LINT_FIX
 
 if [[ ${#LINT_FILTERED_ARGS[@]} -gt 0 ]]; then
   run_with_nix_if_requested "${LINT_FILTERED_ARGS[@]}"
@@ -58,17 +64,11 @@ else
   run_with_nix_if_requested
 fi
 
-# Detect non-interactive / AI tool context: enable AI-friendly + JSON-only if not already set.
+# In interactive TTY without --ai-friendly, use verbose mode; otherwise keep AI-friendly default.
 if [[ "${LINT_AI_FRIENDLY}" -eq 0 ]]; then
-  if [[ ! -t 1 ]]; then
-    LINT_AI_FRIENDLY=1
-    LINT_JSON_ONLY=1
-    export LINT_AI_FRIENDLY LINT_JSON_ONLY
-  elif [[ -n "${CI:-}" ]] && [[ "${CI}" != "0" ]]; then
-    LINT_AI_FRIENDLY=1
-    LINT_JSON_ONLY=1
-    export LINT_AI_FRIENDLY LINT_JSON_ONLY
-  elif [[ -n "${CURSOR:-}" ]] && [[ "${CURSOR}" != "0" ]]; then
+  if [[ -t 1 ]] && [[ -z "${CI:-}" ]] && [[ -z "${CURSOR:-}" ]]; then
+    : # keep LINT_AI_FRIENDLY=0 for human-readable output
+  else
     LINT_AI_FRIENDLY=1
     LINT_JSON_ONLY=1
     export LINT_AI_FRIENDLY LINT_JSON_ONLY
@@ -296,14 +296,16 @@ run_eslint() {
     return 0
   fi
 
+  local cmd="lint"
+  [[ "${LINT_FIX:-0}" -eq 1 ]] && cmd="lint:fix"
   if [[ "${LINT_MAX_LINES}" -gt 0 ]]; then
-    run_limited bash -c "cd '${ROOT_DIR}/web' && npm run lint" || {
-      warn "ESLint found issues. Run 'cd web && npm run lint:fix' to auto-fix some issues."
+    run_limited bash -c "cd '${ROOT_DIR}/web' && npm run ${cmd}" || {
+      [[ "${LINT_FIX:-0}" -ne 1 ]] && warn "ESLint found issues. Run with --fix or 'cd web && npm run lint:fix' to auto-fix."
       return 1
     }
   else
-    (cd "${ROOT_DIR}/web" && npm run lint) || {
-      warn "ESLint found issues. Run 'cd web && npm run lint:fix' to auto-fix some issues."
+    (cd "${ROOT_DIR}/web" && npm run ${cmd}) || {
+      [[ "${LINT_FIX:-0}" -ne 1 ]] && warn "ESLint found issues. Run with --fix or 'cd web && npm run lint:fix' to auto-fix."
       return 1
     }
   fi
@@ -321,14 +323,16 @@ run_stylelint() {
   fi
 
   info "Running stylelint (CSS web frontend)"
+  local cmd="lint:css"
+  [[ "${LINT_FIX:-0}" -eq 1 ]] && cmd="lint:css:fix"
   if [[ "${LINT_MAX_LINES}" -gt 0 ]]; then
-    run_limited bash -c "cd '${ROOT_DIR}/web' && npm run lint:css" || {
-      warn "stylelint found issues. Run 'cd web && npm run lint:css:fix' to auto-fix some issues."
+    run_limited bash -c "cd '${ROOT_DIR}/web' && npm run ${cmd}" || {
+      [[ "${LINT_FIX:-0}" -ne 1 ]] && warn "stylelint found issues. Run with --fix or 'cd web && npm run lint:css:fix' to auto-fix."
       return 1
     }
   else
-    (cd "${ROOT_DIR}/web" && npm run lint:css) || {
-      warn "stylelint found issues. Run 'cd web && npm run lint:css:fix' to auto-fix some issues."
+    (cd "${ROOT_DIR}/web" && npm run ${cmd}) || {
+      [[ "${LINT_FIX:-0}" -ne 1 ]] && warn "stylelint found issues. Run with --fix or 'cd web && npm run lint:css:fix' to auto-fix."
       return 1
     }
   fi
@@ -548,7 +552,11 @@ run_exarp_go_lint() {
   fi
   info "Running exarp-go lint (Go + markdown)"
   local status=0
-  "${exarp_script}" lint || status=0
+  if [[ "${LINT_FIX:-0}" -eq 1 ]]; then
+    "${exarp_script}" lint '{"fix":true}' || status=0
+  else
+    "${exarp_script}" lint || status=0
+  fi
   if [[ ${status} -ne 0 ]]; then
     warn "exarp-go lint reported issues (optional; install exarp-go for full coverage)"
   fi

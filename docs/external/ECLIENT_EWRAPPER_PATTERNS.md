@@ -439,4 +439,4 @@ Contract make_index_contract(const std::string& symbol,
 
 - [EClient and EWrapper Architecture](../research/learnings/ECLIENT_EWRAPPER_ARCHITECTURE.md)
 - [TWS API Quick Reference](./TWS_API_QUICK_REFERENCE.md)
-- [TWS Integration Status](../research/integration/TWS_INTEGRATION_STATUS.md)
+- TWS integration (doc removed; see [API_DOCUMENTATION_INDEX.md](../API_DOCUMENTATION_INDEX.md))

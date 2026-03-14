@@ -4,6 +4,9 @@ edition = "2021"
 version = "0.1.0"
 description = "Quantitative finance calculations using RustQuant"
 
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+
 [dependencies]
 anyhow = { workspace = true }
 serde = { workspace = true }

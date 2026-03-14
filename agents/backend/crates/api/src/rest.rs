@@ -33,6 +33,7 @@ use crate::health::SharedHealthAggregate;
 use crate::ib_positions::fetch_ib_positions;
 use crate::loans::{LoanAggregationInput, LoanRecord, LoanRepository};
 use crate::project_paths::shared_config_candidate_paths;
+use market_data;
 use crate::quant::{
     calculate_box_spread as calc_box, calculate_greeks as calc_greeks,
     calculate_historical_volatility as calc_hv, calculate_iv as calc_iv,
@@ -175,10 +176,10 @@ impl RestServer {
             )
             .route("/api/v1/scenarios", get(get_scenarios))
             .route("/api/v1/chart/:symbol", get(get_chart))
-            .route("/api/v1/fundamentals/:symbol/income", get(fundamentals_income))
-            .route("/api/v1/fundamentals/:symbol/balance-sheet", get(fundamentals_balance_sheet))
-            .route("/api/v1/fundamentals/:symbol/cash-flow", get(fundamentals_cash_flow))
-            .route("/api/v1/fundamentals/:symbol/quote", get(fundamentals_quote))
+            // .route("/api/v1/fundamentals/:symbol/income", get(fundamentals_income))
+            // .route("/api/v1/fundamentals/:symbol/balance-sheet", get(fundamentals_balance_sheet))
+            // .route("/api/v1/fundamentals/:symbol/cash-flow", get(fundamentals_cash_flow))
+            // .route("/api/v1/fundamentals/:symbol/quote", get(fundamentals_quote))
             .route("/api/v1/swiftness/positions", get(swiftness_positions))
             .route(
                 "/api/v1/swiftness/portfolio-value",

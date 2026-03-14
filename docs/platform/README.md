@@ -319,7 +319,7 @@ All strategies follow the same integration pattern:
 
 - **[Box Spread Strategy](../strategies/box-spread/README.md)** - Active strategy component
 - **[Main README](../research/architecture/../../../README.md)** - Project overview and getting started
-- **[Project Status](../research/architecture/../../PROJECT_STATUS.md)** - Implementation status
+- **Project status:** See [ARCHITECTURE.md](../../ARCHITECTURE.md) and [CURRENT_TOPOLOGY.md](CURRENT_TOPOLOGY.md) (PROJECT_STATUS.md removed).
 - **[Project Rename Analysis](../research/architecture/../../PROJECT_RENAME_AND_SPLIT_ANALYSIS.md)** - Rename and split strategy
 
 ---

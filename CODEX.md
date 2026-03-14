@@ -34,6 +34,16 @@ ctest --preset macos-arm64-debug --output-on-failure
 ./scripts/run_linters.sh
 ```
 
+**AI-friendly builds** (JSON output):
+
+```bash
+# C++
+./scripts/build_ai_friendly.sh --json-only
+
+# Rust
+./scripts/build_rust_ai_friendly.sh --json-only
+```
+
 Useful alternatives:
 
 ```bash

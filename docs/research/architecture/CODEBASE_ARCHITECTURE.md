@@ -1,5 +1,7 @@
 # Codebase Architecture
 
+> **Current ownership and runtime:** The active codebase is Rust-first; C++ native build has been removed. For **current** component/broker/backend ownership, build settings, and daemon topology, see **[ARCHITECTURE.md](../../../ARCHITECTURE.md)** and **[docs/platform/CURRENT_TOPOLOGY.md](../../platform/CURRENT_TOPOLOGY.md)**. This document describes the legacy C++-centric design and remains for reference.
+
 ## Overview
 
 This document provides a high-level architectural overview of the Synthetic Financing Platform. Use `@docs CODEBASE_ARCHITECTURE.md` in Cursor to give AI context about system design and component interactions.

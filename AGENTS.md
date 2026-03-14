@@ -4,94 +4,74 @@
 
 Aether (formerly ib_box_spread_full_universal) - Comprehensive multi-asset synthetic financing optimization platform. Manages financing across options, futures, bonds, bank loans, and pension funds with unified portfolio management, cash flow modeling, opportunity simulation, and multi-instrument relationship optimization across 21+ accounts and multiple brokers (IBKR).
 
-Multi-language codebase: C++ core engine, pybind11-backed Python binding tests under `native/tests/python/`, and Rust backend agents. The current active frontend is TUI/CLI.
+Rust-first codebase: backend, TUI, CLI, and broker adapter in `agents/backend/`. C++ native build has been removed (see root `CMakeLists.txt`). See **`docs/MULTI_LANGUAGE_CODEBASE.md`** for language map and build/test/lint commands.
 
 Box spreads are one active strategy component (7-10% of portfolio, spare cash allocation for T-bill-equivalent yields). The platform supports multiple strategy types including futures-implied financing, bond ETFs, and secured lending.
-
-Multi-language codebase: C++ core engine, pybind11-backed Python binding tests under `native/tests/python/`, and Rust backend agents. The current active frontend is the Rust TUI plus the native CLI. See **`docs/MULTI_LANGUAGE_CODEBASE.md`** for a map of languages to directories and build/test/lint commands.
 
 ## Project Structure & Module Organization
 
 ```
 Aether/
-├── native/                  # C++ core (the main codebase)
-│   ├── src/                 # Implementation files (.cpp)
-│   │   ├── brokers/         # Broker adapter implementations
-│   │   └── strategies/      # Strategy implementations (box spread, etc.)
-│   ├── include/             # Public headers (.h)
-│   │   ├── brokers/         # Broker adapter interfaces
-│   │   └── strategies/      # Strategy interfaces
-│   ├── tests/               # Catch2 test suite and Python binding tests
-│   │   └── python/          # pybind11 binding tests
-│   ├── third_party/         # Vendored dependencies (TWS API, Intel Decimal)
-│   ├── ibapi_cmake/         # CMake glue for TWS API build
-│   └── CMakeLists.txt       # Main build definition
-├── agents/                  # Rust backend agents
+├── agents/backend/          # Rust workspace (primary codebase)
+│   ├── crates/              # api, ib_adapter, ledger, market_data, nats_adapter, quant, risk, strategy, discount_bank_parser
+│   ├── services/            # backend_service (:8080), tui_service
+│   └── bin/                 # cli (Rust CLI)
+├── native/                  # C++ removed from build (see root CMakeLists.txt)
 ├── web/                     # Archived React web application (not active runtime)
 ├── proto/                   # Protocol Buffer definitions
 ├── config/                  # Configuration files (example configs only in repo)
 ├── scripts/                 # Helper scripts (build, lint, deploy)
-├── docs/                    # Documentation
-└── build/                   # CMake build output (disposable, not committed)
+└── docs/                    # Documentation
 ```
 
-### Key Source Files
+### Component and backend ownership
 
-| File | Purpose |
+| Area | Owner | Location |
+|------|--------|----------|
+| Frontend API, snapshot, health | Rust | `agents/backend/crates/api`, `services/backend_service` |
+| Broker adapters (IBKR) | Rust | `agents/backend/crates/ib_adapter` |
+| Ledger | Rust | `agents/backend/crates/ledger` |
+| Quant / risk / pricing | Rust | `crates/quant`, `crates/risk` |
+| Market data, strategy | Rust | `crates/market_data`, `crates/strategy` |
+| NATS ingestion, LIVE_STATE | Rust | `crates/nats_adapter`, backend_service |
+| TUI | Rust | `services/tui_service` |
+| CLI | Rust | `agents/backend/bin/cli` |
+
+See **ARCHITECTURE.md** for full ownership and current build settings.
+
+### Key Source Files (Rust)
+
+| Path | Purpose |
 |------|---------|
-| `native/src/ib_box_spread.cpp` | CLI entry point, renders XSP box-spread table |
-| `native/src/tws_client.cpp` | Interactive Brokers TWS API client wrapper |
-| `native/src/order_manager.cpp` | Order lifecycle management |
-| `native/src/risk_calculator.cpp` | Position risk calculations |
-| `native/src/greeks_calculator.cpp` | Options Greeks (delta, gamma, theta, vega) |
-| `native/src/convexity_calculator.cpp` | Bond convexity calculations |
-| `native/src/option_chain.cpp` | Option chain data structures and queries |
-| `native/src/config_manager.cpp` | JSON configuration loading and validation |
-| `native/src/loan_manager.cpp` | Synthetic loan position management |
-| `native/src/market_hours.cpp` | Exchange trading hours logic |
-| `native/src/rate_limiter.cpp` | API rate limiting |
+| `agents/backend/services/backend_service` | REST+WS API, NATS collector, snapshot |
+| `agents/backend/services/tui_service` | Ratatui TUI |
+| `agents/backend/crates/api` | REST routes, snapshot, frontend read models |
+| `agents/backend/crates/ib_adapter` | IBKR/TWS adapter |
+| `agents/backend/crates/quant` | Greeks, margin, amortization, convexity, yield curve |
+| `agents/backend/crates/risk` | Risk calculations |
+| `agents/backend/crates/ledger` | Durable ledger |
+| `agents/backend/crates/nats_adapter` | NATS protobuf and messaging |
+| `agents/backend/bin/cli` | CLI entry point |
 
 ## Build, Test & Development Commands
 
 ```bash
-# Configure (one-time) — use a preset so build dir matches CMakePresets.json
-cmake --preset macos-arm64-debug   # or macos-x86_64-debug on Intel, linux-x64-debug, etc.
+# Rust (primary)
+cd agents/backend && cargo build
+./scripts/build_rust_ai_friendly.sh --json-only   # AI-friendly JSON output
 
-# Build (Ninja uses CMAKE_BUILD_PARALLEL_LEVEL if set; scripts set it when unset)
-cmake --build --preset macos-arm64-debug
+# Run backend and TUI
+cargo run -p backend_service   # :8080
+cargo run -p tui_service       # TUI
+cargo run -p cli               # CLI
 
-# Or configure + build in one go (scripts set parallelism)
-./scripts/shortcuts/run_build.sh build
-./scripts/build_fast.sh
-
-# Run CLI (path depends on preset: build/<preset>/bin/ib_box_spread)
-./build/macos-arm64-debug/bin/ib_box_spread   # or build/macos-x86_64-debug on Intel
-
-# Run tests
-ctest --preset macos-arm64-debug --output-on-failure
-
-# Build universal binary (macOS arm64+x86_64)
-./scripts/build_universal.sh
-
-# Lint
-./scripts/run_linters.sh
+# Test and lint
+cargo test
+cargo clippy
+./scripts/run_linters.sh       # includes Rust linters
 ```
 
-If configure fails with missing **TWS API** or **Intel decimal** dependencies, run from repo root: `./scripts/fetch_third_party.sh`, then reconfigure. Or run `cmake --build <build-dir> --target fetch_third_party` then reconfigure. Set `CMAKE_BUILD_PARALLEL_LEVEL` (e.g. `$(nproc)` or `sysctl -n hw.ncpu`) for parallel builds when not using the wrapper scripts. See `docs/BUILD_PARALLELIZATION_AND_MODULARITY.md` for parallelization and modularity across C++, Rust, and lint.
-
-**Optional (macOS):** To reduce disk reads for third-party trees, create a read-only compressed DMG and use it in builds: run `./scripts/third_party_dmg.sh create` after fetch, then set `USE_THIRD_PARTY_DMG=1` so build scripts mount the DMG automatically. See `docs/RAM_OPTIMIZATION_GUIDE.md` (§ Third-party on read-only compressed DMG).
-
-### CMake Options
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `BUILD_TESTING` | ON | Build Catch2 test suite |
-| `ENABLE_NATIVE_CLI` | ON | Build the CLI binary |
-| `ENABLE_PYTHON_BINDINGS` | ON | Build pybind11 Python bindings |
-| `ENABLE_ASAN` | OFF | AddressSanitizer |
-| `ENABLE_TSAN` | OFF | ThreadSanitizer |
-| `ENABLE_LTO` | ON | Link-Time Optimization |
-| `ENABLE_NATS` | OFF | NATS message queue |
+See `docs/MULTI_LANGUAGE_CODEBASE.md` for full language map and `docs/BUILD_PARALLELIZATION_AND_MODULARITY.md` for parallelization. C++ native build is removed; CMake targets at repo root are for lint/scripts only.
 
 ## Coding Style & Naming Conventions
 

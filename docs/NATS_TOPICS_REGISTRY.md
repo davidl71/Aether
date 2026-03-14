@@ -2,7 +2,7 @@
 
 Complete registry of all NATS topics used in the system. All topics follow the hierarchical naming convention: `{domain}.{entity}.{action}.{identifier}`
 
-**Note**: All topics use protobuf (`NatsEnvelope` with inner message). JSON schemas below are deprecated — see [`proto/messages.proto`](../../proto/messages.proto) for canonical definitions.
+**Note**: All topics use protobuf (`NatsEnvelope` with inner message). JSON schemas below are deprecated — see [`proto/messages.proto`](../proto/messages.proto) for canonical definitions.
 
 ## Topic Naming Convention
 

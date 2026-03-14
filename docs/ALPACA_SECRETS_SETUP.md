@@ -98,5 +98,4 @@ The old `run-alpaca-service.sh` runtime path is retired.
 
 See also: [ONEPASSWORD_INTEGRATION.md](ONEPASSWORD_INTEGRATION.md),
 [BACKEND_SECRETS_PROVIDERS.md](BACKEND_SECRETS_PROVIDERS.md),
-[ALPACA_OAUTH.md](ALPACA_OAUTH.md),
-[ALPACA_TASTYTRADE_RUNTIME_RETIREMENT.md](/Users/davidl/Projects/Trading/ib_box_spread_full_universal/docs/archive/ALPACA_TASTYTRADE_RUNTIME_RETIREMENT.md).
+[ALPACA_OAUTH.md](ALPACA_OAUTH.md). Alpaca/Tastytrade runtime is retired; see [BACKEND_SERVICES_DAEMONIZED.md](BACKEND_SERVICES_DAEMONIZED.md).

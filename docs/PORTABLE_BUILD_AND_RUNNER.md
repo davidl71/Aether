@@ -61,7 +61,7 @@ Used as the exarp-go MCP server command in `.cursor/mcp.json`. Ensures the corre
    If global is not found:
    - `EXARP_GO_ROOT/bin/exarp-go` (if set and present)
    - `PROJECT_ROOT/../exarp-go/bin/exarp-go`
-   - Then `~/go/bin/exarp-go`, `~/Projects/exarp-go/bin/exarp-go`, `/usr/local/bin/exarp-go`
+   - Then `~/go/bin/exarp-go`, `/usr/local/bin/exarp-go`, or a local build when `EXARP_GO_ROOT` is set
 
 ### Environment
 

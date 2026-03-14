@@ -491,7 +491,7 @@ User Interface
 - **Eigen Integration Guide:** `docs/EIGEN_INTEGRATION.md`
 - **NLopt Integration Guide:** `docs/NLOPT_INTEGRATION_GUIDE.md`
 - **Investment Strategy Framework:** `docs/INVESTMENT_STRATEGY_FRAMEWORK.md`
-- **Feature Tracking:** `docs/archive/FEATURE_TRACKING.md`
+- **Feature Tracking:** (archived; doc removed)
 
 ---
 

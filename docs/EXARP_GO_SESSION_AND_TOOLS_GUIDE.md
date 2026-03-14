@@ -11,7 +11,7 @@ When the exarp-go repo is available (sibling, or `EXARP_GO_ROOT`), use it for:
 | Topic | exarp-go location | This repo reference |
 |-------|-------------------|----------------------|
 | Session prime | `.cursor/hooks/session-prime.sh` | [EXARP_GO_OPENCORE_AI_CONTEXT_PATTERNS.md](EXARP_GO_OPENCORE_AI_CONTEXT_PATTERNS.md) |
-| Session handoff | MCP `session` tool, `action=handoff` | [SESSION_HANDOFF_EXPORT.md](SESSION_HANDOFF_EXPORT.md), `.opencode/commands/handoff.md` |
+| Session handoff | MCP `session` tool, `action=handoff` | [SESSION_HANDOFF_EXPORT.md](SESSION_HANDOFF_EXPORT.md); OpenCode handoff command removed — use `run_exarp_go.sh -tool session` or Cursor MCP |
 | Tool catalog / help | MCP `tool_catalog` (action=help, tool_name=…) or CLI `exarp-go -tool …` | This doc, [project-automation.mdc](../.cursor/rules/project-automation.mdc) |
 | Git hooks | `scripts/git-hooks/`, `internal/tools/hooks_setup.go` | [EXARP_GO_GIT_HOOKS_LEARNINGS.md](EXARP_GO_GIT_HOOKS_LEARNINGS.md) |
 | CLI usage | `exarp-go -tool <name> -args '{"key":"value"}'` | [EXARP_GO_SCRIPTS_AND_PATTERNS.md](EXARP_GO_SCRIPTS_AND_PATTERNS.md) |
@@ -65,7 +65,7 @@ You get `suggested_next`, `suggested_next_action`, task counts, and `handoff_ale
 
 ### Commands in this repo
 
-- **OpenCode / Claude:** `.opencode/commands/handoff.md`, `.claude/commands/handoff.md` — “Call exarp-go session with action=handoff, summary=…, include_tasks=true, include_git_status=true.”
+- **OpenCode / Claude:** (removed; use run_exarp_go.sh -tool session or Cursor MCP) — “Call exarp-go session with action=handoff, summary=…, include_tasks=true, include_git_status=true.”
 - **Session prime:** `.cursor/hooks/session-prime.sh` runs prime on session start and injects `additional_context` into Cursor.
 
 ---
@@ -126,4 +126,4 @@ Exarp-go exposes resources (e.g. via MCP `read_resource` or `list_resources`):
 - [SESSION_HANDOFF_EXPORT.md](SESSION_HANDOFF_EXPORT.md) — Export bundle and sync steps
 - [EXARP_GO_OPENCORE_AI_CONTEXT_PATTERNS.md](EXARP_GO_OPENCORE_AI_CONTEXT_PATTERNS.md) — Prime, handoff, workingDirectory
 - [.cursor/rules/project-automation.mdc](../.cursor/rules/project-automation.mdc) — Full list of automation tools and when to use them
-- [.opencode/commands/handoff.md](../.opencode/commands/handoff.md) — Handoff command (session handoff with summary)
+- Handoff command removed; use `run_exarp_go.sh -tool session` or Cursor exarp-go MCP (see SESSION_HANDOFF_EXPORT.md).

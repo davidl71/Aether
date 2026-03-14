@@ -360,7 +360,7 @@ Your project currently uses direct TWS API connections without IBC:
 - [IBC GitHub Repository](https://github.com/IbcAlpha/IBC) - Source code and releases
 - [IBC Releases](https://github.com/ibcalpha/ibc/releases/latest) - Latest official releases
 - [IBController (Original)](https://github.com/rlktradewright/IBController) - Original project (status unclear)
-- [TWS Integration Status](../../research/integration/TWS_INTEGRATION_STATUS.md) - Current project's TWS integration
+- TWS integration (TWS_INTEGRATION_STATUS doc removed; see [API_DOCUMENTATION_INDEX.md](../../API_DOCUMENTATION_INDEX.md))
 - [API Documentation Index](../../API_DOCUMENTATION_INDEX.md) - TWS API resources
 
 ## Key Takeaways

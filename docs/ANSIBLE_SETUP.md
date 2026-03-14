@@ -105,7 +105,7 @@ ansible-galaxy collection list
 
 ### MCP / exarp-go
 
-This project uses **exarp-go** (Go MCP server) for project automation in Cursor, not the old Python/uvx Exarp stack. Configure it in `.cursor/mcp.json`; `scripts/run_exarp_go.sh` sets `PROJECT_ROOT` and runs the `exarp-go` binary (from PATH or `~/go/bin`, `~/Projects/exarp-go/bin`, or `/usr/local/bin`). Install exarp-go separately (e.g. build from source or `go install` if you have the module path). See `docs/EXARP_GO_MIGRATION_LEFTOVERS.md` and `docs/MCP_REQUIRED_SERVERS.md`.
+This project uses **exarp-go** (Go MCP server) for project automation in Cursor, not the old Python/uvx Exarp stack. Configure it in `.cursor/mcp.json`; `scripts/run_exarp_go.sh` sets `PROJECT_ROOT` and runs the `exarp-go` binary (from PATH, `~/go/bin`, `/usr/local/bin`, or a local build via `EXARP_GO_ROOT`). Install exarp-go separately (e.g. build from source or `go install` if you have the module path). See `docs/EXARP_GO_MIGRATION_LEFTOVERS.md` and `docs/MCP_REQUIRED_SERVERS.md`.
 
 **CI / scripts / make:** exarp-go is wired in so you can use it outside Cursor:
 

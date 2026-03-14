@@ -190,7 +190,7 @@ Add a new section to `.cursorrules`:
 
 ### NotebookLM MCP
 - **Use for**: Researching TWS API topics, summarizing videos, creating documentation
-- **Reference**: `docs/NOTEBOOKLM_USAGE.md` for detailed instructions
+- **Reference**: `.cursor/rules/notebooklm.mdc` for when to use NotebookLM
 - **Always ask permission** before consulting notebooks for tasks
 
 ### Filesystem MCP
@@ -427,7 +427,7 @@ Update your prompts to explicitly leverage MCP servers:
 1. **Review this document** and decide which recommendations to implement
 2. **Start with GitKraken MCP** - most immediately useful for your workflow
 3. **Add Browser MCP** if you're actively developing web features
-4. **Update `.cursorrules`** to guide AI on when to use each MCP
+4. **Update project rules** (`.cursorrules` / `.cursor/rules/`) to guide AI on when to use each MCP
 5. **Test thoroughly** before committing changes
 
 ## See Also
@@ -435,5 +435,5 @@ Update your prompts to explicitly leverage MCP servers:
 - [MCP_SERVERS.md](research/integration/MCP_SERVERS.md) - Detailed MCP server configuration
 - [CURSOR_RECOMMENDATIONS.md](CURSOR_RECOMMENDATIONS.md) - Extension recommendations
 - [CURSOR_SETUP.md](research/integration/CURSOR_SETUP.md) - General Cursor setup
-- [NOTEBOOKLM_USAGE.md](research/integration/NOTEBOOKLM_USAGE.md) - NotebookLM usage guide
-- [.cursorrules](../.cursorrules) - AI assistant guidelines
+- **NotebookLM:** `.cursor/rules/notebooklm.mdc` - when to use NotebookLM MCP
+- **Rules:** `.cursorrules` and `.cursor/rules/` - AI assistant guidelines

@@ -260,4 +260,4 @@ auto [contract, order] = builder
 
 - [yatws Documentation](https://docs.rs/yatws/latest/yatws/) - Full API documentation
 - [yatws Repository](https://github.com/drpngx/yatws) - Source code (if available)
-- [Code Improvements Action Plan](../../archive/CODE_IMPROVEMENTS_ACTION_PLAN.md) - Our implementation plan
+- Code improvements action plan (archived; doc removed)
