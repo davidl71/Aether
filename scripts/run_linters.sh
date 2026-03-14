@@ -134,6 +134,10 @@ run_cppcheck() {
     cpp_include="${ROOT_DIR}/include"
     cpp_tests="${ROOT_DIR}/tests"
   fi
+  if [ ! -d "${cpp_src}" ]; then
+    warn "Skipping cppcheck (no native/src or src directory)"
+    return 0
+  fi
   local cppcheck_cache="${ROOT_DIR}/.cppcheck-cache"
   mkdir -p "${cppcheck_cache}"
   if [[ "${LINT_MAX_LINES}" -gt 0 ]]; then
@@ -673,11 +677,11 @@ extract_lint_errors() {
     return
   fi
   if command -v jq >/dev/null 2>&1; then
-    echo "${errs}" | jq -R -s -c 'split("\n") | map(select(length > 0))'
+    echo "${errs}" | jq -R -s -c 'split("\n") | map(select(length > 0))' 2>/dev/null || echo "[]"
   else
     echo "${errs}" | awk 'BEGIN { first=1; printf "[" }
       { gsub(/\\/,"\\\\"); gsub(/"/,"\\\""); gsub(/\t/," "); if (!first) printf ","; first=0; printf "\""; for(i=1;i<=NF;i++){if(i>1)printf " "; printf "%s",$i}; printf "\"" }
-      END { printf "]" }'
+      END { printf "]" }' 2>/dev/null || echo "[]"
   fi
 }
 
@@ -686,17 +690,20 @@ if [[ "${LINT_AI_FRIENDLY}" -eq 1 ]]; then
   mkdir -p "${LOG_DIR}"
   LINT_LOG="${LOG_DIR}/lint_ai_friendly.log"
   START="$(date +%s.%N 2>/dev/null || echo 0)"
+  set +e
   (main) >>"${LINT_LOG}" 2>&1
   lint_exit=$?
+  set -e
   END="$(date +%s.%N 2>/dev/null || echo 0)"
   DURATION="$(awk "BEGIN { printf \"%.2f\", ${END} - ${START} }" 2>/dev/null || echo "0")"
-  ERRORS_JSON="$(extract_lint_errors "${LINT_LOG}")"
+  ERRORS_JSON="$(extract_lint_errors "${LINT_LOG}" 2>/dev/null)" || ERRORS_JSON="[]"
   SUCCESS="false"
   [[ ${lint_exit} -eq 0 ]] && SUCCESS="true"
+  LINT_JSON="{\"success\":${SUCCESS},\"exit_code\":${lint_exit},\"duration_sec\":${DURATION},\"log_path\":\"${LINT_LOG}\",\"errors\":${ERRORS_JSON}}"
   if [[ "${LINT_JSON_ONLY}" -eq 1 ]]; then
-    echo "{\"success\":${SUCCESS},\"exit_code\":${lint_exit},\"duration_sec\":${DURATION},\"log_path\":\"${LINT_LOG}\",\"errors\":${ERRORS_JSON}}"
+    echo "${LINT_JSON}"
   else
-    echo "{\"success\":${SUCCESS},\"exit_code\":${lint_exit},\"duration_sec\":${DURATION},\"log_path\":\"${LINT_LOG}\",\"errors\":${ERRORS_JSON}}"
+    echo "${LINT_JSON}"
     if [[ ${lint_exit} -ne 0 ]]; then
       echo "" 1>&2
       echo "Lint failed. Log: ${LINT_LOG}" 1>&2
