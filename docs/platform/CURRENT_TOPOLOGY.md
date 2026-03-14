@@ -60,6 +60,17 @@ TUI / CLI
 | `QuestDB` | Rust backend | time-series archive (when configured) |
 | `SQLite ledger` | Rust `crates/ledger` | durable ledger state |
 
+## Broker and data provider support
+
+| Broker / provider | Role | Status |
+|-------------------|------|--------|
+| **IBKR** | Trading, market data, positions | Active (Rust `ib_adapter`) |
+| **Discount Bank** | Banking, reconciliation | Active (Rust routes + file import) |
+| **Alpaca / Tastytrade** | Trading | Retired (not in active runtime) |
+| **Fibi, Meitav, IBI** | Israeli bank/broker | Config / file-based |
+
+See [DATAFLOW_ARCHITECTURE.md](DATAFLOW_ARCHITECTURE.md) § 2.2–2.4 for feature readiness, broker support, and data provider tables.
+
 ## Notes
 
 - Go `api-gateway` and Go `heartbeat-aggregator` are retired; Rust owns health and heartbeat routes.

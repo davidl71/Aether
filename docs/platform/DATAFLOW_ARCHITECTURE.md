@@ -1,6 +1,6 @@
 # Dataflow Architecture
 
-**Last updated**: 2026-03-11 (runtime ownership and datapath alignment)
+**Last updated**: 2026-03-14 (Rust-first datapath; broker/data provider tables)
 **Purpose**: Comprehensive analysis of data flow, storage, and inter-component contracts.
 Used as the ground-truth reference for AI-assisted development.
 
@@ -8,56 +8,41 @@ Used as the ground-truth reference for AI-assisted development.
 
 ## 1. End-to-End Data Flow
 
-### Market Data (TWS → Storage → Clients)
+### Market data (TWS → storage → clients)
 
 ```
 IBKR TWS (port 7497)
-  └─► C++ tws_client.cpp
-        ├─► InMemoryCache (hot tick data, C++ only)
-        ├─► nats_client.cpp
-        │     └─► NATS: market-data.tick.<symbol>  [NatsEnvelope protobuf]
-        │           ├─► Rust backend collector
-        │           │     ├─► QuestDB via ILP (time-series archive)
-        │           │     └─► NATS KV LIVE_STATE
-        │           └─► Rust nats_adapter
-        │                 └─► Rust backend (in-memory state)
-        └─► Python integration layer
-              └─► Local in-process caches only
+  └─► Rust ib_adapter (agents/backend/crates/ib_adapter)
+        └─► backend_service
+              ├─► NATS: market-data.tick.<symbol>, strategy.*  [NatsEnvelope protobuf]
+              │     ├─► Rust backend collector → QuestDB (ILP), NATS KV LIVE_STATE
+              │     └─► Rust nats_adapter → in-memory state, ledger
+              └─► REST / WebSocket snapshot API (:8080)
 ```
 
-### Client Data Read Paths
+### Client data read paths
 
 ```
-TUI (Python/Textual)
-  ├─► Rust frontend API: shared read models (snapshot, unified positions,
-  │                      relationships, cash flow, opportunity simulation)
-  ├─► Python integration services: broker snapshots, discount-bank accounts,
-  │                                internal finance helpers where Rust still proxies to Python
-  └─► NATS provider: event-driven fallback / live updates
+Rust TUI (tui_service)
+  ├─► REST: GET /api/v1/snapshot, /api/v1/frontend/*
+  ├─► Optional: NATS provider (event-driven live state)
+  └─► Bank/loans: GET /api/v1/loans, bank-accounts (Rust-owned)
 
-Web (React)
+Web (archived; read path valid if revived)
   └─► SnapshotClient
-        ├─► WebSocket: ws://localhost:8080/ws/snapshot
-        │     └─► Rust backend: full SystemSnapshot on connect, then only changed sections (delta) every 2s
+        ├─► WebSocket: ws://localhost:8080/ws/snapshot (full on connect, then delta every ~2s)
         └─► REST fallback: GET /api/v1/snapshot every 2s
-
-  Other web read models:
-    ├─► Rust frontend endpoints (`/api/v1/frontend/*`)
-    ├─► Rust `/api/bank-accounts`, `/api/balance`, `/api/transactions`
-    └─► Rust-owned benchmark / curve endpoints
-
+  Other: /api/v1/frontend/*, /api/bank-accounts, /api/balance, /api/transactions
 ```
 
-### Order Execution Flow
+### Order execution flow
 
 ```
-User action (TUI / Web / CLI)
-  └─► C++ order_manager.cpp
-        └─► tws_client.cpp → TWS API → IBKR exchange
-              └─► Callbacks: onOrderStatus / onExecution / onPosition
-                    └─► order_manager: update state, notify NATS
-                          └─► NATS: strategy.decision.<symbol>
-                                └─► Rust nats_adapter → SQLite ledger
+User action (TUI / CLI)
+  └─► Rust backend API
+        └─► ib_adapter → TWS API → IBKR exchange
+              └─► Callbacks → backend state, NATS strategy.decision.*
+                    └─► Rust nats_adapter / ledger → SQLite
 ```
 
 ### Ledger / Persistence Write Paths
@@ -70,9 +55,7 @@ Rust backend loan store
   └─► owns active loan CRUD and the transitional backend loan JSON store
         └─► legacy seed/import only: config/loans.json
 
-Python integration / TUI
-  └─► reads snapshot, ledger-adjacent, and loan data
-        └─► no active durable write ownership
+(No Python integration tier; Rust is the only active backend/TUI/CLI.)
 
 QuestDB
   └─► written by: Rust backend collector QuestDB sink (ILP protocol)
@@ -85,11 +68,61 @@ QuestDB
 
 | Store | Technology | Written By | Read By | Data | TTL / Retention |
 |-------|-----------|-----------|---------|------|-----------------|
-| InMemoryCache | C++ (custom) | tws_client | C++ engine only | Hot tick prices | In-process |
-| NATS KV | NATS JetStream | Rust backend collector | Rust API, TUI NatsProvider, Web (future) | Live state (key = messageType.symbol, value = full `NatsEnvelope` protobuf) | Configurable |
-| SQLite (ledger) | Rust (sqlx) | Rust + selected Python read paths | Ledger, positions | Permanent |
-| Loan store | Rust backend (transitional JSON-backed) | Rust backend | Rust API, Python TUI via `/api/v1/loans` | Loan records / loan-derived views | Permanent |
-| QuestDB | Rust (ILP) | backend collector | Python analytics | Tick time-series | Configurable |
+| NATS KV | NATS JetStream | Rust backend collector | Rust API, TUI NatsProvider, Web (if revived) | Live state (key = messageType.symbol, value = full `NatsEnvelope` protobuf) | Configurable |
+| SQLite (ledger) | Rust (sqlx) | Rust ledger crate | Rust API, positions | Ledger, positions | Permanent |
+| Loan store | Rust backend (transitional JSON-backed) | Rust backend | Rust API, TUI via `/api/v1/loans` | Loan records / loan-derived views | Permanent |
+| QuestDB | Rust (ILP) | backend collector | Analytics / notebooks | Tick time-series | Configurable |
+
+### 2.1 Datapath summary
+
+| Path | Source | Sink | Technology |
+|------|--------|------|------------|
+| Market data ingest | IBKR TWS (7497) | NATS, LIVE_STATE KV, QuestDB | Rust ib_adapter → backend_service |
+| Order execution | TUI/CLI → REST | IBKR exchange | Rust backend → ib_adapter → TWS API |
+| Snapshot read | Rust API :8080 | TUI, Web (archived) | REST / WebSocket |
+| Ledger write | Orders, positions, decisions | SQLite ledger | Rust ledger crate |
+| Loan CRUD | REST `/api/v1/loans` | Loan store (transitional JSON) | Rust backend |
+
+### 2.2 Feature readiness
+
+| Feature | Status | Owner | Notes |
+|---------|--------|--------|-------|
+| IBKR order execution | Production | Rust ib_adapter | TWS API; paper (7497) and live |
+| IBKR market data / positions | Production | Rust ib_adapter | Tick data, account summary |
+| Snapshot API (unified positions) | Production | Rust backend | REST + WebSocket delta |
+| Ledger (SQLite) | Production | Rust ledger | Single writer |
+| Loan API | Production | Rust backend | Transitional store; final durability pending |
+| NATS LIVE_STATE / QuestDB | Production | Rust backend collector | When NATS and collector configured |
+| TUI (Rust) | Production | Rust tui_service | Primary frontend |
+| Web frontend | Archived | — | Read path valid if revived |
+| Alpaca / Tastytrade | Retired | — | Not in active runtime |
+| Israeli bank scrapers | Optional / file-based | Config | Manual file import preferred; scrapers service optional |
+| Discount Bank reconciliation | Production | Rust bank routes / file import | Ledger + REST |
+
+### 2.3 Broker support
+
+| Broker / institution | Role | Status | Implementation |
+|----------------------|------|--------|-----------------|
+| **IBKR** (Interactive Brokers) | Trading, market data, positions | Active | Rust `ib_adapter` (TWS API, port 7497 paper / live) |
+| **Alpaca** | Trading, positions | Retired | Not in active runtime; config flag disabled by default |
+| **Tastytrade** | Trading, positions | Retired | Not in active runtime |
+| **Discount Bank** | Banking, cash, loans, securities | Active | Rust bank-account routes; file-based reconciliation import |
+| **Fibi** | Israeli bank | Config / file-based | broker.priorities; scrapers or file import |
+| **Meitav / IBI** | Israeli brokers | Config / file-based | broker.priorities; cache, margin, TASE + US |
+| **Pension funds** | Aggregation | Account-level | Same pattern as other providers |
+
+### 2.4 Data provider (market data and positions)
+
+| Provider | Data type | Status | Notes |
+|-----------|-----------|--------|-------|
+| **IBKR TWS** | Ticks, quotes, account summary, positions, orders | Active | Primary live source via Rust ib_adapter |
+| **Rust backend** | Snapshot, LIVE_STATE KV, health | Active | Aggregates and serves to TUI/Web |
+| **NATS** | NatsEnvelope (market-data.*, strategy.*) | Active | When NATS server and collector running |
+| **Discount Bank** | Balances, loans, transactions | Active | REST + reconciliation file import |
+| **Mock / file** | Synthetic or file-based positions | Active | Testing and development |
+| **Alpaca / Tastytrade** | Market data, positions | Retired | Not in active runtime |
+
+---
 
 **NATS KV key schema (bucket LIVE_STATE):** Keys are `messageType.symbol` (e.g. `MarketDataEvent.SPY`, `StrategyDecision.AAPL`). Values are full serialized `NatsEnvelope` records, not just inner payload bytes. Written by the Rust backend collector when it receives NATS messages. Read from the Rust backend via `GET /api/live/state` (list keys), `GET /api/live/state?key=MarketDataEvent.SPY` (one key, raw value base64 plus decoded envelope metadata), or `GET /api/live/state/watch` (SSE stream of KV updates with the same metadata). **Requires NATS server 2.6.2+** (JetStream Key-Value).
 
@@ -111,10 +144,10 @@ message NatsEnvelope {
 
 | Topic | Inner Message | Publisher | Subscribers |
 |-------|--------------|-----------|-------------|
-| `market-data.tick.<symbol>` | `MarketDataEvent` | C++ nats_client | Rust backend collector, Rust nats_adapter |
-| `strategy.signal.<symbol>` | `StrategySignal` | C++ nats_client | Rust nats_adapter |
-| `strategy.decision.<symbol>` | `StrategyDecision` | C++ nats_client | Rust nats_adapter |
-| `system.health` | protobuf (`BackendHealth` or `NatsEnvelope`) | Python services and other backends | Rust health aggregation and Rust-facing health routes |
+| `market-data.tick.<symbol>` | `MarketDataEvent` | Rust backend (ib_adapter / collector) | Rust backend collector, Rust nats_adapter |
+| `strategy.signal.<symbol>` | `StrategySignal` | Rust backend | Rust nats_adapter |
+| `strategy.decision.<symbol>` | `StrategyDecision` | Rust backend | Rust nats_adapter |
+| `system.health` | protobuf (`BackendHealth` or `NatsEnvelope`) | Rust backend, optional Go/other | Rust health aggregation and Rust-facing health routes |
 
 **Note**: `NatsEnvelope` protobuf is now the only supported active wire format in the
 Rust adapter and Rust backend collector. The active collector
@@ -133,11 +166,10 @@ Canonical schema: `proto/messages.proto`. Codegen via `./proto/generate.sh`.
 
 | Language | Output path | Format | Status |
 |----------|------------|--------|--------|
-| C++ | `native/generated/messages.pb.{h,cc}` | protobuf binary | Active |
 | Rust | `agents/backend/crates/nats_adapter/` (prost) | protobuf binary | Active |
 | Go | `agents/go/proto/v1/messages.pb.go` | protobuf binary | Active |
-| Python | `native/generated/python/` (betterproto) | protobuf binary / JSON | Generated helper output |
-| TypeScript | `web/src/proto/messages.ts` (ts-proto) | JSON / binary | Generated; API migration pending |
+| Python | `proto/generate.sh` → Python output | protobuf / JSON | Optional helper; no active runtime tier |
+| TypeScript | `web/src/proto/messages.ts` (ts-proto) | JSON / binary | Generated; web archived |
 
 Schema management: `proto/generate.sh` (shell script).
 **Recommended upgrade**: migrate to `buf` — single `buf generate` command, lint, and breaking-change detection in CI.
@@ -160,15 +192,15 @@ All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/sl
 
 | Capability | Location | Status | Gap |
 |------------|---------|--------|-----|
-| Options Greeks (delta/gamma/theta/vega) | `greeks_calculator.cpp` | Active via QuantLib `BlackCalculator` | No IV solver — takes IV as external input |
-| Box spread implied rate | `box_spread_strategy.h` | Active | Formula: `((K2-K1 - debit)/debit) × (365/dte) × 100` |
-| ETF duration/convexity | `greeks_calculator.cpp` | Hardcoded lookup table | Should use `QuantLib::BondFunctions::duration()` |
-| Bond convexity optimization | `convexity_calculator.cpp` | Active (barbell NLopt) | Relies on hardcoded ETF values |
-| Yield curve construction | `yield_curve_comparison.py` | Simple linear interpolation | No Nelson-Siegel / Svensson fitting |
-| Amortization schedules | `cash_flow_calculator.py` | SHIR + CPI-linked (Israeli) | No standard PMT / schedule generation |
+| Options Greeks (delta/gamma/theta/vega) | Rust `crates/quant` | Active | No IV solver — takes IV as external input |
+| Box spread implied rate | Rust quant/strategy | Active | Formula: `((K2-K1 - debit)/debit) × (365/dte) × 100` |
+| ETF duration/convexity | Rust quant | Lookup or calc | Improve with bond-function duration where needed |
+| Bond convexity optimization | Rust `crates/quant` (convexity) | Active | Barbell-style optimization |
+| Yield curve construction | Rust quant (yield_curve) | Simple interpolation | Nelson-Siegel / Svensson fitting future |
+| Amortization schedules | Rust quant (amortization) | SHIR + CPI-linked (Israeli) | Standard PMT / schedule future |
 | Loan management | Rust backend loan API/store | Active owner for CRUD / aggregation | Final durable backing store still pending |
-| Put-call parity check | `box_spread_strategy.h` | Active | — |
-| VaR / risk limits | `risk_calculator.cpp` | Active | Parametric only; no historical/Monte Carlo |
+| Put-call parity check | Rust quant/strategy | Active | — |
+| VaR / risk limits | Rust `crates/risk` | Active | Parametric; historical/Monte Carlo future |
 
 ---
 
@@ -189,8 +221,8 @@ All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/sl
 |---|-------|---------|--------|------------|
 | 3 | ~~**WebSocket full snapshot**: Rust WS sends complete `SystemSnapshot` every 2s regardless of changes~~ **DONE (P2-A)**: full snapshot on connect, then delta every 2s | `agents/backend/src/ws.rs` | — resolved | T-1772887222103963807 ✅ |
 | 4 | ~~**Go agents not decoding NatsEnvelope**: raw byte parsing instead of protobuf in the old bridge / heartbeat path~~ **DONE**: active Go collectors decode envelopes | `agents/go/cmd/*` | — resolved | T-1772887221969976131 ✅ |
-| 5 | **Hardcoded ETF duration table**: static lookup in greeks_calculator | `native/src/greeks_calculator.cpp` | Wrong values for newly listed ETFs; maintenance burden | T-1772887222158664215 |
-| 6 | **No IV solver**: BlackCalculator used correctly, but IV must come from market data | `native/src/greeks_calculator.cpp` | Cannot calculate IV from price; blocks model-based workflows | T-1772887222213114929 |
+| 5 | **Hardcoded ETF duration table**: static lookup | Rust `crates/quant` | Wrong values for newly listed ETFs; maintenance burden | T-1772887222158664215 |
+| 6 | **No IV solver**: IV must come from market data | Rust `crates/quant` | Cannot calculate IV from price; blocks model-based workflows | T-1772887222213114929 |
 
 ### Medium
 
@@ -245,11 +277,10 @@ Python remains outside collection and shared read-model ownership in this target
 
 | Store | Single writer | Readers |
 |-------|----------------|---------|
-| SQLite (ledger) | Rust ledger crate only | Rust API; Python should migrate to Rust-owned reads |
-| QuestDB | Rust backend collector only | Python analytics, notebooks |
-| NATS KV (live state) | Rust backend collector | Rust API, TUI NatsProvider, archived Web (future if revived) |
-| Loan store | Rust backend only | Rust API, Python TUI via `/api/v1/loans` |
-| InMemoryCache | C++ tws_client | C++ engine only |
+| SQLite (ledger) | Rust ledger crate only | Rust API |
+| QuestDB | Rust backend collector only | Analytics, notebooks |
+| NATS KV (live state) | Rust backend collector | Rust API, TUI NatsProvider, Web (if revived) |
+| Loan store | Rust backend only | Rust API, TUI via `/api/v1/loans` |
 
 ### Persistence rule
 
@@ -261,10 +292,9 @@ Python remains outside collection and shared read-model ownership in this target
 flowchart LR
   subgraph sources [Sources]
     TWS[TWS/IBKR]
-    Python[Python services]
   end
   subgraph ingest [Ingest]
-    Cpp[C++ engine]
+    RustIng[Rust ib_adapter + backend]
     Nats[NATS]
   end
   subgraph stores [Stores]
@@ -274,13 +304,13 @@ flowchart LR
   end
   subgraph clients [Clients]
     RustApi[Rust API :8080]
-    Web[Web]
-    TUI[TUI]
+    Web[Web archived]
+    TUI[Rust TUI]
   end
-  TWS --> Cpp
-  Cpp --> Nats
+  TWS --> RustIng
+  RustIng --> Nats
   Nats --> Collector[Rust backend collector]
-  Nats --> Rust[Rust nats_adapter + health aggregation]
+  Nats --> Rust[Rust nats_adapter]
   Collector --> QDB
   Collector --> KV
   Rust --> Ledger
@@ -290,9 +320,9 @@ flowchart LR
   KV --> RustApi
 ```
 
-- **Current read paths**: the web client reads primarily from the Rust backend; the active Rust TUI reads shared Rust snapshots plus optional NATS/REST transport paths, while some remaining specialist workflows still depend on selected Python integration services.
+- **Current read paths**: Rust TUI and archived Web (if revived) read from Rust backend (REST/WebSocket); optional NATS provider for live state.
 - **Single writer per store**: Ledger = Rust; loans = Rust backend; QuestDB = Rust backend collector; NATS KV = Rust backend collector.
-- **Persistence**: Rust writes durable backend state, serves shared read models, and writes QuestDB/live state from NATS; Python does not own collection or shared durable writes.
+- **Persistence**: Rust writes durable backend state, serves shared read models, and writes QuestDB/live state from NATS.
 
 ### Implementation order (task dependencies)
 
