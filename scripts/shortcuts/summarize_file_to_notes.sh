@@ -10,9 +10,6 @@ if [[ -z "${FILE_PATH}" || ! -f "${FILE_PATH}" ]]; then
   exit 1
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-
 SUMMARY="(MLX tool not available - python/tools deleted)"
 if [[ -z "${SUMMARY}" ]]; then
   SUMMARY="(No summary generated)"

@@ -7,7 +7,8 @@
 #   ensure_third_party   # call when PWD is project root
 
 if [[ -n "${__IB_BOX_SPREAD_ENSURE_THIRD_PARTY_INCLUDED:-}" ]]; then
-  return 0 2>/dev/null || :
+  # shellcheck disable=SC2317
+  return 0 2>/dev/null || true
 fi
 __IB_BOX_SPREAD_ENSURE_THIRD_PARTY_INCLUDED=1
 

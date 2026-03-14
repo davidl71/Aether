@@ -173,8 +173,8 @@ setup_venv() {
     fi
   fi
 
-  # Set venv Python path
-  VENV_PYTHON="${VENV_DIR}/bin/python"
+  # Set venv Python path for callers
+  export VENV_PYTHON="${VENV_DIR}/bin/python"
 
   return 0
 }
@@ -358,7 +358,9 @@ disable_init_py() {
 
   if [ -f "${INIT_PY}" ]; then
     mv "${INIT_PY}" "${INIT_PY_BAK}"
-    trap "mv '${INIT_PY_BAK}' '${INIT_PY}' 2>/dev/null || true" EXIT
+    # shellcheck disable=SC2329
+    cleanup_init_py() { mv "${INIT_PY_BAK}" "${INIT_PY}" 2>/dev/null || true; }
+    trap cleanup_init_py EXIT
   fi
 
   return 0

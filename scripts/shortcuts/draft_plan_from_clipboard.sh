@@ -3,9 +3,6 @@
 # Usage: Run from macOS Shortcuts without arguments.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-
 SPEC="$(pbpaste || true)"
 if [[ -z "${SPEC// /}" ]]; then
   echo "Clipboard is empty." >&2

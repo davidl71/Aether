@@ -3,7 +3,8 @@
 # Shared workspace-local cache/temp/artifact path defaults for build and test scripts.
 
 if [[ -n "${__IB_BOX_WORKSPACE_PATHS_INCLUDED:-}" ]]; then
-  return 0 2>/dev/null || :
+  # shellcheck disable=SC2317
+  return 0 2>/dev/null || true
 fi
 __IB_BOX_WORKSPACE_PATHS_INCLUDED=1
 

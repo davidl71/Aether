@@ -101,7 +101,7 @@ check_port_with_service() {
       echo "  Using existing service. No need to start a new one." >&2
       echo "  Set VITE_API_URL=http://${host}:${port}/api/snapshot in your web app" >&2
       echo "" >&2
-      SERVICE_ALREADY_RUNNING=1
+      export SERVICE_ALREADY_RUNNING=1
       return 0
     else
       echo "Error: Port ${port} is in use by another service (not ${service_display_name} service)" >&2
