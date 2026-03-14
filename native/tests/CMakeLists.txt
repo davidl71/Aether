@@ -11,9 +11,9 @@ set(CORE_TEST_SOURCES
     test_market_hours.cpp
     test_rate_limiter.cpp
     test_convexity_calculator.cpp
-    test_path_validator.cpp
+    # test_path_validator.cpp  # DEPRECATED: path_validator removed
+    # test_asset_relationship.cpp  # DEPRECATED: financing_instrument removed
     # test_loan_position.cpp  # TODO: File missing
-    test_asset_relationship.cpp
     test_amortization_schedule.cpp
     test_yield_curve_fitting.cpp
 )
@@ -73,14 +73,16 @@ if(NOT TWS_API_LIB)
 endif()
 
 if(NOT INTEL_DECIMAL_LIB)
+    # DEPRECATED: IntelRDFPMathLib20U2 support will be removed. Prefer U4.
     set(_test_u4 "${CMAKE_SOURCE_DIR}/native/third_party/IntelRDFPMathLib20U4/LIBRARY/libbid.a")
     set(_test_u2 "${CMAKE_SOURCE_DIR}/native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a")
     if(EXISTS "${_test_u4}")
         set(INTEL_DECIMAL_LIB "${_test_u4}")
     elseif(EXISTS "${_test_u2}")
+        message(WARNING "IntelRDFPMathLib20U2 is deprecated. Please run ./scripts/fetch_third_party.sh to get U4.")
         set(INTEL_DECIMAL_LIB "${_test_u2}")
     else()
-        set(INTEL_DECIMAL_LIB "${_test_u4}")
+        message(FATAL_ERROR "Intel decimal math library not found. Run ./scripts/fetch_third_party.sh")
     endif()
     unset(_test_u4)
     unset(_test_u2)
