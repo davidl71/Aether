@@ -79,16 +79,18 @@ impl ConvexityCalculator {
         short_term_bond: &BondData,
         long_term_bond: &BondData,
         target_duration: f64,
-        target_convexity: f64,
+        _target_convexity: f64,
     ) -> OptimizationResult {
-        let mut result = OptimizationResult::default();
-        result.success = false;
+        let mut result = OptimizationResult {
+            success: false,
+            ..OptimizationResult::default()
+        };
 
         let short_weight = (target_duration - long_term_bond.duration)
             / (short_term_bond.duration - long_term_bond.duration);
         let long_weight = 1.0 - short_weight;
 
-        if short_weight >= 0.0 && short_weight <= 1.0 && long_weight >= 0.0 && long_weight <= 1.0 {
+        if (0.0..=1.0).contains(&short_weight) && (0.0..=1.0).contains(&long_weight) {
             result.short_term_weight = short_weight;
             result.long_term_weight = long_weight;
             result.portfolio_convexity = self.calculate_portfolio_convexity(

@@ -8,11 +8,9 @@
 ///
 /// Monte Carlo and scenario analysis stubs from C++ are omitted —
 /// they were unimplemented there too.
-
 // ============================================================================
 // Value at Risk
 // ============================================================================
-
 /// Historical simulation VaR.
 ///
 /// Sorts returns ascending, takes the `(1 - confidence_level)` percentile,

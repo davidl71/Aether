@@ -58,9 +58,11 @@ impl MarginCalculator {
         underlying_price: f64,
         _implied_volatility: f64,
     ) -> MarginResult {
-        let mut result = MarginResult::default();
-        result.calculated_at = OffsetDateTime::now_utc().unix_timestamp();
-        result.uses_portfolio_margin = false;
+        let mut result = MarginResult {
+            calculated_at: OffsetDateTime::now_utc().unix_timestamp(),
+            uses_portfolio_margin: false,
+            ..MarginResult::default()
+        };
 
         let short_call_margin = self.calculate_short_option_margin(
             underlying_price,
@@ -98,9 +100,11 @@ impl MarginCalculator {
         implied_volatility: f64,
         portfolio_multiplier: f64,
     ) -> MarginResult {
-        let mut result = MarginResult::default();
-        result.calculated_at = OffsetDateTime::now_utc().unix_timestamp();
-        result.uses_portfolio_margin = true;
+        let mut result = MarginResult {
+            calculated_at: OffsetDateTime::now_utc().unix_timestamp(),
+            uses_portfolio_margin: true,
+            ..MarginResult::default()
+        };
 
         let span_result = self.calculate_span_margin(spread, underlying_price, implied_volatility);
         result.span_margin = span_result.span_margin;
@@ -126,9 +130,11 @@ impl MarginCalculator {
         underlying_price: f64,
         _implied_volatility: f64,
     ) -> MarginResult {
-        let mut result = MarginResult::default();
-        result.calculated_at = OffsetDateTime::now_utc().unix_timestamp();
-        result.uses_portfolio_margin = true;
+        let mut result = MarginResult {
+            calculated_at: OffsetDateTime::now_utc().unix_timestamp(),
+            uses_portfolio_margin: true,
+            ..MarginResult::default()
+        };
 
         let scenarios = self.calculate_span_scenarios(underlying_price, spread.days_to_expiry);
         let mut max_loss: f64 = 0.0;

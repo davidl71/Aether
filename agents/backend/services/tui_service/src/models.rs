@@ -5,6 +5,7 @@ use chrono::{DateTime, Utc};
 use api::RuntimeSnapshotDto;
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)] // TODO(T-1773357423959019000): remove when REST fallback is wired.
 pub enum SnapshotSource {
     Nats,
     /// REST fallback source — only accepted when NATS snapshot is stale.

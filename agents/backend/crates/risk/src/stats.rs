@@ -6,12 +6,10 @@
 ///   - `annualize_return`, `annualize_volatility`
 ///   - `sharpe_ratio`, `sortino_ratio`, `calmar_ratio`, `information_ratio`
 ///   - `max_drawdown`, `current_drawdown`
-
 // ============================================================================
 // Statistical helpers
 // ============================================================================
-
-/// Arithmetic mean. Returns 0.0 for empty slice.
+///     Arithmetic mean. Returns 0.0 for empty slice.
 ///
 /// C++ equivalent: `calculate_mean`
 pub fn mean(values: &[f64]) -> f64 {
@@ -218,6 +216,106 @@ pub fn current_drawdown(equity_curve: &[f64]) -> f64 {
     (peak - current) / peak
 }
 
+// ============================================================================
+// Correlation Matrix
+// ============================================================================
+
+pub type CorrelationMatrix = Vec<Vec<f64>>;
+
+#[allow(clippy::needless_range_loop)]
+pub fn correlation_matrix(returns: &[Vec<f64>]) -> CorrelationMatrix {
+    if returns.is_empty() {
+        return vec![];
+    }
+
+    let n = returns.len();
+    let mut matrix = vec![vec![0.0; n]; n];
+
+    for i in 0..n {
+        matrix[i][i] = 1.0;
+        for j in (i + 1)..n {
+            let corr = correlation(returns[i].as_slice(), returns[j].as_slice());
+            matrix[i][j] = corr;
+            matrix[j][i] = corr;
+        }
+    }
+
+    matrix
+}
+
+pub fn calculate_correlation_risk(
+    symbols: &[String],
+    current_prices: &[f64],
+    avg_prices: &[f64],
+    historical_returns: &[Vec<f64>],
+) -> f64 {
+    let n = symbols.len();
+    if n < 2 {
+        return 0.0;
+    }
+
+    let mut matrix = vec![vec![0.5; n]; n];
+    for (i, row) in matrix.iter_mut().enumerate().take(n) {
+        row[i] = 1.0;
+    }
+
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let corr = if historical_returns.get(i).is_none_or(|r| r.len() < 2)
+                || historical_returns.get(j).is_none_or(|r| r.len() < 2)
+            {
+                if current_prices[i] > 0.0
+                    && avg_prices[i] > 0.0
+                    && current_prices[j] > 0.0
+                    && avg_prices[j] > 0.0
+                {
+                    let ret1 = (current_prices[i] - avg_prices[i]) / avg_prices[i];
+                    let ret2 = (current_prices[j] - avg_prices[j]) / avg_prices[j];
+                    if (ret1 > 0.0 && ret2 > 0.0) || (ret1 < 0.0 && ret2 < 0.0) {
+                        0.7
+                    } else {
+                        0.3
+                    }
+                } else {
+                    0.5
+                }
+            } else if let (Some(ri), Some(rj)) =
+                (historical_returns.get(i), historical_returns.get(j))
+            {
+                if ri.len() == rj.len() && ri.len() >= 2 {
+                    correlation(ri, rj)
+                } else {
+                    0.5
+                }
+            } else {
+                0.5
+            };
+
+            matrix[i][j] = corr;
+            matrix[j][i] = corr;
+        }
+    }
+
+    let total_value: f64 = current_prices.iter().sum();
+    if total_value == 0.0 {
+        return 0.0;
+    }
+
+    let weights: Vec<f64> = current_prices
+        .iter()
+        .map(|p| p.abs() / total_value)
+        .collect();
+
+    let mut variance = 0.0;
+    for i in 0..n {
+        for j in 0..n {
+            variance += weights[i] * weights[j] * matrix[i][j];
+        }
+    }
+
+    variance.sqrt()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -390,103 +488,4 @@ mod tests {
         // peak=120, current=90 → dd = 30/120 = 0.25
         assert!((current_drawdown(&curve) - 0.25).abs() < EPS);
     }
-}
-
-// ============================================================================
-// Correlation Matrix
-// ============================================================================
-
-pub type CorrelationMatrix = Vec<Vec<f64>>;
-
-pub fn correlation_matrix(returns: &[Vec<f64>]) -> CorrelationMatrix {
-    if returns.is_empty() {
-        return vec![];
-    }
-
-    let n = returns.len();
-    let mut matrix = vec![vec![0.0; n]; n];
-
-    for i in 0..n {
-        matrix[i][i] = 1.0;
-        for j in (i + 1)..n {
-            let corr = correlation(returns[i].as_slice(), returns[j].as_slice());
-            matrix[i][j] = corr;
-            matrix[j][i] = corr;
-        }
-    }
-
-    matrix
-}
-
-pub fn calculate_correlation_risk(
-    symbols: &[String],
-    current_prices: &[f64],
-    avg_prices: &[f64],
-    historical_returns: &[Vec<f64>],
-) -> f64 {
-    let n = symbols.len();
-    if n < 2 {
-        return 0.0;
-    }
-
-    let mut matrix = vec![vec![0.5; n]; n];
-    for i in 0..n {
-        matrix[i][i] = 1.0;
-    }
-
-    for i in 0..n {
-        for j in (i + 1)..n {
-            let corr = if !historical_returns.get(i).map_or(false, |r| r.len() >= 2)
-                || !historical_returns.get(j).map_or(false, |r| r.len() >= 2)
-            {
-                if current_prices[i] > 0.0
-                    && avg_prices[i] > 0.0
-                    && current_prices[j] > 0.0
-                    && avg_prices[j] > 0.0
-                {
-                    let ret1 = (current_prices[i] - avg_prices[i]) / avg_prices[i];
-                    let ret2 = (current_prices[j] - avg_prices[j]) / avg_prices[j];
-                    if (ret1 > 0.0 && ret2 > 0.0) || (ret1 < 0.0 && ret2 < 0.0) {
-                        0.7
-                    } else {
-                        0.3
-                    }
-                } else {
-                    0.5
-                }
-            } else if let (Some(ri), Some(rj)) =
-                (historical_returns.get(i), historical_returns.get(j))
-            {
-                if ri.len() == rj.len() && ri.len() >= 2 {
-                    correlation(ri, rj)
-                } else {
-                    0.5
-                }
-            } else {
-                0.5
-            };
-
-            matrix[i][j] = corr;
-            matrix[j][i] = corr;
-        }
-    }
-
-    let total_value: f64 = current_prices.iter().sum();
-    if total_value == 0.0 {
-        return 0.0;
-    }
-
-    let weights: Vec<f64> = current_prices
-        .iter()
-        .map(|p| p.abs() / total_value)
-        .collect();
-
-    let mut variance = 0.0;
-    for i in 0..n {
-        for j in 0..n {
-            variance += weights[i] * weights[j] * matrix[i][j];
-        }
-    }
-
-    variance.sqrt()
 }

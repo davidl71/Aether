@@ -2,6 +2,9 @@
 //!
 //! Uses tokio::sync::broadcast for multi-listener event distribution.
 //! Events are categorized by priority and type for flexible handling.
+//! TODO(T-1773357423959019000): remove allow(dead_code) when structured event routing is wired.
+
+#![allow(dead_code)]
 
 use std::sync::Arc;
 

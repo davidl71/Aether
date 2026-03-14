@@ -256,7 +256,7 @@ fn market_data_ilp_line(envelope: &NatsEnvelope, subject: &str) -> anyhow::Resul
     let timestamp = envelope
         .timestamp
         .as_ref()
-        .and_then(|value| value.clone().try_into().ok())
+        .and_then(|value| (*value).try_into().ok())
         .unwrap_or_else(std::time::SystemTime::now);
     let escaped_symbol = symbol.replace(' ', "\\ ");
     Ok(Some(format!(

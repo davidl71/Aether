@@ -1821,8 +1821,8 @@ fn effective_frontend_positions<'a>(
     positions
         .iter()
         .filter(|position| {
-            !(!repository_loans.is_empty()
-                && is_loan_instrument(position.instrument_type.as_deref()))
+            repository_loans.is_empty()
+                || !is_loan_instrument(position.instrument_type.as_deref())
         })
         .collect()
 }
@@ -2243,7 +2243,7 @@ fn build_unified_positions_response_with_loans(
                     "loan_id": loan.loan_id,
                 })
             }))
-            .chain(bank_positions.into_iter())
+            .chain(bank_positions)
             .collect(),
     }
 }
@@ -2435,8 +2435,8 @@ fn build_relationship_response_with_loans(
     }
     for position in &request.positions {
         if !position.name.is_empty()
-            && !(!repository_loans.is_empty()
-                && is_loan_instrument(position.instrument_type.as_deref()))
+            && (repository_loans.is_empty()
+                || !is_loan_instrument(position.instrument_type.as_deref()))
         {
             nodes.insert(position.name.clone());
         }
@@ -2716,12 +2716,13 @@ async fn swiftness_update_exchange_rate(
 // ---------------------------------------------------------------------------
 // Fundamentals (FMP Tier-2 data source)
 // ---------------------------------------------------------------------------
-
+#[allow(dead_code)] // TODO(exarp): wire to router when FMP fundamentals task tracked
 #[derive(Deserialize)]
 struct FundamentalsQuery {
     limit: Option<u32>,
 }
 
+#[allow(dead_code)] // TODO(exarp): wire to router when FMP fundamentals task tracked
 async fn fundamentals_income(
     Extension(state): Extension<RestState>,
     Path(symbol): Path<String>,
@@ -2741,6 +2742,7 @@ async fn fundamentals_income(
         })
 }
 
+#[allow(dead_code)] // TODO(exarp): wire to router when FMP fundamentals task tracked
 async fn fundamentals_balance_sheet(
     Extension(state): Extension<RestState>,
     Path(symbol): Path<String>,
@@ -2760,6 +2762,7 @@ async fn fundamentals_balance_sheet(
         })
 }
 
+#[allow(dead_code)] // TODO(exarp): wire to router when FMP fundamentals task tracked
 async fn fundamentals_cash_flow(
     Extension(state): Extension<RestState>,
     Path(symbol): Path<String>,
@@ -2779,6 +2782,7 @@ async fn fundamentals_cash_flow(
         })
 }
 
+#[allow(dead_code)] // TODO(exarp): wire to router when FMP fundamentals task tracked
 async fn fundamentals_quote(
     Extension(state): Extension<RestState>,
     Path(symbol): Path<String>,

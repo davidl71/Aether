@@ -6,7 +6,6 @@
 ///   - `calculate_fixed_fractional_size` — fixed-fraction of account
 ///
 /// All inputs and outputs are primitive scalars.
-
 /// Exposure-based position size: how many contracts fit within the risk
 /// budget defined by `risk_tolerance` (fraction of account).
 ///
@@ -54,7 +53,7 @@ pub fn calculate_kelly_position_size(
     // Half Kelly
     let kelly_fraction = kelly_fraction * 0.5;
     // Clamp to [0, 25%]
-    let kelly_fraction = kelly_fraction.max(0.0).min(0.25);
+    let kelly_fraction = kelly_fraction.clamp(0.0, 0.25);
 
     let position_size = account_value * kelly_fraction;
     (position_size / 100.0) as u32

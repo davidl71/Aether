@@ -21,6 +21,7 @@
 //! Tracing output goes to two sinks simultaneously:
 //!   1. In-TUI Logs tab (tui-logger widget — scrollable, level-filtered)
 //!   2. File: /tmp/tui_service.log  (override: LOG_FILE env var)
+//!
 //! Config file changes are detected every 5s and applied without restart.
 
 use std::time::Duration;
@@ -57,10 +58,10 @@ fn is_interactive_terminal() -> bool {
 fn run_noninteractive(config: TuiConfig) -> color_eyre::Result<()> {
     println!("tui_service: Non-interactive terminal detected.");
     println!("This service requires a TTY for the Ratatui interface.");
-    println!("");
+    println!();
     println!("To run in background or scripts, use the API instead:");
     println!("  curl http://localhost:8080/api/v1/snapshot");
-    println!("");
+    println!();
     println!("Backend ID: {}", config.backend_id);
     Ok(())
 }

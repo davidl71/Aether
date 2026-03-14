@@ -101,11 +101,11 @@ impl TuiConfig {
         }
 
         if let Some(tick_ms) = shared.tui.refresh_rate_ms {
-            self.tick_ms = tick_ms.max(1) as u64;
+            self.tick_ms = tick_ms.max(1);
         }
 
         if let Some(rest_poll_ms) = shared.tui.update_interval_ms {
-            self.rest_poll_ms = rest_poll_ms.max(1) as u64;
+            self.rest_poll_ms = rest_poll_ms.max(1);
         }
 
         if let Some(symbols) = shared.strategy.symbols.as_ref() {

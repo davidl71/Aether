@@ -386,6 +386,7 @@ impl QuantCalculator {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn calculate_binomial_option_price(
         &self,
         s: f64,
@@ -491,6 +492,7 @@ impl QuantCalculator {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn calculate_butterfly_spread(
         &self,
         s: f64,
@@ -529,6 +531,7 @@ impl QuantCalculator {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn calculate_iron_condor(
         &self,
         s: f64,
@@ -720,6 +723,7 @@ impl QuantCalculator {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn calculate_ratio_spread(
         &self,
         s: f64,
@@ -766,6 +770,7 @@ impl QuantCalculator {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn calculate_monte_carlo_option(
         &self,
         s: f64,
@@ -786,7 +791,7 @@ impl QuantCalculator {
 
         let config = StochasticProcessConfig::new(s, 0.0, t_years, 100, simulations, false);
 
-        let output = (&gbm).euler_maruyama(&config);
+        let output = gbm.euler_maruyama(&config);
 
         let final_prices: Vec<f64> = output
             .paths
@@ -932,7 +937,7 @@ impl QuantCalculator {
         underlying_price: f64,
         risk_free_rate: f64,
         implied_volatility: f64,
-        dividend_yield: f64,
+        _dividend_yield: f64,
     ) -> Result<Greeks, QuantError> {
         let mut aggregate = Greeks::default();
 

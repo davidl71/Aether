@@ -133,7 +133,7 @@ impl BondCalculator {
             rate += diff / 10000.0;
         }
 
-        rate.max(0.0).min(1.0)
+        rate.clamp(0.0, 1.0)
     }
 
     pub fn calculate_duration(

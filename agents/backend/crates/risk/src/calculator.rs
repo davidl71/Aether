@@ -43,8 +43,10 @@ impl RiskCalculator {
         implied_volatility: f64,
         risk_free_rate: f64,
     ) -> PositionRisk {
-        let mut risk = PositionRisk::default();
-        risk.position_size = (position.current_price * position.quantity).abs();
+        let mut risk = PositionRisk {
+            position_size: (position.current_price * position.quantity).abs(),
+            ..PositionRisk::default()
+        };
 
         if position.is_option {
             if let (Some(strike), Some(expiry), Some(opt_type)) =

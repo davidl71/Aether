@@ -329,8 +329,7 @@ mod tests {
         let mut app = App::new(TuiConfig::default(), snap_rx, event_rx, config_rx);
         drop(snap_tx);
 
-        let mut new_config = TuiConfig::default();
-        new_config.watchlist = vec!["TSLA".into()];
+        let new_config = TuiConfig { watchlist: vec!["TSLA".into()], ..Default::default() };
         config_tx.send(new_config).expect("send new config");
 
         app.tick();

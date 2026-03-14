@@ -75,8 +75,14 @@ pub struct OrderStatusEvent {
 pub struct IbAdapter {
     config: IbConfig,
     state: Arc<RwLock<ConnectionState>>,
+    /// Channel for market data events (reserved for future TWS integration)
+    #[allow(dead_code)]
     market_data_tx: mpsc::Sender<MarketDataEvent>,
+    /// Channel for position events (reserved for future TWS integration)
+    #[allow(dead_code)]
     position_tx: mpsc::Sender<PositionEvent>,
+    /// Channel for order status events (reserved for future TWS integration)
+    #[allow(dead_code)]
     order_tx: mpsc::Sender<OrderStatusEvent>,
 }
 
