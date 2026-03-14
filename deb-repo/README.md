@@ -11,6 +11,7 @@ This directory contains a local Debian repository for all IB Box Spread Platform
 ```
 
 This will:
+
 - Build active projects (native C++, archived web assets when enabled, Rust backend)
 - Create Debian packages (.deb files)
 - Generate repository metadata
@@ -23,6 +24,7 @@ This will:
 ```
 
 Or manually:
+
 ```bash
 echo "deb [trusted=yes] file://$(pwd)/deb-repo stable main" | sudo tee /etc/apt/sources.list.d/ib-box-spread.list
 sudo apt-get update
@@ -74,6 +76,7 @@ deb-repo/
 ### Core Trading Platform
 
 #### ib-box-spread-native
+
 - **Version**: 1.3.3
 - **Architecture**: amd64
 - **Description**: Native C++ trading engine with CLI
@@ -81,12 +84,14 @@ deb-repo/
 - **Binaries**: `ib_box_spread`
 
 #### synthetic-financing-platform
+
 - **Version**: 1.0.0
 - **Architecture**: all
 - **Description**: Historical Python integration package from the older repo layout
 - **Status**: Not part of the active repository surface anymore
 
 #### ib-box-spread-web
+
 - **Version**: 0.1.0
 - **Architecture**: all
 - **Description**: Progressive Web App dashboard
@@ -95,6 +100,7 @@ deb-repo/
 - **Nginx Config**: `/etc/nginx/sites-available/ib-box-spread-web`
 
 #### ib-box-spread-backend
+
 - **Version**: 0.1.0
 - **Architecture**: amd64
 - **Description**: Rust backend services
@@ -104,6 +110,7 @@ deb-repo/
 ### MCP Servers
 
 #### exarp-go
+
 - **Version**: 0.1.0
 - **Architecture**: all
 - **Description**: MCP server for project management automation
@@ -114,6 +121,7 @@ deb-repo/
 ### Development Tools
 
 #### ib-box-spread-build-tools
+
 - **Version**: 1.0.0
 - **Architecture**: all
 - **Description**: Build automation scripts and CMake presets
@@ -124,6 +132,7 @@ deb-repo/
 - **Features**: Universal binary builds, distributed compilation, platform-specific configurations
 
 #### ib-box-spread-automation-tools
+
 - **Version**: 1.0.0
 - **Architecture**: all
 - **Description**: Project management automation tools
@@ -177,16 +186,19 @@ sudo apt-get install -f
 If apt can't find the repository:
 
 1. Check that the repository was created:
+
    ```bash
    ls -la deb-repo/pool/
    ```
 
 2. Verify the sources.list entry:
+
    ```bash
    cat /etc/apt/sources.list.d/ib-box-spread.list
    ```
 
 3. Update apt cache:
+
    ```bash
    sudo apt-get update
    ```
@@ -197,6 +209,7 @@ If a package fails to build:
 
 1. Check build logs in the respective project directories
 2. Ensure all build dependencies are installed:
+
    ```bash
    sudo apt-get install build-essential cmake ninja-build
    sudo apt-get install python3-dev python3-pip
@@ -209,12 +222,14 @@ To share this repository with other systems:
 
 1. **Copy the entire `deb-repo/` directory** to the target system
 2. **Add the repository** on the target system:
+
    ```bash
    echo "deb [trusted=yes] file:///path/to/deb-repo stable main" | sudo tee /etc/apt/sources.list.d/ib-box-spread.list
    sudo apt-get update
    ```
 
 3. **Or serve via HTTP**:
+
    ```bash
    # On source system
    cd deb-repo
@@ -241,6 +256,7 @@ To share this repository with other systems:
    - `agents/backend/Cargo.toml` (for Rust package)
 
 2. Rebuild the repository:
+
    ```bash
    ./scripts/create_deb_repo.sh --clean
    ```

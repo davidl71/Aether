@@ -1,27 +1,27 @@
 # Streaming Websocket Data
+
 Interactive Brokers Web API offers WebSocket streaming for market data, orders and pnl updates. To connect to the WebSocket follow the [Getting Started Instructions](index.html#login) to authenticate the gateway session. Once you receive the message \"Client login succeeds\" a websocket connection can now be established using the endpoint:[**wss://localhost:5000/v1/api/ws**]{style="font-size:16px; color:blue;"}
 
 There are two types of messages:
 
--   **Solicited (↑↓):** User has to explicitly send request to receive
+- **Solicited (↑↓):** User has to explicitly send request to receive
     data.
--   **Unsolicited (↓↓):** User receives data without any incoming
+- **Unsolicited (↓↓):** User receives data without any incoming
     request.
 
 Format for solicated message types: **TOPIC+{ARGUMENTS}**
 
--   The first letter of the topic determines, **s**=subscribe or
+- The first letter of the topic determines, **s**=subscribe or
     **u**=unsubscribe
--   \+ is used as a separator
--   Pass an empty argument {} if none is required
--   Each response relays back the topic of the request
-
+- \+ is used as a separator
+- Pass an empty argument {} if none is required
+- Each response relays back the topic of the request
 
 <table style="width: 475px;">
   <caption>Available Topics</caption>
   <tbody><tr>
-    <th bgcolor="#85C1E9">Topic</th> 
-    <th bgcolor="#85C1E9">Definition</th> 
+    <th bgcolor="#85C1E9">Topic</th>
+    <th bgcolor="#85C1E9">Definition</th>
   </tr>
   <tr id="row1">
     <td colspan="2"><b>Solicated Message Types</b></td>
@@ -72,7 +72,6 @@ Format for solicated message types: **TOPIC+{ARGUMENTS}**
 
 ### <span style="font-size: 22px;">Solicited Message Types</span>
 
-
 ### Market Data (Level I)
 
 Using the Web API, you can request real time data for trading and analysis. For streaming top of the book (level I) data, the topic is <b>smd+conid</b>. The conid (contract identifier) uniquely defines an instrument in IBKR's database and is needed for many endpoints. To find the conid for a stock, the endpoint <span style="color: blue;">/iserver/secdef/search</span> can be used, for futures <span style="color: blue;">/trsrv/futures</span> and for options there is an additional step [described here](option_lookup.html). For the topic: <b>smd+conid</b> it is required to specify the argument <b>fields</b>. The field value is a JSON Object which are a comma separated list of available tick types as described in the endpoint [/iserver/marketdata/snapshot](https://interactivebrokers.com/api/doc.html#tag/Market-Data). Additional field values can be added to an existing market data request by resending <b>smd+conid</b>. To unsubscribe from market data, the topic is <b>umd+conid</b>.
@@ -87,7 +86,7 @@ Using the Web API, you can request real time data for trading and analysis. For 
 
 <br>
 
-- Received: 
+- Received:
     <br>
     <div style="background-color: rgb(255, 255, 255); background-image: initial; overflow-x: auto; overflow-y: auto; width: 22em; padding-top: 0.2em; padding-right: 0.6em; padding-bottom: 0.2em; padding-left: 0.6em;"><pre style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; line-height: 125%;">{
       <span style="color: rgb(0, 116, 232);">"31": </span><span>"382.89"</span>,
@@ -95,23 +94,21 @@ Using the Web API, you can request real time data for trading and analysis. For 
       <span style="color: rgb(0, 116, 232);">"6119": </span><span>"q6"</span>,
       <span style="color: rgb(0, 116, 232);">"server_id": </span><span>"q6"</span>,
       <span style="color: rgb(0, 116, 232);">"conid": </span><span style="color: rgb(5, 139, 0);">265598</span>,
-      <span style="color: rgb(0, 116, 232);">"_updated": </span><span style="color: rgb(5, 139, 0);">1593524408296</span>, 
+      <span style="color: rgb(0, 116, 232);">"_updated": </span><span style="color: rgb(5, 139, 0);">1593524408296</span>,
       <span style="color: rgb(0, 116, 232);">"topic": </span><span>"smd+265598"</span>,
     }
     </pre></div>
 
 <br>
 
-
 #### Format: umd+conid+{}
 
--  Request: 
+- Request:
     <br>
     <div style="background-color: rgb(255, 255, 255); background-image: initial; overflow-x: auto; overflow-y: auto; width: 22em; padding-top: 0.2em; padding-right: 0.6em; padding-bottom: 0.2em; padding-left: 0.6em;"><pre style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; line-height: 125%;"><span>`ws.send('umd+265598+{}');`</span>
     </pre></div>
 
 <br>
-
 
 - - -
 
@@ -126,7 +123,7 @@ Using the Web API, you can request real time data for trading and analysis. For 
 </pre></div>
 </li>
 <br>
-<li>Received: 
+<li>Received:
 <br>
 <div style="background-color: rgb(255, 255, 255); background-image: initial; overflow-x: auto; overflow-y: auto; width: 22em; padding-top: 0.2em; padding-right: 0.6em; padding-bottom: 0.2em; padding-left: 0.6em;">
 <pre style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; line-height: 125%;">{
@@ -166,7 +163,7 @@ Using the Web API, you can request real time data for trading and analysis. For 
 </ul>
 &#13;&#10;<h4>Format: uor+{}</h4>
 <ul>
-<li> Request: 
+<li> Request:
 <div style="background-color: rgb(255, 255, 255); background-image: initial; overflow-x: auto; overflow-y: auto; width: 22em; padding-top: 0.2em; padding-right: 0.6em; padding-bottom: 0.2em; padding-left: 0.6em;"><pre style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; line-height: 125%;"><span>`ws.send('uor+{}');`</span>
 </pre></div>
 </li>
@@ -279,7 +276,7 @@ For existing positions it is possible to receive Profit and Loss updates to the 
 </ul>
 &#13;&#10;<h4>Format: upl{}</h4>
 <ul>
-<li> Request: 
+<li> Request:
 <br>
 <div style="background-color: rgb(255, 255, 255); background-image: initial; overflow-x: auto; overflow-y: auto; width: 22em; padding-top: 0.2em; padding-right: 0.6em; padding-bottom: 0.2em; padding-left: 0.6em;"><pre style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; line-height: 125%;">`ws.send('upl{}');`
 </pre></div>
@@ -299,7 +296,7 @@ To maintain an active websocket connection the topic <b>ech</b> is used to send 
 </pre></div>
 <br>
 </li>
-<li>Received: 
+<li>Received:
 <br>
 <div style="background-color: rgb(255, 255, 255); background-image: initial; overflow-x: auto; overflow-y: auto; width: 22em; padding-top: 0.2em; padding-right: 0.6em; padding-bottom: 0.2em; padding-left: 0.6em;"><pre style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; line-height: 125%;">ech+hb
 </pre></div>
@@ -311,8 +308,8 @@ To maintain an active websocket connection the topic <b>ech</b> is used to send 
 
 ### <span style="font-size: 22px;">Unsolicited Message Types</span>
 
-
 ### System Connection
+
 When initially connecting to websocket the topic <b>system</b> relays back a confirmation with the corresponding username. While the websocket is connecting every 10 seconds there after a heartbeat with corresponding unix time (in millisecond format) is relayed back.
 <br>
 
@@ -328,7 +325,6 @@ When initially connecting to websocket the topic <b>system</b> relays back a con
     }
     </pre></div>
     <br>
-
 
 - - -
 
@@ -348,14 +344,14 @@ When connecting to websocket the topic <b>sts</b> will relay back the status of 
   <span style="color: rgb(0, 116, 232);">"args": </span>{
     <span style="color: rgb(0, 116, 232);">"competing": </span><span style="color: rgb(5, 139, 0);">false</span>
       }
-}      
+}
 </pre></div>
 <br>
 </li></ul>
 &#13;&#10;<hr>
 
 <h3>Notifications</h3>
-If there is a brief message regarding trading activity the topic <b>ntf</b> will be sent. 
+If there is a brief message regarding trading activity the topic <b>ntf</b> will be sent.
 <br>
 <ul>
 <li>Received:
@@ -368,7 +364,7 @@ If there is a brief message regarding trading activity the topic <b>ntf</b> will
     <span style="color: rgb(0, 116, 232);">"title": </span><span>"Warning"</span> ,
     <span style="color: rgb(0, 116, 232);">"url": </span><span>"https://interactivebrokers.com/"</span>
       }
-}      
+}
 </pre></div>
 <br>
 </li></ul>
@@ -384,7 +380,7 @@ If there is an urgent message concerning exchange issues, system problems and ot
   <span style="color: rgb(0, 116, 232);">"topic": </span><span>"blt"</span> ,
   <span style="color: rgb(0, 116, 232);">"args": </span>[
     <span style="color: rgb(0, 116, 232);">"id": </span><span>""</span> ,
-    <span style="color: rgb(0, 116, 232);">"message": </span><span>""</span> 
+    <span style="color: rgb(0, 116, 232);">"message": </span><span>""</span>
     ]
-}      
+}
 </pre></div>

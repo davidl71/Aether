@@ -22,6 +22,7 @@ Comprehensive multi-asset financing optimization system for managing synthetic f
 ## Platform Capabilities
 
 ### Core Platform Features
+
 - ✅ Multi-account aggregation (21+ accounts across multiple brokers)
 - ✅ Cash flow modeling and forecasting
 - ✅ Opportunity simulation (what-if analysis)
@@ -41,6 +42,7 @@ current supported frontends are the Rust TUI and the native CLI. The web tree is
 archived implementation/reference material while the project focuses on TUI/CLI.
 
 ### Additional Platform Features
+
 - ✅ Comprehensive logging with spdlog
 - ✅ Dry-run mode for safe testing
 - ✅ Universal binary support (Intel + Apple Silicon on macOS)
@@ -64,6 +66,7 @@ archived implementation/reference material while the project focuses on TUI/CLI.
 **Use Case**: Enhanced yield on spare cash comparable to T-bills or SOFR
 
 **Features**:
+
 - ✅ Automated box spread identification and analysis
 - ✅ Real-time options chain monitoring
 - ✅ Risk-based position sizing and management
@@ -427,6 +430,7 @@ When enabled, the strategy validates the session during startup and logs account
 ### Run All Tests
 
 **Python Tests:**
+
 ```bash
 # Run all Python tests
 cd native && uv run --project . pytest tests/python/
@@ -436,6 +440,7 @@ cd native && uv run --project . pytest tests/python/ --cov
 ```
 
 **C++ Tests:**
+
 ```bash
 # Run test suite
 cd native/build
@@ -448,6 +453,7 @@ ctest --output-on-failure
 ### Run Specific Test Categories
 
 **Python:**
+
 ```bash
 # Run specific test file
 cd native && uv run --project . pytest tests/python/test_bindings.py
@@ -457,6 +463,7 @@ cd native && uv run --project . pytest tests/python/test_bindings.py --cov=src
 ```
 
 **C++:**
+
 ```bash
 cd native/build
 ./box_spread_tests "[config]"  # Only config tests
@@ -469,6 +476,7 @@ cd native/build
 **Coverage Target**: 30%+ overall coverage
 
 **Generate Coverage Reports:**
+
 ```bash
 # Generate Python binding-test coverage
 cd native && uv run --project . pytest tests/python/ --cov --cov-report=html
@@ -481,10 +489,12 @@ cd native && uv run --project . pytest tests/python/ --cov --cov-report=html
 ```
 
 **Coverage Reports:**
+
 - **Python HTML**: `native/htmlcov/index.html` (when run from `native/`)
 - **C++ HTML**: `native/build-coverage/coverage_html/index.html`
 
 **Documentation:**
+
 - See [Test Coverage Setup Guide](docs/TEST_COVERAGE_SETUP.md) for detailed coverage instructions
 - See [Coverage Gap Analysis](docs/COVERAGE_GAP_ANALYSIS.md) for prioritized test additions
 

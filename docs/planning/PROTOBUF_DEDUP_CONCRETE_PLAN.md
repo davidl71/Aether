@@ -126,7 +126,7 @@ Use the following blocks to create Todo2 tasks in exarp-go (e.g. in Cursor chat:
 
 **Title:** Add box spread and yield curve messages to proto/messages.proto
 
-**Description:** Extend `proto/messages.proto` with OptionContract, OptionTypeEnum, BoxSpreadLeg, BoxSpreadOpportunity, StrategyParams, YieldCurvePoint, and YieldCurve so all languages share one schema. Match fields to C++/Python usage (see python/generated/__init__.py and CROSS_LANGUAGE_DEDUP_PLAN). Run proto codegen and fix any breakage in C++, Python, Rust.
+**Description:** Extend `proto/messages.proto` with OptionContract, OptionTypeEnum, BoxSpreadLeg, BoxSpreadOpportunity, StrategyParams, YieldCurvePoint, and YieldCurve so all languages share one schema. Match fields to C++/Python usage (see python/generated/**init**.py and CROSS_LANGUAGE_DEDUP_PLAN). Run proto codegen and fix any breakage in C++, Python, Rust.
 
 **Acceptance criteria:** New messages exist in messages.proto; ./proto/generate.sh succeeds for Python/C++/Go; Rust nats_adapter builds.
 
@@ -148,11 +148,11 @@ Use the following blocks to create Todo2 tasks in exarp-go (e.g. in Cursor chat:
 
 ---
 
-### Task P2-1: Align Python proto codegen and python/generated/__init__.py
+### Task P2-1: Align Python proto codegen and python/generated/**init**.py
 
-**Title:** Align Python proto codegen and python/generated/__init__.py
+**Title:** Align Python proto codegen and python/generated/**init**.py
 
-**Description:** Ensure proto/generate.sh produces Python that python/generated/__init__.py can export (standard _pb2 or betterproto). Update __init__.py to match actual generator output so all P1 messages are importable from python/generated.
+**Description:** Ensure proto/generate.sh produces Python that python/generated/**init**.py can export (standard _pb2 or betterproto). Update **init**.py to match actual generator output so all P1 messages are importable from python/generated.
 
 **Acceptance criteria:** python/generated exposes all proto types; "from python.generated import BoxSpreadLeg" (or equivalent) works after codegen.
 
@@ -288,7 +288,7 @@ Use the following blocks to create Todo2 tasks in exarp-go (e.g. in Cursor chat:
 |----|-------|------------|
 | P1-1 | Add box spread and yield curve messages to proto/messages.proto | — |
 | P1-2 | Add risk and discount bank messages to proto/messages.proto | P1-1 |
-| P2-1 | Align Python proto codegen and python/generated/__init__.py | P1-1, P1-2 |
+| P2-1 | Align Python proto codegen and python/generated/**init**.py | P1-1, P1-2 |
 | P2-2 | Migrate Python NATS/REST boundaries to generated proto types | P2-1 |
 | P2-3 | Deprecate proto_types.py | P2-2 |
 | P3-1 | Wire ts-proto for proto/messages.proto into web | P1-1 |

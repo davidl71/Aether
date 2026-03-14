@@ -10,6 +10,7 @@ sudo ./scripts/install_deb_repo.sh
 ```
 
 This script will:
+
 1. Detect your Ubuntu version
 2. Import the GPG signing key
 3. Create the `.sources` file with `Signed-By` field (required for Ubuntu 25.04+)
@@ -45,6 +46,7 @@ EOF
 ```
 
 For HTTP repository:
+
 ```bash
 sudo tee /etc/apt/sources.list.d/ib-box-spread.sources > /dev/null <<EOF
 Types: deb
@@ -85,6 +87,7 @@ Before installing, you can test the setup:
 ```
 
 This will show:
+
 - Repository status
 - GPG key status
 - Available packages

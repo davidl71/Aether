@@ -8,6 +8,7 @@ Total scripts: 116 (after deduplication)
 ### Removed Scripts (12 total)
 
 **Duplicates consolidated:**
+
 1. `generate_cpp_coverage.sh` → Use `generate_coverage.sh --cpp`
 2. `generate_python_coverage.sh` → Use `generate_coverage.sh --python`
 3. `validate_docs_format.py` → ~~Use `exarp_validate_docs_format.py`~~ **Removed.** Use exarp-go (`health` with `action=docs`) for docs format/health.
@@ -26,6 +27,7 @@ Total scripts: 116 (after deduplication)
 ## Active Script Categories
 
 ### Build Scripts (5)
+
 - `build_fast.sh` - Fast builds with sccache ✅ PRIMARY
 - `build_distributed.sh` - Distributed builds with distcc
 - `build_ramdisk.sh` - Build on ramdisk for performance
@@ -33,6 +35,7 @@ Total scripts: 116 (after deduplication)
 - `build_with_logging.sh` - Build with detailed logging
 
 ### Test Scripts (7)
+
 - `test_ibkr.sh` - IBKR connection tests ✅ ACTIVE
 - `test_positions_live.sh` - Live position retrieval ✅ ACTIVE  
 - `test_tws_connection.sh` - TWS connection validation
@@ -42,9 +45,11 @@ Total scripts: 116 (after deduplication)
 - `run_tests.sh` - Main test runner ✅ PRIMARY
 
 ### Coverage/Analysis (1)
+
 - `generate_coverage.sh` - Combined C++/Python coverage ✅ CONSOLIDATED
 
 ### Documentation (7)
+
 - ~~`exarp_validate_docs_format.py`~~ **Removed** – use exarp-go (`health` with `action=docs`)
 - ~~`exarp_fix_documentation_links.py`~~ **Removed** – use exarp-go
 - `sync_global_docs.py` - Sync documentation ✅ ACTIVE
@@ -55,6 +60,7 @@ Total scripts: 116 (after deduplication)
 - ~~`automate_docs_health_v2.py`~~ **Removed** – use exarp-go MCP/CLI
 
 ### TODO/Task Management (10)
+
 - `analyze_task_execution_modes.py` - Analyze task execution patterns
 - `audit_in_progress_tasks.py` - Audit in-progress tasks
 - ~~`automate_todo2_alignment_v2.py`~~ **Removed** – use exarp-go MCP/CLI
@@ -67,6 +73,7 @@ Total scripts: 116 (after deduplication)
 - ~~`resolve_task_clarifications.py`~~ **Removed** – no direct Todo2 edits; use exarp-go
 
 ### Installation (5)
+
 - `install_ib_gateway.sh` - Install IB Gateway ✅ ACTIVE
 - `install_mlx.sh` - Install MLX for Apple Silicon ✅ ACTIVE
 - `install_nats.sh` - Install NATS server
@@ -75,6 +82,7 @@ Total scripts: 116 (after deduplication)
 - `install_global_kit.sh` - Install global kit
 
 ### Setup (7)
+
 - `workspace_ram_disk_manager.sh` - RAM disk management ✅ CONSOLIDATED
 - `setup_platform_settings.sh` - Platform-specific settings
 - `setup_pre_commit_hook.sh` - Git pre-commit hooks
@@ -84,6 +92,7 @@ Total scripts: 116 (after deduplication)
 - `setup_homebrew_tap.sh` - Homebrew tap setup
 
 ### Service Management (14)
+
 - `start_ib_service.sh` - Removed; IB daemon retired from active service management
 - `start_alpaca_service.sh` - Removed; Alpaca daemon retired from active service management
 - `start_tastytrade_service.sh` - Removed; Tastytrade daemon retired from active service management
@@ -98,6 +107,7 @@ Total scripts: 116 (after deduplication)
 - `watchdog_services.sh` - Service watchdog
 
 ### Utilities (15+)
+
 - `fetch_third_party.sh` - Fetch third-party dependencies ✅ ACTIVE
 - `collect_system_info_python.py` - System info collection ✅ CONSOLIDATED
 - `diagnose_ibkr.sh` - IBKR diagnostics ✅ ACTIVE
@@ -111,6 +121,7 @@ Total scripts: 116 (after deduplication)
 ### Recommended Scripts for Common Tasks
 
 **Building:**
+
 ```bash
 ./scripts/fetch_third_party.sh  # First time setup
 ./scripts/build_fast.sh          # Normal builds
@@ -118,6 +129,7 @@ Total scripts: 116 (after deduplication)
 ```
 
 **Testing:**
+
 ```bash
 ./scripts/test_ibkr.sh           # Test IBKR connection
 ./scripts/run_tests.sh           # Run all tests
@@ -125,6 +137,7 @@ Total scripts: 116 (after deduplication)
 ```
 
 **Documentation:**
+
 ```bash
 # Docs format/health: use exarp-go MCP (`health` with `action=docs`) or CLI
 ./scripts/sync_global_docs.py    # Sync documentation
@@ -132,6 +145,7 @@ Total scripts: 116 (after deduplication)
 ```
 
 **System Setup:**
+
 ```bash
 ./scripts/install_ib_gateway.sh  # Install IB Gateway
 ./scripts/install_mlx.sh         # Install MLX

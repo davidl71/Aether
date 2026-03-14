@@ -43,6 +43,7 @@ To use real IBKR data, you must have **TWS (Trader Workstation)** or **IB Gatewa
 ```
 
 **To switch to mock data** (no TWS needed):
+
 ```bash
 ./build/bin/ib_box_spread --mock-tws
 # or
@@ -58,6 +59,7 @@ export TWS_MOCK=1
 **Default**: reads shared config and connects through the Rust backend/NATS path
 
 **To switch data sources**:
+
 ```bash
 # Override REST fallback endpoint
 export REST_URL=http://127.0.0.1:8002/api/snapshot
@@ -75,6 +77,7 @@ export NATS_URL=nats://127.0.0.1:4222
 **Default**: `primary: 'ib'` with fallback to `'alpaca'`
 
 **To switch data sources**:
+
 ```bash
 # Use Alpaca instead
 export VITE_DATA_SOURCE_PRIMARY=alpaca
@@ -88,12 +91,14 @@ export VITE_DATA_SOURCE_PRIMARY=mock
 ## Port Reference
 
 ### TWS/IB Gateway Ports
+
 - **7497**: TWS Paper Trading ✅ **DEFAULT** (real market data, simulated execution)
 - **7496**: TWS Live Trading ⚠️ **REAL MONEY**
 - **4002**: IB Gateway Paper Trading
 - **4001**: IB Gateway Live Trading ⚠️ **REAL MONEY**
 
 ### Service Ports
+
 - **5173**: Web frontend (Vite dev server)
 - **8000**: Alpaca service
 - **8002**: IB service ✅ **DEFAULT** (for TUI/PWA to connect)
@@ -105,6 +110,7 @@ export VITE_DATA_SOURCE_PRIMARY=mock
 ## Safety Features
 
 ### Built-in Safety
+
 1. ✅ **Paper Trading by Default**: Port 7497 uses paper account (no real money)
 2. ✅ **Dry-Run Mode**: CLI defaults to `dry_run: true` (simulates orders)
 3. ✅ **Fallback Sources**: PWA falls back to Alpaca if IB unavailable
@@ -114,18 +120,21 @@ export VITE_DATA_SOURCE_PRIMARY=mock
 If you want to run without TWS/IB Gateway:
 
 **CLI**:
+
 ```bash
 export TWS_MOCK=1
 ./build/bin/ib_box_spread
 ```
 
 **TUI**:
+
 ```bash
 REST_FALLBACK=1 ./scripts/run_rust_tui.sh
 ```
 
 **PWA**:
 Edit `web/src/config/sharedConfig.ts`:
+
 ```typescript
 primary: 'mock',  // Change from 'ib' to 'mock'
 ```
@@ -139,6 +148,7 @@ primary: 'mock',  // Change from 'ib' to 'mock'
 **Cause**: TWS/IB Gateway not running or API not enabled
 
 **Solution**:
+
 1. Start TWS/IB Gateway
 2. Go to `Global Configuration → API → Settings`
 3. Enable "Enable ActiveX and Socket Clients"
@@ -150,6 +160,7 @@ primary: 'mock',  // Change from 'ib' to 'mock'
 **Cause**: Rust backend snapshot service (port 8002/8080 depending on setup) not running
 
 **Solution**:
+
 ```bash
 # Start backend services
 ./scripts/start_all_services.sh
@@ -160,6 +171,7 @@ primary: 'mock',  // Change from 'ib' to 'mock'
 **Cause**: TWS API is in Read-Only mode or client ID conflict
 
 **Solution**:
+
 1. TWS: `Global Configuration → API → Settings → Disable "Read-Only API"`
 2. Change `client_id` in config if multiple connections
 
@@ -185,11 +197,13 @@ The system will try IB first, then Alpaca if IB fails, then mock as last resort.
 ## Migration from Mock Data
 
 **Old Behavior** (before patch):
+
 - TUI: Mock data (no real connections)
 - PWA: Alpaca paper trading
 - CLI: Real IBKR data (port 7497)
 
 **New Behavior** (after patch):
+
 - TUI: Real IBKR data via IB service (port 8002)
 - PWA: Real IBKR data via IB service (port 8002)
 - CLI: Real IBKR data (port 7497) - unchanged
@@ -206,6 +220,7 @@ The system will try IB first, then Alpaca if IB fails, then mock as last resort.
 ✅ **Fallback**: PWA falls back to Alpaca if IB unavailable
 
 For more details, see:
+
 - `config/config.example.json` - Full configuration reference
 - `./scripts/run_rust_tui.sh` - TUI runner
 - `web/src/config/sharedConfig.ts` - PWA configuration

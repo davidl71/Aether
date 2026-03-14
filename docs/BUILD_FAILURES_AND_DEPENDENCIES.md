@@ -3,6 +3,7 @@
 ## Current failure: C++ standard library headers not found
 
 **Symptom:** Build fails with:
+
 - `fatal error: 'mutex' file not found`
 - `fatal error: 'string' file not found`
 - `fatal error: 'memory' file not found`
@@ -16,39 +17,49 @@ On macOS, this usually means **Xcode Command Line Tools (CLT)** are missing, inc
 ### Fix: Install or repair Command Line Tools
 
 1. **Install / repair CLT (recommended first step):**
+
    ```bash
    xcode-select --install
    ```
+
    Follow the GUI prompt to install or update Command Line Tools.
 
 2. **If that doesn’t fix it**, reset and reinstall:
+
    ```bash
    sudo rm -rf /Library/Developer/CommandLineTools
    xcode-select --install
    ```
 
 3. **If you use full Xcode** (not just CLT), ensure it’s selected:
+
    ```bash
    sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
    ```
 
 4. **Verify the toolchain:**
+
    ```bash
    ./scripts/verify_toolchain.sh
    ```
+
    Or manually:
+
    ```bash
    echo '#include <string>' | clang++ -x c++ -std=c++20 -fsyntax-only -
    ```
+
    If this fails with `'string' file not found`, CLT/SDK are still not set up correctly.
 
 ### After fixing the toolchain
 
 - Reconfigure and build from a clean or existing build dir:
+
   ```bash
   cmake --preset macos-x86_64-debug   # or your preset
   cmake --build --preset macos-x86_64-debug
   ```
+
   Or use `just build-portable build` / `just build-keep-going-json`.
 
 ---
@@ -67,6 +78,7 @@ If the build gets past the TWS API and fails elsewhere, check:
 | Abseil        | `brew install abseil`   | Optional               | For some builds          |
 
 To fetch vendored third-party (TWS API, Intel decimal) without building:
+
 ```bash
 ./scripts/fetch_third_party.sh
 ```
@@ -90,6 +102,7 @@ Log path: `logs/build_ai_friendly.log`.
 ## Protobuf / TWS API version alignment
 
 **Symptom:** Build or lint fails with:
+
 - `#error "Protobuf C++ gencode is built with an incompatible version of"`
 - `error: unknown type name 'PROTOBUF_CONSTEXPR'`
 

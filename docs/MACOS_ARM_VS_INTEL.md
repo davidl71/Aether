@@ -31,10 +31,12 @@ CMake sets `CMAKE_OSX_ARCHITECTURES` to `arm64` or `x86_64` per preset. Each arc
 
 - **Same-arch build (normal):** On an M-series Mac use `macos-arm64-*`; on an Intel Mac use `macos-x86_64-*`. Scripts pick this automatically from `uname -m`.
 - **Cross-arch (e.g. Intel binary on Apple Silicon):** Run configure and build with the Intel preset:
+
   ```bash
   cmake --preset macos-x86_64-debug
   cmake --build --preset macos-x86_64-debug
   ```
+
   The binary will be in `build/macos-x86_64-debug/bin/` (runs under Rosetta 2 on Apple Silicon).
 - **Universal binary (arm64 + x86_64 in one binary):** Use `scripts/build_universal.sh` (or the build target that builds both and lipo-combines). Not the default; use when you need a single fat binary.
 

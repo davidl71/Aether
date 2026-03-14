@@ -15,6 +15,7 @@ The web application can control PWA services (start, stop, restart, enable, disa
 ### 1. Service Name Whitelist
 
 The `systemctl-helper.sh` script only allows operations on predefined PWA services:
+
 - pwa-web
 - pwa-ib-gateway
 - pwa-ib
@@ -24,6 +25,7 @@ The `systemctl-helper.sh` script only allows operations on predefined PWA servic
 ### 2. Action Validation
 
 Only allowed actions are permitted:
+
 - start
 - stop
 - restart
@@ -68,31 +70,37 @@ echo "ENABLE_SERVICE_CONTROL=true" >> .env
 The Rust backend provides these endpoints (when `ENABLE_SERVICE_CONTROL=true`):
 
 ### Start Service
+
 ```
 POST /api/v1/services/{service_name}/start
 ```
 
 ### Stop Service
+
 ```
 POST /api/v1/services/{service_name}/stop
 ```
 
 ### Restart Service
+
 ```
 POST /api/v1/services/{service_name}/restart
 ```
 
 ### Enable Service
+
 ```
 POST /api/v1/services/{service_name}/enable
 ```
 
 ### Disable Service
+
 ```
 POST /api/v1/services/{service_name}/disable
 ```
 
 ### Get Service Status
+
 ```
 GET /api/v1/services/{service_name}/status
 ```
@@ -123,6 +131,7 @@ The API accepts these service names (mapped to systemd service names):
 ## Fallback Behavior
 
 If systemctl is not available (non-Linux or systemd not installed), the backend falls back to:
+
 - Shell script execution (start_*.sh, stop_*.sh)
 - Port-based status checking
 - Config file-based enable/disable
@@ -158,16 +167,19 @@ Check that `ENABLE_SERVICE_CONTROL=true` is set in the backend environment.
 ### systemctl Commands Fail
 
 1. Verify systemd services are installed:
+
    ```bash
    ls ~/.config/systemd/user/pwa-*.service
    ```
 
 2. Check Polkit rules are installed:
+
    ```bash
    ls /etc/polkit-1/rules.d/10-pwa-services.rules
    ```
 
 3. Test systemctl directly:
+
    ```bash
    systemctl --user status pwa-web.service
    ```
@@ -175,6 +187,7 @@ Check that `ENABLE_SERVICE_CONTROL=true` is set in the backend environment.
 ### Helper Script Not Found
 
 Ensure the helper script exists and is executable:
+
 ```bash
 ls -la web/scripts/systemd/systemctl-helper.sh
 chmod +x web/scripts/systemd/systemctl-helper.sh

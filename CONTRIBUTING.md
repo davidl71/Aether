@@ -5,12 +5,14 @@ Thank you for your interest in contributing! This document provides guidelines f
 ## Quick Start
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd ib_box_spread_full_universal
    ```
 
 2. **Set up development environment**
+
    ```bash
    # Configure CMake with Ninja
    cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug \
@@ -19,6 +21,7 @@ Thank you for your interest in contributing! This document provides guidelines f
    ```
 
 3. **Build and test**
+
    ```bash
    ninja -C build
    ctest --test-dir build --output-on-failure
@@ -40,11 +43,13 @@ We follow these conventions (see [AGENTS.md](AGENTS.md) for complete guidelines)
 ## Pull Request Process
 
 1. **Create a feature branch**
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
 
 2. **Make changes and test**
+
    ```bash
    # Run linters
    ./scripts/run_linters.sh
@@ -89,6 +94,7 @@ docs/              # Documentation
 scripts/           # Build and utility scripts
 .cursor/           # Cursor IDE configuration
 ```
+
 The active Python surface in this repo is limited to native binding tests under `native/tests/python/`
 and selected helper scripts. There is no top-level `python/` application directory anymore.
 

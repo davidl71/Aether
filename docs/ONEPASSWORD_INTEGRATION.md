@@ -34,13 +34,17 @@ Repeated authorization usually means you're **not** using a long-lived token, so
   `./scripts/setup_op_service_account.sh setup-token`  
   (or [create it manually](https://developer.1password.com/docs/service-accounts/get-started#create-a-service-account)).
 - Export the token in **every** environment where you run scripts or the TUI:
+
   ```bash
   export OP_SERVICE_ACCOUNT_TOKEN="ops_xxxxxxxx..."
   ```
+
   Or add that line to `~/.zshrc` / `~/.bashrc`, or use the script’s token file and source it:
+
   ```bash
   source ./scripts/setup_op_service_account.sh
   ```
+
 - Then the CLI and the Python SDK use that token and **do not** ask for authorization again until the token is revoked or expires.
 
 **Optional:** Persist the token in a file and load it when needed:

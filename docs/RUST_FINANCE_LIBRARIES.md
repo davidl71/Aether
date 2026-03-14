@@ -5,6 +5,7 @@ This document surveys Rust crates that could replace C++ QuantLib-dependent code
 ## Overview
 
 The C++ codebase currently owns these QuantLib-dependent calculations:
+
 - Box spread profit/ROI/implied rate calculations
 - Greeks (Delta, Gamma, Theta, Vega, Rho)
 - Convexity calculations
@@ -62,6 +63,7 @@ let geometric_bm = GeometricBrownianMotion::new(mu, sigma);
 ```
 
 #### Pros
+
 - Most comprehensive Rust quant library
 - Actively maintained (65 releases)
 - Well-documented with examples
@@ -69,6 +71,7 @@ let geometric_bm = GeometricBrownianMotion::new(mu, sigma);
 - Covers most QuantLib functionality
 
 #### Cons
+
 - Not as battle-tested as QuantLib
 - Some edge cases may differ from QuantLib
 - Requires validation against known outputs
@@ -150,20 +153,24 @@ let iv = implied_volatility(
 ## Migration Effort
 
 ### Phase 1: Replace Simple Calculations (Low Risk)
+
 - Box spread ROI/implied rate → RustQuant `instruments`
 - DTE calculation → RustQuant `time`
 
 ### Phase 2: Replace Greeks (Medium Risk)
+
 - Greeks calculations → RustQuant `instruments::greeks`
 - Requires validation against C++ output
 
 ### Phase 3: Replace Advanced (Higher Risk)
+
 - VaR calculations → Custom Rust or RustQuant math
 - Stochastic processes → RustQuant `stochastics`
 
 ## Validation
 
 Before production use, validate RustQuant outputs against:
+
 1. C++ QuantLib outputs (existing test vectors)
 2. Known analytical results
 3. IBKR calculations (where available)
@@ -171,12 +178,14 @@ Before production use, validate RustQuant outputs against:
 ## Recommendation
 
 **Use RustQuant** as the primary replacement for C++ QuantLib code:
+
 1. Most comprehensive feature coverage
 2. Active maintenance
 3. Good documentation
 4. MIT/Apache license (permissive)
 
 **Keep C++ for:**
+
 - Complex bond convexity calculations (verify RustQuant bond module first)
 - IBKR-specific margin calculations (proprietary)
 

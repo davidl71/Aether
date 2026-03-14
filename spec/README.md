@@ -92,6 +92,7 @@ shellspec spec/scripts/include/python_utils_spec.sh
 ### Test Scenarios Covered
 
 Each function is tested for:
+
 - ✅ Success cases
 - ✅ Error cases
 - ✅ Edge cases
@@ -104,11 +105,11 @@ Each function is tested for:
 
 When adding new functions to shared include files:
 
-1. **Add function to include file** with comprehensive AI-friendly comments
-2. **Create test file** in `spec/scripts/include/` (or add to existing)
-3. **Write tests** using ShellSpec BDD syntax
-4. **Run tests** to verify they pass
-5. **Update this README** with new test coverage
+1. __Add function to include file__ with comprehensive AI-friendly comments
+2. __Create test file__ in `spec/scripts/include/` (or add to existing)
+3. __Write tests__ using ShellSpec BDD syntax
+4. __Run tests__ to verify they pass
+5. __Update this README__ with new test coverage
 
 ### Test Template
 

@@ -13,11 +13,13 @@ Evaluate using Ratzilla (Ratatui + WebAssembly) to replace the retired React web
 ## Ratzilla
 
 **What it does:**
+
 - Compile Ratatui TUI to WebAssembly
 - Runs in browser with same Rust code as native
 - Powered by Ratatui (your TUI already uses it)
 
 **Requirements:**
+
 - `wasm32-unknown-unknown` target
 - `trunk` build tool
 - Same Ratatui widgets work in browser
@@ -49,6 +51,7 @@ Evaluate using Ratzilla (Ratatui + WebAssembly) to replace the retired React web
 ## Recommendation
 
 **Keep as option for future** - Not urgent:
+
 - Your native Rust TUI works well
 - Ratzilla adds complexity
 - Browser TUI experience differs from native
@@ -76,6 +79,7 @@ Evaluate using Ratzilla (Ratatui + WebAssembly) to replace the retired React web
 ## Lessons from rust-tui-dashboard
 
 **Features (F1-F8):**
+
 - F1: Dashboard View - Real-time tracking of holdings, daily P&L, best/worst performers
 - F2: Transaction Management - Create, view, delete buy/sell via TUI
 - F3: Multi-Portfolio Support - Switch between portfolios
@@ -86,6 +90,7 @@ Evaluate using Ratzilla (Ratatui + WebAssembly) to replace the retired React web
 - F8: Performance - Local price caching (30s TTL), Circuit Breaker pattern
 
 **Key takeways:**
+
 - Config hot-reload is valuable
 - Price caching with TTL prevents rate limit issues
 - Multi-portfolio support is a good pattern
@@ -93,24 +98,28 @@ Evaluate using Ratzilla (Ratatui + WebAssembly) to replace the retired React web
 ## Lessons from arbitrage-scouter
 
 **Architecture:**
+
 - Multi-task concurrency (WebSocket, arbitrage detection, TUI rendering)
 - Shared state with `Arc<RwLock<T>>` - read-optimized locking
 - tokio::select! for task coordination
 - Graceful shutdown propagation
 
 **Design Decisions:**
+
 - Use `RwLock` (not Mutex) for read-heavy workloads
 - Use `anyhow::Result` for application errors
 - tokio-tungstenite for WebSocket (native async/await)
 - Ratatui for flicker-free rendering
 
 **Key takeways:**
+
 - `Arc<RwLock>` pattern is battle-tested for async Rust
 - Circuit breaker pattern prevents cascade failures from API rate limits
 
 ## Recommendation
 
 These projects validate that Ratatui is production-ready for finance apps. Key patterns to adopt:
+
 1. Config hot-reload (F7 from rust-tui-dashboard)
 2. Price caching with TTL (F8)
 3. Circuit breaker pattern for external APIs
@@ -123,6 +132,7 @@ These projects validate that Ratatui is production-ready for finance apps. Key p
 ## Crate
 
 **yahoo-finance** (crates.io: 0.3.0, last updated 2020)
+
 - GitHub: github.com/fbriden/yahoo-finance-rs
 
 ## Features
@@ -163,6 +173,7 @@ let data = history::retrieve("AAPL").unwrap();
 ## Recommendation
 
 **Use as fallback, not primary:**
+
 - Primary: IBKR API
 - Fallback: Yahoo Finance (demo, testing, when IBKR unavailable)
 
@@ -175,6 +186,7 @@ Add price caching with TTL to handle rate limits.
 ## Source
 
 Blog post: "I spent 2 years rebuilding my algorithmic trading platform in Rust. I have no regrets."
+
 - Author: Austin Starks (NexusTrade)
 - Original platform: NextTrade (TypeScript) → Rust
 
@@ -194,13 +206,15 @@ Blog post: "I spent 2 years rebuilding my algorithmic trading platform in Rust. 
 
 ## Key Takeaways
 
-### Why Rust was worth it:
+### Why Rust was worth it
+
 - Enums + pattern matching: "descended from the heavens"
 - No NullPointerExceptions - type safety
 - Lightning fast performance
 - Easier maintenance than expected
 
-### Tips for Rust:
+### Tips for Rust
+
 1. **Use enums correctly** - Rust enums can hold data, unlike other languages
 2. **Don't over-abstract** - Helper functions are harder in Rust  
 3. **Use AI help** - LLMs help once you understand basics
@@ -209,6 +223,7 @@ Blog post: "I spent 2 years rebuilding my algorithmic trading platform in Rust. 
 ## Validation
 
 This validates our C++ → Rust direction:
+
 - Trading logic performance gains are significant
 - Type safety prevents runtime crashes
 - Maintainability improves after learning curve

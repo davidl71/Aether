@@ -5,6 +5,7 @@
 Connection establishes (`connectAck` received) but immediately closes before receiving `managedAccounts`.
 
 ## What's Working
+
 ✅ IB Gateway is running on port 4001  
 ✅ Socket connection succeeds  
 ✅ Initial handshake (`connectAck`) received  
@@ -45,8 +46,9 @@ In the same API Settings dialog:
 ```
 
 **Without "Accept incoming connection requests automatically", IB Gateway will:**
+
 - Accept the socket connection
-- Send `connectAck` 
+- Send `connectAck`
 - Wait for manual approval (popup dialog)
 - Close connection if not approved within ~1 second
 
@@ -73,6 +75,7 @@ This prevents specific client ID restrictions.
 ### Step 5: Socket Port
 
 Verify:
+
 ```
 Socket port: 4001  (Live Trading)
 ```
@@ -80,12 +83,14 @@ Socket port: 4001  (Live Trading)
 ## Testing After Configuration
 
 ### Test 1: Simple Connection
+
 ```bash
 DYLD_LIBRARY_PATH=native/ibapi_cmake/build/lib \\
   ./native/build_native/bin/test_simple_connect
 ```
 
 Expected output:
+
 ```
 ✓ Connected successfully with client ID 100
 Requesting positions...
@@ -93,12 +98,14 @@ Result: Found X positions
 ```
 
 ### Test 2: Full Position Retrieval
+
 ```bash
 DYLD_LIBRARY_PATH=native/ibapi_cmake/build/lib \\
   ./native/build_native/bin/test_positions_live
 ```
 
 Expected output:
+
 ```
 ✓ Connected successfully
 === Position Summary ===
@@ -108,18 +115,22 @@ Total positions: X
 ## Common Errors
 
 ### Error: "Connection closed by TWS"
+
 **Symptom**: Gets `connectAck` but closes immediately  
 **Solution**: Enable "Accept incoming connection requests automatically"
 
 ### Error: "No open ports found"
+
 **Symptom**: Can't connect at all  
 **Solution**: Start IB Gateway, check "Enable ActiveX and Socket Clients"
 
 ### Error: Code 509 "Exception caught while reading socket"
+
 **Symptom**: Connection times out  
 **Solution**: Check Trusted IPs includes 127.0.0.1
 
 ### Error: Code 1100 "Connectivity between IB and TWS has been lost"
+
 **Symptom**: Connection drops after working  
 **Solution**: Check network stability, firewall settings
 
@@ -136,22 +147,26 @@ The Docker version is pre-configured with API enabled and auto-accept turned on.
 
 ## Verification Commands
 
-### Check if IB Gateway is running:
+### Check if IB Gateway is running
+
 ```bash
 ps aux | grep -i ibgateway | grep -v grep
 ```
 
-### Check if port 4001 is listening:
+### Check if port 4001 is listening
+
 ```bash
 lsof -i :4001 | grep LISTEN
 ```
 
-### Check existing connections:
+### Check existing connections
+
 ```bash
 lsof -i :4001 | grep ESTABLISHED
 ```
 
-### Check IB Gateway logs:
+### Check IB Gateway logs
+
 ```bash
 # Location varies by system, typically:
 # macOS: ~/Jts/ibgateway/logs/
@@ -164,6 +179,7 @@ ls -lt ~/Jts/ibgateway/*/logs/ | head -20
 When properly configured, you should see:
 
 1. **In test output**:
+
    ```
    ✓ connectAck received
    ✓ managedAccounts received: U1234567
@@ -177,6 +193,7 @@ When properly configured, you should see:
    - No error messages in status bar
 
 3. **In Gateway logs**:
+
    ```
    Incoming connection from 127.0.0.1 accepted automatically
    Client 100 connected successfully
@@ -185,11 +202,13 @@ When properly configured, you should see:
 ## Current Test Status
 
 **Built Test Programs**:
+
 - ✅ `test_tws_connection` - Basic connection test (native/build_native/bin/test_tws_connection:1)
 - ✅ `test_positions_live` - Position retrieval test (native/build_native/bin/test_positions_live:1)  
 - ✅ `test_simple_connect` - Diagnostic connection test (native/build_native/bin/test_simple_connect:1)
 
 **Next Steps**:
+
 1. Enable "Accept incoming connection requests automatically" in IB Gateway
 2. Add 127.0.0.1 to Trusted IPs
 3. Re-run `test_simple_connect`

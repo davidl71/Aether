@@ -32,6 +32,7 @@ From the `web/` directory run **`npm run generate:proto`** to regenerate TypeScr
 Run `./proto/generate.sh` from the repo root to regenerate all languages.
 
 **Prerequisites:**
+
 - **buf** (optional): single command for C++/Go/TS codegen; if missing, the script falls back to `protoc`. Installed automatically by **Ansible** (devtools role). Manual install: `brew install bufbuild/buf/buf` (macOS) or see [buf install](https://buf.build/docs/cli/installation).
 - C++: `protoc` (system package)
 - Python: `pip install betterproto[compiler]` (or `uv pip install betterproto[compiler]`)
@@ -84,6 +85,7 @@ Payload bytes are a serialized inner message (`MarketDataEvent`, `StrategySignal
 - [`agents/backend/crates/nats_adapter/`](../../agents/backend/crates/nats_adapter/) — Rust prost codegen (build.rs)
 
 **Planning (single proto story, dedup, execution order):**
+
 - [PROTOBUF_DEDUP_OPPORTUNITIES.md](../planning/PROTOBUF_DEDUP_OPPORTUNITIES.md) — consolidation opportunities and TWS vendor protos
 - [PROTOBUF_DEDUP_CONCRETE_PLAN.md](../planning/PROTOBUF_DEDUP_CONCRETE_PLAN.md) — concrete plan for proto cleanup
 - Backlog and wave execution order: regenerate with `exarp-go -tool report -args '{"action":"plan"}'` (see `.cursor/plans/` when present)

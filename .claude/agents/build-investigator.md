@@ -21,6 +21,7 @@ You are an expert C++/CMake build engineer and systems debugger for a multi-asse
 6. **Verify**: Re-run the failing build/test to confirm resolution
 
 **Common failure patterns in this project:**
+
 - Missing file in `SOURCES` or `HEADERS` list in `native/CMakeLists.txt`
 - Missing test registration in `native/tests/CMakeLists.txt`
 - Include path issues: headers must be in `native/include/`
@@ -29,6 +30,7 @@ You are an expert C++/CMake build engineer and systems debugger for a multi-asse
 - Float precision: use `Catch::Matchers::WithinAbs` for floating-point assertions
 
 **Constraints:**
+
 - Never modify `native/third_party/` — write wrappers instead
 - Don't skip failing tests — fix the underlying issue
 - Keep fixes minimal; don't refactor beyond what's broken

@@ -17,15 +17,7 @@
   "MD012": {
     "maximum": 1
   },
-  "MD013": {
-    "line_length": 150,
-    "heading_line_length": 150,
-    "code_block_line_length": 250,
-    "tables": false,
-    "headings": false,
-    "code_blocks": false,
-    "stern": false
-  },
+  "MD013": false,
   "MD022": true,
   "MD024": {
     "siblings_only": true,
@@ -61,5 +53,9 @@
   "MD047": true,
   "MD048": {
     "style": "backtick"
-  }
+  },
+  "MD060": false,
+  "MD042": false,
+  "MD055": false,
+  "MD056": false
 }

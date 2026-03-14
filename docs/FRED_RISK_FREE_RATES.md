@@ -19,6 +19,7 @@ This document catalogs all risk-free rate and benchmark interest rate data avail
 ## United States
 
 ### SOFR (Secured Overnight Financing Rate)
+
 - **Series**: `SOFR`
 - **URL**: https://fred.stlouisfed.org/series/SOFR
 - **Frequency**: Daily
@@ -26,6 +27,7 @@ This document catalogs all risk-free rate and benchmark interest rate data avail
 - **Description**: Primary risk-free rate for USD, based on Treasury repurchase agreement transactions
 
 ### Fed Funds Rate
+
 - **Series**: `FEDFUNDS`
 - **URL**: https://fred.stlouisfed.org/series/FEDFUNDS
 - **Frequency**: Monthly
@@ -33,6 +35,7 @@ This document catalogs all risk-free rate and benchmark interest rate data avail
 - **Description**: Effective Federal Funds Rate
 
 ### Treasury Rates
+
 - **1-Month**: `DTB3` (discontinued, use SOFR)
 - **3-Month**: `DTB3`
 - **6-Month**: `DTB6`
@@ -45,6 +48,7 @@ This document catalogs all risk-free rate and benchmark interest rate data avail
 ## United Kingdom
 
 ### SONIA (Sterling Overnight Index Average)
+
 - **Series**: `IUDSOIA`
 - **URL**: https://fred.stlouisfed.org/series/IUDSOIA
 - **Frequency**: Daily
@@ -52,6 +56,7 @@ This document catalogs all risk-free rate and benchmark interest rate data avail
 - **Description**: Primary risk-free rate for GBP
 
 ### SONIA Variants
+
 | Series | Description |
 |--------|-------------|
 | `IUDZLS8` | SONIA 75th percentile |
@@ -63,6 +68,7 @@ This document catalogs all risk-free rate and benchmark interest rate data avail
 ## Euro Area
 
 ### €STR (Euro Short-Term Rate)
+
 - **Primary Series**: `ECBESTRVOLWGTTRMDMNRT`
 - **URL**: https://fred.stlouisfed.org/series/ECBESTRVOLWGTTRMDMNRT
 - **Frequency**: Daily
@@ -70,6 +76,7 @@ This document catalogs all risk-free rate and benchmark interest rate data avail
 - **Description**: Primary risk-free rate for EUR
 
 ### €STR Variants
+
 | Series | Description |
 |--------|-------------|
 | `ECBESTRTOTVOL` | €STR Total Volume |
@@ -84,6 +91,7 @@ This document catalogs all risk-free rate and benchmark interest rate data avail
 FRED does not have direct SARON data. Options:
 
 ### Alternative Sources
+
 1. **SIX Group** - Direct SARON data: https://www.six-group.com/en/products-services/financial-information/rates/saron.html
 2. **Swiss Government Bonds**:
    - **Series**: `CHLTLT01CHM156N`
@@ -92,6 +100,7 @@ FRED does not have direct SARON data. Options:
    - **Description**: 10-Year Government Bond Yield
 
 ### Available in FRED
+
 | Series | Description | Frequency |
 |--------|-------------|-----------|
 | `CHLTLT01CHM156N` | 10-Year Bond Yield | Monthly |
@@ -102,12 +111,14 @@ FRED does not have direct SARON data. Options:
 ## Israel
 
 ### Short-Term Rates (via OECD)
+
 | Series | Description | Frequency |
 |--------|-------------|-----------|
 | `IRSTCI01ILM156N` | Call Money/Interbank Rate | Monthly |
 | `IR3TIB01ILQ156N` | 3-Month T-bill Rate | Quarterly |
 
 ### Long-Term Rates
+
 | Series | Description | Frequency |
 |--------|-------------|-----------|
 | `IRLTLT01ILM156N` | 10-Year Government Bond | Monthly |
@@ -118,6 +129,7 @@ FRED does not have direct SARON data. Options:
 ## Australia
 
 ### AONIA (Australian Interbank Overnight Cash Rate)
+
 - **Series**: `RBAIORB`
 - **URL**: https://fred.stlouisfed.org/series/RBAIORB
 - **Frequency**: Daily
@@ -125,6 +137,7 @@ FRED does not have direct SARON data. Options:
 - **Description**: Primary risk-free rate for AUD
 
 ### Australian Rates in FRED
+
 | Series | Description | Frequency |
 |--------|-------------|-----------|
 | `RBAIORB` | Overnight Cash Rate | Daily |
@@ -135,6 +148,7 @@ FRED does not have direct SARON data. Options:
 ## Canada
 
 ### Canadian Overnight Rate
+
 - **Series**: `CORRATENTD`
 - **URL**: https://fred.stlouisfed.org/series/CORRATENTD
 - **Frequency**: Daily
@@ -142,6 +156,7 @@ FRED does not have direct SARON data. Options:
 - **Description**: Target Overnight Rate
 
 ### Canadian Rates in FRED
+
 | Series | Description | Frequency |
 |--------|-------------|-----------|
 | `CORRATENTD` | Overnight Rate Target | Daily |
@@ -152,6 +167,7 @@ FRED does not have direct SARON data. Options:
 ## Japan
 
 ### Yen Overnight Rate (TONAR)
+
 - **Series**: `JPONATEL` (experimental)
 - **URL**: https://fred.stlouisfed.org/series/JPONATEL
 - **Frequency**: Daily
@@ -159,6 +175,7 @@ FRED does not have direct SARON data. Options:
 - **Description**: Tokyo Overnight Average Rate
 
 ### Japanese Rates in FRED
+
 | Series | Description | Frequency |
 |--------|-------------|-----------|
 | `JPONATEL` | Overnight Average | Daily |
@@ -169,16 +186,19 @@ FRED does not have direct SARON data. Options:
 ## API Usage
 
 ### FRED API Endpoint
+
 ```bash
 # Get latest observation
 curl "https://api.stlouisfed.org/fred/series/observations?series_id=SOFR&api_key=YOUR_KEY&file_type=json&limit=1&sort_order=desc"
 ```
 
 ### Rate Limiting
+
 - **Free tier**: 120 requests/minute
 - **Commercial**: Higher limits available
 
 ### Authentication
+
 Get API key at: https://fred.stlouisfed.org/docs/api/api_key.html
 
 ---
@@ -199,6 +219,7 @@ Get API key at: https://fred.stlouisfed.org/docs/api/api_key.html
 When FRED API is unavailable (no API key, rate limits, network issues), the system falls back to Yahoo Finance Treasury yields.
 
 ### Installation
+
 ```bash
 pip install yfinance
 ```

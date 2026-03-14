@@ -13,6 +13,7 @@ This is a [Homebrew tap](https://docs.brew.sh/Taps) for installing **private** S
 **This tap uses a private repository. You need SSH access configured:**
 
 1. **Set up SSH keys** (if not already done):
+
    ```bash
    # Check if you have SSH keys
    ls -la ~/.ssh/id_*.pub
@@ -25,12 +26,14 @@ This is a [Homebrew tap](https://docs.brew.sh/Taps) for installing **private** S
    ```
 
 2. **Test SSH access**:
+
    ```bash
    ssh -T git@github.com
    # Should see: "Hi davidl71! You've successfully authenticated..."
    ```
 
 3. **Configure git to use SSH for GitHub** (required for Homebrew):
+
    ```bash
    # This makes git automatically rewrite HTTPS URLs to SSH
    git config --global url."git@github.com:".insteadOf "https://github.com/"
@@ -55,6 +58,7 @@ brew install davidl71/ib-box-spread/ib-box-spread
 ```
 
 **Note**: For public projects like Exarp Oh My Zsh plugin, use the public tap:
+
 ```bash
 brew tap davidl71/public-projects https://github.com/davidl71/homebrew-public-projects.git
 brew install davidl71/public-projects/exarp-oh-my-zsh
@@ -67,6 +71,7 @@ brew install davidl71/public-projects/exarp-oh-my-zsh
 Main C++ trading binary with comprehensive multi-asset financing optimization. Box spreads are one strategy component.
 
 **Dependencies**:
+
 - CMake
 - Ninja
 - Boost
@@ -74,11 +79,13 @@ Main C++ trading binary with comprehensive multi-asset financing optimization. B
 - Abseil
 
 **Installation**:
+
 ```bash
 brew install synthetic-financing-platform
 ```
 
 **Usage**:
+
 ```bash
 synthetic-financing-platform --config ~/.config/synthetic-financing-platform/config.json --dry-run
 ```
@@ -118,6 +125,7 @@ brew install --build-from-source synthetic-financing-platform
    - No SHA256 needed (GitDownloadStrategy doesn't use it)
 
 Example:
+
 ```ruby
 url "git@github.com:davidl71/synthetic-financing-platform.git", tag: "v1.0.1", using: :git
 ```
@@ -129,6 +137,7 @@ url "git@github.com:davidl71/synthetic-financing-platform.git", tag: "v1.0.1", u
 **Problem**: `Permission denied (publickey)` when installing
 
 **Solution**:
+
 1. Verify SSH keys: `ls -la ~/.ssh/id_*.pub`
 2. Test GitHub SSH: `ssh -T git@github.com`
 3. Add SSH key to GitHub: https://github.com/settings/keys
@@ -153,6 +162,7 @@ url "git@github.com:davidl71/synthetic-financing-platform.git", tag: "v1.0.1", u
 **Problem**: `fatal: couldn't find remote ref refs/tags/v1.0.0`
 
 **Solution**:
+
 1. Verify tag exists: `git ls-remote --tags git@github.com:davidl71/synthetic-financing-platform.git`
 2. Create and push tag: `git tag v1.0.0 && git push origin v1.0.0`
 3. Update formula with correct tag name

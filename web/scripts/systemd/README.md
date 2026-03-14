@@ -5,6 +5,7 @@ This directory contains systemd user service files for managing PWA services on 
 ## Overview
 
 The PWA services can be managed via:
+
 - **Linux**: systemd user services (this directory)
 - **macOS**: brew services (see `ib-gateway/install-brew-service.sh`)
 - **Fallback**: Manual background processes (default)
@@ -119,21 +120,25 @@ journalctl --user -u 'pwa-*.service'
 ### Services not starting
 
 1. Check service status:
+
    ```bash
    systemctl --user status pwa-web.service
    ```
 
 2. Check logs:
+
    ```bash
    journalctl --user -u pwa-web.service -n 50
    ```
 
 3. Verify service file exists:
+
    ```bash
    ls -la ~/.config/systemd/user/pwa-*.service
    ```
 
 4. Reload systemd daemon:
+
    ```bash
    systemctl --user daemon-reload
    ```
@@ -165,6 +170,7 @@ Stop the conflicting service or change the port in your configuration.
 The web application can control services via the Rust backend API. See [README_SECURE_CONTROL.md](README_SECURE_CONTROL.md) for details.
 
 **Quick Setup:**
+
 ```bash
 # Install Polkit rules (requires sudo)
 sudo ./web/scripts/systemd/install-polkit-rules.sh

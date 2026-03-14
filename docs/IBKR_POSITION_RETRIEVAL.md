@@ -53,7 +53,8 @@ struct Position {
 
 A live testing utility has been created: `native/tests/test_positions_live.cpp`
 
-### Features:
+### Features
+
 - Connects to IBKR TWS/Gateway (paper trading by default)
 - Pulls all current positions
 - Displays position details with P&L calculations
@@ -93,6 +94,7 @@ ninja -C build
 ### Current Status
 
 ⚠️ **Build blocked** - Missing compiled dependencies:
+
 - `IntelRDFPMathLib20U4/LIBRARY/libbid.a` - Not found
 - `ibapi_cmake/build/lib/libtwsapi.dylib` - Build failed due to missing libbid.a
 

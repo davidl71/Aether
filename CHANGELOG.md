@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added - RAM optimization script and non-C++ cache/target optimization
+
 - **`scripts/setup_ram_optimization.sh`**: New script to enable RAM-based caches and project dirs (macOS).
   - **enable**: Creates cache RAM disk (default 12GB at `/Volumes/IBBoxSpreadDev`), links ccache, sccache, pip, Cargo registry/git to ramdisk; sets `CARGO_TARGET_DIR` so Rust build output uses ramdisk; optionally symlinks project `.venv`, `node_modules`, and `web/node_modules` when absent.
   - **disable**: Removes symlinks and restores local cache dirs; leaves RAM disk mounted.
@@ -17,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Docs**: `docs/RAM_OPTIMIZATION_GUIDE.md` updated with Rust `CARGO_TARGET_DIR`, new section 5a for optional project `.venv` and `node_modules` symlinks, and manual-setup notes.
 
 ### Changed - TWS API Version Update
+
 - Updated TWS API from version 10.33.01 to 10.40.01
 - **Key improvements in 10.40.01** (from [release notes](https://ibkrguides.com/releasenotes/prod-2025.htm)):
   - ✅ **Full Protocol Buffers Support**: All requests/responses now support protocol buffers (previously only specific endpoints)
@@ -33,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added - Box Spread Core Improvements
 
 #### Option Chain Scanning (Priority 1)
+
 - Implemented complete `find_box_spreads_in_chain()` algorithm
 - Scans all expiries in DTE range
 - Generates all strike pairs and validates all 4 legs
@@ -41,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added comprehensive logging for debugging
 
 #### Atomic Execution (Priority 2)
+
 - Enhanced `place_box_spread()` with rollback logic
 - Monitors order statuses after submission
 - Automatic cancellation of remaining orders if any leg fails
@@ -49,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added fmt::join for better logging
 
 #### Comprehensive Validation (Priority 3)
+
 - Strike width validation (theoretical value = strike width)
 - Bid/ask spread validation (max $0.50 per leg)
 - Price validation (all prices must be positive)
@@ -58,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added - NautilusTrader Enhancements
 
 #### Event-Driven Market Data Handler
+
 - Complete rewrite of `market_data_handler.py`
 - Data quality validation (stale data, spread checks, price validation)
 - Proper timestamp extraction from ticks (nanoseconds → datetime)
@@ -67,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Methods: `get_data_quality_stats()`, `get_all_data_quality_stats()`
 
 #### Strategy Class Pattern
+
 - Refactored `strategy_runner.py` to `BoxSpreadStrategyRunner`
 - Lifecycle methods: `on_start()`, `on_stop()`, `on_reset()`
 - Event handlers: `on_quote_tick()`, `on_trade_tick()`, `on_order_filled()`, `on_order_rejected()`
@@ -77,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Backward compatibility via `StrategyRunner` alias
 
 #### Order Factory Pattern
+
 - New `python/integration/order_factory.py`
 - Factory methods: `limit()`, `market()`, `create_box_spread_orders()`
 - Unique client order ID generation (timestamp-based)
@@ -85,12 +93,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Placeholder for combo order support
 
 #### Improved Instrument Management
+
 - Uses proper `InstrumentId` format ("SPY.US")
 - Automatic ".US" suffix for US instruments
 - Proper subscription/unsubscription with error handling
 - Tracks subscribed instruments in set
 
 #### Option Chain Management
+
 - New `python/integration/option_chain_manager.py`
 - Efficient nested dictionary: symbol → expiry → strike → option_data
 - Real-time updates via `update_option()` (event-driven)
@@ -101,6 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Chain statistics: `get_chain_stats()`
 
 #### Execution Handler Improvements
+
 - Integrated `OrderFactory` for order creation
 - New `submit_box_spread_orders()` method for atomic 4-leg submission
 - Automatic rollback on partial failure
@@ -109,6 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added - Distributed Compilation Support
 
 #### CMake Build System
+
 - Added options: `ENABLE_DISTCC`, `ENABLE_CCACHE`, `ENABLE_SCCACHE`
 - Automatic tool detection and configuration
 - Prioritization: sccache > ccache > distcc
@@ -116,6 +128,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Compiler launcher configuration
 
 #### Build Scripts
+
 - New `build_fast.sh` - Fast builds with ccache
 - New `build_distributed.sh` - Distributed builds with distcc + ccache
 - Auto-detection of cores for optimal parallelism
@@ -125,11 +138,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added - Documentation
 
 #### Learning Documents
+
 - `docs/ICLI_LEARNINGS.md` - Patterns from icli project
 - `docs/IBKRBOX_LEARNINGS.md` - Patterns from ibkrbox project
 - `docs/NAUTILUS_LEARNINGS.md` - NautilusTrader patterns and Rust recommendations
 
 #### Implementation Guides
+
 - `docs/ACTION_PLAN.md` - Priority action plan
 - `docs/NAUTILUS_IMPLEMENTATION_SUMMARY.md` - Implementation details
 - `docs/ORATS_INTEGRATION.md` - ORATS integration opportunities
@@ -139,16 +154,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 #### C++ Core
+
 - `src/box_spread_strategy.cpp` - Complete implementations (not stubs)
 - `src/order_manager.cpp` - Rollback logic and tracking
 - `CMakeLists.txt` - Build optimization options
 
 #### Python Integration
+
 - `python/integration/market_data_handler.py` - Complete rewrite
 - `python/integration/strategy_runner.py` - Refactored to Strategy pattern
 - `python/integration/execution_handler.py` - Factory integration
 
 #### Documentation
+
 - `README.md` - Added build optimization section
 
 ### Performance Improvements
@@ -186,6 +204,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Future Enhancements
 
 ### Planned for 1.1.0
+
 - [ ] ORATS API integration
 - [ ] Historical backtesting framework
 - [ ] Enhanced liquidity scoring
@@ -194,6 +213,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Rate limiting implementation
 
 ### Planned for 1.2.0
+
 - [ ] Rust components for performance-critical code
 - [ ] Advanced Greeks calculations
 - [ ] Portfolio-level risk management
@@ -201,6 +221,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Performance metrics tracking
 
 ### Planned for 2.0.0
+
 - [ ] Multi-strategy support (beyond box spreads)
 - [ ] Machine learning for opportunity scoring
 - [ ] Cloud deployment support
@@ -215,4 +236,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Documentation](docs/)
 - [Issues](https://github.com/yourusername/ib-box-spread-generator/issues)
 - [Discussions](https://github.com/yourusername/ib-box-spread-generator/discussions)
-

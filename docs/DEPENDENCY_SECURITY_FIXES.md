@@ -18,6 +18,7 @@ Quick reference for addressing dependency vulnerabilities (e.g. GitHub Dependabo
 - **Install**: `pip-audit` is installed by Ansible (devtools role, playbook `ansible/playbooks/setup_devtools.yml`). After running `./setup_global_tools.sh` or the playbook, use `pip-audit` (or `uv tool run pip-audit` if not on PATH).
 - **Check**: `cd python && pip-audit -r <(uv export --frozen --no-dev --format requirements-txt)` if you want a rootless audit of the locked runtime set.
 - **Fix**: Bump affected packages in `python/pyproject.toml`, then regenerate:
+
   ```bash
   uv lock --project python
   uv sync --project python --extra dev --extra tui

@@ -41,6 +41,7 @@ On reconnect, `start_reader_thread()` was called again and did `reader_thread_ =
 ### Symptom
 
 Build fails with errors like:
+
 - `'OrderId' has not been declared`
 - `'TickerId' has not been declared`
 
@@ -119,6 +120,7 @@ The top-level `add_compile_options(-Wall -Wextra -Wunused -Wconversion ...)` app
 ### Symptom
 
 Build fails when compiling `test_tws_connection`, `test_positions_live`, etc., with:
+
 - `ExecutionDetails.pb.h: No such file or directory` (or similar `.pb.h`).
 
 ### Cause

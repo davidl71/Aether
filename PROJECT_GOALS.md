@@ -15,10 +15,12 @@ A comprehensive trading system for box spread arbitrage on Interactive Brokers. 
 ## Strategic Phases
 
 ### Phase 1: Core Pricing Engine
+
 **Timeline**: Foundation
 **Priority**: Critical
 
 **Goals**:
+
 - C++ pricing calculations for box spreads
 - APR/yield computation with contract multiplier
 - Strike width optimization
@@ -29,10 +31,12 @@ A comprehensive trading system for box spread arbitrage on Interactive Brokers. 
 ---
 
 ### Phase 2: IB API Integration
+
 **Timeline**: Integration
 **Priority**: Critical
 
 **Goals**:
+
 - TWS API client implementation
 - Market data streaming
 - Order management
@@ -44,10 +48,12 @@ A comprehensive trading system for box spread arbitrage on Interactive Brokers. 
 ---
 
 ### Phase 3: Multi-Platform Agents
+
 **Timeline**: Expansion
 **Priority**: High
 
 **Goals**:
+
 - Backend agent (Rust) for order execution
 - Textual TUI for terminal interface
 - Web agent for browser access
@@ -59,10 +65,12 @@ A comprehensive trading system for box spread arbitrage on Interactive Brokers. 
 ---
 
 ### Phase 4: Risk & Strategy
+
 **Timeline**: Enhancement
 **Priority**: High
 
 **Goals**:
+
 - Risk management calculations
 - Strategy optimization
 - Position sizing
@@ -74,10 +82,12 @@ A comprehensive trading system for box spread arbitrage on Interactive Brokers. 
 ---
 
 ### Phase 5: Infrastructure & DevOps
+
 **Timeline**: Stabilization
 **Priority**: Medium
 
 **Goals**:
+
 - CI/CD pipeline (GitHub Actions)
 - Universal binary builds
 - Ansible deployment
@@ -89,10 +99,12 @@ A comprehensive trading system for box spread arbitrage on Interactive Brokers. 
 ---
 
 ### Phase 6: Documentation & Polish
+
 **Timeline**: Documentation
 **Priority**: Medium
 
 **Goals**:
+
 - API documentation
 - User guides
 - Architecture docs
@@ -106,12 +118,14 @@ A comprehensive trading system for box spread arbitrage on Interactive Brokers. 
 ## Design Constraints
 
 ### Code Quality Standards
+
 - **C++ Standard**: C++20
 - **Style**: 2-space indentation, Allman braces
 - **Testing**: All pricing/risk calculations must have tests
 - **Security**: Never commit credentials or API keys
 
 ### Trading Safety
+
 - Always use paper trading port (7497) for development
 - Gate live trading behind configuration flags
 - Validate all orders before submission
@@ -147,12 +161,15 @@ Tasks matching these keywords are considered infrastructure/support work (not mi
 ## Task Categories
 
 ### CODE-TODO-*
+
 Tasks for resolving TODO comments in specific modules. These are intentionally similar in format but target different code areas.
 
 ### SHARED-*
+
 Cross-platform features that need implementation across multiple agents (web, iPad, desktop).
 
 ### CI-*
+
 CI/CD setup tasks for different agents/runners.
 
 ---

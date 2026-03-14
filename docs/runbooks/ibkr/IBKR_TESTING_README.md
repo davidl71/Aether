@@ -65,6 +65,7 @@ All located in `scripts/`:
 ## Expected Output (When Fixed)
 
 ### Diagnostic Script
+
 ```
 ✓ connectAck received
 ✓ managedAccounts received: U1234567
@@ -73,6 +74,7 @@ SUCCESS: Connection Fully Established!
 ```
 
 ### Position Test
+
 ```
 === Position Summary ===
 Total positions: 15
@@ -119,23 +121,27 @@ This confirms: **Security policy is blocking, not a network/code issue.**
 ## Files Modified
 
 ### Source Files Created
+
 - `native/tests/test_positions_live.cpp` (your position retrieval test)
 - `native/tests/test_simple_connect.cpp`
 - `native/tests/test_diagnostic_connect.cpp`
 - `native/tests/test_packet_trace.cpp`
 
 ### Scripts Created
+
 - `scripts/test_ibkr.sh`
 - `scripts/test_positions_live.sh`
 - `scripts/diagnose_ibkr.sh`
 
 ### Documentation Created
+
 - `FIX_IBKR_CONNECTION.md`
 - `IBKR_TROUBLESHOOTING.md`
 - `IBKR_DIAGNOSIS_COMPLETE.md`
 - `IBKR_TESTING_README.md` (this file)
 
 ### Configuration Updated
+
 - `native/CMakeLists.txt` - Added test_tws_connection market_hours dependency
 - `native/CMakeLists.txt` - Added all new test programs
 - `native/tests/CMakeLists.txt` - Fixed path issues for root-level builds
@@ -143,11 +149,13 @@ This confirms: **Security policy is blocking, not a network/code issue.**
 ## Support
 
 ### Self-Service
+
 1. Read: `IBKR_DIAGNOSIS_COMPLETE.md` for full analysis
 2. Read: `FIX_IBKR_CONNECTION.md` for step-by-step fix
 3. Run: `./scripts/diagnose_ibkr.sh` for current status
 
 ### IBKR Support
+
 Call: **1-877-442-2757**
 
 Say: *"My API connections are being rejected immediately after the connectAck handshake with no prompt or dialog. I need to enable 'Accept incoming connection requests automatically' for my Live Gateway."*
@@ -166,23 +174,28 @@ Once all boxes are checked, your IBKR API integration is working perfectly!
 ## Additional Notes
 
 ### Library Path
+
 All test programs require the TWS API library path:
+
 ```bash
 export DYLD_LIBRARY_PATH=native/ibapi_cmake/build/lib
 ```
 
 Or prefix each command with it:
+
 ```bash
 DYLD_LIBRARY_PATH=native/ibapi_cmake/build/lib ./native/build_native/bin/test_positions_live
 ```
 
 ### Ports Reference
+
 - **4001** - IB Gateway Live Trading (what you're using)
 - **4002** - IB Gateway Paper Trading
 - **7496** - TWS Live Trading
 - **7497** - TWS Paper Trading
 
 ### Configuration Files
+
 - IB Gateway config: `~/Jts/jts.ini`
 - User settings: `~/Jts/cdhhmlbknajihdggabjbjlajagapfmahhoppbemd/`
 - Logs: `~/Jts/launcher.log` and `~/Jts/cdhhmlbknajihdggabjbjlajagapfmahhoppbemd/*.ibgzenc`

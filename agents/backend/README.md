@@ -1,10 +1,12 @@
 # Backend Agent
 
 ## Responsibilities
+
 - Ingest market data and normalise events for downstream consumers.
 - Perform pre-trade risk checks and expose REST (and NATS) for clients.
 
 ## Layout
+
 - `Cargo.toml`: Rust workspace aggregating core crates.
 - `crates/`: library crates for market data, strategy/risk models, ledger, NATS, and API layers.
 - `services/backend_service/`: Tokio binary wiring crates together.
@@ -21,6 +23,7 @@
 4. Execute checks via `bash agents/backend/scripts/run-tests.sh`.
 
 ## Current Behaviour
+
 - Periodic mock market data updates drive the shared snapshot returned to TUI/mobile/web clients.
 - Strategy signals flow through a mock internal loop, risk checks vet each decision, and the REST surface streams the approved trades plus risk status.
 - REST now exposes `POST /api/v1/strategy/{start,stop}` to toggle the mock engine, updating risk status and alert stream in lockstep.
@@ -28,11 +31,13 @@
 - Polygon.io integration is available via the market data configuration; set `market_data.provider = "polygon"` and provide an API key (see below).
 
 ## Next Steps
+
 - Swap mock data with the real ingestion pipeline.
 - Flesh out POST command endpoints (`/strategy/start`, `/combos/*`) to match `agents/shared/API_CONTRACT.md`.
 - Expand risk checks beyond scaffolding and persist state to QuestDB/ Livevol feeds.
 
 ## Configuring Polygon.io Market Data
+
 Update `agents/backend/config/default.toml` (or the file pointed to by `BACKEND_CONFIG`) to enable Polygon:
 
 ```toml

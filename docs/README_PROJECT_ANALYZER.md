@@ -31,6 +31,7 @@ python python/tools/project_analyzer.py --tasks
 ```
 
 **Output includes:**
+
 - Total tasks and dependencies
 - Critical path (longest dependency chain)
 - Bottlenecks (tasks with most dependents)
@@ -46,6 +47,7 @@ python python/tools/project_analyzer.py --docs
 ```
 
 **Output includes:**
+
 - Total documents and cross-references
 - Central documents (most referenced)
 - Isolated documents (no references)
@@ -58,6 +60,7 @@ python python/tools/project_analyzer.py --architecture
 ```
 
 **Output includes:**
+
 - Total source files
 - Total dependencies (imports/includes)
 - Average dependencies per file
@@ -124,11 +127,13 @@ avg_references_per_doc: 4.23
 ### 1. Project Planning
 
 **Find Critical Path:**
+
 - Identify the longest dependency chain
 - Understand minimum time to complete project
 - Focus on blocking tasks
 
 **Identify Bottlenecks:**
+
 - Find tasks that many others depend on
 - Prioritize these tasks
 - Consider breaking them down
@@ -136,11 +141,13 @@ avg_references_per_doc: 4.23
 ### 2. Documentation Improvement
 
 **Find Central Documents:**
+
 - These are key reference points
 - Keep them up-to-date
 - Ensure they're comprehensive
 
 **Find Isolated Documents:**
+
 - May need better integration
 - Consider adding cross-references
 - Or consolidate with related docs
@@ -148,6 +155,7 @@ avg_references_per_doc: 4.23
 ### 3. Architecture Understanding
 
 **Understand Dependencies:**
+
 - See which modules are most connected
 - Identify tightly coupled components
 - Plan refactoring efforts
@@ -157,6 +165,7 @@ avg_references_per_doc: 4.23
 ### Regular Analysis
 
 Run analysis weekly to track:
+
 - Task completion progress
 - Documentation growth
 - Architecture evolution
@@ -164,6 +173,7 @@ Run analysis weekly to track:
 ### Before Major Refactoring
 
 Use architecture analysis to:
+
 - Understand current structure
 - Identify refactoring targets
 - Plan dependency changes
@@ -171,6 +181,7 @@ Use architecture analysis to:
 ### Documentation Reviews
 
 Use documentation analysis to:
+
 - Find outdated central docs
 - Identify missing cross-references
 - Plan documentation improvements

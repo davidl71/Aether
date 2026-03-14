@@ -164,6 +164,7 @@ files, or commits:
      to the correct status.
 
 Default scope for this rule:
+
 - Apply it to architecture work, data-path changes, refactors, migrations,
   compatibility cuts, or any task likely to create follow-up work.
 - Do not require it for trivial one-shot answers, status checks, or tiny

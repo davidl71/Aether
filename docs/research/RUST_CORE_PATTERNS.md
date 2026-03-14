@@ -18,12 +18,14 @@ Research into Rust trading engines to identify implementable patterns for our Ru
 ### 1. Box Spread Specific (Your Focus)
 
 What we already have (C++):
+
 - Box spread calculations
 - Greeks (delta, gamma, theta, vega)
 - Risk calculations
 - Option chain data
 
 **What could be added:**
+
 - Event-driven architecture (like NautilusTrader)
 - Position tracking with real-time P&L
 - Order management with state machine
@@ -32,6 +34,7 @@ What we already have (C++):
 ### 2. OrderBook-rs Patterns (Useful?)
 
 **Lock-free architecture:**
+
 - Atomics for concurrent access
 - Multiple order types (not needed for box spreads)
 - Thread-safe price levels
@@ -41,6 +44,7 @@ What we already have (C++):
 ### 3. Event-Driven Architecture
 
 From NautilusTrader:
+
 ```rust
 pub enum Event {
     OrderSubmitted,
@@ -52,6 +56,7 @@ pub enum Event {
 ```
 
 **Could implement:**
+
 - Event sourcing for positions
 - State machine for order lifecycle
 - Audit trail for compliance
@@ -67,6 +72,7 @@ pub trait Strategy {
 ```
 
 **Could add later:**
+
 - Historical backtesting for box spread strategies
 - Walk-forward analysis
 
@@ -77,7 +83,7 @@ pub trait Strategy {
 1. **Event-driven position tracking**
    - Replace mutable state with event sourcing
    - Deterministic replay capability
-   
+
 2. **Order state machine**
    - Track order lifecycle (submit → accept → fill → cancel)
    - Handle rejections gracefully

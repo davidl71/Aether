@@ -28,7 +28,9 @@ TWSClient::Impl (tws_client.cpp - reduced to ~500 lines)
 ## Method-to-Module Mapping
 
 ### tws_connection.cpp (~300 lines)
+
 Connection lifecycle and infrastructure:
+
 - `connectAck()` (line 548)
 - `connectionClosed()` (line 590)
 - `nextValidId()` (line 661)
@@ -39,7 +41,9 @@ Connection lifecycle and infrastructure:
 - Mock client setup
 
 ### tws_market_data.cpp (~400 lines)
+
 Market data tick callbacks and request handling:
+
 - `tickPrice()` (line 729)
 - `tickSize()` (line 810)
 - `tickOptionComputation()` (line 844)
@@ -54,7 +58,9 @@ Market data tick callbacks and request handling:
 - Mock market data generation
 
 ### tws_orders.cpp (~300 lines)
+
 Order placement, status, and execution:
+
 - `orderStatus()` (line 883)
 - `openOrder()` (line 926)
 - `openOrderEnd()` (line 973)
@@ -66,7 +72,9 @@ Order placement, status, and execution:
 - `get_order()`, `get_active_orders()`
 
 ### tws_positions.cpp (~400 lines)
+
 Position tracking, P&L, and account data:
+
 - `position()` (line 1022)
 - `positionEnd()` (line 1062)
 - `positionMulti()`, `positionMultiEnd()` (lines 3164-3167)
@@ -81,7 +89,9 @@ Position tracking, P&L, and account data:
 - `request_account_updates()`, `get_account_info()`
 
 ### tws_contracts.cpp (~200 lines)
+
 Contract details and option chain queries:
+
 - `contractDetails()` (line 3081)
 - `contractDetailsEnd()` (line 3125)
 - `request_contract_details()` (public API)
@@ -91,6 +101,7 @@ Contract details and option chain queries:
 ## Previously Extracted Files (already done, do not redo)
 
 These were extracted in a prior session and are already in the build:
+
 - `native/src/types.cpp` + `native/include/types.h` -- struct implementations
 - `native/src/connection_utils.cpp` + `native/include/connection_utils.h` -- port checking, mock client
 - `native/src/tws_error_codes.cpp` + `native/include/tws_error_codes.h` -- error guidance tables

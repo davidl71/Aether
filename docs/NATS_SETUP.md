@@ -138,6 +138,7 @@ This reports server reachability, `/varz` metrics (messages, bytes), `/connz` (c
 | WebSocket | port 8081 | Browser clients; same tuning as server. |
 
 **Clients:**
+
 - **Rust** (`nats_adapter`): Reconnect exponential backoff 1s→30s; ping 20s; DLQ retry 100ms→5s (max 3 retries). Health check uses 500ms flush timeout.
 - **Python** (`nats_client.py`): `reconnect_time_wait=2` s; no flush after publish (rely on server buffering).
 - **Web** (`nats.ws`): `reconnectTimeWait: 2000` ms.

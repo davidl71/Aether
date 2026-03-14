@@ -227,10 +227,12 @@ After fixing configuration:
 - **Issue**: "exarp-go MCP error" or server not starting / tools not listed.
 - **Checks**:
   1. **Runner from project root** (Cursor substitutes `{{PROJECT_ROOT}}` with workspace root):
+
      ```bash
      cd /path/to/ib_box_spread_full_universal
      ./scripts/run_exarp_go.sh -list -quiet
      ```
+
      If this fails, exarp-go is not on PATH or not found by the script (install it or set `EXARP_GO_ROOT`).
   2. **PROJECT_ROOT**: Cursor must pass `PROJECT_ROOT` in env; `.cursor/mcp.json` should have `"env": { "PROJECT_ROOT": "{{PROJECT_ROOT}}" }`. If the runner is started with a wrong or empty PROJECT_ROOT, exarp-go may fail or use the wrong project.
   3. **Use sibling/global**: If you use native exarp-go (sibling repo or global install), set `command` to that runner path (e.g. `{{PROJECT_ROOT}}/../../mcp/exarp-go/scripts/run_exarp_go.sh`) and keep `PROJECT_ROOT` in env. See `docs/MCP_REQUIRED_SERVERS.md` (§ Using native exarp-go).

@@ -44,18 +44,22 @@ active backend bridge.
 ## Priority 1 — Fix Data Integrity (do first, blocks everything)
 
 ### P1-A: Fix dual SQLite writers (CRITICAL) <!-- exarp: T-1772887221775761020 -->
+
 **Status:** Mitigation implemented. Rust ledger uses WAL mode (ConnectOptions + runtime PRAGMA); Python discount_bank_service opens ledger read-only and does not write. Single writer = Rust; Python reads via local SQLite read-only or future REST.
 **Issue**: Rust ledger and Python both write to `ledger.db` — concurrent writes corrupt WAL.
 **Fix**:
+
 - Enable WAL mode (`PRAGMA journal_mode=WAL`) as immediate mitigation.
 - Longer term: Python reads from Rust ledger via REST API (`GET /api/ledger/...`).
   Python never writes directly to SQLite — Rust ledger is the single writer.
 **Files**: `agents/backend/crates/ledger/src/lib.rs`, plus any surviving Python helper code that still touches ledger reads/writes.
 
 ### P1-B: Unify TUI and Web data backends <!-- exarp: T-1772887221914991889 -->
+
 **Status:** Implemented. TUI shared HTTP reads now use canonical `api_base_url` (defaulting to the Rust/shared origin at `http://localhost:8080`), while specialist presets still use explicit routed snapshot endpoints through the optional gateway when needed.
 **Issue**: TUI reads Python :8000-8006; Web reads Rust :8080. Two pipelines, potential divergence.
 **Fix**:
+
 - Prefer the Rust/shared origin as the default frontend read path.
 - Retire the Go `api-gateway`; expose any remaining operational heartbeat routes through Rust instead.
 **Files**: historical `python/tui/providers/`, `agents/go/cmd/api-gateway/main.go`, and the active Rust TUI/read-model layers.
@@ -65,16 +69,19 @@ active backend bridge.
 ## Priority 2 — Responsiveness (thin, event-driven)
 
 ### P2-A: WebSocket delta compression <!-- exarp: T-1772887222103963807 --> ✅
+
 **Done**: Server sends full snapshot once on connect, then only changed sections every 2s;
 client merges deltas; WebSocket mounted on same server at `/ws`. ~90% bandwidth reduction when state is stable.
 **Files**: `agents/backend/crates/api/src/websocket.rs`, `agents/backend/crates/api/src/rest.rs`.
 
 ### P2-B: Decode NatsEnvelope in Go agents <!-- exarp: T-1772887221969976131 -->
+
 **Status:** Implemented. The active collector path decodes `NatsEnvelope`
 in Rust. QuestDB fanout now runs through the backend collector sink.
 **Benefit**: Type-safe; field names match proto schema; survives format changes.
 
 ### P2-C: NATS KV as primary live-state store <!-- exarp: T-1772925042919416172 -->
+
 **Issue**: Clients poll REST every 1-2s to get current state.
 **Fix**: C++ engine publishes events to NATS, and the Rust backend collector becomes the
 single writer to NATS KV buckets / live-state views. Rust exposes the client-facing
@@ -89,6 +96,7 @@ specialist/analytics views; it does not own collection or live-state writes.
 ## Priority 3 — Financial Math Correctness
 
 ### P3-A: Replace hardcoded ETF duration table with QuantLib <!-- exarp: T-1772887222158664215 -->
+
 **Issue**: `greeks_calculator.cpp` uses a static lookup table for ETF duration/convexity.
 New ETFs or changed compositions produce wrong values.
 **Fix**: Use `QuantLib::BondFunctions::duration()` and `BondFunctions::convexity()` with
@@ -97,6 +105,7 @@ the ETF's known underlying bond parameters. Fall back to lookup for non-bond ETF
 **Test**: Add Catch2 test comparing computed vs known duration for AGG, TLT, SHY.
 
 ### P3-B: Add Newton-Raphson IV solver <!-- exarp: T-1772887222213114929 -->
+
 **Issue**: `BlackCalculator` is used correctly but IV must be supplied externally.
 **Fix**: Implement `calculate_implied_vol(market_price, S, K, r, T, option_type)` using
 Newton-Raphson bisection on `BlackCalculator::value()`. QuantLib provides
@@ -105,18 +114,22 @@ Newton-Raphson bisection on `BlackCalculator::value()`. QuantLib provides
 **Test**: Catch2 round-trip: compute price → compute IV → recompute price, assert < 1bp error.
 
 ### P3-C: Nelson-Siegel/Svensson yield curve fitting <!-- exarp: T-1772887222348905245 -->
+
 **Issue**: `yield_curve_comparison.py` uses simple interpolation for benchmark rates.
 **Fix**: Fit Nelson-Siegel (3-param) or Svensson (4-param) model to Treasury/SOFR term
 structure. Enables:
+
 - Smooth par rate / discount factor curve at any maturity
 - Quantitative comparison of box spread implied rate vs model rate
 - QuantLib has `NelsonSiegelFitting` and `SvenssonFitting` in `ql/termstructures/yield/`.
 **Files**: historical `python/integration/yield_curve_comparison.py` notes, possibly a new C++ `yield_curve.cpp`, or a replacement helper under the current repo layout.
 
 ### P3-D: Standard amortization schedule generation <!-- exarp: T-1772887222449509427 -->
+
 **Issue**: `cash_flow_calculator.py` handles Israeli SHIR/CPI loans but not standard PMT.
 **Fix**: Add `generate_amortization_schedule(principal, rate, periods, type)` returning
 a DataFrame of (period, payment, interest, principal, balance). Support:
+
 - Fixed-rate (standard PMT formula)
 - SHIR-linked (existing, refactor into same interface)
 - CPI-linked (existing)
@@ -128,18 +141,21 @@ a DataFrame of (period, payment, interest, principal, balance). Support:
 ## Priority 4 — Schema & Tooling
 
 ### P4-A: Migrate to `buf` for proto schema management <!-- exarp: T-1772887222270264987 -->
+
 **Issue**: `proto/generate.sh` is a shell script — no lint, no breaking-change detection.
 **Fix**: Add `buf.yaml` + `buf.gen.yaml`. Replace `proto/generate.sh` with `buf generate`.
 Add `buf breaking --against .git#tag=v1.0` to CI.
 **Files**: `proto/buf.yaml`, `proto/buf.gen.yaml` (new), `proto/generate.sh` (retire).
 
 ### P4-B: Structured logging in Go agents <!-- exarp: T-1772887222034956306 --> ✅ DONE
+
 **Issue**: `log.Printf` — no levels, no JSON, no correlation IDs.
 **Fix**: All Go agents already use `log/slog` with `slog.SetDefault(slog.New(slog.NewJSONHandler(...)))`.
 All `log.Printf` calls replaced with structured `slog.Info` / `slog.Error` calls.
 **Files**: `agents/go/cmd/*/main.go` — complete.
 
 ### P4-C: Rust REST: derive serde on prost types
+
 **Issue**: Rust REST responses use hand-written `serde` structs that mirror proto types.
 **Fix**: Add `#[derive(serde::Serialize, serde::Deserialize)]` to prost-generated types
 via `prost-build` with `serde` feature. Eliminates duplicate type definitions.
@@ -150,31 +166,38 @@ via `prost-build` with `serde` feature. Eliminates duplicate type definitions.
 ## Priority 5 — Long-term Epics
 
 ### E1: ConnectRPC — replace REST polling with streaming
+
 Replace TUI's 1s REST polling and Web's 2s snapshot polling with ConnectRPC streaming RPCs.
 ConnectRPC serves gRPC, gRPC-Web, and plain JSON HTTP/1.1 from the same handler.
+
 - Rust: `connectrpc` crate
 - Python TUI: `grpclib` (async) or betterproto stubs
 - React web: `@connectrpc/connect-web`
 **Impact**: Latency drops from 1-2s to ~10ms for state changes. Eliminates polling overhead.
 
 ### E2: Apache Arrow Flight for bulk/historical data
+
 Replace QuestDB HTTP polling with Arrow Flight SQL for columnar bulk reads.
 QuestDB natively supports Arrow Flight SQL. Python analytics get zero-copy columnar data.
 The Rust QuestDB writer path inside the backend collector becomes an Arrow Flight writer.
 **Impact**: 10-100x faster for bulk position/tick queries. Enables notebook-level analysis.
 
 ### E3: Asset Relationship Graph (Phase 2 of SYNTHETIC_FINANCING_ARCHITECTURE)
+
 Implement `AssetRelationshipGraph` + `CollateralValuator` + `FinancingInstrumentRegistry`
 as designed in `docs/platform/SYNTHETIC_FINANCING_ARCHITECTURE.md`.
 Prerequisite for multi-instrument optimization.
 
 ### E4: Financing Optimizer (Phase 4)
+
 NLopt-based `FinancingOptimizer` that minimizes effective cost across box spreads, T-bills,
 bank loans, pension loans, and FX swaps simultaneously.
 Prerequisite: E3 (asset relationship graph).
 
 ### E5: Unified thin collection daemon
+
 Replace Python data-collection polling loops with a single Go daemon that:
+
 - Subscribes to NATS for C++ events
 - Polls broker REST APIs on configurable intervals
 - Writes to NATS KV (live state) and QuestDB (history)

@@ -19,6 +19,7 @@ This document describes how background work (threads, asyncio tasks, timers) is 
 **Lifecycle:** Start order in `on_mount`: log handler → provider.start() → backend health aggregator.start() → set_interval(×5). Stop order in `on_unmount`: backend health aggregator.stop() → provider.stop(). No single “task registry”; each component manages its own thread.
 
 **Gaps:**
+
 - Intervals are not named or tracked; can’t cancel one without touching the app.
 - If `on_unmount` is skipped (e.g. hard kill), daemon threads exit with the process but in-flight work may not finish cleanly.
 - Config reload creates a new aggregator and starts it without a formal “replace previous” protocol beyond stop-then-start.
@@ -40,6 +41,7 @@ This document describes how background work (threads, asyncio tasks, timers) is 
 **Lifecycle:** These notes describe retired Python daemon patterns kept for architectural history.
 
 **Gaps:**
+
 - Fire-and-forget `asyncio.create_task(publish_health(...))`: no await, no cancellation if the app is shutting down. Usually fine for a single publish, but if the task outlives the process it can log or fail after the app is gone.
 - Mixed patterns: lifespan (health_dashboard) vs on_event (tastytrade). FastAPI recommends lifespan for startup/shutdown; on_event is deprecated in favor of lifespan.
 - No shared “task registry”: each service that starts a task is responsible for cancelling it; easy to add a new task and forget to cancel.
@@ -55,6 +57,7 @@ This document describes how background work (threads, asyncio tasks, timers) is 
 | **LEAN event_bridge** | Dedicated thread running a new asyncio loop: `Thread(target=_run_event_loop, daemon=True)`; loop runs forever | `event_bridge.start()` | `event_bridge.stop()`: set flag, `loop.call_soon_threadsafe(loop.stop)`, `thread.join(5.0)` | Clean shutdown with timeout; daemon=True so process exit kills thread if join times out. |
 
 **Gaps:**
+
 - collection-daemon QuestDB mode: run via script; no dedicated process-manager guidance yet beyond normal signal handling.
 - Strategy runner: background asyncio tasks are not registered; on_stop() does not cancel them explicitly.
 

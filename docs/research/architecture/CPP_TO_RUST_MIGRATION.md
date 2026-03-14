@@ -114,6 +114,7 @@ Already done or clearly dead:
 
 **Extend `agents/backend/crates/risk`** with the risk calculator logic from
 `native/src/risk_calculator*.cpp`. This delivers:
+
 - Native risk calculations in the Rust API layer (no NATS round-trip)
 - Verifiable parity with C++ via cross-language tests
 - Foundation for Phase 2 (collateral, hedge manager)

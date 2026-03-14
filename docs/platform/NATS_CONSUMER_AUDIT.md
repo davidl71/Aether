@@ -27,6 +27,7 @@
 **All active NATS consumers use protobuf-only transport via the `nats_adapter` crate.** No JSON or raw payload consumers remain in the active codebase.
 
 The canonical encoding/decoding utilities live in `agents/backend/crates/nats_adapter/src/serde.rs`:
+
 - `encode_envelope()` — wraps proto in `NatsEnvelope`
 - `decode_envelope()` — extracts proto from `NatsEnvelope`
 - `extract_proto_payload()` — extracts inner proto from envelope for subscribers

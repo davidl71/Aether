@@ -21,6 +21,7 @@
 | `python/integration/relationship_graph_example.py` | 224 | **Dead** | Demo/example script, not integration code |
 
 **Test files for dead code (also removable):**
+
 - `python/tests/test_excel_dde_client.py`
 - `python/tests/test_excel_rtd_client.py`
 - `python/tests/test_israeli_broker_scraper.py`
@@ -57,6 +58,7 @@ Rust backend now handles all server-side calculations. WASM was an early approac
 - **Total: 25,160 lines** in `scripts/`
 
 Many are duplicated or superseded by exarp automation. Consolidation targets:
+
 - NATS lifecycle (7 scripts → 1 or Go supervisor)
 - Doc-fixing (6 scripts → 1 or exarp health tool)
 - Todo2 automation (6 scripts → exarp task_workflow)
@@ -79,6 +81,7 @@ The project has converged on REST + NATS + WebSocket; gRPC adds build complexity
 ### 1.7 Misplaced Files
 
 5 test files in `python/integration/` instead of `python/tests/`:
+
 - `test_swiftness_import.py`
 - `test_relationship_graph.py`
 - `test_nats_client.py`
@@ -97,6 +100,7 @@ The project has converged on REST + NATS + WebSocket; gRPC adds build complexity
 ### 2.1 Message Queuing (NATS)
 
 #### A. Enable JetStream + KV Store
+
 - **Current:** NATS core pub/sub only, JetStream commented out in config
 - **Problem:** Fire-and-forget delivery; state lives in `Arc<RwLock<>>` inside Rust process
 - **Solution:** Enable JetStream, use KV bucket for SystemSnapshot
@@ -104,12 +108,14 @@ The project has converged on REST + NATS + WebSocket; gRPC adds build complexity
 - **Priority:** High (foundation for all MQ refactoring)
 
 #### B. NATS Heartbeat Health Aggregation
+
 - **Current:** PWA polls 8 HTTP endpoints every 10s (340 lines TypeScript)
 - **Solution:** Each service publishes heartbeat to `system.health.{service}`, Rust backend aggregates
 - **Impact:** 340 lines → single `/api/v1/health/all` endpoint
 - **Priority:** Medium
 
 #### C. NATS Request-Reply for Broker Services
+
 - **Current:** 7 separate HTTP servers on ports 8000-8006
 - **Solution:** Rust backend sends `rpc.broker.{name}.{method}`, Python replies via NATS
 - **Impact:** Eliminates 7 HTTP server processes and port management
@@ -118,18 +124,21 @@ The project has converged on REST + NATS + WebSocket; gRPC adds build complexity
 ### 2.2 Database
 
 #### A. QuestDB Proper Client + Query Layer
+
 - **Current:** Raw TCP socket ILP writer (98 lines), write-only, no queries
 - **Solution:** Official `questdb` package + HTTP SQL query endpoint for real chart data
 - **Impact:** Chart endpoint serves real OHLCV instead of synthetic data
 - **Priority:** Medium
 
 #### B. Shared Live-State Cache
+
 - **Current:** in-process state and NATS-backed live state
 - **Solution:** keep NATS KV / process-local caching rather than adding Redis
 - **Alternative:** Rust-owned read-model materialization if multi-instance support is needed
 - **Priority:** Low
 
 #### C. Trade Blotter Read Model
+
 - **Current:** SQLite ledger for double-entry journal
 - **Solution:** derive blotter/read-model views from the existing ledger and event stream
 - **Impact:** better compliance/audit without adding another primary store
@@ -149,19 +158,23 @@ The project has converged on REST + NATS + WebSocket; gRPC adds build complexity
 ### 2.4 Code Deduplication
 
 #### A. Python BrokerClientBase
+
 - **17 broker clients**, ~6,000 lines total
 - All repeat: env-var loading, session setup, sandbox toggle, HTTP helpers
 - Extract to `base_client.py`, estimated reduction: 1,500-2,000 lines
 
 #### B. Rust Swiftness Proxy Helper
+
 - 5 nearly identical ~60-line handlers in `rest.rs`
 - Extract `proxy_get`/`proxy_json` helper, reduction: ~250 lines
 
 #### C. TypeScript useFetchJSON Hook
+
 - 4 hooks repeat fetch → parse → setState with loading/error
 - Generic `useFetchJSON<T>` hook, reduction: ~200 lines
 
 #### D. C++ Snapshot Writer Extraction
+
 - 100-line function embedded in 1000-line main entry point
 - Move to `native/src/snapshot_writer.cpp/.h`
 - May be superseded by NATS KV approach

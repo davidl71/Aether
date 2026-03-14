@@ -242,6 +242,7 @@ Synthetic Financing Platform
 - **Tastytrade**: REST API (Python)
 
 **Future improvement note:** Tradier is not part of the active platform surface. Reintroduction is a future integration candidate only if there is a clear operational need.
+
 - **Israeli Brokers**: Excel/RTD/DDE integration, web scraping
 - **Israeli Banks**: Reconciliation file import
 

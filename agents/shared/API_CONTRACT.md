@@ -69,6 +69,7 @@ This document captures the REST/WebSocket schema shared by the backend, Python/T
 > Update this contract whenever the backend changes payload fields. Frontend/TUI agents should sync against this spec.
 
 **Livevol Integration Note**
+
 - When Livevol credentials (`LIVEVOL_API_KEY`, `LIVEVOL_API_SECRET`) are present, the backend should enrich `symbols[].candle` and `positions[]` data with Cboe strategy quotes.
 - Frontends/TUI treat these the same as IB-derived quotes; the source is transparent in the payload.
 
@@ -108,6 +109,7 @@ Define request/response schemas as the backend endpoints solidify.
 List all loans.
 
 **Response**:
+
 ```json
 {
   "loans": [
@@ -145,6 +147,7 @@ Get a single loan by ID.
 Create a new loan.
 
 **Request**:
+
 ```json
 {
   "loan_id": "loan-new",
@@ -188,6 +191,7 @@ Delete a loan.
 Loans can also be loaded from `config/loans.json`. The file should contain an array of `LoanRecord` objects.
 
 **Canonical format**:
+
 ```json
 [
   {
@@ -213,6 +217,7 @@ Loans can also be loaded from `config/loans.json`. The file should contain an ar
 ```
 
 **Legacy format** (auto-converted to canonical):
+
 ```json
 [
   {

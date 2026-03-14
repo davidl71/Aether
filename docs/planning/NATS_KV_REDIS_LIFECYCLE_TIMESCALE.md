@@ -11,12 +11,14 @@ Prioritized plan for shared state, caching, task management, and analytics stora
 **Goal:** Use NATS JetStream Key-Value as the primary shared state store so all services (IB, Alpaca, Tastytrade, TUI, PWA) see the same “current account” and “current mode” without adding another process.
 
 **Why first:**
+
 - NATS is already in the stack (messaging, health dashboard, QuestDB bridge).
 - One less service than Redis; same NATS URL for pub/sub and state.
 - Key history (revisions) useful for debugging and audit.
 - Fits “one bus + one state store” for the platform.
 
 **Implementation:**
+
 - **Bucket:** `ib_box_spread_state` (or `NATS_KV_STATE_BUCKET`). Keys: `current_account:ib`, `current_account:alpaca`, `current_account:tastytrade`, etc.
 - **Module:** `python/integration/nats_kv_state.py` – async get/set/delete with JSON values; bucket created on first connect if missing.
 - **Helpers:** `get_nats_kv_state()`, `get_current_account(backend)`, `set_current_account(backend, account_id)`.
@@ -34,6 +36,7 @@ Prioritized plan for shared state, caching, task management, and analytics stora
 **Goal:** Add Redis only when needed for lower latency or richer structures.
 
 **When to add:**
+
 - Conid/symbol cache with very high read volume and need for minimal latency.
 - Rich structures (hashes, lists, sorted sets) without encoding everything in JSON in NATS KV.
 - Heavy cache eviction (e.g. LRU) or rate limiting.
@@ -47,11 +50,13 @@ Prioritized plan for shared state, caching, task management, and analytics stora
 **Goal:** Structured concurrency for Python services so background tasks (polling, health, snapshot refresh) are started and stopped in one place and shutdown is clean.
 
 **Scope:**
+
 - TUI: RestProvider, BackendHealthAggregator, FileProvider worker threads; single place to stop all on exit.
 - Backend services (IB, Alpaca, etc.): health/snapshot loops; ensure one coordinator (e.g. FastAPI lifespan or an anyio task group) starts/stops them.
 - Optional: use `anyio` or `asyncio` TaskGroup so all tasks are children of one scope and cancel together.
 
 **Deliverables:**
+
 - Document pattern (e.g. “start all background work in lifespan, cancel on shutdown”).
 - Refactor one service (e.g. IB or health dashboard) as reference; then apply to others.
 
@@ -64,6 +69,7 @@ Prioritized plan for shared state, caching, task management, and analytics stora
 **Goal:** Single SQL database for both relational data (accounts, config, ledger) and time-series (ticks, PnL, decisions) if we want to consolidate analytics.
 
 **When to consider:**
+
 - Need to run SQL over both “current state” and “time-series” in one place.
 - Prefer one operational DB (TimescaleDB) over QuestDB + PostgreSQL (or SQLite) for reporting.
 

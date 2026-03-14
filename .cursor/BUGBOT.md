@@ -138,6 +138,7 @@ Before approving a PR, verify:
 ## Multi-Language Considerations
 
 This project includes:
+
 - **C++**: Core trading logic (`native/src/`)
 - **Python**: pybind11 bindings and binding tests (`native/src/box_spread_pybind.cpp`, `native/tests/python/`)
 - **Rust**: Backend services (`agents/backend/`)
@@ -145,6 +146,7 @@ This project includes:
 - **TypeScript**: Web interface (`web/`)
 
 When reviewing:
+
 - Verify language-specific conventions are followed
 - Check that cross-language interfaces are properly defined
 - Ensure build system handles all languages correctly

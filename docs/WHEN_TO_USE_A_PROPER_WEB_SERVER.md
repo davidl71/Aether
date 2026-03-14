@@ -1,6 +1,7 @@
 # When to use a proper web server (or proxy / process manager)
 
 **TL;DR**  
+
 - **Reverse proxy (nginx / Traefik / Caddy):** as soon as you have **more than one** HTTP service and want a single hostname, TLS, or production hardening—so **now** is reasonable.  
 - **Process manager (systemd / supervisord / PM2):** as soon as you care about **restarts, logging, or running in the background**—also **now** if you run multiple services.  
 - **API gateway / load balancer:** when you have **many backends (e.g. 10+)** or need **routing, rate limits, or auth** in one place.  
@@ -104,11 +105,13 @@ The following files implement reverse proxy and process manager options.
 | `config/nginx/backend-services.conf` | Single nginx server block (port 8080) with path-based routing to all backends. `/api/` → IB (default), `/api/ib/`, `/api/alpaca/`, etc. → respective service. Root `/` proxies to web dev server (5173). |
 
 **Install (Linux):**
+
 ```bash
 sudo cp config/nginx/backend-services.conf /etc/nginx/sites-available/
 sudo ln -s /etc/nginx/sites-available/backend-services.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
+
 **Frontend:** Set `VITE_API_URL=http://localhost:8080/api` to use the proxy (default backend = IB). Or use path-prefixed URLs: `/api/ib/snapshot`, `/api/alpaca/snapshot`.
 
 ### Process manager – supervisord (Python)
@@ -119,12 +122,14 @@ sudo nginx -t && sudo systemctl reload nginx
 | `scripts/run_supervisord.sh` | Wrapper that sets `PROJECT_ROOT` and runs supervisord. |
 
 **Run:**
+
 ```bash
 export PROJECT_ROOT="$(pwd)"   # or your repo path
 ./scripts/run_supervisord.sh
 # Or: supervisord -c config/supervisord.conf
 supervisorctl -c config/supervisord.conf status
 ```
+
 **Requires:** `pip install supervisord` or `apt install supervisor`.
 
 ### Process manager – systemd user units
@@ -136,6 +141,7 @@ supervisorctl -c config/supervisord.conf status
 | `scripts/install_systemd_user_units.sh` | Copies units to `~/.config/systemd/user/` and sets `PROJECT_ROOT`. |
 
 **Install and run:**
+
 ```bash
 ./scripts/install_systemd_user_units.sh
 systemctl --user daemon-reload

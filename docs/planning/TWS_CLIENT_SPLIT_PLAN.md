@@ -6,6 +6,7 @@
 ## Current Structure
 
 `tws_client.cpp` already delegates to focused handlers:
+
 - `tws_connection.cpp` - connection lifecycle
 - `tws_market_data.cpp` - market data
 - `tws_orders.cpp` - order management
@@ -13,6 +14,7 @@
 - `tws_contracts.cpp` - contract handling
 
 The `TWSClient::Impl` class (in tws_client.cpp) holds ~800 lines including:
+
 - NATS client setup and publishing
 - EWrapper overrides that delegate to handlers
 - Conversion helpers

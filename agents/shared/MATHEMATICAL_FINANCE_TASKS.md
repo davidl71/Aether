@@ -26,11 +26,13 @@ This document tracks the mathematical finance improvement tasks (T-201 through T
 ## Implementation Phases
 
 ### Phase 1: Calculation Accuracy (High Priority)
+
 - **T-201:** Day count convention fixes
 - **T-202:** Annualized ROI
 - **Estimated Impact:** +5-10% improvement in rate calculations
 
 ### Phase 2: Portfolio Optimization Foundation (Medium Priority)
+
 - **T-204:** Correlation analysis (foundation)
 - **T-203:** Portfolio VaR (depends on T-204)
 - **T-205:** Mean-variance optimization (depends on T-204, T-203)
@@ -38,6 +40,7 @@ This document tracks the mathematical finance improvement tasks (T-201 through T
 - **Estimated Impact:** +10-20% portfolio returns, -15-25% portfolio variance
 
 ### Phase 3: Advanced Features (Low Priority)
+
 - **T-207:** Dividend-adjusted put-call parity
 - **T-208:** CVaR calculation
 - **T-209:** HRP optimization
@@ -55,6 +58,7 @@ This document tracks the mathematical finance improvement tasks (T-201 through T
 ## Status Updates
 
 Update this file when tasks change status:
+
 - `pending` → `in_progress` when work begins
 - `in_progress` → `completed` when merged
 - Add notes for blockers or follow-up items

@@ -238,6 +238,7 @@ Run Python TUI application.
 **Use When**: Testing TUI interface without live trading
 
 **Environment Variables**:
+
 - `TUI_BACKEND`: `mock`, `rest`, or `file` (default: `mock`)
 - `TUI_API_URL`: REST API endpoint (for `rest` backend)
 - `TUI_SNAPSHOT_FILE`: JSON file path (for `file` backend)

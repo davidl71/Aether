@@ -2,11 +2,11 @@
 
 The Client Portal gateway is available for download at: [http://download2.interactivebrokers.com/portal/clientportal.gw.zip](http://download2.interactivebrokers.com/portal/clientportal.gw.zip)
 
-You can download and extract to any location your user has access to. We will install it under 
+You can download and extract to any location your user has access to. We will install it under
 
 C:\gateway\ in Windows or ~user\gateway in Linux.
 
-The gateway requires Java 1.8 update 192 or higher to run, and has been tested successfully with OpenJDK 11. 
+The gateway requires Java 1.8 update 192 or higher to run, and has been tested successfully with OpenJDK 11.
 
 Oracle Java 8 download: [https://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html](https://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html)
 
@@ -27,8 +27,8 @@ To start the gateway you need to open a command prompt or bash on the directory 
 Once in that directory you can run *"bin\run.sh root/conf.yaml"* or *"bin\run.bat root\conf.yaml"*
 
 Once the gateway is running, you should see the following entry in the console:
-"Server listening on port 5000" 
-By default the gateway runs in SSL mode and port 5000. 
+"Server listening on port 5000"
+By default the gateway runs in SSL mode and port 5000.
 
 Now that the gateway is running, you are ready to authenticate, to do that open your browser and go to:
 [https://localhost:5000/](https://localhost:5000/)
@@ -47,4 +47,3 @@ From this point on, the end points documented in the API spec should be availabl
 [https://rebilly.github.io/ReDoc/?url=https://rebilly.github.io/ReDoc/?url=https://gdcdyn.interactivebrokers.com/portal.proxy/v1/portal/swagger/swagger?format=yaml](https://rebilly.github.io/ReDoc/?url=https://rebilly.github.io/ReDoc/?url=https://gdcdyn.interactivebrokers.com/portal.proxy/v1/portal/swagger/swagger?format=yaml)
 
 There is an external Client Portal API guide with test pages at: [https://interactivebrokers.github.io/cpwebapi](https://interactivebrokers.github.io/cpwebapi)
-

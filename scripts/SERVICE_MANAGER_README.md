@@ -3,6 +3,7 @@
 `scripts/service_manager.sh` manages the active local platform services from one entrypoint.
 
 Supported runtime services:
+
 - `rust_backend`
 - `nats`
 

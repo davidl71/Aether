@@ -16,11 +16,13 @@
 ## Per-task classification
 
 ### Meta and review tasks
+
 - **T-1772206054086289000** Review misaligned tasks — *This task; mark Done after review.*
 - **T-1772111114876005000** Review 191 Todo2 tasks not in shared TODO — *Phase 2; mark Done after that review.*
 - **T-1772130709755428000** Review misaligned tasks — *Duplicate of T-1772206054086289000; cancel or mark Done with other.*
 
 ### Already Done (per Todo2 overview / conversation)
+
 - T-1772142920963275000 Phase 6: Discount bank Rust canonical
 - T-1772142918323013000 Phase 5: Python risk call C++ or document as stub
 - T-1772142915869231000 Phase 3: C++ protobuf codegen and boundary adapter
@@ -33,10 +35,12 @@
 - T-1772135684202624000 Fix C++ toolchain - Xcode Command Line Tools headers — *Done (committed).*
 
 ### Infrastructure / partially done
+
 - T-1772136087069653000 Create CacheClient abstraction with memcached backend — *C++ and Python abstractions exist; Memcached backend in C++ is Phase 4.*
 - T-1772136087147162000 Add memcached cache to Python integration layer — *Python cache_client exists; pymemcache integration can be verified separately.*
 
 ### Still todo (backlog; no status change)
+
 Remaining 50+ tasks from the misaligned list are left as-is in Todo2. High-priority or agent-visible ones are added to shared TODO in Phase 2 (agents/shared/TODO_OVERVIEW.md removed).
 
 ## Outcome
