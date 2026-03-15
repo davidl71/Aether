@@ -25,15 +25,12 @@ nats_adapter = { path = "../../crates/nats_adapter" }
 ratatui   = "0.30"
 # event-stream enables crossterm::EventStream for async tokio::select! event handling
 crossterm = { version = "0.28", features = ["event-stream"] }
+# Order confirmation dialogs, risk-check overlays, alert detail modals
+tui-widgets = { version = "0.6", features = ["popup"] }
+# Interactive symbol/filter input (e.g. "filter symbols", "enter order qty")
+ratatui-textarea = "0.8"
 
 # Panic hooks that restore terminal before printing error reports
-# TODO(tui-popup): add tui-widgets = { version = "0.5", features = ["tui-popup"] } for
-#   order confirmation dialogs, risk-check overlays, and alert detail modals.
-# TODO(ratatui-textarea): add ratatui-textarea = "0.7" for interactive symbol/filter
-#   input boxes (e.g. "filter symbols", "enter order qty").
-# TODO(sparklines): Ratatui built-in Sparkline widget is sufficient — add per-symbol
-#   ROI sparkline column to the Dashboard table (needs a ring-buffer of recent roi values
-#   stored in SymbolSnapshot or a parallel VecDeque<f64> in app state).
 color-eyre = "0.6"
 
 # In-TUI log viewer (captures tracing events, renders them in a scrollable widget)
@@ -51,3 +48,7 @@ reqwest = { workspace = true, features = ["json"] }
 
 # UUID for event IDs
 uuid = { workspace = true }
+
+# JSONC and backoff (see docs/platform/RUST_CRATE_OPPORTUNITIES_AUDIT.md)
+jsonc-parser = { workspace = true }
+backoff = { workspace = true }

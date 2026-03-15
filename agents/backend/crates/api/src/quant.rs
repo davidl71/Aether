@@ -1,3 +1,6 @@
+//! Calculate (greeks, IV, risk, box spread, etc.) — **library-only: not exposed via NATS**.
+//! See `docs/platform/NATS_API.md` §3. Use `api::quant::calculate_*` from Rust callers only.
+
 use quant::{BoxSpreadResult, ComboResult, Greeks, OptionKind, QuantCalculator, StrategyResult};
 use serde::{Deserialize, Serialize};
 

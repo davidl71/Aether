@@ -86,7 +86,7 @@ Total scripts: 116 (after deduplication)
 - `workspace_ram_disk_manager.sh` - RAM disk management ✅ CONSOLIDATED
 - `setup_platform_settings.sh` - Platform-specific settings
 - `setup_pre_commit_hook.sh` - Git pre-commit hooks
-- `setup_worktree.sh` - Git worktree setup ✅ ACTIVE
+- `setup_worktree.sh` - REMOVED (native build retired; use `git worktree add`)
 - `setup_github_runner_macos.sh` - GitHub runner (macOS)
 - `setup_github_runner_ubuntu.sh` - GitHub runner (Ubuntu)
 - `setup_homebrew_tap.sh` - Homebrew tap setup
@@ -149,7 +149,7 @@ Total scripts: 116 (after deduplication)
 ```bash
 ./scripts/install_ib_gateway.sh  # Install IB Gateway
 ./scripts/install_mlx.sh         # Install MLX
-./scripts/setup_worktree.sh      # Setup git worktree
+git worktree add <path> [branch] # Setup git worktree (script removed)
 ```
 
 ## Migration Notes

@@ -164,7 +164,7 @@ fn restore_terminal() -> color_eyre::Result<()> {
 /// EventStream (crossterm "event-stream" feature) yields futures that compose
 /// naturally with tokio::select!, giving immediate key response at any tick rate.
 ///
-/// TODO(exarp): T-1773357423959019000 — if the app grows to need per-component
+/// TODO(T-1773509396768932000): if the app grows to need per-component
 /// event routing, consider adopting the full ratatui/async-template component
 /// model.
 async fn run_loop(terminal: &mut ratatui::DefaultTerminal, app: &mut App) -> color_eyre::Result<()> {

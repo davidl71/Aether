@@ -5,7 +5,7 @@
 # On macOS, C++ stdlib headers may be missing from CLT. This script checks
 # and suggests: xcode-select --install
 #
-# See: native/CMakeLists.txt for automatic SDK header injection when CLT lacks headers.
+# (Native C++ build removed; script kept for generic C++ toolchain check.)
 
 set -euo pipefail
 

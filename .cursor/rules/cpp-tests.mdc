@@ -1,33 +1,15 @@
 ---
-globs: native/tests/**/*.cpp
+globs: "**/*.cpp"
 alwaysApply: false
 ---
 
-# C++ Test Conventions
+# C++ Tests (Legacy)
 
-When editing or creating test files in `native/tests/`:
+The native C++ test suite (`native/tests/`, Catch2) was removed with the native build.
 
-## Naming
-- File name: `test_<module>.cpp` (mirrors the source file name)
-- Test tags: `[module_name]` (e.g., `[risk_calculator]`)
+- **Rust tests**: `cd agents/backend && cargo test`
+- **Python (nautilus)**: `just test-nautilus` or `cd agents/nautilus && uv run pytest tests/ -v`
+- **TUI E2E**: `just test-tui-e2e`
+- **ShellSpec**: `./scripts/run_tests.sh`
 
-## Framework
-- Catch2 v3: `#include <catch2/catch_test_macros.hpp>`
-- Use `TEST_CASE` with descriptive names and `SECTION` for sub-scenarios
-- For floating-point: `#include <catch2/matchers/catch_matchers_floating_point.hpp>`
-
-## What to Test
-- All public API functions from the corresponding header
-- Edge cases: zero, negative, boundary values
-- Trading-specific: invalid strikes, expired contracts, zero notional, European vs American exercise
-- Error paths: invalid inputs, empty states
-- Numerical precision: use `Catch::Matchers::WithinAbs` or `WithinRel`
-
-## What to Avoid
-- Tests requiring network or TWS connection (use mocks)
-- Hardcoded absolute paths
-- Trivial constructor-only tests with no logic
-
-## Registration
-- New test files must be added to `native/tests/CMakeLists.txt`
-- Run: `ctest --test-dir build -R test_<module> --output-on-failure`
+For new test coverage, prefer Rust unit/integration tests in `agents/backend` and Python in `agents/nautilus/tests/`.

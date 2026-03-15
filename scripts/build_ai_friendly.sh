@@ -22,9 +22,7 @@
 # (Progress still streams to stderr.)
 #
 # Env: CMAKE_PRESET overrides default preset.
-# Env: CLEAN_TWS_API=1 (or unset) — on macOS, remove TWS API sub-build before building so it
-#      reconfigures with SDK C++ and client staging (avoids stale "mutex/string not found" and
-#      Protobuf version mismatch). Set CLEAN_TWS_API=0 to skip (faster rebuilds when TWS is already ok).
+# (Native/TWS build removed; CLEAN_TWS_API no longer used.)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -115,7 +113,6 @@ cd "${PROJECT_ROOT}"
 # shellcheck source=scripts/include/set_parallel_level.sh
 . "${SCRIPT_DIR}/include/set_parallel_level.sh"
 
-# On macOS, force TWS API and optionally Catch2 to reconfigure so SDK/staging and Catch2 version are current
 if [[ "$(uname -s)" == "Darwin" ]]; then
   if [[ "${PRESET}" == *-ramdisk ]]; then
     BUILD_DIR="${PROJECT_ROOT}/build-ramdisk"
@@ -124,17 +121,6 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
   fi
 else
   BUILD_DIR="${PROJECT_ROOT}/build/${PRESET}"
-fi
-if [[ "${ACTION}" == "build" ]] && [[ "$(uname -s)" == "Darwin" ]] && [[ -d "${BUILD_DIR}" ]]; then
-  if [[ "${CLEAN_TWS_API:-1}" != "0" ]]; then
-    rm -rf "${BUILD_DIR}/native/twsapi_external-prefix" "${BUILD_DIR}/tws_api_vendor_build"
-  fi
-  # Clear Catch2 FetchContent cache so next configure uses GIT_TAG v3.5.4 (valid VERSION)
-  if [[ -d "${BUILD_DIR}/_deps/catch2-src" ]]; then
-    if grep -q 'VERSION 3.5.2-develop' "${BUILD_DIR}/_deps/catch2-src/CMakeLists.txt" 2>/dev/null; then
-      rm -rf "${BUILD_DIR}/_deps/catch2-"*
-    fi
-  fi
 fi
 START="$(date +%s.%N)"
 if ${PROGRESS}; then

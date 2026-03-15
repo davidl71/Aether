@@ -153,7 +153,7 @@ When reviewing:
 
 ## Git Workflow
 
-- Use `scripts/setup_worktree.sh` for new worktrees
+- Use `git worktree add <path> [branch]` for new worktrees
 - Commit messages: Imperative mood, 72-character subject lines
 - Never commit build artifacts, logs, or credentials
 - PRs should be focused and atomic

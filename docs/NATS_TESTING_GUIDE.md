@@ -222,13 +222,12 @@ nats sub "test.throughput" | wc -l
 
 ## Phase 2 Integration Testing
 
-### C++ TWS Client Integration ✅
+### Rust backend / NATS ✅
 
-- [x] NATS wrapper implemented (`native/include/nats_client.h`)
-- [x] Integrated into TWSClient (`native/src/tws_client.cpp`)
-- [x] Market data publishing in `tickPrice()` callback
-- [ ] Build with `ENABLE_NATS=ON` and test
-- [ ] Verify market data messages published correctly
+- [x] NATS integration in `agents/backend` (e.g. `nats_adapter`, backend_service)
+- [x] Market data and messaging over NATS
+- Use `cargo test -p nats_adapter` and backend integration tests
+- **Legacy:** C++ NATS wrapper (`native/include/nats_client.h`, `native/src/tws_client.cpp`) was removed with the native build
 
 ### Python Strategy Runner Integration ✅
 

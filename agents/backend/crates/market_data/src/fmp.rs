@@ -6,10 +6,13 @@
 //! FMP is a Tier 2 data source — not used for live trading decisions, but for
 //! fundamental research, financial statement retrieval, and quote sanity checks.
 //!
+//! **NATS API:** FMP/chart/Swiftness/frontend are not exposed via NATS (deferred).
+//! See `docs/platform/NATS_API.md` §3.
+//!
 //! API reference: <https://site.financialmodelingprep.com/developer/docs>
 
 use reqwest::{Client, Url};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tracing::debug;
 
 const DEFAULT_BASE_URL: &str = "https://financialmodelingprep.com/api";
@@ -18,7 +21,7 @@ const DEFAULT_BASE_URL: &str = "https://financialmodelingprep.com/api";
 // Response types
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IncomeStatement {
     pub symbol: String,
@@ -31,7 +34,7 @@ pub struct IncomeStatement {
     pub eps_diluted: Option<f64>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BalanceSheet {
     pub symbol: String,
@@ -43,7 +46,7 @@ pub struct BalanceSheet {
     pub total_debt: Option<f64>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CashFlowStatement {
     pub symbol: String,
@@ -55,7 +58,7 @@ pub struct CashFlowStatement {
 }
 
 /// Real-time quote used for cross-validation against TWS data.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FmpQuote {
     pub symbol: String,

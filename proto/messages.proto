@@ -244,9 +244,9 @@ message NatsEnvelope {
 // ---------------------------------------------------------------------------
 
 enum OptionTypeEnum {
-  OPTION_TYPE_UNSPECIFIED = 0;
-  OPTION_TYPE_CALL = 1;
-  OPTION_TYPE_PUT = 2;
+  OPTION_TYPE_ENUM_UNSPECIFIED = 0;
+  OPTION_TYPE_ENUM_CALL = 1;
+  OPTION_TYPE_ENUM_PUT = 2;
 }
 
 message OptionContract {
@@ -382,6 +382,48 @@ message DiscountBankTransaction {
   bool is_debit = 3;
   string reference = 4;
   string account_id = 5;
+}
+
+// ---------------------------------------------------------------------------
+// Loans (synthetic loan positions / bank loans API)
+// ---------------------------------------------------------------------------
+
+enum LoanType {
+  LOAN_TYPE_UNSPECIFIED = 0;
+  LOAN_TYPE_SHIR_BASED = 1;
+  LOAN_TYPE_CPI_LINKED = 2;
+}
+
+enum LoanStatus {
+  LOAN_STATUS_UNSPECIFIED = 0;
+  LOAN_STATUS_ACTIVE = 1;
+  LOAN_STATUS_PAID_OFF = 2;
+  LOAN_STATUS_DEFAULTED = 3;
+}
+
+message Loan {
+  string loan_id = 1;
+  string bank_name = 2;
+  string account_number = 3;
+  LoanType loan_type = 4;
+  double principal = 5;
+  double original_principal = 6;
+  double interest_rate = 7;
+  double spread = 8;
+  double base_cpi = 9;
+  double current_cpi = 10;
+  string origination_date = 11;
+  string maturity_date = 12;
+  string next_payment_date = 13;
+  double monthly_payment = 14;
+  int32 payment_frequency_months = 15;
+  LoanStatus status = 16;
+  string last_update = 17;
+}
+
+// List response for GET /api/v1/loans with Accept: application/x-protobuf
+message LoansResponse {
+  repeated Loan loans = 1;
 }
 
 // ---------------------------------------------------------------------------

@@ -17,7 +17,10 @@ pub use bridge::{ChannelBridge, Publisher, Subscriber};
 pub use client::NatsClient;
 pub use dlq::{error_type_from_error, DeadLetterMessage, DlqConfig, DlqService};
 pub use error::{NatsAdapterError, Result};
-pub use rpc::{request_proto, request_proto_with_timeout, serve_proto};
+pub use rpc::{
+    request_json, request_json_with_timeout, request_proto, request_proto_with_timeout, serve_json,
+    serve_proto,
+};
 pub use serde::{
     decode_envelope, decode_proto, encode_envelope, encode_proto, extract_proto_payload,
 };

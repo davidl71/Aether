@@ -35,6 +35,7 @@ fn ts_to_dt(ts: Option<Timestamp>) -> DateTime<Utc> {
 }
 
 fn proto_to_snapshot(p: pb::SystemSnapshot) -> RuntimeSnapshotDto {
+    let account_id = p.account_id.clone();
     let positions: Vec<PositionSnapshot> = p
         .positions
         .into_iter()
@@ -45,6 +46,7 @@ fn proto_to_snapshot(p: pb::SystemSnapshot) -> RuntimeSnapshotDto {
             cost_basis: pos.cost_basis,
             mark: pos.mark,
             unrealized_pnl: pos.unrealized_pnl,
+            account_id: Some(account_id.clone()),
         })
         .collect();
 

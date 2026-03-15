@@ -269,9 +269,9 @@ Run CLI with config file (dry-run).
 
 ### `setup:worktree`
 
-Setup new git worktree with build.
+Show git worktree help. To create a worktree use: `git worktree add <path> [branch]`.
 
-**Command**: `./scripts/setup_worktree.sh`
+**Command**: `git worktree --help`
 
 **Use When**: Creating isolated development environment
 
@@ -365,9 +365,9 @@ Check TWS API download and setup.
 
 Check feature parity across implementations.
 
-**Command**: `./scripts/check_feature_parity.sh`
+**Command**: `check:feature-parity` (prints doc path; script `scripts/check_feature_parity.sh` is not present — see `docs/platform/TUI_CLI_FEATURE_PARITY.md`)
 
-**Use When**: Ensuring consistency across language implementations
+**Use When**: Ensuring consistency across TUI vs CLI implementations
 
 ---
 

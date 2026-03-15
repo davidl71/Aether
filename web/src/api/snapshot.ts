@@ -1,7 +1,7 @@
 import type { DeltaMessage, SnapshotPayload } from '../types/snapshot';
 
-// TODO(exarp): T-1772887222103963807 — WebSocket delta compression (P2-A)
-// TODO(exarp): T-1772887222509770969 — EPIC: ConnectRPC streaming (E1)
+// TODO(T-1772887222103963807): WebSocket delta compression (P2-A)
+// TODO(T-1772887222509770969): EPIC: ConnectRPC streaming (E1)
 // MIGRATION PLAN: Replace full-snapshot polling with delta updates.
 // Current: Rust WS backend sends complete SystemSnapshot every 2s regardless of changes.
 // Target: Server sends only changed sections (positions, rates, health) as JSON patches.

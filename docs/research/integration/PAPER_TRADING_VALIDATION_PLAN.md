@@ -464,7 +464,6 @@ Use this template for tracking issues found during validation:
 
 ## References
 
-- `docs/MERGED_ACTION_PLAN.md` - Source of validation requirements
 - `docs/TESTING_STRATEGY.md` - Comprehensive testing strategy
 - `native/tests/test_tws_integration.cpp` - Integration tests
 - `native/tests/test_market_data_integration.cpp` - Market data tests

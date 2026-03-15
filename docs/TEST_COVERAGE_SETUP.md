@@ -1,87 +1,49 @@
 # Test Coverage Setup Guide
 
 **Date**: 2025-11-29
-**Status**: ✅ **Setup Complete**
+**Status**: ✅ **Setup Complete** (updated for Rust-first; native C++ removed)
+
+> **Note:** The native C++ build and C++ coverage tooling were removed. This guide now focuses on **Rust** and **Python (nautilus)** coverage.
 
 ---
 
 ## Overview
 
-This guide documents the test coverage setup for achieving 30%+ code coverage across C++ and Python codebases.
+This guide documents test coverage for the Rust backend and Python (nautilus) codebases.
 
 ---
 
-## C++ Test Coverage (gcov/lcov)
+## Rust Test Coverage (cargo-llvm-cov / tarpaulin)
 
 ### Prerequisites
 
 ```bash
+# Install cargo-llvm-cov (recommended)
+cargo install cargo-llvm-cov
 
-# Install coverage tools
-
-sudo apt-get install -y gcov lcov  # Linux
-brew install lcov                   # macOS
+# Or tarpaulin
+cargo install cargo-tarpaulin
 ```
 
-### Build with Coverage
+### Run Tests with Coverage
 
 ```bash
+cd agents/backend
 
-# Configure CMake with coverage flags
+# Using cargo-llvm-cov (requires nightly or stable with llvm-tools)
+cargo llvm-cov test --lcov --output-path lcov.info
+cargo llvm-cov report
 
-cd native
-mkdir -p build-coverage
-cd build-coverage
-cmake .. \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_CXX_FLAGS="--coverage -g -O0" \
-  -DCMAKE_EXE_LINKER_FLAGS="--coverage"
-
-# Build
-
-cmake --build .
-
-# Run tests
-
-ctest --output-on-failure
+# Or using tarpaulin
+cargo tarpaulin --out Html --output-dir coverage
+open coverage/tarpaulin-report.html
 ```
 
-### Generate Coverage Report
+### Focus Areas
 
-```bash
-
-# Generate coverage data
-
-lcov --capture --directory . --output-file coverage.info
-
-# Remove system/external includes
-
-lcov --remove coverage.info \
-  '/usr/*' \
-  '*/third_party/*' \
-  '*/tests/*' \
-  --output-file coverage_filtered.info
-
-# Generate HTML report
-
-genhtml coverage_filtered.info --output-directory coverage_html
-
-# Open report
-
-open coverage_html/index.html  # macOS
-xdg-open coverage_html/index.html  # Linux
-```
-
-### Coverage Target: 30%
-
-**Current Status**: Baseline measurement needed
-**Target**: 30%+ coverage
-**Focus Areas**:
-
-- Security: `path_validator.cpp` ✅ (tests added)
-- Core: `box_spread_strategy.cpp`, `order_manager.cpp`, `risk_calculator.cpp`
-- API clients: `tws_client.cpp`, `http_client.cpp`
-- Configuration: `config_manager.cpp`, `tui_config.cpp`
+- **risk**, **quant**, **api**, **ib_adapter** crates — core logic
+- **nats_adapter** — messaging
+- **tui_service**, **backend_service** — integration
 
 ---
 
@@ -99,186 +61,49 @@ pip install pytest pytest-cov coverage
 ### Run Tests with Coverage
 
 ```bash
-
-# Run all Python tests with coverage
-
-pytest python/tests/ python/integration/ \
-  --cov=python/services \
-  --cov=python/tui \
-  --cov-report=html \
-  --cov-report=term
-
-# View HTML report
-
+cd agents/nautilus
+uv run pytest tests/ -v --cov=nautilus_agent --cov-report=html --cov-report=term
 open htmlcov/index.html  # macOS
-xdg-open htmlcov/index.html  # Linux
 ```
 
 ### Coverage Configuration
 
-**File**: `.coveragerc` (root directory) - ✅ **Already Created**
+Use a `.coveragerc` in `agents/nautilus/` or pass `--cov` as above.
 
-The coverage configuration file is located at the project root and includes:
-
-- Source paths: `python/services`, `python/tui`, `python/integration`
-- Exclusions: Tests, `__pycache__`, bindings, setup files
-- Branch coverage: Enabled
-- Report precision: 2 decimal places
-
-### Coverage Target: 30%
-
-**Current Status**: Baseline measurement needed
-**Target**: 30%+ coverage
-**Focus Areas**:
-
-- Security: `python/services/security.py` ✅ (tests exist)
-- Services: `python/services/swiftness_api.py`
-- Integration: `python/integration/`
+**Focus areas**: `nautilus_agent` (strategy, NATS bridge).
 
 ---
 
 ## Test Infrastructure
 
-### C++ Tests (Catch2)
+### Rust Tests
 
-**Location**: `native/tests/`
-**Framework**: Catch2
-**Run**: `ctest --test-dir build --output-on-failure`
+**Location**: `agents/backend`
+**Run**: `cd agents/backend && cargo test`
 
-**Test Files**:
+### Python Tests (nautilus)
 
-- ✅ `test_path_validator.cpp` - Path validation security tests
-- `test_rate_limiter.cpp` - Rate limiting tests
-- `test_box_spread_strategy.cpp` - Core strategy tests
-- `test_tws_client.cpp` - TWS API client tests
-- `test_order_manager.cpp` - Order management tests
-- `test_risk_calculator.cpp` - Risk calculation tests
-
-### Python Tests (pytest/unittest)
-
-**Location**: `python/tests/`, `python/integration/`
-**Framework**: pytest, unittest
-**Run**: `pytest python/tests/` or `python -m unittest discover`
-
-**Test Files**:
-
-- ✅ `python/tests/test_security.py` - Security tests (unittest)
-- `python/tests/run_security_tests.py` - Security test runner
-- `scripts/swiftness_integration_manual.py` – Manual Swiftness integration check (run from repo root: `python scripts/swiftness_integration_manual.py`)
-
-(Test cleanup and deduplication are complete; follow-up doc removed.)
+**Location**: `agents/nautilus/tests/`
+**Run**: `just test-python` or `cd agents/nautilus && uv run pytest tests/ -v`
 
 ## Running Tests
 
-### C++ Tests
+### Rust
 
 ```bash
-
-# Build tests
-
-cd native
-mkdir -p build
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
-cmake --build .
-
-# Run all tests
-
-ctest --output-on-failure
-
-# Run specific test
-
-./box_spread_tests "[path_validator]"
+cd agents/backend
+cargo test
+cargo test -p risk
+cargo test -p backend_service --test integration_test -- --ignored
 ```
 
-### Python Tests
+### Python (nautilus)
 
 ```bash
-
-# Run all tests (using test runner script)
-
-./scripts/run_python_tests.sh
-
-# Run with coverage
-
-./scripts/run_python_tests.sh --coverage
-
-# Run with HTML coverage report
-
-./scripts/run_python_tests.sh --html
-
-# Or use pytest directly
-
-pytest python/tests/ python/integration/
-
-# Run specific test file
-
-pytest python/tests/test_security.py
-
-# Run with unittest
-
-python python/tests/run_security_tests.py
+cd agents/nautilus
+uv run pytest tests/ -v
+uv run pytest tests/test_strategy.py -v
 ```
-
----
-
-## Coverage Generation Scripts
-
-### Automated Coverage Generation
-
-We've created automated scripts to generate coverage reports:
-
-#### Python Coverage
-
-```bash
-# Generate Python coverage report
-./scripts/generate_python_coverage.sh
-
-# Generate with HTML report
-./scripts/generate_python_coverage.sh --html
-
-# Generate with XML report (for CI/CD)
-./scripts/generate_python_coverage.sh --xml
-
-# Generate all report formats
-./scripts/generate_python_coverage.sh --all
-```
-
-#### C++ Coverage
-
-```bash
-# Generate C++ coverage report
-./scripts/generate_cpp_coverage.sh
-
-# Rebuild with coverage enabled
-./scripts/generate_cpp_coverage.sh --rebuild
-```
-
-#### Combined Coverage
-
-```bash
-# Generate both C++ and Python coverage
-./scripts/generate_coverage.sh
-
-# Generate only Python coverage
-./scripts/generate_coverage.sh --python-only
-
-# Generate only C++ coverage
-./scripts/generate_coverage.sh --cpp-only
-
-# Generate with HTML reports
-./scripts/generate_coverage.sh --html
-```
-
-### Coverage Configuration
-
-**File**: `.coveragerc` (root directory)
-
-**Source paths**: `python/services`, `python/tui`, `python/integration`
-
-**Exclusions**: Tests, `__pycache__`, bindings, setup files
-
-**Branch coverage**: Enabled
 
 ---
 
@@ -320,10 +145,8 @@ We've created automated scripts to generate coverage reports:
 
 ### Coverage Report Locations
 
-- **Python HTML Report**: `htmlcov/index.html`
-- **C++ HTML Report**: `native/build-coverage/coverage_html/index.html`
-- **Python XML Report**: `coverage.xml` (for CI/CD integration)
-- **C++ Coverage Data**: `native/build-coverage/coverage_filtered.info`
+- **Rust**: `agents/backend/coverage/` (tarpaulin) or `lcov.info` (cargo-llvm-cov)
+- **Python (nautilus)**: `agents/nautilus/htmlcov/index.html`, `coverage.xml` for CI
 
 ### Troubleshooting Coverage Issues
 
@@ -336,17 +159,17 @@ We've created automated scripts to generate coverage reports:
 
 #### Coverage Not Generating
 
-1. **Verify tools installed**: `pytest-cov` for Python, `lcov` for C++
-2. **Check build flags**: C++ needs `--coverage` flags in CMake
+1. **Verify tools installed**: `pytest-cov` for Python, `cargo-llvm-cov` or `cargo-tarpaulin` for Rust
+2. **Rust**: Run from `agents/backend`; ensure `cargo test` passes first
 3. **Verify test execution**: Tests must run to generate coverage data
 4. **Check file paths**: Ensure coverage tools can find source files
 
 #### Coverage Reports Not Updating
 
-1. **Clear old reports**: Delete `htmlcov/` and rebuild
-2. **Rebuild with coverage**: Use `--rebuild` flag for C++
+1. **Clear old reports**: Delete `htmlcov/` or `coverage/` and re-run
+2. **Rust**: Run `cargo clean` then `cargo llvm-cov test` (or tarpaulin) again
 3. **Verify test execution**: Ensure tests actually ran
-4. **Check coverage data**: Verify `.coverage` (Python) or `coverage.info` (C++) exists
+4. **Check coverage data**: Verify `.coverage` (Python) or `lcov.info` (Rust) exists
 
 ---
 
@@ -366,17 +189,12 @@ We've created automated scripts to generate coverage reports:
 ### Common Commands
 
 ```bash
-# Run Python tests with coverage
-./scripts/run_python_tests.sh --coverage
+# Rust coverage (from agents/backend)
+cargo llvm-cov test --lcov --output-path lcov.info && cargo llvm-cov report
 
-# Generate all coverage reports
-./scripts/generate_coverage.sh --html
-
-# View Python coverage report
-open htmlcov/index.html
-
-# View C++ coverage report
-open native/build-coverage/coverage_html/index.html
+# Python (nautilus) coverage
+cd agents/nautilus && uv run pytest tests/ --cov=nautilus_agent --cov-report=html
+open agents/nautilus/htmlcov/index.html
 ```
 
 ---

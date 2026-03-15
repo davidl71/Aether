@@ -2,7 +2,9 @@
 
 **Date**: 2025-01-16
 **Version**: 1.0
-**Status**: Active
+**Status**: Active (updated for Rust-first; native C++ tests removed)
+
+> **Note:** The native C++ build and Catch2 test suite were removed. Current testing is **Rust** (`agents/backend`, `cargo test`), **Python** (`agents/nautilus`, `pytest`), **TUI E2E** (`just test-tui-e2e`), and **ShellSpec** (`./scripts/run_tests.sh`). See [FUTURE_IMPROVEMENTS.md](../../planning/FUTURE_IMPROVEMENTS.md) for the list of stale test docs.
 
 ---
 
@@ -25,11 +27,11 @@
 
 ### Current State
 
-- **Unit Tests**: ✅ 3,123 lines across 10 test files (comprehensive)
-- **Integration Tests**: 🟡 Minimal (needs expansion)
-- **End-to-End Tests**: ❌ Missing
-- **Paper Trading**: ❌ Not documented
-- **Performance Tests**: ❌ Missing
+- **Rust unit/integration**: `cd agents/backend && cargo test`
+- **Python (nautilus)**: `just test-python` or `just test-nautilus`
+- **TUI E2E**: `just test-tui-e2e`
+- **ShellSpec (scripts)**: `./scripts/run_tests.sh`
+- **Paper Trading**: Use Rust backend/TUI with paper port (7497)
 - **CI/CD**: 🟡 Basic setup exists
 
 ### Goals
@@ -42,9 +44,10 @@
 
 ### Test Framework
 
-- **Unit/Integration**: Catch2
-- **Mocking**: Manual mocks (consider adding gmock)
-- **Build System**: CMake + CTest
+- **Rust**: `cargo test` (agents/backend)
+- **Python**: pytest (agents/nautilus)
+- **TUI E2E**: @microsoft/tui-test (tui-e2e)
+- **Shell scripts**: ShellSpec
 - **CI/CD**: GitHub Actions (recommended)
 
 ---
@@ -74,50 +77,19 @@
 
 ## Unit Testing
 
-### Status: ✅ Comprehensive (Already Implemented)
+### Status: ✅ Rust and Python (current)
 
-**Existing Coverage** (3,123 lines):
+**Rust** (`agents/backend`):
 
-1. `test_box_spread_strategy.cpp` (234 lines)
-   - BoxSpreadValidator tests
-   - BoxSpreadCalculator tests
-   - Opportunity detection tests
+- `cargo test` — all crates (api, risk, quant, ib_adapter, nats_adapter, etc.)
+- Add tests in `crates/<name>/src/` or `crates/<name>/tests/`
 
-2. `test_order_manager.cpp` (339 lines)
-   - Order validation tests
-   - Order placement tests (dry-run)
-   - Multi-leg tracking tests
+**Python** (`agents/nautilus`):
 
-3. `test_tws_client.cpp` (444 lines)
-   - Connection tests
-   - Market data tests
-   - Order status tests
+- `just test-nautilus` or `cd agents/nautilus && uv run pytest tests/ -v`
+- Strategy and NATS bridge tests in `agents/nautilus/tests/`
 
-4. `test_rate_limiter.cpp` (478 lines)
-   - Message rate limiting tests
-   - Historical request limiting tests
-   - Market data line limiting tests
-   - Stale request cleanup tests
-
-5. `test_option_chain.cpp` (436 lines)
-   - Option chain data structure tests
-   - Strike filtering tests
-   - Expiry filtering tests
-
-6. `test_box_spread_bag.cpp` (383 lines)
-   - BAG order construction tests
-   - Combo leg validation tests
-
-7. `test_hedge_manager.cpp` (337 lines)
-   - Hedge calculation tests
-   - Position tracking tests
-
-8. `test_risk_calculator.cpp` (269 lines)
-   - Risk metrics tests
-   - Position sizing tests
-
-9. `test_config_manager.cpp` (185 lines)
-   - Configuration parsing tests
+**Legacy (removed):** The previous C++ Catch2 suite (e.g. test_box_spread_strategy.cpp, test_order_manager.cpp, test_tws_client.cpp, test_rate_limiter.cpp, test_risk_calculator.cpp) was removed with the native build. Equivalent coverage is in Rust crates and nautilus tests
    - Validation tests
 
 10. `test_main.cpp` (18 lines)
@@ -177,7 +149,7 @@ Integration tests verify that components work together correctly.
 
 #### 1. TWS Connection Integration Tests
 
-**File**: `native/tests/test_tws_integration.cpp` (NEW)
+**Rust**: `agents/backend` integration tests (e.g. `cargo test -p backend_service --test integration_test`). Legacy: `native/tests/test_tws_integration.cpp` removed.
 **Purpose**: Verify TWS client connection lifecycle
 **Estimated Lines**: 300-400
 
@@ -255,7 +227,7 @@ TEST_CASE("TWS connection lifecycle", "[integration][tws]") {
 
 #### 2. Market Data Pipeline Integration Tests
 
-**File**: `native/tests/test_market_data_integration.cpp` (NEW)
+**Rust**: Market data flows in `agents/backend` (ib_adapter, NATS). Legacy: `native/tests/test_market_data_integration.cpp` removed.
 **Purpose**: Verify market data subscription, updates, and processing
 **Estimated Lines**: 400-500
 
@@ -336,7 +308,7 @@ TEST_CASE("Market data pipeline end-to-end", "[integration][market_data]") {
 
 #### 3. Box Spread End-to-End Integration Tests
 
-**File**: `native/tests/test_box_spread_e2e.cpp` (NEW)
+**Rust/TUI**: E2E via `just test-tui-e2e`. Legacy: `native/tests/test_box_spread_e2e.cpp` removed.
 **Purpose**: Verify complete box spread workflow from discovery to execution
 **Estimated Lines**: 500-600
 
@@ -429,7 +401,7 @@ TEST_CASE("Box spread workflow end-to-end", "[integration][e2e][box_spread]") {
 
 #### 4. Order Manager Integration Tests (Extension)
 
-**File**: Extend `native/tests/test_order_manager.cpp`
+**Rust**: Order/execution paths in `agents/backend` (api, ib_adapter). Legacy: `native/tests/test_order_manager.cpp` removed.
 **Purpose**: Test order manager with real TWS client (mocked)
 **Additional Lines**: +200-300
 
@@ -1282,8 +1254,6 @@ ctest --test-dir build --output-on-failure > test_report.txt
 
 ## Related Documentation
 
-- **MERGED_ACTION_PLAN.md** - Implementation priorities
-- **CODE_VERIFICATION_REVIEW.md** - Current implementation status
 - **TWS_API_BEST_PRACTICES.md** - TWS integration patterns
 
 ---
@@ -1305,9 +1275,9 @@ ctest --test-dir build -R test_box_spread_strategy --output-on-failure
 **Run Tests by Tag**:
 
 ```bash
-./build/native/tests/test_runner "[unit]"
-./build/native/tests/test_runner "[integration]"
-./build/native/tests/test_runner "[e2e]"
+cd agents/backend && cargo test
+cd agents/backend && cargo test --test integration_test
+just test-tui-e2e
 ```
 
 **Run with Verbose Output**:

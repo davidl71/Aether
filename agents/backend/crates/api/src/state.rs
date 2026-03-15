@@ -99,7 +99,7 @@ impl SystemSnapshot {
         self.strategy = "RUNNING".into();
         let order_id = format!("ORD-{}", Utc::now().timestamp_millis());
         let mut runtime_state = RuntimeExecutionState::from_snapshot(self);
-        let update = runtime_state.apply_strategy_decision(&decision, order_id.clone());
+        let update = runtime_state.apply_strategy_decision(&decision, order_id.clone(), &self.account_id);
         runtime_state.project_into_snapshot(self);
 
         match update {
@@ -309,6 +309,9 @@ pub struct PositionSnapshot {
     pub cost_basis: f64,
     pub mark: f64,
     pub unrealized_pnl: f64,
+    /// Account identifier for multi-account systems (optional for backward compatibility).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub account_id: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

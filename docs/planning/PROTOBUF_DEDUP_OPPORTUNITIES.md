@@ -9,7 +9,7 @@
 
 - **`proto/messages.proto`** defines: `MarketDataEvent`, `CandleSnapshot`, `SymbolSnapshot`, `Position`, `HistoricPosition`, `Order`, `StrategyDecision`, `StrategySignal`, `RiskStatus`, `RiskLimit`, `Alert`, `Metrics`, `SystemSnapshot`, `NatsEnvelope`, `BoxSpreadScenario`, `BoxSpreadExecution`.
 - **C++**: `native/generated/`, `proto_adapter` for boundary serialization; canonical logic stays in C++.
-- **Python**: `python/generated/__init__.py` expects `messages_pb2` and references **messages not yet in the proto**: `OptionContract`, `BoxSpreadLeg`, `BoxSpreadOpportunity`, `StrategyParams`, `RiskDecision`, `PositionRisk`, `PortfolioRisk`, `DiscountBankBalance`, `DiscountBankTransaction`, `BankAccount`, `YieldCurvePoint`, `YieldCurve`. So Python still uses:
+- **Python**: `python/generated/` is generated from `proto/messages.proto`. The proto **already defines** `OptionContract`, `BoxSpreadLeg`, `BoxSpreadOpportunity`, `StrategyParams`, `RiskDecision`, `PositionRisk`, `PortfolioRisk`, `DiscountBankBalance`, `DiscountBankTransaction`, `BankAccount`, `YieldCurvePoint`, `YieldCurve`. Remaining work is to ensure Python boundary code uses generated types and to retire mirrors. So Python may still use:
   - **`python/proto_types.py`** — hand-written dataclasses mirroring the proto (duplication).
   - **`python/integration/box_spread_models.py`** — its own `OptionContract`, `BoxSpreadLeg`, etc. (duplication).
 - **TypeScript**: **`web/src/types/proto.ts`** — hand-written interfaces mirroring the proto (duplication). ts-proto in `proto/generate.sh` writes to `web/src/proto`; `web/src/generated/proto/` holds TWS API–generated types, not `messages.proto`.
@@ -22,13 +22,13 @@
 
 ### 2.1 Extend `proto/messages.proto` (single schema)
 
-Add the DTOs already assumed by `python/generated/__init__.py` and by the cross-language plan so all languages share one schema:
+**Status:** The DTOs below are **already in** `proto/messages.proto`. Remaining work is wiring consumers to generated code.
 
 - **Box spread domain:** `OptionContract`, `OptionTypeEnum`, `BoxSpreadLeg`, `BoxSpreadOpportunity`, `StrategyParams`, `YieldCurvePoint`, `YieldCurve`.
-- **Risk reporting:** `RiskDecision`, `PositionRisk`, `PortfolioRisk` (or extend existing `RiskLimit`/`RiskStatus`).
+- **Risk reporting:** `RiskDecision`, `PositionRisk`, `PortfolioRisk` (and existing `RiskLimit`/`RiskStatus`).
 - **Discount bank:** `DiscountBankBalance`, `DiscountBankTransaction`, `BankAccount`.
 
-**Effect:** Enables Python and Rust to use generated types everywhere at boundaries; allows retiring manual mirrors once codegen is wired.
+**Effect:** Python and Rust can use generated types at boundaries; retire manual mirrors once codegen is wired. See `docs/platform/PROTO_OPPORTUNITIES_AND_BUF_CONFIG.md` for further opportunities and buf config options.
 
 ### 2.2 Wire Python codegen and retire mirrors
 
@@ -64,7 +64,7 @@ Add the DTOs already assumed by `python/generated/__init__.py` and by the cross-
 
 ## 4. Suggested Order
 
-1. **Extend `messages.proto`** with the missing DTOs (OptionContract, BoxSpreadLeg, YieldCurve, discount bank, risk reporting) and regenerate all languages.
+1. **Proto schema:** `messages.proto` already defines OptionContract, BoxSpreadLeg, BoxSpreadOpportunity, BankAccount, DiscountBankBalance, etc. Remaining work is wiring Python/TS to generated code and retiring mirrors; regenerate all languages after any schema change.
 2. **Align Python** generated output and `python/generated/__init__.py`; migrate boundary code from `proto_types.py` and `box_spread_models.py` to generated types; deprecate manual mirrors.
 3. **Wire ts-proto** for `messages.proto` into `web/src/generated/proto/` and switch `web/src/types/proto.ts` to generated imports.
 4. **NATS:** Switch C++ publish path to protobuf; update Python/Rust subscribers.
@@ -74,6 +74,7 @@ Add the DTOs already assumed by `python/generated/__init__.py` and by the cross-
 
 ## 5. References
 
+- `docs/platform/PROTO_OPPORTUNITIES_AND_BUF_CONFIG.md` — Where else to use proto, buf config options (WIRE_JSON, enum_zero_value_suffix), and cross-ref to this doc
 - `docs/planning/CROSS_LANGUAGE_DEDUP_PLAN.md` — Phases 1–6 status and file ownership
 - `docs/planning/NATS_PROTOBUF_MIGRATION.md` — NATS message mapping and steps
 - `docs/analysis/REFACTORING_AND_DEAD_CODE_AUDIT.md` — Dead proto/gRPC, dedup estimates

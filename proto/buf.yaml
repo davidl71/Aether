@@ -4,7 +4,16 @@ modules:
     name: buf.build/dlowes/ib-platform
 lint:
   use:
-    - DEFAULT
+    - STANDARD
+  # Keep messages.proto at repo root proto/ for existing codegen paths
+  except:
+    - PACKAGE_DIRECTORY_MATCH
+  # Enforce _UNSPECIFIED for enum zero value (e.g. OPTION_TYPE_ENUM_UNSPECIFIED)
+  enum_zero_value_suffix: _UNSPECIFIED
 breaking:
   use:
     - FILE
+  # Allow enum value renames (e.g. OPTION_TYPE_* → OPTION_TYPE_ENUM_* for lint) while keeping other FILE rules.
+  # ENUM_VALUE_SAME_NAME would otherwise fail when only the name changes and the number stays the same.
+  except:
+    - ENUM_VALUE_SAME_NAME

@@ -8,7 +8,7 @@ use tui_logger::{TuiWidgetEvent, TuiWidgetState};
 
 use crate::config::TuiConfig;
 use crate::events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget};
-use crate::models::{SnapshotSource, TuiSnapshot};
+use crate::models::TuiSnapshot;
 
 const SPARKLINE_HISTORY_SIZE: usize = 20;
 
@@ -130,20 +130,9 @@ impl App {
         }
     }
 
-    fn should_accept_snapshot(&self, incoming: &TuiSnapshot) -> bool {
-        let Some(current) = self.snapshot.as_ref() else {
-            return true;
-        };
-
-        if incoming.source == SnapshotSource::Nats {
-            return true;
-        }
-
-        if current.source != SnapshotSource::Nats {
-            return true;
-        }
-
-        current.is_stale(self.config.snapshot_stale_after_secs())
+    fn should_accept_snapshot(&self, _incoming: &TuiSnapshot) -> bool {
+        // NATS-only: always accept the latest snapshot.
+        true
     }
 
     fn update_roi_history(&mut self, snap: &TuiSnapshot) {
@@ -237,6 +226,7 @@ mod tests {
         models::{SnapshotSource, TuiSnapshot},
     };
 
+    #[allow(dead_code)] // test helper for future snapshot tests
     fn snapshot(source: SnapshotSource) -> TuiSnapshot {
         TuiSnapshot {
             inner: RuntimeSnapshotDto {
@@ -269,39 +259,6 @@ mod tests {
         let (_config_tx, config_rx) = watch::channel(TuiConfig::default());
         let app = App::new(TuiConfig::default(), snap_rx, event_rx, config_rx);
         (app, snap_tx, event_tx)
-    }
-
-    #[test]
-    fn rest_snapshot_does_not_replace_fresh_nats_snapshot() {
-        let (mut app, tx, _) = make_app();
-
-        app.snapshot = Some(snapshot(SnapshotSource::Nats));
-        tx.send(Some(snapshot(SnapshotSource::Rest)))
-            .expect("send rest snapshot");
-        app.tick();
-
-        assert_eq!(
-            app.snapshot.as_ref().map(|snap| &snap.source),
-            Some(&SnapshotSource::Nats)
-        );
-    }
-
-    #[test]
-    fn rest_snapshot_replaces_stale_nats_snapshot() {
-        let (mut app, tx, _) = make_app();
-
-        let mut stale_nats = snapshot(SnapshotSource::Nats);
-        stale_nats.received_at = Utc::now() - Duration::seconds(5);
-        app.snapshot = Some(stale_nats);
-
-        tx.send(Some(snapshot(SnapshotSource::Rest)))
-            .expect("send rest snapshot");
-        app.tick();
-
-        assert_eq!(
-            app.snapshot.as_ref().map(|snap| &snap.source),
-            Some(&SnapshotSource::Rest)
-        );
     }
 
     #[test]

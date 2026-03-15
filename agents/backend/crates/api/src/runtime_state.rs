@@ -17,6 +17,8 @@ pub struct RuntimePositionState {
     pub cost_basis: f64,
     pub mark: f64,
     pub unrealized_pnl: f64,
+    /// Account identifier for multi-account systems; set from snapshot or decision context.
+    pub account_id: Option<String>,
 }
 
 impl From<&PositionSnapshot> for RuntimePositionState {
@@ -28,6 +30,7 @@ impl From<&PositionSnapshot> for RuntimePositionState {
             cost_basis: value.cost_basis,
             mark: value.mark,
             unrealized_pnl: value.unrealized_pnl,
+            account_id: value.account_id.clone(),
         }
     }
 }
@@ -41,6 +44,7 @@ impl From<RuntimePositionState> for PositionSnapshot {
             cost_basis: value.cost_basis,
             mark: value.mark,
             unrealized_pnl: value.unrealized_pnl,
+            account_id: value.account_id,
         }
     }
 }
@@ -121,6 +125,8 @@ pub struct RuntimeDecisionState {
     pub side: String,
     pub mark: f64,
     pub created_at: DateTime<Utc>,
+    /// Optional producer metadata for filtering by producer type, correlation ID, etc.
+    pub metadata: Option<ProducerMetadata>,
 }
 
 /// Type of producer that generated a decision or event
@@ -312,6 +318,20 @@ impl From<&StrategyDecisionSnapshot> for RuntimeDecisionState {
             side: value.side.clone(),
             mark: value.mark,
             created_at: value.created_at,
+            metadata: None,
+        }
+    }
+}
+
+impl From<&RuntimeProducerDecision> for RuntimeDecisionState {
+    fn from(value: &RuntimeProducerDecision) -> Self {
+        Self {
+            symbol: value.symbol.clone(),
+            quantity: value.quantity,
+            side: value.side.clone(),
+            mark: value.mark,
+            created_at: value.created_at,
+            metadata: value.metadata.clone(),
         }
     }
 }
@@ -342,7 +362,13 @@ impl RuntimeExecutionState {
             positions: snapshot
                 .positions
                 .iter()
-                .map(RuntimePositionState::from)
+                .map(|p| {
+                    let mut r = RuntimePositionState::from(p);
+                    if r.account_id.is_none() {
+                        r.account_id = Some(snapshot.account_id.clone());
+                    }
+                    r
+                })
                 .collect(),
             historic: snapshot
                 .historic
@@ -366,19 +392,66 @@ impl RuntimeExecutionState {
         &mut self,
         decision: &StrategyDecisionSnapshot,
         order_id: String,
+        account_id: &str,
     ) -> RuntimeExecutionUpdate {
         self.decisions.push(RuntimeDecisionState::from(decision));
         if self.decisions.len() > 50 {
             self.decisions.remove(0);
         }
+        self.apply_decision_order_and_position(
+            &decision.symbol,
+            decision.quantity,
+            &decision.side,
+            decision.mark,
+            decision.created_at,
+            order_id,
+            account_id,
+        )
+    }
 
+    /// Apply a producer decision (with metadata) so it can be filtered by producer type or correlation ID.
+    pub fn apply_producer_decision(
+        &mut self,
+        decision: &RuntimeProducerDecision,
+        order_id: String,
+        account_id: &str,
+    ) -> RuntimeExecutionUpdate {
+        self.decisions.push(RuntimeDecisionState::from(decision));
+        if self.decisions.len() > 50 {
+            self.decisions.remove(0);
+        }
+        let account = decision
+            .account_id()
+            .unwrap_or(account_id)
+            .to_string();
+        self.apply_decision_order_and_position(
+            &decision.symbol,
+            decision.quantity,
+            &decision.side,
+            decision.mark,
+            decision.created_at,
+            order_id,
+            &account,
+        )
+    }
+
+    fn apply_decision_order_and_position(
+        &mut self,
+        symbol: &str,
+        quantity: i32,
+        side: &str,
+        mark: f64,
+        created_at: DateTime<Utc>,
+        order_id: String,
+        account_id: &str,
+    ) -> RuntimeExecutionUpdate {
         self.orders.push(RuntimeOrderState {
             id: order_id.clone(),
-            symbol: decision.symbol.clone(),
-            side: decision.side.clone(),
-            quantity: decision.quantity,
+            symbol: symbol.to_string(),
+            side: side.to_string(),
+            quantity,
             status: "FILLED".into(),
-            submitted_at: decision.created_at,
+            submitted_at: created_at,
         });
         if self.orders.len() > 32 {
             self.orders.remove(0);
@@ -387,58 +460,59 @@ impl RuntimeExecutionState {
         if let Some(idx) = self
             .positions
             .iter()
-            .position(|position| position.symbol == decision.symbol)
+            .position(|position| position.symbol == symbol)
         {
             let prev_qty = self.positions[idx].quantity;
             let cost_basis = self.positions[idx].cost_basis;
-            let new_qty = prev_qty + decision.quantity;
+            let new_qty = prev_qty + quantity;
 
             if new_qty == 0 {
                 let position = self.positions.remove(idx);
-                let realized = (decision.mark - cost_basis) * prev_qty as f64;
+                let realized = (mark - cost_basis) * prev_qty as f64;
                 self.historic.push(RuntimeHistoricPositionState {
                     id: format!("HIST-{}", self.historic.len() + 1),
                     symbol: position.symbol.clone(),
                     quantity: prev_qty,
                     realized_pnl: realized,
-                    closed_at: decision.created_at,
+                    closed_at: created_at,
                 });
 
                 RuntimeExecutionUpdate::ClosedPosition {
                     symbol: position.symbol,
                     quantity: prev_qty,
                     cost_basis,
-                    mark: decision.mark,
+                    mark,
                     order_id,
                 }
             } else {
                 let position = &mut self.positions[idx];
                 position.quantity = new_qty;
-                position.mark = decision.mark;
+                position.mark = mark;
                 position.unrealized_pnl =
                     (position.mark - position.cost_basis) * position.quantity as f64;
 
                 RuntimeExecutionUpdate::ChangedPosition {
-                    symbol: decision.symbol.clone(),
-                    quantity: decision.quantity,
-                    mark: decision.mark,
+                    symbol: symbol.to_string(),
+                    quantity,
+                    mark,
                     order_id,
                 }
             }
         } else {
             self.positions.push(RuntimePositionState {
                 id: format!("POS-{}", self.positions.len() + self.historic.len() + 1),
-                symbol: decision.symbol.clone(),
-                quantity: decision.quantity,
-                cost_basis: decision.mark,
-                mark: decision.mark,
+                symbol: symbol.to_string(),
+                quantity,
+                cost_basis: mark,
+                mark,
                 unrealized_pnl: 0.0,
+                account_id: Some(account_id.to_string()),
             });
 
             RuntimeExecutionUpdate::ChangedPosition {
-                symbol: decision.symbol.clone(),
-                quantity: decision.quantity,
-                mark: decision.mark,
+                symbol: symbol.to_string(),
+                quantity,
+                mark,
                 order_id,
             }
         }
@@ -522,26 +596,39 @@ impl RuntimeExecutionState {
     /// Filter decisions by producer type
     pub fn decisions_by_producer_type(
         &self,
-        _producer_type: &ProducerType,
+        producer_type: &ProducerType,
     ) -> Vec<&RuntimeDecisionState> {
-        // Note: RuntimeDecisionState doesn't have metadata yet, so we can't filter.
-        // This is a placeholder for when decisions store producer metadata.
-        // For now, return empty vec.
-        Vec::new()
+        self.decisions
+            .iter()
+            .filter(|d| {
+                d.metadata
+                    .as_ref()
+                    .map(|m| &m.producer_type == producer_type)
+                    .unwrap_or(false)
+            })
+            .collect()
     }
 
     /// Find decisions by correlation ID (for tracing across producers)
-    pub fn find_by_correlation_id(&self, _correlation_id: &str) -> Vec<&RuntimeDecisionState> {
-        // Note: RuntimeDecisionState doesn't have metadata yet.
-        // This is a placeholder for future enhancement.
-        Vec::new()
+    pub fn find_by_correlation_id(&self, correlation_id: &str) -> Vec<&RuntimeDecisionState> {
+        self.decisions
+            .iter()
+            .filter(|d| {
+                d.metadata
+                    .as_ref()
+                    .and_then(|m| m.correlation_id.as_deref())
+                    .map(|s| s == correlation_id)
+                    .unwrap_or(false)
+            })
+            .collect()
     }
 
     /// Group positions by account ID (for multi-account systems)
-    pub fn positions_by_account(&self, _account_id: &str) -> Vec<&RuntimePositionState> {
-        // Note: RuntimePositionState doesn't have account_id yet.
-        // This is a placeholder for future enhancement.
-        Vec::new()
+    pub fn positions_by_account(&self, account_id: &str) -> Vec<&RuntimePositionState> {
+        self.positions
+            .iter()
+            .filter(|p| p.account_id.as_deref() == Some(account_id))
+            .collect()
     }
 }
 
@@ -680,6 +767,7 @@ pub struct RuntimePositionDto {
     pub mark: f64,
     pub unrealized_pnl: f64,
     pub market_value: f64,
+    pub account_id: Option<String>,
 }
 
 impl From<&PositionSnapshot> for RuntimePositionDto {
@@ -698,6 +786,7 @@ impl From<&RuntimePositionState> for RuntimePositionDto {
             mark: value.mark,
             unrealized_pnl: value.unrealized_pnl,
             market_value: value.mark * value.quantity as f64,
+            account_id: value.account_id.clone(),
         }
     }
 }
@@ -949,6 +1038,7 @@ mod tests {
             cost_basis: 500.0,
             mark: 501.0,
             unrealized_pnl: 2.0,
+            account_id: None,
         });
         let execution = RuntimeExecutionState::from_snapshot(&snapshot);
         let producer = RuntimeProducerDecision {
@@ -1050,6 +1140,37 @@ mod tests {
     }
 
     #[test]
+    fn positions_by_account_filters_by_account_id() {
+        let mut snapshot = SystemSnapshot::default();
+        snapshot.account_id = "DU123".into();
+        snapshot.positions.push(PositionSnapshot {
+            id: "POS-1".into(),
+            symbol: "SPY".into(),
+            quantity: 10,
+            cost_basis: 500.0,
+            mark: 501.0,
+            unrealized_pnl: 10.0,
+            account_id: Some("DU123".into()),
+        });
+        snapshot.positions.push(PositionSnapshot {
+            id: "POS-2".into(),
+            symbol: "QQQ".into(),
+            quantity: 5,
+            cost_basis: 400.0,
+            mark: 402.0,
+            unrealized_pnl: 10.0,
+            account_id: Some("DU456".into()),
+        });
+        let execution = RuntimeExecutionState::from_snapshot(&snapshot);
+        let du123 = execution.positions_by_account("DU123");
+        let du456 = execution.positions_by_account("DU456");
+        assert_eq!(du123.len(), 1);
+        assert_eq!(du123[0].symbol, "SPY");
+        assert_eq!(du456.len(), 1);
+        assert_eq!(du456[0].symbol, "QQQ");
+    }
+
+    #[test]
     fn producer_metadata_multi_account_support() {
         let account1_decision = RuntimeProducerDecision::new_with_metadata(
             "SPY".into(),
@@ -1071,5 +1192,46 @@ mod tests {
 
         assert_eq!(account1_decision.account_id(), Some("U12345"));
         assert_eq!(account2_decision.account_id(), Some("U67890"));
+    }
+
+    #[test]
+    fn execution_state_filters_decisions_by_producer_type_and_correlation_id() {
+        let snapshot = SystemSnapshot::default();
+        let mut execution = RuntimeExecutionState::from_snapshot(&snapshot);
+
+        let strategy_decision = RuntimeProducerDecision::new_with_metadata(
+            "SPY".into(),
+            5,
+            "BUY".into(),
+            501.0,
+            Utc::now(),
+            ProducerMetadata::new(ProducerType::Strategy).with_correlation_id("corr-1".into()),
+        );
+        let risk_decision = RuntimeProducerDecision::new_with_metadata(
+            "QQQ".into(),
+            3,
+            "SELL".into(),
+            350.0,
+            Utc::now(),
+            ProducerMetadata::new(ProducerType::Risk).with_correlation_id("corr-2".into()),
+        );
+
+        execution.apply_producer_decision(&strategy_decision, "ORD-1".into(), "DU123");
+        execution.apply_producer_decision(&risk_decision, "ORD-2".into(), "DU123");
+
+        let by_strategy = execution.decisions_by_producer_type(&ProducerType::Strategy);
+        let by_risk = execution.decisions_by_producer_type(&ProducerType::Risk);
+        assert_eq!(by_strategy.len(), 1);
+        assert_eq!(by_strategy[0].symbol, "SPY");
+        assert_eq!(by_risk.len(), 1);
+        assert_eq!(by_risk[0].symbol, "QQQ");
+
+        let by_corr1 = execution.find_by_correlation_id("corr-1");
+        let by_corr2 = execution.find_by_correlation_id("corr-2");
+        assert_eq!(by_corr1.len(), 1);
+        assert_eq!(by_corr1[0].symbol, "SPY");
+        assert_eq!(by_corr2.len(), 1);
+        assert_eq!(by_corr2[0].symbol, "QQQ");
+        assert!(execution.find_by_correlation_id("corr-3").is_empty());
     }
 }

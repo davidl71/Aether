@@ -91,3 +91,33 @@ pub struct MarketData {
     pub volume: i64,
     pub timestamp: i64,
 }
+
+// -----------------------------------------------------------------------------
+// BAG (combo) order types for multi-leg strategies (e.g. box spread)
+// -----------------------------------------------------------------------------
+
+/// One leg of a BAG order. When wired to ibapi, contract will be resolved to
+/// conId and sent as ComboLeg(conId, ratio, action, exchange).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BagOrderLeg {
+    pub contract: OptionContract,
+    /// Ratio for this leg (e.g. 1 for box spread leg).
+    pub ratio: i32,
+    pub action: OrderAction,
+}
+
+/// Request to place a BAG (combo) order via the IB execution client.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlaceBagOrderRequest {
+    /// Underlying symbol for the combo (e.g. "SPX", "XSP").
+    pub underlying_symbol: String,
+    pub currency: String,
+    /// Exchange for the combo (e.g. "BOX" for box options).
+    pub exchange: String,
+    pub legs: Vec<BagOrderLeg>,
+    /// Total quantity of the combo (number of spreads).
+    pub quantity: i32,
+    /// Limit price for the whole combo; None for market.
+    pub limit_price: Option<f64>,
+    pub tif: TimeInForce,
+}

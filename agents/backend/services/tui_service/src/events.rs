@@ -155,14 +155,12 @@ impl ConnectionStatus {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SnapshotSource {
     Nats,
-    Rest,
 }
 
 impl SnapshotSource {
     pub fn label(&self) -> &'static str {
         match self {
             Self::Nats => "NATS",
-            Self::Rest => "REST",
         }
     }
 }

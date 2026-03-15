@@ -1,19 +1,15 @@
-use std::{
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    sync::Arc,
-    time::Duration,
-};
+use std::{sync::Arc, time::Duration};
 
 use anyhow::Context;
 use api::{
-    Alert, HealthAggregateState, HistoricPosition, LoanRepository, OrderSnapshot, PositionSnapshot,
-    RestServer, RestState, RuntimeExecutionState, RuntimeMarketState, RuntimeProducerDecision,
-    SharedSnapshot, StrategyController, StrategyDecisionSnapshot, SystemSnapshot,
+    Alert, HealthAggregateState, HistoricPosition, OrderSnapshot, PositionSnapshot,
+    RuntimeExecutionState, RuntimeMarketState, RuntimeProducerDecision, SharedSnapshot,
+    StrategyController, StrategyDecisionSnapshot, SystemSnapshot,
 };
 use async_trait::async_trait;
 use chrono::{Duration as ChronoDuration, Utc};
 use market_data::{
-    MarketDataEvent, MarketDataIngestor, MarketDataSource, MockMarketDataSource,
+    FmpClient, MarketDataEvent, MarketDataIngestor, MarketDataSource, MockMarketDataSource,
     PolygonMarketDataSource,
 };
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -30,6 +26,7 @@ use tokio::{
 };
 use tracing::{info, warn};
 
+mod api_handlers;
 mod collection_aggregation;
 mod health_aggregation;
 mod nats_integration;
@@ -38,8 +35,6 @@ mod swiftness;
 
 #[derive(Debug, Deserialize, Clone)]
 struct BackendConfig {
-    #[serde(default = "default_rest_addr")]
-    rest_addr: SocketAddr,
     #[serde(default)]
     market_data: MarketDataSettings,
 }
@@ -47,7 +42,6 @@ struct BackendConfig {
 impl Default for BackendConfig {
     fn default() -> Self {
         Self {
-            rest_addr: default_rest_addr(),
             market_data: MarketDataSettings::default(),
         }
     }
@@ -83,10 +77,6 @@ struct PolygonSettings {
     base_url: Option<String>,
 }
 
-fn default_rest_addr() -> SocketAddr {
-    SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 9090)
-}
-
 fn default_market_provider() -> String {
     "mock".into()
 }
@@ -106,8 +96,6 @@ async fn main() -> anyhow::Result<()> {
     init_tracing();
     let config = load_config().context("failed to load backend config")?;
 
-    let rest_addr = config.rest_addr;
-
     let state: SharedSnapshot = Arc::new(RwLock::new(SystemSnapshot::default()));
     let (strategy_ctrl_tx, strategy_ctrl_rx) = watch::channel(false);
     let controller = StrategyController::new(strategy_ctrl_tx);
@@ -126,16 +114,6 @@ async fn main() -> anyhow::Result<()> {
     } else {
         warn!("NATS integration unavailable, continuing without NATS");
     }
-
-    let loan_repository = LoanRepository::load_default()
-        .await
-        .context("failed to initialize loan repository")?;
-    let rest_state = RestState::new(
-        state.clone(),
-        controller.clone(),
-        loan_repository,
-        health_state.clone(),
-    );
 
     {
         let mut snapshot = state.write().await;
@@ -179,6 +157,15 @@ async fn main() -> anyhow::Result<()> {
     collection_aggregation::spawn_collection_aggregator(state.clone(), nats_url.clone());
 
     // Publish full snapshots to NATS for TUI and other subscribers
+    let loan_repo = api::LoanRepository::load_default().await.ok();
+    let fmp_client = std::env::var("FMP_API_KEY")
+        .ok()
+        .filter(|k| !k.trim().is_empty())
+        .and_then(|api_key| {
+            FmpClient::new(api_key, std::env::var("FMP_BASE_URL").ok().as_deref())
+                .ok()
+                .map(Arc::new)
+        });
     if let Some(ref nats) = *nats_integration {
         if let Some(client) = nats.client() {
             let backend_id = std::env::var("BACKEND_ID").unwrap_or_else(|_| "ib".into());
@@ -186,7 +173,8 @@ async fn main() -> anyhow::Result<()> {
                 .ok()
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(1000);
-            snapshot_publisher::spawn(state.clone(), client, backend_id, interval_ms);
+            snapshot_publisher::spawn(state.clone(), client.clone(), backend_id, interval_ms);
+            api_handlers::spawn(client, loan_repo.map(Arc::new), fmp_client);
         }
     }
 
@@ -197,15 +185,11 @@ async fn main() -> anyhow::Result<()> {
         info!("Swiftness integration disabled (set ENABLE_SWIFTNESS=1 to enable)");
     }
 
-    info!(%rest_addr, "backend service online");
-
-    let rest_handle = RestServer::serve(rest_addr, rest_state).await?;
+    info!("backend service online (NATS only, no REST)");
 
     tokio::signal::ctrl_c()
         .await
         .context("failed to listen for shutdown signal")?;
-
-    rest_handle.abort();
 
     Ok(())
 }
@@ -495,6 +479,7 @@ fn seed_static_data(snapshot: &mut SystemSnapshot) {
             cost_basis: 98.75,
             mark: 101.10,
             unrealized_pnl: 4.7,
+            account_id: Some(snapshot.account_id.clone()),
         });
     }
 

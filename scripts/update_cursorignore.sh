@@ -17,7 +17,6 @@ cat <<'BLOCK_END' >"${BLOCK_FILE}"
 .dmg/
 
 # Generated code (reproducible at build; reduces AI context)
-native/generated/
 web/src/generated/
 web/src/proto/
 

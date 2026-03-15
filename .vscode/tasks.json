@@ -97,7 +97,7 @@
     {
       "label": "Setup Worktree",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/setup_worktree.sh",
+      "command": "git worktree --help",
       "args": [],
       "group": "build",
       "presentation": {

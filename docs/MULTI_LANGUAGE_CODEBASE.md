@@ -54,7 +54,7 @@ See **ARCHITECTURE.md** and **AGENTS.md** for full ownership tables.
 ## Shared and generated code
 
 - **Protocol Buffers** (`proto/`): `proto/messages.proto` → Rust (prost in `nats_adapter`). See `docs/message_schemas/README.md`.
-- **Config**: JSON under `config/`; shared by Rust TUI, CLI, and backend.
+- **Config**: JSON under `config/` shared by Rust TUI and backend; CLI uses TOML (`config/config.toml`). See [TUI/CLI feature parity](platform/TUI_CLI_FEATURE_PARITY.md).
 
 ## Boundaries
 

@@ -5,16 +5,12 @@ version = "0.1.0"
 
 [dependencies]
 anyhow = { workspace = true }
-async-stream = "0.3"
-axum = { workspace = true, features = ["ws"] }
 base64 = "0.22"
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
-tokio-stream = { workspace = true, features = ["sync"] }
 chrono = { workspace = true }
 futures = { workspace = true }
-tower = { workspace = true }
 tracing = { workspace = true }
 reqwest = { workspace = true }
 serde_urlencoded = "0.7"
@@ -28,7 +24,9 @@ ledger = { path = "../ledger" }
 nats_adapter = { path = "../nats_adapter" }
 discount_bank_parser = { path = "../discount_bank_parser" }
 quant = { path = "../quant" }
+jsonc-parser = { workspace = true }
 
 [dev-dependencies]
 async-trait = { workspace = true }
+http-body-util = "0.1"
 uuid = { workspace = true }

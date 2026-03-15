@@ -126,16 +126,11 @@ run_cppcheck() {
   fi
 
   info "Running cppcheck (C++ core)"
-  local cpp_src="${ROOT_DIR}/native/src"
-  local cpp_include="${ROOT_DIR}/native/include"
-  local cpp_tests="${ROOT_DIR}/native/tests"
+  local cpp_src="${ROOT_DIR}/src"
+  local cpp_include="${ROOT_DIR}/include"
+  local cpp_tests="${ROOT_DIR}/tests"
   if [ ! -d "${cpp_src}" ]; then
-    cpp_src="${ROOT_DIR}/src"
-    cpp_include="${ROOT_DIR}/include"
-    cpp_tests="${ROOT_DIR}/tests"
-  fi
-  if [ ! -d "${cpp_src}" ]; then
-    warn "Skipping cppcheck (no native/src or src directory)"
+    warn "Skipping cppcheck (no src directory)"
     return 0
   fi
   local cppcheck_cache="${ROOT_DIR}/.cppcheck-cache"
@@ -205,7 +200,7 @@ run_clang_analyze() {
     dir=$(printf '%s' "${entry}" | jq -r '.directory')
 
     case "${file}" in
-    "${ROOT_DIR}/native/src/"* | "${ROOT_DIR}/native/tests/"* | "${ROOT_DIR}/native/include/"* | "${ROOT_DIR}/src/"* | "${ROOT_DIR}/tests/"* | "${ROOT_DIR}/include/"*) ;;
+    "${ROOT_DIR}/src/"* | "${ROOT_DIR}/tests/"* | "${ROOT_DIR}/include/"*) ;;
     *)
       continue
       ;;
@@ -438,7 +433,7 @@ run_cmake_lint() {
     return 0
   fi
   info "Running cmake-lint (CMakeLists.txt and cmake files)"
-  local files=(CMakeLists.txt native/CMakeLists.txt native/tests/CMakeLists.txt native/ibapi_cmake/CMakeLists.txt)
+  local files=(CMakeLists.txt)
   if [[ "${LINT_MAX_LINES}" -gt 0 ]]; then
     run_limited cmake-lint "${files[@]}" || return 1
   else

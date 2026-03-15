@@ -163,6 +163,7 @@ Discover tasks from code comments (TODO/FIXME), markdown checklists, and plannin
 - `create_tasks` (bool): **Create Todo2 tasks for discoveries** (default: `false`). Set to `true` to create tasks.
 - `create_tasks=true` is required to create tasks; discovery alone only reports.
 - `output_path` (Optional): Path for report (e.g. `docs/task_discovery_report.json`)
+- **`ignore_paths`** (Optional): Comma-separated paths to exclude from scanning. **Use** `ignore_paths: ".cache,vendor,third_party,.todo2"` so `vendor/` and `third_party/` (and other non-source trees) are not scanned.
 
 ---
 

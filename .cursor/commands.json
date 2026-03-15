@@ -256,8 +256,8 @@
     },
     {
       "name": "setup:worktree",
-      "description": "Setup new git worktree with build",
-      "command": "./scripts/setup_worktree.sh",
+      "description": "Show git worktree help (use: git worktree add <path> [branch])",
+      "command": "git worktree --help",
       "category": "setup"
     },
     {
@@ -304,39 +304,15 @@
     },
     {
       "name": "check:feature-parity",
-      "description": "Check feature parity across implementations",
-      "command": "./scripts/check_feature_parity.sh",
+      "description": "See TUI/CLI parity (script not present; doc is source of truth)",
+      "command": "echo 'TUI vs CLI: see docs/platform/TUI_CLI_FEATURE_PARITY.md'",
       "category": "check"
-    },
-    {
-      "name": "validate:config",
-      "description": "Validate config. Apple Silicon path; on Intel use validate:config-intel.",
-      "command": "./build/macos-arm64-debug/bin/ib_box_spread --config config/config.json --validate",
-      "category": "validate"
-    },
-    {
-      "name": "validate:config-intel",
-      "description": "Validate config on Intel macOS",
-      "command": "./build/macos-x86_64-debug/bin/ib_box_spread --config config/config.json --validate",
-      "category": "validate"
-    },
-    {
-      "name": "build:dependencies",
-      "description": "Build Intel Decimal and TWS API dependencies",
-      "command": "cmake --build native/third_party/IntelRDFPMathLib20U2/LIBRARY/build --target all && cmake --build native/third_party/tws-api/IBJts/source/cppclient/client/build --target all",
-      "category": "build"
     },
     {
       "name": "test:tws-connection",
       "description": "Test TWS connection (requires TWS/Gateway running)",
       "command": "./scripts/test_tws_connection.sh",
       "category": "test"
-    },
-    {
-      "name": "format:code",
-      "description": "Format code using clang-format",
-      "command": "find native/src native/include -name '*.cpp' -o -name '*.h' | xargs clang-format -i",
-      "category": "format"
     },
     {
       "name": "check:build-status",

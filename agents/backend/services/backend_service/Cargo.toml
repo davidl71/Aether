@@ -6,6 +6,7 @@ authors = ["Aether Team"]
 
 [dependencies]
 anyhow = { workspace = true }
+bytes = "1.5"
 market_data = { path = "../../crates/market_data" }
 strategy = { path = "../../crates/strategy" }
 risk = { path = "../../crates/risk" }

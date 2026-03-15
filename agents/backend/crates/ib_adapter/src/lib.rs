@@ -1,16 +1,36 @@
 //! IB Adapter - Async wrapper for Interactive Brokers TWS/Gateway
-//! 
+//!
 //! This crate provides a modern async Rust interface to Interactive Brokers TWS API.
-//! Currently a placeholder - integrates with ibapi crate for actual TWS communication.
+//! Integrates with the ibapi crate for actual TWS/Gateway communication.
 
 use std::sync::Arc;
 
+use ibapi::accounts::types::AccountGroup;
+use ibapi::accounts::{AccountSummaryTags, PositionUpdate};
+use ibapi::contracts::{Contract, OptionChain, SecurityType};
+use ibapi::Client as IbClient;
+use ibapi::Error as IbError;
 use tokio::sync::{mpsc, RwLock};
 use tracing::info;
 
 pub mod types;
 
 pub use types::*;
+
+/// Parse expiry string in YYYYMMDD form into (year, month, day) for ibapi.
+fn parse_expiry_yyyymmdd(expiry: &str) -> Result<(u16, u8, u8), String> {
+    let s = expiry.trim();
+    if s.len() != 8 || !s.chars().all(|c| c.is_ascii_digit()) {
+        return Err(format!("Option expiry must be YYYYMMDD, got {:?}", expiry));
+    }
+    let y: u16 = s[0..4].parse().map_err(|_| format!("invalid year in expiry {}", expiry))?;
+    let m: u8 = s[4..6].parse().map_err(|_| format!("invalid month in expiry {}", expiry))?;
+    let d: u8 = s[6..8].parse().map_err(|_| format!("invalid day in expiry {}", expiry))?;
+    if m == 0 || m > 12 || d == 0 || d > 31 {
+        return Err(format!("invalid date in expiry {}", expiry));
+    }
+    Ok((y, m, d))
+}
 
 /// IB Adapter configuration
 #[derive(Debug, Clone)]
@@ -75,6 +95,8 @@ pub struct OrderStatusEvent {
 pub struct IbAdapter {
     config: IbConfig,
     state: Arc<RwLock<ConnectionState>>,
+    /// Connected ibapi client; Some when state is Connected (Arc allows use without holding lock across await)
+    client: Arc<RwLock<Option<Arc<IbClient>>>>,
     /// Channel for market data events (reserved for future TWS integration)
     #[allow(dead_code)]
     market_data_tx: mpsc::Sender<MarketDataEvent>,
@@ -96,6 +118,7 @@ impl IbAdapter {
         Self {
             config,
             state: Arc::new(RwLock::new(ConnectionState::Disconnected)),
+            client: Arc::new(RwLock::new(None)),
             market_data_tx,
             position_tx,
             order_tx,
@@ -107,55 +130,84 @@ impl IbAdapter {
         self.state.read().await.clone()
     }
 
-    /// Connect to TWS/Gateway
+    /// Connect to TWS/Gateway using the ibapi crate.
     pub async fn connect(&self) -> Result<(), String> {
         *self.state.write().await = ConnectionState::Connecting;
-        info!("Connecting to IB at {}:{}", self.config.host, self.config.port);
-        
-        // TODO: Initialize actual ibapi connection
-        // let wrapper = IbWrapper::new(...);
-        // let client = EClient::new(wrapper);
-        // client.connect(&self.config.host, self.config.port, self.config.client_id);
-        
-        *self.state.write().await = ConnectionState::Connected;
-        info!("Connected to IB");
-        Ok(())
+        let address = format!("{}:{}", self.config.host, self.config.port);
+        info!("Connecting to IB at {}", address);
+
+        let client_id = self.config.client_id as i32;
+        match IbClient::connect(&address, client_id).await {
+            Ok(client) => {
+                let mut guard = self.client.write().await;
+                *guard = Some(Arc::new(client));
+                drop(guard);
+                *self.state.write().await = ConnectionState::Connected;
+                info!("Connected to IB at {}", address);
+                Ok(())
+            }
+            Err(e) => {
+                let msg = format!("IB connection failed: {}", e);
+                *self.state.write().await = ConnectionState::Error(msg.clone());
+                Err(msg)
+            }
+        }
     }
 
-    /// Disconnect from TWS/Gateway
+    /// Disconnect from TWS/Gateway. Explicitly drops the ibapi client so the connection is closed.
     pub async fn disconnect(&self) {
-        // TODO: client.disconnect()
+        if self.client.write().await.take().is_some() {
+            // client dropped here; ibapi connection closes on drop
+        }
         *self.state.write().await = ConnectionState::Disconnected;
         info!("Disconnected from IB");
     }
 
-    /// Request market data for a contract
+    /// Request market data for a contract. Starts a subscription; ticks are not yet forwarded to market_data_tx.
     pub async fn request_market_data(&self, symbol: &str, contract_id: i64) -> Result<(), String> {
         if *self.state.read().await != ConnectionState::Connected {
             return Err("Not connected".to_string());
         }
-        
-        // TODO: Implement via ibapi
-        // client.reqMktData(tickerId, contract, "", false, false);
-        let _ = symbol;
-        let _ = contract_id;
+        let arc = self.client.read().await.clone();
+        let client = arc.as_ref().ok_or("Not connected")?;
+        let mut contract = Contract::stock(symbol).build();
+        if contract_id != 0 {
+            contract.contract_id = contract_id as i32;
+        }
+        client
+            .market_data(&contract)
+            .subscribe()
+            .await
+            .map_err(|e: IbError| e.to_string())?;
         Ok(())
     }
 
-    /// Request option chain for underlying
+    /// Request option chain for underlying via ibapi security definition option parameters.
     pub async fn request_option_chain(&self, symbol: &str) -> Result<Vec<types::OptionContract>, String> {
         if *self.state.read().await != ConnectionState::Connected {
             return Err("Not connected".to_string());
         }
-        
-        // TODO: Implement via ibapi
-        // client.reqContractDetails(reqId, contract);
-        // Parse response into OptionContract list
-        let _ = symbol;
-        Ok(vec![])
+        let arc = self.client.read().await.clone();
+        let client = arc.as_ref().ok_or("Not connected")?;
+        let mut sub = client
+            .option_chain(symbol, "SMART", SecurityType::Stock, 0)
+            .await
+            .map_err(|e: IbError| e.to_string())?;
+        let mut out = Vec::new();
+        while let Some(chain_result) = sub.next().await {
+            let chain: OptionChain = chain_result.map_err(|e| e.to_string())?;
+            for exp in &chain.expirations {
+                for &strike in &chain.strikes {
+                    out.push(types::OptionContract::new(symbol, exp, strike, true));
+                    out.push(types::OptionContract::new(symbol, exp, strike, false));
+                }
+            }
+            break;
+        }
+        Ok(out)
     }
 
-    /// Place an order
+    /// Place an order via ibapi.
     pub async fn place_order(
         &self,
         contract: types::OptionContract,
@@ -166,51 +218,131 @@ impl IbAdapter {
         if *self.state.read().await != ConnectionState::Connected {
             return Err("Not connected".to_string());
         }
-        
-        // TODO: Implement via ibapi
-        // let order = Order::default();
-        // order.action = action.as_str();
-        // order.total_quantity = quantity;
-        // order.lmt_price = limit_price;
-        // client.placeOrder(orderId, contract, order);
-        let _ = contract;
-        let _ = action;
-        let _ = quantity;
-        let _ = limit_price;
+        let arc = self.client.read().await.clone();
+        let client = arc.as_ref().ok_or("Not connected")?;
+        let (y, m, d) = parse_expiry_yyyymmdd(&contract.expiry)?;
+        let ib_contract = if contract.is_call {
+            Contract::call(&contract.symbol).strike(contract.strike).expires_on(y, m, d).build()
+        } else {
+            Contract::put(&contract.symbol).strike(contract.strike).expires_on(y, m, d).build()
+        };
+        let order_id = client.next_order_id();
+        let qty = quantity as f64;
+        let result = match action {
+            types::OrderAction::Buy => client.order(&ib_contract).buy(qty).limit(limit_price).submit().await,
+            types::OrderAction::Sell => client.order(&ib_contract).sell(qty).limit(limit_price).submit().await,
+        };
+        result.map_err(|e: IbError| e.to_string())?;
+        Ok(order_id)
+    }
+
+    /// Place a BAG (combo) order for multi-leg strategies (e.g. box spread).
+    /// Builds a BAG contract with combo legs; when ibapi is wired, will call
+    /// place_order with secType "BAG" and orderComboLegs for limit prices.
+    pub async fn place_bag_order(
+        &self,
+        request: types::PlaceBagOrderRequest,
+    ) -> Result<i32, String> {
+        if *self.state.read().await != ConnectionState::Connected {
+            return Err("Not connected".to_string());
+        }
+        if request.legs.is_empty() {
+            return Err("BAG order must have at least one leg".to_string());
+        }
+        // TODO(T-1773509396769177000): Wire to ibapi: build Contract with secType "BAG",
+        // symbol=request.underlying_symbol, currency, exchange, and combo_legs (conId, ratio,
+        // action, exchange) per leg; build Order with total_quantity=request.quantity,
+        // lmt_price from request.limit_price, order_combo_legs for leg-level prices if needed;
+        // client.place_order(order_id, bag_contract, order). For now stub returns placeholder id.
+        let _ = request;
         Ok(0)
     }
 
-    /// Cancel an order
+    /// Cancel an order via ibapi.
     pub async fn cancel_order(&self, order_id: i32) -> Result<(), String> {
         if *self.state.read().await != ConnectionState::Connected {
             return Err("Not connected".to_string());
         }
-        
-        // TODO: Implement via ibapi
-        // client.cancelOrder(orderId);
-        let _ = order_id;
+        let arc = self.client.read().await.clone();
+        let client = arc.as_ref().ok_or("Not connected")?;
+        let mut sub = client
+            .cancel_order(order_id, "")
+            .await
+            .map_err(|e: IbError| e.to_string())?;
+        let _ = sub.next().await;
         Ok(())
     }
 
-    /// Request current positions
+    /// Request current positions via ibapi; collects initial snapshot until PositionEnd.
     pub async fn request_positions(&self) -> Result<Vec<PositionEvent>, String> {
         if *self.state.read().await != ConnectionState::Connected {
             return Err("Not connected".to_string());
         }
-        
-        // TODO: Implement via ibapi
-        // client.reqPositions();
-        Ok(vec![])
+        let arc = self.client.read().await.clone();
+        let client = arc.as_ref().ok_or("Not connected")?;
+        let mut sub = client.positions().await.map_err(|e: IbError| e.to_string())?;
+        let mut out = Vec::new();
+        while let Some(update) = sub.next().await {
+            match update.map_err(|e| e.to_string())? {
+                PositionUpdate::Position(p) => {
+                    let symbol = p.contract.symbol.to_string();
+                    out.push(PositionEvent {
+                        account: p.account.clone(),
+                        symbol,
+                        position: p.position as i32,
+                        avg_cost: p.average_cost,
+                    });
+                }
+                PositionUpdate::PositionEnd => break,
+            }
+        }
+        Ok(out)
     }
 
-    /// Request account information
+    /// Request account information via ibapi account summary (first managed account).
     pub async fn request_account(&self) -> Result<types::AccountInfo, String> {
         if *self.state.read().await != ConnectionState::Connected {
             return Err("Not connected".to_string());
         }
-        
-        // TODO: Implement via ibapi
-        // client.reqAccountUpdates(true, account);
-        Ok(types::AccountInfo::default())
+        let arc = self.client.read().await.clone();
+        let client = arc.as_ref().ok_or("Not connected")?;
+        let accounts = client.managed_accounts().await.map_err(|e: IbError| e.to_string())?;
+        let account_id = accounts.first().cloned().unwrap_or_else(|| "".to_string());
+        let group = AccountGroup("All".to_string());
+        let tags = AccountSummaryTags::ALL;
+        let mut sub = client
+            .account_summary(&group, tags)
+            .await
+            .map_err(|e: IbError| e.to_string())?;
+        let mut net_liq = 0.0;
+        let mut cash = 0.0;
+        let mut buying_power = 0.0;
+        let mut maint_margin = 0.0;
+        let mut init_margin = 0.0;
+        use ibapi::accounts::AccountSummaryResult;
+        while let Some(summary) = sub.next().await {
+            let s = summary.map_err(|e| e.to_string())?;
+            if let AccountSummaryResult::Summary(s) = s {
+                if s.account != account_id {
+                    continue;
+                }
+                match s.tag.as_str() {
+                    "NetLiquidation" => net_liq = s.value.parse().unwrap_or(0.0),
+                    "TotalCashValue" => cash = s.value.parse().unwrap_or(0.0),
+                    "BuyingPower" => buying_power = s.value.parse().unwrap_or(0.0),
+                    "MaintMarginReq" => maint_margin = s.value.parse().unwrap_or(0.0),
+                    "InitMarginReq" => init_margin = s.value.parse().unwrap_or(0.0),
+                    _ => {}
+                }
+            }
+        }
+        Ok(types::AccountInfo {
+            account_id,
+            net_liquidation: net_liq,
+            cash_balance: cash,
+            buying_power,
+            maintenance_margin: maint_margin,
+            initial_margin: init_margin,
+        })
     }
 }

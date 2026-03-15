@@ -4,7 +4,7 @@
 # scripts/run_exarp_go.sh if present.
 # Usage: run_exarp_go_tool.sh <tool_name> [json_args|-]
 # Example: run_exarp_go_tool.sh lint
-#          run_exarp_go_tool.sh lint '{"path":"native/src"}'
+#          run_exarp_go_tool.sh lint '{"path":"agents/backend"}'
 #          cat args.json | run_exarp_go_tool.sh task_workflow -
 #          run_exarp_go_tool.sh --list
 set -euo pipefail

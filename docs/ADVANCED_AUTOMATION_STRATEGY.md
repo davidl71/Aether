@@ -65,7 +65,7 @@ This document outlines:
 
 #### 3. ✅ Feature Parity Monitoring
 
-**Current State**: `scripts/check_feature_parity.sh` exists but runs manually
+**Current State**: `scripts/check_feature_parity.sh` is not present in the repo; see `docs/platform/TUI_CLI_FEATURE_PARITY.md` for TUI vs CLI comparison
 
 **Automation Value**: ⭐⭐⭐⭐
 

@@ -49,15 +49,7 @@ build-keep-going-json:
 build-ai-friendly-progress:
     ./scripts/build_ai_friendly.sh --progress
 
-# Build TWS API shared library
-build-twsapi:
-    cmake -S native/ibapi_cmake -B native/ibapi_cmake/build -DCMAKE_BUILD_TYPE=Release
-    cmake --build native/ibapi_cmake/build -j$(sysctl -n hw.ncpu 2>/dev/null || nproc)
-
-# Build third-party dependencies (Intel Decimal + TWS API)
-build-deps:
-    just build-intel-decimal
-    just build-twsapi 2>/dev/null || cmake --build native/ibapi_cmake/build --target all 2>/dev/null || echo "[info] TWS API built via main CMake"
+# (Legacy: build-twsapi / build-deps removed with native C++. Use agents/backend for Rust.)
 
 # Clean all build artifacts
 clean:
@@ -72,21 +64,21 @@ clean-rust:
 
 # --- Test ---
 
-# Run all C++ tests
+# Run Rust tests (primary; C++ tests removed with native build)
 test:
-    ctest --test-dir build --output-on-failure
+    cd agents/backend && cargo test
 
-# Run a specific test by name
+# Run a specific Rust test by name (e.g. just test-one risk_calculator)
 test-one name:
-    ctest --test-dir build -R {{name}} --output-on-failure
+    cd agents/backend && cargo test {{name}}
 
-# Run Python tests
+# Run Python tests (nautilus agent)
 test-python:
-    uv run --with pytest pytest native/tests/python -v
+    cd agents/nautilus && uv run pytest tests/ -v
 
-# Run Python tests with coverage
+# Run Python tests with coverage (nautilus)
 test-python-cov:
-    uv run --with pytest --with pytest-cov pytest native/tests/python -v --cov=native/tests/python
+    cd agents/nautilus && uv run pytest tests/ -v --cov=nautilus_agent --cov-report=term-missing
 
 # Run TUI E2E tests (@microsoft/tui-test; requires Node 18+)
 test-tui-e2e:
@@ -332,12 +324,15 @@ proto-check:
 
 # Lint protobuf files with buf (if installed)
 proto-lint:
-    @if command -v buf >/dev/null 2>&1; then \
-      buf lint proto/; \
-    else \
-      echo "[warn] buf not installed (brew install bufbuild/buf/buf)"; \
-      just proto-check; \
-    fi
+    ./scripts/buf_lint_and_breaking.sh --lint-only
+
+# Breaking-change check: proto/ vs main branch
+proto-breaking:
+    ./scripts/buf_lint_and_breaking.sh --breaking-only
+
+# Lint + breaking (run both; use in CI)
+proto-validate:
+    ./scripts/buf_lint_and_breaking.sh
 
 # --- Build Variants ---
 

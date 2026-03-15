@@ -103,6 +103,7 @@ async fn fetch_and_merge_positions(client: &Client, state: &SharedSnapshot) -> a
                 cost_basis: pos.cost_basis,
                 mark: pos.mark,
                 unrealized_pnl: pos.unrealized_pnl,
+                account_id: Some(snapshot.account_id.clone()),
             });
         }
 

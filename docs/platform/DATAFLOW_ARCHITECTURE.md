@@ -1,6 +1,6 @@
 # Dataflow Architecture
 
-**Last updated**: 2026-03-14 (Rust-first datapath; broker/data provider tables)
+**Last updated**: 2026-03-14 (Rust-first datapath; broker/data provider tables). **Spot-check (2026-03-15):** §5 collector corrected to Rust backend_service; ledger path and broker tables verified against code.
 **Purpose**: Comprehensive analysis of data flow, storage, and inter-component contracts.
 Used as the ground-truth reference for AI-assisted development.
 
@@ -168,7 +168,7 @@ Canonical schema: `proto/messages.proto`. Codegen via `./proto/generate.sh`.
 |----------|------------|--------|--------|
 | Rust | `agents/backend/crates/nats_adapter/` (prost) | protobuf binary | Active |
 | Go | `agents/go/proto/v1/messages.pb.go` | protobuf binary | Active |
-| Python | `proto/generate.sh` → Python output | protobuf / JSON | Optional helper; no active runtime tier |
+| Python | `./proto/generate.sh` (betterproto) → `python/generated/` | protobuf / JSON | Optional helper; no active runtime tier |
 | TypeScript | `web/src/proto/messages.ts` (ts-proto) | JSON / binary | Generated; web archived |
 
 Schema management: `proto/generate.sh` (shell script).
@@ -176,15 +176,11 @@ Schema management: `proto/generate.sh` (shell script).
 
 ---
 
-## 5. Go Agents Inventory
+## 5. Collector and Optional Go Agents
 
-All in `agents/go/cmd/`. Pure stdlib + `nats.go`. Structured logging via `log/slog`.
+**Unified NATS collector (production):** Rust `agents/backend/services/backend_service` — see `collection_aggregation.rs`. Subscribes to NATS subjects (e.g. `market-data.tick.>`), decodes `NatsEnvelope`, writes to NATS KV bucket `LIVE_STATE` and optionally to QuestDB (ILP) when `NATS_KV_BUCKET` / `QUESTDB_ILP_ADDR` are set. This is the single active collector in the repo; no C++ or separate Go collector binary.
 
-| Agent | Purpose | Listens | Exposes |
-|-------|---------|---------|---------|
-| `backend collector` | Unified NATS collector (Epic E5): decode `NatsEnvelope` once, write through sinks (KV/log/QuestDB today) | NATS `market-data.>`, etc. | Rust backend health/metrics surface |
-| `supervisor` | Process supervisor (restart on crash) | JSON config | Process PIDs |
-| `config-validator` | Validates platform config at startup | Config file | Exit code |
+**Go agents:** This repo’s `agents/go/` contains only `proto/` (generated Go from protos). Standalone Go binaries (e.g. supervisor, config-validator) are not present under `agents/go/cmd/`; if used, they are external or optional tooling. Rust backend owns health, heartbeat, and snapshot API.
 
 ---
 
@@ -248,7 +244,7 @@ Provider (abstract)
 BackendHealthAggregator   — daemon thread, polls configured backend health endpoints
 ```
 
-Provider selection historically came from the retired Python/Textual TUI provider flag/config. The active Rust TUI now prefers protobuf-over-NATS and uses REST only as an explicit fallback path.
+Provider selection historically came from the retired Python/Textual TUI provider flag/config. The active Rust TUI now prefers protobuf-over-NATS and uses REST only as an explicit fallback path. **Single source of truth:** the snapshot is the in-memory `SystemSnapshot` in the backend; NATS and REST are two delivery paths for the same data. See **Read/write paths and single source of truth** in [NATS_KV_USAGE_AND_RECOMMENDATIONS.md](NATS_KV_USAGE_AND_RECOMMENDATIONS.md#readwrite-paths-and-single-source-of-truth).
 
 ---
 

@@ -1,10 +1,12 @@
 //! Dead Letter Queue (DLQ) Service
 //!
 //! Handles failed messages by sending them to a dead letter queue topic
-//! with retry logic and exponential backoff.
+//! with retry logic and exponential backoff (via `backoff` crate).
 
 use std::time::Duration;
 
+use backoff::backoff::Backoff;
+use backoff::exponential::ExponentialBackoffBuilder;
 use tracing::{error, warn};
 use uuid::Uuid;
 
@@ -162,13 +164,22 @@ impl DlqService {
         Ok(())
     }
 
-    /// Calculate retry delay using exponential backoff
+    /// Calculate retry delay using exponential backoff (via `backoff` crate).
     pub fn calculate_retry_delay(&self, attempt: u32) -> Duration {
-        let delay_ms = (self.config.initial_retry_delay_ms as f64
-            * self.config.backoff_multiplier.powi(attempt as i32))
-        .min(self.config.max_retry_delay_ms as f64) as u64;
-
-        Duration::from_millis(delay_ms)
+        let mut eb: backoff::ExponentialBackoff = ExponentialBackoffBuilder::new()
+            .with_initial_interval(Duration::from_millis(self.config.initial_retry_delay_ms))
+            .with_multiplier(self.config.backoff_multiplier)
+            .with_max_interval(Duration::from_millis(self.config.max_retry_delay_ms))
+            .with_randomization_factor(0.0)
+            .with_max_elapsed_time(None)
+            .build();
+        let mut out = Duration::from_millis(self.config.initial_retry_delay_ms);
+        for _ in 0..=attempt {
+            if let Some(d) = eb.next_backoff() {
+                out = d;
+            }
+        }
+        out
     }
 
     /// Get the DLQ configuration

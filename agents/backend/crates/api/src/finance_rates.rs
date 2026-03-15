@@ -1,3 +1,6 @@
+//! Finance rates / yield curve / benchmarks — **deferred: not exposed via NATS**.
+//! See `docs/platform/NATS_API.md` §3. To re-enable, implement NATS request/reply (e.g. `api.finance_rates.*`).
+
 use chrono::Utc;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};

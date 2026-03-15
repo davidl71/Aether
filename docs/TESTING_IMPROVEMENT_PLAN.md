@@ -584,8 +584,6 @@ open htmlcov/index.html
 - `docs/TEST_FIXES_COMPLETE.md` - Previous test fixes
 - `docs/research/analysis/TEST_COVERAGE_ANALYSIS.md` - Coverage analysis
 - `docs/research/integration/TESTING_STRATEGY.md` - Testing strategy
-- `docs/CRITICAL_ACTION_PLAN.md` - Overall action plan
-
 ---
 
 **Last Updated**: 2025-01-27

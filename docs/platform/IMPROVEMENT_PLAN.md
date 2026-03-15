@@ -2,6 +2,8 @@
 
 **Last updated**: 2026-03-11
 
+Deferred / future work (e.g. PCAP capture migration) is listed in [Future improvements](../planning/FUTURE_IMPROVEMENTS.md).
+
 ## Completed Tasks
 
 | Task | Notes | Exarp Task ID |

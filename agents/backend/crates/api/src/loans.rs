@@ -1,3 +1,6 @@
+//! Loans API: CRUD and aggregation. Exposed via NATS only (subjects `api.loans.*`).
+//! Config was REST-only and is not exposed; see docs/platform/NATS_API.md §3.
+
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -5,6 +8,7 @@ use std::{
 
 use anyhow::{anyhow, Context};
 use chrono::{DateTime, Utc};
+use nats_adapter::proto::v1::Loan as ProtoLoan;
 use serde::{Deserialize, Serialize};
 use sqlx::{
     sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions},
@@ -497,6 +501,46 @@ fn loan_status_from_str(value: &str) -> anyhow::Result<LoanStatus> {
         "PAID_OFF" => Ok(LoanStatus::PaidOff),
         "DEFAULTED" => Ok(LoanStatus::Defaulted),
         _ => Err(anyhow!("unknown loan status {value}")),
+    }
+}
+
+// Proto conversion for REST Accept: application/x-protobuf (enum values match proto definitions)
+
+fn loan_type_to_proto(t: &LoanType) -> i32 {
+    match t {
+        LoanType::ShirBased => 1,  // LOAN_TYPE_SHIR_BASED
+        LoanType::CpiLinked => 2,  // LOAN_TYPE_CPI_LINKED
+    }
+}
+
+fn loan_status_to_proto(s: &LoanStatus) -> i32 {
+    match s {
+        LoanStatus::Active => 1,    // LOAN_STATUS_ACTIVE
+        LoanStatus::PaidOff => 2,    // LOAN_STATUS_PAID_OFF
+        LoanStatus::Defaulted => 3, // LOAN_STATUS_DEFAULTED
+    }
+}
+
+/// Convert a `LoanRecord` to the protobuf `Loan` message for binary REST responses.
+pub fn loan_record_to_proto(r: &LoanRecord) -> ProtoLoan {
+    ProtoLoan {
+        loan_id: r.loan_id.clone(),
+        bank_name: r.bank_name.clone(),
+        account_number: r.account_number.clone(),
+        loan_type: loan_type_to_proto(&r.loan_type),
+        principal: r.principal,
+        original_principal: r.original_principal,
+        interest_rate: r.interest_rate,
+        spread: r.spread,
+        base_cpi: r.base_cpi,
+        current_cpi: r.current_cpi,
+        origination_date: r.origination_date.clone(),
+        maturity_date: r.maturity_date.clone(),
+        next_payment_date: r.next_payment_date.clone(),
+        monthly_payment: r.monthly_payment,
+        payment_frequency_months: r.payment_frequency_months,
+        status: loan_status_to_proto(&r.status),
+        last_update: r.last_update.clone(),
     }
 }
 

@@ -16,13 +16,6 @@ if command -v buf >/dev/null 2>&1; then
 else
   echo "[buf] buf not found — using protoc (optional: install buf for single-command codegen — see docs/message_schemas/README.md)"
 
-  # C++ fallback
-  if command -v protoc >/dev/null 2>&1; then
-    echo "[c++] generating..."
-    mkdir -p "$ROOT_DIR/native/generated"
-    protoc -I "$PROTO_DIR" --cpp_out="$ROOT_DIR/native/generated" "$PROTO_DIR/messages.proto"
-  fi
-
   # Go fallback
   GO_OUT="$ROOT_DIR/agents/go/proto/v1"
   if command -v protoc-gen-go >/dev/null 2>&1; then
@@ -45,8 +38,9 @@ else
 fi
 
 # Python/betterproto (non-standard plugin — kept here, not in buf.gen.yaml)
+# Output under python/generated/ so scripts/recreate_python_generated_init.py can re-export from python.generated.ib.platform.v1
 echo ""
-PYTHON_OUT="$ROOT_DIR/native/generated/python"
+PYTHON_OUT="$ROOT_DIR/python/generated"
 mkdir -p "$PYTHON_OUT"
 if command -v uv >/dev/null 2>&1; then
   echo "[py] generating with betterproto..."

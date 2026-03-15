@@ -2,12 +2,8 @@ cmake_minimum_required(VERSION 3.21)
 project(SyntheticFinancingPlatformSuperbuild LANGUAGES NONE)
 
 # Convenience targets: lint and exarp-go (run scripts from repo root)
+# (fetch_third_party removed: native build removed)
 set(_root "${CMAKE_SOURCE_DIR}")
-add_custom_target(fetch_third_party
-  COMMAND "${_root}/scripts/fetch_third_party.sh"
-  WORKING_DIRECTORY "${_root}"
-  COMMENT "Fetch TWS API and Intel decimal (run from repo root)"
-)
 add_custom_target(lint
   COMMAND "${_root}/scripts/run_linters.sh"
   WORKING_DIRECTORY "${_root}"

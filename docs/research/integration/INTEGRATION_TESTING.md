@@ -1,25 +1,25 @@
 # Integration Testing Guide
 
 **Date**: 2025-11-01
-
-**Status**: Ready for TWS Integration
-
+**Status**: Updated for Rust-first stack (native binary removed)
 **Version**: 1.0.0
+
+> **Note:** The native `ib_box_spread` binary and `scripts/integration_test.sh` were removed. Use the **Rust backend and TUI** with TWS/Gateway for integration testing.
 
 ---
 
 ## Overview
 
-This document provides comprehensive instructions for integration testing the IBKR Box Spread Generator with Interactive Brokers TWS/Gateway.
+This document describes integration testing with Interactive Brokers TWS/Gateway using the Rust backend and TUI.
 
 ## Prerequisites
 
 ### Software Requirements
 
-- ✅ **Binary Built**: `build/bin/ib_box_spread` (1.1 MB, x86_64)
-- ✅ **All Tests Passing**: 29/29 unit tests pass
-- ✅ **Configuration Valid**: `config/config.json` validated
-- ✅ **EWrapper Implementation**: Full TWS API integration
+- ✅ **Rust backend built**: `cd agents/backend && cargo build`
+- ✅ **Tests passing**: `cargo test`
+- ✅ **Configuration**: Config with TWS host/port (e.g. 127.0.0.1, 7497 for paper)
+- ✅ **IB connectivity**: Use `ib_adapter` / TUI with TWS API
 
 ### TWS/Gateway Requirements
 
@@ -31,34 +31,22 @@ This document provides comprehensive instructions for integration testing the IB
 
 ## Quick Start
 
-### Stage 0: Validate TWS/Gateway with an Official Sample
+### Stage 0: Validate TWS/Gateway
 
-Before running our stack, take an official IB sample client (or the `scmhub/ibapi` Go sample) and connect to the same TWS/Gateway. Ensure it reaches the `nextValidId` phase—if it fails, fix the environment (API settings, trusted IPs, stale sessions) before debugging our code. Proceed only when the sample succeeds.
+Before running our stack:
 
-### 1. Run Automated Integration Tests
+1. Check that TWS/Gateway is listening: `./scripts/test_tws_connection.sh 7497`
+2. Optionally use an official IB sample client to confirm the environment (API settings, trusted IPs). Proceed when the sample reaches `nextValidId`.
 
-```bash
-./scripts/integration_test.sh
-```
-
-This script will:
-
-- ✓ Validate configuration
-- ✓ Check TWS/Gateway connectivity
-- ✓ Test dry-run mode
-- ✓ Test TWS connection (if available)
-
-### 1b. Mock TWS Dry Run
-
-The integration wrapper now runs the CLI with `--mock-tws` after validation. This spins up the in-process mock TWS client, exercises the main trading loop for a few seconds (using `timeout`, default 8s), and writes the transcript to `build/integration_logs/mock_run_<timestamp>.log`. Use it to sanity-check orchestration without a live IB Gateway:
+### 1. Run integration tests
 
 ```bash
-./build/macos-x86_64-release/bin/ib_box_spread \
-  --config config/config.json \
-  --dry-run \
-  --mock-tws \
-  --log-level debug
+# Rust integration tests (may require NATS or mock)
+cd agents/backend
+cargo test --test integration_test -- --ignored
 ```
+
+Validate config and TWS connectivity by starting the TUI or backend with your config and confirming connection in logs.
 
 ### 2. Start TWS Paper Trading
 
@@ -82,22 +70,17 @@ The integration wrapper now runs the CLI with `--mock-tws` after validation. Thi
 4. Read-Only API: ☐ (unchecked)
 5. Click OK
 
-### 3. Run Application
+### 3. Run application
 
 ```bash
+# Start Rust TUI (use config with TWS host/port)
+cd agents/backend && cargo run -p tui_service
 
-# Dry-run mode (no real trades)
-
-build/bin/ib_box_spread --config config/config.json --dry-run
-
-# Live mode (executes orders)
-
-build/bin/ib_box_spread --config config/config.json
-
-# Monitor logs
-
-tail -f logs/ib_box_spread.log
+# Or start backend service for REST/API usage
+cd agents/backend && cargo run -p backend_service
 ```
+
+Use config to point at TWS (e.g. port 7497 for paper). Monitor application logs for connection and activity.
 
 ---
 
@@ -140,7 +123,7 @@ tail -f logs/ib_box_spread.log
 
 1. Start TWS paper trading
 2. Enable API access (see Quick Start)
-3. Run: `./scripts/integration_test.sh`
+3. Run: `./scripts/test_tws_connection.sh 7497`, then start the Rust TUI/backend with config
 
 **Expected Results:**
 
@@ -275,19 +258,19 @@ tail -f logs/ib_box_spread.log
 
 # Real-time log monitoring
 
-tail -f logs/ib_box_spread.log
+tail -f logs/*.log
 
 # Search for errors
 
-grep -i error logs/ib_box_spread.log
+grep -i error logs/*.log
 
 # Monitor connections
 
-grep -i "connect" logs/ib_box_spread.log
+grep -i "connect" logs/*.log
 
 # Track orders
 
-grep -i "order" logs/ib_box_spread.log
+grep -i "order" logs/*.log
 ```
 
 ### TWS Verification

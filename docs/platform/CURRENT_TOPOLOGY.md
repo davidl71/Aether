@@ -1,6 +1,6 @@
 # Current Topology
 
-**Last updated**: 2026-03-14
+**Last updated**: 2026-03-14. **Spot-check (2026-03-15):** TUI/CLI paths made explicit; broker table and storage writers verified.
 
 Short-form reference for the active runtime topology and component/broker/backend ownership.
 
@@ -8,6 +8,7 @@ For deeper detail, see:
 
 - [ARCHITECTURE.md](../../ARCHITECTURE.md)
 - [DATAFLOW_ARCHITECTURE.md](DATAFLOW_ARCHITECTURE.md)
+- [TUI_CLI_FEATURE_PARITY.md](TUI_CLI_FEATURE_PARITY.md) — TUI vs CLI capabilities and parity gaps
 - [BACKEND_SERVICES_DAEMONIZED.md](../BACKEND_SERVICES_DAEMONIZED.md)
 
 ## Summary
@@ -43,7 +44,7 @@ TUI / CLI
 | **Quant / risk / pricing** | Rust | `crates/quant`, `crates/risk` |
 | **Market data, strategy** | Rust | `crates/market_data`, `crates/strategy` |
 | **NATS ingestion, LIVE_STATE** | Rust | `crates/nats_adapter`, backend_service |
-| **TUI, CLI** | Rust | `services/tui_service`, `bin/cli` |
+| **TUI, CLI** | Rust | `agents/backend/services/tui_service`, `agents/backend/bin/cli` |
 
 ### Collection and backend service
 

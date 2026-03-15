@@ -6,6 +6,7 @@ version = "0.1.0"
 [dependencies]
 alloy = "1"
 anyhow = { workspace = true }
+backoff = { workspace = true }
 async-nats = { version = "0.46", default-features = false, features = ["server_2_10", "server_2_11", "server_2_12", "service", "jetstream", "nkeys", "crypto", "object-store", "kv", "websockets", "nuid", "aws-lc-rs"] }
 bytes = "1.5"
 chrono = { workspace = true }

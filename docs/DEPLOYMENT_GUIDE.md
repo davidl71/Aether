@@ -875,8 +875,6 @@ sudo systemctl start ib-box-spread
 - `docs/PAPER_TRADING_VALIDATION_PLAN.md` - Pre-production validation
 - `docs/MULTI_LANGUAGE_ARCHITECTURE.md` - Architecture overview
 - `README.md` - General project documentation
-- `docs/MERGED_ACTION_PLAN.md` - Production readiness checklist
-
 ---
 
 **Document Status**: ✅ Complete - Comprehensive production deployment guide

@@ -182,8 +182,10 @@ impl TuiConfig {
 
     #[cfg(test)]
     fn from_shared_str_for_test(raw: &str) -> Self {
-        let shared: SharedConfigFile =
-            serde_json::from_str(&strip_json_comments(raw)).expect("valid test config");
+        let value = jsonc_parser::parse_to_serde_value(raw, &Default::default())
+            .expect("parse ok")
+            .expect("valid test config");
+        let shared: SharedConfigFile = serde_json::from_value(value).expect("valid test config");
         let mut config = Self::default();
         config.apply_shared_config(&shared);
         config
@@ -261,14 +263,20 @@ fn load_shared_config() -> Result<Option<LoadedSharedConfig>, String> {
 
         match std::fs::read_to_string(&candidate) {
             Ok(raw) => {
-                let stripped = strip_json_comments(&raw);
-                let config =
-                    serde_json::from_str::<SharedConfigFile>(&stripped).map_err(|err| {
+                let value = jsonc_parser::parse_to_serde_value(&raw, &Default::default())
+                    .map_err(|e| {
                         format!(
-                            "Failed to parse shared config at {}: {err}",
+                            "Failed to parse shared config at {}: {e}",
                             candidate.display()
                         )
-                    })?;
+                    })?
+                    .ok_or_else(|| format!("Empty shared config at {}", candidate.display()))?;
+                let config = serde_json::from_value::<SharedConfigFile>(value).map_err(|err| {
+                    format!(
+                        "Failed to parse shared config at {}: {err}",
+                        candidate.display()
+                    )
+                })?;
                 return Ok(Some(LoadedSharedConfig {
                     path: candidate,
                     config,
@@ -285,84 +293,6 @@ fn load_shared_config() -> Result<Option<LoadedSharedConfig>, String> {
     }
 
     Ok(None)
-}
-
-fn strip_json_comments(text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    let chars: Vec<char> = text.chars().collect();
-    let mut i = 0;
-    let mut in_double = false;
-    let mut in_line = false;
-    let mut in_block = false;
-    let mut block_depth = 0_i32;
-
-    while i < chars.len() {
-        let c = chars[i];
-        if in_line {
-            if c == '\n' {
-                in_line = false;
-                out.push(c);
-            }
-            i += 1;
-            continue;
-        }
-        if in_block {
-            if c == '*' && i + 1 < chars.len() && chars[i + 1] == '/' {
-                block_depth -= 1;
-                if block_depth == 0 {
-                    in_block = false;
-                }
-                i += 2;
-            } else if c == '/' && i + 1 < chars.len() && chars[i + 1] == '*' {
-                block_depth += 1;
-                i += 2;
-            } else {
-                i += 1;
-            }
-            continue;
-        }
-        if in_double {
-            if c == '\\' && i + 1 < chars.len() {
-                out.push(c);
-                out.push(chars[i + 1]);
-                i += 2;
-            } else if c == '"' {
-                in_double = false;
-                out.push(c);
-                i += 1;
-            } else {
-                out.push(c);
-                i += 1;
-            }
-            continue;
-        }
-        if c == '"' {
-            in_double = true;
-            out.push(c);
-            i += 1;
-        } else if c == '/' && i + 1 < chars.len() {
-            match chars[i + 1] {
-                '/' => {
-                    in_line = true;
-                    i += 2;
-                }
-                '*' => {
-                    in_block = true;
-                    block_depth = 1;
-                    i += 2;
-                }
-                _ => {
-                    out.push(c);
-                    i += 1;
-                }
-            }
-        } else {
-            out.push(c);
-            i += 1;
-        }
-    }
-
-    out
 }
 
 fn normalize_rest_base_url(value: &str) -> String {

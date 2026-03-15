@@ -3,7 +3,6 @@
   // This helps Cursor/VS Code resolve imports in active Python test/helpers.
 
   "include": [
-    "native/tests/python",
     "scripts"
   ],
 
@@ -20,10 +19,7 @@
   "pythonVersion": "3.11",
 
   // Extra paths for import resolution (relative to workspace root)
-  "extraPaths": [
-    "native/tests/python",
-    "native/generated/python"
-  ],
+  "extraPaths": [],
 
   // Type checking mode
   "typeCheckingMode": "basic",

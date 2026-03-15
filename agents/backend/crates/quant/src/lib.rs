@@ -1,6 +1,5 @@
 pub mod amortization;
 pub mod convexity;
-pub mod ffi;
 pub mod margin;
 pub mod option_chain;
 pub mod yield_curve;
@@ -11,9 +10,6 @@ use time::Date;
 use RustQuant::instruments::options::{implied_volatility, BlackScholesMerton, TypeFlag};
 use RustQuant_stochastics::geometric_brownian_motion::GeometricBrownianMotion;
 use RustQuant_stochastics::process::{StochasticProcess, StochasticProcessConfig};
-
-// FFI: Using cxx crate for C++ ↔ Rust interop
-// See task T-1773489745790117000
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum OptionKind {

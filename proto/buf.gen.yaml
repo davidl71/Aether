@@ -12,10 +12,6 @@ plugins:
     opt:
       - paths=source_relative
 
-  # C++: protoc must be on PATH (system protobuf)
-  - local: protoc-gen-cpp
-    out: ../native/generated
-
   # TypeScript: ts-proto from web/node_modules (output to web/src/generated/proto)
   - local: ../web/node_modules/.bin/protoc-gen-ts_proto
     out: ../web/src/generated/proto

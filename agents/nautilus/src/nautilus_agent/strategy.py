@@ -324,7 +324,7 @@ class BoxSpreadStrategy(Strategy):
             net_debit=round(opp.net_debit, 4),
             note="BAG combo order submission — verify NT 1.224.0 API before enabling",
         )
-        # TODO: implement BAG order via NT IB exec client
+        # TODO(T-1773509396769177000): implement BAG order via NT IB exec client
         # Legs:
         #   BUY  1 opp.long_call.instrument_id   (lower_strike call)
         #   SELL 1 opp.short_call.instrument_id  (upper_strike call)

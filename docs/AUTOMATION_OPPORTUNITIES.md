@@ -15,7 +15,7 @@ Based on analysis of the codebase, I've identified **10 high-value automation op
 
 ### 1. ✅ Feature Parity Monitoring (Already Has Script)
 
-**Current State**: `scripts/check_feature_parity.sh` exists but runs manually
+**Current State**: `scripts/check_feature_parity.sh` is not present in the repo; see `docs/platform/TUI_CLI_FEATURE_PARITY.md` for TUI vs CLI comparison
 
 **Automation Value**: ⭐⭐⭐⭐⭐
 

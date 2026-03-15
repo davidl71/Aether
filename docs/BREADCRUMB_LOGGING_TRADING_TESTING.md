@@ -1,6 +1,8 @@
 # Breadcrumb Logging for Trading Operations Testing
 
-**Purpose**: Guide for using breadcrumb logging to test and debug trading operations, similar to OpenAlgo's API Analyzer.
+**Purpose**: Guide for using breadcrumb-style logging to test and debug trading operations, similar to OpenAlgo's API Analyzer.
+
+**Status:** The code examples below refer to **removed native C++** modules (`native/src/order_manager.cpp`, `native/src/tws_client.cpp`, etc.). Apply the same patterns in the **Rust backend** (`agents/backend`): add structured logging (e.g. tracing, JSON events) around order placement, TWS connection, and strategy actions in `api`, `ib_adapter`, and related crates.
 
 **Reference**:
 
@@ -25,11 +27,11 @@ This is similar to OpenAlgo's API Analyzer, but integrated directly into the tra
 
 ## Integration Points
 
-### 1. Order Manager
+### 1. Order Manager (concept; implement in Rust)
 
-**Location**: `native/src/order_manager.cpp`
+**Legacy location (removed):** `native/src/order_manager.cpp`. Implement equivalent in **Rust** (`agents/backend`, e.g. order/execution paths in `api` or `ib_adapter`) with structured logging.
 
-**Breadcrumb Logging Points**:
+**Breadcrumb-style points** (conceptual; adapt to Rust tracing/logging):
 
 ```cpp
 // Order placement attempt
@@ -102,11 +104,11 @@ ExecutionResult OrderManager::place_box_spread(...) {
 }
 ```
 
-### 2. TWS Client
+### 2. TWS / IB Client (concept; implement in Rust)
 
-**Location**: `native/src/tws_client.cpp`
+**Legacy location (removed):** `native/src/tws_client.cpp`. Implement equivalent in **Rust** (`agents/backend/crates/ib_adapter`) with structured logging.
 
-**Breadcrumb Logging Points**:
+**Breadcrumb-style points** (conceptual):
 
 ```cpp
 // Connection events
@@ -146,7 +148,7 @@ void TWSClient::Impl::error(...) override {
 
 ### 3. Strategy Execution
 
-**Location**: `native/src/box_spread_strategy.cpp`
+**Legacy (removed):** `native/src/box_spread_strategy.cpp`. Implement in **Rust** (e.g. strategy/order logic in `agents/backend`).
 
 **Breadcrumb Logging Points**:
 
@@ -181,7 +183,7 @@ void BoxSpreadStrategy::execute_opportunity(...) {
 
 ### 4. Rate Limiter
 
-**Location**: `native/src/rate_limiter.cpp`
+**Legacy (removed):** `native/src/rate_limiter.cpp`. Implement in **Rust** where rate limiting is used (e.g. `agents/backend`).
 
 **Breadcrumb Logging Points**:
 

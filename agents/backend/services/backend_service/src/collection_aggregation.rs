@@ -1,4 +1,5 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
+use std::time::Duration;
 
 use api::SharedSnapshot;
 use futures::StreamExt;
@@ -157,11 +158,20 @@ impl CollectionRuntime {
                     jetstream
                         .create_key_value(async_nats::jetstream::kv::Config {
                             bucket: bucket.clone(),
+                            history: 5,
+                            max_age: Duration::from_secs(86400), // 24h TTL
+                            max_value_size: 65_536,             // 64 KiB
+                            max_bytes: 10 * 1024 * 1024,        // 10 MiB bucket cap
                             ..Default::default()
                         })
                         .await?
                 }
             };
+            if let Err(e) = store.status().await {
+                warn!(%bucket, error = %e, "LIVE_STATE bucket status check failed (writes may still succeed)");
+            } else {
+                info!(%bucket, "LIVE_STATE bucket reachable");
+            }
             Some(store)
         } else {
             None

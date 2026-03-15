@@ -144,9 +144,7 @@ detect_include_paths() {
   local platform=$1
   local paths=()
 
-  # Workspace-relative paths (always included)
-  paths+=("\"\${workspaceFolder}/native/include\"")
-  paths+=("\"\${workspaceFolder}/native/third_party/tws-api/IBJts/source/cppclient/client\"")
+  # Workspace-relative paths (native build removed; add C++ include paths here if needed)
 
   case "$platform" in
     macos-arm64)
