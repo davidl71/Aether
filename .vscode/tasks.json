@@ -131,43 +131,6 @@
       "problemMatcher": []
     },
     {
-      "label": "Build Intel Decimal Library",
-      "type": "shell",
-      "command": "cmake",
-      "args": [
-        "-S",
-        "${workspaceFolder}/native/third_party/IntelRDFPMathLib20U2/LIBRARY",
-        "-B",
-        "${workspaceFolder}/native/third_party/IntelRDFPMathLib20U2/LIBRARY/build",
-        "-DCMAKE_BUILD_TYPE=Release"
-      ],
-      "group": "build",
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Build TWS API Library",
-      "type": "shell",
-      "command": "cmake",
-      "args": [
-        "-S",
-        "${workspaceFolder}/native/third_party/tws-api/IBJts/source/cppclient/client",
-        "-B",
-        "${workspaceFolder}/native/third_party/tws-api/IBJts/source/cppclient/client/build",
-        "-DCMAKE_BUILD_TYPE=Debug"
-      ],
-      "group": "build",
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      },
-      "dependsOn": "Build Intel Decimal Library",
-      "problemMatcher": []
-    },
-    {
       "label": "RAM Disk: Startup (Auto)",
       "type": "shell",
       "command": "${workspaceFolder}/scripts/workspace_ram_disk_manager.sh",

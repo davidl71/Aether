@@ -175,25 +175,18 @@ impl ExpiryChain {
     }
 
     pub fn days_to_expiry(&self) -> i32 {
-        if self.expiry.len() != 8 {
-            return 0;
-        }
-
-        let year: i32 = self.expiry[0..4].parse().unwrap_or(0);
-        let month: u8 = self.expiry[4..6].parse().unwrap_or(1);
-        let day: u8 = self.expiry[6..8].parse().unwrap_or(1);
-
-        let expiry_date = time::Date::from_calendar_date(
-            year,
-            time::Month::try_from(month).unwrap_or(time::Month::January),
-            day,
-        );
-        if let Ok(exp) = expiry_date {
-            let today = time::OffsetDateTime::now_utc().date();
-            (exp - today).whole_days() as i32
-        } else {
-            0
-        }
+        let (y, m, d) = match common::expiry::parse_expiry_yyyy_mm_dd(&self.expiry) {
+            Ok(ymd) => ymd,
+            Err(_) => return 0,
+        };
+        let year = y as i32;
+        let month = time::Month::try_from(m).unwrap_or(time::Month::January);
+        let expiry_date = match time::Date::from_calendar_date(year, month, d) {
+            Ok(exp) => exp,
+            Err(_) => return 0,
+        };
+        let today = time::OffsetDateTime::now_utc().date();
+        (expiry_date - today).whole_days() as i32
     }
 
     pub fn get_strikes(&self) -> Vec<f64> {

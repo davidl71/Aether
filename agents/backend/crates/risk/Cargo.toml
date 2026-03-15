@@ -4,6 +4,7 @@ edition = "2021"
 version = "0.1.0"
 
 [dependencies]
+common = { path = "../common" }
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 serde = { workspace = true }

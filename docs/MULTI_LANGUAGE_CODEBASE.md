@@ -1,6 +1,6 @@
 # Multi-Programming-Language Codebase
 
-This repository is **Rust-first**; C++ native build has been removed. This doc maps each language to directories, build/test/lint commands, and ownership.
+This repository is **Rust-first**; C++ native build has been removed and no C++ source files remain. References to `native/` in other docs are historical. This doc maps each language to directories, build/test/lint commands, and ownership.
 
 ## Language map
 

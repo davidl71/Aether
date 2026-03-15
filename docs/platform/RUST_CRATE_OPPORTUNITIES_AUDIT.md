@@ -6,12 +6,7 @@ Places where we use hand-rolled or duplicated logic that could be replaced or un
 
 ## 1. JSON with comments (strip_json_comments)
 
-**Current:** Custom parser in two places:
-
-- `agents/backend/crates/api/src/rest.rs` — `strip_json_comments()` (~50 lines), used for shared config and tests.
-- `agents/backend/services/tui_service/src/config.rs` — Same logic duplicated (`strip_json_comments()`), used for shared config and tests.
-
-**Opportunity:** Use a JSONC crate and delete the custom parser.
+**Status:** Resolved. TUI uses **`jsonc-parser::parse_to_serde_value`** in `services/tui_service/src/config.rs` for shared config. The api crate has no `rest.rs` or `strip_json_comments` in the current tree; only TUI loads the JSONC file. No duplicate custom parser remains.
 
 | Crate | Notes |
 |-------|--------|
@@ -91,13 +86,31 @@ Places where we use hand-rolled or duplicated logic that could be replaced or un
 
 ---
 
+## Duplicate code: YYYYMMDD expiry parsing
+
+**Current:** The same “parse expiry string in YYYYMMDD form” logic appears in four places with different return types and error handling:
+
+| Location | Function / code | Returns |
+|----------|------------------|--------|
+| `crates/quant/src/lib.rs` | `parse_expiry_to_days()` | `Result<i64, QuantError>` |
+| `crates/risk/src/calculator.rs` | `parse_expiry_days()` | `Result<i64, ()>` |
+| `crates/ib_adapter/src/lib.rs` | `parse_expiry_yyyymmdd()` | `Result<(u16, u8, u8), String>` |
+| `crates/quant/src/option_chain.rs` | inline (slice `[0..4]` etc.) | `i32` (0 on error) |
+
+**Recommendation:** Add a small shared helper (e.g. in `api` or a tiny `common` crate) that parses YYYYMMDD and returns a date or days-since-today; have quant, risk, and ib_adapter call it and map to their error types. Low priority unless expiry parsing rules or formats change.
+
+**Dependencies that implement similar features:** The workspace already has crates that can parse YYYYMMDD: **time** (quant, risk) with features `parsing` and `macros` — `Date::parse(s, &format_description!("[year][month][day]"))`; **chrono** (api, ledger, tui_service) — `NaiveDate::parse_from_str(s, "%Y%m%d")`. We use a zero-dependency implementation in `crates/common` so `ib_adapter` does not need `time` or `chrono`. See `crates/common/src/expiry.rs` for links.
+
+---
+
 ## Summary table
 
 | Area | Current | Suggested crate | Priority |
 |------|--------|------------------|----------|
-| JSON with comments | Custom `strip_json_comments` in api + tui_service | **jsonc** or **jsonc-parser** | Medium – remove duplication and custom parser |
-| TUI NATS backoff/circuit breaker | Custom in tui_service | **backoff** (and optionally circuit-breaker) | Low |
-| nats_adapter DLQ retry delay | Custom exponential in dlq.rs | **backoff** | Low |
+| JSON with comments | Resolved: tui uses **jsonc-parser** | — | Done |
+| Expiry parsing (YYYYMMDD) | Resolved: **common::expiry::parse_expiry_yyyy_mm_dd** in `crates/common` | — | Done |
+| TUI NATS backoff/circuit breaker | Custom in tui_service; uses **backoff** crate | — | Low |
+| nats_adapter DLQ retry delay | Uses **backoff** crate | — | Done |
 | Backend config | toml + path only | **config** / **figment** when env overlay needed | Later |
 | Mock market data | Concrete `MockMarketDataSource` | Keep; mockall only if we need test-only mocks | Low |
 | ib_adapter stubs | Defaults + TODO | Implement with ibapi when ready | N/A |

@@ -2,18 +2,19 @@
 name = "quant"
 edition = "2021"
 version = "0.1.0"
-description = "Quantitative finance calculations using RustQuant"
+description = "Quantitative finance calculations (BSM, Greeks, Monte Carlo, yield curves)"
 
 [lib]
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [dependencies]
+common = { path = "../common" }
 anyhow = { workspace = true }
+rand = "0.8"
 serde = { workspace = true }
 thiserror = { workspace = true }
-RustQuant = "0.3"
-RustQuant_stochastics = "0.3"
 time = "0.3"
 
 [dev-dependencies]
 approx = "0.5"
+rand_chacha = "0.3"

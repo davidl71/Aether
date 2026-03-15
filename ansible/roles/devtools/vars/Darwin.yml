@@ -19,7 +19,7 @@ _devtools_packages:
   - boost
   - protobuf
   - abseil
-  # Compiler cache (scripts/build_fast.sh; sccache preferred when present)
+  # Compiler cache: C++ (build_fast.sh) and Rust (just build-rust, build_rust_ai_friendly.sh; RUSTC_WRAPPER=sccache when present)
   - ccache
   - sccache
   # Pre-commit / lint (matches .pre-commit-config.yaml)

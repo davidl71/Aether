@@ -17,21 +17,6 @@ pub mod types;
 
 pub use types::*;
 
-/// Parse expiry string in YYYYMMDD form into (year, month, day) for ibapi.
-fn parse_expiry_yyyymmdd(expiry: &str) -> Result<(u16, u8, u8), String> {
-    let s = expiry.trim();
-    if s.len() != 8 || !s.chars().all(|c| c.is_ascii_digit()) {
-        return Err(format!("Option expiry must be YYYYMMDD, got {:?}", expiry));
-    }
-    let y: u16 = s[0..4].parse().map_err(|_| format!("invalid year in expiry {}", expiry))?;
-    let m: u8 = s[4..6].parse().map_err(|_| format!("invalid month in expiry {}", expiry))?;
-    let d: u8 = s[6..8].parse().map_err(|_| format!("invalid day in expiry {}", expiry))?;
-    if m == 0 || m > 12 || d == 0 || d > 31 {
-        return Err(format!("invalid date in expiry {}", expiry));
-    }
-    Ok((y, m, d))
-}
-
 /// IB Adapter configuration
 #[derive(Debug, Clone)]
 pub struct IbConfig {
@@ -220,7 +205,7 @@ impl IbAdapter {
         }
         let arc = self.client.read().await.clone();
         let client = arc.as_ref().ok_or("Not connected")?;
-        let (y, m, d) = parse_expiry_yyyymmdd(&contract.expiry)?;
+        let (y, m, d) = common::expiry::parse_expiry_yyyy_mm_dd(&contract.expiry)?;
         let ib_contract = if contract.is_call {
             Contract::call(&contract.symbol).strike(contract.strike).expires_on(y, m, d).build()
         } else {

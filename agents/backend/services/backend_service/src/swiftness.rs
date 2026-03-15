@@ -95,6 +95,7 @@ async fn fetch_and_merge_positions(client: &Client, state: &SharedSnapshot) -> a
 
         // Add new Swiftness positions
         let new_count = positions.len();
+        let account_id = snapshot.account_id.clone();
         for pos in positions {
             snapshot.positions.push(PositionSnapshot {
                 id: pos.id,
@@ -103,7 +104,7 @@ async fn fetch_and_merge_positions(client: &Client, state: &SharedSnapshot) -> a
                 cost_basis: pos.cost_basis,
                 mark: pos.mark,
                 unrealized_pnl: pos.unrealized_pnl,
-                account_id: Some(snapshot.account_id.clone()),
+                account_id: Some(account_id.clone()),
             });
         }
 

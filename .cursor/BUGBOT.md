@@ -4,7 +4,7 @@ This file provides project-specific context for Cursor Bugbot when reviewing pul
 
 ## Project Overview
 
-Multi-asset synthetic financing platform with a C++20 core, pybind11-backed Python bindings/tests, Rust backend agents, and archived web surfaces. Box spreads are one strategy component, not the whole product.
+Multi-asset synthetic financing platform; **Rust-first**. Rust backend (`agents/backend/`) is the primary runtime (API, TUI, ib_adapter, quant, risk). C++ native build has been removed; no `native/` tree. Box spreads are one strategy component, not the whole product.
 
 ## Critical Security Requirements
 
@@ -27,46 +27,18 @@ Multi-asset synthetic financing platform with a C++20 core, pybind11-backed Pyth
 
 ## Code Style Requirements
 
-### C++ Code Style
+### Rust (primary) and style
 
-- **Standard**: C++20 (ISO C++20)
-- **Indentation**: 2 spaces (not tabs)
-- **Braces**: Allman style for multi-line scopes
-- **Line length**: 100 character soft wrap
-- **Naming**:
-  - Types: `PascalCase` (e.g., `Scenario`, `OrderManager`)
-  - Functions: `snake_case` (e.g., `make_scenario`, `calculate_profit`)
-  - Variables: `snake_case`
-  - Constants: `k` prefix (e.g., `kMaxPositions`)
-- **Comments**: Add `//` comments only where trading math is non-obvious
-
-### File Organization
-
-- Core logic: `native/src/` with headers in `native/include/`
-- Tests: `native/tests/` mirroring source file names
-- Helper scripts: Top-level `scripts/`
-- Generated output: `build/`, `protobuf-build/` (disposable)
+- **Rust**: Primary codebase in `agents/backend/` (crates + services). Follow AGENTS.md and CLAUDE.md; `cargo fmt`, `cargo clippy`, `just build-rust`, `just test`.
+- **File organization**: Core logic in `agents/backend/crates/`; scripts in `scripts/`; generated output in `build/`, `agents/backend/target/` (disposable).
 
 ## Build System Requirements
 
-### CMake Configuration
+### Rust build and test
 
-- Use CMake presets: `macos-universal-debug`, `macos-universal-release`
-- Dependencies must be properly configured:
-  - TWS API: `native/third_party/tws-api/IBJts/source/cppclient/client/`
-  - Intel Decimal: `native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
-  - Protocol Buffers: System-installed
-  - Abseil: System-installed
-
-### Build Commands
-
-```bash
-cmake --preset macos-universal-debug
-cmake --build --preset macos-universal-debug
-./scripts/build_universal.sh
-./scripts/run_linters.sh
-ctest --output-on-failure
-```
+- **Build**: `just build-rust` or `cargo build` in `agents/backend/`
+- **Test**: `just test` or `cargo test` in `agents/backend/`
+- **Lint**: `just lint` or `./scripts/run_linters.sh` (includes Rust fmt + clippy)
 
 ## Testing Requirements
 
@@ -78,10 +50,9 @@ ctest --output-on-failure
 
 ## Static Analysis
 
-- Run linters before committing: `./scripts/run_linters.sh`
-- Tools: cppcheck, Clang Static Analyzer, Infer, clang-tidy
-- Add annotations for critical functions: `[[nodiscard]]`, `__attribute__((nonnull))`
-- See `docs/STATIC_ANALYSIS_ANNOTATIONS.md` for details
+- Run linters before committing: `just lint` or `./scripts/run_linters.sh` (Rust: fmt + clippy; shell, Ansible, etc.)
+- Rust: `cargo clippy` with `-D warnings`; use `#[must_use]`, `Result`/`Option` appropriately
+- See `docs/STATIC_ANALYSIS_ANNOTATIONS.md` for legacy C++ annotations (reference only)
 
 ## Common Issues to Flag
 
@@ -95,9 +66,7 @@ ctest --output-on-failure
 
 ### Code Quality Issues
 
-- Inconsistent indentation (must be 2 spaces)
-- Incorrect brace style (must be Allman for multi-line)
-- Line length exceeding 100 characters
+- Rust: `cargo fmt` and `cargo clippy` must pass; follow project naming and style (see AGENTS.md)
 - Missing or incorrect naming conventions
 - Missing comments for non-obvious trading math
 
@@ -120,13 +89,13 @@ ctest --output-on-failure
 
 Before approving a PR, verify:
 
-1. ✅ All tests pass (`ctest --output-on-failure`)
-2. ✅ Linters pass (`./scripts/run_linters.sh`)
-3. ✅ Build succeeds (`cmake --build --preset macos-universal-debug`)
+1. ✅ All tests pass (`just test` or `cargo test` in `agents/backend/`)
+2. ✅ Linters pass (`just lint` or `./scripts/run_linters.sh`)
+3. ✅ Build succeeds (`just build-rust` or `cargo build` in `agents/backend/`)
 4. ✅ No credentials or secrets committed
-5. ✅ Code follows style guidelines (2-space indent, Allman braces)
+5. ✅ Code follows style guidelines (Rust: fmt + clippy; see AGENTS.md)
 6. ✅ Documentation updated if needed
-7. ✅ Static analysis annotations added for critical functions
+7. ✅ Critical paths have tests
 
 ## Documentation Requirements
 
@@ -137,19 +106,12 @@ Before approving a PR, verify:
 
 ## Multi-Language Considerations
 
-This project includes:
+This project is **Rust-first**:
 
-- **C++**: Core trading logic (`native/src/`)
-- **Python**: pybind11 bindings and binding tests (`native/src/box_spread_pybind.cpp`, `native/tests/python/`)
-- **Rust**: Backend services (`agents/backend/`)
-- **Go**: Agents (`agents/go/`)
-- **TypeScript**: Web interface (`web/`)
+- **Rust**: Primary codebase (`agents/backend/` — API, TUI, ib_adapter, quant, risk). Core build, test, and lint target.
+- **Python**: Scripts and optional agents; no active C++ bindings. Web and legacy C++ native build removed.
 
-When reviewing:
-
-- Verify language-specific conventions are followed
-- Check that cross-language interfaces are properly defined
-- Ensure build system handles all languages correctly
+When reviewing: verify Rust conventions (fmt, clippy), cross-crate and REST contracts, and that tests cover changed paths.
 
 ## Git Workflow
 

@@ -118,21 +118,11 @@ impl Default for RiskCalculator {
 }
 
 fn parse_expiry_days(expiry: &str) -> Result<i64, ()> {
-    if expiry.len() != 8 {
-        return Err(());
-    }
-    let year: i32 = expiry[0..4].parse().map_err(|_| ())?;
-    let month: u32 = expiry[4..6].parse().map_err(|_| ())?;
-    let day: u32 = expiry[6..8].parse().map_err(|_| ())?;
-
-    let month: u8 = month.try_into().map_err(|_| ())?;
-    let day: u8 = day.try_into().map_err(|_| ())?;
-
-    let month = time::Month::try_from(month).map_err(|_| ())?;
-
+    let (y, m, d) = common::expiry::parse_expiry_yyyy_mm_dd(expiry).map_err(|_| ())?;
+    let year = y as i32;
+    let month = time::Month::try_from(m).map_err(|_| ())?;
     let today = time::OffsetDateTime::now_utc().date();
-    let expiry_date = time::Date::from_calendar_date(year, month, day).map_err(|_| ())?;
-
+    let expiry_date = time::Date::from_calendar_date(year, month, d).map_err(|_| ())?;
     Ok((expiry_date - today).whole_days())
 }
 

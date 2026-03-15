@@ -85,25 +85,7 @@ Trade-Frame's `TFInteractiveBrokers` library provides excellent patterns for TWS
 
 ### Our Current Implementation
 
-We already follow this pattern! ✅
-
-```cpp
-// Our current implementation (from TWS_INTEGRATION_TEMPLATE.cpp):
-
-void start_reader_thread() {
-    auto reader = std::make_unique<EReader>(&client_, &signal_);
-    reader->start();
-
-    reader_thread_ = std::make_unique<std::thread>([this, r = std::move(reader)]() {
-        while (connected_) {
-            signal_.waitForSignal();
-            r->processMsgs();
-        }
-    });
-}
-```
-
-**Status:** ✅ **ALREADY CORRECT** - We're using the same pattern as Trade-Frame!
+We follow this pattern in the **Rust** IBKR adapter. The legacy C++ template (`docs/TWS_INTEGRATION_TEMPLATE.cpp`) was removed when the native build was retired; equivalent reader/event-loop logic lives in **`agents/backend/crates/ib_adapter`** (Rust).
 
 ---
 

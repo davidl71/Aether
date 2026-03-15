@@ -62,15 +62,53 @@ clean-rust:
     cd agents/backend && cargo clean
     @echo "Rust workspace cleaned. To free more: rm -rf ~/.cargo/registry/cache ~/.cargo/git (global cache)."
 
+# Save cargo-sweep timestamp (run after a successful build so sweep removes only older artifacts).
+# Requires: cargo install cargo-sweep. Automated: run after successful `just test` and `just build-rust`.
+sweep-stamp:
+    cd agents/backend && cargo sweep sweep . --stamp
+
+# Remove Cargo target artifacts older than the last sweep-stamp. Use after builds to free disk; next build will recompile removed crates.
+# CI runs sweep (agents-backend-rust.yml) after build/test to keep the target cache small.
+# Dry-run: just sweep-dry
+sweep:
+    cd agents/backend && cargo sweep sweep . --file .
+sweep-dry:
+    cd agents/backend && cargo sweep sweep . --file . --dry-run
+
+# Prune artifacts older than N days (default 14). For cron/daily: 0 2 * * * cd /path/to/repo && just sweep-auto
+# Requires: cargo install cargo-sweep
+sweep-auto days="14":
+    cd agents/backend && cargo sweep sweep . --time {{days}}
+
+# Find unused dependencies (compile-time check, more accurate than cargo-machete). Requires: cargo install cargo-udeps, rustup install nightly
+udeps:
+    cd agents/backend && rustup run nightly cargo udeps
+
+# Show Cargo global cache size (~/.cargo). Requires: cargo install cargo-cache
+cache:
+    cargo cache
+# Trim global cache to limit (default 500M). Dry-run: just cache-trim-dry [limit]
+cache-trim limit="500M":
+    cargo cache trim --limit {{limit}}
+cache-trim-dry limit="1G":
+    cargo cache trim --dry-run --limit {{limit}}
+# Remove source checkouts (frees space; crates re-download on next build)
+cache-autoclean:
+    cargo cache -a
+
+# Build Rust workspace (debug). Uses sccache when available (RUSTC_WRAPPER=sccache; cache: .cache/sccache). On success, updates cargo-sweep stamp if installed.
+build-rust:
+    cd agents/backend && env $(command -v sccache >/dev/null 2>&1 && echo RUSTC_WRAPPER=sccache) SCCACHE_DIR="${SCCACHE_DIR:-../.cache/sccache}" cargo build && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep sweep . --stamp || true)
+
 # --- Test ---
 
-# Run Rust tests (primary; C++ tests removed with native build)
+# Run Rust tests (primary; C++ tests removed with native build). Uses sccache when available. On success, updates cargo-sweep stamp if installed.
 test:
-    cd agents/backend && cargo test
+    cd agents/backend && env $(command -v sccache >/dev/null 2>&1 && echo RUSTC_WRAPPER=sccache) SCCACHE_DIR="${SCCACHE_DIR:-../.cache/sccache}" cargo test && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep sweep . --stamp || true)
 
 # Run a specific Rust test by name (e.g. just test-one risk_calculator)
 test-one name:
-    cd agents/backend && cargo test {{name}}
+    cd agents/backend && env $(command -v sccache >/dev/null 2>&1 && echo RUSTC_WRAPPER=sccache) SCCACHE_DIR="${SCCACHE_DIR:-../.cache/sccache}" cargo test {{name}} && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep sweep . --stamp || true)
 
 # Run Python tests (nautilus agent)
 test-python:
@@ -108,20 +146,20 @@ lint-shell:
     shellcheck -x scripts/*.sh ansible/run-dev-setup.sh
     @echo "lint-shell done"
 
-# CMake lint (cmake-lint from cmakelang). Requires: pip install cmakelang or uv tool install cmakelang
+# CMake lint (cmake-lint from cmakelang). Root CMakeLists only; native/ removed. Requires: pip install cmakelang or uv tool install cmakelang
 lint-cmake:
     @command -v cmake-lint >/dev/null 2>&1 || (echo "cmake-lint not found (pip install cmakelang or uv tool install cmakelang)" && exit 1)
-    cmake-lint CMakeLists.txt native/CMakeLists.txt native/tests/CMakeLists.txt native/ibapi_cmake/CMakeLists.txt
+    cmake-lint CMakeLists.txt
     @echo "lint-cmake done"
 
 # Shell-only lint, single JSON line to stdout (for tools/AI). Log to logs/lint_shell_ai.log.
 lint-shell-ai:
     ./scripts/lint_shell_ai.sh
 
-# Python-only lint (ruff + bandit). Full lint is `just lint`.
+# Python-only lint (ruff + bandit). Full lint is `just lint`. native/tests/python removed with native build.
 lint-python:
-    uv run --with ruff ruff check scripts native/tests/python
-    @command -v bandit >/dev/null 2>&1 && bandit -r scripts native/tests/python || echo "[skip] bandit not installed (optional)"
+    uv run --with ruff ruff check scripts
+    @command -v bandit >/dev/null 2>&1 && bandit -r scripts || echo "[skip] bandit not installed (optional)"
     @echo "lint-python done"
 
 # Show lint log paths and tail main log (logs/lint_ai_friendly.log). Creates logs when you run lint --ai-friendly.
@@ -129,9 +167,9 @@ lint-python:
 lint-log *args:
     ./scripts/check_lint_logs.sh {{args}}
 
-# Format C++ code with clang-format
+# Format C++ code with clang-format (no-op when native/ removed; kept for reference)
 format:
-    find native/src native/include -name '*.cpp' -o -name '*.h' | xargs clang-format -i
+    @test -d native/src && find native/src native/include -name '*.cpp' -o -name '*.h' 2>/dev/null | xargs clang-format -i || echo "[skip] no native/src (C++ build removed)"
 
 # Run ESLint on web frontend
 lint-web:
@@ -141,15 +179,15 @@ lint-web:
 typecheck:
     cd web && npm run type-check
 
-# Auto-fix all fixable issues (format + lint-fix)
+# Auto-fix all fixable issues (format + lint-fix). C++ format skipped when native/ removed.
 fix:
-    find native/src native/include -name '*.cpp' -o -name '*.h' | xargs clang-format -i
+    @test -d native/src && find native/src native/include -name '*.cpp' -o -name '*.h' 2>/dev/null | xargs clang-format -i || true
     cd web && npm run lint:fix 2>/dev/null || true
     cd web && npm run lint:css:fix 2>/dev/null || true
     @echo "All auto-fixable issues resolved"
 
-# Pre-push checks (format, lint, test, build)
-pre-push: format lint test build
+# Pre-push checks (format, lint, test, build). format is no-op when native/ absent.
+pre-push: format lint test build-rust
     @echo "All pre-push checks passed — safe to push"
 
 # Lighter pre-commit checks (format + lint only; no test/build)
@@ -189,10 +227,10 @@ run-tui-live:
 qa-tui-screenshot:
     @echo "qa-tui-screenshot is unavailable: the old Python TUI screenshot helper was removed." && exit 1
 
-# Sanity check: Python binding tests + Rust TUI buildability
+# Sanity check: Python binding tests + Rust TUI buildability. On success, updates cargo-sweep stamp if installed.
 sanity:
     just test-python
-    cd agents/backend && cargo check -p tui_service
+    cd agents/backend && env $(command -v sccache >/dev/null 2>&1 && echo RUSTC_WRAPPER=sccache) SCCACHE_DIR="${SCCACHE_DIR:-../.cache/sccache}" cargo check -p tui_service && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep sweep . --stamp || true)
 
 # Sync ad hoc Python tooling dependencies
 py-sync:

@@ -25,10 +25,6 @@ nats_adapter = { path = "../../crates/nats_adapter" }
 ratatui   = "0.30"
 # event-stream enables crossterm::EventStream for async tokio::select! event handling
 crossterm = { version = "0.28", features = ["event-stream"] }
-# Order confirmation dialogs, risk-check overlays, alert detail modals
-tui-widgets = { version = "0.6", features = ["popup"] }
-# Interactive symbol/filter input (e.g. "filter symbols", "enter order qty")
-ratatui-textarea = "0.8"
 
 # Panic hooks that restore terminal before printing error reports
 color-eyre = "0.6"

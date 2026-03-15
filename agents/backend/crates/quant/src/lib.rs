@@ -1,29 +1,20 @@
 pub mod amortization;
+pub mod bsm;
 pub mod convexity;
+pub mod gbm;
 pub mod margin;
 pub mod option_chain;
 pub mod yield_curve;
 
+use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use time::Date;
-use RustQuant::instruments::options::{implied_volatility, BlackScholesMerton, TypeFlag};
-use RustQuant_stochastics::geometric_brownian_motion::GeometricBrownianMotion;
-use RustQuant_stochastics::process::{StochasticProcess, StochasticProcessConfig};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum OptionKind {
     Call,
     Put,
-}
-
-impl From<OptionKind> for TypeFlag {
-    fn from(kind: OptionKind) -> Self {
-        match kind {
-            OptionKind::Call => TypeFlag::Call,
-            OptionKind::Put => TypeFlag::Put,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
@@ -190,50 +181,21 @@ impl QuantCalculator {
     }
 
     fn parse_expiry_to_days(expiry: &str) -> Result<i64, QuantError> {
-        if expiry.len() != 8 {
-            return Err(QuantError::InvalidParameter(
-                "Expiry must be YYYYMMDD format".to_string(),
-            ));
-        }
-
-        let year: i32 = expiry[0..4]
-            .parse()
-            .map_err(|_| QuantError::InvalidParameter("Invalid year in expiry".to_string()))?;
-        let month: u32 = expiry[4..6]
-            .parse()
-            .map_err(|_| QuantError::InvalidParameter("Invalid month in expiry".to_string()))?;
-        let day: u32 = expiry[6..8]
-            .parse()
-            .map_err(|_| QuantError::InvalidParameter("Invalid day in expiry".to_string()))?;
-
-        let month: u8 = month
-            .try_into()
+        let (y, m, d) = common::expiry::parse_expiry_yyyy_mm_dd(expiry)
+            .map_err(|e| QuantError::InvalidParameter(e))?;
+        let year = y as i32;
+        let month = time::Month::try_from(m)
             .map_err(|_| QuantError::InvalidParameter("Invalid month".to_string()))?;
-        let day: u8 = day
-            .try_into()
-            .map_err(|_| QuantError::InvalidParameter("Invalid day".to_string()))?;
-
-        let month = time::Month::try_from(month)
-            .map_err(|_| QuantError::InvalidParameter("Invalid month".to_string()))?;
-
-        let expiry_date = Date::from_calendar_date(year, month, day)
+        let expiry_date = Date::from_calendar_date(year, month, d)
             .map_err(|_| QuantError::InvalidParameter("Invalid date".to_string()))?;
-
         let today = time::OffsetDateTime::now_utc().date();
         let days = (expiry_date - today).whole_days();
-
         if days < 0 {
             return Err(QuantError::InvalidParameter(
                 "Expiry date is in the past".to_string(),
             ));
         }
-
         Ok(days)
-    }
-
-    fn days_to_expiry(&self, days: i64) -> Date {
-        let today = time::OffsetDateTime::now_utc().date();
-        today + time::Duration::days(days)
     }
 
     pub fn calculate_option_price(
@@ -251,12 +213,7 @@ impl QuantCalculator {
             ));
         }
 
-        let days = (t_years * 365.0).round() as i64;
-        let expiry = self.days_to_expiry(days);
-
-        let bsm = BlackScholesMerton::new(r, s, k, sigma, r, None, expiry, option_type.into());
-
-        Ok(bsm.price())
+        Ok(bsm::bsm_price(s, k, t_years, r, sigma, option_type))
     }
 
     pub fn calculate_greeks(
@@ -274,17 +231,12 @@ impl QuantCalculator {
             ));
         }
 
-        let days = (t_years * 365.0).round() as i64;
-        let expiry = self.days_to_expiry(days);
-
-        let bsm = BlackScholesMerton::new(r, s, k, sigma, r, None, expiry, option_type.into());
-
         Ok(Greeks {
-            delta: bsm.delta(),
-            gamma: bsm.gamma(),
-            theta: bsm.theta() / 365.0,
-            vega: bsm.vega() / 100.0,
-            rho: bsm.rho() / 100.0,
+            delta: bsm::bsm_delta(s, k, t_years, r, sigma, option_type),
+            gamma: bsm::bsm_gamma(s, k, t_years, r, sigma),
+            theta: bsm::bsm_theta(s, k, t_years, r, sigma, option_type),
+            vega: bsm::bsm_vega(s, k, t_years, r, sigma),
+            rho: bsm::bsm_rho(s, k, t_years, r, sigma, option_type),
         })
     }
 
@@ -303,13 +255,7 @@ impl QuantCalculator {
             ));
         }
 
-        let iv = implied_volatility(market_price, s, k, t_years, r, option_type.into());
-
-        if iv.is_finite() {
-            Ok(iv)
-        } else {
-            Err(QuantError::ImpliedVolatilityNotFound)
-        }
+        bsm::implied_volatility(market_price, s, k, t_years, r, option_type)
     }
 
     pub fn calculate_historical_volatility(
@@ -783,14 +729,10 @@ impl QuantCalculator {
             ));
         }
 
-        let gbm = GeometricBrownianMotion::new(r, sigma);
+        let mut rng = rand::rngs::StdRng::from_entropy();
+        let paths = gbm::euler_maruyama(&mut rng, s, r, sigma, t_years, 100, simulations);
 
-        let config = StochasticProcessConfig::new(s, 0.0, t_years, 100, simulations, false);
-
-        let output = gbm.euler_maruyama(&config);
-
-        let final_prices: Vec<f64> = output
-            .paths
+        let final_prices: Vec<f64> = paths
             .iter()
             .filter_map(|path| path.last().copied())
             .collect();

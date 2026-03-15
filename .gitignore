@@ -107,6 +107,7 @@ native/third_party/IntelRDFPMathLib20U2/**
 native/third_party/IntelRDFPMathLib20U4/
 native/third_party/IntelRDFPMathLib20U2/**/*.a
 /agents/backend/target/
+sweep.timestamp
 /agents/backend-mock/target/
 /agents/backend-data/target/
 /web/node_modules/

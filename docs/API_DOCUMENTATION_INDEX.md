@@ -461,6 +461,7 @@ for large multi-leg positions.
   - `macos-universal-release`: Production build
 
 - **Build parallelization and modularity**: `docs/BUILD_PARALLELIZATION_AND_MODULARITY.md` — How C++ (Ninja/CMAKE_BUILD_PARALLEL_LEVEL), Rust (Cargo workspace), and lint (--parallel) are parallelized; module layout for incremental builds.
+- **Rust build size**: `docs/platform/RUST_BUILD_SIZE.md` — How we reduced `agents/backend` target size; what drives remaining size; feature-flag options and expected savings.
 
 ### Abseil (Google C++ Libraries)
 

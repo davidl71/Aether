@@ -5,6 +5,7 @@
 #   ./scripts/build_rust_ai_friendly.sh [cargo args...]
 #   ./scripts/build_rust_ai_friendly.sh --json-only [cargo args...]
 #
+# Uses sccache for Rust when available (same cache as C++ if workspace_paths is used).
 # Output (stdout): JSON with success, duration, errors
 set -euo pipefail
 
@@ -14,6 +15,16 @@ RUST_DIR="${PROJECT_ROOT}/agents/backend"
 LOG_DIR="${PROJECT_ROOT}/logs"
 mkdir -p "${LOG_DIR}"
 BUILD_LOG="${LOG_DIR}/rust_build_ai_friendly.log"
+
+# Optional: workspace cache dirs and sccache for Rust (same as C++ build_fast.sh)
+# shellcheck source=./include/workspace_paths.sh
+. "${SCRIPT_DIR}/include/workspace_paths.sh"
+setup_workspace_paths
+if command -v sccache &>/dev/null; then
+  export RUSTC_WRAPPER=sccache
+  export SCCACHE_CACHE_SIZE="${SCCACHE_CACHE_SIZE:-10G}"
+  mkdir -p "${SCCACHE_DIR}"
+fi
 
 JSON_ONLY=false
 if [[ "${1:-}" == "--json-only" ]]; then

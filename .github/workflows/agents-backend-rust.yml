@@ -34,6 +34,18 @@ jobs:
         with:
           components: rustfmt, clippy
 
+      - name: Install sccache
+        id: install_sccache
+        run: cargo install sccache --locked
+        continue-on-error: true
+
+      - name: Set up sccache for Rust
+        if: steps.install_sccache.outcome == 'success'
+        run: |
+          echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"
+          mkdir -p ~/.cache/sccache
+          echo "SCCACHE_DIR=$HOME/.cache/sccache" >> "$GITHUB_ENV"
+
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
@@ -62,3 +74,10 @@ jobs:
 
       - name: Run cargo audit
         run: cargo audit
+
+      # Trim target/ before saving cache (keeps cache smaller; sweep removes artifacts older than 0 days)
+      - name: Install cargo-sweep
+        run: cargo install cargo-sweep
+
+      - name: Sweep old target artifacts (trim cache)
+        run: cargo sweep sweep . --time 0

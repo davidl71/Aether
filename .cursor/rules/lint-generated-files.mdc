@@ -18,7 +18,7 @@ alwaysApply: false
 | Files changed | Lint command (from repo root) |
 |---------------|-------------------------------|
 | Python (`python/**/*.py`) | `uv run ruff check <paths>` then `uv run ruff format --check <paths>` (or `ruff format <paths>` to fix) |
-| C++ (`native/**/*.cpp`, `native/**/*.h`) | `just lint` (full) or run cppcheck/clang-tidy on listed files if script supports it |
+| Rust (`agents/backend/**/*.rs`) | `just lint` (includes Rust fmt + clippy) or `cargo clippy` in `agents/backend/` |
 | Shell (`scripts/*.sh`) | `shellcheck <paths>` or `just lint-shell` |
 | Ansible (`ansible/**/*.yml`) | `ansible-lint` on changed playbooks/roles |
 | TypeScript/JS (`web/**`, `tui-e2e/**`) | `just lint` (includes ESLint) or run from `web/` / `tui-e2e/` |

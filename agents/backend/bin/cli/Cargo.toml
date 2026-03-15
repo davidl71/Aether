@@ -8,10 +8,7 @@ license.workspace = true
 [dependencies]
 # Workspace dependencies
 anyhow.workspace = true
-chrono.workspace = true
 serde.workspace = true
-serde_json.workspace = true
-tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 
@@ -21,8 +18,6 @@ clap = { version = "4", features = ["derive", "env"] }
 # Configuration
 toml.workspace = true
 
-# Logging
-tracing-appender = "0.2"
 
 [features]
 default = []

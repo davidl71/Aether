@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run all project linters (C++, Python, JS/TS, shell, Ansible, exarp-go, etc.).
+# Run all project linters (C++, Rust, Python, JS/TS, shell, Ansible, exarp-go, etc.).
 #
 # Usage:
 #   ./scripts/run_linters.sh                    # normal (verbose)
@@ -119,7 +119,15 @@ run_limited() {
   return "${ret}"
 }
 
+# Skip C++ linters when there is no C++ tree (e.g. native/ and top-level src/ removed).
+has_cpp_tree() {
+  [[ -d "${ROOT_DIR}/src" ]] || [[ -d "${ROOT_DIR}/native/src" ]]
+}
+
 run_cppcheck() {
+  if ! has_cpp_tree; then
+    return 0
+  fi
   if ! command -v cppcheck >/dev/null 2>&1; then
     warn "Skipping cppcheck (executable not found)"
     return 0
@@ -129,6 +137,11 @@ run_cppcheck() {
   local cpp_src="${ROOT_DIR}/src"
   local cpp_include="${ROOT_DIR}/include"
   local cpp_tests="${ROOT_DIR}/tests"
+  if [[ -d "${ROOT_DIR}/native/src" ]]; then
+    cpp_src="${ROOT_DIR}/native/src"
+    cpp_include="${ROOT_DIR}/native/include"
+    cpp_tests="${ROOT_DIR}/native/tests"
+  fi
   if [ ! -d "${cpp_src}" ]; then
     warn "Skipping cppcheck (no src directory)"
     return 0
@@ -161,6 +174,9 @@ run_cppcheck() {
 }
 
 run_clang_analyze() {
+  if ! has_cpp_tree; then
+    return 0
+  fi
   if ! command -v clang >/dev/null 2>&1; then
     warn "Skipping clang --analyze (clang not found)"
     return 0
@@ -469,6 +485,9 @@ run_ruff() {
 }
 
 run_infer() {
+  if ! has_cpp_tree; then
+    return 0
+  fi
   if ! command -v infer >/dev/null 2>&1; then
     warn "Skipping Infer (executable not found)"
     warn "Install Infer: brew install infer or see https://fbinfer.com/docs/getting-started"
@@ -535,6 +554,34 @@ run_infer() {
   info "RacerD (thread safety) analysis included. For details: https://fbinfer.com/docs/checker-racerd"
 }
 
+run_rust_lint() {
+  local backend_dir="${ROOT_DIR}/agents/backend"
+  if [[ ! -f "${backend_dir}/Cargo.toml" ]]; then
+    return 0
+  fi
+  if ! command -v cargo >/dev/null 2>&1; then
+    warn "Skipping Rust lint (cargo not found)"
+    return 0
+  fi
+  if ! cargo fmt --version &>/dev/null; then
+    warn "Skipping Rust fmt (rustfmt not installed; run: rustup component add rustfmt)"
+    return 0
+  fi
+  if ! cargo clippy --version &>/dev/null; then
+    warn "Skipping Rust clippy (clippy not installed; run: rustup component add clippy)"
+    return 0
+  fi
+  info "Running Rust fmt + clippy (agents/backend)"
+  if command -v sccache >/dev/null 2>&1; then
+    export RUSTC_WRAPPER=sccache
+    export SCCACHE_CACHE_SIZE="${SCCACHE_CACHE_SIZE:-10G}"
+    mkdir -p "${SCCACHE_DIR}"
+  fi
+  (cd "${backend_dir}" && cargo fmt --all --check) || return 1
+  (cd "${backend_dir}" && cargo clippy --workspace --all-targets --all-features -- -D warnings) || return 1
+  return 0
+}
+
 run_exarp_go_lint() {
   local exarp_script="${ROOT_DIR}/scripts/run_exarp_go_tool.sh"
   if [[ ! -f "${ROOT_DIR}/go.mod" ]] && [[ "${EXARP_GO_LINT:-0}" != "1" ]]; then
@@ -582,6 +629,7 @@ main() {
   run_stylelint
   run_type_check
   run_js_syntax_check
+  run_rust_lint
 
   info "Lint checks completed"
 }
@@ -637,6 +685,10 @@ main_parallel() {
     run_js_syntax_check
     echo $? >"${tmpdir}/js_syntax_check"
   ) &
+  (
+    run_rust_lint
+    echo $? >"${tmpdir}/rust_lint"
+  ) &
 
   wait
 
@@ -652,7 +704,7 @@ main_parallel() {
   return "${status}"
 }
 
-# Extract error/warning lines from lint log for JSON (first 50).
+# Extract error/warning lines from lint log for JSON (first 50). Exclude false positives (skip messages, code snippets, diffs).
 extract_lint_errors() {
   local log="$1"
   if [[ ! -f "${log}" ]]; then
@@ -660,12 +712,15 @@ extract_lint_errors() {
     return
   fi
   local errs
-  errs="$(grep -E "error:|warning:|\[error\]|\[warn\].*found|FAILED|Error:|fatal" "${log}" 2>/dev/null | head -50)"
+  # Match likely linter/compiler output: file:line:col: error|warning, Rust error[E..., FAILED, fatal error
+  errs="$(grep -E \
+    "(^[^:]+:[0-9]+:[0-9]+:.*(error|warning)|error\[E[0-9]+\]|^FAILED$|FAILED.*test|fatal error:|\[error\]|\berror:\s+.*(undefined|not found))" \
+    "${log}" 2>/dev/null | \
+    grep -v -E \
+    "(\[warn\] Skipping|echo .*[Ee]rror|map_err|\.map_err|format!.*[Ee]rror|JSONDecodeError|except .*Error|^\s*[-+]\s|^\s*\.map_err|\|\s*e\s*\||\\)\\?;|=>|grep -E|\"\(.*error\|warning)" \
+    | head -50)"
   if [[ -z "${errs}" ]]; then
     errs="$(grep -E "^\s*[0-9]+ (error|warning)" "${log}" 2>/dev/null | head -50)"
-  fi
-  if [[ -z "${errs}" ]]; then
-    errs="$(tail -30 "${log}" 2>/dev/null)"
   fi
   if [[ -z "${errs}" ]]; then
     echo "[]"
@@ -686,7 +741,8 @@ if [[ "${LINT_AI_FRIENDLY}" -eq 1 ]]; then
   LINT_LOG="${LOG_DIR}/lint_ai_friendly.log"
   START="$(date +%s.%N 2>/dev/null || echo 0)"
   set +e
-  (main) >>"${LINT_LOG}" 2>&1
+  # Overwrite log each run so extract_lint_errors only sees current run (avoids stale C++/native errors)
+  (main) >"${LINT_LOG}" 2>&1
   lint_exit=$?
   set -e
   END="$(date +%s.%N 2>/dev/null || echo 0)"

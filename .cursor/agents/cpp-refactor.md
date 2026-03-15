@@ -1,6 +1,10 @@
 # Agent E: C++ tws_client.cpp Refactor
 
-## Role
+**Obsolete:** The C++ native build and `native/` tree have been removed. IBKR/TWS integration now lives in **Rust** (`agents/backend/crates/ib_adapter/`). Use the exploration or refactor agents for Rust code; this prompt is kept for historical context only.
+
+---
+
+## Role (legacy)
 
 Split `native/src/tws_client.cpp` (3,684 lines) into granular modules organized by responsibility domain, while keeping the existing `TWSClient` public API unchanged.
 
