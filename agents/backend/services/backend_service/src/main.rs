@@ -2,12 +2,11 @@ use std::{sync::Arc, time::Duration};
 
 use anyhow::Context;
 use api::{
-    Alert, HealthAggregateState, HistoricPosition, OrderSnapshot, PositionSnapshot,
-    RuntimeExecutionState, RuntimeMarketState, RuntimeProducerDecision, SharedSnapshot,
-    StrategyController, StrategyDecisionSnapshot, SystemSnapshot,
+    mock_data::seed_snapshot, Alert, HealthAggregateState, RuntimeExecutionState, RuntimeMarketState, RuntimeProducerDecision,
+    SharedSnapshot, StrategyController, StrategyDecisionSnapshot, SystemSnapshot,
 };
 use async_trait::async_trait;
-use chrono::{Duration as ChronoDuration, Utc};
+use chrono::Utc;
 use market_data::{
     FmpClient, MarketDataEvent, MarketDataIngestor, MarketDataSource, MockMarketDataSource,
     PolygonMarketDataSource,
@@ -28,8 +27,11 @@ use tracing::{info, warn};
 
 mod api_handlers;
 mod collection_aggregation;
+mod dlq_consumer;
 mod health_aggregation;
+mod ib_positions;
 mod nats_integration;
+mod rest_snapshot;
 mod snapshot_publisher;
 mod swiftness;
 
@@ -93,6 +95,9 @@ fn default_poll_interval_ms() -> u64 {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    if std::env::args().any(|a| a == "--validate") {
+        run_validate();
+    }
     init_tracing();
     let config = load_config().context("failed to load backend config")?;
 
@@ -117,7 +122,7 @@ async fn main() -> anyhow::Result<()> {
 
     {
         let mut snapshot = state.write().await;
-        seed_static_data(&mut snapshot);
+        seed_snapshot(&mut snapshot, &config.market_data.symbols);
         snapshot.set_strategy_status("RUNNING");
         snapshot.risk.allowed = true;
         snapshot.risk.reason = None;
@@ -155,6 +160,7 @@ async fn main() -> anyhow::Result<()> {
 
     health_aggregation::spawn_health_aggregator(health_state, nats_url.clone());
     collection_aggregation::spawn_collection_aggregator(state.clone(), nats_url.clone());
+    dlq_consumer::spawn_dlq_consumer(nats_url.clone());
 
     // Publish full snapshots to NATS for TUI and other subscribers
     let loan_repo = api::LoanRepository::load_default().await.ok();
@@ -173,8 +179,18 @@ async fn main() -> anyhow::Result<()> {
                 .ok()
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(1000);
-            snapshot_publisher::spawn(state.clone(), client.clone(), backend_id, interval_ms);
-            api_handlers::spawn(client, loan_repo.map(Arc::new), fmp_client);
+            let use_jetstream = matches!(
+                std::env::var("NATS_USE_JETSTREAM").unwrap_or_default().trim().to_lowercase().as_str(),
+                "1" | "true" | "yes"
+            );
+            snapshot_publisher::spawn(state.clone(), client.clone(), backend_id, interval_ms, use_jetstream);
+            api_handlers::spawn(
+                client,
+                loan_repo.map(Arc::new),
+                fmp_client,
+                controller.clone(),
+                state.clone(),
+            );
         }
     }
 
@@ -185,13 +201,36 @@ async fn main() -> anyhow::Result<()> {
         info!("Swiftness integration disabled (set ENABLE_SWIFTNESS=1 to enable)");
     }
 
-    info!("backend service online (NATS only, no REST)");
+    // IB Client Portal positions: when IB_PORTAL_URL is set, merge real positions into snapshot.
+    if ib_positions::ib_positions_enabled() {
+        ib_positions::spawn_ib_position_fetcher(state.clone());
+        info!("IB Client Portal position fetcher enabled (IB_PORTAL_URL set)");
+    } else {
+        info!("IB positions disabled (set IB_PORTAL_URL to enable, e.g. https://localhost:5001/v1/portal)");
+    }
+
+    rest_snapshot::spawn_if_enabled(state.clone());
+
+    info!("backend service online (NATS primary; REST snapshot if REST_SNAPSHOT_PORT set)");
 
     tokio::signal::ctrl_c()
         .await
         .context("failed to listen for shutdown signal")?;
 
     Ok(())
+}
+
+fn run_validate() -> ! {
+    match load_config() {
+        Ok(_) => {
+            println!("Config valid");
+            std::process::exit(0);
+        }
+        Err(e) => {
+            eprintln!("Config validation failed: {}", e);
+            std::process::exit(1);
+        }
+    }
 }
 
 fn init_tracing() {
@@ -203,15 +242,50 @@ fn init_tracing() {
 
 fn load_config() -> anyhow::Result<BackendConfig> {
     let path = std::env::var("BACKEND_CONFIG").unwrap_or_else(|_| "config/default.toml".into());
+    let path = std::path::Path::new(&path);
 
-    if std::path::Path::new(&path).exists() {
-        let data = std::fs::read_to_string(&path)
-            .with_context(|| format!("unable to read config file {path}"))?;
-        let cfg: BackendConfig =
-            toml::from_str(&data).with_context(|| format!("invalid config file {path}"))?;
-        Ok(cfg)
+    let mut base_value: toml::Value = if path.exists() {
+        let data = std::fs::read_to_string(path)
+            .with_context(|| format!("unable to read config file {}", path.display()))?;
+        toml::from_str(&data)
+            .with_context(|| format!("invalid config file {}", path.display()))?
     } else {
-        Ok(BackendConfig::default())
+        toml::Value::Table(toml::map::Map::new())
+    };
+
+    // Optional gitignored local override (e.g. config/config.local.toml)
+    let local_path = path
+        .parent()
+        .map(|p| p.join("config.local.toml"))
+        .unwrap_or_else(|| std::path::PathBuf::from("config/config.local.toml"));
+    if local_path.exists() {
+        let data = std::fs::read_to_string(&local_path)
+            .with_context(|| format!("unable to read local config {}", local_path.display()))?;
+        let local: toml::Value =
+            toml::from_str(&data).with_context(|| format!("invalid local config {}", local_path.display()))?;
+        merge_toml_over(&local, &mut base_value);
+        info!(path = %local_path.display(), "Loaded backend config local override");
+    }
+
+    let cfg: BackendConfig = toml::from_str(&toml::to_string(&base_value).context("serialize merged config")?)
+        .context("invalid merged backend config")?;
+    Ok(cfg)
+}
+
+/// Merge `overlay` into `base` in place (overlay keys take precedence).
+fn merge_toml_over(overlay: &toml::Value, base: &mut toml::Value) {
+    use toml::Value;
+    match (overlay, base) {
+        (Value::Table(over_t), Value::Table(base_t)) => {
+            for (k, v) in over_t {
+                if let Some(base_v) = base_t.get_mut(k) {
+                    merge_toml_over(v, base_v);
+                } else {
+                    base_t.insert(k.clone(), v.clone());
+                }
+            }
+        }
+        (over, base) => *base = over.clone(),
     }
 }
 
@@ -468,51 +542,6 @@ fn spawn_strategy_fanout(
             }
         }
     });
-}
-
-fn seed_static_data(snapshot: &mut SystemSnapshot) {
-    if snapshot.positions.is_empty() {
-        snapshot.positions.push(PositionSnapshot {
-            id: "POS-1".into(),
-            symbol: "XSP".into(),
-            quantity: 2,
-            cost_basis: 98.75,
-            mark: 101.10,
-            unrealized_pnl: 4.7,
-            account_id: Some(snapshot.account_id.clone()),
-        });
-    }
-
-    if snapshot.orders.is_empty() {
-        snapshot.orders.push(OrderSnapshot {
-            id: "ORD-1".into(),
-            symbol: "XSP".into(),
-            side: "BUY".into(),
-            quantity: 2,
-            status: "FILLED".into(),
-            submitted_at: Utc::now() - ChronoDuration::minutes(30),
-        });
-    }
-
-    if snapshot.historic.is_empty() {
-        snapshot.historic.push(HistoricPosition {
-            id: "POS-0".into(),
-            symbol: "SPY".into(),
-            quantity: 2,
-            realized_pnl: 6.2,
-            closed_at: Utc::now() - ChronoDuration::hours(5),
-        });
-    }
-
-    snapshot
-        .alerts
-        .push(Alert::info("Mock runtime initialised"));
-    snapshot
-        .alerts
-        .push(Alert::info("Waiting for market data updates"));
-    while snapshot.alerts.len() > 32 {
-        snapshot.alerts.remove(0);
-    }
 }
 
 struct PositionLimitCheck {

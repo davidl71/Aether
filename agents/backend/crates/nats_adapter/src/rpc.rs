@@ -1,6 +1,7 @@
 //! NATS request-reply RPC layer.
 //!
 //! Supports protobuf (primary) and JSON wire encodings.
+//! Optional retry/backoff for JSON requests via `request_json_with_retry`.
 
 use std::time::Duration;
 
@@ -8,12 +9,48 @@ use bytes::Bytes;
 use futures::StreamExt;
 use prost::Message as ProstMessage;
 use serde::{de::DeserializeOwned, Serialize};
-use tracing::warn;
+use tracing::{warn, debug};
 
 use crate::client::NatsClient;
 use crate::error::{NatsAdapterError, Result};
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Config for retry/backoff on JSON request/reply (timeout and transient errors).
+#[derive(Debug, Clone)]
+pub struct RetryConfig {
+    /// Maximum number of attempts (1 = no retries).
+    pub max_retries: u32,
+    /// Initial backoff delay before first retry.
+    pub initial_backoff: Duration,
+    /// Cap on backoff delay.
+    pub max_backoff: Duration,
+}
+
+impl Default for RetryConfig {
+    fn default() -> Self {
+        Self {
+            max_retries: 3,
+            initial_backoff: Duration::from_millis(500),
+            max_backoff: Duration::from_secs(5),
+        }
+    }
+}
+
+fn is_retryable(e: &NatsAdapterError) -> bool {
+    matches!(
+        e,
+        NatsAdapterError::Publish(_) | NatsAdapterError::Connection(_)
+    )
+}
+
+fn next_backoff(attempt: u32, config: &RetryConfig) -> Duration {
+    let mut d = config.initial_backoff;
+    for _ in 0..attempt {
+        d = std::cmp::min(d * 2, config.max_backoff);
+    }
+    d
+}
 
 pub async fn request_proto<Req, Res>(
     client: &NatsClient,
@@ -126,6 +163,49 @@ where
     .map_err(|e| NatsAdapterError::Publish(format!("json request to {subject}: {e}")))?;
 
     serde_json::from_slice(msg.payload.as_ref()).map_err(|e| NatsAdapterError::Publish(format!("json decode reply: {e}")))
+}
+
+/// JSON request/reply with retry and exponential backoff on timeout/transient errors.
+/// Uses default timeout (5s) and default RetryConfig (3 retries, 500ms initial backoff).
+pub async fn request_json_with_retry<Req, Res>(
+    client: &NatsClient,
+    subject: &str,
+    payload: &Req,
+) -> Result<Res>
+where
+    Req: Serialize,
+    Res: DeserializeOwned,
+{
+    request_json_with_retry_timeout(client, subject, payload, DEFAULT_TIMEOUT, RetryConfig::default()).await
+}
+
+/// JSON request/reply with retry, custom timeout, and optional retry config.
+pub async fn request_json_with_retry_timeout<Req, Res>(
+    client: &NatsClient,
+    subject: &str,
+    payload: &Req,
+    timeout: Duration,
+    config: RetryConfig,
+) -> Result<Res>
+where
+    Req: Serialize,
+    Res: DeserializeOwned,
+{
+    for attempt in 0..=config.max_retries {
+        match request_json_with_timeout(client, subject, payload, timeout).await {
+            Ok(res) => return Ok(res),
+            Err(e) => {
+                if attempt < config.max_retries && is_retryable(&e) {
+                    let delay = next_backoff(attempt, &config);
+                    debug!(attempt = attempt + 1, delay_ms = delay.as_millis(), subject = %subject, "NATS request retry");
+                    tokio::time::sleep(delay).await;
+                } else {
+                    return Err(e);
+                }
+            }
+        }
+    }
+    Err(NatsAdapterError::Publish("retry exhausted".into()))
 }
 
 /// Spawn a subscription that handles JSON request/reply for a subject.

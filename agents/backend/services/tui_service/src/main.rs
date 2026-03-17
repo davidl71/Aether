@@ -33,6 +33,10 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use futures::StreamExt;
+use api::finance_rates::{BenchmarksResponse, CurveResponse};
+use nats_adapter::{request_json_with_retry, request_json_with_retry_timeout, NatsClient, RetryConfig};
+use serde::Deserialize;
+use serde_json::json;
 use tokio::sync::{mpsc, watch};
 use tracing::{error, info};
 use tracing_subscriber::{fmt::writer::BoxMakeWriter, layer::SubscriberExt, util::SubscriberInitExt};
@@ -42,6 +46,7 @@ mod circuit_breaker;
 mod config;
 mod config_watcher;
 mod events;
+mod expiry_buckets;
 mod models;
 mod nats;
 mod ui;
@@ -50,6 +55,17 @@ mod ui;
 use app::App;
 use config::TuiConfig;
 use crossterm::tty::IsTty;
+use events::StrategyCommand;
+
+/// Backend reply for api.strategy.start / api.strategy.stop / api.strategy.cancel_all
+#[derive(Debug, Deserialize)]
+struct StrategyResponse {
+    ok: bool,
+    #[serde(default)]
+    error: Option<String>,
+    #[serde(default)]
+    message: Option<String>,
+}
 
 fn is_interactive_terminal() -> bool {
     std::io::stdout().is_tty()
@@ -100,6 +116,12 @@ async fn main() -> color_eyre::Result<()> {
         .init();
 
     let config = TuiConfig::load();
+    let require_nats = !is_interactive_terminal();
+    if let Err(errors) = config.validate(require_nats) {
+        let msg = errors.join("; ");
+        error!("Config validation failed: {}", msg);
+        return Err(color_eyre::eyre::eyre!("Config validation failed: {}", msg));
+    }
     info!(
         backend_id = %config.backend_id,
         nats_url = %config.nats_url,
@@ -114,6 +136,10 @@ async fn main() -> color_eyre::Result<()> {
     let (snap_tx, snap_rx) = watch::channel(None);
     let (event_tx, event_rx) = mpsc::unbounded_channel();
     let (config_tx, config_rx) = watch::channel(config.clone());
+    let (strategy_cmd_tx, strategy_cmd_rx) = mpsc::unbounded_channel();
+    let (strategy_result_tx, strategy_result_rx) = mpsc::unbounded_channel();
+    let (yield_fetch_tx, yield_fetch_rx) = mpsc::unbounded_channel();
+    let (yield_result_tx, yield_result_rx) = mpsc::unbounded_channel();
 
     // Spawn NATS subscriber in the background
     let nats_config = config.clone();
@@ -123,6 +149,18 @@ async fn main() -> color_eyre::Result<()> {
         nats::run(nats_config, nats_tx, nats_event_tx).await;
     });
 
+    // Spawn strategy command handler: receives S/T commands, sends NATS request, forwards result
+    let nats_url = config.nats_url.clone();
+    tokio::spawn(async move {
+        run_strategy_commands(nats_url, strategy_cmd_rx, strategy_result_tx).await;
+    });
+
+    // Spawn yield fetcher: receives symbol, requests build_curve + benchmarks, forwards result
+    let nats_url_yield = config.nats_url.clone();
+    tokio::spawn(async move {
+        run_yield_fetcher(nats_url_yield, yield_fetch_rx, yield_result_tx).await;
+    });
+
     // Spawn config file watcher — hot-reloads TuiConfig on disk changes
     tokio::spawn(async move {
         config_watcher::run(config_tx).await;
@@ -130,9 +168,16 @@ async fn main() -> color_eyre::Result<()> {
 
     // Set up terminal
     let mut terminal = init_terminal().context("Failed to initialize TUI terminal")?;
-    let mut app = App::new(config, snap_rx, event_rx, config_rx);
+    let mut app = App::new(
+        config,
+        snap_rx,
+        event_rx,
+        config_rx,
+        Some(strategy_cmd_tx),
+        Some(yield_fetch_tx),
+    );
 
-    let result = run_loop(&mut terminal, &mut app).await;
+    let result = run_loop(&mut terminal, &mut app, strategy_result_rx, yield_result_rx).await;
 
     // Always restore terminal on exit (color-eyre panic hook also restores on panic)
     if let Err(err) = restore_terminal() {
@@ -156,6 +201,86 @@ fn restore_terminal() -> color_eyre::Result<()> {
     Ok(())
 }
 
+/// Handles strategy start/stop/cancel-all: connects to NATS, sends request, forwards result to TUI.
+async fn run_strategy_commands(
+    nats_url: String,
+    mut rx: mpsc::UnboundedReceiver<StrategyCommand>,
+    result_tx: mpsc::UnboundedSender<Result<String, String>>,
+) {
+    while let Some(cmd) = rx.recv().await {
+        let (subject, action) = match cmd {
+            StrategyCommand::Start => ("api.strategy.start", "start"),
+            StrategyCommand::Stop => ("api.strategy.stop", "stop"),
+            StrategyCommand::CancelAll => ("api.strategy.cancel_all", "cancel_all"),
+        };
+        let res = match NatsClient::connect(&nats_url).await {
+            Ok(nc) => match request_json_with_retry::<(), StrategyResponse>(&nc, subject, &()).await {
+                Ok(resp) => {
+                    if resp.ok {
+                        Ok(resp.message.unwrap_or_else(|| "ok".into()))
+                    } else {
+                        Err(resp.error.unwrap_or_else(|| "unknown".into()))
+                    }
+                }
+                Err(e) => Err(e.to_string()),
+            },
+            Err(e) => Err(e.to_string()),
+        };
+        if let Err(ref e) = res {
+            error!(action = %action, error = %e, "Strategy command failed");
+        }
+        let _ = result_tx.send(res);
+    }
+}
+
+/// Fetches curve + benchmarks for a symbol via NATS, sends result to TUI.
+async fn run_yield_fetcher(
+    nats_url: String,
+    mut rx: mpsc::UnboundedReceiver<String>,
+    result_tx: mpsc::UnboundedSender<Result<(CurveResponse, BenchmarksResponse), String>>,
+) {
+    while let Some(symbol) = rx.recv().await {
+        let res = match NatsClient::connect(&nats_url).await {
+            Ok(nc) => {
+                let curve_res = request_json_with_retry(
+                    &nc,
+                    "api.finance_rates.build_curve",
+                    &json!({ "opportunities": [], "symbol": symbol }),
+                )
+                .await
+                .map_err(|e| e.to_string());
+                let curve = match curve_res {
+                    Ok(c) => c,
+                    Err(e) => {
+                        let _ = result_tx.send(Err(e));
+                        continue;
+                    }
+                };
+                // Benchmarks call FRED (SOFR + Treasury); allow longer than default 5s, with retry
+                const BENCHMARKS_TIMEOUT: Duration = Duration::from_secs(15);
+                let bench_res = request_json_with_retry_timeout::<(), BenchmarksResponse>(
+                    &nc,
+                    "api.finance_rates.benchmarks",
+                    &(),
+                    BENCHMARKS_TIMEOUT,
+                    RetryConfig::default(),
+                )
+                .await
+                .map_err(|e| e.to_string());
+                match bench_res {
+                    Ok(benchmarks) => Ok((curve, benchmarks)),
+                    Err(e) => {
+                        let _ = result_tx.send(Err(e));
+                        continue;
+                    }
+                }
+            }
+            Err(e) => Err(e.to_string()),
+        };
+        let _ = result_tx.send(res);
+    }
+}
+
 /// Async event loop using tokio::select! to multiplex terminal key events and
 /// the redraw tick without blocking on either.
 ///
@@ -167,7 +292,12 @@ fn restore_terminal() -> color_eyre::Result<()> {
 /// TODO(T-1773509396768932000): if the app grows to need per-component
 /// event routing, consider adopting the full ratatui/async-template component
 /// model.
-async fn run_loop(terminal: &mut ratatui::DefaultTerminal, app: &mut App) -> color_eyre::Result<()> {
+async fn run_loop(
+    terminal: &mut ratatui::DefaultTerminal,
+    app: &mut App,
+    mut strategy_result_rx: mpsc::UnboundedReceiver<Result<String, String>>,
+    mut yield_result_rx: mpsc::UnboundedReceiver<Result<(CurveResponse, BenchmarksResponse), String>>,
+) -> color_eyre::Result<()> {
     let mut event_stream = EventStream::new();
     let mut tick_interval = tokio::time::interval(Duration::from_millis(app.config.tick_ms));
     // Skip missed ticks rather than bursting to catch up after a slow render
@@ -197,6 +327,16 @@ async fn run_loop(terminal: &mut ratatui::DefaultTerminal, app: &mut App) -> col
                     None => break, // stream closed — terminal gone
                     _ => {}        // resize, focus, mouse — not used yet
                 }
+            }
+
+            // Strategy command result from NATS request task
+            Some(res) = strategy_result_rx.recv() => {
+                app.set_strategy_result(res);
+            }
+
+            // Yield fetch result (curve + benchmarks)
+            Some(res) = yield_result_rx.recv() => {
+                app.set_yield_data(res);
             }
         }
 

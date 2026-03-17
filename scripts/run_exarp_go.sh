@@ -49,4 +49,17 @@ resolve_exarp_go() {
 
 sanitize_go_env
 EXARP_GO_BIN="$(resolve_exarp_go)"
+
+# When Cursor (or another host) runs this script as MCP with no args, ensure exarp-go
+# runs with project root as cwd so it finds .todo2/, config, etc. If cwd is already
+# PROJECT_ROOT (e.g. via mcp.json "cwd"), this is a no-op.
+if [[ "$#" -eq 0 ]] && [[ -n "${PROJECT_ROOT:-}" ]] && [[ -d "${PROJECT_ROOT}" ]]; then
+  cd "${PROJECT_ROOT}"
+fi
+
+# MCP mode: no args + non-TTY stdin. Avoid git-hook guard in exarp-go so it starts the server.
+if [[ "$#" -eq 0 ]]; then
+  unset GIT_HOOK
+fi
+
 exec "${EXARP_GO_BIN}" "$@"
