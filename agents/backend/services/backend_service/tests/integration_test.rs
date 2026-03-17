@@ -5,11 +5,15 @@
 //! bridge types for end-to-end verification.
 //!
 //! Requires: running NATS server (`./scripts/start_nats.sh`), `cargo build -p backend_service`
+//!
+//! For api.* request/reply tests: also run one backend_service instance (subscribed to api.*).
+//! Run ignored tests: `cargo test -p backend_service --test integration_test -- --ignored`
 
 use std::time::Duration;
 
+use api::finance_rates::BenchmarksResponse;
 use nats_adapter::proto::v1 as pb;
-use nats_adapter::{topics, NatsClient, Publisher, Subscriber};
+use nats_adapter::{request_json_with_timeout, topics, NatsClient, Publisher, Subscriber};
 use tokio::time::sleep;
 
 /// Platform topic: market-data.tick.* — deserialize protobuf (NatsEnvelope + MarketDataEvent).
@@ -220,5 +224,31 @@ async fn test_wildcard_subscriptions() {
         received >= 2,
         "Expected at least 2 messages, got {}",
         received
+    );
+}
+
+/// api.* request/reply: requires NATS and a running backend_service subscribed to api.*.
+/// Run with: `cargo test -p backend_service --test integration_test test_api_request_reply_benchmarks -- --ignored`
+#[tokio::test]
+#[ignore] // Requires NATS server and backend_service running
+async fn test_api_request_reply_benchmarks() {
+    let url = std::env::var("NATS_URL").unwrap_or_else(|_| "nats://localhost:4222".to_string());
+    let client = NatsClient::connect(&url)
+        .await
+        .expect("Failed to connect to NATS");
+
+    let response: BenchmarksResponse = request_json_with_timeout(
+        &client,
+        "api.finance_rates.benchmarks",
+        &(),
+        Duration::from_secs(5),
+    )
+    .await
+    .expect("api.finance_rates.benchmarks request/reply");
+
+    // Assert response shape (SOFR + Treasury; timestamps present)
+    assert!(
+        !response.sofr.timestamp.is_empty() || !response.treasury.timestamp.is_empty(),
+        "benchmarks response should have at least one non-empty timestamp"
     );
 }

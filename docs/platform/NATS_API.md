@@ -51,14 +51,14 @@ Single source for all API subject constants and handler wiring: `agents/backend/
 | Pattern | Component | Subject(s) | Payload / role | Notes | Protocol | Next steps |
 |---------|-----------|------------|----------------|-------|----------|------------|
 | **Publish (broadcast)** | backend_service | `snapshot.{backend_id}` | `NatsEnvelope(SystemSnapshot)` | Periodic full state; interval from `SNAPSHOT_PUBLISH_INTERVAL_MS` (default 1000 ms). When `NATS_USE_JETSTREAM=1`, also stored in JetStream stream `SNAPSHOTS` for replay (late-joining clients). | NATS Core pub/sub or JetStream | Stream `SNAPSHOTS` (subjects `snapshot.>`, max 1 msg per subject, 1h max age) when JetStream enabled. Interval is backend-wide; per-client tuning deferred. |
-| **Publish (broadcast)** | backend_service | `market-data.tick.{symbol}` | `MarketDataEvent` | Real-time bid/ask; one message per symbol/tick. | NATS Core pub/sub | Optional: throttle/batch if tick volume grows. |
+| **Publish (broadcast)** | backend_service | `market-data.tick.{symbol}` | `MarketDataEvent` | Real-time bid/ask; one message per symbol/tick. | NATS Core pub/sub | Optional: set `NATS_TICK_BATCH_MS` to buffer ticks and flush at interval (reduces KV/QuestDB write rate). |
 | **Publish (broadcast)** | backend_service | `strategy.signal.{symbol}` | `StrategySignal` | Strategy signals; DLQ on failure. | NATS Core pub/sub | — |
 | **Publish (broadcast)** | backend_service | `strategy.decision.{symbol}` | `StrategyDecision` | Strategy decisions. | NATS Core pub/sub | — |
 | **Publish (broadcast)** | backend_service | `system.dlq.backend.{error_type}` | (varies) | Dead-letter when publish fails. | NATS Core pub/sub | Backend subscribes to `system.dlq.backend.>` and logs each DLQ message (dlq_consumer). |
 | **Subscribe** | backend_service | `system.health` | — | Health aggregation; sets `health_state.nats_connected`. | NATS Core pub/sub | — |
 | **Subscribe** | backend_service | `system.dlq.backend.>` | — | DLQ consumer; logs each message for alerting/replay visibility. | NATS Core pub/sub | See `backend_service/src/dlq_consumer.rs`. |
-| **Subscribe** | backend_service | `NATS_SUBJECTS` (env, e.g. `LIVE_STATE`) | — | Collection aggregation; merged into snapshot and optional KV/QuestDB. | NATS Core (queue sub optional) | Document exact subject list per env. |
-| **Subscribe** | backend_service | `api.discount_bank.*`, `api.loans.*`, `api.fmp.*`, `api.finance_rates.*`, `api.strategy.start` / `stop` / `cancel_all` | Request body (JSON) | Request–reply **server**: receives request, replies to message reply inbox. | NATS Core request–reply | Optional: queue subscription for scale-out; proto for new endpoints. |
+| **Subscribe** | backend_service | `NATS_SUBJECTS` (env, e.g. `LIVE_STATE`) | — | Collection aggregation; merged into snapshot and optional KV/QuestDB. When `NATS_TICK_BATCH_MS` > 0, `market-data.tick.>` messages are buffered and flushed at that interval (last value per symbol). | NATS Core (queue sub optional) | Document exact subject list per env. |
+| **Subscribe** | backend_service | `api.discount_bank.*`, `api.loans.*`, `api.fmp.*`, `api.finance_rates.*`, `api.strategy.start` / `stop` / `cancel_all` | Request body (JSON) | Request–reply **server**: receives request, replies to message reply inbox. Uses **queue subscriptions** (queue group from `NATS_API_QUEUE_GROUP`, default `api`) so multiple backends share load. | NATS Core request–reply | New api.* endpoints may use protobuf via `nats_adapter::rpc`; see § Proto for new endpoints. |
 | **Subscribe** | tui_service | `snapshot.{backend_id}` | — | Single source for dashboard state (positions, orders, risk, alerts). | NATS Core pub/sub | — |
 | **Request** | tui_service (or any client) | `api.loans.list`, `api.finance_rates.build_curve`, `api.finance_rates.benchmarks`, `api.strategy.start` / `stop` / `cancel_all`, etc. | Request body (JSON) | Client sends one request; expects one reply (or timeout). | NATS Core request–reply | `nats_adapter::request_json_with_retry` / `request_json_with_retry_timeout` with exponential backoff (default 3 retries). TUI uses them for strategy and finance_rates. |
 | **Reply** | backend_service | (reply inbox from request) | Response body (JSON) | One reply per request; 5s default timeout. | NATS Core request–reply | — |
@@ -216,7 +216,7 @@ The backend is NATS-only; there are **no** NATS request/reply subjects for calcu
 ## 4. Client lifecycle and configuration
 
 - **async_nats Client:** No explicit `close()`; connection closes when the client (or wrapper) is dropped. For graceful shutdown, drop the client so the connection tears down.
-- **Env / config:** `NATS_URL` (default `nats://localhost:4222`), `BACKEND_ID` (default `ib`), `NATS_SUBJECTS` (collection aggregation), `NATS_KV_BUCKET`, `NATS_USE_JETSTREAM` (optional: when `1`/`true`/`yes`, snapshot is published to JetStream stream `SNAPSHOTS` for replay; backend creates stream if missing). **`SNAPSHOT_PUBLISH_INTERVAL_MS`** (default `1000`): snapshot publish interval. **`FRED_API_KEY`** (optional): St. Louis Fed API key for live finance rates (SOFR, Treasury) used by `api.finance_rates.compare`, `.yield_curve`, `.benchmarks`, `.sofr`, `.treasury`. See backend_service and tui_service config.
+- **Env / config:** `NATS_URL` (default `nats://localhost:4222`), `BACKEND_ID` (default `ib`), `NATS_SUBJECTS` (collection aggregation), `NATS_KV_BUCKET`, `NATS_USE_JETSTREAM` (optional: when `1`/`true`/`yes`, snapshot is published to JetStream stream `SNAPSHOTS` for replay; backend creates stream if missing). **`NATS_API_QUEUE_GROUP`** (default `api`): queue group name for all api.* request/reply subscriptions; when multiple backend instances run, they share load (only one instance receives each request). **`NATS_TICK_BATCH_MS`** (default `0`): when > 0, collection aggregation buffers `market-data.tick.>` messages and flushes every this many ms (last value per symbol); reduces write rate to LIVE_STATE KV and QuestDB under high tick volume. **`SNAPSHOT_PUBLISH_INTERVAL_MS`** (default `1000`): snapshot publish interval. **`FRED_API_KEY`** (optional): St. Louis Fed API key for live finance rates (SOFR, Treasury) used by `api.finance_rates.compare`, `.yield_curve`, `.benchmarks`, `.sofr`, `.treasury`. See backend_service and tui_service config.
 
 ### NATS_SUBJECTS subject list per environment
 
@@ -244,6 +244,27 @@ If `NATS_SUBJECTS` is unset, the default above is used. Empty or invalid subject
 - **Testing changes:** (1) Set `NATS_SUBJECTS` to the new value. (2) Start backend with `NATS_URL` set. (3) Check logs for "CollectionConfig" or subscription errors. (4) Optional: use `nats sub 'market-data.tick.>'` (or your subjects) to confirm messages when publishers are running.
 - **Rollback:** Restart backend with previous `NATS_SUBJECTS` (or unset to use default). No persistent state is keyed by the subject list; only in-flight collection is affected.
 - **Per-environment:** Use the same default in dev; in production override only if you add/remove domains (e.g. add `orders.>`, `risk.>` when new publishers deploy). Document overrides in runbooks or env templates.
+
+### Proto for new api.* endpoints
+
+Current api.* handlers use **JSON** request/reply (see `api_handlers.rs` and `nats_adapter::request_json`). For **new** api.* endpoints, you may use **protobuf** request/reply instead:
+
+- **Wire format:** Define request/response messages in `proto/messages.proto` and generate Rust (prost) via the existing build.
+- **Server:** Use `nats_adapter::rpc::subscribe_proto` (or equivalent) to subscribe to a subject and reply with encoded proto; see `nats_adapter/src/rpc.rs`.
+- **Client:** Use `nats_adapter::rpc::request_proto` (or equivalent) to send a request and decode the reply.
+- **Compatibility:** Existing api.* subjects remain JSON; new subjects (e.g. `api.v2.orders.submit`) can be proto-only. Document each subject’s payload format in this doc or in the proto file.
+
+See `docs/platform/PROTO_OPPORTUNITIES_AND_BUF_CONFIG.md` for proto usage and buf config.
+
+### Integration test for api.* request/reply
+
+Optional E2E test: `backend_service` test `test_api_request_reply_benchmarks` (in `services/backend_service/tests/integration_test.rs`). It is **ignored** by default. With NATS and one backend_service running, run:
+
+```bash
+cargo test -p backend_service --test integration_test test_api_request_reply_benchmarks -- --ignored
+```
+
+See `docs/runbooks/NATS_VERIFICATION_CHECKLIST.md` §5.
 
 ---
 

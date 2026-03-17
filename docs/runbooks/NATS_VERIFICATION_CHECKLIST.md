@@ -47,6 +47,20 @@ See [NATS_API.md](../platform/NATS_API.md) § Operator guidelines for NATS_SUBJE
 - **Subject list:** See §3 above. Set `NATS_SUBJECTS=market-data.tick.>,strategy.signal.>`; start backend; confirm no subscription errors in logs.
 - **Snapshot:** Start backend and TUI; TUI should show "Updated Xs ago" or dashboard data when snapshot is received.
 
+## 5. Integration test for api.* request/reply (optional)
+
+An optional integration test exercises NATS api.* request/reply end-to-end (e.g. `api.finance_rates.benchmarks`).
+
+**Prerequisites:** NATS server running; at least one `backend_service` running and connected to NATS (so it is subscribed to api.*).
+
+**Run the test (ignored by default):**
+
+```bash
+cargo test -p backend_service --test integration_test test_api_request_reply_benchmarks -- --ignored
+```
+
+Optional: set `NATS_URL` if NATS is not on `nats://localhost:4222`. The test sends a JSON request to `api.finance_rates.benchmarks` and asserts the response shape (SOFR + Treasury timestamps).
+
 ## References
 
 - [NATS_API.md](../platform/NATS_API.md) — subject list, request/reply, scope

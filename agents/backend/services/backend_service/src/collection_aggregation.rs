@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -8,8 +9,11 @@ use nats_adapter::{
     proto::v1::{MarketDataEvent, NatsEnvelope},
 };
 use prost::Message;
-use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
+use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex, time::interval};
 use tracing::{debug, info, warn};
+
+/// Prefix for market-data tick subjects; batching applies only to subjects matching this.
+const MARKET_DATA_TICK_PREFIX: &str = "market-data.tick";
 
 #[derive(Clone)]
 struct CollectionConfig {
@@ -18,6 +22,8 @@ struct CollectionConfig {
     kv_bucket: Option<String>,
     questdb_ilp_addr: Option<String>,
     use_jetstream: bool,
+    /// When > 0, buffer market-data.tick.* messages and flush every this many ms (reduces write rate to KV/QuestDB).
+    tick_batch_ms: u64,
 }
 
 #[derive(Clone)]
@@ -49,28 +55,49 @@ pub fn spawn_collection_aggregator(snapshot: SharedSnapshot, nats_url: Option<St
                     match CollectionRuntime::new(client.clone(), &config, snapshot.clone()).await {
                         Ok(runtime) => {
                             let mut tasks = Vec::new();
+                            let tick_batch_ms = config.tick_batch_ms;
                             for subject in &config.subjects {
                                 let client = client.clone();
                                 let runtime = runtime.clone();
                                 let subject = subject.clone();
                                 let snapshot = snapshot.clone();
+                                let use_batch = tick_batch_ms > 0
+                                    && (subject.starts_with(MARKET_DATA_TICK_PREFIX)
+                                        || subject == MARKET_DATA_TICK_PREFIX);
                                 tasks.push(tokio::spawn(async move {
                                     match client.subscribe(subject.clone()).await {
                                         Ok(mut subscriber) => {
-                                            info!(%subject, "rust collection aggregation subscribed");
-                                            while let Some(message) = subscriber.next().await {
-                                                handle_message(
-                                                    snapshot.clone(),
-                                                    runtime.clone(),
+                                            info!(
+                                                %subject,
+                                                batch_ms = use_batch.then_some(tick_batch_ms),
+                                                "rust collection aggregation subscribed"
+                                            );
+                                            if use_batch {
+                                                run_batched_tick_loop(
+                                                    subscriber,
+                                                    snapshot,
+                                                    runtime,
                                                     subject.clone(),
-                                                    message.subject.to_string(),
-                                                    message.payload.as_ref(),
+                                                    tick_batch_ms,
                                                 )
                                                 .await;
+                                            } else {
+                                                while let Some(message) = subscriber.next().await {
+                                                    handle_message(
+                                                        snapshot.clone(),
+                                                        runtime.clone(),
+                                                        subject.clone(),
+                                                        message.subject.to_string(),
+                                                        message.payload.as_ref(),
+                                                    )
+                                                    .await;
+                                                }
                                             }
                                             warn!(%subject, "collection subscription ended");
                                         }
-                                        Err(err) => warn!(%subject, %err, "failed to subscribe for collection aggregation"),
+                                        Err(err) => {
+                                            warn!(%subject, %err, "failed to subscribe for collection aggregation")
+                                        }
                                     }
                                 }));
                             }
@@ -133,6 +160,10 @@ impl CollectionConfig {
                 .as_str(),
             "1" | "true" | "yes"
         );
+        let tick_batch_ms = std::env::var("NATS_TICK_BATCH_MS")
+            .ok()
+            .and_then(|v| v.trim().parse::<u64>().ok())
+            .unwrap_or(0);
 
         Some(Self {
             nats_url,
@@ -140,6 +171,7 @@ impl CollectionConfig {
             kv_bucket,
             questdb_ilp_addr,
             use_jetstream,
+            tick_batch_ms,
         })
     }
 }
@@ -190,6 +222,48 @@ impl CollectionRuntime {
         };
 
         Ok(Self { kv, questdb })
+    }
+}
+
+/// Runs the receive loop for a market-data.tick.* subscription with batching: buffers the latest
+/// payload per subject and flushes every `batch_ms` to reduce write rate to KV/QuestDB.
+async fn run_batched_tick_loop(
+    mut subscriber: async_nats::Subscriber,
+    snapshot: SharedSnapshot,
+    runtime: CollectionRuntime,
+    subscribed_subject: String,
+    batch_ms: u64,
+) {
+    let buffer: Arc<Mutex<HashMap<String, Vec<u8>>>> = Arc::new(Mutex::new(HashMap::new()));
+    let buffer_clone = Arc::clone(&buffer);
+    let mut ticker = interval(Duration::from_millis(batch_ms));
+    ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
+    loop {
+        tokio::select! {
+            Some(message) = subscriber.next() => {
+                let actual = message.subject.to_string();
+                let payload = message.payload.as_ref().to_vec();
+                let mut buf = buffer_clone.lock().await;
+                buf.insert(actual, payload);
+            }
+            _ = ticker.tick() => {
+                let to_flush = {
+                    let mut buf = buffer_clone.lock().await;
+                    std::mem::take(&mut *buf)
+                };
+                for (actual_subject, payload) in to_flush {
+                    handle_message(
+                        snapshot.clone(),
+                        runtime.clone(),
+                        subscribed_subject.clone(),
+                        actual_subject.clone(),
+                        &payload,
+                    )
+                    .await;
+                }
+            }
+        }
     }
 }
 
