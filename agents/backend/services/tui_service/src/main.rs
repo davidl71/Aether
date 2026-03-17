@@ -136,17 +136,19 @@ async fn main() -> color_eyre::Result<()> {
     let (snap_tx, snap_rx) = watch::channel(None);
     let (event_tx, event_rx) = mpsc::unbounded_channel();
     let (config_tx, config_rx) = watch::channel(config.clone());
+    let (health_tx, health_rx) = watch::channel(std::collections::HashMap::new());
     let (strategy_cmd_tx, strategy_cmd_rx) = mpsc::unbounded_channel();
     let (strategy_result_tx, strategy_result_rx) = mpsc::unbounded_channel();
     let (yield_fetch_tx, yield_fetch_rx) = mpsc::unbounded_channel();
     let (yield_result_tx, yield_result_rx) = mpsc::unbounded_channel();
 
-    // Spawn NATS subscriber in the background
+    // Spawn NATS subscriber in the background (snapshot + system.health)
     let nats_config = config.clone();
     let nats_tx = snap_tx.clone();
     let nats_event_tx = event_tx.clone();
+    let nats_health_tx = health_tx.clone();
     tokio::spawn(async move {
-        nats::run(nats_config, nats_tx, nats_event_tx).await;
+        nats::run(nats_config, nats_tx, nats_event_tx, nats_health_tx).await;
     });
 
     // Spawn strategy command handler: receives S/T commands, sends NATS request, forwards result
@@ -173,6 +175,7 @@ async fn main() -> color_eyre::Result<()> {
         snap_rx,
         event_rx,
         config_rx,
+        health_rx,
         Some(strategy_cmd_tx),
         Some(yield_fetch_tx),
     );

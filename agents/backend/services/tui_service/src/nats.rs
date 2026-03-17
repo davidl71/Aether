@@ -7,16 +7,26 @@
 //! Uses a circuit breaker to avoid hammering a downed NATS server:
 //! - After 3 consecutive failures the circuit opens for 30s
 //! - Reconnect delays grow exponentially: 2s, 4s, 8s … 60s max
+//!
+//! **Why the TUI can show "NATS: DOWN" when NATS is up:**
+//! 1. **Circuit open** — After 3 failures we stop trying for 30s; status shows
+//!    "Circuit open, retrying in 30s". Restarting NATS during this window still shows DOWN.
+//! 2. **Connect failed** — Wrong NATS_URL, port, or network (e.g. TUI in another network).
+//!    The status detail shows the error (e.g. "Connection refused").
+//! 3. **Subscription ended** — We connected but the subscription stream closed (server
+//!    disconnect, idle timeout). Detail shows "NATS subscription ended".
 
 use api::{
-    Alert, AlertLevel, CandleSnapshot, HistoricPosition, Metrics, OrderSnapshot, PositionSnapshot,
-    RiskStatus, RuntimeDecisionDto, RuntimeHistoricPositionDto, RuntimeOrderDto,
-    RuntimePositionDto, RuntimeSnapshotDto, StrategyDecisionSnapshot, SymbolSnapshot,
+    backend_health_from_message, Alert, AlertLevel, BackendHealthState, CandleSnapshot,
+    HistoricPosition, Metrics, OrderSnapshot, PositionSnapshot, RiskStatus, RuntimeDecisionDto,
+    RuntimeHistoricPositionDto, RuntimeOrderDto, RuntimePositionDto, RuntimeSnapshotDto,
+    StrategyDecisionSnapshot, SymbolSnapshot,
 };
 use chrono::{DateTime, TimeZone, Utc};
 use futures::StreamExt;
 use nats_adapter::{extract_proto_payload, proto::v1 as pb, topics, NatsClient};
 use prost_types::Timestamp;
+use std::collections::HashMap;
 use tokio::sync::{mpsc, watch};
 use tracing::{debug, info, warn};
 
@@ -104,6 +114,7 @@ fn proto_to_snapshot(p: pb::SystemSnapshot) -> RuntimeSnapshotDto {
             .collect(),
         orders: orders.iter().map(RuntimeOrderDto::from).collect(),
         decisions: decisions.iter().map(RuntimeDecisionDto::from).collect(),
+        scenarios: Vec::new(),
         alerts: p.alerts.into_iter().map(proto_alert).collect(),
         risk: p.risk.map(proto_risk).unwrap_or_default(),
     }
@@ -180,7 +191,8 @@ fn proto_risk(r: pb::RiskStatus) -> RiskStatus {
     }
 }
 
-/// Run the NATS subscriber loop. Sends `TuiSnapshot` updates on `tx`.
+/// Run the NATS subscriber loop. Sends `TuiSnapshot` updates on `tx` and
+/// backend health updates on `health_tx` (from `system.health`).
 ///
 /// Reconnects automatically with exponential backoff (2s → 60s max).
 /// A circuit breaker opens after 3 consecutive failures and pauses
@@ -189,6 +201,7 @@ pub async fn run(
     config: TuiConfig,
     tx: watch::Sender<Option<TuiSnapshot>>,
     event_tx: mpsc::UnboundedSender<AppEvent>,
+    health_tx: watch::Sender<HashMap<String, BackendHealthState>>,
 ) {
     let subject = topics::snapshot::backend(&config.backend_id);
     info!(subject = %subject, nats_url = %config.nats_url, "NATS subscriber starting");
@@ -202,7 +215,12 @@ pub async fn run(
 
     loop {
         if !cb.can_attempt() {
-            // Circuit is open — wait 1s and re-check (avoids busy-spinning)
+            // Circuit is open — don't hammer NATS; emit status so UI shows we're in cooldown
+            emit_status(
+                &event_tx,
+                ConnectionState::Retrying,
+                "Circuit open, retrying in 30s",
+            );
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             continue;
         }
@@ -216,6 +234,14 @@ pub async fn run(
                     ConnectionState::Connected,
                     format!("Connected to {}", config.nats_url),
                 );
+                // Spawn health subscriber on same connection (drops when connection drops)
+                let client_health = client.clone();
+                let health_tx = health_tx.clone();
+                tokio::spawn(async move {
+                    if let Err(e) = run_health_subscriber(client_health, health_tx).await {
+                        warn!(error = %e, "Health subscriber ended");
+                    }
+                });
                 if let Err(e) = subscribe_loop(&client, &subject, &tx).await {
                     cb.record_failure();
                     let delay = cb.backoff();
@@ -269,6 +295,28 @@ async fn subscribe_loop(
     }
 
     anyhow::bail!("NATS subscription ended");
+}
+
+/// Subscribes to `system.health`, decodes BackendHealth messages, and sends
+/// the current map of backend id → health state on each update.
+async fn run_health_subscriber(
+    client: NatsClient,
+    tx: watch::Sender<HashMap<String, BackendHealthState>>,
+) -> anyhow::Result<()> {
+    let subject = topics::system::health();
+    let mut sub = client.client().subscribe(subject.to_string()).await?;
+    let mut backends: HashMap<String, BackendHealthState> = HashMap::new();
+
+    while let Some(msg) = sub.next().await {
+        if let Some(health) = backend_health_from_message(&msg.payload) {
+            let state = BackendHealthState::from_proto(health);
+            let id = state.backend.clone();
+            backends.insert(id, state);
+            let _ = tx.send(backends.clone());
+        }
+    }
+
+    anyhow::bail!("Health subscription ended");
 }
 
 fn emit_status(

@@ -2,12 +2,14 @@
 
 use std::collections::{HashMap, VecDeque};
 
+use api::finance_rates::{BenchmarksResponse, CurveResponse};
+use api::{BackendHealthState, RuntimeOrderDto, RuntimePositionDto, ScenarioDto};
 use crossterm::event::{KeyCode, KeyEvent};
 use tokio::sync::{mpsc, watch};
 use tui_logger::{TuiWidgetEvent, TuiWidgetState};
 
 use crate::config::TuiConfig;
-use crate::events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget};
+use crate::events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget, StrategyCommand};
 use crate::models::TuiSnapshot;
 
 const SPARKLINE_HISTORY_SIZE: usize = 20;
@@ -18,7 +20,18 @@ pub enum Tab {
     Positions,
     Orders,
     Alerts,
+    Yield,
+    Scenarios,
     Logs,
+    Settings,
+}
+
+/// Content for the row-detail overlay (Orders/Positions/Scenarios). Same overlay pattern as help (?); Esc to close.
+#[derive(Debug, Clone)]
+pub enum DetailPopupContent {
+    Order(RuntimeOrderDto),
+    Position(RuntimePositionDto),
+    Scenario(ScenarioDto),
 }
 
 impl Tab {
@@ -27,7 +40,10 @@ impl Tab {
         Tab::Positions,
         Tab::Orders,
         Tab::Alerts,
+        Tab::Yield,
+        Tab::Scenarios,
         Tab::Logs,
+        Tab::Settings,
     ];
 
     pub fn label(&self) -> &'static str {
@@ -36,7 +52,10 @@ impl Tab {
             Tab::Positions => "Pos",
             Tab::Orders => "Orders",
             Tab::Alerts => "Alerts",
+            Tab::Yield => "Yield",
+            Tab::Scenarios => "Scen",
             Tab::Logs => "Logs",
+            Tab::Settings => "Set",
         }
     }
 
@@ -67,9 +86,52 @@ pub struct App {
     pub log_state: TuiWidgetState,
     pub nats_status: ConnectionStatus,
     pub should_quit: bool,
+    /// Last result from strategy start/stop/cancel-all (shown in hint bar until cleared). Ok = message, Err = error.
+    pub last_strategy_result: Option<Result<String, String>>,
+    /// When true, show the help overlay (key bindings).
+    pub show_help: bool,
+    /// When Some, show detail overlay for selected Order or Position (Enter to open, Esc to close).
+    pub detail_popup: Option<DetailPopupContent>,
+    /// Config validation warning (e.g. missing NATS_URL); shown in status bar when set.
+    pub config_warning: Option<String>,
+    /// Backend health from system.health (backend id → state). Updated by NATS health subscriber.
+    pub backend_health: HashMap<String, BackendHealthState>,
+    /// When true, main area shows Dashboard (left) and Positions (right) side-by-side; toggled with [p] or from config.
+    pub split_pane: bool,
+    /// Scroll/selection index for Positions tab (arrow-key scroll).
+    pub positions_scroll: usize,
+    /// Scroll/selection index for Orders tab (arrow-key scroll; index into filtered list).
+    pub orders_scroll: usize,
+    /// Scroll/selection index for Alerts tab (arrow-key scroll).
+    pub alerts_scroll: usize,
+    /// Scroll/selection index for Scenarios tab (arrow-key scroll).
+    pub scenarios_scroll: usize,
+    /// Selected symbol index for Yield tab (into effective watchlist).
+    pub yield_symbol_index: usize,
+    /// In-Settings watchlist override (add/remove symbols in memory). None = use config.watchlist.
+    pub watchlist_override: Option<Vec<String>>,
+    /// Selected row in Settings tab: 0 = backends, 1 = config, 2 = symbols. For symbol list, use settings_symbol_index.
+    pub settings_section_index: usize,
+    /// Selected symbol index in Settings watchlist (for remove / highlight).
+    pub settings_symbol_index: usize,
+    /// When Some, Settings is in "add symbol" mode; buffer for the new symbol (Enter confirm, Esc cancel).
+    pub settings_add_symbol_input: Option<String>,
+    /// Last fetched box spread curve (NATS api.finance_rates.build_curve).
+    pub yield_curve: Option<CurveResponse>,
+    /// Last fetched benchmark rates (NATS api.finance_rates.benchmarks).
+    pub yield_benchmarks: Option<BenchmarksResponse>,
+    /// Last yield fetch error message.
+    pub yield_error: Option<String>,
+    /// Tick counter for periodic yield fetch when on Yield tab.
+    pub yield_fetch_tick: u32,
+    /// Sender to trigger yield fetch (symbol); None when not wired.
+    yield_fetch_tx: Option<mpsc::UnboundedSender<String>>,
+    /// Sender for strategy commands (S=start, T=stop); None when not wired.
+    strategy_cmd_tx: Option<mpsc::UnboundedSender<StrategyCommand>>,
     event_rx: mpsc::UnboundedReceiver<AppEvent>,
     snapshot_rx: watch::Receiver<Option<TuiSnapshot>>,
     config_rx: watch::Receiver<TuiConfig>,
+    health_rx: watch::Receiver<HashMap<String, BackendHealthState>>,
 }
 
 impl App {
@@ -78,7 +140,12 @@ impl App {
         snapshot_rx: watch::Receiver<Option<TuiSnapshot>>,
         event_rx: mpsc::UnboundedReceiver<AppEvent>,
         config_rx: watch::Receiver<TuiConfig>,
+        health_rx: watch::Receiver<HashMap<String, BackendHealthState>>,
+        strategy_cmd_tx: Option<mpsc::UnboundedSender<StrategyCommand>>,
+        yield_fetch_tx: Option<mpsc::UnboundedSender<String>>,
     ) -> Self {
+        let config_warning = validate_config_hint(&config);
+        let split_pane = config.split_pane;
         Self {
             config,
             active_tab: Tab::Dashboard,
@@ -88,10 +155,68 @@ impl App {
             log_state: TuiWidgetState::default(),
             nats_status: ConnectionStatus::new(ConnectionState::Starting, "Connecting to NATS"),
             should_quit: false,
+            last_strategy_result: None,
+            show_help: false,
+            detail_popup: None,
+            config_warning,
+            backend_health: HashMap::new(),
+            split_pane,
+            positions_scroll: 0,
+            orders_scroll: 0,
+            alerts_scroll: 0,
+            scenarios_scroll: 0,
+            yield_symbol_index: 0,
+            watchlist_override: None,
+            settings_section_index: 0,
+            settings_symbol_index: 0,
+            settings_add_symbol_input: None,
+            yield_curve: None,
+            yield_benchmarks: None,
+            yield_error: None,
+            yield_fetch_tick: 0,
+            yield_fetch_tx,
+            strategy_cmd_tx,
             event_rx,
             snapshot_rx,
             config_rx,
+            health_rx,
         }
+    }
+
+    /// Effective watchlist: override if set, else config.
+    pub fn watchlist(&self) -> &[String] {
+        self.watchlist_override
+            .as_deref()
+            .unwrap_or(&self.config.watchlist)
+    }
+
+    /// Set yield data from NATS fetch (curve + benchmarks).
+    pub fn set_yield_data(
+        &mut self,
+        res: Result<(CurveResponse, BenchmarksResponse), String>,
+    ) {
+        self.yield_error = None;
+        match res {
+            Ok((curve, benchmarks)) => {
+                self.yield_curve = Some(curve);
+                self.yield_benchmarks = Some(benchmarks);
+            }
+            Err(e) => {
+                self.yield_error = Some(e);
+            }
+        }
+    }
+
+    /// Request a yield fetch for the given symbol (no-op if yield_fetch_tx is None).
+    pub fn request_yield_fetch(&mut self, symbol: &str) {
+        if let Some(ref tx) = self.yield_fetch_tx {
+            let _ = tx.send(symbol.to_string());
+        }
+    }
+
+    /// Set the last strategy command result (shown in hint bar). Ok(msg) = success message, Err(e) = error.
+    pub fn set_strategy_result(&mut self, r: Result<String, String>) {
+        self.last_strategy_result = Some(r);
     }
 
     /// Pull latest snapshot and config updates, process queued events.
@@ -99,8 +224,14 @@ impl App {
         // Apply hot-reloaded config if it changed
         if self.config_rx.has_changed().unwrap_or(false) {
             let new_config = self.config_rx.borrow_and_update().clone();
-            self.config = new_config;
+            self.config = new_config.clone();
+            self.config_warning = validate_config_hint(&new_config);
             tracing::info!("Config reloaded from disk");
+        }
+
+        // Apply backend health updates from system.health subscriber
+        if self.health_rx.has_changed().unwrap_or(false) {
+            self.backend_health = self.health_rx.borrow_and_update().clone();
         }
 
         while let Ok(event) = self.event_rx.try_recv() {
@@ -120,6 +251,18 @@ impl App {
                 }
             }
         }
+
+        // Periodic yield fetch when on Yield tab (~every 10s at 250ms tick)
+        const YIELD_FETCH_INTERVAL_TICKS: u32 = 40;
+        if self.active_tab == Tab::Yield && !self.config.watchlist.is_empty() {
+            self.yield_fetch_tick = self.yield_fetch_tick.saturating_add(1);
+            if self.yield_fetch_tick >= YIELD_FETCH_INTERVAL_TICKS {
+                self.yield_fetch_tick = 0;
+                let idx = self.yield_symbol_index.min(self.config.watchlist.len() - 1);
+                let symbol = self.config.watchlist[idx].clone();
+                self.request_yield_fetch(&symbol);
+            }
+        }
     }
 
     fn apply_event(&mut self, event: AppEvent) {
@@ -135,6 +278,54 @@ impl App {
         true
     }
 
+    /// Length of orders list after applying order_filter (for Orders tab selection clamp).
+    fn filtered_orders_len(&self) -> usize {
+        self.snapshot
+            .as_ref()
+            .map(|s| self.filtered_orders(s).len())
+            .unwrap_or(0)
+    }
+
+    /// Filter snapshot orders by order_filter (symbol, status, or side).
+    /// Result is sorted by submitted_at descending (newest first).
+    fn filtered_orders(&self, snap: &TuiSnapshot) -> Vec<RuntimeOrderDto> {
+        let filter_lower = self.order_filter.to_lowercase();
+        let mut orders = if filter_lower.is_empty() {
+            snap.inner.orders.clone()
+        } else {
+            snap.inner
+                .orders
+                .iter()
+                .filter(|o| {
+                    o.symbol.to_lowercase().contains(&filter_lower)
+                        || o.status.to_lowercase().contains(&filter_lower)
+                        || o.side.to_lowercase().contains(&filter_lower)
+                })
+                .cloned()
+                .collect()
+        };
+        orders.sort_by(|a, b| b.submitted_at.cmp(&a.submitted_at));
+        orders
+    }
+}
+
+/// Returns a short validation hint if config is missing required fields.
+fn validate_config_hint(config: &TuiConfig) -> Option<String> {
+    let mut issues = Vec::new();
+    if config.nats_url.trim().is_empty() {
+        issues.push("NATS_URL empty");
+    }
+    if config.backend_id.trim().is_empty() {
+        issues.push("BACKEND_ID empty");
+    }
+    if issues.is_empty() {
+        None
+    } else {
+        Some(issues.join("; "))
+    }
+}
+
+impl App {
     fn update_roi_history(&mut self, snap: &TuiSnapshot) {
         for symbol_data in &snap.inner.symbols {
             let roi = symbol_data.roi;
@@ -157,15 +348,83 @@ impl App {
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) {
+        if self.show_help {
+            self.show_help = false;
+            return;
+        }
+        if self.detail_popup.is_some() {
+            self.detail_popup = None;
+            return;
+        }
+        // Settings "add symbol" input mode
+        if let Some(ref mut buf) = self.settings_add_symbol_input {
+            match key.code {
+                KeyCode::Enter => {
+                    let s = buf.trim().to_uppercase();
+                    if !s.is_empty() {
+                        let mut list = self
+                            .watchlist_override
+                            .clone()
+                            .unwrap_or_else(|| self.config.watchlist.clone());
+                        if !list.contains(&s) {
+                            list.push(s);
+                            list.sort();
+                            self.watchlist_override = Some(list);
+                        }
+                    }
+                    self.settings_add_symbol_input = None;
+                }
+                KeyCode::Esc => {
+                    self.settings_add_symbol_input = None;
+                }
+                KeyCode::Backspace => {
+                    buf.pop();
+                }
+                KeyCode::Char(c) if !c.is_control() => {
+                    buf.push(c);
+                }
+                _ => {}
+            }
+            return;
+        }
         match key.code {
             KeyCode::Char('q') | KeyCode::Char('Q') => self.should_quit = true,
+            KeyCode::Char('?') => self.show_help = true,
+            // Yield tab: ←/→ change symbol (before generic tab switch)
+            KeyCode::Left if self.active_tab == Tab::Yield => {
+                let len = self.watchlist().len();
+                if len > 0 {
+                    self.yield_symbol_index = (self.yield_symbol_index + len - 1) % len;
+                    let symbol = self.watchlist()[self.yield_symbol_index].clone();
+                    self.request_yield_fetch(&symbol);
+                }
+            }
+            KeyCode::Right if self.active_tab == Tab::Yield => {
+                let len = self.watchlist().len();
+                if len > 0 {
+                    self.yield_symbol_index = (self.yield_symbol_index + 1) % len;
+                    let symbol = self.watchlist()[self.yield_symbol_index].clone();
+                    self.request_yield_fetch(&symbol);
+                }
+            }
             KeyCode::Tab | KeyCode::Right => self.active_tab = self.active_tab.next(),
             KeyCode::BackTab | KeyCode::Left => self.active_tab = self.active_tab.prev(),
             KeyCode::Char('1') => self.active_tab = Tab::Dashboard,
             KeyCode::Char('2') => self.active_tab = Tab::Positions,
             KeyCode::Char('3') => self.active_tab = Tab::Orders,
             KeyCode::Char('4') => self.active_tab = Tab::Alerts,
-            KeyCode::Char('5') => self.active_tab = Tab::Logs,
+            KeyCode::Char('5') => {
+                self.active_tab = Tab::Yield;
+                let wl = self.watchlist();
+                if !wl.is_empty() {
+                    let idx = self.yield_symbol_index.min(wl.len().saturating_sub(1));
+                    let symbol = wl[idx].clone();
+                    self.request_yield_fetch(&symbol);
+                }
+            }
+            KeyCode::Char('6') => self.active_tab = Tab::Scenarios,
+            KeyCode::Char('7') => self.active_tab = Tab::Logs,
+            KeyCode::Char('8') => self.active_tab = Tab::Settings,
             // Log tab navigation — forwarded to TuiWidgetState
             KeyCode::Up if self.active_tab == Tab::Logs => {
                 self.log_state.transition(TuiWidgetEvent::UpKey);
@@ -192,7 +451,195 @@ impl App {
             KeyCode::Esc if self.active_tab == Tab::Logs => {
                 self.log_state.transition(TuiWidgetEvent::EscapeKey);
             }
+            // Positions tab (or right pane when split): arrow-key scroll
+            KeyCode::Up if self.active_tab == Tab::Positions || self.split_pane => {
+                self.positions_scroll = self.positions_scroll.saturating_sub(1);
+            }
+            KeyCode::Down if self.active_tab == Tab::Positions || self.split_pane => {
+                let len = self
+                    .snapshot
+                    .as_ref()
+                    .map(|s| s.inner.positions.len())
+                    .unwrap_or(0);
+                if len > 0 {
+                    self.positions_scroll = (self.positions_scroll + 1).min(len - 1);
+                }
+            }
+            KeyCode::PageUp if self.active_tab == Tab::Positions || self.split_pane => {
+                self.positions_scroll = self.positions_scroll.saturating_sub(10);
+            }
+            KeyCode::PageDown if self.active_tab == Tab::Positions || self.split_pane => {
+                let len = self
+                    .snapshot
+                    .as_ref()
+                    .map(|s| s.inner.positions.len())
+                    .unwrap_or(0);
+                if len > 0 {
+                    self.positions_scroll = (self.positions_scroll + 10).min(len - 1);
+                }
+            }
+            // Orders tab: arrow-key scroll (selection index into filtered list)
+            KeyCode::Up if self.active_tab == Tab::Orders => {
+                self.orders_scroll = self.orders_scroll.saturating_sub(1);
+            }
+            KeyCode::Down if self.active_tab == Tab::Orders => {
+                let len = self.filtered_orders_len();
+                if len > 0 {
+                    self.orders_scroll = (self.orders_scroll + 1).min(len - 1);
+                }
+            }
+            KeyCode::PageUp if self.active_tab == Tab::Orders => {
+                self.orders_scroll = self.orders_scroll.saturating_sub(10);
+            }
+            KeyCode::PageDown if self.active_tab == Tab::Orders => {
+                let len = self.filtered_orders_len();
+                if len > 0 {
+                    self.orders_scroll = (self.orders_scroll + 10).min(len - 1);
+                }
+            }
+            KeyCode::Enter if self.active_tab == Tab::Orders => {
+                if let Some(ref snap) = self.snapshot {
+                    let filtered = self.filtered_orders(snap);
+                    let idx = self.orders_scroll.min(filtered.len().saturating_sub(1));
+                    if let Some(order) = filtered.get(idx) {
+                        self.detail_popup = Some(DetailPopupContent::Order(order.clone()));
+                    }
+                }
+            }
+            KeyCode::Enter if self.active_tab == Tab::Positions || self.split_pane => {
+                if let Some(ref snap) = self.snapshot {
+                    let len = snap.inner.positions.len();
+                    if len > 0 {
+                        let idx = self.positions_scroll.min(len - 1);
+                        if let Some(pos) = snap.inner.positions.get(idx) {
+                            self.detail_popup = Some(DetailPopupContent::Position(pos.clone()));
+                        }
+                    }
+                }
+            }
+            // Alerts tab: arrow-key scroll
+            KeyCode::Up if self.active_tab == Tab::Alerts => {
+                self.alerts_scroll = self.alerts_scroll.saturating_sub(1);
+            }
+            KeyCode::Down if self.active_tab == Tab::Alerts => {
+                let len = self
+                    .snapshot
+                    .as_ref()
+                    .map(|s| s.inner.alerts.len())
+                    .unwrap_or(0);
+                if len > 0 {
+                    self.alerts_scroll = (self.alerts_scroll + 1).min(len - 1);
+                }
+            }
+            KeyCode::PageUp if self.active_tab == Tab::Alerts => {
+                self.alerts_scroll = self.alerts_scroll.saturating_sub(10);
+            }
+            KeyCode::PageDown if self.active_tab == Tab::Alerts => {
+                let len = self
+                    .snapshot
+                    .as_ref()
+                    .map(|s| s.inner.alerts.len())
+                    .unwrap_or(0);
+                if len > 0 {
+                    self.alerts_scroll = (self.alerts_scroll + 10).min(len - 1);
+                }
+            }
+            // Scenarios tab: arrow-key scroll
+            KeyCode::Up if self.active_tab == Tab::Scenarios => {
+                self.scenarios_scroll = self.scenarios_scroll.saturating_sub(1);
+            }
+            KeyCode::Down if self.active_tab == Tab::Scenarios => {
+                let len = self
+                    .snapshot
+                    .as_ref()
+                    .map(|s| s.inner.scenarios.len())
+                    .unwrap_or(0);
+                if len > 0 {
+                    self.scenarios_scroll = (self.scenarios_scroll + 1).min(len - 1);
+                }
+            }
+            KeyCode::PageUp if self.active_tab == Tab::Scenarios => {
+                self.scenarios_scroll = self.scenarios_scroll.saturating_sub(10);
+            }
+            KeyCode::PageDown if self.active_tab == Tab::Scenarios => {
+                let len = self
+                    .snapshot
+                    .as_ref()
+                    .map(|s| s.inner.scenarios.len())
+                    .unwrap_or(0);
+                if len > 0 {
+                    self.scenarios_scroll = (self.scenarios_scroll + 10).min(len - 1);
+                }
+            }
+            KeyCode::Enter if self.active_tab == Tab::Scenarios => {
+                if let Some(ref snap) = self.snapshot {
+                    let mut sorted = snap.inner.scenarios.clone();
+                    sorted.sort_by(|a, b| {
+                        b.apr_pct
+                            .partial_cmp(&a.apr_pct)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    });
+                    let idx = self.scenarios_scroll.min(sorted.len().saturating_sub(1));
+                    if let Some(scenario) = sorted.get(idx) {
+                        self.detail_popup = Some(DetailPopupContent::Scenario(scenario.clone()));
+                    }
+                }
+            }
+            // Settings tab: section/symbol scroll, add symbol (a), remove (Del), reset override (r)
+            KeyCode::Up if self.active_tab == Tab::Settings => {
+                if self.settings_section_index == 2 {
+                    self.settings_symbol_index = self.settings_symbol_index.saturating_sub(1);
+                } else {
+                    self.settings_section_index = self.settings_section_index.saturating_sub(1);
+                }
+            }
+            KeyCode::Down if self.active_tab == Tab::Settings => {
+                if self.settings_section_index == 2 {
+                    let len = self.watchlist().len();
+                    if len > 0 {
+                        self.settings_symbol_index =
+                            (self.settings_symbol_index + 1).min(len.saturating_sub(1));
+                    }
+                } else {
+                    self.settings_section_index = (self.settings_section_index + 1).min(2);
+                }
+            }
+            KeyCode::Char('a') | KeyCode::Char('A') if self.active_tab == Tab::Settings => {
+                self.settings_add_symbol_input = Some(String::new());
+            }
+            KeyCode::Char('r') | KeyCode::Char('R') if self.active_tab == Tab::Settings => {
+                self.watchlist_override = None;
+            }
+            KeyCode::Delete if self.active_tab == Tab::Settings => {
+                let wl = self.watchlist();
+                if !wl.is_empty() && self.settings_symbol_index < wl.len() {
+                    let mut list = self
+                        .watchlist_override
+                        .clone()
+                        .unwrap_or_else(|| self.config.watchlist.clone());
+                    list.remove(self.settings_symbol_index);
+                    let new_len = list.len();
+                    self.watchlist_override = Some(list);
+                    self.settings_symbol_index = self.settings_symbol_index.min(new_len.saturating_sub(1));
+                }
+            }
             // Order filter: '/' to activate, chars to add, Backspace to delete, Esc to clear
+            // Strategy control via NATS (S=start, T=stop); skip when on Orders tab so s/t can filter
+            KeyCode::Char('s') | KeyCode::Char('S') if self.active_tab != Tab::Orders => {
+                if let Some(ref tx) = self.strategy_cmd_tx {
+                    let _ = tx.send(StrategyCommand::Start);
+                }
+            }
+            KeyCode::Char('t') | KeyCode::Char('T') if self.active_tab != Tab::Orders => {
+                if let Some(ref tx) = self.strategy_cmd_tx {
+                    let _ = tx.send(StrategyCommand::Stop);
+                }
+            }
+            KeyCode::Char('k') | KeyCode::Char('K') if self.active_tab != Tab::Orders => {
+                if let Some(ref tx) = self.strategy_cmd_tx {
+                    let _ = tx.send(StrategyCommand::CancelAll);
+                }
+            }
             KeyCode::Char('/') if self.active_tab == Tab::Orders => {
                 self.order_filter.clear();
             }
@@ -219,35 +666,14 @@ mod tests {
     use crossterm::event::{KeyCode, KeyEvent};
     use tokio::sync::{mpsc, watch};
 
+    use std::collections::HashMap;
+
     use super::{App, Tab};
     use crate::{
         config::TuiConfig,
         events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget},
-        models::{SnapshotSource, TuiSnapshot},
+        models::TuiSnapshot,
     };
-
-    #[allow(dead_code)] // test helper for future snapshot tests
-    fn snapshot(source: SnapshotSource) -> TuiSnapshot {
-        TuiSnapshot {
-            inner: RuntimeSnapshotDto {
-                generated_at: Utc::now(),
-                started_at: Utc::now(),
-                mode: "paper".into(),
-                strategy: "box".into(),
-                account_id: "DU123".into(),
-                metrics: Metrics::default(),
-                symbols: Vec::new(),
-                positions: Vec::new(),
-                historic: Vec::new(),
-                orders: Vec::new(),
-                decisions: Vec::new(),
-                alerts: Vec::new(),
-                risk: RiskStatus::default(),
-            },
-            received_at: Utc::now(),
-            source,
-        }
-    }
 
     fn make_app() -> (
         App,
@@ -257,7 +683,16 @@ mod tests {
         let (snap_tx, snap_rx) = watch::channel(None);
         let (event_tx, event_rx) = mpsc::unbounded_channel();
         let (_config_tx, config_rx) = watch::channel(TuiConfig::default());
-        let app = App::new(TuiConfig::default(), snap_rx, event_rx, config_rx);
+        let (_health_tx, health_rx) = watch::channel(HashMap::new());
+        let app = App::new(
+            TuiConfig::default(),
+            snap_rx,
+            event_rx,
+            config_rx,
+            health_rx,
+            None,
+            None,
+        );
         (app, snap_tx, event_tx)
     }
 
@@ -283,7 +718,16 @@ mod tests {
         let (snap_tx, snap_rx) = watch::channel(None);
         let (_event_tx, event_rx) = mpsc::unbounded_channel();
         let (config_tx, config_rx) = watch::channel(TuiConfig::default());
-        let mut app = App::new(TuiConfig::default(), snap_rx, event_rx, config_rx);
+        let (_health_tx, health_rx) = watch::channel(HashMap::new());
+        let mut app = App::new(
+            TuiConfig::default(),
+            snap_rx,
+            event_rx,
+            config_rx,
+            health_rx,
+            None,
+            None,
+        );
         drop(snap_tx);
 
         let new_config = TuiConfig { watchlist: vec!["TSLA".into()], ..Default::default() };
@@ -309,6 +753,21 @@ mod tests {
             KeyCode::Char('-'),
             KeyCode::Esc,
         ] {
+            app.handle_key(KeyEvent::from(key));
+        }
+    }
+
+    #[test]
+    fn positions_and_alerts_scroll_keys_do_not_panic() {
+        let (mut app, _, _) = make_app();
+
+        app.active_tab = Tab::Positions;
+        for key in [KeyCode::Up, KeyCode::Down, KeyCode::PageUp, KeyCode::PageDown] {
+            app.handle_key(KeyEvent::from(key));
+        }
+
+        app.active_tab = Tab::Alerts;
+        for key in [KeyCode::Up, KeyCode::Down, KeyCode::PageUp, KeyCode::PageDown] {
             app.handle_key(KeyEvent::from(key));
         }
     }
