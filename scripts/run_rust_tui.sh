@@ -10,15 +10,14 @@
 # Environment overrides:
 #   NATS_URL      Override NATS server URL
 #   BACKEND_ID    Override snapshot subject suffix
-#   REST_URL      Override REST fallback base URL
 #   WATCHLIST     Override highlighted symbols
 #   TICK_MS       Override UI redraw interval ms
-#   REST_POLL_MS  Override REST polling interval ms
-#   REST_FALLBACK Override REST fallback on/off
+#   SNAPSHOT_TTL_SECS  Override snapshot staleness seconds
 #   IB_BOX_SPREAD_CONFIG  Override shared config path
+#   RUST_TUI_VERBOSE  If set, print config before starting
 #
 # Examples:
-#   NATS_URL=nats://localhost:4222 BACKEND_ID=alpaca ./scripts/run_rust_tui.sh
+#   NATS_URL=nats://localhost:4222 BACKEND_ID=ib ./scripts/run_rust_tui.sh
 #   TICK_MS=500 WATCHLIST=SPY,QQQ,MSTR ./scripts/run_rust_tui.sh
 
 set -euo pipefail
@@ -26,6 +25,15 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 BACKEND_DIR="${PROJECT_ROOT}/agents/backend"
+
+# Resolve 1Password refs (e.g. OP_FRED_API_KEY_SECRET -> FRED_API_KEY) for Rust TUI
+# Safe when op CLI or token is missing; see docs/platform/KEYS_FROM_1PASSWORD.md
+# shellcheck source=scripts/include/onepassword.sh
+if [[ -f "${SCRIPT_DIR}/include/onepassword.sh" ]]; then
+  # shellcheck source=scripts/include/onepassword.sh
+  source "${SCRIPT_DIR}/include/onepassword.sh"
+  export_op_secrets_for_rust 2>/dev/null || true
+fi
 
 # Check if NATS is running
 check_nats() {
@@ -52,23 +60,22 @@ check_nats() {
 # Build the TUI service if needed
 build_tui() {
   if [[ ! -f "${BACKEND_DIR}/target/debug/tui_service" ]]; then
-    echo "Building tui_service..."
-    (cd "${BACKEND_DIR}" && cargo build -p tui_service)
+    (cd "${BACKEND_DIR}" && cargo build -q -p tui_service)
   fi
 }
 
 # Run the Rust TUI
 run_tui() {
-  echo "Starting Rust TUI..."
-  echo "  Shared config: ${IB_BOX_SPREAD_CONFIG:-auto-discovery}"
-  echo "  NATS_URL:      ${NATS_URL:-<shared config / binary default>}"
-  echo "  BACKEND_ID:    ${BACKEND_ID:-<shared config / binary default>}"
-  echo "  REST_URL:      ${REST_URL:-<shared config / binary default>}"
-  echo "  WATCHLIST:     ${WATCHLIST:-<shared config / binary default>}"
-  echo "  TICK_MS:       ${TICK_MS:-<shared config / binary default>}"
-  echo "  REST_POLL_MS:  ${REST_POLL_MS:-<shared config / binary default>}"
-  echo "  REST_FALLBACK: ${REST_FALLBACK:-<shared config / binary default>}"
-  echo ""
+  if [[ -n "${RUST_TUI_VERBOSE:-}" ]]; then
+    echo "Starting Rust TUI..."
+    echo "  Shared config: ${IB_BOX_SPREAD_CONFIG:-auto-discovery}"
+    echo "  NATS_URL:      ${NATS_URL:-<shared config / binary default>}"
+    echo "  BACKEND_ID:    ${BACKEND_ID:-<shared config / binary default>}"
+    echo "  WATCHLIST:     ${WATCHLIST:-<shared config / binary default>}"
+    echo "  TICK_MS:       ${TICK_MS:-<shared config / binary default>}"
+    echo "  SNAPSHOT_TTL_SECS: ${SNAPSHOT_TTL_SECS:-<shared config / binary default>}"
+    echo ""
+  fi
 
   cd "${PROJECT_ROOT}"
   exec "${BACKEND_DIR}/target/debug/tui_service"

@@ -59,6 +59,35 @@ impl IbPositionDto {
     }
 }
 
+/// Fetch positions for a single account. Used by fetch_ib_positions and fetch_ib_positions_all.
+async fn fetch_positions_for_account(
+    client: &Client,
+    portal_base: &str,
+    account: &str,
+) -> Result<Vec<IbPositionDto>, String> {
+    let primary_url = format!("{portal_base}/iserver/account/{account}/positions");
+    let fallback_url = format!(
+        "{}/portfolio/{account}/positions",
+        portal_base.replace("/v1/portal", "/v1/api")
+    );
+
+    let positions = match get_json(client, &primary_url).await {
+        Ok(Value::Array(items)) => items,
+        Ok(_) => Vec::new(),
+        Err(error) if error.contains("404") => match get_json(client, &fallback_url).await {
+            Ok(Value::Array(items)) => items,
+            Ok(_) => Vec::new(),
+            Err(error) => return Err(error),
+        },
+        Err(error) => return Err(error),
+    };
+
+    Ok(positions
+        .iter()
+        .filter_map(|item| IbPositionDto::from_portal_position(item, Some(account)))
+        .collect())
+}
+
 pub async fn fetch_ib_positions(account_id: Option<&str>) -> Result<Vec<IbPositionDto>, String> {
     let portal_base = std::env::var("IB_PORTAL_URL")
         .unwrap_or_else(|_| DEFAULT_IB_PORTAL_URL.to_string())
@@ -76,27 +105,40 @@ pub async fn fetch_ib_positions(account_id: Option<&str>) -> Result<Vec<IbPositi
         return Ok(Vec::new());
     };
 
-    let primary_url = format!("{portal_base}/iserver/account/{account}/positions");
-    let fallback_url = format!(
-        "{}/portfolio/{account}/positions",
-        portal_base.replace("/v1/portal", "/v1/api")
-    );
+    fetch_positions_for_account(&client, &portal_base, &account).await
+}
 
-    let positions = match get_json(&client, &primary_url).await {
-        Ok(Value::Array(items)) => items,
-        Ok(_) => Vec::new(),
-        Err(error) if error.contains("404") => match get_json(&client, &fallback_url).await {
-            Ok(Value::Array(items)) => items,
-            Ok(_) => Vec::new(),
-            Err(error) => return Err(error),
-        },
-        Err(error) => return Err(error),
-    };
+/// Fetch positions for all accounts (no filter). Use this to show all positions by default.
+pub async fn fetch_ib_positions_all() -> Result<Vec<IbPositionDto>, String> {
+    let portal_base = std::env::var("IB_PORTAL_URL")
+        .unwrap_or_else(|_| DEFAULT_IB_PORTAL_URL.to_string())
+        .trim_end_matches('/')
+        .to_string();
+    let client = Client::builder()
+        .danger_accept_invalid_certs(true)
+        .cookie_store(true)
+        .timeout(Duration::from_secs(5))
+        .build()
+        .map_err(|error| format!("Failed to build IB portal client: {error}"))?;
 
-    Ok(positions
-        .iter()
-        .filter_map(|item| IbPositionDto::from_portal_position(item, Some(&account)))
-        .collect())
+    let accounts = get_accounts(&client, &portal_base).await?;
+    if accounts.is_empty() {
+        tracing::warn!(
+            "IB Client Portal returned 0 accounts (not logged in or /iserver/accounts empty)"
+        );
+        return Ok(Vec::new());
+    }
+    let mut all = Vec::new();
+    for account in accounts {
+        match fetch_positions_for_account(&client, &portal_base, &account).await {
+            Ok(positions) => all.extend(positions),
+            Err(e) => {
+                // Log but continue with other accounts
+                tracing::warn!(%account, error = %e, "failed to fetch IB positions for account");
+            }
+        }
+    }
+    Ok(all)
 }
 
 async fn choose_account(

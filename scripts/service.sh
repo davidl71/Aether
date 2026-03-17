@@ -33,7 +33,6 @@ _svc_display() {
   case "$1" in
   nats) echo "NATS" ;;
   memcached) echo "Memcached" ;;
-  gateway) echo "IB Gateway" ;;
   discount) echo "Discount Bank" ;;
   rust) echo "Rust Backend" ;;
   *) echo "" ;;
@@ -44,7 +43,6 @@ _svc_port() {
   case "$1" in
   nats) echo "4222, 8222, 8081" ;;
   memcached) echo "11211" ;;
-  gateway) echo "${IB_GATEWAY_PORT:-5001}" ;;
   rust) _config_port rust_backend "$(config_get_rust_backend_port 9090)" ;;
   *) echo "" ;;
   esac
@@ -54,8 +52,7 @@ _svc_cmd() {
   case "$1" in
   nats) echo "nats-server" ;;
   memcached) echo "memcached -l 127.0.0.1" ;;
-  gateway) echo "./ib-gateway/run-gateway.sh" ;;
-  rust) echo "./agents/start_rust_backend.sh" ;;
+  rust) echo "./scripts/start_rust_backend.sh" ;;
   *) echo "" ;;
   esac
 }
@@ -64,7 +61,6 @@ _svc_log() {
   case "$1" in
   nats) echo "nats-server.log" ;;
   memcached) echo "memcached.log" ;;
-  gateway) echo "ib-gateway.log" ;;
   rust) echo "rust-backend.log" ;;
   *) echo "" ;;
   esac
@@ -74,8 +70,7 @@ _svc_health() {
   case "$1" in
   nats) echo "http://localhost:8222/healthz" ;;
   memcached) echo "" ;;
-  gateway) echo "https://localhost:\${PORT}" ;;
-  rust) echo "http://localhost:\${PORT}/health" ;;
+  rust) echo "http://localhost:\${PORT}/api/v1/snapshot" ;;
   *) echo "" ;;
   esac
 }
@@ -83,14 +78,14 @@ _svc_health() {
 _svc_wait() {
   case "$1" in
   nats | memcached) echo "2" ;;
-  gateway) echo "5" ;;
+  rust) echo "90" ;;
   *) echo "4" ;;
   esac
 }
 
 _svc_known() {
   case "$1" in
-  nats | memcached | gateway | rust)
+  nats | memcached | rust)
     return 0
     ;;
   *) return 1 ;;
@@ -140,7 +135,7 @@ _service_really_running() {
     # No health URL (e.g. memcached): PID present is enough
     return 0
   fi
-  # IB service can be slow (gateway round-trip); use longer timeout
+  # Some services can be slow to become healthy
   timeout=2
   [[ "$svc" == "ib" ]] && timeout=5
   if [[ "$url" == https* ]]; then
@@ -188,9 +183,17 @@ do_start() {
   fi
 
   mkdir -p "$LOGS_DIR"
+  # In start-all, allow time for rust to compile and bind (release build can take 1–5 min)
+  if [[ -n "${START_ALL_ASYNC:-}" ]] && [[ "$svc" == "rust" ]]; then
+    wait_sec=90
+  fi
   echo "[info] Starting ${display}..."
 
   if _is_nats "$svc"; then
+    if ! command -v nats-server >/dev/null 2>&1; then
+      echo "[warn] nats-server not found (install with: brew install nats-server); skipping"
+      return 0
+    fi
     local cfg="${ROOT_DIR}/config/nats-server.conf"
     if [[ -f "$cfg" ]]; then
       nats-server -c "$cfg" >"$log" 2>&1 &
@@ -198,11 +201,11 @@ do_start() {
       nats-server >"$log" 2>&1 &
     fi
   elif _is_memcached "$svc"; then
+    if ! command -v memcached >/dev/null 2>&1; then
+      echo "[warn] memcached not found (install with: brew install memcached); skipping"
+      return 0
+    fi
     memcached -l 127.0.0.1 >"$log" 2>&1 &
-  elif [[ "$svc" == "gateway" ]]; then
-    (cd "${ROOT_DIR}" && ./ib-gateway/run-gateway.sh >>"$log" 2>&1) &
-  elif [[ "$svc" == "web" ]]; then
-    (cd "${ROOT_DIR}/web" && npm run dev >"$log" 2>&1) &
   else
     (cd "${ROOT_DIR}" && eval "$cmd" >"$log" 2>&1) &
   fi
@@ -241,7 +244,14 @@ do_start() {
     echo "[info] Log: $log"
   else
     echo "[error] Failed to start ${display}"
+    echo "[info] Last lines of ${log}:"
     tail -10 "$log" 2>/dev/null || true
+    # Rust backend: cargo/process output goes to rust_backend_service.log (from service_manager.sh)
+    local backend_log="${LOGS_DIR}/rust_backend_service.log"
+    if [[ "$svc" == "rust" ]] && [[ -f "$backend_log" ]]; then
+      echo "[info] Last lines of ${backend_log} (cargo/backend output):"
+      tail -20 "$backend_log" 2>/dev/null || true
+    fi
     return 1
   fi
 }
@@ -337,7 +347,7 @@ do_restart() {
 do_list() {
   echo "Available services:"
   local svc port enabled
-  for svc in nats memcached gateway web rust; do
+  for svc in nats memcached rust; do
     port=$(_svc_port "$svc")
     enabled="enabled"
     _config_enabled "$svc" "true" || enabled="disabled"
@@ -346,11 +356,15 @@ do_list() {
 }
 
 # Service order for start-all (dependency order); stop-all uses reverse
-# healthdashboard after backends so NATS has time to be ready
-ALL_SERVICES_START=(nats memcached gateway web)
+# NATS first, then memcached, then Rust backend (rust starts async in start-all)
+ALL_SERVICES_START=(nats memcached rust)
 
 do_start_all() {
   local svc
+  # Use real TWS market data when starting all services (ensure TWS/IB Gateway is running on 7497)
+  export MARKET_DATA_PROVIDER="${MARKET_DATA_PROVIDER:-tws}"
+  # Short wait for rust so start-all returns while rust is still coming up
+  export START_ALL_ASYNC=1
   for svc in "${ALL_SERVICES_START[@]}"; do
     if ! _config_enabled "$svc" "true"; then
       echo "==> Skipping disabled $svc..."
@@ -361,6 +375,10 @@ do_start_all() {
   done
   echo ""
   echo "==> All services started. Logs: ${LOGS_DIR}"
+  echo "    Rust backend may still be starting; use '$0 status-all' to confirm."
+  if [[ "${MARKET_DATA_PROVIDER:-}" == "tws" ]]; then
+    echo "    Market data: TWS (connected port shown in TUI status bar)"
+  fi
   echo "    Stop all: $0 stop-all"
   echo "    Status:   $0 status-all"
 }
