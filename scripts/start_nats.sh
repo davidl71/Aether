@@ -27,8 +27,8 @@ LOG_FILE="${ROOT_DIR}/logs/nats-server.log"
 
 if [[ ! -f "$CONFIG_FILE" ]]; then
   echo "[warn] Configuration file not found: $CONFIG_FILE"
-  echo "[info] Starting NATS server with default configuration..."
-  nats-server > "$LOG_FILE" 2>&1 &
+  echo "[info] Starting NATS server with JetStream enabled (required for yield curve KV)..."
+  nats-server -js -DV > "$LOG_FILE" 2>&1 &
   NATS_PID=$!
 else
   echo "[info] Starting NATS server with config: $CONFIG_FILE"

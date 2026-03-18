@@ -20,22 +20,33 @@ Summary of how this repo uses NATS JetStream Key-Value and recommended practices
 
 **Readers**
 
-- **`api`** (`agents/backend/crates/api/src/rest.rs`):
-  - **GET `/api/live/state`**: `live_state_store()` → `get_key_value("LIVE_STATE")`. Optional `?key=` returns single `store.entry(key)`; otherwise returns `store.keys()` as a key list.
-  - **GET `/api/live/state/watch`**: Same store, `store.watch_all()` for SSE stream of key/value updates (key, revision, base64 value, envelope metadata).
-  - Store obtained per request via `live_state_client()` → `jetstream.get_key_value("LIVE_STATE")` (no caching of store handle).
+- **REST (removed):** The backend is NATS-only; there is no HTTP server. Former REST handlers for `GET /api/live/state` and `GET /api/live/state/watch` were removed (see `docs/platform/REMOVE_REST_OPTIONS.md`). To read LIVE_STATE, use the NATS CLI or a JetStream client; see `docs/platform/LIVE_STATE_KV_VERIFICATION.md`.
+- **Real box yield curve:** When a client calls `api.finance_rates.build_curve` with **empty** `opportunities` and a `symbol`, the backend tries to load opportunities from the same bucket (default `LIVE_STATE`) under key **`yield_curve.{symbol}`** (e.g. `yield_curve.SPX`). Value must be a **JSON array** of objects; each object must have a `spread` key that deserializes to `BoxSpreadInput` (symbol, expiry, days_to_expiry, strike_width, buy_implied_rate, sell_implied_rate, net_debit, net_credit, liquidity_score). If the key is missing or invalid, the curve is built from the (empty) request and the TUI Yield tab shows no points. See [BOX_SPREAD_YIELD_CURVE_TWS.md](BOX_SPREAD_YIELD_CURVE_TWS.md) for TWS integration and fallback.
+- **Writer (pre-populate + interval):** `backend_service` runs a **yield curve writer** (`yield_curve_writer.rs`) that writes to `yield_curve.{symbol}` **once immediately** on startup (so the Yield tab has data without waiting), then on an interval (`YIELD_CURVE_WRITER_INTERVAL_SECS`, default 60). Data source: if `YIELD_CURVE_SOURCE_URL` is set, the backend fetches that URL (JSON array of curve points; see BOXTRADES_REFERENCE.md); otherwise it uses **synthetic** points. To use live data instead, set `YIELD_CURVE_SOURCE_URL` to your feed or add a writer that puts the same key from TWS/strategy. TWS integration: [BOX_SPREAD_YIELD_CURVE_TWS.md](BOX_SPREAD_YIELD_CURVE_TWS.md).
+
+**Optional watch endpoint contract (deferred)** — If a REST or gateway layer re-exposes `GET /api/live/state/watch` for UIs that prefer SSE over direct NATS:
+
+- **No query params**: `store.watch_all()` — stream all bucket updates (same as current recommendation for “show everything”).
+- **`?key=`** (e.g. `key=MarketDataEvent.SPY`): Stream updates for a single key. Use `store.watch(key)`.
+- **`?prefix=`** (e.g. `prefix=MarketDataEvent.`): Stream updates for keys matching a subject prefix (all keys for one message type). Use `store.watch(prefix + ">")` (NATS subject wildcard `>` = one or more tokens).
+
+Implementation is deferred; when adding the handler, branch on presence of `key` or `prefix` and call the appropriate `store` method.
 
 ### 2. Configuration
 
 | Env / source | Purpose |
 |--------------|--------|
 | `NATS_URL` | NATS server (default `nats://localhost:4222`) |
-| `NATS_KV_BUCKET` | Bucket name for collection aggregator (default `LIVE_STATE`) |
+| `NATS_KV_BUCKET` | Bucket name for collection aggregator and yield curve keys (default `LIVE_STATE`) |
+| `YIELD_CURVE_WRITER_INTERVAL_SECS` | Interval in seconds for yield curve KV writes (default `60`). Backend only. |
+| `YIELD_CURVE_SOURCE_URL` | Optional. URL returning a JSON array of curve points to pre-populate the yield curve (see BOXTRADES_REFERENCE.md § Pre-populating). If unset, backend uses synthetic data. |
 
 ### 3. Key semantics
 
-- **Key format**: `{message_type}.{symbol}` (e.g. `MarketDataEvent.SPY`, `StrategySignal.AAPL`).
-- **Value**: Protobuf binary of `NatsEnvelope` (id, message_type, payload).
+- **Key format (collection_aggregation):** `{message_type}.{symbol}` (e.g. `MarketDataEvent.SPY`, `StrategySignal.AAPL`).
+- **Key format (yield curve):** `yield_curve.{symbol}` (e.g. `yield_curve.SPX`). Not written by `collection_aggregation`; written by a separate process (strategy, TWS job, or script) that publishes box spread opportunities for the Yield tab.
+- **Value (event keys):** Protobuf binary of `NatsEnvelope` (id, message_type, payload).
+- **Value (yield_curve.{symbol}):** JSON array of objects with a `spread` key (see `api::finance_rates::BoxSpreadInput`). Used by `api.finance_rates.build_curve` when the request has empty opportunities.
 - **Updates**: Each new message on the subject overwrites the key (last-write-wins). No explicit TTL or history configured in code (bucket uses server/default config if created by `create_key_value`).
 
 ---
@@ -72,13 +83,13 @@ Apply the same ideas in `config/nats-server.conf` or via `nats` CLI if you manag
 
 ### 3. Store handle reuse
 
-- **Current**: When `backend_service` starts with NATS, it passes a shared `live_state_kv` store into `RestState`; API handlers use it when present and otherwise connect per-request (`live_state_store()`).
+- **Current**: `backend_service` does not run an HTTP server; it only writes to LIVE_STATE from `collection_aggregation`. No shared store is passed to any REST layer (REST was removed).
 - **Recommendation**: Keep this pattern. Ensure any other server that mounts the API (e.g. a standalone API binary) can also pass an optional shared store so production avoids per-request connections.
 
 ### 4. Watch vs poll
 
-- **Current**: `/api/live/state/watch` uses `store.watch_all()` and streams all updates over SSE.
-- **Recommendation**: Keep `watch_all()` for “show everything” UIs. For “per-symbol” or “per-type” views, use `watch()` with a key/prefix filter to reduce traffic and decoding cost.
+- **Current**: No REST watch endpoint; to stream KV updates use a JetStream client and `store.watch_all()` or `store.watch(key)`.
+- **Recommendation**: Keep `watch_all()` for “show everything” UIs. For “per-symbol” or “per-type” views, use `watch()` with a key/prefix filter to reduce traffic and decoding cost. If a REST `GET /api/live/state/watch` is re-introduced, support optional query params: `key=` → `store.watch(key)`; `prefix=` → `store.watch(prefix + ">")`. See “Optional watch endpoint contract (deferred)” in §1 Readers.
 
 ### 5. Key naming and consistency
 
@@ -109,8 +120,8 @@ There are no dual stores for the same logical data; the following is the intende
 
 - **Source of truth**: In-memory `SystemSnapshot` in `backend_service` (shared `state.snapshot`).
 - **Primary read path**: TUI subscribes to NATS `snapshot.{backend_id}`. The snapshot publisher periodically serializes the same in-memory snapshot and publishes it.
-- **Fallback read path**: When NATS is unavailable or the NATS snapshot is stale, TUI may poll `GET /api/v1/snapshot`, which returns the same in-memory snapshot over REST.
-- **Rule**: NATS is primary; REST is fallback only. Config (`provider_type`, `rest_fallback`) enforces this. Do not treat REST as a second source of truth.
+- **Fallback read path**: None. TUI is NATS-only; REST snapshot fallback has been removed.
+- **Rule**: NATS is the only live path for TUI snapshot. Do not treat REST as a source for TUI.
 
 ### LIVE_STATE KV: derived view, not a second source
 
@@ -127,4 +138,4 @@ The in-memory snapshot has multiple writers: strategy fanout, market data provid
 ## References
 
 - **NATS JetStream KV**: [Key Value Store](https://docs.nats.io/nats-concepts/jetstream/key-value-store) (concepts); [KV store operations](https://docs.nats.io/using-nats/developing-with-nats/js/kv) (history, watch, TTL, limits).
-- **This repo**: `agents/backend/crates/api/src/rest.rs` (live state API), `agents/backend/services/backend_service/src/collection_aggregation.rs` (KV writes), `docs/planning/NATS_KV_REDIS_LIFECYCLE_TIMESCALE.md`, `docs/NATS_TESTING_GUIDE.md`.
+- **This repo**: `agents/backend/services/backend_service/src/collection_aggregation.rs` (KV writes), `docs/platform/LIVE_STATE_KV_VERIFICATION.md` (verification and read path), `docs/planning/NATS_KV_REDIS_LIFECYCLE_TIMESCALE.md`.

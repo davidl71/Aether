@@ -198,7 +198,8 @@ do_start() {
     if [[ -f "$cfg" ]]; then
       nats-server -c "$cfg" >"$log" 2>&1 &
     else
-      nats-server >"$log" 2>&1 &
+      # JetStream (-js) required for yield curve KV (yield_curve.SPX etc.) and LIVE_STATE bucket
+      nats-server -js -DV >"$log" 2>&1 &
     fi
   elif _is_memcached "$svc"; then
     if ! command -v memcached >/dev/null 2>&1; then

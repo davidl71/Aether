@@ -67,34 +67,58 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
         .get(app.yield_symbol_index.min(app.config.watchlist.len().saturating_sub(1)))
         .cloned()
         .unwrap_or_else(|| "—".to_string());
-    let rows: Vec<Row> = match &app.yield_curve {
-        Some(curve) if curve.point_count > 0 => curve
-            .points
-            .iter()
-            .map(|p| {
-                Row::new([
-                    p.symbol.clone(),
-                    p.expiry.clone(),
-                    p.days_to_expiry.to_string(),
-                    bucket_label(p.days_to_expiry).to_string(),
-                    format!("{:.2}", p.mid_rate * 100.0),
-                ])
-            })
-            .collect(),
-        _ => vec![Row::new([
-            symbol,
-            "—".into(),
-            "—".into(),
-            "—".into(),
-            if app.yield_error.is_some() {
-                "error".into()
-            } else {
-                "—".into()
-            },
-        ])],
+    let (rows, empty_reason): (Vec<Row>, Option<&'static str>) = match &app.yield_curve {
+        Some(curve) if curve.point_count > 0 => (
+            curve
+                .points
+                .iter()
+                .map(|p| {
+                    Row::new([
+                        p.symbol.clone(),
+                        p.expiry.clone(),
+                        p.days_to_expiry.to_string(),
+                        bucket_label(p.days_to_expiry).to_string(),
+                        format!("{:.2}", p.mid_rate * 100.0),
+                    ])
+                })
+                .collect(),
+            None,
+        ),
+        Some(_) => (
+            vec![Row::new([
+                symbol,
+                "—".into(),
+                "—".into(),
+                "—".into(),
+                "No data".into(),
+            ])],
+            Some("Backend returned 0 points (need yield_curve.{symbol} in NATS KV or run yield curve writer)"),
+        ),
+        None if app.yield_error.is_some() => (
+            vec![Row::new([
+                symbol,
+                "—".into(),
+                "—".into(),
+                "—".into(),
+                "error".into(),
+            ])],
+            None,
+        ),
+        None => (
+            vec![Row::new([
+                symbol,
+                "—".into(),
+                "—".into(),
+                "—".into(),
+                "—".into(),
+            ])],
+            Some("Request curve to load from api.finance_rates.build_curve"),
+        ),
     };
     let title = if app.yield_error.is_some() {
         "Box spread curve (error)"
+    } else if empty_reason.is_some() {
+        "Box spread curve (empty)"
     } else {
         "Box spread curve (api.finance_rates.build_curve)"
     };
@@ -122,6 +146,11 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
             format!("Error: {}", super::truncate_detail(e, 50)),
             Style::default().fg(Color::Red),
         ));
+    } else if let Some(reason) = empty_reason {
+        bench_note_spans.push(Span::styled(
+            reason.replace("{symbol}", symbol),
+            Style::default().fg(Color::Yellow),
+        ));
     } else {
         bench_note_spans.push(Span::raw("See "));
         bench_note_spans.push(Span::styled("NATS_API.md", Style::default().fg(Color::Cyan)));
@@ -134,10 +163,11 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
     let bench_rows: Vec<Row> = match &app.yield_benchmarks {
         Some(b) => {
             let mut rows = Vec::new();
+            // FRED returns rates already in percent (e.g. 4.5 = 4.5%); display as-is for "Rate %"
             if let Some(rate) = b.sofr.overnight.rate {
                 rows.push(Row::new([
                     "SOFR overnight".into(),
-                    format!("{:.2}", rate * 100.0),
+                    format!("{:.2}", rate),
                     b.sofr.overnight
                         .timestamp
                         .as_deref()
@@ -148,14 +178,14 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
             for r in &b.sofr.term_rates {
                 rows.push(Row::new([
                     r.tenor.clone(),
-                    format!("{:.2}", r.rate * 100.0),
+                    format!("{:.2}", r.rate),
                     r.source.clone(),
                 ]));
             }
             for r in &b.treasury.rates {
                 rows.push(Row::new([
                     r.tenor.clone(),
-                    format!("{:.2}", r.rate * 100.0),
+                    format!("{:.2}", r.rate),
                     r.source.clone(),
                 ]));
             }
