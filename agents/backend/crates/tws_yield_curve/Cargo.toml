@@ -1,0 +1,15 @@
+[package]
+name = "tws_yield_curve"
+edition = "2021"
+version.workspace = true
+description = "TWS-only yield curve: option chain + quotes → box spread opportunities (no NATS)"
+
+[dependencies]
+chrono = { workspace = true }
+common = { path = "../common" }
+futures = "0.3"
+ibapi = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["time", "net"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

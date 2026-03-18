@@ -9,8 +9,10 @@ members = [
   "crates/nats_adapter",
   "crates/quant",
   "crates/ib_adapter",
+  "crates/tws_yield_curve",
   "services/backend_service",
   "services/tui_service",
+  "services/tws_yield_curve_daemon",
   "crates/discount_bank_parser",
   "bin/cli",
 ]
@@ -35,7 +37,7 @@ tower = "0.4"
 rand = { version = "0.8", features = ["std"] }
 futures = "0.3"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter", "registry"] }
 toml = "0.8"
 thiserror = "1"
 reqwest = { version = "0.13", default-features = false, features = ["cookies", "json", "rustls", "query"] }
