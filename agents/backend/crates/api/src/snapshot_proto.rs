@@ -6,13 +6,11 @@
 
 use chrono::{DateTime, TimeZone, Utc};
 use nats_adapter::proto::v1 as pb;
-use nats_adapter::proto::well_known::Timestamp;
+use prost_types::Timestamp;
 
-use crate::combo_strategy;
-use crate::mock_data;
 use crate::runtime_state::{
     RuntimeDecisionDto, RuntimeHistoricPositionDto, RuntimeOrderDto, RuntimePositionDto,
-    RuntimeSnapshotDto, ScenarioDto,
+    RuntimeSnapshotDto,
 };
 use crate::state::{
     Alert, AlertLevel, CandleSnapshot, HistoricPosition, Metrics, OrderSnapshot, PositionSnapshot,
@@ -78,14 +76,6 @@ fn position_to_proto(p: &PositionSnapshot) -> pb::Position {
         cost_basis: p.cost_basis,
         mark: p.mark,
         unrealized_pnl: p.unrealized_pnl,
-        account_id: p.account_id.clone().unwrap_or_default(),
-        source: p.source.clone().unwrap_or_default(),
-        position_type: p.position_type.clone().unwrap_or_default(),
-        strategy: p.strategy.clone().unwrap_or_default(),
-        apr_pct: p.apr_pct,
-        combo_net_bid: p.combo_net_bid,
-        combo_net_ask: p.combo_net_ask,
-        combo_quote_source: p.combo_quote_source.clone().unwrap_or_default(),
     }
 }
 
@@ -147,7 +137,6 @@ fn metrics_to_proto(m: &Metrics) -> pb::Metrics {
         tws_ok: m.tws_ok,
         questdb_ok: m.questdb_ok,
         nats_ok: m.nats_ok,
-        tws_address: m.tws_address.clone().unwrap_or_default(),
     }
 }
 
@@ -159,37 +148,8 @@ fn risk_to_proto(r: &RiskStatus) -> pb::RiskStatus {
     }
 }
 
-fn scenario_to_proto(s: &ScenarioDto) -> pb::BoxSpreadScenarioDto {
-    pb::BoxSpreadScenarioDto {
-        symbol: s.symbol.clone(),
-        expiration: s.expiration.clone(),
-        days_to_expiry: s.days_to_expiry.unwrap_or(0),
-        strike_width: s.strike_width,
-        strike_center: s.strike_center.unwrap_or(0.0),
-        net_debit: s.net_debit,
-        profit: s.profit,
-        roi_pct: s.roi_pct,
-        apr_pct: s.apr_pct,
-        fill_probability: s.fill_probability,
-    }
-}
-
 /// Converts in-memory `SystemSnapshot` to protobuf for NATS and REST.
-/// When `has_real_data` is true, mock positions and mock scenarios are omitted.
 pub fn snapshot_to_proto(snap: &SystemSnapshot) -> pb::SystemSnapshot {
-    let positions: Vec<&PositionSnapshot> = if snap.has_real_data() {
-        snap.positions
-            .iter()
-            .filter(|p| p.source.as_deref() != Some("Mock"))
-            .collect()
-    } else {
-        snap.positions.iter().collect()
-    };
-    let scenarios: Vec<ScenarioDto> = if snap.has_real_data() {
-        vec![]
-    } else {
-        mock_data::mock_scenarios(&snap.symbols)
-    };
     pb::SystemSnapshot {
         generated_at: Some(dt_to_ts(snap.generated_at)),
         started_at: Some(dt_to_ts(snap.started_at)),
@@ -198,13 +158,12 @@ pub fn snapshot_to_proto(snap: &SystemSnapshot) -> pb::SystemSnapshot {
         account_id: snap.account_id.clone(),
         metrics: Some(metrics_to_proto(&snap.metrics)),
         symbols: snap.symbols.iter().map(symbol_to_proto).collect(),
-        positions: positions.into_iter().map(position_to_proto).collect(),
+        positions: snap.positions.iter().map(position_to_proto).collect(),
         historic: snap.historic.iter().map(historic_to_proto).collect(),
         orders: snap.orders.iter().map(order_to_proto).collect(),
         decisions: snap.decisions.iter().map(decision_to_proto).collect(),
         alerts: snap.alerts.iter().map(alert_to_proto).collect(),
         risk: Some(risk_to_proto(&snap.risk)),
-        scenarios: scenarios.iter().map(scenario_to_proto).collect(),
     }
 }
 
@@ -213,11 +172,6 @@ pub fn snapshot_to_proto(snap: &SystemSnapshot) -> pb::SystemSnapshot {
 // ---------------------------------------------------------------------------
 
 fn position_from_proto(pos: pb::Position, fallback_account_id: &str) -> PositionSnapshot {
-    let account_id = if pos.account_id.is_empty() {
-        fallback_account_id.to_string()
-    } else {
-        pos.account_id
-    };
     PositionSnapshot {
         id: pos.id,
         symbol: pos.symbol,
@@ -225,30 +179,7 @@ fn position_from_proto(pos: pb::Position, fallback_account_id: &str) -> Position
         cost_basis: pos.cost_basis,
         mark: pos.mark,
         unrealized_pnl: pos.unrealized_pnl,
-        account_id: Some(account_id),
-        source: if pos.source.is_empty() {
-            None
-        } else {
-            Some(pos.source)
-        },
-        position_type: if pos.position_type.is_empty() {
-            None
-        } else {
-            Some(pos.position_type)
-        },
-        strategy: if pos.strategy.is_empty() {
-            None
-        } else {
-            Some(pos.strategy)
-        },
-        apr_pct: pos.apr_pct,
-        combo_net_bid: pos.combo_net_bid,
-        combo_net_ask: pos.combo_net_ask,
-        combo_quote_source: if pos.combo_quote_source.is_empty() {
-            None
-        } else {
-            Some(pos.combo_quote_source)
-        },
+        account_id: Some(fallback_account_id.to_string()),
     }
 }
 
@@ -263,11 +194,6 @@ fn metrics_from_proto(m: pb::Metrics) -> Metrics {
         tws_ok: m.tws_ok,
         questdb_ok: m.questdb_ok,
         nats_ok: m.nats_ok,
-        tws_address: if m.tws_address.is_empty() {
-            None
-        } else {
-            Some(m.tws_address)
-        },
     }
 }
 
@@ -325,29 +251,6 @@ fn risk_from_proto(r: pb::RiskStatus) -> RiskStatus {
             Some(r.reason)
         },
         updated_at: ts_to_dt(r.updated_at),
-    }
-}
-
-fn scenario_from_proto(s: pb::BoxSpreadScenarioDto) -> ScenarioDto {
-    ScenarioDto {
-        symbol: s.symbol,
-        expiration: s.expiration,
-        days_to_expiry: if s.days_to_expiry != 0 {
-            Some(s.days_to_expiry)
-        } else {
-            None
-        },
-        strike_width: s.strike_width,
-        strike_center: if s.strike_center != 0.0 {
-            Some(s.strike_center)
-        } else {
-            None
-        },
-        net_debit: s.net_debit,
-        profit: s.profit,
-        roi_pct: s.roi_pct,
-        apr_pct: s.apr_pct,
-        fill_probability: s.fill_probability,
     }
 }
 
@@ -412,7 +315,6 @@ pub fn system_snapshot_from_proto(p: pb::SystemSnapshot) -> SystemSnapshot {
 }
 
 /// Converts protobuf `SystemSnapshot` to `RuntimeSnapshotDto` for TUI/JSON consumers.
-/// Preserves scenarios from the wire and applies combo_strategy derivation to positions.
 pub fn runtime_snapshot_dto_from_proto(p: pb::SystemSnapshot) -> RuntimeSnapshotDto {
     let account_id = p.account_id.clone();
     let positions: Vec<PositionSnapshot> = p
@@ -456,9 +358,8 @@ pub fn runtime_snapshot_dto_from_proto(p: pb::SystemSnapshot) -> RuntimeSnapshot
             )
         })
         .collect();
-    let mut position_dtos: Vec<RuntimePositionDto> =
+    let position_dtos: Vec<RuntimePositionDto> =
         positions.iter().map(RuntimePositionDto::from).collect();
-    combo_strategy::apply_derived_strategy_types(&mut position_dtos);
 
     RuntimeSnapshotDto {
         generated_at: ts_to_dt(p.generated_at),
@@ -475,7 +376,6 @@ pub fn runtime_snapshot_dto_from_proto(p: pb::SystemSnapshot) -> RuntimeSnapshot
             .collect(),
         orders: orders.iter().map(RuntimeOrderDto::from).collect(),
         decisions: decisions.iter().map(RuntimeDecisionDto::from).collect(),
-        scenarios: p.scenarios.into_iter().map(scenario_from_proto).collect(),
         alerts: p.alerts.into_iter().map(alert_from_proto).collect(),
         risk: p.risk.map(risk_from_proto).unwrap_or_default(),
     }

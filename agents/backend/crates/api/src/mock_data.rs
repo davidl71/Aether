@@ -18,7 +18,6 @@ use crate::finance_rates::{
     TreasuryBenchmarksResponse,
 };
 use crate::loans::{LoanRecord, LoanStatus, LoanType};
-use crate::runtime_state::ScenarioDto;
 use crate::state::{
     Alert, CandleSnapshot, HistoricPosition, OrderSnapshot, PositionSnapshot, SymbolSnapshot,
     SystemSnapshot,
@@ -73,44 +72,14 @@ pub fn seed_snapshot(snapshot: &mut SystemSnapshot, symbols: &[String]) {
 
 /// Mock box-spread scenarios per calendar day, DTE +4 around the money, for TUI scenario explorer.
 /// One or two scenarios per symbol with expiration = today + 4 days, strike_center near symbol last.
-pub fn mock_scenarios(symbols: &[SymbolSnapshot]) -> Vec<ScenarioDto> {
-    let now = Utc::now();
-    let expiry_date = (now + TimeDelta::days(4)).format("%Y-%m-%d").to_string();
-    const DTE: i32 = 4;
-
-    symbols
-        .iter()
-        .filter(|s| s.last > 0.0)
-        .flat_map(|s| {
-            let strike_center = (s.last / 5.0).round() * 5.0; // round to nearest 5 for ATM
-            vec![
-                ScenarioDto {
-                    symbol: s.symbol.clone(),
-                    expiration: expiry_date.clone(),
-                    days_to_expiry: Some(DTE),
-                    strike_width: 25,
-                    strike_center: Some(strike_center),
-                    net_debit: 24.20,
-                    profit: 0.85,
-                    roi_pct: 3.51,
-                    apr_pct: 7.2,
-                    fill_probability: 0.65,
-                },
-                ScenarioDto {
-                    symbol: s.symbol.clone(),
-                    expiration: expiry_date.clone(),
-                    days_to_expiry: Some(DTE),
-                    strike_width: 50,
-                    strike_center: Some(strike_center),
-                    net_debit: 48.10,
-                    profit: 1.90,
-                    roi_pct: 3.95,
-                    apr_pct: 8.1,
-                    fill_probability: 0.55,
-                },
-            ]
-        })
-        .collect()
+///
+/// NOTE: Stubbed out because `ScenarioDto` does not exist in `runtime_state.rs`.
+/// The proto-generated `BoxSpreadScenario` type exists in `nats_adapter::proto::v1` but the domain
+/// `ScenarioDto` was never defined. See T-1773933296882755000.
+#[allow(dead_code)]
+pub fn mock_scenarios(_symbols: &[SymbolSnapshot]) -> Vec<String> {
+    // TODO: Re-implement once ScenarioDto is properly defined (T-1773933296882755000)
+    Vec::new()
 }
 
 fn mock_positions(account_id: &str) -> Vec<PositionSnapshot> {
@@ -123,13 +92,6 @@ fn mock_positions(account_id: &str) -> Vec<PositionSnapshot> {
             mark: 101.10,
             unrealized_pnl: 4.7,
             account_id: Some(account_id.to_string()),
-            source: Some("Mock".into()),
-            position_type: None,
-            strategy: None,
-            apr_pct: None,
-            combo_net_bid: None,
-            combo_net_ask: None,
-            combo_quote_source: None,
         },
         PositionSnapshot {
             id: "POS-2".into(),
@@ -139,13 +101,6 @@ fn mock_positions(account_id: &str) -> Vec<PositionSnapshot> {
             mark: 5862.50,
             unrealized_pnl: 12.50,
             account_id: Some(account_id.to_string()),
-            source: Some("Mock".into()),
-            position_type: None,
-            strategy: None,
-            apr_pct: None,
-            combo_net_bid: None,
-            combo_net_ask: None,
-            combo_quote_source: None,
         },
     ]
 }

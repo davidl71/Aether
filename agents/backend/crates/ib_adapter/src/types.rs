@@ -9,6 +9,8 @@ pub struct OptionContract {
     pub expiry: String,
     pub strike: f64,
     pub is_call: bool,
+    /// IBKR contract ID (conId), resolved via `reqContractDetails`.
+    pub con_id: Option<i32>,
 }
 
 impl OptionContract {
@@ -18,6 +20,7 @@ impl OptionContract {
             expiry: expiry.to_string(),
             strike,
             is_call,
+            con_id: None,
         }
     }
 }
@@ -120,4 +123,6 @@ pub struct PlaceBagOrderRequest {
     /// Limit price for the whole combo; None for market.
     pub limit_price: Option<f64>,
     pub tif: TimeInForce,
+    /// Side for the whole combo order.
+    pub order_action: OrderAction,
 }

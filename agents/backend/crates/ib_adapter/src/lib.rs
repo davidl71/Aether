@@ -285,7 +285,7 @@ impl IbAdapter {
             return Err("BAG order must have at least one leg".to_string());
         }
         for (i, leg) in request.legs.iter().enumerate() {
-            if leg.con_id.is_none() {
+            if leg.contract.con_id.is_none() {
                 return Err(format!(
                     "BAG leg {} missing con_id (resolve option contract to conId via TWS contract details)",
                     i + 1
@@ -301,7 +301,7 @@ impl IbAdapter {
             .in_currency(&request.currency)
             .on_exchange(&exchange);
         for leg in &request.legs {
-            let con_id = leg.con_id.unwrap();
+            let con_id = leg.contract.con_id.unwrap();
             let action = match leg.action {
                 types::OrderAction::Buy => LegAction::Buy,
                 types::OrderAction::Sell => LegAction::Sell,

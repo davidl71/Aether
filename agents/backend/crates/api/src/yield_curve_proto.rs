@@ -3,8 +3,8 @@
 
 use chrono::{TimeZone, Utc};
 use nats_adapter::proto::v1::{YieldCurve, YieldCurvePoint};
-use nats_adapter::proto::well_known::Timestamp;
 use prost::Message;
+use prost_types::Timestamp;
 use serde_json::Value;
 
 use crate::finance_rates::{BoxSpreadInput, CurveResponse, RatePointResponse};
@@ -45,7 +45,6 @@ pub fn curve_response_from_proto(yc: &YieldCurve, symbol_override: &str) -> Curv
         timestamp,
         strike_width,
         point_count: points.len(),
-        underlying_price: None,
     }
 }
 
@@ -97,8 +96,6 @@ fn proto_point_to_rate_point(
         expiry,
         days_to_expiry: p.days_to_expiry,
         strike_width: strike_width.unwrap_or(0.0),
-        strike_low: None,
-        strike_high: None,
         buy_implied_rate: implied,
         sell_implied_rate: implied,
         mid_rate: implied,
@@ -107,8 +104,6 @@ fn proto_point_to_rate_point(
         liquidity_score: 70.0,
         timestamp,
         spread_id: None,
-        convenience_yield: None,
-        data_source: Some("KV proto".to_string()),
     }
 }
 

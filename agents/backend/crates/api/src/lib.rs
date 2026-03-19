@@ -27,7 +27,7 @@ pub use loans::{LoanAggregationInput, LoanRecord, LoanRepository, LoanStatus, Lo
 pub use runtime_state::{
     ProducerMetadata, ProducerType, RuntimeDecisionDto, RuntimeExecutionState,
     RuntimeHistoricPositionDto, RuntimeMarketState, RuntimeOrderDto, RuntimePositionDto,
-    RuntimeProducerDecision, RuntimeRiskState, RuntimeSnapshotDto, ScenarioDto,
+    RuntimeProducerDecision, RuntimeRiskState, RuntimeSnapshotDto,
 };
 pub use shared_config::{
     load_shared_config, read_shared_config_at, validate_shared_config, write_example_shared_config,
