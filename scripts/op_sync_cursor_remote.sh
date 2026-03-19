@@ -46,7 +46,7 @@ ssh_key_path=""
 if [[ -n "$key" ]]; then
   ssh_key_path="${SSH_DIR}/${ALIAS}_id_ed25519"
   mkdir -p "$SSH_DIR"
-  printf '%s\n' "$key" > "$ssh_key_path"
+  printf '%s\n' "$key" >"$ssh_key_path"
   chmod 600 "$ssh_key_path"
 fi
 

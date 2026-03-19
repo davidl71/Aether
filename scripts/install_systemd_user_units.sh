@@ -17,7 +17,7 @@ SRC="${PROJECT_ROOT}/config/systemd/user"
 
 mkdir -p "$SYSTEMD_USER"
 cp -f "${SRC}"/*.service "${SRC}"/ib-box-spread.env "$SYSTEMD_USER/"
-sed "s|REPLACE_PROJECT_ROOT|${PROJECT_ROOT}|g" "${SYSTEMD_USER}/ib-box-spread.env" > "${SYSTEMD_USER}/ib-box-spread.env.tmp"
+sed "s|REPLACE_PROJECT_ROOT|${PROJECT_ROOT}|g" "${SYSTEMD_USER}/ib-box-spread.env" >"${SYSTEMD_USER}/ib-box-spread.env.tmp"
 mv "${SYSTEMD_USER}/ib-box-spread.env.tmp" "${SYSTEMD_USER}/ib-box-spread.env"
 echo "Installed to $SYSTEMD_USER"
 echo "Run: systemctl --user daemon-reload"

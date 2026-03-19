@@ -53,8 +53,8 @@ else
 fi
 
 case "${command}" in
-  -h|--help)
-    cat <<EOF
+-h | --help)
+  cat <<EOF
 Usage: $0 [build|clean|test|install]
 
 Environment:
@@ -63,21 +63,21 @@ Environment:
 This script is a thin wrapper around \`cmake --preset\`, \`cmake --build\`,
 and \`ctest --preset\`.
 EOF
-    ;;
-  clean)
-    ensure_configured
-    cmake --build --preset "${PRESET}" --target clean "$@"
-    ;;
-  test)
-    ensure_configured
-    ctest --preset "${PRESET}" "$@"
-    ;;
-  install)
-    ensure_configured
-    cmake --install --preset "${PRESET}" "$@"
-    ;;
-  build|*)
-    ensure_configured
-    cmake --build --preset "${PRESET}" "$@"
-    ;;
+  ;;
+clean)
+  ensure_configured
+  cmake --build --preset "${PRESET}" --target clean "$@"
+  ;;
+test)
+  ensure_configured
+  ctest --preset "${PRESET}" "$@"
+  ;;
+install)
+  ensure_configured
+  cmake --install --preset "${PRESET}" "$@"
+  ;;
+build | *)
+  ensure_configured
+  cmake --build --preset "${PRESET}" "$@"
+  ;;
 esac

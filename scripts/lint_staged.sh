@@ -17,7 +17,7 @@ if [[ -z "${STAGED_PY}" ]]; then
 fi
 
 # Run from repo root so paths and config (pyproject.toml / ruff config) resolve
-mapfile -t STAGED_PY_ARR <<< "$STAGED_PY"
+mapfile -t STAGED_PY_ARR <<<"$STAGED_PY"
 if ! uv run ruff check "${STAGED_PY_ARR[@]}"; then
   echo "Fix ruff errors above, then re-stage and commit."
   exit 1

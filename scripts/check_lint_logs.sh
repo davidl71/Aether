@@ -22,7 +22,8 @@ list_logs() {
   for log in "${MAIN_LOG}" "${SHELL_LOG}"; do
     name="$(basename "${log}")"
     if [[ -f "${log}" ]]; then
-      n=$(wc -l < "${log}" 2>/dev/null || true); n=${n:-0}
+      n=$(wc -l <"${log}" 2>/dev/null || true)
+      n=${n:-0}
       mtime="$(ls -l "${log}" 2>/dev/null | awk '{print $6, $7, $8}' || echo "?")"
       echo "  ${name}"
       echo "    path: ${log}"
@@ -63,26 +64,26 @@ print_paths() {
 }
 
 case "${1:-}" in
-  --list)
-    list_logs
-    ;;
-  --path)
-    print_paths
-    ;;
-  --all)
-    list_logs
-    echo "---"
-    tail_all
-    ;;
-  --tail)
-    n="${2:-60}"
-    list_logs
-    echo "---"
-    tail_main "${n}"
-    ;;
-  *)
-    list_logs
-    echo "---"
-    tail_main "${1:-60}"
-    ;;
+--list)
+  list_logs
+  ;;
+--path)
+  print_paths
+  ;;
+--all)
+  list_logs
+  echo "---"
+  tail_all
+  ;;
+--tail)
+  n="${2:-60}"
+  list_logs
+  echo "---"
+  tail_main "${n}"
+  ;;
+*)
+  list_logs
+  echo "---"
+  tail_main "${1:-60}"
+  ;;
 esac

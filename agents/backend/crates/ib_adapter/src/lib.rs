@@ -2,19 +2,26 @@
 //!
 //! This crate provides a modern async Rust interface to Interactive Brokers TWS API.
 //! Integrates with the ibapi crate for actual TWS/Gateway communication.
+//!
+//! **Connection retry:** This crate does not retry on connection failure. Callers should
+//! implement retry with exponential backoff (e.g. 2s → 60s cap); see TWS reconnect
+//! behavior in `backend_service` (tws_market_data, tws_positions) and
+//! `docs/platform/TWS_RECONNECT_BACKOFF.md`.
 
 use std::sync::Arc;
 
 use ibapi::accounts::types::AccountGroup;
 use ibapi::accounts::{AccountSummaryTags, PositionUpdate};
-use ibapi::contracts::{Contract, OptionChain, SecurityType};
+use ibapi::contracts::{Contract, LegAction, OptionChain, SecurityType};
 use ibapi::Client as IbClient;
 use ibapi::Error as IbError;
 use tokio::sync::{mpsc, RwLock};
 use tracing::info;
 
+pub mod scanner;
 pub mod types;
 
+pub use scanner::ScannerSubscription;
 pub use types::*;
 
 /// IB Adapter configuration
@@ -116,6 +123,7 @@ impl IbAdapter {
     }
 
     /// Connect to TWS/Gateway using the ibapi crate.
+    /// Callers should retry on failure with exponential backoff (e.g. 2s → 60s cap); this crate does not retry.
     pub async fn connect(&self) -> Result<(), String> {
         *self.state.write().await = ConnectionState::Connecting;
         let address = format!("{}:{}", self.config.host, self.config.port);
@@ -168,7 +176,10 @@ impl IbAdapter {
     }
 
     /// Request option chain for underlying via ibapi security definition option parameters.
-    pub async fn request_option_chain(&self, symbol: &str) -> Result<Vec<types::OptionContract>, String> {
+    pub async fn request_option_chain(
+        &self,
+        symbol: &str,
+    ) -> Result<Vec<types::OptionContract>, String> {
         if *self.state.read().await != ConnectionState::Connected {
             return Err("Not connected".to_string());
         }
@@ -179,7 +190,7 @@ impl IbAdapter {
             .await
             .map_err(|e: IbError| e.to_string())?;
         let mut out = Vec::new();
-        while let Some(chain_result) = sub.next().await {
+        if let Some(chain_result) = sub.next().await {
             let chain: OptionChain = chain_result.map_err(|e| e.to_string())?;
             for exp in &chain.expirations {
                 for &strike in &chain.strikes {
@@ -187,7 +198,6 @@ impl IbAdapter {
                     out.push(types::OptionContract::new(symbol, exp, strike, false));
                 }
             }
-            break;
         }
         Ok(out)
     }
@@ -207,23 +217,44 @@ impl IbAdapter {
         let client = arc.as_ref().ok_or("Not connected")?;
         let (y, m, d) = common::expiry::parse_expiry_yyyy_mm_dd(&contract.expiry)?;
         let ib_contract = if contract.is_call {
-            Contract::call(&contract.symbol).strike(contract.strike).expires_on(y, m, d).build()
+            Contract::call(&contract.symbol)
+                .strike(contract.strike)
+                .expires_on(y, m, d)
+                .build()
         } else {
-            Contract::put(&contract.symbol).strike(contract.strike).expires_on(y, m, d).build()
+            Contract::put(&contract.symbol)
+                .strike(contract.strike)
+                .expires_on(y, m, d)
+                .build()
         };
         let order_id = client.next_order_id();
         let qty = quantity as f64;
         let result = match action {
-            types::OrderAction::Buy => client.order(&ib_contract).buy(qty).limit(limit_price).submit().await,
-            types::OrderAction::Sell => client.order(&ib_contract).sell(qty).limit(limit_price).submit().await,
+            types::OrderAction::Buy => {
+                client
+                    .order(&ib_contract)
+                    .buy(qty)
+                    .limit(limit_price)
+                    .submit()
+                    .await
+            }
+            types::OrderAction::Sell => {
+                client
+                    .order(&ib_contract)
+                    .sell(qty)
+                    .limit(limit_price)
+                    .submit()
+                    .await
+            }
         };
         result.map_err(|e: IbError| e.to_string())?;
         Ok(order_id)
     }
 
     /// Place a BAG (combo) order for multi-leg strategies (e.g. box spread).
-    /// Builds a BAG contract with combo legs; when ibapi is wired, will call
-    /// place_order with secType "BAG" and orderComboLegs for limit prices.
+    /// Builds a BAG contract with combo legs (conId, ratio, action, SMART); paper port 7497,
+    /// live trading gated by config. See docs/platform/TWS_BAG_COMBO_POSITIONS.md and
+    /// docs/platform/TWS_COMPLEX_ORDER_ECOSYSTEM.md.
     pub async fn place_bag_order(
         &self,
         request: types::PlaceBagOrderRequest,
@@ -231,16 +262,66 @@ impl IbAdapter {
         if *self.state.read().await != ConnectionState::Connected {
             return Err("Not connected".to_string());
         }
+        if !self.config.paper_trading {
+            return Err(
+                "BAG order placement is disabled for live trading; use paper port 7497 and paper_trading=true".to_string()
+            );
+        }
         if request.legs.is_empty() {
             return Err("BAG order must have at least one leg".to_string());
         }
-        // TODO(T-1773509396769177000): Wire to ibapi: build Contract with secType "BAG",
-        // symbol=request.underlying_symbol, currency, exchange, and combo_legs (conId, ratio,
-        // action, exchange) per leg; build Order with total_quantity=request.quantity,
-        // lmt_price from request.limit_price, order_combo_legs for leg-level prices if needed;
-        // client.place_order(order_id, bag_contract, order). For now stub returns placeholder id.
-        let _ = request;
-        Ok(0)
+        for (i, leg) in request.legs.iter().enumerate() {
+            if leg.con_id.is_none() {
+                return Err(format!(
+                    "BAG leg {} missing con_id (resolve option contract to conId via TWS contract details)",
+                    i + 1
+                ));
+            }
+        }
+        let exchange = if request.exchange.is_empty() {
+            "SMART".to_string()
+        } else {
+            request.exchange.clone()
+        };
+        let mut builder = Contract::spread()
+            .in_currency(&request.currency)
+            .on_exchange(&exchange);
+        for leg in &request.legs {
+            let con_id = leg.con_id.unwrap();
+            let action = match leg.action {
+                types::OrderAction::Buy => LegAction::Buy,
+                types::OrderAction::Sell => LegAction::Sell,
+            };
+            builder = builder.add_leg(con_id, action).ratio(leg.ratio).done();
+        }
+        let mut bag_contract = builder.build().map_err(|e| e.to_string())?;
+        bag_contract.symbol = ibapi::contracts::Symbol::from(request.underlying_symbol.as_str());
+
+        let arc = self.client.read().await.clone();
+        let client = arc.as_ref().ok_or("Not connected")?;
+        let order_id = client.next_order_id();
+        let qty = request.quantity as f64;
+        let limit_price = request.limit_price.unwrap_or(0.0);
+        let result = match request.order_action {
+            types::OrderAction::Buy => {
+                client
+                    .order(&bag_contract)
+                    .buy(qty)
+                    .limit(limit_price)
+                    .submit()
+                    .await
+            }
+            types::OrderAction::Sell => {
+                client
+                    .order(&bag_contract)
+                    .sell(qty)
+                    .limit(limit_price)
+                    .submit()
+                    .await
+            }
+        };
+        result.map_err(|e: IbError| e.to_string())?;
+        Ok(order_id)
     }
 
     /// Cancel an order via ibapi.
@@ -265,7 +346,10 @@ impl IbAdapter {
         }
         let arc = self.client.read().await.clone();
         let client = arc.as_ref().ok_or("Not connected")?;
-        let mut sub = client.positions().await.map_err(|e: IbError| e.to_string())?;
+        let mut sub = client
+            .positions()
+            .await
+            .map_err(|e: IbError| e.to_string())?;
         let mut out = Vec::new();
         while let Some(update) = sub.next().await {
             match update.map_err(|e| e.to_string())? {
@@ -291,7 +375,10 @@ impl IbAdapter {
         }
         let arc = self.client.read().await.clone();
         let client = arc.as_ref().ok_or("Not connected")?;
-        let accounts = client.managed_accounts().await.map_err(|e: IbError| e.to_string())?;
+        let accounts = client
+            .managed_accounts()
+            .await
+            .map_err(|e: IbError| e.to_string())?;
         let account_id = accounts.first().cloned().unwrap_or_else(|| "".to_string());
         let group = AccountGroup("All".to_string());
         let tags = AccountSummaryTags::ALL;

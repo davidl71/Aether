@@ -20,19 +20,19 @@ SHELLS="${1:-all}"
 # Detect current shell if not specified
 if [ "$SHELLS" = "auto" ]; then
   case "$SHELL" in
-    */bash|bash)
-      SHELLS="bash"
-      ;;
-    */zsh|zsh)
-      SHELLS="zsh"
-      ;;
-    */fish|fish)
-      SHELLS="fish"
-      ;;
-    *)
-      echo -e "${YELLOW}Could not detect shell. Using 'all'${NC}"
-      SHELLS="all"
-      ;;
+  */bash | bash)
+    SHELLS="bash"
+    ;;
+  */zsh | zsh)
+    SHELLS="zsh"
+    ;;
+  */fish | fish)
+    SHELLS="fish"
+    ;;
+  *)
+    echo -e "${YELLOW}Could not detect shell. Using 'all'${NC}"
+    SHELLS="all"
+    ;;
   esac
 fi
 
@@ -42,12 +42,12 @@ if [ ! -d "$COMPLETIONS_DIR" ] || [ -z "$(ls -A "$COMPLETIONS_DIR" 2>/dev/null)"
   "$SCRIPT_DIR/generate_completions.sh" "$SHELLS"
 fi
 
-# Function to install bash completion
+# Function to install bash completion (Rust CLI: aether)
 install_bash_completion() {
-  local completion_file="$COMPLETIONS_DIR/ib_box_spread.bash"
+  local completion_file="$COMPLETIONS_DIR/aether.bash"
 
   if [ ! -f "$completion_file" ]; then
-    echo -e "${RED}Error: Bash completion not found${NC}"
+    echo -e "${RED}Error: Bash completion not found. Run ./scripts/generate_completions.sh first.${NC}"
     return 1
   fi
 
@@ -64,16 +64,16 @@ install_bash_completion() {
   echo -e "${GREEN}Installing bash completions to $COMPLETION_DIR...${NC}"
   sudo cp "$completion_file" "$COMPLETION_DIR/" 2>/dev/null || cp "$completion_file" "$COMPLETION_DIR/"
 
-  echo -e "${GREEN}✓ Bash completions installed${NC}"
-  echo "  Run: source $COMPLETION_DIR/ib_box_spread.bash"
+  echo -e "${GREEN}✓ Bash completions installed (aether)${NC}"
+  echo "  Run: source $COMPLETION_DIR/aether.bash"
 }
 
-# Function to install zsh completion
+# Function to install zsh completion (Rust CLI: aether)
 install_zsh_completion() {
-  local completion_file="$COMPLETIONS_DIR/_ib_box_spread"
+  local completion_file="$COMPLETIONS_DIR/_aether"
 
   if [ ! -f "$completion_file" ]; then
-    echo -e "${RED}Error: Zsh completion not found${NC}"
+    echo -e "${RED}Error: Zsh completion not found. Run ./scripts/generate_completions.sh first.${NC}"
     return 1
   fi
 
@@ -94,12 +94,12 @@ install_zsh_completion() {
   echo "  Run: rm -f ~/.zcompdump* && compinit"
 }
 
-# Function to install fish completion
+# Function to install fish completion (Rust CLI: aether)
 install_fish_completion() {
-  local completion_file="$COMPLETIONS_DIR/ib_box_spread.fish"
+  local completion_file="$COMPLETIONS_DIR/aether.fish"
 
   if [ ! -f "$completion_file" ]; then
-    echo -e "${RED}Error: Fish completion not found${NC}"
+    echo -e "${RED}Error: Fish completion not found. Run ./scripts/generate_completions.sh first.${NC}"
     return 1
   fi
 
@@ -123,20 +123,20 @@ install_fish_completion() {
 cd "$PROJECT_ROOT"
 
 case "$SHELLS" in
-  bash)
-    install_bash_completion
-    ;;
-  zsh)
-    install_zsh_completion
-    ;;
-  fish)
-    install_fish_completion
-    ;;
-  all|*)
-    install_bash_completion
-    install_zsh_completion
-    install_fish_completion
-    ;;
+bash)
+  install_bash_completion
+  ;;
+zsh)
+  install_zsh_completion
+  ;;
+fish)
+  install_fish_completion
+  ;;
+all | *)
+  install_bash_completion
+  install_zsh_completion
+  install_fish_completion
+  ;;
 esac
 
 echo ""

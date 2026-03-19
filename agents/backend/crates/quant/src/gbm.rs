@@ -22,7 +22,7 @@ pub fn euler_maruyama(
         let mut s = s0;
         for _ in 0..steps {
             let z = box_muller(rng);
-            s = s * (1.0 + mu * dt + sigma * sqrt_dt * z);
+            s *= 1.0 + mu * dt + sigma * sqrt_dt * z;
             path.push(s);
         }
         paths.push(path);

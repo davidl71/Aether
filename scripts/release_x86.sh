@@ -38,7 +38,7 @@ tmp_formula="$(mktemp)"
 sed \
   -e "s|^  url \".*\"|  url \"https://github.com/davidl71/ib_box_spread_full_universal/releases/download/v${VERSION}/ib_box_spread-v${VERSION}-macos-x86_64.tar.gz\"|" \
   -e "s|^  sha256 \".*\"|  sha256 \"${SHA256_PACKAGE}\"|" \
-  "${FORMULA_PATH}" > "${tmp_formula}"
+  "${FORMULA_PATH}" >"${tmp_formula}"
 cp "${tmp_formula}" "${FORMULA_PATH}"
 cp "${tmp_formula}" "${TAP_FORMULA_PATH}"
 rm -f "${tmp_formula}"
@@ -59,7 +59,7 @@ tmp_formula="$(mktemp)"
 sed \
   -e "s|^    root_url \".*\"|    root_url \"https://github.com/davidl71/ib_box_spread_full_universal/releases/download/v${VERSION}\"|" \
   -e "s|^    sha256 cellar: :any, sequoia: \".*\"|    sha256 cellar: :any, sequoia: \"${SHA256_BOTTLE}\"|" \
-  "${FORMULA_PATH}" > "${tmp_formula}"
+  "${FORMULA_PATH}" >"${tmp_formula}"
 cp "${tmp_formula}" "${FORMULA_PATH}"
 cp "${tmp_formula}" "${TAP_FORMULA_PATH}"
 rm -f "${tmp_formula}"

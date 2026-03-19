@@ -45,27 +45,27 @@ DO_TAP=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --pull)
-      DO_PULL=true
-      shift
-      ;;
-    --tap)
-      DO_TAP=true
-      shift
-      ;;
-    --tap-name)
-      TAP_NAME="$2"
-      shift 2
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      echo "Unknown option: $1" >&2
-      usage
-      exit 1
-      ;;
+  --pull)
+    DO_PULL=true
+    shift
+    ;;
+  --tap)
+    DO_TAP=true
+    shift
+    ;;
+  --tap-name)
+    TAP_NAME="$2"
+    shift 2
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    echo "Unknown option: $1" >&2
+    usage
+    exit 1
+    ;;
   esac
 done
 

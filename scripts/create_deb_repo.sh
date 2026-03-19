@@ -35,18 +35,18 @@ log_error() {
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --repo-dir)
-      REPO_DIR="$2"
-      shift 2
-      ;;
-    --clean)
-      CLEAN_BUILD=true
-      shift
-      ;;
-    *)
-      log_error "Unknown option: $1"
-      exit 1
-      ;;
+  --repo-dir)
+    REPO_DIR="$2"
+    shift 2
+    ;;
+  --clean)
+    CLEAN_BUILD=true
+    shift
+    ;;
+  *)
+    log_error "Unknown option: $1"
+    exit 1
+    ;;
   esac
 done
 
@@ -89,7 +89,7 @@ setup_gpg_key() {
     log_info "Generating new GPG key for repository signing..."
 
     # Generate GPG key non-interactively
-    cat > "$gpg_key_dir/keygen.conf" <<EOF
+    cat >"$gpg_key_dir/keygen.conf" <<EOF
 %no-protection
 Key-Type: RSA
 Key-Length: 4096
@@ -128,10 +128,10 @@ EOF
     fi
 
     # Save key ID
-    echo "$gpg_key_id" > "$gpg_key_dir/keyid.txt"
+    echo "$gpg_key_id" >"$gpg_key_dir/keyid.txt"
 
     # Export public key
-    gpg --homedir "$gpg_key_dir" --armor --export "$gpg_key_id" > "$gpg_key_dir/public.key"
+    gpg --homedir "$gpg_key_dir" --armor --export "$gpg_key_id" >"$gpg_key_dir/public.key"
 
     # Copy public key to repo
     cp "$gpg_key_dir/public.key" "$REPO_DIR/public.key"
@@ -156,7 +156,7 @@ setup_repo_structure() {
   setup_gpg_key
 
   # Create reprepro configuration
-  cat > "$REPO_DIR/conf/distributions" <<EOF
+  cat >"$REPO_DIR/conf/distributions" <<EOF
 Origin: IB Box Spread Platform
 Label: IB Box Spread Debian Repository
 Codename: stable
@@ -166,7 +166,7 @@ Description: Debian repository for IB Box Spread Platform packages
 SignWith: ${GPG_KEY_ID:-}
 EOF
 
-  cat > "$REPO_DIR/conf/options" <<EOF
+  cat >"$REPO_DIR/conf/options" <<EOF
 verbose
 basedir $REPO_DIR
 gpg-home $GPG_HOMEDIR
@@ -223,7 +223,7 @@ create_native_deb() {
   # python -m python.tui
 
   # Create control file
-  cat > "$pkg_dir/DEBIAN/control" <<EOF
+  cat >"$pkg_dir/DEBIAN/control" <<EOF
 Package: $pkg_name
 Version: $pkg_version
 Section: finance
@@ -237,7 +237,7 @@ Description: IB Box Spread Native Trading Engine
 EOF
 
   # Create postinst script
-  cat > "$pkg_dir/DEBIAN/postinst" <<'EOF'
+  cat >"$pkg_dir/DEBIAN/postinst" <<'EOF'
 #!/bin/bash
 set -e
 # Update system library cache
@@ -273,7 +273,7 @@ create_python_deb() {
   }
 
   # Create control file
-  cat > "$pkg_dir/DEBIAN/control" <<EOF
+  cat >"$pkg_dir/DEBIAN/control" <<EOF
 Package: $pkg_name
 Version: $pkg_version
 Section: python
@@ -315,7 +315,7 @@ create_web_deb() {
   cp -r "$PROJECT_ROOT/web/dist"/* "$pkg_dir/usr/share/ib-box-spread-web/"
 
   # Create nginx configuration
-  cat > "$pkg_dir/etc/nginx/sites-available/ib-box-spread-web" <<'EOF'
+  cat >"$pkg_dir/etc/nginx/sites-available/ib-box-spread-web" <<'EOF'
 server {
     listen 80;
     server_name _;
@@ -335,7 +335,7 @@ server {
 EOF
 
   # Create control file
-  cat > "$pkg_dir/DEBIAN/control" <<EOF
+  cat >"$pkg_dir/DEBIAN/control" <<EOF
 Package: $pkg_name
 Version: $pkg_version
 Section: web
@@ -349,7 +349,7 @@ Description: IB Box Spread Web Dashboard (PWA)
 EOF
 
   # Create postinst script
-  cat > "$pkg_dir/DEBIAN/postinst" <<'EOF'
+  cat >"$pkg_dir/DEBIAN/postinst" <<'EOF'
 #!/bin/bash
 set -e
 if [ -d /etc/nginx/sites-available ] && [ -f /etc/nginx/sites-available/ib-box-spread-web ]; then
@@ -396,7 +396,7 @@ create_rust_deb() {
   fi
 
   # Create systemd service file
-  cat > "$pkg_dir/usr/lib/systemd/system/ib-box-spread-backend.service" <<'EOF'
+  cat >"$pkg_dir/usr/lib/systemd/system/ib-box-spread-backend.service" <<'EOF'
 [Unit]
 Description=IB Box Spread Backend Service
 After=network.target
@@ -412,7 +412,7 @@ WantedBy=multi-user.target
 EOF
 
   # Create control file
-  cat > "$pkg_dir/DEBIAN/control" <<EOF
+  cat >"$pkg_dir/DEBIAN/control" <<EOF
 Package: $pkg_name
 Version: $pkg_version
 Section: finance
@@ -426,7 +426,7 @@ Description: IB Box Spread Backend Services
 EOF
 
   # Create postinst script
-  cat > "$pkg_dir/DEBIAN/postinst" <<'EOF'
+  cat >"$pkg_dir/DEBIAN/postinst" <<'EOF'
 #!/bin/bash
 set -e
 systemctl daemon-reload
@@ -471,14 +471,14 @@ generate_repo_metadata_apt() {
   mkdir -p "dists/stable/main/binary-amd64"
   mkdir -p "dists/stable/main/binary-all"
 
-  dpkg-scanpackages pool/ > dists/stable/main/binary-amd64/Packages 2>/dev/null || \
-    dpkg-scanpackages -m pool/ > dists/stable/main/binary-amd64/Packages
+  dpkg-scanpackages pool/ >dists/stable/main/binary-amd64/Packages 2>/dev/null ||
+    dpkg-scanpackages -m pool/ >dists/stable/main/binary-amd64/Packages
 
   # Create Packages.gz
-  gzip -c dists/stable/main/binary-amd64/Packages > dists/stable/main/binary-amd64/Packages.gz
+  gzip -c dists/stable/main/binary-amd64/Packages >dists/stable/main/binary-amd64/Packages.gz
 
   # Create Release file
-  cat > dists/stable/Release <<EOF
+  cat >dists/stable/Release <<EOF
 Origin: IB Box Spread Platform
 Label: IB Box Spread Debian Repository
 Codename: stable
@@ -490,8 +490,8 @@ EOF
 
   # Generate checksums
   cd dists/stable
-  md5sum main/binary-amd64/Packages* > MD5Sum 2>/dev/null || true
-  sha256sum main/binary-amd64/Packages* > SHA256 2>/dev/null || true
+  md5sum main/binary-amd64/Packages* >MD5Sum 2>/dev/null || true
+  sha256sum main/binary-amd64/Packages* >SHA256 2>/dev/null || true
 
   # Sign Release file with GPG
   if [ -n "${GPG_KEY_ID:-}" ] && [ -n "${GPG_HOMEDIR:-}" ]; then
@@ -524,7 +524,7 @@ create_build_tools_deb() {
   fi
 
   # Create wrapper scripts in /usr/bin
-  cat > "$pkg_dir/usr/bin/ib-box-spread-build" <<'EOF'
+  cat >"$pkg_dir/usr/bin/ib-box-spread-build" <<'EOF'
 #!/bin/bash
 # Wrapper script for IB Box Spread build tools
 exec /usr/share/ib-box-spread/build-tools/build_universal.sh "$@"
@@ -532,7 +532,7 @@ EOF
   chmod +x "$pkg_dir/usr/bin/ib-box-spread-build"
 
   # Create control file
-  cat > "$pkg_dir/DEBIAN/control" <<EOF
+  cat >"$pkg_dir/DEBIAN/control" <<EOF
 Package: $pkg_name
 Version: $pkg_version
 Section: devel
@@ -593,7 +593,7 @@ create_automation_tools_deb() {
   done
 
   # Create control file
-  cat > "$pkg_dir/DEBIAN/control" <<EOF
+  cat >"$pkg_dir/DEBIAN/control" <<EOF
 Package: $pkg_name
 Version: $pkg_version
 Section: devel

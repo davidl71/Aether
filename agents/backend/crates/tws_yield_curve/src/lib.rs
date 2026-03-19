@@ -9,12 +9,13 @@
 
 use chrono::{Datelike, Timelike, Utc};
 use common::expiry::parse_expiry_yyyy_mm_dd;
-use ibapi::contracts::{Contract, OptionChain, SecurityType};
+use ibapi::contracts::Symbol;
+use ibapi::contracts::{Contract, LegAction, OptionChain, SecurityType};
 use ibapi::market_data::realtime::{TickType, TickTypes};
 use ibapi::market_data::MarketDataType;
 use ibapi::Client;
 use serde_json::{json, Value};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tracing::{debug, info, warn};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -147,7 +148,10 @@ async fn resolve_index_conid(client: &Client, symbol: &str) -> i32 {
 /// Request option chain for symbol; returns (expirations, strikes, trading_class) or error.
 /// Uses Index for SPX/NDX/XSP (avoids "Invalid contract id" from TWS when using STK).
 /// The returned trading_class (e.g. "SPX" or "SPXW") must be used when requesting market data for those options.
-async fn request_option_chain(client: &Client, symbol: &str) -> Result<(Vec<String>, Vec<f64>, String), String> {
+async fn request_option_chain(
+    client: &Client,
+    symbol: &str,
+) -> Result<(Vec<String>, Vec<f64>, String), String> {
     let sec_type = underlying_security_type(symbol);
     let exchange_for_chain = option_chain_exchange(symbol);
     let underlying_conid = resolve_index_conid(client, symbol).await;
@@ -167,7 +171,7 @@ async fn request_option_chain(client: &Client, symbol: &str) -> Result<(Vec<Stri
             "option_chain: timeout waiting for TWS (30s). Check TWS is running and API enabled.".to_string()
         ),
     };
-    let expirations: Vec<String> = chain.expirations.iter().cloned().collect();
+    let expirations: Vec<String> = chain.expirations.to_vec();
     let strikes: Vec<f64> = chain.strikes.clone();
     let trading_class = if chain.trading_class.is_empty() {
         symbol.to_uppercase()
@@ -189,7 +193,10 @@ async fn resolve_option_contract(client: &Client, contract: &Contract) -> Option
                 debug!("contract_details returned contract_id 0, using original contract");
                 Some(contract.clone())
             } else {
-                debug!(conid = one.contract.contract_id, "resolved option via contract_details");
+                debug!(
+                    conid = one.contract.contract_id,
+                    "resolved option via contract_details"
+                );
                 Some(one.contract)
             }
         }
@@ -201,6 +208,50 @@ async fn resolve_option_contract(client: &Client, contract: &Contract) -> Option
             warn!(error = %e, "contract_details failed for option");
             None
         }
+    }
+}
+
+/// Resolve one option leg to conId for BAG construction. Returns None if resolution fails.
+async fn resolve_option_to_conid(
+    client: &Client,
+    symbol: &str,
+    expiry: &str,
+    strike: f64,
+    is_call: bool,
+    trading_class: &str,
+) -> Option<i32> {
+    let normalized = normalize_expiry(expiry)?;
+    let (y, m, d) = parse_expiry_yyyy_mm_dd(&normalized).ok()?;
+    let exchange = option_exchange(symbol);
+    let is_index = underlying_security_type(symbol) == SecurityType::Index;
+    let mut contract = if is_call {
+        Contract::call(symbol)
+            .strike(strike)
+            .expires_on(y, m, d)
+            .on_exchange(exchange)
+            .trading_class(trading_class)
+    } else {
+        Contract::put(symbol)
+            .strike(strike)
+            .expires_on(y, m, d)
+            .on_exchange(exchange)
+            .trading_class(trading_class)
+    };
+    if is_index {
+        contract = contract.primary(exchange);
+    }
+    let contract = contract.build();
+    let contract = if is_index {
+        resolve_option_contract(client, &contract).await?
+    } else {
+        contract
+    };
+    let cid = contract.contract_id;
+    if cid != 0 {
+        Some(cid)
+    } else {
+        debug!("resolved option has contract_id 0");
+        None
     }
 }
 
@@ -240,7 +291,13 @@ async fn get_option_bid_ask(
         match resolve_option_contract(client, &contract).await {
             Some(resolved) => resolved,
             None => {
-                debug!("skipping option (resolution failed): {} {} {} {}", symbol, expiry, strike, if is_call { "C" } else { "P" });
+                debug!(
+                    "skipping option (resolution failed): {} {} {} {}",
+                    symbol,
+                    expiry,
+                    strike,
+                    if is_call { "C" } else { "P" }
+                );
                 return None;
             }
         }
@@ -335,6 +392,216 @@ async fn get_option_bid_ask(
 const PLACEHOLDER_BUY_RATE: f64 = 0.04;
 const PLACEHOLDER_SELL_RATE: f64 = 0.05;
 
+/// True when env YIELD_CURVE_COMPARE_BAG_LEGS=1: run both BAG and 4-leg and include comparison in output.
+fn yield_curve_compare_bag_legs() -> bool {
+    std::env::var("YIELD_CURVE_COMPARE_BAG_LEGS")
+        .map(|s| s == "1")
+        .unwrap_or(false)
+}
+
+/// Get box spread net_debit, net_credit, buy_rate, sell_rate via four separate option subscriptions.
+/// Returns None if any leg has no bid/ask.
+async fn get_box_bid_ask_via_legs(
+    client: &Client,
+    symbol: &str,
+    expiry: &str,
+    strike_low: f64,
+    strike_high: f64,
+    trading_class: &str,
+    timeout_ms: u64,
+) -> Option<(f64, f64, f64, f64)> {
+    let width = strike_high - strike_low;
+    if width <= 0.0 {
+        return None;
+    }
+    let dte = days_to_expiry(expiry)?;
+    let t = (dte as f64) / 365.0;
+    if t <= 0.0 {
+        return None;
+    }
+    let (c_low, c_high, p_low, p_high) = tokio::join!(
+        get_option_bid_ask(
+            client,
+            symbol,
+            expiry,
+            strike_low,
+            true,
+            trading_class,
+            timeout_ms
+        ),
+        get_option_bid_ask(
+            client,
+            symbol,
+            expiry,
+            strike_high,
+            true,
+            trading_class,
+            timeout_ms
+        ),
+        get_option_bid_ask(
+            client,
+            symbol,
+            expiry,
+            strike_low,
+            false,
+            trading_class,
+            timeout_ms
+        ),
+        get_option_bid_ask(
+            client,
+            symbol,
+            expiry,
+            strike_high,
+            false,
+            trading_class,
+            timeout_ms
+        ),
+    );
+    let (c_low_bid, c_low_ask) = c_low?;
+    let (c_high_bid, _) = c_high?;
+    let (p_low_bid, _) = p_low?;
+    let (_, p_high_ask) = p_high?;
+    let net_debit = c_low_ask + p_high_ask - c_high_bid - p_low_bid;
+    let net_credit = c_high_bid + p_low_bid - c_low_bid - p_high_ask;
+    let buy_rate = if net_debit > 0.0 && net_debit < width {
+        (1.0 - net_debit / width) / t
+    } else {
+        PLACEHOLDER_BUY_RATE
+    };
+    let sell_rate = if net_credit > 0.0 && net_credit < width {
+        (1.0 - net_credit / width) / t
+    } else {
+        PLACEHOLDER_SELL_RATE
+    };
+    let buy_rate = buy_rate.clamp(0.001, 0.15);
+    let sell_rate = sell_rate.clamp(0.001, 0.15);
+    Some((net_debit, net_credit, buy_rate, sell_rate))
+}
+
+/// Try to get box spread bid/ask by subscribing to the whole box as a BAG (combo).
+/// Returns Some((bid, ask)) where bid = net_credit (sell box), ask = net_debit (buy box).
+/// Returns None if leg resolution fails, BAG build fails, or no quote within timeout.
+async fn get_box_bid_ask_via_bag(
+    client: &Client,
+    symbol: &str,
+    expiry: &str,
+    strike_low: f64,
+    strike_high: f64,
+    trading_class: &str,
+    timeout_ms: u64,
+) -> Option<(f64, f64)> {
+    let (c_low, c_high, p_low, p_high) = tokio::join!(
+        resolve_option_to_conid(client, symbol, expiry, strike_low, true, trading_class),
+        resolve_option_to_conid(client, symbol, expiry, strike_high, true, trading_class),
+        resolve_option_to_conid(client, symbol, expiry, strike_low, false, trading_class),
+        resolve_option_to_conid(client, symbol, expiry, strike_high, false, trading_class),
+    );
+    let conid_c_low = c_low?;
+    let conid_c_high = c_high?;
+    let conid_p_low = p_low?;
+    let conid_p_high = p_high?;
+
+    let mut builder = Contract::spread().in_currency("USD").on_exchange("SMART");
+    builder = builder.add_leg(conid_c_low, LegAction::Buy).ratio(1).done();
+    builder = builder
+        .add_leg(conid_c_high, LegAction::Sell)
+        .ratio(1)
+        .done();
+    builder = builder.add_leg(conid_p_low, LegAction::Buy).ratio(1).done();
+    builder = builder
+        .add_leg(conid_p_high, LegAction::Sell)
+        .ratio(1)
+        .done();
+    let mut bag_contract = match builder.build() {
+        Ok(c) => c,
+        Err(e) => {
+            warn!(error = %e, "BAG contract build failed");
+            return None;
+        }
+    };
+    bag_contract.symbol = Symbol::from(symbol);
+
+    let mut sub = match client.market_data(&bag_contract).subscribe().await {
+        Ok(s) => s,
+        Err(e) => {
+            warn!(error = %e, "BAG market_data subscribe failed; falling back to leg quotes");
+            return None;
+        }
+    };
+
+    let deadline = tokio::time::Instant::now() + Duration::from_millis(timeout_ms);
+    let mut bid = 0.0_f64;
+    let mut ask = 0.0_f64;
+    while tokio::time::Instant::now() < deadline {
+        match tokio::time::timeout(Duration::from_millis(500), sub.next()).await {
+            Ok(Some(Ok(tick))) => {
+                let (price, tick_type_opt): (f64, Option<&TickType>) = match &tick {
+                    TickTypes::Price(p) => (p.price, Some(&p.tick_type)),
+                    TickTypes::PriceSize(ps) => (ps.price, Some(&ps.price_tick_type)),
+                    TickTypes::RequestParameters(params) if params.min_tick > 0.0 => {
+                        if bid <= 0.0 {
+                            bid = params.min_tick;
+                        }
+                        if ask <= 0.0 {
+                            ask = params.min_tick;
+                        }
+                        (0.0, None)
+                    }
+                    other => {
+                        debug!(tick_variant = ?other, "BAG tick (not Price/PriceSize)");
+                        (0.0, None)
+                    }
+                };
+                if let Some(tt) = tick_type_opt {
+                    match tt {
+                        TickType::Bid | TickType::DelayedBid | TickType::DelayedBidOption => {
+                            bid = price;
+                            if ask <= 0.0 {
+                                ask = price;
+                            }
+                        }
+                        TickType::Ask | TickType::DelayedAsk | TickType::DelayedAskOption => {
+                            ask = price;
+                            if bid <= 0.0 {
+                                bid = price;
+                            }
+                        }
+                        TickType::Last
+                        | TickType::DelayedLast
+                        | TickType::DelayedLastOption
+                        | TickType::Close
+                        | TickType::DelayedClose => {
+                            if bid <= 0.0 {
+                                bid = price;
+                            }
+                            if ask <= 0.0 {
+                                ask = price;
+                            }
+                        }
+                        other_tt => {
+                            debug!(tick_type = ?other_tt, price, "BAG price tick not used");
+                        }
+                    }
+                }
+                if bid > 0.0 && ask > 0.0 {
+                    info!(%symbol, %expiry, strike_low, strike_high, bid, ask, "BAG quote received");
+                    return Some((bid, ask));
+                }
+            }
+            Ok(Some(Err(e))) => {
+                debug!(error = %e, "BAG tick stream error");
+            }
+            _ => continue,
+        }
+    }
+    if bid > 0.0 && ask > 0.0 {
+        Some((bid, ask))
+    } else {
+        debug!(%symbol, %expiry, "no BAG bid/ask within {}ms", timeout_ms);
+        None
+    }
+}
+
 /// Build one box spread point from TWS quotes for one expiry and two strikes.
 /// If any leg has no bid/ask (e.g. market closed), uses placeholder rates and sets "delayed": true.
 async fn box_spread_point(
@@ -361,41 +628,177 @@ async fn box_spread_point(
         format!("{:04}-{:02}-{:02}", y, m, d)
     };
 
-    let (c_low, c_high, p_low, p_high) = tokio::join!(
-        get_option_bid_ask(client, symbol, expiry, strike_low, true, trading_class, quote_timeout_ms),
-        get_option_bid_ask(client, symbol, expiry, strike_high, true, trading_class, quote_timeout_ms),
-        get_option_bid_ask(client, symbol, expiry, strike_low, false, trading_class, quote_timeout_ms),
-        get_option_bid_ask(client, symbol, expiry, strike_high, false, trading_class, quote_timeout_ms),
-    );
+    let compare = yield_curve_compare_bag_legs();
+    let (buy_rate, sell_rate, net_debit, net_credit, delayed, comparison) = if compare {
+        let t0 = Instant::now();
+        let bag = get_box_bid_ask_via_bag(
+            client,
+            symbol,
+            expiry,
+            strike_low,
+            strike_high,
+            trading_class,
+            quote_timeout_ms,
+        )
+        .await;
+        let bag_ms = t0.elapsed().as_millis() as u64;
+        let t1 = Instant::now();
+        let legs = get_box_bid_ask_via_legs(
+            client,
+            symbol,
+            expiry,
+            strike_low,
+            strike_high,
+            trading_class,
+            quote_timeout_ms,
+        )
+        .await;
+        let legs_ms = t1.elapsed().as_millis() as u64;
 
-    let (buy_rate, sell_rate, net_debit, net_credit, delayed) = match (c_low, c_high, p_low, p_high) {
-        (Some((c_low_bid, c_low_ask)), Some((c_high_bid, _)), Some((p_low_bid, _)), Some((_p_high_bid, p_high_ask))) => {
-            let net_debit = c_low_ask + p_high_ask - c_high_bid - p_low_bid;
-            let net_credit = c_high_bid + p_low_bid - c_low_bid - p_high_ask;
-            let buy_rate = if net_debit > 0.0 && net_debit < width {
-                (1.0 - net_debit / width) / t
-            } else {
-                PLACEHOLDER_BUY_RATE
-            };
-            let sell_rate = if net_credit > 0.0 && net_credit < width {
-                (1.0 - net_credit / width) / t
-            } else {
-                PLACEHOLDER_SELL_RATE
-            };
-            let buy_rate = buy_rate.max(0.001).min(0.15);
-            let sell_rate = sell_rate.max(0.001).min(0.15);
-            (buy_rate, sell_rate, net_debit, net_credit, false)
-        }
-        _ => {
-            let buy_rate = PLACEHOLDER_BUY_RATE;
-            let sell_rate = PLACEHOLDER_SELL_RATE;
-            let net_debit = width * (1.0 - buy_rate * t);
-            let net_credit = width * (1.0 - sell_rate * t);
-            (buy_rate, sell_rate, net_debit, net_credit, true)
-        }
+        let (bag_net_debit, bag_net_credit, bag_buy, bag_sell) = match bag {
+            Some((bid, ask)) => {
+                let nd = ask;
+                let nc = bid;
+                let br = ((1.0 - nd / width) / t).clamp(0.001, 0.15);
+                let sr = ((1.0 - nc / width) / t).clamp(0.001, 0.15);
+                (nd, nc, br, sr)
+            }
+            None => (0.0, 0.0, PLACEHOLDER_BUY_RATE, PLACEHOLDER_SELL_RATE),
+        };
+        let (legs_net_debit, legs_net_credit, legs_buy, legs_sell) = legs.unwrap_or((
+            width * (1.0 - PLACEHOLDER_BUY_RATE * t),
+            width * (1.0 - PLACEHOLDER_SELL_RATE * t),
+            PLACEHOLDER_BUY_RATE,
+            PLACEHOLDER_SELL_RATE,
+        ));
+
+        let (buy_rate, sell_rate, net_debit, net_credit, delayed) = match (bag, legs) {
+            (Some((bag_bid, bag_ask)), _) => {
+                let net_credit = bag_bid;
+                let net_debit = bag_ask;
+                let buy_rate = if net_debit > 0.0 && net_debit < width {
+                    (1.0 - net_debit / width) / t
+                } else {
+                    PLACEHOLDER_BUY_RATE
+                };
+                let sell_rate = if net_credit > 0.0 && net_credit < width {
+                    (1.0 - net_credit / width) / t
+                } else {
+                    PLACEHOLDER_SELL_RATE
+                };
+                (
+                    buy_rate.clamp(0.001, 0.15),
+                    sell_rate.clamp(0.001, 0.15),
+                    net_debit,
+                    net_credit,
+                    false,
+                )
+            }
+            (_, Some(_)) => (legs_buy, legs_sell, legs_net_debit, legs_net_credit, false),
+            _ => {
+                let buy_rate = PLACEHOLDER_BUY_RATE;
+                let sell_rate = PLACEHOLDER_SELL_RATE;
+                (
+                    buy_rate,
+                    sell_rate,
+                    width * (1.0 - buy_rate * t),
+                    width * (1.0 - sell_rate * t),
+                    true,
+                )
+            }
+        };
+        let faster = if bag_ms <= legs_ms { "BAG" } else { "Legs" };
+        let bag_bid_v = bag.map(|(b, _)| (b * 100.0).round() / 100.0);
+        let bag_ask_v = bag.map(|(_, a)| (a * 100.0).round() / 100.0);
+        let comparison = json!({
+            "bag_ms": bag_ms,
+            "legs_ms": legs_ms,
+            "faster": faster,
+            "bag_bid": bag_bid_v,
+            "bag_ask": bag_ask_v,
+            "bag_net_debit": (bag_net_debit * 100.0).round() / 100.0,
+            "bag_net_credit": (bag_net_credit * 100.0).round() / 100.0,
+            "bag_buy_pct": (bag_buy * 100.0).round() / 100.0,
+            "bag_sell_pct": (bag_sell * 100.0).round() / 100.0,
+            "legs_net_debit": (legs_net_debit * 100.0).round() / 100.0,
+            "legs_net_credit": (legs_net_credit * 100.0).round() / 100.0,
+            "legs_buy_pct": (legs_buy * 100.0).round() / 100.0,
+            "legs_sell_pct": (legs_sell * 100.0).round() / 100.0,
+        });
+        (
+            buy_rate,
+            sell_rate,
+            net_debit,
+            net_credit,
+            delayed,
+            Some(comparison),
+        )
+    } else {
+        let (buy_rate, sell_rate, net_debit, net_credit, delayed) = match get_box_bid_ask_via_bag(
+            client,
+            symbol,
+            expiry,
+            strike_low,
+            strike_high,
+            trading_class,
+            quote_timeout_ms,
+        )
+        .await
+        {
+            Some((bag_bid, bag_ask)) => {
+                let net_credit = bag_bid;
+                let net_debit = bag_ask;
+                let buy_rate = if net_debit > 0.0 && net_debit < width {
+                    (1.0 - net_debit / width) / t
+                } else {
+                    PLACEHOLDER_BUY_RATE
+                };
+                let sell_rate = if net_credit > 0.0 && net_credit < width {
+                    (1.0 - net_credit / width) / t
+                } else {
+                    PLACEHOLDER_SELL_RATE
+                };
+                (
+                    buy_rate.clamp(0.001, 0.15),
+                    sell_rate.clamp(0.001, 0.15),
+                    net_debit,
+                    net_credit,
+                    false,
+                )
+            }
+            None => {
+                let legs = get_box_bid_ask_via_legs(
+                    client,
+                    symbol,
+                    expiry,
+                    strike_low,
+                    strike_high,
+                    trading_class,
+                    quote_timeout_ms,
+                )
+                .await;
+                match legs {
+                    Some((legs_net_debit, legs_net_credit, legs_buy, legs_sell)) => {
+                        (legs_buy, legs_sell, legs_net_debit, legs_net_credit, false)
+                    }
+                    None => {
+                        let buy_rate = PLACEHOLDER_BUY_RATE;
+                        let sell_rate = PLACEHOLDER_SELL_RATE;
+                        (
+                            buy_rate,
+                            sell_rate,
+                            width * (1.0 - buy_rate * t),
+                            width * (1.0 - sell_rate * t),
+                            true,
+                        )
+                    }
+                }
+            }
+        };
+        (buy_rate, sell_rate, net_debit, net_credit, delayed, None)
     };
 
-    Some(json!({
+    let mut out = json!({
         "spread": {
             "symbol": symbol,
             "expiry": expiry_ymd,
@@ -412,13 +815,20 @@ async fn box_spread_point(
             "convenience_yield": null,
             "delayed": delayed
         }
-    }))
+    });
+    if let Some(ref comp) = comparison {
+        out["comparison"] = comp.clone();
+    }
+    Some(out)
 }
 
 /// Market data type when we want closing data. Delayed (3) is free and often works when "part of requested market data is not available";
 /// DelayedFrozen (4) also needs no subscription; Frozen (2) requires same subscription as live.
 fn closing_market_data_type() -> MarketDataType {
-    match std::env::var("YIELD_CURVE_MARKET_DATA_TYPE").ok().as_deref() {
+    match std::env::var("YIELD_CURVE_MARKET_DATA_TYPE")
+        .ok()
+        .as_deref()
+    {
         Some("frozen") => MarketDataType::Frozen,
         Some("delayed_frozen") => MarketDataType::DelayedFrozen,
         _ => MarketDataType::Delayed,
@@ -427,7 +837,10 @@ fn closing_market_data_type() -> MarketDataType {
 
 /// True when we should request closing data: env YIELD_CURVE_USE_CLOSING=1 or outside US regular session (Mon–Fri 9:30–16:00 ET).
 fn use_closing_data() -> bool {
-    if std::env::var("YIELD_CURVE_USE_CLOSING").map(|s| s == "1").unwrap_or(false) {
+    if std::env::var("YIELD_CURVE_USE_CLOSING")
+        .map(|s| s == "1")
+        .unwrap_or(false)
+    {
         return true;
     }
     let now = Utc::now();
@@ -438,7 +851,9 @@ fn use_closing_data() -> bool {
     let is_weekday = (1..=5).contains(&weekday);
     let utc_session_start = 13 * 60 + 30;
     let utc_session_end = 22 * 60;
-    let in_session = is_weekday && minutes_since_midnight >= utc_session_start && minutes_since_midnight < utc_session_end;
+    let in_session = is_weekday
+        && minutes_since_midnight >= utc_session_start
+        && minutes_since_midnight < utc_session_end;
     !in_session
 }
 
@@ -456,15 +871,11 @@ fn ensure_tracing() {
                     .try_init();
                 info!(path = %path, "TWS yield curve: logging full session to file");
             } else {
-                let _ = tracing_subscriber::fmt()
-                    .with_env_filter(filter)
-                    .try_init();
+                let _ = tracing_subscriber::fmt().with_env_filter(filter).try_init();
             }
         }
         Err(_) => {
-            let _ = tracing_subscriber::fmt()
-                .with_env_filter(filter)
-                .try_init();
+            let _ = tracing_subscriber::fmt().with_env_filter(filter).try_init();
         }
     }
 }
@@ -497,47 +908,69 @@ pub async fn fetch_yield_curve_from_tws(symbol: &str) -> Result<Vec<Value>, Stri
         QUOTE_TIMEOUT_MS
     };
 
-    let (expirations, strikes, trading_class) = request_option_chain(&client, symbol).await.map_err(|e| {
-        warn!(error = %e, "TWS yield curve: option chain failed");
-        e
-    })?;
+    let (expirations, strikes, trading_class) =
+        request_option_chain(&client, symbol).await.map_err(|e| {
+            warn!(error = %e, "TWS yield curve: option chain failed");
+            e
+        })?;
     debug!(%trading_class, "TWS yield curve: using trading_class from option chain");
 
     let spot = reference_spot(symbol);
     let strike_low = (spot - STRIKE_WIDTH / 2.0).round();
     let strike_high = (spot + STRIKE_WIDTH / 2.0).round();
-    let (strike_low, strike_high) = if strikes.contains(&strike_low) && strikes.contains(&strike_high) {
-        (strike_low, strike_high)
-    } else {
-        let closest = strikes.iter().min_by(|a, b| {
-            let da = (spot - **a).abs();
-            let db = (spot - **b).abs();
-            da.partial_cmp(&db).unwrap_or(std::cmp::Ordering::Equal)
-        }).ok_or("option_chain: no strikes")?;
-        let low = (closest - STRIKE_WIDTH / 2.0).round();
-        let high = (closest + STRIKE_WIDTH / 2.0).round();
-        if strikes.contains(&low) && strikes.contains(&high) {
-            (low, high)
+    let (strike_low, strike_high) =
+        if strikes.contains(&strike_low) && strikes.contains(&strike_high) {
+            (strike_low, strike_high)
         } else {
-            let mut sorted: Vec<f64> = strikes.iter().filter(|s| **s > 0.0).copied().collect();
-            sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-            let idx = sorted.iter().position(|s| *s >= spot).unwrap_or(sorted.len().saturating_sub(1));
-            let high = sorted.get(idx).copied().unwrap_or(spot + 2.0);
-            let low = sorted.iter().find(|s| **s < high).copied().unwrap_or(high - STRIKE_WIDTH);
-            if (high - low).abs() < 0.01 {
-                return Err("no valid strike pair".to_string());
+            let closest = strikes
+                .iter()
+                .min_by(|a, b| {
+                    let da = (spot - **a).abs();
+                    let db = (spot - **b).abs();
+                    da.partial_cmp(&db).unwrap_or(std::cmp::Ordering::Equal)
+                })
+                .ok_or("option_chain: no strikes")?;
+            let low = (closest - STRIKE_WIDTH / 2.0).round();
+            let high = (closest + STRIKE_WIDTH / 2.0).round();
+            if strikes.contains(&low) && strikes.contains(&high) {
+                (low, high)
+            } else {
+                let mut sorted: Vec<f64> = strikes.iter().filter(|s| **s > 0.0).copied().collect();
+                sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                let idx = sorted
+                    .iter()
+                    .position(|s| *s >= spot)
+                    .unwrap_or(sorted.len().saturating_sub(1));
+                let high = sorted.get(idx).copied().unwrap_or(spot + 2.0);
+                let low = sorted
+                    .iter()
+                    .find(|s| **s < high)
+                    .copied()
+                    .unwrap_or(high - STRIKE_WIDTH);
+                if (high - low).abs() < 0.01 {
+                    return Err("no valid strike pair".to_string());
+                }
+                (low, high)
             }
-            (low, high)
-        }
-    };
+        };
 
     let expiry_futures: Vec<_> = expirations
         .iter()
         .take(3)
-        .map(|expiry| box_spread_point(&client, symbol, expiry, strike_low, strike_high, &trading_class, quote_timeout_ms))
+        .map(|expiry| {
+            box_spread_point(
+                &client,
+                symbol,
+                expiry,
+                strike_low,
+                strike_high,
+                &trading_class,
+                quote_timeout_ms,
+            )
+        })
         .collect();
     let results = futures::future::join_all(expiry_futures).await;
-    let opportunities: Vec<Value> = results.into_iter().filter_map(|pt| pt).collect();
+    let opportunities: Vec<Value> = results.into_iter().flatten().collect();
     if opportunities.is_empty() {
         return Err(
             "no box spread points from TWS (option chain and resolution succeeded; no bid/ask quotes in time—check market hours and liquidity)".to_string()

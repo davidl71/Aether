@@ -55,11 +55,11 @@ echo "git:               ${GIT_BIN}"
 sed \
   -e "s|__PROJECT_ROOT__|${PROJECT_ROOT}|g" \
   -e "s|__EXARP_MIGRATIONS_DIR__|${EXARP_MIGRATIONS_DIR}|g" \
-  "${PROJECT_ROOT}/opencode.json.example" > "${PROJECT_ROOT}/opencode.json"
+  "${PROJECT_ROOT}/opencode.json.example" >"${PROJECT_ROOT}/opencode.json"
 echo "✓ opencode.json"
 
 # Generate .cursor/mcp.json
-python3 - << PYEOF
+python3 - <<PYEOF
 import json, os
 
 project_root = "${PROJECT_ROOT}"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run all project linters (C++, Rust, Python, JS/TS, shell, Ansible, exarp-go, etc.).
+# Run all project linters (C++, Rust [cargo fmt + cargo clippy], Python, JS/TS, shell, Ansible, exarp-go, etc.).
 #
 # Usage:
 #   ./scripts/run_linters.sh                    # normal (verbose)
@@ -13,6 +13,8 @@
 #   ./scripts/run_linters.sh --no-ai-friendly  # verbose human-readable output (default is AI-friendly/quiet)
 #
 # ansible-lint: ANSIBLE_LINT_TIMEOUT (default 300s); use timeout(1)/gtimeout(1) when available.
+#
+# exarp-go lint: runs for both Go and non-Go projects (shellcheck, markdownlint, etc.); no go.mod required.
 #
 # Caches (faster re-runs): cppcheck (.cppcheck-cache/), ESLint (web/.eslintcache),
 # Stylelint (web/.stylelintcache), Infer (build/*/infer-out).
@@ -371,15 +373,6 @@ run_type_check() {
   }
 }
 
-run_js_syntax_check() {
-  if [ -f "${ROOT_DIR}/scripts/check_javascript.sh" ]; then
-    "${ROOT_DIR}/scripts/check_javascript.sh" || return 1
-  else
-    warn "Skipping JavaScript syntax check (check_javascript.sh not found)"
-    return 0
-  fi
-}
-
 run_shellcheck() {
   if [[ -n "${EXARP_RAN_SHELLCHECK:-}" ]]; then
     if [[ -f "${ROOT_DIR}/ansible/run-dev-setup.sh" ]] && command -v shellcheck >/dev/null 2>&1; then
@@ -571,7 +564,7 @@ run_rust_lint() {
     warn "Skipping Rust clippy (clippy not installed; run: rustup component add clippy)"
     return 0
   fi
-  info "Running Rust fmt + clippy (agents/backend)"
+  info "Running Rust lint (cargo fmt + cargo clippy) (agents/backend)"
   if command -v sccache >/dev/null 2>&1; then
     export RUSTC_WRAPPER=sccache
     export SCCACHE_CACHE_SIZE="${SCCACHE_CACHE_SIZE:-10G}"
@@ -584,10 +577,7 @@ run_rust_lint() {
 
 run_exarp_go_lint() {
   local exarp_script="${ROOT_DIR}/scripts/run_exarp_go_tool.sh"
-  if [[ ! -f "${ROOT_DIR}/go.mod" ]] && [[ "${EXARP_GO_LINT:-0}" != "1" ]]; then
-    warn "Skipping exarp-go lint at repo root (multi-language repo root is not a Go module; set EXARP_GO_LINT=1 to force)"
-    return 0
-  fi
+  # exarp-go lint supports non-Go projects (e.g. shellcheck, markdownlint by path). No need to require go.mod.
   if [[ ! -x "${exarp_script}" ]]; then
     warn "Skipping exarp-go lint (run_exarp_go_tool.sh not executable)"
     return 0
@@ -596,7 +586,7 @@ run_exarp_go_lint() {
     warn "Skipping exarp-go lint (exarp-go not found or not in PATH)"
     return 0
   fi
-  info "Running exarp-go lint (Go + markdown)"
+  info "Running exarp-go lint (Go, shell, markdown, etc.; supports non-Go projects)"
   local status=0
   if [[ "${LINT_FIX:-0}" -eq 1 ]]; then
     "${exarp_script}" lint '{"fix":true}' || status=0
@@ -628,7 +618,6 @@ main() {
   run_eslint
   run_stylelint
   run_type_check
-  run_js_syntax_check
   run_rust_lint
 
   info "Lint checks completed"
@@ -682,10 +671,6 @@ main_parallel() {
     echo $? >"${tmpdir}/type_check"
   ) &
   (
-    run_js_syntax_check
-    echo $? >"${tmpdir}/js_syntax_check"
-  ) &
-  (
     run_rust_lint
     echo $? >"${tmpdir}/rust_lint"
   ) &
@@ -715,10 +700,10 @@ extract_lint_errors() {
   # Match likely linter/compiler output: file:line:col: error|warning, Rust error[E..., FAILED, fatal error
   errs="$(grep -E \
     "(^[^:]+:[0-9]+:[0-9]+:.*(error|warning)|error\[E[0-9]+\]|^FAILED$|FAILED.*test|fatal error:|\[error\]|\berror:\s+.*(undefined|not found))" \
-    "${log}" 2>/dev/null | \
+    "${log}" 2>/dev/null |
     grep -v -E \
-    "(\[warn\] Skipping|echo .*[Ee]rror|map_err|\.map_err|format!.*[Ee]rror|JSONDecodeError|except .*Error|^\s*[-+]\s|^\s*\.map_err|\|\s*e\s*\||\\)\\?;|=>|grep -E|\"\(.*error\|warning)" \
-    | head -50)"
+      "(\[warn\] Skipping|echo .*[Ee]rror|map_err|\.map_err|format!.*[Ee]rror|JSONDecodeError|except .*Error|^\s*[-+]\s|^\s*\.map_err|\|\s*e\s*\||\\)\\?;|=>|grep -E|\"\(.*error\|warning)" |
+    head -50)"
   if [[ -z "${errs}" ]]; then
     errs="$(grep -E "^\s*[0-9]+ (error|warning)" "${log}" 2>/dev/null | head -50)"
   fi

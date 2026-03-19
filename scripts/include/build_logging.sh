@@ -54,4 +54,3 @@ run_logged() {
 
   log_note "${label} completed (log: ${log_file})"
 }
-

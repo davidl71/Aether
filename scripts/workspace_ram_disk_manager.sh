@@ -194,11 +194,11 @@ function save_cache_data() {
 
   # Save cache statistics (useful for analysis)
   if command -v ccache >/dev/null 2>&1; then
-    ccache --show-stats > "${cache_backup}/ccache-stats-$(date +%Y%m%d).txt" 2>/dev/null || true
+    ccache --show-stats >"${cache_backup}/ccache-stats-$(date +%Y%m%d).txt" 2>/dev/null || true
   fi
 
   if command -v sccache >/dev/null 2>&1; then
-    sccache --show-stats > "${cache_backup}/sccache-stats-$(date +%Y%m%d).txt" 2>/dev/null || true
+    sccache --show-stats >"${cache_backup}/sccache-stats-$(date +%Y%m%d).txt" 2>/dev/null || true
   fi
 
   log_success "Cache statistics saved"

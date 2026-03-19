@@ -73,7 +73,7 @@ _BACKEND_PORT=$(config_get_rust_backend_port 9090)
 
 # Service definitions: name, port, start_command
 declare -A SERVICES=(
-  ["rust_backend"]="${_BACKEND_PORT}|cd ${PROJECT_ROOT}/agents/backend && cargo run --release -p backend_service"
+  ["rust_backend"]="${_BACKEND_PORT}|cd ${PROJECT_ROOT}/agents/backend && cargo run --release -p backend_service --bin backend_service"
   ["nats"]="4222|nats-server -js -DV"
 )
 
@@ -126,19 +126,53 @@ start_service() {
   mkdir -p "${PROJECT_ROOT}/logs"
   local log_file="${PROJECT_ROOT}/logs/${service}_service.log"
 
-  # Start service
-  log_info "Starting $service on port $port..."
+  # Resolve 1Password refs for Rust backend (OP_FRED_API_KEY_SECRET -> FRED_API_KEY, etc.)
+  if [[ "$service" == "rust_backend" ]] && [[ -f "${SCRIPT_DIR}/include/onepassword.sh" ]]; then
+    # shellcheck source=scripts/include/onepassword.sh
+    source "${SCRIPT_DIR}/include/onepassword.sh"
+    export_op_secrets_for_rust 2>/dev/null || true
+  fi
 
-  # Append port to command if needed
-  if echo "$start_cmd" | grep -q "-- --port$\|--port$"; then
+  # Start service (verbose so user sees what we're waiting for)
+  if [[ "$service" == "rust_backend" ]]; then
+    log_info "Starting $service (REST snapshot port $port)..."
+    log_info "  First run may compile release build (30–90s); subsequent starts are faster."
+  else
+    log_info "Starting $service on port $port..."
+  fi
+
+  # Rust backend: must set REST_SNAPSHOT_PORT so the process binds to the port we check.
+  # Backend only starts the REST snapshot server when REST_SNAPSHOT_PORT is set (see rest_snapshot.rs).
+  if [[ "$service" == "rust_backend" ]]; then
+    start_cmd="export REST_SNAPSHOT_PORT=$port && $start_cmd"
+  fi
+  # Append port to command if needed (for other services that take --port)
+  if echo "$start_cmd" | grep -qE '(-- --port|--port)$'; then
     start_cmd="$start_cmd $port"
   fi
   # Run in background, redirect output to log
   nohup bash -c "$start_cmd" >"$log_file" 2>&1 &
   _=$!
 
-  # Wait a moment and check if it started
-  sleep 2
+  # Wait for service to bind. Rust backend may need 30-90s on first run (release compile).
+  local wait_sec=2
+  if [[ "$service" == "rust_backend" ]]; then
+    wait_sec=90
+    log_info "  Waiting for backend to listen on port $port (up to ${wait_sec}s)..."
+  fi
+  local elapsed=0
+  while [[ $elapsed -lt $wait_sec ]]; do
+    sleep 2
+    elapsed=$((elapsed + 2))
+    if is_running "$port"; then
+      break
+    fi
+    if [[ "$service" == "rust_backend" ]]; then
+      [[ $elapsed -lt $wait_sec ]] && log_info "  still waiting for port $port (${elapsed}s / ${wait_sec}s)..."
+    else
+      [[ $elapsed -lt $wait_sec ]] && log_info "  waiting for port $port... (${elapsed}s)"
+    fi
+  done
 
   if is_running "$port"; then
     local pid
@@ -252,10 +286,13 @@ show_status() {
   echo ""
 }
 
-# Start all services
+# Start all services (order: nats first so backend can connect)
 start_all() {
-  log_info "Starting all services..."
-  for service in "${!SERVICES[@]}"; do
+  log_info "Starting all services (nats, then rust_backend)..."
+  # Use real TWS market data (connected port shown in TUI when backend is up)
+  export MARKET_DATA_PROVIDER="${MARKET_DATA_PROVIDER:-tws}"
+  for service in nats rust_backend; do
+    [ -z "${SERVICES[$service]:-}" ] && continue
     if ! is_enabled "$service"; then
       log_info "Skipping disabled service: $service"
       continue

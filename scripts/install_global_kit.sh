@@ -16,10 +16,23 @@ MODE="link"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --dest) DEST="$2"; shift 2 ;;
-    --mode) MODE="$2"; shift 2 ;;
-    -h|--help) usage; exit 0 ;;
-    *) echo "Unknown arg: $1"; usage; exit 2 ;;
+  --dest)
+    DEST="$2"
+    shift 2
+    ;;
+  --mode)
+    MODE="$2"
+    shift 2
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    echo "Unknown arg: $1"
+    usage
+    exit 2
+    ;;
   esac
 done
 
@@ -40,9 +53,12 @@ install_one() {
     mv -f "$dest_path" "$dest_path.bak"
   fi
   case "$MODE" in
-    copy) cp -R "$src" "$dest_path" ;;
-    link) ln -s "$src" "$dest_path" ;;
-    *) echo "Invalid mode: $MODE"; exit 2 ;;
+  copy) cp -R "$src" "$dest_path" ;;
+  link) ln -s "$src" "$dest_path" ;;
+  *)
+    echo "Invalid mode: $MODE"
+    exit 2
+    ;;
   esac
   echo "Installed $base"
 }

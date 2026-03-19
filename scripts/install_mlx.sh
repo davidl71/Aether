@@ -6,7 +6,7 @@ set -euo pipefail
 arch="$(uname -m 2>/dev/null || echo unknown)"
 os="$(uname -s 2>/dev/null || echo unknown)"
 
-if [[ "${os}" == "Darwin" && ( "${arch}" == "arm64" || "${arch}" == "aarch64" ) ]]; then
+if [[ "${os}" == "Darwin" && ("${arch}" == "arm64" || "${arch}" == "aarch64") ]]; then
   echo "[install-mlx] Detected Apple Silicon macOS (${arch})."
   if ! command -v python3 >/dev/null 2>&1; then
     echo "[install-mlx] python3 not found. Install Python (e.g., 'brew install python')." >&2

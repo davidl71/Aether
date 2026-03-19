@@ -10,9 +10,9 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 LOG_DIR="${ROOT_DIR}/logs"
 CONFIG_FILE="${ROOT_DIR}/config/services.toml"
 PID_FILE="${LOG_DIR}/watchdog.pid"
-CHECK_INTERVAL=${CHECK_INTERVAL:-30}  # Check every 30 seconds
+CHECK_INTERVAL=${CHECK_INTERVAL:-30} # Check every 30 seconds
 MAX_RESTART_ATTEMPTS=${MAX_RESTART_ATTEMPTS:-5}
-RESTART_DELAY=${RESTART_DELAY:-10}  # Wait 10 seconds before restart
+RESTART_DELAY=${RESTART_DELAY:-10} # Wait 10 seconds before restart
 
 # Colors for output
 if [ -t 1 ] && command -v tput >/dev/null 2>&1; then
@@ -209,7 +209,7 @@ if [ -f "$PID_FILE" ]; then
 fi
 
 # Write PID file
-echo $$ > "$PID_FILE"
+echo $$ >"$PID_FILE"
 
 # Start monitoring
 monitor_services

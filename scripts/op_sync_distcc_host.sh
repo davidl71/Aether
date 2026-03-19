@@ -51,11 +51,11 @@ mkdir -p "$(dirname "$ANSIBLE_HOSTS_FILE")"
 
 ssh_key_path="${SSH_DIR}/${ALIAS}_id_ed25519"
 mkdir -p "$SSH_DIR"
-printf '%s\n' "$key" > "$ssh_key_path"
+printf '%s\n' "$key" >"$ssh_key_path"
 chmod 600 "$ssh_key_path"
 
 # Write Ansible inventory (overwrites distcc group section with latest values)
-cat > "$ANSIBLE_HOSTS_FILE" <<EOF
+cat >"$ANSIBLE_HOSTS_FILE" <<EOF
 [distcc_macos_workers]
 $ALIAS ansible_host=$host ansible_user=$user ansible_port=${port:-22} ansible_ssh_private_key_file=$ssh_key_path
 EOF

@@ -10,10 +10,10 @@
 set -e
 msgfile="$1"
 source="${2:-}"
-coauthor=$(git config --get ib_box_spread.coauthor 2>/dev/null) || \
+coauthor=$(git config --get ib_box_spread.coauthor 2>/dev/null) ||
   git config --get exarp-go.coauthor 2>/dev/null || true
 [ -n "$coauthor" ] || exit 0
 [ -n "$msgfile" ] && [ -f "$msgfile" ] || exit 0
-case "$source" in merge|squash) exit 0 ;; esac
+case "$source" in merge | squash) exit 0 ;; esac
 grep -q '^Co-authored-by:' "$msgfile" 2>/dev/null && exit 0
-printf '\nCo-authored-by: %s\n' "$coauthor" >> "$msgfile"
+printf '\nCo-authored-by: %s\n' "$coauthor" >>"$msgfile"

@@ -36,32 +36,32 @@ TIMEOUT="${TIMEOUT:-300}"
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --format)
-      FORMAT="$2"
-      shift 2
-      ;;
-    --quick)
-      QUICK="true"
-      shift
-      ;;
-    --parallel)
-      PARALLEL="$2"
-      shift 2
-      ;;
-    --verbose)
-      VERBOSE="true"
-      shift
-      ;;
-    --coverage)
-      COVERAGE="true"
-      shift
-      ;;
-    --timeout)
-      TIMEOUT="$2"
-      shift 2
-      ;;
-    --help)
-      cat <<EOF
+  --format)
+    FORMAT="$2"
+    shift 2
+    ;;
+  --quick)
+    QUICK="true"
+    shift
+    ;;
+  --parallel)
+    PARALLEL="$2"
+    shift 2
+    ;;
+  --verbose)
+    VERBOSE="true"
+    shift
+    ;;
+  --coverage)
+    COVERAGE="true"
+    shift
+    ;;
+  --timeout)
+    TIMEOUT="$2"
+    shift 2
+    ;;
+  --help)
+    cat <<EOF
 Run ShellSpec tests for shell scripts
 
 Usage: $0 [options]
@@ -82,13 +82,13 @@ Examples:
   $0 --parallel 8             # Run with 8 parallel jobs
   $0 --coverage               # Generate coverage report
 EOF
-      exit 0
-      ;;
-    *)
-      echo "Unknown option: $1" >&2
-      echo "Run '$0 --help' for usage information" >&2
-      exit 1
-      ;;
+    exit 0
+    ;;
+  *)
+    echo "Unknown option: $1" >&2
+    echo "Run '$0 --help' for usage information" >&2
+    exit 1
+    ;;
   esac
 done
 

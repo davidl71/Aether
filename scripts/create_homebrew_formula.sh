@@ -38,44 +38,44 @@ DRY_RUN=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --tap)
-      TAP="$2"
-      shift 2
-      ;;
-    --formula)
-      FORMULA_NAME="$2"
-      shift 2
-      ;;
-    --class-name)
-      CLASS_NAME="$2"
-      shift 2
-      ;;
-    --version-tag)
-      VERSION_TAG="$2"
-      TARBALL_URL="https://github.com/davidl71/ib_box_spread_full_universal/archive/refs/tags/${VERSION_TAG}.tar.gz"
-      shift 2
-      ;;
-    --url)
-      TARBALL_URL="$2"
-      shift 2
-      ;;
-    --sha256)
-      TARBALL_SHA256="$2"
-      shift 2
-      ;;
-    --dry-run)
-      DRY_RUN=1
-      shift
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      log_error "Unknown option: $1"
-      usage
-      exit 1
-      ;;
+  --tap)
+    TAP="$2"
+    shift 2
+    ;;
+  --formula)
+    FORMULA_NAME="$2"
+    shift 2
+    ;;
+  --class-name)
+    CLASS_NAME="$2"
+    shift 2
+    ;;
+  --version-tag)
+    VERSION_TAG="$2"
+    TARBALL_URL="https://github.com/davidl71/ib_box_spread_full_universal/archive/refs/tags/${VERSION_TAG}.tar.gz"
+    shift 2
+    ;;
+  --url)
+    TARBALL_URL="$2"
+    shift 2
+    ;;
+  --sha256)
+    TARBALL_SHA256="$2"
+    shift 2
+    ;;
+  --dry-run)
+    DRY_RUN=1
+    shift
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    log_error "Unknown option: $1"
+    usage
+    exit 1
+    ;;
   esac
 done
 
@@ -137,7 +137,7 @@ brew tap --force "${TAP}" >/dev/null
 
 mkdir -p "${FORMULA_DIR}"
 log_info "Writing formula to ${FORMULA_PATH}."
-formula_contents > "${FORMULA_PATH}"
+formula_contents >"${FORMULA_PATH}"
 
 log_info "Formula updated. Next steps:"
 cat <<EOF

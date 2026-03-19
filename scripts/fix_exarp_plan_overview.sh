@@ -24,7 +24,7 @@ for f in "$PLANS_DIR"/*.plan.md; do
       -e "s|overview: \"MCP Server\"|overview: \"${OVERVIEW}\"|g" \
       -e "s|\*\*Purpose:\*\* MCP Server|\*\*Purpose:\*\* ${PURPOSE}|g" \
       -e "s|\*\*Project type:\*\* MCP Server|\*\*Project type:\*\* ${PROJECT_TYPE}|g" \
-      "$f" > "$tmp" && mv "$tmp" "$f"
+      "$f" >"$tmp" && mv "$tmp" "$f"
     echo "Patched overview in $(basename "$f")"
   fi
 done

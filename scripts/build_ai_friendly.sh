@@ -38,29 +38,29 @@ detect_default_preset() {
   arch="$(uname -m 2>/dev/null || echo unknown)"
   os="$(uname -s 2>/dev/null || echo unknown)"
   case "${os}" in
-    Darwin)
-      if [[ "${arch}" == "arm64" || "${arch}" == "aarch64" ]]; then
-        echo "macos-arm64-debug"
-      else
-        echo "macos-x86_64-debug"
-      fi
-      ;;
-    Linux)
-      echo "linux-x64-debug"
-      ;;
-    MINGW*|MSYS*|CYGWIN*|Windows_NT)
-      echo "windows-x64-debug"
-      ;;
-    *)
-      # Unknown OS: prefer arch from uname -m to avoid assuming Apple Silicon
-      if [[ "${arch}" == "x86_64" || "${arch}" == "amd64" ]]; then
-        echo "macos-x86_64-debug"
-      elif [[ "${arch}" == "arm64" || "${arch}" == "aarch64" ]]; then
-        echo "macos-arm64-debug"
-      else
-        echo "macos-x86_64-debug"
-      fi
-      ;;
+  Darwin)
+    if [[ "${arch}" == "arm64" || "${arch}" == "aarch64" ]]; then
+      echo "macos-arm64-debug"
+    else
+      echo "macos-x86_64-debug"
+    fi
+    ;;
+  Linux)
+    echo "linux-x64-debug"
+    ;;
+  MINGW* | MSYS* | CYGWIN* | Windows_NT)
+    echo "windows-x64-debug"
+    ;;
+  *)
+    # Unknown OS: prefer arch from uname -m to avoid assuming Apple Silicon
+    if [[ "${arch}" == "x86_64" || "${arch}" == "amd64" ]]; then
+      echo "macos-x86_64-debug"
+    elif [[ "${arch}" == "arm64" || "${arch}" == "aarch64" ]]; then
+      echo "macos-arm64-debug"
+    else
+      echo "macos-x86_64-debug"
+    fi
+    ;;
   esac
 }
 
@@ -73,8 +73,8 @@ resolve_preset() {
   else
     # Strip -ai suffix if preset not found so default still works before -ai presets are added
     case "${p}" in
-      *-ai) echo "${p%-ai}" ;;
-      *)    echo "${p}" ;;
+    *-ai) echo "${p%-ai}" ;;
+    *) echo "${p}" ;;
     esac
   fi
 }
@@ -98,10 +98,28 @@ ACTION="build"
 PRESET=""
 while [[ $# -ge 1 ]]; do
   case "${1}" in
-    --json-only) JSON_ONLY=true; shift ;;
-    --progress)  PROGRESS=true; shift ;;
-    build|configure) ACTION="${1}"; shift; [[ $# -ge 1 ]] && { PRESET="${1}"; shift; }; break ;;
-    *) PRESET="${1}"; shift; break ;;
+  --json-only)
+    JSON_ONLY=true
+    shift
+    ;;
+  --progress)
+    PROGRESS=true
+    shift
+    ;;
+  build | configure)
+    ACTION="${1}"
+    shift
+    [[ $# -ge 1 ]] && {
+      PRESET="${1}"
+      shift
+    }
+    break
+    ;;
+  *)
+    PRESET="${1}"
+    shift
+    break
+    ;;
   esac
 done
 PRESET="${PRESET:-${CMAKE_PRESET:-$(detect_default_preset)}}"
@@ -122,6 +140,7 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
 else
   BUILD_DIR="${PROJECT_ROOT}/build/${PRESET}"
 fi
+export BUILD_DIR
 START="$(date +%s.%N)"
 if ${PROGRESS}; then
   export BUILD_PROGRESS_START="${START}"
@@ -145,25 +164,31 @@ progress_parser() {
 
 run_build() {
   if [[ "${ACTION}" == "configure" ]]; then
-    cmake --preset "${PRESET}" >> "${BUILD_LOG}" 2>&1
+    cmake --preset "${PRESET}" >>"${BUILD_LOG}" 2>&1
   else
-    cmake --preset "${PRESET}" >> "${BUILD_LOG}" 2>&1 || true
+    cmake --preset "${PRESET}" >>"${BUILD_LOG}" 2>&1 || true
     if [[ -n "${BUILD_KEEP_GOING:-}" ]] && [[ "${BUILD_KEEP_GOING}" != "0" ]]; then
       if ${PROGRESS}; then
-        ( ( cmake --build --preset "${PRESET}" -- -k 0 ; echo $? > "${BUILD_EXIT_FILE}" ) 2>&1 | tee -a "${BUILD_LOG}" | progress_parser )
+        ( (
+          cmake --build --preset "${PRESET}" -- -k 0
+          echo $? >"${BUILD_EXIT_FILE}"
+        ) 2>&1 | tee -a "${BUILD_LOG}" | progress_parser)
         exit_code="$(cat "${BUILD_EXIT_FILE}" 2>/dev/null || echo 1)"
         rm -f "${BUILD_EXIT_FILE}"
         return "$((exit_code))"
       fi
-      cmake --build --preset "${PRESET}" -- -k 0 >> "${BUILD_LOG}" 2>&1
+      cmake --build --preset "${PRESET}" -- -k 0 >>"${BUILD_LOG}" 2>&1
     else
       if ${PROGRESS}; then
-        ( ( cmake --build --preset "${PRESET}" ; echo $? > "${BUILD_EXIT_FILE}" ) 2>&1 | tee -a "${BUILD_LOG}" | progress_parser )
+        ( (
+          cmake --build --preset "${PRESET}"
+          echo $? >"${BUILD_EXIT_FILE}"
+        ) 2>&1 | tee -a "${BUILD_LOG}" | progress_parser)
         exit_code="$(cat "${BUILD_EXIT_FILE}" 2>/dev/null || echo 1)"
         rm -f "${BUILD_EXIT_FILE}"
         return "$((exit_code))"
       fi
-      cmake --build --preset "${PRESET}" >> "${BUILD_LOG}" 2>&1
+      cmake --build --preset "${PRESET}" >>"${BUILD_LOG}" 2>&1
     fi
   fi
 }

@@ -35,35 +35,35 @@ REPO="ib_box_spread_full_universal"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --version)
-      VERSION="$2"
-      shift 2
-      ;;
-    --formula)
-      FORMULA_NAME="$2"
-      shift 2
-      ;;
-    --tap-dir)
-      TAP_DIR="$2"
-      shift 2
-      ;;
-    --github-user)
-      GITHUB_USER="$2"
-      shift 2
-      ;;
-    --repo)
-      REPO="$2"
-      shift 2
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      echo "Unknown option: $1" >&2
-      usage
-      exit 1
-      ;;
+  --version)
+    VERSION="$2"
+    shift 2
+    ;;
+  --formula)
+    FORMULA_NAME="$2"
+    shift 2
+    ;;
+  --tap-dir)
+    TAP_DIR="$2"
+    shift 2
+    ;;
+  --github-user)
+    GITHUB_USER="$2"
+    shift 2
+    ;;
+  --repo)
+    REPO="$2"
+    shift 2
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    echo "Unknown option: $1" >&2
+    usage
+    exit 1
+    ;;
   esac
 done
 

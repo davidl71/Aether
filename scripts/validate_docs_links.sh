@@ -27,9 +27,9 @@ FILES=(
 
 # URLs to skip (known issues, local files, etc.)
 SKIP_PATTERNS=(
-  "docs/"           # Local documentation links
-  "mailto:"         # Email links
-  "#"               # Anchor links
+  "docs/"            # Local documentation links
+  "mailto:"          # Email links
+  "#"                # Anchor links
   "github.com.*blob" # GitHub blob links (may require auth)
 )
 
@@ -65,7 +65,7 @@ validate_url() {
   http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 --location "$url" 2>/dev/null || echo "000")
 
   if [[ "$http_code" =~ ^[23][0-9][0-9]$ ]]; then
-    return 0  # Success (2xx or 3xx)
+    return 0 # Success (2xx or 3xx)
   else
     echo -e "${RED}❌ Broken link${NC}: $url"
     echo "   File: $file (line $line)"
@@ -100,7 +100,7 @@ extract_urls() {
       fi
       line="${line#*>}"
     done
-  done < "$file"
+  done <"$file"
 }
 
 # Process all files

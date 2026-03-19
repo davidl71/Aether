@@ -43,18 +43,18 @@ log_error() {
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --repo-url)
-      REPO_URL="$2"
-      shift 2
-      ;;
-    --key-url)
-      KEY_URL="$2"
-      shift 2
-      ;;
-    *)
-      log_error "Unknown option: $1"
-      exit 1
-      ;;
+  --repo-url)
+    REPO_URL="$2"
+    shift 2
+    ;;
+  --key-url)
+    KEY_URL="$2"
+    shift 2
+    ;;
+  *)
+    log_error "Unknown option: $1"
+    exit 1
+    ;;
   esac
 done
 
@@ -185,7 +185,7 @@ create_sources_file() {
   fi
 
   # Create .sources file with Signed-By field
-  cat > "$SOURCES_FILE" <<EOF
+  cat >"$SOURCES_FILE" <<EOF
 Types: deb
 URIs: $repo_uri
 Suites: stable

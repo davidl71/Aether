@@ -8,9 +8,9 @@ REGISTRATION_TOKEN="${2:-}"
 RUNNER_NAME="${3:-macos-m4-agent}"
 
 if [ -z "$REPO_URL" ] || [ -z "$REGISTRATION_TOKEN" ]; then
-    echo "Usage: $0 <REPO_URL> <REGISTRATION_TOKEN> [RUNNER_NAME]"
-    echo "Example: $0 https://github.com/user/repo ghs_TOKEN macos-m4-agent"
-    exit 1
+  echo "Usage: $0 <REPO_URL> <REGISTRATION_TOKEN> [RUNNER_NAME]"
+  echo "Example: $0 https://github.com/user/repo ghs_TOKEN macos-m4-agent"
+  exit 1
 fi
 
 echo "🚀 Setting up GitHub Actions runner on macOS M4..."
@@ -18,11 +18,11 @@ echo "🚀 Setting up GitHub Actions runner on macOS M4..."
 # Detect architecture
 ARCH=$(uname -m)
 if [ "$ARCH" == "arm64" ]; then
-    RUNNER_ARCH="osx-arm64"
-    echo "✅ Detected Apple Silicon (ARM64)"
+  RUNNER_ARCH="osx-arm64"
+  echo "✅ Detected Apple Silicon (ARM64)"
 else
-    RUNNER_ARCH="osx-x64"
-    echo "⚠️  Detected Intel (x64) - using x64 runner"
+  RUNNER_ARCH="osx-x64"
+  echo "⚠️  Detected Intel (x64) - using x64 runner"
 fi
 
 # Create actions-runner directory
@@ -41,7 +41,7 @@ tar xzf "actions-runner-${RUNNER_ARCH}-${RUNNER_VERSION}.tar.gz"
 
 echo "⚙️  Configuring runner..."
 ./config.sh --url "$REPO_URL" --token "$REGISTRATION_TOKEN" \
-    --name "$RUNNER_NAME" --labels macos,apple-silicon,m4 --work _work
+  --name "$RUNNER_NAME" --labels macos,apple-silicon,m4 --work _work
 
 echo "🔧 Installing as launchd service..."
 ./svc.sh install

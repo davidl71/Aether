@@ -38,7 +38,7 @@ validate_json_args() {
   local payload="$1"
 
   if command -v python3 >/dev/null 2>&1; then
-    if ! python3 - <<'PY' "${payload}"
+    if ! python3 - "${payload}" <<'PY'; then
 import json
 import sys
 
@@ -48,7 +48,6 @@ try:
 except json.JSONDecodeError:
     raise SystemExit(1)
 PY
-    then
       echo "Invalid JSON args passed to run_exarp_go_tool.sh." >&2
       echo "Expected a JSON object/array, for example: '{\"action\":\"docs\"}' or '{\"dependencies\":[]}'." >&2
       echo "Common mistake: use dependencies: [] not dependencies: \"[]\"." >&2
@@ -91,7 +90,7 @@ elif [[ -x "${SCRIPT_DIR}/run_exarp_go.sh" ]]; then
   fi
   # Pass JSON args as single token to avoid any shell/flag splitting
   TMP_ARGS="$(mktemp -t exarp_args.XXXXXXXXXX)"
-  printf '%s' "${ARGS}" > "${TMP_ARGS}"
+  printf '%s' "${ARGS}" >"${TMP_ARGS}"
   trap 'rm -f "${TMP_ARGS}"' EXIT
   EXARP_ARGS="$(cat "${TMP_ARGS}")"
   rm -f "${TMP_ARGS}"

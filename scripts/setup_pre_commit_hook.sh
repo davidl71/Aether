@@ -24,7 +24,7 @@ fi
 mkdir -p "$PROJECT_ROOT/.git/hooks"
 
 # Create pre-commit hook
-cat > "$HOOK_FILE" << 'EOF'
+cat >"$HOOK_FILE" <<'EOF'
 #!/bin/bash
 # Pre-commit hook for documentation validation
 

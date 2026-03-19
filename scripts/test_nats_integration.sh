@@ -19,7 +19,7 @@ NC='\033[0m' # No Color
 
 # Check if NATS server is running
 check_nats_server() {
-  if ! curl -s http://localhost:8222/healthz > /dev/null 2>&1; then
+  if ! curl -s http://localhost:8222/healthz >/dev/null 2>&1; then
     log_error "NATS server is not running"
     log_info "Start NATS server: ./scripts/start_nats.sh"
     exit 1
@@ -29,9 +29,9 @@ check_nats_server() {
 
 # Check if nats CLI is installed
 check_nats_cli() {
-  if ! command -v nats > /dev/null 2>&1; then
+  if ! command -v nats >/dev/null 2>&1; then
     log_warning "nats CLI not found. Installing via Homebrew..."
-    if command -v brew > /dev/null 2>&1; then
+    if command -v brew >/dev/null 2>&1; then
       brew install nats-io/nats-tools/nats
     else
       log_error "Homebrew not found. Please install nats CLI manually:"
@@ -59,7 +59,7 @@ test_basic() {
   # Start subscriber in background
   local output_file
   output_file=$(mktemp)
-  nats sub "${test_subject}" > "${output_file}" 2>&1 &
+  nats sub "${test_subject}" >"${output_file}" 2>&1 &
   local sub_pid=$!
   sleep 1
 
@@ -105,7 +105,7 @@ test_market_data() {
     # Start subscriber
     local output_file
     output_file=$(mktemp)
-    timeout 2 nats sub "${test_subject}" > "${output_file}" 2>&1 &
+    timeout 2 nats sub "${test_subject}" >"${output_file}" 2>&1 &
     local sub_pid=$!
     sleep 0.5
 
@@ -149,7 +149,7 @@ test_strategy_topics() {
   log_info "Testing strategy.signal..."
   local output_file
   output_file=$(mktemp)
-  timeout 2 nats sub "strategy.signal.>" > "${output_file}" 2>&1 &
+  timeout 2 nats sub "strategy.signal.>" >"${output_file}" 2>&1 &
   local sub_pid=$!
   sleep 0.5
 
@@ -173,7 +173,7 @@ test_strategy_topics() {
 
   log_info "Testing strategy.decision..."
   output_file=$(mktemp)
-  timeout 2 nats sub "strategy.decision.>" > "${output_file}" 2>&1 &
+  timeout 2 nats sub "strategy.decision.>" >"${output_file}" 2>&1 &
   sub_pid=$!
   sleep 0.5
 
@@ -221,12 +221,12 @@ test_performance() {
     # Start subscriber
     local output_file
     output_file=$(mktemp)
-    timeout 1 nats sub "${test_subject}" > "${output_file}" 2>&1 &
+    timeout 1 nats sub "${test_subject}" >"${output_file}" 2>&1 &
     local sub_pid=$!
     sleep 0.01
 
     # Publish
-    echo "{\"test\":${i}}" | nats pub "${test_subject}" --force-stdin > /dev/null 2>&1
+    echo "{\"test\":${i}}" | nats pub "${test_subject}" --force-stdin >/dev/null 2>&1
 
     # Wait for message
     sleep 0.01
@@ -250,7 +250,7 @@ test_performance() {
     return 0
   else
     log_warning "${YELLOW}⚠️  Performance test warning (latency >= 10ms)${NC}"
-    return 0  # Not a failure, just a warning
+    return 0 # Not a failure, just a warning
   fi
 }
 
@@ -307,29 +307,29 @@ main() {
   check_nats_cli
 
   case "${TEST_TYPE}" in
-    basic)
-      test_basic
-      ;;
-    market-data)
-      test_market_data
-      ;;
-    strategy)
-      test_strategy_topics
-      ;;
-    performance)
-      test_performance
-      ;;
-    error)
-      test_error_handling
-      ;;
-    all)
-      run_all_tests
-      ;;
-    *)
-      log_error "Unknown test type: ${TEST_TYPE}"
-      log_info "Valid types: basic, market-data, strategy, performance, error, all"
-      exit 1
-      ;;
+  basic)
+    test_basic
+    ;;
+  market-data)
+    test_market_data
+    ;;
+  strategy)
+    test_strategy_topics
+    ;;
+  performance)
+    test_performance
+    ;;
+  error)
+    test_error_handling
+    ;;
+  all)
+    run_all_tests
+    ;;
+  *)
+    log_error "Unknown test type: ${TEST_TYPE}"
+    log_info "Valid types: basic, market-data, strategy, performance, error, all"
+    exit 1
+    ;;
   esac
 }
 

@@ -182,7 +182,7 @@ impl QuantCalculator {
 
     fn parse_expiry_to_days(expiry: &str) -> Result<i64, QuantError> {
         let (y, m, d) = common::expiry::parse_expiry_yyyy_mm_dd(expiry)
-            .map_err(|e| QuantError::InvalidParameter(e))?;
+            .map_err(QuantError::InvalidParameter)?;
         let year = y as i32;
         let month = time::Month::try_from(m)
             .map_err(|_| QuantError::InvalidParameter("Invalid month".to_string()))?;

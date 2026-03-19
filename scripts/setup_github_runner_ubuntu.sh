@@ -8,9 +8,9 @@ REGISTRATION_TOKEN="${2:-}"
 RUNNER_NAME="${3:-ubuntu-agent}"
 
 if [ -z "$REPO_URL" ] || [ -z "$REGISTRATION_TOKEN" ]; then
-    echo "Usage: $0 <REPO_URL> <REGISTRATION_TOKEN> [RUNNER_NAME]"
-    echo "Example: $0 https://github.com/user/repo ghs_TOKEN ubuntu-agent"
-    exit 1
+  echo "Usage: $0 <REPO_URL> <REGISTRATION_TOKEN> [RUNNER_NAME]"
+  echo "Example: $0 https://github.com/user/repo ghs_TOKEN ubuntu-agent"
+  exit 1
 fi
 
 echo "🚀 Setting up GitHub Actions runner on Ubuntu..."
@@ -31,7 +31,7 @@ tar xzf "actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz"
 
 echo "⚙️  Configuring runner..."
 ./config.sh --url "$REPO_URL" --token "$REGISTRATION_TOKEN" \
-    --name "$RUNNER_NAME" --labels ubuntu,linux --work _work
+  --name "$RUNNER_NAME" --labels ubuntu,linux --work _work
 
 echo "🔧 Installing as systemd service..."
 sudo ./svc.sh install

@@ -19,22 +19,22 @@ detect_default_preset() {
   arch="$(uname -m 2>/dev/null || echo unknown)"
   os="$(uname -s 2>/dev/null || echo unknown)"
   case "${os}" in
-    Darwin)
-      if [[ "${arch}" == "arm64" || "${arch}" == "aarch64" ]]; then
-        echo "macos-arm64-debug"
-      else
-        echo "macos-x86_64-debug"
-      fi
-      ;;
-    Linux)
-      echo "linux-x64-debug"
-      ;;
-    MINGW*|MSYS*|CYGWIN*|Windows_NT)
-      echo "windows-x64-debug"
-      ;;
-    *)
+  Darwin)
+    if [[ "${arch}" == "arm64" || "${arch}" == "aarch64" ]]; then
       echo "macos-arm64-debug"
-      ;;
+    else
+      echo "macos-x86_64-debug"
+    fi
+    ;;
+  Linux)
+    echo "linux-x64-debug"
+    ;;
+  MINGW* | MSYS* | CYGWIN* | Windows_NT)
+    echo "windows-x64-debug"
+    ;;
+  *)
+    echo "macos-arm64-debug"
+    ;;
   esac
 }
 

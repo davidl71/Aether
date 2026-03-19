@@ -33,31 +33,31 @@ GITHUB_USER="davidl71"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --tap-name)
-      TAP_NAME="$2"
-      shift 2
-      ;;
-    --tap-repo)
-      TAP_REPO="$2"
-      shift 2
-      ;;
-    --github-user)
-      GITHUB_USER="$2"
-      shift 2
-      ;;
-    --local-only)
-      LOCAL_ONLY=true
-      shift
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      echo "Unknown option: $1" >&2
-      usage
-      exit 1
-      ;;
+  --tap-name)
+    TAP_NAME="$2"
+    shift 2
+    ;;
+  --tap-repo)
+    TAP_REPO="$2"
+    shift 2
+    ;;
+  --github-user)
+    GITHUB_USER="$2"
+    shift 2
+    ;;
+  --local-only)
+    LOCAL_ONLY=true
+    shift
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    echo "Unknown option: $1" >&2
+    usage
+    exit 1
+    ;;
   esac
 done
 

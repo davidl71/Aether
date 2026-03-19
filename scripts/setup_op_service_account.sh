@@ -147,7 +147,7 @@ save_vault_default() {
   local name="$1"
   [[ -z "${name}" ]] && return
   mkdir -p "$(dirname "${VAULT_DEFAULT_FILE}")"
-  printf '%s' "${name}" > "${VAULT_DEFAULT_FILE}"
+  printf '%s' "${name}" >"${VAULT_DEFAULT_FILE}"
 }
 
 # Ensure vault exists; if missing and interactive, prompt to create it. Returns 0 if vault exists (or was created), 1 otherwise.
@@ -198,7 +198,10 @@ do_setup_token() {
   echo "You need to be signed in with a personal 1Password account (not the service account)."
   if ! op account get &>/dev/null; then
     echo "Running: op signin"
-    op signin || { echo "Sign-in failed." >&2; return 1; }
+    op signin || {
+      echo "Sign-in failed." >&2
+      return 1
+    }
   fi
   SA_NAME="${OP_SERVICE_ACCOUNT_NAME:-IB Box Spread Automation}"
   VAULT_NAME="${OP_SETUP_VAULT:-}"
@@ -237,14 +240,14 @@ do_setup_token() {
       TOKEN="${BASH_REMATCH[0]}"
       break
     fi
-  done <<< "$OUT"
+  done <<<"$OUT"
   if [[ -z "${TOKEN}" ]]; then
     echo "Could not parse service account token from output. Save it manually from:" >&2
     echo "$OUT" >&2
     return 1
   fi
   mkdir -p "$(dirname "${TOKEN_FILE}")"
-  printf '%s' "${TOKEN}" > "${TOKEN_FILE}"
+  printf '%s' "${TOKEN}" >"${TOKEN_FILE}"
   chmod 600 "${TOKEN_FILE}"
   echo "Token saved to ${TOKEN_FILE}"
   echo "Also save this token in 1Password (e.g. Secure Note) — it is shown only once."
@@ -257,7 +260,10 @@ do_setup_secrets() {
   require_op || return 1
   if ! op account get &>/dev/null; then
     echo "Running: op signin (sign in with personal or service account that has write access)"
-    op signin || { echo "Sign-in failed." >&2; return 1; }
+    op signin || {
+      echo "Sign-in failed." >&2
+      return 1
+    }
   fi
   VAULT_NAME="${OP_SETUP_VAULT:-}"
   if is_interactive; then
@@ -389,7 +395,7 @@ do_generate_and_configure() {
       for line in "${EXPORTS[@]}"; do
         echo "${line}"
       done
-    } >> "${OUTPUT_ENV_FILE}"
+    } >>"${OUTPUT_ENV_FILE}"
     echo ""
     echo "Exports appended to ${OUTPUT_ENV_FILE}"
   fi
@@ -404,61 +410,61 @@ if [[ "${BASH_SOURCE[0]:-}" == "${0:-}" ]]; then
   CMD="export"
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --output-env=*)
-        OUTPUT_ENV_FILE="${1#--output-env=}"
+    --output-env=*)
+      OUTPUT_ENV_FILE="${1#--output-env=}"
+      shift
+      ;;
+    --output-env)
+      if [[ -n "${2:-}" ]]; then
+        OUTPUT_ENV_FILE="$2"
+        shift 2
+      else
         shift
-        ;;
-      --output-env)
-        if [[ -n "${2:-}" ]]; then
-          OUTPUT_ENV_FILE="$2"
-          shift 2
-        else
-          shift
-        fi
-        ;;
-      --all)
-        GENERATE_ALL_FLAG=1
-        shift
-        ;;
-      export|verify|setup-token|setup-secrets|setup-full|generate-and-configure|help|--help|-h)
-        CMD="$1"
-        shift
-        ;;
-      *)
-        CMD="$1"
-        shift
-        ;;
+      fi
+      ;;
+    --all)
+      GENERATE_ALL_FLAG=1
+      shift
+      ;;
+    export | verify | setup-token | setup-secrets | setup-full | generate-and-configure | help | --help | -h)
+      CMD="$1"
+      shift
+      ;;
+    *)
+      CMD="$1"
+      shift
+      ;;
     esac
   done
   case "${CMD}" in
-    export)
-      do_export
-      ;;
-    verify)
-      load_token || true
-      export OP_SERVICE_ACCOUNT_TOKEN 2>/dev/null || true
-      verify_op
-      ;;
-    setup-token)
-      do_setup_token
-      ;;
-    setup-secrets)
-      do_setup_secrets
-      ;;
-    setup-full)
-      do_setup_full
-      ;;
-    generate-and-configure)
-      do_generate_and_configure
-      ;;
-    help|--help|-h)
-      usage
-      ;;
-    *)
-      echo "Unknown option: ${CMD}" >&2
-      usage
-      exit 1
-      ;;
+  export)
+    do_export
+    ;;
+  verify)
+    load_token || true
+    export OP_SERVICE_ACCOUNT_TOKEN 2>/dev/null || true
+    verify_op
+    ;;
+  setup-token)
+    do_setup_token
+    ;;
+  setup-secrets)
+    do_setup_secrets
+    ;;
+  setup-full)
+    do_setup_full
+    ;;
+  generate-and-configure)
+    do_generate_and_configure
+    ;;
+  help | --help | -h)
+    usage
+    ;;
+  *)
+    echo "Unknown option: ${CMD}" >&2
+    usage
+    exit 1
+    ;;
   esac
   exit $?
 fi

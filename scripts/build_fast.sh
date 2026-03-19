@@ -26,19 +26,19 @@ detect_preset_suffix() {
   arch="$(uname -m 2>/dev/null || echo unknown)"
   os="$(uname -s 2>/dev/null || echo unknown)"
   case "${os}" in
-    Darwin)
-      if [[ "${arch}" == "arm64" || "${arch}" == "aarch64" ]]; then
-        echo "macos-arm64"
-      else
-        echo "macos-x86_64"
-      fi
-      ;;
-    Linux)
-      echo "linux-x64"
-      ;;
-    *)
-      echo ""
-      ;;
+  Darwin)
+    if [[ "${arch}" == "arm64" || "${arch}" == "aarch64" ]]; then
+      echo "macos-arm64"
+    else
+      echo "macos-x86_64"
+    fi
+    ;;
+  Linux)
+    echo "linux-x64"
+    ;;
+  *)
+    echo ""
+    ;;
   esac
 }
 

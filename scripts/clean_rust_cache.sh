@@ -12,8 +12,11 @@ ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 do_global=0
 for a in "$@"; do
   case "${a}" in
-    --global) do_global=1 ;;
-    *) echo "Usage: $0 [--global]" 1>&2; exit 1 ;;
+  --global) do_global=1 ;;
+  *)
+    echo "Usage: $0 [--global]" 1>&2
+    exit 1
+    ;;
   esac
 done
 

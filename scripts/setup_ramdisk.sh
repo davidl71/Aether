@@ -48,7 +48,10 @@ create() {
   local dev
   dev=$(hdiutil attach -nomount "ram://${size_sectors}" | head -1 | awk '{print $1}')
   dev="${dev%%[[:space:]]*}"
-  [ -z "${dev}" ] && { echo "hdiutil attach failed" >&2; return 1; }
+  [ -z "${dev}" ] && {
+    echo "hdiutil attach failed" >&2
+    return 1
+  }
   sleep 1
   diskutil eraseVolume HFS+ "${RAMDISK_NAME}" "${dev}"
   mkdir -p "${RAMDISK_BUILD}"
@@ -97,12 +100,12 @@ unmount() {
 }
 
 case "${1:-}" in
-  create)   create ;;
-  status)   status ;;
-  unmount)  unmount ;;
-  -h|--help) usage ;;
-  *)
-    echo "Usage: $0 [create|status|unmount]" >&2
-    exit 1
-    ;;
+create) create ;;
+status) status ;;
+unmount) unmount ;;
+-h | --help) usage ;;
+*)
+  echo "Usage: $0 [create|status|unmount]" >&2
+  exit 1
+  ;;
 esac

@@ -73,5 +73,3 @@ warn() {
 err() {
   log_error "$@"
 }
-
-

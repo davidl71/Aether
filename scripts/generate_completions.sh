@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
-# Generate shell completion scripts for CLI tools
+# Generate shell completion scripts for the Rust CLI (aether/cli).
 # Usage: ./scripts/generate_completions.sh [bash|zsh|fish|all]
+#
+# Completions are generated from the Rust binary (agents/backend/bin/cli).
+# Set CLI_BINARY=legacy to use the legacy C++ binary from build/bin/ib_box_spread if present.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-BUILD_DIR="${BUILD_DIR:-$PROJECT_ROOT/build}"
+BACKEND_DIR="$PROJECT_ROOT/agents/backend"
 COMPLETIONS_DIR="$PROJECT_ROOT/completions"
+CLI_BINARY="${CLI_BINARY:-rust}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -18,157 +22,86 @@ NC='\033[0m' # No Color
 # Parse arguments
 SHELLS="${1:-all}"
 
-# Ensure build directory exists
-if [ ! -d "$BUILD_DIR" ]; then
-  echo -e "${YELLOW}Build directory not found. Building first...${NC}"
-  cd "$PROJECT_ROOT"
-  ./scripts/build_universal.sh
-fi
-
 # Ensure completions directory exists
 mkdir -p "$COMPLETIONS_DIR"
 
-# Function to generate bash completion
+# Build Rust CLI and return path to binary (or empty on failure)
+ensure_rust_cli() {
+  if [ ! -f "$BACKEND_DIR/target/debug/cli" ]; then
+    echo -e "${YELLOW}Rust CLI not found. Building...${NC}" >&2
+    (cd "$BACKEND_DIR" && cargo build -p cli) >&2 || return 1
+  fi
+  echo "$BACKEND_DIR/target/debug/cli"
+}
+
+# Function to generate bash completion (Rust CLI)
 generate_bash_completion() {
-  local binary="$BUILD_DIR/bin/ib_box_spread"
-
-  if [ ! -f "$binary" ]; then
-    echo -e "${RED}Error: Binary not found at $binary${NC}"
+  local binary
+  binary="$(ensure_rust_cli)" || {
+    echo -e "${RED}Error: Could not build Rust CLI${NC}" >&2
     return 1
-  fi
-
-  echo -e "${GREEN}Generating bash completion...${NC}"
-
-  # CLI11 supports bash completion generation
-  "$binary" --generate-completion bash > "$COMPLETIONS_DIR/ib_box_spread.bash" || {
-    # Fallback: create manual completion
-    cat > "$COMPLETIONS_DIR/ib_box_spread.bash" << 'EOF'
-# Bash completion for ib_box_spread
-_ib_box_spread() {
-  local cur prev words cword
-  _init_completion || return
-
-  case "$prev" in
-    -c|--config)
-      _filedir json
-      return
-      ;;
-    --log-level)
-      COMPREPLY=($(compgen -W "trace debug info warn error" -- "$cur"))
-      return
-      ;;
-  esac
-
-  if [[ "$cur" == -* ]]; then
-    COMPREPLY=($(compgen -W "-c --config --dry-run --validate --log-level -v --version -h --help" -- "$cur"))
-  fi
-}
-
-complete -F _ib_box_spread ib_box_spread
-EOF
   }
 
-  chmod +x "$COMPLETIONS_DIR/ib_box_spread.bash"
-  echo -e "${GREEN}✓ Bash completion generated: $COMPLETIONS_DIR/ib_box_spread.bash${NC}"
+  echo -e "${GREEN}Generating bash completion (aether)...${NC}"
+  "$binary" --generate-completion bash >"$COMPLETIONS_DIR/aether.bash"
+  chmod +x "$COMPLETIONS_DIR/aether.bash"
+  echo -e "${GREEN}✓ Bash completion generated: $COMPLETIONS_DIR/aether.bash${NC}"
 }
 
-# Function to generate zsh completion
+# Function to generate zsh completion (Rust CLI)
 generate_zsh_completion() {
-  local binary="$BUILD_DIR/bin/ib_box_spread"
-
-  if [ ! -f "$binary" ]; then
-    echo -e "${RED}Error: Binary not found at $binary${NC}"
+  local binary
+  binary="$(ensure_rust_cli)" || {
+    echo -e "${RED}Error: Could not build Rust CLI${NC}" >&2
     return 1
-  fi
-
-  echo -e "${GREEN}Generating zsh completion...${NC}"
-
-  # CLI11 supports zsh completion generation
-  "$binary" --generate-completion zsh > "$COMPLETIONS_DIR/_ib_box_spread" || {
-    # Fallback: create manual completion
-    cat > "$COMPLETIONS_DIR/_ib_box_spread" << 'EOF'
-#compdef ib_box_spread
-
-_ib_box_spread() {
-  local context state line
-  local -a options configs log_levels
-
-  options=(
-    '(-c --config)'{-c,--config}'[Configuration file path]:config file:_files -g "*.json"'
-    '(--dry-run)'--dry-run'[Simulate trading without executing orders]'
-    '(--validate)'--validate'[Validate configuration and exit]'
-    '(--log-level)'--log-level'[Override log level]:log level:(trace debug info warn error)'
-    '(-v --version)'{-v,--version}'[Show version information]'
-    '(-h --help)'{-h,--help}'[Show help message]'
-  )
-
-  _arguments -s -S $options
-}
-
-_ib_box_spread "$@"
-EOF
   }
 
-  chmod +x "$COMPLETIONS_DIR/_ib_box_spread"
-  echo -e "${GREEN}✓ Zsh completion generated: $COMPLETIONS_DIR/_ib_box_spread${NC}"
+  echo -e "${GREEN}Generating zsh completion (aether)...${NC}"
+  "$binary" --generate-completion zsh >"$COMPLETIONS_DIR/_aether"
+  chmod +x "$COMPLETIONS_DIR/_aether"
+  echo -e "${GREEN}✓ Zsh completion generated: $COMPLETIONS_DIR/_aether${NC}"
 }
 
-# Function to generate fish completion
+# Function to generate fish completion (Rust CLI)
 generate_fish_completion() {
-  local binary="$BUILD_DIR/bin/ib_box_spread"
-
-  if [ ! -f "$binary" ]; then
-    echo -e "${RED}Error: Binary not found at $binary${NC}"
+  local binary
+  binary="$(ensure_rust_cli)" || {
+    echo -e "${RED}Error: Could not build Rust CLI${NC}" >&2
     return 1
-  fi
-
-  echo -e "${GREEN}Generating fish completion...${NC}"
-
-  # CLI11 supports fish completion generation
-  "$binary" --generate-completion fish > "$COMPLETIONS_DIR/ib_box_spread.fish" || {
-    # Fallback: create manual completion
-    cat > "$COMPLETIONS_DIR/ib_box_spread.fish" << 'EOF'
-# Fish completion for ib_box_spread
-
-complete -c ib_box_spread -s c -l config -r -d "Configuration file path"
-complete -c ib_box_spread -l dry-run -d "Simulate trading without executing orders"
-complete -c ib_box_spread -l validate -d "Validate configuration and exit"
-complete -c ib_box_spread -l log-level -x -a "trace debug info warn error" -d "Override log level"
-complete -c ib_box_spread -s v -l version -d "Show version information"
-complete -c ib_box_spread -s h -l help -d "Show help message"
-EOF
   }
 
-  chmod +x "$COMPLETIONS_DIR/ib_box_spread.fish"
-  echo -e "${GREEN}✓ Fish completion generated: $COMPLETIONS_DIR/ib_box_spread.fish${NC}"
+  echo -e "${GREEN}Generating fish completion (aether)...${NC}"
+  "$binary" --generate-completion fish >"$COMPLETIONS_DIR/aether.fish"
+  chmod +x "$COMPLETIONS_DIR/aether.fish"
+  echo -e "${GREEN}✓ Fish completion generated: $COMPLETIONS_DIR/aether.fish${NC}"
 }
 
 # Main execution
 cd "$PROJECT_ROOT"
 
 case "$SHELLS" in
-  bash)
-    generate_bash_completion
-    ;;
-  zsh)
-    generate_zsh_completion
-    ;;
-  fish)
-    generate_fish_completion
-    ;;
-  all|*)
-    generate_bash_completion
-    generate_zsh_completion
-    generate_fish_completion
-    ;;
+bash)
+  generate_bash_completion
+  ;;
+zsh)
+  generate_zsh_completion
+  ;;
+fish)
+  generate_fish_completion
+  ;;
+all | *)
+  generate_bash_completion
+  generate_zsh_completion
+  generate_fish_completion
+  ;;
 esac
 
 echo ""
 echo -e "${GREEN}✓ Completion scripts generated in $COMPLETIONS_DIR${NC}"
 echo ""
-echo "To install completions:"
-echo "  Bash:  source $COMPLETIONS_DIR/ib_box_spread.bash"
+echo "To install completions (Rust CLI binary name: aether):"
+echo "  Bash:  source $COMPLETIONS_DIR/aether.bash"
 echo "  Zsh:   fpath=($COMPLETIONS_DIR \$fpath) && compinit"
-echo "  Fish:  cp $COMPLETIONS_DIR/*.fish ~/.config/fish/completions/"
+echo "  Fish:  cp $COMPLETIONS_DIR/aether.fish ~/.config/fish/completions/"
 echo ""
 echo "Or use: ./scripts/install_completions.sh"

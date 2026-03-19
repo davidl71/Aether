@@ -11,13 +11,13 @@ RUN_BREAKING=1
 
 for arg in "$@"; do
   case "$arg" in
-    --lint-only)    RUN_BREAKING=0 ;;
-    --breaking-only) RUN_LINT=0 ;;
-    -h|--help)
-      echo "Usage: $0 [--lint-only | --breaking-only]"
-      echo "  Default: run both buf lint and buf breaking (against .git#branch=main)."
-      exit 0
-      ;;
+  --lint-only) RUN_BREAKING=0 ;;
+  --breaking-only) RUN_LINT=0 ;;
+  -h | --help)
+    echo "Usage: $0 [--lint-only | --breaking-only]"
+    echo "  Default: run both buf lint and buf breaking (against .git#branch=main)."
+    exit 0
+    ;;
   esac
 done
 
@@ -31,7 +31,7 @@ cd "$REPO_ROOT"
 exit_code=0
 
 # Use paths relative to REPO_ROOT (buf expects relative paths for --path)
-PROTO_REL="proto"
+PROTO_REL="${PROTO_DIR#$REPO_ROOT/}"
 
 if [[ "$RUN_LINT" -eq 1 ]]; then
   echo "=== buf lint (proto/) ==="

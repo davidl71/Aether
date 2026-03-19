@@ -161,3 +161,16 @@ op_build_secret_paths() {
 
   return 0
 }
+
+# Resolve OP_*_SECRET refs and export plain env vars for Rust backend/TUI.
+# Call after sourcing this file; safe when op CLI or token is missing (no-op or keeps existing env).
+# Usage: source .../onepassword.sh && export_op_secrets_for_rust
+export_op_secrets_for_rust() {
+  local val
+  if val=$(read_credential "${OP_FRED_API_KEY_SECRET:-}" "${FRED_API_KEY:-}" 2>/dev/null) && [[ -n "${val}" ]]; then
+    export FRED_API_KEY="${val}"
+  fi
+  if val=$(read_credential "${OP_FMP_API_KEY_SECRET:-}" "${FMP_API_KEY:-}" 2>/dev/null) && [[ -n "${val}" ]]; then
+    export FMP_API_KEY="${val}"
+  fi
+}

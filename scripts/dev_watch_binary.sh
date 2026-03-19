@@ -20,27 +20,27 @@ POLL_INTERVAL=2
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --path=*)
-      WATCH_PATH="${1#--path=}"
-      shift
-      ;;
-    --path)
-      WATCH_PATH="$2"
-      shift 2
-      ;;
-    --poll)
-      POLL_INTERVAL="${2:-2}"
-      shift 2
-      ;;
-    --)
-      shift
-      ON_CHANGE_CMD=("$@")
-      break
-      ;;
-    *)
-      ON_CHANGE_CMD=("$@")
-      break
-      ;;
+  --path=*)
+    WATCH_PATH="${1#--path=}"
+    shift
+    ;;
+  --path)
+    WATCH_PATH="$2"
+    shift 2
+    ;;
+  --poll)
+    POLL_INTERVAL="${2:-2}"
+    shift 2
+    ;;
+  --)
+    shift
+    ON_CHANGE_CMD=("$@")
+    break
+    ;;
+  *)
+    ON_CHANGE_CMD=("$@")
+    break
+    ;;
   esac
 done
 

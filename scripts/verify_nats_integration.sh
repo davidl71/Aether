@@ -17,7 +17,7 @@ log_info "═══════════════════════�
 # Check NATS server
 log_info ""
 log_info "1. Checking NATS server..."
-if curl -s http://localhost:8222/healthz > /dev/null 2>&1; then
+if curl -s http://localhost:8222/healthz >/dev/null 2>&1; then
   log_info "   ✅ NATS server is running"
 else
   log_error "   ❌ NATS server is not running"
@@ -30,7 +30,7 @@ log_info ""
 log_info "2. Checking backend service compilation..."
 cd "${PROJECT_ROOT}/agents/backend"
 
-if cargo check -p backend_service > /dev/null 2>&1; then
+if cargo check -p backend_service >/dev/null 2>&1; then
   log_info "   ✅ Backend service compiles successfully"
 else
   log_error "   ❌ Backend service compilation failed"
@@ -41,7 +41,7 @@ fi
 # Check nats_adapter compilation
 log_info ""
 log_info "3. Checking nats_adapter crate..."
-if cargo check -p nats_adapter > /dev/null 2>&1; then
+if cargo check -p nats_adapter >/dev/null 2>&1; then
   log_info "   ✅ nats_adapter compiles successfully"
 else
   log_error "   ❌ nats_adapter compilation failed"

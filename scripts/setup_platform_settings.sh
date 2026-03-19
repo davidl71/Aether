@@ -41,29 +41,29 @@ detect_platform() {
   arch=$(uname -m 2>/dev/null || echo "Unknown")
 
   case "$os_name" in
-    Darwin)
-      if [ "$arch" = "arm64" ] || [ "$arch" = "aarch64" ]; then
-        echo "macos-arm64"
-      elif [ "$arch" = "x86_64" ]; then
-        echo "macos-x86_64"
-      else
-        echo "macos-unknown"
-      fi
-      ;;
-    Linux)
-      if [ "$arch" = "x86_64" ] || [ "$arch" = "amd64" ]; then
-        echo "linux-x64"
-      else
-        echo "linux-unknown"
-      fi
-      ;;
-    MINGW*|MSYS*|CYGWIN*)
-      echo "windows-x64"
-      ;;
-    *)
-      log_error "Unknown platform: $os_name ($arch)"
-      exit 1
-      ;;
+  Darwin)
+    if [ "$arch" = "arm64" ] || [ "$arch" = "aarch64" ]; then
+      echo "macos-arm64"
+    elif [ "$arch" = "x86_64" ]; then
+      echo "macos-x86_64"
+    else
+      echo "macos-unknown"
+    fi
+    ;;
+  Linux)
+    if [ "$arch" = "x86_64" ] || [ "$arch" = "amd64" ]; then
+      echo "linux-x64"
+    else
+      echo "linux-unknown"
+    fi
+    ;;
+  MINGW* | MSYS* | CYGWIN*)
+    echo "windows-x64"
+    ;;
+  *)
+    log_error "Unknown platform: $os_name ($arch)"
+    exit 1
+    ;;
   esac
 }
 
@@ -73,35 +73,35 @@ detect_compiler() {
   local compiler_path=""
 
   case "$platform" in
-    macos-*)
-      # Try Apple Silicon Homebrew first, then Intel Homebrew, then system
-      if [ -f "/opt/homebrew/bin/clang++" ]; then
-        compiler_path="/opt/homebrew/bin/clang++"
-      elif [ -f "/usr/local/bin/clang++" ]; then
-        compiler_path="/usr/local/bin/clang++"
-      elif command -v clang++ >/dev/null 2>&1; then
-        compiler_path=$(command -v clang++)
+  macos-*)
+    # Try Apple Silicon Homebrew first, then Intel Homebrew, then system
+    if [ -f "/opt/homebrew/bin/clang++" ]; then
+      compiler_path="/opt/homebrew/bin/clang++"
+    elif [ -f "/usr/local/bin/clang++" ]; then
+      compiler_path="/usr/local/bin/clang++"
+    elif command -v clang++ >/dev/null 2>&1; then
+      compiler_path=$(command -v clang++)
+    fi
+    ;;
+  linux-*)
+    if command -v g++ >/dev/null 2>&1; then
+      compiler_path=$(command -v g++)
+    fi
+    ;;
+  windows-*)
+    # Try to find MSVC (this is tricky on Windows, may need manual config)
+    if command -v cl.exe >/dev/null 2>&1; then
+      compiler_path=$(command -v cl.exe)
+    elif [ -f "/c/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC" ]; then
+      # Find latest MSVC version
+      local msvc_base="/c/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC"
+      local latest_version
+      latest_version=$(ls -1 "$msvc_base" 2>/dev/null | sort -V | tail -1)
+      if [ -n "$latest_version" ]; then
+        compiler_path="$msvc_base/$latest_version/bin/Hostx64/x64/cl.exe"
       fi
-      ;;
-    linux-*)
-      if command -v g++ >/dev/null 2>&1; then
-        compiler_path=$(command -v g++)
-      fi
-      ;;
-    windows-*)
-      # Try to find MSVC (this is tricky on Windows, may need manual config)
-      if command -v cl.exe >/dev/null 2>&1; then
-        compiler_path=$(command -v cl.exe)
-      elif [ -f "/c/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC" ]; then
-        # Find latest MSVC version
-        local msvc_base="/c/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC"
-        local latest_version
-        latest_version=$(ls -1 "$msvc_base" 2>/dev/null | sort -V | tail -1)
-        if [ -n "$latest_version" ]; then
-          compiler_path="$msvc_base/$latest_version/bin/Hostx64/x64/cl.exe"
-        fi
-      fi
-      ;;
+    fi
+    ;;
   esac
 
   echo "$compiler_path"
@@ -113,29 +113,29 @@ detect_intellisense_mode() {
   local compiler_path=$2
 
   case "$platform" in
-    macos-arm64)
-      echo "macos-clang-arm64"
-      ;;
-    macos-x86_64)
-      echo "macos-clang-x64"
-      ;;
-    linux-*)
-      if echo "$compiler_path" | grep -q "g++"; then
-        echo "linux-gcc-x64"
-      else
-        echo "linux-clang-x64"
-      fi
-      ;;
-    windows-*)
-      if echo "$compiler_path" | grep -q "cl.exe"; then
-        echo "windows-msvc-x64"
-      else
-        echo "windows-gcc-x64"
-      fi
-      ;;
-    *)
-      echo "unknown"
-      ;;
+  macos-arm64)
+    echo "macos-clang-arm64"
+    ;;
+  macos-x86_64)
+    echo "macos-clang-x64"
+    ;;
+  linux-*)
+    if echo "$compiler_path" | grep -q "g++"; then
+      echo "linux-gcc-x64"
+    else
+      echo "linux-clang-x64"
+    fi
+    ;;
+  windows-*)
+    if echo "$compiler_path" | grep -q "cl.exe"; then
+      echo "windows-msvc-x64"
+    else
+      echo "windows-gcc-x64"
+    fi
+    ;;
+  *)
+    echo "unknown"
+    ;;
   esac
 }
 
@@ -147,29 +147,29 @@ detect_include_paths() {
   # Workspace-relative paths (native build removed; add C++ include paths here if needed)
 
   case "$platform" in
-    macos-arm64)
-      [ -d "/opt/homebrew/include" ] && paths+=("\"/opt/homebrew/include\"")
-      [ -d "/usr/local/include" ] && paths+=("\"/usr/local/include\"")
-      ;;
-    macos-x86_64)
-      [ -d "/usr/local/include" ] && paths+=("\"/usr/local/include\"")
-      ;;
-    linux-*)
-      [ -d "/usr/include" ] && paths+=("\"/usr/include\"")
-      [ -d "/usr/local/include" ] && paths+=("\"/usr/local/include\"")
-      # Try to find GCC C++ headers
-      if [ -d "/usr/include/c++" ]; then
-        local gcc_version
-        gcc_version=$(ls -1 /usr/include/c++ 2>/dev/null | sort -V | tail -1)
-        if [ -n "$gcc_version" ]; then
-          paths+=("\"/usr/include/c++/$gcc_version\"")
-        fi
+  macos-arm64)
+    [ -d "/opt/homebrew/include" ] && paths+=("\"/opt/homebrew/include\"")
+    [ -d "/usr/local/include" ] && paths+=("\"/usr/local/include\"")
+    ;;
+  macos-x86_64)
+    [ -d "/usr/local/include" ] && paths+=("\"/usr/local/include\"")
+    ;;
+  linux-*)
+    [ -d "/usr/include" ] && paths+=("\"/usr/include\"")
+    [ -d "/usr/local/include" ] && paths+=("\"/usr/local/include\"")
+    # Try to find GCC C++ headers
+    if [ -d "/usr/include/c++" ]; then
+      local gcc_version
+      gcc_version=$(ls -1 /usr/include/c++ 2>/dev/null | sort -V | tail -1)
+      if [ -n "$gcc_version" ]; then
+        paths+=("\"/usr/include/c++/$gcc_version\"")
       fi
-      ;;
-    windows-*)
-      # Windows paths are complex, user may need to configure manually
-      log_warn "Windows include paths may need manual configuration"
-      ;;
+    fi
+    ;;
+  windows-*)
+    # Windows paths are complex, user may need to configure manually
+    log_warn "Windows include paths may need manual configuration"
+    ;;
   esac
 
   # Format paths for JSON (one per line with proper indentation)
@@ -192,25 +192,25 @@ detect_python() {
   local python_path=""
 
   case "$platform" in
-    macos-arm64)
-      if [ -f "/opt/homebrew/bin/python3" ]; then
-        python_path="/opt/homebrew/bin/python3"
-      elif command -v python3 >/dev/null 2>&1; then
-        python_path=$(command -v python3)
-      fi
-      ;;
-    macos-x86_64)
-      if [ -f "/usr/local/bin/python3" ]; then
-        python_path="/usr/local/bin/python3"
-      elif command -v python3 >/dev/null 2>&1; then
-        python_path=$(command -v python3)
-      fi
-      ;;
-    linux-*|windows-*)
-      if command -v python3 >/dev/null 2>&1; then
-        python_path=$(command -v python3)
-      fi
-      ;;
+  macos-arm64)
+    if [ -f "/opt/homebrew/bin/python3" ]; then
+      python_path="/opt/homebrew/bin/python3"
+    elif command -v python3 >/dev/null 2>&1; then
+      python_path=$(command -v python3)
+    fi
+    ;;
+  macos-x86_64)
+    if [ -f "/usr/local/bin/python3" ]; then
+      python_path="/usr/local/bin/python3"
+    elif command -v python3 >/dev/null 2>&1; then
+      python_path=$(command -v python3)
+    fi
+    ;;
+  linux-* | windows-*)
+    if command -v python3 >/dev/null 2>&1; then
+      python_path=$(command -v python3)
+    fi
+    ;;
   esac
 
   echo "$python_path"
@@ -226,7 +226,7 @@ generate_settings_user() {
 
   log_info "Generating .vscode/settings.json.user for platform: $platform"
 
-  cat > "$SETTINGS_USER" <<EOF
+  cat >"$SETTINGS_USER" <<EOF
 {
   // ==========================================
   // Platform-Specific Settings (Auto-Generated)
@@ -246,17 +246,17 @@ generate_settings_user() {
 EOF
 
   if [ -n "$python_path" ]; then
-    cat >> "$SETTINGS_USER" <<EOF
+    cat >>"$SETTINGS_USER" <<EOF
   "python.defaultInterpreterPath": "$python_path",
 EOF
   else
-    cat >> "$SETTINGS_USER" <<EOF
+    cat >>"$SETTINGS_USER" <<EOF
   // Python interpreter not detected - using PATH
   // "python.defaultInterpreterPath": "",
 EOF
   fi
 
-  cat >> "$SETTINGS_USER" <<EOF
+  cat >>"$SETTINGS_USER" <<EOF
 
   // ==========================================
   // Personal Preferences (Add your own below)
@@ -274,22 +274,22 @@ configure_cmake() {
   local preset=""
 
   case "$platform" in
-    macos-arm64)
-      preset="macos-arm64-debug"
-      ;;
-    macos-x86_64)
-      preset="macos-x86_64-debug"
-      ;;
-    linux-*)
-      preset="linux-x64-debug"
-      ;;
-    windows-*)
-      preset="windows-x64-debug"
-      ;;
-    *)
-      log_error "Unknown platform for CMake preset: $platform"
-      return 1
-      ;;
+  macos-arm64)
+    preset="macos-arm64-debug"
+    ;;
+  macos-x86_64)
+    preset="macos-x86_64-debug"
+    ;;
+  linux-*)
+    preset="linux-x64-debug"
+    ;;
+  windows-*)
+    preset="windows-x64-debug"
+    ;;
+  *)
+    log_error "Unknown platform for CMake preset: $platform"
+    return 1
+    ;;
   esac
 
   log_info "Configuring CMake with preset: $preset"
@@ -314,16 +314,16 @@ main() {
   # Parse arguments
   while [[ $# -gt 0 ]]; do
     case $1 in
-      --force)
-        force=true
-        shift
-        ;;
-      --cmake-configure)
-        cmake_configure=true
-        shift
-        ;;
-      -h|--help)
-        cat <<EOF
+    --force)
+      force=true
+      shift
+      ;;
+    --cmake-configure)
+      cmake_configure=true
+      shift
+      ;;
+    -h | --help)
+      cat <<EOF
 Usage: $0 [OPTIONS]
 
 Options:
@@ -338,12 +338,12 @@ This script:
   4. Optionally configures CMake preset
 
 EOF
-        exit 0
-        ;;
-      *)
-        log_error "Unknown option: $1"
-        exit 1
-        ;;
+      exit 0
+      ;;
+    *)
+      log_error "Unknown option: $1"
+      exit 1
+      ;;
     esac
   done
 
@@ -368,15 +368,15 @@ EOF
     log_error "No C++ compiler detected!"
     log_info "Please install:"
     case "$platform" in
-      macos-*)
-        log_info "  macOS: Xcode Command Line Tools (xcode-select --install)"
-        ;;
-      linux-*)
-        log_info "  Linux: sudo apt-get install build-essential"
-        ;;
-      windows-*)
-        log_info "  Windows: Install Visual Studio or MinGW-w64"
-        ;;
+    macos-*)
+      log_info "  macOS: Xcode Command Line Tools (xcode-select --install)"
+      ;;
+    linux-*)
+      log_info "  Linux: sudo apt-get install build-essential"
+      ;;
+    windows-*)
+      log_info "  Windows: Install Visual Studio or MinGW-w64"
+      ;;
     esac
     exit 1
   fi
@@ -424,18 +424,18 @@ EOF
   echo ""
   log_info "Platform-specific preset:"
   case "$platform" in
-    macos-arm64)
-      echo "  cmake --preset macos-arm64-debug"
-      ;;
-    macos-x86_64)
-      echo "  cmake --preset macos-x86_64-debug"
-      ;;
-    linux-*)
-      echo "  cmake --preset linux-x64-debug"
-      ;;
-    windows-*)
-      echo "  cmake --preset windows-x64-debug"
-      ;;
+  macos-arm64)
+    echo "  cmake --preset macos-arm64-debug"
+    ;;
+  macos-x86_64)
+    echo "  cmake --preset macos-x86_64-debug"
+    ;;
+  linux-*)
+    echo "  cmake --preset linux-x64-debug"
+    ;;
+  windows-*)
+    echo "  cmake --preset windows-x64-debug"
+    ;;
   esac
 }
 

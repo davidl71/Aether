@@ -20,6 +20,20 @@ if [[ "$(uname)" == "Darwin" ]]; then
   done
 fi
 
+# Pin Python interpreter so Ansible does not warn about "discovered" interpreter
+if [[ -z "${ANSIBLE_PYTHON_INTERPRETER:-}" ]]; then
+  if command -v python3 &>/dev/null; then
+    ANSIBLE_PYTHON_INTERPRETER="$(command -v python3)"
+    export ANSIBLE_PYTHON_INTERPRETER
+  elif [[ "$(uname)" == "Darwin" ]] && [[ -x /opt/homebrew/bin/python3 ]]; then
+    ANSIBLE_PYTHON_INTERPRETER="/opt/homebrew/bin/python3"
+    export ANSIBLE_PYTHON_INTERPRETER
+  else
+    ANSIBLE_PYTHON_INTERPRETER="/usr/bin/python3"
+    export ANSIBLE_PYTHON_INTERPRETER
+  fi
+fi
+
 echo "=== Ansible Development Setup ==="
 echo ""
 
@@ -76,7 +90,25 @@ echo ""
 
 # --- Run playbook ---
 echo "4. Running development playbook..."
-ansible-playbook -i inventories/development playbooks/development.yml --ask-become-pass
+# Skip sudo prompt when ANSIBLE_NO_BECOME=1 or AI_RUN=1 (e.g. AI/automated run; macOS tasks need no become anyway)
+if [[ -n "${ANSIBLE_NO_BECOME:-}" ]] || [[ -n "${AI_RUN:-}" ]]; then
+  echo "   (no-become mode: not prompting for sudo; skipping Nix install and other privileged tasks)"
+  # Use repo_root so cache/tmp live under the repo (writable in sandbox/CI). Skip tasks that need sudo.
+  ansible-playbook -i inventories/development playbooks/development.yml \
+    -e "repo_root=${REPO_ROOT}" \
+    -e "skip_privileged_tasks=true" \
+    -e "ansible_python_interpreter=${ANSIBLE_PYTHON_INTERPRETER:-/usr/bin/python3}"
+else
+  # On macOS no tasks use become (all become tasks are Debian-only), so do not prompt for password.
+  if [[ "$(uname)" == "Darwin" ]]; then
+    ansible-playbook -i inventories/development playbooks/development.yml \
+      -e "ansible_python_interpreter=${ANSIBLE_PYTHON_INTERPRETER:-/usr/bin/python3}"
+  else
+    ansible-playbook -i inventories/development playbooks/development.yml \
+      -e "ansible_python_interpreter=${ANSIBLE_PYTHON_INTERPRETER:-/usr/bin/python3}" \
+      --ask-become-pass
+  fi
+fi
 echo ""
 echo "=== Setup Complete ==="
 echo ""
