@@ -1,0 +1,8 @@
+{
+  "minHeadingLevel": 2,
+  "enableDuplicateHeadingCheck": true,
+  "enableHeadingLevelCheck": true,
+  "ignore": [
+    "docs/archive/**"
+  ]
+}
