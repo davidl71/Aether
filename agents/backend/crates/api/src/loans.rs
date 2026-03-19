@@ -8,7 +8,7 @@ use std::{
 
 use anyhow::{anyhow, Context};
 use chrono::{DateTime, Utc};
-use nats_adapter::proto::v1::Loan as ProtoLoan;
+use nats_adapter::proto::v1::{Loan as ProtoLoan, LoansResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{
     sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions},
@@ -504,24 +504,25 @@ fn loan_status_from_str(value: &str) -> anyhow::Result<LoanStatus> {
     }
 }
 
-// Proto conversion for REST Accept: application/x-protobuf (enum values match proto definitions)
-
+// Reserved for future proto response path; NATS api.loans.* currently returns JSON only.
+#[allow(dead_code)]
 fn loan_type_to_proto(t: &LoanType) -> i32 {
     match t {
-        LoanType::ShirBased => 1,  // LOAN_TYPE_SHIR_BASED
-        LoanType::CpiLinked => 2,  // LOAN_TYPE_CPI_LINKED
+        LoanType::ShirBased => 1, // LOAN_TYPE_SHIR_BASED
+        LoanType::CpiLinked => 2, // LOAN_TYPE_CPI_LINKED
     }
 }
 
+#[allow(dead_code)] // Used by loan_record_to_proto when proto path is enabled.
 fn loan_status_to_proto(s: &LoanStatus) -> i32 {
     match s {
         LoanStatus::Active => 1,    // LOAN_STATUS_ACTIVE
-        LoanStatus::PaidOff => 2,    // LOAN_STATUS_PAID_OFF
+        LoanStatus::PaidOff => 2,   // LOAN_STATUS_PAID_OFF
         LoanStatus::Defaulted => 3, // LOAN_STATUS_DEFAULTED
     }
 }
 
-/// Convert a `LoanRecord` to the protobuf `Loan` message for binary REST responses.
+/// Convert a `LoanRecord` to the protobuf `Loan` message for binary/proto responses.
 pub fn loan_record_to_proto(r: &LoanRecord) -> ProtoLoan {
     ProtoLoan {
         loan_id: r.loan_id.clone(),
@@ -541,6 +542,13 @@ pub fn loan_record_to_proto(r: &LoanRecord) -> ProtoLoan {
         payment_frequency_months: r.payment_frequency_months,
         status: loan_status_to_proto(&r.status),
         last_update: r.last_update.clone(),
+    }
+}
+
+/// Build proto `LoansResponse` from loan records for NATS `api.loans.list.proto`.
+pub fn loans_response_proto(records: &[LoanRecord]) -> LoansResponse {
+    LoansResponse {
+        loans: records.iter().map(loan_record_to_proto).collect(),
     }
 }
 
@@ -568,7 +576,7 @@ fn loan_from_row(row: &sqlx::sqlite::SqliteRow) -> anyhow::Result<LoanRecord> {
 
 #[cfg(test)]
 mod tests {
-    use super::{LoanRecord, LoanStatus, LoanType};
+    use super::{loans_response_proto, LoanRecord, LoanStatus, LoanType};
 
     fn sample_loan() -> LoanRecord {
         LoanRecord {
@@ -619,6 +627,18 @@ mod tests {
         assert_eq!(loan.loan_type, LoanType::ShirBased);
         assert_eq!(loan.status, LoanStatus::Active);
         assert_eq!(loan.loan_id, "loan-1");
+    }
+
+    #[test]
+    fn loans_response_proto_encodes_sample_loan() {
+        let records = vec![sample_loan()];
+        let resp = loans_response_proto(&records);
+        assert_eq!(resp.loans.len(), 1);
+        let loan = &resp.loans[0];
+        assert_eq!(loan.loan_id, "loan-1");
+        assert_eq!(loan.bank_name, "Discount");
+        assert_eq!(loan.status, 1); // LOAN_STATUS_ACTIVE
+        assert_eq!(loan.loan_type, 1); // LOAN_TYPE_SHIR_BASED
     }
 
     #[test]
@@ -685,8 +705,12 @@ mod tests {
 
         let errors = loan.validate().expect_err("missing CPI values should fail");
 
-        assert!(errors.iter().any(|err| err.contains("Base CPI must be > 0")));
-        assert!(errors.iter().any(|err| err.contains("Current CPI must be > 0")));
+        assert!(errors
+            .iter()
+            .any(|err| err.contains("Base CPI must be > 0")));
+        assert!(errors
+            .iter()
+            .any(|err| err.contains("Current CPI must be > 0")));
     }
 
     #[test]
@@ -705,7 +729,6 @@ mod tests {
     #[tokio::test]
     async fn loan_repository_insert_and_retrieve() {
         use sqlx::sqlite::SqlitePoolOptions;
-        
 
         let db_url = "sqlite::memory:";
 
@@ -913,7 +936,9 @@ mod tests {
         updated.principal = 800.0;
         updated.status = LoanStatus::PaidOff;
 
-        repo.update("update-test", updated.clone()).await.expect("update loan");
+        repo.update("update-test", updated.clone())
+            .await
+            .expect("update loan");
 
         let retrieved = repo.get("update-test").await.unwrap();
         assert_eq!(retrieved.bank_name, "New Bank");

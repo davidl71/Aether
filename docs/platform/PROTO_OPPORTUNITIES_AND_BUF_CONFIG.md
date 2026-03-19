@@ -34,6 +34,8 @@ Backend api.* request/reply uses **queue subscriptions** (queue group from `NATS
 
 ## Buf config updates (optional)
 
+**For CI/build:** Run `buf lint` and `buf breaking` from `proto/` (e.g. `just proto-validate` or `scripts/buf_lint_and_breaking.sh`). Optional tweaks (WIRE_JSON, `ignore_unstable_packages`) are in `proto/buf.yaml` and the table below.
+
 Current `proto/buf.yaml`:
 
 - `lint: use: [STANDARD], except: [PACKAGE_DIRECTORY_MATCH], enum_zero_value_suffix: _UNSPECIFIED`
@@ -41,7 +43,9 @@ Current `proto/buf.yaml`:
 
 **Why we except ENUM_VALUE_SAME_NAME:** Allows enum value *renames* (e.g. for lint compliance) when the numeric value is unchanged. Wire format stays the same; only generated enum names change. Documented in `docs/message_schemas/README.md`.
 
-Optional improvements:
+**Applied (Phase 1.2):** `proto/buf.yaml` now sets `breaking.ignore_unstable_packages: true` and documents switching `breaking.use` to `WIRE_JSON` for stricter JSON compatibility when needed. See comments in `proto/buf.yaml`.
+
+Optional improvements (remaining):
 
 | Change | Purpose |
 |--------|---------|

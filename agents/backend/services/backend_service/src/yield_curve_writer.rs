@@ -1,13 +1,16 @@
-//! Writes box spread yield curve opportunities to NATS KV for the Yield tab.
-//! Key: `yield_curve.{symbol}` in the LIVE_STATE bucket. Value: JSON array of
-//! `{ "spread": BoxSpreadInput }` per `api.finance_rates.build_curve` / NATS_KV_USAGE_AND_RECOMMENDATIONS.md.
+//! Writes box spread yield curve to NATS KV for the Yield tab.
+//! Key: `yield_curve.{symbol}` in the LIVE_STATE bucket. Value: protobuf `YieldCurve` (see proto/messages.proto).
+//! Backend build_curve decodes proto first, with JSON fallback for older entries.
 //!
 //! **Pre-population:** Writes once immediately on spawn, then on an interval. Data source:
-//! - If `YIELD_CURVE_SOURCE_URL` is set: HTTP GET that URL; expect JSON array of curve points (see docs).
+//! - If `YIELD_CURVE_SOURCE=tws` (or config): call `tws_yield_curve::fetch_yield_curve_from_tws(symbol)` per symbol;
+//!   same env as daemon (TWS_HOST, TWS_PORT, YIELD_CURVE_USE_CLOSING, etc.).
+//! - Else if `YIELD_CURVE_SOURCE_URL` is set: HTTP GET that URL; expect JSON array of curve points (see docs).
 //!   Public reference: boxtrades.com (no API; use for comparison or host your own JSON).
 //! - Otherwise: synthetic points (no live option chain).
-//! See docs/platform/BOX_SPREAD_YIELD_CURVE_TWS.md and BOXTRADES_REFERENCE.md.
+//! See docs/platform/BOX_SPREAD_YIELD_CURVE_TWS.md and TWS_YIELD_CURVE_KV_WRITER.md.
 
+use api::yield_curve_proto::{encode_yield_curve_to_bytes, yield_curve_from_opportunities};
 use bytes::Bytes;
 use chrono::Utc;
 use nats_adapter::async_nats::Client;
@@ -22,10 +25,21 @@ use tracing::{debug, info, warn};
 const KV_BUCKET_ENV: &str = "NATS_KV_BUCKET";
 const DEFAULT_KV_BUCKET: &str = "LIVE_STATE";
 const KEY_PREFIX: &str = "yield_curve";
-const STRIKE_WIDTH: f64 = 5.0;
+/// Default strike width (points). Symmetric ±width/2 around spot (e.g. 4 → ±2 around the money).
+const STRIKE_WIDTH: f64 = 4.0;
+/// Default reference spot when env not set (ensures synthetic strikes bracket spot: one leg ITM, one OTM).
+const DEFAULT_REFERENCE_SPOT: f64 = 6000.0;
+const REFERENCE_SPOT_ENV_PREFIX: &str = "YIELD_CURVE_REFERENCE_SPOT_";
+/// Base short-term rate (decimal, e.g. 0.048 = 4.8%).
 const BASE_RATE: f64 = 0.048;
+/// Bid-ask spread in rate terms (decimal, e.g. 0.008 = 80 bps).
 const RATE_SPREAD: f64 = 0.008;
+/// Term premium per year (decimal). 0 = flat curve (box APR same for all DTE). Non-zero slopes the curve.
+const TERM_PREMIUM_PER_YEAR: f64 = 0.0;
+/// Convenience yield (decimal, e.g. 0.005 = 0.5%). Benefit of holding the underlying; cost-of-carry ≈ rate − convenience_yield.
+const CONVENIENCE_YIELD: f64 = 0.005;
 const LIQUIDITY_SCORE: f64 = 70.0;
+const SOURCE_ENV: &str = "YIELD_CURVE_SOURCE";
 const SOURCE_URL_ENV: &str = "YIELD_CURVE_SOURCE_URL";
 const HTTP_TIMEOUT_SECS: u64 = 10;
 
@@ -38,6 +52,10 @@ struct ExternalCurvePoint {
     days_to_expiry: i32,
     #[serde(default = "default_strike_width")]
     strike_width: f64,
+    #[serde(default)]
+    strike_low: Option<f64>,
+    #[serde(default)]
+    strike_high: Option<f64>,
     buy_implied_rate: f64,
     sell_implied_rate: f64,
     #[serde(default)]
@@ -47,6 +65,8 @@ struct ExternalCurvePoint {
     #[serde(default = "default_liquidity_score")]
     liquidity_score: f64,
     spread_id: Option<String>,
+    #[serde(default)]
+    convenience_yield: Option<f64>,
 }
 
 fn default_strike_width() -> f64 {
@@ -59,32 +79,61 @@ fn default_liquidity_score() -> f64 {
 /// DTE values (days to expiry) for synthetic curve points.
 const DTE_DAYS: &[i32] = &[30, 60, 90, 120, 180, 365];
 
+/// Reference spot for a symbol (env YIELD_CURVE_REFERENCE_SPOT_{SYMBOL} or default).
+fn reference_spot(symbol: &str) -> f64 {
+    let key = format!("{}{}", REFERENCE_SPOT_ENV_PREFIX, symbol.to_uppercase());
+    std::env::var(&key)
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(DEFAULT_REFERENCE_SPOT)
+}
+
+/// Symmetric ±width/2 around spot (e.g. width 4 → ±2, so K_low = spot-2, K_high = spot+2). One leg ITM, one OTM.
+fn strikes_symmetric_fixed(spot: f64, width: f64) -> (f64, f64) {
+    let half = width / 2.0;
+    let round = |x: f64| (x * 10.0).round() / 10.0;
+    (round(spot - half), round(spot + half))
+}
+
 /// Build one synthetic BoxSpreadInput for a given symbol, expiry string, and DTE.
+/// Uses symmetric strike width (default 4 pts → ±2 around reference spot).
+/// Box PV: you pay net_debit now, receive width at expiry → implied (simple) annual rate r satisfies
+/// net_debit = width * (1 - r*T), so r = (1 - net_debit/width)/T. We set buy_rate/sell_rate and
+/// derive net_debit/net_credit from that; displayed APR is the same rate (mid of buy/sell).
 fn synthetic_spread(symbol: &str, expiry: &str, dte: i32) -> serde_json::Value {
     let t = dte as f64 / 365.0;
-    let mid = BASE_RATE + (dte as f64 / 3650.0); // slight term premium
+    let term_premium = (dte as f64 / 365.0) * TERM_PREMIUM_PER_YEAR;
+    let mid = (BASE_RATE + term_premium).min(0.12); // cap ~12% if term premium is used
     let buy_rate = (mid - RATE_SPREAD / 2.0).max(0.001);
     let sell_rate = (mid + RATE_SPREAD / 2.0).min(0.15);
-    let net_debit = STRIKE_WIDTH * (1.0 - buy_rate * t);
-    let net_credit = STRIKE_WIDTH * (1.0 - sell_rate * t);
+    let spot = reference_spot(symbol);
+    let (strike_low, strike_high) = strikes_symmetric_fixed(spot, STRIKE_WIDTH);
+    let width = strike_high - strike_low;
+    // PV = width * (1 - r*T) => net_debit (buy side), net_credit (sell side)
+    let net_debit = width * (1.0 - buy_rate * t);
+    let net_credit = width * (1.0 - sell_rate * t);
     json!({
         "spread": {
             "symbol": symbol,
             "expiry": expiry,
             "days_to_expiry": dte,
-            "strike_width": STRIKE_WIDTH,
+            "strike_width": (width * 100.0).round() / 100.0,
+            "strike_low": strike_low,
+            "strike_high": strike_high,
             "buy_implied_rate": buy_rate,
             "sell_implied_rate": sell_rate,
             "net_debit": (net_debit * 100.0).round() / 100.0,
             "net_credit": (net_credit * 100.0).round() / 100.0,
             "liquidity_score": LIQUIDITY_SCORE,
-            "spread_id": null
+            "spread_id": null,
+            "convenience_yield": CONVENIENCE_YIELD
         }
     })
 }
 
 /// Generate synthetic opportunities for a symbol (multiple expiries).
-fn synthetic_opportunities(symbol: &str) -> Vec<serde_json::Value> {
+/// Pub for use by build_curve handler when YIELD_CURVE_BYPASS_KV is set (testing).
+pub(crate) fn synthetic_opportunities(symbol: &str) -> Vec<serde_json::Value> {
     let now = Utc::now();
     DTE_DAYS
         .iter()
@@ -111,50 +160,90 @@ async fn fetch_curve_from_url(url: &str) -> Option<HashMap<String, Vec<serde_jso
     }
     let mut by_symbol: HashMap<String, Vec<serde_json::Value>> = HashMap::new();
     for p in points {
-        let spread = json!({
-            "spread": {
-                "symbol": p.symbol,
-                "expiry": p.expiry,
-                "days_to_expiry": p.days_to_expiry,
-                "strike_width": p.strike_width,
-                "buy_implied_rate": p.buy_implied_rate,
-                "sell_implied_rate": p.sell_implied_rate,
-                "net_debit": p.net_debit,
-                "net_credit": p.net_credit,
-                "liquidity_score": p.liquidity_score,
-                "spread_id": p.spread_id
-            }
+        let mut spread_obj = serde_json::json!({
+            "symbol": p.symbol,
+            "expiry": p.expiry,
+            "days_to_expiry": p.days_to_expiry,
+            "strike_width": p.strike_width,
+            "strike_low": p.strike_low,
+            "strike_high": p.strike_high,
+            "buy_implied_rate": p.buy_implied_rate,
+            "sell_implied_rate": p.sell_implied_rate,
+            "net_debit": p.net_debit,
+            "net_credit": p.net_credit,
+            "liquidity_score": p.liquidity_score,
+            "spread_id": p.spread_id
         });
-    by_symbol
-        .entry(p.symbol.clone())
-        .or_default()
-        .push(spread);
+        if let Some(cy) = p.convenience_yield {
+            spread_obj["convenience_yield"] = serde_json::json!(cy);
+        }
+        let spread = json!({ "spread": spread_obj });
+        by_symbol.entry(p.symbol.clone()).or_default().push(spread);
     }
     Some(by_symbol)
 }
 
 /// Run the yield curve writer: pre-populate once immediately, then every `interval_secs` write `yield_curve.{symbol}`.
-pub fn spawn(nats_client: Arc<NatsClient>, symbols: Vec<String>, interval_secs: u64) {
+/// Returns a sender to trigger one immediate write cycle (e.g. for `api.yield_curve.refresh`).
+/// Source: `config_source` (from [yield_curve] source) or env `YIELD_CURVE_SOURCE`; "tws" => TWS, else URL/synthetic.
+pub fn spawn(
+    nats_client: Arc<NatsClient>,
+    symbols: Vec<String>,
+    interval_secs: u64,
+    config_source: Option<String>,
+) -> Option<tokio::sync::mpsc::Sender<()>> {
     if symbols.is_empty() {
         debug!("yield curve writer: no symbols, not spawning");
-        return;
+        return None;
     }
+    let (tx, mut rx) = tokio::sync::mpsc::channel::<()>(4);
     let interval = Duration::from_secs(interval_secs);
-    let source_url = std::env::var(SOURCE_URL_ENV).ok();
+    let source_tws = config_source
+        .as_deref()
+        .map(|s| s.trim().to_lowercase() == "tws")
+        .or_else(|| {
+            std::env::var(SOURCE_ENV)
+                .ok()
+                .map(|s| s.trim().to_lowercase() == "tws")
+        })
+        .unwrap_or(false);
+    let source_url = if source_tws {
+        None
+    } else {
+        std::env::var(SOURCE_URL_ENV).ok()
+    };
     tokio::spawn(async move {
         let nc: Client = nats_client.client().clone();
         let bucket = std::env::var(KV_BUCKET_ENV).unwrap_or_else(|_| DEFAULT_KV_BUCKET.to_string());
         let js = nats_adapter::async_nats::jetstream::new(nc.clone());
         let kv = match js.get_key_value(bucket.as_str()).await {
             Ok(k) => k,
-            Err(e) => {
-                warn!(%bucket, error = %e, "yield curve writer: KV bucket not available, skipping");
-                return;
-            }
+            Err(_) => match js
+                .create_key_value(nats_adapter::async_nats::jetstream::kv::Config {
+                    bucket: bucket.clone(),
+                    history: 3,
+                    max_age: Duration::from_secs(86400),
+                    max_value_size: 65_536,
+                    max_bytes: 10 * 1024 * 1024,
+                    ..Default::default()
+                })
+                .await
+            {
+                Ok(k) => {
+                    info!(%bucket, "yield curve writer: created KV bucket");
+                    k
+                }
+                Err(e) => {
+                    warn!(%bucket, error = %e, "yield curve writer: KV bucket not available, skipping");
+                    return;
+                }
+            },
         };
-        let source_desc = source_url
-            .as_deref()
-            .unwrap_or("synthetic");
+        let source_desc = if source_tws {
+            "tws"
+        } else {
+            source_url.as_deref().unwrap_or("synthetic")
+        };
         info!(
             symbols = ?symbols,
             interval_secs = interval_secs,
@@ -163,17 +252,50 @@ pub fn spawn(nats_client: Arc<NatsClient>, symbols: Vec<String>, interval_secs: 
             "yield curve writer started (pre-populate then interval)"
         );
 
-        /// One full write cycle: fetch (if URL set) or synthetic, then write each symbol to KV.
+        /// One full write cycle: TWS, URL, or synthetic; then write each symbol to KV.
         async fn write_cycle(
             kv: &nats_adapter::async_nats::jetstream::kv::Store,
             symbols: &[String],
             source_url: Option<&str>,
+            source_tws: bool,
         ) {
+            if source_tws {
+                for symbol in symbols {
+                    match tws_yield_curve::fetch_yield_curve_from_tws(symbol).await {
+                        Ok(opportunities) if !opportunities.is_empty() => {
+                            let key = format!("{}.{}", KEY_PREFIX, symbol);
+                            let strike_width = opportunities
+                                .first()
+                                .and_then(|o| o.get("spread"))
+                                .and_then(|s| s.get("strike_width"))
+                                .and_then(|v| v.as_f64())
+                                .unwrap_or(STRIKE_WIDTH);
+                            let payload =
+                                match yield_curve_from_opportunities(&opportunities, symbol, strike_width) {
+                                    Some(yc) => encode_yield_curve_to_bytes(&yc),
+                                    None => serde_json::to_vec(&opportunities).unwrap_or_default(),
+                                };
+                            if let Err(e) = kv.put(key.as_str(), Bytes::from(payload)).await {
+                                warn!(%key, error = %e, "yield curve writer: put failed");
+                            } else {
+                                debug!(%key, points = opportunities.len(), "yield curve writer: wrote (TWS)");
+                            }
+                        }
+                        Ok(_) => debug!(%symbol, "yield curve writer: no TWS points"),
+                        Err(e) => {
+                            warn!(%symbol, error = %e, "yield curve writer: TWS fetch failed")
+                        }
+                    }
+                }
+                return;
+            }
             let by_symbol: HashMap<String, Vec<serde_json::Value>> = if let Some(url) = source_url {
                 match fetch_curve_from_url(url).await {
                     Some(map) if !map.is_empty() => map,
                     _ => {
-                        debug!("yield curve writer: fetch from URL failed or empty, using synthetic");
+                        debug!(
+                            "yield curve writer: fetch from URL failed or empty, using synthetic"
+                        );
                         symbols
                             .iter()
                             .map(|s| (s.clone(), synthetic_opportunities(s)))
@@ -191,7 +313,17 @@ pub fn spawn(nats_client: Arc<NatsClient>, symbols: Vec<String>, interval_secs: 
                     continue;
                 }
                 let key = format!("{}.{}", KEY_PREFIX, symbol);
-                let payload = serde_json::to_vec(&opportunities).unwrap_or_default();
+                let strike_width = opportunities
+                    .first()
+                    .and_then(|o| o.get("spread"))
+                    .and_then(|s| s.get("strike_width"))
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(STRIKE_WIDTH);
+                let payload =
+                    match yield_curve_from_opportunities(&opportunities, &symbol, strike_width) {
+                        Some(yc) => encode_yield_curve_to_bytes(&yc),
+                        None => serde_json::to_vec(&opportunities).unwrap_or_default(),
+                    };
                 if let Err(e) = kv.put(key.as_str(), Bytes::from(payload)).await {
                     warn!(%key, error = %e, "yield curve writer: put failed");
                 } else {
@@ -201,11 +333,20 @@ pub fn spawn(nats_client: Arc<NatsClient>, symbols: Vec<String>, interval_secs: 
         }
 
         // Pre-populate immediately so the Yield tab has data without waiting for first interval.
-        write_cycle(&kv, &symbols, source_url.as_deref()).await;
+        write_cycle(&kv, &symbols, source_url.as_deref(), source_tws).await;
 
+        let mut interval_tick = tokio::time::interval(interval);
+        interval_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         loop {
-            tokio::time::sleep(interval).await;
-            write_cycle(&kv, &symbols, source_url.as_deref()).await;
+            tokio::select! {
+                _ = interval_tick.tick() => {
+                    write_cycle(&kv, &symbols, source_url.as_deref(), source_tws).await;
+                }
+                _ = rx.recv() => {
+                    write_cycle(&kv, &symbols, source_url.as_deref(), source_tws).await;
+                }
+            }
         }
     });
+    Some(tx)
 }

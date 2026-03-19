@@ -16,42 +16,30 @@ nix *args:
     nix develop . --extra-experimental-features "nix-command flakes" -c just {{args}}
 
 # --- Build ---
+# Primary codebase is Rust (agents/backend). C++ native build removed; CMake at root is for lint/convenience only.
 
-# Configure CMake (one-time setup)
+# Configure CMake (optional; used for lint targets and scripts that invoke cmake)
 configure:
     cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+    @echo "Note: native C++ build removed; use 'just build' or 'just build-rust' for Rust."
 
-# Build in debug mode
+# Build in debug mode (Rust workspace; primary)
 build:
-    ninja -C build
+    just build-rust
 
-# Build in release mode
+# Build in release mode (Rust)
 build-release:
-    cmake --build --preset macos-arm64-release
+    cd agents/backend && cargo build --release
 
-# Build universal binary (arm64 + x86_64)
-build-universal:
-    ./scripts/build_universal.sh
+# AI-friendly Rust build: quiet, log to file, emit JSON result. For tools/CI.
+build-ai-friendly:
+    ./scripts/build_rust_ai_friendly.sh
 
-# Portable build: auto-detect macOS (Intel/ARM) or Linux and use matching CMake preset
-# Usage: just build-portable [build|clean|test|install] [--debug|--release]
-build-portable *args:
-    ./scripts/build_portable.sh {{args}}
+# AI-friendly Rust build, JSON only to stdout (for piping to jq/tools)
+build-ai-friendly-json:
+    ./scripts/build_rust_ai_friendly.sh --json-only
 
-# Build with keep-going: continue past failures to surface more errors (Ninja -k 0). Use for diagnostics.
-# Usage: just build-keep-going  |  just build-keep-going --json-only
-build-keep-going:
-    BUILD_KEEP_GOING=1 ./scripts/build_ai_friendly.sh
-build-keep-going-json:
-    BUILD_KEEP_GOING=1 ./scripts/build_ai_friendly.sh --json-only
-
-# Build with progress stream: NDJSON progress events to stderr, final JSON to stdout (AI/tools friendly)
-build-ai-friendly-progress:
-    ./scripts/build_ai_friendly.sh --progress
-
-# (Legacy: build-twsapi / build-deps removed with native C++. Use agents/backend for Rust.)
-
-# Clean all build artifacts
+# Clean CMake/build dirs (optional). Primary clean for Rust: just clean-rust
 clean:
     rm -rf build/* cmake-build-*
     find . -name 'CMakeCache.txt' -delete
@@ -198,8 +186,8 @@ pre-commit: format lint
 pull-safe:
     ./scripts/git_pull_safe.sh
 
-# Tag current commit as last known-good build
-tag-ok: build test
+# Tag current commit as last known-good build (Rust build + test)
+tag-ok: build-rust test
     git tag -f build-ok
     @echo "Tagged current commit as build-ok"
     @echo "  Compare changes: git diff build-ok"
@@ -207,50 +195,48 @@ tag-ok: build test
 
 # --- Run ---
 
-# Run CLI (dry-run mode)
+# Run Rust CLI (from agents/backend)
 run:
-    ./build/bin/ib_box_spread --dry-run
+    cd agents/backend && cargo run -p cli --
 
-# Run CLI with config (dry-run mode)
+# Run Rust CLI with config (TOML; see config/config.toml)
 run-config:
-    ./build/bin/ib_box_spread --config config/config.json --dry-run
+    cd agents/backend && cargo run -p cli -- --config ../config/config.toml
 
-# Run Rust TUI
+# Run Rust TUI (NATS-only; start NATS and backend_service for live data)
 run-tui:
     ./scripts/run_rust_tui.sh
 
-# TUI with REST fallback (requires backend snapshot endpoint on 8002 or IB_PORT)
-run-tui-live:
-    REST_URL="http://127.0.0.1:${IB_PORT:-8002}/api/snapshot" REST_FALLBACK=1 ./scripts/run_rust_tui.sh
+# Run TWS yield curve daemon (standalone: TWS → NATS KV yield_curve.{symbol}). Requires NATS + TWS. Env: TWS_PORT, SYMBOLS, INTERVAL_SECS.
+run-tws-yield-daemon:
+    cd agents/backend && cargo run -p tws_yield_curve_daemon
 
-# Capture TUI screenshot for QA/sanity
-qa-tui-screenshot:
-    @echo "qa-tui-screenshot is unavailable: the old Python TUI screenshot helper was removed." && exit 1
+# Verify CLI box yield curve report (snapshot-write + yield-curve --symbol SPX). Requires NATS and backend_service running.
+check-yield:
+    ./scripts/check_snapshot_yield_curve.sh
 
 # Sanity check: Python binding tests + Rust TUI buildability. On success, updates cargo-sweep stamp if installed.
 sanity:
     just test-python
     cd agents/backend && env $(command -v sccache >/dev/null 2>&1 && echo RUSTC_WRAPPER=sccache) SCCACHE_DIR="${SCCACHE_DIR:-../.cache/sccache}" cargo check -p tui_service && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep sweep . --stamp || true)
 
-# Sync ad hoc Python tooling dependencies
-py-sync:
-    @echo "No standalone python/ project remains. Use 'uv run --with <package> ...' for ad hoc tooling."
-
 # Install a Python package
 py-add package:
     uv pip install {{package}}
 
 # --- Services ---
+# Service scripts: scripts/service.sh (unified), scripts/service_manager.sh (rust_backend + nats).
+# See scripts/SERVICE_MANAGER_README.md. Order: nats → rust → memcached → gateway → web.
 
-# Start a single service (run `just svc list` to see names)
+# Start a single service (run `just svc list` to see: nats, rust, memcached, gateway, web)
 svc action service="":
     ./scripts/service.sh {{action}} {{service}}
 
-# Start all backend services
+# Start all backend services (nats, rust, then optional memcached/gateway/web per config)
 services-start:
     ./scripts/start_all_services.sh
 
-# Stop all backend services
+# Stop all backend services (reverse order)
 services-stop:
     ./scripts/stop_all_services.sh
 
@@ -262,6 +248,18 @@ services-restart:
 services-status:
     ./scripts/status_all_services.sh
 
+# Minimal active stack: start only rust_backend + nats (scripts/service_manager.sh)
+services-active-start:
+    ./scripts/service_manager.sh start-all
+
+# Stop minimal active stack (rust_backend + nats)
+services-active-stop:
+    ./scripts/service_manager.sh stop-all
+
+# Status of minimal active stack
+services-active-status:
+    ./scripts/service_manager.sh status
+
 # Start memcached (cache backend)
 start-memcached:
     ./scripts/service.sh start memcached
@@ -272,9 +270,10 @@ stop-memcached:
 
 # --- Git ---
 
-# Setup new git worktree
-worktree:
-    ./scripts/setup_worktree.sh
+# Add a new git worktree (script removed; use git directly)
+# Usage: just worktree <path> [branch]
+worktree path branch="":
+    if [ -n "{{branch}}" ]; then git worktree add "{{path}}" "{{branch}}"; else git worktree add "{{path}}"; fi
 
 # --- Quality ---
 
@@ -301,14 +300,6 @@ exarp-lint-shell:
 # Generate project scorecard
 scorecard:
     ./scripts/run_exarp_go_tool.sh report
-
-# Review code with local Ollama model
-review-ollama *files:
-    @echo "review-ollama is deprecated: python/tools/ollama_code_review.py was removed. Use exarp-go or local Ollama workflows documented in docs/OLLAMA_WORKFLOW_INTEGRATION.md." && exit 1
-
-# Review code with local MLX model
-review-mlx *files:
-    @echo "review-mlx is deprecated: python/tools/diffucode_review.py was removed. Use current MLX workflows documented in docs/MLX_TOOLS_USAGE_GUIDE.md." && exit 1
 
 # --- Protobuf ---
 
@@ -373,34 +364,24 @@ proto-validate:
     ./scripts/buf_lint_and_breaking.sh
 
 # --- Build Variants ---
+# Legacy C++ variants removed. Use 'just build' or 'just build-rust' (sccache used when available).
 
-# Fast incremental build with ccache/sccache
-build-fast:
-    ./scripts/build_variant.sh fast
+# Verify Rust toolchain (rustc, cargo)
+verify-rust:
+    rustc --version && cargo --version
+    @echo "Rust toolchain OK"
 
-# Distributed build with distcc + ccache
-build-distributed:
-    ./scripts/build_variant.sh distributed
-
-# Build with timestamped log
-build-logging preset="macos-arm64-debug":
-    ./scripts/build_variant.sh logging {{preset}}
-
-# Fast incremental build (parallel jobs, no cache)
-build-fast-parallel:
-    ninja -C build -j $(sysctl -n hw.ncpu 2>/dev/null || nproc)
-
-# Build with ccache enabled
-build-cached:
-    cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_CCACHE=ON && ninja -C build
-
-# Verify C++ toolchain (Xcode CLT headers, cmake, ninja)
+# Verify C++/CMake toolchain (optional; for scripts that still use cmake/ninja)
 verify-toolchain:
     ./scripts/verify_toolchain.sh
 
 # Ansible development setup (install deps, syntax-check, run playbook; uses SSL fix on macOS)
 ansible-dev:
     ./ansible/run-dev-setup.sh
+
+# Ansible dev setup without sudo prompt (for AI/automated runs; macOS needs no sudo; Debian tasks that need sudo will be skipped/fail)
+ansible-dev-no-sudo:
+    ANSIBLE_NO_BECOME=1 ./ansible/run-dev-setup.sh
 
 # Ansible playbook syntax-check only (quick validation)
 ansible-check:
@@ -412,28 +393,19 @@ ansible-lint:
     ansible-lint ansible/
     @echo "ansible-lint done"
 
-# Build Intel Decimal math library
-build-intel-decimal:
-    cmake -S native/third_party/IntelRDFPMathLib20U2/LIBRARY -B native/third_party/IntelRDFPMathLib20U2/LIBRARY/build -DCMAKE_BUILD_TYPE=Release
-    cmake --build native/third_party/IntelRDFPMathLib20U2/LIBRARY/build -j$(sysctl -n hw.ncpu 2>/dev/null || nproc)
-
 # --- Info ---
 
-# Show project info and build presets
+# Show project info (Rust primary)
 info:
-    @echo "Project: Multi-Asset Synthetic Financing Platform"
+    @echo "Project: Multi-Asset Synthetic Financing Platform (Rust-first)"
     @echo "Arch:    $(uname -m)"
-    @echo "Build:   $(ls build/bin/ib_box_spread 2>/dev/null && echo 'ready' || echo 'not built')"
-    @echo ""
-    @cmake --list-presets 2>/dev/null | head -20 || echo "Run: just configure"
+    @(test -d agents/backend/target/debug && echo "Rust:    built (debug)" || echo "Rust:    not built")
+    @echo "Commands: just build | just test | just run | just run-tui"
+    @cmake --list-presets 2>/dev/null | head -10 || true
 
-# Check TWS API setup
+# Check TWS API / IBKR gateway setup (optional; script may require native/third_party)
 check-tws:
     ./scripts/check_tws_download.sh
-
-# Validate config file
-validate-config:
-    ./build/bin/ib_box_spread --config config/config.json --validate
 
 # Benchmark backend services (health + snapshot latency)
 benchmark:
@@ -460,8 +432,3 @@ nautilus-start config="agents/nautilus/config/default.toml":
 # Run NautilusTrader agent unit tests
 test-nautilus:
     cd agents/nautilus && uv run pytest tests/ -v
-
-# Build C++ engine with ENABLE_NAUTILUS_BROKER=ON (suppresses C++ TWSClient)
-build-nautilus-mode:
-    cmake -S native -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_NAUTILUS_BROKER=ON
-    ninja -C build

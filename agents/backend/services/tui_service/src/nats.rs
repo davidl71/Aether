@@ -1,8 +1,10 @@
 //! NATS subscriber task.
 //!
-//! Subscribes to `snapshot.{backend_id}`, decodes protobuf envelopes,
-//! converts to `RuntimeSnapshotDto`, and sends updates on a
-//! `tokio::sync::watch` channel for the main event loop to consume.
+//! Subscribes to `snapshot.{backend_id}`, decodes protobuf envelopes to
+//! `api::SystemSnapshot` via `api::snapshot_proto::system_snapshot_from_proto`,
+//! and passes the unified snapshot to the TUI (TuiSnapshot stores SystemSnapshot
+//! and derives RuntimeSnapshotDto for display). See
+//! docs/platform/PROTOBUF_CONVERSION_AND_KV.md §4.2.
 //!
 //! Uses a circuit breaker to avoid hammering a downed NATS server:
 //! - After 3 consecutive failures the circuit opens for 30s
@@ -16,16 +18,9 @@
 //! 3. **Subscription ended** — We connected but the subscription stream closed (server
 //!    disconnect, idle timeout). Detail shows "NATS subscription ended".
 
-use api::{
-    backend_health_from_message, Alert, AlertLevel, BackendHealthState, CandleSnapshot,
-    HistoricPosition, Metrics, OrderSnapshot, PositionSnapshot, RiskStatus, RuntimeDecisionDto,
-    RuntimeHistoricPositionDto, RuntimeOrderDto, RuntimePositionDto, RuntimeSnapshotDto,
-    StrategyDecisionSnapshot, SymbolSnapshot,
-};
-use chrono::{DateTime, TimeZone, Utc};
+use api::{backend_health_from_message, BackendHealthState};
 use futures::StreamExt;
 use nats_adapter::{extract_proto_payload, proto::v1 as pb, topics, NatsClient};
-use prost_types::Timestamp;
 use std::collections::HashMap;
 use tokio::sync::{mpsc, watch};
 use tracing::{debug, info, warn};
@@ -34,162 +29,6 @@ use crate::circuit_breaker::CircuitBreaker;
 use crate::config::TuiConfig;
 use crate::events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget};
 use crate::models::{SnapshotSource, TuiSnapshot};
-
-fn ts_to_dt(ts: Option<Timestamp>) -> DateTime<Utc> {
-    ts.map(|t| {
-        Utc.timestamp_opt(t.seconds, t.nanos as u32)
-            .single()
-            .unwrap_or_else(Utc::now)
-    })
-    .unwrap_or_else(Utc::now)
-}
-
-fn proto_to_snapshot(p: pb::SystemSnapshot) -> RuntimeSnapshotDto {
-    let account_id = p.account_id.clone();
-    let positions: Vec<PositionSnapshot> = p
-        .positions
-        .into_iter()
-        .map(|pos| PositionSnapshot {
-            id: pos.id,
-            symbol: pos.symbol,
-            quantity: pos.quantity,
-            cost_basis: pos.cost_basis,
-            mark: pos.mark,
-            unrealized_pnl: pos.unrealized_pnl,
-            account_id: Some(account_id.clone()),
-        })
-        .collect();
-
-    let historic: Vec<HistoricPosition> = p
-        .historic
-        .into_iter()
-        .map(|h| HistoricPosition {
-            id: h.id,
-            symbol: h.symbol,
-            quantity: h.quantity,
-            realized_pnl: h.realized_pnl,
-            closed_at: ts_to_dt(h.closed_at),
-        })
-        .collect();
-
-    let orders: Vec<OrderSnapshot> = p
-        .orders
-        .into_iter()
-        .map(|o| OrderSnapshot {
-            id: o.id,
-            symbol: o.symbol,
-            side: o.side,
-            quantity: o.quantity,
-            status: o.status,
-            submitted_at: ts_to_dt(o.submitted_at),
-        })
-        .collect();
-
-    let decisions: Vec<StrategyDecisionSnapshot> = p
-        .decisions
-        .into_iter()
-        .map(|d| {
-            StrategyDecisionSnapshot::new(
-                d.symbol,
-                d.quantity,
-                d.side,
-                d.mark,
-                ts_to_dt(d.created_at),
-            )
-        })
-        .collect();
-
-    RuntimeSnapshotDto {
-        generated_at: ts_to_dt(p.generated_at),
-        started_at: ts_to_dt(p.started_at),
-        mode: p.mode,
-        strategy: p.strategy,
-        account_id: p.account_id,
-        metrics: p.metrics.map(proto_metrics).unwrap_or_default(),
-        symbols: p.symbols.into_iter().map(proto_symbol).collect(),
-        positions: positions.iter().map(RuntimePositionDto::from).collect(),
-        historic: historic
-            .iter()
-            .map(RuntimeHistoricPositionDto::from)
-            .collect(),
-        orders: orders.iter().map(RuntimeOrderDto::from).collect(),
-        decisions: decisions.iter().map(RuntimeDecisionDto::from).collect(),
-        scenarios: Vec::new(),
-        alerts: p.alerts.into_iter().map(proto_alert).collect(),
-        risk: p.risk.map(proto_risk).unwrap_or_default(),
-    }
-}
-
-fn proto_metrics(m: pb::Metrics) -> Metrics {
-    Metrics {
-        net_liq: m.net_liq,
-        buying_power: m.buying_power,
-        excess_liquidity: m.excess_liquidity,
-        margin_requirement: m.margin_requirement,
-        commissions: m.commissions,
-        portal_ok: m.portal_ok,
-        tws_ok: m.tws_ok,
-        questdb_ok: m.questdb_ok,
-        nats_ok: m.nats_ok,
-    }
-}
-
-fn proto_symbol(s: pb::SymbolSnapshot) -> SymbolSnapshot {
-    let candle = s.candle.map(|c| CandleSnapshot {
-        open: c.open,
-        high: c.high,
-        low: c.low,
-        close: c.close,
-        volume: c.volume,
-        entry: c.entry,
-        updated: ts_to_dt(c.updated),
-    });
-    SymbolSnapshot {
-        symbol: s.symbol.clone(),
-        last: s.last,
-        bid: s.bid,
-        ask: s.ask,
-        spread: s.spread,
-        roi: s.roi,
-        maker_count: s.maker_count,
-        taker_count: s.taker_count,
-        volume: s.volume,
-        candle: candle.unwrap_or_else(|| CandleSnapshot {
-            open: s.last,
-            high: s.last,
-            low: s.last,
-            close: s.last,
-            volume: 0,
-            entry: s.last,
-            updated: Utc::now(),
-        }),
-    }
-}
-
-fn proto_alert(a: pb::Alert) -> Alert {
-    let level = match pb::AlertLevel::try_from(a.level).unwrap_or(pb::AlertLevel::Unspecified) {
-        pb::AlertLevel::Warning => AlertLevel::Warning,
-        pb::AlertLevel::Error => AlertLevel::Error,
-        _ => AlertLevel::Info,
-    };
-    Alert {
-        level,
-        message: a.message,
-        timestamp: ts_to_dt(a.timestamp),
-    }
-}
-
-fn proto_risk(r: pb::RiskStatus) -> RiskStatus {
-    RiskStatus {
-        allowed: r.allowed,
-        reason: if r.reason.is_empty() {
-            None
-        } else {
-            Some(r.reason)
-        },
-        updated_at: ts_to_dt(r.updated_at),
-    }
-}
 
 /// Run the NATS subscriber loop. Sends `TuiSnapshot` updates on `tx` and
 /// backend health updates on `health_tx` (from `system.health`).
@@ -283,10 +122,10 @@ async fn subscribe_loop(
     while let Some(msg) = sub.next().await {
         match extract_proto_payload::<pb::SystemSnapshot>(&msg.payload) {
             Ok(proto) => {
-                let dto = proto_to_snapshot(proto);
-                let snap = TuiSnapshot::new(dto, SnapshotSource::Nats);
+                let snap = api::snapshot_proto::system_snapshot_from_proto(proto);
+                let tui_snap = TuiSnapshot::new(snap, SnapshotSource::Nats);
                 debug!(subject = %subject, "Snapshot received");
-                let _ = tx.send(Some(snap));
+                let _ = tx.send(Some(tui_snap));
             }
             Err(e) => {
                 warn!(error = %e, "Failed to decode NATS snapshot payload");

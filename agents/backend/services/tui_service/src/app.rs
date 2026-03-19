@@ -1,6 +1,6 @@
 //! Application state and event dispatch.
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use api::finance_rates::{BenchmarksResponse, CurveResponse};
 use api::{BackendHealthState, RuntimeOrderDto, RuntimePositionDto, ScenarioDto};
@@ -9,7 +9,9 @@ use tokio::sync::{mpsc, watch};
 use tui_logger::{TuiWidgetEvent, TuiWidgetState};
 
 use crate::config::TuiConfig;
-use crate::events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget, StrategyCommand};
+use crate::events::{
+    AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget, StrategyCommand,
+};
 use crate::models::TuiSnapshot;
 
 const SPARKLINE_HISTORY_SIZE: usize = 20;
@@ -100,12 +102,22 @@ pub struct App {
     pub split_pane: bool,
     /// Scroll/selection index for Positions tab (arrow-key scroll).
     pub positions_scroll: usize,
+    /// When true, Positions tab groups by combo (account + strategy + symbol stem) and shows header + legs.
+    pub positions_combo_view: bool,
+    /// Combo keys that are expanded (show legs). Empty = all combos collapsed by default. Key = (account_id, strategy, symbol_stem).
+    pub positions_expanded_combos: HashSet<(String, String, String)>,
     /// Scroll/selection index for Orders tab (arrow-key scroll; index into filtered list).
     pub orders_scroll: usize,
     /// Scroll/selection index for Alerts tab (arrow-key scroll).
     pub alerts_scroll: usize,
     /// Scroll/selection index for Scenarios tab (arrow-key scroll).
     pub scenarios_scroll: usize,
+    /// DTE window center for Scenarios (default 4). Range = center ± scenarios_dte_half_width.
+    pub scenarios_dte_center: i32,
+    /// Half-width of DTE window (default 2 → range 2–6). [ ] to contract/expand.
+    pub scenarios_dte_half_width: i32,
+    /// Strike width filter: None = all, Some(w) = only that width. 'w' to cycle 25/50/100/all.
+    pub scenarios_strike_width_filter: Option<u32>,
     /// Selected symbol index for Yield tab (into effective watchlist).
     pub yield_symbol_index: usize,
     /// In-Settings watchlist override (add/remove symbols in memory). None = use config.watchlist.
@@ -116,6 +128,12 @@ pub struct App {
     pub settings_symbol_index: usize,
     /// When Some, Settings is in "add symbol" mode; buffer for the new symbol (Enter confirm, Esc cancel).
     pub settings_add_symbol_input: Option<String>,
+    /// When Some, Settings is in "edit config" mode for this key; buffer in settings_add_symbol_input.
+    pub settings_edit_config_key: Option<String>,
+    /// In-memory config overrides (key = NATS_URL, BACKEND_ID, etc.). Applied on top of file/env config.
+    pub config_overrides: HashMap<String, String>,
+    /// Selected config row in Settings (0..=4): NATS_URL, BACKEND_ID, TICK_MS, SNAPSHOT_TTL_SECS, SPLIT_PANE.
+    pub settings_config_key_index: usize,
     /// Last fetched box spread curve (NATS api.finance_rates.build_curve).
     pub yield_curve: Option<CurveResponse>,
     /// Last fetched benchmark rates (NATS api.finance_rates.benchmarks).
@@ -124,6 +142,8 @@ pub struct App {
     pub yield_error: Option<String>,
     /// Tick counter for periodic yield fetch when on Yield tab.
     pub yield_fetch_tick: u32,
+    /// True while a yield fetch is in flight; prevents overlapping requests and mock/real cycling.
+    pub yield_fetch_pending: bool,
     /// Sender to trigger yield fetch (symbol); None when not wired.
     yield_fetch_tx: Option<mpsc::UnboundedSender<String>>,
     /// Sender for strategy commands (S=start, T=stop); None when not wired.
@@ -162,18 +182,27 @@ impl App {
             backend_health: HashMap::new(),
             split_pane,
             positions_scroll: 0,
+            positions_combo_view: false,
+            positions_expanded_combos: HashSet::new(),
             orders_scroll: 0,
             alerts_scroll: 0,
             scenarios_scroll: 0,
+            scenarios_dte_center: 4,
+            scenarios_dte_half_width: 2,
+            scenarios_strike_width_filter: None,
             yield_symbol_index: 0,
             watchlist_override: None,
             settings_section_index: 0,
             settings_symbol_index: 0,
             settings_add_symbol_input: None,
+            settings_edit_config_key: None,
+            config_overrides: HashMap::new(),
+            settings_config_key_index: 0,
             yield_curve: None,
             yield_benchmarks: None,
             yield_error: None,
             yield_fetch_tick: 0,
+            yield_fetch_pending: false,
             yield_fetch_tx,
             strategy_cmd_tx,
             event_rx,
@@ -191,10 +220,8 @@ impl App {
     }
 
     /// Set yield data from NATS fetch (curve + benchmarks).
-    pub fn set_yield_data(
-        &mut self,
-        res: Result<(CurveResponse, BenchmarksResponse), String>,
-    ) {
+    pub fn set_yield_data(&mut self, res: Result<(CurveResponse, BenchmarksResponse), String>) {
+        self.yield_fetch_pending = false;
         self.yield_error = None;
         match res {
             Ok((curve, benchmarks)) => {
@@ -207,10 +234,15 @@ impl App {
         }
     }
 
-    /// Request a yield fetch for the given symbol (no-op if yield_fetch_tx is None).
+    /// Request a yield fetch for the given symbol (no-op if yield_fetch_tx is None or a fetch is already in flight).
     pub fn request_yield_fetch(&mut self, symbol: &str) {
+        if self.yield_fetch_pending {
+            return;
+        }
         if let Some(ref tx) = self.yield_fetch_tx {
-            let _ = tx.send(symbol.to_string());
+            if tx.send(symbol.to_string()).is_ok() {
+                self.yield_fetch_pending = true;
+            }
         }
     }
 
@@ -221,11 +253,12 @@ impl App {
 
     /// Pull latest snapshot and config updates, process queued events.
     pub fn tick(&mut self) {
-        // Apply hot-reloaded config if it changed
+        // Apply hot-reloaded config if it changed (file/env); then apply in-TUI overrides
         if self.config_rx.has_changed().unwrap_or(false) {
-            let new_config = self.config_rx.borrow_and_update().clone();
-            self.config = new_config.clone();
-            self.config_warning = validate_config_hint(&new_config);
+            let base = self.config_rx.borrow_and_update().clone();
+            self.config = merge_config_overrides(base, &self.config_overrides);
+            self.config_warning = validate_config_hint(&self.config);
+            self.split_pane = self.config.split_pane;
             tracing::info!("Config reloaded from disk");
         }
 
@@ -252,9 +285,24 @@ impl App {
             }
         }
 
-        // Periodic yield fetch when on Yield tab (~every 10s at 250ms tick)
+        // Clamp positions scroll to current display row count (flat or combo)
+        if let Some(ref s) = self.snapshot {
+            let (display_len, _, _) = crate::ui::positions_display_info(
+                &s.dto().positions,
+                self.positions_combo_view,
+                &self.positions_expanded_combos,
+            );
+            if display_len > 0 {
+                self.positions_scroll = self.positions_scroll.min(display_len - 1);
+            }
+        }
+
+        // Periodic yield fetch when on Yield tab (~every 10s at 250ms tick). Skip if a fetch is already in flight to avoid mock/real cycling from overlapping responses.
         const YIELD_FETCH_INTERVAL_TICKS: u32 = 40;
-        if self.active_tab == Tab::Yield && !self.config.watchlist.is_empty() {
+        if self.active_tab == Tab::Yield
+            && !self.yield_fetch_pending
+            && !self.config.watchlist.is_empty()
+        {
             self.yield_fetch_tick = self.yield_fetch_tick.saturating_add(1);
             if self.yield_fetch_tick >= YIELD_FETCH_INTERVAL_TICKS {
                 self.yield_fetch_tick = 0;
@@ -291,9 +339,9 @@ impl App {
     fn filtered_orders(&self, snap: &TuiSnapshot) -> Vec<RuntimeOrderDto> {
         let filter_lower = self.order_filter.to_lowercase();
         let mut orders = if filter_lower.is_empty() {
-            snap.inner.orders.clone()
+            snap.dto().orders.clone()
         } else {
-            snap.inner
+            snap.dto()
                 .orders
                 .iter()
                 .filter(|o| {
@@ -307,6 +355,48 @@ impl App {
         orders.sort_by(|a, b| b.submitted_at.cmp(&a.submitted_at));
         orders
     }
+}
+
+/// Merge in-TUI config overrides on top of base (file/env) config.
+fn merge_config_overrides(base: TuiConfig, overrides: &HashMap<String, String>) -> TuiConfig {
+    let mut c = base;
+    if let Some(v) = overrides.get("NATS_URL") {
+        c.nats_url = v.trim().to_string();
+    }
+    if let Some(v) = overrides.get("BACKEND_ID") {
+        let v = v.trim().to_lowercase();
+        if !v.is_empty() {
+            c.backend_id = v;
+        }
+    }
+    if let Some(v) = overrides.get("TICK_MS") {
+        if let Ok(n) = v.trim().parse::<u64>() {
+            c.tick_ms = n.max(1);
+        }
+    }
+    if let Some(v) = overrides.get("SNAPSHOT_TTL_SECS") {
+        if let Ok(n) = v.trim().parse::<u64>() {
+            c.snapshot_ttl_secs = n.max(1);
+        }
+    }
+    if let Some(v) = overrides.get("SPLIT_PANE") {
+        let v = v.trim().to_lowercase();
+        c.split_pane = v == "1" || v == "true" || v == "yes";
+    }
+    c
+}
+
+/// Config keys editable from Settings (index 0..=4).
+fn config_key_value_at(config: &TuiConfig, index: usize) -> Option<(String, String)> {
+    let (key, value) = match index {
+        0 => ("NATS_URL", config.nats_url.clone()),
+        1 => ("BACKEND_ID", config.backend_id.clone()),
+        2 => ("TICK_MS", config.tick_ms.to_string()),
+        3 => ("SNAPSHOT_TTL_SECS", config.snapshot_ttl_secs.to_string()),
+        4 => ("SPLIT_PANE", config.split_pane.to_string()),
+        _ => return None,
+    };
+    Some((key.to_string(), value))
 }
 
 /// Returns a short validation hint if config is missing required fields.
@@ -326,8 +416,13 @@ fn validate_config_hint(config: &TuiConfig) -> Option<String> {
 }
 
 impl App {
+    /// Config key/value for Settings config list (index 0..=4).
+    pub fn config_key_value_at(&self, index: usize) -> Option<(String, String)> {
+        config_key_value_at(&self.config, index)
+    }
+
     fn update_roi_history(&mut self, snap: &TuiSnapshot) {
-        for symbol_data in &snap.inner.symbols {
+        for symbol_data in &snap.dto().symbols {
             let roi = symbol_data.roi;
             let entry = self
                 .roi_history
@@ -356,25 +451,40 @@ impl App {
             self.detail_popup = None;
             return;
         }
-        // Settings "add symbol" input mode
+        // Settings input mode: add symbol or edit config
         if let Some(ref mut buf) = self.settings_add_symbol_input {
             match key.code {
                 KeyCode::Enter => {
-                    let s = buf.trim().to_uppercase();
-                    if !s.is_empty() {
-                        let mut list = self
-                            .watchlist_override
-                            .clone()
-                            .unwrap_or_else(|| self.config.watchlist.clone());
-                        if !list.contains(&s) {
-                            list.push(s);
-                            list.sort();
-                            self.watchlist_override = Some(list);
+                    if let Some(ref key_name) = self.settings_edit_config_key {
+                        // Apply config override
+                        let val = buf.trim().to_string();
+                        if !val.is_empty() {
+                            self.config_overrides.insert(key_name.clone(), val);
+                            let base = self.config_rx.borrow().clone();
+                            self.config = merge_config_overrides(base, &self.config_overrides);
+                            self.config_warning = validate_config_hint(&self.config);
+                            self.split_pane = self.config.split_pane;
+                        }
+                        self.settings_edit_config_key = None;
+                    } else {
+                        // Add symbol
+                        let s = buf.trim().to_uppercase();
+                        if !s.is_empty() {
+                            let mut list = self
+                                .watchlist_override
+                                .clone()
+                                .unwrap_or_else(|| self.config.watchlist.clone());
+                            if !list.contains(&s) {
+                                list.push(s);
+                                list.sort();
+                                self.watchlist_override = Some(list);
+                            }
                         }
                     }
                     self.settings_add_symbol_input = None;
                 }
                 KeyCode::Esc => {
+                    self.settings_edit_config_key = None;
                     self.settings_add_symbol_input = None;
                 }
                 KeyCode::Backspace => {
@@ -451,7 +561,13 @@ impl App {
             KeyCode::Esc if self.active_tab == Tab::Logs => {
                 self.log_state.transition(TuiWidgetEvent::EscapeKey);
             }
-            // Positions tab (or right pane when split): arrow-key scroll
+            // Positions tab (or right pane when split): [c] combo view, arrow-key scroll
+            KeyCode::Char('c') | KeyCode::Char('C')
+                if self.active_tab == Tab::Positions || self.split_pane =>
+            {
+                self.positions_combo_view = !self.positions_combo_view;
+                self.positions_scroll = 0;
+            }
             KeyCode::Up if self.active_tab == Tab::Positions || self.split_pane => {
                 self.positions_scroll = self.positions_scroll.saturating_sub(1);
             }
@@ -459,7 +575,14 @@ impl App {
                 let len = self
                     .snapshot
                     .as_ref()
-                    .map(|s| s.inner.positions.len())
+                    .map(|s| {
+                        crate::ui::positions_display_info(
+                            &s.dto().positions,
+                            self.positions_combo_view,
+                            &self.positions_expanded_combos,
+                        )
+                        .0
+                    })
                     .unwrap_or(0);
                 if len > 0 {
                     self.positions_scroll = (self.positions_scroll + 1).min(len - 1);
@@ -472,7 +595,14 @@ impl App {
                 let len = self
                     .snapshot
                     .as_ref()
-                    .map(|s| s.inner.positions.len())
+                    .map(|s| {
+                        crate::ui::positions_display_info(
+                            &s.dto().positions,
+                            self.positions_combo_view,
+                            &self.positions_expanded_combos,
+                        )
+                        .0
+                    })
                     .unwrap_or(0);
                 if len > 0 {
                     self.positions_scroll = (self.positions_scroll + 10).min(len - 1);
@@ -508,10 +638,20 @@ impl App {
             }
             KeyCode::Enter if self.active_tab == Tab::Positions || self.split_pane => {
                 if let Some(ref snap) = self.snapshot {
-                    let len = snap.inner.positions.len();
-                    if len > 0 {
-                        let idx = self.positions_scroll.min(len - 1);
-                        if let Some(pos) = snap.inner.positions.get(idx) {
+                    let (_display_len, index_map, combo_key_per_row) =
+                        crate::ui::positions_display_info(
+                            &snap.dto().positions,
+                            self.positions_combo_view,
+                            &self.positions_expanded_combos,
+                        );
+                    if let Some(Some(combo_key)) = combo_key_per_row.get(self.positions_scroll) {
+                        if self.positions_expanded_combos.contains(combo_key) {
+                            self.positions_expanded_combos.remove(combo_key);
+                        } else {
+                            self.positions_expanded_combos.insert(combo_key.clone());
+                        }
+                    } else if let Some(Some(pos_idx)) = index_map.get(self.positions_scroll) {
+                        if let Some(pos) = snap.dto().positions.get(*pos_idx) {
                             self.detail_popup = Some(DetailPopupContent::Position(pos.clone()));
                         }
                     }
@@ -525,7 +665,7 @@ impl App {
                 let len = self
                     .snapshot
                     .as_ref()
-                    .map(|s| s.inner.alerts.len())
+                    .map(|s| s.dto().alerts.len())
                     .unwrap_or(0);
                 if len > 0 {
                     self.alerts_scroll = (self.alerts_scroll + 1).min(len - 1);
@@ -538,7 +678,7 @@ impl App {
                 let len = self
                     .snapshot
                     .as_ref()
-                    .map(|s| s.inner.alerts.len())
+                    .map(|s| s.dto().alerts.len())
                     .unwrap_or(0);
                 if len > 0 {
                     self.alerts_scroll = (self.alerts_scroll + 10).min(len - 1);
@@ -549,46 +689,50 @@ impl App {
                 self.scenarios_scroll = self.scenarios_scroll.saturating_sub(1);
             }
             KeyCode::Down if self.active_tab == Tab::Scenarios => {
-                let len = self
-                    .snapshot
-                    .as_ref()
-                    .map(|s| s.inner.scenarios.len())
-                    .unwrap_or(0);
-                if len > 0 {
-                    self.scenarios_scroll = (self.scenarios_scroll + 1).min(len - 1);
+                let filtered = crate::ui::filtered_scenarios(self);
+                if !filtered.is_empty() {
+                    self.scenarios_scroll =
+                        (self.scenarios_scroll + 1).min(filtered.len().saturating_sub(1));
                 }
             }
             KeyCode::PageUp if self.active_tab == Tab::Scenarios => {
                 self.scenarios_scroll = self.scenarios_scroll.saturating_sub(10);
             }
             KeyCode::PageDown if self.active_tab == Tab::Scenarios => {
-                let len = self
-                    .snapshot
-                    .as_ref()
-                    .map(|s| s.inner.scenarios.len())
-                    .unwrap_or(0);
-                if len > 0 {
-                    self.scenarios_scroll = (self.scenarios_scroll + 10).min(len - 1);
+                let filtered = crate::ui::filtered_scenarios(self);
+                if !filtered.is_empty() {
+                    self.scenarios_scroll =
+                        (self.scenarios_scroll + 10).min(filtered.len().saturating_sub(1));
                 }
             }
             KeyCode::Enter if self.active_tab == Tab::Scenarios => {
-                if let Some(ref snap) = self.snapshot {
-                    let mut sorted = snap.inner.scenarios.clone();
-                    sorted.sort_by(|a, b| {
-                        b.apr_pct
-                            .partial_cmp(&a.apr_pct)
-                            .unwrap_or(std::cmp::Ordering::Equal)
-                    });
-                    let idx = self.scenarios_scroll.min(sorted.len().saturating_sub(1));
-                    if let Some(scenario) = sorted.get(idx) {
-                        self.detail_popup = Some(DetailPopupContent::Scenario(scenario.clone()));
-                    }
+                let filtered = crate::ui::filtered_scenarios(self);
+                let idx = self.scenarios_scroll.min(filtered.len().saturating_sub(1));
+                if let Some(scenario) = filtered.get(idx) {
+                    self.detail_popup = Some(DetailPopupContent::Scenario(scenario.clone()));
                 }
             }
-            // Settings tab: section/symbol scroll, add symbol (a), remove (Del), reset override (r)
+            KeyCode::Char('[') if self.active_tab == Tab::Scenarios => {
+                self.scenarios_dte_half_width = (self.scenarios_dte_half_width - 1).max(0);
+            }
+            KeyCode::Char(']') if self.active_tab == Tab::Scenarios => {
+                self.scenarios_dte_half_width = (self.scenarios_dte_half_width + 1).min(60);
+            }
+            KeyCode::Char('w') | KeyCode::Char('W') if self.active_tab == Tab::Scenarios => {
+                self.scenarios_strike_width_filter = match self.scenarios_strike_width_filter {
+                    None => Some(25),
+                    Some(25) => Some(50),
+                    Some(50) => Some(100),
+                    Some(_) => None,
+                };
+            }
+            // Settings tab: section/symbol scroll, config key scroll (section 1), add symbol (a), edit config (e), remove (Del), reset override (r)
             KeyCode::Up if self.active_tab == Tab::Settings => {
                 if self.settings_section_index == 2 {
                     self.settings_symbol_index = self.settings_symbol_index.saturating_sub(1);
+                } else if self.settings_section_index == 1 {
+                    self.settings_config_key_index =
+                        self.settings_config_key_index.saturating_sub(1);
                 } else {
                     self.settings_section_index = self.settings_section_index.saturating_sub(1);
                 }
@@ -600,12 +744,26 @@ impl App {
                         self.settings_symbol_index =
                             (self.settings_symbol_index + 1).min(len.saturating_sub(1));
                     }
+                } else if self.settings_section_index == 1 {
+                    self.settings_config_key_index = (self.settings_config_key_index + 1).min(4);
                 } else {
                     self.settings_section_index = (self.settings_section_index + 1).min(2);
                 }
             }
             KeyCode::Char('a') | KeyCode::Char('A') if self.active_tab == Tab::Settings => {
+                if self.settings_section_index != 2 {
+                    return;
+                }
                 self.settings_add_symbol_input = Some(String::new());
+            }
+            KeyCode::Char('e') | KeyCode::Char('E') | KeyCode::Enter
+                if self.active_tab == Tab::Settings && self.settings_section_index == 1 =>
+            {
+                if let Some((key, value)) = self.config_key_value_at(self.settings_config_key_index)
+                {
+                    self.settings_edit_config_key = Some(key);
+                    self.settings_add_symbol_input = Some(value);
+                }
             }
             KeyCode::Char('r') | KeyCode::Char('R') if self.active_tab == Tab::Settings => {
                 self.watchlist_override = None;
@@ -620,10 +778,32 @@ impl App {
                     list.remove(self.settings_symbol_index);
                     let new_len = list.len();
                     self.watchlist_override = Some(list);
-                    self.settings_symbol_index = self.settings_symbol_index.min(new_len.saturating_sub(1));
+                    self.settings_symbol_index =
+                        self.settings_symbol_index.min(new_len.saturating_sub(1));
                 }
             }
             // Order filter: '/' to activate, chars to add, Backspace to delete, Esc to clear
+            // Mode cycle: M → Live / Mock / DRY-RUN (api.admin.set_mode)
+            KeyCode::Char('m') | KeyCode::Char('M') => {
+                if let Some(ref tx) = self.strategy_cmd_tx {
+                    let current = self
+                        .snapshot
+                        .as_ref()
+                        .map(|s| s.dto().mode.to_uppercase())
+                        .unwrap_or_else(|| "DRY-RUN".into());
+                    let current = if current == "TUI" {
+                        "DRY-RUN"
+                    } else {
+                        current.as_str()
+                    };
+                    let next = match current {
+                        "LIVE" => "MOCK",
+                        "MOCK" => "DRY-RUN",
+                        _ => "LIVE",
+                    };
+                    let _ = tx.send(StrategyCommand::SetMode(next.to_string()));
+                }
+            }
             // Strategy control via NATS (S=start, T=stop); skip when on Orders tab so s/t can filter
             KeyCode::Char('s') | KeyCode::Char('S') if self.active_tab != Tab::Orders => {
                 if let Some(ref tx) = self.strategy_cmd_tx {
@@ -638,6 +818,12 @@ impl App {
             KeyCode::Char('k') | KeyCode::Char('K') if self.active_tab != Tab::Orders => {
                 if let Some(ref tx) = self.strategy_cmd_tx {
                     let _ = tx.send(StrategyCommand::CancelAll);
+                }
+            }
+            // Force snapshot: backend publishes current snapshot once to NATS (api.snapshot.publish_now)
+            KeyCode::Char('f') | KeyCode::Char('F') => {
+                if let Some(ref tx) = self.strategy_cmd_tx {
+                    let _ = tx.send(StrategyCommand::PublishSnapshot);
                 }
             }
             KeyCode::Char('/') if self.active_tab == Tab::Orders => {
@@ -661,9 +847,10 @@ impl App {
 
 #[cfg(test)]
 mod tests {
-    use api::{Metrics, RiskStatus, RuntimeSnapshotDto};
-    use chrono::{Duration, Utc};
+    use api::finance_rates::{CurveResponse, RatePointResponse};
     use crossterm::event::{KeyCode, KeyEvent};
+    use ratatui::backend::TestBackend;
+    use ratatui::Terminal;
     use tokio::sync::{mpsc, watch};
 
     use std::collections::HashMap;
@@ -730,7 +917,10 @@ mod tests {
         );
         drop(snap_tx);
 
-        let new_config = TuiConfig { watchlist: vec!["TSLA".into()], ..Default::default() };
+        let new_config = TuiConfig {
+            watchlist: vec!["TSLA".into()],
+            ..Default::default()
+        };
         config_tx.send(new_config).expect("send new config");
 
         app.tick();
@@ -762,13 +952,129 @@ mod tests {
         let (mut app, _, _) = make_app();
 
         app.active_tab = Tab::Positions;
-        for key in [KeyCode::Up, KeyCode::Down, KeyCode::PageUp, KeyCode::PageDown] {
+        for key in [
+            KeyCode::Up,
+            KeyCode::Down,
+            KeyCode::PageUp,
+            KeyCode::PageDown,
+        ] {
             app.handle_key(KeyEvent::from(key));
         }
 
         app.active_tab = Tab::Alerts;
-        for key in [KeyCode::Up, KeyCode::Down, KeyCode::PageUp, KeyCode::PageDown] {
+        for key in [
+            KeyCode::Up,
+            KeyCode::Down,
+            KeyCode::PageUp,
+            KeyCode::PageDown,
+        ] {
             app.handle_key(KeyEvent::from(key));
         }
+    }
+
+    /// Flatten the drawn buffer to a single string (one line per row) for assertion.
+    fn buffer_to_string(area: &ratatui::layout::Rect, buffer: &ratatui::buffer::Buffer) -> String {
+        let mut s = String::new();
+        for y in 0..area.height {
+            for x in 0..area.width {
+                s.push_str(buffer[(x, y)].symbol());
+            }
+            s.push('\n');
+        }
+        s
+    }
+
+    #[test]
+    fn yield_curve_tab_renders_with_data() {
+        let (mut app, _, _) = make_app();
+        app.active_tab = Tab::Yield;
+        app.yield_curve = Some(CurveResponse {
+            symbol: "SPX".to_string(),
+            points: vec![RatePointResponse {
+                symbol: "SPX".to_string(),
+                expiry: "2026-03-20".to_string(),
+                days_to_expiry: 30,
+                strike_width: 5.0,
+                strike_low: None,
+                strike_high: None,
+                buy_implied_rate: 0.04,
+                sell_implied_rate: 0.05,
+                mid_rate: 0.045,
+                net_debit: 4.5,
+                net_credit: 4.4,
+                liquidity_score: 70.0,
+                timestamp: String::new(),
+                spread_id: None,
+                convenience_yield: None,
+                data_source: None,
+            }],
+            timestamp: String::new(),
+            strike_width: None,
+            point_count: 1,
+            underlying_price: None,
+        });
+        app.yield_benchmarks = None;
+
+        let backend = TestBackend::new(80, 24);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let frame = terminal
+            .draw(|f| crate::ui::render_yield_curve_tab(f, &app, f.area()))
+            .unwrap();
+
+        let content = buffer_to_string(&frame.area, &frame.buffer);
+        assert!(
+            content.contains("Yield"),
+            "Yield tab should show 'Yield' title; got:\n{}",
+            content
+        );
+        assert!(
+            content.contains("APR %"),
+            "Yield tab should show 'APR %' column header; got:\n{}",
+            content
+        );
+        assert!(
+            content.contains("SPX"),
+            "Yield tab should show symbol SPX; got:\n{}",
+            content
+        );
+        assert!(
+            content.contains("4.50") || content.contains("4.5"),
+            "Yield tab should show mid rate 4.50% (or truncated 4.5) for one point; got:\n{}",
+            content
+        );
+    }
+
+    #[test]
+    fn yield_curve_tab_renders_empty_state() {
+        let (mut app, _, _) = make_app();
+        app.active_tab = Tab::Yield;
+        app.yield_curve = Some(CurveResponse {
+            symbol: "SPX".to_string(),
+            points: vec![],
+            timestamp: String::new(),
+            strike_width: None,
+            point_count: 0,
+            underlying_price: None,
+        });
+        app.yield_benchmarks = None;
+
+        let backend = TestBackend::new(80, 24);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let frame = terminal
+            .draw(|f| crate::ui::render_yield_curve_tab(f, &app, f.area()))
+            .unwrap();
+
+        let content = buffer_to_string(&frame.area, &frame.buffer);
+        assert!(content.contains("Yield"), "Yield title; got:\n{}", content);
+        assert!(
+            content.contains("No data") || content.contains("No "),
+            "Empty curve should show 'No data' (or truncated 'No'); got:\n{}",
+            content
+        );
+        assert!(
+            content.contains("Box spread curve (empty)"),
+            "Empty curve should show empty title; got:\n{}",
+            content
+        );
     }
 }

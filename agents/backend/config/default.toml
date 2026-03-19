@@ -3,15 +3,29 @@
 rest_addr = "0.0.0.0:9090"
 # gRPC is not in use; REST and NATS are the supported interfaces.
 
+[risk]
+# Max number of positions before strategy is blocked (default 8). Override: RISK_MAX_POSITION=9
+max_position = 8
+# Max notional exposure (default 250_000). Override: RISK_MAX_NOTIONAL=300000
+max_notional = 250000.0
+
 [market_data]
 provider = "mock"
+# Options: "mock" | "polygon" | "tws"
+# For "tws": ensure TWS or IB Gateway is running (paper: 7497, live: 7496).
+# Env: TWS_HOST (default 127.0.0.1), TWS_PORT (optional; if unset, tries 7497, 4002, 7496, 4001), TWS_CLIENT_ID (default 0 for market data; positions use +1; yield-curve uses 10+2=12).
 # Default to European-style symbols: SPX, XSP, NDX (European exercise style)
 # American-style symbols (SPY, QQQ, IWM) are hidden by default
 symbols = ["SPX", "XSP", "NDX"]
 poll_interval_ms = 800
+# use_rth = false  # When true (tws): only forward ticks 09:30–16:00 ET; per-symbol tradingHours not yet used
 
 [market_data.polygon]
 # Uncomment and set either api_key or api_key_env when using Polygon.io
 # api_key = "your-api-key"
 api_key_env = "POLYGON_API_KEY"
 base_url = "https://api.polygon.io"
+
+# [yield_curve]
+# source = "tws"  # Use TWS for yield curve (fetch_yield_curve_from_tws). Else: set YIELD_CURVE_SOURCE_URL for HTTP, or unset for synthetic.
+# Env YIELD_CURVE_SOURCE=tws overrides when set. See docs/platform/TWS_YIELD_CURVE_KV_WRITER.md.

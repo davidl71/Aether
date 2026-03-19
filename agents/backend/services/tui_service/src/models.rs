@@ -1,8 +1,10 @@
 //! TUI-local data models derived from the backend snapshot.
+//!
+//! Consumes `api::SystemSnapshot` from NATS; display uses a derived `RuntimeSnapshotDto`.
 
 use chrono::{DateTime, Utc};
 
-use api::RuntimeSnapshotDto;
+use api::{RuntimeSnapshotDto, SystemSnapshot};
 
 /// Source of the snapshot. Backend is NATS-only; no REST fallback.
 #[derive(Debug, Clone, PartialEq)]
@@ -18,21 +20,41 @@ impl SnapshotSource {
     }
 }
 
-/// Latest snapshot received by the TUI plus metadata about how fresh it is.
-#[derive(Debug, Clone)]
+/// Latest snapshot received by the TUI (unified api::SystemSnapshot) plus display DTO and metadata.
+#[derive(Clone)]
 pub struct TuiSnapshot {
-    pub inner: RuntimeSnapshotDto,
+    /// Canonical snapshot from NATS (api::SystemSnapshot).
+    pub inner: SystemSnapshot,
+    /// Derived DTO for UI binding (positions, orders, metrics, etc.).
+    display_dto: RuntimeSnapshotDto,
     pub received_at: DateTime<Utc>,
     pub source: SnapshotSource,
 }
 
+impl std::fmt::Debug for TuiSnapshot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TuiSnapshot")
+            .field("received_at", &self.received_at)
+            .field("source", &self.source)
+            .finish()
+    }
+}
+
 impl TuiSnapshot {
-    pub fn new(inner: RuntimeSnapshotDto, source: SnapshotSource) -> Self {
+    pub fn new(inner: SystemSnapshot, source: SnapshotSource) -> Self {
+        let display_dto = RuntimeSnapshotDto::from(&inner);
         Self {
             inner,
+            display_dto,
             received_at: Utc::now(),
             source,
         }
+    }
+
+    /// Reference to the display DTO used by the UI (positions, orders, metrics, alerts, etc.).
+    #[inline]
+    pub fn dto(&self) -> &RuntimeSnapshotDto {
+        &self.display_dto
     }
 
     /// Seconds since this snapshot was received.
