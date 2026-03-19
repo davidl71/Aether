@@ -140,6 +140,13 @@ vcpkg/
 build-ramdisk
 tmp/
 
+# Local temp files
+api1.md
+dave2.txt
+data/
+completions/
+tests/expect/
+
 # Documentation build
 docs/_build/
 docs/html/
