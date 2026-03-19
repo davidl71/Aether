@@ -61,10 +61,10 @@ mod config;
 mod config_watcher;
 mod events;
 mod expiry_buckets;
+mod input;
 mod models;
 mod nats;
 mod ui;
-// mod rest; // Removed - NATS-only, no REST fallback
 
 use app::App;
 use config::TuiConfig;
@@ -480,7 +480,11 @@ async fn run_loop(
     tick_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
     loop {
-        terminal.draw(|f| ui::render(f, app))?;
+        // Only redraw when state has changed (dirty flag optimization)
+        if app.needs_redraw {
+            terminal.draw(|f| ui::render(f, app))?;
+            app.needs_redraw = false;
+        }
 
         tokio::select! {
             // Redraw timer — drives app.tick() for snapshot/config polling

@@ -7,7 +7,7 @@ use api::loans::LoanRecord;
 use api::{BackendHealthState, RuntimeOrderDto, RuntimePositionDto, ScenarioDto};
 use crossterm::event::{KeyCode, KeyEvent};
 use tokio::sync::{mpsc, watch};
-use tui_logger::{TuiWidgetEvent, TuiWidgetState};
+use tui_logger::TuiWidgetState;
 
 use crate::config::TuiConfig;
 use crate::events::{
@@ -69,12 +69,12 @@ impl Tab {
         Tab::ALL.iter().position(|t| t == self).unwrap_or(0)
     }
 
-    fn next(&self) -> Tab {
+    pub fn next(&self) -> Tab {
         let i = (self.index() + 1) % Tab::ALL.len();
         Tab::ALL[i].clone()
     }
 
-    fn prev(&self) -> Tab {
+    pub fn prev(&self) -> Tab {
         let i = (self.index() + Tab::ALL.len() - 1) % Tab::ALL.len();
         Tab::ALL[i].clone()
     }
@@ -82,6 +82,8 @@ impl Tab {
 
 pub struct App {
     pub config: TuiConfig,
+    /// Set true when state changes require redraw. Reset after each render.
+    pub needs_redraw: bool,
     pub active_tab: Tab,
     pub snapshot: Option<TuiSnapshot>,
     /// Per-symbol ROI history for sparkline visualization (symbol -> deque of ROI values)
@@ -153,7 +155,7 @@ pub struct App {
     /// True while a yield fetch is in flight; prevents overlapping requests and mock/real cycling.
     pub yield_fetch_pending: bool,
     /// Sender to trigger yield fetch (symbol); None when not wired.
-    yield_fetch_tx: Option<mpsc::UnboundedSender<String>>,
+    pub yield_fetch_tx: Option<mpsc::UnboundedSender<String>>,
     /// Last fetched loans list (NATS api.loans.list).
     pub loans_list: Option<Result<Vec<LoanRecord>, String>>,
     /// True while a loans fetch is in flight.
@@ -161,9 +163,9 @@ pub struct App {
     /// Scroll index for Loans tab.
     pub loans_scroll: usize,
     /// Sender to trigger loans fetch; None when not wired.
-    loans_fetch_tx: Option<mpsc::UnboundedSender<()>>,
+    pub loans_fetch_tx: Option<mpsc::UnboundedSender<()>>,
     /// Sender for strategy commands (S=start, T=stop); None when not wired.
-    strategy_cmd_tx: Option<mpsc::UnboundedSender<StrategyCommand>>,
+    pub strategy_cmd_tx: Option<mpsc::UnboundedSender<StrategyCommand>>,
     event_rx: mpsc::UnboundedReceiver<AppEvent>,
     snapshot_rx: watch::Receiver<Option<TuiSnapshot>>,
     config_rx: watch::Receiver<TuiConfig>,
@@ -185,6 +187,7 @@ impl App {
         let split_pane = config.split_pane;
         Self {
             config,
+            needs_redraw: true,
             active_tab: Tab::Dashboard,
             snapshot: None,
             roi_history: HashMap::new(),
@@ -235,6 +238,11 @@ impl App {
         }
     }
 
+    /// Mark that the UI needs to be redrawn on the next render cycle.
+    pub fn mark_dirty(&mut self) {
+        self.needs_redraw = true;
+    }
+
     /// Effective watchlist: override if set, else config.
     pub fn watchlist(&self) -> &[String] {
         self.watchlist_override
@@ -255,6 +263,7 @@ impl App {
                 self.yield_error = Some(e);
             }
         }
+        self.mark_dirty();
     }
 
     /// Request a yield fetch for the given symbol (no-op if yield_fetch_tx is None or a fetch is already in flight).
@@ -273,6 +282,7 @@ impl App {
     pub fn set_loans_data(&mut self, res: Result<Vec<LoanRecord>, String>) {
         self.loans_fetch_pending = false;
         self.loans_list = Some(res);
+        self.mark_dirty();
     }
 
     /// Request a loans list fetch (no-op if already in flight or tx not wired).
@@ -290,10 +300,14 @@ impl App {
     /// Set the last strategy command result (shown in hint bar). Ok(msg) = success message, Err(e) = error.
     pub fn set_strategy_result(&mut self, r: Result<String, String>) {
         self.last_strategy_result = Some(r);
+        self.mark_dirty();
     }
 
     /// Pull latest snapshot and config updates, process queued events.
+    /// Returns true if the UI state changed and needs redraw.
     pub fn tick(&mut self) {
+        let mut changed = false;
+
         // Apply hot-reloaded config if it changed (file/env); then apply in-TUI overrides
         if self.config_rx.has_changed().unwrap_or(false) {
             let base = self.config_rx.borrow_and_update().clone();
@@ -301,6 +315,7 @@ impl App {
             self.config_warning = validate_config_hint(&self.config);
             self.split_pane = self.config.split_pane;
             tracing::info!("Config reloaded from disk");
+            changed = true;
         }
 
         // Apply backend health updates from system.health subscriber
@@ -322,6 +337,7 @@ impl App {
                 if self.should_accept_snapshot(&snap) {
                     self.snapshot = Some(snap.clone());
                     self.update_roi_history(&snap);
+                    changed = true;
                 }
             }
         }
@@ -365,6 +381,10 @@ impl App {
         if self.active_tab == Tab::Loans && self.loans_list.is_none() && !self.loans_fetch_pending {
             self.request_loans_fetch();
         }
+
+        if changed {
+            self.needs_redraw = true;
+        }
     }
 
     fn apply_event(&mut self, event: AppEvent) {
@@ -381,7 +401,7 @@ impl App {
     }
 
     /// Length of orders list after applying order_filter (for Orders tab selection clamp).
-    fn filtered_orders_len(&self) -> usize {
+    pub fn filtered_orders_len(&self) -> usize {
         self.snapshot
             .as_ref()
             .map(|s| self.filtered_orders(s).len())
@@ -390,7 +410,7 @@ impl App {
 
     /// Filter snapshot orders by order_filter (symbol, status, or side).
     /// Result is sorted by submitted_at descending (newest first).
-    fn filtered_orders(&self, snap: &TuiSnapshot) -> Vec<RuntimeOrderDto> {
+    pub fn filtered_orders(&self, snap: &TuiSnapshot) -> Vec<RuntimeOrderDto> {
         let filter_lower = self.order_filter.to_lowercase();
         let mut orders = if filter_lower.is_empty() {
             snap.dto().orders.clone()
@@ -505,6 +525,8 @@ impl App {
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) {
+        self.needs_redraw = true;
+
         if self.show_help {
             self.show_help = false;
             return;
@@ -513,428 +535,54 @@ impl App {
             self.detail_popup = None;
             return;
         }
-        // Settings input mode: add symbol or edit config
-        if let Some(ref mut buf) = self.settings_add_symbol_input {
-            match key.code {
-                KeyCode::Enter => {
-                    if let Some(ref key_name) = self.settings_edit_config_key {
-                        // Apply config override
-                        let val = buf.trim().to_string();
-                        if !val.is_empty() {
-                            self.config_overrides.insert(key_name.clone(), val);
-                            let base = self.config_rx.borrow().clone();
-                            self.config = merge_config_overrides(base, &self.config_overrides);
-                            self.config_warning = validate_config_hint(&self.config);
-                            self.split_pane = self.config.split_pane;
-                        }
-                        self.settings_edit_config_key = None;
-                    } else {
-                        // Add symbol
-                        let s = buf.trim().to_uppercase();
-                        if !s.is_empty() {
-                            let mut list = self
-                                .watchlist_override
-                                .clone()
-                                .unwrap_or_else(|| self.config.watchlist.clone());
-                            if !list.contains(&s) {
-                                list.push(s);
-                                list.sort();
-                                self.watchlist_override = Some(list);
+        if self.settings_add_symbol_input.is_some() {
+            if let Some(ref mut buf) = self.settings_add_symbol_input {
+                match key.code {
+                    KeyCode::Enter => {
+                        if let Some(ref key_name) = self.settings_edit_config_key {
+                            let val = buf.trim().to_string();
+                            if !val.is_empty() {
+                                self.config_overrides.insert(key_name.clone(), val);
+                                let base = self.config_rx.borrow().clone();
+                                self.config = merge_config_overrides(base, &self.config_overrides);
+                                self.config_warning = validate_config_hint(&self.config);
+                                self.split_pane = self.config.split_pane;
+                            }
+                            self.settings_edit_config_key = None;
+                        } else {
+                            let s = buf.trim().to_uppercase();
+                            if !s.is_empty() {
+                                let mut list = self
+                                    .watchlist_override
+                                    .clone()
+                                    .unwrap_or_else(|| self.config.watchlist.clone());
+                                if !list.contains(&s) {
+                                    list.push(s);
+                                    list.sort();
+                                    self.watchlist_override = Some(list);
+                                }
                             }
                         }
+                        self.settings_add_symbol_input = None;
                     }
-                    self.settings_add_symbol_input = None;
+                    KeyCode::Esc => {
+                        self.settings_edit_config_key = None;
+                        self.settings_add_symbol_input = None;
+                    }
+                    KeyCode::Backspace => {
+                        buf.pop();
+                    }
+                    KeyCode::Char(c) if !c.is_control() => {
+                        buf.push(c);
+                    }
+                    _ => {}
                 }
-                KeyCode::Esc => {
-                    self.settings_edit_config_key = None;
-                    self.settings_add_symbol_input = None;
-                }
-                KeyCode::Backspace => {
-                    buf.pop();
-                }
-                KeyCode::Char(c) if !c.is_control() => {
-                    buf.push(c);
-                }
-                _ => {}
             }
             return;
         }
-        match key.code {
-            KeyCode::Char('q') | KeyCode::Char('Q') => self.should_quit = true,
-            KeyCode::Char('?') => self.show_help = true,
-            // Yield tab: ←/→ change symbol (before generic tab switch)
-            KeyCode::Left if self.active_tab == Tab::Yield => {
-                let len = self.watchlist().len();
-                if len > 0 {
-                    self.yield_symbol_index = (self.yield_symbol_index + len - 1) % len;
-                    let symbol = self.watchlist()[self.yield_symbol_index].clone();
-                    self.request_yield_fetch(&symbol);
-                }
-            }
-            KeyCode::Right if self.active_tab == Tab::Yield => {
-                let len = self.watchlist().len();
-                if len > 0 {
-                    self.yield_symbol_index = (self.yield_symbol_index + 1) % len;
-                    let symbol = self.watchlist()[self.yield_symbol_index].clone();
-                    self.request_yield_fetch(&symbol);
-                }
-            }
-            KeyCode::Tab | KeyCode::Right => self.active_tab = self.active_tab.next(),
-            KeyCode::BackTab | KeyCode::Left => self.active_tab = self.active_tab.prev(),
-            KeyCode::Char('1') => self.active_tab = Tab::Dashboard,
-            KeyCode::Char('2') => self.active_tab = Tab::Positions,
-            KeyCode::Char('3') => self.active_tab = Tab::Orders,
-            KeyCode::Char('4') => self.active_tab = Tab::Alerts,
-            KeyCode::Char('5') => {
-                self.active_tab = Tab::Yield;
-                let wl = self.watchlist();
-                if !wl.is_empty() {
-                    let idx = self.yield_symbol_index.min(wl.len().saturating_sub(1));
-                    let symbol = wl[idx].clone();
-                    self.request_yield_fetch(&symbol);
-                }
-            }
-            KeyCode::Char('6') => {
-                self.active_tab = Tab::Loans;
-                self.request_loans_fetch();
-            }
-            KeyCode::Char('7') => self.active_tab = Tab::Scenarios,
-            KeyCode::Char('8') => self.active_tab = Tab::Logs,
-            KeyCode::Char('9') => self.active_tab = Tab::Settings,
-            // Log tab navigation — forwarded to TuiWidgetState
-            KeyCode::Up if self.active_tab == Tab::Logs => {
-                self.log_state.transition(TuiWidgetEvent::UpKey);
-            }
-            KeyCode::Down if self.active_tab == Tab::Logs => {
-                self.log_state.transition(TuiWidgetEvent::DownKey);
-            }
-            KeyCode::PageUp if self.active_tab == Tab::Logs => {
-                self.log_state.transition(TuiWidgetEvent::PrevPageKey);
-            }
-            KeyCode::PageDown if self.active_tab == Tab::Logs => {
-                self.log_state.transition(TuiWidgetEvent::NextPageKey);
-            }
-            // Log level filter (canonical tui-logger keys)
-            KeyCode::Char('+') if self.active_tab == Tab::Logs => {
-                self.log_state.transition(TuiWidgetEvent::PlusKey);
-            }
-            KeyCode::Char('-') if self.active_tab == Tab::Logs => {
-                self.log_state.transition(TuiWidgetEvent::MinusKey);
-            }
-            KeyCode::Char('h') if self.active_tab == Tab::Logs => {
-                self.log_state.transition(TuiWidgetEvent::HideKey);
-            }
-            KeyCode::Esc if self.active_tab == Tab::Logs => {
-                self.log_state.transition(TuiWidgetEvent::EscapeKey);
-            }
-            // Positions tab (or right pane when split): [c] combo view, arrow-key scroll
-            KeyCode::Char('c') | KeyCode::Char('C')
-                if self.active_tab == Tab::Positions || self.split_pane =>
-            {
-                self.positions_combo_view = !self.positions_combo_view;
-                self.positions_scroll = 0;
-            }
-            KeyCode::Up if self.active_tab == Tab::Positions || self.split_pane => {
-                self.positions_scroll = self.positions_scroll.saturating_sub(1);
-            }
-            KeyCode::Down if self.active_tab == Tab::Positions || self.split_pane => {
-                let len = self
-                    .snapshot
-                    .as_ref()
-                    .map(|s| {
-                        crate::ui::positions_display_info(
-                            &s.dto().positions,
-                            self.positions_combo_view,
-                            &self.positions_expanded_combos,
-                        )
-                        .0
-                    })
-                    .unwrap_or(0);
-                if len > 0 {
-                    self.positions_scroll = (self.positions_scroll + 1).min(len - 1);
-                }
-            }
-            KeyCode::PageUp if self.active_tab == Tab::Positions || self.split_pane => {
-                self.positions_scroll = self.positions_scroll.saturating_sub(10);
-            }
-            KeyCode::PageDown if self.active_tab == Tab::Positions || self.split_pane => {
-                let len = self
-                    .snapshot
-                    .as_ref()
-                    .map(|s| {
-                        crate::ui::positions_display_info(
-                            &s.dto().positions,
-                            self.positions_combo_view,
-                            &self.positions_expanded_combos,
-                        )
-                        .0
-                    })
-                    .unwrap_or(0);
-                if len > 0 {
-                    self.positions_scroll = (self.positions_scroll + 10).min(len - 1);
-                }
-            }
-            // Orders tab: arrow-key scroll (selection index into filtered list)
-            KeyCode::Up if self.active_tab == Tab::Orders => {
-                self.orders_scroll = self.orders_scroll.saturating_sub(1);
-            }
-            KeyCode::Down if self.active_tab == Tab::Orders => {
-                let len = self.filtered_orders_len();
-                if len > 0 {
-                    self.orders_scroll = (self.orders_scroll + 1).min(len - 1);
-                }
-            }
-            KeyCode::PageUp if self.active_tab == Tab::Orders => {
-                self.orders_scroll = self.orders_scroll.saturating_sub(10);
-            }
-            KeyCode::PageDown if self.active_tab == Tab::Orders => {
-                let len = self.filtered_orders_len();
-                if len > 0 {
-                    self.orders_scroll = (self.orders_scroll + 10).min(len - 1);
-                }
-            }
-            KeyCode::Enter if self.active_tab == Tab::Orders => {
-                if let Some(ref snap) = self.snapshot {
-                    let filtered = self.filtered_orders(snap);
-                    let idx = self.orders_scroll.min(filtered.len().saturating_sub(1));
-                    if let Some(order) = filtered.get(idx) {
-                        self.detail_popup = Some(DetailPopupContent::Order(order.clone()));
-                    }
-                }
-            }
-            KeyCode::Up if self.active_tab == Tab::Loans => {
-                self.loans_scroll = self.loans_scroll.saturating_sub(1);
-            }
-            KeyCode::Down if self.active_tab == Tab::Loans => {
-                let len = self
-                    .loans_list
-                    .as_ref()
-                    .and_then(|r| r.as_ref().ok())
-                    .map(|l| l.len())
-                    .unwrap_or(0);
-                if len > 0 {
-                    self.loans_scroll = (self.loans_scroll + 1).min(len - 1);
-                }
-            }
-            KeyCode::PageUp if self.active_tab == Tab::Loans => {
-                self.loans_scroll = self.loans_scroll.saturating_sub(10);
-            }
-            KeyCode::PageDown if self.active_tab == Tab::Loans => {
-                let len = self
-                    .loans_list
-                    .as_ref()
-                    .and_then(|r| r.as_ref().ok())
-                    .map(|l| l.len())
-                    .unwrap_or(0);
-                if len > 0 {
-                    self.loans_scroll = (self.loans_scroll + 10).min(len - 1);
-                }
-            }
-            KeyCode::Enter if self.active_tab == Tab::Positions || self.split_pane => {
-                if let Some(ref snap) = self.snapshot {
-                    let (_display_len, index_map, combo_key_per_row) =
-                        crate::ui::positions_display_info(
-                            &snap.dto().positions,
-                            self.positions_combo_view,
-                            &self.positions_expanded_combos,
-                        );
-                    if let Some(Some(combo_key)) = combo_key_per_row.get(self.positions_scroll) {
-                        if self.positions_expanded_combos.contains(combo_key) {
-                            self.positions_expanded_combos.remove(combo_key);
-                        } else {
-                            self.positions_expanded_combos.insert(combo_key.clone());
-                        }
-                    } else if let Some(Some(pos_idx)) = index_map.get(self.positions_scroll) {
-                        if let Some(pos) = snap.dto().positions.get(*pos_idx) {
-                            self.detail_popup = Some(DetailPopupContent::Position(pos.clone()));
-                        }
-                    }
-                }
-            }
-            // Alerts tab: arrow-key scroll
-            KeyCode::Up if self.active_tab == Tab::Alerts => {
-                self.alerts_scroll = self.alerts_scroll.saturating_sub(1);
-            }
-            KeyCode::Down if self.active_tab == Tab::Alerts => {
-                let len = self
-                    .snapshot
-                    .as_ref()
-                    .map(|s| s.dto().alerts.len())
-                    .unwrap_or(0);
-                if len > 0 {
-                    self.alerts_scroll = (self.alerts_scroll + 1).min(len - 1);
-                }
-            }
-            KeyCode::PageUp if self.active_tab == Tab::Alerts => {
-                self.alerts_scroll = self.alerts_scroll.saturating_sub(10);
-            }
-            KeyCode::PageDown if self.active_tab == Tab::Alerts => {
-                let len = self
-                    .snapshot
-                    .as_ref()
-                    .map(|s| s.dto().alerts.len())
-                    .unwrap_or(0);
-                if len > 0 {
-                    self.alerts_scroll = (self.alerts_scroll + 10).min(len - 1);
-                }
-            }
-            // Scenarios tab: arrow-key scroll
-            KeyCode::Up if self.active_tab == Tab::Scenarios => {
-                self.scenarios_scroll = self.scenarios_scroll.saturating_sub(1);
-            }
-            KeyCode::Down if self.active_tab == Tab::Scenarios => {
-                let filtered = crate::ui::filtered_scenarios(self);
-                if !filtered.is_empty() {
-                    self.scenarios_scroll =
-                        (self.scenarios_scroll + 1).min(filtered.len().saturating_sub(1));
-                }
-            }
-            KeyCode::PageUp if self.active_tab == Tab::Scenarios => {
-                self.scenarios_scroll = self.scenarios_scroll.saturating_sub(10);
-            }
-            KeyCode::PageDown if self.active_tab == Tab::Scenarios => {
-                let filtered = crate::ui::filtered_scenarios(self);
-                if !filtered.is_empty() {
-                    self.scenarios_scroll =
-                        (self.scenarios_scroll + 10).min(filtered.len().saturating_sub(1));
-                }
-            }
-            KeyCode::Enter if self.active_tab == Tab::Scenarios => {
-                let filtered = crate::ui::filtered_scenarios(self);
-                let idx = self.scenarios_scroll.min(filtered.len().saturating_sub(1));
-                if let Some(scenario) = filtered.get(idx) {
-                    self.detail_popup = Some(DetailPopupContent::Scenario(scenario.clone()));
-                }
-            }
-            KeyCode::Char('[') if self.active_tab == Tab::Scenarios => {
-                self.scenarios_dte_half_width = (self.scenarios_dte_half_width - 1).max(0);
-            }
-            KeyCode::Char(']') if self.active_tab == Tab::Scenarios => {
-                self.scenarios_dte_half_width = (self.scenarios_dte_half_width + 1).min(60);
-            }
-            KeyCode::Char('w') | KeyCode::Char('W') if self.active_tab == Tab::Scenarios => {
-                self.scenarios_strike_width_filter = match self.scenarios_strike_width_filter {
-                    None => Some(25),
-                    Some(25) => Some(50),
-                    Some(50) => Some(100),
-                    Some(_) => None,
-                };
-            }
-            // Settings tab: section/symbol scroll, config key scroll (section 1), add symbol (a), edit config (e), remove (Del), reset override (r)
-            KeyCode::Up if self.active_tab == Tab::Settings => {
-                if self.settings_section_index == 2 {
-                    self.settings_symbol_index = self.settings_symbol_index.saturating_sub(1);
-                } else if self.settings_section_index == 1 {
-                    self.settings_config_key_index =
-                        self.settings_config_key_index.saturating_sub(1);
-                } else {
-                    self.settings_section_index = self.settings_section_index.saturating_sub(1);
-                }
-            }
-            KeyCode::Down if self.active_tab == Tab::Settings => {
-                if self.settings_section_index == 2 {
-                    let len = self.watchlist().len();
-                    if len > 0 {
-                        self.settings_symbol_index =
-                            (self.settings_symbol_index + 1).min(len.saturating_sub(1));
-                    }
-                } else if self.settings_section_index == 1 {
-                    self.settings_config_key_index = (self.settings_config_key_index + 1).min(4);
-                } else {
-                    self.settings_section_index = (self.settings_section_index + 1).min(2);
-                }
-            }
-            KeyCode::Char('a') | KeyCode::Char('A') if self.active_tab == Tab::Settings => {
-                if self.settings_section_index != 2 {
-                    return;
-                }
-                self.settings_add_symbol_input = Some(String::new());
-            }
-            KeyCode::Char('e') | KeyCode::Char('E') | KeyCode::Enter
-                if self.active_tab == Tab::Settings && self.settings_section_index == 1 =>
-            {
-                if let Some((key, value)) = self.config_key_value_at(self.settings_config_key_index)
-                {
-                    self.settings_edit_config_key = Some(key);
-                    self.settings_add_symbol_input = Some(value);
-                }
-            }
-            KeyCode::Char('r') | KeyCode::Char('R') if self.active_tab == Tab::Settings => {
-                self.watchlist_override = None;
-            }
-            KeyCode::Delete if self.active_tab == Tab::Settings => {
-                let wl = self.watchlist();
-                if !wl.is_empty() && self.settings_symbol_index < wl.len() {
-                    let mut list = self
-                        .watchlist_override
-                        .clone()
-                        .unwrap_or_else(|| self.config.watchlist.clone());
-                    list.remove(self.settings_symbol_index);
-                    let new_len = list.len();
-                    self.watchlist_override = Some(list);
-                    self.settings_symbol_index =
-                        self.settings_symbol_index.min(new_len.saturating_sub(1));
-                }
-            }
-            // Order filter: '/' to activate, chars to add, Backspace to delete, Esc to clear
-            // Mode cycle: M → Live / Mock / DRY-RUN (api.admin.set_mode)
-            KeyCode::Char('m') | KeyCode::Char('M') => {
-                if let Some(ref tx) = self.strategy_cmd_tx {
-                    let current = self
-                        .snapshot
-                        .as_ref()
-                        .map(|s| s.dto().mode.to_uppercase())
-                        .unwrap_or_else(|| "DRY-RUN".into());
-                    let current = if current == "TUI" {
-                        "DRY-RUN"
-                    } else {
-                        current.as_str()
-                    };
-                    let next = match current {
-                        "LIVE" => "MOCK",
-                        "MOCK" => "DRY-RUN",
-                        _ => "LIVE",
-                    };
-                    let _ = tx.send(StrategyCommand::SetMode(next.to_string()));
-                }
-            }
-            // Strategy control via NATS (S=start, T=stop); skip when on Orders tab so s/t can filter
-            KeyCode::Char('s') | KeyCode::Char('S') if self.active_tab != Tab::Orders => {
-                if let Some(ref tx) = self.strategy_cmd_tx {
-                    let _ = tx.send(StrategyCommand::Start);
-                }
-            }
-            KeyCode::Char('t') | KeyCode::Char('T') if self.active_tab != Tab::Orders => {
-                if let Some(ref tx) = self.strategy_cmd_tx {
-                    let _ = tx.send(StrategyCommand::Stop);
-                }
-            }
-            KeyCode::Char('k') | KeyCode::Char('K') if self.active_tab != Tab::Orders => {
-                if let Some(ref tx) = self.strategy_cmd_tx {
-                    let _ = tx.send(StrategyCommand::CancelAll);
-                }
-            }
-            // Force snapshot: backend publishes current snapshot once to NATS (api.snapshot.publish_now)
-            KeyCode::Char('f') | KeyCode::Char('F') => {
-                if let Some(ref tx) = self.strategy_cmd_tx {
-                    let _ = tx.send(StrategyCommand::PublishSnapshot);
-                }
-            }
-            KeyCode::Char('/') if self.active_tab == Tab::Orders => {
-                self.order_filter.clear();
-            }
-            KeyCode::Char(c) => {
-                if self.active_tab == Tab::Orders {
-                    self.order_filter.push(c);
-                }
-            }
-            KeyCode::Backspace if self.active_tab == Tab::Orders => {
-                self.order_filter.pop();
-            }
-            KeyCode::Esc if self.active_tab == Tab::Orders => {
-                self.order_filter.clear();
-            }
-            _ => {}
+
+        if let Some(action) = crate::input::key_to_action(self, key) {
+            crate::input::apply_action(self, action);
         }
     }
 }
