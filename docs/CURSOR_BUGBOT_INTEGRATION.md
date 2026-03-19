@@ -375,7 +375,7 @@ Recommendation:
 - **Cursor Bugbot Documentation**: [docs.cursor.com/en/bugbot](https://docs.cursor.com/en/bugbot)
 - **Cursor Dashboard**: [cursor.com/dashboard](https://cursor.com/dashboard)
 - **Project Bugbot Rules**: `.cursor/BUGBOT.md`
-- **Cursor Setup Guide**: `docs/research/integration/CURSOR_SETUP.md`
+- **Cursor Setup Guide**: `docs/ CURSOR_SETUP.md`
 - **Security Guidelines**: `.cursorrules` (Security & Best Practices section)
 
 ---

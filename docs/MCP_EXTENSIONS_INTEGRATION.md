@@ -432,8 +432,8 @@ Update your prompts to explicitly leverage MCP servers:
 
 ## See Also
 
-- [MCP_SERVERS.md](research/integration/MCP_SERVERS.md) - Detailed MCP server configuration
+- [MCP_SERVERS.md]( MCP_SERVERS.md) - Detailed MCP server configuration
 - [CURSOR_RECOMMENDATIONS.md](CURSOR_RECOMMENDATIONS.md) - Extension recommendations
-- [CURSOR_SETUP.md](research/integration/CURSOR_SETUP.md) - General Cursor setup
+- [CURSOR_SETUP.md]( CURSOR_SETUP.md) - General Cursor setup
 - **NotebookLM:** `.cursor/rules/notebooklm.mdc` - when to use NotebookLM MCP
 - **Rules:** `.cursorrules` and `.cursor/rules/` - AI assistant guidelines

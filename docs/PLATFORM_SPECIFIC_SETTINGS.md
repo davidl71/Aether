@@ -240,6 +240,6 @@ ls /usr/include/c++/11  # GCC version-specific
 
 ## Related Documentation
 
-- [Cross-Platform Setup Guide](research/integration/CROSS_PLATFORM_SETUP.md)
+- [Cross-Platform Setup Guide]( CROSS_PLATFORM_SETUP.md)
 - [CMake Presets Guide](external/CMake_PRESETS_GUIDE.md)
 - [User vs Workspace Settings](USER_VS_WORKSPACE_SETTINGS.md)

@@ -294,7 +294,7 @@ Ona free tier includes:
 - [Ona Getting Started](https://ona.com/docs/ona/getting-started)
 - [Ona MCP Setup](ONA_MCP_SETUP.md)
 - [Gitpod Flex Extension](https://www.gitpod.io/docs/flex/editors/vscode)
-- [Project MCP Servers](research/integration/MCP_SERVERS.md)
+- [Project MCP Servers]( MCP_SERVERS.md)
 
 ## Next Steps
 

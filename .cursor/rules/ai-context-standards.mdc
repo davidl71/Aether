@@ -32,6 +32,13 @@ This project provides standard context files that AI coding assistants automatic
 | `opencode.json` | OpenCode | Config, MCP server settings |
 | `.opencode/commands/*.md` | OpenCode | Custom slash commands |
 
+### Excluded from AI Context
+
+| Path | Reason |
+|------|--------|
+| `docs/archive/` | Historical C++/LEAN/WASM research; git-tracked but excluded from AI indexing. Knowledge extracted in `docs/ARCHIVE_CPP_KNOWLEDGE_SUMMARY.md`. |
+| `docs/research/integration/` | Cleared; docs moved to `docs/` (live) or `docs/archive/` (obsolete). |
+
 ### Custom Claude Agents
 
 | Agent | File | Purpose |

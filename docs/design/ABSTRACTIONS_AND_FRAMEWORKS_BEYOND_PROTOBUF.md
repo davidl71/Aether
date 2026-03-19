@@ -53,7 +53,7 @@
 | Tool | Role | When to use | Where in this repo |
 |------|------|-------------|--------------------|
 | **NautilusTrader** | Python-first trading framework (data, execution, backtest). | Strategy research, execution adapter, backtesting. | Referenced in integration; C++ remains canonical for box spread math. |
-| **LEAN (QuantConnect)** | Cloud backtesting and live trading. | Alternative backtest/live stack; historical integration notes remain. | Historical LEAN notes in `docs/research/integration/`; proto/types can feed into LEAN where useful. |
+| **LEAN (QuantConnect)** | Cloud backtesting and live trading. | Alternative backtest/live stack; historical integration notes remain. | Historical LEAN notes in `do../`; proto/types can feed into LEAN where useful. |
 | **SmartQuant / FLOX** | C++ trading frameworks. | Reference for patterns; not a direct dependency. | Docs only (`docs/API_DOCUMENTATION_INDEX.md`, research). |
 
 ---

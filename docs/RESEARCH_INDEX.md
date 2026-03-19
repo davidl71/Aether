@@ -2,7 +2,7 @@
 
 **Purpose**: Central navigation hub for research, learnings, analysis, and integration documents in this project.
 
-> Historical note: this index intentionally includes older evaluation material about deferred Apple clients, deprecated Nautilus work, and removed broker/service paths. Treat it as research/archive context, not as the source of truth for the active runtime. For the current system shape, start with `docs/platform/CURRENT_TOPOLOGY.md`.
+> Historical note: this index intentionally includes older evaluation material about deferred Apple clients, deprecated Nautilus work, and removed broker/service paths. Treat it as research/archive context, not as the source of truth for the active runtime. For the current system shape, start with `docs/platform/CURRENT_TOPOLOGY.md`. Archived C++/LEAN/WASM docs are in `docs/archive/` (excluded from AI context); key knowledge extracted in `docs/ARCHIVE_CPP_KNOWLEDGE_SUMMARY.md`.
 
 **Last Updated**: 2025-11-20
 **Total Documents**: 300+ research documents indexed
@@ -53,7 +53,7 @@ Documents containing external API documentation, whitepapers, and market data re
 - **[RESEARCH_TRADING_ECONOMICS_API.md](research/external/RESEARCH_TRADING_ECONOMICS_API.md)** - Trading Economics API research
 - **[RESEARCH_IB_PYTHON_TRADING.md](research/external/RESEARCH_IB_PYTHON_TRADING.md)** - IB Python trading patterns
 - **[QUANTPEDIA_BROKERAGE_APIS.md](research/external/QUANTPEDIA_BROKERAGE_APIS.md)** - Brokerage API research
-- **[ALPACA_INTEGRATION_PLAN_V2.md](research/integration/ALPACA_INTEGRATION_PLAN_V2.md)** - Alpaca API integration
+- **[ALPACA_INTEGRATION_PLAN_V2.md](ALPACA_INTEGRATION_PLAN_V2.md)** - Alpaca API integration
 - **[IB_CLIENT_PORTAL_API_INTEGRATION_DESIGN.md](research/external/IB_CLIENT_PORTAL_API_INTEGRATION_DESIGN.md)** - IB Client Portal API
 
 ### Financial Platforms & Tools
@@ -151,45 +151,45 @@ Step-by-step integration instructions for external services, APIs, and tools.
 ### Broker Integrations
 
 - **TWS_INTEGRATION_STATUS** (doc removed; see API_DOCUMENTATION_INDEX.md for TWS)
-- **[ALPACA_BACKEND_SETUP.md](research/integration/ALPACA_BACKEND_SETUP.md)** - Alpaca backend setup
-- **[ALPACA_API_INTEGRATION_DESIGN.md](research/integration/ALPACA_API_INTEGRATION_DESIGN.md)** - Alpaca API design
-- **[LEAN_IBKR_SETUP.md](research/integration/LEAN_IBKR_SETUP.md)** - LEAN IBKR setup
-- **[LEAN_ALPACA_SETUP.md](research/integration/LEAN_ALPACA_SETUP.md)** - LEAN Alpaca setup
-- **[LEAN_SETUP.md](research/integration/LEAN_SETUP.md)** - LEAN platform setup
+- **[ALPACA_BACKEND_SETUP.md](ALPACA_BACKEND_SETUP.md)** - Alpaca backend setup
+- **[ALPACA_API_INTEGRATION_DESIGN.md](ALPACA_API_INTEGRATION_DESIGN.md)** - Alpaca API design
+- **[LEAN_IBKR_SETUP.md](LEAN_IBKR_SETUP.md)** - LEAN IBKR setup
+- **[LEAN_ALPACA_SETUP.md](LEAN_ALPACA_SETUP.md)** - LEAN Alpaca setup
+- **[LEAN_SETUP.md](LEAN_SETUP.md)** - LEAN platform setup
 
 ### Data & Market Data
 
-- **[MASSIVE_INTEGRATION.md](research/integration/MASSIVE_INTEGRATION.md)** - Massive.com integration
-- **[LIVEVOL_QUICK_START.md](research/integration/LIVEVOL_QUICK_START.md)** - LiveVol setup
+- **[MASSIVE_INTEGRATION.md](MASSIVE_INTEGRATION.md)** - Massive.com integration
+- **[LIVEVOL_QUICK_START.md](LIVEVOL_QUICK_START.md)** - LiveVol setup
 - **LIVEVOL_AUTHENTICATION_SUMMARY** (doc removed)
-- **[LIVEVOL_API_CREDENTIALS_GUIDE.md](research/integration/LIVEVOL_API_CREDENTIALS_GUIDE.md)** - LiveVol credentials
-- **[LIVEVOL_CREDENTIALS_WHERE_TO_FIND.md](research/integration/LIVEVOL_CREDENTIALS_WHERE_TO_FIND.md)** - Credential location
-- **[LIVEVOL_QUOTED_SPREADS_GUIDE.md](research/integration/LIVEVOL_QUOTED_SPREADS_GUIDE.md)** - Quoted spreads guide
-- **[LIVEVOL_TRIAL_SETUP.md](research/integration/LIVEVOL_TRIAL_SETUP.md)** - LiveVol trial
+- **[LIVEVOL_API_CREDENTIALS_GUIDE.md](LIVEVOL_API_CREDENTIALS_GUIDE.md)** - LiveVol credentials
+- **[LIVEVOL_CREDENTIALS_WHERE_TO_FIND.md](LIVEVOL_CREDENTIALS_WHERE_TO_FIND.md)** - Credential location
+- **[LIVEVOL_QUOTED_SPREADS_GUIDE.md](LIVEVOL_QUOTED_SPREADS_GUIDE.md)** - Quoted spreads guide
+- **[LIVEVOL_TRIAL_SETUP.md](LIVEVOL_TRIAL_SETUP.md)** - LiveVol trial
 
 ### Financial Tools
 
-- **[LEDGER_INTEGRATION_GUIDE.md](research/integration/LEDGER_INTEGRATION_GUIDE.md)** - Ledger CLI integration
-- **[LEDGER_CORE_LIBRARY_DESIGN.md](research/integration/LEDGER_CORE_LIBRARY_DESIGN.md)** - Ledger library design
-- **[LEDGER_IMPORT_USAGE.md](research/integration/LEDGER_IMPORT_USAGE.md)** - Ledger import
-- **[LEDGER_PERSISTENCE_USAGE.md](research/integration/LEDGER_PERSISTENCE_USAGE.md)** - Ledger persistence
+- **[LEDGER_INTEGRATION_GUIDE.md](LEDGER_INTEGRATION_GUIDE.md)** - Ledger CLI integration
+- **[LEDGER_CORE_LIBRARY_DESIGN.md](LEDGER_CORE_LIBRARY_DESIGN.md)** - Ledger library design
+- **[LEDGER_IMPORT_USAGE.md](LEDGER_IMPORT_USAGE.md)** - Ledger import
+- **[LEDGER_PERSISTENCE_USAGE.md](LEDGER_PERSISTENCE_USAGE.md)** - Ledger persistence
 
 ### Development Tools
 
-- **[QUANTLIB_INTEGRATION_GUIDE.md](research/integration/QUANTLIB_INTEGRATION_GUIDE.md)** - QuantLib integration
-- **[EIGEN_INTEGRATION.md](research/integration/EIGEN_INTEGRATION.md)** - Eigen library integration
-- **[NLOPT_INTEGRATION_GUIDE.md](research/integration/NLOPT_INTEGRATION_GUIDE.md)** - NLopt optimization
-- **[OPENALGO_INTEGRATION_PATTERNS.md](research/integration/OPENALGO_INTEGRATION_PATTERNS.md)** - OpenAlgo patterns
-- **[ONIXS_DIRECTCONNECT.md](research/integration/ONIXS_DIRECTCONNECT.md)** - ONIXS DirectConnect
+- **[QUANTLIB_INTEGRATION_GUIDE.md](QUANTLIB_INTEGRATION_GUIDE.md)** - QuantLib integration
+- **[EIGEN_INTEGRATION.md](EIGEN_INTEGRATION.md)** - Eigen library integration
+- **[NLOPT_INTEGRATION_GUIDE.md](NLOPT_INTEGRATION_GUIDE.md)** - NLopt optimization
+- **[OPENALGO_INTEGRATION_PATTERNS.md](OPENALGO_INTEGRATION_PATTERNS.md)** - OpenAlgo patterns
+- **[ONIXS_DIRECTCONNECT.md](ONIXS_DIRECTCONNECT.md)** - ONIXS DirectConnect
 - **ONIXS_FIX_DICTIONARY_TOOLS** (doc removed)
 
 ### Platform Integrations
 
-- **[LEAN_PWA_TUI_INTEGRATION.md](research/integration/LEAN_PWA_TUI_INTEGRATION.md)** - LEAN PWA/TUI integration
-- **[LEAN_PWA_TUI_INTEGRATION_ANALYSIS.md](research/integration/LEAN_PWA_TUI_INTEGRATION_ANALYSIS.md)** - Integration analysis
-- **[LEAN_PYBIND11_INTEGRATION_ANALYSIS.md](research/integration/LEAN_PYBIND11_INTEGRATION_ANALYSIS.md)** - Pybind11 analysis
-- **[LEAN_REST_API_WRAPPER_DESIGN.md](research/integration/LEAN_REST_API_WRAPPER_DESIGN.md)** - REST API wrapper
-- **[LEAN_BROKER_ADAPTERS.md](research/integration/LEAN_BROKER_ADAPTERS.md)** - Broker adapters
+- **[LEAN_PWA_TUI_INTEGRATION.md](LEAN_PWA_TUI_INTEGRATION.md)** - LEAN PWA/TUI integration
+- **[LEAN_PWA_TUI_INTEGRATION_ANALYSIS.md](LEAN_PWA_TUI_INTEGRATION_ANALYSIS.md)** - Integration analysis
+- **[LEAN_PYBIND11_INTEGRATION_ANALYSIS.md](LEAN_PYBIND11_INTEGRATION_ANALYSIS.md)** - Pybind11 analysis
+- **[LEAN_REST_API_WRAPPER_DESIGN.md](LEAN_REST_API_WRAPPER_DESIGN.md)** - REST API wrapper
+- **[LEAN_BROKER_ADAPTERS.md](LEAN_BROKER_ADAPTERS.md)** - Broker adapters
 - **LEAN_MIGRATION_SUMMARY** (doc removed)
 
 ---
@@ -253,39 +253,39 @@ How-to guides, setup instructions, and implementation documentation.
 
 ### Quick Start & Setup
 
-- **[QUICK_START.md](research/integration/QUICK_START.md)** - Quick start guide
-- **[QUICK_START_CROSS_PLATFORM.md](research/integration/QUICK_START_CROSS_PLATFORM.md)** - Cross-platform setup
-- **[IMPLEMENTATION_GUIDE.md](research/integration/IMPLEMENTATION_GUIDE.md)** - Complete implementation guide
+- **[QUICK_START.md](QUICK_START.md)** - Quick start guide
+- **[QUICK_START_CROSS_PLATFORM.md](QUICK_START_CROSS_PLATFORM.md)** - Cross-platform setup
+- **[IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)** - Complete implementation guide
 - **IMPLEMENTATION_COMPLETE_SUMMARY** (doc removed)
 - **PLAN_IMPLEMENTATION_SUMMARY** (doc removed)
 
 ### Platform Setup
 
-- **[WINDOWS_SETUP_GUIDE.md](research/integration/WINDOWS_SETUP_GUIDE.md)** - Windows setup
-- **[CROSS_PLATFORM_SETUP.md](research/integration/CROSS_PLATFORM_SETUP.md)** - Cross-platform setup
-- **[WORKTREE_SETUP.md](research/integration/WORKTREE_SETUP.md)** - Git worktree setup
-- **[CURSOR_SETUP.md](research/integration/CURSOR_SETUP.md)** - Cursor IDE setup
-- **[CURSOR_IGNORE_SETUP.md](research/integration/CURSOR_IGNORE_SETUP.md)** - Cursor ignore configuration
-- **[CURSOR_DOCS_USAGE.md](research/integration/CURSOR_DOCS_USAGE.md)** - Cursor @docs usage
+- **[WINDOWS_SETUP_GUIDE.md](WINDOWS_SETUP_GUIDE.md)** - Windows setup
+- **[CROSS_PLATFORM_SETUP.md](CROSS_PLATFORM_SETUP.md)** - Cross-platform setup
+- **[WORKTREE_SETUP.md](WORKTREE_SETUP.md)** - Git worktree setup
+- **[CURSOR_SETUP.md](CURSOR_SETUP.md)** - Cursor IDE setup
+- **[CURSOR_IGNORE_SETUP.md](CURSOR_IGNORE_SETUP.md)** - Cursor ignore configuration
+- **[CURSOR_DOCS_USAGE.md](CURSOR_DOCS_USAGE.md)** - Cursor @docs usage
 
 ### Build & Development
 
-- **[DISTRIBUTED_COMPILATION.md](research/integration/DISTRIBUTED_COMPILATION.md)** - Distributed builds
-- **[WASM_INTEGRATION_PLAN.md](research/integration/WASM_INTEGRATION_PLAN.md)** - WebAssembly integration
-- **[WASM_QUICK_START.md](research/integration/WASM_QUICK_START.md)** - WASM quick start
-- **[EMSCRIPTEN_SETUP.md](research/integration/EMSCRIPTEN_SETUP.md)** - Emscripten setup
-- **[PROTOBUF_MIGRATION_PLAN.md](research/integration/PROTOBUF_MIGRATION_PLAN.md)** - Protocol Buffers migration
+- **[DISTRIBUTED_COMPILATION.md](DISTRIBUTED_COMPILATION.md)** - Distributed builds
+- **[WASM_INTEGRATION_PLAN.md](WASM_INTEGRATION_PLAN.md)** - WebAssembly integration
+- **[WASM_QUICK_START.md](WASM_QUICK_START.md)** - WASM quick start
+- **[EMSCRIPTEN_SETUP.md](EMSCRIPTEN_SETUP.md)** - Emscripten setup
+- **[PROTOBUF_MIGRATION_PLAN.md](PROTOBUF_MIGRATION_PLAN.md)** - Protocol Buffers migration
 - **[DECIMAL_MIGRATION_PLANNING.md](decimal_migration_planning.md)** - Decimal migration
 
 ### Testing & Validation
 
-- **[TESTING_STRATEGY.md](research/integration/TESTING_STRATEGY.md)** - Testing strategy
+- **[TESTING_STRATEGY.md](TESTING_STRATEGY.md)** - Testing strategy
 - **TUI_TESTING** — Historical Python/Textual TUI testing (archived; doc removed)
-- **[LEAN_TESTING.md](research/integration/LEAN_TESTING.md)** - LEAN testing
-- **[INTEGRATION_TESTING.md](research/integration/INTEGRATION_TESTING.md)** - Integration testing
-- **[PAPER_TRADING_VALIDATION_PLAN.md](research/integration/PAPER_TRADING_VALIDATION_PLAN.md)** - Paper trading validation
+- **[LEAN_TESTING.md](LEAN_TESTING.md)** - LEAN testing
+- **[INTEGRATION_TESTING.md](INTEGRATION_TESTING.md)** - Integration testing
+- **[PAPER_TRADING_VALIDATION_PLAN.md](PAPER_TRADING_VALIDATION_PLAN.md)** - Paper trading validation
 - **VALIDATION_SETUP_COMPLETE** (doc removed)
-- **[VALIDATION_SETUP_FINAL.md](research/integration/VALIDATION_SETUP_FINAL.md)** - Final validation
+- **[VALIDATION_SETUP_FINAL.md](VALIDATION_SETUP_FINAL.md)** - Final validation
 
 ### TUI & UI Implementation
 
@@ -298,10 +298,10 @@ How-to guides, setup instructions, and implementation documentation.
 
 ### Specific Features
 
-- **[SYNTHETIC_LENDING_BORROWING_IMPLEMENTATION.md](research/integration/SYNTHETIC_LENDING_BORROWING_IMPLEMENTATION.md)** - Synthetic lending
-- **[COMMISSIONS_AND_HEDGING_IMPLEMENTATION.md](research/integration/COMMISSIONS_AND_HEDGING_IMPLEMENTATION.md)** - Commissions & hedging
-- **[SWIFTNESS_IMPORT_DESIGN.md](research/integration/SWIFTNESS_IMPORT_DESIGN.md)** - Swiftness import
-- **[SWIFTNESS_DATA_MODEL.md](research/integration/SWIFTNESS_DATA_MODEL.md)** - Swiftness data model
+- **[SYNTHETIC_LENDING_BORROWING_IMPLEMENTATION.md](SYNTHETIC_LENDING_BORROWING_IMPLEMENTATION.md)** - Synthetic lending
+- **[COMMISSIONS_AND_HEDGING_IMPLEMENTATION.md](COMMISSIONS_AND_HEDGING_IMPLEMENTATION.md)** - Commissions & hedging
+- **[SWIFTNESS_IMPORT_DESIGN.md](SWIFTNESS_IMPORT_DESIGN.md)** - Swiftness import
+- **[SWIFTNESS_DATA_MODEL.md](SWIFTNESS_DATA_MODEL.md)** - Swiftness data model
 - **[BOX_SPREAD_COMPREHENSIVE_GUIDE.md](strategies/box-spread/BOX_SPREAD_COMPREHENSIVE_GUIDE.md)** - Box spread guide
 
 ---
@@ -421,7 +421,9 @@ External documentation and quick references:
 - **[API_DOCUMENTATION_INDEXING.md](research/analysis/API_DOCUMENTATION_INDEXING.md)** - Indexing strategy
 - **[API_DOCUMENTATION_CONSOLIDATION_PLAN.md](research/analysis/API_DOCUMENTATION_CONSOLIDATION_PLAN.md)** - Consolidation plan
 - **NotebookLM** - Usage guide removed; see `.cursor/rules/notebooklm.mdc` for when to use NotebookLM MCP.
-- **[MCP_SERVERS.md](research/integration/MCP_SERVERS.md)** - MCP server configuration
+- **[MCP_SERVERS.md](MCP_SERVERS.md)** - MCP server configuration
+- **[ARCHIVE_CPP_KNOWLEDGE_SUMMARY.md](ARCHIVE_CPP_KNOWLEDGE_SUMMARY.md)** - Extracted knowledge from archived C++/LEAN/WASM docs (live reference)
+- **`docs/archive/`** - Archived docs git-tracked but excluded from AI context; do not reference in AI prompts
 
 ---
 

@@ -257,6 +257,6 @@
 
 ## See Also
 
-- [MCP_SERVERS.md](research/integration/MCP_SERVERS.md) - Current MCP server documentation
-- [CURSOR_SETUP.md](research/integration/CURSOR_SETUP.md) - General Cursor configuration
+- [MCP_SERVERS.md]( MCP_SERVERS.md) - Current MCP server documentation
+- [CURSOR_SETUP.md]( CURSOR_SETUP.md) - General Cursor configuration
 - [.cursorrules](../.cursorrules) - AI assistant guidelines

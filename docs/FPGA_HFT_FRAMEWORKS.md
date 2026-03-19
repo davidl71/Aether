@@ -641,6 +641,6 @@ For most box spread trading applications, software optimization and efficient al
 ## See Also
 
 - [Trading Infrastructure](TRADING_INFRASTRUCTURE.md) - Trading system architecture and infrastructure
-- [Implementation Guide](research/integration/IMPLEMENTATION_GUIDE.md) - Step-by-step implementation guide
+- [Implementation Guide]( IMPLEMENTATION_GUIDE.md) - Step-by-step implementation guide
 - [Codebase Architecture](research/architecture/CODEBASE_ARCHITECTURE.md) - System design and component interactions
 - [API Documentation Index](API_DOCUMENTATION_INDEX.md) - External APIs and resources

@@ -493,6 +493,6 @@ To add new commands, edit `.cursor/commands.json`:
 
 ## Related Documentation
 
-- [Cursor Setup Guide](research/integration/CURSOR_SETUP.md)
-- [Build System Documentation](research/integration/DISTRIBUTED_COMPILATION.md)
+- [Cursor Setup Guide]( CURSOR_SETUP.md)
+- [Build System Documentation]( DISTRIBUTED_COMPILATION.md)
 - [Testing Guide](platform/README.md)

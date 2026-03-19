@@ -278,7 +278,7 @@ Agent: "Analyze why box spread calculations fail"
 - [Ona MCP Documentation](https://ona.com/docs/ona/mcp)
 - [Ona Getting Started](https://ona.com/docs/ona/getting-started)
 - [MCP Protocol Specification](https://modelcontextprotocol.io/)
-- [Project MCP Servers Documentation](../docs/research/integration/MCP_SERVERS.md)
+- [Project MCP Servers Documentation](../docs/ MCP_SERVERS.md)
 
 ## Migration from Cursor
 

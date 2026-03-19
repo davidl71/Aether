@@ -186,5 +186,5 @@ The AI assistant will automatically:
 ## See Also
 
 - [MCP_EXTENSIONS_INTEGRATION.md](MCP_EXTENSIONS_INTEGRATION.md) - Comprehensive integration guide
-- [MCP_SERVERS.md](research/integration/MCP_SERVERS.md) - Detailed MCP server configuration
+- [MCP_SERVERS.md]( MCP_SERVERS.md) - Detailed MCP server configuration
 - **NotebookLM:** `.cursor/rules/notebooklm.mdc` - when to use NotebookLM MCP

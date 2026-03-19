@@ -2,7 +2,7 @@
 
 **Task:** T-1772887222913841962 (EPIC Financing Optimizer — NLopt multi-instrument optimization)  
 **Status:** Phase 4 — first C++ optimizer class wiring NLopt  
-**References:** `docs/platform/SYNTHETIC_FINANCING_ARCHITECTURE.md`, `native/src/convexity_calculator.cpp`, `docs/research/integration/NLOPT_INTEGRATION_GUIDE.md`
+**References:** `docs/platform/SYNTHETIC_FINANCING_ARCHITECTURE.md`, `native/src/convexity_calculator.cpp`, `do../NLOPT_INTEGRATION_GUIDE.md`
 
 ---
 

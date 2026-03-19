@@ -332,7 +332,7 @@ Override debug settings in `.vscode/launch.json`:
 - [CMake Presets Documentation](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html)
 - [CMake Tools Extension Docs](https://github.com/microsoft/vscode-cmake-tools)
 - [Project CMakePresets.json](../CMakePresets.json)
-- [Cursor Setup Guide](research/integration/CURSOR_SETUP.md)
+- [Cursor Setup Guide]( CURSOR_SETUP.md)
 
 ---
 

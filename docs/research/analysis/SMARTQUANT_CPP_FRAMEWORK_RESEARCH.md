@@ -409,7 +409,7 @@ If SmartQuant doesn't fit, consider:
 - [SmartQuant C++ Framework](https://www.smartquant.com/cpp.html)
 - [Current Architecture Documentation](../../research/architecture/CODEBASE_ARCHITECTURE.md)
 - TWS integration (doc removed; see [API_DOCUMENTATION_INDEX.md](../../API_DOCUMENTATION_INDEX.md))
-- [Implementation Guide](../../research/integration/IMPLEMENTATION_GUIDE.md)
+- [Implementation Guide](../../IMPLEMENTATION_GUIDE.md)
 
 ---
 

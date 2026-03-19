@@ -177,6 +177,14 @@ ib_box_spread-*.tar.gz
 worktrees/
 
 # ============================================================================
+# Archived / Obsolete Documentation
+# ============================================================================
+
+# Historical C++/LEAN/WASM research docs — git-tracked but NOT for AI context
+# See docs/ARCHIVE_CPP_KNOWLEDGE_SUMMARY.md for extracted knowledge
+docs/archive/
+
+# ============================================================================
 # Documentation Build Output
 # ============================================================================
 

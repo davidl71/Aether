@@ -46,7 +46,7 @@ mkdir -p docs/strategies/bonds    # For future strategies
 
 **Files Moved:**
 
-- ✅ `docs/research/integration/BOX_SPREAD_COMPREHENSIVE_GUIDE.md` → `docs/strategies/box-spread/`
+- ✅ `docs/ BOX_SPREAD_COMPREHENSIVE_GUIDE.md` → `docs/strategies/box-spread/`
 - ✅ `docs/research/architecture/BOX_SPREAD_BAG_IMPLEMENTATION.md` → `docs/strategies/box-spread/`
 - ✅ `docs/research/external/DATA_FEEDS_BOX_SPREADS.md` → `docs/strategies/box-spread/`
 - ✅ `docs/indices/BOX_SPREAD_RESOURCES_INDEX.md` → `docs/strategies/box-spread/`
@@ -258,7 +258,7 @@ mkdir -p docs/platform
 
 # Move box-spread docs
 
-mv docs/research/integration/BOX_SPREAD_COMPREHENSIVE_GUIDE.md docs/strategies/box-spread/
+mv docs/ BOX_SPREAD_COMPREHENSIVE_GUIDE.md docs/strategies/box-spread/
 mv docs/research/architecture/BOX_SPREAD_BAG_IMPLEMENTATION.md docs/strategies/box-spread/
 mv docs/research/external/DATA_FEEDS_BOX_SPREADS.md docs/strategies/box-spread/
 mv docs/indices/BOX_SPREAD_RESOURCES_INDEX.md docs/strategies/box-spread/

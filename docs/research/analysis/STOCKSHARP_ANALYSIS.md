@@ -396,7 +396,7 @@ StockSharp uses **XML configuration** for connectors and strategies.
 
 - [API Documentation Index](../../API_DOCUMENTATION_INDEX.md)
 - TWS integration (doc removed; see [API_DOCUMENTATION_INDEX.md](../../API_DOCUMENTATION_INDEX.md))
-- [Alpaca Backend Setup](../../research/integration/ALPACA_BACKEND_SETUP.md)
+- [Alpaca Backend Setup](../../ALPACA_BACKEND_SETUP.md)
 - [Trading Infrastructure Guide](../../TRADING_INFRASTRUCTURE.md)
 
 ---

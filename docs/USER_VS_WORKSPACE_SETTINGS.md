@@ -349,5 +349,5 @@ If you want project-specific user overrides, create `.vscode/settings.json.user`
 
 ## Related Documentation
 
-- [Cursor Setup Guide](research/integration/CURSOR_SETUP.md)
+- [Cursor Setup Guide]( CURSOR_SETUP.md)
 - [VS Code Settings Documentation](https://code.visualstudio.com/docs/getstarted/settings)

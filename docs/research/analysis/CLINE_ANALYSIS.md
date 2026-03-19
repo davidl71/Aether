@@ -391,8 +391,8 @@ AI uses Agentic Tools for task management
 
 ## Related Documentation
 
-- [Cursor Setup Guide](../../research/integration/CURSOR_SETUP.md) - Current Cursor IDE configuration
-- [MCP Servers](../../research/integration/MCP_SERVERS.md) - Model Context Protocol integration
+- [Cursor Setup Guide](../../CURSOR_SETUP.md) - Current Cursor IDE configuration
+- [MCP Servers](../../MCP_SERVERS.md) - Model Context Protocol integration
 - [Cursor Recommendations](../../CURSOR_RECOMMENDATIONS.md) - Optimization guide
 - [API Documentation Index](../../API_DOCUMENTATION_INDEX.md) - Complete API reference
 

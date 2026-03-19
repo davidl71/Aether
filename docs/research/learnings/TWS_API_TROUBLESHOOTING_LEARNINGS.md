@@ -377,7 +377,7 @@ Based on common troubleshooting needs, here are diagnostic tools we could implem
 2. **TWS_API_BEST_PRACTICES.md** - Best practices and patterns
 3. **TWS_API_CODE_EXAMPLES_LEARNINGS.md** - Learnings from code examples
 4. **IMPLEMENTATION_GUIDE.md** - Step-by-step implementation guide
-5. **INTEGRATION_TESTING.md** - Testing and troubleshooting guide
+5. **INTEGRATION_TESTING.md** (`docs/INTEGRATION_TESTING.md`) - Testing and troubleshooting guide
 
 ### What We Could Add
 

@@ -591,7 +591,7 @@ Net Profit (ILS) = (Box Spread Yield - Transaction Costs) × Exchange Rate
 ### Documentation
 
 - **Currency Hedging Implementation**: `docs/COMMISSIONS_AND_HEDGING_IMPLEMENTATION.md`
-- **Hedge Manager Code**: `native/include/hedge_manager.h`, `native/src/hedge_manager.cpp`
+- **Hedge Manager Code**: `agents/backend/crates/quant/` (Rust reimplementation; C++ removed)
 - **API Documentation Index**: `docs/API_DOCUMENTATION_INDEX.md`
 
 ---
@@ -613,7 +613,7 @@ Net Profit (ILS) = (Box Spread Yield - Transaction Costs) × Exchange Rate
 - **Hedging Implementation**: `docs/COMMISSIONS_AND_HEDGING_IMPLEMENTATION.md` - Currency and interest rate hedging
 - **API Documentation Index**: `docs/API_DOCUMENTATION_INDEX.md` - TWS API and forex data sources
 - **CME Fee Schedules**: `docs/CME_FEE_SCHEDULE_REBATES.md` - Currency futures trading costs
-- **Risk Calculator**: `native/include/risk_calculator.h` - Risk management framework
+- **Risk Calculator**: `agents/backend/crates/risk/` - Risk management framework (Rust)
 
 ---
 

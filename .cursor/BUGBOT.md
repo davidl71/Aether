@@ -125,4 +125,4 @@ When reviewing: verify Rust conventions (fmt, clippy), cross-crate and REST cont
 - `.cursorrules` - Main project rules
 - `docs/STATIC_ANALYSIS_ANNOTATIONS.md` - Static analysis guidelines
 - `docs/API_DOCUMENTATION_INDEX.md` - API documentation
-- `docs/research/integration/CURSOR_SETUP.md` - Cursor configuration
+- `docs/CURSOR_SETUP.md` - Cursor configuration

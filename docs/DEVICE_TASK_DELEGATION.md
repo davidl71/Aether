@@ -749,5 +749,5 @@ git commit -m "Add box spread validation (AI-generated message)"
 **References**:
 
 - [Apple Intelligence Overview](https://www.apple.com/apple-intelligence/)
-- [Distributed Compilation Guide](research/integration/DISTRIBUTED_COMPILATION.md)
+- [Distributed Compilation Guide]( DISTRIBUTED_COMPILATION.md)
 - [Build System Documentation](API_DOCUMENTATION_INDEX.md)

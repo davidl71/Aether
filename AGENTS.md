@@ -138,6 +138,10 @@ Follow imperative, 72-character subject lines ("Add TSV formatter for CLI"). In 
 | `.claude/settings.json` | Claude Code permissions |
 | `.claude/agents/` | Custom Claude agents |
 
+**Excluded from AI context:**
+- `docs/archive/` — Historical C++/LEAN/WASM research; git-tracked but not indexed by AI tools. See `docs/ARCHIVE_CPP_KNOWLEDGE_SUMMARY.md` for extracted knowledge relevant to current development.
+- `docs/research/integration/` — Cleared; docs moved to `docs/` or `docs/archive/`.
+
 **Skills & subagents:** Cursor/plugin skills and subagents (e.g. mcp_task,
 exarp-go, Claude agents) should use AGENTS.md as canonical context. `CLAUDE.md`
 and `CODEX.md` are tool-specific quick references. See

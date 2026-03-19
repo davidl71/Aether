@@ -37,13 +37,13 @@ Several docs still describe **native C++ tests** (Catch2, `native/tests/`, `ib_b
 
 **Docs updated (no longer stale):** The following were updated to remove or replace native references and point to Rust/nautilus/TUI:
 
-- `docs/research/integration/TESTING_STRATEGY.md`
+- `docs/ TESTING_STRATEGY.md`
 - `docs/runbooks/ibkr/IBKR_TESTING_README.md`
 - `docs/TEST_COVERAGE_SETUP.md`
 - `docs/TWS_CONNECTION_TEST.md`
 - `docs/TEST_RUN_RESULTS.md`
 - `docs/TEST_COVERAGE_IMPROVEMENT_PLAN.md`
-- `docs/research/integration/INTEGRATION_TESTING.md`
+- `docs/INTEGRATION_TESTING.md`
 - `docs/NATS_TESTING_GUIDE.md`
 - `docs/BREADCRUMB_LOGGING_TRADING_TESTING.md`
 

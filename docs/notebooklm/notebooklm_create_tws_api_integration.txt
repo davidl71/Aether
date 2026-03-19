@@ -27,7 +27,7 @@
 # browser_click(element="Upload file option", ref="[find upload option ref]")
 # [File upload would require file path handling]
 
-# Add source 2: docs/research/integration/TWS_INTEGRATION_STATUS.md (local file - requires file upload)
+# Add source 2: docs/API_DOCUMENTATION_INDEX.md (local file - TWS_INTEGRATION_STATUS.md was removed)
 # browser_click(element="Add source button", ref="[find add source ref]")
 # browser_click(element="Upload file option", ref="[find upload option ref]")
 # [File upload would require file path handling]
