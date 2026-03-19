@@ -36,13 +36,11 @@ See `.cursor/commands.json` or `docs/CURSOR_PROJECT_COMMANDS.md` for complete co
 - `test:run` - Run all tests
 - `lint:run` - Run all linters
 
-**Use existing scripts:** `setup_worktree.sh`, `build_universal.sh`
+**Use existing scripts:** `build_universal.sh`, `build_ai_friendly.sh`; worktrees: `just worktree <path>` or `git worktree add`
 
 ### Dependencies
-- **TWS API**: `native/third_party/tws-api/IBJts/source/cppclient/client/`
-- **Intel Decimal**: `native/third_party/IntelRDFPMathLib20U2/LIBRARY/libbid.a`
-- **Protocol Buffers**: System-installed (`/usr/local/lib/libprotobuf.dylib`). C++ from `proto/messages.proto` is generated at build time (CMake runs `protoc`); run `./proto/generate.sh` only for Python/Go/TypeScript or to pre-generate.
-- **Abseil**: System-installed (`/usr/local/lib/libabsl*.dylib`)
+- **TWS API**: `../tws-api/IBJts/source/cppclient/client/` (sibling repo) or `native/third_party/tws-api/` (legacy vendored)
+- **Protocol Buffers**: System-installed (`/usr/local/lib/libprotobuf.dylib`). Rust from `proto/messages.proto` is generated at build time (prost); run `./proto/generate.sh` only for Python/Go/TypeScript or to pre-generate.
 
 ## Python Package Management
 
@@ -116,10 +114,10 @@ uv pip install <package>  # or add to requirements.in and run uv sync
 
 ## Git Workflow
 
-- Use `setup:worktree` command (or `scripts/setup_worktree.sh`) for new worktrees
+- Use `just worktree <path>` or `git worktree add <path> [branch]` for new worktrees
 - Commit messages: Imperative mood, 72-character subject lines
 - Never commit build artifacts, logs, or credentials
-- **Never modify third-party code directly** - Use wrappers or adapters in `native/src/`
+- **Never modify third-party code directly** - Use wrappers or adapters in `agents/backend/crates/ib_adapter/src/`
 
 ## AI Assistant Guidelines
 

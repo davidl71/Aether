@@ -106,9 +106,9 @@ Most deps use CMake FetchContent — see existing patterns in `native/CMakeLists
 
 - **Never** commit credentials, API keys, or secrets
 - **Always** use paper trading port `7497` for testing
-- **Never** modify code under `native/third_party/` — write wrappers instead
+- **Never** modify code under `native/third_party/` (legacy C++ deps); wrap vendor code in `agents/backend/crates/ib_adapter/src/`
 - **Always** add tests for trading logic and risk calculations
-- All pricing/risk calculations must have Catch2 tests before merge
+- All pricing/risk calculations must have Rust `#[test]` tests before merge
 - Gate live trading behind explicit configuration flags
 
 ## Python

@@ -90,8 +90,7 @@ Add short `//` comments only where the trading math is non-obvious (e.g., APR sc
 
 | Dependency | Location | Purpose |
 |------------|----------|---------|
-| TWS API | `native/third_party/tws-api/` | IBKR connectivity |
-| Intel Decimal | `native/third_party/IntelRDFPMathLib20U4/` | Exact decimal arithmetic |
+| TWS API | `../tws-api/` (sibling repo) | IBKR connectivity |
 | nlohmann/json | FetchContent (v3.11.3) | JSON parsing |
 | spdlog | FetchContent (v1.13.0) | Logging |
 | CLI11 | FetchContent (v2.4.1) | CLI argument parsing |
@@ -103,11 +102,11 @@ Add short `//` comments only where the trading math is non-obvious (e.g., APR sc
 
 ## IB API Integration Notes
 
-The TWS API is vendored under `native/third_party/tws-api/`. The `native/ibapi_cmake/` directory contains CMake presets to build `libtwsapi.dylib` and the Intel decimal math dependency. Never commit IB credentials, logs, or downloaded vendor artifacts — treat everything under `build/` as ephemeral. The CLI currently prints synthetic market data; gate any future live requests behind configuration flags.
+The TWS API is sourced from the sibling `tws-api` repo (clone to `../tws-api/` next to this project) or extracted to `native/third_party/tws-api/` if using the IBKR zip. IBKR connectivity is via Rust `ib_adapter`; no C++ client is used. Never commit IB credentials, logs, or downloaded vendor artifacts — treat everything under `build/` as ephemeral. The CLI currently prints synthetic market data; gate any future live requests behind configuration flags.
 
 ## Testing Guidelines
 
-Tests live in `native/tests/` and use the Catch2 framework. They mirror source file names (e.g., `test_risk_calculator.cpp` tests `risk_calculator.cpp`). Expand coverage alongside new features. Run `ctest --test-dir build --output-on-failure` locally before pushes.
+Rust tests live in `agents/backend/crates/*/tests/` (or `#[test]` modules). Legacy C++ tests were in `native/tests/` (Catch2). Run `cargo test` in `agents/backend/` for Rust tests.
 
 ## Commit & Pull Request Guidelines
 
@@ -118,7 +117,7 @@ Follow imperative, 72-character subject lines ("Add TSV formatter for CLI"). In 
 - Never commit credentials, API keys, or secrets
 - Always use paper trading port (7497) for testing
 - Gate live trading behind explicit configuration flags
-- Never modify third-party code directly — use wrappers in `native/src/`
+- Never modify third-party code directly — use wrappers in `agents/backend/crates/ib_adapter/src/`
 
 ## AI Configuration Files
 

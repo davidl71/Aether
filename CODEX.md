@@ -85,8 +85,8 @@ If configure fails because vendored dependencies are missing, run:
 
 - Never commit credentials, API keys, or broker secrets
 - Always use paper trading port `7497` for testing
-- Never modify `native/third_party/` directly; wrap vendor code in `native/src/`
-- All trading, pricing, and risk logic changes need matching tests in `native/tests/`
+- Never modify `native/third_party/` directly (legacy C++ deps); wrap vendor code in `agents/backend/crates/ib_adapter/src/`
+- All trading, pricing, and risk logic changes need matching tests in `agents/backend/crates/*/tests/`
 - Prefer existing scripts, presets, and repository conventions over ad hoc commands
 - Use imperative commit messages with 72-character subject lines
 
