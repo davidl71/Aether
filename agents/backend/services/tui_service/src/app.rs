@@ -144,6 +144,10 @@ pub struct App {
     pub yield_benchmarks: Option<BenchmarksResponse>,
     /// Last yield fetch error message.
     pub yield_error: Option<String>,
+    /// Cached NYSE market-open flag (None = not yet checked). Updated every ~60 ticks (~15s).
+    pub market_open: Option<bool>,
+    /// Tick counter for periodic market-hours check (resets at MARKET_CHECK_INTERVAL_TICKS).
+    market_open_tick: u32,
     /// Tick counter for periodic yield fetch when on Yield tab.
     pub yield_fetch_tick: u32,
     /// True while a yield fetch is in flight; prevents overlapping requests and mock/real cycling.
@@ -214,6 +218,8 @@ impl App {
             yield_curve: None,
             yield_benchmarks: None,
             yield_error: None,
+            market_open: None,
+            market_open_tick: 0,
             yield_fetch_tick: 0,
             yield_fetch_pending: false,
             yield_fetch_tx,
@@ -332,6 +338,14 @@ impl App {
             }
         }
 
+        // Periodic NYSE market-hours check (~every 60s at 250ms tick).
+        const MARKET_CHECK_INTERVAL_TICKS: u32 = 240;
+        self.market_open_tick = self.market_open_tick.saturating_add(1);
+        if self.market_open_tick == 1 || self.market_open_tick >= MARKET_CHECK_INTERVAL_TICKS {
+            self.market_open_tick = 0;
+            self.market_open = nyse_is_open();
+        }
+
         // Periodic yield fetch when on Yield tab (~every 10s at 250ms tick). Skip if a fetch is already in flight to avoid mock/real cycling from overlapping responses.
         const YIELD_FETCH_INTERVAL_TICKS: u32 = 40;
         if self.active_tab == Tab::Yield
@@ -395,6 +409,14 @@ impl App {
         orders.sort_by(|a, b| b.submitted_at.cmp(&a.submitted_at));
         orders
     }
+}
+
+/// Returns `Some(true)` when NYSE is currently open, `Some(false)` when closed, `None` on error.
+/// Uses NYSE as proxy for options market hours (CBOE follows NYSE schedule).
+fn nyse_is_open() -> Option<bool> {
+    use trading_calendar::{Market, TradingCalendar};
+    let cal = TradingCalendar::new(Market::NYSE).ok()?;
+    cal.is_open_now().ok()
 }
 
 /// Merge in-TUI config overrides on top of base (file/env) config.

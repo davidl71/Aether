@@ -3,6 +3,7 @@
 //! These types are broker-agnostic and can be used by any implementation
 //! of the [`BrokerEngine`](super::traits::BrokerEngine) trait.
 
+use rust_decimal::prelude::ToPrimitive;
 use serde::{Deserialize, Serialize};
 
 pub use crate::error::BrokerError;
@@ -31,6 +32,23 @@ impl OptionContract {
             is_call,
             con_id: None,
         }
+    }
+
+    /// Parse an OSI option symbol (e.g. `"SPXW231127C03850000"`) into an `OptionContract`.
+    ///
+    /// Expiry is formatted as `"YYYYMMDD"` to match IBKR BAG order conventions.
+    /// Strike is converted from `Decimal` to `f64` (sufficient precision for equity options).
+    pub fn from_osi(osi: &str) -> Result<Self, BrokerError> {
+        use financial_symbols::OptionType;
+        let parsed = financial_symbols::OptionContract::from_osi(osi)
+            .map_err(|e| BrokerError::ContractError(e.to_string()))?;
+        Ok(Self {
+            symbol: parsed.ticker().to_string(),
+            expiry: parsed.expiry().format("%Y%m%d").to_string(),
+            strike: parsed.strike().to_f64().unwrap_or(0.0),
+            is_call: matches!(parsed.option_type(), OptionType::Call),
+            con_id: None,
+        })
     }
 }
 
@@ -370,6 +388,24 @@ mod tests {
         assert_eq!(put_low.action, OrderAction::Buy);
         assert_eq!(call_high.action, OrderAction::Buy);
         assert_eq!(put_high.action, OrderAction::Sell);
+    }
+
+    #[test]
+    fn test_option_contract_from_osi() {
+        // SPXW 2023-11-27 Call 3850.00
+        let c = OptionContract::from_osi("SPXW231127C03850000").unwrap();
+        assert_eq!(c.symbol, "SPXW");
+        assert_eq!(c.expiry, "20231127");
+        assert!((c.strike - 3850.0).abs() < 0.01);
+        assert!(c.is_call);
+        assert!(c.con_id.is_none());
+
+        // XSP 2025-03-21 Put 420.00
+        let p = OptionContract::from_osi("XSP250321P00420000").unwrap();
+        assert_eq!(p.symbol, "XSP");
+        assert_eq!(p.expiry, "20250321");
+        assert!((p.strike - 420.0).abs() < 0.01);
+        assert!(!p.is_call);
     }
 
     #[test]

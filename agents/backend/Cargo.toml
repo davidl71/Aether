@@ -48,4 +48,6 @@ openssl = "0.10"
 ibapi = "2.10"
 backoff = "0.4"
 jsonc-parser = { version = "0.29", features = ["serde"] }
+financial_symbols = "1.0"
+trading-calendar = "0.2"
 # cxx = "1.0" # Available for C++ ↔ Rust interop exploration (see task T-1773475473747582000)

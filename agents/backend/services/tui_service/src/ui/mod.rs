@@ -135,6 +135,19 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
     }
 
     spans.push(Span::raw("  "));
+    match app.market_open {
+        Some(true) => spans.push(Span::styled(
+            "MKT:OPEN",
+            Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
+        )),
+        Some(false) => spans.push(Span::styled(
+            "MKT:CLOSED",
+            Style::default().fg(Color::DarkGray),
+        )),
+        None => {}
+    }
+
+    spans.push(Span::raw("  "));
     spans.push(render_connection_badge(
         ConnectionTarget::Nats,
         &app.nats_status,

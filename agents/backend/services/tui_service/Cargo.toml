@@ -48,3 +48,6 @@ uuid = { workspace = true }
 # JSONC and backoff (see docs/platform/RUST_CRATE_OPPORTUNITIES_AUDIT.md)
 jsonc-parser = { workspace = true }
 backoff = { workspace = true }
+
+# Market hours detection for status bar (NYSE proxy for options market)
+trading-calendar = { workspace = true }
