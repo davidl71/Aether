@@ -205,7 +205,8 @@ fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
         height: ROW_HEIGHT,
     };
     f.render_widget(
-        Paragraph::new("Trend").style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED)),
+        Paragraph::new("Trend")
+            .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED)),
         trend_header_rect,
     );
     if let Some(ref snap) = app.snapshot {
@@ -216,7 +217,10 @@ fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
                 width: trend_area.width,
                 height: ROW_HEIGHT,
             };
-            let data = app.roi_history.get(&s.symbol).map(roi_history_to_sparkline_data);
+            let data = app
+                .roi_history
+                .get(&s.symbol)
+                .map(roi_history_to_sparkline_data);
             let sparkline = match &data {
                 Some(d) if !d.is_empty() => Sparkline::default()
                     .data(d.clone())
@@ -442,7 +446,7 @@ fn render_hint_bar(f: &mut Frame, area: Rect) {
             Style::default().add_modifier(Modifier::BOLD),
         ),
         Span::raw(":switch tab  "),
-        Span::styled("1-5", Style::default().add_modifier(Modifier::BOLD)),
+        Span::styled("1-9", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(":jump to tab  "),
         Span::styled(
             "↑/↓ PgUp/PgDn",

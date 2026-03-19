@@ -1,5 +1,7 @@
 //! Dashboard tab: symbols table, trend sparklines, metrics bar.
 
+use std::collections::HashSet;
+
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -46,11 +48,13 @@ pub fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
         .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
     let rows: Vec<Row> = if let Some(ref snap) = app.snapshot {
+        let watchlist_upper: HashSet<_> =
+            app.watchlist().iter().map(|w| w.to_uppercase()).collect();
         snap.inner
             .symbols
             .iter()
             .map(|s| {
-                let in_watchlist = app.watchlist().iter().any(|w| w == &s.symbol.to_uppercase());
+                let in_watchlist = watchlist_upper.contains(&s.symbol.to_uppercase());
                 let style = if in_watchlist {
                     Style::default().fg(Color::Cyan)
                 } else {
@@ -96,7 +100,8 @@ pub fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
         height: ROW_HEIGHT,
     };
     f.render_widget(
-        Paragraph::new("Trend").style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED)),
+        Paragraph::new("Trend")
+            .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED)),
         trend_header_rect,
     );
     if let Some(ref snap) = app.snapshot {
@@ -107,7 +112,10 @@ pub fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
                 width: trend_area.width,
                 height: ROW_HEIGHT,
             };
-            let data = app.roi_history.get(&s.symbol).map(roi_history_to_sparkline_data);
+            let data = app
+                .roi_history
+                .get(&s.symbol)
+                .map(roi_history_to_sparkline_data);
             let sparkline = match &data {
                 Some(d) if !d.is_empty() => Sparkline::default()
                     .data(d.clone())

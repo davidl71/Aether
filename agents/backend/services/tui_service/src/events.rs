@@ -2,7 +2,10 @@
 //!
 //! Uses tokio::sync::broadcast for multi-listener event distribution.
 //! Events are categorized by priority and type for flexible handling.
-//! TODO(T-1773357423959019000): remove allow(dead_code) when structured event routing is wired.
+//!
+//! NOTE: EventRouter infrastructure is built but not yet wired to app.rs.
+//! publish_connection/snapshot/key/tab_change are called nowhere.
+//! TODO(T-1773357423959019000): wire EventRouter into app state and remove allow(dead_code).
 
 #![allow(dead_code)]
 
@@ -223,6 +226,19 @@ pub type SharedEventRouter = Arc<EventRouter>;
 
 pub fn create_event_router() -> SharedEventRouter {
     Arc::new(EventRouter::new())
+}
+
+// ============================================================================
+// Strategy command (used by main.rs and app.rs)
+// ============================================================================
+
+#[derive(Debug, Clone)]
+pub enum StrategyCommand {
+    Start,
+    Stop,
+    CancelAll,
+    PublishSnapshot,
+    SetMode(String),
 }
 
 // ============================================================================
