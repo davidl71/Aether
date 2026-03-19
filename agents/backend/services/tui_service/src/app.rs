@@ -3,6 +3,7 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use api::finance_rates::{BenchmarksResponse, CurveResponse};
+use api::loans::LoanRecord;
 use api::{BackendHealthState, RuntimeOrderDto, RuntimePositionDto, ScenarioDto};
 use crossterm::event::{KeyCode, KeyEvent};
 use tokio::sync::{mpsc, watch};
@@ -23,6 +24,7 @@ pub enum Tab {
     Orders,
     Alerts,
     Yield,
+    Loans,
     Scenarios,
     Logs,
     Settings,
@@ -43,6 +45,7 @@ impl Tab {
         Tab::Orders,
         Tab::Alerts,
         Tab::Yield,
+        Tab::Loans,
         Tab::Scenarios,
         Tab::Logs,
         Tab::Settings,
@@ -55,6 +58,7 @@ impl Tab {
             Tab::Orders => "Orders",
             Tab::Alerts => "Alerts",
             Tab::Yield => "Yield",
+            Tab::Loans => "Loans",
             Tab::Scenarios => "Scen",
             Tab::Logs => "Logs",
             Tab::Settings => "Set",
@@ -146,6 +150,14 @@ pub struct App {
     pub yield_fetch_pending: bool,
     /// Sender to trigger yield fetch (symbol); None when not wired.
     yield_fetch_tx: Option<mpsc::UnboundedSender<String>>,
+    /// Last fetched loans list (NATS api.loans.list).
+    pub loans_list: Option<Result<Vec<LoanRecord>, String>>,
+    /// True while a loans fetch is in flight.
+    pub loans_fetch_pending: bool,
+    /// Scroll index for Loans tab.
+    pub loans_scroll: usize,
+    /// Sender to trigger loans fetch; None when not wired.
+    loans_fetch_tx: Option<mpsc::UnboundedSender<()>>,
     /// Sender for strategy commands (S=start, T=stop); None when not wired.
     strategy_cmd_tx: Option<mpsc::UnboundedSender<StrategyCommand>>,
     event_rx: mpsc::UnboundedReceiver<AppEvent>,
@@ -163,6 +175,7 @@ impl App {
         health_rx: watch::Receiver<HashMap<String, BackendHealthState>>,
         strategy_cmd_tx: Option<mpsc::UnboundedSender<StrategyCommand>>,
         yield_fetch_tx: Option<mpsc::UnboundedSender<String>>,
+        loans_fetch_tx: Option<mpsc::UnboundedSender<()>>,
     ) -> Self {
         let config_warning = validate_config_hint(&config);
         let split_pane = config.split_pane;
@@ -204,6 +217,10 @@ impl App {
             yield_fetch_tick: 0,
             yield_fetch_pending: false,
             yield_fetch_tx,
+            loans_list: None,
+            loans_fetch_pending: false,
+            loans_scroll: 0,
+            loans_fetch_tx,
             strategy_cmd_tx,
             event_rx,
             snapshot_rx,
@@ -242,6 +259,24 @@ impl App {
         if let Some(ref tx) = self.yield_fetch_tx {
             if tx.send(symbol.to_string()).is_ok() {
                 self.yield_fetch_pending = true;
+            }
+        }
+    }
+
+    /// Set loans list from NATS fetch.
+    pub fn set_loans_data(&mut self, res: Result<Vec<LoanRecord>, String>) {
+        self.loans_fetch_pending = false;
+        self.loans_list = Some(res);
+    }
+
+    /// Request a loans list fetch (no-op if already in flight or tx not wired).
+    pub fn request_loans_fetch(&mut self) {
+        if self.loans_fetch_pending {
+            return;
+        }
+        if let Some(ref tx) = self.loans_fetch_tx {
+            if tx.send(()).is_ok() {
+                self.loans_fetch_pending = true;
             }
         }
     }
@@ -310,6 +345,11 @@ impl App {
                 let symbol = self.config.watchlist[idx].clone();
                 self.request_yield_fetch(&symbol);
             }
+        }
+
+        // When on Loans tab and no data yet, trigger a fetch once.
+        if self.active_tab == Tab::Loans && self.loans_list.is_none() && !self.loans_fetch_pending {
+            self.request_loans_fetch();
         }
     }
 
@@ -532,9 +572,13 @@ impl App {
                     self.request_yield_fetch(&symbol);
                 }
             }
-            KeyCode::Char('6') => self.active_tab = Tab::Scenarios,
-            KeyCode::Char('7') => self.active_tab = Tab::Logs,
-            KeyCode::Char('8') => self.active_tab = Tab::Settings,
+            KeyCode::Char('6') => {
+                self.active_tab = Tab::Loans;
+                self.request_loans_fetch();
+            }
+            KeyCode::Char('7') => self.active_tab = Tab::Scenarios,
+            KeyCode::Char('8') => self.active_tab = Tab::Logs,
+            KeyCode::Char('9') => self.active_tab = Tab::Settings,
             // Log tab navigation — forwarded to TuiWidgetState
             KeyCode::Up if self.active_tab == Tab::Logs => {
                 self.log_state.transition(TuiWidgetEvent::UpKey);
@@ -634,6 +678,34 @@ impl App {
                     if let Some(order) = filtered.get(idx) {
                         self.detail_popup = Some(DetailPopupContent::Order(order.clone()));
                     }
+                }
+            }
+            KeyCode::Up if self.active_tab == Tab::Loans => {
+                self.loans_scroll = self.loans_scroll.saturating_sub(1);
+            }
+            KeyCode::Down if self.active_tab == Tab::Loans => {
+                let len = self
+                    .loans_list
+                    .as_ref()
+                    .and_then(|r| r.as_ref().ok())
+                    .map(|l| l.len())
+                    .unwrap_or(0);
+                if len > 0 {
+                    self.loans_scroll = (self.loans_scroll + 1).min(len - 1);
+                }
+            }
+            KeyCode::PageUp if self.active_tab == Tab::Loans => {
+                self.loans_scroll = self.loans_scroll.saturating_sub(10);
+            }
+            KeyCode::PageDown if self.active_tab == Tab::Loans => {
+                let len = self
+                    .loans_list
+                    .as_ref()
+                    .and_then(|r| r.as_ref().ok())
+                    .map(|l| l.len())
+                    .unwrap_or(0);
+                if len > 0 {
+                    self.loans_scroll = (self.loans_scroll + 10).min(len - 1);
                 }
             }
             KeyCode::Enter if self.active_tab == Tab::Positions || self.split_pane => {

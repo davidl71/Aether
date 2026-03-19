@@ -133,6 +133,14 @@ impl MarketDataSource for PolygonMarketDataSource {
             anyhow::anyhow!("polygon response for {symbol} missing last quote data")
         })?;
 
+        if let Some(ref s) = payload.status {
+            debug!("polygon nbbo status: {s}");
+        }
+
+        let symbol = payload
+            .symbol
+            .unwrap_or(symbol);
+
         let bid = last.bid_price.unwrap_or(0.0);
         let ask = last.ask_price.unwrap_or(0.0);
 
@@ -153,11 +161,13 @@ impl MarketDataSource for PolygonMarketDataSource {
     }
 }
 
+/// Polygon /v2/last/nbbo API response shape.
 #[derive(Debug, serde::Deserialize)]
-#[allow(dead_code)]
 struct NbboResponse {
+    /// API response status (e.g. "OK"). Logged at debug for diagnostics.
     #[serde(default)]
     pub status: Option<String>,
+    /// Symbol from the response; used as event symbol when present.
     #[serde(default)]
     pub symbol: Option<String>,
     #[serde(default)]

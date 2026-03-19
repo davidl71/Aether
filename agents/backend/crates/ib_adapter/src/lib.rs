@@ -19,9 +19,11 @@ use tokio::sync::{mpsc, RwLock};
 use tracing::info;
 
 pub mod scanner;
+pub mod tws_wire;
 pub mod types;
 
 pub use scanner::ScannerSubscription;
+pub use tws_wire::{TwsProtoFrame, PROTOBUF_MSG_ID_OFFSET};
 pub use types::*;
 
 /// IB Adapter configuration
@@ -89,14 +91,11 @@ pub struct IbAdapter {
     state: Arc<RwLock<ConnectionState>>,
     /// Connected ibapi client; Some when state is Connected (Arc allows use without holding lock across await)
     client: Arc<RwLock<Option<Arc<IbClient>>>>,
-    /// Channel for market data events (reserved for future TWS integration)
-    #[allow(dead_code)]
+    /// Channel for market data events (reserved for future TWS integration; see README)
     market_data_tx: mpsc::Sender<MarketDataEvent>,
-    /// Channel for position events (reserved for future TWS integration)
-    #[allow(dead_code)]
+    /// Channel for position events (reserved for future TWS integration; see README)
     position_tx: mpsc::Sender<PositionEvent>,
-    /// Channel for order status events (reserved for future TWS integration)
-    #[allow(dead_code)]
+    /// Channel for order status events (reserved for future TWS integration; see README)
     order_tx: mpsc::Sender<OrderStatusEvent>,
 }
 
@@ -120,6 +119,21 @@ impl IbAdapter {
     /// Get current connection state
     pub async fn state(&self) -> ConnectionState {
         self.state.read().await.clone()
+    }
+
+    /// Sender for market data events. Clone and pass the receiver to a consumer task; see crate README.
+    pub fn market_data_tx(&self) -> mpsc::Sender<MarketDataEvent> {
+        self.market_data_tx.clone()
+    }
+
+    /// Sender for position events. Clone and pass the receiver to a consumer task; see crate README.
+    pub fn position_tx(&self) -> mpsc::Sender<PositionEvent> {
+        self.position_tx.clone()
+    }
+
+    /// Sender for order status events. Clone and pass the receiver to a consumer task; see crate README.
+    pub fn order_tx(&self) -> mpsc::Sender<OrderStatusEvent> {
+        self.order_tx.clone()
     }
 
     /// Connect to TWS/Gateway using the ibapi crate.

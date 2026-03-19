@@ -18,6 +18,12 @@
 //!   TICK_MS               UI redraw interval ms (default: 250)
 //!   SNAPSHOT_TTL_SECS     Seconds before data is shown as stale (default: 30)
 //!
+//! # Mosh (mobile shell)
+//!
+//! When running under mosh (detected via TERM containing "mosh" or MOSH_TTY set),
+//! the TUI skips the alternate screen buffer so redraws and scrollback behave
+//! better. You can force this with `TUI_NO_ALT_SCREEN=1` in any terminal.
+//!
 //! Tracing output goes to two sinks simultaneously:
 //!   1. In-TUI Logs tab (tui-logger widget — scrollable, level-filtered)
 //!   2. File: /tmp/tui_service.log  (override: LOG_FILE env var)
@@ -26,20 +32,28 @@
 
 use std::time::Duration;
 
+use api::finance_rates::{BenchmarksResponse, CurveResponse};
+use api::loans::LoanRecord;
 use color_eyre::eyre::Context;
 use crossterm::{
     event::{EventStream, KeyEventKind},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{
+        disable_raw_mode, enable_raw_mode, Clear, ClearType, EnterAlternateScreen,
+        LeaveAlternateScreen,
+    },
 };
 use futures::StreamExt;
-use api::finance_rates::{BenchmarksResponse, CurveResponse};
-use nats_adapter::{request_json_with_retry, request_json_with_retry_timeout, NatsClient, RetryConfig};
+use nats_adapter::{
+    request_json_with_retry, request_json_with_retry_timeout, NatsClient, RetryConfig,
+};
 use serde::Deserialize;
 use serde_json::json;
 use tokio::sync::{mpsc, watch};
 use tracing::{error, info};
-use tracing_subscriber::{fmt::writer::BoxMakeWriter, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{
+    fmt::writer::BoxMakeWriter, layer::SubscriberExt, util::SubscriberInitExt,
+};
 
 mod app;
 mod circuit_breaker;
@@ -67,8 +81,40 @@ struct StrategyResponse {
     message: Option<String>,
 }
 
+/// Backend reply for api.snapshot.publish_now
+#[derive(Debug, Deserialize)]
+struct SnapshotPublishResponse {
+    ok: bool,
+    #[serde(default)]
+    error: Option<String>,
+    #[serde(default)]
+    generated_at: Option<String>,
+    #[serde(default)]
+    subject: Option<String>,
+}
+
 fn is_interactive_terminal() -> bool {
     std::io::stdout().is_tty()
+}
+
+/// True if we should skip the alternate screen (mosh or TUI_NO_ALT_SCREEN).
+/// Improves behavior in mosh and preserves scrollback when requested.
+fn skip_alternate_screen() -> bool {
+    if std::env::var("TUI_NO_ALT_SCREEN")
+        .map(|v| v == "1")
+        .unwrap_or(false)
+    {
+        return true;
+    }
+    if std::env::var("MOSH_TTY").is_ok() {
+        return true;
+    }
+    if let Ok(term) = std::env::var("TERM") {
+        if term.to_lowercase().contains("mosh") {
+            return true;
+        }
+    }
+    false
 }
 
 fn run_noninteractive(config: TuiConfig) -> color_eyre::Result<()> {
@@ -96,8 +142,7 @@ async fn main() -> color_eyre::Result<()> {
 
     // Also write to a file for persistence (no ANSI so it's grep-friendly).
     // Override with LOG_FILE env var (e.g. LOG_FILE=/dev/stderr for debugging).
-    let log_path = std::env::var("LOG_FILE")
-        .unwrap_or_else(|_| "/tmp/tui_service.log".to_string());
+    let log_path = std::env::var("LOG_FILE").unwrap_or_else(|_| "/tmp/tui_service.log".to_string());
     let log_file = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
@@ -141,6 +186,8 @@ async fn main() -> color_eyre::Result<()> {
     let (strategy_result_tx, strategy_result_rx) = mpsc::unbounded_channel();
     let (yield_fetch_tx, yield_fetch_rx) = mpsc::unbounded_channel();
     let (yield_result_tx, yield_result_rx) = mpsc::unbounded_channel();
+    let (loans_fetch_tx, loans_fetch_rx) = mpsc::unbounded_channel();
+    let (loans_result_tx, loans_result_rx) = mpsc::unbounded_channel();
 
     // Spawn NATS subscriber in the background (snapshot + system.health)
     let nats_config = config.clone();
@@ -163,13 +210,26 @@ async fn main() -> color_eyre::Result<()> {
         run_yield_fetcher(nats_url_yield, yield_fetch_rx, yield_result_tx).await;
     });
 
+    // Spawn loans fetcher: requests api.loans.list, forwards result
+    let nats_url_loans = config.nats_url.clone();
+    tokio::spawn(async move {
+        run_loans_fetcher(nats_url_loans, loans_fetch_rx, loans_result_tx).await;
+    });
+
     // Spawn config file watcher — hot-reloads TuiConfig on disk changes
     tokio::spawn(async move {
         config_watcher::run(config_tx).await;
     });
 
-    // Set up terminal
-    let mut terminal = init_terminal().context("Failed to initialize TUI terminal")?;
+    // Set up terminal (skip alternate screen in mosh or when TUI_NO_ALT_SCREEN=1)
+    let use_alternate_screen = !skip_alternate_screen();
+    if use_alternate_screen {
+        info!("TUI using alternate screen buffer");
+    } else {
+        info!("TUI using main screen (mosh-friendly or TUI_NO_ALT_SCREEN=1)");
+    }
+    let mut terminal =
+        init_terminal(use_alternate_screen).context("Failed to initialize TUI terminal")?;
     let mut app = App::new(
         config,
         snap_rx,
@@ -178,29 +238,43 @@ async fn main() -> color_eyre::Result<()> {
         health_rx,
         Some(strategy_cmd_tx),
         Some(yield_fetch_tx),
+        Some(loans_fetch_tx),
     );
 
-    let result = run_loop(&mut terminal, &mut app, strategy_result_rx, yield_result_rx).await;
+    let result = run_loop(
+        &mut terminal,
+        &mut app,
+        strategy_result_rx,
+        yield_result_rx,
+        loans_result_rx,
+    )
+    .await;
 
     // Always restore terminal on exit (color-eyre panic hook also restores on panic)
-    if let Err(err) = restore_terminal() {
+    if let Err(err) = restore_terminal(use_alternate_screen) {
         error!(error = %err, "Failed to restore terminal state");
     }
 
     result.context("TUI event loop error")
 }
 
-fn init_terminal() -> color_eyre::Result<ratatui::DefaultTerminal> {
+fn init_terminal(use_alternate_screen: bool) -> color_eyre::Result<ratatui::DefaultTerminal> {
     enable_raw_mode().context("enable raw mode")?;
     let mut stdout = std::io::stdout();
-    execute!(stdout, EnterAlternateScreen).context("enter alternate screen")?;
+    if use_alternate_screen {
+        execute!(stdout, EnterAlternateScreen).context("enter alternate screen")?;
+    }
+    // Clear screen before first draw (like `reset` does) so no prior output remains.
+    execute!(stdout, Clear(ClearType::All)).context("clear screen")?;
     ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(stdout))
         .context("create terminal backend")
 }
 
-fn restore_terminal() -> color_eyre::Result<()> {
+fn restore_terminal(use_alternate_screen: bool) -> color_eyre::Result<()> {
     disable_raw_mode().context("disable raw mode")?;
-    execute!(std::io::stdout(), LeaveAlternateScreen).context("leave alternate screen")?;
+    if use_alternate_screen {
+        execute!(std::io::stdout(), LeaveAlternateScreen).context("leave alternate screen")?;
+    }
     Ok(())
 }
 
@@ -211,27 +285,123 @@ async fn run_strategy_commands(
     result_tx: mpsc::UnboundedSender<Result<String, String>>,
 ) {
     while let Some(cmd) = rx.recv().await {
-        let (subject, action) = match cmd {
-            StrategyCommand::Start => ("api.strategy.start", "start"),
-            StrategyCommand::Stop => ("api.strategy.stop", "stop"),
-            StrategyCommand::CancelAll => ("api.strategy.cancel_all", "cancel_all"),
-        };
-        let res = match NatsClient::connect(&nats_url).await {
-            Ok(nc) => match request_json_with_retry::<(), StrategyResponse>(&nc, subject, &()).await {
-                Ok(resp) => {
-                    if resp.ok {
-                        Ok(resp.message.unwrap_or_else(|| "ok".into()))
-                    } else {
-                        Err(resp.error.unwrap_or_else(|| "unknown".into()))
+        match cmd {
+            StrategyCommand::Start | StrategyCommand::Stop | StrategyCommand::CancelAll => {
+                let (subject, action) = match cmd {
+                    StrategyCommand::Start => ("api.strategy.start", "start"),
+                    StrategyCommand::Stop => ("api.strategy.stop", "stop"),
+                    StrategyCommand::CancelAll => ("api.strategy.cancel_all", "cancel_all"),
+                    _ => unreachable!(),
+                };
+                let res = match NatsClient::connect(&nats_url).await {
+                    Ok(nc) => {
+                        match request_json_with_retry::<(), StrategyResponse>(&nc, subject, &())
+                            .await
+                        {
+                            Ok(resp) => {
+                                if resp.ok {
+                                    Ok(resp.message.unwrap_or_else(|| "ok".into()))
+                                } else {
+                                    Err(resp.error.unwrap_or_else(|| "unknown".into()))
+                                }
+                            }
+                            Err(e) => Err(e.to_string()),
+                        }
                     }
+                    Err(e) => Err(e.to_string()),
+                };
+                if let Err(ref e) = res {
+                    error!(action = %action, error = %e, "Strategy command failed");
                 }
-                Err(e) => Err(e.to_string()),
-            },
+                let _ = result_tx.send(res);
+            }
+            StrategyCommand::PublishSnapshot => {
+                const SUBJECT_SNAPSHOT_PUBLISH_NOW: &str = "api.snapshot.publish_now";
+                let res = match NatsClient::connect(&nats_url).await {
+                    Ok(nc) => {
+                        match request_json_with_retry::<(), SnapshotPublishResponse>(
+                            &nc,
+                            SUBJECT_SNAPSHOT_PUBLISH_NOW,
+                            &(),
+                        )
+                        .await
+                        {
+                            Ok(resp) => {
+                                if resp.ok {
+                                    let msg = resp
+                                        .generated_at
+                                        .map(|t| format!("Snapshot published at {}", t))
+                                        .or(resp
+                                            .subject
+                                            .map(|s| format!("Snapshot published to {}", s)))
+                                        .unwrap_or_else(|| "Snapshot published".into());
+                                    Ok(msg)
+                                } else {
+                                    Err(resp.error.unwrap_or_else(|| "unknown".into()))
+                                }
+                            }
+                            Err(e) => Err(e.to_string()),
+                        }
+                    }
+                    Err(e) => Err(e.to_string()),
+                };
+                if let Err(ref e) = res {
+                    error!(error = %e, "Force snapshot failed");
+                }
+                let _ = result_tx.send(res);
+            }
+            StrategyCommand::SetMode(mode) => {
+                let res = match NatsClient::connect(&nats_url).await {
+                    Ok(nc) => {
+                        let body = json!({ "mode": mode });
+                        match request_json_with_retry::<_, StrategyResponse>(
+                            &nc,
+                            "api.admin.set_mode",
+                            &body,
+                        )
+                        .await
+                        {
+                            Ok(resp) => {
+                                if resp.ok {
+                                    Ok(resp.message.unwrap_or_else(|| format!("mode {}", mode)))
+                                } else {
+                                    Err(resp.error.unwrap_or_else(|| "unknown".into()))
+                                }
+                            }
+                            Err(e) => Err(e.to_string()),
+                        }
+                    }
+                    Err(e) => Err(e.to_string()),
+                };
+                if let Err(ref e) = res {
+                    error!(mode = %mode, error = %e, "Set mode failed");
+                }
+                let _ = result_tx.send(res);
+            }
+        }
+    }
+}
+
+/// Fetches loans list via NATS api.loans.list, sends result to TUI.
+async fn run_loans_fetcher(
+    nats_url: String,
+    mut rx: mpsc::UnboundedReceiver<()>,
+    result_tx: mpsc::UnboundedSender<Result<Vec<LoanRecord>, String>>,
+) {
+    while rx.recv().await.is_some() {
+        let res = match NatsClient::connect(&nats_url).await {
+            Ok(nc) => {
+                request_json_with_retry::<(), Result<Vec<LoanRecord>, String>>(
+                    &nc,
+                    "api.loans.list",
+                    &(),
+                )
+                .await
+                .map_err(|e| e.to_string())
+                .and_then(|r| r.map_err(|e| e))
+            }
             Err(e) => Err(e.to_string()),
         };
-        if let Err(ref e) = res {
-            error!(action = %action, error = %e, "Strategy command failed");
-        }
         let _ = result_tx.send(res);
     }
 }
@@ -299,7 +469,10 @@ async fn run_loop(
     terminal: &mut ratatui::DefaultTerminal,
     app: &mut App,
     mut strategy_result_rx: mpsc::UnboundedReceiver<Result<String, String>>,
-    mut yield_result_rx: mpsc::UnboundedReceiver<Result<(CurveResponse, BenchmarksResponse), String>>,
+    mut yield_result_rx: mpsc::UnboundedReceiver<
+        Result<(CurveResponse, BenchmarksResponse), String>,
+    >,
+    mut loans_result_rx: mpsc::UnboundedReceiver<Result<Vec<LoanRecord>, String>>,
 ) -> color_eyre::Result<()> {
     let mut event_stream = EventStream::new();
     let mut tick_interval = tokio::time::interval(Duration::from_millis(app.config.tick_ms));
@@ -340,6 +513,11 @@ async fn run_loop(
             // Yield fetch result (curve + benchmarks)
             Some(res) = yield_result_rx.recv() => {
                 app.set_yield_data(res);
+            }
+
+            // Loans fetch result
+            Some(res) = loans_result_rx.recv() => {
+                app.set_loans_data(res);
             }
         }
 

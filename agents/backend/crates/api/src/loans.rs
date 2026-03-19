@@ -504,8 +504,6 @@ fn loan_status_from_str(value: &str) -> anyhow::Result<LoanStatus> {
     }
 }
 
-// Reserved for future proto response path; NATS api.loans.* currently returns JSON only.
-#[allow(dead_code)]
 fn loan_type_to_proto(t: &LoanType) -> i32 {
     match t {
         LoanType::ShirBased => 1, // LOAN_TYPE_SHIR_BASED
@@ -513,7 +511,6 @@ fn loan_type_to_proto(t: &LoanType) -> i32 {
     }
 }
 
-#[allow(dead_code)] // Used by loan_record_to_proto when proto path is enabled.
 fn loan_status_to_proto(s: &LoanStatus) -> i32 {
     match s {
         LoanStatus::Active => 1,    // LOAN_STATUS_ACTIVE
