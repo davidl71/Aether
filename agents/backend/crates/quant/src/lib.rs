@@ -123,6 +123,23 @@ pub struct BoxSpreadLeg {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PutCallParityResult {
+    pub market_cost: f64,
+    pub theoretical_cost: f64,
+    pub intrinsic_value: f64,
+    pub deviation_dollars: f64,
+    pub deviation_pct: f64,
+    pub deviation_bps: f64,
+    pub iv_call_low: f64,
+    pub iv_put_low: f64,
+    pub iv_call_high: f64,
+    pub iv_put_high: f64,
+    pub iv_avg: f64,
+    pub parity_violated: bool,
+    pub parity_flagged: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ComboResult {
     pub name: String,
     pub net_debit: f64,
@@ -154,6 +171,8 @@ pub enum QuantError {
     InsufficientData(String),
     #[error("ML error: {0}")]
     MlError(String),
+    #[error("Put-call parity violation: {0}")]
+    PutCallParityViolation(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -591,6 +610,101 @@ impl QuantCalculator {
             annualized_rate,
             is_arbitrage,
             legs,
+        })
+    }
+
+    pub fn validate_box_spread_parity(
+        &self,
+        s: f64,
+        k_low: f64,
+        k_high: f64,
+        t_years: f64,
+        r: f64,
+        call_low_price: f64,
+        put_low_price: f64,
+        call_high_price: f64,
+        put_high_price: f64,
+    ) -> Result<PutCallParityResult, QuantError> {
+        if k_low >= k_high {
+            return Err(QuantError::InvalidParameter(
+                "k_low must be less than k_high".to_string(),
+            ));
+        }
+
+        let iv_call_low = self.calculate_implied_volatility(
+            call_low_price,
+            s,
+            k_low,
+            t_years,
+            r,
+            OptionKind::Call,
+        )?;
+        let iv_put_low = self.calculate_implied_volatility(
+            put_low_price,
+            s,
+            k_low,
+            t_years,
+            r,
+            OptionKind::Put,
+        )?;
+
+        let iv_call_high = self.calculate_implied_volatility(
+            call_high_price,
+            s,
+            k_high,
+            t_years,
+            r,
+            OptionKind::Call,
+        )?;
+        let iv_put_high = self.calculate_implied_volatility(
+            put_high_price,
+            s,
+            k_high,
+            t_years,
+            r,
+            OptionKind::Put,
+        )?;
+
+        let iv_avg = (iv_call_low + iv_put_low + iv_call_high + iv_put_high) / 4.0;
+
+        let t_call_low =
+            self.calculate_option_price(s, k_low, t_years, r, iv_avg, OptionKind::Call)?;
+        let t_put_low =
+            self.calculate_option_price(s, k_low, t_years, r, iv_avg, OptionKind::Put)?;
+        let t_call_high =
+            self.calculate_option_price(s, k_high, t_years, r, iv_avg, OptionKind::Call)?;
+        let t_put_high =
+            self.calculate_option_price(s, k_high, t_years, r, iv_avg, OptionKind::Put)?;
+
+        let market_cost = call_low_price - put_low_price - call_high_price + put_high_price;
+        let theoretical_cost = t_call_low - t_put_low - t_call_high + t_put_high;
+
+        let intrinsic_value = k_high - k_low;
+        let deviation_dollars = (market_cost - theoretical_cost).abs();
+        let deviation_pct = if intrinsic_value > 0.0 {
+            (deviation_dollars / intrinsic_value) * 100.0
+        } else {
+            0.0
+        };
+        let deviation_bps = deviation_pct * 100.0;
+
+        let parity_violated = deviation_pct > 1.0;
+        let parity_flagged = deviation_pct > 0.5;
+
+        Ok(PutCallParityResult {
+            market_cost,
+            theoretical_cost,
+            intrinsic_value,
+            deviation_dollars,
+            deviation_pct,
+            deviation_bps,
+            iv_call_low,
+            iv_put_low,
+            iv_call_high,
+            iv_put_high,
+            iv_avg,
+            parity_violated,
+            parity_flagged,
         })
     }
 
@@ -1068,6 +1182,88 @@ mod tests {
 
         assert!(r.synthetic_leg_cost > 0.0);
         assert!(r.legs.len() == 4);
+    }
+
+    #[test]
+    fn test_put_call_parity_valid() {
+        let calc = QuantCalculator::new();
+
+        let s = 100.0;
+        let k_low = 95.0;
+        let k_high = 105.0;
+        let t = 0.5;
+        let r = 0.05;
+        let sigma = 0.20;
+
+        let call_low = calc
+            .calculate_option_price(s, k_low, t, r, sigma, OptionKind::Call)
+            .unwrap();
+        let put_low = calc
+            .calculate_option_price(s, k_low, t, r, sigma, OptionKind::Put)
+            .unwrap();
+        let call_high = calc
+            .calculate_option_price(s, k_high, t, r, sigma, OptionKind::Call)
+            .unwrap();
+        let put_high = calc
+            .calculate_option_price(s, k_high, t, r, sigma, OptionKind::Put)
+            .unwrap();
+
+        let result = calc.validate_box_spread_parity(
+            s, k_low, k_high, t, r, call_low, put_low, call_high, put_high,
+        );
+        assert!(result.is_ok());
+        let r = result.unwrap();
+
+        assert!(!r.parity_violated);
+        assert!(!r.parity_flagged);
+        assert!(r.deviation_pct < 0.01);
+        assert!(r.iv_avg > 0.0);
+    }
+
+    #[test]
+    fn test_put_call_parity_flagged() {
+        let calc = QuantCalculator::new();
+
+        let s = 100.0;
+        let k_low = 95.0;
+        let k_high = 105.0;
+        let t = 0.5;
+        let r = 0.05;
+        let sigma = 0.20;
+
+        let call_low = calc
+            .calculate_option_price(s, k_low, t, r, sigma, OptionKind::Call)
+            .unwrap();
+        let put_low = calc
+            .calculate_option_price(s, k_low, t, r, sigma, OptionKind::Put)
+            .unwrap();
+        let call_high = calc
+            .calculate_option_price(s, k_high, t, r, sigma, OptionKind::Call)
+            .unwrap();
+        let put_high = calc
+            .calculate_option_price(s, k_high, t, r, sigma, OptionKind::Put)
+            .unwrap();
+
+        let call_low_manipulated = call_low * 1.10;
+        let put_low_manipulated = put_low * 0.90;
+        let call_high_manipulated = call_high * 1.10;
+        let put_high_manipulated = put_high * 0.90;
+
+        let result = calc.validate_box_spread_parity(
+            s,
+            k_low,
+            k_high,
+            t,
+            r,
+            call_low_manipulated,
+            put_low_manipulated,
+            call_high_manipulated,
+            put_high_manipulated,
+        );
+        assert!(result.is_ok());
+        let r = result.unwrap();
+
+        assert!(r.deviation_pct > 0.5);
     }
 
     #[test]

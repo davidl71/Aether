@@ -31,8 +31,18 @@ fn norm_pdf(x: f64) -> f64 {
 /// s: spot, k: strike, t: time to expiry (years), r: risk-free rate, sigma: vol, option_type: Call/Put.
 pub fn bsm_price(s: f64, k: f64, t: f64, r: f64, sigma: f64, option_type: OptionKind) -> f64 {
     if t <= 0.0 {
-        return (s - k).max(0.0) * if matches!(option_type, OptionKind::Call) { 1.0 } else { -1.0 }
-            + k - s * if matches!(option_type, OptionKind::Call) { 0.0 } else { 1.0 };
+        return (s - k).max(0.0)
+            * if matches!(option_type, OptionKind::Call) {
+                1.0
+            } else {
+                -1.0
+            }
+            + k
+            - s * if matches!(option_type, OptionKind::Call) {
+                0.0
+            } else {
+                1.0
+            };
     }
     let sqrt_t = t.sqrt();
     let d1 = (s.ln() - k.ln() + (r + 0.5 * sigma * sigma) * t) / (sigma * sqrt_t);
@@ -48,8 +58,20 @@ pub fn bsm_price(s: f64, k: f64, t: f64, r: f64, sigma: f64, option_type: Option
 pub fn bsm_delta(s: f64, k: f64, t: f64, r: f64, sigma: f64, option_type: OptionKind) -> f64 {
     if t <= 0.0 {
         return match option_type {
-            OptionKind::Call => if s > k { 1.0 } else { 0.5 },
-            OptionKind::Put => if s < k { -1.0 } else { -0.5 },
+            OptionKind::Call => {
+                if s > k {
+                    1.0
+                } else {
+                    0.5
+                }
+            }
+            OptionKind::Put => {
+                if s < k {
+                    -1.0
+                } else {
+                    -0.5
+                }
+            }
         };
     }
     let sqrt_t = t.sqrt();
