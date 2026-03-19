@@ -92,6 +92,7 @@ fn mock_positions(account_id: &str) -> Vec<PositionSnapshot> {
             mark: 101.10,
             unrealized_pnl: 4.7,
             account_id: Some(account_id.to_string()),
+            source: None,
         },
         PositionSnapshot {
             id: "POS-2".into(),
@@ -101,6 +102,7 @@ fn mock_positions(account_id: &str) -> Vec<PositionSnapshot> {
             mark: 5862.50,
             unrealized_pnl: 12.50,
             account_id: Some(account_id.to_string()),
+            source: None,
         },
     ]
 }

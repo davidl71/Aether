@@ -39,6 +39,14 @@ pub struct RatePointResponse {
     pub liquidity_score: f64,
     pub timestamp: String,
     pub spread_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub data_source: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub strike_low: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub strike_high: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub convenience_yield: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -48,6 +56,8 @@ pub struct CurveResponse {
     pub timestamp: String,
     pub strike_width: Option<f64>,
     pub point_count: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub underlying_price: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -209,6 +219,7 @@ pub fn build_curve(
         point_count: points.len(),
         points,
         timestamp: Utc::now().to_rfc3339(),
+        underlying_price: None,
     })
 }
 
@@ -545,6 +556,10 @@ fn aggregate_opportunities(
                     .fold(0.0_f64, f64::max),
                 timestamp: Utc::now().to_rfc3339(),
                 spread_id: None,
+                data_source: None,
+                strike_low: None,
+                strike_high: None,
+                convenience_yield: None,
             })
         })
         .collect()
@@ -581,6 +596,10 @@ fn build_rate_point(input: BoxSpreadInput, min_liquidity_score: f64) -> Option<R
         liquidity_score: input.liquidity_score,
         timestamp: Utc::now().to_rfc3339(),
         spread_id: input.spread_id,
+        data_source: None,
+        strike_low: None,
+        strike_high: None,
+        convenience_yield: None,
     })
 }
 

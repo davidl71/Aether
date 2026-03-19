@@ -22,6 +22,12 @@ server by appending `use context7` to your prompts. For example:
 
 ## Project Documentation
 
+### Architecture & Design
+
+- **`docs/broker_engine/ARCHITECTURE_BROKER_ENGINE.md`** – Modular broker engine abstraction: `BrokerEngine` trait, `IbApiEngine` (ibapi impl), `YatWSEngine` (yatws impl), runtime engine selection, migration plan (6 steps with task IDs).
+- **`docs/TUI_ARCHITECTURE.md`** – TUI service architecture: main loop, data flow, current file structure, planned dirty-flags render optimization, Longbridge Terminal pattern comparison.
+- **`docs/research/LIBRARY_EVALUATION_SUMMARY.md`** – Evaluated Rust crates: adopt/consider/skip verdicts for yatws, optionstratlib, RustQuant, financial_symbols, trading-calendar, pricelevel, databento, matchcore, nt-portfolio, m4rs. Follow-up task IDs included.
+
 ### Multi-programming-language codebase
 
 - **`docs/MULTI_LANGUAGE_CODEBASE.md`** – Map of programming languages (C++, Python, Rust, Go, TypeScript, Swift) to directories, build/test/lint commands, and cross-language boundaries (proto, NATS, REST, ledger).

@@ -46,6 +46,7 @@ impl From<RuntimePositionState> for PositionSnapshot {
             mark: value.mark,
             unrealized_pnl: value.unrealized_pnl,
             account_id: value.account_id,
+            source: None,
         }
     }
 }
@@ -1067,6 +1068,7 @@ mod tests {
             mark: 501.0,
             unrealized_pnl: 2.0,
             account_id: None,
+            source: None,
         });
         let execution = RuntimeExecutionState::from_snapshot(&snapshot);
         let producer = RuntimeProducerDecision {
@@ -1179,6 +1181,7 @@ mod tests {
             mark: 501.0,
             unrealized_pnl: 10.0,
             account_id: Some("DU123".into()),
+            source: None,
         });
         snapshot.positions.push(PositionSnapshot {
             id: "POS-2".into(),
@@ -1188,6 +1191,7 @@ mod tests {
             mark: 402.0,
             unrealized_pnl: 10.0,
             account_id: Some("DU456".into()),
+            source: None,
         });
         let execution = RuntimeExecutionState::from_snapshot(&snapshot);
         let du123 = execution.positions_by_account("DU123");

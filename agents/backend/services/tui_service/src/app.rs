@@ -951,6 +951,7 @@ mod tests {
             health_rx,
             None,
             None,
+            None,
         );
         (app, snap_tx, event_tx)
     }
@@ -984,6 +985,7 @@ mod tests {
             event_rx,
             config_rx,
             health_rx,
+            None,
             None,
             None,
         );
@@ -1100,8 +1102,8 @@ mod tests {
             content
         );
         assert!(
-            content.contains("APR %"),
-            "Yield tab should show 'APR %' column header; got:\n{}",
+            content.contains("Rate %"),
+            "Yield tab should show 'Rate %' column header; got:\n{}",
             content
         );
         assert!(

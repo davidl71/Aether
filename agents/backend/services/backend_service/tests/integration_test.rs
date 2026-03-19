@@ -11,9 +11,9 @@
 
 use std::time::Duration;
 
-use api::finance_rates::BenchmarksResponse;
 use nats_adapter::proto::v1 as pb;
 use nats_adapter::{request_json_with_timeout, topics, NatsClient, Publisher, Subscriber};
+use serde_json::Value;
 use tokio::time::sleep;
 
 /// Platform topic: market-data.tick.* — deserialize protobuf (NatsEnvelope + MarketDataEvent).
@@ -237,7 +237,7 @@ async fn test_api_request_reply_benchmarks() {
         .await
         .expect("Failed to connect to NATS");
 
-    let response: BenchmarksResponse = request_json_with_timeout(
+    let response: Value = request_json_with_timeout(
         &client,
         "api.finance_rates.benchmarks",
         &(),
@@ -247,8 +247,18 @@ async fn test_api_request_reply_benchmarks() {
     .expect("api.finance_rates.benchmarks request/reply");
 
     // Assert response shape (SOFR + Treasury; timestamps present)
+    let sofr_ts = response
+        .get("sofr")
+        .and_then(|v| v.get("timestamp"))
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    let treasury_ts = response
+        .get("treasury")
+        .and_then(|v| v.get("timestamp"))
+        .and_then(Value::as_str)
+        .unwrap_or_default();
     assert!(
-        !response.sofr.timestamp.is_empty() || !response.treasury.timestamp.is_empty(),
+        !sofr_ts.is_empty() || !treasury_ts.is_empty(),
         "benchmarks response should have at least one non-empty timestamp"
     );
 }

@@ -24,6 +24,10 @@ pub struct HealthAggregateResponse {
     pub all_ok: bool,
     pub any_error: bool,
     pub generated_at: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kv_bucket_ok: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kv_bucket: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -90,6 +94,8 @@ impl HealthAggregateState {
             all_ok,
             any_error,
             generated_at: Utc::now().to_rfc3339(),
+            kv_bucket_ok: None,
+            kv_bucket: None,
         }
     }
 }

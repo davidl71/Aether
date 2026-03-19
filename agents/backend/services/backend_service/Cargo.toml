@@ -6,6 +6,7 @@ authors = ["Aether Team"]
 
 [dependencies]
 anyhow = { workspace = true }
+axum = { workspace = true }
 bytes = "1.5"
 market_data = { path = "../../crates/market_data" }
 strategy = { path = "../../crates/strategy" }
@@ -27,6 +28,8 @@ toml = { workspace = true }
 futures = "0.3"
 uuid = { workspace = true }
 ibapi = { workspace = true }
+tws_yield_curve = { path = "../../crates/tws_yield_curve" }
+broker_engine = { path = "../../crates/broker_engine" }
 
 [dev-dependencies]
 nats_adapter = { path = "../../crates/nats_adapter" }

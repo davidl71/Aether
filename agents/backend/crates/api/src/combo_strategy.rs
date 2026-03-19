@@ -153,12 +153,16 @@ mod tests {
         RuntimePositionDto {
             id: symbol.to_string(),
             symbol: symbol.to_string(),
+            position_type: None,
+            strategy: None,
             quantity: qty,
             cost_basis: 0.0,
             mark: 0.0,
             unrealized_pnl: 0.0,
             market_value: 0.0,
             account_id: Some("DU1".to_string()),
+            apr_pct: None,
+            source: None,
         }
     }
 

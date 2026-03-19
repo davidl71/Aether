@@ -314,6 +314,9 @@ pub struct PositionSnapshot {
     /// Account identifier for multi-account systems (optional for backward compatibility).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub account_id: Option<String>,
+    /// Source of this position (e.g. "TWS", "IB", "mock").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

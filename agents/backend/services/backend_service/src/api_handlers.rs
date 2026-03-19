@@ -5,6 +5,7 @@
 
 use std::sync::Arc;
 
+use tws_yield_curve;
 use api::discount_bank::{get_balance, get_bank_accounts, get_transactions, ImportPositionsQuery};
 use api::fetch_ib_positions;
 use api::finance_rates::{
@@ -549,6 +550,7 @@ async fn run_finance_rates(
                             if let Some(curve_from_kv) =
                                 load_yield_curve_from_kv(&nc_build, sym, query.as_ref()).await
                             {
+                                loaded_from_kv = true;
                                 let spot = symbol
                                     .as_ref()
                                     .map(|s| reference_spot_for_report(s))

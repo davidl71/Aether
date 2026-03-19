@@ -8,6 +8,7 @@ members = [
   "crates/ledger",
   "crates/nats_adapter",
   "crates/quant",
+  "crates/broker_engine",
   "crates/ib_adapter",
   "crates/tws_yield_curve",
   "services/backend_service",

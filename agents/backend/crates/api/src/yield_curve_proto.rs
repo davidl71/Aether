@@ -45,6 +45,7 @@ pub fn curve_response_from_proto(yc: &YieldCurve, symbol_override: &str) -> Curv
         timestamp,
         strike_width,
         point_count: points.len(),
+        underlying_price: None,
     }
 }
 
@@ -104,6 +105,10 @@ fn proto_point_to_rate_point(
         liquidity_score: 70.0,
         timestamp,
         spread_id: None,
+        data_source: None,
+        strike_low: None,
+        strike_high: None,
+        convenience_yield: None,
     }
 }
 

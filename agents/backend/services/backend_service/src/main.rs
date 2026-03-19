@@ -34,6 +34,7 @@ mod nats_integration;
 mod rest_snapshot;
 mod snapshot_publisher;
 mod swiftness;
+mod yield_curve_writer;
 
 #[derive(Debug, Deserialize, Clone)]
 struct BackendConfig {
@@ -158,7 +159,7 @@ async fn main() -> anyhow::Result<()> {
         nats_integration.clone(),
     )?;
 
-    health_aggregation::spawn_health_aggregator(health_state, nats_url.clone());
+    health_aggregation::spawn_health_aggregator(health_state.clone(), nats_url.clone());
     collection_aggregation::spawn_collection_aggregator(state.clone(), nats_url.clone());
     dlq_consumer::spawn_dlq_consumer(nats_url.clone());
 
@@ -190,6 +191,7 @@ async fn main() -> anyhow::Result<()> {
                 fmp_client,
                 controller.clone(),
                 state.clone(),
+                None,
             );
         }
     }
@@ -209,7 +211,7 @@ async fn main() -> anyhow::Result<()> {
         info!("IB positions disabled (set IB_PORTAL_URL to enable, e.g. https://localhost:5001/v1/portal)");
     }
 
-    rest_snapshot::spawn_if_enabled(state.clone());
+    rest_snapshot::spawn_if_enabled(state.clone(), health_state.clone(), nats_integration.clone());
 
     info!("backend service online (NATS primary; REST snapshot if REST_SNAPSHOT_PORT set)");
 

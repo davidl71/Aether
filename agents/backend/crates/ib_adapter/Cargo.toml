@@ -13,6 +13,4 @@ tokio.workspace = true
 tracing.workspace = true
 ibapi = { workspace = true }
 thiserror.workspace = true
-
-[dev-dependencies]
-tokio.workspace = true
+broker_engine = { path = "../broker_engine" }

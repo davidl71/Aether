@@ -180,6 +180,7 @@ fn position_from_proto(pos: pb::Position, fallback_account_id: &str) -> Position
         mark: pos.mark,
         unrealized_pnl: pos.unrealized_pnl,
         account_id: Some(fallback_account_id.to_string()),
+        source: None,
     }
 }
 

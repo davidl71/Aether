@@ -105,6 +105,7 @@ async fn fetch_and_merge_positions(client: &Client, state: &SharedSnapshot) -> a
                 mark: pos.mark,
                 unrealized_pnl: pos.unrealized_pnl,
                 account_id: Some(account_id.clone()),
+                source: Some("swiftness".into()),
             });
         }
 
