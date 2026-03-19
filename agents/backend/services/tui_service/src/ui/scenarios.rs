@@ -76,7 +76,7 @@ pub fn filtered_scenarios(app: &App) -> Vec<ScenarioDto> {
         .into_iter()
         .filter(|s| {
             if let Some(w) = app.scenarios_strike_width_filter {
-                if s.strike_width != w {
+                if s.strike_width != w as f64 {
                     return false;
                 }
             }

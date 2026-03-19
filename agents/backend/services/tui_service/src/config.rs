@@ -30,6 +30,8 @@ pub struct TuiConfig {
     pub rest_fallback: bool,
     /// Seconds before a snapshot is considered stale for display purposes (env: SNAPSHOT_TTL_SECS)
     pub snapshot_ttl_secs: u64,
+    /// Enable split-pane layout (env: SPLIT_PANE=1)
+    pub split_pane: bool,
 }
 
 impl Default for TuiConfig {
@@ -43,6 +45,7 @@ impl Default for TuiConfig {
             rest_poll_ms: 2000,
             rest_fallback: false,
             snapshot_ttl_secs: DEFAULT_SNAPSHOT_TTL_SECS,
+            split_pane: false,
         }
     }
 }
@@ -70,6 +73,21 @@ impl TuiConfig {
 
     pub fn snapshot_stale_after_secs(&self) -> i64 {
         self.rest_poll_ms.max(1000).div_ceil(1000) as i64
+    }
+
+    pub fn validate(&self, require_nats: bool) -> Result<(), Vec<String>> {
+        let mut errors = Vec::new();
+        if require_nats && !self.rest_fallback && !self.nats_url.starts_with("nats://") {
+            errors.push("NATS URL must use nats:// scheme when NATS is required".to_string());
+        }
+        if self.tick_ms == 0 {
+            errors.push("TICK_MS must be > 0".to_string());
+        }
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
     }
 
     fn apply_shared_config(&mut self, shared: &SharedConfigFile) {
@@ -176,6 +194,12 @@ impl TuiConfig {
         if let Ok(value) = std::env::var("SNAPSHOT_TTL_SECS") {
             if let Ok(parsed) = value.parse::<u64>() {
                 self.snapshot_ttl_secs = parsed.max(1);
+            }
+        }
+
+        if let Ok(value) = std::env::var("SPLIT_PANE") {
+            if let Some(parsed) = parse_bool(&value) {
+                self.split_pane = parsed;
             }
         }
     }

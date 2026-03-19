@@ -256,6 +256,7 @@ pub struct Metrics {
     pub commissions: f64,
     pub portal_ok: bool,
     pub tws_ok: bool,
+    pub tws_address: Option<String>,
     pub questdb_ok: bool,
     pub nats_ok: bool,
 }
@@ -270,6 +271,7 @@ impl Default for Metrics {
             commissions: 0.0,
             portal_ok: false,
             tws_ok: false,
+            tws_address: None,
             questdb_ok: false,
             nats_ok: false,
         }

@@ -192,6 +192,7 @@ fn metrics_from_proto(m: pb::Metrics) -> Metrics {
         commissions: m.commissions,
         portal_ok: m.portal_ok,
         tws_ok: m.tws_ok,
+        tws_address: None,
         questdb_ok: m.questdb_ok,
         nats_ok: m.nats_ok,
     }
@@ -378,5 +379,7 @@ pub fn runtime_snapshot_dto_from_proto(p: pb::SystemSnapshot) -> RuntimeSnapshot
         decisions: decisions.iter().map(RuntimeDecisionDto::from).collect(),
         alerts: p.alerts.into_iter().map(alert_from_proto).collect(),
         risk: p.risk.map(risk_from_proto).unwrap_or_default(),
+        scenarios: Vec::new(),
+        yield_benchmarks: None,
     }
 }

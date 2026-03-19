@@ -66,8 +66,7 @@ pub fn render_loans(f: &mut Frame, app: &App, area: Rect) {
     };
 
     if list.is_empty() {
-        let p = Paragraph::new("No loans returned.")
-            .style(Style::default().fg(Color::DarkGray));
+        let p = Paragraph::new("No loans returned.").style(Style::default().fg(Color::DarkGray));
         f.render_widget(p, inner);
         return;
     }

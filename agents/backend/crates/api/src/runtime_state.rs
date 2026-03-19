@@ -4,6 +4,7 @@ use risk::{RiskDecision, RiskLimit};
 use serde::{Deserialize, Serialize};
 use strategy::model::{Decision as StrategyDecisionModel, TradeSide};
 
+use crate::finance_rates::BenchmarksResponse;
 use crate::state::{
     Alert, CandleSnapshot, HistoricPosition, Metrics, OrderSnapshot, PositionSnapshot, RiskStatus,
     StrategyDecisionSnapshot, SymbolSnapshot, SystemSnapshot,
@@ -420,10 +421,7 @@ impl RuntimeExecutionState {
         if self.decisions.len() > 50 {
             self.decisions.remove(0);
         }
-        let account = decision
-            .account_id()
-            .unwrap_or(account_id)
-            .to_string();
+        let account = decision.account_id().unwrap_or(account_id).to_string();
         self.apply_decision_order_and_position(
             &decision.symbol,
             decision.quantity,
@@ -762,12 +760,16 @@ impl RuntimeRiskState {
 pub struct RuntimePositionDto {
     pub id: String,
     pub symbol: String,
+    pub position_type: Option<String>,
+    pub strategy: Option<String>,
     pub quantity: i32,
     pub cost_basis: f64,
     pub mark: f64,
     pub unrealized_pnl: f64,
     pub market_value: f64,
     pub account_id: Option<String>,
+    pub apr_pct: Option<f64>,
+    pub source: Option<String>,
 }
 
 impl From<&PositionSnapshot> for RuntimePositionDto {
@@ -781,12 +783,16 @@ impl From<&RuntimePositionState> for RuntimePositionDto {
         Self {
             id: value.id.clone(),
             symbol: value.symbol.clone(),
+            position_type: None,
+            strategy: None,
             quantity: value.quantity,
             cost_basis: value.cost_basis,
             mark: value.mark,
             unrealized_pnl: value.unrealized_pnl,
             market_value: value.mark * value.quantity as f64,
             account_id: value.account_id.clone(),
+            apr_pct: None,
+            source: None,
         }
     }
 }
@@ -889,6 +895,9 @@ pub struct RuntimeSnapshotDto {
     pub decisions: Vec<RuntimeDecisionDto>,
     pub alerts: Vec<Alert>,
     pub risk: RiskStatus,
+    pub scenarios: Vec<ScenarioDto>,
+    #[serde(skip)]
+    pub yield_benchmarks: Option<BenchmarksResponse>,
 }
 
 impl From<&SystemSnapshot> for RuntimeSnapshotDto {
@@ -924,8 +933,27 @@ impl From<&SystemSnapshot> for RuntimeSnapshotDto {
                 .collect(),
             alerts: value.alerts.clone(),
             risk: value.risk.clone(),
+            scenarios: Vec::new(),
+            yield_benchmarks: None,
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ScenarioDto {
+    pub symbol: String,
+    pub expiration: String,
+    pub strike_width: f64,
+    pub strike_center: Option<f64>,
+    pub days_to_expiry: Option<i32>,
+    pub theoretical_value: f64,
+    pub estimated_net_debit: f64,
+    pub net_debit: f64,
+    pub profit: f64,
+    pub roi_pct: f64,
+    pub apr_pct: f64,
+    pub fill_probability: f64,
+    pub scenario_type: String,
 }
 
 #[cfg(test)]

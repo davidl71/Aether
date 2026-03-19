@@ -2,8 +2,8 @@
 
 mod alerts;
 mod dashboard;
-mod logs;
 mod loans;
+mod logs;
 mod orders;
 mod positions;
 pub use positions::positions_display_info;
@@ -414,7 +414,7 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
             Style::default().add_modifier(Modifier::BOLD),
         ),
         Span::raw(":switch tab  "),
-        Span::styled("1-8", Style::default().add_modifier(Modifier::BOLD)),
+        Span::styled("1-9", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(":jump to tab  "),
         Span::styled("M", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(":mode  "),

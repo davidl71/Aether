@@ -41,7 +41,7 @@ pub struct RatePointResponse {
     pub spread_id: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CurveResponse {
     pub symbol: String,
     pub points: Vec<RatePointResponse>,
@@ -61,7 +61,7 @@ pub struct ComparisonResponse {
     pub timestamp: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BenchmarkRateResponse {
     pub tenor: String,
     pub rate: f64,
@@ -70,22 +70,29 @@ pub struct BenchmarkRateResponse {
     pub source: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SofrBenchmarksResponse {
     pub overnight: SofrOvernightResponse,
     pub term_rates: Vec<BenchmarkRateResponse>,
     pub timestamp: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SofrOvernightResponse {
     pub rate: Option<f64>,
     pub timestamp: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TreasuryBenchmarksResponse {
     pub rates: Vec<BenchmarkRateResponse>,
+    pub timestamp: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BenchmarksResponse {
+    pub sofr: SofrBenchmarksResponse,
+    pub treasury: TreasuryBenchmarksResponse,
     pub timestamp: String,
 }
 

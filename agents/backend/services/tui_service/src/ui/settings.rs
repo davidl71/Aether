@@ -53,7 +53,11 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
     };
     let backend_table = Table::new(
         backend_rows,
-        [Constraint::Length(12), Constraint::Length(10), Constraint::Min(8)],
+        [
+            Constraint::Length(12),
+            Constraint::Length(10),
+            Constraint::Min(8),
+        ],
     )
     .header(
         Row::new(["Backend", "Status", "Updated"])
@@ -85,13 +89,14 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
             Span::raw("  SNAPSHOT_TTL_SECS: "),
             Span::raw(app.config.snapshot_ttl_secs.to_string()),
             Span::raw("  SPLIT_PANE: "),
-            Span::raw(if app.config.split_pane { "true" } else { "false" }),
+            Span::raw(if app.config.split_pane {
+                "true"
+            } else {
+                "false"
+            }),
         ]),
     ];
-    f.render_widget(
-        Paragraph::new(config_lines).block(config_block),
-        chunks[1],
-    );
+    f.render_widget(Paragraph::new(config_lines).block(config_block), chunks[1]);
 
     // 3) Symbols (watchlist) — add (a), remove (Del), reset override (r)
     let watchlist = app.watchlist();
@@ -110,23 +115,19 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
             Span::raw("Add symbol: "),
             Span::styled(
                 format!("{buf}_"),
-                Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
             ),
             Span::raw("  [Enter] confirm  [Esc] cancel"),
         ]);
-        f.render_widget(
-            Paragraph::new(line).block(symbols_block),
-            chunks[2],
-        );
+        f.render_widget(Paragraph::new(line).block(symbols_block), chunks[2]);
     } else if watchlist.is_empty() {
         let line = Line::from(Span::styled(
             "No symbols. Press 'a' to add (in-memory), or set WATCHLIST / config strategy.symbols.",
             Style::default().fg(Color::DarkGray),
         ));
-        f.render_widget(
-            Paragraph::new(line).block(symbols_block),
-            chunks[2],
-        );
+        f.render_widget(Paragraph::new(line).block(symbols_block), chunks[2]);
     } else {
         let mut spans = vec![];
         for (i, sym) in watchlist.iter().enumerate() {
@@ -135,19 +136,19 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
             }
             let selected = i == app.settings_symbol_index;
             if selected {
-                spans.push(
-                    Span::styled(
-                        format!("[{}]", sym),
-                        Style::default()
-                            .fg(Color::Yellow)
-                            .add_modifier(Modifier::BOLD),
-                    )
-                );
+                spans.push(Span::styled(
+                    format!("[{}]", sym),
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ));
             } else {
                 spans.push(Span::styled(sym.as_str(), Style::default().fg(Color::Cyan)));
             }
         }
-        spans.push(Span::raw("  ↑↓ select  a add  Del remove  r reset to config"));
+        spans.push(Span::raw(
+            "  ↑↓ select  a add  Del remove  r reset to config",
+        ));
         f.render_widget(
             Paragraph::new(Line::from(spans)).block(symbols_block),
             chunks[2],

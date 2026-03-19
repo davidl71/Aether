@@ -29,7 +29,9 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
             Style::default().fg(Color::DarkGray),
         ))
     } else {
-        let idx = app.yield_symbol_index.min(watchlist.len().saturating_sub(1));
+        let idx = app
+            .yield_symbol_index
+            .min(watchlist.len().saturating_sub(1));
         let mut spans = vec![Span::raw("Symbol: ")];
         for (i, sym) in watchlist.iter().enumerate() {
             if i > 0 {
@@ -43,19 +45,21 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
                         .add_modifier(Modifier::BOLD),
                 ));
             } else {
-                spans.push(Span::styled(sym.as_str(), Style::default().fg(Color::DarkGray)));
+                spans.push(Span::styled(
+                    sym.as_str(),
+                    Style::default().fg(Color::DarkGray),
+                ));
             }
         }
         spans.push(Span::raw("  [← →]: change. Ref: "));
-        spans.push(Span::styled("boxtrades.com", Style::default().fg(Color::Cyan)));
+        spans.push(Span::styled(
+            "boxtrades.com",
+            Style::default().fg(Color::Cyan),
+        ));
         Line::from(spans)
     };
     f.render_widget(
-        Paragraph::new(symbol_line).block(
-            Block::default()
-                .title("Yield")
-                .borders(Borders::ALL),
-        ),
+        Paragraph::new(symbol_line).block(Block::default().title("Yield").borders(Borders::ALL)),
         chunks[0],
     );
 
@@ -64,7 +68,10 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
     let symbol = app
         .config
         .watchlist
-        .get(app.yield_symbol_index.min(app.config.watchlist.len().saturating_sub(1)))
+        .get(
+            app.yield_symbol_index
+                .min(app.config.watchlist.len().saturating_sub(1)),
+        )
         .cloned()
         .unwrap_or_else(|| "—".to_string());
     let (rows, empty_reason): (Vec<Row>, Option<&'static str>) = match &app.yield_curve {
@@ -86,7 +93,7 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
         ),
         Some(_) => (
             vec![Row::new([
-                symbol,
+                symbol.clone(),
                 "—".into(),
                 "—".into(),
                 "—".into(),
@@ -96,7 +103,7 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
         ),
         None if app.yield_error.is_some() => (
             vec![Row::new([
-                symbol,
+                symbol.clone(),
                 "—".into(),
                 "—".into(),
                 "—".into(),
@@ -106,7 +113,7 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
         ),
         None => (
             vec![Row::new([
-                symbol,
+                symbol.clone(),
                 "—".into(),
                 "—".into(),
                 "—".into(),
@@ -138,7 +145,10 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
 
     let mut bench_note_spans = vec![
         Span::raw("Benchmark: "),
-        Span::styled("api.finance_rates.benchmarks", Style::default().fg(Color::Yellow)),
+        Span::styled(
+            "api.finance_rates.benchmarks",
+            Style::default().fg(Color::Yellow),
+        ),
         Span::raw(" (FRED). "),
     ];
     if let Some(ref e) = app.yield_error {
@@ -148,12 +158,15 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
         ));
     } else if let Some(reason) = empty_reason {
         bench_note_spans.push(Span::styled(
-            reason.replace("{symbol}", symbol),
+            reason.replace("{symbol}", &symbol),
             Style::default().fg(Color::Yellow),
         ));
     } else {
         bench_note_spans.push(Span::raw("See "));
-        bench_note_spans.push(Span::styled("NATS_API.md", Style::default().fg(Color::Cyan)));
+        bench_note_spans.push(Span::styled(
+            "NATS_API.md",
+            Style::default().fg(Color::Cyan),
+        ));
         bench_note_spans.push(Span::raw(", TUI_LEGACY_DESIGN_LEARNINGS."));
     }
     f.render_widget(Paragraph::new(Line::from(bench_note_spans)), chunks[2]);
@@ -168,7 +181,8 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
                 rows.push(Row::new([
                     "SOFR overnight".into(),
                     format!("{:.2}", rate),
-                    b.sofr.overnight
+                    b.sofr
+                        .overnight
                         .timestamp
                         .as_deref()
                         .unwrap_or("SOFR")

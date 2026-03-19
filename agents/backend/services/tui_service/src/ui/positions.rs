@@ -41,9 +41,7 @@ pub fn position_type_label(typ: Option<&str>) -> &'static str {
 }
 
 pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
-    let block = Block::default()
-        .title(" Positions ")
-        .borders(Borders::ALL);
+    let block = Block::default().title(" Positions ").borders(Borders::ALL);
     let inner = block.inner(area);
     f.render_widget(block, area);
 
@@ -84,13 +82,16 @@ pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
         app.positions_scroll.min(len.saturating_sub(1))
     };
     let window: Vec<Row> = rows.into_iter().skip(scroll).take(visible_height).collect();
-    let table = Table::new(window, [
-        Constraint::Length(12),
-        Constraint::Length(10),
-        Constraint::Length(6),
-        Constraint::Length(10),
-        Constraint::Length(10),
-    ])
+    let table = Table::new(
+        window,
+        [
+            Constraint::Length(12),
+            Constraint::Length(10),
+            Constraint::Length(6),
+            Constraint::Length(10),
+            Constraint::Length(10),
+        ],
+    )
     .header(header);
     f.render_widget(table, inner);
 }
