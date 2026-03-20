@@ -244,10 +244,14 @@ async fn run_tws_subscriptions(
             continue;
         }
         let event = MarketDataEvent {
+            contract_id: 0,
             symbol: symbol.clone(),
             bid,
             ask,
-            timestamp: now,
+            last: 0.0,
+            volume: 0,
+            timestamp: Some(prost_types::Timestamp::from(now)),
+            quote_quality: 0,
         };
         let running = *strategy_toggle.borrow();
         handle_market_event(

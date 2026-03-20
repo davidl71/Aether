@@ -226,12 +226,14 @@ func (LoanStatus) EnumDescriptor() ([]byte, []int) {
 
 type MarketDataEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Symbol        string                 `protobuf:"bytes,1,opt,name=symbol,proto3" json:"symbol,omitempty"`
-	Bid           float64                `protobuf:"fixed64,2,opt,name=bid,proto3" json:"bid,omitempty"`
-	Ask           float64                `protobuf:"fixed64,3,opt,name=ask,proto3" json:"ask,omitempty"`
-	Last          float64                `protobuf:"fixed64,4,opt,name=last,proto3" json:"last,omitempty"`
-	Volume        uint64                 `protobuf:"varint,5,opt,name=volume,proto3" json:"volume,omitempty"`
-	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	ContractId    int64                  `protobuf:"varint,1,opt,name=contract_id,json=contractId,proto3" json:"contract_id,omitempty"`
+	Symbol        string                 `protobuf:"bytes,2,opt,name=symbol,proto3" json:"symbol,omitempty"`
+	Bid           float64                `protobuf:"fixed64,3,opt,name=bid,proto3" json:"bid,omitempty"`
+	Ask           float64                `protobuf:"fixed64,4,opt,name=ask,proto3" json:"ask,omitempty"`
+	Last          float64                `protobuf:"fixed64,5,opt,name=last,proto3" json:"last,omitempty"`
+	Volume        uint64                 `protobuf:"varint,6,opt,name=volume,proto3" json:"volume,omitempty"`
+	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	QuoteQuality  uint32                 `protobuf:"varint,8,opt,name=quote_quality,json=quoteQuality,proto3" json:"quote_quality,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -264,6 +266,13 @@ func (x *MarketDataEvent) ProtoReflect() protoreflect.Message {
 // Deprecated: Use MarketDataEvent.ProtoReflect.Descriptor instead.
 func (*MarketDataEvent) Descriptor() ([]byte, []int) {
 	return file_messages_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *MarketDataEvent) GetContractId() int64 {
+	if x != nil {
+		return x.ContractId
+	}
+	return 0
 }
 
 func (x *MarketDataEvent) GetSymbol() string {
@@ -306,6 +315,13 @@ func (x *MarketDataEvent) GetTimestamp() *timestamppb.Timestamp {
 		return x.Timestamp
 	}
 	return nil
+}
+
+func (x *MarketDataEvent) GetQuoteQuality() uint32 {
+	if x != nil {
+		return x.QuoteQuality
+	}
+	return 0
 }
 
 type CandleSnapshot struct {
@@ -3518,14 +3534,17 @@ var File_messages_proto protoreflect.FileDescriptor
 
 const file_messages_proto_rawDesc = "" +
 	"\n" +
-	"\x0emessages.proto\x12\x0eib.platform.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb3\x01\n" +
-	"\x0fMarketDataEvent\x12\x16\n" +
-	"\x06symbol\x18\x01 \x01(\tR\x06symbol\x12\x10\n" +
-	"\x03bid\x18\x02 \x01(\x01R\x03bid\x12\x10\n" +
-	"\x03ask\x18\x03 \x01(\x01R\x03ask\x12\x12\n" +
-	"\x04last\x18\x04 \x01(\x01R\x04last\x12\x16\n" +
-	"\x06volume\x18\x05 \x01(\x04R\x06volume\x128\n" +
-	"\ttimestamp\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\"\xc4\x01\n" +
+	"\x0emessages.proto\x12\x0eib.platform.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf9\x01\n" +
+	"\x0fMarketDataEvent\x12\x1f\n" +
+	"\vcontract_id\x18\x01 \x01(\x03R\n" +
+	"contractId\x12\x16\n" +
+	"\x06symbol\x18\x02 \x01(\tR\x06symbol\x12\x10\n" +
+	"\x03bid\x18\x03 \x01(\x01R\x03bid\x12\x10\n" +
+	"\x03ask\x18\x04 \x01(\x01R\x03ask\x12\x12\n" +
+	"\x04last\x18\x05 \x01(\x01R\x04last\x12\x16\n" +
+	"\x06volume\x18\x06 \x01(\x04R\x06volume\x128\n" +
+	"\ttimestamp\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12#\n" +
+	"\rquote_quality\x18\b \x01(\rR\fquoteQuality\"\xc4\x01\n" +
 	"\x0eCandleSnapshot\x12\x12\n" +
 	"\x04open\x18\x01 \x01(\x01R\x04open\x12\x12\n" +
 	"\x04high\x18\x02 \x01(\x01R\x04high\x12\x10\n" +

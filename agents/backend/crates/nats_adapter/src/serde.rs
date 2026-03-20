@@ -61,12 +61,14 @@ mod tests {
         use crate::proto::v1::MarketDataEvent;
 
         let event = MarketDataEvent {
+            contract_id: 0,
             symbol: "SPX".into(),
             bid: 4500.25,
             ask: 4500.75,
             last: 4500.50,
             volume: 1_000_000,
             timestamp: None,
+            quote_quality: 0,
         };
 
         let bytes = encode_proto(&event).unwrap();
@@ -82,12 +84,14 @@ mod tests {
         use crate::proto::v1::MarketDataEvent;
 
         let event = MarketDataEvent {
+            contract_id: 0,
             symbol: "NDX".into(),
             bid: 15000.0,
             ask: 15001.0,
             last: 15000.5,
             volume: 500,
             timestamp: None,
+            quote_quality: 0,
         };
 
         let bytes = encode_envelope("backend", "MarketDataEvent", &event).unwrap();

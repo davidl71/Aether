@@ -380,12 +380,14 @@ mod tests {
             source: "cpp-engine".into(),
             message_type: "MarketDataEvent".into(),
             payload: MarketDataEvent {
+                contract_id: 0,
                 symbol: "SPY".into(),
                 bid: 100.25,
                 ask: 100.75,
                 last: 100.50,
                 volume: 42,
                 timestamp: None,
+                quote_quality: 0,
             }
             .encode_to_vec(),
         };
@@ -419,12 +421,14 @@ mod tests {
             source: "backend".into(),
             message_type: "MarketDataEvent".into(),
             payload: MarketDataEvent {
+                contract_id: 0,
                 symbol: String::new(),
                 bid: 1.0,
                 ask: 2.0,
                 last: 1.5,
                 volume: 3,
                 timestamp: None,
+                quote_quality: 0,
             }
             .encode_to_vec(),
         };

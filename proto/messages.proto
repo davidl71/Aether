@@ -11,12 +11,14 @@ import "google/protobuf/timestamp.proto";
 // ---------------------------------------------------------------------------
 
 message MarketDataEvent {
-  string symbol = 1;
-  double bid = 2;
-  double ask = 3;
-  double last = 4;
-  uint64 volume = 5;
-  google.protobuf.Timestamp timestamp = 6;
+  int64 contract_id = 1;
+  string symbol = 2;
+  double bid = 3;
+  double ask = 4;
+  double last = 5;
+  uint64 volume = 6;
+  google.protobuf.Timestamp timestamp = 7;
+  uint32 quote_quality = 8;
 }
 
 message CandleSnapshot {

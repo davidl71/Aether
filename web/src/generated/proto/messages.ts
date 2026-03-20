@@ -179,12 +179,14 @@ export function loanStatusToJSON(object: LoanStatus): string {
 }
 
 export interface MarketDataEvent {
+  contractId: number;
   symbol: string;
   bid: number;
   ask: number;
   last: number;
   volume: number;
   timestamp: Date | undefined;
+  quoteQuality: number;
 }
 
 export interface CandleSnapshot {
@@ -578,28 +580,34 @@ export interface RiskFreeRateCurve {
 }
 
 function createBaseMarketDataEvent(): MarketDataEvent {
-  return { symbol: "", bid: 0, ask: 0, last: 0, volume: 0, timestamp: undefined };
+  return { contractId: 0, symbol: "", bid: 0, ask: 0, last: 0, volume: 0, timestamp: undefined, quoteQuality: 0 };
 }
 
 export const MarketDataEvent: MessageFns<MarketDataEvent> = {
   encode(message: MarketDataEvent, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.contractId !== 0) {
+      writer.uint32(8).int64(message.contractId);
+    }
     if (message.symbol !== "") {
-      writer.uint32(10).string(message.symbol);
+      writer.uint32(18).string(message.symbol);
     }
     if (message.bid !== 0) {
-      writer.uint32(17).double(message.bid);
+      writer.uint32(25).double(message.bid);
     }
     if (message.ask !== 0) {
-      writer.uint32(25).double(message.ask);
+      writer.uint32(33).double(message.ask);
     }
     if (message.last !== 0) {
-      writer.uint32(33).double(message.last);
+      writer.uint32(41).double(message.last);
     }
     if (message.volume !== 0) {
-      writer.uint32(40).uint64(message.volume);
+      writer.uint32(48).uint64(message.volume);
     }
     if (message.timestamp !== undefined) {
-      Timestamp.encode(toTimestamp(message.timestamp), writer.uint32(50).fork()).join();
+      Timestamp.encode(toTimestamp(message.timestamp), writer.uint32(58).fork()).join();
+    }
+    if (message.quoteQuality !== 0) {
+      writer.uint32(64).uint32(message.quoteQuality);
     }
     return writer;
   },
@@ -612,19 +620,19 @@ export const MarketDataEvent: MessageFns<MarketDataEvent> = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1: {
-          if (tag !== 10) {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.contractId = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
             break;
           }
 
           message.symbol = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 17) {
-            break;
-          }
-
-          message.bid = reader.double();
           continue;
         }
         case 3: {
@@ -632,7 +640,7 @@ export const MarketDataEvent: MessageFns<MarketDataEvent> = {
             break;
           }
 
-          message.ask = reader.double();
+          message.bid = reader.double();
           continue;
         }
         case 4: {
@@ -640,23 +648,39 @@ export const MarketDataEvent: MessageFns<MarketDataEvent> = {
             break;
           }
 
-          message.last = reader.double();
+          message.ask = reader.double();
           continue;
         }
         case 5: {
-          if (tag !== 40) {
+          if (tag !== 41) {
+            break;
+          }
+
+          message.last = reader.double();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
             break;
           }
 
           message.volume = longToNumber(reader.uint64());
           continue;
         }
-        case 6: {
-          if (tag !== 50) {
+        case 7: {
+          if (tag !== 58) {
             break;
           }
 
           message.timestamp = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.quoteQuality = reader.uint32();
           continue;
         }
       }
@@ -670,17 +694,30 @@ export const MarketDataEvent: MessageFns<MarketDataEvent> = {
 
   fromJSON(object: any): MarketDataEvent {
     return {
+      contractId: isSet(object.contractId)
+        ? globalThis.Number(object.contractId)
+        : isSet(object.contract_id)
+        ? globalThis.Number(object.contract_id)
+        : 0,
       symbol: isSet(object.symbol) ? globalThis.String(object.symbol) : "",
       bid: isSet(object.bid) ? globalThis.Number(object.bid) : 0,
       ask: isSet(object.ask) ? globalThis.Number(object.ask) : 0,
       last: isSet(object.last) ? globalThis.Number(object.last) : 0,
       volume: isSet(object.volume) ? globalThis.Number(object.volume) : 0,
       timestamp: isSet(object.timestamp) ? fromJsonTimestamp(object.timestamp) : undefined,
+      quoteQuality: isSet(object.quoteQuality)
+        ? globalThis.Number(object.quoteQuality)
+        : isSet(object.quote_quality)
+        ? globalThis.Number(object.quote_quality)
+        : 0,
     };
   },
 
   toJSON(message: MarketDataEvent): unknown {
     const obj: any = {};
+    if (message.contractId !== 0) {
+      obj.contractId = Math.round(message.contractId);
+    }
     if (message.symbol !== "") {
       obj.symbol = message.symbol;
     }
@@ -699,6 +736,9 @@ export const MarketDataEvent: MessageFns<MarketDataEvent> = {
     if (message.timestamp !== undefined) {
       obj.timestamp = message.timestamp.toISOString();
     }
+    if (message.quoteQuality !== 0) {
+      obj.quoteQuality = Math.round(message.quoteQuality);
+    }
     return obj;
   },
 
@@ -707,12 +747,14 @@ export const MarketDataEvent: MessageFns<MarketDataEvent> = {
   },
   fromPartial<I extends Exact<DeepPartial<MarketDataEvent>, I>>(object: I): MarketDataEvent {
     const message = createBaseMarketDataEvent();
+    message.contractId = object.contractId ?? 0;
     message.symbol = object.symbol ?? "";
     message.bid = object.bid ?? 0;
     message.ask = object.ask ?? 0;
     message.last = object.last ?? 0;
     message.volume = object.volume ?? 0;
     message.timestamp = object.timestamp ?? undefined;
+    message.quoteQuality = object.quoteQuality ?? 0;
     return message;
   },
 };

@@ -67,12 +67,14 @@ impl NatsIntegration {
             };
 
             let event = pb::MarketDataEvent {
+                contract_id: 0,
                 symbol: symbol.to_string(),
                 bid,
                 ask,
                 last: (bid + ask) * 0.5,
                 volume: 0,
                 timestamp: Some(prost_types::Timestamp::from(std::time::SystemTime::now())),
+                quote_quality: 0,
             };
 
             if let Err(e) = publisher.publish(&event).await {

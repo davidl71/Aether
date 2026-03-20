@@ -37,12 +37,14 @@ async fn test_market_data_publishing() {
     // Publish using proto (same format as C++ nats_client.cpp)
     let publisher = Publisher::new(client.clone(), subject.clone(), "test", "MarketDataEvent");
     let event = pb::MarketDataEvent {
+        contract_id: 0,
         symbol: "TEST".to_string(),
         bid: 100.0,
         ask: 100.1,
         last: 100.05,
         volume: 0,
         timestamp: Some(prost_types::Timestamp::from(std::time::SystemTime::now())),
+        quote_quality: 0,
     };
     publisher.publish(&event).await.expect("Failed to publish");
 
@@ -181,20 +183,24 @@ async fn test_wildcard_subscriptions() {
     );
 
     let event_spy = pb::MarketDataEvent {
+        contract_id: 0,
         symbol: "SPY".to_string(),
         bid: 100.0,
         ask: 100.1,
         last: 100.05,
         volume: 0,
         timestamp: None,
+        quote_quality: 0,
     };
     let event_xsp = pb::MarketDataEvent {
+        contract_id: 0,
         symbol: "XSP".to_string(),
         bid: 50.0,
         ask: 50.1,
         last: 50.05,
         volume: 0,
         timestamp: None,
+        quote_quality: 0,
     };
 
     publisher_spy
