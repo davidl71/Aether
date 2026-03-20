@@ -11,6 +11,7 @@ crate-type = ["lib", "cdylib", "staticlib"]
 common = { path = "../common" }
 anyhow = { workspace = true }
 derive_builder = { workspace = true }
+parking_lot = "0.12"
 rand = "0.8"
 serde = { workspace = true }
 thiserror = { workspace = true }

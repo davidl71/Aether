@@ -216,11 +216,60 @@ pub struct LinearRegressionResult {
     pub predictions: Vec<f64>,
 }
 
-pub struct QuantCalculator;
+// ---------------------------------------------------------------------------
+// L1 Cache for Greeks and IV
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Copy, Hash, Eq, PartialEq)]
+struct GreeksCacheKey(u64, u64, u64, u64, u64, bool);
+
+impl GreeksCacheKey {
+    fn new(s: f64, k: f64, t_years: f64, r: f64, sigma: f64, option_type: OptionKind) -> Self {
+        Self(
+            s.to_bits(),
+            k.to_bits(),
+            t_years.to_bits(),
+            r.to_bits(),
+            sigma.to_bits(),
+            matches!(option_type, OptionKind::Call),
+        )
+    }
+}
+
+#[derive(Clone, Copy, Hash, Eq, PartialEq)]
+struct IvCacheKey(u64, u64, u64, u64, u64, bool);
+
+impl IvCacheKey {
+    fn new(
+        market_price: f64,
+        s: f64,
+        k: f64,
+        t_years: f64,
+        r: f64,
+        option_type: OptionKind,
+    ) -> Self {
+        Self(
+            market_price.to_bits(),
+            s.to_bits(),
+            k.to_bits(),
+            t_years.to_bits(),
+            r.to_bits(),
+            matches!(option_type, OptionKind::Call),
+        )
+    }
+}
+
+pub struct QuantCalculator {
+    greeks_cache: parking_lot::RwLock<std::collections::HashMap<GreeksCacheKey, Greeks>>,
+    iv_cache: parking_lot::RwLock<std::collections::HashMap<IvCacheKey, f64>>,
+}
 
 impl QuantCalculator {
     pub fn new() -> Self {
-        Self
+        Self {
+            greeks_cache: parking_lot::RwLock::new(std::collections::HashMap::new()),
+            iv_cache: parking_lot::RwLock::new(std::collections::HashMap::new()),
+        }
     }
 
     fn parse_expiry_to_days(expiry: &str) -> Result<i64, QuantError> {
@@ -274,13 +323,31 @@ impl QuantCalculator {
             ));
         }
 
-        Ok(Greeks {
+        let key = GreeksCacheKey::new(s, k, t_years, r, sigma, option_type);
+
+        // Check cache first.
+        {
+            let cache = self.greeks_cache.read();
+            if let Some(cached) = cache.get(&key) {
+                return Ok(*cached);
+            }
+        }
+
+        // Calculate and cache.
+        let greeks = Greeks {
             delta: bsm::bsm_delta(s, k, t_years, r, sigma, option_type),
             gamma: bsm::bsm_gamma(s, k, t_years, r, sigma),
             theta: bsm::bsm_theta(s, k, t_years, r, sigma, option_type),
             vega: bsm::bsm_vega(s, k, t_years, r, sigma),
             rho: bsm::bsm_rho(s, k, t_years, r, sigma, option_type),
-        })
+        };
+
+        {
+            let mut cache = self.greeks_cache.write();
+            cache.insert(key, greeks);
+        }
+
+        Ok(greeks)
     }
 
     pub fn calculate_implied_volatility(
@@ -298,7 +365,25 @@ impl QuantCalculator {
             ));
         }
 
-        bsm::implied_volatility(market_price, s, k, t_years, r, option_type)
+        let key = IvCacheKey::new(market_price, s, k, t_years, r, option_type);
+
+        // Check cache first.
+        {
+            let cache = self.iv_cache.read();
+            if let Some(&cached) = cache.get(&key) {
+                return Ok(cached);
+            }
+        }
+
+        // Calculate and cache.
+        let iv = bsm::implied_volatility(market_price, s, k, t_years, r, option_type)?;
+
+        {
+            let mut cache = self.iv_cache.write();
+            cache.insert(key, iv);
+        }
+
+        Ok(iv)
     }
 
     pub fn calculate_historical_volatility(
