@@ -1,6 +1,10 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "instructions": [".opencode/rules/exarp-go.md"],
+  "instructions": [
+    ".opencode/rules/exarp-go.md",
+    ".opencode/rules/lint-after-generation.md",
+    ".opencode/rules/regression-sanity.md"
+  ],
   "mcp": {
     "exarp-go": {
       "type": "local",
