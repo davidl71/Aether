@@ -10,6 +10,7 @@ members = [
   "crates/quant",
   "crates/broker_engine",
   "crates/ib_adapter",
+  "crates/yatws_adapter",
   "crates/tws_yield_curve",
   "services/backend_service",
   "services/tui_service",

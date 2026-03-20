@@ -209,7 +209,7 @@ impl PersistenceLayer for SqlitePersistence {
         // Order by date
         query.push_str(" ORDER BY date ASC");
 
-        let mut sql_query = sqlx::query(&query);
+        let mut sql_query = sqlx::query(sqlx::AssertSqlSafe(query.clone()));
         for value in bind_values {
             sql_query = sql_query.bind(value);
         }
