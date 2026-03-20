@@ -22,8 +22,14 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
+// ---------------------------------------------------------------------------
+// External URL fetching (planned future functionality)
+// ---------------------------------------------------------------------------
+#[allow(dead_code)]
 const KV_BUCKET_ENV: &str = "NATS_KV_BUCKET";
+#[allow(dead_code)]
 const DEFAULT_KV_BUCKET: &str = "LIVE_STATE";
+#[allow(dead_code)]
 const KEY_PREFIX: &str = "yield_curve";
 /// Default strike width (points). Symmetric ±width/2 around spot (e.g. 4 → ±2 around the money).
 const STRIKE_WIDTH: f64 = 4.0;
@@ -39,11 +45,15 @@ const TERM_PREMIUM_PER_YEAR: f64 = 0.0;
 /// Convenience yield (decimal, e.g. 0.005 = 0.5%). Benefit of holding the underlying; cost-of-carry ≈ rate − convenience_yield.
 const CONVENIENCE_YIELD: f64 = 0.005;
 const LIQUIDITY_SCORE: f64 = 70.0;
+#[allow(dead_code)]
 const SOURCE_ENV: &str = "YIELD_CURVE_SOURCE";
+#[allow(dead_code)]
 const SOURCE_URL_ENV: &str = "YIELD_CURVE_SOURCE_URL";
+#[allow(dead_code)]
 const HTTP_TIMEOUT_SECS: u64 = 10;
 
 /// One curve point from an external JSON source (e.g. public API or static file).
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "snake_case")]
 struct ExternalCurvePoint {
@@ -69,9 +79,11 @@ struct ExternalCurvePoint {
     convenience_yield: Option<f64>,
 }
 
+#[allow(dead_code)]
 fn default_strike_width() -> f64 {
     STRIKE_WIDTH
 }
+#[allow(dead_code)]
 fn default_liquidity_score() -> f64 {
     LIQUIDITY_SCORE
 }
@@ -148,6 +160,7 @@ pub(crate) fn synthetic_opportunities(symbol: &str) -> Vec<serde_json::Value> {
 /// Fetch curve points from a public URL. Returns map symbol -> opportunities (each Value is { "spread": BoxSpreadInput }).
 /// URL must return a JSON array of objects with: symbol, expiry, days_to_expiry, buy_implied_rate, sell_implied_rate;
 /// optional: strike_width (default 5), net_debit, net_credit, liquidity_score (default 50), spread_id.
+#[allow(dead_code)]
 async fn fetch_curve_from_url(url: &str) -> Option<HashMap<String, Vec<serde_json::Value>>> {
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(HTTP_TIMEOUT_SECS))
@@ -186,6 +199,7 @@ async fn fetch_curve_from_url(url: &str) -> Option<HashMap<String, Vec<serde_jso
 /// Run the yield curve writer: pre-populate once immediately, then every `interval_secs` write `yield_curve.{symbol}`.
 /// Returns a sender to trigger one immediate write cycle (e.g. for `api.yield_curve.refresh`).
 /// Source: `config_source` (from [yield_curve] source) or env `YIELD_CURVE_SOURCE`; "tws" => TWS, else URL/synthetic.
+#[allow(dead_code)]
 pub fn spawn(
     nats_client: Arc<NatsClient>,
     symbols: Vec<String>,
