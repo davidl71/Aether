@@ -343,6 +343,7 @@ impl SystemSnapshot {
 // Re-exports from common
 // ---------------------------------------------------------------------------
 
+pub use common::snapshot::Alert as CommonAlert;
 pub use common::snapshot::CandleSnapshot;
 pub use common::snapshot::HistoricPosition;
 pub use common::snapshot::Metrics;
@@ -350,7 +351,6 @@ pub use common::snapshot::OrderSnapshot;
 pub use common::snapshot::PositionSnapshot;
 pub use common::snapshot::RiskStatus;
 pub use common::snapshot::StrategyDecisionSnapshot;
-pub use common::snapshot::Alert as CommonAlert;
 
 // ---------------------------------------------------------------------------
 // Tests

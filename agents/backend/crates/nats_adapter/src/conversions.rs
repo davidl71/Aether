@@ -1,10 +1,12 @@
-//! Bidirectional conversions between hand-written domain types (in the `api`
-//! crate's `state` module) and prost-generated protobuf types.
+//! Bidirectional conversions between hand-written domain types (in the `common`
+//! crate's `snapshot` module) and prost-generated protobuf types.
 //!
-//! These `From` impls let callers do `proto_pos.into()` / `state_pos.into()`
+//! These `From` impls let callers do `proto_pos.into()` / `common_pos.into()`
 //! without touching internals.
 
 use prost_types::Timestamp;
+
+use common::snapshot as cmn;
 
 use crate::proto::v1 as pb;
 
@@ -35,20 +37,8 @@ fn unwrap_ts(ts: Option<&Timestamp>) -> chrono::DateTime<chrono::Utc> {
 // Position ↔ PositionSnapshot
 // ---------------------------------------------------------------------------
 
-/// Domain representation used by the API / state layer.
-/// Must mirror the fields in `api::state::PositionSnapshot`.
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct PositionSnapshot {
-    pub id: String,
-    pub symbol: String,
-    pub quantity: i32,
-    pub cost_basis: f64,
-    pub mark: f64,
-    pub unrealized_pnl: f64,
-}
-
-impl From<PositionSnapshot> for pb::Position {
-    fn from(p: PositionSnapshot) -> Self {
+impl From<cmn::PositionSnapshot> for pb::Position {
+    fn from(p: cmn::PositionSnapshot) -> Self {
         pb::Position {
             id: p.id,
             symbol: p.symbol,
@@ -60,7 +50,7 @@ impl From<PositionSnapshot> for pb::Position {
     }
 }
 
-impl From<pb::Position> for PositionSnapshot {
+impl From<pb::Position> for cmn::PositionSnapshot {
     fn from(p: pb::Position) -> Self {
         Self {
             id: p.id,
@@ -69,6 +59,8 @@ impl From<pb::Position> for PositionSnapshot {
             cost_basis: p.cost_basis,
             mark: p.mark,
             unrealized_pnl: p.unrealized_pnl,
+            account_id: None,
+            source: None,
         }
     }
 }
@@ -77,17 +69,8 @@ impl From<pb::Position> for PositionSnapshot {
 // HistoricPosition
 // ---------------------------------------------------------------------------
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct HistoricPosition {
-    pub id: String,
-    pub symbol: String,
-    pub quantity: i32,
-    pub realized_pnl: f64,
-    pub closed_at: chrono::DateTime<chrono::Utc>,
-}
-
-impl From<HistoricPosition> for pb::HistoricPosition {
-    fn from(h: HistoricPosition) -> Self {
+impl From<cmn::HistoricPosition> for pb::HistoricPosition {
+    fn from(h: cmn::HistoricPosition) -> Self {
         pb::HistoricPosition {
             id: h.id,
             symbol: h.symbol,
@@ -98,7 +81,7 @@ impl From<HistoricPosition> for pb::HistoricPosition {
     }
 }
 
-impl From<pb::HistoricPosition> for HistoricPosition {
+impl From<pb::HistoricPosition> for cmn::HistoricPosition {
     fn from(h: pb::HistoricPosition) -> Self {
         Self {
             id: h.id,
@@ -114,18 +97,8 @@ impl From<pb::HistoricPosition> for HistoricPosition {
 // OrderSnapshot ↔ Order
 // ---------------------------------------------------------------------------
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct OrderSnapshot {
-    pub id: String,
-    pub symbol: String,
-    pub side: String,
-    pub quantity: i32,
-    pub status: String,
-    pub submitted_at: chrono::DateTime<chrono::Utc>,
-}
-
-impl From<OrderSnapshot> for pb::Order {
-    fn from(o: OrderSnapshot) -> Self {
+impl From<cmn::OrderSnapshot> for pb::Order {
+    fn from(o: cmn::OrderSnapshot) -> Self {
         pb::Order {
             id: o.id,
             symbol: o.symbol,
@@ -137,7 +110,7 @@ impl From<OrderSnapshot> for pb::Order {
     }
 }
 
-impl From<pb::Order> for OrderSnapshot {
+impl From<pb::Order> for cmn::OrderSnapshot {
     fn from(o: pb::Order) -> Self {
         Self {
             id: o.id,
@@ -154,17 +127,8 @@ impl From<pb::Order> for OrderSnapshot {
 // StrategyDecisionSnapshot ↔ StrategyDecision
 // ---------------------------------------------------------------------------
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct StrategyDecisionSnapshot {
-    pub symbol: String,
-    pub quantity: i32,
-    pub side: String,
-    pub mark: f64,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-}
-
-impl From<StrategyDecisionSnapshot> for pb::StrategyDecision {
-    fn from(d: StrategyDecisionSnapshot) -> Self {
+impl From<cmn::StrategyDecisionSnapshot> for pb::StrategyDecision {
+    fn from(d: cmn::StrategyDecisionSnapshot) -> Self {
         pb::StrategyDecision {
             symbol: d.symbol,
             quantity: d.quantity,
@@ -175,7 +139,7 @@ impl From<StrategyDecisionSnapshot> for pb::StrategyDecision {
     }
 }
 
-impl From<pb::StrategyDecision> for StrategyDecisionSnapshot {
+impl From<pb::StrategyDecision> for cmn::StrategyDecisionSnapshot {
     fn from(d: pb::StrategyDecision) -> Self {
         Self {
             symbol: d.symbol,
@@ -191,15 +155,8 @@ impl From<pb::StrategyDecision> for StrategyDecisionSnapshot {
 // Alert ↔ proto Alert
 // ---------------------------------------------------------------------------
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct Alert {
-    pub level: String,
-    pub message: String,
-    pub timestamp: chrono::DateTime<chrono::Utc>,
-}
-
-impl From<Alert> for pb::Alert {
-    fn from(a: Alert) -> Self {
+impl From<cmn::Alert> for pb::Alert {
+    fn from(a: cmn::Alert) -> Self {
         let level = match a.level.to_uppercase().as_str() {
             "WARNING" => pb::AlertLevel::Warning as i32,
             "ERROR" => pb::AlertLevel::Error as i32,
@@ -213,7 +170,7 @@ impl From<Alert> for pb::Alert {
     }
 }
 
-impl From<pb::Alert> for Alert {
+impl From<pb::Alert> for cmn::Alert {
     fn from(a: pb::Alert) -> Self {
         let level = match a.level {
             x if x == pb::AlertLevel::Warning as i32 => "WARNING",
@@ -232,15 +189,8 @@ impl From<pb::Alert> for Alert {
 // RiskStatus
 // ---------------------------------------------------------------------------
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct RiskStatusSnapshot {
-    pub allowed: bool,
-    pub reason: Option<String>,
-    pub updated_at: chrono::DateTime<chrono::Utc>,
-}
-
-impl From<RiskStatusSnapshot> for pb::RiskStatus {
-    fn from(r: RiskStatusSnapshot) -> Self {
+impl From<cmn::RiskStatus> for pb::RiskStatus {
+    fn from(r: cmn::RiskStatus) -> Self {
         pb::RiskStatus {
             allowed: r.allowed,
             reason: r.reason.unwrap_or_default(),
@@ -249,7 +199,7 @@ impl From<RiskStatusSnapshot> for pb::RiskStatus {
     }
 }
 
-impl From<pb::RiskStatus> for RiskStatusSnapshot {
+impl From<pb::RiskStatus> for cmn::RiskStatus {
     fn from(r: pb::RiskStatus) -> Self {
         Self {
             allowed: r.allowed,
@@ -267,21 +217,8 @@ impl From<pb::RiskStatus> for RiskStatusSnapshot {
 // Metrics
 // ---------------------------------------------------------------------------
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct MetricsSnapshot {
-    pub net_liq: f64,
-    pub buying_power: f64,
-    pub excess_liquidity: f64,
-    pub margin_requirement: f64,
-    pub commissions: f64,
-    pub portal_ok: bool,
-    pub tws_ok: bool,
-    pub questdb_ok: bool,
-    pub nats_ok: bool,
-}
-
-impl From<MetricsSnapshot> for pb::Metrics {
-    fn from(m: MetricsSnapshot) -> Self {
+impl From<cmn::Metrics> for pb::Metrics {
+    fn from(m: cmn::Metrics) -> Self {
         pb::Metrics {
             net_liq: m.net_liq,
             buying_power: m.buying_power,
@@ -296,7 +233,7 @@ impl From<MetricsSnapshot> for pb::Metrics {
     }
 }
 
-impl From<pb::Metrics> for MetricsSnapshot {
+impl From<pb::Metrics> for cmn::Metrics {
     fn from(m: pb::Metrics) -> Self {
         Self {
             net_liq: m.net_liq,
@@ -306,11 +243,21 @@ impl From<pb::Metrics> for MetricsSnapshot {
             commissions: m.commissions,
             portal_ok: m.portal_ok,
             tws_ok: m.tws_ok,
+            tws_address: None,
             questdb_ok: m.questdb_ok,
             nats_ok: m.nats_ok,
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Re-exports for consumers
+// ---------------------------------------------------------------------------
+
+pub use cmn::{
+    Alert, HistoricPosition, Metrics, OrderSnapshot, PositionSnapshot, RiskStatus,
+    StrategyDecisionSnapshot,
+};
 
 #[cfg(test)]
 mod tests {
@@ -318,16 +265,18 @@ mod tests {
 
     #[test]
     fn position_round_trip() {
-        let snap = PositionSnapshot {
+        let snap = cmn::PositionSnapshot {
             id: "P-1".into(),
             symbol: "SPX".into(),
             quantity: 10,
             cost_basis: 4500.0,
             mark: 4550.0,
             unrealized_pnl: 500.0,
+            account_id: None,
+            source: None,
         };
         let proto: pb::Position = snap.clone().into();
-        let back: PositionSnapshot = proto.into();
+        let back: cmn::PositionSnapshot = proto.into();
         assert_eq!(snap.id, back.id);
         assert_eq!(snap.symbol, back.symbol);
         assert_eq!(snap.quantity, back.quantity);
@@ -336,7 +285,7 @@ mod tests {
 
     #[test]
     fn historic_position_round_trip() {
-        let hist = HistoricPosition {
+        let hist = cmn::HistoricPosition {
             id: "H-1".into(),
             symbol: "NDX".into(),
             quantity: 5,
@@ -344,14 +293,14 @@ mod tests {
             closed_at: chrono::Utc::now(),
         };
         let proto: pb::HistoricPosition = hist.clone().into();
-        let back: HistoricPosition = proto.into();
+        let back: cmn::HistoricPosition = proto.into();
         assert_eq!(hist.id, back.id);
         assert_eq!(hist.quantity, back.quantity);
     }
 
     #[test]
     fn order_round_trip() {
-        let order = OrderSnapshot {
+        let order = cmn::OrderSnapshot {
             id: "ORD-1".into(),
             symbol: "SPX".into(),
             side: "BUY".into(),
@@ -360,21 +309,21 @@ mod tests {
             submitted_at: chrono::Utc::now(),
         };
         let proto: pb::Order = order.clone().into();
-        let back: OrderSnapshot = proto.into();
+        let back: cmn::OrderSnapshot = proto.into();
         assert_eq!(order.id, back.id);
         assert_eq!(order.side, back.side);
     }
 
     #[test]
     fn alert_level_round_trip() {
-        let alert = Alert {
+        let alert = cmn::Alert {
             level: "WARNING".into(),
             message: "test alert".into(),
             timestamp: chrono::Utc::now(),
         };
         let proto: pb::Alert = alert.clone().into();
         assert_eq!(proto.level, pb::AlertLevel::Warning as i32);
-        let back: Alert = proto.into();
+        let back: cmn::Alert = proto.into();
         assert_eq!(back.level, "WARNING");
     }
 }

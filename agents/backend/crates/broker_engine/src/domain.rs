@@ -85,7 +85,7 @@ pub enum OrderStatus {
 }
 
 /// Order
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, derive_builder::Builder)]
 pub struct Order {
     pub order_id: i32,
     pub contract: OptionContract,
@@ -149,7 +149,7 @@ pub struct BagOrderLeg {
 }
 
 /// Request to place a BAG (combo) order via the broker execution client.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, derive_builder::Builder)]
 pub struct PlaceBagOrderRequest {
     pub underlying_symbol: String,
     pub currency: String,
