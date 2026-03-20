@@ -59,7 +59,7 @@ struct OptionLegInfo {
 #[allow(dead_code)]
 fn parse_option_leg(symbol: &str, position_type: Option<&str>) -> Option<OptionLegInfo> {
     let pt = position_type.unwrap_or("").trim().to_uppercase();
-    if pt != "OPT" && pt != "BAG" && pt != "" {
+    if pt != "OPT" && pt != "BAG" && !pt.is_empty() {
         return None;
     }
     let parts: Vec<&str> = symbol.split_whitespace().collect();

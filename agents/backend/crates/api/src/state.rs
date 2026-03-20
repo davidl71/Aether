@@ -99,7 +99,8 @@ impl SystemSnapshot {
         self.strategy = "RUNNING".into();
         let order_id = format!("ORD-{}", Utc::now().timestamp_millis());
         let mut runtime_state = RuntimeExecutionState::from_snapshot(self);
-        let update = runtime_state.apply_strategy_decision(&decision, order_id.clone(), &self.account_id);
+        let update =
+            runtime_state.apply_strategy_decision(&decision, order_id.clone(), &self.account_id);
         runtime_state.project_into_snapshot(self);
 
         match update {

@@ -434,6 +434,7 @@ impl RuntimeExecutionState {
         )
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn apply_decision_order_and_position(
         &mut self,
         symbol: &str,

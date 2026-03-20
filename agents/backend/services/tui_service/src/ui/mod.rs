@@ -138,7 +138,9 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
     match app.market_open {
         Some(true) => spans.push(Span::styled(
             "MKT:OPEN",
-            Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Green)
+                .add_modifier(Modifier::BOLD),
         )),
         Some(false) => spans.push(Span::styled(
             "MKT:CLOSED",

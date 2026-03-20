@@ -153,9 +153,9 @@ Step-by-step integration instructions for external services, APIs, and tools.
 - **TWS_INTEGRATION_STATUS** (doc removed; see API_DOCUMENTATION_INDEX.md for TWS)
 - **[ALPACA_BACKEND_SETUP.md](ALPACA_BACKEND_SETUP.md)** - Alpaca backend setup
 - **[ALPACA_API_INTEGRATION_DESIGN.md](ALPACA_API_INTEGRATION_DESIGN.md)** - Alpaca API design
-- **[LEAN_IBKR_SETUP.md](LEAN_IBKR_SETUP.md)** - LEAN IBKR setup
-- **[LEAN_ALPACA_SETUP.md](LEAN_ALPACA_SETUP.md)** - LEAN Alpaca setup
-- **[LEAN_SETUP.md](LEAN_SETUP.md)** - LEAN platform setup
+- **[LEAN_IBKR_SETUP.md](archive/LEAN_IBKR_SETUP.md)** - LEAN IBKR setup
+- **[LEAN_ALPACA_SETUP.md](archive/LEAN_ALPACA_SETUP.md)** - LEAN Alpaca setup
+- **[LEAN_SETUP.md](archive/LEAN_SETUP.md)** - LEAN platform setup
 
 ### Data & Market Data
 
@@ -176,20 +176,20 @@ Step-by-step integration instructions for external services, APIs, and tools.
 
 ### Development Tools
 
-- **[QUANTLIB_INTEGRATION_GUIDE.md](QUANTLIB_INTEGRATION_GUIDE.md)** - QuantLib integration
-- **[EIGEN_INTEGRATION.md](EIGEN_INTEGRATION.md)** - Eigen library integration
-- **[NLOPT_INTEGRATION_GUIDE.md](NLOPT_INTEGRATION_GUIDE.md)** - NLopt optimization
+- **[QUANTLIB_INTEGRATION_GUIDE.md](archive/QUANTLIB_INTEGRATION_GUIDE.md)** - QuantLib integration
+- **[EIGEN_INTEGRATION.md](archive/EIGEN_INTEGRATION.md)** - Eigen library integration
+- **[NLOPT_INTEGRATION_GUIDE.md](archive/NLOPT_INTEGRATION_GUIDE.md)** - NLopt optimization
 - **[OPENALGO_INTEGRATION_PATTERNS.md](OPENALGO_INTEGRATION_PATTERNS.md)** - OpenAlgo patterns
-- **[ONIXS_DIRECTCONNECT.md](ONIXS_DIRECTCONNECT.md)** - ONIXS DirectConnect
+- **[ONIXS_DIRECTCONNECT.md](archive/ONIXS_DIRECTCONNECT.md)** - ONIXS DirectConnect
 - **ONIXS_FIX_DICTIONARY_TOOLS** (doc removed)
 
 ### Platform Integrations
 
-- **[LEAN_PWA_TUI_INTEGRATION.md](LEAN_PWA_TUI_INTEGRATION.md)** - LEAN PWA/TUI integration
-- **[LEAN_PWA_TUI_INTEGRATION_ANALYSIS.md](LEAN_PWA_TUI_INTEGRATION_ANALYSIS.md)** - Integration analysis
-- **[LEAN_PYBIND11_INTEGRATION_ANALYSIS.md](LEAN_PYBIND11_INTEGRATION_ANALYSIS.md)** - Pybind11 analysis
-- **[LEAN_REST_API_WRAPPER_DESIGN.md](LEAN_REST_API_WRAPPER_DESIGN.md)** - REST API wrapper
-- **[LEAN_BROKER_ADAPTERS.md](LEAN_BROKER_ADAPTERS.md)** - Broker adapters
+- **[LEAN_PWA_TUI_INTEGRATION.md](archive/LEAN_PWA_TUI_INTEGRATION.md)** - LEAN PWA/TUI integration
+- **[LEAN_PWA_TUI_INTEGRATION_ANALYSIS.md](archive/LEAN_PWA_TUI_INTEGRATION_ANALYSIS.md)** - Integration analysis
+- **[LEAN_PYBIND11_INTEGRATION_ANALYSIS.md](archive/LEAN_PYBIND11_INTEGRATION_ANALYSIS.md)** - Pybind11 analysis
+- **[LEAN_REST_API_WRAPPER_DESIGN.md](archive/LEAN_REST_API_WRAPPER_DESIGN.md)** - REST API wrapper
+- **[LEAN_BROKER_ADAPTERS.md](archive/LEAN_BROKER_ADAPTERS.md)** - Broker adapters
 - **LEAN_MIGRATION_SUMMARY** (doc removed)
 
 ---
@@ -254,14 +254,14 @@ How-to guides, setup instructions, and implementation documentation.
 ### Quick Start & Setup
 
 - **[QUICK_START.md](QUICK_START.md)** - Quick start guide
-- **[QUICK_START_CROSS_PLATFORM.md](QUICK_START_CROSS_PLATFORM.md)** - Cross-platform setup
+- **[QUICK_START_CROSS_PLATFORM.md](archive/QUICK_START_CROSS_PLATFORM.md)** - Cross-platform setup
 - **[IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)** - Complete implementation guide
 - **IMPLEMENTATION_COMPLETE_SUMMARY** (doc removed)
 - **PLAN_IMPLEMENTATION_SUMMARY** (doc removed)
 
 ### Platform Setup
 
-- **[WINDOWS_SETUP_GUIDE.md](WINDOWS_SETUP_GUIDE.md)** - Windows setup
+- **[WINDOWS_SETUP_GUIDE.md](archive/WINDOWS_SETUP_GUIDE.md)** - Windows setup
 - **[CROSS_PLATFORM_SETUP.md](CROSS_PLATFORM_SETUP.md)** - Cross-platform setup
 - **[WORKTREE_SETUP.md](WORKTREE_SETUP.md)** - Git worktree setup
 - **[CURSOR_SETUP.md](CURSOR_SETUP.md)** - Cursor IDE setup
@@ -271,17 +271,17 @@ How-to guides, setup instructions, and implementation documentation.
 ### Build & Development
 
 - **[DISTRIBUTED_COMPILATION.md](DISTRIBUTED_COMPILATION.md)** - Distributed builds
-- **[WASM_INTEGRATION_PLAN.md](WASM_INTEGRATION_PLAN.md)** - WebAssembly integration
-- **[WASM_QUICK_START.md](WASM_QUICK_START.md)** - WASM quick start
-- **[EMSCRIPTEN_SETUP.md](EMSCRIPTEN_SETUP.md)** - Emscripten setup
-- **[PROTOBUF_MIGRATION_PLAN.md](PROTOBUF_MIGRATION_PLAN.md)** - Protocol Buffers migration
+- **[WASM_INTEGRATION_PLAN.md](archive/WASM_INTEGRATION_PLAN.md)** - WebAssembly integration
+- **[WASM_QUICK_START.md](archive/WASM_QUICK_START.md)** - WASM quick start
+- **[EMSCRIPTEN_SETUP.md](archive/EMSCRIPTEN_SETUP.md)** - Emscripten setup
+- **[PROTOBUF_MIGRATION_PLAN.md](archive/PROTOBUF_MIGRATION_PLAN.md)** - Protocol Buffers migration
 - **[DECIMAL_MIGRATION_PLANNING.md](decimal_migration_planning.md)** - Decimal migration
 
 ### Testing & Validation
 
 - **[TESTING_STRATEGY.md](TESTING_STRATEGY.md)** - Testing strategy
 - **TUI_TESTING** — Historical Python/Textual TUI testing (archived; doc removed)
-- **[LEAN_TESTING.md](LEAN_TESTING.md)** - LEAN testing
+- **[LEAN_TESTING.md](archive/LEAN_TESTING.md)** - LEAN testing
 - **[INTEGRATION_TESTING.md](INTEGRATION_TESTING.md)** - Integration testing
 - **[PAPER_TRADING_VALIDATION_PLAN.md](PAPER_TRADING_VALIDATION_PLAN.md)** - Paper trading validation
 - **VALIDATION_SETUP_COMPLETE** (doc removed)

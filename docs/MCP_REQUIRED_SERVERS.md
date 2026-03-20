@@ -272,4 +272,4 @@ See [EXARP_MCP_TOOLS_USAGE.md](EXARP_MCP_TOOLS_USAGE.md) for current workflow ex
 
 - [MCP_TROUBLESHOOTING.md](MCP_TROUBLESHOOTING.md) - Detailed troubleshooting guide
 - [MCP_QUICK_REFERENCE.md](MCP_QUICK_REFERENCE.md) - Quick usage reference
-- [MCP_SERVERS.md]( MCP_SERVERS.md) - Complete MCP server documentation
+- [MCP_SERVERS.md](./MCP_SERVERS.md) - Complete MCP server documentation

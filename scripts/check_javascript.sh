@@ -34,9 +34,9 @@ check_js_syntax() {
   while IFS= read -r -d '' file; do
     # Skip if in ignored directories
     case "${file}" in
-      */node_modules/*|*/dist/*|*/dev-dist/*|*/build/*|*/coverage/*|*/\.git/*|*/.venv/*|*/venv/*|*/emsdk/*|*/ib-gateway/*|*/python/*|*/native/*)
-        continue
-        ;;
+    */node_modules/* | */dist/* | */dev-dist/* | */build/* | */coverage/* | */\.git/* | */.venv/* | */venv/* | */emsdk/* | */ib-gateway/* | */python/* | */native/*)
+      continue
+      ;;
     esac
 
     checked=$((checked + 1))

@@ -26,7 +26,9 @@ pub fn spawn_dlq_consumer(nats_url: Option<String>) {
                     match client.subscribe(subject.clone()).await {
                         Ok(mut sub) => {
                             while let Some(msg) = sub.next().await {
-                                if let Err(e) = handle_dlq_message(msg.subject.as_str(), msg.payload.as_ref()) {
+                                if let Err(e) =
+                                    handle_dlq_message(msg.subject.as_str(), msg.payload.as_ref())
+                                {
                                     warn!(error = %e, subject = %msg.subject, "DLQ consumer decode failed");
                                 }
                             }

@@ -2,7 +2,7 @@
 
 This project includes comprehensive Cursor IDE configuration to enhance your development experience.
 
-**See also:** [AI_EDITOR_SETUP.md](../../AI_EDITOR_SETUP.md) — setup for OpenCode, Claude Code,
+**See also:** [AI_EDITOR_SETUP.md](./AI_EDITOR_SETUP.md) — setup for OpenCode, Claude Code,
 Cursor, skills, and subagents (canonical context: AGENTS.md, CLAUDE.md).
 
 ## Configuration Files
@@ -292,7 +292,7 @@ To get the best results from codebase indexing:
 2. **Add Documentation Comments**: Comments explaining *why* (not just *what*) improve semantic understanding
 3. **Structure Code Logically**: Well-organized code with clear boundaries (functions, classes) chunks better
 4. **Use Static Analysis Annotations**: Attributes like `[[nodiscard]]` and `__attribute__((nonnull))` provide semantic hints (see
-[STATIC_ANALYSIS_ANNOTATIONS.md](../../research/analysis/STATIC_ANALYSIS_ANNOTATIONS.md))
+[STATIC_ANALYSIS_ANNOTATIONS.md](./research/analysis/STATIC_ANALYSIS_ANNOTATIONS.md))
 5. **Follow Naming Conventions**: Consistent naming patterns help the AI understand code relationships
 
 ### Automatic Updates
@@ -349,11 +349,11 @@ Based on community feedback and best practices:
 
 ## See Also
 
-- [CURSOR_AI_TUTORIAL.md](../../CURSOR_AI_TUTORIAL.md) - Cursor AI tutorial and best practices
-- [CURSOR_RECOMMENDATIONS.md](../../CURSOR_RECOMMENDATIONS.md) - Cursor optimization recommendations
+- [CURSOR_AI_TUTORIAL.md](./CURSOR_AI_TUTORIAL.md) - Cursor AI tutorial and best practices
+- [CURSOR_RECOMMENDATIONS.md](./CURSOR_RECOMMENDATIONS.md) - Cursor optimization recommendations
 - [CURSOR_DOCS_USAGE.md](CURSOR_DOCS_USAGE.md) - Using @docs in Cursor
 - [CURSOR_IGNORE_SETUP.md](CURSOR_IGNORE_SETUP.md) - File exclusion configuration
-- [STATIC_ANALYSIS_ANNOTATIONS.md](../../research/analysis/STATIC_ANALYSIS_ANNOTATIONS.md) - Static analysis annotations that help indexing
-- [README.md](../../../README.md) - Main project documentation
+- [STATIC_ANALYSIS_ANNOTATIONS.md](./research/analysis/STATIC_ANALYSIS_ANNOTATIONS.md) - Static analysis annotations that help indexing
+- [README.md](../README.md) - Main project documentation
 - [WORKTREE_SETUP.md](WORKTREE_SETUP.md) - Worktree setup guide
 - [QUICK_START.md](QUICK_START.md) - Quick start guide

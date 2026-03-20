@@ -160,7 +160,7 @@ We use FastAPI for the REST API. For current FastAPI patterns, see the [official
 
 - `.cursor/rules/context7.mdc` - Context7 usage rules
 - `.cursor/rules/notebooklm.mdc` - NotebookLM usage rules
-- `docs/ MCP_SERVERS.md` - MCP server documentation
+- `docs/MCP_SERVERS.md` - MCP server documentation
 - `docs/API_DOCUMENTATION_INDEX.md` - Example with Context7 hints
 
 ---

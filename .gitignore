@@ -208,6 +208,10 @@ typescript
 
 # OpenMemory - IDE/Assistant specific rules
 .cursor/rules/openmemory.mdc
+# Sibling repos (git worktrees or external dependencies)
+longbridge-terminal/
+rust-trade/
+
 AGENTS.md
 
 

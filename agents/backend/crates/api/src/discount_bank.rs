@@ -448,7 +448,11 @@ fn bank_account_dto_from_balances(
         .map(|s| (*s).to_string())
         .unwrap_or_else(|| account_path.to_string());
     let currency = if balances.len() == 1 {
-        balances.keys().next().cloned().unwrap_or_else(|| "USD".to_string())
+        balances
+            .keys()
+            .next()
+            .cloned()
+            .unwrap_or_else(|| "USD".to_string())
     } else {
         "MULTI".to_string()
     };
@@ -554,10 +558,7 @@ mod tests {
         // Keep a minimal check that multiple currencies produce expected map shape
         let _account = bank_account_dto_from_balances(
             "Assets:Bank:Discount:123456",
-            HashMap::from([
-                ("ILS".to_string(), 100.5),
-                ("USD".to_string(), 25.25),
-            ]),
+            HashMap::from([("ILS".to_string(), 100.5), ("USD".to_string(), 25.25)]),
         );
     }
 }

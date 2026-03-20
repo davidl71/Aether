@@ -1,5 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "instructions": [".opencode/rules/exarp-go.md"],
   "mcp": {
     "exarp-go": {
       "type": "local",
@@ -19,7 +20,7 @@
     },
     "filesystem": {
       "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"],
+      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/Users/davidl/Projects/Trading/ib_box_spread_full_universal", "/Users/davidl/Projects/Trading/Jts", "/Users/davidl/Projects/Trading/ntws", "/Users/davidl/Projects/Trading/tws-api", "/Users/davidl/Projects/Trading/yatws"],
       "enabled": true
     },
     "sequential_thinking": {
@@ -55,7 +56,20 @@
     "lsp-mcp": {
       "type": "local",
       "command": ["lsp-mcp", "--project", "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"],
+      "enabled": false
+    },
+    "github": {
+      "type": "local",
+      "command": ["npx", "-y", "@teolin/mcp-github"],
       "enabled": true
+    },
+    "rust-docs": {
+      "type": "local",
+      "command": ["/Users/davidl/.cargo/bin/rust-docs-mcp"],
+      "enabled": true,
+      "environment": {
+        "RUST_DOCS_MCP_CACHE_DIR": "/Users/davidl/.rust-docs-mcp/cache"
+      }
     }
   }
 }

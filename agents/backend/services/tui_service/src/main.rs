@@ -390,16 +390,14 @@ async fn run_loans_fetcher(
 ) {
     while rx.recv().await.is_some() {
         let res = match NatsClient::connect(&nats_url).await {
-            Ok(nc) => {
-                request_json_with_retry::<(), Result<Vec<LoanRecord>, String>>(
-                    &nc,
-                    "api.loans.list",
-                    &(),
-                )
-                .await
-                .map_err(|e| e.to_string())
-                .and_then(|r| r.map_err(|e| e))
-            }
+            Ok(nc) => request_json_with_retry::<(), Result<Vec<LoanRecord>, String>>(
+                &nc,
+                "api.loans.list",
+                &(),
+            )
+            .await
+            .map_err(|e| e.to_string())
+            .and_then(|r| r.map_err(|e| e)),
             Err(e) => Err(e.to_string()),
         };
         let _ = result_tx.send(res);

@@ -2,8 +2,9 @@ use std::{sync::Arc, time::Duration};
 
 use anyhow::Context;
 use api::{
-    mock_data::seed_snapshot, Alert, HealthAggregateState, RuntimeExecutionState, RuntimeMarketState, RuntimeProducerDecision,
-    SharedSnapshot, StrategyController, StrategyDecisionSnapshot, SystemSnapshot,
+    mock_data::seed_snapshot, Alert, HealthAggregateState, RuntimeExecutionState,
+    RuntimeMarketState, RuntimeProducerDecision, SharedSnapshot, StrategyController,
+    StrategyDecisionSnapshot, SystemSnapshot,
 };
 use async_trait::async_trait;
 use chrono::Utc;
@@ -181,10 +182,20 @@ async fn main() -> anyhow::Result<()> {
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(1000);
             let use_jetstream = matches!(
-                std::env::var("NATS_USE_JETSTREAM").unwrap_or_default().trim().to_lowercase().as_str(),
+                std::env::var("NATS_USE_JETSTREAM")
+                    .unwrap_or_default()
+                    .trim()
+                    .to_lowercase()
+                    .as_str(),
                 "1" | "true" | "yes"
             );
-            snapshot_publisher::spawn(state.clone(), client.clone(), backend_id, interval_ms, use_jetstream);
+            snapshot_publisher::spawn(
+                state.clone(),
+                client.clone(),
+                backend_id,
+                interval_ms,
+                use_jetstream,
+            );
             api_handlers::spawn(
                 client,
                 loan_repo.map(Arc::new),
@@ -211,7 +222,11 @@ async fn main() -> anyhow::Result<()> {
         info!("IB positions disabled (set IB_PORTAL_URL to enable, e.g. https://localhost:5001/v1/portal)");
     }
 
-    rest_snapshot::spawn_if_enabled(state.clone(), health_state.clone(), nats_integration.clone());
+    rest_snapshot::spawn_if_enabled(
+        state.clone(),
+        health_state.clone(),
+        nats_integration.clone(),
+    );
 
     info!("backend service online (NATS primary; REST snapshot if REST_SNAPSHOT_PORT set)");
 
@@ -249,8 +264,7 @@ fn load_config() -> anyhow::Result<BackendConfig> {
     let mut base_value: toml::Value = if path.exists() {
         let data = std::fs::read_to_string(path)
             .with_context(|| format!("unable to read config file {}", path.display()))?;
-        toml::from_str(&data)
-            .with_context(|| format!("invalid config file {}", path.display()))?
+        toml::from_str(&data).with_context(|| format!("invalid config file {}", path.display()))?
     } else {
         toml::Value::Table(toml::map::Map::new())
     };
@@ -263,14 +277,15 @@ fn load_config() -> anyhow::Result<BackendConfig> {
     if local_path.exists() {
         let data = std::fs::read_to_string(&local_path)
             .with_context(|| format!("unable to read local config {}", local_path.display()))?;
-        let local: toml::Value =
-            toml::from_str(&data).with_context(|| format!("invalid local config {}", local_path.display()))?;
+        let local: toml::Value = toml::from_str(&data)
+            .with_context(|| format!("invalid local config {}", local_path.display()))?;
         merge_toml_over(&local, &mut base_value);
         info!(path = %local_path.display(), "Loaded backend config local override");
     }
 
-    let cfg: BackendConfig = toml::from_str(&toml::to_string(&base_value).context("serialize merged config")?)
-        .context("invalid merged backend config")?;
+    let cfg: BackendConfig =
+        toml::from_str(&toml::to_string(&base_value).context("serialize merged config")?)
+            .context("invalid merged backend config")?;
     Ok(cfg)
 }
 

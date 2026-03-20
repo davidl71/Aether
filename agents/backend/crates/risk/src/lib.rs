@@ -9,7 +9,9 @@ pub mod var;
 pub use calculator::RiskCalculator;
 pub use checks::{RiskCheck, RiskEngine};
 pub use limits::{LimitsChecker, RiskLimits};
-pub use model::{BoxSpreadLeg, PortfolioRisk, PositionRisk, RiskDecision, RiskLimit, RiskViolation};
+pub use model::{
+    BoxSpreadLeg, PortfolioRisk, PositionRisk, RiskDecision, RiskLimit, RiskViolation,
+};
 
 pub mod quant {
     pub use quant::{Greeks, OptionKind, Position, QuantCalculator};

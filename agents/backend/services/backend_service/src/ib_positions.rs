@@ -41,23 +41,26 @@ pub fn spawn_ib_position_fetcher(state: SharedSnapshot) {
 }
 
 async fn fetch_and_merge_positions(state: &SharedSnapshot) -> anyhow::Result<()> {
-    let positions = api::fetch_ib_positions_all().await.map_err(|e| anyhow::anyhow!("{}", e))?;
+    let positions = api::fetch_ib_positions_all()
+        .await
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
 
     if positions.is_empty() {
         info!(
             "IB positions: 0 positions (check Client Portal is running, logged in, and accounts have positions)"
         );
     } else {
-        debug!(count = positions.len(), "fetched IB positions from Client Portal");
+        debug!(
+            count = positions.len(),
+            "fetched IB positions from Client Portal"
+        );
     }
 
     {
         let mut snapshot = state.write().await;
         snapshot.touch();
 
-        snapshot
-            .positions
-            .retain(|p| !p.id.starts_with("ib-"));
+        snapshot.positions.retain(|p| !p.id.starts_with("ib-"));
 
         let account_id = snapshot.account_id.clone();
         let new_count = positions.len();

@@ -30,12 +30,12 @@ use tokio::sync::{mpsc, watch, RwLock};
 use tracing::{error, info, warn};
 use yatws::account_subscription::AccountEvent;
 use yatws::contract::{Contract, SecType};
-use yatws::data_subscription::TickDataEvent;
+use yatws::data_subscription::{MarketDataSubscription, TickDataEvent};
 use yatws::{IBKRClient, IBKRError, OptionsStrategyBuilder};
 
 pub use broker_engine::domain::{
     BagOrderLeg, BrokerConfig, MarketDataEvent, OptionContract, OrderAction, OrderStatus,
-    OrderStatusEvent, PlaceBagOrderRequest, Position, PositionEvent, TimeInForce,
+    OrderStatusEvent, PlaceBagOrderRequest, Position, PositionEvent, QuoteQuality, TimeInForce,
 };
 pub use broker_engine::AccountInfo;
 pub use broker_engine::BrokerEngine;
@@ -89,9 +89,17 @@ pub struct YatWSEngine {
     account_sub: Arc<RwLock<Option<yatws::account_subscription::AccountSubscription>>>,
     /// Shutdown signal for the streaming task.
     shutdown_tx: Arc<StdMutex<Option<watch::Sender<bool>>>>,
-    /// Active market data subscriptions keyed by contract_id (symbol as fallback).
-    /// Stored with Arc<Mutex> to allow cancel from disconnect.
-    market_data_subs: Arc<RwLock<HashMap<i64, Arc<StdMutex<yatws::data_subscription::TickDataSubscription>>>>>,
+    /// Active market data streaming handles keyed by contract_id.
+    /// Each handle owns a OS thread that holds the !Send TickDataSubscription.
+    market_data_handles: Arc<StdMutex<HashMap<i64, MarketDataHandle>>>,
+}
+
+/// Owned handle to a market data streaming OS thread.
+/// The OS thread owns the !Send TickDataSubscription; this handle
+/// only holds the cancellation signal and join handle.
+struct MarketDataHandle {
+    cancel_tx: watch::Sender<bool>,
+    handle: std::thread::JoinHandle<()>,
 }
 
 impl YatWSEngine {
@@ -109,7 +117,7 @@ impl YatWSEngine {
             order_tx,
             account_sub: Arc::new(RwLock::new(None)),
             shutdown_tx: Arc::new(StdMutex::new(None)),
-            market_data_subs: Arc::new(RwLock::new(HashMap::new())),
+            market_data_handles: Arc::new(StdMutex::new(HashMap::new())),
         }
     }
 
@@ -120,11 +128,10 @@ impl YatWSEngine {
         let client_id = self.config.client_id as i32;
         info!("Connecting to TWS via yatws at {}:{}", host, port);
 
-        let result = tokio::task::spawn_blocking(move || {
-            IBKRClient::new(&host, port, client_id, None)
-        })
-        .await
-        .map_err(|e| BrokerError::Other(e.to_string()))?;
+        let result =
+            tokio::task::spawn_blocking(move || IBKRClient::new(&host, port, client_id, None))
+                .await
+                .map_err(|e| BrokerError::Other(e.to_string()))?;
 
         match result {
             Ok(client) => {
@@ -138,7 +145,9 @@ impl YatWSEngine {
 
                 // Create account subscription for position/order streaming.
                 let account_sub = tokio::task::spawn_blocking(move || {
-                    yatws::account_manager::AccountManager::create_account_subscription(client_arc.account())
+                    yatws::account_manager::AccountManager::create_account_subscription(
+                        client_arc.account(),
+                    )
                 })
                 .await
                 .map_err(|e| BrokerError::Other(e.to_string()))?
@@ -177,12 +186,11 @@ impl YatWSEngine {
             });
         }
 
-        // Cancel all market data subscriptions.
-        let subs: Vec<_> = self.market_data_subs.write().await.drain().collect();
-        for (_contract_id, sub_arc) in subs {
-            if let Some(sub) = sub_arc.lock().unwrap().take() {
-                let _ = tokio::task::spawn_blocking(move || sub.cancel());
-            }
+        // Cancel all market data handles.
+        let handles: Vec<_> = self.market_data_handles.lock().unwrap().drain().collect();
+        for (_contract_id, handle) in handles {
+            let _ = handle.cancel_tx.send(true);
+            let _ = handle.handle.join();
         }
 
         self.client.write().await.take();
@@ -216,46 +224,56 @@ impl YatWSEngine {
                 };
 
                 match event {
-                    Some(Ok(event)) => {
-                        match event {
-                            AccountEvent::PositionUpdate { position, timestamp: _ } => {
-                                let position_event = PositionEvent {
-                                    account: String::new(),
-                                    symbol: position.symbol.clone(),
-                                    position: position.quantity as i32,
-                                    avg_cost: position.average_cost,
-                                };
-                                if position_tx.send(position_event).await.is_err() {
-                                    warn!("position_tx dropped, stopping streaming");
-                                    break;
-                                }
-                            }
-                            AccountEvent::ExecutionUpdate { execution, timestamp: _ } => {
-                                let order_id = execution.order_id.parse::<i32>().unwrap_or(0);
-                                let filled = execution.cum_qty as i32;
-                                let remaining = (execution.quantity - execution.cum_qty) as i32;
-                                let order_event = OrderStatusEvent {
-                                    order_id,
-                                    status: format!("{:?}", execution.side),
-                                    filled,
-                                    remaining,
-                                    avg_fill_price: execution.avg_price,
-                                };
-                                if order_tx.send(order_event).await.is_err() {
-                                    warn!("order_tx dropped, stopping streaming");
-                                    break;
-                                }
-                            }
-                            AccountEvent::SummaryUpdate { .. } => {}
-                            AccountEvent::Error { error, timestamp: _ } => {
-                                error!("Account subscription error: {}", error);
-                            }
-                            AccountEvent::Closed { account_id, timestamp: _ } => {
-                                info!("Account subscription closed for account: {}", account_id);
+                    Some(Ok(event)) => match event {
+                        AccountEvent::PositionUpdate {
+                            position,
+                            timestamp: _,
+                        } => {
+                            let position_event = PositionEvent {
+                                account: String::new(),
+                                symbol: position.symbol.clone(),
+                                position: position.quantity as i32,
+                                avg_cost: position.average_cost,
+                            };
+                            if position_tx.send(position_event).await.is_err() {
+                                warn!("position_tx dropped, stopping streaming");
                                 break;
                             }
                         }
-                    }
+                        AccountEvent::ExecutionUpdate {
+                            execution,
+                            timestamp: _,
+                        } => {
+                            let order_id = execution.order_id.parse::<i32>().unwrap_or(0);
+                            let filled = execution.cum_qty as i32;
+                            let remaining = (execution.quantity - execution.cum_qty) as i32;
+                            let order_event = OrderStatusEvent {
+                                order_id,
+                                status: format!("{:?}", execution.side),
+                                filled,
+                                remaining,
+                                avg_fill_price: execution.avg_price,
+                            };
+                            if order_tx.send(order_event).await.is_err() {
+                                warn!("order_tx dropped, stopping streaming");
+                                break;
+                            }
+                        }
+                        AccountEvent::SummaryUpdate { .. } => {}
+                        AccountEvent::Error {
+                            error,
+                            timestamp: _,
+                        } => {
+                            error!("Account subscription error: {}", error);
+                        }
+                        AccountEvent::Closed {
+                            account_id,
+                            timestamp: _,
+                        } => {
+                            info!("Account subscription closed for account: {}", account_id);
+                            break;
+                        }
+                    },
                     Some(Err(e)) => {
                         error!("Error receiving account event: {}", e);
                     }
@@ -285,27 +303,25 @@ impl YatWSEngine {
             .clone()
             .ok_or(BrokerError::NotConnected)?;
 
-        // Create a stock contract. For options, sec_type would differ.
         let contract = Contract::stock(symbol);
 
-        // Subscribe to market data.
         let subscription = tokio::task::spawn_blocking({
             let client = client.clone();
             let contract = contract.clone();
-            move || client.data_market().subscribe_market_data(&contract).submit()
+            move || {
+                client
+                    .data_market()
+                    .subscribe_market_data(&contract)
+                    .submit()
+            }
         })
         .await
         .map_err(|e| BrokerError::Other(e.to_string()))?
         .map_err(|e| BrokerError::Other(format!("market data subscription failed: {}", e)))?;
 
-        // Wrap in Arc<Mutex> for shared ownership.
-        let subscription = Arc::new(Mutex::new(subscription));
-
-        // Use contract_id if provided, otherwise hash the symbol.
         let key = if contract_id != 0 {
             contract_id
         } else {
-            // Simple hash of symbol string to i64.
             let mut h: i64 = 0;
             for b in symbol.bytes() {
                 h = h.wrapping_mul(31).wrapping_add(b as i64);
@@ -313,95 +329,91 @@ impl YatWSEngine {
             h
         };
 
-        self.market_data_subs.write().await.insert(key, subscription.clone());
+        let sub_arc = Arc::new(StdMutex::new(Some(subscription)));
+        let (std_tx, std_rx) = std::sync::mpsc::channel::<MarketDataEvent>();
+        let (cancel_tx, cancel_rx) = watch::channel(false);
 
-        // Spawn a task to forward tick events.
+        // Spawn a tokio task to bridge std channel → async market_data_tx.
         let market_data_tx = self.market_data_tx.clone();
-        let subs = self.market_data_subs.clone();
-        let key_for_task = key;
-        let symbol_owned = symbol.to_string();
-
         tokio::spawn(async move {
-            let subscription = subs.read().await.get(&key_for_task).cloned();
-            if let Some(sub_arc) = subscription {
-                // We need to poll events. Since TickDataIterator::next() blocks,
-                // we use try_next with a timeout in a loop.
+            while let Ok(event) = std_rx.recv() {
+                if market_data_tx.send(event).await.is_err() {
+                    break;
+                }
+            }
+        });
+
+        let handle = std::thread::spawn({
+            let symbol = symbol.to_string();
+            let sub = sub_arc.clone();
+            move || {
+                let subscription = {
+                    let mut guard = sub.lock().unwrap();
+                    guard.take()
+                };
+                if subscription.is_none() {
+                    return;
+                }
+                let subscription = subscription.unwrap();
+                let mut iter = subscription.events();
                 loop {
-                    let event = {
-                        let mut sub = sub_arc.lock().unwrap();
-                        sub.events().next()
-                    };
+                    if *cancel_rx.borrow() {
+                        break;
+                    }
+                    let event = iter.next();
 
                     match event {
-                        Some(TickDataEvent::Price(tick_type, price, _attrib)) => {
-                            // Map tick type to bid/ask/last in MarketDataEvent.
-                            // Note: this sends individual ticks; the receiver should
-                            // accumulate bid/ask/last from multiple Price events.
-                            let bid = if tick_type == yatws::data::TickType::BidPrice
-                                || tick_type == yatws::data::TickType::DelayedBid
-                            {
-                                price
-                            } else {
-                                0.0
-                            };
-                            let ask = if tick_type == yatws::data::TickType::AskPrice
-                                || tick_type == yatws::data::TickType::DelayedAsk
-                            {
-                                price
-                            } else {
-                                0.0
-                            };
-                            let last = if tick_type == yatws::data::TickType::LastPrice
-                                || tick_type == yatws::data::TickType::DelayedLast
-                            {
-                                price
-                            } else {
-                                0.0
-                            };
-
+                        Some(TickDataEvent::Price(tick_type, price, attrib)) => {
+                            let bid = matches!(
+                                tick_type,
+                                yatws::data::TickType::BidPrice | yatws::data::TickType::DelayedBid
+                            )
+                            .then_some(price)
+                            .unwrap_or(0.0);
+                            let ask = matches!(
+                                tick_type,
+                                yatws::data::TickType::AskPrice | yatws::data::TickType::DelayedAsk
+                            )
+                            .then_some(price)
+                            .unwrap_or(0.0);
+                            let last = matches!(
+                                tick_type,
+                                yatws::data::TickType::LastPrice
+                                    | yatws::data::TickType::DelayedLast
+                            )
+                            .then_some(price)
+                            .unwrap_or(0.0);
+                            let quote_quality = QuoteQuality::from_tick_attrib(
+                                attrib.can_auto_execute,
+                                attrib.past_limit,
+                                attrib.pre_open,
+                            );
                             let market_event = MarketDataEvent {
-                                contract_id: key_for_task,
-                                symbol: symbol_owned.clone(),
+                                contract_id: key,
+                                symbol: symbol.clone(),
                                 bid,
                                 ask,
                                 last,
                                 volume: 0,
+                                quote_quality,
                             };
-                            if market_data_tx.send(market_event).await.is_err() {
-                                warn!("market_data_tx dropped, stopping market data streaming");
+                            if std_tx.send(market_event).is_err() {
                                 break;
                             }
                         }
-                        Some(TickDataEvent::Size(_, size)) => {
-                            // Size events - could be forwarded separately if needed.
-                            // For now, volume in MarketDataEvent is 0.
-                            let _ = size;
-                        }
-                        Some(TickDataEvent::SnapshotEnd) => {
-                            info!("Market data snapshot end received");
+                        Some(TickDataEvent::SnapshotEnd) | Some(TickDataEvent::Error(_)) | None => {
                             break;
                         }
-                        Some(TickDataEvent::Error(e)) => {
-                            error!("Market data error: {}", e);
-                            break;
-                        }
-                        Some(TickDataEvent::MarketDataTypeSet(_)) => {
-                            // Just acknowledgment, skip.
-                        }
-                        Some(TickDataEvent::String(_, _))
-                        | Some(TickDataEvent::Generic(_, _))
-                        | Some(TickDataEvent::OptionComputation(_)) => {
-                            // Skip other event types for now.
-                        }
-                        None => {
-                            // No event available, yield.
-                            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
-                        }
+                        _ => {}
                     }
                 }
+                drop(subscription);
+                info!("Market data streaming thread exiting for {}", symbol);
             }
-            info!("Market data streaming task exiting");
         });
+
+        let mh = MarketDataHandle { cancel_tx, handle };
+        self.market_data_handles.lock().unwrap().insert(key, mh);
 
         Ok(())
     }
@@ -459,10 +471,7 @@ impl YatWSEngine {
         ))
     }
 
-    pub async fn place_bag_order(
-        &self,
-        request: PlaceBagOrderRequest,
-    ) -> Result<i32, BrokerError> {
+    pub async fn place_bag_order(&self, request: PlaceBagOrderRequest) -> Result<i32, BrokerError> {
         if *self.state.read().await != ConnectionState::Connected {
             return Err(BrokerError::NotConnected);
         }
@@ -491,7 +500,11 @@ impl YatWSEngine {
         let symbol = request.underlying_symbol.clone();
         let expiry_str = request.legs[0].contract.expiry.clone();
         let k_low = request.legs[0].contract.strike;
-        let k_high = request.legs.get(2).map(|l| l.contract.strike).unwrap_or(k_low);
+        let k_high = request
+            .legs
+            .get(2)
+            .map(|l| l.contract.strike)
+            .unwrap_or(k_low);
         let quantity = request.quantity as f64;
         let limit_price = request.limit_price.unwrap_or(0.0);
         let sec_type = sec_type_for(&symbol);
@@ -524,9 +537,9 @@ impl YatWSEngine {
         .await
         .map_err(|e| BrokerError::Other(e.to_string()))??;
 
-        order_id_str
-            .parse::<i32>()
-            .map_err(|e| BrokerError::Other(format!("order_id '{}' is not i32: {}", order_id_str, e)))
+        order_id_str.parse::<i32>().map_err(|e| {
+            BrokerError::Other(format!("order_id '{}' is not i32: {}", order_id_str, e))
+        })
     }
 
     pub async fn cancel_order(&self, order_id: i32) -> Result<(), BrokerError> {
@@ -558,12 +571,10 @@ impl YatWSEngine {
             .clone()
             .ok_or(BrokerError::NotConnected)?;
         let client2 = client.clone();
-        let positions = tokio::task::spawn_blocking(move || {
-            client.account().list_open_positions()
-        })
-        .await
-        .map_err(|e| BrokerError::Other(e.to_string()))?
-        .map_err(map_ibkr_error)?;
+        let positions = tokio::task::spawn_blocking(move || client.account().list_open_positions())
+            .await
+            .map_err(|e| BrokerError::Other(e.to_string()))?
+            .map_err(map_ibkr_error)?;
 
         let account_id = tokio::task::spawn_blocking(move || {
             client2.account().get_account_info().map(|i| i.account_id)
@@ -627,11 +638,7 @@ impl BrokerEngine for YatWSEngine {
         self.state.read().await.clone()
     }
 
-    async fn request_market_data(
-        &self,
-        symbol: &str,
-        contract_id: i64,
-    ) -> Result<(), BrokerError> {
+    async fn request_market_data(&self, symbol: &str, contract_id: i64) -> Result<(), BrokerError> {
         self.request_market_data(symbol, contract_id).await
     }
 
@@ -646,7 +653,8 @@ impl BrokerEngine for YatWSEngine {
         quantity: i32,
         limit_price: f64,
     ) -> Result<i32, BrokerError> {
-        self.place_order(contract, action, quantity, limit_price).await
+        self.place_order(contract, action, quantity, limit_price)
+            .await
     }
 
     async fn place_bag_order(&self, request: PlaceBagOrderRequest) -> Result<i32, BrokerError> {

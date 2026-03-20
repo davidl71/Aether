@@ -13,7 +13,7 @@ echo ""
 
 # Check if build is running
 echo "Build Process:"
-if pgrep -f "create_deb_repo" > /dev/null; then
+if pgrep -f "create_deb_repo" >/dev/null; then
   echo "  ✓ Build script is running (PID: $(pgrep -f 'create_deb_repo'))"
 else
   echo "  ✗ Build script is not running"

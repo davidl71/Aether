@@ -31,7 +31,7 @@ cd "$REPO_ROOT"
 exit_code=0
 
 # Use paths relative to REPO_ROOT (buf expects relative paths for --path)
-PROTO_REL="${PROTO_DIR#$REPO_ROOT/}"
+PROTO_REL="${PROTO_DIR#"${REPO_ROOT}/"}"
 
 if [[ "$RUN_LINT" -eq 1 ]]; then
   echo "=== buf lint (proto/) ==="

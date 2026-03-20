@@ -413,5 +413,5 @@ Ask AI: "Add task 'Integration testing' with subtasks:
 ## See Also
 
 - [AGENTIC_TOOLS_USAGE.md](AGENTIC_TOOLS_USAGE.md) - Complete usage guide
-- [MCP_SERVERS.md]( MCP_SERVERS.md) - MCP server configuration
+- [MCP_SERVERS.md](./MCP_SERVERS.md) - MCP server configuration
 - [Agentic Tools MCP Repository](https://github.com/Pimzino/agentic-tools-mcp) - Official docs

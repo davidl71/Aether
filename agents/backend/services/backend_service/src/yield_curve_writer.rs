@@ -270,11 +270,14 @@ pub fn spawn(
                                 .and_then(|s| s.get("strike_width"))
                                 .and_then(|v| v.as_f64())
                                 .unwrap_or(STRIKE_WIDTH);
-                            let payload =
-                                match yield_curve_from_opportunities(&opportunities, symbol, strike_width) {
-                                    Some(yc) => encode_yield_curve_to_bytes(&yc),
-                                    None => serde_json::to_vec(&opportunities).unwrap_or_default(),
-                                };
+                            let payload = match yield_curve_from_opportunities(
+                                &opportunities,
+                                symbol,
+                                strike_width,
+                            ) {
+                                Some(yc) => encode_yield_curve_to_bytes(&yc),
+                                None => serde_json::to_vec(&opportunities).unwrap_or_default(),
+                            };
                             if let Err(e) = kv.put(key.as_str(), Bytes::from(payload)).await {
                                 warn!(%key, error = %e, "yield curve writer: put failed");
                             } else {

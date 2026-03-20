@@ -243,6 +243,44 @@ pub fn construct_box_spread_order(
 // Event types
 // -----------------------------------------------------------------------------
 
+/// Quote quality flags derived from IBKR TickAttrib.
+/// Bits: 0=stale, 1=pre_open, 2=non_auto_exec, 3=unreported, 4=bid_past_low, 5=ask_past_high
+#[derive(Debug, Clone, Copy, Default)]
+pub struct QuoteQuality(u8);
+
+impl QuoteQuality {
+    pub const STALE: u8 = 1 << 0;
+    pub const PRE_OPEN: u8 = 1 << 1;
+    pub const NON_AUTO_EXEC: u8 = 1 << 2;
+    pub const UNREPORTED: u8 = 1 << 3;
+    pub const BID_PAST_LOW: u8 = 1 << 4;
+    pub const ASK_PAST_HIGH: u8 = 1 << 5;
+
+    #[inline]
+    pub fn from_tick_attrib(can_auto_exec: bool, past_limit: bool, pre_open: bool) -> Self {
+        let mut q = Self(0);
+        if past_limit {
+            q.0 |= Self::STALE;
+        }
+        if pre_open {
+            q.0 |= Self::PRE_OPEN;
+        }
+        if !can_auto_exec {
+            q.0 |= Self::NON_AUTO_EXEC;
+        }
+        q
+    }
+
+    #[inline]
+    pub fn test(self, flag: u8) -> bool {
+        (self.0 & flag) != 0
+    }
+
+    pub fn bits(self) -> u8 {
+        self.0
+    }
+}
+
 /// Market data event
 #[derive(Debug, Clone)]
 pub struct MarketDataEvent {
@@ -252,6 +290,7 @@ pub struct MarketDataEvent {
     pub ask: f64,
     pub last: f64,
     pub volume: i64,
+    pub quote_quality: QuoteQuality,
 }
 
 /// Position event

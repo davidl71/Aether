@@ -192,8 +192,8 @@ impl CollectionRuntime {
                             bucket: bucket.clone(),
                             history: 5,
                             max_age: Duration::from_secs(86400), // 24h TTL
-                            max_value_size: 65_536,             // 64 KiB
-                            max_bytes: 10 * 1024 * 1024,        // 10 MiB bucket cap
+                            max_value_size: 65_536,              // 64 KiB
+                            max_bytes: 10 * 1024 * 1024,         // 10 MiB bucket cap
                             ..Default::default()
                         })
                         .await?

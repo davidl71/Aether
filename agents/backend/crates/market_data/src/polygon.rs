@@ -137,9 +137,7 @@ impl MarketDataSource for PolygonMarketDataSource {
             debug!("polygon nbbo status: {s}");
         }
 
-        let symbol = payload
-            .symbol
-            .unwrap_or(symbol);
+        let symbol = payload.symbol.unwrap_or(symbol);
 
         let bid = last.bid_price.unwrap_or(0.0);
         let ask = last.ask_price.unwrap_or(0.0);

@@ -83,15 +83,19 @@ pub struct FmpClient {
 impl FmpClient {
     pub fn new(api_key: impl Into<String>, base_url: Option<&str>) -> anyhow::Result<Self> {
         let base = base_url.unwrap_or(DEFAULT_BASE_URL);
-        let base_url = Url::parse(base)
-            .map_err(|e| anyhow::anyhow!("invalid FMP base url {base}: {e}"))?;
+        let base_url =
+            Url::parse(base).map_err(|e| anyhow::anyhow!("invalid FMP base url {base}: {e}"))?;
 
         let client = Client::builder()
             .user_agent("ib-box-spread-backend/0.1")
             .build()
             .map_err(|e| anyhow::anyhow!("failed to build HTTP client: {e}"))?;
 
-        Ok(Self { client, api_key: api_key.into(), base_url })
+        Ok(Self {
+            client,
+            api_key: api_key.into(),
+            base_url,
+        })
     }
 
     /// Fetch the most recent income statements for `symbol`.
@@ -108,7 +112,10 @@ impl FmpClient {
         let items: Vec<IncomeStatement> = self
             .client
             .get(url)
-            .query(&[("apikey", self.api_key.as_str()), ("limit", &limit.to_string())])
+            .query(&[
+                ("apikey", self.api_key.as_str()),
+                ("limit", &limit.to_string()),
+            ])
             .send()
             .await
             .map_err(|e| anyhow::anyhow!("FMP income-statement request failed for {symbol}: {e}"))?
@@ -116,9 +123,7 @@ impl FmpClient {
             .map_err(|e| anyhow::anyhow!("FMP income-statement error for {symbol}: {e}"))?
             .json()
             .await
-            .map_err(|e| {
-                anyhow::anyhow!("FMP income-statement decode failed for {symbol}: {e}")
-            })?;
+            .map_err(|e| anyhow::anyhow!("FMP income-statement decode failed for {symbol}: {e}"))?;
 
         Ok(items)
     }
@@ -135,7 +140,10 @@ impl FmpClient {
         let items: Vec<BalanceSheet> = self
             .client
             .get(url)
-            .query(&[("apikey", self.api_key.as_str()), ("limit", &limit.to_string())])
+            .query(&[
+                ("apikey", self.api_key.as_str()),
+                ("limit", &limit.to_string()),
+            ])
             .send()
             .await
             .map_err(|e| anyhow::anyhow!("FMP balance-sheet request failed for {symbol}: {e}"))?
@@ -143,9 +151,7 @@ impl FmpClient {
             .map_err(|e| anyhow::anyhow!("FMP balance-sheet error for {symbol}: {e}"))?
             .json()
             .await
-            .map_err(|e| {
-                anyhow::anyhow!("FMP balance-sheet decode failed for {symbol}: {e}")
-            })?;
+            .map_err(|e| anyhow::anyhow!("FMP balance-sheet decode failed for {symbol}: {e}"))?;
 
         Ok(items)
     }
@@ -162,7 +168,10 @@ impl FmpClient {
         let items: Vec<CashFlowStatement> = self
             .client
             .get(url)
-            .query(&[("apikey", self.api_key.as_str()), ("limit", &limit.to_string())])
+            .query(&[
+                ("apikey", self.api_key.as_str()),
+                ("limit", &limit.to_string()),
+            ])
             .send()
             .await
             .map_err(|e| anyhow::anyhow!("FMP cash-flow request failed for {symbol}: {e}"))?
@@ -242,7 +251,10 @@ mod tests {
             .mount(&server)
             .await;
 
-        let stmts = client(&server.uri()).income_statement("AAPL", 1).await.unwrap();
+        let stmts = client(&server.uri())
+            .income_statement("AAPL", 1)
+            .await
+            .unwrap();
         assert_eq!(stmts.len(), 1);
         assert_eq!(stmts[0].symbol, "AAPL");
         assert!(stmts[0].net_income.unwrap() > 0.0);
@@ -270,7 +282,10 @@ mod tests {
             .mount(&server)
             .await;
 
-        let sheets = client(&server.uri()).balance_sheet("AAPL", 1).await.unwrap();
+        let sheets = client(&server.uri())
+            .balance_sheet("AAPL", 1)
+            .await
+            .unwrap();
         assert_eq!(sheets.len(), 1);
         assert!(sheets[0].total_assets.unwrap() > sheets[0].total_liabilities.unwrap());
     }

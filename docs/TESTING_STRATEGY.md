@@ -4,7 +4,7 @@
 **Version**: 1.0
 **Status**: Active (updated for Rust-first; native C++ tests removed)
 
-> **Note:** The native C++ build and Catch2 test suite were removed. Current testing is **Rust** (`agents/backend`, `cargo test`), **Python** (`agents/nautilus`, `pytest`), **TUI E2E** (`just test-tui-e2e`), and **ShellSpec** (`./scripts/run_tests.sh`). See [FUTURE_IMPROVEMENTS.md](../../planning/FUTURE_IMPROVEMENTS.md) for the list of stale test docs.
+> **Note:** The native C++ build and Catch2 test suite were removed. Current testing is **Rust** (`agents/backend`, `cargo test`), **Python** (`agents/nautilus`, `pytest`), **TUI E2E** (`just test-tui-e2e`), and **ShellSpec** (`./scripts/run_tests.sh`). See [FUTURE_IMPROVEMENTS.md](./planning/FUTURE_IMPROVEMENTS.md) for the list of stale test docs.
 
 ---
 

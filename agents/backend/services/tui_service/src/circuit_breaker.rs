@@ -79,9 +79,7 @@ impl CircuitBreaker {
 
     /// Next backoff duration (2s, 4s, 8s, … capped at 60s). Uses `backoff` crate.
     pub fn backoff(&mut self) -> Duration {
-        self.backoff
-            .next_backoff()
-            .unwrap_or(MAX_BACKOFF)
+        self.backoff.next_backoff().unwrap_or(MAX_BACKOFF)
     }
 
     pub fn is_open(&self) -> bool {

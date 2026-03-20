@@ -5,7 +5,6 @@
 
 use std::sync::Arc;
 
-use tws_yield_curve;
 use api::discount_bank::{get_balance, get_bank_accounts, get_transactions, ImportPositionsQuery};
 use api::fetch_ib_positions;
 use api::finance_rates::{
@@ -35,6 +34,7 @@ use prost::Message;
 use reqwest::Client as ReqwestClient;
 use serde_json::Value;
 use tracing::{debug, info, warn};
+use tws_yield_curve;
 
 const SUBJECT_DISCOUNT_BANK_BALANCE: &str = "api.discount_bank.balance";
 const SUBJECT_DISCOUNT_BANK_TRANSACTIONS: &str = "api.discount_bank.transactions";

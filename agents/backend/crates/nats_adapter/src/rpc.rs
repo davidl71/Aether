@@ -9,7 +9,7 @@ use bytes::Bytes;
 use futures::StreamExt;
 use prost::Message as ProstMessage;
 use serde::{de::DeserializeOwned, Serialize};
-use tracing::{warn, debug};
+use tracing::{debug, warn};
 
 use crate::client::NatsClient;
 use crate::error::{NatsAdapterError, Result};
@@ -78,7 +78,9 @@ where
     let subject_owned = subject.to_string();
     let msg = tokio::time::timeout(
         timeout,
-        client.client().request(subject_owned.clone(), Bytes::from(body)),
+        client
+            .client()
+            .request(subject_owned.clone(), Bytes::from(body)),
     )
     .await
     .map_err(|_| NatsAdapterError::Publish(format!("proto request to {subject}: timeout")))?
@@ -152,17 +154,21 @@ where
     Req: Serialize,
     Res: DeserializeOwned,
 {
-    let body = serde_json::to_vec(payload).map_err(|e| NatsAdapterError::Publish(format!("json encode: {e}")))?;
+    let body = serde_json::to_vec(payload)
+        .map_err(|e| NatsAdapterError::Publish(format!("json encode: {e}")))?;
     let subject_owned = subject.to_string();
     let msg = tokio::time::timeout(
         timeout,
-        client.client().request(subject_owned.clone(), Bytes::from(body)),
+        client
+            .client()
+            .request(subject_owned.clone(), Bytes::from(body)),
     )
     .await
     .map_err(|_| NatsAdapterError::Publish(format!("json request to {subject}: timeout")))?
     .map_err(|e| NatsAdapterError::Publish(format!("json request to {subject}: {e}")))?;
 
-    serde_json::from_slice(msg.payload.as_ref()).map_err(|e| NatsAdapterError::Publish(format!("json decode reply: {e}")))
+    serde_json::from_slice(msg.payload.as_ref())
+        .map_err(|e| NatsAdapterError::Publish(format!("json decode reply: {e}")))
 }
 
 /// JSON request/reply with retry and exponential backoff on timeout/transient errors.
@@ -176,7 +182,14 @@ where
     Req: Serialize,
     Res: DeserializeOwned,
 {
-    request_json_with_retry_timeout(client, subject, payload, DEFAULT_TIMEOUT, RetryConfig::default()).await
+    request_json_with_retry_timeout(
+        client,
+        subject,
+        payload,
+        DEFAULT_TIMEOUT,
+        RetryConfig::default(),
+    )
+    .await
 }
 
 /// JSON request/reply with retry, custom timeout, and optional retry config.

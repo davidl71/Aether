@@ -43,7 +43,11 @@ pub fn var_parametric(
     confidence_level: f64,
     time_horizon_days: u32,
 ) -> f64 {
-    let z_score = if confidence_level >= 0.99 { 2.326 } else { 1.645 };
+    let z_score = if confidence_level >= 0.99 {
+        2.326
+    } else {
+        1.645
+    };
     let time_factor = (time_horizon_days as f64 / 252.0).sqrt();
     position_value * z_score * volatility * time_factor
 }

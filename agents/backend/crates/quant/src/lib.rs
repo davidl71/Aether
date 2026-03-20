@@ -613,6 +613,7 @@ impl QuantCalculator {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn validate_box_spread_parity(
         &self,
         s: f64,

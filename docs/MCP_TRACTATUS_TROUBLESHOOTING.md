@@ -249,5 +249,5 @@ If errors persist:
 ## Related Documentation
 
 - `.cursor/rules/tractatus-thinking.mdc` - Usage guidelines
-- `docs/ MCP_SERVERS.md` - MCP server overview
+- `docs/MCP_SERVERS.md` - MCP server overview
 - `docs/MCP_CONFIGURATION_EXAMPLE.json` - Configuration examples

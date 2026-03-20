@@ -4,7 +4,7 @@ This document provides comprehensive recommendations for optimizing your Cursor 
 
 ## MCP Servers
 
-MCP (Model Context Protocol) servers enhance Cursor's AI capabilities. See [MCP_SERVERS.md]( MCP_SERVERS.md) for detailed configuration.
+MCP (Model Context Protocol) servers enhance Cursor's AI capabilities. See [MCP_SERVERS.md](./MCP_SERVERS.md) for detailed configuration.
 
 ### Recommended MCP Servers
 
@@ -160,5 +160,5 @@ Key settings in `.vscode/settings.json`:
 - [CURSOR_SETUP.md]( CURSOR_SETUP.md) - Complete Cursor setup guide
 - [CURSOR_DOCS_USAGE.md]( CURSOR_DOCS_USAGE.md) - Using @docs in Cursor
 - [PROMPT_TOWER_USAGE.md](PROMPT_TOWER_USAGE.md) - Prompt Tower extension usage guide
-- [MCP_SERVERS.md]( MCP_SERVERS.md) - MCP server configuration details
+- [MCP_SERVERS.md](./MCP_SERVERS.md) - MCP server configuration details
 - [.cursorrules](../.cursorrules) - AI assistant guidelines

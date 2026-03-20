@@ -220,11 +220,16 @@ async fn run(
     }
 }
 
-async fn ensure_snapshot_stream(client: Arc<NatsClient>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn ensure_snapshot_stream(
+    client: Arc<NatsClient>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let js = async_nats::jetstream::new(client.client().clone());
     let stream_config = async_nats::jetstream::stream::Config {
         name: SNAPSHOT_STREAM_NAME.to_string(),
-        subjects: SNAPSHOT_STREAM_SUBJECTS.iter().map(|s| (*s).to_string()).collect(),
+        subjects: SNAPSHOT_STREAM_SUBJECTS
+            .iter()
+            .map(|s| (*s).to_string())
+            .collect(),
         retention: async_nats::jetstream::stream::RetentionPolicy::Limits,
         max_messages_per_subject: 1,
         max_age: Duration::from_secs(SNAPSHOT_STREAM_MAX_AGE_SECS),

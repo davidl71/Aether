@@ -29,9 +29,9 @@ pub use broker_engine::domain::{
     OrderStatusEvent, PlaceBagOrderRequest, Position, PositionEvent, TimeInForce,
 };
 pub use broker_engine::AccountInfo;
-pub use broker_engine::MarketData;
 pub use broker_engine::BrokerError;
 pub use broker_engine::ConnectionState;
+pub use broker_engine::MarketData;
 
 pub use broker_engine::BrokerEngine;
 
@@ -53,7 +53,11 @@ fn is_index(symbol: &str) -> bool {
 
 /// Exchange to use when building an option contract for `contract_details`.
 fn exchange_for_option(symbol: &str) -> &'static str {
-    if is_index(symbol) { "CBOE" } else { "SMART" }
+    if is_index(symbol) {
+        "CBOE"
+    } else {
+        "SMART"
+    }
 }
 
 /// Resolve one option leg to its IBKR conId via `reqContractDetails`.
@@ -63,8 +67,7 @@ fn exchange_for_option(symbol: &str) -> &'static str {
 async fn resolve_con_id(client: &Arc<IbClient>, leg: &OptionContract) -> Result<i32, BrokerError> {
     use common::expiry::parse_expiry_yyyy_mm_dd;
 
-    let (y, m, d) = parse_expiry_yyyy_mm_dd(&leg.expiry)
-        .map_err(BrokerError::Other)?;
+    let (y, m, d) = parse_expiry_yyyy_mm_dd(&leg.expiry).map_err(BrokerError::Other)?;
     let exchange = exchange_for_option(&leg.symbol);
 
     let ib_contract = if leg.is_call {
@@ -285,10 +288,7 @@ impl IbAdapter {
         Ok(order_id)
     }
 
-    pub async fn place_bag_order(
-        &self,
-        request: PlaceBagOrderRequest,
-    ) -> Result<i32, BrokerError> {
+    pub async fn place_bag_order(&self, request: PlaceBagOrderRequest) -> Result<i32, BrokerError> {
         if *self.state.read().await != ConnectionState::Connected {
             return Err(BrokerError::NotConnected);
         }
@@ -478,11 +478,7 @@ impl BrokerEngine for IbAdapter {
         self.state.read().await.clone()
     }
 
-    async fn request_market_data(
-        &self,
-        symbol: &str,
-        contract_id: i64,
-    ) -> Result<(), BrokerError> {
+    async fn request_market_data(&self, symbol: &str, contract_id: i64) -> Result<(), BrokerError> {
         self.request_market_data(symbol, contract_id).await
     }
 
@@ -497,7 +493,8 @@ impl BrokerEngine for IbAdapter {
         quantity: i32,
         limit_price: f64,
     ) -> Result<i32, BrokerError> {
-        self.place_order(contract, action, quantity, limit_price).await
+        self.place_order(contract, action, quantity, limit_price)
+            .await
     }
 
     async fn place_bag_order(&self, request: PlaceBagOrderRequest) -> Result<i32, BrokerError> {

@@ -111,7 +111,8 @@ pub fn validate_shared_config(loaded: &LoadedSharedConfig) -> Result<(), Vec<Str
 
     let mut errors = Vec::new();
     if backend_id.is_empty() {
-        errors.push("BACKEND_ID (or dataSources.primary / broker.primary) must be non-empty".into());
+        errors
+            .push("BACKEND_ID (or dataSources.primary / broker.primary) must be non-empty".into());
     }
     if nats_url.is_empty() {
         errors.push("NATS_URL (or tws.natsUrl) must be non-empty for TUI/backend".into());

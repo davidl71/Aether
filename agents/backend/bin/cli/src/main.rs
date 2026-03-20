@@ -11,12 +11,12 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use chrono::Utc;
 use api::finance_rates::{
     build_curve, get_sofr_rates, get_treasury_rates, BenchmarksResponse, CurveRequest,
     CurveResponse,
 };
 use api::loans::LoanRecord;
+use chrono::Utc;
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use nats_adapter::{
@@ -368,7 +368,11 @@ fn run_benchmarks(json: bool) -> Result<()> {
     let response: BenchmarksResponse = tokio::runtime::Runtime::new()?.block_on(async {
         let sofr = get_sofr_rates(&client).await;
         let treasury = get_treasury_rates(&client).await;
-        BenchmarksResponse { sofr, treasury, timestamp: Utc::now().to_rfc3339() }
+        BenchmarksResponse {
+            sofr,
+            treasury,
+            timestamp: Utc::now().to_rfc3339(),
+        }
     });
 
     if json {
@@ -605,12 +609,7 @@ fn run_loans_list(json: bool) -> Result<()> {
                     };
                     println!(
                         "{:<14} {:<14} {:>6} {:>8.0} {:>10.2} {:>10}",
-                        l.loan_id,
-                        l.bank_name,
-                        typ,
-                        l.principal,
-                        l.interest_rate,
-                        status
+                        l.loan_id, l.bank_name, typ, l.principal, l.interest_rate, status
                     );
                 }
             }

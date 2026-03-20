@@ -265,9 +265,9 @@ For tasks that need tmux sessions:
 
 ## Related Documentation
 
-- [MCP Servers]( MCP_SERVERS.md) - iTerm2 MCP Server integration
+- [MCP Servers](./MCP_SERVERS.md) - iTerm2 MCP Server integration
 - [PWA Patterns](research/architecture/PWA_PATTERNS_APPLICABILITY.md) - Service launch patterns
-- [Cursor Setup]( CURSOR_SETUP.md) - General Cursor/VS Code configuration
+- [Cursor Setup](./CURSOR_SETUP.md) - General Cursor/VS Code configuration
 
 ## See Also
 
