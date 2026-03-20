@@ -248,6 +248,12 @@ pub fn construct_box_spread_order(
 #[derive(Debug, Clone, Copy, Default)]
 pub struct QuoteQuality(u8);
 
+impl From<u8> for QuoteQuality {
+    fn from(bits: u8) -> Self {
+        Self(bits)
+    }
+}
+
 impl QuoteQuality {
     pub const STALE: u8 = 1 << 0;
     pub const PRE_OPEN: u8 = 1 << 1;
@@ -282,7 +288,8 @@ impl QuoteQuality {
 }
 
 /// Market data event
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, derive_builder::Builder)]
+#[builder(setter(into), default)]
 pub struct MarketDataEvent {
     pub contract_id: i64,
     pub symbol: String,
@@ -294,7 +301,7 @@ pub struct MarketDataEvent {
 }
 
 /// Position event
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_builder::Builder)]
 pub struct PositionEvent {
     pub account: String,
     pub symbol: String,
@@ -303,7 +310,7 @@ pub struct PositionEvent {
 }
 
 /// Order status event
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_builder::Builder)]
 pub struct OrderStatusEvent {
     pub order_id: i32,
     pub status: String,

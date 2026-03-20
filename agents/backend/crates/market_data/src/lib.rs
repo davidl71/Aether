@@ -6,6 +6,6 @@ pub mod polygon;
 
 pub use fmp::{BalanceSheet, CashFlowStatement, FmpClient, FmpQuote, IncomeStatement};
 pub use mock::MockMarketDataSource;
-pub use model::{MarketDataEvent, MarketDataSource};
+pub use model::{MarketDataEvent, MarketDataEventBuilder, MarketDataSource};
 pub use pipeline::{MarketDataIngestor, MarketDataPipeline};
 pub use polygon::PolygonMarketDataSource;

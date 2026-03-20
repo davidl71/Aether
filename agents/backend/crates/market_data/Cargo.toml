@@ -13,6 +13,7 @@ chrono = { workspace = true }
 rand = { workspace = true }
 tracing = { workspace = true }
 reqwest = { workspace = true }
+derive_builder = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "macros"] }

@@ -1,17 +1,17 @@
 use std::{collections::HashMap, time::Duration};
 
 use async_trait::async_trait;
+use chrono::Utc;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use tokio::{sync::Mutex, time::sleep};
 
-use crate::{MarketDataEvent, MarketDataSource};
+use crate::{MarketDataEvent, MarketDataEventBuilder, MarketDataSource};
 
 struct MockState {
     baselines: HashMap<String, f64>,
     rng: StdRng,
 }
 
-/// A simple market data source that generates synthetic ticks for a fixed symbol list.
 pub struct MockMarketDataSource {
     symbols: Vec<String>,
     interval: Duration,
@@ -63,11 +63,12 @@ impl MarketDataSource for MockMarketDataSource {
         let bid = (price - (spread / 2.0)).max(0.01);
         let ask = bid + spread;
 
-        Ok(MarketDataEvent {
-            symbol,
-            bid,
-            ask,
-            timestamp: chrono::Utc::now(),
-        })
+        let event = MarketDataEventBuilder::default()
+            .symbol(symbol)
+            .bid(bid)
+            .ask(ask)
+            .timestamp(Utc::now())
+            .build()?;
+        Ok(event)
     }
 }

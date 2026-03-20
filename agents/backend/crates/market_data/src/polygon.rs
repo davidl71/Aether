@@ -6,7 +6,7 @@ use reqwest::{Client, Response, StatusCode, Url};
 use tokio::sync::Mutex;
 use tracing::debug;
 
-use crate::{MarketDataEvent, MarketDataSource};
+use crate::{MarketDataEvent, MarketDataEventBuilder, MarketDataSource};
 
 const DEFAULT_BASE_URL: &str = "https://api.polygon.io";
 
@@ -15,7 +15,6 @@ struct RoundRobinState {
     idx: usize,
 }
 
-/// A Polygon.io-backed market data source that polls NBBO quotes for a configured symbol list.
 pub struct PolygonMarketDataSource {
     client: Client,
     api_key: String,
@@ -26,12 +25,6 @@ pub struct PolygonMarketDataSource {
 }
 
 impl PolygonMarketDataSource {
-    /// Create a new Polygon market data source.
-    ///
-    /// * `symbols` - The list of symbols to poll (e.g., `["SPY", "QQQ"]`).
-    /// * `poll_interval` - The delay between successive requests.
-    /// * `api_key` - Polygon.io API key.
-    /// * `base_url` - Optional override for the Polygon API base URL.
     pub fn new<I, S>(
         symbols: I,
         poll_interval: Duration,
@@ -81,7 +74,6 @@ impl PolygonMarketDataSource {
     }
 
     fn convert_timestamp(ts: i64) -> DateTime<Utc> {
-        // Polygon uses nanoseconds since epoch for NBBO, but be defensive.
         if ts > 1_000_000_000_000_000_000 {
             let secs = ts / 1_000_000_000;
             let nanos = (ts % 1_000_000_000) as u32;
@@ -148,24 +140,22 @@ impl MarketDataSource for PolygonMarketDataSource {
         }
 
         let timestamp = last.timestamp.unwrap_or(0);
-        let event = MarketDataEvent {
-            symbol,
-            bid,
-            ask,
-            timestamp: Self::convert_timestamp(timestamp),
-        };
+
+        let event = MarketDataEventBuilder::default()
+            .symbol(symbol)
+            .bid(bid)
+            .ask(ask)
+            .timestamp(Self::convert_timestamp(timestamp))
+            .build()?;
 
         Ok(event)
     }
 }
 
-/// Polygon /v2/last/nbbo API response shape.
 #[derive(Debug, serde::Deserialize)]
 struct NbboResponse {
-    /// API response status (e.g. "OK"). Logged at debug for diagnostics.
     #[serde(default)]
     pub status: Option<String>,
-    /// Symbol from the response; used as event symbol when present.
     #[serde(default)]
     pub symbol: Option<String>,
     #[serde(default)]
@@ -185,7 +175,6 @@ struct NbboQuote {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Duration;
     use tokio::time::timeout;
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};

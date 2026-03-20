@@ -436,6 +436,7 @@ mod tests {
             bid: 500.0,
             ask: 502.0,
             timestamp: Utc::now(),
+            ..Default::default()
         };
 
         snapshot.apply_market_event(&event);

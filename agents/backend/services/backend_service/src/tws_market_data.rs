@@ -8,6 +8,7 @@
 //! within the regular trading window (09:30–16:00 ET). Per-symbol tradingHours from
 //! ContractDetails are not yet used; see MARKET_DATA_SUBSCRIPTIONS_AND_HOURS.md.
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -20,7 +21,9 @@ use ibapi::Client;
 use tracing::{info, warn};
 
 use api::SharedSnapshot;
-use market_data::MarketDataEvent;
+use broker_engine::QuoteQuality;
+use ibapi::market_data::realtime::TickAttribute;
+use market_data::{MarketDataEvent, MarketDataEventBuilder};
 use strategy::StrategySignal;
 use tokio::sync::mpsc::{self, UnboundedSender};
 use tokio::sync::watch;
@@ -38,6 +41,11 @@ const PORTS_AUTODETECT: &[u16] = &[
 /// US Eastern (EST) offset for RTH window. Does not account for DST (approximation).
 const EST_OFFSET_SECS: i32 = -5 * 3600;
 
+#[inline]
+fn tick_attribute_to_quote_quality(attrib: &TickAttribute) -> QuoteQuality {
+    QuoteQuality::from_tick_attrib(attrib.can_auto_execute, attrib.past_limit, attrib.pre_open)
+}
+
 /// Returns true if `utc_now` is within 09:30–16:00 Eastern (EST). Used when `use_rth` is true.
 fn is_within_rth(utc_now: DateTime<Utc>) -> bool {
     let est = FixedOffset::east_opt(EST_OFFSET_SECS).expect("valid offset");
@@ -46,6 +54,14 @@ fn is_within_rth(utc_now: DateTime<Utc>) -> bool {
     let start = chrono::NaiveTime::from_hms_opt(9, 30, 0).expect("valid time");
     let end = chrono::NaiveTime::from_hms_opt(16, 0, 0).expect("valid time");
     t >= start && t < end
+}
+
+/// Messages from TWS subscription tasks to the main processing loop.
+enum TwsMarketMsg {
+    /// Sent once at subscription start: carries the contract_id for the symbol.
+    Setup { symbol: String, contract_id: i64 },
+    /// Sent for each price tick.
+    Tick { symbol: String, tick: TickTypes },
 }
 
 /// Spawn a task that connects to TWS/IB Gateway, subscribes to each symbol, and forwards
@@ -147,8 +163,10 @@ pub fn spawn_tws_market_data(
 /// Per-symbol state: last bid/ask for building full events from ticks.
 #[derive(Default)]
 struct SymbolState {
+    contract_id: i64,
     bid: f64,
     ask: f64,
+    attrib: TickAttribute,
 }
 
 async fn run_tws_subscriptions(
@@ -175,7 +193,7 @@ async fn run_tws_subscriptions(
         warn!("TWS managed_accounts not available, snapshot account_id unchanged");
     }
 
-    let (tx, mut rx) = mpsc::unbounded_channel::<(String, TickTypes)>();
+    let (tx, mut rx) = mpsc::unbounded_channel::<TwsMarketMsg>();
 
     for symbol in symbols {
         let client = Arc::clone(&client);
@@ -183,6 +201,14 @@ async fn run_tws_subscriptions(
         let symbol = symbol.clone();
         tokio::spawn(async move {
             let contract = Contract::stock(&symbol).build();
+            let contract_id = contract.contract_id as i64;
+            if let Err(e) = tx.send(TwsMarketMsg::Setup {
+                symbol: symbol.clone(),
+                contract_id,
+            }) {
+                warn!(%symbol, error = %e, "failed to send setup for contract_id");
+                return;
+            }
             let mut sub = match client.market_data(&contract).subscribe().await {
                 Ok(s) => s,
                 Err(e) => {
@@ -193,7 +219,10 @@ async fn run_tws_subscriptions(
             while let Some(result) = sub.next().await {
                 match result {
                     Ok(tick) => {
-                        if tx.send((symbol.clone(), tick)).is_err() {
+                        if tx.send(TwsMarketMsg::Tick {
+                            symbol: symbol.clone(),
+                            tick,
+                        }).is_err() {
                             break;
                         }
                     }
@@ -207,61 +236,76 @@ async fn run_tws_subscriptions(
     let mut per_symbol: std::collections::HashMap<String, SymbolState> =
         std::collections::HashMap::new();
 
-    while let Some((symbol, tick)) = rx.recv().await {
-        match &tick {
-            TickTypes::Price(p) => {
-                let price = p.price;
-                match p.tick_type {
-                    TickType::Bid => {
-                        per_symbol.entry(symbol.clone()).or_default().bid = price;
-                    }
-                    TickType::Ask => {
-                        per_symbol.entry(symbol.clone()).or_default().ask = price;
-                    }
-                    TickType::Last => {
-                        let entry = per_symbol.entry(symbol.clone()).or_default();
-                        if entry.bid <= 0.0 {
-                            entry.bid = price;
-                        }
-                        if entry.ask <= 0.0 {
-                            entry.ask = price;
+    while let Some(msg) = rx.recv().await {
+        match msg {
+            TwsMarketMsg::Setup { symbol, contract_id } => {
+                let entry = per_symbol.entry(symbol.clone()).or_default();
+                entry.contract_id = contract_id;
+            }
+            TwsMarketMsg::Tick { symbol, tick } => {
+                match &tick {
+                    TickTypes::Price(p) => {
+                        let price = p.price;
+                        match p.tick_type {
+                            TickType::Bid | TickType::DelayedBid | TickType::DelayedBidOption => {
+                                let entry = per_symbol.entry(symbol.clone()).or_default();
+                                entry.bid = price;
+                                entry.attrib = p.attributes.clone();
+                            }
+                            TickType::Ask | TickType::DelayedAsk | TickType::DelayedAskOption => {
+                                let entry = per_symbol.entry(symbol.clone()).or_default();
+                                entry.ask = price;
+                                entry.attrib = p.attributes.clone();
+                            }
+                            TickType::Last | TickType::DelayedLast => {
+                                let entry = per_symbol.entry(symbol.clone()).or_default();
+                                if entry.bid <= 0.0 {
+                                    entry.bid = price;
+                                }
+                                if entry.ask <= 0.0 {
+                                    entry.ask = price;
+                                }
+                                entry.attrib = p.attributes.clone();
+                            }
+                            _ => continue,
                         }
                     }
                     _ => continue,
                 }
+
+                let st = match per_symbol.get(&symbol) {
+                    Some(s) if s.bid > 0.0 && s.ask > 0.0 => s,
+                    _ => continue,
+                };
+
+                let now = Utc::now();
+                if use_rth && !is_within_rth(now) {
+                    continue;
+                }
+
+                let quote_quality = tick_attribute_to_quote_quality(&st.attrib).bits() as u32;
+                let event = MarketDataEventBuilder::default()
+                    .contract_id(st.contract_id)
+                    .symbol(symbol.clone())
+                    .bid(st.bid)
+                    .ask(st.ask)
+                    .last(0.0)
+                    .volume(0)
+                    .timestamp(now)
+                    .quote_quality(quote_quality)
+                    .build()
+                    .unwrap();
+                let running = *strategy_toggle.borrow();
+                handle_market_event(
+                    &state,
+                    &strategy_signal,
+                    &event,
+                    running,
+                    nats.as_ref().as_ref(),
+                )
+                .await;
             }
-            _ => continue,
         }
-
-        let st = match per_symbol.get(&symbol) {
-            Some(s) if s.bid > 0.0 && s.ask > 0.0 => (s.bid, s.ask),
-            _ => continue,
-        };
-        let (bid, ask) = st;
-
-        let now = Utc::now();
-        if use_rth && !is_within_rth(now) {
-            continue;
-        }
-        let event = MarketDataEvent {
-            contract_id: 0,
-            symbol: symbol.clone(),
-            bid,
-            ask,
-            last: 0.0,
-            volume: 0,
-            timestamp: Some(prost_types::Timestamp::from(now)),
-            quote_quality: 0,
-        };
-        let running = *strategy_toggle.borrow();
-        handle_market_event(
-            &state,
-            &strategy_signal,
-            &event,
-            running,
-            nats.as_ref().as_ref(),
-        )
-        .await;
     }
 
     Ok(())

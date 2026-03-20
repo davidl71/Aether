@@ -9,5 +9,6 @@ async-trait.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+derive_builder = { workspace = true }
 financial_symbols = { workspace = true }
 rust_decimal = { workspace = true }
