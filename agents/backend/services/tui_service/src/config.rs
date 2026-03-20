@@ -71,7 +71,7 @@ impl TuiConfig {
         config
     }
 
-    #[allow(dead_code)]
+    #[allow(dead_code)] // TBD: expose via API or TUI status bar
     pub fn snapshot_stale_after_secs(&self) -> i64 {
         self.rest_poll_ms.max(1000).div_ceil(1000) as i64
     }

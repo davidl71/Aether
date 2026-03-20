@@ -24,6 +24,7 @@ use tracing::{debug, info, warn};
 
 // ---------------------------------------------------------------------------
 // External URL fetching (planned future functionality)
+// TBD: create task for YIELD_CURVE_SOURCE_URL integration
 // ---------------------------------------------------------------------------
 #[allow(dead_code)]
 const KV_BUCKET_ENV: &str = "NATS_KV_BUCKET";
@@ -160,6 +161,7 @@ pub(crate) fn synthetic_opportunities(symbol: &str) -> Vec<serde_json::Value> {
 /// Fetch curve points from a public URL. Returns map symbol -> opportunities (each Value is { "spread": BoxSpreadInput }).
 /// URL must return a JSON array of objects with: symbol, expiry, days_to_expiry, buy_implied_rate, sell_implied_rate;
 /// optional: strike_width (default 5), net_debit, net_credit, liquidity_score (default 50), spread_id.
+/// TBD: create task for YIELD_CURVE_SOURCE_URL integration
 #[allow(dead_code)]
 async fn fetch_curve_from_url(url: &str) -> Option<HashMap<String, Vec<serde_json::Value>>> {
     let client = reqwest::Client::builder()
@@ -199,6 +201,7 @@ async fn fetch_curve_from_url(url: &str) -> Option<HashMap<String, Vec<serde_jso
 /// Run the yield curve writer: pre-populate once immediately, then every `interval_secs` write `yield_curve.{symbol}`.
 /// Returns a sender to trigger one immediate write cycle (e.g. for `api.yield_curve.refresh`).
 /// Source: `config_source` (from [yield_curve] source) or env `YIELD_CURVE_SOURCE`; "tws" => TWS, else URL/synthetic.
+/// TBD: create task for yield_curve_writer::spawn integration into backend_service
 #[allow(dead_code)]
 pub fn spawn(
     nats_client: Arc<NatsClient>,
