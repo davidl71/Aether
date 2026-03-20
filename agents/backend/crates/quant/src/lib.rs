@@ -17,7 +17,7 @@ pub enum OptionKind {
     Put,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, derive_builder::Builder)]
 pub struct Greeks {
     pub delta: f64,
     pub gamma: f64,
@@ -26,13 +26,37 @@ pub struct Greeks {
     pub rho: f64,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+impl Default for Greeks {
+    fn default() -> Self {
+        Self {
+            delta: 0.0,
+            gamma: 0.0,
+            theta: 0.0,
+            vega: 0.0,
+            rho: 0.0,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, derive_builder::Builder)]
 pub struct BondGreeks {
     pub delta: f64,
     pub gamma: f64,
     pub theta: f64,
     pub vega: f64,
     pub rho: f64,
+}
+
+impl Default for BondGreeks {
+    fn default() -> Self {
+        Self {
+            delta: 0.0,
+            gamma: 0.0,
+            theta: 0.0,
+            vega: 0.0,
+            rho: 0.0,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -93,7 +117,7 @@ pub struct RiskMetrics {
     pub max_loss: f64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, derive_builder::Builder)]
 pub struct StrategyResult {
     pub name: String,
     pub payoff_at_expiry: f64,
@@ -103,7 +127,7 @@ pub struct StrategyResult {
     pub cost: f64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, derive_builder::Builder)]
 pub struct BoxSpreadResult {
     pub synthetic_leg_cost: f64,
     pub actual_leg_cost: f64,
@@ -113,7 +137,7 @@ pub struct BoxSpreadResult {
     pub legs: Vec<BoxSpreadLeg>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, derive_builder::Builder)]
 pub struct BoxSpreadLeg {
     pub instrument: String,
     pub strike: f64,
@@ -122,7 +146,7 @@ pub struct BoxSpreadLeg {
     pub price: f64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, derive_builder::Builder)]
 pub struct PutCallParityResult {
     pub market_cost: f64,
     pub theoretical_cost: f64,
@@ -139,7 +163,7 @@ pub struct PutCallParityResult {
     pub parity_flagged: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, derive_builder::Builder)]
 pub struct ComboResult {
     pub name: String,
     pub net_debit: f64,
@@ -149,7 +173,7 @@ pub struct ComboResult {
     pub legs: Vec<ComboLeg>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, derive_builder::Builder)]
 pub struct ComboLeg {
     pub instrument: String,
     pub strike: f64,
