@@ -2,6 +2,8 @@
 name = "common"
 edition = "2021"
 version.workspace = true
-description = "Shared utilities (expiry parsing, etc.)"
+description = "Shared utilities (expiry parsing, snapshot types)"
 
 [dependencies]
+chrono = { workspace = true }
+serde = { workspace = true }

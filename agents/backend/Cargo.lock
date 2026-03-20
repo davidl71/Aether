@@ -140,6 +140,7 @@ dependencies = [
  "async-trait",
  "base64 0.22.1",
  "chrono",
+ "common",
  "discount_bank_parser",
  "futures",
  "http-body-util",
@@ -787,6 +788,10 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+]
 
 [[package]]
 name = "compact_str"

@@ -1,11 +1,13 @@
 use std::sync::Arc;
 
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use market_data::MarketDataEvent;
 use risk::RiskDecision;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use tracing::{debug, warn};
+
+use common::snapshot as cmn;
 
 use crate::runtime_state::{
     RuntimeExecutionState, RuntimeExecutionUpdate, RuntimeMarketState, RuntimeRiskState,
@@ -13,22 +15,114 @@ use crate::runtime_state::{
 
 pub type SharedSnapshot = Arc<RwLock<SystemSnapshot>>;
 
+// ---------------------------------------------------------------------------
+// Api-only types (not shared)
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum AlertLevel {
+    Info,
+    Warning,
+    Error,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Alert {
+    pub level: AlertLevel,
+    pub message: String,
+    pub timestamp: chrono::DateTime<Utc>,
+}
+
+impl Alert {
+    pub fn info(message: impl Into<String>) -> Self {
+        Self {
+            level: AlertLevel::Info,
+            message: message.into(),
+            timestamp: Utc::now(),
+        }
+    }
+
+    pub fn warning(message: impl Into<String>) -> Self {
+        Self {
+            level: AlertLevel::Warning,
+            message: message.into(),
+            timestamp: Utc::now(),
+        }
+    }
+
+    pub fn error(message: impl Into<String>) -> Self {
+        Self {
+            level: AlertLevel::Error,
+            message: message.into(),
+            timestamp: Utc::now(),
+        }
+    }
+}
+
+impl From<cmn::Alert> for Alert {
+    fn from(a: cmn::Alert) -> Self {
+        let level = match a.level.to_uppercase().as_str() {
+            "WARNING" => AlertLevel::Warning,
+            "ERROR" => AlertLevel::Error,
+            _ => AlertLevel::Info,
+        };
+        Alert {
+            level,
+            message: a.message,
+            timestamp: a.timestamp,
+        }
+    }
+}
+
+impl From<Alert> for cmn::Alert {
+    fn from(a: Alert) -> Self {
+        let level = match a.level {
+            AlertLevel::Info => "INFO",
+            AlertLevel::Warning => "WARNING",
+            AlertLevel::Error => "ERROR",
+        };
+        cmn::Alert {
+            level: level.to_string(),
+            message: a.message,
+            timestamp: a.timestamp,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SymbolSnapshot {
+    pub symbol: String,
+    pub last: f64,
+    pub bid: f64,
+    pub ask: f64,
+    pub spread: f64,
+    pub roi: f64,
+    pub maker_count: u32,
+    pub taker_count: u32,
+    pub volume: u64,
+    pub candle: cmn::CandleSnapshot,
+}
+
+// ---------------------------------------------------------------------------
+// System snapshot (api-only aggregate)
+// ---------------------------------------------------------------------------
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SystemSnapshot {
-    pub generated_at: DateTime<Utc>,
-    pub started_at: DateTime<Utc>,
+    pub generated_at: chrono::DateTime<Utc>,
+    pub started_at: chrono::DateTime<Utc>,
     pub mode: String,
     pub strategy: String,
     pub account_id: String,
-    pub metrics: Metrics,
+    pub metrics: cmn::Metrics,
     pub symbols: Vec<SymbolSnapshot>,
-    pub positions: Vec<PositionSnapshot>,
-    pub historic: Vec<HistoricPosition>,
-    pub orders: Vec<OrderSnapshot>,
-    pub decisions: Vec<StrategyDecisionSnapshot>,
+    pub positions: Vec<cmn::PositionSnapshot>,
+    pub historic: Vec<cmn::HistoricPosition>,
+    pub orders: Vec<cmn::OrderSnapshot>,
+    pub decisions: Vec<cmn::StrategyDecisionSnapshot>,
     pub alerts: Vec<Alert>,
-    pub risk: RiskStatus,
-    /// Optional ledger engine for transaction recording (not serialized)
+    pub risk: cmn::RiskStatus,
     #[serde(skip_serializing, skip_deserializing)]
     pub ledger: Option<Arc<ledger::LedgerEngine>>,
 }
@@ -65,14 +159,14 @@ impl Default for SystemSnapshot {
             mode: "DRY-RUN".into(),
             strategy: "IDLE".into(),
             account_id: "DU123456".into(),
-            metrics: Metrics::default(),
+            metrics: cmn::Metrics::default(),
             symbols: Vec::new(),
             positions: Vec::new(),
             historic: Vec::new(),
             orders: Vec::new(),
             decisions: Vec::new(),
             alerts: vec![Alert::info("Backend initialising")],
-            risk: RiskStatus::default(),
+            risk: cmn::RiskStatus::default(),
             ledger: None,
         }
     }
@@ -154,13 +248,11 @@ impl SystemSnapshot {
         }
     }
 
-    /// Set ledger engine for transaction recording
     pub fn set_ledger(&mut self, ledger: Arc<ledger::LedgerEngine>) {
         self.ledger = Some(ledger);
         debug!("Ledger engine attached to SystemSnapshot");
     }
 
-    /// Record box spread transaction (async, non-blocking)
     pub fn record_box_spread_async(
         &self,
         symbol: &str,
@@ -203,7 +295,6 @@ impl SystemSnapshot {
         }
     }
 
-    /// Record cash flow transaction (async, non-blocking)
     pub fn record_cash_flow_async(
         &self,
         amount: f64,
@@ -236,7 +327,7 @@ impl SystemSnapshot {
                 }
             });
         } else {
-            debug!("Ledger not configured, skipping cash flow transaction recording");
+            debug!("Ledger not configured, skipping cash flow recording");
         }
     }
 
@@ -248,181 +339,22 @@ impl SystemSnapshot {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Metrics {
-    pub net_liq: f64,
-    pub buying_power: f64,
-    pub excess_liquidity: f64,
-    pub margin_requirement: f64,
-    pub commissions: f64,
-    pub portal_ok: bool,
-    pub tws_ok: bool,
-    pub tws_address: Option<String>,
-    pub questdb_ok: bool,
-    pub nats_ok: bool,
-}
+// ---------------------------------------------------------------------------
+// Re-exports from common
+// ---------------------------------------------------------------------------
 
-impl Default for Metrics {
-    fn default() -> Self {
-        Self {
-            net_liq: 100_000.0,
-            buying_power: 80_000.0,
-            excess_liquidity: 25_000.0,
-            margin_requirement: 15_000.0,
-            commissions: 0.0,
-            portal_ok: false,
-            tws_ok: false,
-            tws_address: None,
-            questdb_ok: false,
-            nats_ok: false,
-        }
-    }
-}
+pub use common::snapshot::CandleSnapshot;
+pub use common::snapshot::HistoricPosition;
+pub use common::snapshot::Metrics;
+pub use common::snapshot::OrderSnapshot;
+pub use common::snapshot::PositionSnapshot;
+pub use common::snapshot::RiskStatus;
+pub use common::snapshot::StrategyDecisionSnapshot;
+pub use common::snapshot::Alert as CommonAlert;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct SymbolSnapshot {
-    pub symbol: String,
-    pub last: f64,
-    pub bid: f64,
-    pub ask: f64,
-    pub spread: f64,
-    pub roi: f64,
-    pub maker_count: u32,
-    pub taker_count: u32,
-    pub volume: u64,
-    pub candle: CandleSnapshot,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CandleSnapshot {
-    pub open: f64,
-    pub high: f64,
-    pub low: f64,
-    pub close: f64,
-    pub volume: u64,
-    pub entry: f64,
-    pub updated: DateTime<Utc>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct PositionSnapshot {
-    pub id: String,
-    pub symbol: String,
-    pub quantity: i32,
-    pub cost_basis: f64,
-    pub mark: f64,
-    pub unrealized_pnl: f64,
-    /// Account identifier for multi-account systems (optional for backward compatibility).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub account_id: Option<String>,
-    /// Source of this position (e.g. "TWS", "IB", "mock").
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub source: Option<String>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct HistoricPosition {
-    pub id: String,
-    pub symbol: String,
-    pub quantity: i32,
-    pub realized_pnl: f64,
-    pub closed_at: DateTime<Utc>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct OrderSnapshot {
-    pub id: String,
-    pub symbol: String,
-    pub side: String,
-    pub quantity: i32,
-    pub status: String,
-    pub submitted_at: DateTime<Utc>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct StrategyDecisionSnapshot {
-    pub symbol: String,
-    pub quantity: i32,
-    pub side: String,
-    pub mark: f64,
-    pub created_at: DateTime<Utc>,
-}
-
-impl StrategyDecisionSnapshot {
-    pub fn new(
-        symbol: String,
-        quantity: i32,
-        side: impl Into<String>,
-        mark: f64,
-        created_at: DateTime<Utc>,
-    ) -> Self {
-        Self {
-            symbol,
-            quantity,
-            side: side.into(),
-            mark,
-            created_at,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct RiskStatus {
-    pub allowed: bool,
-    pub reason: Option<String>,
-    pub updated_at: DateTime<Utc>,
-}
-
-impl Default for RiskStatus {
-    fn default() -> Self {
-        Self {
-            allowed: true,
-            reason: None,
-            updated_at: Utc::now(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Alert {
-    pub level: AlertLevel,
-    pub message: String,
-    pub timestamp: DateTime<Utc>,
-}
-
-impl Alert {
-    pub fn info(message: impl Into<String>) -> Self {
-        Self {
-            level: AlertLevel::Info,
-            message: message.into(),
-            timestamp: Utc::now(),
-        }
-    }
-
-    pub fn warning(message: impl Into<String>) -> Self {
-        Self {
-            level: AlertLevel::Warning,
-            message: message.into(),
-            timestamp: Utc::now(),
-        }
-    }
-
-    pub fn error(message: impl Into<String>) -> Self {
-        Self {
-            level: AlertLevel::Error,
-            message: message.into(),
-            timestamp: Utc::now(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "UPPERCASE")]
-pub enum AlertLevel {
-    Info,
-    Warning,
-    Error,
-}
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {
@@ -513,5 +445,14 @@ mod tests {
         assert_eq!(snapshot.historic[0].quantity, 10);
         assert_eq!(snapshot.historic[0].realized_pnl, 50.0);
         assert_eq!(snapshot.historic[0].closed_at, closed_at);
+    }
+
+    #[test]
+    fn alert_from_common_round_trip() {
+        let alert = Alert::info("test");
+        let common: cmn::Alert = alert.clone().into();
+        let back: Alert = common.into();
+        assert!(matches!(back.level, AlertLevel::Info));
+        assert_eq!(back.message, "test");
     }
 }
