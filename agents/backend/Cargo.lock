@@ -6324,6 +6324,7 @@ name = "yatws_adapter"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "backoff",
  "broker_engine",
  "chrono",
  "futures",

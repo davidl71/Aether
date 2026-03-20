@@ -23,8 +23,11 @@
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex as StdMutex};
+use std::time::Duration;
 
 use async_trait::async_trait;
+use backoff::backoff::Backoff;
+use backoff::exponential::ExponentialBackoffBuilder;
 use chrono::NaiveDate;
 use tokio::sync::{mpsc, watch, RwLock};
 use tracing::{error, info, warn};
@@ -74,6 +77,15 @@ fn map_ibkr_error(e: IBKRError) -> BrokerError {
 }
 
 // ---------------------------------------------------------------------------
+// Reconnect configuration
+// ---------------------------------------------------------------------------
+
+const RECONNECT_INITIAL_INTERVAL: Duration = Duration::from_secs(2);
+const RECONNECT_MAX_INTERVAL: Duration = Duration::from_secs(60);
+const RECONNECT_MULTIPLIER: f64 = 2.0;
+const RECONNECT_MAX_ELAPSED: Option<Duration> = None;
+
+// ---------------------------------------------------------------------------
 // YatWSEngine
 // ---------------------------------------------------------------------------
 
@@ -89,6 +101,8 @@ pub struct YatWSEngine {
     account_sub: Arc<RwLock<Option<yatws::account_subscription::AccountSubscription>>>,
     /// Shutdown signal for the streaming task.
     shutdown_tx: Arc<StdMutex<Option<watch::Sender<bool>>>>,
+    /// Reconnect trigger signal when connection is lost.
+    reconnect_tx: Arc<StdMutex<Option<watch::Sender<bool>>>>,
     /// Active market data streaming handles keyed by contract_id.
     /// Each handle owns a OS thread that holds the !Send TickDataSubscription.
     market_data_handles: Arc<StdMutex<HashMap<i64, MarketDataHandle>>>,
@@ -117,64 +131,145 @@ impl YatWSEngine {
             order_tx,
             account_sub: Arc::new(RwLock::new(None)),
             shutdown_tx: Arc::new(StdMutex::new(None)),
+            reconnect_tx: Arc::new(StdMutex::new(None)),
             market_data_handles: Arc::new(StdMutex::new(HashMap::new())),
         }
     }
 
     pub async fn connect(&self) -> Result<(), BrokerError> {
-        *self.state.write().await = ConnectionState::Connecting;
-        let host = self.config.host.clone();
-        let port = self.config.port;
-        let client_id = self.config.client_id as i32;
-        info!("Connecting to TWS via yatws at {}:{}", host, port);
+        let backoff: backoff::ExponentialBackoff = ExponentialBackoffBuilder::new()
+            .with_initial_interval(RECONNECT_INITIAL_INTERVAL)
+            .with_multiplier(RECONNECT_MULTIPLIER)
+            .with_max_interval(RECONNECT_MAX_INTERVAL)
+            .with_randomization_factor(0.1)
+            .with_max_elapsed_time(RECONNECT_MAX_ELAPSED)
+            .build();
 
-        let result =
-            tokio::task::spawn_blocking(move || IBKRClient::new(&host, port, client_id, None))
-                .await
-                .map_err(|e| BrokerError::Other(e.to_string()))?;
+        self.connect_with_backoff(backoff).await
+    }
 
-        match result {
-            Ok(client) => {
-                let client_arc = Arc::new(client);
-                *self.client.write().await = Some(client_arc.clone());
-                *self.state.write().await = ConnectionState::Connected;
-                info!(
-                    "Connected to TWS via yatws at {}:{}",
-                    self.config.host, self.config.port
-                );
+    async fn connect_with_backoff<B: Backoff>(&self, mut backoff: B) -> Result<(), BrokerError> {
+        loop {
+            // Create reconnect channel for this connection attempt.
+            let (reconnect_tx, mut reconnect_rx) = watch::channel(false);
+            *self.reconnect_tx.lock().unwrap() = Some(reconnect_tx);
 
-                // Create account subscription for position/order streaming.
-                let account_sub = tokio::task::spawn_blocking(move || {
-                    yatws::account_manager::AccountManager::create_account_subscription(
-                        client_arc.account(),
-                    )
-                })
+            *self.state.write().await = ConnectionState::Connecting;
+            let host = self.config.host.clone();
+            let port = self.config.port;
+            let client_id = self.config.client_id as i32;
+            info!("Connecting to TWS via yatws at {}:{}", host, port);
+
+            match tokio::task::spawn_blocking(move || IBKRClient::new(&host, port, client_id, None))
                 .await
                 .map_err(|e| BrokerError::Other(e.to_string()))?
-                .map_err(|e| {
-                    let msg = format!("failed to create account subscription: {}", e);
-                    error!("{}", msg);
-                    BrokerError::ConnectionFailed(msg)
-                })?;
+            {
+                Ok(client) => {
+                    let client_arc = Arc::new(client);
+                    *self.client.write().await = Some(client_arc.clone());
+                    *self.state.write().await = ConnectionState::Connected;
+                    info!(
+                        "Connected to TWS via yatws at {}:{}",
+                        self.config.host, self.config.port
+                    );
 
-                *self.account_sub.write().await = Some(account_sub);
+                    match tokio::task::spawn_blocking(move || {
+                        yatws::account_manager::AccountManager::create_account_subscription(
+                            client_arc.account(),
+                        )
+                    })
+                    .await
+                    .map_err(|e| BrokerError::Other(e.to_string()))?
+                    {
+                        Ok(account_sub) => {
+                            *self.account_sub.write().await = Some(account_sub);
+                            let reconnect_tx = self
+                                .reconnect_tx
+                                .lock()
+                                .unwrap()
+                                .clone()
+                                .expect("reconnect_tx was just set");
+                            self.spawn_streaming_task(reconnect_tx);
 
-                // Spawn streaming task.
-                self.spawn_streaming_task();
+                            // Wait for either shutdown or reconnect signal.
+                            // If reconnect is signaled (streaming task detected connection loss),
+                            // break and retry connection with backoff.
+                            let shutdown_rx = {
+                                let tx = self.shutdown_tx.lock().unwrap();
+                                tx.as_ref().map(|t| t.subscribe())
+                            };
 
-                Ok(())
+                            if let Some(mut shutdown_rx) = shutdown_rx {
+                                loop {
+                                    tokio::select! {
+                                        _ = shutdown_rx.changed() => {
+                                            if *shutdown_rx.borrow() {
+                                                info!("Shutdown signal received, stopping connection loop");
+                                                return Ok(());
+                                            }
+                                        }
+                                        _ = reconnect_rx.changed() => {
+                                            if *reconnect_rx.borrow() {
+                                                warn!("Reconnect signal received, restarting connection");
+                                                // Clean up before reconnecting.
+                                                self.cleanup_connection().await;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                // No shutdown receiver means disconnect was called.
+                                return Ok(());
+                            }
+                        }
+                        Err(e) => {
+                            let msg = format!("failed to create account subscription: {}", e);
+                            error!("{}", msg);
+                            *self.state.write().await = ConnectionState::Error(msg.clone());
+                            return Err(BrokerError::ConnectionFailed(msg));
+                        }
+                    }
+                }
+                Err(e) => {
+                    let msg = format!("yatws connection failed: {}", e);
+                    warn!("Connection attempt failed: {}", msg);
+
+                    if let Some(delay) = backoff.next_backoff() {
+                        *self.state.write().await = ConnectionState::Connecting;
+                        info!(
+                            "Reconnecting in {:.1}s (max: {:.1}s)",
+                            delay.as_secs_f64(),
+                            RECONNECT_MAX_INTERVAL.as_secs_f64()
+                        );
+                        tokio::time::sleep(delay).await;
+                    } else {
+                        *self.state.write().await = ConnectionState::Error(msg.clone());
+                        return Err(BrokerError::ConnectionFailed(msg));
+                    }
+                }
             }
-            Err(e) => {
-                let msg = format!("yatws connection failed: {}", e);
-                *self.state.write().await = ConnectionState::Error(msg.clone());
-                Err(BrokerError::ConnectionFailed(msg))
-            }
+            // Reset backoff on successful connection attempt (even if it fails later,
+            // we want to start from the beginning on the next manual connect).
+            backoff.reset();
         }
     }
 
     pub async fn disconnect(&self) -> Result<(), BrokerError> {
+        self.cleanup_connection().await;
+        *self.state.write().await = ConnectionState::Disconnected;
+        info!("Disconnected from TWS (yatws)");
+        Ok(())
+    }
+
+    async fn cleanup_connection(&self) {
         // Signal streaming task to shut down.
         if let Some(tx) = self.shutdown_tx.lock().unwrap().take() {
+            let _ = tx.send(true);
+        }
+
+        // Clear reconnect trigger.
+        if let Some(tx) = self.reconnect_tx.lock().unwrap().take() {
             let _ = tx.send(true);
         }
 
@@ -194,13 +289,9 @@ impl YatWSEngine {
         }
 
         self.client.write().await.take();
-        *self.state.write().await = ConnectionState::Disconnected;
-        info!("Disconnected from TWS (yatws)");
-        Ok(())
     }
 
-    /// Spawns a background task that forwards AccountEvent updates to position_tx and order_tx.
-    fn spawn_streaming_task(&self) {
+    fn spawn_streaming_task(&self, reconnect_tx: watch::Sender<bool>) {
         let account_sub = self.account_sub.clone();
         let position_tx = self.position_tx.clone();
         let order_tx = self.order_tx.clone();
@@ -270,7 +361,11 @@ impl YatWSEngine {
                             account_id,
                             timestamp: _,
                         } => {
-                            info!("Account subscription closed for account: {}", account_id);
+                            info!(
+                                "Account subscription closed for account: {}, triggering reconnect",
+                                account_id
+                            );
+                            let _ = reconnect_tx.send(true);
                             break;
                         }
                     },
