@@ -88,6 +88,52 @@ Target ISO C++20. Prefer two-space indentation, Allman braces for multi-line sco
 
 Add short `//` comments only where the trading math is non-obvious (e.g., APR scaling by the contract multiplier).
 
+## Code Patterns
+
+### derive_builder for Event/Data Structs
+
+New or refactored event, data, and snapshot structs with 5+ fields **must** use `#[derive(derive_builder::Builder)]` with field-level `#[builder(default)]` defaults. This ensures all construction sites remain valid when fields are added.
+
+```rust
+#[derive(Clone, Debug, Default, derive_builder::Builder)]
+#[builder(setter(into), default)]
+pub struct MarketDataEvent {
+    #[builder(default = "0")]
+    pub contract_id: i64,
+    #[builder(setter(into))]
+    pub symbol: String,
+    #[builder(default = "0.0")]
+    pub bid: f64,
+}
+
+// Construction: only set what matters
+MarketDataEventBuilder::default()
+    .symbol("SPY")
+    .bid(500.0)
+    .ask(502.0)
+    .build()
+```
+
+**Enforced by:** `.opencode/rules/derive-builder-pattern.md`
+
+### Shared Types in `crates/common/`
+
+Types used by **multiple backend crates** (`api`, `nats_adapter`, `broker_engine`, `market_data`, `strategy`) must live in `crates/common/`. Do **not** copy structs across crates.
+
+```
+crates/common/snapshot.rs   ← shared types (PositionSnapshot, HistoricPosition, etc.)
+crates/api/src/state.rs     ← re-exports from common + api-only types
+crates/nats_adapter/       ← imports from common (NOT api, avoids cycle)
+```
+
+**Enforced by:** `.opencode/rules/shared-types-pattern.md`
+
+### Proto Generation
+
+- Prost proto types are generated at build time via `nats_adapter/build.rs` from `proto/messages.proto`
+- `From<pb::X> for common::X` and `From<common::X> for pb::X` go in `nats_adapter/src/conversions.rs`
+- Never hand-edit generated proto stubs
+
 ## Dependencies
 
 | Dependency | Location | Purpose |

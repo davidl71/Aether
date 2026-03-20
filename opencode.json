@@ -3,7 +3,9 @@
   "instructions": [
     ".opencode/rules/exarp-go.md",
     ".opencode/rules/lint-after-generation.md",
-    ".opencode/rules/regression-sanity.md"
+    ".opencode/rules/regression-sanity.md",
+    ".opencode/rules/derive-builder-pattern.md",
+    ".opencode/rules/shared-types-pattern.md"
   ],
   "mcp": {
     "exarp-go": {
