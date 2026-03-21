@@ -39,6 +39,7 @@ pub trait BrokerEngine: Send + Sync {
 
     async fn place_bag_order(&self, request: PlaceBagOrderRequest) -> Result<i32, BrokerError>;
     async fn cancel_order(&self, order_id: i32) -> Result<(), BrokerError>;
+    async fn cancel_all_orders(&self) -> Result<(), BrokerError>;
 
     // -------------------------------------------------------------------------
     // Positions & account

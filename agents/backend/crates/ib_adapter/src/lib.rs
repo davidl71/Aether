@@ -386,6 +386,19 @@ impl IbAdapter {
         Ok(())
     }
 
+    pub async fn cancel_all_orders(&self) -> Result<(), BrokerError> {
+        if *self.state.read().await != ConnectionState::Connected {
+            return Err(BrokerError::NotConnected);
+        }
+        let arc = self.client.read().await.clone();
+        let client = arc.as_ref().ok_or(BrokerError::NotConnected)?;
+        client
+            .global_cancel()
+            .await
+            .map_err(|e: IbError| BrokerError::Other(e.to_string()))?;
+        Ok(())
+    }
+
     pub async fn request_positions(&self) -> Result<Vec<PositionEvent>, BrokerError> {
         if *self.state.read().await != ConnectionState::Connected {
             return Err(BrokerError::NotConnected);
@@ -503,6 +516,10 @@ impl BrokerEngine for IbAdapter {
 
     async fn cancel_order(&self, order_id: i32) -> Result<(), BrokerError> {
         self.cancel_order(order_id).await
+    }
+
+    async fn cancel_all_orders(&self) -> Result<(), BrokerError> {
+        self.cancel_all_orders().await
     }
 
     async fn request_positions(&self) -> Result<Vec<PositionEvent>, BrokerError> {
