@@ -260,7 +260,7 @@ fn reauth_sleep_seconds() -> f64 {
         .unwrap_or(0.5)
 }
 
-fn truncate_body(text: &str) -> String {
+pub(crate) fn truncate_body(text: &str) -> String {
     text.chars().take(200).collect()
 }
 
