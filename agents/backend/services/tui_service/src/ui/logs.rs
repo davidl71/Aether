@@ -5,13 +5,23 @@ use tui_logger::{TuiLoggerLevelOutput, TuiLoggerWidget};
 
 use crate::app::App;
 
+fn level_name(level: log::LevelFilter) -> &'static str {
+    match level {
+        log::LevelFilter::Error => "ERROR",
+        log::LevelFilter::Warn => "WARN",
+        log::LevelFilter::Info => "INFO",
+        log::LevelFilter::Debug => "DEBUG",
+        log::LevelFilter::Trace => "TRACE",
+        _ => "ALL",
+    }
+}
+
 pub fn render_logs(f: &mut Frame, app: &App, area: Rect) {
+    let lvl = level_name(app.log_display_level);
+    let title =
+        format!("Logs [{lvl}]  [+/- e/w/i/d]:level  [↑↓ PgUp/Dn]:scroll  [h]:hide  [Esc]:reset");
     let widget = TuiLoggerWidget::default()
-        .block(
-            Block::default()
-                .title("Logs  [+/-]:level  [↑↓ PgUp/Dn]:scroll  [h]:hide  [Esc]:reset")
-                .borders(Borders::ALL),
-        )
+        .block(Block::default().title(title).borders(Borders::ALL))
         .style_error(Style::default().fg(Color::Red))
         .style_warn(Style::default().fg(Color::Yellow))
         .style_info(Style::default().fg(Color::Cyan))

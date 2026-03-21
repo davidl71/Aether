@@ -92,6 +92,8 @@ pub struct App {
     pub order_filter: String,
     /// State for the tui-logger widget (scroll position, level filter).
     pub log_state: TuiWidgetState,
+    /// Current display level shown in the Logs tab title.
+    pub log_display_level: log::LevelFilter,
     pub nats_status: ConnectionStatus,
     pub should_quit: bool,
     /// Last result from strategy start/stop/cancel-all (shown in hint bar until cleared). Ok = message, Err = error.
@@ -193,6 +195,7 @@ impl App {
             roi_history: HashMap::new(),
             order_filter: String::new(),
             log_state: TuiWidgetState::default(),
+            log_display_level: log::LevelFilter::Debug,
             nats_status: ConnectionStatus::new(ConnectionState::Starting, "Connecting to NATS"),
             should_quit: false,
             last_strategy_result: None,

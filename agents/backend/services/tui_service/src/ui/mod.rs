@@ -351,7 +351,12 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
             Span::styled(" Enter ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("detail  "),
             Span::styled(" + − ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("Logs level"),
+            Span::raw("Logs level  "),
+            Span::styled(
+                " e / w / i / d ",
+                Style::default().add_modifier(Modifier::BOLD),
+            ),
+            Span::raw("jump to ERROR/WARN/INFO/DEBUG"),
         ]),
         Line::from(vec![
             Span::styled(" ← → ", Style::default().add_modifier(Modifier::BOLD)),

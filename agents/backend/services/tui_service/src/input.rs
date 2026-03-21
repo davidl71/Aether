@@ -64,6 +64,10 @@ pub enum Action {
     LogLevelDown,
     LogHide,
     LogEscape,
+    LogLevelError,
+    LogLevelWarn,
+    LogLevelInfo,
+    LogLevelDebug,
     ModeCycle,
     StrategyStart,
     StrategyStop,
@@ -214,6 +218,18 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
             Some(Action::LogHide)
         }
         KeyCode::Esc if app.active_tab == Tab::Logs => Some(Action::LogEscape),
+        KeyCode::Char('e') | KeyCode::Char('E') if app.active_tab == Tab::Logs => {
+            Some(Action::LogLevelError)
+        }
+        KeyCode::Char('w') | KeyCode::Char('W') if app.active_tab == Tab::Logs => {
+            Some(Action::LogLevelWarn)
+        }
+        KeyCode::Char('i') | KeyCode::Char('I') if app.active_tab == Tab::Logs => {
+            Some(Action::LogLevelInfo)
+        }
+        KeyCode::Char('d') | KeyCode::Char('D') if app.active_tab == Tab::Logs => {
+            Some(Action::LogLevelDebug)
+        }
 
         // Global commands
         KeyCode::Char('m') | KeyCode::Char('M') => Some(Action::ModeCycle),
@@ -571,10 +587,28 @@ pub fn apply_action(app: &mut App, action: Action) {
         Action::LogLevelUp => {
             app.log_state
                 .transition(tui_logger::TuiWidgetEvent::PlusKey);
+            app.log_display_level = match app.log_display_level {
+                log::LevelFilter::Trace => log::LevelFilter::Debug,
+                log::LevelFilter::Debug => log::LevelFilter::Info,
+                log::LevelFilter::Info => log::LevelFilter::Warn,
+                log::LevelFilter::Warn => log::LevelFilter::Error,
+                log::LevelFilter::Error => log::LevelFilter::Error,
+                _ => app.log_display_level,
+            };
+            tui_logger::set_default_level(app.log_display_level);
         }
         Action::LogLevelDown => {
             app.log_state
                 .transition(tui_logger::TuiWidgetEvent::MinusKey);
+            app.log_display_level = match app.log_display_level {
+                log::LevelFilter::Error => log::LevelFilter::Warn,
+                log::LevelFilter::Warn => log::LevelFilter::Info,
+                log::LevelFilter::Info => log::LevelFilter::Debug,
+                log::LevelFilter::Debug => log::LevelFilter::Trace,
+                log::LevelFilter::Trace => log::LevelFilter::Trace,
+                _ => app.log_display_level,
+            };
+            tui_logger::set_default_level(app.log_display_level);
         }
         Action::LogHide => {
             app.log_state
@@ -583,6 +617,22 @@ pub fn apply_action(app: &mut App, action: Action) {
         Action::LogEscape => {
             app.log_state
                 .transition(tui_logger::TuiWidgetEvent::EscapeKey);
+        }
+        Action::LogLevelError => {
+            app.log_display_level = log::LevelFilter::Error;
+            tui_logger::set_default_level(log::LevelFilter::Error);
+        }
+        Action::LogLevelWarn => {
+            app.log_display_level = log::LevelFilter::Warn;
+            tui_logger::set_default_level(log::LevelFilter::Warn);
+        }
+        Action::LogLevelInfo => {
+            app.log_display_level = log::LevelFilter::Info;
+            tui_logger::set_default_level(log::LevelFilter::Info);
+        }
+        Action::LogLevelDebug => {
+            app.log_display_level = log::LevelFilter::Debug;
+            tui_logger::set_default_level(log::LevelFilter::Debug);
         }
         Action::ModeCycle => {
             if let Some(ref tx) = app.strategy_cmd_tx {

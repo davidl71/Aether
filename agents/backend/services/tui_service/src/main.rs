@@ -138,6 +138,7 @@ async fn main() -> color_eyre::Result<()> {
     // that the Logs tab widget reads. Visible inside the TUI immediately.
     tui_logger::init_logger(log::LevelFilter::Trace).expect("tui-logger init");
     tui_logger::set_default_level(log::LevelFilter::Debug);
+    tui_logger::set_buffer_depth(10_000);
     tui_logger::set_env_filter_from_env(None); // respects RUST_LOG
 
     // Also write to a file for persistence (no ANSI so it's grep-friendly).
