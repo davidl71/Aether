@@ -378,6 +378,33 @@ async fn run_strategy_commands(
                 }
                 let _ = result_tx.send(res);
             }
+            StrategyCommand::ExecuteScenario(scenario) => {
+                let res = match NatsClient::connect(&nats_url).await {
+                    Ok(nc) => {
+                        match request_json_with_retry::<_, StrategyResponse>(
+                            &nc,
+                            "api.strategy.execute",
+                            &scenario,
+                        )
+                        .await
+                        {
+                            Ok(resp) => {
+                                if resp.ok {
+                                    Ok(resp.message.unwrap_or_else(|| "scenario executed".into()))
+                                } else {
+                                    Err(resp.error.unwrap_or_else(|| "unknown".into()))
+                                }
+                            }
+                            Err(e) => Err(e.to_string()),
+                        }
+                    }
+                    Err(e) => Err(e.to_string()),
+                };
+                if let Err(ref e) = res {
+                    error!(symbol = %scenario.symbol, error = %e, "Execute scenario failed");
+                }
+                let _ = result_tx.send(res);
+            }
         }
     }
 }

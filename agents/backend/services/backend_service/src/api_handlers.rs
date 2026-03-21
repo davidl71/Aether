@@ -55,6 +55,7 @@ const SUBJECT_FMP_QUOTE: &str = "api.fmp.quote";
 const SUBJECT_STRATEGY_START: &str = "api.strategy.start";
 const SUBJECT_STRATEGY_STOP: &str = "api.strategy.stop";
 const SUBJECT_STRATEGY_CANCEL_ALL: &str = "api.strategy.cancel_all";
+const SUBJECT_STRATEGY_EXECUTE: &str = "api.strategy.execute";
 const SUBJECT_ADMIN_SET_MODE: &str = "api.admin.set_mode";
 
 const SUBJECT_IB_POSITIONS: &str = "api.ib.positions";
@@ -175,6 +176,16 @@ async fn run_strategy_control(nc: Client, controller: StrategyController, state:
             return;
         }
     };
+    let sub_execute = match nc
+        .queue_subscribe(SUBJECT_STRATEGY_EXECUTE.to_string(), api_queue_group())
+        .await
+    {
+        Ok(s) => s,
+        Err(e) => {
+            warn!(error = %e, "subscribe api.strategy.execute failed");
+            return;
+        }
+    };
 
     let c_start = controller.clone();
     tokio::spawn(handle_sub(
@@ -209,6 +220,21 @@ async fn run_strategy_control(nc: Client, controller: StrategyController, state:
             async move { cancel_all_reply(state).await }
         },
     ));
+    tokio::spawn(handle_sub(
+        nc,
+        sub_execute,
+        move |_body: Option<Vec<u8>>| async move { execute_scenario_reply().await },
+    ));
+}
+
+/// Handles api.strategy.execute: places orders for a scenario.
+/// Currently a stub — requires broker engine to be wired into backend_service.
+async fn execute_scenario_reply() -> Vec<u8> {
+    serde_json::to_vec(&serde_json::json!({
+        "ok": false,
+        "error": "scenario execution not wired: backend_service requires Arc<dyn BrokerEngine> to place bag orders"
+    }))
+    .unwrap_or_else(|_| b"{}".to_vec())
 }
 
 /// Handles api.admin.set_mode: set snapshot.mode to LIVE, MOCK, or DRY-RUN for quick display switch.

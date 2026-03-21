@@ -239,6 +239,7 @@ pub enum StrategyCommand {
     CancelAll,
     PublishSnapshot,
     SetMode(String),
+    ExecuteScenario(api::ScenarioDto),
 }
 
 // ============================================================================

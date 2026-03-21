@@ -12,3 +12,4 @@ tokio.workspace = true
 derive_builder = { workspace = true }
 financial_symbols = { workspace = true }
 rust_decimal = { workspace = true }
+common = { path = "../common" }

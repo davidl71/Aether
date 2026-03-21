@@ -152,6 +152,23 @@ pub struct AccountInfo {
     pub initial_margin: f64,
 }
 
+impl From<&AccountInfo> for common::Metrics {
+    fn from(info: &AccountInfo) -> Self {
+        common::Metrics {
+            net_liq: info.net_liquidation,
+            buying_power: info.buying_power,
+            excess_liquidity: info.cash_balance,
+            margin_requirement: info.maintenance_margin,
+            commissions: 0.0,
+            portal_ok: false,
+            tws_ok: false,
+            tws_address: None,
+            questdb_ok: false,
+            nats_ok: false,
+        }
+    }
+}
+
 // -----------------------------------------------------------------------------
 // Market data
 // -----------------------------------------------------------------------------

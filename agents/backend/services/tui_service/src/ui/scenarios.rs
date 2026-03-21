@@ -236,7 +236,9 @@ pub fn render_scenarios(f: &mut Frame, app: &App, area: Rect) {
     .header(header)
     .block(
         Block::default()
-            .title(" Scenarios  [↑↓ scroll] [ ] DTE  [w] width  (Tbill from Yield tab) ")
+            .title(
+                " Scenarios  [↑↓ scroll] ['][\"] DTE  [o] exec  [w] width  (Tbill from Yield tab) ",
+            )
             .borders(Borders::ALL),
     );
 

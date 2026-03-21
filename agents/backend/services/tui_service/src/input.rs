@@ -49,6 +49,7 @@ pub enum Action {
     ScenariosDteContract,
     ScenariosDteExpand,
     ScenariosCycleStrikeWidth,
+    ScenariosExecute,
     SettingsScrollUp,
     SettingsScrollDown,
     SettingsAddSymbol,
@@ -67,6 +68,7 @@ pub enum Action {
     StrategyStart,
     StrategyStop,
     StrategyCancelAll,
+    OrdersCancel,
     ForceSnapshot,
     SplitPaneToggle,
     NoOp,
@@ -142,6 +144,9 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         KeyCode::PageUp if app.active_tab == Tab::Orders => Some(Action::OrdersScrollPageUp),
         KeyCode::PageDown if app.active_tab == Tab::Orders => Some(Action::OrdersScrollPageDown),
         KeyCode::Enter if app.active_tab == Tab::Orders => Some(Action::OrdersDetail),
+        KeyCode::Char('x') | KeyCode::Char('X') if app.active_tab == Tab::Orders => {
+            Some(Action::OrdersCancel)
+        }
         KeyCode::Char('/') if app.active_tab == Tab::Orders => Some(Action::OrdersFilterFocus),
         KeyCode::Esc if app.active_tab == Tab::Orders => Some(Action::OrdersFilterClear),
         KeyCode::Char(c) if app.active_tab == Tab::Orders && !c.is_control() => {
@@ -169,6 +174,9 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
             Some(Action::ScenariosScrollPageDown)
         }
         KeyCode::Enter if app.active_tab == Tab::Scenarios => Some(Action::ScenariosDetail),
+        KeyCode::Char('o') | KeyCode::Char('O') if app.active_tab == Tab::Scenarios => {
+            Some(Action::ScenariosExecute)
+        }
         KeyCode::Char('[') if app.active_tab == Tab::Scenarios => {
             Some(Action::ScenariosDteContract)
         }
@@ -385,6 +393,11 @@ pub fn apply_action(app: &mut App, action: Action) {
         Action::OrdersFilterClear => {
             app.order_filter.clear();
         }
+        Action::OrdersCancel => {
+            if let Some(ref tx) = app.strategy_cmd_tx {
+                let _ = tx.send(StrategyCommand::CancelAll);
+            }
+        }
         Action::LoansScrollUp => {
             app.loans_scroll = app.loans_scroll.saturating_sub(1);
         }
@@ -471,6 +484,15 @@ pub fn apply_action(app: &mut App, action: Action) {
         }
         Action::ScenariosDteExpand => {
             app.scenarios_dte_half_width = (app.scenarios_dte_half_width + 1).min(60);
+        }
+        Action::ScenariosExecute => {
+            let filtered = crate::ui::filtered_scenarios(app);
+            let idx = app.scenarios_scroll.min(filtered.len().saturating_sub(1));
+            if let Some(scenario) = filtered.get(idx) {
+                if let Some(ref tx) = app.strategy_cmd_tx {
+                    let _ = tx.send(StrategyCommand::ExecuteScenario(scenario.clone()));
+                }
+            }
         }
         Action::ScenariosCycleStrikeWidth => {
             app.scenarios_strike_width_filter = match app.scenarios_strike_width_filter {
