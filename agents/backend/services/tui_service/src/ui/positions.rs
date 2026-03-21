@@ -1,6 +1,6 @@
 //! Positions tab: table with combo/flat view and scroll.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use api::RuntimePositionDto;
 use ratatui::{
@@ -12,21 +12,90 @@ use ratatui::{
 
 use crate::app::App;
 
-/// Display row count and index maps for positions (flat or combo grouped).
-/// Returns (display_len, row_index -> Option<position_index>, row_index -> Option<combo_key>).
+fn symbol_stem(symbol: &str) -> &str {
+    symbol.split_whitespace().next().unwrap_or(symbol)
+}
+
+fn make_combo_key(pos: &RuntimePositionDto) -> (String, String, String) {
+    let stem = symbol_stem(&pos.symbol).to_string();
+    let account = pos.account_id.clone().unwrap_or_default();
+    let strategy = pos.strategy.clone().unwrap_or_default();
+    (account, strategy, stem)
+}
+
+#[derive(Debug)]
+pub struct ComboGroup {
+    pub key: (String, String, String),
+    pub position_indices: Vec<usize>,
+    pub total_quantity: i32,
+    pub total_pnl: f64,
+}
+
+fn build_combo_groups(positions: &[RuntimePositionDto]) -> Vec<ComboGroup> {
+    let mut groups: HashMap<(String, String, String), Vec<usize>> = HashMap::new();
+    for (i, pos) in positions.iter().enumerate() {
+        let key = make_combo_key(pos);
+        groups.entry(key).or_default().push(i);
+    }
+    groups
+        .into_iter()
+        .map(|((account, strategy, stem), position_indices)| {
+            let total_quantity: i32 = position_indices
+                .iter()
+                .map(|&i| positions[i].quantity)
+                .sum();
+            let total_pnl: f64 = position_indices
+                .iter()
+                .map(|&i| positions[i].unrealized_pnl)
+                .sum();
+            let key = (account, strategy, stem);
+            ComboGroup {
+                key,
+                position_indices,
+                total_quantity,
+                total_pnl,
+            }
+        })
+        .collect()
+}
+
 pub fn positions_display_info(
     positions: &[RuntimePositionDto],
-    _combo_view: bool,
-    _expanded: &HashSet<(String, String, String)>,
+    combo_view: bool,
+    expanded: &HashSet<(String, String, String)>,
 ) -> (
     usize,
     Vec<Option<usize>>,
     Vec<Option<(String, String, String)>>,
 ) {
-    let len = positions.len();
-    let index_map: Vec<Option<usize>> = (0..len).map(Some).collect();
-    let combo_key_per_row = vec![None; len];
-    (len, index_map, combo_key_per_row)
+    if !combo_view || positions.is_empty() {
+        let len = positions.len();
+        let index_map: Vec<Option<usize>> = (0..len).map(Some).collect();
+        let combo_key_per_row = vec![None; len];
+        return (len, index_map, combo_key_per_row);
+    }
+
+    let groups = build_combo_groups(positions);
+    let mut display_len = 0;
+    let mut index_map: Vec<Option<usize>> = Vec::new();
+    let mut combo_key_per_row: Vec<Option<(String, String, String)>> = Vec::new();
+
+    for group in &groups {
+        let is_expanded = expanded.contains(&group.key);
+        display_len += 1;
+        combo_key_per_row.push(Some(group.key.clone()));
+        index_map.push(None);
+
+        if is_expanded {
+            for &pos_idx in &group.position_indices {
+                display_len += 1;
+                index_map.push(Some(pos_idx));
+                combo_key_per_row.push(None);
+            }
+        }
+    }
+
+    (display_len, index_map, combo_key_per_row)
 }
 
 /// Label for position type (e.g. option, equity).
@@ -47,30 +116,99 @@ pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
 
     let (header, rows) = if let Some(ref snap) = app.snapshot {
         let positions = &snap.dto().positions;
+        let (_, index_map, combo_key_per_row) = positions_display_info(
+            positions,
+            app.positions_combo_view,
+            &app.positions_expanded_combos,
+        );
+
         let header = Row::new([
-            Cell::from("ID").style(Style::default().add_modifier(Modifier::BOLD)),
             Cell::from("Symbol").style(Style::default().add_modifier(Modifier::BOLD)),
             Cell::from("Qty").style(Style::default().add_modifier(Modifier::BOLD)),
+            Cell::from("Cost").style(Style::default().add_modifier(Modifier::BOLD)),
             Cell::from("Mark").style(Style::default().add_modifier(Modifier::BOLD)),
             Cell::from("P&L").style(Style::default().add_modifier(Modifier::BOLD)),
+            Cell::from("Strat").style(Style::default().add_modifier(Modifier::BOLD)),
         ]);
-        let rows: Vec<Row> = positions
+
+        let table_rows: Vec<Row> = index_map
             .iter()
-            .map(|p| {
-                Row::new([
-                    Cell::from(p.id.clone()),
-                    Cell::from(p.symbol.clone()),
-                    Cell::from(p.quantity.to_string()),
-                    Cell::from(format!("{:.2}", p.mark)),
-                    Cell::from(format!("{:+.2}", p.unrealized_pnl)),
-                ])
+            .enumerate()
+            .map(|(row_idx, pos_idx)| {
+                if let Some(Some(combo_key)) = combo_key_per_row.get(row_idx) {
+                    let groups = build_combo_groups(positions);
+                    let group = groups.iter().find(|g| &g.key == combo_key);
+                    let (sym, qty, cost, mark, pnl, strat) = if let Some(g) = group {
+                        let stem = &combo_key.2;
+                        let total_cost: f64 = g
+                            .position_indices
+                            .iter()
+                            .map(|&i| positions[i].cost_basis)
+                            .sum();
+                        let avg_cost = if g.total_quantity != 0 {
+                            total_cost / g.total_quantity.abs() as f64
+                        } else {
+                            0.0
+                        };
+                        let total_mark: f64 = g
+                            .position_indices
+                            .iter()
+                            .map(|&i| positions[i].mark * positions[i].quantity as f64)
+                            .sum();
+                        (
+                            format!(
+                                "{} [{}]",
+                                stem,
+                                if app.positions_expanded_combos.contains(combo_key) {
+                                    '-'
+                                } else {
+                                    '+'
+                                }
+                            ),
+                            g.total_quantity.to_string(),
+                            format!("{:.2}", avg_cost),
+                            format!("{:.2}", total_mark / g.total_quantity.abs() as f64),
+                            format!("{:+.2}", g.total_pnl),
+                            combo_key.1.clone(),
+                        )
+                    } else {
+                        (
+                            "—".into(),
+                            "0".into(),
+                            "—".into(),
+                            "—".into(),
+                            "—".into(),
+                            "—".into(),
+                        )
+                    };
+                    Row::new([
+                        Cell::from(sym).style(Style::default().add_modifier(Modifier::BOLD)),
+                        Cell::from(qty).style(Style::default().add_modifier(Modifier::BOLD)),
+                        Cell::from(cost).style(Style::default().add_modifier(Modifier::BOLD)),
+                        Cell::from(mark).style(Style::default().add_modifier(Modifier::BOLD)),
+                        Cell::from(pnl).style(Style::default().add_modifier(Modifier::BOLD)),
+                        Cell::from(strat).style(Style::default().add_modifier(Modifier::BOLD)),
+                    ])
+                } else if let Some(idx) = *pos_idx {
+                    let pos = &positions[idx];
+                    Row::new([
+                        Cell::from(format!("  {}", pos.symbol)),
+                        Cell::from(pos.quantity.to_string()),
+                        Cell::from(format!("{:.2}", pos.cost_basis)),
+                        Cell::from(format!("{:.2}", pos.mark)),
+                        Cell::from(format!("{:+.2}", pos.unrealized_pnl)),
+                        Cell::from(pos.strategy.clone().unwrap_or_else(|| "—".into())),
+                    ])
+                } else {
+                    Row::new(vec![Cell::from(""); 6])
+                }
             })
             .collect();
-        (header, rows)
+        (header, table_rows)
     } else {
-        let header = Row::new(["ID", "Symbol", "Qty", "Mark", "P&L"])
+        let header = Row::new(["Symbol", "Qty", "Cost", "Mark", "P&L", "Strat"])
             .style(Style::default().add_modifier(Modifier::BOLD));
-        let rows = vec![Row::new(["Waiting for snapshot…", "", "", "", ""])];
+        let rows = vec![Row::new(["Waiting for snapshot…", "", "", "", "", ""])];
         (header, rows)
     };
 
@@ -85,11 +223,12 @@ pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
     let table = Table::new(
         window,
         [
-            Constraint::Length(12),
-            Constraint::Length(10),
-            Constraint::Length(6),
-            Constraint::Length(10),
-            Constraint::Length(10),
+            Constraint::Length(18),
+            Constraint::Length(5),
+            Constraint::Length(7),
+            Constraint::Length(7),
+            Constraint::Length(8),
+            Constraint::Length(8),
         ],
     )
     .header(header);
