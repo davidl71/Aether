@@ -17,23 +17,23 @@ The Rust broker layer implements the `BrokerEngine` async trait, providing a bro
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    Application Layer (backend_service, tui_service)      │
-│         Uses BrokerEngine trait + channels                             │
+│         Uses BrokerEngine trait + OptionChainProvider trait             │
 └───────────────────────────────┬───────────────────────────────────────┘
-                                │
-┌──────────────────────────────▼───────────────────────────────────────┐
-│              BrokerEngine trait (async)                                  │
-│  Traits: Connect, Market Data, Options Chain, Orders, Positions         │
-│  Crate: broker_engine/src/traits.rs                                    │
-└───────────────────────────────┬───────────────────────────────────────┘
-                                │
+                                 │
+        ┌───────────────────────▼───────────────────────────┐
+        │           BrokerEngine trait (async)                  │
+        │  Traits: Connect, Market Data, Options Chain, Orders  │
+        │  Crate: broker_engine/src/traits.rs                 │
+        └───────────────────────┬─────────────────────────────┘
+                                 │
         ┌───────────────────────┼───────────────────────┐
         │                       │                       │
 ┌───────▼────────┐   ┌────────▼───────┐   ┌─────────▼────────┐
-│   IbAdapter     │   │  YatWSEngine   │   │ client_portal_   │
+│   IbAdapter     │   │  YatWSEngine   │   │ client_portal_    │
 │  (ibapi TWS)   │   │ (yatws TWS)    │   │ options (REST)   │
-│                 │   │                │   │                   │
-│  ib_adapter/    │   │ yatws_adapter/ │   │ api/              │
-│  impl BrokerEng │   │ impl BrokerEng  │   │ NOT a BrokerEng  │
+│                 │   │                │   │                  │
+│ impl BrokerEng  │   │ impl BrokerEng  │   │ impl OptionChain │
+│ impl OptChain   │   │ impl OptChain  │   │   (todo)        │
 └─────────────────┘   └────────────────┘   └───────────────────┘
 
 Event channels (mpsc) flow back from all adapters into:
@@ -119,15 +119,30 @@ Uses `yatws` crate (v0.1.7) for TWS socket communication via `IBKRClient`.
 
 ---
 
-## Option Chain Resolution — Three Approaches
+## Option Chain Resolution — Two Interfaces
+
+There are two interfaces for option chains:
+
+### 1. `BrokerEngine::request_option_chain` — lightweight, market-data use cases
+
+| Adapter | Transport | Return Type | API Call |
+|---------|-----------|-------------|----------|
+| `IbAdapter` | TWS socket | `Vec<OptionContract>` (con_id = `None`) | `ibapi::Client::option_chain()` — single call |
+| `YatWSEngine` | TWS socket | `Vec<OptionContract>` (con_id = `None`) | `DataRefManager::get_option_chain_params()` — single call |
+
+Suitable for: yield curve, strike analysis, market data, Greeks.
+
+### 2. `OptionChainProvider::resolve_option_chain` — full metadata, order-placement use cases
 
 | Adapter | Transport | Return Type | Resolution Flow |
-|---------|----------|-------------|----------------|
-| `IbAdapter` | TWS socket | `Vec<OptionContract>` | Single ibapi call |
-| `YatWSEngine` | TWS socket | `Vec<OptionContract>` | Single `reqSecDefOptParams` call |
-| `client_portal_options` | REST | `SearchResult + StrikesResult + ContractInfo` | 3-step REST flow |
+|---------|-----------|-------------|-----------------|
+| `IbAdapter` | TWS socket | `Vec<ResolvedOptionContract>` | `option_chain()` + N × `contract_details()` (parallel) |
+| `YatWSEngine` | TWS socket | `Vec<ResolvedOptionContract>` | `get_option_chain_params()` + N × `get_contract_details()` (sequential) |
+| `client_portal_options` | REST | — | Not yet implemented via trait |
 
-**Problem**: No unified `OptionChain` type. `OptionContract` (broker_engine) is the thinnest common denominator but is missing `con_id` (always `None`), `exchange`, and `multiplier`.
+`ResolvedOptionContract` includes: `con_id`, `exchange`, `multiplier`, `trading_class` — everything needed for order placement.
+
+**Limitation:** `client_portal_options` (REST) does not yet implement `OptionChainProvider`. The 3-step REST flow can return `con_id` via `/info`, but `/exchange` and `/multiplier` are not in the response. A separate contract-details call would be needed for full resolution.
 
 ---
 
@@ -296,17 +311,17 @@ ib_portal_url: "https://localhost:5001"  # Empty = use TWS socket
 
 ## Known Gaps
 
-| Gap | Severity | Task |
-|-----|----------|------|
-| `backend_service` bypasses `BrokerEngine` for positions | High | T-1774099624024314000 (add account_id) |
-| `From<IbPositionDto> for PositionSnapshot` missing | High | T-1774099649464475000 |
-| `cancel_all_orders` not wired to NATS handler | High | T-1774099603122156000 |
-| `BrokerCapabilities` not in trait | Medium | New task needed |
-| `BrokerError` taxonomy is flat | Medium | New task needed |
-| `BrokerWithFallback` not implemented | Medium | New task needed |
-| `OptionChainProvider` trait for unified option chain | Medium | T-1774099701033026000 |
-| `account_id` missing from `broker_engine::domain::Position` | High | T-1774099624024314000 |
-| `tws_positions.rs` sets non-existent fields on `PositionSnapshot` | High | Bug — needs fix |
+| Gap | Severity | Status |
+|-----|----------|--------|
+| `OptionChainProvider` trait for unified option chain | Medium | ✅ Impl added — impl for IbAdapter, YatWSEngine; client_portal REST todo |
+| `BrokerCapabilities` not in trait | Medium | Not started |
+| `BrokerError` taxonomy is flat | Medium | Not started |
+| `BrokerWithFallback` not implemented | Medium | Not started |
+| `client_portal_options` implements `OptionChainProvider` | Medium | Not started |
+| TUI Enter/'o' for scenario execution | Medium | Not started |
+| TUI 'x' to cancel selected order | Medium | Not started |
+| `backend_service` bypasses `BrokerEngine` for positions | High | Not started |
+| `From<AccountInfo> for Metrics` in common crate | Low | Not started |
 
 ---
 

@@ -26,12 +26,15 @@ use tracing::{debug, info};
 pub use broker_engine::construct_box_spread_order;
 pub use broker_engine::domain::{
     BagOrderLeg, BrokerConfig, MarketDataEvent, OptionContract, OrderAction, OrderStatus,
-    OrderStatusEvent, PlaceBagOrderRequest, Position, PositionEvent, TimeInForce,
+    OrderStatusEvent, PlaceBagOrderRequest, Position, PositionEvent, ResolvedOptionContract,
+    TimeInForce,
 };
 pub use broker_engine::AccountInfo;
+pub use broker_engine::BrokerEngine;
 pub use broker_engine::BrokerError;
 pub use broker_engine::ConnectionState;
 pub use broker_engine::MarketData;
+pub use broker_engine::OptionChainProvider;
 
 pub use broker_engine::BrokerEngine;
 
@@ -58,6 +61,68 @@ fn exchange_for_option(symbol: &str) -> &'static str {
     } else {
         "SMART"
     }
+}
+
+/// Resolve one option leg to its full IBKR contract details via `reqContractDetails`.
+///
+/// Returns `Err(BrokerError::ContractError)` if TWS returns no results or conId 0.
+/// Logs the resolved conId at DEBUG level.
+async fn resolve_contract_details(
+    client: &Arc<IbClient>,
+    leg: &OptionContract,
+) -> Result<Vec<ibapi::contracts::ContractDetails>, BrokerError> {
+    use common::expiry::parse_expiry_yyyy_mm_dd;
+
+    let (y, m, d) = parse_expiry_yyyy_mm_dd(&leg.expiry).map_err(BrokerError::Other)?;
+    let exchange = exchange_for_option(&leg.symbol);
+
+    let ib_contract = if leg.is_call {
+        Contract::call(&leg.symbol)
+            .strike(leg.strike)
+            .expires_on(y, m, d)
+            .on_exchange(exchange)
+            .build()
+    } else {
+        Contract::put(&leg.symbol)
+            .strike(leg.strike)
+            .expires_on(y, m, d)
+            .on_exchange(exchange)
+            .build()
+    };
+
+    let details = client
+        .contract_details(&ib_contract)
+        .await
+        .map_err(|e: IbError| {
+            BrokerError::ContractError(format!(
+                "contract_details failed for {} {} {:.0} {}: {}",
+                leg.symbol,
+                leg.expiry,
+                leg.strike,
+                if leg.is_call { "C" } else { "P" },
+                e
+            ))
+        })?;
+
+    if details.is_empty() {
+        return Err(BrokerError::ContractError(format!(
+            "no contract details returned for {} {} {:.0} {}",
+            leg.symbol,
+            leg.expiry,
+            leg.strike,
+            if leg.is_call { "C" } else { "P" },
+        )));
+    }
+
+    debug!(
+        symbol = %leg.symbol,
+        expiry = %leg.expiry,
+        strike = leg.strike,
+        is_call = leg.is_call,
+        con_id = details[0].contract.contract_id,
+        "resolved option contract details via contract_details"
+    );
+    Ok(details)
 }
 
 /// Resolve one option leg to its IBKR conId via `reqContractDetails`.
@@ -540,6 +605,58 @@ impl BrokerEngine for IbAdapter {
 
     fn order_tx(&self) -> mpsc::Sender<OrderStatusEvent> {
         self.order_tx.clone()
+    }
+}
+
+#[async_trait]
+impl OptionChainProvider for IbAdapter {
+    async fn resolve_option_chain(&self, symbol: &str) -> Result<Vec<ResolvedOptionContract>, BrokerError> {
+        if *self.state.read().await != ConnectionState::Connected {
+            return Err(BrokerError::NotConnected);
+        }
+        let client = self
+            .client
+            .read()
+            .await
+            .clone()
+            .ok_or(BrokerError::NotConnected)?;
+
+        let legs = self.request_option_chain(symbol).await?;
+
+        if legs.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let client = client.clone();
+        let resolve_fut = async {
+            try_join_all(legs.iter().map(|leg| {
+                let client = client.clone();
+                let leg = leg.clone();
+                async move {
+                    let details = resolve_contract_details(&client, &leg).await?;
+                    let detail = details.into_iter().next().ok_or_else(|| {
+                        BrokerError::ContractError(format!(
+                            "no contract details for {} {} {:.0} {}",
+                            leg.symbol, leg.expiry, leg.strike,
+                            if leg.is_call { "C" } else { "P" }
+                        ))
+                    })?;
+                    Ok::<ResolvedOptionContract, BrokerError>(ResolvedOptionContract {
+                        symbol: leg.symbol,
+                        expiry: leg.expiry,
+                        strike: leg.strike,
+                        is_call: leg.is_call,
+                        con_id: detail.contract.contract_id,
+                        exchange: detail.contract.exchange.unwrap_or_default(),
+                        multiplier: detail.contract.multiplier.unwrap_or(100.0),
+                        trading_class: detail.trading_class.unwrap_or_default(),
+                    })
+                }
+            }))
+            .await
+        };
+
+        resolve_fut.await
     }
 }
 

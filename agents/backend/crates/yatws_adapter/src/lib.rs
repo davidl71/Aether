@@ -38,13 +38,15 @@ use yatws::{IBKRClient, IBKRError, OptionsStrategyBuilder};
 
 pub use broker_engine::domain::{
     BagOrderLeg, BrokerConfig, MarketDataEvent, OptionContract, OrderAction, OrderStatus,
-    OrderStatusEvent, PlaceBagOrderRequest, Position, PositionEvent, QuoteQuality, TimeInForce,
+    OrderStatusEvent, PlaceBagOrderRequest, Position, PositionEvent, QuoteQuality,
+    ResolvedOptionContract, TimeInForce,
 };
 pub use broker_engine::AccountInfo;
 pub use broker_engine::BrokerEngine;
 pub use broker_engine::BrokerError;
 pub use broker_engine::ConnectionState;
 pub use broker_engine::MarketData;
+pub use broker_engine::OptionChainProvider;
 
 // ---------------------------------------------------------------------------
 // Helper utilities
@@ -798,6 +800,98 @@ impl BrokerEngine for YatWSEngine {
 
     fn order_tx(&self) -> mpsc::Sender<OrderStatusEvent> {
         self.order_tx.clone()
+    }
+}
+
+#[async_trait]
+impl OptionChainProvider for YatWSEngine {
+    async fn resolve_option_chain(&self, symbol: &str) -> Result<Vec<ResolvedOptionContract>, BrokerError> {
+        if *self.state.read().await != ConnectionState::Connected {
+            return Err(BrokerError::NotConnected);
+        }
+        let client = self
+            .client
+            .read()
+            .await
+            .clone()
+            .ok_or(BrokerError::NotConnected)?;
+
+        let sym_owned = symbol.to_string();
+        let sec_type = sec_type_for(&sym_owned);
+
+        let chains = tokio::task::spawn_blocking(move || {
+            client
+                .data_ref()
+                .get_option_chain_params(&sym_owned, "", sec_type, 0)
+                .map_err(map_ibkr_error)
+        })
+        .await
+        .map_err(|e| BrokerError::Other(e.to_string()))??;
+
+        let mut out = Vec::new();
+        for chain in &chains {
+            for exp in &chain.expirations {
+                for &strike in &chain.strikes {
+                    let expiry_date = parse_expiry_to_naive_date(exp)?;
+                    let is_call = true;
+                    let contract = Contract::option(&sym_owned, expiry_date, strike, is_call)
+                        .map_err(|e: IBKRError| BrokerError::Other(e.to_string()))?;
+
+                    let details = tokio::task::spawn_blocking({
+                        let client = client.clone();
+                        move || {
+                            client
+                                .data_ref()
+                                .get_contract_details(&contract)
+                                .map_err(map_ibkr_error)
+                        }
+                    })
+                    .await
+                    .map_err(|e| BrokerError::Other(e.to_string()))??;
+
+                    if let Some(detail) = details.into_iter().next() {
+                        out.push(ResolvedOptionContract {
+                            symbol: sym_owned.clone(),
+                            expiry: exp.clone(),
+                            strike,
+                            is_call: true,
+                            con_id: detail.contract.contract_id,
+                            exchange: detail.contract.exchange.unwrap_or_default(),
+                            multiplier: detail.contract.multiplier.unwrap_or(100.0),
+                            trading_class: detail.trading_class.unwrap_or_default(),
+                        });
+                    }
+
+                    let contract_put = Contract::option(&sym_owned, expiry_date, strike, false)
+                        .map_err(|e: IBKRError| BrokerError::Other(e.to_string()))?;
+                    let details_put = tokio::task::spawn_blocking({
+                        let client = client.clone();
+                        move || {
+                            client
+                                .data_ref()
+                                .get_contract_details(&contract_put)
+                                .map_err(map_ibkr_error)
+                        }
+                    })
+                    .await
+                    .map_err(|e| BrokerError::Other(e.to_string()))??;
+
+                    if let Some(detail) = details_put.into_iter().next() {
+                        out.push(ResolvedOptionContract {
+                            symbol: sym_owned.clone(),
+                            expiry: exp.clone(),
+                            strike,
+                            is_call: false,
+                            con_id: detail.contract.contract_id,
+                            exchange: detail.contract.exchange.unwrap_or_default(),
+                            multiplier: detail.contract.multiplier.unwrap_or(100.0),
+                            trading_class: detail.trading_class.unwrap_or_default(),
+                        });
+                    }
+                }
+            }
+        }
+        Ok(out)
     }
 }
 

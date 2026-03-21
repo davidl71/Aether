@@ -1,11 +1,26 @@
 //! [`BrokerEngine`] trait — async interface for broker operations.
+//!
+//! ## Option Chain Resolution
+//!
+//! There are two interfaces for option chains:
+//!
+//! - **[`BrokerEngine::request_option_chain`](BrokerEngine::request_option_chain)** — returns
+//!   `Vec<OptionContract>` with `con_id = None`. Lightweight, single API call. Suitable for
+//!   market data, yield curve, and strike analysis.
+//!
+//! - **[`OptionChainProvider`]** — returns `Vec<ResolvedOptionContract>` with `con_id`,
+//!   `exchange`, `multiplier`, and `trading_class` fully resolved. More expensive (may require
+//!   multiple API calls per contract) but necessary for order placement.
+//!
+//! Callers should use `request_option_chain` when only market data is needed, and
+//! `OptionChainProvider::resolve_option_chain` when placing orders or needing contract IDs.
 
 use async_trait::async_trait;
 use tokio::sync::mpsc;
 
 use crate::domain::{
     AccountInfo, BrokerError, ConnectionState, MarketDataEvent, OptionContract, OrderAction,
-    PlaceBagOrderRequest, PositionEvent,
+    PlaceBagOrderRequest, PositionEvent, ResolvedOptionContract,
 };
 
 #[async_trait]
@@ -55,4 +70,25 @@ pub trait BrokerEngine: Send + Sync {
     fn market_data_tx(&self) -> mpsc::Sender<MarketDataEvent>;
     fn position_tx(&self) -> mpsc::Sender<PositionEvent>;
     fn order_tx(&self) -> mpsc::Sender<crate::domain::OrderStatusEvent>;
+}
+
+// -----------------------------------------------------------------------------
+// Option chain resolution
+// -----------------------------------------------------------------------------
+
+/// Unified interface for option chain resolution with full contract metadata.
+///
+/// Unlike [`BrokerEngine::request_option_chain`] which returns lightweight
+/// [`OptionContract`] (con_id always `None`), this trait resolves all metadata
+/// needed for order placement: conId, exchange, multiplier, trading_class.
+///
+/// Implementors:
+/// - [`IbAdapter`](crate::ib_adapter::IbAdapter) — TWS socket via ibapi
+/// - [`YatWSEngine`](crate::yatws_adapter::YatWSEngine) — TWS socket via yatws
+/// - [`client_portal_options`](crate::api::client_portal_options) — REST (IB Gateway)
+///
+/// Each implementation uses a different API path but presents a single unified interface.
+#[async_trait]
+pub trait OptionChainProvider: Send + Sync {
+    async fn resolve_option_chain(&self, symbol: &str) -> Result<Vec<ResolvedOptionContract>, BrokerError>;
 }

@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use strategy::model::{Decision as StrategyDecisionModel, TradeSide};
 
 use crate::finance_rates::BenchmarksResponse;
+use crate::ib_positions::IbPositionDto;
 use crate::state::{
     Alert, CandleSnapshot, HistoricPosition, Metrics, OrderSnapshot, PositionSnapshot, RiskStatus,
     StrategyDecisionSnapshot, SymbolSnapshot, SystemSnapshot,
@@ -775,6 +776,31 @@ pub struct RuntimePositionDto {
     pub account_id: Option<String>,
     pub apr_pct: Option<f64>,
     pub source: Option<String>,
+}
+
+impl From<&IbPositionDto> for RuntimePositionDto {
+    fn from(value: &IbPositionDto) -> Self {
+        let id = value
+            .conid
+            .map(|c| format!("ib-{}", c))
+            .unwrap_or_else(|| format!("ib-{}", value.symbol));
+        Self {
+            id,
+            symbol: value.symbol.clone(),
+            position_type: None,
+            strategy: None,
+            quantity: value.quantity as i32,
+            cost_basis: value.avg_price,
+            mark: value.current_price.unwrap_or(value.avg_price),
+            unrealized_pnl: value.unrealized_pl.unwrap_or(0.0),
+            market_value: value
+                .market_value
+                .unwrap_or(value.avg_price * value.quantity),
+            account_id: value.account_id.clone(),
+            apr_pct: None,
+            source: Some("IB".to_string()),
+        }
+    }
 }
 
 impl From<&PositionSnapshot> for RuntimePositionDto {

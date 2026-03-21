@@ -23,6 +23,37 @@ pub struct OptionContract {
     pub con_id: Option<i32>,
 }
 
+/// Option contract with fully resolved IBKR metadata (conId, exchange, multiplier).
+/// Produced by [`OptionChainProvider::resolve_option_chain`].
+///
+/// Use this when placing orders or when exchange/multiplier are needed.
+/// For market-data-only use cases (e.g. yield curve), the lighter
+/// [`OptionContract`] returned by [`super::BrokerEngine::request_option_chain`]
+/// is sufficient.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResolvedOptionContract {
+    pub symbol: String,
+    pub expiry: String,
+    pub strike: f64,
+    pub is_call: bool,
+    pub con_id: i32,
+    pub exchange: String,
+    pub multiplier: f64,
+    pub trading_class: String,
+}
+
+impl ResolvedOptionContract {
+    pub fn into_option_contract(self) -> OptionContract {
+        OptionContract {
+            symbol: self.symbol,
+            expiry: self.expiry,
+            strike: self.strike,
+            is_call: self.is_call,
+            con_id: Some(self.con_id),
+        }
+    }
+}
+
 impl OptionContract {
     pub fn new(symbol: &str, expiry: &str, strike: f64, is_call: bool) -> Self {
         Self {

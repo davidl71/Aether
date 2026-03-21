@@ -16,4 +16,4 @@ pub mod traits;
 
 pub use domain::*;
 pub use error::BrokerError;
-pub use traits::BrokerEngine;
+pub use traits::{BrokerEngine, OptionChainProvider};
