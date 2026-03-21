@@ -6,7 +6,7 @@ This repository is **Rust-first**; C++ native build has been removed and no C++ 
 
 | Language | Directories | Build | Test | Lint |
 |----------|-------------|--------|------|------|
-| **Rust** | `agents/backend/` (crates: api, ib_adapter, ledger, market_data, nats_adapter, quant, risk, strategy, discount_bank_parser; services: backend_service, tui_service; bin: cli) | `cargo build` in `agents/backend/` | `cargo test` in `agents/backend/` | `cargo clippy` |
+| **Rust** | `agents/backend/` (crates: api, broker_engine, common, ib_adapter, ledger, market_data, nats_adapter, quant, risk, strategy, discount_bank_parser, tws_yield_curve, yatws_adapter; services: backend_service, tui_service, tws_yield_curve_daemon; bin: cli) | `cargo build` in `agents/backend/` | `cargo test` in `agents/backend/` | `cargo clippy` |
 | **Python** | `scripts/` (utilities only) | — (interpreted) | — | `uv run ruff check scripts/` |
 | **TypeScript / React** | `web/` (archived, not active runtime) | Historical only | Historical only | Historical only |
 | **C++** | `native/` removed from build | — | — | — |
@@ -30,7 +30,10 @@ See **ARCHITECTURE.md** and **AGENTS.md** for full ownership tables.
 | Crate | Purpose |
 |-------|---------|
 | **api** | REST routes, snapshot, frontend read models, health |
-| **ib_adapter** | IBKR/TWS adapter (broker connectivity) |
+| **broker_engine** | Broker trait (`BrokerEngine`) + domain types; abstraction layer |
+| **common** | Shared snapshot/event types across crates (PositionSnapshot, OrderSnapshot, etc.) |
+| **ib_adapter** | IBKR/TWS adapter (implements `BrokerEngine` via `ibapi`) |
+| **yatws_adapter** | yatws TWS adapter (implements `BrokerEngine` via `yatws`) |
 | **ledger** | Durable ledger state |
 | **market_data** | Market data read path |
 | **nats_adapter** | NATS protobuf and messaging |
@@ -38,8 +41,10 @@ See **ARCHITECTURE.md** and **AGENTS.md** for full ownership tables.
 | **risk** | Risk calculations |
 | **strategy** | Strategy logic |
 | **discount_bank_parser** | Bank statement / reconciliation |
+| **tws_yield_curve** | TWS SOFR/treasury yield curve fetcher |
 | **backend_service** | Binary: REST+WS API, NATS collector, LIVE_STATE, QuestDB |
 | **tui_service** | Binary: Ratatui TUI |
+| **tws_yield_curve_daemon** | Binary: TWS yield curve background fetcher |
 | **cli** | Binary: CLI entry point |
 
 ## Build status

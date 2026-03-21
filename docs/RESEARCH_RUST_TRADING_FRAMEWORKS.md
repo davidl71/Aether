@@ -267,8 +267,8 @@ Critical discovery from TWS API docs:
 - `exerciseOptions` — exercise/assign
 - `reqScannerSubscription` with `Instrument:"NATCOMB"` — combo opportunity discovery
 
-### Root issue in our `ib_adapter`:
-`OptionContract` has no `con_id` field. `place_bag_order` tries to use `leg.con_id` but it doesn't exist. The `conId` must be resolved via `reqContractDetails` first, then stored on the leg. This is a **fundamental data flow gap**.
+### Root issue resolved (2026-03-21):
+`OptionContract` has `con_id: Option<i32>` (in `broker_engine::domain`). `place_bag_order` accesses it via `leg.contract.con_id` — the field exists and is correctly nested. ConId resolution is handled by `resolve_contract_details()` in `IbAdapter` and by `OptionsStrategyBuilder` in `yatws_adapter`.
 
 ### ProtoBuf Configuration (TWSAPI v10.35.01+)
 IBKR migrated to Google Protocol Buffers. Key `ApiSettingsConfig` fields:

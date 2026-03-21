@@ -1,7 +1,7 @@
 # broker_engine Architecture
 
-**Date**: 2026-03-19
-**Status**: ✅ Steps 1–3 complete. See §6 for remaining steps.
+**Date**: 2026-03-21
+**Status**: ✅ Steps 1–4, 6 complete. See §6 for current state.
 **Owner**: backend / ib_adapter team
 **Related tasks**: T-1773949780944708000, T-1773949802510897000, T-1773949816501720000, T-1773949859122015000, T-1773949896022157000, T-1773949903377577000
 
@@ -13,20 +13,20 @@
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                 backend_service                      │
-│   tws_market_data.rs  │  tws_positions.rs  │  ...   │
-└──────────────────────┼───────────────────┼─────────┘
-                       │ uses               │
-                       ▼                   
-              ┌─────────────────────┐      
+│              backend_service                         │
+│  (no direct ibapi/yatws imports — uses BrokerEngine)│
+└──────────────────────┬────────────────────────────┘
+                       │ uses
+                       ▼
+              ┌─────────────────────┐
               │   BrokerEngine      │  ← trait (broker_engine)
-              │   trait + domain    │      
-              └──────────┬──────────┘      
-          implements     │  implements        
-         ┌───────────────┤───────────────┐
+              │   trait + domain    │
+              └──────────┬──────────┘
+          implements     │  implements
+         ┌───────────────┼───────────────┐
          ▼               ▼               ▼
    ┌──────────┐   ┌───────────┐   ┌──────────┐
-   │IbApiEngine│   │YatwsEngine│   │MockEngine │
+   │ IbAdapter │   │YatWSEngine│   │MockEngine │
    │(ib_adapter)│  │(yatws_    │   │(tests)    │
    │ ibapi dep │   │ adapter)  │   │ no deps   │
    └──────────┘   └───────────┘   └──────────┘
@@ -36,14 +36,15 @@
 
 ## 2. Motivation
 
-**Problem**: `backend_service` imports `ibapi` directly in `tws_market_data.rs` and `tws_positions.rs`. Any alternative broker (yatws, mock, paper-trading engine) requires copy-paste refactoring of business logic.
+**Problem**: `backend_service` historically imported `ibapi` directly in `tws_market_data.rs` and `tws_positions.rs`. Any alternative broker (yatws, mock, paper-trading engine) required copy-paste refactoring of business logic.
 
-**Current state**:
-- `IbAdapter` in `ib_adapter` crate wraps `ibapi::Client` with mpsc channels — but `backend_service` does **not** use it
-- `backend_service` uses `ibapi` directly (2 files, ~425 lines of connection/retry logic duplicated)
-- `IbAdapter` methods map 1:1 to `ibapi` calls; the wrapping adds indirection without abstraction
+**Current state** (post-migration):
+- `IbAdapter` in `ib_adapter` crate implements `BrokerEngine` backed by `ibapi::Client`
+- `YatWSEngine` in `yatws_adapter` crate implements `BrokerEngine` backed by `yatws`
+- `backend_service` uses the `BrokerEngine` trait — no direct `ibapi` imports
+- `tws_market_data.rs` and `tws_positions.rs` were removed from `backend_service` (orphaned files, never compiled)
 
-**Goal**: Backend depends only on `BrokerEngine` trait + domain types. Zero `ibapi` references outside `ib_adapter`.
+**Goal**: ✅ **Achieved** — Backend depends only on `BrokerEngine` trait + domain types. Zero `ibapi` references outside `ib_adapter`.
 
 ---
 
@@ -53,7 +54,7 @@
 2. **`async_trait`** for the `BrokerEngine` trait (matches existing workspace pattern)
 3. **Domain types are broker-agnostic** — `OptionContract`, `OrderAction`, `TimeInForce`, `Order`, `Position`, `AccountInfo`, `MarketData`, `BagOrderLeg`, `PlaceBagOrderRequest`
 4. **Event types in domain** — `MarketDataEvent`, `PositionEvent`, `OrderStatusEvent` (not in `ib_adapter`)
-5. **Backwards compatible** — existing `IbAdapter` stays until migration is complete; new `IbApiEngine` implements `BrokerEngine`
+5. **Backwards compatible** — existing `IbAdapter` stays; `IbAdapter` implements `BrokerEngine` (previously a wrapper without the trait)
 6. **Minimal surface area** — trait has exactly the operations backend actually calls
 
 ---
@@ -159,7 +160,7 @@ agents/backend/
     │
     ├── ib_adapter/              # EXISTING: IBKR implementation
     │   └── src/
-    │       ├── lib.rs           # re-exports broker_engine::*; implements BrokerEngine for IbApiEngine
+    │       ├── lib.rs           # re-exports broker_engine::*; implements BrokerEngine for IbAdapter
     │       ├── types.rs         # DELEGATE to broker_engine (keep compat shim or delete)
     │       ├── scanner.rs        # KEEP (TWS scanner, not in trait)
     │       └── tws_wire.rs       # KEEP (wire format docs)
@@ -173,23 +174,23 @@ agents/backend/
 services/
     └── backend_service/
         └── src/
-            ├── main.rs           # creates IbApiEngine (or YatwsEngine) via config
-            ├── tws_market_data.rs # uses BrokerEngine trait
-            └── tws_positions.rs  # uses BrokerEngine trait
+            ├── main.rs           # creates IbAdapter (or YatWSEngine) via config
+            ├── api_handlers.rs   # uses BrokerEngine trait via StrategyController
+            └── backend_service.rs # uses BrokerEngine trait for account/positions
 ```
 
 ---
 
 ## 6. Implementation Sequence
 
-| Step | Task | ID | Notes |
-|------|------|----|-------|
-| 1 | Create `broker_engine` crate with `Cargo.toml`, `lib.rs`, `error.rs`, `domain.rs`, `traits.rs` | T-1773949780944708000 | Zero ibapi dependency |
-| 2 | Implement `BrokerEngine` for `IbApiEngine` in `ib_adapter` | T-1773949802510897000 | Rename/deprecate `IbAdapter` |
-| 3 | Migrate `backend_service` to use `BrokerEngine` trait | T-1773949816501720000 | Remove direct `ibapi` imports |
-| 4 | Migrate `tws_yield_curve` to `BrokerEngine` | T-1773949859122015000 | Lower priority |
-| 5 | Create `yatws_adapter` crate implementing `BrokerEngine` | T-1773949896022157000 | Future; yatws research task exists |
-| 6 | Deprecate and remove legacy `IbAdapter` | T-1773949903377577000 | After all consumers migrated |
+| Step | Task | ID | Status |
+|------|------|----|--------|
+| 1 | Create `broker_engine` crate with `Cargo.toml`, `lib.rs`, `error.rs`, `domain.rs`, `traits.rs` | T-1773949780944708000 | ✅ Done |
+| 2 | Implement `BrokerEngine` for `IbAdapter` in `ib_adapter` | T-1773949802510897000 | ✅ Done |
+| 3 | Migrate `backend_service` to use `BrokerEngine` trait | T-1773949816501720000 | ✅ Done |
+| 4 | Create `yatws_adapter` crate implementing `BrokerEngine` | T-1773949896022157000 | ✅ Done |
+| 5 | Migrate `tws_yield_curve` to `BrokerEngine` | T-1773949859122015000 | ⏳ Deferred (independent service) |
+| 6 | Add `OptionChainProvider` trait | T-1774099701033026000 | ✅ Done (2026-03-21) |
 
 ---
 
@@ -203,8 +204,8 @@ Domain types (`OptionContract`, `OrderAction`, etc.) are plain data structures. 
 
 ### Why keep `IbAdapter` until migration is complete?
 `backend_service` does not currently use `IbAdapter` — it uses `ibapi` directly. The migration path is:
-1. Create `broker_engine` + `IbApiEngine` (implements `BrokerEngine`, backed by `ibapi`)
-2. Migrate `backend_service` from direct `ibapi` → `IbApiEngine: BrokerEngine`
+1. Create `broker_engine` + `IbAdapter` (implements `BrokerEngine`, backed by `ibapi`)
+2. Migrate `backend_service` from direct `ibapi` → `IbAdapter: BrokerEngine`
 3. Delete `IbAdapter` struct (not the `ib_adapter` crate)
 
 ### What about `tws_yield_curve`?
@@ -258,7 +259,7 @@ let (combo_contract, order_request) = OptionsStrategyBuilder::new(
 let order_id = self.client.orders().place_order(combo_contract, order_request)?;
 ```
 
-Features over `IbApiEngine`:
+Features over `IbAdapter`:
 - conId resolution handled automatically via `DataRefManager`
 - Exchange selection by liquidity score (or primary, most-complete, SMART)
 - All 4 legs constructed internally; no manual `BagOrderLeg` assembly
@@ -287,7 +288,7 @@ Engine is selected at startup via config — no recompile required:
 fn create_engine(config: &BrokerConfig) -> Arc<dyn BrokerEngine> {
     match config.engine.as_deref().unwrap_or("ibapi") {
         "yatws" => Arc::new(YatWSEngine::new(config)),
-        _       => Arc::new(IbApiEngine::new(config)),
+        _       => Arc::new(IbAdapter::new(config)),
     }
 }
 ```
@@ -312,24 +313,21 @@ A `MockBrokerEngine` in `broker_engine` behind `#[cfg(test)]` or a `testing` fea
 
 ## 9. Backwards Compatibility & Migration Notes
 
-- `ib_adapter::IbAdapter` remains functional until step 6 (deprecation)
-- `ib_adapter::types::*` will delegate to `broker_engine::domain::*` to avoid duplication
-- `backend_service` current imports of `ibapi` in `tws_market_data.rs` and `tws_positions.rs` are replaced with `use broker_engine::{BrokerEngine, …}`
+- `ib_adapter::IbAdapter` ✅ implements `BrokerEngine` trait (step 2 complete)
+- `ib_adapter::types::*` delegates to `broker_engine::domain::*` to avoid duplication
+- `backend_service` ✅ uses `BrokerEngine` trait — `tws_market_data.rs` and `tws_positions.rs` were removed (orphaned files, never compiled)
+- `yatws_adapter::YatWSEngine` ✅ implements `BrokerEngine` (step 4 complete)
 - No proto/gRPC changes required — this is a Rust-only trait refactor
 
 ---
 
 ## 10. References
 
-- Task: T-1773949780944708000 — Create broker_engine crate
-- Task: T-1773949802510897000 — Implement IbApiEngine in ib_adapter
-- Task: T-1773949816501720000 — Migrate backend_service to broker_engine traits
-- Task: T-1773949859122015000 — Migrate tws_yield_curve to broker_engine traits
-- Task: T-1773949896022157000 — Create yatws_adapter crate
-- Task: T-1773949903377577000 — Deprecate legacy IbAdapter
+- Task: T-1773949780944708000 — Create broker_engine crate ✅
+- Task: T-1773949802510897000 — Implement BrokerEngine for IbAdapter ✅
+- Task: T-1773949816501720000 — Migrate backend_service to broker_engine traits ✅
+- Task: T-1773949896022157000 — Create yatws_adapter crate ✅
+- Task: T-1774099701033026000 — Add OptionChainProvider trait ✅
 - TWS protobuf wire format: `agents/backend/crates/ib_adapter/src/tws_wire.rs`
-- IBKR conId resolution: T-1773941020422614000
-- yatws research: T-1773940123381922000
 - yatws source: `/Users/davidl/Projects/Trading/yatws` (cloned from drpngx/yatws)
 - yatws learnings: `docs/research/learnings/YATWS_LEARNINGS.md`
-- ScenarioDto / dataflow analysis: `docs/TASK_ANALYSIS_ScenarioDto.md`

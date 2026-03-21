@@ -1,7 +1,13 @@
 # Box Spread Bag Implementation
 
-**Date**: 2025-01-27
-**Status**: ✅ Core Functionality Complete
+**Date**: 2026-03-21
+**Status**: ⚠️ Document describes C++ implementation that has been removed. The Rust implementation is in `broker_engine/` and `ib_adapter/`/`yatws_adapter/` crates.
+
+> **⚠️ Historical Note**: This document was written for a C++ implementation that has been removed from the codebase. The box spread functionality is now implemented in Rust. Key Rust equivalents:
+> - `broker_engine::domain::PlaceBagOrderRequest` + `BagOrderLeg` — BAG order structure
+> - `broker_engine::domain::construct_box_spread_order()` — builds 4-leg BAG request
+> - `IbAdapter::place_bag_order()` and `YatWSEngine::place_bag_order()` — execute via `BrokerEngine` trait
+> - `OptionsStrategyBuilder::box_spread_nearest_expiry()` (yatws) — native box spread builder
 
 ---
 
@@ -33,10 +39,15 @@ Greeks are calculated by aggregating from individual option legs:
 - **Vega**: IV sensitivity (should cancel out for perfect box)
 - **Rho**: Rate sensitivity (some exposure due to financing)
 
-**Key Files**:
+**Key Files** (historical C++ — removed):
 
-- `native/include/box_spread_bag.h` - Bag structure and manager interface
-- `native/src/box_spread_bag.cpp` - Bag implementation and Greeks calculation
+- `native/include/box_spread_bag.h` - was: Bag structure and manager interface
+- `native/src/box_spread_bag.cpp` - was: Bag implementation and Greeks calculation
+
+**Rust equivalents**:
+- `agents/backend/crates/broker_engine/src/domain.rs` — `PlaceBagOrderRequest`, `BagOrderLeg`, `construct_box_spread_order()`
+- `agents/backend/crates/ib_adapter/src/lib.rs` — `IbAdapter::place_bag_order()`
+- `agents/backend/crates/yatws_adapter/src/lib.rs` — `YatWSEngine::place_bag_order()` via `OptionsStrategyBuilder`
 
 **Implementation**:
 

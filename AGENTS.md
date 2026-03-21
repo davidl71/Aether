@@ -13,8 +13,8 @@ Box spreads are one active strategy component (7-10% of portfolio, spare cash al
 ```
 Aether/
 ├── agents/backend/          # Rust workspace (primary codebase)
-│   ├── crates/              # api, broker_engine, ib_adapter, ledger, market_data, nats_adapter, quant, risk, strategy, discount_bank_parser
-│   ├── services/            # backend_service (:8080), tui_service
+│   ├── crates/              # api, broker_engine, ib_adapter, ledger, market_data, nats_adapter, quant, risk, strategy, discount_bank_parser, common, tws_yield_curve, yatws_adapter
+│   ├── services/            # backend_service (:8080), tui_service, tws_yield_curve_daemon
 │   └── bin/                 # cli (Rust CLI)
 ├── native/                  # C++ removed from build (see root CMakeLists.txt)
 ├── web/                     # Archived React web application (not active runtime)
@@ -46,13 +46,17 @@ See **ARCHITECTURE.md** for full ownership and current build settings.
 |------|---------|
 | `agents/backend/services/backend_service` | REST+WS API, NATS collector, snapshot |
 | `agents/backend/services/tui_service` | Ratatui TUI |
+| `agents/backend/services/tws_yield_curve_daemon` | TWS yield curve fetcher daemon |
 | `agents/backend/crates/api` | REST routes, snapshot, frontend read models |
 | `agents/backend/crates/broker_engine` | Broker trait + domain types (engine abstraction) |
+| `agents/backend/crates/common` | Shared snapshot/event types across crates |
 | `agents/backend/crates/ib_adapter` | IBKR/TWS adapter (implements BrokerEngine) |
+| `agents/backend/crates/yatws_adapter` | yatws TWS adapter (implements BrokerEngine) |
 | `agents/backend/crates/quant` | Greeks, margin, amortization, convexity, yield curve |
 | `agents/backend/crates/risk` | Risk calculations |
 | `agents/backend/crates/ledger` | Durable ledger |
 | `agents/backend/crates/nats_adapter` | NATS protobuf and messaging |
+| `agents/backend/crates/tws_yield_curve` | TWS SOFR/treasury yield curve |
 | `agents/backend/bin/cli` | CLI entry point |
 
 ## Build, Test & Development Commands

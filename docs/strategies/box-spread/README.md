@@ -83,16 +83,14 @@ Investment Fund (6% return)
 
 ### ✅ Completed
 
-- Core box spread calculation engine (`native/src/box_spread_strategy.cpp`)
-- Box spread validation and opportunity detection
-- Risk-based position sizing integration
-- IBKR TWS API integration framework
-- Cython bindings for Python integration
-- WebAssembly (WASM) module for cross-platform use
+- Box spread validation and opportunity detection (`broker_engine/src/domain.rs`)
+- Risk-based position sizing integration (`risk/` crate)
+- IBKR BAG order placement via `IbAdapter` and `YatWSEngine`
+- Box spread order construction in `place_bag_order()` for both broker adapters
+- TWS yield curve integration (`tws_yield_curve/` crate)
 
 ### ⏳ In Progress
 
-- Full IBKR BAG order implementation
 - Real-time market data integration
 - Multi-leg order execution and tracking
 
@@ -108,57 +106,16 @@ Investment Fund (6% return)
 
 ### Core Files
 
-- **Strategy Engine**: `native/src/box_spread_strategy.cpp`
-- **Strategy Header**: `native/include/box_spread_strategy.h`
-- **Python DSL**: `python/dsl/box_spread_dsl.py`
-- **Notebooks**: `notebooks/box_spread_analysis.ipynb`
+- **Strategy Engine**: `agents/backend/crates/broker_engine/src/domain.rs` — `construct_box_spread_order()`, `PlaceBagOrderRequest`, `BagOrderLeg`
+- **IBKR Adapter**: `agents/backend/crates/ib_adapter/src/lib.rs` — `IbAdapter::place_bag_order()`
+- **YatWS Adapter**: `agents/backend/crates/yatws_adapter/src/lib.rs` — `YatWSEngine::place_bag_order()` via `OptionsStrategyBuilder`
+- **Risk**: `agents/backend/crates/risk/` — `Calculator::box_spread_risk()`
 
 ### Integration Points
 
-- **Platform Core**: Cash flow modeler, opportunity simulator
-- **Risk Management**: `native/src/risk_calculator.cpp`
-- **Order Management**: `native/src/order_manager.cpp`
-- **Broker Integration**: `native/src/brokers/tws_adapter.cpp`
-
----
-
-## Usage Examples
-
-### Python DSL
-
-```python
-from box_spread_dsl import BoxSpreadStrategy
-
-# Create box spread opportunity
-
-strategy = BoxSpreadStrategy(
-    symbol="SPX",
-    lower_strike=5000,
-    upper_strike=5050,
-    expiration="2025-03-21"
-)
-
-# Calculate implied rate
-
-rate = strategy.calculate_implied_rate()
-print(f"Implied financing rate: {rate:.2f}% APR")
-```
-
-### C++ Usage
-
-```cpp
-
-#include "box_spread_strategy.h"
-
-BoxSpreadStrategy strategy(config);
-auto opportunities = strategy.scan_for_opportunities();
-for (const auto& opp : opportunities) {
-    if (opp.profit > min_threshold) {
-        // Execute box spread
-        order_manager.place_box_spread(opp);
-    }
-}
-```
+- **Platform Core**: Cash flow modeler, opportunity simulator (`strategy/` crate)
+- **Risk Management**: `risk/` crate
+- **Broker Integration**: `ib_adapter/`, `yatws_adapter/` (both implement `BrokerEngine` trait)
 
 ---
 
@@ -191,5 +148,5 @@ Box spread strategy configuration in `config/config.json`:
 
 ---
 
-**Last Updated**: 2025-01-27
+**Last Updated**: 2026-03-21
 **Maintained By**: Synthetic Financing Platform Team
