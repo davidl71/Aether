@@ -360,8 +360,9 @@ pub fn runtime_snapshot_dto_from_proto(p: pb::SystemSnapshot) -> RuntimeSnapshot
             )
         })
         .collect();
-    let position_dtos: Vec<RuntimePositionDto> =
+    let mut position_dtos: Vec<RuntimePositionDto> =
         positions.iter().map(RuntimePositionDto::from).collect();
+    crate::combo_strategy::apply_derived_strategy_types(&mut position_dtos);
 
     RuntimeSnapshotDto {
         generated_at: ts_to_dt(p.generated_at),

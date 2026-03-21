@@ -50,8 +50,7 @@ pub use broker_engine::MarketData;
 // Helper utilities
 // ---------------------------------------------------------------------------
 
-/// Whether the symbol is a known cash-settled index.
-#[allow(dead_code)]
+#[cfg(test)]
 fn is_index(symbol: &str) -> bool {
     matches!(symbol.to_uppercase().as_str(), "SPX" | "NDX" | "XSP")
 }

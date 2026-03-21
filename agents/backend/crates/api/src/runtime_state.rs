@@ -538,10 +538,13 @@ impl RuntimeExecutionState {
     }
 
     pub fn position_dtos(&self) -> Vec<RuntimePositionDto> {
-        self.positions
+        let mut dtos: Vec<RuntimePositionDto> = self
+            .positions
             .iter()
             .map(RuntimePositionDto::from)
-            .collect()
+            .collect();
+        crate::combo_strategy::apply_derived_strategy_types(&mut dtos);
+        dtos
     }
 
     pub fn order_dtos(&self) -> Vec<RuntimeOrderDto> {
