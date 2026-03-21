@@ -336,7 +336,9 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
             Span::styled(" / ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("Orders: focus filter  "),
             Span::styled(" Esc ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("clear filter"),
+            Span::raw("clear filter  "),
+            Span::styled(" x ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("cancel all"),
         ]),
         Line::from(vec![
             Span::styled(
@@ -357,7 +359,9 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
             Span::styled(" [ ] ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("Scen: DTE expand/contract  "),
             Span::styled(" w ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("Scen: strike width"),
+            Span::raw("Scen: strike width  "),
+            Span::styled(" o ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("Scen: exec scenario"),
         ]),
         Line::from(vec![
             Span::styled(
