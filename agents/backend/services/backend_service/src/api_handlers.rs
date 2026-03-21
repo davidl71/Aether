@@ -213,7 +213,7 @@ async fn run_strategy_control(nc: Client, controller: StrategyController, state:
     ));
     let state_cancel = state.clone();
     tokio::spawn(handle_sub(
-        nc,
+        nc.clone(),
         sub_cancel_all,
         move |_body: Option<Vec<u8>>| {
             let state = state_cancel.clone();

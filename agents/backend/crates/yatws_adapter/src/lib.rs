@@ -32,7 +32,7 @@ use chrono::NaiveDate;
 use tokio::sync::{mpsc, watch, RwLock};
 use tracing::{error, info, warn};
 use yatws::account_subscription::AccountEvent;
-use yatws::contract::{Contract, SecType};
+use yatws::contract::{Contract, OptionRight, SecType};
 use yatws::data_subscription::{MarketDataSubscription, TickDataEvent};
 use yatws::{IBKRClient, IBKRError, OptionsStrategyBuilder};
 
@@ -805,7 +805,10 @@ impl BrokerEngine for YatWSEngine {
 
 #[async_trait]
 impl OptionChainProvider for YatWSEngine {
-    async fn resolve_option_chain(&self, symbol: &str) -> Result<Vec<ResolvedOptionContract>, BrokerError> {
+    async fn resolve_option_chain(
+        &self,
+        symbol: &str,
+    ) -> Result<Vec<ResolvedOptionContract>, BrokerError> {
         if *self.state.read().await != ConnectionState::Connected {
             return Err(BrokerError::NotConnected);
         }
@@ -818,11 +821,13 @@ impl OptionChainProvider for YatWSEngine {
 
         let sym_owned = symbol.to_string();
         let sec_type = sec_type_for(&sym_owned);
+        let sym_for_chain = sym_owned.clone();
+        let client_for_chain = client.clone();
 
         let chains = tokio::task::spawn_blocking(move || {
-            client
+            client_for_chain
                 .data_ref()
-                .get_option_chain_params(&sym_owned, "", sec_type, 0)
+                .get_option_chain_params(&sym_for_chain, "", sec_type, 0)
                 .map_err(map_ibkr_error)
         })
         .await
@@ -834,8 +839,18 @@ impl OptionChainProvider for YatWSEngine {
                 for &strike in &chain.strikes {
                     let expiry_date = parse_expiry_to_naive_date(exp)?;
                     let is_call = true;
-                    let contract = Contract::option(&sym_owned, expiry_date, strike, is_call)
-                        .map_err(|e: IBKRError| BrokerError::Other(e.to_string()))?;
+                    let contract = Contract::option(
+                        &sym_owned,
+                        &expiry_date,
+                        strike,
+                        if is_call {
+                            OptionRight::Call
+                        } else {
+                            OptionRight::Put
+                        },
+                        &chain.exchange,
+                        "USD",
+                    );
 
                     let details = tokio::task::spawn_blocking({
                         let client = client.clone();
@@ -855,15 +870,32 @@ impl OptionChainProvider for YatWSEngine {
                             expiry: exp.clone(),
                             strike,
                             is_call: true,
-                            con_id: detail.contract.contract_id,
-                            exchange: detail.contract.exchange.unwrap_or_default(),
-                            multiplier: detail.contract.multiplier.unwrap_or(100.0),
-                            trading_class: detail.trading_class.unwrap_or_default(),
+                            con_id: detail.contract.con_id,
+                            exchange: detail.contract.exchange.clone(),
+                            multiplier: detail
+                                .contract
+                                .multiplier
+                                .as_deref()
+                                .unwrap_or("100")
+                                .parse()
+                                .unwrap_or(100.0),
+                            trading_class: detail
+                                .contract
+                                .trading_class
+                                .as_deref()
+                                .unwrap_or_default()
+                                .to_string(),
                         });
                     }
 
-                    let contract_put = Contract::option(&sym_owned, expiry_date, strike, false)
-                        .map_err(|e: IBKRError| BrokerError::Other(e.to_string()))?;
+                    let contract_put = Contract::option(
+                        &sym_owned,
+                        &expiry_date,
+                        strike,
+                        OptionRight::Put,
+                        &chain.exchange,
+                        "USD",
+                    );
                     let details_put = tokio::task::spawn_blocking({
                         let client = client.clone();
                         move || {
@@ -882,10 +914,21 @@ impl OptionChainProvider for YatWSEngine {
                             expiry: exp.clone(),
                             strike,
                             is_call: false,
-                            con_id: detail.contract.contract_id,
-                            exchange: detail.contract.exchange.unwrap_or_default(),
-                            multiplier: detail.contract.multiplier.unwrap_or(100.0),
-                            trading_class: detail.trading_class.unwrap_or_default(),
+                            con_id: detail.contract.con_id,
+                            exchange: detail.contract.exchange.clone(),
+                            multiplier: detail
+                                .contract
+                                .multiplier
+                                .as_deref()
+                                .unwrap_or("100")
+                                .parse()
+                                .unwrap_or(100.0),
+                            trading_class: detail
+                                .contract
+                                .trading_class
+                                .as_deref()
+                                .unwrap_or_default()
+                                .to_string(),
                         });
                     }
                 }

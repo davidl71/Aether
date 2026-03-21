@@ -564,6 +564,7 @@ name = "broker_engine"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "common",
  "derive_builder",
  "financial_symbols",
  "rust_decimal",

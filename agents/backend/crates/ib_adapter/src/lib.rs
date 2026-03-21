@@ -36,8 +36,6 @@ pub use broker_engine::ConnectionState;
 pub use broker_engine::MarketData;
 pub use broker_engine::OptionChainProvider;
 
-pub use broker_engine::BrokerEngine;
-
 pub mod scanner;
 pub mod tws_wire;
 pub mod types;
@@ -610,7 +608,10 @@ impl BrokerEngine for IbAdapter {
 
 #[async_trait]
 impl OptionChainProvider for IbAdapter {
-    async fn resolve_option_chain(&self, symbol: &str) -> Result<Vec<ResolvedOptionContract>, BrokerError> {
+    async fn resolve_option_chain(
+        &self,
+        symbol: &str,
+    ) -> Result<Vec<ResolvedOptionContract>, BrokerError> {
         if *self.state.read().await != ConnectionState::Connected {
             return Err(BrokerError::NotConnected);
         }
@@ -637,7 +638,9 @@ impl OptionChainProvider for IbAdapter {
                     let detail = details.into_iter().next().ok_or_else(|| {
                         BrokerError::ContractError(format!(
                             "no contract details for {} {} {:.0} {}",
-                            leg.symbol, leg.expiry, leg.strike,
+                            leg.symbol,
+                            leg.expiry,
+                            leg.strike,
                             if leg.is_call { "C" } else { "P" }
                         ))
                     })?;
@@ -647,9 +650,9 @@ impl OptionChainProvider for IbAdapter {
                         strike: leg.strike,
                         is_call: leg.is_call,
                         con_id: detail.contract.contract_id,
-                        exchange: detail.contract.exchange.unwrap_or_default(),
-                        multiplier: detail.contract.multiplier.unwrap_or(100.0),
-                        trading_class: detail.trading_class.unwrap_or_default(),
+                        exchange: detail.contract.exchange.0.clone(),
+                        multiplier: detail.contract.multiplier.parse().unwrap_or(100.0),
+                        trading_class: detail.contract.trading_class.clone(),
                     })
                 }
             }))
