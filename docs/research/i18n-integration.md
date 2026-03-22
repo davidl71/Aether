@@ -2,13 +2,13 @@
 
 **Source:** longbridge-terminal  
 **Date:** 2026-03-22  
-**Status:** Todo
+**Status:** Completed
 
 ## Overview
 
-longbridge-terminal uses `rust-i18n` for internationalization with locale files in `locales/*.yml`.
+longbridge-terminal uses `rust-i18n` v2.2 for internationalization with YAML locale files.
 
-## Implementation Pattern
+## Implementation
 
 ### Dependencies
 
@@ -20,24 +20,41 @@ rust-i18n = "2.2"
 
 ```
 locales/
-├── en.yml
-├── zh-CN.yml
-└── zh-HK.yml
+├── en.yml      (6.9KB)
+├── zh-CN.yml   (7.1KB)
+└── zh-HK.yml   (6.8KB)
 ```
 
-### Usage
+### YAML Structure
+
+```yaml
+# en.yml
+error:
+  general: "Something went wrong"
+  api:
+    heading: "Failed to request"
+Candlestick:
+  Open: Open
+  Close: Close
+StockIndex:
+  .DJI.US: Dow
+  .IXIC.US: NASDAQ
+```
+
+### Usage in Code
 
 ```rust
 use rust_i18n::t;
 
-// In code
-let status = t!("TradeStatus.Normal");
+// Simple string
+let msg = t!("error.general");
 
-// Locale files (en.yml)
-TradeStatus:
-  Normal: "Normal"
-  Trading: "Trading"
-  Halted: "Halted"
+// Nested
+let heading = t!("error.api.heading");
+
+// In locale file
+console:
+  title: " Console "
 ```
 
 ### Runtime Switching
@@ -46,26 +63,36 @@ TradeStatus:
 rust_i18n::set_locale("zh-CN");
 ```
 
-## Aether Current State
+## Evaluation for Aether
 
-- No i18n support
-- All strings hardcoded in TUI code
+| Aspect | Assessment |
+|--------|------------|
+| **Workflow** | Simple - YAML files + `t!()` macro |
+| **Coverage** | Need translations for all UI strings |
+| **Audience** | Primarily English-speaking traders |
+| **Complexity** | Medium - refactor all strings |
 
-## Evaluation Criteria
+### Pros for Aether
+- Standard Rust i18n solution
+- Runtime locale switching
+- Separation of content from code
+- Easy to add languages
 
-- [ ] Translation workflow
-- [ ] Runtime locale switching
-- [ ] Impact on existing code
-- [ ] Chinese/English coverage for trading terms
+### Cons for Aether
+- Refactoring all hardcoded strings
+- Trading terminology needs careful translation
+- Primary audience is English-speaking
+- Adds build/deployment complexity
 
-## Potential Tradeoff
+## Recommendation
 
-| Aspect | Aether Consideration |
-|--------|---------------------|
-| Audience | English-speaking traders primarily |
-| Complexity | Adds build/deployment complexity |
-| Value | Multi-language support for terminal |
+**Not Recommended (Current Phase)** - i18n adds significant refactoring work. Consider after:
+1. Feature completion
+2. If expanding to non-English markets
+3. If Chinese traders become a priority
+
+**When to revisit:** If Aether expands to Asian markets or receives international user requests.
 
 ## Related Tasks
 
-- T-1774192024444788000: Research i18n integration for Aether
+- T-1774192024444788000: Research i18n integration (Done)

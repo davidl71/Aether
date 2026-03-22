@@ -6,6 +6,10 @@
 //!   cargo run -p cli -- run --dry-run
 //!   cargo run -p cli -- snapshot
 //!
+//! Output formats:
+//!   --format table (default) - human-readable output
+//!   --format json - machine-readable JSON for AI agents and scripting
+//!
 //! Backward compatibility: --init-config and --validate flags still work.
 
 use std::path::PathBuf;
@@ -23,14 +27,41 @@ use nats_adapter::{
     request_json_with_retry, request_json_with_retry_timeout, NatsClient, RetryConfig,
 };
 use reqwest::Client as ReqwestClient;
+use serde::Serialize;
 use std::time::Duration;
 use tracing::{info, warn};
 
 mod config;
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, ValueEnum)]
+pub enum OutputFormat {
+    #[default]
+    Table,
+    Json,
+}
+
+impl OutputFormat {
+    pub fn print_json<T: Serialize>(&self, value: &T) -> Result<()> {
+        if *self == OutputFormat::Json {
+            println!("{}", serde_json::to_string_pretty(value)?);
+        }
+        Ok(())
+    }
+}
+
 #[derive(Parser, Debug)]
 #[command(name = "aether")]
 #[command(about = "Aether - Multi-asset synthetic financing platform", long_about = None)]
+#[command(
+    after_long_help = "Output formats:
+  --format table (default) - human-readable output
+  --format json            - machine-readable JSON for AI agents and scripting
+
+Examples:
+  aether --format json loans list
+  aether --format json yield-curve --symbol SPX
+  aether validate --format json"
+)]
 struct Cli {
     /// Configuration file path (used by validate, run, snapshot). Same discovery as TUI: shared JSON first, then this path. Prefer config/config.json; TOML supported as CLI-only override.
     #[arg(short, long, global = true, default_value = "config/config.json")]
@@ -47,6 +78,10 @@ struct Cli {
     /// Generate shell completion script and exit (for scripts/generate_completions.sh)
     #[arg(long, global = true, hide = true, value_enum)]
     generate_completion: Option<CompletionShell>,
+
+    /// Output format: 'table' for human-readable, 'json' for AI agents and scripting
+    #[arg(long, global = true, default_value = "table", value_enum)]
+    format: OutputFormat,
 
     #[command(subcommand)]
     command: Option<Commands>,
@@ -207,6 +242,8 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
+    let format = cli.format;
+
     match cli.command.unwrap() {
         Commands::InitConfig { path } => run_init_config(&path)?,
         Commands::Validate => run_validate(&cli.config)?,
@@ -232,17 +269,17 @@ fn main() -> Result<()> {
             snapshot_path,
             no_snapshot,
         } => run_snapshot(&cli.config, &snapshot_path, no_snapshot)?,
-        Commands::Benchmarks { json } => run_benchmarks(json)?,
+        Commands::Benchmarks { json } => run_benchmarks(format, json)?,
         Commands::YieldCurve {
             symbol,
             json,
             refresh,
             source,
             publish_to_nats,
-        } => run_yield_curve(&symbol, json, refresh, &source, publish_to_nats)?,
-        Commands::SnapshotWrite { json } => run_snapshot_write(json)?,
+        } => run_yield_curve(&symbol, format, json, refresh, &source, publish_to_nats)?,
+        Commands::SnapshotWrite { json } => run_snapshot_write(format, json)?,
         Commands::Loans { sub } => match sub {
-            LoansCmd::List { json } => run_loans_list(json)?,
+            LoansCmd::List { json } => run_loans_list(format, json)?,
         },
     }
 
@@ -353,7 +390,7 @@ fn run_snapshot(config_path: &PathBuf, snapshot_path: &PathBuf, no_snapshot: boo
     Ok(())
 }
 
-fn run_benchmarks(json: bool) -> Result<()> {
+fn run_benchmarks(format: OutputFormat, json: bool) -> Result<()> {
     if std::env::var("FRED_API_KEY")
         .ok()
         .map_or(true, |v| v.trim().is_empty())
@@ -375,8 +412,9 @@ fn run_benchmarks(json: bool) -> Result<()> {
         }
     });
 
-    if json {
-        println!("{}", serde_json::to_string_pretty(&response)?);
+    let use_json = json || format == OutputFormat::Json;
+    if use_json {
+        format.print_json(&response)?;
     } else {
         println!("SOFR overnight: {:?}", response.sofr.overnight.rate);
         println!("SOFR term rates: {} tenors", response.sofr.term_rates.len());
@@ -393,6 +431,7 @@ fn run_benchmarks(json: bool) -> Result<()> {
 
 fn run_yield_curve(
     symbol: &str,
+    format: OutputFormat,
     json: bool,
     refresh: bool,
     source: &str,
@@ -478,8 +517,9 @@ fn run_yield_curve(
         }
     }
 
-    if json {
-        println!("{}", serde_json::to_string_pretty(&curve)?);
+    let use_json = json || format == OutputFormat::Json;
+    if use_json {
+        format.print_json(&curve)?;
         return Ok(());
     }
 
@@ -542,7 +582,7 @@ fn run_yield_curve(
     Ok(())
 }
 
-fn run_snapshot_write(json: bool) -> Result<()> {
+fn run_snapshot_write(format: OutputFormat, json: bool) -> Result<()> {
     let nats_url =
         std::env::var("NATS_URL").unwrap_or_else(|_| "nats://localhost:4222".to_string());
     let payload = serde_json::json!({});
@@ -557,8 +597,9 @@ fn run_snapshot_write(json: bool) -> Result<()> {
     if let Some(err) = raw.get("error").and_then(|v| v.as_str()) {
         anyhow::bail!("backend error: {}", err);
     }
-    if json {
-        println!("{}", serde_json::to_string_pretty(&raw)?);
+    let use_json = json || format == OutputFormat::Json;
+    if use_json {
+        format.print_json(&raw)?;
     } else {
         let ok = raw.get("ok").and_then(|v| v.as_bool()).unwrap_or(false);
         let at = raw
@@ -575,7 +616,7 @@ fn run_snapshot_write(json: bool) -> Result<()> {
     Ok(())
 }
 
-fn run_loans_list(json: bool) -> Result<()> {
+fn run_loans_list(format: OutputFormat, json: bool) -> Result<()> {
     let nats_url =
         std::env::var("NATS_URL").unwrap_or_else(|_| "nats://localhost:4222".to_string());
     let result: Result<Vec<LoanRecord>, String> = tokio::runtime::Runtime::new()?.block_on(async {
@@ -589,8 +630,9 @@ fn run_loans_list(json: bool) -> Result<()> {
     });
     match result {
         Ok(list) => {
-            if json {
-                println!("{}", serde_json::to_string_pretty(&list)?);
+            let use_json = json || format == OutputFormat::Json;
+            if use_json {
+                format.print_json(&list)?;
             } else {
                 println!(
                     "{:<14} {:<14} {:>6} {:>8} {:>10} {:>10}",

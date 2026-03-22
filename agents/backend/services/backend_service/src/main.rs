@@ -12,7 +12,7 @@ use chrono::Utc;
 use ib_adapter::IbAdapter;
 use market_data::{
     FmpClient, MarketDataEvent, MarketDataIngestor, MarketDataSource, MockMarketDataSource,
-    PolygonMarketDataSource,
+    PolygonMarketDataSource, YahooFinanceSource,
 };
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use risk::{RiskCheck, RiskDecision, RiskEngine, RiskLimit, RiskViolation};
@@ -115,7 +115,7 @@ struct PolygonSettings {
 }
 
 fn default_market_provider() -> String {
-    "mock".into()
+    "yahoo".into()
 }
 
 fn default_market_symbols() -> Vec<String> {
@@ -378,6 +378,11 @@ fn spawn_market_data_provider(
     let interval = Duration::from_millis(settings.poll_interval_ms.max(10));
 
     match settings.provider.as_str() {
+        "yahoo" => {
+            let source = YahooFinanceSource::new(symbols.clone(), interval)
+                .context("failed to create yahoo finance market data source")?;
+            spawn_market_data_loop(source, state, strategy_signal, strategy_toggle, nats);
+        }
         "polygon" => {
             let polygon_cfg = settings
                 .polygon
@@ -389,11 +394,14 @@ fn spawn_market_data_provider(
                 .context("failed to create polygon market data source")?;
             spawn_market_data_loop(source, state, strategy_signal, strategy_toggle, nats);
         }
-        provider => {
-            if provider != "mock" {
-                warn!(%provider, "unknown market data provider requested, falling back to mock");
-            }
+        "mock" => {
             let source = MockMarketDataSource::new(symbols, interval);
+            spawn_market_data_loop(source, state, strategy_signal, strategy_toggle, nats);
+        }
+        provider => {
+            warn!(%provider, "unknown market data provider requested, falling back to yahoo");
+            let source = YahooFinanceSource::new(symbols, interval)
+                .context("failed to create yahoo finance market data source")?;
             spawn_market_data_loop(source, state, strategy_signal, strategy_toggle, nats);
         }
     }

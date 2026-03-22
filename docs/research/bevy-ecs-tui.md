@@ -1,51 +1,80 @@
 # Bevy ECS for TUI State Management Research
 
-**Source:** longbridge-terminal (`app.rs`)  
+**Source:** longbridge-terminal (`src/app.rs`)  
 **Date:** 2026-03-22  
-**Status:** Todo
+**Status:** Completed
 
 ## Overview
 
-longbridge-terminal uses Bevy ECS (v0.11) for TUI state management. Bevy is primarily a game engine but its ECS pattern applies well to complex UI state.
+longbridge-terminal uses Bevy ECS (v0.11) for TUI state management. Bevy is a game engine that provides Entity-Component-System architecture.
 
-## longbridge-terminal Pattern
+## Implementation Pattern
+
+### App Setup
 
 ```rust
-// app.rs uses Bevy ECS
-use bevy_app::{App, AppExit, Schedules};
+use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
 
-struct AppState { /* ... */ }
-
-// Systems process entities and update UI
-fn handle_input_system(/* ... */) { /* ... */ }
-fn update_ui_system(/* ... */) { /* ... */ }
-
-// Main loop
-let mut app = App::new();
-app.add_systems(Update, (handle_input_system, update_ui_system));
+let mut app = bevy_app::App::new();
+app.add_state::<AppState>()
+    .add_event::<systems::Key>()
+    .add_event::<systems::TuiEvent>()
+    .init_resource::<Terminal>()
+    .add_systems(Update, systems::render_watchlist.run_if(in_state(AppState::Watchlist)))
+    .add_systems(OnEnter(AppState::Stock), systems::enter_stock);
 ```
 
-## Key Benefits
+### Key Concepts
 
-1. **Decoupled Systems** - Each system handles one concern
-2. **Entity-Component Model** - Stocks, positions, orders as entities with components
-3. **Parallel Execution** - Systems can run in parallel when dependencies allow
-4. **Event System** - Bevy's event bus for pub/sub
+| Concept | Purpose |
+|---------|---------|
+| **States** | App states (Watchlist, Stock, Portfolio) with transitions |
+| **Resources** | Global singletons (Terminal, User, Watchlist) |
+| **Systems** | Functions that run each frame, query entities |
+| **Events** | Input events (Key press), TuiEvents |
 
-## Aether Current State
+### System Example
 
-- Ratatui-only in `tui_service`
-- Manual state management with channels
-- No ECS pattern
+```rust
+fn render_watchlist(
+    terminal: Query<&mut Terminal>,
+    stocks: Res<STOCKS>,
+) {
+    // Render logic
+}
+```
 
-## Evaluation Criteria
+## Evaluation for Aether
 
-- [ ] Complexity overhead vs benefits
-- [ ] Integration with existing ratatui rendering
-- [ ] Learning curve for team
-- [ ] Performance implications
+| Aspect | Assessment |
+|--------|------------|
+| **Complexity** | High - new paradigm to learn |
+| **Decoupling** | Excellent - systems are independent |
+| **Testability** | Good - systems can be tested in isolation |
+| **Integration** | Hard - ratatui rendering would need wrapping |
+
+### Pros for Aether
+- Clean separation of concerns
+- Automatic state transition handling
+- Parallel system execution
+- Good for complex UI with many components
+
+### Cons for Aether
+- Significant learning curve
+- Overkill for simpler TUI
+- Current ratatui approach works well
+- ECS concepts may confuse team
+
+## Recommendation
+
+**Not Recommended** - Aether's TUI is well-structured with ratatui. Bevy ECS would add significant complexity without proportional benefit. The longbridge-terminal use case benefits from ECS because:
+1. Many entity types (stocks, watchlists, accounts)
+2. Complex state transitions
+3. Multiple concurrent views
+
+Aether's TUI has simpler state requirements.
 
 ## Related Tasks
 
-- T-1774192022865695000: Research Bevy ECS for TUI state management
+- T-1774192022865695000: Research Bevy ECS for TUI (Done)

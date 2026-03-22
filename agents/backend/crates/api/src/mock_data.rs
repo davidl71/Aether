@@ -4,7 +4,9 @@
 //!
 //! **Mock data sources:** Snapshot (positions, orders, historic, symbols), Loans, Discount Bank,
 //! Finance rates (SOFR, Treasury), FMP (income statement, balance sheet, cash flow, quote).
-//! Market data stream uses `market_data::MockMarketDataSource` when provider is `mock`.
+//!
+//! **Market data:** Yahoo Finance (`yahoo`) is the default provider (free, no API key).
+//! Fallback to `mock` or `polygon` (requires API key) via `market_data.provider` config.
 
 use chrono::{TimeDelta, Utc};
 use market_data::{BalanceSheet, CashFlowStatement, FmpQuote, IncomeStatement};
