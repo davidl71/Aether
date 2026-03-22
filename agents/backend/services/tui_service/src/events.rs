@@ -253,4 +253,10 @@ pub enum AppEvent {
         target: ConnectionTarget,
         status: ConnectionStatus,
     },
+    MarketTick {
+        symbol: String,
+        bid: f64,
+        ask: f64,
+        last: f64,
+    },
 }

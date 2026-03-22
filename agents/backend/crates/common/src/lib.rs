@@ -4,6 +4,6 @@ pub mod expiry;
 pub mod snapshot;
 
 pub use snapshot::{
-    Alert, CandleSnapshot, HistoricPosition, Metrics, OrderSnapshot, PositionSnapshot, RiskStatus,
-    StrategyDecisionSnapshot,
+    Alert, CandleSnapshot, HistoricPosition, MarketDataEvent, MarketDataEventBuilder, Metrics,
+    OrderSnapshot, PositionSnapshot, RiskStatus, StrategyDecisionSnapshot,
 };

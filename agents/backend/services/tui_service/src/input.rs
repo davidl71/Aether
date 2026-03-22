@@ -314,7 +314,7 @@ pub fn apply_action(app: &mut App, action: Action) {
         }
         Action::PositionsScrollDown => {
             let len = app
-                .snapshot
+                .snapshot()
                 .as_ref()
                 .map(|s| {
                     crate::ui::positions_display_info(
@@ -334,7 +334,7 @@ pub fn apply_action(app: &mut App, action: Action) {
         }
         Action::PositionsScrollPageDown => {
             let len = app
-                .snapshot
+                .snapshot()
                 .as_ref()
                 .map(|s| {
                     crate::ui::positions_display_info(
@@ -350,7 +350,7 @@ pub fn apply_action(app: &mut App, action: Action) {
             }
         }
         Action::PositionsDetail => {
-            if let Some(ref snap) = app.snapshot {
+            if let Some(ref snap) = app.snapshot() {
                 let (_display_len, index_map, combo_key_per_row) =
                     crate::ui::positions_display_info(
                         &snap.dto().positions,
@@ -389,7 +389,7 @@ pub fn apply_action(app: &mut App, action: Action) {
             }
         }
         Action::OrdersDetail => {
-            if let Some(ref snap) = app.snapshot {
+            if let Some(ref snap) = app.snapshot() {
                 let filtered = app.filtered_orders(snap);
                 let idx = app.orders_scroll.min(filtered.len().saturating_sub(1));
                 if let Some(order) = filtered.get(idx) {
@@ -447,7 +447,7 @@ pub fn apply_action(app: &mut App, action: Action) {
         }
         Action::AlertsScrollDown => {
             let len = app
-                .snapshot
+                .snapshot()
                 .as_ref()
                 .map(|s| s.dto().alerts.len())
                 .unwrap_or(0);
@@ -460,7 +460,7 @@ pub fn apply_action(app: &mut App, action: Action) {
         }
         Action::AlertsScrollPageDown => {
             let len = app
-                .snapshot
+                .snapshot()
                 .as_ref()
                 .map(|s| s.dto().alerts.len())
                 .unwrap_or(0);
@@ -637,7 +637,7 @@ pub fn apply_action(app: &mut App, action: Action) {
         Action::ModeCycle => {
             if let Some(ref tx) = app.strategy_cmd_tx {
                 let current = app
-                    .snapshot
+                    .snapshot()
                     .as_ref()
                     .map(|s| s.dto().mode.to_uppercase())
                     .unwrap_or_else(|| "DRY-RUN".into());

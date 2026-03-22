@@ -90,5 +90,8 @@ pub trait BrokerEngine: Send + Sync {
 /// Each implementation uses a different API path but presents a single unified interface.
 #[async_trait]
 pub trait OptionChainProvider: Send + Sync {
-    async fn resolve_option_chain(&self, symbol: &str) -> Result<Vec<ResolvedOptionContract>, BrokerError>;
+    async fn resolve_option_chain(
+        &self,
+        symbol: &str,
+    ) -> Result<Vec<ResolvedOptionContract>, BrokerError>;
 }

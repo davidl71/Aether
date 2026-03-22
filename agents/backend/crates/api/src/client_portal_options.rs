@@ -78,8 +78,7 @@ async fn get_json(client: &Client, url: &str) -> Result<Value, String> {
             truncate_body(&body)
         ));
     }
-    serde_json::from_str(&body)
-        .map_err(|e| format!("Failed to decode Client Portal response: {e}"))
+    serde_json::from_str(&body).map_err(|e| format!("Failed to decode Client Portal response: {e}"))
 }
 
 fn value_as_i64(value: Option<&Value>) -> Option<i64> {
@@ -109,9 +108,13 @@ pub async fn search(symbol: &str, listing_exchange: Option<&str>) -> Result<Sear
         url.push_str(&format!("&listingExchange={ex}"));
     }
     let payload: Value = get_json(&client, &url).await?;
-    let items = payload.as_array().ok_or("secdef/search response is not an array")?;
+    let items = payload
+        .as_array()
+        .ok_or("secdef/search response is not an array")?;
     let contract = items.first().ok_or("secdef/search returned empty array")?;
-    let map = contract.as_object().ok_or("secdef/search item is not an object")?;
+    let map = contract
+        .as_object()
+        .ok_or("secdef/search item is not an object")?;
     let conid = value_as_i64(map.get("conid")).ok_or("secdef/search: missing or invalid conid")?;
     let sections = map
         .get("sections")
@@ -138,9 +141,7 @@ pub async fn search(symbol: &str, listing_exchange: Option<&str>) -> Result<Sear
 pub async fn strikes(conid: i64, month: &str) -> Result<StrikesResult, String> {
     let client = build_client()?;
     let base = portal_base();
-    let url = format!(
-        "{base}/iserver/secdef/strikes?conid={conid}&secType=OPT&month={month}"
-    );
+    let url = format!("{base}/iserver/secdef/strikes?conid={conid}&secType=OPT&month={month}");
     let payload: Value = get_json(&client, &url).await?;
     let parse_f64_array = |key: &str| -> Vec<f64> {
         payload
@@ -174,7 +175,9 @@ pub async fn info(
         "{base}/iserver/secdef/info?conid={conid}&month={month}&strike={strike}&secType=OPT&right={right}"
     );
     let payload: Value = get_json(&client, &url).await?;
-    let items = payload.as_array().ok_or("secdef/info response is not an array")?;
+    let items = payload
+        .as_array()
+        .ok_or("secdef/info response is not an array")?;
     let contracts: Vec<ContractInfo> = items
         .iter()
         .filter_map(|item| {
@@ -224,7 +227,7 @@ pub async fn options_chain_flow(symbol: &str) -> Result<OptionsChainResult, Stri
 
 #[cfg(test)]
 mod tests {
-    use super::{portal_base, search, strikes, info};
+    use super::{info, portal_base, search, strikes};
 
     #[test]
     fn portal_base_returns_valid_url() {

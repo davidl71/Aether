@@ -50,7 +50,7 @@ pub fn render(f: &mut Frame, app: &App) {
 
 fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
     let (mode, strategy, source_label, source_color, is_stale) =
-        if let Some(ref snap) = app.snapshot {
+        if let Some(ref snap) = app.snapshot() {
             let stale = snap.is_stale(app.config.snapshot_ttl_secs as i64);
             let color = if stale { Color::Yellow } else { Color::Green };
             (
@@ -77,7 +77,7 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         Span::styled(strategy, Style::default().fg(Color::Yellow)),
     ];
 
-    if let Some(ref snap) = app.snapshot {
+    if let Some(ref snap) = app.snapshot() {
         let aid = snap.dto().account_id.trim();
         if !aid.is_empty() {
             spans.push(Span::raw(" | "));
@@ -112,7 +112,7 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         ));
     }
 
-    if let Some(ref snap) = app.snapshot {
+    if let Some(ref snap) = app.snapshot() {
         let age = snap.age_secs();
         let age_str = if age < 60 {
             format!("{}s ago", age)
@@ -500,7 +500,7 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         spans.push(Span::raw(":reset symbols"));
     }
 
-    if let Some(ref snap) = app.snapshot {
+    if let Some(ref snap) = app.snapshot() {
         let n = snap.dto().alerts.len();
         spans.push(Span::raw("  | "));
         spans.push(Span::raw("Alerts: "));

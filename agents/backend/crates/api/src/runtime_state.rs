@@ -657,6 +657,9 @@ pub enum RuntimeExecutionUpdate {
 pub struct RuntimeMarketState {
     pub symbols: Vec<SymbolSnapshot>,
     pub metrics: Metrics,
+    /// Last known cumulative trade volume per symbol (for delta computation).
+    /// Only populated when the source provides real volume data.
+    last_cumulative_volume: std::collections::HashMap<String, u64>,
 }
 
 impl RuntimeMarketState {
@@ -664,10 +667,29 @@ impl RuntimeMarketState {
         Self {
             symbols: snapshot.symbols.clone(),
             metrics: snapshot.metrics.clone(),
+            last_cumulative_volume: std::collections::HashMap::new(),
         }
     }
 
     pub fn apply_market_event(&mut self, event: &MarketDataEvent) {
+        let volume_delta = if event.volume > 0 {
+            let last = self
+                .last_cumulative_volume
+                .get(&event.symbol)
+                .copied()
+                .unwrap_or(0);
+            if event.volume > last {
+                let delta = event.volume - last;
+                self.last_cumulative_volume
+                    .insert(event.symbol.clone(), event.volume);
+                delta
+            } else {
+                1
+            }
+        } else {
+            1
+        };
+
         if let Some(entry) = self
             .symbols
             .iter_mut()
@@ -678,12 +700,12 @@ impl RuntimeMarketState {
             entry.bid = event.bid;
             entry.ask = event.ask;
             entry.spread = (event.ask - event.bid).max(0.0);
-            entry.volume = entry.volume.saturating_add(1);
+            entry.volume = entry.volume.saturating_add(volume_delta);
             entry.roi = (entry.roi * 0.9) + 0.1 * ((mid / entry.candle.entry) - 1.0) * 100.0;
             entry.candle.high = entry.candle.high.max(mid);
             entry.candle.low = entry.candle.low.min(mid);
             entry.candle.close = mid;
-            entry.candle.volume = entry.candle.volume.saturating_add(1);
+            entry.candle.volume = entry.candle.volume.saturating_add(volume_delta);
             entry.candle.updated = event.timestamp;
         } else {
             let mid = (event.bid + event.ask) * 0.5;
@@ -696,13 +718,13 @@ impl RuntimeMarketState {
                 roi: 0.0,
                 maker_count: 1,
                 taker_count: 0,
-                volume: 1,
+                volume: volume_delta,
                 candle: CandleSnapshot {
                     open: mid,
                     high: mid,
                     low: mid,
                     close: mid,
-                    volume: 1,
+                    volume: volume_delta,
                     entry: mid,
                     updated: event.timestamp,
                 },

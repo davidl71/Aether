@@ -251,11 +251,45 @@ impl From<pb::Metrics> for cmn::Metrics {
 }
 
 // ---------------------------------------------------------------------------
+// MarketDataEvent
+// ---------------------------------------------------------------------------
+
+impl From<pb::MarketDataEvent> for cmn::MarketDataEvent {
+    fn from(p: pb::MarketDataEvent) -> Self {
+        Self {
+            contract_id: p.contract_id,
+            symbol: p.symbol,
+            bid: p.bid,
+            ask: p.ask,
+            last: p.last,
+            volume: p.volume,
+            timestamp: unwrap_ts(p.timestamp.as_ref()),
+            quote_quality: p.quote_quality,
+        }
+    }
+}
+
+impl From<cmn::MarketDataEvent> for pb::MarketDataEvent {
+    fn from(c: cmn::MarketDataEvent) -> Self {
+        Self {
+            contract_id: c.contract_id,
+            symbol: c.symbol,
+            bid: c.bid,
+            ask: c.ask,
+            last: c.last,
+            volume: c.volume,
+            timestamp: opt_ts(&c.timestamp),
+            quote_quality: c.quote_quality,
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Re-exports for consumers
 // ---------------------------------------------------------------------------
 
 pub use cmn::{
-    Alert, HistoricPosition, Metrics, OrderSnapshot, PositionSnapshot, RiskStatus,
+    Alert, HistoricPosition, MarketDataEvent, Metrics, OrderSnapshot, PositionSnapshot, RiskStatus,
     StrategyDecisionSnapshot,
 };
 

@@ -6,6 +6,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use market_data::MarketDataEvent;
 use nats_adapter::proto::v1 as pb;
 use nats_adapter::{topics, DlqService, NatsClient, Publisher};
 use strategy::{model::TradeSide, Decision as StrategyDecisionModel, StrategySignal};
@@ -49,16 +50,16 @@ impl NatsIntegration {
     }
 
     /// Publish market data tick as protobuf (non-blocking, logs errors)
-    pub async fn publish_market_data(&self, symbol: &str, bid: f64, ask: f64) {
+    pub async fn publish_market_data(&self, event: &MarketDataEvent) {
         if let Some(ref client) = self.client {
             let publisher = {
                 let mut publishers = self.market_data_publishers.write().await;
                 publishers
-                    .entry(symbol.to_string())
+                    .entry(event.symbol.clone())
                     .or_insert_with(|| {
                         Arc::new(Publisher::new(
                             client.as_ref().clone(),
-                            topics::market_data::tick(symbol),
+                            topics::market_data::tick(&event.symbol),
                             "backend",
                             "MarketDataEvent",
                         ))
@@ -66,19 +67,23 @@ impl NatsIntegration {
                     .clone()
             };
 
-            let event = pb::MarketDataEvent {
-                contract_id: 0,
-                symbol: symbol.to_string(),
-                bid,
-                ask,
-                last: (bid + ask) * 0.5,
-                volume: 0,
+            let proto_event = pb::MarketDataEvent {
+                contract_id: event.contract_id,
+                symbol: event.symbol.clone(),
+                bid: event.bid,
+                ask: event.ask,
+                last: if event.last != 0.0 {
+                    event.last
+                } else {
+                    (event.bid + event.ask) * 0.5
+                },
+                volume: event.volume,
                 timestamp: Some(prost_types::Timestamp::from(std::time::SystemTime::now())),
-                quote_quality: 0,
+                quote_quality: event.quote_quality,
             };
 
-            if let Err(e) = publisher.publish(&event).await {
-                error!(error = %e, symbol = %symbol, "Failed to publish market data to NATS");
+            if let Err(e) = publisher.publish(&proto_event).await {
+                error!(error = %e, symbol = %event.symbol, "Failed to publish market data to NATS");
             }
         }
     }

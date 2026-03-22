@@ -47,7 +47,7 @@ pub fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
     let header = Row::new(["Symbol", "Last", "Bid", "Ask", "Spread", "ROI%"])
         .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
-    let rows: Vec<Row> = if let Some(ref snap) = app.snapshot {
+    let rows: Vec<Row> = if let Some(ref snap) = app.snapshot() {
         let watchlist_upper: HashSet<_> =
             app.watchlist().iter().map(|w| w.to_uppercase()).collect();
         snap.inner
@@ -104,7 +104,7 @@ pub fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
             .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED)),
         trend_header_rect,
     );
-    if let Some(ref snap) = app.snapshot {
+    if let Some(ref snap) = app.snapshot() {
         for (i, s) in snap.inner.symbols.iter().enumerate() {
             let row_rect = Rect {
                 x: trend_area.x,
@@ -127,7 +127,7 @@ pub fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
         }
     }
 
-    let metrics_text = if let Some(ref snap) = app.snapshot {
+    let metrics_text = if let Some(ref snap) = app.snapshot() {
         let m = &snap.inner.metrics;
         format!(
             " Net Liq: ${:.0}  |  BP: ${:.0}  |  Margin: ${:.0}  |  Comms: ${:.2}  |  TWS: {}  |  Portal: {}",

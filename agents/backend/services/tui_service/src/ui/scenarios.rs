@@ -53,12 +53,12 @@ fn is_atm(s: &ScenarioDto, symbol_last: f64) -> bool {
 /// Used by both render and by App for scroll/Enter.
 pub fn filtered_scenarios(app: &App) -> Vec<ScenarioDto> {
     let scenarios = app
-        .snapshot
+        .snapshot()
         .as_ref()
         .map(|s| s.dto().scenarios.clone())
         .unwrap_or_default();
     let symbol_last: std::collections::HashMap<String, f64> = app
-        .snapshot
+        .snapshot()
         .as_ref()
         .map(|s| {
             s.inner

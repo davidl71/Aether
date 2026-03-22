@@ -33,7 +33,7 @@ pub fn render_orders(f: &mut Frame, app: &App, area: Rect) {
         .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
     let filter_lower = app.order_filter.to_lowercase();
-    let all_rows: Vec<Row> = if let Some(ref snap) = app.snapshot {
+    let all_rows: Vec<Row> = if let Some(ref snap) = app.snapshot() {
         snap.dto()
             .orders
             .iter()

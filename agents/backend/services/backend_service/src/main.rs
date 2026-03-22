@@ -411,9 +411,7 @@ async fn handle_market_event(
 
     // Publish market data to NATS (parallel to existing state update)
     if let Some(nats_integration) = nats {
-        nats_integration
-            .publish_market_data(&event.symbol, event.bid, event.ask)
-            .await;
+        nats_integration.publish_market_data(event).await;
     }
 
     {

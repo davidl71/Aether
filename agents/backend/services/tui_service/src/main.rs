@@ -199,6 +199,22 @@ async fn main() -> color_eyre::Result<()> {
         nats::run(nats_config, nats_tx, nats_event_tx, nats_health_tx).await;
     });
 
+    // Spawn NATS tick subscriber for real-time market data (market-data.>)
+    let nats_url_tick = config.nats_url.clone();
+    let tick_event_tx = event_tx.clone();
+    tokio::spawn(async move {
+        match nats_adapter::NatsClient::connect(&nats_url_tick).await {
+            Ok(client) => {
+                if let Err(e) = nats::run_tick_subscriber(client, tick_event_tx).await {
+                    tracing::warn!(error = %e, "Tick subscriber ended");
+                }
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "Failed to connect tick subscriber to NATS");
+            }
+        }
+    });
+
     // Spawn strategy command handler: receives S/T commands, sends NATS request, forwards result
     let nats_url = config.nats_url.clone();
     tokio::spawn(async move {

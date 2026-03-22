@@ -168,3 +168,33 @@ fn emit_status(
         status: ConnectionStatus::new(state, detail),
     });
 }
+
+/// Run a tick subscriber on `market-data.>` using an existing NATS client connection.
+/// Decodes `pb::MarketDataEvent` and emits `AppEvent::MarketTick` for each tick.
+pub async fn run_tick_subscriber(
+    client: NatsClient,
+    event_tx: mpsc::UnboundedSender<AppEvent>,
+) -> anyhow::Result<()> {
+    let subject = "market-data.>";
+    let mut sub = client.client().subscribe(subject.to_string()).await?;
+    info!(subject = %subject, "Subscribed to market-data tick wildcard");
+
+    while let Some(msg) = sub.next().await {
+        match extract_proto_payload::<pb::MarketDataEvent>(&msg.payload) {
+            Ok(proto) => {
+                let tick = AppEvent::MarketTick {
+                    symbol: proto.symbol,
+                    bid: proto.bid,
+                    ask: proto.ask,
+                    last: proto.last,
+                };
+                let _ = event_tx.send(tick);
+            }
+            Err(e) => {
+                debug!(error = %e, "Failed to decode market-data tick payload");
+            }
+        }
+    }
+
+    anyhow::bail!("Tick subscription ended");
+}

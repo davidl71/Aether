@@ -6,4 +6,5 @@ description = "Shared utilities (expiry parsing, snapshot types)"
 
 [dependencies]
 chrono = { workspace = true }
+derive_builder = { workspace = true }
 serde = { workspace = true }

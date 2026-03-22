@@ -85,7 +85,9 @@ pub struct App {
     /// Set true when state changes require redraw. Reset after each render.
     pub needs_redraw: bool,
     pub active_tab: Tab,
-    pub snapshot: Option<TuiSnapshot>,
+    /// Latest snapshot from periodic NATS publication. Updated via `snapshot_rx`.
+    /// Access via `get_snapshot()` / `set_snapshot()` using UnsafeCell interior mutability.
+    snapshot: std::cell::UnsafeCell<Option<TuiSnapshot>>,
     /// Per-symbol ROI history for sparkline visualization (symbol -> deque of ROI values)
     pub roi_history: HashMap<String, VecDeque<f64>>,
     /// Order filter text (filters orders by symbol or status)
@@ -191,7 +193,7 @@ impl App {
             config,
             needs_redraw: true,
             active_tab: Tab::Dashboard,
-            snapshot: None,
+            snapshot: std::cell::UnsafeCell::new(None),
             roi_history: HashMap::new(),
             order_filter: String::new(),
             log_state: TuiWidgetState::default(),
@@ -244,6 +246,63 @@ impl App {
     /// Mark that the UI needs to be redrawn on the next render cycle.
     pub fn mark_dirty(&mut self) {
         self.needs_redraw = true;
+    }
+
+    /// Returns a reference to the current snapshot (for rendering).
+    #[inline]
+    pub fn snapshot(&self) -> &Option<TuiSnapshot> {
+        unsafe { &*self.snapshot.get() }
+    }
+
+    /// Replaces the current snapshot (used by tick processing).
+    #[inline]
+    pub fn set_snapshot(&mut self, snap: Option<TuiSnapshot>) {
+        unsafe {
+            *self.snapshot.get() = snap;
+        }
+    }
+
+    /// Applies a tick market data event to the current snapshot.
+    /// Creates a new symbol entry if this is the first tick for the symbol.
+    /// Does nothing if no snapshot is loaded yet.
+    #[inline]
+    pub fn apply_tick(&mut self, symbol: &str, bid: f64, ask: f64, last: f64) {
+        let snap_ptr = self.snapshot.get();
+        if snap_ptr.is_null() {
+            return;
+        }
+        let snap = unsafe { &mut *snap_ptr };
+        if let Some(ref mut s) = snap {
+            if let Some(entry) = s.inner.symbols.iter_mut().find(|e| e.symbol == symbol) {
+                let mid = if last != 0.0 { last } else { (bid + ask) * 0.5 };
+                entry.last = mid;
+                entry.bid = bid;
+                entry.ask = ask;
+                entry.spread = (ask - bid).max(0.0);
+            } else if bid != 0.0 || ask != 0.0 {
+                let mid = if last != 0.0 { last } else { (bid + ask) * 0.5 };
+                s.inner.symbols.push(api::SymbolSnapshot {
+                    symbol: symbol.to_string(),
+                    last: mid,
+                    bid,
+                    ask,
+                    spread: (ask - bid).max(0.0),
+                    roi: 0.0,
+                    maker_count: 1,
+                    taker_count: 0,
+                    volume: 0,
+                    candle: api::CandleSnapshot {
+                        open: mid,
+                        high: mid,
+                        low: mid,
+                        close: mid,
+                        volume: 0,
+                        entry: mid,
+                        updated: chrono::Utc::now(),
+                    },
+                });
+            }
+        }
     }
 
     /// Effective watchlist: override if set, else config.
@@ -338,7 +397,7 @@ impl App {
 
             if let Some(snap) = next_snapshot {
                 if self.should_accept_snapshot(&snap) {
-                    self.snapshot = Some(snap.clone());
+                    self.set_snapshot(Some(snap.clone()));
                     self.update_roi_history(&snap);
                     changed = true;
                 }
@@ -346,7 +405,7 @@ impl App {
         }
 
         // Clamp positions scroll to current display row count (flat or combo)
-        if let Some(ref s) = self.snapshot {
+        if let Some(ref s) = self.snapshot() {
             let (display_len, _, _) = crate::ui::positions_display_info(
                 &s.dto().positions,
                 self.positions_combo_view,
@@ -395,6 +454,14 @@ impl App {
             AppEvent::Connection { target, status } => match target {
                 ConnectionTarget::Nats => self.nats_status = status,
             },
+            AppEvent::MarketTick {
+                symbol,
+                bid,
+                ask,
+                last,
+            } => {
+                self.apply_tick(&symbol, bid, ask, last);
+            }
         }
     }
 
@@ -405,7 +472,7 @@ impl App {
 
     /// Length of orders list after applying order_filter (for Orders tab selection clamp).
     pub fn filtered_orders_len(&self) -> usize {
-        self.snapshot
+        self.snapshot()
             .as_ref()
             .map(|s| self.filtered_orders(s).len())
             .unwrap_or(0)

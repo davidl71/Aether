@@ -491,7 +491,8 @@ impl YatWSEngine {
                                 ask,
                                 last,
                                 volume: 0,
-                                quote_quality,
+                                timestamp: chrono::Utc::now(),
+                                quote_quality: quote_quality.bits() as u32,
                             };
                             if std_tx.send(market_event).is_err() {
                                 break;

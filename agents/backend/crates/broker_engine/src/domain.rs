@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 
 pub use crate::error::BrokerError;
 
+pub use common::{MarketDataEvent, MarketDataEventBuilder};
+
 // -----------------------------------------------------------------------------
 // Option contract
 // -----------------------------------------------------------------------------
@@ -333,19 +335,6 @@ impl QuoteQuality {
     pub fn bits(self) -> u8 {
         self.0
     }
-}
-
-/// Market data event
-#[derive(Debug, Clone, Default, derive_builder::Builder)]
-#[builder(setter(into), default)]
-pub struct MarketDataEvent {
-    pub contract_id: i64,
-    pub symbol: String,
-    pub bid: f64,
-    pub ask: f64,
-    pub last: f64,
-    pub volume: i64,
-    pub quote_quality: QuoteQuality,
 }
 
 /// Position event

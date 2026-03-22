@@ -165,3 +165,28 @@ impl StrategyDecisionSnapshot {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Market Data
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize, derive_builder::Builder)]
+#[builder(setter(into, strip_option), default)]
+pub struct MarketDataEvent {
+    #[builder(default = "0")]
+    pub contract_id: i64,
+    #[builder(setter(into))]
+    pub symbol: String,
+    #[builder(default = "0.0")]
+    pub bid: f64,
+    #[builder(default = "0.0")]
+    pub ask: f64,
+    #[builder(default = "0.0")]
+    pub last: f64,
+    #[builder(default = "0")]
+    pub volume: u64,
+    #[builder(default = "Utc::now()")]
+    pub timestamp: DateTime<Utc>,
+    #[builder(default = "0")]
+    pub quote_quality: u32,
+}

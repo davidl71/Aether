@@ -114,7 +114,7 @@ pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
     let inner = block.inner(area);
     f.render_widget(block, area);
 
-    let (header, rows) = if let Some(ref snap) = app.snapshot {
+    let (header, rows) = if let Some(ref snap) = app.snapshot() {
         let positions = &snap.dto().positions;
         let (_, index_map, combo_key_per_row) = positions_display_info(
             positions,

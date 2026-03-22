@@ -14,7 +14,7 @@ use ratatui::layout::Rect;
 use crate::app::App;
 
 pub fn render_alerts(f: &mut Frame, app: &App, area: Rect) {
-    let lines: Vec<Line> = if let Some(ref snap) = app.snapshot {
+    let lines: Vec<Line> = if let Some(ref snap) = app.snapshot() {
         snap.dto()
             .alerts
             .iter()
