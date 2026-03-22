@@ -386,6 +386,7 @@ dependencies = [
  "bytes",
  "chrono",
  "futures",
+ "ib_adapter",
  "ibapi",
  "market_data",
  "nats_adapter",

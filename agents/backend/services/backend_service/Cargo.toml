@@ -30,6 +30,7 @@ uuid = { workspace = true }
 ibapi = { workspace = true }
 tws_yield_curve = { path = "../../crates/tws_yield_curve" }
 broker_engine = { path = "../../crates/broker_engine" }
+ib_adapter = { path = "../../crates/ib_adapter" }
 
 [dev-dependencies]
 nats_adapter = { path = "../../crates/nats_adapter" }

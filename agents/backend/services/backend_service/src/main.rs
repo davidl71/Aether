@@ -7,7 +7,9 @@ use api::{
     StrategyDecisionSnapshot, SystemSnapshot,
 };
 use async_trait::async_trait;
+use broker_engine::{BrokerConfig, BrokerEngine};
 use chrono::Utc;
+use ib_adapter::IbAdapter;
 use market_data::{
     FmpClient, MarketDataEvent, MarketDataIngestor, MarketDataSource, MockMarketDataSource,
     PolygonMarketDataSource,
@@ -41,15 +43,46 @@ mod yield_curve_writer;
 struct BackendConfig {
     #[serde(default)]
     market_data: MarketDataSettings,
+    #[serde(default)]
+    broker: BrokerSettings,
 }
 
 impl Default for BackendConfig {
     fn default() -> Self {
         Self {
             market_data: MarketDataSettings::default(),
+            broker: BrokerSettings::default(),
         }
     }
 }
+
+#[derive(Debug, Deserialize, Clone)]
+struct BrokerSettings {
+    #[serde(default = "default_broker_host")]
+    host: String,
+    #[serde(default = "default_broker_port")]
+    port: u16,
+    #[serde(default = "default_broker_client_id")]
+    client_id: u32,
+    #[serde(default = "default_broker_paper")]
+    paper_trading: bool,
+}
+
+impl Default for BrokerSettings {
+    fn default() -> Self {
+        Self {
+            host: default_broker_host(),
+            port: default_broker_port(),
+            client_id: default_broker_client_id(),
+            paper_trading: default_broker_paper(),
+        }
+    }
+}
+
+fn default_broker_host() -> String { "127.0.0.1".into() }
+fn default_broker_port() -> u16 { 7497 }
+fn default_broker_client_id() -> u32 { 2 }
+fn default_broker_paper() -> bool { true }
 
 #[derive(Debug, Deserialize, Clone)]
 struct MarketDataSettings {
@@ -176,6 +209,29 @@ async fn main() -> anyhow::Result<()> {
         });
     if let Some(ref nats) = *nats_integration {
         if let Some(client) = nats.client() {
+            let broker_engine: Option<Arc<dyn BrokerEngine>> =
+                if config.broker.paper_trading || std::env::var("IB_BROKER_ENABLED").is_ok() {
+                    let broker_config = BrokerConfig {
+                        host: config.broker.host.clone(),
+                        port: config.broker.port,
+                        client_id: config.broker.client_id,
+                        paper_trading: config.broker.paper_trading,
+                    };
+                    let adapter = IbAdapter::new(broker_config.clone());
+                    match adapter.connect().await {
+                        Ok(()) => {
+                            info!(host = %broker_config.host, port = %broker_config.port, "Connected to TWS for order placement");
+                            Some(Arc::new(adapter) as Arc<dyn BrokerEngine>)
+                        }
+                        Err(e) => {
+                            warn!(error = %e, "Failed to connect to TWS; order placement disabled");
+                            None
+                        }
+                    }
+                } else {
+                    info!("Broker order placement disabled (enable with IB_BROKER_ENABLED or set paper_trading=true)");
+                    None
+                };
             let backend_id = std::env::var("BACKEND_ID").unwrap_or_else(|_| "ib".into());
             let interval_ms: u64 = std::env::var("SNAPSHOT_PUBLISH_INTERVAL_MS")
                 .ok()
@@ -203,6 +259,7 @@ async fn main() -> anyhow::Result<()> {
                 controller.clone(),
                 state.clone(),
                 None,
+                broker_engine.clone(),
             );
         }
     }

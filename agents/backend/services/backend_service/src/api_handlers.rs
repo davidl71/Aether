@@ -24,7 +24,10 @@ use api::quant::{
     BoxSpreadRequest, GreeksRequest, HistoricalVolRequest, IvRequest, JellyRollRequest,
     RatioSpreadRequest, RiskMetricsRequest, StrategyRequest,
 };
-use api::{LoanRecord, LoanRepository, SharedSnapshot, StrategyController};
+use api::{LoanRecord, LoanRepository, ScenarioDto, SharedSnapshot, StrategyController};
+use broker_engine::{
+    construct_box_spread_order, BrokerEngine, OrderAction, TimeInForce,
+};
 use bytes::Bytes;
 use futures::StreamExt;
 use market_data::FmpClient;
@@ -95,6 +98,7 @@ pub fn spawn(
     strategy_controller: StrategyController,
     state: SharedSnapshot,
     yield_curve_refresh_tx: Option<tokio::sync::mpsc::Sender<()>>,
+    broker_engine: Option<Arc<dyn BrokerEngine>>,
 ) {
     let nc = nats_client.client().clone();
     let nc_loans = nc.clone();
@@ -112,7 +116,7 @@ pub fn spawn(
     });
     let state_strategy = state.clone();
     tokio::spawn(async move {
-        run_strategy_control(nc_strategy, strategy_controller, state_strategy).await;
+        run_strategy_control(nc_strategy, strategy_controller, state_strategy, broker_engine).await;
     });
     let nc_finance = nats_client.client().clone();
     tokio::spawn(async move {
@@ -145,7 +149,7 @@ pub fn spawn(
     });
 }
 
-async fn run_strategy_control(nc: Client, controller: StrategyController, state: SharedSnapshot) {
+async fn run_strategy_control(nc: Client, controller: StrategyController, state: SharedSnapshot, broker_engine: Option<Arc<dyn BrokerEngine>>) {
     let sub_start = match nc
         .queue_subscribe(SUBJECT_STRATEGY_START.to_string(), api_queue_group())
         .await
@@ -223,18 +227,80 @@ async fn run_strategy_control(nc: Client, controller: StrategyController, state:
     tokio::spawn(handle_sub(
         nc,
         sub_execute,
-        move |_body: Option<Vec<u8>>| async move { execute_scenario_reply().await },
+        move |body: Option<Vec<u8>>| {
+            let broker = broker_engine.clone();
+            async move { execute_scenario_reply(body, broker).await }
+        },
     ));
 }
 
-/// Handles api.strategy.execute: places orders for a scenario.
-/// Currently a stub — requires broker engine to be wired into backend_service.
-async fn execute_scenario_reply() -> Vec<u8> {
-    serde_json::to_vec(&serde_json::json!({
-        "ok": false,
-        "error": "scenario execution not wired: backend_service requires Arc<dyn BrokerEngine> to place bag orders"
-    }))
-    .unwrap_or_else(|_| b"{}".to_vec())
+async fn execute_scenario_reply(body: Option<Vec<u8>>, broker: Option<Arc<dyn BrokerEngine>>) -> Vec<u8> {
+    let Some(broker) = broker else {
+        return serde_json::to_vec(&serde_json::json!({
+            "ok": false,
+            "error": "broker not available"
+        }))
+        .unwrap_or_else(|_| b"{}".to_vec());
+    };
+
+    let Some(bytes) = body else {
+        return serde_json::to_vec(&serde_json::json!({
+            "ok": false,
+            "error": "missing request body"
+        }))
+        .unwrap_or_else(|_| b"{}".to_vec());
+    };
+
+    let scenario: ScenarioDto = match serde_json::from_slice(&bytes) {
+        Ok(s) => s,
+        Err(e) => {
+            return serde_json::to_vec(&serde_json::json!({
+                "ok": false,
+                "error": format!("failed to parse scenario: {}", e)
+            }))
+            .unwrap_or_else(|_| b"{}".to_vec());
+        }
+    };
+
+    let strike_center = match scenario.strike_center {
+        Some(sc) => sc,
+        None => {
+            return serde_json::to_vec(&serde_json::json!({
+                "ok": false,
+                "error": "strike_center is required"
+            }))
+            .unwrap_or_else(|_| b"{}".to_vec());
+        }
+    };
+
+    let k_low = strike_center - scenario.strike_width / 2.0;
+    let k_high = strike_center + scenario.strike_width / 2.0;
+
+    let order_request = construct_box_spread_order(
+        &scenario.symbol,
+        &scenario.expiration,
+        k_low,
+        k_high,
+        OrderAction::Buy,
+        1,
+        scenario.net_debit,
+        "SMART",
+        "USD",
+        TimeInForce::FOK,
+    );
+
+    match broker.place_bag_order(order_request).await {
+        Ok(order_id) => serde_json::to_vec(&serde_json::json!({
+            "ok": true,
+            "order_id": order_id
+        }))
+        .unwrap_or_else(|_| b"{}".to_vec()),
+        Err(e) => serde_json::to_vec(&serde_json::json!({
+            "ok": false,
+            "error": format!("order placement failed: {}", e)
+        }))
+        .unwrap_or_else(|_| b"{}".to_vec()),
+    }
 }
 
 /// Handles api.admin.set_mode: set snapshot.mode to LIVE, MOCK, or DRY-RUN for quick display switch.
