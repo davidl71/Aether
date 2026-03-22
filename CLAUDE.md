@@ -6,119 +6,70 @@ For exarp-go (session prime, handoff, tasks, scorecard) in Cursor, Claude Code, 
 
 ## Project at a Glance
 
-Comprehensive multi-asset synthetic financing platform. Manages financing across options, futures, bonds, loans, and pension funds with unified portfolio management, cash flow modeling, and multi-instrument optimization across 21+ accounts and multiple brokers. Box spreads are one active strategy component (T-bill-equivalent yields on spare cash). Multi-language codebase: C++ core engine, pybind11-backed Python binding tests under `native/tests/python/`, Rust backend agents, and an archived TypeScript/React web client. Active frontend focus is the Rust TUI plus the native CLI.
+Comprehensive multi-asset synthetic financing platform. Manages financing across options, futures, bonds, loans, and pension funds with unified portfolio management, cash flow modeling, and multi-instrument optimization across 21+ accounts and multiple brokers. Box spreads are one active strategy component (T-bill-equivalent yields on spare cash). **Rust-first codebase**: all active development is in `agents/backend/`. C++ native build has been removed (see root `CMakeLists.txt`).
 
 ## Build & Test
 
-Prefer `just` commands (see `just --list`):
+All active development is Rust. Run from `agents/backend/`:
 
 ```bash
-just configure          # one-time CMake setup (debug)
-just build              # ninja -C build
-just test               # ctest --test-dir build --output-on-failure
-just lint               # run all linters
-just build-universal    # universal binary (arm64 + x86_64)
-just build-portable     # auto-detect platform and preset
-```
-
-**AI-friendly builds** (JSON output for easy parsing):
-
-```bash
-# C++ (AI-friendly: quiet, JSON result, error extraction)
-./scripts/build_ai_friendly.sh --json-only
-
-# Rust
-./scripts/build_rust_ai_friendly.sh --json-only
-```
-
-Direct CMake/Ninja (when `just` isn't available):
-
-```bash
-# Configure (one-time)
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
-# Or use a preset (matches CMakePresets.json)
-cmake --preset macos-arm64-debug   # linux-x64-debug, macos-x86_64-debug
+cd agents/backend
 
 # Build
-ninja -C build
+cargo build
 
 # Test
-ctest --test-dir build --output-on-failure
-ctest --test-dir build -R test_name --output-on-failure   # single test
+cargo test
 
 # Lint
+cargo fmt && cargo clippy
+
+# Full lint (all languages)
 ./scripts/run_linters.sh
 ```
 
-If configure fails with missing TWS API or Intel Decimal deps, run `./scripts/fetch_third_party.sh` first.
-
-### CMake Options
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `BUILD_TESTING` | ON | Build Catch2 test suite |
-| `ENABLE_NATIVE_CLI` | ON | Build the CLI binary |
-| `ENABLE_PYTHON_BINDINGS` | ON | Build pybind11 Python bindings |
-| `ENABLE_ASAN` | OFF | AddressSanitizer |
-| `ENABLE_TSAN` | OFF | ThreadSanitizer |
-| `ENABLE_LTO` | ON | Link-Time Optimization |
-| `ENABLE_NATS` | OFF | NATS message queue |
-
-## Code Style
-
-- C++20, 2-space indentation, Allman braces, 100-char soft wrap
-- `snake_case` functions/variables, `PascalCase` types, `k` prefix constants
-- Only comment non-obvious trading math
+AI-friendly JSON output (for parsing):
+```bash
+./scripts/build_rust_ai_friendly.sh --json-only
+```
 
 ## Key Files to Know
 
 | What | Where |
 |------|-------|
-| CLI entry point | `native/src/ib_box_spread.cpp` |
-| Build config | `native/CMakeLists.txt` |
-| Type definitions | `native/include/types.h` |
-| TWS API wrapper | `native/src/tws_client.cpp` |
-| Order management | `native/src/order_manager.cpp` |
-| Risk calculations | `native/src/risk_calculator.cpp` |
-| Greeks | `native/src/greeks_calculator.cpp` |
-| Margin calculator | `native/src/margin_calculator.cpp` |
-| Financing optimizer | `native/src/financing_optimizer.cpp` |
-| Hedge manager | `native/src/hedge_manager.cpp` |
-| Config loading | `native/src/config_manager.cpp` |
-| Broker adapters | `native/src/brokers/` |
-| Strategy impls | `native/src/strategies/` |
+| Backend service (REST+WS API) | `agents/backend/services/backend_service` |
+| TUI (ratatui) | `agents/backend/services/tui_service` |
+| CLI entry point | `agents/backend/bin/cli` |
+| Broker trait + domain | `agents/backend/crates/broker_engine/` |
+| IBKR adapter | `agents/backend/crates/ib_adapter/` |
+| Market data | `agents/backend/crates/market_data/` |
+| Quant / risk / pricing | `agents/backend/crates/quant/` |
+| Ledger | `agents/backend/crates/ledger/` |
+| NATS messaging | `agents/backend/crates/nats_adapter/` |
 | Architecture | `ARCHITECTURE.md` |
 | API docs index | `docs/API_DOCUMENTATION_INDEX.md` |
 
 ## Common Tasks
 
-### Adding a new source file
+### Adding a new Rust crate
 
-1. Create `native/src/foo.cpp` and `native/include/foo.h`
-2. Add to the `SOURCES` / `HEADERS` lists in `native/CMakeLists.txt`
-3. Create `native/tests/test_foo.cpp` and register in `native/tests/CMakeLists.txt`
+1. Add to `agents/backend/crates/` with `Cargo.toml`
+2. Add to workspace members in `agents/backend/Cargo.toml`
+3. Add tests under `crates/*/tests/`
 
-### Adding a dependency
+### Adding a Rust source file
 
-Most deps use CMake FetchContent — see existing patterns in `native/CMakeLists.txt`.
+1. Create `crates/<name>/src/<file>.rs`
+2. Add `mod <file>;` to `crates/<name>/src/lib.rs`
+3. Run `cargo test -p <crate>` to verify
 
 ## Safety Rules
 
 - **Never** commit credentials, API keys, or secrets
 - **Always** use paper trading port `7497` for testing
-- **Never** modify code under `native/third_party/` (legacy C++ deps); wrap vendor code in `agents/backend/crates/ib_adapter/src/`
-- **Always** add tests for trading logic and risk calculations
-- All pricing/risk calculations must have Rust `#[test]` tests before merge
+- **Never** modify vendor code in `ib_adapter/src/` — wrap IBKR TWS API calls there
+- **Always** add `#[test]` tests for trading logic and risk calculations
 - Gate live trading behind explicit configuration flags
-
-## Python
-
-Use `uv` for package management when available. Fall back to `pip` if not.
-
-```bash
-cd native
-uv run --project . pytest tests/python/ -v
-```
 
 ## exarp Workflow
 

@@ -3,7 +3,7 @@
 # Override in -e or extra vars as needed.
 
 # Project (use env for portability)
-project_name: "ib_box_spread_full_universal"
+project_name: "Aether"
 project_user: "{{ lookup('env', 'USER') | default(ansible_user_id | default('vagrant')) }}"
 project_path: "{{ lookup('env', 'HOME') | default('/Users/' + project_user) }}/Projects/trading/{{ project_name }}"
 

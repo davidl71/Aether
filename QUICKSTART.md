@@ -27,33 +27,34 @@ brew install davidl71/ib-box-spread/ib-box-spread
 ib_box_spread --help
 ```
 
-### Method 2: From Source
+### Method 2: From Source (Rust)
 
 ```bash
 # Clone repository
-git clone git@github.com:davidl71/ib_box_spread_full_universal.git
-cd ib_box_spread_full_universal
+git clone git@github.com:davidl71/Aether.git
+cd Aether
 
-# Build (requires CMake, Ninja, and dependencies)
-./scripts/build_universal.sh
+# Build Rust backend
+cd agents/backend
+cargo build
 
-# Or use fast build with ccache
-./scripts/build_fast.sh
+# Run backend service (REST API on :8080)
+cargo run -p backend_service
 
-# Binary will be at: build/bin/ib_box_spread
+# Or run TUI
+cargo run -p tui_service
 ```
 
-### Method 3: Using Worktree (For Development)
+### Method 3: Using Homebrew (CLI)
 
 ```bash
-# Set up worktree with dependencies pre-built
-./scripts/setup_worktree.sh my-worktree
+# Install Rust first if not present
+brew install rust
 
-# This will:
-# - Create worktree
-# - Build Intel Decimal library
-# - Build TWS API library
-# - Configure main project
+# Clone and build
+git clone git@github.com:davidl71/Aether.git
+cd Aether/agents/backend
+cargo build -p cli
 ```
 
 ## Configuration (2 Minutes)

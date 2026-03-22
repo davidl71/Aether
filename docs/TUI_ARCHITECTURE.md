@@ -225,4 +225,4 @@ pub struct Toast { message: String, created_at: Instant, ttl: Duration, level: T
 - rust-trade caching: `/rust-trade/trading-common/src/data/cache.rs`
 - Task T-1773941611822304000 — Longbridge Terminal research
 - Task T-1773939577056591000 — ui.rs vs ui/mod.rs dead code resolution
-- `docs/research/LIBRARY_EVALUATION_SUMMARY.md`
+- `docs/ARCHIVED_INTEGRATION_PATTERNS.md` (consolidated from research docs)

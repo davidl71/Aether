@@ -1,114 +1,104 @@
 # Contributing to Aether
 
-Thank you for your interest in contributing! This document provides guidelines for contributing to the project.
+Thank you for contributing! This project is a Rust-first multi-asset synthetic financing platform.
 
 ## Quick Start
 
-1. **Clone the repository**
+```bash
+# Clone
+git clone git@github.com:davidl71/Aether.git
+cd Aether
 
-   ```bash
-   git clone <repository-url>
-   cd ib_box_spread_full_universal
-   ```
+# Build Rust backend
+cd agents/backend
+cargo build
 
-2. **Set up development environment**
+# Run backend service (:8080)
+cargo run -p backend_service
 
-   ```bash
-   # Configure CMake with Ninja
-   cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug \
-     -DIBAPI_INCLUDE_DIR=~/IBJts/source/cppclient \
-     -DIBAPI_LIB=~/IBJts/source/cppclient/libTwsApiCpp.dylib
-   ```
+# Run TUI (separate terminal)
+cargo run -p tui_service
 
-3. **Build and test**
+# Run CLI
+cargo run -p cli
+```
 
-   ```bash
-   ninja -C build
-   ctest --test-dir build --output-on-failure
-   ```
+## Build & Test
+
+```bash
+cd agents/backend
+
+# Build
+cargo build
+
+# Test
+cargo test
+
+# Lint
+cargo fmt && cargo clippy
+
+# Full project lint
+./scripts/run_linters.sh
+```
 
 ## Code Style
 
-We follow these conventions (see [AGENTS.md](AGENTS.md) for complete guidelines):
+Follow [AGENTS.md](AGENTS.md) for complete guidelines. Rust conventions:
 
-| Element | Convention | Example |
-|---------|------------|---------|
-| Indentation | 2 spaces | |
-| Braces | Allman style | `if (x)\n{` |
-| Functions | `snake_case` | `calculate_spread()` |
-| Types | `PascalCase` | `BoxSpread` |
-| Constants | `k` prefix | `kMaxPositions` |
-| Standard | C++20 | |
+| Element | Convention |
+|---------|------------|
+| Indentation | 4 spaces |
+| Functions | `snake_case` |
+| Types | `PascalCase` |
+| Constants | `k` prefix |
+
+## Project Structure
+
+```
+agents/backend/
+├── crates/           # api, broker_engine, ib_adapter, ledger, market_data,
+│                     # nats_adapter, quant, risk, strategy, etc.
+├── services/         # backend_service, tui_service, tws_yield_curve_daemon
+├── bin/cli           # CLI entry point
+└── Cargo.toml       # Workspace
+```
 
 ## Pull Request Process
 
 1. **Create a feature branch**
-
    ```bash
    git checkout -b feature/your-feature-name
    ```
 
 2. **Make changes and test**
-
    ```bash
-   # Run linters
-   ./scripts/run_linters.sh
-
-   # Run tests
-   ctest --test-dir build --output-on-failure
+   cargo test
+   cargo fmt && cargo clippy
    ```
 
 3. **Commit with descriptive messages**
-   - Use imperative mood: "Add feature" not "Added feature"
-   - Keep subject line under 72 characters
+   - Imperative mood: "Add feature" not "Added feature"
+   - Subject line under 72 characters
    - Include context in body when needed
 
 4. **Push and create PR**
-   - Reference any related issues
+   - Reference related issues
    - Include test output if applicable
-   - Note any configuration changes
 
 ## Testing Requirements
 
-- **All trading logic** must have corresponding tests
-- **Risk calculations** require test coverage
-- Test files mirror source files: `foo.cpp` → `foo_test.cpp`
-- Run tests locally before pushing
+- All trading logic must have `#[test]` tests
+- Risk calculations require test coverage
+- Run `cargo test` before pushing
 
 ## Security Guidelines
 
 - **Never** commit credentials, API keys, or secrets
-- **Never** log sensitive information
-- Use paper trading port (7497) for testing
+- **Always** use paper trading port `7497` for testing
 - Gate live trading behind configuration flags
-
-## Project Structure
-
-```
-native/
-├── src/           # C++ source files
-├── include/       # Header files
-├── tests/         # Test files
-│   └── python/    # Python binding tests
-docs/              # Documentation
-scripts/           # Build and utility scripts
-.cursor/           # Cursor IDE configuration
-```
-
-The active Python surface in this repo is limited to native binding tests under `native/tests/python/`
-and selected helper scripts. There is no top-level `python/` application directory anymore.
 
 ## Getting Help
 
-- Check `docs/` for detailed documentation
-- See `docs/API_DOCUMENTATION_INDEX.md` for API reference
-- Review `.cursor/rules/` for AI-assisted development guidelines
-- Open an issue for questions or problems
-
-## Code of Conduct
-
-Be respectful and constructive. We're all here to build great trading software.
-
----
-
-For complete project guidelines, see [AGENTS.md](AGENTS.md).
+- [AGENTS.md](AGENTS.md) — canonical project guidelines
+- [ARCHITECTURE.md](ARCHITECTURE.md) — system overview
+- `docs/` — additional documentation

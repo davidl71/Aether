@@ -11,7 +11,7 @@ Execute tasks from the parallel-execution plan in waves. Progress is Todo2-only:
 
 - **Wave IDs:** `.cursor/plans/parallel-execution-waves.json` — keys `wave_0`, `wave_1`, `wave_3` (arrays of task IDs).
 - **Order:** Wave 0 → Wave 1 → Wave 3. Do not start the next wave until the current wave has no remaining (non-Done) tasks.
-- **Plan context:** `.cursor/plans/parallel-execution-subagents.plan.md` and project plan (e.g. `.cursor/plans/ib_box_spread_full_universal.plan.md`).
+- **Plan context:** `.cursor/plans/parallel-execution-subagents.plan.md` and project plan (e.g. `.cursor/plans/Aether.plan.md`).
 
 ## Get remaining for a wave
 

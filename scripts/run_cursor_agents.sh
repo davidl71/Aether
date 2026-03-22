@@ -1,9 +1,9 @@
 #!/bin/bash
-# Run Cursor agent batches in parallel for ib_box_spread_full_universal
+# Run Cursor agent batches in parallel for Aether
 # Usage: ./run_cursor_agents.sh [batch]
 #   batch: a, b, c, or all (default)
 
-PROJECT="/Users/davidl/Projects/Trading/ib_box_spread_full_universal"
+PROJECT="/Users/davidl/Projects/Trading/Aether"
 LOGDIR="/tmp/cursor_batch_logs"
 mkdir -p "$LOGDIR"
 

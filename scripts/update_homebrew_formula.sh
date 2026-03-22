@@ -19,7 +19,7 @@ Options:
   --formula <name>      Formula name (default: ib-box-spread)
   --tap-dir <dir>       Tap directory (default: ../homebrew-ib-box-spread)
   --github-user <user>  GitHub username (default: davidl71)
-  --repo <repo>         Repository name (default: ib_box_spread_full_universal)
+  --repo <repo>         Repository name (default: Aether)
   -h, --help            Show this message
 
 Examples:
@@ -31,7 +31,7 @@ VERSION=""
 FORMULA_NAME="ib-box-spread"
 TAP_DIR="${PROJECT_ROOT}/../homebrew-ib-box-spread"
 GITHUB_USER="davidl71"
-REPO="ib_box_spread_full_universal"
+REPO="Aether"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

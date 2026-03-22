@@ -32,7 +32,7 @@ TAP="davidl71/homebrew-tap"
 FORMULA_NAME="ib-box-spread"
 CLASS_NAME="IbBoxSpread"
 VERSION_TAG="v1.2.0"
-TARBALL_URL="https://github.com/davidl71/ib_box_spread_full_universal/archive/refs/tags/${VERSION_TAG}.tar.gz"
+TARBALL_URL="https://github.com/davidl71/Aether/archive/refs/tags/${VERSION_TAG}.tar.gz"
 TARBALL_SHA256="0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5"
 DRY_RUN=0
 
@@ -52,7 +52,7 @@ while [[ $# -gt 0 ]]; do
     ;;
   --version-tag)
     VERSION_TAG="$2"
-    TARBALL_URL="https://github.com/davidl71/ib_box_spread_full_universal/archive/refs/tags/${VERSION_TAG}.tar.gz"
+    TARBALL_URL="https://github.com/davidl71/Aether/archive/refs/tags/${VERSION_TAG}.tar.gz"
     shift 2
     ;;
   --url)
@@ -94,7 +94,7 @@ formula_contents() {
   cat <<EOF
 class ${CLASS_NAME} < Formula
   desc "Native + TUI toolkit for IBKR box spread research"
-  homepage "https://github.com/davidl71/ib_box_spread_full_universal"
+  homepage "https://github.com/davidl71/Aether"
   url "${TARBALL_URL}"
   sha256 "${TARBALL_SHA256}"
   license "MIT"

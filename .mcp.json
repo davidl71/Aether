@@ -4,7 +4,7 @@
       "command": "~/go/bin/exarp-go",
       "args": [],
       "env": {
-        "PROJECT_ROOT": "/home/user/ib_box_spread_full_universal",
+        "PROJECT_ROOT": "/home/user/Aether",
         "EXARP_WATCH": "0",
         "EXARP_DEBUG_LOG": "0"
       }

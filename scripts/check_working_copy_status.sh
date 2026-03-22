@@ -11,7 +11,7 @@ cd "$REPO_ROOT"
 declare -A AGENTS=(
   ["local"]="$(pwd)"
   ["ubuntu"]="david@192.168.192.57:~/ib_box_spread_full_universal"
-  ["macos"]="davidl@192.168.192.141:/Users/davidl/Projects/Trading/ib_box_spread_full_universal"
+  ["macos"]="davidl@192.168.192.141:/Users/davidl/Projects/Trading/Aether"
 )
 
 echo "================================================================================"

@@ -2,7 +2,7 @@
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)]()
+[![Rust](https://img.shields.io/badge/Rust-stable-blue.svg)]()
 
 Comprehensive multi-asset financing optimization system for managing synthetic financing across options, futures, bonds, bank loans, and pension funds. Provides unified portfolio management, cash flow modeling, opportunity simulation, and multi-instrument relationship optimization across 21+ accounts and multiple brokers.
 
@@ -46,16 +46,16 @@ archived implementation/reference material while the project focuses on TUI/CLI.
 - ✅ Comprehensive logging with spdlog
 - ✅ Dry-run mode for safe testing
 - ✅ Universal binary support (Intel + Apple Silicon on macOS)
-- ✅ Modern C++20 codebase with extensive error handling
+- ✅ Modern Rust codebase with extensive error handling
 - ✅ JSON-based configuration
-- ✅ Comprehensive test suite with Catch2
+- ✅ Comprehensive test suite with cargo test
 - ✅ QuantConnect-inspired deployment guard rails (pre-flight checklist, weekly re-auth, rich error catalog)
 - ✅ Event notifications via email/webhook/SMS/Telegram
 - ✅ Market data provider failover with ORATS fallback support
 - ✅ QuestDB time-series archiving for quotes and trades
 - ✅ IBKR Client Portal API integration for account and portfolio snapshots
-- ✅ pybind11 bindings exposing C++ calculations to Python
-- ✅ WebAssembly (WASM) module for code reuse between backend and future UI surfaces
+- ✅ REST API and WebSocket for frontend/TUI communication
+- ✅ NATS messaging for distributed components
 
 ## Strategies
 
@@ -118,12 +118,8 @@ A box spread is a complex options strategy that combines four positions:
 
 ### System Requirements
 
-- **macOS** 11.0+ / **Linux** / **Windows 10/11** (64-bit)
-- **CMake** 3.21 or higher
-- **C++ Compiler** with C++20 support:
-  - **macOS**: Clang 13+ (recommended)
-  - **Linux**: GCC 11+ or Clang 13+
-  - **Windows**: Visual Studio 2019+ or MinGW-w64
+- **macOS** 11.0+ / **Linux** / **Windows** 10/11 (64-bit)
+- **Rust** 1.75+ (stable)
 - **Interactive Brokers** TWS or IB Gateway
 - **Active IBKR account** with options trading enabled
 
@@ -131,12 +127,12 @@ A box spread is a complex options strategy that combines four positions:
 
 ### Dependencies (Automatically Downloaded)
 
-The following dependencies are automatically fetched by CMake:
+Rust dependencies are managed via Cargo.toml. The following are automatically fetched:
 
-- [nlohmann/json](https://github.com/nlohmann/json) - JSON parsing
-- [spdlog](https://github.com/gabime/spdlog) - Logging
-- [CLI11](https://github.com/CLIUtils/CLI11) - Command-line parsing
-- [Catch2](https://github.com/catchorg/Catch2) - Testing framework
+- [tokio](https://tokio.rs/) - Async runtime
+- [serde](https://serde.rs/) - Serialization
+- [reqwest](https://docs.rs/reqwest/) - HTTP client
+- [tokio-tungstenite](https://docs.rs/tokio-tungstenite/) - WebSocket
 
 ### Third-Party Bundles (Cached at Build Time)
 
@@ -165,59 +161,51 @@ The Interactive Brokers TWS C++ API can be used in two ways:
 
 ## Installation
 
-### 1. Install Build Tools
+### 1. Install Rust
 
 ```bash
-# macOS (using Homebrew)
-brew install cmake
+# macOS
+brew install rust
+
+# Linux/Windows
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Verify installation
-cmake --version  # Should be 3.21 or higher
+rustc --version  # Should be 1.75 or higher
 ```
 
 ### 2. Clone Repository
 
 ```bash
-git clone <repository-url>
-cd ib-box-spread-generator
+git clone git@github.com:davidl71/Aether.git
+cd Aether
 ```
 
-### 3. Download TWS API (Optional but Recommended)
+### 3. Build the Project
 
 ```bash
-# Create third-party directory
-mkdir -p native/third_party/tws-api
+cd agents/backend
 
-# Download TWS API from IBKR and extract to native/third_party/tws-api/
-# Directory structure should be:
-# native/third_party/tws-api/source/cppclient/client/*.h
+# Build all crates
+cargo build
+
+# Build specific service
+cargo build -p backend_service
+cargo build -p tui_service
 ```
 
-### 4. Build the Project
+### 4. Run
 
 ```bash
-# Standard build
-chmod +x scripts/build_universal.sh
-./scripts/build_universal.sh
+# Backend API (REST + WebSocket on :8080)
+cargo run -p backend_service
 
-# Or use fast build with ccache (10-100x faster rebuilds)
-brew install ccache  # Install ccache first
-./scripts/build_fast.sh
+# TUI
+cargo run -p tui_service
 
-# Or distributed build (2-10x faster clean builds)
-export DISTCC_HOSTS="localhost/4 remote-ip/8"
-./scripts/build_distributed.sh
+# CLI
+cargo run -p cli
 ```
-
-From repo root you can also use **Make** (wraps CMake presets): `make build`, `make test`, `make lint` (see `make help`). Or **CMake** directly: `cmake --build build --target lint` from a configured build dir.
-
-The binary will be created at: `build/bin/ib_box_spread`
-
-**Build Optimization** (see `docs/DISTRIBUTED_COMPILATION.md` for details):
-
-- 🚀 **ccache**: Cache compilation results (10-100x speedup on rebuilds)
-- 🌐 **distcc**: Distribute compilation across network (2-10x speedup)
-- ⚡ **Both**: Use together for maximum performance
 
 ### 5. Configure
 

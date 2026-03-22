@@ -6,7 +6,7 @@
 
 set -e
 
-WORKSPACE_PATH="/Users/davidl/Projects/Trading/ib_box_spread_full_universal"
+WORKSPACE_PATH="/Users/davidl/Projects/Trading/Aether"
 MCP_CONFIG=".cursor/mcp.json"
 
 echo "🔧 Updating MCP configuration for optimal performance..."
@@ -28,7 +28,7 @@ cat >"$MCP_CONFIG" <<'EOF'
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"
+        "/Users/davidl/Projects/Trading/Aether"
       ]
     },
     "git": {
@@ -37,7 +37,7 @@ cat >"$MCP_CONFIG" <<'EOF'
         "-y",
         "@modelcontextprotocol/server-git",
         "--repository",
-        "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"
+        "/Users/davidl/Projects/Trading/Aether"
       ]
     },
     "context7": {

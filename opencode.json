@@ -13,7 +13,7 @@
       "command": ["/Users/davidl/Projects/mcp/exarp-go/bin/exarp-go"],
       "enabled": true,
       "environment": {
-        "PROJECT_ROOT": "/Users/davidl/Projects/Trading/ib_box_spread_full_universal",
+        "PROJECT_ROOT": "/Users/davidl/Projects/Trading/Aether",
         "EXARP_MIGRATIONS_DIR": "/Users/davidl/Projects/mcp/exarp-go/migrations",
         "EXARP_WATCH": "0",
         "NO_COLOR": "1"
@@ -26,7 +26,7 @@
     },
     "filesystem": {
       "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/Users/davidl/Projects/Trading/ib_box_spread_full_universal", "/Users/davidl/Projects/Trading/Jts", "/Users/davidl/Projects/Trading/ntws", "/Users/davidl/Projects/Trading/tws-api", "/Users/davidl/Projects/Trading/yatws"],
+      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/Users/davidl/Projects/Trading/Aether", "/Users/davidl/Projects/Trading/Jts", "/Users/davidl/Projects/Trading/ntws", "/Users/davidl/Projects/Trading/tws-api", "/Users/davidl/Projects/Trading/yatws"],
       "enabled": true
     },
     "sequential_thinking": {
@@ -51,7 +51,7 @@
     },
     "git": {
       "type": "local",
-      "command": ["uvx", "mcp-server-git", "--repository", "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"],
+      "command": ["uvx", "mcp-server-git", "--repository", "/Users/davidl/Projects/Trading/Aether"],
       "enabled": true
     },
     "ctags-lsp": {
@@ -61,7 +61,7 @@
     },
     "lsp-mcp": {
       "type": "local",
-      "command": ["lsp-mcp", "--project", "/Users/davidl/Projects/Trading/ib_box_spread_full_universal"],
+      "command": ["lsp-mcp", "--project", "/Users/davidl/Projects/Trading/Aether"],
       "enabled": false
     },
     "github": {
