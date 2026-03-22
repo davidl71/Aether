@@ -6,7 +6,8 @@ use reqwest::{Client, Response, StatusCode, Url};
 use tokio::sync::Mutex;
 use tracing::debug;
 
-use crate::{MarketDataEvent, MarketDataEventBuilder, MarketDataSource};
+use crate::{MarketDataEvent, MarketDataEventBuilder, MarketDataSource, MarketDataSourceFactory};
+use anyhow::Context;
 
 const DEFAULT_BASE_URL: &str = "https://api.polygon.io";
 
@@ -170,6 +171,47 @@ struct NbboQuote {
     pub ask_price: Option<f64>,
     #[serde(rename = "timestamp")]
     pub timestamp: Option<i64>,
+}
+
+/// Factory for creating PolygonMarketDataSource instances.
+/// Requires `POLYGON_API_KEY` environment variable.
+#[derive(Debug)]
+pub struct PolygonMarketDataSourceFactory;
+
+impl PolygonMarketDataSourceFactory {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl Default for PolygonMarketDataSourceFactory {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl MarketDataSourceFactory for PolygonMarketDataSourceFactory {
+    fn name(&self) -> &'static str {
+        "polygon"
+    }
+
+    fn create(
+        &self,
+        symbols: &[String],
+        interval: Duration,
+    ) -> anyhow::Result<Box<dyn MarketDataSource>> {
+        let api_key = std::env::var("POLYGON_API_KEY").context("POLYGON_API_KEY not set")?;
+        Ok(Box::new(PolygonMarketDataSource::new(
+            symbols.to_vec(),
+            interval,
+            api_key,
+            None,
+        )?))
+    }
+
+    fn requires_config(&self) -> bool {
+        true
+    }
 }
 
 #[cfg(test)]

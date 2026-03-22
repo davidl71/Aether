@@ -13,6 +13,7 @@ use crate::events::StrategyCommand;
 pub enum Action {
     Quit,
     ShowHelp,
+    ToggleLogPanel,
     TabNext,
     TabPrev,
     JumpToTab(u8),
@@ -89,6 +90,8 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
     match key.code {
         KeyCode::Char('q') | KeyCode::Char('Q') => return Some(Action::Quit),
         KeyCode::Char('?') => return Some(Action::ShowHelp),
+        KeyCode::Char('`') | KeyCode::Char('~') => return Some(Action::ToggleLogPanel),
+        KeyCode::Esc => return Some(Action::ToggleLogPanel),
         _ => {}
     }
 
@@ -119,6 +122,7 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         KeyCode::Char('7') => Some(Action::JumpToTab(7)),
         KeyCode::Char('8') => Some(Action::JumpToTab(8)),
         KeyCode::Char('9') => Some(Action::JumpToTab(9)),
+        KeyCode::Char('0') => Some(Action::JumpToTab(0)),
 
         // Positions
         KeyCode::Char('c') | KeyCode::Char('C')
@@ -258,6 +262,9 @@ pub fn apply_action(app: &mut App, action: Action) {
         Action::ShowHelp => {
             app.show_help = true;
         }
+        Action::ToggleLogPanel => {
+            app.show_log_panel = !app.show_log_panel;
+        }
         Action::TabNext => {
             app.active_tab = app.active_tab.next();
         }
@@ -268,13 +275,14 @@ pub fn apply_action(app: &mut App, action: Action) {
             app.active_tab = match n {
                 1 => Tab::Dashboard,
                 2 => Tab::Positions,
-                3 => Tab::Orders,
-                4 => Tab::Alerts,
-                5 => Tab::Yield,
-                6 => Tab::Loans,
-                7 => Tab::Scenarios,
-                8 => Tab::Logs,
-                9 => Tab::Settings,
+                3 => Tab::Charts,
+                4 => Tab::Orders,
+                5 => Tab::Alerts,
+                6 => Tab::Yield,
+                7 => Tab::Loans,
+                8 => Tab::Scenarios,
+                9 => Tab::Logs,
+                0 => Tab::Settings,
                 _ => app.active_tab.clone(),
             };
             // Trigger data fetch when entering Yield or Loans tab

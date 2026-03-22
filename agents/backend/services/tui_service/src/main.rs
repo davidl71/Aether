@@ -68,10 +68,10 @@ mod ui;
 
 use app::App;
 use config::TuiConfig;
-use events::AppEvent;
-use market_data::{MarketDataSource, PolygonWsMarketDataSource};
 use crossterm::tty::IsTty;
+use events::AppEvent;
 use events::StrategyCommand;
+use market_data::{MarketDataSource, PolygonWsMarketDataSource};
 
 /// Backend reply for api.strategy.start / api.strategy.stop / api.strategy.cancel_all
 #[derive(Debug, Deserialize)]

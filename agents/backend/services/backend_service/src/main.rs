@@ -11,8 +11,8 @@ use broker_engine::{BrokerConfig, BrokerEngine};
 use chrono::Utc;
 use ib_adapter::IbAdapter;
 use market_data::{
-    FmpClient, MarketDataEvent, MarketDataIngestor, MarketDataSource, MockMarketDataSource,
-    PolygonMarketDataSource, YahooFinanceSource,
+    create_provider, FmpClient, MarketDataEvent, MarketDataIngestor, MarketDataSource,
+    MarketDataSourceFactory,
 };
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use risk::{RiskCheck, RiskDecision, RiskEngine, RiskLimit, RiskViolation};
@@ -79,10 +79,18 @@ impl Default for BrokerSettings {
     }
 }
 
-fn default_broker_host() -> String { "127.0.0.1".into() }
-fn default_broker_port() -> u16 { 7497 }
-fn default_broker_client_id() -> u32 { 2 }
-fn default_broker_paper() -> bool { true }
+fn default_broker_host() -> String {
+    "127.0.0.1".into()
+}
+fn default_broker_port() -> u16 {
+    7497
+}
+fn default_broker_client_id() -> u32 {
+    2
+}
+fn default_broker_paper() -> bool {
+    true
+}
 
 #[derive(Debug, Deserialize, Clone)]
 struct MarketDataSettings {
@@ -162,6 +170,7 @@ async fn main() -> anyhow::Result<()> {
         snapshot.risk.allowed = true;
         snapshot.risk.reason = None;
         snapshot.risk.updated_at = Utc::now();
+        snapshot.market_data_source = Some(config.market_data.provider.clone());
     }
     let _ = controller.start();
 
@@ -209,29 +218,30 @@ async fn main() -> anyhow::Result<()> {
         });
     if let Some(ref nats) = *nats_integration {
         if let Some(client) = nats.client() {
-            let broker_engine: Option<Arc<dyn BrokerEngine>> =
-                if config.broker.paper_trading || std::env::var("IB_BROKER_ENABLED").is_ok() {
-                    let broker_config = BrokerConfig {
-                        host: config.broker.host.clone(),
-                        port: config.broker.port,
-                        client_id: config.broker.client_id,
-                        paper_trading: config.broker.paper_trading,
-                    };
-                    let adapter = IbAdapter::new(broker_config.clone());
-                    match adapter.connect().await {
-                        Ok(()) => {
-                            info!(host = %broker_config.host, port = %broker_config.port, "Connected to TWS for order placement");
-                            Some(Arc::new(adapter) as Arc<dyn BrokerEngine>)
-                        }
-                        Err(e) => {
-                            warn!(error = %e, "Failed to connect to TWS; order placement disabled");
-                            None
-                        }
-                    }
-                } else {
-                    info!("Broker order placement disabled (enable with IB_BROKER_ENABLED or set paper_trading=true)");
-                    None
+            let broker_engine: Option<Arc<dyn BrokerEngine>> = if config.broker.paper_trading
+                || std::env::var("IB_BROKER_ENABLED").is_ok()
+            {
+                let broker_config = BrokerConfig {
+                    host: config.broker.host.clone(),
+                    port: config.broker.port,
+                    client_id: config.broker.client_id,
+                    paper_trading: config.broker.paper_trading,
                 };
+                let adapter = IbAdapter::new(broker_config.clone());
+                match adapter.connect().await {
+                    Ok(()) => {
+                        info!(host = %broker_config.host, port = %broker_config.port, "Connected to TWS for order placement");
+                        Some(Arc::new(adapter) as Arc<dyn BrokerEngine>)
+                    }
+                    Err(e) => {
+                        warn!(error = %e, "Failed to connect to TWS; order placement disabled");
+                        None
+                    }
+                }
+            } else {
+                info!("Broker order placement disabled (enable with IB_BROKER_ENABLED or set paper_trading=true)");
+                None
+            };
             let backend_id = std::env::var("BACKEND_ID").unwrap_or_else(|_| "ib".into());
             let interval_ms: u64 = std::env::var("SNAPSHOT_PUBLISH_INTERVAL_MS")
                 .ok()
@@ -377,68 +387,26 @@ fn spawn_market_data_provider(
     };
     let interval = Duration::from_millis(settings.poll_interval_ms.max(10));
 
-    match settings.provider.as_str() {
-        "yahoo" => {
-            let source = YahooFinanceSource::new(symbols.clone(), interval)
-                .context("failed to create yahoo finance market data source")?;
-            spawn_market_data_loop(source, state, strategy_signal, strategy_toggle, nats);
-        }
-        "polygon" => {
-            let polygon_cfg = settings
-                .polygon
-                .as_ref()
-                .context("polygon provider selected but polygon settings missing")?;
-            let api_key = resolve_polygon_api_key(polygon_cfg)?;
-            let base_url = polygon_cfg.base_url.as_deref();
-            let source = PolygonMarketDataSource::new(symbols, interval, api_key, base_url)
-                .context("failed to create polygon market data source")?;
-            spawn_market_data_loop(source, state, strategy_signal, strategy_toggle, nats);
-        }
-        "mock" => {
-            let source = MockMarketDataSource::new(symbols, interval);
-            spawn_market_data_loop(source, state, strategy_signal, strategy_toggle, nats);
-        }
-        provider => {
-            warn!(%provider, "unknown market data provider requested, falling back to yahoo");
-            let source = YahooFinanceSource::new(symbols, interval)
-                .context("failed to create yahoo finance market data source")?;
-            spawn_market_data_loop(source, state, strategy_signal, strategy_toggle, nats);
-        }
-    }
+    info!(provider = %settings.provider, symbol_count = symbols.len(), "creating market data provider");
+    let source = create_provider(&settings.provider, &symbols, interval).with_context(|| {
+        format!(
+            "failed to create market data provider: {}",
+            settings.provider
+        )
+    })?;
+
+    spawn_market_data_loop(source, state, strategy_signal, strategy_toggle, nats);
 
     Ok(())
 }
 
-fn resolve_polygon_api_key(settings: &PolygonSettings) -> anyhow::Result<String> {
-    if let Some(key) = settings.api_key.clone() {
-        return Ok(key);
-    }
-
-    if let Some(env) = &settings.api_key_env {
-        if let Ok(val) = std::env::var(env) {
-            anyhow::ensure!(
-                !val.trim().is_empty(),
-                "environment variable {env} is set but empty"
-            );
-            return Ok(val);
-        }
-        anyhow::bail!("environment variable {env} not found for polygon API key");
-    }
-
-    anyhow::bail!(
-        "polygon API key not configured (set market_data.polygon.api_key or api_key_env)"
-    );
-}
-
-fn spawn_market_data_loop<S>(
-    source: S,
+fn spawn_market_data_loop(
+    source: Box<dyn MarketDataSource + Send + Sync>,
     state: SharedSnapshot,
     strategy_signal: UnboundedSender<StrategySignal>,
     strategy_toggle: watch::Receiver<bool>,
     nats: Arc<Option<nats_integration::NatsIntegration>>,
-) where
-    S: MarketDataSource + Send + Sync + 'static,
-{
+) {
     tokio::spawn(async move {
         let ingestor = MarketDataIngestor::new(source);
 

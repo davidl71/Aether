@@ -156,6 +156,7 @@ pub fn snapshot_to_proto(snap: &SystemSnapshot) -> pb::SystemSnapshot {
         decisions: snap.decisions.iter().map(decision_to_proto).collect(),
         alerts: snap.alerts.iter().map(alert_to_proto).collect(),
         risk: Some(risk_to_proto(&snap.risk)),
+        market_data_source: snap.market_data_source.clone().unwrap_or_default(),
     }
 }
 

@@ -21,6 +21,7 @@ const SPARKLINE_HISTORY_SIZE: usize = 20;
 pub enum Tab {
     Dashboard,
     Positions,
+    Charts,
     Orders,
     Alerts,
     Yield,
@@ -42,6 +43,7 @@ impl Tab {
     pub const ALL: &'static [Tab] = &[
         Tab::Dashboard,
         Tab::Positions,
+        Tab::Charts,
         Tab::Orders,
         Tab::Alerts,
         Tab::Yield,
@@ -55,6 +57,7 @@ impl Tab {
         match self {
             Tab::Dashboard => "Dash",
             Tab::Positions => "Pos",
+            Tab::Charts => "Charts",
             Tab::Orders => "Orders",
             Tab::Alerts => "Alerts",
             Tab::Yield => "Yield",
@@ -102,6 +105,8 @@ pub struct App {
     pub last_strategy_result: Option<Result<String, String>>,
     /// When true, show the help overlay (key bindings).
     pub show_help: bool,
+    /// When true, show the debug log panel overlay (toggled with backtick).
+    pub show_log_panel: bool,
     /// When Some, show detail overlay for selected Order or Position (Enter to open, Esc to close).
     pub detail_popup: Option<DetailPopupContent>,
     /// Config validation warning (e.g. missing NATS_URL); shown in status bar when set.
@@ -118,6 +123,8 @@ pub struct App {
     pub positions_expanded_combos: HashSet<(String, String, String)>,
     /// Scroll/selection index for Orders tab (arrow-key scroll; index into filtered list).
     pub orders_scroll: usize,
+    /// Symbol currently selected for charting in the Charts tab.
+    pub symbol_for_chart: String,
     /// Scroll/selection index for Alerts tab (arrow-key scroll).
     pub alerts_scroll: usize,
     /// Scroll/selection index for Scenarios tab (arrow-key scroll).
@@ -202,6 +209,7 @@ impl App {
             should_quit: false,
             last_strategy_result: None,
             show_help: false,
+            show_log_panel: false,
             detail_popup: None,
             config_warning,
             backend_health: HashMap::new(),
@@ -210,6 +218,7 @@ impl App {
             positions_combo_view: false,
             positions_expanded_combos: HashSet::new(),
             orders_scroll: 0,
+            symbol_for_chart: String::new(),
             alerts_scroll: 0,
             scenarios_scroll: 0,
             scenarios_dte_center: 4,

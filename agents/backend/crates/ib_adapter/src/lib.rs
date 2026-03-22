@@ -37,10 +37,12 @@ pub use broker_engine::ConnectionState;
 pub use broker_engine::MarketData;
 pub use broker_engine::OptionChainProvider;
 
+pub mod pacer;
 pub mod scanner;
 pub mod tws_wire;
 pub mod types;
 
+pub use pacer::TwsPacer;
 pub use scanner::ScannerSubscription;
 pub use tws_wire::{TwsProtoFrame, PROTOBUF_MSG_ID_OFFSET};
 
@@ -618,10 +620,7 @@ impl BrokerEngine for IbAdapter {
         self.order_tx.clone()
     }
 
-    fn request_positions_sync(
-        &self,
-        timeout_ms: u64,
-    ) -> Result<Vec<PositionEvent>, BrokerError> {
+    fn request_positions_sync(&self, timeout_ms: u64) -> Result<Vec<PositionEvent>, BrokerError> {
         let state = futures::executor::block_on(self.state.read());
         if *state != ConnectionState::Connected {
             return Err(BrokerError::NotConnected);
@@ -643,24 +642,24 @@ impl BrokerEngine for IbAdapter {
             loop {
                 let update = tokio::time::timeout(timeout, sub.next()).await;
                 match update {
-                    Ok(Some(Ok(update))) => {
-                        match update {
-                            PositionUpdate::Position(p) => {
-                                out.push(PositionEvent {
-                                    account: p.account.clone(),
-                                    symbol: p.contract.symbol.to_string(),
-                                    position: p.position as i32,
-                                    avg_cost: p.average_cost,
-                                });
-                            }
-                            PositionUpdate::PositionEnd => break,
+                    Ok(Some(Ok(update))) => match update {
+                        PositionUpdate::Position(p) => {
+                            out.push(PositionEvent {
+                                account: p.account.clone(),
+                                symbol: p.contract.symbol.to_string(),
+                                position: p.position as i32,
+                                avg_cost: p.average_cost,
+                            });
                         }
-                    }
+                        PositionUpdate::PositionEnd => break,
+                    },
                     Ok(Some(Err(e))) => {
                         return Err(BrokerError::Other(e.to_string()));
                     }
                     Ok(None) | Err(_) => {
-                        return Err(BrokerError::Other("request_positions_sync timed out".to_string()));
+                        return Err(BrokerError::Other(
+                            "request_positions_sync timed out".to_string(),
+                        ));
                     }
                 }
             }

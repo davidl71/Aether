@@ -52,16 +52,14 @@ impl OutputFormat {
 #[derive(Parser, Debug)]
 #[command(name = "aether")]
 #[command(about = "Aether - Multi-asset synthetic financing platform", long_about = None)]
-#[command(
-    after_long_help = "Output formats:
+#[command(after_long_help = "Output formats:
   --format table (default) - human-readable output
   --format json            - machine-readable JSON for AI agents and scripting
 
 Examples:
   aether --format json loans list
   aether --format json yield-curve --symbol SPX
-  aether validate --format json"
-)]
+  aether validate --format json")]
 struct Cli {
     /// Configuration file path (used by validate, run, snapshot). Same discovery as TUI: shared JSON first, then this path. Prefer config/config.json; TOML supported as CLI-only override.
     #[arg(short, long, global = true, default_value = "config/config.json")]

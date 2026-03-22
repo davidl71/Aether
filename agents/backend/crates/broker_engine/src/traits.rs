@@ -67,10 +67,7 @@ pub trait BrokerEngine: Send + Sync {
     // Sync fallback
     // -------------------------------------------------------------------------
 
-    fn request_positions_sync(
-        &self,
-        timeout_ms: u64,
-    ) -> Result<Vec<PositionEvent>, BrokerError>;
+    fn request_positions_sync(&self, timeout_ms: u64) -> Result<Vec<PositionEvent>, BrokerError>;
 
     // -------------------------------------------------------------------------
     // Capability discovery

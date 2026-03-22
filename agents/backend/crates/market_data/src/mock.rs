@@ -5,7 +5,9 @@ use chrono::Utc;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use tokio::{sync::Mutex, time::sleep};
 
-use crate::{MarketDataEvent, MarketDataEventBuilder, MarketDataSource};
+use crate::{
+    MarketDataEvent, MarketDataEventBuilder, MarketDataSource, SimpleMarketDataSourceFactory,
+};
 
 struct MockState {
     baselines: HashMap<String, f64>,
@@ -70,5 +72,26 @@ impl MarketDataSource for MockMarketDataSource {
             .timestamp(Utc::now())
             .build()?;
         Ok(event)
+    }
+}
+
+/// Factory for creating MockMarketDataSource instances.
+#[derive(Debug, Default)]
+pub struct MockMarketDataSourceFactory;
+
+impl SimpleMarketDataSourceFactory for MockMarketDataSourceFactory {
+    fn name(&self) -> &'static str {
+        "mock"
+    }
+
+    fn create(
+        &self,
+        symbols: &[String],
+        interval: Duration,
+    ) -> anyhow::Result<Box<dyn MarketDataSource>> {
+        Ok(Box::new(MockMarketDataSource::new(
+            symbols.to_vec(),
+            interval,
+        )))
     }
 }

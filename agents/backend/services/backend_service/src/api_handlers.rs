@@ -25,9 +25,7 @@ use api::quant::{
     RatioSpreadRequest, RiskMetricsRequest, StrategyRequest,
 };
 use api::{LoanRecord, LoanRepository, ScenarioDto, SharedSnapshot, StrategyController};
-use broker_engine::{
-    construct_box_spread_order, BrokerEngine, OrderAction, TimeInForce,
-};
+use broker_engine::{construct_box_spread_order, BrokerEngine, OrderAction, TimeInForce};
 use bytes::Bytes;
 use futures::StreamExt;
 use market_data::FmpClient;
@@ -116,7 +114,13 @@ pub fn spawn(
     });
     let state_strategy = state.clone();
     tokio::spawn(async move {
-        run_strategy_control(nc_strategy, strategy_controller, state_strategy, broker_engine).await;
+        run_strategy_control(
+            nc_strategy,
+            strategy_controller,
+            state_strategy,
+            broker_engine,
+        )
+        .await;
     });
     let nc_finance = nats_client.client().clone();
     tokio::spawn(async move {
@@ -149,7 +153,12 @@ pub fn spawn(
     });
 }
 
-async fn run_strategy_control(nc: Client, controller: StrategyController, state: SharedSnapshot, broker_engine: Option<Arc<dyn BrokerEngine>>) {
+async fn run_strategy_control(
+    nc: Client,
+    controller: StrategyController,
+    state: SharedSnapshot,
+    broker_engine: Option<Arc<dyn BrokerEngine>>,
+) {
     let sub_start = match nc
         .queue_subscribe(SUBJECT_STRATEGY_START.to_string(), api_queue_group())
         .await
@@ -224,17 +233,16 @@ async fn run_strategy_control(nc: Client, controller: StrategyController, state:
             async move { cancel_all_reply(state).await }
         },
     ));
-    tokio::spawn(handle_sub(
-        nc,
-        sub_execute,
-        move |body: Option<Vec<u8>>| {
-            let broker = broker_engine.clone();
-            async move { execute_scenario_reply(body, broker).await }
-        },
-    ));
+    tokio::spawn(handle_sub(nc, sub_execute, move |body: Option<Vec<u8>>| {
+        let broker = broker_engine.clone();
+        async move { execute_scenario_reply(body, broker).await }
+    }));
 }
 
-async fn execute_scenario_reply(body: Option<Vec<u8>>, broker: Option<Arc<dyn BrokerEngine>>) -> Vec<u8> {
+async fn execute_scenario_reply(
+    body: Option<Vec<u8>>,
+    broker: Option<Arc<dyn BrokerEngine>>,
+) -> Vec<u8> {
     let Some(broker) = broker else {
         return serde_json::to_vec(&serde_json::json!({
             "ok": false,

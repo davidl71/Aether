@@ -1,9 +1,11 @@
 //! Ratatui rendering: frame layout, tab bar, and per-tab view delegation.
 
 mod alerts;
+mod candlestick;
+mod charts;
 mod dashboard;
 mod loans;
-mod logs;
+pub mod logs;
 mod orders;
 mod positions;
 pub use positions::positions_display_info;
@@ -11,6 +13,7 @@ mod scenarios;
 pub use scenarios::filtered_scenarios;
 mod settings;
 mod yield_curve;
+pub use candlestick::{render_candlestick, Candle, CandlestickChart};
 pub(crate) use yield_curve::render_yield_curve as render_yield_curve_tab;
 
 use ratatui::{
@@ -20,6 +23,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Tabs},
     Frame,
 };
+use tui_logger::TuiLoggerWidget;
 
 use crate::app::{App, DetailPopupContent, Tab};
 use crate::events::{ConnectionState, ConnectionStatus, ConnectionTarget};
@@ -43,20 +47,28 @@ pub fn render(f: &mut Frame, app: &App) {
     if app.show_help {
         render_help_overlay(f, f.area());
     }
+    if app.show_log_panel {
+        render_log_panel_overlay(f, app, f.area());
+    }
     if let Some(ref content) = app.detail_popup {
         render_detail_overlay(f, f.area(), content);
     }
 }
 
 fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
-    let (mode, strategy, source_label, source_color, is_stale) =
+    let (mode, strategy, market_data_source, source_color, is_stale) =
         if let Some(ref snap) = app.snapshot() {
             let stale = snap.is_stale(app.config.snapshot_ttl_secs as i64);
             let color = if stale { Color::Yellow } else { Color::Green };
+            let mds = snap
+                .inner
+                .market_data_source
+                .clone()
+                .unwrap_or_else(|| "NATS".into());
             (
                 snap.dto().mode.as_str().to_owned(),
                 snap.dto().strategy.as_str().to_owned(),
-                snap.source.label(),
+                mds,
                 color,
                 stale,
             )
@@ -64,7 +76,7 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
             (
                 "---".into(),
                 "---".into(),
-                "NO DATA",
+                "NO DATA".into(),
                 Color::DarkGray,
                 false,
             )
@@ -96,11 +108,15 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
     }
 
     spans.push(Span::raw("  "));
+    let pill_color = match market_data_source.to_lowercase().as_str() {
+        "yahoo" => Color::Magenta,
+        "polygon" => Color::Blue,
+        "ib" | "ibkr" => Color::Green,
+        _ => source_color,
+    };
     spans.push(Span::styled(
-        format!("[{}]", source_label),
-        Style::default()
-            .fg(source_color)
-            .add_modifier(Modifier::BOLD),
+        format!("[{}]", market_data_source.to_uppercase()),
+        Style::default().fg(pill_color).add_modifier(Modifier::BOLD),
     ));
 
     if is_stale {
@@ -200,6 +216,7 @@ fn render_main(f: &mut Frame, app: &App, area: Rect) {
         match app.active_tab {
             Tab::Dashboard => dashboard::render_dashboard(f, app, area),
             Tab::Positions => positions::render_positions(f, app, area),
+            Tab::Charts => charts::render_charts(f, app, area),
             Tab::Orders => orders::render_orders(f, app, area),
             Tab::Alerts => alerts::render_alerts(f, app, area),
             Tab::Yield => render_yield_curve_tab(f, app, area),
@@ -318,7 +335,9 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
         ]),
         Line::from(vec![
             Span::styled(" 1–9 ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("jump to Dash / Pos / Orders / Alerts / Yield / Loans / Scen / Logs / Set"),
+            Span::raw(
+                "jump to Dash / Pos / Charts / Orders / Alerts / Yield / Loans / Scen / Logs / Set",
+            ),
         ]),
         Line::from(vec![
             Span::styled(" M ", Style::default().add_modifier(Modifier::BOLD)),
@@ -438,7 +457,7 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
             Style::default().add_modifier(Modifier::BOLD),
         ),
         Span::raw(":switch tab  "),
-        Span::styled("1-9", Style::default().add_modifier(Modifier::BOLD)),
+        Span::styled("0-9", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(":jump to tab  "),
         Span::styled("M", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(":mode  "),
@@ -528,4 +547,31 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
 
     let line = Line::from(spans);
     f.render_widget(Paragraph::new(line), area);
+}
+
+fn render_log_panel_overlay(f: &mut Frame, app: &App, area: Rect) {
+    let panel_area = centered_rect(80, 70, area);
+    f.render_widget(ratatui::widgets::Clear, panel_area);
+
+    let title = " Debug Log [`/Esc]:close  [+/-]:level  [↑↓]:scroll ";
+    let widget = tui_logger::TuiLoggerWidget::default()
+        .block(
+            Block::default()
+                .title(title)
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Yellow)),
+        )
+        .style_error(Style::default().fg(Color::Red))
+        .style_warn(Style::default().fg(Color::Yellow))
+        .style_info(Style::default().fg(Color::Green))
+        .style_debug(Style::default().fg(Color::Cyan))
+        .style_trace(Style::default().fg(Color::DarkGray))
+        .output_separator(' ')
+        .output_timestamp(Some("%H:%M:%S".to_string()))
+        .output_level(Some(tui_logger::TuiLoggerLevelOutput::Abbreviated))
+        .output_target(false)
+        .output_file(false)
+        .output_line(false)
+        .state(&app.log_state);
+    f.render_widget(widget, panel_area);
 }

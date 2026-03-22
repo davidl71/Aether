@@ -803,10 +803,7 @@ impl BrokerEngine for YatWSEngine {
         self.order_tx.clone()
     }
 
-    fn request_positions_sync(
-        &self,
-        timeout_ms: u64,
-    ) -> Result<Vec<PositionEvent>, BrokerError> {
+    fn request_positions_sync(&self, timeout_ms: u64) -> Result<Vec<PositionEvent>, BrokerError> {
         let state = futures::executor::block_on(self.state.read());
         if *state != ConnectionState::Connected {
             return Err(BrokerError::NotConnected);
@@ -820,12 +817,11 @@ impl BrokerEngine for YatWSEngine {
         let rt = tokio::runtime::Handle::current();
         rt.block_on(async {
             let client2 = client.clone();
-            let positions = tokio::task::spawn_blocking(move || {
-                client.account().list_open_positions()
-            })
-            .await
-            .map_err(|e| BrokerError::Other(e.to_string()))?
-            .map_err(map_ibkr_error)?;
+            let positions =
+                tokio::task::spawn_blocking(move || client.account().list_open_positions())
+                    .await
+                    .map_err(|e| BrokerError::Other(e.to_string()))?
+                    .map_err(map_ibkr_error)?;
 
             let account_id = tokio::task::spawn_blocking(move || {
                 client2.account().get_account_info().map(|i| i.account_id)

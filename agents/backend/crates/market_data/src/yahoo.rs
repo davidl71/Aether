@@ -1,3 +1,10 @@
+//! Yahoo Finance market data source.
+//!
+//! Fetches daily OHLCV data via `/v8/finance/chart/{symbol}` endpoint.
+//! Returns bid/ask derived from `regularMarketPrice` with 0.01% spread.
+//!
+//! **Free tier:** No API key required. Rate-limited by Yahoo (respects poll_interval).
+
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -8,10 +15,13 @@ use serde::Deserialize;
 use tokio::sync::Mutex;
 use tracing::{debug, warn};
 
-use crate::{MarketDataEvent, MarketDataEventBuilder, MarketDataSource};
+use crate::{
+    MarketDataEvent, MarketDataEventBuilder, MarketDataSource, SimpleMarketDataSourceFactory,
+};
 
 const YAHOO_BASE_URL: &str = "https://query1.finance.yahoo.com";
 
+/// Yahoo Finance polling source. Cycles through configured symbols in round-robin.
 pub struct YahooFinanceSource {
     client: Client,
     base_url: Url,
@@ -25,6 +35,7 @@ struct YahooState {
 }
 
 impl YahooFinanceSource {
+    /// Creates a new YahooFinanceSource polling the given symbols.
     pub fn new<I, S>(symbols: I, poll_interval: Duration) -> anyhow::Result<Self>
     where
         I: IntoIterator<Item = S>,
@@ -33,6 +44,7 @@ impl YahooFinanceSource {
         Self::with_base_url(symbols, poll_interval, YAHOO_BASE_URL)
     }
 
+    /// Creates a new YahooFinanceSource with a custom base URL (for testing).
     fn with_base_url<I, S>(
         symbols: I,
         poll_interval: Duration,
@@ -166,6 +178,27 @@ struct YahooMeta {
     regular_price: Option<f64>,
     #[serde(default)]
     exchange_name: Option<String>,
+}
+
+/// Factory for creating YahooFinanceSource instances.
+#[derive(Debug, Default)]
+pub struct YahooFinanceSourceFactory;
+
+impl SimpleMarketDataSourceFactory for YahooFinanceSourceFactory {
+    fn name(&self) -> &'static str {
+        "yahoo"
+    }
+
+    fn create(
+        &self,
+        symbols: &[String],
+        interval: Duration,
+    ) -> anyhow::Result<Box<dyn MarketDataSource>> {
+        Ok(Box::new(YahooFinanceSource::new(
+            symbols.to_vec(),
+            interval,
+        )?))
+    }
 }
 
 #[cfg(test)]

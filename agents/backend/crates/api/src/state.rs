@@ -125,6 +125,8 @@ pub struct SystemSnapshot {
     pub risk: cmn::RiskStatus,
     #[serde(skip_serializing, skip_deserializing)]
     pub ledger: Option<Arc<ledger::LedgerEngine>>,
+    #[serde(default)]
+    pub market_data_source: Option<String>,
 }
 
 impl std::fmt::Debug for SystemSnapshot {
@@ -168,6 +170,7 @@ impl Default for SystemSnapshot {
             alerts: vec![Alert::info("Backend initialising")],
             risk: cmn::RiskStatus::default(),
             ledger: None,
+            market_data_source: None,
         }
     }
 }

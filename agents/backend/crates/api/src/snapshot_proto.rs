@@ -164,6 +164,7 @@ pub fn snapshot_to_proto(snap: &SystemSnapshot) -> pb::SystemSnapshot {
         decisions: snap.decisions.iter().map(decision_to_proto).collect(),
         alerts: snap.alerts.iter().map(alert_to_proto).collect(),
         risk: Some(risk_to_proto(&snap.risk)),
+        market_data_source: snap.market_data_source.clone().unwrap_or_default(),
     }
 }
 
@@ -313,6 +314,11 @@ pub fn system_snapshot_from_proto(p: pb::SystemSnapshot) -> SystemSnapshot {
         alerts: p.alerts.into_iter().map(alert_from_proto).collect(),
         risk: p.risk.map(risk_from_proto).unwrap_or_default(),
         ledger: None,
+        market_data_source: if p.market_data_source.is_empty() {
+            None
+        } else {
+            Some(p.market_data_source)
+        },
     }
 }
 
