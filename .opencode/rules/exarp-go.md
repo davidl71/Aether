@@ -9,8 +9,8 @@ You MUST use exarp-go to track all work tasks. This is non-negotiable.
 **For EVERY user request, you MUST:**
 
 1. **Create task(s) FIRST** using `exarp-go_task_workflow` with `action=create` before doing any work
-2. **Update task status** as work progresses: `exarp-update-task` → `In Progress`, `Review`, `Done`
-3. **Add result comment** before marking `Done`: use `task_workflow` `action=add_comment` with `comment_type=result`
+2. **Update task status** as work progresses: `exarp_update_task` → `In Progress`, `Review`, `Done`
+3. **Add result comment** before marking `Done`: use `exarp-go_task_workflow` `action=add_comment` with `comment_type=result`
 4. **Refine remaining tasks** after completing any task: assess, create, update, or delete as needed
 
 ## exarp-go Tools Available
@@ -22,7 +22,7 @@ You MUST use exarp-go to track all work tasks. This is non-negotiable.
 | `exarp-go_update_task` | Update task status |
 | `exarp-go_session` | Get suggested next tasks |
 | `exarp-go_followup` | Get follow-up suggestions |
-| `task_workflow` (MCP) | Full task management via exarp-go MCP |
+| `exarp-go_task_workflow` | Full task management via exarp-go MCP |
 
 ## Task Lifecycle
 
