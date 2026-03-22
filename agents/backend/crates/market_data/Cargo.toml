@@ -9,12 +9,16 @@ async-trait = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
+tokio-stream = { workspace = true }
+tokio-tungstenite = { workspace = true, features = ["connect"] }
+futures = { workspace = true }
 chrono = { workspace = true }
 rand = { workspace = true }
 tracing = { workspace = true }
 reqwest = { workspace = true }
 derive_builder = { workspace = true }
 common = { path = "../common" }
+url = "2"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "macros"] }
