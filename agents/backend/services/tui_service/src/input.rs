@@ -51,6 +51,13 @@ pub enum Action {
     ScenariosDteExpand,
     ScenariosCycleStrikeWidth,
     ScenariosExecute,
+    ChartSearchFocus,
+    ChartSearchChar(char),
+    ChartSearchBackspace,
+    ChartSearchUp,
+    ChartSearchDown,
+    ChartSearchEnter,
+    ChartSearchEscape,
     SettingsScrollUp,
     SettingsScrollDown,
     SettingsAddSymbol,
@@ -191,6 +198,29 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         KeyCode::Char(']') if app.active_tab == Tab::Scenarios => Some(Action::ScenariosDteExpand),
         KeyCode::Char('w') | KeyCode::Char('W') if app.active_tab == Tab::Scenarios => {
             Some(Action::ScenariosCycleStrikeWidth)
+        }
+
+        // Charts
+        KeyCode::Char('/') if app.active_tab == Tab::Charts => Some(Action::ChartSearchFocus),
+        KeyCode::Esc if app.active_tab == Tab::Charts && app.chart_search_visible => {
+            Some(Action::ChartSearchEscape)
+        }
+        KeyCode::Enter if app.active_tab == Tab::Charts && app.chart_search_visible => {
+            Some(Action::ChartSearchEnter)
+        }
+        KeyCode::Up if app.active_tab == Tab::Charts && app.chart_search_visible => {
+            Some(Action::ChartSearchUp)
+        }
+        KeyCode::Down if app.active_tab == Tab::Charts && app.chart_search_visible => {
+            Some(Action::ChartSearchDown)
+        }
+        KeyCode::Backspace if app.active_tab == Tab::Charts && app.chart_search_visible => {
+            Some(Action::ChartSearchBackspace)
+        }
+        KeyCode::Char(c)
+            if app.active_tab == Tab::Charts && app.chart_search_visible && !c.is_control() =>
+        {
+            Some(Action::ChartSearchChar(c))
         }
 
         // Settings
@@ -525,6 +555,61 @@ pub fn apply_action(app: &mut App, action: Action) {
                 Some(50) => Some(100),
                 Some(_) => None,
             };
+        }
+        Action::ChartSearchFocus => {
+            app.chart_search_visible = true;
+            app.chart_search_input.clear();
+            app.chart_search_results.clear();
+            app.chart_search_selected = 0;
+            crate::ui::charts::update_search_results(app);
+        }
+        Action::ChartSearchChar(c) => {
+            app.chart_search_input.push(c);
+            app.chart_search_selected = 0;
+            crate::ui::charts::update_search_results(app);
+        }
+        Action::ChartSearchBackspace => {
+            app.chart_search_input.pop();
+            app.chart_search_selected = 0;
+            crate::ui::charts::update_search_results(app);
+        }
+        Action::ChartSearchUp => {
+            if !app.chart_search_results.is_empty() {
+                app.chart_search_selected = app.chart_search_selected.saturating_sub(1);
+            }
+        }
+        Action::ChartSearchDown => {
+            app.chart_search_selected = (app.chart_search_selected + 1)
+                .min(app.chart_search_results.len().saturating_sub(1));
+        }
+        Action::ChartSearchEnter => {
+            if app.chart_search_input.is_empty() && !app.chart_search_results.is_empty() {
+                if let Some(selected) = app.chart_search_results.get(app.chart_search_selected) {
+                    app.symbol_for_chart = selected.clone();
+                    if !app.chart_search_history.contains(selected) {
+                        app.chart_search_history.push_front(selected.clone());
+                        if app.chart_search_history.len() > 10 {
+                            app.chart_search_history.pop_back();
+                        }
+                    }
+                }
+            } else if !app.chart_search_input.is_empty() {
+                app.symbol_for_chart = app.chart_search_input.clone();
+                if !app.chart_search_history.contains(&app.chart_search_input) {
+                    app.chart_search_history
+                        .push_front(app.chart_search_input.clone());
+                    if app.chart_search_history.len() > 10 {
+                        app.chart_search_history.pop_back();
+                    }
+                }
+            }
+            app.chart_search_visible = false;
+            app.chart_search_input.clear();
+        }
+        Action::ChartSearchEscape => {
+            app.chart_search_visible = false;
+            app.chart_search_input.clear();
+            app.chart_search_results.clear();
         }
         Action::SettingsScrollUp => {
             if app.settings_section_index == 2 {

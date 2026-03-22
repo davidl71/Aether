@@ -125,6 +125,20 @@ pub struct App {
     pub orders_scroll: usize,
     /// Symbol currently selected for charting in the Charts tab.
     pub symbol_for_chart: String,
+    /// Charts search: input buffer (type to search).
+    pub chart_search_input: String,
+    /// Charts search: history of searched symbols.
+    pub chart_search_history: VecDeque<String>,
+    /// Charts search: visible dropdown (true while searching).
+    pub chart_search_visible: bool,
+    /// Charts search: selected result index.
+    pub chart_search_selected: usize,
+    /// Charts search: results from API.
+    pub chart_search_results: Vec<String>,
+    /// Charts search: last search timestamp for debounce (ms since Unix epoch).
+    pub chart_search_last_search_ms: u64,
+    /// Charts search: debounce interval (ms).
+    pub chart_search_debounce_ms: u64,
     /// Scroll/selection index for Alerts tab (arrow-key scroll).
     pub alerts_scroll: usize,
     /// Scroll/selection index for Scenarios tab (arrow-key scroll).
@@ -219,6 +233,13 @@ impl App {
             positions_expanded_combos: HashSet::new(),
             orders_scroll: 0,
             symbol_for_chart: String::new(),
+            chart_search_input: String::new(),
+            chart_search_history: VecDeque::with_capacity(10),
+            chart_search_visible: false,
+            chart_search_selected: 0,
+            chart_search_results: Vec::new(),
+            chart_search_last_search_ms: 0,
+            chart_search_debounce_ms: 300,
             alerts_scroll: 0,
             scenarios_scroll: 0,
             scenarios_dte_center: 4,

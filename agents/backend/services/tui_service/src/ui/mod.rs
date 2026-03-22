@@ -2,7 +2,7 @@
 
 mod alerts;
 mod candlestick;
-mod charts;
+pub mod charts;
 mod dashboard;
 mod loans;
 pub mod logs;
