@@ -4,9 +4,9 @@
 
 set -e
 
-REPO_DIR="/home/david/Projects/trading/ib_box_spread_full_universal/deb-repo"
-PACKAGES_DIR="/home/david/Projects/trading/ib_box_spread_full_universal/deb-packages"
-GPG_DIR="/home/david/Projects/trading/ib_box_spread_full_universal/.gnupg-repo"
+REPO_DIR="${DEB_REPO_DIR:-/home/david/Projects/trading/Aether/deb-repo}"
+PACKAGES_DIR="${DEB_PACKAGES_DIR:-/home/david/Projects/trading/Aether/deb-packages}"
+GPG_DIR="${DEB_GPG_DIR:-/home/david/Projects/trading/Aether/.gnupg-repo}"
 
 echo "=== Debian Repository Build Status ==="
 echo ""

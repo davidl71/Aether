@@ -10,7 +10,7 @@ cd "$REPO_ROOT"
 # Agent configurations
 declare -A AGENTS=(
   ["local"]="$(pwd)"
-  ["ubuntu"]="david@192.168.192.57:~/ib_box_spread_full_universal"
+  ["ubuntu"]="david@192.168.192.57:~/Aether"
   ["macos"]="davidl@192.168.192.141:/Users/davidl/Projects/Trading/Aether"
 )
 
