@@ -68,6 +68,8 @@ mod ui;
 
 use app::App;
 use config::TuiConfig;
+use events::AppEvent;
+use market_data::{MarketDataSource, PolygonWsMarketDataSource};
 use crossterm::tty::IsTty;
 use events::StrategyCommand;
 
@@ -214,6 +216,35 @@ async fn main() -> color_eyre::Result<()> {
             }
         }
     });
+
+    // Spawn Polygon WebSocket market data source (direct, bypassing backend_service NATS)
+    if let Some(key) = config.polygon_api_key.clone() {
+        let tick_event_tx = event_tx.clone();
+        tokio::spawn(async move {
+            match PolygonWsMarketDataSource::new(["SPX", "XSP", "NDX"], key, None) {
+                Ok(source) => {
+                    let src = source.clone();
+                    tokio::spawn(async move {
+                        src.run().await;
+                    });
+                    let src = source.clone();
+                    info!("Polygon WebSocket market data source started");
+                    while let Ok(event) = src.next().await {
+                        let tick = AppEvent::MarketTick {
+                            symbol: event.symbol,
+                            bid: event.bid,
+                            ask: event.ask,
+                            last: event.last,
+                        };
+                        let _ = tick_event_tx.send(tick);
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "Failed to create Polygon WebSocket source");
+                }
+            }
+        });
+    }
 
     // Spawn strategy command handler: receives S/T commands, sends NATS request, forwards result
     let nats_url = config.nats_url.clone();

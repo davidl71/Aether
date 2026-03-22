@@ -19,6 +19,7 @@ tracing-subscriber = { workspace = true }
 
 # Internal crates
 api          = { path = "../../crates/api" }
+market_data  = { path = "../../crates/market_data" }
 nats_adapter = { path = "../../crates/nats_adapter" }
 
 # TUI framework

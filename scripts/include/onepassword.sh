@@ -173,4 +173,7 @@ export_op_secrets_for_rust() {
   if val=$(read_credential "${OP_FMP_API_KEY_SECRET:-}" "${FMP_API_KEY:-}" 2>/dev/null) && [[ -n "${val}" ]]; then
     export FMP_API_KEY="${val}"
   fi
+  if val=$(read_credential "${OP_POLYGON_API_KEY_SECRET:-}" "${POLYGON_API_KEY:-}" 2>/dev/null) && [[ -n "${val}" ]]; then
+    export POLYGON_API_KEY="${val}"
+  fi
 }

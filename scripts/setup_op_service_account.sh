@@ -287,11 +287,11 @@ do_setup_secrets() {
   ensure_vault_exists "${VAULT_NAME}" || return 1
   save_vault_default "${VAULT_NAME}"
   echo "Creating placeholder items in vault \"${VAULT_NAME}\" (fill real values in 1Password app)..."
-  for title in "Alpaca API" "Tastytrade" "FRED API" "Alpha Vantage API" "Finnhub API"; do
+  for title in "Alpaca API" "Tastytrade" "FRED API" "Alpha Vantage API" "Finnhub API" "Polygon API"; do
     if op item get "${title}" --vault "${VAULT_NAME}" &>/dev/null; then
       echo "Item already exists: ${title}"
     else
-      if [[ "${title}" == "FRED API" ]] || [[ "${title}" == "Alpha Vantage API" ]] || [[ "${title}" == "Finnhub API" ]]; then
+      if [[ "${title}" == "FRED API" ]] || [[ "${title}" == "Alpha Vantage API" ]] || [[ "${title}" == "Finnhub API" ]] || [[ "${title}" == "Polygon API" ]]; then
         op item create --category "API Credential" --vault "${VAULT_NAME}" --title "${title}" "credential=replace-me" 2>/dev/null && echo "Created: ${title}" || echo "Failed: ${title}" >&2
       else
         op item create --category "API Credential" --vault "${VAULT_NAME}" --title "${title}" "username=replace-me" "credential=replace-me" 2>/dev/null && echo "Created: ${title}" || echo "Failed: ${title}" >&2
@@ -305,6 +305,7 @@ do_setup_secrets() {
   echo "  export OP_TASTYTRADE_USERNAME_SECRET=\"op://${VAULT_NAME}/Tastytrade/username\""
   echo "  export OP_TASTYTRADE_PASSWORD_SECRET=\"op://${VAULT_NAME}/Tastytrade/credential\""
   echo "  export OP_FRED_API_KEY_SECRET=\"op://${VAULT_NAME}/FRED API/credential\""
+  echo "  export OP_POLYGON_API_KEY_SECRET=\"op://${VAULT_NAME}/Polygon API/credential\""
   echo "  export OP_ALPHA_VANTAGE_API_KEY_SECRET=\"op://${VAULT_NAME}/Alpha Vantage API/credential\""
   echo "  export OP_FINNHUB_API_KEY_SECRET=\"op://${VAULT_NAME}/Finnhub API/credential\""
 }
@@ -356,11 +357,11 @@ do_generate_and_configure() {
   ensure_vault_exists "${VAULT_NAME}" || return 1
   save_vault_default "${VAULT_NAME}"
   echo "Creating or reusing backend secret items in vault \"${VAULT_NAME}\"..."
-  for title in "Alpaca API" "Tastytrade" "FRED API" "Alpha Vantage API" "Finnhub API"; do
+  for title in "Alpaca API" "Tastytrade" "FRED API" "Alpha Vantage API" "Finnhub API" "Polygon API"; do
     if op item get "${title}" --vault "${VAULT_NAME}" &>/dev/null; then
       echo "Item exists: ${title}"
     else
-      if [[ "${title}" == "FRED API" ]] || [[ "${title}" == "Alpha Vantage API" ]] || [[ "${title}" == "Finnhub API" ]]; then
+      if [[ "${title}" == "FRED API" ]] || [[ "${title}" == "Alpha Vantage API" ]] || [[ "${title}" == "Finnhub API" ]] || [[ "${title}" == "Polygon API" ]]; then
         cred="replace-me"
         [[ -n "${GENERATE_ALL_FLAG}" ]] && cred="$(safe_gen_password)"
         op item create --category "API Credential" --vault "${VAULT_NAME}" --title "${title}" "credential=${cred}" 2>/dev/null && echo "Created: ${title}" || echo "Failed: ${title}" >&2
@@ -383,6 +384,7 @@ do_generate_and_configure() {
     "export OP_FRED_API_KEY_SECRET=\"op://${VAULT_NAME}/FRED API/credential\""
     "export OP_ALPHA_VANTAGE_API_KEY_SECRET=\"op://${VAULT_NAME}/Alpha Vantage API/credential\""
     "export OP_FINNHUB_API_KEY_SECRET=\"op://${VAULT_NAME}/Finnhub API/credential\""
+    "export OP_POLYGON_API_KEY_SECRET=\"op://${VAULT_NAME}/Polygon API/credential\""
   )
   for line in "${EXPORTS[@]}"; do
     echo "  ${line}"

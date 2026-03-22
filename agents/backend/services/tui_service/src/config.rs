@@ -32,6 +32,8 @@ pub struct TuiConfig {
     pub snapshot_ttl_secs: u64,
     /// Enable split-pane layout (env: SPLIT_PANE=1)
     pub split_pane: bool,
+    /// Polygon API key for WebSocket market data (env: POLYGON_API_KEY)
+    pub polygon_api_key: Option<String>,
 }
 
 impl Default for TuiConfig {
@@ -46,6 +48,7 @@ impl Default for TuiConfig {
             rest_fallback: false,
             snapshot_ttl_secs: DEFAULT_SNAPSHOT_TTL_SECS,
             split_pane: false,
+            polygon_api_key: None,
         }
     }
 }
@@ -201,6 +204,13 @@ impl TuiConfig {
         if let Ok(value) = std::env::var("SPLIT_PANE") {
             if let Some(parsed) = parse_bool(&value) {
                 self.split_pane = parsed;
+            }
+        }
+
+        if let Ok(value) = std::env::var("POLYGON_API_KEY") {
+            let value = value.trim().to_string();
+            if !value.is_empty() {
+                self.polygon_api_key = Some(value);
             }
         }
     }

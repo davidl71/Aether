@@ -5888,6 +5888,7 @@ dependencies = [
  "futures",
  "jsonc-parser",
  "log",
+ "market_data",
  "nats_adapter",
  "prost-types",
  "ratatui",
