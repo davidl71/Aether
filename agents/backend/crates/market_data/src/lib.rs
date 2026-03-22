@@ -15,7 +15,10 @@ pub use model::{
 pub use pipeline::{MarketDataIngestor, MarketDataPipeline};
 pub use polygon::{PolygonMarketDataSource, PolygonMarketDataSourceFactory};
 pub use polygon_ws::PolygonWsMarketDataSource;
-pub use yahoo::{YahooFinanceSource, YahooFinanceSourceFactory};
+pub use yahoo::{
+    OptionContractData, OptionsDataSource, OptionsExpiration, YahooFinanceSource,
+    YahooFinanceSourceFactory, YahooHistorySource, YahooOptionsSource,
+};
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -25,7 +28,7 @@ type DynFactory = Box<dyn MarketDataSourceFactory + Send + Sync>;
 fn register(
     registry: &mut HashMap<&'static str, DynFactory>,
     name: &'static str,
-    factory: impl MarketDataSourceFactory + Send + Sync + 'static,
+    factory: impl MarketDataSourceFactory + 'static,
 ) {
     registry.insert(name, Box::new(factory));
 }
@@ -35,9 +38,9 @@ pub fn provider_registry() -> &'static HashMap<&'static str, DynFactory> {
     static REGISTRY: OnceLock<HashMap<&'static str, DynFactory>> = OnceLock::new();
     REGISTRY.get_or_init(|| {
         let mut m = HashMap::new();
-        register(&mut m, "yahoo", YahooFinanceSourceFactory::default());
-        register(&mut m, "mock", MockMarketDataSourceFactory::default());
-        register(&mut m, "polygon", PolygonMarketDataSourceFactory::default());
+        register(&mut m, "yahoo", YahooFinanceSourceFactory);
+        register(&mut m, "mock", MockMarketDataSourceFactory);
+        register(&mut m, "polygon", PolygonMarketDataSourceFactory);
         m
     })
 }

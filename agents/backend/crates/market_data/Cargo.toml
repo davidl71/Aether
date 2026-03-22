@@ -19,6 +19,7 @@ reqwest = { workspace = true }
 derive_builder = { workspace = true }
 common = { path = "../common" }
 url = "2"
+yfinance-rs = "0.7.2"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "macros"] }
