@@ -802,6 +802,61 @@ impl BrokerEngine for YatWSEngine {
     fn order_tx(&self) -> mpsc::Sender<OrderStatusEvent> {
         self.order_tx.clone()
     }
+
+    fn request_positions_sync(
+        &self,
+        timeout_ms: u64,
+    ) -> Result<Vec<PositionEvent>, BrokerError> {
+        let state = futures::executor::block_on(self.state.read());
+        if *state != ConnectionState::Connected {
+            return Err(BrokerError::NotConnected);
+        }
+        drop(state);
+
+        let client = futures::executor::block_on(self.client.read()).clone();
+        let client = client.ok_or(BrokerError::NotConnected)?;
+
+        let _timeout = std::time::Duration::from_millis(timeout_ms);
+        let rt = tokio::runtime::Handle::current();
+        rt.block_on(async {
+            let client2 = client.clone();
+            let positions = tokio::task::spawn_blocking(move || {
+                client.account().list_open_positions()
+            })
+            .await
+            .map_err(|e| BrokerError::Other(e.to_string()))?
+            .map_err(map_ibkr_error)?;
+
+            let account_id = tokio::task::spawn_blocking(move || {
+                client2.account().get_account_info().map(|i| i.account_id)
+            })
+            .await
+            .map_err(|e| BrokerError::Other(e.to_string()))?
+            .map_err(map_ibkr_error)?;
+
+            Ok(positions
+                .into_iter()
+                .map(|p| PositionEvent {
+                    account: account_id.clone(),
+                    symbol: p.symbol.clone(),
+                    position: p.quantity as i32,
+                    avg_cost: p.average_cost,
+                })
+                .collect())
+        })
+    }
+
+    fn supports_options(&self) -> bool {
+        true
+    }
+
+    fn supports_box_spreads(&self) -> bool {
+        true
+    }
+
+    fn supports_combo_orders(&self) -> bool {
+        true
+    }
 }
 
 #[async_trait]

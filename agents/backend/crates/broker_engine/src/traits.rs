@@ -64,6 +64,23 @@ pub trait BrokerEngine: Send + Sync {
     async fn request_account(&self) -> Result<AccountInfo, BrokerError>;
 
     // -------------------------------------------------------------------------
+    // Sync fallback
+    // -------------------------------------------------------------------------
+
+    fn request_positions_sync(
+        &self,
+        timeout_ms: u64,
+    ) -> Result<Vec<PositionEvent>, BrokerError>;
+
+    // -------------------------------------------------------------------------
+    // Capability discovery
+    // -------------------------------------------------------------------------
+
+    fn supports_options(&self) -> bool;
+    fn supports_box_spreads(&self) -> bool;
+    fn supports_combo_orders(&self) -> bool;
+
+    // -------------------------------------------------------------------------
     // Event channels
     // -------------------------------------------------------------------------
 

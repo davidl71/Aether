@@ -12,6 +12,7 @@
 //! `docs/platform/TWS_RECONNECT_BACKOFF.md`.
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use async_trait::async_trait;
 use futures::future::try_join_all;
@@ -46,6 +47,16 @@ pub use tws_wire::{TwsProtoFrame, PROTOBUF_MSG_ID_OFFSET};
 // ---------------------------------------------------------------------------
 // conId resolution helpers
 // ---------------------------------------------------------------------------
+
+/// Convert broker_engine TimeInForce to ibapi order builder TimeInForce.
+fn to_ib_tif(tif: TimeInForce) -> ibapi::orders::builder::TimeInForce {
+    match tif {
+        TimeInForce::Day => ibapi::orders::builder::TimeInForce::Day,
+        TimeInForce::GTC => ibapi::orders::builder::TimeInForce::GoodTillCancel,
+        TimeInForce::IOC => ibapi::orders::builder::TimeInForce::ImmediateOrCancel,
+        TimeInForce::FOK => ibapi::orders::builder::TimeInForce::FillOrKill,
+    }
+}
 
 /// Whether the symbol is an index (uses SecurityType::Index + CBOE exchange).
 fn is_index(symbol: &str) -> bool {
@@ -419,6 +430,7 @@ impl IbAdapter {
                     .order(&bag_contract)
                     .buy(qty)
                     .limit(limit_price)
+                    .time_in_force(to_ib_tif(request.tif))
                     .submit()
                     .await
             }
@@ -427,6 +439,7 @@ impl IbAdapter {
                     .order(&bag_contract)
                     .sell(qty)
                     .limit(limit_price)
+                    .time_in_force(to_ib_tif(request.tif))
                     .submit()
                     .await
             }
@@ -604,6 +617,68 @@ impl BrokerEngine for IbAdapter {
     fn order_tx(&self) -> mpsc::Sender<OrderStatusEvent> {
         self.order_tx.clone()
     }
+
+    fn request_positions_sync(
+        &self,
+        timeout_ms: u64,
+    ) -> Result<Vec<PositionEvent>, BrokerError> {
+        let state = futures::executor::block_on(self.state.read());
+        if *state != ConnectionState::Connected {
+            return Err(BrokerError::NotConnected);
+        }
+        drop(state);
+
+        let client = futures::executor::block_on(self.client.read()).clone();
+        let client = client.ok_or(BrokerError::NotConnected)?;
+
+        let timeout = Duration::from_millis(timeout_ms);
+
+        let rt = tokio::runtime::Handle::current();
+        rt.block_on(async {
+            let mut sub = client
+                .positions()
+                .await
+                .map_err(|e: IbError| BrokerError::Other(e.to_string()))?;
+            let mut out = Vec::new();
+            loop {
+                let update = tokio::time::timeout(timeout, sub.next()).await;
+                match update {
+                    Ok(Some(Ok(update))) => {
+                        match update {
+                            PositionUpdate::Position(p) => {
+                                out.push(PositionEvent {
+                                    account: p.account.clone(),
+                                    symbol: p.contract.symbol.to_string(),
+                                    position: p.position as i32,
+                                    avg_cost: p.average_cost,
+                                });
+                            }
+                            PositionUpdate::PositionEnd => break,
+                        }
+                    }
+                    Ok(Some(Err(e))) => {
+                        return Err(BrokerError::Other(e.to_string()));
+                    }
+                    Ok(None) | Err(_) => {
+                        return Err(BrokerError::Other("request_positions_sync timed out".to_string()));
+                    }
+                }
+            }
+            Ok(out)
+        })
+    }
+
+    fn supports_options(&self) -> bool {
+        true
+    }
+
+    fn supports_box_spreads(&self) -> bool {
+        true
+    }
+
+    fn supports_combo_orders(&self) -> bool {
+        true
+    }
 }
 
 #[async_trait]
@@ -723,6 +798,34 @@ mod tests {
             legs: vec![],
             quantity: 1,
             limit_price: None,
+            tif: TimeInForce::Day,
+            order_action: OrderAction::Buy,
+        };
+        let err = adapter.place_bag_order(req).await.unwrap_err();
+        assert!(matches!(err, BrokerError::OrderFailed(_)));
+    }
+
+    #[tokio::test]
+    async fn place_bag_order_rejects_live_trading() {
+        let config = BrokerConfig {
+            host: "127.0.0.1".into(),
+            port: 7496,
+            client_id: 0,
+            paper_trading: false,
+        };
+        let adapter = IbAdapter::new(config);
+        *adapter.state.write().await = ConnectionState::Connected;
+        let req = PlaceBagOrderRequest {
+            underlying_symbol: "SPX".into(),
+            currency: "USD".into(),
+            exchange: "SMART".into(),
+            legs: vec![BagOrderLeg {
+                contract: OptionContract::new("SPX", "20250620", 5000.0, true),
+                ratio: 1,
+                action: OrderAction::Buy,
+            }],
+            quantity: 1,
+            limit_price: Some(8.0),
             tif: TimeInForce::Day,
             order_action: OrderAction::Buy,
         };

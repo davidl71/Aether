@@ -1,9 +1,9 @@
 # broker_engine Architecture
 
-**Date**: 2026-03-21
-**Status**: ✅ Steps 1–4, 6 complete. See §6 for current state.
+**Date**: 2026-03-22
+**Status**: ✅ Steps 1–4, 6 complete. Phase 4 enhancements added (capability flags, sync fallback). See §6 for current state.
 **Owner**: backend / ib_adapter team
-**Related tasks**: T-1773949780944708000, T-1773949802510897000, T-1773949816501720000, T-1773949859122015000, T-1773949896022157000, T-1773949903377577000
+**Related tasks**: T-1773949780944708000, T-1773949802510897000, T-1773949816501720000, T-1773949859122015000, T-1773949896022157000, T-1773949903377577000, T-1774187448891119000
 
 ---
 
@@ -114,6 +114,14 @@ pub trait BrokerEngine: Send + Sync {
     // Positions & account
     async fn request_positions(&self) -> Result<Vec<PositionEvent>, BrokerError>;
     async fn request_account(&self) -> Result<AccountInfo, BrokerError>;
+
+    // Sync fallback
+    fn request_positions_sync(&self, timeout_ms: u64) -> Result<Vec<PositionEvent>, BrokerError>;
+
+    // Capability discovery
+    fn supports_options(&self) -> bool;
+    fn supports_box_spreads(&self) -> bool;
+    fn supports_combo_orders(&self) -> bool;
 
     // Event channels (cloneable senders for consumers)
     fn market_data_tx(&self) -> mpsc::Sender<MarketDataEvent>;
@@ -321,13 +329,40 @@ A `MockBrokerEngine` in `broker_engine` behind `#[cfg(test)]` or a `testing` fea
 
 ---
 
-## 10. References
+## 10. Phase-Based Migration Pattern
+
+When integrating a new broker adapter or significant component, follow this 5-phase approach:
+
+| Phase | Focus | Activities |
+|-------|-------|------------|
+| **1. Foundation** | Core interface without dependencies | Define trait, domain types, error enum. No external runtime deps. |
+| **2. Integration** | Wire to real implementation | Implement trait for adapter. Connect to actual broker API. |
+| **3. Validation** | Tests and benchmarks | Unit tests, integration tests, performance benchmarks (tick→callback latency, throughput). |
+| **4. Enhancement** | Advanced features | Capability flags, sync fallbacks, rate limiting, advanced order types. |
+| **5. Alternate** | Alternative implementations | Additional broker adapters, Python/other language bindings, mock engines. |
+
+**Application to broker_engine migration:**
+
+| Phase | What was done |
+|-------|---------------|
+| Foundation | Created `broker_engine` crate with `BrokerEngine` trait + domain types (zero external deps beyond workspace) |
+| Integration | Implemented `BrokerEngine` for `IbAdapter` and `YatWSEngine` |
+| Validation | Unit tests in each crate; `backend_service` migrated to trait |
+| Enhancement | Capability flags (`supports_*`), sync fallback (`request_positions_sync`), `OptionChainProvider` trait |
+| Alternate | `MockBrokerEngine` for testing (deferred) |
+
+**Key principle**: Each phase produces working, testable code. Do not skip phases — validate before enhancing.
+
+---
+
+## 11. References
 
 - Task: T-1773949780944708000 — Create broker_engine crate ✅
 - Task: T-1773949802510897000 — Implement BrokerEngine for IbAdapter ✅
 - Task: T-1773949816501720000 — Migrate backend_service to broker_engine traits ✅
 - Task: T-1773949896022157000 — Create yatws_adapter crate ✅
 - Task: T-1774099701033026000 — Add OptionChainProvider trait ✅
+- Task: T-1774187448891119000 — Enhance with capability flags and sync fallback ✅ (2026-03-22)
 - TWS protobuf wire format: `agents/backend/crates/ib_adapter/src/tws_wire.rs`
 - yatws source: `/Users/davidl/Projects/Trading/yatws` (cloned from drpngx/yatws)
 - yatws learnings: `docs/research/learnings/YATWS_LEARNINGS.md`
