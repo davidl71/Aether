@@ -26,7 +26,7 @@ use tokio::{
     },
     time::sleep,
 };
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 mod api_handlers;
 mod collection_aggregation;
@@ -435,15 +435,30 @@ fn spawn_market_data_provider(
     };
     let interval = Duration::from_millis(settings.poll_interval_ms.max(10));
 
-    info!(provider = %settings.provider, symbol_count = symbols.len(), "creating market data provider");
-    let source = create_provider(&settings.provider, &symbols, interval).with_context(|| {
-        format!(
-            "failed to create market data provider: {}",
-            settings.provider
-        )
-    })?;
+    let aggregator = Arc::new(
+        market_data::MarketDataAggregator::new()
+    );
 
-    spawn_market_data_loop(source, state, strategy_signal, strategy_toggle, nats);
+    let providers = if settings.provider == "all" {
+        vec!["yahoo", "mock"]
+    } else {
+        vec![settings.provider.as_str()]
+    };
+
+    for provider_name in providers {
+        let source = create_provider(provider_name, &symbols, interval).with_context(|| {
+            format!("failed to create market data provider: {}", provider_name)
+        })?;
+
+        let agg = aggregator.clone();
+        let state_clone = state.clone();
+        let signal_clone = strategy_signal.clone();
+        let toggle_clone = strategy_toggle.clone();
+        let nats_clone = nats.clone();
+
+        info!(provider = %provider_name, symbol_count = symbols.len(), "spawning market data provider");
+        spawn_market_data_loop(source, state_clone, signal_clone, toggle_clone, nats_clone, agg);
+    }
 
     Ok(())
 }
@@ -454,6 +469,7 @@ fn spawn_market_data_loop(
     strategy_signal: UnboundedSender<StrategySignal>,
     strategy_toggle: watch::Receiver<bool>,
     nats: Arc<Option<nats_integration::NatsIntegration>>,
+    aggregator: Arc<market_data::MarketDataAggregator>,
 ) {
     tokio::spawn(async move {
         let ingestor = MarketDataIngestor::new(source);
@@ -462,12 +478,18 @@ fn spawn_market_data_loop(
             match ingestor.poll().await {
                 Ok(event) => {
                     let running = *strategy_toggle.borrow();
+
+                    let _updated = aggregator.process_event(&event).await;
+
+                    let best_quote = aggregator.get_quote(&event.symbol).await;
+
                     handle_market_event(
                         &state,
                         &strategy_signal,
                         &event,
                         running,
                         nats.as_ref().as_ref(),
+                        best_quote.as_ref(),
                     )
                     .await;
                 }
@@ -486,9 +508,19 @@ async fn handle_market_event(
     event: &MarketDataEvent,
     running: bool,
     nats: Option<&nats_integration::NatsIntegration>,
+    best_quote: Option<&market_data::Quote>,
 ) {
     let spread = event.ask - event.bid;
     let mid = (event.bid + event.ask) * 0.5;
+
+    if let Some(q) = best_quote {
+        debug!(
+            symbol = %event.symbol,
+            source = %q.source,
+            priority = q.source_priority,
+            "best quote from aggregator"
+        );
+    }
 
     // Publish market data to NATS (parallel to existing state update)
     if let Some(nats_integration) = nats {
