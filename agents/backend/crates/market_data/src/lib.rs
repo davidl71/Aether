@@ -1,3 +1,5 @@
+pub mod aggregator;
+pub mod cache;
 pub mod fmp;
 pub mod mock;
 pub mod model;
@@ -7,7 +9,14 @@ pub mod polygon_ws;
 pub mod yahoo;
 pub mod yield_curve;
 
-pub use fmp::{BalanceSheet, CashFlowStatement, FmpClient, FmpQuote, IncomeStatement};
+pub use aggregator::{DataSource, MarketDataAggregator, Quote, QuoteWithStaleness, ResolvedQuote};
+pub use cache::{
+    CacheError, CachedCandle, CachedQuote, CachedYieldCurve, CachedYieldPoint,
+    Staleness, Ttl,
+};
+pub use fmp::{
+    BalanceSheet, CashFlowStatement, FmpClient, FmpQuote, HistoricalCandle, IncomeStatement,
+};
 pub use mock::{MockMarketDataSource, MockMarketDataSourceFactory};
 pub use model::{
     MarketDataEvent, MarketDataEventBuilder, MarketDataSource, MarketDataSourceFactory,
@@ -20,9 +29,7 @@ pub use yahoo::{
     OptionContractData, OptionsDataSource, OptionsExpiration, YahooFinanceSource,
     YahooFinanceSourceFactory, YahooHistorySource, YahooOptionsSource,
 };
-pub use yield_curve::{
-    BoxSpreadResult, YahooYieldCurveSource, YieldCurve, YieldCurvePoint,
-};
+pub use yield_curve::{BoxSpreadResult, YahooYieldCurveSource, YieldCurve, YieldCurvePoint};
 
 use std::collections::HashMap;
 use std::sync::OnceLock;

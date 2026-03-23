@@ -103,6 +103,7 @@ pub struct TreasuryBenchmarksResponse {
 pub struct BenchmarksResponse {
     pub sofr: SofrBenchmarksResponse,
     pub treasury: TreasuryBenchmarksResponse,
+    #[serde(default)]
     pub timestamp: String,
 }
 
@@ -221,6 +222,60 @@ pub fn build_curve(
         timestamp: Utc::now().to_rfc3339(),
         underlying_price: None,
     })
+}
+
+const SYNTHETIC_DTE_DAYS: &[i32] = &[30, 60, 90, 120, 180, 365];
+const SYNTHETIC_BASE_RATE: f64 = 0.045;
+const SYNTHETIC_SPOT: f64 = 6000.0;
+const SYNTHETIC_STRIKE_WIDTH: f64 = 4.0;
+const SYNTHETIC_LIQUIDITY: f64 = 70.0;
+
+pub fn build_synthetic_curve(symbol: &str, live_base_rate: Option<f64>) -> CurveResponse {
+    let base_rate = live_base_rate.unwrap_or(SYNTHETIC_BASE_RATE);
+    let now = Utc::now();
+    let points: Vec<RatePointResponse> = SYNTHETIC_DTE_DAYS
+        .iter()
+        .map(|&dte| {
+            let t = dte as f64 / 365.0;
+            let mid_rate = base_rate.min(0.12);
+            let buy_rate = (mid_rate - 0.004).max(0.001);
+            let sell_rate = (mid_rate + 0.004).min(0.10);
+            let spot = SYNTHETIC_SPOT;
+            let width = SYNTHETIC_STRIKE_WIDTH;
+            let strike_low = (spot - width / 2.0).round();
+            let strike_high = (spot + width / 2.0).round();
+            let net_debit = width * (1.0 - buy_rate * t);
+            let net_credit = width * (1.0 - sell_rate * t);
+            let expiry_date = now + chrono::Duration::days(dte as i64);
+            RatePointResponse {
+                symbol: symbol.to_string(),
+                expiry: expiry_date.format("%Y-%m-%d").to_string(),
+                days_to_expiry: dte,
+                strike_width: width,
+                buy_implied_rate: buy_rate,
+                sell_implied_rate: sell_rate,
+                mid_rate,
+                net_debit: (net_debit * 100.0).round() / 100.0,
+                net_credit: (net_credit * 100.0).round() / 100.0,
+                liquidity_score: SYNTHETIC_LIQUIDITY,
+                timestamp: Utc::now().to_rfc3339(),
+                spread_id: None,
+                data_source: Some("synthetic".to_string()),
+                strike_low: Some(strike_low),
+                strike_high: Some(strike_high),
+                convenience_yield: None,
+            }
+        })
+        .collect();
+
+    CurveResponse {
+        symbol: symbol.to_string(),
+        strike_width: Some(SYNTHETIC_STRIKE_WIDTH),
+        point_count: points.len(),
+        points,
+        timestamp: Utc::now().to_rfc3339(),
+        underlying_price: Some(SYNTHETIC_SPOT),
+    }
 }
 
 pub async fn compare_rates(
@@ -795,9 +850,7 @@ async fn fetch_fred_series_observations(
 }
 
 fn fred_api_key() -> Option<String> {
-    std::env::var("FRED_API_KEY")
-        .ok()
-        .filter(|value| !value.trim().is_empty())
+    crate::credentials::fred_api_key()
 }
 
 fn closest_benchmark(

@@ -37,8 +37,8 @@ const STRIKE_WIDTH: f64 = 4.0;
 /// Default reference spot when env not set (ensures synthetic strikes bracket spot: one leg ITM, one OTM).
 const DEFAULT_REFERENCE_SPOT: f64 = 6000.0;
 const REFERENCE_SPOT_ENV_PREFIX: &str = "YIELD_CURVE_REFERENCE_SPOT_";
-/// Base short-term rate (decimal, e.g. 0.048 = 4.8%).
-const BASE_RATE: f64 = 0.048;
+/// Base short-term rate (decimal, e.g. 0.045 = 4.5%). Updated to be closer to current SOFR rates (~4.5-5.3%).
+const BASE_RATE: f64 = 0.045;
 /// Bid-ask spread in rate terms (decimal, e.g. 0.008 = 80 bps).
 const RATE_SPREAD: f64 = 0.008;
 /// Term premium per year (decimal). 0 = flat curve (box APR same for all DTE). Non-zero slopes the curve.
@@ -145,17 +145,55 @@ fn synthetic_spread(symbol: &str, expiry: &str, dte: i32) -> serde_json::Value {
 }
 
 /// Generate synthetic opportunities for a symbol (multiple expiries).
-/// Pub for use by build_curve handler when YIELD_CURVE_BYPASS_KV is set (testing).
-pub(crate) fn synthetic_opportunities(symbol: &str) -> Vec<serde_json::Value> {
+/// Uses live_benchmark_rate if provided (e.g., from SOFR/Treasury), otherwise BASE_RATE (4.8%).
+pub(crate) fn synthetic_opportunities(
+    symbol: &str,
+    live_benchmark_rate: Option<f64>,
+) -> Vec<serde_json::Value> {
     let now = Utc::now();
+    let base_rate = live_benchmark_rate.unwrap_or(BASE_RATE);
     DTE_DAYS
         .iter()
         .map(|&dte| {
             let expiry_date = now + chrono::Duration::days(dte as i64);
             let expiry = expiry_date.format("%Y-%m-%d").to_string();
-            synthetic_spread(symbol, &expiry, dte)
+            synthetic_spread_with_rate(symbol, &expiry, dte, base_rate)
         })
         .collect()
+}
+
+fn synthetic_spread_with_rate(
+    symbol: &str,
+    expiry: &str,
+    dte: i32,
+    base_rate: f64,
+) -> serde_json::Value {
+    let t = dte as f64 / 365.0;
+    let term_premium = (dte as f64 / 365.0) * TERM_PREMIUM_PER_YEAR;
+    let mid = (base_rate + term_premium).min(0.12);
+    let buy_rate = (mid - RATE_SPREAD / 2.0).max(0.001);
+    let sell_rate = (mid + RATE_SPREAD / 2.0).min(0.15);
+    let spot = reference_spot(symbol);
+    let (strike_low, strike_high) = strikes_symmetric_fixed(spot, STRIKE_WIDTH);
+    let width = strike_high - strike_low;
+    let net_debit = width * (1.0 - buy_rate * t);
+    let net_credit = width * (1.0 - sell_rate * t);
+    json!({
+        "spread": {
+            "symbol": symbol,
+            "expiry": expiry,
+            "days_to_expiry": dte,
+            "strike_width": (width * 100.0).round() / 100.0,
+            "strike_low": strike_low,
+            "strike_high": strike_high,
+            "buy_implied_rate": (buy_rate * 100.0).round() / 100.0,
+            "sell_implied_rate": (sell_rate * 100.0).round() / 100.0,
+            "net_debit": (net_debit * 100.0).round() / 100.0,
+            "net_credit": (net_credit * 100.0).round() / 100.0,
+            "liquidity_score": LIQUIDITY_SCORE,
+        },
+        "data_source": "synthetic"
+    })
 }
 
 /// Fetch curve points from a public URL. Returns map symbol -> opportunities (each Value is { "spread": BoxSpreadInput }).
@@ -201,8 +239,6 @@ async fn fetch_curve_from_url(url: &str) -> Option<HashMap<String, Vec<serde_jso
 /// Run the yield curve writer: pre-populate once immediately, then every `interval_secs` write `yield_curve.{symbol}`.
 /// Returns a sender to trigger one immediate write cycle (e.g. for `api.yield_curve.refresh`).
 /// Source: `config_source` (from [yield_curve] source) or env `YIELD_CURVE_SOURCE`; "tws" => TWS, else URL/synthetic.
-/// TBD: create task for yield_curve_writer::spawn integration into backend_service
-#[allow(dead_code)]
 pub fn spawn(
     nats_client: Arc<NatsClient>,
     symbols: Vec<String>,
@@ -318,14 +354,14 @@ pub fn spawn(
                         );
                         symbols
                             .iter()
-                            .map(|s| (s.clone(), synthetic_opportunities(s)))
+                            .map(|s| (s.clone(), synthetic_opportunities(s, None)))
                             .collect()
                     }
                 }
             } else {
                 symbols
                     .iter()
-                    .map(|s| (s.clone(), synthetic_opportunities(s)))
+                    .map(|s| (s.clone(), synthetic_opportunities(s, None)))
                     .collect()
             };
             for (symbol, opportunities) in by_symbol {

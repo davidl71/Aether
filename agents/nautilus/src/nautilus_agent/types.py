@@ -34,15 +34,21 @@ def _ns_to_ts(ns: int) -> timestamp_pb2.Timestamp:
     return timestamp_pb2.Timestamp(seconds=seconds, nanos=nanos)
 
 
+NAUTILUS_SOURCE = "nautilus"
+NAUTILUS_PRIORITY = 100
+
+
 def quote_tick_to_market_data_event(tick: QuoteTick, symbol: str) -> pb.MarketDataEvent:
     """Convert a NT QuoteTick to MarketDataEvent proto for NATS publishing."""
     return pb.MarketDataEvent(
         symbol=symbol,
         bid=float(tick.bid_price),
         ask=float(tick.ask_price),
-        last=float(tick.bid_price),   # no last-trade in QuoteTick; use bid as proxy
+        last=float(tick.bid_price),  # no last-trade in QuoteTick; use bid as proxy
         volume=int(tick.bid_size) + int(tick.ask_size),
         timestamp=_ns_to_ts(tick.ts_event),
+        source=NAUTILUS_SOURCE,
+        source_priority=NAUTILUS_PRIORITY,
     )
 
 
@@ -55,6 +61,8 @@ def trade_tick_to_market_data_event(tick: TradeTick, symbol: str) -> pb.MarketDa
         last=float(tick.price),
         volume=int(tick.size),
         timestamp=_ns_to_ts(tick.ts_event),
+        source=NAUTILUS_SOURCE,
+        source_priority=NAUTILUS_PRIORITY,
     )
 
 
@@ -88,7 +96,9 @@ def position_to_proto(
         symbol=symbol,
         quantity=int(pos.quantity),
         cost_basis=float(pos.avg_px_open) if pos.avg_px_open else 0.0,
-        mark=float(pos.unrealized_pnl) + float(pos.avg_px_open) if pos.avg_px_open else 0.0,
+        mark=float(pos.unrealized_pnl) + float(pos.avg_px_open)
+        if pos.avg_px_open
+        else 0.0,
         unrealized_pnl=float(pos.unrealized_pnl) if pos.unrealized_pnl else 0.0,
     )
 

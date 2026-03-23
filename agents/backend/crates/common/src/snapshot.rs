@@ -189,4 +189,15 @@ pub struct MarketDataEvent {
     pub timestamp: DateTime<Utc>,
     #[builder(default = "0")]
     pub quote_quality: u32,
+    #[builder(default = "\"tws\".into()")]
+    #[builder(setter(into))]
+    pub source: String,
+    #[builder(default = "100")]
+    pub source_priority: u32,
+}
+
+impl MarketDataEvent {
+    pub fn source_weight(&self) -> i32 {
+        100 - self.source_priority as i32
+    }
 }

@@ -70,6 +70,8 @@ impl MarketDataSource for MockMarketDataSource {
             .bid(bid)
             .ask(ask)
             .timestamp(Utc::now())
+            .source("mock")
+            .source_priority(0u32)
             .build()?;
         Ok(event)
     }

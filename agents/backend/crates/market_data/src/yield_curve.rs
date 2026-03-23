@@ -1,7 +1,7 @@
 //! Yield curve derivation from options market data.
 //!
 //! Derives box-spread implied financing rates from equity/index options chains.
-//! 
+//!
 //! ## Data Sources
 //!
 //! | Source | European Options | American Options | Notes |
@@ -25,18 +25,16 @@
 
 use std::collections::HashMap;
 
-use chrono::{Datelike, NaiveDate, Utc};
+use chrono::{NaiveDate, Utc};
 use thiserror::Error;
 use tracing::{debug, warn};
-use yfinance_rs::{
-    core::conversions::money_to_f64,
-    Interval, Range,
-};
+use yfinance_rs::{core::conversions::money_to_f64, Interval, Range};
 
-use crate::yahoo::{OptionContractData, OptionsDataSource, YahooOptionsSource, YahooHistorySource};
+use crate::yahoo::{OptionContractData, OptionsDataSource, YahooHistorySource, YahooOptionsSource};
 
 const STRIKE_WIDTH: f64 = 2.0;
 const MIN_LIQUIDITY_SCORE: f64 = 50.0;
+#[allow(dead_code)]
 const MAX_EXPIRY_DAYS: i32 = 730;
 const MIN_DTE: i32 = 7;
 const MAX_DTE: i32 = 730;
@@ -110,9 +108,9 @@ pub struct BoxSpreadResult {
 
 impl BoxSpreadResult {
     /// Calculate box spread implied rates from option quotes.
-    /// 
+    ///
     /// Box spread payoff at expiration: K_high - K_low (fixed)
-    /// 
+    ///
     /// For a box to be a valid financing instrument:
     /// - Net debit must be positive and less than width (profitable to borrow)
     /// - Net credit must be positive and less than width (profitable to lend)
@@ -133,7 +131,10 @@ impl BoxSpreadResult {
         let net_credit = c_high_bid + p_low_bid - c_low_bid - p_high_ask;
 
         if net_debit <= 0.0 || net_debit >= width {
-            debug!("box spread: invalid net_debit {:.2} vs width {:.2}", net_debit, width);
+            debug!(
+                "box spread: invalid net_debit {:.2} vs width {:.2}",
+                net_debit, width
+            );
             return None;
         }
 
@@ -154,8 +155,8 @@ impl BoxSpreadResult {
         };
 
         let liquidity_score = Self::calculate_liquidity_score(
-            c_low_bid, c_low_ask, c_high_bid, c_high_ask,
-            p_low_bid, p_low_ask, p_high_bid, p_high_ask,
+            c_low_bid, c_low_ask, c_high_bid, c_high_ask, p_low_bid, p_low_ask, p_high_bid,
+            p_high_ask,
         );
 
         Some(Self {
@@ -179,10 +180,14 @@ impl BoxSpreadResult {
     }
 
     fn calculate_liquidity_score(
-        c_low_bid: f64, c_low_ask: f64,
-        c_high_bid: f64, c_high_ask: f64,
-        p_low_bid: f64, p_low_ask: f64,
-        p_high_bid: f64, p_high_ask: f64,
+        c_low_bid: f64,
+        c_low_ask: f64,
+        c_high_bid: f64,
+        c_high_ask: f64,
+        p_low_bid: f64,
+        p_low_ask: f64,
+        p_high_bid: f64,
+        p_high_ask: f64,
     ) -> f64 {
         let spreads = [
             c_low_ask - c_low_bid,
@@ -217,7 +222,10 @@ impl YahooYieldCurveSource {
     }
 
     pub async fn fetch_underlying_price(&self, symbol: &str) -> anyhow::Result<f64> {
-        let history = self.history.get_history(symbol, Range::D1, Interval::D1).await?;
+        let history = self
+            .history
+            .get_history(symbol, Range::D1, Interval::D1)
+            .await?;
         if let Some(candle) = history.first() {
             Ok(money_to_f64(&candle.close))
         } else {
@@ -249,14 +257,17 @@ impl YahooYieldCurveSource {
             })
             .collect();
 
-        debug!(symbol = %symbol, valid_count = valid_expirations.len(), 
+        debug!(symbol = %symbol, valid_count = valid_expirations.len(),
                "filtered expirations (DTE {} to {})", MIN_DTE, MAX_DTE);
 
         let mut points = Vec::new();
 
         for expiry in valid_expirations.into_iter().take(10) {
             let dte = (expiry - today).num_days() as i32;
-            if let Some(point) = self.fetch_point(&yahoo_symbol, expiry, underlying_price).await {
+            if let Some(point) = self
+                .fetch_point(&yahoo_symbol, expiry, underlying_price)
+                .await
+            {
                 debug!(symbol = %symbol, dte = %dte, "computed point");
                 points.push(point);
             }
@@ -283,7 +294,7 @@ impl YahooYieldCurveSource {
     ) -> Option<YieldCurvePoint> {
         let chain = self.options.get_chain(symbol, expiry).await.ok()?;
 
-        debug!(symbol = %symbol, spot = spot, calls = chain.calls.len(), puts = chain.puts.len(), 
+        debug!(symbol = %symbol, spot = spot, calls = chain.calls.len(), puts = chain.puts.len(),
                "fetched option chain for {}", expiry);
 
         let dte = (expiry - Utc::now().date_naive()).num_days() as i32;
@@ -342,6 +353,7 @@ impl YahooYieldCurveSource {
         })
     }
 
+    #[allow(dead_code)]
     fn find_option(
         &self,
         options: &[OptionContractData],
@@ -371,11 +383,11 @@ impl YahooYieldCurveSource {
 
         sorted.sort_by_key(|o| (o.strike - target_low).abs() as i64);
 
-        let c_low = sorted.first()?.clone();
+        let c_low = sorted.first().copied()?;
 
         sorted.sort_by_key(|o| (o.strike - target_high).abs() as i64);
 
-        let c_high = sorted.first()?.clone();
+        let c_high = sorted.first().copied()?;
 
         if c_low.strike >= c_high.strike {
             return None;
@@ -423,7 +435,8 @@ mod tests {
         eprintln!("SPY has {} expiration dates", expirations.len());
 
         let today = Utc::now().date_naive();
-        let valid: Vec<_> = expirations.iter()
+        let valid: Vec<_> = expirations
+            .iter()
             .filter(|e| {
                 let dte = (**e - today).num_days();
                 dte >= 7 && dte <= 60
@@ -433,7 +446,11 @@ mod tests {
 
         if let Some(exp) = valid.first() {
             let expiry = **exp;
-            eprintln!("First valid expiry: {} (DTE {})", expiry, (expiry - today).num_days());
+            eprintln!(
+                "First valid expiry: {} (DTE {})",
+                expiry,
+                (expiry - today).num_days()
+            );
 
             let chain = source.get_chain("SPY", expiry).await;
             match chain {
@@ -444,13 +461,19 @@ mod tests {
                     let target_low = spot - 3.0;
                     let target_high = spot + 3.0;
 
-                    let nearby_calls: Vec<_> = c.calls.iter()
-                        .filter(|o| o.strike >= target_low && o.strike <= target_high && o.bid > 0.0)
+                    let nearby_calls: Vec<_> = c
+                        .calls
+                        .iter()
+                        .filter(|o| {
+                            o.strike >= target_low && o.strike <= target_high && o.bid > 0.0
+                        })
                         .collect();
                     eprintln!("Calls near ATM ({:.0}-{:.0}):", target_low, target_high);
                     for call in nearby_calls.iter().take(5) {
-                        eprintln!("  K={:.0} bid={:.2} ask={:.2} vol={}", 
-                            call.strike, call.bid, call.ask, call.volume);
+                        eprintln!(
+                            "  K={:.0} bid={:.2} ask={:.2} vol={}",
+                            call.strike, call.bid, call.ask, call.volume
+                        );
                     }
                 }
                 Err(e) => eprintln!("Chain fetch failed: {e}"),
@@ -465,12 +488,22 @@ mod tests {
         match source.fetch_yield_curve("SPY").await {
             Ok(curve) => {
                 assert!(!curve.points.is_empty(), "should have at least one point");
-                assert!(curve.underlying_price > 0.0, "should have valid underlying price");
-                eprintln!("SPY yield curve: {} points, spot: {:.2}", 
-                    curve.points.len(), curve.underlying_price);
+                assert!(
+                    curve.underlying_price > 0.0,
+                    "should have valid underlying price"
+                );
+                eprintln!(
+                    "SPY yield curve: {} points, spot: {:.2}",
+                    curve.points.len(),
+                    curve.underlying_price
+                );
                 for point in curve.points.iter().take(3) {
-                    eprintln!("  DTE {}: mid_rate={:.2}% liquidity={:.1}",
-                        point.dte, point.mid_rate * 100.0, point.liquidity_score);
+                    eprintln!(
+                        "  DTE {}: mid_rate={:.2}% liquidity={:.1}",
+                        point.dte,
+                        point.mid_rate * 100.0,
+                        point.liquidity_score
+                    );
                 }
             }
             Err(e) => {
@@ -486,11 +519,18 @@ mod tests {
         match source.fetch_yield_curve("QQQ").await {
             Ok(curve) => {
                 assert!(!curve.points.is_empty(), "should have at least one point");
-                eprintln!("QQQ yield curve: {} points, spot: {:.2}", 
-                    curve.points.len(), curve.underlying_price);
+                eprintln!(
+                    "QQQ yield curve: {} points, spot: {:.2}",
+                    curve.points.len(),
+                    curve.underlying_price
+                );
                 for point in curve.points.iter().take(3) {
-                    eprintln!("  DTE {}: mid_rate={:.2}% liquidity={:.1}",
-                        point.dte, point.mid_rate * 100.0, point.liquidity_score);
+                    eprintln!(
+                        "  DTE {}: mid_rate={:.2}% liquidity={:.1}",
+                        point.dte,
+                        point.mid_rate * 100.0,
+                        point.liquidity_score
+                    );
                 }
             }
             Err(e) => {

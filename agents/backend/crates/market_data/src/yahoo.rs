@@ -96,6 +96,8 @@ impl MarketDataSource for YahooFinanceSource {
             .bid(bid)
             .ask(ask)
             .timestamp(Utc::now())
+            .source("yahoo")
+            .source_priority(50u32)
             .build()?;
 
         Ok(event)

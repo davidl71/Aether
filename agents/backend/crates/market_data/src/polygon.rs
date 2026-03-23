@@ -147,6 +147,8 @@ impl MarketDataSource for PolygonMarketDataSource {
             .bid(bid)
             .ask(ask)
             .timestamp(Self::convert_timestamp(timestamp))
+            .source("polygon")
+            .source_priority(70u32)
             .build()?;
 
         Ok(event)

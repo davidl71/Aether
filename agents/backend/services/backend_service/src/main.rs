@@ -39,21 +39,14 @@ mod snapshot_publisher;
 mod swiftness;
 mod yield_curve_writer;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Default, Deserialize, Clone)]
 struct BackendConfig {
     #[serde(default)]
     market_data: MarketDataSettings,
     #[serde(default)]
     broker: BrokerSettings,
-}
-
-impl Default for BackendConfig {
-    fn default() -> Self {
-        Self {
-            market_data: MarketDataSettings::default(),
-            broker: BrokerSettings::default(),
-        }
-    }
+    #[serde(default)]
+    yield_curve: YieldCurveSettings,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -120,6 +113,41 @@ struct PolygonSettings {
     api_key: Option<String>,
     api_key_env: Option<String>,
     base_url: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+struct YieldCurveSettings {
+    #[serde(default = "default_yield_curve_enabled")]
+    enabled: bool,
+    #[serde(default = "default_yield_curve_symbols")]
+    symbols: Vec<String>,
+    #[serde(default = "default_yield_curve_interval_secs")]
+    interval_secs: u64,
+    #[serde(default)]
+    source: Option<String>,
+}
+
+impl Default for YieldCurveSettings {
+    fn default() -> Self {
+        Self {
+            enabled: default_yield_curve_enabled(),
+            symbols: default_yield_curve_symbols(),
+            interval_secs: default_yield_curve_interval_secs(),
+            source: None,
+        }
+    }
+}
+
+fn default_yield_curve_enabled() -> bool {
+    true
+}
+
+fn default_yield_curve_symbols() -> Vec<String> {
+    vec!["SPX".into(), "XSP".into(), "NDX".into()]
+}
+
+fn default_yield_curve_interval_secs() -> u64 {
+    3600
 }
 
 fn default_market_provider() -> String {
@@ -194,6 +222,7 @@ async fn main() -> anyhow::Result<()> {
     );
 
     let market_ctrl_rx = strategy_ctrl_rx;
+
     spawn_market_data_provider(
         &config.market_data,
         state.clone(),
@@ -263,7 +292,7 @@ async fn main() -> anyhow::Result<()> {
                 use_jetstream,
             );
             api_handlers::spawn(
-                client,
+                client.clone(),
                 loan_repo.map(Arc::new),
                 fmp_client,
                 controller.clone(),
@@ -271,6 +300,25 @@ async fn main() -> anyhow::Result<()> {
                 None,
                 broker_engine.clone(),
             );
+
+            if config.yield_curve.enabled {
+                if let Some(nats_client) = nats.client() {
+                    let _refresh_tx = yield_curve_writer::spawn(
+                        nats_client,
+                        config.yield_curve.symbols.clone(),
+                        config.yield_curve.interval_secs,
+                        config.yield_curve.source.clone(),
+                    );
+                    info!(
+                        symbols = ?config.yield_curve.symbols,
+                        interval_secs = config.yield_curve.interval_secs,
+                        source = ?config.yield_curve.source,
+                        "yield curve writer started"
+                    );
+                } else {
+                    info!("yield curve writer skipped (NATS unavailable)");
+                }
+            }
         }
     }
 

@@ -265,6 +265,8 @@ impl From<pb::MarketDataEvent> for cmn::MarketDataEvent {
             volume: p.volume,
             timestamp: unwrap_ts(p.timestamp.as_ref()),
             quote_quality: p.quote_quality,
+            source: p.source,
+            source_priority: p.source_priority,
         }
     }
 }
@@ -280,6 +282,8 @@ impl From<cmn::MarketDataEvent> for pb::MarketDataEvent {
             volume: c.volume,
             timestamp: opt_ts(&c.timestamp),
             quote_quality: c.quote_quality,
+            source: c.source,
+            source_priority: c.source_priority,
         }
     }
 }

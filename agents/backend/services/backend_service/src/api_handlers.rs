@@ -81,6 +81,65 @@ const SUBJECT_CALCULATE_RATIO_SPREAD: &str = "api.calculate.ratio_spread";
 
 const SUBJECT_SNAPSHOT_PUBLISH_NOW: &str = "api.snapshot.publish_now";
 
+/// Sources for yield curve data with configurable fallback order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum YieldCurveSource {
+    /// Live TWS option chain (requires TWS/Gateway running)
+    Tws,
+    /// Synthetic curve (no live data, for testing/offline)
+    Synthetic,
+    /// Pre-cached from NATS KV (written by yield_curve_writer)
+    Kv,
+}
+
+impl YieldCurveSource {
+    /// Parse from string: "tws", "synthetic", "kv"
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s.trim().to_lowercase().as_str() {
+            "tws" => Some(Self::Tws),
+            "synthetic" | "synth" => Some(Self::Synthetic),
+            "kv" | "cache" | "cached" => Some(Self::Kv),
+            _ => None,
+        }
+    }
+
+    /// Default fallback order: try KV first (fast, cached), then synthetic (always works), then TWS (slow, requires connection)
+    pub fn default_fallback_order() -> Vec<Self> {
+        vec![Self::Kv, Self::Synthetic, Self::Tws]
+    }
+
+    /// TWS-first fallback: try TWS first (freshest), then synthetic, then KV
+    pub fn tws_first_order() -> Vec<Self> {
+        vec![Self::Tws, Self::Synthetic, Self::Kv]
+    }
+
+    /// Synthetic-only fallback (no live data, for testing)
+    pub fn synthetic_only_order() -> Vec<Self> {
+        vec![Self::Synthetic]
+    }
+
+    /// Parse fallback order from env var YIELD_CURVE_FALLBACK (comma-separated, e.g. "kv,synthetic,tws")
+    pub fn from_env_fallback_order() -> Vec<Self> {
+        let fallback_str = std::env::var("YIELD_CURVE_FALLBACK").unwrap_or_default();
+        if fallback_str.is_empty() {
+            return Self::default_fallback_order();
+        }
+        fallback_str
+            .split(',')
+            .filter_map(|s| Self::from_str(s))
+            .collect()
+    }
+
+    /// Source label for logging/display
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::Tws => "TWS",
+            Self::Synthetic => "synthetic",
+            Self::Kv => "KV",
+        }
+    }
+}
+
 /// Default queue group for api.* request/reply when scaling multiple backends. Override with NATS_API_QUEUE_GROUP.
 const DEFAULT_API_QUEUE_GROUP: &str = "api";
 
@@ -601,73 +660,76 @@ async fn run_finance_rates(
                         .or_else(|| query.as_ref().and_then(|q| q.symbol.clone())),
                     CurveRequest::Opportunities(_) => query.as_ref().and_then(|q| q.symbol.clone()),
                 };
-                let mut loaded_from_kv = false;
-                let mut used_synthetic = false;
-                let mut used_tws = false;
-                if let Some(ref sym) = symbol {
-                    let is_empty = match &request {
-                        CurveRequest::Opportunities(opps) => opps.is_empty(),
-                        CurveRequest::Named { opportunities, .. } => opportunities.is_empty(),
-                    };
-                    if is_empty {
-                        // Live TWS: build curve from option chain + option quotes (bypass KV).
-                        let use_tws = std::env::var("YIELD_CURVE_USE_TWS")
-                            .ok()
-                            .map(|v| matches!(v.to_lowercase().as_str(), "1" | "true" | "yes"))
-                            .unwrap_or(false);
-                        if use_tws {
-                            if let Ok(opportunities) =
-                                tws_yield_curve::fetch_yield_curve_from_tws(sym).await
-                            {
-                                if !opportunities.is_empty() {
-                                    request = CurveRequest::Named {
-                                        opportunities,
-                                        symbol: Some(sym.clone()),
-                                    };
-                                    used_tws = true;
+
+                // Granular fallback: try sources in configurable order until one succeeds
+                let fallback_order = YieldCurveSource::from_env_fallback_order();
+                let is_empty = symbol.as_ref().map_or(false, |sym| match &request {
+                    CurveRequest::Opportunities(opps) => opps.is_empty(),
+                    CurveRequest::Named { opportunities, .. } => opportunities.is_empty(),
+                });
+
+                let mut used_source: Option<YieldCurveSource> = None;
+
+                if is_empty {
+                    for source in &fallback_order {
+                        match source {
+                            YieldCurveSource::Tws => {
+                                if let Some(ref sym) = symbol {
+                                    if let Ok(opportunities) =
+                                        tws_yield_curve::fetch_yield_curve_from_tws(sym).await
+                                    {
+                                        if !opportunities.is_empty() {
+                                            request = CurveRequest::Named {
+                                                opportunities,
+                                                symbol: Some(sym.clone()),
+                                            };
+                                            used_source = Some(YieldCurveSource::Tws);
+                                            debug!(symbol = %sym, "Using TWS yield curve");
+                                            break;
+                                        }
+                                    }
                                 }
                             }
-                        }
-                        if !used_tws {
-                            // Testing: bypass KV and use in-process synthetic curve (same algorithm as writer).
-                            let bypass_kv = std::env::var("YIELD_CURVE_BYPASS_KV")
-                                .ok()
-                                .map(|v| matches!(v.to_lowercase().as_str(), "1" | "true" | "yes"))
-                                .unwrap_or(false);
-                            if bypass_kv {
-                                let opportunities =
-                                    crate::yield_curve_writer::synthetic_opportunities(sym);
-                                if !opportunities.is_empty() {
-                                    request = CurveRequest::Named {
-                                        opportunities,
-                                        symbol: Some(sym.clone()),
-                                    };
-                                    used_synthetic = true;
+                            YieldCurveSource::Synthetic => {
+                                if let Some(ref sym) = symbol {
+                                    let live_rate = fetch_live_base_rate(&nc_build).await;
+                                    let opportunities =
+                                        crate::yield_curve_writer::synthetic_opportunities(
+                                            sym, live_rate,
+                                        );
+                                    if !opportunities.is_empty() {
+                                        request = CurveRequest::Named {
+                                            opportunities,
+                                            symbol: Some(sym.clone()),
+                                        };
+                                        used_source = Some(YieldCurveSource::Synthetic);
+                                        debug!(symbol = %sym, live_rate, "Using synthetic yield curve with benchmark rate");
+                                        break;
+                                    }
                                 }
                             }
-                        }
-                        if !used_tws && !used_synthetic {
-                            if let Some(curve_from_kv) =
-                                load_yield_curve_from_kv(&nc_build, sym, query.as_ref()).await
-                            {
-                                loaded_from_kv = true;
-                                let spot = symbol
-                                    .as_ref()
-                                    .map(|s| reference_spot_for_report(s))
-                                    .unwrap_or(DEFAULT_REFERENCE_SPOT);
-                                let mut curve = curve_from_kv;
-                                if symbol.is_some() {
-                                    curve.underlying_price = Some(spot);
+                            YieldCurveSource::Kv => {
+                                if let Some(ref sym) = symbol {
+                                    if let Some(curve_from_kv) =
+                                        load_yield_curve_from_kv(&nc_build, sym, query.as_ref())
+                                            .await
+                                    {
+                                        let spot = reference_spot_for_report(sym);
+                                        let mut curve = curve_from_kv;
+                                        curve.underlying_price = Some(spot);
+                                        fill_missing_strikes(&mut curve, spot);
+                                        for p in curve.points.iter_mut() {
+                                            p.data_source = Some("KV".to_string());
+                                        }
+                                        debug!(symbol = %sym, "Using KV yield curve");
+                                        return finance_rates_result(Ok(curve));
+                                    }
                                 }
-                                fill_missing_strikes(&mut curve, spot);
-                                for p in curve.points.iter_mut() {
-                                    p.data_source = Some("KV".to_string());
-                                }
-                                return finance_rates_result(Ok(curve));
                             }
                         }
                     }
                 }
+
                 let mut curve = match build_curve(request, query) {
                     Ok(c) => c,
                     Err(e) => {
@@ -682,15 +744,7 @@ async fn run_finance_rates(
                     curve.underlying_price = Some(spot);
                 }
                 fill_missing_strikes(&mut curve, spot);
-                let source_label = if used_tws {
-                    "TWS"
-                } else if used_synthetic {
-                    "synthetic"
-                } else if loaded_from_kv {
-                    "KV"
-                } else {
-                    "request"
-                };
+                let source_label = used_source.as_ref().map(|s| s.label()).unwrap_or("request");
                 for p in curve.points.iter_mut() {
                     p.data_source = Some(source_label.to_string());
                 }
@@ -749,7 +803,11 @@ async fn run_finance_rates(
                 if treasury.rates.is_empty() {
                     treasury = mock_treasury_benchmarks();
                 }
-                let response = serde_json::json!({ "sofr": sofr, "treasury": treasury });
+                let response = serde_json::json!({
+                    "sofr": sofr,
+                    "treasury": treasury,
+                    "timestamp": chrono::Utc::now().to_rfc3339()
+                });
                 serde_json::to_vec(&response).unwrap_or_else(|_| b"{}".to_vec())
             }
         },
@@ -1764,6 +1822,30 @@ async fn run_loans_with_repo(nc: Client, repo: Arc<LoanRepository>) {
             serde_json::to_vec(&r).unwrap_or_else(|_| b"{}".to_vec())
         }
     }));
+}
+
+async fn fetch_live_base_rate(_nc: &Client) -> Option<f64> {
+    let client = match reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+    {
+        Ok(c) => c,
+        Err(_) => return None,
+    };
+
+    let sofr = api::finance_rates::get_sofr_rates(&client).await;
+    if let Some(overnight) = sofr.overnight.rate {
+        if overnight > 0.0 {
+            return Some(overnight / 100.0);
+        }
+    }
+    let treasury = api::finance_rates::get_treasury_rates(&client).await;
+    if let Some(treas) = treasury.rates.first() {
+        if treas.rate > 0.0 {
+            return Some(treas.rate / 100.0);
+        }
+    }
+    None
 }
 
 #[cfg(test)]

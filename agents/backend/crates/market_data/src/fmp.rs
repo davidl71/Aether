@@ -9,13 +9,35 @@
 //! **NATS API:** FMP/chart/Swiftness/frontend are not exposed via NATS (deferred).
 //! See `docs/platform/NATS_API.md` §3.
 //!
+//! **Rate limiting:** Free tier has 250 calls/day. Uses 100ms delay between calls
+//! and tracks daily usage to avoid hitting limits.
+//!
 //! API reference: <https://site.financialmodelingprep.com/developer/docs>
 
 use reqwest::{Client, Url};
 use serde::{Deserialize, Serialize};
-use tracing::debug;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+use tokio::sync::Mutex;
+use tracing::{debug, warn};
 
 const DEFAULT_BASE_URL: &str = "https://financialmodelingprep.com/api";
+const CALL_DELAY_MS: u64 = 50;
+const DAILY_LIMIT_FREE: u32 = 250;
+const DAILY_LIMIT_PROFESSIONAL: u32 = 5000;
+const BANDWIDTH_LIMIT_PROFESSIONAL_MB: u32 = 10240;
+
+#[derive(Debug, Clone)]
+pub struct HistoricalCandle {
+    pub date: String,
+    pub open: f64,
+    pub high: f64,
+    pub low: f64,
+    pub close: f64,
+    pub volume: i64,
+    pub adj_close: Option<f64>,
+}
 
 // ---------------------------------------------------------------------------
 // Response types
@@ -78,6 +100,56 @@ pub struct FmpClient {
     client: Client,
     api_key: String,
     base_url: Url,
+    rate_limiter: Arc<RateLimiter>,
+}
+
+struct RateLimiter {
+    calls_today: AtomicU32,
+    window_start: Mutex<Instant>,
+    last_call: Mutex<Instant>,
+}
+
+impl RateLimiter {
+    fn new() -> Self {
+        Self {
+            calls_today: AtomicU32::new(0),
+            window_start: Mutex::new(Instant::now()),
+            last_call: Mutex::new(Instant::now()),
+        }
+    }
+
+    async fn acquire(&self) {
+        let mut last = self.last_call.lock().await;
+        let elapsed = last.elapsed();
+        if elapsed < Duration::from_millis(CALL_DELAY_MS) {
+            tokio::time::sleep(Duration::from_millis(CALL_DELAY_MS) - elapsed).await;
+        }
+        *last = Instant::now();
+        drop(last);
+
+        let calls = self.calls_today.fetch_add(1, Ordering::Relaxed) + 1;
+        if calls >= DAILY_LIMIT_FREE {
+            warn!(
+                "FMP daily limit approaching: {}/{} calls",
+                calls, DAILY_LIMIT_FREE
+            );
+        }
+    }
+
+    async fn reset_if_new_day(&self) {
+        let now = Instant::now();
+        let start = self.window_start.lock().await;
+        if now.duration_since(*start) > Duration::from_secs(86400) {
+            self.calls_today.store(0, Ordering::Relaxed);
+            drop(start);
+            let mut start = self.window_start.lock().await;
+            *start = now;
+        }
+    }
+
+    fn calls_used(&self) -> u32 {
+        self.calls_today.load(Ordering::Relaxed)
+    }
 }
 
 impl FmpClient {
@@ -95,7 +167,16 @@ impl FmpClient {
             client,
             api_key: api_key.into(),
             base_url,
+            rate_limiter: Arc::new(RateLimiter::new()),
         })
+    }
+
+    pub fn calls_remaining(&self) -> u32 {
+        DAILY_LIMIT_FREE.saturating_sub(self.rate_limiter.calls_used())
+    }
+
+    pub fn calls_used(&self) -> u32 {
+        self.rate_limiter.calls_used()
     }
 
     /// Fetch the most recent income statements for `symbol`.
@@ -106,8 +187,17 @@ impl FmpClient {
         symbol: &str,
         limit: u32,
     ) -> anyhow::Result<Vec<IncomeStatement>> {
+        self.rate_limiter.reset_if_new_day().await;
+        if self.calls_remaining() == 0 {
+            anyhow::bail!("FMP daily limit reached (250 calls/day on free tier)");
+        }
+        self.rate_limiter.acquire().await;
         let url = self.url(&format!("/v3/income-statement/{symbol}"));
-        debug!("FMP income-statement: {url}");
+        debug!(
+            "FMP income-statement: {url} ({}/{} calls used)",
+            self.calls_used(),
+            DAILY_LIMIT_FREE
+        );
 
         let items: Vec<IncomeStatement> = self
             .client
@@ -134,8 +224,17 @@ impl FmpClient {
         symbol: &str,
         limit: u32,
     ) -> anyhow::Result<Vec<BalanceSheet>> {
+        self.rate_limiter.reset_if_new_day().await;
+        if self.calls_remaining() == 0 {
+            anyhow::bail!("FMP daily limit reached (250 calls/day on free tier)");
+        }
+        self.rate_limiter.acquire().await;
         let url = self.url(&format!("/v3/balance-sheet-statement/{symbol}"));
-        debug!("FMP balance-sheet: {url}");
+        debug!(
+            "FMP balance-sheet: {url} ({}/{} calls used)",
+            self.calls_used(),
+            DAILY_LIMIT_FREE
+        );
 
         let items: Vec<BalanceSheet> = self
             .client
@@ -162,8 +261,17 @@ impl FmpClient {
         symbol: &str,
         limit: u32,
     ) -> anyhow::Result<Vec<CashFlowStatement>> {
+        self.rate_limiter.reset_if_new_day().await;
+        if self.calls_remaining() == 0 {
+            anyhow::bail!("FMP daily limit reached (250 calls/day on free tier)");
+        }
+        self.rate_limiter.acquire().await;
         let url = self.url(&format!("/v3/cash-flow-statement/{symbol}"));
-        debug!("FMP cash-flow: {url}");
+        debug!(
+            "FMP cash-flow: {url} ({}/{} calls used)",
+            self.calls_used(),
+            DAILY_LIMIT_FREE
+        );
 
         let items: Vec<CashFlowStatement> = self
             .client
@@ -186,8 +294,17 @@ impl FmpClient {
 
     /// Fetch a real-time quote for `symbol` for cross-validation against TWS data.
     pub async fn quote(&self, symbol: &str) -> anyhow::Result<FmpQuote> {
+        self.rate_limiter.reset_if_new_day().await;
+        if self.calls_remaining() == 0 {
+            anyhow::bail!("FMP daily limit reached (250 calls/day on free tier)");
+        }
+        self.rate_limiter.acquire().await;
         let url = self.url(&format!("/v3/quote/{symbol}"));
-        debug!("FMP quote: {url}");
+        debug!(
+            "FMP quote: {url} ({}/{} calls used)",
+            self.calls_used(),
+            DAILY_LIMIT_FREE
+        );
 
         let mut items: Vec<FmpQuote> = self
             .client
@@ -205,6 +322,92 @@ impl FmpClient {
         items
             .pop()
             .ok_or_else(|| anyhow::anyhow!("FMP returned empty quote list for {symbol}"))
+    }
+
+    /// Historical OHLCV price data for `symbol`.
+    ///
+    /// `from` and `to` are ISO 8601 dates (e.g., "2024-01-01").
+    /// `interval` is "1min", "5min", "15min", "30min", "1hour", "4hour", "daily", "weekly", "monthly".
+    pub async fn historical_price(
+        &self,
+        symbol: &str,
+        from: &str,
+        to: &str,
+        interval: &str,
+    ) -> anyhow::Result<Vec<HistoricalCandle>> {
+        self.rate_limiter.reset_if_new_day().await;
+        if self.calls_remaining() == 0 {
+            anyhow::bail!("FMP daily limit reached");
+        }
+        self.rate_limiter.acquire().await;
+
+        let url = self.url(&format!("/v3/historical-price-full/{symbol}"));
+        debug!(
+            "FMP historical: {url} ({}/{} calls)",
+            self.calls_used(),
+            DAILY_LIMIT_FREE
+        );
+
+        #[derive(Deserialize)]
+        struct Response {
+            #[serde(rename = "historical")]
+            candles: Vec<RawCandle>,
+        }
+        #[derive(Deserialize)]
+        struct RawCandle {
+            date: String,
+            open: Option<f64>,
+            high: Option<f64>,
+            low: Option<f64>,
+            close: Option<f64>,
+            volume: Option<i64>,
+            adj_close: Option<f64>,
+        }
+
+        let resp: Response = self
+            .client
+            .get(url)
+            .query(&[
+                ("apikey", self.api_key.as_str()),
+                ("from", from),
+                ("to", to),
+                ("interval", interval),
+            ])
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!("FMP historical request failed: {e}"))?
+            .error_for_status()
+            .map_err(|e| anyhow::anyhow!("FMP historical error: {e}"))?
+            .json()
+            .await
+            .map_err(|e| anyhow::anyhow!("FMP historical decode failed: {e}"))?;
+
+        Ok(resp
+            .candles
+            .into_iter()
+            .map(|c| HistoricalCandle {
+                date: c.date,
+                open: c.open.unwrap_or(0.0),
+                high: c.high.unwrap_or(0.0),
+                low: c.low.unwrap_or(0.0),
+                close: c.close.unwrap_or(0.0),
+                volume: c.volume.unwrap_or(0),
+                adj_close: c.adj_close,
+            })
+            .collect())
+    }
+
+    /// Daily historical prices for the last N years.
+    pub async fn historical_daily(
+        &self,
+        symbol: &str,
+        years: u32,
+    ) -> anyhow::Result<Vec<HistoricalCandle>> {
+        let to = chrono::Utc::now().format("%Y-%m-%d").to_string();
+        let from = (chrono::Utc::now() - chrono::Duration::days(365 * years as i64))
+            .format("%Y-%m-%d")
+            .to_string();
+        self.historical_price(symbol, &from, &to, "daily").await
     }
 
     fn url(&self, path: &str) -> Url {

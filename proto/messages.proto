@@ -19,6 +19,8 @@ message MarketDataEvent {
   uint64 volume = 6;
   google.protobuf.Timestamp timestamp = 7;
   uint32 quote_quality = 8;
+  string source = 9;
+  uint32 source_priority = 10;
 }
 
 message CandleSnapshot {
