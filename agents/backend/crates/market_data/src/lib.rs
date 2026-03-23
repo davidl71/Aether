@@ -5,6 +5,7 @@ pub mod pipeline;
 pub mod polygon;
 pub mod polygon_ws;
 pub mod yahoo;
+pub mod yield_curve;
 
 pub use fmp::{BalanceSheet, CashFlowStatement, FmpClient, FmpQuote, IncomeStatement};
 pub use mock::{MockMarketDataSource, MockMarketDataSourceFactory};
@@ -18,6 +19,9 @@ pub use polygon_ws::PolygonWsMarketDataSource;
 pub use yahoo::{
     OptionContractData, OptionsDataSource, OptionsExpiration, YahooFinanceSource,
     YahooFinanceSourceFactory, YahooHistorySource, YahooOptionsSource,
+};
+pub use yield_curve::{
+    BoxSpreadResult, YahooYieldCurveSource, YieldCurve, YieldCurvePoint,
 };
 
 use std::collections::HashMap;
