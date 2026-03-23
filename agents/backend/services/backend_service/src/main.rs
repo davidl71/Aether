@@ -440,9 +440,11 @@ fn spawn_market_data_provider(
     );
 
     let providers = if settings.provider == "all" {
-        vec!["yahoo", "mock"]
-    } else {
+        vec!["yahoo", "polygon"]  // Yahoo (free) + Polygon (paid) as fallback
+    } else if settings.provider == "yahoo" || settings.provider == "polygon" || settings.provider == "mock" {
         vec![settings.provider.as_str()]
+    } else {
+        vec!["yahoo"]  // Default to Yahoo for real data
     };
 
     for provider_name in providers {
