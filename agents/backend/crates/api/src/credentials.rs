@@ -147,6 +147,10 @@ pub fn fred_api_key() -> Option<String> {
     get_credential(CredentialKey::FredApiKey)
 }
 
+pub fn fmp_api_key() -> Option<String> {
+    get_credential(CredentialKey::FmpApiKey)
+}
+
 pub fn set_fred_api_key(key: &str) -> Result<(), String> {
     set_credential(CredentialKey::FredApiKey, key)
 }

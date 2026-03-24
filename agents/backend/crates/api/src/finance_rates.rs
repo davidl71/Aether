@@ -2,6 +2,7 @@
 //! See `docs/platform/NATS_API.md` §3. To re-enable, implement NATS request/reply (e.g. `api.finance_rates.*`).
 
 use chrono::Utc;
+use market_data::FmpClient;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -669,6 +670,10 @@ async fn all_benchmarks(client: &Client) -> Vec<BenchmarkRate> {
 }
 
 async fn fetch_sofr_overnight(client: &Client) -> Option<BenchmarkRate> {
+    if let Some(rate) = fetch_sofr_overnight_from_fmp().await {
+        return Some(rate);
+    }
+
     if let Some(api_key) = fred_api_key() {
         if let Some(rate) = fetch_fred_latest_series(client, "SOFR", Some(&api_key), 1).await {
             return Some(BenchmarkRate {
@@ -707,6 +712,22 @@ async fn fetch_sofr_overnight(client: &Client) -> Option<BenchmarkRate> {
         rate,
         timestamp: Utc::now().to_rfc3339(),
         source: "New York Fed".to_string(),
+    })
+}
+
+async fn fetch_sofr_overnight_from_fmp() -> Option<BenchmarkRate> {
+    let api_key = crate::credentials::fmp_api_key()?;
+    let client = FmpClient::new(api_key, None).ok()?;
+    let rates = client.sofr_rates().await.ok()?;
+    let latest = rates.into_iter().next()?;
+    let rate = latest.rate? / 100.0;
+    Some(BenchmarkRate {
+        rate_type: "SOFR".to_string(),
+        tenor: "Overnight".to_string(),
+        days_to_expiry: Some(1),
+        rate,
+        timestamp: Utc::now().to_rfc3339(),
+        source: "FMP".to_string(),
     })
 }
 
@@ -769,6 +790,10 @@ async fn fetch_sofr_one_year(client: &Client, api_key: &str) -> Option<Benchmark
 }
 
 async fn fetch_treasury_rates(client: &Client) -> Vec<BenchmarkRate> {
+    if let Some(rates) = fetch_treasury_rates_from_fmp().await {
+        return rates;
+    }
+
     let Some(api_key) = fred_api_key() else {
         return Vec::new();
     };
@@ -798,6 +823,101 @@ async fn fetch_treasury_rates(client: &Client) -> Vec<BenchmarkRate> {
         }
     }
     rates
+}
+
+async fn fetch_treasury_rates_from_fmp() -> Option<Vec<BenchmarkRate>> {
+    let api_key = crate::credentials::fmp_api_key()?;
+    let client = FmpClient::new(api_key, None).ok()?;
+    let rate = client.treasury_rates().await.ok()?;
+
+    let mut rates = Vec::new();
+    let timestamp = Utc::now().to_rfc3339();
+
+    if let Some(r) = rate.one_month {
+        rates.push(BenchmarkRate {
+            rate_type: "Treasury".to_string(),
+            tenor: "1M".to_string(),
+            days_to_expiry: Some(30),
+            rate: r / 100.0,
+            timestamp: timestamp.clone(),
+            source: "FMP".to_string(),
+        });
+    }
+    if let Some(r) = rate.three_month {
+        rates.push(BenchmarkRate {
+            rate_type: "Treasury".to_string(),
+            tenor: "3M".to_string(),
+            days_to_expiry: Some(90),
+            rate: r / 100.0,
+            timestamp: timestamp.clone(),
+            source: "FMP".to_string(),
+        });
+    }
+    if let Some(r) = rate.six_month {
+        rates.push(BenchmarkRate {
+            rate_type: "Treasury".to_string(),
+            tenor: "6M".to_string(),
+            days_to_expiry: Some(180),
+            rate: r / 100.0,
+            timestamp: timestamp.clone(),
+            source: "FMP".to_string(),
+        });
+    }
+    if let Some(r) = rate.one_year {
+        rates.push(BenchmarkRate {
+            rate_type: "Treasury".to_string(),
+            tenor: "1Y".to_string(),
+            days_to_expiry: Some(365),
+            rate: r / 100.0,
+            timestamp: timestamp.clone(),
+            source: "FMP".to_string(),
+        });
+    }
+    if let Some(r) = rate.two_year {
+        rates.push(BenchmarkRate {
+            rate_type: "Treasury".to_string(),
+            tenor: "2Y".to_string(),
+            days_to_expiry: Some(730),
+            rate: r / 100.0,
+            timestamp: timestamp.clone(),
+            source: "FMP".to_string(),
+        });
+    }
+    if let Some(r) = rate.five_year {
+        rates.push(BenchmarkRate {
+            rate_type: "Treasury".to_string(),
+            tenor: "5Y".to_string(),
+            days_to_expiry: Some(1825),
+            rate: r / 100.0,
+            timestamp: timestamp.clone(),
+            source: "FMP".to_string(),
+        });
+    }
+    if let Some(r) = rate.ten_year {
+        rates.push(BenchmarkRate {
+            rate_type: "Treasury".to_string(),
+            tenor: "10Y".to_string(),
+            days_to_expiry: Some(3650),
+            rate: r / 100.0,
+            timestamp: timestamp.clone(),
+            source: "FMP".to_string(),
+        });
+    }
+    if let Some(r) = rate.thirty_year {
+        rates.push(BenchmarkRate {
+            rate_type: "Treasury".to_string(),
+            tenor: "30Y".to_string(),
+            days_to_expiry: Some(10950),
+            rate: r / 100.0,
+            timestamp: timestamp.clone(),
+            source: "FMP".to_string(),
+        });
+    }
+
+    if rates.is_empty() {
+        return None;
+    }
+    Some(rates)
 }
 
 async fn fetch_fred_latest_series(
