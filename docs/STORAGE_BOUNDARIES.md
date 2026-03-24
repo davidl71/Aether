@@ -18,16 +18,16 @@ title: Storage Boundaries for Read-Only Exploration Mode
   - `system.alerts` (alerts emitted on wide spreads or similar conditions)  
 - **TUI contract**: the TUI listens on the above NATS subjects and renders only those ticks/candles; it also surfaces the last `source@priority` badge plus the age of the most recent tick so operators can see which provider currently won and whether the feed is fresh.  
   
-## 3. Backlog & Task Store  
-  
-- **Database**: `.todo2/todo2.db` is the SQLite store that `exarp-go` uses to track tasks; each task has a unique `id` PK and metadata (status, priority, project, etc.).  
-- **Mirror**: `.todo2/state.todo2.json` is kept in sync via `exarp-go task sync` and surfaced to the UI/backlog reports; it must match the SQLite content or downstream `task list` calls break with UNIQUE constraint errors.  
-- **Contract**: always update tasks through `exarp-go task update --status ...` followed by `task sync`, and if the sync reports duplicate IDs, delete the offending rows directly from SQLite before re-syncing. `T-1774365437322588000` / `T-1774365387778319000` document this cleanup workflow.  
+## 3. Backlog & Task Store
+
+- **Database**: `.todo2/todo2.db` is the SQLite store that tracks tasks; each task has a unique `id` PK and metadata (status, priority, project, etc.).
+- **Mirror**: `.todo2/state.todo2.json` reflects the SQLite content and is read by the backlog UI; run the repo’s sync command after any edits so the two stay aligned, otherwise downstream task-list commands break with UNIQUE constraint errors.
+- **Contract**: update tasks via the official task workflow tool (status-only updates, then sync), and when the sync reports duplicate IDs delete the offending rows directly from SQLite before running it again. `T-1774365437322588000` / `T-1774365387778319000` document this cleanup workflow.
   
 ## 4. Tooling Interfaces  
   
 - **NATS**: backend publishes on `market-data.*` subjects, while the TUI subscribes via `tui_service/src/nats.rs`; ensure the same NATS URL and subjects are configured for both (look at `TuiConfig::nats_url`).  
-- **Task tooling**: use `/Users/davidl/Projects/mcp/exarp-go/bin/exarp-go` with `task list`, `task delete`, and `task sync`; the JSON cache is merely a snapshot of the SQLite table, so any drift must be resolved on the SQLite side before syncing.  
+**Task tooling**: use the repo’s approved task toolchain (list/update/delete/sync); the JSON cache is merely a snapshot of the SQLite table, so any drift must be resolved on the SQLite side before syncing.
   
 ## 5. Verification & Monitoring  
   
