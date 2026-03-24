@@ -6,14 +6,60 @@ Aether (formerly ib_box_spread_full_universal) - Comprehensive multi-asset synth
 
 Rust-first codebase: backend, TUI, CLI, and broker adapter in `agents/backend/`. C++ native build has been removed (see root `CMakeLists.txt`). See **`docs/MULTI_LANGUAGE_CODEBASE.md`** for language map and build/test/lint commands.
 
+Current product direction is documented in
+**`docs/DATA_EXPLORATION_MODE.md`**. AI/editor workflow defaults are in
+**`docs/AI_WORKFLOW.md`**.
+
 Box spreads are one active strategy component (7-10% of portfolio, spare cash allocation for T-bill-equivalent yields). The platform supports multiple strategy types including futures-implied financing, bond ETFs, and secured lending.
+
+### Product framing for AI agents
+
+Treat Aether as a **relative-value financing and opportunity-discovery
+console**, not as a single-strategy box spread app and not as a generic quote
+tracker.
+
+Primary operator use case:
+
+- Explore and compare opportunities across **bonds, T-bills, synthetic boxes,
+  bond ETFs, and bank loans**
+- Express one instrument **in terms of another** (e.g. box spread yield vs.
+  T-bill yield, bond ETF carry vs. direct bond ladder, bank loan cost vs.
+  synthetic financing)
+- Explore **specific synthetic instruments** as first-class objects, including
+  instrument-specific views, spreads, and **OHLCV candle bars** where a time
+  series is meaningful
+- Inspect and manage **configuration and daemon/service health** directly from
+  the TUI as part of the operator workflow
+- Surface relative spread, carry, haircut, duration, convexity, liquidity, and
+  funding trade-offs in a form that supports portfolio allocation decisions
+
+Implications for AI behavior:
+
+- Do not reduce the product to "box spread trading" when describing features,
+  tasks, or UI priorities
+- Do not reduce the TUI to a "ticker/watchlist" mental model; it is an
+  operator console for comparing financing instruments and executing or managing
+  those positions
+- Prefer wording like **relative value**, **cross-instrument comparison**,
+  **financing alternatives**, **opportunity exploration**, and **instrument
+  expression/parity**
+- Treat **synthetic instrument candles/OHLCV history** as part of the product
+  surface for discovery and comparison, not as optional decoration
+- Treat **full TUI configurability** and **daemon health visibility** as core
+  product requirements; avoid assuming users should drop to config files or
+  shell commands for routine operational workflows
+- When proposing analytics, UI, or data models, bias toward workflows that let
+  the user compare instruments on a common basis rather than inspect each
+  instrument type in isolation
+- Assume **read-only exploration mode** unless the repo docs or the user make a
+  newer explicit decision to re-enable execution work
 
 ## Project Structure & Module Organization
 
 ```
 Aether/
 ├── agents/backend/          # Rust workspace (primary codebase)
-│   ├── crates/              # api, broker_engine, ib_adapter, ledger, market_data, nats_adapter, quant, risk, strategy, discount_bank_parser, common, tws_yield_curve, yatws_adapter
+│   ├── crates/              # api, broker_engine, ib_adapter, ledger, market_data, nats_adapter, quant, risk, strategy, discount_bank_parser, common, tws_yield_curve
 │   ├── services/            # backend_service (:8080), tui_service, tws_yield_curve_daemon
 │   └── bin/                 # cli (Rust CLI)
 ├── native/                  # C++ removed from build (see root CMakeLists.txt)
@@ -51,7 +97,6 @@ See **ARCHITECTURE.md** for full ownership and current build settings.
 | `agents/backend/crates/broker_engine` | Broker trait + domain types (engine abstraction) |
 | `agents/backend/crates/common` | Shared snapshot/event types across crates |
 | `agents/backend/crates/ib_adapter` | IBKR/TWS adapter (implements BrokerEngine) |
-| `agents/backend/crates/yatws_adapter` | yatws TWS adapter (implements BrokerEngine) |
 | `agents/backend/crates/quant` | Greeks, margin, amortization, convexity, yield curve |
 | `agents/backend/crates/risk` | Risk calculations |
 | `agents/backend/crates/ledger` | Durable ledger |
@@ -81,16 +126,18 @@ See `docs/MULTI_LANGUAGE_CODEBASE.md` for full language map and `docs/BUILD_PARA
 
 ## Coding Style & Naming Conventions
 
-Target ISO C++20. Prefer two-space indentation, Allman braces for multi-line scopes, and 100-character soft wraps.
+Active development is **Rust-first**. Follow normal Rust crate/service
+conventions in `agents/backend/` and keep comments short and focused on
+non-obvious trading math or operational behavior.
 
-| Element | Convention | Example |
-|---------|-----------|---------|
-| Types | `PascalCase` | `Scenario`, `OrderManager` |
-| Functions | `snake_case` | `make_scenario`, `calculate_profit` |
-| Variables | `snake_case` | `strike_price`, `expiry_date` |
-| Constants | `k` prefix | `kMaxPositions`, `kDefaultPort` |
+Legacy C++ conventions below apply only when editing archived or reintroduced
+native code paths:
 
-Add short `//` comments only where the trading math is non-obvious (e.g., APR scaling by the contract multiplier).
+- Target ISO C++20
+- Prefer two-space indentation and Allman braces for multi-line scopes
+- Use `PascalCase` for types, `snake_case` for functions/variables, and `k`
+  prefix for constants
+- Add short `//` comments only where the trading math is non-obvious
 
 ## Code Patterns
 
@@ -197,7 +244,7 @@ Follow imperative, 72-character subject lines ("Add TSV formatter for CLI"). In 
 **Skills & subagents:** Cursor/plugin skills and subagents (e.g. mcp_task,
 exarp-go, Claude agents) should use AGENTS.md as canonical context. `CLAUDE.md`
 and `CODEX.md` are tool-specific quick references. See
-[docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md) for setup and command parity
+[docs/archive/AI_EDITOR_SETUP.md](docs/archive/AI_EDITOR_SETUP.md) for setup and command parity
 across Codex, OpenCode, Claude, Cursor, skills, and subagents.
 
 ## exarp Workflow Rule
@@ -224,3 +271,6 @@ Default scope for this rule:
   compatibility cuts, or any task likely to create follow-up work.
 - Do not require it for trivial one-shot answers, status checks, or tiny
   isolated edits with no realistic follow-up.
+
+Use **`docs/AI_WORKFLOW.md`** for the preferred prompt structure, backlog
+hygiene, and thread-splitting defaults used in this repo.

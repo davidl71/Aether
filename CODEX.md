@@ -2,9 +2,12 @@
 
 See [AGENTS.md](AGENTS.md) for complete project guidelines. For multi-editor
 setup and command parity across Codex, Cursor, Claude Code, OpenCode, skills,
-and subagents, see [docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md). For
+and subagents, see [docs/archive/AI_EDITOR_SETUP.md](docs/archive/AI_EDITOR_SETUP.md). For
 exarp-go session/task workflows used by the other editors, see
-[docs/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md](docs/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md).
+[docs/archive/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md](docs/archive/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md).
+For current product direction and workflow defaults, see
+[docs/DATA_EXPLORATION_MODE.md](docs/DATA_EXPLORATION_MODE.md) and
+[docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md).
 
 ## Project at a Glance
 
@@ -14,6 +17,26 @@ unified portfolio management, cash flow modeling, opportunity simulation, and
 multi-instrument relationship optimization across 21+ accounts and multiple
 brokers. Box spreads are one active strategy component rather than the whole
 system.
+
+Primary operator workflow:
+
+- Explore relative-value opportunities across bonds, T-bills, synthetic boxes,
+  bond ETFs, and bank loans
+- Express one instrument in terms of another on a common financing basis
+- Explore specific synthetic instruments with instrument-level views and OHLCV
+  candle bars where useful
+- Inspect configuration and daemon/service health from the TUI
+- Treat the TUI/CLI as an operator console, not as a simple ticker or watchlist
+
+Current default mode is **read-only exploration**. Keep real positions and data
+surfaces visible, but do not add or restore execution paths unless that
+direction changes explicitly.
+
+When reasoning about product behavior, prefer cross-instrument comparison,
+carry/funding trade-offs, opportunity exploration, and synthetic instrument
+time-series views over single-instrument static summaries. Assume user-facing
+configuration and routine daemon-health workflows should be operable from the
+TUI.
 
 **Rust-first codebase**: all active development is in `agents/backend/`. C++ native build has been removed (see root `CMakeLists.txt`).
 
@@ -63,7 +86,7 @@ AI-friendly JSON output:
 | Ledger | `agents/backend/crates/ledger/` |
 | NATS messaging | `agents/backend/crates/nats_adapter/` |
 | Architecture | `ARCHITECTURE.md` |
-| AI/editor setup | `docs/AI_EDITOR_SETUP.md` |
+| AI/editor setup | `docs/archive/AI_EDITOR_SETUP.md` |
 
 ## Code Style
 
@@ -90,3 +113,6 @@ For non-trivial implementation work:
 2. Compact the active context before starting long-running work
 3. Create 1-2 exarp follow-up tasks when finishing
 4. Add a result comment and update task status after verification
+
+Use the prompt shape in [docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md):
+`Goal / Context / Constraints / Done when / Verification`.

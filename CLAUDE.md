@@ -1,12 +1,34 @@
 # Claude Code Instructions
 
 See [AGENTS.md](AGENTS.md) for complete project guidelines. For multi-editor setup
-(OpenCode, Cursor, skills, subagents), see [docs/AI_EDITOR_SETUP.md](docs/AI_EDITOR_SETUP.md).
-For exarp-go (session prime, handoff, tasks, scorecard) in Cursor, Claude Code, and OpenCode, see [docs/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md](docs/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md).
+(OpenCode, Cursor, skills, subagents), see [docs/archive/AI_EDITOR_SETUP.md](docs/archive/AI_EDITOR_SETUP.md).
+For exarp-go (session prime, handoff, tasks, scorecard) in Cursor, Claude Code, and OpenCode, see [docs/archive/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md](docs/archive/EXARP_GO_CURSOR_CLAUDE_OPENCODE.md).
+For current product direction and workflow defaults, see
+[docs/DATA_EXPLORATION_MODE.md](docs/DATA_EXPLORATION_MODE.md) and
+[docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md).
 
 ## Project at a Glance
 
 Comprehensive multi-asset synthetic financing platform. Manages financing across options, futures, bonds, loans, and pension funds with unified portfolio management, cash flow modeling, and multi-instrument optimization across 21+ accounts and multiple brokers. Box spreads are one active strategy component (T-bill-equivalent yields on spare cash). **Rust-first codebase**: all active development is in `agents/backend/`. C++ native build has been removed (see root `CMakeLists.txt`).
+
+Primary operator workflow:
+
+- Explore relative-value opportunities across bonds, T-bills, synthetic boxes,
+  bond ETFs, and bank loans
+- Express one instrument in terms of another on a common financing basis
+- Explore specific synthetic instruments with instrument-level views and OHLCV
+  candle bars where useful
+- Inspect configuration and daemon/service health from the TUI
+- Treat Aether as an operator console rather than a ticker-style tracking app
+
+When proposing features, UX, or analytics, bias toward cross-instrument
+comparison, financing alternatives, and synthetic instrument time-series views
+instead of single-instrument inspection alone. Assume routine configuration and
+daemon-health workflows belong in the TUI.
+
+Current default mode is **read-only exploration**. Keep real positions and data
+surfaces visible, but do not add or restore execution paths unless the product
+direction changes explicitly.
 
 ## Build & Test
 
@@ -81,3 +103,6 @@ For any non-trivial implementation or refactor spanning multiple steps, files, o
 4. **Update task status at completion** — add a result comment with verification commands
 
 Skip for trivial one-shot edits, status checks, or isolated fixes with no realistic follow-up.
+
+Use the prompt shape in [docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md):
+`Goal / Context / Constraints / Done when / Verification`.

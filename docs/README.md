@@ -1,6 +1,6 @@
 # Aether Documentation Index
 
-**Last updated:** 2026-03-22
+**Last updated:** 2026-03-24
 
 ## Quick Links
 
@@ -10,6 +10,8 @@
 | [ARCHITECTURE.md](../ARCHITECTURE.md) | System overview |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | How to contribute |
 | [QUICKSTART_RUST.md](./QUICKSTART_RUST.md) | Rust dev quickstart |
+| [DATA_EXPLORATION_MODE.md](./DATA_EXPLORATION_MODE.md) | Current read-only product direction and architectural boundaries |
+| [AI_WORKFLOW.md](./AI_WORKFLOW.md) | Repo workflow defaults for AI-assisted implementation |
 
 ## Architecture & Design
 
@@ -17,7 +19,12 @@
 |-----|---------|
 | [ARCHITECTURE.md](../ARCHITECTURE.md) | System overview, component ownership |
 | [TUI_ARCHITECTURE.md](./TUI_ARCHITECTURE.md) | Ratatui TUI design, main loop, planned improvements |
-| [ARCHITECTURE_BROKER_ENGINE.md](./ARCHITECTURE_BROKER_ENGINE.md) | Broker engine architecture, IbApiEngine, YatWSEngine |
+| [TUI_UX_BENCHMARKS.md](./TUI_UX_BENCHMARKS.md) | UX comparison against benchmark trading/terminal apps |
+| [ARCHITECTURE_BROKER_ENGINE.md](./ARCHITECTURE_BROKER_ENGINE.md) | Broker engine architecture and `ib_adapter` integration |
+| [CRATE_BOUNDARIES.md](./CRATE_BOUNDARIES.md) | Logic for Rust crate ownership and segmentation |
+| [COMMAND_DB_TRADING_ENGINE_GUIDANCE.md](./COMMAND_DB_TRADING_ENGINE_GUIDANCE.md) | Guidance for command bus, database roles, and trading-engine scope |
+| [TWS_BACKEND_PROVIDER_DECISION.md](./TWS_BACKEND_PROVIDER_DECISION.md) | Why `ib_adapter` is the active TWS backend path |
+| [BACKLOG_EXECUTION_PLAN_2026_03_24.md](./BACKLOG_EXECUTION_PLAN_2026_03_24.md) | Manual backlog cleanup and execution waves after the current architecture decisions |
 
 ## Development Guides
 
