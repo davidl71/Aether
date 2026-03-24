@@ -1,5 +1,6 @@
 pub mod client_portal_options;
 pub mod combo_strategy;
+pub mod commands;
 pub mod credentials;
 pub mod discount_bank;
 pub mod finance_rates;
@@ -16,9 +17,9 @@ pub mod state;
 mod strategy_controller;
 pub mod yield_curve_proto;
 
-#[cfg(test)]
-mod ledger_integration_test;
-
+pub use commands::{
+    CommandContext, CommandEvent, CommandReply, CommandStatus, SnapshotPublishReply,
+};
 pub use health::backend_health_from_message;
 pub use health::{
     BackendHealthState, HealthAggregateResponse, HealthAggregateState, SharedHealthAggregate,

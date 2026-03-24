@@ -313,7 +313,6 @@ pub fn system_snapshot_from_proto(p: pb::SystemSnapshot) -> SystemSnapshot {
             .collect(),
         alerts: p.alerts.into_iter().map(alert_from_proto).collect(),
         risk: p.risk.map(risk_from_proto).unwrap_or_default(),
-        ledger: None,
         market_data_source: if p.market_data_source.is_empty() {
             None
         } else {

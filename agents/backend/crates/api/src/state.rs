@@ -1,19 +1,13 @@
-use std::sync::Arc;
-
 use chrono::Utc;
 use market_data::MarketDataEvent;
 use risk::RiskDecision;
 use serde::{Deserialize, Serialize};
-use tokio::sync::RwLock;
-use tracing::{debug, warn};
 
 use common::snapshot as cmn;
 
 use crate::runtime_state::{
     RuntimeExecutionState, RuntimeExecutionUpdate, RuntimeMarketState, RuntimeRiskState,
 };
-
-pub type SharedSnapshot = Arc<RwLock<SystemSnapshot>>;
 
 // ---------------------------------------------------------------------------
 // Api-only types (not shared)
@@ -123,8 +117,6 @@ pub struct SystemSnapshot {
     pub decisions: Vec<cmn::StrategyDecisionSnapshot>,
     pub alerts: Vec<Alert>,
     pub risk: cmn::RiskStatus,
-    #[serde(skip_serializing, skip_deserializing)]
-    pub ledger: Option<Arc<ledger::LedgerEngine>>,
     #[serde(default)]
     pub market_data_source: Option<String>,
 }
@@ -145,10 +137,6 @@ impl std::fmt::Debug for SystemSnapshot {
             .field("decisions", &self.decisions)
             .field("alerts", &self.alerts)
             .field("risk", &self.risk)
-            .field(
-                "ledger",
-                &self.ledger.as_ref().map(|_| "Some(LedgerEngine)"),
-            )
             .finish()
     }
 }
@@ -169,7 +157,6 @@ impl Default for SystemSnapshot {
             decisions: Vec::new(),
             alerts: vec![Alert::info("Backend initialising")],
             risk: cmn::RiskStatus::default(),
-            ledger: None,
             market_data_source: None,
         }
     }
@@ -191,7 +178,10 @@ impl SystemSnapshot {
         runtime_market.project_into_snapshot(self);
     }
 
-    pub fn apply_strategy_execution(&mut self, decision: StrategyDecisionSnapshot) {
+    pub fn apply_strategy_execution(
+        &mut self,
+        decision: StrategyDecisionSnapshot,
+    ) -> RuntimeExecutionUpdate {
         self.touch();
         self.strategy = "RUNNING".into();
         let order_id = format!("ORD-{}", Utc::now().timestamp_millis());
@@ -199,139 +189,7 @@ impl SystemSnapshot {
         let update =
             runtime_state.apply_strategy_decision(&decision, order_id.clone(), &self.account_id);
         runtime_state.project_into_snapshot(self);
-
-        match update {
-            RuntimeExecutionUpdate::ClosedPosition {
-                symbol,
-                quantity,
-                cost_basis,
-                mark,
-                order_id,
-            } => {
-                if let Some(ref ledger) = self.ledger {
-                    let ledger_clone = ledger.clone();
-                    tokio::spawn(async move {
-                        if let Err(err) = ledger::record_position_close(
-                            ledger_clone,
-                            &symbol,
-                            quantity,
-                            cost_basis,
-                            mark,
-                            ledger::Currency::USD,
-                            Some(&order_id),
-                        )
-                        .await
-                        {
-                            warn!(error = %err, symbol = %symbol, "Failed to record position close in ledger (non-blocking)");
-                        }
-                    });
-                }
-            }
-            RuntimeExecutionUpdate::ChangedPosition {
-                symbol,
-                quantity,
-                mark,
-                order_id,
-            } => {
-                if let Some(ref ledger) = self.ledger {
-                    let ledger_clone = ledger.clone();
-                    tokio::spawn(async move {
-                        ledger::record_position_change_safe(
-                            ledger_clone,
-                            &symbol,
-                            quantity,
-                            mark,
-                            ledger::Currency::USD,
-                            Some(&order_id),
-                        )
-                        .await;
-                    });
-                }
-            }
-        }
-    }
-
-    pub fn set_ledger(&mut self, ledger: Arc<ledger::LedgerEngine>) {
-        self.ledger = Some(ledger);
-        debug!("Ledger engine attached to SystemSnapshot");
-    }
-
-    pub fn record_box_spread_async(
-        &self,
-        symbol: &str,
-        strike1: i32,
-        strike2: i32,
-        expiry: &str,
-        net_debit: f64,
-        trade_id: Option<&str>,
-    ) {
-        if let Some(ref ledger) = self.ledger {
-            let symbol_for_log = symbol.to_string();
-            let expiry_for_log = expiry.to_string();
-            debug!(
-              symbol = %symbol_for_log,
-              strike1,
-              strike2,
-              expiry = %expiry_for_log,
-              net_debit,
-              "Box spread transaction queued for ledger recording"
-            );
-            let ledger_clone = ledger.clone();
-            let symbol = symbol.to_string();
-            let expiry = expiry.to_string();
-            let trade_id = trade_id.map(|s| s.to_string());
-            tokio::spawn(async move {
-                ledger::record_box_spread_safe(
-                    ledger_clone,
-                    &symbol,
-                    strike1,
-                    strike2,
-                    &expiry,
-                    net_debit,
-                    trade_id.as_deref(),
-                    ledger::Currency::USD,
-                )
-                .await;
-            });
-        } else {
-            debug!("Ledger not configured, skipping box spread transaction recording");
-        }
-    }
-
-    pub fn record_cash_flow_async(
-        &self,
-        amount: f64,
-        currency: ledger::Currency,
-        description: &str,
-        is_deposit: bool,
-    ) {
-        if let Some(ref ledger) = self.ledger {
-            let ledger_clone = ledger.clone();
-            let description_clone = description.to_string();
-            debug!(
-              amount,
-              currency = ?currency,
-              description = %description_clone,
-              is_deposit,
-              "Cash flow transaction queued for ledger recording"
-            );
-            let description = description.to_string();
-            tokio::spawn(async move {
-                if let Err(err) = ledger::record_cash_flow(
-                    ledger_clone,
-                    amount,
-                    currency,
-                    &description,
-                    is_deposit,
-                )
-                .await
-                {
-                    warn!(error = %err, description = %description, "Failed to record cash flow in ledger (non-blocking)");
-                }
-            });
-        } else {
-            debug!("Ledger not configured, skipping cash flow recording");
-        }
+        update
     }
 
     pub fn update_risk_status(&mut self, outcome: &RiskDecision) {
@@ -402,7 +260,7 @@ mod tests {
         let mut snapshot = SystemSnapshot::default();
         let created_at = Utc::now();
 
-        snapshot.apply_strategy_execution(StrategyDecisionSnapshot::new(
+        let _ = snapshot.apply_strategy_execution(StrategyDecisionSnapshot::new(
             "AAPL".into(),
             10,
             "BUY",
@@ -425,14 +283,14 @@ mod tests {
         let opened_at = Utc::now();
         let closed_at = opened_at + chrono::TimeDelta::seconds(1);
 
-        snapshot.apply_strategy_execution(StrategyDecisionSnapshot::new(
+        let _ = snapshot.apply_strategy_execution(StrategyDecisionSnapshot::new(
             "AAPL".into(),
             10,
             "BUY",
             150.0,
             opened_at,
         ));
-        snapshot.apply_strategy_execution(StrategyDecisionSnapshot::new(
+        let _ = snapshot.apply_strategy_execution(StrategyDecisionSnapshot::new(
             "AAPL".into(),
             -10,
             "SELL",

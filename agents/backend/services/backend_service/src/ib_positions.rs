@@ -7,9 +7,11 @@
 
 use std::time::Duration;
 
-use api::{Alert, PositionSnapshot, SharedSnapshot};
+use api::{Alert, PositionSnapshot};
 use tokio::time::interval;
 use tracing::{debug, info, warn};
+
+use crate::shared_state::SharedSnapshot;
 
 const UPDATE_INTERVAL_SECS: u64 = 60;
 

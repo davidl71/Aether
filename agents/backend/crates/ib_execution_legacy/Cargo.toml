@@ -1,0 +1,15 @@
+[package]
+name = "ib_execution_legacy"
+edition = "2021"
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+futures.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+ibapi.workspace = true
+common = { path = "../common" }
+broker_engine = { path = "../broker_engine" }
+broker_execution_legacy = { path = "../broker_execution_legacy" }

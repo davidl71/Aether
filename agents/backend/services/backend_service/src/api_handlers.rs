@@ -24,8 +24,11 @@ use api::quant::{
     BoxSpreadRequest, GreeksRequest, HistoricalVolRequest, IvRequest, JellyRollRequest,
     RatioSpreadRequest, RiskMetricsRequest, StrategyRequest,
 };
-use api::{LoanRecord, LoanRepository, ScenarioDto, SharedSnapshot, StrategyController};
-use broker_engine::{construct_box_spread_order, BrokerEngine, OrderAction, TimeInForce};
+use api::{
+    CommandContext, CommandEvent, LoanRecord, LoanRepository, ScenarioDto, SnapshotPublishReply,
+    StrategyController,
+};
+use broker_engine::BrokerEngine;
 use bytes::Bytes;
 use futures::StreamExt;
 use market_data::FmpClient;
@@ -36,6 +39,8 @@ use reqwest::Client as ReqwestClient;
 use serde_json::Value;
 use tracing::{debug, info, warn};
 use tws_yield_curve;
+
+use crate::shared_state::SharedSnapshot;
 
 const SUBJECT_DISCOUNT_BANK_BALANCE: &str = "api.discount_bank.balance";
 const SUBJECT_DISCOUNT_BANK_TRANSACTIONS: &str = "api.discount_bank.transactions";
@@ -147,15 +152,30 @@ fn api_queue_group() -> String {
     std::env::var("NATS_API_QUEUE_GROUP").unwrap_or_else(|_| DEFAULT_API_QUEUE_GROUP.into())
 }
 
+async fn publish_command_event(nc: &Client, action: &str, event: &CommandEvent) {
+    let subject = topics::system::commands(action);
+    let body = match serde_json::to_vec(event) {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            warn!(action = %action, error = %e, "serialize command event failed");
+            return;
+        }
+    };
+
+    if let Err(e) = nc.publish(subject.clone(), Bytes::from(body)).await {
+        warn!(action = %action, subject = %subject, error = %e, "publish command event failed");
+    }
+}
+
 /// Spawn NATS API handlers for Discount Bank, Loans, optionally FMP fundamentals, finance rates, calculate, and strategy control.
 pub fn spawn(
     nats_client: Arc<NatsClient>,
     loan_repo: Option<Arc<LoanRepository>>,
     fmp_client: Option<Arc<FmpClient>>,
-    strategy_controller: StrategyController,
+    _strategy_controller: StrategyController,
     state: SharedSnapshot,
     yield_curve_refresh_tx: Option<tokio::sync::mpsc::Sender<()>>,
-    broker_engine: Option<Arc<dyn BrokerEngine>>,
+    _broker_engine: Option<Arc<dyn BrokerEngine>>,
 ) {
     let nc = nats_client.client().clone();
     let nc_loans = nc.clone();
@@ -175,9 +195,9 @@ pub fn spawn(
     tokio::spawn(async move {
         run_strategy_control(
             nc_strategy,
-            strategy_controller,
+            _strategy_controller,
             state_strategy,
-            broker_engine,
+            _broker_engine,
         )
         .await;
     });
@@ -214,9 +234,9 @@ pub fn spawn(
 
 async fn run_strategy_control(
     nc: Client,
-    controller: StrategyController,
+    _controller: StrategyController,
     state: SharedSnapshot,
-    broker_engine: Option<Arc<dyn BrokerEngine>>,
+    _broker_engine: Option<Arc<dyn BrokerEngine>>,
 ) {
     let sub_start = match nc
         .queue_subscribe(SUBJECT_STRATEGY_START.to_string(), api_queue_group())
@@ -259,119 +279,109 @@ async fn run_strategy_control(
         }
     };
 
-    let c_start = controller.clone();
+    let nc_start = nc.clone();
     tokio::spawn(handle_sub(
-        nc.clone(),
+        nc_start.clone(),
         sub_start,
         move |_body: Option<Vec<u8>>| {
-            let c = c_start.clone();
+            let nc = nc_start.clone();
             async move {
-                let result = c.start();
-                strategy_reply(result)
+                let command = CommandContext::new("start");
+                let message = "strategy start is deprecated; backend is in data-exploration mode";
+                let reply = command.failed_reply(message);
+                publish_command_event(&nc, "start", &command.failed_event(message)).await;
+                serde_json::to_vec(&reply).unwrap_or_else(|_| b"{}".to_vec())
             }
         },
     ));
-    let c_stop = controller.clone();
+
+    let nc_stop = nc.clone();
     tokio::spawn(handle_sub(
-        nc.clone(),
+        nc_stop.clone(),
         sub_stop,
         move |_body: Option<Vec<u8>>| {
-            let c = c_stop.clone();
+            let nc = nc_stop.clone();
             async move {
-                let result = c.stop();
-                strategy_reply(result)
+                let command = CommandContext::new("stop");
+                let message = "strategy stop is deprecated; backend is in data-exploration mode";
+                let reply = command.failed_reply(message);
+                publish_command_event(&nc, "stop", &command.failed_event(message)).await;
+                serde_json::to_vec(&reply).unwrap_or_else(|_| b"{}".to_vec())
             }
         },
     ));
+
     let state_cancel = state.clone();
+    let nc_cancel = nc.clone();
     tokio::spawn(handle_sub(
-        nc.clone(),
+        nc_cancel.clone(),
         sub_cancel_all,
         move |_body: Option<Vec<u8>>| {
             let state = state_cancel.clone();
-            async move { cancel_all_reply(state).await }
+            let nc = nc_cancel.clone();
+            async move {
+                let command = CommandContext::new("cancel_all");
+                let open_count = state.read().await.orders.len();
+                let error = format!(
+                    "cancel_all is deprecated in data-exploration mode; {} order snapshot(s) remain visible but execution is disabled",
+                    open_count
+                );
+                let reply = command.failed_reply(error.clone());
+                publish_command_event(&nc, "cancel_all", &command.failed_event(error)).await;
+                let mut value = serde_json::to_value(&reply)
+                    .unwrap_or_else(|_| serde_json::json!({ "ok": false, "action": "cancel_all" }));
+                if let Some(obj) = value.as_object_mut() {
+                    obj.insert("open_order_count".into(), serde_json::json!(open_count));
+                }
+                serde_json::to_vec(&value).unwrap_or_else(|_| b"{}".to_vec())
+            }
         },
     ));
-    tokio::spawn(handle_sub(nc, sub_execute, move |body: Option<Vec<u8>>| {
-        let broker = broker_engine.clone();
-        async move { execute_scenario_reply(body, broker).await }
-    }));
+
+    let nc_execute = nc.clone();
+    tokio::spawn(handle_sub(
+        nc_execute.clone(),
+        sub_execute,
+        move |body: Option<Vec<u8>>| {
+            let nc = nc_execute.clone();
+            async move { execute_scenario_reply(&nc, body).await }
+        },
+    ));
 }
 
-async fn execute_scenario_reply(
-    body: Option<Vec<u8>>,
-    broker: Option<Arc<dyn BrokerEngine>>,
-) -> Vec<u8> {
-    let Some(broker) = broker else {
-        return serde_json::to_vec(&serde_json::json!({
-            "ok": false,
-            "error": "broker not available"
-        }))
-        .unwrap_or_else(|_| b"{}".to_vec());
-    };
-
+async fn execute_scenario_reply(nc: &Client, body: Option<Vec<u8>>) -> Vec<u8> {
+    let command = CommandContext::new("execute_scenario");
     let Some(bytes) = body else {
-        return serde_json::to_vec(&serde_json::json!({
-            "ok": false,
-            "error": "missing request body"
-        }))
-        .unwrap_or_else(|_| b"{}".to_vec());
+        let reply = command.failed_reply("missing request body");
+        publish_command_event(
+            nc,
+            "execute_scenario",
+            &command.failed_event("missing request body"),
+        )
+        .await;
+        return serde_json::to_vec(&reply).unwrap_or_else(|_| b"{}".to_vec());
     };
 
     let scenario: ScenarioDto = match serde_json::from_slice(&bytes) {
         Ok(s) => s,
         Err(e) => {
-            return serde_json::to_vec(&serde_json::json!({
-                "ok": false,
-                "error": format!("failed to parse scenario: {}", e)
-            }))
-            .unwrap_or_else(|_| b"{}".to_vec());
+            let err = format!("failed to parse scenario: {}", e);
+            let reply = command.failed_reply(err.clone());
+            publish_command_event(nc, "execute_scenario", &command.failed_event(err)).await;
+            return serde_json::to_vec(&reply).unwrap_or_else(|_| b"{}".to_vec());
         }
     };
-
-    let strike_center = match scenario.strike_center {
-        Some(sc) => sc,
-        None => {
-            return serde_json::to_vec(&serde_json::json!({
-                "ok": false,
-                "error": "strike_center is required"
-            }))
-            .unwrap_or_else(|_| b"{}".to_vec());
-        }
-    };
-
-    let k_low = strike_center - scenario.strike_width / 2.0;
-    let k_high = strike_center + scenario.strike_width / 2.0;
-
-    let order_request = construct_box_spread_order(
-        &scenario.symbol,
-        &scenario.expiration,
-        k_low,
-        k_high,
-        OrderAction::Buy,
-        1,
-        scenario.net_debit,
-        "SMART",
-        "USD",
-        TimeInForce::FOK,
+    let message = format!(
+        "execute_scenario is deprecated in data-exploration mode; scenario for {} {} was not submitted",
+        scenario.symbol, scenario.expiration
     );
-
-    match broker.place_bag_order(order_request).await {
-        Ok(order_id) => serde_json::to_vec(&serde_json::json!({
-            "ok": true,
-            "order_id": order_id
-        }))
-        .unwrap_or_else(|_| b"{}".to_vec()),
-        Err(e) => serde_json::to_vec(&serde_json::json!({
-            "ok": false,
-            "error": format!("order placement failed: {}", e)
-        }))
-        .unwrap_or_else(|_| b"{}".to_vec()),
-    }
+    let reply = command.failed_reply(message.clone());
+    publish_command_event(nc, "execute_scenario", &command.failed_event(message)).await;
+    serde_json::to_vec(&reply).unwrap_or_else(|_| b"{}".to_vec())
 }
 
-/// Handles api.admin.set_mode: set snapshot.mode to LIVE, MOCK, or DRY-RUN for quick display switch.
-async fn run_admin_set_mode(nc: Client, state: SharedSnapshot) {
+/// Handles api.admin.set_mode. This is deprecated while the product is in read-only exploration mode.
+async fn run_admin_set_mode(nc: Client, _state: SharedSnapshot) {
     let sub = match nc
         .queue_subscribe(SUBJECT_ADMIN_SET_MODE.to_string(), api_queue_group())
         .await
@@ -382,39 +392,26 @@ async fn run_admin_set_mode(nc: Client, state: SharedSnapshot) {
             return;
         }
     };
-    let state = state.clone();
+    let nc_events = nc.clone();
     tokio::spawn(handle_sub(nc, sub, move |body: Option<Vec<u8>>| {
-        let state = state.clone();
+        let nc = nc_events.clone();
         async move {
             #[derive(serde::Deserialize)]
             struct SetModeRequest {
                 mode: String,
             }
-            let mode = body
+            let command = CommandContext::new("set_mode");
+            let requested_mode = body
                 .as_deref()
                 .and_then(|b| serde_json::from_slice::<SetModeRequest>(b).ok())
-                .map(|r| r.mode.to_uppercase());
-            let mode = match mode.as_deref() {
-                Some("LIVE") | Some("MOCK") | Some("DRY-RUN") | Some("TUI") => mode.unwrap(),
-                _ => {
-                    let err = serde_json::json!({ "ok": false, "error": "mode must be LIVE, MOCK, or DRY-RUN" });
-                    return serde_json::to_vec(&err).unwrap_or_else(|_| b"{}".to_vec());
-                }
-            };
-            let mode_label = if mode == "TUI" {
-                "DRY-RUN"
-            } else {
-                mode.as_str()
-            };
-            {
-                let mut snap = state.write().await;
-                snap.mode = mode_label.to_string();
-                snap.touch();
-            }
-            let msg = format!("mode set to {}", mode_label);
-            info!(mode = %mode_label, "admin set_mode");
-            serde_json::to_vec(&serde_json::json!({ "ok": true, "message": msg }))
-                .unwrap_or_else(|_| b"{}".to_vec())
+                .map(|r| r.mode.to_uppercase())
+                .unwrap_or_else(|| "UNKNOWN".to_string());
+            let msg = format!(
+                "set_mode is deprecated in data-exploration mode; requested mode {} was ignored",
+                requested_mode
+            );
+            publish_command_event(&nc, "set_mode", &command.failed_event(msg.clone())).await;
+            serde_json::to_vec(&command.failed_reply(msg)).unwrap_or_else(|_| b"{}".to_vec())
         }
     }));
 }
@@ -435,11 +432,20 @@ async fn run_snapshot_publish_now(nc: Client, state: SharedSnapshot) {
     info!("subscribed to api.snapshot.publish_now (force snapshot write)");
     let backend_id = std::env::var("BACKEND_ID").unwrap_or_else(|_| "ib".to_string());
     let subject = topics::snapshot::backend(&backend_id);
+    let nc_events = nc.clone();
     while let Some(msg) = sub.next().await {
         let reply = match msg.reply {
             Some(r) => r,
             None => continue,
         };
+        let command = CommandContext::new("publish_snapshot");
+        let nc = nc_events.clone();
+        publish_command_event(
+            &nc,
+            "publish_snapshot",
+            &command.accepted_event("publish snapshot accepted"),
+        )
+        .await;
         let (proto, generated_at) = {
             let snap = state.read().await;
             let proto = api::snapshot_proto::snapshot_to_proto(&snap);
@@ -450,57 +456,50 @@ async fn run_snapshot_publish_now(nc: Client, state: SharedSnapshot) {
             Ok(bytes) => {
                 if let Err(e) = nc.publish(subject.clone(), bytes.into()).await {
                     warn!(error = %e, subject = %subject, "publish snapshot failed");
-                    serde_json::to_vec(&serde_json::json!({ "ok": false, "error": e.to_string() }))
-                        .unwrap_or_else(|_| b"{}".to_vec())
+                    let err = e.to_string();
+                    publish_command_event(
+                        &nc,
+                        "publish_snapshot",
+                        &command.failed_event(err.clone()),
+                    )
+                    .await;
+                    serde_json::to_vec(&SnapshotPublishReply::failed_from_context(
+                        &command,
+                        subject.clone(),
+                        err,
+                    ))
+                    .unwrap_or_else(|_| b"{}".to_vec())
                 } else {
-                    serde_json::to_vec(&serde_json::json!({
-                        "ok": true,
-                        "generated_at": generated_at.to_rfc3339(),
-                        "subject": subject
-                    }))
+                    publish_command_event(
+                        &nc,
+                        "publish_snapshot",
+                        &command.completed_event("snapshot published"),
+                    )
+                    .await;
+                    serde_json::to_vec(&SnapshotPublishReply::completed_from_context(
+                        &command,
+                        generated_at.to_rfc3339(),
+                        subject.clone(),
+                        "snapshot published",
+                    ))
                     .unwrap_or_else(|_| b"{}".to_vec())
                 }
             }
             Err(e) => {
-                serde_json::to_vec(&serde_json::json!({ "ok": false, "error": e.to_string() }))
-                    .unwrap_or_else(|_| b"{}".to_vec())
+                let err = e.to_string();
+                publish_command_event(&nc, "publish_snapshot", &command.failed_event(err.clone()))
+                    .await;
+                serde_json::to_vec(&SnapshotPublishReply::failed_from_context(
+                    &command,
+                    subject.clone(),
+                    err,
+                ))
+                .unwrap_or_else(|_| b"{}".to_vec())
             }
         };
         if let Err(e) = nc.publish(reply, Bytes::from(response)).await {
             warn!(error = %e, "reply to api.snapshot.publish_now failed");
         }
-    }
-}
-
-/// Reply for api.strategy.cancel_all: reads snapshot for open orders; broker cancel not wired yet.
-async fn cancel_all_reply(state: SharedSnapshot) -> Vec<u8> {
-    let open_count = {
-        let snap = state.read().await;
-        snap.orders
-            .iter()
-            .filter(|o| {
-                let s = o.status.to_uppercase();
-                !matches!(
-                    s.as_str(),
-                    "FILLED" | "CANCELLED" | "CANCELED" | "REJECTED" | "INACTIVE" | "EXPIRED"
-                )
-            })
-            .count()
-    };
-    let message = format!(
-        "{} open order(s); cancel-all received (broker not wired)",
-        open_count
-    );
-    serde_json::to_vec(&serde_json::json!({ "ok": true, "message": message }))
-        .unwrap_or_else(|_| b"{}".to_vec())
-}
-
-fn strategy_reply(result: Result<(), tokio::sync::watch::error::SendError<bool>>) -> Vec<u8> {
-    match result {
-        Ok(()) => serde_json::to_vec(&serde_json::json!({ "ok": true }))
-            .unwrap_or_else(|_| b"{}".to_vec()),
-        Err(e) => serde_json::to_vec(&serde_json::json!({ "ok": false, "error": e.to_string() }))
-            .unwrap_or_else(|_| b"{}".to_vec()),
     }
 }
 
@@ -663,7 +662,7 @@ async fn run_finance_rates(
 
                 // Granular fallback: try sources in configurable order until one succeeds
                 let fallback_order = YieldCurveSource::from_env_fallback_order();
-                let is_empty = symbol.as_ref().map_or(false, |sym| match &request {
+                let is_empty = symbol.as_ref().map_or(false, |_sym| match &request {
                     CurveRequest::Opportunities(opps) => opps.is_empty(),
                     CurveRequest::Named { opportunities, .. } => opportunities.is_empty(),
                 });

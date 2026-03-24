@@ -1,7 +1,7 @@
 //! Broker abstraction — trait + domain types for engine switching.
 //!
-//! The [`BrokerEngine`](traits::BrokerEngine) trait abstracts all broker operations,
-//! enabling the backend to switch between implementations (IBKR, yatws, mock) without
+//! The [`BrokerEngine`](traits::BrokerEngine) trait abstracts active read-only broker operations,
+//! enabling the backend to switch between implementations (IBKR, mock) without
 //! code changes. Domain types are broker-agnostic and live in [`domain`](domain).
 //!
 //! # Crate structure
@@ -16,4 +16,4 @@ pub mod traits;
 
 pub use domain::*;
 pub use error::BrokerError;
-pub use traits::{BrokerEngine, OptionChainProvider};
+pub use traits::{BrokerEngine, MarketDataSubscription, MarketDataSubscriptionError};

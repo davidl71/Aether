@@ -16,28 +16,25 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use futures::future::try_join_all;
 use ibapi::accounts::types::AccountGroup;
 use ibapi::accounts::{AccountSummaryTags, PositionUpdate};
-use ibapi::contracts::{Contract, LegAction, OptionChain, SecurityType};
+use ibapi::contracts::{Contract, OptionChain, SecurityType};
 use ibapi::market_data::realtime::{TickType, TickTypes};
 use ibapi::Client as IbClient;
 use ibapi::Error as IbError;
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::{broadcast, mpsc, RwLock};
 use tracing::{debug, info, warn};
 
-pub use broker_engine::construct_box_spread_order;
 pub use broker_engine::domain::{
-    BagOrderLeg, BrokerConfig, MarketDataEvent, OptionContract, OrderAction, OrderStatus,
-    OrderStatusEvent, PlaceBagOrderRequest, Position, PositionEvent, ResolvedOptionContract,
-    TimeInForce,
+    BrokerConfig, MarketDataEvent, OptionContract, OrderStatusEvent, Position, PositionEvent,
 };
 pub use broker_engine::AccountInfo;
 pub use broker_engine::BrokerEngine;
 pub use broker_engine::BrokerError;
 pub use broker_engine::ConnectionState;
 pub use broker_engine::MarketData;
-pub use broker_engine::OptionChainProvider;
+pub use broker_engine::MarketDataSubscription;
+pub use broker_engine::MarketDataSubscriptionError;
 
 pub mod pacer;
 pub mod scanner;
@@ -48,26 +45,14 @@ pub use pacer::TwsPacer;
 pub use scanner::ScannerSubscription;
 pub use tws_wire::{TwsProtoFrame, PROTOBUF_MSG_ID_OFFSET};
 
-// ---------------------------------------------------------------------------
-// conId resolution helpers
-// ---------------------------------------------------------------------------
-
-/// Convert broker_engine TimeInForce to ibapi order builder TimeInForce.
-fn to_ib_tif(tif: TimeInForce) -> ibapi::orders::builder::TimeInForce {
-    match tif {
-        TimeInForce::Day => ibapi::orders::builder::TimeInForce::Day,
-        TimeInForce::GTC => ibapi::orders::builder::TimeInForce::GoodTillCancel,
-        TimeInForce::IOC => ibapi::orders::builder::TimeInForce::ImmediateOrCancel,
-        TimeInForce::FOK => ibapi::orders::builder::TimeInForce::FillOrKill,
-    }
-}
-
 /// Whether the symbol is an index (uses SecurityType::Index + CBOE exchange).
+#[cfg(test)]
 fn is_index(symbol: &str) -> bool {
     matches!(symbol.to_uppercase().as_str(), "SPX" | "NDX" | "XSP")
 }
 
 /// Exchange to use when building an option contract for `contract_details`.
+#[cfg(test)]
 fn exchange_for_option(symbol: &str) -> &'static str {
     if is_index(symbol) {
         "CBOE"
@@ -75,140 +60,6 @@ fn exchange_for_option(symbol: &str) -> &'static str {
         "SMART"
     }
 }
-
-/// Resolve one option leg to its full IBKR contract details via `reqContractDetails`.
-///
-/// Returns `Err(BrokerError::ContractError)` if TWS returns no results or conId 0.
-/// Logs the resolved conId at DEBUG level.
-async fn resolve_contract_details(
-    client: &Arc<IbClient>,
-    leg: &OptionContract,
-) -> Result<Vec<ibapi::contracts::ContractDetails>, BrokerError> {
-    use common::expiry::parse_expiry_yyyy_mm_dd;
-
-    let (y, m, d) = parse_expiry_yyyy_mm_dd(&leg.expiry).map_err(BrokerError::Other)?;
-    let exchange = exchange_for_option(&leg.symbol);
-
-    let ib_contract = if leg.is_call {
-        Contract::call(&leg.symbol)
-            .strike(leg.strike)
-            .expires_on(y, m, d)
-            .on_exchange(exchange)
-            .build()
-    } else {
-        Contract::put(&leg.symbol)
-            .strike(leg.strike)
-            .expires_on(y, m, d)
-            .on_exchange(exchange)
-            .build()
-    };
-
-    let details = client
-        .contract_details(&ib_contract)
-        .await
-        .map_err(|e: IbError| {
-            BrokerError::ContractError(format!(
-                "contract_details failed for {} {} {:.0} {}: {}",
-                leg.symbol,
-                leg.expiry,
-                leg.strike,
-                if leg.is_call { "C" } else { "P" },
-                e
-            ))
-        })?;
-
-    if details.is_empty() {
-        return Err(BrokerError::ContractError(format!(
-            "no contract details returned for {} {} {:.0} {}",
-            leg.symbol,
-            leg.expiry,
-            leg.strike,
-            if leg.is_call { "C" } else { "P" },
-        )));
-    }
-
-    debug!(
-        symbol = %leg.symbol,
-        expiry = %leg.expiry,
-        strike = leg.strike,
-        is_call = leg.is_call,
-        con_id = details[0].contract.contract_id,
-        "resolved option contract details via contract_details"
-    );
-    Ok(details)
-}
-
-/// Resolve one option leg to its IBKR conId via `reqContractDetails`.
-///
-/// Returns `Err(BrokerError::ContractError)` if TWS returns no results or conId 0.
-/// Logs the resolved conId at DEBUG level.
-async fn resolve_con_id(client: &Arc<IbClient>, leg: &OptionContract) -> Result<i32, BrokerError> {
-    use common::expiry::parse_expiry_yyyy_mm_dd;
-
-    let (y, m, d) = parse_expiry_yyyy_mm_dd(&leg.expiry).map_err(BrokerError::Other)?;
-    let exchange = exchange_for_option(&leg.symbol);
-
-    let ib_contract = if leg.is_call {
-        Contract::call(&leg.symbol)
-            .strike(leg.strike)
-            .expires_on(y, m, d)
-            .on_exchange(exchange)
-            .build()
-    } else {
-        Contract::put(&leg.symbol)
-            .strike(leg.strike)
-            .expires_on(y, m, d)
-            .on_exchange(exchange)
-            .build()
-    };
-
-    let details = client
-        .contract_details(&ib_contract)
-        .await
-        .map_err(|e: IbError| {
-            BrokerError::ContractError(format!(
-                "contract_details failed for {} {} {:.0} {}: {}",
-                leg.symbol,
-                leg.expiry,
-                leg.strike,
-                if leg.is_call { "C" } else { "P" },
-                e
-            ))
-        })?;
-
-    let detail = details.into_iter().next().ok_or_else(|| {
-        BrokerError::ContractError(format!(
-            "no contract details returned for {} {} {:.0} {}",
-            leg.symbol,
-            leg.expiry,
-            leg.strike,
-            if leg.is_call { "C" } else { "P" },
-        ))
-    })?;
-
-    let con_id = detail.contract.contract_id;
-    if con_id == 0 {
-        return Err(BrokerError::ContractError(format!(
-            "contract_details returned con_id=0 for {} {} {:.0} {}",
-            leg.symbol,
-            leg.expiry,
-            leg.strike,
-            if leg.is_call { "C" } else { "P" },
-        )));
-    }
-
-    debug!(
-        symbol = %leg.symbol,
-        expiry = %leg.expiry,
-        strike = leg.strike,
-        is_call = leg.is_call,
-        con_id,
-        "resolved option con_id via contract_details"
-    );
-    Ok(con_id)
-}
-
-// ---------------------------------------------------------------------------
 
 /// IB Adapter configuration (alias for [`BrokerConfig`] for backwards compatibility)
 pub type IbConfig = BrokerConfig;
@@ -219,26 +70,46 @@ pub struct IbAdapter {
     state: Arc<RwLock<ConnectionState>>,
     client: Arc<RwLock<Option<Arc<IbClient>>>>,
     market_data_tx: mpsc::Sender<MarketDataEvent>,
-    position_tx: mpsc::Sender<PositionEvent>,
-    order_tx: mpsc::Sender<OrderStatusEvent>,
+    market_data_broadcast_tx: broadcast::Sender<MarketDataEvent>,
     /// Active market data subscriptions keyed by contract_id.
     /// Each entry is a cancellation trigger.
     market_data_subscriptions: Arc<RwLock<HashMap<i64, mpsc::Sender<()>>>>,
 }
 
+struct TokioBroadcastMarketDataSubscription {
+    receiver: broadcast::Receiver<MarketDataEvent>,
+}
+
+#[async_trait]
+impl MarketDataSubscription for TokioBroadcastMarketDataSubscription {
+    async fn recv(&mut self) -> Result<MarketDataEvent, MarketDataSubscriptionError> {
+        self.receiver.recv().await.map_err(|error| match error {
+            broadcast::error::RecvError::Lagged(skipped) => {
+                MarketDataSubscriptionError::Lagged(skipped)
+            }
+            broadcast::error::RecvError::Closed => MarketDataSubscriptionError::Closed,
+        })
+    }
+}
+
 impl IbAdapter {
     pub fn new(config: BrokerConfig) -> Self {
-        let (market_data_tx, _) = mpsc::channel(100);
-        let (position_tx, _) = mpsc::channel(100);
-        let (order_tx, _) = mpsc::channel(100);
+        let (market_data_tx, mut market_data_rx) = mpsc::channel(100);
+        let (market_data_broadcast_tx, _) = broadcast::channel(1024);
+
+        let market_data_broadcast_tx_clone = market_data_broadcast_tx.clone();
+        tokio::spawn(async move {
+            while let Some(event) = market_data_rx.recv().await {
+                let _ = market_data_broadcast_tx_clone.send(event);
+            }
+        });
 
         Self {
             config,
             state: Arc::new(RwLock::new(ConnectionState::Disconnected)),
             client: Arc::new(RwLock::new(None)),
             market_data_tx,
-            position_tx,
-            order_tx,
+            market_data_broadcast_tx,
             market_data_subscriptions: Arc::new(RwLock::new(HashMap::new())),
         }
     }
@@ -439,168 +310,6 @@ impl IbAdapter {
         Ok(out)
     }
 
-    pub async fn place_order(
-        &self,
-        contract: OptionContract,
-        action: OrderAction,
-        quantity: i32,
-        limit_price: f64,
-    ) -> Result<i32, BrokerError> {
-        if *self.state.read().await != ConnectionState::Connected {
-            return Err(BrokerError::NotConnected);
-        }
-        let arc = self.client.read().await.clone();
-        let client = arc.as_ref().ok_or(BrokerError::NotConnected)?;
-        let (y, m, d) = common::expiry::parse_expiry_yyyy_mm_dd(&contract.expiry)
-            .map_err(BrokerError::Other)?;
-        let ib_contract = if contract.is_call {
-            Contract::call(&contract.symbol)
-                .strike(contract.strike)
-                .expires_on(y, m, d)
-                .build()
-        } else {
-            Contract::put(&contract.symbol)
-                .strike(contract.strike)
-                .expires_on(y, m, d)
-                .build()
-        };
-        let order_id = client.next_order_id();
-        let qty = quantity as f64;
-        let result = match action {
-            OrderAction::Buy => {
-                client
-                    .order(&ib_contract)
-                    .buy(qty)
-                    .limit(limit_price)
-                    .submit()
-                    .await
-            }
-            OrderAction::Sell => {
-                client
-                    .order(&ib_contract)
-                    .sell(qty)
-                    .limit(limit_price)
-                    .submit()
-                    .await
-            }
-        };
-        result.map_err(|e: IbError| BrokerError::OrderFailed(e.to_string()))?;
-        Ok(order_id)
-    }
-
-    pub async fn place_bag_order(&self, request: PlaceBagOrderRequest) -> Result<i32, BrokerError> {
-        if *self.state.read().await != ConnectionState::Connected {
-            return Err(BrokerError::NotConnected);
-        }
-        if !self.config.paper_trading {
-            return Err(BrokerError::OrderFailed(
-                "BAG order placement is disabled for live trading; use paper port 7497 and paper_trading=true"
-                    .to_string(),
-            ));
-        }
-        if request.legs.is_empty() {
-            return Err(BrokerError::OrderFailed(
-                "BAG order must have at least one leg".to_string(),
-            ));
-        }
-
-        // Get the client Arc once; release the lock before the async resolution work.
-        let client = self
-            .client
-            .read()
-            .await
-            .clone()
-            .ok_or(BrokerError::NotConnected)?;
-
-        // Resolve any legs missing con_id in parallel via contract_details.
-        // Legs that already have con_id pass through immediately.
-        let resolve_futs = request.legs.iter().map(|leg| {
-            let client = client.clone();
-            let contract = leg.contract.clone();
-            async move {
-                match contract.con_id {
-                    Some(cid) => Ok::<i32, BrokerError>(cid),
-                    None => resolve_con_id(&client, &contract).await,
-                }
-            }
-        });
-        let con_ids: Vec<i32> = try_join_all(resolve_futs).await?;
-
-        // Build the BAG contract with the resolved conIds.
-        let exchange = if request.exchange.is_empty() {
-            "SMART"
-        } else {
-            &request.exchange
-        };
-        let mut builder = Contract::spread()
-            .in_currency(&request.currency)
-            .on_exchange(exchange);
-        for (leg, con_id) in request.legs.iter().zip(&con_ids) {
-            let action = match leg.action {
-                OrderAction::Buy => LegAction::Buy,
-                OrderAction::Sell => LegAction::Sell,
-            };
-            builder = builder.add_leg(*con_id, action).ratio(leg.ratio).done();
-        }
-        let mut bag_contract = builder
-            .build()
-            .map_err(|e| BrokerError::Other(e.to_string()))?;
-        bag_contract.symbol = ibapi::contracts::Symbol::from(request.underlying_symbol.as_str());
-
-        let order_id = client.next_order_id();
-        let qty = request.quantity as f64;
-        let limit_price = request.limit_price.unwrap_or(0.0);
-        let result = match request.order_action {
-            OrderAction::Buy => {
-                client
-                    .order(&bag_contract)
-                    .buy(qty)
-                    .limit(limit_price)
-                    .time_in_force(to_ib_tif(request.tif))
-                    .submit()
-                    .await
-            }
-            OrderAction::Sell => {
-                client
-                    .order(&bag_contract)
-                    .sell(qty)
-                    .limit(limit_price)
-                    .time_in_force(to_ib_tif(request.tif))
-                    .submit()
-                    .await
-            }
-        };
-        result.map_err(|e: IbError| BrokerError::OrderFailed(e.to_string()))?;
-        Ok(order_id)
-    }
-
-    pub async fn cancel_order(&self, order_id: i32) -> Result<(), BrokerError> {
-        if *self.state.read().await != ConnectionState::Connected {
-            return Err(BrokerError::NotConnected);
-        }
-        let arc = self.client.read().await.clone();
-        let client = arc.as_ref().ok_or(BrokerError::NotConnected)?;
-        let mut sub = client
-            .cancel_order(order_id, "")
-            .await
-            .map_err(|e: IbError| BrokerError::Other(e.to_string()))?;
-        let _ = sub.next().await;
-        Ok(())
-    }
-
-    pub async fn cancel_all_orders(&self) -> Result<(), BrokerError> {
-        if *self.state.read().await != ConnectionState::Connected {
-            return Err(BrokerError::NotConnected);
-        }
-        let arc = self.client.read().await.clone();
-        let client = arc.as_ref().ok_or(BrokerError::NotConnected)?;
-        client
-            .global_cancel()
-            .await
-            .map_err(|e: IbError| BrokerError::Other(e.to_string()))?;
-        Ok(())
-    }
-
     pub async fn request_positions(&self) -> Result<Vec<PositionEvent>, BrokerError> {
         if *self.state.read().await != ConnectionState::Connected {
             return Err(BrokerError::NotConnected);
@@ -701,27 +410,10 @@ impl BrokerEngine for IbAdapter {
         self.request_option_chain(symbol).await
     }
 
-    async fn place_order(
-        &self,
-        contract: OptionContract,
-        action: OrderAction,
-        quantity: i32,
-        limit_price: f64,
-    ) -> Result<i32, BrokerError> {
-        self.place_order(contract, action, quantity, limit_price)
-            .await
-    }
-
-    async fn place_bag_order(&self, request: PlaceBagOrderRequest) -> Result<i32, BrokerError> {
-        self.place_bag_order(request).await
-    }
-
-    async fn cancel_order(&self, order_id: i32) -> Result<(), BrokerError> {
-        self.cancel_order(order_id).await
-    }
-
-    async fn cancel_all_orders(&self) -> Result<(), BrokerError> {
-        self.cancel_all_orders().await
+    fn subscribe_market_data(&self) -> Box<dyn MarketDataSubscription> {
+        Box::new(TokioBroadcastMarketDataSubscription {
+            receiver: self.market_data_broadcast_tx.subscribe(),
+        })
     }
 
     async fn request_positions(&self) -> Result<Vec<PositionEvent>, BrokerError> {
@@ -730,18 +422,6 @@ impl BrokerEngine for IbAdapter {
 
     async fn request_account(&self) -> Result<AccountInfo, BrokerError> {
         self.request_account().await
-    }
-
-    fn market_data_tx(&self) -> mpsc::Sender<MarketDataEvent> {
-        self.market_data_tx.clone()
-    }
-
-    fn position_tx(&self) -> mpsc::Sender<PositionEvent> {
-        self.position_tx.clone()
-    }
-
-    fn order_tx(&self) -> mpsc::Sender<OrderStatusEvent> {
-        self.order_tx.clone()
     }
 
     fn request_positions_sync(&self, timeout_ms: u64) -> Result<Vec<PositionEvent>, BrokerError> {
@@ -804,67 +484,9 @@ impl BrokerEngine for IbAdapter {
     }
 }
 
-#[async_trait]
-impl OptionChainProvider for IbAdapter {
-    async fn resolve_option_chain(
-        &self,
-        symbol: &str,
-    ) -> Result<Vec<ResolvedOptionContract>, BrokerError> {
-        if *self.state.read().await != ConnectionState::Connected {
-            return Err(BrokerError::NotConnected);
-        }
-        let client = self
-            .client
-            .read()
-            .await
-            .clone()
-            .ok_or(BrokerError::NotConnected)?;
-
-        let legs = self.request_option_chain(symbol).await?;
-
-        if legs.is_empty() {
-            return Ok(Vec::new());
-        }
-
-        let client = client.clone();
-        let resolve_fut = async {
-            try_join_all(legs.iter().map(|leg| {
-                let client = client.clone();
-                let leg = leg.clone();
-                async move {
-                    let details = resolve_contract_details(&client, &leg).await?;
-                    let detail = details.into_iter().next().ok_or_else(|| {
-                        BrokerError::ContractError(format!(
-                            "no contract details for {} {} {:.0} {}",
-                            leg.symbol,
-                            leg.expiry,
-                            leg.strike,
-                            if leg.is_call { "C" } else { "P" }
-                        ))
-                    })?;
-                    Ok::<ResolvedOptionContract, BrokerError>(ResolvedOptionContract {
-                        symbol: leg.symbol,
-                        expiry: leg.expiry,
-                        strike: leg.strike,
-                        is_call: leg.is_call,
-                        con_id: detail.contract.contract_id,
-                        exchange: detail.contract.exchange.0.clone(),
-                        multiplier: detail.contract.multiplier.parse().unwrap_or(100.0),
-                        trading_class: detail.contract.trading_class.clone(),
-                    })
-                }
-            }))
-            .await
-        };
-
-        resolve_fut.await
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use broker_engine::domain::{BagOrderLeg, OrderAction, PlaceBagOrderRequest, TimeInForce};
 
     #[test]
     fn is_index_recognises_known_index_symbols() {
@@ -884,75 +506,5 @@ mod tests {
         assert_eq!(exchange_for_option("XSP"), "CBOE");
         assert_eq!(exchange_for_option("SPY"), "SMART");
         assert_eq!(exchange_for_option("AAPL"), "SMART");
-    }
-
-    #[tokio::test]
-    async fn place_bag_order_rejects_when_not_connected() {
-        let adapter = IbAdapter::new(BrokerConfig::default());
-        let req = PlaceBagOrderRequest {
-            underlying_symbol: "SPX".into(),
-            currency: "USD".into(),
-            exchange: "SMART".into(),
-            legs: vec![BagOrderLeg {
-                contract: OptionContract::new("SPX", "20250620", 5000.0, true),
-                ratio: 1,
-                action: OrderAction::Buy,
-            }],
-            quantity: 1,
-            limit_price: Some(8.0),
-            tif: TimeInForce::Day,
-            order_action: OrderAction::Buy,
-        };
-        let err = adapter.place_bag_order(req).await.unwrap_err();
-        assert!(matches!(err, BrokerError::NotConnected));
-    }
-
-    #[tokio::test]
-    async fn place_bag_order_rejects_empty_legs() {
-        // Simulate connected state by writing directly to avoid needing a live TWS.
-        let adapter = IbAdapter::new(BrokerConfig::default());
-        *adapter.state.write().await = ConnectionState::Connected;
-        // No client in the Arc — this will hit NotConnected from the client unwrap,
-        // which is fine: we're testing the empty-legs guard fires before that.
-        let req = PlaceBagOrderRequest {
-            underlying_symbol: "SPX".into(),
-            currency: "USD".into(),
-            exchange: "SMART".into(),
-            legs: vec![],
-            quantity: 1,
-            limit_price: None,
-            tif: TimeInForce::Day,
-            order_action: OrderAction::Buy,
-        };
-        let err = adapter.place_bag_order(req).await.unwrap_err();
-        assert!(matches!(err, BrokerError::OrderFailed(_)));
-    }
-
-    #[tokio::test]
-    async fn place_bag_order_rejects_live_trading() {
-        let config = BrokerConfig {
-            host: "127.0.0.1".into(),
-            port: 7496,
-            client_id: 0,
-            paper_trading: false,
-        };
-        let adapter = IbAdapter::new(config);
-        *adapter.state.write().await = ConnectionState::Connected;
-        let req = PlaceBagOrderRequest {
-            underlying_symbol: "SPX".into(),
-            currency: "USD".into(),
-            exchange: "SMART".into(),
-            legs: vec![BagOrderLeg {
-                contract: OptionContract::new("SPX", "20250620", 5000.0, true),
-                ratio: 1,
-                action: OrderAction::Buy,
-            }],
-            quantity: 1,
-            limit_price: Some(8.0),
-            tif: TimeInForce::Day,
-            order_action: OrderAction::Buy,
-        };
-        let err = adapter.place_bag_order(req).await.unwrap_err();
-        assert!(matches!(err, BrokerError::OrderFailed(_)));
     }
 }

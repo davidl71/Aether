@@ -9,7 +9,7 @@
 
 use std::sync::Arc;
 
-use api::{RuntimeSnapshotDto, SharedHealthAggregate, SharedSnapshot};
+use api::{RuntimeSnapshotDto, SharedHealthAggregate};
 use axum::{
     extract::State,
     http::{header, HeaderMap, StatusCode},
@@ -24,6 +24,7 @@ use api::snapshot_proto;
 use nats_adapter::proto::v1;
 
 use crate::nats_integration;
+use crate::shared_state::SharedSnapshot;
 
 /// Content type for protobuf snapshot response.
 const APPLICATION_X_PROTOBUF: &str = "application/x-protobuf";

@@ -1,11 +1,13 @@
 use std::time::Duration;
 
 use anyhow::Context;
-use api::{Alert, PositionSnapshot, SharedSnapshot};
+use api::{Alert, PositionSnapshot};
 use reqwest::Client;
 use serde::Deserialize;
 use tokio::time::interval;
 use tracing::{debug, info, warn};
+
+use crate::shared_state::SharedSnapshot;
 
 const SWIFTNESS_API_URL: &str = "http://127.0.0.1:8081";
 const UPDATE_INTERVAL_SECS: u64 = 60; // Update every minute

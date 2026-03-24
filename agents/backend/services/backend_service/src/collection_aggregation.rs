@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use api::SharedSnapshot;
 use futures::StreamExt;
 use nats_adapter::{
     async_nats,
@@ -11,6 +10,8 @@ use nats_adapter::{
 use prost::Message;
 use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex, time::interval};
 use tracing::{debug, info, warn};
+
+use crate::shared_state::SharedSnapshot;
 
 /// Prefix for market-data tick subjects; batching applies only to subjects matching this.
 const MARKET_DATA_TICK_PREFIX: &str = "market-data.tick";

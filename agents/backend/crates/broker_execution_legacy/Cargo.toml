@@ -1,0 +1,11 @@
+[package]
+name = "broker_execution_legacy"
+edition = "2021"
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+serde.workspace = true
+derive_builder.workspace = true
+broker_engine = { path = "../broker_engine" }

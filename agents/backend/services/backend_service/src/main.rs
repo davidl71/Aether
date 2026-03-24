@@ -2,17 +2,17 @@ use std::{sync::Arc, time::Duration};
 
 use anyhow::Context;
 use api::{
-    mock_data::seed_snapshot, Alert, HealthAggregateState, RuntimeExecutionState,
-    RuntimeMarketState, RuntimeProducerDecision, SharedSnapshot, StrategyController,
-    StrategyDecisionSnapshot, SystemSnapshot,
+    credentials::{get_credential, CredentialKey},
+    mock_data::seed_snapshot,
+    Alert, HealthAggregateState, RuntimeExecutionState, RuntimeMarketState,
+    RuntimeProducerDecision, StrategyController, StrategyDecisionSnapshot, SystemSnapshot,
 };
 use async_trait::async_trait;
-use broker_engine::{BrokerConfig, BrokerEngine};
+use broker_engine::{BrokerConfig, BrokerEngine, MarketDataSubscriptionError};
 use chrono::Utc;
 use ib_adapter::IbAdapter;
 use market_data::{
     create_provider, FmpClient, MarketDataEvent, MarketDataIngestor, MarketDataSource,
-    MarketDataSourceFactory,
 };
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use risk::{RiskCheck, RiskDecision, RiskEngine, RiskLimit, RiskViolation};
@@ -35,9 +35,12 @@ mod health_aggregation;
 mod ib_positions;
 mod nats_integration;
 mod rest_snapshot;
+mod shared_state;
 mod snapshot_publisher;
 mod swiftness;
 mod yield_curve_writer;
+
+use crate::shared_state::SharedSnapshot;
 
 #[derive(Debug, Default, Deserialize, Clone)]
 struct BackendConfig {
@@ -164,12 +167,40 @@ fn default_poll_interval_ms() -> u64 {
     800
 }
 
+/// Load API credentials from the keyring / credential files into env vars so that
+/// downstream factories in the `market_data` crate (which only read `std::env::var`)
+/// can find them. Explicit env vars always win — this only fills gaps.
+///
+/// Must be called before any threads are spawned.
+fn bootstrap_credentials() {
+    let pairs: &[(CredentialKey, &str)] = &[
+        (CredentialKey::FmpApiKey, "FMP_API_KEY"),
+        (CredentialKey::PolygonApiKey, "POLYGON_API_KEY"),
+        (CredentialKey::FredApiKey, "FRED_API_KEY"),
+        (CredentialKey::TaseApiKey, "TASE_API_KEY"),
+    ];
+    for &(key, env_name) in pairs {
+        if std::env::var(env_name).is_ok() {
+            continue; // already set — respect explicit env var
+        }
+        if let Some(val) = get_credential(key) {
+            // Safety: single-threaded at this point in main(), before any spawns.
+            #[allow(unused_unsafe)]
+            unsafe {
+                std::env::set_var(env_name, &val);
+            }
+            info!(credential = env_name, "loaded credential from keyring/file");
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     if std::env::args().any(|a| a == "--validate") {
         run_validate();
     }
     init_tracing();
+    bootstrap_credentials();
     let config = load_config().context("failed to load backend config")?;
 
     let state: SharedSnapshot = Arc::new(RwLock::new(SystemSnapshot::default()));
@@ -294,14 +325,11 @@ async fn main() -> anyhow::Result<()> {
 
     // Publish full snapshots to NATS for TUI and other subscribers
     let loan_repo = api::LoanRepository::load_default().await.ok();
-    let fmp_client = std::env::var("FMP_API_KEY")
-        .ok()
-        .filter(|k| !k.trim().is_empty())
-        .and_then(|api_key| {
-            FmpClient::new(api_key, std::env::var("FMP_BASE_URL").ok().as_deref())
-                .ok()
-                .map(Arc::new)
-        });
+    let fmp_client = get_credential(CredentialKey::FmpApiKey).and_then(|api_key| {
+        FmpClient::new(api_key, std::env::var("FMP_BASE_URL").ok().as_deref())
+            .ok()
+            .map(Arc::new)
+    });
     if let Some(ref nats) = *nats_integration {
         if let Some(client) = nats.client() {
             let broker_engine: Option<Arc<dyn BrokerEngine>> = if let Some(ref engine) =
@@ -583,14 +611,11 @@ fn spawn_market_data_loop(
     });
 }
 
-/// Spawn a market data loop that uses a BrokerEngine's streaming channel.
-/// This bridges yatws/IbAdapter push-based market data to the aggregator.
+/// Spawn a market data loop that subscribes the active broker engine to
+/// push-based TWS market data.
 ///
-/// Note: mpsc::Sender doesn't support subscribe(), so we use a workaround.
-/// The broker's market_data_tx is a Sender; we can't directly receive from it.
-/// For IbAdapter, the channel receivers are dropped so no events flow.
-/// For YatWSEngine, events are sent through market_data_tx but we need
-/// a different approach to receive them.
+/// The remaining gap is service-side consumption and forwarding into the shared
+/// aggregator/NATS path, not quote production inside `IbAdapter`.
 fn spawn_broker_market_data_loop(
     engine: Arc<dyn BrokerEngine>,
     symbols: Vec<String>,
@@ -601,6 +626,8 @@ fn spawn_broker_market_data_loop(
     aggregator: Arc<market_data::MarketDataAggregator>,
 ) {
     tokio::spawn(async move {
+        let mut market_data_rx = engine.subscribe_market_data();
+
         // Subscribe to market data for each symbol
         for symbol in &symbols {
             match engine.request_market_data(symbol, 0).await {
@@ -613,13 +640,37 @@ fn spawn_broker_market_data_loop(
             }
         }
 
-        // Note: IbAdapter's market_data_tx receivers are dropped, so no events arrive.
-        // YatWSEngine does send events but we can't receive them via mpsc::Sender.
-        // This loop relies on the broker implementation forwarding to our aggregator.
-        // For now, we wait for events but IbAdapter won't send any.
-        // TODO: Implement proper event forwarding via shared state or different channel type.
+        info!("broker market data loop started (subscriptions active; aggregator bridge enabled)");
 
-        info!("broker market data loop started (Note: IbAdapter doesn't forward ticks yet; YatWSEngine requires separate integration)");
+        loop {
+            match market_data_rx.recv().await {
+                Ok(event) => {
+                    let running = *strategy_toggle.borrow();
+                    let _updated = aggregator.process_event(&event).await;
+                    let best_quote = aggregator.get_quote(&event.symbol).await;
+
+                    handle_market_event(
+                        &state,
+                        &strategy_signal,
+                        &event,
+                        running,
+                        nats.as_ref().as_ref(),
+                        best_quote.as_ref(),
+                    )
+                    .await;
+                }
+                Err(MarketDataSubscriptionError::Lagged(skipped)) => {
+                    warn!(
+                        skipped,
+                        "broker market data bridge lagged; skipping stale events"
+                    );
+                }
+                Err(MarketDataSubscriptionError::Closed) => {
+                    warn!("broker market data bridge closed");
+                    break;
+                }
+            }
+        }
     });
 }
 
@@ -633,6 +684,7 @@ async fn handle_market_event(
 ) {
     let spread = event.ask - event.bid;
     let mid = (event.bid + event.ask) * 0.5;
+    let mut emitted_alert = None;
 
     if let Some(q) = best_quote {
         debug!(
@@ -643,23 +695,38 @@ async fn handle_market_event(
         );
     }
 
-    // Publish market data to NATS (parallel to existing state update)
-    if let Some(nats_integration) = nats {
-        nats_integration.publish_market_data(event).await;
-    }
-
-    {
+    let current_candle = {
         let mut snapshot = state.write().await;
         snapshot.apply_market_event(event);
+        let current_candle = snapshot
+            .symbols
+            .iter()
+            .find(|symbol| symbol.symbol == event.symbol)
+            .map(|symbol| symbol.candle.clone());
 
         if spread > 0.4 {
-            snapshot.alerts.push(Alert::warning(format!(
+            let alert = Alert::warning(format!(
                 "Wide spread detected on {}: {:.2}",
                 event.symbol, spread
-            )));
+            ));
+            snapshot.alerts.push(alert.clone());
+            emitted_alert = Some(alert);
         }
         while snapshot.alerts.len() > 32 {
             snapshot.alerts.remove(0);
+        }
+        current_candle
+    };
+
+    // Publish market data and candle updates to NATS after snapshot mutation so
+    // downstream consumers observe the same candle state the snapshot now holds.
+    if let Some(nats_integration) = nats {
+        nats_integration.publish_market_data(event).await;
+        if let Some(ref candle) = current_candle {
+            nats_integration.publish_candle(&event.symbol, candle).await;
+        }
+        if let Some(ref alert) = emitted_alert {
+            nats_integration.publish_alert(alert).await;
         }
     }
 
@@ -775,18 +842,22 @@ fn spawn_strategy_fanout(
                 let mut snapshot = state.write().await;
                 snapshot.update_risk_status(&outcome);
                 if outcome.allowed {
-                    snapshot.apply_strategy_execution(decision_snapshot.clone());
+                    let _ = snapshot.apply_strategy_execution(decision_snapshot.clone());
                 } else {
-                    snapshot.alerts.push(Alert::error(
+                    let alert = Alert::error(
                         outcome
                             .reason
                             .clone()
                             .unwrap_or_else(|| format!("Risk rejected {} order", symbol)),
-                    ));
+                    );
+                    snapshot.alerts.push(alert.clone());
                     while snapshot.alerts.len() > 32 {
                         snapshot.alerts.remove(0);
                     }
                     snapshot.set_strategy_status("BLOCKED");
+                    if let Some(ref nats_integration) = *nats {
+                        nats_integration.publish_alert(&alert).await;
+                    }
                 }
             }
         }
