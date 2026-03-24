@@ -191,6 +191,7 @@ async fn main() -> color_eyre::Result<()> {
     let (yield_result_tx, yield_result_rx) = mpsc::unbounded_channel();
     let (loans_fetch_tx, loans_fetch_rx) = mpsc::unbounded_channel();
     let (loans_result_tx, loans_result_rx) = mpsc::unbounded_channel();
+    let (loan_create_tx, loan_create_rx) = mpsc::unbounded_channel();
 
     // Spawn NATS subscriber in the background (snapshot + system.health)
     let nats_config = config.clone();
@@ -260,8 +261,15 @@ async fn main() -> color_eyre::Result<()> {
 
     // Spawn loans fetcher: requests api.loans.list, forwards result
     let nats_url_loans = config.nats_url.clone();
+    let loans_result_tx_for_fetcher = loans_result_tx.clone();
     tokio::spawn(async move {
-        run_loans_fetcher(nats_url_loans, loans_fetch_rx, loans_result_tx).await;
+        run_loans_fetcher(nats_url_loans, loans_fetch_rx, loans_result_tx_for_fetcher).await;
+    });
+
+    // Spawn loan creator: receives LoanRecord, sends to api.loans.create, refreshes list
+    let nats_url_loan_create = config.nats_url.clone();
+    tokio::spawn(async move {
+        run_loan_creator(nats_url_loan_create, loan_create_rx, loans_result_tx).await;
     });
 
     // Spawn config file watcher — hot-reloads TuiConfig on disk changes
@@ -287,6 +295,7 @@ async fn main() -> color_eyre::Result<()> {
         Some(strategy_cmd_tx),
         Some(yield_fetch_tx),
         Some(loans_fetch_tx),
+        Some(loan_create_tx),
     );
 
     let result = run_loop(
@@ -476,6 +485,48 @@ async fn run_loans_fetcher(
             Err(e) => Err(e.to_string()),
         };
         let _ = result_tx.send(res);
+    }
+}
+
+/// Creates a new loan via NATS api.loans.create, then refreshes the loans list.
+async fn run_loan_creator(
+    nats_url: String,
+    mut rx: mpsc::UnboundedReceiver<LoanRecord>,
+    result_tx: mpsc::UnboundedSender<Result<Vec<LoanRecord>, String>>,
+) {
+    while let Some(loan) = rx.recv().await {
+        let res: Result<Result<(), String>, String> = match NatsClient::connect(&nats_url).await {
+            Ok(nc) => request_json_with_retry(&nc, "api.loans.create", &loan)
+                .await
+                .map_err(|e| e.to_string()),
+            Err(e) => Err(e.to_string()),
+        };
+
+        if let Err(e) = res {
+            let _ = result_tx.send(Err(e));
+            continue;
+        }
+
+        match res.unwrap() {
+            Err(e) => {
+                let _ = result_tx.send(Err(e));
+            }
+            Ok(()) => {
+                let refresh_res =
+                    match NatsClient::connect(&nats_url).await {
+                        Ok(nc) => request_json_with_retry::<(), Result<Vec<LoanRecord>, String>>(
+                            &nc,
+                            "api.loans.list",
+                            &(),
+                        )
+                        .await
+                        .map_err(|e| e.to_string())
+                        .and_then(|r| r.map_err(|e| e)),
+                        Err(e) => Err(e.to_string()),
+                    };
+                let _ = result_tx.send(refresh_res);
+            }
+        }
     }
 }
 

@@ -38,6 +38,13 @@ pub enum Action {
     LoansScrollDown,
     LoansScrollPageUp,
     LoansScrollPageDown,
+    LoansNewLoan,
+    LoansInputChar(char),
+    LoansInputBackspace,
+    LoansInputEscape,
+    LoansInputEnter,
+    LoansInputNavUp,
+    LoansInputNavDown,
     AlertsScrollUp,
     AlertsScrollDown,
     AlertsScrollPageUp,
@@ -120,6 +127,24 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         return Some(Action::NoOp); // Input mode handles its own keys
     }
 
+    // Loan entry form input mode - return actions directly
+    if app.loan_entry.is_some() {
+        return match key.code {
+            KeyCode::Esc => Some(Action::LoansInputEscape),
+            KeyCode::Enter => Some(Action::LoansInputEnter),
+            KeyCode::Tab => Some(Action::LoansInputNavDown),
+            KeyCode::BackTab => Some(Action::LoansInputNavUp),
+            KeyCode::Up => Some(Action::LoansInputNavUp),
+            KeyCode::Down => Some(Action::LoansInputNavDown),
+            KeyCode::Backspace => Some(Action::LoansInputBackspace),
+            KeyCode::Char(c) if c.is_ascii_digit() || c == '-' || c == '.' => {
+                Some(Action::LoansInputChar(c))
+            }
+            KeyCode::Char(c) if c.is_alphabetic() => Some(Action::LoansInputChar(c)),
+            _ => Some(Action::NoOp),
+        };
+    }
+
     match key.code {
         // Yield tab symbol navigation (before generic tab switch)
         KeyCode::Left if app.active_tab == Tab::Yield => Some(Action::YieldSymbolPrev),
@@ -182,6 +207,9 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         KeyCode::Down if app.active_tab == Tab::Loans => Some(Action::LoansScrollDown),
         KeyCode::PageUp if app.active_tab == Tab::Loans => Some(Action::LoansScrollPageUp),
         KeyCode::PageDown if app.active_tab == Tab::Loans => Some(Action::LoansScrollPageDown),
+        KeyCode::Char('n') | KeyCode::Char('N') if app.active_tab == Tab::Loans => {
+            Some(Action::LoansNewLoan)
+        }
 
         // Alerts
         KeyCode::Up if app.active_tab == Tab::Alerts => Some(Action::AlertsScrollUp),
@@ -508,6 +536,118 @@ pub fn apply_action(app: &mut App, action: Action) {
                 .unwrap_or(0);
             if len > 0 {
                 app.loans_scroll = (app.loans_scroll + 10).min(len - 1);
+            }
+        }
+        Action::LoansNewLoan => {
+            app.loan_entry = Some(crate::app::LoanEntryState::new());
+        }
+        Action::LoansInputEscape => {
+            app.loan_entry = None;
+        }
+        Action::LoansInputEnter => {
+            if let Some(ref mut entry) = app.loan_entry {
+                if entry.current_field == 2 {
+                    entry.toggle_loan_type();
+                } else {
+                    entry.calculate_maturity();
+                    entry.calculate_monthly_payment();
+                    if entry.is_complete() {
+                        if let Some(loan_record) = entry.to_loan_record() {
+                            if let Some(ref tx) = app.loan_create_tx {
+                                let _ = tx.send(loan_record);
+                            }
+                            app.loan_entry = None;
+                        }
+                    }
+                }
+            }
+        }
+        Action::LoansInputNavUp => {
+            if let Some(ref mut entry) = app.loan_entry {
+                loop {
+                    if entry.current_field > 0 {
+                        entry.current_field -= 1;
+                    } else {
+                        entry.current_field = 8; // max editable field
+                    }
+                    // Skip field 9 (monthly_payment - read-only)
+                    if entry.current_field != 9 {
+                        break;
+                    }
+                }
+            }
+        }
+        Action::LoansInputNavDown => {
+            if let Some(ref mut entry) = app.loan_entry {
+                loop {
+                    if entry.current_field < 8 {
+                        entry.current_field += 1;
+                    } else {
+                        entry.current_field = 0;
+                    }
+                    // Skip field 9 (monthly_payment - read-only)
+                    if entry.current_field != 9 {
+                        break;
+                    }
+                }
+            }
+        }
+        Action::LoansInputChar(c) => {
+            if let Some(ref mut entry) = app.loan_entry {
+                let field = entry.current_field;
+                let max_len = match field {
+                    0 => 50, // bank_name
+                    1 => 20, // account_number
+                    2 => 3,  // type (SHIR/CPI - no input)
+                    3 => 15, // principal
+                    4 => 6,  // interest_rate
+                    5 => 6,  // spread
+                    6 => 10, // origination_date
+                    7 => 10, // first_payment_date
+                    8 => 5,  // num_payments
+                    9 => 12, // monthly_payment (read-only calculated)
+                    _ => 20,
+                };
+                let target = match field {
+                    0 => &mut entry.bank_name,
+                    1 => &mut entry.account_number,
+                    2 => return, // Type is toggled with Enter
+                    3 => &mut entry.principal,
+                    4 => &mut entry.interest_rate,
+                    5 => &mut entry.spread,
+                    6 => &mut entry.origination_date,
+                    7 => &mut entry.first_payment_date,
+                    8 => &mut entry.num_payments,
+                    9 => return, // monthly_payment is calculated
+                    _ => return,
+                };
+                if target.len() < max_len {
+                    target.push(c);
+                }
+                // Auto-calculate when relevant fields change
+                entry.calculate_maturity();
+                entry.calculate_monthly_payment();
+            }
+        }
+        Action::LoansInputBackspace => {
+            if let Some(ref mut entry) = app.loan_entry {
+                let field = entry.current_field;
+                let target = match field {
+                    0 => &mut entry.bank_name,
+                    1 => &mut entry.account_number,
+                    2 => return, // Type is toggled
+                    3 => &mut entry.principal,
+                    4 => &mut entry.interest_rate,
+                    5 => &mut entry.spread,
+                    6 => &mut entry.origination_date,
+                    7 => &mut entry.first_payment_date,
+                    8 => &mut entry.num_payments,
+                    9 => return, // read-only
+                    _ => return,
+                };
+                target.pop();
+                entry.calculate_maturity();
+                entry.calculate_monthly_payment();
             }
         }
         Action::AlertsScrollUp => {

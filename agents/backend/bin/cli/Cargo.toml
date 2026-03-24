@@ -21,6 +21,10 @@ clap_complete = "4"
 api = { path = "../../crates/api", features = ["keyring"] }
 nats_adapter = { path = "../../crates/nats_adapter" }
 tws_yield_curve = { path = "../../crates/tws_yield_curve" }
+discount_bank_parser = { path = "../../crates/discount_bank_parser" }
+rust_decimal = { workspace = true }
+pdf-extract = "0.10"
+regex = { workspace = true }
 serde_json.workspace = true
 toml.workspace = true
 tokio.workspace = true

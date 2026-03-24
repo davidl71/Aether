@@ -39,6 +39,188 @@ pub enum DetailPopupContent {
     Scenario(ScenarioDto),
 }
 
+/// State for the loan entry form overlay in Loans tab.
+#[derive(Debug, Clone)]
+pub struct LoanEntryState {
+    pub bank_name: String,
+    pub account_number: String,
+    pub loan_type: LoanType,
+    pub principal: String,
+    pub interest_rate: String,
+    pub spread: String,
+    pub origination_date: String,
+    pub first_payment_date: String,
+    pub num_payments: String,
+    pub monthly_payment: String,
+    pub maturity_date: String,
+    pub current_field: usize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum LoanType {
+    ShirBased,
+    CpiLinked,
+}
+
+impl LoanEntryState {
+    pub fn new() -> Self {
+        Self {
+            bank_name: String::new(),
+            account_number: String::new(),
+            loan_type: LoanType::ShirBased,
+            principal: String::new(),
+            interest_rate: String::new(),
+            spread: String::new(),
+            origination_date: String::new(),
+            first_payment_date: String::new(),
+            num_payments: String::new(),
+            monthly_payment: String::new(),
+            maturity_date: String::new(),
+            current_field: 0,
+        }
+    }
+
+    pub fn field_names() -> [&'static str; 10] {
+        [
+            "Bank Name",
+            "Account Number",
+            "Type (SHIR/CPI)",
+            "Principal",
+            "Interest Rate %",
+            "Spread %",
+            "Start Date (YYYY-MM-DD)",
+            "First Payment (YYYY-MM-DD)",
+            "Num Payments",
+            "Monthly Payment",
+        ]
+    }
+
+    pub fn field_value(&self, idx: usize) -> &str {
+        match idx {
+            0 => &self.bank_name,
+            1 => &self.account_number,
+            2 => match self.loan_type {
+                LoanType::ShirBased => "SHIR",
+                LoanType::CpiLinked => "CPI",
+            },
+            3 => &self.principal,
+            4 => &self.interest_rate,
+            5 => &self.spread,
+            6 => &self.origination_date,
+            7 => &self.first_payment_date,
+            8 => &self.num_payments,
+            9 => &self.monthly_payment,
+            _ => "",
+        }
+    }
+
+    pub fn calculate_maturity(&mut self) {
+        if !self.first_payment_date.is_empty() && !self.num_payments.is_empty() {
+            if let (Ok(payments), Ok(base)) = (
+                self.num_payments.parse::<i32>(),
+                parse_date(&self.first_payment_date),
+            ) {
+                let days_to_add = (payments as i64 * 30) - 1;
+                let maturity = base + chrono::Duration::days(days_to_add);
+                self.maturity_date = maturity.format("%Y-%m-%d").to_string();
+            }
+        }
+    }
+
+    pub fn calculate_monthly_payment(&mut self) {
+        if !self.principal.is_empty()
+            && !self.interest_rate.is_empty()
+            && !self.num_payments.is_empty()
+        {
+            if let (Ok(principal), Ok(rate), Ok(payments)) = (
+                self.principal.parse::<f64>(),
+                self.interest_rate.parse::<f64>(),
+                self.num_payments.parse::<i32>(),
+            ) {
+                if rate > 0.0 && payments > 0 {
+                    let monthly_rate = rate / 100.0 / 12.0;
+                    let n = payments as f64;
+                    let payment = principal
+                        * (monthly_rate * n.powf(1.0 + monthly_rate) - monthly_rate)
+                        / (n.powf(1.0 + monthly_rate) - 1.0);
+                    self.monthly_payment = format!("{:.2}", payment);
+                }
+            }
+        }
+    }
+
+    pub fn toggle_loan_type(&mut self) {
+        self.loan_type = match self.loan_type {
+            LoanType::ShirBased => LoanType::CpiLinked,
+            LoanType::CpiLinked => LoanType::ShirBased,
+        };
+    }
+
+    pub fn is_complete(&self) -> bool {
+        !self.bank_name.is_empty()
+            && !self.account_number.is_empty()
+            && !self.principal.is_empty()
+            && self.principal.parse::<f64>().is_ok()
+            && !self.interest_rate.is_empty()
+            && self.interest_rate.parse::<f64>().is_ok()
+            && !self.origination_date.is_empty()
+            && !self.first_payment_date.is_empty()
+            && !self.num_payments.is_empty()
+            && self.num_payments.parse::<i32>().is_ok()
+    }
+
+    pub fn to_loan_record(&self) -> Option<LoanRecord> {
+        if !self.is_complete() {
+            return None;
+        }
+
+        let principal = self.principal.parse::<f64>().ok()?;
+        let interest_rate = self.interest_rate.parse::<f64>().ok()?;
+        let spread = if self.spread.is_empty() {
+            0.0
+        } else {
+            self.spread.parse::<f64>().unwrap_or(0.0)
+        };
+        let num_payments = self.num_payments.parse::<i32>().ok()?;
+        let monthly_payment = if self.monthly_payment.is_empty() {
+            0.0
+        } else {
+            self.monthly_payment.parse::<f64>().unwrap_or(0.0)
+        };
+
+        let loan_type = match self.loan_type {
+            LoanType::ShirBased => api::loans::LoanType::ShirBased,
+            LoanType::CpiLinked => api::loans::LoanType::CpiLinked,
+        };
+
+        let now = chrono::Utc::now().to_rfc3339();
+
+        Some(LoanRecord {
+            loan_id: format!("loan-{}-{}", self.bank_name, chrono::Utc::now().timestamp()),
+            bank_name: self.bank_name.clone(),
+            account_number: self.account_number.clone(),
+            loan_type,
+            principal,
+            original_principal: principal,
+            interest_rate,
+            spread,
+            base_cpi: 0.0,
+            current_cpi: 0.0,
+            origination_date: self.origination_date.clone(),
+            maturity_date: self.maturity_date.clone(),
+            next_payment_date: self.first_payment_date.clone(),
+            monthly_payment,
+            payment_frequency_months: 1,
+            status: api::loans::LoanStatus::Active,
+            last_update: now,
+        })
+    }
+}
+
+fn parse_date(s: &str) -> Result<chrono::NaiveDate, chrono::ParseError> {
+    chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d")
+}
+
 impl Tab {
     pub const ALL: &'static [Tab] = &[
         Tab::Dashboard,
@@ -197,6 +379,10 @@ pub struct App {
     pub loans_scroll: usize,
     /// Sender to trigger loans fetch; None when not wired.
     pub loans_fetch_tx: Option<mpsc::UnboundedSender<()>>,
+    /// Loan entry form state (when Some, show form overlay).
+    pub loan_entry: Option<LoanEntryState>,
+    /// Sender to create a new loan via NATS api.loans.create; None when not wired.
+    pub loan_create_tx: Option<mpsc::UnboundedSender<LoanRecord>>,
     /// Sender for strategy commands (S=start, T=stop); None when not wired.
     pub strategy_cmd_tx: Option<mpsc::UnboundedSender<StrategyCommand>>,
     event_rx: mpsc::UnboundedReceiver<AppEvent>,
@@ -215,6 +401,7 @@ impl App {
         strategy_cmd_tx: Option<mpsc::UnboundedSender<StrategyCommand>>,
         yield_fetch_tx: Option<mpsc::UnboundedSender<String>>,
         loans_fetch_tx: Option<mpsc::UnboundedSender<()>>,
+        loan_create_tx: Option<mpsc::UnboundedSender<LoanRecord>>,
     ) -> Self {
         let config_warning = validate_config_hint(&config);
         let split_pane = config.split_pane;
@@ -277,6 +464,8 @@ impl App {
             loans_fetch_pending: false,
             loans_scroll: 0,
             loans_fetch_tx,
+            loan_entry: None,
+            loan_create_tx: None,
             strategy_cmd_tx,
             event_rx,
             snapshot_rx,
@@ -734,6 +923,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         );
         (app, snap_tx, event_tx)
     }
@@ -767,6 +957,7 @@ mod tests {
             event_rx,
             config_rx,
             health_rx,
+            None,
             None,
             None,
             None,
