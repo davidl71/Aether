@@ -13,7 +13,7 @@ mod scenarios;
 pub use scenarios::filtered_scenarios;
 mod settings;
 mod yield_curve;
-pub use candlestick::{generate_synthetic_candles, render_candlestick, Candle, CandlestickChart};
+pub use candlestick::Candle;
 pub(crate) use yield_curve::render_yield_curve as render_yield_curve_tab;
 
 use ratatui::{
@@ -23,9 +23,10 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Tabs},
     Frame,
 };
-use tui_logger::TuiLoggerWidget;
 
-use crate::app::{App, DetailPopupContent, Tab};
+use api::CommandStatus;
+
+use crate::app::{App, DetailPopupContent, InputMode, Tab};
 use crate::events::{ConnectionState, ConnectionStatus, ConnectionTarget};
 
 pub fn render(f: &mut Frame, app: &App) {
@@ -87,6 +88,13 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         Span::styled(mode, Style::default().fg(Color::Cyan)),
         Span::raw(" | "),
         Span::styled(strategy, Style::default().fg(Color::Yellow)),
+        Span::raw(" | "),
+        Span::styled(
+            "READ-ONLY",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ),
     ];
 
     if let Some(ref snap) = app.snapshot() {
@@ -105,6 +113,42 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
                 Style::default().fg(Color::Green),
             ));
         }
+    }
+
+    if app.split_pane {
+        spans.push(Span::raw(" | "));
+        spans.push(Span::styled(
+            "PANE:DASH+POS",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+    }
+
+    if let Some(meta) = app.live_market_data_source.as_ref() {
+        let age_secs = meta.age_secs();
+        let age_label = if age_secs <= 1 {
+            "now".to_string()
+        } else {
+            format!("{}s ago", age_secs)
+        };
+        let color = if age_secs <= 2 {
+            Color::Green
+        } else if age_secs <= 6 {
+            Color::Yellow
+        } else {
+            Color::Red
+        };
+        spans.push(Span::raw(" | "));
+        spans.push(Span::styled(
+            format!(
+                "{}@{} ({})",
+                meta.source.to_uppercase(),
+                meta.priority,
+                age_label
+            ),
+            Style::default().fg(color),
+        ));
     }
 
     spans.push(Span::raw("  "));
@@ -147,6 +191,14 @@ fn render_status_bar(f: &mut Frame, app: &App, area: Rect) {
         spans.push(Span::styled(
             format!("Config: {}", truncate_detail(w, 24)),
             Style::default().fg(Color::Yellow),
+        ));
+    }
+
+    if let Some((label, color)) = settings_mode_indicator(app) {
+        spans.push(Span::raw("  "));
+        spans.push(Span::styled(
+            label,
+            Style::default().fg(color).add_modifier(Modifier::BOLD),
         ));
     }
 
@@ -206,10 +258,25 @@ fn render_tab_bar(f: &mut Frame, app: &App, area: Rect) {
 
 fn render_main(f: &mut Frame, app: &App, area: Rect) {
     if app.split_pane {
+        let outer = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(1), Constraint::Min(0)])
+            .split(area);
+        let split_label = Paragraph::new(Line::from(vec![
+            Span::styled(
+                " Split pane ",
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw("Dashboard + Positions"),
+        ]));
+        f.render_widget(split_label, outer[0]);
+
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-            .split(area);
+            .split(outer[1]);
         dashboard::render_dashboard(f, app, chunks[0]);
         positions::render_positions(f, app, chunks[1]);
     } else {
@@ -334,71 +401,60 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
             Span::raw("switch tab"),
         ]),
         Line::from(vec![
-            Span::styled(" 1–9 ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::styled(" 0–9 ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(
                 "jump to Dash / Pos / Charts / Orders / Alerts / Yield / Loans / Scen / Logs / Set",
             ),
         ]),
         Line::from(vec![
             Span::styled(" M ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("mode Live/Mock/DRY-RUN  "),
-            Span::styled(" S ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("start  "),
-            Span::styled(" T ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("stop  "),
-            Span::styled(" K ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("cancel all  "),
-            Span::styled(" F ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("force snapshot"),
-        ]),
-        Line::from(vec![
-            Span::styled(" / ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("Orders: focus filter  "),
+            Span::raw("read-only badge  "),
+            Span::styled(" ` ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("log panel  "),
+            Span::styled(" p ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("split pane  "),
             Span::styled(" Esc ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("clear filter  "),
-            Span::styled(" x ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("cancel all"),
+            Span::raw("close current mode"),
         ]),
         Line::from(vec![
             Span::styled(
-                " ↑ ↓ PgUp PgDn ",
+                " Dashboard / Positions / Orders / Alerts / Scenarios ",
                 Style::default().add_modifier(Modifier::BOLD),
             ),
-            Span::raw("Pos/Orders/Alerts/Scen: scroll  "),
-            Span::styled(" c ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("Pos: combo/flat  "),
+            Span::raw("↑↓ PgUp/PgDn scroll  "),
             Span::styled(" Enter ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("detail  "),
-            Span::styled(" + − ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("Logs level  "),
-            Span::styled(
-                " e / w / i / d ",
-                Style::default().add_modifier(Modifier::BOLD),
-            ),
-            Span::raw("jump to ERROR/WARN/INFO/DEBUG"),
+            Span::styled(" c ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("Positions combo"),
         ]),
         Line::from(vec![
-            Span::styled(" ← → ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("Yield: symbol  "),
-            Span::styled(" [ ] ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("Scen: DTE expand/contract  "),
-            Span::styled(" w ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("Scen: strike width  "),
-            Span::styled(" o ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("Scen: exec scenario"),
+            Span::styled(" Orders ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("/ filter mode  type symbol/status/side  Esc clear  "),
+            Span::styled(" Loans ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("n new loan  Tab/Shift-Tab field nav"),
         ]),
         Line::from(vec![
-            Span::styled(
-                " Settings (8): ",
-                Style::default().add_modifier(Modifier::BOLD),
-            ),
-            Span::raw("↑↓ section/config key  "),
-            Span::styled(" e ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("edit config  "),
-            Span::styled(" a ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("add symbol  Del remove  "),
-            Span::styled(" r ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("reset watchlist"),
+            Span::styled(" Charts ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("/ search mode  Enter confirm  Esc cancel  ←→ expiry  ↑↓ width  "),
+            Span::styled(" Yield ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("←→ symbol"),
+        ]),
+        Line::from(vec![
+            Span::styled(" Scenarios ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("[ ] DTE  w strike width  Enter detail  "),
+            Span::styled(" Logs ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("+/- level  e/w/i/d jump  "),
+        ]),
+        Line::from(vec![
+            Span::styled(" Settings ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("↑↓ section/key  e/Enter edit  a add  Del remove  r reset  "),
+            Span::styled(" Status ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("provider, split-pane, loading, and latest result in bars"),
+        ]),
+        Line::from(vec![
+            Span::raw(" Execution: "),
+            Span::styled("S/T/K/F/O/X", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(" disabled in exploration mode"),
         ]),
         Line::from(""),
         Line::from(Span::styled(
@@ -411,7 +467,7 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
         .title(" Help ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Cyan));
-    let area = centered_rect(60, 14, area);
+    let area = centered_rect(78, 22, area);
     f.render_widget(ratatui::widgets::Clear, area);
     f.render_widget(inner.block(block), area);
 }
@@ -460,15 +516,15 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         Span::styled("0-9", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(":jump to tab  "),
         Span::styled("M", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(":mode  "),
+        Span::raw(":read-only  "),
         Span::styled("S", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(":start  "),
+        Span::raw(":disabled  "),
         Span::styled("T", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(":stop  "),
+        Span::raw(":disabled  "),
         Span::styled("K", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(":cancel all  "),
+        Span::raw(":disabled  "),
         Span::styled("F", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(":force snapshot  "),
+        Span::raw(":disabled  "),
         Span::styled(
             "↑/↓ PgUp/PgDn",
             Style::default().add_modifier(Modifier::BOLD),
@@ -492,6 +548,40 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         ));
         spans.push(Span::raw(":Yield symbol"));
     }
+    if app.active_tab == Tab::Charts {
+        spans.push(Span::raw("  "));
+        spans.push(Span::styled(
+            "/",
+            Style::default().add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::raw(
+            if matches!(app.input_mode(), InputMode::ChartSearch) {
+                ":search active"
+            } else {
+                ":chart search"
+            },
+        ));
+    }
+    if app.active_tab == Tab::Orders {
+        spans.push(Span::raw("  "));
+        spans.push(Span::styled(
+            "/",
+            Style::default().add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::raw(
+            if matches!(app.input_mode(), InputMode::OrdersFilter) {
+                ":filter active"
+            } else {
+                ":filter"
+            },
+        ));
+        spans.push(Span::raw("  "));
+        spans.push(Span::styled(
+            "Enter",
+            Style::default().add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::raw(":detail"));
+    }
     if app.active_tab == Tab::Scenarios {
         spans.push(Span::raw("  "));
         spans.push(Span::styled(
@@ -499,6 +589,26 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
             Style::default().add_modifier(Modifier::BOLD),
         ));
         spans.push(Span::raw(":detail"));
+        spans.push(Span::raw("  "));
+        spans.push(Span::styled(
+            "[ ]",
+            Style::default().add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::raw(":DTE  "));
+        spans.push(Span::styled(
+            "w",
+            Style::default().add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::raw(":width"));
+    }
+    if app.active_tab == Tab::Orders || app.active_tab == Tab::Scenarios {
+        spans.push(Span::raw("  | "));
+        spans.push(Span::styled(
+            "Exploration mode",
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
     }
     if app.active_tab == Tab::Settings {
         spans.push(Span::raw("  "));
@@ -519,7 +629,37 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         spans.push(Span::raw(":reset symbols"));
     }
 
+    if let Some((label, color)) = settings_mode_indicator(app) {
+        spans.push(Span::raw("  | "));
+        spans.push(Span::styled(
+            label,
+            Style::default().fg(color).add_modifier(Modifier::BOLD),
+        ));
+    }
+
+    append_async_status_spans(&mut spans, app);
+
     if let Some(ref snap) = app.snapshot() {
+        spans.push(Span::raw("  | "));
+        spans.push(Span::raw("Strategy: "));
+        let strategy = if snap.inner.strategy.trim().is_empty() {
+            "UNKNOWN"
+        } else {
+            snap.inner.strategy.as_str()
+        };
+        let strategy_color = match strategy {
+            "RUNNING" => Color::Green,
+            "BLOCKED" => Color::Red,
+            "IDLE" | "STOPPED" => Color::Yellow,
+            _ => Color::Cyan,
+        };
+        spans.push(Span::styled(
+            strategy,
+            Style::default()
+                .fg(strategy_color)
+                .add_modifier(Modifier::BOLD),
+        ));
+
         let n = snap.dto().alerts.len();
         spans.push(Span::raw("  | "));
         spans.push(Span::raw("Alerts: "));
@@ -533,20 +673,117 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         spans.push(Span::styled(n.to_string(), alert_style));
     }
 
-    if let Some(ref res) = app.last_strategy_result {
-        let (msg, color) = match res {
-            Ok(m) => (m.as_str(), Color::Green),
-            Err(e) => (e.as_str(), Color::Red),
-        };
+    if let Some(ref cmd) = app.last_command_status {
         spans.push(Span::raw("  | "));
         spans.push(Span::styled(
-            msg,
-            Style::default().fg(color).add_modifier(Modifier::BOLD),
+            format!("{}:{}", cmd.action, command_status_label(&cmd.status)),
+            Style::default()
+                .fg(command_status_color(&cmd.status))
+                .add_modifier(Modifier::BOLD),
         ));
+        if let Some(ref command_id) = cmd.command_id {
+            spans.push(Span::raw(" "));
+            spans.push(Span::styled(
+                truncate_command_id(command_id),
+                Style::default().fg(Color::DarkGray),
+            ));
+        }
+        if let Some(ref msg) = cmd.message {
+            spans.push(Span::raw(" "));
+            spans.push(Span::styled(
+                truncate_detail(msg, 28),
+                Style::default().fg(Color::White),
+            ));
+        } else if let Some(ref err) = cmd.error {
+            spans.push(Span::raw(" "));
+            spans.push(Span::styled(
+                truncate_detail(err, 28),
+                Style::default().fg(Color::Red),
+            ));
+        }
     }
 
     let line = Line::from(spans);
     f.render_widget(Paragraph::new(line), area);
+}
+
+fn settings_mode_indicator(app: &App) -> Option<(String, Color)> {
+    match app.input_mode() {
+        InputMode::SettingsEditConfig => Some((
+            format!(
+                "SETTINGS:EDIT {}",
+                truncate_detail(
+                    app.settings_edit_config_key.as_deref().unwrap_or("CONFIG"),
+                    16
+                )
+            ),
+            Color::Yellow,
+        )),
+        InputMode::SettingsAddSymbol => Some(("SETTINGS:ADD SYMBOL".into(), Color::Yellow)),
+        InputMode::ChartSearch => Some(("CHARTS:SEARCH".into(), Color::Cyan)),
+        InputMode::OrdersFilter => Some(("ORDERS:FILTER".into(), Color::Yellow)),
+        InputMode::LoanForm => Some(("LOANS:FORM".into(), Color::Yellow)),
+        InputMode::LogPanel => Some(("LOGS:PANEL".into(), Color::Yellow)),
+        _ => None,
+    }
+}
+
+fn append_async_status_spans<'a>(spans: &mut Vec<Span<'a>>, app: &App) {
+    if app.yield_fetch_pending {
+        spans.push(Span::raw("  | "));
+        spans.push(Span::styled(
+            "Yield:loading",
+            Style::default()
+                .fg(Color::Blue)
+                .add_modifier(Modifier::BOLD),
+        ));
+    } else if let Some(ref err) = app.yield_error {
+        spans.push(Span::raw("  | "));
+        spans.push(Span::styled(
+            format!("Yield:{}", truncate_detail(err, 24)),
+            Style::default().fg(Color::Red),
+        ));
+    }
+
+    if app.loans_fetch_pending {
+        spans.push(Span::raw("  | "));
+        spans.push(Span::styled(
+            "Loans:loading",
+            Style::default()
+                .fg(Color::Blue)
+                .add_modifier(Modifier::BOLD),
+        ));
+    } else if let Some(Err(ref err)) = app.loans_list {
+        spans.push(Span::raw("  | "));
+        spans.push(Span::styled(
+            format!("Loans:{}", truncate_detail(err, 24)),
+            Style::default().fg(Color::Red),
+        ));
+    }
+}
+
+fn truncate_command_id(command_id: &str) -> String {
+    if command_id.len() <= 18 {
+        command_id.to_string()
+    } else {
+        format!("{}…", &command_id[..17])
+    }
+}
+
+fn command_status_label(status: &CommandStatus) -> &'static str {
+    match status {
+        CommandStatus::Accepted => "accepted",
+        CommandStatus::Completed => "completed",
+        CommandStatus::Failed => "failed",
+    }
+}
+
+fn command_status_color(status: &CommandStatus) -> Color {
+    match status {
+        CommandStatus::Accepted => Color::Blue,
+        CommandStatus::Completed => Color::Green,
+        CommandStatus::Failed => Color::Red,
+    }
 }
 
 fn render_log_panel_overlay(f: &mut Frame, app: &App, area: Rect) {

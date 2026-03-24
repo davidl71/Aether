@@ -1,21 +1,25 @@
 //! Application state and event dispatch.
 
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::time::Instant;
 
 use api::finance_rates::{BenchmarksResponse, CurveResponse};
 use api::loans::LoanRecord;
-use api::{BackendHealthState, RuntimeOrderDto, RuntimePositionDto, ScenarioDto};
+use api::{
+    Alert, BackendHealthState, CommandReply, CommandStatus, RuntimeOrderDto, RuntimePositionDto,
+    ScenarioDto,
+};
 use crossterm::event::{KeyCode, KeyEvent};
 use tokio::sync::{mpsc, watch};
 use tui_logger::TuiWidgetState;
 
 use crate::config::TuiConfig;
-use crate::events::{
-    AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget, StrategyCommand,
-};
+use crate::events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget};
 use crate::models::TuiSnapshot;
+use crate::ui::Candle;
 
 const SPARKLINE_HISTORY_SIZE: usize = 20;
+const CHART_HISTORY_SIZE: usize = 120;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Tab {
@@ -39,6 +43,93 @@ pub enum DetailPopupContent {
     Scenario(ScenarioDto),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InputMode {
+    Normal,
+    Help,
+    DetailPopup,
+    SettingsEditConfig,
+    SettingsAddSymbol,
+    LoanForm,
+    ChartSearch,
+    OrdersFilter,
+    LogPanel,
+}
+
+/// Latest command state shown in the TUI status area.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CommandStatusView {
+    pub command_id: Option<String>,
+    pub issued_at: Option<String>,
+    pub action: String,
+    pub status: CommandStatus,
+    pub message: Option<String>,
+    pub error: Option<String>,
+}
+
+impl CommandStatusView {
+    pub fn from_reply(reply: &CommandReply) -> Self {
+        Self {
+            command_id: Some(reply.command_id.clone()),
+            issued_at: Some(reply.issued_at.clone()),
+            action: reply.action.clone(),
+            status: reply.status.clone(),
+            message: reply.message.clone(),
+            error: reply.error.clone(),
+        }
+    }
+
+    pub fn failure(action: impl Into<String>, error: impl Into<String>) -> Self {
+        Self {
+            command_id: None,
+            issued_at: None,
+            action: action.into(),
+            status: CommandStatus::Failed,
+            message: None,
+            error: Some(error.into()),
+        }
+    }
+
+    pub fn disabled(action: impl Into<String>) -> Self {
+        Self::failure(
+            action,
+            "Execution is deprecated in exploration mode; data views remain available.",
+        )
+    }
+
+    pub fn success(action: impl Into<String>, message: impl Into<String>) -> Self {
+        Self {
+            command_id: None,
+            issued_at: None,
+            action: action.into(),
+            status: CommandStatus::Completed,
+            message: Some(message.into()),
+            error: None,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct MarketDataSourceMeta {
+    pub source: String,
+    pub priority: u32,
+    last_tick_at: Instant,
+}
+
+impl MarketDataSourceMeta {
+    pub fn new(source: impl Into<String>, priority: u32) -> Self {
+        Self {
+            source: source.into(),
+            priority,
+            last_tick_at: Instant::now(),
+        }
+    }
+
+    pub fn age_secs(&self) -> u64 {
+        self.last_tick_at.elapsed().as_secs()
+    }
+}
+
 /// State for the loan entry form overlay in Loans tab.
 #[derive(Debug, Clone)]
 pub struct LoanEntryState {
@@ -54,6 +145,7 @@ pub struct LoanEntryState {
     pub monthly_payment: String,
     pub maturity_date: String,
     pub current_field: usize,
+    pub validation_error: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -77,40 +169,7 @@ impl LoanEntryState {
             monthly_payment: String::new(),
             maturity_date: String::new(),
             current_field: 0,
-        }
-    }
-
-    pub fn field_names() -> [&'static str; 10] {
-        [
-            "Bank Name",
-            "Account Number",
-            "Type (SHIR/CPI)",
-            "Principal",
-            "Interest Rate %",
-            "Spread %",
-            "Start Date (YYYY-MM-DD)",
-            "First Payment (YYYY-MM-DD)",
-            "Num Payments",
-            "Monthly Payment",
-        ]
-    }
-
-    pub fn field_value(&self, idx: usize) -> &str {
-        match idx {
-            0 => &self.bank_name,
-            1 => &self.account_number,
-            2 => match self.loan_type {
-                LoanType::ShirBased => "SHIR",
-                LoanType::CpiLinked => "CPI",
-            },
-            3 => &self.principal,
-            4 => &self.interest_rate,
-            5 => &self.spread,
-            6 => &self.origination_date,
-            7 => &self.first_payment_date,
-            8 => &self.num_payments,
-            9 => &self.monthly_payment,
-            _ => "",
+            validation_error: None,
         }
     }
 
@@ -140,9 +199,9 @@ impl LoanEntryState {
                 if rate > 0.0 && payments > 0 {
                     let monthly_rate = rate / 100.0 / 12.0;
                     let n = payments as f64;
-                    let payment = principal
-                        * (monthly_rate * n.powf(1.0 + monthly_rate) - monthly_rate)
-                        / (n.powf(1.0 + monthly_rate) - 1.0);
+                    // Standard annuity formula: M = P * r * (1+r)^n / ((1+r)^n - 1)
+                    let factor = (1.0 + monthly_rate).powf(n);
+                    let payment = principal * monthly_rate * factor / (factor - 1.0);
                     self.monthly_payment = format!("{:.2}", payment);
                 }
             }
@@ -181,7 +240,7 @@ impl LoanEntryState {
         } else {
             self.spread.parse::<f64>().unwrap_or(0.0)
         };
-        let num_payments = self.num_payments.parse::<i32>().ok()?;
+        self.num_payments.parse::<i32>().ok()?;
         let monthly_payment = if self.monthly_payment.is_empty() {
             0.0
         } else {
@@ -277,14 +336,16 @@ pub struct App {
     pub roi_history: HashMap<String, VecDeque<f64>>,
     /// Order filter text (filters orders by symbol or status)
     pub order_filter: String,
+    /// True while the Orders filter input mode is active.
+    pub order_filter_active: bool,
     /// State for the tui-logger widget (scroll position, level filter).
     pub log_state: TuiWidgetState,
     /// Current display level shown in the Logs tab title.
     pub log_display_level: log::LevelFilter,
     pub nats_status: ConnectionStatus,
     pub should_quit: bool,
-    /// Last result from strategy start/stop/cancel-all (shown in hint bar until cleared). Ok = message, Err = error.
-    pub last_strategy_result: Option<Result<String, String>>,
+    /// Last command result from strategy/control actions (shown in status/hint bar).
+    pub last_command_status: Option<CommandStatusView>,
     /// When true, show the help overlay (key bindings).
     pub show_help: bool,
     /// When true, show the debug log panel overlay (toggled with backtick).
@@ -307,6 +368,8 @@ pub struct App {
     pub orders_scroll: usize,
     /// Symbol currently selected for charting in the Charts tab.
     pub symbol_for_chart: String,
+    /// Rolling live candle history keyed by symbol, fed by NATS candle updates.
+    pub chart_history: HashMap<String, VecDeque<Candle>>,
     /// Charts search: input buffer (type to search).
     pub chart_search_input: String,
     /// Charts search: history of searched symbols.
@@ -383,8 +446,8 @@ pub struct App {
     pub loan_entry: Option<LoanEntryState>,
     /// Sender to create a new loan via NATS api.loans.create; None when not wired.
     pub loan_create_tx: Option<mpsc::UnboundedSender<LoanRecord>>,
-    /// Sender for strategy commands (S=start, T=stop); None when not wired.
-    pub strategy_cmd_tx: Option<mpsc::UnboundedSender<StrategyCommand>>,
+    /// Latest metadata from the live market-data tick stream (source, priority, age).
+    pub live_market_data_source: Option<MarketDataSourceMeta>,
     event_rx: mpsc::UnboundedReceiver<AppEvent>,
     snapshot_rx: watch::Receiver<Option<TuiSnapshot>>,
     config_rx: watch::Receiver<TuiConfig>,
@@ -398,7 +461,6 @@ impl App {
         event_rx: mpsc::UnboundedReceiver<AppEvent>,
         config_rx: watch::Receiver<TuiConfig>,
         health_rx: watch::Receiver<HashMap<String, BackendHealthState>>,
-        strategy_cmd_tx: Option<mpsc::UnboundedSender<StrategyCommand>>,
         yield_fetch_tx: Option<mpsc::UnboundedSender<String>>,
         loans_fetch_tx: Option<mpsc::UnboundedSender<()>>,
         loan_create_tx: Option<mpsc::UnboundedSender<LoanRecord>>,
@@ -412,11 +474,12 @@ impl App {
             snapshot: std::cell::UnsafeCell::new(None),
             roi_history: HashMap::new(),
             order_filter: String::new(),
+            order_filter_active: false,
             log_state: TuiWidgetState::default(),
             log_display_level: log::LevelFilter::Debug,
             nats_status: ConnectionStatus::new(ConnectionState::Starting, "Connecting to NATS"),
             should_quit: false,
-            last_strategy_result: None,
+            last_command_status: None,
             show_help: false,
             show_log_panel: false,
             detail_popup: None,
@@ -428,6 +491,7 @@ impl App {
             positions_expanded_combos: HashSet::new(),
             orders_scroll: 0,
             symbol_for_chart: String::new(),
+            chart_history: HashMap::new(),
             chart_search_input: String::new(),
             chart_search_history: VecDeque::with_capacity(10),
             chart_search_visible: false,
@@ -465,8 +529,8 @@ impl App {
             loans_scroll: 0,
             loans_fetch_tx,
             loan_entry: None,
-            loan_create_tx: None,
-            strategy_cmd_tx,
+            loan_create_tx,
+            live_market_data_source: None,
             event_rx,
             snapshot_rx,
             config_rx,
@@ -491,6 +555,7 @@ impl App {
         unsafe {
             *self.snapshot.get() = snap;
         }
+        self.hydrate_chart_history_from_snapshot();
     }
 
     /// Applies a tick market data event to the current snapshot.
@@ -504,14 +569,13 @@ impl App {
         }
         let snap = unsafe { &mut *snap_ptr };
         if let Some(ref mut s) = snap {
+            let mid = if last != 0.0 { last } else { (bid + ask) * 0.5 };
             if let Some(entry) = s.inner.symbols.iter_mut().find(|e| e.symbol == symbol) {
-                let mid = if last != 0.0 { last } else { (bid + ask) * 0.5 };
                 entry.last = mid;
                 entry.bid = bid;
                 entry.ask = ask;
                 entry.spread = (ask - bid).max(0.0);
             } else if bid != 0.0 || ask != 0.0 {
-                let mid = if last != 0.0 { last } else { (bid + ask) * 0.5 };
                 s.inner.symbols.push(api::SymbolSnapshot {
                     symbol: symbol.to_string(),
                     last: mid,
@@ -533,6 +597,105 @@ impl App {
                     },
                 });
             }
+
+            for position in &mut s.inner.positions {
+                if position.symbol == symbol {
+                    position.mark = mid;
+                    position.unrealized_pnl =
+                        (mid - position.cost_basis) * position.quantity as f64;
+                }
+            }
+
+            s.refresh_display_dto();
+            self.mark_dirty();
+        }
+    }
+
+    pub fn apply_candle(
+        &mut self,
+        symbol: &str,
+        open: f64,
+        high: f64,
+        low: f64,
+        close: f64,
+        volume: u64,
+    ) {
+        self.push_chart_candle(
+            symbol,
+            Candle {
+                open,
+                high,
+                low,
+                close,
+                volume: Some(volume as f64),
+            },
+        );
+        self.mark_dirty();
+    }
+
+    pub fn apply_alert(
+        &mut self,
+        level: api::AlertLevel,
+        message: String,
+        timestamp: chrono::DateTime<chrono::Utc>,
+    ) {
+        let snap_ptr = self.snapshot.get();
+        if snap_ptr.is_null() {
+            return;
+        }
+        let snap = unsafe { &mut *snap_ptr };
+        if let Some(ref mut s) = snap {
+            s.inner.alerts.push(Alert {
+                level,
+                message,
+                timestamp,
+            });
+            while s.inner.alerts.len() > 32 {
+                s.inner.alerts.remove(0);
+            }
+            s.refresh_display_dto();
+            self.mark_dirty();
+        }
+    }
+
+    fn hydrate_chart_history_from_snapshot(&mut self) {
+        let symbols = self
+            .snapshot()
+            .as_ref()
+            .map(|snap| snap.inner.symbols.clone())
+            .unwrap_or_default();
+
+        for symbol in symbols {
+            self.push_chart_candle(
+                &symbol.symbol,
+                Candle {
+                    open: symbol.candle.open,
+                    high: symbol.candle.high,
+                    low: symbol.candle.low,
+                    close: symbol.candle.close,
+                    volume: Some(symbol.candle.volume as f64),
+                },
+            );
+        }
+    }
+
+    fn push_chart_candle(&mut self, symbol: &str, candle: Candle) {
+        let history = self.chart_history.entry(symbol.to_string()).or_default();
+
+        if let Some(last) = history.back_mut() {
+            if last.open == candle.open
+                && last.high == candle.high
+                && last.low == candle.low
+                && last.close == candle.close
+                && last.volume == candle.volume
+            {
+                return;
+            }
+        }
+
+        history.push_back(candle);
+        while history.len() > CHART_HISTORY_SIZE {
+            history.pop_front();
         }
     }
 
@@ -541,6 +704,30 @@ impl App {
         self.watchlist_override
             .as_deref()
             .unwrap_or(&self.config.watchlist)
+    }
+
+    pub fn input_mode(&self) -> InputMode {
+        if self.show_help {
+            InputMode::Help
+        } else if self.detail_popup.is_some() {
+            InputMode::DetailPopup
+        } else if self.settings_add_symbol_input.is_some() {
+            if self.settings_edit_config_key.is_some() {
+                InputMode::SettingsEditConfig
+            } else {
+                InputMode::SettingsAddSymbol
+            }
+        } else if self.loan_entry.is_some() {
+            InputMode::LoanForm
+        } else if self.chart_search_visible {
+            InputMode::ChartSearch
+        } else if self.order_filter_active {
+            InputMode::OrdersFilter
+        } else if self.show_log_panel {
+            InputMode::LogPanel
+        } else {
+            InputMode::Normal
+        }
     }
 
     /// Set yield data from NATS fetch (curve + benchmarks).
@@ -590,9 +777,9 @@ impl App {
         }
     }
 
-    /// Set the last strategy command result (shown in hint bar). Ok(msg) = success message, Err(e) = error.
-    pub fn set_strategy_result(&mut self, r: Result<String, String>) {
-        self.last_strategy_result = Some(r);
+    /// Set the last strategy/control command result (shown in the status bar).
+    pub fn set_command_status(&mut self, status: CommandStatusView) {
+        self.last_command_status = Some(status);
         self.mark_dirty();
     }
 
@@ -685,13 +872,37 @@ impl App {
             AppEvent::Connection { target, status } => match target {
                 ConnectionTarget::Nats => self.nats_status = status,
             },
+            AppEvent::CommandStatus(reply) => {
+                self.set_command_status(CommandStatusView::from_reply(&reply));
+            }
             AppEvent::MarketTick {
                 symbol,
                 bid,
                 ask,
                 last,
+                source,
+                source_priority,
             } => {
                 self.apply_tick(&symbol, bid, ask, last);
+                self.live_market_data_source =
+                    Some(MarketDataSourceMeta::new(source, source_priority));
+            }
+            AppEvent::MarketCandle {
+                symbol,
+                open,
+                high,
+                low,
+                close,
+                volume,
+            } => {
+                self.apply_candle(&symbol, open, high, low, close, volume);
+            }
+            AppEvent::AlertReceived {
+                level,
+                message,
+                timestamp,
+            } => {
+                self.apply_alert(level, message, timestamp);
             }
         }
     }
@@ -828,58 +1039,74 @@ impl App {
     pub fn handle_key(&mut self, key: KeyEvent) {
         self.needs_redraw = true;
 
-        if self.show_help {
-            self.show_help = false;
-            return;
-        }
-        if self.detail_popup.is_some() {
-            self.detail_popup = None;
-            return;
-        }
-        if self.settings_add_symbol_input.is_some() {
-            if let Some(ref mut buf) = self.settings_add_symbol_input {
-                match key.code {
-                    KeyCode::Enter => {
-                        if let Some(ref key_name) = self.settings_edit_config_key {
-                            let val = buf.trim().to_string();
-                            if !val.is_empty() {
-                                self.config_overrides.insert(key_name.clone(), val);
-                                let base = self.config_rx.borrow().clone();
-                                self.config = merge_config_overrides(base, &self.config_overrides);
-                                self.config_warning = validate_config_hint(&self.config);
-                                self.split_pane = self.config.split_pane;
-                            }
-                            self.settings_edit_config_key = None;
-                        } else {
-                            let s = buf.trim().to_uppercase();
-                            if !s.is_empty() {
-                                let mut list = self
-                                    .watchlist_override
-                                    .clone()
-                                    .unwrap_or_else(|| self.config.watchlist.clone());
-                                if !list.contains(&s) {
-                                    list.push(s);
-                                    list.sort();
-                                    self.watchlist_override = Some(list);
+        match self.input_mode() {
+            InputMode::Help => {
+                self.show_help = false;
+                return;
+            }
+            InputMode::DetailPopup => {
+                self.detail_popup = None;
+                return;
+            }
+            InputMode::SettingsEditConfig | InputMode::SettingsAddSymbol => {
+                if let Some(ref mut buf) = self.settings_add_symbol_input {
+                    match key.code {
+                        KeyCode::Enter => {
+                            if let Some(ref key_name) = self.settings_edit_config_key {
+                                let val = buf.trim().to_string();
+                                if !val.is_empty() {
+                                    self.config_overrides.insert(key_name.clone(), val);
+                                    let base = self.config_rx.borrow().clone();
+                                    self.config =
+                                        merge_config_overrides(base, &self.config_overrides);
+                                    self.config_warning = validate_config_hint(&self.config);
+                                    self.split_pane = self.config.split_pane;
+                                    self.set_command_status(CommandStatusView::success(
+                                        "settings",
+                                        format!("Saved override for {}.", key_name),
+                                    ));
+                                }
+                                self.settings_edit_config_key = None;
+                            } else {
+                                let s = buf.trim().to_uppercase();
+                                if !s.is_empty() {
+                                    let mut list = self
+                                        .watchlist_override
+                                        .clone()
+                                        .unwrap_or_else(|| self.config.watchlist.clone());
+                                    if !list.contains(&s) {
+                                        list.push(s.clone());
+                                        list.sort();
+                                        self.watchlist_override = Some(list);
+                                        self.set_command_status(CommandStatusView::success(
+                                            "settings",
+                                            format!("Added symbol {}.", s),
+                                        ));
+                                    }
                                 }
                             }
+                            self.settings_add_symbol_input = None;
                         }
-                        self.settings_add_symbol_input = None;
+                        KeyCode::Esc => {
+                            self.set_command_status(CommandStatusView::success(
+                                "settings",
+                                "Edit cancelled.",
+                            ));
+                            self.settings_edit_config_key = None;
+                            self.settings_add_symbol_input = None;
+                        }
+                        KeyCode::Backspace => {
+                            buf.pop();
+                        }
+                        KeyCode::Char(c) if !c.is_control() => {
+                            buf.push(c);
+                        }
+                        _ => {}
                     }
-                    KeyCode::Esc => {
-                        self.settings_edit_config_key = None;
-                        self.settings_add_symbol_input = None;
-                    }
-                    KeyCode::Backspace => {
-                        buf.pop();
-                    }
-                    KeyCode::Char(c) if !c.is_control() => {
-                        buf.push(c);
-                    }
-                    _ => {}
                 }
+                return;
             }
-            return;
+            _ => {}
         }
 
         if let Some(action) = crate::input::key_to_action(self, key) {
@@ -891,6 +1118,8 @@ impl App {
 #[cfg(test)]
 mod tests {
     use api::finance_rates::{CurveResponse, RatePointResponse};
+    use api::{Alert, AlertLevel, OrderSnapshot, SystemSnapshot};
+    use chrono::{Duration, Utc};
     use crossterm::event::{KeyCode, KeyEvent};
     use ratatui::backend::TestBackend;
     use ratatui::Terminal;
@@ -898,11 +1127,13 @@ mod tests {
 
     use std::collections::HashMap;
 
-    use super::{App, Tab};
+    use super::{App, InputMode, Tab};
     use crate::{
         config::TuiConfig,
         events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget},
+        models::SnapshotSource,
         models::TuiSnapshot,
+        ui::{charts::render_charts, render},
     };
 
     fn make_app() -> (
@@ -923,9 +1154,33 @@ mod tests {
             None,
             None,
             None,
-            None,
         );
         (app, snap_tx, event_tx)
+    }
+
+    fn make_snapshot() -> TuiSnapshot {
+        let mut snap = TuiSnapshot::new(SystemSnapshot::default(), SnapshotSource::Nats);
+        snap.inner.alerts.clear();
+        snap.refresh_display_dto();
+        snap
+    }
+
+    #[test]
+    fn input_mode_prefers_settings_edit_over_base_flags() {
+        let (mut app, _, _) = make_app();
+        app.settings_edit_config_key = Some("NATS_URL".into());
+        app.settings_add_symbol_input = Some("nats://demo".into());
+
+        assert_eq!(app.input_mode(), InputMode::SettingsEditConfig);
+    }
+
+    #[test]
+    fn input_mode_reports_chart_search_when_active() {
+        let (mut app, _, _) = make_app();
+        app.active_tab = Tab::Charts;
+        app.chart_search_visible = true;
+
+        assert_eq!(app.input_mode(), InputMode::ChartSearch);
     }
 
     #[test]
@@ -957,7 +1212,6 @@ mod tests {
             event_rx,
             config_rx,
             health_rx,
-            None,
             None,
             None,
             None,
@@ -1123,5 +1377,172 @@ mod tests {
             "Empty curve should show empty title; got:\n{}",
             content
         );
+    }
+
+    #[test]
+    fn charts_tab_shows_waiting_state_without_history() {
+        let (mut app, _, _) = make_app();
+        app.symbol_for_chart = "SPX".to_string();
+        app.active_tab = Tab::Charts;
+
+        let backend = TestBackend::new(60, 20);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let frame = terminal.draw(|f| render_charts(f, &app, f.area())).unwrap();
+
+        let content = buffer_to_string(&frame.area, &frame.buffer);
+        assert!(content.contains("Waiting for live candle data for SPX."));
+        assert!(content.contains("Synthetic candles are disabled."));
+        assert!(content.contains("Waiting for the first backend snapshot"));
+    }
+
+    #[test]
+    fn charts_tab_shows_stale_snapshot_warning_without_history() {
+        let (mut app, _, _) = make_app();
+        let mut snap = make_snapshot();
+        snap.received_at = Utc::now() - Duration::seconds(45);
+        app.set_snapshot(Some(snap));
+        app.symbol_for_chart = "SPX".to_string();
+        app.active_tab = Tab::Charts;
+
+        let backend = TestBackend::new(80, 20);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let frame = terminal.draw(|f| render_charts(f, &app, f.area())).unwrap();
+
+        let content = buffer_to_string(&frame.area, &frame.buffer);
+        assert!(content.contains("Waiting for live candle data for SPX."));
+        assert!(content.contains("Synthetic candles are disabled."));
+        assert!(content.contains("Latest snapshot is stale"));
+    }
+
+    #[test]
+    fn alerts_tab_displays_placeholder_when_no_snapshot() {
+        let (mut app, _, _) = make_app();
+        app.active_tab = Tab::Alerts;
+
+        let backend = TestBackend::new(40, 10);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let frame = terminal.draw(|f| render(f, &app)).unwrap();
+
+        let content = buffer_to_string(&frame.area, &frame.buffer);
+        assert!(content.contains("No alerts"));
+    }
+
+    #[test]
+    fn alerts_tab_renders_live_alert_messages() {
+        let (mut app, _, _) = make_app();
+        let mut snap = make_snapshot();
+        snap.inner.alerts = vec![
+            Alert {
+                level: AlertLevel::Info,
+                message: "provider switched to polygon".into(),
+                timestamp: Utc::now() - Duration::seconds(5),
+            },
+            Alert {
+                level: AlertLevel::Warning,
+                message: "SPX quote is stale".into(),
+                timestamp: Utc::now(),
+            },
+        ];
+        snap.refresh_display_dto();
+        app.set_snapshot(Some(snap));
+        app.active_tab = Tab::Alerts;
+
+        let backend = TestBackend::new(60, 10);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let frame = terminal.draw(|f| render(f, &app)).unwrap();
+
+        let content = buffer_to_string(&frame.area, &frame.buffer);
+        assert!(content.contains("provider switched to polygon"));
+        assert!(content.contains("SPX quote is stale"));
+    }
+
+    #[test]
+    fn help_overlay_documents_mode_aware_bindings() {
+        let (mut app, _, _) = make_app();
+        app.show_help = true;
+
+        let backend = TestBackend::new(100, 32);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let frame = terminal.draw(|f| render(f, &app)).unwrap();
+
+        let content = buffer_to_string(&frame.area, &frame.buffer);
+        assert!(content.contains("Key bindings"));
+    }
+
+    #[test]
+    fn split_pane_renders_visible_mode_label() {
+        let (mut app, _, _) = make_app();
+        app.split_pane = true;
+
+        let backend = TestBackend::new(100, 28);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let frame = terminal.draw(|f| render(f, &app)).unwrap();
+
+        let content = buffer_to_string(&frame.area, &frame.buffer);
+        assert!(content.contains("Split pane"));
+        assert!(content.contains("Dashboard + Positions"));
+        assert!(content.contains("PANE:DASH+POS"));
+    }
+
+    #[test]
+    fn orders_tab_renders_filter_mode_cues() {
+        let (mut app, _, _) = make_app();
+        let mut snap = make_snapshot();
+        snap.inner.orders = vec![OrderSnapshot {
+            id: "ord-1".into(),
+            symbol: "SPY".into(),
+            side: "BUY".into(),
+            quantity: 3,
+            status: "Submitted".into(),
+            submitted_at: Utc::now(),
+        }];
+        snap.refresh_display_dto();
+        app.set_snapshot(Some(snap));
+        app.active_tab = Tab::Orders;
+        app.order_filter_active = true;
+        app.order_filter = "SPY".into();
+
+        let backend = TestBackend::new(100, 20);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let frame = terminal.draw(|f| render(f, &app)).unwrap();
+
+        let content = buffer_to_string(&frame.area, &frame.buffer);
+        assert!(content.contains("Orders [FILTER]"));
+        assert!(content.contains("symbol/status/side"));
+        assert!(content.contains("SPY"));
+    }
+
+    #[test]
+    fn settings_tab_renders_config_edit_label_and_prompt() {
+        let (mut app, _, _) = make_app();
+        app.active_tab = Tab::Settings;
+        app.settings_section_index = 1;
+        app.settings_edit_config_key = Some("NATS_URL".into());
+        app.settings_add_symbol_input = Some("nats://demo".into());
+
+        let backend = TestBackend::new(100, 24);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let frame = terminal.draw(|f| render(f, &app)).unwrap();
+
+        let content = buffer_to_string(&frame.area, &frame.buffer);
+        assert!(content.contains("Config overrides (editing NATS_URL)"));
+        assert!(content.contains("Edit NATS_URL:"));
+        assert!(content.contains("Active section: Config"));
+    }
+
+    #[test]
+    fn hint_bar_renders_async_status_cues() {
+        let (mut app, _, _) = make_app();
+        app.active_tab = Tab::Yield;
+        app.yield_fetch_pending = true;
+        app.loans_fetch_pending = true;
+
+        let backend = TestBackend::new(220, 12);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let frame = terminal.draw(|f| render(f, &app)).unwrap();
+
+        let content = buffer_to_string(&frame.area, &frame.buffer);
+        assert!(content.contains("Yield:loading"));
+        assert!(content.contains("Loans:loading"));
     }
 }

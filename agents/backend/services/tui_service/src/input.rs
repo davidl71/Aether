@@ -5,8 +5,7 @@
 
 use crossterm::event::{KeyCode, KeyEvent};
 
-use crate::app::{App, DetailPopupContent, Tab};
-use crate::events::StrategyCommand;
+use crate::app::{App, DetailPopupContent, InputMode, Tab};
 
 /// Actions that can result from key events.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -108,47 +107,57 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         return None;
     }
 
+    let input_mode = app.input_mode();
+
     // Global actions that work even with overlays
     match key.code {
         KeyCode::Char('q') | KeyCode::Char('Q') => return Some(Action::Quit),
         KeyCode::Char('?') => return Some(Action::ShowHelp),
         KeyCode::Char('`') | KeyCode::Char('~') => return Some(Action::ToggleLogPanel),
-        KeyCode::Esc => return Some(Action::ToggleLogPanel),
+        KeyCode::Esc if matches!(input_mode, InputMode::Normal | InputMode::LogPanel) => {
+            return Some(Action::ToggleLogPanel)
+        }
         _ => {}
     }
 
-    // Skip other input when help or detail popup is open
-    if app.show_help || app.detail_popup.is_some() {
-        return Some(Action::NoOp);
-    }
-
-    // Settings input mode (add symbol / edit config) - handled separately
-    if app.settings_add_symbol_input.is_some() {
-        return Some(Action::NoOp); // Input mode handles its own keys
-    }
-
-    // Loan entry form input mode - return actions directly
-    if app.loan_entry.is_some() {
-        return match key.code {
-            KeyCode::Esc => Some(Action::LoansInputEscape),
-            KeyCode::Enter => Some(Action::LoansInputEnter),
-            KeyCode::Tab => Some(Action::LoansInputNavDown),
-            KeyCode::BackTab => Some(Action::LoansInputNavUp),
-            KeyCode::Up => Some(Action::LoansInputNavUp),
-            KeyCode::Down => Some(Action::LoansInputNavDown),
-            KeyCode::Backspace => Some(Action::LoansInputBackspace),
-            KeyCode::Char(c) if c.is_ascii_digit() || c == '-' || c == '.' => {
-                Some(Action::LoansInputChar(c))
-            }
-            KeyCode::Char(c) if c.is_alphabetic() => Some(Action::LoansInputChar(c)),
-            _ => Some(Action::NoOp),
-        };
+    match input_mode {
+        InputMode::Help | InputMode::DetailPopup => return Some(Action::NoOp),
+        InputMode::SettingsEditConfig | InputMode::SettingsAddSymbol => return Some(Action::NoOp),
+        InputMode::LoanForm => {
+            return match key.code {
+                KeyCode::Esc => Some(Action::LoansInputEscape),
+                KeyCode::Enter => Some(Action::LoansInputEnter),
+                KeyCode::Tab => Some(Action::LoansInputNavDown),
+                KeyCode::BackTab => Some(Action::LoansInputNavUp),
+                KeyCode::Up => Some(Action::LoansInputNavUp),
+                KeyCode::Down => Some(Action::LoansInputNavDown),
+                KeyCode::Backspace => Some(Action::LoansInputBackspace),
+                KeyCode::Char(c) if c.is_ascii_digit() || c == '-' || c == '.' => {
+                    Some(Action::LoansInputChar(c))
+                }
+                KeyCode::Char(c) if c.is_alphabetic() => Some(Action::LoansInputChar(c)),
+                _ => Some(Action::NoOp),
+            };
+        }
+        _ => {}
     }
 
     match key.code {
         // Yield tab symbol navigation (before generic tab switch)
         KeyCode::Left if app.active_tab == Tab::Yield => Some(Action::YieldSymbolPrev),
         KeyCode::Right if app.active_tab == Tab::Yield => Some(Action::YieldSymbolNext),
+
+        // Charts pill navigation (before generic tab switch)
+        KeyCode::Left
+            if app.active_tab == Tab::Charts && !matches!(input_mode, InputMode::ChartSearch) =>
+        {
+            Some(Action::ChartPillLeft)
+        }
+        KeyCode::Right
+            if app.active_tab == Tab::Charts && !matches!(input_mode, InputMode::ChartSearch) =>
+        {
+            Some(Action::ChartPillRight)
+        }
 
         // Tab navigation
         KeyCode::Tab | KeyCode::Right => Some(Action::TabNext),
@@ -196,11 +205,23 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
             Some(Action::OrdersCancel)
         }
         KeyCode::Char('/') if app.active_tab == Tab::Orders => Some(Action::OrdersFilterFocus),
-        KeyCode::Esc if app.active_tab == Tab::Orders => Some(Action::OrdersFilterClear),
-        KeyCode::Char(c) if app.active_tab == Tab::Orders && !c.is_control() => {
+        KeyCode::Esc
+            if app.active_tab == Tab::Orders && matches!(input_mode, InputMode::OrdersFilter) =>
+        {
+            Some(Action::OrdersFilterClear)
+        }
+        KeyCode::Char(c)
+            if app.active_tab == Tab::Orders
+                && matches!(input_mode, InputMode::OrdersFilter)
+                && !c.is_control() =>
+        {
             Some(Action::OrdersFilterChar(c))
         }
-        KeyCode::Backspace if app.active_tab == Tab::Orders => Some(Action::OrdersFilterBackspace),
+        KeyCode::Backspace
+            if app.active_tab == Tab::Orders && matches!(input_mode, InputMode::OrdersFilter) =>
+        {
+            Some(Action::OrdersFilterBackspace)
+        }
 
         // Loans
         KeyCode::Up if app.active_tab == Tab::Loans => Some(Action::LoansScrollUp),
@@ -245,38 +266,50 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
 
         // Charts
         KeyCode::Char('/') if app.active_tab == Tab::Charts => Some(Action::ChartSearchFocus),
-        KeyCode::Left if app.active_tab == Tab::Charts && !app.chart_search_visible => {
-            Some(Action::ChartPillLeft)
-        }
-        KeyCode::Right if app.active_tab == Tab::Charts && !app.chart_search_visible => {
-            Some(Action::ChartPillRight)
-        }
-        KeyCode::Up if app.active_tab == Tab::Charts && !app.chart_search_visible => {
+        KeyCode::Up
+            if app.active_tab == Tab::Charts && !matches!(input_mode, InputMode::ChartSearch) =>
+        {
             Some(Action::ChartPillUp)
         }
-        KeyCode::Down if app.active_tab == Tab::Charts && !app.chart_search_visible => {
+        KeyCode::Down
+            if app.active_tab == Tab::Charts && !matches!(input_mode, InputMode::ChartSearch) =>
+        {
             Some(Action::ChartPillDown)
         }
-        KeyCode::Enter if app.active_tab == Tab::Charts && !app.chart_search_visible => {
+        KeyCode::Enter
+            if app.active_tab == Tab::Charts && !matches!(input_mode, InputMode::ChartSearch) =>
+        {
             Some(Action::ChartPillSelect)
         }
-        KeyCode::Esc if app.active_tab == Tab::Charts && app.chart_search_visible => {
+        KeyCode::Esc
+            if app.active_tab == Tab::Charts && matches!(input_mode, InputMode::ChartSearch) =>
+        {
             Some(Action::ChartSearchEscape)
         }
-        KeyCode::Enter if app.active_tab == Tab::Charts && app.chart_search_visible => {
+        KeyCode::Enter
+            if app.active_tab == Tab::Charts && matches!(input_mode, InputMode::ChartSearch) =>
+        {
             Some(Action::ChartSearchEnter)
         }
-        KeyCode::Up if app.active_tab == Tab::Charts && app.chart_search_visible => {
+        KeyCode::Up
+            if app.active_tab == Tab::Charts && matches!(input_mode, InputMode::ChartSearch) =>
+        {
             Some(Action::ChartSearchUp)
         }
-        KeyCode::Down if app.active_tab == Tab::Charts && app.chart_search_visible => {
+        KeyCode::Down
+            if app.active_tab == Tab::Charts && matches!(input_mode, InputMode::ChartSearch) =>
+        {
             Some(Action::ChartSearchDown)
         }
-        KeyCode::Backspace if app.active_tab == Tab::Charts && app.chart_search_visible => {
+        KeyCode::Backspace
+            if app.active_tab == Tab::Charts && matches!(input_mode, InputMode::ChartSearch) =>
+        {
             Some(Action::ChartSearchBackspace)
         }
         KeyCode::Char(c)
-            if app.active_tab == Tab::Charts && app.chart_search_visible && !c.is_control() =>
+            if app.active_tab == Tab::Charts
+                && matches!(input_mode, InputMode::ChartSearch)
+                && !c.is_control() =>
         {
             Some(Action::ChartSearchChar(c))
         }
@@ -494,9 +527,14 @@ pub fn apply_action(app: &mut App, action: Action) {
             }
         }
         Action::OrdersFilterFocus => {
-            app.order_filter.clear();
+            app.order_filter_active = true;
+            app.set_command_status(crate::app::CommandStatusView::success(
+                "orders_filter",
+                "Filter mode active: type symbol, status, or side; Esc to exit.",
+            ));
         }
         Action::OrdersFilterChar(c) => {
+            app.order_filter_active = true;
             app.order_filter.push(c);
         }
         Action::OrdersFilterBackspace => {
@@ -504,11 +542,14 @@ pub fn apply_action(app: &mut App, action: Action) {
         }
         Action::OrdersFilterClear => {
             app.order_filter.clear();
+            app.order_filter_active = false;
+            app.set_command_status(crate::app::CommandStatusView::success(
+                "orders_filter",
+                "Filter cleared.",
+            ));
         }
         Action::OrdersCancel => {
-            if let Some(ref tx) = app.strategy_cmd_tx {
-                let _ = tx.send(StrategyCommand::CancelAll);
-            }
+            app.set_command_status(crate::app::CommandStatusView::disabled("cancel_all"));
         }
         Action::LoansScrollUp => {
             app.loans_scroll = app.loans_scroll.saturating_sub(1);
@@ -548,6 +589,7 @@ pub fn apply_action(app: &mut App, action: Action) {
             if let Some(ref mut entry) = app.loan_entry {
                 if entry.current_field == 2 {
                     entry.toggle_loan_type();
+                    entry.validation_error = None;
                 } else {
                     entry.calculate_maturity();
                     entry.calculate_monthly_payment();
@@ -558,12 +600,16 @@ pub fn apply_action(app: &mut App, action: Action) {
                             }
                             app.loan_entry = None;
                         }
+                    } else {
+                        entry.validation_error =
+                            Some("Missing or invalid required fields".to_string());
                     }
                 }
             }
         }
         Action::LoansInputNavUp => {
             if let Some(ref mut entry) = app.loan_entry {
+                entry.validation_error = None;
                 loop {
                     if entry.current_field > 0 {
                         entry.current_field -= 1;
@@ -579,6 +625,7 @@ pub fn apply_action(app: &mut App, action: Action) {
         }
         Action::LoansInputNavDown => {
             if let Some(ref mut entry) = app.loan_entry {
+                entry.validation_error = None;
                 loop {
                     if entry.current_field < 8 {
                         entry.current_field += 1;
@@ -737,13 +784,7 @@ pub fn apply_action(app: &mut App, action: Action) {
             app.scenarios_dte_half_width = (app.scenarios_dte_half_width + 1).min(60);
         }
         Action::ScenariosExecute => {
-            let filtered = crate::ui::filtered_scenarios(app);
-            let idx = app.scenarios_scroll.min(filtered.len().saturating_sub(1));
-            if let Some(scenario) = filtered.get(idx) {
-                if let Some(ref tx) = app.strategy_cmd_tx {
-                    let _ = tx.send(StrategyCommand::ExecuteScenario(scenario.clone()));
-                }
-            }
+            app.set_command_status(crate::app::CommandStatusView::disabled("execute_scenario"));
         }
         Action::ScenariosCycleStrikeWidth => {
             app.scenarios_strike_width_filter = match app.scenarios_strike_width_filter {
@@ -862,11 +903,19 @@ pub fn apply_action(app: &mut App, action: Action) {
                 return;
             }
             app.settings_add_symbol_input = Some(String::new());
+            app.set_command_status(crate::app::CommandStatusView::success(
+                "settings",
+                "Add symbol mode active.",
+            ));
         }
         Action::SettingsEditConfig => {
             if let Some((key, value)) = app.config_key_value_at(app.settings_config_key_index) {
                 app.settings_edit_config_key = Some(key);
                 app.settings_add_symbol_input = Some(value);
+                app.set_command_status(crate::app::CommandStatusView::success(
+                    "settings",
+                    "Config edit mode active.",
+                ));
             }
         }
         Action::SettingsDelete => {
@@ -881,10 +930,18 @@ pub fn apply_action(app: &mut App, action: Action) {
                 app.watchlist_override = Some(list);
                 app.settings_symbol_index =
                     app.settings_symbol_index.min(new_len.saturating_sub(1));
+                app.set_command_status(crate::app::CommandStatusView::success(
+                    "settings",
+                    "Watchlist symbol removed.",
+                ));
             }
         }
         Action::SettingsReset => {
             app.watchlist_override = None;
+            app.set_command_status(crate::app::CommandStatusView::success(
+                "settings",
+                "Watchlist reset to config.",
+            ));
         }
         Action::LogScrollUp => {
             app.log_state.transition(tui_logger::TuiWidgetEvent::UpKey);
@@ -952,44 +1009,19 @@ pub fn apply_action(app: &mut App, action: Action) {
             tui_logger::set_default_level(log::LevelFilter::Debug);
         }
         Action::ModeCycle => {
-            if let Some(ref tx) = app.strategy_cmd_tx {
-                let current = app
-                    .snapshot()
-                    .as_ref()
-                    .map(|s| s.dto().mode.to_uppercase())
-                    .unwrap_or_else(|| "DRY-RUN".into());
-                let current = if current == "TUI" {
-                    "DRY-RUN"
-                } else {
-                    current.as_str()
-                };
-                let next = match current {
-                    "LIVE" => "MOCK",
-                    "MOCK" => "DRY-RUN",
-                    _ => "LIVE",
-                };
-                let _ = tx.send(StrategyCommand::SetMode(next.to_string()));
-            }
+            app.set_command_status(crate::app::CommandStatusView::disabled("set_mode"));
         }
         Action::StrategyStart => {
-            if let Some(ref tx) = app.strategy_cmd_tx {
-                let _ = tx.send(StrategyCommand::Start);
-            }
+            app.set_command_status(crate::app::CommandStatusView::disabled("start"));
         }
         Action::StrategyStop => {
-            if let Some(ref tx) = app.strategy_cmd_tx {
-                let _ = tx.send(StrategyCommand::Stop);
-            }
+            app.set_command_status(crate::app::CommandStatusView::disabled("stop"));
         }
         Action::StrategyCancelAll => {
-            if let Some(ref tx) = app.strategy_cmd_tx {
-                let _ = tx.send(StrategyCommand::CancelAll);
-            }
+            app.set_command_status(crate::app::CommandStatusView::disabled("cancel_all"));
         }
         Action::ForceSnapshot => {
-            if let Some(ref tx) = app.strategy_cmd_tx {
-                let _ = tx.send(StrategyCommand::PublishSnapshot);
-            }
+            app.set_command_status(crate::app::CommandStatusView::disabled("publish_snapshot"));
         }
         Action::SplitPaneToggle => {
             app.split_pane = !app.split_pane;

@@ -16,14 +16,45 @@ pub fn render_orders(f: &mut Frame, app: &App, area: Rect) {
         .split(area);
 
     let filter_text = if app.order_filter.is_empty() {
-        "Filter: / to activate".to_string()
+        if app.order_filter_active {
+            "Filter mode active: type symbol/status/side, Esc to exit".to_string()
+        } else {
+            "Filter: / to activate".to_string()
+        }
     } else {
-        format!("Filter: {} (ESC to clear)", app.order_filter)
+        format!(
+            "Filter [{}]: {} (symbol/status/side, Esc to clear)",
+            if app.order_filter_active {
+                "ACTIVE"
+            } else {
+                "saved"
+            },
+            app.order_filter
+        )
     };
     let filter_widget = Paragraph::new(filter_text)
-        .block(Block::default().title("Orders").borders(Borders::ALL))
+        .block(
+            Block::default()
+                .title(if app.order_filter_active {
+                    "Orders [FILTER]"
+                } else {
+                    "Orders"
+                })
+                .borders(Borders::ALL)
+                .border_style(if app.order_filter_active {
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default()
+                }),
+        )
         .style(if app.order_filter.is_empty() {
-            Style::default().fg(Color::DarkGray)
+            if app.order_filter_active {
+                Style::default().fg(Color::Cyan)
+            } else {
+                Style::default().fg(Color::DarkGray)
+            }
         } else {
             Style::default().fg(Color::Cyan)
         });
@@ -67,6 +98,15 @@ pub fn render_orders(f: &mut Frame, app: &App, area: Rect) {
         vec![Row::new(["No data", "", "", "", "", ""])]
     };
 
+    let selected_order_summary = if let Some(ref snap) = app.snapshot() {
+        let filtered = app.filtered_orders(snap);
+        filtered
+            .get(app.orders_scroll.min(filtered.len().saturating_sub(1)))
+            .map(|order| format!("{} {} {}", order.symbol, order.side, order.status))
+    } else {
+        None
+    };
+
     let len = all_rows.len();
     let visible_height = (chunks[1].height as usize).saturating_sub(2).max(1);
     let scroll = if len <= 1 {
@@ -78,7 +118,32 @@ pub fn render_orders(f: &mut Frame, app: &App, area: Rect) {
         .into_iter()
         .skip(scroll)
         .take(visible_height)
+        .enumerate()
+        .map(|(i, row)| {
+            let is_selected = i + scroll == app.orders_scroll;
+            if is_selected {
+                row.style(
+                    Style::default()
+                        .fg(Color::Black)
+                        .bg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                )
+            } else {
+                row
+            }
+        })
         .collect();
+
+    let table_title = selected_order_summary
+        .map(|summary| {
+            format!(
+                "Orders  [↑↓ PgUp/PgDn]:select  [Enter]:detail  [read-only]  Sel: {}",
+                summary
+            )
+        })
+        .unwrap_or_else(|| {
+            "Orders  [↑↓ PgUp/PgDn]:select  [Enter]:detail  [read-only]".to_string()
+        });
 
     let table = Table::new(
         window,
@@ -92,11 +157,7 @@ pub fn render_orders(f: &mut Frame, app: &App, area: Rect) {
         ],
     )
     .header(header)
-    .block(
-        Block::default()
-            .title("Orders  [↑↓ PgUp/PgDn]:scroll  [Enter]:detail")
-            .borders(Borders::ALL),
-    );
+    .block(Block::default().title(table_title).borders(Borders::ALL));
 
     f.render_widget(table, chunks[1]);
 }
