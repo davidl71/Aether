@@ -930,18 +930,15 @@ pub fn apply_action(app: &mut App, action: Action) {
                 app.watchlist_override = Some(list);
                 app.settings_symbol_index =
                     app.settings_symbol_index.min(new_len.saturating_sub(1));
-                app.set_command_status(crate::app::CommandStatusView::success(
-                    "settings",
-                    "Watchlist symbol removed.",
-                ));
+                app.push_toast(
+                    "Symbol removed from watchlist.",
+                    crate::app::ToastLevel::Info,
+                );
             }
         }
         Action::SettingsReset => {
             app.watchlist_override = None;
-            app.set_command_status(crate::app::CommandStatusView::success(
-                "settings",
-                "Watchlist reset to config.",
-            ));
+            app.push_toast("Watchlist reset to config.", crate::app::ToastLevel::Info);
         }
         Action::LogScrollUp => {
             app.log_state.transition(tui_logger::TuiWidgetEvent::UpKey);

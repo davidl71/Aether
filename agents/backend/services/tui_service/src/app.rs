@@ -20,6 +20,15 @@ use crate::ui::Candle;
 
 const SPARKLINE_HISTORY_SIZE: usize = 20;
 const CHART_HISTORY_SIZE: usize = 120;
+const TOAST_TTL_SECS: u64 = 3;
+
+/// Severity level for transient toast notifications.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ToastLevel {
+    Info,
+    Warning,
+    Error,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Tab {
@@ -346,6 +355,8 @@ pub struct App {
     pub should_quit: bool,
     /// Last command result from strategy/control actions (shown in status/hint bar).
     pub last_command_status: Option<CommandStatusView>,
+    /// Transient toast notifications (auto-expire after TOAST_TTL_SECS).
+    pub toast_queue: VecDeque<(String, ToastLevel, Instant)>,
     /// When true, show the help overlay (key bindings).
     pub show_help: bool,
     /// When true, show the debug log panel overlay (toggled with backtick).
@@ -480,6 +491,7 @@ impl App {
             nats_status: ConnectionStatus::new(ConnectionState::Starting, "Connecting to NATS"),
             should_quit: false,
             last_command_status: None,
+            toast_queue: VecDeque::new(),
             show_help: false,
             show_log_panel: false,
             detail_popup: None,
@@ -783,10 +795,25 @@ impl App {
         self.mark_dirty();
     }
 
+    /// Push a transient toast notification. Toasts expire after TOAST_TTL_SECS seconds.
+    pub fn push_toast(&mut self, msg: impl Into<String>, level: ToastLevel) {
+        self.toast_queue
+            .push_back((msg.into(), level, Instant::now()));
+        self.mark_dirty();
+    }
+
     /// Pull latest snapshot and config updates, process queued events.
     /// Returns true if the UI state changed and needs redraw.
     pub fn tick(&mut self) {
         let mut changed = false;
+
+        // Drain expired toasts
+        let ttl = std::time::Duration::from_secs(TOAST_TTL_SECS);
+        let before = self.toast_queue.len();
+        self.toast_queue.retain(|(_, _, ts)| ts.elapsed() < ttl);
+        if self.toast_queue.len() != before {
+            changed = true;
+        }
 
         // Apply hot-reloaded config if it changed (file/env); then apply in-TUI overrides
         if self.config_rx.has_changed().unwrap_or(false) {
@@ -1078,10 +1105,10 @@ impl App {
                                         list.push(s.clone());
                                         list.sort();
                                         self.watchlist_override = Some(list);
-                                        self.set_command_status(CommandStatusView::success(
-                                            "settings",
-                                            format!("Added symbol {}.", s),
-                                        ));
+                                        self.push_toast(
+                                            format!("Symbol {} added to watchlist.", s),
+                                            ToastLevel::Info,
+                                        );
                                     }
                                 }
                             }

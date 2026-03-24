@@ -680,6 +680,19 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         spans.push(Span::styled(n.to_string(), alert_style));
     }
 
+    if let Some((msg, level, _)) = app.toast_queue.front() {
+        use crate::app::ToastLevel;
+        let color = match level {
+            ToastLevel::Info => Color::Cyan,
+            ToastLevel::Warning => Color::Yellow,
+            ToastLevel::Error => Color::Red,
+        };
+        spans.push(Span::raw("  | "));
+        spans.push(Span::styled(
+            truncate_detail(msg, 40),
+            Style::default().fg(color).add_modifier(Modifier::BOLD),
+        ));
+    }
     if let Some(ref cmd) = app.last_command_status {
         spans.push(Span::raw("  | "));
         spans.push(Span::styled(
