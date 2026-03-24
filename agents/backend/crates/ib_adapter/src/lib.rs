@@ -11,6 +11,7 @@
 //! behavior in `backend_service` (tws_market_data, tws_positions) and
 //! `docs/platform/TWS_RECONNECT_BACKOFF.md`.
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -19,10 +20,11 @@ use futures::future::try_join_all;
 use ibapi::accounts::types::AccountGroup;
 use ibapi::accounts::{AccountSummaryTags, PositionUpdate};
 use ibapi::contracts::{Contract, LegAction, OptionChain, SecurityType};
+use ibapi::market_data::realtime::{TickType, TickTypes};
 use ibapi::Client as IbClient;
 use ibapi::Error as IbError;
 use tokio::sync::{mpsc, RwLock};
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 pub use broker_engine::construct_box_spread_order;
 pub use broker_engine::domain::{
@@ -219,6 +221,9 @@ pub struct IbAdapter {
     market_data_tx: mpsc::Sender<MarketDataEvent>,
     position_tx: mpsc::Sender<PositionEvent>,
     order_tx: mpsc::Sender<OrderStatusEvent>,
+    /// Active market data subscriptions keyed by contract_id.
+    /// Each entry is a cancellation trigger.
+    market_data_subscriptions: Arc<RwLock<HashMap<i64, mpsc::Sender<()>>>>,
 }
 
 impl IbAdapter {
@@ -234,6 +239,7 @@ impl IbAdapter {
             market_data_tx,
             position_tx,
             order_tx,
+            market_data_subscriptions: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -275,17 +281,135 @@ impl IbAdapter {
         if *self.state.read().await != ConnectionState::Connected {
             return Err(BrokerError::NotConnected);
         }
+
+        let key = if contract_id != 0 {
+            contract_id
+        } else {
+            let mut h: i64 = 0;
+            for b in symbol.bytes() {
+                h = h.wrapping_mul(31).wrapping_add(b as i64);
+            }
+            h
+        };
+
+        // Check if already subscribed
+        {
+            let subs = self.market_data_subscriptions.read().await;
+            if subs.contains_key(&key) {
+                debug!(symbol, key, "already subscribed to market data");
+                return Ok(());
+            }
+        }
+
         let arc = self.client.read().await.clone();
         let client = arc.as_ref().ok_or(BrokerError::NotConnected)?;
         let mut contract = Contract::stock(symbol).build();
         if contract_id != 0 {
             contract.contract_id = contract_id as i32;
         }
-        client
+
+        let sub = client
             .market_data(&contract)
             .subscribe()
             .await
             .map_err(|e: IbError| BrokerError::Other(e.to_string()))?;
+
+        // Create cancellation channel for this subscription
+        let (cancel_tx, mut cancel_rx) = mpsc::channel::<()>(1);
+        {
+            let mut subs = self.market_data_subscriptions.write().await;
+            subs.insert(key, cancel_tx);
+        }
+
+        let market_data_tx = self.market_data_tx.clone();
+        let subs = self.market_data_subscriptions.clone();
+        let symbol_owned = symbol.to_string();
+
+        // Spawn task to forward ticks to market_data_tx
+        tokio::spawn(async move {
+            let symbol = symbol_owned;
+            let mut sub = sub;
+            let mut bid = 0.0_f64;
+            let mut ask = 0.0_f64;
+            let mut last = 0.0_f64;
+            let mut volume = 0u64;
+
+            loop {
+                tokio::select! {
+                    _ = cancel_rx.recv() => {
+                        debug!(%symbol, "market data subscription cancelled");
+                        break;
+                    }
+                    tick_opt = sub.next() => {
+                        match tick_opt {
+                            Some(Ok(tick)) => {
+                                match &tick {
+                                    TickTypes::Price(pt) => {
+                                        match pt.tick_type {
+                                            TickType::Bid | TickType::DelayedBid | TickType::DelayedBidOption => bid = pt.price,
+                                            TickType::Ask | TickType::DelayedAsk | TickType::DelayedAskOption => ask = pt.price,
+                                            TickType::Last | TickType::DelayedLast | TickType::DelayedLastOption => last = pt.price,
+                                            TickType::Close | TickType::DelayedClose => {
+                                                if last == 0.0 { last = pt.price; }
+                                                if bid == 0.0 { bid = pt.price; }
+                                                if ask == 0.0 { ask = pt.price; }
+                                            }
+                                            _ => {}
+                                        }
+                                    }
+                                    TickTypes::PriceSize(ps) => {
+                                        match ps.price_tick_type {
+                                            TickType::Bid | TickType::DelayedBid | TickType::DelayedBidOption => bid = ps.price,
+                                            TickType::Ask | TickType::DelayedAsk | TickType::DelayedAskOption => ask = ps.price,
+                                            _ => {}
+                                        }
+                                        volume = ps.size as u64;
+                                    }
+                                    TickTypes::Size(s) => {
+                                        volume = s.size as u64;
+                                    }
+                                    _ => {}
+                                }
+
+                                // Send event when we have bid and ask
+                                if bid > 0.0 && ask > 0.0 {
+                                    let event = MarketDataEvent {
+                                        contract_id: key,
+                                        symbol: symbol.clone(),
+                                        bid,
+                                        ask,
+                                        last,
+                                        volume,
+                                        timestamp: chrono::Utc::now(),
+                                        quote_quality: 0,
+                                        source: "tws".to_string(),
+                                        source_priority: 100,
+                                    };
+                                    if market_data_tx.send(event).await.is_err() {
+                                        warn!(%symbol, "market_data_tx dropped, stopping");
+                                        break;
+                                    }
+                                }
+                            }
+                            Some(Err(e)) => {
+                                debug!(error = %e, %symbol, "market data tick error");
+                            }
+                            None => {
+                                debug!(%symbol, "market data subscription ended");
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Cleanup subscription
+            let mut subs = subs.write().await;
+            subs.remove(&key);
+            debug!(%symbol, "market data subscription task exiting");
+        });
+
+        debug!(symbol, key, "started market data subscription");
         Ok(())
     }
 
