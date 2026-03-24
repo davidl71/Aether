@@ -2,3 +2,10 @@
 # Remove when upgrading to a PyO3 version that supports the system Python.
 [env]
 PYO3_USE_ABI3_FORWARD_COMPATIBILITY = "1"
+
+[build]
+rustc-wrapper = "../../scripts/rustc-wrapper.sh"
+
+[profile.dev]
+incremental = false
+debug = 0

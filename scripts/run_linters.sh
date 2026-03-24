@@ -566,7 +566,6 @@ run_rust_lint() {
   fi
   info "Running Rust lint (cargo fmt + cargo clippy) (agents/backend)"
   if command -v sccache >/dev/null 2>&1; then
-    export RUSTC_WRAPPER=sccache
     export SCCACHE_CACHE_SIZE="${SCCACHE_CACHE_SIZE:-10G}"
     mkdir -p "${SCCACHE_DIR}"
   fi
@@ -576,22 +575,22 @@ run_rust_lint() {
 }
 
 run_exarp_go_lint() {
-  local exarp_script="${ROOT_DIR}/scripts/run_exarp_go_tool.sh"
+  local exarp_script="${ROOT_DIR}/scripts/run_exarp_go.sh"
   # exarp-go lint supports non-Go projects (e.g. shellcheck, markdownlint by path). No need to require go.mod.
   if [[ ! -x "${exarp_script}" ]]; then
-    warn "Skipping exarp-go lint (run_exarp_go_tool.sh not executable)"
+    warn "Skipping exarp-go lint (run_exarp_go.sh not executable)"
     return 0
   fi
-  if ! "${exarp_script}" --list &>/dev/null; then
+  if ! "${exarp_script}" -list -quiet &>/dev/null; then
     warn "Skipping exarp-go lint (exarp-go not found or not in PATH)"
     return 0
   fi
   info "Running exarp-go lint (Go, shell, markdown, etc.; supports non-Go projects)"
   local status=0
   if [[ "${LINT_FIX:-0}" -eq 1 ]]; then
-    "${exarp_script}" lint '{"fix":true}' || status=0
+    "${exarp_script}" -tool lint -args '{"fix":true}' -quiet || status=0
   else
-    "${exarp_script}" lint || status=0
+    "${exarp_script}" -tool lint -quiet || status=0
   fi
   if [[ ${status} -ne 0 ]]; then
     warn "exarp-go lint reported issues (optional; install exarp-go for full coverage)"

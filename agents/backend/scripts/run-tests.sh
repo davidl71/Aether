@@ -5,8 +5,7 @@ BACKEND_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 if command -v cargo >/dev/null 2>&1; then
   if command -v sccache >/dev/null 2>&1; then
-    export RUSTC_WRAPPER=sccache
-    export SCCACHE_DIR="${SCCACHE_DIR:-${BACKEND_DIR}/../.cache/sccache}"
+    export SCCACHE_DIR="${SCCACHE_DIR:-${HOME}/.cache/sccache}"
     export SCCACHE_CACHE_SIZE="${SCCACHE_CACHE_SIZE:-10G}"
     mkdir -p "${SCCACHE_DIR}"
   fi

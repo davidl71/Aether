@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-# Shared workspace-local cache/temp/artifact path defaults for build and test scripts.
+# Shared workspace cache/temp/artifact path defaults for build and test scripts.
+# Rust dependency sources should stay in the normal global Cargo home unless the
+# caller explicitly overrides CARGO_HOME.
 
 if [[ -n "${__IB_BOX_WORKSPACE_PATHS_INCLUDED:-}" ]]; then
   # shellcheck disable=SC2317
@@ -30,11 +32,11 @@ setup_workspace_paths() {
   export TMPDIR="${TMPDIR:-${WORKSPACE_TMP_ROOT}}"
   export UV_CACHE_DIR="${UV_CACHE_DIR:-${WORKSPACE_CACHE_ROOT}/uv}"
   export PIP_CACHE_DIR="${PIP_CACHE_DIR:-${WORKSPACE_CACHE_ROOT}/pip}"
-  export SCCACHE_DIR="${SCCACHE_DIR:-${WORKSPACE_CACHE_ROOT}/sccache}"
+  export SCCACHE_DIR="${SCCACHE_DIR:-${HOME}/.cache/sccache}"
   export CCACHE_DIR="${CCACHE_DIR:-${WORKSPACE_CACHE_ROOT}/ccache}"
   export GOCACHE="${GOCACHE:-${WORKSPACE_CACHE_ROOT}/go-build}"
   export GOMODCACHE="${GOMODCACHE:-${WORKSPACE_CACHE_ROOT}/go-mod}"
-  export CARGO_HOME="${CARGO_HOME:-${WORKSPACE_CACHE_ROOT}/cargo}"
+  export CARGO_HOME="${CARGO_HOME:-${HOME}/.cargo}"
   export DISTCC_DIR="${DISTCC_DIR:-${WORKSPACE_CACHE_ROOT}/distcc}"
 
   mkdir -p \

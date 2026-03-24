@@ -1,12 +1,21 @@
-# Aether - Synthetic Financing Platform
+# Aether - Relative-Value Financing Console
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-stable-blue.svg)]()
 
-Comprehensive multi-asset financing optimization system for managing synthetic financing across options, futures, bonds, bank loans, and pension funds. Provides unified portfolio management, cash flow modeling, opportunity simulation, and multi-instrument relationship optimization across 21+ accounts and multiple brokers.
+Comprehensive multi-asset financing exploration system for comparing synthetic financing across options, futures, bonds, bank loans, and pension funds. Provides unified portfolio visibility, cash flow modeling, opportunity exploration, and multi-instrument relationship analysis across 21+ accounts and multiple brokers.
 
 **Note**: Box spreads are one strategy component of this platform, used for spare cash allocation (7-10% of portfolio) to achieve T-bill-equivalent yields.
+
+**Current product mode:** Aether is operating as a **read-only relative-value exploration console**. Near-term work prioritizes market-data truth, yield validity, positions visibility, daemon health, and cross-instrument comparison. Execution workflows remain deprecated unless explicitly re-enabled by a newer product decision.
+
+**Current runtime status:** This repository is **Rust-first**. The active
+backend, TUI, CLI, broker adapter, quant/risk, and messaging surfaces live
+under `agents/backend/`. Historical references to `native/`, `ib_box_spread`,
+Catch2, FTXUI, and removed C++ build flows in older sections of this README or
+archived docs should be treated as legacy context unless explicitly marked as
+current.
 
 ## ⚠️ Important Disclaimers
 
@@ -59,33 +68,33 @@ archived implementation/reference material while the project focuses on TUI/CLI.
 
 ## Strategies
 
-### Box Spread Strategy ⭐ (Active)
+### Box Spread Strategy
 
 **Purpose**: Synthetic financing via options arbitrage
 **Allocation**: 7-10% of portfolio (spare cash)
 **Use Case**: Enhanced yield on spare cash comparable to T-bills or SOFR
 
-**Features**:
+**Current focus**:
 
-- ✅ Automated box spread identification and analysis
+- ✅ Box spread identification and analysis
 - ✅ Real-time options chain monitoring
-- ✅ Risk-based position sizing and management
-- ✅ IBKR BAG order execution (atomic 4-leg execution)
+- ✅ Comparative financing views against T-bills, bonds, and loans
+- ⚠️ Execution workflows are currently deprecated in read-only exploration mode
 
 **Documentation**: See [Box Spread Strategy Documentation](docs/strategies/box-spread/README.md)
 
-### Futures Strategy (Planned)
+### Futures Strategy (Exploration)
 
 **Purpose**: Implied financing rates from futures
 **Status**: Design phase
 
-### Bond Strategy (Planned)
+### Bond Strategy (Exploration)
 
 **Purpose**: Direct financing via bond ETFs
 **Allocation**: 30-40% of portfolio (core investments)
 **Status**: Design phase
 
-### Loan Strategy (Planned)
+### Loan Strategy (Exploration)
 
 **Purpose**: Secured financing via bank/pension loans
 **Status**: Design phase
@@ -133,6 +142,20 @@ Rust dependencies are managed via Cargo.toml. The following are automatically fe
 - [serde](https://serde.rs/) - Serialization
 - [reqwest](https://docs.rs/reqwest/) - HTTP client
 - [tokio-tungstenite](https://docs.rs/tokio-tungstenite/) - WebSocket
+
+### Build Cache Policy
+
+The active Rust workspace uses this default cache/layout policy:
+
+- **Global/shared**: Cargo dependency sources in `~/.cargo/registry` and `~/.cargo/git`
+- **Global/shared when installed**: `sccache` binary and cache, used automatically by plain `cargo` in `agents/backend/`
+- **Local to this repo**: Rust build outputs in `agents/backend/target`
+- **Local to this repo**: Python virtual environments such as `.venv`
+- **Local to each app**: Node `node_modules`
+
+This keeps dependency downloads shared across workspaces without forcing a shared
+`target/` tree or per-commit cleanup. If `sccache` is not installed, Rust
+builds fall back to normal `rustc` automatically.
 
 ### Third-Party Bundles (Cached at Build Time)
 
@@ -216,8 +239,10 @@ cp config/config.example.json config/config.json
 nano config/config.json  # or vim, code, etc.
 ```
 
-When installed via Homebrew, the CLI searches for a user copy of `config.json` in the following
-locations (in priority order) before falling back to the `--config` flag:
+The active runtime is moving toward TUI/CLI-driven configuration and the repo
+example config under `config/`. Older packaged `ib_box_spread` config search
+paths below are historical and should not be treated as the primary workflow
+for the current Rust-first runtime.
 
 - `$HOME/.config/ib_box_spread/config.json`
 - `$HOME/Library/Application Support/ib_box_spread/config.json` (macOS)
@@ -231,10 +256,8 @@ mkdir -p "${HOME}/.config/ib_box_spread"
 cp "$(brew --prefix)/share/ib-box-spread/config.example.json" \
    "${HOME}/.config/ib_box_spread/config.json"
 
-# Or have the CLI generate a starter config for you
-ib_box_spread --init-config
-# Optional: specify a path explicitly
-ib_box_spread --init-config /tmp/my_ib_box_spread.json
+# For current CLI capabilities, inspect the active Rust CLI help
+cd agents/backend && cargo run -p cli -- --help
 ```
 
 You can also set `IB_BOX_SPREAD_CONFIG=/path/to/config.json` to point the CLI at an alternate
@@ -377,8 +400,10 @@ When enabled, the strategy validates the session during startup and logs account
 
 # Start TWS or IB Gateway in Paper Trading mode
 
-# Run the application
-./build/bin/ib_box_spread --config config/config.json --dry-run
+# Run the active services
+cd agents/backend && cargo run -p backend_service
+# In another terminal
+cd agents/backend && cargo run -p tui_service
 ```
 
 ### Live Trading (Use with Extreme Caution)
@@ -390,27 +415,23 @@ When enabled, the strategy validates the session during startup and logs account
 
 # Start TWS or IB Gateway in Live mode
 
-# Run with live trading (BE VERY CAREFUL!)
-./build/bin/ib_box_spread --config config/config.json
-
-# You can still override with --dry-run flag for safety
-./build/bin/ib_box_spread --config config/config.json --dry-run
+# Start the active runtime only after explicitly setting live-trading
+# configuration and reviewing the current CLI/TUI/backend flags and config.
+# There is no supported current equivalent of the removed `ib_box_spread`
+# native binary command shown in older docs.
 ```
 
 ### Command-Line Options
 
 ```bash
-# Show help
-./build/bin/ib_box_spread --help
+# Show active CLI help
+cd agents/backend && cargo run -p cli -- --help
 
-# Validate configuration without trading
-./build/bin/ib_box_spread --config config/config.json --validate
+# Build and lint active code
+cd agents/backend && cargo build && cargo test && cargo clippy
 
-# Override log level
-./build/bin/ib_box_spread --log-level debug
-
-# Use custom config file
-./build/bin/ib_box_spread --config /path/to/custom/config.json
+# Run full repo linters
+./scripts/run_linters.sh
 ```
 
 ## Testing
@@ -614,12 +635,11 @@ Aether/
 ### Building for Development
 
 ```bash
-# Debug build with sanitizers
-cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON
-cmake --build build
+# Build active Rust code
+cd agents/backend && cargo build
 
-# Run with debug logging
-./build/bin/ib_box_spread --log-level debug
+# Run backend with normal cargo workflow
+cd agents/backend && cargo run -p backend_service
 ```
 
 ### Code Style

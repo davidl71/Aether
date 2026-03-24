@@ -7,7 +7,6 @@
   ansible.builtin.set_fact:
     backend_uv_cache_dir: "{{ repo_root }}/.cache/uv"
     backend_pip_cache_dir: "{{ repo_root }}/.cache/pip"
-    backend_cargo_home: "{{ repo_root }}/.cache/cargo"
 
 - name: Ensure backend workspace-local cache directories exist
   ansible.builtin.file:
@@ -17,7 +16,6 @@
   loop:
     - "{{ backend_uv_cache_dir }}"
     - "{{ backend_pip_cache_dir }}"
-    - "{{ backend_cargo_home }}"
 
 - name: Check if uv is available
   ansible.builtin.command: uv --version
@@ -63,5 +61,3 @@
   ansible.builtin.command: cargo fetch --manifest-path "{{ backend_dir }}/Cargo.toml"
   args:
     chdir: "{{ backend_dir }}"
-  environment:
-    CARGO_HOME: "{{ backend_cargo_home }}"

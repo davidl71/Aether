@@ -42,7 +42,6 @@ jobs:
       - name: Set up sccache for Rust
         if: steps.install_sccache.outcome == 'success'
         run: |
-          echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"
           mkdir -p ~/.cache/sccache
           echo "SCCACHE_DIR=$HOME/.cache/sccache" >> "$GITHUB_ENV"
 

@@ -84,19 +84,23 @@ cache-trim-dry limit="1G":
 cache-autoclean:
     cargo cache -a
 
-# Build Rust workspace (debug). Uses sccache when available (RUSTC_WRAPPER=sccache; cache: .cache/sccache). On success, updates cargo-sweep stamp if installed.
+# Build Rust workspace (debug). Uses the workspace rustc-wrapper; if sccache is
+# installed it is picked up automatically. On success, updates cargo-sweep stamp
+# if installed.
 build-rust:
-    cd agents/backend && env $(command -v sccache >/dev/null 2>&1 && echo RUSTC_WRAPPER=sccache) SCCACHE_DIR="${SCCACHE_DIR:-../.cache/sccache}" cargo build && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep sweep . --stamp || true)
+    cd agents/backend && env SCCACHE_DIR="${SCCACHE_DIR:-$HOME/.cache/sccache}" cargo build && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep sweep . --stamp || true)
 
 # --- Test ---
 
-# Run Rust tests (primary; C++ tests removed with native build). Uses sccache when available. On success, updates cargo-sweep stamp if installed.
+# Run Rust tests (primary; C++ tests removed with native build). Uses the
+# workspace rustc-wrapper; if sccache is installed it is picked up
+# automatically. On success, updates cargo-sweep stamp if installed.
 test:
-    cd agents/backend && env $(command -v sccache >/dev/null 2>&1 && echo RUSTC_WRAPPER=sccache) SCCACHE_DIR="${SCCACHE_DIR:-../.cache/sccache}" cargo test && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep sweep . --stamp || true)
+    cd agents/backend && env SCCACHE_DIR="${SCCACHE_DIR:-$HOME/.cache/sccache}" cargo test && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep sweep . --stamp || true)
 
 # Run a specific Rust test by name (e.g. just test-one risk_calculator)
 test-one name:
-    cd agents/backend && env $(command -v sccache >/dev/null 2>&1 && echo RUSTC_WRAPPER=sccache) SCCACHE_DIR="${SCCACHE_DIR:-../.cache/sccache}" cargo test {{name}} && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep sweep . --stamp || true)
+    cd agents/backend && env SCCACHE_DIR="${SCCACHE_DIR:-$HOME/.cache/sccache}" cargo test {{name}} && (command -v cargo-sweep >/dev/null 2>&1 && cargo sweep sweep . --stamp || true)
 
 # Run Python tests (nautilus agent)
 test-python:
@@ -323,27 +327,27 @@ worktree path branch="":
 
 # List exarp-go tools (requires exarp-go on PATH or EXARP_GO_ROOT)
 exarp-list:
-    ./scripts/run_exarp_go_tool.sh --list
+    ./scripts/run_exarp_go.sh -list -quiet
 
 # Show project backlog: task counts, next actions, and overview (runs exarp report, writes docs/PROJECT_OVERVIEW.md)
 exarp-backlog:
-    ./scripts/run_exarp_go_tool.sh report
+    ./scripts/run_exarp_go.sh -tool report -quiet
 
 # Run exarp-go tool (default: lint). Usage: just exarp lint | just exarp testing | just exarp security
 exarp tool="lint":
-    ./scripts/run_exarp_go_tool.sh {{tool}}
+    ./scripts/run_exarp_go.sh -tool {{tool}} -quiet
 
 # Run exarp-go lint only (default: Go linter only; no args)
 exarp-lint:
-    ./scripts/run_exarp_go_tool.sh lint
+    ./scripts/run_exarp_go.sh -tool lint -quiet
 
 # Run exarp-go lint with shellcheck on scripts/ (Go + shell when used with exarp-lint)
 exarp-lint-shell:
-    ./scripts/run_exarp_go_tool.sh lint '{"linter":"shellcheck","path":"scripts"}'
+    ./scripts/run_exarp_go.sh -tool lint -args '{"linter":"shellcheck","path":"scripts"}' -quiet
 
 # Generate project scorecard
 scorecard:
-    ./scripts/run_exarp_go_tool.sh report
+    ./scripts/run_exarp_go.sh -tool report -quiet
 
 # --- Protobuf ---
 
