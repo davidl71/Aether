@@ -170,6 +170,14 @@ pub struct MarketDataEvent {
 - **Endpoint**: `/stable/treasury-rates` - Treasury yields (1m to 30y)
 - **Endpoint**: `/stable/sofr-rates` - SOFR overnight rate history
 
+### TASE Data Hub (Scaffold)
+- **API**: `https://datahubapi.tase.co.il`
+- **Auth**: `X-API-Key` header
+- **Rate Limits**:
+  - 600 requests per 10 seconds
+  - 4000 requests per minute
+- **Status**: Client scaffolded; awaiting API spec
+
 ### SHIR Rate (Implemented)
 - **Source**: Bank of Israel website (HTML parsing)
 - **Fallback**: Default rate ~3.95% when BOI unavailable
@@ -220,6 +228,7 @@ pub fn effective_rate(&self, current_shir: Option<f64>) -> f64 {
 | FMP SOFR Rates | ✅ Done | `/stable/sofr-rates` overnight |
 | FMP Wired to Yield Curve API | ✅ Done | Treasury and SOFR via FMP first, FRED fallback |
 | SHIR Rate Fetching | ✅ Done | Bank of Israel website + default fallback |
+| TASE Data Hub | 🔄 Scaffold | API key stored; client scaffolded; spec pending |
 | SHIR Wired to Loans | ✅ Done | `effective_rate()` uses current SHIR + spread |
 | Integration Report | ✅ Done | This document |
 
