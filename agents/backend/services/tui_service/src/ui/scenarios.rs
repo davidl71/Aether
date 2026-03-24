@@ -3,7 +3,7 @@
 
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
     Frame,
 };
@@ -148,6 +148,11 @@ pub fn render_scenarios(f: &mut Frame, app: &App, area: Rect) {
     f.render_widget(Paragraph::new(summary_text).block(summary_block), chunks[0]);
 
     let sorted = &filtered;
+    let snapshot_scenarios = app
+        .snapshot()
+        .as_ref()
+        .map(|s| s.dto().scenarios.len())
+        .unwrap_or(0);
 
     let header = Row::new([
         "Symbol",
@@ -164,9 +169,16 @@ pub fn render_scenarios(f: &mut Frame, app: &App, area: Rect) {
     ])
     .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
+    let visible_height = chunks[1].height.saturating_sub(3) as usize; // borders + header
+    let scroll = if sorted.is_empty() {
+        0
+    } else {
+        app.scenarios_scroll.min(sorted.len().saturating_sub(1))
+    };
+
     let rows: Vec<Row> = if sorted.is_empty() {
         vec![Row::new(vec![
-            Cell::from("No scenarios in DTE window around the money"),
+            Cell::from("No scenarios match the current DTE/width filters"),
             Cell::from("—"),
             Cell::from("—"),
             Cell::from("—"),
@@ -181,7 +193,9 @@ pub fn render_scenarios(f: &mut Frame, app: &App, area: Rect) {
     } else {
         sorted
             .iter()
-            .map(|s: &ScenarioDto| {
+            .enumerate()
+            .map(|(i, s): (usize, &ScenarioDto)| {
+                let is_selected = i == scroll;
                 let dte = days_to_expiry(s);
                 let dte_str = dte
                     .map(|d| d.to_string())
@@ -200,7 +214,7 @@ pub fn render_scenarios(f: &mut Frame, app: &App, area: Rect) {
                     },
                     _ => ("—".to_string(), "—".to_string()),
                 };
-                Row::new([
+                let row = Row::new([
                     s.symbol.clone(),
                     s.expiration.clone(),
                     dte_str,
@@ -212,13 +226,20 @@ pub fn render_scenarios(f: &mut Frame, app: &App, area: Rect) {
                     format!("{:.2}", s.net_debit),
                     format!("{:.2}", s.roi_pct),
                     format!("{:.2}", s.fill_probability),
-                ])
+                ]);
+                if is_selected {
+                    row.style(Style::default().add_modifier(Modifier::REVERSED))
+                } else {
+                    row
+                }
             })
             .collect()
     };
 
+    let window: Vec<Row> = rows.into_iter().skip(scroll).take(visible_height.max(1)).collect();
+
     let table = Table::new(
-        rows,
+        window,
         [
             Constraint::Length(6),
             Constraint::Length(12),
@@ -236,11 +257,27 @@ pub fn render_scenarios(f: &mut Frame, app: &App, area: Rect) {
     .header(header)
     .block(
         Block::default()
-            .title(
-                " Scenarios  [↑↓ scroll] ['][\"] DTE  [o] exec  [w] width  (Tbill from Yield tab) ",
-            )
+            .title(" Scenarios  [↑↓ scroll] [[]/[]] DTE  [w] width  [read-only] ")
             .borders(Borders::ALL),
     );
 
     f.render_widget(table, chunks[1]);
+
+    if sorted.is_empty() {
+        let hint = if snapshot_scenarios == 0 {
+            "No scenarios are loaded yet. Wait for a fresh snapshot or publish scenarios from the backend."
+        } else {
+            "Try ] to widen DTE, [ to narrow less aggressively, or w to clear/change the strike-width filter."
+        };
+        let hint_area = Rect::new(
+            chunks[1].x + 2,
+            chunks[1].y + chunks[1].height.saturating_sub(2),
+            chunks[1].width.saturating_sub(4),
+            1,
+        );
+        f.render_widget(
+            Paragraph::new(hint).style(Style::default().fg(Color::Yellow)),
+            hint_area,
+        );
+    }
 }

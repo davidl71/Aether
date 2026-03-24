@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet};
 use api::RuntimePositionDto;
 use ratatui::{
     layout::{Constraint, Rect},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     widgets::{Block, Borders, Cell, Row, Table},
     Frame,
 };
@@ -110,17 +110,19 @@ pub fn position_type_label(typ: Option<&str>) -> &'static str {
 }
 
 pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
-    let block = Block::default().title(" Positions ").borders(Borders::ALL);
-    let inner = block.inner(area);
-    f.render_widget(block, area);
-
-    let (header, rows) = if let Some(ref snap) = app.snapshot() {
+    let (header, rows, selected_label) = if let Some(ref snap) = app.snapshot() {
         let positions = &snap.dto().positions;
         let (_, index_map, combo_key_per_row) = positions_display_info(
             positions,
             app.positions_combo_view,
             &app.positions_expanded_combos,
         );
+
+        let scroll = if index_map.is_empty() {
+            0
+        } else {
+            app.positions_scroll.min(index_map.len().saturating_sub(1))
+        };
 
         let header = Row::new([
             Cell::from("Symbol").style(Style::default().add_modifier(Modifier::BOLD)),
@@ -131,10 +133,19 @@ pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
             Cell::from("Strat").style(Style::default().add_modifier(Modifier::BOLD)),
         ]);
 
+        let mut selected_label = String::new();
+
         let table_rows: Vec<Row> = index_map
             .iter()
             .enumerate()
             .map(|(row_idx, pos_idx)| {
+                let is_selected = row_idx == scroll;
+                let base_style = if is_selected {
+                    Style::default().add_modifier(Modifier::REVERSED)
+                } else {
+                    Style::default()
+                };
+
                 if let Some(Some(combo_key)) = combo_key_per_row.get(row_idx) {
                     let groups = build_combo_groups(positions);
                     let group = groups.iter().find(|g| &g.key == combo_key);
@@ -172,15 +183,11 @@ pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
                             combo_key.1.clone(),
                         )
                     } else {
-                        (
-                            "—".into(),
-                            "0".into(),
-                            "—".into(),
-                            "—".into(),
-                            "—".into(),
-                            "—".into(),
-                        )
+                        ("—".into(), "0".into(), "—".into(), "—".into(), "—".into(), "—".into())
                     };
+                    if is_selected {
+                        selected_label = sym.clone();
+                    }
                     Row::new([
                         Cell::from(sym).style(Style::default().add_modifier(Modifier::BOLD)),
                         Cell::from(qty).style(Style::default().add_modifier(Modifier::BOLD)),
@@ -188,38 +195,54 @@ pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
                         Cell::from(mark).style(Style::default().add_modifier(Modifier::BOLD)),
                         Cell::from(pnl).style(Style::default().add_modifier(Modifier::BOLD)),
                         Cell::from(strat).style(Style::default().add_modifier(Modifier::BOLD)),
-                    ])
+                    ]).style(base_style)
                 } else if let Some(idx) = *pos_idx {
                     let pos = &positions[idx];
+                    let pnl_color = if pos.unrealized_pnl >= 0.0 { Color::Green } else { Color::Red };
+                    if is_selected {
+                        selected_label = pos.symbol.clone();
+                    }
                     Row::new([
                         Cell::from(format!("  {}", pos.symbol)),
                         Cell::from(pos.quantity.to_string()),
                         Cell::from(format!("{:.2}", pos.cost_basis)),
                         Cell::from(format!("{:.2}", pos.mark)),
-                        Cell::from(format!("{:+.2}", pos.unrealized_pnl)),
+                        Cell::from(format!("{:+.2}", pos.unrealized_pnl))
+                            .style(if is_selected { base_style } else { Style::default().fg(pnl_color) }),
                         Cell::from(pos.strategy.clone().unwrap_or_else(|| "—".into())),
-                    ])
+                    ]).style(base_style)
                 } else {
                     Row::new(vec![Cell::from(""); 6])
                 }
             })
             .collect();
-        (header, table_rows)
+        (header, table_rows, selected_label)
     } else {
         let header = Row::new(["Symbol", "Qty", "Cost", "Mark", "P&L", "Strat"])
             .style(Style::default().add_modifier(Modifier::BOLD));
         let rows = vec![Row::new(["Waiting for snapshot…", "", "", "", "", ""])];
-        (header, rows)
+        (header, rows, String::new())
     };
 
     let len = rows.len();
-    let visible_height = (inner.height as usize).saturating_sub(2).max(1);
+    let visible_height = area.height.saturating_sub(4) as usize; // borders + header
     let scroll = if len <= 1 {
         0
     } else {
         app.positions_scroll.min(len.saturating_sub(1))
     };
-    let window: Vec<Row> = rows.into_iter().skip(scroll).take(visible_height).collect();
+    let window: Vec<Row> = rows.into_iter().skip(scroll).take(visible_height.max(1)).collect();
+
+    let title = if selected_label.is_empty() {
+        " Positions  [↑↓] navigate  [c] combo view  [Enter] detail ".to_string()
+    } else {
+        format!(" Positions  Sel: {}  [↑↓] navigate  [c] combo  [Enter] detail ", selected_label)
+    };
+
+    let block = Block::default().title(title).borders(Borders::ALL);
+    let inner = block.inner(area);
+    f.render_widget(block, area);
+
     let table = Table::new(
         window,
         [

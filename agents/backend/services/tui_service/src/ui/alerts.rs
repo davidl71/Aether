@@ -36,15 +36,24 @@ pub fn render_alerts(f: &mut Frame, app: &App, area: Rect) {
     };
 
     let len = lines.len();
-    let scroll_row = if len <= 1 {
+    let visible_height = area.height.saturating_sub(2) as usize; // inner height minus borders
+
+    // Only scroll if content exceeds available height; otherwise show all lines from top.
+    let scroll_row = if len <= visible_height {
         0
     } else {
         app.alerts_scroll.min(len.saturating_sub(1))
     };
 
+    let title = if len > visible_height {
+        format!("Alerts ({}/{})  [↑↓ PgUp/PgDn]:scroll", scroll_row + 1, len)
+    } else {
+        format!("Alerts ({})", len)
+    };
+
     let widget = Paragraph::new(lines).scroll((scroll_row as u16, 0)).block(
         Block::default()
-            .title("Alerts  [↑↓ PgUp/PgDn]:scroll")
+            .title(title)
             .borders(Borders::ALL),
     );
 
