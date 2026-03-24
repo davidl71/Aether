@@ -2,7 +2,7 @@
 
 **Date**: 2026-03-24
 **Author**: AI Assistant (Claude Code)
-**Status**: Complete - Implementation Done
+**Status**: Complete - Implementation Done (including live benchmark rates)
 
 ---
 
@@ -11,7 +11,9 @@
 Aether's market data architecture has been enhanced with:
 1. **Unified aggregation layer** with source priority resolution
 2. **FMP batch quotes** for 5x efficient polling
-3. **TWS integration scaffolding** (structurally complete, needs tick forwarding)
+3. **FMP symbol discovery** via stock-list and search-symbol
+4. **FMP treasury & SOFR rates** wired into yield curve API
+5. **TWS tick forwarding** implemented in IbAdapter
 
 ---
 
@@ -158,13 +160,23 @@ pub struct MarketDataEvent {
 - **Efficiency**: 1 API call for N symbols
 - **Rate Limit**: 250 calls/day (free), 5000 calls/day (professional)
 
+### Symbol Discovery (Implemented)
+- **Endpoint**: `/stable/stock-list` - All available symbols
+- **Endpoint**: `/stable/search-symbol?query=AA` - Symbol search
+- **Endpoint**: `/stable/financial-statement-symbol-list` - Symbols with fundamentals
+
+### Treasury & SOFR Rates (Implemented)
+- **Endpoint**: `/stable/treasury-rates` - Treasury yields (1m to 30y)
+- **Endpoint**: `/stable/sofr-rates` - SOFR overnight rate history
+
 ### Other Relevant Endpoints
 | Endpoint | Purpose | Rate Limit |
 |----------|---------|------------|
 | `/stable/batch-quote` | Multi-symbol quotes | 250/day |
 | `/stable/stock-list` | Available symbols | 250/day |
 | `/stable/quote/{symbol}` | Single symbol quote | 250/day |
-| `/stable/aftermarket-trade` | Post-market trades | 250/day |
+| `/stable/treasury-rates` | Treasury yields | 250/day |
+| `/stable/sofr-rates` | SOFR overnight | 250/day |
 
 ---
 
@@ -176,9 +188,12 @@ pub struct MarketDataEvent {
 | Multi-Source Aggregator | ✅ Done | Priority-based selection |
 | Yahoo Source | ✅ Done | Default polling source |
 | Polygon Source | ✅ Done | WebSocket available |
-| TWS Broker Loop | 🔄 Scaffold | IbAdapter needs tick forwarding |
+| TWS Broker Loop | ✅ Done | IbAdapter tick forwarding implemented |
 | YatWS Integration | 🔄 Scaffold | Requires separate integration path |
-| FMP Symbol Discovery | ⏳ Pending | `/stable/stock-list` endpoint |
+| FMP Symbol Discovery | ✅ Done | `/stable/stock-list` and `/stable/search-symbol` |
+| FMP Treasury Rates | ✅ Done | `/stable/treasury-rates` - all maturities |
+| FMP SOFR Rates | ✅ Done | `/stable/sofr-rates` overnight |
+| FMP Wired to Yield Curve API | ✅ Done | Treasury and SOFR via FMP first, FRED fallback |
 | Integration Report | ✅ Done | This document |
 
 ---
@@ -208,14 +223,18 @@ pub struct MarketDataEvent {
 |------|-------------|
 | `b73045e3` | Add FMP batch-quote API for 5x efficient multi-symbol polling |
 | `f0631490` | Wire TWS broker into multi-source market data loop |
+| `94ea41df` | Implement tick forwarding in IbAdapter::request_market_data |
+| `c4dd8454` | Add FMP symbol discovery via stock-list and search-symbol endpoints |
+| `b4797ebd` | Add FMP treasury and SOFR rate fetching for benchmark rates |
+| `49c24c85` | Wire FMP treasury and SOFR rates into yield curve API |
 
 ---
 
 ## Next Steps
 
-1. **IbAdapter Tick Forwarding** - Implement `request_market_data()` to forward TWS ticks to channel
-2. **YatWS Channel Bridge** - Create proper event forwarding from yatws streaming
-3. **FMP Symbol Discovery** - Add `/stable/stock-list` endpoint for symbol list
+1. **YatWS Channel Bridge** - Create proper event forwarding from yatws streaming to aggregator
+2. **FMP Symbol Discovery in UI** - Wire stock-list into symbol search/autocomplete
+3. **Test Live Yield Curve** - Test the wired FMP treasury/SOFR rates with actual API calls
 4. **Documentation** - Update ARCHITECTURE.md with market data flow
 
 ---
@@ -224,4 +243,6 @@ pub struct MarketDataEvent {
 
 - [FMP Stock Batch Quote API](https://site.financialmodelingprep.com/developer/docs/stable/batch-quote)
 - [FMP Company Symbols List](https://site.financialmodelingprep.com/developer/docs/stable/company-symbols-list)
-- [FMP Aftermarket Trade](https://site.financialmodelingprep.com/developer/docs/stable/aftermarket-trade)
+- [FMP Treasury Rates API](https://site.financialmodelingprep.com/developer/docs/stable/treasury-rates)
+- [FMP SOFR Rates API](https://site.financialmodelingprep.com/developer/docs/stable/sofr-rates)
+- [FMP Search Symbol API](https://site.financialmodelingprep.com/developer/docs/stable/search-symbol)
