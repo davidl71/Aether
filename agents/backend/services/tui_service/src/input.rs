@@ -895,7 +895,7 @@ pub fn apply_action(app: &mut App, action: Action) {
             } else if app.settings_section_index == 1 {
                 app.settings_config_key_index = (app.settings_config_key_index + 1).min(4);
             } else {
-                app.settings_section_index = (app.settings_section_index + 1).min(2);
+                app.settings_section_index = (app.settings_section_index + 1).min(3);
             }
         }
         Action::SettingsAddSymbol => {

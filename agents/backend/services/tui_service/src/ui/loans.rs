@@ -48,23 +48,46 @@ pub fn render_loans(f: &mut Frame, app: &App, area: Rect) {
     let inner = block.inner(area);
     f.render_widget(block, area);
 
+    // Helper: render a hint line anchored to the bottom of inner
+    let render_hint = |f: &mut Frame| {
+        if inner.height > 1 {
+            let hint_area = Rect::new(inner.x, inner.y + inner.height - 1, inner.width, 1);
+            f.render_widget(
+                Paragraph::new(Line::from(Span::styled(
+                    " n = new loan ",
+                    Style::default().fg(Color::DarkGray),
+                ))),
+                hint_area,
+            );
+        }
+    };
+
     if app.loans_fetch_pending && app.loans_list.is_none() {
         let p = Paragraph::new("Requesting api.loans.list…")
             .style(Style::default().fg(Color::DarkGray));
         f.render_widget(p, inner);
+        render_hint(f);
         return;
     }
 
     if let None = app.loans_list {
-        let p = Paragraph::new("No data yet. Switch away and back or wait for auto-refresh.")
+        let p = Paragraph::new("No data. Press 'n' to add a loan manually.")
             .style(Style::default().fg(Color::DarkGray));
         f.render_widget(p, inner);
+        render_hint(f);
         return;
     }
 
     if let Some(Err(e)) = &app.loans_list {
-        let p = Paragraph::new(e.as_str()).style(Style::default().fg(Color::Red));
-        f.render_widget(p, inner);
+        let lines = vec![
+            Line::from(Span::styled(e.as_str(), Style::default().fg(Color::Red))),
+            Line::from(Span::styled(
+                "Press 'n' to add a loan manually.",
+                Style::default().fg(Color::DarkGray),
+            )),
+        ];
+        f.render_widget(Paragraph::new(lines), inner);
+        render_hint(f);
         return;
     }
 

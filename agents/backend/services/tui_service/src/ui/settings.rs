@@ -15,9 +15,10 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(4),
-            Constraint::Min(4),
-            Constraint::Length(4),
-            Constraint::Min(4),
+            Constraint::Min(3),
+            Constraint::Length(3),
+            Constraint::Min(5),
+            Constraint::Length(1),
         ])
         .split(area);
 
@@ -210,17 +211,96 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
         );
     }
 
-    // Hint line
+    // 4) Data sources — credential status + live tick source
+    let sources_block = section_block("Data sources", section_active(3));
+    let live_source = app
+        .live_market_data_source
+        .as_ref()
+        .map(|m| m.source.to_lowercase());
+
+    struct SourceDef {
+        name: &'static str,
+        priority: &'static str,
+        cred_key: &'static str,
+        note: &'static str,
+    }
+    let sources = [
+        SourceDef { name: "yahoo",   priority: "50",  cred_key: "(free)",          note: "market quotes" },
+        SourceDef { name: "fmp",     priority: "60",  cred_key: "FMP_API_KEY",     note: "market + fundamentals" },
+        SourceDef { name: "polygon", priority: "70",  cred_key: "POLYGON_API_KEY", note: "market quotes (WebSocket)" },
+        SourceDef { name: "tase",    priority: "—",   cred_key: "TASE_API_KEY",    note: "Israeli exchange" },
+        SourceDef { name: "fred",    priority: "—",   cred_key: "FRED_API_KEY",    note: "yield benchmarks (SOFR/Treasury)" },
+        SourceDef { name: "tws",     priority: "100", cred_key: "(TWS connection)", note: "IB broker push (highest priority)" },
+    ];
+
+    let configured_provider = app
+        .snapshot()
+        .as_ref()
+        .and_then(|s| s.inner.market_data_source.as_deref().map(str::to_lowercase))
+        .unwrap_or_default();
+
+    let source_rows: Vec<Row> = sources.iter().map(|s| {
+        let has_cred = match s.name {
+            "yahoo" | "tws" => true,
+            name => *app.credential_status.get(name).unwrap_or(&false),
+        };
+        let is_live = live_source.as_deref() == Some(s.name);
+        let is_configured = configured_provider == s.name || configured_provider == "all";
+
+        let (status_label, status_color) = if is_live {
+            ("● LIVE", Color::Green)
+        } else if !has_cred && s.name != "yahoo" && s.name != "tws" {
+            ("✗ no key", Color::Red)
+        } else if is_configured || s.name == "yahoo" {
+            ("idle", Color::DarkGray)
+        } else {
+            ("disabled", Color::DarkGray)
+        };
+
+        let cred_color = if has_cred || s.name == "yahoo" || s.name == "tws" {
+            Color::Green
+        } else {
+            Color::Red
+        };
+
+        Row::new([
+            Cell::from(s.name),
+            Cell::from(s.priority),
+            Cell::from(s.cred_key).style(Style::default().fg(cred_color)),
+            Cell::from(status_label).style(Style::default().fg(status_color)),
+            Cell::from(s.note).style(Style::default().fg(Color::DarkGray)),
+        ])
+    }).collect();
+
+    let sources_table = Table::new(
+        source_rows,
+        [
+            Constraint::Length(8),
+            Constraint::Length(6),
+            Constraint::Length(20),
+            Constraint::Length(10),
+            Constraint::Min(10),
+        ],
+    )
+    .header(
+        Row::new(["Provider", "Pri", "Credential", "Status", "Purpose"])
+            .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED)),
+    )
+    .block(sources_block);
+    f.render_widget(sources_table, chunks[3]);
+
+    // 5) Hint line
     let hint_text = match app.settings_section_index {
         1 => " 0 = Settings  ↑↓ key  e/Enter edit override  Active section: Config ",
         2 => " 0 = Settings  ↑↓ symbol  a add symbol  Del remove  Active section: Symbols ",
+        3 => " 0 = Settings  ↑↓ section  Active section: Data Sources (keys: keychain/env/file) ",
         _ => " 0 = Settings  ↑↓ section  Enter inspect  Active section: Backends ",
     };
     let hint = Line::from(Span::styled(
         hint_text,
         Style::default().fg(Color::DarkGray),
     ));
-    f.render_widget(Paragraph::new(hint), chunks[3]);
+    f.render_widget(Paragraph::new(hint), chunks[4]);
 }
 
 fn truncate(s: &str, max: usize) -> String {
