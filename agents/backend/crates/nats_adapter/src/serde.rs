@@ -69,6 +69,8 @@ mod tests {
             volume: 1_000_000,
             timestamp: None,
             quote_quality: 0,
+            source: "test".to_string(),
+            source_priority: 100,
         };
 
         let bytes = encode_proto(&event).unwrap();
@@ -92,6 +94,8 @@ mod tests {
             volume: 500,
             timestamp: None,
             quote_quality: 0,
+            source: "test".to_string(),
+            source_priority: 100,
         };
 
         let bytes = encode_envelope("backend", "MarketDataEvent", &event).unwrap();
