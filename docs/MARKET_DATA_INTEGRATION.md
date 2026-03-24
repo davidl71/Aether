@@ -2,7 +2,7 @@
 
 **Date**: 2026-03-24
 **Author**: AI Assistant (Claude Code)
-**Status**: Complete - Implementation Done (including live benchmark rates)
+**Status**: Complete - Implementation Done (including SHIR, benchmark rates, and yield curve)
 
 ---
 
@@ -13,7 +13,8 @@ Aether's market data architecture has been enhanced with:
 2. **FMP batch quotes** for 5x efficient polling
 3. **FMP symbol discovery** via stock-list and search-symbol
 4. **FMP treasury & SOFR rates** wired into yield curve API
-5. **TWS tick forwarding** implemented in IbAdapter
+5. **SHIR rate fetching** for Israeli loan effective rate calculation
+6. **TWS tick forwarding** implemented in IbAdapter
 
 ---
 
@@ -169,6 +170,30 @@ pub struct MarketDataEvent {
 - **Endpoint**: `/stable/treasury-rates` - Treasury yields (1m to 30y)
 - **Endpoint**: `/stable/sofr-rates` - SOFR overnight rate history
 
+### SHIR Rate (Implemented)
+- **Source**: Bank of Israel website (HTML parsing)
+- **Fallback**: Default rate ~3.95% when BOI unavailable
+- **Usage**: SHIR-based loan effective rate = current_shir + spread/100
+
+```rust
+// SHIR effective rate calculation
+pub fn effective_rate(&self, current_shir: Option<f64>) -> f64 {
+    match self.loan_type {
+        LoanType::ShirBased => {
+            let shir = current_shir.unwrap_or(0.0395);
+            shir + self.spread / 100.0
+        }
+        LoanType::CpiLinked => {
+            if self.base_cpi > 0.0 {
+                (self.current_cpi / self.base_cpi - 1.0) + self.spread / 100.0
+            } else {
+                self.interest_rate
+            }
+        }
+    }
+}
+```
+
 ### Other Relevant Endpoints
 | Endpoint | Purpose | Rate Limit |
 |----------|---------|------------|
@@ -194,6 +219,8 @@ pub struct MarketDataEvent {
 | FMP Treasury Rates | ✅ Done | `/stable/treasury-rates` - all maturities |
 | FMP SOFR Rates | ✅ Done | `/stable/sofr-rates` overnight |
 | FMP Wired to Yield Curve API | ✅ Done | Treasury and SOFR via FMP first, FRED fallback |
+| SHIR Rate Fetching | ✅ Done | Bank of Israel website + default fallback |
+| SHIR Wired to Loans | ✅ Done | `effective_rate()` uses current SHIR + spread |
 | Integration Report | ✅ Done | This document |
 
 ---
@@ -227,6 +254,8 @@ pub struct MarketDataEvent {
 | `c4dd8454` | Add FMP symbol discovery via stock-list and search-symbol endpoints |
 | `b4797ebd` | Add FMP treasury and SOFR rate fetching for benchmark rates |
 | `49c24c85` | Wire FMP treasury and SOFR rates into yield curve API |
+| `b0322926` | Add SHIR rate fetcher for Israeli loan base rate |
+| `5f76c48b` | Wire SHIR into loan effective_rate calculation |
 
 ---
 
@@ -235,7 +264,8 @@ pub struct MarketDataEvent {
 1. **YatWS Channel Bridge** - Create proper event forwarding from yatws streaming to aggregator
 2. **FMP Symbol Discovery in UI** - Wire stock-list into symbol search/autocomplete
 3. **Test Live Yield Curve** - Test the wired FMP treasury/SOFR rates with actual API calls
-4. **Documentation** - Update ARCHITECTURE.md with market data flow
+4. **SHIR IBKR Fallback** - Explore if IBKR/TWS provides ILS interest rates for SHIR
+5. **Documentation** - Update ARCHITECTURE.md with market data flow
 
 ---
 
