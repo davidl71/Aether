@@ -75,22 +75,31 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
         .cloned()
         .unwrap_or_else(|| "—".to_string());
     let (rows, empty_reason): (Vec<Row>, Option<&'static str>) = match &app.yield_curve {
-        Some(curve) if curve.point_count > 0 => (
-            curve
-                .points
-                .iter()
-                .map(|p| {
-                    Row::new([
-                        p.symbol.clone(),
-                        p.expiry.clone(),
-                        p.days_to_expiry.to_string(),
-                        bucket_label(p.days_to_expiry).to_string(),
-                        format!("{:.2}", p.mid_rate * 100.0),
-                    ])
-                })
-                .collect(),
-            None,
-        ),
+        Some(curve) if curve.point_count > 0 => {
+            let scroll = app.yield_curve_scroll.min(curve.point_count.saturating_sub(1));
+            (
+                curve
+                    .points
+                    .iter()
+                    .enumerate()
+                    .map(|(i, p)| {
+                        let row = Row::new([
+                            p.symbol.clone(),
+                            p.expiry.clone(),
+                            p.days_to_expiry.to_string(),
+                            bucket_label(p.days_to_expiry).to_string(),
+                            format!("{:.2}", p.mid_rate * 100.0),
+                        ]);
+                        if i == scroll {
+                            row.style(Style::default().add_modifier(Modifier::REVERSED))
+                        } else {
+                            row
+                        }
+                    })
+                    .collect(),
+                None,
+            )
+        }
         Some(_) => (
             vec![Row::new([
                 symbol.clone(),
@@ -131,7 +140,7 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
     } else if empty_reason.is_some() {
         "Box spread curve (empty)"
     } else {
-        "Box spread curve (api.finance_rates.build_curve)"
+        "Box spread curve  [↑↓] navigate  [Enter] legs detail"
     };
     let table = Table::new(
         rows,

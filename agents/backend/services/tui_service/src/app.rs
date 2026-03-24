@@ -3,7 +3,7 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::Instant;
 
-use api::finance_rates::{BenchmarksResponse, CurveResponse};
+use api::finance_rates::{BenchmarksResponse, CurveResponse, RatePointResponse};
 use api::loans::LoanRecord;
 use api::{
     Alert, BackendHealthState, CommandReply, CommandStatus, RuntimeOrderDto, RuntimePositionDto,
@@ -50,6 +50,7 @@ pub enum DetailPopupContent {
     Order(RuntimeOrderDto),
     Position(RuntimePositionDto),
     Scenario(ScenarioDto),
+    YieldPoint(RatePointResponse),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -415,6 +416,8 @@ pub struct App {
     pub scenarios_strike_width_filter: Option<u32>,
     /// Selected symbol index for Yield tab (into effective watchlist).
     pub yield_symbol_index: usize,
+    /// Selected row in the yield curve points table (↑↓ to navigate, Enter for detail popup).
+    pub yield_curve_scroll: usize,
     /// In-Settings watchlist override (add/remove symbols in memory). None = use config.watchlist.
     pub watchlist_override: Option<Vec<String>>,
     /// Selected row in Settings tab: 0 = backends, 1 = config, 2 = symbols. For symbol list, use settings_symbol_index.
@@ -525,6 +528,7 @@ impl App {
             scenarios_dte_half_width: 2,
             scenarios_strike_width_filter: None,
             yield_symbol_index: 0,
+            yield_curve_scroll: 0,
             watchlist_override: None,
             settings_section_index: 0,
             settings_symbol_index: 0,

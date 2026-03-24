@@ -18,6 +18,9 @@ pub enum Action {
     JumpToTab(u8),
     YieldSymbolPrev,
     YieldSymbolNext,
+    YieldCurveScrollUp,
+    YieldCurveScrollDown,
+    YieldCurveDetail,
     PositionsScrollUp,
     PositionsScrollDown,
     PositionsScrollPageUp,
@@ -146,6 +149,9 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         // Yield tab symbol navigation (before generic tab switch)
         KeyCode::Left if app.active_tab == Tab::Yield => Some(Action::YieldSymbolPrev),
         KeyCode::Right if app.active_tab == Tab::Yield => Some(Action::YieldSymbolNext),
+        KeyCode::Up if app.active_tab == Tab::Yield => Some(Action::YieldCurveScrollUp),
+        KeyCode::Down if app.active_tab == Tab::Yield => Some(Action::YieldCurveScrollDown),
+        KeyCode::Enter if app.active_tab == Tab::Yield => Some(Action::YieldCurveDetail),
 
         // Charts pill navigation (before generic tab switch)
         KeyCode::Left
@@ -422,6 +428,7 @@ pub fn apply_action(app: &mut App, action: Action) {
             let len = app.watchlist().len();
             if len > 0 {
                 app.yield_symbol_index = (app.yield_symbol_index + len - 1) % len;
+                app.yield_curve_scroll = 0;
                 let symbol = app.watchlist()[app.yield_symbol_index].clone();
                 app.request_yield_fetch(&symbol);
             }
@@ -430,8 +437,25 @@ pub fn apply_action(app: &mut App, action: Action) {
             let len = app.watchlist().len();
             if len > 0 {
                 app.yield_symbol_index = (app.yield_symbol_index + 1) % len;
+                app.yield_curve_scroll = 0;
                 let symbol = app.watchlist()[app.yield_symbol_index].clone();
                 app.request_yield_fetch(&symbol);
+            }
+        }
+        Action::YieldCurveScrollUp => {
+            app.yield_curve_scroll = app.yield_curve_scroll.saturating_sub(1);
+        }
+        Action::YieldCurveScrollDown => {
+            if let Some(ref curve) = app.yield_curve {
+                let max = curve.point_count.saturating_sub(1);
+                app.yield_curve_scroll = (app.yield_curve_scroll + 1).min(max);
+            }
+        }
+        Action::YieldCurveDetail => {
+            if let Some(ref curve) = app.yield_curve {
+                if let Some(point) = curve.points.get(app.yield_curve_scroll) {
+                    app.detail_popup = Some(crate::app::DetailPopupContent::YieldPoint(point.clone()));
+                }
             }
         }
         Action::PositionsToggleCombo => {

@@ -365,6 +365,59 @@ fn render_detail_overlay(f: &mut Frame, area: Rect, content: &DetailPopupContent
                 Line::from(format!("Fill prob:  {:.2}", s.fill_probability)),
             ],
         ),
+        DetailPopupContent::YieldPoint(p) => (
+            " Box spread legs ",
+            vec![
+                Line::from(format!("Symbol:      {}", p.symbol)),
+                Line::from(format!("Expiry:      {}", p.expiry)),
+                Line::from(format!("DTE:         {}", p.days_to_expiry)),
+                Line::from(format!("Width:       {:.0}", p.strike_width)),
+                Line::from(vec![
+                    Span::raw("Strikes:     "),
+                    Span::styled(
+                        format!(
+                            "{} / {}",
+                            p.strike_low.map(|s| format!("{:.0}", s)).unwrap_or("—".into()),
+                            p.strike_high.map(|s| format!("{:.0}", s)).unwrap_or("—".into()),
+                        ),
+                        Style::default().fg(Color::Cyan),
+                    ),
+                ]),
+                Line::from(vec![
+                    Span::raw("Buy rate:    "),
+                    Span::styled(
+                        format!("{:.3}%", p.buy_implied_rate * 100.0),
+                        Style::default().fg(Color::Green),
+                    ),
+                ]),
+                Line::from(vec![
+                    Span::raw("Sell rate:   "),
+                    Span::styled(
+                        format!("{:.3}%", p.sell_implied_rate * 100.0),
+                        Style::default().fg(Color::Red),
+                    ),
+                ]),
+                Line::from(vec![
+                    Span::raw("Mid rate:    "),
+                    Span::styled(
+                        format!("{:.3}%", p.mid_rate * 100.0),
+                        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+                    ),
+                ]),
+                Line::from(format!("Net debit:   {:.2}", p.net_debit)),
+                Line::from(format!("Net credit:  {:.2}", p.net_credit)),
+                Line::from(format!("Liquidity:   {:.2}", p.liquidity_score)),
+                Line::from(format!(
+                    "Source:      {}",
+                    p.data_source.as_deref().unwrap_or("—")
+                )),
+                Line::from(format!(
+                    "Spread ID:   {}",
+                    p.spread_id.as_deref().unwrap_or("—")
+                )),
+                Line::from(format!("Timestamp:   {}", p.timestamp)),
+            ],
+        ),
     };
     let mut all_lines = lines;
     all_lines.push(Line::from(""));
