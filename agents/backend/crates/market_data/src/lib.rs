@@ -7,6 +7,7 @@ pub mod pipeline;
 pub mod polygon;
 pub mod polygon_ws;
 pub mod shir;
+pub mod tase;
 pub mod yahoo;
 pub mod yield_curve;
 
@@ -28,6 +29,7 @@ pub use pipeline::{MarketDataIngestor, MarketDataPipeline};
 pub use polygon::{PolygonMarketDataSource, PolygonMarketDataSourceFactory};
 pub use polygon_ws::PolygonWsMarketDataSource;
 pub use shir::{default_shir_rate, fetch_shir_rate, ShirRate};
+pub use tase::{TaseClient, TaseIndex, TaseQuote, TaseSearchResult};
 pub use yahoo::{
     OptionContractData, OptionsDataSource, OptionsExpiration, YahooFinanceSource,
     YahooFinanceSourceFactory, YahooHistorySource, YahooOptionsSource,
