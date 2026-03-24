@@ -4,6 +4,8 @@
 //!
 //! **API:** https://datahubapi.tase.co.il
 //!
+//! **Rate Limits:** 10 requests per 2 seconds (rate + burst)
+//!
 //! Authentication: API key via `X-API-Key` header.
 
 use anyhow::Context;
@@ -12,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 const DEFAULT_BASE_URL: &str = "https://datahubapi.tase.co.il/api/v1";
+const RATE_LIMIT_DELAY_MS: u64 = 200;
 
 #[derive(Debug, Clone)]
 pub struct TaseClient {
@@ -46,8 +49,9 @@ impl TaseClient {
     }
 
     pub async fn quote(&self, symbol: &str) -> anyhow::Result<TaseQuote> {
+        tokio::time::sleep(Duration::from_millis(RATE_LIMIT_DELAY_MS)).await;
         let url = format!("{}/quotes/{}", self.base_url, symbol);
-        
+
         let response = self
             .client
             .get(&url)

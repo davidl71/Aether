@@ -172,11 +172,12 @@ pub struct MarketDataEvent {
 
 ### TASE Data Hub (Scaffold)
 - **API**: `https://datahubapi.tase.co.il`
-- **Auth**: `X-API-Key` header
+- **Auth**: `X-API-Key` header (via Developer Portal)
 - **Rate Limits**:
-  - 600 requests per 10 seconds
-  - 4000 requests per minute
-- **Status**: Client scaffolded; awaiting API spec
+  - 10 requests per 2 seconds (rate limit)
+  - 10 requests per 2 seconds (burst limit)
+  - HTTP 429 on exceeded
+- **Status**: Client scaffolded; awaiting product-specific endpoint spec
 
 ### SHIR Rate (Implemented)
 - **Source**: Bank of Israel website (HTML parsing)
