@@ -437,11 +437,11 @@ fn spawn_market_data_provider(
 
     let aggregator = Arc::new(
         market_data::MarketDataAggregator::new()
-    );
+);
 
     let providers = if settings.provider == "all" {
-        vec!["yahoo", "polygon"]  // Yahoo (free) + Polygon (paid) as fallback
-    } else if settings.provider == "yahoo" || settings.provider == "polygon" || settings.provider == "mock" {
+        vec!["yahoo", "fmp", "polygon"]  // Yahoo (free) + FMP (paid) + Polygon (paid)
+    } else if settings.provider == "yahoo" || settings.provider == "fmp" || settings.provider == "polygon" || settings.provider == "mock" {
         vec![settings.provider.as_str()]
     } else {
         vec!["yahoo"]  // Default to Yahoo for real data

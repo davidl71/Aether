@@ -3,17 +3,20 @@
 //! Provides financial statements and quote data for fundamental analysis
 //! and cross-validation against TWS market data.
 //!
-//! FMP is a Tier 2 data source — not used for live trading decisions, but for
-//! fundamental research, financial statement retrieval, and quote sanity checks.
+//! FMP is a Tier 2 data source — used for continuous quotes when Yahoo/Polygon unavailable.
+//! With paid tier (5000 calls/day), can poll ~1x per symbol per 17 seconds with 5 symbols.
 //!
 //! **NATS API:** FMP/chart/Swiftness/frontend are not exposed via NATS (deferred).
 //! See `docs/platform/NATS_API.md` §3.
 //!
-//! **Rate limiting:** Free tier has 250 calls/day. Uses 100ms delay between calls
-//! and tracks daily usage to avoid hitting limits.
+//! **Rate limiting:** Free tier has 250 calls/day, Professional has 5000 calls/day.
+//! Uses 50ms delay between calls and tracks daily usage to avoid hitting limits.
 //!
 //! API reference: <https://site.financialmodelingprep.com/developer/docs>
 
+use anyhow::Context;
+use async_trait::async_trait;
+use chrono::Utc;
 use reqwest::{Client, Url};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -21,6 +24,10 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 use tracing::{debug, warn};
+
+use crate::{
+    MarketDataEvent, MarketDataEventBuilder, MarketDataSource, SimpleMarketDataSourceFactory,
+};
 
 const DEFAULT_BASE_URL: &str = "https://financialmodelingprep.com/api";
 const CALL_DELAY_MS: u64 = 50;
@@ -414,6 +421,127 @@ impl FmpClient {
         let mut u = self.base_url.clone();
         u.set_path(path);
         u
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Market Data Source (polling)
+// ---------------------------------------------------------------------------
+
+/// FMP market data source for continuous quotes.
+/// Polls FMP quote API with rate limiting.
+/// Use with paid tier (5000 calls/day) for reliable polling.
+pub struct FmpMarketDataSource {
+    client: Arc<FmpClient>,
+    symbols: Arc<Vec<String>>,
+    poll_interval: Duration,
+    state: Mutex<FmpMarketDataState>,
+}
+
+struct FmpMarketDataState {
+    idx: usize,
+}
+
+impl FmpMarketDataSource {
+    /// Create a new FMP market data source.
+    /// Requires FMP_API_KEY environment variable or pass api_key directly.
+    pub fn new<I, S>(
+        symbols: I,
+        poll_interval: Duration,
+        api_key: Option<String>,
+    ) -> anyhow::Result<Self>
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let symbols_vec: Vec<String> = symbols.into_iter().map(Into::into).collect();
+        if symbols_vec.is_empty() {
+            anyhow::bail!("at least one symbol must be configured");
+        }
+
+        let api_key = api_key
+            .or_else(|| std::env::var("FMP_API_KEY").ok())
+            .filter(|k| !k.trim().is_empty())
+            .context("FMP_API_KEY not set")?;
+
+        let client = FmpClient::new(api_key, None)?;
+
+        Ok(Self {
+            client: Arc::new(client),
+            symbols: Arc::new(symbols_vec),
+            poll_interval,
+            state: Mutex::new(FmpMarketDataState { idx: 0 }),
+        })
+    }
+
+    async fn next_symbol(&self) -> String {
+        let mut state = self.state.lock().await;
+        let idx = state.idx % self.symbols.len();
+        state.idx = state.idx.wrapping_add(1);
+        self.symbols[idx].clone()
+    }
+}
+
+#[async_trait]
+impl MarketDataSource for FmpMarketDataSource {
+    async fn next(&self) -> anyhow::Result<MarketDataEvent> {
+        tokio::time::sleep(self.poll_interval).await;
+        let symbol = self.next_symbol().await;
+
+        let quote = self.client.quote(&symbol).await;
+
+        if let Err(e) = &quote {
+            warn!("FMP quote failed for {}: {}", symbol, e);
+        }
+
+        let quote = quote?;
+
+        let price = quote.price.unwrap_or(0.0);
+        if price <= 0.0 {
+            anyhow::bail!("FMP returned invalid price for {symbol}");
+        }
+
+        let day_high = quote.day_high.unwrap_or(price);
+        let day_low = quote.day_low.unwrap_or(price);
+        let spread = (day_high - day_low).max(price * 0.0001);
+        let bid = price - spread / 2.0;
+        let ask = price + spread / 2.0;
+
+        debug!(
+            "FMP quote for {}: bid={:.2}, ask={:.2} (price={:.2})",
+            symbol, bid, ask, price
+        );
+
+        let event = MarketDataEventBuilder::default()
+            .symbol(symbol)
+            .bid(bid)
+            .ask(ask)
+            .last(price)
+            .volume(quote.volume.unwrap_or(0) as u64)
+            .timestamp(Utc::now())
+            .source("fmp")
+            .source_priority(60u32)
+            .build()?;
+
+        Ok(event)
+    }
+}
+
+/// Factory for creating FMP market data sources.
+pub struct FmpMarketDataSourceFactory;
+
+impl SimpleMarketDataSourceFactory for FmpMarketDataSourceFactory {
+    fn name(&self) -> &'static str {
+        "fmp"
+    }
+
+    fn create(
+        &self,
+        symbols: &[String],
+        interval: std::time::Duration,
+    ) -> anyhow::Result<Box<dyn MarketDataSource>> {
+        let source = FmpMarketDataSource::new(symbols.to_vec(), interval, None)?;
+        Ok(Box::new(source))
     }
 }
 

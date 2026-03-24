@@ -15,7 +15,8 @@ pub use cache::{
     Staleness, Ttl,
 };
 pub use fmp::{
-    BalanceSheet, CashFlowStatement, FmpClient, FmpQuote, HistoricalCandle, IncomeStatement,
+    BalanceSheet, CashFlowStatement, FmpClient, FmpMarketDataSource, FmpMarketDataSourceFactory,
+    FmpQuote, HistoricalCandle, IncomeStatement,
 };
 pub use mock::{MockMarketDataSource, MockMarketDataSourceFactory};
 pub use model::{
@@ -50,6 +51,7 @@ pub fn provider_registry() -> &'static HashMap<&'static str, DynFactory> {
     REGISTRY.get_or_init(|| {
         let mut m = HashMap::new();
         register(&mut m, "yahoo", YahooFinanceSourceFactory);
+        register(&mut m, "fmp", FmpMarketDataSourceFactory);
         register(&mut m, "mock", MockMarketDataSourceFactory);
         register(&mut m, "polygon", PolygonMarketDataSourceFactory);
         m
