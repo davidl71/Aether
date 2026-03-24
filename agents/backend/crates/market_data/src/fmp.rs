@@ -123,6 +123,45 @@ pub struct FmpSearchResult {
     pub instrument_type: Option<String>,
 }
 
+/// Treasury rate for a specific maturity.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TreasuryRate {
+    pub date: String,
+    #[serde(rename = "1month")]
+    pub one_month: Option<f64>,
+    #[serde(rename = "2month")]
+    pub two_month: Option<f64>,
+    #[serde(rename = "3month")]
+    pub three_month: Option<f64>,
+    #[serde(rename = "6month")]
+    pub six_month: Option<f64>,
+    #[serde(rename = "1year")]
+    pub one_year: Option<f64>,
+    #[serde(rename = "2year")]
+    pub two_year: Option<f64>,
+    #[serde(rename = "3year")]
+    pub three_year: Option<f64>,
+    #[serde(rename = "5year")]
+    pub five_year: Option<f64>,
+    #[serde(rename = "7year")]
+    pub seven_year: Option<f64>,
+    #[serde(rename = "10year")]
+    pub ten_year: Option<f64>,
+    #[serde(rename = "20year")]
+    pub twenty_year: Option<f64>,
+    #[serde(rename = "30year")]
+    pub thirty_year: Option<f64>,
+}
+
+/// SOFR rate data.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SofrRate {
+    pub date: String,
+    pub rate: Option<f64>,
+}
+
 // ---------------------------------------------------------------------------
 // Client
 // ---------------------------------------------------------------------------
@@ -508,6 +547,121 @@ impl FmpClient {
             items.len()
         );
         Ok(items)
+    }
+
+    /// Fetch the latest treasury rates for all maturities.
+    ///
+    /// Returns rates from 1-month to 30-year treasury yields.
+    /// Endpoint: `/stable/treasury-rates`
+    pub async fn treasury_rates(&self) -> anyhow::Result<TreasuryRate> {
+        self.rate_limiter.reset_if_new_day().await;
+        if self.calls_remaining() == 0 {
+            anyhow::bail!("FMP daily limit reached (250 calls/day on free tier)");
+        }
+        self.rate_limiter.acquire().await;
+
+        let url = self.url("/stable/treasury-rates");
+        debug!(
+            "FMP treasury-rates: ({}/{} calls used)",
+            self.calls_used(),
+            DAILY_LIMIT_FREE
+        );
+
+        let rate: TreasuryRate = self
+            .client
+            .get(url)
+            .query(&[("apikey", self.api_key.as_str())])
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!("FMP treasury-rates request failed: {e}"))?
+            .error_for_status()
+            .map_err(|e| anyhow::anyhow!("FMP treasury-rates error: {e}"))?
+            .json()
+            .await
+            .map_err(|e| anyhow::anyhow!("FMP treasury-rates decode failed: {e}"))?;
+
+        debug!("FMP treasury-rates for date: {}", rate.date);
+        Ok(rate)
+    }
+
+    /// Fetch historical treasury rates.
+    ///
+    /// `from` and `to` are ISO 8601 dates.
+    /// Endpoint: `/stable/treasury-rates`
+    pub async fn treasury_rates_historical(
+        &self,
+        from: &str,
+        to: &str,
+    ) -> anyhow::Result<Vec<TreasuryRate>> {
+        self.rate_limiter.reset_if_new_day().await;
+        if self.calls_remaining() == 0 {
+            anyhow::bail!("FMP daily limit reached (250 calls/day on free tier)");
+        }
+        self.rate_limiter.acquire().await;
+
+        let url = self.url("/stable/treasury-rates");
+        debug!(
+            "FMP treasury-rates historical: {} to {} ({}/{} calls used)",
+            from,
+            to,
+            self.calls_used(),
+            DAILY_LIMIT_FREE
+        );
+
+        let rates: Vec<TreasuryRate> = self
+            .client
+            .get(url)
+            .query(&[
+                ("apikey", self.api_key.as_str()),
+                ("from", from),
+                ("to", to),
+            ])
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!("FMP treasury-rates historical request failed: {e}"))?
+            .error_for_status()
+            .map_err(|e| anyhow::anyhow!("FMP treasury-rates historical error: {e}"))?
+            .json()
+            .await
+            .map_err(|e| anyhow::anyhow!("FMP treasury-rates historical decode failed: {e}"))?;
+
+        debug!("FMP treasury-rates historical returned {} records", rates.len());
+        Ok(rates)
+    }
+
+    /// Fetch SOFR (Secured Overnight Financing Rate) data.
+    ///
+    /// SOFR is the broad repo rate used as the primary reference for USD derivatives.
+    /// Endpoint: `/stable/sofr-rates`
+    pub async fn sofr_rates(&self) -> anyhow::Result<Vec<SofrRate>> {
+        self.rate_limiter.reset_if_new_day().await;
+        if self.calls_remaining() == 0 {
+            anyhow::bail!("FMP daily limit reached (250 calls/day on free tier)");
+        }
+        self.rate_limiter.acquire().await;
+
+        let url = self.url("/stable/sofr-rates");
+        debug!(
+            "FMP sofr-rates: ({}/{} calls used)",
+            self.calls_used(),
+            DAILY_LIMIT_FREE
+        );
+
+        let rates: Vec<SofrRate> = self
+            .client
+            .get(url)
+            .query(&[("apikey", self.api_key.as_str())])
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!("FMP sofr-rates request failed: {e}"))?
+            .error_for_status()
+            .map_err(|e| anyhow::anyhow!("FMP sofr-rates error: {e}"))?
+            .json()
+            .await
+            .map_err(|e| anyhow::anyhow!("FMP sofr-rates decode failed: {e}"))?;
+
+        debug!("FMP sofr-rates returned {} records", rates.len());
+        Ok(rates)
     }
 
     /// Historical OHLCV price data for `symbol`.
@@ -980,5 +1134,66 @@ mod tests {
         let symbols = client(&server.uri()).financial_statement_symbols().await.unwrap();
         assert_eq!(symbols.len(), 3);
         assert_eq!(symbols[0], "AAPL");
+    }
+
+    #[tokio::test]
+    async fn treasury_rates_returns_current_rates() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/stable/treasury-rates"))
+            .and(query_param("apikey", "test-key"))
+            .respond_with(ResponseTemplate::new(200).set_body_raw(
+                r#"{
+                    "date": "2026-03-24",
+                    "1month": 5.52,
+                    "2month": 5.51,
+                    "3month": 5.53,
+                    "6month": 5.48,
+                    "1year": 5.22,
+                    "2year": 4.89,
+                    "3year": 4.75,
+                    "5year": 4.62,
+                    "7year": 4.68,
+                    "10year": 4.71,
+                    "20year": 5.02,
+                    "30year": 5.18
+                }"#,
+                "application/json",
+            ))
+            .mount(&server)
+            .await;
+
+        let rate = client(&server.uri()).treasury_rates().await.unwrap();
+        assert_eq!(rate.date, "2026-03-24");
+        assert!(rate.one_month.unwrap() > 0.0);
+        assert!(rate.ten_year.unwrap() > 0.0);
+        assert!(rate.thirty_year.unwrap() > rate.ten_year.unwrap());
+    }
+
+    #[tokio::test]
+    async fn sofr_rates_returns_rate_history() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/stable/sofr-rates"))
+            .and(query_param("apikey", "test-key"))
+            .respond_with(ResponseTemplate::new(200).set_body_raw(
+                r#"[{
+                    "date": "2026-03-21",
+                    "rate": 5.33
+                }, {
+                    "date": "2026-03-20",
+                    "rate": 5.32
+                }]"#,
+                "application/json",
+            ))
+            .mount(&server)
+            .await;
+
+        let rates = client(&server.uri()).sofr_rates().await.unwrap();
+        assert_eq!(rates.len(), 2);
+        assert_eq!(rates[0].date, "2026-03-21");
+        assert!(rates[0].rate.unwrap() > 0.0);
     }
 }

@@ -15,7 +15,8 @@ pub use cache::{
 };
 pub use fmp::{
     BalanceSheet, CashFlowStatement, FmpClient, FmpMarketDataSource, FmpMarketDataSourceFactory,
-    FmpQuote, FmpSearchResult, FmpStockListEntry, HistoricalCandle, IncomeStatement,
+    FmpQuote, FmpSearchResult, FmpStockListEntry, HistoricalCandle, IncomeStatement, SofrRate,
+    TreasuryRate,
 };
 pub use mock::{MockMarketDataSource, MockMarketDataSourceFactory};
 pub use model::{
