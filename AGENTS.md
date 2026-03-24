@@ -259,7 +259,7 @@ files, or commits:
    - Summarize the active goal, constraints, current worktree state, and prior
      decisions so the next execution step starts from a clean context.
 3. **Create follow-up tasks when finishing**
-   - Add 1-2 follow-up exarp tasks for verification, cleanup, migration, docs,
+   - Add 1-2 follow-up exarp tasks for verification, cleanup, docs,
      or deferred risk uncovered by the implementation.
 4. **Update task status at completion**
    - Add a result comment with verification commands and move the completed task
@@ -267,10 +267,18 @@ files, or commits:
 
 Default scope for this rule:
 
-- Apply it to architecture work, data-path changes, refactors, migrations,
-  compatibility cuts, or any task likely to create follow-up work.
+- Apply it to architecture work, data-path changes, refactors, clean cuts, or
+  any task likely to create follow-up work.
 - Do not require it for trivial one-shot answers, status checks, or tiny
   isolated edits with no realistic follow-up.
+
+**CLI note:** When you call exarp-go from the terminal (outside the MCP/chat
+workflow) prefer the repo wrapper `scripts/run_exarp_go.sh` (aka `exarp_go`) so
+`PROJECT_ROOT`, `EXARP_MIGRATIONS_DIR`, and related env vars track this project.
+For tool-specific commands you can also use `scripts/run_exarp_go_tool.sh -tool
+<name> -args '<json>'` to keep the wrapper’s sanitization logic. This keeps task
+updates, docs health, scorecard, and other automation aligned with the repo
+context referenced by the agents and skills that follow.
 
 Use **`docs/AI_WORKFLOW.md`** for the preferred prompt structure, backlog
 hygiene, and thread-splitting defaults used in this repo.

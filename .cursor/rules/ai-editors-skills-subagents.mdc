@@ -9,4 +9,4 @@ alwaysApply: true
 - **Cursor rules:** This folder (`.cursor/rules/`) adds file-type or topic-specific guidance; they reference AGENTS.md/CLAUDE.md.
 - **Skills:** When using Cursor or plugin skills, they should rely on AGENTS.md and CLAUDE.md for project rules. Project root = workspace root.
 - **Subagents:** When launching subagents (e.g. mcp_task explore/shell/code-reviewer, exarp-go, Claude custom agents), include in the prompt: project root path and “Canonical guidelines: AGENTS.md and CLAUDE.md in repo root.”
-- **Full setup:** See docs/AI_EDITOR_SETUP.md for OpenCode, Claude Code, Cursor, skills, and subagent setup and command parity.
+- **Full setup:** See docs/archive/AI_EDITOR_SETUP.md for OpenCode, Claude Code, Cursor, skills, and subagent setup and command parity.

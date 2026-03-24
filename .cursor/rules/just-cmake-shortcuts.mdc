@@ -1,5 +1,5 @@
 ---
-description: Prefer Just and CMake shortcuts when suggesting commands (ib_box_spread_full_universal)
+description: Prefer current Just and Rust-first shortcuts when suggesting commands
 alwaysApply: true
 ---
 
@@ -18,13 +18,13 @@ Use these when suggesting shell commands so the user can run less typing and sta
 | (none) | `just tag-ok` | Tag current commit as last known-good build |
 | (none) | `just pull-safe` | Pull with uncommitted changes (stash → pull → pop) |
 | long path | `r` or `cd $(git rev-parse --show-toplevel)` | Commands that must run from repo root |
-| `ninja -C build` | `just build` | Build |
+| `cargo build` in `agents/backend/` | `just build-rust` | Active Rust build |
 | (none) | `build:ai-friendly` or `./scripts/build_ai_friendly.sh` | Quiet build + JSON result (for tools/AI) |
 | (none) | `build:ai-friendly-json` or `./scripts/build_ai_friendly.sh --json-only` | Build, print only JSON to stdout |
 | (none) | `just build-ai-friendly-progress` or `./scripts/build_ai_friendly.sh --progress` | Build with NDJSON progress to stderr (AI/tools) |
 | (none) | Presets `*-debug-ai` (e.g. `macos-arm64-debug-ai`) | Configure with BUILD_AI_FRIENDLY=ON (JSON compiler diagnostics) |
 | `./proto/generate.sh` (C++ only) | Not needed for C++ | C++ proto is generated at build by CMake; run `./proto/generate.sh` for Python/Go/TS |
-| `ctest --test-dir build --output-on-failure` | `just test` | Run C++ tests |
+| `cargo test` in `agents/backend/` | `just test` | Run active Rust tests |
 | `./scripts/run_linters.sh` | `just lint` | Lint |
 | Lint with parallelization (faster) | `just lint-parallel` or `./scripts/run_linters.sh --parallel` | Speed |
 | Lint with JSON (quiet, log to logs/) | `just lint-ai-friendly` | AI/tools |

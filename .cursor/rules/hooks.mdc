@@ -44,4 +44,4 @@ See `docs/LINT_AND_AUTOMATION_MATRIX.md` for how pre-commit relates to `run_lint
 
 **Build / proto:** C++ from `proto/messages.proto` is generated at build by CMake. For quiet + JSON build result use `build:ai-friendly` or `./scripts/build_ai_friendly.sh` (see `.cursor/rules/just-cmake-shortcuts.mdc`).
 
-See also: `docs/LINT_AND_AUTOMATION_MATRIX.md`, `docs/AI_EDITOR_SETUP.md` (Hooks section).
+See also: `docs/LINT_AND_AUTOMATION_MATRIX.md`, `docs/archive/AI_EDITOR_SETUP.md` (Hooks section).
