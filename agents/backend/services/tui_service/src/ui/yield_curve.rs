@@ -107,7 +107,11 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
                 "—".into(),
                 "—".into(),
                 "—".into(),
-                "error".into(),
+                app.yield_error
+                    .as_deref()
+                    .map(|e| super::truncate_detail(e, 20))
+                    .unwrap_or_else(|| "error".to_string())
+                    .into(),
             ])],
             None,
         ),
@@ -123,7 +127,7 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
         ),
     };
     let title = if app.yield_error.is_some() {
-        "Box spread curve (error)"
+        "Box spread curve (request failed)"
     } else if empty_reason.is_some() {
         "Box spread curve (empty)"
     } else {
@@ -153,7 +157,7 @@ pub fn render_yield_curve(f: &mut Frame, app: &App, area: Rect) {
     ];
     if let Some(ref e) = app.yield_error {
         bench_note_spans.push(Span::styled(
-            format!("Error: {}", super::truncate_detail(e, 50)),
+            format!("Curve fetch failed: {}", super::truncate_detail(e, 96)),
             Style::default().fg(Color::Red),
         ));
     } else if let Some(reason) = empty_reason {

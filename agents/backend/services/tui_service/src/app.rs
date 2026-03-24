@@ -1537,7 +1537,7 @@ mod tests {
         app.yield_fetch_pending = true;
         app.loans_fetch_pending = true;
 
-        let backend = TestBackend::new(220, 12);
+        let backend = TestBackend::new(240, 12);
         let mut terminal = Terminal::new(backend).unwrap();
         let frame = terminal.draw(|f| render(f, &app)).unwrap();
 

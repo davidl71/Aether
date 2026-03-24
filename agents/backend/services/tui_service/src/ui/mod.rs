@@ -600,6 +600,13 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
             Style::default().add_modifier(Modifier::BOLD),
         ));
         spans.push(Span::raw(":width"));
+        if scenarios::filtered_scenarios(app).is_empty() {
+            spans.push(Span::raw("  | "));
+            spans.push(Span::styled(
+                "No results — ] widen DTE or w clear width filter",
+                Style::default().fg(Color::Yellow),
+            ));
+        }
     }
     if app.active_tab == Tab::Orders || app.active_tab == Tab::Scenarios {
         spans.push(Span::raw("  | "));
@@ -732,7 +739,7 @@ fn append_async_status_spans<'a>(spans: &mut Vec<Span<'a>>, app: &App) {
     if app.yield_fetch_pending {
         spans.push(Span::raw("  | "));
         spans.push(Span::styled(
-            "Yield:loading",
+            "~ Yield:loading",
             Style::default()
                 .fg(Color::Blue)
                 .add_modifier(Modifier::BOLD),
@@ -748,7 +755,7 @@ fn append_async_status_spans<'a>(spans: &mut Vec<Span<'a>>, app: &App) {
     if app.loans_fetch_pending {
         spans.push(Span::raw("  | "));
         spans.push(Span::styled(
-            "Loans:loading",
+            "~ Loans:loading",
             Style::default()
                 .fg(Color::Blue)
                 .add_modifier(Modifier::BOLD),

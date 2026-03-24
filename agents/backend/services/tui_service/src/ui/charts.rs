@@ -8,10 +8,9 @@ use ratatui::{
     Frame,
 };
 
+use super::candlestick::{render_candlestick, render_volume, Candle};
 use crate::app::App;
-use crate::ui::candlestick::{
-    generate_synthetic_candles, render_candlestick, render_volume, Candle,
-};
+use crate::events::ConnectionState;
 
 const SEARCH_RESULTS: &[&str] = &[
     "SPX",
@@ -104,42 +103,26 @@ fn get_expiry_labels(curve: &api::finance_rates::CurveResponse) -> Vec<(i32, Str
 }
 
 fn get_candles_for_symbol(app: &App, symbol: &str) -> Vec<Candle> {
-    if is_option_symbol(symbol) {
-        if let Some(ref curve) = app.yield_curve {
-            return generate_synthetic_candles(curve, 20, 50.0);
+    app.chart_history
+        .get(symbol)
+        .map(|history| history.iter().cloned().collect::<Vec<_>>())
+        .unwrap_or_default()
+}
+
+fn chart_data_status(app: &App) -> String {
+    if app.nats_status.state == ConnectionState::Retrying {
+        return "NATS offline — candle data unavailable.".to_string();
+    }
+    match app.snapshot().as_ref() {
+        Some(snapshot) if snapshot.is_stale(app.config.snapshot_ttl_secs as i64) => format!(
+            "Latest snapshot is stale ({}s old). Live candle publication may be delayed.",
+            snapshot.age_secs()
+        ),
+        Some(_) => "Waiting for authoritative candle history on market-data.candle.*.".to_string(),
+        None => {
+            "Waiting for the first backend snapshot before chart history can hydrate.".to_string()
         }
     }
-
-    let base_price = match symbol.to_uppercase().as_str() {
-        "SPX" | "SPY" => 500.0,
-        "QQQ" => 430.0,
-        "NDX" => 18000.0,
-        "AAPL" => 180.0,
-        "MSFT" => 420.0,
-        "GOOG" => 175.0,
-        "TSLA" => 250.0,
-        _ => 100.0 + (symbol.len() as f64 * 10.0),
-    };
-
-    let mut candles = Vec::new();
-    let mut price = base_price;
-    for i in 0..20 {
-        let open = price;
-        let change = (i32::from(i) % 5 - 2) as f64 * 2.0;
-        let close = (open + change).max(1.0);
-        let high = open.max(close) + (i32::from(i) % 3) as f64;
-        let low = open.min(close) - (i32::from(i) % 2) as f64;
-        let volume = Some(10000.0 + (i as f64 * 1000.0));
-        candles.push(Candle {
-            open,
-            high,
-            low,
-            close,
-            volume,
-        });
-        price = close;
-    }
-    candles
 }
 
 pub fn render_charts(f: &mut Frame, app: &App, area: Rect) {
@@ -173,6 +156,20 @@ pub fn render_charts(f: &mut Frame, app: &App, area: Rect) {
 
     let symbol = &app.symbol_for_chart;
     let is_option = is_option_symbol(symbol);
+    let candles = get_candles_for_symbol(app, symbol);
+
+    if candles.is_empty() {
+        let waiting = Paragraph::new(vec![
+            Line::from(""),
+            Line::from(format!("  Waiting for live candle data for {}.", symbol)),
+            Line::from(""),
+            Line::from("  Synthetic candles are disabled."),
+            Line::from(format!("  {}", chart_data_status(app))),
+            Line::from(""),
+        ]);
+        f.render_widget(waiting, inner);
+        return;
+    }
 
     let (pill_area, chart_area, volume_area, info_area) = if is_option && app.yield_curve.is_some()
     {
@@ -222,7 +219,6 @@ pub fn render_charts(f: &mut Frame, app: &App, area: Rect) {
         render_pill_boxes(f, app, pa);
     }
 
-    let candles = get_candles_for_symbol(app, symbol);
     render_candlestick(f, &candles, symbol, chart_area);
 
     if let Some(va) = volume_area {
@@ -258,7 +254,7 @@ fn render_pill_boxes(f: &mut Frame, app: &App, area: Rect) {
 fn render_expiry_pills(
     f: &mut Frame,
     app: &App,
-    curve: &api::finance_rates::CurveResponse,
+    _curve: &api::finance_rates::CurveResponse,
     labels: &[(i32, String)],
     area: Rect,
 ) {
@@ -294,7 +290,7 @@ fn render_expiry_pills(
     let max_idx = labels.len().saturating_sub(1);
     let selected_idx = app.chart_expiry_index.min(max_idx);
 
-    for (idx, (dte, label)) in labels.iter().enumerate() {
+    for (idx, (_dte, label)) in labels.iter().enumerate() {
         let width = (label.len() as u16) + 2;
         if x + width > area.x + area.width - 1 {
             y += 1;

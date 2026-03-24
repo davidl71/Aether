@@ -2,7 +2,7 @@
 
 use api::loans::{LoanStatus, LoanType};
 use ratatui::{
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
@@ -27,10 +27,11 @@ fn type_label(t: &LoanType) -> &'static str {
 }
 
 fn truncate(s: &str, max: usize) -> String {
-    if s.len() <= max {
+    if s.chars().count() <= max {
         s.to_string()
     } else {
-        format!("{}…", &s[..max.saturating_sub(1)])
+        let t: String = s.chars().take(max.saturating_sub(1)).collect();
+        format!("{}…", t)
     }
 }
 
@@ -132,14 +133,14 @@ pub fn render_loans(f: &mut Frame, app: &App, area: Rect) {
 
     // Hint line
     let hint = Line::from(Span::styled(
-        " ↑↓ scroll  n = new loan  Del = delete  [Enter] = details ",
+        " ↑↓ scroll  n = new loan ",
         Style::default().fg(Color::DarkGray),
     ));
     let hint_area = Rect::new(inner.x, inner.y + inner.height - 1, inner.width, 1);
     f.render_widget(Paragraph::new(hint), hint_area);
 }
 
-fn render_loan_entry_form(f: &mut Frame, app: &App, area: Rect, entry: &LoanEntryState) {
+fn render_loan_entry_form(f: &mut Frame, _app: &App, area: Rect, entry: &LoanEntryState) {
     let block = Block::default()
         .title(" New Loan (Enter=submit, Esc=cancel, ↑↓=nav) ")
         .borders(Borders::ALL);
@@ -148,7 +149,7 @@ fn render_loan_entry_form(f: &mut Frame, app: &App, area: Rect, entry: &LoanEntr
     let inner = Rect::new(area.x + 2, area.y + 2, area.width - 4, area.height - 4);
 
     let fields = [
-        ("Bank Name", entry.bank_name.as_str()),
+        ("Bank Name *", entry.bank_name.as_str()),
         ("Account #", entry.account_number.as_str()),
         (
             "Type",
@@ -158,35 +159,40 @@ fn render_loan_entry_form(f: &mut Frame, app: &App, area: Rect, entry: &LoanEntr
                 "CPI"
             },
         ),
-        ("Principal", entry.principal.as_str()),
-        ("Interest %", entry.interest_rate.as_str()),
+        ("Principal *", entry.principal.as_str()),
+        ("Interest % *", entry.interest_rate.as_str()),
         ("Spread %", entry.spread.as_str()),
-        ("Start Date", entry.origination_date.as_str()),
+        ("Start Date *", entry.origination_date.as_str()),
         ("First Pmt", entry.first_payment_date.as_str()),
-        ("# Payments", entry.num_payments.as_str()),
-        ("Monthly $", entry.monthly_payment.as_str()),
-        ("Maturity", entry.maturity_date.as_str()),
+        ("# Payments *", entry.num_payments.as_str()),
+        ("[calc] Monthly $", entry.monthly_payment.as_str()),
+        ("[calc] Maturity", entry.maturity_date.as_str()),
     ];
 
-    let max_field_len = 40;
+    // Fields 9+ (monthly_payment, maturity) are read-only/calculated
+    let readonly_from = 9;
+    let max_field_len_usize: usize = 40;
     let field_rows: Vec<Line> = fields
         .iter()
         .enumerate()
         .map(|(idx, (label, value))| {
             let is_selected = idx == entry.current_field;
+            let is_readonly = idx >= readonly_from;
             let prefix = if is_selected { "> " } else { "  " };
             let label_str = format!("{}{}:", prefix, label);
             let value_display = if value.is_empty() { "—" } else { value };
             let value_str = format!(
                 " {:width$}",
                 value_display,
-                width = max_field_len - label_str.len()
+                width = max_field_len_usize.saturating_sub(label_str.len())
             );
 
             let style = if is_selected {
                 Style::default()
                     .fg(Color::Yellow)
                     .add_modifier(Modifier::BOLD)
+            } else if is_readonly {
+                Style::default().fg(Color::DarkGray)
             } else {
                 Style::default().fg(Color::White)
             };
@@ -200,9 +206,19 @@ fn render_loan_entry_form(f: &mut Frame, app: &App, area: Rect, entry: &LoanEntr
         inner,
     );
 
+    // Validation error (shown above instructions when present)
+    if let Some(ref err) = entry.validation_error {
+        let err_line = Line::from(Span::styled(
+            format!(" ⚠ {} ", err),
+            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+        ));
+        let err_area = Rect::new(area.x, area.y + area.height - 4, area.width, 1);
+        f.render_widget(Paragraph::new(err_line), err_area);
+    }
+
     // Instructions at bottom
     let instructions = Line::from(Span::styled(
-        " Type values  [Tab] toggle SHIR/CPI  [Enter] calculate/submit  [Esc] cancel ",
+        " ↑↓/Tab=navigate  Enter=submit (Type field: toggle SHIR/CPI)  Esc=cancel ",
         Style::default().fg(Color::DarkGray),
     ));
     let instr_area = Rect::new(area.x, area.y + area.height - 3, area.width, 1);
