@@ -1,13 +1,7 @@
 use chrono::Utc;
-use market_data::MarketDataEvent;
-use risk::RiskDecision;
 use serde::{Deserialize, Serialize};
 
 use common::snapshot as cmn;
-
-use crate::runtime_state::{
-    RuntimeExecutionState, RuntimeExecutionUpdate, RuntimeMarketState, RuntimeRiskState,
-};
 
 // ---------------------------------------------------------------------------
 // Api-only types (not shared)
@@ -170,34 +164,6 @@ impl SystemSnapshot {
     pub fn set_strategy_status(&mut self, status: impl Into<String>) {
         self.strategy = status.into();
     }
-
-    pub fn apply_market_event(&mut self, event: &MarketDataEvent) {
-        self.touch();
-        let mut runtime_market = RuntimeMarketState::from_snapshot(self);
-        runtime_market.apply_market_event(event);
-        runtime_market.project_into_snapshot(self);
-    }
-
-    pub fn apply_strategy_execution(
-        &mut self,
-        decision: StrategyDecisionSnapshot,
-    ) -> RuntimeExecutionUpdate {
-        self.touch();
-        self.strategy = "RUNNING".into();
-        let order_id = format!("ORD-{}", Utc::now().timestamp_millis());
-        let mut runtime_state = RuntimeExecutionState::from_snapshot(self);
-        let update =
-            runtime_state.apply_strategy_decision(&decision, order_id.clone(), &self.account_id);
-        runtime_state.project_into_snapshot(self);
-        update
-    }
-
-    pub fn update_risk_status(&mut self, outcome: &RiskDecision) {
-        self.touch();
-        let mut runtime_risk = RuntimeRiskState::from_snapshot(self);
-        runtime_risk.apply_risk_decision(outcome);
-        runtime_risk.project_into_snapshot(self);
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -220,93 +186,6 @@ pub use common::snapshot::StrategyDecisionSnapshot;
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn apply_market_event_delegates_to_runtime_market_state() {
-        let mut snapshot = SystemSnapshot::default();
-        let event = MarketDataEvent {
-            symbol: "SPY".into(),
-            bid: 500.0,
-            ask: 502.0,
-            timestamp: Utc::now(),
-            ..Default::default()
-        };
-
-        snapshot.apply_market_event(&event);
-
-        assert_eq!(snapshot.symbols.len(), 1);
-        assert_eq!(snapshot.symbols[0].symbol, "SPY");
-        assert_eq!(snapshot.symbols[0].last, 501.0);
-        assert!(snapshot.metrics.portal_ok);
-        assert!(snapshot.metrics.tws_ok);
-        assert!(snapshot.metrics.questdb_ok);
-    }
-
-    #[test]
-    fn update_risk_status_delegates_to_runtime_risk_state() {
-        let mut snapshot = SystemSnapshot::default();
-
-        snapshot.update_risk_status(&RiskDecision {
-            allowed: false,
-            reason: Some("limit".into()),
-        });
-
-        assert!(!snapshot.risk.allowed);
-        assert_eq!(snapshot.risk.reason.as_deref(), Some("limit"));
-    }
-
-    #[test]
-    fn apply_strategy_execution_creates_runtime_position_and_order() {
-        let mut snapshot = SystemSnapshot::default();
-        let created_at = Utc::now();
-
-        let _ = snapshot.apply_strategy_execution(StrategyDecisionSnapshot::new(
-            "AAPL".into(),
-            10,
-            "BUY",
-            150.0,
-            created_at,
-        ));
-
-        assert_eq!(snapshot.positions.len(), 1);
-        assert_eq!(snapshot.orders.len(), 1);
-        assert_eq!(snapshot.decisions.len(), 1);
-        assert_eq!(snapshot.historic.len(), 0);
-        assert_eq!(snapshot.positions[0].symbol, "AAPL");
-        assert_eq!(snapshot.positions[0].quantity, 10);
-        assert_eq!(snapshot.positions[0].cost_basis, 150.0);
-    }
-
-    #[test]
-    fn apply_strategy_execution_closing_position_moves_to_history() {
-        let mut snapshot = SystemSnapshot::default();
-        let opened_at = Utc::now();
-        let closed_at = opened_at + chrono::TimeDelta::seconds(1);
-
-        let _ = snapshot.apply_strategy_execution(StrategyDecisionSnapshot::new(
-            "AAPL".into(),
-            10,
-            "BUY",
-            150.0,
-            opened_at,
-        ));
-        let _ = snapshot.apply_strategy_execution(StrategyDecisionSnapshot::new(
-            "AAPL".into(),
-            -10,
-            "SELL",
-            155.0,
-            closed_at,
-        ));
-
-        assert!(snapshot.positions.is_empty());
-        assert_eq!(snapshot.orders.len(), 2);
-        assert_eq!(snapshot.decisions.len(), 2);
-        assert_eq!(snapshot.historic.len(), 1);
-        assert_eq!(snapshot.historic[0].symbol, "AAPL");
-        assert_eq!(snapshot.historic[0].quantity, 10);
-        assert_eq!(snapshot.historic[0].realized_pnl, 50.0);
-        assert_eq!(snapshot.historic[0].closed_at, closed_at);
-    }
 
     #[test]
     fn alert_from_common_round_trip() {

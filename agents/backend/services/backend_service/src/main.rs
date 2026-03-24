@@ -4,8 +4,7 @@ use anyhow::Context;
 use api::{
     credentials::{get_credential, CredentialKey},
     mock_data::seed_snapshot,
-    Alert, HealthAggregateState, RuntimeExecutionState, RuntimeMarketState,
-    RuntimeProducerDecision, StrategyController, StrategyDecisionSnapshot, SystemSnapshot,
+    Alert, HealthAggregateState, StrategyController, StrategyDecisionSnapshot, SystemSnapshot,
 };
 use async_trait::async_trait;
 use broker_engine::{BrokerConfig, BrokerEngine, MarketDataSubscriptionError};
@@ -16,6 +15,10 @@ use market_data::{
 };
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use risk::{RiskCheck, RiskDecision, RiskEngine, RiskLimit, RiskViolation};
+use runtime_state::{
+    apply_market_event, apply_risk_status, apply_strategy_execution, RuntimeExecutionState,
+    RuntimeMarketState, RuntimeProducerDecision,
+};
 use serde::Deserialize;
 use strategy::model::TradeSide;
 use strategy::{Decision as StrategyDecisionModel, StrategySignal};
@@ -35,6 +38,7 @@ mod health_aggregation;
 mod ib_positions;
 mod nats_integration;
 mod rest_snapshot;
+mod runtime_state;
 mod shared_state;
 mod snapshot_publisher;
 mod swiftness;
@@ -697,7 +701,7 @@ async fn handle_market_event(
 
     let current_candle = {
         let mut snapshot = state.write().await;
-        snapshot.apply_market_event(event);
+        apply_market_event(&mut snapshot, event);
         let current_candle = snapshot
             .symbols
             .iter()
@@ -840,9 +844,9 @@ fn spawn_strategy_fanout(
 
             {
                 let mut snapshot = state.write().await;
-                snapshot.update_risk_status(&outcome);
+                apply_risk_status(&mut snapshot, &outcome);
                 if outcome.allowed {
-                    let _ = snapshot.apply_strategy_execution(decision_snapshot.clone());
+                    let _ = apply_strategy_execution(&mut snapshot, decision_snapshot.clone());
                 } else {
                     let alert = Alert::error(
                         outcome
