@@ -147,6 +147,8 @@ pub struct App {
     pub chart_strike_index: usize,
     /// Scroll/selection index for Alerts tab (arrow-key scroll).
     pub alerts_scroll: usize,
+    /// Scroll/selection index for Dashboard symbols (arrow-key scroll).
+    pub dashboard_scroll: usize,
     /// Scroll/selection index for Scenarios tab (arrow-key scroll).
     pub scenarios_scroll: usize,
     /// DTE window center for Scenarios (default 4). Range = center ± scenarios_dte_half_width.
@@ -250,6 +252,7 @@ impl App {
             chart_expiry_index: 0,
             chart_strike_index: 2,
             alerts_scroll: 0,
+            dashboard_scroll: 0,
             scenarios_scroll: 0,
             scenarios_dte_center: 4,
             scenarios_dte_half_width: 2,

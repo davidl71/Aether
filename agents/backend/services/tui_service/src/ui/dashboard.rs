@@ -53,9 +53,19 @@ pub fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
         snap.inner
             .symbols
             .iter()
-            .map(|s| {
+            .enumerate()
+            .map(|(i, s)| {
                 let in_watchlist = watchlist_upper.contains(&s.symbol.to_uppercase());
-                let style = if in_watchlist {
+                let is_selected = i == app.dashboard_scroll;
+                let style = if is_selected {
+                    Style::default()
+                        .add_modifier(Modifier::REVERSED)
+                        .fg(if in_watchlist {
+                            Color::Cyan
+                        } else {
+                            Color::White
+                        })
+                } else if in_watchlist {
                     Style::default().fg(Color::Cyan)
                 } else {
                     Style::default()

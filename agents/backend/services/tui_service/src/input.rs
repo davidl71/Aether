@@ -42,6 +42,9 @@ pub enum Action {
     AlertsScrollDown,
     AlertsScrollPageUp,
     AlertsScrollPageDown,
+    DashboardScrollUp,
+    DashboardScrollDown,
+    DashboardNavigateToChart,
     ScenariosScrollUp,
     ScenariosScrollDown,
     ScenariosScrollPageUp,
@@ -185,6 +188,13 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         KeyCode::Down if app.active_tab == Tab::Alerts => Some(Action::AlertsScrollDown),
         KeyCode::PageUp if app.active_tab == Tab::Alerts => Some(Action::AlertsScrollPageUp),
         KeyCode::PageDown if app.active_tab == Tab::Alerts => Some(Action::AlertsScrollPageDown),
+
+        // Dashboard
+        KeyCode::Up if app.active_tab == Tab::Dashboard => Some(Action::DashboardScrollUp),
+        KeyCode::Down if app.active_tab == Tab::Dashboard => Some(Action::DashboardScrollDown),
+        KeyCode::Enter if app.active_tab == Tab::Dashboard => {
+            Some(Action::DashboardNavigateToChart)
+        }
 
         // Scenarios
         KeyCode::Up if app.active_tab == Tab::Scenarios => Some(Action::ScenariosScrollUp),
@@ -524,6 +534,33 @@ pub fn apply_action(app: &mut App, action: Action) {
                 .unwrap_or(0);
             if len > 0 {
                 app.alerts_scroll = (app.alerts_scroll + 10).min(len - 1);
+            }
+        }
+        Action::DashboardScrollUp => {
+            app.dashboard_scroll = app.dashboard_scroll.saturating_sub(1);
+        }
+        Action::DashboardScrollDown => {
+            let len = app
+                .snapshot()
+                .as_ref()
+                .map(|s| s.inner.symbols.len())
+                .unwrap_or(0);
+            if len > 0 {
+                app.dashboard_scroll = (app.dashboard_scroll + 1).min(len - 1);
+            }
+        }
+        Action::DashboardNavigateToChart => {
+            let symbol = app.snapshot().as_ref().and_then(|snap| {
+                let idx = app
+                    .dashboard_scroll
+                    .min(snap.inner.symbols.len().saturating_sub(1));
+                snap.inner.symbols.get(idx).map(|s| s.symbol.clone())
+            });
+            if let Some(symbol) = symbol {
+                app.active_tab = Tab::Charts;
+                app.symbol_for_chart = symbol;
+                app.chart_search_visible = false;
+                app.chart_search_input.clear();
             }
         }
         Action::ScenariosScrollUp => {
