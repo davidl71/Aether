@@ -23,6 +23,7 @@ pub enum CredentialKey {
     AlpacaSecretKey,
     TastytradeApiKey,
     TastytradeAccount,
+    TaseApiKey,
 }
 
 impl CredentialKey {
@@ -35,6 +36,7 @@ impl CredentialKey {
             Self::AlpacaSecretKey => "alpaca_secret_key",
             Self::TastytradeApiKey => "tastytrade_api_key",
             Self::TastytradeAccount => "tastytrade_account",
+            Self::TaseApiKey => "tase_api_key",
         }
     }
 
@@ -47,6 +49,7 @@ impl CredentialKey {
             Self::AlpacaSecretKey => "ALPACA_SECRET_KEY",
             Self::TastytradeApiKey => "TASTYTRADE_API_KEY",
             Self::TastytradeAccount => "TASTYTRADE_ACCOUNT",
+            Self::TaseApiKey => "TASE_API_KEY",
         }
     }
 
@@ -59,6 +62,7 @@ impl CredentialKey {
             Self::AlpacaSecretKey => "alpaca-secret",
             Self::TastytradeApiKey => "tastytrade-key",
             Self::TastytradeAccount => "tastytrade-account",
+            Self::TaseApiKey => "tase",
         }
     }
 
@@ -71,11 +75,26 @@ impl CredentialKey {
             Self::AlpacaSecretKey => "Alpaca Secret Key",
             Self::TastytradeApiKey => "Tastytrade API Key",
             Self::TastytradeAccount => "Tastytrade Account",
+            Self::TaseApiKey => "TASE API Key",
         }
     }
 
     fn file_key(&self) -> String {
         self.user().to_string()
+    }
+
+    pub fn from_name(name: &str) -> Option<Self> {
+        match name.to_lowercase().as_str() {
+            "fred" => Some(Self::FredApiKey),
+            "fmp" => Some(Self::FmpApiKey),
+            "polygon" => Some(Self::PolygonApiKey),
+            "alpaca-key" | "alpaca_api_key" => Some(Self::AlpacaApiKey),
+            "alpaca-secret" | "alpaca_secret" => Some(Self::AlpacaSecretKey),
+            "tastytrade-key" | "tastytrade_api_key" => Some(Self::TastytradeApiKey),
+            "tastytrade-account" | "tastytrade_account" => Some(Self::TastytradeAccount),
+            "tase" => Some(Self::TaseApiKey),
+            _ => None,
+        }
     }
 }
 
@@ -175,6 +194,14 @@ pub fn tastytrade_account() -> Option<String> {
     get_credential(CredentialKey::TastytradeAccount)
 }
 
+pub fn tase_api_key() -> Option<String> {
+    get_credential(CredentialKey::TaseApiKey)
+}
+
+pub fn set_tase_api_key(key: &str) -> Result<(), String> {
+    set_credential(CredentialKey::TaseApiKey, key)
+}
+
 pub fn list_credentials() -> Vec<(&'static str, &'static str)> {
     vec![
         ("fred", "FRED (Federal Reserve Economic Data)"),
@@ -184,5 +211,6 @@ pub fn list_credentials() -> Vec<(&'static str, &'static str)> {
         ("alpaca-secret", "Alpaca Secret Key"),
         ("tastytrade-key", "Tastytrade API Key"),
         ("tastytrade-account", "Tastytrade Account Number"),
+        ("tase", "TASE (Tel Aviv Stock Exchange)"),
     ]
 }

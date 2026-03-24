@@ -648,20 +648,9 @@ fn run_cred(sub: CredCmd) -> Result<()> {
     use api::credentials::{self, CredentialKey};
 
     fn parse_key(name: &str) -> Result<CredentialKey, String> {
-        match name.to_lowercase().as_str() {
-            "fred" => Ok(CredentialKey::FredApiKey),
-            "fmp" => Ok(CredentialKey::FmpApiKey),
-            "polygon" => Ok(CredentialKey::PolygonApiKey),
-            "alpaca-key" | "alpaca_api_key" => Ok(CredentialKey::AlpacaApiKey),
-            "alpaca-secret" | "alpaca_secret" => Ok(CredentialKey::AlpacaSecretKey),
-            "tastytrade-key" | "tastytrade_api_key" => Ok(CredentialKey::TastytradeApiKey),
-            "tastytrade-account" | "tastytrade_account" => Ok(CredentialKey::TastytradeAccount),
-            _ => Err(format!(
-                "Unknown credential '{}'. Use: {}",
-                name,
-                list_credential_names()
-            )),
-        }
+        CredentialKey::from_name(name).ok_or_else(|| {
+            format!("Unknown credential '{}'. Use: {}", name, list_credential_names())
+        })
     }
 
     fn list_credential_names() -> String {
@@ -727,16 +716,8 @@ fn run_cred(sub: CredCmd) -> Result<()> {
             println!("Available credentials:");
             let creds = credentials::list_credentials();
             for (key_str, desc) in &creds {
-                let test_key = match *key_str {
-                    "fred" => CredentialKey::FredApiKey,
-                    "fmp" => CredentialKey::FmpApiKey,
-                    "polygon" => CredentialKey::PolygonApiKey,
-                    "alpaca-key" => CredentialKey::AlpacaApiKey,
-                    "alpaca-secret" => CredentialKey::AlpacaSecretKey,
-                    "tastytrade-key" => CredentialKey::TastytradeApiKey,
-                    "tastytrade-account" => CredentialKey::TastytradeAccount,
-                    _ => CredentialKey::FredApiKey,
-                };
+                let test_key = CredentialKey::from_name(key_str)
+                    .unwrap_or(CredentialKey::FredApiKey);
                 let status = if credentials::get_credential(test_key).is_some() {
                     "✓"
                 } else {
