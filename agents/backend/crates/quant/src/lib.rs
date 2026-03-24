@@ -7,17 +7,20 @@ pub mod option_chain;
 pub mod yield_curve;
 
 use rand::SeedableRng;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use time::Date;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Copy)]
 pub enum OptionKind {
     Call,
     Put,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, derive_builder::Builder)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Copy, derive_builder::Builder)]
 pub struct Greeks {
     pub delta: f64,
     pub gamma: f64,
@@ -38,7 +41,8 @@ impl Default for Greeks {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, derive_builder::Builder)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Copy, derive_builder::Builder)]
 pub struct BondGreeks {
     pub delta: f64,
     pub gamma: f64,
@@ -59,7 +63,8 @@ impl Default for BondGreeks {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Default)]
 pub struct Position {
     pub symbol: String,
     pub quantity: f64,
@@ -103,21 +108,24 @@ impl Position {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Copy)]
 pub struct HistoricalVolatilityResult {
     pub hv: f64,
     pub sample_std_dev: f64,
     pub variance: f64,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, Copy)]
 pub struct RiskMetrics {
     pub var_95: f64,
     pub cvar_95: f64,
     pub max_loss: f64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, derive_builder::Builder)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, derive_builder::Builder)]
 pub struct StrategyResult {
     pub name: String,
     pub payoff_at_expiry: f64,
@@ -127,7 +135,8 @@ pub struct StrategyResult {
     pub cost: f64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, derive_builder::Builder)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, derive_builder::Builder)]
 pub struct BoxSpreadResult {
     pub synthetic_leg_cost: f64,
     pub actual_leg_cost: f64,
@@ -137,7 +146,8 @@ pub struct BoxSpreadResult {
     pub legs: Vec<BoxSpreadLeg>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, derive_builder::Builder)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, derive_builder::Builder)]
 pub struct BoxSpreadLeg {
     pub instrument: String,
     pub strike: f64,
@@ -146,7 +156,8 @@ pub struct BoxSpreadLeg {
     pub price: f64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, derive_builder::Builder)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, derive_builder::Builder)]
 pub struct PutCallParityResult {
     pub market_cost: f64,
     pub theoretical_cost: f64,
@@ -163,7 +174,8 @@ pub struct PutCallParityResult {
     pub parity_flagged: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, derive_builder::Builder)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, derive_builder::Builder)]
 pub struct ComboResult {
     pub name: String,
     pub net_debit: f64,
@@ -173,7 +185,8 @@ pub struct ComboResult {
     pub legs: Vec<ComboLeg>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, derive_builder::Builder)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone, derive_builder::Builder)]
 pub struct ComboLeg {
     pub instrument: String,
     pub strike: f64,

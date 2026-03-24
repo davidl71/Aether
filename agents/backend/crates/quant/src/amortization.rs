@@ -1,6 +1,8 @@
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug)]
 pub struct CashFlow {
     pub period: i32,
     pub date: String,
@@ -10,7 +12,8 @@ pub struct CashFlow {
     pub balance: f64,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug)]
 pub struct AmortizationSchedule {
     pub face_amount: f64,
     pub coupon_rate: f64,
@@ -73,7 +76,8 @@ impl AmortizationSchedule {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug)]
 pub struct BondPriceResult {
     pub price: f64,
     pub duration: f64,

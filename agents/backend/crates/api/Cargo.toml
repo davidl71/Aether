@@ -24,11 +24,11 @@ prost = "0.13"
 prost-types = "0.13"
 common = { path = "../common" }
 market_data = { path = "../market_data" }
-risk = { path = "../risk" }
+risk = { path = "../risk", features = ["serde"] }
 strategy = { path = "../strategy" }
 nats_adapter = { path = "../nats_adapter" }
 discount_bank_parser = { path = "../discount_bank_parser" }
-quant = { path = "../quant" }
+quant = { path = "../quant", features = ["serde"] }
 keyring = { version = "3", optional = true }
 dirs = "5"
 

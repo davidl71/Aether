@@ -1,25 +1,30 @@
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug)]
 pub struct RiskLimit {
     pub symbol: String,
     pub max_position: i32,
     pub max_notional: f64,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug)]
 pub struct RiskDecision {
     pub allowed: bool,
     pub reason: Option<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug)]
 pub struct RiskViolation {
     pub symbol: String,
     pub details: String,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug, Default)]
 pub struct PositionRisk {
     pub position_size: f64,
     pub max_loss: f64,
@@ -38,7 +43,8 @@ pub struct PositionRisk {
     pub margin_call_risk: bool,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug, Default)]
 pub struct PortfolioRisk {
     pub total_exposure: f64,
     pub total_delta: f64,
@@ -49,7 +55,8 @@ pub struct PortfolioRisk {
     pub var_99: f64,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug)]
 pub struct BoxSpreadLeg {
     pub net_debit: f64,
     pub strike_width: f64,

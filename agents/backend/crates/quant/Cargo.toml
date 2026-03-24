@@ -7,13 +7,16 @@ description = "Quantitative finance calculations (BSM, Greeks, Monte Carlo, yiel
 [lib]
 crate-type = ["lib", "cdylib", "staticlib"]
 
+[features]
+serde = ["dep:serde"]
+
 [dependencies]
 common = { path = "../common" }
 anyhow = { workspace = true }
 derive_builder = { workspace = true }
 parking_lot = "0.12"
 rand = "0.8"
-serde = { workspace = true }
+serde = { workspace = true, optional = true }
 thiserror = { workspace = true }
 time = "0.3"
 

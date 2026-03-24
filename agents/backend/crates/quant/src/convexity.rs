@@ -1,13 +1,16 @@
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug)]
 pub struct BondData {
     pub duration: f64,
     pub convexity: f64,
     pub name: String,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug, Default)]
 pub struct OptimizationResult {
     pub short_term_weight: f64,
     pub long_term_weight: f64,

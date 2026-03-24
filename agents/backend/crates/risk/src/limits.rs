@@ -9,10 +9,12 @@
 ///
 /// All inputs are primitive scalars — no Eigen, no QuantLib.
 /// StrategyParams / RiskConfig equivalents are captured in [`RiskLimits`].
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 /// Configuration mirror of C++ `config::RiskConfig` limits fields.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug, PartialEq)]
 pub struct RiskLimits {
     /// Maximum total capital deployed across all positions (abs market value sum).
     pub max_total_exposure: f64,

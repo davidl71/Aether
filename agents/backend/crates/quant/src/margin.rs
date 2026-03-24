@@ -1,7 +1,9 @@
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug, Default)]
 pub struct MarginResult {
     pub initial_margin: f64,
     pub maintenance_margin: f64,
@@ -33,7 +35,7 @@ impl MarginResult {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct BoxSpreadMarginInput {
     pub short_call_strike: f64,
     pub short_call_price: f64,
