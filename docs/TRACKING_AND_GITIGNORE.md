@@ -9,7 +9,7 @@ Decisions on which uncommitted paths to add to version control and which to igno
 | **Generated code** | **Do not track** | Reproducible at build time; reduces noise and merge conflicts. |
 | **Third-party vendor trees** | **Do not track** | Large clones (tws-api, Intel libs) and cache archives; use scripts/docs to obtain. |
 | **Build symlinks** | **Do not track** | Machine-specific (e.g. `build-ramdisk` → ramdisk volume). |
-| **Project source** | **Track** | C++ in `native/`, Python integration, Rust/Go in `agents/`, scripts, Ansible, shared editor config. |
+| **Project source** | **Track** | Rust in `agents/backend/`, Python/scripts where still active, docs, scripts, Ansible, and shared editor config. Legacy `native/` references are historical only. |
 | **Project docs** | **Track** | Exarp-go, Ansible, subagents, planning (unless auto-generated reports). |
 | **Nix lockfile** | **Track** | `flake.lock` for reproducible Nix builds. |
 
@@ -30,16 +30,16 @@ Decisions on which uncommitted paths to add to version control and which to igno
 ## Track (add to repo)
 
 - **Agents**
-  - `agents/backend/` – Rust backend source (handlers, ledger_recorder, config, market_data_loop, seed, strategy_loop).
+  - `agents/backend/` – Rust backend source (handlers, config, market-data wiring, seed, service/runtime modules).
   - `agents/go/proto/` – Go proto-related code (track unless we later generate and add to ignore).
 - **Ansible**
   - `ansible/inventories/`, `ansible/playbooks/development.yml`, `ansible/roles/devtools/vars/`, `ansible/run-dev-setup.sh`.
 - **Docs**
-  - `docs/EXARP_GO_ANSIBLE_PATTERNS.md`, `docs/EXARP_GO_GIT_HOOKS_LEARNINGS.md`, `docs/EXARP_GO_PATTERNS_AND_PORTS.md`, `docs/EXARP_GO_SCRIPTS_AND_PATTERNS.md`, `docs/EXARP_GO_VS_THIS_REPO.md`, `docs/SUBAGENTS_REFERENCE.md`, `docs/planning/`.
-- **Native (C++)**
-  - `native/include/` – New headers (cache_client, tws_*, proto_adapter, etc.).
-  - `native/src/` – New/updated .cpp (cache_client, connection_utils, proto_adapter, tws_*, types).
-  - `native/tests/` – test_proto_adapter.cpp, types_stub_for_proto_test.cpp.
+  - Historical exarp-go/subagent docs mostly live under `docs/archive/`; use current active docs in `docs/` for present runtime guidance.
+- **Legacy native (historical only)**
+  - `native/` paths referenced in older notes are historical and should not be
+    used as guidance for new active-source tracking decisions unless native code
+    is deliberately reintroduced.
 - **Python**
   - `python/integration/` – box_spread_models, broker_positions, cache_client, discount_bank_*, ledger_queries, nats_helper.
 - **Scripts**

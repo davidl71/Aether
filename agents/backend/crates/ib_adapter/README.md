@@ -2,30 +2,52 @@
 
 Async Rust wrapper for Interactive Brokers TWS/Gateway. Uses the [ibapi](https://docs.rs/ibapi) crate for socket communication.
 
-## Order placement readiness gate
+## Scope
 
-**Before placing any order** (e.g. `place_order`, `place_bag_order` or equivalent), the session must be **ready**:
+`ib_adapter` is the active **read-only** IBKR/TWS adapter. It owns:
+
+- connection lifecycle
+- market-data subscriptions
+- option-chain lookup for analytics
+- account and position fetches
+
+It does **not** own active order placement anymore. Execution-only order
+placement, BAG/combo submission, cancellation, and resolved contract metadata
+for order flows now live in `ib_execution_legacy`.
+
+## Legacy order placement readiness gate
+
+For explicit legacy execution workflows, the session must be **ready** before
+placing any order:
 
 1. **Connected** — TWS/Gateway connection established (`ConnectionState::Connected`).
 2. **nextValidId received** — The API has sent the next valid order ID. The underlying `ibapi::Client` exposes this (e.g. after `next_order_id()` is valid); do not submit orders until the client has received `nextValidId` from the server.
 
 **Rationale:** TWS requires that order IDs are only used after the server has confirmed the session with `nextValidId`. Submitting before that can cause rejections or duplicate IDs.
 
-**Actionable:** In any path that calls order placement (strategy, TUI, CLI), check that the adapter is connected and that a valid next order ID is available before submitting. See [ACTIONABLE_ITEMS_PATTERNS §1 — Gate actions on readiness](../../../../docs/platform/ACTIONABLE_ITEMS_PATTERNS.md#1-gate-actions-on-readiness) and [§2 — Order ID lifecycle](../../../../docs/platform/ACTIONABLE_ITEMS_PATTERNS.md#2-order-id-lifecycle-never-reuse).
+**Actionable:** Any future opt-in execution path should check that the adapter is
+connected and that a valid next order ID is available before submitting. See
+[ACTIONABLE_ITEMS_PATTERNS §1 — Gate actions on readiness](../../../../docs/platform/ACTIONABLE_ITEMS_PATTERNS.md#1-gate-actions-on-readiness) and
+[§2 — Order ID lifecycle](../../../../docs/platform/ACTIONABLE_ITEMS_PATTERNS.md#2-order-id-lifecycle-never-reuse).
 
-## Event channels (reserved for future wiring)
+## Event channels
 
-`IbAdapter` holds three MPSC senders for streaming events; **none are currently wired** to producers or consumers:
+`IbAdapter` holds the active market-data sender/broadcast path for streaming
+quote events. Historical references to `position_tx` and `order_tx` are now
+legacy design notes rather than active exported channels.
 
-| Channel        | Type                    | Intent |
-|----------------|-------------------------|--------|
-| `market_data_tx` | `Sender<MarketDataEvent>`  | Forward TWS tick updates (bid/ask/last/volume) to a consumer task. |
-| `position_tx`    | `Sender<PositionEvent>`    | Stream position updates as they arrive (e.g. after `request_positions` or position subscription). |
-| `order_tx`       | `Sender<OrderStatusEvent>` | Stream order status updates (filled, cancelled, etc.). |
+| Channel | Type | Intent |
+|---------|------|--------|
+| `market_data_tx` | `Sender<MarketDataEvent>` | Forward TWS tick updates (bid/ask/last/volume) to a consumer task. |
 
-**Current state:** Channels are created in `IbAdapter::new` and the receivers are dropped, so nothing is sent. `request_market_data` does not yet forward ticks to `market_data_tx`; `request_positions` returns a snapshot and does not stream to `position_tx`; order placement does not push to `order_tx`.
+**Current state:** `request_market_data` forwards tick-derived quote events to
+`market_data_tx`. The remaining integration gap is on the consumer side: the
+active backend startup path does not yet attach a receiver/bridge cleanly enough
+to make broker events flow through the shared aggregator and NATS path.
 
-**Future wiring:** Callers can clone the senders via `market_data_tx()`, `position_tx()`, and `order_tx()` and pass the receiver to a backend or TUI task. When wiring: (1) start a task that `recv()`s on the receiver and applies events to shared state or NATS; (2) from TWS callbacks or subscription streams, call `send()` on the cloned sender. See `backend_service::tws_market_data` and `tws_positions` for current TWS integration that uses `ibapi::Client` directly (not `IbAdapter`); a future refactor could route through `IbAdapter` and these channels.
+The active product direction is to keep TWS integration on `IbAdapter` for
+read-only flows and finish the service-side market-data wiring instead of
+reintroducing another parallel path.
 
 ## Scanner (stub)
 
