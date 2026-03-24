@@ -22,6 +22,7 @@ url = "2"
 yfinance-rs = "0.7.2"
 thiserror = "1"
 rusqlite = { version = "0.37", features = ["bundled"] }
+regex = "1"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "macros"] }

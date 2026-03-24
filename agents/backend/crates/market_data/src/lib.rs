@@ -6,6 +6,7 @@ pub mod model;
 pub mod pipeline;
 pub mod polygon;
 pub mod polygon_ws;
+pub mod shir;
 pub mod yahoo;
 pub mod yield_curve;
 
@@ -18,6 +19,7 @@ pub use fmp::{
     FmpQuote, FmpSearchResult, FmpStockListEntry, HistoricalCandle, IncomeStatement, SofrRate,
     TreasuryRate,
 };
+pub use shir::{default_shir_rate, fetch_shir_rate, ShirRate};
 pub use mock::{MockMarketDataSource, MockMarketDataSourceFactory};
 pub use model::{
     MarketDataEvent, MarketDataEventBuilder, MarketDataSource, MarketDataSourceFactory,
