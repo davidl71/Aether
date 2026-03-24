@@ -45,6 +45,8 @@ async fn test_market_data_publishing() {
         volume: 0,
         timestamp: Some(prost_types::Timestamp::from(std::time::SystemTime::now())),
         quote_quality: 0,
+        source: "test".to_string(),
+        source_priority: 100,
     };
     publisher.publish(&event).await.expect("Failed to publish");
 
@@ -191,6 +193,8 @@ async fn test_wildcard_subscriptions() {
         volume: 0,
         timestamp: None,
         quote_quality: 0,
+        source: "test".to_string(),
+        source_priority: 100,
     };
     let event_xsp = pb::MarketDataEvent {
         contract_id: 0,
@@ -201,6 +205,8 @@ async fn test_wildcard_subscriptions() {
         volume: 0,
         timestamp: None,
         quote_quality: 0,
+        source: "test".to_string(),
+        source_priority: 100,
     };
 
     publisher_spy

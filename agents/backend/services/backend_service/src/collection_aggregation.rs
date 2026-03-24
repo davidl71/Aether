@@ -431,6 +431,8 @@ mod tests {
                 volume: 3,
                 timestamp: None,
                 quote_quality: 0,
+                source: "test".to_string(),
+                source_priority: 100,
             }
             .encode_to_vec(),
         };

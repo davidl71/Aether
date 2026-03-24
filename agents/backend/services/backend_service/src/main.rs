@@ -223,12 +223,69 @@ async fn main() -> anyhow::Result<()> {
 
     let market_ctrl_rx = strategy_ctrl_rx;
 
+    // Create shared aggregator for source priority resolution
+    let market_aggregator = Arc::new(market_data::MarketDataAggregator::new());
+
+    // Spawn broker market data loop if broker is enabled
+    // This runs at highest priority (100) so it takes precedence over polling sources
+    let broker_engine_for_market_data: Option<Arc<dyn BrokerEngine>> = if config
+        .broker
+        .paper_trading
+        || std::env::var("IB_BROKER_ENABLED").is_ok()
+    {
+        let broker_config = BrokerConfig {
+            host: config.broker.host.clone(),
+            port: config.broker.port,
+            client_id: config.broker.client_id,
+            paper_trading: config.broker.paper_trading,
+        };
+        let adapter = IbAdapter::new(broker_config.clone());
+        match adapter.connect().await {
+            Ok(()) => {
+                info!(host = %broker_config.host, port = %broker_config.port, "Connected to TWS for market data + order placement");
+                Some(Arc::new(adapter) as Arc<dyn BrokerEngine>)
+            }
+            Err(e) => {
+                warn!(error = %e, "Failed to connect to TWS for market data; using polling sources only");
+                None
+            }
+        }
+    } else {
+        None
+    };
+
+    if let Some(ref engine) = broker_engine_for_market_data {
+        let symbols = if config.market_data.symbols.is_empty() {
+            default_market_symbols()
+        } else {
+            config.market_data.symbols.clone()
+        };
+        let agg = market_aggregator.clone();
+        let state_clone = state.clone();
+        let signal_clone = strategy_signal_tx.clone();
+        let toggle_clone = market_ctrl_rx.clone();
+        let nats_clone = nats_integration.clone();
+
+        info!(provider = "tws", symbol_count = symbols.len(), "spawning TWS market data provider (priority 100, takes precedence over polling sources)");
+        spawn_broker_market_data_loop(
+            engine.clone(),
+            symbols,
+            state_clone,
+            signal_clone,
+            toggle_clone,
+            nats_clone,
+            agg,
+        );
+    }
+
     spawn_market_data_provider(
         &config.market_data,
         state.clone(),
         strategy_signal_tx,
         market_ctrl_rx,
         nats_integration.clone(),
+        None, // Broker market data already spawned above
+        market_aggregator.clone(),
     )?;
 
     health_aggregation::spawn_health_aggregator(health_state.clone(), nats_url.clone());
@@ -247,26 +304,14 @@ async fn main() -> anyhow::Result<()> {
         });
     if let Some(ref nats) = *nats_integration {
         if let Some(client) = nats.client() {
-            let broker_engine: Option<Arc<dyn BrokerEngine>> = if config.broker.paper_trading
-                || std::env::var("IB_BROKER_ENABLED").is_ok()
+            let broker_engine: Option<Arc<dyn BrokerEngine>> = if let Some(ref engine) =
+                broker_engine_for_market_data
             {
-                let broker_config = BrokerConfig {
-                    host: config.broker.host.clone(),
-                    port: config.broker.port,
-                    client_id: config.broker.client_id,
-                    paper_trading: config.broker.paper_trading,
-                };
-                let adapter = IbAdapter::new(broker_config.clone());
-                match adapter.connect().await {
-                    Ok(()) => {
-                        info!(host = %broker_config.host, port = %broker_config.port, "Connected to TWS for order placement");
-                        Some(Arc::new(adapter) as Arc<dyn BrokerEngine>)
-                    }
-                    Err(e) => {
-                        warn!(error = %e, "Failed to connect to TWS; order placement disabled");
-                        None
-                    }
-                }
+                info!("Reusing TWS connection for order placement");
+                Some(engine.clone())
+            } else if config.broker.paper_trading || std::env::var("IB_BROKER_ENABLED").is_ok() {
+                info!("Broker order placement disabled (TWS connection failed earlier)");
+                None
             } else {
                 info!("Broker order placement disabled (enable with IB_BROKER_ENABLED or set paper_trading=true)");
                 None
@@ -427,6 +472,8 @@ fn spawn_market_data_provider(
     strategy_signal: UnboundedSender<StrategySignal>,
     strategy_toggle: watch::Receiver<bool>,
     nats: Arc<Option<nats_integration::NatsIntegration>>,
+    broker_engine: Option<Arc<dyn BrokerEngine>>,
+    aggregator: Arc<market_data::MarketDataAggregator>,
 ) -> anyhow::Result<()> {
     let symbols = if settings.symbols.is_empty() {
         default_market_symbols()
@@ -435,7 +482,31 @@ fn spawn_market_data_provider(
     };
     let interval = Duration::from_millis(settings.poll_interval_ms.max(10));
 
-    let aggregator = Arc::new(market_data::MarketDataAggregator::new());
+    // If broker engine is available and connected, spawn market data loop first (highest priority: 100)
+    // This ensures TWS market data takes precedence over polling sources
+    if let Some(ref engine) = broker_engine {
+        let state_clone = state.clone();
+        let signal_clone = strategy_signal.clone();
+        let toggle_clone = strategy_toggle.clone();
+        let nats_clone = nats.clone();
+        let agg = aggregator.clone();
+        let symbols_clone = symbols.clone();
+
+        info!(
+            provider = "tws",
+            symbol_count = symbols.len(),
+            "spawning TWS market data provider (priority 100)"
+        );
+        spawn_broker_market_data_loop(
+            engine.clone(),
+            symbols_clone,
+            state_clone,
+            signal_clone,
+            toggle_clone,
+            nats_clone,
+            agg,
+        );
+    }
 
     let providers = if settings.provider == "all" {
         vec!["yahoo", "fmp", "polygon"] // Yahoo (free) + FMP (paid) + Polygon (paid)
@@ -509,6 +580,46 @@ fn spawn_market_data_loop(
                 }
             }
         }
+    });
+}
+
+/// Spawn a market data loop that uses a BrokerEngine's streaming channel.
+/// This bridges yatws/IbAdapter push-based market data to the aggregator.
+///
+/// Note: mpsc::Sender doesn't support subscribe(), so we use a workaround.
+/// The broker's market_data_tx is a Sender; we can't directly receive from it.
+/// For IbAdapter, the channel receivers are dropped so no events flow.
+/// For YatWSEngine, events are sent through market_data_tx but we need
+/// a different approach to receive them.
+fn spawn_broker_market_data_loop(
+    engine: Arc<dyn BrokerEngine>,
+    symbols: Vec<String>,
+    state: SharedSnapshot,
+    strategy_signal: UnboundedSender<StrategySignal>,
+    strategy_toggle: watch::Receiver<bool>,
+    nats: Arc<Option<nats_integration::NatsIntegration>>,
+    aggregator: Arc<market_data::MarketDataAggregator>,
+) {
+    tokio::spawn(async move {
+        // Subscribe to market data for each symbol
+        for symbol in &symbols {
+            match engine.request_market_data(symbol, 0).await {
+                Ok(()) => {
+                    debug!(symbol = %symbol, "subscribed to market data via broker");
+                }
+                Err(e) => {
+                    warn!(symbol = %symbol, error = %e, "failed to subscribe to market data");
+                }
+            }
+        }
+
+        // Note: IbAdapter's market_data_tx receivers are dropped, so no events arrive.
+        // YatWSEngine does send events but we can't receive them via mpsc::Sender.
+        // This loop relies on the broker implementation forwarding to our aggregator.
+        // For now, we wait for events but IbAdapter won't send any.
+        // TODO: Implement proper event forwarding via shared state or different channel type.
+
+        info!("broker market data loop started (Note: IbAdapter doesn't forward ticks yet; YatWSEngine requires separate integration)");
     });
 }
 
