@@ -19,7 +19,6 @@ pub use fmp::{
     FmpQuote, FmpSearchResult, FmpStockListEntry, HistoricalCandle, IncomeStatement, SofrRate,
     TreasuryRate,
 };
-pub use shir::{default_shir_rate, fetch_shir_rate, ShirRate};
 pub use mock::{MockMarketDataSource, MockMarketDataSourceFactory};
 pub use model::{
     MarketDataEvent, MarketDataEventBuilder, MarketDataSource, MarketDataSourceFactory,
@@ -28,6 +27,7 @@ pub use model::{
 pub use pipeline::{MarketDataIngestor, MarketDataPipeline};
 pub use polygon::{PolygonMarketDataSource, PolygonMarketDataSourceFactory};
 pub use polygon_ws::PolygonWsMarketDataSource;
+pub use shir::{default_shir_rate, fetch_shir_rate, ShirRate};
 pub use yahoo::{
     OptionContractData, OptionsDataSource, OptionsExpiration, YahooFinanceSource,
     YahooFinanceSourceFactory, YahooHistorySource, YahooOptionsSource,

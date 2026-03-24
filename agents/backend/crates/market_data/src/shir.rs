@@ -24,7 +24,8 @@ pub struct ShirRate {
 /// Result type for SHIR fetch operations.
 pub type ShirResult<T> = anyhow::Result<T>;
 
-const BANK_OF_ISRAEL_URL: &str = "https://www.boi.org.il/en/About/MonetaryPolicy/Pages/InterestRates.aspx";
+const BANK_OF_ISRAEL_URL: &str =
+    "https://www.boi.org.il/en/About/MonetaryPolicy/Pages/InterestRates.aspx";
 
 /// Fetch the current SHIR rate from Bank of Israel.
 ///

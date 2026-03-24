@@ -507,7 +507,11 @@ impl FmpClient {
             .await
             .map_err(|e| anyhow::anyhow!("FMP search-symbol decode failed: {e}"))?;
 
-        debug!("FMP search-symbol '{}' returned {} results", query, items.len());
+        debug!(
+            "FMP search-symbol '{}' returned {} results",
+            query,
+            items.len()
+        );
         Ok(items)
     }
 
@@ -535,12 +539,16 @@ impl FmpClient {
             .query(&[("apikey", self.api_key.as_str())])
             .send()
             .await
-            .map_err(|e| anyhow::anyhow!("FMP financial-statement-symbol-list request failed: {e}"))?
+            .map_err(|e| {
+                anyhow::anyhow!("FMP financial-statement-symbol-list request failed: {e}")
+            })?
             .error_for_status()
             .map_err(|e| anyhow::anyhow!("FMP financial-statement-symbol-list error: {e}"))?
             .json()
             .await
-            .map_err(|e| anyhow::anyhow!("FMP financial-statement-symbol-list decode failed: {e}"))?;
+            .map_err(|e| {
+                anyhow::anyhow!("FMP financial-statement-symbol-list decode failed: {e}")
+            })?;
 
         debug!(
             "FMP financial-statement-symbol-list returned {} symbols",
@@ -625,7 +633,10 @@ impl FmpClient {
             .await
             .map_err(|e| anyhow::anyhow!("FMP treasury-rates historical decode failed: {e}"))?;
 
-        debug!("FMP treasury-rates historical returned {} records", rates.len());
+        debug!(
+            "FMP treasury-rates historical returned {} records",
+            rates.len()
+        );
         Ok(rates)
     }
 
@@ -1124,14 +1135,17 @@ mod tests {
         Mock::given(method("GET"))
             .and(path("/stable/financial-statement-symbol-list"))
             .and(query_param("apikey", "test-key"))
-            .respond_with(ResponseTemplate::new(200).set_body_raw(
-                r#"["AAPL", "MSFT", "GOOG"]"#,
-                "application/json",
-            ))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_raw(r#"["AAPL", "MSFT", "GOOG"]"#, "application/json"),
+            )
             .mount(&server)
             .await;
 
-        let symbols = client(&server.uri()).financial_statement_symbols().await.unwrap();
+        let symbols = client(&server.uri())
+            .financial_statement_symbols()
+            .await
+            .unwrap();
         assert_eq!(symbols.len(), 3);
         assert_eq!(symbols[0], "AAPL");
     }

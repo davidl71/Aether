@@ -78,6 +78,22 @@ impl LoanAggregationInput {
 }
 
 impl LoanRecord {
+    pub fn effective_rate(&self, current_shir: Option<f64>) -> f64 {
+        match self.loan_type {
+            LoanType::ShirBased => {
+                let shir = current_shir.unwrap_or(0.0395);
+                shir + self.spread / 100.0
+            }
+            LoanType::CpiLinked => {
+                if self.base_cpi > 0.0 {
+                    (self.current_cpi / self.base_cpi - 1.0) + self.spread / 100.0
+                } else {
+                    self.interest_rate
+                }
+            }
+        }
+    }
+
     pub fn validate(&self) -> Result<(), Vec<String>> {
         let mut errors = Vec::new();
 
@@ -1048,5 +1064,61 @@ mod tests {
         assert_eq!(second.loan_type, LoanType::CpiLinked);
         assert_eq!(second.base_cpi, 250.0);
         assert_eq!(second.current_cpi, 255.0);
+    }
+
+    #[test]
+    fn effective_rate_for_shir_based_uses_current_shir() {
+        let loan = LoanRecord {
+            loan_id: "test-shir".into(),
+            bank_name: "Test".into(),
+            account_number: "123".into(),
+            loan_type: LoanType::ShirBased,
+            principal: 1000.0,
+            original_principal: 1000.0,
+            interest_rate: 4.0,
+            spread: 0.5,
+            base_cpi: 0.0,
+            current_cpi: 0.0,
+            origination_date: "2025-01-01T00:00:00Z".into(),
+            maturity_date: "2030-01-01T00:00:00Z".into(),
+            next_payment_date: "2025-02-01T00:00:00Z".into(),
+            monthly_payment: 100.0,
+            payment_frequency_months: 1,
+            status: LoanStatus::Active,
+            last_update: "2025-01-15T00:00:00Z".into(),
+        };
+
+        let rate_with_shir = loan.effective_rate(Some(0.035));
+        assert!((rate_with_shir - 0.04).abs() < 0.001);
+
+        let rate_with_default = loan.effective_rate(None);
+        assert!((rate_with_default - 0.0445).abs() < 0.001);
+    }
+
+    #[test]
+    fn effective_rate_for_cpi_linked_uses_cpi_ratio() {
+        let loan = LoanRecord {
+            loan_id: "test-cpi".into(),
+            bank_name: "Test".into(),
+            account_number: "123".into(),
+            loan_type: LoanType::CpiLinked,
+            principal: 1000.0,
+            original_principal: 1000.0,
+            interest_rate: 2.0,
+            spread: 0.3,
+            base_cpi: 250.0,
+            current_cpi: 255.0,
+            origination_date: "2025-01-01T00:00:00Z".into(),
+            maturity_date: "2030-01-01T00:00:00Z".into(),
+            next_payment_date: "2025-02-01T00:00:00Z".into(),
+            monthly_payment: 100.0,
+            payment_frequency_months: 1,
+            status: LoanStatus::Active,
+            last_update: "2025-01-15T00:00:00Z".into(),
+        };
+
+        let rate = loan.effective_rate(None);
+        let expected = (255.0 / 250.0 - 1.0) + 0.3 / 100.0;
+        assert!((rate - expected).abs() < 0.001);
     }
 }
