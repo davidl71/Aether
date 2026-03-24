@@ -99,6 +99,30 @@ pub struct FmpQuote {
     pub previous_close: Option<f64>,
 }
 
+/// Entry in the stock list directory.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FmpStockListEntry {
+    pub symbol: String,
+    pub name: Option<String>,
+    pub exchange: Option<String>,
+    #[serde(rename = "exchangeShortName")]
+    pub exchange_short_name: Option<String>,
+}
+
+/// Search result for symbol search endpoint.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FmpSearchResult {
+    pub symbol: String,
+    pub name: Option<String>,
+    pub exchange: Option<String>,
+    #[serde(rename = "exchangeShortName")]
+    pub exchange_short_name: Option<String>,
+    #[serde(rename = "type")]
+    pub instrument_type: Option<String>,
+}
+
 // ---------------------------------------------------------------------------
 // Client
 // ---------------------------------------------------------------------------
@@ -370,6 +394,120 @@ impl FmpClient {
 
         debug!("FMP batch-quote returned {} quotes", quotes.len());
         Ok(quotes)
+    }
+
+    /// Fetch the complete list of available stock symbols.
+    ///
+    /// This endpoint returns all symbols across all exchanges.
+    /// Use this for symbol discovery and validation.
+    /// Endpoint: `/stable/stock-list`
+    pub async fn stock_list(&self) -> anyhow::Result<Vec<FmpStockListEntry>> {
+        self.rate_limiter.reset_if_new_day().await;
+        if self.calls_remaining() == 0 {
+            anyhow::bail!("FMP daily limit reached (250 calls/day on free tier)");
+        }
+        self.rate_limiter.acquire().await;
+
+        let url = self.url("/stable/stock-list");
+        debug!(
+            "FMP stock-list: ({}/{} calls used)",
+            self.calls_used(),
+            DAILY_LIMIT_FREE
+        );
+
+        let items: Vec<FmpStockListEntry> = self
+            .client
+            .get(url)
+            .query(&[("apikey", self.api_key.as_str())])
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!("FMP stock-list request failed: {e}"))?
+            .error_for_status()
+            .map_err(|e| anyhow::anyhow!("FMP stock-list error: {e}"))?
+            .json()
+            .await
+            .map_err(|e| anyhow::anyhow!("FMP stock-list decode failed: {e}"))?;
+
+        debug!("FMP stock-list returned {} symbols", items.len());
+        Ok(items)
+    }
+
+    /// Search for symbols by name or symbol prefix.
+    ///
+    /// Useful for autocomplete and symbol discovery.
+    /// Endpoint: `/stable/search-symbol?query=AA`
+    pub async fn search_symbol(&self, query: &str) -> anyhow::Result<Vec<FmpSearchResult>> {
+        if query.trim().is_empty() {
+            return Ok(vec![]);
+        }
+
+        self.rate_limiter.reset_if_new_day().await;
+        if self.calls_remaining() == 0 {
+            anyhow::bail!("FMP daily limit reached (250 calls/day on free tier)");
+        }
+        self.rate_limiter.acquire().await;
+
+        let url = self.url("/stable/search-symbol");
+        debug!(
+            "FMP search-symbol: query='{}' ({}/{} calls used)",
+            query,
+            self.calls_used(),
+            DAILY_LIMIT_FREE
+        );
+
+        let items: Vec<FmpSearchResult> = self
+            .client
+            .get(url)
+            .query(&[("apikey", self.api_key.as_str()), ("query", query)])
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!("FMP search-symbol request failed: {e}"))?
+            .error_for_status()
+            .map_err(|e| anyhow::anyhow!("FMP search-symbol error: {e}"))?
+            .json()
+            .await
+            .map_err(|e| anyhow::anyhow!("FMP search-symbol decode failed: {e}"))?;
+
+        debug!("FMP search-symbol '{}' returned {} results", query, items.len());
+        Ok(items)
+    }
+
+    /// Fetch symbols that have financial statement data available.
+    ///
+    /// This is a smaller, curated list of symbols with fundamentals.
+    /// Endpoint: `/stable/financial-statement-symbol-list`
+    pub async fn financial_statement_symbols(&self) -> anyhow::Result<Vec<String>> {
+        self.rate_limiter.reset_if_new_day().await;
+        if self.calls_remaining() == 0 {
+            anyhow::bail!("FMP daily limit reached (250 calls/day on free tier)");
+        }
+        self.rate_limiter.acquire().await;
+
+        let url = self.url("/stable/financial-statement-symbol-list");
+        debug!(
+            "FMP financial-statement-symbol-list: ({}/{} calls used)",
+            self.calls_used(),
+            DAILY_LIMIT_FREE
+        );
+
+        let items: Vec<String> = self
+            .client
+            .get(url)
+            .query(&[("apikey", self.api_key.as_str())])
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!("FMP financial-statement-symbol-list request failed: {e}"))?
+            .error_for_status()
+            .map_err(|e| anyhow::anyhow!("FMP financial-statement-symbol-list error: {e}"))?
+            .json()
+            .await
+            .map_err(|e| anyhow::anyhow!("FMP financial-statement-symbol-list decode failed: {e}"))?;
+
+        debug!(
+            "FMP financial-statement-symbol-list returned {} symbols",
+            items.len()
+        );
+        Ok(items)
     }
 
     /// Historical OHLCV price data for `symbol`.
@@ -760,5 +898,87 @@ mod tests {
 
         let err = client(&server.uri()).quote("SPY").await.unwrap_err();
         assert!(err.to_string().contains("SPY"));
+    }
+
+    #[tokio::test]
+    async fn stock_list_returns_symbols() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/stable/stock-list"))
+            .and(query_param("apikey", "test-key"))
+            .respond_with(ResponseTemplate::new(200).set_body_raw(
+                r#"[{
+                    "symbol": "AAPL",
+                    "name": "Apple Inc",
+                    "exchange": "NASDAQ",
+                    "exchangeShortName": "NASDAQ"
+                }, {
+                    "symbol": "MSFT",
+                    "name": "Microsoft Corporation",
+                    "exchange": "NASDAQ",
+                    "exchangeShortName": "NASDAQ"
+                }]"#,
+                "application/json",
+            ))
+            .mount(&server)
+            .await;
+
+        let items = client(&server.uri()).stock_list().await.unwrap();
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0].symbol, "AAPL");
+        assert_eq!(items[0].exchange_short_name.as_deref(), Some("NASDAQ"));
+    }
+
+    #[tokio::test]
+    async fn search_symbol_returns_matches() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/stable/search-symbol"))
+            .and(query_param("apikey", "test-key"))
+            .and(query_param("query", "AA"))
+            .respond_with(ResponseTemplate::new(200).set_body_raw(
+                r#"[{
+                    "symbol": "AA",
+                    "name": "Alcoa Corporation",
+                    "exchange": "NYSE",
+                    "exchangeShortName": "NYSE",
+                    "type": "stock"
+                }, {
+                    "symbol": "AAPL",
+                    "name": "Apple Inc",
+                    "exchange": "NASDAQ",
+                    "exchangeShortName": "NASDAQ",
+                    "type": "stock"
+                }]"#,
+                "application/json",
+            ))
+            .mount(&server)
+            .await;
+
+        let results = client(&server.uri()).search_symbol("AA").await.unwrap();
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].symbol, "AA");
+        assert_eq!(results[0].instrument_type.as_deref(), Some("stock"));
+    }
+
+    #[tokio::test]
+    async fn financial_statement_symbols_returns_list() {
+        let server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/stable/financial-statement-symbol-list"))
+            .and(query_param("apikey", "test-key"))
+            .respond_with(ResponseTemplate::new(200).set_body_raw(
+                r#"["AAPL", "MSFT", "GOOG"]"#,
+                "application/json",
+            ))
+            .mount(&server)
+            .await;
+
+        let symbols = client(&server.uri()).financial_statement_symbols().await.unwrap();
+        assert_eq!(symbols.len(), 3);
+        assert_eq!(symbols[0], "AAPL");
     }
 }
