@@ -388,6 +388,8 @@ mod tests {
                 volume: 42,
                 timestamp: None,
                 quote_quality: 0,
+                source: "cpp-engine".into(),
+                source_priority: 100,
             }
             .encode_to_vec(),
         };

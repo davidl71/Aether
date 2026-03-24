@@ -3,6 +3,10 @@ name = "api"
 edition = "2021"
 version = "0.1.0"
 
+[features]
+default = []
+keyring = ["dep:keyring"]
+
 [dependencies]
 anyhow = { workspace = true }
 base64 = "0.22"
@@ -26,6 +30,8 @@ ledger = { path = "../ledger" }
 nats_adapter = { path = "../nats_adapter" }
 discount_bank_parser = { path = "../discount_bank_parser" }
 quant = { path = "../quant" }
+keyring = { version = "3", optional = true }
+dirs = "5"
 
 [dev-dependencies]
 async-trait = { workspace = true }

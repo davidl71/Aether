@@ -139,6 +139,12 @@ pub struct App {
     pub chart_search_last_search_ms: u64,
     /// Charts search: debounce interval (ms).
     pub chart_search_debounce_ms: u64,
+    /// Charts pill navigation: which row is active (0 = expiry, 1 = strike width).
+    pub chart_pill_row: usize,
+    /// Charts pill navigation: selected expiry index.
+    pub chart_expiry_index: usize,
+    /// Charts pill navigation: selected strike width index.
+    pub chart_strike_index: usize,
     /// Scroll/selection index for Alerts tab (arrow-key scroll).
     pub alerts_scroll: usize,
     /// Scroll/selection index for Scenarios tab (arrow-key scroll).
@@ -240,6 +246,9 @@ impl App {
             chart_search_results: Vec::new(),
             chart_search_last_search_ms: 0,
             chart_search_debounce_ms: 300,
+            chart_pill_row: 0,
+            chart_expiry_index: 0,
+            chart_strike_index: 2,
             alerts_scroll: 0,
             scenarios_scroll: 0,
             scenarios_dte_center: 4,

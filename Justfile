@@ -215,6 +215,50 @@ run-tws-yield-daemon:
 check-yield:
     ./scripts/check_snapshot_yield_curve.sh
 
+# --- Credentials ---
+# Secure credential management using config file (~/.config/aether/) + keyring fallback
+# Usage: just cred-set <name> <value> | just cred-get <name> | just cred-delete <name>
+
+# Set a credential (fred, fmp, polygon, alpaca-key, alpaca-secret, tastytrade-key, tastytrade-account)
+cred-set name value:
+    cd agents/backend && cargo run -p cli -- cred set {{name}} {{value}}
+
+# Set FRED API key (prompts for value)
+cred-set-fred:
+    cd agents/backend && cargo run -p cli -- cred set fred
+
+# Set FMP API key
+cred-set-fmp:
+    cd agents/backend && cargo run -p cli -- cred set fmp
+
+# Set Polygon API key
+cred-set-polygon:
+    cd agents/backend && cargo run -p cli -- cred set polygon
+
+# Set Alpaca API credentials
+cred-set-alpaca:
+    cd agents/backend && cargo run -p cli -- cred set alpaca-key && cargo run -p cli -- cred set alpaca-secret
+
+# Set Tastytrade credentials
+cred-set-tastytrade:
+    cd agents/backend && cargo run -p cli -- cred set tastytrade-key && cargo run -p cli -- cred set tastytrade-account
+
+# Get a credential value (shows masked output)
+cred-get name:
+    cd agents/backend && cargo run -p cli -- cred get {{name}}
+
+# Delete a stored credential
+cred-delete name:
+    cd agents/backend && cargo run -p cli -- cred delete {{name}}
+
+# List available credentials
+cred-list:
+    cd agents/backend && cargo run -p cli -- cred list
+
+# Check which credentials are configured
+cred-status:
+    cd agents/backend && cargo run -q -p cli -- cred list 2>/dev/null
+
 # Sanity check: Python binding tests + Rust TUI buildability. On success, updates cargo-sweep stamp if installed.
 sanity:
     just test-python

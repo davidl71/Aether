@@ -331,6 +331,47 @@ impl FmpClient {
             .ok_or_else(|| anyhow::anyhow!("FMP returned empty quote list for {symbol}"))
     }
 
+    /// Fetch real-time quotes for multiple symbols in a single API call.
+    ///
+    /// This is ~5x more efficient than calling `quote()` for each symbol.
+    /// Endpoint: `/stable/batch-quote?symbols=AAPL,MSFT,GOOG`
+    pub async fn batch_quote(&self, symbols: &[String]) -> anyhow::Result<Vec<FmpQuote>> {
+        if symbols.is_empty() {
+            return Ok(vec![]);
+        }
+
+        self.rate_limiter.reset_if_new_day().await;
+        if self.calls_remaining() == 0 {
+            anyhow::bail!("FMP daily limit reached (250 calls/day on free tier)");
+        }
+        self.rate_limiter.acquire().await;
+
+        let symbols_csv = symbols.join(",");
+        let url = self.url("/stable/batch-quote");
+        debug!(
+            "FMP batch-quote: {} symbols ({}/{} calls used)",
+            symbols.len(),
+            self.calls_used(),
+            DAILY_LIMIT_FREE
+        );
+
+        let quotes: Vec<FmpQuote> = self
+            .client
+            .get(url)
+            .query(&[("apikey", self.api_key.as_str()), ("symbols", &symbols_csv)])
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!("FMP batch-quote request failed: {e}"))?
+            .error_for_status()
+            .map_err(|e| anyhow::anyhow!("FMP batch-quote error: {e}"))?
+            .json()
+            .await
+            .map_err(|e| anyhow::anyhow!("FMP batch-quote decode failed: {e}"))?;
+
+        debug!("FMP batch-quote returned {} quotes", quotes.len());
+        Ok(quotes)
+    }
+
     /// Historical OHLCV price data for `symbol`.
     ///
     /// `from` and `to` are ISO 8601 dates (e.g., "2024-01-01").
@@ -429,8 +470,8 @@ impl FmpClient {
 // ---------------------------------------------------------------------------
 
 /// FMP market data source for continuous quotes.
-/// Polls FMP quote API with rate limiting.
-/// Use with paid tier (5000 calls/day) for reliable polling.
+/// Uses batch quote API for efficient multi-symbol fetching.
+/// Fetches all symbols in one API call, then returns events one at a time.
 pub struct FmpMarketDataSource {
     client: Arc<FmpClient>,
     symbols: Arc<Vec<String>>,
@@ -440,6 +481,7 @@ pub struct FmpMarketDataSource {
 
 struct FmpMarketDataState {
     idx: usize,
+    cached_quotes: Vec<FmpQuote>,
 }
 
 impl FmpMarketDataSource {
@@ -470,32 +512,49 @@ impl FmpMarketDataSource {
             client: Arc::new(client),
             symbols: Arc::new(symbols_vec),
             poll_interval,
-            state: Mutex::new(FmpMarketDataState { idx: 0 }),
+            state: Mutex::new(FmpMarketDataState {
+                idx: 0,
+                cached_quotes: vec![],
+            }),
         })
     }
 
-    async fn next_symbol(&self) -> String {
+    /// Fetch a fresh batch of quotes from FMP and cache them.
+    async fn refresh_batch(&self) -> anyhow::Result<()> {
+        let quotes = self.client.batch_quote(&self.symbols).await?;
         let mut state = self.state.lock().await;
-        let idx = state.idx % self.symbols.len();
-        state.idx = state.idx.wrapping_add(1);
-        self.symbols[idx].clone()
+        state.cached_quotes = quotes;
+        state.idx = 0;
+        Ok(())
     }
 }
 
 #[async_trait]
 impl MarketDataSource for FmpMarketDataSource {
     async fn next(&self) -> anyhow::Result<MarketDataEvent> {
+        let quote = {
+            let mut state = self.state.lock().await;
+            if state.cached_quotes.is_empty() {
+                drop(state);
+                self.refresh_batch().await?;
+                let state = self.state.lock().await;
+                state.cached_quotes.first().cloned()
+            } else {
+                let quote = state.cached_quotes.get(state.idx).cloned();
+                state.idx = state.idx.wrapping_add(1);
+                if state.idx >= state.cached_quotes.len() {
+                    state.cached_quotes.clear();
+                    state.idx = 0;
+                }
+                quote
+            }
+        };
+
         tokio::time::sleep(self.poll_interval).await;
-        let symbol = self.next_symbol().await;
 
-        let quote = self.client.quote(&symbol).await;
+        let quote = quote.ok_or_else(|| anyhow::anyhow!("FMP batch cache empty"))?;
 
-        if let Err(e) = &quote {
-            warn!("FMP quote failed for {}: {}", symbol, e);
-        }
-
-        let quote = quote?;
-
+        let symbol = quote.symbol.clone();
         let price = quote.price.unwrap_or(0.0);
         if price <= 0.0 {
             anyhow::bail!("FMP returned invalid price for {symbol}");

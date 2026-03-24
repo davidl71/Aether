@@ -1,5 +1,6 @@
 pub mod client_portal_options;
 pub mod combo_strategy;
+pub mod credentials;
 pub mod discount_bank;
 pub mod finance_rates;
 mod health;

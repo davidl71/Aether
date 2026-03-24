@@ -12,6 +12,7 @@
 //!
 //! Backward compatibility: --init-config and --validate flags still work.
 
+use std::io::Write;
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -149,7 +150,7 @@ enum Commands {
         #[arg(long)]
         refresh: bool,
         /// Data source: nats (backend via NATS) or tws (direct TWS, no backend)
-        #[arg(long, default_value = "nats", value_parser = ["nats", "tws"])]
+        #[arg(long, default_value = "nats", value_parser = ["nats", "tws", "synthetic", "local"])]
         source: String,
         /// After building curve, publish result to NATS subject yield_curve.direct.{symbol}
         #[arg(long)]
@@ -166,6 +167,34 @@ enum Commands {
         #[command(subcommand)]
         sub: LoansCmd,
     },
+    /// Manage secure credentials. Uses config file (~/.config/aether/) + keyring fallback.
+    Cred {
+        #[command(subcommand)]
+        sub: CredCmd,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum CredCmd {
+    /// Set a credential value (prompts for input if not provided)
+    Set {
+        /// Credential name: fred, fmp, polygon, alpaca-key, alpaca-secret, tastytrade-key, tastytrade-account
+        name: String,
+        /// Value to store (reads from stdin if not provided)
+        value: Option<String>,
+    },
+    /// Get a credential value (shows masked for security)
+    Get {
+        /// Credential name: fred, fmp, polygon, alpaca-key, alpaca-secret, tastytrade-key, tastytrade-account
+        name: String,
+    },
+    /// Delete a stored credential
+    Delete {
+        /// Credential name: fred, fmp, polygon, alpaca-key, alpaca-secret, tastytrade-key, tastytrade-account
+        name: String,
+    },
+    /// List available credential names
+    List,
 }
 
 #[derive(Subcommand, Debug)]
@@ -279,6 +308,7 @@ fn main() -> Result<()> {
         Commands::Loans { sub } => match sub {
             LoansCmd::List { json } => run_loans_list(format, json)?,
         },
+        Commands::Cred { sub } => run_cred(sub)?,
     }
 
     Ok(())
@@ -389,11 +419,8 @@ fn run_snapshot(config_path: &PathBuf, snapshot_path: &PathBuf, no_snapshot: boo
 }
 
 fn run_benchmarks(format: OutputFormat, json: bool) -> Result<()> {
-    if std::env::var("FRED_API_KEY")
-        .ok()
-        .map_or(true, |v| v.trim().is_empty())
-    {
-        eprintln!("warning: FRED_API_KEY not set; SOFR/Treasury data may be empty. See docs/platform/KEYS_FROM_1PASSWORD.md");
+    if api::credentials::fred_api_key().is_none() {
+        eprintln!("warning: FRED_API_KEY not set; SOFR/Treasury data may be empty. Run 'just cred-set-fred' to configure.");
     }
     let client = ReqwestClient::builder()
         .timeout(std::time::Duration::from_secs(10))
@@ -435,7 +462,10 @@ fn run_yield_curve(
     source: &str,
     publish_to_nats: bool,
 ) -> Result<()> {
-    let curve: CurveResponse = if source == "tws" {
+    let curve: CurveResponse = if source == "synthetic" || source == "local" {
+        // Local synthetic: no NATS, no TWS. Use built-in synthetic data.
+        api::finance_rates::build_synthetic_curve(symbol, None)
+    } else if source == "tws" {
         // Direct TWS: no NATS, no backend. Build curve from option chain + quotes.
         let opportunities = tokio::runtime::Runtime::new()?
             .block_on(tws_yield_curve::fetch_yield_curve_from_tws(symbol))
@@ -609,6 +639,115 @@ fn run_snapshot_write(format: OutputFormat, json: bool) -> Result<()> {
             println!("Snapshot written at {} to {}", at, sub);
         } else {
             println!("ok: {}, generated_at: {}, subject: {}", ok, at, sub);
+        }
+    }
+    Ok(())
+}
+
+fn run_cred(sub: CredCmd) -> Result<()> {
+    use api::credentials::{self, CredentialKey};
+
+    fn parse_key(name: &str) -> Result<CredentialKey, String> {
+        match name.to_lowercase().as_str() {
+            "fred" => Ok(CredentialKey::FredApiKey),
+            "fmp" => Ok(CredentialKey::FmpApiKey),
+            "polygon" => Ok(CredentialKey::PolygonApiKey),
+            "alpaca-key" | "alpaca_api_key" => Ok(CredentialKey::AlpacaApiKey),
+            "alpaca-secret" | "alpaca_secret" => Ok(CredentialKey::AlpacaSecretKey),
+            "tastytrade-key" | "tastytrade_api_key" => Ok(CredentialKey::TastytradeApiKey),
+            "tastytrade-account" | "tastytrade_account" => Ok(CredentialKey::TastytradeAccount),
+            _ => Err(format!(
+                "Unknown credential '{}'. Use: {}",
+                name,
+                list_credential_names()
+            )),
+        }
+    }
+
+    fn list_credential_names() -> String {
+        let creds = credentials::list_credentials();
+        creds.iter().map(|(k, _)| *k).collect::<Vec<_>>().join(", ")
+    }
+
+    fn mask_value(v: &str) -> String {
+        if v.len() > 8 {
+            format!("{}...{}", &v[..4], &v[v.len() - 4..])
+        } else {
+            v.to_string()
+        }
+    }
+
+    match sub {
+        CredCmd::Set { name, value } => {
+            let key = parse_key(&name).map_err(|e| anyhow::anyhow!("{}", e))?;
+            let display_name = key.display_name();
+
+            let value = match value {
+                Some(v) => v,
+                None => {
+                    eprint!("Enter {}: ", display_name);
+                    std::io::stderr().flush().ok();
+                    let mut input = String::new();
+                    std::io::stdin().read_line(&mut input).ok();
+                    input.trim().to_string()
+                }
+            };
+
+            if value.is_empty() {
+                anyhow::bail!("Value cannot be empty");
+            }
+
+            credentials::set_credential(key, &value).map_err(|e| anyhow::anyhow!("{}", e))?;
+            println!("{} stored securely", display_name);
+        }
+        CredCmd::Get { name } => {
+            let key = parse_key(&name).map_err(|e| anyhow::anyhow!("{}", e))?;
+            let display_name = key.display_name();
+
+            match credentials::get_credential(key) {
+                Some(v) => {
+                    println!("{}: {}", display_name, mask_value(&v));
+                }
+                None => println!(
+                    "No {} found (set via 'just cred-set {} <value>')",
+                    display_name, name
+                ),
+            }
+        }
+        CredCmd::Delete { name } => {
+            let key = parse_key(&name).map_err(|e| anyhow::anyhow!("{}", e))?;
+            let display_name = key.display_name();
+
+            match credentials::delete_credential(key) {
+                Ok(()) => println!("{} deleted", display_name),
+                Err(e) => println!("Note: {}", e),
+            }
+        }
+        CredCmd::List => {
+            println!("Available credentials:");
+            let creds = credentials::list_credentials();
+            for (key_str, desc) in &creds {
+                let test_key = match *key_str {
+                    "fred" => CredentialKey::FredApiKey,
+                    "fmp" => CredentialKey::FmpApiKey,
+                    "polygon" => CredentialKey::PolygonApiKey,
+                    "alpaca-key" => CredentialKey::AlpacaApiKey,
+                    "alpaca-secret" => CredentialKey::AlpacaSecretKey,
+                    "tastytrade-key" => CredentialKey::TastytradeApiKey,
+                    "tastytrade-account" => CredentialKey::TastytradeAccount,
+                    _ => CredentialKey::FredApiKey,
+                };
+                let status = if credentials::get_credential(test_key).is_some() {
+                    "✓"
+                } else {
+                    "○"
+                };
+                println!("  {:20} {}  {}", key_str, status, desc);
+            }
+            println!("\nCommands:");
+            println!("  just cred-set <name> <value>  # Store credential");
+            println!("  just cred-get <name>          # Show (masked)");
+            println!("  just cred-delete <name>       # Remove");
         }
     }
     Ok(())

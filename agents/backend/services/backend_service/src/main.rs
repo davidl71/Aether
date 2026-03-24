@@ -435,22 +435,23 @@ fn spawn_market_data_provider(
     };
     let interval = Duration::from_millis(settings.poll_interval_ms.max(10));
 
-    let aggregator = Arc::new(
-        market_data::MarketDataAggregator::new()
-);
+    let aggregator = Arc::new(market_data::MarketDataAggregator::new());
 
     let providers = if settings.provider == "all" {
-        vec!["yahoo", "fmp", "polygon"]  // Yahoo (free) + FMP (paid) + Polygon (paid)
-    } else if settings.provider == "yahoo" || settings.provider == "fmp" || settings.provider == "polygon" || settings.provider == "mock" {
+        vec!["yahoo", "fmp", "polygon"] // Yahoo (free) + FMP (paid) + Polygon (paid)
+    } else if settings.provider == "yahoo"
+        || settings.provider == "fmp"
+        || settings.provider == "polygon"
+        || settings.provider == "mock"
+    {
         vec![settings.provider.as_str()]
     } else {
-        vec!["yahoo"]  // Default to Yahoo for real data
+        vec!["yahoo"] // Default to Yahoo for real data
     };
 
     for provider_name in providers {
-        let source = create_provider(provider_name, &symbols, interval).with_context(|| {
-            format!("failed to create market data provider: {}", provider_name)
-        })?;
+        let source = create_provider(provider_name, &symbols, interval)
+            .with_context(|| format!("failed to create market data provider: {}", provider_name))?;
 
         let agg = aggregator.clone();
         let state_clone = state.clone();
@@ -459,7 +460,14 @@ fn spawn_market_data_provider(
         let nats_clone = nats.clone();
 
         info!(provider = %provider_name, symbol_count = symbols.len(), "spawning market data provider");
-        spawn_market_data_loop(source, state_clone, signal_clone, toggle_clone, nats_clone, agg);
+        spawn_market_data_loop(
+            source,
+            state_clone,
+            signal_clone,
+            toggle_clone,
+            nats_clone,
+            agg,
+        );
     }
 
     Ok(())

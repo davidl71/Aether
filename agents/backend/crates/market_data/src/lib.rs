@@ -11,8 +11,7 @@ pub mod yield_curve;
 
 pub use aggregator::{DataSource, MarketDataAggregator, Quote, QuoteWithStaleness, ResolvedQuote};
 pub use cache::{
-    CacheError, CachedCandle, CachedQuote, CachedYieldCurve, CachedYieldPoint,
-    Staleness, Ttl,
+    CacheError, CachedCandle, CachedQuote, CachedYieldCurve, CachedYieldPoint, Staleness, Ttl,
 };
 pub use fmp::{
     BalanceSheet, CashFlowStatement, FmpClient, FmpMarketDataSource, FmpMarketDataSourceFactory,

@@ -13,7 +13,7 @@ mod scenarios;
 pub use scenarios::filtered_scenarios;
 mod settings;
 mod yield_curve;
-pub use candlestick::{render_candlestick, Candle, CandlestickChart};
+pub use candlestick::{generate_synthetic_candles, render_candlestick, Candle, CandlestickChart};
 pub(crate) use yield_curve::render_yield_curve as render_yield_curve_tab;
 
 use ratatui::{

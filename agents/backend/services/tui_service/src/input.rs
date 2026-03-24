@@ -58,6 +58,11 @@ pub enum Action {
     ChartSearchDown,
     ChartSearchEnter,
     ChartSearchEscape,
+    ChartPillLeft,
+    ChartPillRight,
+    ChartPillUp,
+    ChartPillDown,
+    ChartPillSelect,
     SettingsScrollUp,
     SettingsScrollDown,
     SettingsAddSymbol,
@@ -202,6 +207,21 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
 
         // Charts
         KeyCode::Char('/') if app.active_tab == Tab::Charts => Some(Action::ChartSearchFocus),
+        KeyCode::Left if app.active_tab == Tab::Charts && !app.chart_search_visible => {
+            Some(Action::ChartPillLeft)
+        }
+        KeyCode::Right if app.active_tab == Tab::Charts && !app.chart_search_visible => {
+            Some(Action::ChartPillRight)
+        }
+        KeyCode::Up if app.active_tab == Tab::Charts && !app.chart_search_visible => {
+            Some(Action::ChartPillUp)
+        }
+        KeyCode::Down if app.active_tab == Tab::Charts && !app.chart_search_visible => {
+            Some(Action::ChartPillDown)
+        }
+        KeyCode::Enter if app.active_tab == Tab::Charts && !app.chart_search_visible => {
+            Some(Action::ChartPillSelect)
+        }
         KeyCode::Esc if app.active_tab == Tab::Charts && app.chart_search_visible => {
             Some(Action::ChartSearchEscape)
         }
@@ -610,6 +630,33 @@ pub fn apply_action(app: &mut App, action: Action) {
             app.chart_search_visible = false;
             app.chart_search_input.clear();
             app.chart_search_results.clear();
+        }
+        Action::ChartPillLeft => {
+            if app.chart_pill_row == 0 {
+                app.chart_expiry_index = app.chart_expiry_index.saturating_sub(1);
+            }
+        }
+        Action::ChartPillRight => {
+            if app.chart_pill_row == 0 {
+                app.chart_expiry_index += 1;
+            }
+        }
+        Action::ChartPillUp => {
+            if app.chart_pill_row > 0 {
+                app.chart_pill_row -= 1;
+            } else {
+                app.chart_pill_row = 1;
+            }
+        }
+        Action::ChartPillDown => {
+            if app.chart_pill_row < 1 {
+                app.chart_pill_row += 1;
+            }
+        }
+        Action::ChartPillSelect => {
+            if app.chart_pill_row == 1 {
+                app.chart_strike_index = (app.chart_strike_index + 1) % 5;
+            }
         }
         Action::SettingsScrollUp => {
             if app.settings_section_index == 2 {

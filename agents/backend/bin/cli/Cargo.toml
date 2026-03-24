@@ -18,7 +18,7 @@ clap = { version = "4", features = ["derive", "env"] }
 clap_complete = "4"
 
 # Configuration: shared JSON (same as TUI/backend) + TOML fallback
-api = { path = "../../crates/api" }
+api = { path = "../../crates/api", features = ["keyring"] }
 nats_adapter = { path = "../../crates/nats_adapter" }
 tws_yield_curve = { path = "../../crates/tws_yield_curve" }
 serde_json.workspace = true

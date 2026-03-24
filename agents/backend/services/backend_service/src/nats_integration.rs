@@ -80,6 +80,8 @@ impl NatsIntegration {
                 volume: event.volume,
                 timestamp: Some(prost_types::Timestamp::from(std::time::SystemTime::now())),
                 quote_quality: event.quote_quality,
+                source: event.source.clone(),
+                source_priority: event.source_priority,
             };
 
             if let Err(e) = publisher.publish(&proto_event).await {

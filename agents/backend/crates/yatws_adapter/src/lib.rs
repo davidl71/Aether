@@ -493,6 +493,8 @@ impl YatWSEngine {
                                 volume: 0,
                                 timestamp: chrono::Utc::now(),
                                 quote_quality: quote_quality.bits() as u32,
+                                source: "tws".to_string(),
+                                source_priority: 100,
                             };
                             if std_tx.send(market_event).is_err() {
                                 break;
