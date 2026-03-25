@@ -2939,6 +2939,7 @@ dependencies = [
  "common",
  "derive_builder",
  "futures",
+ "keyring",
  "rand 0.8.5",
  "regex",
  "reqwest 0.13.2",

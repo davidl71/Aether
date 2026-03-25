@@ -1,11 +1,12 @@
 use std::{sync::Arc, time::Duration};
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 use reqwest::{Client, Response, StatusCode, Url};
 use tokio::sync::Mutex;
 use tracing::debug;
 
+use crate::yahoo::{OptionContractData, OptionsDataSource, OptionsExpiration};
 use crate::{MarketDataEvent, MarketDataEventBuilder, MarketDataSource, MarketDataSourceFactory};
 use anyhow::Context;
 
@@ -202,7 +203,8 @@ impl MarketDataSourceFactory for PolygonMarketDataSourceFactory {
         symbols: &[String],
         interval: Duration,
     ) -> anyhow::Result<Box<dyn MarketDataSource>> {
-        let api_key = std::env::var("POLYGON_API_KEY").context("POLYGON_API_KEY not set")?;
+        let api_key = resolve_polygon_api_key()
+            .context("Polygon API key not found (set POLYGON_API_KEY or store via credstore)")?;
         Ok(Box::new(PolygonMarketDataSource::new(
             symbols.to_vec(),
             interval,
@@ -214,6 +216,296 @@ impl MarketDataSourceFactory for PolygonMarketDataSourceFactory {
     fn requires_config(&self) -> bool {
         true
     }
+}
+
+// ---------------------------------------------------------------------------
+// Credential helper (mirrors api::credentials without a hard dep)
+// ---------------------------------------------------------------------------
+
+/// Resolve the Polygon API key from (in order):
+/// 1. `POLYGON_API_KEY` environment variable
+/// 2. `~/.config/aether/polygon_api_key.cred` file (written by the credstore)
+fn resolve_polygon_api_key() -> Option<String> {
+    if let Ok(v) = std::env::var("POLYGON_API_KEY") {
+        if !v.trim().is_empty() {
+            return Some(v);
+        }
+    }
+
+    #[cfg(feature = "keyring")]
+    {
+        if let Ok(entry) = keyring::Entry::new("aether", "polygon_api_key") {
+            if let Ok(v) = entry.get_password() {
+                if !v.trim().is_empty() {
+                    return Some(v.trim().to_string());
+                }
+            }
+        }
+    }
+
+    // Fallback: cred file written by the credstore.
+    // Mirror the path used by api::credentials (dirs::config_dir() + "aether").
+    // On macOS: ~/Library/Application Support/aether/
+    // On Linux: ~/.config/aether/
+    let config_base = if cfg!(target_os = "macos") {
+        std::env::var("HOME").ok().map(|h| {
+            std::path::PathBuf::from(h)
+                .join("Library")
+                .join("Application Support")
+        })
+    } else {
+        std::env::var("XDG_CONFIG_HOME")
+            .ok()
+            .map(std::path::PathBuf::from)
+            .or_else(|| {
+                std::env::var("HOME")
+                    .ok()
+                    .map(|h| std::path::PathBuf::from(h).join(".config"))
+            })
+    };
+    let path = config_base?.join("aether").join("polygon_api_key.cred");
+    std::fs::read_to_string(path)
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+}
+
+// ---------------------------------------------------------------------------
+// Options chain source
+// ---------------------------------------------------------------------------
+
+/// Polygon.io options source implementing [`OptionsDataSource`].
+///
+/// Uses the `/v3/snapshot/options/{underlying}` endpoint, which returns live
+/// market data (bid/ask/greeks) for all listed contracts without needing to
+/// enumerate them first.  Requires a Polygon Starter plan or higher.
+///
+/// Set `POLYGON_API_KEY` in the environment.
+pub struct PolygonOptionsSource {
+    client: Client,
+    api_key: String,
+    base_url: Url,
+}
+
+impl PolygonOptionsSource {
+    pub fn new(api_key: impl Into<String>, base_url: Option<&str>) -> anyhow::Result<Self> {
+        let base = base_url.unwrap_or(DEFAULT_BASE_URL);
+        let base_url = Url::parse(base)
+            .map_err(|err| anyhow::anyhow!("invalid polygon base url {base}: {err}"))?;
+        let client = Client::builder()
+            .user_agent("aether-backend/0.1")
+            .build()
+            .map_err(|err| anyhow::anyhow!("failed to build http client: {err}"))?;
+        Ok(Self {
+            client,
+            api_key: api_key.into(),
+            base_url,
+        })
+    }
+
+    pub fn from_env() -> anyhow::Result<Self> {
+        let api_key = resolve_polygon_api_key()
+            .context("Polygon API key not found (set POLYGON_API_KEY or store via credstore)")?;
+        Self::new(api_key, None)
+    }
+
+    /// Fetch one page of option snapshots for `underlying`.
+    /// Follows `next_url` pagination automatically.
+    async fn fetch_snapshots(
+        &self,
+        underlying: &str,
+        expiration_date: Option<&str>,
+    ) -> anyhow::Result<Vec<OptionSnapshotResult>> {
+        let mut url = self.base_url.clone();
+        url.set_path(&format!("/v3/snapshot/options/{}", underlying.to_uppercase()));
+
+        let mut query: Vec<(&str, String)> = vec![
+            ("apiKey", self.api_key.clone()),
+            ("limit", "250".to_string()),
+        ];
+        if let Some(exp) = expiration_date {
+            query.push(("expiration_date", exp.to_string()));
+        }
+
+        let mut all: Vec<OptionSnapshotResult> = Vec::new();
+        let mut next_url: Option<String> = None;
+
+        loop {
+            let resp = if let Some(ref next) = next_url {
+                // next_url already contains apiKey
+                self.client.get(next).send().await
+            } else {
+                self.client.get(url.clone()).query(&query).send().await
+            }
+            .map_err(|e| anyhow::anyhow!("polygon options request failed: {e}"))?;
+
+            if resp.status() == StatusCode::UNAUTHORIZED {
+                anyhow::bail!("polygon options: invalid API key");
+            }
+            if !resp.status().is_success() {
+                let status = resp.status();
+                let body = resp.text().await.unwrap_or_default();
+                anyhow::bail!("polygon options request failed {status}: {body}");
+            }
+
+            let page: OptionSnapshotPage = resp
+                .json()
+                .await
+                .map_err(|e| anyhow::anyhow!("failed to decode polygon options response: {e}"))?;
+
+            all.extend(page.results.unwrap_or_default());
+
+            match page.next_url {
+                Some(ref n) if !n.is_empty() => next_url = Some(n.clone()),
+                _ => break,
+            }
+        }
+
+        Ok(all)
+    }
+}
+
+#[async_trait]
+impl OptionsDataSource for PolygonOptionsSource {
+    /// Returns unique expiration timestamps (Unix seconds, midnight UTC) for `symbol`.
+    async fn get_expirations(&self, symbol: &str) -> anyhow::Result<Vec<i64>> {
+        let snapshots = self.fetch_snapshots(symbol, None).await?;
+
+        let mut seen = std::collections::HashSet::new();
+        let mut timestamps: Vec<i64> = snapshots
+            .iter()
+            .filter_map(|s| {
+                let exp_str = s.details.as_ref()?.expiration_date.as_deref()?;
+                let date = NaiveDate::parse_from_str(exp_str, "%Y-%m-%d").ok()?;
+                let ts = Utc
+                    .from_utc_datetime(&date.and_hms_opt(0, 0, 0)?)
+                    .timestamp();
+                if seen.insert(ts) { Some(ts) } else { None }
+            })
+            .collect();
+
+        timestamps.sort_unstable();
+        Ok(timestamps)
+    }
+
+    /// Returns all contracts for a specific expiration timestamp.
+    async fn get_chain(
+        &self,
+        symbol: &str,
+        expiration_ts: i64,
+    ) -> anyhow::Result<OptionsExpiration> {
+        let expiry_date = Utc
+            .timestamp_opt(expiration_ts, 0)
+            .single()
+            .map(|dt| dt.date_naive())
+            .ok_or_else(|| anyhow::anyhow!("invalid expiration timestamp {expiration_ts}"))?;
+
+        let exp_str = expiry_date.format("%Y-%m-%d").to_string();
+        let snapshots = self.fetch_snapshots(symbol, Some(&exp_str)).await?;
+
+        let mut calls: Vec<OptionContractData> = Vec::new();
+        let mut puts: Vec<OptionContractData> = Vec::new();
+
+        for s in snapshots {
+            let details = match s.details {
+                Some(ref d) => d,
+                None => continue,
+            };
+            let contract_type = details.contract_type.as_deref().unwrap_or("");
+            let strike = details.strike_price.unwrap_or(0.0);
+            if strike <= 0.0 {
+                continue;
+            }
+
+            let bid = s.last_quote.as_ref().and_then(|q| q.bid).unwrap_or(0.0);
+            let ask = s.last_quote.as_ref().and_then(|q| q.ask).unwrap_or(0.0);
+            let volume = s.day.as_ref().and_then(|d| d.volume).unwrap_or(0.0) as u64;
+            let open_interest = s.open_interest.unwrap_or(0.0) as u64;
+            let implied_volatility = s.implied_volatility.unwrap_or(0.0);
+            let in_the_money = s.in_the_money.unwrap_or(false);
+
+            let delta = s.greeks.as_ref().and_then(|g| g.delta);
+            let gamma = s.greeks.as_ref().and_then(|g| g.gamma);
+            let theta = s.greeks.as_ref().and_then(|g| g.theta);
+            let vega = s.greeks.as_ref().and_then(|g| g.vega);
+
+            let contract = OptionContractData {
+                contract_symbol: details.ticker.clone().unwrap_or_default(),
+                strike,
+                bid,
+                ask,
+                volume,
+                open_interest,
+                implied_volatility,
+                in_the_money,
+                delta,
+                gamma,
+                theta,
+                rho: None, // Polygon greeks don't include rho in snapshots
+                vega,
+            };
+
+            match contract_type {
+                "call" => calls.push(contract),
+                "put" => puts.push(contract),
+                _ => {
+                    debug!("polygon options: unknown contract type {:?}", contract_type);
+                }
+            }
+        }
+
+        Ok(OptionsExpiration {
+            expiration_date: expiry_date,
+            calls,
+            puts,
+        })
+    }
+}
+
+// Polygon /v3/snapshot/options response shapes
+#[derive(Debug, serde::Deserialize)]
+struct OptionSnapshotPage {
+    #[serde(default)]
+    results: Option<Vec<OptionSnapshotResult>>,
+    next_url: Option<String>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct OptionSnapshotResult {
+    details: Option<OptionDetails>,
+    last_quote: Option<OptionQuote>,
+    day: Option<OptionDay>,
+    greeks: Option<OptionGreeks>,
+    open_interest: Option<f64>,
+    implied_volatility: Option<f64>,
+    in_the_money: Option<bool>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct OptionDetails {
+    ticker: Option<String>,
+    contract_type: Option<String>,
+    strike_price: Option<f64>,
+    expiration_date: Option<String>, // "2026-04-17"
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct OptionQuote {
+    bid: Option<f64>,
+    ask: Option<f64>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct OptionDay {
+    volume: Option<f64>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct OptionGreeks {
+    delta: Option<f64>,
+    gamma: Option<f64>,
+    theta: Option<f64>,
+    vega: Option<f64>,
 }
 
 #[cfg(test)]
@@ -284,5 +576,67 @@ mod tests {
         assert_eq!(second.symbol, "QQQ");
         assert!(second.bid > 0.0);
         assert!(second.ask > second.bid);
+    }
+
+    /// Live integration test — requires `POLYGON_API_KEY` env var and network access.
+    /// Run with: cargo test -p market_data inspects_spy_option_chain_polygon -- --nocapture --ignored
+    #[tokio::test]
+    #[ignore]
+    async fn inspects_spy_option_chain_polygon() {
+        use crate::yahoo::OptionsDataSource;
+
+        let source = match PolygonOptionsSource::from_env() {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("Skipping: {e}");
+                return;
+            }
+        };
+
+        let timestamps = source.get_expirations("SPY").await.unwrap_or_default();
+        eprintln!("SPY has {} expiration dates via Polygon", timestamps.len());
+
+        let today = Utc::now().date_naive();
+        let valid: Vec<i64> = timestamps
+            .into_iter()
+            .filter(|&ts| {
+                if let Some(date) = Utc.timestamp_opt(ts, 0).single().map(|dt| dt.date_naive()) {
+                    let dte = (date - today).num_days();
+                    dte >= 7 && dte <= 60
+                } else {
+                    false
+                }
+            })
+            .collect();
+        eprintln!("Valid expirations (DTE 7-60): {}", valid.len());
+
+        if let Some(&ts) = valid.first() {
+            let date = Utc.timestamp_opt(ts, 0).single().map(|dt| dt.date_naive());
+            eprintln!(
+                "First valid expiry: {:?} (ts={})",
+                date,
+                ts
+            );
+
+            let chain = source.get_chain("SPY", ts).await;
+            match chain {
+                Ok(c) => {
+                    eprintln!("Chain: {} calls, {} puts", c.calls.len(), c.puts.len());
+                    let spot = 680.0_f64;
+                    let nearby: Vec<_> = c
+                        .calls
+                        .iter()
+                        .filter(|o| (o.strike - spot).abs() <= 3.0 && o.bid > 0.0)
+                        .collect();
+                    for o in nearby.iter().take(5) {
+                        eprintln!(
+                            "  K={:.0} bid={:.2} ask={:.2} delta={:?}",
+                            o.strike, o.bid, o.ask, o.delta
+                        );
+                    }
+                }
+                Err(e) => eprintln!("Chain fetch failed: {e}"),
+            }
+        }
     }
 }

@@ -133,11 +133,14 @@ pub struct OptionContractData {
 /// Options data source trait for fetching option chains.
 #[async_trait]
 pub trait OptionsDataSource: Send + Sync {
-    async fn get_expirations(&self, symbol: &str) -> anyhow::Result<Vec<chrono::NaiveDate>>;
+    /// Returns raw Unix timestamps for each available expiration.
+    /// Callers should pass these timestamps back to [`get_chain`] unchanged
+    /// to avoid roundtrip precision loss through `NaiveDate`.
+    async fn get_expirations(&self, symbol: &str) -> anyhow::Result<Vec<i64>>;
     async fn get_chain(
         &self,
         symbol: &str,
-        expiration: chrono::NaiveDate,
+        expiration_ts: i64,
     ) -> anyhow::Result<OptionsExpiration>;
 }
 
@@ -162,36 +165,26 @@ impl Default for YahooOptionsSource {
 
 #[async_trait]
 impl OptionsDataSource for YahooOptionsSource {
-    async fn get_expirations(&self, symbol: &str) -> anyhow::Result<Vec<chrono::NaiveDate>> {
+    async fn get_expirations(&self, symbol: &str) -> anyhow::Result<Vec<i64>> {
         let ticker = Ticker::new(&self.client, symbol);
 
-        let expiration_timestamps = ticker
+        let timestamps = ticker
             .options()
             .await
             .map_err(|err| anyhow::anyhow!("yahoo options failed for {symbol}: {err}"))?;
 
-        let dates: Vec<chrono::NaiveDate> = expiration_timestamps
-            .into_iter()
-            .filter_map(|ts| Utc.timestamp_opt(ts, 0).single().map(|dt| dt.date_naive()))
-            .collect();
-
-        Ok(dates)
+        Ok(timestamps)
     }
 
     async fn get_chain(
         &self,
         symbol: &str,
-        expiration: chrono::NaiveDate,
+        expiration_ts: i64,
     ) -> anyhow::Result<OptionsExpiration> {
         let ticker = Ticker::new(&self.client, symbol);
 
-        let expiration_datetime = expiration
-            .and_hms_opt(16, 0, 0)
-            .ok_or_else(|| anyhow::anyhow!("invalid expiration date"))?;
-        let timestamp = Utc.from_utc_datetime(&expiration_datetime).timestamp();
-
         let chain = ticker
-            .option_chain(Some(timestamp))
+            .option_chain(Some(expiration_ts))
             .await
             .map_err(|err| anyhow::anyhow!("yahoo chain failed for {symbol}: {err}"))?;
 
@@ -241,8 +234,14 @@ impl OptionsDataSource for YahooOptionsSource {
             })
             .collect();
 
+        let expiration_date = Utc
+            .timestamp_opt(expiration_ts, 0)
+            .single()
+            .map(|dt| dt.date_naive())
+            .unwrap_or_default();
+
         Ok(OptionsExpiration {
-            expiration_date: expiration,
+            expiration_date,
             calls,
             puts,
         })
@@ -362,11 +361,12 @@ mod tests {
         let expirations = source.get_expirations("SPY").await;
 
         match expirations {
-            Ok(dates) => {
-                assert!(!dates.is_empty(), "should have at least one expiration");
-                eprintln!("SPY has {} expiration dates", dates.len());
-                for date in dates.iter().take(3) {
-                    eprintln!("  - {}", date);
+            Ok(timestamps) => {
+                assert!(!timestamps.is_empty(), "should have at least one expiration");
+                eprintln!("SPY has {} expiration dates", timestamps.len());
+                for ts in timestamps.iter().take(3) {
+                    let date = Utc.timestamp_opt(*ts, 0).single().map(|dt| dt.date_naive());
+                    eprintln!("  - ts={} date={:?}", ts, date);
                 }
             }
             Err(e) => {

@@ -4,35 +4,78 @@
 //!
 //! ## Data Sources
 //!
-//! | Source | European Options | American Options | Notes |
-//! |--------|----------------|-----------------|-------|
-//! | **TWS** (IBKR) | ✅ SPX, NDX | ✅ SPY, QQQ | Recommended - full data |
-//! | **Yahoo Finance** | ❌ No index options | ⚠️ May be limited | Requires testing |
+//! | Source | Style | Notes |
+//! |--------|-------|-------|
+//! | **TWS** (IBKR) | European (SPX/NDX) + American (SPY/QQQ) | Recommended — live NBBO |
+//! | **Yahoo Finance** | American (SPY/QQQ/etc.) | Free, delayed; no index options |
+//! | **Polygon** | American | Requires Starter plan for options snapshot |
 //!
 //! ## Box Spread Financing Rate
 //!
-//! A box spread is a combination of a bull call spread and bear put spread with
-//! the same strikes. Its payoff at expiration is always `(K_high - K_low)` regardless
-//! of the underlying price.
+//! A box spread (bull call spread + bear put spread at the same two strikes)
+//! has a fixed payoff at expiration of `K_high - K_low` regardless of price.
 //!
-//! The financing rate implied by a box spread is:
+//! **All four legs must share the same two strike prices** — mismatched strikes
+//! break the arbitrage relationship.
+//!
+//! ### Buy-box (borrow cash):
 //! ```text
-//! Net Debit = C(K_low) + P(K_high) - C(K_high) - P(K_low)
-//! r_implied = (K_high - K_low - Net_Debit) / (Net_Debit * T)
+//! Net Debit  = C(K_low).ask + P(K_high).ask − C(K_high).bid − P(K_low).bid
+//! buy_rate   = (width − Net_Debit) / (Net_Debit × T)
 //! ```
 //!
-//! Where `T = DTE / 365` (time to expiration in years).
+//! ### Sell-box (lend cash):
+//! ```text
+//! Net Credit = C(K_low).bid + P(K_high).bid − C(K_high).ask − P(K_low).ask
+//! sell_rate  = (width − Net_Credit) / (Net_Credit × T)
+//! ```
+//!
+//! Where `T = DTE / 365`.
+//!
+//! ## Dividend-Paying Underlyings (SPY, QQQ, …)
+//!
+//! For dividend-paying stocks with American options, **net_debit > width is
+//! normal** — buying the box is uneconomic because put prices are depressed
+//! by the dividend (early-exercise premium shifts value from put to call).
+//! In this case `buy_rate` is negative (no-arb: borrowing via box is expensive).
+//!
+//! The sell side remains positive: selling the box (lending) still earns a
+//! positive rate ≈ risk-free − dividend_yield.
+//!
+//! ## Short-DTE High Rates
+//!
+//! Very short-DTE boxes (< 30 days) can show high annualized sell rates
+//! (e.g. 20-50%). These are **real lending opportunities**: sell the box,
+//! collect the premium, hold all four legs to expiry and collect the width.
+//! The apparent high rate reflects small absolute profit (e.g. $0.55 on $55)
+//! annualized over a short period. Execution quality (fill prices vs NBBO)
+//! determines whether the opportunity is actually achievable.
+//!
+//! ## Strike Width Selection
+//!
+//! Strike width scales with underlying price to ensure signal-to-noise ratio:
+//! - Target box payoff = `MIN_BOX_PAYOFF / CONTRACT_MULTIPLIER` (minimum per-share)
+//! - Candidates: 8%, 4%, 2%, 1% of spot, rounded to nearest $5
+//! - All four legs must be liquid (bid > 0) at the same two strikes
+//! - Widest candidate with sufficient liquidity is preferred
 
 use std::collections::HashMap;
 
-use chrono::{NaiveDate, Utc};
+use chrono::{NaiveDate, TimeZone, Utc};
 use thiserror::Error;
 use tracing::{debug, warn};
 use yfinance_rs::{core::conversions::money_to_f64, Interval, Range};
 
 use crate::yahoo::{OptionContractData, OptionsDataSource, YahooHistorySource, YahooOptionsSource};
 
-const STRIKE_WIDTH: f64 = 2.0;
+/// Standard options multiplier (shares per contract).
+const CONTRACT_MULTIPLIER: f64 = 100.0;
+
+/// Minimum box payoff per contract in dollars.
+/// A $500 box on SPY means width × 100 ≥ $500, so width ≥ $5.
+/// Ensures the yield signal dominates bid/ask noise across 4 legs.
+const MIN_BOX_PAYOFF: f64 = 500.0;
+
 const MIN_LIQUIDITY_SCORE: f64 = 50.0;
 #[allow(dead_code)]
 const MAX_EXPIRY_DAYS: i32 = 730;
@@ -127,28 +170,32 @@ impl BoxSpreadResult {
         let (p_low_bid, p_low_ask) = p_low;
         let (p_high_bid, p_high_ask) = p_high;
 
+        // Buy box:  buy C(K_low) + buy P(K_high) - sell C(K_high) - sell P(K_low)
         let net_debit = c_low_ask + p_high_ask - c_high_bid - p_low_bid;
-        let net_credit = c_high_bid + p_low_bid - c_low_bid - p_high_ask;
-
-        if net_debit <= 0.0 || net_debit >= width {
-            debug!(
-                "box spread: invalid net_debit {:.2} vs width {:.2}",
-                net_debit, width
-            );
-            return None;
-        }
+        // Sell box: sell C(K_low) + sell P(K_high) - buy C(K_high) - buy P(K_low)
+        let net_credit = c_low_bid + p_high_bid - c_high_ask - p_low_ask;
 
         let t = dte / 365.0;
         if t <= 0.0 {
             return None;
         }
 
-        let buy_rate = if net_debit > 0.0 && net_debit < width {
+        // At least one side must be viable (net_credit or net_debit within box payoff).
+        // For dividend-paying stocks (e.g. SPY), net_debit can exceed width (buy side
+        // is unprofitable due to dividends), while the sell side remains positive.
+        let sell_ok = net_credit > 0.0 && net_credit < width;
+        let buy_ok = net_debit > 0.0 && net_debit < width;
+        if !sell_ok && !buy_ok {
+            return None;
+        }
+
+        let buy_rate = if buy_ok {
             (width - net_debit) / (net_debit * t)
         } else {
-            return None;
+            // Negative: buying the box costs more than its payoff.
+            (width - net_debit) / (net_debit.abs() * t)
         };
-        let sell_rate = if net_credit > 0.0 && net_credit < width {
+        let sell_rate = if sell_ok {
             (width - net_credit) / (net_credit * t)
         } else {
             buy_rate
@@ -158,6 +205,12 @@ impl BoxSpreadResult {
             c_low_bid, c_low_ask, c_high_bid, c_high_ask, p_low_bid, p_low_ask, p_high_bid,
             p_high_ask,
         );
+
+        // No clamping — high sell rates on short-DTE boxes are real lending
+        // opportunities (sell the box, collect premium, hold to expiry).
+        // Negative buy_rate is normal for dividend-paying stocks (buying the
+        // box costs more than its payoff due to dividend-embedded put pricing).
+        let mid_rate = (buy_rate + sell_rate) / 2.0;
 
         Some(Self {
             strike_low: 0.0,
@@ -172,9 +225,9 @@ impl BoxSpreadResult {
             p_high_ask,
             net_debit,
             net_credit,
-            buy_rate: buy_rate.clamp(0.001, 0.20),
-            sell_rate: sell_rate.clamp(0.001, 0.20),
-            mid_rate: (buy_rate + sell_rate) / 2.0,
+            buy_rate,
+            sell_rate,
+            mid_rate,
             liquidity_score,
         })
     }
@@ -239,9 +292,9 @@ impl YahooYieldCurveSource {
 
     pub async fn fetch_yield_curve(&self, symbol: &str) -> anyhow::Result<YieldCurve> {
         let yahoo_symbol = Self::to_yahoo_symbol(symbol);
-        let expirations = self.options.get_expirations(&yahoo_symbol).await?;
-        debug!(symbol = %symbol, expirations = expirations.len(), "got expirations");
-        if expirations.is_empty() {
+        let expiration_timestamps = self.options.get_expirations(&yahoo_symbol).await?;
+        debug!(symbol = %symbol, expirations = expiration_timestamps.len(), "got expirations");
+        if expiration_timestamps.is_empty() {
             return Err(anyhow::anyhow!("no expiration dates for {symbol}"));
         }
 
@@ -249,10 +302,16 @@ impl YahooYieldCurveSource {
         debug!(symbol = %symbol, spot = underlying_price, "got underlying price");
 
         let today = Utc::now().date_naive();
-        let valid_expirations: Vec<NaiveDate> = expirations
+        // Keep (ts, NaiveDate) pairs so we pass the original timestamp to get_chain.
+        let valid_expirations: Vec<(i64, NaiveDate)> = expiration_timestamps
             .into_iter()
-            .filter(|exp| {
-                let dte = (*exp - today).num_days() as i32;
+            .filter_map(|ts| {
+                Utc.timestamp_opt(ts, 0)
+                    .single()
+                    .map(|dt| (ts, dt.date_naive()))
+            })
+            .filter(|(_, date)| {
+                let dte = (*date - today).num_days() as i32;
                 dte >= MIN_DTE && dte <= MAX_DTE
             })
             .collect();
@@ -262,10 +321,10 @@ impl YahooYieldCurveSource {
 
         let mut points = Vec::new();
 
-        for expiry in valid_expirations.into_iter().take(10) {
+        for (ts, expiry) in valid_expirations.into_iter().take(10) {
             let dte = (expiry - today).num_days() as i32;
             if let Some(point) = self
-                .fetch_point(&yahoo_symbol, expiry, underlying_price)
+                .fetch_point(&yahoo_symbol, ts, expiry, underlying_price)
                 .await
             {
                 debug!(symbol = %symbol, dte = %dte, "computed point");
@@ -289,10 +348,11 @@ impl YahooYieldCurveSource {
     async fn fetch_point(
         &self,
         symbol: &str,
+        expiration_ts: i64,
         expiry: NaiveDate,
         spot: f64,
     ) -> Option<YieldCurvePoint> {
-        let chain = self.options.get_chain(symbol, expiry).await.ok()?;
+        let chain = self.options.get_chain(symbol, expiration_ts).await.ok()?;
 
         debug!(symbol = %symbol, spot = spot, calls = chain.calls.len(), puts = chain.puts.len(),
                "fetched option chain for {}", expiry);
@@ -302,55 +362,74 @@ impl YahooYieldCurveSource {
             return None;
         }
 
-        let (c_low, c_high) = self.find_strike_pair(&chain.calls, spot, STRIKE_WIDTH)?;
-        debug!(%symbol, c_low_strike = c_low.strike, c_high_strike = c_high.strike, "call strikes");
+        // Try candidate widths (widest first) and take the one with the best
+        // liquidity score that clears the minimum threshold.
+        let widths = Self::candidate_widths(spot);
+        debug!(%symbol, dte, ?widths, "trying strike widths");
 
-        let (p_low, p_high) = self.find_strike_pair(&chain.puts, spot, STRIKE_WIDTH)?;
-        debug!(%symbol, p_low_strike = p_low.strike, p_high_strike = p_high.strike, "put strikes");
+        let mut best: Option<(YieldCurvePoint, f64)> = None;
 
-        let strike_low = c_low.strike.min(p_low.strike);
-        let strike_high = c_high.strike.max(p_high.strike);
-        let width = strike_high - strike_low;
+        for width in &widths {
+            let width = *width;
 
-        if width <= 0.0 || width > STRIKE_WIDTH * 2.0 {
-            debug!("strike width {:.2} outside acceptable range", width);
-            return None;
+            let Some((c_low, c_high, p_low, p_high)) =
+                self.find_box_legs(&chain.calls, &chain.puts, spot, width)
+            else {
+                continue;
+            };
+
+            let strike_low = c_low.strike;   // all four legs share same two strikes
+            let strike_high = c_high.strike;
+            let actual_width = strike_high - strike_low;
+
+            let Some(box_result) = BoxSpreadResult::from_quotes(
+                (c_low.bid, c_low.ask),
+                (c_high.bid, c_high.ask),
+                (p_low.bid, p_low.ask),
+                (p_high.bid, p_high.ask),
+                actual_width,
+                dte as f64,
+            ) else {
+                continue;
+            };
+
+            if box_result.liquidity_score < MIN_LIQUIDITY_SCORE {
+                debug!(%symbol, dte, width, liquidity = box_result.liquidity_score, "low liquidity, trying next width");
+                continue;
+            }
+
+            let spread_bps = (box_result.sell_rate - box_result.buy_rate) * 10000.0;
+            debug!(%symbol, dte, width, buy_rate = box_result.buy_rate * 100.0, sell_rate = box_result.sell_rate * 100.0, "candidate box spread");
+
+            let point = YieldCurvePoint {
+                expiry,
+                dte,
+                strike_low,
+                strike_high,
+                strike_width: actual_width,
+                net_debit: box_result.net_debit,
+                net_credit: box_result.net_credit,
+                buy_implied_rate: box_result.buy_rate,
+                sell_implied_rate: box_result.sell_rate,
+                liquidity_score: box_result.liquidity_score,
+                mid_rate: box_result.mid_rate,
+                spread_bps,
+                source: "yahoo_finance".to_string(),
+            };
+
+            let score = box_result.liquidity_score;
+            match best {
+                None => best = Some((point, score)),
+                Some((_, prev_score)) if score > prev_score => best = Some((point, score)),
+                _ => {}
+            }
         }
 
-        let box_result = BoxSpreadResult::from_quotes(
-            (c_low.bid, c_low.ask),
-            (c_high.bid, c_high.ask),
-            (p_low.bid, p_low.ask),
-            (p_high.bid, p_high.ask),
-            width,
-            dte as f64,
-        )?;
-
-        let liquidity = box_result.liquidity_score;
-        if liquidity < MIN_LIQUIDITY_SCORE {
-            debug!("low liquidity score {:.1} for {}", liquidity, expiry);
-            return None;
+        if best.is_none() {
+            debug!(%symbol, dte, "no valid box spread found across all candidate widths");
         }
 
-        let spread_bps = (box_result.sell_rate - box_result.buy_rate) * 10000.0;
-
-        debug!(%symbol, dte = %dte, buy_rate = box_result.buy_rate * 100.0, sell_rate = box_result.sell_rate * 100.0, "computed box spread rates");
-
-        Some(YieldCurvePoint {
-            expiry,
-            dte,
-            strike_low,
-            strike_high,
-            strike_width: width,
-            net_debit: box_result.net_debit,
-            net_credit: box_result.net_credit,
-            buy_implied_rate: box_result.buy_rate,
-            sell_implied_rate: box_result.sell_rate,
-            liquidity_score: liquidity,
-            mid_rate: box_result.mid_rate,
-            spread_bps,
-            source: "yahoo_finance".to_string(),
-        })
+        best.map(|(point, _)| point)
     }
 
     #[allow(dead_code)]
@@ -367,33 +446,98 @@ impl YahooYieldCurveSource {
             .cloned()
     }
 
-    fn find_strike_pair(
+    /// Returns candidate strike widths (per-share) to try for a given spot price,
+    /// ordered from widest (best signal) to narrowest (most liquid).
+    ///
+    /// Width is derived from `MIN_BOX_PAYOFF / CONTRACT_MULTIPLIER` as a floor,
+    /// then scaled by spot so strikes are spaced meaningfully relative to the
+    /// underlying price.  E.g. for SPY at $656:
+    ///   min_width = $500 / 100 = $5
+    ///   candidates ≈ [$50, $25, $10, $5]
+    pub fn candidate_widths(spot: f64) -> Vec<f64> {
+        let min_width = (MIN_BOX_PAYOFF / CONTRACT_MULTIPLIER).ceil();
+        // Anchor widths as round percentages of spot, rounded to nearest $5.
+        let pcts: &[f64] = &[0.08, 0.04, 0.02, 0.01];
+        let mut widths: Vec<f64> = pcts
+            .iter()
+            .map(|&p| {
+                let raw = spot * p;
+                let rounded = (raw / 5.0).round() * 5.0;
+                rounded.max(min_width)
+            })
+            .collect();
+        // Dedup and keep only widths above the minimum, widest first.
+        widths.dedup();
+        widths.retain(|&w| w >= min_width);
+        if widths.is_empty() {
+            widths.push(min_width);
+        }
+        widths
+    }
+
+    /// Finds (K_low, K_high) where ALL FOUR legs (call and put at each strike)
+    /// are liquid, with K_high - K_low as close to `width` as possible.
+    /// Returns (call_low, call_high, put_low, put_high).
+    fn find_box_legs(
         &self,
-        options: &[OptionContractData],
+        calls: &[OptionContractData],
+        puts: &[OptionContractData],
         spot: f64,
         width: f64,
-    ) -> Option<(OptionContractData, OptionContractData)> {
-        let target_low = (spot - width / 2.0).round();
-        let target_high = (spot + width / 2.0).round();
+    ) -> Option<(OptionContractData, OptionContractData, OptionContractData, OptionContractData)>
+    {
+        use std::collections::HashMap;
 
-        let mut sorted: Vec<_> = options
+        // Build maps: strike → option, for liquid legs only.
+        let call_map: HashMap<i64, &OptionContractData> = calls
             .iter()
             .filter(|o| o.bid > 0.0 && o.ask > 0.0 && o.ask > o.bid)
+            .map(|o| ((o.strike * 100.0).round() as i64, o))
+            .collect();
+        let put_map: HashMap<i64, &OptionContractData> = puts
+            .iter()
+            .filter(|o| o.bid > 0.0 && o.ask > 0.0 && o.ask > o.bid)
+            .map(|o| ((o.strike * 100.0).round() as i64, o))
             .collect();
 
-        sorted.sort_by_key(|o| (o.strike - target_low).abs() as i64);
+        // Valid strikes: those with both a liquid call AND a liquid put.
+        let mut valid_strikes: Vec<f64> = call_map
+            .keys()
+            .filter(|k| put_map.contains_key(k))
+            .map(|&k| k as f64 / 100.0)
+            .collect();
+        valid_strikes.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-        let c_low = sorted.first().copied()?;
+        let target_low = spot - width / 2.0;
+        let target_high = spot + width / 2.0;
 
-        sorted.sort_by_key(|o| (o.strike - target_high).abs() as i64);
+        // Find K_low: valid strike closest to target_low.
+        let k_low = valid_strikes
+            .iter()
+            .min_by_key(|&&s| ((s - target_low).abs() * 100.0) as i64)
+            .copied()?;
 
-        let c_high = sorted.first().copied()?;
+        // Find K_high: valid strike closest to target_high, strictly above K_low.
+        let k_high = valid_strikes
+            .iter()
+            .filter(|&&s| s > k_low)
+            .min_by_key(|&&s| ((s - target_high).abs() * 100.0) as i64)
+            .copied()?;
 
-        if c_low.strike >= c_high.strike {
+        // Reject if the actual width is more than 2× the requested width.
+        if k_high - k_low > width * 2.0 {
             return None;
         }
 
-        Some((c_low.clone(), c_high.clone()))
+        let k_low_key = (k_low * 100.0).round() as i64;
+        let k_high_key = (k_high * 100.0).round() as i64;
+
+        let c_low = (*call_map.get(&k_low_key)?).clone();
+        let c_high = (*call_map.get(&k_high_key)?).clone();
+        let p_low = (*put_map.get(&k_low_key)?).clone();
+        let p_high = (*put_map.get(&k_high_key)?).clone();
+
+        Some((c_low, c_high, p_low, p_high))
     }
 
     pub async fn fetch_multi_symbol_curve(
@@ -431,28 +575,39 @@ mod tests {
         use crate::yahoo::OptionsDataSource;
 
         let source = YahooOptionsSource::new();
-        let expirations = source.get_expirations("SPY").await.unwrap_or_default();
-        eprintln!("SPY has {} expiration dates", expirations.len());
+        let timestamps = source.get_expirations("SPY").await.unwrap_or_default();
+        eprintln!("SPY has {} expiration dates", timestamps.len());
 
         let today = Utc::now().date_naive();
-        let valid: Vec<_> = expirations
+        // Convert to (ts, NaiveDate) pairs, keeping original timestamps for get_chain.
+        let dated: Vec<(i64, NaiveDate)> = timestamps
             .iter()
-            .filter(|e| {
-                let dte = (**e - today).num_days();
+            .filter_map(|&ts| {
+                Utc.timestamp_opt(ts, 0)
+                    .single()
+                    .map(|dt| (ts, dt.date_naive()))
+            })
+            .collect();
+
+        let valid: Vec<_> = dated
+            .iter()
+            .filter(|(_, date)| {
+                let dte = (*date - today).num_days();
                 dte >= 7 && dte <= 60
             })
             .collect();
         eprintln!("Valid expirations (DTE 7-60): {}", valid.len());
 
-        if let Some(exp) = valid.first() {
-            let expiry = **exp;
+        if let Some((ts, expiry)) = valid.first() {
+            let expiry = *expiry;
             eprintln!(
-                "First valid expiry: {} (DTE {})",
+                "First valid expiry: {} (DTE {}, ts={})",
                 expiry,
-                (expiry - today).num_days()
+                (expiry - today).num_days(),
+                ts,
             );
 
-            let chain = source.get_chain("SPY", expiry).await;
+            let chain = source.get_chain("SPY", *ts).await;
             match chain {
                 Ok(c) => {
                     eprintln!("Chain: {} calls, {} puts", c.calls.len(), c.puts.len());
@@ -497,12 +652,16 @@ mod tests {
                     curve.points.len(),
                     curve.underlying_price
                 );
-                for point in curve.points.iter().take(3) {
+                for point in curve.points.iter().take(5) {
                     eprintln!(
-                        "  DTE {}: mid_rate={:.2}% liquidity={:.1}",
+                        "  DTE {:3}: K={:.0}/{:.0} width={:.0}  sell={:.2}% buy={:.2}% mid={:.2}%  liquidity={:.1}",
                         point.dte,
+                        point.strike_low, point.strike_high,
+                        point.strike_width,
+                        point.sell_implied_rate * 100.0,
+                        point.buy_implied_rate * 100.0,
                         point.mid_rate * 100.0,
-                        point.liquidity_score
+                        point.liquidity_score,
                     );
                 }
             }
@@ -535,6 +694,78 @@ mod tests {
             }
             Err(e) => {
                 eprintln!("QQQ yield curve fetch failed: {e}");
+            }
+        }
+    }
+
+    /// SPX options are European-style — both buy and sell rates should be positive
+    /// and close to the risk-free rate (~4-5%).  Yahoo Finance uses "^SPX" as the
+    /// ticker for the index, but option chains are typically not available via Yahoo
+    /// for cash-settled indices.  This test probes what's available.
+    /// Probe Euro Stoxx 50 options availability on Yahoo Finance.
+    /// Eurex OESX options are European-style, cash-settled — ideal for box spreads.
+    #[tokio::test]
+    async fn fetches_es50_yield_curve() {
+        let source_raw = YahooOptionsSource::new();
+        // Try known Yahoo Finance tickers for Euro Stoxx 50
+        for sym in &["^STOXX50E", "STOXX50E", "SX5E", "^SX5E"] {
+            match source_raw.get_expirations(sym).await {
+                Ok(ts) if !ts.is_empty() => {
+                    eprintln!("{sym}: {} expirations available", ts.len());
+                    // Try fetching the first chain
+                    if let Ok(chain) = source_raw.get_chain(sym, ts[0]).await {
+                        let date = Utc.timestamp_opt(ts[0], 0).single().map(|d| d.date_naive());
+                        eprintln!("  First expiry: {:?}  calls={} puts={}", date, chain.calls.len(), chain.puts.len());
+                        let liquid_calls = chain.calls.iter().filter(|o| o.bid > 0.0).count();
+                        eprintln!("  Liquid calls (bid>0): {liquid_calls}");
+                    }
+                    // Try full yield curve
+                    let source = YahooYieldCurveSource::new();
+                    match source.fetch_yield_curve(sym).await {
+                        Ok(curve) => {
+                            eprintln!("{sym} yield curve: {} points, spot: {:.2}", curve.points.len(), curve.underlying_price);
+                            for point in curve.points.iter().take(5) {
+                                eprintln!(
+                                    "  DTE {:3}: K={:.0}/{:.0} width={:.0}  sell={:.2}% buy={:.2}% mid={:.2}%",
+                                    point.dte, point.strike_low, point.strike_high, point.strike_width,
+                                    point.sell_implied_rate * 100.0,
+                                    point.buy_implied_rate * 100.0,
+                                    point.mid_rate * 100.0,
+                                );
+                            }
+                        }
+                        Err(e) => eprintln!("{sym} yield curve failed: {e}"),
+                    }
+                    return;
+                }
+                Ok(_) => eprintln!("{sym}: 0 expirations"),
+                Err(e) => eprintln!("{sym}: {e}"),
+            }
+        }
+        eprintln!("No ES50 options found on Yahoo Finance");
+    }
+
+    #[tokio::test]
+    async fn fetches_spx_yield_curve() {
+        let source = YahooYieldCurveSource::new();
+
+        for sym in &["SPX", "^SPX", "SPXW"] {
+            let result = source.fetch_yield_curve(sym).await;
+            match result {
+                Ok(curve) => {
+                    eprintln!("{sym} yield curve: {} points, spot: {:.2}", curve.points.len(), curve.underlying_price);
+                    for point in curve.points.iter().take(5) {
+                        eprintln!(
+                            "  DTE {:3}: K={:.0}/{:.0} width={:.0}  sell={:.2}% buy={:.2}% mid={:.2}%",
+                            point.dte, point.strike_low, point.strike_high, point.strike_width,
+                            point.sell_implied_rate * 100.0,
+                            point.buy_implied_rate * 100.0,
+                            point.mid_rate * 100.0,
+                        );
+                    }
+                    return; // found a working ticker
+                }
+                Err(e) => eprintln!("{sym}: {e}"),
             }
         }
     }

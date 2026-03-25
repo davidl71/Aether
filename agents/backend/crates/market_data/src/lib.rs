@@ -26,7 +26,7 @@ pub use model::{
     SimpleMarketDataSourceFactory,
 };
 pub use pipeline::{MarketDataIngestor, MarketDataPipeline};
-pub use polygon::{PolygonMarketDataSource, PolygonMarketDataSourceFactory};
+pub use polygon::{PolygonMarketDataSource, PolygonMarketDataSourceFactory, PolygonOptionsSource};
 pub use polygon_ws::PolygonWsMarketDataSource;
 pub use shir::{default_shir_rate, fetch_shir_rate, ShirRate};
 pub use tase::{TaseClient, TaseIndex, TaseQuote, TaseSearchResult};
