@@ -28,8 +28,9 @@ use ratatui::{
 
 use api::CommandStatus;
 
-use crate::app::{App, DetailPopupContent, InputMode, Tab, VisibleWorkspace, WorkspaceSpec};
+use crate::app::{App, DetailPopupContent, InputMode, Tab};
 use crate::events::{ConnectionState, ConnectionStatus, ConnectionTarget};
+use crate::workspace::{VisibleWorkspace, WorkspaceSpec};
 
 pub fn render(f: &mut Frame, app: &App) {
     let chunks = Layout::default()

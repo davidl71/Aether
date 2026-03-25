@@ -32,14 +32,13 @@
 
 use std::{
     panic,
-    sync::Arc,
     sync::atomic::{AtomicBool, Ordering},
+    sync::Arc,
     time::Duration,
 };
 
 use api::discount_bank::{DiscountBankBalanceDto, DiscountBankTransactionsListDto};
 use api::finance_rates::{BenchmarksResponse, CurveResponse};
-use std::collections::HashMap;
 use api::loans::LoanRecord;
 use color_eyre::eyre::Context;
 use crossterm::{
@@ -55,6 +54,7 @@ use nats_adapter::{
     request_json_with_retry, request_json_with_retry_timeout, NatsClient, RetryConfig,
 };
 use serde_json::json;
+use std::collections::HashMap;
 use tokio::sync::{mpsc, watch};
 use tracing::{error, info};
 use tracing_subscriber::{
@@ -68,15 +68,17 @@ mod config_watcher;
 mod events;
 mod expiry_buckets;
 mod input;
+mod input_settings;
 mod models;
 mod nats;
 mod option_symbol;
 mod ui;
+mod workspace;
 
 use app::{App, FmpDetail, GreeksDisplay, GreeksFetchRequest};
-use events::AppEvent;
 use config::TuiConfig;
 use crossterm::tty::IsTty;
+use events::AppEvent;
 
 static RAW_MODE_ACTIVE: AtomicBool = AtomicBool::new(false);
 static ALT_SCREEN_ACTIVE: AtomicBool = AtomicBool::new(false);
@@ -178,8 +180,9 @@ async fn main() -> color_eyre::Result<()> {
     // Benchmarks (SOFR/Treasury) are fetched periodically on a separate slow interval.
     // Result comes back via event_tx as AppEvent::BenchmarksUpdate.
     // Keep a dummy channel so run_loop signature stays simple.
-    let (_yield_result_tx_unused, yield_result_rx) =
-        mpsc::unbounded_channel::<Result<(HashMap<String, CurveResponse>, BenchmarksResponse), String>>();
+    let (_yield_result_tx_unused, yield_result_rx) = mpsc::unbounded_channel::<
+        Result<(HashMap<String, CurveResponse>, BenchmarksResponse), String>,
+    >();
     let (loans_fetch_tx, loans_fetch_rx) = mpsc::unbounded_channel();
     let (loans_result_tx, loans_result_rx) = mpsc::unbounded_channel();
     let (loan_create_tx, loan_create_rx) = mpsc::unbounded_channel();
@@ -303,7 +306,10 @@ async fn main() -> color_eyre::Result<()> {
         loop {
             match nats_adapter::NatsClient::connect(&nats_url_kv).await {
                 Ok(client) => {
-                    if let Err(e) = nats::run_yield_kv_watcher(client, kv_bucket.clone(), kv_event_tx.clone()).await {
+                    if let Err(e) =
+                        nats::run_yield_kv_watcher(client, kv_bucket.clone(), kv_event_tx.clone())
+                            .await
+                    {
                         tracing::warn!(error = %e, "Yield KV watcher ended, reconnecting");
                     }
                 }
@@ -463,29 +469,28 @@ async fn run_discount_bank_fetcher(
 ) {
     while rx.recv().await.is_some() {
         let balance_res = match NatsClient::connect(&nats_url).await {
-            Ok(nc) => {
-                request_json_with_retry::<(), Result<DiscountBankBalanceDto, String>>(
-                    &nc,
-                    "api.discount_bank.balance",
-                    &(),
-                )
-                .await
-                .map_err(|e| e.to_string())
-                .and_then(|r| r)
-            }
+            Ok(nc) => request_json_with_retry::<(), Result<DiscountBankBalanceDto, String>>(
+                &nc,
+                "api.discount_bank.balance",
+                &(),
+            )
+            .await
+            .map_err(|e| e.to_string())
+            .and_then(|r| r),
             Err(e) => Err(e.to_string()),
         };
         let txns_res = match NatsClient::connect(&nats_url).await {
-            Ok(nc) => {
-                request_json_with_retry::<serde_json::Value, Result<DiscountBankTransactionsListDto, String>>(
-                    &nc,
-                    "api.discount_bank.transactions",
-                    &json!({ "limit": 50 }),
-                )
-                .await
-                .map_err(|e| e.to_string())
-                .and_then(|r| r)
-            }
+            Ok(nc) => request_json_with_retry::<
+                serde_json::Value,
+                Result<DiscountBankTransactionsListDto, String>,
+            >(
+                &nc,
+                "api.discount_bank.transactions",
+                &json!({ "limit": 50 }),
+            )
+            .await
+            .map_err(|e| e.to_string())
+            .and_then(|r| r),
             Err(e) => Err(e.to_string()),
         };
         let _ = result_tx.send((balance_res, txns_res));
@@ -811,34 +816,17 @@ async fn run_greeks_fetcher(
                 .map_err(|e| e.to_string());
                 match greeks_res {
                     Err(e) => Err(e),
-                    Ok(greeks_val) => {
-                        match greeks_val.get("greeks").cloned() {
-                            None => Err("no greeks field".to_string()),
-                            Some(greeks) => Ok(GreeksDisplay {
-                                iv,
-                                delta: greeks
-                                    .get("delta")
-                                    .and_then(|v| v.as_f64())
-                                    .unwrap_or(0.0),
-                                gamma: greeks
-                                    .get("gamma")
-                                    .and_then(|v| v.as_f64())
-                                    .unwrap_or(0.0),
-                                theta: greeks
-                                    .get("theta")
-                                    .and_then(|v| v.as_f64())
-                                    .unwrap_or(0.0),
-                                vega: greeks
-                                    .get("vega")
-                                    .and_then(|v| v.as_f64())
-                                    .unwrap_or(0.0),
-                                rho: greeks
-                                    .get("rho")
-                                    .and_then(|v| v.as_f64())
-                                    .unwrap_or(0.0),
-                            }),
-                        }
-                    }
+                    Ok(greeks_val) => match greeks_val.get("greeks").cloned() {
+                        None => Err("no greeks field".to_string()),
+                        Some(greeks) => Ok(GreeksDisplay {
+                            iv,
+                            delta: greeks.get("delta").and_then(|v| v.as_f64()).unwrap_or(0.0),
+                            gamma: greeks.get("gamma").and_then(|v| v.as_f64()).unwrap_or(0.0),
+                            theta: greeks.get("theta").and_then(|v| v.as_f64()).unwrap_or(0.0),
+                            vega: greeks.get("vega").and_then(|v| v.as_f64()).unwrap_or(0.0),
+                            rho: greeks.get("rho").and_then(|v| v.as_f64()).unwrap_or(0.0),
+                        }),
+                    },
                 }
             }
             Err(e) => Err(e.to_string()),

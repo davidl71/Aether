@@ -1,0 +1,70 @@
+use crossterm::event::KeyCode;
+
+use crate::app::{App, CommandStatusView};
+use crate::input::Action;
+use crate::workspace::SettingsSection;
+
+pub(crate) fn settings_key_action(app: &App, key: KeyCode) -> Option<Action> {
+    match key {
+        KeyCode::Left => Some(Action::SettingsSectionPrev),
+        KeyCode::Right => Some(Action::SettingsSectionNext),
+        KeyCode::Up => Some(Action::SettingsScrollUp),
+        KeyCode::Down => Some(Action::SettingsScrollDown),
+        KeyCode::Char('a') | KeyCode::Char('A') if app.settings_section == SettingsSection::Symbols => {
+            Some(Action::SettingsAddSymbol)
+        }
+        KeyCode::Char('e') | KeyCode::Char('E') | KeyCode::Enter
+            if app.settings_section == SettingsSection::Config =>
+        {
+            Some(Action::SettingsEditConfig)
+        }
+        KeyCode::Char('r') | KeyCode::Char('R') => Some(Action::SettingsReset),
+        KeyCode::Delete => Some(Action::SettingsDelete),
+        _ => None,
+    }
+}
+
+pub(crate) fn apply_settings_action(app: &mut App, action: Action) -> bool {
+    match action {
+        Action::SettingsScrollUp => {
+            if app.settings_section == SettingsSection::Symbols {
+                app.settings_symbol_index = app.settings_symbol_index.saturating_sub(1);
+            } else if app.settings_section == SettingsSection::Config {
+                app.settings_config_key_index = app.settings_config_key_index.saturating_sub(1);
+            } else {
+                app.settings_section = app.settings_section.prev();
+            }
+        }
+        Action::SettingsScrollDown => {
+            if app.settings_section == SettingsSection::Symbols {
+                let len = app.watchlist().len();
+                if len > 0 {
+                    app.settings_symbol_index =
+                        (app.settings_symbol_index + 1).min(len.saturating_sub(1));
+                }
+            } else if app.settings_section == SettingsSection::Config {
+                app.settings_config_key_index = (app.settings_config_key_index + 1).min(9);
+            } else {
+                app.settings_section = app.settings_section.next();
+            }
+        }
+        Action::SettingsAddSymbol => {
+            if app.settings_section != SettingsSection::Symbols {
+                return true;
+            }
+            app.settings_add_symbol_input = Some(String::new());
+            app.set_command_status(CommandStatusView::success(
+                "settings",
+                "Add symbol mode active.",
+            ));
+        }
+        Action::SettingsSectionPrev => {
+            app.settings_section = app.settings_section.prev();
+        }
+        Action::SettingsSectionNext => {
+            app.settings_section = app.settings_section.next();
+        }
+        _ => return false,
+    }
+    true
+}

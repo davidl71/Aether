@@ -19,6 +19,9 @@ use crate::config::TuiConfig;
 use crate::events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget};
 use crate::models::TuiSnapshot;
 use crate::ui::Candle;
+use crate::workspace::{
+    SettingsSection, VisibleWorkspace, WorkspaceSpec, SPLIT_PANE_TABS,
+};
 
 const SPARKLINE_HISTORY_SIZE: usize = 20;
 const CHART_HISTORY_SIZE: usize = 120;
@@ -74,74 +77,6 @@ pub enum Tab {
     Settings,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum VisibleWorkspace {
-    None,
-    SplitPane,
-    Market,
-    Operations,
-    Credit,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct WorkspaceSpec {
-    pub kind: VisibleWorkspace,
-    pub title: &'static str,
-    pub summary: &'static str,
-    pub tabs: &'static [Tab],
-    pub min_width: u16,
-    pub min_height: u16,
-    pub hint_label: &'static str,
-}
-
-const MARKET_WORKSPACE_TABS: [Tab; 4] = [Tab::Dashboard, Tab::Positions, Tab::Orders, Tab::Yield];
-const OPERATIONS_WORKSPACE_TABS: [Tab; 3] = [Tab::Alerts, Tab::Logs, Tab::Settings];
-const CREDIT_WORKSPACE_TABS: [Tab; 2] = [Tab::Loans, Tab::DiscountBank];
-const SPLIT_PANE_TABS: [Tab; 2] = [Tab::Dashboard, Tab::Positions];
-
-impl VisibleWorkspace {
-    pub fn spec(self) -> Option<WorkspaceSpec> {
-        match self {
-            VisibleWorkspace::None => None,
-            VisibleWorkspace::SplitPane => Some(WorkspaceSpec {
-                kind: self,
-                title: "Split pane",
-                summary: "Dashboard + Positions",
-                tabs: &SPLIT_PANE_TABS,
-                min_width: 0,
-                min_height: 0,
-                hint_label: "split",
-            }),
-            VisibleWorkspace::Market => Some(WorkspaceSpec {
-                kind: self,
-                title: "Market Workspace",
-                summary: "Dash + Pos + Orders + Yield visible",
-                tabs: &MARKET_WORKSPACE_TABS,
-                min_width: 170,
-                min_height: 22,
-                hint_label: "workspace",
-            }),
-            VisibleWorkspace::Operations => Some(WorkspaceSpec {
-                kind: self,
-                title: "Operations Workspace",
-                summary: "Alerts + Logs + Settings visible",
-                tabs: &OPERATIONS_WORKSPACE_TABS,
-                min_width: 170,
-                min_height: 20,
-                hint_label: "ops",
-            }),
-            VisibleWorkspace::Credit => Some(WorkspaceSpec {
-                kind: self,
-                title: "Credit Workspace",
-                summary: "Loans + Bank visible",
-                tabs: &CREDIT_WORKSPACE_TABS,
-                min_width: 170,
-                min_height: 18,
-                hint_label: "credit",
-            }),
-        }
-    }
-}
 
 /// Display-ready greeks result for an option position.
 #[derive(Debug, Clone)]
@@ -587,8 +522,8 @@ pub struct App {
     pub yield_curve_scroll: usize,
     /// In-Settings watchlist override (add/remove symbols in memory). None = use config.watchlist.
     pub watchlist_override: Option<Vec<String>>,
-    /// Selected row in Settings tab: 0 = backends, 1 = config, 2 = symbols. For symbol list, use settings_symbol_index.
-    pub settings_section_index: usize,
+    /// Active secondary focus target inside the Settings pane.
+    pub settings_section: SettingsSection,
     /// Selected symbol index in Settings watchlist (for remove / highlight).
     pub settings_symbol_index: usize,
     /// When Some, Settings is in "add symbol" mode; buffer for the new symbol (Enter confirm, Esc cancel).
@@ -726,7 +661,7 @@ impl App {
             yield_symbol_index: 0,
             yield_curve_scroll: 0,
             watchlist_override: None,
-            settings_section_index: 0,
+            settings_section: SettingsSection::Health,
             settings_symbol_index: 0,
             settings_add_symbol_input: None,
             settings_edit_config_key: None,
@@ -1662,6 +1597,7 @@ mod tests {
     use tokio::sync::{mpsc, watch};
 
     use std::collections::HashMap;
+    use crate::workspace::SettingsSection;
 
     use super::{App, InputMode, Tab};
     use crate::{
@@ -2049,20 +1985,20 @@ mod tests {
     fn settings_left_right_escapes_nested_sections() {
         let (mut app, _, _) = make_app();
         app.active_tab = Tab::Settings;
-        app.settings_section_index = 1;
+        app.settings_section = SettingsSection::Config;
         app.settings_config_key_index = 3;
 
         app.handle_key(KeyEvent::from(KeyCode::Left));
-        assert_eq!(app.settings_section_index, 0);
+        assert_eq!(app.settings_section, SettingsSection::Health);
 
         app.handle_key(KeyEvent::from(KeyCode::Right));
-        assert_eq!(app.settings_section_index, 1);
+        assert_eq!(app.settings_section, SettingsSection::Config);
 
         app.handle_key(KeyEvent::from(KeyCode::Right));
-        assert_eq!(app.settings_section_index, 2);
+        assert_eq!(app.settings_section, SettingsSection::Symbols);
 
         app.handle_key(KeyEvent::from(KeyCode::Left));
-        assert_eq!(app.settings_section_index, 1);
+        assert_eq!(app.settings_section, SettingsSection::Config);
     }
 
     #[test]
@@ -2144,7 +2080,7 @@ mod tests {
     fn settings_tab_renders_config_edit_label_and_prompt() {
         let (mut app, _, _) = make_app();
         app.active_tab = Tab::Settings;
-        app.settings_section_index = 1;
+        app.settings_section = SettingsSection::Config;
         app.settings_edit_config_key = Some("NATS_URL".into());
         app.settings_add_symbol_input = Some("nats://demo".into());
 
@@ -2154,8 +2090,8 @@ mod tests {
         let frame = terminal.draw(|f| render(f, &app)).unwrap();
 
         let content = buffer_to_string(&frame.area, &frame.buffer);
-        assert!(content.contains("Config overrides (editing NATS_URL)"));
-        assert!(content.contains("Edit NATS_URL:"));
+        assert!(content.contains("Config overrides (editing NATS_URL [editable])"));
+        assert!(content.contains("NATS_URL"));
         assert!(content.contains("Active section: Config"));
     }
 

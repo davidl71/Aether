@@ -7,6 +7,7 @@ use api::RuntimePositionDto;
 use crossterm::event::{KeyCode, KeyEvent};
 
 use crate::app::{App, DetailPopupContent, InputMode, Tab};
+use crate::input_settings::{apply_settings_action, settings_key_action};
 
 /// Actions that can result from key events.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -201,8 +202,21 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         {
             Some(Action::ChartPillRight)
         }
-        KeyCode::Left if app.active_tab == Tab::Settings => Some(Action::SettingsSectionPrev),
-        KeyCode::Right if app.active_tab == Tab::Settings => Some(Action::SettingsSectionNext),
+        KeyCode::Left if app.active_tab == Tab::Settings => settings_key_action(app, KeyCode::Left),
+        KeyCode::Right if app.active_tab == Tab::Settings => settings_key_action(app, KeyCode::Right),
+        KeyCode::Up if app.active_tab == Tab::Settings => settings_key_action(app, KeyCode::Up),
+        KeyCode::Down if app.active_tab == Tab::Settings => settings_key_action(app, KeyCode::Down),
+        KeyCode::Delete if app.active_tab == Tab::Settings => settings_key_action(app, KeyCode::Delete),
+        KeyCode::Char('a') | KeyCode::Char('A') if app.active_tab == Tab::Settings => {
+            settings_key_action(app, key.code)
+        }
+        KeyCode::Char('e') | KeyCode::Char('E') if app.active_tab == Tab::Settings => {
+            settings_key_action(app, key.code)
+        }
+        KeyCode::Char('r') | KeyCode::Char('R') if app.active_tab == Tab::Settings => {
+            settings_key_action(app, key.code)
+        }
+        KeyCode::Enter if app.active_tab == Tab::Settings => settings_key_action(app, KeyCode::Enter),
 
         // Workspace focus cycling takes precedence when a composed workspace is actually visible.
         KeyCode::Tab if workspace_focus_target(app, true).is_some() => Some(Action::WorkspaceFocusNext),
@@ -369,25 +383,6 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         {
             Some(Action::ChartSearchChar(c))
         }
-
-        // Settings
-        KeyCode::Up if app.active_tab == Tab::Settings => Some(Action::SettingsScrollUp),
-        KeyCode::Down if app.active_tab == Tab::Settings => Some(Action::SettingsScrollDown),
-        KeyCode::Char('a') | KeyCode::Char('A')
-            if app.active_tab == Tab::Settings && app.settings_section_index == 2 =>
-        {
-            Some(Action::SettingsAddSymbol)
-        }
-        KeyCode::Char('e') | KeyCode::Char('E') | KeyCode::Enter
-            if app.active_tab == Tab::Settings && app.settings_section_index == 1 =>
-        {
-            Some(Action::SettingsEditConfig)
-        }
-        KeyCode::Char('r') | KeyCode::Char('R') if app.active_tab == Tab::Settings => {
-            Some(Action::SettingsReset)
-        }
-        KeyCode::Delete if app.active_tab == Tab::Settings => Some(Action::SettingsDelete),
-
         // Logs tab
         KeyCode::Up if app.active_tab == Tab::Logs => Some(Action::LogScrollUp),
         KeyCode::Down if app.active_tab == Tab::Logs => Some(Action::LogScrollDown),
@@ -437,6 +432,9 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
 
 /// Applies an action to the app state.
 pub fn apply_action(app: &mut App, action: Action) {
+    if apply_settings_action(app, action) {
+        return;
+    }
     match action {
         Action::Quit => {
             app.should_quit = true;
@@ -1011,38 +1009,6 @@ pub fn apply_action(app: &mut App, action: Action) {
                 app.chart_strike_index = (app.chart_strike_index + 1) % 5;
             }
         }
-        Action::SettingsScrollUp => {
-            if app.settings_section_index == 2 {
-                app.settings_symbol_index = app.settings_symbol_index.saturating_sub(1);
-            } else if app.settings_section_index == 1 {
-                app.settings_config_key_index = app.settings_config_key_index.saturating_sub(1);
-            } else {
-                app.settings_section_index = app.settings_section_index.saturating_sub(1);
-            }
-        }
-        Action::SettingsScrollDown => {
-            if app.settings_section_index == 2 {
-                let len = app.watchlist().len();
-                if len > 0 {
-                    app.settings_symbol_index =
-                        (app.settings_symbol_index + 1).min(len.saturating_sub(1));
-                }
-            } else if app.settings_section_index == 1 {
-                app.settings_config_key_index = (app.settings_config_key_index + 1).min(9);
-            } else {
-                app.settings_section_index = (app.settings_section_index + 1).min(3);
-            }
-        }
-        Action::SettingsAddSymbol => {
-            if app.settings_section_index != 2 {
-                return;
-            }
-            app.settings_add_symbol_input = Some(String::new());
-            app.set_command_status(crate::app::CommandStatusView::success(
-                "settings",
-                "Add symbol mode active.",
-            ));
-        }
         Action::SettingsEditConfig => {
             if let Some((key, value)) = app.config_key_value_at(app.settings_config_key_index) {
                 app.settings_edit_config_key = Some(key);
@@ -1204,16 +1170,11 @@ pub fn apply_action(app: &mut App, action: Action) {
                 set_active_tab(app, target);
             }
         }
-        Action::SettingsSectionPrev => {
-            if app.active_tab == Tab::Settings {
-                app.settings_section_index = app.settings_section_index.saturating_sub(1);
-            }
-        }
-        Action::SettingsSectionNext => {
-            if app.active_tab == Tab::Settings {
-                app.settings_section_index = (app.settings_section_index + 1).min(3);
-            }
-        }
-        Action::NoOp => {}
+        Action::SettingsScrollUp
+        | Action::SettingsScrollDown
+        | Action::SettingsAddSymbol
+        | Action::SettingsSectionPrev
+        | Action::SettingsSectionNext
+        | Action::NoOp => {}
     }
 }
