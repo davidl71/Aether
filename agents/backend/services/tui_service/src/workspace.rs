@@ -28,7 +28,38 @@ pub enum SettingsSection {
     Sources,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SecondaryFocus {
+    None,
+    Settings(SettingsSection),
+}
+
+impl SecondaryFocus {
+    pub fn label(self) -> Option<&'static str> {
+        match self {
+            SecondaryFocus::None => None,
+            SecondaryFocus::Settings(section) => Some(section.title()),
+        }
+    }
+
+    pub fn title(self) -> Option<String> {
+        match self {
+            SecondaryFocus::None => None,
+            SecondaryFocus::Settings(section) => Some(format!("Settings / {}", section.title())),
+        }
+    }
+}
+
 impl SettingsSection {
+    pub fn title(self) -> &'static str {
+        match self {
+            SettingsSection::Health => "Health",
+            SettingsSection::Config => "Config",
+            SettingsSection::Symbols => "Symbols",
+            SettingsSection::Sources => "Sources",
+        }
+    }
+
     pub fn prev(self) -> Self {
         match self {
             SettingsSection::Health => SettingsSection::Health,

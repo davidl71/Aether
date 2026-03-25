@@ -20,7 +20,7 @@ use crate::events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarge
 use crate::models::TuiSnapshot;
 use crate::ui::Candle;
 use crate::workspace::{
-    SettingsSection, VisibleWorkspace, WorkspaceSpec, SPLIT_PANE_TABS,
+    SecondaryFocus, SettingsSection, VisibleWorkspace, WorkspaceSpec, SPLIT_PANE_TABS,
 };
 
 const SPARKLINE_HISTORY_SIZE: usize = 20;
@@ -751,6 +751,19 @@ impl App {
 
     pub fn visible_workspace_spec(&self) -> Option<WorkspaceSpec> {
         self.visible_workspace().spec()
+    }
+
+    pub fn secondary_focus(&self) -> SecondaryFocus {
+        match self.active_tab {
+            Tab::Settings => SecondaryFocus::Settings(self.settings_section),
+            _ => SecondaryFocus::None,
+        }
+    }
+
+    pub fn focus_label(&self) -> String {
+        self.secondary_focus()
+            .title()
+            .unwrap_or_else(|| self.active_tab.title().to_string())
     }
 
     /// Applies a tick market data event to the current snapshot.
@@ -1486,6 +1499,12 @@ impl App {
         config_key_value_at(&self.config, index)
     }
 
+    pub fn config_key_count(&self) -> usize {
+        (0usize..)
+            .take_while(|index| self.config_key_value_at(*index).is_some())
+            .count()
+    }
+
     fn update_roi_history(&mut self, snap: &TuiSnapshot) {
         for symbol_data in &snap.dto().symbols {
             let roi = symbol_data.roi;
@@ -2002,6 +2021,27 @@ mod tests {
     }
 
     #[test]
+    fn settings_up_down_escape_at_list_boundaries() {
+        let (mut app, _, _) = make_app();
+        app.active_tab = Tab::Settings;
+        app.settings_section = SettingsSection::Config;
+        app.settings_config_key_index = 0;
+
+        app.handle_key(KeyEvent::from(KeyCode::Up));
+        assert_eq!(app.settings_section, SettingsSection::Health);
+
+        app.settings_section = SettingsSection::Config;
+        app.settings_config_key_index = app.config_key_count().saturating_sub(1);
+        app.handle_key(KeyEvent::from(KeyCode::Down));
+        assert_eq!(app.settings_section, SettingsSection::Symbols);
+
+        app.settings_section = SettingsSection::Symbols;
+        app.settings_symbol_index = 0;
+        app.handle_key(KeyEvent::from(KeyCode::Up));
+        assert_eq!(app.settings_section, SettingsSection::Config);
+    }
+
+    #[test]
     fn wide_terminal_renders_market_workspace() {
         let (mut app, _, _) = make_app();
         app.active_tab = Tab::Dashboard;
@@ -2046,6 +2086,34 @@ mod tests {
 
         app.handle_key(KeyEvent::from(KeyCode::BackTab));
         assert_eq!(app.active_tab, Tab::Logs);
+    }
+
+    #[test]
+    fn operations_workspace_banner_shows_nested_settings_focus() {
+        let (mut app, _, _) = make_app();
+        app.active_tab = Tab::Settings;
+        app.settings_section = SettingsSection::Sources;
+
+        let backend = TestBackend::new(190, 32);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let frame = terminal.draw(|f| render(f, &app)).unwrap();
+
+        let content = buffer_to_string(&frame.area, &frame.buffer);
+        assert!(content.contains("Focus: Settings / Sources"));
+    }
+
+    #[test]
+    fn settings_hint_bar_shows_secondary_focus_label() {
+        let (mut app, _, _) = make_app();
+        app.active_tab = Tab::Settings;
+        app.settings_section = SettingsSection::Config;
+
+        let backend = TestBackend::new(180, 20);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let frame = terminal.draw(|f| render(f, &app)).unwrap();
+
+        let content = buffer_to_string(&frame.area, &frame.buffer);
+        assert!(content.contains("focus:Config"));
     }
 
     #[test]

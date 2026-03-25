@@ -28,9 +28,20 @@ pub(crate) fn apply_settings_action(app: &mut App, action: Action) -> bool {
     match action {
         Action::SettingsScrollUp => {
             if app.settings_section == SettingsSection::Symbols {
-                app.settings_symbol_index = app.settings_symbol_index.saturating_sub(1);
+                if app.settings_symbol_index > 0 {
+                    app.settings_symbol_index = app.settings_symbol_index.saturating_sub(1);
+                } else {
+                    app.settings_section = SettingsSection::Config;
+                }
             } else if app.settings_section == SettingsSection::Config {
-                app.settings_config_key_index = app.settings_config_key_index.saturating_sub(1);
+                if app.settings_config_key_index > 0 {
+                    app.settings_config_key_index =
+                        app.settings_config_key_index.saturating_sub(1);
+                } else {
+                    app.settings_section = SettingsSection::Health;
+                }
+            } else if app.settings_section == SettingsSection::Sources {
+                app.settings_section = SettingsSection::Symbols;
             } else {
                 app.settings_section = app.settings_section.prev();
             }
@@ -38,12 +49,21 @@ pub(crate) fn apply_settings_action(app: &mut App, action: Action) -> bool {
         Action::SettingsScrollDown => {
             if app.settings_section == SettingsSection::Symbols {
                 let len = app.watchlist().len();
-                if len > 0 {
+                if len > 0 && app.settings_symbol_index + 1 < len {
                     app.settings_symbol_index =
                         (app.settings_symbol_index + 1).min(len.saturating_sub(1));
+                } else {
+                    app.settings_section = SettingsSection::Sources;
                 }
             } else if app.settings_section == SettingsSection::Config {
-                app.settings_config_key_index = (app.settings_config_key_index + 1).min(9);
+                let last = app.config_key_count().saturating_sub(1);
+                if app.settings_config_key_index < last {
+                    app.settings_config_key_index += 1;
+                } else {
+                    app.settings_section = SettingsSection::Symbols;
+                }
+            } else if app.settings_section == SettingsSection::Health {
+                app.settings_section = SettingsSection::Config;
             } else {
                 app.settings_section = app.settings_section.next();
             }

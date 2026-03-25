@@ -307,13 +307,17 @@ fn workspace_banner(spec: WorkspaceSpec, focus_label: &str) -> Paragraph<'static
     ]))
 }
 
+fn workspace_focus_label(app: &App) -> String {
+    app.focus_label()
+}
+
 fn render_market_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
     let outer = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Length(1), Constraint::Min(0)])
         .split(area);
 
-    f.render_widget(workspace_banner(spec, app.active_tab.title()), outer[0]);
+    f.render_widget(workspace_banner(spec, &workspace_focus_label(app)), outer[0]);
 
     let rows = Layout::default()
         .direction(Direction::Vertical)
@@ -340,7 +344,7 @@ fn render_operations_workspace(f: &mut Frame, app: &App, area: Rect, spec: Works
         .constraints([Constraint::Length(1), Constraint::Min(0)])
         .split(area);
 
-    f.render_widget(workspace_banner(spec, app.active_tab.title()), outer[0]);
+    f.render_widget(workspace_banner(spec, &workspace_focus_label(app)), outer[0]);
 
     let columns = Layout::default()
         .direction(Direction::Horizontal)
@@ -376,7 +380,7 @@ fn render_credit_workspace(f: &mut Frame, app: &App, area: Rect, spec: Workspace
     } else {
         (48, 52)
     };
-    f.render_widget(workspace_banner(spec, app.active_tab.title()), outer[0]);
+    f.render_widget(workspace_banner(spec, &workspace_focus_label(app)), outer[0]);
 
     let panes = Layout::default()
         .direction(Direction::Horizontal)
@@ -734,27 +738,6 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         Span::raw(":jump to tab  "),
         Span::styled("M", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(":read-only  "),
-        Span::styled("S", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(":disabled  "),
-        Span::styled("T", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(":disabled  "),
-        Span::styled("K", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(":disabled  "),
-        Span::styled("F", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(":disabled  "),
-        Span::styled(
-            "↑/↓ PgUp/PgDn",
-            Style::default().add_modifier(Modifier::BOLD),
-        ),
-        Span::raw(":scroll  "),
-        Span::styled("c", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(":combo  "),
-        Span::styled("p", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(if app.split_pane {
-            ":single pane"
-        } else {
-            ":split pane"
-        }),
     ];
 
     if app.active_tab == Tab::Yield {
@@ -780,7 +763,38 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
             Style::default().add_modifier(Modifier::BOLD),
         ));
         spans.push(Span::raw(":section"));
+        if let Some(section) = app.secondary_focus().label() {
+            spans.push(Span::raw("  "));
+            spans.push(Span::styled(
+                "focus",
+                Style::default().add_modifier(Modifier::BOLD),
+            ));
+            spans.push(Span::raw(format!(":{section}")));
+        }
     }
+    spans.push(Span::raw("  "));
+    spans.push(Span::styled(
+        "↑/↓ PgUp/PgDn",
+        Style::default().add_modifier(Modifier::BOLD),
+    ));
+    spans.push(Span::raw(":scroll  "));
+    spans.push(Span::styled("c", Style::default().add_modifier(Modifier::BOLD)));
+    spans.push(Span::raw(":combo  "));
+    spans.push(Span::styled("p", Style::default().add_modifier(Modifier::BOLD)));
+    spans.push(Span::raw(if app.split_pane {
+        ":single pane"
+    } else {
+        ":split pane"
+    }));
+    spans.push(Span::raw("  "));
+    spans.push(Span::styled("S", Style::default().add_modifier(Modifier::BOLD)));
+    spans.push(Span::raw(":disabled  "));
+    spans.push(Span::styled("T", Style::default().add_modifier(Modifier::BOLD)));
+    spans.push(Span::raw(":disabled  "));
+    spans.push(Span::styled("K", Style::default().add_modifier(Modifier::BOLD)));
+    spans.push(Span::raw(":disabled  "));
+    spans.push(Span::styled("F", Style::default().add_modifier(Modifier::BOLD)));
+    spans.push(Span::raw(":disabled"));
     if app.active_tab == Tab::Charts {
         spans.push(Span::raw("  "));
         spans.push(Span::styled(
