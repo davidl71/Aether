@@ -260,13 +260,13 @@ pub fn config_key_scope(key: &str) -> SettingScope {
         "NATS_URL"
         | "BACKEND_ID"
         | "TICK_MS"
-        | "REST_URL"
-        | "REST_POLL_MS"
-        | "REST_FALLBACK"
         | "SNAPSHOT_TTL_SECS"
         | "SPLIT_PANE"
         | "BENCHMARKS_REFRESH_SECS"
         | "NATS_KV_BUCKET" => SettingScope::Editable,
+        // Legacy REST compatibility knobs are still parsed from file/env, but
+        // they are not operator-editable from the active NATS-first Settings UI.
+        "REST_URL" | "REST_POLL_MS" | "REST_FALLBACK" => SettingScope::EnvOnly,
         _ => SettingScope::EnvOnly,
     }
 }
@@ -426,7 +426,7 @@ mod tests {
 
     use api::project_paths::discover_workspace_root;
 
-    use super::{shared_config_candidate_paths, TuiConfig};
+    use super::{config_key_scope, shared_config_candidate_paths, SettingScope, TuiConfig};
 
     fn env_lock() -> &'static Mutex<()> {
         static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
@@ -552,5 +552,13 @@ mod tests {
         env::remove_var("WATCHLIST");
         env::remove_var("REST_FALLBACK");
         let _ = fs::remove_file(config_path);
+    }
+
+    #[test]
+    fn config_scope_marks_legacy_rest_knobs_as_env_only() {
+        assert_eq!(config_key_scope("NATS_URL"), SettingScope::Editable);
+        assert_eq!(config_key_scope("REST_URL"), SettingScope::EnvOnly);
+        assert_eq!(config_key_scope("REST_POLL_MS"), SettingScope::EnvOnly);
+        assert_eq!(config_key_scope("REST_FALLBACK"), SettingScope::EnvOnly);
     }
 }

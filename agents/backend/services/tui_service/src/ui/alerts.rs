@@ -51,10 +51,6 @@ pub(crate) fn render_alerts_panel(f: &mut Frame, area: Rect, view: AlertsView) {
     f.render_widget(widget, area);
 }
 
-pub fn render_alerts(f: &mut Frame, app: &App, area: Rect) {
-    render_alerts_panel(f, area, build_alerts_view(app, area));
-}
-
 fn alert_lines(app: &App) -> Vec<Line<'static>> {
     if let Some(ref snap) = app.snapshot() {
         snap.dto()

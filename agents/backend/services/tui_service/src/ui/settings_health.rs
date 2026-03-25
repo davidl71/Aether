@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+use chrono::{DateTime, TimeDelta, Utc};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -6,11 +9,15 @@ use ratatui::{
     Frame,
 };
 
+use api::{BackendHealthState, NatsTransportHealthState};
+
 use crate::app::App;
 use crate::events::ConnectionState;
-use crate::workspace::SettingsSection;
+use crate::workspace::{SettingsHealthFocus, SettingsSection};
 
 use super::{section_active, section_block, truncate};
+
+const DEFAULT_HEALTH_STALE_AFTER_SECS: i64 = 45;
 
 #[derive(Default)]
 struct BackendHealthCounts {
@@ -23,7 +30,14 @@ struct BackendHealthCounts {
 }
 
 pub(crate) fn render_settings_health_section(f: &mut Frame, app: &App, area: Rect) {
-    let backends_block = section_block("System health", section_active(app, SettingsSection::Health));
+    let backends_block = section_block(
+        "System health",
+        section_active(app, SettingsSection::Health),
+    );
+    let now = Utc::now();
+    let stale_after = TimeDelta::seconds(DEFAULT_HEALTH_STALE_AFTER_SECS);
+    let transport = app.nats_transport.effective_at(now, stale_after);
+    let backends = effective_backends(app, now, stale_after);
 
     let (nats_sym, nats_color, nats_label) = match app.nats_status.state {
         ConnectionState::Connected => ("●", Color::Green, "Connected"),
@@ -31,10 +45,9 @@ pub(crate) fn render_settings_health_section(f: &mut Frame, app: &App, area: Rec
         ConnectionState::Retrying => ("⚠", Color::Red, "Retrying"),
     };
 
-    let backend_entry = app
-        .backend_health
+    let backend_entry = backends
         .get("backend_service")
-        .or_else(|| app.backend_health.get("backend"));
+        .or_else(|| backends.get("backend"));
     let (be_sym, be_color, be_label) = match backend_entry {
         Some(h) if h.status == "ok" => ("●", Color::Green, h.status.as_str().to_string()),
         Some(h) => ("⚠", Color::Yellow, h.status.clone()),
@@ -74,11 +87,11 @@ pub(crate) fn render_settings_health_section(f: &mut Frame, app: &App, area: Rec
         .unwrap_or("—");
     let yield_pts = app.yield_curve.as_ref().map(|c| c.point_count).unwrap_or(0);
     let yield_age = app.yield_curve.as_ref().and_then(|c| {
-        chrono::DateTime::parse_from_rfc3339(&c.timestamp)
+        DateTime::parse_from_rfc3339(&c.timestamp)
             .ok()
-            .map(|dt| (chrono::Utc::now() - dt.with_timezone(&chrono::Utc)).num_seconds())
+            .map(|dt| (Utc::now() - dt.with_timezone(&Utc)).num_seconds())
     });
-    let backend_counts = backend_health_counts(app);
+    let backend_counts = backend_health_counts(&backends);
     let snapshot_age = app
         .snapshot()
         .as_ref()
@@ -86,6 +99,8 @@ pub(crate) fn render_settings_health_section(f: &mut Frame, app: &App, area: Rec
         .unwrap_or_else(|| "—".to_string());
     let flow_lines = settings_health_flow_lines(
         app,
+        &transport,
+        &backends,
         nats_sym.to_string(),
         nats_color,
         nats_label.to_string(),
@@ -105,32 +120,50 @@ pub(crate) fn render_settings_health_section(f: &mut Frame, app: &App, area: Rec
         &backend_counts,
         snapshot_age,
     );
-    let component_lines = settings_component_lines(app, &backend_counts);
+    let component_lines = settings_component_lines(&transport, &backends, &backend_counts);
     let health_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Min(6), Constraint::Length(4)])
         .split(area);
-    f.render_widget(Paragraph::new(flow_lines).block(backends_block.clone()), health_chunks[0]);
+    f.render_widget(
+        Paragraph::new(flow_lines).block(backends_block.clone()),
+        health_chunks[0],
+    );
     f.render_widget(
         Paragraph::new(component_lines).block(
             Block::default()
                 .title(" Components ")
                 .borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM)
-                .border_style(if section_active(app, SettingsSection::Health) {
-                    Style::default()
-                        .fg(Color::Yellow)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().fg(Color::DarkGray)
-                }),
+                .border_style(
+                    if section_active(app, SettingsSection::Health)
+                        && app.settings_health_focus == SettingsHealthFocus::Services
+                    {
+                        Style::default()
+                            .fg(Color::Yellow)
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().fg(Color::DarkGray)
+                    },
+                ),
         ),
         health_chunks[1],
     );
 }
 
-fn backend_health_counts(app: &App) -> BackendHealthCounts {
+fn effective_backends(
+    app: &App,
+    now: DateTime<Utc>,
+    stale_after: TimeDelta,
+) -> HashMap<String, BackendHealthState> {
+    app.backend_health
+        .iter()
+        .map(|(name, state)| (name.clone(), state.effective_at(now, stale_after)))
+        .collect()
+}
+
+fn backend_health_counts(backends: &HashMap<String, BackendHealthState>) -> BackendHealthCounts {
     let mut counts = BackendHealthCounts::default();
-    for state in app.backend_health.values() {
+    for state in backends.values() {
         counts.total += 1;
         match state.status.as_str() {
             "ok" => counts.ok += 1,
@@ -151,8 +184,19 @@ fn backend_health_counts(app: &App) -> BackendHealthCounts {
     counts
 }
 
+fn transport_summary_label(transport: &NatsTransportHealthState) -> (&'static str, Color) {
+    match transport.status.as_str() {
+        "ok" => ("●", Color::Green),
+        "error" | "disabled" => ("✗", Color::Red),
+        "degraded" => ("⚠", Color::Yellow),
+        _ => ("?", Color::DarkGray),
+    }
+}
+
 fn settings_health_flow_lines(
     app: &App,
+    transport: &NatsTransportHealthState,
+    backends: &HashMap<String, BackendHealthState>,
     nats_sym: String,
     nats_color: Color,
     nats_label: String,
@@ -175,35 +219,83 @@ fn settings_health_flow_lines(
     let yield_age = yield_age
         .map(|a| a.to_string())
         .unwrap_or_else(|| "—".to_string());
-    let transport_detail = if app.nats_status.detail.trim().is_empty() {
-        "waiting for connection state".to_string()
-    } else {
-        truncate(&app.nats_status.detail, 42)
-    };
-    let yw_entry = app
-        .backend_health
+    let transport_detail = transport
+        .hint
+        .clone()
+        .or_else(|| transport.error.clone())
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| {
+            if app.nats_status.detail.trim().is_empty() {
+                "waiting for transport observations".to_string()
+            } else {
+                app.nats_status.detail.clone()
+            }
+        });
+    let transport_age = transport
+        .age_secs_at(Utc::now())
+        .map(|value| format!("{value}s"))
+        .unwrap_or_else(|| "—".to_string());
+    let transport_role = transport.role().unwrap_or("subscriber").to_string();
+    let transport_subject = transport.subject().unwrap_or("system.health").to_string();
+    let (transport_sym, transport_color) = transport_summary_label(transport);
+    let yw_entry = backends
         .get("tws_yield_curve_daemon")
-        .or_else(|| app.backend_health.get("yield_curve_writer"));
+        .or_else(|| backends.get("yield_curve_writer"));
     let (yw_sym, yw_color, yw_lbl) = match yw_entry {
         Some(h) if h.status == "ok" => ("●", Color::Green, "ok"),
-        Some(_) => ("⚠", Color::Yellow, "degraded"),
+        Some(h) => ("⚠", Color::Yellow, h.status.as_str()),
         None => ("?", Color::DarkGray, "not reporting"),
     };
 
     vec![
         Line::from(vec![
-            Span::raw(" TUI -> "),
-            Span::styled(nats_sym.clone(), Style::default().fg(nats_color)),
-            Span::raw(" NATS transport "),
-            Span::styled(nats_label, Style::default().fg(nats_color)),
-            Span::raw("  detail: "),
-            Span::styled(transport_detail, Style::default().fg(Color::DarkGray)),
+            Span::styled(
+                " Transport ",
+                Style::default()
+                    .fg(
+                        if section_active(app, SettingsSection::Health)
+                            && app.settings_health_focus == SettingsHealthFocus::Transport
+                        {
+                            Color::Yellow
+                        } else {
+                            Color::DarkGray
+                        },
+                    )
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(" "),
+            Span::styled(transport_sym, Style::default().fg(transport_color)),
+            Span::raw(" "),
+            Span::styled(
+                transport.status.clone(),
+                Style::default().fg(transport_color),
+            ),
+            Span::raw("  role: "),
+            Span::styled(transport_role, Style::default().fg(Color::Cyan)),
+            Span::raw("  subject: "),
+            Span::styled(
+                truncate(&transport_subject, 24),
+                Style::default().fg(Color::Cyan),
+            ),
+            Span::raw("  age: "),
+            Span::styled(transport_age, Style::default().fg(Color::Cyan)),
         ]),
         Line::from(vec![
-            Span::raw("  +- system.health services "),
+            Span::raw(" TUI -> "),
+            Span::styled(nats_sym.clone(), Style::default().fg(nats_color)),
+            Span::raw(" connection "),
+            Span::styled(nats_label, Style::default().fg(nats_color)),
+            Span::raw("  detail: "),
+            Span::styled(
+                truncate(&transport_detail, 42),
+                Style::default().fg(Color::DarkGray),
+            ),
+        ]),
+        Line::from(vec![
+            Span::raw(" Services -> "),
             Span::styled(
                 format!(
-                    "total {} ok {} degraded {} error {} disabled {} stale {}",
+                    "{} total / ok {} / degraded {} / error {} / disabled {} / stale {}",
                     backend_counts.total,
                     backend_counts.ok,
                     backend_counts.degraded,
@@ -277,25 +369,34 @@ fn settings_health_flow_lines(
     ]
 }
 
-fn settings_component_lines(app: &App, backend_counts: &BackendHealthCounts) -> Vec<Line<'static>> {
-    let transport_state = match app.nats_status.state {
-        ConnectionState::Connected => ("●", Color::Green, "transport connected"),
-        ConnectionState::Starting => ("◌", Color::Yellow, "transport connecting"),
-        ConnectionState::Retrying => ("⚠", Color::Red, "transport retrying"),
-    };
-    let mut component_names: Vec<_> = app.backend_health.keys().cloned().collect();
+fn settings_component_lines(
+    transport: &NatsTransportHealthState,
+    backends: &HashMap<String, BackendHealthState>,
+    backend_counts: &BackendHealthCounts,
+) -> Vec<Line<'static>> {
+    let (transport_sym, transport_color) = transport_summary_label(transport);
+    let transport_detail = transport
+        .hint
+        .as_deref()
+        .or(transport.error.as_deref())
+        .unwrap_or("observing system.health")
+        .to_string();
+    let mut component_names: Vec<_> = backends.keys().cloned().collect();
     component_names.sort();
     let mut lines = vec![
         Line::from(vec![
             Span::styled(
-                format!("{} ", transport_state.0),
-                Style::default().fg(transport_state.1),
+                format!("{transport_sym} "),
+                Style::default().fg(transport_color),
             ),
             Span::styled("NATS transport", Style::default().fg(Color::Cyan)),
             Span::raw(" "),
-            Span::styled(transport_state.2, Style::default().fg(transport_state.1)),
+            Span::styled(
+                transport.status.clone(),
+                Style::default().fg(transport_color),
+            ),
             Span::raw("  "),
-            Span::styled(app.nats_status.detail.clone(), Style::default().fg(Color::DarkGray)),
+            Span::styled(transport_detail, Style::default().fg(Color::DarkGray)),
         ]),
         Line::from(vec![
             Span::styled(
@@ -324,7 +425,7 @@ fn settings_component_lines(app: &App, backend_counts: &BackendHealthCounts) -> 
         return lines;
     }
     lines.extend(component_names.into_iter().filter_map(|name| {
-        let state = app.backend_health.get(&name)?;
+        let state = backends.get(&name)?;
         let (sym, color) = match state.status.as_str() {
             "ok" => ("●", Color::Green),
             "error" | "disabled" => ("✗", Color::Red),
@@ -342,7 +443,10 @@ fn settings_component_lines(app: &App, backend_counts: &BackendHealthCounts) -> 
         ];
         if let Some(error) = state.error.as_deref() {
             spans.push(Span::raw("  "));
-            spans.push(Span::styled(truncate(error, 28), Style::default().fg(Color::Red)));
+            spans.push(Span::styled(
+                truncate(error, 28),
+                Style::default().fg(Color::Red),
+            ));
         } else if let Some(hint) = state.hint.as_deref() {
             spans.push(Span::raw("  "));
             spans.push(Span::styled(

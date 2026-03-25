@@ -1,5 +1,5 @@
 use api::finance_rates::{CurveResponse, RatePointResponse};
-use api::{Alert, AlertLevel, OrderSnapshot, SystemSnapshot};
+use api::{Alert, AlertLevel, NatsTransportHealthState, OrderSnapshot, SystemSnapshot};
 use chrono::{Duration, Utc};
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::backend::TestBackend;
@@ -8,7 +8,7 @@ use tokio::sync::{mpsc, watch};
 
 use std::collections::HashMap;
 
-use crate::workspace::SettingsSection;
+use crate::workspace::{SettingsHealthFocus, SettingsSection};
 use crate::{
     config::TuiConfig,
     events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget},
@@ -87,6 +87,25 @@ fn app_updates_connection_status() {
 }
 
 #[test]
+fn app_updates_transport_health_status() {
+    let (mut app, _, event_tx) = make_app();
+
+    event_tx
+        .send(AppEvent::TransportHealth(
+            NatsTransportHealthState::connected(Some("nats://localhost:4222".into()), Utc::now())
+                .with_subject("system.health")
+                .with_role("health-subscriber"),
+        ))
+        .expect("send transport health");
+
+    app.tick();
+
+    assert_eq!(app.nats_transport.status, "ok");
+    assert_eq!(app.nats_transport.role(), Some("health-subscriber"));
+    assert_eq!(app.nats_transport.subject(), Some("system.health"));
+}
+
+#[test]
 fn config_hot_reload_updates_app_config() {
     let (snap_tx, snap_rx) = watch::channel(None);
     let (_event_tx, event_rx) = mpsc::unbounded_channel();
@@ -159,6 +178,15 @@ fn positions_and_alerts_scroll_keys_do_not_panic() {
     ] {
         app.handle_key(KeyEvent::from(key));
     }
+}
+
+#[test]
+fn tab_cycle_skips_logs_as_primary_shell_tab() {
+    let (mut app, _, _) = make_app();
+    app.active_tab = Tab::Alerts;
+
+    app.handle_key(KeyEvent::from(KeyCode::Tab));
+    assert_eq!(app.active_tab, Tab::Yield);
 }
 
 fn buffer_to_string(area: &ratatui::layout::Rect, buffer: &ratatui::buffer::Buffer) -> String {
@@ -305,12 +333,13 @@ fn alerts_tab_displays_placeholder_when_no_snapshot() {
     let (mut app, _, _) = make_app();
     app.active_tab = Tab::Alerts;
 
-    let backend = TestBackend::new(40, 10);
+    let backend = TestBackend::new(80, 18);
     let mut terminal = Terminal::new(backend).unwrap();
     let frame = terminal.draw(|f| render(f, &app)).unwrap();
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
     assert!(content.contains("No alerts"));
+    assert!(content.contains("Logs ["));
 }
 
 #[test]
@@ -333,7 +362,7 @@ fn alerts_tab_renders_live_alert_messages() {
     app.set_snapshot(Some(snap));
     app.active_tab = Tab::Alerts;
 
-    let backend = TestBackend::new(60, 10);
+    let backend = TestBackend::new(80, 18);
     let mut terminal = Terminal::new(backend).unwrap();
     let frame = terminal.draw(|f| render(f, &app)).unwrap();
 
@@ -468,6 +497,20 @@ fn wide_terminal_renders_operations_workspace() {
 }
 
 #[test]
+fn standalone_alerts_tab_renders_logs_below_alerts() {
+    let (mut app, _, _) = make_app();
+    app.active_tab = Tab::Alerts;
+
+    let backend = TestBackend::new(120, 24);
+    let mut terminal = Terminal::new(backend).unwrap();
+    let frame = terminal.draw(|f| render(f, &app)).unwrap();
+
+    let content = buffer_to_string(&frame.area, &frame.buffer);
+    assert!(content.contains("Alerts"));
+    assert!(content.contains("Logs ["));
+}
+
+#[test]
 fn wide_operations_workspace_tab_cycles_focus_between_panes() {
     let (mut app, _, _) = make_app();
     app.active_tab = Tab::Alerts;
@@ -490,28 +533,45 @@ fn wide_operations_workspace_tab_cycles_focus_between_panes() {
 fn operations_workspace_banner_shows_nested_settings_focus() {
     let (mut app, _, _) = make_app();
     app.active_tab = Tab::Settings;
-    app.settings_section = SettingsSection::Sources;
+    app.settings_section = SettingsSection::Health;
+    app.settings_health_focus = SettingsHealthFocus::Services;
 
     let backend = TestBackend::new(190, 32);
     let mut terminal = Terminal::new(backend).unwrap();
     let frame = terminal.draw(|f| render(f, &app)).unwrap();
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
-    assert!(content.contains("Focus: Settings / Sources"));
+    assert!(content.contains("Focus: Settings / Health / Services"));
 }
 
 #[test]
 fn settings_hint_bar_shows_secondary_focus_label() {
     let (mut app, _, _) = make_app();
     app.active_tab = Tab::Settings;
-    app.settings_section = SettingsSection::Config;
+    app.settings_section = SettingsSection::Health;
+    app.settings_health_focus = SettingsHealthFocus::Transport;
 
     let backend = TestBackend::new(180, 20);
     let mut terminal = Terminal::new(backend).unwrap();
     let frame = terminal.draw(|f| render(f, &app)).unwrap();
 
     let content = buffer_to_string(&frame.area, &frame.buffer);
-    assert!(content.contains("focus:Config"));
+    assert!(content.contains("focus:Transport"));
+}
+
+#[test]
+fn settings_health_scroll_down_advances_nested_focus_before_next_section() {
+    let (mut app, _, _) = make_app();
+    app.active_tab = Tab::Settings;
+    app.settings_section = SettingsSection::Health;
+    app.settings_health_focus = SettingsHealthFocus::Transport;
+
+    app.handle_key(KeyEvent::from(KeyCode::Down));
+    assert_eq!(app.settings_section, SettingsSection::Health);
+    assert_eq!(app.settings_health_focus, SettingsHealthFocus::Services);
+
+    app.handle_key(KeyEvent::from(KeyCode::Down));
+    assert_eq!(app.settings_section, SettingsSection::Config);
 }
 
 #[test]

@@ -254,6 +254,10 @@ impl App {
             AppEvent::Connection { target, status } => match target {
                 ConnectionTarget::Nats => self.nats_status = status,
             },
+            AppEvent::TransportHealth(state) => {
+                self.nats_transport = state;
+                self.mark_dirty();
+            }
             AppEvent::CommandStatus(reply) => {
                 self.set_command_status(CommandStatusView::from_reply(&reply));
             }

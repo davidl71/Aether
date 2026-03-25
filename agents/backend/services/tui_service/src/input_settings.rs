@@ -2,7 +2,7 @@ use crossterm::event::KeyCode;
 
 use crate::app::{App, CommandStatusView};
 use crate::input::Action;
-use crate::workspace::SettingsSection;
+use crate::workspace::{SettingsHealthFocus, SettingsSection};
 
 pub(crate) fn settings_key_action(app: &App, key: KeyCode) -> Option<Action> {
     match key {
@@ -10,7 +10,9 @@ pub(crate) fn settings_key_action(app: &App, key: KeyCode) -> Option<Action> {
         KeyCode::Right => Some(Action::SettingsSectionNext),
         KeyCode::Up => Some(Action::SettingsScrollUp),
         KeyCode::Down => Some(Action::SettingsScrollDown),
-        KeyCode::Char('a') | KeyCode::Char('A') if app.settings_section == SettingsSection::Symbols => {
+        KeyCode::Char('a') | KeyCode::Char('A')
+            if app.settings_section == SettingsSection::Symbols =>
+        {
             Some(Action::SettingsAddSymbol)
         }
         KeyCode::Char('e') | KeyCode::Char('E') | KeyCode::Enter
@@ -27,7 +29,9 @@ pub(crate) fn settings_key_action(app: &App, key: KeyCode) -> Option<Action> {
 pub(crate) fn apply_settings_action(app: &mut App, action: Action) -> bool {
     match action {
         Action::SettingsScrollUp => {
-            if app.settings_section == SettingsSection::Symbols {
+            if app.settings_section == SettingsSection::Health {
+                app.settings_health_focus = app.settings_health_focus.prev();
+            } else if app.settings_section == SettingsSection::Symbols {
                 if app.settings_symbol_index > 0 {
                     app.settings_symbol_index = app.settings_symbol_index.saturating_sub(1);
                 } else {
@@ -35,8 +39,7 @@ pub(crate) fn apply_settings_action(app: &mut App, action: Action) -> bool {
                 }
             } else if app.settings_section == SettingsSection::Config {
                 if app.settings_config_key_index > 0 {
-                    app.settings_config_key_index =
-                        app.settings_config_key_index.saturating_sub(1);
+                    app.settings_config_key_index = app.settings_config_key_index.saturating_sub(1);
                 } else {
                     app.settings_section = SettingsSection::Health;
                 }
@@ -47,7 +50,13 @@ pub(crate) fn apply_settings_action(app: &mut App, action: Action) -> bool {
             }
         }
         Action::SettingsScrollDown => {
-            if app.settings_section == SettingsSection::Symbols {
+            if app.settings_section == SettingsSection::Health {
+                if app.settings_health_focus == SettingsHealthFocus::Transport {
+                    app.settings_health_focus = SettingsHealthFocus::Services;
+                } else {
+                    app.settings_section = SettingsSection::Config;
+                }
+            } else if app.settings_section == SettingsSection::Symbols {
                 let len = app.watchlist().len();
                 if len > 0 && app.settings_symbol_index + 1 < len {
                     app.settings_symbol_index =
@@ -80,9 +89,15 @@ pub(crate) fn apply_settings_action(app: &mut App, action: Action) -> bool {
         }
         Action::SettingsSectionPrev => {
             app.settings_section = app.settings_section.prev();
+            if app.settings_section == SettingsSection::Health {
+                app.settings_health_focus = SettingsHealthFocus::Transport;
+            }
         }
         Action::SettingsSectionNext => {
             app.settings_section = app.settings_section.next();
+            if app.settings_section == SettingsSection::Health {
+                app.settings_health_focus = SettingsHealthFocus::Transport;
+            }
         }
         _ => return false,
     }

@@ -11,6 +11,7 @@
 
 use std::sync::Arc;
 
+use api::{AlertLevel, CommandReply, NatsTransportHealthState};
 use chrono::{DateTime, Utc};
 use tokio::sync::broadcast;
 use uuid::Uuid;
@@ -229,20 +230,6 @@ pub fn create_event_router() -> SharedEventRouter {
 }
 
 // ============================================================================
-// Strategy command (used by main.rs and app.rs)
-// ============================================================================
-
-#[derive(Debug, Clone)]
-pub enum StrategyCommand {
-    Start,
-    Stop,
-    CancelAll,
-    PublishSnapshot,
-    SetMode(String),
-    ExecuteScenario(api::ScenarioDto),
-}
-
-// ============================================================================
 // Legacy AppEvent for backward compatibility
 // ============================================================================
 
@@ -253,10 +240,40 @@ pub enum AppEvent {
         target: ConnectionTarget,
         status: ConnectionStatus,
     },
+    TransportHealth(NatsTransportHealthState),
     MarketTick {
         symbol: String,
         bid: f64,
         ask: f64,
         last: f64,
+        source: String,
+        source_priority: u32,
+    },
+    MarketCandle {
+        symbol: String,
+        open: f64,
+        high: f64,
+        low: f64,
+        close: f64,
+        volume: u64,
+    },
+    AlertReceived {
+        level: AlertLevel,
+        message: String,
+        timestamp: DateTime<Utc>,
+    },
+    CommandStatus(CommandReply),
+    /// Yield curve updated in NATS KV (pushed by yield_curve_writer).
+    YieldCurveKvUpdate {
+        symbol: String,
+        curve: api::finance_rates::CurveResponse,
+        /// Timestamp from the curve payload (RFC 3339).
+        fetched_at: String,
+    },
+    /// Periodic benchmark rates update (SOFR + Treasury).
+    BenchmarksUpdate(api::finance_rates::BenchmarksResponse),
+    /// Result of a manual yield refresh request (NATS publish to api.yield_curve.refresh).
+    YieldRefreshAck {
+        ok: bool,
     },
 }

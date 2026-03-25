@@ -29,9 +29,16 @@ pub enum SettingsSection {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SettingsHealthFocus {
+    Transport,
+    Services,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SecondaryFocus {
     None,
     Settings(SettingsSection),
+    SettingsHealth(SettingsHealthFocus),
 }
 
 impl SecondaryFocus {
@@ -39,6 +46,7 @@ impl SecondaryFocus {
         match self {
             SecondaryFocus::None => None,
             SecondaryFocus::Settings(section) => Some(section.title()),
+            SecondaryFocus::SettingsHealth(focus) => Some(focus.title()),
         }
     }
 
@@ -46,6 +54,25 @@ impl SecondaryFocus {
         match self {
             SecondaryFocus::None => None,
             SecondaryFocus::Settings(section) => Some(format!("Settings / {}", section.title())),
+            SecondaryFocus::SettingsHealth(focus) => {
+                Some(format!("Settings / Health / {}", focus.title()))
+            }
+        }
+    }
+}
+
+impl SettingsHealthFocus {
+    pub fn title(self) -> &'static str {
+        match self {
+            SettingsHealthFocus::Transport => "Transport",
+            SettingsHealthFocus::Services => "Services",
+        }
+    }
+
+    pub fn prev(self) -> Self {
+        match self {
+            SettingsHealthFocus::Transport => SettingsHealthFocus::Transport,
+            SettingsHealthFocus::Services => SettingsHealthFocus::Transport,
         }
     }
 }
@@ -79,7 +106,8 @@ impl SettingsSection {
     }
 }
 
-pub const MARKET_WORKSPACE_TABS: [Tab; 4] = [Tab::Dashboard, Tab::Positions, Tab::Orders, Tab::Yield];
+pub const MARKET_WORKSPACE_TABS: [Tab; 4] =
+    [Tab::Dashboard, Tab::Positions, Tab::Orders, Tab::Yield];
 pub const OPERATIONS_WORKSPACE_TABS: [Tab; 3] = [Tab::Alerts, Tab::Logs, Tab::Settings];
 pub const CREDIT_WORKSPACE_TABS: [Tab; 2] = [Tab::Loans, Tab::DiscountBank];
 pub const SPLIT_PANE_TABS: [Tab; 2] = [Tab::Dashboard, Tab::Positions];

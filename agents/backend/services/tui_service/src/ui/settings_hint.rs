@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use crate::app::App;
-use crate::workspace::SettingsSection;
+use crate::workspace::{SettingsHealthFocus, SettingsSection};
 
 pub(crate) fn render_settings_hint_section(f: &mut Frame, app: &App, area: Rect) {
     let hint_text = match app.settings_section {
@@ -21,7 +21,14 @@ pub(crate) fn render_settings_hint_section(f: &mut Frame, app: &App, area: Rect)
             " 0 = Settings  ↑↓ section  Active section: Data Sources (credential origin: env/keyring/file/built-in) "
         }
         SettingsSection::Health => {
-            " 0 = Settings  ↑↓ section  Enter inspect  Active section: Backends "
+            match app.settings_health_focus {
+                SettingsHealthFocus::Transport => {
+                    " 0 = Settings  ↑↓ transport/services  Active section: Health / Transport "
+                }
+                SettingsHealthFocus::Services => {
+                    " 0 = Settings  ↑↓ transport/services  Active section: Health / Services "
+                }
+            }
         }
     };
     let hint = Line::from(Span::styled(

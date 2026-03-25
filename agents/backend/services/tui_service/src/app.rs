@@ -8,8 +8,8 @@ use api::discount_bank::{DiscountBankBalanceDto, DiscountBankTransactionsListDto
 use api::finance_rates::{BenchmarksResponse, CurveResponse, RatePointResponse};
 use api::loans::LoanRecord;
 use api::{
-    Alert, BackendHealthState, CommandReply, CommandStatus, RuntimeOrderDto, RuntimePositionDto,
-    ScenarioDto,
+    Alert, BackendHealthState, CommandReply, CommandStatus, NatsTransportHealthState,
+    RuntimeOrderDto, RuntimePositionDto, ScenarioDto,
 };
 use crossterm::event::{KeyCode, KeyEvent};
 use tokio::sync::{mpsc, watch};
@@ -24,7 +24,8 @@ use crate::models::TuiSnapshot;
 use crate::pane::pane_spec;
 use crate::ui::Candle;
 use crate::workspace::{
-    SecondaryFocus, SettingsSection, VisibleWorkspace, WorkspaceSpec, SPLIT_PANE_TABS,
+    SecondaryFocus, SettingsHealthFocus, SettingsSection, VisibleWorkspace, WorkspaceSpec,
+    SPLIT_PANE_TABS,
 };
 
 const SPARKLINE_HISTORY_SIZE: usize = 20;
@@ -385,7 +386,6 @@ impl Tab {
         Tab::Loans,
         Tab::DiscountBank,
         Tab::Scenarios,
-        Tab::Logs,
         Tab::Settings,
     ];
 
@@ -398,7 +398,11 @@ impl Tab {
     }
 
     fn index(&self) -> usize {
-        Tab::ALL.iter().position(|t| t == self).unwrap_or(0)
+        let primary = match self {
+            Tab::Logs => Tab::Alerts,
+            other => *other,
+        };
+        Tab::ALL.iter().position(|t| t == &primary).unwrap_or(0)
     }
 
     pub fn next(&self) -> Tab {
@@ -449,6 +453,8 @@ pub struct App {
     pub config_warning: Option<String>,
     /// Backend health from system.health (backend id → state). Updated by NATS health subscriber.
     pub backend_health: HashMap<String, BackendHealthState>,
+    /// First-class NATS transport health for the subscriber path.
+    pub nats_transport: NatsTransportHealthState,
     /// When true, main area shows Dashboard (left) and Positions (right) side-by-side; toggled with [p] or from config.
     pub split_pane: bool,
     /// Scroll/selection index for Positions tab (arrow-key scroll).
@@ -503,6 +509,8 @@ pub struct App {
     pub watchlist_override: Option<Vec<String>>,
     /// Active secondary focus target inside the Settings pane.
     pub settings_section: SettingsSection,
+    /// Nested focus target within Settings -> Health.
+    pub settings_health_focus: SettingsHealthFocus,
     /// Selected symbol index in Settings watchlist (for remove / highlight).
     pub settings_symbol_index: usize,
     /// When Some, Settings is in "add symbol" mode; buffer for the new symbol (Enter confirm, Esc cancel).
@@ -614,6 +622,7 @@ impl App {
             detail_popup: None,
             config_warning,
             backend_health: HashMap::new(),
+            nats_transport: NatsTransportHealthState::default(),
             split_pane,
             positions_scroll: 0,
             positions_combo_view: false,
@@ -641,6 +650,7 @@ impl App {
             yield_curve_scroll: 0,
             watchlist_override: None,
             settings_section: SettingsSection::Health,
+            settings_health_focus: SettingsHealthFocus::Transport,
             settings_symbol_index: 0,
             settings_add_symbol_input: None,
             settings_edit_config_key: None,
@@ -725,7 +735,12 @@ impl App {
 
     pub fn secondary_focus(&self) -> SecondaryFocus {
         match self.active_tab {
-            Tab::Settings => SecondaryFocus::Settings(self.settings_section),
+            Tab::Settings => match self.settings_section {
+                SettingsSection::Health => {
+                    SecondaryFocus::SettingsHealth(self.settings_health_focus)
+                }
+                section => SecondaryFocus::Settings(section),
+            },
             _ => SecondaryFocus::None,
         }
     }

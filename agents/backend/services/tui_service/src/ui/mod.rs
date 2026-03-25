@@ -223,7 +223,12 @@ fn render_tab_bar(f: &mut Frame, app: &App, area: Rect) {
 
     let active_idx = Tab::ALL
         .iter()
-        .position(|t| t == &app.active_tab)
+        .position(|t| {
+            *t == match app.active_tab {
+                Tab::Logs => Tab::Alerts,
+                other => other,
+            }
+        })
         .unwrap_or(0);
 
     let tabs = Tabs::new(titles)
@@ -259,14 +264,26 @@ fn render_tab_panel(f: &mut Frame, app: &App, area: Rect, tab: Tab) {
         Tab::Positions => positions::render_positions_panel(f, app, area),
         Tab::Charts => charts::render_charts(f, app, area),
         Tab::Orders => orders::render_orders_panel(f, app, area),
-        Tab::Alerts => alerts::render_alerts(f, app, area),
+        Tab::Alerts | Tab::Logs => render_operations_tab(f, app, area),
         Tab::Yield => yield_curve::render_yield_curve_panel(f, app, area),
         Tab::Loans => loans::render_loans(f, app, area),
         Tab::DiscountBank => discount_bank::render_discount_bank(f, app, area),
         Tab::Scenarios => scenarios::render_scenarios(f, app, area),
-        Tab::Logs => logs::render_logs(f, app, area),
         Tab::Settings => settings::render_settings(f, app, area),
     }
+}
+
+fn render_operations_tab(f: &mut Frame, app: &App, area: Rect) {
+    let rows = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(42), Constraint::Percentage(58)])
+        .split(area);
+
+    let alerts_view = alerts::build_alerts_view(app, rows[0]);
+    alerts::render_alerts_panel(f, rows[0], alerts_view);
+
+    let logs_widget = logs::build_logs_widget(app, logs::logs_title(app));
+    f.render_widget(logs_widget, rows[1]);
 }
 
 fn render_split_workspace(f: &mut Frame, app: &App, area: Rect, spec: WorkspaceSpec) {
@@ -322,7 +339,10 @@ fn render_market_workspace(f: &mut Frame, app: &App, area: Rect, spec: Workspace
         .constraints([Constraint::Length(1), Constraint::Min(0)])
         .split(area);
 
-    f.render_widget(workspace_banner(spec, &workspace_focus_label(app)), outer[0]);
+    f.render_widget(
+        workspace_banner(spec, &workspace_focus_label(app)),
+        outer[0],
+    );
 
     let rows = Layout::default()
         .direction(Direction::Vertical)
@@ -349,7 +369,10 @@ fn render_operations_workspace(f: &mut Frame, app: &App, area: Rect, spec: Works
         .constraints([Constraint::Length(1), Constraint::Min(0)])
         .split(area);
 
-    f.render_widget(workspace_banner(spec, &workspace_focus_label(app)), outer[0]);
+    f.render_widget(
+        workspace_banner(spec, &workspace_focus_label(app)),
+        outer[0],
+    );
 
     let columns = Layout::default()
         .direction(Direction::Horizontal)
@@ -385,7 +408,10 @@ fn render_credit_workspace(f: &mut Frame, app: &App, area: Rect, spec: Workspace
     } else {
         (48, 52)
     };
-    f.render_widget(workspace_banner(spec, &workspace_focus_label(app)), outer[0]);
+    f.render_widget(
+        workspace_banner(spec, &workspace_focus_label(app)),
+        outer[0],
+    );
 
     let panes = Layout::default()
         .direction(Direction::Horizontal)
@@ -623,14 +649,15 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
             Span::raw("quit  "),
             Span::styled(" ? ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("this help  "),
-            Span::styled(" Tab / ← → ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("switch tab"),
+            Span::styled(
+                " Tab / Shift-Tab ",
+                Style::default().add_modifier(Modifier::BOLD),
+            ),
+            Span::raw("next / prev tab or pane"),
         ]),
         Line::from(vec![
             Span::styled(" 0–9 ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw(
-                "jump to Dash / Pos / Charts / Orders / Alerts / Yield / Loans / Scen / Logs / Set",
-            ),
+            Span::raw("jump to Dash / Pos / Charts / Orders / Alerts / Yield / Loans / Scen / Set"),
         ]),
         Line::from(vec![
             Span::styled(" M ", Style::default().add_modifier(Modifier::BOLD)),
@@ -668,8 +695,8 @@ fn render_help_overlay(f: &mut Frame, area: Rect) {
         Line::from(vec![
             Span::styled(" Scenarios ", Style::default().add_modifier(Modifier::BOLD)),
             Span::raw("[ ] DTE  w strike width  Enter detail  "),
-            Span::styled(" Logs ", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw("+/- level  e/w/i/d jump  "),
+            Span::styled(" Alerts ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw("includes Logs below  +/- e/w/i/d adjust log level  "),
         ]),
         Line::from(vec![
             Span::styled(" Settings ", Style::default().add_modifier(Modifier::BOLD)),
@@ -734,11 +761,8 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         Span::raw(":quit  "),
         Span::styled("?", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(":help  "),
-        Span::styled(
-            "←/→ Tab/BackTab",
-            Style::default().add_modifier(Modifier::BOLD),
-        ),
-        Span::raw(":switch tab  "),
+        Span::styled("Tab/BackTab", Style::default().add_modifier(Modifier::BOLD)),
+        Span::raw(":next/prev tab  "),
         Span::styled("0-9", Style::default().add_modifier(Modifier::BOLD)),
         Span::raw(":jump to tab  "),
         Span::styled("M", Style::default().add_modifier(Modifier::BOLD)),
@@ -835,7 +859,7 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
     if app.split_pane && matches!(app.active_tab, Tab::Dashboard | Tab::Positions) {
         spans.push(Span::raw("  "));
         spans.push(Span::styled(
-            "←/→",
+            "Tab/BackTab",
             Style::default().add_modifier(Modifier::BOLD),
         ));
         spans.push(Span::raw(":focus pane"));
@@ -846,22 +870,40 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         Style::default().add_modifier(Modifier::BOLD),
     ));
     spans.push(Span::raw(":scroll  "));
-    spans.push(Span::styled("c", Style::default().add_modifier(Modifier::BOLD)));
+    spans.push(Span::styled(
+        "c",
+        Style::default().add_modifier(Modifier::BOLD),
+    ));
     spans.push(Span::raw(":combo  "));
-    spans.push(Span::styled("p", Style::default().add_modifier(Modifier::BOLD)));
+    spans.push(Span::styled(
+        "p",
+        Style::default().add_modifier(Modifier::BOLD),
+    ));
     spans.push(Span::raw(if app.split_pane {
         ":single pane"
     } else {
         ":split pane"
     }));
     spans.push(Span::raw("  "));
-    spans.push(Span::styled("S", Style::default().add_modifier(Modifier::BOLD)));
+    spans.push(Span::styled(
+        "S",
+        Style::default().add_modifier(Modifier::BOLD),
+    ));
     spans.push(Span::raw(":disabled  "));
-    spans.push(Span::styled("T", Style::default().add_modifier(Modifier::BOLD)));
+    spans.push(Span::styled(
+        "T",
+        Style::default().add_modifier(Modifier::BOLD),
+    ));
     spans.push(Span::raw(":disabled  "));
-    spans.push(Span::styled("K", Style::default().add_modifier(Modifier::BOLD)));
+    spans.push(Span::styled(
+        "K",
+        Style::default().add_modifier(Modifier::BOLD),
+    ));
     spans.push(Span::raw(":disabled  "));
-    spans.push(Span::styled("F", Style::default().add_modifier(Modifier::BOLD)));
+    spans.push(Span::styled(
+        "F",
+        Style::default().add_modifier(Modifier::BOLD),
+    ));
     spans.push(Span::raw(":disabled"));
     if app.active_tab == Tab::Orders || app.active_tab == Tab::Scenarios {
         spans.push(Span::raw("  | "));

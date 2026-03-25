@@ -18,7 +18,10 @@
 //! 3. **Subscription ended** — We connected but the subscription stream closed (server
 //!    disconnect, idle timeout). Detail shows "NATS subscription ended".
 
-use api::{backend_health_from_message, BackendHealthState};
+use api::{
+    backend_health_from_message, BackendHealthState, CommandReply, NatsTransportHealthState,
+};
+use chrono::Utc;
 use futures::StreamExt;
 use nats_adapter::{extract_proto_payload, proto::v1 as pb, topics, NatsClient};
 use std::collections::HashMap;
@@ -73,11 +76,20 @@ pub async fn run(
                     ConnectionState::Connected,
                     format!("Connected to {}", config.nats_url),
                 );
+                emit_transport_health(
+                    &event_tx,
+                    NatsTransportHealthState::connected(Some(config.nats_url.clone()), Utc::now())
+                        .with_subject(&subject)
+                        .with_role("snapshot-subscriber"),
+                );
                 // Spawn health subscriber on same connection (drops when connection drops)
                 let client_health = client.clone();
                 let health_tx = health_tx.clone();
+                let health_event_tx = event_tx.clone();
                 tokio::spawn(async move {
-                    if let Err(e) = run_health_subscriber(client_health, health_tx).await {
+                    if let Err(e) =
+                        run_health_subscriber(client_health, health_tx, health_event_tx).await
+                    {
                         warn!(error = %e, "Health subscriber ended");
                     }
                 });
@@ -90,6 +102,17 @@ pub async fn run(
                         "NATS subscription lost, reconnecting"
                     );
                     emit_status(&event_tx, ConnectionState::Retrying, e.to_string());
+                    emit_transport_health(
+                        &event_tx,
+                        NatsTransportHealthState::disconnected(
+                            Some(config.nats_url.clone()),
+                            Utc::now(),
+                            Some(e.to_string()),
+                            Some("snapshot subscription lost".to_string()),
+                        )
+                        .with_subject(&subject)
+                        .with_role("snapshot-subscriber"),
+                    );
                     tokio::time::sleep(delay).await;
                 }
             }
@@ -103,6 +126,17 @@ pub async fn run(
                 };
                 warn!(error = %e, "NATS connect failed{}", open_msg);
                 emit_status(&event_tx, ConnectionState::Retrying, e.to_string());
+                emit_transport_health(
+                    &event_tx,
+                    NatsTransportHealthState::disconnected(
+                        Some(config.nats_url.clone()),
+                        Utc::now(),
+                        Some(e.to_string()),
+                        Some("failed to connect snapshot subscriber to NATS".to_string()),
+                    )
+                    .with_subject(&subject)
+                    .with_role("snapshot-subscriber"),
+                );
                 if !cb.is_open() {
                     tokio::time::sleep(delay).await;
                 }
@@ -141,12 +175,19 @@ async fn subscribe_loop(
 async fn run_health_subscriber(
     client: NatsClient,
     tx: watch::Sender<HashMap<String, BackendHealthState>>,
+    event_tx: mpsc::UnboundedSender<AppEvent>,
 ) -> anyhow::Result<()> {
     let subject = topics::system::health();
     let mut sub = client.client().subscribe(subject.to_string()).await?;
     let mut backends: HashMap<String, BackendHealthState> = HashMap::new();
 
     while let Some(msg) = sub.next().await {
+        emit_transport_health(
+            &event_tx,
+            NatsTransportHealthState::connected(None, Utc::now())
+                .with_subject(subject)
+                .with_role("health-subscriber"),
+        );
         if let Some(health) = backend_health_from_message(&msg.payload) {
             let state = BackendHealthState::from_proto(health);
             let id = state.backend.clone();
@@ -154,6 +195,18 @@ async fn run_health_subscriber(
             let _ = tx.send(backends.clone());
         }
     }
+
+    emit_transport_health(
+        &event_tx,
+        NatsTransportHealthState::disconnected(
+            None,
+            Utc::now(),
+            None,
+            Some("system.health subscription ended".to_string()),
+        )
+        .with_subject(subject)
+        .with_role("health-subscriber"),
+    );
 
     anyhow::bail!("Health subscription ended");
 }
@@ -169,14 +222,21 @@ fn emit_status(
     });
 }
 
-/// Run a tick subscriber on `market-data.>` using an existing NATS client connection.
+fn emit_transport_health(
+    event_tx: &mpsc::UnboundedSender<AppEvent>,
+    state: NatsTransportHealthState,
+) {
+    let _ = event_tx.send(AppEvent::TransportHealth(state));
+}
+
+/// Run a tick subscriber on `market-data.tick.>` using an existing NATS client connection.
 /// Decodes `pb::MarketDataEvent` and emits `AppEvent::MarketTick` for each tick.
 pub async fn run_tick_subscriber(
     client: NatsClient,
     event_tx: mpsc::UnboundedSender<AppEvent>,
 ) -> anyhow::Result<()> {
-    let subject = "market-data.>";
-    let mut sub = client.client().subscribe(subject.to_string()).await?;
+    let subject = topics::market_data::tick(">");
+    let mut sub = client.client().subscribe(subject.clone()).await?;
     info!(subject = %subject, "Subscribed to market-data tick wildcard");
 
     while let Some(msg) = sub.next().await {
@@ -187,6 +247,8 @@ pub async fn run_tick_subscriber(
                     bid: proto.bid,
                     ask: proto.ask,
                     last: proto.last,
+                    source: proto.source,
+                    source_priority: proto.source_priority,
                 };
                 let _ = event_tx.send(tick);
             }
@@ -197,4 +259,185 @@ pub async fn run_tick_subscriber(
     }
 
     anyhow::bail!("Tick subscription ended");
+}
+
+/// Run a candle subscriber on `market-data.candle.>` and emit `AppEvent::MarketCandle`.
+pub async fn run_candle_subscriber(
+    client: NatsClient,
+    event_tx: mpsc::UnboundedSender<AppEvent>,
+) -> anyhow::Result<()> {
+    let subject = topics::market_data::candle(">");
+    let mut sub = client.client().subscribe(subject.clone()).await?;
+    info!(subject = %subject, "Subscribed to market-data candle wildcard");
+
+    while let Some(msg) = sub.next().await {
+        let symbol = msg
+            .subject
+            .split('.')
+            .next_back()
+            .unwrap_or_default()
+            .to_string();
+
+        match extract_proto_payload::<pb::CandleSnapshot>(&msg.payload) {
+            Ok(proto) => {
+                let candle = AppEvent::MarketCandle {
+                    symbol,
+                    open: proto.open,
+                    high: proto.high,
+                    low: proto.low,
+                    close: proto.close,
+                    volume: proto.volume,
+                };
+                let _ = event_tx.send(candle);
+            }
+            Err(e) => {
+                debug!(error = %e, "Failed to decode market-data candle payload");
+            }
+        }
+    }
+
+    anyhow::bail!("Candle subscription ended");
+}
+
+/// Run a command-event subscriber on `system.commands.>` and emit `AppEvent::CommandStatus`.
+///
+/// This is best-effort: if backend-side command events are not published yet,
+/// the subscription simply stays idle and the existing request/reply path
+/// continues to drive the status area.
+pub async fn run_command_subscriber(
+    client: NatsClient,
+    event_tx: mpsc::UnboundedSender<AppEvent>,
+) -> anyhow::Result<()> {
+    let subject = "system.commands.>";
+    let mut sub = client.client().subscribe(subject.to_string()).await?;
+    info!(subject = %subject, "Subscribed to system command events");
+
+    while let Some(msg) = sub.next().await {
+        match serde_json::from_slice::<CommandReply>(&msg.payload) {
+            Ok(reply) => {
+                let _ = event_tx.send(AppEvent::CommandStatus(reply));
+            }
+            Err(e) => {
+                debug!(error = %e, "Failed to decode system command event payload");
+            }
+        }
+    }
+
+    anyhow::bail!("Command-event subscription ended");
+}
+
+/// Watch the NATS KV bucket for yield curve updates.
+///
+/// Watches `yield_curve.*` keys in `bucket`. On each `Put`, decodes the
+/// protobuf payload and emits `AppEvent::YieldCurveKvUpdate`. Errors are
+/// logged and the watcher is restarted after a short delay.
+pub async fn run_yield_kv_watcher(
+    client: NatsClient,
+    bucket: String,
+    event_tx: mpsc::UnboundedSender<AppEvent>,
+) -> anyhow::Result<()> {
+    use futures::StreamExt;
+    use nats_adapter::async_nats::jetstream;
+    use nats_adapter::async_nats::jetstream::kv::Operation;
+
+    let js = jetstream::new(client.client().clone());
+    let kv: jetstream::kv::Store = match js.get_key_value(&bucket).await {
+        Ok(k) => k,
+        Err(e) => {
+            anyhow::bail!("yield KV bucket {bucket} not found: {e}");
+        }
+    };
+
+    let mut watcher = kv.watch("yield_curve.*").await?;
+    info!(%bucket, "yield KV watcher started (yield_curve.*)");
+
+    while let Some(entry_res) = watcher.next().await {
+        let entry = match entry_res {
+            Ok(e) => e,
+            Err(e) => {
+                warn!(error = %e, "yield KV watcher entry error");
+                continue;
+            }
+        };
+
+        // Only process Put (new value); ignore Delete/Purge
+        if entry.operation != Operation::Put {
+            continue;
+        }
+
+        // Key is "yield_curve.{symbol}"
+        let symbol = match entry.key.strip_prefix("yield_curve.") {
+            Some(s) if !s.is_empty() => s.to_string(),
+            _ => continue,
+        };
+
+        let bytes = entry.value.as_ref().to_vec();
+        let curve = match api::yield_curve_proto::curve_response_from_proto_bytes(&bytes, &symbol) {
+            Some(c) if !c.points.is_empty() => c,
+            _ => {
+                debug!(key = %entry.key, "yield KV entry empty or not decodable, skipping");
+                continue;
+            }
+        };
+
+        let fetched_at = curve.timestamp.clone();
+        debug!(symbol = %symbol, points = curve.point_count, "yield KV update received");
+        let _ = event_tx.send(AppEvent::YieldCurveKvUpdate {
+            symbol,
+            curve,
+            fetched_at,
+        });
+    }
+
+    anyhow::bail!("yield KV watcher stream ended");
+}
+
+/// Publish a one-shot refresh request to `api.yield_curve.refresh`.
+/// The yield_curve_writer backend picks this up and runs a write cycle immediately,
+/// which will trigger another KV update that the watcher will receive.
+pub async fn send_yield_refresh(client: &NatsClient) -> anyhow::Result<()> {
+    client
+        .client()
+        .publish("api.yield_curve.refresh", "{}".into())
+        .await
+        .map_err(|e| anyhow::anyhow!("yield refresh publish failed: {e}"))
+}
+
+pub async fn run_alert_subscriber(
+    client: NatsClient,
+    event_tx: mpsc::UnboundedSender<AppEvent>,
+) -> anyhow::Result<()> {
+    let subject = topics::system::alerts();
+    let mut sub = client.client().subscribe(subject.to_string()).await?;
+    info!(subject = %subject, "Subscribed to system alerts");
+
+    while let Some(msg) = sub.next().await {
+        match extract_proto_payload::<pb::Alert>(&msg.payload) {
+            Ok(proto) => {
+                let level = match pb::AlertLevel::try_from(proto.level)
+                    .unwrap_or(pb::AlertLevel::Unspecified)
+                {
+                    pb::AlertLevel::Warning => api::AlertLevel::Warning,
+                    pb::AlertLevel::Error => api::AlertLevel::Error,
+                    _ => api::AlertLevel::Info,
+                };
+                let timestamp = proto
+                    .timestamp
+                    .and_then(|ts| {
+                        chrono::DateTime::<Utc>::from_timestamp(ts.seconds, ts.nanos as u32)
+                    })
+                    .unwrap_or_else(Utc::now);
+                let _ = event_tx.send(AppEvent::AlertReceived {
+                    level,
+                    message: proto.message,
+                    timestamp,
+                });
+            }
+            Err(e) => {
+                debug!(error = %e, "Failed to decode system alert payload");
+            }
+        }
+    }
+
+    anyhow::bail!("Alert subscription ended");
 }

@@ -1,6 +1,6 @@
 //! Logs tab: tui-logger widget.
 
-use ratatui::{layout::Rect, style::Color, style::Style, widgets::Block, widgets::Borders, Frame};
+use ratatui::{style::Color, style::Style, widgets::Block, widgets::Borders};
 use tui_logger::{TuiLoggerLevelOutput, TuiLoggerWidget};
 
 use crate::app::App;
@@ -36,9 +36,4 @@ pub(crate) fn build_logs_widget<'a>(app: &'a App, title: String) -> TuiLoggerWid
         .output_file(false)
         .output_line(false)
         .state(&app.log_state)
-}
-
-pub fn render_logs(f: &mut Frame, app: &App, area: Rect) {
-    let widget = build_logs_widget(app, logs_title(app));
-    f.render_widget(widget, area);
 }
