@@ -762,7 +762,7 @@ mod tests {
         let mut snapshot = SystemSnapshot::default();
         let update = apply_strategy_execution(
             &mut snapshot,
-            StrategyDecisionSnapshot::new("AAPL".into(), 5, "BUY".into(), 150.0, Utc::now()),
+            StrategyDecisionSnapshot::new("AAPL".into(), 5, "BUY", 150.0, Utc::now()),
         );
 
         assert!(matches!(
