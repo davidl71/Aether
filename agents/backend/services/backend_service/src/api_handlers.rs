@@ -1,7 +1,9 @@
 //! NATS request/reply handlers for api.discount_bank.*, api.loans.*, api.fmp.*, and api.strategy.*.
 //! Scope per docs/platform/NATS_API.md §3.
 //! FMP fundamentals wired when FMP_API_KEY is set (task T-1773509396765766000).
-//! Strategy start/stop: api.strategy.start, api.strategy.stop (task T-1773515657237625000).
+//! Strategy start/stop subjects are registered but return a deprecated-mode reply;
+//! execution is disabled — platform is in read-only data-exploration mode.
+//! See docs/DATA_EXPLORATION_MODE.md.
 
 use std::sync::Arc;
 
@@ -31,6 +33,7 @@ use api::{
 use broker_engine::BrokerEngine;
 use bytes::Bytes;
 use futures::StreamExt;
+use market_data::yield_curve::YahooYieldCurveSource;
 use market_data::FmpClient;
 use nats_adapter::async_nats::Client;
 use nats_adapter::{encode_envelope, topics, NatsClient};
@@ -91,6 +94,8 @@ const SUBJECT_SNAPSHOT_PUBLISH_NOW: &str = "api.snapshot.publish_now";
 pub enum YieldCurveSource {
     /// Live TWS option chain (requires TWS/Gateway running)
     Tws,
+    /// Yahoo Finance options chain (live, internet-accessible)
+    Yahoo,
     /// Synthetic curve (no live data, for testing/offline)
     Synthetic,
     /// Pre-cached from NATS KV (written by yield_curve_writer)
@@ -102,20 +107,19 @@ impl YieldCurveSource {
     pub fn from_str(s: &str) -> Option<Self> {
         match s.trim().to_lowercase().as_str() {
             "tws" => Some(Self::Tws),
+            "yahoo" | "yfinance" => Some(Self::Yahoo),
             "synthetic" | "synth" => Some(Self::Synthetic),
             "kv" | "cache" | "cached" => Some(Self::Kv),
             _ => None,
         }
     }
 
-    /// Default fallback order: try KV first (fast, cached), then synthetic (always works), then TWS (slow, requires connection)
     pub fn default_fallback_order() -> Vec<Self> {
-        vec![Self::Kv, Self::Synthetic, Self::Tws]
+        vec![Self::Kv, Self::Yahoo, Self::Synthetic, Self::Tws]
     }
 
-    /// TWS-first fallback: try TWS first (freshest), then synthetic, then KV
     pub fn tws_first_order() -> Vec<Self> {
-        vec![Self::Tws, Self::Synthetic, Self::Kv]
+        vec![Self::Tws, Self::Yahoo, Self::Synthetic, Self::Kv]
     }
 
     /// Synthetic-only fallback (no live data, for testing)
@@ -139,6 +143,7 @@ impl YieldCurveSource {
     pub fn label(&self) -> &'static str {
         match self {
             Self::Tws => "TWS",
+            Self::Yahoo => "yahoo",
             Self::Synthetic => "synthetic",
             Self::Kv => "KV",
         }
@@ -430,7 +435,7 @@ async fn run_snapshot_publish_now(nc: Client, state: SharedSnapshot) {
         }
     };
     info!("subscribed to api.snapshot.publish_now (force snapshot write)");
-    let backend_id = std::env::var("BACKEND_ID").unwrap_or_else(|_| "ib".to_string());
+    let backend_id = std::env::var("BACKEND_ID").unwrap_or_else(|_| "backend".to_string());
     let subject = topics::snapshot::backend(&backend_id);
     let nc_events = nc.clone();
     while let Some(msg) = sub.next().await {
@@ -704,6 +709,21 @@ async fn run_finance_rates(
                                         used_source = Some(YieldCurveSource::Synthetic);
                                         debug!(symbol = %sym, live_rate, "Using synthetic yield curve with benchmark rate");
                                         break;
+                                    }
+                                }
+                            }
+                            YieldCurveSource::Yahoo => {
+                                if let Some(ref sym) = symbol {
+                                    let source = YahooYieldCurveSource::new();
+                                    match source.fetch_yield_curve(sym).await {
+                                        Ok(ycurve) => {
+                                            let curve = yahoo_curve_to_response(ycurve);
+                                            debug!(symbol = %sym, points = curve.point_count, "Using Yahoo yield curve");
+                                            return finance_rates_result(Ok(curve));
+                                        }
+                                        Err(e) => {
+                                            debug!(symbol = %sym, error = %e, "Yahoo yield curve failed");
+                                        }
                                     }
                                 }
                             }
@@ -1156,6 +1176,42 @@ async fn load_yield_curve_from_kv(
         symbol: Some(symbol.to_string()),
     };
     build_curve(request, query.cloned()).ok()
+}
+
+fn yahoo_curve_to_response(ycurve: market_data::yield_curve::YieldCurve) -> CurveResponse {
+    use market_data::yield_curve::YieldCurvePoint;
+    let points: Vec<api::finance_rates::RatePointResponse> = ycurve
+        .points
+        .into_iter()
+        .map(|p: YieldCurvePoint| api::finance_rates::RatePointResponse {
+            symbol: ycurve.symbol.clone(),
+            expiry: p.expiry.format("%Y-%m-%d").to_string(),
+            days_to_expiry: p.dte,
+            strike_width: p.strike_width,
+            buy_implied_rate: p.buy_implied_rate,
+            sell_implied_rate: p.sell_implied_rate,
+            mid_rate: p.mid_rate,
+            net_debit: p.net_debit,
+            net_credit: p.net_credit,
+            liquidity_score: p.liquidity_score,
+            timestamp: ycurve.timestamp.to_rfc3339(),
+            spread_id: None,
+            data_source: Some("yahoo".to_string()),
+            strike_low: Some(p.strike_low),
+            strike_high: Some(p.strike_high),
+            convenience_yield: None,
+        })
+        .collect();
+    let point_count = points.len();
+    let strike_width = points.first().map(|p| p.strike_width);
+    CurveResponse {
+        symbol: ycurve.symbol,
+        points,
+        timestamp: ycurve.timestamp.to_rfc3339(),
+        strike_width,
+        point_count,
+        underlying_price: Some(ycurve.underlying_price),
+    }
 }
 
 fn parse_curve_body(body: Option<&[u8]>) -> (CurveRequest, Option<CurveQuery>) {

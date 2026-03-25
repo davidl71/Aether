@@ -1,5 +1,6 @@
-//! Finance rates / yield curve / benchmarks — **deferred: not exposed via NATS**.
-//! See `docs/platform/NATS_API.md` §3. To re-enable, implement NATS request/reply (e.g. `api.finance_rates.*`).
+//! Finance rates / yield curve / benchmarks — exposed via NATS `api.finance_rates.*`.
+//! Sources: KV (cached), Yahoo (live), Synthetic (fallback), TWS (live, requires IBKR).
+//! Fallback order: KV → Yahoo → Synthetic → TWS (configurable via YIELD_CURVE_FALLBACK env var).
 
 use chrono::Utc;
 use market_data::FmpClient;

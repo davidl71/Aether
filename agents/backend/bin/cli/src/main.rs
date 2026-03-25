@@ -1,4 +1,4 @@
-//! Aether CLI - Command-line interface for the trading platform
+//! Aether CLI - Command-line interface for the Aether financing platform
 //!
 //! Usage:
 //!   cargo run -p cli -- init-config config/config.json
@@ -96,9 +96,10 @@ enum Commands {
     },
     /// Validate shared JSON config (same discovery as TUI: IB_BOX_SPREAD_CONFIG, then config/config.json) and exit 0/1
     Validate,
-    /// Load config and run the trading loop (placeholder; use tui_service for full UI)
+    /// Load config and run the service loop (read-only; use tui_service for full UI)
+    // [execution-disabled: see docs/DATA_EXPLORATION_MODE.md]
     Run {
-        /// Dry run mode - simulate trading without executing orders
+        /// Dry run mode - read-only simulation (no order execution)
         #[arg(long)]
         dry_run: bool,
 
@@ -357,9 +358,11 @@ fn main() -> Result<()> {
             LoansCmd::List { json } => run_loans_list(format, json)?,
             LoansCmd::Import { path, json } => run_loans_import(&path, format, json)?,
             LoansCmd::ImportCsv { path, json } => run_loans_import_csv(&path, format, json)?,
-            LoansCmd::ImportPdf { path, bank_name, json } => {
-                run_loans_import_pdf(&path, &bank_name, format, json)?
-            }
+            LoansCmd::ImportPdf {
+                path,
+                bank_name,
+                json,
+            } => run_loans_import_pdf(&path, &bank_name, format, json)?,
         },
         Commands::DiscountBank { sub } => match sub {
             DiscountBankCmd::Import {
@@ -450,9 +453,10 @@ fn run_run(config_path: &PathBuf, opts: RunOpts) -> Result<()> {
     print_banner();
 
     if cfg.dry_run {
-        warn!("DRY RUN MODE - No real trades will be executed");
+        warn!("DRY RUN MODE - read-only exploration, no execution");
     } else {
-        warn!("LIVE TRADING MODE - Real money at risk!");
+        // [execution-disabled: see docs/DATA_EXPLORATION_MODE.md]
+        warn!("READ-ONLY MODE - execution paths are disabled");
         warn!("Press Ctrl+C to stop safely");
     }
 
@@ -709,7 +713,11 @@ fn run_cred(sub: CredCmd) -> Result<()> {
 
     fn parse_key(name: &str) -> Result<CredentialKey, String> {
         CredentialKey::from_name(name).ok_or_else(|| {
-            format!("Unknown credential '{}'. Use: {}", name, list_credential_names())
+            format!(
+                "Unknown credential '{}'. Use: {}",
+                name,
+                list_credential_names()
+            )
         })
     }
 
@@ -776,8 +784,8 @@ fn run_cred(sub: CredCmd) -> Result<()> {
             println!("Available credentials:");
             let creds = credentials::list_credentials();
             for (key_str, desc) in &creds {
-                let test_key = CredentialKey::from_name(key_str)
-                    .unwrap_or(CredentialKey::FredApiKey);
+                let test_key =
+                    CredentialKey::from_name(key_str).unwrap_or(CredentialKey::FredApiKey);
                 let status = if credentials::get_credential(test_key).is_some() {
                     "✓"
                 } else {
@@ -853,22 +861,24 @@ fn run_loans_import(path: &PathBuf, format: OutputFormat, json: bool) -> Result<
 
     let file: LoanFile = serde_json::from_str(&text).context("failed to parse loans JSON")?;
 
-    let repo = tokio::runtime::Runtime::new()?
-        .block_on(api::loans::LoanRepository::load(path.clone()))?;
+    let repo =
+        tokio::runtime::Runtime::new()?.block_on(api::loans::LoanRepository::load(path.clone()))?;
 
     let mut imported = 0;
     let mut errors = Vec::new();
 
     for loan in &file.loans {
         match loan.validate() {
-            Ok(()) => {
-                match tokio::runtime::Runtime::new()?.block_on(repo.create(loan.clone())) {
-                    Ok(()) => imported += 1,
-                    Err(e) => errors.push(format!("{}: {}", loan.loan_id, e)),
-                }
-            }
+            Ok(()) => match tokio::runtime::Runtime::new()?.block_on(repo.create(loan.clone())) {
+                Ok(()) => imported += 1,
+                Err(e) => errors.push(format!("{}: {}", loan.loan_id, e)),
+            },
             Err(errs) => {
-                errors.push(format!("{}: validation failed - {}", loan.loan_id, errs.join("; ")));
+                errors.push(format!(
+                    "{}: validation failed - {}",
+                    loan.loan_id,
+                    errs.join("; ")
+                ));
             }
         }
     }
@@ -888,7 +898,12 @@ fn run_loans_import(path: &PathBuf, format: OutputFormat, json: bool) -> Result<
         })?;
     } else {
         println!("Loans import from {}", path.display());
-        println!("Total: {}, Imported: {}, Errors: {}", file.loans.len(), imported, errors.len());
+        println!(
+            "Total: {}, Imported: {}, Errors: {}",
+            file.loans.len(),
+            imported,
+            errors.len()
+        );
         if !errors.is_empty() {
             println!("\nErrors:");
             for e in &errors {
@@ -912,15 +927,17 @@ fn run_loans_import_csv(path: &PathBuf, format: OutputFormat, json: bool) -> Res
     let mut lines = reader.lines();
 
     let headers = match lines.next() {
-        Some(Ok(line)) => line.split(',').map(|s| s.trim().to_lowercase()).collect::<Vec<_>>(),
+        Some(Ok(line)) => line
+            .split(',')
+            .map(|s| s.trim().to_lowercase())
+            .collect::<Vec<_>>(),
         Some(Err(e)) => anyhow::bail!("Failed to read CSV header: {}", e),
         None => anyhow::bail!("Empty CSV file"),
     };
 
     // Expected columns
-    let col = |name: &str| -> usize {
-        headers.iter().position(|h| h == name).unwrap_or(usize::MAX)
-    };
+    let col =
+        |name: &str| -> usize { headers.iter().position(|h| h == name).unwrap_or(usize::MAX) };
     let idx_bank = col("bank_name");
     let idx_account = col("account_number");
     let idx_type = col("loan_type");
@@ -945,9 +962,7 @@ fn run_loans_import_csv(path: &PathBuf, format: OutputFormat, json: bool) -> Res
         };
 
         let fields: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
-        let get = |idx: usize| -> &str {
-            fields.get(idx).unwrap_or(&"").trim_matches('"')
-        };
+        let get = |idx: usize| -> &str { fields.get(idx).unwrap_or(&"").trim_matches('"') };
 
         let bank_name = get(idx_bank).to_string();
         let account_number = get(idx_account).to_string();
@@ -956,7 +971,11 @@ fn run_loans_import_csv(path: &PathBuf, format: OutputFormat, json: bool) -> Res
             "SHIR" | "SHIR_BASED" => api::loans::LoanType::ShirBased,
             "CPI" | "CPI_LINKED" => api::loans::LoanType::CpiLinked,
             _ => {
-                errors.push(format!("line {}: unknown loan type '{}'", line_num + 2, loan_type_str));
+                errors.push(format!(
+                    "line {}: unknown loan type '{}'",
+                    line_num + 2,
+                    loan_type_str
+                ));
                 continue;
             }
         };
@@ -965,14 +984,22 @@ fn run_loans_import_csv(path: &PathBuf, format: OutputFormat, json: bool) -> Res
         let principal: f64 = match get(idx_principal).parse() {
             Ok(v) => v,
             Err(_) => {
-                errors.push(format!("line {}: invalid principal '{}'", line_num + 2, get(idx_principal)));
+                errors.push(format!(
+                    "line {}: invalid principal '{}'",
+                    line_num + 2,
+                    get(idx_principal)
+                ));
                 continue;
             }
         };
         let interest_rate: f64 = match get(idx_rate).parse() {
             Ok(v) => v,
             Err(_) => {
-                errors.push(format!("line {}: invalid interest rate '{}'", line_num + 2, get(idx_rate)));
+                errors.push(format!(
+                    "line {}: invalid interest rate '{}'",
+                    line_num + 2,
+                    get(idx_rate)
+                ));
                 continue;
             }
         };
@@ -982,7 +1009,12 @@ fn run_loans_import_csv(path: &PathBuf, format: OutputFormat, json: bool) -> Res
         let now = chrono::Utc::now();
         let last_update = now.to_rfc3339();
 
-        let loan_id = format!("loan-{}-{}-{}", bank_name.to_lowercase().replace(' ', "-"), account_number, now.timestamp());
+        let loan_id = format!(
+            "loan-{}-{}-{}",
+            bank_name.to_lowercase().replace(' ', "-"),
+            account_number,
+            now.timestamp()
+        );
 
         loans.push(LoanRecord {
             loan_id,
@@ -1002,13 +1034,15 @@ fn run_loans_import_csv(path: &PathBuf, format: OutputFormat, json: bool) -> Res
             payment_frequency_months: 1,
             status: api::loans::LoanStatus::Active,
             last_update,
+            currency: "ILS".to_string(),
         });
     }
 
     // Calculate maturity dates
     for loan in &mut loans {
         if !loan.next_payment_date.is_empty() {
-            if let Ok(base) = chrono::NaiveDate::parse_from_str(&loan.next_payment_date, "%Y-%m-%d") {
+            if let Ok(base) = chrono::NaiveDate::parse_from_str(&loan.next_payment_date, "%Y-%m-%d")
+            {
                 let days_to_add = (loan.payment_frequency_months as i64 * 30) - 1;
                 let maturity = base + chrono::Duration::days(days_to_add);
                 loan.maturity_date = maturity.format("%Y-%m-%d").to_string();
@@ -1017,8 +1051,8 @@ fn run_loans_import_csv(path: &PathBuf, format: OutputFormat, json: bool) -> Res
     }
 
     // Insert into database
-    let repo = tokio::runtime::Runtime::new()?
-        .block_on(api::loans::LoanRepository::load(path.clone()))?;
+    let repo =
+        tokio::runtime::Runtime::new()?.block_on(api::loans::LoanRepository::load(path.clone()))?;
 
     let mut imported = 0;
     for loan in &loans {
@@ -1044,7 +1078,12 @@ fn run_loans_import_csv(path: &PathBuf, format: OutputFormat, json: bool) -> Res
         })?;
     } else {
         println!("Loans CSV import from {}", path.display());
-        println!("Total: {}, Imported: {}, Errors: {}", loans.len(), imported, errors.len());
+        println!(
+            "Total: {}, Imported: {}, Errors: {}",
+            loans.len(),
+            imported,
+            errors.len()
+        );
         if !errors.is_empty() {
             println!("\nErrors:");
             for e in &errors {
@@ -1056,7 +1095,12 @@ fn run_loans_import_csv(path: &PathBuf, format: OutputFormat, json: bool) -> Res
     Ok(())
 }
 
-fn run_loans_import_pdf(path: &PathBuf, bank_name: &str, format: OutputFormat, json: bool) -> Result<()> {
+fn run_loans_import_pdf(
+    path: &PathBuf,
+    bank_name: &str,
+    format: OutputFormat,
+    json: bool,
+) -> Result<()> {
     use pdf_extract::extract_text;
 
     if !path.exists() {
@@ -1072,10 +1116,14 @@ fn run_loans_import_pdf(path: &PathBuf, bank_name: &str, format: OutputFormat, j
     println!("PDF text length: {} characters", text.len());
 
     // Regex patterns for common loan data extraction
-    let principal_re = regex::Regex::new(r"(?i)(principal|loan amount|balance)[\s:]*[\$₪]?\s*([\d,]+(?:\.\d{2})?)").unwrap();
+    let principal_re = regex::Regex::new(
+        r"(?i)(principal|loan amount|balance)[\s:]*[\$₪]?\s*([\d,]+(?:\.\d{2})?)",
+    )
+    .unwrap();
     let rate_re = regex::Regex::new(r"(?i)(interest rate|rate)[\s:]*(\d+(?:\.\d+)?)\s*%?").unwrap();
     let account_re = regex::Regex::new(r"(?i)(account|loan number)[\s:]*([A-Z0-9-]+)").unwrap();
-    let date_re = regex::Regex::new(r"(?i)(date|start)[\s:]*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})").unwrap();
+    let date_re =
+        regex::Regex::new(r"(?i)(date|start)[\s:]*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})").unwrap();
 
     let mut extracted_loans: Vec<LoanRecord> = Vec::new();
     let mut errors: Vec<String> = Vec::new();
@@ -1092,37 +1140,49 @@ fn run_loans_import_pdf(path: &PathBuf, bank_name: &str, format: OutputFormat, j
         }
 
         // Detect new loan block (starts with "Loan", "Account", "Credit", etc.)
-        let is_new_block = regex::Regex::new(r"(?i)^(loan|account|credit|הלוואה|משכנתא)").unwrap()
+        let is_new_block = regex::Regex::new(r"(?i)^(loan|account|credit|הלוואה|משכנתא)")
+            .unwrap()
             .is_match(trimmed);
 
         if is_new_block && !current_block.is_empty() {
             // Process the previous block
             let block_text = current_block.clone();
 
-            let principal = principal_re.captures(&block_text)
+            let principal = principal_re
+                .captures(&block_text)
                 .and_then(|c| c.get(2))
                 .and_then(|m| m.as_str().replace(',', "").parse::<f64>().ok());
 
-            let rate = rate_re.captures(&block_text)
+            let rate = rate_re
+                .captures(&block_text)
                 .and_then(|c| c.get(2))
                 .and_then(|m| m.as_str().parse::<f64>().ok());
 
-            let account = account_re.captures(&block_text)
+            let account = account_re
+                .captures(&block_text)
                 .and_then(|c| c.get(2))
                 .map(|m| m.as_str().to_string());
 
-            let date = date_re.captures(&block_text)
+            let date = date_re
+                .captures(&block_text)
                 .and_then(|c| c.get(2))
                 .map(|m| m.as_str().to_string());
 
             if let (Some(p), Some(r)) = (principal, rate) {
                 let now = chrono::Utc::now();
-                let loan_id = format!("loan-{}-{}-{}", bank_name.to_lowercase().replace(' ', "-"), account.as_deref().unwrap_or("unknown"), now.timestamp());
+                let loan_id = format!(
+                    "loan-{}-{}-{}",
+                    bank_name.to_lowercase().replace(' ', "-"),
+                    account.as_deref().unwrap_or("unknown"),
+                    now.timestamp()
+                );
 
                 let maturity = date.as_ref().and_then(|d| {
-                    chrono::NaiveDate::parse_from_str(d, "%d/%m/%Y").ok()
+                    chrono::NaiveDate::parse_from_str(d, "%d/%m/%Y")
+                        .ok()
                         .or_else(|| chrono::NaiveDate::parse_from_str(d, "%m/%d/%Y").ok())
-                        .map(|base| base + chrono::Duration::days(30 * 12 * 20 - 1)) // Default 20 years
+                        .map(|base| base + chrono::Duration::days(30 * 12 * 20 - 1))
+                    // Default 20 years
                 });
 
                 extracted_loans.push(LoanRecord {
@@ -1136,20 +1196,32 @@ fn run_loans_import_pdf(path: &PathBuf, bank_name: &str, format: OutputFormat, j
                     spread: 0.0,
                     base_cpi: 0.0,
                     current_cpi: 0.0,
-                    origination_date: date.clone().unwrap_or_else(|| now.format("%Y-%m-%d").to_string()),
-                    maturity_date: maturity.map(|m| m.format("%Y-%m-%d").to_string()).unwrap_or_default(),
+                    origination_date: date
+                        .clone()
+                        .unwrap_or_else(|| now.format("%Y-%m-%d").to_string()),
+                    maturity_date: maturity
+                        .map(|m| m.format("%Y-%m-%d").to_string())
+                        .unwrap_or_default(),
                     next_payment_date: now.format("%Y-%m-%d").to_string(),
                     monthly_payment: 0.0, // Would need more parsing
                     payment_frequency_months: 1,
                     status: api::loans::LoanStatus::Active,
                     last_update: now.to_rfc3339(),
+                    currency: "ILS".to_string(),
                 });
             } else {
                 if principal.is_none() && rate.is_none() {
                     errors.push(format!("Block at line {}: no loan data found", block_start));
                 } else {
-                    let missing = if principal.is_none() { "principal" } else { "interest rate" };
-                    errors.push(format!("Block at line {}: missing {}", block_start, missing));
+                    let missing = if principal.is_none() {
+                        "principal"
+                    } else {
+                        "interest rate"
+                    };
+                    errors.push(format!(
+                        "Block at line {}: missing {}",
+                        block_start, missing
+                    ));
                 }
             }
 
@@ -1165,28 +1237,38 @@ fn run_loans_import_pdf(path: &PathBuf, bank_name: &str, format: OutputFormat, j
     if !current_block.is_empty() {
         let block_text = current_block;
 
-        let principal = principal_re.captures(&block_text)
+        let principal = principal_re
+            .captures(&block_text)
             .and_then(|c| c.get(2))
             .and_then(|m| m.as_str().replace(',', "").parse::<f64>().ok());
 
-        let rate = rate_re.captures(&block_text)
+        let rate = rate_re
+            .captures(&block_text)
             .and_then(|c| c.get(2))
             .and_then(|m| m.as_str().parse::<f64>().ok());
 
-        let account = account_re.captures(&block_text)
+        let account = account_re
+            .captures(&block_text)
             .and_then(|c| c.get(2))
             .map(|m| m.as_str().to_string());
 
-        let date = date_re.captures(&block_text)
+        let date = date_re
+            .captures(&block_text)
             .and_then(|c| c.get(2))
             .map(|m| m.as_str().to_string());
 
         if let (Some(p), Some(r)) = (principal, rate) {
             let now = chrono::Utc::now();
-            let loan_id = format!("loan-{}-{}-{}", bank_name.to_lowercase().replace(' ', "-"), account.as_deref().unwrap_or("unknown"), now.timestamp());
+            let loan_id = format!(
+                "loan-{}-{}-{}",
+                bank_name.to_lowercase().replace(' ', "-"),
+                account.as_deref().unwrap_or("unknown"),
+                now.timestamp()
+            );
 
             let maturity = date.as_ref().and_then(|d| {
-                chrono::NaiveDate::parse_from_str(d, "%d/%m/%Y").ok()
+                chrono::NaiveDate::parse_from_str(d, "%d/%m/%Y")
+                    .ok()
                     .or_else(|| chrono::NaiveDate::parse_from_str(d, "%m/%d/%Y").ok())
                     .map(|base| base + chrono::Duration::days(30 * 12 * 20 - 1))
             });
@@ -1202,20 +1284,25 @@ fn run_loans_import_pdf(path: &PathBuf, bank_name: &str, format: OutputFormat, j
                 spread: 0.0,
                 base_cpi: 0.0,
                 current_cpi: 0.0,
-                origination_date: date.clone().unwrap_or_else(|| now.format("%Y-%m-%d").to_string()),
-                maturity_date: maturity.map(|m| m.format("%Y-%m-%d").to_string()).unwrap_or_default(),
+                origination_date: date
+                    .clone()
+                    .unwrap_or_else(|| now.format("%Y-%m-%d").to_string()),
+                maturity_date: maturity
+                    .map(|m| m.format("%Y-%m-%d").to_string())
+                    .unwrap_or_default(),
                 next_payment_date: now.format("%Y-%m-%d").to_string(),
                 monthly_payment: 0.0,
                 payment_frequency_months: 1,
                 status: api::loans::LoanStatus::Active,
                 last_update: now.to_rfc3339(),
+                currency: "ILS".to_string(),
             });
         }
     }
 
     // Insert into database
-    let repo = tokio::runtime::Runtime::new()?
-        .block_on(api::loans::LoanRepository::load(path.clone()))?;
+    let repo =
+        tokio::runtime::Runtime::new()?.block_on(api::loans::LoanRepository::load(path.clone()))?;
 
     let mut imported = 0;
     for loan in &extracted_loans {
@@ -1241,11 +1328,19 @@ fn run_loans_import_pdf(path: &PathBuf, bank_name: &str, format: OutputFormat, j
         })?;
     } else {
         println!("Loans PDF import from {}", path.display());
-        println!("Total extracted: {}, Imported: {}, Errors: {}", extracted_loans.len(), imported, errors.len());
+        println!(
+            "Total extracted: {}, Imported: {}, Errors: {}",
+            extracted_loans.len(),
+            imported,
+            errors.len()
+        );
         if !extracted_loans.is_empty() {
             println!("\nExtracted loans:");
             for loan in &extracted_loans {
-                println!("  - {}: {} at {}%", loan.loan_id, loan.principal, loan.interest_rate);
+                println!(
+                    "  - {}: {} at {}%",
+                    loan.loan_id, loan.principal, loan.interest_rate
+                );
             }
         }
         if !errors.is_empty() {
@@ -1272,13 +1367,12 @@ fn run_discount_bank_import(
     let parsed = tokio::runtime::Runtime::new()?
         .block_on(discount_bank_parser::DiscountBankParser::parse_file(path))?;
 
-    let exchange_rate_decimal = exchange_rate.map(rust_decimal::Decimal::try_from).transpose()?;
+    let exchange_rate_decimal = exchange_rate
+        .map(rust_decimal::Decimal::try_from)
+        .transpose()?;
 
-    let transactions = discount_bank_parser::convert_to_transactions(
-        &parsed,
-        exchange_rate_decimal,
-        None,
-    )?;
+    let transactions =
+        discount_bank_parser::convert_to_transactions(&parsed, exchange_rate_decimal, None)?;
 
     let use_json = json || format == OutputFormat::Json;
     if use_json {
@@ -1296,7 +1390,12 @@ fn run_discount_bank_import(
         if !transactions.is_empty() {
             println!("\nLedger transactions would be:");
             for txn in &transactions {
-                println!("  {} - {} ({} postings)", txn.date, txn.description, txn.postings.len());
+                println!(
+                    "  {} - {} ({} postings)",
+                    txn.date,
+                    txn.description,
+                    txn.postings.len()
+                );
             }
         }
     }
@@ -1333,7 +1432,7 @@ fn bucket_label(days_to_expiry: i32) -> &'static str {
 fn print_banner() {
     println!("╔═══════════════════════════════════════════════════════════╗");
     println!("║         Aether - Multi-Asset Synthetic Financing          ║");
-    println!("║                    Trading Platform                        ║");
+    println!("║              Operator Console (Read-Only)                  ║");
     println!("╚═══════════════════════════════════════════════════════════╝");
 }
 
