@@ -1,10 +1,10 @@
+use ratatui::layout::Rect;
 use ratatui::{
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::Paragraph,
     Frame,
 };
-use ratatui::layout::Rect;
 
 use crate::app::App;
 use crate::config::{config_key_scope, SettingScope};
@@ -22,10 +22,10 @@ pub(crate) fn render_settings_config_section(f: &mut Frame, app: &App, area: Rec
     let config_block = section_block(&config_title, section_active(app, SettingsSection::Config));
     let config_value_width = area.width.saturating_sub(20) as usize;
     let mut config_lines = Vec::new();
-    for idx in 0..=9 {
+    for idx in 0..app.config_key_count() {
         if let Some((key, value)) = app.config_key_value_at(idx) {
-            let active =
-                section_active(app, SettingsSection::Config) && app.settings_config_key_index == idx;
+            let active = section_active(app, SettingsSection::Config)
+                && app.settings_config_key_index == idx;
             let scope = config_key_scope(&key);
             let key_style = if active {
                 Style::default()

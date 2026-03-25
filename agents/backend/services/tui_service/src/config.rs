@@ -12,28 +12,49 @@ const DEFAULT_REST_URL: &str = "http://localhost:9090";
 const DEFAULT_WATCHLIST: &str = "SPX,XSP,NDX";
 const DEFAULT_SNAPSHOT_TTL_SECS: u64 = 30;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SettingScope {
+    Editable,
+    EnvOnly,
+    BuiltIn,
+}
+
+impl SettingScope {
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Editable => "editable",
+            Self::EnvOnly => "env-only",
+            Self::BuiltIn => "built-in",
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct TuiConfig {
     /// NATS server URL (env: NATS_URL)
     pub nats_url: String,
     /// Backend identifier used as the snapshot topic suffix (env: BACKEND_ID)
     pub backend_id: String,
-    /// REST base URL for fallback polling (env: REST_URL)
+    /// Legacy REST endpoint compatibility setting. The active TUI runtime is NATS-first.
     pub rest_url: String,
     /// Symbols to highlight in the dashboard (env: WATCHLIST, comma-separated)
     pub watchlist: Vec<String>,
     /// UI redraw interval in milliseconds (env: TICK_MS)
     pub tick_ms: u64,
-    /// Poll interval for REST fallback in milliseconds (env: REST_POLL_MS)
+    /// Legacy REST polling compatibility setting.
     pub rest_poll_ms: u64,
-    /// Enable REST fallback when NATS is unavailable (env: REST_FALLBACK=1)
+    /// Legacy REST fallback compatibility flag.
     pub rest_fallback: bool,
     /// Seconds before a snapshot is considered stale for display purposes (env: SNAPSHOT_TTL_SECS)
     pub snapshot_ttl_secs: u64,
     /// Enable split-pane layout (env: SPLIT_PANE=1)
     pub split_pane: bool,
-    /// Polygon API key for WebSocket market data (env: POLYGON_API_KEY)
-    pub polygon_api_key: Option<String>,
+    /// How often to re-fetch benchmark rates (SOFR/Treasury from FRED) in seconds.
+    /// FRED updates at most once per business day, so a long interval is fine.
+    /// (env: BENCHMARKS_REFRESH_SECS, default: 3600)
+    pub benchmarks_refresh_secs: u64,
+    /// NATS KV bucket name for yield curves (env: NATS_KV_BUCKET, default: LIVE_STATE)
+    pub yield_kv_bucket: String,
 }
 
 impl Default for TuiConfig {
@@ -48,7 +69,8 @@ impl Default for TuiConfig {
             rest_fallback: false,
             snapshot_ttl_secs: DEFAULT_SNAPSHOT_TTL_SECS,
             split_pane: false,
-            polygon_api_key: None,
+            benchmarks_refresh_secs: 3600,
+            yield_kv_bucket: "LIVE_STATE".into(),
         }
     }
 }
@@ -207,10 +229,16 @@ impl TuiConfig {
             }
         }
 
-        if let Ok(value) = std::env::var("POLYGON_API_KEY") {
+        if let Ok(value) = std::env::var("BENCHMARKS_REFRESH_SECS") {
+            if let Ok(parsed) = value.parse::<u64>() {
+                self.benchmarks_refresh_secs = parsed.max(60);
+            }
+        }
+
+        if let Ok(value) = std::env::var("NATS_KV_BUCKET") {
             let value = value.trim().to_string();
             if !value.is_empty() {
-                self.polygon_api_key = Some(value);
+                self.yield_kv_bucket = value;
             }
         }
     }
@@ -224,6 +252,30 @@ impl TuiConfig {
         let mut config = Self::default();
         config.apply_shared_config(&shared);
         config
+    }
+}
+
+pub fn config_key_scope(key: &str) -> SettingScope {
+    match key {
+        "NATS_URL"
+        | "BACKEND_ID"
+        | "TICK_MS"
+        | "REST_URL"
+        | "REST_POLL_MS"
+        | "REST_FALLBACK"
+        | "SNAPSHOT_TTL_SECS"
+        | "SPLIT_PANE"
+        | "BENCHMARKS_REFRESH_SECS"
+        | "NATS_KV_BUCKET" => SettingScope::Editable,
+        _ => SettingScope::EnvOnly,
+    }
+}
+
+pub fn credential_scope(provider: &str) -> SettingScope {
+    match provider {
+        "yahoo" | "mock" | "tws" => SettingScope::BuiltIn,
+        "fmp" | "polygon" | "tase" | "fred" => SettingScope::EnvOnly,
+        _ => SettingScope::EnvOnly,
     }
 }
 

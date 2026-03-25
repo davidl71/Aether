@@ -62,6 +62,7 @@ use tracing_subscriber::{
 };
 
 mod app;
+mod app_config;
 mod circuit_breaker;
 mod config;
 mod config_watcher;

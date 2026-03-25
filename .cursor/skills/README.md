@@ -6,6 +6,9 @@ Reusable workflows and checklists for this repo. Use by opening or @-mentioning 
 
 | Skill | File | When to use |
 |-------|------|--------------|
+| **exarp-go** | [exarp-go/SKILL.md](exarp-go/SKILL.md) | Task management, project health, session prime/handoff, scorecards |
+| **build-shortcuts** | [build-shortcuts/SKILL.md](build-shortcuts/SKILL.md) | Make, cargo, CMake presets, build/test/lint shortcuts |
+| **oh-my-opencode** | [.opencode/oh-my-opencode/README.md](/.opencode/oh-my-opencode/README.md) | Oh My OpenCode config - themes, shortcuts, hooks, enhanced workflow |
 | **UI/UX Pro Max** | [ui-ux-pro-max/SKILL.md](ui-ux-pro-max/SKILL.md) | Web/PWA design systems, landing pages, dashboards (design-system generator, styles, palettes) |
 | **When to use subagents** | [when-to-use-subagents.md](when-to-use-subagents.md) | Code review, refactor, tests, trading audit, tasks/reports — which subagent or exarp-go to use |
 | Pull with uncommitted changes | [git-pull-with-wip.md](git-pull-with-wip.md) | Before pulling; you have local WIP |

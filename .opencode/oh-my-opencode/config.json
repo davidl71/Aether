@@ -1,0 +1,55 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "name": "Aether",
+  "description": "Multi-asset synthetic financing optimization platform",
+  "version": "1.0.0",
+  "theme": {
+    "primary": "#00d4ff",
+    "secondary": "#7c3aed",
+    "success": "#10b981",
+    "warning": "#f59e0b",
+    "error": "#ef4444"
+  },
+  "prompt": {
+    "template": "{status} {context} › ",
+    "showGitBranch": true,
+    "showTaskCount": true,
+    "showLastCommandDuration": true
+  },
+  "hooks": {
+    "preCommand": [
+      "check_project_root",
+      "refresh_task_cache"
+    ],
+    "postCommand": [
+      "show_task_reminders"
+    ],
+    "sessionStart": [
+      "prime_session",
+      "show_welcome"
+    ]
+  },
+  "shortcuts": {
+    "p": "prime",
+    "t": "tasks",
+    "s": "scorecard",
+    "h": "health",
+    "b": "build",
+    "bt": "build --test",
+    "l": "lint",
+    "f": "followup",
+    "w": "welcome"
+  },
+  "integrations": {
+    "exarp-go": {
+      "enabled": true,
+      "autoPrime": true,
+      "showInPrompt": true
+    },
+    "git": {
+      "enabled": true,
+      "showBranchInPrompt": true,
+      "autoFetch": false
+    }
+  }
+}

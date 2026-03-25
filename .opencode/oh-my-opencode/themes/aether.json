@@ -1,0 +1,55 @@
+{
+  "name": "aether",
+  "description": "Aether project theme - cyan and purple",
+  "author": "Aether Team",
+  "colors": {
+    "primary": {
+      "hex": "#00d4ff",
+      "rgb": [0, 212, 255]
+    },
+    "secondary": {
+      "hex": "#7c3aed",
+      "rgb": [124, 58, 237]
+    },
+    "success": {
+      "hex": "#10b981",
+      "rgb": [16, 185, 129]
+    },
+    "warning": {
+      "hex": "#f59e0b",
+      "rgb": [245, 158, 11]
+    },
+    "error": {
+      "hex": "#ef4444",
+      "rgb": [239, 68, 68]
+    },
+    "info": {
+      "hex": "#3b82f6",
+      "rgb": [59, 130, 246]
+    },
+    "background": {
+      "hex": "#0f172a",
+      "rgb": [15, 23, 42]
+    },
+    "surface": {
+      "hex": "#1e293b",
+      "rgb": [30, 41, 59]
+    },
+    "text": {
+      "hex": "#f8fafc",
+      "rgb": [248, 250, 252]
+    },
+    "muted": {
+      "hex": "#94a3b8",
+      "rgb": [148, 163, 184]
+    }
+  },
+  "syntax": {
+    "comment": "#64748b",
+    "string": "#10b981",
+    "keyword": "#00d4ff",
+    "function": "#7c3aed",
+    "variable": "#f8fafc",
+    "type": "#f59e0b"
+  }
+}
