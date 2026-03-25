@@ -14,7 +14,7 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(4),
+            Constraint::Length(7),
             Constraint::Min(3),
             Constraint::Length(3),
             Constraint::Min(5),
@@ -42,48 +42,144 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
             .border_style(border_style)
     };
 
-    // 1) Backend services (system.health)
-    let backends_block = section_block("Backend services (system.health)", section_active(0));
-    let backend_rows: Vec<Row> = if app.backend_health.is_empty() {
-        vec![Row::new(vec![
-            Cell::from("No backends reported yet (connect to NATS)"),
-            Cell::from(""),
-            Cell::from(""),
-        ])]
-    } else {
-        let mut names: Vec<_> = app.backend_health.keys().collect();
-        names.sort();
-        names
-            .into_iter()
-            .map(|id| {
-                let h = app.backend_health.get(id).unwrap();
-                let status_style = match h.status.as_str() {
-                    "ok" => Style::default().fg(Color::Green),
-                    "error" | "disabled" => Style::default().fg(Color::Red),
-                    _ => Style::default().fg(Color::Yellow),
-                };
-                Row::new([
-                    Cell::from(id.clone()),
-                    Cell::from(h.status.clone()).style(status_style),
-                    Cell::from(h.updated_at.clone()),
-                ])
-            })
-            .collect()
+    // 1) Data flow diagram (system.health + NATS state)
+    let backends_block = section_block("System health", section_active(0));
+
+    // NATS node
+    use crate::events::ConnectionState;
+    let (nats_sym, nats_color, nats_label) = match app.nats_status.state {
+        ConnectionState::Connected => ("●", Color::Green, "Connected"),
+        ConnectionState::Starting => ("◌", Color::Yellow, "Connecting…"),
+        ConnectionState::Retrying => ("⚠", Color::Red, "Retrying"),
     };
-    let backend_table = Table::new(
-        backend_rows,
-        [
-            Constraint::Length(12),
-            Constraint::Length(10),
-            Constraint::Min(8),
-        ],
-    )
-    .header(
-        Row::new(["Backend", "Status", "Updated"])
-            .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED)),
-    )
-    .block(backends_block);
-    f.render_widget(backend_table, chunks[0]);
+
+    // backend_service node (from system.health)
+    let backend_entry = app.backend_health.get("backend");
+    let (be_sym, be_color, be_label) = match backend_entry {
+        Some(h) if h.status == "ok" => ("●", Color::Green, h.status.as_str().to_string()),
+        Some(h) => ("⚠", Color::Yellow, h.status.clone()),
+        None => ("?", Color::DarkGray, "no health report".to_string()),
+    };
+
+    // TWS node (from snapshot metrics)
+    let tws_ok = app
+        .snapshot()
+        .as_ref()
+        .is_some_and(|s| s.inner.metrics.tws_ok);
+    let (tws_sym, tws_color) = if tws_ok {
+        ("●", Color::Green)
+    } else {
+        ("✗", Color::DarkGray)
+    };
+
+    // Live market data source
+    let live_src = app
+        .live_market_data_source
+        .as_ref()
+        .map(|m| m.source.as_str())
+        .unwrap_or("none");
+    let live_priority = app
+        .live_market_data_source
+        .as_ref()
+        .map(|m| m.priority)
+        .unwrap_or(0);
+    let live_age = app
+        .live_market_data_source
+        .as_ref()
+        .map(|m| m.age_secs())
+        .unwrap_or(0);
+    let sym_count = app.watchlist().len();
+    let yield_symbol = app
+        .yield_curve
+        .as_ref()
+        .map(|c| c.symbol.as_str())
+        .unwrap_or("—");
+    let yield_pts = app.yield_curve.as_ref().map(|c| c.point_count).unwrap_or(0);
+    let yield_age = app.yield_curve.as_ref().and_then(|c| {
+        chrono::DateTime::parse_from_rfc3339(&c.timestamp)
+            .ok()
+            .map(|dt| (chrono::Utc::now() - dt.with_timezone(&chrono::Utc)).num_seconds())
+    });
+
+    let flow_lines = vec![
+        Line::from(vec![
+            Span::raw(" TUI ──► "),
+            Span::styled(nats_sym, Style::default().fg(nats_color)),
+            Span::raw(" NATS :4222 "),
+            Span::styled(nats_label, Style::default().fg(nats_color)),
+        ]),
+        Line::from(vec![
+            Span::raw("          ├──► "),
+            Span::styled(be_sym, Style::default().fg(be_color)),
+            Span::raw(" backend_service "),
+            Span::styled(be_label, Style::default().fg(be_color)),
+        ]),
+        Line::from(vec![
+            Span::raw("          │         ├──► "),
+            Span::styled(tws_sym, Style::default().fg(tws_color)),
+            Span::raw(" TWS :7497 "),
+            Span::styled(
+                if tws_ok { "connected" } else { "not connected" },
+                Style::default().fg(tws_color),
+            ),
+            if live_src == "tws" {
+                Span::styled(" [LIVE]", Style::default().fg(Color::Green))
+            } else {
+                Span::raw("")
+            },
+        ]),
+        Line::from(vec![
+            Span::raw("          │         └──► "),
+            Span::styled(
+                live_src,
+                Style::default().fg(if live_src == "none" {
+                    Color::DarkGray
+                } else {
+                    Color::Green
+                }),
+            ),
+            Span::raw(" [p"),
+            Span::raw(live_priority.to_string()),
+            Span::raw("] "),
+            Span::raw(if live_src == "none" { "idle" } else { "LIVE" }),
+            Span::raw("  age: "),
+            Span::raw(format!("{live_age}s")),
+        ]),
+        Line::from(vec![
+            Span::raw("          │                   ├── symbols: "),
+            Span::styled(format!("{sym_count}"), Style::default().fg(Color::Cyan)),
+        ]),
+        Line::from(vec![
+            Span::raw("          │                   └── yield: "),
+            Span::styled(yield_symbol, Style::default().fg(Color::Cyan)),
+            Span::raw("  "),
+            Span::styled(format!("{yield_pts}pts"), Style::default().fg(Color::Cyan)),
+            Span::raw("  age: "),
+            Span::raw(format!(
+                "{}s",
+                yield_age
+                    .map(|a| a.to_string())
+                    .unwrap_or_else(|| "—".to_string())
+            )),
+        ]),
+        Line::from(vec![
+            Span::raw("          └──► yield_curve_writer "),
+            {
+                let yw_entry = app.backend_health.get("yield_curve_writer");
+                let (yw_sym, yw_color, yw_lbl) = match yw_entry {
+                    Some(h) if h.status == "ok" => ("●", Color::Green, "ok"),
+                    Some(_) => ("⚠", Color::Yellow, "degraded"),
+                    None => ("?", Color::DarkGray, "not reporting"),
+                };
+                Span::styled(
+                    format!("{} {}", yw_sym, yw_lbl),
+                    Style::default().fg(yw_color),
+                )
+            },
+        ]),
+    ];
+
+    f.render_widget(Paragraph::new(flow_lines).block(backends_block), chunks[0]);
 
     // 2) Config (read-only)
     let config_title = if let Some(ref key) = app.settings_edit_config_key {
@@ -225,12 +321,42 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
         note: &'static str,
     }
     let sources = [
-        SourceDef { name: "yahoo",   priority: "50",  cred_key: "(free)",          note: "market quotes" },
-        SourceDef { name: "fmp",     priority: "60",  cred_key: "FMP_API_KEY",     note: "market + fundamentals" },
-        SourceDef { name: "polygon", priority: "70",  cred_key: "POLYGON_API_KEY", note: "market quotes (WebSocket)" },
-        SourceDef { name: "tase",    priority: "—",   cred_key: "TASE_API_KEY",    note: "Israeli exchange" },
-        SourceDef { name: "fred",    priority: "—",   cred_key: "FRED_API_KEY",    note: "yield benchmarks (SOFR/Treasury)" },
-        SourceDef { name: "tws",     priority: "100", cred_key: "(TWS connection)", note: "IB broker push (highest priority)" },
+        SourceDef {
+            name: "yahoo",
+            priority: "50",
+            cred_key: "(free)",
+            note: "market quotes",
+        },
+        SourceDef {
+            name: "fmp",
+            priority: "60",
+            cred_key: "FMP_API_KEY",
+            note: "market + fundamentals",
+        },
+        SourceDef {
+            name: "polygon",
+            priority: "70",
+            cred_key: "POLYGON_API_KEY",
+            note: "market quotes (WebSocket)",
+        },
+        SourceDef {
+            name: "tase",
+            priority: "—",
+            cred_key: "TASE_API_KEY",
+            note: "Israeli exchange",
+        },
+        SourceDef {
+            name: "fred",
+            priority: "—",
+            cred_key: "FRED_API_KEY",
+            note: "yield benchmarks (SOFR/Treasury)",
+        },
+        SourceDef {
+            name: "tws",
+            priority: "100",
+            cred_key: "(TWS connection)",
+            note: "IB broker push (highest priority)",
+        },
     ];
 
     let configured_provider = app
@@ -239,38 +365,41 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
         .and_then(|s| s.inner.market_data_source.as_deref().map(str::to_lowercase))
         .unwrap_or_default();
 
-    let source_rows: Vec<Row> = sources.iter().map(|s| {
-        let has_cred = match s.name {
-            "yahoo" | "tws" => true,
-            name => *app.credential_status.get(name).unwrap_or(&false),
-        };
-        let is_live = live_source.as_deref() == Some(s.name);
-        let is_configured = configured_provider == s.name || configured_provider == "all";
+    let source_rows: Vec<Row> = sources
+        .iter()
+        .map(|s| {
+            let has_cred = match s.name {
+                "yahoo" | "tws" => true,
+                name => *app.credential_status.get(name).unwrap_or(&false),
+            };
+            let is_live = live_source.as_deref() == Some(s.name);
+            let is_configured = configured_provider == s.name || configured_provider == "all";
 
-        let (status_label, status_color) = if is_live {
-            ("● LIVE", Color::Green)
-        } else if !has_cred && s.name != "yahoo" && s.name != "tws" {
-            ("✗ no key", Color::Red)
-        } else if is_configured || s.name == "yahoo" {
-            ("idle", Color::DarkGray)
-        } else {
-            ("disabled", Color::DarkGray)
-        };
+            let (status_label, status_color) = if is_live {
+                ("● LIVE", Color::Green)
+            } else if !has_cred && s.name != "yahoo" && s.name != "tws" {
+                ("✗ no key", Color::Red)
+            } else if is_configured || s.name == "yahoo" {
+                ("idle", Color::DarkGray)
+            } else {
+                ("disabled", Color::DarkGray)
+            };
 
-        let cred_color = if has_cred || s.name == "yahoo" || s.name == "tws" {
-            Color::Green
-        } else {
-            Color::Red
-        };
+            let cred_color = if has_cred || s.name == "yahoo" || s.name == "tws" {
+                Color::Green
+            } else {
+                Color::Red
+            };
 
-        Row::new([
-            Cell::from(s.name),
-            Cell::from(s.priority),
-            Cell::from(s.cred_key).style(Style::default().fg(cred_color)),
-            Cell::from(status_label).style(Style::default().fg(status_color)),
-            Cell::from(s.note).style(Style::default().fg(Color::DarkGray)),
-        ])
-    }).collect();
+            Row::new([
+                Cell::from(s.name),
+                Cell::from(s.priority),
+                Cell::from(s.cred_key).style(Style::default().fg(cred_color)),
+                Cell::from(status_label).style(Style::default().fg(status_color)),
+                Cell::from(s.note).style(Style::default().fg(Color::DarkGray)),
+            ])
+        })
+        .collect();
 
     let sources_table = Table::new(
         source_rows,
