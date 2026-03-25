@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
-use chrono::{TimeZone, Utc};
+use chrono::{DateTime, TimeDelta, TimeZone, Utc};
+pub use nats_adapter::NatsTransportHealthState;
 use nats_adapter::proto::v1::{BackendHealth, NatsEnvelope};
 use prost::Message;
 use serde::Serialize;
@@ -8,10 +9,13 @@ use tokio::sync::RwLock;
 
 pub type SharedHealthAggregate = Arc<RwLock<HealthAggregateState>>;
 
+const DEFAULT_HEALTH_STALE_AFTER_SECS: i64 = 45;
+
 #[derive(Debug, Clone, Default)]
 pub struct HealthAggregateState {
     pub backends: HashMap<String, BackendHealthState>,
     pub nats_connected: bool,
+    pub transport: NatsTransportHealthState,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -19,6 +23,7 @@ pub struct HealthAggregateResponse {
     pub status: String,
     pub source: String,
     pub nats_connected: bool,
+    pub transport: NatsTransportHealthState,
     pub backends: HashMap<String, serde_json::Value>,
     pub backends_list: Vec<String>,
     pub all_ok: bool,
@@ -49,8 +54,18 @@ impl HealthAggregateState {
     }
 
     pub fn response(&self) -> HealthAggregateResponse {
-        let mut backends = self
+        self.response_with_stale_after(TimeDelta::seconds(DEFAULT_HEALTH_STALE_AFTER_SECS))
+    }
+
+    pub fn response_with_stale_after(&self, stale_after: TimeDelta) -> HealthAggregateResponse {
+        let now = Utc::now();
+        let effective_backends = self
             .backends
+            .iter()
+            .map(|(name, value)| (name.clone(), value.effective_at(now, stale_after)))
+            .collect::<HashMap<_, _>>();
+        let effective_transport = self.transport.effective_at(now, stale_after);
+        let mut backends = effective_backends
             .iter()
             .map(|(name, value)| {
                 (
@@ -61,15 +76,21 @@ impl HealthAggregateState {
             .collect::<HashMap<_, _>>();
         let mut backends_list = backends.keys().cloned().collect::<Vec<_>>();
         backends_list.sort();
-        let statuses = self
-            .backends
+        let backend_statuses = effective_backends
             .values()
             .map(|value| value.status.as_str())
             .collect::<Vec<_>>();
-        let all_ok = !statuses.is_empty() && statuses.iter().all(|status| *status == "ok");
-        let any_error = statuses
+        let all_backends_ok =
+            !backend_statuses.is_empty() && backend_statuses.iter().all(|status| *status == "ok");
+        let any_backend_error = backend_statuses
             .iter()
             .any(|status| matches!(*status, "error" | "disabled"));
+        let transport_status = effective_transport.status.as_str();
+        let transport_ok = transport_status == "ok";
+        let transport_error = matches!(transport_status, "error" | "disabled");
+        let all_ok = all_backends_ok && transport_ok;
+        let any_error = transport_error || any_backend_error;
+        let nats_connected = self.nats_connected || effective_transport.connected;
 
         if backends.is_empty() {
             backends = HashMap::new();
@@ -83,12 +104,13 @@ impl HealthAggregateState {
             } else {
                 "degraded".to_string()
             },
-            source: if self.nats_connected {
+            source: if nats_connected {
                 "nats".to_string()
             } else {
                 "none".to_string()
             },
-            nats_connected: self.nats_connected,
+            nats_connected,
+            transport: effective_transport,
             backends,
             backends_list,
             all_ok,
@@ -122,6 +144,32 @@ impl BackendHealthState {
             extra: proto.extra,
         }
     }
+
+    pub fn effective_at(&self, now: DateTime<Utc>, stale_after: TimeDelta) -> Self {
+        let mut effective = self.clone();
+        if self.status == "ok" {
+            if let Some(age_secs) = self.age_secs_at(now) {
+                if age_secs > stale_after.num_seconds() {
+                    effective.status = "degraded".to_string();
+                    if effective.hint.is_none() {
+                        effective.hint = Some(format!("stale heartbeat ({}s old)", age_secs));
+                    }
+                    effective
+                        .extra
+                        .insert("stale".to_string(), "true".to_string());
+                    effective
+                        .extra
+                        .insert("age_secs".to_string(), age_secs.to_string());
+                }
+            }
+        }
+        effective
+    }
+
+    pub fn age_secs_at(&self, now: DateTime<Utc>) -> Option<i64> {
+        let updated_at = DateTime::parse_from_rfc3339(&self.updated_at).ok()?;
+        Some((now - updated_at.with_timezone(&Utc)).num_seconds())
+    }
 }
 
 pub fn backend_health_from_message(data: &[u8]) -> Option<BackendHealth> {
@@ -137,4 +185,58 @@ fn timestamp_to_rfc3339(ts: prost_types::Timestamp) -> Option<String> {
     Utc.timestamp_opt(ts.seconds, ts.nanos as u32)
         .single()
         .map(|dt| dt.to_rfc3339())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn backend_health_goes_degraded_when_stale() {
+        let now = Utc.with_ymd_and_hms(2026, 3, 25, 12, 0, 0).unwrap();
+        let stale_at = (now - TimeDelta::seconds(90)).to_rfc3339();
+        let state = BackendHealthState {
+            backend: "tui_service".to_string(),
+            status: "ok".to_string(),
+            updated_at: stale_at,
+            error: None,
+            hint: None,
+            extra: HashMap::new(),
+        };
+
+        let effective = state.effective_at(now, TimeDelta::seconds(45));
+
+        assert_eq!(effective.status, "degraded");
+        assert_eq!(effective.hint.as_deref(), Some("stale heartbeat (90s old)"));
+        assert_eq!(
+            effective.extra.get("stale").map(String::as_str),
+            Some("true")
+        );
+    }
+
+    #[test]
+    fn nats_transport_goes_degraded_when_stale() {
+        let now = Utc.with_ymd_and_hms(2026, 3, 25, 12, 0, 0).unwrap();
+        let transport = NatsTransportHealthState {
+            connected: true,
+            status: "ok".to_string(),
+            updated_at: (now - TimeDelta::seconds(120)).to_rfc3339(),
+            url: Some("nats://127.0.0.1:4222".to_string()),
+            error: None,
+            hint: None,
+            extra: HashMap::new(),
+        };
+
+        let effective = transport.effective_at(now, TimeDelta::seconds(45));
+
+        assert_eq!(effective.status, "degraded");
+        assert_eq!(
+            effective.hint.as_deref(),
+            Some("stale NATS transport (120s old)")
+        );
+        assert_eq!(
+            effective.extra.get("stale").map(String::as_str),
+            Some("true")
+        );
+    }
 }

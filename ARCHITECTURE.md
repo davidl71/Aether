@@ -194,6 +194,18 @@ Current service ids published on `system.health`:
 - `tui_service`
 - `tws_yield_curve_daemon`
 
+### `BACKEND_ID` ownership
+
+`BACKEND_ID` is the runtime identity used for snapshot routing on NATS via
+`snapshot.<backend_id>`.
+
+- `api::shared_config` owns shared-config resolution from `dataSources.primary` / `broker.primary`
+- explicit `BACKEND_ID` env override still wins when set
+- `backend_service` resolves `backend_id` once at startup and injects it into snapshot publishing and snapshot RPC handlers
+- `tui_service` resolves the same value from shared config/env and subscribes to the matching `snapshot.<backend_id>` subject
+
+This is now a startup/config concern, not an ad hoc per-handler env lookup concern.
+
 ### Legacy execution paths
 
 `broker_execution_legacy` and `ib_execution_legacy` exist as isolated crates. They are **not

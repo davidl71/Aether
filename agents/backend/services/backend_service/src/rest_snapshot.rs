@@ -2,7 +2,7 @@
 //!
 //! When `REST_SNAPSHOT_PORT` is set, serves:
 //! - `GET /api/v1/snapshot`: snapshot (Accept: application/x-protobuf → protobuf; else JSON).
-//! - `GET /health`: health aggregate (nats_connected, backends) plus optional LIVE_STATE KV bucket
+//! - `GET /health`: health aggregate (transport, backends) plus optional LIVE_STATE KV bucket
 //!   reachability check (see NATS_KV_USAGE_AND_RECOMMENDATIONS.md). KV check is optional so health
 //!   still reports OK when KV is down if that is acceptable.
 //! See docs/platform/PROTO_OPPORTUNITIES_AND_BUF_CONFIG.md.
@@ -105,7 +105,10 @@ async fn get_health(
         ..
     }): State<AppState>,
 ) -> impl IntoResponse {
-    let mut resp = health_state.read().await.response();
+    let mut resp = health_state
+        .read()
+        .await
+        .response_with_stale_after(health_stale_after());
     if let Some((ok, bucket)) = check_kv_bucket_reachable(nats_integration.as_ref()).await {
         resp.kv_bucket_ok = Some(ok);
         resp.kv_bucket = Some(bucket);
@@ -140,4 +143,13 @@ async fn get_snapshot(
                 .into_response(),
         }
     }
+}
+
+fn health_stale_after() -> chrono::TimeDelta {
+    let secs = std::env::var("HEALTH_STALE_AFTER_SECS")
+        .ok()
+        .and_then(|value| value.parse::<i64>().ok())
+        .filter(|value| *value > 0)
+        .unwrap_or(45);
+    chrono::TimeDelta::seconds(secs)
 }

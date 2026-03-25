@@ -2,14 +2,19 @@
 
 use std::collections::HashSet;
 
+use chrono::{Local, Utc};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
+    text::Line,
     widgets::{Block, Borders, Cell, Paragraph, RenderDirection, Row, Sparkline, Table},
     Frame,
 };
 
 use crate::app::App;
+
+const TREND_COLUMN_WIDTH: u16 = 14;
+const METRICS_HEIGHT: u16 = 4;
 
 /// Normalize ROI history (f64) to u64 in 0..=100 for Sparkline. Handles empty and constant data.
 fn roi_history_to_sparkline_data(history: &std::collections::VecDeque<f64>) -> Vec<u64> {
@@ -29,22 +34,28 @@ fn roi_history_to_sparkline_data(history: &std::collections::VecDeque<f64>) -> V
 }
 
 pub fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
+    render_dashboard_panel(f, app, area);
+}
+
+pub fn render_dashboard_panel(f: &mut Frame, app: &App, area: Rect) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Min(0), Constraint::Length(4)])
+        .constraints([Constraint::Min(0), Constraint::Length(METRICS_HEIGHT)])
         .split(area);
 
-    const TREND_COLUMN_WIDTH: u16 = 14;
+    render_dashboard_market_view(f, app, chunks[0]);
+    render_dashboard_metrics(f, app, chunks[1]);
+}
 
-    let (table_area, trend_area) = {
-        let horz = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Min(10), Constraint::Length(TREND_COLUMN_WIDTH)])
-            .split(chunks[0]);
-        (horz[0], horz[1])
-    };
+pub fn render_dashboard_market_view(f: &mut Frame, app: &App, area: Rect) {
+    let horz = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Min(10), Constraint::Length(TREND_COLUMN_WIDTH)])
+        .split(area);
+    let table_area = horz[0];
+    let trend_area = horz[1];
 
-    let header = Row::new(["Symbol", "Last", "Bid", "Ask", "Spread", "ROI%"])
+    let header = Row::new(["Symbol", "Last", "Bid", "Ask", "Spread", "Move%"])
         .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
     let rows: Vec<Row> = if let Some(ref snap) = app.snapshot() {
@@ -101,13 +112,11 @@ pub fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
 
     f.render_widget(table, table_area);
 
-    const ROW_HEIGHT: u16 = 1;
-    let table_inner_y = table_area.y + 1;
     let trend_header_rect = Rect {
         x: trend_area.x,
-        y: table_inner_y,
+        y: trend_area.y + 1,
         width: trend_area.width,
-        height: ROW_HEIGHT,
+        height: 1,
     };
     f.render_widget(
         Paragraph::new("Trend")
@@ -118,9 +127,9 @@ pub fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
         for (i, s) in snap.inner.symbols.iter().enumerate() {
             let row_rect = Rect {
                 x: trend_area.x,
-                y: table_inner_y + ROW_HEIGHT + i as u16 * ROW_HEIGHT,
+                y: trend_area.y + 2 + i as u16,
                 width: trend_area.width,
-                height: ROW_HEIGHT,
+                height: 1,
             };
             let data = app
                 .roi_history
@@ -131,30 +140,41 @@ pub fn render_dashboard(f: &mut Frame, app: &App, area: Rect) {
                     .data(d.clone())
                     .direction(RenderDirection::RightToLeft)
                     .style(Style::default().fg(Color::Cyan)),
-                _ => Sparkline::default().data(&[0u64]),
+                _ => Sparkline::default().data([0u64].as_ref()),
             };
             f.render_widget(sparkline, row_rect);
         }
     }
+}
 
-    let metrics_text = if let Some(ref snap) = app.snapshot() {
+pub fn render_dashboard_metrics(f: &mut Frame, app: &App, area: Rect) {
+    let clock_text = format!(
+        " Local: {}  |  UTC: {}",
+        Local::now().format("%H:%M:%S"),
+        Utc::now().format("%H:%M:%S"),
+    );
+
+    let metrics_lines = if let Some(ref snap) = app.snapshot() {
         let m = &snap.inner.metrics;
-        format!(
-            " Net Liq: ${:.0}  |  BP: ${:.0}  |  Margin: ${:.0}  |  Comms: ${:.2}  |  TWS: {}  |  Portal: {}",
-            m.net_liq,
-            m.buying_power,
-            m.margin_requirement,
-            m.commissions,
-            if m.tws_ok { "OK" } else { "--" },
-            if m.portal_ok { "OK" } else { "--" },
-        )
+        vec![
+            Line::from(format!(
+                " Net Liq: ${:.0}  |  BP: ${:.0}  |  Margin: ${:.0}  |  Comms: ${:.2}  |  TWS: {}  |  Portal: {}",
+                m.net_liq,
+                m.buying_power,
+                m.margin_requirement,
+                m.commissions,
+                if m.tws_ok { "OK" } else { "--" },
+                if m.portal_ok { "OK" } else { "--" },
+            )),
+            Line::from(clock_text),
+        ]
     } else {
-        " No metrics".into()
+        vec![Line::from(" No metrics"), Line::from(clock_text)]
     };
 
-    let metrics_widget = Paragraph::new(metrics_text)
+    let metrics_widget = Paragraph::new(metrics_lines)
         .block(Block::default().title("Metrics").borders(Borders::ALL))
         .style(Style::default().fg(Color::White));
 
-    f.render_widget(metrics_widget, chunks[1]);
+    f.render_widget(metrics_widget, area);
 }

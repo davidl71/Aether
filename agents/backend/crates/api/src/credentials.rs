@@ -52,6 +52,10 @@ impl CredentialSource {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+/// Resolved Alpaca source credentials and endpoints.
+///
+/// Keep paper and live identities separate so market-data and future broker
+/// adapters do not collapse into a single generic Alpaca credential blob.
 pub struct AlpacaCredentialSet {
     pub environment: AlpacaEnvironment,
     pub api_key_id: String,

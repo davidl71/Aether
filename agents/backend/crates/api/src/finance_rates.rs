@@ -1,6 +1,7 @@
-//! Finance rates / yield curve / benchmarks — exposed via NATS `api.finance_rates.*`.
-//! Sources: KV (cached), Yahoo (live), Synthetic (fallback), TWS (live, requires IBKR).
-//! Fallback order: KV → Yahoo → Synthetic → TWS (configurable via YIELD_CURVE_FALLBACK env var).
+//! Finance rates / yield curve / benchmarks exposed via NATS `api.finance_rates.*`.
+//! Curve sources are layered as cached KV, Yahoo option-chain data, then synthetic placeholders.
+//! Benchmark rates are resolved independently through FMP, FRED, and New York Fed endpoints.
+//! Keep this module read-model oriented; it is not an execution or broker-engine boundary.
 
 use chrono::Utc;
 use market_data::FmpClient;
@@ -105,6 +106,9 @@ pub struct TreasuryBenchmarksResponse {
 pub struct BenchmarksResponse {
     pub sofr: SofrBenchmarksResponse,
     pub treasury: TreasuryBenchmarksResponse,
+    /// Israeli overnight rate (Bank of Israel). Populated when backend has a SHIR data source.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shir: Option<f64>,
     #[serde(default)]
     pub timestamp: String,
 }

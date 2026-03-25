@@ -16,11 +16,13 @@ fn level_name(level: log::LevelFilter) -> &'static str {
     }
 }
 
-pub fn render_logs(f: &mut Frame, app: &App, area: Rect) {
+pub(crate) fn logs_title(app: &App) -> String {
     let lvl = level_name(app.log_display_level);
-    let title =
-        format!("Logs [{lvl}]  [+/- e/w/i/d]:level  [↑↓ PgUp/Dn]:scroll  [h]:hide  [Esc]:reset");
-    let widget = TuiLoggerWidget::default()
+    format!("Logs [{lvl}]  [+/- e/w/i/d]:level  [↑↓ PgUp/Dn]:scroll  [h]:hide  [Esc]:reset")
+}
+
+pub(crate) fn build_logs_widget<'a>(app: &'a App, title: String) -> TuiLoggerWidget<'a> {
+    TuiLoggerWidget::default()
         .block(Block::default().title(title).borders(Borders::ALL))
         .style_error(Style::default().fg(Color::Red))
         .style_warn(Style::default().fg(Color::Yellow))
@@ -33,6 +35,10 @@ pub fn render_logs(f: &mut Frame, app: &App, area: Rect) {
         .output_target(false)
         .output_file(false)
         .output_line(false)
-        .state(&app.log_state);
+        .state(&app.log_state)
+}
+
+pub fn render_logs(f: &mut Frame, app: &App, area: Rect) {
+    let widget = build_logs_widget(app, logs_title(app));
     f.render_widget(widget, area);
 }

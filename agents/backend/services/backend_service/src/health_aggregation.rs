@@ -1,6 +1,7 @@
 use std::time::Duration;
 
-use api::{BackendHealthState, SharedHealthAggregate};
+use api::{BackendHealthState, NatsTransportHealthState, SharedHealthAggregate};
+use chrono::Utc;
 use futures::StreamExt;
 use nats_adapter::{async_nats, topics};
 use tracing::{info, warn};
@@ -18,6 +19,12 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                     {
                         let mut health = state.write().await;
                         health.nats_connected = true;
+                        health.transport =
+                            NatsTransportHealthState::connected(Some(nats_url.clone()), Utc::now());
+                        health
+                            .transport
+                            .extra
+                            .insert("subject".to_string(), topics::system::health().to_string());
                     }
                     info!(
                         "health aggregation subscribed to {}",
@@ -34,15 +41,59 @@ pub fn spawn_health_aggregator(state: SharedHealthAggregate, nats_url: Option<St
                                     let mapped = BackendHealthState::from_proto(health);
                                     state.write().await.backends.insert(backend, mapped);
                                 }
+                                let mut health = state.write().await;
+                                health.transport = health.transport.observed(Utc::now());
+                                health.transport.extra.insert(
+                                    "subject".to_string(),
+                                    topics::system::health().to_string(),
+                                );
                             }
                         }
-                        Err(err) => warn!(%err, "failed to subscribe to system.health"),
+                        Err(err) => {
+                            let mut health = state.write().await;
+                            health.nats_connected = false;
+                            health.transport = NatsTransportHealthState::disconnected(
+                                Some(nats_url.clone()),
+                                Utc::now(),
+                                Some(err.to_string()),
+                                Some("failed to subscribe to system.health".to_string()),
+                            );
+                            health.transport.extra.insert(
+                                "subject".to_string(),
+                                topics::system::health().to_string(),
+                            );
+                            warn!(%err, "failed to subscribe to system.health");
+                        }
                     }
 
-                    state.write().await.nats_connected = false;
+                    {
+                        let mut health = state.write().await;
+                        health.nats_connected = false;
+                        health.transport = NatsTransportHealthState::disconnected(
+                            Some(nats_url.clone()),
+                            Utc::now(),
+                            None,
+                            Some("system.health subscription ended".to_string()),
+                        );
+                        health
+                            .transport
+                            .extra
+                            .insert("subject".to_string(), topics::system::health().to_string());
+                    }
                 }
                 Err(err) => {
-                    state.write().await.nats_connected = false;
+                    let mut health = state.write().await;
+                    health.nats_connected = false;
+                    health.transport = NatsTransportHealthState::disconnected(
+                        Some(nats_url.clone()),
+                        Utc::now(),
+                        Some(err.to_string()),
+                        Some("failed to connect health aggregation to NATS".to_string()),
+                    );
+                    health
+                        .transport
+                        .extra
+                        .insert("subject".to_string(), topics::system::health().to_string());
                     warn!(%err, "failed to connect health aggregation to NATS");
                 }
             }

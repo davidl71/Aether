@@ -14,7 +14,7 @@ Aether's market data architecture has been enhanced with:
 3. **FMP symbol discovery** via stock-list and search-symbol
 4. **FMP treasury & SOFR rates** wired into yield curve API
 5. **SHIR rate fetching** for Israeli loan effective rate calculation
-6. **TWS tick forwarding** implemented in IbAdapter
+6. **TWS tick forwarding** implemented in `IbAdapter`
 
 ---
 
@@ -26,11 +26,14 @@ Data sources are ranked by priority (higher = more trusted):
 
 | Source | Priority | Type | Status |
 |--------|----------|------|--------|
-| TWS/yatws | 100 | Streaming | Scaffolding complete |
+| TWS (`ib_adapter`) | 100 | Streaming | Active backend path |
 | Polygon | 70 | WebSocket | Available |
 | FMP | 60 | Polling (batch) | Implemented |
 | Yahoo | 50 | Polling | Default |
 | Mock | 0 | Generated | Testing only |
+
+Alpaca is not part of the active backend data-source path today. If we add it
+later, the source-only boundary note lives in [ALPACA_SOURCE_ARCHITECTURE.md](./ALPACA_SOURCE_ARCHITECTURE.md).
 
 ### Event Flow
 
@@ -107,16 +110,13 @@ pub fn process_event(&self, event: &MarketDataEvent) -> bool {
 
 ### 3. TWS Integration
 
-**Challenge**: TWS/yatws uses push-based streaming via `mpsc::Sender<MarketDataEvent>`
+**Challenge**: broker-backed TWS market data is push-based and must be bridged
+into the aggregator used by the backend.
 
 **Approach** (`backend_service/src/main.rs`):
 - `spawn_broker_market_data_loop()` subscribes to symbols via `request_market_data()`
-- Forwards events to aggregator via channel
-
-**Blocker**: `IbAdapter`'s market data receivers are dropped in constructor (line 226 README):
-> "Current state: Channels are created in `IbAdapter::new` and the receivers are dropped, so nothing is sent"
-
-**Required Fix**: Implement tick forwarding in `IbAdapter::request_market_data()`
+- the active provider is `IbAdapter`
+- the remaining gap is service-side event-consumer wiring
 
 ---
 
@@ -127,7 +127,7 @@ pub fn process_event(&self, event: &MarketDataEvent) -> bool {
 ```
 1. Create shared MarketDataAggregator
 2. If broker enabled:
-   a. Connect to TWS via IbAdapter/YatWSEngine
+   a. Connect to TWS via IbAdapter
    b. Spawn spawn_broker_market_data_loop() (priority 100)
 3. For each configured polling provider (yahoo/fmp/polygon):
    a. Create MarketDataSource via factory
@@ -222,8 +222,8 @@ pub fn effective_rate(&self, current_shir: Option<f64>) -> f64 {
 | Multi-Source Aggregator | ✅ Done | Priority-based selection |
 | Yahoo Source | ✅ Done | Default polling source |
 | Polygon Source | ✅ Done | WebSocket available |
-| TWS Broker Loop | ✅ Done | IbAdapter tick forwarding implemented |
-| YatWS Integration | 🔄 Scaffold | Requires separate integration path |
+| TWS Broker Loop | ⚠️ Partial | `IbAdapter` emits ticks, but backend loop still needs proper consumer wiring |
+| YatWS Integration | 🔄 Experimental | Not part of active backend startup path |
 | FMP Symbol Discovery | ✅ Done | `/stable/stock-list` and `/stable/search-symbol` |
 | FMP Treasury Rates | ✅ Done | `/stable/treasury-rates` - all maturities |
 | FMP SOFR Rates | ✅ Done | `/stable/sofr-rates` overnight |
@@ -271,7 +271,7 @@ pub fn effective_rate(&self, current_shir: Option<f64>) -> f64 {
 
 ## Next Steps
 
-1. **YatWS Channel Bridge** - Create proper event forwarding from yatws streaming to aggregator
+1. **Broker Event Consumer Bridge** - Create proper event forwarding from `IbAdapter` streaming into the shared aggregator and NATS path
 2. **FMP Symbol Discovery in UI** - Wire stock-list into symbol search/autocomplete
 3. **Test Live Yield Curve** - Test the wired FMP treasury/SOFR rates with actual API calls
 4. **SHIR IBKR Fallback** - Explore if IBKR/TWS provides ILS interest rates for SHIR

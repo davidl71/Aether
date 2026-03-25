@@ -10,11 +10,20 @@ use ratatui::{
 use crate::app::App;
 
 pub fn render_orders(f: &mut Frame, app: &App, area: Rect) {
+    render_orders_panel(f, app, area);
+}
+
+pub fn render_orders_panel(f: &mut Frame, app: &App, area: Rect) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Length(3), Constraint::Min(0)])
         .split(area);
 
+    render_orders_filter(f, app, chunks[0]);
+    render_orders_table(f, app, chunks[1]);
+}
+
+pub fn render_orders_filter(f: &mut Frame, app: &App, area: Rect) {
     let filter_text = if app.order_filter.is_empty() {
         if app.order_filter_active {
             "Filter mode active: type symbol/status/side, Esc to exit".to_string()
@@ -58,8 +67,10 @@ pub fn render_orders(f: &mut Frame, app: &App, area: Rect) {
         } else {
             Style::default().fg(Color::Cyan)
         });
-    f.render_widget(filter_widget, chunks[0]);
+    f.render_widget(filter_widget, area);
+}
 
+pub fn render_orders_table(f: &mut Frame, app: &App, area: Rect) {
     let header = Row::new(["ID", "Symbol", "Side", "Qty", "Status", "Submitted"])
         .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED));
 
@@ -107,20 +118,45 @@ pub fn render_orders(f: &mut Frame, app: &App, area: Rect) {
         None
     };
 
+    let table_block = Block::default()
+        .title(
+            selected_order_summary
+                .as_ref()
+                .map(|summary| {
+                    format!(
+                        "Orders  [↑↓ PgUp/PgDn]:select  [Enter]:detail  [read-only]  Sel: {}",
+                        summary
+                    )
+                })
+                .unwrap_or_else(|| {
+                    "Orders  [↑↓ PgUp/PgDn]:select  [Enter]:detail  [read-only]".to_string()
+                }),
+        )
+        .borders(Borders::ALL);
+    let inner = table_block.inner(area);
+    f.render_widget(table_block, area);
+
     let len = all_rows.len();
-    let visible_height = (chunks[1].height as usize).saturating_sub(2).max(1);
-    let scroll = if len <= 1 {
+    let visible_height = inner.height.saturating_sub(1).max(1) as usize;
+    let cursor = if len == 0 {
         0
     } else {
-        app.orders_scroll.min(len.saturating_sub(1))
+        app.orders_scroll.min(len - 1)
+    };
+    let viewport = if len <= visible_height {
+        0
+    } else {
+        cursor
+            .saturating_sub(visible_height / 2)
+            .min(len - visible_height)
     };
     let window: Vec<Row> = all_rows
         .into_iter()
-        .skip(scroll)
+        .skip(viewport)
         .take(visible_height)
         .enumerate()
         .map(|(i, row)| {
-            let is_selected = i + scroll == app.orders_scroll;
+            let is_selected = i + viewport == cursor;
             if is_selected {
                 row.style(
                     Style::default()
@@ -134,17 +170,6 @@ pub fn render_orders(f: &mut Frame, app: &App, area: Rect) {
         })
         .collect();
 
-    let table_title = selected_order_summary
-        .map(|summary| {
-            format!(
-                "Orders  [↑↓ PgUp/PgDn]:select  [Enter]:detail  [read-only]  Sel: {}",
-                summary
-            )
-        })
-        .unwrap_or_else(|| {
-            "Orders  [↑↓ PgUp/PgDn]:select  [Enter]:detail  [read-only]".to_string()
-        });
-
     let table = Table::new(
         window,
         [
@@ -156,8 +181,7 @@ pub fn render_orders(f: &mut Frame, app: &App, area: Rect) {
             Constraint::Length(12),
         ],
     )
-    .header(header)
-    .block(Block::default().title(table_title).borders(Borders::ALL));
+    .header(header);
 
-    f.render_widget(table, chunks[1]);
+    f.render_widget(table, inner);
 }

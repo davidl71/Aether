@@ -1,6 +1,6 @@
 # TUI Architecture
 
-**Last updated:** 2026-03-19
+**Last updated:** 2026-03-25
 **Service:** `agents/backend/services/tui_service`
 **Framework:** ratatui + crossterm + tokio
 
@@ -8,7 +8,9 @@
 
 ## Overview
 
-The TUI is a full-screen terminal dashboard for monitoring and controlling the box spread platform. It renders 5 live tabs (Dashboard, Positions, Orders, Alerts, Logs) and receives real-time data from the Rust backend via NATS JetStream snapshots.
+The TUI is a full-screen operator console for monitoring and controlling the financing platform. It renders live tabs for Dashboard, Positions, Orders, Alerts, Logs, Settings, and related instruments, and receives real-time data from the Rust backend via NATS JetStream snapshots.
+
+Large-terminal operational workspaces are composed in `ui/mod.rs`, but the tab modules now expose reusable section renderers so Alerts, Logs, and Settings can be combined without duplicating layout logic.
 
 ---
 
@@ -52,8 +54,8 @@ pub struct App {
 }
 
 pub enum Tab {
-    Dashboard, Positions, Orders, Alerts,
-    Yield, Loans, Scenarios, Logs, Settings,  // ← 4 not yet live in ui.rs
+    Dashboard, Positions, Charts, Orders, Alerts,
+    Yield, Loans, DiscountBank, Scenarios, Logs, Settings,
 }
 ```
 
@@ -77,11 +79,13 @@ tui_service/src/
     ├── dashboard.rs      # Dashboard tab
     ├── positions.rs      # Positions tab
     ├── orders.rs         # Orders tab
-    ├── alerts.rs         # Alerts tab
-    └── logs.rs           # Logs tab (tui-logger)
+    ├── alerts.rs         # Alerts tab + reusable alert view builder
+    ├── logs.rs           # Logs tab + reusable logger widget builder
+    ├── settings.rs       # Settings tab + reusable section renderers
+    ├── yield_curve.rs    # Yield tab
+    ├── loans.rs          # Loans tab
+    └── discount_bank.rs  # Discount bank tab
 ```
-
-**Dead code note:** `ui/mod.rs` references Yield/Loans/Scenarios/Settings tabs that exist in `ui/mod.rs` (old) but are not rendered by the live `ui.rs`. See T-1773939577056591000 for resolution.
 
 ---
 

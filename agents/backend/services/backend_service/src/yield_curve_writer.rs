@@ -2,17 +2,19 @@
 //! Key: `yield_curve.{symbol}` in the LIVE_STATE bucket. Value: protobuf `YieldCurve` (see proto/messages.proto).
 //! Backend build_curve decodes proto first, with JSON fallback for older entries.
 //!
-//! **Pre-population:** Writes once immediately on spawn, then on an interval. Data source:
+//! **Pre-population:** Writes once immediately on spawn, then on an interval. This selects a
+//! yield-curve data source, not a trading or execution engine.
 //! - If `YIELD_CURVE_SOURCE=tws` (or config): call `tws_yield_curve::fetch_yield_curve_from_tws(symbol)` per symbol;
 //!   same env as daemon (TWS_HOST, TWS_PORT, YIELD_CURVE_USE_CLOSING, etc.).
 //! - Else if `YIELD_CURVE_SOURCE_URL` is set: HTTP GET that URL; expect JSON array of curve points (see docs).
 //!   Public reference: boxtrades.com (no API; use for comparison or host your own JSON).
-//! - Otherwise: synthetic points (no live option chain).
+//! - Otherwise: query Yahoo option chains per symbol, then fall back to synthetic placeholder points when Yahoo is unavailable.
 //! See docs/platform/BOX_SPREAD_YIELD_CURVE_TWS.md and TWS_YIELD_CURVE_KV_WRITER.md.
 
 use api::yield_curve_proto::{encode_yield_curve_to_bytes, yield_curve_from_opportunities};
 use bytes::Bytes;
 use chrono::Utc;
+use market_data::yield_curve::YahooYieldCurveSource;
 use nats_adapter::async_nats::Client;
 use nats_adapter::NatsClient;
 use serde::Deserialize;
@@ -238,7 +240,7 @@ async fn fetch_curve_from_url(url: &str) -> Option<HashMap<String, Vec<serde_jso
 
 /// Run the yield curve writer: pre-populate once immediately, then every `interval_secs` write `yield_curve.{symbol}`.
 /// Returns a sender to trigger one immediate write cycle (e.g. for `api.yield_curve.refresh`).
-/// Source: `config_source` (from [yield_curve] source) or env `YIELD_CURVE_SOURCE`; "tws" => TWS, else URL/synthetic.
+/// Source: `config_source` (from [yield_curve] source) or env `YIELD_CURVE_SOURCE`; "tws" => TWS, else URL/Yahoo/synthetic.
 pub fn spawn(
     nats_client: Arc<NatsClient>,
     symbols: Vec<String>,
@@ -305,7 +307,7 @@ pub fn spawn(
             "yield curve writer started (pre-populate then interval)"
         );
 
-        /// One full write cycle: TWS, URL, or synthetic; then write each symbol to KV.
+        /// One full write cycle: TWS, URL, Yahoo, or synthetic placeholder; then write each symbol to KV.
         async fn write_cycle(
             kv: &nats_adapter::async_nats::jetstream::kv::Store,
             symbols: &[String],
@@ -359,10 +361,49 @@ pub fn spawn(
                     }
                 }
             } else {
-                symbols
-                    .iter()
-                    .map(|s| (s.clone(), synthetic_opportunities(s, None)))
-                    .collect()
+                // Default: try Yahoo option chains for real implied rates; fall back to synthetic
+                // placeholder if Yahoo is unavailable (offline, rate-limited, or market closed).
+                let yahoo = YahooYieldCurveSource::new();
+                let mut result: HashMap<String, Vec<serde_json::Value>> = HashMap::new();
+                for sym in symbols {
+                    match yahoo.fetch_yield_curve(sym).await {
+                        Ok(curve) if !curve.points.is_empty() => {
+                            let opps: Vec<serde_json::Value> = curve
+                                .points
+                                .iter()
+                                .map(|p| {
+                                    json!({
+                                        "spread": {
+                                            "symbol": curve.symbol,
+                                            "expiry": p.expiry.format("%Y-%m-%d").to_string(),
+                                            "days_to_expiry": p.dte,
+                                            "strike_width": p.strike_width,
+                                            "strike_low": p.strike_low,
+                                            "strike_high": p.strike_high,
+                                            "buy_implied_rate": p.buy_implied_rate,
+                                            "sell_implied_rate": p.sell_implied_rate,
+                                            "net_debit": p.net_debit,
+                                            "net_credit": p.net_credit,
+                                            "liquidity_score": p.liquidity_score,
+                                        },
+                                        "data_source": "yahoo"
+                                    })
+                                })
+                                .collect();
+                            debug!(symbol = %sym, points = opps.len(), "yield curve writer: Yahoo option chain");
+                            result.insert(sym.clone(), opps);
+                        }
+                        Ok(_) => {
+                            debug!(symbol = %sym, "yield curve writer: Yahoo returned empty, using synthetic");
+                            result.insert(sym.clone(), synthetic_opportunities(sym, None));
+                        }
+                        Err(e) => {
+                            debug!(symbol = %sym, error = %e, "yield curve writer: Yahoo failed, using synthetic");
+                            result.insert(sym.clone(), synthetic_opportunities(sym, None));
+                        }
+                    }
+                }
+                result
             };
             for (symbol, opportunities) in by_symbol {
                 if opportunities.is_empty() {

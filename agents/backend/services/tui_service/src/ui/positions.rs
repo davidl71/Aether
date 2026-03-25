@@ -12,6 +12,13 @@ use ratatui::{
 
 use crate::app::App;
 
+/// Return type for `positions_display_info`: (row_count, position_index_per_row, combo_key_per_row)
+type DisplayInfo = (
+    usize,
+    Vec<Option<usize>>,
+    Vec<Option<(String, String, String)>>,
+);
+
 fn symbol_stem(symbol: &str) -> &str {
     symbol.split_whitespace().next().unwrap_or(symbol)
 }
@@ -63,11 +70,7 @@ pub fn positions_display_info(
     positions: &[RuntimePositionDto],
     combo_view: bool,
     expanded: &HashSet<(String, String, String)>,
-) -> (
-    usize,
-    Vec<Option<usize>>,
-    Vec<Option<(String, String, String)>>,
-) {
+) -> DisplayInfo {
     if !combo_view || positions.is_empty() {
         let len = positions.len();
         let index_map: Vec<Option<usize>> = (0..len).map(Some).collect();
@@ -110,6 +113,14 @@ pub fn position_type_label(typ: Option<&str>) -> &'static str {
 }
 
 pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
+    render_positions_panel(f, app, area);
+}
+
+pub fn render_positions_panel(f: &mut Frame, app: &App, area: Rect) {
+    render_positions_table(f, app, area);
+}
+
+pub fn render_positions_table(f: &mut Frame, app: &App, area: Rect) {
     let (header, rows, selected_label) = if let Some(ref snap) = app.snapshot() {
         let positions = &snap.dto().positions;
         let (_, index_map, combo_key_per_row) = positions_display_info(
@@ -117,11 +128,10 @@ pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
             app.positions_combo_view,
             &app.positions_expanded_combos,
         );
-
-        let scroll = if index_map.is_empty() {
-            0
+        let groups = if app.positions_combo_view {
+            build_combo_groups(positions)
         } else {
-            app.positions_scroll.min(index_map.len().saturating_sub(1))
+            Vec::new()
         };
 
         let header = Row::new([
@@ -134,6 +144,11 @@ pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
         ]);
 
         let mut selected_label = String::new();
+        let scroll = if index_map.is_empty() {
+            0
+        } else {
+            app.positions_scroll.min(index_map.len().saturating_sub(1))
+        };
 
         let table_rows: Vec<Row> = index_map
             .iter()
@@ -147,7 +162,6 @@ pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
                 };
 
                 if let Some(Some(combo_key)) = combo_key_per_row.get(row_idx) {
-                    let groups = build_combo_groups(positions);
                     let group = groups.iter().find(|g| &g.key == combo_key);
                     let (sym, qty, cost, mark, pnl, strat) = if let Some(g) = group {
                         let stem = &combo_key.2;
@@ -183,7 +197,14 @@ pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
                             combo_key.1.clone(),
                         )
                     } else {
-                        ("—".into(), "0".into(), "—".into(), "—".into(), "—".into(), "—".into())
+                        (
+                            "—".into(),
+                            "0".into(),
+                            "—".into(),
+                            "—".into(),
+                            "—".into(),
+                            "—".into(),
+                        )
                     };
                     if is_selected {
                         selected_label = sym.clone();
@@ -195,10 +216,15 @@ pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
                         Cell::from(mark).style(Style::default().add_modifier(Modifier::BOLD)),
                         Cell::from(pnl).style(Style::default().add_modifier(Modifier::BOLD)),
                         Cell::from(strat).style(Style::default().add_modifier(Modifier::BOLD)),
-                    ]).style(base_style)
+                    ])
+                    .style(base_style)
                 } else if let Some(idx) = *pos_idx {
                     let pos = &positions[idx];
-                    let pnl_color = if pos.unrealized_pnl >= 0.0 { Color::Green } else { Color::Red };
+                    let pnl_color = if pos.unrealized_pnl >= 0.0 {
+                        Color::Green
+                    } else {
+                        Color::Red
+                    };
                     if is_selected {
                         selected_label = pos.symbol.clone();
                     }
@@ -207,10 +233,14 @@ pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
                         Cell::from(pos.quantity.to_string()),
                         Cell::from(format!("{:.2}", pos.cost_basis)),
                         Cell::from(format!("{:.2}", pos.mark)),
-                        Cell::from(format!("{:+.2}", pos.unrealized_pnl))
-                            .style(if is_selected { base_style } else { Style::default().fg(pnl_color) }),
+                        Cell::from(format!("{:+.2}", pos.unrealized_pnl)).style(if is_selected {
+                            base_style
+                        } else {
+                            Style::default().fg(pnl_color)
+                        }),
                         Cell::from(pos.strategy.clone().unwrap_or_else(|| "—".into())),
-                    ]).style(base_style)
+                    ])
+                    .style(base_style)
                 } else {
                     Row::new(vec![Cell::from(""); 6])
                 }
@@ -224,24 +254,50 @@ pub fn render_positions(f: &mut Frame, app: &App, area: Rect) {
         (header, rows, String::new())
     };
 
-    let len = rows.len();
-    let visible_height = area.height.saturating_sub(4) as usize; // borders + header
-    let scroll = if len <= 1 {
-        0
-    } else {
-        app.positions_scroll.min(len.saturating_sub(1))
-    };
-    let window: Vec<Row> = rows.into_iter().skip(scroll).take(visible_height.max(1)).collect();
+    let block = Block::default()
+        .title({
+            if selected_label.is_empty() {
+                if app.positions_combo_view {
+                    " Positions  [↑↓] navigate  [c] combo view  [Enter] detail ".to_string()
+                } else {
+                    " Positions  [↑↓] navigate  [Enter] detail ".to_string()
+                }
+            } else if app.positions_combo_view {
+                format!(
+                    " Positions  Sel: {}  [↑↓] navigate  [c] combo  [Enter] detail ",
+                    selected_label
+                )
+            } else {
+                format!(
+                    " Positions  Sel: {}  [↑↓] navigate  [Enter] detail ",
+                    selected_label
+                )
+            }
+        })
+        .borders(Borders::ALL);
 
-    let title = if selected_label.is_empty() {
-        " Positions  [↑↓] navigate  [c] combo view  [Enter] detail ".to_string()
-    } else {
-        format!(" Positions  Sel: {}  [↑↓] navigate  [c] combo  [Enter] detail ", selected_label)
-    };
-
-    let block = Block::default().title(title).borders(Borders::ALL);
     let inner = block.inner(area);
     f.render_widget(block, area);
+
+    let len = rows.len();
+    let visible_height = inner.height.saturating_sub(1).max(1) as usize;
+    let cursor = if len == 0 {
+        0
+    } else {
+        app.positions_scroll.min(len - 1)
+    };
+    let viewport = if len <= visible_height {
+        0
+    } else {
+        cursor
+            .saturating_sub(visible_height / 2)
+            .min(len - visible_height)
+    };
+    let window: Vec<Row> = rows
+        .into_iter()
+        .skip(viewport)
+        .take(visible_height.max(1))
+        .collect();
 
     let table = Table::new(
         window,

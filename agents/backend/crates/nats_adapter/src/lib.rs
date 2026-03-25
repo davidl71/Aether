@@ -18,7 +18,7 @@ pub use bridge::{ChannelBridge, Publisher, Subscriber};
 pub use client::NatsClient;
 pub use dlq::{error_type_from_error, DeadLetterMessage, DlqConfig, DlqService};
 pub use error::{NatsAdapterError, Result};
-pub use health::spawn_health_publisher;
+pub use health::{spawn_health_publisher, NatsTransportHealthState};
 pub use rpc::{
     request_json, request_json_with_retry, request_json_with_retry_timeout,
     request_json_with_timeout, request_proto, request_proto_with_timeout, serve_json, serve_proto,
