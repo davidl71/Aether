@@ -30,6 +30,7 @@ use api::CommandStatus;
 
 use crate::app::{App, DetailPopupContent, InputMode, Tab};
 use crate::events::{ConnectionState, ConnectionStatus, ConnectionTarget};
+use crate::pane::{pane_spec, PaneHintMode};
 use crate::workspace::{VisibleWorkspace, WorkspaceSpec};
 
 pub fn render(f: &mut Frame, app: &App) {
@@ -248,19 +249,23 @@ fn render_main(f: &mut Frame, app: &App, area: Rect) {
             VisibleWorkspace::None => unreachable!("visible_workspace_spec never returns None"),
         }
     } else {
-        match app.active_tab {
-            Tab::Dashboard => dashboard::render_dashboard_panel(f, app, area),
-            Tab::Positions => positions::render_positions_panel(f, app, area),
-            Tab::Charts => charts::render_charts(f, app, area),
-            Tab::Orders => orders::render_orders_panel(f, app, area),
-            Tab::Alerts => alerts::render_alerts(f, app, area),
-            Tab::Yield => yield_curve::render_yield_curve_panel(f, app, area),
-            Tab::Loans => loans::render_loans(f, app, area),
-            Tab::DiscountBank => discount_bank::render_discount_bank(f, app, area),
-            Tab::Scenarios => scenarios::render_scenarios(f, app, area),
-            Tab::Logs => logs::render_logs(f, app, area),
-            Tab::Settings => settings::render_settings(f, app, area),
-        }
+        render_tab_panel(f, app, area, app.active_tab);
+    }
+}
+
+fn render_tab_panel(f: &mut Frame, app: &App, area: Rect, tab: Tab) {
+    match tab {
+        Tab::Dashboard => dashboard::render_dashboard_panel(f, app, area),
+        Tab::Positions => positions::render_positions_panel(f, app, area),
+        Tab::Charts => charts::render_charts(f, app, area),
+        Tab::Orders => orders::render_orders_panel(f, app, area),
+        Tab::Alerts => alerts::render_alerts(f, app, area),
+        Tab::Yield => yield_curve::render_yield_curve_panel(f, app, area),
+        Tab::Loans => loans::render_loans(f, app, area),
+        Tab::DiscountBank => discount_bank::render_discount_bank(f, app, area),
+        Tab::Scenarios => scenarios::render_scenarios(f, app, area),
+        Tab::Logs => logs::render_logs(f, app, area),
+        Tab::Settings => settings::render_settings(f, app, area),
     }
 }
 
@@ -740,13 +745,92 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
         Span::raw(":read-only  "),
     ];
 
-    if app.active_tab == Tab::Yield {
-        spans.push(Span::raw("  "));
-        spans.push(Span::styled(
-            "←/→",
-            Style::default().add_modifier(Modifier::BOLD),
-        ));
-        spans.push(Span::raw(":Yield symbol"));
+    match pane_spec(app.active_tab).hint_mode {
+        PaneHintMode::Yield => {
+            spans.push(Span::raw("  "));
+            spans.push(Span::styled(
+                "←/→",
+                Style::default().add_modifier(Modifier::BOLD),
+            ));
+            spans.push(Span::raw(":Yield symbol"));
+        }
+        PaneHintMode::Settings => {
+            spans.push(Span::raw("  "));
+            spans.push(Span::styled(
+                "←/→",
+                Style::default().add_modifier(Modifier::BOLD),
+            ));
+            spans.push(Span::raw(":section"));
+            if let Some(section) = app.secondary_focus().label() {
+                spans.push(Span::raw("  "));
+                spans.push(Span::styled(
+                    "focus",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ));
+                spans.push(Span::raw(format!(":{section}")));
+            }
+        }
+        PaneHintMode::Charts => {
+            spans.push(Span::raw("  "));
+            spans.push(Span::styled(
+                "/",
+                Style::default().add_modifier(Modifier::BOLD),
+            ));
+            spans.push(Span::raw(
+                if matches!(app.input_mode(), InputMode::ChartSearch) {
+                    ":search active"
+                } else {
+                    ":chart search"
+                },
+            ));
+        }
+        PaneHintMode::Orders => {
+            spans.push(Span::raw("  "));
+            spans.push(Span::styled(
+                "/",
+                Style::default().add_modifier(Modifier::BOLD),
+            ));
+            spans.push(Span::raw(
+                if matches!(app.input_mode(), InputMode::OrdersFilter) {
+                    ":filter active"
+                } else {
+                    ":filter"
+                },
+            ));
+            spans.push(Span::raw("  "));
+            spans.push(Span::styled(
+                "Enter",
+                Style::default().add_modifier(Modifier::BOLD),
+            ));
+            spans.push(Span::raw(":detail"));
+        }
+        PaneHintMode::Scenarios => {
+            spans.push(Span::raw("  "));
+            spans.push(Span::styled(
+                "Enter",
+                Style::default().add_modifier(Modifier::BOLD),
+            ));
+            spans.push(Span::raw(":detail"));
+            spans.push(Span::raw("  "));
+            spans.push(Span::styled(
+                "[ ]",
+                Style::default().add_modifier(Modifier::BOLD),
+            ));
+            spans.push(Span::raw(":DTE  "));
+            spans.push(Span::styled(
+                "w",
+                Style::default().add_modifier(Modifier::BOLD),
+            ));
+            spans.push(Span::raw(":width"));
+            if scenarios::filtered_scenarios(app).is_empty() {
+                spans.push(Span::raw("  | "));
+                spans.push(Span::styled(
+                    "No results — ] widen DTE or w clear width filter",
+                    Style::default().fg(Color::Yellow),
+                ));
+            }
+        }
+        PaneHintMode::None => {}
     }
     if app.split_pane && matches!(app.active_tab, Tab::Dashboard | Tab::Positions) {
         spans.push(Span::raw("  "));
@@ -755,22 +839,6 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
             Style::default().add_modifier(Modifier::BOLD),
         ));
         spans.push(Span::raw(":focus pane"));
-    }
-    if app.active_tab == Tab::Settings {
-        spans.push(Span::raw("  "));
-        spans.push(Span::styled(
-            "←/→",
-            Style::default().add_modifier(Modifier::BOLD),
-        ));
-        spans.push(Span::raw(":section"));
-        if let Some(section) = app.secondary_focus().label() {
-            spans.push(Span::raw("  "));
-            spans.push(Span::styled(
-                "focus",
-                Style::default().add_modifier(Modifier::BOLD),
-            ));
-            spans.push(Span::raw(format!(":{section}")));
-        }
     }
     spans.push(Span::raw("  "));
     spans.push(Span::styled(
@@ -795,66 +863,6 @@ fn render_hint_bar(f: &mut Frame, app: &App, area: Rect) {
     spans.push(Span::raw(":disabled  "));
     spans.push(Span::styled("F", Style::default().add_modifier(Modifier::BOLD)));
     spans.push(Span::raw(":disabled"));
-    if app.active_tab == Tab::Charts {
-        spans.push(Span::raw("  "));
-        spans.push(Span::styled(
-            "/",
-            Style::default().add_modifier(Modifier::BOLD),
-        ));
-        spans.push(Span::raw(
-            if matches!(app.input_mode(), InputMode::ChartSearch) {
-                ":search active"
-            } else {
-                ":chart search"
-            },
-        ));
-    }
-    if app.active_tab == Tab::Orders {
-        spans.push(Span::raw("  "));
-        spans.push(Span::styled(
-            "/",
-            Style::default().add_modifier(Modifier::BOLD),
-        ));
-        spans.push(Span::raw(
-            if matches!(app.input_mode(), InputMode::OrdersFilter) {
-                ":filter active"
-            } else {
-                ":filter"
-            },
-        ));
-        spans.push(Span::raw("  "));
-        spans.push(Span::styled(
-            "Enter",
-            Style::default().add_modifier(Modifier::BOLD),
-        ));
-        spans.push(Span::raw(":detail"));
-    }
-    if app.active_tab == Tab::Scenarios {
-        spans.push(Span::raw("  "));
-        spans.push(Span::styled(
-            "Enter",
-            Style::default().add_modifier(Modifier::BOLD),
-        ));
-        spans.push(Span::raw(":detail"));
-        spans.push(Span::raw("  "));
-        spans.push(Span::styled(
-            "[ ]",
-            Style::default().add_modifier(Modifier::BOLD),
-        ));
-        spans.push(Span::raw(":DTE  "));
-        spans.push(Span::styled(
-            "w",
-            Style::default().add_modifier(Modifier::BOLD),
-        ));
-        spans.push(Span::raw(":width"));
-        if scenarios::filtered_scenarios(app).is_empty() {
-            spans.push(Span::raw("  | "));
-            spans.push(Span::styled(
-                "No results — ] widen DTE or w clear width filter",
-                Style::default().fg(Color::Yellow),
-            ));
-        }
-    }
     if app.active_tab == Tab::Orders || app.active_tab == Tab::Scenarios {
         spans.push(Span::raw("  | "));
         spans.push(Span::styled(

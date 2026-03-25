@@ -18,6 +18,7 @@ use tui_logger::TuiWidgetState;
 use crate::config::TuiConfig;
 use crate::events::{AppEvent, ConnectionState, ConnectionStatus, ConnectionTarget};
 use crate::models::TuiSnapshot;
+use crate::pane::pane_spec;
 use crate::ui::Candle;
 use crate::workspace::{
     SecondaryFocus, SettingsSection, VisibleWorkspace, WorkspaceSpec, SPLIT_PANE_TABS,
@@ -387,35 +388,11 @@ impl Tab {
     ];
 
     pub fn label(&self) -> &'static str {
-        match self {
-            Tab::Dashboard => "Dash",
-            Tab::Positions => "Pos",
-            Tab::Charts => "Charts",
-            Tab::Orders => "Orders",
-            Tab::Alerts => "Alerts",
-            Tab::Yield => "Yield",
-            Tab::Loans => "Loans",
-            Tab::DiscountBank => "Bank",
-            Tab::Scenarios => "Scen",
-            Tab::Logs => "Logs",
-            Tab::Settings => "Set",
-        }
+        pane_spec(*self).label
     }
 
     pub fn title(&self) -> &'static str {
-        match self {
-            Tab::Dashboard => "Dashboard",
-            Tab::Positions => "Positions",
-            Tab::Charts => "Charts",
-            Tab::Orders => "Orders",
-            Tab::Alerts => "Alerts",
-            Tab::Yield => "Yield",
-            Tab::Loans => "Loans",
-            Tab::DiscountBank => "Bank",
-            Tab::Scenarios => "Scenarios",
-            Tab::Logs => "Logs",
-            Tab::Settings => "Settings",
-        }
+        pane_spec(*self).title
     }
 
     fn index(&self) -> usize {

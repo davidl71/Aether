@@ -8,6 +8,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 
 use crate::app::{App, DetailPopupContent, InputMode, Tab};
 use crate::input_settings::{apply_settings_action, settings_key_action};
+use crate::input_tabs::tab_key_action;
 
 /// Actions that can result from key events.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -180,51 +181,15 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         _ => {}
     }
 
+    if let Some(action) = tab_key_action(app, key.code, input_mode) {
+        return Some(action);
+    }
+
     match key.code {
-        // Yield tab symbol navigation (before generic tab switch)
-        KeyCode::Left if app.active_tab == Tab::Yield => Some(Action::YieldSymbolPrev),
-        KeyCode::Right if app.active_tab == Tab::Yield => Some(Action::YieldSymbolNext),
-        KeyCode::Up if app.active_tab == Tab::Yield => Some(Action::YieldCurveScrollUp),
-        KeyCode::Down if app.active_tab == Tab::Yield => Some(Action::YieldCurveScrollDown),
-        KeyCode::Enter if app.active_tab == Tab::Yield => Some(Action::YieldCurveDetail),
-        KeyCode::Char('r') | KeyCode::Char('R') if app.active_tab == Tab::Yield => {
-            Some(Action::YieldRefresh)
-        }
-
-        // Charts pill navigation (before generic tab switch)
-        KeyCode::Left
-            if app.active_tab == Tab::Charts && !matches!(input_mode, InputMode::ChartSearch) =>
-        {
-            Some(Action::ChartPillLeft)
-        }
-        KeyCode::Right
-            if app.active_tab == Tab::Charts && !matches!(input_mode, InputMode::ChartSearch) =>
-        {
-            Some(Action::ChartPillRight)
-        }
-        KeyCode::Left if app.active_tab == Tab::Settings => settings_key_action(app, KeyCode::Left),
-        KeyCode::Right if app.active_tab == Tab::Settings => settings_key_action(app, KeyCode::Right),
-        KeyCode::Up if app.active_tab == Tab::Settings => settings_key_action(app, KeyCode::Up),
-        KeyCode::Down if app.active_tab == Tab::Settings => settings_key_action(app, KeyCode::Down),
-        KeyCode::Delete if app.active_tab == Tab::Settings => settings_key_action(app, KeyCode::Delete),
-        KeyCode::Char('a') | KeyCode::Char('A') if app.active_tab == Tab::Settings => {
-            settings_key_action(app, key.code)
-        }
-        KeyCode::Char('e') | KeyCode::Char('E') if app.active_tab == Tab::Settings => {
-            settings_key_action(app, key.code)
-        }
-        KeyCode::Char('r') | KeyCode::Char('R') if app.active_tab == Tab::Settings => {
-            settings_key_action(app, key.code)
-        }
-        KeyCode::Enter if app.active_tab == Tab::Settings => settings_key_action(app, KeyCode::Enter),
-
-        // Workspace focus cycling takes precedence when a composed workspace is actually visible.
         KeyCode::Tab if workspace_focus_target(app, true).is_some() => Some(Action::WorkspaceFocusNext),
         KeyCode::BackTab if workspace_focus_target(app, false).is_some() => {
             Some(Action::WorkspaceFocusPrev)
         }
-
-        // Tab navigation
         KeyCode::Tab | KeyCode::Right => Some(Action::TabNext),
         KeyCode::BackTab | KeyCode::Left => Some(Action::TabPrev),
         KeyCode::Char('1') => Some(Action::JumpToTab(1)),
@@ -237,177 +202,6 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         KeyCode::Char('8') => Some(Action::JumpToTab(8)),
         KeyCode::Char('9') => Some(Action::JumpToTab(9)),
         KeyCode::Char('0') => Some(Action::JumpToTab(0)),
-
-        // Positions
-        KeyCode::Char('c') | KeyCode::Char('C') if app.active_tab == Tab::Positions => {
-            Some(Action::PositionsToggleCombo)
-        }
-        KeyCode::Up if app.active_tab == Tab::Positions => Some(Action::PositionsScrollUp),
-        KeyCode::Down if app.active_tab == Tab::Positions => Some(Action::PositionsScrollDown),
-        KeyCode::PageUp if app.active_tab == Tab::Positions => Some(Action::PositionsScrollPageUp),
-        KeyCode::PageDown if app.active_tab == Tab::Positions => {
-            Some(Action::PositionsScrollPageDown)
-        }
-        KeyCode::Enter if app.active_tab == Tab::Positions => Some(Action::PositionsDetail),
-
-        // Orders
-        KeyCode::Up if app.active_tab == Tab::Orders => Some(Action::OrdersScrollUp),
-        KeyCode::Down if app.active_tab == Tab::Orders => Some(Action::OrdersScrollDown),
-        KeyCode::PageUp if app.active_tab == Tab::Orders => Some(Action::OrdersScrollPageUp),
-        KeyCode::PageDown if app.active_tab == Tab::Orders => Some(Action::OrdersScrollPageDown),
-        KeyCode::Enter if app.active_tab == Tab::Orders => Some(Action::OrdersDetail),
-        KeyCode::Char('x') | KeyCode::Char('X') if app.active_tab == Tab::Orders => {
-            Some(Action::OrdersCancel)
-        }
-        KeyCode::Char('/') if app.active_tab == Tab::Orders => Some(Action::OrdersFilterFocus),
-        KeyCode::Esc
-            if app.active_tab == Tab::Orders && matches!(input_mode, InputMode::OrdersFilter) =>
-        {
-            Some(Action::OrdersFilterClear)
-        }
-        KeyCode::Char(c)
-            if app.active_tab == Tab::Orders
-                && matches!(input_mode, InputMode::OrdersFilter)
-                && !c.is_control() =>
-        {
-            Some(Action::OrdersFilterChar(c))
-        }
-        KeyCode::Backspace
-            if app.active_tab == Tab::Orders && matches!(input_mode, InputMode::OrdersFilter) =>
-        {
-            Some(Action::OrdersFilterBackspace)
-        }
-
-        // Loans
-        KeyCode::Up if app.active_tab == Tab::Loans => Some(Action::LoansScrollUp),
-        KeyCode::Down if app.active_tab == Tab::Loans => Some(Action::LoansScrollDown),
-        KeyCode::PageUp if app.active_tab == Tab::Loans => Some(Action::LoansScrollPageUp),
-        KeyCode::PageDown if app.active_tab == Tab::Loans => Some(Action::LoansScrollPageDown),
-        KeyCode::Char('n') | KeyCode::Char('N') if app.active_tab == Tab::Loans => {
-            Some(Action::LoansNewLoan)
-        }
-
-        // Discount Bank
-        KeyCode::Up if app.active_tab == Tab::DiscountBank => Some(Action::DiscountBankScrollUp),
-        KeyCode::Down if app.active_tab == Tab::DiscountBank => {
-            Some(Action::DiscountBankScrollDown)
-        }
-        KeyCode::PageUp if app.active_tab == Tab::DiscountBank => {
-            Some(Action::DiscountBankScrollPageUp)
-        }
-        KeyCode::PageDown if app.active_tab == Tab::DiscountBank => {
-            Some(Action::DiscountBankScrollPageDown)
-        }
-        KeyCode::Char('r') | KeyCode::Char('R') if app.active_tab == Tab::DiscountBank => {
-            Some(Action::DiscountBankRefresh)
-        }
-
-        // Alerts
-        KeyCode::Up if app.active_tab == Tab::Alerts => Some(Action::AlertsScrollUp),
-        KeyCode::Down if app.active_tab == Tab::Alerts => Some(Action::AlertsScrollDown),
-        KeyCode::PageUp if app.active_tab == Tab::Alerts => Some(Action::AlertsScrollPageUp),
-        KeyCode::PageDown if app.active_tab == Tab::Alerts => Some(Action::AlertsScrollPageDown),
-
-        // Dashboard
-        KeyCode::Up if app.active_tab == Tab::Dashboard => Some(Action::DashboardScrollUp),
-        KeyCode::Down if app.active_tab == Tab::Dashboard => Some(Action::DashboardScrollDown),
-        KeyCode::Enter if app.active_tab == Tab::Dashboard => {
-            Some(Action::DashboardNavigateToChart)
-        }
-
-        // Scenarios
-        KeyCode::Up if app.active_tab == Tab::Scenarios => Some(Action::ScenariosScrollUp),
-        KeyCode::Down if app.active_tab == Tab::Scenarios => Some(Action::ScenariosScrollDown),
-        KeyCode::PageUp if app.active_tab == Tab::Scenarios => Some(Action::ScenariosScrollPageUp),
-        KeyCode::PageDown if app.active_tab == Tab::Scenarios => {
-            Some(Action::ScenariosScrollPageDown)
-        }
-        KeyCode::Enter if app.active_tab == Tab::Scenarios => Some(Action::ScenariosDetail),
-        KeyCode::Char('o') | KeyCode::Char('O') if app.active_tab == Tab::Scenarios => {
-            Some(Action::ScenariosExecute)
-        }
-        KeyCode::Char('[') if app.active_tab == Tab::Scenarios => {
-            Some(Action::ScenariosDteContract)
-        }
-        KeyCode::Char(']') if app.active_tab == Tab::Scenarios => Some(Action::ScenariosDteExpand),
-        KeyCode::Char('w') | KeyCode::Char('W') if app.active_tab == Tab::Scenarios => {
-            Some(Action::ScenariosCycleStrikeWidth)
-        }
-
-        // Charts
-        KeyCode::Char('/') if app.active_tab == Tab::Charts => Some(Action::ChartSearchFocus),
-        KeyCode::Up
-            if app.active_tab == Tab::Charts && !matches!(input_mode, InputMode::ChartSearch) =>
-        {
-            Some(Action::ChartPillUp)
-        }
-        KeyCode::Down
-            if app.active_tab == Tab::Charts && !matches!(input_mode, InputMode::ChartSearch) =>
-        {
-            Some(Action::ChartPillDown)
-        }
-        KeyCode::Enter
-            if app.active_tab == Tab::Charts && !matches!(input_mode, InputMode::ChartSearch) =>
-        {
-            Some(Action::ChartPillSelect)
-        }
-        KeyCode::Esc
-            if app.active_tab == Tab::Charts && matches!(input_mode, InputMode::ChartSearch) =>
-        {
-            Some(Action::ChartSearchEscape)
-        }
-        KeyCode::Enter
-            if app.active_tab == Tab::Charts && matches!(input_mode, InputMode::ChartSearch) =>
-        {
-            Some(Action::ChartSearchEnter)
-        }
-        KeyCode::Up
-            if app.active_tab == Tab::Charts && matches!(input_mode, InputMode::ChartSearch) =>
-        {
-            Some(Action::ChartSearchUp)
-        }
-        KeyCode::Down
-            if app.active_tab == Tab::Charts && matches!(input_mode, InputMode::ChartSearch) =>
-        {
-            Some(Action::ChartSearchDown)
-        }
-        KeyCode::Backspace
-            if app.active_tab == Tab::Charts && matches!(input_mode, InputMode::ChartSearch) =>
-        {
-            Some(Action::ChartSearchBackspace)
-        }
-        KeyCode::Char(c)
-            if app.active_tab == Tab::Charts
-                && matches!(input_mode, InputMode::ChartSearch)
-                && !c.is_control() =>
-        {
-            Some(Action::ChartSearchChar(c))
-        }
-        // Logs tab
-        KeyCode::Up if app.active_tab == Tab::Logs => Some(Action::LogScrollUp),
-        KeyCode::Down if app.active_tab == Tab::Logs => Some(Action::LogScrollDown),
-        KeyCode::PageUp if app.active_tab == Tab::Logs => Some(Action::LogPageUp),
-        KeyCode::PageDown if app.active_tab == Tab::Logs => Some(Action::LogPageDown),
-        KeyCode::Char('+') if app.active_tab == Tab::Logs => Some(Action::LogLevelUp),
-        KeyCode::Char('-') if app.active_tab == Tab::Logs => Some(Action::LogLevelDown),
-        KeyCode::Char('h') | KeyCode::Char('H') if app.active_tab == Tab::Logs => {
-            Some(Action::LogHide)
-        }
-        KeyCode::Esc if app.active_tab == Tab::Logs => Some(Action::LogEscape),
-        KeyCode::Char('e') | KeyCode::Char('E') if app.active_tab == Tab::Logs => {
-            Some(Action::LogLevelError)
-        }
-        KeyCode::Char('w') | KeyCode::Char('W') if app.active_tab == Tab::Logs => {
-            Some(Action::LogLevelWarn)
-        }
-        KeyCode::Char('i') | KeyCode::Char('I') if app.active_tab == Tab::Logs => {
-            Some(Action::LogLevelInfo)
-        }
-        KeyCode::Char('d') | KeyCode::Char('D') if app.active_tab == Tab::Logs => {
-            Some(Action::LogLevelDebug)
-        }
-
-        // Global commands
         KeyCode::Char('m') | KeyCode::Char('M') => Some(Action::ModeCycle),
         KeyCode::Char('s') | KeyCode::Char('S') if app.active_tab != Tab::Orders => {
             Some(Action::StrategyStart)
@@ -419,13 +213,12 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
             Some(Action::StrategyCancelAll)
         }
         KeyCode::Char('f') | KeyCode::Char('F')
-            if app.active_tab == Tab::Dashboard || app.active_tab == Tab::Positions =>
+            if matches!(app.active_tab, Tab::Dashboard | Tab::Positions) =>
         {
             Some(Action::FmpDetail)
         }
         KeyCode::Char('f') | KeyCode::Char('F') => Some(Action::ForceSnapshot),
         KeyCode::Char('p') | KeyCode::Char('P') => Some(Action::SplitPaneToggle),
-
         _ => None,
     }
 }

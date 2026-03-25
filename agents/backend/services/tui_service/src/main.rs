@@ -69,9 +69,11 @@ mod events;
 mod expiry_buckets;
 mod input;
 mod input_settings;
+mod input_tabs;
 mod models;
 mod nats;
 mod option_symbol;
+mod pane;
 mod ui;
 mod workspace;
 
