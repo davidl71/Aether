@@ -1,9 +1,8 @@
-use std::{sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anyhow::Context;
 use api::{
     credentials::{get_credential, CredentialKey},
-    mock_data::seed_snapshot,
     Alert, HealthAggregateState, StrategyController, StrategyDecisionSnapshot, SystemSnapshot,
 };
 use async_trait::async_trait;
@@ -33,6 +32,7 @@ use tracing::{debug, info, warn};
 
 mod api_handlers;
 mod collection_aggregation;
+mod demo_seed;
 mod dlq_consumer;
 mod health_aggregation;
 mod ib_positions;
@@ -45,6 +45,7 @@ mod swiftness;
 mod yield_curve_writer;
 
 use crate::shared_state::SharedSnapshot;
+use crate::demo_seed::{seed_demo_market_data, seed_demo_positions};
 
 #[derive(Debug, Default, Deserialize, Clone)]
 struct BackendConfig {
@@ -54,6 +55,16 @@ struct BackendConfig {
     broker: BrokerSettings,
     #[serde(default)]
     yield_curve: YieldCurveSettings,
+    /// Seed demo positions/orders/historic trades on startup and spawn demo strategy signals.
+    /// Off by default; enable with `mock_positions = true` in config or `MOCK_POSITIONS=true` env.
+    /// Intended for CI/QA and local smoke-testing only.
+    #[serde(default)]
+    mock_positions: bool,
+    /// Seed demo symbol quotes (market data) on startup.
+    /// Off by default; enable with `mock_market_data = true` in config or `MOCK_MARKET_DATA=true` env.
+    /// Intended for CI/QA and local smoke-testing only.
+    #[serde(default)]
+    mock_market_data: bool,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -226,9 +237,23 @@ async fn main() -> anyhow::Result<()> {
         warn!("NATS integration unavailable, continuing without NATS");
     }
 
+    let mock_positions_enabled = config.mock_positions
+        || std::env::var("MOCK_POSITIONS")
+            .map(|v| matches!(v.to_lowercase().as_str(), "1" | "true" | "yes"))
+            .unwrap_or(false);
+    let mock_market_data_enabled = config.mock_market_data
+        || std::env::var("MOCK_MARKET_DATA")
+            .map(|v| matches!(v.to_lowercase().as_str(), "1" | "true" | "yes"))
+            .unwrap_or(false);
+
     {
         let mut snapshot = state.write().await;
-        seed_snapshot(&mut snapshot, &config.market_data.symbols);
+        if mock_positions_enabled {
+            seed_demo_positions(&mut snapshot);
+        }
+        if mock_market_data_enabled {
+            seed_demo_market_data(&mut snapshot, &config.market_data.symbols);
+        }
         snapshot.set_strategy_status("RUNNING");
         snapshot.risk.allowed = true;
         snapshot.risk.reason = None;
@@ -246,7 +271,9 @@ async fn main() -> anyhow::Result<()> {
     let (strategy_decision_tx, strategy_decision_rx) =
         tokio::sync::mpsc::unbounded_channel::<StrategyDecisionModel>();
 
-    spawn_mock_strategy(strategy_signal_rx, strategy_decision_tx);
+    if mock_positions_enabled {
+        spawn_demo_strategy(strategy_signal_rx, strategy_decision_tx);
+    }
     let fanout_ctrl_rx = strategy_ctrl_rx.clone();
     spawn_strategy_fanout(
         strategy_decision_rx,
@@ -348,11 +375,15 @@ async fn main() -> anyhow::Result<()> {
                 info!("Broker order placement disabled (enable with IB_BROKER_ENABLED or set paper_trading=true)");
                 None
             };
-            let backend_id = std::env::var("BACKEND_ID").unwrap_or_else(|_| "ib".into());
+            let backend_id = std::env::var("BACKEND_ID").unwrap_or_else(|_| "backend".into());
             let interval_ms: u64 = std::env::var("SNAPSHOT_PUBLISH_INTERVAL_MS")
                 .ok()
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(1000);
+            let health_interval_secs: u64 = std::env::var("HEALTH_PUBLISH_INTERVAL_SECS")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(15);
             let use_jetstream = matches!(
                 std::env::var("NATS_USE_JETSTREAM")
                     .unwrap_or_default()
@@ -360,6 +391,16 @@ async fn main() -> anyhow::Result<()> {
                     .to_lowercase()
                     .as_str(),
                 "1" | "true" | "yes"
+            );
+            let mut health_extra = HashMap::new();
+            health_extra.insert("pid".to_string(), std::process::id().to_string());
+            health_extra.insert("service".to_string(), "backend_service".to_string());
+            health_extra.insert("snapshot_backend_id".to_string(), backend_id.clone());
+            nats_adapter::spawn_health_publisher(
+                client.clone(),
+                "backend_service".to_string(),
+                health_interval_secs,
+                health_extra,
             );
             snapshot_publisher::spawn(
                 state.clone(),
@@ -755,7 +796,7 @@ async fn handle_market_event(
     }
 }
 
-fn spawn_mock_strategy(
+fn spawn_demo_strategy(
     mut signal_rx: UnboundedReceiver<StrategySignal>,
     decision_tx: UnboundedSender<StrategyDecisionModel>,
 ) {
@@ -777,7 +818,7 @@ fn spawn_mock_strategy(
                 };
 
                 if let Err(err) = decision_tx.send(decision) {
-                    warn!(%err, "failed to push mock strategy decision");
+                    warn!(%err, "failed to push demo strategy decision");
                     break;
                 }
             }

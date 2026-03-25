@@ -1,7 +1,7 @@
 //! tui_service — Ratatui terminal UI for the ib-platform.
 //!
-//! Subscribes to NATS snapshot subject and renders live trading state.
-//! Runs without Python; replaces the retired Python/Textual TUI.
+//! Subscribes to NATS snapshot subject and renders read-only portfolio and
+//! market state for exploration. Replaces the retired Python/Textual TUI.
 //!
 //! # Usage
 //!
@@ -30,9 +30,16 @@
 //!
 //! Config file changes are detected every 5s and applied without restart.
 
-use std::time::Duration;
+use std::{
+    panic,
+    sync::Arc,
+    sync::atomic::{AtomicBool, Ordering},
+    time::Duration,
+};
 
+use api::discount_bank::{DiscountBankBalanceDto, DiscountBankTransactionsListDto};
 use api::finance_rates::{BenchmarksResponse, CurveResponse};
+use std::collections::HashMap;
 use api::loans::LoanRecord;
 use color_eyre::eyre::Context;
 use crossterm::{
@@ -47,7 +54,6 @@ use futures::StreamExt;
 use nats_adapter::{
     request_json_with_retry, request_json_with_retry_timeout, NatsClient, RetryConfig,
 };
-use serde::Deserialize;
 use serde_json::json;
 use tokio::sync::{mpsc, watch};
 use tracing::{error, info};
@@ -64,36 +70,16 @@ mod expiry_buckets;
 mod input;
 mod models;
 mod nats;
+mod option_symbol;
 mod ui;
 
-use app::App;
+use app::{App, FmpDetail, GreeksDisplay, GreeksFetchRequest};
+use events::AppEvent;
 use config::TuiConfig;
 use crossterm::tty::IsTty;
-use events::AppEvent;
-use events::StrategyCommand;
-use market_data::{MarketDataSource, PolygonWsMarketDataSource};
 
-/// Backend reply for api.strategy.start / api.strategy.stop / api.strategy.cancel_all
-#[derive(Debug, Deserialize)]
-struct StrategyResponse {
-    ok: bool,
-    #[serde(default)]
-    error: Option<String>,
-    #[serde(default)]
-    message: Option<String>,
-}
-
-/// Backend reply for api.snapshot.publish_now
-#[derive(Debug, Deserialize)]
-struct SnapshotPublishResponse {
-    ok: bool,
-    #[serde(default)]
-    error: Option<String>,
-    #[serde(default)]
-    generated_at: Option<String>,
-    #[serde(default)]
-    subject: Option<String>,
-}
+static RAW_MODE_ACTIVE: AtomicBool = AtomicBool::new(false);
+static ALT_SCREEN_ACTIVE: AtomicBool = AtomicBool::new(false);
 
 fn is_interactive_terminal() -> bool {
     std::io::stdout().is_tty()
@@ -135,6 +121,7 @@ async fn main() -> color_eyre::Result<()> {
     // Install color-eyre: pretty-prints errors and — critically — restores the terminal
     // before printing panic backtraces so the shell isn't left in raw mode.
     color_eyre::install()?;
+    install_panic_hook();
 
     // tui-logger: captures all tracing events into an in-memory ring buffer
     // that the Logs tab widget reads. Visible inside the TUI immediately.
@@ -185,13 +172,57 @@ async fn main() -> color_eyre::Result<()> {
     let (event_tx, event_rx) = mpsc::unbounded_channel();
     let (config_tx, config_rx) = watch::channel(config.clone());
     let (health_tx, health_rx) = watch::channel(std::collections::HashMap::new());
-    let (strategy_cmd_tx, strategy_cmd_rx) = mpsc::unbounded_channel();
-    let (strategy_result_tx, strategy_result_rx) = mpsc::unbounded_channel();
-    let (yield_fetch_tx, yield_fetch_rx) = mpsc::unbounded_channel();
-    let (yield_result_tx, yield_result_rx) = mpsc::unbounded_channel();
+    // Yield refresh: TUI → background task → publishes to api.yield_curve.refresh.
+    // Results come back via NATS KV watch (AppEvent::YieldCurveKvUpdate through event_tx).
+    let (yield_refresh_tx, yield_refresh_rx) = mpsc::unbounded_channel::<()>();
+    // Benchmarks (SOFR/Treasury) are fetched periodically on a separate slow interval.
+    // Result comes back via event_tx as AppEvent::BenchmarksUpdate.
+    // Keep a dummy channel so run_loop signature stays simple.
+    let (_yield_result_tx_unused, yield_result_rx) =
+        mpsc::unbounded_channel::<Result<(HashMap<String, CurveResponse>, BenchmarksResponse), String>>();
     let (loans_fetch_tx, loans_fetch_rx) = mpsc::unbounded_channel();
     let (loans_result_tx, loans_result_rx) = mpsc::unbounded_channel();
     let (loan_create_tx, loan_create_rx) = mpsc::unbounded_channel();
+    let (fmp_fetch_tx, fmp_fetch_rx) = mpsc::unbounded_channel::<String>();
+    let (fmp_result_tx, fmp_result_rx) = mpsc::unbounded_channel::<Result<FmpDetail, String>>();
+    let (greeks_fetch_tx, greeks_fetch_rx) = mpsc::unbounded_channel::<GreeksFetchRequest>();
+    let (greeks_result_tx, greeks_result_rx) =
+        mpsc::unbounded_channel::<Result<GreeksDisplay, String>>();
+    let (discount_bank_fetch_tx, discount_bank_fetch_rx) = mpsc::unbounded_channel::<()>();
+    let (discount_bank_result_tx, discount_bank_result_rx) = mpsc::unbounded_channel::<(
+        Result<DiscountBankBalanceDto, String>,
+        Result<DiscountBankTransactionsListDto, String>,
+    )>();
+    let health_publish_interval_secs: u64 = std::env::var("HEALTH_PUBLISH_INTERVAL_SECS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(15);
+
+    let health_publish_url = config.nats_url.clone();
+    let health_publish_backend_id = config.backend_id.clone();
+    tokio::spawn(async move {
+        loop {
+            match nats_adapter::NatsClient::connect(&health_publish_url).await {
+                Ok(client) => {
+                    let mut extra = HashMap::new();
+                    extra.insert("pid".to_string(), std::process::id().to_string());
+                    extra.insert("service".to_string(), "tui_service".to_string());
+                    extra.insert("backend_id".to_string(), health_publish_backend_id.clone());
+                    nats_adapter::spawn_health_publisher(
+                        Arc::new(client),
+                        "tui_service".to_string(),
+                        health_publish_interval_secs,
+                        extra,
+                    );
+                    break;
+                }
+                Err(err) => {
+                    tracing::warn!(error = %err, "Failed to connect TUI health publisher to NATS");
+                    tokio::time::sleep(Duration::from_secs(5)).await;
+                }
+            }
+        }
+    });
 
     // Spawn NATS subscriber in the background (snapshot + system.health)
     let nats_config = config.clone();
@@ -218,45 +249,85 @@ async fn main() -> color_eyre::Result<()> {
         }
     });
 
-    // Spawn Polygon WebSocket market data source (direct, bypassing backend_service NATS)
-    if let Some(key) = config.polygon_api_key.clone() {
-        let tick_event_tx = event_tx.clone();
-        tokio::spawn(async move {
-            match PolygonWsMarketDataSource::new(["SPX", "XSP", "NDX"], key, None) {
-                Ok(source) => {
-                    let src = source.clone();
-                    tokio::spawn(async move {
-                        src.run().await;
-                    });
-                    let src = source.clone();
-                    info!("Polygon WebSocket market data source started");
-                    while let Ok(event) = src.next().await {
-                        let tick = AppEvent::MarketTick {
-                            symbol: event.symbol,
-                            bid: event.bid,
-                            ask: event.ask,
-                            last: event.last,
-                        };
-                        let _ = tick_event_tx.send(tick);
+    // Spawn NATS candle subscriber for real chart OHLCV updates.
+    let nats_url_candle = config.nats_url.clone();
+    let candle_event_tx = event_tx.clone();
+    tokio::spawn(async move {
+        match nats_adapter::NatsClient::connect(&nats_url_candle).await {
+            Ok(client) => {
+                if let Err(e) = nats::run_candle_subscriber(client, candle_event_tx).await {
+                    tracing::warn!(error = %e, "Candle subscriber ended");
+                }
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "Failed to connect candle subscriber to NATS");
+            }
+        }
+    });
+
+    let nats_url_alerts = config.nats_url.clone();
+    let alert_event_tx = event_tx.clone();
+    tokio::spawn(async move {
+        match nats_adapter::NatsClient::connect(&nats_url_alerts).await {
+            Ok(client) => {
+                if let Err(e) = nats::run_alert_subscriber(client, alert_event_tx).await {
+                    tracing::warn!(error = %e, "Alert subscriber ended");
+                }
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "Failed to connect alert subscriber to NATS");
+            }
+        }
+    });
+
+    let nats_url_commands = config.nats_url.clone();
+    let command_event_tx = event_tx.clone();
+    tokio::spawn(async move {
+        match nats_adapter::NatsClient::connect(&nats_url_commands).await {
+            Ok(client) => {
+                if let Err(e) = nats::run_command_subscriber(client, command_event_tx).await {
+                    tracing::warn!(error = %e, "Command-event subscriber ended");
+                }
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "Failed to connect command-event subscriber to NATS");
+            }
+        }
+    });
+
+    // Spawn yield KV watcher: watches NATS KV for yield curve updates, emits AppEvent.
+    let nats_url_kv = config.nats_url.clone();
+    let kv_bucket = config.yield_kv_bucket.clone();
+    let kv_event_tx = event_tx.clone();
+    tokio::spawn(async move {
+        loop {
+            match nats_adapter::NatsClient::connect(&nats_url_kv).await {
+                Ok(client) => {
+                    if let Err(e) = nats::run_yield_kv_watcher(client, kv_bucket.clone(), kv_event_tx.clone()).await {
+                        tracing::warn!(error = %e, "Yield KV watcher ended, reconnecting");
                     }
                 }
                 Err(e) => {
-                    tracing::warn!(error = %e, "Failed to create Polygon WebSocket source");
+                    tracing::warn!(error = %e, "Failed to connect yield KV watcher to NATS");
                 }
             }
-        });
-    }
-
-    // Spawn strategy command handler: receives S/T commands, sends NATS request, forwards result
-    let nats_url = config.nats_url.clone();
-    tokio::spawn(async move {
-        run_strategy_commands(nats_url, strategy_cmd_rx, strategy_result_tx).await;
+            tokio::time::sleep(Duration::from_secs(5)).await;
+        }
     });
 
-    // Spawn yield fetcher: receives symbol, requests build_curve + benchmarks, forwards result
-    let nats_url_yield = config.nats_url.clone();
+    // Spawn yield refresh publisher: sends api.yield_curve.refresh when triggered.
+    let nats_url_refresh = config.nats_url.clone();
+    let refresh_event_tx = event_tx.clone();
     tokio::spawn(async move {
-        run_yield_fetcher(nats_url_yield, yield_fetch_rx, yield_result_tx).await;
+        run_yield_refresher(nats_url_refresh, yield_refresh_rx, refresh_event_tx).await;
+    });
+
+    // Spawn benchmarks periodic fetcher (SOFR/Treasury from FRED — slow interval).
+    let nats_url_bench = config.nats_url.clone();
+    let bench_interval = Duration::from_secs(config.benchmarks_refresh_secs);
+    let bench_event_tx = event_tx.clone();
+    tokio::spawn(async move {
+        run_benchmarks_fetcher(nats_url_bench, bench_interval, bench_event_tx).await;
     });
 
     // Spawn loans fetcher: requests api.loans.list, forwards result
@@ -270,6 +341,29 @@ async fn main() -> color_eyre::Result<()> {
     let nats_url_loan_create = config.nats_url.clone();
     tokio::spawn(async move {
         run_loan_creator(nats_url_loan_create, loan_create_rx, loans_result_tx).await;
+    });
+
+    // Spawn FMP fetcher: receives symbol, requests quote + income statement, forwards result
+    let nats_url_fmp = config.nats_url.clone();
+    tokio::spawn(async move {
+        run_fmp_fetcher(nats_url_fmp, fmp_fetch_rx, fmp_result_tx).await;
+    });
+
+    // Spawn greeks fetcher: receives GreeksFetchRequest, computes IV then greeks, forwards result
+    let nats_url_greeks = config.nats_url.clone();
+    tokio::spawn(async move {
+        run_greeks_fetcher(nats_url_greeks, greeks_fetch_rx, greeks_result_tx).await;
+    });
+
+    // Spawn Discount Bank fetcher: requests balance + transactions concurrently, forwards result
+    let nats_url_discount_bank = config.nats_url.clone();
+    tokio::spawn(async move {
+        run_discount_bank_fetcher(
+            nats_url_discount_bank,
+            discount_bank_fetch_rx,
+            discount_bank_result_tx,
+        )
+        .await;
     });
 
     // Spawn config file watcher — hot-reloads TuiConfig on disk changes
@@ -292,18 +386,22 @@ async fn main() -> color_eyre::Result<()> {
         event_rx,
         config_rx,
         health_rx,
-        Some(strategy_cmd_tx),
-        Some(yield_fetch_tx),
+        Some(yield_refresh_tx),
         Some(loans_fetch_tx),
         Some(loan_create_tx),
+        Some(fmp_fetch_tx),
+        Some(greeks_fetch_tx),
+        Some(discount_bank_fetch_tx),
     );
 
     let result = run_loop(
         &mut terminal,
         &mut app,
-        strategy_result_rx,
         yield_result_rx,
         loans_result_rx,
+        fmp_result_rx,
+        greeks_result_rx,
+        discount_bank_result_rx,
     )
     .await;
 
@@ -317,152 +415,80 @@ async fn main() -> color_eyre::Result<()> {
 
 fn init_terminal(use_alternate_screen: bool) -> color_eyre::Result<ratatui::DefaultTerminal> {
     enable_raw_mode().context("enable raw mode")?;
-    let mut stdout = std::io::stdout();
-    if use_alternate_screen {
-        execute!(stdout, EnterAlternateScreen).context("enter alternate screen")?;
+    RAW_MODE_ACTIVE.store(true, Ordering::SeqCst);
+    let init_result = (|| {
+        let mut stdout = std::io::stdout();
+        if use_alternate_screen {
+            execute!(stdout, EnterAlternateScreen).context("enter alternate screen")?;
+            ALT_SCREEN_ACTIVE.store(true, Ordering::SeqCst);
+        }
+        // Clear screen before first draw (like `reset` does) so no prior output remains.
+        execute!(stdout, Clear(ClearType::All)).context("clear screen")?;
+        ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(stdout))
+            .context("create terminal backend")
+    })();
+    if init_result.is_err() {
+        let _ = restore_terminal(use_alternate_screen);
     }
-    // Clear screen before first draw (like `reset` does) so no prior output remains.
-    execute!(stdout, Clear(ClearType::All)).context("clear screen")?;
-    ratatui::Terminal::new(ratatui::backend::CrosstermBackend::new(stdout))
-        .context("create terminal backend")
+    init_result
 }
 
 fn restore_terminal(use_alternate_screen: bool) -> color_eyre::Result<()> {
-    disable_raw_mode().context("disable raw mode")?;
-    if use_alternate_screen {
+    if RAW_MODE_ACTIVE.swap(false, Ordering::SeqCst) {
+        disable_raw_mode().context("disable raw mode")?;
+    }
+    if use_alternate_screen && ALT_SCREEN_ACTIVE.swap(false, Ordering::SeqCst) {
         execute!(std::io::stdout(), LeaveAlternateScreen).context("leave alternate screen")?;
     }
     Ok(())
 }
 
-/// Handles strategy start/stop/cancel-all: connects to NATS, sends request, forwards result to TUI.
-async fn run_strategy_commands(
+fn install_panic_hook() {
+    let previous_hook = panic::take_hook();
+    panic::set_hook(Box::new(move |panic_info| {
+        let use_alternate_screen = ALT_SCREEN_ACTIVE.load(Ordering::SeqCst);
+        let _ = restore_terminal(use_alternate_screen);
+        previous_hook(panic_info);
+    }));
+}
+
+/// Fetches Discount Bank balance and transactions concurrently via NATS, sends result to TUI.
+async fn run_discount_bank_fetcher(
     nats_url: String,
-    mut rx: mpsc::UnboundedReceiver<StrategyCommand>,
-    result_tx: mpsc::UnboundedSender<Result<String, String>>,
+    mut rx: mpsc::UnboundedReceiver<()>,
+    result_tx: mpsc::UnboundedSender<(
+        Result<DiscountBankBalanceDto, String>,
+        Result<DiscountBankTransactionsListDto, String>,
+    )>,
 ) {
-    while let Some(cmd) = rx.recv().await {
-        match cmd {
-            StrategyCommand::Start | StrategyCommand::Stop | StrategyCommand::CancelAll => {
-                let (subject, action) = match cmd {
-                    StrategyCommand::Start => ("api.strategy.start", "start"),
-                    StrategyCommand::Stop => ("api.strategy.stop", "stop"),
-                    StrategyCommand::CancelAll => ("api.strategy.cancel_all", "cancel_all"),
-                    _ => unreachable!(),
-                };
-                let res = match NatsClient::connect(&nats_url).await {
-                    Ok(nc) => {
-                        match request_json_with_retry::<(), StrategyResponse>(&nc, subject, &())
-                            .await
-                        {
-                            Ok(resp) => {
-                                if resp.ok {
-                                    Ok(resp.message.unwrap_or_else(|| "ok".into()))
-                                } else {
-                                    Err(resp.error.unwrap_or_else(|| "unknown".into()))
-                                }
-                            }
-                            Err(e) => Err(e.to_string()),
-                        }
-                    }
-                    Err(e) => Err(e.to_string()),
-                };
-                if let Err(ref e) = res {
-                    error!(action = %action, error = %e, "Strategy command failed");
-                }
-                let _ = result_tx.send(res);
+    while rx.recv().await.is_some() {
+        let balance_res = match NatsClient::connect(&nats_url).await {
+            Ok(nc) => {
+                request_json_with_retry::<(), Result<DiscountBankBalanceDto, String>>(
+                    &nc,
+                    "api.discount_bank.balance",
+                    &(),
+                )
+                .await
+                .map_err(|e| e.to_string())
+                .and_then(|r| r)
             }
-            StrategyCommand::PublishSnapshot => {
-                const SUBJECT_SNAPSHOT_PUBLISH_NOW: &str = "api.snapshot.publish_now";
-                let res = match NatsClient::connect(&nats_url).await {
-                    Ok(nc) => {
-                        match request_json_with_retry::<(), SnapshotPublishResponse>(
-                            &nc,
-                            SUBJECT_SNAPSHOT_PUBLISH_NOW,
-                            &(),
-                        )
-                        .await
-                        {
-                            Ok(resp) => {
-                                if resp.ok {
-                                    let msg = resp
-                                        .generated_at
-                                        .map(|t| format!("Snapshot published at {}", t))
-                                        .or(resp
-                                            .subject
-                                            .map(|s| format!("Snapshot published to {}", s)))
-                                        .unwrap_or_else(|| "Snapshot published".into());
-                                    Ok(msg)
-                                } else {
-                                    Err(resp.error.unwrap_or_else(|| "unknown".into()))
-                                }
-                            }
-                            Err(e) => Err(e.to_string()),
-                        }
-                    }
-                    Err(e) => Err(e.to_string()),
-                };
-                if let Err(ref e) = res {
-                    error!(error = %e, "Force snapshot failed");
-                }
-                let _ = result_tx.send(res);
+            Err(e) => Err(e.to_string()),
+        };
+        let txns_res = match NatsClient::connect(&nats_url).await {
+            Ok(nc) => {
+                request_json_with_retry::<serde_json::Value, Result<DiscountBankTransactionsListDto, String>>(
+                    &nc,
+                    "api.discount_bank.transactions",
+                    &json!({ "limit": 50 }),
+                )
+                .await
+                .map_err(|e| e.to_string())
+                .and_then(|r| r)
             }
-            StrategyCommand::SetMode(mode) => {
-                let res = match NatsClient::connect(&nats_url).await {
-                    Ok(nc) => {
-                        let body = json!({ "mode": mode });
-                        match request_json_with_retry::<_, StrategyResponse>(
-                            &nc,
-                            "api.admin.set_mode",
-                            &body,
-                        )
-                        .await
-                        {
-                            Ok(resp) => {
-                                if resp.ok {
-                                    Ok(resp.message.unwrap_or_else(|| format!("mode {}", mode)))
-                                } else {
-                                    Err(resp.error.unwrap_or_else(|| "unknown".into()))
-                                }
-                            }
-                            Err(e) => Err(e.to_string()),
-                        }
-                    }
-                    Err(e) => Err(e.to_string()),
-                };
-                if let Err(ref e) = res {
-                    error!(mode = %mode, error = %e, "Set mode failed");
-                }
-                let _ = result_tx.send(res);
-            }
-            StrategyCommand::ExecuteScenario(scenario) => {
-                let res = match NatsClient::connect(&nats_url).await {
-                    Ok(nc) => {
-                        match request_json_with_retry::<_, StrategyResponse>(
-                            &nc,
-                            "api.strategy.execute",
-                            &scenario,
-                        )
-                        .await
-                        {
-                            Ok(resp) => {
-                                if resp.ok {
-                                    Ok(resp.message.unwrap_or_else(|| "scenario executed".into()))
-                                } else {
-                                    Err(resp.error.unwrap_or_else(|| "unknown".into()))
-                                }
-                            }
-                            Err(e) => Err(e.to_string()),
-                        }
-                    }
-                    Err(e) => Err(e.to_string()),
-                };
-                if let Err(ref e) = res {
-                    error!(symbol = %scenario.symbol, error = %e, "Execute scenario failed");
-                }
-                let _ = result_tx.send(res);
-            }
-        }
+            Err(e) => Err(e.to_string()),
+        };
+        let _ = result_tx.send((balance_res, txns_res));
     }
 }
 
@@ -481,7 +507,7 @@ async fn run_loans_fetcher(
             )
             .await
             .map_err(|e| e.to_string())
-            .and_then(|r| r.map_err(|e| e)),
+            .and_then(|r| r),
             Err(e) => Err(e.to_string()),
         };
         let _ = result_tx.send(res);
@@ -502,60 +528,71 @@ async fn run_loan_creator(
             Err(e) => Err(e.to_string()),
         };
 
-        if let Err(e) = res {
-            let _ = result_tx.send(Err(e));
-            continue;
-        }
+        let inner = match res {
+            Err(e) => {
+                let _ = result_tx.send(Err(e));
+                continue;
+            }
+            Ok(v) => v,
+        };
 
-        match res.unwrap() {
+        match inner {
             Err(e) => {
                 let _ = result_tx.send(Err(e));
             }
             Ok(()) => {
-                let refresh_res =
-                    match NatsClient::connect(&nats_url).await {
-                        Ok(nc) => request_json_with_retry::<(), Result<Vec<LoanRecord>, String>>(
-                            &nc,
-                            "api.loans.list",
-                            &(),
-                        )
-                        .await
-                        .map_err(|e| e.to_string())
-                        .and_then(|r| r.map_err(|e| e)),
-                        Err(e) => Err(e.to_string()),
-                    };
+                let refresh_res = match NatsClient::connect(&nats_url).await {
+                    Ok(nc) => request_json_with_retry::<(), Result<Vec<LoanRecord>, String>>(
+                        &nc,
+                        "api.loans.list",
+                        &(),
+                    )
+                    .await
+                    .map_err(|e| e.to_string())
+                    .and_then(|r| r),
+                    Err(e) => Err(e.to_string()),
+                };
                 let _ = result_tx.send(refresh_res);
             }
         }
     }
 }
 
-/// Fetches curve + benchmarks for a symbol via NATS, sends result to TUI.
-async fn run_yield_fetcher(
+/// Publishes a yield refresh request to `api.yield_curve.refresh` whenever triggered.
+/// The KV watcher picks up the writer's response and updates curves via AppEvent.
+async fn run_yield_refresher(
     nats_url: String,
-    mut rx: mpsc::UnboundedReceiver<String>,
-    result_tx: mpsc::UnboundedSender<Result<(CurveResponse, BenchmarksResponse), String>>,
+    mut rx: mpsc::UnboundedReceiver<()>,
+    event_tx: mpsc::UnboundedSender<AppEvent>,
 ) {
-    while let Some(symbol) = rx.recv().await {
-        let res = match NatsClient::connect(&nats_url).await {
+    while rx.recv().await.is_some() {
+        match NatsClient::connect(&nats_url).await {
+            Ok(client) => {
+                let ok = nats::send_yield_refresh(&client).await.is_ok();
+                let _ = event_tx.send(AppEvent::YieldRefreshAck { ok });
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "yield refresher: NATS connect failed");
+                let _ = event_tx.send(AppEvent::YieldRefreshAck { ok: false });
+            }
+        }
+    }
+}
+
+/// Fetches SOFR + Treasury benchmarks periodically and emits AppEvent::BenchmarksUpdate.
+async fn run_benchmarks_fetcher(
+    nats_url: String,
+    interval: Duration,
+    event_tx: mpsc::UnboundedSender<AppEvent>,
+) {
+    let mut ticker = tokio::time::interval(interval);
+    ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    loop {
+        ticker.tick().await;
+        match NatsClient::connect(&nats_url).await {
             Ok(nc) => {
-                let curve_res = request_json_with_retry(
-                    &nc,
-                    "api.finance_rates.build_curve",
-                    &json!({ "opportunities": [], "symbol": symbol }),
-                )
-                .await
-                .map_err(|e| e.to_string());
-                let curve = match curve_res {
-                    Ok(c) => c,
-                    Err(e) => {
-                        let _ = result_tx.send(Err(e));
-                        continue;
-                    }
-                };
-                // Benchmarks call FRED (SOFR + Treasury); allow longer than default 5s, with retry
                 const BENCHMARKS_TIMEOUT: Duration = Duration::from_secs(15);
-                let bench_res = request_json_with_retry_timeout::<(), BenchmarksResponse>(
+                match request_json_with_retry_timeout::<(), BenchmarksResponse>(
                     &nc,
                     "api.finance_rates.benchmarks",
                     &(),
@@ -563,18 +600,19 @@ async fn run_yield_fetcher(
                     RetryConfig::default(),
                 )
                 .await
-                .map_err(|e| e.to_string());
-                match bench_res {
-                    Ok(benchmarks) => Ok((curve, benchmarks)),
+                {
+                    Ok(benchmarks) => {
+                        let _ = event_tx.send(AppEvent::BenchmarksUpdate(benchmarks));
+                    }
                     Err(e) => {
-                        let _ = result_tx.send(Err(e));
-                        continue;
+                        tracing::debug!(error = %e, "benchmarks fetch failed");
                     }
                 }
             }
-            Err(e) => Err(e.to_string()),
-        };
-        let _ = result_tx.send(res);
+            Err(e) => {
+                tracing::debug!(error = %e, "benchmarks fetcher: NATS connect failed");
+            }
+        }
     }
 }
 
@@ -592,11 +630,16 @@ async fn run_yield_fetcher(
 async fn run_loop(
     terminal: &mut ratatui::DefaultTerminal,
     app: &mut App,
-    mut strategy_result_rx: mpsc::UnboundedReceiver<Result<String, String>>,
     mut yield_result_rx: mpsc::UnboundedReceiver<
-        Result<(CurveResponse, BenchmarksResponse), String>,
+        Result<(HashMap<String, CurveResponse>, BenchmarksResponse), String>,
     >,
     mut loans_result_rx: mpsc::UnboundedReceiver<Result<Vec<LoanRecord>, String>>,
+    mut fmp_result_rx: mpsc::UnboundedReceiver<Result<FmpDetail, String>>,
+    mut greeks_result_rx: mpsc::UnboundedReceiver<Result<GreeksDisplay, String>>,
+    mut discount_bank_result_rx: mpsc::UnboundedReceiver<(
+        Result<DiscountBankBalanceDto, String>,
+        Result<DiscountBankTransactionsListDto, String>,
+    )>,
 ) -> color_eyre::Result<()> {
     let mut event_stream = EventStream::new();
     let mut tick_interval = tokio::time::interval(Duration::from_millis(app.config.tick_ms));
@@ -633,11 +676,6 @@ async fn run_loop(
                 }
             }
 
-            // Strategy command result from NATS request task
-            Some(res) = strategy_result_rx.recv() => {
-                app.set_strategy_result(res);
-            }
-
             // Yield fetch result (curve + benchmarks)
             Some(res) = yield_result_rx.recv() => {
                 app.set_yield_data(res);
@@ -647,6 +685,21 @@ async fn run_loop(
             Some(res) = loans_result_rx.recv() => {
                 app.set_loans_data(res);
             }
+
+            // FMP quote + fundamentals result
+            Some(res) = fmp_result_rx.recv() => {
+                app.set_fmp_data(res);
+            }
+
+            // Greeks computation result
+            Some(res) = greeks_result_rx.recv() => {
+                app.set_greeks_data(res);
+            }
+
+            // Discount Bank fetch result (balance + transactions)
+            Some((balance, txns)) = discount_bank_result_rx.recv() => {
+                app.set_discount_bank_data(balance, txns);
+            }
         }
 
         if app.should_quit {
@@ -655,4 +708,141 @@ async fn run_loop(
     }
 
     Ok(())
+}
+
+/// Fetches FMP quote + latest income statement for a symbol via NATS, sends result to TUI.
+async fn run_fmp_fetcher(
+    nats_url: String,
+    mut rx: mpsc::UnboundedReceiver<String>,
+    result_tx: mpsc::UnboundedSender<Result<FmpDetail, String>>,
+) {
+    while let Some(symbol) = rx.recv().await {
+        let res = match NatsClient::connect(&nats_url).await {
+            Ok(nc) => {
+                // Fetch quote
+                let quote_res = request_json_with_retry::<_, serde_json::Value>(
+                    &nc,
+                    "api.fmp.quote",
+                    &serde_json::json!({ "symbol": symbol, "limit": 1 }),
+                )
+                .await;
+                // Fetch income statement
+                let income_res = request_json_with_retry::<_, serde_json::Value>(
+                    &nc,
+                    "api.fmp.income_statement",
+                    &serde_json::json!({ "symbol": symbol, "limit": 1 }),
+                )
+                .await;
+                match (quote_res, income_res) {
+                    (Ok(q), income) => {
+                        let income_arr = income
+                            .ok()
+                            .and_then(|v| v.as_array().cloned())
+                            .unwrap_or_default();
+                        let first = income_arr.first();
+                        Ok(FmpDetail {
+                            symbol: symbol.clone(),
+                            price: q.get("price").and_then(|v| v.as_f64()),
+                            day_high: q.get("dayHigh").and_then(|v| v.as_f64()),
+                            day_low: q.get("dayLow").and_then(|v| v.as_f64()),
+                            prev_close: q.get("previousClose").and_then(|v| v.as_f64()),
+                            eps: first.and_then(|r| r.get("eps")).and_then(|v| v.as_f64()),
+                            revenue: first
+                                .and_then(|r| r.get("revenue"))
+                                .and_then(|v| v.as_f64()),
+                            net_income: first
+                                .and_then(|r| r.get("netIncome"))
+                                .and_then(|v| v.as_f64()),
+                        })
+                    }
+                    (Err(e), _) => Err(e.to_string()),
+                }
+            }
+            Err(e) => Err(e.to_string()),
+        };
+        let _ = result_tx.send(res);
+    }
+}
+
+/// Computes IV then greeks for an option position via NATS, sends result to TUI.
+async fn run_greeks_fetcher(
+    nats_url: String,
+    mut rx: mpsc::UnboundedReceiver<GreeksFetchRequest>,
+    result_tx: mpsc::UnboundedSender<Result<GreeksDisplay, String>>,
+) {
+    while let Some(req) = rx.recv().await {
+        let res = match NatsClient::connect(&nats_url).await {
+            Ok(nc) => {
+                // Step 1: compute IV
+                let iv_res = request_json_with_retry::<_, serde_json::Value>(
+                    &nc,
+                    "api.calculate.iv",
+                    &serde_json::json!({
+                        "market_price": req.market_price,
+                        "underlying_price": req.underlying,
+                        "strike_price": req.strike,
+                        "time_to_expiry": req.tte_years,
+                        "risk_free_rate": req.rate,
+                        "option_type": req.option_type,
+                    }),
+                )
+                .await;
+                let iv = match iv_res {
+                    Ok(v) => v
+                        .get("implied_volatility")
+                        .and_then(|x| x.as_f64())
+                        .unwrap_or(0.2),
+                    Err(_) => 0.2, // fallback 20% vol
+                };
+                // Step 2: compute greeks with IV
+                let greeks_res = request_json_with_retry::<_, serde_json::Value>(
+                    &nc,
+                    "api.calculate.greeks",
+                    &serde_json::json!({
+                        "underlying_price": req.underlying,
+                        "strike_price": req.strike,
+                        "time_to_expiry": req.tte_years,
+                        "risk_free_rate": req.rate,
+                        "volatility": iv,
+                        "option_type": req.option_type,
+                    }),
+                )
+                .await
+                .map_err(|e| e.to_string());
+                match greeks_res {
+                    Err(e) => Err(e),
+                    Ok(greeks_val) => {
+                        match greeks_val.get("greeks").cloned() {
+                            None => Err("no greeks field".to_string()),
+                            Some(greeks) => Ok(GreeksDisplay {
+                                iv,
+                                delta: greeks
+                                    .get("delta")
+                                    .and_then(|v| v.as_f64())
+                                    .unwrap_or(0.0),
+                                gamma: greeks
+                                    .get("gamma")
+                                    .and_then(|v| v.as_f64())
+                                    .unwrap_or(0.0),
+                                theta: greeks
+                                    .get("theta")
+                                    .and_then(|v| v.as_f64())
+                                    .unwrap_or(0.0),
+                                vega: greeks
+                                    .get("vega")
+                                    .and_then(|v| v.as_f64())
+                                    .unwrap_or(0.0),
+                                rho: greeks
+                                    .get("rho")
+                                    .and_then(|v| v.as_f64())
+                                    .unwrap_or(0.0),
+                            }),
+                        }
+                    }
+                }
+            }
+            Err(e) => Err(e.to_string()),
+        };
+        let _ = result_tx.send(res);
+    }
 }

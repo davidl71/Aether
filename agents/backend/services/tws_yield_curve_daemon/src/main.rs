@@ -8,6 +8,8 @@ use api::yield_curve_proto::{encode_yield_curve_to_bytes, yield_curve_from_oppor
 use bytes::Bytes;
 use nats_adapter::async_nats::Client;
 use nats_adapter::NatsClient;
+use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
@@ -51,6 +53,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let nc = NatsClient::connect(&nats_url)
         .await
         .map_err(|e| format!("NATS connect: {}", e))?;
+    let health_interval_secs: u64 = std::env::var("HEALTH_PUBLISH_INTERVAL_SECS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(15);
+    let mut health_extra = HashMap::new();
+    health_extra.insert("pid".to_string(), std::process::id().to_string());
+    health_extra.insert("service".to_string(), "tws_yield_curve_daemon".to_string());
+    health_extra.insert("bucket".to_string(), bucket.clone());
+    health_extra.insert("symbols".to_string(), symbols.join(","));
+    nats_adapter::spawn_health_publisher(
+        Arc::new(nc.clone()),
+        "tws_yield_curve_daemon".to_string(),
+        health_interval_secs,
+        health_extra,
+    );
     let client: Client = nc.client().clone();
 
     let js = nats_adapter::async_nats::jetstream::new(client.clone());

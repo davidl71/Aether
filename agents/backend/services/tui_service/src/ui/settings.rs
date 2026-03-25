@@ -4,23 +4,45 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Cell, Paragraph, Row, Table},
+    widgets::{Block, Borders, Cell, List, ListItem, Paragraph, Row, Table},
     Frame,
 };
 
 use crate::app::App;
 
 pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(7),
-            Constraint::Min(3),
-            Constraint::Length(3),
-            Constraint::Min(5),
-            Constraint::Length(1),
-        ])
-        .split(area);
+    let wide_layout = area.width >= 120 && area.height >= 18;
+    let (health_area, config_area, symbols_area, sources_area, hint_area) = if wide_layout {
+        let rows = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(10),
+                Constraint::Min(7),
+                Constraint::Length(1),
+            ])
+            .split(area);
+        let top = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(58), Constraint::Percentage(42)])
+            .split(rows[0]);
+        let bottom = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(34), Constraint::Percentage(66)])
+            .split(rows[1]);
+        (top[0], top[1], bottom[0], bottom[1], rows[2])
+    } else {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(9),
+                Constraint::Min(3),
+                Constraint::Min(6),
+                Constraint::Min(5),
+                Constraint::Length(1),
+            ])
+            .split(area);
+        (chunks[0], chunks[1], chunks[2], chunks[3], chunks[4])
+    };
 
     let section_active = |idx: usize| app.settings_section_index == idx;
     let section_block = |title: &str, active: bool| {
@@ -103,21 +125,21 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
 
     let flow_lines = vec![
         Line::from(vec![
-            Span::raw(" TUI ──► "),
+            Span::raw(" TUI -> "),
             Span::styled(nats_sym, Style::default().fg(nats_color)),
-            Span::raw(" NATS :4222 "),
+            Span::raw(" NATS "),
             Span::styled(nats_label, Style::default().fg(nats_color)),
         ]),
         Line::from(vec![
-            Span::raw("          ├──► "),
+            Span::raw("  +- "),
             Span::styled(be_sym, Style::default().fg(be_color)),
             Span::raw(" backend_service "),
             Span::styled(be_label, Style::default().fg(be_color)),
         ]),
         Line::from(vec![
-            Span::raw("          │         ├──► "),
+            Span::raw("  |  +- "),
             Span::styled(tws_sym, Style::default().fg(tws_color)),
-            Span::raw(" TWS :7497 "),
+            Span::raw(" TWS "),
             Span::styled(
                 if tws_ok { "connected" } else { "not connected" },
                 Style::default().fg(tws_color),
@@ -129,7 +151,7 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
             },
         ]),
         Line::from(vec![
-            Span::raw("          │         └──► "),
+            Span::raw("  |  +- "),
             Span::styled(
                 live_src,
                 Style::default().fg(if live_src == "none" {
@@ -146,11 +168,11 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
             Span::raw(format!("{live_age}s")),
         ]),
         Line::from(vec![
-            Span::raw("          │                   ├── symbols: "),
+            Span::raw("  |     +- symbols: "),
             Span::styled(format!("{sym_count}"), Style::default().fg(Color::Cyan)),
         ]),
         Line::from(vec![
-            Span::raw("          │                   └── yield: "),
+            Span::raw("  |     +- yield: "),
             Span::styled(yield_symbol, Style::default().fg(Color::Cyan)),
             Span::raw("  "),
             Span::styled(format!("{yield_pts}pts"), Style::default().fg(Color::Cyan)),
@@ -163,7 +185,7 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
             )),
         ]),
         Line::from(vec![
-            Span::raw("          └──► yield_curve_writer "),
+            Span::raw("  +- yield_curve_writer "),
             {
                 let yw_entry = app.backend_health.get("yield_curve_writer");
                 let (yw_sym, yw_color, yw_lbl) = match yw_entry {
@@ -179,7 +201,85 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
         ]),
     ];
 
-    f.render_widget(Paragraph::new(flow_lines).block(backends_block), chunks[0]);
+    let mut component_names: Vec<_> = app.backend_health.keys().cloned().collect();
+    component_names.sort();
+    let component_lines: Vec<Line> = if component_names.is_empty() {
+        vec![Line::from(Span::styled(
+            "No system.health components reported yet.",
+            Style::default().fg(Color::DarkGray),
+        ))]
+    } else {
+        component_names
+            .into_iter()
+            .filter_map(|name| {
+                let state = app.backend_health.get(&name)?;
+                let (sym, color) = match state.status.as_str() {
+                    "ok" => ("●", Color::Green),
+                    "error" | "disabled" => ("✗", Color::Red),
+                    _ => ("⚠", Color::Yellow),
+                };
+                let mut spans = vec![
+                    Span::styled(format!("{sym} "), Style::default().fg(color)),
+                    Span::styled(format!("{name:<18}"), Style::default().fg(Color::Cyan)),
+                    Span::styled(state.status.as_str(), Style::default().fg(color)),
+                    Span::raw("  "),
+                    Span::styled(
+                        truncate(&state.updated_at, 19),
+                        Style::default().fg(Color::DarkGray),
+                    ),
+                ];
+                if let Some(error) = state.error.as_deref() {
+                    spans.push(Span::raw("  "));
+                    spans.push(Span::styled(
+                        truncate(error, 28),
+                        Style::default().fg(Color::Red),
+                    ));
+                } else if let Some(hint) = state.hint.as_deref() {
+                    spans.push(Span::raw("  "));
+                    spans.push(Span::styled(
+                        truncate(hint, 28),
+                        Style::default().fg(Color::DarkGray),
+                    ));
+                } else if !state.extra.is_empty() {
+                    let extras = state
+                        .extra
+                        .iter()
+                        .take(2)
+                        .map(|(k, v)| format!("{k}={v}"))
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                    if !extras.is_empty() {
+                        spans.push(Span::raw("  "));
+                        spans.push(Span::styled(
+                            truncate(&extras, 28),
+                            Style::default().fg(Color::DarkGray),
+                        ));
+                    }
+                }
+                Some(Line::from(spans))
+            })
+            .collect()
+    };
+    let health_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Min(6), Constraint::Length(4)])
+        .split(health_area);
+    f.render_widget(Paragraph::new(flow_lines).block(backends_block.clone()), health_chunks[0]);
+    f.render_widget(
+        Paragraph::new(component_lines).block(
+            Block::default()
+                .title(" Components ")
+                .borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM)
+                .border_style(if section_active(0) {
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().fg(Color::DarkGray)
+                }),
+        ),
+        health_chunks[1],
+    );
 
     // 2) Config (read-only)
     let config_title = if let Some(ref key) = app.settings_edit_config_key {
@@ -188,6 +288,7 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
         "Config overrides (session only)".to_string()
     };
     let config_block = section_block(&config_title, section_active(1));
+    let config_value_width = config_area.width.saturating_sub(20) as usize;
     let mut config_lines = Vec::new();
     for idx in 0..=4 {
         if let Some((key, value)) = app.config_key_value_at(idx) {
@@ -208,7 +309,7 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
             };
             config_lines.push(Line::from(vec![
                 Span::styled(format!("{key}: "), key_style),
-                Span::styled(truncate(&value, 48), value_style),
+                Span::styled(truncate(&value, config_value_width.max(20)), value_style),
             ]));
         }
     }
@@ -240,9 +341,9 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
             )),
         ])
         .block(config_block);
-        f.render_widget(config_edit, chunks[1]);
+        f.render_widget(config_edit, config_area);
     } else {
-        f.render_widget(Paragraph::new(config_lines).block(config_block), chunks[1]);
+        f.render_widget(Paragraph::new(config_lines).block(config_block), config_area);
     }
 
     // 3) Symbols (watchlist) — add (a), remove (Del), reset override (r)
@@ -259,52 +360,48 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
 
     if app.settings_add_symbol_input.is_some() && app.settings_edit_config_key.is_none() {
         let buf = app.settings_add_symbol_input.as_deref().unwrap_or("");
-        let (prompt, confirm_text) = (
-            "Add symbol: ".to_string(),
-            "  [Enter] confirm  [Esc] cancel".to_string(),
-        );
-        let line = Line::from(vec![
-            Span::raw(prompt),
-            Span::styled(
-                format!("{buf}_"),
-                Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::raw(confirm_text),
-        ]);
-        f.render_widget(Paragraph::new(line).block(symbols_block), chunks[2]);
+        let prompt_lines = vec![
+            Line::from(vec![
+                Span::raw("Add symbol: "),
+                Span::styled(
+                    format!("{buf}_"),
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ]),
+            Line::from(Span::styled(
+                "[Enter] confirm  [Esc] cancel",
+                Style::default().fg(Color::DarkGray),
+            )),
+        ];
+        f.render_widget(Paragraph::new(prompt_lines).block(symbols_block), symbols_area);
     } else if watchlist.is_empty() {
         let line = Line::from(Span::styled(
             "No symbols. Press 'a' to add (in-memory), or set WATCHLIST / config strategy.symbols.",
             Style::default().fg(Color::DarkGray),
         ));
-        f.render_widget(Paragraph::new(line).block(symbols_block), chunks[2]);
+        f.render_widget(Paragraph::new(line).block(symbols_block), symbols_area);
     } else {
-        let mut spans = vec![];
-        for (i, sym) in watchlist.iter().enumerate() {
-            if i > 0 {
-                spans.push(Span::raw(" "));
-            }
-            let selected = i == app.settings_symbol_index;
-            if selected {
-                spans.push(Span::styled(
-                    format!("[{}]", sym),
+        let items: Vec<ListItem> = watchlist
+            .iter()
+            .enumerate()
+            .map(|(i, sym)| {
+                let selected = i == app.settings_symbol_index;
+                let style = if selected {
                     Style::default()
                         .fg(Color::Yellow)
-                        .add_modifier(Modifier::BOLD),
-                ));
-            } else {
-                spans.push(Span::styled(sym.as_str(), Style::default().fg(Color::Cyan)));
-            }
-        }
-        spans.push(Span::raw(
-            "  ↑↓ select  a add  Del remove  r reset to config",
-        ));
-        f.render_widget(
-            Paragraph::new(Line::from(spans)).block(symbols_block),
-            chunks[2],
-        );
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().fg(Color::Cyan)
+                };
+                ListItem::new(Line::from(vec![
+                    Span::styled("[x] ", style),
+                    Span::styled(sym.as_str(), style),
+                ]))
+            })
+            .collect();
+        f.render_widget(List::new(items).block(symbols_block), symbols_area);
     }
 
     // 4) Data sources — credential status + live tick source
@@ -332,6 +429,12 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
             priority: "60",
             cred_key: "FMP_API_KEY",
             note: "market + fundamentals",
+        },
+        SourceDef {
+            name: "mock",
+            priority: "0",
+            cred_key: "(fixture/demo)",
+            note: "deterministic provider",
         },
         SourceDef {
             name: "polygon",
@@ -369,15 +472,22 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
         .iter()
         .map(|s| {
             let has_cred = match s.name {
-                "yahoo" | "tws" => true,
+                "yahoo" | "tws" | "mock" => true,
                 name => *app.credential_status.get(name).unwrap_or(&false),
+            };
+            let credential_label = match s.name {
+                "yahoo" | "tws" | "mock" => s.cred_key.to_string(),
+                name => match app.credential_source.get(name) {
+                    Some(source) => format!("{} [{}]", s.cred_key, source),
+                    None => s.cred_key.to_string(),
+                },
             };
             let is_live = live_source.as_deref() == Some(s.name);
             let is_configured = configured_provider == s.name || configured_provider == "all";
 
             let (status_label, status_color) = if is_live {
                 ("● LIVE", Color::Green)
-            } else if !has_cred && s.name != "yahoo" && s.name != "tws" {
+            } else if !has_cred && s.name != "yahoo" && s.name != "tws" && s.name != "mock" {
                 ("✗ no key", Color::Red)
             } else if is_configured || s.name == "yahoo" {
                 ("idle", Color::DarkGray)
@@ -385,7 +495,7 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
                 ("disabled", Color::DarkGray)
             };
 
-            let cred_color = if has_cred || s.name == "yahoo" || s.name == "tws" {
+            let cred_color = if has_cred || s.name == "yahoo" || s.name == "tws" || s.name == "mock" {
                 Color::Green
             } else {
                 Color::Red
@@ -394,7 +504,7 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
             Row::new([
                 Cell::from(s.name),
                 Cell::from(s.priority),
-                Cell::from(s.cred_key).style(Style::default().fg(cred_color)),
+                Cell::from(credential_label).style(Style::default().fg(cred_color)),
                 Cell::from(status_label).style(Style::default().fg(status_color)),
                 Cell::from(s.note).style(Style::default().fg(Color::DarkGray)),
             ])
@@ -406,7 +516,7 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
         [
             Constraint::Length(8),
             Constraint::Length(6),
-            Constraint::Length(20),
+            Constraint::Length(28),
             Constraint::Length(10),
             Constraint::Min(10),
         ],
@@ -416,7 +526,7 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
             .style(Style::default().add_modifier(Modifier::BOLD | Modifier::UNDERLINED)),
     )
     .block(sources_block);
-    f.render_widget(sources_table, chunks[3]);
+    f.render_widget(sources_table, sources_area);
 
     // 5) Hint line
     let hint_text = match app.settings_section_index {
@@ -429,7 +539,7 @@ pub fn render_settings(f: &mut Frame, app: &App, area: Rect) {
         hint_text,
         Style::default().fg(Color::DarkGray),
     ));
-    f.render_widget(Paragraph::new(hint), chunks[4]);
+    f.render_widget(Paragraph::new(hint), hint_area);
 }
 
 fn truncate(s: &str, max: usize) -> String {

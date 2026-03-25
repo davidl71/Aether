@@ -19,11 +19,45 @@ pub enum CredentialKey {
     FredApiKey,
     FmpApiKey,
     PolygonApiKey,
-    AlpacaApiKey,
-    AlpacaSecretKey,
+    AlpacaPaperApiKeyId,
+    AlpacaPaperSecretKey,
+    AlpacaLiveApiKeyId,
+    AlpacaLiveSecretKey,
     TastytradeApiKey,
     TastytradeAccount,
     TaseApiKey,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AlpacaEnvironment {
+    Paper,
+    Live,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CredentialSource {
+    Env,
+    Keyring,
+    File,
+}
+
+impl CredentialSource {
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Env => "env",
+            Self::Keyring => "keyring",
+            Self::File => "file",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AlpacaCredentialSet {
+    pub environment: AlpacaEnvironment,
+    pub api_key_id: String,
+    pub api_secret_key: String,
+    pub trading_base_url: String,
+    pub data_base_url: String,
 }
 
 impl CredentialKey {
@@ -32,8 +66,10 @@ impl CredentialKey {
             Self::FredApiKey => "fred_api_key",
             Self::FmpApiKey => "fmp_api_key",
             Self::PolygonApiKey => "polygon_api_key",
-            Self::AlpacaApiKey => "alpaca_api_key",
-            Self::AlpacaSecretKey => "alpaca_secret_key",
+            Self::AlpacaPaperApiKeyId => "alpaca_paper_api_key_id",
+            Self::AlpacaPaperSecretKey => "alpaca_paper_secret_key",
+            Self::AlpacaLiveApiKeyId => "alpaca_live_api_key_id",
+            Self::AlpacaLiveSecretKey => "alpaca_live_secret_key",
             Self::TastytradeApiKey => "tastytrade_api_key",
             Self::TastytradeAccount => "tastytrade_account",
             Self::TaseApiKey => "tase_api_key",
@@ -45,11 +81,22 @@ impl CredentialKey {
             Self::FredApiKey => "FRED_API_KEY",
             Self::FmpApiKey => "FMP_API_KEY",
             Self::PolygonApiKey => "POLYGON_API_KEY",
-            Self::AlpacaApiKey => "ALPACA_API_KEY",
-            Self::AlpacaSecretKey => "ALPACA_SECRET_KEY",
+            Self::AlpacaPaperApiKeyId => "ALPACA_PAPER_API_KEY_ID",
+            Self::AlpacaPaperSecretKey => "ALPACA_PAPER_API_SECRET_KEY",
+            Self::AlpacaLiveApiKeyId => "ALPACA_LIVE_API_KEY_ID",
+            Self::AlpacaLiveSecretKey => "ALPACA_LIVE_API_SECRET_KEY",
             Self::TastytradeApiKey => "TASTYTRADE_API_KEY",
             Self::TastytradeAccount => "TASTYTRADE_ACCOUNT",
             Self::TaseApiKey => "TASE_API_KEY",
+        }
+    }
+
+    const fn legacy_env_vars(&self) -> &'static [&'static str] {
+        match self {
+            // Preserve historical generic Alpaca env vars as the paper/default identity.
+            Self::AlpacaPaperApiKeyId => &["ALPACA_API_KEY_ID", "ALPACA_API_KEY"],
+            Self::AlpacaPaperSecretKey => &["ALPACA_API_SECRET_KEY", "ALPACA_SECRET_KEY"],
+            _ => &[],
         }
     }
 
@@ -58,8 +105,10 @@ impl CredentialKey {
             Self::FredApiKey => "fred",
             Self::FmpApiKey => "fmp",
             Self::PolygonApiKey => "polygon",
-            Self::AlpacaApiKey => "alpaca-key",
-            Self::AlpacaSecretKey => "alpaca-secret",
+            Self::AlpacaPaperApiKeyId => "alpaca-paper-key",
+            Self::AlpacaPaperSecretKey => "alpaca-paper-secret",
+            Self::AlpacaLiveApiKeyId => "alpaca-live-key",
+            Self::AlpacaLiveSecretKey => "alpaca-live-secret",
             Self::TastytradeApiKey => "tastytrade-key",
             Self::TastytradeAccount => "tastytrade-account",
             Self::TaseApiKey => "tase",
@@ -71,8 +120,10 @@ impl CredentialKey {
             Self::FredApiKey => "FRED API Key",
             Self::FmpApiKey => "FMP API Key",
             Self::PolygonApiKey => "Polygon API Key",
-            Self::AlpacaApiKey => "Alpaca API Key",
-            Self::AlpacaSecretKey => "Alpaca Secret Key",
+            Self::AlpacaPaperApiKeyId => "Alpaca Paper API Key ID",
+            Self::AlpacaPaperSecretKey => "Alpaca Paper API Secret Key",
+            Self::AlpacaLiveApiKeyId => "Alpaca Live API Key ID",
+            Self::AlpacaLiveSecretKey => "Alpaca Live API Secret Key",
             Self::TastytradeApiKey => "Tastytrade API Key",
             Self::TastytradeAccount => "Tastytrade Account",
             Self::TaseApiKey => "TASE API Key",
@@ -88,8 +139,15 @@ impl CredentialKey {
             "fred" => Some(Self::FredApiKey),
             "fmp" => Some(Self::FmpApiKey),
             "polygon" => Some(Self::PolygonApiKey),
-            "alpaca-key" | "alpaca_api_key" => Some(Self::AlpacaApiKey),
-            "alpaca-secret" | "alpaca_secret" => Some(Self::AlpacaSecretKey),
+            "alpaca-paper-key" | "alpaca_paper_api_key_id" | "alpaca-key" | "alpaca_api_key" => {
+                Some(Self::AlpacaPaperApiKeyId)
+            }
+            "alpaca-paper-secret"
+            | "alpaca_paper_secret_key"
+            | "alpaca-secret"
+            | "alpaca_secret" => Some(Self::AlpacaPaperSecretKey),
+            "alpaca-live-key" | "alpaca_live_api_key_id" => Some(Self::AlpacaLiveApiKeyId),
+            "alpaca-live-secret" | "alpaca_live_secret_key" => Some(Self::AlpacaLiveSecretKey),
             "tastytrade-key" | "tastytrade_api_key" => Some(Self::TastytradeApiKey),
             "tastytrade-account" | "tastytrade_account" => Some(Self::TastytradeAccount),
             "tase" => Some(Self::TaseApiKey),
@@ -99,9 +157,24 @@ impl CredentialKey {
 }
 
 pub fn get_credential(key: CredentialKey) -> Option<String> {
+    credential_value_and_source(key).map(|(value, _)| value)
+}
+
+pub fn credential_source(key: CredentialKey) -> Option<CredentialSource> {
+    credential_value_and_source(key).map(|(_, source)| source)
+}
+
+fn credential_value_and_source(key: CredentialKey) -> Option<(String, CredentialSource)> {
     if let Ok(val) = env::var(key.env_var()) {
         if !val.trim().is_empty() {
-            return Some(val);
+            return Some((val, CredentialSource::Env));
+        }
+    }
+    for legacy_var in key.legacy_env_vars() {
+        if let Ok(val) = env::var(legacy_var) {
+            if !val.trim().is_empty() {
+                return Some((val, CredentialSource::Env));
+            }
         }
     }
 
@@ -110,7 +183,7 @@ pub fn get_credential(key: CredentialKey) -> Option<String> {
         if let Ok(entry) = keyring::Entry::new(SERVICE, key.user()) {
             if let Ok(val) = entry.get_password() {
                 if !val.trim().is_empty() {
-                    return Some(val);
+                    return Some((val, CredentialSource::Keyring));
                 }
             }
         }
@@ -121,7 +194,7 @@ pub fn get_credential(key: CredentialKey) -> Option<String> {
         if let Ok(content) = fs::read_to_string(&file) {
             let val = content.trim();
             if !val.is_empty() {
-                return Some(val.to_string());
+                return Some((val.to_string(), CredentialSource::File));
             }
         }
     }
@@ -174,12 +247,70 @@ pub fn set_fred_api_key(key: &str) -> Result<(), String> {
     set_credential(CredentialKey::FredApiKey, key)
 }
 
+pub fn alpaca_paper_api_key_id() -> Option<String> {
+    get_credential(CredentialKey::AlpacaPaperApiKeyId)
+}
+
+pub fn alpaca_paper_secret_key() -> Option<String> {
+    get_credential(CredentialKey::AlpacaPaperSecretKey)
+}
+
+pub fn alpaca_live_api_key_id() -> Option<String> {
+    get_credential(CredentialKey::AlpacaLiveApiKeyId)
+}
+
+pub fn alpaca_live_secret_key() -> Option<String> {
+    get_credential(CredentialKey::AlpacaLiveSecretKey)
+}
+
+pub fn alpaca_trading_base_url(environment: AlpacaEnvironment) -> String {
+    let env_name = match environment {
+        AlpacaEnvironment::Paper => "ALPACA_PAPER_BASE_URL",
+        AlpacaEnvironment::Live => "ALPACA_LIVE_BASE_URL",
+    };
+    let default = match environment {
+        AlpacaEnvironment::Paper => "https://paper-api.alpaca.markets",
+        AlpacaEnvironment::Live => "https://api.alpaca.markets",
+    };
+    env::var(env_name)
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| default.to_string())
+}
+
+pub fn alpaca_data_base_url(environment: AlpacaEnvironment) -> String {
+    let env_name = match environment {
+        AlpacaEnvironment::Paper => "ALPACA_PAPER_DATA_BASE_URL",
+        AlpacaEnvironment::Live => "ALPACA_LIVE_DATA_BASE_URL",
+    };
+    env::var(env_name)
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| "https://data.alpaca.markets".to_string())
+}
+
+pub fn alpaca_credentials(environment: AlpacaEnvironment) -> Option<AlpacaCredentialSet> {
+    let (api_key_id, api_secret_key) = match environment {
+        AlpacaEnvironment::Paper => (alpaca_paper_api_key_id()?, alpaca_paper_secret_key()?),
+        AlpacaEnvironment::Live => (alpaca_live_api_key_id()?, alpaca_live_secret_key()?),
+    };
+
+    Some(AlpacaCredentialSet {
+        environment,
+        api_key_id,
+        api_secret_key,
+        trading_base_url: alpaca_trading_base_url(environment),
+        data_base_url: alpaca_data_base_url(environment),
+    })
+}
+
+// Backward-compatible paper-default accessors for older callers.
 pub fn alpaca_api_key() -> Option<String> {
-    get_credential(CredentialKey::AlpacaApiKey)
+    alpaca_paper_api_key_id()
 }
 
 pub fn alpaca_secret_key() -> Option<String> {
-    get_credential(CredentialKey::AlpacaSecretKey)
+    alpaca_paper_secret_key()
 }
 
 pub fn polygon_api_key() -> Option<String> {
@@ -207,10 +338,49 @@ pub fn list_credentials() -> Vec<(&'static str, &'static str)> {
         ("fred", "FRED (Federal Reserve Economic Data)"),
         ("fmp", "Financial Modeling Prep"),
         ("polygon", "Polygon.io"),
-        ("alpaca-key", "Alpaca API Key"),
-        ("alpaca-secret", "Alpaca Secret Key"),
+        ("alpaca-paper-key", "Alpaca Paper API Key ID"),
+        ("alpaca-paper-secret", "Alpaca Paper API Secret Key"),
+        ("alpaca-live-key", "Alpaca Live API Key ID"),
+        ("alpaca-live-secret", "Alpaca Live API Secret Key"),
         ("tastytrade-key", "Tastytrade API Key"),
         ("tastytrade-account", "Tastytrade Account Number"),
         ("tase", "TASE (Tel Aviv Stock Exchange)"),
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn paper_aliases_map_to_paper_credentials() {
+        assert!(matches!(
+            CredentialKey::from_name("alpaca-key"),
+            Some(CredentialKey::AlpacaPaperApiKeyId)
+        ));
+        assert!(matches!(
+            CredentialKey::from_name("alpaca-secret"),
+            Some(CredentialKey::AlpacaPaperSecretKey)
+        ));
+    }
+
+    #[test]
+    fn alpaca_defaults_match_expected_endpoints() {
+        assert_eq!(
+            alpaca_trading_base_url(AlpacaEnvironment::Paper),
+            "https://paper-api.alpaca.markets"
+        );
+        assert_eq!(
+            alpaca_trading_base_url(AlpacaEnvironment::Live),
+            "https://api.alpaca.markets"
+        );
+        assert_eq!(
+            alpaca_data_base_url(AlpacaEnvironment::Paper),
+            "https://data.alpaca.markets"
+        );
+        assert_eq!(
+            alpaca_data_base_url(AlpacaEnvironment::Live),
+            "https://data.alpaca.markets"
+        );
+    }
 }

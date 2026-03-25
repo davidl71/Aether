@@ -203,6 +203,10 @@ impl MarketDataSourceMeta {
     pub fn age_secs(&self) -> u64 {
         self.last_tick_at.elapsed().as_secs()
     }
+
+    fn is_fresh(&self, ttl_secs: u64) -> bool {
+        self.age_secs() <= ttl_secs
+    }
 }
 
 /// State for the loan entry form overlay in Loans tab.
@@ -552,8 +556,12 @@ pub struct App {
     pub greeks_fetch_tx: Option<mpsc::UnboundedSender<GreeksFetchRequest>>,
     /// Latest metadata from the live market-data tick stream (source, priority, age).
     pub live_market_data_source: Option<MarketDataSourceMeta>,
+    /// Per-provider activity cache used to choose the freshest/highest-priority live source.
+    market_data_sources: HashMap<String, MarketDataSourceMeta>,
     /// Cached credential presence per provider (refreshed every ~30s). True = key found.
     pub credential_status: HashMap<&'static str, bool>,
+    /// Cached credential source per provider (`env`, `keyring`, `file`) when present.
+    pub credential_source: HashMap<&'static str, &'static str>,
     /// Instant when credential_status was last refreshed.
     credential_status_refreshed_at: Option<Instant>,
     event_rx: mpsc::UnboundedReceiver<AppEvent>,
@@ -655,7 +663,9 @@ impl App {
             fmp_fetch_tx,
             greeks_fetch_tx,
             live_market_data_source: None,
+            market_data_sources: HashMap::new(),
             credential_status: HashMap::new(),
+            credential_source: HashMap::new(),
             credential_status_refreshed_at: None,
             event_rx,
             snapshot_rx,
@@ -1131,23 +1141,21 @@ impl App {
     }
 
     fn refresh_credential_status(&mut self) {
-        use api::credentials::{get_credential, CredentialKey};
-        self.credential_status.insert(
-            "fmp",
-            get_credential(CredentialKey::FmpApiKey).is_some(),
-        );
-        self.credential_status.insert(
-            "polygon",
-            get_credential(CredentialKey::PolygonApiKey).is_some(),
-        );
-        self.credential_status.insert(
-            "fred",
-            get_credential(CredentialKey::FredApiKey).is_some(),
-        );
-        self.credential_status.insert(
-            "tase",
-            get_credential(CredentialKey::TaseApiKey).is_some(),
-        );
+        use api::credentials::{credential_source, CredentialKey};
+        for (provider, key) in [
+            ("fmp", CredentialKey::FmpApiKey),
+            ("polygon", CredentialKey::PolygonApiKey),
+            ("fred", CredentialKey::FredApiKey),
+            ("tase", CredentialKey::TaseApiKey),
+        ] {
+            let source = credential_source(key);
+            self.credential_status.insert(provider, source.is_some());
+            if let Some(source) = source {
+                self.credential_source.insert(provider, source.label());
+            } else {
+                self.credential_source.remove(provider);
+            }
+        }
         self.credential_status_refreshed_at = Some(Instant::now());
     }
 
@@ -1168,20 +1176,11 @@ impl App {
                 source_priority,
             } => {
                 self.apply_tick(&symbol, bid, ask, last);
-                // Only replace the displayed source if the incoming tick has higher or
-                // equal priority, or if the current meta is stale (>5s). This prevents
-                // the status bar from flickering between e.g. MOCK@0 and YAHOO@50 when
-                // multiple providers publish ticks to the same NATS subject.
-                let should_update = match &self.live_market_data_source {
-                    None => true,
-                    Some(existing) => {
-                        source_priority >= existing.priority || existing.age_secs() > 5
-                    }
-                };
-                if should_update {
-                    self.live_market_data_source =
-                        Some(MarketDataSourceMeta::new(source, source_priority));
-                }
+                self.market_data_sources.insert(
+                    source.clone(),
+                    MarketDataSourceMeta::new(source, source_priority),
+                );
+                self.recompute_live_market_data_source();
             }
             AppEvent::MarketCandle {
                 symbol,
@@ -1236,6 +1235,44 @@ impl App {
                 self.mark_dirty();
             }
         }
+    }
+
+    fn recompute_live_market_data_source(&mut self) {
+        const LIVE_SOURCE_TTL_SECS: u64 = 5;
+
+        self.market_data_sources
+            .retain(|_, meta| meta.is_fresh(LIVE_SOURCE_TTL_SECS));
+
+        let configured_provider = self
+            .snapshot()
+            .as_ref()
+            .and_then(|snap| snap.inner.market_data_source.as_deref())
+            .map(str::to_lowercase);
+        let real_provider_configured = configured_provider
+            .as_deref()
+            .is_some_and(|provider| provider != "mock")
+            || self
+                .market_data_sources
+                .keys()
+                .any(|source| source.as_str() != "mock");
+
+        let mut candidates: Vec<&MarketDataSourceMeta> = self
+            .market_data_sources
+            .values()
+            .filter(|meta| !(real_provider_configured && meta.source == "mock"))
+            .collect();
+        if candidates.is_empty() {
+            candidates = self.market_data_sources.values().collect();
+        }
+
+        candidates.sort_by(|a, b| {
+            b.priority
+                .cmp(&a.priority)
+                .then_with(|| a.age_secs().cmp(&b.age_secs()))
+                .then_with(|| a.source.cmp(&b.source))
+        });
+
+        self.live_market_data_source = candidates.first().cloned().cloned();
     }
 
     fn should_accept_snapshot(&self, _incoming: &TuiSnapshot) -> bool {
