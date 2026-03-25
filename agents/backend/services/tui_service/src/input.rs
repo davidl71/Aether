@@ -3,6 +3,7 @@
 //! Converts crossterm key events into typed actions, keeping input parsing
 //! separate from application state mutation.
 
+use api::RuntimePositionDto;
 use crossterm::event::{KeyCode, KeyEvent};
 
 use crate::app::{App, DetailPopupContent, InputMode, Tab};
@@ -21,6 +22,7 @@ pub enum Action {
     YieldCurveScrollUp,
     YieldCurveScrollDown,
     YieldCurveDetail,
+    YieldRefresh,
     PositionsScrollUp,
     PositionsScrollDown,
     PositionsScrollPageUp,
@@ -41,6 +43,11 @@ pub enum Action {
     LoansScrollPageUp,
     LoansScrollPageDown,
     LoansNewLoan,
+    DiscountBankScrollUp,
+    DiscountBankScrollDown,
+    DiscountBankScrollPageUp,
+    DiscountBankScrollPageDown,
+    DiscountBankRefresh,
     LoansInputChar(char),
     LoansInputBackspace,
     LoansInputEscape,
@@ -100,6 +107,7 @@ pub enum Action {
     OrdersCancel,
     ForceSnapshot,
     SplitPaneToggle,
+    FmpDetail,
     NoOp,
 }
 
@@ -152,6 +160,7 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         KeyCode::Up if app.active_tab == Tab::Yield => Some(Action::YieldCurveScrollUp),
         KeyCode::Down if app.active_tab == Tab::Yield => Some(Action::YieldCurveScrollDown),
         KeyCode::Enter if app.active_tab == Tab::Yield => Some(Action::YieldCurveDetail),
+        KeyCode::Char('r') | KeyCode::Char('R') if app.active_tab == Tab::Yield => Some(Action::YieldRefresh),
 
         // Charts pill navigation (before generic tab switch)
         KeyCode::Left
@@ -236,6 +245,23 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         KeyCode::PageDown if app.active_tab == Tab::Loans => Some(Action::LoansScrollPageDown),
         KeyCode::Char('n') | KeyCode::Char('N') if app.active_tab == Tab::Loans => {
             Some(Action::LoansNewLoan)
+        }
+
+        // Discount Bank
+        KeyCode::Up if app.active_tab == Tab::DiscountBank => {
+            Some(Action::DiscountBankScrollUp)
+        }
+        KeyCode::Down if app.active_tab == Tab::DiscountBank => {
+            Some(Action::DiscountBankScrollDown)
+        }
+        KeyCode::PageUp if app.active_tab == Tab::DiscountBank => {
+            Some(Action::DiscountBankScrollPageUp)
+        }
+        KeyCode::PageDown if app.active_tab == Tab::DiscountBank => {
+            Some(Action::DiscountBankScrollPageDown)
+        }
+        KeyCode::Char('r') | KeyCode::Char('R') if app.active_tab == Tab::DiscountBank => {
+            Some(Action::DiscountBankRefresh)
         }
 
         // Alerts
@@ -373,6 +399,11 @@ pub fn key_to_action(app: &App, key: KeyEvent) -> Option<Action> {
         KeyCode::Char('k') | KeyCode::Char('K') if app.active_tab != Tab::Orders => {
             Some(Action::StrategyCancelAll)
         }
+        KeyCode::Char('f') | KeyCode::Char('F')
+            if app.active_tab == Tab::Dashboard || app.active_tab == Tab::Positions =>
+        {
+            Some(Action::FmpDetail)
+        }
         KeyCode::Char('f') | KeyCode::Char('F') => Some(Action::ForceSnapshot),
         KeyCode::Char('p') | KeyCode::Char('P') => Some(Action::SplitPaneToggle),
 
@@ -407,30 +438,34 @@ pub fn apply_action(app: &mut App, action: Action) {
                 5 => Tab::Alerts,
                 6 => Tab::Yield,
                 7 => Tab::Loans,
-                8 => Tab::Scenarios,
-                9 => Tab::Logs,
+                8 => Tab::DiscountBank,
+                9 => Tab::Scenarios,
                 0 => Tab::Settings,
                 _ => app.active_tab.clone(),
             };
-            // Trigger data fetch when entering Yield or Loans tab
+            // When entering Yield tab, sync detail view from KV cache; no on-demand fetch.
             if app.active_tab == Tab::Yield {
-                let wl = app.watchlist();
-                if !wl.is_empty() {
-                    let idx = app.yield_symbol_index.min(wl.len().saturating_sub(1));
-                    let symbol = wl[idx].clone();
-                    app.request_yield_fetch(&symbol);
-                }
+                app.sync_yield_curve_from_cache();
             } else if app.active_tab == Tab::Loans {
                 app.request_loans_fetch();
+            } else if app.active_tab == Tab::DiscountBank {
+                app.request_discount_bank_fetch();
             }
+        }
+        Action::YieldRefresh => {
+            let watchlist = app.watchlist();
+            let symbol = watchlist
+                .get(app.yield_symbol_index.min(watchlist.len().saturating_sub(1)))
+                .cloned()
+                .unwrap_or_default();
+            app.request_yield_fetch(&symbol);
         }
         Action::YieldSymbolPrev => {
             let len = app.watchlist().len();
             if len > 0 {
                 app.yield_symbol_index = (app.yield_symbol_index + len - 1) % len;
                 app.yield_curve_scroll = 0;
-                let symbol = app.watchlist()[app.yield_symbol_index].clone();
-                app.request_yield_fetch(&symbol);
+                app.sync_yield_curve_from_cache();
             }
         }
         Action::YieldSymbolNext => {
@@ -438,8 +473,7 @@ pub fn apply_action(app: &mut App, action: Action) {
             if len > 0 {
                 app.yield_symbol_index = (app.yield_symbol_index + 1) % len;
                 app.yield_curve_scroll = 0;
-                let symbol = app.watchlist()[app.yield_symbol_index].clone();
-                app.request_yield_fetch(&symbol);
+                app.sync_yield_curve_from_cache();
             }
         }
         Action::YieldCurveScrollUp => {
@@ -503,24 +537,50 @@ pub fn apply_action(app: &mut App, action: Action) {
             }
         }
         Action::PositionsDetail => {
-            if let Some(ref snap) = app.snapshot() {
-                let (_display_len, index_map, combo_key_per_row) =
-                    crate::ui::positions_display_info(
-                        &snap.dto().positions,
-                        app.positions_combo_view,
-                        &app.positions_expanded_combos,
-                    );
-                if let Some(Some(combo_key)) = combo_key_per_row.get(app.positions_scroll) {
-                    if app.positions_expanded_combos.contains(combo_key) {
-                        app.positions_expanded_combos.remove(combo_key);
+            // Collect what we need while borrow is live, then drop it before mutating app.
+            enum PosDetailAction {
+                ToggleCombo((String, String, String)),
+                ShowPosition(RuntimePositionDto),
+            }
+            let detail_action: Option<PosDetailAction> =
+                app.snapshot().as_ref().and_then(|snap| {
+                    let (_display_len, index_map, combo_key_per_row) =
+                        crate::ui::positions_display_info(
+                            &snap.dto().positions,
+                            app.positions_combo_view,
+                            &app.positions_expanded_combos,
+                        );
+                    if let Some(Some(combo_key)) = combo_key_per_row.get(app.positions_scroll) {
+                        Some(PosDetailAction::ToggleCombo(combo_key.clone()))
+                    } else if let Some(Some(pos_idx)) = index_map.get(app.positions_scroll) {
+                        snap.dto()
+                            .positions
+                            .get(*pos_idx)
+                            .map(|pos| PosDetailAction::ShowPosition(pos.clone()))
                     } else {
-                        app.positions_expanded_combos.insert(combo_key.clone());
+                        None
                     }
-                } else if let Some(Some(pos_idx)) = index_map.get(app.positions_scroll) {
-                    if let Some(pos) = snap.dto().positions.get(*pos_idx) {
-                        app.detail_popup = Some(DetailPopupContent::Position(pos.clone()));
+                });
+            match detail_action {
+                Some(PosDetailAction::ToggleCombo(combo_key)) => {
+                    if app.positions_expanded_combos.contains(&combo_key) {
+                        app.positions_expanded_combos.remove(&combo_key);
+                    } else {
+                        app.positions_expanded_combos.insert(combo_key);
                     }
                 }
+                Some(PosDetailAction::ShowPosition(pos)) => {
+                    let is_opt = pos
+                        .position_type
+                        .as_deref()
+                        .map(|t| t == "OPT" || t == "OPTION")
+                        .unwrap_or(false);
+                    app.detail_popup = Some(DetailPopupContent::Position(pos.clone(), None));
+                    if is_opt {
+                        app.fetch_greeks_for_position(&pos);
+                    }
+                }
+                None => {}
             }
         }
         Action::OrdersScrollUp => {
@@ -638,10 +698,10 @@ pub fn apply_action(app: &mut App, action: Action) {
                     if entry.current_field > 0 {
                         entry.current_field -= 1;
                     } else {
-                        entry.current_field = 8; // max editable field
+                        entry.current_field = 9; // max editable field
                     }
-                    // Skip field 9 (monthly_payment - read-only)
-                    if entry.current_field != 9 {
+                    // Skip fields 10/11 (monthly_payment, maturity - read-only)
+                    if entry.current_field < 10 {
                         break;
                     }
                 }
@@ -651,13 +711,13 @@ pub fn apply_action(app: &mut App, action: Action) {
             if let Some(ref mut entry) = app.loan_entry {
                 entry.validation_error = None;
                 loop {
-                    if entry.current_field < 8 {
+                    if entry.current_field < 9 {
                         entry.current_field += 1;
                     } else {
                         entry.current_field = 0;
                     }
-                    // Skip field 9 (monthly_payment - read-only)
-                    if entry.current_field != 9 {
+                    // Skip fields 10/11 (monthly_payment, maturity - read-only)
+                    if entry.current_field < 10 {
                         break;
                     }
                 }
@@ -676,8 +736,8 @@ pub fn apply_action(app: &mut App, action: Action) {
                     6 => 10, // origination_date
                     7 => 10, // first_payment_date
                     8 => 5,  // num_payments
-                    9 => 12, // monthly_payment (read-only calculated)
-                    _ => 20,
+                    9 => 5,  // currency
+                    _ => 20, // read-only fields 10/11
                 };
                 let target = match field {
                     0 => &mut entry.bank_name,
@@ -689,8 +749,8 @@ pub fn apply_action(app: &mut App, action: Action) {
                     6 => &mut entry.origination_date,
                     7 => &mut entry.first_payment_date,
                     8 => &mut entry.num_payments,
-                    9 => return, // monthly_payment is calculated
-                    _ => return,
+                    9 => &mut entry.currency,
+                    _ => return, // monthly_payment / maturity are calculated
                 };
                 if target.len() < max_len {
                     target.push(c);
@@ -713,13 +773,44 @@ pub fn apply_action(app: &mut App, action: Action) {
                     6 => &mut entry.origination_date,
                     7 => &mut entry.first_payment_date,
                     8 => &mut entry.num_payments,
-                    9 => return, // read-only
-                    _ => return,
+                    9 => &mut entry.currency,
+                    _ => return, // monthly_payment / maturity are read-only
                 };
                 target.pop();
                 entry.calculate_maturity();
                 entry.calculate_monthly_payment();
             }
+        }
+        Action::DiscountBankScrollUp => {
+            app.discount_bank_scroll = app.discount_bank_scroll.saturating_sub(1);
+        }
+        Action::DiscountBankScrollDown => {
+            let len = app
+                .discount_bank_transactions
+                .as_ref()
+                .and_then(|r| r.as_ref().ok())
+                .map(|t| t.transactions.len())
+                .unwrap_or(0);
+            if len > 0 {
+                app.discount_bank_scroll = (app.discount_bank_scroll + 1).min(len - 1);
+            }
+        }
+        Action::DiscountBankScrollPageUp => {
+            app.discount_bank_scroll = app.discount_bank_scroll.saturating_sub(10);
+        }
+        Action::DiscountBankScrollPageDown => {
+            let len = app
+                .discount_bank_transactions
+                .as_ref()
+                .and_then(|r| r.as_ref().ok())
+                .map(|t| t.transactions.len())
+                .unwrap_or(0);
+            if len > 0 {
+                app.discount_bank_scroll = (app.discount_bank_scroll + 10).min(len - 1);
+            }
+        }
+        Action::DiscountBankRefresh => {
+            app.request_discount_bank_fetch();
         }
         Action::AlertsScrollUp => {
             app.alerts_scroll = app.alerts_scroll.saturating_sub(1);
@@ -1043,6 +1134,41 @@ pub fn apply_action(app: &mut App, action: Action) {
         }
         Action::ForceSnapshot => {
             app.set_command_status(crate::app::CommandStatusView::disabled("publish_snapshot"));
+        }
+        Action::FmpDetail => {
+            // Get symbol from selected row depending on active tab
+            let symbol = if app.active_tab == Tab::Dashboard {
+                app.snapshot().as_ref().and_then(|snap| {
+                    snap.inner
+                        .symbols
+                        .get(app.dashboard_scroll)
+                        .map(|s| s.symbol.clone())
+                })
+            } else {
+                // Positions tab — use root symbol (first whitespace-delimited token)
+                app.snapshot().as_ref().and_then(|snap| {
+                    let (_display_len, index_map, _combo_key_per_row) =
+                        crate::ui::positions_display_info(
+                            &snap.dto().positions,
+                            app.positions_combo_view,
+                            &app.positions_expanded_combos,
+                        );
+                    if let Some(Some(pos_idx)) = index_map.get(app.positions_scroll) {
+                        snap.dto().positions.get(*pos_idx).map(|p| {
+                            p.symbol
+                                .split_whitespace()
+                                .next()
+                                .unwrap_or(&p.symbol)
+                                .to_string()
+                        })
+                    } else {
+                        None
+                    }
+                })
+            };
+            if let Some(sym) = symbol {
+                app.fetch_fmp(sym);
+            }
         }
         Action::SplitPaneToggle => {
             app.split_pane = !app.split_pane;

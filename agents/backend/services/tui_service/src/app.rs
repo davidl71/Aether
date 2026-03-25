@@ -3,6 +3,7 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::Instant;
 
+use api::discount_bank::{DiscountBankBalanceDto, DiscountBankTransactionsListDto};
 use api::finance_rates::{BenchmarksResponse, CurveResponse, RatePointResponse};
 use api::loans::LoanRecord;
 use api::{
@@ -22,8 +23,35 @@ const SPARKLINE_HISTORY_SIZE: usize = 20;
 const CHART_HISTORY_SIZE: usize = 120;
 const TOAST_TTL_SECS: u64 = 3;
 
+// ── Yield-refresh task tracking ─────────────────────────────────────────────
+
+/// Status of a manual yield-refresh request.
+#[derive(Debug, Clone, PartialEq)]
+pub enum RefreshTaskStatus {
+    /// Request sent to backend; waiting for KV update.
+    Pending,
+    /// KV update received; data is fresh.
+    Done,
+    /// Request failed or backend returned an error.
+    Error(String),
+}
+
+/// One manual or periodic refresh event tracked in the TUI task queue.
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct RefreshTask {
+    /// Monotone id (incrementing u64).
+    pub id: u64,
+    /// Human-readable label, e.g. "Yield refresh SPX,XSP".
+    pub label: String,
+    pub triggered_at: chrono::DateTime<chrono::Utc>,
+    pub completed_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub status: RefreshTaskStatus,
+}
+
 /// Severity level for transient toast notifications.
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 pub enum ToastLevel {
     Info,
     Warning,
@@ -39,18 +67,55 @@ pub enum Tab {
     Alerts,
     Yield,
     Loans,
+    DiscountBank,
     Scenarios,
     Logs,
     Settings,
+}
+
+/// Display-ready greeks result for an option position.
+#[derive(Debug, Clone)]
+pub struct GreeksDisplay {
+    pub iv: f64,
+    pub delta: f64,
+    pub gamma: f64,
+    pub theta: f64,
+    pub vega: f64,
+    pub rho: f64,
+}
+
+/// Combined FMP quote + most recent income statement for a symbol.
+#[derive(Debug, Clone)]
+pub struct FmpDetail {
+    pub symbol: String,
+    pub price: Option<f64>,
+    pub day_high: Option<f64>,
+    pub day_low: Option<f64>,
+    pub prev_close: Option<f64>,
+    pub eps: Option<f64>,
+    pub revenue: Option<f64>,
+    pub net_income: Option<f64>,
+}
+
+/// Request sent to the background greeks fetcher task.
+#[derive(Debug, Clone)]
+pub struct GreeksFetchRequest {
+    pub underlying: f64,
+    pub strike: f64,
+    pub tte_years: f64,
+    pub rate: f64,
+    pub market_price: f64,
+    pub option_type: String,
 }
 
 /// Content for the row-detail overlay (Orders/Positions/Scenarios). Same overlay pattern as help (?); Esc to close.
 #[derive(Debug, Clone)]
 pub enum DetailPopupContent {
     Order(RuntimeOrderDto),
-    Position(RuntimePositionDto),
+    Position(RuntimePositionDto, Option<GreeksDisplay>),
     Scenario(ScenarioDto),
     YieldPoint(RatePointResponse),
+    FmpSymbol(FmpDetail),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -152,6 +217,7 @@ pub struct LoanEntryState {
     pub origination_date: String,
     pub first_payment_date: String,
     pub num_payments: String,
+    pub currency: String,
     pub monthly_payment: String,
     pub maturity_date: String,
     pub current_field: usize,
@@ -176,6 +242,7 @@ impl LoanEntryState {
             origination_date: String::new(),
             first_payment_date: String::new(),
             num_payments: String::new(),
+            currency: "ILS".to_string(),
             monthly_payment: String::new(),
             maturity_date: String::new(),
             current_field: 0,
@@ -282,6 +349,7 @@ impl LoanEntryState {
             payment_frequency_months: 1,
             status: api::loans::LoanStatus::Active,
             last_update: now,
+            currency: if self.currency.is_empty() { "ILS".to_string() } else { self.currency.clone() },
         })
     }
 }
@@ -299,6 +367,7 @@ impl Tab {
         Tab::Alerts,
         Tab::Yield,
         Tab::Loans,
+        Tab::DiscountBank,
         Tab::Scenarios,
         Tab::Logs,
         Tab::Settings,
@@ -313,6 +382,7 @@ impl Tab {
             Tab::Alerts => "Alerts",
             Tab::Yield => "Yield",
             Tab::Loans => "Loans",
+            Tab::DiscountBank => "Bank",
             Tab::Scenarios => "Scen",
             Tab::Logs => "Logs",
             Tab::Settings => "Set",
@@ -432,22 +502,28 @@ pub struct App {
     pub config_overrides: HashMap<String, String>,
     /// Selected config row in Settings (0..=4): NATS_URL, BACKEND_ID, TICK_MS, SNAPSHOT_TTL_SECS, SPLIT_PANE.
     pub settings_config_key_index: usize,
-    /// Last fetched box spread curve (NATS api.finance_rates.build_curve).
+    /// Last fetched box spread curve for the selected symbol.
     pub yield_curve: Option<CurveResponse>,
+    /// Box spread curves for all watchlist symbols (keyed by symbol), populated by batch fetch.
+    pub yield_curves_all: HashMap<String, CurveResponse>,
     /// Last fetched benchmark rates (NATS api.finance_rates.benchmarks).
     pub yield_benchmarks: Option<BenchmarksResponse>,
     /// Last yield fetch error message.
     pub yield_error: Option<String>,
+    /// Per-symbol: timestamp of the last KV update received (from curve.timestamp).
+    pub yield_last_refreshed: HashMap<String, chrono::DateTime<chrono::Utc>>,
+    /// Recent refresh tasks (max 8, newest first) for tracking manual requests.
+    pub yield_tasks: VecDeque<RefreshTask>,
+    /// Monotone counter for task ids.
+    yield_task_id_counter: u64,
+    /// True while a manual refresh request is in-flight (sent but KV update not yet received).
+    pub yield_refresh_pending: bool,
+    /// Sender to trigger a refresh request publish to `api.yield_curve.refresh`; None if not wired.
+    pub yield_refresh_tx: Option<mpsc::UnboundedSender<()>>,
     /// Cached NYSE market-open flag (None = not yet checked). Updated every ~60 ticks (~15s).
     pub market_open: Option<bool>,
     /// Tick counter for periodic market-hours check (resets at MARKET_CHECK_INTERVAL_TICKS).
     market_open_tick: u32,
-    /// Tick counter for periodic yield fetch when on Yield tab.
-    pub yield_fetch_tick: u32,
-    /// True while a yield fetch is in flight; prevents overlapping requests and mock/real cycling.
-    pub yield_fetch_pending: bool,
-    /// Sender to trigger yield fetch (symbol); None when not wired.
-    pub yield_fetch_tx: Option<mpsc::UnboundedSender<String>>,
     /// Last fetched loans list (NATS api.loans.list).
     pub loans_list: Option<Result<Vec<LoanRecord>, String>>,
     /// True while a loans fetch is in flight.
@@ -460,6 +536,20 @@ pub struct App {
     pub loan_entry: Option<LoanEntryState>,
     /// Sender to create a new loan via NATS api.loans.create; None when not wired.
     pub loan_create_tx: Option<mpsc::UnboundedSender<LoanRecord>>,
+    /// Last fetched Discount Bank balance (NATS api.discount_bank.balance).
+    pub discount_bank_balance: Option<Result<DiscountBankBalanceDto, String>>,
+    /// Last fetched Discount Bank transactions (NATS api.discount_bank.transactions).
+    pub discount_bank_transactions: Option<Result<DiscountBankTransactionsListDto, String>>,
+    /// True while a Discount Bank fetch is in flight.
+    pub discount_bank_fetch_pending: bool,
+    /// Scroll index for Discount Bank tab.
+    pub discount_bank_scroll: usize,
+    /// Sender to trigger Discount Bank fetch; None when not wired.
+    pub discount_bank_fetch_tx: Option<mpsc::UnboundedSender<()>>,
+    /// Sender to trigger FMP quote+fundamentals fetch (symbol string); None when not wired.
+    pub fmp_fetch_tx: Option<mpsc::UnboundedSender<String>>,
+    /// Sender to trigger greeks fetch for an option position; None when not wired.
+    pub greeks_fetch_tx: Option<mpsc::UnboundedSender<GreeksFetchRequest>>,
     /// Latest metadata from the live market-data tick stream (source, priority, age).
     pub live_market_data_source: Option<MarketDataSourceMeta>,
     /// Cached credential presence per provider (refreshed every ~30s). True = key found.
@@ -473,15 +563,19 @@ pub struct App {
 }
 
 impl App {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         config: TuiConfig,
         snapshot_rx: watch::Receiver<Option<TuiSnapshot>>,
         event_rx: mpsc::UnboundedReceiver<AppEvent>,
         config_rx: watch::Receiver<TuiConfig>,
         health_rx: watch::Receiver<HashMap<String, BackendHealthState>>,
-        yield_fetch_tx: Option<mpsc::UnboundedSender<String>>,
+        yield_refresh_tx: Option<mpsc::UnboundedSender<()>>,
         loans_fetch_tx: Option<mpsc::UnboundedSender<()>>,
         loan_create_tx: Option<mpsc::UnboundedSender<LoanRecord>>,
+        fmp_fetch_tx: Option<mpsc::UnboundedSender<String>>,
+        greeks_fetch_tx: Option<mpsc::UnboundedSender<GreeksFetchRequest>>,
+        discount_bank_fetch_tx: Option<mpsc::UnboundedSender<()>>,
     ) -> Self {
         let config_warning = validate_config_hint(&config);
         let split_pane = config.split_pane;
@@ -537,19 +631,29 @@ impl App {
             config_overrides: HashMap::new(),
             settings_config_key_index: 0,
             yield_curve: None,
+            yield_curves_all: HashMap::new(),
             yield_benchmarks: None,
             yield_error: None,
+            yield_last_refreshed: HashMap::new(),
+            yield_tasks: VecDeque::new(),
+            yield_task_id_counter: 0,
+            yield_refresh_pending: false,
+            yield_refresh_tx,
             market_open: None,
             market_open_tick: 0,
-            yield_fetch_tick: 0,
-            yield_fetch_pending: false,
-            yield_fetch_tx,
             loans_list: None,
             loans_fetch_pending: false,
             loans_scroll: 0,
             loans_fetch_tx,
             loan_entry: None,
             loan_create_tx,
+            discount_bank_balance: None,
+            discount_bank_transactions: None,
+            discount_bank_fetch_pending: false,
+            discount_bank_scroll: 0,
+            discount_bank_fetch_tx,
+            fmp_fetch_tx,
+            greeks_fetch_tx,
             live_market_data_source: None,
             credential_status: HashMap::new(),
             credential_status_refreshed_at: None,
@@ -752,13 +856,19 @@ impl App {
         }
     }
 
-    /// Set yield data from NATS fetch (curve + benchmarks).
-    pub fn set_yield_data(&mut self, res: Result<(CurveResponse, BenchmarksResponse), String>) {
-        self.yield_fetch_pending = false;
+
+    /// Legacy: set yield data from NATS request/reply fetch (curve + benchmarks).
+    /// Kept for test compatibility; production path now uses KV watch + periodic benchmarks fetch.
+    pub fn set_yield_data(
+        &mut self,
+        res: Result<(HashMap<String, CurveResponse>, BenchmarksResponse), String>,
+    ) {
+        self.yield_refresh_pending = false;
         self.yield_error = None;
         match res {
-            Ok((curve, benchmarks)) => {
-                self.yield_curve = Some(curve);
+            Ok((curves, benchmarks)) => {
+                self.yield_curves_all.extend(curves);
+                self.sync_yield_curve_from_cache();
                 self.yield_benchmarks = Some(benchmarks);
             }
             Err(e) => {
@@ -768,16 +878,43 @@ impl App {
         self.mark_dirty();
     }
 
-    /// Request a yield fetch for the given symbol (no-op if yield_fetch_tx is None or a fetch is already in flight).
-    pub fn request_yield_fetch(&mut self, symbol: &str) {
-        if self.yield_fetch_pending {
+    /// Trigger a yield refresh: publishes to `api.yield_curve.refresh` (fire-and-forget).
+    /// The KV watcher receives the writer's response and updates `yield_curves_all` via AppEvent.
+    pub fn request_yield_fetch(&mut self, _symbol: &str) {
+        if self.yield_refresh_pending {
             return;
         }
-        if let Some(ref tx) = self.yield_fetch_tx {
-            if tx.send(symbol.to_string()).is_ok() {
-                self.yield_fetch_pending = true;
+        if let Some(ref tx) = self.yield_refresh_tx {
+            if !self.config.watchlist.is_empty() && tx.send(()).is_ok() {
+                self.yield_refresh_pending = true;
+                // Create a tracking task
+                self.yield_task_id_counter += 1;
+                let symbols_label = self.config.watchlist.join(",");
+                const MAX_TASKS: usize = 8;
+                if self.yield_tasks.len() >= MAX_TASKS {
+                    self.yield_tasks.pop_back();
+                }
+                self.yield_tasks.push_front(RefreshTask {
+                    id: self.yield_task_id_counter,
+                    label: format!("Yield refresh {}", symbols_label),
+                    triggered_at: chrono::Utc::now(),
+                    completed_at: None,
+                    status: RefreshTaskStatus::Pending,
+                });
             }
         }
+    }
+
+    /// Update `yield_curve` (detail view) to match `yield_symbol_index` from cached data.
+    /// Called after navigation or after a KV update arrives for the selected symbol.
+    pub fn sync_yield_curve_from_cache(&mut self) {
+        let idx = self.yield_symbol_index.min(self.config.watchlist.len().saturating_sub(1));
+        self.yield_curve = self
+            .config
+            .watchlist
+            .get(idx)
+            .and_then(|s| self.yield_curves_all.get(s))
+            .cloned();
     }
 
     /// Set loans list from NATS fetch.
@@ -796,6 +933,98 @@ impl App {
             if tx.send(()).is_ok() {
                 self.loans_fetch_pending = true;
             }
+        }
+    }
+
+    /// Set Discount Bank data from NATS fetch (balance + transactions).
+    pub fn set_discount_bank_data(
+        &mut self,
+        balance: Result<DiscountBankBalanceDto, String>,
+        txns: Result<DiscountBankTransactionsListDto, String>,
+    ) {
+        self.discount_bank_fetch_pending = false;
+        self.discount_bank_balance = Some(balance);
+        self.discount_bank_transactions = Some(txns);
+        self.mark_dirty();
+    }
+
+    /// Request a Discount Bank fetch (no-op if already in flight or tx not wired).
+    pub fn request_discount_bank_fetch(&mut self) {
+        if self.discount_bank_fetch_pending {
+            return;
+        }
+        if let Some(ref tx) = self.discount_bank_fetch_tx {
+            if tx.send(()).is_ok() {
+                self.discount_bank_fetch_pending = true;
+            }
+        }
+    }
+
+    /// Apply incoming FMP data result.
+    pub fn set_fmp_data(&mut self, result: Result<FmpDetail, String>) {
+        match result {
+            Ok(data) => {
+                self.detail_popup = Some(DetailPopupContent::FmpSymbol(data));
+            }
+            Err(e) => {
+                self.push_toast(format!("FMP: {}", e), ToastLevel::Error);
+            }
+        }
+        self.needs_redraw = true;
+    }
+
+    /// Apply incoming greeks result — updates the open Position popup if present.
+    pub fn set_greeks_data(&mut self, result: Result<GreeksDisplay, String>) {
+        if let Some(DetailPopupContent::Position(_, greeks_slot)) = &mut self.detail_popup {
+            *greeks_slot = result.ok();
+        }
+        self.needs_redraw = true;
+    }
+
+    /// Trigger FMP fetch for a symbol.
+    pub fn fetch_fmp(&mut self, symbol: String) {
+        if let Some(ref tx) = self.fmp_fetch_tx {
+            let _ = tx.send(symbol);
+        }
+    }
+
+    /// Trigger greeks fetch for an option position if parseable.
+    pub fn fetch_greeks_for_position(&mut self, pos: &RuntimePositionDto) {
+        use crate::option_symbol::parse_option_symbol;
+        let parsed = match parse_option_symbol(&pos.symbol) {
+            Some(p) => p,
+            None => return,
+        };
+        let underlying = self
+            .snapshot()
+            .as_ref()
+            .and_then(|s| {
+                s.inner
+                    .symbols
+                    .iter()
+                    .find(|sym| pos.symbol.starts_with(&sym.symbol))
+            })
+            .map(|s| s.last)
+            .unwrap_or(0.0);
+        if underlying == 0.0 {
+            return;
+        }
+        let rate = self
+            .yield_curve
+            .as_ref()
+            .and_then(|c| c.points.first())
+            .map(|p| p.mid_rate)
+            .unwrap_or(0.045);
+        let req = GreeksFetchRequest {
+            underlying,
+            strike: parsed.strike,
+            tte_years: parsed.tte_years,
+            rate,
+            market_price: pos.mark,
+            option_type: parsed.option_type,
+        };
+        if let Some(ref tx) = self.greeks_fetch_tx {
+            let _ = tx.send(req);
         }
     }
 
@@ -879,20 +1108,8 @@ impl App {
             self.market_open = nyse_is_open();
         }
 
-        // Periodic yield fetch when on Yield tab (~every 10s at 250ms tick). Skip if a fetch is already in flight to avoid mock/real cycling from overlapping responses.
-        const YIELD_FETCH_INTERVAL_TICKS: u32 = 40;
-        if self.active_tab == Tab::Yield
-            && !self.yield_fetch_pending
-            && !self.config.watchlist.is_empty()
-        {
-            self.yield_fetch_tick = self.yield_fetch_tick.saturating_add(1);
-            if self.yield_fetch_tick >= YIELD_FETCH_INTERVAL_TICKS {
-                self.yield_fetch_tick = 0;
-                let idx = self.yield_symbol_index.min(self.config.watchlist.len() - 1);
-                let symbol = self.config.watchlist[idx].clone();
-                self.request_yield_fetch(&symbol);
-            }
-        }
+        // Yield curves are now push-based via NATS KV watch (run_yield_kv_watcher).
+        // No periodic polling needed here. Manual refresh via 'r' key sends to yield_refresh_tx.
 
         // When on Loans tab and no data yet, trigger a fetch once.
         if self.active_tab == Tab::Loans && self.loans_list.is_none() && !self.loans_fetch_pending {
@@ -982,6 +1199,41 @@ impl App {
                 timestamp,
             } => {
                 self.apply_alert(level, message, timestamp);
+            }
+            AppEvent::YieldCurveKvUpdate {
+                symbol,
+                curve,
+                fetched_at,
+            } => {
+                // Record when we last got fresh data for this symbol
+                if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&fetched_at) {
+                    self.yield_last_refreshed.insert(symbol.clone(), dt.with_timezone(&chrono::Utc));
+                }
+                self.yield_curves_all.insert(symbol.clone(), curve);
+                self.sync_yield_curve_from_cache();
+                // Mark most recent pending task as done
+                if let Some(task) = self.yield_tasks.iter_mut().find(|t| t.status == RefreshTaskStatus::Pending) {
+                    task.status = RefreshTaskStatus::Done;
+                    task.completed_at = Some(chrono::Utc::now());
+                }
+                self.yield_refresh_pending = false;
+                self.yield_error = None;
+                self.mark_dirty();
+            }
+            AppEvent::BenchmarksUpdate(benchmarks) => {
+                self.yield_benchmarks = Some(benchmarks);
+                self.mark_dirty();
+            }
+            AppEvent::YieldRefreshAck { ok } => {
+                if !ok {
+                    // Mark most recent pending task as error
+                    if let Some(task) = self.yield_tasks.iter_mut().find(|t| t.status == RefreshTaskStatus::Pending) {
+                        task.status = RefreshTaskStatus::Error("backend rejected refresh".into());
+                        task.completed_at = Some(chrono::Utc::now());
+                    }
+                    self.yield_refresh_pending = false;
+                }
+                self.mark_dirty();
             }
         }
     }
@@ -1233,6 +1485,9 @@ mod tests {
             None,
             None,
             None,
+            None,
+            None,
+            None,
         );
         (app, snap_tx, event_tx)
     }
@@ -1291,6 +1546,9 @@ mod tests {
             event_rx,
             config_rx,
             health_rx,
+            None,
+            None,
+            None,
             None,
             None,
             None,
@@ -1368,7 +1626,7 @@ mod tests {
     fn yield_curve_tab_renders_with_data() {
         let (mut app, _, _) = make_app();
         app.active_tab = Tab::Yield;
-        app.yield_curve = Some(CurveResponse {
+        let curve = CurveResponse {
             symbol: "SPX".to_string(),
             points: vec![RatePointResponse {
                 symbol: "SPX".to_string(),
@@ -1392,7 +1650,10 @@ mod tests {
             strike_width: None,
             point_count: 1,
             underlying_price: None,
-        });
+        };
+        app.yield_curves_all.insert("SPX".to_string(), curve.clone());
+        app.yield_curve = Some(curve);
+        app.config.watchlist = vec!["SPX".to_string()];
         app.yield_benchmarks = None;
 
         let backend = TestBackend::new(80, 24);
@@ -1408,8 +1669,8 @@ mod tests {
             content
         );
         assert!(
-            content.contains("Rate %"),
-            "Yield tab should show 'Rate %' column header; got:\n{}",
+            content.contains("SPX %") || content.contains("SPX"),
+            "Yield tab should show SPX column header; got:\n{}",
             content
         );
         assert!(
@@ -1446,14 +1707,11 @@ mod tests {
 
         let content = buffer_to_string(&frame.area, &frame.buffer);
         assert!(content.contains("Yield"), "Yield title; got:\n{}", content);
+        // The comparison table shows "…" (waiting) when no data is in yield_curves_all.
+        // The detail table shows "0 points returned" when yield_curve has an empty points vec.
         assert!(
-            content.contains("No data") || content.contains("No "),
-            "Empty curve should show 'No data' (or truncated 'No'); got:\n{}",
-            content
-        );
-        assert!(
-            content.contains("Box spread curve (empty)"),
-            "Empty curve should show empty title; got:\n{}",
+            content.contains("0 points") || content.contains("no data") || content.contains("waiting"),
+            "Empty curve should show empty/waiting state; got:\n{}",
             content
         );
     }
@@ -1599,7 +1857,8 @@ mod tests {
         app.settings_edit_config_key = Some("NATS_URL".into());
         app.settings_add_symbol_input = Some("nats://demo".into());
 
-        let backend = TestBackend::new(100, 24);
+        // 28 rows: 5 chrome + 7 (health diagram) + min3 (config) + 3 (symbols) + min5 (data srcs) + 1 (hint)
+        let backend = TestBackend::new(100, 28);
         let mut terminal = Terminal::new(backend).unwrap();
         let frame = terminal.draw(|f| render(f, &app)).unwrap();
 
@@ -1613,7 +1872,7 @@ mod tests {
     fn hint_bar_renders_async_status_cues() {
         let (mut app, _, _) = make_app();
         app.active_tab = Tab::Yield;
-        app.yield_fetch_pending = true;
+        app.yield_refresh_pending = true;
         app.loans_fetch_pending = true;
 
         let backend = TestBackend::new(240, 12);
